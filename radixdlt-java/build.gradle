@@ -14,10 +14,6 @@ dependencies {
     testCompile group: 'org.mockito', name: 'mockito-core', version: '2.7.22'
 }
 
-repositories {
-    mavenCentral()
-}
-
 jar {
     manifest {
         attributes('Implementation-Title': project.name,

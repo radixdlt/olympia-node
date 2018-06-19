@@ -1,7 +1,17 @@
-group 'com.radixdlt'
+buildscript {
+	repositories {
+		jcenter()
+	}
+}
 
-subprojects {
-    version '1.0-SNAPSHOT'
+plugins {
+    id 'com.jfrog.bintray' version '1.8.2'
+}
+
+group 'com.radixdlt'
+version '0.9.0'
+
+allprojects {
 
     configurations.all {
         resolutionStrategy {
@@ -16,12 +26,20 @@ subprojects {
     sourceCompatibility = 1.8
     targetCompatibility = 1.8
 
-
     repositories {
-        mavenCentral()
+        jcenter()
     }
+}
 
-    dependencies {
-        testCompile group: 'junit', name: 'junit', version: '4.12'
+bintray {
+    user = project.property('bintrayUser')
+    key = project.property('bintrayApiKey')
+    configurations = ['archives']
+    pkg {
+        repo = 'maven2'
+        name = project.name
+        userOrg = 'radixdlt'
+        licenses = ['MIT']
+        vcsUrl = 'https://github.com/radixdlt/radixdlt-system.git'
     }
 }
