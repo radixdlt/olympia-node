@@ -1,0 +1,45 @@
+plugins {
+    id 'java-library'
+}
+
+dependencies {
+    compile group: 'org.bouncycastle', name: 'bcprov-jdk15on', version: '1.56'
+    compile group: 'com.google.code.gson', name: 'gson', version: '2.8.2'
+    compile group: 'com.squareup.okhttp3', name: 'okhttp', version: '3.10.0'
+    compile group: 'com.squareup.okhttp3', name: 'logging-interceptor', version: '3.10.0'
+    compile group: 'io.reactivex.rxjava2', name: 'rxjava', version: '2.1.14'
+    compile group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.25'
+
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+    testCompile group: 'org.mockito', name: 'mockito-core', version: '2.7.22'
+}
+
+repositories {
+    mavenCentral()
+}
+
+jar {
+    manifest {
+        attributes('Implementation-Title': project.name,
+                   'Implementation-Version': project.version)
+    }
+
+    exclude('universe.key')
+}
+
+task depsize {
+    doLast {
+        final formatStr = "%,10.2f"
+        final conf = configurations.default
+        final size = conf.collect { it.length() / (1024 * 1024) }.sum()
+        final out = new StringBuffer()
+        out << 'Total dependencies size:'.padRight(45)
+        out << "${String.format(formatStr, size)} Mb\n\n"
+        conf.sort { -it.length() }
+                .each {
+            out << "${it.name}".padRight(45)
+            out << "${String.format(formatStr, (it.length() / 1024))} kb\n"
+        }
+        println(out)
+    }
+}

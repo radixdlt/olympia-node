@@ -1,0 +1,9 @@
+.gradle
+.idea
+.DS_Store
+.project
+examples/out/
+out/
+*.key
+build/
+bin/
