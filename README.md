@@ -10,16 +10,14 @@ Add our Maven2 repository:
 
 ```
 repositories {
-    maven {
-        url  "https://dl.bintray.com/radixdlt/maven2" 
-    }
+    jcenter()    
 }
 ```
 
 Add the dependency:
 
 ```
-compile group: 'com.radixdlt', name: 'radixdlt-java', version: '0.9.0'
+compile group: 'com.radixdlt', name: 'radixdlt-java', version: '0.9.1'
 ```
 
 # Documentation
