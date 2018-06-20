@@ -101,8 +101,8 @@ publishing {
 }
 
 bintray {
-    user = project.property('bintrayUser')
-    key = project.property('bintrayApiKey')
+    user = project.properties.get('bintrayUser')
+    key = project.properties.get('bintrayApiKey')
     publications = ['MyPublication']
     pkg {
         repo = 'maven2'
