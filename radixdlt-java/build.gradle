@@ -1,5 +1,8 @@
 plugins {
     id 'java-library'
+    id 'maven'
+    id 'maven-publish'
+    id 'com.jfrog.bintray' version '1.8.2'
 }
 
 dependencies {
@@ -37,5 +40,75 @@ task depsize {
             out << "${String.format(formatStr, (it.length() / 1024))} kb\n"
         }
         println(out)
+    }
+}
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+artifacts {
+    archives sourcesJar
+    archives javadocJar
+}
+
+// Create the pom configuration:
+def pomConfig = {
+    licenses {
+        license {
+            name "The MIT License"
+            url "https://opensource.org/licenses/MIT"
+            distribution "repo"
+        }
+    }
+    developers {
+        developer {
+            id "TAlekhiNezh"
+            name "Joshua Primero"
+            email "josh@radixdlt.com"
+        }
+    }
+    scm {
+       url project.url
+    }
+}
+
+// Create the publication with the pom configuration:
+publishing {
+    publications {
+        MyPublication(MavenPublication) {
+            from components.java
+            artifact sourcesJar
+            artifact javadocJar
+            groupId project.group
+            artifactId project.name
+            version project.version
+            pom.withXml {
+                def root = asNode()
+                root.appendNode('description', 'A Java/Android Client library for interacting with a RADIX Distributed Ledger.')
+                root.appendNode('name', project.name)
+                root.appendNode('url', project.url)
+                root.children().last() + pomConfig
+            }
+        }
+    }
+}
+
+bintray {
+    user = project.property('bintrayUser')
+    key = project.property('bintrayApiKey')
+    publications = ['MyPublication']
+    pkg {
+        repo = 'maven2'
+        name = project.name
+        userOrg = 'radixdlt'
+        licenses = ['MIT']
+        vcsUrl = project.url
     }
 }
