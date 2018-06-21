@@ -6,6 +6,7 @@ import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.util.Base58;
 import com.radixdlt.client.core.util.Hash;
+import java.util.Objects;
 
 public class RadixAddress {
 
@@ -31,17 +32,18 @@ public class RadixAddress {
 	}
 
 	public RadixAddress(RadixUniverseConfig universe, ECPublicKey publicKey) {
-		if (publicKey == null) {
-			throw new IllegalArgumentException();
-		}
+		this(universe.getMagic(), publicKey);
+	}
 
+	public RadixAddress(int magic, ECPublicKey publicKey) {
+		Objects.requireNonNull(publicKey);
 		if (publicKey.length() != 33) {
 			throw new IllegalArgumentException("Public key must be 33 bytes but was " + publicKey.length());
 		}
 
 		byte[] addressBytes = new byte[1 + publicKey.length() + 4];
 		// Universe magic byte
-		addressBytes[0] = (byte) (universe.getMagic() & 0xff);
+		addressBytes[0] = (byte) (magic & 0xff);
 		// Public Key
 		publicKey.copyPublicKey(addressBytes, 1);
 		// Checksum
@@ -52,6 +54,13 @@ public class RadixAddress {
 		this.publicKey = publicKey;
 	}
 
+	public boolean ownsKey(ECKeyPair ecKeyPair) {
+		return this.ownsKey(ecKeyPair.getPublicKey());
+	}
+
+	public boolean ownsKey(ECPublicKey publicKey) {
+		return this.publicKey.equals(publicKey);
+	}
 
 	@Override
 	public String toString() {
