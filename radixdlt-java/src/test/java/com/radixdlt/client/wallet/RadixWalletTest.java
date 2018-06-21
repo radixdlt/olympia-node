@@ -18,6 +18,7 @@ import com.radixdlt.client.core.identity.RadixIdentity;
 import com.radixdlt.client.core.ledger.RadixLedger;
 import com.radixdlt.client.core.address.RadixAddress;
 import io.reactivex.Observable;
+import java.security.interfaces.ECKey;
 import java.util.Collections;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -61,6 +62,8 @@ public class RadixWalletTest {
 		when(publicKey.toByteArray()).thenReturn(new byte[33]);
 		when(publicKey.length()).thenReturn(33);
 		when(address.getPublicKey()).thenReturn(publicKey);
+		when(address.ownsKey(any(ECPublicKey.class))).thenReturn(true);
+		when(address.ownsKey(any(ECKeyPair.class))).thenReturn(true);
 		when(ledger.getMagic()).thenReturn(1);
 
 		when(consumer.quantity()).thenReturn(1L);
@@ -75,7 +78,6 @@ public class RadixWalletTest {
 		when(consumable.getAsConsumable()).thenReturn(consumable);
 		when(consumable.isAbstractConsumable()).thenReturn(true);
 		when(consumable.getAsAbstractConsumable()).thenReturn(consumable);
-		when(consumable.hasOwner(any())).thenReturn(true);
 		when(transactionAtom.getParticles()).thenReturn(Collections.singletonList(consumable));
 		ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
 		when(ledger.getAllAtoms(any(), any())).thenReturn(Observable.create(emitter -> {

@@ -7,6 +7,7 @@ import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.serialization.Dson;
 import com.radixdlt.client.core.util.Hash;
+import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -29,21 +30,12 @@ public abstract class Particle {
 		this.owners = owners;
 	}
 
-	public boolean hasOwner(ECPublicKey publicKey) {
-		// TODO: optimize this
-		return this.owners != null && this.owners.stream().map(ECKeyPair::getPublicKey).allMatch(pb -> pb.equals(publicKey));
-	}
-
 	public Set<EUID> getDestinations() {
 		return destinations;
 	}
 
 	public Set<ECPublicKey> getOwners() {
-		return owners.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toSet());
-	}
-
-	public Set<RadixAddress> getOwnersByAddress(RadixUniverseConfig universe) {
-		return owners.stream().map(ecKeyPair -> new RadixAddress(universe, ecKeyPair.getPublicKey())).collect(Collectors.toSet());
+		return owners == null ? Collections.emptySet() : owners.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toSet());
 	}
 
 	public boolean isAbstractConsumable() {

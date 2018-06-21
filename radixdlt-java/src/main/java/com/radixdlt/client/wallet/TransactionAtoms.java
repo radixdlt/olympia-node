@@ -1,21 +1,16 @@
 package com.radixdlt.client.wallet;
 
-import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.AbstractConsumable;
 import com.radixdlt.client.core.atoms.Consumable;
 import com.radixdlt.client.core.atoms.Particle;
-import com.radixdlt.client.core.atoms.RadixHash;
 import com.radixdlt.client.core.atoms.TransactionAtom;
-import com.radixdlt.client.core.crypto.ECPublicKey;
 import io.reactivex.ObservableEmitter;
 import io.reactivex.observables.ConnectableObservable;
 import java.nio.ByteBuffer;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
@@ -54,7 +49,7 @@ public class TransactionAtoms {
 		transactionAtom.getParticles().stream()
 			.filter(Particle::isAbstractConsumable)
 			.map(Particle::getAsAbstractConsumable)
-			.filter(particle -> particle.hasOwner(address.getPublicKey()))
+			.filter(particle -> particle.getOwners().stream().allMatch(address::ownsKey))
 			.filter(particle -> particle.getAssetId().equals(assetId))
 			.forEach(particle -> {
 				ByteBuffer dson = ByteBuffer.wrap(particle.getDson());
@@ -84,7 +79,7 @@ public class TransactionAtoms {
 		Optional<ByteBuffer> missing = transactionAtom.getParticles().stream()
 			.filter(Particle::isAbstractConsumable)
 			.map(Particle::getAsAbstractConsumable)
-			.filter(particle -> particle.hasOwner(address.getPublicKey()))
+			.filter(particle -> particle.getOwners().stream().allMatch(address::ownsKey))
 			.filter(particle -> particle.getAssetId().equals(assetId))
 			.filter(AbstractConsumable::isConsumer)
 			.map(AbstractConsumable::getDson)

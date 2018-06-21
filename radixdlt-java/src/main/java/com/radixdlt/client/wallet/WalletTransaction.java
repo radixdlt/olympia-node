@@ -21,7 +21,7 @@ public class WalletTransaction {
 				.filter(Particle::isAbstractConsumable)
 				.map(Particle::getAsAbstractConsumable)
 				.filter(particle -> particle.getAssetId().equals(Asset.XRD.getId()))
-				.filter(particle -> particle.hasOwner(address.getPublicKey()))
+				.filter(particle -> particle.getOwners().stream().allMatch(address::ownsKey))
 				.mapToLong(AbstractConsumable::signedQuantity)
 				.sum();
 
