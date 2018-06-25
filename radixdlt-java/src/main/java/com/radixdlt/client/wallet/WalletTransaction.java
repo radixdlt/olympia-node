@@ -1,22 +1,26 @@
 package com.radixdlt.client.wallet;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+import java.util.TimeZone;
+
 import com.radixdlt.client.assets.Asset;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.AbstractConsumable;
 import com.radixdlt.client.core.atoms.Particle;
 import com.radixdlt.client.core.atoms.TransactionAtom;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Locale;
-import java.util.TimeZone;
-
+/**
+ * A transaction from the perspective of a wallet. Amount is positive or
+ * negative depending on how it affects the balance of the wallet.
+ */
 public class WalletTransaction {
-	private final long balanceChange;
+	private final long amount;
 	private final TransactionAtom transactionAtom;
 
 	public WalletTransaction(RadixAddress address, TransactionAtom transactionAtom) {
-		this.balanceChange =
+		this.amount =
 			transactionAtom.getParticles().stream()
 				.filter(Particle::isAbstractConsumable)
 				.map(Particle::getAsAbstractConsumable)
@@ -32,8 +36,8 @@ public class WalletTransaction {
 		return transactionAtom;
 	}
 
-	public long getChange() {
-		return balanceChange;
+	public long getAmount() {
+		return amount;
 	}
 
 	@Override
