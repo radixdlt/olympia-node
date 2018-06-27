@@ -90,7 +90,7 @@ public class Faucet {
 			})
 			.map(update -> update.getState() == AtomSubmissionState.STORED ? "Sent you 10 Test Rads!" : "Couldn't send you any (Reason: " + update + ")")
 			.map(replyMessage -> new SimpleImmutableEntry<>(message.getFrom(), replyMessage))
-			.onErrorReturn(throwable -> new SimpleImmutableEntry<>(message.getFrom(), "Couldn't send you any (Reason: " + throwable.getLocalizedMessage() + ")"))
+			.onErrorReturn(throwable -> new SimpleImmutableEntry<>(message.getFrom(), "Couldn't send you any (Reason: " + throwable.getMessage() + ")"))
 			;
 	}
 

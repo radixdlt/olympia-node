@@ -1,11 +1,17 @@
 package com.radixdlt.client.wallet;
 
+import com.radixdlt.client.assets.Asset;
+import com.radixdlt.client.assets.AssetAmount;
+
 public class InsufficientFundsException extends Exception {
+	private final Asset asset;
 	private final long available;
 	private final long requestedAmount;
 
-	public InsufficientFundsException(long available, long requestedAmount) {
-		super("Requested " + requestedAmount + " XRD but only " + available + " XRD available.");
+	public InsufficientFundsException(Asset asset, long available, long requestedAmount) {
+		super("Requested " + new AssetAmount(asset, requestedAmount)
+			+ " but only " + new AssetAmount(asset, available) + " available.");
+		this.asset = asset;
 		this.available = available;
 		this.requestedAmount = requestedAmount;
 	}
@@ -25,6 +31,6 @@ public class InsufficientFundsException extends Exception {
 		}
 
 		InsufficientFundsException o = (InsufficientFundsException)obj;
-		return this.available == o.available && this.requestedAmount == o.requestedAmount;
+		return this.asset.equals(o.asset) && this.available == o.available && this.requestedAmount == o.requestedAmount;
 	}
 }
