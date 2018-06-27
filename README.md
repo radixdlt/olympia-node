@@ -2,23 +2,11 @@
 A Java/Android Client library for interacting with a RADIX Distributed Ledger.
 For more information on RADIX, please see [https://www.radixdlt.com](https://www.radixdlt.com).
 
-# Installation
+# Usage Guide
 
-## Gradle
+Artifacts are hosted by [JitPack](https://jitpack.io/#com.radixdlt/radixdlt-java/).
 
-Add our Maven2 repository:
-
-```
-repositories {
-    jcenter()    
-}
-```
-
-Add the dependency:
-
-```
-compile group: 'com.radixdlt', name: 'radixdlt-java', version: '0.9.1'
-```
+**TIP**: Push the `Get it` button to generate a copy-pastable snippet for your build environment.
 
 # Documentation
 
