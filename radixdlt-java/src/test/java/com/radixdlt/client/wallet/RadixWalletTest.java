@@ -120,6 +120,6 @@ public class RadixWalletTest {
 				throwable -> errorHandler.accept(throwable.getCause())
 			);
 
-		verify(errorHandler, times(1)).accept(new InsufficientFundsException(0, 10));
+		verify(errorHandler, times(1)).accept(new InsufficientFundsException(Asset.XRD, 0, 10));
 	}
 }

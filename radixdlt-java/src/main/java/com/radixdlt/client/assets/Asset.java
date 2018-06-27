@@ -2,6 +2,7 @@ package com.radixdlt.client.assets;
 
 import com.radixdlt.client.core.address.EUID;
 import java.math.BigInteger;
+import java.util.Objects;
 
 public class Asset {
 
@@ -17,6 +18,9 @@ public class Asset {
 	private final EUID id;
 
 	public Asset(String iso, int subUnits, EUID id) {
+		Objects.requireNonNull(iso);
+		Objects.requireNonNull(id);
+
 		this.iso = iso;
 		this.subUnits = subUnits;
 		this.id = id;
@@ -32,5 +36,11 @@ public class Asset {
 
 	public EUID getId() {
 		return id;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		Asset asset = (Asset)o;
+		return this.iso.equals(asset.iso);
 	}
 }

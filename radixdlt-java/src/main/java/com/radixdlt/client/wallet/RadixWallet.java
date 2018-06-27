@@ -17,6 +17,7 @@ import com.radixdlt.client.core.ledger.RadixLedger;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate;
 import io.reactivex.Observable;
 import io.reactivex.Single;
+import io.reactivex.exceptions.Exceptions;
 import io.reactivex.observables.ConnectableObservable;
 import io.reactivex.observables.GroupedObservable;
 import java.util.Collection;
@@ -174,7 +175,7 @@ public class RadixWallet {
 				}
 
 				if (consumerTotal < amountInSubUnits) {
-					io.reactivex.exceptions.Exceptions.propagate(new InsufficientFundsException(consumerTotal, amountInSubUnits));
+					Exceptions.propagate(new InsufficientFundsException(Asset.XRD, consumerTotal, amountInSubUnits));
 				}
 
 				List<Consumable> consumables = consumerQuantities.entrySet().stream()
