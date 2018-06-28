@@ -1,6 +1,8 @@
 plugins {
     id 'java-library'
     id 'maven'
+    id 'jacoco'
+    id 'org.sonarqube' version '2.6'
 }
 
 dependencies {
