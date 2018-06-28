@@ -9,38 +9,68 @@ import com.radixdlt.client.core.atoms.AtomBuilder;
 import com.radixdlt.client.core.atoms.AtomValidationException;
 import com.radixdlt.client.core.atoms.Consumable;
 import com.radixdlt.client.core.atoms.Consumer;
+import com.radixdlt.client.core.atoms.RadixHash;
 import com.radixdlt.client.core.atoms.TransactionAtom;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
-import com.radixdlt.client.core.identity.OneTimeUseIdentity;
-import com.radixdlt.client.core.identity.RadixIdentity;
+import com.radixdlt.client.core.crypto.ECKeyPair;
+import com.radixdlt.client.core.crypto.ECPublicKey;
 import java.math.BigInteger;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Optional;
 import org.junit.Test;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class RadixAtomValidatorTest {
 
 	@Test(expected = AtomValidationException.class)
 	public void testSignatureValidation() throws AtomValidationException {
-		RadixIdentity radixIdentity = new OneTimeUseIdentity();
-		UnsignedAtom unsignedAtom = new AtomBuilder()
-			.type(TransactionAtom.class)
-			.addParticle(new Consumer(100000000000L, radixIdentity.getPublicKey().toECKeyPair(), System.nanoTime(), Asset.XRD.getId()))
-			.addParticle(new Consumable(100000000000L, radixIdentity.getPublicKey().toECKeyPair(), System.nanoTime(), Asset.XRD.getId()))
-			.build();
+		RadixHash hash = mock(RadixHash.class);
+
+		ECKeyPair keyPair = mock(ECKeyPair.class);
+		ECPublicKey publicKey = mock(ECPublicKey.class);
+		when(keyPair.getUID()).thenReturn(new EUID(BigInteger.ONE));
+		when(keyPair.getPublicKey()).thenReturn(publicKey);
+		when(publicKey.getUID()).thenReturn(new EUID(BigInteger.ONE));
+
+		Consumer consumer = mock(Consumer.class);
+		when(consumer.isAbstractConsumable()).thenReturn(true);
+		when(consumer.getAsAbstractConsumable()).thenReturn(consumer);
+		when(consumer.getOwners()).thenReturn(Collections.singleton(publicKey));
+		when(consumer.getAssetId()).thenReturn(Asset.XRD.getId());
+
+		TransactionAtom atom = mock(TransactionAtom.class);
+		when(atom.getHash()).thenReturn(hash);
+		when(atom.getSignature(any())).thenReturn(Optional.empty());
+		when(atom.getParticles()).thenReturn(Arrays.asList(consumer));
 
 		RadixAtomValidator validator = RadixAtomValidator.getInstance();
-		validator.validateSignatures(unsignedAtom.getRawAtom());
+		validator.validateSignatures(atom);
 	}
 
 	@Test
 	public void testPayloadValidationWithNoSignatures() throws AtomValidationException {
-		UnsignedAtom unsignedAtom = new AtomBuilder()
-			.type(ApplicationPayloadAtom.class)
-			.applicationId("Test")
-			.payload("Hello")
-			.addDestination(new EUID(BigInteger.valueOf(1L)))
-			.build();
+		RadixHash hash = mock(RadixHash.class);
+
+		ECKeyPair keyPair = mock(ECKeyPair.class);
+		ECPublicKey publicKey = mock(ECPublicKey.class);
+		when(keyPair.getUID()).thenReturn(new EUID(BigInteger.ONE));
+		when(keyPair.getPublicKey()).thenReturn(publicKey);
+		when(publicKey.getUID()).thenReturn(new EUID(BigInteger.ONE));
+
+		Consumer consumer = mock(Consumer.class);
+		when(consumer.isAbstractConsumable()).thenReturn(true);
+		when(consumer.getAsAbstractConsumable()).thenReturn(consumer);
+		when(consumer.getOwners()).thenReturn(Collections.singleton(publicKey));
+		when(consumer.getAssetId()).thenReturn(Asset.XRD.getId());
+
+		ApplicationPayloadAtom atom = mock(ApplicationPayloadAtom.class);
+		when(atom.getHash()).thenReturn(hash);
+		when(atom.getSignature(any())).thenReturn(Optional.empty());
 
 		RadixAtomValidator validator = RadixAtomValidator.getInstance();
-		validator.validateSignatures(unsignedAtom.getRawAtom());
+		validator.validateSignatures(atom);
 	}
 }
