@@ -114,8 +114,4 @@ public class TransactionAtoms {
 
 		return new TransactionAtomsUpdate(observable);
 	}
-
-	public Stream<Consumable> getUnconsumedConsumables() {
-		return unconsumedConsumables.values().stream();
-	}
 }

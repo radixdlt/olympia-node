@@ -17,6 +17,9 @@ import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.identity.OneTimeUseIdentity;
+import io.reactivex.observers.TestObserver;
+import java.util.Collection;
+import java.util.Collections;
 import org.junit.Test;
 
 public class TransactionAtomsTest {
@@ -33,10 +36,13 @@ public class TransactionAtomsTest {
 			.addParticle(new Consumable(100, radixIdentity.getPublicKey().toECKeyPair(), 2, Asset.XRD.getId()))
 			.buildWithPOWFee(1, radixIdentity.getPublicKey());
 
+		TestObserver<Collection<Consumable>> observer = TestObserver.create();
+
 		/* Make sure we don't count it unless we find the matching consumable */
 		TransactionAtoms transactionAtoms = new TransactionAtoms(address, Asset.XRD.getId());
-		transactionAtoms.accept(radixIdentity.synchronousSign(unsignedAtom).getAsTransactionAtom());
-		assertEquals(0, transactionAtoms.getUnconsumedConsumables().count());
+		transactionAtoms.accept(radixIdentity.synchronousSign(unsignedAtom).getAsTransactionAtom())
+			.getUnconsumedConsumables().subscribe(observer);
+		observer.assertValueCount(0);
 	}
 
 	@Test
@@ -60,10 +66,16 @@ public class TransactionAtomsTest {
 			.addParticle(new Consumable(100, radixIdentity.getPublicKey().toECKeyPair(), 1, Asset.XRD.getId()))
 			.buildWithPOWFee(1, radixIdentity.getPublicKey());
 
+		TestObserver<Collection<Consumable>> observer = TestObserver.create();
+
 		/* Make sure we don't count it unless we find the matching consumable */
 		TransactionAtoms transactionAtoms = new TransactionAtoms(address, Asset.XRD.getId());
 		transactionAtoms.accept(radixIdentity.synchronousSign(unsignedAtom).getAsTransactionAtom());
-		transactionAtoms.accept(radixIdentity2.synchronousSign(unsignedAtom2).getAsTransactionAtom());
-		assertEquals(1, transactionAtoms.getUnconsumedConsumables().count());
+		transactionAtoms.accept(radixIdentity2.synchronousSign(unsignedAtom2).getAsTransactionAtom())
+			.getUnconsumedConsumables()
+			.subscribe(observer)
+		;
+
+		observer.assertValue(collection -> collection.stream().findFirst().get().getNonce() == 2);
 	}
 }
