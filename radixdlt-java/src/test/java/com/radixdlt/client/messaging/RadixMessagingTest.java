@@ -12,83 +12,81 @@ import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.ApplicationPayloadAtom;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomBuilder;
+import com.radixdlt.client.core.crypto.CryptoException;
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECKeyPairGenerator;
+import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.identity.OneTimeUseIdentity;
 import com.radixdlt.client.core.identity.RadixIdentity;
 import com.radixdlt.client.core.ledger.RadixLedger;
 import io.reactivex.Observable;
 import io.reactivex.Observer;
+import io.reactivex.Single;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
+import io.reactivex.observers.TestObserver;
+import java.security.interfaces.ECKey;
 import org.junit.Test;
 
 public class RadixMessagingTest {
 
 	@Test
 	public void testReceiveUndecryptableMessage() {
-		RadixIdentity myIdentity = new OneTimeUseIdentity()	;
-		ECKeyPair unknownKey = ECKeyPairGenerator.generateKeyPair();
-		Observer observer = mock(Observer.class);
+		ECPublicKey key = mock(ECPublicKey.class);
+		RadixIdentity myIdentity = mock(RadixIdentity.class);
+		when(myIdentity.getPublicKey()).thenReturn(key);
+		TestObserver<RadixMessage> observer = TestObserver.create();
 
-		Atom undecryptableAtom = new AtomBuilder()
-			.type(ApplicationPayloadAtom.class)
-			.applicationId(RadixMessaging.APPLICATION_ID)
-			.payload(new RadixMessageContent(null, null, "Hello").toJson())
-			.addProtector(unknownKey.getPublicKey())
-			.build()
-			.getRawAtom();
+		ApplicationPayloadAtom undecryptableAtom = mock(ApplicationPayloadAtom.class);
+		when(undecryptableAtom.getApplicationId()).thenReturn(RadixMessaging.APPLICATION_ID);
 
-		Atom decryptableAtom = new AtomBuilder()
-			.type(ApplicationPayloadAtom.class)
-			.applicationId(RadixMessaging.APPLICATION_ID)
-			.payload(new RadixMessageContent(null, null, "Hello").toJson())
-			.addProtector(myIdentity.getPublicKey())
-			.build()
-			.getRawAtom();
+		ApplicationPayloadAtom decryptableAtom = mock(ApplicationPayloadAtom.class);
+		when(decryptableAtom.getApplicationId()).thenReturn(RadixMessaging.APPLICATION_ID);
+
+		when(myIdentity.decrypt(any()))
+			.thenReturn(Single.error(new CryptoException("Can't decrypt")))
+			.thenReturn(Single.just(new RadixMessageContent(null, null, "Hello").toJson().getBytes()));
 
 		RadixUniverse universe = mock(RadixUniverse.class);
 		RadixLedger ledger = mock(RadixLedger.class);
 		when(universe.getLedger()).thenReturn(ledger);
 		when(ledger.getAllAtoms(any(), any())).thenReturn(Observable.just(undecryptableAtom, decryptableAtom));
+
 		RadixMessaging messaging = new RadixMessaging(universe);
 		messaging.getAllMessagesDecrypted(myIdentity)
 			.subscribe(observer);
 
-		verify(observer, times(1)).onNext(any());
-		verify(observer, times(0)).onError(any());
+		observer.assertValueCount(1);
+		observer.assertNoErrors();
 	}
 
 	@Test
 	public void testBadMessage() {
-		RadixIdentity myIdentity = new OneTimeUseIdentity()	;
-		Observer observer = mock(Observer.class);
+		ECPublicKey key = mock(ECPublicKey.class);
+		RadixIdentity myIdentity = mock(RadixIdentity.class);
+		when(myIdentity.getPublicKey()).thenReturn(key);
+		TestObserver<RadixMessage> observer = TestObserver.create();
 
-		Atom undecryptableAtom = new AtomBuilder()
-			.type(ApplicationPayloadAtom.class)
-			.applicationId(RadixMessaging.APPLICATION_ID)
-			.payload("hello")
-			.addProtector(myIdentity.getPublicKey())
-			.build()
-			.getRawAtom();
+		ApplicationPayloadAtom undecryptableAtom = mock(ApplicationPayloadAtom.class);
+		when(undecryptableAtom.getApplicationId()).thenReturn(RadixMessaging.APPLICATION_ID);
 
-		Atom decryptableAtom = new AtomBuilder()
-			.type(ApplicationPayloadAtom.class)
-			.applicationId(RadixMessaging.APPLICATION_ID)
-			.payload(new RadixMessageContent(null, null, "Hello").toJson())
-			.addProtector(myIdentity.getPublicKey())
-			.build()
-			.getRawAtom();
+		ApplicationPayloadAtom decryptableAtom = mock(ApplicationPayloadAtom.class);
+		when(decryptableAtom.getApplicationId()).thenReturn(RadixMessaging.APPLICATION_ID);
+
+		when(myIdentity.decrypt(any()))
+			.thenReturn(Single.just(new byte[] {0, 1, 2, 3}))
+			.thenReturn(Single.just(new RadixMessageContent(null, null, "Hello").toJson().getBytes()));
 
 		RadixUniverse universe = mock(RadixUniverse.class);
 		RadixLedger ledger = mock(RadixLedger.class);
 		when(universe.getLedger()).thenReturn(ledger);
 		when(ledger.getAllAtoms(any(), any())).thenReturn(Observable.just(undecryptableAtom, decryptableAtom));
+
 		RadixMessaging messaging = new RadixMessaging(universe);
 		messaging.getAllMessagesDecrypted(myIdentity)
 			.subscribe(observer);
 
-		verify(observer, times(1)).onNext(any());
-		verify(observer, times(0)).onError(any());
+		observer.assertValueCount(1);
+		observer.assertNoErrors();
 	}
 }
