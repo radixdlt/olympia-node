@@ -27,6 +27,26 @@ import org.mockito.stubbing.Answer;
 public class RadixJsonRpcClientTest {
 
 	@Test
+	public void getSelfTestError() {
+		WebSocketClient wsClient = mock(WebSocketClient.class);
+		when(wsClient.getStatus()).thenReturn(Observable.just(RadixClientStatus.OPEN));
+
+		ReplaySubject<String> messages = ReplaySubject.create();
+		when(wsClient.getMessages()).thenReturn(messages);
+		when(wsClient.connect()).thenReturn(Completable.complete());
+		when(wsClient.send(any())).thenReturn(false);
+
+		RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(wsClient);
+
+		TestObserver<NodeRunnerData> observer = new TestObserver<>();
+
+		jsonRpcClient.getSelf().subscribe(observer);
+
+		observer.assertValueCount(0);
+		observer.assertError(t -> true);
+	}
+
+	@Test
 	public void getSelfTest() {
 		WebSocketClient wsClient = mock(WebSocketClient.class);
 		when(wsClient.getStatus()).thenReturn(Observable.just(RadixClientStatus.OPEN));
