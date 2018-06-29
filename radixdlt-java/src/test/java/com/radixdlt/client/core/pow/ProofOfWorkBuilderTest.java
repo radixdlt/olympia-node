@@ -9,7 +9,6 @@ import javax.xml.bind.DatatypeConverter;
 import org.junit.Test;
 
 public class ProofOfWorkBuilderTest {
-
 	@Test
 	public void test() throws ProofOfWorkException {
 		int magic = 12345;

@@ -13,6 +13,7 @@ import io.reactivex.subjects.BehaviorSubject;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -53,9 +54,9 @@ public class RadixClient extends WebSocketListener {
 	private final BehaviorSubject<RadixClientStatus> status = BehaviorSubject.createDefault(RadixClientStatus.CLOSED);
 
 	private final String location;
-	private final OkHttpClient okHttpClient;
+	private final Supplier<OkHttpClient> okHttpClient;
 
-	public RadixClient(OkHttpClient okHttpClient, String location) {
+	public RadixClient(Supplier<OkHttpClient> okHttpClient, String location) {
 		this.okHttpClient = okHttpClient;
 		this.location = location;
 
@@ -200,7 +201,7 @@ public class RadixClient extends WebSocketListener {
 		final Request request = new Request.Builder().url(location).build();
 
 		// HACKISH: fix
-		this.webSocket = this.okHttpClient.newWebSocket(request, this);
+		this.webSocket = this.okHttpClient.get().newWebSocket(request, this);
 	}
 
 	/**

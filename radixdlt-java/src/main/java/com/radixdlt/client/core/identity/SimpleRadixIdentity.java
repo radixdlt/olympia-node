@@ -20,7 +20,7 @@ public class SimpleRadixIdentity implements RadixIdentity {
 		if (myKeyFile.exists()) {
 			myKey = new ECKeyPair(myKeyFile);
 		} else {
-			myKey = ECKeyPairGenerator.generateKeyPair();
+			myKey = ECKeyPairGenerator.newInstance().generateKeyPair();
 			FileOutputStream io = new FileOutputStream(myKeyFile);
 			io.write(myKey.getPrivateKey());
 			io.close();

@@ -20,11 +20,9 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.jce.spec.ECParameterSpec;
 
 public final class ECKeyPairGenerator {
-	private static final java.security.SecureRandom SecureRandom = new SecureRandom();
 	private static final Map<Integer,ECDomainParameters> domains;
 
 	static {
-		Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME);
 		Security.insertProviderAt(new BouncyCastleProvider(), 1);
 		domains = Stream.of(256).collect(Collectors.toMap(Integer::new, (bits) -> {
 			final X9ECParameters curve = bits == 256 ? CustomNamedCurves.getByName("secp" + bits + "k1") : SECNamedCurves.getByName("secp" + bits + "k1");
@@ -37,21 +35,26 @@ public final class ECKeyPairGenerator {
 		return domains.get(roundedNumBits);
 	}
 
+	public static ECKeyPairGenerator newInstance() {
+		return new ECKeyPairGenerator();
+	}
+
+	private final SecureRandom secureRandom = new SecureRandom();
+
 	private ECKeyPairGenerator() {}
 
-
-	public static ECKeyPair generateKeyPair() {
+	public ECKeyPair generateKeyPair() {
 		return generateKeyPair(256);
 	}
 
 	// Generates a new Public/Private Key pair
-	public static ECKeyPair generateKeyPair(int numBits) {
+	public ECKeyPair generateKeyPair(int numBits) {
 		try {
 			KeyPairGenerator g2 = KeyPairGenerator.getInstance("EC", "BC");
 			ECDomainParameters domain = getDomain(numBits);
 			ECParameterSpec curveSpec = new ECParameterSpec(domain.getCurve(), domain.getG(),
 				domain.getN(), domain.getH());
-			g2.initialize(curveSpec, SecureRandom);
+			g2.initialize(curveSpec, secureRandom);
 			KeyPair keypair = g2.generateKeyPair();
 			byte[] privateKey = ((org.bouncycastle.jce.interfaces.ECPrivateKey) keypair
 				.getPrivate()).getD().toByteArray();
