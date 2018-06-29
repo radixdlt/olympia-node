@@ -7,6 +7,7 @@ import com.radixdlt.client.core.network.WebSocketClient.RadixClientStatus;
 import com.radixdlt.client.core.serialization.RadixJson;
 import io.reactivex.Observable;
 import io.reactivex.Single;
+import java.lang.reflect.Type;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import okhttp3.WebSocketListener;
@@ -43,9 +44,15 @@ public class RadixJsonRpcClient {
 
 	private final WebSocketClient wsClient;
 
+	private final Observable<JsonObject> messages;
+
 	public RadixJsonRpcClient(WebSocketClient wsClient) {
 
 		this.wsClient = wsClient;
+
+		this.messages = this.wsClient.getMessages()
+			.map(msg -> parser.parse(msg).getAsJsonObject());
+
 		this.wsClient.getMessages().subscribe(this::onMessage);
 		this.wsClient.getStatus()
 			.filter(status -> status == RadixClientStatus.CLOSED)
@@ -146,55 +153,51 @@ public class RadixJsonRpcClient {
 		}
 	}
 
+	private <T> Single<T> callJsonRpcMethod(String method, TypeToken<T> typeToken) {
+		return this.wsClient.connect().andThen(
+			Single.<T>create(emitter -> {
+				final String uuid = UUID.randomUUID().toString();
+
+				JsonObject requestObject = new JsonObject();
+				requestObject.addProperty("id", uuid);
+				requestObject.addProperty("method", method);
+				requestObject.add("params", new JsonObject());
+
+				messages
+					.filter(msg -> msg.has("id"))
+					.filter(msg -> msg.get("id").getAsString().equals(uuid))
+					.firstOrError()
+					.doOnSubscribe(disposable -> {
+						boolean sendSuccess = wsClient.send(gson.toJson(requestObject));
+						if (!sendSuccess) {
+							disposable.dispose();
+							emitter.onError(new RuntimeException("Could not connect."));
+						}
+					})
+					.subscribe(msg -> {
+						if (msg.getAsJsonObject().has("result")) {
+							T data = gson.fromJson(msg.getAsJsonObject().get("result"), typeToken.getType());
+							emitter.onSuccess(data);
+						} else {
+							emitter.onError(new RuntimeException(msg.getAsJsonObject().get("error").toString()));
+						}
+					})
+				;
+			})
+		);
+	}
+
 	public Single<NodeRunnerData> getSelf() {
-		return this.wsClient.connect().andThen(
-			Single.create(emitter -> {
-			final String uuid = UUID.randomUUID().toString();
-
-			JsonObject requestObject = new JsonObject();
-			requestObject.addProperty("id", uuid);
-			requestObject.addProperty("method", "Network.getSelf");
-			requestObject.add("params", new JsonObject());
-
-			jsonRpcMethodCalls.put(uuid, response -> {
-				NodeRunnerData data = gson.fromJson(response.getAsJsonObject().get("result"), NodeRunnerData.class);
-				emitter.onSuccess(data);
-			});
-
-			boolean sendSuccess = wsClient.send(gson.toJson(requestObject));
-			if (!sendSuccess) {
-				jsonRpcMethodCalls.remove(uuid);
-				emitter.onError(new RuntimeException("Unable to get self"));
-			}
-		}));
+		return this.callJsonRpcMethod("Network.getSelf", new TypeToken<NodeRunnerData>(){});
 	}
 
-	public io.reactivex.Single<List<NodeRunnerData>> getLivePeers() {
-		return this.wsClient.connect().andThen(
-			Single.create(emitter -> {
-			final String uuid = UUID.randomUUID().toString();
-
-			JsonObject requestObject = new JsonObject();
-			requestObject.addProperty("id", uuid);
-			requestObject.addProperty("method", "Network.getLivePeers");
-			requestObject.add("params", new JsonObject());
-
-			jsonRpcMethodCalls.put(uuid, response -> {
-				List<NodeRunnerData> peers = gson.fromJson(response.getAsJsonObject().get("result"), new TypeToken<List<NodeRunnerData>>(){}.getType());
-				emitter.onSuccess(peers);
-			});
-
-			boolean sendSuccess = wsClient.send(gson.toJson(requestObject));
-			if (!sendSuccess) {
-				jsonRpcMethodCalls.remove(uuid);
-				emitter.onError(new RuntimeException("Unable to tryConnect"));
-			}
-		}));
+	public Single<List<NodeRunnerData>> getLivePeers() {
+		return this.callJsonRpcMethod("Network.getLivePeers", new TypeToken<List<NodeRunnerData>>(){});
 	}
 
-	public <T extends Atom> io.reactivex.Observable<T> getAtoms(AtomQuery<T> atomQuery) {
+	public <T extends Atom> Observable<T> getAtoms(AtomQuery<T> atomQuery) {
 		return this.wsClient.connect().andThen(
-			io.reactivex.Observable.create(emitter -> {
+			Observable.create(emitter -> {
 				final String uuid = UUID.randomUUID().toString();
 
 				JsonObject requestObject = new JsonObject();
@@ -269,9 +272,9 @@ public class RadixJsonRpcClient {
 		);
 	}
 
-	public <T extends Atom> io.reactivex.Observable<AtomSubmissionUpdate> submitAtom(T atom) {
+	public <T extends Atom> Observable<AtomSubmissionUpdate> submitAtom(T atom) {
 		return this.wsClient.connect().andThen(
-			io.reactivex.Observable.<AtomSubmissionUpdate>create(emitter -> {
+			Observable.<AtomSubmissionUpdate>create(emitter -> {
 				try {
 					JsonElement jsonAtom = gson.toJsonTree(atom, Atom.class);
 

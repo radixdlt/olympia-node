@@ -7,7 +7,6 @@ import io.reactivex.subjects.PublishSubject;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -31,7 +30,7 @@ public class WebSocketClient extends WebSocketListener {
 	private final String location;
 	private final Supplier<OkHttpClient> okHttpClient;
 
-	private final PublishSubject<String> messages = PublishSubject.create();
+	private PublishSubject<String> messages = PublishSubject.create();
 
 	public WebSocketClient(Supplier<OkHttpClient> okHttpClient, String location) {
 		this.okHttpClient = okHttpClient;
@@ -40,7 +39,10 @@ public class WebSocketClient extends WebSocketListener {
 		this.status
 			.filter(status -> status.equals(RadixClientStatus.FAILURE))
 			.debounce(1, TimeUnit.MINUTES)
-			.subscribe(i -> this.status.onNext(RadixClientStatus.CLOSED));
+			.subscribe(i -> {
+				this.messages = PublishSubject.create();
+				this.status.onNext(RadixClientStatus.CLOSED);
+			});
 	}
 
 	public Observable<String> getMessages() {
@@ -128,5 +130,7 @@ public class WebSocketClient extends WebSocketListener {
 
 		logger.error(t.toString());
 		this.status.onNext(RadixClientStatus.FAILURE);
+
+		this.messages.onError(t);
 	}
 }
