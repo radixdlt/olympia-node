@@ -13,7 +13,6 @@ public class RadixPeer {
 
 	private final String location;
 	private final RadixClient radixClient;
-	private final Object dataLock = new Object();
 	private final SingleSubject<NodeRunnerData> data;
 
 	public RadixPeer(String location, boolean useSSL, int port) {
@@ -21,9 +20,9 @@ public class RadixPeer {
 		this.location = location;
 
 		if (useSSL) {
-			this.radixClient = new RadixClient(HttpClients.get(), "wss://" + location + ":" + port + "/rpc");
+			this.radixClient = new RadixClient(HttpClients::get, "wss://" + location + ":" + port + "/rpc");
 		} else {
-			this.radixClient = new RadixClient(HttpClients.get(), "ws://" + location + ":" + port + "/rpc");
+			this.radixClient = new RadixClient(HttpClients::get, "ws://" + location + ":" + port + "/rpc");
 		}
 	}
 
