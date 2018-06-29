@@ -56,23 +56,16 @@ artifacts {
     archives javadocJar
 }
 
-// Create the pom configuration:
-def pomConfig = {
-    licenses {
+install {
+  repositories.mavenInstaller {
+    pom.project {
+      licenses {
         license {
             name "The MIT License"
             url "https://opensource.org/licenses/MIT"
             distribution "repo"
         }
+      }
     }
-    developers {
-        developer {
-            id "TAlekhiNezh"
-            name "Joshua Primero"
-            email "josh@radixdlt.com"
-        }
-    }
-    scm {
-       url project.url
-    }
+  }
 }

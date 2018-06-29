@@ -1,4 +1,22 @@
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'org.eclipse.jgit:org.eclipse.jgit:5.0.1.201806211838-r'
+    }
+}
+
+group = 'com.radixdlt'
+// Do NOT override project version from CLI, gradle.properties, etc.
+if (version == 'unspecified') {
+    // Add the -SNAPSHOT suffix so that we do not clash with artifacts published by jitpack
+    version = org.eclipse.jgit.api.Git.open(project.projectDir).describe().call() + '-SNAPSHOT'
+}
+
 allprojects {
+    version = rootProject.version
+
     configurations.all {
         resolutionStrategy {
             // fail eagerly on version conflict (includes transitive dependencies)
@@ -16,4 +34,3 @@ allprojects {
         jcenter()
     }
 }
-
