@@ -3,6 +3,7 @@ package com.radixdlt.client.core.network;
 import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState;
+import com.radixdlt.client.core.network.WebSocketClient.RadixClientStatus;
 import com.radixdlt.client.core.serialization.RadixJson;
 import io.reactivex.Completable;
 import io.reactivex.Observable;
@@ -40,70 +41,67 @@ public class RadixClient extends WebSocketListener {
 		}
 	}
 
-	private WebSocket webSocket;
 	private final Gson gson = RadixJson.getGson();
 	private final JsonParser parser = new JsonParser();
 	private final ConcurrentHashMap<String, RadixObserver> observers = new ConcurrentHashMap<>();
 	private final ConcurrentHashMap<String, Consumer<JsonObject>> jsonRpcMethodCalls = new ConcurrentHashMap<>();
 	private final AtomicBoolean closed = new AtomicBoolean(false);
 
-	public enum RadixClientStatus {
-		CONNECTING, OPEN, CLOSED, FAILURE
-	}
+	private final WebSocketClient wsClient;
 
-	private final BehaviorSubject<RadixClientStatus> status = BehaviorSubject.createDefault(RadixClientStatus.CLOSED);
+	public RadixClient(WebSocketClient wsClient) {
 
-	private final String location;
-	private final Supplier<OkHttpClient> okHttpClient;
+		this.wsClient = wsClient;
+		this.wsClient.getMessages().subscribe(this::onMessage);
+		this.wsClient.getStatus()
+			.filter(status -> status == RadixClientStatus.CLOSED)
+			.subscribe(status -> {
+				if (status == RadixClientStatus.CLOSED) {
+					if (!observers.isEmpty()) {
+						logger.warn("Websocket closed but observers still exist.");
+					}
 
-	public RadixClient(Supplier<OkHttpClient> okHttpClient, String location) {
-		this.okHttpClient = okHttpClient;
-		this.location = location;
-
-		this.status
-			.filter(status -> status.equals(RadixClientStatus.FAILURE))
-			.debounce(1, TimeUnit.MINUTES)
-			.subscribe(i -> this.status.onNext(RadixClientStatus.CLOSED));
+					if (!jsonRpcMethodCalls.isEmpty()) {
+						logger.warn("Websocket closed but methods still exist.");
+					}
+				} else if (status == RadixClientStatus.FAILURE) {
+					// Again, race conditions here
+					this.observers.forEachValue(100, radixObserver -> radixObserver.onError.accept(new RuntimeException("Network failure")));
+					this.observers.clear();
+				}
+			});
 	}
 
 
 	public String getLocation() {
-		return location;
+		return wsClient.getLocation();
 	}
 
 	public Observable<RadixClientStatus> getStatus() {
-		return status;
+		return wsClient.getStatus();
 	}
 
 	public boolean tryClose() {
 		// TODO: must make this logic from check to close atomic, otherwise race issue occurs
 
 		if (!this.jsonRpcMethodCalls.isEmpty()) {
-			logger.info("Attempt to close " + location + " but methods still being completed.");
+			logger.info("Attempt to close " + wsClient.getLocation() + " but methods still being completed.");
 			return false;
 		}
 
 		if (!this.observers.isEmpty()) {
-			logger.info("Attempt to close " + location + " but observers still subscribed.");
+			logger.info("Attempt to close " + wsClient.getLocation() + " but observers still subscribed.");
 			return false;
 		}
 
 		this.closed.set(true);
 
-		if (this.webSocket != null) {
-			this.webSocket.close(1000, null);
-		}
+		this.wsClient.close();
 
 		return true;
 	}
 
-	@Override
-	public void onOpen(WebSocket webSocket, Response response) {
-		this.status.onNext(RadixClientStatus.OPEN);
-	}
-
-	@Override
-	public void onMessage(WebSocket webSocket, String message) {
+	private void onMessage(String message) {
 		JsonObject json;
 		try {
 			json = parser.parse(message).getAsJsonObject();
@@ -137,7 +135,7 @@ public class RadixClient extends WebSocketListener {
 			final String methodName = json.get("method").getAsString();
 			switch (methodName) {
 				case "Radix.welcome":
-					logger.info(location + " says " + json.get("params"));
+					logger.info(wsClient.getLocation() + " says " + json.get("params"));
 					break;
 				case "Atoms.subscribeUpdate":
 				case "AtomSubmissionState.onNext":
@@ -154,79 +152,10 @@ public class RadixClient extends WebSocketListener {
 					throw new IllegalStateException("Unknown method received: " + methodName);
 			}
 		}
-
-		// same as above
-	}
-
-	@Override
-	public void onClosing(WebSocket webSocket, int code, String reason) {
-		webSocket.close(1000, null);
-	}
-
-	@Override
-	public void onClosed(WebSocket webSocket, int code, String reason) {
-		if (!observers.isEmpty()) {
-			logger.warn("Websocket closed but observers still exist.");
-		}
-
-		if (!jsonRpcMethodCalls.isEmpty()) {
-			logger.warn("Websocket closed but methods still exist.");
-		}
-
-		this.status.onNext(RadixClientStatus.CLOSED);
-	}
-
-	@Override
-	public void onFailure(WebSocket websocket, Throwable t, Response response) {
-		if (closed.get()) {
-			return;
-		}
-
-		logger.error(t.toString());
-		this.status.onNext(RadixClientStatus.FAILURE);
-
-		// Again, race conditions here
-		this.observers.forEachValue(100, radixObserver -> radixObserver.onError.accept(t));
-		this.observers.clear();
-	}
-
-	public void tryConnect() {
-		// TODO: Race condition here but not fatal, fix later on
-		if (this.status.getValue() == RadixClientStatus.CONNECTING) {
-			return;
-		}
-
-		this.status.onNext(RadixClientStatus.CONNECTING);
-
-		final Request request = new Request.Builder().url(location).build();
-
-		// HACKISH: fix
-		this.webSocket = this.okHttpClient.get().newWebSocket(request, this);
-	}
-
-	/**
-	 * Attempts to connect to this Radix node on subscribe if not already connected
-	 *
-	 * @return completable which signifies when connection has been made
-	 */
-	public Completable connect() {
-		return this.getStatus()
-			.doOnNext(status -> {
-				// TODO: cancel tryConnect on dispose
-				if (status.equals(RadixClientStatus.CLOSED)) {
-					this.tryConnect();
-				} else if (status.equals(RadixClientStatus.FAILURE)) {
-					throw new IOException();
-				}
-			})
-			.filter(status -> status.equals(RadixClientStatus.OPEN))
-			.firstOrError()
-			.ignoreElement()
-			;
 	}
 
 	public Single<NodeRunnerData> getSelf() {
-		return this.connect().andThen(
+		return this.wsClient.connect().andThen(
 			Single.create(emitter -> {
 			final String uuid = UUID.randomUUID().toString();
 
@@ -240,7 +169,7 @@ public class RadixClient extends WebSocketListener {
 				emitter.onSuccess(data);
 			});
 
-			boolean sendSuccess = webSocket.send(gson.toJson(requestObject));
+			boolean sendSuccess = wsClient.send(gson.toJson(requestObject));
 			if (!sendSuccess) {
 				jsonRpcMethodCalls.remove(uuid);
 				emitter.onError(new RuntimeException("Unable to get self"));
@@ -249,7 +178,7 @@ public class RadixClient extends WebSocketListener {
 	}
 
 	public io.reactivex.Single<List<NodeRunnerData>> getLivePeers() {
-		return this.connect().andThen(
+		return this.wsClient.connect().andThen(
 			Single.create(emitter -> {
 			final String uuid = UUID.randomUUID().toString();
 
@@ -263,7 +192,7 @@ public class RadixClient extends WebSocketListener {
 				emitter.onSuccess(peers);
 			});
 
-			boolean sendSuccess = webSocket.send(gson.toJson(requestObject));
+			boolean sendSuccess = wsClient.send(gson.toJson(requestObject));
 			if (!sendSuccess) {
 				jsonRpcMethodCalls.remove(uuid);
 				emitter.onError(new RuntimeException("Unable to tryConnect"));
@@ -272,7 +201,7 @@ public class RadixClient extends WebSocketListener {
 	}
 
 	public <T extends Atom> io.reactivex.Observable<T> getAtoms(AtomQuery<T> atomQuery) {
-		return this.connect().andThen(
+		return this.wsClient.connect().andThen(
 			io.reactivex.Observable.create(emitter -> {
 				final String uuid = UUID.randomUUID().toString();
 
@@ -337,11 +266,11 @@ public class RadixClient extends WebSocketListener {
 					JsonObject cancelParams = new JsonObject();
 					cancelParams.addProperty("subscriberId", uuid);
 					cancelObject.add("params", params);
-					webSocket.send(gson.toJson(cancelObject));
+					wsClient.send(gson.toJson(cancelObject));
 				});
 
 				// TODO: add unsubscribe!
-				if (!webSocket.send(gson.toJson(requestObject))) {
+				if (!wsClient.send(gson.toJson(requestObject))) {
 					emitter.onError(new RuntimeException("Socket closed"));
 				}
 			})
@@ -349,7 +278,7 @@ public class RadixClient extends WebSocketListener {
 	}
 
 	public <T extends Atom> io.reactivex.Observable<AtomSubmissionUpdate> submitAtom(T atom) {
-		return this.connect().andThen(
+		return this.wsClient.connect().andThen(
 			io.reactivex.Observable.<AtomSubmissionUpdate>create(emitter -> {
 				try {
 					JsonElement jsonAtom = gson.toJsonTree(atom, Atom.class);
@@ -410,8 +339,7 @@ public class RadixClient extends WebSocketListener {
 
 					emitter.onNext(AtomSubmissionUpdate.now(atom.getHid(), AtomSubmissionState.SUBMITTING));
 
-					boolean sendSuccess = webSocket.send(gson.toJson(requestObject));
-					if (!sendSuccess) {
+					if (!wsClient.send(gson.toJson(requestObject))) {
 						jsonRpcMethodCalls.remove(uuid);
 						emitter.onNext(AtomSubmissionUpdate.now(atom.getHid(), AtomSubmissionState.FAILED, "Websocket Send Fail"));
 					}

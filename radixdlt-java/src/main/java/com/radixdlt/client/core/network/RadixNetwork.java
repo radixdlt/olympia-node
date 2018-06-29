@@ -1,6 +1,6 @@
 package com.radixdlt.client.core.network;
 
-import com.radixdlt.client.core.network.RadixClient.RadixClientStatus;
+import com.radixdlt.client.core.network.WebSocketClient.RadixClientStatus;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.disposables.Disposable;

@@ -20,9 +20,9 @@ public class RadixPeer {
 		this.location = location;
 
 		if (useSSL) {
-			this.radixClient = new RadixClient(HttpClients::get, "wss://" + location + ":" + port + "/rpc");
+			this.radixClient = new RadixClient(new WebSocketClient(HttpClients::get, "wss://" + location + ":" + port + "/rpc"));
 		} else {
-			this.radixClient = new RadixClient(HttpClients::get, "ws://" + location + ":" + port + "/rpc");
+			this.radixClient = new RadixClient(new WebSocketClient(HttpClients::get, "ws://" + location + ":" + port + "/rpc"));
 		}
 	}
 
