@@ -37,9 +37,7 @@ public class RadixAddressTest {
 
 	@Test
 	public void generateAddress() {
-		ECKeyPair keyPair = ECKeyPairGenerator.generateKeyPair();
-		RadixAddress address = new RadixAddress(RadixUniverseConfigs.getWinterfell(), keyPair.getPublicKey());
-		assertNotNull(address);
+		new RadixAddress(RadixUniverseConfigs.getWinterfell(), new ECPublicKey(new byte[33]));
 	}
 
 	@Test

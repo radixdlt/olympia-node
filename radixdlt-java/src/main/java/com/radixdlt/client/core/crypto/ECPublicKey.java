@@ -160,7 +160,7 @@ public class ECPublicKey implements Base64Encoded {
 			rand.nextBytes(IV);
 
 			// 3. Generate a new ephemeral EC key pair
-			ECKeyPair ephemeral = ECKeyPairGenerator.generateKeyPair((publicKey.length - 1) * 8);
+			ECKeyPair ephemeral = ECKeyPairGenerator.newInstance().generateKeyPair((publicKey.length - 1) * 8);
 
 			// 4. Do an EC point multiply with this.getPublicKey() and ephemeral private key. This gives you a point M.
 			ECPoint M = getPublicPoint().multiply(new BigInteger(1, ephemeral.getPrivateKey())).normalize();

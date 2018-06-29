@@ -22,7 +22,6 @@ import javax.crypto.spec.SecretKeySpec;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
@@ -55,7 +54,7 @@ public final class PrivateKeyEncrypter {
     private PrivateKeyEncrypter() { }
 
     public static void createEncryptedPrivateKeyFile(String password, String filePath) throws Exception {
-        ECKeyPair ecKeyPair = ECKeyPairGenerator.generateKeyPair();
+        ECKeyPair ecKeyPair = ECKeyPairGenerator.newInstance().generateKeyPair();
         String privateKey = ByteString.of(ecKeyPair.getPrivateKey()).hex();
         byte[] salt = getSalt().getBytes(StandardCharsets.UTF_8);
 

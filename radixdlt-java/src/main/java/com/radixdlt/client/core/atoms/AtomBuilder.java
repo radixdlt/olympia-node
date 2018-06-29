@@ -1,6 +1,5 @@
 package com.radixdlt.client.core.atoms;
 
-import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.crypto.ECKeyPair;
@@ -9,7 +8,6 @@ import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.crypto.ECSignature;
 import com.radixdlt.client.core.crypto.Encryptor;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -107,7 +105,7 @@ public class AtomBuilder {
 		if (this.payloadRaw != null) {
 			if (!protectors.isEmpty()) {
 				if (this.sharedKey == null) {
-					this.sharedKey = ECKeyPairGenerator.generateKeyPair();
+					this.sharedKey = ECKeyPairGenerator.newInstance().generateKeyPair();
 				}
 
 				if (this.encryptor == null) {

@@ -15,7 +15,7 @@ public class OneTimeUseIdentity implements RadixIdentity {
 	private final ECKeyPair myKey;
 
 	public OneTimeUseIdentity() {
-		myKey = ECKeyPairGenerator.generateKeyPair();
+		myKey = ECKeyPairGenerator.newInstance().generateKeyPair();
 	}
 
 	public Atom synchronousSign(UnsignedAtom unsignedAtom) {
