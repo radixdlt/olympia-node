@@ -1,9 +1,7 @@
 package com.radixdlt.client.core.network;
 
 import io.reactivex.Maybe;
-import io.reactivex.Single;
 import io.reactivex.subjects.SingleSubject;
-import java.util.Map;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,7 +10,7 @@ public class RadixPeer {
 	private final static Logger logger = LoggerFactory.getLogger(RadixPeer.class);
 
 	private final String location;
-	private final RadixClient radixClient;
+	private final RadixJsonRpcClient radixClient;
 	private final SingleSubject<NodeRunnerData> data;
 
 	public RadixPeer(String location, boolean useSSL, int port) {
@@ -20,9 +18,9 @@ public class RadixPeer {
 		this.location = location;
 
 		if (useSSL) {
-			this.radixClient = new RadixClient(new WebSocketClient(HttpClients::get, "wss://" + location + ":" + port + "/rpc"));
+			this.radixClient = new RadixJsonRpcClient(new WebSocketClient(HttpClients::get, "wss://" + location + ":" + port + "/rpc"));
 		} else {
-			this.radixClient = new RadixClient(new WebSocketClient(HttpClients::get, "ws://" + location + ":" + port + "/rpc"));
+			this.radixClient = new RadixJsonRpcClient(new WebSocketClient(HttpClients::get, "ws://" + location + ":" + port + "/rpc"));
 		}
 	}
 
@@ -30,7 +28,7 @@ public class RadixPeer {
 		return location;
 	}
 
-	public RadixClient getRadixClient() {
+	public RadixJsonRpcClient getRadixClient() {
 		return radixClient;
 	}
 

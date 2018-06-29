@@ -5,20 +5,10 @@ import com.google.gson.reflect.TypeToken;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState;
 import com.radixdlt.client.core.network.WebSocketClient.RadixClientStatus;
 import com.radixdlt.client.core.serialization.RadixJson;
-import io.reactivex.Completable;
 import io.reactivex.Observable;
-import io.reactivex.ObservableEmitter;
-import io.reactivex.ObservableOnSubscribe;
 import io.reactivex.Single;
-import io.reactivex.subjects.BehaviorSubject;
-import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Supplier;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
-import okhttp3.WebSocket;
 import okhttp3.WebSocketListener;
 import com.radixdlt.client.core.atoms.Atom;
 
@@ -28,8 +18,13 @@ import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class RadixClient extends WebSocketListener {
-	private static final Logger logger = LoggerFactory.getLogger(RadixClient.class);
+/**
+ * Responsible for managing the state across one web socket connection to a Radix Node.
+ * This consists of mainly keeping track of JSON-RPC method calls and JSON-RPC subscription
+ * calls.
+ */
+public class RadixJsonRpcClient {
+	private static final Logger logger = LoggerFactory.getLogger(RadixJsonRpcClient.class);
 
 	private static class RadixObserver {
 		private final Consumer<JsonObject> onNext;
@@ -45,11 +40,10 @@ public class RadixClient extends WebSocketListener {
 	private final JsonParser parser = new JsonParser();
 	private final ConcurrentHashMap<String, RadixObserver> observers = new ConcurrentHashMap<>();
 	private final ConcurrentHashMap<String, Consumer<JsonObject>> jsonRpcMethodCalls = new ConcurrentHashMap<>();
-	private final AtomicBoolean closed = new AtomicBoolean(false);
 
 	private final WebSocketClient wsClient;
 
-	public RadixClient(WebSocketClient wsClient) {
+	public RadixJsonRpcClient(WebSocketClient wsClient) {
 
 		this.wsClient = wsClient;
 		this.wsClient.getMessages().subscribe(this::onMessage);
@@ -93,8 +87,6 @@ public class RadixClient extends WebSocketListener {
 			logger.info("Attempt to close " + wsClient.getLocation() + " but observers still subscribed.");
 			return false;
 		}
-
-		this.closed.set(true);
 
 		this.wsClient.close();
 

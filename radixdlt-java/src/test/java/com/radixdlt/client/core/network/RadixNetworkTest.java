@@ -1,7 +1,5 @@
 package com.radixdlt.client.core.network;
 
-import static org.junit.Assert.*;
-
 import io.reactivex.Observable;
 import java.util.stream.IntStream;
 import org.junit.Test;
@@ -19,7 +17,7 @@ public class RadixNetworkTest {
 
 		IntStream.range(0,10).forEach(i ->
 			network.getRadixClients()
-				.map(RadixClient::getLocation)
+				.map(RadixJsonRpcClient::getLocation)
 				.test()
 				.assertValueAt(0, "ws://1:8080/rpc")
 				.assertValueAt(1, "ws://2:8080/rpc")

@@ -70,8 +70,8 @@ public class RadixLedger {
 
 		final AtomQuery<T> atomQuery = new AtomQuery<>(destination, atomClass);
 		return radixNetwork.getRadixClient(destination.getShard())
-			.doOnSubscribe(client -> logger.info("Looking for client to serve atoms at: " + destination))
-			.doOnSuccess(client -> logger.info("Found client to serve atoms: " + client.getLocation()))
+			//.doOnSubscribe(client -> logger.info("Looking for client to serve atoms at: " + destination))
+			//.doOnSuccess(client -> logger.info("Found client to serve atoms: " + client.getLocation()))
 			.flatMapObservable(client -> client.getAtoms(atomQuery))
 			.doOnError(Throwable::printStackTrace)
 			.retryWhen(new IncreasingRetryTimer())
