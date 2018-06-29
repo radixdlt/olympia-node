@@ -115,8 +115,8 @@ public class RadixLedger {
 	 */
 	public io.reactivex.Observable<AtomSubmissionUpdate> submitAtom(Atom atom) {
 		io.reactivex.Observable<AtomSubmissionUpdate> status = radixNetwork.getRadixClient(atom.getRequiredFirstShard())
-			.doOnSubscribe(client -> logger.info("Looking for client to submit atom"))
-			.doOnSuccess(client -> logger.info("Found client to submit atom: " + client.getLocation()))
+			//.doOnSubscribe(client -> logger.info("Looking for client to submit atom"))
+			//.doOnSuccess(client -> logger.info("Found client to submit atom: " + client.getLocation()))
 			.flatMapObservable(client -> client.submitAtom(atom))
 			.doOnError(Throwable::printStackTrace)
 			.retryWhen(new IncreasingRetryTimer());
