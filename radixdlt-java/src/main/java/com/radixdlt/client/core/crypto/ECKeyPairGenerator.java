@@ -23,7 +23,6 @@ public final class ECKeyPairGenerator {
 	private static final Map<Integer,ECDomainParameters> domains;
 
 	static {
-		Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME);
 		Security.insertProviderAt(new BouncyCastleProvider(), 1);
 		domains = Stream.of(256).collect(Collectors.toMap(Integer::new, (bits) -> {
 			final X9ECParameters curve = bits == 256 ? CustomNamedCurves.getByName("secp" + bits + "k1") : SECNamedCurves.getByName("secp" + bits + "k1");
