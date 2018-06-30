@@ -13,4 +13,7 @@ public class AndroidUtil {
         }
         return isAndroid == 1;
     }
+
+    private AndroidUtil() {
+	}
 }
