@@ -11,6 +11,7 @@ import com.radixdlt.client.core.identity.model.keystore.Cipherparams;
 import com.radixdlt.client.core.identity.model.keystore.Crypto;
 import com.radixdlt.client.core.identity.model.keystore.Keystore;
 import com.radixdlt.client.core.identity.model.keystore.Pbkdfparams;
+import com.radixdlt.client.core.util.AndroidUtil;
 import okio.ByteString;
 
 import javax.crypto.Cipher;
@@ -19,7 +20,10 @@ import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
-import java.io.*;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
@@ -34,17 +38,13 @@ public final class PrivateKeyEncrypter {
     // lower than API 17 Jellybean where there is a vulnerability in the implementation of SecureRandom, the below
     // initialisation of SecureRandom on Android fixes the potential issue.
     static {
-        if (isAndroidRuntime()) {
+        if (AndroidUtil.isAndroidRuntime()) {
             new LinuxSecureRandom();
         }
         SECURE_RANDOM = new SecureRandom();
     }
 
     private static final SecureRandom SECURE_RANDOM;
-
-    // Taken from BitcoinJ implementation
-    // https://github.com/bitcoinj/bitcoinj/blob/3cb1f6c6c589f84fe6e1fb56bf26d94cccc85429/core/src/main/java/org/bitcoinj/core/Utils.java#L573
-    private static int isAndroid = -1;
 
     private static final int ITERATIONS = 100000;
     private static final int KEY_LENGTH = 32;
@@ -192,13 +192,5 @@ public final class PrivateKeyEncrypter {
 
     private static SecureRandom getSecureRandom() {
         return SECURE_RANDOM;
-    }
-
-    private static boolean isAndroidRuntime() {
-        if (isAndroid == -1) {
-            final String runtime = System.getProperty("java.runtime.name");
-            isAndroid = (runtime != null && runtime.equals("Android Runtime")) ? 1 : 0;
-        }
-        return isAndroid == 1;
     }
 }
