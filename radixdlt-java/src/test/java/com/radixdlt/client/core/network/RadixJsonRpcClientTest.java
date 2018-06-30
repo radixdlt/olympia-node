@@ -14,6 +14,7 @@ import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.atoms.ApplicationPayloadAtom;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.Shards;
+import com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState;
 import com.radixdlt.client.core.network.WebSocketClient.RadixClientStatus;
 import com.radixdlt.client.core.serialization.RadixJson;
 import io.reactivex.Completable;
@@ -138,5 +139,56 @@ public class RadixJsonRpcClientTest {
 		observer.assertNoErrors();
 		observer.assertValueCount(1);
 		observer.assertValue(atom -> atom.getAsMessageAtom().getApplicationId().equals("Test"));
+	}
+
+	@Test
+	public void submitAtomTest() {
+		WebSocketClient wsClient = mock(WebSocketClient.class);
+		when(wsClient.getStatus()).thenReturn(Observable.just(RadixClientStatus.OPEN));
+
+		ReplaySubject<String> messages = ReplaySubject.create();
+		when(wsClient.getMessages()).thenReturn(messages);
+		when(wsClient.connect()).thenReturn(Completable.complete());
+
+		JsonParser parser = new JsonParser();
+		Gson gson = RadixJson.getGson();
+
+		doAnswer(invocation -> {
+			String msg = (String) invocation.getArguments()[0];
+			JsonObject jsonObject = parser.parse(msg).getAsJsonObject();
+			String id = jsonObject.get("id").getAsString();
+
+			JsonObject response = new JsonObject();
+			response.addProperty("id", id);
+			response.add("result", new JsonObject());
+
+			messages.onNext(gson.toJson(response));
+
+			String subscriberId = jsonObject.get("params").getAsJsonObject().get("subscriberId").getAsString();
+			JsonObject notification = new JsonObject();
+			notification.addProperty("method", "AtomSubmissionState.onNext");
+			JsonObject params = new JsonObject();
+			params.addProperty("subscriberId", subscriberId);
+			params.addProperty("value", "STORED");
+
+			notification.add("params", params);
+
+			messages.onNext(gson.toJson(notification));
+			return true;
+		}).when(wsClient).send(any());
+		RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(wsClient);
+
+		TestObserver<AtomSubmissionUpdate> observer = new TestObserver<>();
+
+		jsonRpcClient.submitAtom(
+			new ApplicationPayloadAtom("Test", null, null, null, null, 1)
+		).subscribe(observer);
+
+		observer.assertNoErrors();
+		observer.assertValueCount(3);
+		observer.assertValueAt(0, update -> update.getState().equals(AtomSubmissionState.SUBMITTING));
+		observer.assertValueAt(1, update -> update.getState().equals(AtomSubmissionState.SUBMITTED));
+		observer.assertValueAt(2, update -> update.getState().equals(AtomSubmissionState.STORED));
+		observer.assertComplete();
 	}
 }
