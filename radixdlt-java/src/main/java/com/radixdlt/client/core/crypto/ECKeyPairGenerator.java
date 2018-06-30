@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.radixdlt.client.core.util.AndroidUtil;
 import org.bouncycastle.asn1.sec.SECNamedCurves;
 import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.crypto.ec.CustomNamedCurves;
@@ -23,6 +24,9 @@ public final class ECKeyPairGenerator {
 	private static final Map<Integer, ECDomainParameters> DOMAINS;
 
 	static {
+		if (AndroidUtil.isAndroidRuntime()) {
+			Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME);
+		}
 		Security.insertProviderAt(new BouncyCastleProvider(), 1);
 		DOMAINS = Stream.of(256).collect(Collectors.toMap(Integer::new, (bits) -> {
 			final X9ECParameters curve =
