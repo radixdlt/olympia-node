@@ -1,15 +1,12 @@
 package com.radixdlt.client.core.address;
 
 import com.radixdlt.client.core.atoms.RadixHash;
-import java.util.Arrays;
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.util.Base58;
-import com.radixdlt.client.core.util.Hash;
 import java.util.Objects;
 
 public class RadixAddress {
-
 
 	// The Base58 address string
 	private final String addressBase58;
@@ -25,7 +22,7 @@ public class RadixAddress {
 		}
 
 		byte[] publicKey = new byte[raw.length - 5];
-		System.arraycopy (raw, 1, publicKey, 0, raw.length - 5);
+		System.arraycopy(raw, 1, publicKey, 0, raw.length - 5);
 
 		this.addressBase58 = addressBase58;
 		this.publicKey = new ECPublicKey(publicKey);

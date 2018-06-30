@@ -30,7 +30,12 @@ public class InsufficientFundsException extends Exception {
 			return false;
 		}
 
-		InsufficientFundsException o = (InsufficientFundsException)obj;
+		InsufficientFundsException o = (InsufficientFundsException) obj;
 		return this.asset.equals(o.asset) && this.available == o.available && this.requestedAmount == o.requestedAmount;
+	}
+
+	@Override
+	public int hashCode() {
+		return this.getMessage().hashCode();
 	}
 }

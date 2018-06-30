@@ -21,22 +21,25 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.jce.spec.ECParameterSpec;
 
 public final class ECKeyPairGenerator {
-	private static final Map<Integer,ECDomainParameters> domains;
+	private static final Map<Integer, ECDomainParameters> DOMAINS;
 
 	static {
 		if (AndroidUtil.isAndroidRuntime()) {
 			Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME);
 		}
 		Security.insertProviderAt(new BouncyCastleProvider(), 1);
-		domains = Stream.of(256).collect(Collectors.toMap(Integer::new, (bits) -> {
-			final X9ECParameters curve = bits == 256 ? CustomNamedCurves.getByName("secp" + bits + "k1") : SECNamedCurves.getByName("secp" + bits + "k1");
+		DOMAINS = Stream.of(256).collect(Collectors.toMap(Integer::new, (bits) -> {
+			final X9ECParameters curve =
+				bits == 256
+					? CustomNamedCurves.getByName("secp" + bits + "k1")
+					: SECNamedCurves.getByName("secp" + bits + "k1");
 			return new ECDomainParameters(curve.getCurve(), curve.getG(), curve.getN(), curve.getH());
 		}));
 	}
 
 	public static ECDomainParameters getDomain(int numBits) {
 		int roundedNumBits = (((numBits - 1) / 32) + 1) * 32;
-		return domains.get(roundedNumBits);
+		return DOMAINS.get(roundedNumBits);
 	}
 
 	public static ECKeyPairGenerator newInstance() {
@@ -45,7 +48,8 @@ public final class ECKeyPairGenerator {
 
 	private final SecureRandom secureRandom = new SecureRandom();
 
-	private ECKeyPairGenerator() {}
+	private ECKeyPairGenerator() {
+	}
 
 	public ECKeyPair generateKeyPair() {
 		return generateKeyPair(256);
@@ -67,7 +71,7 @@ public final class ECKeyPairGenerator {
 				// Remove signed byte
 				if (privateKey.length == (numBits / 8) + 1 && privateKey[0] == 0) {
 					privateKey = Arrays.copyOfRange(privateKey, 1, privateKey.length);
-				} else if (privateKey.length < numBits / 8){ // Pad
+				} else if (privateKey.length < numBits / 8) { // Pad
 					byte[] copy = new byte[32];
 					System.arraycopy(privateKey, 0, copy, 32 - privateKey.length, privateKey.length);
 					privateKey = copy;

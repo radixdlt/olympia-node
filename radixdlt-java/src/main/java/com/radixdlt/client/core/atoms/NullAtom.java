@@ -29,6 +29,6 @@ public class NullAtom extends Atom {
 	}
 
 	public String getJunk() {
-		return Base64.toBase64String(((JunkParticle)getParticles().get(0)).junk);
+		return Base64.toBase64String(((JunkParticle) getParticles().get(0)).junk);
 	}
 }

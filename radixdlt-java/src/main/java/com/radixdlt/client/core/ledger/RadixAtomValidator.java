@@ -1,8 +1,6 @@
 package com.radixdlt.client.core.ledger;
 
 import com.radixdlt.client.assets.Asset;
-import com.radixdlt.client.core.address.EUID;
-import com.radixdlt.client.core.atoms.AbstractConsumable;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomValidationException;
 import com.radixdlt.client.core.atoms.AtomValidator;
@@ -10,15 +8,14 @@ import com.radixdlt.client.core.atoms.Consumer;
 import com.radixdlt.client.core.atoms.Particle;
 import com.radixdlt.client.core.atoms.RadixHash;
 import com.radixdlt.client.core.crypto.ECSignature;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
 public class RadixAtomValidator implements AtomValidator {
-	private final static RadixAtomValidator validator = new RadixAtomValidator();
+	private static final RadixAtomValidator VALIDATOR = new RadixAtomValidator();
 
 	public static RadixAtomValidator getInstance() {
-		return validator;
+		return VALIDATOR;
 	}
 
 	private RadixAtomValidator() {
@@ -38,7 +35,7 @@ public class RadixAtomValidator implements AtomValidator {
 			.filter(Particle::isAbstractConsumable)
 			.map(Particle::getAsAbstractConsumable)
 			.map(particle -> {
-				if (particle.getOwners().isEmpty()) {
+				if (particle.getOwnersPublicKeys().isEmpty()) {
 					return new AtomValidationException("No owners in particle");
 				}
 
@@ -47,7 +44,7 @@ public class RadixAtomValidator implements AtomValidator {
 				}
 
 				if (particle instanceof Consumer) {
-					Optional<AtomValidationException> consumerException = particle.getOwners().stream().map(owner -> {
+					Optional<AtomValidationException> consumerException = particle.getOwnersPublicKeys().stream().map(owner -> {
 						Optional<ECSignature> signature = atom.getSignature(owner.getUID());
 						if (!signature.isPresent()) {
 							return new AtomValidationException("Missing signature");
@@ -75,7 +72,7 @@ public class RadixAtomValidator implements AtomValidator {
 		}
 	}
 
-	public void validate(Atom atom) throws AtomValidationException{
+	public void validate(Atom atom) throws AtomValidationException {
 		// TODO: check with universe genesis timestamp
 		if (atom.getTimestamp() == null || atom.getTimestamp() == 0L) {
 			throw new AtomValidationException("Null or Zero Timestamp");

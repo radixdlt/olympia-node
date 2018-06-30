@@ -1,15 +1,11 @@
 package com.radixdlt.client.wallet;
 
-import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockingDetails;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.radixdlt.client.assets.Asset;
-import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.AtomBuilder;
 import com.radixdlt.client.core.atoms.Consumable;
@@ -18,10 +14,8 @@ import com.radixdlt.client.core.atoms.TransactionAtom;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECPublicKey;
-import com.radixdlt.client.core.identity.OneTimeUseIdentity;
 import io.reactivex.observers.TestObserver;
 import java.util.Collection;
-import java.util.Collections;
 import org.junit.Test;
 
 public class TransactionAtomsTest {
@@ -86,8 +80,7 @@ public class TransactionAtomsTest {
 		transactionAtoms.accept(unsignedAtom.getRawAtom().getAsTransactionAtom());
 		transactionAtoms.accept(unsignedAtom2.getRawAtom().getAsTransactionAtom())
 			.getUnconsumedConsumables()
-			.subscribe(observer)
-		;
+			.subscribe(observer);
 
 		observer.assertValue(collection -> collection.stream().findFirst().get().getNonce() == 2);
 	}

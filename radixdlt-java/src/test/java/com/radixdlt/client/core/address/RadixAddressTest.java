@@ -1,7 +1,5 @@
 package com.radixdlt.client.core.address;
 
-import com.radixdlt.client.core.crypto.ECKeyPair;
-import com.radixdlt.client.core.crypto.ECKeyPairGenerator;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import org.bouncycastle.util.encoders.Base64;
 import org.junit.Test;
@@ -11,7 +9,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 public class RadixAddressTest {
 
@@ -19,7 +16,7 @@ public class RadixAddressTest {
 	public void createAddressFromPublicKey() {
 		ECPublicKey publicKey = new ECPublicKey(Base64.decode("A455PdOZNwyRWaSWFXyYYkbj7Wv9jtgCCqUYhuOHiPLC"));
 		RadixAddress address = new RadixAddress(RadixUniverseConfigs.getWinterfell(), publicKey);
-		assertEquals("JHB89drvftPj6zVCNjnaijURk8D8AMFw4mVja19aoBGmRXWchnJ", address.toString() );
+		assertEquals("JHB89drvftPj6zVCNjnaijURk8D8AMFw4mVja19aoBGmRXWchnJ", address.toString());
 		assertEquals(address, RadixAddress.fromString("JHB89drvftPj6zVCNjnaijURk8D8AMFw4mVja19aoBGmRXWchnJ"));
 	}
 

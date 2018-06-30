@@ -1,19 +1,16 @@
 package com.radixdlt.client.core.atoms;
 
 import com.radixdlt.client.core.address.EUID;
-import com.radixdlt.client.core.address.RadixAddress;
-import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.serialization.Dson;
-import com.radixdlt.client.core.util.Hash;
 import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 public abstract class Particle {
 	private final Set<EUID> destinations;
-	protected final Set<ECKeyPair> owners;
+	private final Set<ECKeyPair> owners;
 
 	Particle() {
 		this.destinations = null;
@@ -34,8 +31,12 @@ public abstract class Particle {
 		return destinations;
 	}
 
-	public Set<ECPublicKey> getOwners() {
+	public Set<ECPublicKey> getOwnersPublicKeys() {
 		return owners == null ? Collections.emptySet() : owners.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toSet());
+	}
+
+	public Set<ECKeyPair> getOwners() {
+		return owners;
 	}
 
 	public boolean isAbstractConsumable() {

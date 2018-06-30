@@ -16,14 +16,19 @@
 
 package com.radixdlt.client.core.crypto;
 
-import java.io.*;
+import java.io.DataInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.security.Provider;
 import java.security.SecureRandomSpi;
 import java.security.Security;
 
 /**
  * Implementation from
- * <a href="https://github.com/bitcoinj/bitcoinj/blob/master/core/src/main/java/org/bitcoinj/crypto/LinuxSecureRandom.java">BitcoinJ implementation</a>
+ * <a href="https://github.com/bitcoinj/bitcoinj/blob/master/core/src/main/java/org/bitcoinj/crypto/LinuxSecureRandom.java">
+ * BitcoinJ implementation</a>
  *
  * <p>A SecureRandom implementation that is able to override the standard JVM provided
  * implementation, and which simply serves random numbers by reading /dev/urandom. That is, it
@@ -32,10 +37,10 @@ import java.security.Security;
  * all from the same source.
  */
 public class LinuxSecureRandom extends SecureRandomSpi {
-    private static final FileInputStream urandom;
+    private static final FileInputStream URANDOM;
 
     private static class LinuxSecureRandomProvider extends Provider {
-        public LinuxSecureRandomProvider() {
+        LinuxSecureRandomProvider() {
             super("LinuxSecureRandom", 1.0,
                     "A Linux specific random number provider that uses /dev/urandom");
             put("SecureRandom.LinuxSecureRandom", LinuxSecureRandom.class.getName());
@@ -46,8 +51,8 @@ public class LinuxSecureRandom extends SecureRandomSpi {
         try {
             File file = new File("/dev/urandom");
             // This stream is deliberately leaked.
-            urandom = new FileInputStream(file);
-            if (urandom.read() == -1) {
+            URANDOM = new FileInputStream(file);
+            if (URANDOM.read() == -1) {
                 throw new RuntimeException("/dev/urandom not readable?");
             }
             // Now override the default SecureRandom implementation with this one.
@@ -70,7 +75,7 @@ public class LinuxSecureRandom extends SecureRandomSpi {
 
     public LinuxSecureRandom() {
         // DataInputStream is not thread safe, so each random object has its own.
-        dis = new DataInputStream(urandom);
+        dis = new DataInputStream(URANDOM);
     }
 
     @Override

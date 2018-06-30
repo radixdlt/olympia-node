@@ -37,15 +37,15 @@ public class RadixHash {
 	}
 
 	public static RadixHash of(byte[] data) {
-		return new RadixHash(Hash.SHA256(Hash.SHA256(data)));
+		return new RadixHash(Hash.sha256(Hash.sha256(data)));
 	}
 
 	public static RadixHash of(byte[] data, int offset, int length) {
-		return new RadixHash(Hash.SHA256(Hash.SHA256(data, offset, length)));
+		return new RadixHash(Hash.sha256(Hash.sha256(data, offset, length)));
 	}
 
-	public static RadixHash SHA512of(byte[] data) {
-		return new RadixHash(Hash.SHA512(Hash.SHA512(data)));
+	public static RadixHash sha512of(byte[] data) {
+		return new RadixHash(Hash.sha512(Hash.sha512(data)));
 	}
 
 	@Override
@@ -58,7 +58,7 @@ public class RadixHash {
 			return false;
 		}
 
-		RadixHash other = (RadixHash)o;
+		RadixHash other = (RadixHash) o;
 		return Arrays.equals(hash, other.hash);
 	}
 

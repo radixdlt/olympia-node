@@ -25,8 +25,8 @@ public class WalletTransaction {
 				.filter(Particle::isAbstractConsumable)
 				.map(Particle::getAsAbstractConsumable)
 				.filter(particle -> particle.getAssetId().equals(Asset.XRD.getId()))
-				.filter(particle -> particle.getOwners().stream().allMatch(address::ownsKey))
-				.mapToLong(AbstractConsumable::signedQuantity)
+				.filter(particle -> particle.getOwnersPublicKeys().stream().allMatch(address::ownsKey))
+				.mapToLong(AbstractConsumable::getSignedQuantity)
 				.sum();
 
 		this.transactionAtom = transactionAtom;
@@ -45,7 +45,13 @@ public class WalletTransaction {
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS", Locale.getDefault());
 		sdf.setTimeZone(TimeZone.getDefault());
 
-		return sdf.format(new Date(transactionAtom.getTimestamp())) + ": " +
-				transactionAtom.summary() + (transactionAtom.getPayload() == null ? "" : " Payload: " + transactionAtom.getPayload().base64());
+		StringBuilder txString = new StringBuilder(sdf.format(new Date(transactionAtom.getTimestamp()))
+			+ ": " + transactionAtom.summary());
+
+		if (transactionAtom.getPayload() != null) {
+			txString.append(" Payload: " + transactionAtom.getPayload().base64());
+		}
+
+		return txString.toString();
 	}
 }

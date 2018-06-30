@@ -11,8 +11,12 @@ addons:
 jdk:
   - oraclejdk8
 
-script:
-  - ./gradlew sonarqube
+jobs:
+  include:
+    - stage: check
+      script: ./gradlew check
+    - stage: test
+      script: ./gradlew sonarqube
 
 cache:
   directories:

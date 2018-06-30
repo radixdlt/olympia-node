@@ -32,7 +32,7 @@ public class NodeRunnerData {
 
 	@Override
 	public boolean equals(Object o) {
-		NodeRunnerData other = (NodeRunnerData)o;
+		NodeRunnerData other = (NodeRunnerData) o;
 		return other.ip.equals(ip) && other.shards.equals(this.shards);
 	}
 }

@@ -40,7 +40,12 @@ public class Asset {
 
 	@Override
 	public boolean equals(Object o) {
-		Asset asset = (Asset)o;
+		Asset asset = (Asset) o;
 		return this.iso.equals(asset.iso);
+	}
+
+	@Override
+	public int hashCode() {
+		return iso.hashCode();
 	}
 }

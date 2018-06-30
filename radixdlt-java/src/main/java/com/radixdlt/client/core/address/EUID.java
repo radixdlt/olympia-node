@@ -28,7 +28,7 @@ public class EUID {
 
 	@Override
 	public boolean equals(Object object) {
-		EUID other = (EUID)object;
+		EUID other = (EUID) object;
 		return this.value.equals(other.value);
 	}
 

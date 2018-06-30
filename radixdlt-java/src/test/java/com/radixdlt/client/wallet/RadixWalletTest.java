@@ -8,7 +8,6 @@ import static org.mockito.Mockito.when;
 
 import com.radixdlt.client.assets.Asset;
 import com.radixdlt.client.core.RadixUniverse;
-import com.radixdlt.client.core.atoms.AtomBuilder;
 import com.radixdlt.client.core.atoms.Consumable;
 import com.radixdlt.client.core.atoms.TransactionAtom;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
@@ -18,7 +17,6 @@ import com.radixdlt.client.core.identity.RadixIdentity;
 import com.radixdlt.client.core.ledger.RadixLedger;
 import com.radixdlt.client.core.address.RadixAddress;
 import io.reactivex.Observable;
-import java.security.interfaces.ECKey;
 import java.util.Collections;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -66,7 +64,7 @@ public class RadixWalletTest {
 		when(address.ownsKey(any(ECKeyPair.class))).thenReturn(true);
 		when(ledger.getMagic()).thenReturn(1);
 
-		when(consumer.quantity()).thenReturn(1L);
+		when(consumer.getQuantity()).thenReturn(1L);
 
 		when(consumable.toConsumer()).thenReturn(consumer);
 		when(consumable.getDson()).thenReturn(
@@ -116,7 +114,8 @@ public class RadixWalletTest {
 		RadixWallet wallet = new RadixWallet(universe);
 		wallet.transferXRD(10, radixIdentity, toAddress)
 			.subscribe(
-				update -> {},
+				update -> {
+				},
 				throwable -> errorHandler.accept(throwable.getCause())
 			);
 

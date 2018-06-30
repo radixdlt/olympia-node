@@ -1,7 +1,5 @@
 package com.radixdlt.client.core.network;
 
-import static org.junit.Assert.*;
-
 import io.reactivex.Observable;
 import java.util.stream.IntStream;
 import org.junit.Test;
@@ -17,7 +15,7 @@ public class RadixNetworkTest {
 			new RadixPeer("3", false, 8080)
 		));
 
-		IntStream.range(0,10).forEach(i ->
+		IntStream.range(0, 10).forEach(i ->
 			network.getRadixClients()
 				.map(RadixClient::getLocation)
 				.test()

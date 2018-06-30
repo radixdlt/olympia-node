@@ -26,7 +26,16 @@ public class RadixUniverseConfig {
 		return universe;
 	}
 
-	RadixUniverseConfig(List<Atom> genesis, int port, String name, String description, RadixUniverseType type, long timestamp, ECPublicKey creator, int magic) {
+	RadixUniverseConfig(
+		List<Atom> genesis,
+		int port,
+		String name,
+		String description,
+		RadixUniverseType type,
+		long timestamp,
+		ECPublicKey creator,
+		int magic
+	) {
 		this.genesis = Collections.unmodifiableList(genesis);
 		this.name = name;
 		this.description = description;
@@ -42,7 +51,7 @@ public class RadixUniverseConfig {
 	}
 
 	public byte getMagicByte() {
-		return (byte)(magic & 0xff);
+		return (byte) (magic & 0xff);
 	}
 
 	public ECPublicKey getSystemPublicKey() {
@@ -63,14 +72,32 @@ public class RadixUniverseConfig {
 	}
 
 	@Override
+	public int hashCode() {
+		// TODO: fix this
+		return (magic + ":" + port + ":" + name + ":" + timestamp).hashCode();
+	}
+
+	@Override
 	public boolean equals(Object o) {
-		RadixUniverseConfig c = (RadixUniverseConfig)o;
-		if (magic != c.magic) return false;
-		if (port != c.port) return false;
-		if (!name.equals(c.name)) return false;
-		if (!type.equals(c.type)) return false;
-		if (timestamp != c.timestamp) return false;
-		if (!creator.equals(c.creator)) return false;
+		RadixUniverseConfig c = (RadixUniverseConfig) o;
+		if (magic != c.magic) {
+			return false;
+		}
+		if (port != c.port) {
+			return false;
+		}
+		if (!name.equals(c.name)) {
+			return false;
+		}
+		if (!type.equals(c.type)) {
+			return false;
+		}
+		if (timestamp != c.timestamp) {
+			return false;
+		}
+		if (!creator.equals(c.creator)) {
+			return false;
+		}
 
 		return true;
 	}

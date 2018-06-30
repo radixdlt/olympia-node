@@ -1,30 +1,23 @@
 package com.radixdlt.client.core.atoms;
 
-import com.radixdlt.client.core.util.Hash;
 import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.crypto.ECSignature;
 import com.radixdlt.client.core.serialization.Dson;
-import java.math.BigInteger;
-import java.security.Signature;
-import java.util.AbstractMap.SimpleImmutableEntry;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public abstract class Atom {
 	private Set<EUID> destinations;
-	private final Map<String,Long> timestamps;
+	private final Map<String, Long> timestamps;
 	private String action;
-	protected final List<Particle> particles;
-	private final Map<String,ECSignature> signatures;
-	private transient Map<String,Long> debug = new HashMap<>();
+	private final List<Particle> particles;
+	private final Map<String, ECSignature> signatures;
+	private transient Map<String, Long> debug = new HashMap<>();
 
 	Atom() {
 		this.destinations = Collections.emptySet();
@@ -91,7 +84,7 @@ public abstract class Atom {
 		return timestamps.get("default");
 	}
 
-	public Map<String,ECSignature> getSignatures() {
+	public Map<String, ECSignature> getSignatures() {
 		return signatures;
 	}
 
@@ -149,7 +142,7 @@ public abstract class Atom {
 			return false;
 		}
 
-		Atom atom = (Atom)o;
+		Atom atom = (Atom) o;
 		return getHash().equals(atom.getHash());
 	}
 
