@@ -15,8 +15,6 @@ import java.util.List;
 import com.radixdlt.client.core.atoms.Atom;
 
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,54 +26,18 @@ import org.slf4j.LoggerFactory;
 public class RadixJsonRpcClient {
 	private static final Logger LOGGER = LoggerFactory.getLogger(RadixJsonRpcClient.class);
 
-	private static class RadixObserver {
-		private final Consumer<JsonObject> onNext;
-		private final Consumer<Throwable> onError;
-
-		RadixObserver(Consumer<JsonObject> onNext, Consumer<Throwable> onError) {
-			this.onNext = onNext;
-			this.onError = onError;
-		}
-	}
-
 	private final Gson gson = RadixJson.getGson();
 	private final JsonParser parser = new JsonParser();
-	private final ConcurrentHashMap<String, RadixObserver> observers = new ConcurrentHashMap<>();
-	private final ConcurrentHashMap<String, Consumer<JsonObject>> jsonRpcMethodCalls = new ConcurrentHashMap<>();
-
 	private final WebSocketClient wsClient;
 	private final Observable<JsonObject> messages;
 
 	public RadixJsonRpcClient(WebSocketClient wsClient) {
 
 		this.wsClient = wsClient;
-
 		this.messages = this.wsClient.getMessages()
 			.map(msg -> parser.parse(msg).getAsJsonObject())
 			.publish()
 			.refCount();
-
-		this.wsClient.getMessages().subscribe(this::onMessage);
-		this.wsClient.getStatus()
-			.filter(status -> status == RadixClientStatus.CLOSED)
-			.subscribe(status -> {
-				if (status == RadixClientStatus.CLOSED) {
-					if (!observers.isEmpty()) {
-						LOGGER.warn("Websocket closed but observers still exist.");
-					}
-
-					if (!jsonRpcMethodCalls.isEmpty()) {
-						LOGGER.warn("Websocket closed but methods still exist.");
-					}
-				} else if (status == RadixClientStatus.FAILURE) {
-					// Again, race conditions here
-					this.observers.forEachValue(
-						100,
-						radixObserver -> radixObserver.onError.accept(new RuntimeException("Network failure"))
-					);
-					this.observers.clear();
-				}
-			});
 	}
 
 
@@ -88,72 +50,7 @@ public class RadixJsonRpcClient {
 	}
 
 	public boolean tryClose() {
-		// TODO: must make this logic from check to close atomic, otherwise race issue occurs
-
-		if (!this.jsonRpcMethodCalls.isEmpty()) {
-			LOGGER.info("Attempt to close " + wsClient.getLocation() + " but methods still being completed.");
-			return false;
-		}
-
-		if (!this.observers.isEmpty()) {
-			LOGGER.info("Attempt to close " + wsClient.getLocation() + " but observers still subscribed.");
-			return false;
-		}
-
-		this.wsClient.close();
-
-		return true;
-	}
-
-	private void onMessage(String message) {
-		JsonObject json;
-		try {
-			json = parser.parse(message).getAsJsonObject();
-		} catch (Exception e) {
-			e.printStackTrace();
-			throw new RuntimeException();
-		}
-
-		// JSON RPC responses
-		if (json.has("id")) {
-			final String id = json.get("id").getAsString();
-
-			if (json.has("result")) {
-				if (jsonRpcMethodCalls.containsKey(id)) {
-					jsonRpcMethodCalls.remove(id).accept(json);
-				}
-			} else if (json.has("error")) {
-				LOGGER.error(json.toString());
-				if (jsonRpcMethodCalls.containsKey(id)) {
-					jsonRpcMethodCalls.remove(id).accept(json);
-				}
-			} else {
-				throw new RuntimeException("Bad JSON RPC message: " + message);
-			}
-
-			return;
-		}
-
-		// JSON RPC notifications
-		if (json.get("method") != null) {
-			final String methodName = json.get("method").getAsString();
-			switch (methodName) {
-				case "Radix.welcome":
-					LOGGER.info(wsClient.getLocation() + " says " + json.get("params"));
-					break;
-				case "Atoms.subscribeUpdate":
-				case "AtomSubmissionState.onNext":
-					final JsonObject params = json.get("params").getAsJsonObject();
-					final String subscriberId = params.get("subscriberId").getAsString();
-					RadixObserver observer = observers.get(subscriberId);
-					if (observer != null) {
-						observers.get(subscriberId).onNext.accept(params);
-					}
-					break;
-				default:
-					throw new IllegalStateException("Unknown method received: " + methodName);
-			}
-		}
+		return this.wsClient.close();
 	}
 
 	private <T> Single<T> callJsonRpcMethod(String method, TypeToken<T> returnType) {

@@ -57,10 +57,16 @@ public class WebSocketClient extends WebSocketListener {
 		return status;
 	}
 
-	public void close() {
+	public boolean close() {
+		if (messages.hasObservers()) {
+			return false;
+		}
+
 		if (this.webSocket != null) {
 			this.webSocket.close(1000, null);
 		}
+
+		return true;
 	}
 
 	public void tryConnect() {
