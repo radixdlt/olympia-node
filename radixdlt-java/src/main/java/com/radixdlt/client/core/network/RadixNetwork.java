@@ -3,13 +3,11 @@ package com.radixdlt.client.core.network;
 import com.radixdlt.client.core.network.RadixClient.RadixClientStatus;
 import io.reactivex.Observable;
 import io.reactivex.Single;
-import io.reactivex.disposables.Disposable;
 import io.reactivex.observables.ConnectableObservable;
-import io.reactivex.subjects.ReplaySubject;
 
 import java.util.AbstractMap.SimpleImmutableEntry;
-import java.util.*;
-import java.util.Map.Entry;
+import java.util.Collections;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,7 +15,7 @@ import org.slf4j.LoggerFactory;
  * A Radix Network manages connections to Node Runners for a given Universe.
  */
 public final class RadixNetwork {
-	private final static Logger logger = LoggerFactory.getLogger(RadixNetwork.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(RadixNetwork.class);
 
 	/**
 	 * Cached observable for keeping track of Radix Peers
@@ -27,23 +25,23 @@ public final class RadixNetwork {
 	/**
 	 * Hot observable which updates subscribers of new connection events
 	 */
-	private final ConnectableObservable<SimpleImmutableEntry<String,RadixClientStatus>> statusUpdates;
+	private final ConnectableObservable<SimpleImmutableEntry<String, RadixClientStatus>> statusUpdates;
 
 	public RadixNetwork(PeerDiscovery peerDiscovery) {
 		this.peers = peerDiscovery.findPeers()
-			.doOnNext(peer -> logger.info("Added to peer list: " + peer.getLocation()))
+			.doOnNext(peer -> LOGGER.info("Added to peer list: " + peer.getLocation()))
 			.replay().autoConnect(2);
 		this.statusUpdates = peers.map(RadixPeer::getRadixClient)
 			.flatMap(
 				client -> client.getStatus().map(
-					status -> new SimpleImmutableEntry<>(client.getLocation(),status)
+					status -> new SimpleImmutableEntry<>(client.getLocation(), status)
 				)
 			)
 			.publish();
 		this.statusUpdates.connect();
 	}
 
-	public Observable<SimpleImmutableEntry<String,RadixClientStatus>> connectAndGetStatusUpdates() {
+	public Observable<SimpleImmutableEntry<String, RadixClientStatus>> connectAndGetStatusUpdates() {
 		this.peers.subscribe();
 		return this.getStatusUpdates();
 	}
@@ -53,7 +51,7 @@ public final class RadixNetwork {
 	 *
 	 * @return a hot Observable of status of peers
 	 */
-	public Observable<SimpleImmutableEntry<String,RadixClientStatus>> getStatusUpdates() {
+	public Observable<SimpleImmutableEntry<String, RadixClientStatus>> getStatusUpdates() {
 		return statusUpdates;
 	}
 
@@ -85,8 +83,7 @@ public final class RadixNetwork {
 					.firstOrError()
 					.toMaybe()
 			)
-			.firstOrError()
-		;
+			.firstOrError();
 	}
 
 	/**

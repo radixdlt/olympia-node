@@ -1,16 +1,10 @@
 package com.radixdlt.client.core.network;
 
 import io.reactivex.Maybe;
-import io.reactivex.Single;
 import io.reactivex.subjects.SingleSubject;
-import java.util.Map;
 import java.util.Set;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class RadixPeer {
-	private final static Logger logger = LoggerFactory.getLogger(RadixPeer.class);
-
 	private final String location;
 	private final RadixClient radixClient;
 	private final SingleSubject<NodeRunnerData> data;

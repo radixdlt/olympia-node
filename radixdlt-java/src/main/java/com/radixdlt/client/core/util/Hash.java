@@ -12,6 +12,9 @@ public class Hash {
 		Security.insertProviderAt(new BouncyCastleProvider(), 1);
 	}
 
+	private Hash() {
+	}
+
 	private static byte[] hash(String algorithm, byte[] data, int offset, int len) {
 		try {
 			MessageDigest messageDigest = MessageDigest.getInstance(algorithm, "BC");
@@ -26,16 +29,16 @@ public class Hash {
 		}
 	}
 
-	public static byte[] SHA512(byte[] data) {
+	public static byte[] sha512(byte[] data) {
 		return hash("SHA-512", data, 0, data.length);
 	}
 
-	public static byte[] SHA256(byte[] data) {
-		return SHA256(data, 0, data.length);
+	public static byte[] sha256(byte[] data) {
+		return sha256(data, 0, data.length);
 	}
 
 	// Hashes the specified byte array using SHA-256
-	public static byte[] SHA256(byte[] data, int offset, int len) {
+	public static byte[] sha256(byte[] data, int offset, int len) {
 		return hash("SHA-256", data, offset, len);
 	}
 }

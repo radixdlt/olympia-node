@@ -24,51 +24,57 @@ public class TransactionAtom extends PayloadAtom {
 		super(destinations, null, particles, timestamp);
 	}
 
-	TransactionAtom(List<Particle> particles, Set<EUID> destinations, Payload payload, Encryptor encryptor, EUID signatureId, ECSignature signature, long timestamp) {
+	TransactionAtom(
+		List<Particle> particles,
+		Set<EUID> destinations,
+		Payload payload,
+		Encryptor encryptor,
+		EUID signatureId,
+		ECSignature signature,
+		long timestamp
+	) {
 		super(particles, destinations, payload, encryptor, timestamp, signatureId, signature);
 	}
 
 	public List<Consumable> getConsumables() {
-		return particles.stream()
+		return getParticles().stream()
 			.filter(Particle::isConsumable)
 			.map(Particle::getAsConsumable)
 			.collect(Collectors.toList());
 	}
 
 	public List<Consumer> getConsumers() {
-		return particles.stream()
+		return getParticles().stream()
 			.filter(Particle::isConsumer)
 			.map(Particle::getAsConsumer)
 			.collect(Collectors.toList());
 	}
 
 
-	public Map<Set<ECPublicKey>,Map<EUID,Long>> summary() {
-		return particles.stream()
+	public Map<Set<ECPublicKey>, Map<EUID, Long>> summary() {
+		return getParticles().stream()
 			.filter(Particle::isAbstractConsumable)
 			.map(Particle::getAsAbstractConsumable)
 			.collect(Collectors.groupingBy(
-				AbstractConsumable::getOwners,
+				AbstractConsumable::getOwnersPublicKeys,
 				Collectors.groupingBy(
 					AbstractConsumable::getAssetId,
-					Collectors.summingLong(AbstractConsumable::signedQuantity)
+					Collectors.summingLong(AbstractConsumable::getSignedQuantity)
 				)
-			))
-			;
+			));
 	}
 
-	public Map<Set<ECPublicKey>,Map<EUID,List<Long>>> consumableSummary() {
-		return particles.stream()
+	public Map<Set<ECPublicKey>, Map<EUID, List<Long>>> consumableSummary() {
+		return getParticles().stream()
 		.filter(Particle::isAbstractConsumable)
 		.map(Particle::getAsAbstractConsumable)
 		.collect(Collectors.groupingBy(
-			AbstractConsumable::getOwners,
+			AbstractConsumable::getOwnersPublicKeys,
 			Collectors.groupingBy(
 				AbstractConsumable::getAssetId,
-				Collectors.mapping(AbstractConsumable::signedQuantity, Collectors.toList())
+				Collectors.mapping(AbstractConsumable::getSignedQuantity, Collectors.toList())
 			)
-		))
-		;
+		));
 	}
 
 	@Override

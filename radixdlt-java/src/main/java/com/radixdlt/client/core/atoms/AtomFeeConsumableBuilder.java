@@ -6,7 +6,6 @@ import com.radixdlt.client.core.pow.ProofOfWork;
 import com.radixdlt.client.core.pow.ProofOfWorkBuilder;
 import java.util.Collections;
 import java.util.Objects;
-import org.bouncycastle.util.encoders.Hex;
 
 public class AtomFeeConsumableBuilder {
 	private ECPublicKey owner;

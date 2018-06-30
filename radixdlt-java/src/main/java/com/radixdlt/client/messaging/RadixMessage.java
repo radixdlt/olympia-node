@@ -4,7 +4,6 @@ import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.address.RadixAddress;
 
 import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.atoms.AtomValidationException;
 import com.radixdlt.client.core.crypto.ECSignature;
 import java.text.SimpleDateFormat;
 import java.util.Date;
