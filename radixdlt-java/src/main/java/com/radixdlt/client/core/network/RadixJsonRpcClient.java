@@ -269,100 +269,78 @@ public class RadixJsonRpcClient {
 	public <T extends Atom> Observable<AtomSubmissionUpdate> submitAtom(T atom) {
 		return this.wsClient.connect().andThen(
 			Observable.<AtomSubmissionUpdate>create(emitter -> {
-				try {
-					JsonElement jsonAtom = gson.toJsonTree(atom, Atom.class);
+				JsonElement jsonAtom = gson.toJsonTree(atom, Atom.class);
 
-					final String uuid = UUID.randomUUID().toString();
-					JsonObject requestObject = new JsonObject();
-					requestObject.addProperty("id", uuid);
-					JsonObject params = new JsonObject();
-					params.addProperty("subscriberId", uuid);
-					params.add("atom", jsonAtom);
-					requestObject.add("params", params);
-					requestObject.addProperty("method", "Universe.submitAtomAndSubscribe");
-					observers.put(uuid,
-						new RadixObserver(
-							(json) -> {
-								AtomSubmissionState state;
-								String message = null;
+				final String uuid = UUID.randomUUID().toString();
+				JsonObject requestObject = new JsonObject();
+				requestObject.addProperty("id", uuid);
+				JsonObject params = new JsonObject();
+				params.addProperty("subscriberId", uuid);
+				params.add("atom", jsonAtom);
+				requestObject.add("params", params);
+				requestObject.addProperty("method", "Universe.submitAtomAndSubscribe");
 
-								try {
-									JsonElement messageElement = json.getAsJsonObject().get("message");
-									if (messageElement != null) {
-										message = messageElement.getAsString();
-									}
-									state = AtomSubmissionState.valueOf(
-										json.getAsJsonObject().get("value").getAsString()
-									);
-								} catch (IllegalArgumentException e) {
-									state = AtomSubmissionState.UNKNOWN_FAILURE;
-								}
-
-								emitter.onNext(AtomSubmissionUpdate.now(atom.getHid(), state, message));
-
-								if (state.isComplete()) {
-									emitter.onComplete();
-									observers.remove(uuid);
-								}
-							},
-							emitter::onError
-						)
+				Disposable subscriptionDisposable = messages
+					.filter(msg -> msg.has("method"))
+					.filter(msg -> msg.get("method").getAsString().equals("AtomSubmissionState.onNext"))
+					.map(msg -> msg.get("params").getAsJsonObject())
+					.filter(p -> p.get("subscriberId").getAsString().equals(uuid))
+					.map(p -> {
+						final AtomSubmissionState state = AtomSubmissionState.valueOf(p.get("value").getAsString());
+						final String message;
+						if (p.has("message")) {
+							message = p.get("message").getAsString();
+						} else {
+							message = null;
+						}
+						return AtomSubmissionUpdate.now(atom.getHid(), state, message);
+					})
+					.takeUntil(AtomSubmissionUpdate::isComplete)
+					.subscribe(
+						emitter::onNext,
+						emitter::onError,
+						emitter::onComplete
 					);
 
-					// TODO: add unsubscribe!
-					// emitter.setDisposable()
-
-					jsonRpcMethodCalls.put(uuid, json -> {
-						try {
-							JsonObject jsonObject = json.getAsJsonObject();
-							if (jsonObject.has("result")) {
-								emitter.onNext(
-									AtomSubmissionUpdate.now(
-										atom.getHid(),
-										AtomSubmissionState.SUBMITTED
-									)
-								);
-							} else if (jsonObject.has("error")) {
-								JsonObject error = jsonObject.get("error").getAsJsonObject();
-								String message = error.get("message").getAsString();
-								emitter.onNext(
-									AtomSubmissionUpdate.now(
-										atom.getHid(),
-										AtomSubmissionState.FAILED,
-										message
-									)
-								);
-							} else {
-								emitter.onNext(
-									AtomSubmissionUpdate.now(
-										atom.getHid(),
-										AtomSubmissionState.FAILED,
-										"Unrecognizable json rpc response " + jsonObject.toString()
-									)
-								);
-							}
-						} catch (Exception e) {
-							emitter.onError(e);
+				Disposable methodDisposable = messages
+					.filter(msg -> msg.has("id"))
+					.filter(msg -> msg.get("id").getAsString().equals(uuid))
+					.firstOrError()
+					.doOnSubscribe(disposable -> {
+						boolean sendSuccess = wsClient.send(gson.toJson(requestObject));
+						if (!sendSuccess) {
+							disposable.dispose();
+							emitter.onError(new RuntimeException("Could not connect."));
+						} else {
+							emitter.onNext(AtomSubmissionUpdate.now(atom.getHid(), AtomSubmissionState.SUBMITTING));
+						}
+					})
+					.subscribe(msg -> {
+						if (msg.getAsJsonObject().has("result")) {
+							emitter.onNext(
+								AtomSubmissionUpdate.now(
+									atom.getHid(),
+									AtomSubmissionState.SUBMITTED
+								)
+							);
+						} else {
+							JsonObject error = msg.getAsJsonObject().get("error").getAsJsonObject();
+							String message = error.get("message").getAsString();
+							emitter.onNext(
+								AtomSubmissionUpdate.now(
+									atom.getHid(),
+									AtomSubmissionState.FAILED,
+									message
+								)
+							);
+							emitter.onComplete();
 						}
 					});
 
-
-					emitter.onNext(AtomSubmissionUpdate.now(atom.getHid(), AtomSubmissionState.SUBMITTING));
-
-					if (!wsClient.send(gson.toJson(requestObject))) {
-						jsonRpcMethodCalls.remove(uuid);
-						emitter.onNext(
-							AtomSubmissionUpdate.now(
-								atom.getHid(),
-								AtomSubmissionState.FAILED,
-								"Websocket Send Fail"
-							)
-						);
-					}
-				} catch (Exception e) {
-					e.printStackTrace();
-					emitter.onError(e);
-				}
+				emitter.setCancellable(() -> {
+					methodDisposable.dispose();
+					subscriptionDisposable.dispose();
+				});
 			})
 		);
 	}

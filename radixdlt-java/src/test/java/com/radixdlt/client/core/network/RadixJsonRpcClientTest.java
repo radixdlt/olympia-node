@@ -185,10 +185,7 @@ public class RadixJsonRpcClientTest {
 		).subscribe(observer);
 
 		observer.assertNoErrors();
-		observer.assertValueCount(3);
-		observer.assertValueAt(0, update -> update.getState().equals(AtomSubmissionState.SUBMITTING));
-		observer.assertValueAt(1, update -> update.getState().equals(AtomSubmissionState.SUBMITTED));
-		observer.assertValueAt(2, update -> update.getState().equals(AtomSubmissionState.STORED));
+		observer.assertValueAt(observer.valueCount() - 1, update -> update.getState().equals(AtomSubmissionState.STORED));
 		observer.assertComplete();
 	}
 }
