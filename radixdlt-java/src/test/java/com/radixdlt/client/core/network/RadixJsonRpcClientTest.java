@@ -1,11 +1,8 @@
 package com.radixdlt.client.core.network;
 
-import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.gson.Gson;
@@ -17,11 +14,8 @@ import com.radixdlt.client.core.serialization.RadixJson;
 import io.reactivex.Completable;
 import io.reactivex.Observable;
 import io.reactivex.observers.TestObserver;
-import io.reactivex.subjects.PublishSubject;
 import io.reactivex.subjects.ReplaySubject;
-import java.util.concurrent.CompletableFuture;
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 public class RadixJsonRpcClientTest {
@@ -59,7 +53,7 @@ public class RadixJsonRpcClientTest {
 		Gson gson = RadixJson.getGson();
 
 		doAnswer((Answer) invocation -> {
-			String msg = (String)invocation.getArguments()[0];
+			String msg = (String) invocation.getArguments()[0];
 			JsonObject jsonObject = parser.parse(msg).getAsJsonObject();
 			String id = jsonObject.get("id").getAsString();
 
@@ -85,6 +79,6 @@ public class RadixJsonRpcClientTest {
 		jsonRpcClient.getSelf().subscribe(observer);
 
 		observer.assertValueCount(1);
-		observer.assertValue(data -> data.getShards().equals(Shards.range(-1,1)));
+		observer.assertValue(data -> data.getShards().equals(Shards.range(-1, 1)));
 	}
 }

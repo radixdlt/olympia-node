@@ -17,7 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class WebSocketClient extends WebSocketListener {
-	private static final Logger logger = LoggerFactory.getLogger(WebSocketClient.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(WebSocketClient.class);
 
 	private WebSocket webSocket;
 	public enum RadixClientStatus {
@@ -94,8 +94,7 @@ public class WebSocketClient extends WebSocketListener {
 			})
 			.filter(status -> status.equals(RadixClientStatus.OPEN))
 			.firstOrError()
-			.ignoreElement()
-			;
+			.ignoreElement();
 	}
 
 	public boolean send(String message) {
@@ -128,7 +127,7 @@ public class WebSocketClient extends WebSocketListener {
 			return;
 		}
 
-		logger.error(t.toString());
+		LOGGER.error(t.toString());
 		this.status.onNext(RadixClientStatus.FAILURE);
 
 		this.messages.onError(t);

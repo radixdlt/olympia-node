@@ -1,20 +1,21 @@
 package com.radixdlt.client.core.network;
 
-import com.google.gson.*;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState;
 import com.radixdlt.client.core.network.WebSocketClient.RadixClientStatus;
 import com.radixdlt.client.core.serialization.RadixJson;
 import io.reactivex.Observable;
 import io.reactivex.Single;
-import java.lang.reflect.Type;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
-import okhttp3.WebSocketListener;
 import com.radixdlt.client.core.atoms.Atom;
 
 import java.util.UUID;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,13 +26,13 @@ import org.slf4j.LoggerFactory;
  * calls.
  */
 public class RadixJsonRpcClient {
-	private static final Logger logger = LoggerFactory.getLogger(RadixJsonRpcClient.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(RadixJsonRpcClient.class);
 
 	private static class RadixObserver {
 		private final Consumer<JsonObject> onNext;
 		private final Consumer<Throwable> onError;
 
-		public RadixObserver(Consumer<JsonObject> onNext, Consumer<Throwable> onError) {
+		RadixObserver(Consumer<JsonObject> onNext, Consumer<Throwable> onError) {
 			this.onNext = onNext;
 			this.onError = onError;
 		}
@@ -59,15 +60,18 @@ public class RadixJsonRpcClient {
 			.subscribe(status -> {
 				if (status == RadixClientStatus.CLOSED) {
 					if (!observers.isEmpty()) {
-						logger.warn("Websocket closed but observers still exist.");
+						LOGGER.warn("Websocket closed but observers still exist.");
 					}
 
 					if (!jsonRpcMethodCalls.isEmpty()) {
-						logger.warn("Websocket closed but methods still exist.");
+						LOGGER.warn("Websocket closed but methods still exist.");
 					}
 				} else if (status == RadixClientStatus.FAILURE) {
 					// Again, race conditions here
-					this.observers.forEachValue(100, radixObserver -> radixObserver.onError.accept(new RuntimeException("Network failure")));
+					this.observers.forEachValue(
+						100,
+						radixObserver -> radixObserver.onError.accept(new RuntimeException("Network failure"))
+					);
 					this.observers.clear();
 				}
 			});
@@ -86,12 +90,12 @@ public class RadixJsonRpcClient {
 		// TODO: must make this logic from check to close atomic, otherwise race issue occurs
 
 		if (!this.jsonRpcMethodCalls.isEmpty()) {
-			logger.info("Attempt to close " + wsClient.getLocation() + " but methods still being completed.");
+			LOGGER.info("Attempt to close " + wsClient.getLocation() + " but methods still being completed.");
 			return false;
 		}
 
 		if (!this.observers.isEmpty()) {
-			logger.info("Attempt to close " + wsClient.getLocation() + " but observers still subscribed.");
+			LOGGER.info("Attempt to close " + wsClient.getLocation() + " but observers still subscribed.");
 			return false;
 		}
 
@@ -118,7 +122,7 @@ public class RadixJsonRpcClient {
 					jsonRpcMethodCalls.remove(id).accept(json);
 				}
 			} else if (json.has("error")) {
-				logger.error(json.toString());
+				LOGGER.error(json.toString());
 				if (jsonRpcMethodCalls.containsKey(id)) {
 					jsonRpcMethodCalls.remove(id).accept(json);
 				}
@@ -134,7 +138,7 @@ public class RadixJsonRpcClient {
 			final String methodName = json.get("method").getAsString();
 			switch (methodName) {
 				case "Radix.welcome":
-					logger.info(wsClient.getLocation() + " says " + json.get("params"));
+					LOGGER.info(wsClient.getLocation() + " says " + json.get("params"));
 					break;
 				case "Atoms.subscribeUpdate":
 				case "AtomSubmissionState.onNext":
@@ -142,7 +146,11 @@ public class RadixJsonRpcClient {
 					final String subscriberId = params.get("subscriberId").getAsString();
 					RadixObserver observer = observers.get(subscriberId);
 					if (observer == null) {
-						logger.warn("Received {} for subscriberId {} which doesn't exist/has been cancelled.", methodName, subscriberId);
+						LOGGER.warn(
+							"Received {} for subscriberId {} which doesn't exist/has been cancelled.",
+							methodName,
+							subscriberId
+						);
 					} else {
 						observers.get(subscriberId).onNext.accept(params);
 					}
@@ -181,18 +189,17 @@ public class RadixJsonRpcClient {
 						} else {
 							emitter.onError(new RuntimeException(msg.getAsJsonObject().get("error").toString()));
 						}
-					})
-				;
+					});
 			})
 		);
 	}
 
 	public Single<NodeRunnerData> getSelf() {
-		return this.callJsonRpcMethod("Network.getSelf", new TypeToken<NodeRunnerData>(){});
+		return this.callJsonRpcMethod("Network.getSelf", new TypeToken<NodeRunnerData>() { });
 	}
 
 	public Single<List<NodeRunnerData>> getLivePeers() {
-		return this.callJsonRpcMethod("Network.getLivePeers", new TypeToken<List<NodeRunnerData>>(){});
+		return this.callJsonRpcMethod("Network.getLivePeers", new TypeToken<List<NodeRunnerData>>() { });
 	}
 
 	public <T extends Atom> Observable<T> getAtoms(AtomQuery<T> atomQuery) {
@@ -215,10 +222,14 @@ public class RadixJsonRpcClient {
 
 							atoms.iterator().forEachRemaining(rawAtom -> {
 								JsonObject jsonAtom = rawAtom.getAsJsonObject();
-								if (atomQuery.getAtomType().isPresent() && jsonAtom.getAsJsonObject().get("serializer").getAsLong() != atomQuery.getAtomType()
-									.get().getSerializer()) {
-									emitter.onError(new IllegalStateException("Received wrong type of atom!"));
-									return;
+								if (atomQuery.getAtomType().isPresent()) {
+									long serializer = jsonAtom.getAsJsonObject().get("serializer").getAsLong();
+									if (serializer != atomQuery.getAtomType().get().getSerializer()) {
+										emitter.onError(
+											new IllegalStateException("Received wrong type of atom!")
+										);
+										return;
+									}
 								}
 
 								try {
@@ -293,10 +304,13 @@ public class RadixJsonRpcClient {
 								String message = null;
 
 								try {
-									if (json.getAsJsonObject().get("message") != null) {
-										message = json.getAsJsonObject().get("message").getAsString();
+									JsonElement messageElement = json.getAsJsonObject().get("message");
+									if (messageElement != null) {
+										message = messageElement.getAsString();
 									}
-									state = AtomSubmissionState.valueOf(json.getAsJsonObject().get("value").getAsString());
+									state = AtomSubmissionState.valueOf(
+										json.getAsJsonObject().get("value").getAsString()
+									);
 								} catch (IllegalArgumentException e) {
 									state = AtomSubmissionState.UNKNOWN_FAILURE;
 								}
@@ -319,12 +333,30 @@ public class RadixJsonRpcClient {
 						try {
 							JsonObject jsonObject = json.getAsJsonObject();
 							if (jsonObject.has("result")) {
-								emitter.onNext(AtomSubmissionUpdate.now(atom.getHid(), AtomSubmissionState.SUBMITTED));
+								emitter.onNext(
+									AtomSubmissionUpdate.now(
+										atom.getHid(),
+										AtomSubmissionState.SUBMITTED
+									)
+								);
 							} else if (jsonObject.has("error")) {
-								String message = jsonObject.get("error").getAsJsonObject().get("message").getAsString();
-								emitter.onNext(AtomSubmissionUpdate.now(atom.getHid(), AtomSubmissionState.FAILED, message));
+								JsonObject error = jsonObject.get("error").getAsJsonObject();
+								String message = error.get("message").getAsString();
+								emitter.onNext(
+									AtomSubmissionUpdate.now(
+										atom.getHid(),
+										AtomSubmissionState.FAILED,
+										message
+									)
+								);
 							} else {
-								emitter.onNext(AtomSubmissionUpdate.now(atom.getHid(), AtomSubmissionState.FAILED, "Unrecognizable json rpc response " + jsonObject.toString()));
+								emitter.onNext(
+									AtomSubmissionUpdate.now(
+										atom.getHid(),
+										AtomSubmissionState.FAILED,
+										"Unrecognizable json rpc response " + jsonObject.toString()
+									)
+								);
 							}
 						} catch (Exception e) {
 							emitter.onError(e);
@@ -336,7 +368,13 @@ public class RadixJsonRpcClient {
 
 					if (!wsClient.send(gson.toJson(requestObject))) {
 						jsonRpcMethodCalls.remove(uuid);
-						emitter.onNext(AtomSubmissionUpdate.now(atom.getHid(), AtomSubmissionState.FAILED, "Websocket Send Fail"));
+						emitter.onNext(
+							AtomSubmissionUpdate.now(
+								atom.getHid(),
+								AtomSubmissionState.FAILED,
+								"Websocket Send Fail"
+							)
+						);
 					}
 				} catch (Exception e) {
 					e.printStackTrace();
