@@ -8,14 +8,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class PeersFromSeed implements PeerDiscovery {
-	private final static Logger logger = LoggerFactory.getLogger(PeersFromSeed.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(PeersFromSeed.class);
 
 	private final String seed;
 	private final boolean useSSL;
 	private final int port;
 
 	public PeersFromSeed(String seed, int port) {
-		this(seed,true, port);
+		this(seed, true, port);
 	}
 
 	public PeersFromSeed(String seed, boolean useSSL, int port) {
@@ -35,7 +35,7 @@ public class PeersFromSeed implements PeerDiscovery {
 			connectedSeed
 				.map(RadixPeer::getRadixClient)
 				.flatMapSingle(client -> client.getLivePeers().doFinally(client::tryClose))
-				.doOnNext(list -> logger.info("Got peer list " + list))
+				.doOnNext(list -> LOGGER.info("Got peer list " + list))
 				.flatMapIterable(list -> {
 					ArrayList<NodeRunnerData> copyList = new ArrayList<>(list);
 					Collections.shuffle(copyList);
@@ -43,7 +43,6 @@ public class PeersFromSeed implements PeerDiscovery {
 				})
 				.map(data -> new RadixPeer(data.getIp(), useSSL, port).data(data)),
 			rawSeed.toObservable()
-		).distinct(RadixPeer::getLocation)
-		;
+		).distinct(RadixPeer::getLocation);
 	}
 }

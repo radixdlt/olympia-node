@@ -3,12 +3,8 @@ package com.radixdlt.client.core.network;
 import io.reactivex.Maybe;
 import io.reactivex.subjects.SingleSubject;
 import java.util.Set;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class RadixPeer {
-	private final static Logger logger = LoggerFactory.getLogger(RadixPeer.class);
-
 	private final String location;
 	private final RadixJsonRpcClient radixClient;
 	private final SingleSubject<NodeRunnerData> data;

@@ -15,7 +15,7 @@ public class RadixNetworkTest {
 			new RadixPeer("3", false, 8080)
 		));
 
-		IntStream.range(0,10).forEach(i ->
+		IntStream.range(0, 10).forEach(i ->
 			network.getRadixClients()
 				.map(RadixJsonRpcClient::getLocation)
 				.test()

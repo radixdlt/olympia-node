@@ -15,7 +15,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public class AtomBuilder {
-	private final static int MAX_PAYLOAD_SIZE = 1028;
+	private static final int MAX_PAYLOAD_SIZE = 1028;
 
 	private Set<EUID> destinations = new HashSet<>();
 	private List<Particle> particles = new ArrayList<>();
@@ -30,7 +30,8 @@ public class AtomBuilder {
 	private Encryptor encryptor;
 	private Payload payload;
 
-	public AtomBuilder() {}
+	public AtomBuilder() {
+	}
 
 	public AtomBuilder addDestination(EUID euid) {
 		this.destinations.add(euid);
@@ -109,7 +110,11 @@ public class AtomBuilder {
 				}
 
 				if (this.encryptor == null) {
-					this.encryptor = new Encryptor(protectors.stream().map(publicKey -> this.sharedKey.encryptPrivateKey(publicKey)).collect(Collectors.toList()));
+					this.encryptor = new Encryptor(
+						protectors.stream().map(
+							publicKey -> this.sharedKey.encryptPrivateKey(publicKey)).collect(Collectors.toList()
+						)
+					);
 					this.payload = new Payload(this.sharedKey.getPublicKey().encrypt(this.payloadRaw));
 				}
 			} else {

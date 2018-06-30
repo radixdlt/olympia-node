@@ -6,20 +6,20 @@ import java.util.Collections;
 import java.util.Set;
 
 public class Consumable extends AbstractConsumable {
-	public Consumable(long quantity, ECKeyPair owner, long nonce, EUID asset_id) {
-		super(quantity, Collections.singleton(owner), nonce, asset_id);
+	public Consumable(long quantity, ECKeyPair owner, long nonce, EUID assetId) {
+		super(quantity, Collections.singleton(owner), nonce, assetId);
 	}
 
-	public Consumable(long quantity, Set<ECKeyPair> owners, long nonce, EUID asset_id) {
-		super(quantity, owners, nonce, asset_id);
+	public Consumable(long quantity, Set<ECKeyPair> owners, long nonce, EUID assetId) {
+		super(quantity, owners, nonce, assetId);
 	}
 
 	@Override
-	public long signedQuantity() {
-		return quantity();
+	public long getSignedQuantity() {
+		return getQuantity();
 	}
 
 	public Consumer toConsumer() {
-		return new Consumer(quantity, owners, nonce, asset_id);
+		return new Consumer(getQuantity(), getOwners(), getNonce(), getAssetId());
 	}
 }

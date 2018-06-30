@@ -10,13 +10,11 @@ import com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState
 import com.radixdlt.client.core.network.IncreasingRetryTimer;
 import com.radixdlt.client.core.network.RadixNetwork;
 import com.radixdlt.client.core.serialization.RadixJson;
-import io.reactivex.Observable;
 import io.reactivex.functions.Predicate;
 import io.reactivex.observables.ConnectableObservable;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,7 +25,7 @@ import org.slf4j.LoggerFactory;
  * and writing atoms onto the Ledger.
  */
 public class RadixLedger {
-	private static final Logger logger = LoggerFactory.getLogger(RadixLedger.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(RadixLedger.class);
 
 	private final RadixNetwork radixNetwork;
 	private final int magic;
@@ -76,12 +74,12 @@ public class RadixLedger {
 			.doOnError(Throwable::printStackTrace)
 			.retryWhen(new IncreasingRetryTimer())
 			.filter(new Predicate<T>() {
-				final Set<RadixHash> atomsSeen = new HashSet<>();
+				private final Set<RadixHash> atomsSeen = new HashSet<>();
 
 				@Override
 				public boolean test(T t) {
 					if (atomsSeen.contains(t.getHash())) {
-						logger.warn("Atom Already Seen: destination({}) atom({})", destination, t);
+						LOGGER.warn("Atom Already Seen: destination({}) atom({})", destination, t);
 						return false;
 					}
 					atomsSeen.add(t.getHash());
@@ -95,14 +93,18 @@ public class RadixLedger {
 					return true;
 				} catch (AtomValidationException e) {
 					// TODO: Stop stream and mark client as untrustable
-					logger.error(e.toString());
+					LOGGER.error(e.toString());
 					return false;
 				}
 			})
-			.doOnSubscribe(atoms -> logger.info("Atom Query Subscribe: destination({}) class({})", destination, atomClass.getSimpleName()))
+			.doOnSubscribe(
+				atoms -> LOGGER.info(
+					"Atom Query Subscribe: destination({}) class({})",
+					destination, atomClass.getSimpleName()
+				)
+			)
 			.publish()
-			.refCount()
-		;
+			.refCount();
 	}
 
 	/**
@@ -125,12 +127,12 @@ public class RadixLedger {
 			try {
 				RadixAtomValidator.getInstance().validate(atom);
 			} catch (AtomValidationException e) {
-				logger.error(e.toString());
+				LOGGER.error(e.toString());
 			}
 
 			return status.doOnNext(atomSubmissionUpdate -> {
 				if (atomSubmissionUpdate.getState() == AtomSubmissionState.VALIDATION_ERROR) {
-					logger.error(atomSubmissionUpdate.getMessage() + "\n" + RadixJson.getGson().toJson(atom));
+					LOGGER.error(atomSubmissionUpdate.getMessage() + "\n" + RadixJson.getGson().toJson(atom));
 				}
 			});
 		}

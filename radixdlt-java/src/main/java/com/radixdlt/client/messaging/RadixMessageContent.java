@@ -8,12 +8,12 @@ import com.google.gson.JsonSerializer;
 import com.radixdlt.client.core.address.RadixAddress;
 
 public class RadixMessageContent {
-	private final static JsonDeserializer<RadixAddress> addressDeserializer = (json, typeOf, context) -> new RadixAddress(json.getAsString());
-	private final static JsonSerializer<RadixAddress> addressSerializer = (src, typeOf, context) -> new JsonPrimitive(src.toString());
+	private static final JsonDeserializer<RadixAddress> ADDRESS_DESERIALIZER = (json, typeOf, context) -> new RadixAddress(json.getAsString());
+	private static final JsonSerializer<RadixAddress> ADDRESS_SERIALIZER = (src, typeOf, context) -> new JsonPrimitive(src.toString());
 
-	private final static Gson gson = new GsonBuilder()
-		.registerTypeAdapter(RadixAddress.class, addressDeserializer)
-		.registerTypeAdapter(RadixAddress.class, addressSerializer)
+	private static final Gson GSON = new GsonBuilder()
+		.registerTypeAdapter(RadixAddress.class, ADDRESS_DESERIALIZER)
+		.registerTypeAdapter(RadixAddress.class, ADDRESS_SERIALIZER)
 		.create();
 
 	private final RadixAddress to;
@@ -39,11 +39,11 @@ public class RadixMessageContent {
 	}
 
 	public String toJson() {
-		return gson.toJson(this);
+		return GSON.toJson(this);
 	}
 
 	public static RadixMessageContent fromJson(String json) {
-		return gson.fromJson(json, RadixMessageContent.class);
+		return GSON.fromJson(json, RadixMessageContent.class);
 	}
 
 	@Override

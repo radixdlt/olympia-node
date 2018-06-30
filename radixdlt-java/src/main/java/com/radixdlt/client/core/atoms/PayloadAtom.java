@@ -16,7 +16,15 @@ public abstract class PayloadAtom extends Atom {
 		this.encryptor = null;
 	}
 
-	PayloadAtom(List<Particle> particles, Set<EUID> destinations, Payload encrypted, Encryptor encryptor, long timestamp, EUID signatureId, ECSignature signature) {
+	PayloadAtom(
+		List<Particle> particles,
+		Set<EUID> destinations,
+		Payload encrypted,
+		Encryptor encryptor,
+		long timestamp,
+		EUID signatureId,
+		ECSignature signature
+	) {
 		super(particles, destinations, timestamp, signatureId, signature);
 		this.encrypted = encrypted;
 		this.encryptor = encryptor;

@@ -138,7 +138,8 @@ public final class RadixUniverse {
 
 				return systemIdentity;
 			}
-		} catch (IOException e) {}
+		} catch (IOException e) {
+		}
 
 		return Optional.empty();
 	}

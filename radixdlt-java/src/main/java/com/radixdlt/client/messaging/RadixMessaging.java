@@ -7,7 +7,6 @@ import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.ApplicationPayloadAtom;
 import com.radixdlt.client.core.atoms.AtomBuilder;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
-import com.radixdlt.client.core.crypto.CryptoException;
 import com.radixdlt.client.core.identity.RadixIdentities;
 import com.radixdlt.client.core.identity.RadixIdentity;
 import com.radixdlt.client.core.ledger.RadixLedger;
@@ -19,11 +18,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class RadixMessaging {
-	private final static Logger logger = LoggerFactory.getLogger(RadixMessaging.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(RadixMessaging.class);
 
-	public final static String APPLICATION_ID = "radix-messaging";
+	public static final String APPLICATION_ID = "radix-messaging";
 
-	public final static int MAX_MESSAGE_LENGTH = 256;
+	public static final int MAX_MESSAGE_LENGTH = 256;
 
 	/**
 	 * Lock to protect default messaging object
@@ -63,12 +62,11 @@ public class RadixMessaging {
 		return this.getAllMessagesEncrypted(identity.getPublicKey().getUID())
 			.flatMapMaybe(decryptable -> RadixIdentities.decrypt(identity, decryptable)
 				.toMaybe()
-				.doOnError(error -> logger.error(error.toString()))
-				.onErrorComplete())
-			;
+				.doOnError(error -> LOGGER.error(error.toString()))
+				.onErrorComplete());
 	}
 
-	public Observable<GroupedObservable<RadixAddress,RadixMessage>> getAllMessagesDecryptedAndGroupedByParticipants(RadixIdentity identity) {
+	public Observable<GroupedObservable<RadixAddress, RadixMessage>> getAllMessagesDecryptedAndGroupedByParticipants(RadixIdentity identity) {
 		return this.getAllMessagesDecrypted(identity)
 			.groupBy(msg -> msg.getFrom().getPublicKey().equals(identity.getPublicKey()) ? msg.getTo() : msg.getFrom());
 	}
@@ -92,8 +90,7 @@ public class RadixMessaging {
 			.addDestination(fromAddress)
 			.addProtector(toAddress.getPublicKey())
 			.addProtector(fromAddress.getPublicKey())
-			.buildWithPOWFee(ledger.getMagic(), fromIdentity.getPublicKey())
-			;
+			.buildWithPOWFee(ledger.getMagic(), fromIdentity.getPublicKey());
 
 		return fromIdentity.sign(unsignedAtom)
 			.flatMapObservable(ledger::submitAtom);

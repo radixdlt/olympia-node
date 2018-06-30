@@ -4,7 +4,6 @@ import com.radixdlt.client.core.crypto.CryptoException;
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.Encryptor;
 import java.util.Optional;
-import java.util.function.Function;
 
 public class EncryptedPayload {
 	private final Payload payload;

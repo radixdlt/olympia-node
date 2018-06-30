@@ -37,19 +37,17 @@ public class Dson {
 		EUID(7),
 		HASH(8);
 
-		final int value;
+		private final int value;
 
 		Primitive(int value) {
 			this.value = value;
 		}
 	}
 
-	private static byte[] longToByteArray(long value)
-	{
+	private static byte[] longToByteArray(long value) {
 		byte[] result = new byte[8];
 
-		for (int i = 7; i >= 0; i--)
-		{
+		for (int i = 7; i >= 0; i--) {
 			result[i] = (byte) (value & 0xffL);
 			value >>= 8;
 		}
@@ -57,13 +55,14 @@ public class Dson {
 		return result;
 	}
 
-	private static final Dson dson = new Dson();
+	private static final Dson DSON = new Dson();
 
 	public static Dson getInstance() {
-		return dson;
+		return DSON;
 	}
 
-	private Dson() {}
+	private Dson() {
+	}
 
 	private JsonElement parse(ByteBuffer byteBuffer) {
 		int type = byteBuffer.get();
@@ -150,7 +149,7 @@ public class Dson {
 		}
 	};
 
-	private Collector<DsonField,?,byte[]> toByteArray = Collectors.collectingAndThen(Collectors.toList(), list -> {
+	private Collector<DsonField, ?, byte[]> toByteArray = Collectors.collectingAndThen(Collectors.toList(), list -> {
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		list.forEach(dsonField -> {
 			try {
@@ -171,7 +170,7 @@ public class Dson {
 
 		if (o == null) {
 			throw new IllegalArgumentException("Null sent");
-		} if (o instanceof Collection) {
+		} else if (o instanceof Collection) {
 			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 			Collection collection = (Collection) o;
 			for (Object arrayObject : collection) {
@@ -185,23 +184,23 @@ public class Dson {
 			raw = outputStream.toByteArray();
 			type = 6;
 		} else if (o instanceof Long) {
-			raw = longToByteArray((Long)o);
+			raw = longToByteArray((Long) o);
 			type = 2;
 		} else if (o instanceof EUID) {
-			raw = ((EUID)o).bigInteger().toByteArray();
+			raw = ((EUID) o).bigInteger().toByteArray();
 			type = 7;
 		} else if (o instanceof Base64Encoded) {
-			raw = ((Base64Encoded)o).toByteArray();
+			raw = ((Base64Encoded) o).toByteArray();
 			type = 4;
 		} else if (o instanceof String) {
 			raw = ((String) o).getBytes();
 			type = 3;
 		} else if (o instanceof byte[]) {
-			raw = (byte[])o;
+			raw = (byte[]) o;
 			type = 4;
 		} else if (o instanceof Map) {
 
-			final Map<?,?> map = (Map)o;
+			final Map<?, ?> map = (Map) o;
 			Stream<DsonField> fieldStream = map.keySet().stream().map(key -> new DsonField() {
 				@Override
 				public String getName() {

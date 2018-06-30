@@ -39,25 +39,27 @@ public class ECKeyPair {
 		this.privateKey = Arrays.copyOf(privateKey, privateKey.length);
 
 		ECPrivateKey ecPrivateKey;
-		try
-		{
-			ECDomainParameters domain = ECKeyPairGenerator.getDomain(((this.privateKey.length-1)*8));
-			ECPrivateKeySpec privateKeySpec = new ECPrivateKeySpec(new BigInteger(1, this.privateKey), new ECParameterSpec(domain.getCurve(), domain.getG(), domain.getN(), domain.getH()));
+		try {
+			ECDomainParameters domain = ECKeyPairGenerator.getDomain(((this.privateKey.length - 1) * 8));
+			ECPrivateKeySpec privateKeySpec = new ECPrivateKeySpec(
+				new BigInteger(1, this.privateKey),
+				new ECParameterSpec(domain.getCurve(), domain.getG(), domain.getN(), domain.getH())
+			);
 			ecPrivateKey = (ECPrivateKey) KeyFactory.getInstance("EC", "BC").generatePrivate(privateKeySpec);
-		}
-		catch (Exception e)
-		{
+		} catch (Exception e) {
 			throw new RuntimeException(e.getMessage());
 		}
 
-		try
-		{
-			ECDomainParameters domain = ECKeyPairGenerator.getDomain((this.privateKey.length-1)*8);
-			ECPublicKeySpec publicKeySpec = new ECPublicKeySpec(domain.getG().multiply (ecPrivateKey.getD()), new ECParameterSpec(domain.getCurve(), domain.getG(), domain.getN(), domain.getH()));
-			this.publicKey = new ECPublicKey(((org.bouncycastle.jce.interfaces.ECPublicKey) KeyFactory.getInstance("EC", "BC").generatePublic(publicKeySpec)).getQ().getEncoded(true));
-		}
-		catch (Exception e)
-		{
+		try {
+			ECDomainParameters domain = ECKeyPairGenerator.getDomain((this.privateKey.length - 1) * 8);
+			ECPublicKeySpec publicKeySpec = new ECPublicKeySpec(
+				domain.getG().multiply(ecPrivateKey.getD()),
+				new ECParameterSpec(domain.getCurve(), domain.getG(), domain.getN(), domain.getH())
+			);
+			this.publicKey = new ECPublicKey(
+				((org.bouncycastle.jce.interfaces.ECPublicKey) KeyFactory.getInstance("EC", "BC")
+					.generatePublic(publicKeySpec)).getQ().getEncoded(true));
+		} catch (Exception e) {
 			throw new RuntimeException(e.getMessage());
 		}
 	}
@@ -69,25 +71,27 @@ public class ECKeyPair {
 
 		ECPrivateKey privateKey;
 
-		try
-		{
-			ECDomainParameters domain = ECKeyPairGenerator.getDomain(((this.privateKey.length-1)*8));
-			ECPrivateKeySpec privateKeySpec = new ECPrivateKeySpec(new BigInteger(1, this.privateKey), new ECParameterSpec(domain.getCurve(), domain.getG(), domain.getN(), domain.getH()));
+		try {
+			ECDomainParameters domain = ECKeyPairGenerator.getDomain(((this.privateKey.length - 1) * 8));
+			ECPrivateKeySpec privateKeySpec = new ECPrivateKeySpec(
+				new BigInteger(1, this.privateKey),
+				new ECParameterSpec(domain.getCurve(), domain.getG(), domain.getN(), domain.getH())
+			);
 			privateKey = (ECPrivateKey) KeyFactory.getInstance("EC", "BC").generatePrivate(privateKeySpec);
-		}
-		catch (Exception e)
-		{
+		} catch (Exception e) {
 			throw new RuntimeException(e.getMessage());
 		}
 
-		try
-		{
-			ECDomainParameters domain = ECKeyPairGenerator.getDomain((this.privateKey.length-1)*8);
-			ECPublicKeySpec publicKeySpec = new ECPublicKeySpec(domain.getG().multiply (privateKey.getD()), new ECParameterSpec(domain.getCurve(), domain.getG(), domain.getN(), domain.getH()));
-			this.publicKey = new ECPublicKey(((org.bouncycastle.jce.interfaces.ECPublicKey) KeyFactory.getInstance("EC", "BC").generatePublic(publicKeySpec)).getQ().getEncoded(true));
-		}
-		catch (Exception e)
-		{
+		try {
+			ECDomainParameters domain = ECKeyPairGenerator.getDomain((this.privateKey.length - 1) * 8);
+			ECPublicKeySpec publicKeySpec = new ECPublicKeySpec(
+				domain.getG().multiply(privateKey.getD()),
+				new ECParameterSpec(domain.getCurve(), domain.getG(), domain.getN(), domain.getH())
+			);
+			this.publicKey = new ECPublicKey(
+				((org.bouncycastle.jce.interfaces.ECPublicKey) KeyFactory.getInstance("EC", "BC")
+					.generatePublic(publicKeySpec)).getQ().getEncoded(true));
+		} catch (Exception e) {
 			throw new RuntimeException(e.getMessage());
 		}
 	}
@@ -120,9 +124,9 @@ public class ECKeyPair {
 
 	public ECSignature sign(byte[] data) {
 		ECDomainParameters domain = ECKeyPairGenerator.getDomain((getPublicKey().length() - 1) * 8);
-		ECDSASigner signer = new ECDSASigner ();
-		signer.init (true, new ECPrivateKeyParameters(new BigInteger(1, getPrivateKey()), domain));
-		BigInteger[] components = signer.generateSignature (data);
+		ECDSASigner signer = new ECDSASigner();
+		signer.init(true, new ECPrivateKeyParameters(new BigInteger(1, getPrivateKey()), domain));
+		BigInteger[] components = signer.generateSignature(data);
 		ECSignature signature = new ECSignature(components[0], components[1]);
 		return signature;
 	}
@@ -143,20 +147,18 @@ public class ECKeyPair {
 		}
 	}
 
-	public byte[] decrypt(byte[] data) throws MacMismatchException
-	{
+	public byte[] decrypt(byte[] data) throws MacMismatchException {
 		if (privateKey == null) {
 			throw new IllegalStateException("This key does not contain a private key.");
 		}
 
-		try
-		{
+		try {
 			DataInputStream inputStream = new DataInputStream(new ByteArrayInputStream(data));
 
 
 			// 1. Read the IV
-			byte[] IV = new byte[16];
-			inputStream.readFully(IV);
+			byte[] iv = new byte[16];
+			inputStream.readFully(iv);
 
 
 			// 2. Read the ephemeral public key
@@ -166,14 +168,14 @@ public class ECKeyPair {
 			ECPublicKey ephemeral = new ECPublicKey(publicKeyRaw);
 
 			// 3. Do an EC point multiply with this.getPrivateKey() and ephemeral public key. This gives you a point M.
-			ECPoint M = ephemeral.getPublicPoint().multiply(new BigInteger(1, getPrivateKey())).normalize();
+			ECPoint m = ephemeral.getPublicPoint().multiply(new BigInteger(1, getPrivateKey())).normalize();
 
 			// 4. Use the X component of point M and calculate the SHA512 hash H.
-			byte[] H = RadixHash.SHA512of(M.getXCoord().getEncoded()).toByteArray();
+			byte[] h = RadixHash.sha512of(m.getXCoord().getEncoded()).toByteArray();
 
 			// 5. The first 32 bytes of H are called key_e and the last 32 bytes are called key_m.
-			byte[] key_e = Arrays.copyOfRange(H, 0, 32);
-			byte[] key_m = Arrays.copyOfRange(H, 32, 64);
+			byte[] keyE = Arrays.copyOfRange(h, 0, 32);
+			byte[] keyM = Arrays.copyOfRange(h, 32, 64);
 
 			// 6. Read encrypted data
 			byte[] encrypted = new byte[inputStream.readInt()];
@@ -184,17 +186,15 @@ public class ECKeyPair {
 			inputStream.readFully(mac);
 
 			// 7. Compare MAC with MAC'. If not equal, decryption will fail.
-			byte[] pkMac = publicKey.calculateMAC(key_m, IV, ephemeral, encrypted);
+			byte[] pkMac = publicKey.calculateMAC(keyM, iv, ephemeral, encrypted);
 			if (!Arrays.equals(mac, pkMac)) {
 				throw new MacMismatchException(pkMac, mac);
 			}
 
 			// 8. Decrypt the cipher text with AES-256-CBC, using IV as initialization vector, key_e as decryption key
 			//    and the cipher text as payload. The output is the padded input text.
-			return publicKey.crypt(false, IV, encrypted, key_e);
-		}
-		catch (IOException e)
-		{
+			return publicKey.crypt(false, iv, encrypted, keyE);
+		} catch (IOException e) {
 			// TODO: change type of exception thrown
 			throw new RuntimeException("Failed to decrypt", e);
 		}
@@ -212,6 +212,6 @@ public class ECKeyPair {
 
 	@Override
 	public boolean equals(Object o) {
-		return this.publicKey.equals(((ECKeyPair)o).getPublicKey());
+		return this.publicKey.equals(((ECKeyPair) o).getPublicKey());
 	}
 }
