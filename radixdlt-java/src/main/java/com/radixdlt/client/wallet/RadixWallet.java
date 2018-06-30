@@ -6,7 +6,6 @@ import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.AtomBuilder;
 import com.radixdlt.client.core.atoms.Consumable;
-import com.radixdlt.client.core.atoms.IdParticle;
 import com.radixdlt.client.core.atoms.Particle;
 import com.radixdlt.client.core.atoms.TransactionAtom;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
@@ -30,7 +29,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 
@@ -53,14 +51,14 @@ public class RadixWallet {
 
 	private final RadixLedger ledger;
 	private final RadixUniverse universe;
-	private final ConcurrentHashMap<RadixAddress, io.reactivex.Observable<Collection<Consumable>>> cache = new ConcurrentHashMap<>();
+	private final ConcurrentHashMap<RadixAddress, Observable<Collection<Consumable>>> cache = new ConcurrentHashMap<>();
 
 	RadixWallet(RadixUniverse universe) {
 		this.universe = universe;
 		this.ledger = universe.getLedger();
 	}
 
-	io.reactivex.Observable<Collection<Consumable>> getUnconsumedConsumables(RadixAddress address) {
+	Observable<Collection<Consumable>> getUnconsumedConsumables(RadixAddress address) {
 		// TODO: use https://github.com/JakeWharton/RxReplayingShare to disconnect when unsubscribed
 		return cache.computeIfAbsent(address, addr ->
 			io.reactivex.Observable.<Collection<Consumable>>just(Collections.emptySet()).concatWith(
@@ -76,18 +74,18 @@ public class RadixWallet {
 		);
 	}
 
-	public io.reactivex.Observable<Long> getSubUnitBalance(RadixAddress address, EUID assetId) {
+	public Observable<Long> getSubUnitBalance(RadixAddress address, EUID assetId) {
 		return this.getUnconsumedConsumables(address)
 			.map(Collection::stream)
 			.map(stream -> stream
 				.filter(consumable -> consumable.getAssetId().equals(assetId))
-				.mapToLong(Consumable::quantity)
+				.mapToLong(Consumable::getQuantity)
 				.sum()
 			)
 			.share();
 	}
 
-	public io.reactivex.Observable<Long> getSubUnitBalance(RadixAddress address, Asset asset) {
+	public Observable<Long> getSubUnitBalance(RadixAddress address, Asset asset) {
 		return this.getSubUnitBalance(address, asset.getId());
 	}
 
@@ -95,7 +93,7 @@ public class RadixWallet {
 		return this.getSubUnitBalance(address, Asset.XRD.getId());
 	}
 
-	public io.reactivex.Observable<WalletTransaction> getXRDTransactions(RadixAddress address) {
+	public Observable<WalletTransaction> getXRDTransactions(RadixAddress address) {
 		return
 			Observable.combineLatest(
 				Observable.fromCallable(() -> new TransactionAtoms(address, Asset.XRD.getId())),
@@ -108,12 +106,12 @@ public class RadixWallet {
 			.map(atom -> new WalletTransaction(address, atom));
 	}
 
-	public Observable<GroupedObservable<Set<ECPublicKey>,WalletTransaction>> getXRDTransactionsGroupedByParticipants(RadixAddress address) {
+	public Observable<GroupedObservable<Set<ECPublicKey>, WalletTransaction>> getXRDTransactionsGroupedByParticipants(RadixAddress address) {
 		return this.getXRDTransactions(address)
 			.groupBy(transaction ->
 				transaction.getTransactionAtom()
 					.getParticles().stream()
-					.map(Particle::getOwners)
+					.map(Particle::getOwnersPublicKeys)
 					.flatMap(Set::stream)
 					.filter(publicKey -> !address.getPublicKey().equals(publicKey))
 					.distinct()
@@ -166,9 +164,10 @@ public class RadixWallet {
 					final long left = amountInSubUnits - consumerTotal;
 
 					com.radixdlt.client.core.atoms.Consumer newConsumer = iterator.next().toConsumer();
-					consumerTotal += newConsumer.quantity();
+					consumerTotal += newConsumer.getQuantity();
 
-					newConsumer.addConsumerQuantities(Math.min(left, newConsumer.quantity()), Collections.singleton(toAddress.toECKeyPair()),
+					final long amount = Math.min(left, newConsumer.getQuantity());
+					newConsumer.addConsumerQuantities(amount, Collections.singleton(toAddress.toECKeyPair()),
 						consumerQuantities);
 
 					atomBuilder.addParticle(newConsumer);
@@ -192,23 +191,48 @@ public class RadixWallet {
 			});
 	}
 
-	public Observable<AtomSubmissionUpdate> transferXRD(long amountInSubUnits, RadixIdentity fromIdentity, RadixAddress toAddress, Particle extraParticle) {
-		return this.transferXRD(amountInSubUnits, fromIdentity, toAddress, (byte[])null, extraParticle);
+	public Observable<AtomSubmissionUpdate> transferXRD(
+		long amountInSubUnits,
+		RadixIdentity fromIdentity,
+		RadixAddress toAddress,
+		Particle extraParticle
+	) {
+		return this.transferXRD(amountInSubUnits, fromIdentity, toAddress, null, extraParticle);
 	}
 
-	public Observable<AtomSubmissionUpdate> transferXRD(long amountInSubUnits, RadixIdentity fromIdentity, RadixAddress toAddress) {
-		return this.transferXRD(amountInSubUnits, fromIdentity, toAddress, (byte[])null);
+	public Observable<AtomSubmissionUpdate> transferXRD(
+		long amountInSubUnits,
+		RadixIdentity fromIdentity,
+		RadixAddress toAddress
+	) {
+		return this.transferXRD(amountInSubUnits, fromIdentity, toAddress, (byte[]) null);
 	}
 
-	public Observable<AtomSubmissionUpdate> transferXRD(long amountInSubUnits, RadixIdentity fromIdentity, RadixAddress toAddress, String payload) {
+	public Observable<AtomSubmissionUpdate> transferXRD(
+		long amountInSubUnits,
+		RadixIdentity fromIdentity,
+		RadixAddress toAddress,
+		String payload
+	) {
 		return this.transferXRD(amountInSubUnits, fromIdentity, toAddress, payload.getBytes());
 	}
 
-	public Observable<AtomSubmissionUpdate> transferXRD(long amountInSubUnits, RadixIdentity fromIdentity, RadixAddress toAddress, byte[] payload) {
+	public Observable<AtomSubmissionUpdate> transferXRD(
+		long amountInSubUnits,
+		RadixIdentity fromIdentity,
+		RadixAddress toAddress,
+		byte[] payload
+	) {
 		return this.transferXRD(amountInSubUnits, fromIdentity, toAddress, payload, null);
 	}
 
-	public Observable<AtomSubmissionUpdate> transferXRD(long amountInSubUnits, RadixIdentity fromIdentity, RadixAddress toAddress, byte[] payload, Particle extraParticle) {
+	public Observable<AtomSubmissionUpdate> transferXRD(
+		long amountInSubUnits,
+		RadixIdentity fromIdentity,
+		RadixAddress toAddress,
+		byte[] payload,
+		Particle extraParticle
+	) {
 		if (amountInSubUnits <= 0) {
 			throw new IllegalArgumentException("Cannot send negative or 0 XRD.");
 		}
@@ -220,30 +244,54 @@ public class RadixWallet {
 			this.createXRDTransaction(amountInSubUnits, fromAddress, toAddress, payload, true, extraParticle)
 				.flatMap(fromIdentity::sign)
 				.flatMapObservable(ledger::submitAtom)
-				.replay()
-			;
+				.replay();
 		statusObservable.connect();
 		return statusObservable;
 	}
 
-	public Observable<AtomSubmissionUpdate> transferXRDWhenAvailable(long amountInSubUnits, RadixIdentity fromIdentity, RadixAddress toAddress, Particle extraParticle) {
-		return this.transferXRDWhenAvailable(amountInSubUnits, fromIdentity, toAddress, (byte[])null, extraParticle);
+	public Observable<AtomSubmissionUpdate> transferXRDWhenAvailable(
+		long amountInSubUnits,
+		RadixIdentity fromIdentity,
+		RadixAddress toAddress,
+		Particle extraParticle
+	) {
+		return this.transferXRDWhenAvailable(amountInSubUnits, fromIdentity, toAddress, null, extraParticle);
 	}
 
 
-	public Observable<AtomSubmissionUpdate> transferXRDWhenAvailable(long amountInSubUnits, RadixIdentity fromIdentity, RadixAddress toAddress) {
-		return this.transferXRDWhenAvailable(amountInSubUnits, fromIdentity, toAddress, (byte[])null);
+	public Observable<AtomSubmissionUpdate> transferXRDWhenAvailable(
+		long amountInSubUnits,
+		RadixIdentity fromIdentity,
+		RadixAddress toAddress
+	) {
+		return this.transferXRDWhenAvailable(amountInSubUnits, fromIdentity, toAddress, (byte[]) null);
 	}
 
-	public Observable<AtomSubmissionUpdate> transferXRDWhenAvailable(long amountInSubUnits, RadixIdentity fromIdentity, RadixAddress toAddress, String payload) {
+	public Observable<AtomSubmissionUpdate> transferXRDWhenAvailable(
+		long amountInSubUnits,
+		RadixIdentity fromIdentity,
+		RadixAddress toAddress,
+		String payload
+	) {
 		return this.transferXRDWhenAvailable(amountInSubUnits, fromIdentity, toAddress, payload.getBytes());
 	}
 
-	public Observable<AtomSubmissionUpdate> transferXRDWhenAvailable(long amountInSubUnits, RadixIdentity fromIdentity, RadixAddress toAddress, byte[] payload) {
+	public Observable<AtomSubmissionUpdate> transferXRDWhenAvailable(
+		long amountInSubUnits,
+		RadixIdentity fromIdentity,
+		RadixAddress toAddress,
+		byte[] payload
+	) {
 		return this.transferXRDWhenAvailable(amountInSubUnits, fromIdentity, toAddress, payload, null);
 	}
 
-	public Observable<AtomSubmissionUpdate> transferXRDWhenAvailable(long amountInSubUnits, RadixIdentity fromIdentity, RadixAddress toAddress, byte[] payload, Particle extraParticle) {
+	public Observable<AtomSubmissionUpdate> transferXRDWhenAvailable(
+		long amountInSubUnits,
+		RadixIdentity fromIdentity,
+		RadixAddress toAddress,
+		byte[] payload,
+		Particle extraParticle
+	) {
 		if (amountInSubUnits <= 0) {
 			throw new IllegalArgumentException("Cannot send negative or 0 XRD.");
 		}
@@ -253,9 +301,11 @@ public class RadixWallet {
 			.filter(balance -> balance > amountInSubUnits)
 			.firstOrError()
 			.ignoreElement()
-			.andThen(Single.fromCallable(() -> this.transferXRD(amountInSubUnits, fromIdentity, toAddress, payload, extraParticle)).flatMapObservable(t -> t))
-			.replay()
-			;
+			.andThen(
+				Single.fromCallable(
+					() -> this.transferXRD(amountInSubUnits, fromIdentity, toAddress, payload, extraParticle)
+				).flatMapObservable(t -> t))
+			.replay();
 
 		status.connect();
 		return status;

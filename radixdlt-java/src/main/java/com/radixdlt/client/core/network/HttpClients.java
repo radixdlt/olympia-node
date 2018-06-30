@@ -1,22 +1,20 @@
 package com.radixdlt.client.core.network;
 
-import java.security.cert.CertificateException;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.logging.HttpLoggingInterceptor;
 
 public class HttpClients {
-	private HttpClients() {}
+	private HttpClients() {
+	}
 
 	/**
 	 * Single OkHttpClient to be used for all connections
 	 */
-	private static final OkHttpClient okHttpClient;
+	private static final OkHttpClient OK_HTTP_CLIENT;
 
 	/**
 	 * Builds OkHttpClient to be used for secure connections with self signed
@@ -28,14 +26,16 @@ public class HttpClients {
 			final TrustManager[] trustAllCerts = new TrustManager[] {
 				new X509TrustManager() {
 					@Override
-					public void checkClientTrusted(java.security.cert.X509Certificate[] chain, String authType) {}
+					public void checkClientTrusted(java.security.cert.X509Certificate[] chain, String authType) {
+					}
 
 					@Override
-					public void checkServerTrusted(java.security.cert.X509Certificate[] chain, String authType) {}
+					public void checkServerTrusted(java.security.cert.X509Certificate[] chain, String authType) {
+					}
 
 					@Override
 					public java.security.cert.X509Certificate[] getAcceptedIssuers() {
-						return new java.security.cert.X509Certificate[]{};
+						return new java.security.cert.X509Certificate[] {};
 					}
 				}
 			};
@@ -47,17 +47,16 @@ public class HttpClients {
 			final SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
 
 			OkHttpClient.Builder builder = new OkHttpClient.Builder();
-			builder.sslSocketFactory(sslSocketFactory, (X509TrustManager)trustAllCerts[0]);
+			builder.sslSocketFactory(sslSocketFactory, (X509TrustManager) trustAllCerts[0]);
 			builder.hostnameVerifier((hostname, session) -> true);
 
 			builder
 				.connectTimeout(30, TimeUnit.SECONDS)
 				.writeTimeout(30, TimeUnit.SECONDS)
 				.readTimeout(30, TimeUnit.SECONDS)
-				.pingInterval(30, TimeUnit.SECONDS)
-			;
+				.pingInterval(30, TimeUnit.SECONDS);
 
-			okHttpClient = builder.build();
+			OK_HTTP_CLIENT = builder.build();
 
 		} catch (Exception e) {
 			throw new RuntimeException(e);
@@ -65,7 +64,7 @@ public class HttpClients {
 	}
 
 	public static OkHttpClient get() {
-		return okHttpClient;
+		return OK_HTTP_CLIENT;
 	}
 
 }

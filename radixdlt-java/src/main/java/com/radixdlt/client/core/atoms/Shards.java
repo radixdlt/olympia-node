@@ -30,7 +30,7 @@ public class Shards {
 
 	@Override
 	public boolean equals(Object obj) {
-		Shards s = (Shards)obj;
+		Shards s = (Shards) obj;
 		return s.high == this.high && s.low == this.low;
 	}
 

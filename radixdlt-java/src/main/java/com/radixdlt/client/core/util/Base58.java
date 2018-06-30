@@ -4,16 +4,16 @@ import java.math.BigInteger;
 
 public class Base58 {
 
-	private static final char[] b58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz".toCharArray();
+	private static final char[] B58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz".toCharArray();
 
-	private static final int[] r58 = new int[256];
+	private static final int[] R58 = new int[256];
 
 	static {
 		for (int i = 0; i < 256; ++i) {
-			r58[i] = -1;
+			R58[i] = -1;
 		}
-		for (int i = 0; i < b58.length; ++i) {
-			r58[b58[i]] = i;
+		for (int i = 0; i < B58.length; ++i) {
+			R58[B58[i]] = i;
 		}
 	}
 
@@ -37,7 +37,7 @@ public class Base58 {
 		while (n.compareTo(BigInteger.ZERO) > 0) {
 			BigInteger[] r = n.divideAndRemainder(BigInteger.valueOf(58));
 			n = r[0];
-			char digit = b58[r[1].intValue()];
+			char digit = B58[r[1].intValue()];
 			s.append(digit);
 		}
 		while (lz > 0) {
@@ -59,7 +59,7 @@ public class Base58 {
 				} else {
 					leading = false;
 					b = b.multiply(BigInteger.valueOf(58));
-					b = b.add(BigInteger.valueOf(r58[c]));
+					b = b.add(BigInteger.valueOf(R58[c]));
 				}
 			}
 			byte[] encoded = b.toByteArray();

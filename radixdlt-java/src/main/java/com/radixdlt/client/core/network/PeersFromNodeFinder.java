@@ -4,7 +4,6 @@ import io.reactivex.Observable;
 import io.reactivex.Single;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.Request;
@@ -31,8 +30,8 @@ public class PeersFromNodeFinder implements PeerDiscovery {
 				call.enqueue(new Callback() {
 					@Override
 					public void onFailure(Call call, IOException e) {
-																		  emitter.onError(e);
-																							 }
+						emitter.onError(e);
+					}
 
 					@Override
 					public void onResponse(Call call, Response response) throws IOException {
@@ -54,7 +53,6 @@ public class PeersFromNodeFinder implements PeerDiscovery {
 			.map(peerUrl -> new PeersFromSeed(peerUrl, true, port))
 			.flatMapObservable(PeersFromSeed::findPeers)
 			.timeout(3, TimeUnit.SECONDS)
-			.retry(3)
-			;
+			.retry(3);
 	}
 }

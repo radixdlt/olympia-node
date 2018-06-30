@@ -12,12 +12,11 @@ import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class TransactionAtoms {
-	private final static Logger logger = LoggerFactory.getLogger(TransactionAtoms.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(TransactionAtoms.class);
 
 	public class TransactionAtomsUpdate {
 		private final io.reactivex.Observable<TransactionAtom> newValidTransactions;
@@ -49,7 +48,7 @@ public class TransactionAtoms {
 		transactionAtom.getParticles().stream()
 			.filter(Particle::isAbstractConsumable)
 			.map(Particle::getAsAbstractConsumable)
-			.filter(particle -> particle.getOwners().stream().allMatch(address::ownsKey))
+			.filter(particle -> particle.getOwnersPublicKeys().stream().allMatch(address::ownsKey))
 			.filter(particle -> particle.getAssetId().equals(assetId))
 			.forEach(particle -> {
 				ByteBuffer dson = ByteBuffer.wrap(particle.getDson());
@@ -79,7 +78,7 @@ public class TransactionAtoms {
 		Optional<ByteBuffer> missing = transactionAtom.getParticles().stream()
 			.filter(Particle::isAbstractConsumable)
 			.map(Particle::getAsAbstractConsumable)
-			.filter(particle -> particle.getOwners().stream().allMatch(address::ownsKey))
+			.filter(particle -> particle.getOwnersPublicKeys().stream().allMatch(address::ownsKey))
 			.filter(particle -> particle.getAssetId().equals(assetId))
 			.filter(AbstractConsumable::isConsumer)
 			.map(AbstractConsumable::getDson)
@@ -88,7 +87,7 @@ public class TransactionAtoms {
 			.findFirst();
 
 		if (missing.isPresent()) {
-			logger.info("Missing consumable for atom: " + transactionAtom);
+			LOGGER.info("Missing consumable for atom: " + transactionAtom);
 			missingConsumable.compute(missing.get(), (thisHash, current) -> {
 				if (current == null) {
 					return transactionAtom;
@@ -103,12 +102,13 @@ public class TransactionAtoms {
 	}
 
 	public TransactionAtomsUpdate accept(TransactionAtom transactionAtom) {
-		ConnectableObservable<TransactionAtom> observable = io.reactivex.Observable.<TransactionAtom>create(emitter -> {
-			synchronized (TransactionAtoms.this) {
-				checkConsumers(transactionAtom, emitter);
-			}
-			emitter.onComplete();
-		}).replay();
+		ConnectableObservable<TransactionAtom> observable =
+			io.reactivex.Observable.<TransactionAtom>create(emitter -> {
+				synchronized (TransactionAtoms.this) {
+					checkConsumers(transactionAtom, emitter);
+				}
+				emitter.onComplete();
+			}).replay();
 
 		observable.connect();
 

@@ -50,19 +50,29 @@ public class RadixJson {
 		return element;
 	}
 
-	private final static JsonSerializer<Base64Encoded> base64Serializer = (src, typeOfSrc, context) -> serializedValue("BASE64", src.base64());
-	private final static JsonSerializer<EUID> euidSerializer = (uid, typeOfSrc, context) -> serializedValue("EUID", uid.bigInteger().toString());
-	private final static JsonDeserializer<Payload> payloadDeserializer = (json, typeOfT, context) -> Payload.fromBase64(json.getAsJsonObject().get("value").getAsString());
-	private final static JsonDeserializer<ECPublicKey> pkDeserializer = (json, typeOf, context) -> {
+	private static final JsonSerializer<Base64Encoded> BASE64_SERIALIZER =
+		(src, typeOfSrc, context) -> serializedValue("BASE64", src.base64());
+
+	private static final JsonSerializer<EUID> EUID_SERIALIZER =
+		(uid, typeOfSrc, context) -> serializedValue("EUID", uid.bigInteger().toString());
+
+	private static final JsonDeserializer<Payload> PAYLOAD_DESERIALIZER =
+		(json, typeOfT, context) -> Payload.fromBase64(json.getAsJsonObject().get("value").getAsString());
+
+	private static final JsonDeserializer<ECPublicKey> PK_DESERIALIZER = (json, typeOf, context) -> {
 		byte[] publicKey = Base64.decode(json.getAsJsonObject().get("value").getAsString());
 		return new ECPublicKey(publicKey);
 	};
-	private final static JsonDeserializer<EncryptedPrivateKey> protectorDeserializer = (json, typeOf, context) -> {
+
+	private static final JsonDeserializer<EncryptedPrivateKey> PROTECTOR_DESERIALIZER = (json, typeOf, context) -> {
 		byte[] encryptedPrivateKey = Base64.decode(json.getAsJsonObject().get("value").getAsString());
 		return new EncryptedPrivateKey(encryptedPrivateKey);
 	};
-	private final static JsonDeserializer<RadixUniverseType> universeTypeDeserializer = (json, typeOf, context) -> RadixUniverseType.valueOf(json.getAsInt());
-	private final static JsonDeserializer<NodeRunnerData> nodeRunnerDataJsonDeserializer = (json, typeOf, context) -> {
+
+	private static final JsonDeserializer<RadixUniverseType> UNIVERSER_TYPE_DESERIALIZER =
+		(json, typeOf, context) -> RadixUniverseType.valueOf(json.getAsInt());
+
+	private static final JsonDeserializer<NodeRunnerData> NODE_RUNNDER_DATA_JSON_DESERIALIZER = (json, typeOf, context) -> {
 		return new NodeRunnerData(
 			json.getAsJsonObject().has("host") ? json.getAsJsonObject().get("host").getAsJsonObject().get("ip").getAsString() : null,
 			json.getAsJsonObject().get("system").getAsJsonObject().get("shards").getAsJsonObject().get("low").getAsLong(),
@@ -70,7 +80,7 @@ public class RadixJson {
 		);
 	};
 
-	private final static JsonDeserializer<Atom> atomDeserializer = (json, typeOfT, context) -> {
+	private static final JsonDeserializer<Atom> ATOM_DESERIALIZER = (json, typeOfT, context) -> {
 		long serializer = json.getAsJsonObject().get("serializer").getAsLong();
 		Optional<SerializedAtomType> atomType = SerializedAtomType.valueOf(serializer);
 		if (atomType.isPresent()) {
@@ -80,7 +90,7 @@ public class RadixJson {
 		}
 	};
 
-	private final static JsonSerializer<Atom> atomSerializer = (atom, typeOfT, context) -> {
+	private static final JsonSerializer<Atom> ATOM_SERIALIZER = (atom, typeOfT, context) -> {
 		Optional<SerializedAtomType> atomType = SerializedAtomType.valueOf(atom.getClass());
 		if (atomType.isPresent()) {
 			JsonObject jsonAtom = context.serialize(atom).getAsJsonObject();
@@ -94,7 +104,7 @@ public class RadixJson {
 
 
 
-	private final static JsonSerializer<Particle> particleSerializer = (particle, typeOfT, context) -> {
+	private static final JsonSerializer<Particle> PARTICLE_SERIALIZER = (particle, typeOfT, context) -> {
 		if (particle.getClass() == AtomFeeConsumable.class) {
 			JsonObject jsonParticle = context.serialize(particle).getAsJsonObject();
 			jsonParticle.addProperty("serializer", -1463653224);
@@ -131,7 +141,7 @@ public class RadixJson {
 		throw new RuntimeException("Unknown Particle: " + particle.getClass());
 	};
 
-	private final static JsonDeserializer<Particle> particleDeserializer = (json, typeOf, context) -> {
+	private static final JsonDeserializer<Particle> PARTICLE_DESERIALIZER = (json, typeOf, context) -> {
 		long serializer = json.getAsJsonObject().get("serializer").getAsLong();
 		if (serializer == -1463653224) {
 			return context.deserialize(json.getAsJsonObject(), AtomFeeConsumable.class);
@@ -162,17 +172,17 @@ public class RadixJson {
 		}
 	}
 
-	private static Map<Class,Integer> serializers = new HashMap<>();
+	private static final Map<Class, Integer> SERIALIZERS = new HashMap<>();
 	static {
-		serializers.put(ECKeyPair.class, 547221307);
-		serializers.put(ECSignature.class, -434788200);
-		serializers.put(Encryptor.class , 105401064);
+		SERIALIZERS.put(ECKeyPair.class, 547221307);
+		SERIALIZERS.put(ECSignature.class, -434788200);
+		SERIALIZERS.put(Encryptor.class, 105401064);
 	}
 
-	private static TypeAdapterFactory ecKeyPairAdapterFactory = new TypeAdapterFactory() {
+	private static final TypeAdapterFactory ECKEYPAIR_ADAPTER_FACTORY = new TypeAdapterFactory() {
 		@Override
 		public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
-			final Integer serializer = serializers.get(type.getRawType());
+			final Integer serializer = SERIALIZERS.get(type.getRawType());
 			if (serializer == null) {
 				return null;
 			}
@@ -199,31 +209,31 @@ public class RadixJson {
 		}
 	};
 
-	private final static Gson gson;
+	private static final Gson GSON;
 
 	static {
 		GsonBuilder gsonBuilder = new GsonBuilder()
-			.registerTypeHierarchyAdapter(Base64Encoded.class, base64Serializer)
-			.registerTypeAdapterFactory(ecKeyPairAdapterFactory)
+			.registerTypeHierarchyAdapter(Base64Encoded.class, BASE64_SERIALIZER)
+			.registerTypeAdapterFactory(ECKEYPAIR_ADAPTER_FACTORY)
 			.registerTypeAdapter(byte[].class, new ByteArraySerializer())
-			.registerTypeAdapter(Particle.class, particleSerializer)
-			.registerTypeAdapter(Particle.class, particleDeserializer)
-			.registerTypeAdapter(Atom.class, atomSerializer)
-			.registerTypeAdapter(Atom.class, atomDeserializer)
-			.registerTypeAdapter(EUID.class, euidSerializer)
-			.registerTypeAdapter(Payload.class, payloadDeserializer)
-			.registerTypeAdapter(EncryptedPrivateKey.class, protectorDeserializer)
-			.registerTypeAdapter(ECPublicKey.class, pkDeserializer)
-			.registerTypeAdapter(RadixUniverseType.class, universeTypeDeserializer)
-			.registerTypeAdapter(NodeRunnerData.class, nodeRunnerDataJsonDeserializer)
-			;
+			.registerTypeAdapter(Particle.class, PARTICLE_SERIALIZER)
+			.registerTypeAdapter(Particle.class, PARTICLE_DESERIALIZER)
+			.registerTypeAdapter(Atom.class, ATOM_SERIALIZER)
+			.registerTypeAdapter(Atom.class, ATOM_DESERIALIZER)
+			.registerTypeAdapter(EUID.class, EUID_SERIALIZER)
+			.registerTypeAdapter(Payload.class, PAYLOAD_DESERIALIZER)
+			.registerTypeAdapter(EncryptedPrivateKey.class, PROTECTOR_DESERIALIZER)
+			.registerTypeAdapter(ECPublicKey.class, PK_DESERIALIZER)
+			.registerTypeAdapter(RadixUniverseType.class, UNIVERSER_TYPE_DESERIALIZER)
+			.registerTypeAdapter(NodeRunnerData.class, NODE_RUNNDER_DATA_JSON_DESERIALIZER);
 
-		gson = gsonBuilder.create();
+		GSON = gsonBuilder.create();
 	}
 
-	private RadixJson() {}
+	private RadixJson() {
+	}
 
 	public static Gson getGson() {
-		return gson;
+		return GSON;
 	}
 }
