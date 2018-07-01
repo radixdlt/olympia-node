@@ -82,6 +82,10 @@ public class RadixAddress {
 
 	@Override
 	public boolean equals(Object o) {
+		if (o == null || !(o instanceof RadixAddress)) {
+			return false;
+		}
+
 		RadixAddress other = (RadixAddress) o;
 		return other.addressBase58.equals(this.addressBase58);
 	}

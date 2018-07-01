@@ -79,6 +79,10 @@ public class RadixUniverseConfig {
 
 	@Override
 	public boolean equals(Object o) {
+		if (o == null || !(o instanceof RadixUniverseConfig)) {
+			return false;
+		}
+
 		RadixUniverseConfig c = (RadixUniverseConfig) o;
 		if (magic != c.magic) {
 			return false;

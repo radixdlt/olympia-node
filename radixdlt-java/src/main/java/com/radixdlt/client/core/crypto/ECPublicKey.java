@@ -78,8 +78,14 @@ public class ECPublicKey implements Base64Encoded {
 
 	@Override
 	public boolean equals(Object o) {
+		if (o == null || !(o instanceof ECPublicKey)) {
+			return false;
+		}
+
+		ECPublicKey publicKey = (ECPublicKey) o;
+
 		// Slow but works for now
-		return ((ECPublicKey) o).base64().equals(this.base64());
+		return publicKey.base64().equals(this.base64());
 	}
 
 	@Override

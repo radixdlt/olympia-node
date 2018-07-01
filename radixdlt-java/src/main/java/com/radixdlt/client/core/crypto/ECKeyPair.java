@@ -212,6 +212,12 @@ public class ECKeyPair {
 
 	@Override
 	public boolean equals(Object o) {
-		return this.publicKey.equals(((ECKeyPair) o).getPublicKey());
+		if (o == null || !(o instanceof ECKeyPair)) {
+			return false;
+		}
+
+		ECKeyPair ecKeyPair = (ECKeyPair) o;
+
+		return this.publicKey.equals(ecKeyPair.getPublicKey());
 	}
 }

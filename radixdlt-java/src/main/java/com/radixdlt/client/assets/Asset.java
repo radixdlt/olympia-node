@@ -40,6 +40,10 @@ public class Asset {
 
 	@Override
 	public boolean equals(Object o) {
+		if (o == null || !(o instanceof Asset)) {
+			return false;
+		}
+
 		Asset asset = (Asset) o;
 		return this.iso.equals(asset.iso);
 	}

@@ -32,6 +32,10 @@ public class NodeRunnerData {
 
 	@Override
 	public boolean equals(Object o) {
+		if (o == null || !(o instanceof NodeRunnerData)) {
+			return false;
+		}
+
 		NodeRunnerData other = (NodeRunnerData) o;
 		return other.ip.equals(ip) && other.shards.equals(this.shards);
 	}
