@@ -68,8 +68,8 @@ public class RadixLedger {
 
 		final AtomQuery<T> atomQuery = new AtomQuery<>(destination, atomClass);
 		return radixNetwork.getRadixClient(destination.getShard())
-			.doOnSubscribe(client -> LOGGER.info("Looking for client to serve atoms at: " + destination))
-			.doOnSuccess(client -> LOGGER.info("Found client to serve atoms: " + client.getLocation()))
+			//.doOnSubscribe(client -> logger.info("Looking for client to serve atoms at: " + destination))
+			//.doOnSuccess(client -> logger.info("Found client to serve atoms: " + client.getLocation()))
 			.flatMapObservable(client -> client.getAtoms(atomQuery))
 			.doOnError(Throwable::printStackTrace)
 			.retryWhen(new IncreasingRetryTimer())
@@ -117,8 +117,8 @@ public class RadixLedger {
 	 */
 	public io.reactivex.Observable<AtomSubmissionUpdate> submitAtom(Atom atom) {
 		io.reactivex.Observable<AtomSubmissionUpdate> status = radixNetwork.getRadixClient(atom.getRequiredFirstShard())
-			.doOnSubscribe(client -> LOGGER.info("Looking for client to submit atom"))
-			.doOnSuccess(client -> LOGGER.info("Found client to submit atom: " + client.getLocation()))
+			//.doOnSubscribe(client -> logger.info("Looking for client to submit atom"))
+			//.doOnSuccess(client -> logger.info("Found client to submit atom: " + client.getLocation()))
 			.flatMapObservable(client -> client.submitAtom(atom))
 			.doOnError(Throwable::printStackTrace)
 			.retryWhen(new IncreasingRetryTimer());

@@ -1,6 +1,6 @@
 package com.radixdlt.client.core.network;
 
-import com.radixdlt.client.core.network.RadixClient.RadixClientStatus;
+import com.radixdlt.client.core.network.WebSocketClient.RadixClientStatus;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.observables.ConnectableObservable;
@@ -55,15 +55,15 @@ public final class RadixNetwork {
 		return statusUpdates;
 	}
 
-	public Observable<RadixClient> getRadixClients() {
+	public Observable<RadixJsonRpcClient> getRadixClients() {
 		return peers.map(RadixPeer::getRadixClient);
 	}
 
-	public Observable<RadixClient> getRadixClients(Set<Long> shards) {
+	public Observable<RadixJsonRpcClient> getRadixClients(Set<Long> shards) {
 		return peers.flatMapMaybe(peer -> peer.servesShards(shards)).map(RadixPeer::getRadixClient);
 	}
 
-	public Observable<RadixClient> getRadixClients(Long shard) {
+	public Observable<RadixJsonRpcClient> getRadixClients(Long shard) {
 		return this.getRadixClients(Collections.singleton(shard));
 	}
 
@@ -74,7 +74,7 @@ public final class RadixNetwork {
 	 * @param shards set of shards to find an intersection with
 	 * @return a cold observable of the first matching Radix client
 	 */
-	public Single<RadixClient> getRadixClient(Set<Long> shards) {
+	public Single<RadixJsonRpcClient> getRadixClient(Set<Long> shards) {
 		return this.getRadixClients(shards)
 			.flatMapMaybe(client ->
 				client.getStatus()
@@ -93,7 +93,7 @@ public final class RadixNetwork {
 	 * @param shard a shards to find an intersection with
 	 * @return a cold observable of the first matching Radix client
 	 */
-	public Single<RadixClient> getRadixClient(Long shard) {
+	public Single<RadixJsonRpcClient> getRadixClient(Long shard) {
 		return getRadixClient(Collections.singleton(shard));
 	}
 

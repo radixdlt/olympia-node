@@ -28,8 +28,7 @@ public class PeersFromSeed implements PeerDiscovery {
 
 		Single<RadixPeer> rawSeed = Single.just(new RadixPeer(seed, useSSL, port)).cache();
 		Observable<RadixPeer> connectedSeed =
-			rawSeed.flatMap(peer -> peer.getRadixClient().connect().toSingleDefault(peer))
-				.doOnSuccess(peer -> peer.getRadixClient().getSelf().subscribe(peer::data))
+			rawSeed.doOnSuccess(peer -> peer.getRadixClient().getSelf().subscribe(peer::data))
 				.toObservable();
 
 		return Observable.concat(

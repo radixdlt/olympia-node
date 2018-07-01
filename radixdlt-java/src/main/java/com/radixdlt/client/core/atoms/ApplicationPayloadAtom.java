@@ -9,7 +9,7 @@ import java.util.Set;
 public class ApplicationPayloadAtom extends PayloadAtom {
 	private final String applicationId;
 
-	ApplicationPayloadAtom(
+	public ApplicationPayloadAtom(
 		String applicationId,
 		List<Particle> particles,
 		Set<EUID> destinations,
@@ -22,7 +22,7 @@ public class ApplicationPayloadAtom extends PayloadAtom {
 	}
 
 
-	ApplicationPayloadAtom(
+	public ApplicationPayloadAtom(
 		String applicationId,
 		List<Particle> particles,
 		Set<EUID> destinations,

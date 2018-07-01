@@ -6,7 +6,7 @@ import java.util.Set;
 
 public class RadixPeer {
 	private final String location;
-	private final RadixClient radixClient;
+	private final RadixJsonRpcClient radixClient;
 	private final SingleSubject<NodeRunnerData> data;
 
 	public RadixPeer(String location, boolean useSSL, int port) {
@@ -14,9 +14,9 @@ public class RadixPeer {
 		this.location = location;
 
 		if (useSSL) {
-			this.radixClient = new RadixClient(HttpClients::get, "wss://" + location + ":" + port + "/rpc");
+			this.radixClient = new RadixJsonRpcClient(new WebSocketClient(HttpClients::get, "wss://" + location + ":" + port + "/rpc"));
 		} else {
-			this.radixClient = new RadixClient(HttpClients::get, "ws://" + location + ":" + port + "/rpc");
+			this.radixClient = new RadixJsonRpcClient(new WebSocketClient(HttpClients::get, "ws://" + location + ":" + port + "/rpc"));
 		}
 	}
 
@@ -24,7 +24,7 @@ public class RadixPeer {
 		return location;
 	}
 
-	public RadixClient getRadixClient() {
+	public RadixJsonRpcClient getRadixClient() {
 		return radixClient;
 	}
 
