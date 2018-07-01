@@ -4,9 +4,11 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
+import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState;
 import com.radixdlt.client.core.network.WebSocketClient.RadixClientStatus;
 import com.radixdlt.client.core.serialization.RadixJson;
+import io.reactivex.Maybe;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.disposables.Disposable;
@@ -68,14 +70,14 @@ public class RadixJsonRpcClient {
 	}
 
 	/**
-	 * Helper method for calling a JSON RPC method
+	 * Helper method for calling a JSON-RPC method. Deserializes the received json.
 	 *
-	 * @param method name of JSON RPC method
+	 * @param method name of JSON-RPC method
 	 * @param returnType the type this method is expected to return
-	 * @param <T>
+	 * @param <T> the class type this method is expected to return
 	 * @return response from rpc method
 	 */
-	private <T> Single<T> callJsonRpcMethod(String method, TypeToken<T> returnType) {
+	private <T> Single<T> callJsonRpcMethod(String method, JsonObject params, TypeToken<T> returnType) {
 		return this.wsClient.connect().andThen(
 			Single.<T>create(emitter -> {
 				final String uuid = UUID.randomUUID().toString();
@@ -83,7 +85,7 @@ public class RadixJsonRpcClient {
 				JsonObject requestObject = new JsonObject();
 				requestObject.addProperty("id", uuid);
 				requestObject.addProperty("method", method);
-				requestObject.add("params", new JsonObject());
+				requestObject.add("params", params);
 
 				messages
 					.filter(msg -> msg.has("id"))
@@ -111,6 +113,18 @@ public class RadixJsonRpcClient {
 	}
 
 	/**
+	 * Helper method for calling a JSON-RPC method with no parameters. Deserializes the received json.
+	 *
+	 * @param method name of JSON-RPC method
+	 * @param returnType the type this method is expected to return
+	 * @param <T> the class type this method is expected to return
+	 * @return response from rpc method
+	 */
+	private <T> Single<T> callJsonRpcMethod(String method, TypeToken<T> returnType) {
+		return this.callJsonRpcMethod(method, new JsonObject(), returnType);
+	}
+
+	/**
 	 * Retrieve the node data for node we are connected to
 	 *
 	 * @return node data for node we are connected to
@@ -126,6 +140,23 @@ public class RadixJsonRpcClient {
 	 */
 	public Single<List<NodeRunnerData>> getLivePeers() {
 		return this.callJsonRpcMethod("Network.getLivePeers", new TypeToken<List<NodeRunnerData>>() { });
+	}
+
+
+	/**
+	 * Connects to this Radix Node if not already connected and queries for an atom by HID.
+	 * If the node does not carry the atom (e.g. if it does not reside on the same shard) then
+	 * this method will return an empty Maybe.
+	 *
+	 * @param hid the hash id of the atom being queried
+	 * @return the atom if found, if not, return an empty Maybe
+	 */
+	public Maybe<Atom> getAtom(EUID hid) {
+		JsonObject params = new JsonObject();
+		params.addProperty("hid", hid.toString());
+
+		return this.callJsonRpcMethod("Ledger.getAtoms", params, new TypeToken<List<Atom>>() { })
+			.flatMapMaybe(list -> list.isEmpty() ? Maybe.empty() : Maybe.just(list.get(0)));
 	}
 
 	/**

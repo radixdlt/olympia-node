@@ -89,6 +89,82 @@ public class RadixJsonRpcClientTest {
 	}
 
 	@Test
+	public void getAtomDoesNotExistTest() {
+		WebSocketClient wsClient = mock(WebSocketClient.class);
+		when(wsClient.getStatus()).thenReturn(Observable.just(RadixClientStatus.OPEN));
+
+		ReplaySubject<String> messages = ReplaySubject.create();
+		when(wsClient.getMessages()).thenReturn(messages);
+		when(wsClient.connect()).thenReturn(Completable.complete());
+
+		JsonParser parser = new JsonParser();
+		Gson gson = RadixJson.getGson();
+
+		doAnswer(invocation -> {
+			String msg = (String) invocation.getArguments()[0];
+			JsonObject jsonObject = parser.parse(msg).getAsJsonObject();
+			String id = jsonObject.get("id").getAsString();
+
+			JsonArray atoms = new JsonArray();
+
+			JsonObject response = new JsonObject();
+			response.addProperty("id", id);
+			response.add("result", atoms);
+
+			messages.onNext(gson.toJson(response));
+			return true;
+		}).when(wsClient).send(any());
+		RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(wsClient);
+
+		TestObserver<Atom> observer = new TestObserver<>();
+
+		jsonRpcClient.getAtom(new EUID(BigInteger.ONE)).subscribe(observer);
+
+		observer.assertValueCount(0);
+		observer.assertComplete();
+		observer.assertNoErrors();
+	}
+
+	@Test
+	public void getAtomTest() {
+		WebSocketClient wsClient = mock(WebSocketClient.class);
+		when(wsClient.getStatus()).thenReturn(Observable.just(RadixClientStatus.OPEN));
+
+		ReplaySubject<String> messages = ReplaySubject.create();
+		when(wsClient.getMessages()).thenReturn(messages);
+		when(wsClient.connect()).thenReturn(Completable.complete());
+
+		JsonParser parser = new JsonParser();
+		Gson gson = RadixJson.getGson();
+
+		doAnswer(invocation -> {
+			String msg = (String) invocation.getArguments()[0];
+			JsonObject jsonObject = parser.parse(msg).getAsJsonObject();
+			String id = jsonObject.get("id").getAsString();
+
+			JsonArray atoms = new JsonArray();
+			Atom atom = new ApplicationPayloadAtom("Test", null, null, null, null, 1);
+			atoms.add(gson.toJsonTree(atom, Atom.class));
+
+			JsonObject response = new JsonObject();
+			response.addProperty("id", id);
+			response.add("result", atoms);
+
+			messages.onNext(gson.toJson(response));
+			return true;
+		}).when(wsClient).send(any());
+		RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(wsClient);
+
+		TestObserver<Atom> observer = new TestObserver<>();
+
+		jsonRpcClient.getAtom(new EUID(BigInteger.ONE)).subscribe(observer);
+
+		observer.assertValue(atom -> atom.getAsMessageAtom().getApplicationId().equals("Test"));
+		observer.assertComplete();
+		observer.assertNoErrors();
+	}
+
+	@Test
 	public void getAtomsTest() {
 		WebSocketClient wsClient = mock(WebSocketClient.class);
 		when(wsClient.getStatus()).thenReturn(Observable.just(RadixClientStatus.OPEN));
