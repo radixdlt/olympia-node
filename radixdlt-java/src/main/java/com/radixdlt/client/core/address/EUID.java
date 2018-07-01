@@ -27,8 +27,12 @@ public class EUID {
 	}
 
 	@Override
-	public boolean equals(Object object) {
-		EUID other = (EUID) object;
+	public boolean equals(Object o) {
+		if (o == null || !(o instanceof EUID)) {
+			return false;
+		}
+
+		EUID other = (EUID) o;
 		return this.value.equals(other.value);
 	}
 

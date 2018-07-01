@@ -29,8 +29,12 @@ public class Shards {
 	}
 
 	@Override
-	public boolean equals(Object obj) {
-		Shards s = (Shards) obj;
+	public boolean equals(Object o) {
+		if (o == null || !(o instanceof Shards)) {
+			return false;
+		}
+
+		Shards s = (Shards) o;
 		return s.high == this.high && s.low == this.low;
 	}
 
