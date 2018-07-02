@@ -88,7 +88,7 @@ public class AtomBuilder {
 		AtomFeeConsumable fee = new AtomFeeConsumableBuilder()
 			.atom(unsignedAtom)
 			.owner(owner)
-			.pow(magic, (int) Math.ceil(Math.log(size * 8)))
+			.pow(magic, (int) Math.ceil(Math.log(size * 8.0)))
 			.build();
 
 		this.addParticle(fee);

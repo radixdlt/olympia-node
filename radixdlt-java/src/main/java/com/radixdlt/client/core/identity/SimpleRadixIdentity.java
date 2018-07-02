@@ -18,12 +18,12 @@ public class SimpleRadixIdentity implements RadixIdentity {
 
 	public SimpleRadixIdentity(File myKeyFile) throws IOException {
 		if (myKeyFile.exists()) {
-			myKey = new ECKeyPair(myKeyFile);
+			myKey = ECKeyPair.fromFile(myKeyFile);
 		} else {
 			myKey = ECKeyPairGenerator.newInstance().generateKeyPair();
-			FileOutputStream io = new FileOutputStream(myKeyFile);
-			io.write(myKey.getPrivateKey());
-			io.close();
+			try (FileOutputStream io = new FileOutputStream(myKeyFile)) {
+				io.write(myKey.getPrivateKey());
+			}
 		}
 	}
 
