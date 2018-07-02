@@ -172,13 +172,9 @@ public class RadixJsonRpcClient {
 		return this.wsClient.connect().andThen(
 			Observable.create(emitter -> {
 				final String uuid = UUID.randomUUID().toString();
-				JsonObject requestObject = new JsonObject();
-				requestObject.addProperty("id", uuid);
-				requestObject.addProperty("method", "Atoms.subscribe");
-				JsonObject params = new JsonObject();
+				final JsonObject params = new JsonObject();
 				params.addProperty("subscriberId", uuid);
 				params.add("query", atomQuery.toJson());
-				requestObject.add("params", params);
 
 				Disposable subscriptionDisposable = messages
 					.filter(msg -> msg.has("method"))
@@ -198,27 +194,17 @@ public class RadixJsonRpcClient {
 						emitter::onError
 					);
 
-				Disposable methodDisposable = messages
-					.filter(msg -> msg.has("id"))
-					.filter(msg -> msg.get("id").getAsString().equals(uuid))
-					.firstOrError()
-					.doOnSubscribe(disposable -> {
-						boolean sendSuccess = wsClient.send(RadixJson.getGson().toJson(requestObject));
-						if (!sendSuccess) {
-							disposable.dispose();
-							emitter.onError(new RuntimeException("Could not connect."));
-						}
-					})
-					.subscribe(msg -> {
-						if (msg.getAsJsonObject().has("result")) {
-							return;
-						} else {
-							// TODO: Better error message
-							String err = msg.getAsJsonObject().get("error").toString();
-							emitter.onError(new RuntimeException("JSON RPC Error: " + err));
-						}
-					});
-
+				Disposable methodDisposable = this.callJsonRpcMethod("Atoms.subscribe", params)
+					.subscribe(
+						msg -> {
+							if (!msg.getAsJsonObject().has("result")) {
+								// TODO: Better error message
+								String err = msg.getAsJsonObject().get("error").toString();
+								emitter.onError(new RuntimeException("JSON RPC Error: " + err));
+							}
+						},
+						emitter::onError
+					);
 
 				emitter.setCancellable(() -> {
 					methodDisposable.dispose();
@@ -281,40 +267,22 @@ public class RadixJsonRpcClient {
 						emitter::onComplete
 					);
 
-				Disposable methodDisposable = messages
-					.filter(msg -> msg.has("id"))
-					.filter(msg -> msg.get("id").getAsString().equals(uuid))
-					.firstOrError()
-					.doOnSubscribe(disposable -> {
-						boolean sendSuccess = wsClient.send(RadixJson.getGson().toJson(requestObject));
-						if (!sendSuccess) {
-							disposable.dispose();
-							emitter.onError(new RuntimeException("Could not connect."));
-						} else {
-							emitter.onNext(AtomSubmissionUpdate.now(atom.getHid(), AtomSubmissionState.SUBMITTING));
-						}
-					})
-					.subscribe(msg -> {
-						if (msg.getAsJsonObject().has("result")) {
-							emitter.onNext(
-								AtomSubmissionUpdate.now(
-									atom.getHid(),
-									AtomSubmissionState.SUBMITTED
-								)
-							);
-						} else {
-							JsonObject error = msg.getAsJsonObject().get("error").getAsJsonObject();
-							String message = error.get("message").getAsString();
+
+				Disposable methodDisposable = this.callJsonRpcMethod("Atoms.subscribe", params)
+					.doOnSubscribe(disposable -> emitter.onNext(AtomSubmissionUpdate.now(atom.getHid(), AtomSubmissionState.SUBMITTING)))
+					.subscribe(
+						msg -> emitter.onNext(AtomSubmissionUpdate.now(atom.getHid(), AtomSubmissionState.SUBMITTED)),
+						throwable -> {
 							emitter.onNext(
 								AtomSubmissionUpdate.now(
 									atom.getHid(),
 									AtomSubmissionState.FAILED,
-									message
+									throwable.getMessage()
 								)
 							);
 							emitter.onComplete();
 						}
-					});
+					);
 
 				emitter.setCancellable(() -> {
 					methodDisposable.dispose();
