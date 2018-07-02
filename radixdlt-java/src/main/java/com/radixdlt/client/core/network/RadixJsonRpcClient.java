@@ -75,7 +75,7 @@ public class RadixJsonRpcClient {
 	 * @param method name of JSON-RPC method
 	 * @return response from rpc method
 	 */
-	private Single<JsonElement> callJsonRpcMethod(String method, JsonObject params) {
+	private Single<JsonElement> jsonRpcCall(String method, JsonObject params) {
 		return this.wsClient.connect().andThen(
 			Single.<JsonElement>create(emitter -> {
 				final String uuid = UUID.randomUUID().toString();
@@ -118,8 +118,8 @@ public class RadixJsonRpcClient {
 	 * @param method name of JSON-RPC method
 	 * @return response from rpc method
 	 */
-	private Single<JsonElement> callJsonRpcMethod(String method) {
-		return this.callJsonRpcMethod(method, new JsonObject());
+	private Single<JsonElement> jsonRpcCall(String method) {
+		return this.jsonRpcCall(method, new JsonObject());
 	}
 
 	/**
@@ -128,7 +128,7 @@ public class RadixJsonRpcClient {
 	 * @return node data for node we are connected to
 	 */
 	public Single<NodeRunnerData> getSelf() {
-		return this.callJsonRpcMethod("Network.getSelf")
+		return this.jsonRpcCall("Network.getSelf")
 			.map(result -> RadixJson.getGson().fromJson(result, NodeRunnerData.class));
 	}
 
@@ -138,7 +138,7 @@ public class RadixJsonRpcClient {
 	 * @return list of nodes this node knows about
 	 */
 	public Single<List<NodeRunnerData>> getLivePeers() {
-		return this.callJsonRpcMethod("Network.getLivePeers")
+		return this.jsonRpcCall("Network.getLivePeers")
 			.map(result -> RadixJson.getGson().fromJson(result, new TypeToken<List<NodeRunnerData>>() { }.getType()));
 	}
 
@@ -155,9 +155,20 @@ public class RadixJsonRpcClient {
 		JsonObject params = new JsonObject();
 		params.addProperty("hid", hid.toString());
 
-		return this.callJsonRpcMethod("Ledger.getAtoms", params)
+		return this.jsonRpcCall("Ledger.getAtoms", params)
 			.<List<Atom>>map(result -> RadixJson.getGson().fromJson(result, new TypeToken<List<Atom>>() { }.getType()))
 			.flatMapMaybe(list -> list.isEmpty() ? Maybe.empty() : Maybe.just(list.get(0)));
+	}
+
+	/**
+	 * Generic helper method for creating a subscription via JSON-RPC.
+	 *
+	 * @param method name of subscription method
+	 * @param notificationMethod name of the JSON-RPC notification method
+	 * @return Observable of emitted subscription json elements
+	 */
+	public Observable<JsonElement> jsonRpcSubscribe(String method, String notificationMethod) {
+		return this.jsonRpcSubscribe(method, new JsonObject(), notificationMethod);
 	}
 
 	/**
@@ -168,7 +179,7 @@ public class RadixJsonRpcClient {
 	 * @param notificationMethod name of the JSON-RPC notification method
 	 * @return Observable of emitted subscription json elements
 	 */
-	private Observable<JsonElement> subscribeJsonRpc(String method, JsonObject rawParams, String notificationMethod) {
+	public Observable<JsonElement> jsonRpcSubscribe(String method, JsonObject rawParams, String notificationMethod) {
 		return this.wsClient.connect().andThen(
 			Observable.create(emitter -> {
 				final String subscriberId = UUID.randomUUID().toString();
@@ -185,15 +196,9 @@ public class RadixJsonRpcClient {
 						emitter::onError
 					);
 
-				Disposable methodDisposable = this.callJsonRpcMethod(method, params)
+				Disposable methodDisposable = this.jsonRpcCall(method, params)
 					.subscribe(
-						msg -> {
-							if (!msg.getAsJsonObject().has("result")) {
-								// TODO: Better error message
-								String err = msg.getAsJsonObject().get("error").toString();
-								emitter.onError(new RuntimeException("JSON RPC Error: " + err));
-							}
-						},
+						msg -> { },
 						emitter::onError
 					);
 
@@ -226,7 +231,7 @@ public class RadixJsonRpcClient {
 		final JsonObject params = new JsonObject();
 		params.add("query", atomQuery.toJson());
 
-		return this.subscribeJsonRpc("Atoms.subscribe", params, "Atoms.subscribeUpdate")
+		return this.jsonRpcSubscribe("Atoms.subscribe", params, "Atoms.subscribeUpdate")
 			.map(p -> p.getAsJsonObject().get("atoms").getAsJsonArray())
 			.flatMapIterable(array -> array)
 			.map(JsonElement::getAsJsonObject)
@@ -282,7 +287,7 @@ public class RadixJsonRpcClient {
 					);
 
 
-				Disposable methodDisposable = this.callJsonRpcMethod("Atoms.subscribe", params)
+				Disposable methodDisposable = this.jsonRpcCall("Atoms.subscribe", params)
 					.doOnSubscribe(
 						disposable -> emitter.onNext(
 							AtomSubmissionUpdate.now(atom.getHid(), AtomSubmissionState.SUBMITTING)
