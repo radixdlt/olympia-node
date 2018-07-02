@@ -70,7 +70,7 @@ public class RadixJsonRpcClient {
 	}
 
 	/**
-	 * Helper method for calling a JSON-RPC method. Deserializes the received json.
+	 * Generic helper method for calling a JSON-RPC method. Deserializes the received json.
 	 *
 	 * @param method name of JSON-RPC method
 	 * @return response from rpc method
@@ -100,7 +100,7 @@ public class RadixJsonRpcClient {
 						final JsonObject received = msg.getAsJsonObject();
 						if (received.has("result")) {
 							emitter.onSuccess(received.get("result"));
-						} else if (received.has("error")){
+						} else if (received.has("error")) {
 							emitter.onError(new RuntimeException(received.toString()));
 						} else {
 							emitter.onError(
@@ -113,12 +113,12 @@ public class RadixJsonRpcClient {
 	}
 
 	/**
-	 * Helper method for calling a JSON-RPC method with no parameters. Deserializes the received json.
+	 * Generic helper method for calling a JSON-RPC method with no parameters. Deserializes the received json.
 	 *
 	 * @param method name of JSON-RPC method
 	 * @return response from rpc method
 	 */
-	public Single<JsonElement> callJsonRpcMethod(String method) {
+	private Single<JsonElement> callJsonRpcMethod(String method) {
 		return this.callJsonRpcMethod(method, new JsonObject());
 	}
 
@@ -161,40 +161,31 @@ public class RadixJsonRpcClient {
 	}
 
 	/**
-	 *  Retrieves all atoms from a node specified by a query. This includes all past
-	 *  and future atoms. The Observable returned will never complete.
+	 * Generic helper method for creating a subscription via JSON-RPC.
 	 *
-	 * @param atomQuery query specifying which atoms to retrieve
-	 * @param <T> atom type
-	 * @return observable of atoms
+	 * @param method name of subscription method
+	 * @param rawParams parameters to subscription method
+	 * @param notificationMethod name of the JSON-RPC notification method
+	 * @return Observable of emitted subscription json elements
 	 */
-	public <T extends Atom> Observable<T> getAtoms(AtomQuery<T> atomQuery) {
+	private Observable<JsonElement> subscribeJsonRpc(String method, JsonObject rawParams, String notificationMethod) {
 		return this.wsClient.connect().andThen(
 			Observable.create(emitter -> {
-				final String uuid = UUID.randomUUID().toString();
-				final JsonObject params = new JsonObject();
-				params.addProperty("subscriberId", uuid);
-				params.add("query", atomQuery.toJson());
+				final String subscriberId = UUID.randomUUID().toString();
+				final JsonObject params = rawParams.deepCopy();
+				params.addProperty("subscriberId", subscriberId);
 
 				Disposable subscriptionDisposable = messages
 					.filter(msg -> msg.has("method"))
-					.filter(msg -> msg.get("method").getAsString().equals("Atoms.subscribeUpdate"))
+					.filter(msg -> msg.get("method").getAsString().equals(notificationMethod))
 					.map(msg -> msg.get("params").getAsJsonObject())
-					.filter(p -> p.get("subscriberId").getAsString().equals(uuid))
-					.map(p -> p.get("atoms").getAsJsonArray())
-					.flatMapIterable(array -> array)
-					.map(JsonElement::getAsJsonObject)
-					.map(jsonAtom -> RadixJson.getGson().fromJson(jsonAtom, atomQuery.getAtomClass()))
-					.map(atom -> {
-						atom.putDebug("RECEIVED", System.currentTimeMillis());
-						return atom;
-					})
+					.filter(p -> p.get("subscriberId").getAsString().equals(subscriberId))
 					.subscribe(
 						emitter::onNext,
 						emitter::onError
 					);
 
-				Disposable methodDisposable = this.callJsonRpcMethod("Atoms.subscribe", params)
+				Disposable methodDisposable = this.callJsonRpcMethod(method, params)
 					.subscribe(
 						msg -> {
 							if (!msg.getAsJsonObject().has("result")) {
@@ -213,14 +204,37 @@ public class RadixJsonRpcClient {
 					final String cancelUuid = UUID.randomUUID().toString();
 					JsonObject cancelObject = new JsonObject();
 					cancelObject.addProperty("id", cancelUuid);
-					cancelObject.addProperty("method", "Atoms.cancel");
+					cancelObject.addProperty("method", "Subscription.cancel");
 					JsonObject cancelParams = new JsonObject();
-					cancelParams.addProperty("subscriberId", uuid);
+					cancelParams.addProperty("subscriberId", subscriberId);
 					cancelObject.add("params", cancelParams);
 					wsClient.send(RadixJson.getGson().toJson(cancelObject));
 				});
 			})
 		);
+	}
+
+	/**
+	 *  Retrieves all atoms from a node specified by a query. This includes all past
+	 *  and future atoms. The Observable returned will never complete.
+	 *
+	 * @param atomQuery query specifying which atoms to retrieve
+	 * @param <T> atom type
+	 * @return observable of atoms
+	 */
+	public <T extends Atom> Observable<T> getAtoms(AtomQuery<T> atomQuery) {
+		final JsonObject params = new JsonObject();
+		params.add("query", atomQuery.toJson());
+
+		return this.subscribeJsonRpc("Atoms.subscribe", params, "Atoms.subscribeUpdate")
+			.map(p -> p.getAsJsonObject().get("atoms").getAsJsonArray())
+			.flatMapIterable(array -> array)
+			.map(JsonElement::getAsJsonObject)
+			.map(jsonAtom -> RadixJson.getGson().fromJson(jsonAtom, atomQuery.getAtomClass()))
+			.map(atom -> {
+				atom.putDebug("RECEIVED", System.currentTimeMillis());
+				return atom;
+			});
 	}
 
 	/**
@@ -269,7 +283,11 @@ public class RadixJsonRpcClient {
 
 
 				Disposable methodDisposable = this.callJsonRpcMethod("Atoms.subscribe", params)
-					.doOnSubscribe(disposable -> emitter.onNext(AtomSubmissionUpdate.now(atom.getHid(), AtomSubmissionState.SUBMITTING)))
+					.doOnSubscribe(
+						disposable -> emitter.onNext(
+							AtomSubmissionUpdate.now(atom.getHid(), AtomSubmissionState.SUBMITTING)
+						)
+					)
 					.subscribe(
 						msg -> emitter.onNext(AtomSubmissionUpdate.now(atom.getHid(), AtomSubmissionState.SUBMITTED)),
 						throwable -> {
