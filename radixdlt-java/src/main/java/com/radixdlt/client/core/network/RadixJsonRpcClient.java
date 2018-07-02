@@ -73,13 +73,11 @@ public class RadixJsonRpcClient {
 	 * Helper method for calling a JSON-RPC method. Deserializes the received json.
 	 *
 	 * @param method name of JSON-RPC method
-	 * @param returnType the type this method is expected to return
-	 * @param <T> the class type this method is expected to return
 	 * @return response from rpc method
 	 */
-	private <T> Single<T> callJsonRpcMethod(String method, JsonObject params, TypeToken<T> returnType) {
+	private Single<JsonElement> callJsonRpcMethod(String method, JsonObject params) {
 		return this.wsClient.connect().andThen(
-			Single.<T>create(emitter -> {
+			Single.<JsonElement>create(emitter -> {
 				final String uuid = UUID.randomUUID().toString();
 
 				JsonObject requestObject = new JsonObject();
@@ -99,13 +97,15 @@ public class RadixJsonRpcClient {
 						}
 					})
 					.subscribe(msg -> {
-						if (msg.getAsJsonObject().has("result")) {
-							T data = RadixJson.getGson().fromJson(
-								msg.getAsJsonObject().get("result"), returnType.getType()
-							);
-							emitter.onSuccess(data);
+						final JsonObject received = msg.getAsJsonObject();
+						if (received.has("result")) {
+							emitter.onSuccess(received.get("result"));
+						} else if (received.has("error")){
+							emitter.onError(new RuntimeException(received.toString()));
 						} else {
-							emitter.onError(new RuntimeException(msg.getAsJsonObject().get("error").toString()));
+							emitter.onError(
+								new RuntimeException("Received bad json rpc message: " + received.toString())
+							);
 						}
 					});
 			})
@@ -116,12 +116,10 @@ public class RadixJsonRpcClient {
 	 * Helper method for calling a JSON-RPC method with no parameters. Deserializes the received json.
 	 *
 	 * @param method name of JSON-RPC method
-	 * @param returnType the type this method is expected to return
-	 * @param <T> the class type this method is expected to return
 	 * @return response from rpc method
 	 */
-	private <T> Single<T> callJsonRpcMethod(String method, TypeToken<T> returnType) {
-		return this.callJsonRpcMethod(method, new JsonObject(), returnType);
+	public Single<JsonElement> callJsonRpcMethod(String method) {
+		return this.callJsonRpcMethod(method, new JsonObject());
 	}
 
 	/**
@@ -130,7 +128,8 @@ public class RadixJsonRpcClient {
 	 * @return node data for node we are connected to
 	 */
 	public Single<NodeRunnerData> getSelf() {
-		return this.callJsonRpcMethod("Network.getSelf", new TypeToken<NodeRunnerData>() { });
+		return this.callJsonRpcMethod("Network.getSelf")
+			.map(result -> RadixJson.getGson().fromJson(result, NodeRunnerData.class));
 	}
 
 	/**
@@ -139,7 +138,8 @@ public class RadixJsonRpcClient {
 	 * @return list of nodes this node knows about
 	 */
 	public Single<List<NodeRunnerData>> getLivePeers() {
-		return this.callJsonRpcMethod("Network.getLivePeers", new TypeToken<List<NodeRunnerData>>() { });
+		return this.callJsonRpcMethod("Network.getLivePeers")
+			.map(result -> RadixJson.getGson().fromJson(result, new TypeToken<List<NodeRunnerData>>() { }.getType()));
 	}
 
 
@@ -155,7 +155,8 @@ public class RadixJsonRpcClient {
 		JsonObject params = new JsonObject();
 		params.addProperty("hid", hid.toString());
 
-		return this.callJsonRpcMethod("Ledger.getAtoms", params, new TypeToken<List<Atom>>() { })
+		return this.callJsonRpcMethod("Ledger.getAtoms", params)
+			.<List<Atom>>map(result -> RadixJson.getGson().fromJson(result, new TypeToken<List<Atom>>() { }.getType()))
 			.flatMapMaybe(list -> list.isEmpty() ? Maybe.empty() : Maybe.just(list.get(0)));
 	}
 
