@@ -110,32 +110,14 @@ public final class PrivateKeyEncrypter {
     }
 
     private static Keystore getKeystore(String filePath) throws Exception {
-        JsonReader reader;
-        try {
-            reader = new JsonReader(new FileReader(filePath));
-
+        try (JsonReader reader = new JsonReader(new FileReader(filePath))) {
             return new Gson().fromJson(reader, Keystore.class);
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new Exception();
         }
     }
 
-    private static void createFile(String fileContents, String filePath) {
-        FileWriter writer = null;
-        try {
-            writer = new FileWriter(filePath);
+    private static void createFile(String fileContents, String filePath) throws IOException {
+        try (FileWriter writer = new FileWriter(filePath)) {
             writer.write(fileContents);
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            if (writer != null) {
-                try {
-                    writer.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
         }
     }
 

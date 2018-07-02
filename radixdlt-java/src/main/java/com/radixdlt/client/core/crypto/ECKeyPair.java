@@ -3,6 +3,7 @@ package com.radixdlt.client.core.crypto;
 import com.google.gson.annotations.SerializedName;
 import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.atoms.RadixHash;
+import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.File;
@@ -64,35 +65,16 @@ public class ECKeyPair {
 		}
 	}
 
-	public ECKeyPair(File file) throws IOException {
-		FileInputStream io = new FileInputStream(file);
-		this.privateKey = new byte[32];
-		io.read(this.privateKey);
+	public static ECKeyPair fromFile(File file) throws IOException {
+		try (BufferedInputStream io = new BufferedInputStream(new FileInputStream(file))) {
+			byte[] privateKey = new byte[32];
+			int len = io.read(privateKey, 0, 32);
 
-		ECPrivateKey privateKey;
+			if (len < 32) {
+				throw new IllegalStateException("Private Key file must be 32 bytes");
+			}
 
-		try {
-			ECDomainParameters domain = ECKeyPairGenerator.getDomain(((this.privateKey.length - 1) * 8));
-			ECPrivateKeySpec privateKeySpec = new ECPrivateKeySpec(
-				new BigInteger(1, this.privateKey),
-				new ECParameterSpec(domain.getCurve(), domain.getG(), domain.getN(), domain.getH())
-			);
-			privateKey = (ECPrivateKey) KeyFactory.getInstance("EC", "BC").generatePrivate(privateKeySpec);
-		} catch (Exception e) {
-			throw new RuntimeException(e.getMessage());
-		}
-
-		try {
-			ECDomainParameters domain = ECKeyPairGenerator.getDomain((this.privateKey.length - 1) * 8);
-			ECPublicKeySpec publicKeySpec = new ECPublicKeySpec(
-				domain.getG().multiply(privateKey.getD()),
-				new ECParameterSpec(domain.getCurve(), domain.getG(), domain.getN(), domain.getH())
-			);
-			this.publicKey = new ECPublicKey(
-				((org.bouncycastle.jce.interfaces.ECPublicKey) KeyFactory.getInstance("EC", "BC")
-					.generatePublic(publicKeySpec)).getQ().getEncoded(true));
-		} catch (Exception e) {
-			throw new RuntimeException(e.getMessage());
+			return new ECKeyPair(privateKey);
 		}
 	}
 
