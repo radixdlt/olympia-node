@@ -255,20 +255,16 @@ public class RadixJsonRpcClient {
 			Observable.<AtomSubmissionUpdate>create(emitter -> {
 				JsonElement jsonAtom = RadixJson.getGson().toJsonTree(atom, Atom.class);
 
-				final String uuid = UUID.randomUUID().toString();
-				JsonObject requestObject = new JsonObject();
-				requestObject.addProperty("id", uuid);
+				final String subscriberId = UUID.randomUUID().toString();
 				JsonObject params = new JsonObject();
-				params.addProperty("subscriberId", uuid);
+				params.addProperty("subscriberId", subscriberId);
 				params.add("atom", jsonAtom);
-				requestObject.add("params", params);
-				requestObject.addProperty("method", "Universe.submitAtomAndSubscribe");
 
 				Disposable subscriptionDisposable = messages
 					.filter(msg -> msg.has("method"))
 					.filter(msg -> msg.get("method").getAsString().equals("AtomSubmissionState.onNext"))
 					.map(msg -> msg.get("params").getAsJsonObject())
-					.filter(p -> p.get("subscriberId").getAsString().equals(uuid))
+					.filter(p -> p.get("subscriberId").getAsString().equals(subscriberId))
 					.map(p -> {
 						final AtomSubmissionState state = AtomSubmissionState.valueOf(p.get("value").getAsString());
 						final String message;
@@ -287,7 +283,7 @@ public class RadixJsonRpcClient {
 					);
 
 
-				Disposable methodDisposable = this.jsonRpcCall("Atoms.subscribe", params)
+				Disposable methodDisposable = this.jsonRpcCall("Universe.submitAtomAndSubscribe", params)
 					.doOnSubscribe(
 						disposable -> emitter.onNext(
 							AtomSubmissionUpdate.now(atom.getHid(), AtomSubmissionState.SUBMITTING)

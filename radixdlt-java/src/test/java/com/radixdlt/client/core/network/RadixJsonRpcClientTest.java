@@ -292,23 +292,27 @@ public class RadixJsonRpcClientTest {
 			String msg = (String) invocation.getArguments()[0];
 			JsonObject jsonObject = parser.parse(msg).getAsJsonObject();
 			String id = jsonObject.get("id").getAsString();
+			String method = jsonObject.get("method").getAsString();
 
-			JsonObject response = new JsonObject();
-			response.addProperty("id", id);
-			response.add("result", new JsonObject());
+			if (method.equals("Universe.submitAtomAndSubscribe")) {
+				JsonObject response = new JsonObject();
+				response.addProperty("id", id);
+				response.add("result", new JsonObject());
 
-			messages.onNext(gson.toJson(response));
+				messages.onNext(gson.toJson(response));
 
-			String subscriberId = jsonObject.get("params").getAsJsonObject().get("subscriberId").getAsString();
-			JsonObject notification = new JsonObject();
-			notification.addProperty("method", "AtomSubmissionState.onNext");
-			JsonObject params = new JsonObject();
-			params.addProperty("subscriberId", subscriberId);
-			params.addProperty("value", "STORED");
+				String subscriberId = jsonObject.get("params").getAsJsonObject().get("subscriberId").getAsString();
+				JsonObject notification = new JsonObject();
+				notification.addProperty("method", "AtomSubmissionState.onNext");
+				JsonObject params = new JsonObject();
+				params.addProperty("subscriberId", subscriberId);
+				params.addProperty("value", "STORED");
 
-			notification.add("params", params);
+				notification.add("params", params);
 
-			messages.onNext(gson.toJson(notification));
+				messages.onNext(gson.toJson(notification));
+			}
+
 			return true;
 		}).when(wsClient).send(any());
 		RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(wsClient);
