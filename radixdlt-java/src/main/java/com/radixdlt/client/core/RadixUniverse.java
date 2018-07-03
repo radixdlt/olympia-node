@@ -173,7 +173,7 @@ public final class RadixUniverse {
 		network.close();
 	}
 
-	public JsonObject toJson() {
-		return config.toJson();
+	public RadixUniverseConfig getConfig() {
+		return config;
 	}
 }
