@@ -41,7 +41,7 @@ public class RadixUniverseConfig {
 	}
 
 	public byte getMagicByte() {
-		return (byte)(magic & 0xff);
+		return (byte) (magic & 0xff);
 	}
 
 	public ECPublicKey getSystemPublicKey() {
@@ -59,6 +59,12 @@ public class RadixUniverseConfig {
 	@Override
 	public String toString() {
 		return name;
+	}
+
+	@Override
+	public int hashCode() {
+		// TODO: fix this
+		return (magic + ":" + port + ":" + name + ":" + timestamp).hashCode();
 	}
 
 	@Override
