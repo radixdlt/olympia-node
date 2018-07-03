@@ -1,6 +1,5 @@
 package com.radixdlt.client.core;
 
-import com.google.gson.JsonObject;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.client.core.address.RadixUniverseConfigs;
