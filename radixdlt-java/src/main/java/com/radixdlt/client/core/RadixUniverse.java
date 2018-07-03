@@ -171,4 +171,8 @@ public final class RadixUniverse {
 		ledger.close();
 		network.close();
 	}
+
+	public RadixUniverseConfig getConfig() {
+		return config;
+	}
 }

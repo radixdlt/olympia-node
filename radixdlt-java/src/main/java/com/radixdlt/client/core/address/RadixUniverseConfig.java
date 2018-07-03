@@ -2,6 +2,7 @@ package com.radixdlt.client.core.address;
 
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.crypto.ECPublicKey;
+import com.google.gson.JsonObject;
 import com.radixdlt.client.core.serialization.RadixJson;
 
 import java.io.InputStream;
@@ -54,6 +55,20 @@ public class RadixUniverseConfig {
 
 	public List<Atom> getGenesis() {
 		return genesis;
+	}
+
+	public JsonObject toJson() {
+		JsonObject universe = new JsonObject();
+		universe.addProperty("magic", magic);
+		universe.addProperty("port", port);
+		universe.addProperty("name", name);
+		universe.addProperty("description", description);
+		universe.add("type", RadixJson.getGson().toJsonTree(type));
+		universe.addProperty("timestamp", timestamp);
+		universe.add("creator", RadixJson.getGson().toJsonTree(creator));
+		universe.add("genesis", RadixJson.getGson().toJsonTree(genesis));
+
+		return universe;
 	}
 
 	@Override
