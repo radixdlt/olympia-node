@@ -218,6 +218,65 @@ public class RadixJsonRpcClientTest {
 	}
 
 	@Test
+	public void getAtomsCancelTest() {
+		WebSocketClient wsClient = mock(WebSocketClient.class);
+		when(wsClient.getStatus()).thenReturn(Observable.just(RadixClientStatus.OPEN));
+
+		ReplaySubject<String> messages = ReplaySubject.create();
+		when(wsClient.getMessages()).thenReturn(messages);
+		when(wsClient.connect()).thenReturn(Completable.complete());
+
+		JsonParser parser = new JsonParser();
+		Gson gson = RadixJson.getGson();
+
+		doAnswer(invocation -> {
+			String msg = (String) invocation.getArguments()[0];
+			JsonObject jsonObject = parser.parse(msg).getAsJsonObject();
+			String id = jsonObject.get("id").getAsString();
+			String method = jsonObject.get("method").getAsString();
+
+			if (method.equals("Atoms.subscribe")) {
+
+				JsonObject response = new JsonObject();
+				response.addProperty("id", id);
+				response.add("result", new JsonObject());
+
+				messages.onNext(gson.toJson(response));
+			} else if (method.equals("Subscription.cancel")) {
+				String subscriberId = jsonObject.get("params").getAsJsonObject().get("subscriberId").getAsString();
+				JsonObject notification = new JsonObject();
+				notification.addProperty("method", "Atoms.subscribeUpdate");
+				JsonObject params = new JsonObject();
+				params.addProperty("subscriberId", subscriberId);
+				JsonArray atoms = new JsonArray();
+				JsonElement atom = gson.toJsonTree(
+					new ApplicationPayloadAtom("Test", null, null, null, null, 1),
+					Atom.class
+				);
+				atoms.add(atom);
+				params.add("atoms", atoms);
+
+				notification.add("params", params);
+
+				messages.onNext(gson.toJson(notification));
+			}
+
+			return true;
+		}).when(wsClient).send(any());
+		RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(wsClient);
+
+		TestObserver<ApplicationPayloadAtom> observer = new TestObserver<>();
+
+		jsonRpcClient.getAtoms(new AtomQuery<>(new EUID(BigInteger.ONE), ApplicationPayloadAtom.class))
+			.subscribe(observer);
+		observer.cancel();
+
+		observer.assertSubscribed();
+		observer.assertNoErrors();
+		observer.assertValueCount(0);
+	}
+
+	@Test
 	public void submitAtomTest() {
 		WebSocketClient wsClient = mock(WebSocketClient.class);
 		when(wsClient.getStatus()).thenReturn(Observable.just(RadixClientStatus.OPEN));
@@ -233,23 +292,27 @@ public class RadixJsonRpcClientTest {
 			String msg = (String) invocation.getArguments()[0];
 			JsonObject jsonObject = parser.parse(msg).getAsJsonObject();
 			String id = jsonObject.get("id").getAsString();
+			String method = jsonObject.get("method").getAsString();
 
-			JsonObject response = new JsonObject();
-			response.addProperty("id", id);
-			response.add("result", new JsonObject());
+			if (method.equals("Universe.submitAtomAndSubscribe")) {
+				JsonObject response = new JsonObject();
+				response.addProperty("id", id);
+				response.add("result", new JsonObject());
 
-			messages.onNext(gson.toJson(response));
+				messages.onNext(gson.toJson(response));
 
-			String subscriberId = jsonObject.get("params").getAsJsonObject().get("subscriberId").getAsString();
-			JsonObject notification = new JsonObject();
-			notification.addProperty("method", "AtomSubmissionState.onNext");
-			JsonObject params = new JsonObject();
-			params.addProperty("subscriberId", subscriberId);
-			params.addProperty("value", "STORED");
+				String subscriberId = jsonObject.get("params").getAsJsonObject().get("subscriberId").getAsString();
+				JsonObject notification = new JsonObject();
+				notification.addProperty("method", "AtomSubmissionState.onNext");
+				JsonObject params = new JsonObject();
+				params.addProperty("subscriberId", subscriberId);
+				params.addProperty("value", "STORED");
 
-			notification.add("params", params);
+				notification.add("params", params);
 
-			messages.onNext(gson.toJson(notification));
+				messages.onNext(gson.toJson(notification));
+			}
+
 			return true;
 		}).when(wsClient).send(any());
 		RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(wsClient);
