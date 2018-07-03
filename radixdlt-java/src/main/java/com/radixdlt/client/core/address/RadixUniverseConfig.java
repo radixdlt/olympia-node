@@ -1,13 +1,13 @@
 package com.radixdlt.client.core.address;
 
-import com.google.gson.JsonElement;
-import com.radixdlt.client.core.serialization.Dson;
-import com.radixdlt.client.core.serialization.RadixJson;
-import java.util.Collections;
-import java.util.List;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.crypto.ECPublicKey;
-import org.bouncycastle.util.encoders.Base64;
+import com.radixdlt.client.core.serialization.RadixJson;
+
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.Collections;
+import java.util.List;
 
 public class RadixUniverseConfig {
 
@@ -20,22 +20,12 @@ public class RadixUniverseConfig {
 	private final ECPublicKey creator;
 	private final List<Atom> genesis;
 
-	public static RadixUniverseConfig fromDson(String universeDson) {
-		JsonElement jsonElement = Dson.getInstance().parse(Base64.decode(universeDson));
-		RadixUniverseConfig universe = RadixJson.getGson().fromJson(jsonElement, RadixUniverseConfig.class);
-		return universe;
+	public static RadixUniverseConfig fromInputStream(InputStream inputStream) {
+		return RadixJson.getGson().fromJson(new InputStreamReader(inputStream), RadixUniverseConfig.class);
 	}
 
-	RadixUniverseConfig(
-		List<Atom> genesis,
-		int port,
-		String name,
-		String description,
-		RadixUniverseType type,
-		long timestamp,
-		ECPublicKey creator,
-		int magic
-	) {
+	RadixUniverseConfig(List<Atom> genesis, int port, String name, String description, RadixUniverseType type,
+                        long timestamp, ECPublicKey creator, int magic) {
 		this.genesis = Collections.unmodifiableList(genesis);
 		this.name = name;
 		this.description = description;
