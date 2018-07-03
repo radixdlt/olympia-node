@@ -1,5 +1,6 @@
 package com.radixdlt.client.core;
 
+import com.google.gson.JsonObject;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.client.core.address.RadixUniverseConfigs;
@@ -170,5 +171,9 @@ public final class RadixUniverse {
 	public void disconnect() {
 		ledger.close();
 		network.close();
+	}
+
+	public JsonObject toJson() {
+		return config.toJson();
 	}
 }
