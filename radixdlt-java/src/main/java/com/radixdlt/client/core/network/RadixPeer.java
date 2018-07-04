@@ -5,6 +5,7 @@ import io.reactivex.subjects.SingleSubject;
 import java.util.Set;
 
 public class RadixPeer {
+
 	private final String location;
 	private final RadixJsonRpcClient radixClient;
 	private final SingleSubject<NodeRunnerData> data;
@@ -14,9 +15,17 @@ public class RadixPeer {
 		this.location = location;
 
 		if (useSSL) {
-			this.radixClient = new RadixJsonRpcClient(new WebSocketClient(HttpClients::get, "wss://" + location + ":" + port + "/rpc"));
+			this.radixClient = new RadixJsonRpcClient(
+				new WebSocketClient(
+					HttpClients::getSslAllTrustingClient, "wss://" + location + ":" + port + "/rpc"
+				)
+			);
 		} else {
-			this.radixClient = new RadixJsonRpcClient(new WebSocketClient(HttpClients::get, "ws://" + location + ":" + port + "/rpc"));
+			this.radixClient = new RadixJsonRpcClient(
+				new WebSocketClient(
+					HttpClients::getSslAllTrustingClient, "ws://" + location + ":" + port + "/rpc"
+				)
+			);
 		}
 	}
 

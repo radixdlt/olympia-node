@@ -1,6 +1,12 @@
 package com.radixdlt.client.core.network;
 
+import io.reactivex.Single;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiFunction;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
@@ -12,59 +18,74 @@ public class HttpClients {
 	}
 
 	/**
-	 * Single OkHttpClient to be used for all connections
+	 * Lock for http client
 	 */
-	private static final OkHttpClient OK_HTTP_CLIENT;
+	private static final Object LOCK = new Object();
 
 	/**
-	 * Builds OkHttpClient to be used for secure connections with self signed
-	 * certificates.
+	 * Single OkHttpClient to be used for all connections
 	 */
-	static {
-		try {
-			// Create a trust manager that does not validate certificate chains
-			final TrustManager[] trustAllCerts = new TrustManager[] {
-				new X509TrustManager() {
-					@Override
-					public void checkClientTrusted(java.security.cert.X509Certificate[] chain, String authType) {
-					}
+	private static OkHttpClient sslAllTrustingClient;
 
-					@Override
-					public void checkServerTrusted(java.security.cert.X509Certificate[] chain, String authType) {
-					}
-
-					@Override
-					public java.security.cert.X509Certificate[] getAcceptedIssuers() {
-						return new java.security.cert.X509Certificate[] {};
+	private static OkHttpClient createClient(BiFunction<X509Certificate[], String, Single<Boolean>> trustManager) {
+		// TODO: Pass trust issue to user
+		// Create a trust manager that does not validate certificate chains
+		final TrustManager[] trustAllCerts = new TrustManager[] {
+			new X509TrustManager() {
+				@Override
+				public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+					if (!trustManager.apply(chain, authType).blockingGet()) {
+						throw new CertificateException();
 					}
 				}
-			};
 
+				@Override
+				public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+					if (!trustManager.apply(chain, authType).blockingGet()) {
+						throw new CertificateException();
+					}
+				}
+
+				@Override
+				public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+					return new java.security.cert.X509Certificate[] {};
+				}
+			}
+		};
+
+		try {
 			// Install the all-trusting trust manager
-			final SSLContext sslContext = SSLContext.getInstance("SSL");
+			final SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
 			sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
 			// Create an ssl socket factory with our all-trusting manager
 			final SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
 
 			OkHttpClient.Builder builder = new OkHttpClient.Builder();
 			builder.sslSocketFactory(sslSocketFactory, (X509TrustManager) trustAllCerts[0]);
-			builder.hostnameVerifier((hostname, session) -> true);
+			builder.hostnameVerifier((hostname, session) -> hostname.equals(session.getPeerHost()));
 
-			builder
-				.connectTimeout(30, TimeUnit.SECONDS)
+			builder.connectTimeout(30, TimeUnit.SECONDS)
 				.writeTimeout(30, TimeUnit.SECONDS)
 				.readTimeout(30, TimeUnit.SECONDS)
 				.pingInterval(30, TimeUnit.SECONDS);
 
-			OK_HTTP_CLIENT = builder.build();
-
-		} catch (Exception e) {
-			throw new RuntimeException(e);
+			return builder.build();
+		} catch (NoSuchAlgorithmException | KeyManagementException e) {
+			throw new RuntimeException("Could not create http client: " + e.getMessage());
 		}
 	}
 
-	public static OkHttpClient get() {
-		return OK_HTTP_CLIENT;
+	/**
+	 * Builds OkHttpClient to be used for secure connections with self signed
+	 * certificates.
+	 */
+	public static OkHttpClient getSslAllTrustingClient() {
+		synchronized (LOCK) {
+			if (sslAllTrustingClient == null) {
+				sslAllTrustingClient = createClient(((x509Certificates, s) -> Single.just(true)));
+			}
+			return sslAllTrustingClient;
+		}
 	}
 
 }
