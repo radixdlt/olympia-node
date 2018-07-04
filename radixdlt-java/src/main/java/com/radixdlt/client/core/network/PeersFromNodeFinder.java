@@ -25,7 +25,7 @@ public class PeersFromNodeFinder implements PeerDiscovery {
 			.build();
 
 		return Single.<String>create(emitter -> {
-				Call call = HttpClients.get().newCall(request);
+				Call call = HttpClients.getSslAllTrustingClient().newCall(request);
 				emitter.setCancellable(call::cancel);
 				call.enqueue(new Callback() {
 					@Override
