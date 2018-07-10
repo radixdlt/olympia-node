@@ -30,7 +30,7 @@ public class PeersFromNodeFinder implements PeerDiscovery {
 				call.enqueue(new Callback() {
 					@Override
 					public void onFailure(Call call, IOException e) {
-						emitter.onError(e);
+						emitter.tryOnError(e);
 					}
 
 					@Override
@@ -53,6 +53,7 @@ public class PeersFromNodeFinder implements PeerDiscovery {
 			.map(peerUrl -> new PeersFromSeed(peerUrl, true, port))
 			.flatMapObservable(PeersFromSeed::findPeers)
 			.timeout(3, TimeUnit.SECONDS)
-			.retry(3);
+			.retry(3)
+			.onErrorResumeNext(Observable.empty());
 	}
 }
