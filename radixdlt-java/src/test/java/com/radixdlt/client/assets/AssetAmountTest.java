@@ -1,7 +1,5 @@
 package com.radixdlt.client.assets;
 
-import static org.junit.Assert.*;
-
 import org.junit.Test;
 
 import com.radixdlt.client.core.address.EUID;
@@ -31,12 +29,12 @@ public class AssetAmountTest {
 	@Test
 	public void testUnusualSubUnits() {
 		// 1 foot = 12 inches
-		final Asset FOOT = new Asset("FOOT", 12, new EUID(BigInteger.valueOf("TEST".hashCode())));
-		assertEquals("0 FOOT", new AssetAmount(FOOT, 0).toString());
-		assertEquals("1/12 FOOT", new AssetAmount(FOOT, 1).toString());
-		assertEquals("6/12 FOOT", new AssetAmount(FOOT, 6).toString());
-		assertEquals("1 FOOT", new AssetAmount(FOOT, 12).toString());
-		assertEquals("1 and 6/12 FOOT", new AssetAmount(FOOT, 18).toString());
-		assertEquals("1 and 8/12 FOOT", new AssetAmount(FOOT, 20).toString());
+		final Asset foot = new Asset("FOOT", 12, new EUID(BigInteger.valueOf("TEST".hashCode())));
+		assertEquals("0 FOOT", new AssetAmount(foot, 0).toString());
+		assertEquals("1/12 FOOT", new AssetAmount(foot, 1).toString());
+		assertEquals("6/12 FOOT", new AssetAmount(foot, 6).toString());
+		assertEquals("1 FOOT", new AssetAmount(foot, 12).toString());
+		assertEquals("1 and 6/12 FOOT", new AssetAmount(foot, 18).toString());
+		assertEquals("1 and 8/12 FOOT", new AssetAmount(foot, 20).toString());
 	}
 }

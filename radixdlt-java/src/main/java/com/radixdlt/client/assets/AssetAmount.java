@@ -18,7 +18,7 @@ public class AssetAmount {
 	public String toString() {
 		return formattedAmount() + " " + asset.getIso();
 	}
-	
+
 	private String formattedAmount() {
 		long remainder = amountInSubunits % asset.getSubUnits();
 
