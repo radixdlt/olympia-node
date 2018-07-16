@@ -30,7 +30,7 @@ public class PeersFromNodeFinder implements PeerDiscovery {
 				call.enqueue(new Callback() {
 					@Override
 					public void onFailure(Call call, IOException e) {
-						emitter.onError(e);
+						emitter.tryOnError(e);
 					}
 
 					@Override
@@ -40,12 +40,12 @@ public class PeersFromNodeFinder implements PeerDiscovery {
 							String bodyString = body.string();
 							body.close();
 							if (bodyString.isEmpty()) {
-								emitter.onError(new IOException("Received empty peer."));
+								emitter.tryOnError(new IOException("Received empty peer."));
 							} else {
 								emitter.onSuccess(bodyString);
 							}
 						} else {
-							emitter.onError(new IOException("Error retrieving peer: " + response.message()));
+							emitter.tryOnError(new IOException("Error retrieving peer: " + response.message()));
 						}
 					}
 				});
@@ -53,6 +53,6 @@ public class PeersFromNodeFinder implements PeerDiscovery {
 			.map(peerUrl -> new PeersFromSeed(peerUrl, true, port))
 			.flatMapObservable(PeersFromSeed::findPeers)
 			.timeout(3, TimeUnit.SECONDS)
-			.retry(3);
+			.retryWhen(new IncreasingRetryTimer());
 	}
 }
