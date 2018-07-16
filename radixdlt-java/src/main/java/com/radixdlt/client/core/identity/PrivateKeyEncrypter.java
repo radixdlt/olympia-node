@@ -16,21 +16,22 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import okio.ByteString;
-
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.security.Security;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.KeySpec;
+import java.util.Arrays;
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.KeySpec;
-import java.util.Arrays;
+import okio.ByteString;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 public final class PrivateKeyEncrypter {
 
@@ -40,6 +41,9 @@ public final class PrivateKeyEncrypter {
     static {
         if (AndroidUtil.isAndroidRuntime()) {
             new LinuxSecureRandom();
+            // Ensure the library version of BouncyCastle is used for Android
+            Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME);
+            Security.insertProviderAt(new BouncyCastleProvider(), 1);
         }
         SECURE_RANDOM = new SecureRandom();
     }
