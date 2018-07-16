@@ -9,6 +9,9 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 public class Hash {
 
 	static {
+		if (AndroidUtil.isAndroidRuntime()) {
+			Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME);
+		}
 		Security.insertProviderAt(new BouncyCastleProvider(), 1);
 	}
 
