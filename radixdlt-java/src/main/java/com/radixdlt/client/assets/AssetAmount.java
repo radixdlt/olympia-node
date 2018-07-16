@@ -27,7 +27,7 @@ public class AssetAmount {
 			return String.valueOf(amountInSubunits / asset.getSubUnits());
 		}
 
-		if (asset.isPowerOfTen()) {
+		if (isPowerOfTen(asset.getSubUnits())) {
 			// Decimal format
 			return BigDecimal.valueOf(amountInSubunits).divide(BigDecimal.valueOf(asset.getSubUnits())).toString();
 		}
@@ -39,5 +39,12 @@ public class AssetAmount {
 			return fraction;
 		}
 		return quotient + " and " + fraction;
+	}
+
+	private boolean isPowerOfTen(int value) {
+		while (value > 9 && value % 10 == 0) {
+			value /= 10;
+		}
+		return value == 1;
 	}
 }

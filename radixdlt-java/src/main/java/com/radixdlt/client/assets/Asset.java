@@ -15,7 +15,6 @@ public class Asset {
 	private final String iso;
 	private final int subUnits;
 	private final EUID id;
-	private final boolean powerOfTen;
 
 	public Asset(String iso, int subUnits, EUID id) {
 		Objects.requireNonNull(iso);
@@ -28,7 +27,6 @@ public class Asset {
 		this.iso = iso;
 		this.subUnits = subUnits;
 		this.id = id;
-		this.powerOfTen = isPowerOfTen(subUnits);
 	}
 
 	public String getIso() {
@@ -41,10 +39,6 @@ public class Asset {
 
 	public EUID getId() {
 		return id;
-	}
-
-	public boolean isPowerOfTen() {
-		return powerOfTen;
 	}
 
 	@Override
@@ -60,12 +54,5 @@ public class Asset {
 	@Override
 	public int hashCode() {
 		return iso.hashCode();
-	}
-
-	private boolean isPowerOfTen(int value) {
-		while (value > 9 && value % 10 == 0) {
-			value /= 10;
-		}
-		return value == 1;
 	}
 }
