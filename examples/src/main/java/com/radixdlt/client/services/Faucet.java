@@ -9,6 +9,7 @@ import com.radixdlt.client.core.identity.SimpleRadixIdentity;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState;
 import com.radixdlt.client.messaging.RadixMessage;
+import com.radixdlt.client.messaging.RadixMessageContent;
 import com.radixdlt.client.messaging.RadixMessaging;
 import com.radixdlt.client.wallet.RadixWallet;
 import io.reactivex.Observable;
@@ -63,7 +64,7 @@ public class Faucet {
 	 * @param message the original message received
 	 * @return the reply the faucet will send to the user
 	 */
-	private Single<SimpleImmutableEntry<RadixAddress,String>> leakFaucet(RadixMessage message) {
+	private Single<RadixMessageContent> leakFaucet(RadixMessage message) {
 		RadixAddress address = message.getFrom();
 		Long timestamp = System.currentTimeMillis();
 
@@ -72,9 +73,9 @@ public class Faucet {
 			if (timeSince < DELAY) {
 				long secondsTimeLeft = ((DELAY - timeSince) / 1000) % 60;
 				long minutesTimeLeft = ((DELAY - timeSince) / 1000) / 60;
-				return io.reactivex.Single.just(new SimpleImmutableEntry<>(
-					message.getFrom(),
-					"Don't be hasty! You can only make one request every 10 minutes. " + minutesTimeLeft + " minutes and " + secondsTimeLeft + " seconds left."
+				return Single.just(message.createReply(
+				"Don't be hasty! You can only make one request every 10 minutes. "
+						+ minutesTimeLeft + " minutes and " + secondsTimeLeft + " seconds left."
 				));
 			}
 		}
@@ -89,8 +90,8 @@ public class Faucet {
 				}
 			})
 			.map(update -> update.getState() == AtomSubmissionState.STORED ? "Sent you 10 Test Rads!" : "Couldn't send you any (Reason: " + update + ")")
-			.map(replyMessage -> new SimpleImmutableEntry<>(message.getFrom(), replyMessage))
-			.onErrorReturn(throwable -> new SimpleImmutableEntry<>(message.getFrom(), "Couldn't send you any (Reason: " + throwable.getMessage() + ")"))
+			.map(message::createReply)
+			.onErrorReturn(throwable -> message.createReply("Couldn't send you any (Reason: " + throwable.getMessage() + ")"))
 			;
 	}
 
@@ -100,8 +101,8 @@ public class Faucet {
 	 * @param reply reply to send to requestor
 	 * @return state of the message atom submission
 	 */
-	private Observable<AtomSubmissionUpdate> sendReply(Map.Entry<RadixAddress,String> reply) {
-		return RadixMessaging.getInstance().sendMessage(reply.getValue(), radixIdentity, reply.getKey())
+	private Observable<AtomSubmissionUpdate> sendReply(RadixMessageContent reply) {
+		return RadixMessaging.getInstance().sendMessage(reply, radixIdentity)
 			.doOnNext(state -> System.out.println("Message: " + state))
 		;
 	}
