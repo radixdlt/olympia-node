@@ -7,11 +7,10 @@ import java.util.Objects;
 public class Asset {
 
 	/**
-	 * Radix Token asset.
-	 * TODO: Read from universe file. Hardcode for now.
+	 * Radix Token asset. TODO: Read from universe file. Hardcode for now.
 	 */
 	public static final Asset XRD = new Asset("TEST", 100000, new EUID(BigInteger.valueOf("TEST".hashCode())));
-	public static final Asset POW = new Asset("POW", 0, new EUID(BigInteger.valueOf(79416)));
+	public static final Asset POW = new Asset("POW", 1, new EUID(BigInteger.valueOf(79416)));
 
 	private final String iso;
 	private final int subUnits;
@@ -20,6 +19,10 @@ public class Asset {
 	public Asset(String iso, int subUnits, EUID id) {
 		Objects.requireNonNull(iso);
 		Objects.requireNonNull(id);
+
+		if (subUnits == 0) {
+			throw new IllegalArgumentException("Integer assets should have subUnits set to 1 for mathematical reasons");
+		}
 
 		this.iso = iso;
 		this.subUnits = subUnits;
