@@ -1,8 +1,10 @@
 package com.radixdlt.client.wallet;
 
+import com.radixdlt.client.core.crypto.ECPublicKey;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.Set;
 import java.util.TimeZone;
 
 import com.radixdlt.client.assets.Asset;
@@ -10,6 +12,7 @@ import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.AbstractConsumable;
 import com.radixdlt.client.core.atoms.Particle;
 import com.radixdlt.client.core.atoms.TransactionAtom;
+import java.util.stream.Collectors;
 
 /**
  * A transaction from the perspective of a wallet. Amount is positive or
@@ -34,6 +37,14 @@ public class WalletTransaction {
 
 	public TransactionAtom getTransactionAtom() {
 		return transactionAtom;
+	}
+
+	public Set<ECPublicKey> getSenders() {
+		return transactionAtom.summary().entrySet().stream()
+			.filter(entry -> entry.getValue().containsKey(Asset.XRD.getId()))
+			.filter(entry -> entry.getValue().get(Asset.XRD.getId()) < 0)
+			.flatMap(entry -> entry.getKey().stream())
+			.collect(Collectors.toSet());
 	}
 
 	public long getAmount() {
