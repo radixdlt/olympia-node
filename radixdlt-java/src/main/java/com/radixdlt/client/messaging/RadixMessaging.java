@@ -6,6 +6,7 @@ import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.ApplicationPayloadAtom;
 import com.radixdlt.client.core.atoms.AtomBuilder;
+import com.radixdlt.client.core.atoms.IdParticle;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.identity.RadixIdentities;
 import com.radixdlt.client.core.identity.RadixIdentity;
@@ -71,7 +72,7 @@ public class RadixMessaging {
 			.groupBy(msg -> msg.getFrom().getPublicKey().equals(identity.getPublicKey()) ? msg.getTo() : msg.getFrom());
 	}
 
-	public Observable<AtomSubmissionUpdate> sendMessage(RadixMessageContent content, RadixIdentity fromIdentity) {
+	public Observable<AtomSubmissionUpdate> sendMessage(RadixMessageContent content, RadixIdentity fromIdentity, EUID uniqueId) {
 		Objects.requireNonNull(content);
 		if (content.getContent().length() > MAX_MESSAGE_LENGTH) {
 			throw new IllegalArgumentException(
@@ -79,27 +80,40 @@ public class RadixMessaging {
 			);
 		}
 
-		UnsignedAtom unsignedAtom = new AtomBuilder()
+		AtomBuilder atomBuilder = new AtomBuilder()
 			.type(ApplicationPayloadAtom.class)
 			.applicationId(RadixMessaging.APPLICATION_ID)
 			.payload(content.toJson())
 			.addDestination(content.getTo())
 			.addDestination(content.getFrom())
 			.addProtector(content.getTo().getPublicKey())
-			.addProtector(content.getFrom().getPublicKey())
-			.buildWithPOWFee(ledger.getMagic(), fromIdentity.getPublicKey());
+			.addProtector(content.getFrom().getPublicKey());
+
+		if (uniqueId != null) {
+			atomBuilder.addParticle(IdParticle.create("jwt", uniqueId, fromIdentity.getPublicKey()));
+		}
+
+		UnsignedAtom unsignedAtom = atomBuilder.buildWithPOWFee(ledger.getMagic(), fromIdentity.getPublicKey());
 
 		return fromIdentity.sign(unsignedAtom)
 			.flatMapObservable(ledger::submitAtom);
 	}
 
-	public Observable<AtomSubmissionUpdate> sendMessage(String message, RadixIdentity fromIdentity, RadixAddress toAddress) {
+	public Observable<AtomSubmissionUpdate> sendMessage(RadixMessageContent content, RadixIdentity fromIdentity) {
+		return this.sendMessage(content, fromIdentity, null);
+	}
+
+	public Observable<AtomSubmissionUpdate> sendMessage(String message, RadixIdentity fromIdentity, RadixAddress toAddress, EUID uniqueId) {
 		Objects.requireNonNull(message);
 		Objects.requireNonNull(fromIdentity);
 		Objects.requireNonNull(toAddress);
 
 		RadixAddress fromAddress = universe.getAddressFrom(fromIdentity.getPublicKey());
 
-		return this.sendMessage(new RadixMessageContent(toAddress, fromAddress, message), fromIdentity);
+		return this.sendMessage(new RadixMessageContent(toAddress, fromAddress, message), fromIdentity, uniqueId);
+	}
+
+	public Observable<AtomSubmissionUpdate> sendMessage(String message, RadixIdentity fromIdentity, RadixAddress toAddress) {
+		return this.sendMessage(message, fromIdentity, toAddress, null);
 	}
 }
