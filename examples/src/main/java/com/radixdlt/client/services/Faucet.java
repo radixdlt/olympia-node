@@ -74,11 +74,12 @@ public class Faucet {
 	/**
 	 * Actually send a reply message to the requestor through the Universe
 	 *
-	 * @param reply reply to send to requestor
+	 * @param message message to send back
+	 * @param to address to send message back to
 	 * @return state of the message atom submission
 	 */
-	private Completable sendReply(RadixMessageContent reply) {
-		return RadixMessaging.getInstance().sendMessage(reply, radixIdentity)
+	private Completable sendReply(String message, RadixAddress to) {
+		return RadixMessaging.getInstance().sendMessage(message, radixIdentity, to)
 			.doOnNext(state -> System.out.println("Message: " + state))
 			.filter(AtomSubmissionUpdate::isComplete)
 			.firstOrError()
@@ -120,16 +121,15 @@ public class Faucet {
 							return this.leakFaucet(from)
 								.doOnComplete(rateLimiter::reset)
 								.andThen(Single.just("Sent you 10 Test Rads!"))
-								.onErrorReturn(throwable -> "Couldn't send you any (Reason: " + throwable.getMessage() + ")")
-								.map(message::createReply);
+								.onErrorReturn(throwable -> "Couldn't send you any (Reason: " + throwable.getMessage() + ")");
 						} else {
-							return Single.just(message.createReply(
+							return Single.just(
 								"Don't be hasty! You can only make one request every 10 minutes. "
 								+ rateLimiter.getTimeLeftString() + " left."
-							));
+							);
 						}
 					}, true)
-					.flatMapCompletable(this::sendReply)
+					.flatMapCompletable(msg -> this.sendReply(msg, from))
 					.subscribe();
 			});
 	}
