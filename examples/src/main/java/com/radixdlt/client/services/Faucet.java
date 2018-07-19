@@ -12,6 +12,7 @@ import com.radixdlt.client.messaging.RadixMessage;
 import com.radixdlt.client.messaging.RadixMessageContent;
 import com.radixdlt.client.messaging.RadixMessaging;
 import com.radixdlt.client.wallet.RadixWallet;
+import io.reactivex.Completable;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 
@@ -20,6 +21,7 @@ import java.sql.Timestamp;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * A service which sends tokens to whoever sends it a message through
@@ -43,11 +45,6 @@ public class Faucet {
 	private final RadixIdentity radixIdentity;
 
 	/**
-	 * Map to keep track of last request timestamps per user
-	 */
-	private final ConcurrentHashMap<RadixAddress, Long> recipientTimestamps = new ConcurrentHashMap<>();
-
-	/**
 	 * A faucet created on the default universe
 	 *
 	 * @param radixIdentity identity to load faucet off of
@@ -58,41 +55,19 @@ public class Faucet {
 	}
 
 	/**
-	 * Given a message, will attempt to send the requestor some tokens
-	 * and then sends a message indicating whether successful or not.
+	 * Send XRD from this account to an address
 	 *
-	 * @param message the original message received
-	 * @return the reply the faucet will send to the user
+	 * @param to the address to send to
+	 * @return completable whether transfer was successful or not
 	 */
-	private Single<RadixMessageContent> leakFaucet(RadixMessage message) {
-		RadixAddress address = message.getFrom();
-		Long timestamp = System.currentTimeMillis();
-
-		if (this.recipientTimestamps.containsKey(address) && timestamp - this.recipientTimestamps.get(address) < DELAY) {
-			long timeSince = timestamp - this.recipientTimestamps.get(address);
-			if (timeSince < DELAY) {
-				long secondsTimeLeft = ((DELAY - timeSince) / 1000) % 60;
-				long minutesTimeLeft = ((DELAY - timeSince) / 1000) / 60;
-				return Single.just(message.createReply(
-				"Don't be hasty! You can only make one request every 10 minutes. "
-						+ minutesTimeLeft + " minutes and " + secondsTimeLeft + " seconds left."
-				));
-			}
-		}
-
-		return RadixWallet.getInstance().transferXRD(10 * Asset.XRD.getSubUnits(), radixIdentity, message.getFrom())
+	private Completable leakFaucet(RadixAddress to) {
+		return RadixWallet.getInstance().transferXRD(10 * Asset.XRD.getSubUnits(), radixIdentity, to)
 			.doOnNext(state -> System.out.println("Transaction: " + state))
 			.filter(AtomSubmissionUpdate::isComplete)
 			.firstOrError()
-			.doOnSuccess(update -> {
-				if (update.getState() == AtomSubmissionState.STORED) {
-					this.recipientTimestamps.put(address, timestamp);
-				}
-			})
-			.map(update -> update.getState() == AtomSubmissionState.STORED ? "Sent you 10 Test Rads!" : "Couldn't send you any (Reason: " + update + ")")
-			.map(message::createReply)
-			.onErrorReturn(throwable -> message.createReply("Couldn't send you any (Reason: " + throwable.getMessage() + ")"))
-			;
+			.flatMapCompletable(update -> update.getState() == AtomSubmissionState.STORED ?
+				Completable.complete() : Completable.error(new RuntimeException(update.toString()))
+			);
 	}
 
 	/**
@@ -104,20 +79,6 @@ public class Faucet {
 	private Observable<AtomSubmissionUpdate> sendReply(RadixMessageContent reply) {
 		return RadixMessaging.getInstance().sendMessage(reply, radixIdentity)
 			.doOnNext(state -> System.out.println("Message: " + state))
-		;
-	}
-
-	/**
-	 * Retrieves all recent messages sent to this faucet
-	 *
-	 * @return stream of recent messages to this faucet
-	 */
-	private Observable<RadixMessage> getRecentMessages() {
-		return RadixMessaging.getInstance()
-			.getAllMessagesDecrypted(radixIdentity)
-			.doOnNext(message -> System.out.println(new Timestamp(System.currentTimeMillis()).toLocalDateTime() + " " + message)) // Print out all messages
-			.filter(message -> !message.getFrom().equals(sourceAddress)) // Don't send ourselves money
-			.filter(message -> Math.abs(message.getTimestamp() - System.currentTimeMillis()) < 60000) // Only deal with recent messages
 		;
 	}
 
@@ -138,10 +99,37 @@ public class Faucet {
 		// Flow Logic
 		// Listen to any recent messages, send 10 XRD to the sender and then send a confirmation whether it succeeded or not
 		// NOTE: this is neither idempotent nor atomic!
-		this.getRecentMessages()
-			.flatMapSingle(this::leakFaucet, true)
-			.flatMap(this::sendReply)
-			.subscribe();
+		RadixMessaging.getInstance()
+			.getAllMessagesDecryptedAndGroupedByParticipants(radixIdentity)
+			.subscribe(observableByAddress -> {
+				// Keep track of when last request was made per address
+				final AtomicLong lastTimestamp = new AtomicLong();
+
+				observableByAddress
+					.doOnNext(System.out::println) // Print out all messages
+					.filter(message -> !message.getFrom().equals(sourceAddress)) // Don't send ourselves money
+					.filter(message -> Math.abs(message.getTimestamp() - System.currentTimeMillis()) < 60000) // Only deal with recent messages
+					.flatMapSingle(message -> {
+						long currentTimestamp = System.currentTimeMillis();
+						long timeSince = currentTimestamp - lastTimestamp.get();
+						if (lastTimestamp.get() != 0 && timeSince < DELAY) {
+							long secondsTimeLeft = ((DELAY - timeSince) / 1000) % 60;
+							long minutesTimeLeft = ((DELAY - timeSince) / 1000) / 60;
+							return Single.just(message.createReply(
+						  "Don't be hasty! You can only make one request every 10 minutes. "
+									+ minutesTimeLeft + " minutes and " + secondsTimeLeft + " seconds left."
+							));
+						} else {
+							return this.leakFaucet(observableByAddress.getKey())
+								.doOnComplete(() -> lastTimestamp.set(currentTimestamp))
+								.andThen(Single.just("Sent you 10 Test Rads!"))
+								.onErrorReturn(throwable -> "Couldn't send you any (Reason: " + throwable.getMessage() + ")")
+								.map(message::createReply);
+						}
+					}, true)
+					.flatMap(this::sendReply)
+					.subscribe();
+			});
 	}
 
 	public static void main(String[] args) throws IOException {
