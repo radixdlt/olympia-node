@@ -21,6 +21,7 @@ import java.sql.Timestamp;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -76,10 +77,14 @@ public class Faucet {
 	 * @param reply reply to send to requestor
 	 * @return state of the message atom submission
 	 */
-	private Observable<AtomSubmissionUpdate> sendReply(RadixMessageContent reply) {
+	private Completable sendReply(RadixMessageContent reply) {
 		return RadixMessaging.getInstance().sendMessage(reply, radixIdentity)
 			.doOnNext(state -> System.out.println("Message: " + state))
-		;
+			.filter(AtomSubmissionUpdate::isComplete)
+			.firstOrError()
+			.flatMapCompletable(update -> update.getState() == AtomSubmissionState.STORED ?
+				Completable.complete() : Completable.error(new RuntimeException(update.toString()))
+			);
 	}
 
 	/**
@@ -102,34 +107,58 @@ public class Faucet {
 		RadixMessaging.getInstance()
 			.getAllMessagesDecryptedAndGroupedByParticipants(radixIdentity)
 			.subscribe(observableByAddress -> {
-				// Keep track of when last request was made per address
-				final AtomicLong lastTimestamp = new AtomicLong();
+				final RadixAddress from = observableByAddress.getKey();
+
+				final RateLimiter rateLimiter = new RateLimiter(DELAY);
 
 				observableByAddress
 					.doOnNext(System.out::println) // Print out all messages
 					.filter(message -> !message.getFrom().equals(sourceAddress)) // Don't send ourselves money
 					.filter(message -> Math.abs(message.getTimestamp() - System.currentTimeMillis()) < 60000) // Only deal with recent messages
 					.flatMapSingle(message -> {
-						long currentTimestamp = System.currentTimeMillis();
-						long timeSince = currentTimestamp - lastTimestamp.get();
-						if (lastTimestamp.get() != 0 && timeSince < DELAY) {
-							long secondsTimeLeft = ((DELAY - timeSince) / 1000) % 60;
-							long minutesTimeLeft = ((DELAY - timeSince) / 1000) / 60;
-							return Single.just(message.createReply(
-						  "Don't be hasty! You can only make one request every 10 minutes. "
-									+ minutesTimeLeft + " minutes and " + secondsTimeLeft + " seconds left."
-							));
-						} else {
-							return this.leakFaucet(observableByAddress.getKey())
-								.doOnComplete(() -> lastTimestamp.set(currentTimestamp))
+						if (rateLimiter.check()) {
+							return this.leakFaucet(from)
+								.doOnComplete(rateLimiter::reset)
 								.andThen(Single.just("Sent you 10 Test Rads!"))
 								.onErrorReturn(throwable -> "Couldn't send you any (Reason: " + throwable.getMessage() + ")")
 								.map(message::createReply);
+						} else {
+							return Single.just(message.createReply(
+								"Don't be hasty! You can only make one request every 10 minutes. "
+								+ rateLimiter.getTimeLeftString() + " left."
+							));
 						}
 					}, true)
-					.flatMap(this::sendReply)
+					.flatMapCompletable(this::sendReply)
 					.subscribe();
 			});
+	}
+
+	/**
+	 * Simple Rate Limiter helper class
+	 */
+	private static class RateLimiter {
+		private final AtomicLong lastTimestamp = new AtomicLong();
+		private final long millis;
+
+		private RateLimiter(long millis) {
+			this.millis = millis;
+		}
+
+		String getTimeLeftString() {
+			long timeSince = System.currentTimeMillis() - lastTimestamp.get();
+			long secondsTimeLeft = ((DELAY - timeSince) / 1000) % 60;
+			long minutesTimeLeft = ((DELAY - timeSince) / 1000) / 60;
+			return minutesTimeLeft + " minutes and " + secondsTimeLeft + " seconds";
+		}
+
+		boolean check() {
+			return lastTimestamp.get() == 0 || (System.currentTimeMillis() - lastTimestamp.get() > millis);
+		}
+
+		void reset() {
+			lastTimestamp.set(System.currentTimeMillis());
+		}
 	}
 
 	public static void main(String[] args) throws IOException {
