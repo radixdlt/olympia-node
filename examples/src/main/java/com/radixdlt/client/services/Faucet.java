@@ -8,20 +8,12 @@ import com.radixdlt.client.core.identity.RadixIdentity;
 import com.radixdlt.client.core.identity.SimpleRadixIdentity;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState;
-import com.radixdlt.client.messaging.RadixMessage;
-import com.radixdlt.client.messaging.RadixMessageContent;
 import com.radixdlt.client.messaging.RadixMessaging;
 import com.radixdlt.client.wallet.RadixWallet;
 import io.reactivex.Completable;
-import io.reactivex.Observable;
 import io.reactivex.Single;
 
 import java.io.IOException;
-import java.sql.Timestamp;
-import java.util.AbstractMap.SimpleImmutableEntry;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -36,11 +28,6 @@ public class Faucet {
 	private final static long DELAY = 1000 * 60 * 10; //10min
 
 	/**
-	 * The address of this faucet on which one can send messages to
-	 */
-	private final RadixAddress sourceAddress;
-
-	/**
 	 * The RadixIdentity of this faucet, an object which keeps the Chatbot's private key
 	 */
 	private final RadixIdentity radixIdentity;
@@ -52,7 +39,6 @@ public class Faucet {
 	 */
 	private Faucet(RadixIdentity radixIdentity) {
 		this.radixIdentity = radixIdentity;
-		this.sourceAddress = RadixUniverse.getInstance().getAddressFrom(radixIdentity.getPublicKey());
 	}
 
 	/**
@@ -89,9 +75,11 @@ public class Faucet {
 	}
 
 	/**
-	 * Start the faucet service
+	 * Start and run the faucet service
 	 */
 	public void run() {
+		final RadixAddress sourceAddress = RadixUniverse.getInstance().getAddressFrom(radixIdentity.getPublicKey());
+
 		System.out.println("Faucet Address: " + sourceAddress);
 
 		// Print out current balance of faucet
