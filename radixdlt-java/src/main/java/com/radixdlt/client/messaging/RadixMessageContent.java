@@ -42,6 +42,10 @@ public class RadixMessageContent {
 		return GSON.toJson(this);
 	}
 
+	public RadixMessageContent createReply(String replyContent) {
+		return new RadixMessageContent(from, to, replyContent);
+	}
+
 	public static RadixMessageContent fromJson(String json) {
 		return GSON.fromJson(json, RadixMessageContent.class);
 	}

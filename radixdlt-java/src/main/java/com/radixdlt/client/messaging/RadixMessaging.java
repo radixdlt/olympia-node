@@ -71,28 +71,35 @@ public class RadixMessaging {
 			.groupBy(msg -> msg.getFrom().getPublicKey().equals(identity.getPublicKey()) ? msg.getTo() : msg.getFrom());
 	}
 
+	public Observable<AtomSubmissionUpdate> sendMessage(RadixMessageContent content, RadixIdentity fromIdentity) {
+		Objects.requireNonNull(content);
+		if (content.getContent().length() > MAX_MESSAGE_LENGTH) {
+			throw new IllegalArgumentException(
+				"Message must be under " + MAX_MESSAGE_LENGTH + " characters but was " + content.getContent().length()
+			);
+		}
+
+		UnsignedAtom unsignedAtom = new AtomBuilder()
+			.type(ApplicationPayloadAtom.class)
+			.applicationId(RadixMessaging.APPLICATION_ID)
+			.payload(content.toJson())
+			.addDestination(content.getTo())
+			.addDestination(content.getFrom())
+			.addProtector(content.getTo().getPublicKey())
+			.addProtector(content.getFrom().getPublicKey())
+			.buildWithPOWFee(ledger.getMagic(), fromIdentity.getPublicKey());
+
+		return fromIdentity.sign(unsignedAtom)
+			.flatMapObservable(ledger::submitAtom);
+	}
+
 	public Observable<AtomSubmissionUpdate> sendMessage(String message, RadixIdentity fromIdentity, RadixAddress toAddress) {
 		Objects.requireNonNull(message);
 		Objects.requireNonNull(fromIdentity);
 		Objects.requireNonNull(toAddress);
 
-		if (message.length() > MAX_MESSAGE_LENGTH) {
-			throw new IllegalArgumentException("Message must be under " + MAX_MESSAGE_LENGTH + " characters but was " + message.length());
-		}
-
 		RadixAddress fromAddress = universe.getAddressFrom(fromIdentity.getPublicKey());
 
-		UnsignedAtom unsignedAtom = new AtomBuilder()
-			.type(ApplicationPayloadAtom.class)
-			.applicationId(RadixMessaging.APPLICATION_ID)
-			.payload(new RadixMessageContent(toAddress, fromAddress, message).toJson())
-			.addDestination(toAddress)
-			.addDestination(fromAddress)
-			.addProtector(toAddress.getPublicKey())
-			.addProtector(fromAddress.getPublicKey())
-			.buildWithPOWFee(ledger.getMagic(), fromIdentity.getPublicKey());
-
-		return fromIdentity.sign(unsignedAtom)
-			.flatMapObservable(ledger::submitAtom);
+		return this.sendMessage(new RadixMessageContent(toAddress, fromAddress, message), fromIdentity);
 	}
 }

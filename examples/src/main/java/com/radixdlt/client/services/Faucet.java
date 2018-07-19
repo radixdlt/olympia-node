@@ -8,17 +8,13 @@ import com.radixdlt.client.core.identity.RadixIdentity;
 import com.radixdlt.client.core.identity.SimpleRadixIdentity;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState;
-import com.radixdlt.client.messaging.RadixMessage;
 import com.radixdlt.client.messaging.RadixMessaging;
 import com.radixdlt.client.wallet.RadixWallet;
-import io.reactivex.Observable;
+import io.reactivex.Completable;
 import io.reactivex.Single;
 
 import java.io.IOException;
-import java.sql.Timestamp;
-import java.util.AbstractMap.SimpleImmutableEntry;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * A service which sends tokens to whoever sends it a message through
@@ -32,19 +28,9 @@ public class Faucet {
 	private final static long DELAY = 1000 * 60 * 10; //10min
 
 	/**
-	 * The address of this faucet on which one can send messages to
-	 */
-	private final RadixAddress sourceAddress;
-
-	/**
 	 * The RadixIdentity of this faucet, an object which keeps the Chatbot's private key
 	 */
 	private final RadixIdentity radixIdentity;
-
-	/**
-	 * Map to keep track of last request timestamps per user
-	 */
-	private final ConcurrentHashMap<RadixAddress, Long> recipientTimestamps = new ConcurrentHashMap<>();
 
 	/**
 	 * A faucet created on the default universe
@@ -53,77 +39,47 @@ public class Faucet {
 	 */
 	private Faucet(RadixIdentity radixIdentity) {
 		this.radixIdentity = radixIdentity;
-		this.sourceAddress = RadixUniverse.getInstance().getAddressFrom(radixIdentity.getPublicKey());
 	}
 
 	/**
-	 * Given a message, will attempt to send the requestor some tokens
-	 * and then sends a message indicating whether successful or not.
+	 * Send XRD from this account to an address
 	 *
-	 * @param message the original message received
-	 * @return the reply the faucet will send to the user
+	 * @param to the address to send to
+	 * @return completable whether transfer was successful or not
 	 */
-	private Single<SimpleImmutableEntry<RadixAddress,String>> leakFaucet(RadixMessage message) {
-		RadixAddress address = message.getFrom();
-		Long timestamp = System.currentTimeMillis();
-
-		if (this.recipientTimestamps.containsKey(address) && timestamp - this.recipientTimestamps.get(address) < DELAY) {
-			long timeSince = timestamp - this.recipientTimestamps.get(address);
-			if (timeSince < DELAY) {
-				long secondsTimeLeft = ((DELAY - timeSince) / 1000) % 60;
-				long minutesTimeLeft = ((DELAY - timeSince) / 1000) / 60;
-				return io.reactivex.Single.just(new SimpleImmutableEntry<>(
-					message.getFrom(),
-					"Don't be hasty! You can only make one request every 10 minutes. " + minutesTimeLeft + " minutes and " + secondsTimeLeft + " seconds left."
-				));
-			}
-		}
-
-		return RadixWallet.getInstance().transferXRD(10 * Asset.XRD.getSubUnits(), radixIdentity, message.getFrom())
+	private Completable leakFaucet(RadixAddress to) {
+		return RadixWallet.getInstance().transferXRD(10 * Asset.XRD.getSubUnits(), radixIdentity, to)
 			.doOnNext(state -> System.out.println("Transaction: " + state))
 			.filter(AtomSubmissionUpdate::isComplete)
 			.firstOrError()
-			.doOnSuccess(update -> {
-				if (update.getState() == AtomSubmissionState.STORED) {
-					this.recipientTimestamps.put(address, timestamp);
-				}
-			})
-			.map(update -> update.getState() == AtomSubmissionState.STORED ? "Sent you 10 Test Rads!" : "Couldn't send you any (Reason: " + update + ")")
-			.map(replyMessage -> new SimpleImmutableEntry<>(message.getFrom(), replyMessage))
-			.onErrorReturn(throwable -> new SimpleImmutableEntry<>(message.getFrom(), "Couldn't send you any (Reason: " + throwable.getMessage() + ")"))
-			;
+			.flatMapCompletable(update -> update.getState() == AtomSubmissionState.STORED ?
+				Completable.complete() : Completable.error(new RuntimeException(update.toString()))
+			);
 	}
 
 	/**
 	 * Actually send a reply message to the requestor through the Universe
 	 *
-	 * @param reply reply to send to requestor
+	 * @param message message to send back
+	 * @param to address to send message back to
 	 * @return state of the message atom submission
 	 */
-	private Observable<AtomSubmissionUpdate> sendReply(Map.Entry<RadixAddress,String> reply) {
-		return RadixMessaging.getInstance().sendMessage(reply.getValue(), radixIdentity, reply.getKey())
+	private Completable sendReply(String message, RadixAddress to) {
+		return RadixMessaging.getInstance().sendMessage(message, radixIdentity, to)
 			.doOnNext(state -> System.out.println("Message: " + state))
-		;
+			.filter(AtomSubmissionUpdate::isComplete)
+			.firstOrError()
+			.flatMapCompletable(update -> update.getState() == AtomSubmissionState.STORED ?
+				Completable.complete() : Completable.error(new RuntimeException(update.toString()))
+			);
 	}
 
 	/**
-	 * Retrieves all recent messages sent to this faucet
-	 *
-	 * @return stream of recent messages to this faucet
-	 */
-	private Observable<RadixMessage> getRecentMessages() {
-		return RadixMessaging.getInstance()
-			.getAllMessagesDecrypted(radixIdentity)
-			.doOnNext(message -> System.out.println(new Timestamp(System.currentTimeMillis()).toLocalDateTime() + " " + message)) // Print out all messages
-			.filter(message -> !message.getFrom().equals(sourceAddress)) // Don't send ourselves money
-			.filter(message -> Math.abs(message.getTimestamp() - System.currentTimeMillis()) < 60000) // Only deal with recent messages
-		;
-	}
-
-	/**
-	 * Start the faucet service
+	 * Start and run the faucet service
 	 */
 	public void run() {
+		final RadixAddress sourceAddress = RadixUniverse.getInstance().getAddressFrom(radixIdentity.getPublicKey());
+
 		System.out.println("Faucet Address: " + sourceAddress);
 
 		// Print out current balance of faucet
@@ -137,10 +93,60 @@ public class Faucet {
 		// Flow Logic
 		// Listen to any recent messages, send 10 XRD to the sender and then send a confirmation whether it succeeded or not
 		// NOTE: this is neither idempotent nor atomic!
-		this.getRecentMessages()
-			.flatMapSingle(this::leakFaucet, true)
-			.flatMap(this::sendReply)
-			.subscribe();
+		RadixMessaging.getInstance()
+			.getAllMessagesDecryptedAndGroupedByParticipants(radixIdentity)
+			.subscribe(observableByAddress -> {
+				final RadixAddress from = observableByAddress.getKey();
+
+				final RateLimiter rateLimiter = new RateLimiter(DELAY);
+
+				observableByAddress
+					.doOnNext(System.out::println) // Print out all messages
+					.filter(message -> !message.getFrom().equals(sourceAddress)) // Don't send ourselves money
+					.filter(message -> Math.abs(message.getTimestamp() - System.currentTimeMillis()) < 60000) // Only deal with recent messages
+					.flatMapSingle(message -> {
+						if (rateLimiter.check()) {
+							return this.leakFaucet(from)
+								.doOnComplete(rateLimiter::reset)
+								.andThen(Single.just("Sent you 10 Test Rads!"))
+								.onErrorReturn(throwable -> "Couldn't send you any (Reason: " + throwable.getMessage() + ")");
+						} else {
+							return Single.just(
+								"Don't be hasty! You can only make one request every 10 minutes. "
+								+ rateLimiter.getTimeLeftString() + " left."
+							);
+						}
+					}, true)
+					.flatMapCompletable(msg -> this.sendReply(msg, from))
+					.subscribe();
+			});
+	}
+
+	/**
+	 * Simple Rate Limiter helper class
+	 */
+	private static class RateLimiter {
+		private final AtomicLong lastTimestamp = new AtomicLong();
+		private final long millis;
+
+		private RateLimiter(long millis) {
+			this.millis = millis;
+		}
+
+		String getTimeLeftString() {
+			long timeSince = System.currentTimeMillis() - lastTimestamp.get();
+			long secondsTimeLeft = ((DELAY - timeSince) / 1000) % 60;
+			long minutesTimeLeft = ((DELAY - timeSince) / 1000) / 60;
+			return minutesTimeLeft + " minutes and " + secondsTimeLeft + " seconds";
+		}
+
+		boolean check() {
+			return lastTimestamp.get() == 0 || (System.currentTimeMillis() - lastTimestamp.get() > millis);
+		}
+
+		void reset() {
+			lastTimestamp.set(System.currentTimeMillis());
+		}
 	}
 
 	public static void main(String[] args) throws IOException {

@@ -55,6 +55,10 @@ public class RadixMessage {
 		return timestamp;
 	}
 
+	public RadixMessageContent createReply(String replyContent) {
+		return content.createReply(replyContent);
+	}
+
 	@Override
 	public String toString() {
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS", Locale.getDefault());
