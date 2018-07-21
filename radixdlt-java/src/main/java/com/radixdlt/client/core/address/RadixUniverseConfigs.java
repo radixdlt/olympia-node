@@ -24,7 +24,7 @@ public final class RadixUniverseConfigs {
     }
 
     private static InputStream getConfigFileStream(String name) {
-        String source = File.separator + "universe" + File.separator + name;
+        String source = "/universe/" + name;
         return RadixUniverseConfig.class.getResourceAsStream(source);
     }
 }
