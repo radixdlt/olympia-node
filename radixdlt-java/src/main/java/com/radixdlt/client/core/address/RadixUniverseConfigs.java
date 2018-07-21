@@ -1,6 +1,5 @@
 package com.radixdlt.client.core.address;
 
-import java.io.File;
 import java.io.InputStream;
 
 public final class RadixUniverseConfigs {
