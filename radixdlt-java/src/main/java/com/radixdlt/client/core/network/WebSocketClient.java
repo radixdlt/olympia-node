@@ -16,7 +16,7 @@ import okhttp3.WebSocketListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class WebSocketClient extends WebSocketListener {
+public class WebSocketClient {
 	private static final Logger LOGGER = LoggerFactory.getLogger(WebSocketClient.class);
 
 	private WebSocket webSocket;
@@ -80,7 +80,39 @@ public class WebSocketClient extends WebSocketListener {
 		final Request request = new Request.Builder().url(location).build();
 
 		// HACKISH: fix
-		this.webSocket = this.okHttpClient.get().newWebSocket(request, this);
+		this.webSocket = this.okHttpClient.get().newWebSocket(request, new WebSocketListener() {
+			@Override
+			public void onOpen(WebSocket webSocket, Response response) {
+				WebSocketClient.this.status.onNext(RadixClientStatus.OPEN);
+			}
+
+			@Override
+			public void onMessage(WebSocket webSocket, String message) {
+				messages.onNext(message);
+			}
+
+			@Override
+			public void onClosing(WebSocket webSocket, int code, String reason) {
+				webSocket.close(1000, null);
+			}
+
+			@Override
+			public void onClosed(WebSocket webSocket, int code, String reason) {
+				WebSocketClient.this.status.onNext(RadixClientStatus.CLOSED);
+			}
+
+			@Override
+			public void onFailure(WebSocket websocket, Throwable t, Response response) {
+				if (closed.get()) {
+					return;
+				}
+
+				LOGGER.error(t.toString());
+				WebSocketClient.this.status.onNext(RadixClientStatus.FAILURE);
+
+				WebSocketClient.this.messages.onError(t);
+			}
+		});
 	}
 
 	/**
@@ -105,37 +137,5 @@ public class WebSocketClient extends WebSocketListener {
 
 	public boolean send(String message) {
 		return this.webSocket.send(message);
-	}
-
-	@Override
-	public void onOpen(WebSocket webSocket, Response response) {
-		this.status.onNext(RadixClientStatus.OPEN);
-	}
-
-	@Override
-	public void onMessage(WebSocket webSocket, String message) {
-		messages.onNext(message);
-	}
-
-	@Override
-	public void onClosing(WebSocket webSocket, int code, String reason) {
-		webSocket.close(1000, null);
-	}
-
-	@Override
-	public void onClosed(WebSocket webSocket, int code, String reason) {
-		this.status.onNext(RadixClientStatus.CLOSED);
-	}
-
-	@Override
-	public void onFailure(WebSocket websocket, Throwable t, Response response) {
-		if (closed.get()) {
-			return;
-		}
-
-		LOGGER.error(t.toString());
-		this.status.onNext(RadixClientStatus.FAILURE);
-
-		this.messages.onError(t);
 	}
 }
