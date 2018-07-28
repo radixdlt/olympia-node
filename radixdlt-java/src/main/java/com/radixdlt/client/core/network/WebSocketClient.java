@@ -108,7 +108,7 @@ public class WebSocketClient {
 				LOGGER.error(t.toString());
 				WebSocketClient.this.status.onNext(RadixClientStatus.FAILURE);
 
-				WebSocketClient.this.messages.onError(t);
+				WebSocketClient.this.messages.onError(new IOException());
 			}
 		});
 	}
