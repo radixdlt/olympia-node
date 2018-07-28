@@ -3,6 +3,7 @@ package com.radixdlt.client.core.network;
 import io.reactivex.Maybe;
 import io.reactivex.subjects.SingleSubject;
 import java.util.Set;
+import okhttp3.Request;
 
 public class RadixPeer {
 
@@ -17,13 +18,15 @@ public class RadixPeer {
 		if (useSSL) {
 			this.radixClient = new RadixJsonRpcClient(
 				new WebSocketClient(
-					HttpClients::getSslAllTrustingClient, "wss://" + location + ":" + port + "/rpc"
+					HttpClients::getSslAllTrustingClient,
+					new Request.Builder().url("wss://" + location + ":" + port + "/rpc").build()
 				)
 			);
 		} else {
 			this.radixClient = new RadixJsonRpcClient(
 				new WebSocketClient(
-					HttpClients::getSslAllTrustingClient, "ws://" + location + ":" + port + "/rpc"
+					HttpClients::getSslAllTrustingClient,
+					new Request.Builder().url("ws://" + location + ":" + port + "/rpc").build()
 				)
 			);
 		}
