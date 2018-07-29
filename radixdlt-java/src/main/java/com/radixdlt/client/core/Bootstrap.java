@@ -5,6 +5,7 @@ import com.radixdlt.client.core.address.RadixUniverseConfigs;
 import com.radixdlt.client.core.network.PeerDiscovery;
 import com.radixdlt.client.core.network.PeersFromNodeFinder;
 import com.radixdlt.client.core.network.PeersFromSeed;
+import com.radixdlt.client.core.network.RadixPeer;
 
 public enum Bootstrap implements BootstrapConfig {
 	ALPHANET(
@@ -21,11 +22,11 @@ public enum Bootstrap implements BootstrapConfig {
 	),
 	WINTERFELL(
 		RadixUniverseConfigs.getWinterfell(),
-		new PeersFromSeed("52.190.0.18", false, 8080)
+		new PeersFromSeed(new RadixPeer("52.190.0.18", false, 8080))
 	),
 	WINTERFELL_LOCAL(
 		RadixUniverseConfigs.getWinterfell(),
-		new PeersFromSeed("localhost", false, 8080)
+		new PeersFromSeed(new RadixPeer("localhost", false, 8080))
 	);
 
 	private final RadixUniverseConfig config;

@@ -10,10 +10,14 @@ public class RadixPeer {
 	private final String location;
 	private final RadixJsonRpcClient radixClient;
 	private final SingleSubject<NodeRunnerData> data;
+	private final boolean useSSL;
+	private final int port;
 
 	public RadixPeer(String location, boolean useSSL, int port) {
 		this.data = SingleSubject.create();
 		this.location = location;
+		this.useSSL = useSSL;
+		this.port = port;
 
 		if (useSSL) {
 			this.radixClient = new RadixJsonRpcClient(
@@ -30,6 +34,14 @@ public class RadixPeer {
 				)
 			);
 		}
+	}
+
+	public int getPort() {
+		return port;
+	}
+
+	public boolean isSsl() {
+		return useSSL;
 	}
 
 	public String getLocation() {
