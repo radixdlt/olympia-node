@@ -17,10 +17,13 @@ public class PeersFromSeed implements PeerDiscovery {
 	}
 
 	public Observable<RadixPeer> findPeers() {
-
 		Single<RadixPeer> rawSeed = Single.just(seed).cache();
 		Observable<RadixPeer> connectedSeed =
-			rawSeed.doOnSuccess(seed -> seed.getRadixClient().getSelf().subscribe(seed::data))
+			rawSeed
+				.doOnSuccess(seed -> seed.getRadixClient().getSelf().subscribe(
+					seed::data,
+					e -> LOGGER.warn("Unable to load seed info")
+				))
 				.toObservable();
 
 		return Observable.concat(
