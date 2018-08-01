@@ -19,9 +19,9 @@ public class RadixNetworkTest {
 			network.getRadixClients()
 				.map(RadixJsonRpcClient::getLocation)
 				.test()
-				.assertValueAt(0, "ws://1:8080/rpc")
-				.assertValueAt(1, "ws://2:8080/rpc")
-				.assertValueAt(2, "ws://3:8080/rpc")
+				.assertValueAt(0, "http://1:8080/rpc")
+				.assertValueAt(1, "http://2:8080/rpc")
+				.assertValueAt(2, "http://3:8080/rpc")
 		);
 	}
 }

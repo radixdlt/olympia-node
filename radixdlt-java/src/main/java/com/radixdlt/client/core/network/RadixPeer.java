@@ -3,30 +3,45 @@ package com.radixdlt.client.core.network;
 import io.reactivex.Maybe;
 import io.reactivex.subjects.SingleSubject;
 import java.util.Set;
+import okhttp3.Request;
 
 public class RadixPeer {
 
 	private final String location;
 	private final RadixJsonRpcClient radixClient;
 	private final SingleSubject<NodeRunnerData> data;
+	private final boolean useSSL;
+	private final int port;
 
 	public RadixPeer(String location, boolean useSSL, int port) {
 		this.data = SingleSubject.create();
 		this.location = location;
+		this.useSSL = useSSL;
+		this.port = port;
 
 		if (useSSL) {
 			this.radixClient = new RadixJsonRpcClient(
 				new WebSocketClient(
-					HttpClients::getSslAllTrustingClient, "wss://" + location + ":" + port + "/rpc"
+					HttpClients::getSslAllTrustingClient,
+					new Request.Builder().url("wss://" + location + ":" + port + "/rpc").build()
 				)
 			);
 		} else {
 			this.radixClient = new RadixJsonRpcClient(
 				new WebSocketClient(
-					HttpClients::getSslAllTrustingClient, "ws://" + location + ":" + port + "/rpc"
+					HttpClients::getSslAllTrustingClient,
+					new Request.Builder().url("ws://" + location + ":" + port + "/rpc").build()
 				)
 			);
 		}
+	}
+
+	public int getPort() {
+		return port;
+	}
+
+	public boolean isSsl() {
+		return useSSL;
 	}
 
 	public String getLocation() {

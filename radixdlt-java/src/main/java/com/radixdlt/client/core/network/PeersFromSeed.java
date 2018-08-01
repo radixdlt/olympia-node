@@ -10,25 +10,20 @@ import org.slf4j.LoggerFactory;
 public class PeersFromSeed implements PeerDiscovery {
 	private static final Logger LOGGER = LoggerFactory.getLogger(PeersFromSeed.class);
 
-	private final String seed;
-	private final boolean useSSL;
-	private final int port;
+	private final RadixPeer seed;
 
-	public PeersFromSeed(String seed, int port) {
-		this(seed, true, port);
-	}
-
-	public PeersFromSeed(String seed, boolean useSSL, int port) {
+	public PeersFromSeed(RadixPeer seed) {
 		this.seed = seed;
-		this.useSSL = useSSL;
-		this.port = port;
 	}
 
 	public Observable<RadixPeer> findPeers() {
-
-		Single<RadixPeer> rawSeed = Single.just(new RadixPeer(seed, useSSL, port)).cache();
+		Single<RadixPeer> rawSeed = Single.just(seed).cache();
 		Observable<RadixPeer> connectedSeed =
-			rawSeed.doOnSuccess(peer -> peer.getRadixClient().getSelf().subscribe(peer::data))
+			rawSeed
+				.doOnSuccess(seed -> seed.getRadixClient().getSelf().subscribe(
+					seed::data,
+					e -> LOGGER.warn("Unable to load seed info")
+				))
 				.toObservable();
 
 		return Observable.concat(
@@ -41,7 +36,7 @@ public class PeersFromSeed implements PeerDiscovery {
 					Collections.shuffle(copyList);
 					return copyList;
 				})
-				.map(data -> new RadixPeer(data.getIp(), useSSL, port).data(data)),
+				.map(data -> new RadixPeer(data.getIp(), seed.isSsl(), seed.getPort()).data(data)),
 			rawSeed.toObservable()
 		).distinct(RadixPeer::getLocation);
 	}

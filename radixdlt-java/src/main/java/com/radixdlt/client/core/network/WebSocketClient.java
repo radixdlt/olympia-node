@@ -16,7 +16,7 @@ import okhttp3.WebSocketListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class WebSocketClient extends WebSocketListener {
+public class WebSocketClient {
 	private static final Logger LOGGER = LoggerFactory.getLogger(WebSocketClient.class);
 
 	private WebSocket webSocket;
@@ -27,14 +27,14 @@ public class WebSocketClient extends WebSocketListener {
 	private final BehaviorSubject<RadixClientStatus> status = BehaviorSubject.createDefault(RadixClientStatus.CLOSED);
 	private final AtomicBoolean closed = new AtomicBoolean(false);
 
-	private final String location;
+	private final Request endpoint;
 	private final Supplier<OkHttpClient> okHttpClient;
 
 	private PublishSubject<String> messages = PublishSubject.create();
 
-	public WebSocketClient(Supplier<OkHttpClient> okHttpClient, String location) {
+	public WebSocketClient(Supplier<OkHttpClient> okHttpClient, Request endpoint) {
 		this.okHttpClient = okHttpClient;
-		this.location = location;
+		this.endpoint = endpoint;
 
 		this.status
 			.filter(status -> status.equals(RadixClientStatus.FAILURE))
@@ -49,8 +49,8 @@ public class WebSocketClient extends WebSocketListener {
 		return messages;
 	}
 
-	public String getLocation() {
-		return location;
+	public Request getEndpoint() {
+		return endpoint;
 	}
 
 	public Observable<RadixClientStatus> getStatus() {
@@ -69,7 +69,7 @@ public class WebSocketClient extends WebSocketListener {
 		return true;
 	}
 
-	public void tryConnect() {
+	private void tryConnect() {
 		// TODO: Race condition here but not fatal, fix later on
 		if (this.status.getValue() == RadixClientStatus.CONNECTING) {
 			return;
@@ -77,10 +77,40 @@ public class WebSocketClient extends WebSocketListener {
 
 		this.status.onNext(RadixClientStatus.CONNECTING);
 
-		final Request request = new Request.Builder().url(location).build();
-
 		// HACKISH: fix
-		this.webSocket = this.okHttpClient.get().newWebSocket(request, this);
+		this.webSocket = this.okHttpClient.get().newWebSocket(endpoint, new WebSocketListener() {
+			@Override
+			public void onOpen(WebSocket webSocket, Response response) {
+				WebSocketClient.this.status.onNext(RadixClientStatus.OPEN);
+			}
+
+			@Override
+			public void onMessage(WebSocket webSocket, String message) {
+				messages.onNext(message);
+			}
+
+			@Override
+			public void onClosing(WebSocket webSocket, int code, String reason) {
+				webSocket.close(1000, null);
+			}
+
+			@Override
+			public void onClosed(WebSocket webSocket, int code, String reason) {
+				WebSocketClient.this.status.onNext(RadixClientStatus.CLOSED);
+			}
+
+			@Override
+			public void onFailure(WebSocket websocket, Throwable t, Response response) {
+				if (closed.get()) {
+					return;
+				}
+
+				LOGGER.error(t.toString());
+				WebSocketClient.this.status.onNext(RadixClientStatus.FAILURE);
+
+				WebSocketClient.this.messages.onError(new IOException());
+			}
+		});
 	}
 
 	/**
@@ -105,37 +135,5 @@ public class WebSocketClient extends WebSocketListener {
 
 	public boolean send(String message) {
 		return this.webSocket.send(message);
-	}
-
-	@Override
-	public void onOpen(WebSocket webSocket, Response response) {
-		this.status.onNext(RadixClientStatus.OPEN);
-	}
-
-	@Override
-	public void onMessage(WebSocket webSocket, String message) {
-		messages.onNext(message);
-	}
-
-	@Override
-	public void onClosing(WebSocket webSocket, int code, String reason) {
-		webSocket.close(1000, null);
-	}
-
-	@Override
-	public void onClosed(WebSocket webSocket, int code, String reason) {
-		this.status.onNext(RadixClientStatus.CLOSED);
-	}
-
-	@Override
-	public void onFailure(WebSocket websocket, Throwable t, Response response) {
-		if (closed.get()) {
-			return;
-		}
-
-		LOGGER.error(t.toString());
-		this.status.onNext(RadixClientStatus.FAILURE);
-
-		this.messages.onError(t);
 	}
 }

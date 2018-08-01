@@ -51,7 +51,7 @@ public class RadixJsonRpcClient {
 	 * @return URL which websocket is connected to
 	 */
 	public String getLocation() {
-		return wsClient.getLocation();
+		return wsClient.getEndpoint().url().toString();
 	}
 
 	public Observable<RadixClientStatus> getStatus() {
