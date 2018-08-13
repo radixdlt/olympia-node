@@ -39,8 +39,8 @@ public class RadixMessagingTest {
 		when(universe.getLedger()).thenReturn(ledger);
 		when(ledger.getAllAtoms(any(), any())).thenReturn(Observable.just(undecryptableAtom, decryptableAtom));
 
-		RadixMessaging messaging = new RadixMessaging(universe);
-		messaging.getAllMessagesDecrypted(myIdentity)
+		RadixMessaging messaging = new RadixMessaging(myIdentity, universe);
+		messaging.getAllMessages()
 			.subscribe(observer);
 
 		observer.assertValueCount(1);
@@ -69,8 +69,8 @@ public class RadixMessagingTest {
 		when(universe.getLedger()).thenReturn(ledger);
 		when(ledger.getAllAtoms(any(), any())).thenReturn(Observable.just(undecryptableAtom, decryptableAtom));
 
-		RadixMessaging messaging = new RadixMessaging(universe);
-		messaging.getAllMessagesDecrypted(myIdentity)
+		RadixMessaging messaging = new RadixMessaging(myIdentity, universe);
+		messaging.getAllMessages()
 			.subscribe(observer);
 
 		observer.assertValueCount(1);

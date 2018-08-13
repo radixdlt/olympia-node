@@ -1,14 +1,13 @@
-package com.radixdlt.client.services;
+package com.radixdlt.client.examples;
 
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.identity.RadixIdentity;
 import com.radixdlt.client.core.identity.SimpleRadixIdentity;
-import com.radixdlt.client.core.network.AtomSubmissionUpdate;
 import com.radixdlt.client.messaging.RadixMessage;
 import com.radixdlt.client.messaging.RadixMessaging;
-import io.reactivex.ObservableSource;
+import io.reactivex.Completable;
 import java.sql.Timestamp;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -24,6 +23,8 @@ public class ChatBot {
 	 */
 	private final RadixIdentity identity;
 
+	private final RadixMessaging messaging;
+
 	/**
 	 * The chat algorithm to run on each new conversation
 	 *
@@ -33,6 +34,7 @@ public class ChatBot {
 
 	public ChatBot(RadixIdentity identity, Supplier<Function<String,String>> chatBotAlgorithmSupplier) {
 		this.identity = identity;
+		this.messaging = new RadixMessaging(identity, RadixUniverse.getInstance());
 		this.chatBotAlgorithmSupplier = chatBotAlgorithmSupplier;
 	}
 
@@ -45,18 +47,18 @@ public class ChatBot {
 		System.out.println("Chatbot address: " + address);
 
 		// Subscribe/Decrypt messages
-		RadixMessaging.getInstance()
-			.getAllMessagesDecryptedAndGroupedByParticipants(identity)
-			.flatMap(convo -> convo
+		messaging
+			.getAllMessagesGroupedByParticipants()
+			.flatMapCompletable(convo -> convo
 				.doOnNext(message -> System.out.println("Received at " + new Timestamp(System.currentTimeMillis()) + ": " + message)) // Print messages
 				.filter(message -> !message.getFrom().equals(address)) // Don't reply to ourselves!
 				.filter(message -> Math.abs(message.getTimestamp() - System.currentTimeMillis()) < 60000) // Only reply to recent messages
-				.flatMap(new io.reactivex.functions.Function<RadixMessage, ObservableSource<AtomSubmissionUpdate>>() {
+				.flatMapCompletable(new io.reactivex.functions.Function<RadixMessage, Completable>() {
 					Function<String,String> chatBotAlgorithm = chatBotAlgorithmSupplier.get();
 
 					@Override
-					public ObservableSource<AtomSubmissionUpdate> apply(RadixMessage message) {
-						return RadixMessaging.getInstance().sendMessage(chatBotAlgorithm.apply(message.getContent()), identity, message.getFrom());
+					public Completable apply(RadixMessage message) {
+						return messaging.sendMessage(chatBotAlgorithm.apply(message.getContent()), message.getFrom()).toCompletable();
 					}
 				})
 			).subscribe(
@@ -66,7 +68,7 @@ public class ChatBot {
 	}
 
 	public static void main(String[] args) throws Exception {
-		RadixUniverse.bootstrap(Bootstrap.SUNSTONE);
+		RadixUniverse.bootstrap(Bootstrap.WINTERFELL_LOCAL);
 
 		RadixUniverse.getInstance()
 			.getNetwork()
