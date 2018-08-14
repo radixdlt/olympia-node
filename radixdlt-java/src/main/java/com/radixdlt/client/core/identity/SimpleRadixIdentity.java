@@ -3,7 +3,6 @@ package com.radixdlt.client.core.identity;
 import com.radixdlt.client.application.EncryptedData;
 import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.atoms.EncryptedPayload;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.crypto.CryptoException;
 import com.radixdlt.client.core.crypto.ECKeyPair;
@@ -64,11 +63,6 @@ public class SimpleRadixIdentity implements RadixIdentity {
 			}
 		}
 		return Single.error(new CryptoException("Cannot decrypt"));
-	}
-
-	@Override
-	public Single<byte[]> decrypt(EncryptedPayload data) {
-		return Single.fromCallable(() -> data.decrypt(myKey));
 	}
 
 	@Override

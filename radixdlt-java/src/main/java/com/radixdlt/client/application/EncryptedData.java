@@ -78,7 +78,7 @@ public class EncryptedData {
 		List<EncryptedPrivateKey> protectors = atom.getEncryptor().getProtectors();
 
 		return new EncryptedData(
-			atom.getEncryptedPayload().getPayload().getBytes(),
+			atom.getPayload().getBytes(),
 			metaData,
 			protectors
 		);

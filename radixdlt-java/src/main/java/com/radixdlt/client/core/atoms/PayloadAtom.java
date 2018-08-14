@@ -56,16 +56,4 @@ public abstract class PayloadAtom extends Atom {
 	public Payload getPayload() {
 		return encrypted;
 	}
-
-	public EncryptedPayload getEncryptedPayload() {
-		if (encrypted == null) {
-			return null;
-		}
-
-		if (encryptor == null) {
-			return new EncryptedPayload(encrypted);
-		} else {
-			return new EncryptedPayload(encrypted, encryptor);
-		}
-	}
 }
