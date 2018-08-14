@@ -1,18 +1,19 @@
 package com.radixdlt.client.messaging;
 
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.radixdlt.client.application.EncryptedData;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
-import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.address.RadixAddress;
-import com.radixdlt.client.core.atoms.ApplicationPayloadAtom;
-import com.radixdlt.client.core.identity.RadixIdentities;
+import com.radixdlt.client.core.crypto.ECSignature;
 import com.radixdlt.client.core.identity.RadixIdentity;
-import com.radixdlt.client.core.ledger.RadixLedger;
 import io.reactivex.Observable;
 import io.reactivex.observables.GroupedObservable;
+import java.util.Map;
 import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,31 +25,42 @@ public class RadixMessaging {
 
 	public static final int MAX_MESSAGE_LENGTH = 256;
 
-	private final RadixUniverse universe;
-	private final RadixLedger ledger;
 	private final RadixApplicationAPI api;
 	private final RadixIdentity identity;
+	private final RadixAddress myAddress;
+	private final JsonParser parser = new JsonParser();
 
-	public RadixMessaging(RadixIdentity identity, RadixUniverse universe) {
-		this.universe = universe;
-		this.ledger = universe.getLedger();
-		this.identity = identity;
-		this.api = new RadixApplicationAPI(identity, ledger);
-	}
-
-
-	public Observable<EncryptedMessage> getAllMessagesEncrypted(EUID euid) {
-		return ledger.getAllAtoms(euid, ApplicationPayloadAtom.class)
-			.filter(atom -> atom.getApplicationId().equals(APPLICATION_ID)) // Only get messaging atoms
-			.map(EncryptedMessage::fromAtom);
+	public RadixMessaging(RadixApplicationAPI api) {
+		this.identity = api.getIdentity();
+		this.myAddress = api.getAddress();
+		this.api = api;
 	}
 
 	public Observable<RadixMessage> getAllMessages() {
-		return this.getAllMessagesEncrypted(identity.getPublicKey().getUID())
-			.flatMapMaybe(decryptable -> RadixIdentities.decrypt(identity, decryptable)
-				.toMaybe()
-				.doOnError(error -> LOGGER.error(error.toString()))
-				.onErrorComplete());
+		return api.getEncryptedData(myAddress)
+			.filter(encryptedData -> APPLICATION_ID.equals(encryptedData.getMetaData().get("application")))
+			.flatMapMaybe(encryptedData ->
+				identity.decrypt(encryptedData)
+					.toMaybe()
+					.map(String::new)
+					.map(parser::parse)
+					.map(JsonElement::getAsJsonObject)
+					.map(jsonObject -> {
+						RadixAddress from = new RadixAddress(jsonObject.get("from").getAsString());
+						RadixAddress to = new RadixAddress(jsonObject.get("to").getAsString());
+						String content = jsonObject.get("content").getAsString();
+						Object signaturesUnchecked = encryptedData.getMetaData().get("signatures");
+						Map<String, ECSignature> signatures = (Map<String, ECSignature>) signaturesUnchecked;
+						ECSignature signature = signatures.get(from.getUID().toString());
+						if (signature == null) {
+							throw new RuntimeException("Unsigned message");
+						}
+						Long timestamp = (Long) encryptedData.getMetaData().get("timestamp");
+						return new RadixMessage(from, to, content, timestamp);
+					})
+					.doOnError(error -> LOGGER.warn("Could not read message: " + error))
+					.onErrorComplete()
+			);
 	}
 
 	public Observable<GroupedObservable<RadixAddress, RadixMessage>> getAllMessagesGroupedByParticipants() {
@@ -56,11 +68,13 @@ public class RadixMessaging {
 			.groupBy(msg -> msg.getFrom().getPublicKey().equals(identity.getPublicKey()) ? msg.getTo() : msg.getFrom());
 	}
 
-	public Result sendMessage(RadixMessageContent content, EUID uniqueId) {
-		Objects.requireNonNull(content);
-		if (content.getContent().length() > MAX_MESSAGE_LENGTH) {
+	public Result sendMessage(String message, RadixAddress toAddress, EUID uniqueId) {
+		Objects.requireNonNull(message);
+		Objects.requireNonNull(toAddress);
+
+		if (message.length() > MAX_MESSAGE_LENGTH) {
 			throw new IllegalArgumentException(
-				"Message must be under " + MAX_MESSAGE_LENGTH + " characters but was " + content.getContent().length()
+				"Message must be under " + MAX_MESSAGE_LENGTH + " characters but was " + message.length()
 			);
 		}
 
@@ -68,28 +82,19 @@ public class RadixMessaging {
 			throw new IllegalArgumentException("Unique ids not supported");
 		}
 
+		JsonObject messageJson = new JsonObject();
+		messageJson.addProperty("from", myAddress.toString());
+		messageJson.addProperty("to", toAddress.toString());
+		messageJson.addProperty("content", message);
+
 		EncryptedData encryptedData = new EncryptedData.EncryptedDataBuilder()
-			.data(content.toJson().getBytes())
+			.data(messageJson.toString().getBytes())
 			.metaData("application", RadixMessaging.APPLICATION_ID)
-			.addReader(content.getTo().getPublicKey())
-			.addReader(content.getFrom().getPublicKey())
+			.addReader(toAddress.getPublicKey())
+			.addReader(myAddress.getPublicKey())
 			.build();
 
-		return api.storeData(encryptedData, content.getTo(), content.getFrom());
-
-	}
-
-	public Result sendMessage(RadixMessageContent content) {
-		return this.sendMessage(content, null);
-	}
-
-	public Result sendMessage(String message, RadixAddress toAddress, EUID uniqueId) {
-		Objects.requireNonNull(message);
-		Objects.requireNonNull(toAddress);
-
-		RadixAddress fromAddress = universe.getAddressFrom(identity.getPublicKey());
-
-		return this.sendMessage(new RadixMessageContent(toAddress, fromAddress, message), uniqueId);
+		return api.storeData(encryptedData, toAddress, myAddress);
 	}
 
 	public Result sendMessage(String message, RadixAddress toAddress) {

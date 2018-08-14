@@ -1,5 +1,6 @@
 package com.radixdlt.client.examples;
 
+import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.address.RadixAddress;
@@ -18,7 +19,7 @@ public class RadixMessagingExample {
 	}
 
 	static {
-		RadixUniverse.bootstrap(Bootstrap.WINTERFELL_LOCAL);
+		RadixUniverse.bootstrap(Bootstrap.WINTERFELL);
 	}
 
 	public static void main(String[] args) throws Exception {
@@ -29,12 +30,12 @@ public class RadixMessagingExample {
 			.subscribe(System.out::println);
 
 		// Identity Manager which manages user's keys, signing, encrypting and decrypting
-		RadixIdentity radixIdentity = new SimpleRadixIdentity();
+		RadixApplicationAPI api = new RadixApplicationAPI(new SimpleRadixIdentity(), RadixUniverse.getInstance().getLedger());
 
 		// Addresses
 		RadixAddress toAddress = RadixAddress.fromString(TO_ADDRESS_BASE58);
 
-		RadixMessaging messaging = new RadixMessaging(radixIdentity, RadixUniverse.getInstance());
+		RadixMessaging messaging = new RadixMessaging(api);
 
 		switch(queryType) {
 			case ALL:

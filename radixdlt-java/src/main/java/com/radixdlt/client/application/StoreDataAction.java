@@ -13,7 +13,7 @@ import java.util.Map;
  */
 public class StoreDataAction {
 	private byte[] data;
-	private Map<String, String> metaData;
+	private Map<String, Object> metaData;
 	private List<EncryptedPrivateKey> protectors;
 	private List<RadixAddress> addresses = new ArrayList<>();
 
@@ -34,11 +34,7 @@ public class StoreDataAction {
 		addresses.add(address1);
 	}
 
-	/**
-	 * Compose this action into an Atom Builder
-	 *
-	 * @param atomBuilder the atom builder to add this action to
-	 */
+	// TODO: move this to a separate module
 	public void addToAtomBuilder(AtomBuilder atomBuilder) {
 		atomBuilder
 			.type(ApplicationPayloadAtom.class)
@@ -46,7 +42,7 @@ public class StoreDataAction {
 			.payload(data);
 
 		if (metaData.containsKey("application")) {
-			atomBuilder.applicationId(metaData.get("application"));
+			atomBuilder.applicationId((String) metaData.get("application"));
 		}
 
 		addresses.forEach(atomBuilder::addDestination);

@@ -1,62 +1,44 @@
 package com.radixdlt.client.messaging;
 
-import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.address.RadixAddress;
 
-import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.crypto.ECSignature;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
-import java.util.Optional;
 import java.util.TimeZone;
 
 public class RadixMessage {
-	private final RadixMessageContent content;
-	private final Atom atom;
 	private final long timestamp;
+	private final RadixAddress to;
+	private final RadixAddress from;
+	private final String content;
 
-	public RadixMessage(RadixMessageContent content, Atom atom) {
+	public RadixMessage(
+		RadixAddress from,
+		RadixAddress to,
+		String content,
+		long timestamp
+	) {
+		this.from = from;
+		this.to = to;
 		this.content = content;
-		this.timestamp = atom.getTimestamp();
-		this.atom = atom;
-	}
-
-	public boolean validateSignature() {
-		Optional<ECSignature> signature = this.getSignature(this.getFrom().getUID());
-		if (!signature.isPresent()) {
-			return false;
-		}
-
-		if (!atom.getHash().verifySelf(this.getFrom().getPublicKey(), signature.get())) {
-			return false;
-		}
-
-		return true;
-	}
-
-	public Optional<ECSignature> getSignature(EUID euid) {
-		return atom.getSignature(euid);
+		this.timestamp = timestamp;
 	}
 
 	public RadixAddress getFrom() {
-		return content.getFrom();
+		return from;
 	}
 
 	public RadixAddress getTo() {
-		return content.getTo();
+		return to;
 	}
 
 	public String getContent() {
-		return content.getContent();
+		return content;
 	}
 
 	public long getTimestamp() {
 		return timestamp;
-	}
-
-	public RadixMessageContent createReply(String replyContent) {
-		return content.createReply(replyContent);
 	}
 
 	@Override
@@ -64,6 +46,6 @@ public class RadixMessage {
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS", Locale.getDefault());
 		sdf.setTimeZone(TimeZone.getDefault());
 
-		return sdf.format(new Date(timestamp)) + " " + content.toString();
+		return "Time: " + sdf.format(new Date(timestamp)) + "\nFrom: " + from + "\nTo: " + to + "\nContent: " + content;
 	}
 }

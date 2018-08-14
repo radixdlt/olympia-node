@@ -1,6 +1,7 @@
 package com.radixdlt.client.application;
 
 import com.radixdlt.client.core.address.RadixAddress;
+import com.radixdlt.client.core.atoms.ApplicationPayloadAtom;
 import com.radixdlt.client.core.atoms.AtomBuilder;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.identity.RadixIdentity;
@@ -40,6 +41,19 @@ public class RadixApplicationAPI {
 	public RadixApplicationAPI(RadixIdentity identity, RadixLedger ledger) {
 		this.identity = identity;
 		this.ledger = ledger;
+	}
+
+	public RadixIdentity getIdentity() {
+		return identity;
+	}
+
+	public RadixAddress getAddress() {
+		return ledger.getAddressFromPublicKey(identity.getPublicKey());
+	}
+
+	public Observable<EncryptedData> getEncryptedData(RadixAddress address) {
+		return ledger.getAllAtoms(address.getUID(), ApplicationPayloadAtom.class)
+			.map(EncryptedData::fromAtom);
 	}
 
 	public Result storeData(EncryptedData encryptedData, RadixAddress address) {

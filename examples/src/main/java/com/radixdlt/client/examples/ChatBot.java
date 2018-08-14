@@ -1,5 +1,6 @@
 package com.radixdlt.client.examples;
 
+import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.address.RadixAddress;
@@ -18,10 +19,7 @@ import java.util.function.Supplier;
  */
 public class ChatBot {
 
-	/**
-	 * The Chatbot's RadixIdentity, an object which keeps the Chatbot's private key
-	 */
-	private final RadixIdentity identity;
+	private final RadixApplicationAPI api;
 
 	private final RadixMessaging messaging;
 
@@ -32,9 +30,9 @@ public class ChatBot {
 	 */
 	private final Supplier<Function<String,String>> chatBotAlgorithmSupplier;
 
-	public ChatBot(RadixIdentity identity, Supplier<Function<String,String>> chatBotAlgorithmSupplier) {
-		this.identity = identity;
-		this.messaging = new RadixMessaging(identity, RadixUniverse.getInstance());
+	public ChatBot(RadixApplicationAPI api, Supplier<Function<String,String>> chatBotAlgorithmSupplier) {
+		this.api = api;
+		this.messaging = new RadixMessaging(api);
 		this.chatBotAlgorithmSupplier = chatBotAlgorithmSupplier;
 	}
 
@@ -42,16 +40,14 @@ public class ChatBot {
 	 * Connect to the network and begin running the service
 	 */
 	public void run() {
-		RadixAddress address = RadixUniverse.getInstance().getAddressFrom(identity.getPublicKey());
-
-		System.out.println("Chatbot address: " + address);
+		System.out.println("Chatbot address: " + api.getAddress());
 
 		// Subscribe/Decrypt messages
 		messaging
 			.getAllMessagesGroupedByParticipants()
 			.flatMapCompletable(convo -> convo
 				.doOnNext(message -> System.out.println("Received at " + new Timestamp(System.currentTimeMillis()) + ": " + message)) // Print messages
-				.filter(message -> !message.getFrom().equals(address)) // Don't reply to ourselves!
+				.filter(message -> !message.getFrom().equals(api.getAddress())) // Don't reply to ourselves!
 				.filter(message -> Math.abs(message.getTimestamp() - System.currentTimeMillis()) < 60000) // Only reply to recent messages
 				.flatMapCompletable(new io.reactivex.functions.Function<RadixMessage, Completable>() {
 					Function<String,String> chatBotAlgorithm = chatBotAlgorithmSupplier.get();
@@ -68,7 +64,7 @@ public class ChatBot {
 	}
 
 	public static void main(String[] args) throws Exception {
-		RadixUniverse.bootstrap(Bootstrap.WINTERFELL_LOCAL);
+		RadixUniverse.bootstrap(Bootstrap.WINTERFELL);
 
 		RadixUniverse.getInstance()
 			.getNetwork()
@@ -78,7 +74,9 @@ public class ChatBot {
 		// Setup Identity of Chatbot
 		RadixIdentity radixIdentity = new SimpleRadixIdentity("chatbot.key");
 
-		ChatBot chatBot = new ChatBot(radixIdentity, () -> new Function<String, String>() {
+		RadixApplicationAPI api = new RadixApplicationAPI(radixIdentity, RadixUniverse.getInstance().getLedger());
+
+		ChatBot chatBot = new ChatBot(api, () -> new Function<String, String>() {
 			int messageCount = 0;
 
 			@Override
