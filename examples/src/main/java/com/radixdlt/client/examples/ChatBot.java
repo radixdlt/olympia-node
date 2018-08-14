@@ -74,7 +74,7 @@ public class ChatBot {
 		// Setup Identity of Chatbot
 		RadixIdentity radixIdentity = new SimpleRadixIdentity("chatbot.key");
 
-		RadixApplicationAPI api = new RadixApplicationAPI(radixIdentity, RadixUniverse.getInstance().getLedger());
+		RadixApplicationAPI api = RadixApplicationAPI.create(radixIdentity);
 
 		ChatBot chatBot = new ChatBot(api, () -> new Function<String, String>() {
 			int messageCount = 0;

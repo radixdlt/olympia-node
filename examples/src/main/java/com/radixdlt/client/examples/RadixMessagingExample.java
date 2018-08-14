@@ -30,7 +30,7 @@ public class RadixMessagingExample {
 			.subscribe(System.out::println);
 
 		// Identity Manager which manages user's keys, signing, encrypting and decrypting
-		RadixApplicationAPI api = new RadixApplicationAPI(new SimpleRadixIdentity(), RadixUniverse.getInstance().getLedger());
+		RadixApplicationAPI api = RadixApplicationAPI.create(new SimpleRadixIdentity());
 
 		// Addresses
 		RadixAddress toAddress = RadixAddress.fromString(TO_ADDRESS_BASE58);

@@ -1,5 +1,6 @@
 package com.radixdlt.client.application;
 
+import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.ApplicationPayloadAtom;
 import com.radixdlt.client.core.atoms.AtomBuilder;
@@ -38,9 +39,13 @@ public class RadixApplicationAPI {
 	private final RadixIdentity identity;
 	private final RadixLedger ledger;
 
-	public RadixApplicationAPI(RadixIdentity identity, RadixLedger ledger) {
+	private RadixApplicationAPI(RadixIdentity identity, RadixLedger ledger) {
 		this.identity = identity;
 		this.ledger = ledger;
+	}
+
+	public static RadixApplicationAPI create(RadixIdentity identity) {
+		return new RadixApplicationAPI(identity, RadixUniverse.getInstance().getLedger());
 	}
 
 	public RadixIdentity getIdentity() {
