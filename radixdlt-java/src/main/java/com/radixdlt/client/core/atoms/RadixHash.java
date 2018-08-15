@@ -1,15 +1,15 @@
 package com.radixdlt.client.core.atoms;
 
-import com.radixdlt.client.core.address.EUID;
-import com.radixdlt.client.core.crypto.ECPublicKey;
-import com.radixdlt.client.core.crypto.ECSignature;
-import com.radixdlt.client.core.util.Hash;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-public class RadixHash {
-	private static final int HASH_MAX_SIZE = 12;
+import com.radixdlt.client.core.address.EUID;
+import com.radixdlt.client.core.crypto.ECPublicKey;
+import com.radixdlt.client.core.crypto.ECSignature;
+import com.radixdlt.client.core.util.Hash;
+
+public final class RadixHash {
 	private final byte[] hash;
 
 	private RadixHash(byte[] hash) {
@@ -21,7 +21,7 @@ public class RadixHash {
 	}
 
 	public EUID toEUID() {
-		return new EUID(Arrays.copyOfRange(hash, 0, HASH_MAX_SIZE));
+		return new EUID(Arrays.copyOfRange(hash, 0, EUID.BYTES));
 	}
 
 	public void putSelf(ByteBuffer byteBuffer) {
