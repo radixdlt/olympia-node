@@ -57,7 +57,7 @@ public final class EUID {
 			// Pad with sign bit
 			byte[] newBytes = new byte[BYTES];
 			int fillSize = BYTES - bytes.length;
-			byte fill = (bytes[0] < 0) ? (byte)-1 : (byte)0;
+			byte fill = (bytes[0] < 0) ? (byte) -1 : (byte) 0;
 			Arrays.fill(newBytes, 0, fillSize, fill);
 			System.arraycopy(bytes, 0, newBytes, fillSize, bytes.length);
 			return newBytes;
