@@ -1,12 +1,5 @@
 package com.radixdlt.client.core.serialization;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
-import com.google.gson.annotations.SerializedName;
-import com.radixdlt.client.core.address.EUID;
-import com.radixdlt.client.core.util.Base64Encoded;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -24,8 +17,17 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import okio.ByteString;
 import org.bouncycastle.util.encoders.Base64;
+
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.annotations.SerializedName;
+import com.radixdlt.client.core.address.EUID;
+import com.radixdlt.client.core.util.Base64Encoded;
+
+import okio.ByteString;
 
 public class Dson {
 	private enum Primitive {
@@ -187,7 +189,7 @@ public class Dson {
 			raw = longToByteArray((Long) o);
 			type = 2;
 		} else if (o instanceof EUID) {
-			raw = ((EUID) o).bigInteger().toByteArray();
+			raw = ((EUID) o).toByteArray();
 			type = 7;
 		} else if (o instanceof Base64Encoded) {
 			raw = ((Base64Encoded) o).toByteArray();
