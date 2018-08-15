@@ -1,7 +1,5 @@
 package com.radixdlt.client.messaging;
 
-
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.radixdlt.client.application.EncryptedData;
@@ -11,6 +9,7 @@ import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.crypto.ECSignature;
 import com.radixdlt.client.core.identity.RadixIdentity;
+import io.reactivex.Maybe;
 import io.reactivex.Observable;
 import io.reactivex.observables.GroupedObservable;
 import java.util.Map;
@@ -37,30 +36,27 @@ public class RadixMessaging {
 	}
 
 	public Observable<RadixMessage> getAllMessages() {
-		return api.getEncryptedData(myAddress)
-			.filter(encryptedData -> APPLICATION_ID.equals(encryptedData.getMetaData().get("application")))
-			.flatMapMaybe(encryptedData ->
-				identity.decrypt(encryptedData)
-					.toMaybe()
-					.map(String::new)
-					.map(parser::parse)
-					.map(JsonElement::getAsJsonObject)
-					.map(jsonObject -> {
-						RadixAddress from = new RadixAddress(jsonObject.get("from").getAsString());
-						RadixAddress to = new RadixAddress(jsonObject.get("to").getAsString());
-						String content = jsonObject.get("content").getAsString();
-						Object signaturesUnchecked = encryptedData.getMetaData().get("signatures");
-						Map<String, ECSignature> signatures = (Map<String, ECSignature>) signaturesUnchecked;
-						ECSignature signature = signatures.get(from.getUID().toString());
-						if (signature == null) {
-							throw new RuntimeException("Unsigned message");
-						}
-						Long timestamp = (Long) encryptedData.getMetaData().get("timestamp");
-						return new RadixMessage(from, to, content, timestamp);
-					})
-					.doOnError(error -> LOGGER.warn("Could not read message: " + error))
-					.onErrorComplete()
-			);
+		return api.getDecryptableData(myAddress)
+			.filter(decryptedData -> APPLICATION_ID.equals(decryptedData.getMetaData().get("application")))
+			.flatMapMaybe(decryptedData -> {
+				try {
+					JsonObject jsonObject = parser.parse(new String(decryptedData.getData())).getAsJsonObject();
+					RadixAddress from = new RadixAddress(jsonObject.get("from").getAsString());
+					RadixAddress to = new RadixAddress(jsonObject.get("to").getAsString());
+					String content = jsonObject.get("content").getAsString();
+					Object signaturesUnchecked = decryptedData.getMetaData().get("signatures");
+					Map<String, ECSignature> signatures = (Map<String, ECSignature>) signaturesUnchecked;
+					ECSignature signature = signatures.get(from.getUID().toString());
+					if (signature == null) {
+						throw new RuntimeException("Unsigned message");
+					}
+					Long timestamp = (Long) decryptedData.getMetaData().get("timestamp");
+					return Maybe.just(new RadixMessage(from, to, content, timestamp));
+				} catch (Exception e) {
+					LOGGER.warn(e.getMessage());
+					return Maybe.empty();
+				}
+			});
 	}
 
 	public Observable<GroupedObservable<RadixAddress, RadixMessage>> getAllMessagesGroupedByParticipants() {

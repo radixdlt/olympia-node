@@ -48,6 +48,10 @@ public class RadixApplicationAPI {
 		return new RadixApplicationAPI(identity, RadixUniverse.getInstance().getLedger());
 	}
 
+	public static RadixApplicationAPI create(RadixIdentity identity, RadixLedger ledger) {
+		return new RadixApplicationAPI(identity, ledger);
+	}
+
 	public RadixIdentity getIdentity() {
 		return identity;
 	}
@@ -58,7 +62,13 @@ public class RadixApplicationAPI {
 
 	public Observable<EncryptedData> getEncryptedData(RadixAddress address) {
 		return ledger.getAllAtoms(address.getUID(), ApplicationPayloadAtom.class)
+			.filter(atom -> atom.getEncryptor() != null && atom.getEncryptor().getProtectors() != null)
 			.map(EncryptedData::fromAtom);
+	}
+
+	public Observable<UnencryptedData> getDecryptableData(RadixAddress address) {
+		return ledger.getAllAtoms(address.getUID(), ApplicationPayloadAtom.class)
+			.flatMapMaybe(atom -> UnencryptedData.fromAtom(atom, identity));
 	}
 
 	public Result storeData(EncryptedData encryptedData, RadixAddress address) {
