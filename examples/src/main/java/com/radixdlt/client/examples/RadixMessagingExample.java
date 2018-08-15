@@ -8,7 +8,7 @@ import com.radixdlt.client.core.identity.SimpleRadixIdentity;
 import com.radixdlt.client.messaging.RadixMessaging;
 
 public class RadixMessagingExample {
-	private static String TO_ADDRESS_BASE58 = "JGuwJVu7REeqQtx7736GB9AJ91z5xB55t8NvteaoC25AumYovjp";
+	private static String TO_ADDRESS_BASE58 = "JFgcgRKq6GbQqP8mZzDRhtr7K7YQM1vZiYopZLRpAeVxcnePRXX";
 	private static String MESSAGE = "Hello World!";
 	private static RadixMessagesQueryType queryType = RadixMessagesQueryType.BY_CONVO;
 
@@ -18,7 +18,7 @@ public class RadixMessagingExample {
 	}
 
 	static {
-		RadixUniverse.bootstrap(Bootstrap.SUNSTONE);
+		RadixUniverse.bootstrap(Bootstrap.BETANET);
 	}
 
 	public static void main(String[] args) throws Exception {

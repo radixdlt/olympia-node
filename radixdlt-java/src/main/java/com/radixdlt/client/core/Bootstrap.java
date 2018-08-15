@@ -8,6 +8,10 @@ import com.radixdlt.client.core.network.PeersFromSeed;
 import com.radixdlt.client.core.network.RadixPeer;
 
 public enum Bootstrap implements BootstrapConfig {
+	BETANET(
+		RadixUniverseConfigs.getBetanet(),
+		new PeersFromSeed(new RadixPeer("localhost", false, 8080))
+	),
 	ALPHANET(
 		RadixUniverseConfigs.getAlphanet(),
 		new PeersFromNodeFinder("https://alphanet.radixdlt.com/node-finder", 443)

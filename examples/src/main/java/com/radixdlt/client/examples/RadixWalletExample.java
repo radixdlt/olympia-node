@@ -10,14 +10,14 @@ import com.radixdlt.client.wallet.RadixWallet;
 
 public class RadixWalletExample {
 
-	//private static String TO_ADDRESS_BASE58 = "JGuwJVu7REeqQtx7736GB9AJ91z5xB55t8NvteaoC25AumYovjp";
-	private static String TO_ADDRESS_BASE58 = null;
+	private static String TO_ADDRESS_BASE58 = "JFgcgRKq6GbQqP8mZzDRhtr7K7YQM1vZiYopZLRpAeVxcnePRXX";
+	//private static String TO_ADDRESS_BASE58 = null;
 	private static String PAYLOAD = "A gift for you!";
 	private static long AMOUNT = 1000;
 
 	// Initialize Radix Universe
 	static {
-		RadixUniverse.bootstrap(Bootstrap.SUNSTONE);
+		RadixUniverse.bootstrap(Bootstrap.BETANET);
 	}
 
 	public static void main(String[] args) throws Exception {
@@ -30,12 +30,7 @@ public class RadixWalletExample {
 		// Identity Manager which manages user's keys, signing, encrypting and decrypting
 		final RadixIdentity radixIdentity;
 		if (args.length > 0) {
-			if (args[0].equals("-system")) {
-				radixIdentity = RadixUniverse.getInstance().getSystemIdentity()
-					.orElseThrow(() -> new IllegalStateException("System key not present"));
-			} else {
-				radixIdentity = new SimpleRadixIdentity(args[0]);
-			}
+			radixIdentity = new SimpleRadixIdentity(args[0]);
 		} else {
 			radixIdentity = new SimpleRadixIdentity();
 		}

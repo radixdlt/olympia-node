@@ -66,7 +66,7 @@ public class ChatBot {
 	}
 
 	public static void main(String[] args) throws Exception {
-		RadixUniverse.bootstrap(Bootstrap.SUNSTONE);
+		RadixUniverse.bootstrap(Bootstrap.BETANET);
 
 		RadixUniverse.getInstance()
 			.getNetwork()
