@@ -1,12 +1,13 @@
 package com.radixdlt.client.core.address;
 
-import com.radixdlt.client.core.crypto.ECPublicKey;
-import org.bouncycastle.util.encoders.Base64;
-import org.junit.Test;
-
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
+
+import org.bouncycastle.util.encoders.Base64;
+import org.junit.Test;
+
+import com.radixdlt.client.core.crypto.ECPublicKey;
 
 import static org.junit.Assert.assertEquals;
 
@@ -29,7 +30,7 @@ public class RadixAddressTest {
 	@Test
 	public void createAddressAndCheckUID() {
 		RadixAddress address = new RadixAddress("JHB89drvftPj6zVCNjnaijURk8D8AMFw4mVja19aoBGmRXWchnJ");
-		assertEquals(new EUID(new BigInteger("-35592036731042511330623796977")), address.getUID());
+		assertEquals(new EUID(new BigInteger("-152866633757858334150738651292965210305")), address.getUID());
 	}
 
 	@Test
