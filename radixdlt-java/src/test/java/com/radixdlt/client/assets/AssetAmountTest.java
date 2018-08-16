@@ -6,8 +6,6 @@ import com.radixdlt.client.core.address.EUID;
 
 import static org.junit.Assert.assertEquals;
 
-import java.math.BigInteger;
-
 public class AssetAmountTest {
 
 	@Test
@@ -29,7 +27,7 @@ public class AssetAmountTest {
 	@Test
 	public void testUnusualSubUnits() {
 		// 1 foot = 12 inches
-		final Asset foot = new Asset("FOOT", 12, new EUID(BigInteger.valueOf("FOOT".hashCode())));
+		final Asset foot = new Asset("FOOT", 12, new EUID("FOOT".hashCode()));
 		assertEquals("0 FOOT", new AssetAmount(foot, 0).toString());
 		assertEquals("1/12 FOOT", new AssetAmount(foot, 1).toString());
 		assertEquals("6/12 FOOT", new AssetAmount(foot, 6).toString());

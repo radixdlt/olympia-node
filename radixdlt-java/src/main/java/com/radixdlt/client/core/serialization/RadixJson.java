@@ -33,6 +33,7 @@ import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
 import com.radixdlt.client.core.crypto.Encryptor;
 import com.radixdlt.client.core.network.NodeRunnerData;
 import com.radixdlt.client.core.util.Base64Encoded;
+import com.radixdlt.client.core.util.Int128;
 import org.bouncycastle.util.encoders.Base64;
 
 import java.io.IOException;
@@ -40,6 +41,7 @@ import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import org.bouncycastle.util.encoders.Hex;
 
 public class RadixJson {
 
@@ -52,9 +54,6 @@ public class RadixJson {
 
 	private static final JsonSerializer<Base64Encoded> BASE64_SERIALIZER =
 		(src, typeOfSrc, context) -> serializedValue("BASE64", src.base64());
-
-	private static final JsonSerializer<EUID> EUID_SERIALIZER =
-		(uid, typeOfSrc, context) -> serializedValue("EUID", uid.bigInteger().toString());
 
 	private static final JsonDeserializer<Payload> PAYLOAD_DESERIALIZER =
 		(json, typeOfT, context) -> Payload.fromBase64(json.getAsJsonObject().get("value").getAsString());
@@ -160,6 +159,19 @@ public class RadixJson {
 		}
 	};
 
+	private static class EUIDSerializer implements JsonDeserializer<EUID>, JsonSerializer<EUID> {
+		@Override
+		public JsonElement serialize(EUID src, Type typeOfSrc, JsonSerializationContext context) {
+			return serializedValue("EUID", src.toString());
+		}
+
+		@Override
+		public EUID deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+			return new EUID(Int128.from(Hex.decode(json.getAsJsonObject().get("value").getAsString())));
+		}
+	}
+
+
 	private static class ByteArraySerializer implements JsonDeserializer<byte[]>, JsonSerializer<byte[]> {
 		@Override
 		public JsonElement serialize(byte[] src, Type typeOfSrc, JsonSerializationContext context) {
@@ -220,7 +232,7 @@ public class RadixJson {
 			.registerTypeAdapter(Particle.class, PARTICLE_DESERIALIZER)
 			.registerTypeAdapter(Atom.class, ATOM_SERIALIZER)
 			.registerTypeAdapter(Atom.class, ATOM_DESERIALIZER)
-			.registerTypeAdapter(EUID.class, EUID_SERIALIZER)
+			.registerTypeAdapter(EUID.class, new EUIDSerializer())
 			.registerTypeAdapter(Payload.class, PAYLOAD_DESERIALIZER)
 			.registerTypeAdapter(EncryptedPrivateKey.class, PROTECTOR_DESERIALIZER)
 			.registerTypeAdapter(ECPublicKey.class, PK_DESERIALIZER)

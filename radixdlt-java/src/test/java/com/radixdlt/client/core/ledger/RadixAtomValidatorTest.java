@@ -9,7 +9,6 @@ import com.radixdlt.client.core.atoms.RadixHash;
 import com.radixdlt.client.core.atoms.TransactionAtom;
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECPublicKey;
-import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Optional;
@@ -26,9 +25,9 @@ public class RadixAtomValidatorTest {
 
 		ECKeyPair keyPair = mock(ECKeyPair.class);
 		ECPublicKey publicKey = mock(ECPublicKey.class);
-		when(keyPair.getUID()).thenReturn(new EUID(BigInteger.ONE));
+		when(keyPair.getUID()).thenReturn(new EUID(1));
 		when(keyPair.getPublicKey()).thenReturn(publicKey);
-		when(publicKey.getUID()).thenReturn(new EUID(BigInteger.ONE));
+		when(publicKey.getUID()).thenReturn(new EUID(1));
 
 		Consumer consumer = mock(Consumer.class);
 		when(consumer.isAbstractConsumable()).thenReturn(true);
@@ -51,9 +50,9 @@ public class RadixAtomValidatorTest {
 
 		ECKeyPair keyPair = mock(ECKeyPair.class);
 		ECPublicKey publicKey = mock(ECPublicKey.class);
-		when(keyPair.getUID()).thenReturn(new EUID(BigInteger.ONE));
+		when(keyPair.getUID()).thenReturn(new EUID(1));
 		when(keyPair.getPublicKey()).thenReturn(publicKey);
-		when(publicKey.getUID()).thenReturn(new EUID(BigInteger.ONE));
+		when(publicKey.getUID()).thenReturn(new EUID(1));
 
 		Consumer consumer = mock(Consumer.class);
 		when(consumer.isAbstractConsumable()).thenReturn(true);

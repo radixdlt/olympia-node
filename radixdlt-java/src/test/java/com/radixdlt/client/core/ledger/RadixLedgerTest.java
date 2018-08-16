@@ -15,7 +15,6 @@ import com.radixdlt.client.core.network.RadixNetwork;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.functions.Consumer;
-import java.math.BigInteger;
 import org.junit.Test;
 
 public class RadixLedgerTest {
@@ -26,7 +25,7 @@ public class RadixLedgerTest {
 			.type(ApplicationPayloadAtom.class)
 			.applicationId("Test")
 			.payload("Hello")
-			.addDestination(new EUID(BigInteger.ONE))
+			.addDestination(new EUID(1))
 			.build()
 			.getRawAtom();
 
@@ -36,7 +35,7 @@ public class RadixLedgerTest {
 		when(network.getRadixClient(any(Long.class))).thenReturn(Single.just(client));
 		when(client.getAtoms(any())).thenReturn(Observable.just(atom, atom));
 		RadixLedger ledger = new RadixLedger(0, network);
-		ledger.getAllAtoms(new EUID(BigInteger.ONE), ApplicationPayloadAtom.class)
+		ledger.getAllAtoms(new EUID(1), ApplicationPayloadAtom.class)
 			.subscribe(observer);
 
 		verify(observer, times(1)).accept(any());

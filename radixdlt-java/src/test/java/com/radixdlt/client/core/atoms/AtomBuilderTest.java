@@ -7,7 +7,6 @@ import static org.mockito.Mockito.when;
 
 import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.crypto.ECKeyPair;
-import java.math.BigInteger;
 import java.util.Collections;
 import org.junit.Test;
 
@@ -15,9 +14,9 @@ public class AtomBuilderTest {
 	@Test
 	public void buildTransactionAtomWithPayload() {
 		ECKeyPair ecKeyPair = mock(ECKeyPair.class);
-		when(ecKeyPair.getUID()).thenReturn(new EUID(BigInteger.ONE));
+		when(ecKeyPair.getUID()).thenReturn(new EUID(1));
 
-		Consumable consumable = new Consumable(1, Collections.singleton(ecKeyPair), 0, new EUID(BigInteger.valueOf(2L)));
+		Consumable consumable = new Consumable(1, Collections.singleton(ecKeyPair), 0, new EUID(2));
 
 		AtomBuilder atomBuilder = new AtomBuilder();
 		UnsignedAtom atom = atomBuilder
@@ -36,7 +35,7 @@ public class AtomBuilderTest {
 			.type(ApplicationPayloadAtom.class)
 			.applicationId("Test")
 			.payload("Hello")
-			.addDestination(new EUID(BigInteger.ONE));
+			.addDestination(new EUID(1));
 
 		UnsignedAtom atom1 = atomBuilder.build();
 		UnsignedAtom atom2 = atomBuilder.build();

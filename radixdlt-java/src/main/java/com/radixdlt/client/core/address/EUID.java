@@ -1,27 +1,24 @@
 package com.radixdlt.client.core.address;
 
-import java.math.BigInteger;
+import com.radixdlt.client.core.util.Int128;
 import java.util.Arrays;
+import org.bouncycastle.util.encoders.Hex;
 
 public final class EUID {
 	public static final int BYTES = Long.BYTES * 2;
 
-	private final BigInteger value;
+	private final Int128 value;
 
-	public EUID(byte[] value) {
-		this.value = new BigInteger(value);
-	}
-
-	public EUID(BigInteger value) {
+	public EUID(Int128 value) {
 		this.value = value;
 	}
 
-	public BigInteger bigInteger() {
-		return value;
+	public EUID(int value) {
+		this.value = Int128.from(value);
 	}
 
 	public long getShard() {
-		return value.longValue();
+		return value.getLow();
 	}
 
 	@Override
@@ -41,7 +38,7 @@ public final class EUID {
 
 	@Override
 	public String toString() {
-		return value.toString();
+		return Hex.toHexString(value.toByteArray());
 	}
 
 	/**

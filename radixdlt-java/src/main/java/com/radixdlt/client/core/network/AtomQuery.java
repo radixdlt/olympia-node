@@ -40,7 +40,7 @@ public class AtomQuery<T extends Atom> {
 
 	public JsonObject toJson() {
 		JsonObject query = new JsonObject();
-		query.addProperty("destination", destination.bigInteger());
+		query.addProperty("destination", destination.toString());
 
 		if (atomType != null) {
 			query.addProperty("atomSerializer", atomType.getSerializer());

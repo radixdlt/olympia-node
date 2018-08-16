@@ -21,7 +21,6 @@ import io.reactivex.Completable;
 import io.reactivex.Observable;
 import io.reactivex.observers.TestObserver;
 import io.reactivex.subjects.ReplaySubject;
-import java.math.BigInteger;
 import org.junit.Test;
 
 public class RadixJsonRpcClientTest {
@@ -118,7 +117,7 @@ public class RadixJsonRpcClientTest {
 
 		TestObserver<Atom> observer = new TestObserver<>();
 
-		jsonRpcClient.getAtom(new EUID(BigInteger.ONE)).subscribe(observer);
+		jsonRpcClient.getAtom(new EUID(1)).subscribe(observer);
 
 		observer.assertValueCount(0);
 		observer.assertComplete();
@@ -157,7 +156,7 @@ public class RadixJsonRpcClientTest {
 
 		TestObserver<Atom> observer = new TestObserver<>();
 
-		jsonRpcClient.getAtom(new EUID(BigInteger.ONE)).subscribe(observer);
+		jsonRpcClient.getAtom(new EUID(1)).subscribe(observer);
 
 		observer.assertValue(atom -> atom.getAsMessageAtom().getApplicationId().equals("Test"));
 		observer.assertComplete();
@@ -210,7 +209,7 @@ public class RadixJsonRpcClientTest {
 
 		TestObserver<ApplicationPayloadAtom> observer = new TestObserver<>();
 
-		jsonRpcClient.getAtoms(new AtomQuery<>(new EUID(BigInteger.ONE), ApplicationPayloadAtom.class)).subscribe(observer);
+		jsonRpcClient.getAtoms(new AtomQuery<>(new EUID(1), ApplicationPayloadAtom.class)).subscribe(observer);
 
 		observer.assertNoErrors();
 		observer.assertValueCount(1);
@@ -267,7 +266,7 @@ public class RadixJsonRpcClientTest {
 
 		TestObserver<ApplicationPayloadAtom> observer = new TestObserver<>();
 
-		jsonRpcClient.getAtoms(new AtomQuery<>(new EUID(BigInteger.ONE), ApplicationPayloadAtom.class))
+		jsonRpcClient.getAtoms(new AtomQuery<>(new EUID(1), ApplicationPayloadAtom.class))
 			.subscribe(observer);
 		observer.cancel();
 

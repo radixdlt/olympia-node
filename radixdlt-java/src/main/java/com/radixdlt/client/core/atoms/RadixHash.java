@@ -1,5 +1,6 @@
 package com.radixdlt.client.core.atoms;
 
+import com.radixdlt.client.core.util.Int128;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -21,7 +22,7 @@ public final class RadixHash {
 	}
 
 	public EUID toEUID() {
-		return new EUID(Arrays.copyOfRange(hash, 0, EUID.BYTES));
+		return new EUID(Int128.from(Arrays.copyOfRange(hash, 0, EUID.BYTES)));
 	}
 
 	public void putSelf(ByteBuffer byteBuffer) {

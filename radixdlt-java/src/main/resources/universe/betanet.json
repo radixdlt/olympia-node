@@ -10,7 +10,7 @@
       },
       "destinations": [{
         "serializer": "EUID",
-        "value": "115204963163900701114365231371191847879"
+        "value": "56abab3870585f04d015d55adf600bc7"
       }],
       "icon": {
         "serializer": "BASE64",
@@ -30,14 +30,14 @@
       "classification": "commodity",
       "type": "COMMODITY",
       "version": 100,
-      "signatures": {"115204963163900701114365231371191847879": {
+      "signatures": {"56abab3870585f04d015d55adf600bc7": {
         "r": {
           "serializer": "BASE64",
-          "value": "cMriUXfpn1xGpTWzBq5oEOS7t6UsqKtaQaakedYhGQI="
+          "value": "QsYTWvG5kjSOP5jTELzHl6oygbE40shozhxX2gmBvso="
         },
         "s": {
           "serializer": "BASE64",
-          "value": "ALCK/sbZ05rYz705oTTt6N4LwTPRO9CaWr26xEprV00K"
+          "value": "AKGsvVKnVm5hMsiKMH7CNQrY+cE03jsbYPNKbX9yMxda"
         },
         "serializer": -434788200,
         "version": 100
@@ -47,7 +47,7 @@
       "sub_units": 0,
       "id": {
         "serializer": "EUID",
-        "value": "79416"
+        "value": "00000000000000000000000000013638"
       }
     },
     {
@@ -59,7 +59,7 @@
       },
       "destinations": [{
         "serializer": "EUID",
-        "value": "115204963163900701114365231371191847879"
+        "value": "56abab3870585f04d015d55adf600bc7"
       }],
       "icon": {
         "serializer": "BASE64",
@@ -79,14 +79,14 @@
       "classification": "currencies",
       "type": "CURRENCY",
       "version": 100,
-      "signatures": {"115204963163900701114365231371191847879": {
+      "signatures": {"56abab3870585f04d015d55adf600bc7": {
         "r": {
           "serializer": "BASE64",
-          "value": "Fi3qeJnLEqiak5G3kII4N8nFuxXfdIoiUas0EmiBsMs="
+          "value": "EEJ8DvxVPOe96RMY4iQBvbWtg4hvFqOzQIjrwfW1t3k="
         },
         "s": {
           "serializer": "BASE64",
-          "value": "AIrxSjrHllDcZPRVChTLmUeJ5fdPhzgE5ynr1o5IQpNo"
+          "value": "AN5NH6LcX8BkrnfoC3vkJGWGZEOB/oLGDosMCC7Qje0l"
         },
         "serializer": -434788200,
         "version": 100
@@ -96,7 +96,7 @@
       "sub_units": 100000,
       "id": {
         "serializer": "EUID",
-        "value": "2571410"
+        "value": "00000000000000000000000000273c92"
       },
       "scrypt": {
         "serializer": 549088296,
@@ -111,7 +111,7 @@
       "temporal_proof": {
         "atom_id": {
           "serializer": "EUID",
-          "value": "-84821939799923007995193396768951067975"
+          "value": "c21dcb6db320093a276cee427e5aeada"
         },
         "vertices": [{
           "owner": {
@@ -124,21 +124,21 @@
           },
           "previous": {
             "serializer": "EUID",
-            "value": "0"
+            "value": "00000000000000000000000000000000"
           },
           "signature": {
             "r": {
               "serializer": "BASE64",
-              "value": "c4VB8NMxpqS+/xrThrSad5xNeoQmrVrMU/eB0hWs2II="
+              "value": "JfLC043K1hOnLp+PEY1qfQIiLJMaHrMz/lwuDM90UXE="
             },
             "s": {
               "serializer": "BASE64",
-              "value": "ANS+BEJ/LC9PwxNTXrjIzn/H3tm3w0DkHDK0jfnyqElW"
+              "value": "AM75l42lSZwGkSNbFvRH0KTPCTl1fmwgw8a5snXwancy"
             },
             "serializer": -434788200,
             "version": 100
           },
-          "timestamps": {"default": 1534375091888},
+          "timestamps": {"default": 1534385151917},
           "commitment": {
             "serializer": "HASH",
             "value": "0000000000000000000000000000000000000000000000000000000000000000"
@@ -153,7 +153,7 @@
       "timestamps": {"default": 1488326400000},
       "destinations": [{
         "serializer": "EUID",
-        "value": "115204963163900701114365231371191847879"
+        "value": "56abab3870585f04d015d55adf600bc7"
       }],
       "action": "STORE",
       "serializer": -760130,
@@ -161,7 +161,7 @@
         "quantity": 100000000000000,
         "destinations": [{
           "serializer": "EUID",
-          "value": "115204963163900701114365231371191847879"
+          "value": "56abab3870585f04d015d55adf600bc7"
         }],
         "serializer": 1782261127,
         "owners": [{
@@ -174,21 +174,21 @@
         }],
         "asset_id": {
           "serializer": "EUID",
-          "value": "2571410"
+          "value": "00000000000000000000000000273c92"
         },
-        "nonce": 99722941675364,
+        "nonce": 109783349679915,
         "version": 100
       }],
       "operation": "TRANSFER",
       "version": 100,
-      "signatures": {"115204963163900701114365231371191847879": {
+      "signatures": {"56abab3870585f04d015d55adf600bc7": {
         "r": {
           "serializer": "BASE64",
-          "value": "P4VVDfkjpkQfom9qlwTmQimVd+BXESv5qWVrznkuYoI="
+          "value": "WbL5Zb/yxyMGjOlDT2/xgThlZqoreJOBRQVu0bq6rm8="
         },
         "s": {
           "serializer": "BASE64",
-          "value": "APiSTa0pWgH61D9+QLlKWw4mzoYeoeE2Fe9pbVRicaDD"
+          "value": "AKcBVwiy4cJ/e5UoFs2PDpwhZ5vtpOjzXfjMdpAMVqrT"
         },
         "serializer": -434788200,
         "version": 100
@@ -202,11 +202,11 @@
   "port": 30000,
   "signature.r": {
     "serializer": "BASE64",
-    "value": "Z/u6rFpQEo/2DeAjkyrSW4dkAFJnWSLR8kBD8es9hQI="
+    "value": "Wv8jZUadfVJSY6Irmprth8N/NqY+0gbU256t/PtmzZ4="
   },
   "signature.s": {
     "serializer": "BASE64",
-    "value": "APdPk6bvqOaisrlGm1RAOoeAB0IbTW1ogomJ1z7OVq/5"
+    "value": "APR5Q2E8XKkfbOs4GbUKzJhS1COUpew7Uak5sznLimij"
   },
   "name": "Radix Devnet",
   "serializer": 492321349,

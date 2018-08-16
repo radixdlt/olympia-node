@@ -4,7 +4,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -28,6 +27,7 @@ import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.util.Base64Encoded;
 
 import okio.ByteString;
+import org.bouncycastle.util.encoders.Hex;
 
 public class Dson {
 	private enum Primitive {
@@ -114,7 +114,7 @@ public class Dson {
 			jsonObject.addProperty("serializer", "EUID");
 			byte[] buffer = new byte[length];
 			byteBuffer.get(buffer);
-			jsonObject.addProperty("value", new BigInteger(buffer).toString());
+			jsonObject.addProperty("value", Hex.toHexString(buffer));
 			result = jsonObject;
 		} else if (type == Primitive.HASH.value) {
 			JsonObject jsonObject = new JsonObject();
