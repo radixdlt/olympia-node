@@ -101,7 +101,7 @@ public class RadixJsonRpcClient {
 						if (received.has("result")) {
 							emitter.onSuccess(received.get("result"));
 						} else if (received.has("error")) {
-							emitter.onError(new RuntimeException(received.toString()));
+							emitter.onError(new JsonRpcException(requestObject, received));
 						} else {
 							emitter.onError(
 								new RuntimeException("Received bad json rpc message: " + received.toString())
