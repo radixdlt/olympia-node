@@ -1,5 +1,6 @@
 package com.radixdlt.client.examples;
 
+import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.address.RadixAddress;
@@ -29,24 +30,26 @@ public class RadixMessagingExample {
 			.subscribe(System.out::println);
 
 		// Identity Manager which manages user's keys, signing, encrypting and decrypting
-		RadixIdentity radixIdentity = new SimpleRadixIdentity();
+		RadixApplicationAPI api = RadixApplicationAPI.create(new SimpleRadixIdentity());
 
 		// Addresses
 		RadixAddress toAddress = RadixAddress.fromString(TO_ADDRESS_BASE58);
 
+		RadixMessaging messaging = new RadixMessaging(api);
+
 		switch(queryType) {
 			case ALL:
 				// Print out to console all received messages
-				RadixMessaging.getInstance()
-					.getAllMessagesDecrypted(radixIdentity)
+				messaging
+					.getAllMessages()
 					.subscribe(System.out::println);
 				break;
 
 			case BY_CONVO:
 			default:
 				// Group messages by other address, useful for messaging apps
-				RadixMessaging.getInstance()
-					.getAllMessagesDecryptedAndGroupedByParticipants(radixIdentity)
+				messaging
+					.getAllMessagesGroupedByParticipants()
 					.subscribe(convo -> {
 						System.out.println("New Conversation with: " + convo.getKey());
 						convo.subscribe(System.out::println);
@@ -54,7 +57,9 @@ public class RadixMessagingExample {
 		}
 
 		// Send a message!
-		RadixMessaging.getInstance().sendMessage(MESSAGE, radixIdentity, toAddress)
-			.subscribe(System.out::println);
+		messaging
+			.sendMessage(MESSAGE, toAddress)
+			.toCompletable()
+			.subscribe(() -> System.out.println("Submitted"));
 	}
 }

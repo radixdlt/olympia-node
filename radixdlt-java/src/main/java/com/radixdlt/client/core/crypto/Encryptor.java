@@ -10,6 +10,10 @@ public class Encryptor {
 		this.protectors = new ArrayList<>(protectors);
 	}
 
+	public List<EncryptedPrivateKey> getProtectors() {
+		return protectors;
+	}
+
 	public byte[] decrypt(byte[] data, ECKeyPair accessor) throws CryptoException {
 		for (EncryptedPrivateKey protector : protectors) {
 			// TODO: remove exception catching

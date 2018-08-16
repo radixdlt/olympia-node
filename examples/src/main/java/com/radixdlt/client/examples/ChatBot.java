@@ -1,14 +1,14 @@
-package com.radixdlt.client.services;
+package com.radixdlt.client.examples;
 
+import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.identity.RadixIdentity;
 import com.radixdlt.client.core.identity.SimpleRadixIdentity;
-import com.radixdlt.client.core.network.AtomSubmissionUpdate;
 import com.radixdlt.client.messaging.RadixMessage;
 import com.radixdlt.client.messaging.RadixMessaging;
-import io.reactivex.ObservableSource;
+import io.reactivex.Completable;
 import java.sql.Timestamp;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -19,10 +19,9 @@ import java.util.function.Supplier;
  */
 public class ChatBot {
 
-	/**
-	 * The Chatbot's RadixIdentity, an object which keeps the Chatbot's private key
-	 */
-	private final RadixIdentity identity;
+	private final RadixApplicationAPI api;
+
+	private final RadixMessaging messaging;
 
 	/**
 	 * The chat algorithm to run on each new conversation
@@ -31,8 +30,9 @@ public class ChatBot {
 	 */
 	private final Supplier<Function<String,String>> chatBotAlgorithmSupplier;
 
-	public ChatBot(RadixIdentity identity, Supplier<Function<String,String>> chatBotAlgorithmSupplier) {
-		this.identity = identity;
+	public ChatBot(RadixApplicationAPI api, Supplier<Function<String,String>> chatBotAlgorithmSupplier) {
+		this.api = api;
+		this.messaging = new RadixMessaging(api);
 		this.chatBotAlgorithmSupplier = chatBotAlgorithmSupplier;
 	}
 
@@ -40,23 +40,21 @@ public class ChatBot {
 	 * Connect to the network and begin running the service
 	 */
 	public void run() {
-		RadixAddress address = RadixUniverse.getInstance().getAddressFrom(identity.getPublicKey());
-
-		System.out.println("Chatbot address: " + address);
+		System.out.println("Chatbot address: " + api.getAddress());
 
 		// Subscribe/Decrypt messages
-		RadixMessaging.getInstance()
-			.getAllMessagesDecryptedAndGroupedByParticipants(identity)
-			.flatMap(convo -> convo
+		messaging
+			.getAllMessagesGroupedByParticipants()
+			.flatMapCompletable(convo -> convo
 				.doOnNext(message -> System.out.println("Received at " + new Timestamp(System.currentTimeMillis()) + ": " + message)) // Print messages
-				.filter(message -> !message.getFrom().equals(address)) // Don't reply to ourselves!
+				.filter(message -> !message.getFrom().equals(api.getAddress())) // Don't reply to ourselves!
 				.filter(message -> Math.abs(message.getTimestamp() - System.currentTimeMillis()) < 60000) // Only reply to recent messages
-				.flatMap(new io.reactivex.functions.Function<RadixMessage, ObservableSource<AtomSubmissionUpdate>>() {
+				.flatMapCompletable(new io.reactivex.functions.Function<RadixMessage, Completable>() {
 					Function<String,String> chatBotAlgorithm = chatBotAlgorithmSupplier.get();
 
 					@Override
-					public ObservableSource<AtomSubmissionUpdate> apply(RadixMessage message) {
-						return RadixMessaging.getInstance().sendMessage(chatBotAlgorithm.apply(message.getContent()), identity, message.getFrom());
+					public Completable apply(RadixMessage message) {
+						return messaging.sendMessage(chatBotAlgorithm.apply(message.getContent()), message.getFrom()).toCompletable();
 					}
 				})
 			).subscribe(
@@ -76,7 +74,9 @@ public class ChatBot {
 		// Setup Identity of Chatbot
 		RadixIdentity radixIdentity = new SimpleRadixIdentity("chatbot.key");
 
-		ChatBot chatBot = new ChatBot(radixIdentity, () -> new Function<String, String>() {
+		RadixApplicationAPI api = RadixApplicationAPI.create(radixIdentity);
+
+		ChatBot chatBot = new ChatBot(api, () -> new Function<String, String>() {
 			int messageCount = 0;
 
 			@Override
