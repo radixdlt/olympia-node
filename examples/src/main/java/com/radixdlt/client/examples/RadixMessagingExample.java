@@ -1,5 +1,6 @@
 package com.radixdlt.client.examples;
 
+import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.address.RadixAddress;
@@ -8,7 +9,7 @@ import com.radixdlt.client.core.identity.SimpleRadixIdentity;
 import com.radixdlt.client.messaging.RadixMessaging;
 
 public class RadixMessagingExample {
-	private static String TO_ADDRESS_BASE58 = "JGuwJVu7REeqQtx7736GB9AJ91z5xB55t8NvteaoC25AumYovjp";
+	private static String TO_ADDRESS_BASE58 = "JFgcgRKq6GbQqP8mZzDRhtr7K7YQM1vZiYopZLRpAeVxcnePRXX";
 	private static String MESSAGE = "Hello World!";
 	private static RadixMessagesQueryType queryType = RadixMessagesQueryType.BY_CONVO;
 
@@ -18,7 +19,7 @@ public class RadixMessagingExample {
 	}
 
 	static {
-		RadixUniverse.bootstrap(Bootstrap.SUNSTONE);
+		RadixUniverse.bootstrap(Bootstrap.WINTERFELL);
 	}
 
 	public static void main(String[] args) throws Exception {
@@ -29,24 +30,26 @@ public class RadixMessagingExample {
 			.subscribe(System.out::println);
 
 		// Identity Manager which manages user's keys, signing, encrypting and decrypting
-		RadixIdentity radixIdentity = new SimpleRadixIdentity();
+		RadixApplicationAPI api = RadixApplicationAPI.create(new SimpleRadixIdentity());
 
 		// Addresses
 		RadixAddress toAddress = RadixAddress.fromString(TO_ADDRESS_BASE58);
 
+		RadixMessaging messaging = new RadixMessaging(api);
+
 		switch(queryType) {
 			case ALL:
 				// Print out to console all received messages
-				RadixMessaging.getInstance()
-					.getAllMessagesDecrypted(radixIdentity)
+				messaging
+					.getAllMessages()
 					.subscribe(System.out::println);
 				break;
 
 			case BY_CONVO:
 			default:
 				// Group messages by other address, useful for messaging apps
-				RadixMessaging.getInstance()
-					.getAllMessagesDecryptedAndGroupedByParticipants(radixIdentity)
+				messaging
+					.getAllMessagesGroupedByParticipants()
 					.subscribe(convo -> {
 						System.out.println("New Conversation with: " + convo.getKey());
 						convo.subscribe(System.out::println);
@@ -54,7 +57,9 @@ public class RadixMessagingExample {
 		}
 
 		// Send a message!
-		RadixMessaging.getInstance().sendMessage(MESSAGE, radixIdentity, toAddress)
-			.subscribe(System.out::println);
+		messaging
+			.sendMessage(MESSAGE, toAddress)
+			.toCompletable()
+			.subscribe(() -> System.out.println("Submitted"));
 	}
 }

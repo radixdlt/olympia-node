@@ -1,13 +1,16 @@
 package com.radixdlt.client.core.identity;
 
+import com.radixdlt.client.application.EncryptedData;
 import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.atoms.EncryptedPayload;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
+import com.radixdlt.client.core.crypto.CryptoException;
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.crypto.ECSignature;
 
+import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
+import com.radixdlt.client.core.crypto.MacMismatchException;
 import java.io.File;
 
 import io.reactivex.Single;
@@ -52,8 +55,15 @@ public class EncryptedRadixIdentity implements RadixIdentity {
 	}
 
 	@Override
-	public Single<byte[]> decrypt(EncryptedPayload data) {
-		return Single.fromCallable(() -> data.decrypt(myKey));
+	public Single<byte[]> decrypt(EncryptedData data) {
+		for (EncryptedPrivateKey protector : data.getProtectors()) {
+			// TODO: remove exception catching
+			try {
+				return Single.just(myKey.decrypt(data.getEncrypted(), protector));
+			} catch (MacMismatchException e) {
+			}
+		}
+		return Single.error(new CryptoException("Cannot decrypt"));
 	}
 
 	@Override

@@ -3,16 +3,15 @@ package com.radixdlt.client.core.atoms;
 import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.crypto.ECKeyPair;
-import com.radixdlt.client.core.crypto.ECKeyPairGenerator;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.crypto.ECSignature;
+import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
 import com.radixdlt.client.core.crypto.Encryptor;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public class AtomBuilder {
 	private static final int MAX_PAYLOAD_SIZE = 1028;
@@ -23,7 +22,6 @@ public class AtomBuilder {
 	private EUID signatureId;
 	private Long timestamp;
 	private ECKeyPair sharedKey;
-	private List<ECPublicKey> protectors = new ArrayList<>();
 	private String applicationId;
 	private byte[] payloadRaw;
 	private Class<? extends Atom> atomClass;
@@ -48,7 +46,6 @@ public class AtomBuilder {
 	}
 
 	public AtomBuilder payload(byte[] payloadRaw) {
-
 		this.payloadRaw = payloadRaw;
 		return this;
 	}
@@ -57,11 +54,10 @@ public class AtomBuilder {
 		return this.payload(payloadRaw.getBytes());
 	}
 
-	public AtomBuilder addProtector(ECPublicKey publicKey) {
-		protectors.add(publicKey);
+	public AtomBuilder protectors(List<EncryptedPrivateKey> protectors) {
+		this.encryptor = new Encryptor(protectors);
 		return this;
 	}
-
 
 	public AtomBuilder addParticle(Particle particle) {
 		this.particles.add(particle);
@@ -104,25 +100,7 @@ public class AtomBuilder {
 		}
 
 		if (this.payloadRaw != null) {
-			if (!protectors.isEmpty()) {
-				if (this.sharedKey == null) {
-					this.sharedKey = ECKeyPairGenerator.newInstance().generateKeyPair();
-				}
-
-				if (this.encryptor == null) {
-					this.encryptor = new Encryptor(
-						protectors.stream().map(
-							publicKey -> this.sharedKey.encryptPrivateKey(publicKey)).collect(Collectors.toList()
-						)
-					);
-					this.payload = new Payload(this.sharedKey.getPublicKey().encrypt(this.payloadRaw));
-				}
-			} else {
-				if (this.payload == null) {
-					encryptor = null;
-					payload = new Payload(this.payloadRaw);
-				}
-			}
+			this.payload = new Payload(this.payloadRaw);
 		}
 
 		// TODO: add this check to when payloadRaw is first set
