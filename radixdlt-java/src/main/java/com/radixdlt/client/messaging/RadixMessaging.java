@@ -2,7 +2,7 @@ package com.radixdlt.client.messaging;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.radixdlt.client.application.EncryptedData;
+import com.radixdlt.client.application.objects.EncryptedData;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
 import com.radixdlt.client.core.address.EUID;

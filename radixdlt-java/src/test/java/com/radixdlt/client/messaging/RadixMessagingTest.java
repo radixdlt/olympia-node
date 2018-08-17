@@ -6,7 +6,7 @@ import static org.mockito.Mockito.when;
 
 import com.google.gson.JsonObject;
 import com.radixdlt.client.application.RadixApplicationAPI;
-import com.radixdlt.client.application.UnencryptedData;
+import com.radixdlt.client.application.objects.UnencryptedData;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.crypto.ECSignature;

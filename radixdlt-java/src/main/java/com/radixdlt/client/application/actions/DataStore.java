@@ -1,8 +1,7 @@
-package com.radixdlt.client.application;
+package com.radixdlt.client.application.actions;
 
+import com.radixdlt.client.application.objects.EncryptedData;
 import com.radixdlt.client.core.address.RadixAddress;
-import com.radixdlt.client.core.atoms.ApplicationPayloadAtom;
-import com.radixdlt.client.core.atoms.AtomBuilder;
 import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
 import java.util.ArrayList;
 import java.util.List;
@@ -11,13 +10,13 @@ import java.util.Map;
 /**
  * An Application Layer Action object which stores data in an address.
  */
-public class StoreDataAction {
+public class DataStore {
 	private byte[] data;
 	private Map<String, Object> metaData;
 	private List<EncryptedPrivateKey> protectors;
 	private List<RadixAddress> addresses = new ArrayList<>();
 
-	public StoreDataAction(EncryptedData encryptedData, RadixAddress address) {
+	public DataStore(EncryptedData encryptedData, RadixAddress address) {
 		this.data = encryptedData.getEncrypted();
 		this.metaData = encryptedData.getMetaData();
 		this.protectors = encryptedData.getProtectors();
@@ -25,7 +24,7 @@ public class StoreDataAction {
 		addresses.add(address);
 	}
 
-	public StoreDataAction(EncryptedData encryptedData, RadixAddress address0, RadixAddress address1) {
+	public DataStore(EncryptedData encryptedData, RadixAddress address0, RadixAddress address1) {
 		this.data = encryptedData.getEncrypted();
 		this.metaData = encryptedData.getMetaData();
 		this.protectors = encryptedData.getProtectors();
@@ -34,17 +33,20 @@ public class StoreDataAction {
 		addresses.add(address1);
 	}
 
-	// TODO: move this to a separate module
-	public void addToAtomBuilder(AtomBuilder atomBuilder) {
-		atomBuilder
-			.type(ApplicationPayloadAtom.class)
-			.protectors(protectors)
-			.payload(data);
+	public List<EncryptedPrivateKey> getProtectors() {
+		return protectors;
+	}
 
-		if (metaData.containsKey("application")) {
-			atomBuilder.applicationId((String) metaData.get("application"));
-		}
+	// TODO: make this immutable
+	public byte[] getData() {
+		return data;
+	}
 
-		addresses.forEach(atomBuilder::addDestination);
+	public Map<String, Object> getMetaData() {
+		return metaData;
+	}
+
+	public List<RadixAddress> getAddresses() {
+		return addresses;
 	}
 }

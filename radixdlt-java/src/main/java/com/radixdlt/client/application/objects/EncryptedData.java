@@ -1,4 +1,4 @@
-package com.radixdlt.client.application;
+package com.radixdlt.client.application.objects;
 
 import com.radixdlt.client.core.atoms.ApplicationPayloadAtom;
 import com.radixdlt.client.core.crypto.ECKeyPair;

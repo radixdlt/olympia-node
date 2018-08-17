@@ -1,16 +1,20 @@
 package com.radixdlt.client.application;
 
+import com.radixdlt.client.application.actions.DataStore;
+import com.radixdlt.client.application.objects.EncryptedData;
+import com.radixdlt.client.application.objects.UnencryptedData;
+import com.radixdlt.client.application.translate.DataStoreTranslator;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.ApplicationPayloadAtom;
 import com.radixdlt.client.core.atoms.AtomBuilder;
-import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.identity.RadixIdentity;
 import com.radixdlt.client.core.ledger.RadixLedger;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState;
 import io.reactivex.Completable;
 import io.reactivex.Observable;
+import io.reactivex.Single;
 
 public class RadixApplicationAPI {
 	public static class Result {
@@ -31,17 +35,24 @@ public class RadixApplicationAPI {
 				});
 		}
 
+		public Observable<AtomSubmissionUpdate> toObservable() {
+			return updates;
+		}
+
 		public Completable toCompletable() {
 			return completable;
 		}
 	}
 
+
 	private final RadixIdentity identity;
 	private final RadixLedger ledger;
+	private final DataStoreTranslator dataStoreTranslator;
 
 	private RadixApplicationAPI(RadixIdentity identity, RadixLedger ledger) {
 		this.identity = identity;
 		this.ledger = ledger;
+		this.dataStoreTranslator = DataStoreTranslator.getInstance();
 	}
 
 	public static RadixApplicationAPI create(RadixIdentity identity) {
@@ -72,22 +83,26 @@ public class RadixApplicationAPI {
 	}
 
 	public Result storeData(EncryptedData encryptedData, RadixAddress address) {
-		StoreDataAction storeDataAction = new StoreDataAction(encryptedData, address);
+		DataStore dataStore = new DataStore(encryptedData, address);
 
 		AtomBuilder atomBuilder = new AtomBuilder();
-		storeDataAction.addToAtomBuilder(atomBuilder);
-		UnsignedAtom unsignedAtom = atomBuilder.buildWithPOWFee(ledger.getMagic(), address.getPublicKey());
+		Observable<AtomSubmissionUpdate> updates = dataStoreTranslator.translate(dataStore, atomBuilder)
+			.andThen(Single.fromCallable(() -> atomBuilder.buildWithPOWFee(ledger.getMagic(), address.getPublicKey())))
+			.flatMap(identity::sign)
+			.flatMapObservable(ledger::submitAtom);
 
-		return new Result(identity.sign(unsignedAtom).flatMapObservable(ledger::submitAtom));
+		return new Result(updates);
 	}
 
 	public Result storeData(EncryptedData encryptedData, RadixAddress address0, RadixAddress address1) {
-		StoreDataAction storeDataAction = new StoreDataAction(encryptedData, address0, address1);
+		DataStore dataStore = new DataStore(encryptedData, address0, address1);
 
 		AtomBuilder atomBuilder = new AtomBuilder();
-		storeDataAction.addToAtomBuilder(atomBuilder);
-		UnsignedAtom unsignedAtom = atomBuilder.buildWithPOWFee(ledger.getMagic(), address0.getPublicKey());
+		Observable<AtomSubmissionUpdate> updates = dataStoreTranslator.translate(dataStore, atomBuilder)
+			.andThen(Single.fromCallable(() -> atomBuilder.buildWithPOWFee(ledger.getMagic(), address0.getPublicKey())))
+			.flatMap(identity::sign)
+			.flatMapObservable(ledger::submitAtom);
 
-		return new Result(identity.sign(unsignedAtom).flatMapObservable(ledger::submitAtom));
+		return new Result(updates);
 	}
 }
