@@ -27,8 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 
@@ -51,31 +49,16 @@ public class RadixWallet {
 
 	private final RadixLedger ledger;
 	private final RadixUniverse universe;
-	private final ConcurrentHashMap<RadixAddress, Observable<Collection<Consumable>>> cache = new ConcurrentHashMap<>();
+	private final ConsumableDataSource consumableDataSource;
 
 	RadixWallet(RadixUniverse universe) {
 		this.universe = universe;
 		this.ledger = universe.getLedger();
-	}
-
-	Observable<Collection<Consumable>> getUnconsumedConsumables(RadixAddress address) {
-		// TODO: use https://github.com/JakeWharton/RxReplayingShare to disconnect when unsubscribed
-		return cache.computeIfAbsent(address, addr ->
-			io.reactivex.Observable.<Collection<Consumable>>just(Collections.emptySet()).concatWith(
-				Observable.combineLatest(
-					Observable.fromCallable(() -> new TransactionAtoms(address, Asset.XRD.getId())),
-					ledger.getAllAtoms(address.getUID(), TransactionAtom.class),
-					(transactionAtoms, atom) ->
-						transactionAtoms.accept(atom)
-							.getUnconsumedConsumables()
-				).flatMapMaybe(unconsumedMaybe -> unconsumedMaybe)
-			).debounce(1000, TimeUnit.MILLISECONDS)
-			.replay(1).autoConnect()
-		);
+		this.consumableDataSource = new ConsumableDataSource(ledger);
 	}
 
 	public Observable<Long> getSubUnitBalance(RadixAddress address, EUID assetId) {
-		return this.getUnconsumedConsumables(address)
+		return this.consumableDataSource.getConsumables(address)
 			.map(Collection::stream)
 			.map(stream -> stream
 				.filter(consumable -> consumable.getAssetId().equals(assetId))
@@ -139,7 +122,7 @@ public class RadixWallet {
 		boolean withPOWFee,
 		Particle extraParticle
 	) {
-		return this.getUnconsumedConsumables(fromAddress)
+		return this.consumableDataSource.getConsumables(fromAddress)
 			.firstOrError()
 			.map(unconsumedConsumables -> {
 				AtomBuilder atomBuilder = new AtomBuilder();

@@ -39,7 +39,7 @@ public class TransactionAtoms {
 	private final ConcurrentHashMap<ByteBuffer, Consumable> unconsumedConsumables = new ConcurrentHashMap<>();
 	private final ConcurrentHashMap<ByteBuffer, TransactionAtom> missingConsumable = new ConcurrentHashMap<>();
 
-	TransactionAtoms(RadixAddress address, EUID assetId) {
+	public TransactionAtoms(RadixAddress address, EUID assetId) {
 		this.address = address;
 		this.assetId = assetId;
 	}
