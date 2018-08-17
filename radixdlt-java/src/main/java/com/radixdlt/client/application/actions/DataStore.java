@@ -42,10 +42,12 @@ public class DataStore {
 		return data;
 	}
 
+	// TODO: make this immutable
 	public Map<String, Object> getMetaData() {
 		return metaData;
 	}
 
+	// TODO: make this immutable
 	public List<RadixAddress> getAddresses() {
 		return addresses;
 	}

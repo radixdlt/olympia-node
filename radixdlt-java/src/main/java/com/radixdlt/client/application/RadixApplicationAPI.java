@@ -15,6 +15,7 @@ import com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState
 import io.reactivex.Completable;
 import io.reactivex.Observable;
 import io.reactivex.Single;
+import java.util.function.Supplier;
 
 public class RadixApplicationAPI {
 	public static class Result {
@@ -48,19 +49,21 @@ public class RadixApplicationAPI {
 	private final RadixIdentity identity;
 	private final RadixLedger ledger;
 	private final DataStoreTranslator dataStoreTranslator;
+	private final Supplier<AtomBuilder> atomBuilderSupplier;
 
-	private RadixApplicationAPI(RadixIdentity identity, RadixLedger ledger) {
+	private RadixApplicationAPI(RadixIdentity identity, RadixLedger ledger, Supplier<AtomBuilder> atomBuilderSupplier) {
 		this.identity = identity;
 		this.ledger = ledger;
 		this.dataStoreTranslator = DataStoreTranslator.getInstance();
+		this.atomBuilderSupplier = atomBuilderSupplier;
 	}
 
 	public static RadixApplicationAPI create(RadixIdentity identity) {
-		return new RadixApplicationAPI(identity, RadixUniverse.getInstance().getLedger());
+		return new RadixApplicationAPI(identity, RadixUniverse.getInstance().getLedger(), AtomBuilder::new);
 	}
 
-	public static RadixApplicationAPI create(RadixIdentity identity, RadixLedger ledger) {
-		return new RadixApplicationAPI(identity, ledger);
+	public static RadixApplicationAPI create(RadixIdentity identity, RadixLedger ledger, Supplier<AtomBuilder> atomBuilderSupplier) {
+		return new RadixApplicationAPI(identity, ledger, atomBuilderSupplier);
 	}
 
 	public RadixIdentity getIdentity() {
@@ -71,12 +74,6 @@ public class RadixApplicationAPI {
 		return ledger.getAddressFromPublicKey(identity.getPublicKey());
 	}
 
-	public Observable<EncryptedData> getEncryptedData(RadixAddress address) {
-		return ledger.getAllAtoms(address.getUID(), ApplicationPayloadAtom.class)
-			.filter(atom -> atom.getEncryptor() != null && atom.getEncryptor().getProtectors() != null)
-			.map(EncryptedData::fromAtom);
-	}
-
 	public Observable<UnencryptedData> getDecryptableData(RadixAddress address) {
 		return ledger.getAllAtoms(address.getUID(), ApplicationPayloadAtom.class)
 			.flatMapMaybe(atom -> UnencryptedData.fromAtom(atom, identity));
@@ -85,7 +82,7 @@ public class RadixApplicationAPI {
 	public Result storeData(EncryptedData encryptedData, RadixAddress address) {
 		DataStore dataStore = new DataStore(encryptedData, address);
 
-		AtomBuilder atomBuilder = new AtomBuilder();
+		AtomBuilder atomBuilder = atomBuilderSupplier.get();
 		Observable<AtomSubmissionUpdate> updates = dataStoreTranslator.translate(dataStore, atomBuilder)
 			.andThen(Single.fromCallable(() -> atomBuilder.buildWithPOWFee(ledger.getMagic(), address.getPublicKey())))
 			.flatMap(identity::sign)
@@ -97,7 +94,7 @@ public class RadixApplicationAPI {
 	public Result storeData(EncryptedData encryptedData, RadixAddress address0, RadixAddress address1) {
 		DataStore dataStore = new DataStore(encryptedData, address0, address1);
 
-		AtomBuilder atomBuilder = new AtomBuilder();
+		AtomBuilder atomBuilder = atomBuilderSupplier.get();
 		Observable<AtomSubmissionUpdate> updates = dataStoreTranslator.translate(dataStore, atomBuilder)
 			.andThen(Single.fromCallable(() -> atomBuilder.buildWithPOWFee(ledger.getMagic(), address0.getPublicKey())))
 			.flatMap(identity::sign)
