@@ -1,4 +1,4 @@
-package com.radixdlt.client.messaging;
+package com.radixdlt.client.dapps.messaging;
 
 import com.radixdlt.client.core.address.RadixAddress;
 

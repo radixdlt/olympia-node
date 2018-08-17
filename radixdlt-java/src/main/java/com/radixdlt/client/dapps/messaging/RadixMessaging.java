@@ -1,4 +1,4 @@
-package com.radixdlt.client.messaging;
+package com.radixdlt.client.dapps.messaging;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;

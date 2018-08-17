@@ -1,4 +1,4 @@
-package com.radixdlt.client.wallet;
+package com.radixdlt.client.dapps.wallet;
 
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import java.text.SimpleDateFormat;

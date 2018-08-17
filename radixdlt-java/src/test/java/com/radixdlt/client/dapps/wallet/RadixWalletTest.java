@@ -1,4 +1,4 @@
-package com.radixdlt.client.wallet;
+package com.radixdlt.client.dapps.wallet;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;

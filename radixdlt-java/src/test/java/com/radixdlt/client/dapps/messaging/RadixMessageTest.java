@@ -1,4 +1,4 @@
-package com.radixdlt.client.messaging;
+package com.radixdlt.client.dapps.messaging;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
