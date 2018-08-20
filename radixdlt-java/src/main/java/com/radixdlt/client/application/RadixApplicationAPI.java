@@ -145,7 +145,7 @@ public class RadixApplicationAPI {
 	}
 
 	public Result transferTokens(RadixAddress from, RadixAddress to, Asset tokenClass, long subUnitAmount) {
-		TokenTransfer tokenTransfer = new TokenTransfer(from, to, tokenClass, subUnitAmount);
+		TokenTransfer tokenTransfer = TokenTransfer.create(from, to, tokenClass, subUnitAmount);
 		AtomBuilder atomBuilder = atomBuilderSupplier.get();
 
 		ConnectableObservable<AtomSubmissionUpdate> updates = tokenTransferTranslator.translate(tokenTransfer, atomBuilder)

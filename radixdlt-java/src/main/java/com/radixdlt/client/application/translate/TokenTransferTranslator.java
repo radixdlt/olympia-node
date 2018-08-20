@@ -3,6 +3,7 @@ package com.radixdlt.client.application.translate;
 import com.radixdlt.client.application.actions.TokenTransfer;
 import com.radixdlt.client.assets.Asset;
 import com.radixdlt.client.core.RadixUniverse;
+import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.AtomBuilder;
 import com.radixdlt.client.core.atoms.Consumable;
 import com.radixdlt.client.core.atoms.Consumer;
@@ -35,34 +36,26 @@ public class TokenTransferTranslator {
 				.map(entry -> new SimpleImmutableEntry<>(entry.getKey().iterator().next(), entry.getValue().get(Asset.XRD.getId())))
 				.collect(Collectors.toList());
 
-		if (summary.size() == 1) {
-			return new TokenTransfer(
-				summary.get(0).getValue() <= 0L ? universe.getAddressFrom(summary.get(0).getKey()) : null,
-				summary.get(0).getValue() <= 0L ? null : universe.getAddressFrom(summary.get(0).getKey()),
-				Asset.XRD,
-				summary.get(0).getValue()
-			);
-		}
-
 		if (summary.size() > 2) {
 			throw new IllegalStateException("More than two participants in token transfer. Unable to handle: " + summary);
 		}
 
-		if (summary.get(0).getValue() > 0) {
-			return new TokenTransfer(
-				universe.getAddressFrom(summary.get(1).getKey()),
-				universe.getAddressFrom(summary.get(0).getKey()),
-				Asset.XRD,
-				summary.get(0).getValue()
-			);
+		final RadixAddress from;
+		final RadixAddress to;
+		if (summary.size() == 1) {
+			from = summary.get(0).getValue() <= 0L ? universe.getAddressFrom(summary.get(0).getKey()) : null;
+			to = summary.get(0).getValue() <= 0L ? null : universe.getAddressFrom(summary.get(0).getKey());
 		} else {
-			return new TokenTransfer(
-				universe.getAddressFrom(summary.get(0).getKey()),
-				universe.getAddressFrom(summary.get(1).getKey()),
-				Asset.XRD,
-				summary.get(1).getValue()
-			);
+			if (summary.get(0).getValue() > 0) {
+				from = universe.getAddressFrom(summary.get(1).getKey());
+				to = universe.getAddressFrom(summary.get(0).getKey());
+			} else {
+				from = universe.getAddressFrom(summary.get(0).getKey());
+				to = universe.getAddressFrom(summary.get(1).getKey());
+			}
 		}
+
+		return TokenTransfer.create(from, to, Asset.XRD, Math.abs(summary.get(0).getValue()), transactionAtom.getTimestamp());
 	}
 
 	public Completable translate(TokenTransfer tokenTransfer, AtomBuilder atomBuilder) {
