@@ -5,8 +5,8 @@ import com.radixdlt.client.assets.Asset;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.address.RadixAddress;
-import com.radixdlt.client.core.identity.RadixIdentity;
-import com.radixdlt.client.core.identity.SimpleRadixIdentity;
+import com.radixdlt.client.application.identity.RadixIdentity;
+import com.radixdlt.client.application.identity.SimpleRadixIdentity;
 import com.radixdlt.client.dapps.wallet.RadixWallet;
 
 public class RadixWalletExample {

@@ -10,7 +10,7 @@ import com.radixdlt.client.application.objects.UnencryptedData;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.crypto.ECSignature;
-import com.radixdlt.client.core.identity.RadixIdentity;
+import com.radixdlt.client.application.identity.RadixIdentity;
 import io.reactivex.Observable;
 import io.reactivex.observers.TestObserver;
 import java.util.HashMap;

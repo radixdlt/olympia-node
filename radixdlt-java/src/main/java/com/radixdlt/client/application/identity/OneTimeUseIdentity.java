@@ -1,4 +1,4 @@
-package com.radixdlt.client.core.identity;
+package com.radixdlt.client.application.identity;
 
 import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.core.address.EUID;
@@ -12,36 +12,19 @@ import com.radixdlt.client.core.crypto.ECSignature;
 import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
 import com.radixdlt.client.core.crypto.MacMismatchException;
 import io.reactivex.Single;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
 
-public class SimpleRadixIdentity implements RadixIdentity {
+// Simply generate a key pair and don't worry about saving it
+public class OneTimeUseIdentity implements RadixIdentity {
 	private final ECKeyPair myKey;
 
-	public SimpleRadixIdentity(File myKeyFile) throws IOException {
-		if (myKeyFile.exists()) {
-			myKey = ECKeyPair.fromFile(myKeyFile);
-		} else {
-			myKey = ECKeyPairGenerator.newInstance().generateKeyPair();
-			try (FileOutputStream io = new FileOutputStream(myKeyFile)) {
-				io.write(myKey.getPrivateKey());
-			}
-		}
+	public OneTimeUseIdentity() {
+		myKey = ECKeyPairGenerator.newInstance().generateKeyPair();
 	}
 
-	public SimpleRadixIdentity(String fileName) throws IOException {
-		this(new File(fileName));
-	}
-
-	public SimpleRadixIdentity() throws IOException {
-		this("my.key");
-	}
-
-	public Atom synchronousSign(UnsignedAtom atom) {
-		ECSignature signature = myKey.sign(atom.getHash().toByteArray());
+	public Atom synchronousSign(UnsignedAtom unsignedAtom) {
+		ECSignature signature = myKey.sign(unsignedAtom.getHash().toByteArray());
 		EUID signatureId = myKey.getUID();
-		return atom.sign(signature, signatureId);
+		return unsignedAtom.sign(signature, signatureId);
 	}
 
 	@Override

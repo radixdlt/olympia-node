@@ -1,4 +1,4 @@
-package com.radixdlt.client.core.identity;
+package com.radixdlt.client.application.identity;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -7,10 +7,10 @@ import com.radixdlt.client.core.atoms.RadixHash;
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECKeyPairGenerator;
 import com.radixdlt.client.core.crypto.LinuxSecureRandom;
-import com.radixdlt.client.core.identity.model.keystore.Cipherparams;
-import com.radixdlt.client.core.identity.model.keystore.Crypto;
-import com.radixdlt.client.core.identity.model.keystore.Keystore;
-import com.radixdlt.client.core.identity.model.keystore.Pbkdfparams;
+import com.radixdlt.client.application.identity.model.keystore.Cipherparams;
+import com.radixdlt.client.application.identity.model.keystore.Crypto;
+import com.radixdlt.client.application.identity.model.keystore.Keystore;
+import com.radixdlt.client.application.identity.model.keystore.Pbkdfparams;
 import com.radixdlt.client.core.util.AndroidUtil;
 import java.io.FileReader;
 import java.io.FileWriter;

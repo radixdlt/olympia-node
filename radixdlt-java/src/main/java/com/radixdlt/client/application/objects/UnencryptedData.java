@@ -1,6 +1,6 @@
 package com.radixdlt.client.application.objects;
 
-import com.radixdlt.client.core.identity.RadixIdentity;
+import com.radixdlt.client.application.identity.RadixIdentity;
 import io.reactivex.Maybe;
 import java.util.Map;
 

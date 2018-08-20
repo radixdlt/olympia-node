@@ -4,7 +4,7 @@ import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.address.RadixAddress;
-import com.radixdlt.client.core.identity.SimpleRadixIdentity;
+import com.radixdlt.client.application.identity.SimpleRadixIdentity;
 import com.radixdlt.client.dapps.messaging.RadixMessaging;
 
 public class RadixMessagingExample {

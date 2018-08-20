@@ -1,4 +1,4 @@
-package com.radixdlt.client.core.identity;
+package com.radixdlt.client.application.identity;
 
 import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.core.atoms.Atom;
