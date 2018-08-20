@@ -19,11 +19,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class TokensTransferTranslator {
+public class TokenTransferTranslator {
 	private final RadixUniverse universe;
 	private final ConsumableDataSource consumableDataSource;
 
-	public TokensTransferTranslator(RadixUniverse universe, ConsumableDataSource consumableDataSource) {
+	public TokenTransferTranslator(RadixUniverse universe, ConsumableDataSource consumableDataSource) {
 		this.universe = universe;
 		this.consumableDataSource = consumableDataSource;
 	}

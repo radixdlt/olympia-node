@@ -5,7 +5,7 @@ import com.radixdlt.client.application.actions.TokenTransfer;
 import com.radixdlt.client.application.objects.EncryptedData;
 import com.radixdlt.client.application.objects.UnencryptedData;
 import com.radixdlt.client.application.translate.DataStoreTranslator;
-import com.radixdlt.client.application.translate.TokensTransferTranslator;
+import com.radixdlt.client.application.translate.TokenTransferTranslator;
 import com.radixdlt.client.assets.Asset;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.address.RadixAddress;
@@ -58,7 +58,7 @@ public class RadixApplicationAPI {
 	private final RadixIdentity identity;
 	private final RadixLedger ledger;
 	private final DataStoreTranslator dataStoreTranslator;
-	private final TokensTransferTranslator tokensTransferTranslator;
+	private final TokenTransferTranslator tokenTransferTranslator;
 	private final Supplier<AtomBuilder> atomBuilderSupplier;
 	private final ConsumableDataSource consumableDataSource;
 
@@ -67,7 +67,7 @@ public class RadixApplicationAPI {
 		this.ledger = universe.getLedger();
 		this.consumableDataSource = new ConsumableDataSource(ledger);
 		this.dataStoreTranslator = DataStoreTranslator.getInstance();
-		this.tokensTransferTranslator = new TokensTransferTranslator(universe, consumableDataSource);
+		this.tokenTransferTranslator = new TokenTransferTranslator(universe, consumableDataSource);
 		this.atomBuilderSupplier = atomBuilderSupplier;
 	}
 
@@ -130,7 +130,7 @@ public class RadixApplicationAPI {
 				transactionAtoms.accept(atom)
 					.getNewValidTransactions()
 		)
-		.flatMap(atoms -> atoms.map(tokensTransferTranslator::fromAtom));
+		.flatMap(atoms -> atoms.map(tokenTransferTranslator::fromAtom));
 	}
 
 	public Observable<Long> getSubUnitBalance(RadixAddress address, Asset tokenClass) {
@@ -148,7 +148,7 @@ public class RadixApplicationAPI {
 		TokenTransfer tokenTransfer = new TokenTransfer(from, to, tokenClass, subUnitAmount);
 		AtomBuilder atomBuilder = atomBuilderSupplier.get();
 
-		ConnectableObservable<AtomSubmissionUpdate> updates = tokensTransferTranslator.translate(tokenTransfer, atomBuilder)
+		ConnectableObservable<AtomSubmissionUpdate> updates = tokenTransferTranslator.translate(tokenTransfer, atomBuilder)
 			.andThen(Single.fromCallable(() -> atomBuilder.buildWithPOWFee(ledger.getMagic(), from.getPublicKey())))
 			.flatMap(identity::sign)
 			.flatMapObservable(ledger::submitAtom)
