@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.bouncycastle.util.encoders.Base64;
 
 /**
  * Application layer bytes bytes object. Can be stored and retrieved from a RadixAddress.
@@ -51,6 +52,7 @@ public class Data {
 			if (isPublicReadable) {
 				protectors = Collections.emptyList();
 				bytes = this.bytes;
+				metaData.put("encrypted", false);
 			} else {
 				if (readers.isEmpty()) {
 					throw new IllegalStateException("Must either be publicReadable or have atleast one reader.");
@@ -59,12 +61,14 @@ public class Data {
 				ECKeyPair sharedKey = ECKeyPairGenerator.newInstance().generateKeyPair();
 				protectors = readers.stream().map(sharedKey::encryptPrivateKey).collect(Collectors.toList());
 				bytes = sharedKey.getPublicKey().encrypt(this.bytes);
+				metaData.put("encrypted", true);
 			}
 
 			return new Data(bytes, metaData, protectors);
 		}
 	}
 
+	// TODO: Cleanup this interface
 	public static Data raw(byte[] bytes, Map<String, Object> metaData, List<EncryptedPrivateKey> protectors) {
 		return new Data(bytes, metaData, protectors);
 	}
@@ -79,7 +83,7 @@ public class Data {
 		this.protectors = protectors;
 	}
 
-	// TODO: make immutable
+	// TODO: make unmodifiable
 	public byte[] getBytes() {
 		return bytes;
 	}
@@ -90,5 +94,12 @@ public class Data {
 
 	public Map<String, Object> getMetaData() {
 		return Collections.unmodifiableMap(metaData);
+	}
+
+	@Override
+	public String toString() {
+		boolean encrypted = (Boolean) metaData.get("encrypted");
+
+		return encrypted ? ("encrypted: " + Base64.toBase64String(bytes)) : ("unencrypted: " + new String(bytes));
 	}
 }

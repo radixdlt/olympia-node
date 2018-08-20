@@ -3,6 +3,8 @@ package com.radixdlt.client.dapps.wallet;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
 import com.radixdlt.client.application.actions.TokenTransfer;
+import com.radixdlt.client.application.objects.Data;
+import com.radixdlt.client.application.objects.Data.DataBuilder;
 import com.radixdlt.client.assets.Asset;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate;
@@ -55,11 +57,26 @@ public class RadixWallet {
 		return new TransferResult(updates);
 	}
 
+
 	public TransferResult transferXRDWhenAvailable(long amountInSubUnits, RadixAddress toAddress) {
+		return this.transferXRDWhenAvailable(amountInSubUnits, toAddress, null);
+	}
+
+	public TransferResult transferXRDWhenAvailable(long amountInSubUnits, RadixAddress toAddress, String message) {
+		final Data attachment;
+		if (message != null) {
+			attachment = new DataBuilder()
+				.addReader(toAddress.getPublicKey())
+				.addReader(api.getAddress().getPublicKey())
+				.bytes(message.getBytes()).build();
+		} else {
+			attachment = null;
+		}
+
 		ConnectableObservable<AtomSubmissionUpdate> updates = api.getSubUnitBalance(api.getAddress(), Asset.XRD)
 			.filter(balance -> balance > amountInSubUnits)
 			.firstOrError()
-			.map(balance -> api.transferTokens(api.getAddress(), toAddress, Asset.XRD, amountInSubUnits))
+			.map(balance -> api.transferTokens(api.getAddress(), toAddress, Asset.XRD, amountInSubUnits, attachment))
 			.flatMapObservable(Result::toObservable)
 			.replay();
 

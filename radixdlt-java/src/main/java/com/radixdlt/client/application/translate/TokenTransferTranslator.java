@@ -1,6 +1,7 @@
 package com.radixdlt.client.application.translate;
 
 import com.radixdlt.client.application.actions.TokenTransfer;
+import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.assets.Asset;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.address.RadixAddress;
@@ -10,6 +11,7 @@ import com.radixdlt.client.core.atoms.Consumer;
 import com.radixdlt.client.core.atoms.TransactionAtom;
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECPublicKey;
+import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
 import io.reactivex.Completable;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Collections;
@@ -55,7 +57,22 @@ public class TokenTransferTranslator {
 			}
 		}
 
-		return TokenTransfer.create(from, to, Asset.XRD, Math.abs(summary.get(0).getValue()), transactionAtom.getTimestamp());
+		final Data attachment;
+		if (transactionAtom.getPayload() != null) {
+			final List<EncryptedPrivateKey> protectors;
+			if (transactionAtom.getEncryptor() != null && transactionAtom.getEncryptor().getProtectors() != null) {
+				protectors = transactionAtom.getEncryptor().getProtectors();
+			} else {
+				protectors = Collections.emptyList();
+			}
+			Map<String, Object> metaData = new HashMap<>();
+			metaData.put("encrypted", !protectors.isEmpty());
+			attachment = Data.raw(transactionAtom.getPayload().getBytes(), metaData, protectors);
+		} else {
+			attachment = null;
+		}
+
+		return TokenTransfer.create(from, to, Asset.XRD, Math.abs(summary.get(0).getValue()), attachment, transactionAtom.getTimestamp());
 	}
 
 	public Completable translate(TokenTransfer tokenTransfer, AtomBuilder atomBuilder) {
@@ -65,11 +82,12 @@ public class TokenTransferTranslator {
 			.firstOrError()
 			.flatMapCompletable(unconsumedConsumables -> {
 
-				/*
-				if (payload != null) {
-					atomBuilder.payload(payload);
+				if (tokenTransfer.getAttachment() != null) {
+					atomBuilder.payload(tokenTransfer.getAttachment().getBytes());
+					if (!tokenTransfer.getAttachment().getProtectors().isEmpty()) {
+						atomBuilder.protectors(tokenTransfer.getAttachment().getProtectors());
+					}
 				}
-				*/
 
 				long consumerTotal = 0;
 				Iterator<Consumable> iterator = unconsumedConsumables.iterator();

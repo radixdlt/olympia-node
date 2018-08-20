@@ -145,6 +145,22 @@ public class RadixApplicationAPI {
 			.share();
 	}
 
+
+	public Result transferTokens(RadixAddress from, RadixAddress to, Asset tokenClass, long subUnitAmount, Data attachment) {
+		TokenTransfer tokenTransfer = TokenTransfer.create(from, to, tokenClass, subUnitAmount, attachment);
+		AtomBuilder atomBuilder = atomBuilderSupplier.get();
+
+		ConnectableObservable<AtomSubmissionUpdate> updates = tokenTransferTranslator.translate(tokenTransfer, atomBuilder)
+			.andThen(Single.fromCallable(() -> atomBuilder.buildWithPOWFee(ledger.getMagic(), from.getPublicKey())))
+			.flatMap(identity::sign)
+			.flatMapObservable(ledger::submitAtom)
+			.replay();
+
+		updates.connect();
+
+		return new Result(updates);
+	}
+
 	public Result transferTokens(RadixAddress from, RadixAddress to, Asset tokenClass, long subUnitAmount) {
 		TokenTransfer tokenTransfer = TokenTransfer.create(from, to, tokenClass, subUnitAmount);
 		AtomBuilder atomBuilder = atomBuilderSupplier.get();

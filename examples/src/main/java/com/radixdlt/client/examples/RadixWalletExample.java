@@ -14,6 +14,7 @@ public class RadixWalletExample {
 	private static String TO_ADDRESS_BASE58 = "JGuwJVu7REeqQtx7736GB9AJ91z5xB55t8NvteaoC25AumYovjp";
 	//private static String TO_ADDRESS_BASE58 = null;
 	private static long AMOUNT = 1;
+	private static String MESSAGE = "A gift!";
 
 	// Initialize Radix Universe
 	static {
@@ -49,7 +50,7 @@ public class RadixWalletExample {
 		// If specified, send money to another address
 		if (TO_ADDRESS_BASE58 != null) {
 			RadixAddress toAddress = RadixAddress.fromString(TO_ADDRESS_BASE58);
-			wallet.transferXRDWhenAvailable(AMOUNT * Asset.XRD.getSubUnits(), toAddress)
+			wallet.transferXRDWhenAvailable(AMOUNT * Asset.XRD.getSubUnits(), toAddress, MESSAGE)
 				.toObservable()
 				.subscribe(System.out::println, Throwable::printStackTrace);
 		}

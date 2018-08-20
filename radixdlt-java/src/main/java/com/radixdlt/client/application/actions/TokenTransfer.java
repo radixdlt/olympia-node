@@ -1,5 +1,6 @@
 package com.radixdlt.client.application.actions;
 
+import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.assets.Asset;
 import com.radixdlt.client.assets.AssetAmount;
 import com.radixdlt.client.core.address.RadixAddress;
@@ -13,24 +14,55 @@ public class TokenTransfer {
 	private final Asset tokenClass;
 	private final Map<String, Object> metaData;
 	private final long subUnitAmount;
+	private final Data attachment;
 
-	private TokenTransfer(RadixAddress from, RadixAddress to, Asset tokenClass, long subUnitAmount, Map<String, Object> metaData) {
+	private TokenTransfer(
+		RadixAddress from,
+		RadixAddress to,
+		Asset tokenClass,
+		long subUnitAmount,
+		Data attachment,
+		Map<String, Object> metaData
+	) {
 		this.from = from;
 		this.to = to;
 		this.tokenClass = tokenClass;
 		this.subUnitAmount = subUnitAmount;
+		this.attachment = attachment;
 		this.metaData = metaData;
 	}
 
 	public static TokenTransfer create(RadixAddress from, RadixAddress to, Asset tokenClass, long subUnitAmount) {
-		return new TokenTransfer(from, to, tokenClass, subUnitAmount, Collections.emptyMap());
+		return new TokenTransfer(from, to, tokenClass, subUnitAmount, null, Collections.emptyMap());
+	}
+
+	public static TokenTransfer create(RadixAddress from, RadixAddress to, Asset tokenClass, long subUnitAmount, Data attachment) {
+		return new TokenTransfer(from, to, tokenClass, subUnitAmount, attachment, Collections.emptyMap());
 	}
 
 	public static TokenTransfer create(RadixAddress from, RadixAddress to, Asset tokenClass, long subUnitAmount, Long timestamp) {
 		Map<String, Object> metaData = new HashMap<>();
 		metaData.put("timestamp", timestamp);
 
-		return new TokenTransfer(from, to, tokenClass, subUnitAmount, metaData);
+		return new TokenTransfer(from, to, tokenClass, subUnitAmount, null, metaData);
+	}
+
+	public static TokenTransfer create(
+		RadixAddress from,
+		RadixAddress to,
+		Asset tokenClass,
+		long subUnitAmount,
+		Data attachment,
+		Long timestamp
+	) {
+		Map<String, Object> metaData = new HashMap<>();
+		metaData.put("timestamp", timestamp);
+
+		return new TokenTransfer(from, to, tokenClass, subUnitAmount, attachment, metaData);
+	}
+
+	public Data getAttachment() {
+		return attachment;
 	}
 
 	public RadixAddress getFrom() {
@@ -56,6 +88,7 @@ public class TokenTransfer {
 	@Override
 	public String toString() {
 		Long timestamp = (Long) metaData.get("timestamp");
-		return timestamp + " " + from + " -> " + to + " " + new AssetAmount(tokenClass, subUnitAmount).toString();
+		return timestamp + " " + from + " -> " + to + " " + new AssetAmount(tokenClass, subUnitAmount).toString()
+			+ (attachment == null ? "" : " " + attachment);
 	}
 }
