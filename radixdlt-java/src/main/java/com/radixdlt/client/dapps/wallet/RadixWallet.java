@@ -5,10 +5,23 @@ import com.radixdlt.client.application.RadixApplicationAPI.Result;
 import com.radixdlt.client.application.actions.TokenTransfer;
 import com.radixdlt.client.assets.Asset;
 import com.radixdlt.client.core.address.RadixAddress;
-import io.reactivex.Completable;
+import com.radixdlt.client.core.network.AtomSubmissionUpdate;
 import io.reactivex.Observable;
+import io.reactivex.observables.ConnectableObservable;
 
 public class RadixWallet {
+	public static class TransferResult {
+		private final Observable<AtomSubmissionUpdate> updates;
+
+		private TransferResult(Observable<AtomSubmissionUpdate> updates) {
+			this.updates = updates;
+		}
+
+		public Observable<AtomSubmissionUpdate> toObservable() {
+			return updates;
+		}
+	}
+
 	private final RadixApplicationAPI api;
 
 	public RadixWallet(RadixApplicationAPI api) {
@@ -35,21 +48,23 @@ public class RadixWallet {
 		return api.getTokenTransfers(address, Asset.XRD);
 	}
 
-	public Completable transferXRD(long amountInSubUnits, RadixAddress toAddress) {
-		Completable completable = api.transferTokens(api.getAddress(), toAddress, Asset.XRD, amountInSubUnits)
-			.toCompletable().cache();
-		completable.subscribe();
-		return completable;
+	public TransferResult transferXRD(long amountInSubUnits, RadixAddress toAddress) {
+		ConnectableObservable<AtomSubmissionUpdate> updates =
+			api.transferTokens(api.getAddress(), toAddress, Asset.XRD, amountInSubUnits).toObservable().replay();
+		updates.connect();
+		return new TransferResult(updates);
 	}
 
-	public Completable transferXRDWhenAvailable(long amountInSubUnits, RadixAddress toAddress) {
-		Completable completable = api.getSubUnitBalance(api.getAddress(), Asset.XRD)
+	public TransferResult transferXRDWhenAvailable(long amountInSubUnits, RadixAddress toAddress) {
+		ConnectableObservable<AtomSubmissionUpdate> updates = api.getSubUnitBalance(api.getAddress(), Asset.XRD)
 			.filter(balance -> balance > amountInSubUnits)
 			.firstOrError()
 			.map(balance -> api.transferTokens(api.getAddress(), toAddress, Asset.XRD, amountInSubUnits))
-			.flatMapCompletable(Result::toCompletable)
-			.cache();
-		completable.subscribe();
-		return completable;
+			.flatMapObservable(Result::toObservable)
+			.replay();
+
+		updates.connect();
+
+		return new TransferResult(updates);
 	}
 }

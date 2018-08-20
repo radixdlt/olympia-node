@@ -50,7 +50,8 @@ public class RadixWalletExample {
 		if (TO_ADDRESS_BASE58 != null) {
 			RadixAddress toAddress = RadixAddress.fromString(TO_ADDRESS_BASE58);
 			wallet.transferXRDWhenAvailable(AMOUNT * Asset.XRD.getSubUnits(), toAddress)
-				.subscribe(() -> System.out.println("Completed Transfer"), Throwable::printStackTrace);
+				.toObservable()
+				.subscribe(System.out::println, Throwable::printStackTrace);
 		}
 	}
 }
