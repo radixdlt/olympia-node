@@ -15,6 +15,7 @@ import com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState
 import io.reactivex.Completable;
 import io.reactivex.Observable;
 import io.reactivex.Single;
+import io.reactivex.observables.ConnectableObservable;
 import java.util.function.Supplier;
 
 public class RadixApplicationAPI {
@@ -83,10 +84,13 @@ public class RadixApplicationAPI {
 		DataStore dataStore = new DataStore(encryptedData, address);
 
 		AtomBuilder atomBuilder = atomBuilderSupplier.get();
-		Observable<AtomSubmissionUpdate> updates = dataStoreTranslator.translate(dataStore, atomBuilder)
+		ConnectableObservable<AtomSubmissionUpdate> updates = dataStoreTranslator.translate(dataStore, atomBuilder)
 			.andThen(Single.fromCallable(() -> atomBuilder.buildWithPOWFee(ledger.getMagic(), address.getPublicKey())))
 			.flatMap(identity::sign)
-			.flatMapObservable(ledger::submitAtom);
+			.flatMapObservable(ledger::submitAtom)
+			.replay();
+
+		updates.connect();
 
 		return new Result(updates);
 	}
@@ -95,10 +99,13 @@ public class RadixApplicationAPI {
 		DataStore dataStore = new DataStore(encryptedData, address0, address1);
 
 		AtomBuilder atomBuilder = atomBuilderSupplier.get();
-		Observable<AtomSubmissionUpdate> updates = dataStoreTranslator.translate(dataStore, atomBuilder)
+		ConnectableObservable<AtomSubmissionUpdate> updates = dataStoreTranslator.translate(dataStore, atomBuilder)
 			.andThen(Single.fromCallable(() -> atomBuilder.buildWithPOWFee(ledger.getMagic(), address0.getPublicKey())))
 			.flatMap(identity::sign)
-			.flatMapObservable(ledger::submitAtom);
+			.flatMapObservable(ledger::submitAtom)
+			.replay();
+
+		updates.connect();
 
 		return new Result(updates);
 	}

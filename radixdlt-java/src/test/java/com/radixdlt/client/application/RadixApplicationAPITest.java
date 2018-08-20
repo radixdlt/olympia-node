@@ -3,6 +3,8 @@ package com.radixdlt.client.application;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
@@ -28,15 +30,24 @@ import java.util.function.Supplier;
 import org.junit.Test;
 
 public class RadixApplicationAPITest {
-	private RadixApplicationAPI createMockedAPIWhichAlwaysSucceeds() {
+	private RadixApplicationAPI createMockedAPI(RadixLedger ledger) {
 		RadixIdentity identity = mock(RadixIdentity.class);
-		RadixLedger ledger = mock(RadixLedger.class);
 		AtomBuilder atomBuilder = mock(AtomBuilder.class);
 		when(atomBuilder.type(any())).thenReturn(atomBuilder);
 		when(atomBuilder.protectors(any())).thenReturn(atomBuilder);
 		when(atomBuilder.payload(any(byte[].class))).thenReturn(atomBuilder);
 		Atom atom = mock(Atom.class);
 		when(identity.sign(any())).thenReturn(Single.just(atom));
+
+		Supplier<AtomBuilder> atomBuilderSupplier = () -> atomBuilder;
+		UnsignedAtom unsignedAtom = mock(UnsignedAtom.class);
+		when(atomBuilder.buildWithPOWFee(anyInt(), any())).thenReturn(unsignedAtom);
+
+		return RadixApplicationAPI.create(identity, ledger, atomBuilderSupplier);
+	}
+
+	private RadixLedger createMockedLedgerWhichAlwaysSucceeds() {
+		RadixLedger ledger = mock(RadixLedger.class);
 
 		AtomSubmissionUpdate submitting = mock(AtomSubmissionUpdate.class);
 		AtomSubmissionUpdate submitted = mock(AtomSubmissionUpdate.class);
@@ -50,11 +61,12 @@ public class RadixApplicationAPITest {
 		when(stored.getState()).thenReturn(AtomSubmissionState.STORED);
 
 		when(ledger.submitAtom(any())).thenReturn(Observable.just(submitting, submitted, stored));
-		Supplier<AtomBuilder> atomBuilderSupplier = () -> atomBuilder;
-		UnsignedAtom unsignedAtom = mock(UnsignedAtom.class);
-		when(atomBuilder.buildWithPOWFee(anyInt(), any())).thenReturn(unsignedAtom);
 
-		return RadixApplicationAPI.create(identity, ledger, atomBuilderSupplier);
+		return ledger;
+	}
+
+	private RadixApplicationAPI createMockedAPIWhichAlwaysSucceeds() {
+		return createMockedAPI(createMockedLedgerWhichAlwaysSucceeds());
 	}
 
 	private void validateSuccessfulStoreDataResult(Result result) {
@@ -92,6 +104,33 @@ public class RadixApplicationAPITest {
 		Result result = api.storeData(encryptedData, address, address);
 		validateSuccessfulStoreDataResult(result);
 	}
+
+	@Test
+	public void testStoreWithoutSubscription() {
+		RadixLedger ledger = createMockedLedgerWhichAlwaysSucceeds();
+		RadixApplicationAPI api = createMockedAPI(ledger);
+		RadixAddress address = mock(RadixAddress.class);
+
+		EncryptedData encryptedData = mock(EncryptedData.class);
+		api.storeData(encryptedData, address, address);
+		verify(ledger, times(1)).submitAtom(any());
+	}
+
+	@Test
+	public void testStoreWithMultipleSubscribes() {
+		RadixLedger ledger = createMockedLedgerWhichAlwaysSucceeds();
+		RadixApplicationAPI api = createMockedAPI(ledger);
+		RadixAddress address = mock(RadixAddress.class);
+
+		EncryptedData encryptedData = mock(EncryptedData.class);
+		Result result = api.storeData(encryptedData, address, address);
+		Observable observable = result.toObservable();
+		observable.subscribe();
+		observable.subscribe();
+		observable.subscribe();
+		verify(ledger, times(1)).submitAtom(any());
+	}
+
 
 	@Test
 	public void testUndecryptableData() {
