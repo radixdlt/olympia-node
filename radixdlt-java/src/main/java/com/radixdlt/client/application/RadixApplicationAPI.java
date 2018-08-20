@@ -1,21 +1,29 @@
 package com.radixdlt.client.application;
 
 import com.radixdlt.client.application.actions.DataStore;
+import com.radixdlt.client.application.actions.TokenTransfer;
 import com.radixdlt.client.application.objects.EncryptedData;
 import com.radixdlt.client.application.objects.UnencryptedData;
 import com.radixdlt.client.application.translate.DataStoreTranslator;
+import com.radixdlt.client.application.translate.TokensTransferTranslator;
+import com.radixdlt.client.assets.Asset;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.ApplicationPayloadAtom;
 import com.radixdlt.client.core.atoms.AtomBuilder;
+import com.radixdlt.client.core.atoms.Consumable;
+import com.radixdlt.client.core.atoms.TransactionAtom;
 import com.radixdlt.client.core.identity.RadixIdentity;
 import com.radixdlt.client.core.ledger.RadixLedger;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState;
+import com.radixdlt.client.application.translate.ConsumableDataSource;
+import com.radixdlt.client.application.translate.TransactionAtoms;
 import io.reactivex.Completable;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.observables.ConnectableObservable;
+import java.util.Collection;
 import java.util.function.Supplier;
 
 public class RadixApplicationAPI {
@@ -50,21 +58,25 @@ public class RadixApplicationAPI {
 	private final RadixIdentity identity;
 	private final RadixLedger ledger;
 	private final DataStoreTranslator dataStoreTranslator;
+	private final TokensTransferTranslator tokensTransferTranslator;
 	private final Supplier<AtomBuilder> atomBuilderSupplier;
+	private final ConsumableDataSource consumableDataSource;
 
-	private RadixApplicationAPI(RadixIdentity identity, RadixLedger ledger, Supplier<AtomBuilder> atomBuilderSupplier) {
+	private RadixApplicationAPI(RadixIdentity identity, RadixUniverse universe, Supplier<AtomBuilder> atomBuilderSupplier) {
 		this.identity = identity;
-		this.ledger = ledger;
+		this.ledger = universe.getLedger();
+		this.consumableDataSource = new ConsumableDataSource(ledger);
 		this.dataStoreTranslator = DataStoreTranslator.getInstance();
+		this.tokensTransferTranslator = new TokensTransferTranslator(universe, consumableDataSource);
 		this.atomBuilderSupplier = atomBuilderSupplier;
 	}
 
 	public static RadixApplicationAPI create(RadixIdentity identity) {
-		return new RadixApplicationAPI(identity, RadixUniverse.getInstance().getLedger(), AtomBuilder::new);
+		return new RadixApplicationAPI(identity, RadixUniverse.getInstance(), AtomBuilder::new);
 	}
 
-	public static RadixApplicationAPI create(RadixIdentity identity, RadixLedger ledger, Supplier<AtomBuilder> atomBuilderSupplier) {
-		return new RadixApplicationAPI(identity, ledger, atomBuilderSupplier);
+	public static RadixApplicationAPI create(RadixIdentity identity, RadixUniverse universe, Supplier<AtomBuilder> atomBuilderSupplier) {
+		return new RadixApplicationAPI(identity, universe, atomBuilderSupplier);
 	}
 
 	public RadixIdentity getIdentity() {
@@ -101,6 +113,43 @@ public class RadixApplicationAPI {
 		AtomBuilder atomBuilder = atomBuilderSupplier.get();
 		ConnectableObservable<AtomSubmissionUpdate> updates = dataStoreTranslator.translate(dataStore, atomBuilder)
 			.andThen(Single.fromCallable(() -> atomBuilder.buildWithPOWFee(ledger.getMagic(), address0.getPublicKey())))
+			.flatMap(identity::sign)
+			.flatMapObservable(ledger::submitAtom)
+			.replay();
+
+		updates.connect();
+
+		return new Result(updates);
+	}
+
+	public Observable<TokenTransfer> getTokenTransfers(RadixAddress address, Asset tokenClass) {
+		return Observable.combineLatest(
+			Observable.fromCallable(() -> new TransactionAtoms(address, tokenClass.getId())),
+			ledger.getAllAtoms(address.getUID(), TransactionAtom.class),
+			(transactionAtoms, atom) ->
+				transactionAtoms.accept(atom)
+					.getNewValidTransactions()
+		)
+		.flatMap(atoms -> atoms.map(tokensTransferTranslator::fromAtom));
+	}
+
+	public Observable<Long> getSubUnitBalance(RadixAddress address, Asset tokenClass) {
+		return this.consumableDataSource.getConsumables(address)
+			.map(Collection::stream)
+			.map(stream -> stream
+				.filter(consumable -> consumable.getAssetId().equals(tokenClass.getId()))
+				.mapToLong(Consumable::getQuantity)
+				.sum()
+			)
+			.share();
+	}
+
+	public Result transferTokens(RadixAddress from, RadixAddress to, Asset tokenClass, long subUnitAmount) {
+		TokenTransfer tokenTransfer = new TokenTransfer(from, to, tokenClass, subUnitAmount);
+		AtomBuilder atomBuilder = atomBuilderSupplier.get();
+
+		ConnectableObservable<AtomSubmissionUpdate> updates = tokensTransferTranslator.translate(tokenTransfer, atomBuilder)
+			.andThen(Single.fromCallable(() -> atomBuilder.buildWithPOWFee(ledger.getMagic(), from.getPublicKey())))
 			.flatMap(identity::sign)
 			.flatMapObservable(ledger::submitAtom)
 			.replay();

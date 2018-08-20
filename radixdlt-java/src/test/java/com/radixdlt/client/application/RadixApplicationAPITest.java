@@ -9,6 +9,9 @@ import static org.mockito.Mockito.when;
 
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
 import com.radixdlt.client.application.objects.EncryptedData;
+import com.radixdlt.client.application.translate.InsufficientFundsException;
+import com.radixdlt.client.assets.Asset;
+import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.ApplicationPayloadAtom;
 import com.radixdlt.client.core.atoms.Atom;
@@ -31,7 +34,10 @@ import org.junit.Test;
 
 public class RadixApplicationAPITest {
 	private RadixApplicationAPI createMockedAPI(RadixLedger ledger) {
+		RadixUniverse universe = mock(RadixUniverse.class);
+		when(universe.getLedger()).thenReturn(ledger);
 		RadixIdentity identity = mock(RadixIdentity.class);
+
 		AtomBuilder atomBuilder = mock(AtomBuilder.class);
 		when(atomBuilder.type(any())).thenReturn(atomBuilder);
 		when(atomBuilder.protectors(any())).thenReturn(atomBuilder);
@@ -43,7 +49,7 @@ public class RadixApplicationAPITest {
 		UnsignedAtom unsignedAtom = mock(UnsignedAtom.class);
 		when(atomBuilder.buildWithPOWFee(anyInt(), any())).thenReturn(unsignedAtom);
 
-		return RadixApplicationAPI.create(identity, ledger, atomBuilderSupplier);
+		return RadixApplicationAPI.create(identity, universe, atomBuilderSupplier);
 	}
 
 	private RadixLedger createMockedLedgerWhichAlwaysSucceeds() {
@@ -136,6 +142,8 @@ public class RadixApplicationAPITest {
 	public void testUndecryptableData() {
 		RadixIdentity identity = mock(RadixIdentity.class);
 		RadixLedger ledger = mock(RadixLedger.class);
+		RadixUniverse universe = mock(RadixUniverse.class);
+		when(universe.getLedger()).thenReturn(ledger);
 		RadixAddress address = mock(RadixAddress.class);
 
 		when(identity.decrypt(any()))
@@ -158,11 +166,45 @@ public class RadixApplicationAPITest {
 
 		when(ledger.getAllAtoms(any(), any())).thenReturn(Observable.just(errorAtom, okAtom));
 
-		RadixApplicationAPI api = RadixApplicationAPI.create(identity, ledger, AtomBuilder::new);
+		RadixApplicationAPI api = RadixApplicationAPI.create(identity, universe, AtomBuilder::new);
 		TestObserver observer = TestObserver.create();
 		api.getDecryptableData(address).subscribe(observer);
 
 		observer.assertValueCount(1);
 		observer.assertNoErrors();
+	}
+
+
+	@Test
+	public void testZeroTransactionWallet() {
+		RadixUniverse universe = mock(RadixUniverse.class);
+		RadixLedger ledger = mock(RadixLedger.class);
+		RadixAddress address = mock(RadixAddress.class);
+		RadixIdentity identity = mock(RadixIdentity.class);
+		when(universe.getLedger()).thenReturn(ledger);
+		RadixApplicationAPI api = RadixApplicationAPI.create(identity, universe, AtomBuilder::new);
+
+		when(ledger.getAllAtoms(any(), any())).thenReturn(Observable.empty());
+
+		TestObserver<Long> observer = TestObserver.create();
+
+		api.getSubUnitBalance(address, Asset.XRD).subscribe(observer);
+		observer.assertValue(0L);
+	}
+
+	@Test
+	public void createTransactionWithNoFunds() {
+		RadixUniverse universe = mock(RadixUniverse.class);
+		RadixLedger ledger = mock(RadixLedger.class);
+		RadixAddress address = mock(RadixAddress.class);
+		RadixIdentity identity = mock(RadixIdentity.class);
+		when(universe.getLedger()).thenReturn(ledger);
+		RadixApplicationAPI api = RadixApplicationAPI.create(identity, universe, AtomBuilder::new);
+
+		when(ledger.getAllAtoms(any(), any())).thenReturn(Observable.empty());
+
+		TestObserver observer = TestObserver.create();
+		api.transferTokens(address, address, Asset.XRD, 10).toCompletable().subscribe(observer);
+		observer.assertError(new InsufficientFundsException(Asset.XRD, 0, 10));
 	}
 }

@@ -1,4 +1,4 @@
-package com.radixdlt.client.dapps.wallet;
+package com.radixdlt.client.application.translate;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;

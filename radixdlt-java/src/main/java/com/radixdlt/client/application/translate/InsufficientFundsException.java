@@ -1,4 +1,4 @@
-package com.radixdlt.client.dapps.wallet;
+package com.radixdlt.client.application.translate;
 
 import com.radixdlt.client.assets.Asset;
 import com.radixdlt.client.assets.AssetAmount;
