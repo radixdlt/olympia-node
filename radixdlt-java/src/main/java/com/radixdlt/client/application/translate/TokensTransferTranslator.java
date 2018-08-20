@@ -37,10 +37,10 @@ public class TokensTransferTranslator {
 
 		if (summary.size() == 1) {
 			return new TokenTransfer(
-				universe.getAddressFrom(summary.get(0).getKey()),
-				universe.getAddressFrom(summary.get(0).getKey()),
+				summary.get(0).getValue() <= 0L ? universe.getAddressFrom(summary.get(0).getKey()) : null,
+				summary.get(0).getValue() <= 0L ? null : universe.getAddressFrom(summary.get(0).getKey()),
 				Asset.XRD,
-				0
+				summary.get(0).getValue()
 			);
 		}
 
