@@ -22,13 +22,15 @@ public class DataStoreTranslator {
 	}
 
 	public Completable translate(DataStore dataStore, AtomBuilder atomBuilder) {
-		atomBuilder
-			.type(ApplicationPayloadAtom.class)
-			.protectors(dataStore.getProtectors())
-			.payload(dataStore.getData());
+		atomBuilder.type(ApplicationPayloadAtom.class);
+		atomBuilder.payload(dataStore.getData().getBytes());
 
-		if (dataStore.getMetaData().containsKey("application")) {
-			atomBuilder.applicationId((String) dataStore.getMetaData().get("application"));
+		if (!dataStore.getData().getProtectors().isEmpty()) {
+			atomBuilder.protectors(dataStore.getData().getProtectors());
+		}
+
+		if (dataStore.getData().getMetaData().containsKey("application")) {
+			atomBuilder.applicationId((String) dataStore.getData().getMetaData().get("application"));
 		}
 
 		dataStore.getAddresses().forEach(atomBuilder::addDestination);

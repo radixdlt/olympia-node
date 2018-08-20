@@ -90,7 +90,7 @@ public class RadixApplicationAPI {
 	public Observable<UnencryptedData> getReadableData(RadixAddress address) {
 		return ledger.getAllAtoms(address.getUID(), ApplicationPayloadAtom.class)
 			.map(dataStoreTranslator::fromAtom)
-			.flatMapMaybe(data -> UnencryptedData.fromData(data, identity));
+			.flatMapMaybe(data -> identity.decrypt(data).toMaybe().onErrorComplete());
 	}
 
 	public Result storeData(Data data, RadixAddress address) {

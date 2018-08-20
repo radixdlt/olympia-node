@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
 import com.radixdlt.client.application.objects.Data;
+import com.radixdlt.client.application.objects.UnencryptedData;
 import com.radixdlt.client.application.translate.InsufficientFundsException;
 import com.radixdlt.client.assets.Asset;
 import com.radixdlt.client.core.RadixUniverse;
@@ -145,10 +146,11 @@ public class RadixApplicationAPITest {
 		RadixUniverse universe = mock(RadixUniverse.class);
 		when(universe.getLedger()).thenReturn(ledger);
 		RadixAddress address = mock(RadixAddress.class);
+		UnencryptedData unencryptedData = mock(UnencryptedData.class);
 
 		when(identity.decrypt(any()))
 			.thenReturn(Single.error(new CryptoException("Can't decrypt")))
-			.thenReturn(Single.just(new byte[] {0}));
+			.thenReturn(Single.just(unencryptedData));
 
 		Encryptor encryptor = mock(Encryptor.class);
 		EncryptedPrivateKey protector = mock(EncryptedPrivateKey.class);

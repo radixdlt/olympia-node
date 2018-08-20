@@ -1,6 +1,7 @@
 package com.radixdlt.client.application.identity;
 
 import com.radixdlt.client.application.objects.Data;
+import com.radixdlt.client.application.objects.UnencryptedData;
 import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
@@ -35,12 +36,6 @@ public class EncryptedRadixIdentity implements RadixIdentity {
 		this(password, "my_encrypted.key");
 	}
 
-	public Atom synchronousSign(UnsignedAtom atom) {
-		ECSignature signature = myKey.sign(atom.getHash().toByteArray());
-		EUID signatureId = myKey.getUID();
-		return atom.sign(signature, signatureId);
-	}
-
 	private ECKeyPair getECKeyPair(String password, File myKeyfile) throws Exception {
 		return new ECKeyPair(PrivateKeyEncrypter.decryptPrivateKeyFile(password, myKeyfile.getPath()));
 	}
@@ -55,15 +50,21 @@ public class EncryptedRadixIdentity implements RadixIdentity {
 	}
 
 	@Override
-	public Single<byte[]> decrypt(Data data) {
-		for (EncryptedPrivateKey protector : data.getProtectors()) {
-			// TODO: remove exception catching
-			try {
-				return Single.just(myKey.decrypt(data.getBytes(), protector));
-			} catch (MacMismatchException e) {
+	public Single<UnencryptedData> decrypt(Data data) {
+		boolean encrypted = (Boolean) data.getMetaData().get("encrypted");
+		if (encrypted) {
+			for (EncryptedPrivateKey protector : data.getProtectors()) {
+				// TODO: remove exception catching
+				try {
+					byte[] bytes = myKey.decrypt(data.getBytes(), protector);
+					return Single.just(new UnencryptedData(bytes, data.getMetaData(), true));
+				} catch (MacMismatchException e) {
+				}
 			}
+			return Single.error(new CryptoException("Cannot decrypt"));
+		} else {
+			return Single.just(new UnencryptedData(data.getBytes(), data.getMetaData(), false));
 		}
-		return Single.error(new CryptoException("Cannot decrypt"));
 	}
 
 	@Override
