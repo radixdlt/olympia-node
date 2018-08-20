@@ -2,9 +2,10 @@ package com.radixdlt.client.dapps.messaging;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.radixdlt.client.application.objects.EncryptedData;
+import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
+import com.radixdlt.client.application.objects.Data.DataBuilder;
 import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.crypto.ECSignature;
@@ -36,22 +37,22 @@ public class RadixMessaging {
 	}
 
 	public Observable<RadixMessage> getAllMessages() {
-		return api.getDecryptableData(myAddress)
-			.filter(decryptedData -> APPLICATION_ID.equals(decryptedData.getMetaData().get("application")))
-			.flatMapMaybe(decryptedData -> {
+		return api.getReadableData(myAddress)
+			.filter(data -> APPLICATION_ID.equals(data.getMetaData().get("application")))
+			.flatMapMaybe(data -> {
 				try {
-					JsonObject jsonObject = parser.parse(new String(decryptedData.getData())).getAsJsonObject();
+					JsonObject jsonObject = parser.parse(new String(data.getData())).getAsJsonObject();
 					RadixAddress from = new RadixAddress(jsonObject.get("from").getAsString());
 					RadixAddress to = new RadixAddress(jsonObject.get("to").getAsString());
 					String content = jsonObject.get("content").getAsString();
-					Object signaturesUnchecked = decryptedData.getMetaData().get("signatures");
+					Object signaturesUnchecked = data.getMetaData().get("signatures");
 					Map<String, ECSignature> signatures = (Map<String, ECSignature>) signaturesUnchecked;
 					ECSignature signature = signatures.get(from.getUID().toString());
 					if (signature == null) {
 						throw new RuntimeException("Unsigned message");
 					}
-					Long timestamp = (Long) decryptedData.getMetaData().get("timestamp");
-					return Maybe.just(new RadixMessage(from, to, content, timestamp));
+					Long timestamp = (Long) data.getMetaData().get("timestamp");
+					return Maybe.just(new RadixMessage(from, to, content, timestamp, data.isFromEncryptedSource()));
 				} catch (Exception e) {
 					LOGGER.warn(e.getMessage());
 					return Maybe.empty();
@@ -83,14 +84,14 @@ public class RadixMessaging {
 		messageJson.addProperty("to", toAddress.toString());
 		messageJson.addProperty("content", message);
 
-		EncryptedData encryptedData = new EncryptedData.EncryptedDataBuilder()
-			.data(messageJson.toString().getBytes())
+		Data data = new DataBuilder()
+			.bytes(messageJson.toString().getBytes())
 			.metaData("application", RadixMessaging.APPLICATION_ID)
 			.addReader(toAddress.getPublicKey())
 			.addReader(myAddress.getPublicKey())
 			.build();
 
-		return api.storeData(encryptedData, toAddress, myAddress);
+		return api.storeData(data, toAddress, myAddress);
 	}
 
 	public Result sendMessage(String message, RadixAddress toAddress) {

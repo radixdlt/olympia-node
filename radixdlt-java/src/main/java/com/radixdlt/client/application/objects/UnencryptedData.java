@@ -1,40 +1,52 @@
 package com.radixdlt.client.application.objects;
 
-import com.radixdlt.client.core.atoms.ApplicationPayloadAtom;
 import com.radixdlt.client.core.identity.RadixIdentity;
 import io.reactivex.Maybe;
-import java.util.HashMap;
 import java.util.Map;
 
 public class UnencryptedData {
 	private final Map<String, Object> metaData;
 	private final byte[] data;
+	private final boolean isFromEncryptedSource;
 
-	public UnencryptedData(byte[] data, Map<String, Object> metaData) {
+	private UnencryptedData(byte[] data, Map<String, Object> metaData, boolean isFromEncryptedSource) {
 		this.data = data;
 		this.metaData = metaData;
+		this.isFromEncryptedSource = isFromEncryptedSource;
+	}
+
+	/**
+	 * @return whether this bytes came from an encrypted source
+	 */
+	public boolean isFromEncryptedSource() {
+		return isFromEncryptedSource;
 	}
 
 	public Map<String, Object> getMetaData() {
 		return metaData;
 	}
 
+	// TODO: make immutable
 	public byte[] getData() {
 		return data;
 	}
 
-	public static Maybe<UnencryptedData> fromAtom(ApplicationPayloadAtom atom, RadixIdentity identity) {
-		if (atom.getEncryptor() != null && atom.getEncryptor().getProtectors() != null) {
-			EncryptedData encryptedData = EncryptedData.fromAtom(atom);
-			return identity.decrypt(encryptedData)
-				.map(data -> new UnencryptedData(data, encryptedData.getMetaData()))
+	/**
+	 * Transforms a possibly encrypted bytes object into an unencrypted one.
+	 * If decryption fails then return an empty Maybe.
+	 * @param data bytes to transform
+	 * @param identity identity to decrypt with
+	 * @return either the unencrypted version of the bytes or an empty Maybe
+	 */
+	public static Maybe<UnencryptedData> fromData(Data data, RadixIdentity identity) {
+		boolean encrypted = (Boolean) data.getMetaData().get("encrypted");
+
+		if (encrypted) {
+			return identity.decrypt(data)
+				.map(bytes -> new UnencryptedData(bytes, data.getMetaData(), true))
 				.toMaybe().onErrorComplete();
 		} else {
-			Map<String, Object> metaData = new HashMap<>();
-			metaData.put("timestamp", atom.getTimestamp());
-			metaData.put("signatures", atom.getSignatures());
-			metaData.put("application", atom.getApplicationId());
-			return Maybe.just(new UnencryptedData(atom.getPayload().getBytes(), metaData));
+			return Maybe.just(new UnencryptedData(data.getBytes(), data.getMetaData(), false));
 		}
 	}
 }

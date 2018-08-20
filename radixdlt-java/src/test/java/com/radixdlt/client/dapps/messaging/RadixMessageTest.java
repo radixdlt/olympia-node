@@ -13,7 +13,7 @@ public class RadixMessageTest {
 		RadixAddress to = mock(RadixAddress.class);
 		when(from.toString()).thenReturn("Me");
 		when(to.toString()).thenReturn("You");
-		RadixMessage message = new RadixMessage(from, to, "Hello", 0L);
+		RadixMessage message = new RadixMessage(from, to, "Hello", 0L, true);
 		System.out.println(message.toString());
 	}
 }

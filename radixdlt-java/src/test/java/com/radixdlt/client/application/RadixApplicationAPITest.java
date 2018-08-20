@@ -8,7 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
-import com.radixdlt.client.application.objects.EncryptedData;
+import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.application.translate.InsufficientFundsException;
 import com.radixdlt.client.assets.Asset;
 import com.radixdlt.client.core.RadixUniverse;
@@ -96,8 +96,8 @@ public class RadixApplicationAPITest {
 		RadixApplicationAPI api = createMockedAPIWhichAlwaysSucceeds();
 		RadixAddress address = mock(RadixAddress.class);
 
-		EncryptedData encryptedData = mock(EncryptedData.class);
-		Result result = api.storeData(encryptedData, address);
+		Data data = mock(Data.class);
+		Result result = api.storeData(data, address);
 		validateSuccessfulStoreDataResult(result);
 	}
 
@@ -106,8 +106,8 @@ public class RadixApplicationAPITest {
 		RadixApplicationAPI api = createMockedAPIWhichAlwaysSucceeds();
 		RadixAddress address = mock(RadixAddress.class);
 
-		EncryptedData encryptedData = mock(EncryptedData.class);
-		Result result = api.storeData(encryptedData, address, address);
+		Data data = mock(Data.class);
+		Result result = api.storeData(data, address, address);
 		validateSuccessfulStoreDataResult(result);
 	}
 
@@ -117,8 +117,8 @@ public class RadixApplicationAPITest {
 		RadixApplicationAPI api = createMockedAPI(ledger);
 		RadixAddress address = mock(RadixAddress.class);
 
-		EncryptedData encryptedData = mock(EncryptedData.class);
-		api.storeData(encryptedData, address, address);
+		Data data = mock(Data.class);
+		api.storeData(data, address, address);
 		verify(ledger, times(1)).submitAtom(any());
 	}
 
@@ -128,8 +128,8 @@ public class RadixApplicationAPITest {
 		RadixApplicationAPI api = createMockedAPI(ledger);
 		RadixAddress address = mock(RadixAddress.class);
 
-		EncryptedData encryptedData = mock(EncryptedData.class);
-		Result result = api.storeData(encryptedData, address, address);
+		Data data = mock(Data.class);
+		Result result = api.storeData(data, address, address);
 		Observable observable = result.toObservable();
 		observable.subscribe();
 		observable.subscribe();
@@ -168,7 +168,7 @@ public class RadixApplicationAPITest {
 
 		RadixApplicationAPI api = RadixApplicationAPI.create(identity, universe, AtomBuilder::new);
 		TestObserver observer = TestObserver.create();
-		api.getDecryptableData(address).subscribe(observer);
+		api.getReadableData(address).subscribe(observer);
 
 		observer.assertValueCount(1);
 		observer.assertNoErrors();

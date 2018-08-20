@@ -1,6 +1,6 @@
 package com.radixdlt.client.core.identity;
 
-import com.radixdlt.client.application.objects.EncryptedData;
+import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
@@ -55,11 +55,11 @@ public class EncryptedRadixIdentity implements RadixIdentity {
 	}
 
 	@Override
-	public Single<byte[]> decrypt(EncryptedData data) {
+	public Single<byte[]> decrypt(Data data) {
 		for (EncryptedPrivateKey protector : data.getProtectors()) {
 			// TODO: remove exception catching
 			try {
-				return Single.just(myKey.decrypt(data.getEncrypted(), protector));
+				return Single.just(myKey.decrypt(data.getBytes(), protector));
 			} catch (MacMismatchException e) {
 			}
 		}

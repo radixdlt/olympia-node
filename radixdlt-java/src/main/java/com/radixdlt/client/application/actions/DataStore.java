@@ -1,6 +1,6 @@
 package com.radixdlt.client.application.actions;
 
-import com.radixdlt.client.application.objects.EncryptedData;
+import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
 import java.util.ArrayList;
@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * An Application Layer Action object which stores data in an address.
+ * An Application Layer Action object which stores bytes in an address.
  */
 public class DataStore {
 	private byte[] data;
@@ -16,18 +16,18 @@ public class DataStore {
 	private List<EncryptedPrivateKey> protectors;
 	private List<RadixAddress> addresses = new ArrayList<>();
 
-	public DataStore(EncryptedData encryptedData, RadixAddress address) {
-		this.data = encryptedData.getEncrypted();
-		this.metaData = encryptedData.getMetaData();
-		this.protectors = encryptedData.getProtectors();
+	public DataStore(Data data, RadixAddress address) {
+		this.data = data.getBytes();
+		this.metaData = data.getMetaData();
+		this.protectors = data.getProtectors();
 
 		addresses.add(address);
 	}
 
-	public DataStore(EncryptedData encryptedData, RadixAddress address0, RadixAddress address1) {
-		this.data = encryptedData.getEncrypted();
-		this.metaData = encryptedData.getMetaData();
-		this.protectors = encryptedData.getProtectors();
+	public DataStore(Data data, RadixAddress address0, RadixAddress address1) {
+		this.data = data.getBytes();
+		this.metaData = data.getMetaData();
+		this.protectors = data.getProtectors();
 
 		addresses.add(address0);
 		addresses.add(address1);

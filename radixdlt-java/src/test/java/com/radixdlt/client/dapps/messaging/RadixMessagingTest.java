@@ -50,7 +50,7 @@ public class RadixMessagingTest {
 		RadixAddress address = mock(RadixAddress.class);
 		when(api.getAddress()).thenReturn(address);
 		when(api.getIdentity()).thenReturn(myIdentity);
-		when(api.getDecryptableData(any())).thenReturn(Observable.just(undecryptableData, decryptableData));
+		when(api.getReadableData(any())).thenReturn(Observable.just(undecryptableData, decryptableData));
 
 		RadixMessaging messaging = new RadixMessaging(api);
 		messaging.getAllMessages()

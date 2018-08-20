@@ -2,7 +2,7 @@ package com.radixdlt.client.application;
 
 import com.radixdlt.client.application.actions.DataStore;
 import com.radixdlt.client.application.actions.TokenTransfer;
-import com.radixdlt.client.application.objects.EncryptedData;
+import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.application.objects.UnencryptedData;
 import com.radixdlt.client.application.translate.DataStoreTranslator;
 import com.radixdlt.client.application.translate.TokenTransferTranslator;
@@ -87,13 +87,14 @@ public class RadixApplicationAPI {
 		return ledger.getAddressFromPublicKey(identity.getPublicKey());
 	}
 
-	public Observable<UnencryptedData> getDecryptableData(RadixAddress address) {
+	public Observable<UnencryptedData> getReadableData(RadixAddress address) {
 		return ledger.getAllAtoms(address.getUID(), ApplicationPayloadAtom.class)
-			.flatMapMaybe(atom -> UnencryptedData.fromAtom(atom, identity));
+			.map(dataStoreTranslator::fromAtom)
+			.flatMapMaybe(data -> UnencryptedData.fromData(data, identity));
 	}
 
-	public Result storeData(EncryptedData encryptedData, RadixAddress address) {
-		DataStore dataStore = new DataStore(encryptedData, address);
+	public Result storeData(Data data, RadixAddress address) {
+		DataStore dataStore = new DataStore(data, address);
 
 		AtomBuilder atomBuilder = atomBuilderSupplier.get();
 		ConnectableObservable<AtomSubmissionUpdate> updates = dataStoreTranslator.translate(dataStore, atomBuilder)
@@ -107,8 +108,8 @@ public class RadixApplicationAPI {
 		return new Result(updates);
 	}
 
-	public Result storeData(EncryptedData encryptedData, RadixAddress address0, RadixAddress address1) {
-		DataStore dataStore = new DataStore(encryptedData, address0, address1);
+	public Result storeData(Data data, RadixAddress address0, RadixAddress address1) {
+		DataStore dataStore = new DataStore(data, address0, address1);
 
 		AtomBuilder atomBuilder = atomBuilderSupplier.get();
 		ConnectableObservable<AtomSubmissionUpdate> updates = dataStoreTranslator.translate(dataStore, atomBuilder)

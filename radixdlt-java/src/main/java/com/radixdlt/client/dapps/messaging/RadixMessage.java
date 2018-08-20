@@ -12,17 +12,20 @@ public class RadixMessage {
 	private final RadixAddress to;
 	private final RadixAddress from;
 	private final String content;
+	private final boolean isEncrypted;
 
 	public RadixMessage(
 		RadixAddress from,
 		RadixAddress to,
 		String content,
-		long timestamp
+		long timestamp,
+		boolean isEncrypted
 	) {
 		this.from = from;
 		this.to = to;
 		this.content = content;
 		this.timestamp = timestamp;
+		this.isEncrypted = isEncrypted;
 	}
 
 	public RadixAddress getFrom() {
@@ -39,6 +42,10 @@ public class RadixMessage {
 
 	public long getTimestamp() {
 		return timestamp;
+	}
+
+	public boolean isEncrypted() {
+		return isEncrypted;
 	}
 
 	@Override
