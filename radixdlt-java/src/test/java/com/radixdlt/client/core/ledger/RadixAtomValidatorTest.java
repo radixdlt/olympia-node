@@ -2,7 +2,6 @@ package com.radixdlt.client.core.ledger;
 
 import com.radixdlt.client.assets.Asset;
 import com.radixdlt.client.core.address.EUID;
-import com.radixdlt.client.core.atoms.ApplicationPayloadAtom;
 import com.radixdlt.client.core.atoms.AtomValidationException;
 import com.radixdlt.client.core.atoms.Consumer;
 import com.radixdlt.client.core.atoms.RadixHash;
@@ -60,7 +59,7 @@ public class RadixAtomValidatorTest {
 		when(consumer.getOwnersPublicKeys()).thenReturn(Collections.singleton(publicKey));
 		when(consumer.getAssetId()).thenReturn(Asset.XRD.getId());
 
-		ApplicationPayloadAtom atom = mock(ApplicationPayloadAtom.class);
+		TransactionAtom atom = mock(TransactionAtom.class);
 		when(atom.getHash()).thenReturn(hash);
 		when(atom.getSignature(any())).thenReturn(Optional.empty());
 

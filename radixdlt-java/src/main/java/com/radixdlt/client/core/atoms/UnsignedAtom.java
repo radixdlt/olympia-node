@@ -22,6 +22,7 @@ public class UnsignedAtom {
 		if (atom instanceof TransactionAtom) {
 			TransactionAtom unsigned = (TransactionAtom) atom;
 			return new TransactionAtom(
+				unsigned.getApplicationId(),
 				unsigned.getParticles(),
 				unsigned.getDestinations(),
 				unsigned.getPayload(),
@@ -29,18 +30,6 @@ public class UnsignedAtom {
 				signatureId,
 				signature,
 				atom.getTimestamp()
-			);
-		} else if (atom instanceof ApplicationPayloadAtom) {
-			ApplicationPayloadAtom unsigned = (ApplicationPayloadAtom) atom;
-			return new ApplicationPayloadAtom(
-				unsigned.getApplicationId(),
-				unsigned.getParticles(),
-				unsigned.getDestinations(),
-				unsigned.getPayload(),
-				unsigned.getEncryptor(),
-				atom.getTimestamp(),
-				signatureId,
-				signature
 			);
 		} else {
 			throw new IllegalStateException("Cannot create signed atom");

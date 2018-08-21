@@ -14,10 +14,10 @@ import com.radixdlt.client.application.translate.InsufficientFundsException;
 import com.radixdlt.client.assets.Asset;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.address.RadixAddress;
-import com.radixdlt.client.core.atoms.ApplicationPayloadAtom;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomBuilder;
 import com.radixdlt.client.core.atoms.Payload;
+import com.radixdlt.client.core.atoms.TransactionAtom;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.crypto.CryptoException;
 import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
@@ -158,11 +158,11 @@ public class RadixApplicationAPITest {
 
 		Payload payload = mock(Payload.class);
 
-		ApplicationPayloadAtom errorAtom = mock(ApplicationPayloadAtom.class);
+		TransactionAtom errorAtom = mock(TransactionAtom.class);
 		when(errorAtom.getEncryptor()).thenReturn(encryptor);
 		when(errorAtom.getPayload()).thenReturn(payload);
 
-		ApplicationPayloadAtom okAtom = mock(ApplicationPayloadAtom.class);
+		TransactionAtom okAtom = mock(TransactionAtom.class);
 		when(okAtom.getEncryptor()).thenReturn(encryptor);
 		when(okAtom.getPayload()).thenReturn(payload);
 

@@ -11,20 +11,43 @@ import java.util.stream.Collectors;
 
 public class TransactionAtom extends PayloadAtom {
 	private final String operation = "TRANSFER";
+	private final String applicationId;
 
-	TransactionAtom(List<Particle> particles, Set<EUID> destinations, Payload payload, long timestamp) {
+	public TransactionAtom(
+		String applicationId,
+		List<Particle> particles,
+		Set<EUID> destinations,
+		Payload payload,
+		long timestamp
+	) {
 		super(destinations, payload, particles, timestamp);
+		this.applicationId = applicationId;
 	}
 
-	TransactionAtom(List<Particle> particles, Set<EUID> destinations, Payload payload, Encryptor encryptor, long timestamp) {
+	public TransactionAtom(
+		String applicationId,
+		List<Particle> particles,
+		Set<EUID> destinations,
+		Payload payload,
+		Encryptor encryptor,
+		long timestamp
+	) {
 		super(particles, destinations, payload, encryptor, timestamp);
+		this.applicationId = applicationId;
 	}
 
-	TransactionAtom(List<Particle> particles, Set<EUID> destinations, long timestamp) {
+	public TransactionAtom(
+		String applicationId,
+		List<Particle> particles,
+		Set<EUID> destinations,
+		long timestamp
+	) {
 		super(destinations, null, particles, timestamp);
+		this.applicationId = applicationId;
 	}
 
-	TransactionAtom(
+	public TransactionAtom(
+		String applicationId,
 		List<Particle> particles,
 		Set<EUID> destinations,
 		Payload payload,
@@ -34,6 +57,11 @@ public class TransactionAtom extends PayloadAtom {
 		long timestamp
 	) {
 		super(particles, destinations, payload, encryptor, timestamp, signatureId, signature);
+		this.applicationId = applicationId;
+	}
+
+	public String getApplicationId() {
+		return applicationId;
 	}
 
 	public List<Consumable> getConsumables() {

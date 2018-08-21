@@ -32,7 +32,7 @@ public class AtomBuilderTest {
 	@Test
 	public void testMultipleAtomPayloadBuildsShouldCreateSameAtom() {
 		AtomBuilder atomBuilder = new AtomBuilder()
-			.type(ApplicationPayloadAtom.class)
+			.type(TransactionAtom.class)
 			.applicationId("Test")
 			.payload("Hello")
 			.addDestination(new EUID(1));

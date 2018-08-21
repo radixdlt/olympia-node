@@ -1,15 +1,13 @@
 package com.radixdlt.client.core.serialization;
 
 import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.atoms.ApplicationPayloadAtom;
 import com.radixdlt.client.core.atoms.NullAtom;
 import com.radixdlt.client.core.atoms.TransactionAtom;
 import java.util.Optional;
 
 public enum SerializedAtomType {
 	TRANSACTION(TransactionAtom.class, -760130L),
-	NULL(NullAtom.class, -1123323048L),
-	MESSAGE(ApplicationPayloadAtom.class, -2040291185L);
+	NULL(NullAtom.class, -1123323048L);
 
 	private final Class<? extends Atom> atomClass;
 	private final long serializer;

@@ -9,7 +9,6 @@ import com.radixdlt.client.application.translate.TokenTransferTranslator;
 import com.radixdlt.client.assets.Asset;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.address.RadixAddress;
-import com.radixdlt.client.core.atoms.ApplicationPayloadAtom;
 import com.radixdlt.client.core.atoms.AtomBuilder;
 import com.radixdlt.client.core.atoms.Consumable;
 import com.radixdlt.client.core.atoms.TransactionAtom;
@@ -88,7 +87,7 @@ public class RadixApplicationAPI {
 	}
 
 	public Observable<UnencryptedData> getReadableData(RadixAddress address) {
-		return ledger.getAllAtoms(address.getUID(), ApplicationPayloadAtom.class)
+		return ledger.getAllAtoms(address.getUID(), TransactionAtom.class)
 			.map(dataStoreTranslator::fromAtom)
 			.flatMapMaybe(data -> identity.decrypt(data).toMaybe().onErrorComplete());
 	}
