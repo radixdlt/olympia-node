@@ -50,7 +50,7 @@ public class AtomSubmissionUpdate {
 	}
 
 	public boolean isComplete() {
-		return state.isComplete();
+		return this.getState().isComplete();
 	}
 
 	public long getTimestamp() {

@@ -4,9 +4,8 @@ import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.address.RadixAddress;
-import com.radixdlt.client.core.identity.RadixIdentity;
-import com.radixdlt.client.core.identity.SimpleRadixIdentity;
-import com.radixdlt.client.messaging.RadixMessaging;
+import com.radixdlt.client.application.identity.SimpleRadixIdentity;
+import com.radixdlt.client.dapps.messaging.RadixMessaging;
 
 public class RadixMessagingExample {
 	private static String TO_ADDRESS_BASE58 = "JFgcgRKq6GbQqP8mZzDRhtr7K7YQM1vZiYopZLRpAeVxcnePRXX";
