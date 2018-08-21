@@ -10,7 +10,7 @@ import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.AtomBuilder;
 import com.radixdlt.client.core.atoms.Consumable;
 import com.radixdlt.client.core.atoms.Consumer;
-import com.radixdlt.client.core.atoms.TransactionAtom;
+import com.radixdlt.client.core.atoms.PayloadAtom;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECPublicKey;
@@ -29,7 +29,7 @@ public class TransactionAtomsTest {
 
 		/* Build atom with consumer originating from nowhere */
 		UnsignedAtom unsignedAtom = new AtomBuilder()
-			.type(TransactionAtom.class)
+			.type(PayloadAtom.class)
 			.addParticle(new Consumer(100, keyPair, 1, Asset.XRD.getId()))
 			.addParticle(new Consumable(100, keyPair, 2, Asset.XRD.getId()))
 			.build();
@@ -61,14 +61,14 @@ public class TransactionAtomsTest {
 
 		/* Atom with consumer originating from nowhere */
 		UnsignedAtom unsignedAtom = new AtomBuilder()
-			.type(TransactionAtom.class)
+			.type(PayloadAtom.class)
 			.addParticle(new Consumer(100, keyPair, 1, Asset.XRD.getId()))
 			.addParticle(new Consumable(100, keyPair, 2, Asset.XRD.getId()))
 			.build();
 
 		/* Atom with consumable for previous atom's consumer */
 		UnsignedAtom unsignedAtom2 = new AtomBuilder()
-			.type(TransactionAtom.class)
+			.type(PayloadAtom.class)
 			.addParticle(new Consumer(100, otherKeyPair, 1, Asset.XRD.getId()))
 			.addParticle(new Consumable(100, keyPair, 1, Asset.XRD.getId()))
 			.build();

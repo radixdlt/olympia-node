@@ -4,8 +4,8 @@ import com.radixdlt.client.assets.Asset;
 import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.atoms.AtomValidationException;
 import com.radixdlt.client.core.atoms.Consumer;
+import com.radixdlt.client.core.atoms.PayloadAtom;
 import com.radixdlt.client.core.atoms.RadixHash;
-import com.radixdlt.client.core.atoms.TransactionAtom;
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import java.util.Arrays;
@@ -34,7 +34,7 @@ public class RadixAtomValidatorTest {
 		when(consumer.getOwnersPublicKeys()).thenReturn(Collections.singleton(publicKey));
 		when(consumer.getAssetId()).thenReturn(Asset.XRD.getId());
 
-		TransactionAtom atom = mock(TransactionAtom.class);
+		PayloadAtom atom = mock(PayloadAtom.class);
 		when(atom.getHash()).thenReturn(hash);
 		when(atom.getSignature(any())).thenReturn(Optional.empty());
 		when(atom.getParticles()).thenReturn(Arrays.asList(consumer));
@@ -59,7 +59,7 @@ public class RadixAtomValidatorTest {
 		when(consumer.getOwnersPublicKeys()).thenReturn(Collections.singleton(publicKey));
 		when(consumer.getAssetId()).thenReturn(Asset.XRD.getId());
 
-		TransactionAtom atom = mock(TransactionAtom.class);
+		PayloadAtom atom = mock(PayloadAtom.class);
 		when(atom.getHash()).thenReturn(hash);
 		when(atom.getSignature(any())).thenReturn(Optional.empty());
 

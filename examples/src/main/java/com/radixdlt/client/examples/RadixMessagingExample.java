@@ -41,7 +41,7 @@ public class RadixMessagingExample {
 				// Print out to console all received messages
 				messaging
 					.getAllMessages()
-					.subscribe(System.out::println);
+					.subscribe(System.out::println, Throwable::printStackTrace);
 				break;
 
 			case BY_CONVO:
@@ -51,7 +51,7 @@ public class RadixMessagingExample {
 					.getAllMessagesGroupedByParticipants()
 					.subscribe(convo -> {
 						System.out.println("New Conversation with: " + convo.getKey());
-						convo.subscribe(System.out::println);
+						convo.subscribe(System.out::println, Throwable::printStackTrace);
 					});
 		}
 
@@ -59,6 +59,6 @@ public class RadixMessagingExample {
 		messaging
 			.sendMessage(MESSAGE, toAddress)
 			.toCompletable()
-			.subscribe(() -> System.out.println("Submitted"));
+			.subscribe(() -> System.out.println("Submitted"), Throwable::printStackTrace);
 	}
 }

@@ -19,17 +19,17 @@ public class UnsignedAtom {
 
 	public Atom sign(ECSignature signature, EUID signatureId) {
 		// TODO: Remove need to create a new object
-		if (atom instanceof TransactionAtom) {
-			TransactionAtom unsigned = (TransactionAtom) atom;
-			return new TransactionAtom(
+		if (atom instanceof PayloadAtom) {
+			PayloadAtom unsigned = (PayloadAtom) atom;
+			return new PayloadAtom(
 				unsigned.getApplicationId(),
 				unsigned.getParticles(),
 				unsigned.getDestinations(),
 				unsigned.getPayload(),
 				unsigned.getEncryptor(),
+				atom.getTimestamp(),
 				signatureId,
-				signature,
-				atom.getTimestamp()
+				signature
 			);
 		} else {
 			throw new IllegalStateException("Cannot create signed atom");

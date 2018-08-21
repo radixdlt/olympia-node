@@ -109,8 +109,8 @@ public class AtomBuilder {
 		}
 
 		final Atom atom;
-		if (TransactionAtom.class.isAssignableFrom(atomClass)) {
-			atom = new TransactionAtom(applicationId, particles, destinations, payload, encryptor, this.timestamp);
+		if (PayloadAtom.class.isAssignableFrom(atomClass)) {
+			atom = new PayloadAtom(applicationId, particles, destinations, payload, encryptor, this.timestamp);
 		} else {
 			throw new IllegalStateException("Unable to create atom with class: " + atomClass.getSimpleName());
 		}

@@ -96,8 +96,8 @@ public abstract class Atom {
 		return particles == null ? Collections.emptyList() : Collections.unmodifiableList(particles);
 	}
 
-	public TransactionAtom getAsTransactionAtom() {
-		return (TransactionAtom) this;
+	public PayloadAtom getAsTransactionAtom() {
+		return (PayloadAtom) this;
 	}
 
 	public byte[] toDson() {
@@ -143,6 +143,6 @@ public abstract class Atom {
 
 	@Override
 	public String toString() {
-		return "Atom hid(" + getHid().toString() + ") destinations(" + destinations + ")";
+		return "Atom hid(" + getHid().toString() + ") destinations(" + destinations + ") particles(" + particles.size() + ")";
 	}
 }
