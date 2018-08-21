@@ -1,18 +1,19 @@
 package com.radixdlt.client.examples;
 
+import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.assets.Asset;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.address.RadixAddress;
-import com.radixdlt.client.core.identity.RadixIdentity;
-import com.radixdlt.client.core.identity.SimpleRadixIdentity;
-import com.radixdlt.client.wallet.RadixWallet;
+import com.radixdlt.client.application.identity.RadixIdentity;
+import com.radixdlt.client.application.identity.SimpleRadixIdentity;
+import com.radixdlt.client.dapps.wallet.RadixWallet;
 
 public class RadixWalletExample {
 
 	private static String TO_ADDRESS_BASE58 = "JFgcgRKq6GbQqP8mZzDRhtr7K7YQM1vZiYopZLRpAeVxcnePRXX";
 	//private static String TO_ADDRESS_BASE58 = null;
-	private static String PAYLOAD = "A gift for you!";
+	private static String MESSAGE = "A gift for you!";
 	private static long AMOUNT = 1000;
 
 	// Initialize Radix Universe
@@ -34,29 +35,24 @@ public class RadixWalletExample {
 		} else {
 			radixIdentity = new SimpleRadixIdentity();
 		}
-		RadixAddress myAddress = RadixUniverse.getInstance().getAddressFrom(radixIdentity.getPublicKey());
+
+		RadixApplicationAPI api = RadixApplicationAPI.create(radixIdentity);
+		RadixWallet wallet = new RadixWallet(api);
 
 		// Print out all past and future transactions
-		RadixWallet.getInstance()
-			.getXRDTransactions(myAddress)
+		wallet.getXRDTransactions()
 			.subscribe(System.out::println);
 
 		// Subscribe to current and future total balance
-		RadixWallet.getInstance()
-			.getXRDSubUnitBalance(myAddress)
+		wallet.getXRDSubUnitBalance()
 			.subscribe(balance -> System.out.println("My Balance: " + ((double)balance) / Asset.XRD.getSubUnits()));
-
 
 		// If specified, send money to another address
 		if (TO_ADDRESS_BASE58 != null) {
 			RadixAddress toAddress = RadixAddress.fromString(TO_ADDRESS_BASE58);
-			RadixWallet.getInstance()
-				.transferXRDWhenAvailable(AMOUNT * Asset.XRD.getSubUnits(), radixIdentity, toAddress, PAYLOAD)
-				.subscribe(
-					status -> System.out.println("Transaction " + status),
-					Throwable::printStackTrace
-				)
-				;
+			wallet.transferXRDWhenAvailable(AMOUNT * Asset.XRD.getSubUnits(), toAddress, MESSAGE)
+				.toObservable()
+				.subscribe(System.out::println, Throwable::printStackTrace);
 		}
 	}
 }
