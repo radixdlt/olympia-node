@@ -1,16 +1,25 @@
 package com.radixdlt.client.core.address;
 
-import com.radixdlt.client.core.util.Int128;
 import java.util.Arrays;
+
 import org.bouncycastle.util.encoders.Hex;
 
+import com.radixdlt.client.core.util.Int128;
+
 public final class EUID {
-	public static final int BYTES = Long.BYTES * 2;
+	public static final int BYTES = Int128.BYTES;
 
 	private final Int128 value;
 
 	public EUID(Int128 value) {
 		this.value = value;
+	}
+
+	public EUID(byte[] bytes) {
+		if (bytes.length > BYTES) {
+			bytes = Arrays.copyOf(bytes, BYTES);
+		}
+		this.value = Int128.from(bytes);
 	}
 
 	public EUID(int value) {
