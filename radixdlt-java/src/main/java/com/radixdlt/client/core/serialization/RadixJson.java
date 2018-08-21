@@ -22,7 +22,7 @@ import com.radixdlt.client.core.atoms.Consumable;
 import com.radixdlt.client.core.atoms.Consumer;
 import com.radixdlt.client.core.atoms.Emission;
 import com.radixdlt.client.core.atoms.IdParticle;
-import com.radixdlt.client.core.atoms.NullAtom.JunkParticle;
+import com.radixdlt.client.core.atoms.JunkParticle;
 import com.radixdlt.client.core.atoms.Particle;
 import com.radixdlt.client.core.atoms.Payload;
 import com.radixdlt.client.core.atoms.UnknownAtom;
