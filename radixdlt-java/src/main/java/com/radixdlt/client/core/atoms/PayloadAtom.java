@@ -10,21 +10,20 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public final class PayloadAtom extends Atom {
-	private final String operation = "TRANSFER";
 	private final String applicationId;
-	private final Payload encrypted;
+	private final Payload bytes;
 	private final Encryptor encryptor;
 
 	PayloadAtom(
 		String applicationId,
 		Set<EUID> destinations,
-		Payload encrypted,
+		Payload bytes,
 		long timestamp,
 		EUID signatureId,
 		ECSignature signature
 	) {
 		super(destinations, timestamp, signatureId, signature);
-		this.encrypted = encrypted;
+		this.bytes = bytes;
 		this.encryptor = null;
 		this.applicationId = applicationId;
 	}
@@ -33,14 +32,14 @@ public final class PayloadAtom extends Atom {
 		String applicationId,
 		List<Particle> particles,
 		Set<EUID> destinations,
-		Payload encrypted,
+		Payload bytes,
 		Encryptor encryptor,
 		long timestamp,
 		EUID signatureId,
 		ECSignature signature
 	) {
 		super(particles, destinations, timestamp, signatureId, signature);
-		this.encrypted = encrypted;
+		this.bytes = bytes;
 		this.encryptor = encryptor;
 		this.applicationId = applicationId;
 	}
@@ -49,13 +48,13 @@ public final class PayloadAtom extends Atom {
 		String applicationId,
 		List<Particle> particles,
 		Set<EUID> destinations,
-		Payload encrypted,
+		Payload bytes,
 		long timestamp,
 		EUID signatureId,
 		ECSignature signature
 	) {
 		super(particles, destinations, timestamp, signatureId, signature);
-		this.encrypted = encrypted;
+		this.bytes = bytes;
 		this.encryptor = null;
 		this.applicationId = applicationId;
 	}
@@ -64,12 +63,12 @@ public final class PayloadAtom extends Atom {
 		String applicationId,
 		List<Particle> particles,
 		Set<EUID> destinations,
-		Payload encrypted,
+		Payload bytes,
 		Encryptor encryptor,
 		long timestamp
 	) {
 		super(destinations, particles, timestamp);
-		this.encrypted = encrypted;
+		this.bytes = bytes;
 		this.encryptor = encryptor;
 		this.applicationId = applicationId;
 	}
@@ -78,12 +77,12 @@ public final class PayloadAtom extends Atom {
 	PayloadAtom(
 		String applicationId,
 		Set<EUID> destinations,
-		Payload encrypted,
+		Payload bytes,
 		List<Particle> particles,
 		long timestamp
 	) {
 		super(destinations, particles, timestamp);
-		this.encrypted = encrypted;
+		this.bytes = bytes;
 		this.encryptor = null;
 		this.applicationId = applicationId;
 	}
@@ -93,7 +92,7 @@ public final class PayloadAtom extends Atom {
 	}
 
 	public Payload getPayload() {
-		return encrypted;
+		return bytes;
 	}
 
 	public String getApplicationId() {
