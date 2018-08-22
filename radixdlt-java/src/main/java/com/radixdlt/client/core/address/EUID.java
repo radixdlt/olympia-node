@@ -27,7 +27,7 @@ public final class EUID {
 	}
 
 	public long getShard() {
-		return value.getLow();
+		return value.getHigh();
 	}
 
 	@Override
