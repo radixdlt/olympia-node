@@ -12,7 +12,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.atoms.PayloadAtom;
 import com.radixdlt.client.core.atoms.Shards;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState;
 import com.radixdlt.client.core.network.WebSocketClient.RadixClientStatus;
@@ -142,7 +141,7 @@ public class RadixJsonRpcClientTest {
 			String id = jsonObject.get("id").getAsString();
 
 			JsonArray atoms = new JsonArray();
-			Atom atom = new PayloadAtom("Test", null, null, null, null, 1);
+			Atom atom = new Atom("Test", null, null, null, null, 1);
 			atoms.add(gson.toJsonTree(atom, Atom.class));
 
 			JsonObject response = new JsonObject();
@@ -158,7 +157,7 @@ public class RadixJsonRpcClientTest {
 
 		jsonRpcClient.getAtom(new EUID(1)).subscribe(observer);
 
-		observer.assertValue(atom -> atom.getAsTransactionAtom().getApplicationId().equals("Test"));
+		observer.assertValue(atom -> atom.getApplicationId().equals("Test"));
 		observer.assertComplete();
 		observer.assertNoErrors();
 	}
@@ -194,7 +193,7 @@ public class RadixJsonRpcClientTest {
 
 			JsonArray atoms = new JsonArray();
 			JsonElement atom = gson.toJsonTree(
-				new PayloadAtom("Test", null, null, null, null, 1),
+				new Atom("Test", null, null, null, null, 1),
 				Atom.class
 			);
 			atoms.add(atom);
@@ -207,13 +206,13 @@ public class RadixJsonRpcClientTest {
 		}).when(wsClient).send(any());
 		RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(wsClient);
 
-		TestObserver<PayloadAtom> observer = new TestObserver<>();
+		TestObserver<Atom> observer = new TestObserver<>();
 
-		jsonRpcClient.getAtoms(new AtomQuery<>(new EUID(1), PayloadAtom.class)).subscribe(observer);
+		jsonRpcClient.getAtoms(new AtomQuery<>(new EUID(1), Atom.class)).subscribe(observer);
 
 		observer.assertNoErrors();
 		observer.assertValueCount(1);
-		observer.assertValue(atom -> atom.getAsTransactionAtom().getApplicationId().equals("Test"));
+		observer.assertValue(atom -> atom.getApplicationId().equals("Test"));
 	}
 
 	@Test
@@ -249,7 +248,7 @@ public class RadixJsonRpcClientTest {
 				params.addProperty("subscriberId", subscriberId);
 				JsonArray atoms = new JsonArray();
 				JsonElement atom = gson.toJsonTree(
-					new PayloadAtom("Test", null, null, null, null, 1),
+					new Atom("Test", null, null, null, null, 1),
 					Atom.class
 				);
 				atoms.add(atom);
@@ -264,9 +263,9 @@ public class RadixJsonRpcClientTest {
 		}).when(wsClient).send(any());
 		RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(wsClient);
 
-		TestObserver<PayloadAtom> observer = new TestObserver<>();
+		TestObserver<Atom> observer = new TestObserver<>();
 
-		jsonRpcClient.getAtoms(new AtomQuery<>(new EUID(1), PayloadAtom.class))
+		jsonRpcClient.getAtoms(new AtomQuery<>(new EUID(1), Atom.class))
 			.subscribe(observer);
 		observer.cancel();
 
@@ -319,7 +318,7 @@ public class RadixJsonRpcClientTest {
 		TestObserver<AtomSubmissionUpdate> observer = new TestObserver<>();
 
 		jsonRpcClient.submitAtom(
-			new PayloadAtom("Test", null, null, null, null, 1)
+			new Atom("Test", null, null, null, null, 1)
 		).subscribe(observer);
 
 		observer.assertNoErrors();

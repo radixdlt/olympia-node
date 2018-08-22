@@ -1,11 +1,10 @@
 package com.radixdlt.client.core.serialization;
 
 import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.atoms.PayloadAtom;
 import java.util.Optional;
 
 public enum SerializedAtomType {
-	ATOM(PayloadAtom.class, -1231693889);
+	ATOM(Atom.class, 2019665);
 
 	private final Class<? extends Atom> atomClass;
 	private final long serializer;

@@ -10,7 +10,6 @@ import com.radixdlt.client.core.crypto.Encryptor;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 
 public class AtomBuilder {
@@ -24,7 +23,6 @@ public class AtomBuilder {
 	private ECKeyPair sharedKey;
 	private String applicationId;
 	private byte[] payloadRaw;
-	private Class<? extends Atom> atomClass;
 	private Encryptor encryptor;
 	private Payload payload;
 
@@ -71,11 +69,6 @@ public class AtomBuilder {
 		return this;
 	}
 
-	public <T extends Atom> AtomBuilder type(Class<T> atomClass) {
-		this.atomClass = atomClass;
-		return this;
-	}
-
 	public UnsignedAtom buildWithPOWFee(int magic, ECPublicKey owner) {
 		// Expensive but fine for now
 		UnsignedAtom unsignedAtom = this.build();
@@ -93,8 +86,6 @@ public class AtomBuilder {
 	}
 
 	public UnsignedAtom build() {
-		Objects.requireNonNull(atomClass);
-
 		if (this.timestamp == null) {
 			this.timestamp = System.currentTimeMillis();
 		}
@@ -108,13 +99,6 @@ public class AtomBuilder {
 			throw new IllegalStateException("Payload must be under " + MAX_PAYLOAD_SIZE + " bytes but was " + payload.length());
 		}
 
-		final Atom atom;
-		if (PayloadAtom.class.isAssignableFrom(atomClass)) {
-			atom = new PayloadAtom(applicationId, particles, destinations, payload, encryptor, this.timestamp);
-		} else {
-			throw new IllegalStateException("Unable to create atom with class: " + atomClass.getSimpleName());
-		}
-
-		return new UnsignedAtom(atom);
+		return new UnsignedAtom(new Atom(applicationId, particles, destinations, payload, encryptor, this.timestamp));
 	}
 }

@@ -5,10 +5,10 @@ import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.assets.Asset;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.address.RadixAddress;
+import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomBuilder;
 import com.radixdlt.client.core.atoms.Consumable;
 import com.radixdlt.client.core.atoms.Consumer;
-import com.radixdlt.client.core.atoms.PayloadAtom;
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
@@ -31,15 +31,15 @@ public class TokenTransferTranslator {
 		this.consumableDataSource = consumableDataSource;
 	}
 
-	public TokenTransfer fromAtom(PayloadAtom transactionAtom) {
+	public TokenTransfer fromAtom(Atom atom) {
 		List<SimpleImmutableEntry<ECPublicKey, Long>> summary =
-			transactionAtom.summary().entrySet().stream()
+			atom.summary().entrySet().stream()
 				.filter(entry -> entry.getValue().containsKey(Asset.XRD.getId()))
 				.map(entry -> new SimpleImmutableEntry<>(entry.getKey().iterator().next(), entry.getValue().get(Asset.XRD.getId())))
 				.collect(Collectors.toList());
 
 		if (summary.isEmpty()) {
-			throw new IllegalStateException("Invalid atom: " + transactionAtom);
+			throw new IllegalStateException("Invalid atom: " + atom);
 		}
 
 		if (summary.size() > 2) {
@@ -62,26 +62,24 @@ public class TokenTransferTranslator {
 		}
 
 		final Data attachment;
-		if (transactionAtom.getPayload() != null) {
+		if (atom.getPayload() != null) {
 			final List<EncryptedPrivateKey> protectors;
-			if (transactionAtom.getEncryptor() != null && transactionAtom.getEncryptor().getProtectors() != null) {
-				protectors = transactionAtom.getEncryptor().getProtectors();
+			if (atom.getEncryptor() != null && atom.getEncryptor().getProtectors() != null) {
+				protectors = atom.getEncryptor().getProtectors();
 			} else {
 				protectors = Collections.emptyList();
 			}
 			Map<String, Object> metaData = new HashMap<>();
 			metaData.put("encrypted", !protectors.isEmpty());
-			attachment = Data.raw(transactionAtom.getPayload().getBytes(), metaData, protectors);
+			attachment = Data.raw(atom.getPayload().getBytes(), metaData, protectors);
 		} else {
 			attachment = null;
 		}
 
-		return TokenTransfer.create(from, to, Asset.XRD, Math.abs(summary.get(0).getValue()), attachment, transactionAtom.getTimestamp());
+		return TokenTransfer.create(from, to, Asset.XRD, Math.abs(summary.get(0).getValue()), attachment, atom.getTimestamp());
 	}
 
 	public Completable translate(TokenTransfer tokenTransfer, AtomBuilder atomBuilder) {
-		atomBuilder.type(PayloadAtom.class);
-
 		return this.consumableDataSource.getConsumables(tokenTransfer.getFrom())
 			.firstOrError()
 			.flatMapCompletable(unconsumedConsumables -> {

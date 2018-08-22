@@ -9,7 +9,6 @@ import static org.mockito.Mockito.times;
 import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomBuilder;
-import com.radixdlt.client.core.atoms.PayloadAtom;
 import com.radixdlt.client.core.network.RadixJsonRpcClient;
 import com.radixdlt.client.core.network.RadixNetwork;
 import io.reactivex.Observable;
@@ -22,20 +21,19 @@ public class RadixLedgerTest {
 	@Test
 	public void testFilterOutDuplicateAtoms() throws Exception {
 		Atom atom = new AtomBuilder()
-			.type(PayloadAtom.class)
 			.applicationId("Test")
 			.payload("Hello")
 			.addDestination(new EUID(1))
 			.build()
 			.getRawAtom();
 
-		Consumer<PayloadAtom> observer = mock(Consumer.class);
+		Consumer<Atom> observer = mock(Consumer.class);
 		RadixJsonRpcClient client = mock(RadixJsonRpcClient.class);
 		RadixNetwork network = mock(RadixNetwork.class);
 		when(network.getRadixClient(any(Long.class))).thenReturn(Single.just(client));
 		when(client.getAtoms(any())).thenReturn(Observable.just(atom, atom));
 		RadixLedger ledger = new RadixLedger(0, network);
-		ledger.getAllAtoms(new EUID(1), PayloadAtom.class)
+		ledger.getAllAtoms(new EUID(1), Atom.class)
 			.subscribe(observer);
 
 		verify(observer, times(1)).accept(any());

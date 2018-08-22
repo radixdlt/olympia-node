@@ -3,9 +3,10 @@ package com.radixdlt.client.application.translate;
 import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.AbstractConsumable;
+import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.client.core.atoms.AtomFeeConsumable;
 import com.radixdlt.client.core.atoms.Consumable;
 import com.radixdlt.client.core.atoms.Particle;
-import com.radixdlt.client.core.atoms.PayloadAtom;
 import io.reactivex.Maybe;
 import io.reactivex.Observable;
 import io.reactivex.ObservableEmitter;
@@ -21,13 +22,13 @@ public class TransactionAtoms {
 	private static final Logger LOGGER = LoggerFactory.getLogger(TransactionAtoms.class);
 
 	public class TransactionAtomsUpdate {
-		private final Observable<PayloadAtom> newValidTransactions;
+		private final Observable<Atom> newValidTransactions;
 
-		private TransactionAtomsUpdate(Observable<PayloadAtom> newValidTransactions) {
+		private TransactionAtomsUpdate(Observable<Atom> newValidTransactions) {
 			this.newValidTransactions = newValidTransactions;
 		}
 
-		public Observable<PayloadAtom> getNewValidTransactions() {
+		public Observable<Atom> getNewValidTransactions() {
 			return newValidTransactions;
 		}
 
@@ -39,14 +40,14 @@ public class TransactionAtoms {
 	private final RadixAddress address;
 	private final EUID assetId;
 	private final ConcurrentHashMap<ByteBuffer, Consumable> unconsumedConsumables = new ConcurrentHashMap<>();
-	private final ConcurrentHashMap<ByteBuffer, PayloadAtom> missingConsumable = new ConcurrentHashMap<>();
+	private final ConcurrentHashMap<ByteBuffer, Atom> missingConsumable = new ConcurrentHashMap<>();
 
 	public TransactionAtoms(RadixAddress address, EUID assetId) {
 		this.address = address;
 		this.assetId = assetId;
 	}
 
-	private void addConsumables(PayloadAtom transactionAtom, ObservableEmitter<PayloadAtom> emitter) {
+	private void addConsumables(Atom transactionAtom, ObservableEmitter<Atom> emitter) {
 		transactionAtom.getParticles().stream()
 			.filter(Particle::isAbstractConsumable)
 			.map(Particle::getAsAbstractConsumable)
@@ -63,7 +64,7 @@ public class TransactionAtoms {
 						}
 					});
 
-					PayloadAtom reanalyzeAtom = missingConsumable.remove(dson);
+					Atom reanalyzeAtom = missingConsumable.remove(dson);
 					if (reanalyzeAtom != null) {
 						checkConsumers(reanalyzeAtom, emitter);
 					}
@@ -76,7 +77,7 @@ public class TransactionAtoms {
 			});
 	}
 
-	private void checkConsumers(PayloadAtom transactionAtom, ObservableEmitter<PayloadAtom> emitter) {
+	private void checkConsumers(Atom transactionAtom, ObservableEmitter<Atom> emitter) {
 		Optional<ByteBuffer> missing = transactionAtom.getParticles().stream()
 			.filter(Particle::isAbstractConsumable)
 			.map(Particle::getAsAbstractConsumable)
@@ -98,14 +99,18 @@ public class TransactionAtoms {
 				}
 			});
 		} else {
+			if (transactionAtom.getParticles().stream().allMatch(p -> p instanceof AtomFeeConsumable))  {
+				return;
+			}
+
 			emitter.onNext(transactionAtom);
 			addConsumables(transactionAtom, emitter);
 		}
 	}
 
-	public TransactionAtomsUpdate accept(PayloadAtom transactionAtom) {
-		ConnectableObservable<PayloadAtom> observable =
-			Observable.<PayloadAtom>create(emitter -> {
+	public TransactionAtomsUpdate accept(Atom transactionAtom) {
+		ConnectableObservable<Atom> observable =
+			Observable.<Atom>create(emitter -> {
 				synchronized (TransactionAtoms.this) {
 					checkConsumers(transactionAtom, emitter);
 				}

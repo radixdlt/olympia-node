@@ -1,7 +1,9 @@
 package com.radixdlt.client.core.atoms;
 
 import com.radixdlt.client.core.address.EUID;
+import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.crypto.ECSignature;
+import com.radixdlt.client.core.crypto.Encryptor;
 import com.radixdlt.client.core.serialization.Dson;
 import java.util.Collections;
 import java.util.HashMap;
@@ -11,43 +13,50 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public abstract class Atom {
+public final class Atom {
 	private Set<EUID> destinations;
 	private final Map<String, Long> timestamps;
 	private String action;
 	private final List<Particle> particles;
 	private final Map<String, ECSignature> signatures;
 	private transient Map<String, Long> debug = new HashMap<>();
+	private final String applicationId;
+	private final Payload bytes;
+	private final Encryptor encryptor;
 
-	Atom() {
-		this.destinations = Collections.emptySet();
-		this.timestamps = null;
-		this.particles = null;
-		this.signatures = null;
-		this.action = "STORE";
-	}
-
-	Atom(Set<EUID> destinations, long timestamp, EUID signatureId, ECSignature signature) {
-		this.destinations = destinations;
-		this.particles = null;
-		this.timestamps = Collections.singletonMap("default", timestamp);
-		this.action = "STORE";
-		// HACK
-		// TODO: fix this
-		this.signatures = signatureId == null ? null : Collections.singletonMap(signatureId.toString(), signature);
-	}
-
-	Atom(Set<EUID> destinations, List<Particle> particles, long timestamp) {
-		this.destinations = destinations;
+	public Atom(
+		String applicationId,
+		List<Particle> particles,
+		Set<EUID> destinations,
+		Payload bytes,
+		Encryptor encryptor,
+		long timestamp
+	) {
+		this.applicationId = applicationId;
 		this.particles = particles;
+		this.destinations = destinations;
+		this.bytes = bytes;
+		this.encryptor = encryptor;
 		this.timestamps = Collections.singletonMap("default", timestamp);
 		this.signatures = null;
 		this.action = "STORE";
 	}
 
-	Atom(List<Particle> particles, Set<EUID> destinations, long timestamp, EUID signatureId, ECSignature signature) {
-		this.destinations = destinations;
+	public Atom(
+		String applicationId,
+		List<Particle> particles,
+		Set<EUID> destinations,
+		Payload bytes,
+		Encryptor encryptor,
+		long timestamp,
+		EUID signatureId,
+		ECSignature signature
+	) {
+		this.applicationId = applicationId;
 		this.particles = particles;
+		this.destinations = destinations;
+		this.bytes = bytes;
+		this.encryptor = encryptor;
 		this.timestamps = Collections.singletonMap("default", timestamp);
 		this.signatures = Collections.singletonMap(signatureId.toString(), signature);
 		this.action = "STORE";
@@ -96,10 +105,6 @@ public abstract class Atom {
 		return particles == null ? Collections.emptyList() : Collections.unmodifiableList(particles);
 	}
 
-	public PayloadAtom getAsTransactionAtom() {
-		return (PayloadAtom) this;
-	}
-
 	public byte[] toDson() {
 		return Dson.getInstance().toDson(this);
 	}
@@ -110,6 +115,59 @@ public abstract class Atom {
 
 	public EUID getHid() {
 		return getHash().toEUID();
+	}
+
+	public Encryptor getEncryptor() {
+		return encryptor;
+	}
+
+	public Payload getPayload() {
+		return bytes;
+	}
+
+	public String getApplicationId() {
+		return applicationId;
+	}
+
+	public List<Consumable> getConsumables() {
+		return getParticles().stream()
+			.filter(Particle::isConsumable)
+			.map(Particle::getAsConsumable)
+			.collect(Collectors.toList());
+	}
+
+	public List<Consumer> getConsumers() {
+		return getParticles().stream()
+			.filter(Particle::isConsumer)
+			.map(Particle::getAsConsumer)
+			.collect(Collectors.toList());
+	}
+
+
+	public Map<Set<ECPublicKey>, Map<EUID, Long>> summary() {
+		return getParticles().stream()
+			.filter(Particle::isAbstractConsumable)
+			.map(Particle::getAsAbstractConsumable)
+			.collect(Collectors.groupingBy(
+				AbstractConsumable::getOwnersPublicKeys,
+				Collectors.groupingBy(
+					AbstractConsumable::getAssetId,
+					Collectors.summingLong(AbstractConsumable::getSignedQuantity)
+				)
+			));
+	}
+
+	public Map<Set<ECPublicKey>, Map<EUID, List<Long>>> consumableSummary() {
+		return getParticles().stream()
+			.filter(Particle::isAbstractConsumable)
+			.map(Particle::getAsAbstractConsumable)
+			.collect(Collectors.groupingBy(
+				AbstractConsumable::getOwnersPublicKeys,
+				Collectors.groupingBy(
+					AbstractConsumable::getAssetId,
+					Collectors.mapping(AbstractConsumable::getSignedQuantity, Collectors.toList())
+				)
+			));
 	}
 
 	@Override

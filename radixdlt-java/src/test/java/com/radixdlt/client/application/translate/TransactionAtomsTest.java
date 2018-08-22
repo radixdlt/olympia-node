@@ -10,7 +10,6 @@ import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.AtomBuilder;
 import com.radixdlt.client.core.atoms.Consumable;
 import com.radixdlt.client.core.atoms.Consumer;
-import com.radixdlt.client.core.atoms.PayloadAtom;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECPublicKey;
@@ -29,7 +28,6 @@ public class TransactionAtomsTest {
 
 		/* Build atom with consumer originating from nowhere */
 		UnsignedAtom unsignedAtom = new AtomBuilder()
-			.type(PayloadAtom.class)
 			.addParticle(new Consumer(100, keyPair, 1, Asset.XRD.getId()))
 			.addParticle(new Consumable(100, keyPair, 2, Asset.XRD.getId()))
 			.build();
@@ -38,7 +36,7 @@ public class TransactionAtomsTest {
 
 		/* Make sure we don't count it unless we find the matching consumable */
 		TransactionAtoms transactionAtoms = new TransactionAtoms(address, Asset.XRD.getId());
-		transactionAtoms.accept(unsignedAtom.getRawAtom().getAsTransactionAtom())
+		transactionAtoms.accept(unsignedAtom.getRawAtom())
 			.getUnconsumedConsumables().subscribe(observer);
 		observer.assertValueCount(0);
 	}
@@ -61,14 +59,12 @@ public class TransactionAtomsTest {
 
 		/* Atom with consumer originating from nowhere */
 		UnsignedAtom unsignedAtom = new AtomBuilder()
-			.type(PayloadAtom.class)
 			.addParticle(new Consumer(100, keyPair, 1, Asset.XRD.getId()))
 			.addParticle(new Consumable(100, keyPair, 2, Asset.XRD.getId()))
 			.build();
 
 		/* Atom with consumable for previous atom's consumer */
 		UnsignedAtom unsignedAtom2 = new AtomBuilder()
-			.type(PayloadAtom.class)
 			.addParticle(new Consumer(100, otherKeyPair, 1, Asset.XRD.getId()))
 			.addParticle(new Consumable(100, keyPair, 1, Asset.XRD.getId()))
 			.build();
@@ -77,8 +73,8 @@ public class TransactionAtomsTest {
 
 		/* Make sure we don't count it unless we find the matching consumable */
 		TransactionAtoms transactionAtoms = new TransactionAtoms(address, Asset.XRD.getId());
-		transactionAtoms.accept(unsignedAtom.getRawAtom().getAsTransactionAtom());
-		transactionAtoms.accept(unsignedAtom2.getRawAtom().getAsTransactionAtom())
+		transactionAtoms.accept(unsignedAtom.getRawAtom());
+		transactionAtoms.accept(unsignedAtom2.getRawAtom())
 			.getUnconsumedConsumables()
 			.subscribe(observer);
 

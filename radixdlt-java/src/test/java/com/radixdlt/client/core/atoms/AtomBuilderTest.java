@@ -20,19 +20,16 @@ public class AtomBuilderTest {
 
 		AtomBuilder atomBuilder = new AtomBuilder();
 		UnsignedAtom atom = atomBuilder
-			.type(PayloadAtom.class)
 			.addParticle(consumable)
 			.payload("Hello")
 			.build();
 
-		assertEquals(atom.getRawAtom().getClass(), PayloadAtom.class);
-		assertEquals(atom.getRawAtom().getAsTransactionAtom().getPayload().toAscii(), "Hello");
+		assertEquals(atom.getRawAtom().getPayload().toAscii(), "Hello");
 	}
 
 	@Test
 	public void testMultipleAtomPayloadBuildsShouldCreateSameAtom() {
 		AtomBuilder atomBuilder = new AtomBuilder()
-			.type(PayloadAtom.class)
 			.applicationId("Test")
 			.payload("Hello")
 			.addDestination(new EUID(1));

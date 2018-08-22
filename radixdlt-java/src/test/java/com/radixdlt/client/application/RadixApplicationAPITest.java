@@ -17,7 +17,6 @@ import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomBuilder;
 import com.radixdlt.client.core.atoms.Payload;
-import com.radixdlt.client.core.atoms.PayloadAtom;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.crypto.CryptoException;
 import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
@@ -40,7 +39,6 @@ public class RadixApplicationAPITest {
 		RadixIdentity identity = mock(RadixIdentity.class);
 
 		AtomBuilder atomBuilder = mock(AtomBuilder.class);
-		when(atomBuilder.type(any())).thenReturn(atomBuilder);
 		when(atomBuilder.protectors(any())).thenReturn(atomBuilder);
 		when(atomBuilder.payload(any(byte[].class))).thenReturn(atomBuilder);
 		Atom atom = mock(Atom.class);
@@ -158,11 +156,11 @@ public class RadixApplicationAPITest {
 
 		Payload payload = mock(Payload.class);
 
-		PayloadAtom errorAtom = mock(PayloadAtom.class);
+		Atom errorAtom = mock(Atom.class);
 		when(errorAtom.getEncryptor()).thenReturn(encryptor);
 		when(errorAtom.getPayload()).thenReturn(payload);
 
-		PayloadAtom okAtom = mock(PayloadAtom.class);
+		Atom okAtom = mock(Atom.class);
 		when(okAtom.getEncryptor()).thenReturn(encryptor);
 		when(okAtom.getPayload()).thenReturn(payload);
 
