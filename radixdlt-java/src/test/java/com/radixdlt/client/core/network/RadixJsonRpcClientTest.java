@@ -208,7 +208,7 @@ public class RadixJsonRpcClientTest {
 
 		TestObserver<Atom> observer = new TestObserver<>();
 
-		jsonRpcClient.getAtoms(new AtomQuery<>(new EUID(1), Atom.class)).subscribe(observer);
+		jsonRpcClient.getAtoms(new AtomQuery(new EUID(1))).subscribe(observer);
 
 		observer.assertNoErrors();
 		observer.assertValueCount(1);
@@ -265,7 +265,7 @@ public class RadixJsonRpcClientTest {
 
 		TestObserver<Atom> observer = new TestObserver<>();
 
-		jsonRpcClient.getAtoms(new AtomQuery<>(new EUID(1), Atom.class))
+		jsonRpcClient.getAtoms(new AtomQuery(new EUID(1)))
 			.subscribe(observer);
 		observer.cancel();
 

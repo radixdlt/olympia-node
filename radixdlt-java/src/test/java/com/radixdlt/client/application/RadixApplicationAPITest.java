@@ -164,7 +164,7 @@ public class RadixApplicationAPITest {
 		when(okAtom.getEncryptor()).thenReturn(encryptor);
 		when(okAtom.getPayload()).thenReturn(payload);
 
-		when(ledger.getAllAtoms(any(), any())).thenReturn(Observable.just(errorAtom, okAtom));
+		when(ledger.getAllAtoms(any())).thenReturn(Observable.just(errorAtom, okAtom));
 
 		RadixApplicationAPI api = RadixApplicationAPI.create(identity, universe, AtomBuilder::new);
 		TestObserver observer = TestObserver.create();
@@ -184,7 +184,7 @@ public class RadixApplicationAPITest {
 		when(universe.getLedger()).thenReturn(ledger);
 		RadixApplicationAPI api = RadixApplicationAPI.create(identity, universe, AtomBuilder::new);
 
-		when(ledger.getAllAtoms(any(), any())).thenReturn(Observable.empty());
+		when(ledger.getAllAtoms(any())).thenReturn(Observable.empty());
 
 		TestObserver<Long> observer = TestObserver.create();
 
@@ -201,7 +201,7 @@ public class RadixApplicationAPITest {
 		when(universe.getLedger()).thenReturn(ledger);
 		RadixApplicationAPI api = RadixApplicationAPI.create(identity, universe, AtomBuilder::new);
 
-		when(ledger.getAllAtoms(any(), any())).thenReturn(Observable.empty());
+		when(ledger.getAllAtoms(any())).thenReturn(Observable.empty());
 
 		TestObserver observer = TestObserver.create();
 		api.transferTokens(address, address, Asset.XRD, 10).toCompletable().subscribe(observer);

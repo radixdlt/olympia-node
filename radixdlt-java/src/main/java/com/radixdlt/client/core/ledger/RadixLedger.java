@@ -12,6 +12,7 @@ import com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState
 import com.radixdlt.client.core.network.IncreasingRetryTimer;
 import com.radixdlt.client.core.network.RadixNetwork;
 import com.radixdlt.client.core.serialization.RadixJson;
+import io.reactivex.Observable;
 import io.reactivex.functions.Predicate;
 import io.reactivex.observables.ConnectableObservable;
 import java.util.HashSet;
@@ -72,25 +73,23 @@ public class RadixLedger {
 	 * to retrieve the requested atoms.
 	 *
 	 * @param destination destination (which determines shard) to query atoms for
-	 * @param atomClass atom class type to filter for
 	 * @return a new Observable Atom Query
 	 */
-	public <T extends Atom> io.reactivex.Observable<T> getAllAtoms(EUID destination, Class<T> atomClass) {
+	public Observable<Atom> getAllAtoms(EUID destination) {
 		Objects.requireNonNull(destination);
-		Objects.requireNonNull(atomClass);
 
-		final AtomQuery<T> atomQuery = new AtomQuery<>(destination, atomClass);
+		final AtomQuery atomQuery = new AtomQuery(destination);
 		return radixNetwork.getRadixClient(destination.getShard())
 			//.doOnSubscribe(client -> logger.info("Looking for client to serve atoms at: " + destination))
 			//.doOnSuccess(client -> logger.info("Found client to serve atoms: " + client.getLocation()))
 			.flatMapObservable(client -> client.getAtoms(atomQuery))
 			.doOnError(Throwable::printStackTrace)
 			.retryWhen(new IncreasingRetryTimer())
-			.filter(new Predicate<T>() {
+			.filter(new Predicate<Atom>() {
 				private final Set<RadixHash> atomsSeen = new HashSet<>();
 
 				@Override
-				public boolean test(T t) {
+				public boolean test(Atom t) {
 					if (atomsSeen.contains(t.getHash())) {
 						LOGGER.warn("Atom Already Seen: destination({}) atom({})", destination, t);
 						return false;
@@ -111,10 +110,7 @@ public class RadixLedger {
 				}
 			})
 			.doOnSubscribe(
-				atoms -> LOGGER.info(
-					"Atom Query Subscribe: destination({}) class({})",
-					destination, atomClass.getSimpleName()
-				)
+				atoms -> LOGGER.info("Atom Query Subscribe: destination({})", destination)
 			)
 			.publish()
 			.refCount();
@@ -128,8 +124,8 @@ public class RadixLedger {
 	 * @param atom atom to submit into the ledger
 	 * @return Observable emitting status updates to submission
 	 */
-	public io.reactivex.Observable<AtomSubmissionUpdate> submitAtom(Atom atom) {
-		io.reactivex.Observable<AtomSubmissionUpdate> status = radixNetwork.getRadixClient(atom.getRequiredFirstShard())
+	public Observable<AtomSubmissionUpdate> submitAtom(Atom atom) {
+		Observable<AtomSubmissionUpdate> status = radixNetwork.getRadixClient(atom.getRequiredFirstShard())
 			//.doOnSubscribe(client -> logger.info("Looking for client to submit atom"))
 			//.doOnSuccess(client -> logger.info("Found client to submit atom: " + client.getLocation()))
 			.flatMapObservable(client -> client.submitAtom(atom))

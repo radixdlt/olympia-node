@@ -2,9 +2,7 @@ package com.radixdlt.client.core.atoms;
 
 import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.address.RadixAddress;
-import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECPublicKey;
-import com.radixdlt.client.core.crypto.ECSignature;
 import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
 import com.radixdlt.client.core.crypto.Encryptor;
 import java.util.ArrayList;
@@ -17,14 +15,9 @@ public class AtomBuilder {
 
 	private Set<EUID> destinations = new HashSet<>();
 	private List<Particle> particles = new ArrayList<>();
-	private ECSignature signature;
-	private EUID signatureId;
-	private Long timestamp;
-	private ECKeyPair sharedKey;
 	private String applicationId;
 	private byte[] payloadRaw;
 	private Encryptor encryptor;
-	private Payload payload;
 
 	public AtomBuilder() {
 	}
@@ -70,35 +63,40 @@ public class AtomBuilder {
 	}
 
 	public UnsignedAtom buildWithPOWFee(int magic, ECPublicKey owner) {
-		// Expensive but fine for now
-		UnsignedAtom unsignedAtom = this.build();
-		int size = unsignedAtom.getRawAtom().toDson().length;
+		long timestamp = System.currentTimeMillis();
 
+		// Expensive but fine for now
+		UnsignedAtom unsignedAtom = this.build(timestamp);
+
+		// Rebuild with atom fee
+		int size = unsignedAtom.getRawAtom().toDson().length;
 		AtomFeeConsumable fee = new AtomFeeConsumableBuilder()
 			.atom(unsignedAtom)
 			.owner(owner)
 			.pow(magic, (int) Math.ceil(Math.log(size * 8.0)))
 			.build();
-
 		this.addParticle(fee);
 
-		return this.build();
+		return this.build(timestamp);
 	}
 
-	public UnsignedAtom build() {
-		if (this.timestamp == null) {
-			this.timestamp = System.currentTimeMillis();
-		}
-
+	public UnsignedAtom build(long timestamp) {
+		final Payload payload;
 		if (this.payloadRaw != null) {
-			this.payload = new Payload(this.payloadRaw);
+			if (payloadRaw.length > MAX_PAYLOAD_SIZE) {
+				throw new IllegalStateException("Payload must be under " + MAX_PAYLOAD_SIZE + " bytes but was " + payloadRaw.length);
+
+			}
+			payload = new Payload(this.payloadRaw);
+		} else {
+			payload = null;
 		}
 
-		// TODO: add this check to when payloadRaw is first set
-		if (payload != null && payload.length() > MAX_PAYLOAD_SIZE) {
-			throw new IllegalStateException("Payload must be under " + MAX_PAYLOAD_SIZE + " bytes but was " + payload.length());
-		}
+		return new UnsignedAtom(new Atom(applicationId, particles, destinations, payload, encryptor, timestamp));
+	}
 
-		return new UnsignedAtom(new Atom(applicationId, particles, destinations, payload, encryptor, this.timestamp));
+	// Temporary method for testing
+	public UnsignedAtom build() {
+		return this.build(System.currentTimeMillis());
 	}
 }

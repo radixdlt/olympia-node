@@ -33,7 +33,7 @@ public class RadixLedgerTest {
 		when(network.getRadixClient(any(Long.class))).thenReturn(Single.just(client));
 		when(client.getAtoms(any())).thenReturn(Observable.just(atom, atom));
 		RadixLedger ledger = new RadixLedger(0, network);
-		ledger.getAllAtoms(new EUID(1), Atom.class)
+		ledger.getAllAtoms(new EUID(1))
 			.subscribe(observer);
 
 		verify(observer, times(1)).accept(any());

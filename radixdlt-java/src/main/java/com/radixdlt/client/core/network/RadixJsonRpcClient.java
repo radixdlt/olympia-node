@@ -224,10 +224,9 @@ public class RadixJsonRpcClient {
 	 *  and future atoms. The Observable returned will never complete.
 	 *
 	 * @param atomQuery query specifying which atoms to retrieve
-	 * @param <T> atom type
 	 * @return observable of atoms
 	 */
-	public <T extends Atom> Observable<T> getAtoms(AtomQuery<T> atomQuery) {
+	public Observable<Atom> getAtoms(AtomQuery atomQuery) {
 		final JsonObject params = new JsonObject();
 		params.add("query", atomQuery.toJson());
 
@@ -235,7 +234,7 @@ public class RadixJsonRpcClient {
 			.map(p -> p.getAsJsonObject().get("atoms").getAsJsonArray())
 			.flatMapIterable(array -> array)
 			.map(JsonElement::getAsJsonObject)
-			.map(jsonAtom -> RadixJson.getGson().fromJson(jsonAtom, atomQuery.getAtomClass()))
+			.map(jsonAtom -> RadixJson.getGson().fromJson(jsonAtom, Atom.class))
 			.map(atom -> {
 				atom.putDebug("RECEIVED", System.currentTimeMillis());
 				return atom;
