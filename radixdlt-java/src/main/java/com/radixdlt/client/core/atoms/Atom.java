@@ -201,6 +201,6 @@ public final class Atom {
 
 	@Override
 	public String toString() {
-		return "Atom hid(" + getHid().toString() + ") destinations(" + destinations + ") particles(" + particles.size() + ")";
+		return "Atom hid(" + getHid().toString() + ") destinations(" + destinations + ") particles(" + (particles == null ? 0 : particles.size()) + ")";
 	}
 }
