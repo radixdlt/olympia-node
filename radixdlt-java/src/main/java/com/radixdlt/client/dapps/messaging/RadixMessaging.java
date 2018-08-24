@@ -18,6 +18,9 @@ import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * High Level API for Instant Messaging. Currently being used by the Radix Android Mobile Wallet.
+ */
 public class RadixMessaging {
 	private static final Logger LOGGER = LoggerFactory.getLogger(RadixMessaging.class);
 
