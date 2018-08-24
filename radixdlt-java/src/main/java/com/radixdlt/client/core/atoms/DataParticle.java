@@ -2,6 +2,7 @@ package com.radixdlt.client.core.atoms;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Particle which can hold arbitrary data
@@ -19,6 +20,8 @@ public class DataParticle {
 	private final Payload bytes;
 
 	public DataParticle(Payload bytes, String application) {
+		Objects.requireNonNull(bytes);
+
 		this.bytes = bytes;
 		if (application != null) {
 			this.metaData = new HashMap<>();
