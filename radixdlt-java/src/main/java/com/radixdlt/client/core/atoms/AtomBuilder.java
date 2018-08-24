@@ -3,8 +3,6 @@ package com.radixdlt.client.core.atoms;
 import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.crypto.ECPublicKey;
-import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
-import com.radixdlt.client.core.crypto.Encryptor;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -13,7 +11,7 @@ import java.util.Set;
 public class AtomBuilder {
 	private Set<EUID> destinations = new HashSet<>();
 	private List<Particle> particles = new ArrayList<>();
-	private Encryptor encryptor;
+	private EncryptorParticle encryptor;
 	private DataParticle dataParticle;
 
 	public AtomBuilder() {
@@ -33,8 +31,8 @@ public class AtomBuilder {
 		return this;
 	}
 
-	public AtomBuilder protectors(List<EncryptedPrivateKey> protectors) {
-		this.encryptor = new Encryptor(protectors);
+	public AtomBuilder setEncryptorParticle(EncryptorParticle encryptor) {
+		this.encryptor = encryptor;
 		return this;
 	}
 

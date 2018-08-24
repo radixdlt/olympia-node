@@ -17,11 +17,11 @@ import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomBuilder;
 import com.radixdlt.client.core.atoms.DataParticle;
+import com.radixdlt.client.core.atoms.EncryptorParticle;
 import com.radixdlt.client.core.atoms.Payload;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.crypto.CryptoException;
 import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
-import com.radixdlt.client.core.crypto.Encryptor;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.core.ledger.RadixLedger;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate;
@@ -40,7 +40,7 @@ public class RadixApplicationAPITest {
 		RadixIdentity identity = mock(RadixIdentity.class);
 
 		AtomBuilder atomBuilder = mock(AtomBuilder.class);
-		when(atomBuilder.protectors(any())).thenReturn(atomBuilder);
+		when(atomBuilder.setEncryptorParticle(any())).thenReturn(atomBuilder);
 		when(atomBuilder.setDataParticle(any())).thenReturn(atomBuilder);
 		Atom atom = mock(Atom.class);
 		when(identity.sign(any())).thenReturn(Single.just(atom));
@@ -170,7 +170,7 @@ public class RadixApplicationAPITest {
 			.thenReturn(Single.error(new CryptoException("Can't decrypt")))
 			.thenReturn(Single.just(unencryptedData));
 
-		Encryptor encryptor = mock(Encryptor.class);
+		EncryptorParticle encryptor = mock(EncryptorParticle.class);
 		EncryptedPrivateKey protector = mock(EncryptedPrivateKey.class);
 		when(encryptor.getProtectors()).thenReturn(Collections.singletonList(protector));
 

@@ -65,6 +65,10 @@ public class AtomSubmissionUpdate {
 		return this;
 	}
 
+	public Object getMetaData(String key) {
+		return metaData.get(key);
+	}
+
 	public static AtomSubmissionUpdate create(EUID hid, AtomSubmissionState code) {
 		return new AtomSubmissionUpdate(hid, code, null);
 	}
@@ -78,6 +82,6 @@ public class AtomSubmissionUpdate {
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS", Locale.getDefault());
 		sdf.setTimeZone(TimeZone.getDefault());
 
-		return sdf.format(new Date(timestamp)) + " atom " + hid + " " + state + (message != null ? ": " + message : "") + " " + metaData;
+		return sdf.format(new Date(timestamp)) + " atom " + hid + " " + state + (message != null ? ": " + message : "");
 	}
 }

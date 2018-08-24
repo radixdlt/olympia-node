@@ -3,7 +3,6 @@ package com.radixdlt.client.core.atoms;
 import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.crypto.ECSignature;
-import com.radixdlt.client.core.crypto.Encryptor;
 import com.radixdlt.client.core.serialization.Dson;
 import java.util.Collections;
 import java.util.HashMap;
@@ -22,13 +21,13 @@ public final class Atom {
 	private transient Map<String, Long> debug = new HashMap<>();
 
 	private final DataParticle dataParticle;
-	private final Encryptor encryptor;
+	private final EncryptorParticle encryptor;
 
 	public Atom(
 		DataParticle dataParticle,
 		List<Particle> particles,
 		Set<EUID> destinations,
-		Encryptor encryptor,
+		EncryptorParticle encryptor,
 		long timestamp
 	) {
 		this.dataParticle = dataParticle;
@@ -44,7 +43,7 @@ public final class Atom {
 		DataParticle dataParticle,
 		List<Particle> particles,
 		Set<EUID> destinations,
-		Encryptor encryptor,
+		EncryptorParticle encryptor,
 		long timestamp,
 		EUID signatureId,
 		ECSignature signature
@@ -113,7 +112,7 @@ public final class Atom {
 		return getHash().toEUID();
 	}
 
-	public Encryptor getEncryptor() {
+	public EncryptorParticle getEncryptor() {
 		return encryptor;
 	}
 

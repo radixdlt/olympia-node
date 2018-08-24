@@ -3,13 +3,11 @@ package com.radixdlt.client.application.objects;
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECKeyPairGenerator;
 import com.radixdlt.client.core.crypto.ECPublicKey;
-import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
-import java.util.ArrayList;
+import com.radixdlt.client.core.crypto.Encryptor;
+import com.radixdlt.client.core.crypto.Encryptor.EncryptorBuilder;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import org.bouncycastle.util.encoders.Base64;
 
 /**
@@ -19,7 +17,7 @@ public class Data {
 	public static class DataBuilder {
 		private Map<String, Object> metaData = new HashMap<>();
 		private byte[] bytes;
-		private List<ECPublicKey> readers = new ArrayList<>();
+		private EncryptorBuilder encryptorBuilder = new EncryptorBuilder();
 		private boolean isPublicReadable;
 
 		public DataBuilder() {
@@ -36,7 +34,7 @@ public class Data {
 		}
 
 		public DataBuilder addReader(ECPublicKey reader) {
-			readers.add(reader);
+			encryptorBuilder.addReader(reader);
 			return this;
 		}
 
@@ -47,40 +45,41 @@ public class Data {
 
 		public Data build() {
 			final byte[] bytes;
-			final List<EncryptedPrivateKey> protectors;
+			final Encryptor encryptor;
 
 			if (isPublicReadable) {
-				protectors = Collections.emptyList();
+				encryptor = null;
 				bytes = this.bytes;
 				metaData.put("encrypted", false);
 			} else {
-				if (readers.isEmpty()) {
+				if (encryptorBuilder.getNumReaders() == 0) {
 					throw new IllegalStateException("Must either be publicReadable or have atleast one reader.");
 				}
 
 				ECKeyPair sharedKey = ECKeyPairGenerator.newInstance().generateKeyPair();
-				protectors = readers.stream().map(sharedKey::encryptPrivateKey).collect(Collectors.toList());
+				encryptorBuilder.sharedKey(sharedKey);
+				encryptor = encryptorBuilder.build();
 				bytes = sharedKey.getPublicKey().encrypt(this.bytes);
 				metaData.put("encrypted", true);
 			}
 
-			return new Data(bytes, metaData, protectors);
+			return new Data(bytes, metaData, encryptor);
 		}
 	}
 
 	// TODO: Cleanup this interface
-	public static Data raw(byte[] bytes, Map<String, Object> metaData, List<EncryptedPrivateKey> protectors) {
-		return new Data(bytes, metaData, protectors);
+	public static Data raw(byte[] bytes, Map<String, Object> metaData, Encryptor encryptor) {
+		return new Data(bytes, metaData, encryptor);
 	}
 
 	private final Map<String, Object> metaData;
 	private final byte[] bytes;
-	private final List<EncryptedPrivateKey> protectors;
+	private final Encryptor encryptor;
 
-	private Data(byte[] bytes, Map<String, Object> metaData, List<EncryptedPrivateKey> protectors) {
+	private Data(byte[] bytes, Map<String, Object> metaData, Encryptor encryptor) {
 		this.bytes = bytes;
 		this.metaData = metaData;
-		this.protectors = protectors;
+		this.encryptor = encryptor;
 	}
 
 	// TODO: make unmodifiable
@@ -88,8 +87,8 @@ public class Data {
 		return bytes;
 	}
 
-	public List<EncryptedPrivateKey> getProtectors() {
-		return protectors;
+	public Encryptor getEncryptor() {
+		return encryptor;
 	}
 
 	public Map<String, Object> getMetaData() {
