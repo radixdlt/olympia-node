@@ -1,15 +1,17 @@
 package com.radixdlt.client.core.atoms;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Particle which can hold arbitrary data
  */
 public class DataParticle {
-
 	/**
-	 * Temporary property specifying the application this data particle
-	 * was meant for. Will change into some kind of metaData in the future.
+	 * Nullable for the timebeing as we want dson to be optimized for
+	 * saving space and no way to skip empty maps in Dson yet.
 	 */
-	private final String application;
+	private final Map<String, Object> metaData;
 
 	/**
 	 * Arbitrary data, possibly encrypted
@@ -17,12 +19,21 @@ public class DataParticle {
 	private final Payload bytes;
 
 	public DataParticle(Payload bytes, String application) {
-		this.application = application;
 		this.bytes = bytes;
+		if (application != null) {
+			this.metaData = new HashMap<>();
+			this.metaData.put("application", application);
+		} else {
+			this.metaData = null;
+		}
 	}
 
-	public String getApplication() {
-		return application;
+	public Object getMetaData(String key) {
+		if (metaData == null) {
+			return null;
+		}
+
+		return metaData.get(key);
 	}
 
 	public Payload getBytes() {

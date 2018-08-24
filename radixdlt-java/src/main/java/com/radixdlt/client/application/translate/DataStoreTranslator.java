@@ -40,7 +40,7 @@ public class DataStoreTranslator {
 		Map<String, Object> metaData = new HashMap<>();
 		metaData.put("timestamp", atom.getTimestamp());
 		metaData.put("signatures", atom.getSignatures());
-		metaData.put("application", atom.getDataParticle().getApplication());
+		metaData.put("application", atom.getDataParticle().getMetaData("application"));
 		metaData.put("encrypted", atom.getEncryptor() != null);
 
 		final Encryptor encryptor;
