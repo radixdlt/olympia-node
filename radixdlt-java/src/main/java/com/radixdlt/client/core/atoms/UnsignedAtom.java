@@ -20,10 +20,9 @@ public class UnsignedAtom {
 	public Atom sign(ECSignature signature, EUID signatureId) {
 		// TODO: Remove need to create a new object
 		return new Atom(
-			atom.getApplicationId(),
+			atom.getDataParticle(),
 			atom.getParticles(),
 			atom.getDestinations(),
-			atom.getPayload(),
 			atom.getEncryptor(),
 			atom.getTimestamp(),
 			signatureId,

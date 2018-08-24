@@ -4,12 +4,15 @@ import com.radixdlt.client.application.actions.DataStore;
 import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomBuilder;
+import com.radixdlt.client.core.atoms.DataParticle;
+import com.radixdlt.client.core.atoms.Payload;
 import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
 import io.reactivex.Completable;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public class DataStoreTranslator {
 	private static final DataStoreTranslator INSTANCE = new DataStoreTranslator();
@@ -22,22 +25,20 @@ public class DataStoreTranslator {
 	}
 
 	public Completable translate(DataStore dataStore, AtomBuilder atomBuilder) {
-		atomBuilder.payload(dataStore.getData().getBytes());
+		Payload payload = new Payload(dataStore.getData().getBytes());
+		String application = (String) dataStore.getData().getMetaData().get("application");
 
-		if (!dataStore.getData().getProtectors().isEmpty()) {
-			atomBuilder.protectors(dataStore.getData().getProtectors());
-		}
-
-		if (dataStore.getData().getMetaData().containsKey("application")) {
-			atomBuilder.applicationId((String) dataStore.getData().getMetaData().get("application"));
-		}
-
+		atomBuilder.setDataParticle(new DataParticle(payload, application));
 		dataStore.getAddresses().forEach(atomBuilder::addDestination);
 
 		return Completable.complete();
 	}
 
-	public Data fromAtom(Atom atom) {
+	public Optional<Data> fromAtom(Atom atom) {
+		if (atom.getDataParticle() == null) {
+			return Optional.empty();
+		}
+
 		final List<EncryptedPrivateKey> protectors;
 		if (atom.getEncryptor() != null && atom.getEncryptor().getProtectors() != null) {
 			protectors = atom.getEncryptor().getProtectors();
@@ -48,9 +49,9 @@ public class DataStoreTranslator {
 		Map<String, Object> metaData = new HashMap<>();
 		metaData.put("timestamp", atom.getTimestamp());
 		metaData.put("signatures", atom.getSignatures());
-		metaData.put("application", atom.getApplicationId());
+		metaData.put("application", atom.getDataParticle().getApplication());
 		metaData.put("encrypted", !protectors.isEmpty());
 
-		return Data.raw(atom.getPayload().getBytes(), metaData, protectors);
+		return Optional.of(Data.raw(atom.getDataParticle().getBytes().getBytes(), metaData, protectors));
 	}
 }

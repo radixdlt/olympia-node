@@ -4,10 +4,13 @@ import com.radixdlt.client.core.util.Base64Encoded;
 import java.util.Arrays;
 import org.bouncycastle.util.encoders.Base64;
 
+/**
+ * Temporary class, will remove in the near future
+ */
 public class Payload implements Base64Encoded {
 	private final byte[] payload;
 
-	Payload(byte[] payload) {
+	public Payload(byte[] payload) {
 		this.payload = payload;
 	}
 

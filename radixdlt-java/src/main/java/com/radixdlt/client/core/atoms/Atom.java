@@ -20,22 +20,20 @@ public final class Atom {
 	private final List<Particle> particles;
 	private final Map<String, ECSignature> signatures;
 	private transient Map<String, Long> debug = new HashMap<>();
-	private final String applicationId;
-	private final Payload bytes;
+
+	private final DataParticle dataParticle;
 	private final Encryptor encryptor;
 
 	public Atom(
-		String applicationId,
+		DataParticle dataParticle,
 		List<Particle> particles,
 		Set<EUID> destinations,
-		Payload bytes,
 		Encryptor encryptor,
 		long timestamp
 	) {
-		this.applicationId = applicationId;
+		this.dataParticle = dataParticle;
 		this.particles = particles;
 		this.destinations = destinations;
-		this.bytes = bytes;
 		this.encryptor = encryptor;
 		this.timestamps = Collections.singletonMap("default", timestamp);
 		this.signatures = null;
@@ -43,19 +41,17 @@ public final class Atom {
 	}
 
 	public Atom(
-		String applicationId,
+		DataParticle dataParticle,
 		List<Particle> particles,
 		Set<EUID> destinations,
-		Payload bytes,
 		Encryptor encryptor,
 		long timestamp,
 		EUID signatureId,
 		ECSignature signature
 	) {
-		this.applicationId = applicationId;
+		this.dataParticle = dataParticle;
 		this.particles = particles;
 		this.destinations = destinations;
-		this.bytes = bytes;
 		this.encryptor = encryptor;
 		this.timestamps = Collections.singletonMap("default", timestamp);
 		this.signatures = Collections.singletonMap(signatureId.toString(), signature);
@@ -121,12 +117,8 @@ public final class Atom {
 		return encryptor;
 	}
 
-	public Payload getPayload() {
-		return bytes;
-	}
-
-	public String getApplicationId() {
-		return applicationId;
+	public DataParticle getDataParticle() {
+		return dataParticle;
 	}
 
 	public List<Consumable> getConsumables() {

@@ -20,6 +20,7 @@ import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomFeeConsumable;
 import com.radixdlt.client.core.atoms.Consumable;
 import com.radixdlt.client.core.atoms.Consumer;
+import com.radixdlt.client.core.atoms.DataParticle;
 import com.radixdlt.client.core.atoms.Emission;
 import com.radixdlt.client.core.atoms.IdParticle;
 import com.radixdlt.client.core.atoms.JunkParticle;
@@ -164,6 +165,7 @@ public class RadixJson {
 		SERIALIZERS.put(ECKeyPair.class, 547221307);
 		SERIALIZERS.put(ECSignature.class, -434788200);
 		SERIALIZERS.put(Encryptor.class, 105401064);
+		SERIALIZERS.put(DataParticle.class, 473758768);
 	}
 
 	private static final TypeAdapterFactory ECKEYPAIR_ADAPTER_FACTORY = new TypeAdapterFactory() {

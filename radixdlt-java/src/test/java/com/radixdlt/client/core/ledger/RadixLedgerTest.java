@@ -21,8 +21,6 @@ public class RadixLedgerTest {
 	@Test
 	public void testFilterOutDuplicateAtoms() throws Exception {
 		Atom atom = new AtomBuilder()
-			.applicationId("Test")
-			.payload("Hello")
 			.addDestination(new EUID(1))
 			.build()
 			.getRawAtom();

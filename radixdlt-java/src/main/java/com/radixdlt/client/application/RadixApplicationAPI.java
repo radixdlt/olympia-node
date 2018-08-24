@@ -18,6 +18,7 @@ import com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState
 import com.radixdlt.client.application.translate.ConsumableDataSource;
 import com.radixdlt.client.application.translate.TransactionAtoms;
 import io.reactivex.Completable;
+import io.reactivex.Maybe;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.observables.ConnectableObservable;
@@ -88,6 +89,7 @@ public class RadixApplicationAPI {
 	public Observable<UnencryptedData> getReadableData(RadixAddress address) {
 		return ledger.getAllAtoms(address.getUID())
 			.map(dataStoreTranslator::fromAtom)
+			.flatMapMaybe(data -> data.isPresent() ? Maybe.just(data.get()) : Maybe.empty())
 			.flatMapMaybe(data -> identity.decrypt(data).toMaybe().onErrorComplete());
 	}
 

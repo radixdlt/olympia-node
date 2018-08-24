@@ -9,6 +9,8 @@ import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomBuilder;
 import com.radixdlt.client.core.atoms.Consumable;
 import com.radixdlt.client.core.atoms.Consumer;
+import com.radixdlt.client.core.atoms.DataParticle;
+import com.radixdlt.client.core.atoms.Payload;
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
@@ -62,7 +64,7 @@ public class TokenTransferTranslator {
 		}
 
 		final Data attachment;
-		if (atom.getPayload() != null) {
+		if (atom.getDataParticle() != null) {
 			final List<EncryptedPrivateKey> protectors;
 			if (atom.getEncryptor() != null && atom.getEncryptor().getProtectors() != null) {
 				protectors = atom.getEncryptor().getProtectors();
@@ -71,7 +73,7 @@ public class TokenTransferTranslator {
 			}
 			Map<String, Object> metaData = new HashMap<>();
 			metaData.put("encrypted", !protectors.isEmpty());
-			attachment = Data.raw(atom.getPayload().getBytes(), metaData, protectors);
+			attachment = Data.raw(atom.getDataParticle().getBytes().getBytes(), metaData, protectors);
 		} else {
 			attachment = null;
 		}
@@ -85,7 +87,7 @@ public class TokenTransferTranslator {
 			.flatMapCompletable(unconsumedConsumables -> {
 
 				if (tokenTransfer.getAttachment() != null) {
-					atomBuilder.payload(tokenTransfer.getAttachment().getBytes());
+					atomBuilder.setDataParticle(new DataParticle(new Payload(tokenTransfer.getAttachment().getBytes()), null));
 					if (!tokenTransfer.getAttachment().getProtectors().isEmpty()) {
 						atomBuilder.protectors(tokenTransfer.getAttachment().getProtectors());
 					}

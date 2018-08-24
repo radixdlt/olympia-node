@@ -2,36 +2,14 @@ package com.radixdlt.client.core.atoms;
 
 import static org.junit.Assert.assertEquals;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import com.radixdlt.client.core.address.EUID;
-import com.radixdlt.client.core.crypto.ECKeyPair;
-import java.util.Collections;
 import org.junit.Test;
 
 public class AtomBuilderTest {
 	@Test
-	public void buildTransactionAtomWithPayload() {
-		ECKeyPair ecKeyPair = mock(ECKeyPair.class);
-		when(ecKeyPair.getUID()).thenReturn(new EUID(1));
-
-		Consumable consumable = new Consumable(1, Collections.singleton(ecKeyPair), 0, new EUID(2));
-
-		AtomBuilder atomBuilder = new AtomBuilder();
-		UnsignedAtom atom = atomBuilder
-			.addParticle(consumable)
-			.payload("Hello")
-			.build();
-
-		assertEquals(atom.getRawAtom().getPayload().toAscii(), "Hello");
-	}
-
-	@Test
 	public void testMultipleAtomPayloadBuildsShouldCreateSameAtom() {
 		AtomBuilder atomBuilder = new AtomBuilder()
-			.applicationId("Test")
-			.payload("Hello")
+			.setDataParticle(new DataParticle(new Payload("Hello".getBytes()), "Test"))
 			.addDestination(new EUID(1));
 
 		UnsignedAtom atom1 = atomBuilder.build();
