@@ -22,10 +22,9 @@ import com.radixdlt.client.core.atoms.Consumable;
 import com.radixdlt.client.core.atoms.Consumer;
 import com.radixdlt.client.core.atoms.Emission;
 import com.radixdlt.client.core.atoms.IdParticle;
-import com.radixdlt.client.core.atoms.NullAtom.JunkParticle;
+import com.radixdlt.client.core.atoms.JunkParticle;
 import com.radixdlt.client.core.atoms.Particle;
 import com.radixdlt.client.core.atoms.Payload;
-import com.radixdlt.client.core.atoms.UnknownAtom;
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.crypto.ECSignature;
@@ -40,7 +39,6 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import org.bouncycastle.util.encoders.Hex;
 
 public class RadixJson {
@@ -78,30 +76,6 @@ public class RadixJson {
 			json.getAsJsonObject().get("system").getAsJsonObject().get("shards").getAsJsonObject().get("high").getAsLong()
 		);
 	};
-
-	private static final JsonDeserializer<Atom> ATOM_DESERIALIZER = (json, typeOfT, context) -> {
-		long serializer = json.getAsJsonObject().get("serializer").getAsLong();
-		Optional<SerializedAtomType> atomType = SerializedAtomType.valueOf(serializer);
-		if (atomType.isPresent()) {
-			return context.deserialize(json.getAsJsonObject(), atomType.get().getAtomClass());
-		} else {
-			return new UnknownAtom(json.getAsJsonObject());
-		}
-	};
-
-	private static final JsonSerializer<Atom> ATOM_SERIALIZER = (atom, typeOfT, context) -> {
-		Optional<SerializedAtomType> atomType = SerializedAtomType.valueOf(atom.getClass());
-		if (atomType.isPresent()) {
-			JsonObject jsonAtom = context.serialize(atom).getAsJsonObject();
-			jsonAtom.addProperty("serializer", atomType.get().getSerializer());
-			jsonAtom.addProperty("version", 100);
-			return jsonAtom;
-		} else {
-			throw new IllegalArgumentException("Cannot serialize an atom with class: " + atom.getClass());
-		}
-	};
-
-
 
 	private static final JsonSerializer<Particle> PARTICLE_SERIALIZER = (particle, typeOfT, context) -> {
 		if (particle.getClass() == AtomFeeConsumable.class) {
@@ -186,6 +160,7 @@ public class RadixJson {
 
 	private static final Map<Class, Integer> SERIALIZERS = new HashMap<>();
 	static {
+		SERIALIZERS.put(Atom.class, 2019665);
 		SERIALIZERS.put(ECKeyPair.class, 547221307);
 		SERIALIZERS.put(ECSignature.class, -434788200);
 		SERIALIZERS.put(Encryptor.class, 105401064);
@@ -230,8 +205,6 @@ public class RadixJson {
 			.registerTypeAdapter(byte[].class, new ByteArraySerializer())
 			.registerTypeAdapter(Particle.class, PARTICLE_SERIALIZER)
 			.registerTypeAdapter(Particle.class, PARTICLE_DESERIALIZER)
-			.registerTypeAdapter(Atom.class, ATOM_SERIALIZER)
-			.registerTypeAdapter(Atom.class, ATOM_DESERIALIZER)
 			.registerTypeAdapter(EUID.class, new EUIDSerializer())
 			.registerTypeAdapter(Payload.class, PAYLOAD_DESERIALIZER)
 			.registerTypeAdapter(EncryptedPrivateKey.class, PROTECTOR_DESERIALIZER)

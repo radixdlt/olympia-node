@@ -14,7 +14,6 @@ import com.radixdlt.client.application.translate.InsufficientFundsException;
 import com.radixdlt.client.assets.Asset;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.address.RadixAddress;
-import com.radixdlt.client.core.atoms.ApplicationPayloadAtom;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomBuilder;
 import com.radixdlt.client.core.atoms.Payload;
@@ -40,7 +39,6 @@ public class RadixApplicationAPITest {
 		RadixIdentity identity = mock(RadixIdentity.class);
 
 		AtomBuilder atomBuilder = mock(AtomBuilder.class);
-		when(atomBuilder.type(any())).thenReturn(atomBuilder);
 		when(atomBuilder.protectors(any())).thenReturn(atomBuilder);
 		when(atomBuilder.payload(any(byte[].class))).thenReturn(atomBuilder);
 		Atom atom = mock(Atom.class);
@@ -158,15 +156,15 @@ public class RadixApplicationAPITest {
 
 		Payload payload = mock(Payload.class);
 
-		ApplicationPayloadAtom errorAtom = mock(ApplicationPayloadAtom.class);
+		Atom errorAtom = mock(Atom.class);
 		when(errorAtom.getEncryptor()).thenReturn(encryptor);
 		when(errorAtom.getPayload()).thenReturn(payload);
 
-		ApplicationPayloadAtom okAtom = mock(ApplicationPayloadAtom.class);
+		Atom okAtom = mock(Atom.class);
 		when(okAtom.getEncryptor()).thenReturn(encryptor);
 		when(okAtom.getPayload()).thenReturn(payload);
 
-		when(ledger.getAllAtoms(any(), any())).thenReturn(Observable.just(errorAtom, okAtom));
+		when(ledger.getAllAtoms(any())).thenReturn(Observable.just(errorAtom, okAtom));
 
 		RadixApplicationAPI api = RadixApplicationAPI.create(identity, universe, AtomBuilder::new);
 		TestObserver observer = TestObserver.create();
@@ -186,7 +184,7 @@ public class RadixApplicationAPITest {
 		when(universe.getLedger()).thenReturn(ledger);
 		RadixApplicationAPI api = RadixApplicationAPI.create(identity, universe, AtomBuilder::new);
 
-		when(ledger.getAllAtoms(any(), any())).thenReturn(Observable.empty());
+		when(ledger.getAllAtoms(any())).thenReturn(Observable.empty());
 
 		TestObserver<Long> observer = TestObserver.create();
 
@@ -203,7 +201,7 @@ public class RadixApplicationAPITest {
 		when(universe.getLedger()).thenReturn(ledger);
 		RadixApplicationAPI api = RadixApplicationAPI.create(identity, universe, AtomBuilder::new);
 
-		when(ledger.getAllAtoms(any(), any())).thenReturn(Observable.empty());
+		when(ledger.getAllAtoms(any())).thenReturn(Observable.empty());
 
 		TestObserver observer = TestObserver.create();
 		api.transferTokens(address, address, Asset.XRD, 10).toCompletable().subscribe(observer);

@@ -2,7 +2,7 @@ package com.radixdlt.client.application.translate;
 
 import com.radixdlt.client.application.actions.DataStore;
 import com.radixdlt.client.application.objects.Data;
-import com.radixdlt.client.core.atoms.ApplicationPayloadAtom;
+import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomBuilder;
 import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
 import io.reactivex.Completable;
@@ -22,7 +22,6 @@ public class DataStoreTranslator {
 	}
 
 	public Completable translate(DataStore dataStore, AtomBuilder atomBuilder) {
-		atomBuilder.type(ApplicationPayloadAtom.class);
 		atomBuilder.payload(dataStore.getData().getBytes());
 
 		if (!dataStore.getData().getProtectors().isEmpty()) {
@@ -38,7 +37,7 @@ public class DataStoreTranslator {
 		return Completable.complete();
 	}
 
-	public Data fromAtom(ApplicationPayloadAtom atom) {
+	public Data fromAtom(Atom atom) {
 		final List<EncryptedPrivateKey> protectors;
 		if (atom.getEncryptor() != null && atom.getEncryptor().getProtectors() != null) {
 			protectors = atom.getEncryptor().getProtectors();
