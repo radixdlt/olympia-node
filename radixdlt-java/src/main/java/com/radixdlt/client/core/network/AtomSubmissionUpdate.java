@@ -3,7 +3,9 @@ package com.radixdlt.client.core.network;
 import com.radixdlt.client.core.address.EUID;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.TimeZone;
 
 public class AtomSubmissionUpdate {
@@ -30,15 +32,16 @@ public class AtomSubmissionUpdate {
 	}
 
 	private final AtomSubmissionState state;
-	private final long timestamp;
 	private final String message;
 	private final EUID hid;
+	private final Map<String, Object> metaData = new HashMap<>();
+	private final long timestamp;
 
-	public AtomSubmissionUpdate(EUID hid, AtomSubmissionState state, String message, long timestamp) {
+	private AtomSubmissionUpdate(EUID hid, AtomSubmissionState state, String message) {
 		this.hid = hid;
 		this.state = state;
 		this.message = message;
-		this.timestamp = timestamp;
+		this.timestamp = System.currentTimeMillis();
 	}
 
 	public AtomSubmissionState getState() {
@@ -57,12 +60,17 @@ public class AtomSubmissionUpdate {
 		return timestamp;
 	}
 
-	public static AtomSubmissionUpdate now(EUID hid, AtomSubmissionState code) {
-		return new AtomSubmissionUpdate(hid, code, null, System.currentTimeMillis());
+	public AtomSubmissionUpdate putMetaData(String key, Object value) {
+		metaData.put(key, value);
+		return this;
 	}
 
-	public static AtomSubmissionUpdate now(EUID hid, AtomSubmissionState code, String message) {
-		return new AtomSubmissionUpdate(hid, code, message, System.currentTimeMillis());
+	public static AtomSubmissionUpdate create(EUID hid, AtomSubmissionState code) {
+		return new AtomSubmissionUpdate(hid, code, null);
+	}
+
+	public static AtomSubmissionUpdate create(EUID hid, AtomSubmissionState code, String message) {
+		return new AtomSubmissionUpdate(hid, code, message);
 	}
 
 	@Override
@@ -70,6 +78,6 @@ public class AtomSubmissionUpdate {
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS", Locale.getDefault());
 		sdf.setTimeZone(TimeZone.getDefault());
 
-		return sdf.format(new Date(timestamp)) + " atom " + hid + " " + state + (message != null ? ": " + message : "");
+		return sdf.format(new Date(timestamp)) + " atom " + hid + " " + state + (message != null ? ": " + message : "") + " " + metaData;
 	}
 }
