@@ -12,16 +12,37 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * An atom is the fundamental atomic unit of storage on the ledger (similar to a block
+ * in a blockchain) and defines the actions that can be issued onto the ledger.
+ */
 public final class Atom {
-	private Set<EUID> destinations;
-	private final Map<String, Long> timestamps;
 	private String action;
-	private final List<Particle> particles;
-	private final Map<String, ECSignature> signatures;
-	private transient Map<String, Long> debug = new HashMap<>();
 
+	/**
+	 * This explicit use will be removed in the future
+	 */
+	private Set<EUID> destinations;
+
+	/**
+	 * This will be moved into a Transfer Particle in the future
+	 */
+	private final List<Particle> particles;
+
+	/**
+	 * This will be moved into a Chrono Particle in the future
+	 */
+	private final Map<String, Long> timestamps;
+
+	private final Map<String, ECSignature> signatures;
+
+	/**
+	 * These will be moved into a more general particle list in the future
+	 */
 	private final DataParticle dataParticle;
 	private final EncryptorParticle encryptor;
+
+	private transient Map<String, Long> debug = new HashMap<>();
 
 	public Atom(
 		DataParticle dataParticle,

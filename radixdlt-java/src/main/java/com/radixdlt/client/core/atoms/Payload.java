@@ -10,6 +10,7 @@ import org.bouncycastle.util.encoders.Base64;
 public class Payload implements Base64Encoded {
 	private final byte[] payload;
 
+	// TODO: immutable byte array, a copy?
 	public Payload(byte[] payload) {
 		this.payload = payload;
 	}
