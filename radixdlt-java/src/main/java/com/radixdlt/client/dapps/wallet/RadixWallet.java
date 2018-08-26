@@ -5,6 +5,7 @@ import com.radixdlt.client.application.RadixApplicationAPI.Result;
 import com.radixdlt.client.application.actions.TokenTransfer;
 import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.application.objects.Data.DataBuilder;
+import com.radixdlt.client.assets.Amount;
 import com.radixdlt.client.assets.Asset;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate;
@@ -43,8 +44,8 @@ public class RadixWallet {
 	 *
 	 * @return an unending Observable of balances
 	 */
-	public Observable<Long> getXRDSubUnitBalance() {
-		return api.getSubUnitBalance(api.getMyAddress(), Asset.XRD);
+	public Observable<Amount> getXRDBalance() {
+		return api.getBalance(api.getMyAddress(), Asset.XRD);
 	}
 
 	/**
@@ -54,9 +55,9 @@ public class RadixWallet {
  	 * @param address address to get balance from
 	 * @return an unending Observable of balances
 	 */
-	public Observable<Long> getXRDSubUnitBalance(@NonNull RadixAddress address) {
+	public Observable<Amount> getXRDBalance(@NonNull RadixAddress address) {
 		Objects.requireNonNull(address, "address must be non-null");
-		return api.getSubUnitBalance(address, Asset.XRD);
+		return api.getBalance(address, Asset.XRD);
 	}
 
 	/**
@@ -127,7 +128,8 @@ public class RadixWallet {
 		}
 
 		ConnectableObservable<AtomSubmissionUpdate> updates =
-			api.transferTokens(api.getMyAddress(), toAddress, Asset.XRD, amountInSubUnits, attachment).toObservable().replay();
+			api.transferTokens(api.getMyAddress(), toAddress, Amount.subUnitsOf(amountInSubUnits, Asset.XRD), attachment)
+				.toObservable().replay();
 		updates.connect();
 		return new TransferResult(updates);
 	}
@@ -174,10 +176,10 @@ public class RadixWallet {
 			attachment = null;
 		}
 
-		ConnectableObservable<AtomSubmissionUpdate> updates = api.getSubUnitBalance(api.getMyAddress(), Asset.XRD)
-			.filter(balance -> balance > amountInSubUnits)
+		ConnectableObservable<AtomSubmissionUpdate> updates = api.getBalance(api.getMyAddress(), Asset.XRD)
+			.filter(amount -> amount.getAmountInSubunits() > amountInSubUnits)
 			.firstOrError()
-			.map(balance -> api.transferTokens(api.getMyAddress(), toAddress, Asset.XRD, amountInSubUnits, attachment))
+			.map(balance -> api.transferTokens(api.getMyAddress(), toAddress, Amount.subUnitsOf(amountInSubUnits, Asset.XRD), attachment))
 			.flatMapObservable(Result::toObservable)
 			.replay();
 

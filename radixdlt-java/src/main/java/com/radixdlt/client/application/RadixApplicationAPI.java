@@ -6,6 +6,7 @@ import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.application.objects.UnencryptedData;
 import com.radixdlt.client.application.translate.DataStoreTranslator;
 import com.radixdlt.client.application.translate.TokenTransferTranslator;
+import com.radixdlt.client.assets.Amount;
 import com.radixdlt.client.assets.Asset;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.address.RadixAddress;
@@ -134,6 +135,10 @@ public class RadixApplicationAPI {
 		return new Result(updates);
 	}
 
+	public Observable<TokenTransfer> getMyTokenTransfers(Asset tokenClass) {
+		return getTokenTransfers(getMyAddress(), tokenClass);
+	}
+
 	public Observable<TokenTransfer> getTokenTransfers(RadixAddress address, Asset tokenClass) {
 		Objects.requireNonNull(address);
 		Objects.requireNonNull(tokenClass);
@@ -148,7 +153,11 @@ public class RadixApplicationAPI {
 		.flatMap(atoms -> atoms.map(tokenTransferTranslator::fromAtom));
 	}
 
-	public Observable<Long> getSubUnitBalance(RadixAddress address, Asset tokenClass) {
+	public Observable<Amount> getMyBalance(Asset tokenClass) {
+		return getBalance(getMyAddress(), tokenClass);
+	}
+
+	public Observable<Amount> getBalance(RadixAddress address, Asset tokenClass) {
 		Objects.requireNonNull(address);
 		Objects.requireNonNull(tokenClass);
 
@@ -159,12 +168,20 @@ public class RadixApplicationAPI {
 				.mapToLong(Consumable::getQuantity)
 				.sum()
 			)
+			.map(balanceInSubUnits -> Amount.subUnitsOf(balanceInSubUnits, tokenClass))
 			.share();
 	}
 
+	public Result sendTokens(RadixAddress to, Amount amount) {
+		return transferTokens(getMyAddress(), to, amount);
+	}
 
-	public Result transferTokens(RadixAddress from, RadixAddress to, Asset tokenClass, long subUnitAmount, Data attachment) {
-		TokenTransfer tokenTransfer = TokenTransfer.create(from, to, tokenClass, subUnitAmount, attachment);
+	public Result sendTokens(RadixAddress to, Amount amount, Data attachment) {
+		return transferTokens(getMyAddress(), to, amount, attachment);
+	}
+
+	public Result transferTokens(RadixAddress from, RadixAddress to, Amount amount, Data attachment) {
+		TokenTransfer tokenTransfer = TokenTransfer.create(from, to, amount.getTokenClass(), amount.getAmountInSubunits(), attachment);
 		AtomBuilder atomBuilder = atomBuilderSupplier.get();
 
 		ConnectableObservable<AtomSubmissionUpdate> updates = tokenTransferTranslator.translate(tokenTransfer, atomBuilder)
@@ -178,8 +195,8 @@ public class RadixApplicationAPI {
 		return new Result(updates);
 	}
 
-	public Result transferTokens(RadixAddress from, RadixAddress to, Asset tokenClass, long subUnitAmount) {
-		TokenTransfer tokenTransfer = TokenTransfer.create(from, to, tokenClass, subUnitAmount);
+	public Result transferTokens(RadixAddress from, RadixAddress to, Amount amount) {
+		TokenTransfer tokenTransfer = TokenTransfer.create(from, to, amount.getTokenClass(), amount.getAmountInSubunits());
 		AtomBuilder atomBuilder = atomBuilderSupplier.get();
 
 		ConnectableObservable<AtomSubmissionUpdate> updates = tokenTransferTranslator.translate(tokenTransfer, atomBuilder)

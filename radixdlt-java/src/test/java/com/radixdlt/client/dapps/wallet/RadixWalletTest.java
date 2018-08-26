@@ -10,7 +10,7 @@ public class RadixWalletTest {
 	public void nullTest() {
 		RadixApplicationAPI api = mock(RadixApplicationAPI.class);
 		RadixWallet radixWallet = new RadixWallet(api);
-		assertThatThrownBy(() -> radixWallet.getXRDSubUnitBalance(null))
+		assertThatThrownBy(() -> radixWallet.getXRDBalance(null))
 			.isInstanceOf(NullPointerException.class);
 		assertThatThrownBy(() -> radixWallet.getXRDTransactions(null))
 			.isInstanceOf(NullPointerException.class);

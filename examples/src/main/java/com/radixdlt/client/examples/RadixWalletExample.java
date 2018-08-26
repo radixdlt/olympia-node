@@ -44,8 +44,8 @@ public class RadixWalletExample {
 			.subscribe(System.out::println);
 
 		// Subscribe to current and future total balance
-		wallet.getXRDSubUnitBalance()
-			.subscribe(balance -> System.out.println("My Balance: " + ((double)balance) / Asset.XRD.getSubUnits()));
+		wallet.getXRDBalance()
+			.subscribe(balance -> System.out.println("My Balance: " + balance));
 
 		// If specified, send money to another address
 		if (TO_ADDRESS_BASE58 != null) {

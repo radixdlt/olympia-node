@@ -2,7 +2,7 @@ package com.radixdlt.client.application.actions;
 
 import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.assets.Asset;
-import com.radixdlt.client.assets.AssetAmount;
+import com.radixdlt.client.assets.Amount;
 import com.radixdlt.client.core.address.RadixAddress;
 import java.util.Collections;
 import java.util.HashMap;
@@ -88,7 +88,7 @@ public class TokenTransfer {
 	@Override
 	public String toString() {
 		Long timestamp = (Long) metaData.get("timestamp");
-		return timestamp + " " + from + " -> " + to + " " + new AssetAmount(tokenClass, subUnitAmount).toString()
+		return timestamp + " " + from + " -> " + to + " " + Amount.subUnitsOf(subUnitAmount, tokenClass).toString()
 			+ (attachment == null ? "" : " " + attachment);
 	}
 }
