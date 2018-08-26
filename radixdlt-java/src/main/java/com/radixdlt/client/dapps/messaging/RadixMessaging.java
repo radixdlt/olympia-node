@@ -29,12 +29,10 @@ public class RadixMessaging {
 	public static final int MAX_MESSAGE_LENGTH = 256;
 
 	private final RadixApplicationAPI api;
-	private final RadixIdentity identity;
 	private final RadixAddress myAddress;
 	private final JsonParser parser = new JsonParser();
 
 	public RadixMessaging(RadixApplicationAPI api) {
-		this.identity = api.getMyIdentity();
 		this.myAddress = api.getMyAddress();
 		this.api = api;
 	}
@@ -65,7 +63,7 @@ public class RadixMessaging {
 
 	public Observable<GroupedObservable<RadixAddress, RadixMessage>> getAllMessagesGroupedByParticipants() {
 		return this.getAllMessages()
-			.groupBy(msg -> msg.getFrom().getPublicKey().equals(identity.getPublicKey()) ? msg.getTo() : msg.getFrom());
+			.groupBy(msg -> msg.getFrom().getPublicKey().equals(api.getMyPublicKey()) ? msg.getTo() : msg.getFrom());
 	}
 
 	public Result sendMessage(String message, RadixAddress toAddress, EUID uniqueId) {
