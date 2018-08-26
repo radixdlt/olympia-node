@@ -24,8 +24,13 @@ import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.observables.ConnectableObservable;
 import java.util.Collection;
+import java.util.Objects;
 import java.util.function.Supplier;
 
+/**
+ * The Radix Dapp API, a high level api which dapps can utilize. The class hides
+ * the complexity of Atoms and cryptography and exposes a simple high level interface.
+ */
 public class RadixApplicationAPI {
 	public static class Result {
 		private final Observable<AtomSubmissionUpdate> updates;
@@ -72,22 +77,28 @@ public class RadixApplicationAPI {
 	}
 
 	public static RadixApplicationAPI create(RadixIdentity identity) {
-		return new RadixApplicationAPI(identity, RadixUniverse.getInstance(), AtomBuilder::new);
+		Objects.requireNonNull(identity);
+		return create(identity, RadixUniverse.getInstance(), AtomBuilder::new);
 	}
 
 	public static RadixApplicationAPI create(RadixIdentity identity, RadixUniverse universe, Supplier<AtomBuilder> atomBuilderSupplier) {
+		Objects.requireNonNull(identity);
+		Objects.requireNonNull(universe);
+		Objects.requireNonNull(atomBuilderSupplier);
 		return new RadixApplicationAPI(identity, universe, atomBuilderSupplier);
 	}
 
-	public RadixIdentity getIdentity() {
+	public RadixIdentity getMyIdentity() {
 		return identity;
 	}
 
-	public RadixAddress getAddress() {
+	public RadixAddress getMyAddress() {
 		return ledger.getAddressFromPublicKey(identity.getPublicKey());
 	}
 
 	public Observable<UnencryptedData> getReadableData(RadixAddress address) {
+		Objects.requireNonNull(address);
+
 		return ledger.getAllAtoms(address.getUID(), ApplicationPayloadAtom.class)
 			.map(dataStoreTranslator::fromAtom)
 			.flatMapMaybe(data -> identity.decrypt(data).toMaybe().onErrorComplete());
@@ -124,6 +135,9 @@ public class RadixApplicationAPI {
 	}
 
 	public Observable<TokenTransfer> getTokenTransfers(RadixAddress address, Asset tokenClass) {
+		Objects.requireNonNull(address);
+		Objects.requireNonNull(tokenClass);
+
 		return Observable.combineLatest(
 			Observable.fromCallable(() -> new TransactionAtoms(address, tokenClass.getId())),
 			ledger.getAllAtoms(address.getUID(), TransactionAtom.class),
@@ -135,6 +149,9 @@ public class RadixApplicationAPI {
 	}
 
 	public Observable<Long> getSubUnitBalance(RadixAddress address, Asset tokenClass) {
+		Objects.requireNonNull(address);
+		Objects.requireNonNull(tokenClass);
+
 		return this.consumableDataSource.getConsumables(address)
 			.map(Collection::stream)
 			.map(stream -> stream

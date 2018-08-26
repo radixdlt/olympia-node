@@ -34,8 +34,8 @@ public class RadixMessaging {
 	private final JsonParser parser = new JsonParser();
 
 	public RadixMessaging(RadixApplicationAPI api) {
-		this.identity = api.getIdentity();
-		this.myAddress = api.getAddress();
+		this.identity = api.getMyIdentity();
+		this.myAddress = api.getMyAddress();
 		this.api = api;
 	}
 

@@ -6,6 +6,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
 import com.radixdlt.client.application.objects.Data;
@@ -90,6 +91,20 @@ public class RadixApplicationAPITest {
 		updatesObserver.assertValueAt(0, atomUpdate -> atomUpdate.getState().equals(AtomSubmissionState.SUBMITTING));
 		updatesObserver.assertValueAt(1, atomUpdate -> atomUpdate.getState().equals(AtomSubmissionState.SUBMITTED));
 		updatesObserver.assertValueAt(2, atomUpdate -> atomUpdate.getState().equals(AtomSubmissionState.STORED));
+	}
+
+	@Test
+	public void testNull() {
+		assertThatThrownBy(() -> RadixApplicationAPI.create(null))
+			.isInstanceOf(NullPointerException.class);
+
+		RadixApplicationAPI api = createMockedAPIWhichAlwaysSucceeds();
+		assertThatThrownBy(() -> api.getReadableData(null))
+			.isInstanceOf(NullPointerException.class);
+		assertThatThrownBy(() -> api.getTokenTransfers(null, null))
+			.isInstanceOf(NullPointerException.class);
+		assertThatThrownBy(() -> api.getSubUnitBalance(null, null))
+			.isInstanceOf(NullPointerException.class);
 	}
 
 	@Test

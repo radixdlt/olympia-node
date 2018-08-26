@@ -44,7 +44,7 @@ public class RadixWallet {
 	 * @return an unending Observable of balances
 	 */
 	public Observable<Long> getXRDSubUnitBalance() {
-		return api.getSubUnitBalance(api.getAddress(), Asset.XRD);
+		return api.getSubUnitBalance(api.getMyAddress(), Asset.XRD);
 	}
 
 	/**
@@ -66,7 +66,7 @@ public class RadixWallet {
 	 * @return an unending Observable of transfers
 	 */
 	public Observable<TokenTransfer> getXRDTransactions() {
-		return api.getTokenTransfers(api.getAddress(), Asset.XRD);
+		return api.getTokenTransfers(api.getMyAddress(), Asset.XRD);
 	}
 
 	/**
@@ -120,14 +120,14 @@ public class RadixWallet {
 		if (message != null) {
 			attachment = new DataBuilder()
 				.addReader(toAddress.getPublicKey())
-				.addReader(api.getAddress().getPublicKey())
+				.addReader(api.getMyAddress().getPublicKey())
 				.bytes(message.getBytes()).build();
 		} else {
 			attachment = null;
 		}
 
 		ConnectableObservable<AtomSubmissionUpdate> updates =
-			api.transferTokens(api.getAddress(), toAddress, Asset.XRD, amountInSubUnits, attachment).toObservable().replay();
+			api.transferTokens(api.getMyAddress(), toAddress, Asset.XRD, amountInSubUnits, attachment).toObservable().replay();
 		updates.connect();
 		return new TransferResult(updates);
 	}
@@ -168,16 +168,16 @@ public class RadixWallet {
 		if (message != null) {
 			attachment = new DataBuilder()
 				.addReader(toAddress.getPublicKey())
-				.addReader(api.getAddress().getPublicKey())
+				.addReader(api.getMyAddress().getPublicKey())
 				.bytes(message.getBytes()).build();
 		} else {
 			attachment = null;
 		}
 
-		ConnectableObservable<AtomSubmissionUpdate> updates = api.getSubUnitBalance(api.getAddress(), Asset.XRD)
+		ConnectableObservable<AtomSubmissionUpdate> updates = api.getSubUnitBalance(api.getMyAddress(), Asset.XRD)
 			.filter(balance -> balance > amountInSubUnits)
 			.firstOrError()
-			.map(balance -> api.transferTokens(api.getAddress(), toAddress, Asset.XRD, amountInSubUnits, attachment))
+			.map(balance -> api.transferTokens(api.getMyAddress(), toAddress, Asset.XRD, amountInSubUnits, attachment))
 			.flatMapObservable(Result::toObservable)
 			.replay();
 
