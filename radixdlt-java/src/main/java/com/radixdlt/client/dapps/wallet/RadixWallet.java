@@ -45,7 +45,7 @@ public class RadixWallet {
 	 * @return an unending Observable of balances
 	 */
 	public Observable<Amount> getXRDBalance() {
-		return api.getBalance(api.getMyAddress(), Asset.XRD);
+		return api.getBalance(api.getMyAddress(), Asset.TEST);
 	}
 
 	/**
@@ -57,7 +57,7 @@ public class RadixWallet {
 	 */
 	public Observable<Amount> getXRDBalance(@NonNull RadixAddress address) {
 		Objects.requireNonNull(address, "address must be non-null");
-		return api.getBalance(address, Asset.XRD);
+		return api.getBalance(address, Asset.TEST);
 	}
 
 	/**
@@ -67,7 +67,7 @@ public class RadixWallet {
 	 * @return an unending Observable of transfers
 	 */
 	public Observable<TokenTransfer> getXRDTransactions() {
-		return api.getTokenTransfers(api.getMyAddress(), Asset.XRD);
+		return api.getTokenTransfers(api.getMyAddress(), Asset.TEST);
 	}
 
 	/**
@@ -81,14 +81,14 @@ public class RadixWallet {
 		@NonNull RadixAddress address
 	) {
 		Objects.requireNonNull(address, "address must be non-null");
-		return api.getTokenTransfers(address, Asset.XRD);
+		return api.getTokenTransfers(address, Asset.TEST);
 	}
 
 	/**
-	 * Immediately try and transfer XRD from user's account to another address. If there is
+	 * Immediately try and transfer TEST from user's account to another address. If there is
 	 * not enough in the account TransferResult will specify so.
 	 *
-	 * @param amountInSubUnits The amount of XRD to transfer
+	 * @param amountInSubUnits The amount of TEST to transfer
 	 * @param toAddress The address to send to.
 	 * @return The result of the transaction.
 	 */
@@ -101,11 +101,11 @@ public class RadixWallet {
 	}
 
 	/**
-	 * Immediately try and transfer XRD from user's account to another address with an encrypted message
+	 * Immediately try and transfer TEST from user's account to another address with an encrypted message
 	 * attachment (readable by sender and receiver). If there is not enough in the account TransferResult
 	 * will specify so.
 	 *
-	 * @param amountInSubUnits The amount of XRD to transfer.
+	 * @param amountInSubUnits The amount of TEST to transfer.
 	 * @param toAddress The address to send to.
 	 * @param message The message to send as an attachment.
 	 * @return The result of the transaction.
@@ -128,7 +128,7 @@ public class RadixWallet {
 		}
 
 		ConnectableObservable<AtomSubmissionUpdate> updates =
-			api.transferTokens(api.getMyAddress(), toAddress, Amount.subUnitsOf(amountInSubUnits, Asset.XRD), attachment)
+			api.sendTokens(toAddress, Amount.subUnitsOf(amountInSubUnits, Asset.TEST), attachment)
 				.toObservable().replay();
 		updates.connect();
 		return new TransferResult(updates);
@@ -138,7 +138,7 @@ public class RadixWallet {
 	 * Block indefinitely until there are enough funds in the account, then immediately transfer
 	 * amount to a specified account.
 	 *
-	 * @param amountInSubUnits The amount of XRD to transfer.
+	 * @param amountInSubUnits The amount of TEST to transfer.
 	 * @param toAddress The address to send to.
 	 * @return The result of the transaction.
 	 */
@@ -154,7 +154,7 @@ public class RadixWallet {
 	 * Block indefinitely until there are enough funds in the account, then immediately transfer
 	 * amount with an encrypted message (readable by sender and receiver) to a specified account.
 	 *
-	 * @param amountInSubUnits The amount of XRD to transfer.
+	 * @param amountInSubUnits The amount of TEST to transfer.
 	 * @param toAddress The address to send to.
 	 * @param message The message to send as an attachment.
 	 * @return The result of the transaction.
@@ -176,10 +176,10 @@ public class RadixWallet {
 			attachment = null;
 		}
 
-		ConnectableObservable<AtomSubmissionUpdate> updates = api.getBalance(api.getMyAddress(), Asset.XRD)
+		ConnectableObservable<AtomSubmissionUpdate> updates = api.getBalance(api.getMyAddress(), Asset.TEST)
 			.filter(amount -> amount.getAmountInSubunits() > amountInSubUnits)
 			.firstOrError()
-			.map(balance -> api.transferTokens(api.getMyAddress(), toAddress, Amount.subUnitsOf(amountInSubUnits, Asset.XRD), attachment))
+			.map(balance -> api.sendTokens(toAddress, Amount.subUnitsOf(amountInSubUnits, Asset.TEST), attachment))
 			.flatMapObservable(Result::toObservable)
 			.replay();
 

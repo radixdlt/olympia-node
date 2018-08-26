@@ -206,7 +206,7 @@ public class RadixApplicationAPITest {
 
 		TestObserver<Amount> observer = TestObserver.create();
 
-		api.getBalance(address, Asset.XRD).subscribe(observer);
+		api.getBalance(address, Asset.TEST).subscribe(observer);
 		observer.assertValue(amount -> amount.getAmountInSubunits() == 0);
 	}
 
@@ -222,7 +222,7 @@ public class RadixApplicationAPITest {
 		when(ledger.getAllAtoms(any(), any())).thenReturn(Observable.empty());
 
 		TestObserver observer = TestObserver.create();
-		api.transferTokens(address, address, Amount.subUnitsOf(10, Asset.XRD)).toCompletable().subscribe(observer);
-		observer.assertError(new InsufficientFundsException(Asset.XRD, 0, 10));
+		api.transferTokens(address, address, Amount.subUnitsOf(10, Asset.TEST)).toCompletable().subscribe(observer);
+		observer.assertError(new InsufficientFundsException(Asset.TEST, 0, 10));
 	}
 }
