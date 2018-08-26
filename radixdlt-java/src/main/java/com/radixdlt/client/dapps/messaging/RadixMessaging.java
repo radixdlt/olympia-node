@@ -9,7 +9,6 @@ import com.radixdlt.client.application.objects.Data.DataBuilder;
 import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.crypto.ECSignature;
-import com.radixdlt.client.application.identity.RadixIdentity;
 import io.reactivex.Maybe;
 import io.reactivex.Observable;
 import io.reactivex.observables.GroupedObservable;
