@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collector;
@@ -201,8 +202,12 @@ public class Dson {
 			raw = (byte[]) o;
 			type = 4;
 		} else if (o instanceof Map) {
-
 			final Map<?, ?> map = (Map) o;
+
+			if (map instanceof HashMap) {
+				throw new IllegalStateException("Cannot DSON serialize HashMap. Must be a predictably ordered map.");
+			}
+
 			Stream<DsonField> fieldStream = map.keySet().stream().map(key -> new DsonField() {
 				@Override
 				public String getName() {
