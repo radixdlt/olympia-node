@@ -53,7 +53,7 @@ public class EncryptedRadixIdentity implements RadixIdentity {
 	public Single<UnencryptedData> decrypt(Data data) {
 		boolean encrypted = (Boolean) data.getMetaData().get("encrypted");
 		if (encrypted) {
-			for (EncryptedPrivateKey protector : data.getProtectors()) {
+			for (EncryptedPrivateKey protector : data.getEncryptor().getProtectors()) {
 				// TODO: remove exception catching
 				try {
 					byte[] bytes = myKey.decrypt(data.getBytes(), protector);

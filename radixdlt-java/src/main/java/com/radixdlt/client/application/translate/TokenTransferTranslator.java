@@ -9,9 +9,12 @@ import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomBuilder;
 import com.radixdlt.client.core.atoms.Consumable;
 import com.radixdlt.client.core.atoms.Consumer;
+import com.radixdlt.client.core.atoms.DataParticle;
+import com.radixdlt.client.core.atoms.EncryptorParticle;
+import com.radixdlt.client.core.atoms.Payload;
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECPublicKey;
-import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
+import com.radixdlt.client.core.crypto.Encryptor;
 import io.reactivex.Completable;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Collections;
@@ -61,17 +64,19 @@ public class TokenTransferTranslator {
 			}
 		}
 
+		// Construct attachment from atom
 		final Data attachment;
-		if (atom.getPayload() != null) {
-			final List<EncryptedPrivateKey> protectors;
-			if (atom.getEncryptor() != null && atom.getEncryptor().getProtectors() != null) {
-				protectors = atom.getEncryptor().getProtectors();
-			} else {
-				protectors = Collections.emptyList();
-			}
+		if (atom.getDataParticle() != null) {
 			Map<String, Object> metaData = new HashMap<>();
-			metaData.put("encrypted", !protectors.isEmpty());
-			attachment = Data.raw(atom.getPayload().getBytes(), metaData, protectors);
+			metaData.put("encrypted", atom.getEncryptor() != null);
+
+			final Encryptor encryptor;
+			if (atom.getEncryptor() != null) {
+				encryptor = new Encryptor(atom.getEncryptor().getProtectors());
+			} else {
+				encryptor = null;
+			}
+			attachment = Data.raw(atom.getDataParticle().getBytes().getBytes(), metaData, encryptor);
 		} else {
 			attachment = null;
 		}
@@ -84,10 +89,14 @@ public class TokenTransferTranslator {
 			.firstOrError()
 			.flatMapCompletable(unconsumedConsumables -> {
 
-				if (tokenTransfer.getAttachment() != null) {
-					atomBuilder.payload(tokenTransfer.getAttachment().getBytes());
-					if (!tokenTransfer.getAttachment().getProtectors().isEmpty()) {
-						atomBuilder.protectors(tokenTransfer.getAttachment().getProtectors());
+				// Translate attachment to corresponding atom structure
+				final Data attachment = tokenTransfer.getAttachment();
+				if (attachment != null) {
+					atomBuilder.setDataParticle(new DataParticle(new Payload(attachment.getBytes()), null));
+					Encryptor encryptor = attachment.getEncryptor();
+					if (encryptor != null) {
+						EncryptorParticle encryptorParticle = new EncryptorParticle(encryptor.getProtectors());
+						atomBuilder.setEncryptorParticle(encryptorParticle);
 					}
 				}
 

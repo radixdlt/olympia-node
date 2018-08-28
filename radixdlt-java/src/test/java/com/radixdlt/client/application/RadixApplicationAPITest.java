@@ -16,11 +16,12 @@ import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomBuilder;
+import com.radixdlt.client.core.atoms.DataParticle;
+import com.radixdlt.client.core.atoms.EncryptorParticle;
 import com.radixdlt.client.core.atoms.Payload;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.crypto.CryptoException;
 import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
-import com.radixdlt.client.core.crypto.Encryptor;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.core.ledger.RadixLedger;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate;
@@ -39,8 +40,8 @@ public class RadixApplicationAPITest {
 		RadixIdentity identity = mock(RadixIdentity.class);
 
 		AtomBuilder atomBuilder = mock(AtomBuilder.class);
-		when(atomBuilder.protectors(any())).thenReturn(atomBuilder);
-		when(atomBuilder.payload(any(byte[].class))).thenReturn(atomBuilder);
+		when(atomBuilder.setEncryptorParticle(any())).thenReturn(atomBuilder);
+		when(atomBuilder.setDataParticle(any())).thenReturn(atomBuilder);
 		Atom atom = mock(Atom.class);
 		when(identity.sign(any())).thenReturn(Single.just(atom));
 
@@ -136,6 +137,25 @@ public class RadixApplicationAPITest {
 		verify(ledger, times(1)).submitAtom(any());
 	}
 
+	@Test
+	public void testZeroAtomsWithData() {
+		RadixIdentity identity = mock(RadixIdentity.class);
+		RadixLedger ledger = mock(RadixLedger.class);
+		RadixUniverse universe = mock(RadixUniverse.class);
+		when(universe.getLedger()).thenReturn(ledger);
+		RadixAddress address = mock(RadixAddress.class);
+		Atom atom = mock(Atom.class);
+		when(atom.getDataParticle()).thenReturn(null);
+
+		when(ledger.getAllAtoms(any())).thenReturn(Observable.just(atom, atom, atom));
+
+		RadixApplicationAPI api = RadixApplicationAPI.create(identity, universe, AtomBuilder::new);
+		TestObserver<UnencryptedData> observer = TestObserver.create();
+		api.getReadableData(address).subscribe(observer);
+		observer.assertValueCount(0);
+		observer.assertComplete();
+		observer.assertNoErrors();
+	}
 
 	@Test
 	public void testUndecryptableData() {
@@ -150,19 +170,21 @@ public class RadixApplicationAPITest {
 			.thenReturn(Single.error(new CryptoException("Can't decrypt")))
 			.thenReturn(Single.just(unencryptedData));
 
-		Encryptor encryptor = mock(Encryptor.class);
+		EncryptorParticle encryptor = mock(EncryptorParticle.class);
 		EncryptedPrivateKey protector = mock(EncryptedPrivateKey.class);
 		when(encryptor.getProtectors()).thenReturn(Collections.singletonList(protector));
 
 		Payload payload = mock(Payload.class);
+		DataParticle dataParticle = mock(DataParticle.class);
+		when(dataParticle.getBytes()).thenReturn(payload);
 
 		Atom errorAtom = mock(Atom.class);
 		when(errorAtom.getEncryptor()).thenReturn(encryptor);
-		when(errorAtom.getPayload()).thenReturn(payload);
+		when(errorAtom.getDataParticle()).thenReturn(dataParticle);
 
 		Atom okAtom = mock(Atom.class);
 		when(okAtom.getEncryptor()).thenReturn(encryptor);
-		when(okAtom.getPayload()).thenReturn(payload);
+		when(okAtom.getDataParticle()).thenReturn(dataParticle);
 
 		when(ledger.getAllAtoms(any())).thenReturn(Observable.just(errorAtom, okAtom));
 

@@ -272,7 +272,9 @@ public class RadixJsonRpcClient {
 						} else {
 							message = null;
 						}
-						return AtomSubmissionUpdate.now(atom.getHid(), state, message);
+						AtomSubmissionUpdate update = AtomSubmissionUpdate.create(atom.getHid(), state, message);
+						update.putMetaData("jsonRpcParams", params);
+						return update;
 					})
 					.takeUntil(AtomSubmissionUpdate::isComplete)
 					.subscribe(
@@ -285,14 +287,14 @@ public class RadixJsonRpcClient {
 				Disposable methodDisposable = this.jsonRpcCall("Universe.submitAtomAndSubscribe", params)
 					.doOnSubscribe(
 						disposable -> emitter.onNext(
-							AtomSubmissionUpdate.now(atom.getHid(), AtomSubmissionState.SUBMITTING)
+							AtomSubmissionUpdate.create(atom.getHid(), AtomSubmissionState.SUBMITTING)
 						)
 					)
 					.subscribe(
-						msg -> emitter.onNext(AtomSubmissionUpdate.now(atom.getHid(), AtomSubmissionState.SUBMITTED)),
+						msg -> emitter.onNext(AtomSubmissionUpdate.create(atom.getHid(), AtomSubmissionState.SUBMITTED)),
 						throwable -> {
 							emitter.onNext(
-								AtomSubmissionUpdate.now(
+								AtomSubmissionUpdate.create(
 									atom.getHid(),
 									AtomSubmissionState.FAILED,
 									throwable.getMessage()

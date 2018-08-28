@@ -3,21 +3,16 @@ package com.radixdlt.client.core.atoms;
 import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.crypto.ECPublicKey;
-import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
-import com.radixdlt.client.core.crypto.Encryptor;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 public class AtomBuilder {
-	private static final int MAX_PAYLOAD_SIZE = 1028;
-
 	private Set<EUID> destinations = new HashSet<>();
 	private List<Particle> particles = new ArrayList<>();
-	private String applicationId;
-	private byte[] payloadRaw;
-	private Encryptor encryptor;
+	private EncryptorParticle encryptor;
+	private DataParticle dataParticle;
 
 	public AtomBuilder() {
 	}
@@ -31,22 +26,13 @@ public class AtomBuilder {
 		return this.addDestination(address.getUID());
 	}
 
-	public AtomBuilder applicationId(String applicationId) {
-		this.applicationId = applicationId;
+	public AtomBuilder setDataParticle(DataParticle dataParticle) {
+		this.dataParticle = dataParticle;
 		return this;
 	}
 
-	public AtomBuilder payload(byte[] payloadRaw) {
-		this.payloadRaw = payloadRaw;
-		return this;
-	}
-
-	public AtomBuilder payload(String payloadRaw) {
-		return this.payload(payloadRaw.getBytes());
-	}
-
-	public AtomBuilder protectors(List<EncryptedPrivateKey> protectors) {
-		this.encryptor = new Encryptor(protectors);
+	public AtomBuilder setEncryptorParticle(EncryptorParticle encryptor) {
+		this.encryptor = encryptor;
 		return this;
 	}
 
@@ -81,18 +67,7 @@ public class AtomBuilder {
 	}
 
 	public UnsignedAtom build(long timestamp) {
-		final Payload payload;
-		if (this.payloadRaw != null) {
-			if (payloadRaw.length > MAX_PAYLOAD_SIZE) {
-				throw new IllegalStateException("Payload must be under " + MAX_PAYLOAD_SIZE + " bytes but was " + payloadRaw.length);
-
-			}
-			payload = new Payload(this.payloadRaw);
-		} else {
-			payload = null;
-		}
-
-		return new UnsignedAtom(new Atom(applicationId, particles, destinations, payload, encryptor, timestamp));
+		return new UnsignedAtom(new Atom(dataParticle, particles, destinations, encryptor, timestamp));
 	}
 
 	// Temporary method for testing

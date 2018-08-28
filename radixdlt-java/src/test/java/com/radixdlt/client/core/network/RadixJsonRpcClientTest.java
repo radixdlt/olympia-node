@@ -141,7 +141,7 @@ public class RadixJsonRpcClientTest {
 			String id = jsonObject.get("id").getAsString();
 
 			JsonArray atoms = new JsonArray();
-			Atom atom = new Atom("Test", null, null, null, null, 1);
+			Atom atom = new Atom(null, null, null, null, 1);
 			atoms.add(gson.toJsonTree(atom, Atom.class));
 
 			JsonObject response = new JsonObject();
@@ -157,7 +157,7 @@ public class RadixJsonRpcClientTest {
 
 		jsonRpcClient.getAtom(new EUID(1)).subscribe(observer);
 
-		observer.assertValue(atom -> atom.getApplicationId().equals("Test"));
+		observer.assertValueCount(1);
 		observer.assertComplete();
 		observer.assertNoErrors();
 	}
@@ -193,7 +193,7 @@ public class RadixJsonRpcClientTest {
 
 			JsonArray atoms = new JsonArray();
 			JsonElement atom = gson.toJsonTree(
-				new Atom("Test", null, null, null, null, 1),
+				new Atom(null, null, null, null, 1),
 				Atom.class
 			);
 			atoms.add(atom);
@@ -212,7 +212,6 @@ public class RadixJsonRpcClientTest {
 
 		observer.assertNoErrors();
 		observer.assertValueCount(1);
-		observer.assertValue(atom -> atom.getApplicationId().equals("Test"));
 	}
 
 	@Test
@@ -248,7 +247,7 @@ public class RadixJsonRpcClientTest {
 				params.addProperty("subscriberId", subscriberId);
 				JsonArray atoms = new JsonArray();
 				JsonElement atom = gson.toJsonTree(
-					new Atom("Test", null, null, null, null, 1),
+					new Atom(null, null, null, null, 1),
 					Atom.class
 				);
 				atoms.add(atom);
@@ -318,7 +317,7 @@ public class RadixJsonRpcClientTest {
 		TestObserver<AtomSubmissionUpdate> observer = new TestObserver<>();
 
 		jsonRpcClient.submitAtom(
-			new Atom("Test", null, null, null, null, 1)
+			new Atom(null, null, null, null, 1)
 		).subscribe(observer);
 
 		observer.assertNoErrors();

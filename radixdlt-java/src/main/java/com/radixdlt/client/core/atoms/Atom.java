@@ -3,7 +3,6 @@ package com.radixdlt.client.core.atoms;
 import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.crypto.ECSignature;
-import com.radixdlt.client.core.crypto.Encryptor;
 import com.radixdlt.client.core.serialization.Dson;
 import java.util.Collections;
 import java.util.HashMap;
@@ -13,29 +12,48 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * An atom is the fundamental atomic unit of storage on the ledger (similar to a block
+ * in a blockchain) and defines the actions that can be issued onto the ledger.
+ */
 public final class Atom {
-	private Set<EUID> destinations;
-	private final Map<String, Long> timestamps;
 	private String action;
+
+	/**
+	 * This explicit use will be removed in the future
+	 */
+	private Set<EUID> destinations;
+
+	/**
+	 * This will be moved into a Transfer Particle in the future
+	 */
 	private final List<Particle> particles;
+
+	/**
+	 * This will be moved into a Chrono Particle in the future
+	 */
+	private final Map<String, Long> timestamps;
+
 	private final Map<String, ECSignature> signatures;
+
+	/**
+	 * These will be moved into a more general particle list in the future
+	 */
+	private final DataParticle dataParticle;
+	private final EncryptorParticle encryptor;
+
 	private transient Map<String, Long> debug = new HashMap<>();
-	private final String applicationId;
-	private final Payload bytes;
-	private final Encryptor encryptor;
 
 	public Atom(
-		String applicationId,
+		DataParticle dataParticle,
 		List<Particle> particles,
 		Set<EUID> destinations,
-		Payload bytes,
-		Encryptor encryptor,
+		EncryptorParticle encryptor,
 		long timestamp
 	) {
-		this.applicationId = applicationId;
+		this.dataParticle = dataParticle;
 		this.particles = particles;
 		this.destinations = destinations;
-		this.bytes = bytes;
 		this.encryptor = encryptor;
 		this.timestamps = Collections.singletonMap("default", timestamp);
 		this.signatures = null;
@@ -43,19 +61,17 @@ public final class Atom {
 	}
 
 	public Atom(
-		String applicationId,
+		DataParticle dataParticle,
 		List<Particle> particles,
 		Set<EUID> destinations,
-		Payload bytes,
-		Encryptor encryptor,
+		EncryptorParticle encryptor,
 		long timestamp,
 		EUID signatureId,
 		ECSignature signature
 	) {
-		this.applicationId = applicationId;
+		this.dataParticle = dataParticle;
 		this.particles = particles;
 		this.destinations = destinations;
-		this.bytes = bytes;
 		this.encryptor = encryptor;
 		this.timestamps = Collections.singletonMap("default", timestamp);
 		this.signatures = Collections.singletonMap(signatureId.toString(), signature);
@@ -117,16 +133,12 @@ public final class Atom {
 		return getHash().toEUID();
 	}
 
-	public Encryptor getEncryptor() {
+	public EncryptorParticle getEncryptor() {
 		return encryptor;
 	}
 
-	public Payload getPayload() {
-		return bytes;
-	}
-
-	public String getApplicationId() {
-		return applicationId;
+	public DataParticle getDataParticle() {
+		return dataParticle;
 	}
 
 	public List<Consumable> getConsumables() {
