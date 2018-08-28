@@ -6,7 +6,6 @@ import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.crypto.Encryptor;
 import com.radixdlt.client.core.crypto.Encryptor.EncryptorBuilder;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.bouncycastle.util.encoders.Base64;

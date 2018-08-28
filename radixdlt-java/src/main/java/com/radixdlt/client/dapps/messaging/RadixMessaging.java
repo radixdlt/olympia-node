@@ -55,6 +55,7 @@ public class RadixMessaging {
 					return Maybe.just(new RadixMessage(from, to, content, timestamp, data.isFromEncryptedSource()));
 				} catch (Exception e) {
 					LOGGER.warn(e.getMessage());
+					LOGGER.warn(new String(data.getData()));
 					return Maybe.empty();
 				}
 			});

@@ -5,6 +5,7 @@ import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomBuilder;
 import com.radixdlt.client.core.atoms.DataParticle;
+import com.radixdlt.client.core.atoms.EncryptorParticle;
 import com.radixdlt.client.core.atoms.Payload;
 import com.radixdlt.client.core.crypto.Encryptor;
 import io.reactivex.Completable;
@@ -22,11 +23,16 @@ public class DataStoreTranslator {
 	private DataStoreTranslator() {
 	}
 
+	// TODO: figure out correct method signature here (return Single<AtomBuilder> instead?)
 	public Completable translate(DataStore dataStore, AtomBuilder atomBuilder) {
 		Payload payload = new Payload(dataStore.getData().getBytes());
 		String application = (String) dataStore.getData().getMetaData().get("application");
 
 		atomBuilder.setDataParticle(new DataParticle(payload, application));
+		Encryptor encryptor = dataStore.getData().getEncryptor();
+		if (encryptor != null) {
+			atomBuilder.setEncryptorParticle(new EncryptorParticle(encryptor.getProtectors()));
+		}
 		dataStore.getAddresses().forEach(atomBuilder::addDestination);
 
 		return Completable.complete();
