@@ -28,7 +28,7 @@ public class ConsumableDataSource {
 		return cache.computeIfAbsent(address, addr ->
 			Observable.<Collection<Consumable>>just(Collections.emptySet()).concatWith(
 				Observable.combineLatest(
-					Observable.fromCallable(() -> new TransactionAtoms(address, Asset.XRD.getId())),
+					Observable.fromCallable(() -> new TransactionAtoms(address, Asset.TEST.getId())),
 					ledger.getAllAtoms(address.getUID()),
 					(transactionAtoms, atom) ->
 						transactionAtoms.accept(atom)

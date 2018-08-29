@@ -18,7 +18,7 @@ public class Data {
 		private Map<String, Object> metaData = new LinkedHashMap<>();
 		private byte[] bytes;
 		private EncryptorBuilder encryptorBuilder = new EncryptorBuilder();
-		private boolean isPublicReadable;
+		private boolean unencrypted = false;
 
 		public DataBuilder() {
 		}
@@ -38,30 +38,33 @@ public class Data {
 			return this;
 		}
 
-		public DataBuilder publicReadable(boolean isPublicReadable) {
-			this.isPublicReadable = isPublicReadable;
+		public DataBuilder unencrypted() {
+			this.unencrypted = true;
 			return this;
 		}
 
 		public Data build() {
+			if (this.bytes == null) {
+				throw new IllegalStateException("Must include bytes.");
+			}
+
 			final byte[] bytes;
 			final Encryptor encryptor;
 
-			if (isPublicReadable) {
+			if (unencrypted) {
 				encryptor = null;
 				bytes = this.bytes;
-				metaData.put("encrypted", false);
 			} else {
 				if (encryptorBuilder.getNumReaders() == 0) {
-					throw new IllegalStateException("Must either be publicReadable or have atleast one reader.");
+					throw new IllegalStateException("Must either be unencrypted or have atleast one reader.");
 				}
 
 				ECKeyPair sharedKey = ECKeyPairGenerator.newInstance().generateKeyPair();
 				encryptorBuilder.sharedKey(sharedKey);
 				encryptor = encryptorBuilder.build();
 				bytes = sharedKey.getPublicKey().encrypt(this.bytes);
-				metaData.put("encrypted", true);
 			}
+			metaData.put("encrypted", unencrypted);
 
 			return new Data(bytes, metaData, encryptor);
 		}

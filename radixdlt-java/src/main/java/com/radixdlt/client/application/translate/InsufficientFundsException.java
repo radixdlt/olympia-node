@@ -1,7 +1,7 @@
 package com.radixdlt.client.application.translate;
 
 import com.radixdlt.client.assets.Asset;
-import com.radixdlt.client.assets.AssetAmount;
+import com.radixdlt.client.assets.Amount;
 
 public class InsufficientFundsException extends Exception {
 	private final Asset asset;
@@ -9,8 +9,8 @@ public class InsufficientFundsException extends Exception {
 	private final long requestedAmount;
 
 	public InsufficientFundsException(Asset asset, long available, long requestedAmount) {
-		super("Requested " + new AssetAmount(asset, requestedAmount)
-			+ " but only " + new AssetAmount(asset, available) + " available.");
+		super("Requested " + Amount.subUnitsOf(requestedAmount, asset)
+			+ " but only " + Amount.subUnitsOf(available, asset) + " available.");
 		this.asset = asset;
 		this.available = available;
 		this.requestedAmount = requestedAmount;

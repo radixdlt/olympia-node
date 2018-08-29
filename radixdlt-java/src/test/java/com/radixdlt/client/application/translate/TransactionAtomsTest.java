@@ -28,14 +28,14 @@ public class TransactionAtomsTest {
 
 		/* Build atom with consumer originating from nowhere */
 		UnsignedAtom unsignedAtom = new AtomBuilder()
-			.addParticle(new Consumer(100, keyPair, 1, Asset.XRD.getId()))
-			.addParticle(new Consumable(100, keyPair, 2, Asset.XRD.getId()))
+			.addParticle(new Consumer(100, keyPair, 1, Asset.TEST.getId()))
+			.addParticle(new Consumable(100, keyPair, 2, Asset.TEST.getId()))
 			.build();
 
 		TestObserver<Collection<Consumable>> observer = TestObserver.create();
 
 		/* Make sure we don't count it unless we find the matching consumable */
-		TransactionAtoms transactionAtoms = new TransactionAtoms(address, Asset.XRD.getId());
+		TransactionAtoms transactionAtoms = new TransactionAtoms(address, Asset.TEST.getId());
 		transactionAtoms.accept(unsignedAtom.getRawAtom())
 			.getUnconsumedConsumables().subscribe(observer);
 		observer.assertValueCount(0);
@@ -59,20 +59,20 @@ public class TransactionAtomsTest {
 
 		/* Atom with consumer originating from nowhere */
 		UnsignedAtom unsignedAtom = new AtomBuilder()
-			.addParticle(new Consumer(100, keyPair, 1, Asset.XRD.getId()))
-			.addParticle(new Consumable(100, keyPair, 2, Asset.XRD.getId()))
+			.addParticle(new Consumer(100, keyPair, 1, Asset.TEST.getId()))
+			.addParticle(new Consumable(100, keyPair, 2, Asset.TEST.getId()))
 			.build();
 
 		/* Atom with consumable for previous atom's consumer */
 		UnsignedAtom unsignedAtom2 = new AtomBuilder()
-			.addParticle(new Consumer(100, otherKeyPair, 1, Asset.XRD.getId()))
-			.addParticle(new Consumable(100, keyPair, 1, Asset.XRD.getId()))
+			.addParticle(new Consumer(100, otherKeyPair, 1, Asset.TEST.getId()))
+			.addParticle(new Consumable(100, keyPair, 1, Asset.TEST.getId()))
 			.build();
 
 		TestObserver<Collection<Consumable>> observer = TestObserver.create();
 
 		/* Make sure we don't count it unless we find the matching consumable */
-		TransactionAtoms transactionAtoms = new TransactionAtoms(address, Asset.XRD.getId());
+		TransactionAtoms transactionAtoms = new TransactionAtoms(address, Asset.TEST.getId());
 		transactionAtoms.accept(unsignedAtom.getRawAtom());
 		transactionAtoms.accept(unsignedAtom2.getRawAtom())
 			.getUnconsumedConsumables()

@@ -37,8 +37,8 @@ public class TokenTransferTranslator {
 	public TokenTransfer fromAtom(Atom atom) {
 		List<SimpleImmutableEntry<ECPublicKey, Long>> summary =
 			atom.summary().entrySet().stream()
-				.filter(entry -> entry.getValue().containsKey(Asset.XRD.getId()))
-				.map(entry -> new SimpleImmutableEntry<>(entry.getKey().iterator().next(), entry.getValue().get(Asset.XRD.getId())))
+				.filter(entry -> entry.getValue().containsKey(Asset.TEST.getId()))
+				.map(entry -> new SimpleImmutableEntry<>(entry.getKey().iterator().next(), entry.getValue().get(Asset.TEST.getId())))
 				.collect(Collectors.toList());
 
 		if (summary.isEmpty()) {
@@ -81,7 +81,7 @@ public class TokenTransferTranslator {
 			attachment = null;
 		}
 
-		return TokenTransfer.create(from, to, Asset.XRD, Math.abs(summary.get(0).getValue()), attachment, atom.getTimestamp());
+		return TokenTransfer.create(from, to, Asset.TEST, Math.abs(summary.get(0).getValue()), attachment, atom.getTimestamp());
 	}
 
 	public Completable translate(TokenTransfer tokenTransfer, AtomBuilder atomBuilder) {
@@ -127,8 +127,8 @@ public class TokenTransferTranslator {
 				}
 
 				List<Consumable> consumables = consumerQuantities.entrySet().stream()
-					.map(entry -> new Consumable(entry.getValue(), entry.getKey(), System.nanoTime(), Asset.XRD.getId())).collect(
-						Collectors.toList());
+					.map(entry -> new Consumable(entry.getValue(), entry.getKey(), System.nanoTime(), Asset.TEST.getId()))
+					.collect(Collectors.toList());
 				atomBuilder.addParticles(consumables);
 
 				return Completable.complete();

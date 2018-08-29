@@ -39,14 +39,14 @@ public class ChatBot {
 	 * Connect to the network and begin running the service
 	 */
 	public void run() {
-		System.out.println("Chatbot address: " + api.getAddress());
+		System.out.println("Chatbot address: " + api.getMyAddress());
 
 		// Subscribe/Decrypt messages
 		messaging
 			.getAllMessagesGroupedByParticipants()
 			.flatMapCompletable(convo -> convo
 				.doOnNext(message -> System.out.println("Received at " + new Timestamp(System.currentTimeMillis()) + ": " + message)) // Print messages
-				.filter(message -> !message.getFrom().equals(api.getAddress())) // Don't reply to ourselves!
+				.filter(message -> !message.getFrom().equals(api.getMyAddress())) // Don't reply to ourselves!
 				.filter(message -> Math.abs(message.getTimestamp() - System.currentTimeMillis()) < 60000) // Only reply to recent messages
 				.flatMapCompletable(new io.reactivex.functions.Function<RadixMessage, Completable>() {
 					Function<String,String> chatBotAlgorithm = chatBotAlgorithmSupplier.get();

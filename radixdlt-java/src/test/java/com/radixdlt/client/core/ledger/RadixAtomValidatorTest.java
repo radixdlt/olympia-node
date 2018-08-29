@@ -32,7 +32,7 @@ public class RadixAtomValidatorTest {
 		when(consumer.isAbstractConsumable()).thenReturn(true);
 		when(consumer.getAsAbstractConsumable()).thenReturn(consumer);
 		when(consumer.getOwnersPublicKeys()).thenReturn(Collections.singleton(publicKey));
-		when(consumer.getAssetId()).thenReturn(Asset.XRD.getId());
+		when(consumer.getAssetId()).thenReturn(Asset.TEST.getId());
 
 		Atom atom = mock(Atom.class);
 		when(atom.getHash()).thenReturn(hash);
@@ -57,7 +57,7 @@ public class RadixAtomValidatorTest {
 		when(consumer.isAbstractConsumable()).thenReturn(true);
 		when(consumer.getAsAbstractConsumable()).thenReturn(consumer);
 		when(consumer.getOwnersPublicKeys()).thenReturn(Collections.singleton(publicKey));
-		when(consumer.getAssetId()).thenReturn(Asset.XRD.getId());
+		when(consumer.getAssetId()).thenReturn(Asset.TEST.getId());
 
 		Atom atom = mock(Atom.class);
 		when(atom.getHash()).thenReturn(hash);

@@ -44,13 +44,13 @@ public class RadixWalletExample {
 			.subscribe(System.out::println);
 
 		// Subscribe to current and future total balance
-		wallet.getXRDSubUnitBalance()
-			.subscribe(balance -> System.out.println("My Balance: " + ((double)balance) / Asset.XRD.getSubUnits()));
+		wallet.getXRDBalance()
+			.subscribe(balance -> System.out.println("My Balance: " + balance));
 
 		// If specified, send money to another address
 		if (TO_ADDRESS_BASE58 != null) {
 			RadixAddress toAddress = RadixAddress.fromString(TO_ADDRESS_BASE58);
-			wallet.transferXRDWhenAvailable(AMOUNT * Asset.XRD.getSubUnits(), toAddress, MESSAGE)
+			wallet.transferXRDWhenAvailable(AMOUNT * Asset.TEST.getSubUnits(), toAddress, MESSAGE)
 				.toObservable()
 				.subscribe(System.out::println, Throwable::printStackTrace);
 		}
