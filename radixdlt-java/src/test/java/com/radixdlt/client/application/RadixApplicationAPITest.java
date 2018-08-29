@@ -6,11 +6,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
 import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.application.objects.UnencryptedData;
 import com.radixdlt.client.application.translate.InsufficientFundsException;
+import com.radixdlt.client.assets.Amount;
 import com.radixdlt.client.assets.Asset;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.address.RadixAddress;
@@ -90,6 +92,20 @@ public class RadixApplicationAPITest {
 		updatesObserver.assertValueAt(0, atomUpdate -> atomUpdate.getState().equals(AtomSubmissionState.SUBMITTING));
 		updatesObserver.assertValueAt(1, atomUpdate -> atomUpdate.getState().equals(AtomSubmissionState.SUBMITTED));
 		updatesObserver.assertValueAt(2, atomUpdate -> atomUpdate.getState().equals(AtomSubmissionState.STORED));
+	}
+
+	@Test
+	public void testNull() {
+		assertThatThrownBy(() -> RadixApplicationAPI.create(null))
+			.isInstanceOf(NullPointerException.class);
+
+		RadixApplicationAPI api = createMockedAPIWhichAlwaysSucceeds();
+		assertThatThrownBy(() -> api.getReadableData(null))
+			.isInstanceOf(NullPointerException.class);
+		assertThatThrownBy(() -> api.getTokenTransfers(null, null))
+			.isInstanceOf(NullPointerException.class);
+		assertThatThrownBy(() -> api.getBalance(null, null))
+			.isInstanceOf(NullPointerException.class);
 	}
 
 	@Test
@@ -188,10 +204,10 @@ public class RadixApplicationAPITest {
 
 		when(ledger.getAllAtoms(any(), any())).thenReturn(Observable.empty());
 
-		TestObserver<Long> observer = TestObserver.create();
+		TestObserver<Amount> observer = TestObserver.create();
 
-		api.getSubUnitBalance(address, Asset.XRD).subscribe(observer);
-		observer.assertValue(0L);
+		api.getBalance(address, Asset.TEST).subscribe(observer);
+		observer.assertValue(amount -> amount.getAmountInSubunits() == 0);
 	}
 
 	@Test
@@ -206,7 +222,7 @@ public class RadixApplicationAPITest {
 		when(ledger.getAllAtoms(any(), any())).thenReturn(Observable.empty());
 
 		TestObserver observer = TestObserver.create();
-		api.transferTokens(address, address, Asset.XRD, 10).toCompletable().subscribe(observer);
-		observer.assertError(new InsufficientFundsException(Asset.XRD, 0, 10));
+		api.transferTokens(address, address, Amount.subUnitsOf(10, Asset.TEST)).toCompletable().subscribe(observer);
+		observer.assertError(new InsufficientFundsException(Asset.TEST, 0, 10));
 	}
 }

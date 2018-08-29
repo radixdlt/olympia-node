@@ -20,7 +20,7 @@ public class Data {
 		private Map<String, Object> metaData = new HashMap<>();
 		private byte[] bytes;
 		private List<ECPublicKey> readers = new ArrayList<>();
-		private boolean isPublicReadable;
+		private boolean unencrypted = false;
 
 		public DataBuilder() {
 		}
@@ -40,29 +40,32 @@ public class Data {
 			return this;
 		}
 
-		public DataBuilder publicReadable(boolean isPublicReadable) {
-			this.isPublicReadable = isPublicReadable;
+		public DataBuilder unencrypted() {
+			this.unencrypted = true;
 			return this;
 		}
 
 		public Data build() {
+			if (this.bytes == null) {
+				throw new IllegalStateException("Must include bytes.");
+			}
+
 			final byte[] bytes;
 			final List<EncryptedPrivateKey> protectors;
 
-			if (isPublicReadable) {
+			if (unencrypted) {
 				protectors = Collections.emptyList();
 				bytes = this.bytes;
-				metaData.put("encrypted", false);
 			} else {
 				if (readers.isEmpty()) {
-					throw new IllegalStateException("Must either be publicReadable or have atleast one reader.");
+					throw new IllegalStateException("Must either be unencrypted or have atleast one reader.");
 				}
 
 				ECKeyPair sharedKey = ECKeyPairGenerator.newInstance().generateKeyPair();
 				protectors = readers.stream().map(sharedKey::encryptPrivateKey).collect(Collectors.toList());
 				bytes = sharedKey.getPublicKey().encrypt(this.bytes);
-				metaData.put("encrypted", true);
 			}
+			metaData.put("encrypted", unencrypted);
 
 			return new Data(bytes, metaData, protectors);
 		}

@@ -6,6 +6,7 @@ import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.application.objects.UnencryptedData;
 import com.radixdlt.client.application.translate.DataStoreTranslator;
 import com.radixdlt.client.application.translate.TokenTransferTranslator;
+import com.radixdlt.client.assets.Amount;
 import com.radixdlt.client.assets.Asset;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.address.RadixAddress;
@@ -14,6 +15,7 @@ import com.radixdlt.client.core.atoms.AtomBuilder;
 import com.radixdlt.client.core.atoms.Consumable;
 import com.radixdlt.client.core.atoms.TransactionAtom;
 import com.radixdlt.client.application.identity.RadixIdentity;
+import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.ledger.RadixLedger;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState;
@@ -24,8 +26,13 @@ import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.observables.ConnectableObservable;
 import java.util.Collection;
+import java.util.Objects;
 import java.util.function.Supplier;
 
+/**
+ * The Radix Dapp API, a high level api which dapps can utilize. The class hides
+ * the complexity of Atoms and cryptography and exposes a simple high level interface.
+ */
 public class RadixApplicationAPI {
 	public static class Result {
 		private final Observable<AtomSubmissionUpdate> updates;
@@ -72,22 +79,32 @@ public class RadixApplicationAPI {
 	}
 
 	public static RadixApplicationAPI create(RadixIdentity identity) {
-		return new RadixApplicationAPI(identity, RadixUniverse.getInstance(), AtomBuilder::new);
+		Objects.requireNonNull(identity);
+		return create(identity, RadixUniverse.getInstance(), AtomBuilder::new);
 	}
 
 	public static RadixApplicationAPI create(RadixIdentity identity, RadixUniverse universe, Supplier<AtomBuilder> atomBuilderSupplier) {
+		Objects.requireNonNull(identity);
+		Objects.requireNonNull(universe);
+		Objects.requireNonNull(atomBuilderSupplier);
 		return new RadixApplicationAPI(identity, universe, atomBuilderSupplier);
 	}
 
-	public RadixIdentity getIdentity() {
+	public ECPublicKey getMyPublicKey() {
+		return identity.getPublicKey();
+	}
+
+	public RadixIdentity getMyIdentity() {
 		return identity;
 	}
 
-	public RadixAddress getAddress() {
+	public RadixAddress getMyAddress() {
 		return ledger.getAddressFromPublicKey(identity.getPublicKey());
 	}
 
 	public Observable<UnencryptedData> getReadableData(RadixAddress address) {
+		Objects.requireNonNull(address);
+
 		return ledger.getAllAtoms(address.getUID(), ApplicationPayloadAtom.class)
 			.map(dataStoreTranslator::fromAtom)
 			.flatMapMaybe(data -> identity.decrypt(data).toMaybe().onErrorComplete());
@@ -123,7 +140,14 @@ public class RadixApplicationAPI {
 		return new Result(updates);
 	}
 
+	public Observable<TokenTransfer> getMyTokenTransfers(Asset tokenClass) {
+		return getTokenTransfers(getMyAddress(), tokenClass);
+	}
+
 	public Observable<TokenTransfer> getTokenTransfers(RadixAddress address, Asset tokenClass) {
+		Objects.requireNonNull(address);
+		Objects.requireNonNull(tokenClass);
+
 		return Observable.combineLatest(
 			Observable.fromCallable(() -> new TransactionAtoms(address, tokenClass.getId())),
 			ledger.getAllAtoms(address.getUID(), TransactionAtom.class),
@@ -134,7 +158,14 @@ public class RadixApplicationAPI {
 		.flatMap(atoms -> atoms.map(tokenTransferTranslator::fromAtom));
 	}
 
-	public Observable<Long> getSubUnitBalance(RadixAddress address, Asset tokenClass) {
+	public Observable<Amount> getMyBalance(Asset tokenClass) {
+		return getBalance(getMyAddress(), tokenClass);
+	}
+
+	public Observable<Amount> getBalance(RadixAddress address, Asset tokenClass) {
+		Objects.requireNonNull(address);
+		Objects.requireNonNull(tokenClass);
+
 		return this.consumableDataSource.getConsumables(address)
 			.map(Collection::stream)
 			.map(stream -> stream
@@ -142,12 +173,20 @@ public class RadixApplicationAPI {
 				.mapToLong(Consumable::getQuantity)
 				.sum()
 			)
+			.map(balanceInSubUnits -> Amount.subUnitsOf(balanceInSubUnits, tokenClass))
 			.share();
 	}
 
+	public Result sendTokens(RadixAddress to, Amount amount) {
+		return transferTokens(getMyAddress(), to, amount);
+	}
 
-	public Result transferTokens(RadixAddress from, RadixAddress to, Asset tokenClass, long subUnitAmount, Data attachment) {
-		TokenTransfer tokenTransfer = TokenTransfer.create(from, to, tokenClass, subUnitAmount, attachment);
+	public Result sendTokens(RadixAddress to, Amount amount, Data attachment) {
+		return transferTokens(getMyAddress(), to, amount, attachment);
+	}
+
+	public Result transferTokens(RadixAddress from, RadixAddress to, Amount amount, Data attachment) {
+		TokenTransfer tokenTransfer = TokenTransfer.create(from, to, amount.getTokenClass(), amount.getAmountInSubunits(), attachment);
 		AtomBuilder atomBuilder = atomBuilderSupplier.get();
 
 		ConnectableObservable<AtomSubmissionUpdate> updates = tokenTransferTranslator.translate(tokenTransfer, atomBuilder)
@@ -161,8 +200,8 @@ public class RadixApplicationAPI {
 		return new Result(updates);
 	}
 
-	public Result transferTokens(RadixAddress from, RadixAddress to, Asset tokenClass, long subUnitAmount) {
-		TokenTransfer tokenTransfer = TokenTransfer.create(from, to, tokenClass, subUnitAmount);
+	public Result transferTokens(RadixAddress from, RadixAddress to, Amount amount) {
+		TokenTransfer tokenTransfer = TokenTransfer.create(from, to, amount.getTokenClass(), amount.getAmountInSubunits());
 		AtomBuilder atomBuilder = atomBuilderSupplier.get();
 
 		ConnectableObservable<AtomSubmissionUpdate> updates = tokenTransferTranslator.translate(tokenTransfer, atomBuilder)

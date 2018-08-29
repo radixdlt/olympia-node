@@ -9,7 +9,6 @@ import com.radixdlt.client.application.objects.Data.DataBuilder;
 import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.crypto.ECSignature;
-import com.radixdlt.client.application.identity.RadixIdentity;
 import io.reactivex.Maybe;
 import io.reactivex.Observable;
 import io.reactivex.observables.GroupedObservable;
@@ -29,13 +28,11 @@ public class RadixMessaging {
 	public static final int MAX_MESSAGE_LENGTH = 256;
 
 	private final RadixApplicationAPI api;
-	private final RadixIdentity identity;
 	private final RadixAddress myAddress;
 	private final JsonParser parser = new JsonParser();
 
 	public RadixMessaging(RadixApplicationAPI api) {
-		this.identity = api.getIdentity();
-		this.myAddress = api.getAddress();
+		this.myAddress = api.getMyAddress();
 		this.api = api;
 	}
 
@@ -65,7 +62,7 @@ public class RadixMessaging {
 
 	public Observable<GroupedObservable<RadixAddress, RadixMessage>> getAllMessagesGroupedByParticipants() {
 		return this.getAllMessages()
-			.groupBy(msg -> msg.getFrom().getPublicKey().equals(identity.getPublicKey()) ? msg.getTo() : msg.getFrom());
+			.groupBy(msg -> msg.getFrom().getPublicKey().equals(api.getMyPublicKey()) ? msg.getTo() : msg.getFrom());
 	}
 
 	public Result sendMessage(String message, RadixAddress toAddress, EUID uniqueId) {

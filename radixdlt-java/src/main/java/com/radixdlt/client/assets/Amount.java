@@ -5,13 +5,30 @@ import java.math.BigDecimal;
 /**
  * Class mainly for formatting amounts in error messages and other English text.
  */
-public class AssetAmount {
+public class Amount {
+	public static Amount subUnitsOf(long amountInSubunits, Asset tokenClass) {
+		return new Amount(tokenClass, amountInSubunits);
+	}
+
+	public static Amount of(long amount, Asset tokenClass) {
+		return new Amount(tokenClass, tokenClass.getSubUnits() * amount);
+	}
+
+
 	private final Asset asset;
 	private final long amountInSubunits;
 
-	public AssetAmount(Asset asset, long amountInSubunits) {
+	private Amount(Asset asset, long amountInSubunits) {
 		this.asset = asset;
 		this.amountInSubunits = amountInSubunits;
+	}
+
+	public Asset getTokenClass() {
+		return asset;
+	}
+
+	public long getAmountInSubunits() {
+		return amountInSubunits;
 	}
 
 	@Override

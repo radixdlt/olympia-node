@@ -48,8 +48,8 @@ public class RadixMessagingTest {
 
 		RadixApplicationAPI api = mock(RadixApplicationAPI.class);
 		RadixAddress address = mock(RadixAddress.class);
-		when(api.getAddress()).thenReturn(address);
-		when(api.getIdentity()).thenReturn(myIdentity);
+		when(api.getMyAddress()).thenReturn(address);
+		when(api.getMyIdentity()).thenReturn(myIdentity);
 		when(api.getReadableData(any())).thenReturn(Observable.just(undecryptableData, decryptableData));
 
 		RadixMessaging messaging = new RadixMessaging(api);

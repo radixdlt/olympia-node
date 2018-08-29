@@ -5,6 +5,7 @@ import com.radixdlt.client.application.RadixApplicationAPI.Result;
 import com.radixdlt.client.application.actions.TokenTransfer;
 import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.application.objects.Data.DataBuilder;
+import com.radixdlt.client.assets.Amount;
 import com.radixdlt.client.assets.Asset;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate;
@@ -43,8 +44,8 @@ public class RadixWallet {
 	 *
 	 * @return an unending Observable of balances
 	 */
-	public Observable<Long> getXRDSubUnitBalance() {
-		return api.getSubUnitBalance(api.getAddress(), Asset.XRD);
+	public Observable<Amount> getXRDBalance() {
+		return api.getBalance(api.getMyAddress(), Asset.TEST);
 	}
 
 	/**
@@ -54,9 +55,9 @@ public class RadixWallet {
  	 * @param address address to get balance from
 	 * @return an unending Observable of balances
 	 */
-	public Observable<Long> getXRDSubUnitBalance(@NonNull RadixAddress address) {
+	public Observable<Amount> getXRDBalance(@NonNull RadixAddress address) {
 		Objects.requireNonNull(address, "address must be non-null");
-		return api.getSubUnitBalance(address, Asset.XRD);
+		return api.getBalance(address, Asset.TEST);
 	}
 
 	/**
@@ -66,7 +67,7 @@ public class RadixWallet {
 	 * @return an unending Observable of transfers
 	 */
 	public Observable<TokenTransfer> getXRDTransactions() {
-		return api.getTokenTransfers(api.getAddress(), Asset.XRD);
+		return api.getTokenTransfers(api.getMyAddress(), Asset.TEST);
 	}
 
 	/**
@@ -80,14 +81,14 @@ public class RadixWallet {
 		@NonNull RadixAddress address
 	) {
 		Objects.requireNonNull(address, "address must be non-null");
-		return api.getTokenTransfers(address, Asset.XRD);
+		return api.getTokenTransfers(address, Asset.TEST);
 	}
 
 	/**
-	 * Immediately try and transfer XRD from user's account to another address. If there is
+	 * Immediately try and transfer TEST from user's account to another address. If there is
 	 * not enough in the account TransferResult will specify so.
 	 *
-	 * @param amountInSubUnits The amount of XRD to transfer
+	 * @param amountInSubUnits The amount of TEST to transfer
 	 * @param toAddress The address to send to.
 	 * @return The result of the transaction.
 	 */
@@ -100,11 +101,11 @@ public class RadixWallet {
 	}
 
 	/**
-	 * Immediately try and transfer XRD from user's account to another address with an encrypted message
+	 * Immediately try and transfer TEST from user's account to another address with an encrypted message
 	 * attachment (readable by sender and receiver). If there is not enough in the account TransferResult
 	 * will specify so.
 	 *
-	 * @param amountInSubUnits The amount of XRD to transfer.
+	 * @param amountInSubUnits The amount of TEST to transfer.
 	 * @param toAddress The address to send to.
 	 * @param message The message to send as an attachment.
 	 * @return The result of the transaction.
@@ -120,14 +121,15 @@ public class RadixWallet {
 		if (message != null) {
 			attachment = new DataBuilder()
 				.addReader(toAddress.getPublicKey())
-				.addReader(api.getAddress().getPublicKey())
+				.addReader(api.getMyAddress().getPublicKey())
 				.bytes(message.getBytes()).build();
 		} else {
 			attachment = null;
 		}
 
 		ConnectableObservable<AtomSubmissionUpdate> updates =
-			api.transferTokens(api.getAddress(), toAddress, Asset.XRD, amountInSubUnits, attachment).toObservable().replay();
+			api.sendTokens(toAddress, Amount.subUnitsOf(amountInSubUnits, Asset.TEST), attachment)
+				.toObservable().replay();
 		updates.connect();
 		return new TransferResult(updates);
 	}
@@ -136,7 +138,7 @@ public class RadixWallet {
 	 * Block indefinitely until there are enough funds in the account, then immediately transfer
 	 * amount to a specified account.
 	 *
-	 * @param amountInSubUnits The amount of XRD to transfer.
+	 * @param amountInSubUnits The amount of TEST to transfer.
 	 * @param toAddress The address to send to.
 	 * @return The result of the transaction.
 	 */
@@ -152,7 +154,7 @@ public class RadixWallet {
 	 * Block indefinitely until there are enough funds in the account, then immediately transfer
 	 * amount with an encrypted message (readable by sender and receiver) to a specified account.
 	 *
-	 * @param amountInSubUnits The amount of XRD to transfer.
+	 * @param amountInSubUnits The amount of TEST to transfer.
 	 * @param toAddress The address to send to.
 	 * @param message The message to send as an attachment.
 	 * @return The result of the transaction.
@@ -168,16 +170,16 @@ public class RadixWallet {
 		if (message != null) {
 			attachment = new DataBuilder()
 				.addReader(toAddress.getPublicKey())
-				.addReader(api.getAddress().getPublicKey())
+				.addReader(api.getMyAddress().getPublicKey())
 				.bytes(message.getBytes()).build();
 		} else {
 			attachment = null;
 		}
 
-		ConnectableObservable<AtomSubmissionUpdate> updates = api.getSubUnitBalance(api.getAddress(), Asset.XRD)
-			.filter(balance -> balance > amountInSubUnits)
+		ConnectableObservable<AtomSubmissionUpdate> updates = api.getBalance(api.getMyAddress(), Asset.TEST)
+			.filter(amount -> amount.getAmountInSubunits() > amountInSubUnits)
 			.firstOrError()
-			.map(balance -> api.transferTokens(api.getAddress(), toAddress, Asset.XRD, amountInSubUnits, attachment))
+			.map(balance -> api.sendTokens(toAddress, Amount.subUnitsOf(amountInSubUnits, Asset.TEST), attachment))
 			.flatMapObservable(Result::toObservable)
 			.replay();
 
