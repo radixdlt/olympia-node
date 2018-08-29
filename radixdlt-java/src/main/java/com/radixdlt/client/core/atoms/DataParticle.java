@@ -1,6 +1,6 @@
 package com.radixdlt.client.core.atoms;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -24,7 +24,7 @@ public class DataParticle {
 
 		this.bytes = bytes;
 		if (application != null) {
-			this.metaData = new HashMap<>();
+			this.metaData = new LinkedHashMap<>();
 			this.metaData.put("application", application);
 		} else {
 			this.metaData = null;
