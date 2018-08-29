@@ -25,7 +25,7 @@ repositories {
 ```
 ```
 dependencies {
-    implementation 'com.radixdlt:radixdlt-java:v0.9.4'
+    implementation 'com.radixdlt:radixdlt-java:v0.10.0'
 }
 ```
 
@@ -61,7 +61,7 @@ DAPP creation easier.
 
 To initialize the API:
 ```
-RadixUniverse.bootstrap(Bootstrap.ALPHANET); // This must be called before api create()
+RadixUniverse.bootstrap(Bootstrap.ALPHANET); // This must be called before RadixApplicationAPI.create()
 RadixApplicationAPI api = RadixApplicationAPI.create(identity);
 ```
 
