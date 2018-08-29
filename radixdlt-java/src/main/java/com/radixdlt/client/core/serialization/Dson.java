@@ -204,7 +204,7 @@ public class Dson {
 		} else if (o instanceof Map) {
 			final Map<?, ?> map = (Map) o;
 
-			if (map instanceof HashMap) {
+			if (HashMap.class == o.getClass()) {
 				throw new IllegalStateException("Cannot DSON serialize HashMap. Must be a predictably ordered map.");
 			}
 

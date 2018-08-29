@@ -43,10 +43,11 @@ public class DataStoreTranslator {
 			return Optional.empty();
 		}
 
+		// TODO: don't pass in maps, utilize a metadata builder?
 		Map<String, Object> metaData = new HashMap<>();
 		metaData.put("timestamp", atom.getTimestamp());
 		metaData.put("signatures", atom.getSignatures());
-		metaData.put("application", atom.getDataParticle().getApplication());
+		metaData.compute("application", (k, v) -> atom.getDataParticle().getMetaData("application"));
 		metaData.put("encrypted", atom.getEncryptor() != null);
 
 		final Encryptor encryptor;

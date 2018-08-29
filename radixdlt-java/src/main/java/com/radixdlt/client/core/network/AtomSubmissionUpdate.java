@@ -2,6 +2,7 @@ package com.radixdlt.client.core.network;
 
 import com.radixdlt.client.core.address.EUID;
 import java.text.SimpleDateFormat;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
@@ -67,6 +68,10 @@ public class AtomSubmissionUpdate {
 
 	public Object getMetaData(String key) {
 		return metaData.get(key);
+	}
+
+	public Map<String, Object> getMetaData() {
+		return Collections.unmodifiableMap(metaData);
 	}
 
 	public static AtomSubmissionUpdate create(EUID hid, AtomSubmissionState code) {
