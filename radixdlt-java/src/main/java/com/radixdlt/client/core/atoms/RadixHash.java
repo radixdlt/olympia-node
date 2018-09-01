@@ -9,6 +9,7 @@ import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.crypto.ECSignature;
 import com.radixdlt.client.core.util.Hash;
+import org.bouncycastle.util.encoders.Base64;
 
 public final class RadixHash {
 	private final byte[] hash;
@@ -66,5 +67,10 @@ public final class RadixHash {
 	@Override
 	public int hashCode() {
 		return new BigInteger(hash).hashCode();
+	}
+
+	@Override
+	public String toString() {
+		return Base64.toBase64String(hash);
 	}
 }
