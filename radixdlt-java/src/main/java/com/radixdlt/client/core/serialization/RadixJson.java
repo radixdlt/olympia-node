@@ -23,8 +23,7 @@ import com.radixdlt.client.core.atoms.Consumer;
 import com.radixdlt.client.core.atoms.DataParticle;
 import com.radixdlt.client.core.atoms.Emission;
 import com.radixdlt.client.core.atoms.EncryptorParticle;
-import com.radixdlt.client.core.atoms.IdParticle;
-import com.radixdlt.client.core.atoms.JunkParticle;
+import com.radixdlt.client.core.atoms.UniqueParticle;
 import com.radixdlt.client.core.atoms.Particle;
 import com.radixdlt.client.core.atoms.Payload;
 import com.radixdlt.client.core.crypto.ECKeyPair;
@@ -84,12 +83,6 @@ public class RadixJson {
 			jsonParticle.addProperty("serializer", -1463653224);
 			jsonParticle.addProperty("version", 100);
 			return jsonParticle;
-		} else if (particle.getClass() == JunkParticle.class) {
-
-			JsonObject jsonParticle = context.serialize(particle).getAsJsonObject();
-			jsonParticle.addProperty("serializer", -1123054001);
-			jsonParticle.addProperty("version", 100);
-			return jsonParticle;
 		} else if (particle.getClass() == Consumable.class) {
 			JsonObject jsonParticle = context.serialize(particle).getAsJsonObject();
 			jsonParticle.addProperty("serializer", 318720611);
@@ -105,9 +98,9 @@ public class RadixJson {
 			jsonParticle.addProperty("serializer", 1782261127);
 			jsonParticle.addProperty("version", 100);
 			return jsonParticle;
-		} else if (particle.getClass() == IdParticle.class) {
+		} else if (particle.getClass() == UniqueParticle.class) {
 			JsonObject jsonParticle = context.serialize(particle).getAsJsonObject();
-			jsonParticle.addProperty("serializer", "IDPARTICLE".hashCode());
+			jsonParticle.addProperty("serializer", "UNIQUEPARTICLE".hashCode());
 			jsonParticle.addProperty("version", 100);
 			return jsonParticle;
 		}
@@ -125,10 +118,8 @@ public class RadixJson {
 			return context.deserialize(json.getAsJsonObject(), Consumer.class);
 		} else if (serializer == 1782261127) {
 			return context.deserialize(json.getAsJsonObject(), Emission.class);
-		} else if (serializer == -1123054001) {
-			return context.deserialize(json.getAsJsonObject(), JunkParticle.class);
-		} else if (serializer == "IDPARTICLE".hashCode()) {
-			return context.deserialize(json.getAsJsonObject(), IdParticle.class);
+		} else if (serializer == "UNIQUEPARTICLE".hashCode()) {
+			return context.deserialize(json.getAsJsonObject(), UniqueParticle.class);
 		} else {
 			throw new RuntimeException("Unknown particle serializer: " + serializer);
 		}
