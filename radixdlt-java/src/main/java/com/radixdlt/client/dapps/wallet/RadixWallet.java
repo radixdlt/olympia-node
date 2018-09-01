@@ -14,7 +14,6 @@ import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.annotations.NonNull;
 import io.reactivex.annotations.Nullable;
-import io.reactivex.observables.ConnectableObservable;
 import java.util.Objects;
 
 /**
