@@ -9,7 +9,9 @@ import com.radixdlt.client.assets.Amount;
 import com.radixdlt.client.assets.Asset;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate;
+import io.reactivex.Completable;
 import io.reactivex.Observable;
+import io.reactivex.Single;
 import io.reactivex.annotations.NonNull;
 import io.reactivex.annotations.Nullable;
 import io.reactivex.observables.ConnectableObservable;
@@ -21,14 +23,22 @@ import java.util.Objects;
 public class RadixWallet {
 	// TODO: add cancel option
 	public static class TransferResult {
-		private final Observable<AtomSubmissionUpdate> updates;
+		private final Single<Result> result;
 
-		private TransferResult(Observable<AtomSubmissionUpdate> updates) {
-			this.updates = updates;
+		private TransferResult(Result result) {
+			this.result = Single.just(result);
+		}
+
+		private TransferResult(Single<Result> result) {
+			this.result = result;
 		}
 
 		public Observable<AtomSubmissionUpdate> toObservable() {
-			return updates;
+			return result.flatMapObservable(Result::toObservable);
+		}
+
+		public Completable toCompletable() {
+			return result.flatMapCompletable(Result::toCompletable);
 		}
 	}
 
@@ -127,11 +137,8 @@ public class RadixWallet {
 			attachment = null;
 		}
 
-		ConnectableObservable<AtomSubmissionUpdate> updates =
-			api.sendTokens(toAddress, Amount.subUnitsOf(amountInSubUnits, Asset.TEST), attachment)
-				.toObservable().replay();
-		updates.connect();
-		return new TransferResult(updates);
+		Result result = api.sendTokens(toAddress, Amount.subUnitsOf(amountInSubUnits, Asset.TEST), attachment);
+		return new TransferResult(result);
 	}
 
 	/**
@@ -195,17 +202,15 @@ public class RadixWallet {
 			attachment = null;
 		}
 
-		byte[] uniqueBytes = unique != null ? unique.getBytes() : null;
+		final byte[] uniqueBytes = unique != null ? unique.getBytes() : null;
 
-		ConnectableObservable<AtomSubmissionUpdate> updates = api.getMyBalance(Asset.TEST)
-			.filter(amount -> amount.getAmountInSubunits() > amountInSubUnits)
+		Single<Result> result = api.getMyBalance(Asset.TEST)
+			.filter(amount -> amount.getAmountInSubunits() >= amountInSubUnits)
 			.firstOrError()
 			.map(balance -> api.sendTokens(toAddress, Amount.subUnitsOf(amountInSubUnits, Asset.TEST), attachment, uniqueBytes))
-			.flatMapObservable(Result::toObservable)
-			.replay();
+			.cache();
+		result.subscribe();
 
-		updates.connect();
-
-		return new TransferResult(updates);
+		return new TransferResult(result);
 	}
 }
