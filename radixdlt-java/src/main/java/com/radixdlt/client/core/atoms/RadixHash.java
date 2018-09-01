@@ -7,6 +7,7 @@ import com.radixdlt.client.core.util.Hash;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import org.bouncycastle.util.encoders.Base64;
 
 public class RadixHash {
 	private static final int HASH_MAX_SIZE = 12;
@@ -65,5 +66,10 @@ public class RadixHash {
 	@Override
 	public int hashCode() {
 		return new BigInteger(hash).hashCode();
+	}
+
+	@Override
+	public String toString() {
+		return Base64.toBase64String(hash);
 	}
 }

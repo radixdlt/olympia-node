@@ -2,10 +2,12 @@ package com.radixdlt.client.application;
 
 import com.radixdlt.client.application.actions.DataStore;
 import com.radixdlt.client.application.actions.TokenTransfer;
+import com.radixdlt.client.application.actions.UniqueProperty;
 import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.application.objects.UnencryptedData;
 import com.radixdlt.client.application.translate.DataStoreTranslator;
 import com.radixdlt.client.application.translate.TokenTransferTranslator;
+import com.radixdlt.client.application.translate.UniquePropertyTranslator;
 import com.radixdlt.client.assets.Amount;
 import com.radixdlt.client.assets.Asset;
 import com.radixdlt.client.core.RadixUniverse;
@@ -24,6 +26,7 @@ import com.radixdlt.client.application.translate.TransactionAtoms;
 import io.reactivex.Completable;
 import io.reactivex.Observable;
 import io.reactivex.Single;
+import io.reactivex.annotations.Nullable;
 import io.reactivex.observables.ConnectableObservable;
 import java.util.Collection;
 import java.util.Objects;
@@ -66,6 +69,7 @@ public class RadixApplicationAPI {
 	private final RadixLedger ledger;
 	private final DataStoreTranslator dataStoreTranslator;
 	private final TokenTransferTranslator tokenTransferTranslator;
+	private final UniquePropertyTranslator uniquePropertyTranslator;
 	private final Supplier<AtomBuilder> atomBuilderSupplier;
 	private final ConsumableDataSource consumableDataSource;
 
@@ -76,6 +80,7 @@ public class RadixApplicationAPI {
 		this.dataStoreTranslator = DataStoreTranslator.getInstance();
 		this.tokenTransferTranslator = new TokenTransferTranslator(universe, consumableDataSource);
 		this.atomBuilderSupplier = atomBuilderSupplier;
+		this.uniquePropertyTranslator = new UniquePropertyTranslator();
 	}
 
 	public static RadixApplicationAPI create(RadixIdentity identity) {
@@ -108,6 +113,10 @@ public class RadixApplicationAPI {
 		return ledger.getAllAtoms(address.getUID(), ApplicationPayloadAtom.class)
 			.map(dataStoreTranslator::fromAtom)
 			.flatMapMaybe(data -> identity.decrypt(data).toMaybe().onErrorComplete());
+	}
+
+	public Result storeData(Data data) {
+		return this.storeData(data, getMyAddress());
 	}
 
 	public Result storeData(Data data, RadixAddress address) {
@@ -177,35 +186,90 @@ public class RadixApplicationAPI {
 			.share();
 	}
 
+	/**
+	 * Sends an amount of a token to an address
+	 *
+	 * @param to the address to send tokens to
+	 * @param amount the amount and token type
+	 * @return result of the transaction
+	 */
 	public Result sendTokens(RadixAddress to, Amount amount) {
 		return transferTokens(getMyAddress(), to, amount);
 	}
 
-	public Result sendTokens(RadixAddress to, Amount amount, Data attachment) {
+	/**
+	 * Sends an amount of a token with a data attachment to an address
+	 *
+	 * @param to the address to send tokens to
+	 * @param amount the amount and token type
+	 * @param attachment the data attached to the transaction
+	 * @return result of the transaction
+	 */
+	public Result sendTokens(RadixAddress to, Amount amount, @Nullable Data attachment) {
 		return transferTokens(getMyAddress(), to, amount, attachment);
 	}
 
-	public Result transferTokens(RadixAddress from, RadixAddress to, Amount amount, Data attachment) {
-		TokenTransfer tokenTransfer = TokenTransfer.create(from, to, amount.getTokenClass(), amount.getAmountInSubunits(), attachment);
-		AtomBuilder atomBuilder = atomBuilderSupplier.get();
-
-		ConnectableObservable<AtomSubmissionUpdate> updates = tokenTransferTranslator.translate(tokenTransfer, atomBuilder)
-			.andThen(Single.fromCallable(() -> atomBuilder.buildWithPOWFee(ledger.getMagic(), from.getPublicKey())))
-			.flatMap(identity::sign)
-			.flatMapObservable(ledger::submitAtom)
-			.replay();
-
-		updates.connect();
-
-		return new Result(updates);
+	/**
+	 * Sends an amount of a token with a data attachment to an address with a unique property
+	 * meaning that no other transaction can be executed with the same unique bytes
+	 *
+	 * @param to the address to send tokens to
+	 * @param amount the amount and token type
+	 * @param attachment the data attached to the transaction
+	 * @param unique the bytes representing the unique id of this transaction
+	 * @return result of the transaction
+	 */
+	public Result sendTokens(RadixAddress to, Amount amount, @Nullable Data attachment, @Nullable byte[] unique) {
+		return transferTokens(getMyAddress(), to, amount, attachment, unique);
 	}
 
 	public Result transferTokens(RadixAddress from, RadixAddress to, Amount amount) {
-		TokenTransfer tokenTransfer = TokenTransfer.create(from, to, amount.getTokenClass(), amount.getAmountInSubunits());
+		return transferTokens(from, to, amount, null, null);
+	}
+
+	public Result transferTokens(
+		RadixAddress from,
+		RadixAddress to,
+		Amount amount,
+		@Nullable Data attachment
+	) {
+		return transferTokens(from, to, amount, attachment, null);
+	}
+
+	public Result transferTokens(
+		RadixAddress from,
+		RadixAddress to,
+		Amount amount,
+		@Nullable Data attachment,
+		@Nullable byte[] unique // TODO: make unique immutable
+	) {
+		Objects.requireNonNull(from);
+		Objects.requireNonNull(to);
+		Objects.requireNonNull(amount);
+
+		final TokenTransfer tokenTransfer = TokenTransfer.create(from, to, amount.getTokenClass(), amount.getAmountInSubunits(), attachment);
+		final UniqueProperty uniqueProperty;
+		if (unique != null) {
+			// Unique Property must be the from address so that all validation occurs in a single shard.
+			// Once multi-shard validation is implemented this constraint can be removed.
+			uniqueProperty = new UniqueProperty(unique, from);
+		} else {
+			uniqueProperty = null;
+		}
+
+		return executeTransaction(tokenTransfer, uniqueProperty);
+	}
+
+	// TODO: make this more generic
+	private Result executeTransaction(TokenTransfer tokenTransfer, @Nullable UniqueProperty uniqueProperty) {
+		Objects.requireNonNull(tokenTransfer);
+
 		AtomBuilder atomBuilder = atomBuilderSupplier.get();
 
-		ConnectableObservable<AtomSubmissionUpdate> updates = tokenTransferTranslator.translate(tokenTransfer, atomBuilder)
-			.andThen(Single.fromCallable(() -> atomBuilder.buildWithPOWFee(ledger.getMagic(), from.getPublicKey())))
+		ConnectableObservable<AtomSubmissionUpdate> updates =
+			uniquePropertyTranslator.translate(uniqueProperty, atomBuilder)
+			.andThen(tokenTransferTranslator.translate(tokenTransfer, atomBuilder))
+			.andThen(Single.fromCallable(() -> atomBuilder.buildWithPOWFee(ledger.getMagic(), tokenTransfer.getFrom().getPublicKey())))
 			.flatMap(identity::sign)
 			.flatMapObservable(ledger::submitAtom)
 			.replay();
