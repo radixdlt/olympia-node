@@ -98,11 +98,6 @@ public class RadixJson {
 			jsonParticle.addProperty("serializer", 1782261127);
 			jsonParticle.addProperty("version", 100);
 			return jsonParticle;
-		} else if (particle.getClass() == UniqueParticle.class) {
-			JsonObject jsonParticle = context.serialize(particle).getAsJsonObject();
-			jsonParticle.addProperty("serializer", "UNIQUEPARTICLE".hashCode());
-			jsonParticle.addProperty("version", 100);
-			return jsonParticle;
 		}
 
 		throw new RuntimeException("Unknown Particle: " + particle.getClass());
@@ -118,8 +113,6 @@ public class RadixJson {
 			return context.deserialize(json.getAsJsonObject(), Consumer.class);
 		} else if (serializer == 1782261127) {
 			return context.deserialize(json.getAsJsonObject(), Emission.class);
-		} else if (serializer == "UNIQUEPARTICLE".hashCode()) {
-			return context.deserialize(json.getAsJsonObject(), UniqueParticle.class);
 		} else {
 			throw new RuntimeException("Unknown particle serializer: " + serializer);
 		}
@@ -157,6 +150,7 @@ public class RadixJson {
 		SERIALIZERS.put(ECSignature.class, -434788200);
 		SERIALIZERS.put(EncryptorParticle.class, 105401064);
 		SERIALIZERS.put(DataParticle.class, 473758768);
+		SERIALIZERS.put(UniqueParticle.class, "UNIQUEPARTICLE".hashCode());
 	}
 
 	private static final TypeAdapterFactory ECKEYPAIR_ADAPTER_FACTORY = new TypeAdapterFactory() {

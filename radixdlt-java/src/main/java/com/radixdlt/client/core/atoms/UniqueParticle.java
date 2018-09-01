@@ -7,14 +7,17 @@ import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
 
-public class UniqueParticle extends Particle {
+public class UniqueParticle {
 	private final Payload unique;
+	private final Set<EUID> destinations;
+	private final Set<ECKeyPair> owners;
 
+	// TODO: make immutable
 	public UniqueParticle(Payload unique, Set<EUID> destinations, Set<ECKeyPair> owners) {
-		super(destinations, owners);
-
 		Objects.requireNonNull(unique);
 
+		this.destinations = destinations;
+		this.owners = owners;
 		this.unique = unique;
 	}
 

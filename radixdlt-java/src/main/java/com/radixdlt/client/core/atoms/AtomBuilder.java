@@ -13,6 +13,7 @@ public class AtomBuilder {
 	private List<Particle> particles = new ArrayList<>();
 	private EncryptorParticle encryptor;
 	private DataParticle dataParticle;
+	private UniqueParticle uniqueParticle;
 
 	public AtomBuilder() {
 	}
@@ -24,6 +25,11 @@ public class AtomBuilder {
 
 	public AtomBuilder addDestination(RadixAddress address) {
 		return this.addDestination(address.getUID());
+	}
+
+	public AtomBuilder setUniqueParticle(UniqueParticle uniqueParticle) {
+		this.uniqueParticle = uniqueParticle;
+		return this;
 	}
 
 	public AtomBuilder setDataParticle(DataParticle dataParticle) {
@@ -67,7 +73,7 @@ public class AtomBuilder {
 	}
 
 	public UnsignedAtom build(long timestamp) {
-		return new UnsignedAtom(new Atom(dataParticle, particles, destinations, encryptor, timestamp));
+		return new UnsignedAtom(new Atom(dataParticle, particles, destinations, encryptor, uniqueParticle, timestamp));
 	}
 
 	// Temporary method for testing

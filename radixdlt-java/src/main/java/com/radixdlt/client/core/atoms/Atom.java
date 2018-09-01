@@ -41,6 +41,7 @@ public final class Atom {
 	 */
 	private final DataParticle dataParticle;
 	private final EncryptorParticle encryptor;
+	private final UniqueParticle uniqueParticle;
 
 	private transient Map<String, Long> debug = new HashMap<>();
 
@@ -49,12 +50,14 @@ public final class Atom {
 		List<Particle> particles,
 		Set<EUID> destinations,
 		EncryptorParticle encryptor,
+		UniqueParticle uniqueParticle,
 		long timestamp
 	) {
 		this.dataParticle = dataParticle;
 		this.particles = particles;
 		this.destinations = destinations;
 		this.encryptor = encryptor;
+		this.uniqueParticle = uniqueParticle;
 		this.timestamps = Collections.singletonMap("default", timestamp);
 		this.signatures = null;
 		this.action = "STORE";
@@ -65,6 +68,7 @@ public final class Atom {
 		List<Particle> particles,
 		Set<EUID> destinations,
 		EncryptorParticle encryptor,
+		UniqueParticle uniqueParticle,
 		long timestamp,
 		EUID signatureId,
 		ECSignature signature
@@ -73,6 +77,7 @@ public final class Atom {
 		this.particles = particles;
 		this.destinations = destinations;
 		this.encryptor = encryptor;
+		this.uniqueParticle = uniqueParticle;
 		this.timestamps = Collections.singletonMap("default", timestamp);
 		this.signatures = Collections.singletonMap(signatureId.toString(), signature);
 		this.action = "STORE";
@@ -104,6 +109,7 @@ public final class Atom {
 			return getShards();
 		}
 	}
+
 
 	public Long getTimestamp() {
 		return timestamps.get("default");
@@ -139,6 +145,10 @@ public final class Atom {
 
 	public DataParticle getDataParticle() {
 		return dataParticle;
+	}
+
+	public UniqueParticle getUniqueParticle() {
+		return uniqueParticle;
 	}
 
 	public List<Consumable> getConsumables() {
