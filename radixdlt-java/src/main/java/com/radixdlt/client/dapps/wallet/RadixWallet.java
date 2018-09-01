@@ -189,16 +189,18 @@ public class RadixWallet {
 		if (message != null) {
 			attachment = new DataBuilder()
 				.addReader(toAddress.getPublicKey())
-				.addReader(api.getMyAddress().getPublicKey())
+				.addReader(api.getMyPublicKey())
 				.bytes(message.getBytes()).build();
 		} else {
 			attachment = null;
 		}
 
-		ConnectableObservable<AtomSubmissionUpdate> updates = api.getBalance(api.getMyAddress(), Asset.TEST)
+		byte[] uniqueBytes = unique != null ? unique.getBytes() : null;
+
+		ConnectableObservable<AtomSubmissionUpdate> updates = api.getMyBalance(Asset.TEST)
 			.filter(amount -> amount.getAmountInSubunits() > amountInSubUnits)
 			.firstOrError()
-			.map(balance -> api.sendTokens(toAddress, Amount.subUnitsOf(amountInSubUnits, Asset.TEST), attachment, unique.getBytes()))
+			.map(balance -> api.sendTokens(toAddress, Amount.subUnitsOf(amountInSubUnits, Asset.TEST), attachment, uniqueBytes))
 			.flatMapObservable(Result::toObservable)
 			.replay();
 
