@@ -16,7 +16,7 @@ public class AtomSubmissionUpdate {
 		ILLEGAL_STATE(true),
 		UNSUITABLE_PEER(true),
 		VALIDATION_ERROR(true),
-		UNKNOWN_FAILURE(true);
+		UNKNOWN_ERROR(true);
 
 		private boolean isComplete;
 
