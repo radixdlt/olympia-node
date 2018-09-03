@@ -83,20 +83,20 @@ RadixAddress anotherAddress = RadixAddress.fromString("JHB89drvftPj6zVCNjnaijURk
 Immutable data can be stored on the ledger. The data can be encrypted so that only
 selected identities can read the data.
 
-To store the encrypted string `Hello` which only I can read into an account:
+To store the encrypted string `Hello` which only the user can read:
 ```
 ECPublicKey myPublicKey = api.getMyPublicKey();
 Data data = new DataBuilder()
-    .bytes("Hello".getBytes())
+    .bytes("Hello".getBytes(StandardCharsets.UTF_8))
     .addReader(myPublicKey)
     .build();
 Result result = api.storeData(data, <address>);
 ```
 
-To store unencrypted data:
+To store the unencrypted string `Hello`:
 ```
 Data data = new DataBuilder()
-    .bytes("Hello World".getBytes())
+    .bytes("Hello".getBytes(StandardCharsets.UTF_8))
     .unencrypted()
     .build();
 Result result = api.storeData(data, <address>);
