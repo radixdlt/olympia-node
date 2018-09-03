@@ -24,6 +24,7 @@ public class UnsignedAtom {
 			atom.getParticles(),
 			atom.getDestinations(),
 			atom.getEncryptor(),
+			atom.getUniqueParticle(),
 			atom.getTimestamp(),
 			signatureId,
 			signature

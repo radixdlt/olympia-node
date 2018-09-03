@@ -12,8 +12,8 @@ public class AtomBuilderTest {
 			.setDataParticle(new DataParticle(new Payload("Hello".getBytes()), "Test"))
 			.addDestination(new EUID(1));
 
-		UnsignedAtom atom1 = atomBuilder.build();
-		UnsignedAtom atom2 = atomBuilder.build();
+		UnsignedAtom atom1 = atomBuilder.build(0);
+		UnsignedAtom atom2 = atomBuilder.build(0);
 
 		assertEquals(atom1.getHash(), atom2.getHash());
 	}

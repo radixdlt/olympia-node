@@ -9,10 +9,11 @@ import com.radixdlt.client.assets.Amount;
 import com.radixdlt.client.assets.Asset;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate;
+import io.reactivex.Completable;
 import io.reactivex.Observable;
+import io.reactivex.Single;
 import io.reactivex.annotations.NonNull;
 import io.reactivex.annotations.Nullable;
-import io.reactivex.observables.ConnectableObservable;
 import java.util.Objects;
 
 /**
@@ -21,14 +22,22 @@ import java.util.Objects;
 public class RadixWallet {
 	// TODO: add cancel option
 	public static class TransferResult {
-		private final Observable<AtomSubmissionUpdate> updates;
+		private final Single<Result> result;
 
-		private TransferResult(Observable<AtomSubmissionUpdate> updates) {
-			this.updates = updates;
+		private TransferResult(Result result) {
+			this.result = Single.just(result);
+		}
+
+		private TransferResult(Single<Result> result) {
+			this.result = result;
 		}
 
 		public Observable<AtomSubmissionUpdate> toObservable() {
-			return updates;
+			return result.flatMapObservable(Result::toObservable);
+		}
+
+		public Completable toCompletable() {
+			return result.flatMapCompletable(Result::toCompletable);
 		}
 	}
 
@@ -127,11 +136,8 @@ public class RadixWallet {
 			attachment = null;
 		}
 
-		ConnectableObservable<AtomSubmissionUpdate> updates =
-			api.sendTokens(toAddress, Amount.subUnitsOf(amountInSubUnits, Asset.TEST), attachment)
-				.toObservable().replay();
-		updates.connect();
-		return new TransferResult(updates);
+		Result result = api.sendTokens(toAddress, Amount.subUnitsOf(amountInSubUnits, Asset.TEST), attachment);
+		return new TransferResult(result);
 	}
 
 	/**
@@ -147,7 +153,7 @@ public class RadixWallet {
 		@NonNull RadixAddress toAddress
 	) {
 		Objects.requireNonNull(toAddress, "toAddress must be non-null");
-		return this.transferXRDWhenAvailable(amountInSubUnits, toAddress, null);
+		return this.transferXRDWhenAvailable(amountInSubUnits, toAddress, null, null);
 	}
 
 	/**
@@ -164,27 +170,46 @@ public class RadixWallet {
 		@NonNull RadixAddress toAddress,
 		@Nullable String message
 	) {
+		return transferXRDWhenAvailable(amountInSubUnits, toAddress, message, null);
+	}
+
+	/**
+	 * Block indefinitely until there are enough funds in the account, then immediately transfer
+	 * amount with an encrypted message (readable by sender and receiver) to a specified account.
+	 *
+	 * @param amountInSubUnits The amount of TEST to transfer.
+	 * @param toAddress The address to send to.
+	 * @param message The message to send as an attachment.
+	 * @param unique The unique id for this transaction.
+	 * @return The result of the transaction.
+	 */
+	public TransferResult transferXRDWhenAvailable(
+		long amountInSubUnits,
+		@NonNull RadixAddress toAddress,
+		@Nullable String message,
+		@Nullable String unique
+	) {
 		Objects.requireNonNull(toAddress, "toAddress must be non-null");
 
 		final Data attachment;
 		if (message != null) {
 			attachment = new DataBuilder()
 				.addReader(toAddress.getPublicKey())
-				.addReader(api.getMyAddress().getPublicKey())
+				.addReader(api.getMyPublicKey())
 				.bytes(message.getBytes()).build();
 		} else {
 			attachment = null;
 		}
 
-		ConnectableObservable<AtomSubmissionUpdate> updates = api.getBalance(api.getMyAddress(), Asset.TEST)
-			.filter(amount -> amount.getAmountInSubunits() > amountInSubUnits)
+		final byte[] uniqueBytes = unique != null ? unique.getBytes() : null;
+
+		Single<Result> result = api.getMyBalance(Asset.TEST)
+			.filter(amount -> amount.getAmountInSubunits() >= amountInSubUnits)
 			.firstOrError()
-			.map(balance -> api.sendTokens(toAddress, Amount.subUnitsOf(amountInSubUnits, Asset.TEST), attachment))
-			.flatMapObservable(Result::toObservable)
-			.replay();
+			.map(balance -> api.sendTokens(toAddress, Amount.subUnitsOf(amountInSubUnits, Asset.TEST), attachment, uniqueBytes))
+			.cache();
+		result.subscribe();
 
-		updates.connect();
-
-		return new TransferResult(updates);
+		return new TransferResult(result);
 	}
 }

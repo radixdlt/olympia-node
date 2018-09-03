@@ -6,7 +6,7 @@ radixdlt-java is a Java/Android Client library for interacting with a [Radix](ht
 
 ## Features
 * Connection to the Alphanet test network 
-* Fee-less transactions for the time being
+* Fee-less transactions for testnets
 * Identity Creation
 * Native token transfers
 * Immutable data storage
@@ -86,15 +86,19 @@ selected identities can read the data.
 To store the encrypted string `Hello` which only I can read into an account:
 ```
 ECPublicKey myPublicKey = api.getMyPublicKey();
-Data data = new DataBuilder().bytes("Hello".getBytes()).addReader(myPublicKey)
-			.build();
+Data data = new DataBuilder()
+    .bytes("Hello".getBytes())
+    .addReader(myPublicKey)
+    .build();
 Result result = api.storeData(data, <address>);
 ```
 
 To store unencrypted data:
 ```
-Data data = new DataBuilder().bytes("Hello World".getBytes()).unencrypted()
-			.build();
+Data data = new DataBuilder()
+    .bytes("Hello World".getBytes())
+    .unencrypted()
+    .build();
 Result result = api.storeData(data, <address>);
 ```
 
@@ -108,7 +112,7 @@ result.toCompletable().subscribe(<on-success>, <on-error>);
 To then read (and decrypt if necessary) all the readable data at an address:
 ```
 Observable<UnencryptedData> readable = api.getReadableData(<address>);
-readable.map(data -> { ... });
+readable.subscribe(data -> { ... });
 ```
 
 NOTE: data which is not decryptable by the user's key is simply ignored
