@@ -12,6 +12,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 
 public class AtomBuilder {
 	private static final int MAX_PAYLOAD_SIZE = 1028;
@@ -112,7 +113,10 @@ public class AtomBuilder {
 		if (TransactionAtom.class.isAssignableFrom(atomClass)) {
 			atom = new TransactionAtom(particles, destinations, payload, encryptor, this.timestamp);
 		} else if (ApplicationPayloadAtom.class.isAssignableFrom(atomClass)) {
-			Objects.requireNonNull(applicationId, "Payload Atom must have an application id");
+			// Temporary fix to allow payload atoms with no applicationId to still be submitted to network
+			if (applicationId == null) {
+				applicationId = UUID.randomUUID().toString();
+			}
 			atom = new ApplicationPayloadAtom(applicationId, particles, destinations, payload, encryptor, this.timestamp);
 		} else {
 			throw new IllegalStateException("Unable to create atom with class: " + atomClass.getSimpleName());
