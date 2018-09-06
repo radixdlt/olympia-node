@@ -2,6 +2,7 @@ package com.radixdlt.client.core.serialization;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
@@ -18,6 +19,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.bouncycastle.util.encoders.Base64;
+import org.bouncycastle.util.encoders.Hex;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -28,7 +30,6 @@ import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.util.Base64Encoded;
 
 import okio.ByteString;
-import org.bouncycastle.util.encoders.Hex;
 
 public class Dson {
 	private enum Primitive {
@@ -69,7 +70,7 @@ public class Dson {
 
 	private JsonElement parse(ByteBuffer byteBuffer) {
 		int type = byteBuffer.get();
-		int length = byteBuffer.getInt();
+		int length = SerializationUtils.decodeInt(byteBuffer);
 		final JsonElement result;
 		if (type == Primitive.NUMBER.value) {
 			result = new JsonPrimitive(byteBuffer.getLong());
@@ -88,7 +89,7 @@ public class Dson {
 			JsonObject jsonObject = new JsonObject();
 
 			while (length > 0) {
-				int fieldNameLength = byteBuffer.get();
+				int fieldNameLength = byteBuffer.get() & 0xFF;
 				byte[] fieldName = new byte[fieldNameLength];
 				byteBuffer.get(fieldName);
 				int start = byteBuffer.position();
@@ -157,11 +158,11 @@ public class Dson {
 		list.forEach(dsonField -> {
 			try {
 				byte[] nameBytes = dsonField.getName().getBytes(StandardCharsets.UTF_8);
-				outputStream.write(nameBytes.length);
+				SerializationUtils.encodeInt(nameBytes.length, outputStream);
 				outputStream.write(nameBytes);
 				outputStream.write(dsonField.getBytes());
 			} catch (IOException e) {
-				throw new RuntimeException();
+				throw new UncheckedIOException(e);
 			}
 		});
 		return outputStream.toByteArray();
@@ -175,13 +176,13 @@ public class Dson {
 			throw new IllegalArgumentException("Null sent");
 		} else if (o instanceof Collection) {
 			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-			Collection collection = (Collection) o;
+			Collection<?> collection = (Collection<?>) o;
 			for (Object arrayObject : collection) {
 				try {
 					byte[] arrayObjRaw = toDson(arrayObject);
 					outputStream.write(arrayObjRaw);
 				} catch (IOException e) {
-					throw new RuntimeException();
+					throw new UncheckedIOException(e);
 				}
 			}
 			raw = outputStream.toByteArray();
@@ -202,21 +203,21 @@ public class Dson {
 			raw = (byte[]) o;
 			type = 4;
 		} else if (o instanceof Map) {
-			final Map<?, ?> map = (Map) o;
+			final Map<?, ?> map = (Map<?, ?>) o;
 
 			if (HashMap.class == o.getClass()) {
 				throw new IllegalStateException("Cannot DSON serialize HashMap. Must be a predictably ordered map.");
 			}
 
-			Stream<DsonField> fieldStream = map.keySet().stream().map(key -> new DsonField() {
+			Stream<DsonField> fieldStream = map.entrySet().stream().map(e -> new DsonField() {
 				@Override
 				public String getName() {
-					return key.toString();
+					return e.getKey().toString();
 				}
 
 				@Override
 				public byte[] getBytes() {
-					return toDson(map.get(key));
+					return toDson(e.getValue());
 				}
 			});
 
@@ -226,7 +227,7 @@ public class Dson {
 			type = 5;
 
 		} else {
-			Class c = o.getClass();
+			Class<?> c = o.getClass();
 			List<Field> fields = new ArrayList<>();
 			while (c != Object.class) {
 				fields.addAll(Arrays.asList(c.getDeclaredFields()));
@@ -242,27 +243,10 @@ public class Dson {
 						field.setAccessible(true);
 						return field.get(o) != null;
 					} catch (IllegalAccessException e) {
-						throw new RuntimeException();
+						throw new RuntimeException(e);
 					}
 				})
-				.map(field -> new DsonField() {
-					@Override
-					public String getName() {
-						SerializedName serializedName = field.getAnnotation(SerializedName.class);
-						return serializedName == null ? field.getName() : serializedName.value();
-					}
-
-					@Override
-					public byte[] getBytes() {
-						try {
-							field.setAccessible(true);
-							Object fieldObject = field.get(o);
-							return toDson(fieldObject);
-						} catch (IllegalAccessException e) {
-							throw new RuntimeException();
-						}
-					}
-				});
+				.map(field -> dsonFieldFrom(o, field));
 
 			raw = Stream.concat(fieldStream, Stream.of(versionField))
 				.sorted(Comparator.comparing(DsonField::getName))
@@ -270,11 +254,34 @@ public class Dson {
 			type = 5;
 		}
 
-		ByteBuffer byteBuffer = ByteBuffer.allocate(5 + raw.length);
+		ByteBuffer byteBuffer = ByteBuffer.allocate(1 + SerializationUtils.intLength(raw.length) + raw.length);
 		byteBuffer.put(type);
-		byteBuffer.putInt(raw.length);
+		SerializationUtils.encodeInt(raw.length, byteBuffer);
 		byteBuffer.put(raw);
 
 		return byteBuffer.array();
+	}
+
+	private DsonField dsonFieldFrom(Object o, Field field) {
+		SerializedName serializedName = field.getAnnotation(SerializedName.class);
+		String name = (serializedName == null) ? field.getName() : serializedName.value();
+
+		return new DsonField() {
+			@Override
+			public String getName() {
+				return name;
+			}
+
+			@Override
+			public byte[] getBytes() {
+				try {
+					field.setAccessible(true);
+					Object fieldObject = field.get(o);
+					return toDson(fieldObject);
+				} catch (IllegalArgumentException | IllegalAccessException e) {
+					throw new RuntimeException(e);
+				}
+			}
+		};
 	}
 }
