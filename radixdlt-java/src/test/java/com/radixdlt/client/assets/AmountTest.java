@@ -1,14 +1,25 @@
 package com.radixdlt.client.assets;
 
+import java.math.BigDecimal;
 import org.junit.Test;
 
 import com.radixdlt.client.core.address.EUID;
 
+import static org.mockito.Mockito.mock;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.when;
 
 import java.math.BigInteger;
 
 public class AmountTest {
+	@Test
+	public void testBigDecimal() {
+		Asset asset = mock(Asset.class);
+		when(asset.getSubUnits()).thenReturn(1);
+		assertThatThrownBy(() -> Amount.of(new BigDecimal("1.1"), asset)).isInstanceOf(IllegalArgumentException.class);
+		assertEquals(Amount.of(new BigDecimal("1.00"), asset), Amount.of(1, asset));
+	}
 
 	@Test
 	public void testXRD() {
