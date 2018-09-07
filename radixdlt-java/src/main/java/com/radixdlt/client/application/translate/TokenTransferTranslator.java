@@ -15,6 +15,7 @@ import com.radixdlt.client.core.atoms.Payload;
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.crypto.Encryptor;
+import com.radixdlt.client.core.serialization.RadixJson;
 import io.reactivex.Completable;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Collections;
@@ -42,7 +43,7 @@ public class TokenTransferTranslator {
 				.collect(Collectors.toList());
 
 		if (summary.isEmpty()) {
-			throw new IllegalStateException("Invalid atom: " + atom);
+			throw new IllegalStateException("Invalid atom: " + RadixJson.getGson().toJson(atom));
 		}
 
 		if (summary.size() > 2) {
@@ -117,7 +118,7 @@ public class TokenTransferTranslator {
 					newConsumer.addConsumerQuantities(amount, Collections.singleton(tokenTransfer.getTo().toECKeyPair()),
 						consumerQuantities);
 
-					atomBuilder.addParticle(newConsumer);
+					atomBuilder.addConsumer(newConsumer);
 				}
 
 				if (consumerTotal < tokenTransfer.getSubUnitAmount()) {
@@ -129,7 +130,7 @@ public class TokenTransferTranslator {
 				List<Consumable> consumables = consumerQuantities.entrySet().stream()
 					.map(entry -> new Consumable(entry.getValue(), entry.getKey(), System.nanoTime(), Asset.TEST.getId()))
 					.collect(Collectors.toList());
-				atomBuilder.addParticles(consumables);
+				atomBuilder.addConsumables(consumables);
 
 				return Completable.complete();
 

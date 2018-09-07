@@ -39,7 +39,7 @@ public class RadixAtomValidatorTest {
 		Atom atom = mock(Atom.class);
 		when(atom.getHash()).thenReturn(hash);
 		when(atom.getSignature(any())).thenReturn(Optional.empty());
-		when(atom.getAbstractConsumables()).thenReturn(Arrays.asList(consumer));
+		when(atom.getConsumers()).thenReturn(Arrays.asList(consumer));
 
 		RadixAtomValidator validator = RadixAtomValidator.getInstance();
 		assertThatThrownBy(() -> validator.validateSignatures(atom))

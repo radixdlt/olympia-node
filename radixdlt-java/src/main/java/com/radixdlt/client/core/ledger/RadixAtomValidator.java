@@ -4,8 +4,6 @@ import com.radixdlt.client.assets.Asset;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomValidationException;
 import com.radixdlt.client.core.atoms.AtomValidator;
-import com.radixdlt.client.core.atoms.Consumer;
-import com.radixdlt.client.core.atoms.Particle;
 import com.radixdlt.client.core.atoms.RadixHash;
 import com.radixdlt.client.core.crypto.ECSignature;
 import java.util.Objects;
@@ -31,35 +29,31 @@ public class RadixAtomValidator implements AtomValidator {
 	public void validateSignatures(Atom atom) throws AtomValidationException {
 		RadixHash hash = atom.getHash();
 
-		Optional<AtomValidationException> exception = atom.getAbstractConsumables().stream()
-			.filter(Particle::isAbstractConsumable)
-			.map(Particle::getAsAbstractConsumable)
-			.map(particle -> {
-				if (particle.getOwnersPublicKeys().isEmpty()) {
+		Optional<AtomValidationException> exception = atom.getConsumers().stream()
+			.map(consumer -> {
+				if (consumer.getOwnersPublicKeys().isEmpty()) {
 					return new AtomValidationException("No owners in particle");
 				}
 
-				if (particle.getAssetId().equals(Asset.POW.getId())) {
+				if (consumer.getAssetId().equals(Asset.POW.getId())) {
 					return null;
 				}
 
-				if (particle instanceof Consumer) {
-					Optional<AtomValidationException> consumerException = particle.getOwnersPublicKeys().stream().map(owner -> {
-						Optional<ECSignature> signature = atom.getSignature(owner.getUID());
-						if (!signature.isPresent()) {
-							return new AtomValidationException("Missing signature");
-						}
-
-						if (!hash.verifySelf(owner, signature.get())) {
-							return new AtomValidationException("Bad signature");
-						}
-
-						return null;
-					}).filter(Objects::nonNull).findAny();
-
-					if (consumerException.isPresent()) {
-						return consumerException.get();
+				Optional<AtomValidationException> consumerException = consumer.getOwnersPublicKeys().stream().map(owner -> {
+					Optional<ECSignature> signature = atom.getSignature(owner.getUID());
+					if (!signature.isPresent()) {
+						return new AtomValidationException("Missing signature");
 					}
+
+					if (!hash.verifySelf(owner, signature.get())) {
+						return new AtomValidationException("Bad signature");
+					}
+
+					return null;
+				}).filter(Objects::nonNull).findAny();
+
+				if (consumerException.isPresent()) {
+					return consumerException.get();
 				}
 
 				return null;

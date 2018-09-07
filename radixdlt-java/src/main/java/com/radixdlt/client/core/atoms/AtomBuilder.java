@@ -10,7 +10,8 @@ import java.util.Set;
 
 public class AtomBuilder {
 	private Set<EUID> destinations = new HashSet<>();
-	private List<Particle> particles = new ArrayList<>();
+	private List<AbstractConsumable> consumables = new ArrayList<>();
+	private List<Consumer> consumers = new ArrayList<>();
 	private EncryptorParticle encryptor;
 	private DataParticle dataParticle;
 	private UniqueParticle uniqueParticle;
@@ -42,14 +43,20 @@ public class AtomBuilder {
 		return this;
 	}
 
-	public AtomBuilder addParticle(Particle particle) {
-		this.particles.add(particle);
-		this.destinations.addAll(particle.getDestinations());
+	public AtomBuilder addConsumer(Consumer consumer) {
+		this.consumers.add(consumer);
+		this.destinations.addAll(consumer.getDestinations());
 		return this;
 	}
 
-	public <T extends Particle> AtomBuilder addParticles(List<T> particles) {
-		this.particles.addAll(particles);
+	public AtomBuilder addConsumable(Consumable consumable) {
+		this.consumables.add(consumable);
+		this.destinations.addAll(consumable.getDestinations());
+		return this;
+	}
+
+	public <T extends Consumable> AtomBuilder addConsumables(List<T> particles) {
+		this.consumables.addAll(particles);
 		particles.stream().flatMap(particle -> particle.getDestinations().stream()).forEach(destinations::add);
 		return this;
 	}
@@ -67,13 +74,21 @@ public class AtomBuilder {
 			.owner(owner)
 			.pow(magic, (int) Math.ceil(Math.log(size * 8.0)))
 			.build();
-		this.addParticle(fee);
+		this.addConsumable(fee);
 
 		return this.build(timestamp);
 	}
 
 	public UnsignedAtom build(long timestamp) {
-		return new UnsignedAtom(new Atom(dataParticle, particles, destinations, encryptor, uniqueParticle, timestamp));
+		return new UnsignedAtom(new Atom(
+			dataParticle,
+			consumers.isEmpty() ? null : consumers, // Pretty nasty hack here. Need to fix.
+			consumables,
+			destinations,
+			encryptor,
+			uniqueParticle,
+			timestamp
+		));
 	}
 
 	// Temporary method for testing
