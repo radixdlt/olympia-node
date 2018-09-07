@@ -10,7 +10,7 @@ public class AtomTest {
 	public void testNullAtom() {
 		Atom atom = new Atom(null, null, null, null, null, 0);
 		assertNull(atom.getDataParticle());
-		assertEquals(0, atom.getParticles().size());
+		assertEquals(0, atom.getAbstractConsumables().size());
 		assertEquals(0, atom.getConsumables().size());
 		assertEquals(0, atom.getConsumers().size());
 		assertNotNull(atom.getHash());

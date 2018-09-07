@@ -21,7 +21,7 @@ public class UnsignedAtom {
 		// TODO: Remove need to create a new object
 		return new Atom(
 			atom.getDataParticle(),
-			atom.getParticles(),
+			atom.getAbstractConsumables(),
 			atom.getDestinations(),
 			atom.getEncryptor(),
 			atom.getUniqueParticle(),

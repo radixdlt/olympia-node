@@ -48,7 +48,7 @@ public class TransactionAtoms {
 	}
 
 	private void addConsumables(Atom transactionAtom, ObservableEmitter<Atom> emitter) {
-		transactionAtom.getParticles().stream()
+		transactionAtom.getAbstractConsumables().stream()
 			.filter(Particle::isAbstractConsumable)
 			.map(Particle::getAsAbstractConsumable)
 			.filter(particle -> particle.getOwnersPublicKeys().stream().allMatch(address::ownsKey))
@@ -78,7 +78,7 @@ public class TransactionAtoms {
 	}
 
 	private void checkConsumers(Atom transactionAtom, ObservableEmitter<Atom> emitter) {
-		Optional<ByteBuffer> missing = transactionAtom.getParticles().stream()
+		Optional<ByteBuffer> missing = transactionAtom.getAbstractConsumables().stream()
 			.filter(Particle::isAbstractConsumable)
 			.map(Particle::getAsAbstractConsumable)
 			.filter(particle -> particle.getOwnersPublicKeys().stream().allMatch(address::ownsKey))
@@ -99,7 +99,7 @@ public class TransactionAtoms {
 				}
 			});
 		} else {
-			if (transactionAtom.getParticles().stream().allMatch(p -> p instanceof AtomFeeConsumable))  {
+			if (transactionAtom.getAbstractConsumables().stream().allMatch(p -> p instanceof AtomFeeConsumable))  {
 				return;
 			}
 

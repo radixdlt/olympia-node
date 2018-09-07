@@ -39,6 +39,9 @@ public class RadixWalletExample {
 		RadixApplicationAPI api = RadixApplicationAPI.create(radixIdentity);
 		RadixWallet wallet = new RadixWallet(api);
 
+		System.out.println("My address: " + api.getMyAddress());
+		System.out.println("My public key: " + api.getMyPublicKey());
+
 		// Print out all past and future transactions
 		wallet.getXRDTransactions()
 			.subscribe(System.out::println);

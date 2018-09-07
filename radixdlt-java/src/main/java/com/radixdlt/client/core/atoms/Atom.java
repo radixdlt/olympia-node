@@ -27,7 +27,7 @@ public final class Atom {
 	/**
 	 * This will be moved into a Transfer Particle in the future
 	 */
-	private final List<Particle> particles;
+	private final List<Particle> consumables;
 
 	/**
 	 * This will be moved into a Chrono Particle in the future
@@ -47,14 +47,14 @@ public final class Atom {
 
 	public Atom(
 		DataParticle dataParticle,
-		List<Particle> particles,
+		List<Particle> consumables,
 		Set<EUID> destinations,
 		EncryptorParticle encryptor,
 		UniqueParticle uniqueParticle,
 		long timestamp
 	) {
 		this.dataParticle = dataParticle;
-		this.particles = particles;
+		this.consumables = consumables;
 		this.destinations = destinations;
 		this.encryptor = encryptor;
 		this.uniqueParticle = uniqueParticle;
@@ -65,7 +65,7 @@ public final class Atom {
 
 	public Atom(
 		DataParticle dataParticle,
-		List<Particle> particles,
+		List<Particle> consumables,
 		Set<EUID> destinations,
 		EncryptorParticle encryptor,
 		UniqueParticle uniqueParticle,
@@ -74,7 +74,7 @@ public final class Atom {
 		ECSignature signature
 	) {
 		this.dataParticle = dataParticle;
-		this.particles = particles;
+		this.consumables = consumables;
 		this.destinations = destinations;
 		this.encryptor = encryptor;
 		this.uniqueParticle = uniqueParticle;
@@ -97,10 +97,10 @@ public final class Atom {
 
 	// HACK
 	public Set<Long> getRequiredFirstShard() {
-		if (this.particles != null
-			&& this.particles.stream().anyMatch(Particle::isConsumer)
+		if (this.consumables != null
+			&& this.consumables.stream().anyMatch(Particle::isConsumer)
 		) {
-			return particles.stream()
+			return consumables.stream()
 				.filter(Particle::isConsumer)
 				.flatMap(particle -> particle.getDestinations().stream())
 				.map(EUID::getShard)
@@ -123,8 +123,8 @@ public final class Atom {
 		return Optional.ofNullable(signatures).map(sigs -> sigs.get(uid.toString()));
 	}
 
-	public List<Particle> getParticles() {
-		return particles == null ? Collections.emptyList() : Collections.unmodifiableList(particles);
+	public List<Particle> getAbstractConsumables() {
+		return consumables == null ? Collections.emptyList() : Collections.unmodifiableList(consumables);
 	}
 
 	public byte[] toDson() {
@@ -152,14 +152,14 @@ public final class Atom {
 	}
 
 	public List<Consumable> getConsumables() {
-		return getParticles().stream()
+		return getAbstractConsumables().stream()
 			.filter(Particle::isConsumable)
 			.map(Particle::getAsConsumable)
 			.collect(Collectors.toList());
 	}
 
 	public List<Consumer> getConsumers() {
-		return getParticles().stream()
+		return getAbstractConsumables().stream()
 			.filter(Particle::isConsumer)
 			.map(Particle::getAsConsumer)
 			.collect(Collectors.toList());
@@ -167,7 +167,7 @@ public final class Atom {
 
 
 	public Map<Set<ECPublicKey>, Map<EUID, Long>> summary() {
-		return getParticles().stream()
+		return getAbstractConsumables().stream()
 			.filter(Particle::isAbstractConsumable)
 			.map(Particle::getAsAbstractConsumable)
 			.collect(Collectors.groupingBy(
@@ -180,7 +180,7 @@ public final class Atom {
 	}
 
 	public Map<Set<ECPublicKey>, Map<EUID, List<Long>>> consumableSummary() {
-		return getParticles().stream()
+		return getAbstractConsumables().stream()
 			.filter(Particle::isAbstractConsumable)
 			.map(Particle::getAsAbstractConsumable)
 			.collect(Collectors.groupingBy(
@@ -224,6 +224,6 @@ public final class Atom {
 	@Override
 	public String toString() {
 		return "Atom hid(" + getHid().toString() + ") destinations(" + destinations
-			+ ") particles(" + (particles == null ? 0 : particles.size()) + ")";
+			+ ") consumables(" + (consumables == null ? 0 : consumables.size()) + ")";
 	}
 }

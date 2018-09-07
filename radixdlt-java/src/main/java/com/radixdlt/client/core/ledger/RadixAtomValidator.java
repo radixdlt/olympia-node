@@ -31,7 +31,7 @@ public class RadixAtomValidator implements AtomValidator {
 	public void validateSignatures(Atom atom) throws AtomValidationException {
 		RadixHash hash = atom.getHash();
 
-		Optional<AtomValidationException> exception = atom.getParticles().stream()
+		Optional<AtomValidationException> exception = atom.getAbstractConsumables().stream()
 			.filter(Particle::isAbstractConsumable)
 			.map(Particle::getAsAbstractConsumable)
 			.map(particle -> {
