@@ -18,33 +18,25 @@ import java.util.stream.Stream;
  * in a blockchain) and defines the actions that can be issued onto the ledger.
  */
 public final class Atom {
+	// TODO: Remove as action should be outside of Atom structure
 	private String action;
 
-	/**
-	 * This explicit use will be removed in the future
-	 */
+	// TODO: Remove when particles define destinations
 	private Set<EUID> destinations;
 
-
-	/**
-	 * These will be moved into a Transfer Particle in the future
-	 */
+	// TODO: These will be turned into a list of DeleteParticles in the future
 	private final List<Consumer> consumers;
+
+	// TODO: These will be turned into a list of CreateParticles in the future
 	private final List<AbstractConsumable> consumables;
-
-	/**
-	 * This will be moved into a Chrono Particle in the future
-	 */
-	private final Map<String, Long> timestamps;
-
-	private final Map<String, ECSignature> signatures;
-
-	/**
-	 * These will be moved into a more general particle list in the future
-	 */
 	private final DataParticle dataParticle;
 	private final EncryptorParticle encryptor;
 	private final UniqueParticle uniqueParticle;
+
+	// TODO: This will be moved into a Chrono Particle in the future
+	private final Map<String, Long> timestamps;
+
+	private final Map<String, ECSignature> signatures;
 
 	private transient Map<String, Long> debug = new HashMap<>();
 
