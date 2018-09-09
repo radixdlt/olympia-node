@@ -1,8 +1,10 @@
 package com.radixdlt.client.core.crypto;
 
+import java.security.GeneralSecurityException;
+
 import org.bouncycastle.util.encoders.Base64;
 
-public class MacMismatchException extends Exception {
+public class MacMismatchException extends GeneralSecurityException {
 	private final byte[] expected;
 	private final byte[] actual;
 
