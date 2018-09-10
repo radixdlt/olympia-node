@@ -25,7 +25,7 @@ repositories {
 ```
 ```
 dependencies {
-    implementation 'com.radixdlt:radixdlt-java:v0.10.0'
+    implementation 'com.radixdlt:radixdlt-java:0.10.1'
 }
 ```
 
