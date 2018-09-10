@@ -11,50 +11,47 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * An atom is the fundamental atomic unit of storage on the ledger (similar to a block
  * in a blockchain) and defines the actions that can be issued onto the ledger.
  */
 public final class Atom {
+	// TODO: Remove as action should be outside of Atom structure
 	private String action;
 
-	/**
-	 * This explicit use will be removed in the future
-	 */
+	// TODO: Remove when particles define destinations
 	private Set<EUID> destinations;
 
-	/**
-	 * This will be moved into a Transfer Particle in the future
-	 */
-	private final List<Particle> particles;
+	// TODO: These will be turned into a list of DeleteParticles in the future
+	private final List<Consumer> consumers;
 
-	/**
-	 * This will be moved into a Chrono Particle in the future
-	 */
-	private final Map<String, Long> timestamps;
-
-	private final Map<String, ECSignature> signatures;
-
-	/**
-	 * These will be moved into a more general particle list in the future
-	 */
+	// TODO: These will be turned into a list of CreateParticles in the future
+	private final List<AbstractConsumable> consumables;
 	private final DataParticle dataParticle;
 	private final EncryptorParticle encryptor;
 	private final UniqueParticle uniqueParticle;
+
+	// TODO: This will be moved into a Chrono Particle in the future
+	private final Map<String, Long> timestamps;
+
+	private final Map<String, ECSignature> signatures;
 
 	private transient Map<String, Long> debug = new HashMap<>();
 
 	public Atom(
 		DataParticle dataParticle,
-		List<Particle> particles,
+		List<Consumer> consumers,
+		List<AbstractConsumable> consumables,
 		Set<EUID> destinations,
 		EncryptorParticle encryptor,
 		UniqueParticle uniqueParticle,
 		long timestamp
 	) {
 		this.dataParticle = dataParticle;
-		this.particles = particles;
+		this.consumers = consumers;
+		this.consumables = consumables;
 		this.destinations = destinations;
 		this.encryptor = encryptor;
 		this.uniqueParticle = uniqueParticle;
@@ -63,9 +60,10 @@ public final class Atom {
 		this.action = "STORE";
 	}
 
-	public Atom(
+	private Atom(
 		DataParticle dataParticle,
-		List<Particle> particles,
+		List<Consumer> consumers,
+		List<AbstractConsumable> consumables,
 		Set<EUID> destinations,
 		EncryptorParticle encryptor,
 		UniqueParticle uniqueParticle,
@@ -74,13 +72,28 @@ public final class Atom {
 		ECSignature signature
 	) {
 		this.dataParticle = dataParticle;
-		this.particles = particles;
+		this.consumers = consumers;
+		this.consumables = consumables;
 		this.destinations = destinations;
 		this.encryptor = encryptor;
 		this.uniqueParticle = uniqueParticle;
 		this.timestamps = Collections.singletonMap("default", timestamp);
 		this.signatures = Collections.singletonMap(signatureId.toString(), signature);
 		this.action = "STORE";
+	}
+
+	public Atom withSignature(ECSignature signature, EUID signatureId) {
+		return new Atom(
+			dataParticle,
+			consumers,
+			consumables,
+			destinations,
+			encryptor,
+			uniqueParticle,
+			getTimestamp(),
+			signatureId,
+			signature
+		);
 	}
 
 	public String getAction() {
@@ -97,12 +110,9 @@ public final class Atom {
 
 	// HACK
 	public Set<Long> getRequiredFirstShard() {
-		if (this.particles != null
-			&& this.particles.stream().anyMatch(Particle::isConsumer)
-		) {
-			return particles.stream()
-				.filter(Particle::isConsumer)
-				.flatMap(particle -> particle.getDestinations().stream())
+		if (this.consumers != null && !this.consumers.isEmpty()) {
+			return consumers.stream()
+				.flatMap(consumer -> consumer.getDestinations().stream())
 				.map(EUID::getShard)
 				.collect(Collectors.toSet());
 		} else {
@@ -123,8 +133,12 @@ public final class Atom {
 		return Optional.ofNullable(signatures).map(sigs -> sigs.get(uid.toString()));
 	}
 
-	public List<Particle> getParticles() {
-		return particles == null ? Collections.emptyList() : Collections.unmodifiableList(particles);
+	public List<Consumer> getConsumers() {
+		return consumers == null ? Collections.emptyList() : Collections.unmodifiableList(consumers);
+	}
+
+	public List<AbstractConsumable> getConsumables() {
+		return consumables == null ? Collections.emptyList() : Collections.unmodifiableList(consumables);
 	}
 
 	public byte[] toDson() {
@@ -151,25 +165,8 @@ public final class Atom {
 		return uniqueParticle;
 	}
 
-	public List<Consumable> getConsumables() {
-		return getParticles().stream()
-			.filter(Particle::isConsumable)
-			.map(Particle::getAsConsumable)
-			.collect(Collectors.toList());
-	}
-
-	public List<Consumer> getConsumers() {
-		return getParticles().stream()
-			.filter(Particle::isConsumer)
-			.map(Particle::getAsConsumer)
-			.collect(Collectors.toList());
-	}
-
-
 	public Map<Set<ECPublicKey>, Map<EUID, Long>> summary() {
-		return getParticles().stream()
-			.filter(Particle::isAbstractConsumable)
-			.map(Particle::getAsAbstractConsumable)
+		return Stream.concat(getConsumers().stream(), getConsumables().stream())
 			.collect(Collectors.groupingBy(
 				AbstractConsumable::getOwnersPublicKeys,
 				Collectors.groupingBy(
@@ -180,9 +177,7 @@ public final class Atom {
 	}
 
 	public Map<Set<ECPublicKey>, Map<EUID, List<Long>>> consumableSummary() {
-		return getParticles().stream()
-			.filter(Particle::isAbstractConsumable)
-			.map(Particle::getAsAbstractConsumable)
+		return Stream.concat(getConsumers().stream(), getConsumables().stream())
 			.collect(Collectors.groupingBy(
 				AbstractConsumable::getOwnersPublicKeys,
 				Collectors.groupingBy(
@@ -224,6 +219,6 @@ public final class Atom {
 	@Override
 	public String toString() {
 		return "Atom hid(" + getHid().toString() + ") destinations(" + destinations
-			+ ") particles(" + (particles == null ? 0 : particles.size()) + ")";
+			+ ") consumables(" + getConsumables().size() + ") consumers(" + getConsumers().size() + ")";
 	}
 }

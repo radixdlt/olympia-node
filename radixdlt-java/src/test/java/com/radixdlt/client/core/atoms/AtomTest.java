@@ -8,9 +8,9 @@ import org.junit.Test;
 public class AtomTest {
 	@Test
 	public void testNullAtom() {
-		Atom atom = new Atom(null, null, null, null, null, 0);
+		Atom atom = new Atom(null, null, null, null, null, null, 0);
 		assertNull(atom.getDataParticle());
-		assertEquals(0, atom.getParticles().size());
+		assertEquals(0, atom.getConsumables().size());
 		assertEquals(0, atom.getConsumables().size());
 		assertEquals(0, atom.getConsumers().size());
 		assertNotNull(atom.getHash());
@@ -20,6 +20,6 @@ public class AtomTest {
 		assertEquals(new Long(0), atom.getTimestamp());
 		assertNotNull(atom.toString());
 
-		assertEquals(atom, new Atom(null, null, null, null, null, 0));
+		assertEquals(atom, new Atom(null, null, null, null, null, null, 0));
 	}
 }

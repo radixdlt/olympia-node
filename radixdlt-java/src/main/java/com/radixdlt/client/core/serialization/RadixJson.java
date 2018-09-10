@@ -16,6 +16,7 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.address.RadixUniverseType;
+import com.radixdlt.client.core.atoms.AbstractConsumable;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomFeeConsumable;
 import com.radixdlt.client.core.atoms.Consumable;
@@ -77,7 +78,7 @@ public class RadixJson {
 		);
 	};
 
-	private static final JsonSerializer<Particle> PARTICLE_SERIALIZER = (particle, typeOfT, context) -> {
+	private static final JsonSerializer<Particle> ABSTRACT_CONSUMABLE_SERIALIZER = (particle, typeOfT, context) -> {
 		if (particle.getClass() == AtomFeeConsumable.class) {
 			JsonObject jsonParticle = context.serialize(particle).getAsJsonObject();
 			jsonParticle.addProperty("serializer", -1463653224);
@@ -86,11 +87,6 @@ public class RadixJson {
 		} else if (particle.getClass() == Consumable.class) {
 			JsonObject jsonParticle = context.serialize(particle).getAsJsonObject();
 			jsonParticle.addProperty("serializer", 318720611);
-			jsonParticle.addProperty("version", 100);
-			return jsonParticle;
-		} else if (particle.getClass() == Consumer.class) {
-			JsonObject jsonParticle = context.serialize(particle).getAsJsonObject();
-			jsonParticle.addProperty("serializer", 214856694);
 			jsonParticle.addProperty("version", 100);
 			return jsonParticle;
 		} else if (particle.getClass() == Emission.class) {
@@ -103,14 +99,12 @@ public class RadixJson {
 		throw new RuntimeException("Unknown Particle: " + particle.getClass());
 	};
 
-	private static final JsonDeserializer<Particle> PARTICLE_DESERIALIZER = (json, typeOf, context) -> {
+	private static final JsonDeserializer<Particle> ABSTRACT_CONSUMABLE_DESERIALIZER = (json, typeOf, context) -> {
 		long serializer = json.getAsJsonObject().get("serializer").getAsLong();
 		if (serializer == -1463653224) {
 			return context.deserialize(json.getAsJsonObject(), AtomFeeConsumable.class);
 		} else if (serializer == 318720611) {
 			return context.deserialize(json.getAsJsonObject(), Consumable.class);
-		} else if (serializer == 214856694) {
-			return context.deserialize(json.getAsJsonObject(), Consumer.class);
 		} else if (serializer == 1782261127) {
 			return context.deserialize(json.getAsJsonObject(), Emission.class);
 		} else {
@@ -151,6 +145,7 @@ public class RadixJson {
 		SERIALIZERS.put(EncryptorParticle.class, 105401064);
 		SERIALIZERS.put(DataParticle.class, 473758768);
 		SERIALIZERS.put(UniqueParticle.class, "UNIQUEPARTICLE".hashCode());
+		SERIALIZERS.put(Consumer.class, 214856694);
 	}
 
 	private static final TypeAdapterFactory ECKEYPAIR_ADAPTER_FACTORY = new TypeAdapterFactory() {
@@ -190,8 +185,8 @@ public class RadixJson {
 			.registerTypeHierarchyAdapter(Base64Encoded.class, BASE64_SERIALIZER)
 			.registerTypeAdapterFactory(ECKEYPAIR_ADAPTER_FACTORY)
 			.registerTypeAdapter(byte[].class, new ByteArraySerializer())
-			.registerTypeAdapter(Particle.class, PARTICLE_SERIALIZER)
-			.registerTypeAdapter(Particle.class, PARTICLE_DESERIALIZER)
+			.registerTypeAdapter(AbstractConsumable.class, ABSTRACT_CONSUMABLE_SERIALIZER)
+			.registerTypeAdapter(AbstractConsumable.class, ABSTRACT_CONSUMABLE_DESERIALIZER)
 			.registerTypeAdapter(EUID.class, new EUIDSerializer())
 			.registerTypeAdapter(Payload.class, PAYLOAD_DESERIALIZER)
 			.registerTypeAdapter(EncryptedPrivateKey.class, PROTECTOR_DESERIALIZER)

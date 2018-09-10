@@ -12,13 +12,15 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Optional;
 import org.junit.Test;
+
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class RadixAtomValidatorTest {
 
-	@Test(expected = AtomValidationException.class)
+	@Test
 	public void testSignatureValidation() throws AtomValidationException {
 		RadixHash hash = mock(RadixHash.class);
 
@@ -37,10 +39,11 @@ public class RadixAtomValidatorTest {
 		Atom atom = mock(Atom.class);
 		when(atom.getHash()).thenReturn(hash);
 		when(atom.getSignature(any())).thenReturn(Optional.empty());
-		when(atom.getParticles()).thenReturn(Arrays.asList(consumer));
+		when(atom.getConsumers()).thenReturn(Arrays.asList(consumer));
 
 		RadixAtomValidator validator = RadixAtomValidator.getInstance();
-		validator.validateSignatures(atom);
+		assertThatThrownBy(() -> validator.validateSignatures(atom))
+			.isInstanceOf(AtomValidationException.class);
 	}
 
 	@Test
