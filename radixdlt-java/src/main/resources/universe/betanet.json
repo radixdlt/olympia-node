@@ -2,10 +2,6 @@
   "magic": 63799298,
   "genesis": [
     {
-      "timestamps": {
-        "default": 1488326400000,
-        "expires": 9223372036854775807
-      },
       "destinations": [{
         "serializer": "EUID",
         "value": "56abab3870585f04d015d55adf600bc7"
@@ -44,21 +40,25 @@
       "signatures": {"56abab3870585f04d015d55adf600bc7": {
         "r": {
           "serializer": "BASE64",
-          "value": "d1GbB8u+RQLL9g3HhkHcST68feMRak0gSE6NZgOBqO8="
+          "value": "AJnsaMDyLsBhaZNViH735OLC0HbmFDfKFzXKoxbsEIfH"
         },
         "s": {
           "serializer": "BASE64",
-          "value": "AJsByxOduFW6YKbabNmyM5Nqxr/YQNvc67xLVtpykWf/"
+          "value": "AIYvItMpNStM1MrtNKVVL7VN+5KIO1t7nIefU4HCyUXD"
         },
         "serializer": -434788200,
         "version": 100
-      }}
+      }},
+      "chronoParticle": {
+        "timestamps": {
+          "default": 1488326400000,
+          "expires": 9223372036854775807
+        },
+        "serializer": 1080087081,
+        "version": 100
+      }
     },
     {
-      "timestamps": {
-        "default": 1488326400000,
-        "expires": 9223372036854775807
-      },
       "destinations": [{
         "serializer": "EUID",
         "value": "56abab3870585f04d015d55adf600bc7"
@@ -101,21 +101,29 @@
       "signatures": {"56abab3870585f04d015d55adf600bc7": {
         "r": {
           "serializer": "BASE64",
-          "value": "Drig2hOebYNAgui9cnPTYLeg0y0JQNmuVMZifyN0QPU="
+          "value": "AJxeqJ4JuHieNboiEkNIEZE2cAcHr2yONM5VB9dmBYPW"
         },
         "s": {
           "serializer": "BASE64",
-          "value": "AJ0jJGdVtOi+KWgO2bK7ItOCbTw17IpZLmBXD3TNDafC"
+          "value": "ANaatTrgXq7XU9pwmjLJDvabDFJv+kLMtEHCqMyTkoiq"
         },
         "serializer": -434788200,
         "version": 100
-      }}
+      }},
+      "chronoParticle": {
+        "timestamps": {
+          "default": 1488326400000,
+          "expires": 9223372036854775807
+        },
+        "serializer": 1080087081,
+        "version": 100
+      }
     },
     {
       "temporal_proof": {
         "atom_id": {
           "serializer": "EUID",
-          "value": "b28a8654199434b57727faf784f1c0bd"
+          "value": "c5e9a682102d3924ce7b7fbefd25f910"
         },
         "vertices": [{
           "owner": {
@@ -133,16 +141,16 @@
           "signature": {
             "r": {
               "serializer": "BASE64",
-              "value": "AJhFJdfnJygOIi7RNf4q20oitI75KQbcPPDRG31Ypohv"
+              "value": "APR3Kzx1hYrjKQj+VLTtuW9M60DirGBi5Nvre8w4Nnmw"
             },
             "s": {
               "serializer": "BASE64",
-              "value": "AMvr7Azo8ORIdvUlLVVvw0EXwjnJxbsI5DAHyzEX5wQZ"
+              "value": "AInEEihDC+k5KWiOfhPK5gQl1e7pxEo7Sfwnyjixk1iD"
             },
             "serializer": -434788200,
             "version": 100
           },
-          "timestamps": {"default": 1536290196774},
+          "timestamps": {"default": 1536609463111},
           "commitment": {
             "serializer": "HASH",
             "value": "0000000000000000000000000000000000000000000000000000000000000000"
@@ -173,10 +181,9 @@
           "serializer": "EUID",
           "value": "d7bd34bfe44a18d2aa755a344fe3e6b0"
         },
-        "nonce": 189906203401395,
+        "nonce": 339952022335573,
         "version": 100
       }],
-      "timestamps": {"default": 1488326400000},
       "destinations": [{
         "serializer": "EUID",
         "value": "56abab3870585f04d015d55adf600bc7"
@@ -195,15 +202,20 @@
       "signatures": {"56abab3870585f04d015d55adf600bc7": {
         "r": {
           "serializer": "BASE64",
-          "value": "WNbYyQzrPdBJKYneJZXndr7EsItKU2avJYrLiDTmsZM="
+          "value": "WtnzxmGfZWuVzD1wRA9E/KQXPmIEbMhAz0GzVunCRyA="
         },
         "s": {
           "serializer": "BASE64",
-          "value": "AMZxwt7jtX1nXHbKUU0DBSJ7xCUW4RmR3AbrOIXnuxjk"
+          "value": "AOO8uz8vB6BASTSt0W7WMx7SwUmoYkYEQCaUq/DOD+XU"
         },
         "serializer": -434788200,
         "version": 100
-      }}
+      }},
+      "chronoParticle": {
+        "timestamps": {"default": 1488326400000},
+        "serializer": 1080087081,
+        "version": 100
+      }
     }
   ],
   "creator": {
@@ -213,11 +225,11 @@
   "port": 30000,
   "signature.r": {
     "serializer": "BASE64",
-    "value": "c3/uGSBimPkCNS0ZDhFPPtE9JRBeUZZBZU+hOfOCdEE="
+    "value": "AMKJxK+fQ6oWH/Xp49ZppucXdvuPG6IJrQ+WuJyATkEL"
   },
   "signature.s": {
     "serializer": "BASE64",
-    "value": "ANNVBroomeB92Xfs3mjBm+6EU7WCEjHXc6Ke/zP2Fw4/"
+    "value": "APAm/NjIkbsyfPACjeleCsS5yVfxaEj3mtr+ceEgPt6L"
   },
   "name": "Radix Devnet",
   "description": "The Radix development Universe",
