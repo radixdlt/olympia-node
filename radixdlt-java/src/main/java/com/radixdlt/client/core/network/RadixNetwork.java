@@ -83,6 +83,7 @@ public final class RadixNetwork {
 					.firstOrError()
 					.toMaybe()
 			)
+			.flatMapMaybe(client -> client.checkAPIVersion().filter(b -> b).map(b -> client))
 			.firstOrError();
 	}
 

@@ -28,6 +28,11 @@ public class RadixJsonRpcClient {
 	private static final Logger LOGGER = LoggerFactory.getLogger(RadixJsonRpcClient.class);
 
 	/**
+	 * API version of Client, must match with Server
+	 */
+	private static final Integer API_VERSION = 1;
+
+	/**
 	 * The websocket this is wrapping
 	 */
 	private final WebSocketClient wsClient;
@@ -37,6 +42,11 @@ public class RadixJsonRpcClient {
 	 */
 	private final Observable<JsonObject> messages;
 
+	/**
+	 * Cached API version of Server
+	 */
+	private final Single<Integer> serverApiVersion;
+
 	public RadixJsonRpcClient(WebSocketClient wsClient) {
 		this.wsClient = wsClient;
 
@@ -45,6 +55,10 @@ public class RadixJsonRpcClient {
 			.map(msg -> parser.parse(msg).getAsJsonObject())
 			.publish()
 			.refCount();
+
+		this.serverApiVersion = jsonRpcCall("Api.getVersion")
+			.map(result -> result.getAsJsonObject().get("version").getAsInt())
+			.cache();
 	}
 
 	/**
@@ -120,6 +134,14 @@ public class RadixJsonRpcClient {
 	 */
 	private Single<JsonElement> jsonRpcCall(String method) {
 		return this.jsonRpcCall(method, new JsonObject());
+	}
+
+	public Single<Integer> getAPIVersion() {
+		return serverApiVersion;
+	}
+
+	public Single<Boolean> checkAPIVersion() {
+		return this.getAPIVersion().map(API_VERSION::equals);
 	}
 
 	/**
