@@ -7,17 +7,18 @@ import com.radixdlt.client.core.atoms.RadixHash;
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECKeyPairGenerator;
 import com.radixdlt.client.core.crypto.LinuxSecureRandom;
+import com.radixdlt.client.core.crypto.MacMismatchException;
 import com.radixdlt.client.application.identity.model.keystore.Cipherparams;
 import com.radixdlt.client.application.identity.model.keystore.Crypto;
 import com.radixdlt.client.application.identity.model.keystore.Keystore;
 import com.radixdlt.client.application.identity.model.keystore.Pbkdfparams;
 import com.radixdlt.client.core.util.AndroidUtil;
-import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
+import java.io.Reader;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.Security;
@@ -57,7 +58,12 @@ public final class PrivateKeyEncrypter {
 
     private PrivateKeyEncrypter() { }
 
-    public static void createEncryptedPrivateKeyFile(String password, String filePath) throws Exception {
+    public static void createEncryptedPrivateKeyFile(String password, String filePath) throws IOException, GeneralSecurityException {
+        String strJson = createEncryptedPrivateKey(password);
+        createFile(strJson, filePath);
+    }
+
+    public static String createEncryptedPrivateKey(String password) throws GeneralSecurityException {
         ECKeyPair ecKeyPair = ECKeyPairGenerator.newInstance().generateKeyPair();
         String privateKey = ByteString.of(ecKeyPair.getPrivateKey()).hex();
         byte[] salt = getSalt().getBytes(StandardCharsets.UTF_8);
@@ -74,18 +80,16 @@ public final class PrivateKeyEncrypter {
         Keystore keystore = createKeystore(ecKeyPair, cipherText, mac, iv, salt);
 
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
-        String strJson = gson.toJson(keystore);
-
-        createFile(strJson, filePath);
+        return gson.toJson(keystore);
     }
 
-    public static byte[] decryptPrivateKeyFile(String password, String filePath) throws Exception {
-        Keystore keystore = getKeystore(filePath);
+    public static byte[] decryptPrivateKey(String password, Reader keyReader) throws IOException, GeneralSecurityException {
+        Keystore keystore = getKeystore(keyReader);
         byte[] salt = keystore.getCrypto().getPbkdfparams().getSalt().getBytes(StandardCharsets.UTF_8);
         int iterations = keystore.getCrypto().getPbkdfparams().getIterations();
         int keyLen = keystore.getCrypto().getPbkdfparams().getKeylen();
         byte[] iv = ByteString.decodeHex(keystore.getCrypto().getCipherparams().getIv()).toByteArray();
-        String mac = keystore.getCrypto().getMac();
+        byte[] mac = ByteString.decodeHex(keystore.getCrypto().getMac()).toByteArray();
         byte[] cipherText = ByteString.decodeHex(keystore.getCrypto().getCiphertext()).toByteArray();
 
         SecretKey derivedKey = getSecretKey(password, salt, iterations, keyLen);
@@ -95,8 +99,8 @@ public final class PrivateKeyEncrypter {
 
         byte[] computedMac = generateMac(derivedKey.getEncoded(), cipherText);
 
-        if (!Arrays.equals(computedMac, ByteString.decodeHex(mac).toByteArray())) {
-            throw new Exception("MAC mismatch");
+        if (!Arrays.equals(computedMac, mac)) {
+            throw new MacMismatchException(computedMac, mac);
         }
 
         String privateKey = decrypt(cipher, cipherText);
@@ -113,9 +117,9 @@ public final class PrivateKeyEncrypter {
         return new SecretKeySpec(key.getEncoded(), "AES");
     }
 
-    private static Keystore getKeystore(String filePath) throws Exception {
-        try (JsonReader reader = new JsonReader(new FileReader(filePath))) {
-            return new Gson().fromJson(reader, Keystore.class);
+    private static Keystore getKeystore(Reader keyReader) throws IOException {
+        try (JsonReader jsonReader = new JsonReader(keyReader)) {
+            return new Gson().fromJson(jsonReader, Keystore.class);
         }
     }
 
@@ -125,8 +129,7 @@ public final class PrivateKeyEncrypter {
         }
     }
 
-    private static Keystore createKeystore(ECKeyPair ecKeyPair, String cipherText, byte[] mac, byte[] iv, byte[] salt)
-            throws UnsupportedEncodingException {
+    private static Keystore createKeystore(ECKeyPair ecKeyPair, String cipherText, byte[] mac, byte[] iv, byte[] salt) {
         Keystore keystore = new Keystore();
         keystore.setId(ecKeyPair.getUID().toString());
 
@@ -152,13 +155,13 @@ public final class PrivateKeyEncrypter {
         return keystore;
     }
 
-    private static String encrypt(Cipher cipher, String encrypt) throws Exception {
+    private static String encrypt(Cipher cipher, String encrypt) throws GeneralSecurityException {
         byte[] bytes = encrypt.getBytes(StandardCharsets.UTF_8);
         byte[] encrypted = cipher.doFinal(bytes);
         return ByteString.of(encrypted).hex();
     }
 
-    private static String decrypt(Cipher cipher, byte[] encrypted) throws Exception {
+    private static String decrypt(Cipher cipher, byte[] encrypted) throws GeneralSecurityException {
         byte[] decrypted = cipher.doFinal(encrypted);
         return new String(decrypted, StandardCharsets.UTF_8);
     }
