@@ -54,7 +54,7 @@ public class TransactionAtoms {
 				ByteBuffer dson = ByteBuffer.wrap(consumer.getDson());
 				Consumable consumable = unconsumedConsumables.remove(dson);
 				if (consumable == null) {
-					throw new IllegalStateException();
+					throw new IllegalStateException("Missing consumable for consumer.");
 				}
 			});
 
@@ -67,7 +67,7 @@ public class TransactionAtoms {
 					if (current == null) {
 						return particle.getAsConsumable();
 					} else {
-						throw new IllegalStateException();
+						throw new IllegalStateException("Consumable already exists.");
 					}
 				});
 
