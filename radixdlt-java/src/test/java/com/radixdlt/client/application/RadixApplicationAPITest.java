@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
 import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.application.objects.UnencryptedData;
+import com.radixdlt.client.application.translate.DataStoreTranslator;
 import com.radixdlt.client.application.translate.InsufficientFundsException;
 import com.radixdlt.client.assets.Amount;
 import com.radixdlt.client.assets.Asset;
@@ -18,12 +19,8 @@ import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomBuilder;
-import com.radixdlt.client.core.atoms.DataParticle;
-import com.radixdlt.client.core.atoms.EncryptorParticle;
-import com.radixdlt.client.core.atoms.Payload;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.crypto.CryptoException;
-import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.core.ledger.RadixLedger;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate;
@@ -31,7 +28,7 @@ import com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.observers.TestObserver;
-import java.util.Collections;
+import java.util.Optional;
 import java.util.function.Supplier;
 import org.junit.Test;
 
@@ -51,7 +48,7 @@ public class RadixApplicationAPITest {
 		UnsignedAtom unsignedAtom = mock(UnsignedAtom.class);
 		when(atomBuilder.buildWithPOWFee(anyInt(), any())).thenReturn(unsignedAtom);
 
-		return RadixApplicationAPI.create(identity, universe, atomBuilderSupplier);
+		return RadixApplicationAPI.create(identity, universe, DataStoreTranslator.getInstance(), atomBuilderSupplier);
 	}
 
 	private RadixLedger createMockedLedgerWhichAlwaysSucceeds() {
@@ -165,7 +162,7 @@ public class RadixApplicationAPITest {
 
 		when(ledger.getAllAtoms(any())).thenReturn(Observable.just(atom, atom, atom));
 
-		RadixApplicationAPI api = RadixApplicationAPI.create(identity, universe, AtomBuilder::new);
+		RadixApplicationAPI api = RadixApplicationAPI.create(identity, universe, DataStoreTranslator.getInstance(), AtomBuilder::new);
 		TestObserver<UnencryptedData> observer = TestObserver.create();
 		api.getReadableData(address).subscribe(observer);
 		observer.assertValueCount(0);
@@ -186,25 +183,15 @@ public class RadixApplicationAPITest {
 			.thenReturn(Single.error(new CryptoException("Can't decrypt")))
 			.thenReturn(Single.just(unencryptedData));
 
-		EncryptorParticle encryptor = mock(EncryptorParticle.class);
-		EncryptedPrivateKey protector = mock(EncryptedPrivateKey.class);
-		when(encryptor.getProtectors()).thenReturn(Collections.singletonList(protector));
-
-		Payload payload = mock(Payload.class);
-		DataParticle dataParticle = mock(DataParticle.class);
-		when(dataParticle.getBytes()).thenReturn(payload);
+		Data data = mock(Data.class);
+		DataStoreTranslator dataStoreTranslator = mock(DataStoreTranslator.class);
+		when(dataStoreTranslator.fromAtom(any(Atom.class))).thenReturn(Optional.of(data), Optional.of(data));
 
 		Atom errorAtom = mock(Atom.class);
-		when(errorAtom.getEncryptor()).thenReturn(encryptor);
-		when(errorAtom.getDataParticle()).thenReturn(dataParticle);
-
 		Atom okAtom = mock(Atom.class);
-		when(okAtom.getEncryptor()).thenReturn(encryptor);
-		when(okAtom.getDataParticle()).thenReturn(dataParticle);
-
 		when(ledger.getAllAtoms(any())).thenReturn(Observable.just(errorAtom, okAtom));
 
-		RadixApplicationAPI api = RadixApplicationAPI.create(identity, universe, AtomBuilder::new);
+		RadixApplicationAPI api = RadixApplicationAPI.create(identity, universe, dataStoreTranslator, AtomBuilder::new);
 		TestObserver observer = TestObserver.create();
 		api.getReadableData(address).subscribe(observer);
 
@@ -220,7 +207,7 @@ public class RadixApplicationAPITest {
 		RadixAddress address = mock(RadixAddress.class);
 		RadixIdentity identity = mock(RadixIdentity.class);
 		when(universe.getLedger()).thenReturn(ledger);
-		RadixApplicationAPI api = RadixApplicationAPI.create(identity, universe, AtomBuilder::new);
+		RadixApplicationAPI api = RadixApplicationAPI.create(identity, universe, DataStoreTranslator.getInstance(), AtomBuilder::new);
 
 		when(ledger.getAllAtoms(any())).thenReturn(Observable.empty());
 
@@ -237,7 +224,7 @@ public class RadixApplicationAPITest {
 		RadixAddress address = mock(RadixAddress.class);
 		RadixIdentity identity = mock(RadixIdentity.class);
 		when(universe.getLedger()).thenReturn(ledger);
-		RadixApplicationAPI api = RadixApplicationAPI.create(identity, universe, AtomBuilder::new);
+		RadixApplicationAPI api = RadixApplicationAPI.create(identity, universe, DataStoreTranslator.getInstance(), AtomBuilder::new);
 
 		when(ledger.getAllAtoms(any())).thenReturn(Observable.empty());
 

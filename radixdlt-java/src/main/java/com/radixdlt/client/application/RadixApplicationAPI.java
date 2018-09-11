@@ -72,11 +72,16 @@ public class RadixApplicationAPI {
 	private final Supplier<AtomBuilder> atomBuilderSupplier;
 	private final ConsumableDataSource consumableDataSource;
 
-	private RadixApplicationAPI(RadixIdentity identity, RadixUniverse universe, Supplier<AtomBuilder> atomBuilderSupplier) {
+	private RadixApplicationAPI(
+		RadixIdentity identity,
+		RadixUniverse universe,
+		DataStoreTranslator dataStoreTranslator,
+		Supplier<AtomBuilder> atomBuilderSupplier
+	) {
 		this.identity = identity;
 		this.ledger = universe.getLedger();
 		this.consumableDataSource = new ConsumableDataSource(ledger);
-		this.dataStoreTranslator = DataStoreTranslator.getInstance();
+		this.dataStoreTranslator = dataStoreTranslator;
 		this.tokenTransferTranslator = new TokenTransferTranslator(universe, consumableDataSource);
 		this.atomBuilderSupplier = atomBuilderSupplier;
 		this.uniquePropertyTranslator = new UniquePropertyTranslator();
@@ -84,14 +89,19 @@ public class RadixApplicationAPI {
 
 	public static RadixApplicationAPI create(RadixIdentity identity) {
 		Objects.requireNonNull(identity);
-		return create(identity, RadixUniverse.getInstance(), AtomBuilder::new);
+		return create(identity, RadixUniverse.getInstance(), DataStoreTranslator.getInstance(), AtomBuilder::new);
 	}
 
-	public static RadixApplicationAPI create(RadixIdentity identity, RadixUniverse universe, Supplier<AtomBuilder> atomBuilderSupplier) {
+	public static RadixApplicationAPI create(
+		RadixIdentity identity,
+		RadixUniverse universe,
+		DataStoreTranslator dataStoreTranslator,
+		Supplier<AtomBuilder> atomBuilderSupplier
+	) {
 		Objects.requireNonNull(identity);
 		Objects.requireNonNull(universe);
 		Objects.requireNonNull(atomBuilderSupplier);
-		return new RadixApplicationAPI(identity, universe, atomBuilderSupplier);
+		return new RadixApplicationAPI(identity, universe, dataStoreTranslator, atomBuilderSupplier);
 	}
 
 	public ECPublicKey getMyPublicKey() {
