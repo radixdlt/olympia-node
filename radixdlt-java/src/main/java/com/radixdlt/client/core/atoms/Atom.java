@@ -30,7 +30,7 @@ public final class Atom {
 	// TODO: These will be turned into a list of CreateParticles in the future
 	private final List<AbstractConsumable> consumables;
 	private final DataParticle dataParticle;
-	private final EncryptorParticle encryptor;
+	private final DataParticle encryptor;
 	private final UniqueParticle uniqueParticle;
 	private final ChronoParticle chronoParticle;
 
@@ -43,7 +43,7 @@ public final class Atom {
 		List<Consumer> consumers,
 		List<AbstractConsumable> consumables,
 		Set<EUID> destinations,
-		EncryptorParticle encryptor,
+		DataParticle encryptor,
 		UniqueParticle uniqueParticle,
 		long timestamp
 	) {
@@ -63,7 +63,7 @@ public final class Atom {
 		List<Consumer> consumers,
 		List<AbstractConsumable> consumables,
 		Set<EUID> destinations,
-		EncryptorParticle encryptor,
+		DataParticle encryptor,
 		UniqueParticle uniqueParticle,
 		long timestamp,
 		EUID signatureId,
@@ -151,7 +151,7 @@ public final class Atom {
 		return getHash().toEUID();
 	}
 
-	public EncryptorParticle getEncryptor() {
+	public DataParticle getEncryptor() {
 		return encryptor;
 	}
 

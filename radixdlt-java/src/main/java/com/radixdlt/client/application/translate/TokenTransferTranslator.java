@@ -1,5 +1,7 @@
 package com.radixdlt.client.application.translate;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonParser;
 import com.radixdlt.client.application.actions.TokenTransfer;
 import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.assets.Asset;
@@ -14,10 +16,13 @@ import com.radixdlt.client.core.atoms.EncryptorParticle;
 import com.radixdlt.client.core.atoms.Payload;
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECPublicKey;
+import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
 import com.radixdlt.client.core.crypto.Encryptor;
 import com.radixdlt.client.core.serialization.RadixJson;
 import io.reactivex.Completable;
+import java.nio.charset.StandardCharsets;
 import java.util.AbstractMap.SimpleImmutableEntry;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -29,6 +34,7 @@ import java.util.stream.Collectors;
 public class TokenTransferTranslator {
 	private final RadixUniverse universe;
 	private final ConsumableDataSource consumableDataSource;
+	private static final JsonParser parser = new JsonParser();
 
 	public TokenTransferTranslator(RadixUniverse universe, ConsumableDataSource consumableDataSource) {
 		this.universe = universe;
@@ -73,7 +79,10 @@ public class TokenTransferTranslator {
 
 			final Encryptor encryptor;
 			if (atom.getEncryptor() != null) {
-				encryptor = new Encryptor(atom.getEncryptor().getProtectors());
+				JsonArray protectorsJson = parser.parse(atom.getEncryptor().getBytes().toUtf8()).getAsJsonArray();
+				List<EncryptedPrivateKey> protectors = new ArrayList<>();
+				protectorsJson.forEach(protectorJson -> protectors.add(EncryptedPrivateKey.fromBase64(protectorJson.getAsString())));
+				encryptor = new Encryptor(protectors);
 			} else {
 				encryptor = null;
 			}
@@ -93,10 +102,15 @@ public class TokenTransferTranslator {
 				// Translate attachment to corresponding atom structure
 				final Data attachment = tokenTransfer.getAttachment();
 				if (attachment != null) {
+
 					atomBuilder.setDataParticle(new DataParticle(new Payload(attachment.getBytes()), null));
 					Encryptor encryptor = attachment.getEncryptor();
 					if (encryptor != null) {
-						EncryptorParticle encryptorParticle = new EncryptorParticle(encryptor.getProtectors());
+						JsonArray protectorsJson = new JsonArray();
+						encryptor.getProtectors().stream().map(EncryptedPrivateKey::base64).forEach(protectorsJson::add);
+
+						Payload encryptorPayload = new Payload(protectorsJson.toString().getBytes(StandardCharsets.UTF_8));
+						DataParticle encryptorParticle = new DataParticle(encryptorPayload, "encryptor");
 						atomBuilder.setEncryptorParticle(encryptorParticle);
 					}
 				}

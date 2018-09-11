@@ -12,7 +12,7 @@ public class AtomBuilder {
 	private Set<EUID> destinations = new HashSet<>();
 	private List<AbstractConsumable> consumables = new ArrayList<>();
 	private List<Consumer> consumers = new ArrayList<>();
-	private EncryptorParticle encryptor;
+	private DataParticle encryptor;
 	private DataParticle dataParticle;
 	private UniqueParticle uniqueParticle;
 
@@ -38,7 +38,7 @@ public class AtomBuilder {
 		return this;
 	}
 
-	public AtomBuilder setEncryptorParticle(EncryptorParticle encryptor) {
+	public AtomBuilder setEncryptorParticle(DataParticle encryptor) {
 		this.encryptor = encryptor;
 		return this;
 	}
