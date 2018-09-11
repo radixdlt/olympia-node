@@ -1,10 +1,10 @@
 package com.radixdlt.client.examples;
 
 import com.radixdlt.client.application.RadixApplicationAPI;
+import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.address.RadixAddress;
-import com.radixdlt.client.application.identity.SimpleRadixIdentity;
 import com.radixdlt.client.dapps.messaging.RadixMessaging;
 
 public class RadixMessagingExample {
@@ -29,7 +29,7 @@ public class RadixMessagingExample {
 			.subscribe(System.out::println);
 
 		// Identity Manager which manages user's keys, signing, encrypting and decrypting
-		RadixApplicationAPI api = RadixApplicationAPI.create(new SimpleRadixIdentity());
+		RadixApplicationAPI api = RadixApplicationAPI.create(RadixIdentities.loadOrCreateFile("my.key"));
 
 		// Addresses
 		RadixAddress toAddress = RadixAddress.fromString(TO_ADDRESS_BASE58);

@@ -7,36 +7,17 @@ import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.crypto.CryptoException;
 import com.radixdlt.client.core.crypto.ECKeyPair;
-import com.radixdlt.client.core.crypto.ECKeyPairGenerator;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.crypto.ECSignature;
 import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
 import com.radixdlt.client.core.crypto.MacMismatchException;
 import io.reactivex.Single;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
 
-public class SimpleRadixIdentity implements RadixIdentity {
+class BaseRadixIdentity implements RadixIdentity {
 	private final ECKeyPair myKey;
 
-	public SimpleRadixIdentity(File myKeyFile) throws IOException {
-		if (myKeyFile.exists()) {
-			myKey = ECKeyPair.fromFile(myKeyFile);
-		} else {
-			myKey = ECKeyPairGenerator.newInstance().generateKeyPair();
-			try (FileOutputStream io = new FileOutputStream(myKeyFile)) {
-				io.write(myKey.getPrivateKey());
-			}
-		}
-	}
-
-	public SimpleRadixIdentity(String fileName) throws IOException {
-		this(new File(fileName));
-	}
-
-	public SimpleRadixIdentity() throws IOException {
-		this("my.key");
+	BaseRadixIdentity(ECKeyPair myKey) {
+		this.myKey = myKey;
 	}
 
 	@Override
@@ -53,7 +34,7 @@ public class SimpleRadixIdentity implements RadixIdentity {
 		boolean encrypted = (Boolean) data.getMetaData().get("encrypted");
 		if (encrypted) {
 			for (EncryptedPrivateKey protector : data.getEncryptor().getProtectors()) {
-			// TODO: remove exception catching
+				// TODO: remove exception catching
 				try {
 					byte[] bytes = myKey.decrypt(data.getBytes(), protector);
 					return Single.just(new UnencryptedData(bytes, data.getMetaData(), true));
