@@ -28,6 +28,7 @@ import com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.observers.TestObserver;
+import java.util.Collections;
 import java.util.Optional;
 import java.util.function.Supplier;
 import org.junit.Test;
@@ -39,8 +40,8 @@ public class RadixApplicationAPITest {
 		RadixIdentity identity = mock(RadixIdentity.class);
 
 		AtomBuilder atomBuilder = mock(AtomBuilder.class);
-		when(atomBuilder.setEncryptorParticle(any())).thenReturn(atomBuilder);
-		when(atomBuilder.setDataParticle(any())).thenReturn(atomBuilder);
+		when(atomBuilder.addDataParticle(any())).thenReturn(atomBuilder);
+		when(atomBuilder.addDataParticle(any())).thenReturn(atomBuilder);
 		Atom atom = mock(Atom.class);
 		when(identity.sign(any())).thenReturn(Single.just(atom));
 
@@ -158,7 +159,7 @@ public class RadixApplicationAPITest {
 		when(universe.getLedger()).thenReturn(ledger);
 		RadixAddress address = mock(RadixAddress.class);
 		Atom atom = mock(Atom.class);
-		when(atom.getDataParticle()).thenReturn(null);
+		when(atom.getDataParticles()).thenReturn(Collections.emptyList());
 
 		when(ledger.getAllAtoms(any())).thenReturn(Observable.just(atom, atom, atom));
 

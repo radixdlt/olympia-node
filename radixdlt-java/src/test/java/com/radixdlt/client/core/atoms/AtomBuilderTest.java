@@ -9,7 +9,7 @@ public class AtomBuilderTest {
 	@Test
 	public void testMultipleAtomPayloadBuildsShouldCreateSameAtom() {
 		AtomBuilder atomBuilder = new AtomBuilder()
-			.setDataParticle(new DataParticle(new Payload("Hello".getBytes()), "Test"))
+			.addDataParticle(new DataParticle(new Payload("Hello".getBytes()), "Test"))
 			.addDestination(new EUID(1));
 
 		UnsignedAtom atom1 = atomBuilder.build(0);

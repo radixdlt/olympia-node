@@ -29,8 +29,7 @@ public final class Atom {
 
 	// TODO: These will be turned into a list of CreateParticles in the future
 	private final List<AbstractConsumable> consumables;
-	private final DataParticle dataParticle;
-	private final DataParticle encryptor;
+	private final List<DataParticle> dataParticles;
 	private final UniqueParticle uniqueParticle;
 	private final ChronoParticle chronoParticle;
 
@@ -39,41 +38,37 @@ public final class Atom {
 	private transient Map<String, Long> debug = new HashMap<>();
 
 	public Atom(
-		DataParticle dataParticle,
+		List<DataParticle> dataParticles,
 		List<Consumer> consumers,
 		List<AbstractConsumable> consumables,
 		Set<EUID> destinations,
-		DataParticle encryptor,
 		UniqueParticle uniqueParticle,
 		long timestamp
 	) {
-		this.dataParticle = dataParticle;
+		this.dataParticles = dataParticles;
 		this.chronoParticle = new ChronoParticle(timestamp);
 		this.consumers = consumers;
 		this.consumables = consumables;
 		this.destinations = destinations;
-		this.encryptor = encryptor;
 		this.uniqueParticle = uniqueParticle;
 		this.signatures = null;
 		this.action = "STORE";
 	}
 
 	private Atom(
-		DataParticle dataParticle,
+		List<DataParticle> dataParticles,
 		List<Consumer> consumers,
 		List<AbstractConsumable> consumables,
 		Set<EUID> destinations,
-		DataParticle encryptor,
 		UniqueParticle uniqueParticle,
 		long timestamp,
 		EUID signatureId,
 		ECSignature signature
 	) {
-		this.dataParticle = dataParticle;
+		this.dataParticles = dataParticles;
 		this.consumers = consumers;
 		this.consumables = consumables;
 		this.destinations = destinations;
-		this.encryptor = encryptor;
 		this.uniqueParticle = uniqueParticle;
 		this.chronoParticle = new ChronoParticle(timestamp);
 		this.signatures = Collections.singletonMap(signatureId.toString(), signature);
@@ -82,11 +77,10 @@ public final class Atom {
 
 	public Atom withSignature(ECSignature signature, EUID signatureId) {
 		return new Atom(
-			dataParticle,
+			dataParticles,
 			consumers,
 			consumables,
 			destinations,
-			encryptor,
 			uniqueParticle,
 			getTimestamp(),
 			signatureId,
@@ -151,12 +145,8 @@ public final class Atom {
 		return getHash().toEUID();
 	}
 
-	public DataParticle getEncryptor() {
-		return encryptor;
-	}
-
-	public DataParticle getDataParticle() {
-		return dataParticle;
+	public List<DataParticle> getDataParticles() {
+		return dataParticles == null ? Collections.emptyList() : Collections.unmodifiableList(dataParticles);
 	}
 
 	public UniqueParticle getUniqueParticle() {
