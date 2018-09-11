@@ -107,11 +107,15 @@ public class RadixApplicationAPI {
 		return ledger.getAddressFromPublicKey(identity.getPublicKey());
 	}
 
-	public Observable<UnencryptedData> getReadableData(RadixAddress address) {
+	public Observable<Data> getData(RadixAddress address) {
 		Objects.requireNonNull(address);
 
 		return ledger.getAllAtoms(address.getUID(), ApplicationPayloadAtom.class)
-			.map(dataStoreTranslator::fromAtom)
+			.map(dataStoreTranslator::fromAtom);
+	}
+
+	public Observable<UnencryptedData> getReadableData(RadixAddress address) {
+		return getData(address)
 			.flatMapMaybe(data -> identity.decrypt(data).toMaybe().onErrorComplete());
 	}
 
