@@ -2,17 +2,10 @@ package com.radixdlt.client.core;
 
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
-import com.radixdlt.client.core.address.RadixUniverseConfigs;
 import com.radixdlt.client.core.crypto.ECPublicKey;
-import com.radixdlt.client.application.identity.RadixIdentity;
-import com.radixdlt.client.application.identity.SimpleRadixIdentity;
 import com.radixdlt.client.core.ledger.RadixLedger;
 import com.radixdlt.client.core.network.PeerDiscovery;
 import com.radixdlt.client.core.network.RadixNetwork;
-import java.io.File;
-import java.io.IOException;
-import java.net.URL;
-import java.util.Optional;
 
 /**
  * A RadixUniverse represents the interface through which a client can interact
@@ -116,32 +109,6 @@ public final class RadixUniverse {
 
 	public RadixLedger getLedger() {
 		return ledger;
-	}
-
-	/**
-	 * Returns a RadixIdentity capable of signing system transactions if private key
-	 * exists in universe.key and matches the Universe configuration's public key
-	 *
-	 * @return Identity capable of signing system transactions if exists
-	 */
-	public Optional<RadixIdentity> getSystemIdentity() {
-		ClassLoader classLoader = RadixUniverseConfigs.class.getClassLoader();
-		final Optional<RadixIdentity> systemIdentity;
-		URL resource = classLoader.getResource("universe.key");
-		try {
-			if (resource != null) {
-				File universeKeyFile = new File(resource.getFile());
-				systemIdentity = Optional.of(new SimpleRadixIdentity(universeKeyFile));
-				if (!systemIdentity.get().getPublicKey().equals(config.getSystemPublicKey())) {
-					throw new RuntimeException("Bad Universe Key");
-				}
-
-				return systemIdentity;
-			}
-		} catch (IOException e) {
-		}
-
-		return Optional.empty();
 	}
 
 	/**

@@ -13,7 +13,6 @@ import com.radixdlt.client.application.identity.model.keystore.Crypto;
 import com.radixdlt.client.application.identity.model.keystore.Keystore;
 import com.radixdlt.client.application.identity.model.keystore.Pbkdfparams;
 import com.radixdlt.client.core.util.AndroidUtil;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.ByteBuffer;
@@ -57,11 +56,6 @@ public final class PrivateKeyEncrypter {
     private static final String ALGORITHM = "aes-256-ctr";
 
     private PrivateKeyEncrypter() { }
-
-    public static void createEncryptedPrivateKeyFile(String password, String filePath) throws IOException, GeneralSecurityException {
-        String strJson = createEncryptedPrivateKey(password);
-        createFile(strJson, filePath);
-    }
 
     public static String createEncryptedPrivateKey(String password) throws GeneralSecurityException {
         ECKeyPair ecKeyPair = ECKeyPairGenerator.newInstance().generateKeyPair();
@@ -120,12 +114,6 @@ public final class PrivateKeyEncrypter {
     private static Keystore getKeystore(Reader keyReader) throws IOException {
         try (JsonReader jsonReader = new JsonReader(keyReader)) {
             return new Gson().fromJson(jsonReader, Keystore.class);
-        }
-    }
-
-    private static void createFile(String fileContents, String filePath) throws IOException {
-        try (FileWriter writer = new FileWriter(filePath)) {
-            writer.write(fileContents);
         }
     }
 
