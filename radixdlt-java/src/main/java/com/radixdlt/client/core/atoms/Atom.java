@@ -32,9 +32,7 @@ public final class Atom {
 	private final DataParticle dataParticle;
 	private final EncryptorParticle encryptor;
 	private final UniqueParticle uniqueParticle;
-
-	// TODO: This will be moved into a Chrono Particle in the future
-	private final Map<String, Long> timestamps;
+	private final ChronoParticle chronoParticle;
 
 	private final Map<String, ECSignature> signatures;
 
@@ -50,12 +48,12 @@ public final class Atom {
 		long timestamp
 	) {
 		this.dataParticle = dataParticle;
+		this.chronoParticle = new ChronoParticle(timestamp);
 		this.consumers = consumers;
 		this.consumables = consumables;
 		this.destinations = destinations;
 		this.encryptor = encryptor;
 		this.uniqueParticle = uniqueParticle;
-		this.timestamps = Collections.singletonMap("default", timestamp);
 		this.signatures = null;
 		this.action = "STORE";
 	}
@@ -77,7 +75,7 @@ public final class Atom {
 		this.destinations = destinations;
 		this.encryptor = encryptor;
 		this.uniqueParticle = uniqueParticle;
-		this.timestamps = Collections.singletonMap("default", timestamp);
+		this.chronoParticle = new ChronoParticle(timestamp);
 		this.signatures = Collections.singletonMap(signatureId.toString(), signature);
 		this.action = "STORE";
 	}
@@ -122,7 +120,7 @@ public final class Atom {
 
 
 	public Long getTimestamp() {
-		return timestamps.get("default");
+		return chronoParticle.getTimestamp();
 	}
 
 	public Map<String, ECSignature> getSignatures() {
