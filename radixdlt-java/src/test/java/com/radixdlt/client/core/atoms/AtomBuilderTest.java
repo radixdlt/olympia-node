@@ -3,13 +3,14 @@ package com.radixdlt.client.core.atoms;
 import static org.junit.Assert.assertEquals;
 
 import com.radixdlt.client.core.address.EUID;
+import com.radixdlt.client.core.atoms.DataParticle.DataParticleBuilder;
 import org.junit.Test;
 
 public class AtomBuilderTest {
 	@Test
 	public void testMultipleAtomPayloadBuildsShouldCreateSameAtom() {
 		AtomBuilder atomBuilder = new AtomBuilder()
-			.setDataParticle(new DataParticle(new Payload("Hello".getBytes()), "Test"))
+			.addDataParticle(new DataParticleBuilder().payload(new Payload("Hello".getBytes())).build())
 			.addDestination(new EUID(1));
 
 		UnsignedAtom atom1 = atomBuilder.build(0);

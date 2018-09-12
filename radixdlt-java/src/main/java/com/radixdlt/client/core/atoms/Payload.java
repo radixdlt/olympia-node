@@ -1,6 +1,7 @@
 package com.radixdlt.client.core.atoms;
 
 import com.radixdlt.client.core.util.Base64Encoded;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import org.bouncycastle.util.encoders.Base64;
 
@@ -39,7 +40,7 @@ public class Payload implements Base64Encoded {
 		return Arrays.copyOf(payload, payload.length);
 	}
 
-	public String toAscii() {
-		return new String(payload);
+	public String toUtf8String() {
+		return new String(payload, StandardCharsets.UTF_8);
 	}
 }

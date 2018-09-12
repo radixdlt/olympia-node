@@ -30,7 +30,6 @@ public class DataStoreTranslatorTest {
 		dataStoreTranslator.translate(dataStore, atomBuilder).subscribe(testObserver);
 		testObserver.assertNoErrors();
 		testObserver.assertComplete();
-		verify(atomBuilder, times(1)).setEncryptorParticle(any());
-
+		verify(atomBuilder, times(2)).addDataParticle(any());
 	}
 }

@@ -1,5 +1,7 @@
 package com.radixdlt.client.application.translate;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonParser;
 import com.radixdlt.client.application.actions.TokenTransfer;
 import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.assets.Asset;
@@ -10,25 +12,30 @@ import com.radixdlt.client.core.atoms.AtomBuilder;
 import com.radixdlt.client.core.atoms.Consumable;
 import com.radixdlt.client.core.atoms.Consumer;
 import com.radixdlt.client.core.atoms.DataParticle;
-import com.radixdlt.client.core.atoms.EncryptorParticle;
+import com.radixdlt.client.core.atoms.DataParticle.DataParticleBuilder;
 import com.radixdlt.client.core.atoms.Payload;
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECPublicKey;
+import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
 import com.radixdlt.client.core.crypto.Encryptor;
 import com.radixdlt.client.core.serialization.RadixJson;
 import io.reactivex.Completable;
+import java.nio.charset.StandardCharsets;
 import java.util.AbstractMap.SimpleImmutableEntry;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 public class TokenTransferTranslator {
 	private final RadixUniverse universe;
 	private final ConsumableDataSource consumableDataSource;
+	private static final JsonParser JSON_PARSER = new JsonParser();
 
 	public TokenTransferTranslator(RadixUniverse universe, ConsumableDataSource consumableDataSource) {
 		this.universe = universe;
@@ -65,19 +72,30 @@ public class TokenTransferTranslator {
 			}
 		}
 
+		final Optional<DataParticle> bytesParticle = atom.getDataParticles().stream()
+			.filter(p -> !"encryptor".equals(p.getMetaData("application")))
+			.findFirst();
+
 		// Construct attachment from atom
 		final Data attachment;
-		if (atom.getDataParticle() != null) {
+		if (bytesParticle.isPresent()) {
 			Map<String, Object> metaData = new HashMap<>();
-			metaData.put("encrypted", atom.getEncryptor() != null);
+
+			final Optional<DataParticle> encryptorParticle = atom.getDataParticles().stream()
+				.filter(p -> "encryptor".equals(p.getMetaData("application")))
+				.findAny();
+			metaData.put("encrypted", encryptorParticle.isPresent());
 
 			final Encryptor encryptor;
-			if (atom.getEncryptor() != null) {
-				encryptor = new Encryptor(atom.getEncryptor().getProtectors());
+			if (encryptorParticle.isPresent()) {
+				JsonArray protectorsJson = JSON_PARSER.parse(encryptorParticle.get().getBytes().toUtf8String()).getAsJsonArray();
+				List<EncryptedPrivateKey> protectors = new ArrayList<>();
+				protectorsJson.forEach(protectorJson -> protectors.add(EncryptedPrivateKey.fromBase64(protectorJson.getAsString())));
+				encryptor = new Encryptor(protectors);
 			} else {
 				encryptor = null;
 			}
-			attachment = Data.raw(atom.getDataParticle().getBytes().getBytes(), metaData, encryptor);
+			attachment = Data.raw(bytesParticle.get().getBytes().getBytes(), metaData, encryptor);
 		} else {
 			attachment = null;
 		}
@@ -93,11 +111,19 @@ public class TokenTransferTranslator {
 				// Translate attachment to corresponding atom structure
 				final Data attachment = tokenTransfer.getAttachment();
 				if (attachment != null) {
-					atomBuilder.setDataParticle(new DataParticle(new Payload(attachment.getBytes()), null));
+					atomBuilder.addDataParticle(new DataParticleBuilder().payload(new Payload(attachment.getBytes())).build());
 					Encryptor encryptor = attachment.getEncryptor();
 					if (encryptor != null) {
-						EncryptorParticle encryptorParticle = new EncryptorParticle(encryptor.getProtectors());
-						atomBuilder.setEncryptorParticle(encryptorParticle);
+						JsonArray protectorsJson = new JsonArray();
+						encryptor.getProtectors().stream().map(EncryptedPrivateKey::base64).forEach(protectorsJson::add);
+
+						Payload encryptorPayload = new Payload(protectorsJson.toString().getBytes(StandardCharsets.UTF_8));
+						DataParticle encryptorParticle = new DataParticleBuilder()
+							.payload(encryptorPayload)
+							.setMetaData("application", "encryptor")
+							.setMetaData("contentType", "application/json")
+							.build();
+						atomBuilder.addDataParticle(encryptorParticle);
 					}
 				}
 

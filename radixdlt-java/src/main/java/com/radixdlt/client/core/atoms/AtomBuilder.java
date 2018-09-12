@@ -12,8 +12,7 @@ public class AtomBuilder {
 	private Set<EUID> destinations = new HashSet<>();
 	private List<AbstractConsumable> consumables = new ArrayList<>();
 	private List<Consumer> consumers = new ArrayList<>();
-	private EncryptorParticle encryptor;
-	private DataParticle dataParticle;
+	private List<DataParticle> dataParticles = new ArrayList<>();
 	private UniqueParticle uniqueParticle;
 
 	public AtomBuilder() {
@@ -33,13 +32,8 @@ public class AtomBuilder {
 		return this;
 	}
 
-	public AtomBuilder setDataParticle(DataParticle dataParticle) {
-		this.dataParticle = dataParticle;
-		return this;
-	}
-
-	public AtomBuilder setEncryptorParticle(EncryptorParticle encryptor) {
-		this.encryptor = encryptor;
+	public AtomBuilder addDataParticle(DataParticle dataParticle) {
+		this.dataParticles.add(dataParticle);
 		return this;
 	}
 
@@ -81,11 +75,10 @@ public class AtomBuilder {
 
 	public UnsignedAtom build(long timestamp) {
 		return new UnsignedAtom(new Atom(
-			dataParticle,
+			dataParticles.isEmpty() ? null : dataParticles,
 			consumers.isEmpty() ? null : consumers, // Pretty nasty hack here. Need to fix.
 			consumables,
 			destinations,
-			encryptor,
 			uniqueParticle,
 			timestamp
 		));
