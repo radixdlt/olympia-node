@@ -7,6 +7,7 @@ import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomBuilder;
 import com.radixdlt.client.core.atoms.DataParticle;
+import com.radixdlt.client.core.atoms.DataParticle.DataParticleBuilder;
 import com.radixdlt.client.core.atoms.Payload;
 import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
 import com.radixdlt.client.core.crypto.Encryptor;
@@ -34,14 +35,22 @@ public class DataStoreTranslator {
 		Payload payload = new Payload(dataStore.getData().getBytes());
 		String application = (String) dataStore.getData().getMetaData().get("application");
 
-		atomBuilder.addDataParticle(new DataParticle(payload, application));
+		DataParticle dataParticle = new DataParticleBuilder()
+			.payload(payload)
+			.setMetaData("application", application)
+			.build();
+		atomBuilder.addDataParticle(dataParticle);
 		Encryptor encryptor = dataStore.getData().getEncryptor();
 		if (encryptor != null) {
 			JsonArray protectorsJson = new JsonArray();
 			encryptor.getProtectors().stream().map(EncryptedPrivateKey::base64).forEach(protectorsJson::add);
 
 			Payload encryptorPayload = new Payload(protectorsJson.toString().getBytes(StandardCharsets.UTF_8));
-			DataParticle encryptorParticle = new DataParticle(encryptorPayload, "encryptor");
+			DataParticle encryptorParticle = new DataParticleBuilder()
+				.payload(encryptorPayload)
+				.setMetaData("application", "encryptor")
+				.setMetaData("contentType", "json")
+				.build();
 			atomBuilder.addDataParticle(encryptorParticle);
 		}
 		dataStore.getAddresses().forEach(atomBuilder::addDestination);

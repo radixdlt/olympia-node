@@ -5,20 +5,24 @@ import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.radixdlt.client.core.atoms.DataParticle.DataParticleBuilder;
 import org.junit.Test;
 
 public class DataParticleTest {
 	@Test
 	public void testApplicationMetaData() {
 		Payload payload = mock(Payload.class);
-		DataParticle dataParticle = new DataParticle(payload, "test");
+		DataParticle dataParticle = new DataParticleBuilder()
+			.payload(payload)
+			.setMetaData("application", "test")
+			.build();
 		assertEquals("test", dataParticle.getMetaData("application"));
 		assertNull(dataParticle.getMetaData("missing"));
 	}
 
 	@Test
 	public void testNullDataParticle() {
-		assertThatThrownBy(() -> new DataParticle(null, "hello"))
+		assertThatThrownBy(() -> new DataParticleBuilder().setMetaData("application", "hello").build())
 			.isInstanceOf(NullPointerException.class);
 	}
 }

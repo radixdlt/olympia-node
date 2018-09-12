@@ -12,6 +12,7 @@ import com.radixdlt.client.core.atoms.AtomBuilder;
 import com.radixdlt.client.core.atoms.Consumable;
 import com.radixdlt.client.core.atoms.Consumer;
 import com.radixdlt.client.core.atoms.DataParticle;
+import com.radixdlt.client.core.atoms.DataParticle.DataParticleBuilder;
 import com.radixdlt.client.core.atoms.Payload;
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECPublicKey;
@@ -110,15 +111,18 @@ public class TokenTransferTranslator {
 				// Translate attachment to corresponding atom structure
 				final Data attachment = tokenTransfer.getAttachment();
 				if (attachment != null) {
-
-					atomBuilder.addDataParticle(new DataParticle(new Payload(attachment.getBytes()), null));
+					atomBuilder.addDataParticle(new DataParticleBuilder().payload(new Payload(attachment.getBytes())).build());
 					Encryptor encryptor = attachment.getEncryptor();
 					if (encryptor != null) {
 						JsonArray protectorsJson = new JsonArray();
 						encryptor.getProtectors().stream().map(EncryptedPrivateKey::base64).forEach(protectorsJson::add);
 
 						Payload encryptorPayload = new Payload(protectorsJson.toString().getBytes(StandardCharsets.UTF_8));
-						DataParticle encryptorParticle = new DataParticle(encryptorPayload, "encryptor");
+						DataParticle encryptorParticle = new DataParticleBuilder()
+							.payload(encryptorPayload)
+							.setMetaData("application", "encryptor")
+							.setMetaData("contentType", "json")
+							.build();
 						atomBuilder.addDataParticle(encryptorParticle);
 					}
 				}
