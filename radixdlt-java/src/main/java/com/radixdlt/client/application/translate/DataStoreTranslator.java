@@ -72,10 +72,7 @@ public class DataStoreTranslator {
 		metaData.put("timestamp", atom.getTimestamp());
 		metaData.put("signatures", atom.getSignatures());
 
-		final String application = (String) bytesParticle
-			.map(p -> p.getMetaData("application"))
-			.orElse(null);
-		metaData.compute("application", (k, v) -> application);
+		bytesParticle.ifPresent(p -> metaData.compute("application", (k, v) -> p.getMetaData("application")));
 
 		final Optional<DataParticle> encryptorParticle = atom.getDataParticles().stream()
 			.filter(p -> "encryptor".equals(p.getMetaData("application")))
@@ -84,7 +81,7 @@ public class DataStoreTranslator {
 
 		final Encryptor encryptor;
 		if (encryptorParticle.isPresent()) {
-			JsonArray protectorsJson = JSON_PARSER.parse(encryptorParticle.get().getBytes().toUtf8()).getAsJsonArray();
+			JsonArray protectorsJson = JSON_PARSER.parse(encryptorParticle.get().getBytes().toUtf8String()).getAsJsonArray();
 			List<EncryptedPrivateKey> protectors = new ArrayList<>();
 			protectorsJson.forEach(protectorJson -> protectors.add(EncryptedPrivateKey.fromBase64(protectorJson.getAsString())));
 			encryptor = new Encryptor(protectors);

@@ -40,11 +40,7 @@ public class Payload implements Base64Encoded {
 		return Arrays.copyOf(payload, payload.length);
 	}
 
-	public String toAscii() {
-		return new String(payload);
-	}
-
-	public String toUtf8() {
+	public String toUtf8String() {
 		return new String(payload, StandardCharsets.UTF_8);
 	}
 }

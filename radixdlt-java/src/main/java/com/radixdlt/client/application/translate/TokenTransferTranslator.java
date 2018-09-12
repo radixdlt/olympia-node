@@ -88,7 +88,7 @@ public class TokenTransferTranslator {
 
 			final Encryptor encryptor;
 			if (encryptorParticle.isPresent()) {
-				JsonArray protectorsJson = JSON_PARSER.parse(encryptorParticle.get().getBytes().toUtf8()).getAsJsonArray();
+				JsonArray protectorsJson = JSON_PARSER.parse(encryptorParticle.get().getBytes().toUtf8String()).getAsJsonArray();
 				List<EncryptedPrivateKey> protectors = new ArrayList<>();
 				protectorsJson.forEach(protectorJson -> protectors.add(EncryptedPrivateKey.fromBase64(protectorJson.getAsString())));
 				encryptor = new Encryptor(protectors);
