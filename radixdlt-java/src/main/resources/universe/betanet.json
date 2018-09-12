@@ -1,240 +1,156 @@
 {
-  "magic": 63799298,
-  "genesis": [
-    {
-      "destinations": [{
-        "serializer": "EUID",
-        "value": "56abab3870585f04d015d55adf600bc7"
-      }],
-      "action": "STORE",
-      "serializer": 2019665,
-      "owners": [{
-        "public": {
-          "serializer": "BASE64",
-          "value": "A3hanCWf3pmR5E+i+wtWWfKleBrDOQduLb/vcFKOSt9o"
-        },
-        "serializer": 547221307,
-        "version": 100
-      }],
-      "id": {
-        "serializer": "EUID",
-        "value": "229c9d7905761d24ea9fafcff64d3d49"
-      },
-      "asset": {
-        "maximum_units": 0,
-        "settings": 4096,
-        "iso": "POW",
-        "icon": {
-          "serializer": "BASE64",
-          "value": "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAACXBIWXMAAC4jAAAuIwF4pT92AAAAHWlUWHRTb2Z0d2FyZQAAAAAAQWRvYmUgSW1hZ2VSZWFkeQatApcAAAYqSURBVFiFrVdrUFRVHP+de8+2sJim4MqymylPUXrjyirQioBOqc34zhcx08OyGTWnJqcPTY/JD2WJY9pgiYwyidWM2jSIPHaDTd69hGBJBJXH4vLQcmGXveeePuAauKs84jdzP9x7zj3/3/9x/g/COcdIkCRJrGtojC40lS4xW8qMtQ3WGNt1e7DT6QoAAH8/pSNYrbbNi468aIw3mJONCUXz5kQ2UErZSGeT+xGQGBPLKmsWZOXkphWaSpe22zp1TJJEEAIQMnwz5wDnECmVQoJntKYsTsxP37Qu26B/ukIURXnMBK62tun2HczcmZP7/dburp7pEAggCCMpNAhZBmSOwKBA++YNq7Pf3P7K/pm6kDafeznnXk9pWWXcgqTlFkwO4Zii5XhIN75nipZjcgiPS15RYimv0vuS5WWBvEJT8vbd7x5qbm6JgCiOTuORwBjCQmc3Hv5872spixOLhy4NI2Apr4rb+uqO483NLeETJnwIidDQ2Y3HMzO2LNTHVnoRuNrapl2btu1UZVXNwgkXPoREXNx8y7dZX67XaTXtAEABwC1JdN/BzF2V1b8Y/pdwmQPwEdSeWyOKKK+oXrTvi8ydn3zw7h5KKSOcc1jKqwzPv5B+tqf3RpDX9RoliEIBEjQVRBCGcyAE3OGAfOPvwXfOEThtqv3MN1krFi2IraBut5sePXEyvaerJwh0/Nr7p62D39qV3vmBinCdOQfH/sw7lui2d03Pysl9Uf/0EzW0vvFSVIGpdOmo7/jdkGWIM3VQrl4OQTMDcnfPYB7wQBC8SQkCzheXLLP+1RRBC0wlyR22Ti2E8ZkeHHggKR7iw1q4y2tw6+MMwD0wZAMBv+UYTkIQ0N5h0xWaS5dQU2mZkUmSOC4LcA4hcCqUy5IAxuD6IR/MegkQ7zrLR+pmkkRNpReMtK7BGjPewIMsQ2GIBZ0bCamxCQOWSoCK3ib3BUJQW299lNo67RqfP9xdI7yKD0BUKiifSwZRKDCQb4Zs7xp9vSAEtk67hjpdLpWvRTJ5EsjtnMAH3N5+lBnoY3OhiH0CrK0DrsKS0Qkegv5+p4p6feUcZFIAJr33FmjYLIBzyD29cHx6GFJtw3/+VSigfHYJhCkPov9sPtiVa6PX/j9hoH5+yj5PY3EHhEAInAYhWA0IBGJUGAJ2vIx/3vkQcu/NwbofPhsPJBog996EK68IkJh38I0AlcrfQYPV6o6WK1fD75iXEPC+ftx6/xMQpRLC1CkIePsNKBbp4bdlHfoOfg0wBmWqEaJmBlz5Jkh1DWMWDs4RrFZ30JjoqIstLVfCh/mXMbCmlsGUymWQABUmfbQH/htXQbpYD6m2HsqUZ8CdTrh+LADvd2LMNYRzxMyNqqXGBIM5r6B4JZPl4Sfc8acAV7EF9ORp+L+0CarX0+Euq4IY+gik3+swUPnrOHwPiAoqGeMNJppiTCjcHzyjtbW1/ZF7ZkPG0J+dCzovcvDeh80CALjyisB7b47d/LIMrU7bmmxMKKLRkRGNqYsT849m57wCwftSAAAIgdzVA8eBrzB51kwIWg1YUzNc5gujSzpeBDhSkxLz5kSEXaIKBZXSN6/POv1j/qqe3t57l2NRgPTHn+j7Mhuq7elwnT0Pud2GMdcQzhE4Pcievmn9MUqpRAEgLvbJ6i0bVh/LOHRkN8h9VCIEzjPn4K7+DfL1rrEJ9hzBOU/buOao/qnHazzvAIBrbe0ha1/clltRUR0/YkTLss8CMyIYg8GgLzmVdXiDLkTTMYwAAFyoqNZveXXHicuXmyeuIx4iPCws1Ho888Bmw/ynqj2fvdryAlNJ0mu79hxuutwcOZFteXhYqPXQ53u3pRgTzMPWfA0LP5dX6Q0pK0smajBZmPr8Txcqq+ePajDx4Fpbe8hnXxzZefzkd2nd9m71eEazIHVQ59YNa47tev3lDJ120Od3477DKWNMKKv6RX8s51RagalkaVuH7WEmSRS4HYCeGOT8difMISqopNNorqUmJZ5L27guOy72yapxDadDITEm1Fv/mlNkLk0yWcqMdfXWGNt1u6av3xkAACp/P0ewWt0REx110ZhgMCc/E18cHRVhvZ9gD/4F4vECTSY22WoAAAAASUVORK5CYII="
-        },
-        "description": "Radix POW",
-        "serializer": 62583504,
-        "sub_units": 0,
-        "label": "Proof of Work",
-        "classification": "commodity",
-        "type": "COMMODITY",
-        "version": 100
-      },
-      "version": 100,
-      "signatures": {"56abab3870585f04d015d55adf600bc7": {
-        "r": {
-          "serializer": "BASE64",
-          "value": "AINuRf3Sh+KPTGxB666yfQ1IVsueNsxt/Ze93xzcwv8R"
-        },
-        "s": {
-          "serializer": "BASE64",
-          "value": "AKVZbukZqFV1PMpUQ4+W5pRjAgiQIX7B89PQbfBMkcaV"
-        },
-        "serializer": -434788200,
-        "version": 100
-      }},
-      "chronoParticle": {
-        "timestamps": {
-          "default": 1488326400000,
-          "expires": 9223372036854775807
-        },
-        "serializer": 1080087081,
-        "version": 100
-      }
-    },
-    {
-      "destinations": [{
-        "serializer": "EUID",
-        "value": "56abab3870585f04d015d55adf600bc7"
-      }],
-      "action": "STORE",
-      "serializer": 2019665,
-      "owners": [{
-        "public": {
-          "serializer": "BASE64",
-          "value": "A3hanCWf3pmR5E+i+wtWWfKleBrDOQduLb/vcFKOSt9o"
-        },
-        "serializer": 547221307,
-        "version": 100
-      }],
-      "id": {
-        "serializer": "EUID",
-        "value": "d7bd34bfe44a18d2aa755a344fe3e6b0"
-      },
-      "asset": {
-        "maximum_units": 0,
-        "settings": 20483,
-        "iso": "TEST",
-        "icon": {
-          "serializer": "BASE64",
-          "value": "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAACXBIWXMAAC4jAAAuIwF4pT92AAAAHWlUWHRTb2Z0d2FyZQAAAAAAQWRvYmUgSW1hZ2VSZWFkeQatApcAAAYqSURBVFiFrVdrUFRVHP+de8+2sJim4MqymylPUXrjyirQioBOqc34zhcx08OyGTWnJqcPTY/JD2WJY9pgiYwyidWM2jSIPHaDTd69hGBJBJXH4vLQcmGXveeePuAauKs84jdzP9x7zj3/3/9x/g/COcdIkCRJrGtojC40lS4xW8qMtQ3WGNt1e7DT6QoAAH8/pSNYrbbNi468aIw3mJONCUXz5kQ2UErZSGeT+xGQGBPLKmsWZOXkphWaSpe22zp1TJJEEAIQMnwz5wDnECmVQoJntKYsTsxP37Qu26B/ukIURXnMBK62tun2HczcmZP7/dburp7pEAggCCMpNAhZBmSOwKBA++YNq7Pf3P7K/pm6kDafeznnXk9pWWXcgqTlFkwO4Zii5XhIN75nipZjcgiPS15RYimv0vuS5WWBvEJT8vbd7x5qbm6JgCiOTuORwBjCQmc3Hv5872spixOLhy4NI2Apr4rb+uqO483NLeETJnwIidDQ2Y3HMzO2LNTHVnoRuNrapl2btu1UZVXNwgkXPoREXNx8y7dZX67XaTXtAEABwC1JdN/BzF2V1b8Y/pdwmQPwEdSeWyOKKK+oXrTvi8ydn3zw7h5KKSOcc1jKqwzPv5B+tqf3RpDX9RoliEIBEjQVRBCGcyAE3OGAfOPvwXfOEThtqv3MN1krFi2IraBut5sePXEyvaerJwh0/Nr7p62D39qV3vmBinCdOQfH/sw7lui2d03Pysl9Uf/0EzW0vvFSVIGpdOmo7/jdkGWIM3VQrl4OQTMDcnfPYB7wQBC8SQkCzheXLLP+1RRBC0wlyR22Ti2E8ZkeHHggKR7iw1q4y2tw6+MMwD0wZAMBv+UYTkIQ0N5h0xWaS5dQU2mZkUmSOC4LcA4hcCqUy5IAxuD6IR/MegkQ7zrLR+pmkkRNpReMtK7BGjPewIMsQ2GIBZ0bCamxCQOWSoCK3ib3BUJQW299lNo67RqfP9xdI7yKD0BUKiifSwZRKDCQb4Zs7xp9vSAEtk67hjpdLpWvRTJ5EsjtnMAH3N5+lBnoY3OhiH0CrK0DrsKS0Qkegv5+p4p6feUcZFIAJr33FmjYLIBzyD29cHx6GFJtw3/+VSigfHYJhCkPov9sPtiVa6PX/j9hoH5+yj5PY3EHhEAInAYhWA0IBGJUGAJ2vIx/3vkQcu/NwbofPhsPJBog996EK68IkJh38I0AlcrfQYPV6o6WK1fD75iXEPC+ftx6/xMQpRLC1CkIePsNKBbp4bdlHfoOfg0wBmWqEaJmBlz5Jkh1DWMWDs4RrFZ30JjoqIstLVfCh/mXMbCmlsGUymWQABUmfbQH/htXQbpYD6m2HsqUZ8CdTrh+LADvd2LMNYRzxMyNqqXGBIM5r6B4JZPl4Sfc8acAV7EF9ORp+L+0CarX0+Euq4IY+gik3+swUPnrOHwPiAoqGeMNJppiTCjcHzyjtbW1/ZF7ZkPG0J+dCzovcvDeh80CALjyisB7b47d/LIMrU7bmmxMKKLRkRGNqYsT849m57wCwftSAAAIgdzVA8eBrzB51kwIWg1YUzNc5gujSzpeBDhSkxLz5kSEXaIKBZXSN6/POv1j/qqe3t57l2NRgPTHn+j7Mhuq7elwnT0Pud2GMdcQzhE4Pcievmn9MUqpRAEgLvbJ6i0bVh/LOHRkN8h9VCIEzjPn4K7+DfL1rrEJ9hzBOU/buOao/qnHazzvAIBrbe0ha1/clltRUR0/YkTLss8CMyIYg8GgLzmVdXiDLkTTMYwAAFyoqNZveXXHicuXmyeuIx4iPCws1Ho888Bmw/ynqj2fvdryAlNJ0mu79hxuutwcOZFteXhYqPXQ53u3pRgTzMPWfA0LP5dX6Q0pK0smajBZmPr8Txcqq+ePajDx4Fpbe8hnXxzZefzkd2nd9m71eEazIHVQ59YNa47tev3lDJ120Od3477DKWNMKKv6RX8s51RagalkaVuH7WEmSRS4HYCeGOT8difMISqopNNorqUmJZ5L27guOy72yapxDadDITEm1Fv/mlNkLk0yWcqMdfXWGNt1u6av3xkAACp/P0ewWt0REx110ZhgMCc/E18cHRVhvZ9gD/4F4vECTSY22WoAAAAASUVORK5CYII="
-        },
-        "description": "Radix Test currency asset",
-        "serializer": 62583504,
-        "sub_units": 100000,
-        "label": "Test Rads",
-        "classification": "currencies",
-        "type": "CURRENCY",
-        "scrypt": {
-          "serializer": 549088296,
-          "version": 100
-        },
-        "version": 100
-      },
-      "version": 100,
-      "signatures": {"56abab3870585f04d015d55adf600bc7": {
-        "r": {
-          "serializer": "BASE64",
-          "value": "AK0yGyHgs+tDlfJafBQbLvjxqkiOvGP96z/zAoWnp1ty"
-        },
-        "s": {
-          "serializer": "BASE64",
-          "value": "AMamADq7wcSKjp+p1kSAM7Z0V/3bMQV1dku7qRjonRjk"
-        },
-        "serializer": -434788200,
-        "version": 100
-      }},
-      "chronoParticle": {
-        "timestamps": {
-          "default": 1488326400000,
-          "expires": 9223372036854775807
-        },
-        "serializer": 1080087081,
-        "version": 100
-      }
-    },
-    {
-      "temporal_proof": {
-        "atom_id": {
-          "serializer": "EUID",
-          "value": "c5e9a682102d3924ce7b7fbefd25f910"
-        },
-        "vertices": [{
-          "owner": {
-            "public": {
-              "serializer": "BASE64",
-              "value": "AtjPzcFVv/5yKDcxsO9qXjqtVeowz7lWmCX1cqEg5KnQ"
+    "magic": 63799298,
+    "genesis": [
+        {
+            "destinations": [":uid:56abab3870585f04d015d55adf600bc7"],
+            "action": ":str:STORE",
+            "serializer": 2019665,
+            "owners": [{
+                "public": ":byt:A3hanCWf3pmR5E+i+wtWWfKleBrDOQduLb/vcFKOSt9o",
+                "serializer": 547221307,
+                "version": 100
+            }],
+            "id": ":uid:229c9d7905761d24ea9fafcff64d3d49",
+            "asset": {
+                "maximum_units": 0,
+                "settings": 4096,
+                "iso": ":str:POW",
+                "icon": ":byt:iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAACXBIWXMAAC4jAAAuIwF4pT92AAAAHWlUWHRTb2Z0d2FyZQAAAAAAQWRvYmUgSW1hZ2VSZWFkeQatApcAAAYqSURBVFiFrVdrUFRVHP+de8+2sJim4MqymylPUXrjyirQioBOqc34zhcx08OyGTWnJqcPTY/JD2WJY9pgiYwyidWM2jSIPHaDTd69hGBJBJXH4vLQcmGXveeePuAauKs84jdzP9x7zj3/3/9x/g/COcdIkCRJrGtojC40lS4xW8qMtQ3WGNt1e7DT6QoAAH8/pSNYrbbNi468aIw3mJONCUXz5kQ2UErZSGeT+xGQGBPLKmsWZOXkphWaSpe22zp1TJJEEAIQMnwz5wDnECmVQoJntKYsTsxP37Qu26B/ukIURXnMBK62tun2HczcmZP7/dburp7pEAggCCMpNAhZBmSOwKBA++YNq7Pf3P7K/pm6kDafeznnXk9pWWXcgqTlFkwO4Zii5XhIN75nipZjcgiPS15RYimv0vuS5WWBvEJT8vbd7x5qbm6JgCiOTuORwBjCQmc3Hv5872spixOLhy4NI2Apr4rb+uqO483NLeETJnwIidDQ2Y3HMzO2LNTHVnoRuNrapl2btu1UZVXNwgkXPoREXNx8y7dZX67XaTXtAEABwC1JdN/BzF2V1b8Y/pdwmQPwEdSeWyOKKK+oXrTvi8ydn3zw7h5KKSOcc1jKqwzPv5B+tqf3RpDX9RoliEIBEjQVRBCGcyAE3OGAfOPvwXfOEThtqv3MN1krFi2IraBut5sePXEyvaerJwh0/Nr7p62D39qV3vmBinCdOQfH/sw7lui2d03Pysl9Uf/0EzW0vvFSVIGpdOmo7/jdkGWIM3VQrl4OQTMDcnfPYB7wQBC8SQkCzheXLLP+1RRBC0wlyR22Ti2E8ZkeHHggKR7iw1q4y2tw6+MMwD0wZAMBv+UYTkIQ0N5h0xWaS5dQU2mZkUmSOC4LcA4hcCqUy5IAxuD6IR/MegkQ7zrLR+pmkkRNpReMtK7BGjPewIMsQ2GIBZ0bCamxCQOWSoCK3ib3BUJQW299lNo67RqfP9xdI7yKD0BUKiifSwZRKDCQb4Zs7xp9vSAEtk67hjpdLpWvRTJ5EsjtnMAH3N5+lBnoY3OhiH0CrK0DrsKS0Qkegv5+p4p6feUcZFIAJr33FmjYLIBzyD29cHx6GFJtw3/+VSigfHYJhCkPov9sPtiVa6PX/j9hoH5+yj5PY3EHhEAInAYhWA0IBGJUGAJ2vIx/3vkQcu/NwbofPhsPJBog996EK68IkJh38I0AlcrfQYPV6o6WK1fD75iXEPC+ftx6/xMQpRLC1CkIePsNKBbp4bdlHfoOfg0wBmWqEaJmBlz5Jkh1DWMWDs4RrFZ30JjoqIstLVfCh/mXMbCmlsGUymWQABUmfbQH/htXQbpYD6m2HsqUZ8CdTrh+LADvd2LMNYRzxMyNqqXGBIM5r6B4JZPl4Sfc8acAV7EF9ORp+L+0CarX0+Euq4IY+gik3+swUPnrOHwPiAoqGeMNJppiTCjcHzyjtbW1/ZF7ZkPG0J+dCzovcvDeh80CALjyisB7b47d/LIMrU7bmmxMKKLRkRGNqYsT849m57wCwftSAAAIgdzVA8eBrzB51kwIWg1YUzNc5gujSzpeBDhSkxLz5kSEXaIKBZXSN6/POv1j/qqe3t57l2NRgPTHn+j7Mhuq7elwnT0Pud2GMdcQzhE4Pcievmn9MUqpRAEgLvbJ6i0bVh/LOHRkN8h9VCIEzjPn4K7+DfL1rrEJ9hzBOU/buOao/qnHazzvAIBrbe0ha1/clltRUR0/YkTLss8CMyIYg8GgLzmVdXiDLkTTMYwAAFyoqNZveXXHicuXmyeuIx4iPCws1Ho888Bmw/ynqj2fvdryAlNJ0mu79hxuutwcOZFteXhYqPXQ53u3pRgTzMPWfA0LP5dX6Q0pK0smajBZmPr8Txcqq+ePajDx4Fpbe8hnXxzZefzkd2nd9m71eEazIHVQ59YNa47tev3lDJ120Od3477DKWNMKKv6RX8s51RagalkaVuH7WEmSRS4HYCeGOT8difMISqopNNorqUmJZ5L27guOy72yapxDadDITEm1Fv/mlNkLk0yWcqMdfXWGNt1u6av3xkAACp/P0ewWt0REx110ZhgMCc/E18cHRVhvZ9gD/4F4vECTSY22WoAAAAASUVORK5CYII=",
+                "description": ":str:Radix POW",
+                "serializer": 62583504,
+                "sub_units": 0,
+                "label": ":str:Proof of Work",
+                "classification": ":str:commodity",
+                "type": ":str:COMMODITY",
+                "version": 100
             },
-            "serializer": 547221307,
-            "version": 100
-          },
-          "previous": {
-            "serializer": "EUID",
-            "value": "00000000000000000000000000000000"
-          },
-          "signature": {
-            "r": {
-              "serializer": "BASE64",
-              "value": "HNUfMNd8lA5sfPHH4UUJSdZE4YibWa3HZhXLzpDJhlY="
+            "version": 100,
+            "signatures": {"56abab3870585f04d015d55adf600bc7": {
+                "r": ":byt:Ndc/nAfo6dVUwkR2YZ4Z8YnpCGDvikq6CsRughkBpJk=",
+                "s": ":byt:AIlUkQvYkuZlO0QK+qtkSIia1Aono0uuqQOKqRP3xfjn",
+                "serializer": -434788200,
+                "version": 100
+            }},
+            "chronoParticle": {
+                "timestamps": {
+                    "default": 1488326400000,
+                    "expires": 9223372036854775807
+                },
+                "serializer": 1080087081,
+                "version": 100
+            }
+        },
+        {
+            "destinations": [":uid:56abab3870585f04d015d55adf600bc7"],
+            "action": ":str:STORE",
+            "serializer": 2019665,
+            "owners": [{
+                "public": ":byt:A3hanCWf3pmR5E+i+wtWWfKleBrDOQduLb/vcFKOSt9o",
+                "serializer": 547221307,
+                "version": 100
+            }],
+            "id": ":uid:d7bd34bfe44a18d2aa755a344fe3e6b0",
+            "asset": {
+                "maximum_units": 0,
+                "settings": 20483,
+                "iso": ":str:TEST",
+                "icon": ":byt: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",
+                "description": ":str:Radix Test currency asset",
+                "serializer": 62583504,
+                "sub_units": 100000,
+                "label": ":str:Test Rads",
+                "classification": ":str:currencies",
+                "type": ":str:CURRENCY",
+                "scrypt": {
+                    "serializer": 549088296,
+                    "version": 100
+                },
+                "version": 100
             },
-            "s": {
-              "serializer": "BASE64",
-              "value": "AKu3Ug+ngAwH1hQ6A4djKB2sPoRFyCTEnzrpdWYfGIoH"
+            "version": 100,
+            "signatures": {"56abab3870585f04d015d55adf600bc7": {
+                "r": ":byt:AOH5OCcp3yqFVU1f2Z7M5sN+hVbk/lH5+jyE/ATMIyrK",
+                "s": ":byt:AN6k/2+2jcnLsLo0ROy8jJ+Cq8hEuMfaCTBQGB3me0FL",
+                "serializer": -434788200,
+                "version": 100
+            }},
+            "chronoParticle": {
+                "timestamps": {
+                    "default": 1488326400000,
+                    "expires": 9223372036854775807
+                },
+                "serializer": 1080087081,
+                "version": 100
+            }
+        },
+        {
+            "temporal_proof": {
+                "atom_id": ":uid:54092c4454274ea85304f34724d8c605",
+                "vertices": [{
+                    "owner": {
+                        "public": ":byt:AiDi9s7Y2EOIS7Jt7WJ09KempPMII3hb3HeBV/MaA/qm",
+                        "serializer": 547221307,
+                        "version": 100
+                    },
+                    "previous": ":uid:00000000000000000000000000000000",
+                    "signature": {
+                        "r": ":byt:AOHKwltYgqK7NSnuNxKYiomYVGU+53yr8GvXVPovoGk9",
+                        "s": ":byt:AL16pBcxF9jJroDyc4Jc2I6AXN5pRL0EocOSl3kf4Kua",
+                        "serializer": -434788200,
+                        "version": 100
+                    },
+                    "timestamps": {"default": 1536767431453},
+                    "commitment": ":hsh:0000000000000000000000000000000000000000000000000000000000000000",
+                    "serializer": -909337786,
+                    "clock": 0,
+                    "version": 100
+                }],
+                "serializer": 1905172290,
+                "version": 100
             },
-            "serializer": -434788200,
-            "version": 100
-          },
-          "timestamps": {"default": 1536706584620},
-          "commitment": {
-            "serializer": "HASH",
-            "value": "0000000000000000000000000000000000000000000000000000000000000000"
-          },
-          "serializer": -909337786,
-          "clock": 0,
-          "version": 100
-        }],
-        "serializer": 1905172290,
-        "version": 100
-      },
-      "dataParticles": [{
-        "bytes": {
-          "serializer": "BASE64",
-          "value": "UmFkaXguLi4uSnVzdCBJbWFnaW5l"
-        },
-        "serializer": 473758768,
-        "version": 100
-      }],
-      "consumables": [{
-        "quantity": 100000000000000,
-        "destinations": [{
-          "serializer": "EUID",
-          "value": "56abab3870585f04d015d55adf600bc7"
-        }],
-        "serializer": 1782261127,
-        "owners": [{
-          "public": {
-            "serializer": "BASE64",
-            "value": "A3hanCWf3pmR5E+i+wtWWfKleBrDOQduLb/vcFKOSt9o"
-          },
-          "serializer": 547221307,
-          "version": 100
-        }],
-        "asset_id": {
-          "serializer": "EUID",
-          "value": "d7bd34bfe44a18d2aa755a344fe3e6b0"
-        },
-        "nonce": 394151630418302,
-        "version": 100
-      }],
-      "destinations": [{
-        "serializer": "EUID",
-        "value": "56abab3870585f04d015d55adf600bc7"
-      }],
-      "action": "STORE",
-      "serializer": 2019665,
-      "version": 100,
-      "signatures": {"56abab3870585f04d015d55adf600bc7": {
-        "r": {
-          "serializer": "BASE64",
-          "value": "cSeWQt/whbmK1ZHcRt9wSec7QOn3saQQq3Z8vgoMWKg="
-        },
-        "s": {
-          "serializer": "BASE64",
-          "value": "AN+YbhgZXaXnNCQC6ZxfOIxJ0p6RlpFk+VprxpU97Nc3"
-        },
-        "serializer": -434788200,
-        "version": 100
-      }},
-      "chronoParticle": {
-        "timestamps": {"default": 1488326400000},
-        "serializer": 1080087081,
-        "version": 100
-      }
-    }
-  ],
-  "creator": {
-    "serializer": "BASE64",
-    "value": "A3hanCWf3pmR5E+i+wtWWfKleBrDOQduLb/vcFKOSt9o"
-  },
-  "port": 30000,
-  "signature.r": {
-    "serializer": "BASE64",
-    "value": "GZ5PwxVcYCjZuAvwEVIr4JxTXEMkwGBwLEbpTydWG90="
-  },
-  "signature.s": {
-    "serializer": "BASE64",
-    "value": "AP76pi2jBRP0ouvSqj7q3tPE6dfR/+uXjdrUEC0+drxw"
-  },
-  "name": "Radix Devnet",
-  "description": "The Radix development Universe",
-  "serializer": 492321349,
-  "type": 2,
-  "version": 100,
-  "timestamp": 1488326400000
+            "dataParticles": [{
+                "bytes": ":byt:UmFkaXguLi4uSnVzdCBJbWFnaW5l",
+                "serializer": 473758768,
+                "version": 100
+            }],
+            "consumables": [{
+                "quantity": 100000000000000,
+                "destinations": [":uid:56abab3870585f04d015d55adf600bc7"],
+                "serializer": 1782261127,
+                "owners": [{
+                    "public": ":byt:A3hanCWf3pmR5E+i+wtWWfKleBrDOQduLb/vcFKOSt9o",
+                    "serializer": 547221307,
+                    "version": 100
+                }],
+                "asset_id": ":uid:d7bd34bfe44a18d2aa755a344fe3e6b0",
+                "nonce": 999273432306367,
+                "version": 100
+            }],
+            "destinations": [":uid:56abab3870585f04d015d55adf600bc7"],
+            "action": ":str:STORE",
+            "serializer": 2019665,
+            "version": 100,
+            "signatures": {"56abab3870585f04d015d55adf600bc7": {
+                "r": ":byt:G6ZVbuSByfBhHRTmYpxygb5lJM5UNyRlQsWuUnvk5dM=",
+                "s": ":byt:APEJjFvd3W84pFP6f6bV4yspLMFOPvbAS/sI4aTerrDs",
+                "serializer": -434788200,
+                "version": 100
+            }},
+            "chronoParticle": {
+                "timestamps": {"default": 1488326400000},
+                "serializer": 1080087081,
+                "version": 100
+            }
+        }
+    ],
+    "creator": ":byt:A3hanCWf3pmR5E+i+wtWWfKleBrDOQduLb/vcFKOSt9o",
+    "port": 30000,
+    "signature.r": ":byt:Hey7UQzgoH94rx60g9fGSBjISRi3+NIPZ7km0xJwdC8=",
+    "signature.s": ":byt:APl1Yd8yyTV4yub1R+wqlmGMMjEHFsH1v56Sr3QMkWrK",
+    "name": ":str:Radix Devnet",
+    "description": ":str:The Radix development Universe",
+    "serializer": 492321349,
+    "type": 2,
+    "version": 100,
+    "timestamp": 1488326400000
 }

@@ -29,17 +29,20 @@ import com.google.gson.annotations.SerializedName;
 import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.util.Base64Encoded;
 
-import okio.ByteString;
+import static com.radixdlt.client.core.serialization.SerializationConstants.BYT_PREFIX;
+import static com.radixdlt.client.core.serialization.SerializationConstants.HSH_PREFIX;
+import static com.radixdlt.client.core.serialization.SerializationConstants.STR_PREFIX;
+import static com.radixdlt.client.core.serialization.SerializationConstants.UID_PREFIX;
 
 public class Dson {
 	private enum Primitive {
-		NUMBER(2),
-		STRING(3),
-		BYTES(4),
-		OBJECT(5),
-		ARRAY(6),
-		EUID(7),
-		HASH(8);
+		NUMBER(0x20),
+		EUID(0x21),
+		HASH(0x22),
+		BYTES(0x40),
+		STRING(0x41),
+		ARRAY(0x80),
+		OBJECT(0x81);
 
 		private final int value;
 
@@ -69,7 +72,7 @@ public class Dson {
 	}
 
 	private JsonElement parse(ByteBuffer byteBuffer) {
-		int type = byteBuffer.get();
+		int type = byteBuffer.get() & 0xFF;
 		int length = SerializationUtils.decodeInt(byteBuffer);
 		final JsonElement result;
 		if (type == Primitive.NUMBER.value) {
@@ -77,14 +80,11 @@ public class Dson {
 		} else if (type == Primitive.STRING.value) {
 			byte[] buffer = new byte[length];
 			byteBuffer.get(buffer);
-			result = new JsonPrimitive(new String(buffer));
+			result = new JsonPrimitive(STR_PREFIX + new String(buffer, StandardCharsets.UTF_8));
 		} else if (type == Primitive.BYTES.value) {
 			byte[] buffer = new byte[length];
 			byteBuffer.get(buffer);
-			JsonObject jsonObject = new JsonObject();
-			jsonObject.addProperty("serializer", "BASE64");
-			jsonObject.addProperty("value", Base64.toBase64String(buffer));
-			result = jsonObject;
+			result = new JsonPrimitive(BYT_PREFIX + Base64.toBase64String(buffer));
 		} else if (type == Primitive.OBJECT.value) {
 			JsonObject jsonObject = new JsonObject();
 
@@ -112,19 +112,13 @@ public class Dson {
 			}
 			result = jsonArray;
 		} else if (type == Primitive.EUID.value) {
-			JsonObject jsonObject = new JsonObject();
-			jsonObject.addProperty("serializer", "EUID");
 			byte[] buffer = new byte[length];
 			byteBuffer.get(buffer);
-			jsonObject.addProperty("value", Hex.toHexString(buffer));
-			result = jsonObject;
+			result = new JsonPrimitive(UID_PREFIX + Hex.toHexString(buffer));
 		} else if (type == Primitive.HASH.value) {
-			JsonObject jsonObject = new JsonObject();
-			jsonObject.addProperty("serializer", "HASH");
 			byte[] buffer = new byte[length];
 			byteBuffer.get(buffer);
-			jsonObject.addProperty("value", ByteString.of(buffer).hex());
-			result = jsonObject;
+			result = new JsonPrimitive(HSH_PREFIX + Hex.toHexString(buffer));
 		} else {
 			throw new RuntimeException("Unknown type: " + type);
 		}
@@ -170,7 +164,7 @@ public class Dson {
 
 	public byte[] toDson(Object o) {
 		final byte[] raw;
-		final byte type;
+		final int type;
 
 		if (o == null) {
 			throw new IllegalArgumentException("Null sent");
@@ -186,22 +180,22 @@ public class Dson {
 				}
 			}
 			raw = outputStream.toByteArray();
-			type = 6;
+			type = Primitive.ARRAY.value;
 		} else if (o instanceof Long) {
 			raw = longToByteArray((Long) o);
-			type = 2;
+			type = Primitive.NUMBER.value;
 		} else if (o instanceof EUID) {
 			raw = ((EUID) o).toByteArray();
-			type = 7;
+			type = Primitive.EUID.value;
 		} else if (o instanceof Base64Encoded) {
 			raw = ((Base64Encoded) o).toByteArray();
-			type = 4;
+			type = Primitive.BYTES.value;
 		} else if (o instanceof String) {
-			raw = ((String) o).getBytes();
-			type = 3;
+			raw = ((String) o).getBytes(StandardCharsets.UTF_8);
+			type = Primitive.STRING.value;
 		} else if (o instanceof byte[]) {
 			raw = (byte[]) o;
-			type = 4;
+			type = Primitive.BYTES.value;
 		} else if (o instanceof Map) {
 			final Map<?, ?> map = (Map<?, ?>) o;
 
@@ -224,7 +218,7 @@ public class Dson {
 			raw = fieldStream
 				.sorted(Comparator.comparing(DsonField::getName))
 				.collect(toByteArray);
-			type = 5;
+			type = Primitive.OBJECT.value;
 
 		} else {
 			Class<?> c = o.getClass();
@@ -251,11 +245,11 @@ public class Dson {
 			raw = Stream.concat(fieldStream, Stream.of(versionField))
 				.sorted(Comparator.comparing(DsonField::getName))
 				.collect(toByteArray);
-			type = 5;
+			type = Primitive.OBJECT.value;
 		}
 
 		ByteBuffer byteBuffer = ByteBuffer.allocate(1 + SerializationUtils.intLength(raw.length) + raw.length);
-		byteBuffer.put(type);
+		byteBuffer.put((byte) type);
 		SerializationUtils.encodeInt(raw.length, byteBuffer);
 		byteBuffer.put(raw);
 
