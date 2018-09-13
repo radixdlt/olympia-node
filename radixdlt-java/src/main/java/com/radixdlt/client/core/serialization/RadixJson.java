@@ -33,6 +33,7 @@ import com.radixdlt.client.core.atoms.Consumable;
 import com.radixdlt.client.core.atoms.Consumer;
 import com.radixdlt.client.core.atoms.DataParticle;
 import com.radixdlt.client.core.atoms.Emission;
+import com.radixdlt.client.core.atoms.MetadataMap;
 import com.radixdlt.client.core.atoms.Particle;
 import com.radixdlt.client.core.atoms.Payload;
 import com.radixdlt.client.core.atoms.UniqueParticle;
@@ -160,6 +161,27 @@ public class RadixJson {
 		}
 	}
 
+	private static class MetadataCodec implements JsonDeserializer<MetadataMap>, JsonSerializer<MetadataMap> {
+		@Override
+		public JsonElement serialize(MetadataMap src, Type typeOfSrc, JsonSerializationContext context) {
+			JsonObject obj = new JsonObject();
+			for (Map.Entry<String, String> e : src.entrySet()) {
+				obj.addProperty(e.getKey(), STR_PREFIX + e.getValue());
+			}
+			return obj;
+		}
+
+		@Override
+		public MetadataMap deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) {
+			JsonObject obj = (JsonObject) json;
+			MetadataMap map = new MetadataMap();
+			for (Map.Entry<String, JsonElement> e : obj.entrySet()) {
+				map.put(e.getKey(), unString(e.getValue().getAsString()));
+			}
+			return map;
+		}
+	}
+
 	private static final Map<Class<?>, Integer> SERIALIZERS = new HashMap<>();
 	static {
 		SERIALIZERS.put(Atom.class, 2019665);
@@ -211,6 +233,7 @@ public class RadixJson {
 			.registerTypeAdapter(AbstractConsumable.class, ABSTRACT_CONSUMABLE_SERIALIZER)
 			.registerTypeAdapter(AbstractConsumable.class, ABSTRACT_CONSUMABLE_DESERIALIZER)
 			.registerTypeAdapter(String.class, new StringCodec())
+			.registerTypeAdapter(MetadataMap.class, new MetadataCodec())
 			.registerTypeAdapter(EUID.class, new EUIDSerializer())
 			.registerTypeAdapter(Payload.class, PAYLOAD_DESERIALIZER)
 			.registerTypeAdapter(EncryptedPrivateKey.class, PROTECTOR_DESERIALIZER)
