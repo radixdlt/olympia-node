@@ -1,14 +1,17 @@
 package com.radixdlt.client.core.address;
 
+import com.google.gson.JsonElement;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.google.gson.JsonObject;
+import com.radixdlt.client.core.serialization.Dson;
 import com.radixdlt.client.core.serialization.RadixJson;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Collections;
 import java.util.List;
+import org.bouncycastle.util.encoders.Base64;
 
 public class RadixUniverseConfig {
 
@@ -20,6 +23,12 @@ public class RadixUniverseConfig {
 	private final long timestamp;
 	private final ECPublicKey creator;
 	private final List<Atom> genesis;
+
+	public static RadixUniverseConfig fromDsonBase64(String dsonBase64) {
+		JsonElement universeJson = Dson.getInstance().parse(Base64.decode(dsonBase64));
+		System.out.println(universeJson);
+		return RadixJson.getGson().fromJson(universeJson, RadixUniverseConfig.class);
+	}
 
 	public static RadixUniverseConfig fromInputStream(InputStream inputStream) {
 		return RadixJson.getGson().fromJson(new InputStreamReader(inputStream), RadixUniverseConfig.class);
