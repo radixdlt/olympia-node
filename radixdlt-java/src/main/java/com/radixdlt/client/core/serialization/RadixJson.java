@@ -25,7 +25,6 @@ import com.radixdlt.client.core.atoms.IdParticle;
 import com.radixdlt.client.core.atoms.NullAtom.JunkParticle;
 import com.radixdlt.client.core.atoms.Particle;
 import com.radixdlt.client.core.atoms.Payload;
-import com.radixdlt.client.core.atoms.UnknownAtom;
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.crypto.ECSignature;
@@ -86,7 +85,7 @@ public class RadixJson {
 		if (atomType.isPresent()) {
 			return context.deserialize(json.getAsJsonObject(), atomType.get().getAtomClass());
 		} else {
-			return new UnknownAtom(json.getAsJsonObject());
+			throw new IllegalStateException("Unknown Atom Serializer: " + serializer);
 		}
 	};
 
