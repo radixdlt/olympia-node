@@ -1,5 +1,6 @@
 package com.radixdlt.client.core.serialization;
 
+import com.radixdlt.client.core.atoms.AssetAtom;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.ApplicationPayloadAtom;
 import com.radixdlt.client.core.atoms.NullAtom;
@@ -7,6 +8,7 @@ import com.radixdlt.client.core.atoms.TransactionAtom;
 import java.util.Optional;
 
 public enum SerializedAtomType {
+	ASSET(AssetAtom.class, 62583504L),
 	TRANSACTION(TransactionAtom.class, -760130L),
 	NULL(NullAtom.class, -1123323048L),
 	MESSAGE(ApplicationPayloadAtom.class, -2040291185L);

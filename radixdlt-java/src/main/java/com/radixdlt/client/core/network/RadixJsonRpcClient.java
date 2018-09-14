@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 import com.radixdlt.client.core.address.EUID;
+import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState;
 import com.radixdlt.client.core.network.WebSocketClient.RadixClientStatus;
 import com.radixdlt.client.core.serialization.RadixJson;
@@ -49,9 +50,14 @@ public class RadixJsonRpcClient {
 	private final Observable<JsonObject> messages;
 
 	/**
-	 * Cached API version of Server
+	 * Cached API version of Node
 	 */
 	private final Single<Integer> serverApiVersion;
+
+	/**
+	 * Cached Universe of Node
+	 */
+	private final Single<RadixUniverseConfig> universeConfig;
 
 	public RadixJsonRpcClient(WebSocketClient wsClient) {
 		this.wsClient = wsClient;
@@ -69,6 +75,10 @@ public class RadixJsonRpcClient {
 				.map(result -> result.getAsJsonObject().get("version").getAsInt())
 				.cache();
 		}
+
+		this.universeConfig = jsonRpcCall("Universe.getUniverse")
+			.map(result -> RadixJson.getGson().fromJson(result, RadixUniverseConfig.class))
+			.cache();
 	}
 
 	/**
@@ -152,6 +162,15 @@ public class RadixJsonRpcClient {
 
 	public Single<Boolean> checkAPIVersion() {
 		return this.getAPIVersion().map(API_VERSION::equals);
+	}
+
+	/**
+	 * Retrieve the universe the node is supporting. The result is cached for future calls.
+	 *
+	 * @return universe config which the node is supporting
+	 */
+	public Single<RadixUniverseConfig> getUniverse() {
+		return this.universeConfig;
 	}
 
 	/**
