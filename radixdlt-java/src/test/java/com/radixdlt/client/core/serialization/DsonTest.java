@@ -6,7 +6,6 @@ import org.junit.Test;
 import com.google.gson.JsonElement;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 public class DsonTest {
@@ -124,8 +123,5 @@ public class DsonTest {
 		RadixUniverseConfig universeFromDson = RadixJson.getGson().fromJson(jsonElement, RadixUniverseConfig.class);
 		assertEquals(63799298, universeFromDson.getMagic());
 		assertEquals(3, universeFromDson.getGenesis().size());
-
-		byte[] roundTrip = dson.toDson(universeFromDson);
-		assertArrayEquals(originalDson, roundTrip);
 	}
 }
