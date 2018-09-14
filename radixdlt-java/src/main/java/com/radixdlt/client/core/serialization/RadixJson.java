@@ -1,5 +1,13 @@
 package com.radixdlt.client.core.serialization;
 
+import java.io.IOException;
+import java.lang.reflect.Type;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.bouncycastle.util.encoders.Base64;
+import org.bouncycastle.util.encoders.Hex;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializationContext;
@@ -7,6 +15,7 @@ import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
+import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import com.google.gson.TypeAdapter;
@@ -24,9 +33,10 @@ import com.radixdlt.client.core.atoms.Consumable;
 import com.radixdlt.client.core.atoms.Consumer;
 import com.radixdlt.client.core.atoms.DataParticle;
 import com.radixdlt.client.core.atoms.Emission;
-import com.radixdlt.client.core.atoms.UniqueParticle;
+import com.radixdlt.client.core.atoms.MetadataMap;
 import com.radixdlt.client.core.atoms.Particle;
 import com.radixdlt.client.core.atoms.Payload;
+import com.radixdlt.client.core.atoms.UniqueParticle;
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.crypto.ECSignature;
@@ -34,47 +44,49 @@ import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
 import com.radixdlt.client.core.network.NodeRunnerData;
 import com.radixdlt.client.core.util.Base64Encoded;
 import com.radixdlt.client.core.util.Int128;
-import org.bouncycastle.util.encoders.Base64;
 
-import java.io.IOException;
-import java.lang.reflect.Type;
-import java.util.HashMap;
-import java.util.Map;
-import org.bouncycastle.util.encoders.Hex;
+import static com.radixdlt.client.core.serialization.SerializationConstants.BYT_PREFIX;
+import static com.radixdlt.client.core.serialization.SerializationConstants.STR_PREFIX;
+import static com.radixdlt.client.core.serialization.SerializationConstants.UID_PREFIX;
 
 public class RadixJson {
 
-	private static JsonObject serializedValue(String type, String value) {
-		JsonObject element = new JsonObject();
-		element.addProperty("serializer", type);
-		element.addProperty("value", value);
-		return element;
+	private static String checkPrefix(String value, String prefix) {
+		if (!value.startsWith(prefix)) {
+			throw new IllegalStateException("JSON value does not start with prefix " + prefix);
+		}
+		return value.substring(prefix.length());
+	}
+
+	private static String unString(String value) {
+		return value.startsWith(STR_PREFIX) ? value.substring(STR_PREFIX.length()) : value;
 	}
 
 	private static final JsonSerializer<Base64Encoded> BASE64_SERIALIZER =
-		(src, typeOfSrc, context) -> serializedValue("BASE64", src.base64());
+		(src, typeOfSrc, context) -> new JsonPrimitive(BYT_PREFIX + src.base64());
 
 	private static final JsonDeserializer<Payload> PAYLOAD_DESERIALIZER =
-		(json, typeOfT, context) -> Payload.fromBase64(json.getAsJsonObject().get("value").getAsString());
+		(json, typeOfT, context) -> Payload.fromBase64(checkPrefix(json.getAsString(), BYT_PREFIX));
 
 	private static final JsonDeserializer<ECPublicKey> PK_DESERIALIZER = (json, typeOf, context) -> {
-		byte[] publicKey = Base64.decode(json.getAsJsonObject().get("value").getAsString());
+		byte[] publicKey = Base64.decode(checkPrefix(json.getAsString(), BYT_PREFIX));
 		return new ECPublicKey(publicKey);
 	};
 
 	private static final JsonDeserializer<EncryptedPrivateKey> PROTECTOR_DESERIALIZER = (json, typeOf, context) -> {
-		byte[] encryptedPrivateKey = Base64.decode(json.getAsJsonObject().get("value").getAsString());
+		byte[] encryptedPrivateKey = Base64.decode(checkPrefix(json.getAsString(), BYT_PREFIX));
 		return new EncryptedPrivateKey(encryptedPrivateKey);
 	};
 
-	private static final JsonDeserializer<RadixUniverseType> UNIVERSER_TYPE_DESERIALIZER =
+	private static final JsonDeserializer<RadixUniverseType> UNIVERSE_TYPE_DESERIALIZER =
 		(json, typeOf, context) -> RadixUniverseType.valueOf(json.getAsInt());
 
-	private static final JsonDeserializer<NodeRunnerData> NODE_RUNNDER_DATA_JSON_DESERIALIZER = (json, typeOf, context) -> {
+	private static final JsonDeserializer<NodeRunnerData> NODE_RUNNER_DATA_JSON_DESERIALIZER = (json, typeOf, context) -> {
+		JsonObject obj = json.getAsJsonObject();
 		return new NodeRunnerData(
-			json.getAsJsonObject().has("host") ? json.getAsJsonObject().get("host").getAsJsonObject().get("ip").getAsString() : null,
-			json.getAsJsonObject().get("system").getAsJsonObject().get("shards").getAsJsonObject().get("low").getAsLong(),
-			json.getAsJsonObject().get("system").getAsJsonObject().get("shards").getAsJsonObject().get("high").getAsLong()
+			obj.has("host") ? unString(obj.get("host").getAsJsonObject().get("ip").getAsString()) : null,
+			obj.get("system").getAsJsonObject().get("shards").getAsJsonObject().get("low").getAsLong(),
+			obj.get("system").getAsJsonObject().get("shards").getAsJsonObject().get("high").getAsLong()
 		);
 	};
 
@@ -115,12 +127,12 @@ public class RadixJson {
 	private static class EUIDSerializer implements JsonDeserializer<EUID>, JsonSerializer<EUID> {
 		@Override
 		public JsonElement serialize(EUID src, Type typeOfSrc, JsonSerializationContext context) {
-			return serializedValue("EUID", src.toString());
+			return new JsonPrimitive(UID_PREFIX + src.toString());
 		}
 
 		@Override
 		public EUID deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
-			return new EUID(Int128.from(Hex.decode(json.getAsJsonObject().get("value").getAsString())));
+			return new EUID(Int128.from(Hex.decode(checkPrefix(json.getAsString(), UID_PREFIX))));
 		}
 	}
 
@@ -128,16 +140,49 @@ public class RadixJson {
 	private static class ByteArraySerializer implements JsonDeserializer<byte[]>, JsonSerializer<byte[]> {
 		@Override
 		public JsonElement serialize(byte[] src, Type typeOfSrc, JsonSerializationContext context) {
-			return serializedValue("BASE64", Base64.toBase64String(src));
+			return new JsonPrimitive(BYT_PREFIX + Base64.toBase64String(src));
 		}
 
 		@Override
-		public byte[] deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
-			return Base64.decode(json.getAsJsonObject().get("value").getAsString());
+		public byte[] deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) {
+			return Base64.decode(checkPrefix(json.getAsString(), BYT_PREFIX));
 		}
 	}
 
-	private static final Map<Class, Integer> SERIALIZERS = new HashMap<>();
+	private static class StringCodec implements JsonDeserializer<String>, JsonSerializer<String> {
+		@Override
+		public JsonElement serialize(String src, Type typeOfSrc, JsonSerializationContext context) {
+			return new JsonPrimitive(STR_PREFIX + src);
+		}
+
+		@Override
+		public String deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) {
+			return unString(json.getAsString());
+		}
+	}
+
+	private static class MetadataCodec implements JsonDeserializer<MetadataMap>, JsonSerializer<MetadataMap> {
+		@Override
+		public JsonElement serialize(MetadataMap src, Type typeOfSrc, JsonSerializationContext context) {
+			JsonObject obj = new JsonObject();
+			for (Map.Entry<String, String> e : src.entrySet()) {
+				obj.addProperty(e.getKey(), STR_PREFIX + e.getValue());
+			}
+			return obj;
+		}
+
+		@Override
+		public MetadataMap deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) {
+			JsonObject obj = (JsonObject) json;
+			MetadataMap map = new MetadataMap();
+			for (Map.Entry<String, JsonElement> e : obj.entrySet()) {
+				map.put(e.getKey(), unString(e.getValue().getAsString()));
+			}
+			return map;
+		}
+	}
+
+	private static final Map<Class<?>, Integer> SERIALIZERS = new HashMap<>();
 	static {
 		SERIALIZERS.put(Atom.class, 2019665);
 		SERIALIZERS.put(ECKeyPair.class, 547221307);
@@ -187,12 +232,14 @@ public class RadixJson {
 			.registerTypeAdapter(byte[].class, new ByteArraySerializer())
 			.registerTypeAdapter(AbstractConsumable.class, ABSTRACT_CONSUMABLE_SERIALIZER)
 			.registerTypeAdapter(AbstractConsumable.class, ABSTRACT_CONSUMABLE_DESERIALIZER)
+			.registerTypeAdapter(String.class, new StringCodec())
+			.registerTypeAdapter(MetadataMap.class, new MetadataCodec())
 			.registerTypeAdapter(EUID.class, new EUIDSerializer())
 			.registerTypeAdapter(Payload.class, PAYLOAD_DESERIALIZER)
 			.registerTypeAdapter(EncryptedPrivateKey.class, PROTECTOR_DESERIALIZER)
 			.registerTypeAdapter(ECPublicKey.class, PK_DESERIALIZER)
-			.registerTypeAdapter(RadixUniverseType.class, UNIVERSER_TYPE_DESERIALIZER)
-			.registerTypeAdapter(NodeRunnerData.class, NODE_RUNNDER_DATA_JSON_DESERIALIZER);
+			.registerTypeAdapter(RadixUniverseType.class, UNIVERSE_TYPE_DESERIALIZER)
+			.registerTypeAdapter(NodeRunnerData.class, NODE_RUNNER_DATA_JSON_DESERIALIZER);
 
 		GSON = gsonBuilder.create();
 	}

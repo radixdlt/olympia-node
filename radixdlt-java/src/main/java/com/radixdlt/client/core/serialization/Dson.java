@@ -2,6 +2,7 @@ package com.radixdlt.client.core.serialization;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
@@ -18,6 +19,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.bouncycastle.util.encoders.Base64;
+import org.bouncycastle.util.encoders.Hex;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -27,18 +29,20 @@ import com.google.gson.annotations.SerializedName;
 import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.util.Base64Encoded;
 
-import okio.ByteString;
-import org.bouncycastle.util.encoders.Hex;
+import static com.radixdlt.client.core.serialization.SerializationConstants.BYT_PREFIX;
+import static com.radixdlt.client.core.serialization.SerializationConstants.HSH_PREFIX;
+import static com.radixdlt.client.core.serialization.SerializationConstants.STR_PREFIX;
+import static com.radixdlt.client.core.serialization.SerializationConstants.UID_PREFIX;
 
 public class Dson {
 	private enum Primitive {
-		NUMBER(2),
-		STRING(3),
-		BYTES(4),
-		OBJECT(5),
-		ARRAY(6),
-		EUID(7),
-		HASH(8);
+		NUMBER(0x20),
+		EUID(0x21),
+		HASH(0x22),
+		BYTES(0x40),
+		STRING(0x41),
+		ARRAY(0x80),
+		OBJECT(0x81);
 
 		private final int value;
 
@@ -68,27 +72,24 @@ public class Dson {
 	}
 
 	private JsonElement parse(ByteBuffer byteBuffer) {
-		int type = byteBuffer.get();
-		int length = byteBuffer.getInt();
+		int type = byteBuffer.get() & 0xFF;
+		int length = SerializationUtils.decodeInt(byteBuffer);
 		final JsonElement result;
 		if (type == Primitive.NUMBER.value) {
 			result = new JsonPrimitive(byteBuffer.getLong());
 		} else if (type == Primitive.STRING.value) {
 			byte[] buffer = new byte[length];
 			byteBuffer.get(buffer);
-			result = new JsonPrimitive(new String(buffer));
+			result = new JsonPrimitive(STR_PREFIX + new String(buffer, StandardCharsets.UTF_8));
 		} else if (type == Primitive.BYTES.value) {
 			byte[] buffer = new byte[length];
 			byteBuffer.get(buffer);
-			JsonObject jsonObject = new JsonObject();
-			jsonObject.addProperty("serializer", "BASE64");
-			jsonObject.addProperty("value", Base64.toBase64String(buffer));
-			result = jsonObject;
+			result = new JsonPrimitive(BYT_PREFIX + Base64.toBase64String(buffer));
 		} else if (type == Primitive.OBJECT.value) {
 			JsonObject jsonObject = new JsonObject();
 
 			while (length > 0) {
-				int fieldNameLength = byteBuffer.get();
+				int fieldNameLength = byteBuffer.get() & 0xFF;
 				byte[] fieldName = new byte[fieldNameLength];
 				byteBuffer.get(fieldName);
 				int start = byteBuffer.position();
@@ -111,19 +112,13 @@ public class Dson {
 			}
 			result = jsonArray;
 		} else if (type == Primitive.EUID.value) {
-			JsonObject jsonObject = new JsonObject();
-			jsonObject.addProperty("serializer", "EUID");
 			byte[] buffer = new byte[length];
 			byteBuffer.get(buffer);
-			jsonObject.addProperty("value", Hex.toHexString(buffer));
-			result = jsonObject;
+			result = new JsonPrimitive(UID_PREFIX + Hex.toHexString(buffer));
 		} else if (type == Primitive.HASH.value) {
-			JsonObject jsonObject = new JsonObject();
-			jsonObject.addProperty("serializer", "HASH");
 			byte[] buffer = new byte[length];
 			byteBuffer.get(buffer);
-			jsonObject.addProperty("value", ByteString.of(buffer).hex());
-			result = jsonObject;
+			result = new JsonPrimitive(HSH_PREFIX + Hex.toHexString(buffer));
 		} else {
 			throw new RuntimeException("Unknown type: " + type);
 		}
@@ -157,11 +152,11 @@ public class Dson {
 		list.forEach(dsonField -> {
 			try {
 				byte[] nameBytes = dsonField.getName().getBytes(StandardCharsets.UTF_8);
-				outputStream.write(nameBytes.length);
+				SerializationUtils.encodeInt(nameBytes.length, outputStream);
 				outputStream.write(nameBytes);
 				outputStream.write(dsonField.getBytes());
 			} catch (IOException e) {
-				throw new RuntimeException();
+				throw new UncheckedIOException(e);
 			}
 		});
 		return outputStream.toByteArray();
@@ -169,64 +164,64 @@ public class Dson {
 
 	public byte[] toDson(Object o) {
 		final byte[] raw;
-		final byte type;
+		final int type;
 
 		if (o == null) {
 			throw new IllegalArgumentException("Null sent");
 		} else if (o instanceof Collection) {
 			ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-			Collection collection = (Collection) o;
+			Collection<?> collection = (Collection<?>) o;
 			for (Object arrayObject : collection) {
 				try {
 					byte[] arrayObjRaw = toDson(arrayObject);
 					outputStream.write(arrayObjRaw);
 				} catch (IOException e) {
-					throw new RuntimeException();
+					throw new UncheckedIOException(e);
 				}
 			}
 			raw = outputStream.toByteArray();
-			type = 6;
+			type = Primitive.ARRAY.value;
 		} else if (o instanceof Long) {
 			raw = longToByteArray((Long) o);
-			type = 2;
+			type = Primitive.NUMBER.value;
 		} else if (o instanceof EUID) {
 			raw = ((EUID) o).toByteArray();
-			type = 7;
+			type = Primitive.EUID.value;
 		} else if (o instanceof Base64Encoded) {
 			raw = ((Base64Encoded) o).toByteArray();
-			type = 4;
+			type = Primitive.BYTES.value;
 		} else if (o instanceof String) {
-			raw = ((String) o).getBytes();
-			type = 3;
+			raw = ((String) o).getBytes(StandardCharsets.UTF_8);
+			type = Primitive.STRING.value;
 		} else if (o instanceof byte[]) {
 			raw = (byte[]) o;
-			type = 4;
+			type = Primitive.BYTES.value;
 		} else if (o instanceof Map) {
-			final Map<?, ?> map = (Map) o;
+			final Map<?, ?> map = (Map<?, ?>) o;
 
 			if (HashMap.class == o.getClass()) {
 				throw new IllegalStateException("Cannot DSON serialize HashMap. Must be a predictably ordered map.");
 			}
 
-			Stream<DsonField> fieldStream = map.keySet().stream().map(key -> new DsonField() {
+			Stream<DsonField> fieldStream = map.entrySet().stream().map(e -> new DsonField() {
 				@Override
 				public String getName() {
-					return key.toString();
+					return e.getKey().toString();
 				}
 
 				@Override
 				public byte[] getBytes() {
-					return toDson(map.get(key));
+					return toDson(e.getValue());
 				}
 			});
 
 			raw = fieldStream
 				.sorted(Comparator.comparing(DsonField::getName))
 				.collect(toByteArray);
-			type = 5;
+			type = Primitive.OBJECT.value;
 
 		} else {
-			Class c = o.getClass();
+			Class<?> c = o.getClass();
 			List<Field> fields = new ArrayList<>();
 			while (c != Object.class) {
 				fields.addAll(Arrays.asList(c.getDeclaredFields()));
@@ -242,39 +237,45 @@ public class Dson {
 						field.setAccessible(true);
 						return field.get(o) != null;
 					} catch (IllegalAccessException e) {
-						throw new RuntimeException();
+						throw new RuntimeException(e);
 					}
 				})
-				.map(field -> new DsonField() {
-					@Override
-					public String getName() {
-						SerializedName serializedName = field.getAnnotation(SerializedName.class);
-						return serializedName == null ? field.getName() : serializedName.value();
-					}
-
-					@Override
-					public byte[] getBytes() {
-						try {
-							field.setAccessible(true);
-							Object fieldObject = field.get(o);
-							return toDson(fieldObject);
-						} catch (IllegalAccessException e) {
-							throw new RuntimeException();
-						}
-					}
-				});
+				.map(field -> dsonFieldFrom(o, field));
 
 			raw = Stream.concat(fieldStream, Stream.of(versionField))
 				.sorted(Comparator.comparing(DsonField::getName))
 				.collect(toByteArray);
-			type = 5;
+			type = Primitive.OBJECT.value;
 		}
 
-		ByteBuffer byteBuffer = ByteBuffer.allocate(5 + raw.length);
-		byteBuffer.put(type);
-		byteBuffer.putInt(raw.length);
+		ByteBuffer byteBuffer = ByteBuffer.allocate(1 + SerializationUtils.intLength(raw.length) + raw.length);
+		byteBuffer.put((byte) type);
+		SerializationUtils.encodeInt(raw.length, byteBuffer);
 		byteBuffer.put(raw);
 
 		return byteBuffer.array();
+	}
+
+	private DsonField dsonFieldFrom(Object o, Field field) {
+		SerializedName serializedName = field.getAnnotation(SerializedName.class);
+		String name = (serializedName == null) ? field.getName() : serializedName.value();
+
+		return new DsonField() {
+			@Override
+			public String getName() {
+				return name;
+			}
+
+			@Override
+			public byte[] getBytes() {
+				try {
+					field.setAccessible(true);
+					Object fieldObject = field.get(o);
+					return toDson(fieldObject);
+				} catch (IllegalArgumentException | IllegalAccessException e) {
+					throw new RuntimeException(e);
+				}
+			}
+		};
 	}
 }
