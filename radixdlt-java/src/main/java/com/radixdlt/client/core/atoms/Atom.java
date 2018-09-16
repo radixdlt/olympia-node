@@ -96,10 +96,6 @@ public abstract class Atom {
 		return particles == null ? Collections.emptyList() : Collections.unmodifiableList(particles);
 	}
 
-	public boolean isUnknown() {
-		return this.getClass() == UnknownAtom.class;
-	}
-
 	public boolean isNullAtom() {
 		return this.getClass() == NullAtom.class;
 	}

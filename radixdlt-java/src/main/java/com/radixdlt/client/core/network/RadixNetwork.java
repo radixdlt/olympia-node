@@ -1,5 +1,6 @@
 package com.radixdlt.client.core.network;
 
+import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.client.core.network.WebSocketClient.RadixClientStatus;
 import io.reactivex.Observable;
 import io.reactivex.Single;
@@ -7,6 +8,7 @@ import io.reactivex.observables.ConnectableObservable;
 
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Collections;
+import java.util.Objects;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,7 +29,17 @@ public final class RadixNetwork {
 	 */
 	private final ConnectableObservable<SimpleImmutableEntry<String, RadixClientStatus>> statusUpdates;
 
-	public RadixNetwork(PeerDiscovery peerDiscovery) {
+	/**
+	 * The Universe we need peers for
+	 * TODO: is this the right place to have this?
+	 */
+	private final RadixUniverseConfig config;
+
+	public RadixNetwork(RadixUniverseConfig config, PeerDiscovery peerDiscovery) {
+		Objects.requireNonNull(config);
+		Objects.requireNonNull(peerDiscovery);
+
+		this.config = config;
 		this.peers = peerDiscovery.findPeers()
 			.doOnNext(peer -> LOGGER.info("Added to peer list: " + peer.getLocation()))
 			.replay().autoConnect(2);
@@ -84,6 +96,18 @@ public final class RadixNetwork {
 					.toMaybe()
 			)
 			.flatMapMaybe(client -> client.checkAPIVersion().filter(b -> b).map(b -> client))
+			.flatMapMaybe(client ->
+				client.getUniverse()
+					.doOnSuccess(cliUniverse -> {
+						if (!config.equals(cliUniverse)) {
+							LOGGER.warn(client + " has universe: " + cliUniverse.getHash()
+								+ " but looking for " + config.getHash());
+						}
+					})
+					.map(config::equals)
+					.filter(b -> b)
+					.map(b -> client)
+			)
 			.firstOrError();
 	}
 

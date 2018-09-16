@@ -18,7 +18,7 @@ public class RadixWalletExample {
 
 	// Initialize Radix Universe
 	static {
-		RadixUniverse.bootstrap(Bootstrap.SUNSTONE);
+		RadixUniverse.bootstrap(Bootstrap.ALPHANET);
 	}
 
 	public static void main(String[] args) throws Exception {

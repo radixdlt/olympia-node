@@ -186,6 +186,8 @@ public class Dson {
 		} else if (o instanceof Long) {
 			raw = longToByteArray((Long) o);
 			type = 2;
+		} else if (o instanceof Number) {
+			throw new IllegalStateException("A number must be a long to be serialized in Dson: " + o);
 		} else if (o instanceof EUID) {
 			raw = ((EUID) o).bigInteger().toByteArray();
 			type = 7;
@@ -213,11 +215,11 @@ public class Dson {
 				}
 			});
 
-			raw = fieldStream
-				.sorted(Comparator.comparing(DsonField::getName))
-				.collect(toByteArray);
+			raw = fieldStream.sorted(Comparator.comparing(DsonField::getName)).collect(toByteArray);
 			type = 5;
-
+		} else if (o instanceof HasOrdinalValue) { // HACK
+			raw = longToByteArray(((HasOrdinalValue) o).ordinalValue());
+			type = 2;
 		} else {
 			Class c = o.getClass();
 			List<Field> fields = new ArrayList<>();
