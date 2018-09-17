@@ -48,7 +48,7 @@ public class WebSocketClientTest {
 
 		TestObserver testObserver = TestObserver.create();
 		client.connect().subscribe(testObserver);
-		testObserver.assertError(t -> t instanceof IOException);
+		testObserver.assertError(t -> t instanceof RuntimeException);
 	}
 
 	@Test

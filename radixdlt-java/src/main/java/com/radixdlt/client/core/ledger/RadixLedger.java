@@ -137,7 +137,6 @@ public class RadixLedger {
 			.flatMapObservable(client -> client.getAtoms(atomQuery))
 			.doOnError(throwable -> {
 				LOGGER.warn("Error on getAllAtoms" + destination);
-				throwable.printStackTrace();
 			})
 			.retryWhen(new IncreasingRetryTimer())
 			.filter(new Predicate<T>() {
@@ -184,8 +183,7 @@ public class RadixLedger {
 	 */
 	public Observable<AtomSubmissionUpdate> submitAtom(Atom atom) {
 		Observable<AtomSubmissionUpdate> status = getRadixClient(atom.getRequiredFirstShard())
-			//.doOnSubscribe(client -> logger.info("Looking for client to submit atom"))
-			//.doOnSuccess(client -> logger.info("Found client to submit atom: " + client.getLocation()))
+			.doOnSuccess(client -> LOGGER.info("Found client to submit atom: " + client.getLocation()))
 			.doOnError(throwable -> {
 				LOGGER.warn("Error on submitAtom " + atom.getHid());
 				throwable.printStackTrace();
