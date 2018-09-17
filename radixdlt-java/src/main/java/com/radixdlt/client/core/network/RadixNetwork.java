@@ -1,9 +1,7 @@
 package com.radixdlt.client.core.network;
 
-import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.client.core.network.WebSocketClient.RadixClientStatus;
 import io.reactivex.Observable;
-import io.reactivex.Single;
 import io.reactivex.observables.ConnectableObservable;
 
 import java.util.AbstractMap.SimpleImmutableEntry;
@@ -29,17 +27,10 @@ public final class RadixNetwork {
 	 */
 	private final ConnectableObservable<SimpleImmutableEntry<String, RadixClientStatus>> statusUpdates;
 
-	/**
-	 * The Universe we need peers for
-	 * TODO: is this the right place to have this?
-	 */
-	private final RadixUniverseConfig config;
 
-	public RadixNetwork(RadixUniverseConfig config, PeerDiscovery peerDiscovery) {
-		Objects.requireNonNull(config);
+	public RadixNetwork(PeerDiscovery peerDiscovery) {
 		Objects.requireNonNull(peerDiscovery);
 
-		this.config = config;
 		this.peers = peerDiscovery.findPeers()
 			.doOnNext(peer -> LOGGER.info("Added to peer list: " + peer.getLocation()))
 			.replay().autoConnect(2);
@@ -72,54 +63,12 @@ public final class RadixNetwork {
 	}
 
 	public Observable<RadixJsonRpcClient> getRadixClients(Set<Long> shards) {
-		return peers.flatMapMaybe(peer -> peer.servesShards(shards)).map(RadixPeer::getRadixClient);
+		return peers.flatMapMaybe(peer -> peer.servesShards(shards)).map(RadixPeer::getRadixClient)
+			.flatMapMaybe(client -> client.checkAPIVersion().filter(b -> b).map(b -> client));
 	}
 
 	public Observable<RadixJsonRpcClient> getRadixClients(Long shard) {
 		return this.getRadixClients(Collections.singleton(shard));
-	}
-
-	/**
-	 * Returns a cold observable of the first peer found which supports
-	 * a set short shards which intersects with a given set of shards.
-	 *
-	 * @param shards set of shards to find an intersection with
-	 * @return a cold observable of the first matching Radix client
-	 */
-	public Single<RadixJsonRpcClient> getRadixClient(Set<Long> shards) {
-		return this.getRadixClients(shards)
-			.flatMapMaybe(client ->
-				client.getStatus()
-					.filter(status -> !status.equals(RadixClientStatus.FAILURE))
-					.map(status -> client)
-					.firstOrError()
-					.toMaybe()
-			)
-			.flatMapMaybe(client -> client.checkAPIVersion().filter(b -> b).map(b -> client))
-			.flatMapMaybe(client ->
-				client.getUniverse()
-					.doOnSuccess(cliUniverse -> {
-						if (!config.equals(cliUniverse)) {
-							LOGGER.warn(client + " has universe: " + cliUniverse.getHash()
-								+ " but looking for " + config.getHash());
-						}
-					})
-					.map(config::equals)
-					.filter(b -> b)
-					.map(b -> client)
-			)
-			.firstOrError();
-	}
-
-	/**
-	 * Returns a cold observable of the first peer found which supports
-	 * a set short shards which intersects with a given shard
-	 *
-	 * @param shard a shards to find an intersection with
-	 * @return a cold observable of the first matching Radix client
-	 */
-	public Single<RadixJsonRpcClient> getRadixClient(Long shard) {
-		return getRadixClient(Collections.singleton(shard));
 	}
 
 	/**

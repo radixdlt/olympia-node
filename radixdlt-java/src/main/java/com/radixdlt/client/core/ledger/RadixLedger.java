@@ -2,6 +2,7 @@ package com.radixdlt.client.core.ledger;
 
 import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.address.RadixAddress;
+import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomValidationException;
 import com.radixdlt.client.core.atoms.RadixHash;
@@ -10,11 +11,15 @@ import com.radixdlt.client.core.network.AtomQuery;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState;
 import com.radixdlt.client.core.network.IncreasingRetryTimer;
+import com.radixdlt.client.core.network.RadixJsonRpcClient;
 import com.radixdlt.client.core.network.RadixNetwork;
+import com.radixdlt.client.core.network.WebSocketClient.RadixClientStatus;
 import com.radixdlt.client.core.serialization.RadixJson;
 import io.reactivex.Observable;
+import io.reactivex.Single;
 import io.reactivex.functions.Predicate;
 import io.reactivex.observables.ConnectableObservable;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -31,11 +36,16 @@ public class RadixLedger {
 	private static final Logger LOGGER = LoggerFactory.getLogger(RadixLedger.class);
 
 	private final RadixNetwork radixNetwork;
-	private final int magic;
 	private final AtomicBoolean debug = new AtomicBoolean(false);
 
-	public RadixLedger(int magic, RadixNetwork radixNetwork) {
-		this.magic = magic;
+	/**
+	 * The Universe we need peers for
+	 * TODO: is this the right place to have this?
+	 */
+	private final RadixUniverseConfig config;
+
+	public RadixLedger(RadixUniverseConfig config, RadixNetwork radixNetwork) {
+		this.config = config;
 		this.radixNetwork = radixNetwork;
 	}
 
@@ -44,7 +54,7 @@ public class RadixLedger {
 	}
 
 	public int getMagic() {
-		return magic;
+		return config.getMagic();
 	}
 
 	/**
@@ -65,7 +75,49 @@ public class RadixLedger {
 	 * @return the corresponding address to the key for this universe
 	 */
 	public RadixAddress getAddressFromPublicKey(ECPublicKey publicKey) {
-		return new RadixAddress(magic, publicKey);
+		return new RadixAddress(config.getMagic(), publicKey);
+	}
+
+	/**
+	 * Returns a cold observable of the first peer found which supports
+	 * a set short shards which intersects with a given set of shards.
+	 *
+	 * @param shards set of shards to find an intersection with
+	 * @return a cold observable of the first matching Radix client
+	 */
+	private Single<RadixJsonRpcClient> getRadixClient(Set<Long> shards) {
+		return this.radixNetwork.getRadixClients(shards)
+			.flatMapMaybe(client ->
+				client.getStatus()
+					.filter(status -> !status.equals(RadixClientStatus.FAILURE))
+					.map(status -> client)
+					.firstOrError()
+					.toMaybe()
+			)
+			.flatMapMaybe(client ->
+				client.getUniverse()
+					.doOnSuccess(cliUniverse -> {
+						if (!config.equals(cliUniverse)) {
+							LOGGER.warn(client + " has universe: " + cliUniverse.getHash()
+								+ " but looking for " + config.getHash());
+						}
+					})
+					.map(config::equals)
+					.filter(b -> b)
+					.map(b -> client)
+			)
+			.firstOrError();
+	}
+
+	/**
+	 * Returns a cold observable of the first peer found which supports
+	 * a set short shards which intersects with a given shard
+	 *
+	 * @param shard a shards to find an intersection with
+	 * @return a cold observable of the first matching Radix client
+	 */
+	private Single<RadixJsonRpcClient> getRadixClient(Long shard) {
+		return getRadixClient(Collections.singleton(shard));
 	}
 
 	/**
@@ -81,9 +133,12 @@ public class RadixLedger {
 		Objects.requireNonNull(atomClass);
 
 		final AtomQuery<T> atomQuery = new AtomQuery<>(destination, atomClass);
-		return radixNetwork.getRadixClient(destination.getShard())
+		return getRadixClient(destination.getShard())
 			.flatMapObservable(client -> client.getAtoms(atomQuery))
-			.doOnError(Throwable::printStackTrace)
+			.doOnError(throwable -> {
+				LOGGER.warn("Error on getAllAtoms" + destination);
+				throwable.printStackTrace();
+			})
 			.retryWhen(new IncreasingRetryTimer())
 			.filter(new Predicate<T>() {
 				private final Set<RadixHash> atomsSeen = new HashSet<>();
@@ -128,10 +183,13 @@ public class RadixLedger {
 	 * @return Observable emitting status updates to submission
 	 */
 	public Observable<AtomSubmissionUpdate> submitAtom(Atom atom) {
-		Observable<AtomSubmissionUpdate> status = radixNetwork.getRadixClient(atom.getRequiredFirstShard())
+		Observable<AtomSubmissionUpdate> status = getRadixClient(atom.getRequiredFirstShard())
 			//.doOnSubscribe(client -> logger.info("Looking for client to submit atom"))
 			//.doOnSuccess(client -> logger.info("Found client to submit atom: " + client.getLocation()))
-			.flatMapObservable(client -> client.submitAtom(atom))
+			.doOnError(throwable -> {
+				LOGGER.warn("Error on submitAtom " + atom.getHid());
+				throwable.printStackTrace();
+			})			.flatMapObservable(client -> client.submitAtom(atom))
 			.doOnError(Throwable::printStackTrace)
 			.retryWhen(new IncreasingRetryTimer());
 

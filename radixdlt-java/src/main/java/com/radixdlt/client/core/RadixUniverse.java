@@ -52,8 +52,8 @@ public final class RadixUniverse {
 				throw new IllegalStateException("Default Universe already bootstrapped");
 			}
 
-			RadixNetwork network = new RadixNetwork(config, peerDiscovery);
-			RadixLedger ledger = new RadixLedger(config.getMagic(), network);
+			RadixNetwork network = new RadixNetwork(peerDiscovery);
+			RadixLedger ledger = new RadixLedger(config, network);
 
 			defaultUniverse = new RadixUniverse(config, network, ledger);
 

@@ -10,7 +10,6 @@ import io.reactivex.Maybe;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.observers.TestObserver;
-import java.util.NoSuchElementException;
 import java.util.stream.IntStream;
 import org.junit.Test;
 
@@ -18,8 +17,7 @@ public class RadixNetworkTest {
 
 	@Test
 	public void testGetClientsMultipleTimes() {
-		RadixUniverseConfig config = mock(RadixUniverseConfig.class);
-		RadixNetwork network = new RadixNetwork(config, () -> Observable.just(
+		RadixNetwork network = new RadixNetwork(() -> Observable.just(
 			new RadixPeer("1", false, 8080),
 			new RadixPeer("2", false, 8080),
 			new RadixPeer("3", false, 8080)
@@ -37,7 +35,6 @@ public class RadixNetworkTest {
 
 	@Test
 	public void testAPIMismatch() {
-		RadixUniverseConfig config = mock(RadixUniverseConfig.class);
 		RadixPeer peer = mock(RadixPeer.class);
 		RadixJsonRpcClient client = mock(RadixJsonRpcClient.class);
 		when(peer.servesShards(any())).thenReturn(Maybe.just(peer));
@@ -45,30 +42,14 @@ public class RadixNetworkTest {
 		when(client.getStatus()).thenReturn(Observable.just(RadixClientStatus.OPEN));
 		when(client.checkAPIVersion()).thenReturn(Single.just(false));
 
-		RadixNetwork network = new RadixNetwork(config, () -> Observable.just(peer));
+		RadixNetwork network = new RadixNetwork(() -> Observable.just(peer));
 
 		TestObserver<RadixJsonRpcClient> testObserver = TestObserver.create();
-		network.getRadixClient(0L).subscribe(testObserver);
-		testObserver.assertError(NoSuchElementException.class);
-	}
-
-	@Test
-	public void testUniverseMismatch() {
-		RadixUniverseConfig config = mock(RadixUniverseConfig.class);
-		RadixPeer peer = mock(RadixPeer.class);
-		RadixJsonRpcClient client = mock(RadixJsonRpcClient.class);
-		when(peer.servesShards(any())).thenReturn(Maybe.just(peer));
-		when(peer.getRadixClient()).thenReturn(client);
-		when(client.getStatus()).thenReturn(Observable.just(RadixClientStatus.OPEN));
-		when(client.checkAPIVersion()).thenReturn(Single.just(true));
-		RadixUniverseConfig config2 = mock(RadixUniverseConfig.class);
-		when(client.getUniverse()).thenReturn(Single.just(config2));
-
-		RadixNetwork network = new RadixNetwork(config, () -> Observable.just(peer));
-
-		TestObserver<RadixJsonRpcClient> testObserver = TestObserver.create();
-		network.getRadixClient(0L).subscribe(testObserver);
-		testObserver.assertError(NoSuchElementException.class);
+		network.getRadixClients(0L).subscribe(testObserver);
+		testObserver
+			.assertComplete()
+			.assertNoErrors()
+			.assertNoValues();
 	}
 
 	@Test
@@ -82,10 +63,10 @@ public class RadixNetworkTest {
 		when(client.checkAPIVersion()).thenReturn(Single.just(true));
 		when(client.getUniverse()).thenReturn(Single.just(config));
 
-		RadixNetwork network = new RadixNetwork(config, () -> Observable.just(peer));
+		RadixNetwork network = new RadixNetwork(() -> Observable.just(peer));
 
 		TestObserver<RadixJsonRpcClient> testObserver = TestObserver.create();
-		network.getRadixClient(0L).subscribe(testObserver);
+		network.getRadixClients(0L).subscribe(testObserver);
 		testObserver.assertValue(client);
 	}
 }
