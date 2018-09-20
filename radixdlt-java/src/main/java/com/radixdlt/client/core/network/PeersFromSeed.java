@@ -30,6 +30,7 @@ public class PeersFromSeed implements PeerDiscovery {
 			connectedSeed
 				.map(RadixPeer::getRadixClient)
 				.flatMapSingle(client -> client.getLivePeers().doFinally(client::tryClose))
+				.doOnError(e -> LOGGER.warn("Unable to load seed peers"))
 				.doOnNext(list -> LOGGER.info("Got peer list " + list))
 				.flatMapIterable(list -> {
 					ArrayList<NodeRunnerData> copyList = new ArrayList<>(list);
