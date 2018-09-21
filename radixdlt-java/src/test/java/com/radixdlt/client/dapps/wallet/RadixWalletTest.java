@@ -13,6 +13,7 @@ import com.radixdlt.client.core.address.RadixAddress;
 import io.reactivex.Completable;
 import io.reactivex.Observable;
 import io.reactivex.observers.TestObserver;
+import java.math.BigDecimal;
 import org.junit.Test;
 
 public class RadixWalletTest {
@@ -20,17 +21,17 @@ public class RadixWalletTest {
 	public void nullTest() {
 		RadixApplicationAPI api = mock(RadixApplicationAPI.class);
 		RadixWallet radixWallet = new RadixWallet(api);
-		assertThatThrownBy(() -> radixWallet.getXRDBalance(null))
+		assertThatThrownBy(() -> radixWallet.getBalance(null))
 			.isInstanceOf(NullPointerException.class);
-		assertThatThrownBy(() -> radixWallet.getXRDTransactions(null))
+		assertThatThrownBy(() -> radixWallet.getTransactions(null))
 			.isInstanceOf(NullPointerException.class);
-		assertThatThrownBy(() -> radixWallet.transferXRD(1, null))
+		assertThatThrownBy(() -> radixWallet.send(BigDecimal.ONE, null))
 			.isInstanceOf(NullPointerException.class);
-		assertThatThrownBy(() -> radixWallet.transferXRD(1, null, "hi"))
+		assertThatThrownBy(() -> radixWallet.send(BigDecimal.ONE, null, "hi"))
 			.isInstanceOf(NullPointerException.class);
-		assertThatThrownBy(() -> radixWallet.transferXRDWhenAvailable(1, null))
+		assertThatThrownBy(() -> radixWallet.sendWhenAvailable(BigDecimal.ONE, null))
 			.isInstanceOf(NullPointerException.class);
-		assertThatThrownBy(() -> radixWallet.transferXRDWhenAvailable(1, null, "hi"))
+		assertThatThrownBy(() -> radixWallet.sendWhenAvailable(BigDecimal.ONE, null, "hi"))
 			.isInstanceOf(NullPointerException.class);
 	}
 
@@ -39,12 +40,12 @@ public class RadixWalletTest {
 		RadixApplicationAPI api = mock(RadixApplicationAPI.class);
 		Result result = mock(Result.class);
 		when(result.toCompletable()).thenReturn(Completable.complete());
-		when(api.getMyBalance(any())).thenReturn(Observable.just(Amount.subUnitsOf(1000, Asset.TEST)));
+		when(api.getMyBalance(any())).thenReturn(Observable.just(Amount.of(new BigDecimal("1.0"), Asset.TEST)));
 		when(api.sendTokens(any(), any(), any(), any())).thenReturn(result);
 		RadixWallet radixWallet = new RadixWallet(api);
 		RadixAddress radixAddress = mock(RadixAddress.class);
 		TestObserver testObserver = TestObserver.create();
-		radixWallet.transferXRDWhenAvailable(1000, radixAddress).toCompletable().subscribe(testObserver);
+		radixWallet.sendWhenAvailable(new BigDecimal("1.0"), radixAddress).toCompletable().subscribe(testObserver);
 		testObserver.assertComplete();
 	}
 }
