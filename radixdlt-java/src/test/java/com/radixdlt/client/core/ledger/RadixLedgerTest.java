@@ -33,7 +33,7 @@ public class RadixLedgerTest {
 			.build()
 			.getRawAtom();
 
-		Consumer<ApplicationPayloadAtom> observer = mock(Consumer.class);
+		Consumer<Atom> observer = mock(Consumer.class);
 		RadixJsonRpcClient client = mock(RadixJsonRpcClient.class);
 		RadixNetwork network = mock(RadixNetwork.class);
 		when(network.getRadixClients(any(Long.class))).thenReturn(Single.just(client).toObservable());
@@ -47,8 +47,7 @@ public class RadixLedgerTest {
 		when(client.getUniverse()).thenReturn(Single.just(config));
 
 		RadixLedger ledger = new RadixLedger(config, network);
-		ledger.getAllAtoms(new EUID(BigInteger.ONE), ApplicationPayloadAtom.class)
-			.subscribe(observer);
+		ledger.getAllAtoms(new EUID(BigInteger.ONE)).subscribe(observer);
 
 		verify(observer, times(1)).accept(any());
 	}

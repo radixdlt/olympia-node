@@ -12,10 +12,9 @@ import com.radixdlt.client.assets.Amount;
 import com.radixdlt.client.assets.Asset;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.address.RadixAddress;
-import com.radixdlt.client.core.atoms.ApplicationPayloadAtom;
+import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomBuilder;
 import com.radixdlt.client.core.atoms.Consumable;
-import com.radixdlt.client.core.atoms.TransactionAtom;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.ledger.RadixLedger;
@@ -120,7 +119,9 @@ public class RadixApplicationAPI {
 	public Observable<Data> getData(RadixAddress address) {
 		Objects.requireNonNull(address);
 
-		return ledger.getAllAtoms(address.getUID(), ApplicationPayloadAtom.class)
+		return ledger.getAllAtoms(address.getUID())
+			.filter(Atom::isMessageAtom)
+			.map(Atom::getAsMessageAtom)
 			.map(dataStoreTranslator::fromAtom);
 	}
 
@@ -173,7 +174,9 @@ public class RadixApplicationAPI {
 
 		return Observable.combineLatest(
 			Observable.fromCallable(() -> new TransactionAtoms(address, tokenClass.getId())),
-			ledger.getAllAtoms(address.getUID(), TransactionAtom.class),
+			ledger.getAllAtoms(address.getUID())
+				.filter(Atom::isTransactionAtom)
+				.map(Atom::getAsTransactionAtom),
 			(transactionAtoms, atom) ->
 				transactionAtoms.accept(atom)
 					.getNewValidTransactions()

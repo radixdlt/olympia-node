@@ -125,30 +125,28 @@ public class RadixLedger {
 	 * to retrieve the requested atoms.
 	 *
 	 * @param destination destination (which determines shard) to query atoms for
-	 * @param atomClass atom class type to filter for
 	 * @return a new Observable Atom Query
 	 */
-	public <T extends Atom> Observable<T> getAllAtoms(EUID destination, Class<T> atomClass) {
+	public Observable<Atom> getAllAtoms(EUID destination) {
 		Objects.requireNonNull(destination);
-		Objects.requireNonNull(atomClass);
 
-		final AtomQuery<T> atomQuery = new AtomQuery<>(destination, atomClass);
+		final AtomQuery<Atom> atomQuery = new AtomQuery<>(destination, Atom.class);
 		return getRadixClient(destination.getShard())
 			.flatMapObservable(client -> client.getAtoms(atomQuery))
 			.doOnError(throwable -> {
 				LOGGER.warn("Error on getAllAtoms: {}", destination);
 			})
 			.retryWhen(new IncreasingRetryTimer())
-			.filter(new Predicate<T>() {
+			.filter(new Predicate<Atom>() {
 				private final Set<RadixHash> atomsSeen = new HashSet<>();
 
 				@Override
-				public boolean test(T t) {
-					if (atomsSeen.contains(t.getHash())) {
-						LOGGER.warn("Atom Already Seen: destination({}) atom({})", destination, t);
+				public boolean test(Atom atom) {
+					if (atomsSeen.contains(atom.getHash())) {
+						LOGGER.warn("Atom Already Seen: destination({})", destination);
 						return false;
 					}
-					atomsSeen.add(t.getHash());
+					atomsSeen.add(atom.getHash());
 
 					return true;
 				}
@@ -164,10 +162,7 @@ public class RadixLedger {
 				}
 			})
 			.doOnSubscribe(
-				atoms -> LOGGER.info(
-					"Atom Query Subscribe: destination({}) class({})",
-					destination, atomClass.getSimpleName()
-				)
+				atoms -> LOGGER.info("Atom Query Subscribe: destination({})", destination)
 			)
 			.publish()
 			.refCount();

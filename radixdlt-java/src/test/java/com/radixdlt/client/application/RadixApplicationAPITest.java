@@ -170,9 +170,13 @@ public class RadixApplicationAPITest {
 		when(dataStoreTranslator.fromAtom(any())).thenReturn(data, data);
 
 		ApplicationPayloadAtom errorAtom = mock(ApplicationPayloadAtom.class);
+		when(errorAtom.isMessageAtom()).thenReturn(true);
+		when(errorAtom.getAsMessageAtom()).thenReturn(errorAtom);
 		ApplicationPayloadAtom okAtom = mock(ApplicationPayloadAtom.class);
+		when(okAtom.isMessageAtom()).thenReturn(true);
+		when(okAtom.getAsMessageAtom()).thenReturn(okAtom);
 
-		when(ledger.getAllAtoms(any(), any())).thenReturn(Observable.just(errorAtom, okAtom));
+		when(ledger.getAllAtoms(any())).thenReturn(Observable.just(errorAtom, okAtom));
 
 		RadixApplicationAPI api = RadixApplicationAPI.create(identity, universe, dataStoreTranslator, AtomBuilder::new);
 		TestObserver observer = TestObserver.create();
@@ -192,7 +196,7 @@ public class RadixApplicationAPITest {
 		when(universe.getLedger()).thenReturn(ledger);
 		RadixApplicationAPI api = RadixApplicationAPI.create(identity, universe, DataStoreTranslator.getInstance(), AtomBuilder::new);
 
-		when(ledger.getAllAtoms(any(), any())).thenReturn(Observable.empty());
+		when(ledger.getAllAtoms(any())).thenReturn(Observable.empty());
 
 		TestObserver<Amount> observer = TestObserver.create();
 
@@ -209,7 +213,7 @@ public class RadixApplicationAPITest {
 		when(universe.getLedger()).thenReturn(ledger);
 		RadixApplicationAPI api = RadixApplicationAPI.create(identity, universe, DataStoreTranslator.getInstance(), AtomBuilder::new);
 
-		when(ledger.getAllAtoms(any(), any())).thenReturn(Observable.empty());
+		when(ledger.getAllAtoms(any())).thenReturn(Observable.empty());
 
 		TestObserver observer = TestObserver.create();
 		api.transferTokens(address, address, Amount.subUnitsOf(10, Asset.TEST)).toCompletable().subscribe(observer);
