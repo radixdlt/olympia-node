@@ -55,7 +55,7 @@ public class RadixWallet {
 	 * @return an unending Observable of balances
 	 */
 	public Observable<Amount> getBalance() {
-		return api.getBalance(api.getMyAddress(), Asset.TEST);
+		return api.getMyBalance(Asset.TEST);
 	}
 
 	/**
@@ -107,7 +107,7 @@ public class RadixWallet {
 		@NonNull RadixAddress toAddress
 	) {
 		Objects.requireNonNull(toAddress, "toAddress must be non-null");
-		return this.send(amount, toAddress, null);
+		return this.send(amount, null, toAddress);
 	}
 
 	/**
@@ -116,14 +116,14 @@ public class RadixWallet {
 	 * will specify so.
 	 *
 	 * @param amount The amount of TEST to transfer.
-	 * @param toAddress The address to send to.
 	 * @param message The message to send as an attachment.
+	 * @param toAddress The address to send to.
 	 * @return The result of the transaction.
 	 */
 	public SendResult send(
 		BigDecimal amount,
-		@NonNull RadixAddress toAddress,
-		@Nullable String message
+		@Nullable String message,
+		@NonNull RadixAddress toAddress
 	) {
 		Objects.requireNonNull(toAddress, "toAddress must be non-null");
 
