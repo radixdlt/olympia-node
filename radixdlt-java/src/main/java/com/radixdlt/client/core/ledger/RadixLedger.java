@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +38,11 @@ public class RadixLedger {
 
 	private final RadixNetwork radixNetwork;
 	private final AtomicBoolean debug = new AtomicBoolean(false);
+
+	/**
+	 * Implementation of a data store for all atoms in a shard
+	 */
+	private final ConcurrentHashMap<EUID, Observable<Atom>> cache = new ConcurrentHashMap<>();
 
 	/**
 	 * The Universe we need peers for
@@ -121,20 +127,20 @@ public class RadixLedger {
 	}
 
 	/**
-	 * Returns a new hot Observable Atom Query which will connect to the network
-	 * to retrieve the requested atoms.
+	 * Returns an unending stream of atoms which are stored at a particular destination.
 	 *
 	 * @param destination destination (which determines shard) to query atoms for
-	 * @return a new Observable Atom Query
+	 * @return an Atom Observable
 	 */
 	public Observable<Atom> getAllAtoms(EUID destination) {
 		Objects.requireNonNull(destination);
 
-		final AtomQuery<Atom> atomQuery = new AtomQuery<>(destination, Atom.class);
-		return getRadixClient(destination.getShard())
+		return cache.computeIfAbsent(destination, euid -> {
+			final AtomQuery<Atom> atomQuery = new AtomQuery<>(euid, Atom.class);
+			return getRadixClient(euid.getShard())
 			.flatMapObservable(client -> client.getAtoms(atomQuery))
 			.doOnError(throwable -> {
-				LOGGER.warn("Error on getAllAtoms: {}", destination);
+				LOGGER.warn("Error on getAllAtoms: {}", euid);
 			})
 			.retryWhen(new IncreasingRetryTimer())
 			.filter(new Predicate<Atom>() {
@@ -143,7 +149,7 @@ public class RadixLedger {
 				@Override
 				public boolean test(Atom atom) {
 					if (atomsSeen.contains(atom.getHash())) {
-						LOGGER.warn("Atom Already Seen: destination({})", destination);
+						LOGGER.warn("Atom Already Seen: destination({})", euid);
 						return false;
 					}
 					atomsSeen.add(atom.getHash());
@@ -161,11 +167,9 @@ public class RadixLedger {
 					return false;
 				}
 			})
-			.doOnSubscribe(
-				atoms -> LOGGER.info("Atom Query Subscribe: destination({})", destination)
-			)
-			.publish()
-			.refCount();
+			.doOnSubscribe(atoms -> LOGGER.info("Atom Query Subscribe: destination({})", euid))
+			.cache();
+		});
 	}
 
 	/**
