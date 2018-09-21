@@ -1,11 +1,16 @@
 package com.radixdlt.client.core;
 
+import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
+import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.ledger.RadixLedger;
+import com.radixdlt.client.core.network.AtomSubmissionUpdate;
 import com.radixdlt.client.core.network.PeerDiscovery;
 import com.radixdlt.client.core.network.RadixNetwork;
+import io.reactivex.Observable;
+import java.util.function.Function;
 
 /**
  * A RadixUniverse represents the interface through which a client can interact
@@ -103,12 +108,16 @@ public final class RadixUniverse {
 		return config.getMagic();
 	}
 
-	public RadixNetwork getNetwork() {
-		return network;
+	public Function<EUID, Observable<Atom>> getAtomStore() {
+		return ledger::getAllAtoms;
 	}
 
-	public RadixLedger getLedger() {
-		return ledger;
+	public Function<Atom, Observable<AtomSubmissionUpdate>> getAtomSubmissionHandler() {
+		return ledger::submitAtom;
+	}
+
+	public RadixNetwork getNetwork() {
+		return network;
 	}
 
 	/**
