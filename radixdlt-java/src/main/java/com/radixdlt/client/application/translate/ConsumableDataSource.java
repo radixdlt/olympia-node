@@ -6,7 +6,6 @@ import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.Consumable;
 import io.reactivex.Observable;
-import io.reactivex.Single;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.ConcurrentHashMap;
@@ -19,10 +18,6 @@ public class ConsumableDataSource {
 
 	public ConsumableDataSource(Function<EUID, Observable<Atom>> atomStore) {
 		this.atomStore = atomStore;
-	}
-
-	public Single<Collection<Consumable>> getCurrentConsumables(RadixAddress address) {
-		return this.getConsumables(address).firstOrError();
 	}
 
 	public Observable<Collection<Consumable>> getConsumables(RadixAddress address) {

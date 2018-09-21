@@ -1,15 +1,18 @@
 package com.radixdlt.client.core;
 
+import com.radixdlt.client.application.translate.ConsumableDataSource;
 import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.client.core.atoms.Consumable;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.ledger.RadixLedger;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate;
 import com.radixdlt.client.core.network.PeerDiscovery;
 import com.radixdlt.client.core.network.RadixNetwork;
 import io.reactivex.Observable;
+import java.util.Collection;
 import java.util.function.Function;
 
 /**
@@ -98,14 +101,25 @@ public final class RadixUniverse {
 	 */
 	private final RadixUniverseConfig config;
 
+	/**
+	 * The Particle Data Store
+	 * TODO: actually change it into the particle data store
+	 */
+	private final ConsumableDataSource consumableDataSource;
+
 	private RadixUniverse(RadixUniverseConfig config, RadixNetwork network, RadixLedger ledger) {
 		this.config = config;
 		this.network = network;
 		this.ledger = ledger;
+		this.consumableDataSource = new ConsumableDataSource(ledger::getAllAtoms);
 	}
 
 	public int getMagic() {
 		return config.getMagic();
+	}
+
+	public Function<RadixAddress, Observable<Collection<Consumable>>> getParticleStore() {
+		return consumableDataSource::getConsumables;
 	}
 
 	public Function<EUID, Observable<Atom>> getAtomStore() {

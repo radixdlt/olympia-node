@@ -21,7 +21,6 @@ import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState;
-import com.radixdlt.client.application.translate.ConsumableDataSource;
 import com.radixdlt.client.application.translate.TransactionAtoms;
 import io.reactivex.Completable;
 import io.reactivex.Observable;
@@ -70,9 +69,9 @@ public class RadixApplicationAPI {
 	private final TokenTransferTranslator tokenTransferTranslator;
 	private final UniquePropertyTranslator uniquePropertyTranslator;
 	private final Supplier<AtomBuilder> atomBuilderSupplier;
-	private final ConsumableDataSource consumableDataSource;
 	private final RadixUniverse universe;
 	private final Function<EUID, Observable<Atom>> atomStore;
+	private final Function<RadixAddress, Observable<Collection<Consumable>>> particleStore;
 	private final Function<Atom, Observable<AtomSubmissionUpdate>> atomSubmissionHandler;
 
 	private RadixApplicationAPI(
@@ -81,16 +80,17 @@ public class RadixApplicationAPI {
 		DataStoreTranslator dataStoreTranslator,
 		Supplier<AtomBuilder> atomBuilderSupplier,
 		Function<EUID, Observable<Atom>> atomStore,
+		Function<RadixAddress, Observable<Collection<Consumable>>> particleStore,
 		Function<Atom, Observable<AtomSubmissionUpdate>> atomSubmissionHandler
 	) {
 		this.identity = identity;
 		this.universe = universe;
-		this.consumableDataSource = new ConsumableDataSource(universe.getAtomStore());
 		this.dataStoreTranslator = dataStoreTranslator;
-		this.tokenTransferTranslator = new TokenTransferTranslator(universe, consumableDataSource);
+		this.tokenTransferTranslator = new TokenTransferTranslator(universe, particleStore);
 		this.uniquePropertyTranslator = new UniquePropertyTranslator();
 		this.atomBuilderSupplier = atomBuilderSupplier;
 		this.atomStore = atomStore;
+		this.particleStore = particleStore;
 		this.atomSubmissionHandler = atomSubmissionHandler;
 	}
 
@@ -110,6 +110,7 @@ public class RadixApplicationAPI {
 		Objects.requireNonNull(atomBuilderSupplier);
 		return new RadixApplicationAPI(identity, universe, dataStoreTranslator, atomBuilderSupplier,
 			universe.getAtomStore(),
+			universe.getParticleStore(),
 			universe.getAtomSubmissionHandler()
 		);
 	}
@@ -202,7 +203,7 @@ public class RadixApplicationAPI {
 		Objects.requireNonNull(address);
 		Objects.requireNonNull(tokenClass);
 
-		return this.consumableDataSource.getConsumables(address)
+		return this.particleStore.apply(address)
 			.map(Collection::stream)
 			.map(stream -> stream
 				.filter(consumable -> consumable.getAssetId().equals(tokenClass.getId()))

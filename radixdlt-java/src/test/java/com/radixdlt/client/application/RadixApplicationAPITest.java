@@ -29,6 +29,7 @@ import com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.observers.TestObserver;
+import java.util.Collections;
 import java.util.function.Supplier;
 import org.junit.Test;
 
@@ -190,6 +191,7 @@ public class RadixApplicationAPITest {
 	public void testZeroTransactionWallet() {
 		RadixUniverse universe = mock(RadixUniverse.class);
 		when(universe.getAtomStore()).thenReturn(euid -> Observable.empty());
+		when(universe.getParticleStore()).thenReturn(euid -> Observable.just(Collections.emptySet()));
 
 		RadixAddress address = mock(RadixAddress.class);
 		RadixIdentity identity = mock(RadixIdentity.class);
@@ -205,6 +207,7 @@ public class RadixApplicationAPITest {
 	public void createTransactionWithNoFunds() {
 		RadixUniverse universe = mock(RadixUniverse.class);
 		when(universe.getAtomStore()).thenReturn(euid -> Observable.empty());
+		when(universe.getParticleStore()).thenReturn(euid -> Observable.just(Collections.emptySet()));
 		when(universe.getAtomSubmissionHandler()).thenReturn(atom -> Observable.empty());
 
 		RadixAddress address = mock(RadixAddress.class);
