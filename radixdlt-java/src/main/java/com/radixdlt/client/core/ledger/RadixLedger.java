@@ -1,12 +1,9 @@
 package com.radixdlt.client.core.ledger;
 
 import com.radixdlt.client.core.address.EUID;
-import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomValidationException;
-import com.radixdlt.client.core.atoms.RadixHash;
-import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.network.AtomQuery;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState;
@@ -17,10 +14,9 @@ import com.radixdlt.client.core.network.WebSocketClient.RadixClientStatus;
 import com.radixdlt.client.core.serialization.RadixJson;
 import io.reactivex.Observable;
 import io.reactivex.Single;
-import io.reactivex.functions.Predicate;
+import io.reactivex.disposables.Disposable;
 import io.reactivex.observables.ConnectableObservable;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -50,6 +46,8 @@ public class RadixLedger {
 	 */
 	private final RadixUniverseConfig config;
 
+	private final InMemoryAtomStore inMemoryAtomStore = new InMemoryAtomStore();
+
 	public RadixLedger(RadixUniverseConfig config, RadixNetwork radixNetwork) {
 		this.config = config;
 		this.radixNetwork = radixNetwork;
@@ -72,17 +70,6 @@ public class RadixLedger {
 		return radixNetwork;
 	}
 
-
-	/**
-	 * Maps a public key to it's corresponding Radix address in this universe.
-	 * Within a universe, a public key has a one to one bijective relationship to an address
-	 *
-	 * @param publicKey the key to get an address from
-	 * @return the corresponding address to the key for this universe
-	 */
-	public RadixAddress getAddressFromPublicKey(ECPublicKey publicKey) {
-		return new RadixAddress(config.getMagic(), publicKey);
-	}
 
 	/**
 	 * Returns a cold observable of the first peer found which supports
@@ -126,15 +113,7 @@ public class RadixLedger {
 		return getRadixClient(Collections.singleton(shard));
 	}
 
-	/**
-	 * Returns an unending stream of atoms which are stored at a particular destination.
-	 *
-	 * @param destination destination (which determines shard) to query atoms for
-	 * @return an Atom Observable
-	 */
-	public Observable<Atom> getAllAtoms(EUID destination) {
-		Objects.requireNonNull(destination);
-
+	private Observable<Atom> fetchAtoms(EUID destination) {
 		return cache.computeIfAbsent(destination, euid -> {
 			final AtomQuery<Atom> atomQuery = new AtomQuery<>(euid, Atom.class);
 			return getRadixClient(euid.getShard())
@@ -143,20 +122,6 @@ public class RadixLedger {
 				LOGGER.warn("Error on getAllAtoms: {}", euid);
 			})
 			.retryWhen(new IncreasingRetryTimer())
-			.filter(new Predicate<Atom>() {
-				private final Set<RadixHash> atomsSeen = new HashSet<>();
-
-				@Override
-				public boolean test(Atom atom) {
-					if (atomsSeen.contains(atom.getHash())) {
-						LOGGER.warn("Atom Already Seen: destination({})", euid);
-						return false;
-					}
-					atomsSeen.add(atom.getHash());
-
-					return true;
-				}
-			})
 			.filter(atom -> {
 				try {
 					RadixAtomValidator.getInstance().validate(atom);
@@ -168,8 +133,24 @@ public class RadixLedger {
 				}
 			})
 			.doOnSubscribe(atoms -> LOGGER.info("Atom Query Subscribe: destination({})", euid))
-			.cache();
+			.doOnNext(atom -> inMemoryAtomStore.store(destination, atom))
+			.publish()
+			.refCount();
 		});
+	}
+
+	/**
+	 * Returns an unending stream of atoms which are stored at a particular destination.
+	 *
+	 * @param destination destination (which determines shard) to query atoms for
+	 * @return an Atom Observable
+	 */
+	public Observable<Atom> getAllAtoms(EUID destination) {
+		Objects.requireNonNull(destination);
+
+		Disposable disposable = fetchAtoms(destination).subscribe();
+
+		return inMemoryAtomStore.getAtoms(destination).doOnDispose(disposable::dispose);
 	}
 
 	/**

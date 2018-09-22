@@ -17,11 +17,39 @@ import com.radixdlt.client.core.network.WebSocketClient.RadixClientStatus;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.functions.Consumer;
+import io.reactivex.observers.TestObserver;
 import java.math.BigInteger;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.junit.Test;
 
 public class RadixLedgerTest {
+
+	@Test
+	public void testClientAPICalledOnceWithManySubscibers() {
+		RadixNetwork network = mock(RadixNetwork.class);
+		RadixJsonRpcClient client = mock(RadixJsonRpcClient.class);
+		when(client.getAtoms(any())).thenReturn(Observable.never());
+		when(client.getStatus()).thenReturn(Observable.just(RadixClientStatus.OPEN));
+		when(client.checkAPIVersion()).thenReturn(Single.just(true));
+
+		when(network.getRadixClients(any(Long.class))).thenReturn(Single.just(client).toObservable());
+		when(network.getRadixClients(any(Set.class))).thenReturn(Single.just(client).toObservable());
+
+		RadixUniverseConfig config = mock(RadixUniverseConfig.class);
+		when(client.getUniverse()).thenReturn(Single.just(config));
+
+		RadixLedger ledger = new RadixLedger(config, network);
+
+		List<TestObserver> observers = Stream.iterate(TestObserver.create(), t -> TestObserver.create()).limit(10)
+			.collect(Collectors.toList());
+
+		observers.forEach(observer -> ledger.getAllAtoms(new EUID(BigInteger.ONE)).subscribe(observer));
+
+		verify(client, times(1)).getAtoms(any());
+	}
 
 	@Test
 	public void testFilterOutDuplicateAtoms() throws Exception {
@@ -43,7 +71,6 @@ public class RadixLedgerTest {
 		when(client.checkAPIVersion()).thenReturn(Single.just(true));
 
 		RadixUniverseConfig config = mock(RadixUniverseConfig.class);
-
 		when(client.getUniverse()).thenReturn(Single.just(config));
 
 		RadixLedger ledger = new RadixLedger(config, network);
