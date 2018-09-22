@@ -26,6 +26,8 @@ import io.reactivex.Completable;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.annotations.Nullable;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.disposables.Disposables;
 import io.reactivex.observables.ConnectableObservable;
 import java.util.Collection;
 import java.util.Objects;
@@ -109,6 +111,19 @@ public class RadixApplicationAPI {
 		return new RadixApplicationAPI(identity, universe, dataStoreTranslator, atomBuilderSupplier, universe.getLedger());
 	}
 
+	/**
+	 * Idempotent method which prefetches atoms in user's account
+	 * TODO: what to do when no puller available
+	 * @return Disposable to dispose to stop pulling
+	 */
+	public Disposable pull() {
+		if (ledger.getAtomPuller() != null) {
+			return ledger.getAtomPuller().pull(getMyPublicKey().getUID());
+		} else {
+			return Disposables.disposed();
+		}
+	}
+
 	public ECPublicKey getMyPublicKey() {
 		return identity.getPublicKey();
 	}
@@ -123,6 +138,8 @@ public class RadixApplicationAPI {
 
 	public Observable<Data> getData(RadixAddress address) {
 		Objects.requireNonNull(address);
+
+		pull();
 
 		return ledger.getAtomStore().getAtoms(address.getUID())
 			.filter(Atom::isMessageAtom)
@@ -177,6 +194,8 @@ public class RadixApplicationAPI {
 		Objects.requireNonNull(address);
 		Objects.requireNonNull(tokenClass);
 
+		pull();
+
 		return Observable.combineLatest(
 			Observable.fromCallable(() -> new TransactionAtoms(address, tokenClass.getId())),
 			ledger.getAtomStore().getAtoms(address.getUID())
@@ -196,6 +215,8 @@ public class RadixApplicationAPI {
 	public Observable<Amount> getBalance(RadixAddress address, Asset tokenClass) {
 		Objects.requireNonNull(address);
 		Objects.requireNonNull(tokenClass);
+
+		pull();
 
 		return ledger.getParticleStore().getConsumables(address)
 			.map(Collection::stream)
@@ -285,6 +306,8 @@ public class RadixApplicationAPI {
 	// TODO: make this more generic
 	private Result executeTransaction(TokenTransfer tokenTransfer, @Nullable UniqueProperty uniqueProperty) {
 		Objects.requireNonNull(tokenTransfer);
+
+		pull();
 
 		AtomBuilder atomBuilder = atomBuilderSupplier.get();
 
