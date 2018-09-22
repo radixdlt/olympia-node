@@ -7,11 +7,16 @@ import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.Consumable;
 import com.radixdlt.client.core.crypto.ECPublicKey;
-import com.radixdlt.client.core.ledger.RadixLedger;
+import com.radixdlt.client.core.ledger.AtomFetcher;
+import com.radixdlt.client.core.ledger.AtomPuller;
+import com.radixdlt.client.core.ledger.AtomSubmitter;
+import com.radixdlt.client.core.ledger.ClientSelector;
+import com.radixdlt.client.core.ledger.InMemoryAtomStore;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate;
 import com.radixdlt.client.core.network.PeerDiscovery;
 import com.radixdlt.client.core.network.RadixNetwork;
 import io.reactivex.Observable;
+import io.reactivex.disposables.Disposable;
 import java.util.Collection;
 import java.util.function.Function;
 
@@ -61,9 +66,8 @@ public final class RadixUniverse {
 			}
 
 			RadixNetwork network = new RadixNetwork(peerDiscovery);
-			RadixLedger ledger = new RadixLedger(config, network);
 
-			defaultUniverse = new RadixUniverse(config, network, ledger);
+			defaultUniverse = new RadixUniverse(config, network);
 
 			return defaultUniverse;
 		}
@@ -92,11 +96,6 @@ public final class RadixUniverse {
 	private final RadixNetwork network;
 
 	/**
-	 * Ledger Interface
-	 */
-	private final RadixLedger ledger;
-
-	/**
 	 * Universe Configuration
 	 */
 	private final RadixUniverseConfig config;
@@ -107,11 +106,21 @@ public final class RadixUniverse {
 	 */
 	private final ConsumableDataSource consumableDataSource;
 
-	private RadixUniverse(RadixUniverseConfig config, RadixNetwork network, RadixLedger ledger) {
+	private final ClientSelector clientSelector;
+	private final AtomFetcher atomFetcher;
+	private final AtomPuller atomPuller;
+	private final AtomSubmitter atomSubmitter;
+	private final InMemoryAtomStore inMemoryAtomStore;
+
+	private RadixUniverse(RadixUniverseConfig config, RadixNetwork network) {
 		this.config = config;
 		this.network = network;
-		this.ledger = ledger;
-		this.consumableDataSource = new ConsumableDataSource(ledger::getAllAtoms);
+		this.clientSelector = new ClientSelector(config, network);
+		this.atomFetcher = new AtomFetcher(clientSelector::getRadixClient);
+		this.inMemoryAtomStore = new InMemoryAtomStore();
+		this.atomPuller = new AtomPuller(atomFetcher::fetchAtoms, inMemoryAtomStore::store);
+		this.atomSubmitter = new AtomSubmitter(clientSelector::getRadixClient);
+		this.consumableDataSource = new ConsumableDataSource(inMemoryAtomStore::getAtoms);
 	}
 
 	public int getMagic() {
@@ -123,11 +132,14 @@ public final class RadixUniverse {
 	}
 
 	public Function<EUID, Observable<Atom>> getAtomStore() {
-		return ledger::getAllAtoms;
+		return euid -> {
+			Disposable disposable = atomPuller.pull(euid);
+			return inMemoryAtomStore.getAtoms(euid).doOnDispose(disposable::dispose);
+		};
 	}
 
 	public Function<Atom, Observable<AtomSubmissionUpdate>> getAtomSubmissionHandler() {
-		return ledger::submitAtom;
+		return atomSubmitter::submitAtom;
 	}
 
 	public RadixNetwork getNetwork() {
@@ -158,7 +170,6 @@ public final class RadixUniverse {
 	 * Attempts to gracefully free all resources associated with this Universe
 	 */
 	public void disconnect() {
-		ledger.close();
 		network.close();
 	}
 
