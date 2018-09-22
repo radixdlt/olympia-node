@@ -12,9 +12,15 @@ import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Module responsible for selecting a node and fetching atoms and retrying if necessary.
+ */
 public class AtomFetcher {
 	private static final Logger LOGGER = LoggerFactory.getLogger(AtomFetcher.class);
 
+	/**
+	 * Mechanism by which to get a valid client to connect to.
+	 */
 	private final Function<Long, Single<RadixJsonRpcClient>> clientSelector;
 
 	public AtomFetcher(Function<Long, Single<RadixJsonRpcClient>> clientSelector) {

@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.Test;
 
-public class AtomPullerTest {
+public class RadixAtomPullerTest {
 	@Test
 	public void testClientAPICalledOnceWithManySubscibers() throws Exception {
 		Consumer<Disposable> onSubscribe = mock(Consumer.class);
@@ -27,12 +27,12 @@ public class AtomPullerTest {
 		Function<EUID, Observable<Atom>> fetcher = mock(Function.class);
 		when(fetcher.apply(any())).thenReturn(atoms);
 
-		AtomPuller atomPuller = new AtomPuller(fetcher, (a, b) -> { });
+		RadixAtomPuller radixAtomPuller = new RadixAtomPuller(fetcher, (a, b) -> { });
 
 		List<TestObserver> observers = Stream.iterate(TestObserver.create(), t -> TestObserver.create()).limit(10)
 			.collect(Collectors.toList());
 
-		observers.forEach(observer -> atomPuller.pull(new EUID(BigInteger.ONE)));
+		observers.forEach(observer -> radixAtomPuller.pull(new EUID(BigInteger.ONE)));
 
 		verify(onSubscribe, times(1)).accept(any());
 	}

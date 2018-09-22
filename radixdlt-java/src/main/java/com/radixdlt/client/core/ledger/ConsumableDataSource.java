@@ -1,5 +1,6 @@
-package com.radixdlt.client.application.translate;
+package com.radixdlt.client.core.ledger;
 
+import com.radixdlt.client.application.translate.TransactionAtoms;
 import com.radixdlt.client.assets.Asset;
 import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.address.RadixAddress;
@@ -12,7 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
-public class ConsumableDataSource {
+public class ConsumableDataSource implements ParticleStore {
 	private final Function<EUID, Observable<Atom>> atomStore;
 	private final ConcurrentHashMap<RadixAddress, Observable<Collection<Consumable>>> cache = new ConcurrentHashMap<>();
 

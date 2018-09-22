@@ -1,28 +1,24 @@
 package com.radixdlt.client.core;
 
-import com.radixdlt.client.application.translate.ConsumableDataSource;
-import com.radixdlt.client.core.address.EUID;
+import com.radixdlt.client.core.ledger.ConsumableDataSource;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
-import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.atoms.Consumable;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.ledger.AtomFetcher;
 import com.radixdlt.client.core.ledger.AtomPuller;
+import com.radixdlt.client.core.ledger.AtomStore;
 import com.radixdlt.client.core.ledger.AtomSubmitter;
+import com.radixdlt.client.core.ledger.ParticleStore;
+import com.radixdlt.client.core.ledger.RadixAtomPuller;
+import com.radixdlt.client.core.ledger.RadixAtomSubmitter;
 import com.radixdlt.client.core.ledger.ClientSelector;
 import com.radixdlt.client.core.ledger.InMemoryAtomStore;
-import com.radixdlt.client.core.network.AtomSubmissionUpdate;
 import com.radixdlt.client.core.network.PeerDiscovery;
 import com.radixdlt.client.core.network.RadixNetwork;
-import io.reactivex.Observable;
-import io.reactivex.disposables.Disposable;
-import java.util.Collection;
-import java.util.function.Function;
 
 /**
  * A RadixUniverse represents the interface through which a client can interact
- * with a Radix Universe (an instance of a Radix Ledger + Radix Network).
+ * with a Radix Universe.
  * <p>
  * The configuration file of a Radix Universe defines the genesis atoms of the
  * distributed getLedger and distinguishes this universe from other universes.
@@ -37,6 +33,15 @@ import java.util.function.Function;
  * be used to cache atoms locally.
  */
 public final class RadixUniverse {
+	public interface Ledger {
+		AtomPuller getAtomPuller();
+
+		ParticleStore getParticleStore();
+
+		AtomStore getAtomStore();
+
+		AtomSubmitter getAtomSubmitter();
+	}
 
 	/**
 	 * Lock to protect default Radix Universe instance
@@ -100,46 +105,54 @@ public final class RadixUniverse {
 	 */
 	private final RadixUniverseConfig config;
 
-	/**
-	 * The Particle Data Store
-	 * TODO: actually change it into the particle data store
-	 */
-	private final ConsumableDataSource consumableDataSource;
-
-	private final ClientSelector clientSelector;
-	private final AtomFetcher atomFetcher;
-	private final AtomPuller atomPuller;
-	private final AtomSubmitter atomSubmitter;
-	private final InMemoryAtomStore inMemoryAtomStore;
+	private final Ledger ledger;
 
 	private RadixUniverse(RadixUniverseConfig config, RadixNetwork network) {
 		this.config = config;
 		this.network = network;
-		this.clientSelector = new ClientSelector(config, network);
-		this.atomFetcher = new AtomFetcher(clientSelector::getRadixClient);
-		this.inMemoryAtomStore = new InMemoryAtomStore();
-		this.atomPuller = new AtomPuller(atomFetcher::fetchAtoms, inMemoryAtomStore::store);
-		this.atomSubmitter = new AtomSubmitter(clientSelector::getRadixClient);
-		this.consumableDataSource = new ConsumableDataSource(inMemoryAtomStore::getAtoms);
+
+		// Hooking up the default configuration
+		// TODO: cleanup
+		this.ledger = new Ledger() {
+			private final ClientSelector clientSelector = new ClientSelector(config, network);
+			private final AtomFetcher atomFetcher = new AtomFetcher(clientSelector::getRadixClient);
+			private final InMemoryAtomStore inMemoryAtomStore = new InMemoryAtomStore();
+			private final AtomPuller atomPuller = new RadixAtomPuller(atomFetcher::fetchAtoms, inMemoryAtomStore::store);
+			private final AtomSubmitter atomSubmitter = new RadixAtomSubmitter(clientSelector::getRadixClient);
+			/**
+			* The Particle Data Store
+			* TODO: actually change it into the particle data store
+			*/
+			private final ConsumableDataSource particleStore = new ConsumableDataSource(inMemoryAtomStore::getAtoms);
+
+			@Override
+			public AtomPuller getAtomPuller() {
+				return atomPuller;
+			}
+
+			@Override
+			public ConsumableDataSource getParticleStore() {
+				return particleStore;
+			}
+
+			@Override
+			public AtomStore getAtomStore() {
+				return inMemoryAtomStore;
+			}
+
+			@Override
+			public AtomSubmitter getAtomSubmitter() {
+				return atomSubmitter;
+			}
+		};
 	}
 
 	public int getMagic() {
 		return config.getMagic();
 	}
 
-	public Function<RadixAddress, Observable<Collection<Consumable>>> getParticleStore() {
-		return consumableDataSource::getConsumables;
-	}
-
-	public Function<EUID, Observable<Atom>> getAtomStore() {
-		return euid -> {
-			Disposable disposable = atomPuller.pull(euid);
-			return inMemoryAtomStore.getAtoms(euid).doOnDispose(disposable::dispose);
-		};
-	}
-
-	public Function<Atom, Observable<AtomSubmissionUpdate>> getAtomSubmissionHandler() {
-		return atomSubmitter::submitAtom;
+	public Ledger getLedger() {
+		return ledger;
 	}
 
 	public RadixNetwork getNetwork() {

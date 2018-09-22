@@ -11,7 +11,7 @@ import com.radixdlt.client.application.translate.UniquePropertyTranslator;
 import com.radixdlt.client.assets.Amount;
 import com.radixdlt.client.assets.Asset;
 import com.radixdlt.client.core.RadixUniverse;
-import com.radixdlt.client.core.address.EUID;
+import com.radixdlt.client.core.RadixUniverse.Ledger;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomBuilder;
@@ -29,7 +29,6 @@ import io.reactivex.annotations.Nullable;
 import io.reactivex.observables.ConnectableObservable;
 import java.util.Collection;
 import java.util.Objects;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
@@ -65,33 +64,32 @@ public class RadixApplicationAPI {
 	}
 
 	private final RadixIdentity identity;
+	private final RadixUniverse universe;
+
+	// TODO: Translators from application to particles
 	private final DataStoreTranslator dataStoreTranslator;
 	private final TokenTransferTranslator tokenTransferTranslator;
 	private final UniquePropertyTranslator uniquePropertyTranslator;
+
+	// TODO: Translator from particles to atom
 	private final Supplier<AtomBuilder> atomBuilderSupplier;
-	private final RadixUniverse universe;
-	private final Function<EUID, Observable<Atom>> atomStore;
-	private final Function<RadixAddress, Observable<Collection<Consumable>>> particleStore;
-	private final Function<Atom, Observable<AtomSubmissionUpdate>> atomSubmissionHandler;
+
+	private final Ledger ledger;
 
 	private RadixApplicationAPI(
 		RadixIdentity identity,
 		RadixUniverse universe,
 		DataStoreTranslator dataStoreTranslator,
 		Supplier<AtomBuilder> atomBuilderSupplier,
-		Function<EUID, Observable<Atom>> atomStore,
-		Function<RadixAddress, Observable<Collection<Consumable>>> particleStore,
-		Function<Atom, Observable<AtomSubmissionUpdate>> atomSubmissionHandler
+		Ledger ledger
 	) {
 		this.identity = identity;
 		this.universe = universe;
 		this.dataStoreTranslator = dataStoreTranslator;
-		this.tokenTransferTranslator = new TokenTransferTranslator(universe, particleStore);
+		this.tokenTransferTranslator = new TokenTransferTranslator(universe, ledger.getParticleStore());
 		this.uniquePropertyTranslator = new UniquePropertyTranslator();
 		this.atomBuilderSupplier = atomBuilderSupplier;
-		this.atomStore = atomStore;
-		this.particleStore = particleStore;
-		this.atomSubmissionHandler = atomSubmissionHandler;
+		this.ledger = ledger;
 	}
 
 	public static RadixApplicationAPI create(RadixIdentity identity) {
@@ -108,11 +106,7 @@ public class RadixApplicationAPI {
 		Objects.requireNonNull(identity);
 		Objects.requireNonNull(universe);
 		Objects.requireNonNull(atomBuilderSupplier);
-		return new RadixApplicationAPI(identity, universe, dataStoreTranslator, atomBuilderSupplier,
-			universe.getAtomStore(),
-			universe.getParticleStore(),
-			universe.getAtomSubmissionHandler()
-		);
+		return new RadixApplicationAPI(identity, universe, dataStoreTranslator, atomBuilderSupplier, universe.getLedger());
 	}
 
 	public ECPublicKey getMyPublicKey() {
@@ -130,7 +124,7 @@ public class RadixApplicationAPI {
 	public Observable<Data> getData(RadixAddress address) {
 		Objects.requireNonNull(address);
 
-		return atomStore.apply(address.getUID())
+		return ledger.getAtomStore().getAtoms(address.getUID())
 			.filter(Atom::isMessageAtom)
 			.map(Atom::getAsMessageAtom)
 			.map(dataStoreTranslator::fromAtom);
@@ -152,7 +146,7 @@ public class RadixApplicationAPI {
 		ConnectableObservable<AtomSubmissionUpdate> updates = dataStoreTranslator.translate(dataStore, atomBuilder)
 			.andThen(Single.fromCallable(() -> atomBuilder.buildWithPOWFee(universe.getMagic(), address.getPublicKey())))
 			.flatMap(identity::sign)
-			.flatMapObservable(atomSubmissionHandler::apply)
+			.flatMapObservable(ledger.getAtomSubmitter()::submitAtom)
 			.replay();
 
 		updates.connect();
@@ -167,7 +161,7 @@ public class RadixApplicationAPI {
 		ConnectableObservable<AtomSubmissionUpdate> updates = dataStoreTranslator.translate(dataStore, atomBuilder)
 			.andThen(Single.fromCallable(() -> atomBuilder.buildWithPOWFee(universe.getMagic(), address0.getPublicKey())))
 			.flatMap(identity::sign)
-			.flatMapObservable(atomSubmissionHandler::apply)
+			.flatMapObservable(ledger.getAtomSubmitter()::submitAtom)
 			.replay();
 
 		updates.connect();
@@ -185,7 +179,7 @@ public class RadixApplicationAPI {
 
 		return Observable.combineLatest(
 			Observable.fromCallable(() -> new TransactionAtoms(address, tokenClass.getId())),
-			atomStore.apply(address.getUID())
+			ledger.getAtomStore().getAtoms(address.getUID())
 				.filter(Atom::isTransactionAtom)
 				.map(Atom::getAsTransactionAtom),
 			(transactionAtoms, atom) ->
@@ -203,7 +197,7 @@ public class RadixApplicationAPI {
 		Objects.requireNonNull(address);
 		Objects.requireNonNull(tokenClass);
 
-		return this.particleStore.apply(address)
+		return ledger.getParticleStore().getConsumables(address)
 			.map(Collection::stream)
 			.map(stream -> stream
 				.filter(consumable -> consumable.getAssetId().equals(tokenClass.getId()))
@@ -302,7 +296,7 @@ public class RadixApplicationAPI {
 		ConnectableObservable<AtomSubmissionUpdate> updates =
 			unsignedAtom
 			.flatMap(identity::sign)
-			.flatMapObservable(atomSubmissionHandler::apply)
+			.flatMapObservable(ledger.getAtomSubmitter()::submitAtom)
 			.replay();
 
 		updates.connect();

@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Implementation of a data store for all atoms in a shard
  */
-public class InMemoryAtomStore {
+public class InMemoryAtomStore implements AtomStore {
 
 	/**
 	 * The In Memory Atom Data Store

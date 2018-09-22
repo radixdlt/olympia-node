@@ -10,22 +10,26 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Given a network, selects the node to connect to
+ */
 public class ClientSelector {
 	private static final Logger LOGGER = LoggerFactory.getLogger(ClientSelector.class);
 
 	/**
-	 * The Universe we need peers for
+	 * The Universe the node we return must match
 	 */
 	private final RadixUniverseConfig config;
 
+	/**
+	 * The network of peers available to connect to
+	 */
 	private final RadixNetwork radixNetwork;
-
 
 	public ClientSelector(RadixUniverseConfig config, RadixNetwork radixNetwork) {
 		this.config = config;
 		this.radixNetwork = radixNetwork;
 	}
-
 
 	/**
 	 * Returns a cold observable of the first peer found which supports
