@@ -25,7 +25,7 @@ repositories {
 ```
 ```
 dependencies {
-    implementation 'com.radixdlt:radixdlt-java:0.10.1'
+    implementation 'com.radixdlt:radixdlt-java:0.11.0'
 }
 ```
 
@@ -34,16 +34,11 @@ An Identity is the user's credentials (or more technically the manager of the
 public/private key pair) into the ledger, allowing a user to own tokens and send tokens
 as well as decrypt data.
 
-To create a new identity:
+To create/load an identity from a file:
 ```
-RadixIdentity identity = new EncryptedRadixIdentity("password", "filename.key");
+RadixIdentity identity = RadixIdentities.loadOrCreateEncryptedFile("filename.key", password");
 ```
-This will create a new file which stores the public/private key and encrypted with the given password.
-
-To read an identity file, simply run the same constructor with the correct password:
-```
-RadixIdentity identity = new EncryptedRadixIdentity("password", "filename.key");
-```
+This will either create or load a file with a public/private key and encrypted with the given password.
 
 # Universes
 A Universe is an instance of a Radix Distributed Ledger which is defined by a genesis atom and
