@@ -154,7 +154,7 @@ public class RadixWallet {
 		@NonNull RadixAddress toAddress
 	) {
 		Objects.requireNonNull(toAddress, "toAddress must be non-null");
-		return this.sendWhenAvailable(amount, toAddress, null, null);
+		return this.sendWhenAvailable(amount, null, toAddress, null);
 	}
 
 	/**
@@ -162,16 +162,16 @@ public class RadixWallet {
 	 * amount with an encrypted message (readable by sender and receiver) to a specified account.
 	 *
 	 * @param amount The amount of TEST to transfer.
-	 * @param toAddress The address to send to.
 	 * @param message The message to send as an attachment.
+	 * @param toAddress The address to send to.
 	 * @return The result of the transaction.
 	 */
 	public SendResult sendWhenAvailable(
 		BigDecimal amount,
-		@NonNull RadixAddress toAddress,
-		@Nullable String message
+		@Nullable String message,
+		@NonNull RadixAddress toAddress
 	) {
-		return sendWhenAvailable(amount, toAddress, message, null);
+		return sendWhenAvailable(amount, message, toAddress, null);
 	}
 
 	/**
@@ -179,15 +179,15 @@ public class RadixWallet {
 	 * amount with an encrypted message (readable by sender and receiver) to a specified account.
 	 *
 	 * @param amount The amount of TEST to transfer.
-	 * @param toAddress The address to send to.
 	 * @param message The message to send as an attachment.
+	 * @param toAddress The address to send to.
 	 * @param unique The unique id for this transaction.
 	 * @return The result of the transaction.
 	 */
 	public SendResult sendWhenAvailable(
 		BigDecimal amount,
-		@NonNull RadixAddress toAddress,
 		@Nullable String message,
+		@NonNull RadixAddress toAddress,
 		@Nullable String unique
 	) {
 		Objects.requireNonNull(amount, "amount must be non-null");
