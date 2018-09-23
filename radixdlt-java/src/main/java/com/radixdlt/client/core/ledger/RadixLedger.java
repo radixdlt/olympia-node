@@ -98,8 +98,8 @@ public class RadixLedger {
 				client.getUniverse()
 					.doOnSuccess(cliUniverse -> {
 						if (!config.equals(cliUniverse)) {
-							LOGGER.warn(client + " has universe: " + cliUniverse.getHash()
-								+ " but looking for " + config.getHash());
+							LOGGER.warn("{} has universe: {} but looking for {}",
+								client, cliUniverse.getHash(), config.getHash());
 						}
 					})
 					.map(config::equals)
@@ -136,7 +136,7 @@ public class RadixLedger {
 		return getRadixClient(destination.getShard())
 			.flatMapObservable(client -> client.getAtoms(atomQuery))
 			.doOnError(throwable -> {
-				LOGGER.warn("Error on getAllAtoms" + destination);
+				LOGGER.warn("Error on getAllAtoms: {}", destination);
 			})
 			.retryWhen(new IncreasingRetryTimer())
 			.filter(new Predicate<T>() {
@@ -183,9 +183,9 @@ public class RadixLedger {
 	 */
 	public Observable<AtomSubmissionUpdate> submitAtom(Atom atom) {
 		Observable<AtomSubmissionUpdate> status = getRadixClient(atom.getRequiredFirstShard())
-			.doOnSuccess(client -> LOGGER.info("Found client to submit atom: " + client.getLocation()))
+			.doOnSuccess(client -> LOGGER.info("Found client to submit atom: {}", client.getLocation()))
 			.doOnError(throwable -> {
-				LOGGER.warn("Error on submitAtom " + atom.getHid());
+				LOGGER.warn("Error on submitAtom {}", atom.getHid());
 				throwable.printStackTrace();
 			})			.flatMapObservable(client -> client.submitAtom(atom))
 			.doOnError(Throwable::printStackTrace)
@@ -200,7 +200,7 @@ public class RadixLedger {
 
 			return status.doOnNext(atomSubmissionUpdate -> {
 				if (atomSubmissionUpdate.getState() == AtomSubmissionState.VALIDATION_ERROR) {
-					LOGGER.error(atomSubmissionUpdate.getMessage() + "\n" + RadixJson.getGson().toJson(atom));
+					LOGGER.error("{}\n{}", atomSubmissionUpdate.getMessage(), RadixJson.getGson().toJson(atom));
 				}
 			});
 		}

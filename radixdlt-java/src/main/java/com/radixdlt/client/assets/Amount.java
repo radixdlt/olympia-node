@@ -46,6 +46,22 @@ public class Amount {
 		return amountInSubunits;
 	}
 
+	public boolean lte(Amount amount) {
+		if (!amount.getTokenClass().equals(this.getTokenClass())) {
+			throw new IllegalArgumentException("Only amounts with the same token class can be compared.");
+		}
+
+		return this.getAmountInSubunits() <= amount.getAmountInSubunits();
+	}
+
+	public boolean gte(Amount amount) {
+		if (!amount.getTokenClass().equals(this.getTokenClass())) {
+			throw new IllegalArgumentException("Only amounts with the same token class can be compared.");
+		}
+
+		return this.getAmountInSubunits() >= amount.getAmountInSubunits();
+	}
+
 	@Override
 	public int hashCode() {
 		// Hackish but good for now

@@ -8,12 +8,14 @@ import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.dapps.wallet.RadixWallet;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 
 public class RadixWalletExample {
 
-	private static String TO_ADDRESS_BASE58 = "JGuwJVu7REeqQtx7736GB9AJ91z5xB55t8NvteaoC25AumYovjp";
+	private static String TO_ADDRESS_BASE58 = "9ejksTjHEXJAPuSwUP1a9GDYNaRmUShJq5RgMkXQXgdHbdEkTbD";
 	//private static String TO_ADDRESS_BASE58 = null;
-	private static long AMOUNT = 1;
+	private static BigDecimal AMOUNT = new BigDecimal("100.0");
 	private static String MESSAGE = "A gift!";
 
 	// Initialize Radix Universe
@@ -41,17 +43,17 @@ public class RadixWalletExample {
 		RadixWallet wallet = new RadixWallet(api);
 
 		// Print out all past and future transactions
-		wallet.getXRDTransactions()
+		wallet.getTransactions()
 			.subscribe(System.out::println);
 
 		// Subscribe to current and future total balance
-		wallet.getXRDBalance()
+		wallet.getBalance()
 			.subscribe(balance -> System.out.println("My Balance: " + balance));
 
 		// If specified, send money to another address
 		if (TO_ADDRESS_BASE58 != null) {
 			RadixAddress toAddress = RadixAddress.fromString(TO_ADDRESS_BASE58);
-			wallet.transferXRDWhenAvailable(AMOUNT * Asset.TEST.getSubUnits(), toAddress, MESSAGE)
+			wallet.sendWhenAvailable(AMOUNT, MESSAGE, toAddress)
 				.toObservable()
 				.subscribe(System.out::println, Throwable::printStackTrace);
 		}
