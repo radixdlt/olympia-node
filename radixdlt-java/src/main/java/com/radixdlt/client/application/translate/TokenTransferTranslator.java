@@ -19,6 +19,7 @@ import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
 import com.radixdlt.client.core.crypto.Encryptor;
 import com.radixdlt.client.core.serialization.RadixJson;
+import com.radixdlt.client.core.ledger.ParticleStore;
 import io.reactivex.Completable;
 import java.nio.charset.StandardCharsets;
 import java.util.AbstractMap.SimpleImmutableEntry;
@@ -34,12 +35,12 @@ import java.util.stream.Collectors;
 
 public class TokenTransferTranslator {
 	private final RadixUniverse universe;
-	private final ConsumableDataSource consumableDataSource;
 	private static final JsonParser JSON_PARSER = new JsonParser();
+	private final ParticleStore particleStore;
 
-	public TokenTransferTranslator(RadixUniverse universe, ConsumableDataSource consumableDataSource) {
+	public TokenTransferTranslator(RadixUniverse universe, ParticleStore particleStore) {
 		this.universe = universe;
-		this.consumableDataSource = consumableDataSource;
+		this.particleStore = particleStore;
 	}
 
 	public TokenTransfer fromAtom(Atom atom) {
@@ -104,7 +105,7 @@ public class TokenTransferTranslator {
 	}
 
 	public Completable translate(TokenTransfer tokenTransfer, AtomBuilder atomBuilder) {
-		return this.consumableDataSource.getConsumables(tokenTransfer.getFrom())
+		return this.particleStore.getConsumables(tokenTransfer.getFrom())
 			.firstOrError()
 			.flatMapCompletable(unconsumedConsumables -> {
 

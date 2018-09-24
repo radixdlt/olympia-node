@@ -1,5 +1,6 @@
 package com.radixdlt.client.core.serialization;
 
+import com.radixdlt.client.core.atoms.AssetParticle;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.HashMap;
@@ -190,6 +191,7 @@ public class RadixJson {
 		SERIALIZERS.put(DataParticle.class, 473758768);
 		SERIALIZERS.put(UniqueParticle.class, "UNIQUEPARTICLE".hashCode());
 		SERIALIZERS.put(ChronoParticle.class, "CHRONOPARTICLE".hashCode());
+		SERIALIZERS.put(AssetParticle.class, "ASSET".hashCode());
 		SERIALIZERS.put(Consumer.class, 214856694);
 	}
 

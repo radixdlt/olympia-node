@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 import com.radixdlt.client.core.address.EUID;
+import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState;
 import com.radixdlt.client.core.network.WebSocketClient.RadixClientStatus;
 import com.radixdlt.client.core.serialization.RadixJson;
@@ -49,9 +50,14 @@ public class RadixJsonRpcClient {
 	private final Observable<JsonObject> messages;
 
 	/**
-	 * Cached API version of Server
+	 * Cached API version of Node
 	 */
 	private final Single<Integer> serverApiVersion;
+
+	/**
+	 * Cached Universe of Node
+	 */
+	private final Single<RadixUniverseConfig> universeConfig;
 
 	public RadixJsonRpcClient(WebSocketClient wsClient) {
 		this.wsClient = wsClient;
@@ -69,6 +75,10 @@ public class RadixJsonRpcClient {
 				.map(result -> result.getAsJsonObject().get("version").getAsInt())
 				.cache();
 		}
+
+		this.universeConfig = jsonRpcCall("Universe.getUniverse")
+			.map(result -> RadixJson.getGson().fromJson(result, RadixUniverseConfig.class))
+			.cache();
 	}
 
 	/**
@@ -120,18 +130,23 @@ public class RadixJsonRpcClient {
 							emitter.onError(new RuntimeException("Could not connect."));
 						}
 					})
-					.subscribe(msg -> {
-						final JsonObject received = msg.getAsJsonObject();
-						if (received.has("result")) {
-							emitter.onSuccess(received.get("result"));
-						} else if (received.has("error")) {
-							emitter.onError(new JsonRpcException(requestObject, received));
-						} else {
-							emitter.onError(
-								new RuntimeException("Received bad json rpc message: " + received.toString())
-							);
+					.subscribe(
+						msg -> {
+							final JsonObject received = msg.getAsJsonObject();
+							if (received.has("result")) {
+								emitter.onSuccess(received.get("result"));
+							} else if (received.has("error")) {
+								emitter.onError(new RuntimeException(received.toString()));
+							} else {
+								emitter.onError(
+									new RuntimeException("Received bad json rpc message: " + received.toString())
+								);
+							}
+						},
+						err -> {
+							emitter.onError(new RuntimeException("Lost connection."));
 						}
-					});
+					);
 			})
 		);
 	}
@@ -152,6 +167,15 @@ public class RadixJsonRpcClient {
 
 	public Single<Boolean> checkAPIVersion() {
 		return this.getAPIVersion().map(API_VERSION::equals);
+	}
+
+	/**
+	 * Retrieve the universe the node is supporting. The result is cached for future calls.
+	 *
+	 * @return universe config which the node is supporting
+	 */
+	public Single<RadixUniverseConfig> getUniverse() {
+		return this.universeConfig;
 	}
 
 	/**
@@ -282,65 +306,63 @@ public class RadixJsonRpcClient {
 	 * @return observable of the atom as it gets stored
 	 */
 	public <T extends Atom> Observable<AtomSubmissionUpdate> submitAtom(T atom) {
-		return this.wsClient.connect().andThen(
-			Observable.<AtomSubmissionUpdate>create(emitter -> {
-				JsonElement jsonAtom = RadixJson.getGson().toJsonTree(atom, Atom.class);
+		return Observable.<AtomSubmissionUpdate>create(emitter -> {
+			JsonElement jsonAtom = RadixJson.getGson().toJsonTree(atom, Atom.class);
 
-				final String subscriberId = UUID.randomUUID().toString();
-				JsonObject params = new JsonObject();
-				params.addProperty("subscriberId", subscriberId);
-				params.add("atom", jsonAtom);
+			final String subscriberId = UUID.randomUUID().toString();
+			JsonObject params = new JsonObject();
+			params.addProperty("subscriberId", subscriberId);
+			params.add("atom", jsonAtom);
 
-				Disposable subscriptionDisposable = messages
-					.filter(msg -> msg.has("method"))
-					.filter(msg -> msg.get("method").getAsString().equals("AtomSubmissionState.onNext"))
-					.map(msg -> msg.get("params").getAsJsonObject())
-					.filter(p -> p.get("subscriberId").getAsString().equals(subscriberId))
-					.map(p -> {
-						final AtomSubmissionState state = AtomSubmissionState.valueOf(p.get("value").getAsString());
-						final String message;
-						if (p.has("message")) {
-							message = p.get("message").getAsString();
-						} else {
-							message = null;
-						}
-						AtomSubmissionUpdate update = AtomSubmissionUpdate.create(atom.getHid(), state, message);
-						update.putMetaData("jsonRpcParams", params);
-						return update;
-					})
-					.takeUntil(AtomSubmissionUpdate::isComplete)
-					.subscribe(
-						emitter::onNext,
-						emitter::onError,
-						emitter::onComplete
-					);
+			Disposable subscriptionDisposable = messages
+				.filter(msg -> msg.has("method"))
+				.filter(msg -> msg.get("method").getAsString().equals("AtomSubmissionState.onNext"))
+				.map(msg -> msg.get("params").getAsJsonObject())
+				.filter(p -> p.get("subscriberId").getAsString().equals(subscriberId))
+				.map(p -> {
+					final AtomSubmissionState state = AtomSubmissionState.valueOf(p.get("value").getAsString());
+					final String message;
+					if (p.has("message")) {
+						message = p.get("message").getAsString();
+					} else {
+						message = null;
+					}
+					AtomSubmissionUpdate update = AtomSubmissionUpdate.create(atom.getHid(), state, message);
+					update.putMetaData("jsonRpcParams", params);
+					return update;
+				})
+				.takeUntil(AtomSubmissionUpdate::isComplete)
+				.subscribe(
+					emitter::onNext,
+					emitter::onError,
+					emitter::onComplete
+				);
 
 
-				Disposable methodDisposable = this.jsonRpcCall("Universe.submitAtomAndSubscribe", params)
-					.doOnSubscribe(
-						disposable -> emitter.onNext(
-							AtomSubmissionUpdate.create(atom.getHid(), AtomSubmissionState.SUBMITTING)
-						)
+			Disposable methodDisposable = this.jsonRpcCall("Universe.submitAtomAndSubscribe", params)
+				.doOnSubscribe(
+					disposable -> emitter.onNext(
+						AtomSubmissionUpdate.create(atom.getHid(), AtomSubmissionState.SUBMITTING)
 					)
-					.subscribe(
-						msg -> emitter.onNext(AtomSubmissionUpdate.create(atom.getHid(), AtomSubmissionState.SUBMITTED)),
-						throwable -> {
-							emitter.onNext(
-								AtomSubmissionUpdate.create(
-									atom.getHid(),
-									AtomSubmissionState.FAILED,
-									throwable.getMessage()
-								)
-							);
-							emitter.onComplete();
-						}
-					);
+				)
+				.subscribe(
+					msg -> emitter.onNext(AtomSubmissionUpdate.create(atom.getHid(), AtomSubmissionState.SUBMITTED)),
+					throwable -> {
+						emitter.onNext(
+							AtomSubmissionUpdate.create(
+								atom.getHid(),
+								AtomSubmissionState.FAILED,
+								throwable.getMessage()
+							)
+						);
+						emitter.onComplete();
+					}
+				);
 
-				emitter.setCancellable(() -> {
-					methodDisposable.dispose();
-					subscriptionDisposable.dispose();
-				});
-			})
-		);
+			emitter.setCancellable(() -> {
+				methodDisposable.dispose();
+				subscriptionDisposable.dispose();
+			});
+		});
 	}
 }

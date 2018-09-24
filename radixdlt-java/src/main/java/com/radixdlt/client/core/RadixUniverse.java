@@ -1,15 +1,24 @@
 package com.radixdlt.client.core;
 
+import com.radixdlt.client.core.ledger.ConsumableDataSource;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.client.core.crypto.ECPublicKey;
-import com.radixdlt.client.core.ledger.RadixLedger;
+import com.radixdlt.client.core.ledger.AtomFetcher;
+import com.radixdlt.client.core.ledger.AtomPuller;
+import com.radixdlt.client.core.ledger.AtomStore;
+import com.radixdlt.client.core.ledger.AtomSubmitter;
+import com.radixdlt.client.core.ledger.ParticleStore;
+import com.radixdlt.client.core.ledger.RadixAtomPuller;
+import com.radixdlt.client.core.ledger.RadixAtomSubmitter;
+import com.radixdlt.client.core.ledger.ClientSelector;
+import com.radixdlt.client.core.ledger.InMemoryAtomStore;
 import com.radixdlt.client.core.network.PeerDiscovery;
 import com.radixdlt.client.core.network.RadixNetwork;
 
 /**
  * A RadixUniverse represents the interface through which a client can interact
- * with a Radix Universe (an instance of a Radix Ledger + Radix Network).
+ * with a Radix Universe.
  * <p>
  * The configuration file of a Radix Universe defines the genesis atoms of the
  * distributed getLedger and distinguishes this universe from other universes.
@@ -24,6 +33,15 @@ import com.radixdlt.client.core.network.RadixNetwork;
  * be used to cache atoms locally.
  */
 public final class RadixUniverse {
+	public interface Ledger {
+		AtomPuller getAtomPuller();
+
+		ParticleStore getParticleStore();
+
+		AtomStore getAtomStore();
+
+		AtomSubmitter getAtomSubmitter();
+	}
 
 	/**
 	 * Lock to protect default Radix Universe instance
@@ -34,6 +52,9 @@ public final class RadixUniverse {
 	 * Default Universe Instance
 	 */
 	private static RadixUniverse defaultUniverse;
+
+	// TODO: don't check universe for betanet, enable in future
+	private static final boolean CHECK_UNIVERSE = false;
 
 
 	/**
@@ -53,9 +74,8 @@ public final class RadixUniverse {
 			}
 
 			RadixNetwork network = new RadixNetwork(peerDiscovery);
-			RadixLedger ledger = new RadixLedger(config.getMagic(), network);
 
-			defaultUniverse = new RadixUniverse(config, network, ledger);
+			defaultUniverse = new RadixUniverse(config, network);
 
 			return defaultUniverse;
 		}
@@ -84,31 +104,62 @@ public final class RadixUniverse {
 	private final RadixNetwork network;
 
 	/**
-	 * Ledger Interface
-	 */
-	private final RadixLedger ledger;
-
-	/**
 	 * Universe Configuration
 	 */
 	private final RadixUniverseConfig config;
 
-	private RadixUniverse(RadixUniverseConfig config, RadixNetwork network, RadixLedger ledger) {
+	private final Ledger ledger;
+
+	private RadixUniverse(RadixUniverseConfig config, RadixNetwork network) {
 		this.config = config;
 		this.network = network;
-		this.ledger = ledger;
+
+		// Hooking up the default configuration
+		// TODO: cleanup
+		this.ledger = new Ledger() {
+			private final ClientSelector clientSelector = new ClientSelector(config, network, CHECK_UNIVERSE);
+			private final AtomFetcher atomFetcher = new AtomFetcher(clientSelector::getRadixClient);
+			private final InMemoryAtomStore inMemoryAtomStore = new InMemoryAtomStore();
+			private final AtomPuller atomPuller = new RadixAtomPuller(atomFetcher::fetchAtoms, inMemoryAtomStore::store);
+			private final AtomSubmitter atomSubmitter = new RadixAtomSubmitter(clientSelector::getRadixClient);
+			/**
+			* The Particle Data Store
+			* TODO: actually change it into the particle data store
+			*/
+			private final ConsumableDataSource particleStore = new ConsumableDataSource(inMemoryAtomStore::getAtoms);
+
+			@Override
+			public AtomPuller getAtomPuller() {
+				return atomPuller;
+			}
+
+			@Override
+			public ConsumableDataSource getParticleStore() {
+				return particleStore;
+			}
+
+			@Override
+			public AtomStore getAtomStore() {
+				return inMemoryAtomStore;
+			}
+
+			@Override
+			public AtomSubmitter getAtomSubmitter() {
+				return atomSubmitter;
+			}
+		};
 	}
 
 	public int getMagic() {
 		return config.getMagic();
 	}
 
-	public RadixNetwork getNetwork() {
-		return network;
+	public Ledger getLedger() {
+		return ledger;
 	}
 
-	public RadixLedger getLedger() {
-		return ledger;
+	public RadixNetwork getNetwork() {
+		return network;
 	}
 
 	/**
@@ -135,7 +186,6 @@ public final class RadixUniverse {
 	 * Attempts to gracefully free all resources associated with this Universe
 	 */
 	public void disconnect() {
-		ledger.close();
 		network.close();
 	}
 

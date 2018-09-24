@@ -139,7 +139,7 @@ public class SerializationUtils {
 	/**
 	 * Write an encoded integer to a {@link ByteArrayOutputStream}.
 	 *
-	 * @param value The integer to write
+	 * @param length The integer to write
 	 * @param outputStream The output stream to write on
 	 * @see #encodeInt(int, ByteBuffer)
 	 */

@@ -184,6 +184,8 @@ public class Dson {
 		} else if (o instanceof Long) {
 			raw = longToByteArray((Long) o);
 			type = Primitive.NUMBER.value;
+		} else if (o instanceof Number) {
+			throw new IllegalStateException("A number must be a long to be serialized in Dson: " + o);
 		} else if (o instanceof EUID) {
 			raw = ((EUID) o).toByteArray();
 			type = Primitive.EUID.value;
@@ -220,6 +222,9 @@ public class Dson {
 				.collect(toByteArray);
 			type = Primitive.OBJECT.value;
 
+		} else if (o instanceof HasOrdinalValue) { // HACK
+			raw = longToByteArray(((HasOrdinalValue) o).ordinalValue());
+			type = 2;
 		} else {
 			Class<?> c = o.getClass();
 			List<Field> fields = new ArrayList<>();
