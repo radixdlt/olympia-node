@@ -53,6 +53,9 @@ public final class RadixUniverse {
 	 */
 	private static RadixUniverse defaultUniverse;
 
+	// TODO: don't check universe for betanet, enable in future
+	private static final boolean CHECK_UNIVERSE = false;
+
 
 	/**
 	 * Initializes the default universe with a Peer Discovery mechanism.
@@ -114,7 +117,7 @@ public final class RadixUniverse {
 		// Hooking up the default configuration
 		// TODO: cleanup
 		this.ledger = new Ledger() {
-			private final ClientSelector clientSelector = new ClientSelector(config, network);
+			private final ClientSelector clientSelector = new ClientSelector(config, network, CHECK_UNIVERSE);
 			private final AtomFetcher atomFetcher = new AtomFetcher(clientSelector::getRadixClient);
 			private final InMemoryAtomStore inMemoryAtomStore = new InMemoryAtomStore();
 			private final AtomPuller atomPuller = new RadixAtomPuller(atomFetcher::fetchAtoms, inMemoryAtomStore::store);

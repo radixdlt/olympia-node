@@ -4,6 +4,7 @@ import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.client.core.network.RadixJsonRpcClient;
 import com.radixdlt.client.core.network.RadixNetwork;
 import com.radixdlt.client.core.network.WebSocketClient.RadixClientStatus;
+import io.reactivex.Maybe;
 import io.reactivex.Single;
 import java.util.Collections;
 import java.util.Set;
@@ -22,13 +23,19 @@ public class ClientSelector {
 	private final RadixUniverseConfig config;
 
 	/**
+	 * Flag whether to check universe or not
+	 */
+	private final boolean checkUniverse;
+
+	/**
 	 * The network of peers available to connect to
 	 */
 	private final RadixNetwork radixNetwork;
 
-	public ClientSelector(RadixUniverseConfig config, RadixNetwork radixNetwork) {
+	public ClientSelector(RadixUniverseConfig config, RadixNetwork radixNetwork, boolean checkUniverse) {
 		this.config = config;
 		this.radixNetwork = radixNetwork;
+		this.checkUniverse = checkUniverse;
 	}
 
 	/**
@@ -62,14 +69,18 @@ public class ClientSelector {
 			.flatMapMaybe(client ->
 				client.getUniverse()
 					.doOnSuccess(cliUniverse -> {
-						if (!config.equals(cliUniverse)) {
+						if (checkUniverse && !config.equals(cliUniverse)) {
 							LOGGER.warn("{} has universe: {} but looking for {}",
 								client, cliUniverse.getHash(), config.getHash());
 						}
 					})
-					.map(config::equals)
-					.filter(b -> b)
-					.map(b -> client)
+					.flatMapMaybe(config -> {
+						if (!checkUniverse || config.equals(this.config)) {
+							return Maybe.just(client);
+						} else {
+							return Maybe.empty();
+						}
+					})
 					.onErrorComplete()
 			)
 			.firstOrError();

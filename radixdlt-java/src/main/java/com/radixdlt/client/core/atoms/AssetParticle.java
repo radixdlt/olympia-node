@@ -10,6 +10,7 @@ public class AssetParticle {
 	private final String type;
 	@SerializedName("sub_units")
 	private final long subUnits;
+	@SerializedName("maximum_units")
 	private final long maximumUnits;
 	private final long settings;
 	private final String iso;

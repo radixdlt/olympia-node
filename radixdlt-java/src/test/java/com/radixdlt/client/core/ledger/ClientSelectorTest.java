@@ -25,7 +25,7 @@ public class ClientSelectorTest {
 		when(client.getUniverse()).thenReturn(Single.error(new IOException()));
 		when(network.getRadixClients(any(Set.class))).thenReturn(Observable.concat(Observable.just(client), Observable.never()));
 
-		ClientSelector clientSelector = new ClientSelector(config, network);
+		ClientSelector clientSelector = new ClientSelector(config, network, true);
 		TestObserver<RadixJsonRpcClient> testObserver = TestObserver.create();
 		clientSelector.getRadixClient(1L).subscribe(testObserver);
 
