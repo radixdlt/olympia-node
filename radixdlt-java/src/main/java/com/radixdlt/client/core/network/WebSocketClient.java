@@ -2,6 +2,7 @@ package com.radixdlt.client.core.network;
 
 import io.reactivex.Completable;
 import io.reactivex.Observable;
+import io.reactivex.exceptions.Exceptions;
 import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.PublishSubject;
 import java.io.IOException;
@@ -125,7 +126,7 @@ public class WebSocketClient {
 				if (status.equals(RadixClientStatus.CLOSED)) {
 					this.tryConnect();
 				} else if (status.equals(RadixClientStatus.FAILURE)) {
-					throw new IOException();
+					throw Exceptions.propagate(new IOException(this.endpoint + ": connection failure"));
 				}
 			})
 			.filter(status -> status.equals(RadixClientStatus.OPEN))

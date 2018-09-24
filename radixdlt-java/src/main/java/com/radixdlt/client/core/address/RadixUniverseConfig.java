@@ -1,19 +1,22 @@
 package com.radixdlt.client.core.address;
 
+import com.google.gson.JsonElement;
 import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.client.core.atoms.RadixHash;
 import com.radixdlt.client.core.crypto.ECPublicKey;
-import com.google.gson.JsonObject;
+import com.radixdlt.client.core.serialization.Dson;
 import com.radixdlt.client.core.serialization.RadixJson;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Collections;
 import java.util.List;
+import org.bouncycastle.util.encoders.Base64;
 
 public class RadixUniverseConfig {
 
-	private final int magic;
-	private final int port;
+	private final long magic;
+	private final long port;
 	private final String name;
 	private final String description;
 	private final RadixUniverseType type;
@@ -21,12 +24,26 @@ public class RadixUniverseConfig {
 	private final ECPublicKey creator;
 	private final List<Atom> genesis;
 
+	public static RadixUniverseConfig fromDsonBase64(String dsonBase64) {
+		JsonElement universeJson = Dson.getInstance().parse(Base64.decode(dsonBase64));
+		System.out.println(universeJson);
+		return RadixJson.getGson().fromJson(universeJson, RadixUniverseConfig.class);
+	}
+
 	public static RadixUniverseConfig fromInputStream(InputStream inputStream) {
 		return RadixJson.getGson().fromJson(new InputStreamReader(inputStream), RadixUniverseConfig.class);
 	}
 
-	RadixUniverseConfig(List<Atom> genesis, int port, String name, String description, RadixUniverseType type,
-                        long timestamp, ECPublicKey creator, int magic) {
+	RadixUniverseConfig(
+		List<Atom> genesis,
+		long port,
+		String name,
+		String description,
+		RadixUniverseType type,
+		long timestamp,
+		ECPublicKey creator,
+		long magic
+	) {
 		this.genesis = Collections.unmodifiableList(genesis);
 		this.name = name;
 		this.description = description;
@@ -37,8 +54,9 @@ public class RadixUniverseConfig {
 		this.magic = magic;
 	}
 
+	// TODO: should this be long?
 	public int getMagic() {
-		return magic;
+		return (int) magic;
 	}
 
 	public byte getMagicByte() {
@@ -57,29 +75,18 @@ public class RadixUniverseConfig {
 		return genesis;
 	}
 
-	public JsonObject toJson() {
-		JsonObject universe = new JsonObject();
-		universe.addProperty("magic", magic);
-		universe.addProperty("port", port);
-		universe.addProperty("name", name);
-		universe.addProperty("description", description);
-		universe.add("type", RadixJson.getGson().toJsonTree(type));
-		universe.addProperty("timestamp", timestamp);
-		universe.add("creator", RadixJson.getGson().toJsonTree(creator));
-		universe.add("genesis", RadixJson.getGson().toJsonTree(genesis));
-
-		return universe;
+	public RadixHash getHash() {
+		return RadixHash.of(Dson.getInstance().toDson(this));
 	}
 
 	@Override
 	public String toString() {
-		return name;
+		return name + " " + magic;
 	}
 
 	@Override
 	public int hashCode() {
-		// TODO: fix this
-		return (magic + ":" + port + ":" + name + ":" + timestamp).hashCode();
+		return getHash().hashCode();
 	}
 
 	@Override
@@ -88,26 +95,6 @@ public class RadixUniverseConfig {
 			return false;
 		}
 
-		RadixUniverseConfig c = (RadixUniverseConfig) o;
-		if (magic != c.magic) {
-			return false;
-		}
-		if (port != c.port) {
-			return false;
-		}
-		if (!name.equals(c.name)) {
-			return false;
-		}
-		if (!type.equals(c.type)) {
-			return false;
-		}
-		if (timestamp != c.timestamp) {
-			return false;
-		}
-		if (!creator.equals(c.creator)) {
-			return false;
-		}
-
-		return true;
+		return this.getHash().equals(((RadixUniverseConfig) o).getHash());
 	}
 }
