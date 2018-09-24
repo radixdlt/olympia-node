@@ -57,6 +57,7 @@ public class ClientSelector {
 					.map(status -> client)
 					.firstOrError()
 					.toMaybe()
+					.onErrorComplete()
 			)
 			.flatMapMaybe(client ->
 				client.getUniverse()
@@ -69,6 +70,7 @@ public class ClientSelector {
 					.map(config::equals)
 					.filter(b -> b)
 					.map(b -> client)
+					.onErrorComplete()
 			)
 			.firstOrError();
 	}

@@ -126,7 +126,7 @@ public class WebSocketClient {
 				if (status.equals(RadixClientStatus.CLOSED)) {
 					this.tryConnect();
 				} else if (status.equals(RadixClientStatus.FAILURE)) {
-					throw Exceptions.propagate(new IOException());
+					throw Exceptions.propagate(new IOException(this.endpoint + ": connection failure"));
 				}
 			})
 			.filter(status -> status.equals(RadixClientStatus.OPEN))
