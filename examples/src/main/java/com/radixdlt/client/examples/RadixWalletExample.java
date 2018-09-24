@@ -40,6 +40,8 @@ public class RadixWalletExample {
 
 
 		RadixApplicationAPI api = RadixApplicationAPI.create(radixIdentity);
+		api.pull();
+
 		RadixWallet wallet = new RadixWallet(api);
 
 		// Print out all past and future transactions

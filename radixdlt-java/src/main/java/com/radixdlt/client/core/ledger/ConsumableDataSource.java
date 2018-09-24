@@ -1,27 +1,24 @@
-package com.radixdlt.client.application.translate;
+package com.radixdlt.client.core.ledger;
 
+import com.radixdlt.client.application.translate.TransactionAtoms;
 import com.radixdlt.client.assets.Asset;
+import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.address.RadixAddress;
+import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.Consumable;
-import com.radixdlt.client.core.atoms.TransactionAtom;
-import com.radixdlt.client.core.ledger.RadixLedger;
 import io.reactivex.Observable;
-import io.reactivex.Single;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
-public class ConsumableDataSource {
-	private final RadixLedger ledger;
+public class ConsumableDataSource implements ParticleStore {
+	private final Function<EUID, Observable<Atom>> atomStore;
 	private final ConcurrentHashMap<RadixAddress, Observable<Collection<Consumable>>> cache = new ConcurrentHashMap<>();
 
-	public ConsumableDataSource(RadixLedger ledger) {
-		this.ledger = ledger;
-	}
-
-	public Single<Collection<Consumable>> getCurrentConsumables(RadixAddress address) {
-		return this.getConsumables(address).firstOrError();
+	public ConsumableDataSource(Function<EUID, Observable<Atom>> atomStore) {
+		this.atomStore = atomStore;
 	}
 
 	public Observable<Collection<Consumable>> getConsumables(RadixAddress address) {
@@ -30,7 +27,9 @@ public class ConsumableDataSource {
 			Observable.<Collection<Consumable>>just(Collections.emptySet()).concatWith(
 				Observable.combineLatest(
 					Observable.fromCallable(() -> new TransactionAtoms(address, Asset.TEST.getId())),
-					ledger.getAllAtoms(address.getUID(), TransactionAtom.class),
+					atomStore.apply(address.getUID())
+					.filter(Atom::isTransactionAtom)
+					.map(Atom::getAsTransactionAtom),
 					(transactionAtoms, atom) ->
 						transactionAtoms.accept(atom)
 							.getUnconsumedConsumables()

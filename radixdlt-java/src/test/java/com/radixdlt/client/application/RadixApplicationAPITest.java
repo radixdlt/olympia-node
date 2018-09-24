@@ -16,6 +16,7 @@ import com.radixdlt.client.application.translate.InsufficientFundsException;
 import com.radixdlt.client.assets.Amount;
 import com.radixdlt.client.assets.Asset;
 import com.radixdlt.client.core.RadixUniverse;
+import com.radixdlt.client.core.RadixUniverse.Ledger;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.ApplicationPayloadAtom;
 import com.radixdlt.client.core.atoms.Atom;
@@ -23,18 +24,26 @@ import com.radixdlt.client.core.atoms.AtomBuilder;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.crypto.CryptoException;
 import com.radixdlt.client.application.identity.RadixIdentity;
-import com.radixdlt.client.core.ledger.RadixLedger;
+import com.radixdlt.client.core.ledger.AtomStore;
+import com.radixdlt.client.core.ledger.AtomSubmitter;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.observers.TestObserver;
+import java.util.Collections;
 import java.util.function.Supplier;
 import org.junit.Test;
 
 public class RadixApplicationAPITest {
-	private RadixApplicationAPI createMockedAPI(RadixLedger ledger) {
+	private RadixApplicationAPI createMockedAPI(
+		AtomSubmitter atomSubmitter,
+		AtomStore atomStore
+	) {
 		RadixUniverse universe = mock(RadixUniverse.class);
+		Ledger ledger = mock(Ledger.class);
+		when(ledger.getAtomSubmitter()).thenReturn(atomSubmitter);
+		when(ledger.getAtomStore()).thenReturn(atomStore);
 		when(universe.getLedger()).thenReturn(ledger);
 		RadixIdentity identity = mock(RadixIdentity.class);
 
@@ -52,8 +61,8 @@ public class RadixApplicationAPITest {
 		return RadixApplicationAPI.create(identity, universe, DataStoreTranslator.getInstance(), atomBuilderSupplier);
 	}
 
-	private RadixLedger createMockedLedgerWhichAlwaysSucceeds() {
-		RadixLedger ledger = mock(RadixLedger.class);
+	private AtomSubmitter createMockedSubmissionWhichAlwaysSucceeds() {
+		AtomSubmitter submission = mock(AtomSubmitter.class);
 
 		AtomSubmissionUpdate submitting = mock(AtomSubmissionUpdate.class);
 		AtomSubmissionUpdate submitted = mock(AtomSubmissionUpdate.class);
@@ -66,13 +75,13 @@ public class RadixApplicationAPITest {
 		when(submitted.getState()).thenReturn(AtomSubmissionState.SUBMITTED);
 		when(stored.getState()).thenReturn(AtomSubmissionState.STORED);
 
-		when(ledger.submitAtom(any())).thenReturn(Observable.just(submitting, submitted, stored));
+		when(submission.submitAtom(any())).thenReturn(Observable.just(submitting, submitted, stored));
 
-		return ledger;
+		return submission;
 	}
 
 	private RadixApplicationAPI createMockedAPIWhichAlwaysSucceeds() {
-		return createMockedAPI(createMockedLedgerWhichAlwaysSucceeds());
+		return createMockedAPI(createMockedSubmissionWhichAlwaysSucceeds(), euid -> Observable.never());
 	}
 
 	private void validateSuccessfulStoreDataResult(Result result) {
@@ -127,19 +136,21 @@ public class RadixApplicationAPITest {
 
 	@Test
 	public void testStoreWithoutSubscription() {
-		RadixLedger ledger = createMockedLedgerWhichAlwaysSucceeds();
-		RadixApplicationAPI api = createMockedAPI(ledger);
+		AtomSubmitter submitter = createMockedSubmissionWhichAlwaysSucceeds();
+		RadixApplicationAPI api = createMockedAPI(submitter, euid -> Observable.never());
+
+		createMockedAPIWhichAlwaysSucceeds();
 		RadixAddress address = mock(RadixAddress.class);
 
 		Data data = mock(Data.class);
 		api.storeData(data, address, address);
-		verify(ledger, times(1)).submitAtom(any());
+		verify(submitter, times(1)).submitAtom(any());
 	}
 
 	@Test
 	public void testStoreWithMultipleSubscribes() {
-		RadixLedger ledger = createMockedLedgerWhichAlwaysSucceeds();
-		RadixApplicationAPI api = createMockedAPI(ledger);
+		AtomSubmitter submitter = createMockedSubmissionWhichAlwaysSucceeds();
+		RadixApplicationAPI api = createMockedAPI(submitter, euid -> Observable.never());
 		RadixAddress address = mock(RadixAddress.class);
 
 		Data data = mock(Data.class);
@@ -148,16 +159,14 @@ public class RadixApplicationAPITest {
 		observable.subscribe();
 		observable.subscribe();
 		observable.subscribe();
-		verify(ledger, times(1)).submitAtom(any());
+		verify(submitter, times(1)).submitAtom(any());
 	}
 
 
 	@Test
 	public void testUndecryptableData() {
 		RadixIdentity identity = mock(RadixIdentity.class);
-		RadixLedger ledger = mock(RadixLedger.class);
 		RadixUniverse universe = mock(RadixUniverse.class);
-		when(universe.getLedger()).thenReturn(ledger);
 		RadixAddress address = mock(RadixAddress.class);
 		UnencryptedData unencryptedData = mock(UnencryptedData.class);
 
@@ -170,9 +179,15 @@ public class RadixApplicationAPITest {
 		when(dataStoreTranslator.fromAtom(any())).thenReturn(data, data);
 
 		ApplicationPayloadAtom errorAtom = mock(ApplicationPayloadAtom.class);
+		when(errorAtom.isMessageAtom()).thenReturn(true);
+		when(errorAtom.getAsMessageAtom()).thenReturn(errorAtom);
 		ApplicationPayloadAtom okAtom = mock(ApplicationPayloadAtom.class);
+		when(okAtom.isMessageAtom()).thenReturn(true);
+		when(okAtom.getAsMessageAtom()).thenReturn(okAtom);
 
-		when(ledger.getAllAtoms(any(), any())).thenReturn(Observable.just(errorAtom, okAtom));
+		Ledger ledger = mock(Ledger.class);
+		when(ledger.getAtomStore()).thenReturn(euid -> Observable.just(errorAtom, okAtom));
+		when(universe.getLedger()).thenReturn(ledger);
 
 		RadixApplicationAPI api = RadixApplicationAPI.create(identity, universe, dataStoreTranslator, AtomBuilder::new);
 		TestObserver observer = TestObserver.create();
@@ -186,14 +201,15 @@ public class RadixApplicationAPITest {
 	@Test
 	public void testZeroTransactionWallet() {
 		RadixUniverse universe = mock(RadixUniverse.class);
-		RadixLedger ledger = mock(RadixLedger.class);
+		Ledger ledger = mock(Ledger.class);
+		when(universe.getLedger()).thenReturn(ledger);
+		when(ledger.getAtomStore()).thenReturn(euid -> Observable.empty());
+		when(ledger.getParticleStore()).thenReturn(euid -> Observable.just(Collections.emptySet()));
+
 		RadixAddress address = mock(RadixAddress.class);
 		RadixIdentity identity = mock(RadixIdentity.class);
-		when(universe.getLedger()).thenReturn(ledger);
+
 		RadixApplicationAPI api = RadixApplicationAPI.create(identity, universe, DataStoreTranslator.getInstance(), AtomBuilder::new);
-
-		when(ledger.getAllAtoms(any(), any())).thenReturn(Observable.empty());
-
 		TestObserver<Amount> observer = TestObserver.create();
 
 		api.getBalance(address, Asset.TEST).subscribe(observer);
@@ -203,13 +219,16 @@ public class RadixApplicationAPITest {
 	@Test
 	public void createTransactionWithNoFunds() {
 		RadixUniverse universe = mock(RadixUniverse.class);
-		RadixLedger ledger = mock(RadixLedger.class);
+		Ledger ledger = mock(Ledger.class);
+		when(universe.getLedger()).thenReturn(ledger);
+		when(ledger.getAtomStore()).thenReturn(euid -> Observable.empty());
+		when(ledger.getParticleStore()).thenReturn(euid -> Observable.just(Collections.emptySet()));
+		when(ledger.getAtomSubmitter()).thenReturn(atom -> Observable.empty());
+
 		RadixAddress address = mock(RadixAddress.class);
 		RadixIdentity identity = mock(RadixIdentity.class);
-		when(universe.getLedger()).thenReturn(ledger);
-		RadixApplicationAPI api = RadixApplicationAPI.create(identity, universe, DataStoreTranslator.getInstance(), AtomBuilder::new);
 
-		when(ledger.getAllAtoms(any(), any())).thenReturn(Observable.empty());
+		RadixApplicationAPI api = RadixApplicationAPI.create(identity, universe, DataStoreTranslator.getInstance(), AtomBuilder::new);
 
 		TestObserver observer = TestObserver.create();
 		api.transferTokens(address, address, Amount.subUnitsOf(10, Asset.TEST)).toCompletable().subscribe(observer);
