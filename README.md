@@ -25,7 +25,7 @@ repositories {
 ```
 ```
 dependencies {
-    implementation 'com.radixdlt:radixdlt-java:0.11.0'
+    implementation 'com.radixdlt:radixdlt-java:0.11.1'
 }
 ```
 
@@ -36,7 +36,7 @@ as well as decrypt data.
 
 To create/load an identity from a file:
 ```
-RadixIdentity identity = RadixIdentities.loadOrCreateEncryptedFile("filename.key", password");
+RadixIdentity identity = RadixIdentities.loadOrCreateEncryptedFile("filename.key", "password");
 ```
 This will either create or load a file with a public/private key and encrypted with the given password.
 
