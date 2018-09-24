@@ -32,6 +32,7 @@ public final class Atom {
 	private final List<DataParticle> dataParticles;
 	private final UniqueParticle uniqueParticle;
 	private final ChronoParticle chronoParticle;
+	private final AssetParticle asset;
 
 	private final Map<String, ECSignature> signatures;
 
@@ -43,6 +44,7 @@ public final class Atom {
 		List<AbstractConsumable> consumables,
 		Set<EUID> destinations,
 		UniqueParticle uniqueParticle,
+		AssetParticle asset,
 		long timestamp
 	) {
 		this.dataParticles = dataParticles;
@@ -51,6 +53,7 @@ public final class Atom {
 		this.consumables = consumables;
 		this.destinations = destinations;
 		this.uniqueParticle = uniqueParticle;
+		this.asset = asset;
 		this.signatures = null;
 		this.action = "STORE";
 	}
@@ -61,6 +64,7 @@ public final class Atom {
 		List<AbstractConsumable> consumables,
 		Set<EUID> destinations,
 		UniqueParticle uniqueParticle,
+		AssetParticle asset,
 		long timestamp,
 		EUID signatureId,
 		ECSignature signature
@@ -70,6 +74,7 @@ public final class Atom {
 		this.consumables = consumables;
 		this.destinations = destinations;
 		this.uniqueParticle = uniqueParticle;
+		this.asset = asset;
 		this.chronoParticle = new ChronoParticle(timestamp);
 		this.signatures = Collections.singletonMap(signatureId.toString(), signature);
 		this.action = "STORE";
@@ -82,6 +87,7 @@ public final class Atom {
 			consumables,
 			destinations,
 			uniqueParticle,
+			asset,
 			getTimestamp(),
 			signatureId,
 			signature
