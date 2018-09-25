@@ -80,9 +80,13 @@ public class RadixIdentities {
 	 */
 	public static RadixIdentity loadOrCreateEncryptedFile(File keyFile, String password) throws IOException, GeneralSecurityException {
 		if (!keyFile.exists()) {
-			return createNewEncryptedIdentity(new FileWriter(keyFile), password);
+			try (Writer writer = new FileWriter(keyFile)) {
+				return createNewEncryptedIdentity(writer, password);
+			}
 		} else {
-			return readEncryptedIdentity(new FileReader(keyFile), password);
+			try (Reader reader = new FileReader(keyFile)) {
+				return readEncryptedIdentity(reader, password);
+			}
 		}
 	}
 
@@ -99,7 +103,8 @@ public class RadixIdentities {
 	}
 
 	/**
-	 * Creates a new private key and encrypts it and then writes the result to a given writer
+	 * Creates a new private key and encrypts it and then writes/flushes the result to a given writer
+	 *
 	 * @param writer the writer to write the encrypted private key to
 	 * @param password the password to encrypt the private key with
 	 * @return the radix identity created
@@ -108,6 +113,7 @@ public class RadixIdentities {
 	public static RadixIdentity createNewEncryptedIdentity(Writer writer, String password) throws IOException, GeneralSecurityException {
 		String encryptedKey = PrivateKeyEncrypter.createEncryptedPrivateKey(password);
 		writer.write(encryptedKey);
+		writer.flush();
 		return readEncryptedIdentity(new StringReader(encryptedKey), password);
 	}
 
