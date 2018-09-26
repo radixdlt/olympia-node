@@ -1,30 +1,16 @@
 package com.radixdlt.client.core.atoms;
 
-import com.radixdlt.client.core.address.EUID;
-import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 public class AtomBuilder {
-	private Set<EUID> destinations = new HashSet<>();
 	private List<AbstractConsumable> consumables = new ArrayList<>();
 	private List<Consumer> consumers = new ArrayList<>();
 	private List<DataParticle> dataParticles = new ArrayList<>();
 	private UniqueParticle uniqueParticle;
 
 	public AtomBuilder() {
-	}
-
-	public AtomBuilder addDestination(EUID euid) {
-		this.destinations.add(euid);
-		return this;
-	}
-
-	public AtomBuilder addDestination(RadixAddress address) {
-		return this.addDestination(address.getUID());
 	}
 
 	public AtomBuilder setUniqueParticle(UniqueParticle uniqueParticle) {
@@ -39,19 +25,16 @@ public class AtomBuilder {
 
 	public AtomBuilder addConsumer(Consumer consumer) {
 		this.consumers.add(consumer);
-		this.destinations.addAll(consumer.getDestinations());
 		return this;
 	}
 
 	public AtomBuilder addConsumable(Consumable consumable) {
 		this.consumables.add(consumable);
-		this.destinations.addAll(consumable.getDestinations());
 		return this;
 	}
 
 	public <T extends Consumable> AtomBuilder addConsumables(List<T> particles) {
 		this.consumables.addAll(particles);
-		particles.stream().flatMap(particle -> particle.getDestinations().stream()).forEach(destinations::add);
 		return this;
 	}
 
@@ -78,7 +61,6 @@ public class AtomBuilder {
 			dataParticles.isEmpty() ? null : dataParticles,
 			consumers.isEmpty() ? null : consumers, // Pretty nasty hack here. Need to fix.
 			consumables,
-			destinations,
 			uniqueParticle,
 			null,
 			timestamp

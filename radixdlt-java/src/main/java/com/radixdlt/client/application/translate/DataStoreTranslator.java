@@ -53,7 +53,8 @@ public class DataStoreTranslator {
 				.build();
 			atomBuilder.addDataParticle(encryptorParticle);
 		}
-		dataStore.getAddresses().forEach(atomBuilder::addDestination);
+		//TODO: add this into data particle
+		//dataStore.getAddresses().forEach(atomBuilder::addDestination);
 
 		return Completable.complete();
 	}

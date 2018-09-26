@@ -1,6 +1,7 @@
 package com.radixdlt.client.core.atoms;
 
 import com.radixdlt.client.core.address.EUID;
+import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.crypto.ECSignature;
 import com.radixdlt.client.core.serialization.Dson;
@@ -18,12 +19,6 @@ import java.util.stream.Stream;
  * in a blockchain) and defines the actions that can be issued onto the ledger.
  */
 public final class Atom {
-	// TODO: Remove as action should be outside of Atom structure
-	private String action;
-
-	// TODO: Remove when particles define destinations
-	private Set<EUID> destinations;
-
 	// TODO: These will be turned into a list of DeleteParticles in the future
 	private final List<Consumer> consumers;
 
@@ -42,7 +37,6 @@ public final class Atom {
 		List<DataParticle> dataParticles,
 		List<Consumer> consumers,
 		List<AbstractConsumable> consumables,
-		Set<EUID> destinations,
 		UniqueParticle uniqueParticle,
 		AssetParticle asset,
 		long timestamp
@@ -51,18 +45,15 @@ public final class Atom {
 		this.chronoParticle = new ChronoParticle(timestamp);
 		this.consumers = consumers;
 		this.consumables = consumables;
-		this.destinations = destinations;
 		this.uniqueParticle = uniqueParticle;
 		this.asset = asset;
 		this.signatures = null;
-		this.action = "STORE";
 	}
 
 	private Atom(
 		List<DataParticle> dataParticles,
 		List<Consumer> consumers,
 		List<AbstractConsumable> consumables,
-		Set<EUID> destinations,
 		UniqueParticle uniqueParticle,
 		AssetParticle asset,
 		long timestamp,
@@ -72,12 +63,10 @@ public final class Atom {
 		this.dataParticles = dataParticles;
 		this.consumers = consumers;
 		this.consumables = consumables;
-		this.destinations = destinations;
 		this.uniqueParticle = uniqueParticle;
 		this.asset = asset;
 		this.chronoParticle = new ChronoParticle(timestamp);
 		this.signatures = Collections.singletonMap(signatureId.toString(), signature);
-		this.action = "STORE";
 	}
 
 	public Atom withSignature(ECSignature signature, EUID signatureId) {
@@ -85,7 +74,6 @@ public final class Atom {
 			dataParticles,
 			consumers,
 			consumables,
-			destinations,
 			uniqueParticle,
 			asset,
 			getTimestamp(),
@@ -94,16 +82,13 @@ public final class Atom {
 		);
 	}
 
-	public String getAction() {
-		return action;
-	}
-
-	public Set<EUID> getDestinations() {
-		return destinations;
-	}
-
 	public Set<Long> getShards() {
-		return destinations.stream().map(EUID::getShard).collect(Collectors.toSet());
+		return consumers.stream()
+			.map(Consumer::getOwners)
+			.flatMap(Set::stream)
+			.map(ECKeyPair::getUID)
+			.map(EUID::getShard)
+			.collect(Collectors.toSet());
 	}
 
 	// HACK
@@ -212,7 +197,6 @@ public final class Atom {
 
 	@Override
 	public String toString() {
-		return "Atom hid(" + getHid().toString() + ") destinations(" + destinations
-			+ ") consumables(" + getConsumables().size() + ") consumers(" + getConsumers().size() + ")";
+		return "Atom hid(" + getHid().toString() + ")";
 	}
 }

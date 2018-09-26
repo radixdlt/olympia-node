@@ -91,7 +91,7 @@ public class RadixJson {
 		);
 	};
 
-	private static final JsonSerializer<Particle> ABSTRACT_CONSUMABLE_SERIALIZER = (particle, typeOfT, context) -> {
+	private static final JsonSerializer<AbstractConsumable> ABSTRACT_CONSUMABLE_SERIALIZER = (particle, typeOfT, context) -> {
 		if (particle.getClass() == AtomFeeConsumable.class) {
 			JsonObject jsonParticle = context.serialize(particle).getAsJsonObject();
 			jsonParticle.addProperty("serializer", -1463653224);
