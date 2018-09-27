@@ -5,7 +5,7 @@ import java.util.Objects;
 /**
  * Particle which can hold arbitrary data
  */
-public class DataParticle {
+public class DataParticle extends Particle {
 	public static class DataParticleBuilder {
 		private final MetadataMap metaData = new MetadataMap();
 		private Payload bytes;
@@ -37,6 +37,8 @@ public class DataParticle {
 	private final Payload bytes;
 
 	private DataParticle(Payload bytes, MetadataMap metaData) {
+		super(1);
+
 		Objects.requireNonNull(bytes);
 
 		this.bytes = bytes;

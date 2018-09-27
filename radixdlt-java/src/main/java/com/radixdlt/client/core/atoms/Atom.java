@@ -23,63 +23,39 @@ public final class Atom {
 	private final List<Consumer> consumers;
 
 	// TODO: These will be turned into a list of CreateParticles in the future
-	private final List<AbstractConsumable> consumables;
-	private final List<DataParticle> dataParticles;
-	private final UniqueParticle uniqueParticle;
-	private final ChronoParticle chronoParticle;
-	private final AssetParticle asset;
+	private final List<Particle> particles;
 
 	private final Map<String, ECSignature> signatures;
 
 	private transient Map<String, Long> debug = new HashMap<>();
 
-	public Atom(
-		List<DataParticle> dataParticles,
-		List<Consumer> consumers,
-		List<AbstractConsumable> consumables,
-		UniqueParticle uniqueParticle,
-		AssetParticle asset,
-		long timestamp
-	) {
-		this.dataParticles = dataParticles;
-		this.chronoParticle = new ChronoParticle(timestamp);
+	public Atom(List<Particle> particles, List<Consumer> consumers) {
+		this.particles = particles;
 		this.consumers = consumers;
-		this.consumables = consumables;
-		this.uniqueParticle = uniqueParticle;
-		this.asset = asset;
 		this.signatures = null;
 	}
 
 	private Atom(
-		List<DataParticle> dataParticles,
-		List<Consumer> consumers,
-		List<AbstractConsumable> consumables,
-		UniqueParticle uniqueParticle,
-		AssetParticle asset,
-		long timestamp,
+		List<Particle> particles, List<Consumer> consumers,
 		EUID signatureId,
 		ECSignature signature
 	) {
-		this.dataParticles = dataParticles;
+		this.particles = particles;
 		this.consumers = consumers;
-		this.consumables = consumables;
-		this.uniqueParticle = uniqueParticle;
-		this.asset = asset;
-		this.chronoParticle = new ChronoParticle(timestamp);
 		this.signatures = Collections.singletonMap(signatureId.toString(), signature);
 	}
 
 	public Atom withSignature(ECSignature signature, EUID signatureId) {
 		return new Atom(
-			dataParticles,
+			particles,
 			consumers,
-			consumables,
-			uniqueParticle,
-			asset,
-			getTimestamp(),
 			signatureId,
 			signature
 		);
+	}
+
+	private List<Particle> getParticles() {
+		return particles != null ? particles : Collections.emptyList();
 	}
 
 	public Set<Long> getShards() {
@@ -105,7 +81,10 @@ public final class Atom {
 
 
 	public Long getTimestamp() {
-		return chronoParticle.getTimestamp();
+		return this.getParticles().stream()
+			.filter(p -> p instanceof ChronoParticle)
+			.map(p -> ((ChronoParticle) p).getTimestamp()).findAny()
+			.orElse(0L);
 	}
 
 	public Map<String, ECSignature> getSignatures() {
@@ -121,7 +100,10 @@ public final class Atom {
 	}
 
 	public List<AbstractConsumable> getConsumables() {
-		return consumables == null ? Collections.emptyList() : Collections.unmodifiableList(consumables);
+		return this.getParticles().stream()
+			.filter(p -> p instanceof AbstractConsumable)
+			.map(p -> (AbstractConsumable)p)
+			.collect(Collectors.toList());
 	}
 
 	public byte[] toDson() {
@@ -137,11 +119,10 @@ public final class Atom {
 	}
 
 	public List<DataParticle> getDataParticles() {
-		return dataParticles == null ? Collections.emptyList() : Collections.unmodifiableList(dataParticles);
-	}
-
-	public UniqueParticle getUniqueParticle() {
-		return uniqueParticle;
+		return this.getParticles().stream()
+			.filter(p -> p instanceof DataParticle)
+			.map(p -> (DataParticle)p)
+			.collect(Collectors.toList());
 	}
 
 	public Map<Set<ECPublicKey>, Map<EUID, Long>> summary() {

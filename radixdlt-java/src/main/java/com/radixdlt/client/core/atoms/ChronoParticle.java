@@ -6,10 +6,12 @@ import java.util.Map;
 /**
  * Particle which stores time related aspects of an atom.
  */
-public class ChronoParticle {
+public class ChronoParticle extends Particle {
 	private final Map<String, Long> timestamps;
 
 	public ChronoParticle(long timestamp) {
+		super(1);
+
 		this.timestamps = Collections.singletonMap("default", timestamp);
 	}
 

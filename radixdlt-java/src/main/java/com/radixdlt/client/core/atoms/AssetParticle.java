@@ -5,7 +5,7 @@ import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import java.util.Set;
 
-public class AssetParticle {
+public class AssetParticle extends Particle {
 	private final Set<ECKeyPair> owners;
 	private final String type;
 	@SerializedName("sub_units")
@@ -33,6 +33,8 @@ public class AssetParticle {
 		String classification,
 		byte[] icon
 	) {
+		super(1);
+
 		this.owners = owners;
 		this.id = id;
 		this.type = type;

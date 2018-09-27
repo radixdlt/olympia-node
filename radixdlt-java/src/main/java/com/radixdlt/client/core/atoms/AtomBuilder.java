@@ -2,6 +2,7 @@ package com.radixdlt.client.core.atoms;
 
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class AtomBuilder {
@@ -57,14 +58,13 @@ public class AtomBuilder {
 	}
 
 	public UnsignedAtom build(long timestamp) {
-		return new UnsignedAtom(new Atom(
-			dataParticles.isEmpty() ? null : dataParticles,
-			consumers.isEmpty() ? null : consumers, // Pretty nasty hack here. Need to fix.
-			consumables,
-			uniqueParticle,
-			null,
-			timestamp
-		));
+		List<Particle> particles = new ArrayList<>();
+		particles.addAll(dataParticles);
+		particles.addAll(consumables);
+		if (uniqueParticle != null) {
+			particles.add(uniqueParticle);
+		}
+		return new UnsignedAtom(new Atom(particles, consumers.isEmpty() ? null : consumers));
 	}
 
 	// Temporary method for testing

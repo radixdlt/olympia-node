@@ -9,7 +9,7 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public abstract class AbstractConsumable {
+public abstract class AbstractConsumable extends Particle {
 	private final Set<EUID> destinations;
 	private final Set<ECKeyPair> owners;
 	private final long quantity;
@@ -18,6 +18,8 @@ public abstract class AbstractConsumable {
 	private final EUID assetId;
 
 	AbstractConsumable(long quantity, Set<ECKeyPair> owners, long nonce, EUID assetId) {
+		super(1);
+
 		this.destinations = owners.stream().map(ECKeyPair::getUID).collect(Collectors.toSet());
 		this.owners = owners;
 		this.quantity = quantity;
