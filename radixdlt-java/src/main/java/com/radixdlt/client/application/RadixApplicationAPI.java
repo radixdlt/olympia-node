@@ -114,15 +114,30 @@ public class RadixApplicationAPI {
 	/**
 	 * Idempotent method which prefetches atoms in user's account
 	 * TODO: what to do when no puller available
+	 *
 	 * @return Disposable to dispose to stop pulling
 	 */
 	public Disposable pull() {
+		return pull(getMyAddress());
+	}
+
+	/**
+	 * Idempotent method which prefetches atoms in an address
+	 * TODO: what to do when no puller available
+	 *
+	 * @param address the address to pull atoms from
+	 * @return Disposable to dispose to stop pulling
+	 */
+	public Disposable pull(RadixAddress address) {
+		Objects.requireNonNull(address);
+
 		if (ledger.getAtomPuller() != null) {
-			return ledger.getAtomPuller().pull(getMyPublicKey().getUID());
+			return ledger.getAtomPuller().pull(address.getUID());
 		} else {
 			return Disposables.disposed();
 		}
 	}
+
 
 	public ECPublicKey getMyPublicKey() {
 		return identity.getPublicKey();
@@ -139,7 +154,7 @@ public class RadixApplicationAPI {
 	public Observable<Data> getData(RadixAddress address) {
 		Objects.requireNonNull(address);
 
-		pull();
+		pull(address);
 
 		return ledger.getAtomStore().getAtoms(address.getUID())
 			.filter(Atom::isMessageAtom)
@@ -194,7 +209,7 @@ public class RadixApplicationAPI {
 		Objects.requireNonNull(address);
 		Objects.requireNonNull(tokenClass);
 
-		pull();
+		pull(address);
 
 		return Observable.combineLatest(
 			Observable.fromCallable(() -> new TransactionAtoms(address, tokenClass.getId())),
@@ -216,7 +231,7 @@ public class RadixApplicationAPI {
 		Objects.requireNonNull(address);
 		Objects.requireNonNull(tokenClass);
 
-		pull();
+		pull(address);
 
 		return ledger.getParticleStore().getConsumables(address)
 			.map(Collection::stream)
