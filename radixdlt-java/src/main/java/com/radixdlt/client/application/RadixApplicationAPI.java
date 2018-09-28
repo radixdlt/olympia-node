@@ -233,8 +233,8 @@ public class RadixApplicationAPI {
 		return ledger.getParticleStore().getConsumables(address)
 			.map(Collection::stream)
 			.map(stream -> stream
-				.filter(consumable -> consumable.getAssetId().equals(tokenClass.getId()))
-				.mapToLong(Consumable::getQuantity)
+				.filter(consumable -> consumable.getTokenClass().equals(tokenClass.getId()))
+				.mapToLong(Consumable::getAmount)
 				.sum()
 			)
 			.map(balanceInSubUnits -> Amount.subUnitsOf(balanceInSubUnits, tokenClass))

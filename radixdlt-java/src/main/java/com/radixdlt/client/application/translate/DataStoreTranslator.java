@@ -38,7 +38,9 @@ public class DataStoreTranslator {
 		DataParticle dataParticle = new DataParticleBuilder()
 			.payload(payload)
 			.setMetaData("application", application)
+			.accounts(dataStore.getAddresses())
 			.build();
+
 		atomBuilder.addDataParticle(dataParticle);
 		Encryptor encryptor = dataStore.getData().getEncryptor();
 		if (encryptor != null) {
@@ -53,8 +55,6 @@ public class DataStoreTranslator {
 				.build();
 			atomBuilder.addDataParticle(encryptorParticle);
 		}
-		//TODO: add this into data particle
-		//dataStore.getAddresses().forEach(atomBuilder::addDestination);
 
 		return Completable.complete();
 	}

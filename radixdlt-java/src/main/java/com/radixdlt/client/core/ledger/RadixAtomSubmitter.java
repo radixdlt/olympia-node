@@ -35,7 +35,7 @@ public class RadixAtomSubmitter implements AtomSubmitter {
 	 */
 	public Observable<AtomSubmissionUpdate> submitAtom(Atom atom) {
 		Observable<AtomSubmissionUpdate> status = clientSelector.apply(atom.getRequiredFirstShard())
-			.doOnSuccess(client -> LOGGER.info("Found client to submit atom: {}", client.getLocation()))
+			.doOnSuccess(client -> LOGGER.info("Found client to submit atom {}: {}", atom.getHid(), client.getLocation()))
 			.doOnError(throwable -> {
 				LOGGER.warn("Error on submitAtom {} {}", atom.getHid(), throwable.getMessage());
 			})

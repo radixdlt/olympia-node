@@ -114,7 +114,7 @@ public class RadixJsonRpcClient {
 			Single.<JsonElement>create(emitter -> {
 				final String uuid = UUID.randomUUID().toString();
 
-				JsonObject requestObject = new JsonObject();
+				final JsonObject requestObject = new JsonObject();
 				requestObject.addProperty("id", uuid);
 				requestObject.addProperty("method", method);
 				requestObject.add("params", params);

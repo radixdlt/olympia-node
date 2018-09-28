@@ -1,7 +1,6 @@
 package com.radixdlt.client.core.atoms;
 
 import com.radixdlt.client.core.address.EUID;
-import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.crypto.ECSignature;
 import com.radixdlt.client.core.serialization.Dson;
@@ -58,11 +57,10 @@ public final class Atom {
 		return particles != null ? particles : Collections.emptyList();
 	}
 
-	public Set<Long> getShards() {
-		return consumers.stream()
-			.map(Consumer::getOwners)
+	private Set<Long> getShards() {
+		return getParticles().stream()
+			.map(Particle::getDestinations)
 			.flatMap(Set::stream)
-			.map(ECKeyPair::getUID)
 			.map(EUID::getShard)
 			.collect(Collectors.toSet());
 	}
@@ -102,7 +100,7 @@ public final class Atom {
 	public List<AbstractConsumable> getConsumables() {
 		return this.getParticles().stream()
 			.filter(p -> p instanceof AbstractConsumable)
-			.map(p -> (AbstractConsumable)p)
+			.map(p -> (AbstractConsumable) p)
 			.collect(Collectors.toList());
 	}
 
@@ -121,7 +119,7 @@ public final class Atom {
 	public List<DataParticle> getDataParticles() {
 		return this.getParticles().stream()
 			.filter(p -> p instanceof DataParticle)
-			.map(p -> (DataParticle)p)
+			.map(p -> (DataParticle) p)
 			.collect(Collectors.toList());
 	}
 
@@ -130,7 +128,7 @@ public final class Atom {
 			.collect(Collectors.groupingBy(
 				AbstractConsumable::getOwnersPublicKeys,
 				Collectors.groupingBy(
-					AbstractConsumable::getAssetId,
+					AbstractConsumable::getTokenClass,
 					Collectors.summingLong(AbstractConsumable::getSignedQuantity)
 				)
 			));
@@ -141,7 +139,7 @@ public final class Atom {
 			.collect(Collectors.groupingBy(
 				AbstractConsumable::getOwnersPublicKeys,
 				Collectors.groupingBy(
-					AbstractConsumable::getAssetId,
+					AbstractConsumable::getTokenClass,
 					Collectors.mapping(AbstractConsumable::getSignedQuantity, Collectors.toList())
 				)
 			));

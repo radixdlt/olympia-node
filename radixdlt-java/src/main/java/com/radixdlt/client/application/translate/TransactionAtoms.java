@@ -49,7 +49,7 @@ public class TransactionAtoms {
 	private void addConsumables(Atom atom, ObservableEmitter<Atom> emitter) {
 		atom.getConsumers().stream()
 			.filter(particle -> particle.getOwnersPublicKeys().stream().allMatch(address::ownsKey))
-			.filter(particle -> particle.getAssetId().equals(assetId))
+			.filter(particle -> particle.getTokenClass().equals(assetId))
 			.forEach(consumer -> {
 				ByteBuffer dson = ByteBuffer.wrap(consumer.getDson());
 				Consumable consumable = unconsumedConsumables.remove(dson);
@@ -60,7 +60,7 @@ public class TransactionAtoms {
 
 		atom.getConsumables().stream()
 			.filter(particle -> particle.getOwnersPublicKeys().stream().allMatch(address::ownsKey))
-			.filter(particle -> particle.getAssetId().equals(assetId))
+			.filter(particle -> particle.getTokenClass().equals(assetId))
 			.forEach(particle -> {
 				ByteBuffer dson = ByteBuffer.wrap(particle.getDson());
 				unconsumedConsumables.compute(dson, (thisHash, current) -> {
@@ -81,7 +81,7 @@ public class TransactionAtoms {
 	private void checkConsumers(Atom transactionAtom, ObservableEmitter<Atom> emitter) {
 		Optional<ByteBuffer> missing = transactionAtom.getConsumers().stream()
 			.filter(particle -> particle.getOwnersPublicKeys().stream().allMatch(address::ownsKey))
-			.filter(particle -> particle.getAssetId().equals(assetId))
+			.filter(particle -> particle.getTokenClass().equals(assetId))
 			.map(AbstractConsumable::getDson)
 			.map(ByteBuffer::wrap)
 			.filter(dson -> !unconsumedConsumables.containsKey(dson))

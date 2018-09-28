@@ -1,54 +1,68 @@
 package com.radixdlt.client.core.atoms;
 
 import com.google.gson.annotations.SerializedName;
+import com.radixdlt.client.core.TokenClassReference;
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.serialization.Dson;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public abstract class AbstractConsumable extends Particle {
-	private final Set<EUID> destinations;
-	private final Set<ECKeyPair> owners;
-	private final long quantity;
+public abstract class AbstractConsumable implements Particle {
+	private final List<AccountReference> addresses;
+	private final long amount;
 	private final long nonce;
-	@SerializedName("asset_id")
-	private final EUID assetId;
+	private final long spin;
+	private final long planck;
+	@SerializedName("token_reference")
+	private final TokenClassReference tokenClassReference;
 
-	AbstractConsumable(long quantity, Set<ECKeyPair> owners, long nonce, EUID assetId) {
-		super(1);
-
-		this.destinations = owners.stream().map(ECKeyPair::getUID).collect(Collectors.toSet());
-		this.owners = owners;
-		this.quantity = quantity;
+	AbstractConsumable(long amount, List<AccountReference> addresses, long nonce, EUID tokenReference, long planck) {
+		this.spin = 1;
+		this.addresses = addresses;
+		this.amount = amount;
 		this.nonce = nonce;
-		this.assetId = assetId;
+		this.tokenClassReference = new TokenClassReference(tokenReference, new EUID(0));
+		this.planck = planck;
+	}
+
+	public List<AccountReference> getAddresses() {
+		return addresses;
+	}
+
+	public long getPlanck() {
+		return planck;
+	}
+
+	public long getSpin() {
+		return spin;
 	}
 
 	public long getNonce() {
 		return nonce;
 	}
 
-	public EUID getAssetId() {
-		return assetId;
+	public EUID getTokenClass() {
+		return tokenClassReference.getToken();
 	}
 
-	public long getQuantity() {
-		return quantity;
+	public long getAmount() {
+		return amount;
 	}
 
 	public Set<EUID> getDestinations() {
-		return destinations;
+		return getOwnersPublicKeys().stream().map(ECPublicKey::getUID).collect(Collectors.toSet());
 	}
 
 	public Set<ECPublicKey> getOwnersPublicKeys() {
-		return owners == null ? Collections.emptySet() : owners.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toSet());
+		return addresses == null ? Collections.emptySet() : addresses.stream().map(AccountReference::getKey).collect(Collectors.toSet());
 	}
 
 	public Set<ECKeyPair> getOwners() {
-		return owners;
+		return getOwnersPublicKeys().stream().map(ECPublicKey::toECKeyPair).collect(Collectors.toSet());
 	}
 
 	public boolean isAbstractConsumable() {
@@ -85,7 +99,7 @@ public abstract class AbstractConsumable extends Particle {
 
 	@Override
 	public String toString() {
-		return this.getClass().getName() + " owners(" + owners + ")";
+		return this.getClass().getName() + " owners(" + addresses + ")";
 	}
 
 	public abstract long getSignedQuantity();

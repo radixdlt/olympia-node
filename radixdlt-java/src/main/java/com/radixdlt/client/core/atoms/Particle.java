@@ -1,9 +1,9 @@
 package com.radixdlt.client.core.atoms;
 
-public abstract class Particle {
-	private final long spin;
+import com.radixdlt.client.core.address.EUID;
+import java.util.Set;
 
-	Particle(long spin) {
-		this.spin = spin;
-	}
+public interface Particle {
+	long getSpin();
+	Set<EUID> getDestinations();
 }

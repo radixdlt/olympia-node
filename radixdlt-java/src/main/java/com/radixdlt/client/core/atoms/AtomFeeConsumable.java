@@ -1,11 +1,13 @@
 package com.radixdlt.client.core.atoms;
 
 import com.radixdlt.client.core.address.EUID;
-import com.radixdlt.client.core.crypto.ECKeyPair;
-import java.util.Set;
+import java.util.List;
 
 public class AtomFeeConsumable extends Consumable {
-	public AtomFeeConsumable(long quantity, Set<ECKeyPair> owners, long nonce, EUID assetId) {
-		super(quantity, owners, nonce, assetId);
+	private final EUID service;
+	public AtomFeeConsumable(long quantity, List<AccountReference> addresses, long nonce, EUID assetId, long planck) {
+		super(quantity, addresses, nonce, assetId, planck);
+
+		this.service = new EUID(1);
 	}
 }

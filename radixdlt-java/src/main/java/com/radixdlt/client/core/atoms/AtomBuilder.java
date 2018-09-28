@@ -2,7 +2,6 @@ package com.radixdlt.client.core.atoms;
 
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 public class AtomBuilder {
@@ -64,6 +63,7 @@ public class AtomBuilder {
 		if (uniqueParticle != null) {
 			particles.add(uniqueParticle);
 		}
+		particles.add(new ChronoParticle(timestamp));
 		return new UnsignedAtom(new Atom(particles, consumers.isEmpty() ? null : consumers));
 	}
 

@@ -1,5 +1,7 @@
 package com.radixdlt.client.core.serialization;
 
+import com.radixdlt.client.core.TokenClassReference;
+import com.radixdlt.client.core.atoms.AccountReference;
 import com.radixdlt.client.core.atoms.AssetParticle;
 import java.io.IOException;
 import java.lang.reflect.Type;
@@ -38,7 +40,6 @@ import com.radixdlt.client.core.atoms.Emission;
 import com.radixdlt.client.core.atoms.MetadataMap;
 import com.radixdlt.client.core.atoms.Particle;
 import com.radixdlt.client.core.atoms.Payload;
-import com.radixdlt.client.core.atoms.UniqueParticle;
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.crypto.ECSignature;
@@ -92,19 +93,19 @@ public class RadixJson {
 		);
 	};
 
-	private static final Map<Class<? extends Particle>, Long> particles = new HashMap<>();
+	private static final Map<Class<? extends Particle>, Long> PARTICLE_SERIALIZER_IDS = new HashMap<>();
 	static {
-		particles.put(AtomFeeConsumable.class, -1463653224L);
-		particles.put(Consumable.class, 318720611L);
-		particles.put(Emission.class, 1341978856L);
-		particles.put(DataParticle.class, 473758768L);
-		//particles.put(UniqueParticle.class, Long.valueOf("UNIQUEPARTICLE".hashCode()));
-		particles.put(ChronoParticle.class, 1080087081L);
-		particles.put(AssetParticle.class, -1034420571L);
+		PARTICLE_SERIALIZER_IDS.put(AtomFeeConsumable.class, new Integer("FEEPARTICLE".hashCode()).longValue());
+		PARTICLE_SERIALIZER_IDS.put(Consumable.class, 318720611L);
+		PARTICLE_SERIALIZER_IDS.put(Emission.class, 1341978856L);
+		PARTICLE_SERIALIZER_IDS.put(DataParticle.class, 473758768L);
+		//PARTICLE_SERIALIZER_IDS.put(UniqueParticle.class, Long.valueOf("UNIQUEPARTICLE".hashCode()));
+		PARTICLE_SERIALIZER_IDS.put(ChronoParticle.class, new Integer("CHRONOPARTICLE".hashCode()).longValue());
+		PARTICLE_SERIALIZER_IDS.put(AssetParticle.class, -1034420571L);
 	}
 
 	private static final JsonSerializer<Particle> PARTICLE_SERIALIZER = (particle, typeOfT, context) -> {
-		Number id = particles.get(particle.getClass());
+		Number id = PARTICLE_SERIALIZER_IDS.get(particle.getClass());
 		if (id != null) {
 			JsonObject jsonParticle = context.serialize(particle).getAsJsonObject();
 			jsonParticle.addProperty("serializer", id);
@@ -117,9 +118,9 @@ public class RadixJson {
 
 	private static final JsonDeserializer<Particle> PARTICLE_DESERIALIZER = (json, typeOf, context) -> {
 		long serializer = json.getAsJsonObject().get("serializer").getAsLong();
-		Optional c = particles.entrySet().stream().filter(e -> e.getValue().equals(serializer)).map(Entry::getKey).findFirst();
+		Optional c = PARTICLE_SERIALIZER_IDS.entrySet().stream().filter(e -> e.getValue().equals(serializer)).map(Entry::getKey).findFirst();
 		if (c.isPresent()) {
-			return context.deserialize(json.getAsJsonObject(), (Class)c.get());
+			return context.deserialize(json.getAsJsonObject(), (Class) c.get());
 		}
 
 		throw new RuntimeException("Unknown particle serializer: " + serializer);
@@ -188,8 +189,9 @@ public class RadixJson {
 		SERIALIZERS.put(Atom.class, 2019665);
 		SERIALIZERS.put(ECKeyPair.class, 547221307);
 		SERIALIZERS.put(ECSignature.class, -434788200);
-
+		SERIALIZERS.put(TokenClassReference.class, "TOKENCLASSREFERENCE".hashCode());
 		SERIALIZERS.put(Consumer.class, 214856694);
+		SERIALIZERS.put(AccountReference.class, "ACCOUNTREFERENCE".hashCode());
 	}
 
 	private static final TypeAdapterFactory ECKEYPAIR_ADAPTER_FACTORY = new TypeAdapterFactory() {
