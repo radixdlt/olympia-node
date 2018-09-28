@@ -113,7 +113,13 @@ public class TokenTransferTranslator {
 				// Translate attachment to corresponding atom structure
 				final Data attachment = tokenTransfer.getAttachment();
 				if (attachment != null) {
-					atomBuilder.addDataParticle(new DataParticleBuilder().payload(new Payload(attachment.getBytes())).build());
+					atomBuilder.addDataParticle(
+						new DataParticleBuilder()
+							.payload(new Payload(attachment.getBytes()))
+							.account(tokenTransfer.getFrom())
+							.account(tokenTransfer.getTo())
+							.build()
+					);
 					Encryptor encryptor = attachment.getEncryptor();
 					if (encryptor != null) {
 						JsonArray protectorsJson = new JsonArray();
@@ -124,6 +130,8 @@ public class TokenTransferTranslator {
 							.payload(encryptorPayload)
 							.setMetaData("application", "encryptor")
 							.setMetaData("contentType", "application/json")
+							.account(tokenTransfer.getFrom())
+							.account(tokenTransfer.getTo())
 							.build();
 						atomBuilder.addDataParticle(encryptorParticle);
 					}

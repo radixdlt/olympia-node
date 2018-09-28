@@ -96,7 +96,7 @@ public class RadixJson {
 	private static final Map<Class<? extends Particle>, Long> PARTICLE_SERIALIZER_IDS = new HashMap<>();
 	static {
 		PARTICLE_SERIALIZER_IDS.put(AtomFeeConsumable.class, new Integer("FEEPARTICLE".hashCode()).longValue());
-		PARTICLE_SERIALIZER_IDS.put(Consumable.class, 318720611L);
+		PARTICLE_SERIALIZER_IDS.put(Consumable.class, new Integer("TRANSFERPARTICLE".hashCode()).longValue());
 		PARTICLE_SERIALIZER_IDS.put(Emission.class, 1341978856L);
 		PARTICLE_SERIALIZER_IDS.put(DataParticle.class, 473758768L);
 		//PARTICLE_SERIALIZER_IDS.put(UniqueParticle.class, Long.valueOf("UNIQUEPARTICLE".hashCode()));

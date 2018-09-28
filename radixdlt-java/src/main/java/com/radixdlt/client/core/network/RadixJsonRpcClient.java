@@ -136,7 +136,7 @@ public class RadixJsonRpcClient {
 							if (received.has("result")) {
 								emitter.onSuccess(received.get("result"));
 							} else if (received.has("error")) {
-								emitter.onError(new RuntimeException(received.toString()));
+								emitter.onError(new JsonRpcException(requestObject, received));
 							} else {
 								emitter.onError(
 									new RuntimeException("Received bad json rpc message: " + received.toString())
@@ -348,6 +348,12 @@ public class RadixJsonRpcClient {
 				.subscribe(
 					msg -> emitter.onNext(AtomSubmissionUpdate.create(atom.getHid(), AtomSubmissionState.SUBMITTED)),
 					throwable -> {
+						if (throwable instanceof JsonRpcException) {
+							JsonRpcException e = (JsonRpcException) throwable;
+							LOGGER.warn(e.getRequest().toString());
+							LOGGER.warn(e.getError().toString());
+						}
+
 						emitter.onNext(
 							AtomSubmissionUpdate.create(
 								atom.getHid(),
