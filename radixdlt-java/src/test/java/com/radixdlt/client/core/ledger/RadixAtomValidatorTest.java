@@ -4,7 +4,7 @@ import com.radixdlt.client.assets.Asset;
 import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomValidationException;
-import com.radixdlt.client.core.atoms.Consumer;
+import com.radixdlt.client.core.atoms.Consumable;
 import com.radixdlt.client.core.atoms.RadixHash;
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECPublicKey;
@@ -30,9 +30,7 @@ public class RadixAtomValidatorTest {
 		when(keyPair.getPublicKey()).thenReturn(publicKey);
 		when(publicKey.getUID()).thenReturn(new EUID(1));
 
-		Consumer consumer = mock(Consumer.class);
-		when(consumer.isAbstractConsumable()).thenReturn(true);
-		when(consumer.getAsAbstractConsumable()).thenReturn(consumer);
+		Consumable consumer = mock(Consumable.class);
 		when(consumer.getOwnersPublicKeys()).thenReturn(Collections.singleton(publicKey));
 		when(consumer.getTokenClass()).thenReturn(Asset.TEST.getId());
 
@@ -55,12 +53,6 @@ public class RadixAtomValidatorTest {
 		when(keyPair.getUID()).thenReturn(new EUID(1));
 		when(keyPair.getPublicKey()).thenReturn(publicKey);
 		when(publicKey.getUID()).thenReturn(new EUID(1));
-
-		Consumer consumer = mock(Consumer.class);
-		when(consumer.isAbstractConsumable()).thenReturn(true);
-		when(consumer.getAsAbstractConsumable()).thenReturn(consumer);
-		when(consumer.getOwnersPublicKeys()).thenReturn(Collections.singleton(publicKey));
-		when(consumer.getTokenClass()).thenReturn(Asset.TEST.getId());
 
 		Atom atom = mock(Atom.class);
 		when(atom.getHash()).thenReturn(hash);

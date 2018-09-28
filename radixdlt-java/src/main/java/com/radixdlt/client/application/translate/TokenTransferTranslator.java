@@ -11,7 +11,6 @@ import com.radixdlt.client.core.atoms.AccountReference;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomBuilder;
 import com.radixdlt.client.core.atoms.Consumable;
-import com.radixdlt.client.core.atoms.Consumer;
 import com.radixdlt.client.core.atoms.DataParticle;
 import com.radixdlt.client.core.atoms.DataParticle.DataParticleBuilder;
 import com.radixdlt.client.core.atoms.Payload;
@@ -147,14 +146,14 @@ public class TokenTransferTranslator {
 				while (consumerTotal < tokenTransfer.getSubUnitAmount() && iterator.hasNext()) {
 					final long left = tokenTransfer.getSubUnitAmount() - consumerTotal;
 
-					Consumer newConsumer = iterator.next().toConsumer();
+					Consumable newConsumer = iterator.next().toConsumer();
 					consumerTotal += newConsumer.getAmount();
 
 					final long amount = Math.min(left, newConsumer.getAmount());
 					newConsumer.addConsumerQuantities(amount, Collections.singleton(tokenTransfer.getTo().toECKeyPair()),
 						consumerQuantities);
 
-					atomBuilder.addConsumer(newConsumer);
+					atomBuilder.addConsumable(newConsumer);
 				}
 
 				if (consumerTotal < tokenTransfer.getSubUnitAmount()) {
@@ -167,7 +166,7 @@ public class TokenTransferTranslator {
 					.map(entry -> new Consumable(entry.getValue(),
 						entry.getKey().stream().map(ECKeyPair::getPublicKey).map(AccountReference::new)
 							.collect(Collectors.toList()),
-						System.nanoTime(), Asset.TEST.getId(), System.currentTimeMillis() * 60000L))
+						System.nanoTime(), Asset.TEST.getId(), System.currentTimeMillis() / 60000L, 1))
 					.collect(Collectors.toList());
 				atomBuilder.addConsumables(consumables);
 

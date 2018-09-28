@@ -20,8 +20,8 @@ public abstract class AbstractConsumable implements Particle {
 	@SerializedName("token_reference")
 	private final TokenClassReference tokenClassReference;
 
-	AbstractConsumable(long amount, List<AccountReference> addresses, long nonce, EUID tokenReference, long planck) {
-		this.spin = 1;
+	AbstractConsumable(long amount, List<AccountReference> addresses, long nonce, EUID tokenReference, long planck, long spin) {
+		this.spin = spin;
 		this.addresses = addresses;
 		this.amount = amount;
 		this.nonce = nonce;
@@ -63,30 +63,6 @@ public abstract class AbstractConsumable implements Particle {
 
 	public Set<ECKeyPair> getOwners() {
 		return getOwnersPublicKeys().stream().map(ECPublicKey::toECKeyPair).collect(Collectors.toSet());
-	}
-
-	public boolean isAbstractConsumable() {
-		return this instanceof AbstractConsumable;
-	}
-
-	public boolean isConsumable() {
-		return this instanceof Consumable;
-	}
-
-	public boolean isConsumer() {
-		return this instanceof Consumer;
-	}
-
-	public Consumer getAsConsumer() {
-		return (Consumer) this;
-	}
-
-	public Consumable getAsConsumable() {
-		return (Consumable) this;
-	}
-
-	public AbstractConsumable getAsAbstractConsumable() {
-		return (AbstractConsumable) this;
 	}
 
 	public RadixHash getHash() {

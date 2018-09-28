@@ -7,7 +7,6 @@ import java.util.List;
 public class AtomBuilder {
 	private static final int POW_LEADING_ZEROES_REQUIRED = 16;
 	private List<AbstractConsumable> consumables = new ArrayList<>();
-	private List<Consumer> consumers = new ArrayList<>();
 	private List<DataParticle> dataParticles = new ArrayList<>();
 	private UniqueParticle uniqueParticle;
 
@@ -21,11 +20,6 @@ public class AtomBuilder {
 
 	public AtomBuilder addDataParticle(DataParticle dataParticle) {
 		this.dataParticles.add(dataParticle);
-		return this;
-	}
-
-	public AtomBuilder addConsumer(Consumer consumer) {
-		this.consumers.add(consumer);
 		return this;
 	}
 
@@ -64,7 +58,7 @@ public class AtomBuilder {
 			particles.add(uniqueParticle);
 		}
 		particles.add(new ChronoParticle(timestamp));
-		return new UnsignedAtom(new Atom(particles, consumers.isEmpty() ? null : consumers));
+		return new UnsignedAtom(new Atom(particles));
 	}
 
 	// Temporary method for testing

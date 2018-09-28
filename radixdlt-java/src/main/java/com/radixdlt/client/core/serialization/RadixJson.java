@@ -34,7 +34,6 @@ import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomFeeConsumable;
 import com.radixdlt.client.core.atoms.ChronoParticle;
 import com.radixdlt.client.core.atoms.Consumable;
-import com.radixdlt.client.core.atoms.Consumer;
 import com.radixdlt.client.core.atoms.DataParticle;
 import com.radixdlt.client.core.atoms.Emission;
 import com.radixdlt.client.core.atoms.MetadataMap;
@@ -190,7 +189,6 @@ public class RadixJson {
 		SERIALIZERS.put(ECKeyPair.class, 547221307);
 		SERIALIZERS.put(ECSignature.class, -434788200);
 		SERIALIZERS.put(TokenClassReference.class, "TOKENCLASSREFERENCE".hashCode());
-		SERIALIZERS.put(Consumer.class, 214856694);
 		SERIALIZERS.put(AccountReference.class, "ACCOUNTREFERENCE".hashCode());
 	}
 

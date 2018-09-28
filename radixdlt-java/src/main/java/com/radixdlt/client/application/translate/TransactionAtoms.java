@@ -65,7 +65,7 @@ public class TransactionAtoms {
 				ByteBuffer dson = ByteBuffer.wrap(particle.getDson());
 				unconsumedConsumables.compute(dson, (thisHash, current) -> {
 					if (current == null) {
-						return particle.getAsConsumable();
+						return particle;
 					} else {
 						throw new IllegalStateException("Consumable already exists.");
 					}

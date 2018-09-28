@@ -9,7 +9,7 @@ import org.junit.Test;
 public class AtomTest {
 	@Test
 	public void testNullAtom() {
-		Atom atom = new Atom(null, null);
+		Atom atom = new Atom(null);
 		assertTrue(atom.getDataParticles().isEmpty());
 		assertTrue(atom.getConsumables().isEmpty());
 		assertTrue(atom.getConsumers().isEmpty());
@@ -20,6 +20,6 @@ public class AtomTest {
 		assertEquals(new Long(0), atom.getTimestamp());
 		assertNotNull(atom.toString());
 
-		assertEquals(atom, new Atom(null, null));
+		assertEquals(atom, new Atom(null));
 	}
 }

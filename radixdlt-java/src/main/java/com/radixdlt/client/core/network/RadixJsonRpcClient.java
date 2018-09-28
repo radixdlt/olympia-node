@@ -327,6 +327,11 @@ public class RadixJsonRpcClient {
 					} else {
 						message = null;
 					}
+
+					if (state == AtomSubmissionState.VALIDATION_ERROR) {
+						LOGGER.warn(jsonAtom.toString());
+					}
+
 					AtomSubmissionUpdate update = AtomSubmissionUpdate.create(atom.getHid(), state, message);
 					update.putMetaData("jsonRpcParams", params);
 					return update;

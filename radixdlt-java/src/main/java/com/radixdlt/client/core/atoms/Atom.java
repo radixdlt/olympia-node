@@ -18,36 +18,29 @@ import java.util.stream.Stream;
  * in a blockchain) and defines the actions that can be issued onto the ledger.
  */
 public final class Atom {
-	// TODO: These will be turned into a list of DeleteParticles in the future
-	private final List<Consumer> consumers;
-
-	// TODO: These will be turned into a list of CreateParticles in the future
 	private final List<Particle> particles;
 
 	private final Map<String, ECSignature> signatures;
 
 	private transient Map<String, Long> debug = new HashMap<>();
 
-	public Atom(List<Particle> particles, List<Consumer> consumers) {
+	public Atom(List<Particle> particles) {
 		this.particles = particles;
-		this.consumers = consumers;
 		this.signatures = null;
 	}
 
 	private Atom(
-		List<Particle> particles, List<Consumer> consumers,
+		List<Particle> particles,
 		EUID signatureId,
 		ECSignature signature
 	) {
 		this.particles = particles;
-		this.consumers = consumers;
 		this.signatures = Collections.singletonMap(signatureId.toString(), signature);
 	}
 
 	public Atom withSignature(ECSignature signature, EUID signatureId) {
 		return new Atom(
 			particles,
-			consumers,
 			signatureId,
 			signature
 		);
@@ -67,8 +60,9 @@ public final class Atom {
 
 	// HACK
 	public Set<Long> getRequiredFirstShard() {
-		if (this.consumers != null && !this.consumers.isEmpty()) {
-			return consumers.stream()
+		if (this.particles.stream().anyMatch(p -> p.getSpin() == 0)) {
+			return particles.stream()
+				.filter(p -> p.getSpin() == 0)
 				.flatMap(consumer -> consumer.getDestinations().stream())
 				.map(EUID::getShard)
 				.collect(Collectors.toSet());
@@ -93,14 +87,19 @@ public final class Atom {
 		return Optional.ofNullable(signatures).map(sigs -> sigs.get(uid.toString()));
 	}
 
-	public List<Consumer> getConsumers() {
-		return consumers == null ? Collections.emptyList() : Collections.unmodifiableList(consumers);
+	public List<Consumable> getConsumers() {
+		return this.getParticles().stream()
+			.filter(p -> p instanceof Consumable)
+			.filter(p -> p.getSpin() == 0)
+			.map(p -> (Consumable) p)
+			.collect(Collectors.toList());
 	}
 
-	public List<AbstractConsumable> getConsumables() {
+	public List<Consumable> getConsumables() {
 		return this.getParticles().stream()
-			.filter(p -> p instanceof AbstractConsumable)
-			.map(p -> (AbstractConsumable) p)
+			.filter(p -> p instanceof Consumable)
+			.filter(p -> p.getSpin() == 1)
+			.map(p -> (Consumable) p)
 			.collect(Collectors.toList());
 	}
 

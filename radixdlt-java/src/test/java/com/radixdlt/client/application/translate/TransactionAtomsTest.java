@@ -9,7 +9,6 @@ import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.AccountReference;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.Consumable;
-import com.radixdlt.client.core.atoms.Consumer;
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import io.reactivex.observers.TestObserver;
@@ -29,7 +28,7 @@ public class TransactionAtomsTest {
 		when(address.ownsKey(any(ECKeyPair.class))).thenReturn(true);
 		when(address.ownsKey(any(ECPublicKey.class))).thenReturn(true);
 
-		Consumer consumer = mock(Consumer.class);
+		Consumable consumer = mock(Consumable.class);
 		when(consumer.getTokenClass()).thenReturn(Asset.TEST.getId());
 		when(consumer.getOwnersPublicKeys()).thenReturn(Collections.singleton(ecPublicKey));
 		when(consumer.getDson()).thenReturn(new byte[] {0});
@@ -61,7 +60,7 @@ public class TransactionAtomsTest {
 		RadixAddress address = mock(RadixAddress.class);
 		when(address.ownsKey(ecPublicKey)).thenReturn(true);
 
-		Consumer consumer = mock(Consumer.class);
+		Consumable consumer = mock(Consumable.class);
 		when(consumer.getTokenClass()).thenReturn(Asset.TEST.getId());
 		when(consumer.getOwnersPublicKeys()).thenReturn(Collections.singleton(ecPublicKey));
 		when(consumer.getDson()).thenReturn(new byte[] {0});
@@ -70,7 +69,6 @@ public class TransactionAtomsTest {
 		when(consumable.getTokenClass()).thenReturn(Asset.TEST.getId());
 		when(consumable.getOwnersPublicKeys()).thenReturn(Collections.singleton(ecPublicKey));
 		when(consumable.getDson()).thenReturn(new byte[] {1});
-		when(consumable.getAsConsumable()).thenReturn(consumable);
 
 		Atom atom = mock(Atom.class);
 		when(atom.getConsumers()).thenReturn(Collections.singletonList(consumer));
@@ -80,9 +78,8 @@ public class TransactionAtomsTest {
 		when(oldConsumable.getTokenClass()).thenReturn(Asset.TEST.getId());
 		when(oldConsumable.getOwnersPublicKeys()).thenReturn(Collections.singleton(ecPublicKey));
 		when(oldConsumable.getDson()).thenReturn(new byte[] {0});
-		when(oldConsumable.getAsConsumable()).thenReturn(oldConsumable);
 
-		Consumer oldConsumer = mock(Consumer.class);
+		Consumable oldConsumer = mock(Consumable.class);
 		when(oldConsumer.getTokenClass()).thenReturn(Asset.TEST.getId());
 		when(oldConsumer.getOwnersPublicKeys()).thenReturn(Collections.singleton(mock(ECPublicKey.class)));
 		when(oldConsumer.getDson()).thenReturn(new byte[] {2});
