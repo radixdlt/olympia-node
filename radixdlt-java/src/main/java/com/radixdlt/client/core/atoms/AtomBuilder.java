@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class AtomBuilder {
+	private static final int POW_LEADING_ZEROES_REQUIRED = 16;
 	private List<AbstractConsumable> consumables = new ArrayList<>();
 	private List<Consumer> consumers = new ArrayList<>();
 	private List<DataParticle> dataParticles = new ArrayList<>();
@@ -45,11 +46,10 @@ public class AtomBuilder {
 		UnsignedAtom unsignedAtom = this.build(timestamp);
 
 		// Rebuild with atom fee
-		int size = unsignedAtom.getRawAtom().toDson().length;
 		AtomFeeConsumable fee = new AtomFeeConsumableBuilder()
 			.atom(unsignedAtom)
 			.owner(owner)
-			.pow(magic, (int) Math.ceil(Math.log(size * 8.0)))
+			.pow(magic, POW_LEADING_ZEROES_REQUIRED)
 			.build();
 		this.addConsumable(fee);
 

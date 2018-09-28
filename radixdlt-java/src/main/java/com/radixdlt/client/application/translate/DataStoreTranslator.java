@@ -52,6 +52,7 @@ public class DataStoreTranslator {
 				.payload(encryptorPayload)
 				.setMetaData("application", "encryptor")
 				.setMetaData("contentType", "application/json")
+				.accounts(dataStore.getAddresses())
 				.build();
 			atomBuilder.addDataParticle(encryptorParticle);
 		}
