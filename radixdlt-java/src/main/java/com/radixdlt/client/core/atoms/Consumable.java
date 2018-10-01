@@ -7,17 +7,17 @@ import java.util.Map;
 import java.util.Set;
 
 public class Consumable extends AbstractConsumable {
-	public Consumable(long quantity, List<AccountReference> addresses, long nonce, EUID assetId, long planck, long spin) {
+	public Consumable(long quantity, List<AccountReference> addresses, long nonce, EUID assetId, long planck, Spin spin) {
 		super(quantity, addresses, nonce, assetId, planck, spin);
 	}
 
 	@Override
 	public long getSignedQuantity() {
-		return getSpin() == 1 ? getAmount() : getSpin() == 2 ? -1 * getAmount() : 0;
+		return getSpin() == Spin.UP ? getAmount() : getSpin() == Spin.DOWN ? -1 * getAmount() : 0;
 	}
 
 	public Consumable toConsumer() {
-		return new Consumable(getAmount(), getAddresses(), getNonce(), getTokenClass(), getPlanck(), 2);
+		return new Consumable(getAmount(), getAddresses(), getNonce(), getTokenClass(), getPlanck(), Spin.DOWN);
 	}
 
 	public void addConsumerQuantities(long amount, Set<ECKeyPair> newOwners, Map<Set<ECKeyPair>, Long> consumerQuantities) {

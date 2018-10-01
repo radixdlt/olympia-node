@@ -5,6 +5,6 @@ import java.util.List;
 
 public class Emission extends Consumable {
 	public Emission(long quantity, List<AccountReference> addresses, long nonce, EUID assetId, long planck) {
-		super(quantity, addresses, nonce, assetId, planck, 1);
+		super(quantity, addresses, nonce, assetId, planck, Spin.UP);
 	}
 }

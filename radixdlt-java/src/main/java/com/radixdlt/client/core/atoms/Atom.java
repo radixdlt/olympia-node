@@ -60,9 +60,9 @@ public final class Atom {
 
 	// HACK
 	public Set<Long> getRequiredFirstShard() {
-		if (this.particles.stream().anyMatch(p -> p.getSpin() == 0)) {
+		if (this.particles.stream().anyMatch(p -> p.getSpin() == Spin.DOWN)) {
 			return particles.stream()
-				.filter(p -> p.getSpin() == 0)
+				.filter(p -> p.getSpin() == Spin.DOWN)
 				.flatMap(consumer -> consumer.getDestinations().stream())
 				.map(EUID::getShard)
 				.collect(Collectors.toSet());
@@ -90,7 +90,7 @@ public final class Atom {
 	public List<Consumable> getConsumers() {
 		return this.getParticles().stream()
 			.filter(p -> p instanceof Consumable)
-			.filter(p -> p.getSpin() == 2)
+			.filter(p -> p.getSpin() == Spin.DOWN)
 			.map(p -> (Consumable) p)
 			.collect(Collectors.toList());
 	}
@@ -98,7 +98,7 @@ public final class Atom {
 	public List<Consumable> getConsumables() {
 		return this.getParticles().stream()
 			.filter(p -> p instanceof Consumable)
-			.filter(p -> p.getSpin() == 1)
+			.filter(p -> p.getSpin() == Spin.UP)
 			.map(p -> (Consumable) p)
 			.collect(Collectors.toList());
 	}

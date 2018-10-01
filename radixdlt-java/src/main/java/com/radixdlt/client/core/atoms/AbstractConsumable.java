@@ -15,12 +15,12 @@ public abstract class AbstractConsumable implements Particle {
 	private final List<AccountReference> addresses;
 	private final long amount;
 	private final long nonce;
-	private final long spin;
+	private final Spin spin;
 	private final long planck;
 	@SerializedName("token_reference")
 	private final TokenClassReference tokenClassReference;
 
-	AbstractConsumable(long amount, List<AccountReference> addresses, long nonce, EUID tokenReference, long planck, long spin) {
+	AbstractConsumable(long amount, List<AccountReference> addresses, long nonce, EUID tokenReference, long planck, Spin spin) {
 		this.spin = spin;
 		this.addresses = addresses;
 		this.amount = amount;
@@ -37,7 +37,7 @@ public abstract class AbstractConsumable implements Particle {
 		return planck;
 	}
 
-	public long getSpin() {
+	public Spin getSpin() {
 		return spin;
 	}
 

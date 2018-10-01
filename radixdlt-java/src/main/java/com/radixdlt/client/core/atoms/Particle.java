@@ -4,7 +4,7 @@ import com.radixdlt.client.core.address.EUID;
 import java.util.Set;
 
 public interface Particle {
-	long getSpin();
+	Spin getSpin();
 	Set<EUID> getDestinations();
 
 }

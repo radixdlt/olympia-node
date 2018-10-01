@@ -20,7 +20,7 @@ public class AssetParticle implements Particle {
 	private final String classification;
 	private final byte[] icon;
 	private final EUID id;
-	private final long spin;
+	private final Spin spin;
 
 	public AssetParticle(
 		Set<ECKeyPair> owners,
@@ -35,7 +35,7 @@ public class AssetParticle implements Particle {
 		String classification,
 		byte[] icon
 	) {
-		this.spin = 1;
+		this.spin = Spin.UP;
 		this.owners = owners;
 		this.id = id;
 		this.type = type;
@@ -54,7 +54,7 @@ public class AssetParticle implements Particle {
 		return Collections.singleton(id);
 	}
 
-	public long getSpin() {
+	public Spin getSpin() {
 		return spin;
 	}
 }

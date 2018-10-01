@@ -10,14 +10,14 @@ import java.util.Set;
  */
 public class ChronoParticle implements Particle {
 	private final Map<String, Long> timestamps;
-	private final long spin;
+	private final Spin spin;
 
 	public ChronoParticle(long timestamp) {
-		this.spin = 1;
+		this.spin = Spin.UP;
 		this.timestamps = Collections.singletonMap("default", timestamp);
 	}
 
-	public long getSpin() {
+	public Spin getSpin() {
 		return spin;
 	}
 

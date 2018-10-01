@@ -57,12 +57,12 @@ public class DataParticle implements Particle {
 	 */
 	private final Payload bytes;
 
-	private final long spin;
+	private final Spin spin;
 
 	private DataParticle(Payload bytes, MetadataMap metaData, List<AccountReference> addresses) {
 		Objects.requireNonNull(bytes);
 
-		this.spin = 1;
+		this.spin = Spin.UP;
 		this.bytes = bytes;
 		this.metaData = metaData;
 		this.addresses = addresses;
@@ -80,7 +80,7 @@ public class DataParticle implements Particle {
 		return metaData.get(key);
 	}
 
-	public long getSpin() {
+	public Spin getSpin() {
 		return spin;
 	}
 

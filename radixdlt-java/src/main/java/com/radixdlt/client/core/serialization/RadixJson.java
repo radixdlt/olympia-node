@@ -3,6 +3,7 @@ package com.radixdlt.client.core.serialization;
 import com.radixdlt.client.core.TokenClassReference;
 import com.radixdlt.client.core.atoms.AccountReference;
 import com.radixdlt.client.core.atoms.AssetParticle;
+import com.radixdlt.client.core.atoms.Spin;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.HashMap;
@@ -79,6 +80,12 @@ public class RadixJson {
 		byte[] encryptedPrivateKey = Base64.decode(checkPrefix(json.getAsString(), BYT_PREFIX));
 		return new EncryptedPrivateKey(encryptedPrivateKey);
 	};
+
+	private static final JsonSerializer<Spin> SPIN_JSON_SERIALIZER =
+		(src, typeOf, context) -> new JsonPrimitive(src.ordinalValue());
+
+	private static final JsonDeserializer<Spin> SPIN_JSON_DESERIALIZER =
+		(json, typeOf, context) -> Spin.valueOf(json.getAsInt());
 
 	private static final JsonDeserializer<RadixUniverseType> UNIVERSE_TYPE_DESERIALIZER =
 		(json, typeOf, context) -> RadixUniverseType.valueOf(json.getAsInt());
@@ -238,6 +245,8 @@ public class RadixJson {
 			.registerTypeAdapter(EncryptedPrivateKey.class, PROTECTOR_DESERIALIZER)
 			.registerTypeAdapter(ECPublicKey.class, PK_DESERIALIZER)
 			.registerTypeAdapter(RadixUniverseType.class, UNIVERSE_TYPE_DESERIALIZER)
+			.registerTypeAdapter(Spin.class, SPIN_JSON_DESERIALIZER)
+			.registerTypeAdapter(Spin.class, SPIN_JSON_SERIALIZER)
 			.registerTypeAdapter(NodeRunnerData.class, NODE_RUNNER_DATA_JSON_DESERIALIZER);
 
 		GSON = gsonBuilder.create();

@@ -11,13 +11,13 @@ public class UniqueParticle implements Particle {
 	private final Payload unique;
 	private final Set<EUID> destinations;
 	private final Set<ECKeyPair> owners;
-	private final long spin;
+	private final Spin spin;
 
 	// TODO: make immutable
 	public UniqueParticle(Payload unique, Set<EUID> destinations, Set<ECKeyPair> owners) {
 		Objects.requireNonNull(unique);
 
-		this.spin = 1;
+		this.spin = Spin.UP;
 		this.destinations = destinations;
 		this.owners = owners;
 		this.unique = unique;
@@ -27,7 +27,7 @@ public class UniqueParticle implements Particle {
 		return destinations;
 	}
 
-	public long getSpin() {
+	public Spin getSpin() {
 		return spin;
 	}
 
