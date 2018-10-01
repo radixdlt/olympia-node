@@ -3,6 +3,7 @@ package com.radixdlt.client.core.network;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.JsonPrimitive;
 import com.google.gson.reflect.TypeToken;
 import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
@@ -321,18 +322,18 @@ public class RadixJsonRpcClient {
 				.filter(p -> p.get("subscriberId").getAsString().equals(subscriberId))
 				.map(p -> {
 					final AtomSubmissionState state = AtomSubmissionState.valueOf(p.get("value").getAsString());
-					final String message;
-					if (p.has("message")) {
-						message = p.get("message").getAsString();
+					final JsonElement data;
+					if (p.has("data")) {
+						data = p.get("data");
 					} else {
-						message = null;
+						data = null;
 					}
 
 					if (state == AtomSubmissionState.VALIDATION_ERROR) {
 						LOGGER.warn(jsonAtom.toString());
 					}
 
-					AtomSubmissionUpdate update = AtomSubmissionUpdate.create(atom.getHid(), state, message);
+					AtomSubmissionUpdate update = AtomSubmissionUpdate.create(atom, state, data);
 					update.putMetaData("jsonRpcParams", params);
 					return update;
 				})
@@ -347,11 +348,11 @@ public class RadixJsonRpcClient {
 			Disposable methodDisposable = this.jsonRpcCall("Universe.submitAtomAndSubscribe", params)
 				.doOnSubscribe(
 					disposable -> emitter.onNext(
-						AtomSubmissionUpdate.create(atom.getHid(), AtomSubmissionState.SUBMITTING)
+						AtomSubmissionUpdate.create(atom, AtomSubmissionState.SUBMITTING)
 					)
 				)
 				.subscribe(
-					msg -> emitter.onNext(AtomSubmissionUpdate.create(atom.getHid(), AtomSubmissionState.SUBMITTED)),
+					msg -> emitter.onNext(AtomSubmissionUpdate.create(atom, AtomSubmissionState.SUBMITTED)),
 					throwable -> {
 						if (throwable instanceof JsonRpcException) {
 							JsonRpcException e = (JsonRpcException) throwable;
@@ -361,9 +362,9 @@ public class RadixJsonRpcClient {
 
 						emitter.onNext(
 							AtomSubmissionUpdate.create(
-								atom.getHid(),
+								atom,
 								AtomSubmissionState.FAILED,
-								throwable.getMessage()
+								new JsonPrimitive(throwable.getMessage())
 							)
 						);
 						emitter.onComplete();

@@ -46,7 +46,7 @@ public final class Atom {
 		);
 	}
 
-	private List<Particle> getParticles() {
+	public List<Particle> getParticles() {
 		return particles != null ? particles : Collections.emptyList();
 	}
 
@@ -90,7 +90,7 @@ public final class Atom {
 	public List<Consumable> getConsumers() {
 		return this.getParticles().stream()
 			.filter(p -> p instanceof Consumable)
-			.filter(p -> p.getSpin() == 0)
+			.filter(p -> p.getSpin() == 2)
 			.map(p -> (Consumable) p)
 			.collect(Collectors.toList());
 	}

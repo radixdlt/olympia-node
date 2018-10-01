@@ -13,4 +13,9 @@ public class AccountReference {
 	public ECPublicKey getKey() {
 		return key.getPublicKey();
 	}
+
+	@Override
+	public String toString() {
+		return key.getPublicKey().toString();
+	}
 }

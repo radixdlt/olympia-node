@@ -1,5 +1,6 @@
 package com.radixdlt.client.application;
 
+import com.google.gson.JsonObject;
 import com.radixdlt.client.application.actions.DataStore;
 import com.radixdlt.client.application.actions.TokenTransfer;
 import com.radixdlt.client.application.actions.UniqueProperty;
@@ -21,6 +22,7 @@ import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState;
 import com.radixdlt.client.application.translate.TransactionAtoms;
+import com.radixdlt.client.core.serialization.RadixJson;
 import io.reactivex.Completable;
 import io.reactivex.Maybe;
 import io.reactivex.Observable;
@@ -32,12 +34,16 @@ import io.reactivex.observables.ConnectableObservable;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.function.Supplier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The Radix Dapp API, a high level api which dapps can utilize. The class hides
  * the complexity of Atoms and cryptography and exposes a simple high level interface.
  */
 public class RadixApplicationAPI {
+	private static final Logger LOGGER = LoggerFactory.getLogger(RadixApplicationAPI.class);
+
 	public static class Result {
 		private final Observable<AtomSubmissionUpdate> updates;
 		private final Completable completable;
@@ -51,7 +57,7 @@ public class RadixApplicationAPI {
 					if (update.getState() == AtomSubmissionState.STORED) {
 						return Completable.complete();
 					} else {
-						return Completable.error(new RuntimeException(update.getMessage()));
+						return Completable.error(new RuntimeException(update.getData().toString()));
 					}
 				});
 		}
@@ -332,6 +338,18 @@ public class RadixApplicationAPI {
 			unsignedAtom
 			.flatMap(identity::sign)
 			.flatMapObservable(ledger.getAtomSubmitter()::submitAtom)
+			.doOnNext(update -> {
+				//TODO: retry on collision
+				if (update.getState() == AtomSubmissionState.COLLISION) {
+					JsonObject data = update.getData().getAsJsonObject();
+					String jsonPointer = data.getAsJsonPrimitive("pointerToConflict").getAsString();
+					LOGGER.info("ParticleConflict: pointer({}) cause({}) atom({})",
+						jsonPointer,
+						data.getAsJsonPrimitive("cause").getAsString(),
+						RadixJson.getGson().toJson(update.getAtom())
+					);
+				}
+			})
 			.replay();
 
 		updates.connect();
