@@ -166,7 +166,7 @@ public class TokenTransferTranslator {
 					.map(entry -> new Consumable(entry.getValue(),
 						entry.getKey().stream().map(ECKeyPair::getPublicKey).map(AccountReference::new)
 							.collect(Collectors.toList()),
-						System.nanoTime(), Asset.TEST.getId(), System.currentTimeMillis() / 60000L, 1))
+						System.nanoTime(), Asset.TEST.getId(), System.currentTimeMillis() / 60000L + 60000L, 1))
 					.collect(Collectors.toList());
 				atomBuilder.addConsumables(consumables);
 
