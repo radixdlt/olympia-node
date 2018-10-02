@@ -208,9 +208,9 @@ public class RadixJsonRpcClientTest {
 		}).when(wsClient).send(any());
 		RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(wsClient);
 
-		TestObserver<ApplicationPayloadAtom> observer = new TestObserver<>();
+		TestObserver<Atom> observer = new TestObserver<>();
 
-		jsonRpcClient.getAtoms(new AtomQuery<>(new EUID(BigInteger.ONE), ApplicationPayloadAtom.class)).subscribe(observer);
+		jsonRpcClient.getAtoms(new EUID(BigInteger.ONE)).subscribe(observer);
 
 		observer.assertNoErrors();
 		observer.assertValueCount(1);
@@ -265,9 +265,9 @@ public class RadixJsonRpcClientTest {
 		}).when(wsClient).send(any());
 		RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(wsClient);
 
-		TestObserver<ApplicationPayloadAtom> observer = new TestObserver<>();
+		TestObserver<Atom> observer = new TestObserver<>();
 
-		jsonRpcClient.getAtoms(new AtomQuery<>(new EUID(BigInteger.ONE), ApplicationPayloadAtom.class))
+		jsonRpcClient.getAtoms(new EUID(BigInteger.ONE))
 			.subscribe(observer);
 		observer.cancel();
 
