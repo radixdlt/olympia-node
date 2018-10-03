@@ -11,7 +11,7 @@ public final class RadixUniverseConfigs {
     }
 
     public static RadixUniverseConfig getSunstone() {
-        return RadixUniverseConfig.fromInputStream(getConfigFileStream("testuniverse.json"));
+        return RadixUniverseConfig.fromInputStream(getConfigFileStream("sunstone.json"));
     }
 
     public static RadixUniverseConfig getHighgarden() {
