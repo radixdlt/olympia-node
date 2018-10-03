@@ -44,6 +44,10 @@ public class TransactionAtoms {
 		this.assetId = assetId;
 	}
 
+	public Collection<Consumable> getUnconsumedConsumables() {
+		return unconsumedConsumables.values();
+	}
+
 	private void addConsumables(TransactionAtom transactionAtom, ObservableEmitter<TransactionAtom> emitter) {
 		transactionAtom.getParticles().stream()
 			.filter(Particle::isAbstractConsumable)
