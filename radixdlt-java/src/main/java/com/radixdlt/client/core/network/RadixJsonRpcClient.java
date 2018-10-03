@@ -19,9 +19,6 @@ import java.util.List;
 import com.radixdlt.client.core.atoms.Atom;
 
 import java.util.UUID;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -295,16 +292,14 @@ public class RadixJsonRpcClient {
 
 		return this.jsonRpcSubscribe("Atoms.subscribe", params, "Atoms.subscribeUpdate")
 			.map(JsonElement::getAsJsonObject)
-			.flatMapIterable(observedAtomsJson -> {
+			.flatMap(observedAtomsJson -> {
 				JsonArray atomsJson = observedAtomsJson.getAsJsonArray("atoms");
-				Stream<AtomObservation> atomsObserved = StreamSupport.stream(atomsJson.spliterator(), false)
-					.map(atomJson -> RadixJson.getGson().fromJson(atomJson, Atom.class))
-					.map(AtomObservation::storeAtom);
-
 				boolean isHead = observedAtomsJson.has("isHead") && observedAtomsJson.get("isHead").getAsBoolean();
-				Stream<AtomObservation> headObserved = isHead ? Stream.of(AtomObservation.head()) : Stream.empty();
 
-				return Stream.concat(atomsObserved, headObserved).collect(Collectors.toList());
+				return Observable.fromIterable(atomsJson)
+					.map(atomJson -> RadixJson.getGson().fromJson(atomJson, Atom.class))
+					.map(AtomObservation::storeAtom)
+					.concatWith(Maybe.fromCallable(() -> isHead ? AtomObservation.head() : null));
 			});
 	}
 
