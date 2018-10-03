@@ -1,9 +1,7 @@
 package com.radixdlt.client.core.ledger;
 
 import com.radixdlt.client.core.address.EUID;
-import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.atoms.AtomValidationException;
-import com.radixdlt.client.core.network.AtomQuery;
+import com.radixdlt.client.core.atoms.AtomObservation;
 import com.radixdlt.client.core.network.IncreasingRetryTimer;
 import com.radixdlt.client.core.network.RadixJsonRpcClient;
 import io.reactivex.Observable;
@@ -27,24 +25,13 @@ public class AtomFetcher {
 		this.clientSelector = clientSelector;
 	}
 
-	public Observable<Atom> fetchAtoms(EUID destination) {
-		final AtomQuery<Atom> atomQuery = new AtomQuery<>(destination, Atom.class);
+	public Observable<AtomObservation> fetchAtoms(EUID destination) {
 		return clientSelector.apply(destination.getShard())
-			.flatMapObservable(client -> client.getAtoms(atomQuery))
+			.flatMapObservable(client -> client.getAtoms(destination))
 			.doOnError(throwable -> {
 				LOGGER.warn("Error on getAllAtoms: {}", destination);
 			})
 			.retryWhen(new IncreasingRetryTimer())
-			.filter(atom -> {
-				try {
-					RadixAtomValidator.getInstance().validate(atom);
-					return true;
-				} catch (AtomValidationException e) {
-					// TODO: Stop stream and mark client as untrustable
-					LOGGER.error(e.toString());
-					return false;
-				}
-			})
 			.doOnSubscribe(atoms -> LOGGER.info("Atom Query Subscribe: destination({})", destination));
 	}
 }

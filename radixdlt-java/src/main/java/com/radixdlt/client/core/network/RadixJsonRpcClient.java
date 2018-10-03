@@ -1,11 +1,13 @@
 package com.radixdlt.client.core.network;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
+import com.radixdlt.client.core.atoms.AtomObservation;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState;
 import com.radixdlt.client.core.network.WebSocketClient.RadixClientStatus;
 import com.radixdlt.client.core.serialization.RadixJson;
@@ -279,22 +281,25 @@ public class RadixJsonRpcClient {
 	 *  Retrieves all atoms from a node specified by a query. This includes all past
 	 *  and future atoms. The Observable returned will never complete.
 	 *
-	 * @param atomQuery query specifying which atoms to retrieve
-	 * @param <T> atom type
+	 * @param destination atoms at a particular destination
 	 * @return observable of atoms
 	 */
-	public <T extends Atom> Observable<T> getAtoms(AtomQuery<T> atomQuery) {
+	public Observable<AtomObservation> getAtoms(EUID destination) {
 		final JsonObject params = new JsonObject();
-		params.add("query", atomQuery.toJson());
+		JsonObject query = new JsonObject();
+		query.addProperty("destination", destination.bigInteger());
+		params.add("query", query);
 
 		return this.jsonRpcSubscribe("Atoms.subscribe", params, "Atoms.subscribeUpdate")
-			.map(p -> p.getAsJsonObject().get("atoms").getAsJsonArray())
-			.flatMapIterable(array -> array)
 			.map(JsonElement::getAsJsonObject)
-			.map(jsonAtom -> RadixJson.getGson().fromJson(jsonAtom, atomQuery.getAtomClass()))
-			.map(atom -> {
-				atom.putDebug("RECEIVED", System.currentTimeMillis());
-				return atom;
+			.flatMap(observedAtomsJson -> {
+				JsonArray atomsJson = observedAtomsJson.getAsJsonArray("atoms");
+				boolean isHead = observedAtomsJson.has("isHead") && observedAtomsJson.get("isHead").getAsBoolean();
+
+				return Observable.fromIterable(atomsJson)
+					.map(atomJson -> RadixJson.getGson().fromJson(atomJson, Atom.class))
+					.map(AtomObservation::storeAtom)
+					.concatWith(Maybe.fromCallable(() -> isHead ? AtomObservation.head() : null));
 			});
 	}
 
