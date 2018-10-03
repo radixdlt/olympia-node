@@ -22,6 +22,7 @@ import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.ApplicationPayloadAtom;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomBuilder;
+import com.radixdlt.client.core.atoms.AtomObservation;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.crypto.CryptoException;
 import com.radixdlt.client.application.identity.RadixIdentity;
@@ -189,7 +190,7 @@ public class RadixApplicationAPITest {
 		when(okAtom.getAsMessageAtom()).thenReturn(okAtom);
 
 		Ledger ledger = mock(Ledger.class);
-		when(ledger.getAtomStore()).thenReturn(euid -> Observable.just(errorAtom, okAtom));
+		when(ledger.getAtomStore()).thenReturn(euid -> Observable.just(errorAtom, okAtom).map(AtomObservation::storeAtom));
 		when(universe.getLedger()).thenReturn(ledger);
 
 		RadixApplicationAPI api = RadixApplicationAPI.create(identity, universe, dataStoreTranslator, AtomBuilder::new);

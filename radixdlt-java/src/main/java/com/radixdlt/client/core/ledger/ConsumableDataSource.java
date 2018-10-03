@@ -5,6 +5,7 @@ import com.radixdlt.client.assets.Asset;
 import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.client.core.atoms.AtomObservation;
 import com.radixdlt.client.core.atoms.Consumable;
 import io.reactivex.Observable;
 import java.util.Collection;
@@ -14,10 +15,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 public class ConsumableDataSource implements ParticleStore {
-	private final Function<EUID, Observable<Atom>> atomStore;
+	private final Function<EUID, Observable<AtomObservation>> atomStore;
 	private final ConcurrentHashMap<RadixAddress, Observable<Collection<Consumable>>> cache = new ConcurrentHashMap<>();
 
-	public ConsumableDataSource(Function<EUID, Observable<Atom>> atomStore) {
+	public ConsumableDataSource(Function<EUID, Observable<AtomObservation>> atomStore) {
 		this.atomStore = atomStore;
 	}
 
@@ -28,11 +29,11 @@ public class ConsumableDataSource implements ParticleStore {
 				Observable.combineLatest(
 					Observable.fromCallable(() -> new TransactionAtoms(address, Asset.TEST.getId())),
 					atomStore.apply(address.getUID())
-					.filter(Atom::isTransactionAtom)
-					.map(Atom::getAsTransactionAtom),
-					(transactionAtoms, atom) ->
-						transactionAtoms.accept(atom)
-							.getUnconsumedConsumables()
+						.filter(AtomObservation::isStore)
+						.map(AtomObservation::getAtom)
+						.filter(Atom::isTransactionAtom)
+						.map(Atom::getAsTransactionAtom),
+					(transactionAtoms, atom) -> transactionAtoms.accept(atom).getUnconsumedConsumables()
 				).flatMapMaybe(unconsumedMaybe -> unconsumedMaybe)
 			).debounce(1000, TimeUnit.MILLISECONDS)
 				.replay(1).autoConnect()

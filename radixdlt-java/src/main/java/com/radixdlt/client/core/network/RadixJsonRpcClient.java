@@ -1,11 +1,13 @@
 package com.radixdlt.client.core.network;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
+import com.radixdlt.client.core.atoms.AtomObservation;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState;
 import com.radixdlt.client.core.network.WebSocketClient.RadixClientStatus;
 import com.radixdlt.client.core.serialization.RadixJson;
@@ -17,6 +19,9 @@ import java.util.List;
 import com.radixdlt.client.core.atoms.Atom;
 
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -282,20 +287,24 @@ public class RadixJsonRpcClient {
 	 * @param destination atoms at a particular destination
 	 * @return observable of atoms
 	 */
-	public Observable<Atom> getAtoms(EUID destination) {
+	public Observable<AtomObservation> getAtoms(EUID destination) {
 		final JsonObject params = new JsonObject();
 		JsonObject query = new JsonObject();
 		query.addProperty("destination", destination.bigInteger());
 		params.add("query", query);
 
 		return this.jsonRpcSubscribe("Atoms.subscribe", params, "Atoms.subscribeUpdate")
-			.map(p -> p.getAsJsonObject().get("atoms").getAsJsonArray())
-			.flatMapIterable(array -> array)
 			.map(JsonElement::getAsJsonObject)
-			.map(jsonAtom -> RadixJson.getGson().fromJson(jsonAtom, Atom.class))
-			.map(atom -> {
-				atom.putDebug("RECEIVED", System.currentTimeMillis());
-				return atom;
+			.flatMapIterable(observedAtomsJson -> {
+				JsonArray atomsJson = observedAtomsJson.getAsJsonArray("atoms");
+				Stream<AtomObservation> atomsObserved = StreamSupport.stream(atomsJson.spliterator(), false)
+					.map(atomJson -> RadixJson.getGson().fromJson(atomJson, Atom.class))
+					.map(AtomObservation::storeAtom);
+
+				boolean isHead = observedAtomsJson.has("isHead") && observedAtomsJson.get("isHead").getAsBoolean();
+				Stream<AtomObservation> headObserved = isHead ? Stream.of(AtomObservation.head()) : Stream.empty();
+
+				return Stream.concat(atomsObserved, headObserved).collect(Collectors.toList());
 			});
 	}
 

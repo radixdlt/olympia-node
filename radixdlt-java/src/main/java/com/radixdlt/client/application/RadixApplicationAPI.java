@@ -15,6 +15,7 @@ import com.radixdlt.client.core.RadixUniverse.Ledger;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomBuilder;
+import com.radixdlt.client.core.atoms.AtomObservation;
 import com.radixdlt.client.core.atoms.Consumable;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
@@ -157,6 +158,8 @@ public class RadixApplicationAPI {
 		pull(address);
 
 		return ledger.getAtomStore().getAtoms(address.getUID())
+			.filter(AtomObservation::isStore)
+			.map(AtomObservation::getAtom)
 			.filter(Atom::isMessageAtom)
 			.map(Atom::getAsMessageAtom)
 			.map(dataStoreTranslator::fromAtom);
@@ -214,6 +217,8 @@ public class RadixApplicationAPI {
 		return Observable.combineLatest(
 			Observable.fromCallable(() -> new TransactionAtoms(address, tokenClass.getId())),
 			ledger.getAtomStore().getAtoms(address.getUID())
+				.filter(AtomObservation::isStore)
+				.map(AtomObservation::getAtom)
 				.filter(Atom::isTransactionAtom)
 				.map(Atom::getAsTransactionAtom),
 			(transactionAtoms, atom) ->
