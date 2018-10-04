@@ -204,7 +204,7 @@ public class RadixApplicationAPITest {
 		Ledger ledger = mock(Ledger.class);
 		when(universe.getLedger()).thenReturn(ledger);
 		when(ledger.getAtomStore()).thenReturn(euid -> Observable.empty());
-		when(ledger.getParticleStore()).thenReturn(euid -> Observable.empty());
+		when(ledger.getParticleStore()).thenReturn(euid -> Observable.never());
 
 		RadixAddress address = mock(RadixAddress.class);
 		RadixIdentity identity = mock(RadixIdentity.class);
@@ -213,7 +213,7 @@ public class RadixApplicationAPITest {
 		TestObserver<Amount> observer = TestObserver.create();
 
 		api.getBalance(address, Asset.TEST).subscribe(observer);
-		observer.awaitTerminalEvent();
+		observer.awaitCount(1);
 		observer.assertValue(amount -> amount.getAmountInSubunits() == 0);
 	}
 

@@ -5,18 +5,16 @@ import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.assets.Asset;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.address.RadixAddress;
-import com.radixdlt.client.core.atoms.AbstractConsumable;
 import com.radixdlt.client.core.atoms.AtomBuilder;
-import com.radixdlt.client.core.atoms.AtomFeeConsumable;
 import com.radixdlt.client.core.atoms.Consumable;
 import com.radixdlt.client.core.atoms.Consumer;
-import com.radixdlt.client.core.atoms.RadixHash;
 import com.radixdlt.client.core.atoms.TransactionAtom;
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
 import com.radixdlt.client.core.ledger.ParticleStore;
 import io.reactivex.Completable;
+import io.reactivex.Observable;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Collections;
 import java.util.HashMap;
@@ -24,12 +22,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 public class TokenTransferTranslator {
 	private final RadixUniverse universe;
 	private final ParticleStore particleStore;
+	private final ConcurrentHashMap<RadixAddress, AddressTokenReducer> cache = new ConcurrentHashMap<>();
 
 	public TokenTransferTranslator(RadixUniverse universe, ParticleStore particleStore) {
 		this.universe = universe;
@@ -80,22 +79,15 @@ public class TokenTransferTranslator {
 		return TokenTransfer.create(from, to, Asset.TEST, Math.abs(summary.get(0).getValue()), attachment, transactionAtom.getTimestamp());
 	}
 
+	public Observable<AddressTokenState> getTokenState(RadixAddress address) {
+		return cache.computeIfAbsent(address, addr -> new AddressTokenReducer(addr, particleStore)).getState();
+	}
+
 	public Completable translate(TokenTransfer tokenTransfer, AtomBuilder atomBuilder) {
 		atomBuilder.type(TransactionAtom.class);
 
-		return this.particleStore.getConsumables(tokenTransfer.getFrom())
-			.filter(p -> !(p instanceof AtomFeeConsumable))
-			.scanWith(HashMap<RadixHash, AbstractConsumable>::new, (map, p) -> {
-				HashMap<RadixHash, AbstractConsumable> newMap = new HashMap<>(map);
-				newMap.put(p.getHash(), p);
-				return newMap;
-			})
-			.map(map -> map.values().stream()
-				.filter(AbstractConsumable::isConsumable)
-				.map(AbstractConsumable::getAsConsumable)
-				.collect(Collectors.toList())
-			)
-			.debounce(1000, TimeUnit.MILLISECONDS)
+		return getTokenState(tokenTransfer.getFrom())
+			.map(AddressTokenState::getUnconsumedConsumables)
 			.firstOrError()
 			.flatMapCompletable(unconsumedConsumables -> {
 
