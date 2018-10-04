@@ -1,5 +1,7 @@
 package com.radixdlt.client.core.ledger;
 
+import com.radixdlt.client.application.translate.TransactionAtoms;
+import com.radixdlt.client.assets.Asset;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.Atom;
 import io.reactivex.Observable;
@@ -29,13 +31,24 @@ public class InMemoryAtomStore implements AtomStore {
 	}
 
 	/**
-	 * Returns an unending stream of atoms which are stored at a particular destination.
+	 * Returns an unending stream of validated atoms which are stored at a particular destination.
 	 *
 	 * @param address address (which determines shard) to query atoms for
 	 * @return an Atom Observable
 	 */
 	public Observable<Atom> getAtoms(RadixAddress address) {
 		Objects.requireNonNull(address);
-		return cache.computeIfAbsent(address, euid -> ReplaySubject.create()).distinct();
+		return Observable.just(new TransactionAtoms(address, Asset.TEST.getId()))
+			.flatMap(txAtoms ->
+				cache.computeIfAbsent(address, euid -> ReplaySubject.create())
+					.distinct()
+					.flatMap(atom -> {
+						if (atom.isTransactionAtom()) {
+							return txAtoms.accept(atom.getAsTransactionAtom()).getNewValidTransactions();
+						} else {
+							return Observable.just(atom);
+						}
+					})
+			);
 	}
 }

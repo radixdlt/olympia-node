@@ -13,9 +13,10 @@ import com.radixdlt.client.assets.Asset;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.RadixUniverse.Ledger;
 import com.radixdlt.client.core.address.RadixAddress;
+import com.radixdlt.client.core.atoms.AbstractConsumable;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomBuilder;
-import com.radixdlt.client.core.atoms.Consumable;
+import com.radixdlt.client.core.atoms.AtomFeeConsumable;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.crypto.ECPublicKey;
@@ -29,8 +30,8 @@ import io.reactivex.annotations.Nullable;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.disposables.Disposables;
 import io.reactivex.observables.ConnectableObservable;
-import java.util.Collection;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 /**
@@ -234,12 +235,11 @@ public class RadixApplicationAPI {
 		pull(address);
 
 		return ledger.getParticleStore().getConsumables(address)
-			.map(Collection::stream)
-			.map(stream -> stream
-				.filter(consumable -> consumable.getAssetId().equals(tokenClass.getId()))
-				.mapToLong(Consumable::getQuantity)
-				.sum()
-			)
+			.filter(p -> !(p instanceof AtomFeeConsumable))
+			.filter(p -> p.getOwnersPublicKeys().stream().allMatch(address::ownsKey))
+			.map(AbstractConsumable::getSignedQuantity)
+			.scan((a, b) -> a + b).startWith(0L)
+			.debounce(1000, TimeUnit.MILLISECONDS)
 			.map(balanceInSubUnits -> Amount.subUnitsOf(balanceInSubUnits, tokenClass))
 			.share();
 	}

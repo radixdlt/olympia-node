@@ -5,9 +5,12 @@ import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.assets.Asset;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.address.RadixAddress;
+import com.radixdlt.client.core.atoms.AbstractConsumable;
 import com.radixdlt.client.core.atoms.AtomBuilder;
+import com.radixdlt.client.core.atoms.AtomFeeConsumable;
 import com.radixdlt.client.core.atoms.Consumable;
 import com.radixdlt.client.core.atoms.Consumer;
+import com.radixdlt.client.core.atoms.RadixHash;
 import com.radixdlt.client.core.atoms.TransactionAtom;
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECPublicKey;
@@ -21,6 +24,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public class TokenTransferTranslator {
@@ -80,6 +84,18 @@ public class TokenTransferTranslator {
 		atomBuilder.type(TransactionAtom.class);
 
 		return this.particleStore.getConsumables(tokenTransfer.getFrom())
+			.filter(p -> !(p instanceof AtomFeeConsumable))
+			.scanWith(HashMap<RadixHash, AbstractConsumable>::new, (map, p) -> {
+				HashMap<RadixHash, AbstractConsumable> newMap = new HashMap<>(map);
+				newMap.put(p.getHash(), p);
+				return newMap;
+			})
+			.map(map -> map.values().stream()
+				.filter(AbstractConsumable::isConsumable)
+				.map(AbstractConsumable::getAsConsumable)
+				.collect(Collectors.toList())
+			)
+			.debounce(1000, TimeUnit.MILLISECONDS)
 			.firstOrError()
 			.flatMapCompletable(unconsumedConsumables -> {
 
@@ -122,15 +138,6 @@ public class TokenTransferTranslator {
 				atomBuilder.addParticles(consumables);
 
 				return Completable.complete();
-
-				/*
-				if (withPOWFee) {
-					// TODO: Replace this with public key of processing node runner
-					return atomBuilder.buildWithPOWFee(ledger.getMagic(), fromAddress.getPublicKey());
-				} else {
-					return atomBuilder.build();
-				}
-				*/
 			});
 	}
 }

@@ -36,6 +36,13 @@ public class TransactionAtom extends PayloadAtom {
 		super(particles, destinations, payload, encryptor, timestamp, signatureId, signature);
 	}
 
+	public List<AbstractConsumable> getAbstractConsumables() {
+		return getParticles().stream()
+			.filter(Particle::isAbstractConsumable)
+			.map(Particle::getAsAbstractConsumable)
+			.collect(Collectors.toList());
+	}
+
 	public List<Consumable> getConsumables() {
 		return getParticles().stream()
 			.filter(Particle::isConsumable)
