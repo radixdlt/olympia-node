@@ -2,7 +2,6 @@ package com.radixdlt.client.core.ledger;
 
 import com.radixdlt.client.application.translate.TransactionAtoms;
 import com.radixdlt.client.assets.Asset;
-import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.Consumable;
@@ -11,13 +10,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 
 public class ConsumableDataSource implements ParticleStore {
-	private final Function<EUID, Observable<Atom>> atomStore;
+	private final AtomStore atomStore;
 	private final ConcurrentHashMap<RadixAddress, Observable<Collection<Consumable>>> cache = new ConcurrentHashMap<>();
 
-	public ConsumableDataSource(Function<EUID, Observable<Atom>> atomStore) {
+	public ConsumableDataSource(AtomStore atomStore) {
 		this.atomStore = atomStore;
 	}
 
@@ -27,7 +25,7 @@ public class ConsumableDataSource implements ParticleStore {
 			Observable.<Collection<Consumable>>just(Collections.emptySet()).concatWith(
 				Observable.combineLatest(
 					Observable.fromCallable(() -> new TransactionAtoms(address, Asset.TEST.getId())),
-					atomStore.apply(address.getUID())
+					atomStore.getAtoms(address)
 					.filter(Atom::isTransactionAtom)
 					.map(Atom::getAsTransactionAtom),
 					(transactionAtoms, atom) ->

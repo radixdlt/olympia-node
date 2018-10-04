@@ -1,6 +1,6 @@
 package com.radixdlt.client.core.ledger;
 
-import com.radixdlt.client.core.address.EUID;
+import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomValidationException;
 import com.radixdlt.client.core.network.AtomQuery;
@@ -27,13 +27,13 @@ public class AtomFetcher {
 		this.clientSelector = clientSelector;
 	}
 
-	public Observable<Atom> fetchAtoms(EUID destination) {
-		final AtomQuery<Atom> atomQuery = new AtomQuery<>(destination, Atom.class);
-		return Observable.fromCallable(() -> clientSelector.apply(destination.getShard()))
+	public Observable<Atom> fetchAtoms(RadixAddress address) {
+		final AtomQuery<Atom> atomQuery = new AtomQuery<>(address.getUID(), Atom.class);
+		return Observable.fromCallable(() -> clientSelector.apply(address.getUID().getShard()))
 			.flatMapSingle(c -> c)
 			.flatMap(client -> client.getAtoms(atomQuery))
 			.doOnError(throwable -> {
-				LOGGER.warn("Error on getAllAtoms: {}", destination);
+				LOGGER.warn("Error on getAllAtoms: {}", address);
 			})
 			.retryWhen(new IncreasingRetryTimer())
 			.filter(atom -> {
@@ -46,6 +46,6 @@ public class AtomFetcher {
 					return false;
 				}
 			})
-			.doOnSubscribe(atoms -> LOGGER.info("Atom Query Subscribe: destination({})", destination));
+			.doOnSubscribe(atoms -> LOGGER.info("Atom Query Subscribe: address({})", address));
 	}
 }

@@ -132,7 +132,7 @@ public class RadixApplicationAPI {
 		Objects.requireNonNull(address);
 
 		if (ledger.getAtomPuller() != null) {
-			return ledger.getAtomPuller().pull(address.getUID());
+			return ledger.getAtomPuller().pull(address);
 		} else {
 			return Disposables.disposed();
 		}
@@ -156,7 +156,7 @@ public class RadixApplicationAPI {
 
 		pull(address);
 
-		return ledger.getAtomStore().getAtoms(address.getUID())
+		return ledger.getAtomStore().getAtoms(address)
 			.filter(Atom::isMessageAtom)
 			.map(Atom::getAsMessageAtom)
 			.map(dataStoreTranslator::fromAtom);
@@ -213,7 +213,7 @@ public class RadixApplicationAPI {
 
 		return Observable.combineLatest(
 			Observable.fromCallable(() -> new TransactionAtoms(address, tokenClass.getId())),
-			ledger.getAtomStore().getAtoms(address.getUID())
+			ledger.getAtomStore().getAtoms(address)
 				.filter(Atom::isTransactionAtom)
 				.map(Atom::getAsTransactionAtom),
 			(transactionAtoms, atom) ->

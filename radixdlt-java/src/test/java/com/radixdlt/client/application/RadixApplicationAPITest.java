@@ -17,7 +17,6 @@ import com.radixdlt.client.assets.Amount;
 import com.radixdlt.client.assets.Asset;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.RadixUniverse.Ledger;
-import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.ApplicationPayloadAtom;
 import com.radixdlt.client.core.atoms.Atom;
@@ -252,13 +251,11 @@ public class RadixApplicationAPITest {
 
 		RadixIdentity identity = mock(RadixIdentity.class);
 		RadixAddress address = mock(RadixAddress.class);
-		EUID euid = mock(EUID.class);
-		when(address.getUID()).thenReturn(euid);
 
 		RadixApplicationAPI api = RadixApplicationAPI.create(identity, universe, DataStoreTranslator.getInstance(), AtomBuilder::new);
 		TestObserver<Data> testObserver = TestObserver.create();
 		api.getData(address).subscribe(testObserver);
-		verify(puller, times(1)).pull(euid);
+		verify(puller, times(1)).pull(address);
 	}
 
 	@Test
@@ -274,12 +271,10 @@ public class RadixApplicationAPITest {
 
 		RadixIdentity identity = mock(RadixIdentity.class);
 		RadixAddress address = mock(RadixAddress.class);
-		EUID euid = mock(EUID.class);
-		when(address.getUID()).thenReturn(euid);
 
 		RadixApplicationAPI api = RadixApplicationAPI.create(identity, universe, DataStoreTranslator.getInstance(), AtomBuilder::new);
 		TestObserver<Amount> testObserver = TestObserver.create();
 		api.getBalance(address, Asset.TEST).subscribe(testObserver);
-		verify(puller, times(1)).pull(euid);
+		verify(puller, times(1)).pull(address);
 	}
 }
