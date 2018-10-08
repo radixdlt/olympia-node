@@ -2,24 +2,37 @@ package com.radixdlt.client.core.atoms;
 
 import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.crypto.ECKeyPair;
-import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class Consumable extends AbstractConsumable {
-	public Consumable(long quantity, ECKeyPair owner, long nonce, EUID assetId) {
-		super(quantity, Collections.singleton(owner), nonce, assetId);
-	}
-
-	public Consumable(long quantity, Set<ECKeyPair> owners, long nonce, EUID assetId) {
-		super(quantity, owners, nonce, assetId);
+	public Consumable(long quantity, List<AccountReference> addresses, long nonce, EUID assetId, long planck, Spin spin) {
+		super(quantity, addresses, nonce, assetId, planck, spin);
 	}
 
 	@Override
 	public long getSignedQuantity() {
-		return getQuantity();
+		return getSpin() == Spin.UP ? getAmount() : getSpin() == Spin.DOWN ? -1 * getAmount() : 0;
 	}
 
-	public Consumer toConsumer() {
-		return new Consumer(getQuantity(), getOwners(), getNonce(), getAssetId());
+	public Consumable toConsumer() {
+		return new Consumable(getAmount(), getAddresses(), getNonce(), getTokenClass(), getPlanck(), Spin.DOWN);
+	}
+
+	public void addConsumerQuantities(long amount, Set<ECKeyPair> newOwners, Map<Set<ECKeyPair>, Long> consumerQuantities) {
+		if (amount > getAmount()) {
+			throw new IllegalArgumentException(
+				"Unable to create consumable with amount " + amount + " (available: " + getAmount() + ")"
+			);
+		}
+
+		if (amount == getAmount()) {
+			consumerQuantities.merge(newOwners, amount, Long::sum);
+			return;
+		}
+
+		consumerQuantities.merge(newOwners, amount, Long::sum);
+		consumerQuantities.merge(getOwners(), getAmount() - amount, Long::sum);
 	}
 }

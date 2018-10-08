@@ -3,9 +3,10 @@ package com.radixdlt.client.core.atoms;
 import com.google.gson.annotations.SerializedName;
 import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.crypto.ECKeyPair;
+import java.util.Collections;
 import java.util.Set;
 
-public class AssetParticle {
+public class AssetParticle implements Particle {
 	private final Set<ECKeyPair> owners;
 	private final String type;
 	@SerializedName("sub_units")
@@ -19,6 +20,7 @@ public class AssetParticle {
 	private final String classification;
 	private final byte[] icon;
 	private final EUID id;
+	private final Spin spin;
 
 	public AssetParticle(
 		Set<ECKeyPair> owners,
@@ -33,6 +35,7 @@ public class AssetParticle {
 		String classification,
 		byte[] icon
 	) {
+		this.spin = Spin.UP;
 		this.owners = owners;
 		this.id = id;
 		this.type = type;
@@ -44,5 +47,14 @@ public class AssetParticle {
 		this.description = description;
 		this.classification = classification;
 		this.icon = icon;
+	}
+
+	// TODO: fix this to be an account
+	public Set<EUID> getDestinations() {
+		return Collections.singleton(id);
+	}
+
+	public Spin getSpin() {
+		return spin;
 	}
 }

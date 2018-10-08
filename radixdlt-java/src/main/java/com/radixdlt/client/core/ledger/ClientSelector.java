@@ -57,6 +57,10 @@ public class ClientSelector {
 	 * @return a cold observable of the first matching Radix client
 	 */
 	public Single<RadixJsonRpcClient> getRadixClient(Set<Long> shards) {
+		if (shards.isEmpty()) {
+			throw new IllegalArgumentException("Shards cannot be empty to obtain a radixClient.");
+		}
+
 		return this.radixNetwork.getRadixClients(shards)
 			.flatMapMaybe(client ->
 				client.getStatus()

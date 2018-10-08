@@ -1,11 +1,16 @@
 package com.radixdlt.client.core.serialization;
 
+import com.radixdlt.client.core.TokenClassReference;
+import com.radixdlt.client.core.atoms.AccountReference;
 import com.radixdlt.client.core.atoms.AssetParticle;
+import com.radixdlt.client.core.atoms.Spin;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
 
+import java.util.Map.Entry;
+import java.util.Optional;
 import org.bouncycastle.util.encoders.Base64;
 import org.bouncycastle.util.encoders.Hex;
 
@@ -26,18 +31,15 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.address.RadixUniverseType;
-import com.radixdlt.client.core.atoms.AbstractConsumable;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomFeeConsumable;
 import com.radixdlt.client.core.atoms.ChronoParticle;
 import com.radixdlt.client.core.atoms.Consumable;
-import com.radixdlt.client.core.atoms.Consumer;
 import com.radixdlt.client.core.atoms.DataParticle;
 import com.radixdlt.client.core.atoms.Emission;
 import com.radixdlt.client.core.atoms.MetadataMap;
 import com.radixdlt.client.core.atoms.Particle;
 import com.radixdlt.client.core.atoms.Payload;
-import com.radixdlt.client.core.atoms.UniqueParticle;
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.crypto.ECSignature;
@@ -79,6 +81,12 @@ public class RadixJson {
 		return new EncryptedPrivateKey(encryptedPrivateKey);
 	};
 
+	private static final JsonSerializer<Spin> SPIN_JSON_SERIALIZER =
+		(src, typeOf, context) -> new JsonPrimitive(src.ordinalValue());
+
+	private static final JsonDeserializer<Spin> SPIN_JSON_DESERIALIZER =
+		(json, typeOf, context) -> Spin.valueOf(json.getAsInt());
+
 	private static final JsonDeserializer<RadixUniverseType> UNIVERSE_TYPE_DESERIALIZER =
 		(json, typeOf, context) -> RadixUniverseType.valueOf(json.getAsInt());
 
@@ -91,20 +99,22 @@ public class RadixJson {
 		);
 	};
 
-	private static final JsonSerializer<Particle> ABSTRACT_CONSUMABLE_SERIALIZER = (particle, typeOfT, context) -> {
-		if (particle.getClass() == AtomFeeConsumable.class) {
+	private static final Map<Class<? extends Particle>, Long> PARTICLE_SERIALIZER_IDS = new HashMap<>();
+	static {
+		PARTICLE_SERIALIZER_IDS.put(AtomFeeConsumable.class, new Integer("FEEPARTICLE".hashCode()).longValue());
+		PARTICLE_SERIALIZER_IDS.put(Consumable.class, new Integer("TRANSFERPARTICLE".hashCode()).longValue());
+		PARTICLE_SERIALIZER_IDS.put(Emission.class, 1341978856L);
+		PARTICLE_SERIALIZER_IDS.put(DataParticle.class, 473758768L);
+		//PARTICLE_SERIALIZER_IDS.put(UniqueParticle.class, Long.valueOf("UNIQUEPARTICLE".hashCode()));
+		PARTICLE_SERIALIZER_IDS.put(ChronoParticle.class, new Integer("CHRONOPARTICLE".hashCode()).longValue());
+		PARTICLE_SERIALIZER_IDS.put(AssetParticle.class, -1034420571L);
+	}
+
+	private static final JsonSerializer<Particle> PARTICLE_SERIALIZER = (particle, typeOfT, context) -> {
+		Number id = PARTICLE_SERIALIZER_IDS.get(particle.getClass());
+		if (id != null) {
 			JsonObject jsonParticle = context.serialize(particle).getAsJsonObject();
-			jsonParticle.addProperty("serializer", -1463653224);
-			jsonParticle.addProperty("version", 100);
-			return jsonParticle;
-		} else if (particle.getClass() == Consumable.class) {
-			JsonObject jsonParticle = context.serialize(particle).getAsJsonObject();
-			jsonParticle.addProperty("serializer", 318720611);
-			jsonParticle.addProperty("version", 100);
-			return jsonParticle;
-		} else if (particle.getClass() == Emission.class) {
-			JsonObject jsonParticle = context.serialize(particle).getAsJsonObject();
-			jsonParticle.addProperty("serializer", 1782261127);
+			jsonParticle.addProperty("serializer", id);
 			jsonParticle.addProperty("version", 100);
 			return jsonParticle;
 		}
@@ -112,17 +122,14 @@ public class RadixJson {
 		throw new RuntimeException("Unknown Particle: " + particle.getClass());
 	};
 
-	private static final JsonDeserializer<Particle> ABSTRACT_CONSUMABLE_DESERIALIZER = (json, typeOf, context) -> {
+	private static final JsonDeserializer<Particle> PARTICLE_DESERIALIZER = (json, typeOf, context) -> {
 		long serializer = json.getAsJsonObject().get("serializer").getAsLong();
-		if (serializer == -1463653224) {
-			return context.deserialize(json.getAsJsonObject(), AtomFeeConsumable.class);
-		} else if (serializer == 318720611) {
-			return context.deserialize(json.getAsJsonObject(), Consumable.class);
-		} else if (serializer == 1782261127) {
-			return context.deserialize(json.getAsJsonObject(), Emission.class);
-		} else {
-			throw new RuntimeException("Unknown particle serializer: " + serializer);
+		Optional c = PARTICLE_SERIALIZER_IDS.entrySet().stream().filter(e -> e.getValue().equals(serializer)).map(Entry::getKey).findFirst();
+		if (c.isPresent()) {
+			return context.deserialize(json.getAsJsonObject(), (Class) c.get());
 		}
+
+		throw new RuntimeException("Unknown particle serializer: " + serializer);
 	};
 
 	private static class EUIDSerializer implements JsonDeserializer<EUID>, JsonSerializer<EUID> {
@@ -188,11 +195,8 @@ public class RadixJson {
 		SERIALIZERS.put(Atom.class, 2019665);
 		SERIALIZERS.put(ECKeyPair.class, 547221307);
 		SERIALIZERS.put(ECSignature.class, -434788200);
-		SERIALIZERS.put(DataParticle.class, 473758768);
-		SERIALIZERS.put(UniqueParticle.class, "UNIQUEPARTICLE".hashCode());
-		SERIALIZERS.put(ChronoParticle.class, "CHRONOPARTICLE".hashCode());
-		SERIALIZERS.put(AssetParticle.class, "ASSET".hashCode());
-		SERIALIZERS.put(Consumer.class, 214856694);
+		SERIALIZERS.put(TokenClassReference.class, "TOKENCLASSREFERENCE".hashCode());
+		SERIALIZERS.put(AccountReference.class, "ACCOUNTREFERENCE".hashCode());
 	}
 
 	private static final TypeAdapterFactory ECKEYPAIR_ADAPTER_FACTORY = new TypeAdapterFactory() {
@@ -232,8 +236,8 @@ public class RadixJson {
 			.registerTypeHierarchyAdapter(Base64Encoded.class, BASE64_SERIALIZER)
 			.registerTypeAdapterFactory(ECKEYPAIR_ADAPTER_FACTORY)
 			.registerTypeAdapter(byte[].class, new ByteArraySerializer())
-			.registerTypeAdapter(AbstractConsumable.class, ABSTRACT_CONSUMABLE_SERIALIZER)
-			.registerTypeAdapter(AbstractConsumable.class, ABSTRACT_CONSUMABLE_DESERIALIZER)
+			.registerTypeAdapter(Particle.class, PARTICLE_SERIALIZER)
+			.registerTypeAdapter(Particle.class, PARTICLE_DESERIALIZER)
 			.registerTypeAdapter(String.class, new StringCodec())
 			.registerTypeAdapter(MetadataMap.class, new MetadataCodec())
 			.registerTypeAdapter(EUID.class, new EUIDSerializer())
@@ -241,6 +245,8 @@ public class RadixJson {
 			.registerTypeAdapter(EncryptedPrivateKey.class, PROTECTOR_DESERIALIZER)
 			.registerTypeAdapter(ECPublicKey.class, PK_DESERIALIZER)
 			.registerTypeAdapter(RadixUniverseType.class, UNIVERSE_TYPE_DESERIALIZER)
+			.registerTypeAdapter(Spin.class, SPIN_JSON_DESERIALIZER)
+			.registerTypeAdapter(Spin.class, SPIN_JSON_SERIALIZER)
 			.registerTypeAdapter(NodeRunnerData.class, NODE_RUNNER_DATA_JSON_DESERIALIZER);
 
 		GSON = gsonBuilder.create();

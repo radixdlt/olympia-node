@@ -18,98 +18,51 @@ import java.util.stream.Stream;
  * in a blockchain) and defines the actions that can be issued onto the ledger.
  */
 public final class Atom {
-	// TODO: Remove as action should be outside of Atom structure
-	private String action;
-
-	// TODO: Remove when particles define destinations
-	private Set<EUID> destinations;
-
-	// TODO: These will be turned into a list of DeleteParticles in the future
-	private final List<Consumer> consumers;
-
-	// TODO: These will be turned into a list of CreateParticles in the future
-	private final List<AbstractConsumable> consumables;
-	private final List<DataParticle> dataParticles;
-	private final UniqueParticle uniqueParticle;
-	private final ChronoParticle chronoParticle;
-	private final AssetParticle asset;
+	private final List<Particle> particles;
 
 	private final Map<String, ECSignature> signatures;
 
 	private transient Map<String, Long> debug = new HashMap<>();
 
-	public Atom(
-		List<DataParticle> dataParticles,
-		List<Consumer> consumers,
-		List<AbstractConsumable> consumables,
-		Set<EUID> destinations,
-		UniqueParticle uniqueParticle,
-		AssetParticle asset,
-		long timestamp
-	) {
-		this.dataParticles = dataParticles;
-		this.chronoParticle = new ChronoParticle(timestamp);
-		this.consumers = consumers;
-		this.consumables = consumables;
-		this.destinations = destinations;
-		this.uniqueParticle = uniqueParticle;
-		this.asset = asset;
+	public Atom(List<Particle> particles) {
+		this.particles = particles;
 		this.signatures = null;
-		this.action = "STORE";
 	}
 
 	private Atom(
-		List<DataParticle> dataParticles,
-		List<Consumer> consumers,
-		List<AbstractConsumable> consumables,
-		Set<EUID> destinations,
-		UniqueParticle uniqueParticle,
-		AssetParticle asset,
-		long timestamp,
+		List<Particle> particles,
 		EUID signatureId,
 		ECSignature signature
 	) {
-		this.dataParticles = dataParticles;
-		this.consumers = consumers;
-		this.consumables = consumables;
-		this.destinations = destinations;
-		this.uniqueParticle = uniqueParticle;
-		this.asset = asset;
-		this.chronoParticle = new ChronoParticle(timestamp);
+		this.particles = particles;
 		this.signatures = Collections.singletonMap(signatureId.toString(), signature);
-		this.action = "STORE";
 	}
 
 	public Atom withSignature(ECSignature signature, EUID signatureId) {
 		return new Atom(
-			dataParticles,
-			consumers,
-			consumables,
-			destinations,
-			uniqueParticle,
-			asset,
-			getTimestamp(),
+			particles,
 			signatureId,
 			signature
 		);
 	}
 
-	public String getAction() {
-		return action;
+	public List<Particle> getParticles() {
+		return particles != null ? particles : Collections.emptyList();
 	}
 
-	public Set<EUID> getDestinations() {
-		return destinations;
-	}
-
-	public Set<Long> getShards() {
-		return destinations.stream().map(EUID::getShard).collect(Collectors.toSet());
+	private Set<Long> getShards() {
+		return getParticles().stream()
+			.map(Particle::getDestinations)
+			.flatMap(Set::stream)
+			.map(EUID::getShard)
+			.collect(Collectors.toSet());
 	}
 
 	// HACK
 	public Set<Long> getRequiredFirstShard() {
-		if (this.consumers != null && !this.consumers.isEmpty()) {
-			return consumers.stream()
+		if (this.particles.stream().anyMatch(p -> p.getSpin() == Spin.DOWN)) {
+			return particles.stream()
+				.filter(p -> p.getSpin() == Spin.DOWN)
 				.flatMap(consumer -> consumer.getDestinations().stream())
 				.map(EUID::getShard)
 				.collect(Collectors.toSet());
@@ -120,7 +73,10 @@ public final class Atom {
 
 
 	public Long getTimestamp() {
-		return chronoParticle.getTimestamp();
+		return this.getParticles().stream()
+			.filter(p -> p instanceof ChronoParticle)
+			.map(p -> ((ChronoParticle) p).getTimestamp()).findAny()
+			.orElse(0L);
 	}
 
 	public Map<String, ECSignature> getSignatures() {
@@ -131,12 +87,20 @@ public final class Atom {
 		return Optional.ofNullable(signatures).map(sigs -> sigs.get(uid.toString()));
 	}
 
-	public List<Consumer> getConsumers() {
-		return consumers == null ? Collections.emptyList() : Collections.unmodifiableList(consumers);
+	public List<Consumable> getConsumers() {
+		return this.getParticles().stream()
+			.filter(p -> p instanceof Consumable)
+			.filter(p -> p.getSpin() == Spin.DOWN)
+			.map(p -> (Consumable) p)
+			.collect(Collectors.toList());
 	}
 
-	public List<AbstractConsumable> getConsumables() {
-		return consumables == null ? Collections.emptyList() : Collections.unmodifiableList(consumables);
+	public List<Consumable> getConsumables() {
+		return this.getParticles().stream()
+			.filter(p -> p instanceof Consumable)
+			.filter(p -> p.getSpin() == Spin.UP)
+			.map(p -> (Consumable) p)
+			.collect(Collectors.toList());
 	}
 
 	public byte[] toDson() {
@@ -152,11 +116,10 @@ public final class Atom {
 	}
 
 	public List<DataParticle> getDataParticles() {
-		return dataParticles == null ? Collections.emptyList() : Collections.unmodifiableList(dataParticles);
-	}
-
-	public UniqueParticle getUniqueParticle() {
-		return uniqueParticle;
+		return this.getParticles().stream()
+			.filter(p -> p instanceof DataParticle)
+			.map(p -> (DataParticle) p)
+			.collect(Collectors.toList());
 	}
 
 	public Map<Set<ECPublicKey>, Map<EUID, Long>> summary() {
@@ -164,7 +127,7 @@ public final class Atom {
 			.collect(Collectors.groupingBy(
 				AbstractConsumable::getOwnersPublicKeys,
 				Collectors.groupingBy(
-					AbstractConsumable::getAssetId,
+					AbstractConsumable::getTokenClass,
 					Collectors.summingLong(AbstractConsumable::getSignedQuantity)
 				)
 			));
@@ -175,7 +138,7 @@ public final class Atom {
 			.collect(Collectors.groupingBy(
 				AbstractConsumable::getOwnersPublicKeys,
 				Collectors.groupingBy(
-					AbstractConsumable::getAssetId,
+					AbstractConsumable::getTokenClass,
 					Collectors.mapping(AbstractConsumable::getSignedQuantity, Collectors.toList())
 				)
 			));
@@ -212,7 +175,6 @@ public final class Atom {
 
 	@Override
 	public String toString() {
-		return "Atom hid(" + getHid().toString() + ") destinations(" + destinations
-			+ ") consumables(" + getConsumables().size() + ") consumers(" + getConsumers().size() + ")";
+		return "Atom hid(" + getHid().toString() + ")";
 	}
 }

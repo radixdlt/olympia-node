@@ -7,13 +7,14 @@ import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.assets.Asset;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.address.RadixAddress;
+import com.radixdlt.client.core.atoms.AccountReference;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomBuilder;
 import com.radixdlt.client.core.atoms.Consumable;
-import com.radixdlt.client.core.atoms.Consumer;
 import com.radixdlt.client.core.atoms.DataParticle;
 import com.radixdlt.client.core.atoms.DataParticle.DataParticleBuilder;
 import com.radixdlt.client.core.atoms.Payload;
+import com.radixdlt.client.core.atoms.Spin;
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
@@ -112,7 +113,13 @@ public class TokenTransferTranslator {
 				// Translate attachment to corresponding atom structure
 				final Data attachment = tokenTransfer.getAttachment();
 				if (attachment != null) {
-					atomBuilder.addDataParticle(new DataParticleBuilder().payload(new Payload(attachment.getBytes())).build());
+					atomBuilder.addDataParticle(
+						new DataParticleBuilder()
+							.payload(new Payload(attachment.getBytes()))
+							.account(tokenTransfer.getFrom())
+							.account(tokenTransfer.getTo())
+							.build()
+					);
 					Encryptor encryptor = attachment.getEncryptor();
 					if (encryptor != null) {
 						JsonArray protectorsJson = new JsonArray();
@@ -123,6 +130,8 @@ public class TokenTransferTranslator {
 							.payload(encryptorPayload)
 							.setMetaData("application", "encryptor")
 							.setMetaData("contentType", "application/json")
+							.account(tokenTransfer.getFrom())
+							.account(tokenTransfer.getTo())
 							.build();
 						atomBuilder.addDataParticle(encryptorParticle);
 					}
@@ -138,14 +147,14 @@ public class TokenTransferTranslator {
 				while (consumerTotal < tokenTransfer.getSubUnitAmount() && iterator.hasNext()) {
 					final long left = tokenTransfer.getSubUnitAmount() - consumerTotal;
 
-					Consumer newConsumer = iterator.next().toConsumer();
-					consumerTotal += newConsumer.getQuantity();
+					Consumable newConsumer = iterator.next().toConsumer();
+					consumerTotal += newConsumer.getAmount();
 
-					final long amount = Math.min(left, newConsumer.getQuantity());
+					final long amount = Math.min(left, newConsumer.getAmount());
 					newConsumer.addConsumerQuantities(amount, Collections.singleton(tokenTransfer.getTo().toECKeyPair()),
 						consumerQuantities);
 
-					atomBuilder.addConsumer(newConsumer);
+					atomBuilder.addConsumable(newConsumer);
 				}
 
 				if (consumerTotal < tokenTransfer.getSubUnitAmount()) {
@@ -155,7 +164,10 @@ public class TokenTransferTranslator {
 				}
 
 				List<Consumable> consumables = consumerQuantities.entrySet().stream()
-					.map(entry -> new Consumable(entry.getValue(), entry.getKey(), System.nanoTime(), Asset.TEST.getId()))
+					.map(entry -> new Consumable(entry.getValue(),
+						entry.getKey().stream().map(ECKeyPair::getPublicKey).map(AccountReference::new)
+							.collect(Collectors.toList()),
+						System.nanoTime(), Asset.TEST.getId(), System.currentTimeMillis() / 60000L + 60000L, Spin.UP))
 					.collect(Collectors.toList());
 				atomBuilder.addConsumables(consumables);
 

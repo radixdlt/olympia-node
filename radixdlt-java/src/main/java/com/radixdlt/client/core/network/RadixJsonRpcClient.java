@@ -3,6 +3,7 @@ package com.radixdlt.client.core.network;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.JsonPrimitive;
 import com.google.gson.reflect.TypeToken;
 import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
@@ -114,7 +115,7 @@ public class RadixJsonRpcClient {
 			Single.<JsonElement>create(emitter -> {
 				final String uuid = UUID.randomUUID().toString();
 
-				JsonObject requestObject = new JsonObject();
+				final JsonObject requestObject = new JsonObject();
 				requestObject.addProperty("id", uuid);
 				requestObject.addProperty("method", method);
 				requestObject.add("params", params);
@@ -136,7 +137,7 @@ public class RadixJsonRpcClient {
 							if (received.has("result")) {
 								emitter.onSuccess(received.get("result"));
 							} else if (received.has("error")) {
-								emitter.onError(new RuntimeException(received.toString()));
+								emitter.onError(new JsonRpcException(requestObject, received));
 							} else {
 								emitter.onError(
 									new RuntimeException("Received bad json rpc message: " + received.toString())
@@ -321,13 +322,18 @@ public class RadixJsonRpcClient {
 				.filter(p -> p.get("subscriberId").getAsString().equals(subscriberId))
 				.map(p -> {
 					final AtomSubmissionState state = AtomSubmissionState.valueOf(p.get("value").getAsString());
-					final String message;
-					if (p.has("message")) {
-						message = p.get("message").getAsString();
+					final JsonElement data;
+					if (p.has("data")) {
+						data = p.get("data");
 					} else {
-						message = null;
+						data = null;
 					}
-					AtomSubmissionUpdate update = AtomSubmissionUpdate.create(atom.getHid(), state, message);
+
+					if (state == AtomSubmissionState.VALIDATION_ERROR) {
+						LOGGER.warn(jsonAtom.toString());
+					}
+
+					AtomSubmissionUpdate update = AtomSubmissionUpdate.create(atom, state, data);
 					update.putMetaData("jsonRpcParams", params);
 					return update;
 				})
@@ -342,17 +348,23 @@ public class RadixJsonRpcClient {
 			Disposable methodDisposable = this.jsonRpcCall("Universe.submitAtomAndSubscribe", params)
 				.doOnSubscribe(
 					disposable -> emitter.onNext(
-						AtomSubmissionUpdate.create(atom.getHid(), AtomSubmissionState.SUBMITTING)
+						AtomSubmissionUpdate.create(atom, AtomSubmissionState.SUBMITTING)
 					)
 				)
 				.subscribe(
-					msg -> emitter.onNext(AtomSubmissionUpdate.create(atom.getHid(), AtomSubmissionState.SUBMITTED)),
+					msg -> emitter.onNext(AtomSubmissionUpdate.create(atom, AtomSubmissionState.SUBMITTED)),
 					throwable -> {
+						if (throwable instanceof JsonRpcException) {
+							JsonRpcException e = (JsonRpcException) throwable;
+							LOGGER.warn(e.getRequest().toString());
+							LOGGER.warn(e.getError().toString());
+						}
+
 						emitter.onNext(
 							AtomSubmissionUpdate.create(
-								atom.getHid(),
+								atom,
 								AtomSubmissionState.FAILED,
-								throwable.getMessage()
+								new JsonPrimitive(throwable.getMessage())
 							)
 						);
 						emitter.onComplete();

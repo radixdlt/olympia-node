@@ -25,6 +25,7 @@ import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.crypto.CryptoException;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.core.ledger.AtomPuller;
+import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.ledger.AtomStore;
 import com.radixdlt.client.core.ledger.AtomSubmitter;
 import com.radixdlt.client.core.ledger.ParticleStore;
@@ -119,7 +120,9 @@ public class RadixApplicationAPITest {
 	@Test
 	public void testStoreData() {
 		RadixApplicationAPI api = createMockedAPIWhichAlwaysSucceeds();
+		ECPublicKey key = mock(ECPublicKey.class);
 		RadixAddress address = mock(RadixAddress.class);
+		when(address.getPublicKey()).thenReturn(key);
 
 		Data data = mock(Data.class);
 		Result result = api.storeData(data, address);
@@ -129,7 +132,9 @@ public class RadixApplicationAPITest {
 	@Test
 	public void testStoreData2() {
 		RadixApplicationAPI api = createMockedAPIWhichAlwaysSucceeds();
+		ECPublicKey key = mock(ECPublicKey.class);
 		RadixAddress address = mock(RadixAddress.class);
+		when(address.getPublicKey()).thenReturn(key);
 
 		Data data = mock(Data.class);
 		Result result = api.storeData(data, address, address);
@@ -143,6 +148,7 @@ public class RadixApplicationAPITest {
 
 		createMockedAPIWhichAlwaysSucceeds();
 		RadixAddress address = mock(RadixAddress.class);
+		when(address.getPublicKey()).thenReturn(mock(ECPublicKey.class));
 
 		Data data = mock(Data.class);
 		api.storeData(data, address, address);
@@ -154,6 +160,7 @@ public class RadixApplicationAPITest {
 		AtomSubmitter submitter = createMockedSubmissionWhichAlwaysSucceeds();
 		RadixApplicationAPI api = createMockedAPI(submitter, euid -> Observable.never());
 		RadixAddress address = mock(RadixAddress.class);
+		when(address.getPublicKey()).thenReturn(mock(ECPublicKey.class));
 
 		Data data = mock(Data.class);
 		Result result = api.storeData(data, address, address);
@@ -169,6 +176,7 @@ public class RadixApplicationAPITest {
 		RadixIdentity identity = mock(RadixIdentity.class);
 		RadixUniverse universe = mock(RadixUniverse.class);
 		RadixAddress address = mock(RadixAddress.class);
+		when(address.getPublicKey()).thenReturn(mock(ECPublicKey.class));
 		Atom atom = mock(Atom.class);
 		when(atom.getDataParticles()).thenReturn(Collections.emptyList());
 

@@ -1,6 +1,7 @@
 package com.radixdlt.client.core.network;
 
-import com.radixdlt.client.core.address.EUID;
+import com.google.gson.JsonElement;
+import com.radixdlt.client.core.atoms.Atom;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.Date;
@@ -33,15 +34,15 @@ public class AtomSubmissionUpdate {
 	}
 
 	private final AtomSubmissionState state;
-	private final String message;
-	private final EUID hid;
+	private final JsonElement data;
+	private final Atom atom;
 	private final Map<String, Object> metaData = new HashMap<>();
 	private final long timestamp;
 
-	private AtomSubmissionUpdate(EUID hid, AtomSubmissionState state, String message) {
-		this.hid = hid;
+	private AtomSubmissionUpdate(Atom atom, AtomSubmissionState state, JsonElement data) {
+		this.atom = atom;
 		this.state = state;
-		this.message = message;
+		this.data = data;
 		this.timestamp = System.currentTimeMillis();
 	}
 
@@ -49,8 +50,12 @@ public class AtomSubmissionUpdate {
 		return state;
 	}
 
-	public String getMessage() {
-		return message;
+	public Atom getAtom() {
+		return atom;
+	}
+
+	public JsonElement getData() {
+		return data;
 	}
 
 	public boolean isComplete() {
@@ -74,12 +79,12 @@ public class AtomSubmissionUpdate {
 		return Collections.unmodifiableMap(metaData);
 	}
 
-	public static AtomSubmissionUpdate create(EUID hid, AtomSubmissionState code) {
-		return new AtomSubmissionUpdate(hid, code, null);
+	public static AtomSubmissionUpdate create(Atom atom, AtomSubmissionState code) {
+		return new AtomSubmissionUpdate(atom, code, null);
 	}
 
-	public static AtomSubmissionUpdate create(EUID hid, AtomSubmissionState code, String message) {
-		return new AtomSubmissionUpdate(hid, code, message);
+	public static AtomSubmissionUpdate create(Atom atom, AtomSubmissionState code, JsonElement data) {
+		return new AtomSubmissionUpdate(atom, code, data);
 	}
 
 	@Override
@@ -87,6 +92,6 @@ public class AtomSubmissionUpdate {
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS", Locale.getDefault());
 		sdf.setTimeZone(TimeZone.getDefault());
 
-		return sdf.format(new Date(timestamp)) + " atom " + hid + " " + state + (message != null ? ": " + message : "");
+		return sdf.format(new Date(timestamp)) + " atom " + atom.getHid() + " " + state + (data != null ? ": " + data : "");
 	}
 }

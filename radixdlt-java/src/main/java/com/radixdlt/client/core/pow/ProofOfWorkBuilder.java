@@ -20,7 +20,7 @@ public class ProofOfWorkBuilder {
 
 		ByteBuffer buffer = ByteBuffer.allocate(32 + 4 + Long.BYTES);
 
-		// Consumable getQuantity cannot be 0 so start at 1
+		// Consumable getAmount cannot be 0 so start at 1
 		long nonce = 1;
 		buffer.putInt(magic);
 		buffer.put(seed);

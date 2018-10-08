@@ -36,6 +36,7 @@ public class AtomFetcher {
 			})
 			.retryWhen(new IncreasingRetryTimer())
 			.filter(atom -> {
+				LOGGER.info("Received atom " + atom.getHid());
 				try {
 					RadixAtomValidator.getInstance().validate(atom);
 					return true;

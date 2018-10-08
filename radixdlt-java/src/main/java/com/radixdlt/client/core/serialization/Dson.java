@@ -236,6 +236,7 @@ public class Dson {
 			Stream<DsonField> fieldStream = fields.stream()
 				.filter(field -> !field.getName().equalsIgnoreCase("signatures"))
 				.filter(field -> !field.getName().equalsIgnoreCase("serialVersionUID"))
+				.filter(field -> !field.getName().equalsIgnoreCase("spin")) // TODO: This needs to be added back in
 				.filter(field -> !Modifier.isTransient(field.getModifiers()))
 				.filter(field -> {
 					try {

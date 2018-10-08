@@ -19,11 +19,11 @@ public class AmountTest {
 
 	@Test
 	public void testXRD() {
-		assertEquals("0 TEST", Amount.subUnitsOf(0, Asset.TEST).toString());
-		assertEquals("0.00001 TEST", Amount.subUnitsOf(1, Asset.TEST).toString());
-		assertEquals("0.1 TEST", Amount.subUnitsOf(10000, Asset.TEST).toString());
-		assertEquals("1.1 TEST", Amount.subUnitsOf(110000, Asset.TEST).toString());
-		assertEquals("1.23456 TEST", Amount.subUnitsOf(123456, Asset.TEST).toString());
+		assertEquals("0 XRD", Amount.subUnitsOf(0, Asset.TEST).toString());
+		assertEquals("0.00001 XRD", Amount.subUnitsOf(1, Asset.TEST).toString());
+		assertEquals("0.1 XRD", Amount.subUnitsOf(10000, Asset.TEST).toString());
+		assertEquals("1.1 XRD", Amount.subUnitsOf(110000, Asset.TEST).toString());
+		assertEquals("1.23456 XRD", Amount.subUnitsOf(123456, Asset.TEST).toString());
 	}
 
 	@Test

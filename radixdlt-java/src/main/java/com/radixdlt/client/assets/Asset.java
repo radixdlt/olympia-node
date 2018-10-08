@@ -13,7 +13,7 @@ public final class Asset {
 	/**
 	 * Radix Token asset. TODO: Read from universe file. Hardcode for now.
 	 */
-	public static final Asset TEST = new Asset("TEST", 100000);
+	public static final Asset TEST = new Asset("XRD", 100000);
 	public static final Asset POW = new Asset("POW",       1);
 
 	private final String iso;
