@@ -5,6 +5,7 @@ import com.radixdlt.client.application.actions.TokenTransfer;
 import com.radixdlt.client.application.actions.UniqueProperty;
 import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.application.objects.UnencryptedData;
+import com.radixdlt.client.application.translate.AddressTokenState;
 import com.radixdlt.client.application.translate.DataStoreTranslator;
 import com.radixdlt.client.application.translate.TokenTransferTranslator;
 import com.radixdlt.client.application.translate.UniquePropertyTranslator;
@@ -15,7 +16,6 @@ import com.radixdlt.client.core.RadixUniverse.Ledger;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomBuilder;
-import com.radixdlt.client.core.atoms.Consumable;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.crypto.ECPublicKey;
@@ -29,7 +29,6 @@ import io.reactivex.annotations.Nullable;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.disposables.Disposables;
 import io.reactivex.observables.ConnectableObservable;
-import java.util.Collection;
 import java.util.Objects;
 import java.util.function.Supplier;
 
@@ -132,7 +131,7 @@ public class RadixApplicationAPI {
 		Objects.requireNonNull(address);
 
 		if (ledger.getAtomPuller() != null) {
-			return ledger.getAtomPuller().pull(address.getUID());
+			return ledger.getAtomPuller().pull(address);
 		} else {
 			return Disposables.disposed();
 		}
@@ -156,7 +155,7 @@ public class RadixApplicationAPI {
 
 		pull(address);
 
-		return ledger.getAtomStore().getAtoms(address.getUID())
+		return ledger.getAtomStore().getAtoms(address)
 			.filter(Atom::isMessageAtom)
 			.map(Atom::getAsMessageAtom)
 			.map(dataStoreTranslator::fromAtom);
@@ -213,7 +212,7 @@ public class RadixApplicationAPI {
 
 		return Observable.combineLatest(
 			Observable.fromCallable(() -> new TransactionAtoms(address, tokenClass.getId())),
-			ledger.getAtomStore().getAtoms(address.getUID())
+			ledger.getAtomStore().getAtoms(address)
 				.filter(Atom::isTransactionAtom)
 				.map(Atom::getAsTransactionAtom),
 			(transactionAtoms, atom) ->
@@ -233,15 +232,7 @@ public class RadixApplicationAPI {
 
 		pull(address);
 
-		return ledger.getParticleStore().getConsumables(address)
-			.map(Collection::stream)
-			.map(stream -> stream
-				.filter(consumable -> consumable.getAssetId().equals(tokenClass.getId()))
-				.mapToLong(Consumable::getQuantity)
-				.sum()
-			)
-			.map(balanceInSubUnits -> Amount.subUnitsOf(balanceInSubUnits, tokenClass))
-			.share();
+		return tokenTransferTranslator.getTokenState(address).map(AddressTokenState::getBalance);
 	}
 
 	/**

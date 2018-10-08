@@ -5,12 +5,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.radixdlt.client.core.address.EUID;
+import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.network.RadixJsonRpcClient;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.observers.TestObserver;
-import java.math.BigInteger;
 import java.util.function.Function;
 import org.junit.Test;
 
@@ -30,7 +30,10 @@ public class AtomFetcherTest {
 
 		AtomFetcher atomFetcher = new AtomFetcher(clientSelector);
 		TestObserver<Atom> testObserver = TestObserver.create();
-		atomFetcher.fetchAtoms(new EUID(BigInteger.ONE)).subscribe(testObserver);
+		RadixAddress address = mock(RadixAddress.class);
+		EUID uid = mock(EUID.class);
+		when(address.getUID()).thenReturn(uid);
+		atomFetcher.fetchAtoms(address).subscribe(testObserver);
 		testObserver.awaitCount(1);
 		testObserver.assertValue(atom);
 	}

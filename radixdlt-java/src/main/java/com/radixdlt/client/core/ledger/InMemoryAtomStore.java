@@ -1,6 +1,8 @@
 package com.radixdlt.client.core.ledger;
 
-import com.radixdlt.client.core.address.EUID;
+import com.radixdlt.client.application.translate.TransactionAtoms;
+import com.radixdlt.client.assets.Asset;
+import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.Atom;
 import io.reactivex.Observable;
 import io.reactivex.subjects.ReplaySubject;
@@ -15,27 +17,38 @@ public class InMemoryAtomStore implements AtomStore {
 	/**
 	 * The In Memory Atom Data Store
 	 */
-	private final ConcurrentHashMap<EUID, ReplaySubject<Atom>> cache = new ConcurrentHashMap<>();
+	private final ConcurrentHashMap<RadixAddress, ReplaySubject<Atom>> cache = new ConcurrentHashMap<>();
 
 	/**
 	 * Store an atom under a given destination
 	 * TODO: add synchronization if needed
 	 *
-	 * @param destination destination to store under
+	 * @param address address to store under
 	 * @param atom the atom to store
 	 */
-	public void store(EUID destination, Atom atom) {
-		cache.computeIfAbsent(destination, euid -> ReplaySubject.create()).onNext(atom);
+	public void store(RadixAddress address, Atom atom) {
+		cache.computeIfAbsent(address, euid -> ReplaySubject.create()).onNext(atom);
 	}
 
 	/**
-	 * Returns an unending stream of atoms which are stored at a particular destination.
+	 * Returns an unending stream of validated atoms which are stored at a particular destination.
 	 *
-	 * @param destination destination (which determines shard) to query atoms for
+	 * @param address address (which determines shard) to query atoms for
 	 * @return an Atom Observable
 	 */
-	public Observable<Atom> getAtoms(EUID destination) {
-		Objects.requireNonNull(destination);
-		return cache.computeIfAbsent(destination, euid -> ReplaySubject.create()).distinct();
+	public Observable<Atom> getAtoms(RadixAddress address) {
+		Objects.requireNonNull(address);
+		return Observable.just(new TransactionAtoms(address, Asset.TEST.getId()))
+			.flatMap(txAtoms ->
+				cache.computeIfAbsent(address, euid -> ReplaySubject.create())
+					.distinct()
+					.flatMap(atom -> {
+						if (atom.isTransactionAtom()) {
+							return txAtoms.accept(atom.getAsTransactionAtom()).getNewValidTransactions();
+						} else {
+							return Observable.just(atom);
+						}
+					})
+			);
 	}
 }
