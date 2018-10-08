@@ -29,8 +29,9 @@ public class AtomFetcher {
 
 	public Observable<Atom> fetchAtoms(EUID destination) {
 		final AtomQuery<Atom> atomQuery = new AtomQuery<>(destination, Atom.class);
-		return clientSelector.apply(destination.getShard())
-			.flatMapObservable(client -> client.getAtoms(atomQuery))
+		return Observable.fromCallable(() -> clientSelector.apply(destination.getShard()))
+			.flatMapSingle(c -> c)
+			.flatMap(client -> client.getAtoms(atomQuery))
 			.doOnError(throwable -> {
 				LOGGER.warn("Error on getAllAtoms: {}", destination);
 			})
