@@ -47,7 +47,7 @@ public class TokenTransferTranslator {
 		final RadixAddress to;
 		if (summary.size() == 1) {
 			from = summary.get(0).getValue() <= 0L ? universe.getAddressFrom(summary.get(0).getKey()) : null;
-			to = summary.get(0).getValue() <= 0L ? null : universe.getAddressFrom(summary.get(0).getKey());
+			to = summary.get(0).getValue() < 0L ? null : universe.getAddressFrom(summary.get(0).getKey());
 		} else {
 			if (summary.get(0).getValue() > 0) {
 				from = universe.getAddressFrom(summary.get(1).getKey());
