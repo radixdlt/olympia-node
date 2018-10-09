@@ -13,6 +13,7 @@ import com.radixdlt.client.core.atoms.AtomBuilder;
 import com.radixdlt.client.core.atoms.Consumable;
 import com.radixdlt.client.core.atoms.DataParticle;
 import com.radixdlt.client.core.atoms.DataParticle.DataParticleBuilder;
+import com.radixdlt.client.core.atoms.Particle;
 import com.radixdlt.client.core.atoms.Payload;
 import com.radixdlt.client.core.atoms.Spin;
 import com.radixdlt.client.core.crypto.ECKeyPair;
@@ -121,7 +122,7 @@ public class TokenTransferTranslator {
 				// Translate attachment to corresponding atom structure
 				final Data attachment = tokenTransfer.getAttachment();
 				if (attachment != null) {
-					atomBuilder.addDataParticle(
+					atomBuilder.addParticle(
 						new DataParticleBuilder()
 							.payload(new Payload(attachment.getBytes()))
 							.account(tokenTransfer.getFrom())
@@ -141,7 +142,7 @@ public class TokenTransferTranslator {
 							.account(tokenTransfer.getFrom())
 							.account(tokenTransfer.getTo())
 							.build();
-						atomBuilder.addDataParticle(encryptorParticle);
+						atomBuilder.addParticle(encryptorParticle);
 					}
 				}
 
@@ -162,7 +163,7 @@ public class TokenTransferTranslator {
 					down.addConsumerQuantities(amount, Collections.singleton(tokenTransfer.getTo().toECKeyPair()),
 						consumerQuantities);
 
-					atomBuilder.addConsumable(down);
+					atomBuilder.addParticle(down);
 				}
 
 				if (consumerTotal < tokenTransfer.getSubUnitAmount()) {
@@ -171,13 +172,13 @@ public class TokenTransferTranslator {
 					));
 				}
 
-				List<Consumable> consumables = consumerQuantities.entrySet().stream()
+				List<Particle> consumables = consumerQuantities.entrySet().stream()
 					.map(entry -> new Consumable(entry.getValue(),
 						entry.getKey().stream().map(ECKeyPair::getPublicKey).map(AccountReference::new)
 							.collect(Collectors.toList()),
 						System.nanoTime(), Token.TEST.getId(), System.currentTimeMillis() / 60000L + 60000L, Spin.UP))
 					.collect(Collectors.toList());
-				atomBuilder.addConsumables(consumables);
+				atomBuilder.addParticles(consumables);
 
 				return Completable.complete();
 			});

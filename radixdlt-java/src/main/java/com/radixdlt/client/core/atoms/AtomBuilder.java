@@ -6,30 +6,18 @@ import java.util.List;
 
 public class AtomBuilder {
 	private static final int POW_LEADING_ZEROES_REQUIRED = 16;
-	private List<Consumable> consumables = new ArrayList<>();
-	private List<DataParticle> dataParticles = new ArrayList<>();
-	private UniqueParticle uniqueParticle;
+	private List<Particle> particles = new ArrayList<>();
 
 	public AtomBuilder() {
 	}
 
-	public AtomBuilder setUniqueParticle(UniqueParticle uniqueParticle) {
-		this.uniqueParticle = uniqueParticle;
+	public AtomBuilder addParticles(List<Particle> particles) {
+		this.particles.addAll(particles);
 		return this;
 	}
 
-	public AtomBuilder addDataParticle(DataParticle dataParticle) {
-		this.dataParticles.add(dataParticle);
-		return this;
-	}
-
-	public AtomBuilder addConsumable(Consumable consumable) {
-		this.consumables.add(consumable);
-		return this;
-	}
-
-	public <T extends Consumable> AtomBuilder addConsumables(List<T> particles) {
-		this.consumables.addAll(particles);
+	public AtomBuilder addParticle(Particle particle) {
+		this.particles.add(particle);
 		return this;
 	}
 
@@ -45,18 +33,13 @@ public class AtomBuilder {
 			.owner(owner)
 			.pow(magic, POW_LEADING_ZEROES_REQUIRED)
 			.build();
-		this.addConsumable(fee);
+		this.addParticle(fee);
 
 		return this.build(timestamp);
 	}
 
 	public UnsignedAtom build(long timestamp) {
-		List<Particle> particles = new ArrayList<>();
-		particles.addAll(dataParticles);
-		particles.addAll(consumables);
-		if (uniqueParticle != null) {
-			particles.add(uniqueParticle);
-		}
+		List<Particle> particles = new ArrayList<>(this.particles);
 		particles.add(new ChronoParticle(timestamp));
 		return new UnsignedAtom(new Atom(particles));
 	}

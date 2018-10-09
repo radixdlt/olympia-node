@@ -41,7 +41,7 @@ public class DataStoreTranslator {
 			.accounts(dataStore.getAddresses())
 			.build();
 
-		atomBuilder.addDataParticle(dataParticle);
+		atomBuilder.addParticle(dataParticle);
 		Encryptor encryptor = dataStore.getData().getEncryptor();
 		if (encryptor != null) {
 			JsonArray protectorsJson = new JsonArray();
@@ -54,7 +54,7 @@ public class DataStoreTranslator {
 				.setMetaData("contentType", "application/json")
 				.accounts(dataStore.getAddresses())
 				.build();
-			atomBuilder.addDataParticle(encryptorParticle);
+			atomBuilder.addParticle(encryptorParticle);
 		}
 
 		return Completable.complete();

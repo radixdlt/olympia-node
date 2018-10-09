@@ -23,7 +23,7 @@ public class UniquePropertyTranslator {
 		Payload payload = new Payload(uniqueProperty.getUnique());
 		ECPublicKey ecPublicKey = uniqueProperty.getAddress().getPublicKey();
 		UniqueParticle uniqueParticle = UniqueParticle.create(payload, ecPublicKey);
-		atomBuilder.setUniqueParticle(uniqueParticle);
+		atomBuilder.addParticle(uniqueParticle);
 		return Completable.complete();
 	}
 }

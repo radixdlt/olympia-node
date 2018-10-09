@@ -50,8 +50,8 @@ public class RadixApplicationAPITest {
 		RadixIdentity identity = mock(RadixIdentity.class);
 
 		AtomBuilder atomBuilder = mock(AtomBuilder.class);
-		when(atomBuilder.addDataParticle(any())).thenReturn(atomBuilder);
-		when(atomBuilder.addDataParticle(any())).thenReturn(atomBuilder);
+		when(atomBuilder.addParticle(any())).thenReturn(atomBuilder);
+		when(atomBuilder.addParticle(any())).thenReturn(atomBuilder);
 		Atom atom = mock(Atom.class);
 		when(identity.sign(any())).thenReturn(Single.just(atom));
 
