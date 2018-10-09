@@ -6,8 +6,8 @@ import java.util.List;
 
 public class AtomFeeConsumable extends Consumable {
 	private final EUID service;
-	public AtomFeeConsumable(long quantity, List<AccountReference> addresses, long nonce, EUID assetId, long planck) {
-		super(quantity, addresses, nonce, assetId, planck, Spin.UP);
+	public AtomFeeConsumable(long quantity, AccountReference address, long nonce, EUID assetId, long planck) {
+		super(quantity, address, nonce, assetId, planck, Spin.UP);
 
 		this.service = new EUID(1);
 	}

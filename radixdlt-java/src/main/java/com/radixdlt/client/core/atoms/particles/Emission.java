@@ -5,7 +5,7 @@ import com.radixdlt.client.core.atoms.AccountReference;
 import java.util.List;
 
 public class Emission extends Consumable {
-	public Emission(long quantity, List<AccountReference> addresses, long nonce, EUID assetId, long planck) {
-		super(quantity, addresses, nonce, assetId, planck, Spin.UP);
+	public Emission(long quantity, AccountReference address, long nonce, EUID assetId, long planck) {
+		super(quantity, address, nonce, assetId, planck, Spin.UP);
 	}
 }

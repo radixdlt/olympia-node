@@ -40,7 +40,7 @@ public class AtomFeeConsumableBuilder {
 
 		return new AtomFeeConsumable(
 			pow.getNonce(),
-			Collections.singletonList(new AccountReference(owner)),
+			new AccountReference(owner),
 			System.nanoTime(),
 			Token.POW.getId(),
 			System.currentTimeMillis() * 60000

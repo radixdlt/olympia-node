@@ -148,7 +148,7 @@ public class TokenTransferTranslator {
 
 				long consumerTotal = 0;
 				Iterator<Consumable> iterator = unconsumedConsumables.iterator();
-				Map<Set<ECKeyPair>, Long> consumerQuantities = new HashMap<>();
+				Map<ECKeyPair, Long> consumerQuantities = new HashMap<>();
 
 				// HACK for now
 				// TODO: remove this, create a ConsumersCreator
@@ -160,8 +160,7 @@ public class TokenTransferTranslator {
 					consumerTotal += down.getAmount();
 
 					final long amount = Math.min(left, down.getAmount());
-					down.addConsumerQuantities(amount, Collections.singleton(tokenTransfer.getTo().toECKeyPair()),
-						consumerQuantities);
+					down.addConsumerQuantities(amount, tokenTransfer.getTo().toECKeyPair(), consumerQuantities);
 
 					atomBuilder.addParticle(down);
 				}
@@ -173,10 +172,13 @@ public class TokenTransferTranslator {
 				}
 
 				List<Particle> consumables = consumerQuantities.entrySet().stream()
-					.map(entry -> new Consumable(entry.getValue(),
-						entry.getKey().stream().map(ECKeyPair::getPublicKey).map(AccountReference::new)
-							.collect(Collectors.toList()),
-						System.nanoTime(), Token.TEST.getId(), System.currentTimeMillis() / 60000L + 60000L, Spin.UP))
+					.map(entry -> new Consumable(
+						entry.getValue(),
+						new AccountReference(entry.getKey().getPublicKey()),
+						System.nanoTime(),
+						Token.TEST.getId(),
+						System.currentTimeMillis() / 60000L + 60000L, Spin.UP
+					))
 					.collect(Collectors.toList());
 				atomBuilder.addParticles(consumables);
 

@@ -23,9 +23,9 @@ public class Consumable implements Particle {
 	@SerializedName("token_reference")
 	private final TokenClassReference tokenClassReference;
 
-	public Consumable(long amount, List<AccountReference> addresses, long nonce, EUID tokenId, long planck, Spin spin) {
+	public Consumable(long amount, AccountReference address, long nonce, EUID tokenId, long planck, Spin spin) {
 		this.spin = spin;
-		this.addresses = addresses;
+		this.addresses = Collections.singletonList(address);
 		this.amount = amount;
 		this.nonce = nonce;
 		this.tokenClassReference = new TokenClassReference(tokenId, new EUID(0));
@@ -33,10 +33,14 @@ public class Consumable implements Particle {
 	}
 
 	public Consumable spinDown() {
-		return new Consumable(getAmount(), getAddresses(), getNonce(), getTokenClass(), getPlanck(), Spin.DOWN);
+		return new Consumable(getAmount(), getAddresses().get(0), getNonce(), getTokenClass(), getPlanck(), Spin.DOWN);
 	}
 
-	public void addConsumerQuantities(long amount, Set<ECKeyPair> newOwners, Map<Set<ECKeyPair>, Long> consumerQuantities) {
+	public AccountReference getAddress() {
+		return addresses.get(0);
+	}
+
+	public void addConsumerQuantities(long amount, ECKeyPair newOwner, Map<ECKeyPair, Long> consumerQuantities) {
 		if (amount > getAmount()) {
 			throw new IllegalArgumentException(
 				"Unable to create consumable with amount " + amount + " (available: " + getAmount() + ")"
@@ -44,12 +48,12 @@ public class Consumable implements Particle {
 		}
 
 		if (amount == getAmount()) {
-			consumerQuantities.merge(newOwners, amount, Long::sum);
+			consumerQuantities.merge(newOwner, amount, Long::sum);
 			return;
 		}
 
-		consumerQuantities.merge(newOwners, amount, Long::sum);
-		consumerQuantities.merge(getOwners(), getAmount() - amount, Long::sum);
+		consumerQuantities.merge(newOwner, amount, Long::sum);
+		consumerQuantities.merge(getAddress().getKey().toECKeyPair(), getAmount() - amount, Long::sum);
 	}
 
 	public List<AccountReference> getAddresses() {
