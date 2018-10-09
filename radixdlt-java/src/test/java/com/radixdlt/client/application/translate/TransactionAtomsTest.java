@@ -9,6 +9,7 @@ import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.AccountReference;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.Consumable;
+import com.radixdlt.client.core.atoms.Spin;
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import io.reactivex.observers.TestObserver;
@@ -40,8 +41,8 @@ public class TransactionAtomsTest {
 
 		// Build atom with consumer originating from nowhere
 		Atom atom = mock(Atom.class);
-		when(atom.getConsumers()).thenReturn(Collections.singletonList(consumer));
-		when(atom.getConsumables()).thenReturn(Collections.singletonList(consumable));
+		when(atom.getConsumables(Spin.DOWN)).thenReturn(Collections.singletonList(consumer));
+		when(atom.getConsumables(Spin.UP)).thenReturn(Collections.singletonList(consumable));
 
 		// Make sure we don't count it unless we find the matching consumable
 		TransactionAtoms transactionAtoms = new TransactionAtoms(address, Asset.TEST.getId());
@@ -61,32 +62,36 @@ public class TransactionAtomsTest {
 		when(address.ownsKey(ecPublicKey)).thenReturn(true);
 
 		Consumable consumer = mock(Consumable.class);
+		when(consumer.getSpin()).thenReturn(Spin.DOWN);
 		when(consumer.getTokenClass()).thenReturn(Asset.TEST.getId());
 		when(consumer.getOwnersPublicKeys()).thenReturn(Collections.singleton(ecPublicKey));
 		when(consumer.getDson()).thenReturn(new byte[] {0});
 
 		Consumable consumable = mock(Consumable.class);
+		when(consumable.getSpin()).thenReturn(Spin.UP);
 		when(consumable.getTokenClass()).thenReturn(Asset.TEST.getId());
 		when(consumable.getOwnersPublicKeys()).thenReturn(Collections.singleton(ecPublicKey));
 		when(consumable.getDson()).thenReturn(new byte[] {1});
 
 		Atom atom = mock(Atom.class);
-		when(atom.getConsumers()).thenReturn(Collections.singletonList(consumer));
-		when(atom.getConsumables()).thenReturn(Collections.singletonList(consumable));
+		when(atom.getConsumables(Spin.DOWN)).thenReturn(Collections.singletonList(consumer));
+		when(atom.getConsumables(Spin.UP)).thenReturn(Collections.singletonList(consumable));
 
 		Consumable oldConsumable = mock(Consumable.class);
+		when(oldConsumable.getSpin()).thenReturn(Spin.UP);
 		when(oldConsumable.getTokenClass()).thenReturn(Asset.TEST.getId());
 		when(oldConsumable.getOwnersPublicKeys()).thenReturn(Collections.singleton(ecPublicKey));
 		when(oldConsumable.getDson()).thenReturn(new byte[] {0});
 
 		Consumable oldConsumer = mock(Consumable.class);
+		when(oldConsumer.getSpin()).thenReturn(Spin.DOWN);
 		when(oldConsumer.getTokenClass()).thenReturn(Asset.TEST.getId());
 		when(oldConsumer.getOwnersPublicKeys()).thenReturn(Collections.singleton(mock(ECPublicKey.class)));
 		when(oldConsumer.getDson()).thenReturn(new byte[] {2});
 
 		Atom oldAtom = mock(Atom.class);
-		when(oldAtom.getConsumers()).thenReturn(Collections.singletonList(oldConsumer));
-		when(oldAtom.getConsumables()).thenReturn(Collections.singletonList(oldConsumable));
+		when(oldAtom.getConsumables(Spin.DOWN)).thenReturn(Collections.singletonList(oldConsumer));
+		when(oldAtom.getConsumables(Spin.UP)).thenReturn(Collections.singletonList(oldConsumable));
 
 		TestObserver<Collection<Consumable>> observer = TestObserver.create();
 

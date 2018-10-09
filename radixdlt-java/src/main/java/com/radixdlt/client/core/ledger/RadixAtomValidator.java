@@ -5,6 +5,7 @@ import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomValidationException;
 import com.radixdlt.client.core.atoms.AtomValidator;
 import com.radixdlt.client.core.atoms.RadixHash;
+import com.radixdlt.client.core.atoms.Spin;
 import com.radixdlt.client.core.crypto.ECSignature;
 import java.util.Objects;
 import java.util.Optional;
@@ -29,17 +30,17 @@ public class RadixAtomValidator implements AtomValidator {
 	public void validateSignatures(Atom atom) throws AtomValidationException {
 		RadixHash hash = atom.getHash();
 
-		Optional<AtomValidationException> exception = atom.getConsumers().stream()
-			.map(consumer -> {
-				if (consumer.getOwnersPublicKeys().isEmpty()) {
+		Optional<AtomValidationException> exception = atom.getConsumables(Spin.DOWN).stream()
+			.map(down -> {
+				if (down.getOwnersPublicKeys().isEmpty()) {
 					return new AtomValidationException("No owners in particle");
 				}
 
-				if (consumer.getTokenClass().equals(Asset.POW.getId())) {
+				if (down.getTokenClass().equals(Asset.POW.getId())) {
 					return null;
 				}
 
-				Optional<AtomValidationException> consumerException = consumer.getOwnersPublicKeys().stream().map(owner -> {
+				Optional<AtomValidationException> consumerException = down.getOwnersPublicKeys().stream().map(owner -> {
 					Optional<ECSignature> signature = atom.getSignature(owner.getUID());
 					if (!signature.isPresent()) {
 						return new AtomValidationException("Missing signature");

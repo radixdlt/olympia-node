@@ -77,6 +77,4 @@ public abstract class AbstractConsumable implements Particle {
 	public String toString() {
 		return this.getClass().getSimpleName() + " owners(" + addresses + ") amount(" + amount + ") spin(" + spin + ")";
 	}
-
-	public abstract long getSignedQuantity();
 }

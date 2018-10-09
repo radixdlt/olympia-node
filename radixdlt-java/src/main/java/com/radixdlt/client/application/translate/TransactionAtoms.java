@@ -2,10 +2,10 @@ package com.radixdlt.client.application.translate;
 
 import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.address.RadixAddress;
-import com.radixdlt.client.core.atoms.AbstractConsumable;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomFeeConsumable;
 import com.radixdlt.client.core.atoms.Consumable;
+import com.radixdlt.client.core.atoms.Spin;
 import io.reactivex.Maybe;
 import io.reactivex.Observable;
 import io.reactivex.ObservableEmitter;
@@ -47,25 +47,25 @@ public class TransactionAtoms {
 	}
 
 	private void addConsumables(Atom atom, ObservableEmitter<Atom> emitter) {
-		atom.getConsumers().stream()
+		atom.getConsumables(Spin.DOWN).stream()
 			.filter(particle -> particle.getOwnersPublicKeys().stream().allMatch(address::ownsKey))
 			.filter(particle -> particle.getTokenClass().equals(assetId))
-			.forEach(consumer -> {
-				ByteBuffer dson = ByteBuffer.wrap(consumer.getDson());
-				Consumable consumable = unconsumedConsumables.remove(dson);
-				if (consumable == null) {
+			.forEach(down -> {
+				ByteBuffer dson = ByteBuffer.wrap(down.getDson());
+				Consumable up = unconsumedConsumables.remove(dson);
+				if (up == null) {
 					throw new IllegalStateException("Missing consumable for consumer.");
 				}
 			});
 
-		atom.getConsumables().stream()
-			.filter(particle -> particle.getOwnersPublicKeys().stream().allMatch(address::ownsKey))
-			.filter(particle -> particle.getTokenClass().equals(assetId))
-			.forEach(particle -> {
-				ByteBuffer dson = ByteBuffer.wrap(particle.getDson());
+		atom.getConsumables(Spin.UP).stream()
+			.filter(up -> up.getOwnersPublicKeys().stream().allMatch(address::ownsKey))
+			.filter(up -> up.getTokenClass().equals(assetId))
+			.forEach(up -> {
+				ByteBuffer dson = ByteBuffer.wrap(up.getDson());
 				unconsumedConsumables.compute(dson, (thisHash, current) -> {
 					if (current == null) {
-						return particle;
+						return up;
 					} else {
 						throw new IllegalStateException("Consumable already exists.");
 					}
@@ -79,10 +79,10 @@ public class TransactionAtoms {
 	}
 
 	private void checkConsumers(Atom transactionAtom, ObservableEmitter<Atom> emitter) {
-		Optional<ByteBuffer> missing = transactionAtom.getConsumers().stream()
-			.filter(particle -> particle.getOwnersPublicKeys().stream().allMatch(address::ownsKey))
-			.filter(particle -> particle.getTokenClass().equals(assetId))
-			.map(AbstractConsumable::getDson)
+		Optional<ByteBuffer> missing = transactionAtom.getConsumables(Spin.DOWN).stream()
+			.filter(down -> down.getOwnersPublicKeys().stream().allMatch(address::ownsKey))
+			.filter(down -> down.getTokenClass().equals(assetId))
+			.map(Consumable::getDson)
 			.map(ByteBuffer::wrap)
 			.filter(dson -> !unconsumedConsumables.containsKey(dson))
 			.findFirst();
@@ -98,7 +98,7 @@ public class TransactionAtoms {
 				}
 			});
 		} else {
-			if (transactionAtom.getConsumables().stream().allMatch(p -> p instanceof AtomFeeConsumable))  {
+			if (transactionAtom.getConsumables(Spin.UP).stream().allMatch(p -> p instanceof AtomFeeConsumable))  {
 				return;
 			}
 

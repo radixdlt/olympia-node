@@ -6,7 +6,7 @@ import java.util.List;
 
 public class AtomBuilder {
 	private static final int POW_LEADING_ZEROES_REQUIRED = 16;
-	private List<AbstractConsumable> consumables = new ArrayList<>();
+	private List<Consumable> consumables = new ArrayList<>();
 	private List<DataParticle> dataParticles = new ArrayList<>();
 	private UniqueParticle uniqueParticle;
 

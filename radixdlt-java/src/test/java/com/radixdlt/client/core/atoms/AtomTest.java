@@ -11,8 +11,8 @@ public class AtomTest {
 	public void testNullAtom() {
 		Atom atom = new Atom(null);
 		assertTrue(atom.getDataParticles().isEmpty());
-		assertTrue(atom.getConsumables().isEmpty());
-		assertTrue(atom.getConsumers().isEmpty());
+		assertTrue(atom.getConsumables(Spin.UP).isEmpty());
+		assertTrue(atom.getConsumables(Spin.DOWN).isEmpty());
 		assertNotNull(atom.getHash());
 		assertNotNull(atom.getHid());
 		assertNotNull(atom.summary());
