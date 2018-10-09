@@ -6,6 +6,7 @@ import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomValidationException;
 import com.radixdlt.client.core.atoms.Consumable;
 import com.radixdlt.client.core.atoms.RadixHash;
+import com.radixdlt.client.core.atoms.Spin;
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import java.util.Arrays;
@@ -21,7 +22,7 @@ import static org.mockito.Mockito.when;
 public class RadixAtomValidatorTest {
 
 	@Test
-	public void testSignatureValidation() throws AtomValidationException {
+	public void testSignatureValidation() {
 		RadixHash hash = mock(RadixHash.class);
 
 		ECKeyPair keyPair = mock(ECKeyPair.class);
@@ -37,7 +38,7 @@ public class RadixAtomValidatorTest {
 		Atom atom = mock(Atom.class);
 		when(atom.getHash()).thenReturn(hash);
 		when(atom.getSignature(any())).thenReturn(Optional.empty());
-		when(atom.getConsumers()).thenReturn(Arrays.asList(consumer));
+		when(atom.getConsumables(Spin.DOWN)).thenReturn(Arrays.asList(consumer));
 
 		RadixAtomValidator validator = RadixAtomValidator.getInstance();
 		assertThatThrownBy(() -> validator.validateSignatures(atom))

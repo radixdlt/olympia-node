@@ -147,14 +147,14 @@ public class TokenTransferTranslator {
 				while (consumerTotal < tokenTransfer.getSubUnitAmount() && iterator.hasNext()) {
 					final long left = tokenTransfer.getSubUnitAmount() - consumerTotal;
 
-					Consumable newConsumer = iterator.next().toConsumer();
-					consumerTotal += newConsumer.getAmount();
+					Consumable down = iterator.next().spinDown();
+					consumerTotal += down.getAmount();
 
-					final long amount = Math.min(left, newConsumer.getAmount());
-					newConsumer.addConsumerQuantities(amount, Collections.singleton(tokenTransfer.getTo().toECKeyPair()),
+					final long amount = Math.min(left, down.getAmount());
+					down.addConsumerQuantities(amount, Collections.singleton(tokenTransfer.getTo().toECKeyPair()),
 						consumerQuantities);
 
-					atomBuilder.addConsumable(newConsumer);
+					atomBuilder.addConsumable(down);
 				}
 
 				if (consumerTotal < tokenTransfer.getSubUnitAmount()) {

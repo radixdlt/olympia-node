@@ -87,18 +87,10 @@ public final class Atom {
 		return Optional.ofNullable(signatures).map(sigs -> sigs.get(uid.toString()));
 	}
 
-	public List<Consumable> getConsumers() {
+	public List<Consumable> getConsumables(Spin spin) {
 		return this.getParticles().stream()
 			.filter(p -> p instanceof Consumable)
-			.filter(p -> p.getSpin() == Spin.DOWN)
-			.map(p -> (Consumable) p)
-			.collect(Collectors.toList());
-	}
-
-	public List<Consumable> getConsumables() {
-		return this.getParticles().stream()
-			.filter(p -> p instanceof Consumable)
-			.filter(p -> p.getSpin() == Spin.UP)
+			.filter(p -> p.getSpin() == spin)
 			.map(p -> (Consumable) p)
 			.collect(Collectors.toList());
 	}
@@ -123,23 +115,23 @@ public final class Atom {
 	}
 
 	public Map<Set<ECPublicKey>, Map<EUID, Long>> summary() {
-		return Stream.concat(getConsumers().stream(), getConsumables().stream())
+		return Stream.concat(this.getConsumables(Spin.UP).stream(), getConsumables(Spin.DOWN).stream())
 			.collect(Collectors.groupingBy(
-				AbstractConsumable::getOwnersPublicKeys,
+				Consumable::getOwnersPublicKeys,
 				Collectors.groupingBy(
-					AbstractConsumable::getTokenClass,
-					Collectors.summingLong(AbstractConsumable::getSignedQuantity)
+					Consumable::getTokenClass,
+					Collectors.summingLong(Consumable::getSignedAmount)
 				)
 			));
 	}
 
 	public Map<Set<ECPublicKey>, Map<EUID, List<Long>>> consumableSummary() {
-		return Stream.concat(getConsumers().stream(), getConsumables().stream())
+		return Stream.concat(this.getConsumables(Spin.UP).stream(), getConsumables(Spin.DOWN).stream())
 			.collect(Collectors.groupingBy(
-				AbstractConsumable::getOwnersPublicKeys,
+				Consumable::getOwnersPublicKeys,
 				Collectors.groupingBy(
-					AbstractConsumable::getTokenClass,
-					Collectors.mapping(AbstractConsumable::getSignedQuantity, Collectors.toList())
+					Consumable::getTokenClass,
+					Collectors.mapping(Consumable::getSignedAmount, Collectors.toList())
 				)
 			));
 	}
