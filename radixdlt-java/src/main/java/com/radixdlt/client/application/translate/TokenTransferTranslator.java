@@ -23,6 +23,7 @@ import com.radixdlt.client.core.serialization.RadixJson;
 import com.radixdlt.client.core.ledger.ParticleStore;
 import io.reactivex.Completable;
 import java.nio.charset.StandardCharsets;
+import io.reactivex.Observable;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -32,12 +33,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 public class TokenTransferTranslator {
 	private final RadixUniverse universe;
 	private static final JsonParser JSON_PARSER = new JsonParser();
 	private final ParticleStore particleStore;
+	private final ConcurrentHashMap<RadixAddress, AddressTokenReducer> cache = new ConcurrentHashMap<>();
 
 	public TokenTransferTranslator(RadixUniverse universe, ParticleStore particleStore) {
 		this.universe = universe;
@@ -63,7 +66,7 @@ public class TokenTransferTranslator {
 		final RadixAddress to;
 		if (summary.size() == 1) {
 			from = summary.get(0).getValue() <= 0L ? universe.getAddressFrom(summary.get(0).getKey()) : null;
-			to = summary.get(0).getValue() <= 0L ? null : universe.getAddressFrom(summary.get(0).getKey());
+			to = summary.get(0).getValue() < 0L ? null : universe.getAddressFrom(summary.get(0).getKey());
 		} else {
 			if (summary.get(0).getValue() > 0) {
 				from = universe.getAddressFrom(summary.get(1).getKey());
@@ -105,8 +108,13 @@ public class TokenTransferTranslator {
 		return TokenTransfer.create(from, to, Asset.TEST, Math.abs(summary.get(0).getValue()), attachment, atom.getTimestamp());
 	}
 
+	public Observable<AddressTokenState> getTokenState(RadixAddress address) {
+		return cache.computeIfAbsent(address, addr -> new AddressTokenReducer(addr, particleStore)).getState();
+	}
+
 	public Completable translate(TokenTransfer tokenTransfer, AtomBuilder atomBuilder) {
-		return this.particleStore.getConsumables(tokenTransfer.getFrom())
+		return getTokenState(tokenTransfer.getFrom())
+			.map(AddressTokenState::getUnconsumedConsumables)
 			.firstOrError()
 			.flatMapCompletable(unconsumedConsumables -> {
 
@@ -172,15 +180,6 @@ public class TokenTransferTranslator {
 				atomBuilder.addConsumables(consumables);
 
 				return Completable.complete();
-
-				/*
-				if (withPOWFee) {
-					// TODO: Replace this with public key of processing node runner
-					return atomBuilder.buildWithPOWFee(ledger.getMagic(), fromAddress.getPublicKey());
-				} else {
-					return atomBuilder.build();
-				}
-				*/
 			});
 	}
 }

@@ -12,12 +12,10 @@ import com.radixdlt.client.application.RadixApplicationAPI.Result;
 import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.application.objects.UnencryptedData;
 import com.radixdlt.client.application.translate.DataStoreTranslator;
-import com.radixdlt.client.application.translate.InsufficientFundsException;
 import com.radixdlt.client.assets.Amount;
 import com.radixdlt.client.assets.Asset;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.RadixUniverse.Ledger;
-import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomBuilder;
@@ -229,7 +227,7 @@ public class RadixApplicationAPITest {
 		Ledger ledger = mock(Ledger.class);
 		when(universe.getLedger()).thenReturn(ledger);
 		when(ledger.getAtomStore()).thenReturn(euid -> Observable.empty());
-		when(ledger.getParticleStore()).thenReturn(euid -> Observable.just(Collections.emptySet()));
+		when(ledger.getParticleStore()).thenReturn(euid -> Observable.never());
 
 		RadixAddress address = mock(RadixAddress.class);
 		RadixIdentity identity = mock(RadixIdentity.class);
@@ -238,28 +236,10 @@ public class RadixApplicationAPITest {
 		TestObserver<Amount> observer = TestObserver.create();
 
 		api.getBalance(address, Asset.TEST).subscribe(observer);
+		observer.awaitCount(1);
 		observer.assertValue(amount -> amount.getAmountInSubunits() == 0);
 	}
 
-	@Test
-	public void createTransactionWithNoFunds() {
-		RadixUniverse universe = mock(RadixUniverse.class);
-		Ledger ledger = mock(Ledger.class);
-		when(universe.getLedger()).thenReturn(ledger);
-		when(ledger.getAtomStore()).thenReturn(euid -> Observable.empty());
-		when(ledger.getParticleStore()).thenReturn(euid -> Observable.just(Collections.emptySet()));
-		when(ledger.getAtomSubmitter()).thenReturn(atom -> Observable.empty());
-
-		RadixAddress address = mock(RadixAddress.class);
-		when(universe.getAddressFrom(any())).thenReturn(address);
-		RadixIdentity identity = mock(RadixIdentity.class);
-
-		RadixApplicationAPI api = RadixApplicationAPI.create(identity, universe, DataStoreTranslator.getInstance(), AtomBuilder::new);
-
-		TestObserver observer = TestObserver.create();
-		api.transferTokens(address, address, Amount.subUnitsOf(10, Asset.TEST)).toCompletable().subscribe(observer);
-		observer.assertError(new InsufficientFundsException(Asset.TEST, 0, 10));
-	}
 
 	@Test
 	public void testPullOnReadDataOfOtherAddresses() {
@@ -274,13 +254,11 @@ public class RadixApplicationAPITest {
 
 		RadixIdentity identity = mock(RadixIdentity.class);
 		RadixAddress address = mock(RadixAddress.class);
-		EUID euid = mock(EUID.class);
-		when(address.getUID()).thenReturn(euid);
 
 		RadixApplicationAPI api = RadixApplicationAPI.create(identity, universe, DataStoreTranslator.getInstance(), AtomBuilder::new);
 		TestObserver<Data> testObserver = TestObserver.create();
 		api.getData(address).subscribe(testObserver);
-		verify(puller, times(1)).pull(euid);
+		verify(puller, times(1)).pull(address);
 	}
 
 	@Test
@@ -296,12 +274,10 @@ public class RadixApplicationAPITest {
 
 		RadixIdentity identity = mock(RadixIdentity.class);
 		RadixAddress address = mock(RadixAddress.class);
-		EUID euid = mock(EUID.class);
-		when(address.getUID()).thenReturn(euid);
 
 		RadixApplicationAPI api = RadixApplicationAPI.create(identity, universe, DataStoreTranslator.getInstance(), AtomBuilder::new);
 		TestObserver<Amount> testObserver = TestObserver.create();
 		api.getBalance(address, Asset.TEST).subscribe(testObserver);
-		verify(puller, times(1)).pull(euid);
+		verify(puller, times(1)).pull(address);
 	}
 }

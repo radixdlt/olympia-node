@@ -6,7 +6,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.radixdlt.client.core.address.EUID;
+import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.Atom;
 import io.reactivex.Observable;
 import io.reactivex.disposables.Disposable;
@@ -23,15 +23,16 @@ public class RadixAtomPullerTest {
 	public void testClientAPICalledOnceWithManySubscibers() throws Exception {
 		Consumer<Disposable> onSubscribe = mock(Consumer.class);
 		Observable atoms = Observable.never().doOnSubscribe(onSubscribe);
-		Function<EUID, Observable<Atom>> fetcher = mock(Function.class);
+		Function<RadixAddress, Observable<Atom>> fetcher = mock(Function.class);
 		when(fetcher.apply(any())).thenReturn(atoms);
+		RadixAddress address = mock(RadixAddress.class);
 
 		RadixAtomPuller radixAtomPuller = new RadixAtomPuller(fetcher, (a, b) -> { });
 
 		List<TestObserver> observers = Stream.iterate(TestObserver.create(), t -> TestObserver.create()).limit(10)
 			.collect(Collectors.toList());
 
-		observers.forEach(observer -> radixAtomPuller.pull(new EUID(1)));
+		observers.forEach(observer -> radixAtomPuller.pull(address));
 
 		verify(onSubscribe, times(1)).accept(any());
 	}

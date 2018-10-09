@@ -126,7 +126,7 @@ public final class RadixUniverse {
 			* The Particle Data Store
 			* TODO: actually change it into the particle data store
 			*/
-			private final ConsumableDataSource particleStore = new ConsumableDataSource(inMemoryAtomStore::getAtoms);
+			private final ConsumableDataSource particleStore = new ConsumableDataSource(inMemoryAtomStore);
 
 			@Override
 			public AtomPuller getAtomPuller() {

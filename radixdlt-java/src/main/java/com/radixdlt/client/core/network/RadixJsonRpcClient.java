@@ -145,7 +145,7 @@ public class RadixJsonRpcClient {
 							}
 						},
 						err -> {
-							emitter.onError(new RuntimeException("Lost connection."));
+							emitter.onError(new RuntimeException(err.getMessage()));
 						}
 					);
 			})

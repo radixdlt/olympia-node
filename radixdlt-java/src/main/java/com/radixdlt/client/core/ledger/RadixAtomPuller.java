@@ -1,6 +1,6 @@
 package com.radixdlt.client.core.ledger;
 
-import com.radixdlt.client.core.address.EUID;
+import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.Atom;
 import io.reactivex.Observable;
 import io.reactivex.disposables.Disposable;
@@ -16,29 +16,29 @@ public class RadixAtomPuller implements AtomPuller {
 	/**
 	 * Atoms retrieved from the network
 	 */
-	private final ConcurrentHashMap<EUID, Observable<Atom>> cache = new ConcurrentHashMap<>();
+	private final ConcurrentHashMap<RadixAddress, Observable<Atom>> cache = new ConcurrentHashMap<>();
 
 	/**
 	 * The mechanism by which to fetch atoms
 	 */
-	private final Function<EUID, Observable<Atom>> fetcher;
+	private final Function<RadixAddress, Observable<Atom>> fetcher;
 
 	/**
 	 * The mechanism by which to merge or store atoms
 	 */
-	private final BiConsumer<EUID, Atom> atomStore;
+	private final BiConsumer<RadixAddress, Atom> atomStore;
 
-	public RadixAtomPuller(Function<EUID, Observable<Atom>> fetcher, BiConsumer<EUID, Atom> atomStore) {
+	public RadixAtomPuller(Function<RadixAddress, Observable<Atom>> fetcher, BiConsumer<RadixAddress, Atom> atomStore) {
 		this.fetcher = fetcher;
 		this.atomStore = atomStore;
 	}
 
-	public Disposable pull(EUID euid) {
+	public Disposable pull(RadixAddress address) {
 		return cache.computeIfAbsent(
-			euid, destination -> {
+			address, destination -> {
 				Observable<Atom> fetchedAtoms = fetcher.apply(destination)
 					.publish().refCount(2);
-				fetchedAtoms.subscribe(atom -> atomStore.accept(euid, atom));
+				fetchedAtoms.subscribe(atom -> atomStore.accept(address, atom));
 				return fetchedAtoms;
 			}
 		).subscribe();

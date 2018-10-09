@@ -87,6 +87,13 @@ public final class Atom {
 		return Optional.ofNullable(signatures).map(sigs -> sigs.get(uid.toString()));
 	}
 
+	public List<Consumable> getConsumables() {
+		return this.getParticles().stream()
+			.filter(p -> p instanceof Consumable)
+			.map(p -> (Consumable) p)
+			.collect(Collectors.toList());
+	}
+
 	public List<Consumable> getConsumables(Spin spin) {
 		return this.getParticles().stream()
 			.filter(p -> p instanceof Consumable)
