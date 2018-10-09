@@ -49,7 +49,7 @@ public final class Asset {
 		return id;
 	}
 
-	private static EUID calcEUID(String isoCode) {
+	public static EUID calcEUID(String isoCode) {
 		return RadixHash.of(isoCode.getBytes(CHARSET)).toEUID();
 	}
 

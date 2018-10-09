@@ -2,7 +2,7 @@ package com.radixdlt.client.core.serialization;
 
 import com.radixdlt.client.core.TokenClassReference;
 import com.radixdlt.client.core.atoms.AccountReference;
-import com.radixdlt.client.core.atoms.AssetParticle;
+import com.radixdlt.client.core.atoms.TokenParticle;
 import com.radixdlt.client.core.atoms.Spin;
 import java.io.IOException;
 import java.lang.reflect.Type;
@@ -107,7 +107,7 @@ public class RadixJson {
 		PARTICLE_SERIALIZER_IDS.put(DataParticle.class, 473758768L);
 		//PARTICLE_SERIALIZER_IDS.put(UniqueParticle.class, Long.valueOf("UNIQUEPARTICLE".hashCode()));
 		PARTICLE_SERIALIZER_IDS.put(ChronoParticle.class, new Integer("CHRONOPARTICLE".hashCode()).longValue());
-		PARTICLE_SERIALIZER_IDS.put(AssetParticle.class, -1034420571L);
+		PARTICLE_SERIALIZER_IDS.put(TokenParticle.class, -1034420571L);
 	}
 
 	private static final JsonSerializer<Particle> PARTICLE_SERIALIZER = (particle, typeOfT, context) -> {
