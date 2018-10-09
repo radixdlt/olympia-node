@@ -1,7 +1,7 @@
 package com.radixdlt.client.core.ledger;
 
 import com.radixdlt.client.application.translate.TransactionAtoms;
-import com.radixdlt.client.assets.Asset;
+import com.radixdlt.client.application.objects.Token;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomFeeConsumable;
@@ -39,7 +39,7 @@ public class InMemoryAtomStore implements AtomStore {
 	 */
 	public Observable<Atom> getAtoms(RadixAddress address) {
 		Objects.requireNonNull(address);
-		return Observable.just(new TransactionAtoms(address, Asset.TEST.getId()))
+		return Observable.just(new TransactionAtoms(address, Token.TEST.getId()))
 			.flatMap(txAtoms ->
 				cache.computeIfAbsent(address, euid -> ReplaySubject.create())
 					.distinct()

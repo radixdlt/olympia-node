@@ -1,8 +1,8 @@
 package com.radixdlt.client.application.actions;
 
 import com.radixdlt.client.application.objects.Data;
-import com.radixdlt.client.assets.Asset;
-import com.radixdlt.client.assets.Amount;
+import com.radixdlt.client.application.objects.Token;
+import com.radixdlt.client.application.objects.Amount;
 import com.radixdlt.client.core.address.RadixAddress;
 import java.util.Collections;
 import java.util.HashMap;
@@ -11,7 +11,7 @@ import java.util.Map;
 public class TokenTransfer {
 	private final RadixAddress from;
 	private final RadixAddress to;
-	private final Asset tokenClass;
+	private final Token token;
 	private final Map<String, Object> metaData;
 	private final long subUnitAmount;
 	private final Data attachment;
@@ -19,38 +19,38 @@ public class TokenTransfer {
 	private TokenTransfer(
 		RadixAddress from,
 		RadixAddress to,
-		Asset tokenClass,
+		Token token,
 		long subUnitAmount,
 		Data attachment,
 		Map<String, Object> metaData
 	) {
 		this.from = from;
 		this.to = to;
-		this.tokenClass = tokenClass;
+		this.token = token;
 		this.subUnitAmount = subUnitAmount;
 		this.attachment = attachment;
 		this.metaData = metaData;
 	}
 
-	public static TokenTransfer create(RadixAddress from, RadixAddress to, Asset tokenClass, long subUnitAmount) {
-		return new TokenTransfer(from, to, tokenClass, subUnitAmount, null, Collections.emptyMap());
+	public static TokenTransfer create(RadixAddress from, RadixAddress to, Token token, long subUnitAmount) {
+		return new TokenTransfer(from, to, token, subUnitAmount, null, Collections.emptyMap());
 	}
 
-	public static TokenTransfer create(RadixAddress from, RadixAddress to, Asset tokenClass, long subUnitAmount, Data attachment) {
-		return new TokenTransfer(from, to, tokenClass, subUnitAmount, attachment, Collections.emptyMap());
+	public static TokenTransfer create(RadixAddress from, RadixAddress to, Token token, long subUnitAmount, Data attachment) {
+		return new TokenTransfer(from, to, token, subUnitAmount, attachment, Collections.emptyMap());
 	}
 
-	public static TokenTransfer create(RadixAddress from, RadixAddress to, Asset tokenClass, long subUnitAmount, Long timestamp) {
+	public static TokenTransfer create(RadixAddress from, RadixAddress to, Token token, long subUnitAmount, Long timestamp) {
 		Map<String, Object> metaData = new HashMap<>();
 		metaData.put("timestamp", timestamp);
 
-		return new TokenTransfer(from, to, tokenClass, subUnitAmount, null, metaData);
+		return new TokenTransfer(from, to, token, subUnitAmount, null, metaData);
 	}
 
 	public static TokenTransfer create(
 		RadixAddress from,
 		RadixAddress to,
-		Asset tokenClass,
+		Token token,
 		long subUnitAmount,
 		Data attachment,
 		Long timestamp
@@ -58,7 +58,7 @@ public class TokenTransfer {
 		Map<String, Object> metaData = new HashMap<>();
 		metaData.put("timestamp", timestamp);
 
-		return new TokenTransfer(from, to, tokenClass, subUnitAmount, attachment, metaData);
+		return new TokenTransfer(from, to, token, subUnitAmount, attachment, metaData);
 	}
 
 	public Data getAttachment() {
@@ -73,8 +73,8 @@ public class TokenTransfer {
 		return to;
 	}
 
-	public Asset getTokenClass() {
-		return tokenClass;
+	public Token getToken() {
+		return token;
 	}
 
 	public long getSubUnitAmount() {
@@ -88,7 +88,7 @@ public class TokenTransfer {
 	@Override
 	public String toString() {
 		Long timestamp = (Long) metaData.get("timestamp");
-		return timestamp + " " + from + " -> " + to + " " + Amount.subUnitsOf(subUnitAmount, tokenClass).toString()
+		return timestamp + " " + from + " -> " + to + " " + Amount.subUnitsOf(subUnitAmount, token).toString()
 			+ (attachment == null ? "" : " " + attachment);
 	}
 }

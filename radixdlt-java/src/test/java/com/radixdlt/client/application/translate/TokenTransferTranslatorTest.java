@@ -10,7 +10,7 @@ import io.reactivex.Observable;
 import io.reactivex.observers.TestObserver;
 import org.junit.Test;
 import com.radixdlt.client.application.actions.TokenTransfer;
-import com.radixdlt.client.assets.Asset;
+import com.radixdlt.client.application.objects.Token;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.crypto.ECPublicKey;
@@ -27,7 +27,7 @@ public class TokenTransferTranslatorTest {
 		RadixAddress myAddress = mock(RadixAddress.class);
 		when(universe.getAddressFrom(myKey)).thenReturn(myAddress);
 		when(atom.summary()).thenReturn(Collections.singletonMap(
-			Collections.singleton(myKey), Collections.singletonMap(Asset.TEST.getId(), 0L)
+			Collections.singleton(myKey), Collections.singletonMap(Token.TEST.getId(), 0L)
 		));
 
 		TokenTransferTranslator tokenTransferTranslator = new TokenTransferTranslator(universe, particleStore);
@@ -45,12 +45,12 @@ public class TokenTransferTranslatorTest {
 		TokenTransfer tokenTransfer = mock(TokenTransfer.class);
 		when(tokenTransfer.getSubUnitAmount()).thenReturn(10L);
 		when(tokenTransfer.getFrom()).thenReturn(address);
-		when(tokenTransfer.getTokenClass()).thenReturn(Asset.TEST);
+		when(tokenTransfer.getToken()).thenReturn(Token.TEST);
 
 		TestObserver observer = TestObserver.create();
 		transferTranslator.translate(tokenTransfer, new AtomBuilder()).subscribe(observer);
 		observer.awaitTerminalEvent();
-		observer.assertError(new InsufficientFundsException(Asset.TEST, 0, 10));
+		observer.assertError(new InsufficientFundsException(Token.TEST, 0, 10));
 	}
 
 }

@@ -1,17 +1,17 @@
 package com.radixdlt.client.application.translate;
 
-import com.radixdlt.client.assets.Asset;
-import com.radixdlt.client.assets.Amount;
+import com.radixdlt.client.application.objects.Token;
+import com.radixdlt.client.application.objects.Amount;
 
 public class InsufficientFundsException extends Exception {
-	private final Asset asset;
+	private final Token token;
 	private final long available;
 	private final long requestedAmount;
 
-	public InsufficientFundsException(Asset asset, long available, long requestedAmount) {
-		super("Requested " + Amount.subUnitsOf(requestedAmount, asset)
-			+ " but only " + Amount.subUnitsOf(available, asset) + " available.");
-		this.asset = asset;
+	public InsufficientFundsException(Token token, long available, long requestedAmount) {
+		super("Requested " + Amount.subUnitsOf(requestedAmount, token)
+			+ " but only " + Amount.subUnitsOf(available, token) + " available.");
+		this.token = token;
 		this.available = available;
 		this.requestedAmount = requestedAmount;
 	}
@@ -31,7 +31,7 @@ public class InsufficientFundsException extends Exception {
 		}
 
 		InsufficientFundsException o = (InsufficientFundsException) obj;
-		return this.asset.equals(o.asset) && this.available == o.available && this.requestedAmount == o.requestedAmount;
+		return this.token.equals(o.token) && this.available == o.available && this.requestedAmount == o.requestedAmount;
 	}
 
 	@Override

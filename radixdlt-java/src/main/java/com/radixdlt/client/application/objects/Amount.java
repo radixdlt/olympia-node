@@ -1,4 +1,4 @@
-package com.radixdlt.client.assets;
+package com.radixdlt.client.application.objects;
 
 import java.math.BigDecimal;
 import java.util.Objects;
@@ -7,39 +7,39 @@ import java.util.Objects;
  * Class mainly for formatting amounts in error messages and other English text.
  */
 public class Amount {
-	public static Amount subUnitsOf(long amountInSubunits, Asset tokenClass) {
-		return new Amount(tokenClass, amountInSubunits);
+	public static Amount subUnitsOf(long amountInSubunits, Token token) {
+		return new Amount(token, amountInSubunits);
 	}
 
-	public static Amount of(long amount, Asset tokenClass) {
-		return new Amount(tokenClass, tokenClass.getSubUnits() * amount);
+	public static Amount of(long amount, Token token) {
+		return new Amount(token, token.getSubUnits() * amount);
 	}
 
-	public static Amount of(BigDecimal amount, Asset tokenClass) {
-		BigDecimal subUnitAmount = amount.multiply(BigDecimal.valueOf(tokenClass.getSubUnits())).stripTrailingZeros();
+	public static Amount of(BigDecimal amount, Token token) {
+		BigDecimal subUnitAmount = amount.multiply(BigDecimal.valueOf(token.getSubUnits())).stripTrailingZeros();
 		if (subUnitAmount.scale() > 0) {
 			throw new IllegalArgumentException("Amount " + amount + " cannot be used for "
-				+ tokenClass + " which has a subunit value of " + tokenClass.getSubUnits());
+				+ token + " which has a subunit value of " + token.getSubUnits());
 		}
 
-		return new Amount(tokenClass, subUnitAmount.longValueExact());
+		return new Amount(token, subUnitAmount.longValueExact());
 	}
 
-	private final Asset asset;
+	private final Token token;
 	private final long amountInSubunits;
 
-	private Amount(Asset asset, long amountInSubunits) {
-		Objects.requireNonNull(asset);
+	private Amount(Token token, long amountInSubunits) {
+		Objects.requireNonNull(token);
 		if (amountInSubunits < 0) {
 			throw new IllegalArgumentException("amount cannot be negative");
 		}
 
-		this.asset = asset;
+		this.token = token;
 		this.amountInSubunits = amountInSubunits;
 	}
 
-	public Asset getTokenClass() {
-		return asset;
+	public Token getToken() {
+		return token;
 	}
 
 	public long getAmountInSubunits() {
@@ -47,7 +47,7 @@ public class Amount {
 	}
 
 	public boolean lte(Amount amount) {
-		if (!amount.getTokenClass().equals(this.getTokenClass())) {
+		if (!amount.getToken().equals(this.getToken())) {
 			throw new IllegalArgumentException("Only amounts with the same token class can be compared.");
 		}
 
@@ -55,7 +55,7 @@ public class Amount {
 	}
 
 	public boolean gte(Amount amount) {
-		if (!amount.getTokenClass().equals(this.getTokenClass())) {
+		if (!amount.getToken().equals(this.getToken())) {
 			throw new IllegalArgumentException("Only amounts with the same token class can be compared.");
 		}
 
@@ -72,7 +72,7 @@ public class Amount {
 	public boolean equals(Object o) {
 		if (o instanceof Amount) {
 			Amount amount = (Amount) o;
-			return amount.amountInSubunits == this.amountInSubunits && amount.asset.equals(this.asset);
+			return amount.amountInSubunits == this.amountInSubunits && amount.token.equals(this.token);
 		}
 
 		return false;
@@ -80,25 +80,25 @@ public class Amount {
 
 	@Override
 	public String toString() {
-		return formattedAmount() + " " + asset.getIso();
+		return formattedAmount() + " " + token.getIso();
 	}
 
 	private String formattedAmount() {
-		long remainder = amountInSubunits % asset.getSubUnits();
+		long remainder = amountInSubunits % token.getSubUnits();
 
 		if (remainder == 0) {
 			// Whole number
-			return String.valueOf(amountInSubunits / asset.getSubUnits());
+			return String.valueOf(amountInSubunits / token.getSubUnits());
 		}
 
-		if (isPowerOfTen(asset.getSubUnits())) {
+		if (isPowerOfTen(token.getSubUnits())) {
 			// Decimal format
-			return BigDecimal.valueOf(amountInSubunits).divide(BigDecimal.valueOf(asset.getSubUnits())).toString();
+			return BigDecimal.valueOf(amountInSubunits).divide(BigDecimal.valueOf(token.getSubUnits())).toString();
 		}
 
 		// Fraction format
-		long quotient = amountInSubunits / asset.getSubUnits();
-		String fraction = remainder + "/" + asset.getSubUnits();
+		long quotient = amountInSubunits / token.getSubUnits();
+		String fraction = remainder + "/" + token.getSubUnits();
 		if (quotient == 0) {
 			return fraction;
 		}

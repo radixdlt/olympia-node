@@ -4,7 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonParser;
 import com.radixdlt.client.application.actions.TokenTransfer;
 import com.radixdlt.client.application.objects.Data;
-import com.radixdlt.client.assets.Asset;
+import com.radixdlt.client.application.objects.Token;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.AccountReference;
@@ -50,8 +50,8 @@ public class TokenTransferTranslator {
 	public TokenTransfer fromAtom(Atom atom) {
 		List<SimpleImmutableEntry<ECPublicKey, Long>> summary =
 			atom.summary().entrySet().stream()
-				.filter(entry -> entry.getValue().containsKey(Asset.TEST.getId()))
-				.map(entry -> new SimpleImmutableEntry<>(entry.getKey().iterator().next(), entry.getValue().get(Asset.TEST.getId())))
+				.filter(entry -> entry.getValue().containsKey(Token.TEST.getId()))
+				.map(entry -> new SimpleImmutableEntry<>(entry.getKey().iterator().next(), entry.getValue().get(Token.TEST.getId())))
 				.collect(Collectors.toList());
 
 		if (summary.isEmpty()) {
@@ -105,7 +105,7 @@ public class TokenTransferTranslator {
 			attachment = null;
 		}
 
-		return TokenTransfer.create(from, to, Asset.TEST, Math.abs(summary.get(0).getValue()), attachment, atom.getTimestamp());
+		return TokenTransfer.create(from, to, Token.TEST, Math.abs(summary.get(0).getValue()), attachment, atom.getTimestamp());
 	}
 
 	public Observable<AddressTokenState> getTokenState(RadixAddress address) {
@@ -167,7 +167,7 @@ public class TokenTransferTranslator {
 
 				if (consumerTotal < tokenTransfer.getSubUnitAmount()) {
 					return Completable.error(new InsufficientFundsException(
-						tokenTransfer.getTokenClass(), consumerTotal, tokenTransfer.getSubUnitAmount()
+						tokenTransfer.getToken(), consumerTotal, tokenTransfer.getSubUnitAmount()
 					));
 				}
 
@@ -175,7 +175,7 @@ public class TokenTransferTranslator {
 					.map(entry -> new Consumable(entry.getValue(),
 						entry.getKey().stream().map(ECKeyPair::getPublicKey).map(AccountReference::new)
 							.collect(Collectors.toList()),
-						System.nanoTime(), Asset.TEST.getId(), System.currentTimeMillis() / 60000L + 60000L, Spin.UP))
+						System.nanoTime(), Token.TEST.getId(), System.currentTimeMillis() / 60000L + 60000L, Spin.UP))
 					.collect(Collectors.toList());
 				atomBuilder.addConsumables(consumables);
 

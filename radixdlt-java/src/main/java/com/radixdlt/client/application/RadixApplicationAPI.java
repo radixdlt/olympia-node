@@ -10,8 +10,8 @@ import com.radixdlt.client.application.translate.AddressTokenState;
 import com.radixdlt.client.application.translate.DataStoreTranslator;
 import com.radixdlt.client.application.translate.TokenTransferTranslator;
 import com.radixdlt.client.application.translate.UniquePropertyTranslator;
-import com.radixdlt.client.assets.Amount;
-import com.radixdlt.client.assets.Asset;
+import com.radixdlt.client.application.objects.Amount;
+import com.radixdlt.client.application.objects.Token;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.RadixUniverse.Ledger;
 import com.radixdlt.client.core.address.RadixAddress;
@@ -205,18 +205,18 @@ public class RadixApplicationAPI {
 		return new Result(updates);
 	}
 
-	public Observable<TokenTransfer> getMyTokenTransfers(Asset tokenClass) {
-		return getTokenTransfers(getMyAddress(), tokenClass);
+	public Observable<TokenTransfer> getMyTokenTransfers(Token token) {
+		return getTokenTransfers(getMyAddress(), token);
 	}
 
-	public Observable<TokenTransfer> getTokenTransfers(RadixAddress address, Asset tokenClass) {
+	public Observable<TokenTransfer> getTokenTransfers(RadixAddress address, Token token) {
 		Objects.requireNonNull(address);
-		Objects.requireNonNull(tokenClass);
+		Objects.requireNonNull(token);
 
 		pull(address);
 
 		return Observable.combineLatest(
-			Observable.fromCallable(() -> new TransactionAtoms(address, tokenClass.getId())),
+			Observable.fromCallable(() -> new TransactionAtoms(address, token.getId())),
 			ledger.getAtomStore().getAtoms(address),
 			(transactionAtoms, atom) ->
 				transactionAtoms.accept(atom)
@@ -225,13 +225,13 @@ public class RadixApplicationAPI {
 		.flatMap(atoms -> atoms.map(tokenTransferTranslator::fromAtom));
 	}
 
-	public Observable<Amount> getMyBalance(Asset tokenClass) {
-		return getBalance(getMyAddress(), tokenClass);
+	public Observable<Amount> getMyBalance(Token token) {
+		return getBalance(getMyAddress(), token);
 	}
 
-	public Observable<Amount> getBalance(RadixAddress address, Asset tokenClass) {
+	public Observable<Amount> getBalance(RadixAddress address, Token token) {
 		Objects.requireNonNull(address);
-		Objects.requireNonNull(tokenClass);
+		Objects.requireNonNull(token);
 
 		pull(address);
 
@@ -299,7 +299,7 @@ public class RadixApplicationAPI {
 		Objects.requireNonNull(to);
 		Objects.requireNonNull(amount);
 
-		final TokenTransfer tokenTransfer = TokenTransfer.create(from, to, amount.getTokenClass(), amount.getAmountInSubunits(), attachment);
+		final TokenTransfer tokenTransfer = TokenTransfer.create(from, to, amount.getToken(), amount.getAmountInSubunits(), attachment);
 		final UniqueProperty uniqueProperty;
 		if (unique != null) {
 			// Unique Property must be the from address so that all validation occurs in a single shard.

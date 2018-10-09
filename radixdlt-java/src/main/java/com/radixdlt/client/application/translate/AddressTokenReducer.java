@@ -1,7 +1,7 @@
 package com.radixdlt.client.application.translate;
 
-import com.radixdlt.client.assets.Amount;
-import com.radixdlt.client.assets.Asset;
+import com.radixdlt.client.application.objects.Amount;
+import com.radixdlt.client.application.objects.Token;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.AtomFeeConsumable;
 import com.radixdlt.client.core.atoms.Consumable;
@@ -32,7 +32,7 @@ public class AddressTokenReducer {
 			.debounce(1000, TimeUnit.MILLISECONDS)
 			.map(consumables -> {
 				long balanceInSubUnits = consumables.stream().mapToLong(Consumable::getAmount).sum();
-				Amount balance = Amount.subUnitsOf(balanceInSubUnits, Asset.TEST);
+				Amount balance = Amount.subUnitsOf(balanceInSubUnits, Token.TEST);
 				return new AddressTokenState(balance, consumables);
 			})
 			.replay(1)

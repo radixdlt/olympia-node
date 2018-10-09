@@ -1,4 +1,4 @@
-package com.radixdlt.client.assets;
+package com.radixdlt.client.application.objects;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -7,20 +7,20 @@ import java.util.Objects;
 import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.atoms.RadixHash;
 
-public final class Asset {
+public final class Token {
 
 	private static final Charset CHARSET = StandardCharsets.UTF_8;
 	/**
 	 * Radix Token asset. TODO: Read from universe file. Hardcode for now.
 	 */
-	public static final Asset TEST = new Asset("XRD", 100000);
-	public static final Asset POW = new Asset("POW",       1);
+	public static final Token TEST = new Token("XRD", 100000);
+	public static final Token POW = new Token("POW",       1);
 
 	private final String iso;
 	private final int subUnits;
 	private final EUID id;
 
-	private Asset(String iso, int subUnits, EUID id) {
+	private Token(String iso, int subUnits, EUID id) {
 		Objects.requireNonNull(iso);
 		Objects.requireNonNull(id);
 
@@ -33,7 +33,7 @@ public final class Asset {
 		this.id = id;
 	}
 
-	public Asset(String iso, int subUnits) {
+	public Token(String iso, int subUnits) {
 		this(iso, subUnits, calcEUID(iso));
 	}
 
@@ -55,12 +55,12 @@ public final class Asset {
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof Asset)) {
+		if (!(o instanceof Token)) {
 			return false;
 		}
 
-		Asset asset = (Asset) o;
-		return this.iso.equals(asset.iso);
+		Token token = (Token) o;
+		return this.iso.equals(token.iso);
 	}
 
 	@Override

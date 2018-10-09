@@ -7,8 +7,8 @@ import static org.mockito.Mockito.when;
 
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
-import com.radixdlt.client.assets.Amount;
-import com.radixdlt.client.assets.Asset;
+import com.radixdlt.client.application.objects.Amount;
+import com.radixdlt.client.application.objects.Token;
 import com.radixdlt.client.core.address.RadixAddress;
 import io.reactivex.Completable;
 import io.reactivex.Observable;
@@ -40,7 +40,7 @@ public class RadixWalletTest {
 		RadixApplicationAPI api = mock(RadixApplicationAPI.class);
 		Result result = mock(Result.class);
 		when(result.toCompletable()).thenReturn(Completable.complete());
-		when(api.getMyBalance(any())).thenReturn(Observable.just(Amount.of(new BigDecimal("1.0"), Asset.TEST)));
+		when(api.getMyBalance(any())).thenReturn(Observable.just(Amount.of(new BigDecimal("1.0"), Token.TEST)));
 		when(api.sendTokens(any(), any(), any(), any())).thenReturn(result);
 		RadixWallet radixWallet = new RadixWallet(api);
 		RadixAddress radixAddress = mock(RadixAddress.class);

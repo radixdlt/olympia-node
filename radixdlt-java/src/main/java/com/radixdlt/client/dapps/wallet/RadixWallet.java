@@ -5,8 +5,8 @@ import com.radixdlt.client.application.RadixApplicationAPI.Result;
 import com.radixdlt.client.application.actions.TokenTransfer;
 import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.application.objects.Data.DataBuilder;
-import com.radixdlt.client.assets.Amount;
-import com.radixdlt.client.assets.Asset;
+import com.radixdlt.client.application.objects.Amount;
+import com.radixdlt.client.application.objects.Token;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate;
 import io.reactivex.Completable;
@@ -55,7 +55,7 @@ public class RadixWallet {
 	 * @return an unending Observable of balances
 	 */
 	public Observable<Amount> getBalance() {
-		return api.getMyBalance(Asset.TEST);
+		return api.getMyBalance(Token.TEST);
 	}
 
 	/**
@@ -67,7 +67,7 @@ public class RadixWallet {
 	 */
 	public Observable<Amount> getBalance(@NonNull RadixAddress address) {
 		Objects.requireNonNull(address, "address must be non-null");
-		return api.getBalance(address, Asset.TEST);
+		return api.getBalance(address, Token.TEST);
 	}
 
 	/**
@@ -77,7 +77,7 @@ public class RadixWallet {
 	 * @return an unending Observable of transfers
 	 */
 	public Observable<TokenTransfer> getTransactions() {
-		return api.getTokenTransfers(api.getMyAddress(), Asset.TEST);
+		return api.getTokenTransfers(api.getMyAddress(), Token.TEST);
 	}
 
 	/**
@@ -91,7 +91,7 @@ public class RadixWallet {
 		@NonNull RadixAddress address
 	) {
 		Objects.requireNonNull(address, "address must be non-null");
-		return api.getTokenTransfers(address, Asset.TEST);
+		return api.getTokenTransfers(address, Token.TEST);
 	}
 
 	/**
@@ -137,7 +137,7 @@ public class RadixWallet {
 			attachment = null;
 		}
 
-		Result result = api.sendTokens(toAddress, Amount.of(amount, Asset.TEST), attachment);
+		Result result = api.sendTokens(toAddress, Amount.of(amount, Token.TEST), attachment);
 		return new SendResult(result);
 	}
 
@@ -205,9 +205,9 @@ public class RadixWallet {
 
 		final byte[] uniqueBytes = unique != null ? unique.getBytes() : null;
 
-		final Amount amountToSend = Amount.of(amount, Asset.TEST);
+		final Amount amountToSend = Amount.of(amount, Token.TEST);
 
-		Single<Result> result = api.getMyBalance(Asset.TEST)
+		Single<Result> result = api.getMyBalance(Token.TEST)
 			.filter(amountToSend::lte)
 			.firstOrError()
 			.map(balance -> api.sendTokens(toAddress, amountToSend, attachment, uniqueBytes))

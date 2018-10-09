@@ -1,7 +1,7 @@
 package com.radixdlt.client.core.atoms;
 
 import com.google.gson.annotations.SerializedName;
-import com.radixdlt.client.assets.Asset;
+import com.radixdlt.client.application.objects.Token;
 import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import java.util.Collections;
@@ -29,7 +29,7 @@ public class TokenParticle implements Particle {
 	) {
 		this.spin = Spin.UP;
 		this.owners = owners;
-		this.id = Asset.calcEUID(iso);
+		this.id = Token.calcEUID(iso);
 		this.subUnits = subUnits;
 		this.iso = iso;
 		this.label = label;
