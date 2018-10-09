@@ -1,4 +1,4 @@
-package com.radixdlt.client.core.atoms;
+package com.radixdlt.client.core.atoms.particles;
 
 import com.radixdlt.client.core.address.EUID;
 import java.util.Collections;

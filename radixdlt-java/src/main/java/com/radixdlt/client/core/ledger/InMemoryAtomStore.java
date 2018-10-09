@@ -4,7 +4,7 @@ import com.radixdlt.client.application.translate.TransactionAtoms;
 import com.radixdlt.client.application.objects.Token;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.atoms.AtomFeeConsumable;
+import com.radixdlt.client.core.atoms.particles.AtomFeeConsumable;
 import io.reactivex.Observable;
 import io.reactivex.subjects.ReplaySubject;
 import java.util.Objects;

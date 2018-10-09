@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import com.radixdlt.client.core.atoms.particles.Spin;
 import org.junit.Test;
 
 public class AtomTest {

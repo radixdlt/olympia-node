@@ -1,7 +1,10 @@
-package com.radixdlt.client.core.atoms;
+package com.radixdlt.client.core.atoms.particles;
 
 import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.address.RadixAddress;
+import com.radixdlt.client.core.atoms.AccountReference;
+import com.radixdlt.client.core.atoms.MetadataMap;
+import com.radixdlt.client.core.atoms.Payload;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import java.util.ArrayList;
 import java.util.Collection;

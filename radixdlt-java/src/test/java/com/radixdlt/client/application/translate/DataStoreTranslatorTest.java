@@ -9,7 +9,7 @@ import static org.mockito.Mockito.when;
 import com.radixdlt.client.application.actions.DataStore;
 import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.core.atoms.AtomBuilder;
-import com.radixdlt.client.core.atoms.DataParticle;
+import com.radixdlt.client.core.atoms.particles.DataParticle;
 import com.radixdlt.client.core.crypto.Encryptor;
 import io.reactivex.observers.TestObserver;
 import org.junit.Test;

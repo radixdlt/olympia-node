@@ -3,6 +3,7 @@ package com.radixdlt.client.core.atoms;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
+import com.radixdlt.client.core.atoms.particles.UniqueParticle;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import org.junit.Test;
 

@@ -1,6 +1,11 @@
 package com.radixdlt.client.core.atoms;
 
 import com.radixdlt.client.core.address.EUID;
+import com.radixdlt.client.core.atoms.particles.ChronoParticle;
+import com.radixdlt.client.core.atoms.particles.Consumable;
+import com.radixdlt.client.core.atoms.particles.DataParticle;
+import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.crypto.ECSignature;
 import com.radixdlt.client.core.serialization.Dson;

@@ -1,10 +1,9 @@
-package com.radixdlt.client.core.atoms;
+package com.radixdlt.client.core.atoms.particles;
 
 import com.google.gson.annotations.SerializedName;
 import com.radixdlt.client.application.objects.Token;
 import com.radixdlt.client.core.address.EUID;
-import com.radixdlt.client.core.address.RadixAddress;
-import com.radixdlt.client.core.crypto.ECKeyPair;
+import com.radixdlt.client.core.atoms.AccountReference;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;

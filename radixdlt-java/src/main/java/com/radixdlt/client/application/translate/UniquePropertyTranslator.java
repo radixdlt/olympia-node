@@ -3,7 +3,7 @@ package com.radixdlt.client.application.translate;
 import com.radixdlt.client.application.actions.UniqueProperty;
 import com.radixdlt.client.core.atoms.AtomBuilder;
 import com.radixdlt.client.core.atoms.Payload;
-import com.radixdlt.client.core.atoms.UniqueParticle;
+import com.radixdlt.client.core.atoms.particles.UniqueParticle;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import io.reactivex.Completable;
 import io.reactivex.annotations.Nullable;

@@ -1,6 +1,7 @@
 package com.radixdlt.client.core.atoms;
 
 import com.radixdlt.client.application.objects.Token;
+import com.radixdlt.client.core.atoms.particles.AtomFeeConsumable;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.pow.ProofOfWork;
 import com.radixdlt.client.core.pow.ProofOfWorkBuilder;

@@ -2,7 +2,7 @@ package com.radixdlt.client.core.atoms;
 
 import static org.junit.Assert.assertEquals;
 
-import com.radixdlt.client.core.atoms.DataParticle.DataParticleBuilder;
+import com.radixdlt.client.core.atoms.particles.DataParticle.DataParticleBuilder;
 import org.junit.Test;
 
 public class AtomBuilderTest {
