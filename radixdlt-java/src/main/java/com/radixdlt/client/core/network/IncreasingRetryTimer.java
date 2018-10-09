@@ -12,9 +12,10 @@ public class IncreasingRetryTimer implements Function<Observable<Throwable>, Obs
 
 	@Override
 	public ObservableSource<Long> apply(Observable<Throwable> attempts) {
-		return attempts.zipWith(Observable.range(1, 300), (n, i) -> i)
+		return attempts.doOnNext(t -> LOGGER.info(t.toString()))
+			.zipWith(Observable.range(1, 300), (n, i) -> i)
 			.map(i -> Math.min(i * i, 100))
-			.doOnNext(i -> LOGGER.info("Connection lost. Retrying in " + i + " seconds..."))
+			.doOnNext(i -> LOGGER.info("Retrying in " + i + " seconds..."))
 			.flatMap(i -> Observable.timer(i, TimeUnit.SECONDS));
 	}
 }
