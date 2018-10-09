@@ -20,9 +20,8 @@ public final class Token {
 	private final int subUnits;
 	private final EUID id;
 
-	private Token(String iso, int subUnits, EUID id) {
+	public Token(String iso, int subUnits) {
 		Objects.requireNonNull(iso);
-		Objects.requireNonNull(id);
 
 		if (subUnits == 0) {
 			throw new IllegalArgumentException("Integer assets should have subUnits set to 1 for mathematical reasons");
@@ -30,11 +29,7 @@ public final class Token {
 
 		this.iso = iso;
 		this.subUnits = subUnits;
-		this.id = id;
-	}
-
-	public Token(String iso, int subUnits) {
-		this(iso, subUnits, calcEUID(iso));
+		this.id = calcEUID(iso);
 	}
 
 	public String getIso() {

@@ -15,8 +15,10 @@ import com.radixdlt.client.application.objects.Token;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.RadixUniverse.Ledger;
 import com.radixdlt.client.core.address.RadixAddress;
+import com.radixdlt.client.core.atoms.AccountReference;
 import com.radixdlt.client.core.atoms.AtomBuilder;
 import com.radixdlt.client.application.identity.RadixIdentity;
+import com.radixdlt.client.core.atoms.TokenParticle;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate;
@@ -236,6 +238,21 @@ public class RadixApplicationAPI {
 		pull(address);
 
 		return tokenTransferTranslator.getTokenState(address).map(AddressTokenState::getBalance);
+	}
+
+	// TODO: refactor to access a TokenTranslator
+	public Result createToken(String name, String iso, String description, int subUnits) {
+		TokenParticle tokenParticle = new TokenParticle(new AccountReference(getMyPublicKey()), name, iso, description, subUnits, null);
+		AtomBuilder atomBuilder = atomBuilderSupplier.get();
+		atomBuilder.addParticle(tokenParticle);
+		UnsignedAtom unsignedAtom = atomBuilder.buildWithPOWFee(universe.getMagic(), getMyPublicKey());
+		ConnectableObservable<AtomSubmissionUpdate> updates = identity.sign(unsignedAtom)
+			.flatMapObservable(ledger.getAtomSubmitter()::submitAtom)
+			.replay();
+
+		updates.connect();
+
+		return new Result(updates);
 	}
 
 	/**
