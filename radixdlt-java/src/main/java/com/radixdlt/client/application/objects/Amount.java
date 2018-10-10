@@ -12,14 +12,14 @@ public class Amount {
 	}
 
 	public static Amount of(long amount, Token token) {
-		return new Amount(token, token.getSubUnits() * amount);
+		return new Amount(token, Token.SUB_UNITS * amount);
 	}
 
 	public static Amount of(BigDecimal amount, Token token) {
-		BigDecimal subUnitAmount = amount.multiply(BigDecimal.valueOf(token.getSubUnits())).stripTrailingZeros();
+		BigDecimal subUnitAmount = amount.multiply(BigDecimal.valueOf(Token.SUB_UNITS)).stripTrailingZeros();
 		if (subUnitAmount.scale() > 0) {
 			throw new IllegalArgumentException("Amount " + amount + " cannot be used for "
-				+ token + " which has a subunit value of " + token.getSubUnits());
+				+ token + " which has a subunit value of " + Token.SUB_UNITS);
 		}
 
 		return new Amount(token, subUnitAmount.longValueExact());
@@ -84,31 +84,14 @@ public class Amount {
 	}
 
 	private String formattedAmount() {
-		long remainder = amountInSubunits % token.getSubUnits();
+		long remainder = amountInSubunits % Token.SUB_UNITS;
 
 		if (remainder == 0) {
 			// Whole number
-			return String.valueOf(amountInSubunits / token.getSubUnits());
+			return String.valueOf(amountInSubunits / Token.SUB_UNITS);
 		}
 
-		if (isPowerOfTen(token.getSubUnits())) {
-			// Decimal format
-			return BigDecimal.valueOf(amountInSubunits).divide(BigDecimal.valueOf(token.getSubUnits())).toString();
-		}
-
-		// Fraction format
-		long quotient = amountInSubunits / token.getSubUnits();
-		String fraction = remainder + "/" + token.getSubUnits();
-		if (quotient == 0) {
-			return fraction;
-		}
-		return quotient + " and " + fraction;
-	}
-
-	private boolean isPowerOfTen(int value) {
-		while (value > 9 && value % 10 == 0) {
-			value /= 10;
-		}
-		return value == 1;
+		// Decimal format
+		return BigDecimal.valueOf(amountInSubunits).divide(BigDecimal.valueOf(Token.SUB_UNITS)).toString();
 	}
 }

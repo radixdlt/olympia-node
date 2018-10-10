@@ -16,7 +16,6 @@ public class TokenParticle implements Particle {
 	}
 
 	@SerializedName("sub_units")
-	private final long subUnits;
 	private final String iso;
 	private final String name;
 	private final String description;
@@ -32,14 +31,12 @@ public class TokenParticle implements Particle {
 		String name,
 		String iso,
 		String description,
-		long subUnits,
 		MintPermissions mintPermissions,
 		byte[] icon
 	) {
 		this.addresses = Collections.singletonList(accountReference);
 		this.spin = Spin.UP;
 		this.uid = Token.calcEUID(iso);
-		this.subUnits = subUnits;
 		this.iso = iso;
 		this.name = name;
 		this.description = description;

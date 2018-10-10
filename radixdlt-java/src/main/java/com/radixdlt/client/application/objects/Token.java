@@ -10,34 +10,25 @@ import com.radixdlt.client.core.atoms.RadixHash;
 public final class Token {
 
 	private static final Charset CHARSET = StandardCharsets.UTF_8;
+	public static final int SUB_UNITS = 100000;
 	/**
 	 * Radix Token asset. TODO: Read from universe file. Hardcode for now.
 	 */
-	public static final Token TEST = new Token("XRD", 100000);
-	public static final Token POW = new Token("POW",       1);
+	public static final Token TEST = new Token("XRD");
+	public static final Token POW = new Token("POW");
 
 	private final String iso;
-	private final int subUnits;
 	private final EUID id;
 
-	public Token(String iso, int subUnits) {
+	public Token(String iso) {
 		Objects.requireNonNull(iso);
 
-		if (subUnits == 0) {
-			throw new IllegalArgumentException("Integer assets should have subUnits set to 1 for mathematical reasons");
-		}
-
 		this.iso = iso;
-		this.subUnits = subUnits;
 		this.id = calcEUID(iso);
 	}
 
 	public String getIso() {
 		return iso;
-	}
-
-	public int getSubUnits() {
-		return subUnits;
 	}
 
 	public EUID getId() {
@@ -65,6 +56,6 @@ public final class Token {
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s/%s/%s]", getClass().getSimpleName(), iso, subUnits, id);
+		return String.format("%s[%s/%s]", getClass().getSimpleName(), iso, id);
 	}
 }

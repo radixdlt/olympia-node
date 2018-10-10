@@ -253,9 +253,9 @@ public class RadixApplicationAPI {
 	}
 
 	// TODO: refactor to access a TokenTranslator
-	public Result createToken(String name, String iso, String description, int subUnits) {
+	public Result createToken(String name, String iso, String description) {
 		AccountReference account = new AccountReference(getMyPublicKey());
-		TokenParticle token = new TokenParticle(account, name, iso, description, subUnits, MintPermissions.SAME_ATOM_ONLY, null);
+		TokenParticle token = new TokenParticle(account, name, iso, description, MintPermissions.SAME_ATOM_ONLY, null);
 		Minted minted = new Minted(
 			10000,
 			account,
