@@ -114,14 +114,21 @@ public final class RadixUniverse {
 		this.config = config;
 		this.network = network;
 
+		final InMemoryAtomStore inMemoryAtomStore = new InMemoryAtomStore();
+		config.getGenesis().forEach(atom ->
+			atom.addresses()
+				.map(this::getAddressFrom)
+				.forEach(addr -> inMemoryAtomStore.store(addr, atom))
+		);
+
 		// Hooking up the default configuration
 		// TODO: cleanup
 		this.ledger = new Ledger() {
 			private final ClientSelector clientSelector = new ClientSelector(config, network, CHECK_UNIVERSE);
 			private final AtomFetcher atomFetcher = new AtomFetcher(clientSelector::getRadixClient);
-			private final InMemoryAtomStore inMemoryAtomStore = new InMemoryAtomStore();
 			private final AtomPuller atomPuller = new RadixAtomPuller(atomFetcher::fetchAtoms, inMemoryAtomStore::store);
 			private final AtomSubmitter atomSubmitter = new RadixAtomSubmitter(clientSelector::getRadixClient);
+
 			/**
 			* The Particle Data Store
 			* TODO: actually change it into the particle data store
