@@ -1,23 +1,24 @@
 package com.radixdlt.client.application.translate;
 
-import com.radixdlt.client.application.objects.Amount;
+import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.atoms.particles.Consumable;
 import java.util.List;
+import java.util.Map;
 
 public class AddressTokenState {
-	private final Amount balance;
-	private final List<Consumable> unconsumedConsumables;
+	private final Map<EUID, Long> balance;
+	private final Map<EUID, List<Consumable>> unconsumedConsumables;
 
-	public AddressTokenState(Amount balance, List<Consumable> unconsumedConsumables) {
+	public AddressTokenState(Map<EUID, Long> balance, Map<EUID, List<Consumable>> unconsumedConsumables) {
 		this.balance = balance;
 		this.unconsumedConsumables = unconsumedConsumables;
 	}
 
-	public Amount getBalance() {
+	public Map<EUID, Long> getBalance() {
 		return balance;
 	}
 
-	public List<Consumable> getUnconsumedConsumables() {
+	public Map<EUID, List<Consumable>> getUnconsumedConsumables() {
 		return unconsumedConsumables;
 	}
 }

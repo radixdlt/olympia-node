@@ -8,6 +8,7 @@ import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomBuilder;
 import io.reactivex.Observable;
 import io.reactivex.observers.TestObserver;
+import java.util.List;
 import org.junit.Test;
 import com.radixdlt.client.application.actions.TokenTransfer;
 import com.radixdlt.client.application.objects.Token;
@@ -26,14 +27,14 @@ public class TokenTransferTranslatorTest {
 		ECPublicKey myKey = mock(ECPublicKey.class);
 		RadixAddress myAddress = mock(RadixAddress.class);
 		when(universe.getAddressFrom(myKey)).thenReturn(myAddress);
-		when(atom.summary()).thenReturn(Collections.singletonMap(
-			Collections.singleton(myKey), Collections.singletonMap(Token.TEST.getId(), 0L)
+		when(atom.tokenSummary()).thenReturn(Collections.singletonMap(Token.TEST.getId(),
+			Collections.singletonMap(myKey, 0L)
 		));
 
 		TokenTransferTranslator tokenTransferTranslator = new TokenTransferTranslator(universe, particleStore);
-		TokenTransfer tokenTransfer = tokenTransferTranslator.fromAtom(atom);
-		assertEquals(myAddress, tokenTransfer.getFrom());
-		assertEquals(myAddress, tokenTransfer.getTo());
+		List<TokenTransfer> tokenTransfers = tokenTransferTranslator.fromAtom(atom);
+		assertEquals(myAddress, tokenTransfers.get(0).getFrom());
+		assertEquals(myAddress, tokenTransfers.get(0).getTo());
 	}
 
 	@Test

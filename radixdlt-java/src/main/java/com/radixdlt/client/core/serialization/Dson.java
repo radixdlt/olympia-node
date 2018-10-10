@@ -225,6 +225,10 @@ public class Dson {
 		} else if (o instanceof HasOrdinalValue) { // HACK
 			raw = longToByteArray(((HasOrdinalValue) o).ordinalValue());
 			type = 2;
+		} else if (o instanceof Enum) {
+			Enum e = (Enum) o;
+			raw = e.name().toLowerCase().getBytes(StandardCharsets.UTF_8);
+			type = Primitive.STRING.value;
 		} else {
 			Class<?> c = o.getClass();
 			List<Field> fields = new ArrayList<>();

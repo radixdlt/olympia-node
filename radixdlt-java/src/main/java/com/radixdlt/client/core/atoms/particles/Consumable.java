@@ -33,7 +33,7 @@ public class Consumable implements Particle {
 	}
 
 	public Consumable spinDown() {
-		return new Consumable(getAmount(), getAddresses().get(0), getNonce(), getTokenClass(), getPlanck(), Spin.DOWN);
+		return new Consumable(getAmount(), getAddress(), getNonce(), getTokenClass(), getPlanck(), Spin.DOWN);
 	}
 
 	public AccountReference getAddress() {
@@ -54,10 +54,6 @@ public class Consumable implements Particle {
 
 		consumerQuantities.merge(newOwner, amount, Long::sum);
 		consumerQuantities.merge(getAddress().getKey().toECKeyPair(), getAmount() - amount, Long::sum);
-	}
-
-	public List<AccountReference> getAddresses() {
-		return addresses;
 	}
 
 	public long getPlanck() {
@@ -90,6 +86,10 @@ public class Consumable implements Particle {
 
 	public Set<ECPublicKey> getOwnersPublicKeys() {
 		return addresses == null ? Collections.emptySet() : addresses.stream().map(AccountReference::getKey).collect(Collectors.toSet());
+	}
+
+	public ECPublicKey getOwner() {
+		return addresses.get(0).getKey();
 	}
 
 	public Set<ECKeyPair> getOwners() {

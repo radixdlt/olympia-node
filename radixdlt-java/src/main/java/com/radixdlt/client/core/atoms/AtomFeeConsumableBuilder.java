@@ -5,7 +5,6 @@ import com.radixdlt.client.core.atoms.particles.AtomFeeConsumable;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.pow.ProofOfWork;
 import com.radixdlt.client.core.pow.ProofOfWorkBuilder;
-import java.util.Collections;
 import java.util.Objects;
 
 public class AtomFeeConsumableBuilder {

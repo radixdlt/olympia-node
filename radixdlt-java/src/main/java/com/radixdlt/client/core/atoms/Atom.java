@@ -1,5 +1,6 @@
 package com.radixdlt.client.core.atoms;
 
+import com.radixdlt.client.application.objects.Token;
 import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.atoms.particles.ChronoParticle;
 import com.radixdlt.client.core.atoms.particles.Consumable;
@@ -92,6 +93,12 @@ public final class Atom {
 		return Optional.ofNullable(signatures).map(sigs -> sigs.get(uid.toString()));
 	}
 
+	public Stream<Consumable> consumables() {
+		return this.getParticles().stream()
+			.filter(p -> p instanceof Consumable)
+			.map(p -> (Consumable) p);
+	}
+
 	public List<Consumable> getConsumables() {
 		return this.getParticles().stream()
 			.filter(p -> p instanceof Consumable)
@@ -126,8 +133,21 @@ public final class Atom {
 			.collect(Collectors.toList());
 	}
 
+	public Map<EUID, Map<ECPublicKey, Long>> tokenSummary() {
+		return consumables()
+			.filter(c -> !c.getTokenClass().equals(Token.calcEUID("POW")))
+			.collect(Collectors.groupingBy(
+				Consumable::getTokenClass,
+				Collectors.groupingBy(
+					Consumable::getOwner,
+					Collectors.summingLong(Consumable::getSignedAmount)
+				)
+			));
+	}
+
 	public Map<Set<ECPublicKey>, Map<EUID, Long>> summary() {
-		return Stream.concat(this.getConsumables(Spin.UP).stream(), getConsumables(Spin.DOWN).stream())
+		return consumables()
+			.filter(c -> !c.getTokenClass().equals(Token.calcEUID("POW")))
 			.collect(Collectors.groupingBy(
 				Consumable::getOwnersPublicKeys,
 				Collectors.groupingBy(

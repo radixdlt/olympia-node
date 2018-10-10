@@ -14,12 +14,15 @@ import com.radixdlt.client.application.objects.Amount;
 import com.radixdlt.client.application.objects.Token;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.RadixUniverse.Ledger;
+import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.AccountReference;
 import com.radixdlt.client.core.atoms.AtomBuilder;
 import com.radixdlt.client.application.identity.RadixIdentity;
+import com.radixdlt.client.core.atoms.particles.Minted;
 import com.radixdlt.client.core.atoms.particles.TokenParticle;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
+import com.radixdlt.client.core.atoms.particles.TokenParticle.MintPermissions;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState;
@@ -33,7 +36,9 @@ import io.reactivex.annotations.Nullable;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.disposables.Disposables;
 import io.reactivex.observables.ConnectableObservable;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -224,7 +229,16 @@ public class RadixApplicationAPI {
 				transactionAtoms.accept(atom)
 					.getNewValidTransactions()
 		)
-		.flatMap(atoms -> atoms.map(tokenTransferTranslator::fromAtom));
+		.flatMap(atoms -> atoms.flatMapIterable(tokenTransferTranslator::fromAtom));
+	}
+
+	public Observable<Map<EUID, Long>> getBalance(RadixAddress address) {
+		Objects.requireNonNull(address);
+
+		pull(address);
+
+		return tokenTransferTranslator.getTokenState(address)
+			.map(AddressTokenState::getBalance);
 	}
 
 	public Observable<Amount> getMyBalance(Token token) {
@@ -232,22 +246,29 @@ public class RadixApplicationAPI {
 	}
 
 	public Observable<Amount> getBalance(RadixAddress address, Token token) {
-		Objects.requireNonNull(address);
 		Objects.requireNonNull(token);
 
-		pull(address);
-
-		return tokenTransferTranslator.getTokenState(address).map(AddressTokenState::getBalance);
+		return getBalance(address)
+			.map(balances -> Amount.subUnitsOf(Optional.ofNullable(balances.get(token.getId())).orElse(0L), token));
 	}
 
 	// TODO: refactor to access a TokenTranslator
 	public Result createToken(String name, String iso, String description, int subUnits) {
-		TokenParticle tokenParticle = new TokenParticle(new AccountReference(getMyPublicKey()), name, iso, description, subUnits, null);
-		AtomBuilder atomBuilder = atomBuilderSupplier.get();
-		atomBuilder.addParticle(tokenParticle);
+		AccountReference account = new AccountReference(getMyPublicKey());
+		TokenParticle token = new TokenParticle(account, name, iso, description, subUnits, MintPermissions.SAME_ATOM_ONLY, null);
+		Minted minted = new Minted(
+			10000,
+			account,
+			System.currentTimeMillis(),
+			Token.calcEUID(iso),
+			System.currentTimeMillis() / 60000L + 60000
+		);
 
+		UnsignedAtom unsignedAtom = atomBuilderSupplier.get()
+			.addParticle(token)
+			.addParticle(minted)
+			.buildWithPOWFee(universe.getMagic(), getMyPublicKey());
 
-		UnsignedAtom unsignedAtom = atomBuilder.buildWithPOWFee(universe.getMagic(), getMyPublicKey());
 		ConnectableObservable<AtomSubmissionUpdate> updates = identity.sign(unsignedAtom)
 			.flatMapObservable(ledger.getAtomSubmitter()::submitAtom)
 			.replay();

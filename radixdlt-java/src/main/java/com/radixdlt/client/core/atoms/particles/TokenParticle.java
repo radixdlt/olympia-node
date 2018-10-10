@@ -9,6 +9,11 @@ import java.util.List;
 import java.util.Set;
 
 public class TokenParticle implements Particle {
+	public enum MintPermissions {
+		GENESIS_ONLY,
+		SAME_ATOM_ONLY
+	}
+
 	@SerializedName("sub_units")
 	private final long subUnits;
 	private final String iso;
@@ -18,6 +23,8 @@ public class TokenParticle implements Particle {
 	private final EUID uid;
 	private final Spin spin;
 	private final List<AccountReference> addresses;
+	@SerializedName("mint_permissions")
+	private final MintPermissions mintPermissions;
 
 	public TokenParticle(
 		AccountReference accountReference,
@@ -25,6 +32,7 @@ public class TokenParticle implements Particle {
 		String iso,
 		String description,
 		long subUnits,
+		MintPermissions mintPermissions,
 		byte[] icon
 	) {
 		this.addresses = Collections.singletonList(accountReference);
@@ -34,6 +42,7 @@ public class TokenParticle implements Particle {
 		this.iso = iso;
 		this.name = name;
 		this.description = description;
+		this.mintPermissions = mintPermissions;
 		this.icon = icon;
 	}
 

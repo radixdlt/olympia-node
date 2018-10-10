@@ -1,7 +1,6 @@
 package com.radixdlt.client.application.translate;
 
-import com.radixdlt.client.application.objects.Amount;
-import com.radixdlt.client.application.objects.Token;
+import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.particles.AtomFeeConsumable;
 import com.radixdlt.client.core.atoms.particles.Consumable;
@@ -10,6 +9,8 @@ import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.ledger.ParticleStore;
 import io.reactivex.Observable;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -31,9 +32,17 @@ public class AddressTokenReducer {
 			)
 			.debounce(1000, TimeUnit.MILLISECONDS)
 			.map(consumables -> {
-				long balanceInSubUnits = consumables.stream().mapToLong(Consumable::getAmount).sum();
-				Amount balance = Amount.subUnitsOf(balanceInSubUnits, Token.TEST);
-				return new AddressTokenState(balance, consumables);
+				Map<EUID, Long> balance = consumables.stream().collect(
+					Collectors.groupingBy(
+						Consumable::getTokenClass, Collectors.summingLong(Consumable::getAmount)
+					)
+				);
+
+				Map<EUID, List<Consumable>> consumableLists = consumables.stream().collect(
+					Collectors.groupingBy(Consumable::getTokenClass)
+				);
+
+				return new AddressTokenState(balance, consumableLists);
 			})
 			.replay(1)
 			.autoConnect();

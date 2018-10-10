@@ -2,7 +2,6 @@ package com.radixdlt.client.core.atoms.particles;
 
 import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.atoms.AccountReference;
-import java.util.List;
 
 public class AtomFeeConsumable extends Consumable {
 	private final EUID service;
