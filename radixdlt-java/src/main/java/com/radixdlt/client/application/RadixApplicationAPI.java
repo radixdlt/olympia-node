@@ -26,7 +26,6 @@ import com.radixdlt.client.core.atoms.particles.TokenParticle.MintPermissions;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState;
-import com.radixdlt.client.application.translate.TransactionAtoms;
 import com.radixdlt.client.core.serialization.RadixJson;
 import io.reactivex.Completable;
 import io.reactivex.Maybe;
@@ -222,14 +221,8 @@ public class RadixApplicationAPI {
 
 		pull(address);
 
-		return Observable.combineLatest(
-			Observable.fromCallable(() -> new TransactionAtoms(address, token.getId())),
-			ledger.getAtomStore().getAtoms(address),
-			(transactionAtoms, atom) ->
-				transactionAtoms.accept(atom)
-					.getNewValidTransactions()
-		)
-		.flatMap(atoms -> atoms.flatMapIterable(tokenTransferTranslator::fromAtom));
+		return ledger.getAtomStore().getAtoms(address)
+			.flatMapIterable(tokenTransferTranslator::fromAtom);
 	}
 
 	public Observable<Map<EUID, Long>> getBalance(RadixAddress address) {

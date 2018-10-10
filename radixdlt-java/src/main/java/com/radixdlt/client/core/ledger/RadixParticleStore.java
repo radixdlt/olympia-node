@@ -2,7 +2,6 @@ package com.radixdlt.client.core.ledger;
 
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.atoms.particles.Consumable;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import io.reactivex.Observable;
 import java.util.concurrent.ConcurrentHashMap;

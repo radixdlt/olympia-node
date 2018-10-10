@@ -79,6 +79,10 @@ public final class Atom {
 		}
 	}
 
+	public Stream<Particle> particles(Spin spin) {
+		return particles.stream().filter(p -> p.getSpin() == spin);
+	}
+
 	public Stream<ECPublicKey> addresses() {
 		return particles.stream()
 			.map(Particle::getAddresses)

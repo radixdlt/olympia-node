@@ -1,10 +1,8 @@
 package com.radixdlt.client.core.ledger;
 
-import com.radixdlt.client.application.translate.TransactionAtoms;
-import com.radixdlt.client.application.objects.Token;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.atoms.particles.AtomFeeConsumable;
+import com.radixdlt.client.core.serialization.Dson;
 import io.reactivex.Observable;
 import io.reactivex.subjects.ReplaySubject;
 import java.util.Objects;
@@ -39,18 +37,12 @@ public class InMemoryAtomStore implements AtomStore {
 	 */
 	public Observable<Atom> getAtoms(RadixAddress address) {
 		Objects.requireNonNull(address);
-		return Observable.just(new TransactionAtoms(address, Token.TEST.getId()))
-			.flatMap(txAtoms ->
+		// TODO: move atom filter outside of class
+		return Observable.fromCallable(() -> new ValidAtomFilter(address, Dson.getInstance()))
+			.flatMap(atomFilter ->
 				cache.computeIfAbsent(address, euid -> ReplaySubject.create())
 					.distinct()
-					.flatMap(atom -> {
-						if (!atom.getConsumables().isEmpty() && !atom.getConsumables().stream()
-							.allMatch(c -> c instanceof AtomFeeConsumable)) {
-							return txAtoms.accept(atom).getNewValidTransactions();
-						} else {
-							return Observable.just(atom);
-						}
-					})
+					.flatMap(atomFilter::filter)
 			);
 	}
 }
