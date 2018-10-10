@@ -1,6 +1,6 @@
 package com.radixdlt.client.core.atoms.particles;
 
-import com.radixdlt.client.core.address.EUID;
+import com.radixdlt.client.core.crypto.ECPublicKey;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
@@ -21,7 +21,8 @@ public class ChronoParticle implements Particle {
 		return spin;
 	}
 
-	public Set<EUID> getDestinations() {
+	@Override
+	public Set<ECPublicKey> getAddresses() {
 		return Collections.emptySet();
 	}
 

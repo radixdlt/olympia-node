@@ -1,6 +1,5 @@
 package com.radixdlt.client.core.atoms.particles;
 
-import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.AccountReference;
 import com.radixdlt.client.core.atoms.MetadataMap;
@@ -71,8 +70,9 @@ public class DataParticle implements Particle {
 		this.addresses = addresses;
 	}
 
-	public Set<EUID> getDestinations() {
-		return addresses.stream().map(AccountReference::getKey).map(ECPublicKey::getUID).collect(Collectors.toSet());
+	@Override
+	public Set<ECPublicKey> getAddresses() {
+		return addresses.stream().map(AccountReference::getKey).collect(Collectors.toSet());
 	}
 
 	public Object getMetaData(String key) {

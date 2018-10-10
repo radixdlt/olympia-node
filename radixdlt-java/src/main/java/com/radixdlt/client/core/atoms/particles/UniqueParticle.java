@@ -7,6 +7,7 @@ import com.radixdlt.client.core.crypto.ECPublicKey;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class UniqueParticle implements Particle {
 	private final Payload unique;
@@ -24,8 +25,8 @@ public class UniqueParticle implements Particle {
 		this.unique = unique;
 	}
 
-	public Set<EUID> getDestinations() {
-		return destinations;
+	public Set<ECPublicKey> getAddresses() {
+		return owners.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toSet());
 	}
 
 	public Spin getSpin() {

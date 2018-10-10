@@ -58,8 +58,9 @@ public final class Atom {
 
 	private Set<Long> getShards() {
 		return getParticles().stream()
-			.map(Particle::getDestinations)
+			.map(Particle::getAddresses)
 			.flatMap(Set::stream)
+			.map(ECPublicKey::getUID)
 			.map(EUID::getShard)
 			.collect(Collectors.toSet());
 	}
@@ -69,7 +70,8 @@ public final class Atom {
 		if (this.particles.stream().anyMatch(p -> p.getSpin() == Spin.DOWN)) {
 			return particles.stream()
 				.filter(p -> p.getSpin() == Spin.DOWN)
-				.flatMap(consumer -> consumer.getDestinations().stream())
+				.flatMap(consumer -> consumer.getAddresses().stream())
+				.map(ECPublicKey::getUID)
 				.map(EUID::getShard)
 				.collect(Collectors.toSet());
 		} else {
@@ -77,6 +79,11 @@ public final class Atom {
 		}
 	}
 
+	public Stream<ECPublicKey> addresses() {
+		return particles.stream()
+			.map(Particle::getAddresses)
+			.flatMap(Set::stream);
+	}
 
 	public Long getTimestamp() {
 		return this.getParticles().stream()

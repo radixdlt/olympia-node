@@ -40,6 +40,11 @@ public class Consumable implements Particle {
 		return addresses.get(0);
 	}
 
+	@Override
+	public Set<ECPublicKey> getAddresses() {
+		return addresses.stream().map(AccountReference::getKey).collect(Collectors.toSet());
+	}
+
 	public void addConsumerQuantities(long amount, ECKeyPair newOwner, Map<ECKeyPair, Long> consumerQuantities) {
 		if (amount > getAmount()) {
 			throw new IllegalArgumentException(
@@ -80,20 +85,12 @@ public class Consumable implements Particle {
 		return amount;
 	}
 
-	public Set<EUID> getDestinations() {
-		return getOwnersPublicKeys().stream().map(ECPublicKey::getUID).collect(Collectors.toSet());
-	}
-
 	public Set<ECPublicKey> getOwnersPublicKeys() {
 		return addresses == null ? Collections.emptySet() : addresses.stream().map(AccountReference::getKey).collect(Collectors.toSet());
 	}
 
 	public ECPublicKey getOwner() {
 		return addresses.get(0).getKey();
-	}
-
-	public Set<ECKeyPair> getOwners() {
-		return getOwnersPublicKeys().stream().map(ECPublicKey::toECKeyPair).collect(Collectors.toSet());
 	}
 
 	public RadixHash getHash() {

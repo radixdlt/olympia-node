@@ -4,6 +4,7 @@ import com.google.gson.annotations.SerializedName;
 import com.radixdlt.client.application.objects.Token;
 import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.atoms.AccountReference;
+import com.radixdlt.client.core.crypto.ECPublicKey;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -46,9 +47,8 @@ public class TokenParticle implements Particle {
 		this.icon = icon;
 	}
 
-	// TODO: fix this to be an account
-	public Set<EUID> getDestinations() {
-		return Collections.singleton(uid);
+	public Set<ECPublicKey> getAddresses() {
+		return Collections.singleton(addresses.get(0).getKey());
 	}
 
 	public Spin getSpin() {
