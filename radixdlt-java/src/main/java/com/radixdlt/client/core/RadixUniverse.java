@@ -1,6 +1,6 @@
 package com.radixdlt.client.core;
 
-import com.radixdlt.client.core.ledger.ConsumableDataSource;
+import com.radixdlt.client.core.ledger.RadixParticleStore;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.client.core.crypto.ECPublicKey;
@@ -133,7 +133,7 @@ public final class RadixUniverse {
 			* The Particle Data Store
 			* TODO: actually change it into the particle data store
 			*/
-			private final ConsumableDataSource particleStore = new ConsumableDataSource(inMemoryAtomStore);
+			private final RadixParticleStore particleStore = new RadixParticleStore(inMemoryAtomStore);
 
 			@Override
 			public AtomPuller getAtomPuller() {
@@ -141,7 +141,7 @@ public final class RadixUniverse {
 			}
 
 			@Override
-			public ConsumableDataSource getParticleStore() {
+			public RadixParticleStore getParticleStore() {
 				return particleStore;
 			}
 

@@ -268,7 +268,7 @@ public class RadixApplicationAPITest {
 		AtomPuller puller = mock(AtomPuller.class);
 		when(ledger.getAtomPuller()).thenReturn(puller);
 		ParticleStore particleStore = mock(ParticleStore.class);
-		when(particleStore.getConsumables(any())).thenReturn(Observable.never());
+		when(particleStore.getParticles(any())).thenReturn(Observable.never());
 		when(ledger.getParticleStore()).thenReturn(particleStore);
 		when(universe.getLedger()).thenReturn(ledger);
 

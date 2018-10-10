@@ -19,8 +19,9 @@ public class AddressTokenReducer {
 	private final Observable<AddressTokenState> state;
 
 	public AddressTokenReducer(RadixAddress address, ParticleStore particleStore) {
-		this.state = particleStore.getConsumables(address)
-			.filter(p -> !(p instanceof AtomFeeConsumable))
+		this.state = particleStore.getParticles(address)
+			.filter(p -> p instanceof Consumable && !(p instanceof AtomFeeConsumable))
+			.map(p -> (Consumable) p)
 			.scanWith(HashMap<RadixHash, Consumable>::new, (map, p) -> {
 				HashMap<RadixHash, Consumable> newMap = new HashMap<>(map);
 				newMap.put(p.getHash(), p);

@@ -9,6 +9,7 @@ import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.particles.Consumable;
 import com.radixdlt.client.core.atoms.RadixHash;
+import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.ledger.ParticleStore;
 import io.reactivex.Observable;
@@ -29,8 +30,8 @@ public class AddressTokenReducerTest {
 		when(consumable.getSpin()).thenReturn(Spin.UP);
 		when(consumable.getTokenClass()).thenReturn(new EUID(1));
 
-		when(store.getConsumables(address)).thenReturn(
-			Observable.just(consumable).concatWith(Observable.never())
+		when(store.getParticles(address)).thenReturn(
+			Observable.<Particle>just(consumable).concatWith(Observable.never())
 		);
 		AddressTokenReducer reducer = new AddressTokenReducer(address, store);
 
@@ -44,7 +45,7 @@ public class AddressTokenReducerTest {
 		reducer.getState().subscribe(testObserver2);
 		testObserver2.assertValue(state -> state.getBalance().get(new EUID(1)) == 10L);
 
-		verify(store, times(1)).getConsumables(address);
+		verify(store, times(1)).getParticles(address);
 	}
 
 }
