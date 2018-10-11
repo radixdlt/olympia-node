@@ -24,7 +24,7 @@ public class AtomBuilder {
 		return this;
 	}
 
-	public UnsignedAtom buildWithPOWFee(int magic, ECPublicKey owner) {
+	public UnsignedAtom buildWithPOWFee(int magic, ECPublicKey owner, TokenReference powToken) {
 		long timestamp = System.currentTimeMillis();
 
 		// Expensive but fine for now
@@ -32,6 +32,7 @@ public class AtomBuilder {
 
 		// Rebuild with atom fee
 		AtomFeeConsumable fee = new AtomFeeConsumableBuilder()
+			.powToken(powToken)
 			.atom(unsignedAtom)
 			.owner(owner)
 			.pow(magic, POW_LEADING_ZEROES_REQUIRED)

@@ -3,7 +3,8 @@ package com.radixdlt.client.examples;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.objects.Amount;
-import com.radixdlt.client.core.atoms.Token;
+import com.radixdlt.client.core.atoms.AccountReference;
+import com.radixdlt.client.core.atoms.TokenReference;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.address.RadixAddress;
@@ -51,10 +52,16 @@ public class RadixWalletExample {
 		api.getBalance(api.getMyAddress())
 			.subscribe(balance -> System.out.println("My Balance:\n" + balance));
 
+		/*
+		api.createFixedSupplyToken("Joshy Token", "YOSHY", "The Best Coin Ever", 10000)
+			.toObservable().subscribe(System.out::println);
+		*/
+
 		// If specified, send money to another address
 		if (TO_ADDRESS_BASE58 != null) {
 			RadixAddress toAddress = RadixAddress.fromString(TO_ADDRESS_BASE58);
-			api.sendTokens(toAddress, Amount.of(AMOUNT, Token.of("JOSH"))).toObservable()
+			TokenReference token = TokenReference.of(new AccountReference(api.getMyPublicKey()), "YOSHY");
+			api.sendTokens(toAddress, Amount.of(AMOUNT, token)).toObservable()
 				.subscribe(System.out::println, Throwable::printStackTrace);
 		}
 	}

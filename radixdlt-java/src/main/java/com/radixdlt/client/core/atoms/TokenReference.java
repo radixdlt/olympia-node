@@ -5,21 +5,23 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
-public final class Token {
+public final class TokenReference {
 
 	private static final Charset CHARSET = StandardCharsets.UTF_8;
 	public static final int SUB_UNITS = 100000;
 
+	private final AccountReference address;
 	private final String iso;
 
-	private Token(String iso) {
+	private TokenReference(AccountReference address, String iso) {
 		Objects.requireNonNull(iso);
 
+		this.address = address;
 		this.iso = iso;
 	}
 
-	public static Token of(String reference) {
-		return new Token(reference);
+	public static TokenReference of(AccountReference address, String reference) {
+		return new TokenReference(address, reference);
 	}
 
 	public String getIso() {
@@ -32,21 +34,21 @@ public final class Token {
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof Token)) {
+		if (!(o instanceof TokenReference)) {
 			return false;
 		}
 
-		Token token = (Token) o;
-		return this.iso.equals(token.iso);
+		TokenReference tokenReference = (TokenReference) o;
+		return this.iso.equals(tokenReference.iso);
 	}
 
 	@Override
 	public int hashCode() {
-		return iso.hashCode();
+		return toString().hashCode(); //FIXME: quick hack for now
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s]", getClass().getSimpleName(), iso);
+		return String.format("%s/@%s", address.toString(), iso);
 	}
 }

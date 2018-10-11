@@ -11,6 +11,15 @@ public class AtomFeeConsumableBuilder {
 	private int magic;
 	private int leading;
 	private UnsignedAtom unsignedAtom;
+	private TokenReference powToken;
+
+	public AtomFeeConsumableBuilder() {
+	}
+
+	public AtomFeeConsumableBuilder powToken(TokenReference powToken) {
+		this.powToken = powToken;
+		return this;
+	}
 
 	public AtomFeeConsumableBuilder pow(int magic, int leading) {
 		this.magic = magic;
@@ -40,7 +49,7 @@ public class AtomFeeConsumableBuilder {
 			pow.getNonce(),
 			new AccountReference(owner),
 			System.nanoTime(),
-			Token.of("POW"),
+			powToken,
 			System.currentTimeMillis() * 60000
 		);
 	}

@@ -1,7 +1,7 @@
 package com.radixdlt.client.application.translate;
 
 import com.radixdlt.client.core.address.RadixAddress;
-import com.radixdlt.client.core.atoms.Token;
+import com.radixdlt.client.core.atoms.TokenReference;
 import com.radixdlt.client.core.atoms.particles.AtomFeeConsumable;
 import com.radixdlt.client.core.atoms.particles.Consumable;
 import com.radixdlt.client.core.atoms.RadixHash;
@@ -33,13 +33,13 @@ public class AddressTokenReducer {
 			)
 			.debounce(1000, TimeUnit.MILLISECONDS)
 			.map(consumables -> {
-				Map<Token, Long> balance = consumables.stream().collect(
+				Map<TokenReference, Long> balance = consumables.stream().collect(
 					Collectors.groupingBy(
 						Consumable::getTokenReference, Collectors.summingLong(Consumable::getAmount)
 					)
 				);
 
-				Map<Token, List<Consumable>> consumableLists = consumables.stream().collect(
+				Map<TokenReference, List<Consumable>> consumableLists = consumables.stream().collect(
 					Collectors.groupingBy(Consumable::getTokenReference)
 				);
 

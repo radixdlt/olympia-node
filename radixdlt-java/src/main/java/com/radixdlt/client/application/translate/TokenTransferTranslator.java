@@ -115,8 +115,8 @@ public class TokenTransferTranslator {
 	public Completable translate(TokenTransfer tokenTransfer, AtomBuilder atomBuilder) {
 		return getTokenState(tokenTransfer.getFrom())
 			.map(AddressTokenState::getUnconsumedConsumables)
-			.map(u -> u.containsKey(tokenTransfer.getToken())
-				? u.get(tokenTransfer.getToken())
+			.map(u -> u.containsKey(tokenTransfer.getTokenReference())
+				? u.get(tokenTransfer.getTokenReference())
 				: Collections.<Consumable>emptyList())
 			.firstOrError()
 			.flatMapCompletable(unconsumedConsumables -> {
@@ -170,7 +170,7 @@ public class TokenTransferTranslator {
 
 				if (consumerTotal < tokenTransfer.getSubUnitAmount()) {
 					return Completable.error(new InsufficientFundsException(
-						tokenTransfer.getToken(), consumerTotal, tokenTransfer.getSubUnitAmount()
+						tokenTransfer.getTokenReference(), consumerTotal, tokenTransfer.getSubUnitAmount()
 					));
 				}
 
@@ -179,7 +179,7 @@ public class TokenTransferTranslator {
 						entry.getValue(),
 						new AccountReference(entry.getKey().getPublicKey()),
 						System.nanoTime(),
-						tokenTransfer.getToken(),
+						tokenTransfer.getTokenReference(),
 						System.currentTimeMillis() / 60000L + 60000L, Spin.UP
 					))
 					.collect(Collectors.toList());

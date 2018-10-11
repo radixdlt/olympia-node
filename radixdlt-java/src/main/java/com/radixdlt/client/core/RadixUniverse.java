@@ -1,5 +1,8 @@
 package com.radixdlt.client.core;
 
+import com.radixdlt.client.core.atoms.TokenReference;
+import com.radixdlt.client.core.atoms.particles.Spin;
+import com.radixdlt.client.core.atoms.particles.TokenParticle;
 import com.radixdlt.client.core.ledger.RadixParticleStore;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
@@ -15,6 +18,7 @@ import com.radixdlt.client.core.ledger.ClientSelector;
 import com.radixdlt.client.core.ledger.InMemoryAtomStore;
 import com.radixdlt.client.core.network.PeerDiscovery;
 import com.radixdlt.client.core.network.RadixNetwork;
+import java.util.Optional;
 
 /**
  * A RadixUniverse represents the interface through which a client can interact
@@ -110,9 +114,39 @@ public final class RadixUniverse {
 
 	private final Ledger ledger;
 
+	private final TokenReference powToken;
+
+	private final TokenReference nativeToken;
+
 	private RadixUniverse(RadixUniverseConfig config, RadixNetwork network) {
 		this.config = config;
 		this.network = network;
+
+		final Optional<TokenReference> powToken = config.getGenesis().stream()
+			.flatMap(atom -> atom.particles(Spin.UP))
+			.filter(p -> p instanceof TokenParticle)
+			.filter(p -> ((TokenParticle) p).getTokenReference().getIso().equals("POW"))
+			.map(p -> ((TokenParticle) p).getTokenReference())
+			.findFirst();
+
+		if (!powToken.isPresent()) {
+			throw new IllegalStateException("No POW Token defined in universe");
+		}
+
+		this.powToken = powToken.get();
+
+		final Optional<TokenReference> nativeToken = config.getGenesis().stream()
+			.flatMap(atom -> atom.particles(Spin.UP))
+			.filter(p -> p instanceof TokenParticle)
+			.filter(p -> !((TokenParticle) p).getTokenReference().getIso().equals("POW"))
+			.map(p -> ((TokenParticle) p).getTokenReference())
+			.findFirst();
+
+		if (!nativeToken.isPresent()) {
+			throw new IllegalStateException("No Native Token defined in universe");
+		}
+
+		this.nativeToken = nativeToken.get();
 
 		final InMemoryAtomStore inMemoryAtomStore = new InMemoryAtomStore();
 		config.getGenesis().forEach(atom ->
@@ -155,6 +189,14 @@ public final class RadixUniverse {
 				return atomSubmitter;
 			}
 		};
+	}
+
+	public TokenReference getPOWToken() {
+		return powToken;
+	}
+
+	public TokenReference getNativeToken() {
+		return nativeToken;
 	}
 
 	public int getMagic() {

@@ -11,7 +11,7 @@ import io.reactivex.observers.TestObserver;
 import java.util.List;
 import org.junit.Test;
 import com.radixdlt.client.application.actions.TokenTransfer;
-import com.radixdlt.client.core.atoms.Token;
+import com.radixdlt.client.core.atoms.TokenReference;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.crypto.ECPublicKey;
@@ -27,7 +27,8 @@ public class TokenTransferTranslatorTest {
 		ECPublicKey myKey = mock(ECPublicKey.class);
 		RadixAddress myAddress = mock(RadixAddress.class);
 		when(universe.getAddressFrom(myKey)).thenReturn(myAddress);
-		when(atom.tokenSummary()).thenReturn(Collections.singletonMap(Token.of("TEST"),
+		TokenReference tokenReference = mock(TokenReference.class);
+		when(atom.tokenSummary()).thenReturn(Collections.singletonMap(tokenReference,
 			Collections.singletonMap(myKey, 0L)
 		));
 
@@ -46,12 +47,13 @@ public class TokenTransferTranslatorTest {
 		TokenTransfer tokenTransfer = mock(TokenTransfer.class);
 		when(tokenTransfer.getSubUnitAmount()).thenReturn(10L);
 		when(tokenTransfer.getFrom()).thenReturn(address);
-		when(tokenTransfer.getToken()).thenReturn(Token.of("XRD"));
+		TokenReference token = mock(TokenReference.class);
+		when(tokenTransfer.getTokenReference()).thenReturn(token);
 
 		TestObserver observer = TestObserver.create();
 		transferTranslator.translate(tokenTransfer, new AtomBuilder()).subscribe(observer);
 		observer.awaitTerminalEvent();
-		observer.assertError(new InsufficientFundsException(Token.of("XRD"), 0, 10));
+		observer.assertError(new InsufficientFundsException(token, 0, 10));
 	}
 
 }

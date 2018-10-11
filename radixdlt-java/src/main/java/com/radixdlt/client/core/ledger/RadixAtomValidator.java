@@ -35,7 +35,7 @@ public class RadixAtomValidator implements AtomValidator {
 					return new AtomValidationException("No owners in particle");
 				}
 
-				if (down.getTokenReference().equals("POW")) {
+				if (down.getTokenReference().getIso().equals("POW")) {
 					return null;
 				}
 

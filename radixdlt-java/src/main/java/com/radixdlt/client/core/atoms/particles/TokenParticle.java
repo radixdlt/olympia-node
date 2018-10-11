@@ -1,10 +1,12 @@
 package com.radixdlt.client.core.atoms.particles;
 
 import com.google.gson.annotations.SerializedName;
-import com.radixdlt.client.core.atoms.Token;
+import com.radixdlt.client.core.atoms.RadixHash;
+import com.radixdlt.client.core.atoms.TokenReference;
 import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.atoms.AccountReference;
 import com.radixdlt.client.core.crypto.ECPublicKey;
+import com.radixdlt.client.core.serialization.Dson;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -34,13 +36,18 @@ public class TokenParticle implements Particle {
 		byte[] icon
 	) {
 		this.addresses = Collections.singletonList(accountReference);
-		this.spin = Spin.UP;
-		this.uid = Token.calcEUID(iso);
 		this.iso = iso;
+		this.spin = Spin.UP;
+		// FIXME: bad hack
+		this.uid = RadixHash.of(Dson.getInstance().toDson(getTokenReference())).toEUID();
 		this.name = name;
 		this.description = description;
 		this.mintPermissions = mintPermissions;
 		this.icon = icon;
+	}
+
+	public TokenReference getTokenReference() {
+		return TokenReference.of(addresses.get(0), iso);
 	}
 
 	public Set<ECPublicKey> getAddresses() {

@@ -13,7 +13,7 @@ import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.application.objects.UnencryptedData;
 import com.radixdlt.client.application.translate.DataStoreTranslator;
 import com.radixdlt.client.application.objects.Amount;
-import com.radixdlt.client.core.atoms.Token;
+import com.radixdlt.client.core.atoms.TokenReference;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.RadixUniverse.Ledger;
 import com.radixdlt.client.core.address.RadixAddress;
@@ -57,7 +57,7 @@ public class RadixApplicationAPITest {
 
 		Supplier<AtomBuilder> atomBuilderSupplier = () -> atomBuilder;
 		UnsignedAtom unsignedAtom = mock(UnsignedAtom.class);
-		when(atomBuilder.buildWithPOWFee(anyInt(), any())).thenReturn(unsignedAtom);
+		when(atomBuilder.buildWithPOWFee(anyInt(), any(), any())).thenReturn(unsignedAtom);
 
 		return RadixApplicationAPI.create(identity, universe, DataStoreTranslator.getInstance(), atomBuilderSupplier);
 	}
@@ -234,8 +234,9 @@ public class RadixApplicationAPITest {
 
 		RadixApplicationAPI api = RadixApplicationAPI.create(identity, universe, DataStoreTranslator.getInstance(), AtomBuilder::new);
 		TestObserver<Amount> observer = TestObserver.create();
+		TokenReference token = mock(TokenReference.class);
 
-		api.getBalance(address, Token.of("XRD")).subscribe(observer);
+		api.getBalance(address, token).subscribe(observer);
 		observer.awaitCount(1);
 		observer.assertValue(amount -> amount.getAmountInSubunits() == 0);
 	}
@@ -277,7 +278,8 @@ public class RadixApplicationAPITest {
 
 		RadixApplicationAPI api = RadixApplicationAPI.create(identity, universe, DataStoreTranslator.getInstance(), AtomBuilder::new);
 		TestObserver<Amount> testObserver = TestObserver.create();
-		api.getBalance(address, Token.of("XRD")).subscribe(testObserver);
+		TokenReference token = mock(TokenReference.class);
+		api.getBalance(address, token).subscribe(testObserver);
 		verify(puller, times(1)).pull(address);
 	}
 }

@@ -143,7 +143,7 @@ public final class Atom {
 			.collect(Collectors.toList());
 	}
 
-	public Map<Token, Map<ECPublicKey, Long>> tokenSummary() {
+	public Map<TokenReference, Map<ECPublicKey, Long>> tokenSummary() {
 		return consumables()
 			.filter(c -> !c.getTokenReference().equals("POW"))
 			.collect(Collectors.groupingBy(

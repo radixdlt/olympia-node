@@ -3,7 +3,7 @@ package com.radixdlt.client.core.ledger;
 import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomValidationException;
-import com.radixdlt.client.core.atoms.Token;
+import com.radixdlt.client.core.atoms.TokenReference;
 import com.radixdlt.client.core.atoms.particles.Consumable;
 import com.radixdlt.client.core.atoms.RadixHash;
 import com.radixdlt.client.core.atoms.particles.Spin;
@@ -33,7 +33,9 @@ public class RadixAtomValidatorTest {
 
 		Consumable consumer = mock(Consumable.class);
 		when(consumer.getOwnersPublicKeys()).thenReturn(Collections.singleton(publicKey));
-		when(consumer.getTokenReference()).thenReturn(Token.of("TEST"));
+		TokenReference token = mock(TokenReference.class);
+		when(token.getIso()).thenReturn("TEST");
+		when(consumer.getTokenReference()).thenReturn(token);
 
 		Atom atom = mock(Atom.class);
 		when(atom.getHash()).thenReturn(hash);

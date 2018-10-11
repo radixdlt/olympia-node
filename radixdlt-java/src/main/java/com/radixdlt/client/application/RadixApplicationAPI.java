@@ -12,7 +12,7 @@ import com.radixdlt.client.application.translate.DataStoreTranslator;
 import com.radixdlt.client.application.translate.TokenTransferTranslator;
 import com.radixdlt.client.application.translate.UniquePropertyTranslator;
 import com.radixdlt.client.application.objects.Amount;
-import com.radixdlt.client.core.atoms.Token;
+import com.radixdlt.client.core.atoms.TokenReference;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.RadixUniverse.Ledger;
 import com.radixdlt.client.core.address.RadixAddress;
@@ -153,6 +153,9 @@ public class RadixApplicationAPI {
 		}
 	}
 
+	public TokenReference getNativeToken() {
+		return universe.getNativeToken();
+	}
 
 	public ECPublicKey getMyPublicKey() {
 		return identity.getPublicKey();
@@ -190,7 +193,9 @@ public class RadixApplicationAPI {
 
 		AtomBuilder atomBuilder = atomBuilderSupplier.get();
 		ConnectableObservable<AtomSubmissionUpdate> updates = dataStoreTranslator.translate(dataStore, atomBuilder)
-			.andThen(Single.fromCallable(() -> atomBuilder.buildWithPOWFee(universe.getMagic(), address.getPublicKey())))
+			.andThen(Single.fromCallable(
+				() -> atomBuilder.buildWithPOWFee(universe.getMagic(), address.getPublicKey(), universe.getPOWToken())
+			))
 			.flatMap(identity::sign)
 			.flatMapObservable(ledger.getAtomSubmitter()::submitAtom)
 			.replay();
@@ -205,7 +210,9 @@ public class RadixApplicationAPI {
 
 		AtomBuilder atomBuilder = atomBuilderSupplier.get();
 		ConnectableObservable<AtomSubmissionUpdate> updates = dataStoreTranslator.translate(dataStore, atomBuilder)
-			.andThen(Single.fromCallable(() -> atomBuilder.buildWithPOWFee(universe.getMagic(), address0.getPublicKey())))
+			.andThen(Single.fromCallable(
+				() -> atomBuilder.buildWithPOWFee(universe.getMagic(), address0.getPublicKey(), universe.getPOWToken())
+			))
 			.flatMap(identity::sign)
 			.flatMapObservable(ledger.getAtomSubmitter()::submitAtom)
 			.replay();
@@ -228,7 +235,7 @@ public class RadixApplicationAPI {
 			.flatMapIterable(tokenTransferTranslator::fromAtom);
 	}
 
-	public Observable<Map<Token, BigDecimal>> getBalance(RadixAddress address) {
+	public Observable<Map<TokenReference, BigDecimal>> getBalance(RadixAddress address) {
 		Objects.requireNonNull(address);
 
 		pull(address);
@@ -237,20 +244,24 @@ public class RadixApplicationAPI {
 			.map(AddressTokenState::getBalance)
 			.map(map -> map.entrySet().stream().collect(
 				Collectors.toMap(Entry::getKey,
-					e -> BigDecimal.valueOf(e.getValue()).divide(BigDecimal.valueOf(Token.SUB_UNITS), MathContext.UNLIMITED))
+					e -> {
+						BigDecimal subUnitAmount = BigDecimal.valueOf(e.getValue());
+						BigDecimal subUnits = BigDecimal.valueOf(TokenReference.SUB_UNITS);
+						return subUnitAmount.divide(subUnits, MathContext.UNLIMITED);
+					})
 				)
 			);
 	}
 
-	public Observable<Amount> getMyBalance(Token token) {
-		return getBalance(getMyAddress(), token);
+	public Observable<Amount> getMyBalance(TokenReference tokenReference) {
+		return getBalance(getMyAddress(), tokenReference);
 	}
 
-	public Observable<Amount> getBalance(RadixAddress address, Token token) {
-		Objects.requireNonNull(token);
+	public Observable<Amount> getBalance(RadixAddress address, TokenReference tokenReference) {
+		Objects.requireNonNull(tokenReference);
 
 		return getBalance(address)
-			.map(balances -> Amount.of(Optional.ofNullable(balances.get(token.getIso())).orElse(BigDecimal.ZERO), token));
+			.map(balances -> Amount.of(Optional.ofNullable(balances.get(tokenReference)).orElse(BigDecimal.ZERO), tokenReference));
 	}
 
 	// TODO: refactor to access a TokenTranslator
@@ -258,17 +269,17 @@ public class RadixApplicationAPI {
 		AccountReference account = new AccountReference(getMyPublicKey());
 		TokenParticle token = new TokenParticle(account, name, iso, description, MintPermissions.SAME_ATOM_ONLY, null);
 		Minted minted = new Minted(
-			fixedSupply * Token.SUB_UNITS,
+			fixedSupply * TokenReference.SUB_UNITS,
 			account,
 			System.currentTimeMillis(),
-			Token.of(iso),
+			token.getTokenReference(),
 			System.currentTimeMillis() / 60000L + 60000
 		);
 
 		UnsignedAtom unsignedAtom = atomBuilderSupplier.get()
 			.addParticle(token)
 			.addParticle(minted)
-			.buildWithPOWFee(universe.getMagic(), getMyPublicKey());
+			.buildWithPOWFee(universe.getMagic(), getMyPublicKey(), universe.getPOWToken());
 
 		ConnectableObservable<AtomSubmissionUpdate> updates = identity.sign(unsignedAtom)
 			.flatMapObservable(ledger.getAtomSubmitter()::submitAtom)
@@ -375,7 +386,8 @@ public class RadixApplicationAPI {
 		Objects.requireNonNull(to);
 		Objects.requireNonNull(amount);
 
-		final TokenTransfer tokenTransfer = TokenTransfer.create(from, to, amount.getToken(), amount.getAmountInSubunits(), attachment);
+		final TokenTransfer tokenTransfer =
+			TokenTransfer.create(from, to, amount.getTokenReference(), amount.getAmountInSubunits(), attachment);
 		final UniqueProperty uniqueProperty;
 		if (unique != null) {
 			// Unique Property must be the from address so that all validation occurs in a single shard.
@@ -399,7 +411,9 @@ public class RadixApplicationAPI {
 		Single<UnsignedAtom> unsignedAtom =
 			uniquePropertyTranslator.translate(uniqueProperty, atomBuilder)
 			.andThen(tokenTransferTranslator.translate(tokenTransfer, atomBuilder))
-			.andThen(Single.fromCallable(() -> atomBuilder.buildWithPOWFee(universe.getMagic(), tokenTransfer.getFrom().getPublicKey())));
+			.andThen(Single.fromCallable(
+				() -> atomBuilder.buildWithPOWFee(universe.getMagic(), tokenTransfer.getFrom().getPublicKey(), universe.getPOWToken())
+			));
 
 		ConnectableObservable<AtomSubmissionUpdate> updates =
 			unsignedAtom
