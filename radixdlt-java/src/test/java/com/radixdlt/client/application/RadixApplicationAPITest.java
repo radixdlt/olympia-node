@@ -109,7 +109,7 @@ public class RadixApplicationAPITest {
 		RadixApplicationAPI api = createMockedAPIWhichAlwaysSucceeds();
 		assertThatThrownBy(() -> api.getReadableData(null))
 			.isInstanceOf(NullPointerException.class);
-		assertThatThrownBy(() -> api.getTokenTransfers(null, null))
+		assertThatThrownBy(() -> api.getTokenTransfers(null))
 			.isInstanceOf(NullPointerException.class);
 		assertThatThrownBy(() -> api.getBalance(null, null))
 			.isInstanceOf(NullPointerException.class);

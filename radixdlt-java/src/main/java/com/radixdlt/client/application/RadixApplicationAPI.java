@@ -5,6 +5,7 @@ import com.radixdlt.client.application.actions.DataStore;
 import com.radixdlt.client.application.actions.TokenTransfer;
 import com.radixdlt.client.application.actions.UniqueProperty;
 import com.radixdlt.client.application.objects.Data;
+import com.radixdlt.client.application.objects.Data.DataBuilder;
 import com.radixdlt.client.application.objects.UnencryptedData;
 import com.radixdlt.client.application.translate.AddressTokenState;
 import com.radixdlt.client.application.translate.DataStoreTranslator;
@@ -214,13 +215,12 @@ public class RadixApplicationAPI {
 		return new Result(updates);
 	}
 
-	public Observable<TokenTransfer> getMyTokenTransfers(Token token) {
-		return getTokenTransfers(getMyAddress(), token);
+	public Observable<TokenTransfer> getMyTokenTransfers() {
+		return getTokenTransfers(getMyAddress());
 	}
 
-	public Observable<TokenTransfer> getTokenTransfers(RadixAddress address, Token token) {
+	public Observable<TokenTransfer> getTokenTransfers(RadixAddress address) {
 		Objects.requireNonNull(address);
-		Objects.requireNonNull(token);
 
 		pull(address);
 
@@ -288,6 +288,41 @@ public class RadixApplicationAPI {
 	 */
 	public Result sendTokens(RadixAddress to, Amount amount) {
 		return transferTokens(getMyAddress(), to, amount);
+	}
+
+
+	/**
+	 * Sends an amount of a token with a message attachment to an address
+	 *
+	 * @param to the address to send tokens to
+	 * @param amount the amount and token type
+	 * @param message message to be encrypted and attached to transfer
+	 * @return result of the transaction
+	 */
+	public Result sendTokensWithMessage(RadixAddress to, Amount amount, @Nullable String message) {
+		return sendTokensWithMessage(to, amount, message, null);
+	}
+
+	/**
+	 * Sends an amount of a token with a message attachment to an address
+	 *
+	 * @param to the address to send tokens to
+	 * @param amount the amount and token type
+	 * @param message message to be encrypted and attached to transfer
+	 * @return result of the transaction
+	 */
+	public Result sendTokensWithMessage(RadixAddress to, Amount amount, @Nullable String message, @Nullable byte[] unique) {
+		final Data attachment;
+		if (message != null) {
+			attachment = new DataBuilder()
+				.addReader(to.getPublicKey())
+				.addReader(getMyPublicKey())
+				.bytes(message.getBytes()).build();
+		} else {
+			attachment = null;
+		}
+
+		return transferTokens(getMyAddress(), to, amount, attachment, unique);
 	}
 
 	/**
