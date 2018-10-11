@@ -75,16 +75,17 @@ public class DataParticle implements Particle {
 		return addresses.stream().map(AccountReference::getKey).collect(Collectors.toSet());
 	}
 
+	@Override
+	public Spin getSpin() {
+		return spin;
+	}
+
 	public Object getMetaData(String key) {
 		if (metaData == null) {
 			return null;
 		}
 
 		return metaData.get(key);
-	}
-
-	public Spin getSpin() {
-		return spin;
 	}
 
 	public Payload getBytes() {

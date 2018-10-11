@@ -1,6 +1,6 @@
 package com.radixdlt.client.application.translate;
 
-import com.radixdlt.client.application.objects.Token;
+import com.radixdlt.client.core.atoms.Token;
 import com.radixdlt.client.application.objects.Amount;
 
 public class InsufficientFundsException extends Exception {

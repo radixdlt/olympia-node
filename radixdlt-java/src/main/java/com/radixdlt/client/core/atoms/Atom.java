@@ -143,7 +143,7 @@ public final class Atom {
 			.collect(Collectors.toList());
 	}
 
-	public Map<String, Map<ECPublicKey, Long>> tokenSummary() {
+	public Map<Token, Map<ECPublicKey, Long>> tokenSummary() {
 		return consumables()
 			.filter(c -> !c.getTokenReference().equals("POW"))
 			.collect(Collectors.groupingBy(
@@ -186,6 +186,6 @@ public final class Atom {
 
 	@Override
 	public String toString() {
-		return "Atom hid(" + getHid().toString() + ")";
+		return "Atom particles(" + getHid().toString() + ")";
 	}
 }

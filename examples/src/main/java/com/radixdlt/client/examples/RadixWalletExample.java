@@ -3,7 +3,7 @@ package com.radixdlt.client.examples;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.objects.Amount;
-import com.radixdlt.client.application.objects.Token;
+import com.radixdlt.client.core.atoms.Token;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.address.RadixAddress;

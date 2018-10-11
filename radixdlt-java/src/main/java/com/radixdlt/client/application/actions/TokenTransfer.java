@@ -1,7 +1,7 @@
 package com.radixdlt.client.application.actions;
 
 import com.radixdlt.client.application.objects.Data;
-import com.radixdlt.client.application.objects.Token;
+import com.radixdlt.client.core.atoms.Token;
 import com.radixdlt.client.application.objects.Amount;
 import com.radixdlt.client.core.address.RadixAddress;
 import java.util.Collections;

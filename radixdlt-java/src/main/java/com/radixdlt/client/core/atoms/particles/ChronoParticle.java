@@ -17,6 +17,7 @@ public class ChronoParticle implements Particle {
 		this.timestamps = Collections.singletonMap("default", timestamp);
 	}
 
+	@Override
 	public Spin getSpin() {
 		return spin;
 	}

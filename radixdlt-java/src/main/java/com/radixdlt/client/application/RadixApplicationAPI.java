@@ -12,7 +12,7 @@ import com.radixdlt.client.application.translate.DataStoreTranslator;
 import com.radixdlt.client.application.translate.TokenTransferTranslator;
 import com.radixdlt.client.application.translate.UniquePropertyTranslator;
 import com.radixdlt.client.application.objects.Amount;
-import com.radixdlt.client.application.objects.Token;
+import com.radixdlt.client.core.atoms.Token;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.RadixUniverse.Ledger;
 import com.radixdlt.client.core.address.RadixAddress;
@@ -228,7 +228,7 @@ public class RadixApplicationAPI {
 			.flatMapIterable(tokenTransferTranslator::fromAtom);
 	}
 
-	public Observable<Map<String, BigDecimal>> getBalance(RadixAddress address) {
+	public Observable<Map<Token, BigDecimal>> getBalance(RadixAddress address) {
 		Objects.requireNonNull(address);
 
 		pull(address);
@@ -261,7 +261,7 @@ public class RadixApplicationAPI {
 			fixedSupply * Token.SUB_UNITS,
 			account,
 			System.currentTimeMillis(),
-			iso,
+			Token.of(iso),
 			System.currentTimeMillis() / 60000L + 60000
 		);
 

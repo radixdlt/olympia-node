@@ -3,6 +3,7 @@ package com.radixdlt.client.core.atoms.particles;
 import com.google.gson.annotations.SerializedName;
 import com.radixdlt.client.core.atoms.AccountReference;
 import com.radixdlt.client.core.atoms.RadixHash;
+import com.radixdlt.client.core.atoms.Token;
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.serialization.Dson;
@@ -19,9 +20,9 @@ public class Consumable implements Particle {
 	private final Spin spin;
 	private final long planck;
 	@SerializedName("token_reference")
-	private final String tokenReference;
+	private final Token tokenReference;
 
-	public Consumable(long amount, AccountReference address, long nonce, String tokenReference, long planck, Spin spin) {
+	public Consumable(long amount, AccountReference address, long nonce, Token tokenReference, long planck, Spin spin) {
 		this.spin = spin;
 		this.addresses = Collections.singletonList(address);
 		this.amount = amount;
@@ -36,6 +37,11 @@ public class Consumable implements Particle {
 
 	public AccountReference getAddress() {
 		return addresses.get(0);
+	}
+
+	@Override
+	public Spin getSpin() {
+		return spin;
 	}
 
 	@Override
@@ -63,15 +69,11 @@ public class Consumable implements Particle {
 		return planck;
 	}
 
-	public Spin getSpin() {
-		return spin;
-	}
-
 	public long getNonce() {
 		return nonce;
 	}
 
-	public String getTokenReference() {
+	public Token getTokenReference() {
 		return tokenReference;
 	}
 

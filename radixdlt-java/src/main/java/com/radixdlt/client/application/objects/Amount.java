@@ -1,5 +1,6 @@
 package com.radixdlt.client.application.objects;
 
+import com.radixdlt.client.core.atoms.Token;
 import java.math.BigDecimal;
 import java.util.Objects;
 

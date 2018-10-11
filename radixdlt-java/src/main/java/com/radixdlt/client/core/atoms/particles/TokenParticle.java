@@ -1,7 +1,7 @@
 package com.radixdlt.client.core.atoms.particles;
 
 import com.google.gson.annotations.SerializedName;
-import com.radixdlt.client.application.objects.Token;
+import com.radixdlt.client.core.atoms.Token;
 import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.atoms.AccountReference;
 import com.radixdlt.client.core.crypto.ECPublicKey;

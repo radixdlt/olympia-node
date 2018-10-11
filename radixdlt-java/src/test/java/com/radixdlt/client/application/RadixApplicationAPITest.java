@@ -13,7 +13,7 @@ import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.application.objects.UnencryptedData;
 import com.radixdlt.client.application.translate.DataStoreTranslator;
 import com.radixdlt.client.application.objects.Amount;
-import com.radixdlt.client.application.objects.Token;
+import com.radixdlt.client.core.atoms.Token;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.RadixUniverse.Ledger;
 import com.radixdlt.client.core.address.RadixAddress;
@@ -235,7 +235,7 @@ public class RadixApplicationAPITest {
 		RadixApplicationAPI api = RadixApplicationAPI.create(identity, universe, DataStoreTranslator.getInstance(), AtomBuilder::new);
 		TestObserver<Amount> observer = TestObserver.create();
 
-		api.getBalance(address, Token.TEST).subscribe(observer);
+		api.getBalance(address, Token.of("XRD")).subscribe(observer);
 		observer.awaitCount(1);
 		observer.assertValue(amount -> amount.getAmountInSubunits() == 0);
 	}
@@ -277,7 +277,7 @@ public class RadixApplicationAPITest {
 
 		RadixApplicationAPI api = RadixApplicationAPI.create(identity, universe, DataStoreTranslator.getInstance(), AtomBuilder::new);
 		TestObserver<Amount> testObserver = TestObserver.create();
-		api.getBalance(address, Token.TEST).subscribe(testObserver);
+		api.getBalance(address, Token.of("XRD")).subscribe(testObserver);
 		verify(puller, times(1)).pull(address);
 	}
 }

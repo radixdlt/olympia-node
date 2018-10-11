@@ -4,7 +4,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonParser;
 import com.radixdlt.client.application.actions.TokenTransfer;
 import com.radixdlt.client.application.objects.Data;
-import com.radixdlt.client.application.objects.Token;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.AccountReference;
@@ -104,7 +103,7 @@ public class TokenTransferTranslator {
 				}
 
 				final long amount = Math.abs(summary.get(0).getValue());
-				return TokenTransfer.create(from, to, Token.of(e.getKey()), amount, attachment, atom.getTimestamp());
+				return TokenTransfer.create(from, to, e.getKey(), amount, attachment, atom.getTimestamp());
 			})
 			.collect(Collectors.toList());
 	}
@@ -116,8 +115,8 @@ public class TokenTransferTranslator {
 	public Completable translate(TokenTransfer tokenTransfer, AtomBuilder atomBuilder) {
 		return getTokenState(tokenTransfer.getFrom())
 			.map(AddressTokenState::getUnconsumedConsumables)
-			.map(u -> u.containsKey(tokenTransfer.getToken().getIso())
-				? u.get(tokenTransfer.getToken().getIso())
+			.map(u -> u.containsKey(tokenTransfer.getToken())
+				? u.get(tokenTransfer.getToken())
 				: Collections.<Consumable>emptyList())
 			.firstOrError()
 			.flatMapCompletable(unconsumedConsumables -> {
@@ -180,7 +179,7 @@ public class TokenTransferTranslator {
 						entry.getValue(),
 						new AccountReference(entry.getKey().getPublicKey()),
 						System.nanoTime(),
-						tokenTransfer.getToken().getIso(),
+						tokenTransfer.getToken(),
 						System.currentTimeMillis() / 60000L + 60000L, Spin.UP
 					))
 					.collect(Collectors.toList());

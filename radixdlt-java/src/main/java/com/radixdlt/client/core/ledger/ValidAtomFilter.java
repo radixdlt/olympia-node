@@ -2,6 +2,7 @@ package com.radixdlt.client.core.ledger;
 
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.client.core.atoms.particles.DataParticle;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.serialization.Dson;
@@ -39,7 +40,8 @@ public class ValidAtomFilter {
 			});
 
 		atom.particles(Spin.UP)
-			.filter(up -> !up.getAddresses().isEmpty() && up.getAddresses().stream().allMatch(address::ownsKey))
+			.filter(up -> !up.getAddresses().isEmpty() && !(up instanceof DataParticle) // FIXME: remove hardcode of DataParticle
+				&& up.getAddresses().stream().allMatch(address::ownsKey))
 			.forEach(up -> {
 				ByteBuffer dson = ByteBuffer.wrap(serializer.toDson(up));
 				upParticles.compute(dson, (thisHash, current) -> {
