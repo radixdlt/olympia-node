@@ -1,12 +1,14 @@
 package com.radixdlt.client.core.ledger;
 
-import com.radixdlt.client.core.address.RadixAddress;
-import com.radixdlt.client.core.atoms.Atom;
-import io.reactivex.Observable;
-import io.reactivex.disposables.Disposable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+
+import com.radixdlt.client.core.address.RadixAddress;
+import com.radixdlt.client.core.atoms.Atom;
+
+import io.reactivex.Observable;
+import io.reactivex.disposables.Disposable;
 
 /**
  * Module responsible for fetches and merges of new atoms into the Atom Store.
@@ -33,6 +35,7 @@ public class RadixAtomPuller implements AtomPuller {
 		this.atomStore = atomStore;
 	}
 
+	@Override
 	public Disposable pull(RadixAddress address) {
 		return cache.computeIfAbsent(
 			address, destination -> {

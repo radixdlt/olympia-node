@@ -1,10 +1,5 @@
 package com.radixdlt.client.core.atoms.particles;
 
-import com.radixdlt.client.core.address.RadixAddress;
-import com.radixdlt.client.core.atoms.AccountReference;
-import com.radixdlt.client.core.atoms.MetadataMap;
-import com.radixdlt.client.core.atoms.Payload;
-import com.radixdlt.client.core.crypto.ECPublicKey;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -12,10 +7,23 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.radix.serialization2.DsonOutput;
+import org.radix.serialization2.DsonOutput.Output;
+import org.radix.serialization2.SerializerDummy;
+import org.radix.serialization2.SerializerId2;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.client.core.address.RadixAddress;
+import com.radixdlt.client.core.atoms.AccountReference;
+import com.radixdlt.client.core.atoms.MetadataMap;
+import com.radixdlt.client.core.atoms.Payload;
+import com.radixdlt.client.core.crypto.ECPublicKey;
+
 /**
  * Particle which can hold arbitrary data
  */
-public class DataParticle implements Particle {
+@SerializerId2("DATAPARTICLE")
+public class DataParticle extends Particle {
 	public static class DataParticleBuilder {
 		private final List<AccountReference> addresses = new ArrayList<>();
 		private final MetadataMap metaData = new MetadataMap();
@@ -46,20 +54,39 @@ public class DataParticle implements Particle {
 		}
 	}
 
-	private final List<AccountReference> addresses;
+	@JsonProperty("version")
+	@DsonOutput(Output.ALL)
+	private short version = 100;
+
+	// Placeholder for the serializer ID
+	@JsonProperty("serializer")
+	@DsonOutput({Output.API, Output.WIRE, Output.PERSIST})
+	private SerializerDummy serializer = SerializerDummy.DUMMY;
+
+	@JsonProperty("addresses")
+	@DsonOutput(Output.ALL)
+	private List<AccountReference> addresses;
 
 	/**
 	 * Nullable for the timebeing as we want dson to be optimized for
 	 * saving space and no way to skip empty maps in Dson yet.
 	 */
-	private final MetadataMap metaData;
+	@JsonProperty("metaData")
+	@DsonOutput(Output.ALL)
+	private MetadataMap metaData;
 
 	/**
 	 * Arbitrary data, possibly encrypted
 	 */
-	private final Payload bytes;
+	@JsonProperty("bytes")
+	@DsonOutput(Output.ALL)
+	private  Payload bytes;
 
-	private final Spin spin;
+	private Spin spin;
+
+	DataParticle() {
+		// No-arg constructor for serializer
+	}
 
 	private DataParticle(Payload bytes, MetadataMap metaData, List<AccountReference> addresses) {
 		Objects.requireNonNull(bytes);
@@ -90,5 +117,16 @@ public class DataParticle implements Particle {
 
 	public Payload getBytes() {
 		return bytes;
+	}
+
+	@JsonProperty("spin")
+	@DsonOutput(value = {Output.WIRE, Output.API, Output.PERSIST})
+	private int getJsonSpin() {
+		return this.spin.ordinalValue();
+	}
+
+	@JsonProperty("spin")
+	private void setJsonSpin(int spin) {
+		this.spin = Spin.valueOf(spin);
 	}
 }

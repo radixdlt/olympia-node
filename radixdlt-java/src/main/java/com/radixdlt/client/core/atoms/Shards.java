@@ -27,6 +27,14 @@ public final class Shards {
 		return shard >= low && shard <= high;
 	}
 
+	public long getLow() {
+		return this.low;
+	}
+
+	public long getHigh() {
+		return this.high;
+	}
+
 	@Override
 	public String toString() {
 		return "[" + low + ", " + high + "]";

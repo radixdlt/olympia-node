@@ -1,7 +1,8 @@
 package com.radixdlt.client.core.network;
 
+import org.radix.common.ID.EUID;
+
 import com.google.gson.JsonObject;
-import com.radixdlt.client.core.address.EUID;
 
 public class AtomQuery {
 	private final EUID destination;

@@ -1,11 +1,19 @@
 package com.radixdlt.client.core.atoms;
 
-import com.radixdlt.client.core.address.EUID;
 import java.math.BigDecimal;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
+import org.radix.common.ID.EUID;
+import org.radix.serialization2.DsonOutput;
+import org.radix.serialization2.DsonOutput.Output;
+import org.radix.serialization2.SerializerDummy;
+import org.radix.serialization2.SerializerId2;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+@SerializerId2("TOKENCLASSREFERENCE")
 public final class TokenRef {
 	private static final Charset CHARSET = StandardCharsets.UTF_8;
 
@@ -25,8 +33,26 @@ public final class TokenRef {
 		return BigDecimal.valueOf(subUnits, TOKEN_SCALE);
 	}
 
-	private final AccountReference address;
-	private final String iso;
+	@JsonProperty("version")
+	@DsonOutput(Output.ALL)
+	private short version = 100;
+
+	// Placeholder for the serializer ID
+	@JsonProperty("serializer")
+	@DsonOutput({Output.API, Output.WIRE, Output.PERSIST})
+	private SerializerDummy serializer = SerializerDummy.DUMMY;
+
+	@JsonProperty("address")
+	@DsonOutput(Output.ALL)
+	private AccountReference address;
+
+	@JsonProperty("iso")
+	@DsonOutput(Output.ALL)
+	private String iso;
+
+	TokenRef() {
+		// No-arg constructor for serializer
+	}
 
 	private TokenRef(AccountReference address, String iso) {
 		Objects.requireNonNull(iso);

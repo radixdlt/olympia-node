@@ -1,25 +1,31 @@
 package com.radixdlt.client.core.network;
 
+import java.util.List;
+import java.util.UUID;
+
+import org.json.JSONObject;
+import org.radix.common.ID.EUID;
+import org.radix.serialization2.DsonOutput.Output;
+import org.radix.serialization2.JsonJavaType;
+import org.radix.serialization2.Serialization;
+import org.radix.serialization2.client.GsonJson;
+import org.radix.serialization2.client.Serialize;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
-import com.google.gson.reflect.TypeToken;
-import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
+import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState;
 import com.radixdlt.client.core.network.WebSocketClient.RadixClientStatus;
-import com.radixdlt.client.core.serialization.RadixJson;
+
 import io.reactivex.Maybe;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.disposables.Disposable;
-import java.util.List;
-import com.radixdlt.client.core.atoms.Atom;
-
-import java.util.UUID;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Responsible for managing the state across one web socket connection to a Radix Node.
@@ -77,8 +83,10 @@ public class RadixJsonRpcClient {
 				.cache();
 		}
 
+		Serialization serialization = Serialize.getInstance();
 		this.universeConfig = jsonRpcCall("Universe.getUniverse")
-			.map(result -> RadixJson.getGson().fromJson(result, RadixUniverseConfig.class))
+			.map(element -> GsonJson.getInstance().stringFromGson(element))
+			.map(result -> serialization.fromJson(result, RadixUniverseConfig.class))
 			.cache();
 	}
 
@@ -125,7 +133,7 @@ public class RadixJsonRpcClient {
 					.filter(msg -> msg.get("id").getAsString().equals(uuid))
 					.firstOrError()
 					.doOnSubscribe(disposable -> {
-						boolean sendSuccess = wsClient.send(RadixJson.getGson().toJson(requestObject));
+						boolean sendSuccess = wsClient.send(GsonJson.getInstance().stringFromGson(requestObject));
 						if (!sendSuccess) {
 							disposable.dispose();
 							emitter.onError(new RuntimeException("Could not connect."));
@@ -186,7 +194,8 @@ public class RadixJsonRpcClient {
 	 */
 	public Single<NodeRunnerData> getSelf() {
 		return this.jsonRpcCall("Network.getSelf")
-			.map(result -> RadixJson.getGson().fromJson(result, NodeRunnerData.class));
+				.map(result -> Serialize.getInstance().fromJson(result.toString(), RadixSystem.class))
+				.map(system -> new NodeRunnerData(system));
 	}
 
 	/**
@@ -195,8 +204,9 @@ public class RadixJsonRpcClient {
 	 * @return list of nodes this node knows about
 	 */
 	public Single<List<NodeRunnerData>> getLivePeers() {
+		JsonJavaType listOfNodeRunnerData = Serialize.getInstance().jsonCollectionType(List.class, NodeRunnerData.class);
 		return this.jsonRpcCall("Network.getLivePeers")
-			.map(result -> RadixJson.getGson().fromJson(result, new TypeToken<List<NodeRunnerData>>() { }.getType()));
+				.map(result -> Serialize.getInstance().fromJson(result.toString(), listOfNodeRunnerData));
 	}
 
 
@@ -212,8 +222,9 @@ public class RadixJsonRpcClient {
 		JsonObject params = new JsonObject();
 		params.addProperty("hid", hid.toString());
 
+		JsonJavaType listOfAtom = Serialize.getInstance().jsonCollectionType(List.class, Atom.class);
 		return this.jsonRpcCall("Ledger.getAtoms", params)
-			.<List<Atom>>map(result -> RadixJson.getGson().fromJson(result, new TypeToken<List<Atom>>() { }.getType()))
+			.<List<Atom>>map(result -> Serialize.getInstance().fromJson(result.toString(), listOfAtom))
 			.flatMapMaybe(list -> list.isEmpty() ? Maybe.empty() : Maybe.just(list.get(0)));
 	}
 
@@ -270,7 +281,7 @@ public class RadixJsonRpcClient {
 					JsonObject cancelParams = new JsonObject();
 					cancelParams.addProperty("subscriberId", subscriberId);
 					cancelObject.add("params", cancelParams);
-					wsClient.send(RadixJson.getGson().toJson(cancelObject));
+					wsClient.send(GsonJson.getInstance().stringFromGson(cancelObject));
 				});
 			})
 		);
@@ -291,7 +302,7 @@ public class RadixJsonRpcClient {
 			.map(p -> p.getAsJsonObject().get("atoms").getAsJsonArray())
 			.flatMapIterable(array -> array)
 			.map(JsonElement::getAsJsonObject)
-			.map(jsonAtom -> RadixJson.getGson().fromJson(jsonAtom, Atom.class))
+			.map(jsonAtom -> Serialize.getInstance().fromJson(jsonAtom.toString(), Atom.class))
 			.map(atom -> {
 				atom.putDebug("RECEIVED", System.currentTimeMillis());
 				return atom;
@@ -308,7 +319,8 @@ public class RadixJsonRpcClient {
 	 */
 	public <T extends Atom> Observable<AtomSubmissionUpdate> submitAtom(T atom) {
 		return Observable.<AtomSubmissionUpdate>create(emitter -> {
-			JsonElement jsonAtom = RadixJson.getGson().toJsonTree(atom, Atom.class);
+			JSONObject jsonAtomTemp = Serialize.getInstance().toJsonObject(atom, Output.API);
+			JsonElement jsonAtom = GsonJson.getInstance().toGson(jsonAtomTemp);
 
 			final String subscriberId = UUID.randomUUID().toString();
 			JsonObject params = new JsonObject();

@@ -1,16 +1,20 @@
 package com.radixdlt.client.core.ledger;
 
+import java.util.Set;
+import java.util.function.Function;
+
+import org.radix.common.ID.EUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate;
 import com.radixdlt.client.core.network.IncreasingRetryTimer;
 import com.radixdlt.client.core.network.RadixJsonRpcClient;
+
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.observables.ConnectableObservable;
-import java.util.Set;
-import java.util.function.Function;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Module responsible for a node request and then submission of an atom and retry

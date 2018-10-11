@@ -1,6 +1,7 @@
 package com.radixdlt.client.core.atoms;
 
-import com.radixdlt.client.core.address.EUID;
+import org.radix.common.ID.EUID;
+
 import com.radixdlt.client.core.crypto.ECSignature;
 
 public class UnsignedAtom {

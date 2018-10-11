@@ -1,8 +1,9 @@
 package com.radixdlt.client.application.identity;
 
+import org.radix.common.ID.EUID;
+
 import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.application.objects.UnencryptedData;
-import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.crypto.CryptoException;
@@ -11,6 +12,7 @@ import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.crypto.ECSignature;
 import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
 import com.radixdlt.client.core.crypto.MacMismatchException;
+
 import io.reactivex.Single;
 
 class BaseRadixIdentity implements RadixIdentity {

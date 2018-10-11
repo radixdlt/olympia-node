@@ -1,17 +1,23 @@
 package com.radixdlt.client.core.atoms;
 
-import com.radixdlt.client.core.util.Base64Encoded;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+
 import org.bouncycastle.util.encoders.Base64;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.client.core.util.Base64Encoded;
 
 /**
  * Temporary class, will remove in the near future
  */
 public class Payload implements Base64Encoded {
+	@JsonValue
 	private final byte[] payload;
 
 	// TODO: immutable byte array, a copy?
+	@JsonCreator
 	public Payload(byte[] payload) {
 		this.payload = payload;
 	}
@@ -32,10 +38,12 @@ public class Payload implements Base64Encoded {
 		return payload.length;
 	}
 
+	@Override
 	public String base64() {
 		return Base64.toBase64String(payload);
 	}
 
+	@Override
 	public byte[] toByteArray() {
 		return Arrays.copyOf(payload, payload.length);
 	}

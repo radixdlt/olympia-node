@@ -1,18 +1,49 @@
 package com.radixdlt.client.core.network;
 
+import java.util.Map;
+
+import org.radix.serialization2.DsonOutput;
+import org.radix.serialization2.DsonOutput.Output;
+import org.radix.serialization2.SerializerDummy;
+import org.radix.serialization2.SerializerId2;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.core.atoms.Shards;
 
-public class NodeRunnerData {
-	private final String ip;
-	private final Shards shards;
+@SerializerId2("PEER")
+public final class NodeRunnerData {
+	@JsonProperty("version")
+	@DsonOutput(Output.ALL)
+	private short version = 100;
+
+	// Placeholder for the serializer ID
+	@JsonProperty("serializer")
+	@DsonOutput({Output.API, Output.WIRE, Output.PERSIST})
+	private SerializerDummy serializer = SerializerDummy.DUMMY;
+
+	private String ip;
+
+	@JsonProperty("system")
+	@DsonOutput(Output.ALL)
+	private RadixSystem system;
+
+	NodeRunnerData() {
+		// No-arg constructor for serializer
+	}
 
 	public NodeRunnerData(String ip, long lowShard, long highShard) {
 		this.ip = ip;
-		this.shards = Shards.range(lowShard, highShard);
+		this.system = new RadixSystem(lowShard, highShard);
+	}
+
+	public NodeRunnerData(RadixSystem system) {
+		this.ip = null;
+		this.system = system;
 	}
 
 	public Shards getShards() {
-		return shards;
+		return system.getShards();
 	}
 
 	public String getIp() {
@@ -21,13 +52,13 @@ public class NodeRunnerData {
 
 	@Override
 	public String toString() {
-		return ip + ": " + shards;
+		return ip + ": " + system.getShards();
 	}
 
 	@Override
 	public int hashCode() {
 		// TODO: fix hack
-		return (ip + shards.toString()).hashCode();
+		return (ip + system.getShards().toString()).hashCode();
 	}
 
 	@Override
@@ -37,6 +68,19 @@ public class NodeRunnerData {
 		}
 
 		NodeRunnerData other = (NodeRunnerData) o;
-		return other.ip.equals(ip) && other.shards.equals(this.shards);
+		return other.ip.equals(ip) && other.system.getShards().equals(this.system.getShards());
+	}
+
+	// Property "host" - 1 getter, 1 setter
+	// Could potentially just serialize the URI as a string
+	@JsonProperty("host")
+	@DsonOutput(Output.ALL)
+	private Map<String, Object> getJsonHost() {
+		return ImmutableMap.of("ip", this.ip);
+	}
+
+	@JsonProperty("host")
+	private void setJsonHost(Map<String, Object> props) {
+		this.ip = props.get("ip").toString();
 	}
 }

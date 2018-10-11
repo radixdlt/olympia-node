@@ -1,12 +1,15 @@
 package com.radixdlt.client.core.ledger;
 
-import com.radixdlt.client.core.address.RadixAddress;
-import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.serialization.Dson;
-import io.reactivex.Observable;
-import io.reactivex.subjects.ReplaySubject;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+
+import org.radix.serialization2.client.Serialize;
+
+import com.radixdlt.client.core.address.RadixAddress;
+import com.radixdlt.client.core.atoms.Atom;
+
+import io.reactivex.Observable;
+import io.reactivex.subjects.ReplaySubject;
 
 /**
  * Implementation of a data store for all atoms in a shard
@@ -35,10 +38,11 @@ public class InMemoryAtomStore implements AtomStore {
 	 * @param address address (which determines shard) to query atoms for
 	 * @return an Atom Observable
 	 */
+	@Override
 	public Observable<Atom> getAtoms(RadixAddress address) {
 		Objects.requireNonNull(address);
 		// TODO: move atom filter outside of class
-		return Observable.fromCallable(() -> new ValidAtomFilter(address, Dson.getInstance()))
+		return Observable.fromCallable(() -> new ValidAtomFilter(address, Serialize.getInstance()))
 			.flatMap(atomFilter ->
 				cache.computeIfAbsent(address, euid -> ReplaySubject.create())
 					.distinct()

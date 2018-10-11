@@ -1,8 +1,6 @@
 package com.radixdlt.client.core.atoms.particles;
 
-import com.radixdlt.client.core.serialization.HasOrdinalValue;
-
-public enum Spin implements HasOrdinalValue {
+public enum Spin {
 	UP(1), DOWN(2);
 
 	private final int value;
