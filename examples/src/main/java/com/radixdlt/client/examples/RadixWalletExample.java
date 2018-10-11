@@ -2,7 +2,6 @@ package com.radixdlt.client.examples;
 
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
-import com.radixdlt.client.application.objects.Amount;
 import com.radixdlt.client.core.atoms.AccountReference;
 import com.radixdlt.client.core.atoms.TokenReference;
 import com.radixdlt.client.core.Bootstrap;
@@ -61,7 +60,7 @@ public class RadixWalletExample {
 		if (TO_ADDRESS_BASE58 != null) {
 			RadixAddress toAddress = RadixAddress.fromString(TO_ADDRESS_BASE58);
 			TokenReference token = TokenReference.of(new AccountReference(api.getMyPublicKey()), "YOSHY");
-			api.sendTokens(toAddress, Amount.of(AMOUNT, token)).toObservable()
+			api.sendTokens(toAddress, AMOUNT, token).toObservable()
 				.subscribe(System.out::println, Throwable::printStackTrace);
 		}
 	}

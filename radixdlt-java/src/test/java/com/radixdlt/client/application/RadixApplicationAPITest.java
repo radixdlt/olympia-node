@@ -12,7 +12,6 @@ import com.radixdlt.client.application.RadixApplicationAPI.Result;
 import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.application.objects.UnencryptedData;
 import com.radixdlt.client.application.translate.DataStoreTranslator;
-import com.radixdlt.client.application.objects.Amount;
 import com.radixdlt.client.core.atoms.TokenReference;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.RadixUniverse.Ledger;
@@ -32,6 +31,7 @@ import com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.observers.TestObserver;
+import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -233,12 +233,12 @@ public class RadixApplicationAPITest {
 		RadixIdentity identity = mock(RadixIdentity.class);
 
 		RadixApplicationAPI api = RadixApplicationAPI.create(identity, universe, DataStoreTranslator.getInstance(), AtomBuilder::new);
-		TestObserver<Amount> observer = TestObserver.create();
+		TestObserver<BigDecimal> observer = TestObserver.create();
 		TokenReference token = mock(TokenReference.class);
 
 		api.getBalance(address, token).subscribe(observer);
 		observer.awaitCount(1);
-		observer.assertValue(amount -> amount.getAmountInSubunits() == 0);
+		observer.assertValue(amount -> amount.compareTo(BigDecimal.ZERO) == 0);
 	}
 
 
@@ -277,7 +277,7 @@ public class RadixApplicationAPITest {
 		RadixAddress address = mock(RadixAddress.class);
 
 		RadixApplicationAPI api = RadixApplicationAPI.create(identity, universe, DataStoreTranslator.getInstance(), AtomBuilder::new);
-		TestObserver<Amount> testObserver = TestObserver.create();
+		TestObserver<BigDecimal> testObserver = TestObserver.create();
 		TokenReference token = mock(TokenReference.class);
 		api.getBalance(address, token).subscribe(testObserver);
 		verify(puller, times(1)).pull(address);

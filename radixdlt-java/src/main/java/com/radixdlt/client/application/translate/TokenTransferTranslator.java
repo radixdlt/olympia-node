@@ -9,6 +9,7 @@ import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.AccountReference;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomBuilder;
+import com.radixdlt.client.core.atoms.TokenReference;
 import com.radixdlt.client.core.atoms.particles.Consumable;
 import com.radixdlt.client.core.atoms.particles.DataParticle;
 import com.radixdlt.client.core.atoms.particles.DataParticle.DataParticleBuilder;
@@ -22,6 +23,7 @@ import com.radixdlt.client.core.crypto.Encryptor;
 import com.radixdlt.client.core.serialization.RadixJson;
 import com.radixdlt.client.core.ledger.ParticleStore;
 import io.reactivex.Completable;
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import io.reactivex.Observable;
 import java.util.ArrayList;
@@ -102,8 +104,8 @@ public class TokenTransferTranslator {
 					attachment = null;
 				}
 
-				final long amount = Math.abs(summary.get(0).getValue());
-				return TokenTransfer.create(from, to, e.getKey(), amount, attachment, atom.getTimestamp());
+				final BigDecimal amount = TokenReference.subUnitsToDecimal(Math.abs(summary.get(0).getValue()));
+				return TokenTransfer.create(from, to, amount, e.getKey(), attachment, atom.getTimestamp());
 			})
 			.collect(Collectors.toList());
 	}
@@ -112,23 +114,24 @@ public class TokenTransferTranslator {
 		return cache.computeIfAbsent(address, addr -> new AddressTokenReducer(addr, particleStore)).getState();
 	}
 
-	public Completable translate(TokenTransfer tokenTransfer, AtomBuilder atomBuilder) {
-		return getTokenState(tokenTransfer.getFrom())
-			.map(AddressTokenState::getUnconsumedConsumables)
-			.map(u -> u.containsKey(tokenTransfer.getTokenReference())
-				? u.get(tokenTransfer.getTokenReference())
-				: Collections.<Consumable>emptyList())
+	public Completable translate(TokenTransfer transfer, AtomBuilder atomBuilder) {
+		return getTokenState(transfer.getFrom())
 			.firstOrError()
-			.flatMapCompletable(unconsumedConsumables -> {
+			.flatMapCompletable(state -> {
+				final Map<TokenReference, List<Consumable>> allUnconsumedConsumables = state.getUnconsumedConsumables();
+				final List<Consumable> unconsumedConsumables =
+					allUnconsumedConsumables.containsKey(transfer.getTokenRef())
+					? allUnconsumedConsumables.get(transfer.getTokenRef())
+					: Collections.emptyList();
 
 				// Translate attachment to corresponding atom structure
-				final Data attachment = tokenTransfer.getAttachment();
+				final Data attachment = transfer.getAttachment();
 				if (attachment != null) {
 					atomBuilder.addParticle(
 						new DataParticleBuilder()
 							.payload(new Payload(attachment.getBytes()))
-							.account(tokenTransfer.getFrom())
-							.account(tokenTransfer.getTo())
+							.account(transfer.getFrom())
+							.account(transfer.getTo())
 							.build()
 					);
 					Encryptor encryptor = attachment.getEncryptor();
@@ -141,36 +144,37 @@ public class TokenTransferTranslator {
 							.payload(encryptorPayload)
 							.setMetaData("application", "encryptor")
 							.setMetaData("contentType", "application/json")
-							.account(tokenTransfer.getFrom())
-							.account(tokenTransfer.getTo())
+							.account(transfer.getFrom())
+							.account(transfer.getTo())
 							.build();
 						atomBuilder.addParticle(encryptorParticle);
 					}
 				}
 
 				long consumerTotal = 0;
+				final long subUnitAmount = transfer.getAmount().multiply(TokenReference.getSubUnits()).longValueExact();
 				Iterator<Consumable> iterator = unconsumedConsumables.iterator();
 				Map<ECKeyPair, Long> consumerQuantities = new HashMap<>();
 
 				// HACK for now
 				// TODO: remove this, create a ConsumersCreator
 				// TODO: randomize this to decrease probability of collision
-				while (consumerTotal < tokenTransfer.getSubUnitAmount() && iterator.hasNext()) {
-					final long left = tokenTransfer.getSubUnitAmount() - consumerTotal;
+				while (consumerTotal < subUnitAmount && iterator.hasNext()) {
+					final long left = subUnitAmount - consumerTotal;
 
 					Consumable down = iterator.next().spinDown();
 					consumerTotal += down.getAmount();
 
 					final long amount = Math.min(left, down.getAmount());
-					down.addConsumerQuantities(amount, tokenTransfer.getTo().toECKeyPair(),
+					down.addConsumerQuantities(amount, transfer.getTo().toECKeyPair(),
 						consumerQuantities);
 
 					atomBuilder.addParticle(down);
 				}
 
-				if (consumerTotal < tokenTransfer.getSubUnitAmount()) {
+				if (consumerTotal < subUnitAmount) {
 					return Completable.error(new InsufficientFundsException(
-						tokenTransfer.getTokenReference(), consumerTotal, tokenTransfer.getSubUnitAmount()
+						transfer.getTokenRef(), TokenReference.subUnitsToDecimal(consumerTotal), transfer.getAmount()
 					));
 				}
 
@@ -179,7 +183,7 @@ public class TokenTransferTranslator {
 						entry.getValue(),
 						new AccountReference(entry.getKey().getPublicKey()),
 						System.nanoTime(),
-						tokenTransfer.getTokenReference(),
+						transfer.getTokenRef(),
 						System.currentTimeMillis() / 60000L + 60000L, Spin.UP
 					))
 					.collect(Collectors.toList());

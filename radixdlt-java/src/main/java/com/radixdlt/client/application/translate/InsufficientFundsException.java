@@ -1,26 +1,26 @@
 package com.radixdlt.client.application.translate;
 
 import com.radixdlt.client.core.atoms.TokenReference;
-import com.radixdlt.client.application.objects.Amount;
+import java.math.BigDecimal;
 
 public class InsufficientFundsException extends Exception {
 	private final TokenReference tokenReference;
-	private final long available;
-	private final long requestedAmount;
+	private final BigDecimal available;
+	private final BigDecimal requestedAmount;
 
-	public InsufficientFundsException(TokenReference tokenReference, long available, long requestedAmount) {
-		super("Requested " + Amount.subUnitsOf(requestedAmount, tokenReference)
-			+ " but only " + Amount.subUnitsOf(available, tokenReference) + " available.");
+	public InsufficientFundsException(TokenReference tokenReference, BigDecimal available, BigDecimal requestedAmount) {
+		super("Requested " + requestedAmount
+			+ " but only " + available + " " + tokenReference.getIso() + " available.");
 		this.tokenReference = tokenReference;
 		this.available = available;
 		this.requestedAmount = requestedAmount;
 	}
 
-	public long getAvailable() {
+	public BigDecimal getAvailable() {
 		return available;
 	}
 
-	public long getRequestedAmount() {
+	public BigDecimal getRequestedAmount() {
 		return requestedAmount;
 	}
 
@@ -31,7 +31,9 @@ public class InsufficientFundsException extends Exception {
 		}
 
 		InsufficientFundsException o = (InsufficientFundsException) obj;
-		return this.tokenReference.equals(o.tokenReference) && this.available == o.available && this.requestedAmount == o.requestedAmount;
+		return this.tokenReference.equals(o.tokenReference)
+			&& this.available.compareTo(o.available) == 0
+			&& this.requestedAmount.compareTo(o.requestedAmount) == 0;
 	}
 
 	@Override

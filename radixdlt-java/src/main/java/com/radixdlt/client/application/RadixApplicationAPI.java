@@ -11,7 +11,6 @@ import com.radixdlt.client.application.translate.AddressTokenState;
 import com.radixdlt.client.application.translate.DataStoreTranslator;
 import com.radixdlt.client.application.translate.TokenTransferTranslator;
 import com.radixdlt.client.application.translate.UniquePropertyTranslator;
-import com.radixdlt.client.application.objects.Amount;
 import com.radixdlt.client.core.atoms.TokenReference;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.RadixUniverse.Ledger;
@@ -253,15 +252,15 @@ public class RadixApplicationAPI {
 			);
 	}
 
-	public Observable<Amount> getMyBalance(TokenReference tokenReference) {
+	public Observable<BigDecimal> getMyBalance(TokenReference tokenReference) {
 		return getBalance(getMyAddress(), tokenReference);
 	}
 
-	public Observable<Amount> getBalance(RadixAddress address, TokenReference tokenReference) {
-		Objects.requireNonNull(tokenReference);
+	public Observable<BigDecimal> getBalance(RadixAddress address, TokenReference token) {
+		Objects.requireNonNull(token);
 
 		return getBalance(address)
-			.map(balances -> Amount.of(Optional.ofNullable(balances.get(tokenReference)).orElse(BigDecimal.ZERO), tokenReference));
+			.map(balances -> Optional.ofNullable(balances.get(token)).orElse(BigDecimal.ZERO));
 	}
 
 	// TODO: refactor to access a TokenTranslator
@@ -297,8 +296,8 @@ public class RadixApplicationAPI {
 	 * @param amount the amount and token type
 	 * @return result of the transaction
 	 */
-	public Result sendTokens(RadixAddress to, Amount amount) {
-		return transferTokens(getMyAddress(), to, amount);
+	public Result sendTokens(RadixAddress to, BigDecimal amount, TokenReference token) {
+		return transferTokens(getMyAddress(), to, amount, token);
 	}
 
 
@@ -310,8 +309,8 @@ public class RadixApplicationAPI {
 	 * @param message message to be encrypted and attached to transfer
 	 * @return result of the transaction
 	 */
-	public Result sendTokensWithMessage(RadixAddress to, Amount amount, @Nullable String message) {
-		return sendTokensWithMessage(to, amount, message, null);
+	public Result sendTokensWithMessage(RadixAddress to, BigDecimal amount, TokenReference token, @Nullable String message) {
+		return sendTokensWithMessage(to, amount, token, message, null);
 	}
 
 	/**
@@ -322,7 +321,13 @@ public class RadixApplicationAPI {
 	 * @param message message to be encrypted and attached to transfer
 	 * @return result of the transaction
 	 */
-	public Result sendTokensWithMessage(RadixAddress to, Amount amount, @Nullable String message, @Nullable byte[] unique) {
+	public Result sendTokensWithMessage(
+		RadixAddress to,
+		BigDecimal amount,
+		TokenReference token,
+		@Nullable String message,
+		@Nullable byte[] unique
+	) {
 		final Data attachment;
 		if (message != null) {
 			attachment = new DataBuilder()
@@ -333,7 +338,7 @@ public class RadixApplicationAPI {
 			attachment = null;
 		}
 
-		return transferTokens(getMyAddress(), to, amount, attachment, unique);
+		return transferTokens(getMyAddress(), to, amount, token, attachment, unique);
 	}
 
 	/**
@@ -344,8 +349,8 @@ public class RadixApplicationAPI {
 	 * @param attachment the data attached to the transaction
 	 * @return result of the transaction
 	 */
-	public Result sendTokens(RadixAddress to, Amount amount, @Nullable Data attachment) {
-		return transferTokens(getMyAddress(), to, amount, attachment);
+	public Result sendTokens(RadixAddress to, BigDecimal amount, TokenReference token, @Nullable Data attachment) {
+		return transferTokens(getMyAddress(), to, amount, token, attachment);
 	}
 
 	/**
@@ -358,36 +363,45 @@ public class RadixApplicationAPI {
 	 * @param unique the bytes representing the unique id of this transaction
 	 * @return result of the transaction
 	 */
-	public Result sendTokens(RadixAddress to, Amount amount, @Nullable Data attachment, @Nullable byte[] unique) {
-		return transferTokens(getMyAddress(), to, amount, attachment, unique);
+	public Result sendTokens(
+		RadixAddress to,
+		BigDecimal amount,
+		TokenReference token,
+		@Nullable Data attachment,
+		@Nullable byte[] unique
+	) {
+		return transferTokens(getMyAddress(), to, amount, token, attachment, unique);
 	}
 
-	public Result transferTokens(RadixAddress from, RadixAddress to, Amount amount) {
+	public Result transferTokens(RadixAddress from, RadixAddress to, BigDecimal amount, TokenReference token) {
 		return transferTokens(from, to, amount, null, null);
 	}
 
 	public Result transferTokens(
 		RadixAddress from,
 		RadixAddress to,
-		Amount amount,
+		BigDecimal amount,
+		TokenReference token,
 		@Nullable Data attachment
 	) {
-		return transferTokens(from, to, amount, attachment, null);
+		return transferTokens(from, to, amount, token, attachment, null);
 	}
 
 	public Result transferTokens(
 		RadixAddress from,
 		RadixAddress to,
-		Amount amount,
+		BigDecimal amount,
+		TokenReference token,
 		@Nullable Data attachment,
 		@Nullable byte[] unique // TODO: make unique immutable
 	) {
 		Objects.requireNonNull(from);
 		Objects.requireNonNull(to);
 		Objects.requireNonNull(amount);
+		Objects.requireNonNull(token);
 
 		final TokenTransfer tokenTransfer =
-			TokenTransfer.create(from, to, amount.getTokenReference(), amount.getAmountInSubunits(), attachment);
+			TokenTransfer.create(from, to, amount, token, attachment);
 		final UniqueProperty uniqueProperty;
 		if (unique != null) {
 			// Unique Property must be the from address so that all validation occurs in a single shard.

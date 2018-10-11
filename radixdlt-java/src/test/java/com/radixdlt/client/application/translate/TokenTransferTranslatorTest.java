@@ -8,6 +8,7 @@ import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomBuilder;
 import io.reactivex.Observable;
 import io.reactivex.observers.TestObserver;
+import java.math.BigDecimal;
 import java.util.List;
 import org.junit.Test;
 import com.radixdlt.client.application.actions.TokenTransfer;
@@ -45,15 +46,15 @@ public class TokenTransferTranslatorTest {
 
 		TokenTransferTranslator transferTranslator = new TokenTransferTranslator(universe, addr -> Observable.never());
 		TokenTransfer tokenTransfer = mock(TokenTransfer.class);
-		when(tokenTransfer.getSubUnitAmount()).thenReturn(10L);
+		when(tokenTransfer.getAmount()).thenReturn(new BigDecimal("1.0"));
 		when(tokenTransfer.getFrom()).thenReturn(address);
 		TokenReference token = mock(TokenReference.class);
-		when(tokenTransfer.getTokenReference()).thenReturn(token);
+		when(tokenTransfer.getTokenRef()).thenReturn(token);
 
 		TestObserver observer = TestObserver.create();
 		transferTranslator.translate(tokenTransfer, new AtomBuilder()).subscribe(observer);
 		observer.awaitTerminalEvent();
-		observer.assertError(new InsufficientFundsException(token, 0, 10));
+		observer.assertError(new InsufficientFundsException(token, BigDecimal.ZERO, new BigDecimal("1.0")));
 	}
 
 }
