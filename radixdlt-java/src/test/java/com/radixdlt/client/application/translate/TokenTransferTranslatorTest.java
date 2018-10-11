@@ -27,7 +27,7 @@ public class TokenTransferTranslatorTest {
 		ECPublicKey myKey = mock(ECPublicKey.class);
 		RadixAddress myAddress = mock(RadixAddress.class);
 		when(universe.getAddressFrom(myKey)).thenReturn(myAddress);
-		when(atom.tokenSummary()).thenReturn(Collections.singletonMap(Token.TEST.getId(),
+		when(atom.tokenSummary()).thenReturn(Collections.singletonMap("TEST",
 			Collections.singletonMap(myKey, 0L)
 		));
 

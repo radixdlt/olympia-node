@@ -1,6 +1,7 @@
 package com.radixdlt.client.examples;
 
 import com.radixdlt.client.application.RadixApplicationAPI;
+import com.radixdlt.client.application.RadixApplicationAPI.Result;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
@@ -36,7 +37,6 @@ public class RadixWalletExample {
 			.getStatusUpdates()
 			.subscribe(System.out::println);
 
-
 		RadixApplicationAPI api = RadixApplicationAPI.create(radixIdentity);
 		api.pull();
 
@@ -50,15 +50,25 @@ public class RadixWalletExample {
 			.subscribe(System.out::println);
 
 		// Subscribe to current and future total balance
-		wallet.getBalance()
-			.subscribe(balance -> System.out.println("My Balance: " + balance));
+		api.getBalance(api.getMyAddress())
+			.subscribe(balance -> System.out.println("My Balance:\n" + balance));
+
+		/*
+		Result result = api.createToken("Test", "Josh", "Just for kicks", 1);
+		result.toObservable().subscribe(System.out::println);
+		*/
+
 
 		// If specified, send money to another address
+
+			/*
 		if (TO_ADDRESS_BASE58 != null) {
 			RadixAddress toAddress = RadixAddress.fromString(TO_ADDRESS_BASE58);
+			api.sendTokens(toAddress, Amount.)
 			wallet.sendWhenAvailable(AMOUNT, MESSAGE, toAddress)
 				.toObservable()
 				.subscribe(System.out::println, Throwable::printStackTrace);
 		}
+				*/
 	}
 }

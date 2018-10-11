@@ -5,7 +5,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.particles.Consumable;
 import com.radixdlt.client.core.atoms.RadixHash;
@@ -28,7 +27,7 @@ public class AddressTokenReducerTest {
 		when(consumable.getAmount()).thenReturn(10L);
 		when(consumable.getHash()).thenReturn(hash);
 		when(consumable.getSpin()).thenReturn(Spin.UP);
-		when(consumable.getTokenClass()).thenReturn(new EUID(1));
+		when(consumable.getTokenReference()).thenReturn("TEST");
 
 		when(store.getParticles(address)).thenReturn(
 			Observable.<Particle>just(consumable).concatWith(Observable.never())
@@ -38,12 +37,12 @@ public class AddressTokenReducerTest {
 		TestObserver<AddressTokenState> testObserver = TestObserver.create();
 		reducer.getState().subscribe(testObserver);
 		testObserver.awaitCount(1);
-		testObserver.assertValue(state -> state.getBalance().get(new EUID(1)) == 10L);
+		testObserver.assertValue(state -> state.getBalance().get("TEST") == 10L);
 		testObserver.dispose();
 
 		TestObserver<AddressTokenState> testObserver2 = TestObserver.create();
 		reducer.getState().subscribe(testObserver2);
-		testObserver2.assertValue(state -> state.getBalance().get(new EUID(1)) == 10L);
+		testObserver2.assertValue(state -> state.getBalance().get("TEST") == 10L);
 
 		verify(store, times(1)).getParticles(address);
 	}

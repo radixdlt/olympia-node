@@ -1,6 +1,5 @@
 package com.radixdlt.client.core.serialization;
 
-import com.radixdlt.client.core.TokenClassReference;
 import com.radixdlt.client.core.atoms.AccountReference;
 import com.radixdlt.client.core.atoms.particles.TokenParticle;
 import com.radixdlt.client.core.atoms.particles.Spin;
@@ -203,7 +202,6 @@ public class RadixJson {
 		SERIALIZERS.put(Atom.class, 2019665);
 		SERIALIZERS.put(ECKeyPair.class, 547221307);
 		SERIALIZERS.put(ECSignature.class, -434788200);
-		SERIALIZERS.put(TokenClassReference.class, "TOKENCLASSREFERENCE".hashCode());
 		SERIALIZERS.put(AccountReference.class, "ACCOUNTREFERENCE".hashCode());
 	}
 

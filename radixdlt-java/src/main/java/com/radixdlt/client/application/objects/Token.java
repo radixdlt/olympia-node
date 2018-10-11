@@ -27,6 +27,10 @@ public final class Token {
 		this.id = calcEUID(iso);
 	}
 
+	public static Token of(String reference) {
+		return new Token(reference);
+	}
+
 	public String getIso() {
 		return iso;
 	}

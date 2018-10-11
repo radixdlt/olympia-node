@@ -104,7 +104,7 @@ public class TokenTransferTranslator {
 				}
 
 				final long amount = Math.abs(summary.get(0).getValue());
-				return TokenTransfer.create(from, to, Token.TEST, amount, attachment, atom.getTimestamp());
+				return TokenTransfer.create(from, to, Token.of(e.getKey()), amount, attachment, atom.getTimestamp());
 			})
 			.collect(Collectors.toList());
 	}
@@ -116,8 +116,8 @@ public class TokenTransferTranslator {
 	public Completable translate(TokenTransfer tokenTransfer, AtomBuilder atomBuilder) {
 		return getTokenState(tokenTransfer.getFrom())
 			.map(AddressTokenState::getUnconsumedConsumables)
-			.map(u -> u.containsKey(tokenTransfer.getToken().getId())
-				? u.get(tokenTransfer.getToken().getId())
+			.map(u -> u.containsKey(tokenTransfer.getToken().getIso())
+				? u.get(tokenTransfer.getToken().getIso())
 				: Collections.<Consumable>emptyList())
 			.firstOrError()
 			.flatMapCompletable(unconsumedConsumables -> {
@@ -180,7 +180,7 @@ public class TokenTransferTranslator {
 						entry.getValue(),
 						new AccountReference(entry.getKey().getPublicKey()),
 						System.nanoTime(),
-						Token.TEST.getId(),
+						tokenTransfer.getToken().getIso(),
 						System.currentTimeMillis() / 60000L + 60000L, Spin.UP
 					))
 					.collect(Collectors.toList());

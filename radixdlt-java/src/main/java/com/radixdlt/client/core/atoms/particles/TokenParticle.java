@@ -15,7 +15,6 @@ public class TokenParticle implements Particle {
 		SAME_ATOM_ONLY
 	}
 
-	@SerializedName("sub_units")
 	private final String iso;
 	private final String name;
 	private final String description;

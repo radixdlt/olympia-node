@@ -14,7 +14,6 @@ import com.radixdlt.client.application.objects.Amount;
 import com.radixdlt.client.application.objects.Token;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.RadixUniverse.Ledger;
-import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.AccountReference;
 import com.radixdlt.client.core.atoms.AtomBuilder;
@@ -35,10 +34,14 @@ import io.reactivex.annotations.Nullable;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.disposables.Disposables;
 import io.reactivex.observables.ConnectableObservable;
+import java.math.BigDecimal;
+import java.math.MathContext;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -225,13 +228,18 @@ public class RadixApplicationAPI {
 			.flatMapIterable(tokenTransferTranslator::fromAtom);
 	}
 
-	public Observable<Map<EUID, Long>> getBalance(RadixAddress address) {
+	public Observable<Map<String, BigDecimal>> getBalance(RadixAddress address) {
 		Objects.requireNonNull(address);
 
 		pull(address);
 
 		return tokenTransferTranslator.getTokenState(address)
-			.map(AddressTokenState::getBalance);
+			.map(AddressTokenState::getBalance)
+			.map(map -> map.entrySet().stream().collect(
+				Collectors.toMap(Entry::getKey,
+					e -> BigDecimal.valueOf(e.getValue()).divide(BigDecimal.valueOf(Token.SUB_UNITS), MathContext.UNLIMITED))
+				)
+			);
 	}
 
 	public Observable<Amount> getMyBalance(Token token) {
@@ -242,18 +250,18 @@ public class RadixApplicationAPI {
 		Objects.requireNonNull(token);
 
 		return getBalance(address)
-			.map(balances -> Amount.subUnitsOf(Optional.ofNullable(balances.get(token.getId())).orElse(0L), token));
+			.map(balances -> Amount.of(Optional.ofNullable(balances.get(token.getIso())).orElse(BigDecimal.ZERO), token));
 	}
 
 	// TODO: refactor to access a TokenTranslator
-	public Result createToken(String name, String iso, String description) {
+	public Result createFixedSupplyToken(String name, String iso, String description, long fixedSupply) {
 		AccountReference account = new AccountReference(getMyPublicKey());
 		TokenParticle token = new TokenParticle(account, name, iso, description, MintPermissions.SAME_ATOM_ONLY, null);
 		Minted minted = new Minted(
-			10000,
+			fixedSupply * Token.SUB_UNITS,
 			account,
 			System.currentTimeMillis(),
-			Token.calcEUID(iso),
+			iso,
 			System.currentTimeMillis() / 60000L + 60000
 		);
 
