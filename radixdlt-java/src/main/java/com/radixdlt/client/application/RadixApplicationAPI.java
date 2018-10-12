@@ -6,6 +6,7 @@ import com.radixdlt.client.application.actions.TokenTransfer;
 import com.radixdlt.client.application.actions.UniqueProperty;
 import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.application.objects.Data.DataBuilder;
+import com.radixdlt.client.application.translate.ApplicationStore;
 import com.radixdlt.client.application.translate.TokenBalanceReducer;
 import com.radixdlt.client.application.translate.TokenReducer;
 import com.radixdlt.client.application.translate.TokenState;
@@ -38,7 +39,6 @@ import io.reactivex.disposables.Disposable;
 import io.reactivex.disposables.Disposables;
 import io.reactivex.observables.ConnectableObservable;
 import java.math.BigDecimal;
-import java.math.MathContext;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -90,8 +90,8 @@ public class RadixApplicationAPI {
 	private final TokenTransferTranslator tokenTransferTranslator;
 	private final UniquePropertyTranslator uniquePropertyTranslator;
 
-	private final TokenReducer tokenReducer;
-	private final TokenBalanceReducer tokenBalanceReducer;
+	private final ApplicationStore<Map<TokenRef, TokenState>> tokenStore;
+	private final ApplicationStore<TokenBalanceState> tokenBalanceStore;
 
 	// TODO: Translator from particles to atom
 	private final Supplier<AtomBuilder> atomBuilderSupplier;
@@ -111,8 +111,8 @@ public class RadixApplicationAPI {
 		this.tokenTransferTranslator = new TokenTransferTranslator(universe);
 		this.uniquePropertyTranslator = new UniquePropertyTranslator();
 
-		this.tokenReducer = new TokenReducer(ledger.getParticleStore());
-		this.tokenBalanceReducer = new TokenBalanceReducer(ledger.getParticleStore());
+		this.tokenStore = new ApplicationStore<>(ledger.getParticleStore(), new TokenReducer());
+		this.tokenBalanceStore = new ApplicationStore<>(ledger.getParticleStore(), new TokenBalanceReducer());
 
 		this.atomBuilderSupplier = atomBuilderSupplier;
 		this.ledger = ledger;
@@ -173,7 +173,7 @@ public class RadixApplicationAPI {
 	public Observable<Map<TokenRef, TokenState>> getTokens(RadixAddress address) {
 		pull(address);
 
-		return tokenReducer.getState(address);
+		return tokenStore.getState(address);
 	}
 
 	public Observable<Map<TokenRef, TokenState>> getMyTokens() {
@@ -183,7 +183,7 @@ public class RadixApplicationAPI {
 	public Observable<TokenState> getToken(TokenRef ref) {
 		pull(universe.getAddressFrom(ref.getAddress().getKey()));
 
-		return tokenReducer.getState(universe.getAddressFrom(ref.getAddress().getKey()))
+		return tokenStore.getState(universe.getAddressFrom(ref.getAddress().getKey()))
 			.flatMapMaybe(m -> Optional.ofNullable(m.get(ref)).map(Maybe::just).orElse(Maybe.empty()));
 	}
 
@@ -270,7 +270,7 @@ public class RadixApplicationAPI {
 
 		pull(address);
 
-		return tokenBalanceReducer.getState(address)
+		return tokenBalanceStore.getState(address)
 			.map(TokenBalanceState::getBalance)
 			.map(map -> map.entrySet().stream().collect(
 				Collectors.toMap(Entry::getKey, e -> e.getValue().getAmount())
@@ -448,7 +448,7 @@ public class RadixApplicationAPI {
 		AtomBuilder atomBuilder = atomBuilderSupplier.get();
 
 		uniquePropertyTranslator.translate(uniqueProperty, atomBuilder);
-		Single<UnsignedAtom> unsignedAtom = tokenBalanceReducer.getState(tokenTransfer.getFrom())
+		Single<UnsignedAtom> unsignedAtom = tokenBalanceStore.getState(tokenTransfer.getFrom())
 			.firstOrError()
 			.map(curState -> tokenTransferTranslator.translate(curState, tokenTransfer, atomBuilder))
 			.map(builder -> builder.buildWithPOWFee(universe.getMagic(), tokenTransfer.getFrom().getPublicKey(), universe.getPOWToken()));
