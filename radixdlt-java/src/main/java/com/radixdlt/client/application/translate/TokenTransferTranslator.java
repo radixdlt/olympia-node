@@ -9,7 +9,7 @@ import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.AccountReference;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomBuilder;
-import com.radixdlt.client.core.atoms.TokenReference;
+import com.radixdlt.client.core.atoms.TokenRef;
 import com.radixdlt.client.core.atoms.particles.Consumable;
 import com.radixdlt.client.core.atoms.particles.DataParticle;
 import com.radixdlt.client.core.atoms.particles.DataParticle.DataParticleBuilder;
@@ -105,7 +105,7 @@ public class TokenTransferTranslator {
 					attachment = null;
 				}
 
-				final BigDecimal amount = TokenReference.subUnitsToDecimal(Math.abs(summary.get(0).getValue()));
+				final BigDecimal amount = TokenRef.subUnitsToDecimal(Math.abs(summary.get(0).getValue()));
 				return TokenTransfer.create(from, to, amount, e.getKey(), attachment, atom.getTimestamp());
 			})
 			.collect(Collectors.toList());
@@ -119,7 +119,7 @@ public class TokenTransferTranslator {
 		return getTokenState(transfer.getFrom())
 			.firstOrError()
 			.flatMapCompletable(state -> {
-				final Map<TokenReference, List<Consumable>> allUnconsumedConsumables = state.getUnconsumedConsumables();
+				final Map<TokenRef, List<Consumable>> allUnconsumedConsumables = state.getUnconsumedConsumables();
 				final List<Consumable> unconsumedConsumables =
 					allUnconsumedConsumables.containsKey(transfer.getTokenRef())
 					? allUnconsumedConsumables.get(transfer.getTokenRef())
@@ -153,7 +153,7 @@ public class TokenTransferTranslator {
 				}
 
 				long consumerTotal = 0;
-				final long subUnitAmount = transfer.getAmount().multiply(TokenReference.getSubUnits()).longValueExact();
+				final long subUnitAmount = transfer.getAmount().multiply(TokenRef.getSubUnits()).longValueExact();
 				Iterator<Consumable> iterator = unconsumedConsumables.iterator();
 				Map<ECKeyPair, Long> consumerQuantities = new HashMap<>();
 
@@ -175,7 +175,7 @@ public class TokenTransferTranslator {
 
 				if (consumerTotal < subUnitAmount) {
 					return Completable.error(new InsufficientFundsException(
-						transfer.getTokenRef(), TokenReference.subUnitsToDecimal(consumerTotal), transfer.getAmount()
+						transfer.getTokenRef(), TokenRef.subUnitsToDecimal(consumerTotal), transfer.getAmount()
 					));
 				}
 

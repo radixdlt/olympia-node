@@ -2,7 +2,7 @@ package com.radixdlt.client.core.atoms.particles;
 
 import com.google.gson.annotations.SerializedName;
 import com.radixdlt.client.core.atoms.RadixHash;
-import com.radixdlt.client.core.atoms.TokenReference;
+import com.radixdlt.client.core.atoms.TokenRef;
 import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.atoms.AccountReference;
 import com.radixdlt.client.core.crypto.ECPublicKey;
@@ -39,7 +39,7 @@ public class TokenParticle implements Particle {
 		this.iso = iso;
 		this.spin = Spin.UP;
 		// FIXME: bad hack
-		this.uid = RadixHash.of(Dson.getInstance().toDson(getTokenReference())).toEUID();
+		this.uid = RadixHash.of(Dson.getInstance().toDson(getTokenRef())).toEUID();
 		this.name = name;
 		this.description = description;
 		this.mintPermissions = mintPermissions;
@@ -58,8 +58,8 @@ public class TokenParticle implements Particle {
 		return description;
 	}
 
-	public TokenReference getTokenReference() {
-		return TokenReference.of(addresses.get(0), iso);
+	public TokenRef getTokenRef() {
+		return TokenRef.of(addresses.get(0), iso);
 	}
 
 	public Set<ECPublicKey> getAddresses() {

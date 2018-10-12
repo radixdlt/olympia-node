@@ -11,12 +11,12 @@ public class AtomFeeConsumableBuilder {
 	private int magic;
 	private int leading;
 	private UnsignedAtom unsignedAtom;
-	private TokenReference powToken;
+	private TokenRef powToken;
 
 	public AtomFeeConsumableBuilder() {
 	}
 
-	public AtomFeeConsumableBuilder powToken(TokenReference powToken) {
+	public AtomFeeConsumableBuilder powToken(TokenRef powToken) {
 		this.powToken = powToken;
 		return this;
 	}

@@ -24,7 +24,7 @@ public class AtomBuilder {
 		return this;
 	}
 
-	public UnsignedAtom buildWithPOWFee(int magic, ECPublicKey owner, TokenReference powToken) {
+	public UnsignedAtom buildWithPOWFee(int magic, ECPublicKey owner, TokenRef powToken) {
 		long timestamp = System.currentTimeMillis();
 
 		// Expensive but fine for now

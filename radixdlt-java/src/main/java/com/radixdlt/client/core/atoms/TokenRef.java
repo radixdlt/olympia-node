@@ -6,7 +6,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
-public final class TokenReference {
+public final class TokenRef {
 	private static final Charset CHARSET = StandardCharsets.UTF_8;
 
 	private static final int TOKEN_SCALE = 5;
@@ -28,15 +28,15 @@ public final class TokenReference {
 	private final AccountReference address;
 	private final String iso;
 
-	private TokenReference(AccountReference address, String iso) {
+	private TokenRef(AccountReference address, String iso) {
 		Objects.requireNonNull(iso);
 
 		this.address = address;
 		this.iso = iso;
 	}
 
-	public static TokenReference of(AccountReference address, String reference) {
-		return new TokenReference(address, reference);
+	public static TokenRef of(AccountReference address, String reference) {
+		return new TokenRef(address, reference);
 	}
 
 	public AccountReference getAddress() {
@@ -53,12 +53,12 @@ public final class TokenReference {
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof TokenReference)) {
+		if (!(o instanceof TokenRef)) {
 			return false;
 		}
 
-		TokenReference tokenReference = (TokenReference) o;
-		return this.iso.equals(tokenReference.iso) && this.address.equals(tokenReference.address);
+		TokenRef tokenRef = (TokenRef) o;
+		return this.iso.equals(tokenRef.iso) && this.address.equals(tokenRef.address);
 	}
 
 	@Override

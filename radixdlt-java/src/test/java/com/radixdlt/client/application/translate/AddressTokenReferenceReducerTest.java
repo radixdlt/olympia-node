@@ -6,7 +6,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.radixdlt.client.core.address.RadixAddress;
-import com.radixdlt.client.core.atoms.TokenReference;
+import com.radixdlt.client.core.atoms.TokenRef;
 import com.radixdlt.client.core.atoms.particles.Consumable;
 import com.radixdlt.client.core.atoms.RadixHash;
 import com.radixdlt.client.core.atoms.particles.Particle;
@@ -28,8 +28,8 @@ public class AddressTokenReferenceReducerTest {
 		when(consumable.getAmount()).thenReturn(10L);
 		when(consumable.getHash()).thenReturn(hash);
 		when(consumable.getSpin()).thenReturn(Spin.UP);
-		TokenReference token = mock(TokenReference.class);
-		when(consumable.getTokenReference()).thenReturn(token);
+		TokenRef token = mock(TokenRef.class);
+		when(consumable.getTokenRef()).thenReturn(token);
 
 		when(store.getParticles(address)).thenReturn(
 			Observable.<Particle>just(consumable).concatWith(Observable.never())

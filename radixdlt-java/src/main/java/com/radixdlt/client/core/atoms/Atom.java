@@ -143,11 +143,10 @@ public final class Atom {
 			.collect(Collectors.toList());
 	}
 
-	public Map<TokenReference, Map<ECPublicKey, Long>> tokenSummary() {
+	public Map<TokenRef, Map<ECPublicKey, Long>> tokenSummary() {
 		return consumables()
-			.filter(c -> !c.getTokenReference().equals("POW"))
 			.collect(Collectors.groupingBy(
-				Consumable::getTokenReference,
+				Consumable::getTokenRef,
 				Collectors.groupingBy(
 					Consumable::getOwner,
 					Collectors.summingLong(Consumable::getSignedAmount)

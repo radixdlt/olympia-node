@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
 import com.radixdlt.client.core.address.RadixAddress;
-import com.radixdlt.client.core.atoms.TokenReference;
+import com.radixdlt.client.core.atoms.TokenRef;
 import java.math.BigDecimal;
 import org.junit.Test;
 
@@ -15,7 +15,7 @@ public class TokenTransferTest {
 	public void testBadBigDecimalScale() {
 		RadixAddress from = mock(RadixAddress.class);
 		RadixAddress to = mock(RadixAddress.class);
-		TokenReference tokenRef = mock(TokenReference.class);
+		TokenRef tokenRef = mock(TokenRef.class);
 
 		assertThatThrownBy(() -> TokenTransfer.create(from, to, new BigDecimal("0.000001"), tokenRef))
 			.isInstanceOf(IllegalArgumentException.class);
@@ -25,7 +25,7 @@ public class TokenTransferTest {
 	public void testSmallestAllowedAmount() {
 		RadixAddress from = mock(RadixAddress.class);
 		RadixAddress to = mock(RadixAddress.class);
-		TokenReference tokenRef = mock(TokenReference.class);
+		TokenRef tokenRef = mock(TokenRef.class);
 
 		assertThat(TokenTransfer.create(from, to, new BigDecimal("0.00001"), tokenRef).toString()).isNotNull();
 	}
@@ -34,7 +34,7 @@ public class TokenTransferTest {
 	public void testSmallestAllowedAmountLargeScale() {
 		RadixAddress from = mock(RadixAddress.class);
 		RadixAddress to = mock(RadixAddress.class);
-		TokenReference tokenRef = mock(TokenReference.class);
+		TokenRef tokenRef = mock(TokenRef.class);
 
 		assertThat(TokenTransfer.create(from, to, new BigDecimal("0.000010000"), tokenRef).toString()).isNotNull();
 	}

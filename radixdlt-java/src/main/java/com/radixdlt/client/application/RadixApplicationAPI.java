@@ -13,7 +13,7 @@ import com.radixdlt.client.application.translate.AddressTokenState;
 import com.radixdlt.client.application.translate.DataStoreTranslator;
 import com.radixdlt.client.application.translate.TokenTransferTranslator;
 import com.radixdlt.client.application.translate.UniquePropertyTranslator;
-import com.radixdlt.client.core.atoms.TokenReference;
+import com.radixdlt.client.core.atoms.TokenRef;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.RadixUniverse.Ledger;
 import com.radixdlt.client.core.address.RadixAddress;
@@ -156,7 +156,7 @@ public class RadixApplicationAPI {
 		}
 	}
 
-	public TokenReference getNativeToken() {
+	public TokenRef getNativeToken() {
 		return universe.getNativeToken();
 	}
 
@@ -164,17 +164,17 @@ public class RadixApplicationAPI {
 		return getToken(getNativeToken());
 	}
 
-	public Observable<Map<TokenReference, TokenState>> getTokens(RadixAddress address) {
+	public Observable<Map<TokenRef, TokenState>> getTokens(RadixAddress address) {
 		pull(address);
 
 		return tokenReducer.getState(address);
 	}
 
-	public Observable<Map<TokenReference, TokenState>> getMyTokens() {
+	public Observable<Map<TokenRef, TokenState>> getMyTokens() {
 		return getTokens(getMyAddress());
 	}
 
-	public Observable<TokenState> getToken(TokenReference ref) {
+	public Observable<TokenState> getToken(TokenRef ref) {
 		pull(universe.getAddressFrom(ref.getAddress().getKey()));
 
 		return tokenReducer.getState(universe.getAddressFrom(ref.getAddress().getKey()))
@@ -259,7 +259,7 @@ public class RadixApplicationAPI {
 			.flatMapIterable(tokenTransferTranslator::fromAtom);
 	}
 
-	public Observable<Map<TokenReference, BigDecimal>> getBalance(RadixAddress address) {
+	public Observable<Map<TokenRef, BigDecimal>> getBalance(RadixAddress address) {
 		Objects.requireNonNull(address);
 
 		pull(address);
@@ -270,18 +270,18 @@ public class RadixApplicationAPI {
 				Collectors.toMap(Entry::getKey,
 					e -> {
 						BigDecimal subUnitAmount = BigDecimal.valueOf(e.getValue());
-						BigDecimal subUnits = BigDecimal.valueOf(TokenReference.SUB_UNITS);
+						BigDecimal subUnits = BigDecimal.valueOf(TokenRef.SUB_UNITS);
 						return subUnitAmount.divide(subUnits, MathContext.UNLIMITED);
 					})
 				)
 			);
 	}
 
-	public Observable<BigDecimal> getMyBalance(TokenReference tokenReference) {
-		return getBalance(getMyAddress(), tokenReference);
+	public Observable<BigDecimal> getMyBalance(TokenRef tokenRef) {
+		return getBalance(getMyAddress(), tokenRef);
 	}
 
-	public Observable<BigDecimal> getBalance(RadixAddress address, TokenReference token) {
+	public Observable<BigDecimal> getBalance(RadixAddress address, TokenRef token) {
 		Objects.requireNonNull(token);
 
 		return getBalance(address)
@@ -293,10 +293,10 @@ public class RadixApplicationAPI {
 		AccountReference account = new AccountReference(getMyPublicKey());
 		TokenParticle token = new TokenParticle(account, name, iso, description, MintPermissions.SAME_ATOM_ONLY, null);
 		Minted minted = new Minted(
-			fixedSupply * TokenReference.SUB_UNITS,
+			fixedSupply * TokenRef.SUB_UNITS,
 			account,
 			System.currentTimeMillis(),
-			token.getTokenReference(),
+			token.getTokenRef(),
 			System.currentTimeMillis() / 60000L + 60000
 		);
 
@@ -321,7 +321,7 @@ public class RadixApplicationAPI {
 	 * @param amount the amount and token type
 	 * @return result of the transaction
 	 */
-	public Result sendTokens(RadixAddress to, BigDecimal amount, TokenReference token) {
+	public Result sendTokens(RadixAddress to, BigDecimal amount, TokenRef token) {
 		return transferTokens(getMyAddress(), to, amount, token);
 	}
 
@@ -334,7 +334,7 @@ public class RadixApplicationAPI {
 	 * @param message message to be encrypted and attached to transfer
 	 * @return result of the transaction
 	 */
-	public Result sendTokensWithMessage(RadixAddress to, BigDecimal amount, TokenReference token, @Nullable String message) {
+	public Result sendTokensWithMessage(RadixAddress to, BigDecimal amount, TokenRef token, @Nullable String message) {
 		return sendTokensWithMessage(to, amount, token, message, null);
 	}
 
@@ -349,7 +349,7 @@ public class RadixApplicationAPI {
 	public Result sendTokensWithMessage(
 		RadixAddress to,
 		BigDecimal amount,
-		TokenReference token,
+		TokenRef token,
 		@Nullable String message,
 		@Nullable byte[] unique
 	) {
@@ -374,7 +374,7 @@ public class RadixApplicationAPI {
 	 * @param attachment the data attached to the transaction
 	 * @return result of the transaction
 	 */
-	public Result sendTokens(RadixAddress to, BigDecimal amount, TokenReference token, @Nullable Data attachment) {
+	public Result sendTokens(RadixAddress to, BigDecimal amount, TokenRef token, @Nullable Data attachment) {
 		return transferTokens(getMyAddress(), to, amount, token, attachment);
 	}
 
@@ -391,14 +391,14 @@ public class RadixApplicationAPI {
 	public Result sendTokens(
 		RadixAddress to,
 		BigDecimal amount,
-		TokenReference token,
+		TokenRef token,
 		@Nullable Data attachment,
 		@Nullable byte[] unique
 	) {
 		return transferTokens(getMyAddress(), to, amount, token, attachment, unique);
 	}
 
-	public Result transferTokens(RadixAddress from, RadixAddress to, BigDecimal amount, TokenReference token) {
+	public Result transferTokens(RadixAddress from, RadixAddress to, BigDecimal amount, TokenRef token) {
 		return transferTokens(from, to, amount, token, null);
 	}
 
@@ -406,7 +406,7 @@ public class RadixApplicationAPI {
 		RadixAddress from,
 		RadixAddress to,
 		BigDecimal amount,
-		TokenReference token,
+		TokenRef token,
 		@Nullable Data attachment
 	) {
 		return transferTokens(from, to, amount, token, attachment, null);
@@ -416,7 +416,7 @@ public class RadixApplicationAPI {
 		RadixAddress from,
 		RadixAddress to,
 		BigDecimal amount,
-		TokenReference token,
+		TokenRef token,
 		@Nullable Data attachment,
 		@Nullable byte[] unique // TODO: make unique immutable
 	) {

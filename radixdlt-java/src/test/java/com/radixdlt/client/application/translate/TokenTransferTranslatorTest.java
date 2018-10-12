@@ -12,7 +12,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import org.junit.Test;
 import com.radixdlt.client.application.actions.TokenTransfer;
-import com.radixdlt.client.core.atoms.TokenReference;
+import com.radixdlt.client.core.atoms.TokenRef;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.crypto.ECPublicKey;
@@ -28,8 +28,8 @@ public class TokenTransferTranslatorTest {
 		ECPublicKey myKey = mock(ECPublicKey.class);
 		RadixAddress myAddress = mock(RadixAddress.class);
 		when(universe.getAddressFrom(myKey)).thenReturn(myAddress);
-		TokenReference tokenReference = mock(TokenReference.class);
-		when(atom.tokenSummary()).thenReturn(Collections.singletonMap(tokenReference,
+		TokenRef tokenRef = mock(TokenRef.class);
+		when(atom.tokenSummary()).thenReturn(Collections.singletonMap(tokenRef,
 			Collections.singletonMap(myKey, 0L)
 		));
 
@@ -48,7 +48,7 @@ public class TokenTransferTranslatorTest {
 		TokenTransfer tokenTransfer = mock(TokenTransfer.class);
 		when(tokenTransfer.getAmount()).thenReturn(new BigDecimal("1.0"));
 		when(tokenTransfer.getFrom()).thenReturn(address);
-		TokenReference token = mock(TokenReference.class);
+		TokenRef token = mock(TokenRef.class);
 		when(tokenTransfer.getTokenRef()).thenReturn(token);
 
 		TestObserver observer = TestObserver.create();

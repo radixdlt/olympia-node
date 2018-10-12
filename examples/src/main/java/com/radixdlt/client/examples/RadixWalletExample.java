@@ -3,7 +3,7 @@ package com.radixdlt.client.examples;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.core.atoms.AccountReference;
-import com.radixdlt.client.core.atoms.TokenReference;
+import com.radixdlt.client.core.atoms.TokenRef;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.address.RadixAddress;
@@ -56,7 +56,7 @@ public class RadixWalletExample {
 			.toObservable().subscribe(System.out::println);
 			*/
 
-		TokenReference token = TokenReference.of(new AccountReference(api.getMyPublicKey()), "NONA");
+		TokenRef token = TokenRef.of(new AccountReference(api.getMyPublicKey()), "NONA");
 		api.getToken(token)
 			.subscribe(System.out::println);
 

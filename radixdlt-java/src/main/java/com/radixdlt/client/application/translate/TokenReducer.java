@@ -1,7 +1,7 @@
 package com.radixdlt.client.application.translate;
 
 import com.radixdlt.client.core.address.RadixAddress;
-import com.radixdlt.client.core.atoms.TokenReference;
+import com.radixdlt.client.core.atoms.TokenRef;
 import com.radixdlt.client.core.atoms.particles.Minted;
 import com.radixdlt.client.core.atoms.particles.TokenParticle;
 import com.radixdlt.client.core.ledger.ParticleStore;
@@ -15,21 +15,21 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public class TokenReducer {
-	private final ConcurrentHashMap<RadixAddress, Observable<Map<TokenReference, TokenState>>> cache = new ConcurrentHashMap<>();
+	private final ConcurrentHashMap<RadixAddress, Observable<Map<TokenRef, TokenState>>> cache = new ConcurrentHashMap<>();
 	private final ParticleStore particleStore;
 
 	public TokenReducer(ParticleStore particleStore) {
 		this.particleStore = particleStore;
 	}
 
-	public Observable<Map<TokenReference, TokenState>> getState(RadixAddress address) {
+	public Observable<Map<TokenRef, TokenState>> getState(RadixAddress address) {
 		return cache.computeIfAbsent(address, addr -> {
 			Observable<Map<String, TokenParticle>> tokenParticles = particleStore.getParticles(address)
 				.filter(p -> p instanceof TokenParticle)
 				.map(p -> (TokenParticle) p)
 				.scanWith(HashMap<String, TokenParticle>::new, (map, p) -> {
 					HashMap<String, TokenParticle> newMap = new HashMap<>(map);
-					newMap.put(p.getTokenReference().getIso(), p);
+					newMap.put(p.getTokenRef().getIso(), p);
 					return newMap;
 				});
 
@@ -38,17 +38,17 @@ public class TokenReducer {
 				.map(p -> (Minted) p)
 				.scanWith(HashMap<String, Long>::new, (map, p) -> {
 					HashMap<String, Long> newMap = new HashMap<>(map);
-					newMap.merge(p.getTokenReference().getIso(), p.getAmount(), Long::sum);
+					newMap.merge(p.getTokenRef().getIso(), p.getAmount(), Long::sum);
 					return newMap;
 				});
 
 			return Observable.combineLatest(tokenParticles, mintedTokens, (tokens, minted) ->
 				tokens.entrySet().stream().collect(Collectors.toMap(
-					e -> e.getValue().getTokenReference(),
+					e -> e.getValue().getTokenRef(),
 					e -> {
 						TokenParticle p = e.getValue();
-						Long subUnits = Optional.ofNullable(minted.get(p.getTokenReference().getIso())).orElse(0L);
-						BigDecimal totalSupply = TokenReference.subUnitsToDecimal(subUnits);
+						Long subUnits = Optional.ofNullable(minted.get(p.getTokenRef().getIso())).orElse(0L);
+						BigDecimal totalSupply = TokenRef.subUnitsToDecimal(subUnits);
 						return new TokenState(p.getName(), p.getIso(), p.getDescription(), totalSupply);
 					}
 				))
