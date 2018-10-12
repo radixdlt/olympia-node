@@ -6,6 +6,8 @@ import com.radixdlt.client.application.actions.TokenTransfer;
 import com.radixdlt.client.application.actions.UniqueProperty;
 import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.application.objects.Data.DataBuilder;
+import com.radixdlt.client.application.translate.TokenReducer;
+import com.radixdlt.client.application.translate.TokenState;
 import com.radixdlt.client.application.objects.UnencryptedData;
 import com.radixdlt.client.application.translate.AddressTokenState;
 import com.radixdlt.client.application.translate.DataStoreTranslator;
@@ -86,6 +88,7 @@ public class RadixApplicationAPI {
 	private final DataStoreTranslator dataStoreTranslator;
 	private final TokenTransferTranslator tokenTransferTranslator;
 	private final UniquePropertyTranslator uniquePropertyTranslator;
+	private final TokenReducer tokenReducer;
 
 	// TODO: Translator from particles to atom
 	private final Supplier<AtomBuilder> atomBuilderSupplier;
@@ -104,6 +107,7 @@ public class RadixApplicationAPI {
 		this.dataStoreTranslator = dataStoreTranslator;
 		this.tokenTransferTranslator = new TokenTransferTranslator(universe, ledger.getParticleStore());
 		this.uniquePropertyTranslator = new UniquePropertyTranslator();
+		this.tokenReducer = new TokenReducer(ledger.getParticleStore());
 		this.atomBuilderSupplier = atomBuilderSupplier;
 		this.ledger = ledger;
 	}
@@ -154,6 +158,27 @@ public class RadixApplicationAPI {
 
 	public TokenReference getNativeToken() {
 		return universe.getNativeToken();
+	}
+
+	public Observable<TokenState> getNativeTokenState() {
+		return getToken(getNativeToken());
+	}
+
+	public Observable<Map<TokenReference, TokenState>> getTokens(RadixAddress address) {
+		pull(address);
+
+		return tokenReducer.getState(address);
+	}
+
+	public Observable<Map<TokenReference, TokenState>> getMyTokens() {
+		return getTokens(getMyAddress());
+	}
+
+	public Observable<TokenState> getToken(TokenReference ref) {
+		pull(universe.getAddressFrom(ref.getAddress().getKey()));
+
+		return tokenReducer.getState(universe.getAddressFrom(ref.getAddress().getKey()))
+			.flatMapMaybe(m -> Optional.ofNullable(m.get(ref)).map(Maybe::just).orElse(Maybe.empty()));
 	}
 
 	public ECPublicKey getMyPublicKey() {
@@ -374,7 +399,7 @@ public class RadixApplicationAPI {
 	}
 
 	public Result transferTokens(RadixAddress from, RadixAddress to, BigDecimal amount, TokenReference token) {
-		return transferTokens(from, to, amount, null, null);
+		return transferTokens(from, to, amount, token, null);
 	}
 
 	public Result transferTokens(

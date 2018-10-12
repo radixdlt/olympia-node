@@ -52,14 +52,17 @@ public class RadixWalletExample {
 			.subscribe(balance -> System.out.println("My Balance:\n" + balance));
 
 		/*
-		api.createFixedSupplyToken("Joshy Token", "YOSHY", "The Best Coin Ever", 10000)
+		api.createFixedSupplyToken("Joshy Token", "JOSH", "The Best Coin Ever", 10000)
 			.toObservable().subscribe(System.out::println);
-		*/
+			*/
+
+		TokenReference token = TokenReference.of(new AccountReference(api.getMyPublicKey()), "NONA");
+		api.getToken(token)
+			.subscribe(System.out::println);
 
 		// If specified, send money to another address
 		if (TO_ADDRESS_BASE58 != null) {
 			RadixAddress toAddress = RadixAddress.fromString(TO_ADDRESS_BASE58);
-			TokenReference token = TokenReference.of(new AccountReference(api.getMyPublicKey()), "YOSHY");
 			api.sendTokens(toAddress, AMOUNT, token).toObservable()
 				.subscribe(System.out::println, Throwable::printStackTrace);
 		}

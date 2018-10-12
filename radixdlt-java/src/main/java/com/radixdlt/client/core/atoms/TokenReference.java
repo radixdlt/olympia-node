@@ -39,6 +39,10 @@ public final class TokenReference {
 		return new TokenReference(address, reference);
 	}
 
+	public AccountReference getAddress() {
+		return address;
+	}
+
 	public String getIso() {
 		return iso;
 	}
@@ -54,7 +58,7 @@ public final class TokenReference {
 		}
 
 		TokenReference tokenReference = (TokenReference) o;
-		return this.iso.equals(tokenReference.iso);
+		return this.iso.equals(tokenReference.iso) && this.address.equals(tokenReference.address);
 	}
 
 	@Override

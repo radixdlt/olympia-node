@@ -50,6 +50,7 @@ public class TokenTransferTranslator {
 
 	public List<TokenTransfer> fromAtom(Atom atom) {
 		return atom.tokenSummary().entrySet().stream()
+			.filter(e -> !e.getKey().equals(universe.getPOWToken()))
 			.map(e -> {
 				List<Entry<ECPublicKey, Long>> summary = new ArrayList<>(e.getValue().entrySet());
 				if (summary.isEmpty()) {

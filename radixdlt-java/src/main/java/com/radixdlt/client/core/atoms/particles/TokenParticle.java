@@ -46,6 +46,18 @@ public class TokenParticle implements Particle {
 		this.icon = icon;
 	}
 
+	public String getName() {
+		return name;
+	}
+
+	public String getIso() {
+		return iso;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
 	public TokenReference getTokenReference() {
 		return TokenReference.of(addresses.get(0), iso);
 	}
