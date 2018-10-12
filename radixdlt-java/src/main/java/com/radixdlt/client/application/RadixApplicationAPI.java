@@ -6,10 +6,11 @@ import com.radixdlt.client.application.actions.TokenTransfer;
 import com.radixdlt.client.application.actions.UniqueProperty;
 import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.application.objects.Data.DataBuilder;
+import com.radixdlt.client.application.translate.TokenBalanceReducer;
 import com.radixdlt.client.application.translate.TokenReducer;
 import com.radixdlt.client.application.translate.TokenState;
 import com.radixdlt.client.application.objects.UnencryptedData;
-import com.radixdlt.client.application.translate.AddressTokenState;
+import com.radixdlt.client.application.translate.TokenBalanceState;
 import com.radixdlt.client.application.translate.DataStoreTranslator;
 import com.radixdlt.client.application.translate.TokenTransferTranslator;
 import com.radixdlt.client.application.translate.UniquePropertyTranslator;
@@ -88,7 +89,9 @@ public class RadixApplicationAPI {
 	private final DataStoreTranslator dataStoreTranslator;
 	private final TokenTransferTranslator tokenTransferTranslator;
 	private final UniquePropertyTranslator uniquePropertyTranslator;
+
 	private final TokenReducer tokenReducer;
+	private final TokenBalanceReducer tokenBalanceReducer;
 
 	// TODO: Translator from particles to atom
 	private final Supplier<AtomBuilder> atomBuilderSupplier;
@@ -105,9 +108,10 @@ public class RadixApplicationAPI {
 		this.identity = identity;
 		this.universe = universe;
 		this.dataStoreTranslator = dataStoreTranslator;
-		this.tokenTransferTranslator = new TokenTransferTranslator(universe, ledger.getParticleStore());
+		this.tokenTransferTranslator = new TokenTransferTranslator(universe);
 		this.uniquePropertyTranslator = new UniquePropertyTranslator();
 		this.tokenReducer = new TokenReducer(ledger.getParticleStore());
+		this.tokenBalanceReducer = new TokenBalanceReducer(ledger.getParticleStore());
 		this.atomBuilderSupplier = atomBuilderSupplier;
 		this.ledger = ledger;
 	}
@@ -264,8 +268,8 @@ public class RadixApplicationAPI {
 
 		pull(address);
 
-		return tokenTransferTranslator.getTokenState(address)
-			.map(AddressTokenState::getBalance)
+		return tokenBalanceReducer.getState(address)
+			.map(TokenBalanceState::getBalance)
 			.map(map -> map.entrySet().stream().collect(
 				Collectors.toMap(Entry::getKey,
 					e -> {
@@ -443,16 +447,15 @@ public class RadixApplicationAPI {
 	private Result executeTransaction(TokenTransfer tokenTransfer, @Nullable UniqueProperty uniqueProperty) {
 		Objects.requireNonNull(tokenTransfer);
 
-		pull();
+		pull(tokenTransfer.getFrom());
 
 		AtomBuilder atomBuilder = atomBuilderSupplier.get();
 
-		Single<UnsignedAtom> unsignedAtom =
-			uniquePropertyTranslator.translate(uniqueProperty, atomBuilder)
-			.andThen(tokenTransferTranslator.translate(tokenTransfer, atomBuilder))
-			.andThen(Single.fromCallable(
-				() -> atomBuilder.buildWithPOWFee(universe.getMagic(), tokenTransfer.getFrom().getPublicKey(), universe.getPOWToken())
-			));
+		uniquePropertyTranslator.translate(uniqueProperty, atomBuilder);
+		Single<UnsignedAtom> unsignedAtom = tokenBalanceReducer.getState(tokenTransfer.getFrom())
+			.firstOrError()
+			.map(curState -> tokenTransferTranslator.translate(curState, tokenTransfer, atomBuilder))
+			.map(builder -> builder.buildWithPOWFee(universe.getMagic(), tokenTransfer.getFrom().getPublicKey(), universe.getPOWToken()));
 
 		ConnectableObservable<AtomSubmissionUpdate> updates =
 			unsignedAtom

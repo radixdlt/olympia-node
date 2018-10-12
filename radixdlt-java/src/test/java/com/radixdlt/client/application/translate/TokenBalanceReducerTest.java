@@ -16,7 +16,7 @@ import io.reactivex.Observable;
 import io.reactivex.observers.TestObserver;
 import org.junit.Test;
 
-public class AddressTokenReferenceReducerTest {
+public class TokenBalanceReducerTest {
 
 	@Test
 	public void testCache() {
@@ -34,16 +34,16 @@ public class AddressTokenReferenceReducerTest {
 		when(store.getParticles(address)).thenReturn(
 			Observable.<Particle>just(consumable).concatWith(Observable.never())
 		);
-		AddressTokenReducer reducer = new AddressTokenReducer(address, store);
+		TokenBalanceReducer reducer = new TokenBalanceReducer(store);
 
-		TestObserver<AddressTokenState> testObserver = TestObserver.create();
-		reducer.getState().subscribe(testObserver);
+		TestObserver<TokenBalanceState> testObserver = TestObserver.create();
+		reducer.getState(address).subscribe(testObserver);
 		testObserver.awaitCount(1);
 		testObserver.assertValue(state -> state.getBalance().get(token) == 10L);
 		testObserver.dispose();
 
-		TestObserver<AddressTokenState> testObserver2 = TestObserver.create();
-		reducer.getState().subscribe(testObserver2);
+		TestObserver<TokenBalanceState> testObserver2 = TestObserver.create();
+		reducer.getState(address).subscribe(testObserver2);
 		testObserver2.assertValue(state -> state.getBalance().get(token) == 10L);
 
 		verify(store, times(1)).getParticles(address);

@@ -21,11 +21,8 @@ import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
 import com.radixdlt.client.core.crypto.Encryptor;
 import com.radixdlt.client.core.serialization.RadixJson;
-import com.radixdlt.client.core.ledger.ParticleStore;
-import io.reactivex.Completable;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
-import io.reactivex.Observable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -34,18 +31,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 public class TokenTransferTranslator {
 	private final RadixUniverse universe;
 	private static final JsonParser JSON_PARSER = new JsonParser();
-	private final ParticleStore particleStore;
-	private final ConcurrentHashMap<RadixAddress, AddressTokenReducer> cache = new ConcurrentHashMap<>();
 
-	public TokenTransferTranslator(RadixUniverse universe, ParticleStore particleStore) {
+	public TokenTransferTranslator(RadixUniverse universe) {
 		this.universe = universe;
-		this.particleStore = particleStore;
 	}
 
 	public List<TokenTransfer> fromAtom(Atom atom) {
@@ -111,86 +104,77 @@ public class TokenTransferTranslator {
 			.collect(Collectors.toList());
 	}
 
-	public Observable<AddressTokenState> getTokenState(RadixAddress address) {
-		return cache.computeIfAbsent(address, addr -> new AddressTokenReducer(addr, particleStore)).getState();
-	}
+	public AtomBuilder translate(TokenBalanceState curState, TokenTransfer transfer, AtomBuilder atomBuilder) throws InsufficientFundsException {
+		final Map<TokenRef, List<Consumable>> allUnconsumedConsumables = curState.getUnconsumedConsumables();
+		final List<Consumable> unconsumedConsumables =
+			allUnconsumedConsumables.containsKey(transfer.getTokenRef())
+			? allUnconsumedConsumables.get(transfer.getTokenRef())
+			: Collections.emptyList();
 
-	public Completable translate(TokenTransfer transfer, AtomBuilder atomBuilder) {
-		return getTokenState(transfer.getFrom())
-			.firstOrError()
-			.flatMapCompletable(state -> {
-				final Map<TokenRef, List<Consumable>> allUnconsumedConsumables = state.getUnconsumedConsumables();
-				final List<Consumable> unconsumedConsumables =
-					allUnconsumedConsumables.containsKey(transfer.getTokenRef())
-					? allUnconsumedConsumables.get(transfer.getTokenRef())
-					: Collections.emptyList();
+		// Translate attachment to corresponding atom structure
+		final Data attachment = transfer.getAttachment();
+		if (attachment != null) {
+			atomBuilder.addParticle(
+				new DataParticleBuilder()
+					.payload(new Payload(attachment.getBytes()))
+					.account(transfer.getFrom())
+					.account(transfer.getTo())
+					.build()
+			);
+			Encryptor encryptor = attachment.getEncryptor();
+			if (encryptor != null) {
+				JsonArray protectorsJson = new JsonArray();
+				encryptor.getProtectors().stream().map(EncryptedPrivateKey::base64).forEach(protectorsJson::add);
 
-				// Translate attachment to corresponding atom structure
-				final Data attachment = transfer.getAttachment();
-				if (attachment != null) {
-					atomBuilder.addParticle(
-						new DataParticleBuilder()
-							.payload(new Payload(attachment.getBytes()))
-							.account(transfer.getFrom())
-							.account(transfer.getTo())
-							.build()
-					);
-					Encryptor encryptor = attachment.getEncryptor();
-					if (encryptor != null) {
-						JsonArray protectorsJson = new JsonArray();
-						encryptor.getProtectors().stream().map(EncryptedPrivateKey::base64).forEach(protectorsJson::add);
+				Payload encryptorPayload = new Payload(protectorsJson.toString().getBytes(StandardCharsets.UTF_8));
+				DataParticle encryptorParticle = new DataParticleBuilder()
+					.payload(encryptorPayload)
+					.setMetaData("application", "encryptor")
+					.setMetaData("contentType", "application/json")
+					.account(transfer.getFrom())
+					.account(transfer.getTo())
+					.build();
+				atomBuilder.addParticle(encryptorParticle);
+			}
+		}
 
-						Payload encryptorPayload = new Payload(protectorsJson.toString().getBytes(StandardCharsets.UTF_8));
-						DataParticle encryptorParticle = new DataParticleBuilder()
-							.payload(encryptorPayload)
-							.setMetaData("application", "encryptor")
-							.setMetaData("contentType", "application/json")
-							.account(transfer.getFrom())
-							.account(transfer.getTo())
-							.build();
-						atomBuilder.addParticle(encryptorParticle);
-					}
-				}
+		long consumerTotal = 0;
+		final long subUnitAmount = transfer.getAmount().multiply(TokenRef.getSubUnits()).longValueExact();
+		Iterator<Consumable> iterator = unconsumedConsumables.iterator();
+		Map<ECKeyPair, Long> consumerQuantities = new HashMap<>();
 
-				long consumerTotal = 0;
-				final long subUnitAmount = transfer.getAmount().multiply(TokenRef.getSubUnits()).longValueExact();
-				Iterator<Consumable> iterator = unconsumedConsumables.iterator();
-				Map<ECKeyPair, Long> consumerQuantities = new HashMap<>();
+		// HACK for now
+		// TODO: remove this, create a ConsumersCreator
+		// TODO: randomize this to decrease probability of collision
+		while (consumerTotal < subUnitAmount && iterator.hasNext()) {
+			final long left = subUnitAmount - consumerTotal;
 
-				// HACK for now
-				// TODO: remove this, create a ConsumersCreator
-				// TODO: randomize this to decrease probability of collision
-				while (consumerTotal < subUnitAmount && iterator.hasNext()) {
-					final long left = subUnitAmount - consumerTotal;
+			Consumable down = iterator.next().spinDown();
+			consumerTotal += down.getAmount();
 
-					Consumable down = iterator.next().spinDown();
-					consumerTotal += down.getAmount();
+			final long amount = Math.min(left, down.getAmount());
+			down.addConsumerQuantities(amount, transfer.getTo().toECKeyPair(),
+				consumerQuantities);
 
-					final long amount = Math.min(left, down.getAmount());
-					down.addConsumerQuantities(amount, transfer.getTo().toECKeyPair(),
-						consumerQuantities);
+			atomBuilder.addParticle(down);
+		}
 
-					atomBuilder.addParticle(down);
-				}
+		if (consumerTotal < subUnitAmount) {
+			throw new InsufficientFundsException(
+				transfer.getTokenRef(), TokenRef.subUnitsToDecimal(consumerTotal), transfer.getAmount()
+			);
+		}
 
-				if (consumerTotal < subUnitAmount) {
-					return Completable.error(new InsufficientFundsException(
-						transfer.getTokenRef(), TokenRef.subUnitsToDecimal(consumerTotal), transfer.getAmount()
-					));
-				}
-
-				List<Particle> consumables = consumerQuantities.entrySet().stream()
-					.map(entry -> new Consumable(
-						entry.getValue(),
-						new AccountReference(entry.getKey().getPublicKey()),
-						System.nanoTime(),
-						transfer.getTokenRef(),
-						System.currentTimeMillis() / 60000L + 60000L, Spin.UP
-					))
-					.collect(Collectors.toList());
-				atomBuilder.addParticles(consumables);
-
-				return Completable.complete();
-			});
+		List<Particle> consumables = consumerQuantities.entrySet().stream()
+			.map(entry -> new Consumable(
+				entry.getValue(),
+				new AccountReference(entry.getKey().getPublicKey()),
+				System.nanoTime(),
+				transfer.getTokenRef(),
+				System.currentTimeMillis() / 60000L + 60000L, Spin.UP
+			))
+			.collect(Collectors.toList());
+		atomBuilder.addParticles(consumables);
+		return atomBuilder;
 	}
 }
