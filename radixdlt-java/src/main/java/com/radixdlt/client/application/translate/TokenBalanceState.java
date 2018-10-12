@@ -11,6 +11,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Stream;
 
+/**
+ * All the token balances at an address at a given point in time.
+ */
 public class TokenBalanceState {
 	public static class Balance {
 		private final Long balance;

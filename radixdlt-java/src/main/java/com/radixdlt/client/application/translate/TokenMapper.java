@@ -10,6 +10,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * Maps the CreateFixedSupplyToken action into it's corresponding particles
+ */
 public class TokenMapper {
 	public List<Particle> map(CreateFixedSupplyToken tokenCreation) {
 		if (tokenCreation == null) {

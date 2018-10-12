@@ -176,24 +176,52 @@ public class RadixApplicationAPI {
 		}
 	}
 
-	public TokenRef getNativeToken() {
+	/**
+	 * Returns the native Token Reference found in the genesis atom
+	 *
+	 * @return the native token reference
+	 */
+	public TokenRef getNativeTokenRef() {
 		return universe.getNativeToken();
 	}
 
+	/**
+	 * Returns a hot observable with the latest token state of the native token
+	 *
+	 * @return a hot observable of latest state of the native token
+	 */
 	public Observable<TokenState> getNativeTokenState() {
-		return getToken(getNativeToken());
+		return getToken(getNativeTokenRef());
 	}
 
+	/**
+	 * Returns a hot observable of the latest state of token classes at a given
+	 * address
+	 *
+	 * @param address the address of the account to check
+	 * @return a hot observable of the latest state of token classes
+	 */
 	public Observable<Map<TokenRef, TokenState>> getTokens(RadixAddress address) {
 		pull(address);
 
 		return tokenStore.getState(address);
 	}
 
+	/**
+	 * Returns a hot observable of the latest state of token classes at the user's
+	 * address
+	 *
+	 * @return a hot observable of the latest state of token classes
+	 */
 	public Observable<Map<TokenRef, TokenState>> getMyTokens() {
 		return getTokens(getMyAddress());
 	}
 
+	/**
+	 * Returns a hot observable of the latest state of a given token
+	 *
+	 * @return a hot observable of the latest state of the token
+	 */
 	public Observable<TokenState> getToken(TokenRef ref) {
 		pull(universe.getAddressFrom(ref.getAddress().getKey()));
 
@@ -280,7 +308,15 @@ public class RadixApplicationAPI {
 			.map(balances -> Optional.ofNullable(balances.get(token)).orElse(BigDecimal.ZERO));
 	}
 
-	// TODO: refactor to access a TokenTranslator
+	/**
+	 * Creates a fixed supply third party token
+	 *
+	 * @param name The name of the token to create
+	 * @param iso The symbol of the token to create
+	 * @param description A description of the token
+	 * @param fixedSupply The initial/final amount of supply of this token
+	 * @return result of the transaction
+	 */
 	public Result createFixedSupplyToken(String name, String iso, String description, long fixedSupply) {
 		AccountReference account = new AccountReference(getMyPublicKey());
 		CreateFixedSupplyToken tokenCreation = new CreateFixedSupplyToken(account, name, iso, description, fixedSupply);

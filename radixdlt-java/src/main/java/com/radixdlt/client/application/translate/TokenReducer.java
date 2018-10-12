@@ -9,6 +9,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Reduces particles at an address into concrete Tokens and their states
+ */
 public class TokenReducer implements ParticleReducer<Map<TokenRef, TokenState>> {
 	@Override
 	public Map<TokenRef, TokenState> initialState() {

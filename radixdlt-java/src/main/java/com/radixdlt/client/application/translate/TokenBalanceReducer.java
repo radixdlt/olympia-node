@@ -4,6 +4,9 @@ import com.radixdlt.client.core.atoms.particles.AtomFeeConsumable;
 import com.radixdlt.client.core.atoms.particles.Consumable;
 import com.radixdlt.client.core.atoms.particles.Particle;
 
+/**
+ * Reduces particles at an address to it's token balances
+ */
 public class TokenBalanceReducer implements ParticleReducer<TokenBalanceState> {
 	@Override
 	public TokenBalanceState initialState() {

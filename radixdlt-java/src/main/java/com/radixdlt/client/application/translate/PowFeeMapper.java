@@ -13,6 +13,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 
+/**
+ * Maps a complete list of particles ready to be submitted to a POW fee particle.
+ */
 public class PowFeeMapper implements FeeMapper {
 	private static final int LEADING = 16;
 
