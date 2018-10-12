@@ -32,6 +32,7 @@ import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState;
+import com.radixdlt.client.core.pow.ProofOfWorkBuilder;
 import com.radixdlt.client.core.serialization.RadixJson;
 import io.reactivex.Completable;
 import io.reactivex.Maybe;
@@ -128,7 +129,12 @@ public class RadixApplicationAPI {
 
 	public static RadixApplicationAPI create(RadixIdentity identity) {
 		Objects.requireNonNull(identity);
-		return create(identity, RadixUniverse.getInstance(), DataStoreTranslator.getInstance(), new PowFeeMapper());
+		return create(
+			identity,
+			RadixUniverse.getInstance(),
+			DataStoreTranslator.getInstance(),
+			new PowFeeMapper(p -> new Atom(p).getHash(), new ProofOfWorkBuilder())
+		);
 	}
 
 	public static RadixApplicationAPI create(
