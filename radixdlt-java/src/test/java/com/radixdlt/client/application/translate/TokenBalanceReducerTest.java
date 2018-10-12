@@ -28,6 +28,7 @@ public class TokenBalanceReducerTest {
 		when(consumable.getAmount()).thenReturn(10L);
 		when(consumable.getHash()).thenReturn(hash);
 		when(consumable.getSpin()).thenReturn(Spin.UP);
+		when(consumable.getDson()).thenReturn(new byte[] {1});
 		TokenRef token = mock(TokenRef.class);
 		when(consumable.getTokenRef()).thenReturn(token);
 
@@ -39,12 +40,12 @@ public class TokenBalanceReducerTest {
 		TestObserver<TokenBalanceState> testObserver = TestObserver.create();
 		reducer.getState(address).subscribe(testObserver);
 		testObserver.awaitCount(1);
-		testObserver.assertValue(state -> state.getBalance().get(token) == 10L);
+		testObserver.assertValue(state -> state.getBalance().get(token).getAmount().compareTo(TokenRef.subUnitsToDecimal(10L)) == 0);
 		testObserver.dispose();
 
 		TestObserver<TokenBalanceState> testObserver2 = TestObserver.create();
 		reducer.getState(address).subscribe(testObserver2);
-		testObserver2.assertValue(state -> state.getBalance().get(token) == 10L);
+		testObserver2.assertValue(state -> state.getBalance().get(token).getAmount().compareTo(TokenRef.subUnitsToDecimal(10L)) == 0);
 
 		verify(store, times(1)).getParticles(address);
 	}

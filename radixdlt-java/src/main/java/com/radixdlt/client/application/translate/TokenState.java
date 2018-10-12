@@ -20,6 +20,26 @@ public class TokenState {
 		this.totalSupply = totalSupply;
 	}
 
+	public String getName() {
+		return name;
+	}
+
+	public String getIso() {
+		return iso;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
+	public BigDecimal getTotalSupply() {
+		return totalSupply;
+	}
+
+	public BigDecimal getMaxSupply() {
+		return totalSupply;
+	}
+
 	@Override
 	public String toString() {
 		return "Token(" + iso + ") name(" + name + ") description(" + description

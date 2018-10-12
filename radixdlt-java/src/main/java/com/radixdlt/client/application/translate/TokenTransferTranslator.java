@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonParser;
 import com.radixdlt.client.application.actions.TokenTransfer;
 import com.radixdlt.client.application.objects.Data;
+import com.radixdlt.client.application.translate.TokenBalanceState.Balance;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.AccountReference;
@@ -105,11 +106,20 @@ public class TokenTransferTranslator {
 	}
 
 	public AtomBuilder translate(TokenBalanceState curState, TokenTransfer transfer, AtomBuilder atomBuilder) throws InsufficientFundsException {
-		final Map<TokenRef, List<Consumable>> allUnconsumedConsumables = curState.getUnconsumedConsumables();
+		final Map<TokenRef, Balance> allConsumables = curState.getBalance();
+
+		final TokenRef tokenRef = transfer.getTokenRef();
+		final Balance balance = Optional.ofNullable(allConsumables.get(transfer.getTokenRef())).orElse(Balance.empty());
+		if (balance.getAmount().compareTo(transfer.getAmount()) < 0) {
+			throw new InsufficientFundsException(
+				tokenRef, balance.getAmount(), transfer.getAmount()
+			);
+		}
+
 		final List<Consumable> unconsumedConsumables =
-			allUnconsumedConsumables.containsKey(transfer.getTokenRef())
-			? allUnconsumedConsumables.get(transfer.getTokenRef())
-			: Collections.emptyList();
+			Optional.ofNullable(allConsumables.get(transfer.getTokenRef()))
+				.map(bal -> bal.unconsumedConsumables().collect(Collectors.toList()))
+				.orElse(Collections.emptyList());
 
 		// Translate attachment to corresponding atom structure
 		final Data attachment = transfer.getAttachment();
@@ -157,12 +167,6 @@ public class TokenTransferTranslator {
 				consumerQuantities);
 
 			atomBuilder.addParticle(down);
-		}
-
-		if (consumerTotal < subUnitAmount) {
-			throw new InsufficientFundsException(
-				transfer.getTokenRef(), TokenRef.subUnitsToDecimal(consumerTotal), transfer.getAmount()
-			);
 		}
 
 		List<Particle> consumables = consumerQuantities.entrySet().stream()

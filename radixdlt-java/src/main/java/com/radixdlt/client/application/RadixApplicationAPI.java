@@ -110,8 +110,10 @@ public class RadixApplicationAPI {
 		this.dataStoreTranslator = dataStoreTranslator;
 		this.tokenTransferTranslator = new TokenTransferTranslator(universe);
 		this.uniquePropertyTranslator = new UniquePropertyTranslator();
+
 		this.tokenReducer = new TokenReducer(ledger.getParticleStore());
 		this.tokenBalanceReducer = new TokenBalanceReducer(ledger.getParticleStore());
+
 		this.atomBuilderSupplier = atomBuilderSupplier;
 		this.ledger = ledger;
 	}
@@ -271,14 +273,8 @@ public class RadixApplicationAPI {
 		return tokenBalanceReducer.getState(address)
 			.map(TokenBalanceState::getBalance)
 			.map(map -> map.entrySet().stream().collect(
-				Collectors.toMap(Entry::getKey,
-					e -> {
-						BigDecimal subUnitAmount = BigDecimal.valueOf(e.getValue());
-						BigDecimal subUnits = BigDecimal.valueOf(TokenRef.SUB_UNITS);
-						return subUnitAmount.divide(subUnits, MathContext.UNLIMITED);
-					})
-				)
-			);
+				Collectors.toMap(Entry::getKey, e -> e.getValue().getAmount())
+			));
 	}
 
 	public Observable<BigDecimal> getMyBalance(TokenRef tokenRef) {

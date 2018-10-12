@@ -42,14 +42,17 @@ public class TokenTransferTranslatorTest {
 		RadixAddress address = mock(RadixAddress.class);
 
 		TokenTransferTranslator transferTranslator = new TokenTransferTranslator(universe);
+
+		TokenRef token = mock(TokenRef.class);
+		when(token.getIso()).thenReturn("TEST");
+
 		TokenTransfer tokenTransfer = mock(TokenTransfer.class);
 		when(tokenTransfer.getAmount()).thenReturn(new BigDecimal("1.0"));
 		when(tokenTransfer.getFrom()).thenReturn(address);
-		TokenRef token = mock(TokenRef.class);
 		when(tokenTransfer.getTokenRef()).thenReturn(token);
 
 		TokenBalanceState state = mock(TokenBalanceState.class);
-		when(state.getUnconsumedConsumables()).thenReturn(Collections.emptyMap());
+		when(state.getBalance()).thenReturn(Collections.emptyMap());
 
 		assertThatThrownBy(() -> transferTranslator.translate(state, tokenTransfer, new AtomBuilder()))
 			.isEqualTo(new InsufficientFundsException(token, BigDecimal.ZERO, new BigDecimal("1.0")));

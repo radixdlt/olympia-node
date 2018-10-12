@@ -9,10 +9,8 @@ import io.reactivex.Observable;
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 public class TokenReducer {
 	private final ConcurrentHashMap<RadixAddress, Observable<Map<TokenRef, TokenState>>> cache = new ConcurrentHashMap<>();
@@ -23,37 +21,49 @@ public class TokenReducer {
 	}
 
 	public Observable<Map<TokenRef, TokenState>> getState(RadixAddress address) {
-		return cache.computeIfAbsent(address, addr -> {
-			Observable<Map<String, TokenParticle>> tokenParticles = particleStore.getParticles(address)
-				.filter(p -> p instanceof TokenParticle)
-				.map(p -> (TokenParticle) p)
-				.scanWith(HashMap<String, TokenParticle>::new, (map, p) -> {
-					HashMap<String, TokenParticle> newMap = new HashMap<>(map);
-					newMap.put(p.getTokenRef().getIso(), p);
-					return newMap;
-				});
+		return cache.computeIfAbsent(address, addr ->
+			particleStore.getParticles(address)
+				.filter(p -> p instanceof TokenParticle || p instanceof Minted)
+				.scanWith(HashMap<TokenRef, TokenState>::new, (map, p) -> {
+					HashMap<TokenRef, TokenState> newMap = new HashMap<>(map);
+					if (p instanceof TokenParticle) {
+						TokenParticle tokenParticle = (TokenParticle) p;
+						TokenState tokenState = new TokenState(
+							tokenParticle.getName(),
+							tokenParticle.getIso(),
+							tokenParticle.getDescription(),
+							BigDecimal.ZERO
+						);
 
-			Observable<HashMap<String, Long>> mintedTokens = particleStore.getParticles(address)
-				.filter(p -> p instanceof Minted)
-				.map(p -> (Minted) p)
-				.scanWith(HashMap<String, Long>::new, (map, p) -> {
-					HashMap<String, Long> newMap = new HashMap<>(map);
-					newMap.merge(p.getTokenRef().getIso(), p.getAmount(), Long::sum);
-					return newMap;
-				});
-
-			return Observable.combineLatest(tokenParticles, mintedTokens, (tokens, minted) ->
-				tokens.entrySet().stream().collect(Collectors.toMap(
-					e -> e.getValue().getTokenRef(),
-					e -> {
-						TokenParticle p = e.getValue();
-						Long subUnits = Optional.ofNullable(minted.get(p.getTokenRef().getIso())).orElse(0L);
-						BigDecimal totalSupply = TokenRef.subUnitsToDecimal(subUnits);
-						return new TokenState(p.getName(), p.getIso(), p.getDescription(), totalSupply);
+						newMap.merge(
+							tokenParticle.getTokenRef(),
+							tokenState,
+							(a, b) -> new TokenState(b.getName(), b.getIso(), b.getDescription(), a.getTotalSupply())
+						);
+					} else if (p instanceof Minted) {
+						Minted minted = (Minted) p;
+						TokenState tokenState = new TokenState(
+							null,
+							minted.getTokenRef().getIso(),
+							null,
+							BigDecimal.ZERO
+						);
+						newMap.merge(
+							minted.getTokenRef(),
+							tokenState,
+							(a, b) -> new TokenState(
+								a.getName(),
+								a.getIso(),
+								a.getDescription(),
+								a.getTotalSupply().add(b.getTotalSupply())
+							)
+						);
 					}
-				))
-			).debounce(1000, TimeUnit.MILLISECONDS);
-		});
-	}
 
+					return newMap;
+				})
+				.map(m -> (Map<TokenRef, TokenState>) m)
+				.debounce(1000, TimeUnit.MILLISECONDS)
+		);
+	}
 }
