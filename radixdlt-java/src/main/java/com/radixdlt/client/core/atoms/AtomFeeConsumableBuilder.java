@@ -10,7 +10,7 @@ public class AtomFeeConsumableBuilder {
 	private ECPublicKey owner;
 	private int magic;
 	private int leading;
-	private UnsignedAtom unsignedAtom;
+	private Atom atom;
 	private TokenRef powToken;
 
 	public AtomFeeConsumableBuilder() {
@@ -27,8 +27,8 @@ public class AtomFeeConsumableBuilder {
 		return this;
 	}
 
-	public AtomFeeConsumableBuilder atom(UnsignedAtom atom) {
-		this.unsignedAtom = atom;
+	public AtomFeeConsumableBuilder atom(Atom atom) {
+		this.atom = atom;
 		return this;
 	}
 
@@ -38,10 +38,10 @@ public class AtomFeeConsumableBuilder {
 	}
 
 	public AtomFeeConsumable build() {
-		Objects.requireNonNull(unsignedAtom);
+		Objects.requireNonNull(atom);
 		Objects.requireNonNull(owner);
 
-		final byte[] seed = unsignedAtom.getRawAtom().getHash().toByteArray();
+		final byte[] seed = atom.getHash().toByteArray();
 
 		ProofOfWork pow = new ProofOfWorkBuilder().build(magic, seed, leading);
 

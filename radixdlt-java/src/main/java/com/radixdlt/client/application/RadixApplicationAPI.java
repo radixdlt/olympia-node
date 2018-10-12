@@ -15,6 +15,8 @@ import com.radixdlt.client.application.translate.TokenBalanceState;
 import com.radixdlt.client.application.translate.DataStoreTranslator;
 import com.radixdlt.client.application.translate.TokenTransferTranslator;
 import com.radixdlt.client.application.translate.UniquePropertyTranslator;
+import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.client.core.atoms.AtomFeeConsumableBuilder;
 import com.radixdlt.client.core.atoms.TokenRef;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.RadixUniverse.Ledger;
@@ -22,7 +24,10 @@ import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.AccountReference;
 import com.radixdlt.client.core.atoms.AtomBuilder;
 import com.radixdlt.client.application.identity.RadixIdentity;
+import com.radixdlt.client.core.atoms.particles.AtomFeeConsumable;
+import com.radixdlt.client.core.atoms.particles.ChronoParticle;
 import com.radixdlt.client.core.atoms.particles.Minted;
+import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.TokenParticle;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.atoms.particles.TokenParticle.MintPermissions;
@@ -39,12 +44,16 @@ import io.reactivex.disposables.Disposable;
 import io.reactivex.disposables.Disposables;
 import io.reactivex.observables.ConnectableObservable;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -445,16 +454,35 @@ public class RadixApplicationAPI {
 
 		pull(tokenTransfer.getFrom());
 
-		AtomBuilder atomBuilder = atomBuilderSupplier.get();
+		Observable<TokenBalanceState> tokenBalanceState = tokenBalanceStore.getState(tokenTransfer.getFrom());
 
-		uniquePropertyTranslator.translate(uniqueProperty, atomBuilder);
-		Single<UnsignedAtom> unsignedAtom = tokenBalanceStore.getState(tokenTransfer.getFrom())
-			.firstOrError()
-			.map(curState -> tokenTransferTranslator.translate(curState, tokenTransfer, atomBuilder))
-			.map(builder -> builder.buildWithPOWFee(universe.getMagic(), tokenTransfer.getFrom().getPublicKey(), universe.getPOWToken()));
+		Single<List<Particle>> atomParticles =
+			Observable.concat(
+				Observable.just(uniquePropertyTranslator.map(uniqueProperty)),
+				Observable.combineLatest(
+					Observable.just(tokenTransfer),
+					tokenBalanceState,
+					tokenTransferTranslator::map
+				).firstOrError().toObservable(),
+				Observable.just(Collections.singletonList(new ChronoParticle(System.currentTimeMillis())))
+			)
+			.<List<Particle>>scanWith(ArrayList::new, (a, b) -> Stream.concat(a.stream(), b.stream()).collect(Collectors.toList()))
+			.lastOrError()
+			.map(particles -> {
+				List<Particle> allParticles = new ArrayList<>(particles);
+				Atom atom = new Atom(particles);
+				AtomFeeConsumable fee = new AtomFeeConsumableBuilder()
+					.powToken(universe.getPOWToken())
+					.atom(atom)
+					.owner(tokenTransfer.getFrom().getPublicKey())
+					.pow(universe.getMagic(), 16)
+					.build();
+				allParticles.add(fee);
+				return allParticles;
+			});
 
-		ConnectableObservable<AtomSubmissionUpdate> updates =
-			unsignedAtom
+		ConnectableObservable<AtomSubmissionUpdate> updates = atomParticles
+			.map(list -> new UnsignedAtom(new Atom(list)))
 			.flatMap(identity::sign)
 			.flatMapObservable(ledger.getAtomSubmitter()::submitAtom)
 			.doOnNext(update -> {

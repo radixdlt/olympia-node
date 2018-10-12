@@ -6,7 +6,6 @@ import static org.mockito.Mockito.when;
 import static org.junit.Assert.assertEquals;
 
 import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.atoms.AtomBuilder;
 import java.math.BigDecimal;
 import java.util.List;
 import org.junit.Test;
@@ -54,7 +53,7 @@ public class TokenTransferTranslatorTest {
 		TokenBalanceState state = mock(TokenBalanceState.class);
 		when(state.getBalance()).thenReturn(Collections.emptyMap());
 
-		assertThatThrownBy(() -> transferTranslator.translate(state, tokenTransfer, new AtomBuilder()))
+		assertThatThrownBy(() -> transferTranslator.map(tokenTransfer, state))
 			.isEqualTo(new InsufficientFundsException(token, BigDecimal.ZERO, new BigDecimal("1.0")));
 	}
 

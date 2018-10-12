@@ -9,7 +9,6 @@ import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.AccountReference;
 import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.atoms.AtomBuilder;
 import com.radixdlt.client.core.atoms.TokenRef;
 import com.radixdlt.client.core.atoms.particles.Consumable;
 import com.radixdlt.client.core.atoms.particles.DataParticle;
@@ -105,7 +104,7 @@ public class TokenTransferTranslator {
 			.collect(Collectors.toList());
 	}
 
-	public AtomBuilder translate(TokenBalanceState curState, TokenTransfer transfer, AtomBuilder atomBuilder) throws InsufficientFundsException {
+	public List<Particle> map(TokenTransfer transfer, TokenBalanceState curState) throws InsufficientFundsException {
 		final Map<TokenRef, Balance> allConsumables = curState.getBalance();
 
 		final TokenRef tokenRef = transfer.getTokenRef();
@@ -121,10 +120,12 @@ public class TokenTransferTranslator {
 				.map(bal -> bal.unconsumedConsumables().collect(Collectors.toList()))
 				.orElse(Collections.emptyList());
 
+		List<Particle> particles = new ArrayList<>();
+
 		// Translate attachment to corresponding atom structure
 		final Data attachment = transfer.getAttachment();
 		if (attachment != null) {
-			atomBuilder.addParticle(
+			particles.add(
 				new DataParticleBuilder()
 					.payload(new Payload(attachment.getBytes()))
 					.account(transfer.getFrom())
@@ -144,7 +145,7 @@ public class TokenTransferTranslator {
 					.account(transfer.getFrom())
 					.account(transfer.getTo())
 					.build();
-				atomBuilder.addParticle(encryptorParticle);
+				particles.add(encryptorParticle);
 			}
 		}
 
@@ -166,10 +167,10 @@ public class TokenTransferTranslator {
 			down.addConsumerQuantities(amount, transfer.getTo().toECKeyPair(),
 				consumerQuantities);
 
-			atomBuilder.addParticle(down);
+			particles.add(down);
 		}
 
-		List<Particle> consumables = consumerQuantities.entrySet().stream()
+		consumerQuantities.entrySet().stream()
 			.map(entry -> new Consumable(
 				entry.getValue(),
 				new AccountReference(entry.getKey().getPublicKey()),
@@ -177,8 +178,7 @@ public class TokenTransferTranslator {
 				transfer.getTokenRef(),
 				System.currentTimeMillis() / 60000L + 60000L, Spin.UP
 			))
-			.collect(Collectors.toList());
-		atomBuilder.addParticles(consumables);
-		return atomBuilder;
+			.forEach(particles::add);
+		return particles;
 	}
 }

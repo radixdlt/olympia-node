@@ -14,11 +14,6 @@ public class AtomBuilder {
 	public AtomBuilder() {
 	}
 
-	public AtomBuilder addParticles(List<Particle> particles) {
-		this.particles.addAll(particles);
-		return this;
-	}
-
 	public AtomBuilder addParticle(Particle particle) {
 		this.particles.add(particle);
 		return this;
@@ -33,7 +28,7 @@ public class AtomBuilder {
 		// Rebuild with atom fee
 		AtomFeeConsumable fee = new AtomFeeConsumableBuilder()
 			.powToken(powToken)
-			.atom(unsignedAtom)
+			.atom(unsignedAtom.getRawAtom())
 			.owner(owner)
 			.pow(magic, POW_LEADING_ZEROES_REQUIRED)
 			.build();
@@ -46,10 +41,5 @@ public class AtomBuilder {
 		List<Particle> particles = new ArrayList<>(this.particles);
 		particles.add(new ChronoParticle(timestamp));
 		return new UnsignedAtom(new Atom(particles));
-	}
-
-	// Temporary method for testing
-	public UnsignedAtom build() {
-		return this.build(System.currentTimeMillis());
 	}
 }
