@@ -105,6 +105,10 @@ public class TokenTransferTranslator {
 	}
 
 	public List<Particle> map(TokenTransfer transfer, TokenBalanceState curState) throws InsufficientFundsException {
+		if (transfer == null) {
+			return Collections.emptyList();
+		}
+
 		final Map<TokenRef, Balance> allConsumables = curState.getBalance();
 
 		final TokenRef tokenRef = transfer.getTokenRef();

@@ -2,12 +2,16 @@ package com.radixdlt.client.application;
 
 import com.google.gson.JsonObject;
 import com.radixdlt.client.application.actions.DataStore;
+import com.radixdlt.client.application.actions.FixedSupplyTokenCreation;
 import com.radixdlt.client.application.actions.TokenTransfer;
 import com.radixdlt.client.application.actions.UniqueProperty;
 import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.application.objects.Data.DataBuilder;
 import com.radixdlt.client.application.translate.ApplicationStore;
+import com.radixdlt.client.application.translate.FeeMapper;
+import com.radixdlt.client.application.translate.PowFeeMapper;
 import com.radixdlt.client.application.translate.TokenBalanceReducer;
+import com.radixdlt.client.application.translate.TokenMapper;
 import com.radixdlt.client.application.translate.TokenReducer;
 import com.radixdlt.client.application.translate.TokenState;
 import com.radixdlt.client.application.objects.UnencryptedData;
@@ -16,21 +20,15 @@ import com.radixdlt.client.application.translate.DataStoreTranslator;
 import com.radixdlt.client.application.translate.TokenTransferTranslator;
 import com.radixdlt.client.application.translate.UniquePropertyTranslator;
 import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.atoms.AtomFeeConsumableBuilder;
 import com.radixdlt.client.core.atoms.TokenRef;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.RadixUniverse.Ledger;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.AccountReference;
-import com.radixdlt.client.core.atoms.AtomBuilder;
 import com.radixdlt.client.application.identity.RadixIdentity;
-import com.radixdlt.client.core.atoms.particles.AtomFeeConsumable;
 import com.radixdlt.client.core.atoms.particles.ChronoParticle;
-import com.radixdlt.client.core.atoms.particles.Minted;
 import com.radixdlt.client.core.atoms.particles.Particle;
-import com.radixdlt.client.core.atoms.particles.TokenParticle;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
-import com.radixdlt.client.core.atoms.particles.TokenParticle.MintPermissions;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState;
@@ -51,7 +49,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
@@ -98,12 +95,13 @@ public class RadixApplicationAPI {
 	private final DataStoreTranslator dataStoreTranslator;
 	private final TokenTransferTranslator tokenTransferTranslator;
 	private final UniquePropertyTranslator uniquePropertyTranslator;
+	private final TokenMapper tokenMapper;
 
 	private final ApplicationStore<Map<TokenRef, TokenState>> tokenStore;
 	private final ApplicationStore<TokenBalanceState> tokenBalanceStore;
 
 	// TODO: Translator from particles to atom
-	private final Supplier<AtomBuilder> atomBuilderSupplier;
+	private final FeeMapper feeMapper;
 
 	private final Ledger ledger;
 
@@ -111,7 +109,7 @@ public class RadixApplicationAPI {
 		RadixIdentity identity,
 		RadixUniverse universe,
 		DataStoreTranslator dataStoreTranslator,
-		Supplier<AtomBuilder> atomBuilderSupplier,
+		FeeMapper feeMapper,
 		Ledger ledger
 	) {
 		this.identity = identity;
@@ -119,29 +117,30 @@ public class RadixApplicationAPI {
 		this.dataStoreTranslator = dataStoreTranslator;
 		this.tokenTransferTranslator = new TokenTransferTranslator(universe);
 		this.uniquePropertyTranslator = new UniquePropertyTranslator();
+		this.tokenMapper = new TokenMapper();
 
 		this.tokenStore = new ApplicationStore<>(ledger.getParticleStore(), new TokenReducer());
 		this.tokenBalanceStore = new ApplicationStore<>(ledger.getParticleStore(), new TokenBalanceReducer());
 
-		this.atomBuilderSupplier = atomBuilderSupplier;
+		this.feeMapper = feeMapper;
 		this.ledger = ledger;
 	}
 
 	public static RadixApplicationAPI create(RadixIdentity identity) {
 		Objects.requireNonNull(identity);
-		return create(identity, RadixUniverse.getInstance(), DataStoreTranslator.getInstance(), AtomBuilder::new);
+		return create(identity, RadixUniverse.getInstance(), DataStoreTranslator.getInstance(), new PowFeeMapper());
 	}
 
 	public static RadixApplicationAPI create(
 		RadixIdentity identity,
 		RadixUniverse universe,
 		DataStoreTranslator dataStoreTranslator,
-		Supplier<AtomBuilder> atomBuilderSupplier
+		FeeMapper feeMapper
 	) {
 		Objects.requireNonNull(identity);
 		Objects.requireNonNull(universe);
-		Objects.requireNonNull(atomBuilderSupplier);
-		return new RadixApplicationAPI(identity, universe, dataStoreTranslator, atomBuilderSupplier, universe.getLedger());
+		Objects.requireNonNull(feeMapper);
+		return new RadixApplicationAPI(identity, universe, dataStoreTranslator, feeMapper, universe.getLedger());
 	}
 
 	/**
@@ -230,35 +229,13 @@ public class RadixApplicationAPI {
 	public Result storeData(Data data, RadixAddress address) {
 		DataStore dataStore = new DataStore(data, address);
 
-		AtomBuilder atomBuilder = atomBuilderSupplier.get();
-		ConnectableObservable<AtomSubmissionUpdate> updates = dataStoreTranslator.translate(dataStore, atomBuilder)
-			.andThen(Single.fromCallable(
-				() -> atomBuilder.buildWithPOWFee(universe.getMagic(), address.getPublicKey(), universe.getPOWToken())
-			))
-			.flatMap(identity::sign)
-			.flatMapObservable(ledger.getAtomSubmitter()::submitAtom)
-			.replay();
-
-		updates.connect();
-
-		return new Result(updates);
+		return executeTransaction(null, dataStore, null, null);
 	}
 
 	public Result storeData(Data data, RadixAddress address0, RadixAddress address1) {
 		DataStore dataStore = new DataStore(data, address0, address1);
 
-		AtomBuilder atomBuilder = atomBuilderSupplier.get();
-		ConnectableObservable<AtomSubmissionUpdate> updates = dataStoreTranslator.translate(dataStore, atomBuilder)
-			.andThen(Single.fromCallable(
-				() -> atomBuilder.buildWithPOWFee(universe.getMagic(), address0.getPublicKey(), universe.getPOWToken())
-			))
-			.flatMap(identity::sign)
-			.flatMapObservable(ledger.getAtomSubmitter()::submitAtom)
-			.replay();
-
-		updates.connect();
-
-		return new Result(updates);
+		return executeTransaction(null, dataStore, null, null);
 	}
 
 	public Observable<TokenTransfer> getMyTokenTransfers() {
@@ -300,27 +277,8 @@ public class RadixApplicationAPI {
 	// TODO: refactor to access a TokenTranslator
 	public Result createFixedSupplyToken(String name, String iso, String description, long fixedSupply) {
 		AccountReference account = new AccountReference(getMyPublicKey());
-		TokenParticle token = new TokenParticle(account, name, iso, description, MintPermissions.SAME_ATOM_ONLY, null);
-		Minted minted = new Minted(
-			fixedSupply * TokenRef.SUB_UNITS,
-			account,
-			System.currentTimeMillis(),
-			token.getTokenRef(),
-			System.currentTimeMillis() / 60000L + 60000
-		);
-
-		UnsignedAtom unsignedAtom = atomBuilderSupplier.get()
-			.addParticle(token)
-			.addParticle(minted)
-			.buildWithPOWFee(universe.getMagic(), getMyPublicKey(), universe.getPOWToken());
-
-		ConnectableObservable<AtomSubmissionUpdate> updates = identity.sign(unsignedAtom)
-			.flatMapObservable(ledger.getAtomSubmitter()::submitAtom)
-			.replay();
-
-		updates.connect();
-
-		return new Result(updates);
+		FixedSupplyTokenCreation tokenCreation = new FixedSupplyTokenCreation(account, name, iso, description, fixedSupply);
+		return executeTransaction(null, null, tokenCreation, null);
 	}
 
 	/**
@@ -445,39 +403,35 @@ public class RadixApplicationAPI {
 			uniqueProperty = null;
 		}
 
-		return executeTransaction(tokenTransfer, uniqueProperty);
+		return executeTransaction(tokenTransfer, null, null, uniqueProperty);
 	}
 
 	// TODO: make this more generic
-	private Result executeTransaction(TokenTransfer tokenTransfer, @Nullable UniqueProperty uniqueProperty) {
-		Objects.requireNonNull(tokenTransfer);
-
-		pull(tokenTransfer.getFrom());
-
-		Observable<TokenBalanceState> tokenBalanceState = tokenBalanceStore.getState(tokenTransfer.getFrom());
+	private Result executeTransaction(
+		@Nullable TokenTransfer tokenTransfer,
+		@Nullable DataStore dataStore,
+		@Nullable FixedSupplyTokenCreation tokenCreation,
+		@Nullable UniqueProperty uniqueProperty
+	) {
+		if (tokenTransfer != null) {
+			pull(tokenTransfer.getFrom());
+		}
 
 		Single<List<Particle>> atomParticles =
-			Observable.concat(
+			Observable.concatArray(
 				Observable.just(uniquePropertyTranslator.map(uniqueProperty)),
-				Observable.combineLatest(
-					Observable.just(tokenTransfer),
-					tokenBalanceState,
-					tokenTransferTranslator::map
-				).firstOrError().toObservable(),
+				tokenTransfer != null ? tokenBalanceStore.getState(tokenTransfer.getFrom())
+					.firstOrError().toObservable()
+					.map(s -> tokenTransferTranslator.map(tokenTransfer, s)) : Observable.empty(),
+				Observable.just(dataStoreTranslator.map(dataStore)),
+				Observable.just(tokenMapper.map(tokenCreation)),
 				Observable.just(Collections.singletonList(new ChronoParticle(System.currentTimeMillis())))
 			)
 			.<List<Particle>>scanWith(ArrayList::new, (a, b) -> Stream.concat(a.stream(), b.stream()).collect(Collectors.toList()))
 			.lastOrError()
 			.map(particles -> {
 				List<Particle> allParticles = new ArrayList<>(particles);
-				Atom atom = new Atom(particles);
-				AtomFeeConsumable fee = new AtomFeeConsumableBuilder()
-					.powToken(universe.getPOWToken())
-					.atom(atom)
-					.owner(tokenTransfer.getFrom().getPublicKey())
-					.pow(universe.getMagic(), 16)
-					.build();
-				allParticles.add(fee);
+				allParticles.addAll(feeMapper.map(particles, universe, getMyPublicKey()));
 				return allParticles;
 			});
 
