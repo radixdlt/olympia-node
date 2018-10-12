@@ -9,16 +9,16 @@ import java.util.List;
 /**
  * An Application Layer Action object which stores data into an address or multiple addresses.
  */
-public class DataStore {
+public class StoreData {
 	private final Data data;
 	private final List<RadixAddress> addresses;
 
-	public DataStore(Data data, RadixAddress address) {
+	public StoreData(Data data, RadixAddress address) {
 		this.data = data;
 		this.addresses = Collections.singletonList(address);
 	}
 
-	public DataStore(Data data, RadixAddress address0, RadixAddress address1) {
+	public StoreData(Data data, RadixAddress address0, RadixAddress address1) {
 		this.data = data;
 		this.addresses = Arrays.asList(address0, address1);
 	}

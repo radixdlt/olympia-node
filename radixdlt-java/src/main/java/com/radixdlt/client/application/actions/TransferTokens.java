@@ -8,7 +8,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-public class TokenTransfer {
+public class TransferTokens {
 	private final RadixAddress from;
 	private final RadixAddress to;
 	private final TokenRef tokenRef;
@@ -16,7 +16,7 @@ public class TokenTransfer {
 	private final BigDecimal amount;
 	private final Data attachment;
 
-	private TokenTransfer(
+	private TransferTokens(
 		RadixAddress from,
 		RadixAddress to,
 		BigDecimal amount,
@@ -36,26 +36,26 @@ public class TokenTransfer {
 		this.metaData = metaData;
 	}
 
-	public static TokenTransfer create(
+	public static TransferTokens create(
 		RadixAddress from,
 		RadixAddress to,
 		BigDecimal amount,
 		TokenRef tokenRef
 	) {
-		return new TokenTransfer(from, to, amount, tokenRef, null, Collections.emptyMap());
+		return new TransferTokens(from, to, amount, tokenRef, null, Collections.emptyMap());
 	}
 
-	public static TokenTransfer create(
+	public static TransferTokens create(
 		RadixAddress from,
 		RadixAddress to,
 		BigDecimal amount,
 		TokenRef tokenRef,
 		Data attachment
 	) {
-		return new TokenTransfer(from, to, amount, tokenRef, attachment, Collections.emptyMap());
+		return new TransferTokens(from, to, amount, tokenRef, attachment, Collections.emptyMap());
 	}
 
-	public static TokenTransfer create(
+	public static TransferTokens create(
 		RadixAddress from,
 		RadixAddress to,
 		BigDecimal amount,
@@ -65,10 +65,10 @@ public class TokenTransfer {
 		Map<String, Object> metaData = new HashMap<>();
 		metaData.put("timestamp", timestamp);
 
-		return new TokenTransfer(from, to, amount, tokenRef, null, metaData);
+		return new TransferTokens(from, to, amount, tokenRef, null, metaData);
 	}
 
-	public static TokenTransfer create(
+	public static TransferTokens create(
 		RadixAddress from,
 		RadixAddress to,
 		BigDecimal amount,
@@ -79,7 +79,7 @@ public class TokenTransfer {
 		Map<String, Object> metaData = new HashMap<>();
 		metaData.put("timestamp", timestamp);
 
-		return new TokenTransfer(from, to, amount, tokenRef, attachment, metaData);
+		return new TransferTokens(from, to, amount, tokenRef, attachment, metaData);
 	}
 
 	public Data getAttachment() {

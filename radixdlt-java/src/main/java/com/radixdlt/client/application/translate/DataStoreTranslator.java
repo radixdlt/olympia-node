@@ -2,7 +2,7 @@ package com.radixdlt.client.application.translate;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonParser;
-import com.radixdlt.client.application.actions.DataStore;
+import com.radixdlt.client.application.actions.StoreData;
 import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.particles.DataParticle;
@@ -31,23 +31,23 @@ public class DataStoreTranslator {
 	}
 
 	// TODO: figure out correct method signature here (return Single<AtomBuilder> instead?)
-	public List<Particle> map(DataStore dataStore) {
-		if (dataStore == null) {
+	public List<Particle> map(StoreData storeData) {
+		if (storeData == null) {
 			return Collections.emptyList();
 		}
 
-		Payload payload = new Payload(dataStore.getData().getBytes());
-		String application = (String) dataStore.getData().getMetaData().get("application");
+		Payload payload = new Payload(storeData.getData().getBytes());
+		String application = (String) storeData.getData().getMetaData().get("application");
 
 		List<Particle> particles = new ArrayList<>();
 		DataParticle dataParticle = new DataParticleBuilder()
 			.payload(payload)
 			.setMetaData("application", application)
-			.accounts(dataStore.getAddresses())
+			.accounts(storeData.getAddresses())
 			.build();
 		particles.add(dataParticle);
 
-		Encryptor encryptor = dataStore.getData().getEncryptor();
+		Encryptor encryptor = storeData.getData().getEncryptor();
 		if (encryptor != null) {
 			JsonArray protectorsJson = new JsonArray();
 			encryptor.getProtectors().stream().map(EncryptedPrivateKey::base64).forEach(protectorsJson::add);
@@ -57,7 +57,7 @@ public class DataStoreTranslator {
 				.payload(encryptorPayload)
 				.setMetaData("application", "encryptor")
 				.setMetaData("contentType", "application/json")
-				.accounts(dataStore.getAddresses())
+				.accounts(storeData.getAddresses())
 				.build();
 			particles.add(encryptorParticle);
 		}

@@ -2,7 +2,7 @@ package com.radixdlt.client.application.translate;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonParser;
-import com.radixdlt.client.application.actions.TokenTransfer;
+import com.radixdlt.client.application.actions.TransferTokens;
 import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.application.translate.TokenBalanceState.Balance;
 import com.radixdlt.client.core.RadixUniverse;
@@ -41,7 +41,7 @@ public class TokenTransferTranslator {
 		this.universe = universe;
 	}
 
-	public List<TokenTransfer> fromAtom(Atom atom) {
+	public List<TransferTokens> fromAtom(Atom atom) {
 		return atom.tokenSummary().entrySet().stream()
 			.filter(e -> !e.getKey().equals(universe.getPOWToken()))
 			.map(e -> {
@@ -99,12 +99,12 @@ public class TokenTransferTranslator {
 				}
 
 				final BigDecimal amount = TokenRef.subUnitsToDecimal(Math.abs(summary.get(0).getValue()));
-				return TokenTransfer.create(from, to, amount, e.getKey(), attachment, atom.getTimestamp());
+				return TransferTokens.create(from, to, amount, e.getKey(), attachment, atom.getTimestamp());
 			})
 			.collect(Collectors.toList());
 	}
 
-	public List<Particle> map(TokenTransfer transfer, TokenBalanceState curState) throws InsufficientFundsException {
+	public List<Particle> map(TransferTokens transfer, TokenBalanceState curState) throws InsufficientFundsException {
 		if (transfer == null) {
 			return Collections.emptyList();
 		}

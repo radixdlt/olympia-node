@@ -1,6 +1,6 @@
 package com.radixdlt.client.application.translate;
 
-import com.radixdlt.client.application.actions.FixedSupplyTokenCreation;
+import com.radixdlt.client.application.actions.CreateFixedSupplyToken;
 import com.radixdlt.client.core.atoms.TokenRef;
 import com.radixdlt.client.core.atoms.particles.Minted;
 import com.radixdlt.client.core.atoms.particles.Particle;
@@ -11,7 +11,7 @@ import java.util.Collections;
 import java.util.List;
 
 public class TokenMapper {
-	public List<Particle> map(FixedSupplyTokenCreation tokenCreation) {
+	public List<Particle> map(CreateFixedSupplyToken tokenCreation) {
 		if (tokenCreation == null) {
 			return Collections.emptyList();
 		}
