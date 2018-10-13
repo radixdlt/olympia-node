@@ -1,8 +1,10 @@
 package com.radixdlt.client.application.translate;
 
 import com.radixdlt.client.core.atoms.TokenRef;
-import com.radixdlt.client.core.atoms.particles.Minted;
+import com.radixdlt.client.core.atoms.particles.Consumable;
+import com.radixdlt.client.core.atoms.particles.Consumable.ConsumableType;
 import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.atoms.particles.TokenParticle;
 import java.math.BigDecimal;
 import java.util.Collections;
@@ -20,7 +22,8 @@ public class TokenReducer implements ParticleReducer<Map<TokenRef, TokenState>> 
 
 	@Override
 	public Map<TokenRef, TokenState> reduce(Map<TokenRef, TokenState> state, Particle p) {
-		if (!(p instanceof TokenParticle || p instanceof Minted)) {
+		if (!(p instanceof TokenParticle
+			|| (p instanceof Consumable && p.getSpin() == Spin.UP && ((Consumable) p).getType() == ConsumableType.MINTED))) {
 			return state;
 		}
 
@@ -40,7 +43,7 @@ public class TokenReducer implements ParticleReducer<Map<TokenRef, TokenState>> 
 				(a, b) -> new TokenState(b.getName(), b.getIso(), b.getDescription(), a.getTotalSupply())
 			);
 		} else {
-			Minted minted = (Minted) p;
+			Consumable minted = (Consumable) p;
 			TokenState tokenState = new TokenState(
 				null,
 				minted.getTokenRef().getIso(),

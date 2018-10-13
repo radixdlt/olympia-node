@@ -5,7 +5,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.radixdlt.client.core.atoms.TokenRef;
-import com.radixdlt.client.core.atoms.particles.Minted;
+import com.radixdlt.client.core.atoms.particles.Consumable;
+import com.radixdlt.client.core.atoms.particles.Consumable.ConsumableType;
+import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.atoms.particles.TokenParticle;
 import java.math.BigDecimal;
 import java.util.Collections;
@@ -37,9 +39,11 @@ public class TokenReducerTest {
 		when(tokenParticle.getIso()).thenReturn("ISO");
 		when(tokenParticle.getDescription()).thenReturn("Desc");
 
-		Minted minted = mock(Minted.class);
+		Consumable minted = mock(Consumable.class);
 		when(minted.getAmount()).thenReturn(100L);
+		when(minted.getType()).thenReturn(ConsumableType.MINTED);
 		when(minted.getTokenRef()).thenReturn(tokenRef);
+		when(minted.getSpin()).thenReturn(Spin.UP);
 
 		TokenReducer tokenReducer = new TokenReducer();
 		Map<TokenRef, TokenState> state1 = tokenReducer.reduce(Collections.emptyMap(), tokenParticle);

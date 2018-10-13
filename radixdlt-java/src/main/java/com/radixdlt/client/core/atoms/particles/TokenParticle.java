@@ -14,7 +14,8 @@ import java.util.Set;
 public class TokenParticle implements Particle {
 	public enum MintPermissions {
 		GENESIS_ONLY,
-		SAME_ATOM_ONLY
+		SAME_ATOM_ONLY,
+		POW
 	}
 
 	private final String iso;

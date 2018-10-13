@@ -14,6 +14,10 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public class Consumable implements Particle {
+	public enum ConsumableType {
+		MINTED, AMOUNT
+	}
+
 	private final List<AccountReference> addresses;
 	private final long amount;
 	private final long nonce;
@@ -21,8 +25,10 @@ public class Consumable implements Particle {
 	private final long planck;
 	@SerializedName("token_reference")
 	private final TokenRef tokenRef;
+	private final ConsumableType type;
 
-	public Consumable(long amount, AccountReference address, long nonce, TokenRef tokenRef, long planck, Spin spin) {
+	public Consumable(long amount, ConsumableType type, AccountReference address, long nonce, TokenRef tokenRef, long planck, Spin spin) {
+		this.type = type;
 		this.spin = spin;
 		this.addresses = Collections.singletonList(address);
 		this.amount = amount;
@@ -32,7 +38,7 @@ public class Consumable implements Particle {
 	}
 
 	public Consumable spinDown() {
-		return new Consumable(getAmount(), getAddress(), getNonce(), getTokenRef(), getPlanck(), Spin.DOWN);
+		return new Consumable(getAmount(), getType(), getAddress(), getNonce(), getTokenRef(), getPlanck(), Spin.DOWN);
 	}
 
 	public AccountReference getAddress() {
@@ -63,6 +69,10 @@ public class Consumable implements Particle {
 
 		consumerQuantities.merge(newOwner, amount, Long::sum);
 		consumerQuantities.merge(getAddress().getKey().toECKeyPair(), getAmount() - amount, Long::sum);
+	}
+
+	public ConsumableType getType() {
+		return type;
 	}
 
 	public long getPlanck() {

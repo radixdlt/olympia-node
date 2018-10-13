@@ -11,6 +11,7 @@ import com.radixdlt.client.core.atoms.AccountReference;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.TokenRef;
 import com.radixdlt.client.core.atoms.particles.Consumable;
+import com.radixdlt.client.core.atoms.particles.Consumable.ConsumableType;
 import com.radixdlt.client.core.atoms.particles.DataParticle;
 import com.radixdlt.client.core.atoms.particles.DataParticle.DataParticleBuilder;
 import com.radixdlt.client.core.atoms.particles.Particle;
@@ -177,6 +178,7 @@ public class TokenTransferTranslator {
 		consumerQuantities.entrySet().stream()
 			.map(entry -> new Consumable(
 				entry.getValue(),
+				ConsumableType.AMOUNT,
 				new AccountReference(entry.getKey().getPublicKey()),
 				System.nanoTime(),
 				transfer.getTokenRef(),
