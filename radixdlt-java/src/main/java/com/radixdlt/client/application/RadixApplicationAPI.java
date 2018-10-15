@@ -1,9 +1,9 @@
 package com.radixdlt.client.application;
 
 import com.google.gson.JsonObject;
-import com.radixdlt.client.application.actions.StoreData;
-import com.radixdlt.client.application.actions.CreateFixedSupplyToken;
-import com.radixdlt.client.application.actions.TransferTokens;
+import com.radixdlt.client.application.actions.StoreDataAction;
+import com.radixdlt.client.application.actions.CreateFixedSupplyTokenAction;
+import com.radixdlt.client.application.actions.TransferTokensAction;
 import com.radixdlt.client.application.actions.UniqueProperty;
 import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.application.objects.Data.DataBuilder;
@@ -261,22 +261,22 @@ public class RadixApplicationAPI {
 	}
 
 	public Result storeData(Data data, RadixAddress address) {
-		StoreData storeData = new StoreData(data, address);
+		StoreDataAction storeDataAction = new StoreDataAction(data, address);
 
-		return executeTransaction(null, storeData, null, null);
+		return executeTransaction(null, storeDataAction, null, null);
 	}
 
 	public Result storeData(Data data, RadixAddress address0, RadixAddress address1) {
-		StoreData storeData = new StoreData(data, address0, address1);
+		StoreDataAction storeDataAction = new StoreDataAction(data, address0, address1);
 
-		return executeTransaction(null, storeData, null, null);
+		return executeTransaction(null, storeDataAction, null, null);
 	}
 
-	public Observable<TransferTokens> getMyTokenTransfers() {
+	public Observable<TransferTokensAction> getMyTokenTransfers() {
 		return getTokenTransfers(getMyAddress());
 	}
 
-	public Observable<TransferTokens> getTokenTransfers(RadixAddress address) {
+	public Observable<TransferTokensAction> getTokenTransfers(RadixAddress address) {
 		Objects.requireNonNull(address);
 
 		pull(address);
@@ -319,7 +319,7 @@ public class RadixApplicationAPI {
 	 */
 	public Result createFixedSupplyToken(String name, String iso, String description, long fixedSupply) {
 		AccountReference account = new AccountReference(getMyPublicKey());
-		CreateFixedSupplyToken tokenCreation = new CreateFixedSupplyToken(account, name, iso, description, fixedSupply);
+		CreateFixedSupplyTokenAction tokenCreation = new CreateFixedSupplyTokenAction(account, name, iso, description, fixedSupply);
 		return executeTransaction(null, null, tokenCreation, null);
 	}
 
@@ -434,8 +434,8 @@ public class RadixApplicationAPI {
 		Objects.requireNonNull(amount);
 		Objects.requireNonNull(token);
 
-		final TransferTokens transferTokens =
-			TransferTokens.create(from, to, amount, token, attachment);
+		final TransferTokensAction transferTokensAction =
+			TransferTokensAction.create(from, to, amount, token, attachment);
 		final UniqueProperty uniqueProperty;
 		if (unique != null) {
 			// Unique Property must be the from address so that all validation occurs in a single shard.
@@ -445,27 +445,27 @@ public class RadixApplicationAPI {
 			uniqueProperty = null;
 		}
 
-		return executeTransaction(transferTokens, null, null, uniqueProperty);
+		return executeTransaction(transferTokensAction, null, null, uniqueProperty);
 	}
 
 	// TODO: make this more generic
 	private Result executeTransaction(
-		@Nullable TransferTokens transferTokens,
-		@Nullable StoreData storeData,
-		@Nullable CreateFixedSupplyToken tokenCreation,
+		@Nullable TransferTokensAction transferTokensAction,
+		@Nullable StoreDataAction storeDataAction,
+		@Nullable CreateFixedSupplyTokenAction tokenCreation,
 		@Nullable UniqueProperty uniqueProperty
 	) {
-		if (transferTokens != null) {
-			pull(transferTokens.getFrom());
+		if (transferTokensAction != null) {
+			pull(transferTokensAction.getFrom());
 		}
 
 		Single<List<Particle>> atomParticles =
 			Observable.concatArray(
 				Observable.just(uniquePropertyTranslator.map(uniqueProperty)),
-				transferTokens != null ? tokenBalanceStore.getState(transferTokens.getFrom())
+				transferTokensAction != null ? tokenBalanceStore.getState(transferTokensAction.getFrom())
 					.firstOrError().toObservable()
-					.map(s -> tokenTransferTranslator.map(transferTokens, s)) : Observable.empty(),
-				Observable.just(dataStoreTranslator.map(storeData)),
+					.map(s -> tokenTransferTranslator.map(transferTokensAction, s)) : Observable.empty(),
+				Observable.just(dataStoreTranslator.map(storeDataAction)),
 				Observable.just(tokenMapper.map(tokenCreation)),
 				Observable.just(Collections.singletonList(new ChronoParticle(System.currentTimeMillis())))
 			)

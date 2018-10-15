@@ -8,7 +8,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-public class TransferTokens {
+public class TransferTokensAction {
 	private final RadixAddress from;
 	private final RadixAddress to;
 	private final TokenRef tokenRef;
@@ -16,7 +16,7 @@ public class TransferTokens {
 	private final BigDecimal amount;
 	private final Data attachment;
 
-	private TransferTokens(
+	private TransferTokensAction(
 		RadixAddress from,
 		RadixAddress to,
 		BigDecimal amount,
@@ -36,26 +36,26 @@ public class TransferTokens {
 		this.metaData = metaData;
 	}
 
-	public static TransferTokens create(
+	public static TransferTokensAction create(
 		RadixAddress from,
 		RadixAddress to,
 		BigDecimal amount,
 		TokenRef tokenRef
 	) {
-		return new TransferTokens(from, to, amount, tokenRef, null, Collections.emptyMap());
+		return new TransferTokensAction(from, to, amount, tokenRef, null, Collections.emptyMap());
 	}
 
-	public static TransferTokens create(
+	public static TransferTokensAction create(
 		RadixAddress from,
 		RadixAddress to,
 		BigDecimal amount,
 		TokenRef tokenRef,
 		Data attachment
 	) {
-		return new TransferTokens(from, to, amount, tokenRef, attachment, Collections.emptyMap());
+		return new TransferTokensAction(from, to, amount, tokenRef, attachment, Collections.emptyMap());
 	}
 
-	public static TransferTokens create(
+	public static TransferTokensAction create(
 		RadixAddress from,
 		RadixAddress to,
 		BigDecimal amount,
@@ -65,10 +65,10 @@ public class TransferTokens {
 		Map<String, Object> metaData = new HashMap<>();
 		metaData.put("timestamp", timestamp);
 
-		return new TransferTokens(from, to, amount, tokenRef, null, metaData);
+		return new TransferTokensAction(from, to, amount, tokenRef, null, metaData);
 	}
 
-	public static TransferTokens create(
+	public static TransferTokensAction create(
 		RadixAddress from,
 		RadixAddress to,
 		BigDecimal amount,
@@ -79,7 +79,7 @@ public class TransferTokens {
 		Map<String, Object> metaData = new HashMap<>();
 		metaData.put("timestamp", timestamp);
 
-		return new TransferTokens(from, to, amount, tokenRef, attachment, metaData);
+		return new TransferTokensAction(from, to, amount, tokenRef, attachment, metaData);
 	}
 
 	public Data getAttachment() {

@@ -1,6 +1,6 @@
 package com.radixdlt.client.application.translate;
 
-import com.radixdlt.client.application.actions.CreateFixedSupplyToken;
+import com.radixdlt.client.application.actions.CreateFixedSupplyTokenAction;
 import com.radixdlt.client.core.atoms.TokenRef;
 import com.radixdlt.client.core.atoms.particles.Consumable;
 import com.radixdlt.client.core.atoms.particles.Consumable.ConsumableType;
@@ -16,7 +16,7 @@ import java.util.List;
  * Maps the CreateFixedSupplyToken action into it's corresponding particles
  */
 public class TokenMapper {
-	public List<Particle> map(CreateFixedSupplyToken tokenCreation) {
+	public List<Particle> map(CreateFixedSupplyTokenAction tokenCreation) {
 		if (tokenCreation == null) {
 			return Collections.emptyList();
 		}

@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.radixdlt.client.application.actions.CreateFixedSupplyToken;
+import com.radixdlt.client.application.actions.CreateFixedSupplyTokenAction;
 import com.radixdlt.client.core.atoms.AccountReference;
 import com.radixdlt.client.core.atoms.particles.Consumable;
 import com.radixdlt.client.core.atoms.particles.Particle;
@@ -15,7 +15,7 @@ import org.junit.Test;
 public class TokenMapperTest {
 	@Test
 	public void testNormalConstruction() {
-		CreateFixedSupplyToken tokenCreation = mock(CreateFixedSupplyToken.class);
+		CreateFixedSupplyTokenAction tokenCreation = mock(CreateFixedSupplyTokenAction.class);
 		AccountReference accountReference = mock(AccountReference.class);
 		when(tokenCreation.getAccountReference()).thenReturn(accountReference);
 		when(tokenCreation.getIso()).thenReturn("ISO");

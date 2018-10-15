@@ -9,7 +9,7 @@ import com.radixdlt.client.core.atoms.TokenRef;
 import java.math.BigDecimal;
 import org.junit.Test;
 
-public class TransferTokensTest {
+public class TransferTokensActionTest {
 
 	@Test
 	public void testBadBigDecimalScale() {
@@ -17,7 +17,7 @@ public class TransferTokensTest {
 		RadixAddress to = mock(RadixAddress.class);
 		TokenRef tokenRef = mock(TokenRef.class);
 
-		assertThatThrownBy(() -> TransferTokens.create(from, to, new BigDecimal("0.000001"), tokenRef))
+		assertThatThrownBy(() -> TransferTokensAction.create(from, to, new BigDecimal("0.000001"), tokenRef))
 			.isInstanceOf(IllegalArgumentException.class);
 	}
 
@@ -27,7 +27,7 @@ public class TransferTokensTest {
 		RadixAddress to = mock(RadixAddress.class);
 		TokenRef tokenRef = mock(TokenRef.class);
 
-		assertThat(TransferTokens.create(from, to, new BigDecimal("0.00001"), tokenRef).toString()).isNotNull();
+		assertThat(TransferTokensAction.create(from, to, new BigDecimal("0.00001"), tokenRef).toString()).isNotNull();
 	}
 
 	@Test
@@ -36,6 +36,6 @@ public class TransferTokensTest {
 		RadixAddress to = mock(RadixAddress.class);
 		TokenRef tokenRef = mock(TokenRef.class);
 
-		assertThat(TransferTokens.create(from, to, new BigDecimal("0.000010000"), tokenRef).toString()).isNotNull();
+		assertThat(TransferTokensAction.create(from, to, new BigDecimal("0.000010000"), tokenRef).toString()).isNotNull();
 	}
 }

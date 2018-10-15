@@ -3,14 +3,14 @@ package com.radixdlt.client.application.actions;
 import com.radixdlt.client.core.atoms.AccountReference;
 import java.util.Objects;
 
-public class CreateFixedSupplyToken {
+public class CreateFixedSupplyTokenAction {
 	private final String name;
 	private final String iso;
 	private final String description;
 	private final long fixedSupply;
 	private final AccountReference accountReference;
 
-	public CreateFixedSupplyToken(
+	public CreateFixedSupplyTokenAction(
 		AccountReference accountReference,
 		String name,
 		String iso,
