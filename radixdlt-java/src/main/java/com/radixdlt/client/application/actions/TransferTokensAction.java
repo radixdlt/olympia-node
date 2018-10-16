@@ -8,7 +8,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-public class TokenTransfer {
+public class TransferTokensAction {
 	private final RadixAddress from;
 	private final RadixAddress to;
 	private final Asset tokenClass;
@@ -16,7 +16,7 @@ public class TokenTransfer {
 	private final long subUnitAmount;
 	private final Data attachment;
 
-	private TokenTransfer(
+	private TransferTokensAction(
 		RadixAddress from,
 		RadixAddress to,
 		Asset tokenClass,
@@ -32,22 +32,22 @@ public class TokenTransfer {
 		this.metaData = metaData;
 	}
 
-	public static TokenTransfer create(RadixAddress from, RadixAddress to, Asset tokenClass, long subUnitAmount) {
-		return new TokenTransfer(from, to, tokenClass, subUnitAmount, null, Collections.emptyMap());
+	public static TransferTokensAction create(RadixAddress from, RadixAddress to, Asset tokenClass, long subUnitAmount) {
+		return new TransferTokensAction(from, to, tokenClass, subUnitAmount, null, Collections.emptyMap());
 	}
 
-	public static TokenTransfer create(RadixAddress from, RadixAddress to, Asset tokenClass, long subUnitAmount, Data attachment) {
-		return new TokenTransfer(from, to, tokenClass, subUnitAmount, attachment, Collections.emptyMap());
+	public static TransferTokensAction create(RadixAddress from, RadixAddress to, Asset tokenClass, long subUnitAmount, Data attachment) {
+		return new TransferTokensAction(from, to, tokenClass, subUnitAmount, attachment, Collections.emptyMap());
 	}
 
-	public static TokenTransfer create(RadixAddress from, RadixAddress to, Asset tokenClass, long subUnitAmount, Long timestamp) {
+	public static TransferTokensAction create(RadixAddress from, RadixAddress to, Asset tokenClass, long subUnitAmount, Long timestamp) {
 		Map<String, Object> metaData = new HashMap<>();
 		metaData.put("timestamp", timestamp);
 
-		return new TokenTransfer(from, to, tokenClass, subUnitAmount, null, metaData);
+		return new TransferTokensAction(from, to, tokenClass, subUnitAmount, null, metaData);
 	}
 
-	public static TokenTransfer create(
+	public static TransferTokensAction create(
 		RadixAddress from,
 		RadixAddress to,
 		Asset tokenClass,
@@ -58,7 +58,7 @@ public class TokenTransfer {
 		Map<String, Object> metaData = new HashMap<>();
 		metaData.put("timestamp", timestamp);
 
-		return new TokenTransfer(from, to, tokenClass, subUnitAmount, attachment, metaData);
+		return new TransferTokensAction(from, to, tokenClass, subUnitAmount, attachment, metaData);
 	}
 
 	public Data getAttachment() {

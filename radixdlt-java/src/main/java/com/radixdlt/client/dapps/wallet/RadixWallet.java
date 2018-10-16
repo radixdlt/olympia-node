@@ -2,9 +2,9 @@ package com.radixdlt.client.dapps.wallet;
 
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
-import com.radixdlt.client.application.actions.TokenTransfer;
 import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.application.objects.Data.DataBuilder;
+import com.radixdlt.client.application.objects.TokenTransfer;
 import com.radixdlt.client.assets.Amount;
 import com.radixdlt.client.assets.Asset;
 import com.radixdlt.client.core.address.RadixAddress;
