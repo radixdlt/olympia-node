@@ -489,10 +489,10 @@ public class RadixApplicationAPI {
 				//TODO: retry on collision
 				if (update.getState() == AtomSubmissionState.COLLISION) {
 					JsonObject data = update.getData().getAsJsonObject();
-					String jsonPointer = data.getAsJsonPrimitive("pointerToConflict").getAsString();
+					String jsonPointer = data.getAsJsonPrimitive("pointerToIssue").getAsString();
 					LOGGER.info("ParticleConflict: pointer({}) cause({}) atom({})",
 						jsonPointer,
-						data.getAsJsonPrimitive("cause").getAsString(),
+						data.getAsJsonPrimitive("message").getAsString(),
 						Serialize.getInstance().toJson(update.getAtom(), Output.ALL)
 					);
 				}
