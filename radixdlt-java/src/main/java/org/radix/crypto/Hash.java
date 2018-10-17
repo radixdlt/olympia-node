@@ -10,14 +10,12 @@ import org.bouncycastle.util.Arrays;
 import org.radix.common.ID.EUID;
 import org.radix.utils.primitives.Bytes;
 
-public class Hash implements Comparable<Hash>
-{
+public class Hash implements Comparable<Hash> {
 
 	public static final int BYTES = 32;
 	public static final Hash ZERO_HASH = new Hash(new byte[BYTES]);
 
-	public static Hash random()
-	{
+	public static Hash random() {
 		byte[] randomBytes = new byte[BYTES];
 
 		new SecureRandom().nextBytes(randomBytes);
@@ -25,17 +23,23 @@ public class Hash implements Comparable<Hash>
 		return new Hash(Hash.hash(randomBytes));
 	}
 
-	public static byte[] hash (byte[] data)	{ return hash (data, 0, data.length); }
+	public static byte[] hash(byte[] data) {
+		return hash(data, 0, data.length);
+	}
 
-	public static byte[] hash (byte[] data, int offset, int len) { return hash("SHA-256", data, offset, len); }
+	public static byte[] hash(byte[] data, int offset, int len) {
+		return hash("SHA-256", data, offset, len);
+	}
 
-	public static byte[] hash (String algorithm, byte[] data) { return hash (algorithm, data, 0, data.length); }
+	public static byte[] hash(String algorithm, byte[] data) {
+		return hash(algorithm, data, 0, data.length);
+	}
 
 	private static final ConcurrentHashMap<String, MessageDigest> digesters = new ConcurrentHashMap<>();
 
 	public static byte[] hash(String algorithm, byte[] data, int offset, int len) {
 		MessageDigest digester = digesters.computeIfAbsent(algorithm, Hash::getDigester);
-		synchronized(digester) {
+		synchronized (digester) {
 			digester.reset();
 			digester.update(data, offset, len);
 			return digester.digest(digester.digest());
@@ -52,63 +56,63 @@ public class Hash implements Comparable<Hash>
 		}
 	}
 
-	private final byte[] 	bytes;
-	private EUID			id;
+	private final byte[] bytes;
+	private EUID id;
 
 	public Hash(byte[] hash) {
 		this(hash, 0, hash.length);
 	}
 
 	public Hash(byte[] hash, int offset, int length) {
-		if (length != BYTES)
-			throw new IllegalArgumentException ("Digest length must be " + BYTES + " bytes for Hash");
+		if (length != BYTES) {
+			throw new IllegalArgumentException("Digest length must be " + BYTES + " bytes for Hash");
+		}
 
 		this.bytes = new byte[BYTES];
 		System.arraycopy(hash, offset, this.bytes, 0, BYTES);
 	}
 
-	public Hash (String hex)
-	{
-		if ( hex.length () != (BYTES*2) )
-			throw new IllegalArgumentException ("Digest length must be 64 hex characters for Hash");
+	public Hash(String hex) {
+		if (hex.length() != (BYTES * 2)) {
+			throw new IllegalArgumentException("Digest length must be 64 hex characters for Hash");
+		}
 
 		this.bytes = Bytes.fromHexString(hex);
 	}
 
-	public byte[] toByteArray()
-	{
+	public byte[] toByteArray() {
 		return bytes.clone();
 	}
 
 	@Override
-	public int compareTo(Hash object)
-	{
+	public int compareTo(Hash object) {
 		return this.toString().compareTo(object.toString());
 	}
 
 	@Override
-	public String toString () {
+	public String toString() {
 		return Bytes.toHexString(toByteArray());
 	}
 
 	@Override
-	public boolean equals(Object o)
-	{
-		if (o == null) return false;
+	public boolean equals(Object o) {
+		if (o == null) {
+			return false;
+		}
 
-		if (o == this) return true;
+		if (o == this) {
+			return true;
+		}
 
-		return (o instanceof Hash && Arrays.areEqual(((Hash)o).bytes, this.bytes));
+		return (o instanceof Hash && Arrays.areEqual(((Hash) o).bytes, this.bytes));
 	}
 
 	@Override
-	public int hashCode()
-	{
+	public int hashCode() {
 		return Arrays.hashCode(this.bytes);
 	}
 
-	public EUID getID()
-	{
+	public EUID getID() {
 		if (id == null) {
 			id = new EUID(Arrays.copyOfRange(bytes, 0, EUID.BYTES));
 		}
@@ -116,8 +120,7 @@ public class Hash implements Comparable<Hash>
 		return id;
 	}
 
-	protected byte[] getBytes()
-	{
+	protected byte[] getBytes() {
 		return bytes;
 	}
 }

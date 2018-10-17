@@ -3,7 +3,6 @@ package com.radixdlt.client.core.ledger;
 import java.util.Set;
 import java.util.function.Function;
 
-import org.radix.common.ID.EUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,6 +36,7 @@ public class RadixAtomSubmitter implements AtomSubmitter {
 	 * @param atom atom to submit into the ledger
 	 * @return Observable emitting status updates to submission
 	 */
+	@Override
 	public Observable<AtomSubmissionUpdate> submitAtom(Atom atom) {
 		Observable<AtomSubmissionUpdate> status = clientSelector.apply(atom.getRequiredFirstShard())
 			.doOnSuccess(client -> LOGGER.info("Found client to submit atom {}: {}", atom.getHid(), client.getLocation()))

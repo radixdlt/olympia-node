@@ -29,8 +29,9 @@ class JacksonJsonHashDeserializer extends StdDeserializer<Hash> {
 	public Hash deserialize(JsonParser p, DeserializationContext ctxt)
 			throws IOException, JsonProcessingException {
 		String value = p.getValueAsString();
-		if (!value.startsWith(JacksonCodecConstants.HASH_STR_VALUE))
+		if (!value.startsWith(JacksonCodecConstants.HASH_STR_VALUE)) {
 			throw new InvalidFormatException(p, "Expecting Hash", value, Hash.class);
+		}
 		return new Hash(value.substring(JacksonCodecConstants.STR_VALUE_LEN));
 	}
 }

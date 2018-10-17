@@ -5,10 +5,8 @@ import java.util.Objects;
 import org.radix.utils.Int128;
 import org.radix.utils.primitives.Bytes;
 
-public final class EUID implements Comparable<EUID>
-{
-	public static EUID valueOf(String string)
-	{
+public final class EUID implements Comparable<EUID> {
+	public static EUID valueOf(String string) {
 		return new EUID(string);
 	}
 
@@ -40,7 +38,7 @@ public final class EUID implements Comparable<EUID>
 	}
 
 	public EUID(int value) {
-		this((long)value);
+		this((long) value);
 	}
 
 	public EUID(long value) {
@@ -66,8 +64,9 @@ public final class EUID implements Comparable<EUID>
 	 */
 	public EUID(byte[] bytes) {
 		Objects.requireNonNull(bytes);
-		if (bytes.length == 0)
+		if (bytes.length == 0) {
 			throw new IllegalArgumentException("Invalid byte length of " + bytes.length);
+		}
 		this.value = Int128.from(bytes);
 	}
 
@@ -150,34 +149,30 @@ public final class EUID implements Comparable<EUID>
 	}
 
 	@Override
-	public int compareTo(EUID euid)
-	{
+	public int compareTo(EUID euid) {
 		return this.value.compareToUnsigned(euid.value);
 	}
 
 	@Override
-	public boolean equals(Object o)
-	{
-		if (o == this)
+	public boolean equals(Object o) {
+		if (o == this) {
 			return true;
+		}
 
-		if (o instanceof EUID)
-		{
-			EUID other = (EUID)o;
+		if (o instanceof EUID) {
+			EUID other = (EUID) o;
 			return this.value.equals(other.value);
 		}
 		throw new UnsupportedOperationException("EUID equals object NOT an EUID");
 	}
 
 	@Override
-	public int hashCode()
-	{
+	public int hashCode() {
 		return this.value.hashCode();
 	}
 
 	@Override
-	public String toString()
-	{
+	public String toString() {
 		return Bytes.toHexString(value.toByteArray());
 	}
 
@@ -195,5 +190,4 @@ public final class EUID implements Comparable<EUID>
 		Int128 d2 = a.subtract(b);
 		return d1.compareToUnsigned(d2) <= 0 ? d1 : d2;
 	}
-
 }

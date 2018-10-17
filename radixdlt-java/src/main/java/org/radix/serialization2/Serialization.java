@@ -60,7 +60,8 @@ public class Serialization {
 		noneProvider = filterProviderFor(ImmutableMap.of());
 		Map<Class<?>, ImmutableSet<String>> allFields =  availableOutputs.stream()
 				.flatMap(output -> policy.getIncludedFields(output).entrySet().stream())
-				.collect(Collectors.groupingBy(Map.Entry::getKey, flatMapping(e -> e.getValue().stream(), ImmutableSet.toImmutableSet())));
+				.collect(Collectors.groupingBy(Map.Entry::getKey,
+						flatMapping(e -> e.getValue().stream(), ImmutableSet.toImmutableSet())));
 		allProvider = filterProviderFor(ImmutableMap.copyOf(allFields));
 
 		ImmutableMap.Builder<Output, JacksonCborMapper> dsonBuilder = ImmutableMap.builder();

@@ -1,6 +1,5 @@
 package org.radix.serialization2;
 
-public interface Polymorphic
-{
+public interface Polymorphic {
 
 }

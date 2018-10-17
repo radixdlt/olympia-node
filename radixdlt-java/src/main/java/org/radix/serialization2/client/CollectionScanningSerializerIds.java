@@ -4,7 +4,6 @@ import java.util.Collection;
 
 import org.radix.serialization2.ClassScanningSerializerIds;
 import org.radix.serialization2.SerializerIds;
-import org.radix.serialization2.SerializerIdsException;
 
 import com.google.common.annotations.VisibleForTesting;
 
@@ -22,8 +21,6 @@ public final class CollectionScanningSerializerIds extends ClassScanningSerializ
 	 *
 	 * @param classes The classes to scan for annotations.
 	 * @return A freshly created and initialized instance
-	 * @throws SerializerIdsException If two or more classes are
-	 *			found with the same {@code SerializerId}
 	 */
 	public static SerializerIds create(Collection<Class<?>> classes) {
 		return new CollectionScanningSerializerIds(classes);

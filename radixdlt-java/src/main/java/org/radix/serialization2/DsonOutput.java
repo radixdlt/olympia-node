@@ -64,7 +64,7 @@ public @interface DsonOutput {
 	 * <p>
 	 * Note that the output mode {@link #NONE} is of limited use.
 	 */
-	public enum Output {
+	enum Output {
 		/**
 		 * An output mode that never results in output.  Of limited use.
 		 */

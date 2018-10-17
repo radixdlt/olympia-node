@@ -105,7 +105,8 @@ public abstract class ClassScanningSerializerIds implements SerializerIds {
 			Long id = entry.getKey();
 			if (!idClassMap.containsKey(id)) {
 				throw new SerializerIdsException(
-						String.format("No concrete class with ID '%s' for polymorphic classes %s", entry.getKey(), entry.getValue()));
+						String.format("No concrete class with ID '%s' for polymorphic classes %s",
+								entry.getKey(), entry.getValue()));
 			}
 			for (Class<?> cls : entry.getValue()) {
 				Long dupId = classIdMap.put(cls, id);

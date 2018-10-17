@@ -29,8 +29,9 @@ class JacksonJsonEUIDDeserializer extends StdDeserializer<EUID> {
 	public EUID deserialize(JsonParser p, DeserializationContext ctxt)
 			throws IOException, JsonProcessingException {
 		String value = p.getValueAsString();
-		if (!value.startsWith(JacksonCodecConstants.EUID_STR_VALUE))
+		if (!value.startsWith(JacksonCodecConstants.EUID_STR_VALUE)) {
 			throw new InvalidFormatException(p, "Expecting UID", value, EUID.class);
+		}
 		return EUID.valueOf(value.substring(JacksonCodecConstants.STR_VALUE_LEN));
 	}
 }

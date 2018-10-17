@@ -8,7 +8,9 @@ import org.radix.utils.RadixConstants;
  * Utility class for manipulating primitive bytes.
  */
 public class Bytes {
-	private static final char[] hexChars = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
+	private static final char[] HEX_CHARS = {
+		'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'
+	};
 
 	private Bytes() {
 		throw new IllegalStateException("Can't construct");
@@ -76,7 +78,9 @@ public class Bytes {
 	 * @return The converted string
 	 */
 	public static String toHexString(byte b) {
-		char[] value = { toHexChar(b >> 4), toHexChar(b) };
+		char[] value = {
+			toHexChar(b >> 4), toHexChar(b)
+		};
 		return new String(value);
 	}
 
@@ -160,7 +164,7 @@ public class Bytes {
 	}
 
 	private static char toHexChar(int value) {
-		return hexChars[value & 0xF];
+		return HEX_CHARS [value & 0xF];
 	}
 
 	private static byte fromHexNybble(char value) {

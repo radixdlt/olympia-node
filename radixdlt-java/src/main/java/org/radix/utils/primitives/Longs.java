@@ -86,7 +86,7 @@ public final class Longs {
 	 * @return The {@code long} value represented by the arguments.
 	 */
 	public static long fromBytes(byte b0, byte b1, byte b2, byte b3, byte b4, byte b5, byte b6, byte b7) {
-		return (b0 & 0xFFL) << 56 | (b1 & 0xFFL) << 48 | (b2 & 0xFFL) << 40 | (b3 & 0xFFL) << 32 |
-			   (b4 & 0xFFL) << 24 | (b5 & 0xFFL) << 16 | (b6 & 0xFFL) <<  8 | (b7 & 0xFFL);
+		return (b0 & 0xFFL) << 56 | (b1 & 0xFFL) << 48 | (b2 & 0xFFL) << 40 | (b3 & 0xFFL) << 32
+			 | (b4 & 0xFFL) << 24 | (b5 & 0xFFL) << 16 | (b6 & 0xFFL) <<  8 | (b7 & 0xFFL);
 	}
 }

@@ -13,11 +13,11 @@ import com.google.gson.JsonParser;
 public final class GsonJson {
 
 	private static class Holder {
-		static GsonJson INSTANCE = new GsonJson();
+		static GsonJson instance = new GsonJson();
 	}
 
 	public static GsonJson getInstance() {
-		return Holder.INSTANCE;
+		return Holder.instance;
 	}
 
 	private final Gson gson;

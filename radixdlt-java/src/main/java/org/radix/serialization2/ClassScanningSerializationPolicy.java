@@ -53,20 +53,23 @@ public abstract class ClassScanningSerializationPolicy implements SerializationP
 						throw new IllegalStateException(
 								String.format("Field %s#%s has a %s annotation, but no %s annotation",
 										outerCls.getName(), field.getName(),
-										JsonProperty.class.getSimpleName(), DsonOutput.class.getSimpleName()));
+										JsonProperty.class.getSimpleName(),
+										DsonOutput.class.getSimpleName()));
 					}
 					if (dsonOutput != null && jsonProperty == null) {
 						throw new IllegalStateException(
 								String.format("Field %s#%s has a %s annotation, but no %s annotation",
 										outerCls.getName(), field.getName(),
-										DsonOutput.class.getSimpleName(), JsonProperty.class.getSimpleName()));
+										DsonOutput.class.getSimpleName(),
+										JsonProperty.class.getSimpleName()));
 					}
 					if (dsonOutput != null && jsonProperty != null) {
 						String fieldName = jsonProperty.value();
 						for (DsonOutput.Output out : DsonOutput.Output.toEnumSet(dsonOutput.value(), dsonOutput.include())) {
 							if (!tempOutputs.get(out).computeIfAbsent(outerCls, k -> new HashSet<>()).add(fieldName)) {
 								throw new IllegalStateException(
-										String.format("Duplicate property %s in class %s", fieldName, outerCls.getName()));
+										String.format("Duplicate property %s in class %s",
+												fieldName, outerCls.getName()));
 							}
 						}
 					}
@@ -84,25 +87,29 @@ public abstract class ClassScanningSerializationPolicy implements SerializationP
 						throw new IllegalStateException(
 								String.format("Method %s#%s has a %s annotation, but no %s annotation",
 										outerCls.getName(), method.getName(),
-										JsonProperty.class.getSimpleName(), DsonOutput.class.getSimpleName()));
+										JsonProperty.class.getSimpleName(),
+										DsonOutput.class.getSimpleName()));
 					}
 					if (dsonOutput != null && jsonProperty == null && jsonAnyGetter == null) {
 						throw new IllegalStateException(
 								String.format("Method %s#%s has a %s annotation, but no %s or %s annotation",
 										outerCls.getName(), method.getName(),
 										DsonOutput.class.getSimpleName(),
-										JsonProperty.class.getSimpleName(), JsonAnyGetter.class.getSimpleName()));
+										JsonProperty.class.getSimpleName(),
+										JsonAnyGetter.class.getSimpleName()));
 					}
 					if (dsonOutput != null && jsonProperty != null) {
 						String fieldName = jsonProperty.value();
 						if (method.getParameterCount() != 0) {
 							throw new IllegalStateException(
-									String.format("Property %s in class %s not a getter", fieldName, outerCls.getName()));
+									String.format("Property %s in class %s not a getter",
+											fieldName, outerCls.getName()));
 						}
 						for (DsonOutput.Output out : DsonOutput.Output.toEnumSet(dsonOutput.value(), dsonOutput.include())) {
 							if (!tempOutputs.get(out).computeIfAbsent(outerCls, k -> new HashSet<>()).add(fieldName)) {
 								throw new IllegalStateException(
-										String.format("Duplicate property %s in class %s", fieldName, outerCls.getName()));
+										String.format("Duplicate property %s in class %s",
+												fieldName, outerCls.getName()));
 							}
 						}
 					}
@@ -111,7 +118,8 @@ public abstract class ClassScanningSerializationPolicy implements SerializationP
 						if (properties == null) {
 							throw new IllegalStateException(
 									String.format("Found %s annotation without %s annotation in class %s",
-											JsonAnyGetter.class.getSimpleName(), DsonAnyProperties.class.getSimpleName(),
+											JsonAnyGetter.class.getSimpleName(),
+											DsonAnyProperties.class.getSimpleName(),
 											cls.getName()));
 						}
 						Set<String> fieldNames = ImmutableSet.copyOf(properties.value());
@@ -120,7 +128,8 @@ public abstract class ClassScanningSerializationPolicy implements SerializationP
 							for (String fieldName : fieldNames) {
 								if (!fields.add(fieldName)) {
 									throw new IllegalStateException(
-											String.format("Duplicate property %s in class %s", fieldName, outerCls.getName()));
+											String.format("Duplicate property %s in class %s",
+													fieldName, outerCls.getName()));
 								}
 							}
 						}

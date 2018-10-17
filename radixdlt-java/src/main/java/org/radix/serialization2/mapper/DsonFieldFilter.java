@@ -3,8 +3,6 @@ package org.radix.serialization2.mapper;
 import java.awt.Container;
 import java.util.Map;
 
-import org.radix.serialization2.DsonOutput;
-
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.BeanPropertyWriter;
@@ -17,8 +15,6 @@ import com.google.common.collect.ImmutableSet;
 
 /**
  * A field filter for DSON output modes.
- *
- * @see DsonOutput
  */
 public class DsonFieldFilter extends SimpleBeanPropertyFilter {
 	private final ImmutableMap<Class<?>, ImmutableSet<String>> includedItems;

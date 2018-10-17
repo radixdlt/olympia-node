@@ -59,15 +59,13 @@ public final class Int128 extends Number implements Comparable<Int128> {
 	public static final Int128 MINUS_ONE = new Int128(-1L, -1L);
 
 	// Numbers in order.  This is used by factory methods.
-	private static final Int128[] numbers = {
+	private static final Int128[] NUMBERS = {
 		ZERO, ONE, TWO, THREE, FOUR, FIVE, SIX, SEVEN, EIGHT, NINE, TEN
 	};
 
 	// The actual value.
-	// @PackageLocalForTest
-	final long high;
-	// @PackageLocalForTest
-	final long low;
+	private final long high;
+	private final long low;
 
 	/**
 	 * Factory method for materialising an {@link Int128} from a {@code short}
@@ -77,7 +75,7 @@ public final class Int128 extends Number implements Comparable<Int128> {
 	 * @return {@code value} as an {@link Int128} type.
 	 */
 	public static Int128 from(short value) {
-		return from((long)value);
+		return from((long) value);
 	}
 
 	/**
@@ -87,7 +85,7 @@ public final class Int128 extends Number implements Comparable<Int128> {
 	 * @return {@code value} as an {@link Int128} type.
 	 */
 	public static Int128 from(int value) {
-		return from((long)value);
+		return from((long) value);
 	}
 
 	/**
@@ -113,8 +111,8 @@ public final class Int128 extends Number implements Comparable<Int128> {
 	 */
 	public static Int128 from(long high, long low) {
 		if (high == 0L) {
-			if (low >= 0L && low < numbers.length) {
-				return numbers[(int)low];
+			if (low >= 0L && low < NUMBERS.length) {
+				return NUMBERS[(int) low];
 			}
 		} else if (high == -1L && low == -1L) {
 			return MINUS_ONE;
@@ -138,8 +136,9 @@ public final class Int128 extends Number implements Comparable<Int128> {
 	 */
 	public static Int128 from(byte[] bytes) {
 		Objects.requireNonNull(bytes);
-		if (bytes.length ==  0)
+		if (bytes.length ==  0) {
 			throw new IllegalArgumentException("bytes is 0 bytes long");
+		}
 		byte[] newBytes = extend(bytes);
 		long high = Longs.fromByteArray(newBytes, 0);
 		long low  = Longs.fromByteArray(newBytes, Long.BYTES);
@@ -195,7 +194,7 @@ public final class Int128 extends Number implements Comparable<Int128> {
 				if (digit < 0) {
 					throw new NumberFormatException(s);
 				}
-				result = result.multiply(Int128.TEN).add(numbers[digit]);
+				result = result.multiply(Int128.TEN).add(NUMBERS[digit]);
 			}
 			return negative ? result.negate() : result;
 		} else {
@@ -205,8 +204,9 @@ public final class Int128 extends Number implements Comparable<Int128> {
 
 	// Pad short (< BYTES length) array with appropriate lead bytes.
 	private static byte[] extend(byte[] bytes) {
-		if (bytes.length >= BYTES)
+		if (bytes.length >= BYTES) {
 			return bytes;
+		}
 		byte[] newBytes = new byte[BYTES];
 		int newPos = BYTES - bytes.length;
 		// Sign extension
@@ -293,10 +293,10 @@ public final class Int128 extends Number implements Comparable<Int128> {
 		Int128 result = Int128.ZERO;
 		Int128 multiplier = this;
 
-		while (!multiplicand.isZero())
-		{
-			if (multiplicand.isOdd())
+		while (!multiplicand.isZero()) {
+			if (multiplicand.isOdd()) {
 				result = result.add(multiplier);
+			}
 
 			multiplier = multiplier.shiftLeft();
 			multiplicand = multiplicand.logicalShiftRight();
@@ -389,8 +389,9 @@ public final class Int128 extends Number implements Comparable<Int128> {
 		long h = this.high;
 		if (h < 0) {
 			l += 1;
-			if (l == 0L)
+			if (l == 0L) {
 				h += 1;
+			}
 		}
 		return Int128.from(h >> 1, (l >>> 1) | (h << (Long.SIZE - 1)));
 	}
@@ -422,8 +423,9 @@ public final class Int128 extends Number implements Comparable<Int128> {
 		long h = ~this.high;
 		long l = ~this.low;
 		l += 1;
-		if (l == 0)
+		if (l == 0) {
 			h += 1;
+		}
 		return Int128.from(h, l);
 	}
 
@@ -489,8 +491,9 @@ public final class Int128 extends Number implements Comparable<Int128> {
 	public double doubleValue() {
 		// If it's a number that fits into a long, let the compiler
 		// convert.
-		if ((this.high == 0L && this.low >= 0L) || (this.high == -1L && this.low < 0L))
+		if ((this.high == 0L && this.low >= 0L) || (this.high == -1L && this.low < 0L)) {
 			return low;
+		}
 
 		long h = this.high;
 		long l = this.low;
@@ -500,8 +503,9 @@ public final class Int128 extends Number implements Comparable<Int128> {
 			h = ~h;
 			l = ~l;
 			l += 1;
-			if (l == 0)
+			if (l == 0) {
 				h += 1;
+			}
 		}
 
 		// Must be at least 64 bits based on initial checks.
@@ -628,8 +632,9 @@ public final class Int128 extends Number implements Comparable<Int128> {
 	@Override
 	public boolean equals(Object obj) {
 		// Note that this needs to be consistent with compareTo
-		if (this == obj)
+		if (this == obj) {
 			return true;
+		}
 		if (obj instanceof Int128) {
 			Int128 other = (Int128) obj;
 			return this.high == other.high && this.low == other.low;
@@ -639,8 +644,9 @@ public final class Int128 extends Number implements Comparable<Int128> {
 
 	@Override
 	public String toString() {
-		if (isZero())
+		if (isZero()) {
 			return "0";
+		}
 		// This is cheating to avoid the case where this.abs() < 0
 		if (this.high == 0x8000_0000_0000_0000L && this.low == 0) {
 			return "-170141183460469231731687303715884105728";
@@ -650,11 +656,12 @@ public final class Int128 extends Number implements Comparable<Int128> {
 		Int128 n = this.abs();
 		while (!n.isZero()) {
 			Int128 digit = n.remainder(Int128.TEN);
-			sb.append((char)('0' + digit.low));
+			sb.append((char) ('0' + digit.low));
 			n = n.divide(Int128.TEN);
 		}
-		if (negative)
+		if (negative) {
 			sb.append('-');
+		}
 		return sb.reverse().toString();
 	}
 
@@ -681,5 +688,4 @@ public final class Int128 extends Number implements Comparable<Int128> {
 			dividend = dividend.subtract(div);
 		}
 	}
-
 }

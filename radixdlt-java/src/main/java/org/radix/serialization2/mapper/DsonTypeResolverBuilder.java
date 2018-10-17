@@ -27,7 +27,7 @@ class DsonTypeResolverBuilder extends ObjectMapper.DefaultTypeResolverBuilder {
 
 	private final SerializerIds idLookup;
 
-	public DsonTypeResolverBuilder(SerializerIds idLookup) {
+	DsonTypeResolverBuilder(SerializerIds idLookup) {
 		super(ObjectMapper.DefaultTyping.NON_FINAL);
 		init(Id.CUSTOM, null).inclusion(As.EXISTING_PROPERTY).typeProperty("serializer");
 		this.idLookup = idLookup;
@@ -50,7 +50,8 @@ class DsonTypeResolverBuilder extends ObjectMapper.DefaultTypeResolverBuilder {
 	}
 
     @Override
-	protected TypeIdResolver idResolver(MapperConfig<?> config, JavaType baseType, Collection<NamedType> subtypes, boolean forSer, boolean forDeser) {
+	protected TypeIdResolver idResolver(MapperConfig<?> config, JavaType baseType,
+			Collection<NamedType> subtypes, boolean forSer, boolean forDeser) {
 		return new DsonTypeIdResolver(baseType, config.getTypeFactory(), idLookup);
 	}
 }
