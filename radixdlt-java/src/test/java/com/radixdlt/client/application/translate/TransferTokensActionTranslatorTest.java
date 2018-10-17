@@ -2,13 +2,14 @@ package com.radixdlt.client.application.translate;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.junit.Assert.assertEquals;
 
+import com.radixdlt.client.application.identity.RadixIdentity;
+import com.radixdlt.client.application.objects.TokenTransfer;
 import com.radixdlt.client.core.atoms.AtomBuilder;
 import io.reactivex.Observable;
 import io.reactivex.observers.TestObserver;
 import org.junit.Test;
-import com.radixdlt.client.application.actions.TokenTransfer;
+import com.radixdlt.client.application.actions.TransferTokensAction;
 import com.radixdlt.client.assets.Asset;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.address.RadixAddress;
@@ -17,7 +18,7 @@ import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.ledger.ParticleStore;
 import java.util.Collections;
 
-public class TokenTransferTranslatorTest {
+public class TransferTokensActionTranslatorTest {
 	@Test
 	public void testSendToSelfTest() {
 		RadixUniverse universe = mock(RadixUniverse.class);
@@ -30,10 +31,10 @@ public class TokenTransferTranslatorTest {
 			Collections.singleton(myKey), Collections.singletonMap(Asset.TEST.getId(), 0L)
 		));
 
+		TestObserver<TokenTransfer> testObserver = TestObserver.create();
 		TokenTransferTranslator tokenTransferTranslator = new TokenTransferTranslator(universe, particleStore);
-		TokenTransfer tokenTransfer = tokenTransferTranslator.fromAtom(atom);
-		assertEquals(myAddress, tokenTransfer.getFrom());
-		assertEquals(myAddress, tokenTransfer.getTo());
+		tokenTransferTranslator.fromAtom(atom, mock(RadixIdentity.class)).subscribe(testObserver);
+		testObserver.assertValue(transfer -> myAddress.equals(transfer.getFrom()) && myAddress.equals(transfer.getTo()));
 	}
 
 	@Test
@@ -42,13 +43,13 @@ public class TokenTransferTranslatorTest {
 		RadixAddress address = mock(RadixAddress.class);
 
 		TokenTransferTranslator transferTranslator = new TokenTransferTranslator(universe, addr -> Observable.never());
-		TokenTransfer tokenTransfer = mock(TokenTransfer.class);
-		when(tokenTransfer.getSubUnitAmount()).thenReturn(10L);
-		when(tokenTransfer.getFrom()).thenReturn(address);
-		when(tokenTransfer.getTokenClass()).thenReturn(Asset.TEST);
+		TransferTokensAction transferTokensAction = mock(TransferTokensAction.class);
+		when(transferTokensAction.getSubUnitAmount()).thenReturn(10L);
+		when(transferTokensAction.getFrom()).thenReturn(address);
+		when(transferTokensAction.getTokenClass()).thenReturn(Asset.TEST);
 
 		TestObserver observer = TestObserver.create();
-		transferTranslator.translate(tokenTransfer, new AtomBuilder()).subscribe(observer);
+		transferTranslator.translate(transferTokensAction, new AtomBuilder()).subscribe(observer);
 		observer.awaitTerminalEvent();
 		observer.assertError(new InsufficientFundsException(Asset.TEST, 0, 10));
 	}

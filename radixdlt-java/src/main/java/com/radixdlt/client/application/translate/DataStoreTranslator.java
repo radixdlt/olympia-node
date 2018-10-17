@@ -1,6 +1,6 @@
 package com.radixdlt.client.application.translate;
 
-import com.radixdlt.client.application.actions.DataStore;
+import com.radixdlt.client.application.actions.StoreDataAction;
 import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.core.atoms.ApplicationPayloadAtom;
 import com.radixdlt.client.core.atoms.AtomBuilder;
@@ -21,19 +21,19 @@ public class DataStoreTranslator {
 	private DataStoreTranslator() {
 	}
 
-	public Completable translate(DataStore dataStore, AtomBuilder atomBuilder) {
+	public Completable translate(StoreDataAction storeDataAction, AtomBuilder atomBuilder) {
 		atomBuilder.type(ApplicationPayloadAtom.class);
-		atomBuilder.payload(dataStore.getData().getBytes());
+		atomBuilder.payload(storeDataAction.getData().getBytes());
 
-		if (!dataStore.getData().getProtectors().isEmpty()) {
-			atomBuilder.protectors(dataStore.getData().getProtectors());
+		if (!storeDataAction.getData().getProtectors().isEmpty()) {
+			atomBuilder.protectors(storeDataAction.getData().getProtectors());
 		}
 
-		if (dataStore.getData().getMetaData().containsKey("application")) {
-			atomBuilder.applicationId((String) dataStore.getData().getMetaData().get("application"));
+		if (storeDataAction.getData().getMetaData().containsKey("application")) {
+			atomBuilder.applicationId((String) storeDataAction.getData().getMetaData().get("application"));
 		}
 
-		dataStore.getAddresses().forEach(atomBuilder::addDestination);
+		storeDataAction.getAddresses().forEach(atomBuilder::addDestination);
 
 		return Completable.complete();
 	}

@@ -1,7 +1,9 @@
 package com.radixdlt.client.application.translate;
 
-import com.radixdlt.client.application.actions.TokenTransfer;
+import com.radixdlt.client.application.actions.TransferTokensAction;
+import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.objects.Data;
+import com.radixdlt.client.application.objects.TokenTransfer;
 import com.radixdlt.client.assets.Asset;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.address.RadixAddress;
@@ -9,12 +11,14 @@ import com.radixdlt.client.core.atoms.AtomBuilder;
 import com.radixdlt.client.core.atoms.Consumable;
 import com.radixdlt.client.core.atoms.Consumer;
 import com.radixdlt.client.core.atoms.TransactionAtom;
+import com.radixdlt.client.core.crypto.CryptoException;
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
 import com.radixdlt.client.core.ledger.ParticleStore;
 import io.reactivex.Completable;
 import io.reactivex.Observable;
+import io.reactivex.Single;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Collections;
 import java.util.HashMap;
@@ -35,7 +39,7 @@ public class TokenTransferTranslator {
 		this.particleStore = particleStore;
 	}
 
-	public TokenTransfer fromAtom(TransactionAtom transactionAtom) {
+	public Single<TokenTransfer> fromAtom(TransactionAtom transactionAtom, RadixIdentity identity) {
 		List<SimpleImmutableEntry<ECPublicKey, Long>> summary =
 			transactionAtom.summary().entrySet().stream()
 				.filter(entry -> entry.getValue().containsKey(Asset.TEST.getId()))
@@ -61,6 +65,9 @@ public class TokenTransferTranslator {
 			}
 		}
 
+
+		final long subUnitAmount = Math.abs(summary.get(0).getValue());
+
 		final Data attachment;
 		if (transactionAtom.getPayload() != null) {
 			final List<EncryptedPrivateKey> protectors;
@@ -72,29 +79,43 @@ public class TokenTransferTranslator {
 			Map<String, Object> metaData = new HashMap<>();
 			metaData.put("encrypted", !protectors.isEmpty());
 			attachment = Data.raw(transactionAtom.getPayload().getBytes(), metaData, protectors);
-		} else {
-			attachment = null;
-		}
 
-		return TokenTransfer.create(from, to, Asset.TEST, Math.abs(summary.get(0).getValue()), attachment, transactionAtom.getTimestamp());
+			final long timestamp = transactionAtom.getTimestamp();
+			return Single.just(attachment)
+				.flatMap(identity::decrypt)
+				.map(unencrypted -> new TokenTransfer(from, to, Asset.TEST, subUnitAmount, unencrypted, timestamp))
+				.onErrorResumeNext(e -> {
+					if (e instanceof CryptoException) {
+						return Single.just(
+							new TokenTransfer(from, to, Asset.TEST, subUnitAmount, null, timestamp)
+						);
+					} else {
+						return Single.error(e);
+					}
+				});
+		} else {
+			return Single.just(
+				new TokenTransfer(from, to, Asset.TEST, subUnitAmount, null, transactionAtom.getTimestamp())
+			);
+		}
 	}
 
 	public Observable<AddressTokenState> getTokenState(RadixAddress address) {
 		return cache.computeIfAbsent(address, addr -> new AddressTokenReducer(addr, particleStore)).getState();
 	}
 
-	public Completable translate(TokenTransfer tokenTransfer, AtomBuilder atomBuilder) {
+	public Completable translate(TransferTokensAction transferTokensAction, AtomBuilder atomBuilder) {
 		atomBuilder.type(TransactionAtom.class);
 
-		return getTokenState(tokenTransfer.getFrom())
+		return getTokenState(transferTokensAction.getFrom())
 			.map(AddressTokenState::getUnconsumedConsumables)
 			.firstOrError()
 			.flatMapCompletable(unconsumedConsumables -> {
 
-				if (tokenTransfer.getAttachment() != null) {
-					atomBuilder.payload(tokenTransfer.getAttachment().getBytes());
-					if (!tokenTransfer.getAttachment().getProtectors().isEmpty()) {
-						atomBuilder.protectors(tokenTransfer.getAttachment().getProtectors());
+				if (transferTokensAction.getAttachment() != null) {
+					atomBuilder.payload(transferTokensAction.getAttachment().getBytes());
+					if (!transferTokensAction.getAttachment().getProtectors().isEmpty()) {
+						atomBuilder.protectors(transferTokensAction.getAttachment().getProtectors());
 					}
 				}
 
@@ -105,22 +126,22 @@ public class TokenTransferTranslator {
 				// HACK for now
 				// TODO: remove this, create a ConsumersCreator
 				// TODO: randomize this to decrease probability of collision
-				while (consumerTotal < tokenTransfer.getSubUnitAmount() && iterator.hasNext()) {
-					final long left = tokenTransfer.getSubUnitAmount() - consumerTotal;
+				while (consumerTotal < transferTokensAction.getSubUnitAmount() && iterator.hasNext()) {
+					final long left = transferTokensAction.getSubUnitAmount() - consumerTotal;
 
 					Consumer newConsumer = iterator.next().toConsumer();
 					consumerTotal += newConsumer.getQuantity();
 
 					final long amount = Math.min(left, newConsumer.getQuantity());
-					newConsumer.addConsumerQuantities(amount, Collections.singleton(tokenTransfer.getTo().toECKeyPair()),
+					newConsumer.addConsumerQuantities(amount, Collections.singleton(transferTokensAction.getTo().toECKeyPair()),
 						consumerQuantities);
 
 					atomBuilder.addParticle(newConsumer);
 				}
 
-				if (consumerTotal < tokenTransfer.getSubUnitAmount()) {
+				if (consumerTotal < transferTokensAction.getSubUnitAmount()) {
 					return Completable.error(new InsufficientFundsException(
-						tokenTransfer.getTokenClass(), consumerTotal, tokenTransfer.getSubUnitAmount()
+						transferTokensAction.getTokenClass(), consumerTotal, transferTokensAction.getSubUnitAmount()
 					));
 				}
 
