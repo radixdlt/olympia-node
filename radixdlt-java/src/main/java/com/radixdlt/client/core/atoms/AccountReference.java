@@ -18,4 +18,18 @@ public class AccountReference {
 	public String toString() {
 		return key.getPublicKey().toString();
 	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (!(o instanceof AccountReference)) {
+			return false;
+		}
+
+		return ((AccountReference) o).key.equals(this.key);
+	}
+
+	@Override
+	public int hashCode() {
+		return key.hashCode();
+	}
 }

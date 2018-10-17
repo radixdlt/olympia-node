@@ -1,12 +1,12 @@
 package com.radixdlt.client.core.ledger;
 
-import com.radixdlt.client.assets.Asset;
 import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomValidationException;
-import com.radixdlt.client.core.atoms.Consumable;
+import com.radixdlt.client.core.atoms.TokenRef;
+import com.radixdlt.client.core.atoms.particles.Consumable;
 import com.radixdlt.client.core.atoms.RadixHash;
-import com.radixdlt.client.core.atoms.Spin;
+import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import java.util.Arrays;
@@ -33,7 +33,9 @@ public class RadixAtomValidatorTest {
 
 		Consumable consumer = mock(Consumable.class);
 		when(consumer.getOwnersPublicKeys()).thenReturn(Collections.singleton(publicKey));
-		when(consumer.getTokenClass()).thenReturn(Asset.TEST.getId());
+		TokenRef token = mock(TokenRef.class);
+		when(token.getIso()).thenReturn("TEST");
+		when(consumer.getTokenRef()).thenReturn(token);
 
 		Atom atom = mock(Atom.class);
 		when(atom.getHash()).thenReturn(hash);

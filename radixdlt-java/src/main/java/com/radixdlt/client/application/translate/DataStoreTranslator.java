@@ -2,18 +2,18 @@ package com.radixdlt.client.application.translate;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonParser;
-import com.radixdlt.client.application.actions.DataStore;
+import com.radixdlt.client.application.actions.StoreDataAction;
 import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.atoms.AtomBuilder;
-import com.radixdlt.client.core.atoms.DataParticle;
-import com.radixdlt.client.core.atoms.DataParticle.DataParticleBuilder;
+import com.radixdlt.client.core.atoms.particles.DataParticle;
+import com.radixdlt.client.core.atoms.particles.DataParticle.DataParticleBuilder;
 import com.radixdlt.client.core.atoms.Payload;
+import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
 import com.radixdlt.client.core.crypto.Encryptor;
-import io.reactivex.Completable;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,18 +31,23 @@ public class DataStoreTranslator {
 	}
 
 	// TODO: figure out correct method signature here (return Single<AtomBuilder> instead?)
-	public Completable translate(DataStore dataStore, AtomBuilder atomBuilder) {
-		Payload payload = new Payload(dataStore.getData().getBytes());
-		String application = (String) dataStore.getData().getMetaData().get("application");
+	public List<Particle> map(StoreDataAction storeDataAction) {
+		if (storeDataAction == null) {
+			return Collections.emptyList();
+		}
 
+		Payload payload = new Payload(storeDataAction.getData().getBytes());
+		String application = (String) storeDataAction.getData().getMetaData().get("application");
+
+		List<Particle> particles = new ArrayList<>();
 		DataParticle dataParticle = new DataParticleBuilder()
 			.payload(payload)
 			.setMetaData("application", application)
-			.accounts(dataStore.getAddresses())
+			.accounts(storeDataAction.getAddresses())
 			.build();
+		particles.add(dataParticle);
 
-		atomBuilder.addDataParticle(dataParticle);
-		Encryptor encryptor = dataStore.getData().getEncryptor();
+		Encryptor encryptor = storeDataAction.getData().getEncryptor();
 		if (encryptor != null) {
 			JsonArray protectorsJson = new JsonArray();
 			encryptor.getProtectors().stream().map(EncryptedPrivateKey::base64).forEach(protectorsJson::add);
@@ -52,12 +57,12 @@ public class DataStoreTranslator {
 				.payload(encryptorPayload)
 				.setMetaData("application", "encryptor")
 				.setMetaData("contentType", "application/json")
-				.accounts(dataStore.getAddresses())
+				.accounts(storeDataAction.getAddresses())
 				.build();
-			atomBuilder.addDataParticle(encryptorParticle);
+			particles.add(encryptorParticle);
 		}
 
-		return Completable.complete();
+		return particles;
 	}
 
 	public Optional<Data> fromAtom(Atom atom) {

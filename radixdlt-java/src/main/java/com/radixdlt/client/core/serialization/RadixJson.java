@@ -1,9 +1,11 @@
 package com.radixdlt.client.core.serialization;
 
-import com.radixdlt.client.core.TokenClassReference;
 import com.radixdlt.client.core.atoms.AccountReference;
-import com.radixdlt.client.core.atoms.AssetParticle;
-import com.radixdlt.client.core.atoms.Spin;
+import com.radixdlt.client.core.atoms.TokenRef;
+import com.radixdlt.client.core.atoms.particles.Consumable.ConsumableType;
+import com.radixdlt.client.core.atoms.particles.TokenParticle;
+import com.radixdlt.client.core.atoms.particles.Spin;
+import com.radixdlt.client.core.atoms.particles.TokenParticle.MintPermissions;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.HashMap;
@@ -32,13 +34,12 @@ import com.google.gson.stream.JsonWriter;
 import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.address.RadixUniverseType;
 import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.atoms.AtomFeeConsumable;
-import com.radixdlt.client.core.atoms.ChronoParticle;
-import com.radixdlt.client.core.atoms.Consumable;
-import com.radixdlt.client.core.atoms.DataParticle;
-import com.radixdlt.client.core.atoms.Emission;
+import com.radixdlt.client.core.atoms.particles.AtomFeeConsumable;
+import com.radixdlt.client.core.atoms.particles.ChronoParticle;
+import com.radixdlt.client.core.atoms.particles.Consumable;
+import com.radixdlt.client.core.atoms.particles.DataParticle;
 import com.radixdlt.client.core.atoms.MetadataMap;
-import com.radixdlt.client.core.atoms.Particle;
+import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.Payload;
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECPublicKey;
@@ -81,6 +82,19 @@ public class RadixJson {
 		return new EncryptedPrivateKey(encryptedPrivateKey);
 	};
 
+	private static final JsonSerializer<ConsumableType> CONSUMABLE_TYPE_SERIALIZER =
+		(src, typeOf, context) -> new JsonPrimitive(STR_PREFIX + src.name().toLowerCase());
+
+	private static final JsonDeserializer<ConsumableType> CONSUMABLE_TYPE_DESERIALIZER =
+		(json, typeOf, context) -> ConsumableType.valueOf(unString(json.getAsString()).toUpperCase());
+
+	private static final JsonSerializer<MintPermissions> MINT_PERMISSIONS_SERIALIZER =
+		(src, typeOf, context) -> new JsonPrimitive(STR_PREFIX + src.name().toLowerCase());
+
+	private static final JsonDeserializer<MintPermissions> MINT_PERMISSIONS_DESERIALIZER =
+		(json, typeOf, context) -> MintPermissions.valueOf(unString(json.getAsString()).toUpperCase());
+
+
 	private static final JsonSerializer<Spin> SPIN_JSON_SERIALIZER =
 		(src, typeOf, context) -> new JsonPrimitive(src.ordinalValue());
 
@@ -103,11 +117,10 @@ public class RadixJson {
 	static {
 		PARTICLE_SERIALIZER_IDS.put(AtomFeeConsumable.class, new Integer("FEEPARTICLE".hashCode()).longValue());
 		PARTICLE_SERIALIZER_IDS.put(Consumable.class, new Integer("TRANSFERPARTICLE".hashCode()).longValue());
-		PARTICLE_SERIALIZER_IDS.put(Emission.class, 1341978856L);
 		PARTICLE_SERIALIZER_IDS.put(DataParticle.class, 473758768L);
 		//PARTICLE_SERIALIZER_IDS.put(UniqueParticle.class, Long.valueOf("UNIQUEPARTICLE".hashCode()));
 		PARTICLE_SERIALIZER_IDS.put(ChronoParticle.class, new Integer("CHRONOPARTICLE".hashCode()).longValue());
-		PARTICLE_SERIALIZER_IDS.put(AssetParticle.class, -1034420571L);
+		PARTICLE_SERIALIZER_IDS.put(TokenParticle.class, -1034420571L);
 	}
 
 	private static final JsonSerializer<Particle> PARTICLE_SERIALIZER = (particle, typeOfT, context) -> {
@@ -195,8 +208,8 @@ public class RadixJson {
 		SERIALIZERS.put(Atom.class, 2019665);
 		SERIALIZERS.put(ECKeyPair.class, 547221307);
 		SERIALIZERS.put(ECSignature.class, -434788200);
-		SERIALIZERS.put(TokenClassReference.class, "TOKENCLASSREFERENCE".hashCode());
 		SERIALIZERS.put(AccountReference.class, "ACCOUNTREFERENCE".hashCode());
+		SERIALIZERS.put(TokenRef.class, "TOKENCLASSREFERENCE".hashCode());
 	}
 
 	private static final TypeAdapterFactory ECKEYPAIR_ADAPTER_FACTORY = new TypeAdapterFactory() {
@@ -247,6 +260,10 @@ public class RadixJson {
 			.registerTypeAdapter(RadixUniverseType.class, UNIVERSE_TYPE_DESERIALIZER)
 			.registerTypeAdapter(Spin.class, SPIN_JSON_DESERIALIZER)
 			.registerTypeAdapter(Spin.class, SPIN_JSON_SERIALIZER)
+			.registerTypeAdapter(MintPermissions.class, MINT_PERMISSIONS_DESERIALIZER)
+			.registerTypeAdapter(MintPermissions.class, MINT_PERMISSIONS_SERIALIZER)
+			.registerTypeAdapter(ConsumableType.class, CONSUMABLE_TYPE_DESERIALIZER)
+			.registerTypeAdapter(ConsumableType.class, CONSUMABLE_TYPE_SERIALIZER)
 			.registerTypeAdapter(NodeRunnerData.class, NODE_RUNNER_DATA_JSON_DESERIALIZER);
 
 		GSON = gsonBuilder.create();

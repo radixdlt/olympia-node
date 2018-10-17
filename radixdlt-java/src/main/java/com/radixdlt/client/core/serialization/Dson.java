@@ -225,6 +225,10 @@ public class Dson {
 		} else if (o instanceof HasOrdinalValue) { // HACK
 			raw = longToByteArray(((HasOrdinalValue) o).ordinalValue());
 			type = 2;
+		} else if (o instanceof Enum) {
+			Enum e = (Enum) o;
+			raw = e.name().toLowerCase().getBytes(StandardCharsets.UTF_8);
+			type = Primitive.STRING.value;
 		} else {
 			Class<?> c = o.getClass();
 			List<Field> fields = new ArrayList<>();
@@ -238,6 +242,7 @@ public class Dson {
 				.filter(field -> !field.getName().equalsIgnoreCase("serialVersionUID"))
 				.filter(field -> !field.getName().equalsIgnoreCase("spin")) // TODO: This needs to be added back in
 				.filter(field -> !Modifier.isTransient(field.getModifiers()))
+				.filter(field -> !Modifier.isStatic(field.getModifiers()))
 				.filter(field -> {
 					try {
 						field.setAccessible(true);

@@ -5,7 +5,8 @@ import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.radixdlt.client.core.atoms.DataParticle.DataParticleBuilder;
+import com.radixdlt.client.core.atoms.particles.DataParticle;
+import com.radixdlt.client.core.atoms.particles.DataParticle.DataParticleBuilder;
 import org.junit.Test;
 
 public class DataParticleTest {

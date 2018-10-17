@@ -1,6 +1,9 @@
 package com.radixdlt.client.core;
 
-import com.radixdlt.client.core.ledger.ConsumableDataSource;
+import com.radixdlt.client.core.atoms.TokenRef;
+import com.radixdlt.client.core.atoms.particles.Spin;
+import com.radixdlt.client.core.atoms.particles.TokenParticle;
+import com.radixdlt.client.core.ledger.RadixParticleStore;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.client.core.crypto.ECPublicKey;
@@ -15,6 +18,7 @@ import com.radixdlt.client.core.ledger.ClientSelector;
 import com.radixdlt.client.core.ledger.InMemoryAtomStore;
 import com.radixdlt.client.core.network.PeerDiscovery;
 import com.radixdlt.client.core.network.RadixNetwork;
+import java.util.Optional;
 
 /**
  * A RadixUniverse represents the interface through which a client can interact
@@ -110,23 +114,60 @@ public final class RadixUniverse {
 
 	private final Ledger ledger;
 
+	private final TokenRef powToken;
+
+	private final TokenRef nativeToken;
+
 	private RadixUniverse(RadixUniverseConfig config, RadixNetwork network) {
 		this.config = config;
 		this.network = network;
+
+		final Optional<TokenRef> powToken = config.getGenesis().stream()
+			.flatMap(atom -> atom.particles(Spin.UP))
+			.filter(p -> p instanceof TokenParticle)
+			.filter(p -> ((TokenParticle) p).getTokenRef().getIso().equals("POW"))
+			.map(p -> ((TokenParticle) p).getTokenRef())
+			.findFirst();
+
+		if (!powToken.isPresent()) {
+			throw new IllegalStateException("No POW Token defined in universe");
+		}
+
+		this.powToken = powToken.get();
+
+		final Optional<TokenRef> nativeToken = config.getGenesis().stream()
+			.flatMap(atom -> atom.particles(Spin.UP))
+			.filter(p -> p instanceof TokenParticle)
+			.filter(p -> !((TokenParticle) p).getTokenRef().getIso().equals("POW"))
+			.map(p -> ((TokenParticle) p).getTokenRef())
+			.findFirst();
+
+		if (!nativeToken.isPresent()) {
+			throw new IllegalStateException("No Native Token defined in universe");
+		}
+
+		this.nativeToken = nativeToken.get();
+
+		final InMemoryAtomStore inMemoryAtomStore = new InMemoryAtomStore();
+		config.getGenesis().forEach(atom ->
+			atom.addresses()
+				.map(this::getAddressFrom)
+				.forEach(addr -> inMemoryAtomStore.store(addr, atom))
+		);
 
 		// Hooking up the default configuration
 		// TODO: cleanup
 		this.ledger = new Ledger() {
 			private final ClientSelector clientSelector = new ClientSelector(config, network, CHECK_UNIVERSE);
 			private final AtomFetcher atomFetcher = new AtomFetcher(clientSelector::getRadixClient);
-			private final InMemoryAtomStore inMemoryAtomStore = new InMemoryAtomStore();
 			private final AtomPuller atomPuller = new RadixAtomPuller(atomFetcher::fetchAtoms, inMemoryAtomStore::store);
 			private final AtomSubmitter atomSubmitter = new RadixAtomSubmitter(clientSelector::getRadixClient);
+
 			/**
 			* The Particle Data Store
 			* TODO: actually change it into the particle data store
 			*/
-			private final ConsumableDataSource particleStore = new ConsumableDataSource(inMemoryAtomStore);
+			private final RadixParticleStore particleStore = new RadixParticleStore(inMemoryAtomStore);
 
 			@Override
 			public AtomPuller getAtomPuller() {
@@ -134,7 +175,7 @@ public final class RadixUniverse {
 			}
 
 			@Override
-			public ConsumableDataSource getParticleStore() {
+			public RadixParticleStore getParticleStore() {
 				return particleStore;
 			}
 
@@ -148,6 +189,14 @@ public final class RadixUniverse {
 				return atomSubmitter;
 			}
 		};
+	}
+
+	public TokenRef getPOWToken() {
+		return powToken;
+	}
+
+	public TokenRef getNativeToken() {
+		return nativeToken;
 	}
 
 	public int getMagic() {

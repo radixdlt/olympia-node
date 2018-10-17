@@ -1,6 +1,11 @@
 package com.radixdlt.client.core.atoms;
 
 import com.radixdlt.client.core.address.EUID;
+import com.radixdlt.client.core.atoms.particles.ChronoParticle;
+import com.radixdlt.client.core.atoms.particles.Consumable;
+import com.radixdlt.client.core.atoms.particles.DataParticle;
+import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.crypto.ECSignature;
 import com.radixdlt.client.core.serialization.Dson;
@@ -52,8 +57,9 @@ public final class Atom {
 
 	private Set<Long> getShards() {
 		return getParticles().stream()
-			.map(Particle::getDestinations)
+			.map(Particle::getAddresses)
 			.flatMap(Set::stream)
+			.map(ECPublicKey::getUID)
 			.map(EUID::getShard)
 			.collect(Collectors.toSet());
 	}
@@ -63,7 +69,8 @@ public final class Atom {
 		if (this.particles.stream().anyMatch(p -> p.getSpin() == Spin.DOWN)) {
 			return particles.stream()
 				.filter(p -> p.getSpin() == Spin.DOWN)
-				.flatMap(consumer -> consumer.getDestinations().stream())
+				.flatMap(consumer -> consumer.getAddresses().stream())
+				.map(ECPublicKey::getUID)
 				.map(EUID::getShard)
 				.collect(Collectors.toSet());
 		} else {
@@ -71,6 +78,15 @@ public final class Atom {
 		}
 	}
 
+	public Stream<Particle> particles(Spin spin) {
+		return particles.stream().filter(p -> p.getSpin() == spin);
+	}
+
+	public Stream<ECPublicKey> addresses() {
+		return particles.stream()
+			.map(Particle::getAddresses)
+			.flatMap(Set::stream);
+	}
 
 	public Long getTimestamp() {
 		return this.getParticles().stream()
@@ -85,6 +101,12 @@ public final class Atom {
 
 	public Optional<ECSignature> getSignature(EUID uid) {
 		return Optional.ofNullable(signatures).map(sigs -> sigs.get(uid.toString()));
+	}
+
+	public Stream<Consumable> consumables() {
+		return this.getParticles().stream()
+			.filter(p -> p instanceof Consumable)
+			.map(p -> (Consumable) p);
 	}
 
 	public List<Consumable> getConsumables() {
@@ -121,24 +143,13 @@ public final class Atom {
 			.collect(Collectors.toList());
 	}
 
-	public Map<Set<ECPublicKey>, Map<EUID, Long>> summary() {
-		return Stream.concat(this.getConsumables(Spin.UP).stream(), getConsumables(Spin.DOWN).stream())
+	public Map<TokenRef, Map<ECPublicKey, Long>> tokenSummary() {
+		return consumables()
 			.collect(Collectors.groupingBy(
-				Consumable::getOwnersPublicKeys,
+				Consumable::getTokenRef,
 				Collectors.groupingBy(
-					Consumable::getTokenClass,
+					Consumable::getOwner,
 					Collectors.summingLong(Consumable::getSignedAmount)
-				)
-			));
-	}
-
-	public Map<Set<ECPublicKey>, Map<EUID, List<Long>>> consumableSummary() {
-		return Stream.concat(this.getConsumables(Spin.UP).stream(), getConsumables(Spin.DOWN).stream())
-			.collect(Collectors.groupingBy(
-				Consumable::getOwnersPublicKeys,
-				Collectors.groupingBy(
-					Consumable::getTokenClass,
-					Collectors.mapping(Consumable::getSignedAmount, Collectors.toList())
 				)
 			));
 	}
@@ -174,6 +185,6 @@ public final class Atom {
 
 	@Override
 	public String toString() {
-		return "Atom hid(" + getHid().toString() + ")";
+		return "Atom particles(" + getHid().toString() + ")";
 	}
 }

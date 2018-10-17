@@ -1,11 +1,10 @@
 package com.radixdlt.client.core.ledger;
 
-import com.radixdlt.client.assets.Asset;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomValidationException;
 import com.radixdlt.client.core.atoms.AtomValidator;
 import com.radixdlt.client.core.atoms.RadixHash;
-import com.radixdlt.client.core.atoms.Spin;
+import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.crypto.ECSignature;
 import java.util.Objects;
 import java.util.Optional;
@@ -36,7 +35,7 @@ public class RadixAtomValidator implements AtomValidator {
 					return new AtomValidationException("No owners in particle");
 				}
 
-				if (down.getTokenClass().equals(Asset.POW.getId())) {
+				if (down.getTokenRef().getIso().equals("POW")) {
 					return null;
 				}
 
