@@ -93,7 +93,6 @@ public abstract class ClassScanningSerializerIds implements SerializerIds {
 //				if (log.hasLevel(Logging.DEBUG)) {
 //					log.debug("Putting Class:" + cls.getName() + " with ID:" + id);
 //				}
-				System.out.format("%s: %s%n", cls.getName(), id);
 				collectSupertypes(cls);
 			}
 		}
