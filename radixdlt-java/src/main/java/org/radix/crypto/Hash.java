@@ -35,7 +35,7 @@ public class Hash implements Comparable<Hash> {
 		return hash(algorithm, data, 0, data.length);
 	}
 
-	private static final ConcurrentHashMap<String, MessageDigest> digesters = new ConcurrentHashMap<>();
+	private static ConcurrentHashMap<String, MessageDigest> digesters = new ConcurrentHashMap<>();
 
 	public static byte[] hash(String algorithm, byte[] data, int offset, int len) {
 		MessageDigest digester = digesters.computeIfAbsent(algorithm, Hash::getDigester);

@@ -13,11 +13,16 @@ import com.google.gson.JsonParser;
 public final class GsonJson {
 
 	private static class Holder {
-		static GsonJson instance = new GsonJson();
+		private static GsonJson instance = new GsonJson();
+
+		// This paraphernalia is here to placate checkstyle
+		static GsonJson instance() {
+			return instance;
+		}
 	}
 
 	public static GsonJson getInstance() {
-		return Holder.instance;
+		return Holder.instance();
 	}
 
 	private final Gson gson;
