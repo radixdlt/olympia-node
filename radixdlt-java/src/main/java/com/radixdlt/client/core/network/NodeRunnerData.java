@@ -5,14 +5,12 @@ import java.util.Map;
 import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.DsonOutput.Output;
 import org.radix.serialization2.SerializerDummy;
-import org.radix.serialization2.SerializerId2;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.core.atoms.Shards;
 
-@SerializerId2("PEER")
-public final class NodeRunnerData {
+public abstract class NodeRunnerData {
 	@JsonProperty("version")
 	@DsonOutput(Output.ALL)
 	private short version = 100;
@@ -32,12 +30,12 @@ public final class NodeRunnerData {
 		// No-arg constructor for serializer
 	}
 
-	public NodeRunnerData(String ip, long lowShard, long highShard) {
+	protected NodeRunnerData(String ip, long lowShard, long highShard) {
 		this.ip = ip;
 		this.system = new RadixSystem(lowShard, highShard);
 	}
 
-	public NodeRunnerData(RadixSystem system) {
+	protected NodeRunnerData(RadixSystem system) {
 		this.ip = null;
 		this.system = system;
 	}

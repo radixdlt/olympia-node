@@ -13,7 +13,11 @@ import com.radixdlt.client.core.atoms.TokenRef;
 public class AtomFeeConsumable extends Consumable {
 	@JsonProperty("service")
 	@DsonOutput(Output.ALL)
-	private final EUID service;
+	private EUID service;
+
+	AtomFeeConsumable() {
+		// No-arg constructor for serializer
+	}
 
 	public AtomFeeConsumable(long quantity, AccountReference address, long nonce, TokenRef tokenRef, long planck) {
 		super(quantity, ConsumableType.MINTED, address, nonce, tokenRef, planck, Spin.UP);

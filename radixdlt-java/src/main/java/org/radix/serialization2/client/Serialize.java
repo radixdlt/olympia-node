@@ -19,8 +19,9 @@ import com.radixdlt.client.core.atoms.particles.TokenParticle;
 import com.radixdlt.client.core.atoms.particles.UniqueParticle;
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECSignature;
-import com.radixdlt.client.core.network.NodeRunnerData;
 import com.radixdlt.client.core.network.RadixSystem;
+import com.radixdlt.client.core.network.TCPNodeRunnerData;
+import com.radixdlt.client.core.network.UDPNodeRunnerData;
 
 public final class Serialize {
 
@@ -45,11 +46,12 @@ public final class Serialize {
 				DataParticle.class,
 				ECKeyPair.class,
 				ECSignature.class,
-				NodeRunnerData.class,
 				RadixSystem.class,
 				RadixUniverseConfig.class,
+				TCPNodeRunnerData.class,
 				TokenParticle.class,
 				TokenRef.class,
+				UDPNodeRunnerData.class,
 				UniqueParticle.class
 			);
 		}

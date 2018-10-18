@@ -1,6 +1,5 @@
 package org.radix.serialization2;
 
-import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -58,13 +57,13 @@ public abstract class ClassScanningSerializerIds implements SerializerIds {
 				continue;
 			}
 
-			if (Modifier.isAbstract(cls.getModifiers())) {
-				// Abstract classes should not be marked with @SerializerId
-				// There may be a need to implement this to satisfy some of the Indexable stuff.
+//			if (Modifier.isAbstract(cls.getModifiers())) {
+//				// Abstract classes should not be marked with @SerializerId
+//				// There may be a need to implement this to satisfy some of the Indexable stuff.
 //				log.warn(String.format("Skipping abstract class %s with unexpected %s annotation",
 //						cls.getName(), SERIALIZER_ID_ANNOTATION.getSimpleName()));
-				continue;
-			}
+//				continue;
+//			}
 
 			// Currently Loggables are required to have a SerializerID so that
 			// they can be correctly deserialized in a polymorphic way.

@@ -195,7 +195,7 @@ public class RadixJsonRpcClient {
 	public Single<NodeRunnerData> getSelf() {
 		return this.jsonRpcCall("Network.getSelf")
 				.map(result -> Serialize.getInstance().fromJson(result.toString(), RadixSystem.class))
-				.map(system -> new NodeRunnerData(system));
+				.map(system -> new UDPNodeRunnerData(system));
 	}
 
 	/**
