@@ -36,7 +36,7 @@ public final class Strings {
 
 	/**
 	 * Convert a sequence of ASCII bytes into a string.  Note that
-	 * no bounds checking is performed on the incoming bytes &emdash;
+	 * no bounds checking is performed on the incoming bytes;
 	 * the upper bit is silently discarded.
 	 *
 	 * @param bytes  The buffer to convert to a string.

@@ -24,7 +24,8 @@ public class TokenReducer implements ParticleReducer<Map<TokenClassReference, To
 	@Override
 	public Map<TokenClassReference, TokenState> reduce(Map<TokenClassReference, TokenState> state, Particle p) {
 		if (!(p instanceof TokenParticle
-			|| (p instanceof TransferParticle && p.getSpin() == Spin.UP && ((TransferParticle) p).getType() == FungibleQuark.FungibleType.MINTED))) {
+			|| (p instanceof TransferParticle && p.getSpin() == Spin.UP
+				&& ((TransferParticle) p).getType() == FungibleQuark.FungibleType.MINTED))) {
 			return state;
 		}
 

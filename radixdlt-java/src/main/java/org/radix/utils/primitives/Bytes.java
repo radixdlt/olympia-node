@@ -26,7 +26,7 @@ public class Bytes {
 	 * @param offset2 The offset within {@code a2} to begin the comparison
 	 * @param length2 The quantity of {@code a2} to compare
 	 * @return {@code true} iff {@code length1 == length2} and {@code a1[offset1 + i] == a2[offset2 + i]}
-	 * 		for {@code i} &in; {@code [0, length1)}.
+	 * 		for {@code i} in; {@code [0, length1)}.
 	 */
 	public static boolean arrayEquals(byte[] a1, int offset1, int length1, byte[] a2, int offset2, int length2) {
         if (length1 != length2) {

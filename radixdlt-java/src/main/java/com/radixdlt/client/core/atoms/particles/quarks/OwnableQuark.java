@@ -1,7 +1,6 @@
 package com.radixdlt.client.core.atoms.particles.quarks;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.gson.annotations.SerializedName;
 import com.radixdlt.client.core.atoms.AccountReference;
 import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.SerializerId2;

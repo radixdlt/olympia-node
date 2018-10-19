@@ -1,7 +1,11 @@
 package com.radixdlt.client.core.atoms;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.client.core.atoms.particles.*;
+import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.client.core.atoms.particles.Spin;
+import com.radixdlt.client.core.atoms.particles.StorageParticle;
+import com.radixdlt.client.core.atoms.particles.TimestampParticle;
+import com.radixdlt.client.core.atoms.particles.TransferParticle;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.crypto.ECSignature;
 import org.radix.common.ID.EUID;
@@ -10,7 +14,12 @@ import org.radix.serialization2.SerializerDummy;
 import org.radix.serialization2.SerializerId2;
 import org.radix.serialization2.client.Serialize;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
