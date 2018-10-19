@@ -11,6 +11,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.radixdlt.client.core.atoms.particles.TimestampParticle;
 import org.radix.serialization2.DsonOutput.Output;
 import org.radix.serialization2.client.Serialize;
 import org.slf4j.Logger;
@@ -41,9 +42,8 @@ import com.radixdlt.client.core.RadixUniverse.Ledger;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.AccountReference;
 import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.atoms.TokenRef;
+import com.radixdlt.client.core.atoms.TokenClassReference;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
-import com.radixdlt.client.core.atoms.particles.ChronoParticle;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate;
@@ -102,7 +102,7 @@ public class RadixApplicationAPI {
 	private final UniquePropertyTranslator uniquePropertyTranslator;
 	private final TokenMapper tokenMapper;
 
-	private final ApplicationStore<Map<TokenRef, TokenState>> tokenStore;
+	private final ApplicationStore<Map<TokenClassReference, TokenState>> tokenStore;
 	private final ApplicationStore<TokenBalanceState> tokenBalanceStore;
 
 	// TODO: Translator from particles to atom
@@ -185,7 +185,7 @@ public class RadixApplicationAPI {
 	 *
 	 * @return the native token reference
 	 */
-	public TokenRef getNativeTokenRef() {
+	public TokenClassReference getNativeTokenRef() {
 		return universe.getNativeToken();
 	}
 
@@ -205,7 +205,7 @@ public class RadixApplicationAPI {
 	 * @param address the address of the account to check
 	 * @return a hot observable of the latest state of token classes
 	 */
-	public Observable<Map<TokenRef, TokenState>> getTokens(RadixAddress address) {
+	public Observable<Map<TokenClassReference, TokenState>> getTokens(RadixAddress address) {
 		pull(address);
 
 		return tokenStore.getState(address);
@@ -217,7 +217,7 @@ public class RadixApplicationAPI {
 	 *
 	 * @return a hot observable of the latest state of token classes
 	 */
-	public Observable<Map<TokenRef, TokenState>> getMyTokens() {
+	public Observable<Map<TokenClassReference, TokenState>> getMyTokens() {
 		return getTokens(getMyAddress());
 	}
 
@@ -226,7 +226,7 @@ public class RadixApplicationAPI {
 	 *
 	 * @return a hot observable of the latest state of the token
 	 */
-	public Observable<TokenState> getToken(TokenRef ref) {
+	public Observable<TokenState> getToken(TokenClassReference ref) {
 		pull(universe.getAddressFrom(ref.getAddress().getKey()));
 
 		return tokenStore.getState(universe.getAddressFrom(ref.getAddress().getKey()))
@@ -289,7 +289,7 @@ public class RadixApplicationAPI {
 			.flatMapIterable(tokenTransferTranslator::fromAtom);
 	}
 
-	public Observable<Map<TokenRef, BigDecimal>> getBalance(RadixAddress address) {
+	public Observable<Map<TokenClassReference, BigDecimal>> getBalance(RadixAddress address) {
 		Objects.requireNonNull(address);
 
 		pull(address);
@@ -301,11 +301,11 @@ public class RadixApplicationAPI {
 			));
 	}
 
-	public Observable<BigDecimal> getMyBalance(TokenRef tokenRef) {
-		return getBalance(getMyAddress(), tokenRef);
+	public Observable<BigDecimal> getMyBalance(TokenClassReference tokenClassReference) {
+		return getBalance(getMyAddress(), tokenClassReference);
 	}
 
-	public Observable<BigDecimal> getBalance(RadixAddress address, TokenRef token) {
+	public Observable<BigDecimal> getBalance(RadixAddress address, TokenClassReference token) {
 		Objects.requireNonNull(token);
 
 		return getBalance(address)
@@ -334,7 +334,7 @@ public class RadixApplicationAPI {
 	 * @param amount the amount and token type
 	 * @return result of the transaction
 	 */
-	public Result sendTokens(RadixAddress to, BigDecimal amount, TokenRef token) {
+	public Result sendTokens(RadixAddress to, BigDecimal amount, TokenClassReference token) {
 		return transferTokens(getMyAddress(), to, amount, token);
 	}
 
@@ -347,7 +347,7 @@ public class RadixApplicationAPI {
 	 * @param message message to be encrypted and attached to transfer
 	 * @return result of the transaction
 	 */
-	public Result sendTokensWithMessage(RadixAddress to, BigDecimal amount, TokenRef token, @Nullable String message) {
+	public Result sendTokensWithMessage(RadixAddress to, BigDecimal amount, TokenClassReference token, @Nullable String message) {
 		return sendTokensWithMessage(to, amount, token, message, null);
 	}
 
@@ -362,7 +362,7 @@ public class RadixApplicationAPI {
 	public Result sendTokensWithMessage(
 		RadixAddress to,
 		BigDecimal amount,
-		TokenRef token,
+		TokenClassReference token,
 		@Nullable String message,
 		@Nullable byte[] unique
 	) {
@@ -387,7 +387,7 @@ public class RadixApplicationAPI {
 	 * @param attachment the data attached to the transaction
 	 * @return result of the transaction
 	 */
-	public Result sendTokens(RadixAddress to, BigDecimal amount, TokenRef token, @Nullable Data attachment) {
+	public Result sendTokens(RadixAddress to, BigDecimal amount, TokenClassReference token, @Nullable Data attachment) {
 		return transferTokens(getMyAddress(), to, amount, token, attachment);
 	}
 
@@ -404,14 +404,14 @@ public class RadixApplicationAPI {
 	public Result sendTokens(
 		RadixAddress to,
 		BigDecimal amount,
-		TokenRef token,
+		TokenClassReference token,
 		@Nullable Data attachment,
 		@Nullable byte[] unique
 	) {
 		return transferTokens(getMyAddress(), to, amount, token, attachment, unique);
 	}
 
-	public Result transferTokens(RadixAddress from, RadixAddress to, BigDecimal amount, TokenRef token) {
+	public Result transferTokens(RadixAddress from, RadixAddress to, BigDecimal amount, TokenClassReference token) {
 		return transferTokens(from, to, amount, token, null);
 	}
 
@@ -419,7 +419,7 @@ public class RadixApplicationAPI {
 		RadixAddress from,
 		RadixAddress to,
 		BigDecimal amount,
-		TokenRef token,
+		TokenClassReference token,
 		@Nullable Data attachment
 	) {
 		return transferTokens(from, to, amount, token, attachment, null);
@@ -429,7 +429,7 @@ public class RadixApplicationAPI {
 		RadixAddress from,
 		RadixAddress to,
 		BigDecimal amount,
-		TokenRef token,
+		TokenClassReference token,
 		@Nullable Data attachment,
 		@Nullable byte[] unique // TODO: make unique immutable
 	) {
@@ -465,13 +465,13 @@ public class RadixApplicationAPI {
 
 		Single<List<Particle>> atomParticles =
 			Observable.concatArray(
-				Observable.just(uniquePropertyTranslator.map(uniqueProperty)),
+//				Observable.just(uniquePropertyTranslator.map(uniqueProperty)),
 				transferTokensAction != null ? tokenBalanceStore.getState(transferTokensAction.getFrom())
 					.firstOrError().toObservable()
 					.map(s -> tokenTransferTranslator.map(transferTokensAction, s)) : Observable.empty(),
 				Observable.just(dataStoreTranslator.map(storeDataAction)),
 				Observable.just(tokenMapper.map(tokenCreation)),
-				Observable.just(Collections.singletonList(new ChronoParticle(System.currentTimeMillis())))
+				Observable.just(Collections.singletonList(new TimestampParticle(System.currentTimeMillis())))
 			)
 			.<List<Particle>>scanWith(ArrayList::new, (a, b) -> Stream.concat(a.stream(), b.stream()).collect(Collectors.toList()))
 			.lastOrError()

@@ -1,11 +1,12 @@
 package com.radixdlt.client.application.translate;
 
-import com.radixdlt.client.core.atoms.TokenRef;
-import com.radixdlt.client.core.atoms.particles.Consumable;
-import com.radixdlt.client.core.atoms.particles.Consumable.ConsumableType;
+import com.radixdlt.client.core.atoms.TokenClassReference;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.atoms.particles.TokenParticle;
+import com.radixdlt.client.core.atoms.particles.TransferParticle;
+import com.radixdlt.client.core.atoms.particles.quarks.FungibleQuark;
+
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.HashMap;
@@ -14,20 +15,20 @@ import java.util.Map;
 /**
  * Reduces particles at an address into concrete Tokens and their states
  */
-public class TokenReducer implements ParticleReducer<Map<TokenRef, TokenState>> {
+public class TokenReducer implements ParticleReducer<Map<TokenClassReference, TokenState>> {
 	@Override
-	public Map<TokenRef, TokenState> initialState() {
+	public Map<TokenClassReference, TokenState> initialState() {
 		return Collections.emptyMap();
 	}
 
 	@Override
-	public Map<TokenRef, TokenState> reduce(Map<TokenRef, TokenState> state, Particle p) {
+	public Map<TokenClassReference, TokenState> reduce(Map<TokenClassReference, TokenState> state, Particle p) {
 		if (!(p instanceof TokenParticle
-			|| (p instanceof Consumable && p.getSpin() == Spin.UP && ((Consumable) p).getType() == ConsumableType.MINTED))) {
+			|| (p instanceof TransferParticle && p.getSpin() == Spin.UP && ((TransferParticle) p).getType() == FungibleQuark.FungibleType.MINTED))) {
 			return state;
 		}
 
-		HashMap<TokenRef, TokenState> newMap = new HashMap<>(state);
+		HashMap<TokenClassReference, TokenState> newMap = new HashMap<>(state);
 		if (p instanceof TokenParticle) {
 			TokenParticle tokenParticle = (TokenParticle) p;
 			TokenState tokenState = new TokenState(
@@ -38,20 +39,20 @@ public class TokenReducer implements ParticleReducer<Map<TokenRef, TokenState>> 
 			);
 
 			newMap.merge(
-				tokenParticle.getTokenRef(),
+				tokenParticle.getTokenClassReference(),
 				tokenState,
 				(a, b) -> new TokenState(b.getName(), b.getIso(), b.getDescription(), a.getTotalSupply())
 			);
 		} else {
-			Consumable minted = (Consumable) p;
+			TransferParticle minted = (TransferParticle) p;
 			TokenState tokenState = new TokenState(
 				null,
-				minted.getTokenRef().getIso(),
+				minted.getTokenClassReference().getIso(),
 				null,
-				TokenRef.subUnitsToDecimal(minted.getAmount())
+				TokenClassReference.subUnitsToDecimal(minted.getAmount())
 			);
 			newMap.merge(
-				minted.getTokenRef(),
+				minted.getTokenClassReference(),
 				tokenState,
 				(a, b) -> new TokenState(
 					a.getName(),

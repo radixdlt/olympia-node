@@ -1,23 +1,21 @@
 package com.radixdlt.client.core.ledger;
 
-import java.nio.ByteBuffer;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-
+import com.radixdlt.client.core.address.RadixAddress;
+import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.client.core.atoms.particles.Spin;
+import com.radixdlt.client.core.atoms.particles.StorageParticle;
+import io.reactivex.Observable;
+import io.reactivex.ObservableEmitter;
+import io.reactivex.observables.ConnectableObservable;
 import org.radix.serialization2.DsonOutput.Output;
 import org.radix.serialization2.Serialization;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.radixdlt.client.core.address.RadixAddress;
-import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.atoms.particles.DataParticle;
-import com.radixdlt.client.core.atoms.particles.Particle;
-import com.radixdlt.client.core.atoms.particles.Spin;
-
-import io.reactivex.Observable;
-import io.reactivex.ObservableEmitter;
-import io.reactivex.observables.ConnectableObservable;
+import java.nio.ByteBuffer;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ValidAtomFilter {
 	private static final Logger LOGGER = LoggerFactory.getLogger(ValidAtomFilter.class);
@@ -44,7 +42,7 @@ public class ValidAtomFilter {
 			});
 
 		atom.particles(Spin.UP)
-			.filter(up -> !up.getAddresses().isEmpty() && !(up instanceof DataParticle) // FIXME: remove hardcode of DataParticle
+			.filter(up -> !up.getAddresses().isEmpty() && !(up instanceof StorageParticle) // FIXME: remove hardcode of DataParticle
 				&& up.getAddresses().stream().allMatch(address::ownsKey))
 			.forEach(up -> {
 				ByteBuffer dson = ByteBuffer.wrap(serializer.toDson(up, Output.HASH));

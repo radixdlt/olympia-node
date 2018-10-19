@@ -1,48 +1,45 @@
 package com.radixdlt.client.application;
 
-import java.math.BigDecimal;
-import java.util.Collections;
-import java.util.Optional;
-
-import org.junit.Test;
-
-import com.radixdlt.client.application.RadixApplicationAPI.Result;
-import com.radixdlt.client.application.identity.RadixIdentity;
-import com.radixdlt.client.application.objects.Data;
-import com.radixdlt.client.application.objects.UnencryptedData;
-import com.radixdlt.client.application.translate.DataStoreTranslator;
-import com.radixdlt.client.application.translate.FeeMapper;
-import com.radixdlt.client.application.translate.PowFeeMapper;
-import com.radixdlt.client.core.RadixUniverse;
-import com.radixdlt.client.core.RadixUniverse.Ledger;
-import com.radixdlt.client.core.address.RadixAddress;
-import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.atoms.TokenRef;
-import com.radixdlt.client.core.atoms.UnsignedAtom;
-import com.radixdlt.client.core.crypto.CryptoException;
-import com.radixdlt.client.core.crypto.ECPublicKey;
-import com.radixdlt.client.core.ledger.AtomPuller;
-import com.radixdlt.client.core.ledger.AtomStore;
-import com.radixdlt.client.core.ledger.AtomSubmitter;
-import com.radixdlt.client.core.ledger.ParticleStore;
-import com.radixdlt.client.core.network.AtomSubmissionUpdate;
-import com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState;
-
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.radixdlt.client.application.RadixApplicationAPI.Result;
+import com.radixdlt.client.application.objects.Data;
+import com.radixdlt.client.application.objects.UnencryptedData;
+import com.radixdlt.client.application.translate.DataStoreTranslator;
+import com.radixdlt.client.application.translate.FeeMapper;
+import com.radixdlt.client.application.translate.PowFeeMapper;
+import com.radixdlt.client.core.atoms.TokenClassReference;
+import com.radixdlt.client.core.RadixUniverse;
+import com.radixdlt.client.core.RadixUniverse.Ledger;
+import com.radixdlt.client.core.address.RadixAddress;
+import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.client.core.atoms.UnsignedAtom;
+import com.radixdlt.client.core.crypto.CryptoException;
+import com.radixdlt.client.application.identity.RadixIdentity;
+import com.radixdlt.client.core.ledger.AtomPuller;
+import com.radixdlt.client.core.crypto.ECPublicKey;
+import com.radixdlt.client.core.ledger.AtomStore;
+import com.radixdlt.client.core.ledger.AtomSubmitter;
+import com.radixdlt.client.core.ledger.ParticleStore;
+import com.radixdlt.client.core.network.AtomSubmissionUpdate;
+import com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.observers.TestObserver;
+import java.math.BigDecimal;
+import java.util.Collections;
+import java.util.Optional;
+import org.junit.Test;
 
 public class RadixApplicationAPITest {
 	private RadixApplicationAPI createMockedAPI(
-		AtomSubmitter atomSubmitter,
-		AtomStore atomStore
+			AtomSubmitter atomSubmitter,
+			AtomStore atomStore
 	) {
 		RadixUniverse universe = mock(RadixUniverse.class);
 		Ledger ledger = mock(Ledger.class);
@@ -102,15 +99,15 @@ public class RadixApplicationAPITest {
 	@Test
 	public void testNull() {
 		assertThatThrownBy(() -> RadixApplicationAPI.create(null))
-			.isInstanceOf(NullPointerException.class);
+				.isInstanceOf(NullPointerException.class);
 
 		RadixApplicationAPI api = createMockedAPIWhichAlwaysSucceeds();
 		assertThatThrownBy(() -> api.getReadableData(null))
-			.isInstanceOf(NullPointerException.class);
+				.isInstanceOf(NullPointerException.class);
 		assertThatThrownBy(() -> api.getTokenTransfers(null))
-			.isInstanceOf(NullPointerException.class);
+				.isInstanceOf(NullPointerException.class);
 		assertThatThrownBy(() -> api.getBalance(null, null))
-			.isInstanceOf(NullPointerException.class);
+				.isInstanceOf(NullPointerException.class);
 	}
 
 	@Test
@@ -121,6 +118,7 @@ public class RadixApplicationAPITest {
 		when(address.getPublicKey()).thenReturn(key);
 
 		Data data = mock(Data.class);
+		when(data.getBytes()).thenReturn(new byte[0]);
 		Result result = api.storeData(data, address);
 		validateSuccessfulStoreDataResult(result);
 	}
@@ -133,6 +131,7 @@ public class RadixApplicationAPITest {
 		when(address.getPublicKey()).thenReturn(key);
 
 		Data data = mock(Data.class);
+		when(data.getBytes()).thenReturn(new byte[0]);
 		Result result = api.storeData(data, address, address);
 		validateSuccessfulStoreDataResult(result);
 	}
@@ -147,6 +146,7 @@ public class RadixApplicationAPITest {
 		when(address.getPublicKey()).thenReturn(mock(ECPublicKey.class));
 
 		Data data = mock(Data.class);
+		when(data.getBytes()).thenReturn(new byte[0]);
 		api.storeData(data, address, address);
 		verify(submitter, times(1)).submitAtom(any());
 	}
@@ -159,6 +159,7 @@ public class RadixApplicationAPITest {
 		when(address.getPublicKey()).thenReturn(mock(ECPublicKey.class));
 
 		Data data = mock(Data.class);
+		when(data.getBytes()).thenReturn(new byte[0]);
 		Result result = api.storeData(data, address, address);
 		Observable observable = result.toObservable();
 		observable.subscribe();
@@ -196,10 +197,11 @@ public class RadixApplicationAPITest {
 		UnencryptedData unencryptedData = mock(UnencryptedData.class);
 
 		when(identity.decrypt(any()))
-			.thenReturn(Single.error(new CryptoException("Can't decrypt")))
-			.thenReturn(Single.just(unencryptedData));
+				.thenReturn(Single.error(new CryptoException("Can't decrypt")))
+				.thenReturn(Single.just(unencryptedData));
 
 		Data data = mock(Data.class);
+		when(data.getBytes()).thenReturn(new byte[0]);
 		DataStoreTranslator dataStoreTranslator = mock(DataStoreTranslator.class);
 		when(dataStoreTranslator.fromAtom(any(Atom.class))).thenReturn(Optional.of(data), Optional.of(data));
 
@@ -232,7 +234,7 @@ public class RadixApplicationAPITest {
 
 		RadixApplicationAPI api = RadixApplicationAPI.create(identity, universe, DataStoreTranslator.getInstance(), mock(PowFeeMapper.class));
 		TestObserver<BigDecimal> observer = TestObserver.create();
-		TokenRef token = mock(TokenRef.class);
+		TokenClassReference token = mock(TokenClassReference.class);
 
 		api.getBalance(address, token).subscribe(observer);
 		observer.awaitCount(1);
@@ -276,7 +278,7 @@ public class RadixApplicationAPITest {
 
 		RadixApplicationAPI api = RadixApplicationAPI.create(identity, universe, DataStoreTranslator.getInstance(), mock(PowFeeMapper.class));
 		TestObserver<BigDecimal> testObserver = TestObserver.create();
-		TokenRef token = mock(TokenRef.class);
+		TokenClassReference token = mock(TokenClassReference.class);
 		api.getBalance(address, token).subscribe(testObserver);
 		verify(puller, times(1)).pull(address);
 	}
