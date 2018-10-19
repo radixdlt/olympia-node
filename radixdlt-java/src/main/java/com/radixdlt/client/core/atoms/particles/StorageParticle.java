@@ -6,6 +6,7 @@ import com.radixdlt.client.core.atoms.MetadataMap;
 import com.radixdlt.client.core.atoms.particles.quarks.AddressableQuark;
 import com.radixdlt.client.core.atoms.particles.quarks.DataQuark;
 import com.radixdlt.client.core.crypto.ECPublicKey;
+import org.radix.serialization2.SerializerId2;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -13,9 +14,9 @@ import java.util.stream.Collectors;
 /**
  * Particle which can hold arbitrary data
  */
+@SerializerId2("STORAGEPARTICLE")
 public class StorageParticle extends Particle {
 	public static class StorageParticleBuilder {
-
 		private final List<AccountReference> addresses = new ArrayList<>();
 		private final MetadataMap metaData = new MetadataMap();
 		private byte[] bytes;
@@ -42,7 +43,9 @@ public class StorageParticle extends Particle {
 		public StorageParticle build() {
 			return new StorageParticle(bytes, metaData.isEmpty() ? null : metaData, addresses);
 		}
+	}
 
+	private StorageParticle() {
 	}
 
 	private StorageParticle(byte[] bytes, MetadataMap metaData, List<AccountReference> addresses) {

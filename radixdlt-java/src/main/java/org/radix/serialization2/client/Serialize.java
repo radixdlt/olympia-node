@@ -37,6 +37,7 @@ public final class Serialize {
 				AccountReference.class,
 				Particle.class,
 				TimestampParticle.class,
+				TransferParticle.class,
 				FeeParticle.class,
 				StorageParticle.class,
 				TokenParticle.class,
@@ -48,6 +49,7 @@ public final class Serialize {
 				NonFungibleQuark.class,
 				OwnableQuark.class,
 				UniqueQuark.class,
+				AddressableQuark.class,
 
 				ECKeyPair.class,
 				ECSignature.class,

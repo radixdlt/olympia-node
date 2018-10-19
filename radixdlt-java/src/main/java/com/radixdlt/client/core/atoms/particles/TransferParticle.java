@@ -1,5 +1,6 @@
 package com.radixdlt.client.core.atoms.particles;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.gson.annotations.SerializedName;
 import com.radixdlt.client.core.atoms.AccountReference;
 import com.radixdlt.client.core.atoms.RadixHash;
@@ -10,6 +11,7 @@ import com.radixdlt.client.core.atoms.particles.quarks.OwnableQuark;
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import org.radix.serialization2.DsonOutput;
+import org.radix.serialization2.SerializerId2;
 import org.radix.serialization2.client.Serialize;
 
 import java.util.Collections;
@@ -17,9 +19,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+@SerializerId2("TRANSFERPARTICLE")
 public class TransferParticle extends Particle {
-	@SerializedName("token_reference")
-	private final TokenClassReference tokenClassReference;
+	@JsonProperty("token_reference")
+	@DsonOutput(DsonOutput.Output.ALL)
+	private TokenClassReference tokenClassReference;
+
+	protected TransferParticle() {
+	}
 
 	public TransferParticle(long amount, FungibleQuark.FungibleType type, AccountReference address, long nonce,
 	                        TokenClassReference tokenRef, long planck, Spin spin) {

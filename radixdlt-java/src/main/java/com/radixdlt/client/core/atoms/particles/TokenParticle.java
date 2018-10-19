@@ -45,7 +45,7 @@ public class TokenParticle extends Particle {
 
 	private MintPermissions mintPermissions;
 
-	TokenParticle() {
+	private TokenParticle() {
 		// Empty constructor for serializer
 	}
 
