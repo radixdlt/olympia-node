@@ -5,10 +5,14 @@ import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.client.Serialize;
 
 public class TestUtils {
+	private TestUtils() {
+	}
+
 	private static final int HEXDUMP_LINESIZE = 0x20;
 
 	/**
 	 * Dump the JSON representation of the binary generated for hashing
+	 *
 	 * @param atom The atom
 	 */
 	public static void dumpJsonForHash(Atom atom) {
@@ -17,6 +21,7 @@ public class TestUtils {
 
 	/**
 	 * Dump the DSON representation of the binary generated for hashing
+	 *
 	 * @param atom The atom
 	 */
 	public static void dumpDsonForHash(Atom atom) {
@@ -59,7 +64,7 @@ public class TestUtils {
 
 	private static char toPrintable(byte b) {
 		if (b >= 0x20 && b < 0x7F) {
-			return (char)b;
+			return (char) b;
 		}
 		return '.';
 	}
