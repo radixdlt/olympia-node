@@ -56,7 +56,8 @@ public class RadixWalletExample {
 			.toObservable().subscribe(System.out::println);
 			*/
 
-		TokenClassReference token = TokenClassReference.of(new AccountReference(api.getMyPublicKey()), "NONA");
+
+		TokenClassReference token = api.getNativeTokenRef();
 		api.getToken(token)
 			.subscribe(System.out::println);
 

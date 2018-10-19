@@ -23,6 +23,10 @@ import java.util.stream.Stream;
 public abstract class Particle {
 	private Spin spin;
 
+	@JsonProperty("version")
+	@DsonOutput(DsonOutput.Output.ALL)
+	private short version = 100;
+
 	@JsonProperty("quarks")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final List<Quark> quarks; // immutable for now, later on will be able to modify after construction
