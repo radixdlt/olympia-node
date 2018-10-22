@@ -1,29 +1,33 @@
 package com.radixdlt.client.core.ledger;
 
+import java.nio.ByteBuffer;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.radix.serialization2.DsonOutput.Output;
+import org.radix.serialization2.Serialization;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.particles.DataParticle;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.Spin;
-import com.radixdlt.client.core.serialization.Dson;
+
 import io.reactivex.Observable;
 import io.reactivex.ObservableEmitter;
 import io.reactivex.observables.ConnectableObservable;
-import java.nio.ByteBuffer;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ValidAtomFilter {
 	private static final Logger LOGGER = LoggerFactory.getLogger(ValidAtomFilter.class);
 
 	private final RadixAddress address;
-	private final Dson serializer;
+	private final Serialization serializer;
 	private final ConcurrentHashMap<ByteBuffer, Particle> upParticles = new ConcurrentHashMap<>();
 	private final ConcurrentHashMap<ByteBuffer, Atom> missingUpParticles = new ConcurrentHashMap<>();
 
-	public ValidAtomFilter(RadixAddress address, Dson serializer) {
+	public ValidAtomFilter(RadixAddress address, Serialization serializer) {
 		this.address = address;
 		this.serializer = serializer;
 	}
@@ -32,7 +36,7 @@ public class ValidAtomFilter {
 		atom.particles(Spin.DOWN)
 			.filter(d -> d.getAddresses().stream().allMatch(address::ownsKey))
 			.forEach(down -> {
-				ByteBuffer dson = ByteBuffer.wrap(serializer.toDson(down));
+				ByteBuffer dson = ByteBuffer.wrap(serializer.toDson(down, Output.HASH));
 				Particle up = upParticles.remove(dson);
 				if (up == null) {
 					throw new IllegalStateException("Missing UP particle for " + down);
@@ -43,7 +47,7 @@ public class ValidAtomFilter {
 			.filter(up -> !up.getAddresses().isEmpty() && !(up instanceof DataParticle) // FIXME: remove hardcode of DataParticle
 				&& up.getAddresses().stream().allMatch(address::ownsKey))
 			.forEach(up -> {
-				ByteBuffer dson = ByteBuffer.wrap(serializer.toDson(up));
+				ByteBuffer dson = ByteBuffer.wrap(serializer.toDson(up, Output.HASH));
 				upParticles.compute(dson, (thisHash, current) -> {
 					if (current == null) {
 						return up;
@@ -62,7 +66,7 @@ public class ValidAtomFilter {
 	private void checkDownParticles(Atom atom, ObservableEmitter<Atom> emitter) {
 		Optional<ByteBuffer> missingUp = atom.particles(Spin.DOWN)
 			.filter(p -> p.getAddresses().stream().allMatch(address::ownsKey))
-			.map(serializer::toDson)
+			.map(p -> serializer.toDson(p, Output.HASH))
 			.map(ByteBuffer::wrap)
 			.filter(dson -> !upParticles.containsKey(dson))
 			.findFirst();

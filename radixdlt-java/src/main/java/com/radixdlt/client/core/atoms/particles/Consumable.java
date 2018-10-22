@@ -1,31 +1,57 @@
 package com.radixdlt.client.core.atoms.particles;
 
-import com.google.gson.annotations.SerializedName;
-import com.radixdlt.client.core.atoms.AccountReference;
-import com.radixdlt.client.core.atoms.RadixHash;
-import com.radixdlt.client.core.atoms.TokenRef;
-import com.radixdlt.client.core.crypto.ECKeyPair;
-import com.radixdlt.client.core.crypto.ECPublicKey;
-import com.radixdlt.client.core.serialization.Dson;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class Consumable implements Particle {
+import org.radix.serialization2.DsonOutput;
+import org.radix.serialization2.DsonOutput.Output;
+import org.radix.serialization2.SerializerId2;
+import org.radix.serialization2.client.Serialize;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.client.core.atoms.AccountReference;
+import com.radixdlt.client.core.atoms.RadixHash;
+import com.radixdlt.client.core.atoms.TokenRef;
+import com.radixdlt.client.core.crypto.ECKeyPair;
+import com.radixdlt.client.core.crypto.ECPublicKey;
+
+@SerializerId2("TRANSFERPARTICLE")
+public class Consumable extends Particle {
+
 	public enum ConsumableType {
 		MINTED, AMOUNT
 	}
 
-	private final List<AccountReference> addresses;
-	private final long amount;
-	private final long nonce;
-	private final Spin spin;
-	private final long planck;
-	@SerializedName("token_reference")
-	private final TokenRef tokenRef;
-	private final ConsumableType type;
+	@JsonProperty("addresses")
+	@DsonOutput(Output.ALL)
+	private List<AccountReference> addresses;
+
+	@JsonProperty("amount")
+	@DsonOutput(Output.ALL)
+	private long amount;
+
+	@JsonProperty("nonce")
+	@DsonOutput(Output.ALL)
+	private long nonce;
+
+	private Spin spin;
+
+	@JsonProperty("planck")
+	@DsonOutput(Output.ALL)
+	private long planck;
+
+	@JsonProperty("token_reference")
+	@DsonOutput(Output.ALL)
+	private TokenRef tokenRef;
+
+	private ConsumableType type;
+
+	Consumable() {
+		// No-arg constructor for serializer
+	}
 
 	public Consumable(long amount, ConsumableType type, AccountReference address, long nonce, TokenRef tokenRef, long planck, Spin spin) {
 		this.type = type;
@@ -108,11 +134,33 @@ public class Consumable implements Particle {
 	}
 
 	public byte[] getDson() {
-		return Dson.getInstance().toDson(this);
+		return Serialize.getInstance().toDson(this, Output.HASH);
 	}
 
 	@Override
 	public String toString() {
 		return this.getClass().getSimpleName() + " owners(" + addresses + ") amount(" + amount + ") spin(" + spin + ")";
+	}
+
+	@JsonProperty("spin")
+	@DsonOutput(value = {Output.WIRE, Output.API, Output.PERSIST})
+	private int getJsonSpin() {
+		return this.spin.ordinalValue();
+	}
+
+	@JsonProperty("spin")
+	private void setJsonSpin(int spin) {
+		this.spin = Spin.valueOf(spin);
+	}
+
+	@JsonProperty("type")
+	@DsonOutput(Output.ALL)
+	private String getJsonType() {
+		return this.type == null ? null : this.type.name().toLowerCase();
+	}
+
+	@JsonProperty("type")
+	private void setJsonType(String type) {
+		this.type = type == null ? null : ConsumableType.valueOf(type.toUpperCase());
 	}
 }

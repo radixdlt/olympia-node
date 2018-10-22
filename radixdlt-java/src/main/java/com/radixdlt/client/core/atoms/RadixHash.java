@@ -1,15 +1,15 @@
 package com.radixdlt.client.core.atoms;
 
-import com.radixdlt.client.core.util.Int128;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-import com.radixdlt.client.core.address.EUID;
+import org.bouncycastle.util.encoders.Base64;
+import org.radix.common.ID.EUID;
+
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.crypto.ECSignature;
 import com.radixdlt.client.core.util.Hash;
-import org.bouncycastle.util.encoders.Base64;
 
 public final class RadixHash {
 	private final byte[] hash;
@@ -23,7 +23,7 @@ public final class RadixHash {
 	}
 
 	public EUID toEUID() {
-		return new EUID(Int128.from(Arrays.copyOfRange(hash, 0, EUID.BYTES)));
+		return new EUID(Arrays.copyOfRange(hash, 0, EUID.BYTES));
 	}
 
 	public void putSelf(ByteBuffer byteBuffer) {

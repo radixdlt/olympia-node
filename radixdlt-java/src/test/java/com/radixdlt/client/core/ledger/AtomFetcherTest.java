@@ -1,18 +1,21 @@
 package com.radixdlt.client.core.ledger;
 
+import java.util.function.Function;
+
+import org.junit.Test;
+import org.radix.common.ID.EUID;
+
+import com.radixdlt.client.core.address.RadixAddress;
+import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.client.core.network.RadixJsonRpcClient;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.radixdlt.client.core.address.EUID;
-import com.radixdlt.client.core.address.RadixAddress;
-import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.network.RadixJsonRpcClient;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.observers.TestObserver;
-import java.util.function.Function;
-import org.junit.Test;
 
 public class AtomFetcherTest {
 	@Test

@@ -1,32 +1,60 @@
 package com.radixdlt.client.core.atoms.particles;
 
-import com.google.gson.annotations.SerializedName;
-import com.radixdlt.client.core.atoms.RadixHash;
-import com.radixdlt.client.core.atoms.TokenRef;
-import com.radixdlt.client.core.address.EUID;
-import com.radixdlt.client.core.atoms.AccountReference;
-import com.radixdlt.client.core.crypto.ECPublicKey;
-import com.radixdlt.client.core.serialization.Dson;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
-public class TokenParticle implements Particle {
+import org.radix.common.ID.EUID;
+import org.radix.serialization2.DsonOutput;
+import org.radix.serialization2.DsonOutput.Output;
+import org.radix.serialization2.SerializerId2;
+import org.radix.serialization2.client.Serialize;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.client.core.atoms.AccountReference;
+import com.radixdlt.client.core.atoms.RadixHash;
+import com.radixdlt.client.core.atoms.TokenRef;
+import com.radixdlt.client.core.crypto.ECPublicKey;
+
+@SerializerId2("TOKENCLASSPARTICLE")
+public class TokenParticle extends Particle {
 	public enum MintPermissions {
 		GENESIS_ONLY,
 		SAME_ATOM_ONLY,
 		POW
 	}
 
-	private final String iso;
-	private final String name;
-	private final String description;
-	private final byte[] icon;
-	private final EUID uid;
-	private final Spin spin;
-	private final List<AccountReference> addresses;
-	@SerializedName("mint_permissions")
-	private final MintPermissions mintPermissions;
+	@JsonProperty("iso")
+	@DsonOutput(Output.ALL)
+	private String iso;
+
+	@JsonProperty("name")
+	@DsonOutput(Output.ALL)
+	private String name;
+
+	@JsonProperty("description")
+	@DsonOutput(Output.ALL)
+	private String description;
+
+	@JsonProperty("icon")
+	@DsonOutput(Output.ALL)
+	private byte[] icon;
+
+	@JsonProperty("uid")
+	@DsonOutput(Output.ALL)
+	private EUID uid;
+
+	private Spin spin;
+
+	@JsonProperty("addresses")
+	@DsonOutput(Output.ALL)
+	private List<AccountReference> addresses;
+
+	private MintPermissions mintPermissions;
+
+	TokenParticle() {
+		// Empty constructor for serializer
+	}
 
 	public TokenParticle(
 		AccountReference accountReference,
@@ -40,7 +68,7 @@ public class TokenParticle implements Particle {
 		this.iso = iso;
 		this.spin = Spin.UP;
 		// FIXME: bad hack
-		this.uid = RadixHash.of(Dson.getInstance().toDson(getTokenRef())).toEUID();
+		this.uid = RadixHash.of(Serialize.getInstance().toDson(getTokenRef(), Output.HASH)).toEUID();
 		this.name = name;
 		this.description = description;
 		this.mintPermissions = mintPermissions;
@@ -63,11 +91,35 @@ public class TokenParticle implements Particle {
 		return TokenRef.of(addresses.get(0), iso);
 	}
 
+	@Override
 	public Set<ECPublicKey> getAddresses() {
 		return Collections.singleton(addresses.get(0).getKey());
 	}
 
+	@Override
 	public Spin getSpin() {
 		return spin;
+	}
+
+	@JsonProperty("spin")
+	@DsonOutput(value = {Output.WIRE, Output.API, Output.PERSIST})
+	private int getJsonSpin() {
+		return this.spin.ordinalValue();
+	}
+
+	@JsonProperty("spin")
+	private void setJsonSpin(int spin) {
+		this.spin = Spin.valueOf(spin);
+	}
+
+	@JsonProperty("mint_permissions")
+	@DsonOutput(Output.ALL)
+	private String getJsonMintPermissions() {
+		return mintPermissions == null ? null : mintPermissions.name().toLowerCase();
+	}
+
+	@JsonProperty("mint_permissions")
+	private void setJsonMintPermissions(String mintPermissions) {
+		this.mintPermissions = mintPermissions == null ? null : MintPermissions.valueOf(mintPermissions.toUpperCase());
 	}
 }

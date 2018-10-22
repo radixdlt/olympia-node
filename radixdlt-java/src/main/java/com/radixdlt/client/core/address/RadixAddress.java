@@ -1,10 +1,13 @@
 package com.radixdlt.client.core.address;
 
+import java.util.Objects;
+
+import org.radix.common.ID.EUID;
+
 import com.radixdlt.client.core.atoms.RadixHash;
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.util.Base58;
-import java.util.Objects;
 
 public class RadixAddress {
 

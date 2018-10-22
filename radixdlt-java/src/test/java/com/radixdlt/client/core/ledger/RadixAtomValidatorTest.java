@@ -1,18 +1,20 @@
 package com.radixdlt.client.core.ledger;
 
-import com.radixdlt.client.core.address.EUID;
-import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.atoms.AtomValidationException;
-import com.radixdlt.client.core.atoms.TokenRef;
-import com.radixdlt.client.core.atoms.particles.Consumable;
-import com.radixdlt.client.core.atoms.RadixHash;
-import com.radixdlt.client.core.atoms.particles.Spin;
-import com.radixdlt.client.core.crypto.ECKeyPair;
-import com.radixdlt.client.core.crypto.ECPublicKey;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Optional;
+
 import org.junit.Test;
+import org.radix.common.ID.EUID;
+
+import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.client.core.atoms.AtomValidationException;
+import com.radixdlt.client.core.atoms.RadixHash;
+import com.radixdlt.client.core.atoms.TokenRef;
+import com.radixdlt.client.core.atoms.particles.Consumable;
+import com.radixdlt.client.core.atoms.particles.Spin;
+import com.radixdlt.client.core.crypto.ECKeyPair;
+import com.radixdlt.client.core.crypto.ECPublicKey;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;

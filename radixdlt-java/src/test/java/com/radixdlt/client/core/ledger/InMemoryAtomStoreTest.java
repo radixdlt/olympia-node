@@ -1,11 +1,13 @@
 package com.radixdlt.client.core.ledger;
 
-import static org.mockito.Mockito.mock;
+import org.junit.Test;
 
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.Atom;
+
+import static org.mockito.Mockito.mock;
+
 import io.reactivex.observers.TestObserver;
-import org.junit.Test;
 
 public class InMemoryAtomStoreTest {
 

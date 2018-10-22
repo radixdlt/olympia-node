@@ -1,16 +1,19 @@
 package com.radixdlt.client.core.ledger;
 
+import java.util.Set;
+import java.util.function.Function;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate;
 import com.radixdlt.client.core.network.IncreasingRetryTimer;
 import com.radixdlt.client.core.network.RadixJsonRpcClient;
+
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.observables.ConnectableObservable;
-import java.util.Set;
-import java.util.function.Function;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Module responsible for a node request and then submission of an atom and retry
@@ -33,6 +36,7 @@ public class RadixAtomSubmitter implements AtomSubmitter {
 	 * @param atom atom to submit into the ledger
 	 * @return Observable emitting status updates to submission
 	 */
+	@Override
 	public Observable<AtomSubmissionUpdate> submitAtom(Atom atom) {
 		Observable<AtomSubmissionUpdate> status = clientSelector.apply(atom.getRequiredFirstShard())
 			.doOnSuccess(client -> LOGGER.info("Found client to submit atom {}: {}", atom.getHid(), client.getLocation()))

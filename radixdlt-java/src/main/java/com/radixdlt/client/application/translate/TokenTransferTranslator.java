@@ -1,27 +1,5 @@
 package com.radixdlt.client.application.translate;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonParser;
-import com.radixdlt.client.application.actions.TransferTokensAction;
-import com.radixdlt.client.application.objects.Data;
-import com.radixdlt.client.application.translate.TokenBalanceState.Balance;
-import com.radixdlt.client.core.RadixUniverse;
-import com.radixdlt.client.core.address.RadixAddress;
-import com.radixdlt.client.core.atoms.AccountReference;
-import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.atoms.TokenRef;
-import com.radixdlt.client.core.atoms.particles.Consumable;
-import com.radixdlt.client.core.atoms.particles.Consumable.ConsumableType;
-import com.radixdlt.client.core.atoms.particles.DataParticle;
-import com.radixdlt.client.core.atoms.particles.DataParticle.DataParticleBuilder;
-import com.radixdlt.client.core.atoms.particles.Particle;
-import com.radixdlt.client.core.atoms.Payload;
-import com.radixdlt.client.core.atoms.particles.Spin;
-import com.radixdlt.client.core.crypto.ECKeyPair;
-import com.radixdlt.client.core.crypto.ECPublicKey;
-import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
-import com.radixdlt.client.core.crypto.Encryptor;
-import com.radixdlt.client.core.serialization.RadixJson;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -33,6 +11,31 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
+import org.radix.serialization2.DsonOutput.Output;
+import org.radix.serialization2.client.Serialize;
+
+import com.google.gson.JsonArray;
+import com.google.gson.JsonParser;
+import com.radixdlt.client.application.actions.TransferTokensAction;
+import com.radixdlt.client.application.objects.Data;
+import com.radixdlt.client.application.translate.TokenBalanceState.Balance;
+import com.radixdlt.client.core.RadixUniverse;
+import com.radixdlt.client.core.address.RadixAddress;
+import com.radixdlt.client.core.atoms.AccountReference;
+import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.client.core.atoms.Payload;
+import com.radixdlt.client.core.atoms.TokenRef;
+import com.radixdlt.client.core.atoms.particles.Consumable;
+import com.radixdlt.client.core.atoms.particles.Consumable.ConsumableType;
+import com.radixdlt.client.core.atoms.particles.DataParticle;
+import com.radixdlt.client.core.atoms.particles.DataParticle.DataParticleBuilder;
+import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.client.core.atoms.particles.Spin;
+import com.radixdlt.client.core.crypto.ECKeyPair;
+import com.radixdlt.client.core.crypto.ECPublicKey;
+import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
+import com.radixdlt.client.core.crypto.Encryptor;
 
 public class TokenTransferTranslator {
 	private final RadixUniverse universe;
@@ -48,9 +51,9 @@ public class TokenTransferTranslator {
 			.map(e -> {
 				List<Entry<ECPublicKey, Long>> summary = new ArrayList<>(e.getValue().entrySet());
 				if (summary.isEmpty()) {
-					throw new IllegalStateException("Invalid atom: " + RadixJson.getGson().toJson(atom));
+					throw new IllegalStateException("Invalid atom: " + Serialize.getInstance().toJson(atom, Output.ALL));
 				}
-					if (summary.size() > 2) {
+				if (summary.size() > 2) {
 					throw new IllegalStateException("More than two participants in token transfer. Unable to handle: " + summary);
 				}
 

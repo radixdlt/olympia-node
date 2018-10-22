@@ -1,47 +1,5 @@
 package com.radixdlt.client.application;
 
-import com.google.gson.JsonObject;
-import com.radixdlt.client.application.actions.StoreDataAction;
-import com.radixdlt.client.application.actions.CreateFixedSupplyTokenAction;
-import com.radixdlt.client.application.actions.TransferTokensAction;
-import com.radixdlt.client.application.actions.UniqueProperty;
-import com.radixdlt.client.application.objects.Data;
-import com.radixdlt.client.application.objects.Data.DataBuilder;
-import com.radixdlt.client.application.translate.ApplicationStore;
-import com.radixdlt.client.application.translate.FeeMapper;
-import com.radixdlt.client.application.translate.PowFeeMapper;
-import com.radixdlt.client.application.translate.TokenBalanceReducer;
-import com.radixdlt.client.application.translate.TokenMapper;
-import com.radixdlt.client.application.translate.TokenReducer;
-import com.radixdlt.client.application.translate.TokenState;
-import com.radixdlt.client.application.objects.UnencryptedData;
-import com.radixdlt.client.application.translate.TokenBalanceState;
-import com.radixdlt.client.application.translate.DataStoreTranslator;
-import com.radixdlt.client.application.translate.TokenTransferTranslator;
-import com.radixdlt.client.application.translate.UniquePropertyTranslator;
-import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.atoms.TokenRef;
-import com.radixdlt.client.core.RadixUniverse;
-import com.radixdlt.client.core.RadixUniverse.Ledger;
-import com.radixdlt.client.core.address.RadixAddress;
-import com.radixdlt.client.core.atoms.AccountReference;
-import com.radixdlt.client.application.identity.RadixIdentity;
-import com.radixdlt.client.core.atoms.particles.ChronoParticle;
-import com.radixdlt.client.core.atoms.particles.Particle;
-import com.radixdlt.client.core.atoms.UnsignedAtom;
-import com.radixdlt.client.core.crypto.ECPublicKey;
-import com.radixdlt.client.core.network.AtomSubmissionUpdate;
-import com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState;
-import com.radixdlt.client.core.pow.ProofOfWorkBuilder;
-import com.radixdlt.client.core.serialization.RadixJson;
-import io.reactivex.Completable;
-import io.reactivex.Maybe;
-import io.reactivex.Observable;
-import io.reactivex.Single;
-import io.reactivex.annotations.Nullable;
-import io.reactivex.disposables.Disposable;
-import io.reactivex.disposables.Disposables;
-import io.reactivex.observables.ConnectableObservable;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -52,8 +10,54 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import org.radix.serialization2.DsonOutput.Output;
+import org.radix.serialization2.client.Serialize;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.gson.JsonObject;
+import com.radixdlt.client.application.actions.CreateFixedSupplyTokenAction;
+import com.radixdlt.client.application.actions.StoreDataAction;
+import com.radixdlt.client.application.actions.TransferTokensAction;
+import com.radixdlt.client.application.actions.UniqueProperty;
+import com.radixdlt.client.application.identity.RadixIdentity;
+import com.radixdlt.client.application.objects.Data;
+import com.radixdlt.client.application.objects.Data.DataBuilder;
+import com.radixdlt.client.application.objects.UnencryptedData;
+import com.radixdlt.client.application.translate.ApplicationStore;
+import com.radixdlt.client.application.translate.DataStoreTranslator;
+import com.radixdlt.client.application.translate.FeeMapper;
+import com.radixdlt.client.application.translate.PowFeeMapper;
+import com.radixdlt.client.application.translate.TokenBalanceReducer;
+import com.radixdlt.client.application.translate.TokenBalanceState;
+import com.radixdlt.client.application.translate.TokenMapper;
+import com.radixdlt.client.application.translate.TokenReducer;
+import com.radixdlt.client.application.translate.TokenState;
+import com.radixdlt.client.application.translate.TokenTransferTranslator;
+import com.radixdlt.client.application.translate.UniquePropertyTranslator;
+import com.radixdlt.client.core.RadixUniverse;
+import com.radixdlt.client.core.RadixUniverse.Ledger;
+import com.radixdlt.client.core.address.RadixAddress;
+import com.radixdlt.client.core.atoms.AccountReference;
+import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.client.core.atoms.TokenRef;
+import com.radixdlt.client.core.atoms.UnsignedAtom;
+import com.radixdlt.client.core.atoms.particles.ChronoParticle;
+import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.client.core.crypto.ECPublicKey;
+import com.radixdlt.client.core.network.AtomSubmissionUpdate;
+import com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState;
+import com.radixdlt.client.core.pow.ProofOfWorkBuilder;
+
+import io.reactivex.Completable;
+import io.reactivex.Maybe;
+import io.reactivex.Observable;
+import io.reactivex.Single;
+import io.reactivex.annotations.Nullable;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.disposables.Disposables;
+import io.reactivex.observables.ConnectableObservable;
 
 /**
  * The Radix Dapp API, a high level api which dapps can utilize. The class hides
@@ -489,7 +493,7 @@ public class RadixApplicationAPI {
 					LOGGER.info("ParticleConflict: pointer({}) cause({}) atom({})",
 						jsonPointer,
 						data.getAsJsonPrimitive("cause").getAsString(),
-						RadixJson.getGson().toJson(update.getAtom())
+						Serialize.getInstance().toJson(update.getAtom(), Output.ALL)
 					);
 				}
 			})
