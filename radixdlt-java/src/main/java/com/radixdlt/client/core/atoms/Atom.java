@@ -1,19 +1,5 @@
 package com.radixdlt.client.core.atoms;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.client.core.atoms.particles.Particle;
-import com.radixdlt.client.core.atoms.particles.Spin;
-import com.radixdlt.client.core.atoms.particles.StorageParticle;
-import com.radixdlt.client.core.atoms.particles.TimestampParticle;
-import com.radixdlt.client.core.atoms.particles.TransferParticle;
-import com.radixdlt.client.core.crypto.ECPublicKey;
-import com.radixdlt.client.core.crypto.ECSignature;
-import org.radix.common.ID.EUID;
-import org.radix.serialization2.DsonOutput;
-import org.radix.serialization2.SerializerDummy;
-import org.radix.serialization2.SerializerId2;
-import org.radix.serialization2.client.Serialize;
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -23,20 +9,27 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.radix.common.ID.EUID;
+import org.radix.serialization2.DsonOutput;
+import org.radix.serialization2.SerializerId2;
+import org.radix.serialization2.client.SerializableObject;
+import org.radix.serialization2.client.Serialize;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.client.core.atoms.particles.Spin;
+import com.radixdlt.client.core.atoms.particles.StorageParticle;
+import com.radixdlt.client.core.atoms.particles.TimestampParticle;
+import com.radixdlt.client.core.atoms.particles.TransferParticle;
+import com.radixdlt.client.core.crypto.ECPublicKey;
+import com.radixdlt.client.core.crypto.ECSignature;
+
 /**
  * An atom is the fundamental atomic unit of storage on the ledger (similar to a block
  * in a blockchain) and defines the actions that can be issued onto the ledger.
  */
 @SerializerId2("ATOM")
-public final class Atom {
-	@JsonProperty("version")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private short version = 100;
-
-	// Placeholder for the serializer ID
-	@JsonProperty("serializer")
-	@DsonOutput({DsonOutput.Output.API, DsonOutput.Output.WIRE, DsonOutput.Output.PERSIST})
-	private SerializerDummy serializer = SerializerDummy.DUMMY;
+public final class Atom extends SerializableObject {
 
 	@JsonProperty("particles")
 	@DsonOutput(DsonOutput.Output.ALL)

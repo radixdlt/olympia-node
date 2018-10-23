@@ -1,12 +1,5 @@
 package com.radixdlt.client.core.atoms.particles;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.client.core.atoms.particles.quarks.Quark;
-import com.radixdlt.client.core.crypto.ECPublicKey;
-import org.radix.serialization2.DsonOutput;
-import org.radix.serialization2.SerializerDummy;
-import org.radix.serialization2.SerializerId2;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -16,25 +9,24 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import org.radix.serialization2.DsonOutput;
+import org.radix.serialization2.SerializerId2;
+import org.radix.serialization2.client.SerializableObject;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.client.core.atoms.particles.quarks.Quark;
+import com.radixdlt.client.core.crypto.ECPublicKey;
+
 /**
  * A logical action on the ledger, composed of distinct {@link Quark} properties
  */
 @SerializerId2("PARTICLE")
-public abstract class Particle {
+public abstract class Particle extends SerializableObject {
 	private Spin spin;
-
-	@JsonProperty("version")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private short version = 100;
 
 	@JsonProperty("quarks")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final List<Quark> quarks; // immutable for now, later on will be able to modify after construction
-
-	// Placeholder for the serializer ID
-	@JsonProperty("serializer")
-	@DsonOutput({DsonOutput.Output.API, DsonOutput.Output.WIRE, DsonOutput.Output.PERSIST})
-	private SerializerDummy serializer = SerializerDummy.DUMMY;
 
 	protected Particle() {
 		this.quarks = Collections.emptyList();
