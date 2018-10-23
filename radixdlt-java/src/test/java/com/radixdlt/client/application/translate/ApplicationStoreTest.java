@@ -7,8 +7,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.radixdlt.client.core.address.RadixAddress;
-import com.radixdlt.client.core.atoms.TokenRef;
-import com.radixdlt.client.core.atoms.particles.Consumable;
+import com.radixdlt.client.core.atoms.TokenClassReference;
+import com.radixdlt.client.core.atoms.particles.TransferParticle;
 import com.radixdlt.client.core.atoms.RadixHash;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.Spin;
@@ -23,18 +23,18 @@ public class ApplicationStoreTest {
 	public void testCache() {
 		RadixAddress address = mock(RadixAddress.class);
 		ParticleStore store = mock(ParticleStore.class);
-		Consumable consumable = mock(Consumable.class);
+		TransferParticle transferParticle = mock(TransferParticle.class);
 		RadixHash hash = mock(RadixHash.class);
-		when(consumable.getSignedAmount()).thenReturn(10L);
-		when(consumable.getAmount()).thenReturn(10L);
-		when(consumable.getHash()).thenReturn(hash);
-		when(consumable.getSpin()).thenReturn(Spin.UP);
-		when(consumable.getDson()).thenReturn(new byte[] {1});
-		TokenRef token = mock(TokenRef.class);
-		when(consumable.getTokenRef()).thenReturn(token);
+		when(transferParticle.getSignedAmount()).thenReturn(10L);
+		when(transferParticle.getAmount()).thenReturn(10L);
+		when(transferParticle.getHash()).thenReturn(hash);
+		when(transferParticle.getSpin()).thenReturn(Spin.UP);
+		when(transferParticle.getDson()).thenReturn(new byte[] {1});
+		TokenClassReference token = mock(TokenClassReference.class);
+		when(transferParticle.getTokenClassReference()).thenReturn(token);
 
 		when(store.getParticles(address)).thenReturn(
-			Observable.<Particle>just(consumable).concatWith(Observable.never())
+				Observable.<Particle>just(transferParticle).concatWith(Observable.never())
 		);
 
 		Object o = mock(Object.class);

@@ -1,20 +1,20 @@
 package com.radixdlt.client.core.atoms.particles;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-
-import org.radix.common.ID.EUID;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.client.core.atoms.AccountReference;
+import com.radixdlt.client.core.atoms.RadixHash;
+import com.radixdlt.client.core.atoms.TokenClassReference;
+import com.radixdlt.client.core.atoms.particles.quarks.AddressableQuark;
+import com.radixdlt.client.core.atoms.particles.quarks.NonFungibleQuark;
+import com.radixdlt.client.core.atoms.particles.quarks.OwnableQuark;
+import com.radixdlt.client.core.crypto.ECPublicKey;
 import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.DsonOutput.Output;
 import org.radix.serialization2.SerializerId2;
 import org.radix.serialization2.client.Serialize;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.client.core.atoms.AccountReference;
-import com.radixdlt.client.core.atoms.RadixHash;
-import com.radixdlt.client.core.atoms.TokenRef;
-import com.radixdlt.client.core.crypto.ECPublicKey;
+import java.util.Collections;
+import java.util.Set;
 
 @SerializerId2("TOKENCLASSPARTICLE")
 public class TokenParticle extends Particle {
@@ -40,39 +40,32 @@ public class TokenParticle extends Particle {
 	@DsonOutput(Output.ALL)
 	private byte[] icon;
 
-	@JsonProperty("uid")
-	@DsonOutput(Output.ALL)
-	private EUID uid;
-
-	private Spin spin;
-
-	@JsonProperty("addresses")
-	@DsonOutput(Output.ALL)
-	private List<AccountReference> addresses;
-
 	private MintPermissions mintPermissions;
 
-	TokenParticle() {
+	private TokenParticle() {
 		// Empty constructor for serializer
 	}
 
 	public TokenParticle(
-		AccountReference accountReference,
-		String name,
-		String iso,
-		String description,
-		MintPermissions mintPermissions,
-		byte[] icon
+			AccountReference accountReference,
+			String name,
+			String iso,
+			String description,
+			MintPermissions mintPermissions,
+			byte[] icon
 	) {
-		this.addresses = Collections.singletonList(accountReference);
+		super(Spin.UP, new NonFungibleQuark(RadixHash.of(Serialize.getInstance()
+						.toDson(getTokenClassReference(accountReference, iso), Output.HASH)).toEUID()),
+				new AddressableQuark(accountReference), new OwnableQuark(accountReference));
 		this.iso = iso;
-		this.spin = Spin.UP;
-		// FIXME: bad hack
-		this.uid = RadixHash.of(Serialize.getInstance().toDson(getTokenRef(), Output.HASH)).toEUID();
 		this.name = name;
 		this.description = description;
 		this.mintPermissions = mintPermissions;
 		this.icon = icon;
+	}
+
+	private static TokenClassReference getTokenClassReference(AccountReference accountReference, String iso) {
+		return TokenClassReference.of(accountReference, iso);
 	}
 
 	public String getName() {
@@ -87,29 +80,13 @@ public class TokenParticle extends Particle {
 		return description;
 	}
 
-	public TokenRef getTokenRef() {
-		return TokenRef.of(addresses.get(0), iso);
+	public TokenClassReference getTokenClassReference() {
+		return TokenClassReference.of(getQuarkOrError(AddressableQuark.class).getAddresses().get(0), iso);
 	}
 
 	@Override
 	public Set<ECPublicKey> getAddresses() {
-		return Collections.singleton(addresses.get(0).getKey());
-	}
-
-	@Override
-	public Spin getSpin() {
-		return spin;
-	}
-
-	@JsonProperty("spin")
-	@DsonOutput(value = {Output.WIRE, Output.API, Output.PERSIST})
-	private int getJsonSpin() {
-		return this.spin.ordinalValue();
-	}
-
-	@JsonProperty("spin")
-	private void setJsonSpin(int spin) {
-		this.spin = Spin.valueOf(spin);
+		return Collections.singleton(getQuarkOrError(AddressableQuark.class).getAddresses().get(0).getKey());
 	}
 
 	@JsonProperty("mint_permissions")

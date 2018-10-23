@@ -9,8 +9,8 @@ import static org.mockito.Mockito.when;
 
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.atoms.RadixHash;
-import com.radixdlt.client.core.atoms.TokenRef;
-import com.radixdlt.client.core.atoms.particles.AtomFeeConsumable;
+import com.radixdlt.client.core.atoms.TokenClassReference;
+import com.radixdlt.client.core.atoms.particles.FeeParticle;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.pow.ProofOfWork;
@@ -30,22 +30,23 @@ public class PowFeeMapperTest {
 		ProofOfWorkBuilder builder = mock(ProofOfWorkBuilder.class);
 		ProofOfWork pow = mock(ProofOfWork.class);
 		when(builder.build(anyInt(), any(), anyInt())).thenReturn(pow);
+		when(pow.getNonce()).thenReturn(1L);
 
 		Function<List<Particle>, RadixHash> hasher = mock(Function.class);
 		when(hasher.apply(any())).thenReturn(hash);
 		PowFeeMapper powFeeMapper = new PowFeeMapper(hasher, builder);
 
 		RadixUniverse universe = mock(RadixUniverse.class);
-		TokenRef powToken = mock(TokenRef.class);
+		TokenClassReference powToken = mock(TokenClassReference.class);
 		when(universe.getPOWToken()).thenReturn(powToken);
 
 		List<Particle> particles = powFeeMapper.map(Collections.emptyList(), universe, mock(ECPublicKey.class));
 		assertThat(particles)
-			.hasOnlyOneElementSatisfying(p -> {
-				assertThat(p).isInstanceOf(AtomFeeConsumable.class);
-				AtomFeeConsumable a = (AtomFeeConsumable) p;
-				assertThat(a.getTokenRef()).isEqualTo(powToken);
-			});
+				.hasOnlyOneElementSatisfying(p -> {
+					assertThat(p).isInstanceOf(FeeParticle.class);
+					FeeParticle a = (FeeParticle) p;
+					assertThat(a.getTokenClassReference()).isEqualTo(powToken);
+				});
 
 		verify(builder, times(1)).build(anyInt(), any(), anyInt());
 		verify(hasher, times(1)).apply(any());

@@ -1,6 +1,6 @@
 package com.radixdlt.client.core;
 
-import com.radixdlt.client.core.atoms.TokenRef;
+import com.radixdlt.client.core.atoms.TokenClassReference;
 import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.atoms.particles.TokenParticle;
 import com.radixdlt.client.core.ledger.RadixParticleStore;
@@ -114,19 +114,19 @@ public final class RadixUniverse {
 
 	private final Ledger ledger;
 
-	private final TokenRef powToken;
+	private final TokenClassReference powToken;
 
-	private final TokenRef nativeToken;
+	private final TokenClassReference nativeToken;
 
 	private RadixUniverse(RadixUniverseConfig config, RadixNetwork network) {
 		this.config = config;
 		this.network = network;
 
-		final Optional<TokenRef> powToken = config.getGenesis().stream()
+		final Optional<TokenClassReference> powToken = config.getGenesis().stream()
 			.flatMap(atom -> atom.particles(Spin.UP))
 			.filter(p -> p instanceof TokenParticle)
-			.filter(p -> ((TokenParticle) p).getTokenRef().getIso().equals("POW"))
-			.map(p -> ((TokenParticle) p).getTokenRef())
+			.filter(p -> ((TokenParticle) p).getTokenClassReference().getIso().equals("POW"))
+			.map(p -> ((TokenParticle) p).getTokenClassReference())
 			.findFirst();
 
 		if (!powToken.isPresent()) {
@@ -135,11 +135,11 @@ public final class RadixUniverse {
 
 		this.powToken = powToken.get();
 
-		final Optional<TokenRef> nativeToken = config.getGenesis().stream()
+		final Optional<TokenClassReference> nativeToken = config.getGenesis().stream()
 			.flatMap(atom -> atom.particles(Spin.UP))
 			.filter(p -> p instanceof TokenParticle)
-			.filter(p -> !((TokenParticle) p).getTokenRef().getIso().equals("POW"))
-			.map(p -> ((TokenParticle) p).getTokenRef())
+			.filter(p -> !((TokenParticle) p).getTokenClassReference().getIso().equals("POW"))
+			.map(p -> ((TokenParticle) p).getTokenClassReference())
 			.findFirst();
 
 		if (!nativeToken.isPresent()) {
@@ -191,11 +191,11 @@ public final class RadixUniverse {
 		};
 	}
 
-	public TokenRef getPOWToken() {
+	public TokenClassReference getPOWToken() {
 		return powToken;
 	}
 
-	public TokenRef getNativeToken() {
+	public TokenClassReference getNativeToken() {
 		return nativeToken;
 	}
 

@@ -1,5 +1,19 @@
 package com.radixdlt.client.core.atoms;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.client.core.atoms.particles.Spin;
+import com.radixdlt.client.core.atoms.particles.StorageParticle;
+import com.radixdlt.client.core.atoms.particles.TimestampParticle;
+import com.radixdlt.client.core.atoms.particles.TransferParticle;
+import com.radixdlt.client.core.crypto.ECPublicKey;
+import com.radixdlt.client.core.crypto.ECSignature;
+import org.radix.common.ID.EUID;
+import org.radix.serialization2.DsonOutput;
+import org.radix.serialization2.SerializerDummy;
+import org.radix.serialization2.SerializerId2;
+import org.radix.serialization2.client.Serialize;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -9,22 +23,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.radix.common.ID.EUID;
-import org.radix.serialization2.DsonOutput;
-import org.radix.serialization2.DsonOutput.Output;
-import org.radix.serialization2.SerializerDummy;
-import org.radix.serialization2.SerializerId2;
-import org.radix.serialization2.client.Serialize;
-
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.client.core.atoms.particles.ChronoParticle;
-import com.radixdlt.client.core.atoms.particles.Consumable;
-import com.radixdlt.client.core.atoms.particles.DataParticle;
-import com.radixdlt.client.core.atoms.particles.Particle;
-import com.radixdlt.client.core.atoms.particles.Spin;
-import com.radixdlt.client.core.crypto.ECPublicKey;
-import com.radixdlt.client.core.crypto.ECSignature;
-
 /**
  * An atom is the fundamental atomic unit of storage on the ledger (similar to a block
  * in a blockchain) and defines the actions that can be issued onto the ledger.
@@ -32,26 +30,25 @@ import com.radixdlt.client.core.crypto.ECSignature;
 @SerializerId2("ATOM")
 public final class Atom {
 	@JsonProperty("version")
-	@DsonOutput(Output.ALL)
+	@DsonOutput(DsonOutput.Output.ALL)
 	private short version = 100;
 
 	// Placeholder for the serializer ID
 	@JsonProperty("serializer")
-	@DsonOutput({Output.API, Output.WIRE, Output.PERSIST})
+	@DsonOutput({DsonOutput.Output.API, DsonOutput.Output.WIRE, DsonOutput.Output.PERSIST})
 	private SerializerDummy serializer = SerializerDummy.DUMMY;
 
 	@JsonProperty("particles")
-	@DsonOutput(Output.ALL)
+	@DsonOutput(DsonOutput.Output.ALL)
 	private List<Particle> particles;
 
 	@JsonProperty("signatures")
-	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
+	@DsonOutput(value = {DsonOutput.Output.API, DsonOutput.Output.WIRE, DsonOutput.Output.PERSIST})
 	private Map<String, ECSignature> signatures;
 
 	private transient Map<String, Long> debug = new HashMap<>();
 
-	Atom() {
-		// No-arg constructor for serializer
+	private Atom() {
 	}
 
 	public Atom(List<Particle> particles) {
@@ -115,9 +112,9 @@ public final class Atom {
 
 	public Long getTimestamp() {
 		return this.getParticles().stream()
-			.filter(p -> p instanceof ChronoParticle)
-			.map(p -> ((ChronoParticle) p).getTimestamp())
-			.findAny().orElse(0L);
+			.filter(p -> p instanceof TimestampParticle)
+			.map(p -> ((TimestampParticle) p).getTimestamp()).findAny()
+			.orElse(0L);
 	}
 
 	public Map<String, ECSignature> getSignatures() {
@@ -128,53 +125,53 @@ public final class Atom {
 		return Optional.ofNullable(signatures).map(sigs -> sigs.get(uid.toString()));
 	}
 
-	public Stream<Consumable> consumables() {
+	public Stream<TransferParticle> consumables() {
 		return this.getParticles().stream()
-			.filter(p -> p instanceof Consumable)
-			.map(p -> (Consumable) p);
+			.filter(p -> p instanceof TransferParticle)
+			.map(p -> (TransferParticle) p);
 	}
 
-	public List<Consumable> getConsumables() {
+	public List<TransferParticle> getConsumables() {
 		return this.getParticles().stream()
-			.filter(p -> p instanceof Consumable)
-			.map(p -> (Consumable) p)
+			.filter(p -> p instanceof TransferParticle)
+			.map(p -> (TransferParticle) p)
 			.collect(Collectors.toList());
 	}
 
-	public List<Consumable> getConsumables(Spin spin) {
+	public List<TransferParticle> getConsumables(Spin spin) {
 		return this.getParticles().stream()
-			.filter(p -> p instanceof Consumable)
+			.filter(p -> p instanceof TransferParticle)
 			.filter(p -> p.getSpin() == spin)
-			.map(p -> (Consumable) p)
+			.map(p -> (TransferParticle) p)
 			.collect(Collectors.toList());
 	}
 
 	public byte[] toDson() {
-		return Serialize.getInstance().toDson(this, Output.HASH);
+		return Serialize.getInstance().toDson(this, DsonOutput.Output.HASH);
 	}
 
 	public RadixHash getHash() {
-		return RadixHash.of(Serialize.getInstance().toDson(this, Output.HASH));
+		return RadixHash.of(Serialize.getInstance().toDson(this, DsonOutput.Output.HASH));
 	}
 
 	public EUID getHid() {
 		return getHash().toEUID();
 	}
 
-	public List<DataParticle> getDataParticles() {
+	public List<StorageParticle> getDataParticles() {
 		return this.getParticles().stream()
-			.filter(p -> p instanceof DataParticle)
-			.map(p -> (DataParticle) p)
+			.filter(p -> p instanceof StorageParticle)
+			.map(p -> (StorageParticle) p)
 			.collect(Collectors.toList());
 	}
 
-	public Map<TokenRef, Map<ECPublicKey, Long>> tokenSummary() {
+	public Map<TokenClassReference, Map<ECPublicKey, Long>> tokenSummary() {
 		return consumables()
 			.collect(Collectors.groupingBy(
-				Consumable::getTokenRef,
+				TransferParticle::getTokenClassReference,
 				Collectors.groupingBy(
-					Consumable::getOwner,
-					Collectors.summingLong(Consumable::getSignedAmount)
+					TransferParticle::getOwner,
+					Collectors.summingLong(TransferParticle::getSignedAmount)
 				)
 			));
 	}

@@ -14,7 +14,7 @@ import org.radix.serialization2.SerializerId2;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 @SerializerId2("TOKENCLASSREFERENCE")
-public final class TokenRef {
+public final class TokenClassReference {
 	private static final Charset CHARSET = StandardCharsets.UTF_8;
 
 	private static final int TOKEN_SCALE = 5;
@@ -50,19 +50,19 @@ public final class TokenRef {
 	@DsonOutput(Output.ALL)
 	private String iso;
 
-	TokenRef() {
+	TokenClassReference() {
 		// No-arg constructor for serializer
 	}
 
-	private TokenRef(AccountReference address, String iso) {
+	private TokenClassReference(AccountReference address, String iso) {
 		Objects.requireNonNull(iso);
 
 		this.address = address;
 		this.iso = iso;
 	}
 
-	public static TokenRef of(AccountReference address, String reference) {
-		return new TokenRef(address, reference);
+	public static TokenClassReference of(AccountReference address, String reference) {
+		return new TokenClassReference(address, reference);
 	}
 
 	public AccountReference getAddress() {
@@ -79,12 +79,12 @@ public final class TokenRef {
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof TokenRef)) {
+		if (!(o instanceof TokenClassReference)) {
 			return false;
 		}
 
-		TokenRef tokenRef = (TokenRef) o;
-		return this.iso.equals(tokenRef.iso) && this.address.equals(tokenRef.address);
+		TokenClassReference tokenClassReference = (TokenClassReference) o;
+		return this.iso.equals(tokenClassReference.iso) && this.address.equals(tokenClassReference.address);
 	}
 
 	@Override

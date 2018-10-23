@@ -126,11 +126,19 @@ public abstract class ClassScanningSerializerIds implements SerializerIds {
 
 	@Override
 	public Long getIdForClass(Class<?> cls) {
+		if (!this.classIdMap.containsKey(cls)) {
+			throw new IllegalArgumentException("Class " + cls + " could not be found");
+		}
+
 		return classIdMap.get(cls);
 	}
 
 	@Override
 	public Class<?> getClassForId(long id) {
+		if (!this.idClassMap.containsKey(id)) {
+			throw new IllegalArgumentException("Class id " + id + " could not be found");
+		}
+
 		return idClassMap.get(id);
 	}
 

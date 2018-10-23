@@ -10,7 +10,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import org.junit.Test;
 import com.radixdlt.client.application.actions.TransferTokensAction;
-import com.radixdlt.client.core.atoms.TokenRef;
+import com.radixdlt.client.core.atoms.TokenClassReference;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.crypto.ECPublicKey;
@@ -24,8 +24,8 @@ public class TransferTokensActionTranslatorTest {
 		ECPublicKey myKey = mock(ECPublicKey.class);
 		RadixAddress myAddress = mock(RadixAddress.class);
 		when(universe.getAddressFrom(myKey)).thenReturn(myAddress);
-		TokenRef tokenRef = mock(TokenRef.class);
-		when(atom.tokenSummary()).thenReturn(Collections.singletonMap(tokenRef,
+		TokenClassReference tokenClassReference = mock(TokenClassReference.class);
+		when(atom.tokenSummary()).thenReturn(Collections.singletonMap(tokenClassReference,
 			Collections.singletonMap(myKey, 0L)
 		));
 
@@ -42,13 +42,13 @@ public class TransferTokensActionTranslatorTest {
 
 		TokenTransferTranslator transferTranslator = new TokenTransferTranslator(universe);
 
-		TokenRef token = mock(TokenRef.class);
+		TokenClassReference token = mock(TokenClassReference.class);
 		when(token.getIso()).thenReturn("TEST");
 
 		TransferTokensAction transferTokensAction = mock(TransferTokensAction.class);
 		when(transferTokensAction.getAmount()).thenReturn(new BigDecimal("1.0"));
 		when(transferTokensAction.getFrom()).thenReturn(address);
-		when(transferTokensAction.getTokenRef()).thenReturn(token);
+		when(transferTokensAction.getTokenClassReference()).thenReturn(token);
 
 		TokenBalanceState state = mock(TokenBalanceState.class);
 		when(state.getBalance()).thenReturn(Collections.emptyMap());
