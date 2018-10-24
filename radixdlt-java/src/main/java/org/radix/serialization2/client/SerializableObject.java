@@ -2,6 +2,7 @@ package org.radix.serialization2.client;
 
 import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.DsonOutput.Output;
+import org.radix.serialization2.SerializerConstants;
 import org.radix.serialization2.SerializerDummy;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -17,7 +18,7 @@ public class SerializableObject {
 	private short version = 100;
 
 	// Placeholder for the serializer ID
-	@JsonProperty("serializer")
+	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(Output.ALL)
 	private SerializerDummy serializer = SerializerDummy.DUMMY;
 }

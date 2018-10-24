@@ -5,8 +5,10 @@ import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.radix.serialization2.DsonOutput.Output;
 
@@ -138,8 +140,25 @@ public abstract class ClassScanningSerializationPolicy implements SerializationP
 			}
 		}
 		Map<Output, ImmutableMap<Class<?>, ImmutableSet<String>>> newOutputs = new HashMap<>();
+		Map<Class<?>, Set<String>> classFields = new HashMap<>();
 		for (Map.Entry<Output, Map<Class<?>, Set<String>>> output : tempOutputs.entrySet()) {
 			newOutputs.put(output.getKey(), toImmutableMap(output.getValue()));
+			for (Map.Entry<Class<?>, Set<String>> fields : output.getValue().entrySet()) {
+				classFields.computeIfAbsent(fields.getKey(), k -> new HashSet<>()).addAll(fields.getValue());
+			}
+		}
+		List<String> classesWithMissingSerializer = classFields.entrySet().stream()
+				.filter(e -> !e.getValue().contains(SerializerConstants.SERIALIZER_NAME))
+				.map(Map.Entry::getKey)
+				.map(Class::getName)
+				.sorted()
+				.collect(Collectors.toList());
+		if (!classesWithMissingSerializer.isEmpty()) {
+			throw new IllegalStateException(String.format(
+					"The following class%s missing the '%s' field: %s",
+					classesWithMissingSerializer.size() == 1 ? " is" : "es are",
+					SerializerConstants.SERIALIZER_NAME,
+					String.join(", ", classesWithMissingSerializer)));
 		}
 		outputs.putAll(newOutputs);
 	}
