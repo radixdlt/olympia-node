@@ -21,24 +21,15 @@ import org.bouncycastle.math.ec.ECPoint;
 import org.radix.common.ID.EUID;
 import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.DsonOutput.Output;
-import org.radix.serialization2.SerializerDummy;
 import org.radix.serialization2.SerializerId2;
+import org.radix.serialization2.client.SerializableObject;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.client.core.atoms.RadixHash;
 
 
 @SerializerId2("ECKEYPAIR")
-public class ECKeyPair {
-	@JsonProperty("version")
-	@DsonOutput(Output.ALL)
-	private short version = 100;
-
-	// Placeholder for the serializer ID
-	@JsonProperty("serializer")
-	@DsonOutput({Output.API, Output.WIRE, Output.PERSIST})
-	private SerializerDummy serializer = SerializerDummy.DUMMY;
-
+public class ECKeyPair extends SerializableObject {
 	@JsonProperty("public")
 	@DsonOutput(Output.ALL)
 	private ECPublicKey publicKey;

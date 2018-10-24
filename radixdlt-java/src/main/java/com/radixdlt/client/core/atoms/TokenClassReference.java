@@ -8,13 +8,13 @@ import java.util.Objects;
 import org.radix.common.ID.EUID;
 import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.DsonOutput.Output;
-import org.radix.serialization2.SerializerDummy;
 import org.radix.serialization2.SerializerId2;
+import org.radix.serialization2.client.SerializableObject;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 @SerializerId2("TOKENCLASSREFERENCE")
-public final class TokenClassReference {
+public final class TokenClassReference extends SerializableObject {
 	private static final Charset CHARSET = StandardCharsets.UTF_8;
 
 	private static final int TOKEN_SCALE = 5;
@@ -32,15 +32,6 @@ public final class TokenClassReference {
 	public static BigDecimal subUnitsToDecimal(long subUnits) {
 		return BigDecimal.valueOf(subUnits, TOKEN_SCALE);
 	}
-
-	@JsonProperty("version")
-	@DsonOutput(Output.ALL)
-	private short version = 100;
-
-	// Placeholder for the serializer ID
-	@JsonProperty("serializer")
-	@DsonOutput({Output.API, Output.WIRE, Output.PERSIST})
-	private SerializerDummy serializer = SerializerDummy.DUMMY;
 
 	@JsonProperty("address")
 	@DsonOutput(Output.ALL)

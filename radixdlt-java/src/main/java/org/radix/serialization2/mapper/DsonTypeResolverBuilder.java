@@ -2,6 +2,7 @@ package org.radix.serialization2.mapper;
 
 import java.util.Collection;
 
+import org.radix.serialization2.SerializerConstants;
 import org.radix.serialization2.SerializerIds;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
@@ -29,7 +30,7 @@ class DsonTypeResolverBuilder extends ObjectMapper.DefaultTypeResolverBuilder {
 
 	DsonTypeResolverBuilder(SerializerIds idLookup) {
 		super(ObjectMapper.DefaultTyping.NON_FINAL);
-		init(Id.CUSTOM, null).inclusion(As.EXISTING_PROPERTY).typeProperty("serializer");
+		init(Id.CUSTOM, null).inclusion(As.EXISTING_PROPERTY).typeProperty(SerializerConstants.SERIALIZER_NAME);
 		this.idLookup = idLookup;
 	}
 
@@ -50,8 +51,8 @@ class DsonTypeResolverBuilder extends ObjectMapper.DefaultTypeResolverBuilder {
 	}
 
     @Override
-	protected TypeIdResolver idResolver(MapperConfig<?> config, JavaType baseType,
-			Collection<NamedType> subtypes, boolean forSer, boolean forDeser) {
+	protected TypeIdResolver idResolver(MapperConfig<?> config, JavaType baseType, Collection<NamedType> subtypes,
+			boolean forSer, boolean forDeser) {
 		return new DsonTypeIdResolver(baseType, config.getTypeFactory(), idLookup);
 	}
 }
