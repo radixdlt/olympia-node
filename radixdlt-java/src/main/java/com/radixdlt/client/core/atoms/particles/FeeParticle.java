@@ -18,7 +18,7 @@ public class FeeParticle extends TransferParticle {
 	}
 
 	public FeeParticle(long quantity, AccountReference address, long nonce, TokenClassReference tokenRef, long planck) {
-		super(quantity, FungibleQuark.FungibleType.MINTED, address, nonce, tokenRef, planck, Spin.UP);
+		super(quantity, FungibleQuark.FungibleType.MINTED, address, nonce, tokenRef, planck);
 
 		this.service = new EUID(1);
 	}

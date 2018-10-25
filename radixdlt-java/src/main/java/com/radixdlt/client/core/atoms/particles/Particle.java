@@ -22,8 +22,6 @@ import com.radixdlt.client.core.crypto.ECPublicKey;
  */
 @SerializerId2("PARTICLE")
 public abstract class Particle extends SerializableObject {
-	private Spin spin;
-
 	@JsonProperty("quarks")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final List<Quark> quarks; // immutable for now, later on will be able to modify after construction
@@ -32,18 +30,12 @@ public abstract class Particle extends SerializableObject {
 		this.quarks = Collections.emptyList();
 	}
 
-	protected Particle(Spin spin, Quark... quarks) {
-		this.spin = spin;
+	protected Particle(Quark... quarks) {
 		this.quarks = Arrays.asList(quarks);
 	}
 
-	protected Particle(Spin spin, List<Quark> quarks) {
-		this.spin = spin;
+	protected Particle(List<Quark> quarks) {
 		this.quarks = Collections.unmodifiableList(quarks);
-	}
-
-	public final Spin getSpin() {
-		return this.spin;
 	}
 
 	public abstract Set<ECPublicKey> getAddresses();
@@ -115,16 +107,4 @@ public abstract class Particle extends SerializableObject {
 			return false;
 		}
 	}
-
-	@JsonProperty("spin")
-	@DsonOutput(value = {DsonOutput.Output.WIRE, DsonOutput.Output.API, DsonOutput.Output.PERSIST})
-	private int getJsonSpin() {
-		return this.spin.ordinalValue();
-	}
-
-	@JsonProperty("spin")
-	private void setJsonSpin(int spin) {
-		this.spin = Spin.valueOf(spin);
-	}
-
 }

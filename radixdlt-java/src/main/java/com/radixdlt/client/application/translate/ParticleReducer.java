@@ -1,6 +1,6 @@
 package com.radixdlt.client.application.translate;
 
-import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.client.core.atoms.particles.SpunParticle;
 
 /**
  * Java version of redux-like reducer where particles are the actions
@@ -9,5 +9,5 @@ import com.radixdlt.client.core.atoms.particles.Particle;
  */
 public interface ParticleReducer<T> {
 	T initialState();
-	T reduce(T state, Particle p);
+	T reduce(T state, SpunParticle p);
 }

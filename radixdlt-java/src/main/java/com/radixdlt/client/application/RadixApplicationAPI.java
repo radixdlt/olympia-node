@@ -1,5 +1,6 @@
 package com.radixdlt.client.application;
 
+import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -44,7 +45,6 @@ import com.radixdlt.client.core.atoms.AccountReference;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.TokenClassReference;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
-import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState;
@@ -463,7 +463,7 @@ public class RadixApplicationAPI {
 			pull(transferTokensAction.getFrom());
 		}
 
-		Single<List<Particle>> atomParticles =
+		Single<List<SpunParticle>> atomParticles =
 			Observable.concatArray(
 //				Observable.just(uniquePropertyTranslator.map(uniqueProperty)),
 				transferTokensAction != null ? tokenBalanceStore.getState(transferTokensAction.getFrom())
@@ -471,12 +471,17 @@ public class RadixApplicationAPI {
 					.map(s -> tokenTransferTranslator.map(transferTokensAction, s)) : Observable.empty(),
 				Observable.just(dataStoreTranslator.map(storeDataAction)),
 				Observable.just(tokenMapper.map(tokenCreation)),
-				Observable.just(Collections.singletonList(new TimestampParticle(System.currentTimeMillis())))
+				Observable.just(
+					Collections.singletonList(SpunParticle.up(new TimestampParticle(System.currentTimeMillis())))
+				)
 			)
-			.<List<Particle>>scanWith(ArrayList::new, (a, b) -> Stream.concat(a.stream(), b.stream()).collect(Collectors.toList()))
+			.<List<SpunParticle>>scanWith(
+				ArrayList::new,
+				(a, b) -> Stream.concat(a.stream(), b.stream()).collect(Collectors.toList())
+			)
 			.lastOrError()
 			.map(particles -> {
-				List<Particle> allParticles = new ArrayList<>(particles);
+				List<SpunParticle> allParticles = new ArrayList<>(particles);
 				allParticles.addAll(feeMapper.map(particles, universe, getMyPublicKey()));
 				return allParticles;
 			});

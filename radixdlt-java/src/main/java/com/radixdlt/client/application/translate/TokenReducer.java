@@ -3,6 +3,7 @@ package com.radixdlt.client.application.translate;
 import com.radixdlt.client.core.atoms.TokenClassReference;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.Spin;
+import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.atoms.particles.TokenParticle;
 import com.radixdlt.client.core.atoms.particles.TransferParticle;
 import com.radixdlt.client.core.atoms.particles.quarks.FungibleQuark;
@@ -22,9 +23,10 @@ public class TokenReducer implements ParticleReducer<Map<TokenClassReference, To
 	}
 
 	@Override
-	public Map<TokenClassReference, TokenState> reduce(Map<TokenClassReference, TokenState> state, Particle p) {
+	public Map<TokenClassReference, TokenState> reduce(Map<TokenClassReference, TokenState> state, SpunParticle s) {
+		Particle p = s.getParticle();
 		if (!(p instanceof TokenParticle
-			|| (p instanceof TransferParticle && p.getSpin() == Spin.UP
+			|| (p instanceof TransferParticle && s.getSpin() == Spin.UP
 				&& ((TransferParticle) p).getType() == FungibleQuark.FungibleType.MINTED))) {
 			return state;
 		}

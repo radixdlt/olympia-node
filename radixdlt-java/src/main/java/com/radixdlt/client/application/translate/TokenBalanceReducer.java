@@ -1,6 +1,7 @@
 package com.radixdlt.client.application.translate;
 
 import com.radixdlt.client.core.atoms.particles.FeeParticle;
+import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.atoms.particles.TransferParticle;
 import com.radixdlt.client.core.atoms.particles.Particle;
 
@@ -14,11 +15,12 @@ public class TokenBalanceReducer implements ParticleReducer<TokenBalanceState> {
 	}
 
 	@Override
-	public TokenBalanceState reduce(TokenBalanceState state, Particle p) {
+	public TokenBalanceState reduce(TokenBalanceState state, SpunParticle s) {
+		Particle p = s.getParticle();
 		if (!(p instanceof TransferParticle) || p instanceof FeeParticle) {
 			return state;
 		}
 
-		return TokenBalanceState.merge(state, (TransferParticle) p);
+		return TokenBalanceState.merge(state, (SpunParticle<TransferParticle>) s);
 	}
 }

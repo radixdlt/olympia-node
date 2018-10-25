@@ -5,7 +5,7 @@ import com.google.gson.JsonParser;
 import com.radixdlt.client.application.actions.StoreDataAction;
 import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.atoms.particles.StorageParticle;
 import com.radixdlt.client.core.atoms.particles.StorageParticle.StorageParticleBuilder;
 import com.radixdlt.client.core.atoms.particles.quarks.DataQuark;
@@ -32,7 +32,7 @@ public class DataStoreTranslator {
 	}
 
 	// TODO: figure out correct method signature here (return Single<AtomBuilder> instead?)
-	public List<Particle> map(StoreDataAction storeDataAction) {
+	public List<SpunParticle> map(StoreDataAction storeDataAction) {
 		if (storeDataAction == null) {
 			return Collections.emptyList();
 		}
@@ -40,13 +40,13 @@ public class DataStoreTranslator {
 		byte[] payload = storeDataAction.getData().getBytes();
 		String application = (String) storeDataAction.getData().getMetaData().get("application");
 
-		List<Particle> particles = new ArrayList<>();
+		List<SpunParticle> particles = new ArrayList<>();
 		StorageParticle storageParticle = new StorageParticleBuilder()
 				.payload(payload)
 				.setMetaData("application", application)
 				.accounts(storeDataAction.getAddresses())
 				.build();
-		particles.add(storageParticle);
+		particles.add(SpunParticle.up(storageParticle));
 
 		Encryptor encryptor = storeDataAction.getData().getEncryptor();
 		if (encryptor != null) {
@@ -60,7 +60,7 @@ public class DataStoreTranslator {
 					.setMetaData("contentType", "application/json")
 					.accounts(storeDataAction.getAddresses())
 					.build();
-			particles.add(encryptorParticle);
+			particles.add(SpunParticle.up(encryptorParticle));
 		}
 
 		return particles;

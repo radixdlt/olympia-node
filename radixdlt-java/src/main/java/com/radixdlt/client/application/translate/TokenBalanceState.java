@@ -2,6 +2,7 @@ package com.radixdlt.client.application.translate;
 
 import com.radixdlt.client.core.atoms.RadixHash;
 import com.radixdlt.client.core.atoms.TokenClassReference;
+import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.atoms.particles.TransferParticle;
 import com.radixdlt.client.core.atoms.particles.Spin;
 
@@ -18,16 +19,16 @@ import java.util.stream.Stream;
 public class TokenBalanceState {
 	public static class Balance {
 		private final Long balance;
-		private final Map<RadixHash, TransferParticle> consumables;
+		private final Map<RadixHash, SpunParticle<TransferParticle>> consumables;
 
-		private Balance(Long balance, Map<RadixHash, TransferParticle> consumables) {
+		private Balance(Long balance, Map<RadixHash, SpunParticle<TransferParticle>> consumables) {
 			this.balance = balance;
 			this.consumables = consumables;
 		}
 
-		private Balance(Long balance, TransferParticle transferParticle) {
+		private Balance(Long balance, SpunParticle<TransferParticle> s) {
 			this.balance = balance;
-			this.consumables = Collections.singletonMap(RadixHash.of(transferParticle.getDson()), transferParticle);
+			this.consumables = Collections.singletonMap(RadixHash.of(s.getParticle().getDson()), s);
 		}
 
 		public static Balance empty() {
@@ -39,13 +40,17 @@ public class TokenBalanceState {
 		}
 
 		public Stream<TransferParticle> unconsumedConsumables() {
-			return consumables.entrySet().stream().map(Entry::getValue).filter(c -> c.getSpin() == Spin.UP);
+			return consumables.entrySet().stream()
+				.map(Entry::getValue)
+				.filter(c -> c.getSpin() == Spin.UP)
+				.map(SpunParticle::getParticle);
 		}
 
-		public static Balance merge(Balance balance, TransferParticle transferParticle) {
-			Map<RadixHash, TransferParticle> newMap = new HashMap<>(balance.consumables);
-			newMap.put(RadixHash.of(transferParticle.getDson()), transferParticle);
-			Long newBalance = balance.balance + ((transferParticle.getSpin() == Spin.UP) ? 1 : -1) * transferParticle.getAmount();
+		public static Balance merge(Balance balance, SpunParticle<TransferParticle> s) {
+			TransferParticle transferParticle = s.getParticle();
+			Map<RadixHash, SpunParticle<TransferParticle>> newMap = new HashMap<>(balance.consumables);
+			newMap.put(RadixHash.of(transferParticle.getDson()), s);
+			Long newBalance = balance.balance + ((s.getSpin() == Spin.UP) ? 1 : -1) * transferParticle.getAmount();
 			return new Balance(newBalance, newMap);
 		}
 	}
@@ -64,12 +69,13 @@ public class TokenBalanceState {
 		return Collections.unmodifiableMap(balance);
 	}
 
-	public static TokenBalanceState merge(TokenBalanceState state, TransferParticle transferParticle) {
+	public static TokenBalanceState merge(TokenBalanceState state, SpunParticle<TransferParticle> s) {
 		HashMap<TokenClassReference, Balance> balance = new HashMap<>(state.balance);
+		TransferParticle transferParticle = s.getParticle();
 		balance.merge(
 				transferParticle.getTokenClassReference(),
-				new Balance(transferParticle.getAmount(), transferParticle),
-				(bal1, bal2) -> Balance.merge(bal1, transferParticle)
+				new Balance(transferParticle.getAmount(), s),
+				(bal1, bal2) -> Balance.merge(bal1, s)
 		);
 
 		return new TokenBalanceState(balance);

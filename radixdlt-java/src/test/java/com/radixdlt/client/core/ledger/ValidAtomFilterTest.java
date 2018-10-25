@@ -65,14 +65,12 @@ public class ValidAtomFilterTest {
 		when(address.ownsKey(ecPublicKey)).thenReturn(true);
 
 		Particle down0 = mock(Particle.class);
-		when(down0.getSpin()).thenReturn(Spin.DOWN);
 		when(down0.getAddresses()).thenReturn(Collections.singleton(ecPublicKey));
 
 		Serialization dson = mock(Serialization.class);
 		when(dson.toDson(down0, Output.HASH)).thenReturn(new byte[] {0});
 
 		Particle up1 = mock(Particle.class);
-		when(up1.getSpin()).thenReturn(Spin.UP);
 		when(up1.getAddresses()).thenReturn(Collections.singleton(ecPublicKey));
 		when(dson.toDson(up1, Output.HASH)).thenReturn(new byte[] {1});
 
@@ -81,12 +79,10 @@ public class ValidAtomFilterTest {
 		when(atom.particles(Spin.UP)).then(inv -> Stream.of(up1));
 
 		Particle up0 = mock(Particle.class);
-		when(up0.getSpin()).thenReturn(Spin.UP);
 		when(up0.getAddresses()).thenReturn(Collections.singleton(ecPublicKey));
 		when(dson.toDson(up0, Output.HASH)).thenReturn(new byte[] {0});
 
 		Particle down2 = mock(Particle.class);
-		when(down2.getSpin()).thenReturn(Spin.DOWN);
 		when(down2.getAddresses()).thenReturn(Collections.singleton(mock(ECPublicKey.class)));
 		when(dson.toDson(down2, Output.HASH)).thenReturn(new byte[] {2});
 

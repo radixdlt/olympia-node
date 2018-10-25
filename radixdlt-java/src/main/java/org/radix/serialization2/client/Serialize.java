@@ -6,6 +6,7 @@ import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.TokenClassReference;
 import com.radixdlt.client.core.atoms.particles.FeeParticle;
 import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.atoms.particles.StorageParticle;
 import com.radixdlt.client.core.atoms.particles.TimestampParticle;
 import com.radixdlt.client.core.atoms.particles.TokenParticle;
@@ -48,6 +49,7 @@ public final class Serialize {
 				Atom.class,
 				AccountReference.class,
 				Particle.class,
+				SpunParticle.class,
 				TimestampParticle.class,
 				TransferParticle.class,
 				FeeParticle.class,

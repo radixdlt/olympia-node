@@ -10,8 +10,7 @@ import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.AccountReference;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.TokenClassReference;
-import com.radixdlt.client.core.atoms.particles.Particle;
-import com.radixdlt.client.core.atoms.particles.Spin;
+import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.atoms.particles.StorageParticle;
 import com.radixdlt.client.core.atoms.particles.StorageParticle.StorageParticleBuilder;
 import com.radixdlt.client.core.atoms.particles.TransferParticle;
@@ -112,7 +111,7 @@ public class TokenTransferTranslator {
 				.collect(Collectors.toList());
 	}
 
-	public List<Particle> map(TransferTokensAction transfer, TokenBalanceState curState) throws InsufficientFundsException {
+	public List<SpunParticle> map(TransferTokensAction transfer, TokenBalanceState curState) throws InsufficientFundsException {
 		if (transfer == null) {
 			return Collections.emptyList();
 		}
@@ -133,17 +132,19 @@ public class TokenTransferTranslator {
 						.map(bal -> bal.unconsumedConsumables().collect(Collectors.toList()))
 						.orElse(Collections.emptyList());
 
-		List<Particle> particles = new ArrayList<>();
+		List<SpunParticle> particles = new ArrayList<>();
 
 		// Translate attachment to corresponding atom structure
 		final Data attachment = transfer.getAttachment();
 		if (attachment != null) {
 			particles.add(
+				SpunParticle.up(
 					new StorageParticleBuilder()
-							.payload(attachment.getBytes())
-							.account(transfer.getFrom())
-							.account(transfer.getTo())
-							.build()
+						.payload(attachment.getBytes())
+						.account(transfer.getFrom())
+						.account(transfer.getTo())
+						.build()
+				)
 			);
 			Encryptor encryptor = attachment.getEncryptor();
 			if (encryptor != null) {
@@ -158,7 +159,7 @@ public class TokenTransferTranslator {
 						.account(transfer.getFrom())
 						.account(transfer.getTo())
 						.build();
-				particles.add(encryptorParticle);
+				particles.add(SpunParticle.up(encryptorParticle));
 			}
 		}
 
@@ -173,26 +174,27 @@ public class TokenTransferTranslator {
 		while (consumerTotal < subUnitAmount && iterator.hasNext()) {
 			final long left = subUnitAmount - consumerTotal;
 
-			TransferParticle down = iterator.next().spinDown();
-			consumerTotal += down.getAmount();
+			TransferParticle particle = iterator.next();
+			consumerTotal += particle.getAmount();
 
-			final long amount = Math.min(left, down.getAmount());
-			down.addConsumerQuantities(amount, transfer.getTo().toECKeyPair(),
-					consumerQuantities);
+			final long amount = Math.min(left, particle.getAmount());
+			particle.addConsumerQuantities(amount, transfer.getTo().toECKeyPair(), consumerQuantities);
 
+			SpunParticle<TransferParticle> down = SpunParticle.down(particle);
 			particles.add(down);
 		}
 
 		consumerQuantities.entrySet().stream()
-				.map(entry -> new TransferParticle(
-						entry.getValue(),
-						FungibleQuark.FungibleType.AMOUNT,
-						new AccountReference(entry.getKey().getPublicKey()),
-						System.nanoTime(),
-						transfer.getTokenClassReference(),
-						System.currentTimeMillis() / 60000L + 60000L, Spin.UP
-				))
-				.forEach(particles::add);
+			.map(entry -> new TransferParticle(
+				entry.getValue(),
+				FungibleQuark.FungibleType.AMOUNT,
+				new AccountReference(entry.getKey().getPublicKey()),
+				System.nanoTime(),
+				transfer.getTokenClassReference(),
+				System.currentTimeMillis() / 60000L + 60000L
+			))
+			.map(SpunParticle::up)
+			.forEach(particles::add);
 		return particles;
 	}
 }

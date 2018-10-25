@@ -1,5 +1,6 @@
 package com.radixdlt.client.core.atoms;
 
+import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -33,7 +34,7 @@ public final class Atom extends SerializableObject {
 
 	@JsonProperty("particles")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private List<Particle> particles;
+	private List<SpunParticle> particles;
 
 	@JsonProperty("signatures")
 	@DsonOutput(value = {DsonOutput.Output.API, DsonOutput.Output.WIRE, DsonOutput.Output.PERSIST})
@@ -44,13 +45,13 @@ public final class Atom extends SerializableObject {
 	private Atom() {
 	}
 
-	public Atom(List<Particle> particles) {
+	public Atom(List<SpunParticle> particles) {
 		this.particles = particles;
 		this.signatures = null;
 	}
 
 	private Atom(
-		List<Particle> particles,
+		List<SpunParticle> particles,
 		EUID signatureId,
 		ECSignature signature
 	) {
@@ -66,12 +67,13 @@ public final class Atom extends SerializableObject {
 		);
 	}
 
-	public List<Particle> getParticles() {
+	public List<SpunParticle> getSpunParticles() {
 		return particles != null ? particles : Collections.emptyList();
 	}
 
 	private Set<Long> getShards() {
-		return getParticles().stream()
+		return getSpunParticles().stream()
+			.map(SpunParticle<Particle>::getParticle)
 			.map(Particle::getAddresses)
 			.flatMap(Set::stream)
 			.map(ECPublicKey::getUID)
@@ -81,10 +83,10 @@ public final class Atom extends SerializableObject {
 
 	// HACK
 	public Set<Long> getRequiredFirstShard() {
-		if (this.particles.stream().anyMatch(p -> p.getSpin() == Spin.DOWN)) {
+		if (this.particles.stream().anyMatch(s -> s.getSpin() == Spin.DOWN)) {
 			return particles.stream()
-				.filter(p -> p.getSpin() == Spin.DOWN)
-				.flatMap(consumer -> consumer.getAddresses().stream())
+				.filter(s -> s.getSpin() == Spin.DOWN)
+				.flatMap(s -> s.getParticle().getAddresses().stream())
 				.map(ECPublicKey::getUID)
 				.map(EUID::getShard)
 				.collect(Collectors.toSet());
@@ -94,17 +96,19 @@ public final class Atom extends SerializableObject {
 	}
 
 	public Stream<Particle> particles(Spin spin) {
-		return particles.stream().filter(p -> p.getSpin() == spin);
+		return particles.stream().filter(s -> s.getSpin() == spin).map(SpunParticle::getParticle);
 	}
 
 	public Stream<ECPublicKey> addresses() {
 		return particles.stream()
+			.map(SpunParticle<Particle>::getParticle)
 			.map(Particle::getAddresses)
 			.flatMap(Set::stream);
 	}
 
 	public Long getTimestamp() {
-		return this.getParticles().stream()
+		return this.getSpunParticles().stream()
+			.map(SpunParticle::getParticle)
 			.filter(p -> p instanceof TimestampParticle)
 			.map(p -> ((TimestampParticle) p).getTimestamp()).findAny()
 			.orElse(0L);
@@ -118,23 +122,17 @@ public final class Atom extends SerializableObject {
 		return Optional.ofNullable(signatures).map(sigs -> sigs.get(uid.toString()));
 	}
 
-	public Stream<TransferParticle> consumables() {
-		return this.getParticles().stream()
-			.filter(p -> p instanceof TransferParticle)
-			.map(p -> (TransferParticle) p);
-	}
-
-	public List<TransferParticle> getConsumables() {
-		return this.getParticles().stream()
-			.filter(p -> p instanceof TransferParticle)
-			.map(p -> (TransferParticle) p)
-			.collect(Collectors.toList());
+	public Stream<SpunParticle<TransferParticle>> consumables() {
+		return this.getSpunParticles().stream()
+			.filter(s -> s.getParticle() instanceof TransferParticle)
+			.map(s -> (SpunParticle<TransferParticle>) s);
 	}
 
 	public List<TransferParticle> getConsumables(Spin spin) {
-		return this.getParticles().stream()
+		return this.getSpunParticles().stream()
+			.filter(s -> s.getSpin() == spin)
+			.map(SpunParticle::getParticle)
 			.filter(p -> p instanceof TransferParticle)
-			.filter(p -> p.getSpin() == spin)
 			.map(p -> (TransferParticle) p)
 			.collect(Collectors.toList());
 	}
@@ -152,7 +150,8 @@ public final class Atom extends SerializableObject {
 	}
 
 	public List<StorageParticle> getDataParticles() {
-		return this.getParticles().stream()
+		return this.getSpunParticles().stream()
+			.map(SpunParticle::getParticle)
 			.filter(p -> p instanceof StorageParticle)
 			.map(p -> (StorageParticle) p)
 			.collect(Collectors.toList());
@@ -161,10 +160,12 @@ public final class Atom extends SerializableObject {
 	public Map<TokenClassReference, Map<ECPublicKey, Long>> tokenSummary() {
 		return consumables()
 			.collect(Collectors.groupingBy(
-				TransferParticle::getTokenClassReference,
+				s -> s.getParticle().getTokenClassReference(),
 				Collectors.groupingBy(
-					TransferParticle::getOwner,
-					Collectors.summingLong(TransferParticle::getSignedAmount)
+					s -> s.getParticle().getOwner(),
+					Collectors.summingLong((SpunParticle<TransferParticle> value) ->
+						(value.getSpin() == Spin.UP ? 1 : -1) * value.getParticle().getAmount()
+					)
 				)
 			));
 	}

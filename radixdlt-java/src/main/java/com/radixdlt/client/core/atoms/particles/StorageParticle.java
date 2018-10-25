@@ -54,7 +54,7 @@ public class StorageParticle extends Particle {
 	}
 
 	private StorageParticle(byte[] bytes, MetadataMap metaData, List<AccountReference> addresses) {
-		super(Spin.UP, new AddressableQuark(addresses), new DataQuark(bytes, metaData));
+		super(new AddressableQuark(addresses), new DataQuark(bytes, metaData));
 		Objects.requireNonNull(bytes);
 	}
 

@@ -54,7 +54,7 @@ public class TokenParticle extends Particle {
 			MintPermissions mintPermissions,
 			byte[] icon
 	) {
-		super(Spin.UP, new NonFungibleQuark(RadixHash.of(Serialize.getInstance()
+		super(new NonFungibleQuark(RadixHash.of(Serialize.getInstance()
 						.toDson(getTokenClassReference(accountReference, iso), Output.HASH)).toEUID()),
 				new AddressableQuark(accountReference), new OwnableQuark(accountReference));
 		this.iso = iso;
