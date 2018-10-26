@@ -1,5 +1,6 @@
 package org.radix.serialization2.mapper;
 
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import org.radix.common.ID.EUID;
 import org.radix.crypto.Hash;
 import org.radix.serialization2.SerializerDummy;
@@ -52,11 +53,18 @@ public class JacksonCborMapper extends ObjectMapper {
 		cborModule.addSerializer(Timestamps.class, new JacksonTimestampsSerializer());
 		cborModule.addSerializer(byte[].class, new JacksonCborBytesSerializer());
 		cborModule.addSerializer(SerializerDummy.class, new JacksonSerializerDummySerializer(idLookup));
+		cborModule.addSerializer(RadixAddress.class, new JacksonCborObjectStringSerializer<>(
+			JacksonCodecConstants.ADDR_VALUE, RadixAddress::toString)
+		);
+
 		cborModule.addDeserializer(EUID.class, new JacksonCborEUIDDeserializer());
 		cborModule.addDeserializer(Hash.class, new JacksonCborHashDeserializer());
 		cborModule.addDeserializer(Timestamps.class, new JacksonTimestampsDeserializer());
 		cborModule.addDeserializer(byte[].class, new JacksonCborBytesDeserializer());
 		cborModule.addDeserializer(SerializerDummy.class, new JacksonSerializerDummyDeserializer());
+		cborModule.addDeserializer(RadixAddress.class, new JacksonCborObjectStringDeserializer<>(
+			RadixAddress.class, JacksonCodecConstants.ADDR_VALUE, RadixAddress::from)
+		);
 
 		JacksonCborMapper mapper = new JacksonCborMapper();
 		mapper.registerModule(cborModule);

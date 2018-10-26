@@ -1,5 +1,6 @@
 package org.radix.serialization2.mapper;
 
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import java.io.IOException;
 
 import org.radix.common.ID.EUID;
@@ -56,6 +57,25 @@ public class JacksonJsonMapper extends ObjectMapper {
 	 */
 	public static JacksonJsonMapper create(SerializerIds idLookup, FilterProvider filterProvider, boolean sortProperties) {
 		SimpleModule jsonModule = new SimpleModule();
+		jsonModule.addSerializer(EUID.class, new JacksonJsonEUIDSerializer());
+		jsonModule.addSerializer(Hash.class, new JacksonJsonHashSerializer());
+		jsonModule.addSerializer(Timestamps.class, new JacksonTimestampsSerializer());
+		jsonModule.addSerializer(byte[].class, new JacksonJsonBytesSerializer());
+		jsonModule.addSerializer(String.class, new JacksonJsonStringSerializer());
+		jsonModule.addSerializer(SerializerDummy.class, new JacksonSerializerDummySerializer(idLookup));
+		jsonModule.addSerializer(RadixAddress.class, new JacksonJsonObjectStringSerializer<>(
+			JacksonCodecConstants.ADDR_STR_VALUE, RadixAddress::toString)
+		);
+		jsonModule.addDeserializer(EUID.class, new JacksonJsonEUIDDeserializer());
+		jsonModule.addDeserializer(Hash.class, new JacksonJsonHashDeserializer());
+		jsonModule.addDeserializer(Timestamps.class, new JacksonTimestampsDeserializer());
+		jsonModule.addDeserializer(byte[].class, new JacksonJsonBytesDeserializer());
+		jsonModule.addDeserializer(String.class, new JacksonJsonStringDeserializer());
+		jsonModule.addDeserializer(SerializerDummy.class, new JacksonSerializerDummyDeserializer());
+		jsonModule.addDeserializer(RadixAddress.class, new JacksonJsonObjectStringDeserializer<>(
+			RadixAddress.class, JacksonCodecConstants.ADDR_STR_VALUE, RadixAddress::from)
+		);
+
 		jsonModule.addSerializer(EUID.class, new JacksonJsonEUIDSerializer());
 		jsonModule.addSerializer(Hash.class, new JacksonJsonHashSerializer());
 		jsonModule.addSerializer(Timestamps.class, new JacksonTimestampsSerializer());

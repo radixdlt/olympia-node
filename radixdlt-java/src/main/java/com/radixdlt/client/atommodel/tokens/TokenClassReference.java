@@ -35,7 +35,9 @@ public final class TokenClassReference extends SerializableObject {
 		return BigDecimal.valueOf(subUnits, TOKEN_SCALE);
 	}
 
-	private transient RadixAddress address;
+	@JsonProperty("address")
+	@DsonOutput(Output.ALL)
+	private RadixAddress address;
 
 	@JsonProperty("iso")
 	@DsonOutput(Output.ALL)
@@ -54,17 +56,6 @@ public final class TokenClassReference extends SerializableObject {
 
 	public static TokenClassReference of(RadixAddress address, String reference) {
 		return new TokenClassReference(address, reference);
-	}
-
-	@JsonProperty("address")
-	@DsonOutput(Output.ALL)
-	private String getJsonAddress() {
-		return this.address == null ? null : address.toString();
-	}
-
-	@JsonProperty("address")
-	private void setJsonAddress(String address) {
-		this.address = RadixAddress.fromString(address);
 	}
 
 	public RadixAddress getAddress() {

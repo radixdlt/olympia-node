@@ -19,7 +19,7 @@ public class RadixAddressTest {
 		ECPublicKey publicKey = new ECPublicKey(Base64.decode("A455PdOZNwyRWaSWFXyYYkbj7Wv9jtgCCqUYhuOHiPLC"));
 		RadixAddress address = new RadixAddress(RadixUniverseConfigs.getBetanet(), publicKey);
 		assertEquals("JHB89drvftPj6zVCNjnaijURk8D8AMFw4mVja19aoBGmRXWchnJ", address.toString());
-		assertEquals(address, RadixAddress.fromString("JHB89drvftPj6zVCNjnaijURk8D8AMFw4mVja19aoBGmRXWchnJ"));
+		assertEquals(address, RadixAddress.from("JHB89drvftPj6zVCNjnaijURk8D8AMFw4mVja19aoBGmRXWchnJ"));
 	}
 
 	@Test(expected = IllegalArgumentException.class)
@@ -46,7 +46,7 @@ public class RadixAddressTest {
 		);
 
 		addresses.forEach(address -> {
-			RadixAddress.fromString(address);
+			RadixAddress.from(address);
 		});
 	}
 }

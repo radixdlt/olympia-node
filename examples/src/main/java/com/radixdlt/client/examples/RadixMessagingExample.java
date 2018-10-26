@@ -32,7 +32,7 @@ public class RadixMessagingExample {
 		RadixApplicationAPI api = RadixApplicationAPI.create(RadixIdentities.loadOrCreateFile("my.key"));
 
 		// Addresses
-		RadixAddress toAddress = RadixAddress.fromString(TO_ADDRESS_BASE58);
+		RadixAddress toAddress = RadixAddress.from(TO_ADDRESS_BASE58);
 
 		RadixMessaging messaging = new RadixMessaging(api);
 

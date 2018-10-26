@@ -9,9 +9,7 @@ import com.radixdlt.client.core.atoms.RadixHash;
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.util.Base58;
-import org.radix.serialization2.SerializerId2;
 
-@SerializerId2("ADDRESS")
 public class RadixAddress {
 
 	// The Base58 address string
@@ -82,7 +80,7 @@ public class RadixAddress {
 		return new ECKeyPair(publicKey);
 	}
 
-	public static RadixAddress fromString(String addressBase58) {
+	public static RadixAddress from(String addressBase58) {
 		return new RadixAddress(addressBase58);
 	}
 

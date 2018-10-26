@@ -14,6 +14,8 @@ import java.util.Objects;
  */
 @SerializerId2("OWNABLEQUARK")
 public final class OwnableQuark extends Quark {
+	@JsonProperty("owner")
+	@DsonOutput(Output.ALL)
 	private ECPublicKey owner;
 
 	private OwnableQuark() {
@@ -21,17 +23,6 @@ public final class OwnableQuark extends Quark {
 
 	public OwnableQuark(ECPublicKey owner) {
 		this.owner = Objects.requireNonNull(owner);
-	}
-
-	@JsonProperty("owner")
-	@DsonOutput(Output.ALL)
-	private byte[] getJsonOwner() {
-		return this.owner == null ? null : owner.getPublicKey();
-	}
-
-	@JsonProperty("owner")
-	private void setJsonOwner(byte[] owner) {
-		this.owner = new ECPublicKey(owner);
 	}
 
 	public ECPublicKey getOwner() {
