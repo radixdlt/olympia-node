@@ -1,7 +1,7 @@
 package com.radixdlt.client.application.translate;
 
 import com.radixdlt.client.core.atoms.TokenClassReference;
-import com.radixdlt.client.core.atoms.particles.Spin;
+import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.atoms.particles.TokenParticle;
 import com.radixdlt.client.core.atoms.particles.TransferParticle;
 import com.radixdlt.client.core.atoms.particles.quarks.FungibleQuark;
@@ -26,7 +26,7 @@ public class TokenReducerTest {
 		when(tokenParticle.getDescription()).thenReturn("Desc");
 
 		TokenReducer tokenReducer = new TokenReducer();
-		Map<TokenClassReference, TokenState> state = tokenReducer.reduce(Collections.emptyMap(), tokenParticle);
+		Map<TokenClassReference, TokenState> state = tokenReducer.reduce(Collections.emptyMap(), SpunParticle.up(tokenParticle));
 		assertThat(state.get(tokenRef))
 				.isEqualToComparingFieldByField(new TokenState("Name", "ISO", "Desc", BigDecimal.ZERO));
 	}
@@ -44,11 +44,10 @@ public class TokenReducerTest {
 		when(minted.getAmount()).thenReturn(100L);
 		when(minted.getType()).thenReturn(FungibleQuark.FungibleType.MINTED);
 		when(minted.getTokenClassReference()).thenReturn(tokenRef);
-		when(minted.getSpin()).thenReturn(Spin.UP);
 
 		TokenReducer tokenReducer = new TokenReducer();
-		Map<TokenClassReference, TokenState> state1 = tokenReducer.reduce(Collections.emptyMap(), tokenParticle);
-		Map<TokenClassReference, TokenState> state2 = tokenReducer.reduce(state1, minted);
+		Map<TokenClassReference, TokenState> state1 = tokenReducer.reduce(Collections.emptyMap(), SpunParticle.up(tokenParticle));
+		Map<TokenClassReference, TokenState> state2 = tokenReducer.reduce(state1, SpunParticle.up(minted));
 		assertThat(state2.get(tokenRef))
 				.isEqualToComparingFieldByField(
 						new TokenState("Name", "ISO", "Desc", TokenClassReference.subUnitsToDecimal(100L))

@@ -8,10 +8,9 @@ import static org.mockito.Mockito.when;
 
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.TokenClassReference;
+import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.atoms.particles.TransferParticle;
 import com.radixdlt.client.core.atoms.RadixHash;
-import com.radixdlt.client.core.atoms.particles.Particle;
-import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.ledger.ParticleStore;
 import io.reactivex.Observable;
 import io.reactivex.observers.TestObserver;
@@ -25,16 +24,14 @@ public class ApplicationStoreTest {
 		ParticleStore store = mock(ParticleStore.class);
 		TransferParticle transferParticle = mock(TransferParticle.class);
 		RadixHash hash = mock(RadixHash.class);
-		when(transferParticle.getSignedAmount()).thenReturn(10L);
 		when(transferParticle.getAmount()).thenReturn(10L);
 		when(transferParticle.getHash()).thenReturn(hash);
-		when(transferParticle.getSpin()).thenReturn(Spin.UP);
 		when(transferParticle.getDson()).thenReturn(new byte[] {1});
 		TokenClassReference token = mock(TokenClassReference.class);
 		when(transferParticle.getTokenClassReference()).thenReturn(token);
 
 		when(store.getParticles(address)).thenReturn(
-				Observable.<Particle>just(transferParticle).concatWith(Observable.never())
+				Observable.<SpunParticle>just(SpunParticle.up(transferParticle)).concatWith(Observable.never())
 		);
 
 		Object o = mock(Object.class);

@@ -28,16 +28,11 @@ public class TransferParticle extends Particle {
 	}
 
 	public TransferParticle(long amount, FungibleQuark.FungibleType type, AccountReference address, long nonce,
-	                        TokenClassReference tokenRef, long planck, Spin spin) {
-		super(spin, new OwnableQuark(address), new AddressableQuark(address),
+	                        TokenClassReference tokenRef, long planck) {
+		super(new OwnableQuark(address), new AddressableQuark(address),
 				new FungibleQuark(amount, planck, nonce, type));
 
 		this.tokenClassReference = tokenRef;
-	}
-
-	public TransferParticle spinDown() {
-		return new TransferParticle(getAmount(), getType(), getAddress(), getNonce(), getTokenClassReference(),
-				getPlanck(), Spin.DOWN);
 	}
 
 	public AccountReference getAddress() {
@@ -81,10 +76,6 @@ public class TransferParticle extends Particle {
 		return tokenClassReference;
 	}
 
-	public long getSignedAmount() {
-		return getQuarkOrError(FungibleQuark.class).getAmount() * (getSpin() == Spin.UP ? 1 : -1);
-	}
-
 	public long getAmount() {
 		return getQuarkOrError(FungibleQuark.class).getAmount();
 	}
@@ -109,6 +100,6 @@ public class TransferParticle extends Particle {
 	@Override
 	public String toString() {
 		return this.getClass().getSimpleName() + " owners(" + getQuarkOrError(OwnableQuark.class).getAccountReference() + ")"
-				+ " amount(" + getQuarkOrError(FungibleQuark.class).getAmount() + ") spin(" + getSpin() + ")";
+				+ " amount(" + getQuarkOrError(FungibleQuark.class).getAmount() + ")";
 	}
 }

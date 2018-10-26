@@ -6,8 +6,8 @@ import static org.mockito.Mockito.when;
 
 import com.radixdlt.client.application.actions.CreateFixedSupplyTokenAction;
 import com.radixdlt.client.core.atoms.AccountReference;
+import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.atoms.particles.TransferParticle;
-import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.TokenParticle;
 import java.util.List;
 
@@ -23,9 +23,9 @@ public class TokenMapperTest {
 		when(tokenCreation.getFixedSupply()).thenReturn(1L);
 
 		TokenMapper tokenMapper = new TokenMapper();
-		List<Particle> particles = tokenMapper.map(tokenCreation);
-		assertThat(particles).hasAtLeastOneElementOfType(TokenParticle.class);
-		assertThat(particles).hasAtLeastOneElementOfType(TransferParticle.class);
+		List<SpunParticle> particles = tokenMapper.map(tokenCreation);
+		assertThat(particles).anySatisfy(s -> assertThat(s.getParticle()).isInstanceOf(TokenParticle.class));
+		assertThat(particles).anySatisfy(s -> assertThat(s.getParticle()).isInstanceOf(TransferParticle.class));
 		assertThat(particles).hasSize(2);
 	}
 }

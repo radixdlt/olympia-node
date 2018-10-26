@@ -16,7 +16,7 @@ public class TimestampParticle extends Particle {
 	}
 
 	public TimestampParticle(long timestamp) {
-		super(Spin.UP, new ChronoQuark("default", timestamp));
+		super(new ChronoQuark("default", timestamp));
 	}
 
 	@Override
