@@ -1,6 +1,6 @@
 package com.radixdlt.client.application.translate;
 
-import com.radixdlt.client.core.atoms.TokenClassReference;
+import com.radixdlt.client.atommodel.tokens.TokenClassReference;
 import java.math.BigDecimal;
 
 public class InsufficientFundsException extends Exception {

@@ -1,10 +1,10 @@
 package com.radixdlt.client.core;
 
-import com.radixdlt.client.core.atoms.TokenClassReference;
+import com.radixdlt.client.atommodel.tokens.TokenClassReference;
 import com.radixdlt.client.core.atoms.particles.Spin;
-import com.radixdlt.client.core.atoms.particles.TokenParticle;
+import com.radixdlt.client.atommodel.tokens.TokenParticle;
 import com.radixdlt.client.core.ledger.RadixParticleStore;
-import com.radixdlt.client.core.address.RadixAddress;
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.ledger.AtomFetcher;

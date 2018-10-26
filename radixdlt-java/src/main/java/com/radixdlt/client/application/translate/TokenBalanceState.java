@@ -1,9 +1,9 @@
 package com.radixdlt.client.application.translate;
 
 import com.radixdlt.client.core.atoms.RadixHash;
-import com.radixdlt.client.core.atoms.TokenClassReference;
+import com.radixdlt.client.atommodel.tokens.TokenClassReference;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
-import com.radixdlt.client.core.atoms.particles.TransferParticle;
+import com.radixdlt.client.atommodel.tokens.TransferParticle;
 import com.radixdlt.client.core.atoms.particles.Spin;
 
 import java.math.BigDecimal;

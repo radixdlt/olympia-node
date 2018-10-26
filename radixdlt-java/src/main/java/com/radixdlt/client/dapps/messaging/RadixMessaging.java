@@ -13,7 +13,7 @@ import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
 import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.application.objects.Data.DataBuilder;
-import com.radixdlt.client.core.address.RadixAddress;
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.crypto.ECSignature;
 
 import io.reactivex.Maybe;

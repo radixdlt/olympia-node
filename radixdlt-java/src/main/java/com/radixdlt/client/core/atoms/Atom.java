@@ -1,5 +1,6 @@
 package com.radixdlt.client.core.atoms;
 
+import com.radixdlt.client.atommodel.tokens.TokenClassReference;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import java.util.Collections;
 import java.util.HashMap;
@@ -19,9 +20,9 @@ import org.radix.serialization2.client.Serialize;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.Spin;
-import com.radixdlt.client.core.atoms.particles.StorageParticle;
-import com.radixdlt.client.core.atoms.particles.TimestampParticle;
-import com.radixdlt.client.core.atoms.particles.TransferParticle;
+import com.radixdlt.client.atommodel.storage.StorageParticle;
+import com.radixdlt.client.atommodel.timestamp.TimestampParticle;
+import com.radixdlt.client.atommodel.tokens.TransferParticle;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.crypto.ECSignature;
 

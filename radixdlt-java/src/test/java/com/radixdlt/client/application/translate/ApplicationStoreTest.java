@@ -6,10 +6,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.radixdlt.client.core.address.RadixAddress;
-import com.radixdlt.client.core.atoms.TokenClassReference;
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.client.atommodel.tokens.TokenClassReference;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
-import com.radixdlt.client.core.atoms.particles.TransferParticle;
+import com.radixdlt.client.atommodel.tokens.TransferParticle;
 import com.radixdlt.client.core.atoms.RadixHash;
 import com.radixdlt.client.core.ledger.ParticleStore;
 import io.reactivex.Observable;

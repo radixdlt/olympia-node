@@ -1,8 +1,8 @@
 package com.radixdlt.client.application.translate;
 
-import com.radixdlt.client.core.atoms.particles.FeeParticle;
+import com.radixdlt.client.atommodel.tokens.FeeParticle;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
-import com.radixdlt.client.core.atoms.particles.TransferParticle;
+import com.radixdlt.client.atommodel.tokens.TransferParticle;
 import com.radixdlt.client.core.atoms.particles.Particle;
 
 /**

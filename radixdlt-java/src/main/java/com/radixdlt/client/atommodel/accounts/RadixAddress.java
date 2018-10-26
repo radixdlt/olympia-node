@@ -1,5 +1,6 @@
-package com.radixdlt.client.core.address;
+package com.radixdlt.client.atommodel.accounts;
 
+import com.radixdlt.client.core.address.RadixUniverseConfig;
 import java.util.Objects;
 
 import org.radix.common.ID.EUID;

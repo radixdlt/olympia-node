@@ -1,9 +1,9 @@
-package com.radixdlt.client.core.atoms.particles;
+package com.radixdlt.client.atommodel.storage;
 
-import com.radixdlt.client.core.address.RadixAddress;
-import com.radixdlt.client.core.atoms.MetadataMap;
-import com.radixdlt.client.core.atoms.particles.quarks.AddressableQuark;
-import com.radixdlt.client.core.atoms.particles.quarks.DataQuark;
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.client.atommodel.quarks.AddressableQuark;
+import com.radixdlt.client.atommodel.quarks.DataQuark;
+import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import org.radix.serialization2.SerializerId2;
 

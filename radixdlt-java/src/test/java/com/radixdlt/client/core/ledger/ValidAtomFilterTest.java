@@ -7,7 +7,7 @@ import org.junit.Test;
 import org.radix.serialization2.DsonOutput.Output;
 import org.radix.serialization2.Serialization;
 
-import com.radixdlt.client.core.address.RadixAddress;
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.Spin;

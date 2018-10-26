@@ -1,6 +1,7 @@
-package com.radixdlt.client.core.atoms;
+package com.radixdlt.client.atommodel.tokens;
 
-import com.radixdlt.client.core.address.RadixAddress;
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.client.core.atoms.RadixHash;
 import java.math.BigDecimal;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;

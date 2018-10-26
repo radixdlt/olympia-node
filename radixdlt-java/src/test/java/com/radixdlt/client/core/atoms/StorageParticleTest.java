@@ -1,7 +1,7 @@
 package com.radixdlt.client.core.atoms;
 
-import com.radixdlt.client.core.atoms.particles.StorageParticle;
-import com.radixdlt.client.core.atoms.particles.StorageParticle.StorageParticleBuilder;
+import com.radixdlt.client.atommodel.storage.StorageParticle;
+import com.radixdlt.client.atommodel.storage.StorageParticle.StorageParticleBuilder;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

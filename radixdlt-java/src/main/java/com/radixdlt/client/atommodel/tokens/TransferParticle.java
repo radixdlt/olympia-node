@@ -1,12 +1,12 @@
-package com.radixdlt.client.core.atoms.particles;
+package com.radixdlt.client.atommodel.tokens;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.client.core.address.RadixAddress;
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.RadixHash;
-import com.radixdlt.client.core.atoms.TokenClassReference;
-import com.radixdlt.client.core.atoms.particles.quarks.AddressableQuark;
-import com.radixdlt.client.core.atoms.particles.quarks.FungibleQuark;
-import com.radixdlt.client.core.atoms.particles.quarks.OwnableQuark;
+import com.radixdlt.client.atommodel.quarks.AddressableQuark;
+import com.radixdlt.client.atommodel.quarks.FungibleQuark;
+import com.radixdlt.client.atommodel.quarks.OwnableQuark;
+import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import org.radix.serialization2.DsonOutput;

@@ -2,7 +2,7 @@ package com.radixdlt.client.application.translate;
 
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.atoms.RadixHash;
-import com.radixdlt.client.core.atoms.particles.FeeParticle;
+import com.radixdlt.client.atommodel.tokens.FeeParticle;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.crypto.ECPublicKey;

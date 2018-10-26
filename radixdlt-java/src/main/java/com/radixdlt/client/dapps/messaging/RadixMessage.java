@@ -1,6 +1,6 @@
 package com.radixdlt.client.dapps.messaging;
 
-import com.radixdlt.client.core.address.RadixAddress;
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;

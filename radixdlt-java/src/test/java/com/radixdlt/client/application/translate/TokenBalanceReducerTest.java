@@ -4,9 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.radixdlt.client.core.atoms.TokenClassReference;
+import com.radixdlt.client.atommodel.tokens.TokenClassReference;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
-import com.radixdlt.client.core.atoms.particles.TransferParticle;
+import com.radixdlt.client.atommodel.tokens.TransferParticle;
 import com.radixdlt.client.core.atoms.RadixHash;
 import org.junit.Test;
 

@@ -1,7 +1,8 @@
-package com.radixdlt.client.core.atoms.particles.quarks;
+package com.radixdlt.client.atommodel.quarks;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.client.core.atoms.MetadataMap;
+import com.radixdlt.client.atommodel.storage.MetadataMap;
+import com.radixdlt.client.core.atoms.particles.Quark;
 import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.SerializerId2;
 

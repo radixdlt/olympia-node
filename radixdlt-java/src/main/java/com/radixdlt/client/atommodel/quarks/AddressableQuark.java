@@ -1,7 +1,8 @@
-package com.radixdlt.client.core.atoms.particles.quarks;
+package com.radixdlt.client.atommodel.quarks;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.client.core.address.RadixAddress;
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.client.core.atoms.particles.Quark;
 import java.util.stream.Collectors;
 import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.DsonOutput.Output;

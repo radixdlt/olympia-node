@@ -1,10 +1,10 @@
 package com.radixdlt.client.core.ledger;
 
-import com.radixdlt.client.core.address.RadixAddress;
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.Spin;
-import com.radixdlt.client.core.atoms.particles.StorageParticle;
+import com.radixdlt.client.atommodel.storage.StorageParticle;
 import io.reactivex.Observable;
 import io.reactivex.ObservableEmitter;
 import io.reactivex.observables.ConnectableObservable;

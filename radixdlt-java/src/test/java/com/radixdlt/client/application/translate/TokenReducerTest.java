@@ -1,10 +1,10 @@
 package com.radixdlt.client.application.translate;
 
-import com.radixdlt.client.core.atoms.TokenClassReference;
+import com.radixdlt.client.atommodel.tokens.TokenClassReference;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
-import com.radixdlt.client.core.atoms.particles.TokenParticle;
-import com.radixdlt.client.core.atoms.particles.TransferParticle;
-import com.radixdlt.client.core.atoms.particles.quarks.FungibleQuark;
+import com.radixdlt.client.atommodel.tokens.TokenParticle;
+import com.radixdlt.client.atommodel.tokens.TransferParticle;
+import com.radixdlt.client.atommodel.quarks.FungibleQuark;
 import org.junit.Test;
 
 import java.math.BigDecimal;

@@ -1,6 +1,7 @@
-package com.radixdlt.client.core.atoms.particles.quarks;
+package com.radixdlt.client.atommodel.quarks;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.client.core.atoms.particles.Quark;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.DsonOutput.Output;

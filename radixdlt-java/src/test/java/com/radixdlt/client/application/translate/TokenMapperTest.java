@@ -5,10 +5,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.radixdlt.client.application.actions.CreateFixedSupplyTokenAction;
-import com.radixdlt.client.core.address.RadixAddress;
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
-import com.radixdlt.client.core.atoms.particles.TransferParticle;
-import com.radixdlt.client.core.atoms.particles.TokenParticle;
+import com.radixdlt.client.atommodel.tokens.TransferParticle;
+import com.radixdlt.client.atommodel.tokens.TokenParticle;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import java.util.List;
 
