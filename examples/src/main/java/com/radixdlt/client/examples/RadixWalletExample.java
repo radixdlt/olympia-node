@@ -2,7 +2,6 @@ package com.radixdlt.client.examples;
 
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
-import com.radixdlt.client.core.atoms.AccountReference;
 import com.radixdlt.client.core.atoms.TokenClassReference;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;

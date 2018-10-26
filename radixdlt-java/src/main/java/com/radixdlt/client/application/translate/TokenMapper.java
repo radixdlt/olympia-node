@@ -22,7 +22,7 @@ public class TokenMapper {
 		}
 
 		TokenParticle token = new TokenParticle(
-				tokenCreation.getAccountReference(),
+				tokenCreation.getAddress(),
 				tokenCreation.getName(),
 				tokenCreation.getIso(),
 				tokenCreation.getDescription(),
@@ -32,7 +32,7 @@ public class TokenMapper {
 		TransferParticle minted = new TransferParticle(
 				tokenCreation.getFixedSupply() * TokenClassReference.SUB_UNITS,
 				FungibleQuark.FungibleType.MINTED,
-				tokenCreation.getAccountReference(),
+				tokenCreation.getAddress(),
 				System.currentTimeMillis(),
 				token.getTokenClassReference(),
 				System.currentTimeMillis() / 60000L + 60000

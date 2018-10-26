@@ -1,7 +1,6 @@
 package com.radixdlt.client.application.translate;
 
 import com.radixdlt.client.core.RadixUniverse;
-import com.radixdlt.client.core.atoms.AccountReference;
 import com.radixdlt.client.core.atoms.RadixHash;
 import com.radixdlt.client.core.atoms.particles.FeeParticle;
 import com.radixdlt.client.core.atoms.particles.Particle;
@@ -39,7 +38,7 @@ public class PowFeeMapper implements FeeMapper {
 
 		Particle fee = new FeeParticle(
 				pow.getNonce(),
-				new AccountReference(key),
+				universe.getAddressFrom(key),
 				System.nanoTime(),
 				universe.getPOWToken(),
 				System.currentTimeMillis() * 60000

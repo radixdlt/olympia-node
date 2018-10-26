@@ -1,6 +1,6 @@
 package com.radixdlt.client.application.actions;
 
-import com.radixdlt.client.core.atoms.AccountReference;
+import com.radixdlt.client.core.address.RadixAddress;
 import java.util.Objects;
 
 public class CreateFixedSupplyTokenAction {
@@ -8,30 +8,30 @@ public class CreateFixedSupplyTokenAction {
 	private final String iso;
 	private final String description;
 	private final long fixedSupply;
-	private final AccountReference accountReference;
+	private final RadixAddress address;
 
 	public CreateFixedSupplyTokenAction(
-		AccountReference accountReference,
+		RadixAddress address,
 		String name,
 		String iso,
 		String description,
 		long fixedSupply
 	) {
-		Objects.requireNonNull(accountReference);
+		Objects.requireNonNull(address);
 		Objects.requireNonNull(iso);
 		if (fixedSupply <= 0) {
 			throw new IllegalArgumentException("Fixed supply must be greater than 0.");
 		}
 
-		this.accountReference = accountReference;
+		this.address = address;
 		this.name = name;
 		this.iso = iso;
 		this.description = description;
 		this.fixedSupply = fixedSupply;
 	}
 
-	public AccountReference getAccountReference() {
-		return accountReference;
+	public RadixAddress getAddress() {
+		return address;
 	}
 
 	public String getName() {

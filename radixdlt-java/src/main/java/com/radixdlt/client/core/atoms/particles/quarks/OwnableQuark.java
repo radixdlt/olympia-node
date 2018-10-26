@@ -1,8 +1,9 @@
 package com.radixdlt.client.core.atoms.particles.quarks;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.client.core.atoms.AccountReference;
+import com.radixdlt.client.core.crypto.ECPublicKey;
 import org.radix.serialization2.DsonOutput;
+import org.radix.serialization2.DsonOutput.Output;
 import org.radix.serialization2.SerializerId2;
 
 import java.util.Objects;
@@ -12,18 +13,27 @@ import java.util.Objects;
  */
 @SerializerId2("OWNABLEQUARK")
 public final class OwnableQuark extends Quark {
-	@JsonProperty("account_reference")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private AccountReference accountReference;
+	private ECPublicKey owner;
 
 	private OwnableQuark() {
 	}
 
-	public OwnableQuark(AccountReference accountReference) {
-		this.accountReference = Objects.requireNonNull(accountReference);
+	public OwnableQuark(ECPublicKey owner) {
+		this.owner = Objects.requireNonNull(owner);
 	}
 
-	public AccountReference getAccountReference() {
-		return this.accountReference;
+	@JsonProperty("owner")
+	@DsonOutput(Output.ALL)
+	private byte[] getJsonOwner() {
+		return this.owner == null ? null : owner.getPublicKey();
+	}
+
+	@JsonProperty("owner")
+	private void setJsonOwner(byte[] owner) {
+		this.owner = new ECPublicKey(owner);
+	}
+
+	public ECPublicKey getOwner() {
+		return this.owner;
 	}
 }

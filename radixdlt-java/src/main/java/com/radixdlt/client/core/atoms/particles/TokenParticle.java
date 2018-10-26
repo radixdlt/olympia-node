@@ -1,7 +1,7 @@
 package com.radixdlt.client.core.atoms.particles;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.client.core.atoms.AccountReference;
+import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.RadixHash;
 import com.radixdlt.client.core.atoms.TokenClassReference;
 import com.radixdlt.client.core.atoms.particles.quarks.AddressableQuark;
@@ -47,7 +47,7 @@ public class TokenParticle extends Particle {
 	}
 
 	public TokenParticle(
-			AccountReference accountReference,
+			RadixAddress address,
 			String name,
 			String iso,
 			String description,
@@ -55,8 +55,8 @@ public class TokenParticle extends Particle {
 			byte[] icon
 	) {
 		super(new NonFungibleQuark(RadixHash.of(Serialize.getInstance()
-						.toDson(getTokenClassReference(accountReference, iso), Output.HASH)).toEUID()),
-				new AddressableQuark(accountReference), new OwnableQuark(accountReference));
+						.toDson(getTokenClassReference(address, iso), Output.HASH)).toEUID()),
+				new AddressableQuark(address), new OwnableQuark(address.getPublicKey()));
 		this.iso = iso;
 		this.name = name;
 		this.description = description;
@@ -64,8 +64,8 @@ public class TokenParticle extends Particle {
 		this.icon = icon;
 	}
 
-	private static TokenClassReference getTokenClassReference(AccountReference accountReference, String iso) {
-		return TokenClassReference.of(accountReference, iso);
+	private static TokenClassReference getTokenClassReference(RadixAddress address, String iso) {
+		return TokenClassReference.of(address, iso);
 	}
 
 	public String getName() {
@@ -86,7 +86,7 @@ public class TokenParticle extends Particle {
 
 	@Override
 	public Set<ECPublicKey> getAddresses() {
-		return Collections.singleton(getQuarkOrError(AddressableQuark.class).getAddresses().get(0).getKey());
+		return Collections.singleton(getQuarkOrError(AddressableQuark.class).getAddresses().get(0).getPublicKey());
 	}
 
 	@JsonProperty("mint_permissions")

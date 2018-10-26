@@ -1,7 +1,6 @@
 package com.radixdlt.client.core.atoms.particles;
 
 import com.radixdlt.client.core.address.RadixAddress;
-import com.radixdlt.client.core.atoms.AccountReference;
 import com.radixdlt.client.core.atoms.MetadataMap;
 import com.radixdlt.client.core.atoms.particles.quarks.AddressableQuark;
 import com.radixdlt.client.core.atoms.particles.quarks.DataQuark;
@@ -22,7 +21,7 @@ import java.util.stream.Collectors;
 @SerializerId2("STORAGEPARTICLE")
 public class StorageParticle extends Particle {
 	public static class StorageParticleBuilder {
-		private final List<AccountReference> addresses = new ArrayList<>();
+		private final List<RadixAddress> addresses = new ArrayList<>();
 		private final MetadataMap metaData = new MetadataMap();
 		private byte[] bytes;
 		public StorageParticleBuilder setMetaData(String key, String value) {
@@ -41,7 +40,7 @@ public class StorageParticle extends Particle {
 		}
 
 		public StorageParticleBuilder account(RadixAddress address) {
-			addresses.add(new AccountReference(address.getPublicKey()));
+			addresses.add(address);
 			return this;
 		}
 
@@ -53,14 +52,14 @@ public class StorageParticle extends Particle {
 	private StorageParticle() {
 	}
 
-	private StorageParticle(byte[] bytes, MetadataMap metaData, List<AccountReference> addresses) {
+	private StorageParticle(byte[] bytes, MetadataMap metaData, List<RadixAddress> addresses) {
 		super(new AddressableQuark(addresses), new DataQuark(bytes, metaData));
 		Objects.requireNonNull(bytes);
 	}
 
 	@Override
 	public Set<ECPublicKey> getAddresses() {
-		return getQuarkOrError(AddressableQuark.class).getAddresses().stream().map(AccountReference::getKey).collect(Collectors.toSet());
+		return getQuarkOrError(AddressableQuark.class).getAddresses().stream().map(RadixAddress::getPublicKey).collect(Collectors.toSet());
 	}
 
 	public String getMetaData(String key) {

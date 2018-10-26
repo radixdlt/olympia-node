@@ -1,7 +1,7 @@
 package org.radix.serialization2.client;
 
+import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
-import com.radixdlt.client.core.atoms.AccountReference;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.TokenClassReference;
 import com.radixdlt.client.core.atoms.particles.FeeParticle;
@@ -47,7 +47,7 @@ public final class Serialize {
 		private static Collection<Class<?>> getClasses() {
 			return Arrays.asList(
 				Atom.class,
-				AccountReference.class,
+				RadixAddress.class,
 				Particle.class,
 				SpunParticle.class,
 				TimestampParticle.class,

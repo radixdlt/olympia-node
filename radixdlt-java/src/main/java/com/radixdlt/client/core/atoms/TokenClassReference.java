@@ -1,5 +1,6 @@
 package com.radixdlt.client.core.atoms;
 
+import com.radixdlt.client.core.address.RadixAddress;
 import java.math.BigDecimal;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -33,9 +34,7 @@ public final class TokenClassReference extends SerializableObject {
 		return BigDecimal.valueOf(subUnits, TOKEN_SCALE);
 	}
 
-	@JsonProperty("address")
-	@DsonOutput(Output.ALL)
-	private AccountReference address;
+	private transient RadixAddress address;
 
 	@JsonProperty("iso")
 	@DsonOutput(Output.ALL)
@@ -45,18 +44,29 @@ public final class TokenClassReference extends SerializableObject {
 		// No-arg constructor for serializer
 	}
 
-	private TokenClassReference(AccountReference address, String iso) {
+	private TokenClassReference(RadixAddress address, String iso) {
 		Objects.requireNonNull(iso);
 
 		this.address = address;
 		this.iso = iso;
 	}
 
-	public static TokenClassReference of(AccountReference address, String reference) {
+	public static TokenClassReference of(RadixAddress address, String reference) {
 		return new TokenClassReference(address, reference);
 	}
 
-	public AccountReference getAddress() {
+	@JsonProperty("address")
+	@DsonOutput(Output.ALL)
+	private String getJsonAddress() {
+		return this.address == null ? null : address.toString();
+	}
+
+	@JsonProperty("address")
+	private void setJsonAddress(String address) {
+		this.address = RadixAddress.fromString(address);
+	}
+
+	public RadixAddress getAddress() {
 		return address;
 	}
 

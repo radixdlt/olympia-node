@@ -1,8 +1,10 @@
 package com.radixdlt.client.core.atoms.particles.quarks;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.client.core.atoms.AccountReference;
+import com.radixdlt.client.core.address.RadixAddress;
+import java.util.stream.Collectors;
 import org.radix.serialization2.DsonOutput;
+import org.radix.serialization2.DsonOutput.Output;
 import org.radix.serialization2.SerializerId2;
 
 import java.util.ArrayList;
@@ -14,22 +16,32 @@ import java.util.List;
  */
 @SerializerId2("ADDRESSABLEQUARK")
 public final class AddressableQuark extends Quark {
-	@JsonProperty("addresses")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private List<AccountReference> addresses = null;
+	private List<RadixAddress> addresses = null;
 
 	private AddressableQuark() {
 	}
 
-	public AddressableQuark(AccountReference accountReference) {
-		this(Arrays.asList(accountReference));
+	public AddressableQuark(RadixAddress address) {
+		this(Arrays.asList(address));
 	}
 
-	public AddressableQuark(List<AccountReference> addresses) {
+	public AddressableQuark(List<RadixAddress> addresses) {
 		this.addresses = new ArrayList<>(addresses);
 	}
 
-	public List<AccountReference> getAddresses() {
+
+	@JsonProperty("addresses")
+	@DsonOutput(Output.ALL)
+	private List<String> getJsonAddresses() {
+		return this.addresses == null ? null : this.addresses.stream().map(RadixAddress::toString).collect(Collectors.toList());
+	}
+
+	@JsonProperty("addresses")
+	private void setJsonAddresses(List<String> addresses) {
+		this.addresses = addresses.stream().map(RadixAddress::fromString).collect(Collectors.toList());
+	}
+
+	public List<RadixAddress> getAddresses() {
 		return this.addresses;
 	}
 }

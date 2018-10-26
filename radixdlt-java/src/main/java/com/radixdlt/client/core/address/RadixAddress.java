@@ -8,7 +8,9 @@ import com.radixdlt.client.core.atoms.RadixHash;
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.util.Base58;
+import org.radix.serialization2.SerializerId2;
 
+@SerializerId2("ACCOUNTREFERENCE")
 public class RadixAddress {
 
 	// The Base58 address string

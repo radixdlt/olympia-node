@@ -1,7 +1,7 @@
 package com.radixdlt.client.core.atoms.particles;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.client.core.atoms.AccountReference;
+import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.core.atoms.RadixHash;
 import com.radixdlt.client.core.atoms.TokenClassReference;
 import com.radixdlt.client.core.atoms.particles.quarks.AddressableQuark;
@@ -27,21 +27,21 @@ public class TransferParticle extends Particle {
 	protected TransferParticle() {
 	}
 
-	public TransferParticle(long amount, FungibleQuark.FungibleType type, AccountReference address, long nonce,
+	public TransferParticle(long amount, FungibleQuark.FungibleType type, RadixAddress address, long nonce,
 	                        TokenClassReference tokenRef, long planck) {
-		super(new OwnableQuark(address), new AddressableQuark(address),
+		super(new OwnableQuark(address.getPublicKey()), new AddressableQuark(address),
 				new FungibleQuark(amount, planck, nonce, type));
 
 		this.tokenClassReference = tokenRef;
 	}
 
-	public AccountReference getAddress() {
+	public RadixAddress getAddress() {
 		return getQuarkOrError(AddressableQuark.class).getAddresses().get(0);
 	}
 
 	@Override
 	public Set<ECPublicKey> getAddresses() {
-		return getQuarkOrError(AddressableQuark.class).getAddresses().stream().map(AccountReference::getKey).collect(Collectors.toSet());
+		return getQuarkOrError(AddressableQuark.class).getAddresses().stream().map(RadixAddress::getPublicKey).collect(Collectors.toSet());
 	}
 
 	public void addConsumerQuantities(long amount, ECKeyPair newOwner, Map<ECKeyPair, Long> consumerQuantities) {
@@ -57,7 +57,7 @@ public class TransferParticle extends Particle {
 		}
 
 		consumerQuantities.merge(newOwner, amount, Long::sum);
-		consumerQuantities.merge(getAddress().getKey().toECKeyPair(), getAmount() - amount, Long::sum);
+		consumerQuantities.merge(getAddress().toECKeyPair(), getAmount() - amount, Long::sum);
 	}
 
 	public FungibleQuark.FungibleType getType() {
@@ -81,12 +81,11 @@ public class TransferParticle extends Particle {
 	}
 
 	public Set<ECPublicKey> getOwnersPublicKeys() {
-		AccountReference accountReference = getQuarkOrError(OwnableQuark.class).getAccountReference();
-		return accountReference == null ? Collections.emptySet() : Collections.singleton(accountReference.getKey());
+		return Collections.singleton(getQuarkOrError(OwnableQuark.class).getOwner());
 	}
 
 	public ECPublicKey getOwner() {
-		return getQuarkOrError(OwnableQuark.class).getAccountReference().getKey();
+		return getQuarkOrError(OwnableQuark.class).getOwner();
 	}
 
 	public RadixHash getHash() {
@@ -99,7 +98,7 @@ public class TransferParticle extends Particle {
 
 	@Override
 	public String toString() {
-		return this.getClass().getSimpleName() + " owners(" + getQuarkOrError(OwnableQuark.class).getAccountReference() + ")"
+		return this.getClass().getSimpleName() + " owners(" + getQuarkOrError(OwnableQuark.class).getOwner() + ")"
 				+ " amount(" + getQuarkOrError(FungibleQuark.class).getAmount() + ")";
 	}
 }

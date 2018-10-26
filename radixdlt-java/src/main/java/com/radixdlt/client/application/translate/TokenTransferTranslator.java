@@ -7,7 +7,6 @@ import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.application.translate.TokenBalanceState.Balance;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.address.RadixAddress;
-import com.radixdlt.client.core.atoms.AccountReference;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.TokenClassReference;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
@@ -188,7 +187,7 @@ public class TokenTransferTranslator {
 			.map(entry -> new TransferParticle(
 				entry.getValue(),
 				FungibleQuark.FungibleType.AMOUNT,
-				new AccountReference(entry.getKey().getPublicKey()),
+				universe.getAddressFrom(entry.getKey().getPublicKey()),
 				System.nanoTime(),
 				transfer.getTokenClassReference(),
 				System.currentTimeMillis() / 60000L + 60000L
