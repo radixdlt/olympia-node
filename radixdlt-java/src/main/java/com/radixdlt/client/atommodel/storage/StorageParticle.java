@@ -1,7 +1,7 @@
 package com.radixdlt.client.atommodel.storage;
 
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.atommodel.quarks.AddressableQuark;
+import com.radixdlt.client.atommodel.quarks.AccountableQuark;
 import com.radixdlt.client.atommodel.quarks.DataQuark;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.crypto.ECPublicKey;
@@ -53,13 +53,13 @@ public class StorageParticle extends Particle {
 	}
 
 	private StorageParticle(byte[] bytes, MetadataMap metaData, List<RadixAddress> addresses) {
-		super(new AddressableQuark(addresses), new DataQuark(bytes, metaData));
+		super(new AccountableQuark(addresses), new DataQuark(bytes, metaData));
 		Objects.requireNonNull(bytes);
 	}
 
 	@Override
 	public Set<ECPublicKey> getAddresses() {
-		return getQuarkOrError(AddressableQuark.class).getAddresses().stream().map(RadixAddress::getPublicKey).collect(Collectors.toSet());
+		return getQuarkOrError(AccountableQuark.class).getAddresses().stream().map(RadixAddress::getPublicKey).collect(Collectors.toSet());
 	}
 
 	public String getMetaData(String key) {

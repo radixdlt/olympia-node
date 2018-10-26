@@ -8,7 +8,7 @@ import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.SerializerId2;
 
 @SerializerId2("FEEPARTICLE")
-public class FeeParticle extends TransferParticle {
+public class FeeParticle extends OwnedTokensParticle {
 	@JsonProperty("service")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private EUID service;

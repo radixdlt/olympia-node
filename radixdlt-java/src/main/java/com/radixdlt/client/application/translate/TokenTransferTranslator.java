@@ -12,7 +12,7 @@ import com.radixdlt.client.atommodel.tokens.TokenClassReference;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.atommodel.storage.StorageParticle;
 import com.radixdlt.client.atommodel.storage.StorageParticle.StorageParticleBuilder;
-import com.radixdlt.client.atommodel.tokens.TransferParticle;
+import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
 import com.radixdlt.client.atommodel.quarks.DataQuark;
 import com.radixdlt.client.atommodel.quarks.FungibleQuark;
 import com.radixdlt.client.core.crypto.ECKeyPair;
@@ -126,7 +126,7 @@ public class TokenTransferTranslator {
 			);
 		}
 
-		final List<TransferParticle> unconsumedTransferParticles =
+		final List<OwnedTokensParticle> unconsumedOwnedTokensParticles =
 				Optional.ofNullable(allConsumables.get(transfer.getTokenClassReference()))
 						.map(bal -> bal.unconsumedConsumables().collect(Collectors.toList()))
 						.orElse(Collections.emptyList());
@@ -164,7 +164,7 @@ public class TokenTransferTranslator {
 
 		long consumerTotal = 0;
 		final long subUnitAmount = transfer.getAmount().multiply(TokenClassReference.getSubUnits()).longValueExact();
-		Iterator<TransferParticle> iterator = unconsumedTransferParticles.iterator();
+		Iterator<OwnedTokensParticle> iterator = unconsumedOwnedTokensParticles.iterator();
 		Map<ECKeyPair, Long> consumerQuantities = new HashMap<>();
 
 		// HACK for now
@@ -173,18 +173,18 @@ public class TokenTransferTranslator {
 		while (consumerTotal < subUnitAmount && iterator.hasNext()) {
 			final long left = subUnitAmount - consumerTotal;
 
-			TransferParticle particle = iterator.next();
+			OwnedTokensParticle particle = iterator.next();
 			consumerTotal += particle.getAmount();
 
 			final long amount = Math.min(left, particle.getAmount());
 			particle.addConsumerQuantities(amount, transfer.getTo().toECKeyPair(), consumerQuantities);
 
-			SpunParticle<TransferParticle> down = SpunParticle.down(particle);
+			SpunParticle<OwnedTokensParticle> down = SpunParticle.down(particle);
 			particles.add(down);
 		}
 
 		consumerQuantities.entrySet().stream()
-			.map(entry -> new TransferParticle(
+			.map(entry -> new OwnedTokensParticle(
 				entry.getValue(),
 				FungibleQuark.FungibleType.AMOUNT,
 				universe.getAddressFrom(entry.getKey().getPublicKey()),

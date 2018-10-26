@@ -3,7 +3,7 @@ package com.radixdlt.client.atommodel.tokens;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.RadixHash;
-import com.radixdlt.client.atommodel.quarks.AddressableQuark;
+import com.radixdlt.client.atommodel.quarks.AccountableQuark;
 import com.radixdlt.client.atommodel.quarks.NonFungibleQuark;
 import com.radixdlt.client.atommodel.quarks.OwnableQuark;
 import com.radixdlt.client.core.atoms.particles.Particle;
@@ -56,7 +56,7 @@ public class TokenParticle extends Particle {
 	) {
 		super(new NonFungibleQuark(RadixHash.of(Serialize.getInstance()
 						.toDson(getTokenClassReference(address, iso), Output.HASH)).toEUID()),
-				new AddressableQuark(address), new OwnableQuark(address.getPublicKey()));
+				new AccountableQuark(address), new OwnableQuark(address.getPublicKey()));
 		this.iso = iso;
 		this.name = name;
 		this.description = description;
@@ -81,12 +81,12 @@ public class TokenParticle extends Particle {
 	}
 
 	public TokenClassReference getTokenClassReference() {
-		return TokenClassReference.of(getQuarkOrError(AddressableQuark.class).getAddresses().get(0), iso);
+		return TokenClassReference.of(getQuarkOrError(AccountableQuark.class).getAddresses().get(0), iso);
 	}
 
 	@Override
 	public Set<ECPublicKey> getAddresses() {
-		return Collections.singleton(getQuarkOrError(AddressableQuark.class).getAddresses().get(0).getPublicKey());
+		return Collections.singleton(getQuarkOrError(AccountableQuark.class).getAddresses().get(0).getPublicKey());
 	}
 
 	@JsonProperty("mint_permissions")

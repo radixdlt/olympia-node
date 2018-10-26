@@ -3,7 +3,7 @@ package com.radixdlt.client.atommodel.tokens;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.RadixHash;
-import com.radixdlt.client.atommodel.quarks.AddressableQuark;
+import com.radixdlt.client.atommodel.quarks.AccountableQuark;
 import com.radixdlt.client.atommodel.quarks.FungibleQuark;
 import com.radixdlt.client.atommodel.quarks.OwnableQuark;
 import com.radixdlt.client.core.atoms.particles.Particle;
@@ -18,30 +18,33 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@SerializerId2("TRANSFERPARTICLE")
-public class TransferParticle extends Particle {
+/**
+ *  A particle which represents an amount of fungible tokens owned by some key owner and stored in an account.
+ */
+@SerializerId2("OWNEDTOKENSPARTICLE")
+public class OwnedTokensParticle extends Particle {
 	@JsonProperty("token_reference")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private TokenClassReference tokenClassReference;
 
-	protected TransferParticle() {
+	protected OwnedTokensParticle() {
 	}
 
-	public TransferParticle(long amount, FungibleQuark.FungibleType type, RadixAddress address, long nonce,
+	public OwnedTokensParticle(long amount, FungibleQuark.FungibleType type, RadixAddress address, long nonce,
 	                        TokenClassReference tokenRef, long planck) {
-		super(new OwnableQuark(address.getPublicKey()), new AddressableQuark(address),
+		super(new OwnableQuark(address.getPublicKey()), new AccountableQuark(address),
 				new FungibleQuark(amount, planck, nonce, type));
 
 		this.tokenClassReference = tokenRef;
 	}
 
 	public RadixAddress getAddress() {
-		return getQuarkOrError(AddressableQuark.class).getAddresses().get(0);
+		return getQuarkOrError(AccountableQuark.class).getAddresses().get(0);
 	}
 
 	@Override
 	public Set<ECPublicKey> getAddresses() {
-		return getQuarkOrError(AddressableQuark.class).getAddresses().stream().map(RadixAddress::getPublicKey).collect(Collectors.toSet());
+		return getQuarkOrError(AccountableQuark.class).getAddresses().stream().map(RadixAddress::getPublicKey).collect(Collectors.toSet());
 	}
 
 	public void addConsumerQuantities(long amount, ECKeyPair newOwner, Map<ECKeyPair, Long> consumerQuantities) {

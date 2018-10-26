@@ -5,7 +5,7 @@ import com.radixdlt.client.atommodel.tokens.TokenClassReference;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.atommodel.tokens.TokenParticle;
 import com.radixdlt.client.atommodel.tokens.TokenParticle.MintPermissions;
-import com.radixdlt.client.atommodel.tokens.TransferParticle;
+import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
 import com.radixdlt.client.atommodel.quarks.FungibleQuark;
 
 import java.util.Arrays;
@@ -29,7 +29,7 @@ public class TokenMapper {
 				MintPermissions.SAME_ATOM_ONLY,
 				null
 		);
-		TransferParticle minted = new TransferParticle(
+		OwnedTokensParticle minted = new OwnedTokensParticle(
 				tokenCreation.getFixedSupply() * TokenClassReference.SUB_UNITS,
 				FungibleQuark.FungibleType.MINTED,
 				tokenCreation.getAddress(),

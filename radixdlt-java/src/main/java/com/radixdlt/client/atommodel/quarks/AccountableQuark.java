@@ -13,20 +13,25 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- *  A quark that is stored in a shardable public key address.
+ *  A quark which gives it's containing particle the property that it is something to be
+ *  stored in a shardable account
  */
-@SerializerId2("ADDRESSABLEQUARK")
-public final class AddressableQuark extends Quark {
+@SerializerId2("ACCOUNTABLEQUARK")
+public final class AccountableQuark extends Quark {
+
+	/**
+	 * The addresses of the accounts the containing object will be stored in
+	 */
 	private List<RadixAddress> addresses = null;
 
-	private AddressableQuark() {
+	private AccountableQuark() {
 	}
 
-	public AddressableQuark(RadixAddress address) {
+	public AccountableQuark(RadixAddress address) {
 		this(Arrays.asList(address));
 	}
 
-	public AddressableQuark(List<RadixAddress> addresses) {
+	public AccountableQuark(List<RadixAddress> addresses) {
 		this.addresses = new ArrayList<>(addresses);
 	}
 

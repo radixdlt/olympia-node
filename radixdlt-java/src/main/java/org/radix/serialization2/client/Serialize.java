@@ -10,8 +10,8 @@ import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.atommodel.storage.StorageParticle;
 import com.radixdlt.client.atommodel.timestamp.TimestampParticle;
 import com.radixdlt.client.atommodel.tokens.TokenParticle;
-import com.radixdlt.client.atommodel.tokens.TransferParticle;
-import com.radixdlt.client.atommodel.quarks.AddressableQuark;
+import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
+import com.radixdlt.client.atommodel.quarks.AccountableQuark;
 import com.radixdlt.client.atommodel.quarks.ChronoQuark;
 import com.radixdlt.client.atommodel.quarks.DataQuark;
 import com.radixdlt.client.atommodel.quarks.FungibleQuark;
@@ -51,7 +51,7 @@ public final class Serialize {
 				Particle.class,
 				SpunParticle.class,
 				TimestampParticle.class,
-				TransferParticle.class,
+				OwnedTokensParticle.class,
 				FeeParticle.class,
 				StorageParticle.class,
 				TokenParticle.class,
@@ -63,7 +63,7 @@ public final class Serialize {
 				NonFungibleQuark.class,
 				OwnableQuark.class,
 				UniqueQuark.class,
-				AddressableQuark.class,
+				AccountableQuark.class,
 
 				ECKeyPair.class,
 				ECSignature.class,
