@@ -1,12 +1,12 @@
 package com.radixdlt.client.application.translate;
 
 import com.radixdlt.client.application.actions.CreateFixedSupplyTokenAction;
-import com.radixdlt.client.core.atoms.TokenClassReference;
+import com.radixdlt.client.atommodel.tokens.TokenClassReference;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
-import com.radixdlt.client.core.atoms.particles.TokenParticle;
-import com.radixdlt.client.core.atoms.particles.TokenParticle.MintPermissions;
-import com.radixdlt.client.core.atoms.particles.TransferParticle;
-import com.radixdlt.client.core.atoms.particles.quarks.FungibleQuark;
+import com.radixdlt.client.atommodel.tokens.TokenParticle;
+import com.radixdlt.client.atommodel.tokens.TokenParticle.MintPermissions;
+import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
+import com.radixdlt.client.atommodel.quarks.FungibleQuark;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -22,17 +22,17 @@ public class TokenMapper {
 		}
 
 		TokenParticle token = new TokenParticle(
-				tokenCreation.getAccountReference(),
+				tokenCreation.getAddress(),
 				tokenCreation.getName(),
 				tokenCreation.getIso(),
 				tokenCreation.getDescription(),
 				MintPermissions.SAME_ATOM_ONLY,
 				null
 		);
-		TransferParticle minted = new TransferParticle(
+		OwnedTokensParticle minted = new OwnedTokensParticle(
 				tokenCreation.getFixedSupply() * TokenClassReference.SUB_UNITS,
 				FungibleQuark.FungibleType.MINTED,
-				tokenCreation.getAccountReference(),
+				tokenCreation.getAddress(),
 				System.currentTimeMillis(),
 				token.getTokenClassReference(),
 				System.currentTimeMillis() / 60000L + 60000

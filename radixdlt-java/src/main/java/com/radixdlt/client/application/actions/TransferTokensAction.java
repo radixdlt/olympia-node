@@ -1,8 +1,8 @@
 package com.radixdlt.client.application.actions;
 
 import com.radixdlt.client.application.objects.Data;
-import com.radixdlt.client.core.atoms.TokenClassReference;
-import com.radixdlt.client.core.address.RadixAddress;
+import com.radixdlt.client.atommodel.tokens.TokenClassReference;
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.HashMap;

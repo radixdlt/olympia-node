@@ -12,7 +12,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.radixdlt.client.core.atoms.particles.TimestampParticle;
+import com.radixdlt.client.atommodel.timestamp.TimestampParticle;
 import org.radix.serialization2.DsonOutput.Output;
 import org.radix.serialization2.client.Serialize;
 import org.slf4j.Logger;
@@ -40,10 +40,9 @@ import com.radixdlt.client.application.translate.TokenTransferTranslator;
 import com.radixdlt.client.application.translate.UniquePropertyTranslator;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.RadixUniverse.Ledger;
-import com.radixdlt.client.core.address.RadixAddress;
-import com.radixdlt.client.core.atoms.AccountReference;
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.atoms.TokenClassReference;
+import com.radixdlt.client.atommodel.tokens.TokenClassReference;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate;
@@ -227,9 +226,9 @@ public class RadixApplicationAPI {
 	 * @return a hot observable of the latest state of the token
 	 */
 	public Observable<TokenState> getToken(TokenClassReference ref) {
-		pull(universe.getAddressFrom(ref.getAddress().getKey()));
+		pull(ref.getAddress());
 
-		return tokenStore.getState(universe.getAddressFrom(ref.getAddress().getKey()))
+		return tokenStore.getState(ref.getAddress())
 			.flatMapMaybe(m -> Optional.ofNullable(m.get(ref)).map(Maybe::just).orElse(Maybe.empty()));
 	}
 
@@ -322,8 +321,7 @@ public class RadixApplicationAPI {
 	 * @return result of the transaction
 	 */
 	public Result createFixedSupplyToken(String name, String iso, String description, long fixedSupply) {
-		AccountReference account = new AccountReference(getMyPublicKey());
-		CreateFixedSupplyTokenAction tokenCreation = new CreateFixedSupplyTokenAction(account, name, iso, description, fixedSupply);
+		CreateFixedSupplyTokenAction tokenCreation = new CreateFixedSupplyTokenAction(getMyAddress(), name, iso, description, fixedSupply);
 		return executeTransaction(null, null, tokenCreation, null);
 	}
 

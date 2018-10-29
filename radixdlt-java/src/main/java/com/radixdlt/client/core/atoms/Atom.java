@@ -1,5 +1,6 @@
 package com.radixdlt.client.core.atoms;
 
+import com.radixdlt.client.atommodel.tokens.TokenClassReference;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import java.util.Collections;
 import java.util.HashMap;
@@ -19,9 +20,9 @@ import org.radix.serialization2.client.Serialize;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.Spin;
-import com.radixdlt.client.core.atoms.particles.StorageParticle;
-import com.radixdlt.client.core.atoms.particles.TimestampParticle;
-import com.radixdlt.client.core.atoms.particles.TransferParticle;
+import com.radixdlt.client.atommodel.storage.StorageParticle;
+import com.radixdlt.client.atommodel.timestamp.TimestampParticle;
+import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.crypto.ECSignature;
 
@@ -122,18 +123,18 @@ public final class Atom extends SerializableObject {
 		return Optional.ofNullable(signatures).map(sigs -> sigs.get(uid.toString()));
 	}
 
-	public Stream<SpunParticle<TransferParticle>> consumables() {
+	public Stream<SpunParticle<OwnedTokensParticle>> consumables() {
 		return this.getSpunParticles().stream()
-			.filter(s -> s.getParticle() instanceof TransferParticle)
-			.map(s -> (SpunParticle<TransferParticle>) s);
+			.filter(s -> s.getParticle() instanceof OwnedTokensParticle)
+			.map(s -> (SpunParticle<OwnedTokensParticle>) s);
 	}
 
-	public List<TransferParticle> getConsumables(Spin spin) {
+	public List<OwnedTokensParticle> getConsumables(Spin spin) {
 		return this.getSpunParticles().stream()
 			.filter(s -> s.getSpin() == spin)
 			.map(SpunParticle::getParticle)
-			.filter(p -> p instanceof TransferParticle)
-			.map(p -> (TransferParticle) p)
+			.filter(p -> p instanceof OwnedTokensParticle)
+			.map(p -> (OwnedTokensParticle) p)
 			.collect(Collectors.toList());
 	}
 
@@ -163,7 +164,7 @@ public final class Atom extends SerializableObject {
 				s -> s.getParticle().getTokenClassReference(),
 				Collectors.groupingBy(
 					s -> s.getParticle().getOwner(),
-					Collectors.summingLong((SpunParticle<TransferParticle> value) ->
+					Collectors.summingLong((SpunParticle<OwnedTokensParticle> value) ->
 						(value.getSpin() == Spin.UP ? 1 : -1) * value.getParticle().getAmount()
 					)
 				)

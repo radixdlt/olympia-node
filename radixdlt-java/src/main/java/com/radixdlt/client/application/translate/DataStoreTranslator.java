@@ -6,9 +6,9 @@ import com.radixdlt.client.application.actions.StoreDataAction;
 import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
-import com.radixdlt.client.core.atoms.particles.StorageParticle;
-import com.radixdlt.client.core.atoms.particles.StorageParticle.StorageParticleBuilder;
-import com.radixdlt.client.core.atoms.particles.quarks.DataQuark;
+import com.radixdlt.client.atommodel.storage.StorageParticle;
+import com.radixdlt.client.atommodel.storage.StorageParticle.StorageParticleBuilder;
+import com.radixdlt.client.atommodel.quarks.DataQuark;
 import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
 import com.radixdlt.client.core.crypto.Encryptor;
 

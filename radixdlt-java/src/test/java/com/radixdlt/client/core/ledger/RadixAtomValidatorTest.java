@@ -3,9 +3,9 @@ package com.radixdlt.client.core.ledger;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomValidationException;
 import com.radixdlt.client.core.atoms.RadixHash;
-import com.radixdlt.client.core.atoms.TokenClassReference;
+import com.radixdlt.client.atommodel.tokens.TokenClassReference;
 import com.radixdlt.client.core.atoms.particles.Spin;
-import com.radixdlt.client.core.atoms.particles.TransferParticle;
+import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import org.junit.Test;
@@ -32,7 +32,7 @@ public class RadixAtomValidatorTest {
 		when(keyPair.getPublicKey()).thenReturn(publicKey);
 		when(publicKey.getUID()).thenReturn(new EUID(1));
 
-		TransferParticle consumer = mock(TransferParticle.class);
+		OwnedTokensParticle consumer = mock(OwnedTokensParticle.class);
 		when(consumer.getOwnersPublicKeys()).thenReturn(Collections.singleton(publicKey));
 		TokenClassReference token = mock(TokenClassReference.class);
 		when(token.getIso()).thenReturn("TEST");

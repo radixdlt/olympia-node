@@ -5,7 +5,7 @@ import java.util.function.Function;
 import org.junit.Test;
 import org.radix.common.ID.EUID;
 
-import com.radixdlt.client.core.address.RadixAddress;
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.network.RadixJsonRpcClient;
 

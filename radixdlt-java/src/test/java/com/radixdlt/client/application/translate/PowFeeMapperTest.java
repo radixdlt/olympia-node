@@ -8,9 +8,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.radixdlt.client.core.RadixUniverse;
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.RadixHash;
-import com.radixdlt.client.core.atoms.TokenClassReference;
-import com.radixdlt.client.core.atoms.particles.FeeParticle;
+import com.radixdlt.client.atommodel.tokens.TokenClassReference;
+import com.radixdlt.client.atommodel.tokens.FeeParticle;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.pow.ProofOfWork;
@@ -40,7 +41,12 @@ public class PowFeeMapperTest {
 		TokenClassReference powToken = mock(TokenClassReference.class);
 		when(universe.getPOWToken()).thenReturn(powToken);
 
-		List<SpunParticle> particles = powFeeMapper.map(Collections.emptyList(), universe, mock(ECPublicKey.class));
+		ECPublicKey key = mock(ECPublicKey.class);
+		RadixAddress address = mock(RadixAddress.class);
+		when(address.getPublicKey()).thenReturn(key);
+		when(universe.getAddressFrom(key)).thenReturn(address);
+
+		List<SpunParticle> particles = powFeeMapper.map(Collections.emptyList(), universe, key);
 		assertThat(particles)
 				.hasOnlyOneElementSatisfying(s -> {
 					assertThat(s.getParticle()).isInstanceOf(FeeParticle.class);

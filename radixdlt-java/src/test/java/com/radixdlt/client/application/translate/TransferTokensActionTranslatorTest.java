@@ -10,9 +10,9 @@ import java.math.BigDecimal;
 import java.util.List;
 import org.junit.Test;
 import com.radixdlt.client.application.actions.TransferTokensAction;
-import com.radixdlt.client.core.atoms.TokenClassReference;
+import com.radixdlt.client.atommodel.tokens.TokenClassReference;
 import com.radixdlt.client.core.RadixUniverse;
-import com.radixdlt.client.core.address.RadixAddress;
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import java.util.Collections;
 

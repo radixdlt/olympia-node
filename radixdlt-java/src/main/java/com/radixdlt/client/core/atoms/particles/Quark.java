@@ -1,4 +1,4 @@
-package com.radixdlt.client.core.atoms.particles.quarks;
+package com.radixdlt.client.core.atoms.particles;
 
 import org.radix.serialization2.client.SerializableObject;
 

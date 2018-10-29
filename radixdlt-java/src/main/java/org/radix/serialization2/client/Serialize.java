@@ -1,24 +1,24 @@
 package org.radix.serialization2.client;
 
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
-import com.radixdlt.client.core.atoms.AccountReference;
 import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.atoms.TokenClassReference;
-import com.radixdlt.client.core.atoms.particles.FeeParticle;
+import com.radixdlt.client.atommodel.tokens.TokenClassReference;
+import com.radixdlt.client.atommodel.tokens.FeeParticle;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
-import com.radixdlt.client.core.atoms.particles.StorageParticle;
-import com.radixdlt.client.core.atoms.particles.TimestampParticle;
-import com.radixdlt.client.core.atoms.particles.TokenParticle;
-import com.radixdlt.client.core.atoms.particles.TransferParticle;
-import com.radixdlt.client.core.atoms.particles.quarks.AddressableQuark;
-import com.radixdlt.client.core.atoms.particles.quarks.ChronoQuark;
-import com.radixdlt.client.core.atoms.particles.quarks.DataQuark;
-import com.radixdlt.client.core.atoms.particles.quarks.FungibleQuark;
-import com.radixdlt.client.core.atoms.particles.quarks.NonFungibleQuark;
-import com.radixdlt.client.core.atoms.particles.quarks.OwnableQuark;
-import com.radixdlt.client.core.atoms.particles.quarks.Quark;
-import com.radixdlt.client.core.atoms.particles.quarks.UniqueQuark;
+import com.radixdlt.client.atommodel.storage.StorageParticle;
+import com.radixdlt.client.atommodel.timestamp.TimestampParticle;
+import com.radixdlt.client.atommodel.tokens.TokenParticle;
+import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
+import com.radixdlt.client.atommodel.quarks.AccountableQuark;
+import com.radixdlt.client.atommodel.quarks.ChronoQuark;
+import com.radixdlt.client.atommodel.quarks.DataQuark;
+import com.radixdlt.client.atommodel.quarks.FungibleQuark;
+import com.radixdlt.client.atommodel.quarks.NonFungibleQuark;
+import com.radixdlt.client.atommodel.quarks.OwnableQuark;
+import com.radixdlt.client.core.atoms.particles.Quark;
+import com.radixdlt.client.atommodel.quarks.UniqueQuark;
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECSignature;
 import com.radixdlt.client.core.network.RadixSystem;
@@ -47,11 +47,11 @@ public final class Serialize {
 		private static Collection<Class<?>> getClasses() {
 			return Arrays.asList(
 				Atom.class,
-				AccountReference.class,
+				RadixAddress.class,
 				Particle.class,
 				SpunParticle.class,
 				TimestampParticle.class,
-				TransferParticle.class,
+				OwnedTokensParticle.class,
 				FeeParticle.class,
 				StorageParticle.class,
 				TokenParticle.class,
@@ -63,7 +63,7 @@ public final class Serialize {
 				NonFungibleQuark.class,
 				OwnableQuark.class,
 				UniqueQuark.class,
-				AddressableQuark.class,
+				AccountableQuark.class,
 
 				ECKeyPair.class,
 				ECSignature.class,

@@ -1,6 +1,6 @@
 package com.radixdlt.client.application.translate;
 
-import com.radixdlt.client.core.address.RadixAddress;
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.ledger.ParticleStore;
 import io.reactivex.Observable;
 import java.util.concurrent.ConcurrentHashMap;

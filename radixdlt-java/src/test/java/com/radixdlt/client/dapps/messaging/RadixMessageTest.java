@@ -3,7 +3,7 @@ package com.radixdlt.client.dapps.messaging;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.radixdlt.client.core.address.RadixAddress;
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import org.junit.Test;
 
 public class RadixMessageTest {

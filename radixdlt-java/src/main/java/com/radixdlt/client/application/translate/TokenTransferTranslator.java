@@ -6,16 +6,15 @@ import com.radixdlt.client.application.actions.TransferTokensAction;
 import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.application.translate.TokenBalanceState.Balance;
 import com.radixdlt.client.core.RadixUniverse;
-import com.radixdlt.client.core.address.RadixAddress;
-import com.radixdlt.client.core.atoms.AccountReference;
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.atoms.TokenClassReference;
+import com.radixdlt.client.atommodel.tokens.TokenClassReference;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
-import com.radixdlt.client.core.atoms.particles.StorageParticle;
-import com.radixdlt.client.core.atoms.particles.StorageParticle.StorageParticleBuilder;
-import com.radixdlt.client.core.atoms.particles.TransferParticle;
-import com.radixdlt.client.core.atoms.particles.quarks.DataQuark;
-import com.radixdlt.client.core.atoms.particles.quarks.FungibleQuark;
+import com.radixdlt.client.atommodel.storage.StorageParticle;
+import com.radixdlt.client.atommodel.storage.StorageParticle.StorageParticleBuilder;
+import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
+import com.radixdlt.client.atommodel.quarks.DataQuark;
+import com.radixdlt.client.atommodel.quarks.FungibleQuark;
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
@@ -127,7 +126,7 @@ public class TokenTransferTranslator {
 			);
 		}
 
-		final List<TransferParticle> unconsumedTransferParticles =
+		final List<OwnedTokensParticle> unconsumedOwnedTokensParticles =
 				Optional.ofNullable(allConsumables.get(transfer.getTokenClassReference()))
 						.map(bal -> bal.unconsumedConsumables().collect(Collectors.toList()))
 						.orElse(Collections.emptyList());
@@ -165,7 +164,7 @@ public class TokenTransferTranslator {
 
 		long consumerTotal = 0;
 		final long subUnitAmount = transfer.getAmount().multiply(TokenClassReference.getSubUnits()).longValueExact();
-		Iterator<TransferParticle> iterator = unconsumedTransferParticles.iterator();
+		Iterator<OwnedTokensParticle> iterator = unconsumedOwnedTokensParticles.iterator();
 		Map<ECKeyPair, Long> consumerQuantities = new HashMap<>();
 
 		// HACK for now
@@ -174,21 +173,21 @@ public class TokenTransferTranslator {
 		while (consumerTotal < subUnitAmount && iterator.hasNext()) {
 			final long left = subUnitAmount - consumerTotal;
 
-			TransferParticle particle = iterator.next();
+			OwnedTokensParticle particle = iterator.next();
 			consumerTotal += particle.getAmount();
 
 			final long amount = Math.min(left, particle.getAmount());
 			particle.addConsumerQuantities(amount, transfer.getTo().toECKeyPair(), consumerQuantities);
 
-			SpunParticle<TransferParticle> down = SpunParticle.down(particle);
+			SpunParticle<OwnedTokensParticle> down = SpunParticle.down(particle);
 			particles.add(down);
 		}
 
 		consumerQuantities.entrySet().stream()
-			.map(entry -> new TransferParticle(
+			.map(entry -> new OwnedTokensParticle(
 				entry.getValue(),
 				FungibleQuark.FungibleType.AMOUNT,
-				new AccountReference(entry.getKey().getPublicKey()),
+				universe.getAddressFrom(entry.getKey().getPublicKey()),
 				System.nanoTime(),
 				transfer.getTokenClassReference(),
 				System.currentTimeMillis() / 60000L + 60000L

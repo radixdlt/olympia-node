@@ -1,6 +1,7 @@
-package com.radixdlt.client.core.atoms.particles.quarks;
+package com.radixdlt.client.atommodel.quarks;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.client.core.atoms.particles.Quark;
 import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.SerializerId2;
 
@@ -8,7 +9,7 @@ import java.util.Objects;
 
 /**
  * A quark that keeps a specific timestamp.
- * Currently used to keep atom-specific timestamps in {@link com.radixdlt.client.core.atoms.particles.TimestampParticle}.
+ * Currently used to keep atom-specific timestamps in TimestampParticle.
  */
 @SerializerId2("CHRONOQUARK")
 public final class ChronoQuark extends Quark {

@@ -1,12 +1,12 @@
-package com.radixdlt.client.core.atoms.particles;
+package com.radixdlt.client.atommodel.tokens;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.client.core.atoms.AccountReference;
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.RadixHash;
-import com.radixdlt.client.core.atoms.TokenClassReference;
-import com.radixdlt.client.core.atoms.particles.quarks.AddressableQuark;
-import com.radixdlt.client.core.atoms.particles.quarks.FungibleQuark;
-import com.radixdlt.client.core.atoms.particles.quarks.OwnableQuark;
+import com.radixdlt.client.atommodel.quarks.AccountableQuark;
+import com.radixdlt.client.atommodel.quarks.FungibleQuark;
+import com.radixdlt.client.atommodel.quarks.OwnableQuark;
+import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import org.radix.serialization2.DsonOutput;
@@ -18,30 +18,33 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@SerializerId2("TRANSFERPARTICLE")
-public class TransferParticle extends Particle {
+/**
+ *  A particle which represents an amount of fungible tokens owned by some key owner and stored in an account.
+ */
+@SerializerId2("OWNEDTOKENSPARTICLE")
+public class OwnedTokensParticle extends Particle {
 	@JsonProperty("token_reference")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private TokenClassReference tokenClassReference;
 
-	protected TransferParticle() {
+	protected OwnedTokensParticle() {
 	}
 
-	public TransferParticle(long amount, FungibleQuark.FungibleType type, AccountReference address, long nonce,
+	public OwnedTokensParticle(long amount, FungibleQuark.FungibleType type, RadixAddress address, long nonce,
 	                        TokenClassReference tokenRef, long planck) {
-		super(new OwnableQuark(address), new AddressableQuark(address),
+		super(new OwnableQuark(address.getPublicKey()), new AccountableQuark(address),
 				new FungibleQuark(amount, planck, nonce, type));
 
 		this.tokenClassReference = tokenRef;
 	}
 
-	public AccountReference getAddress() {
-		return getQuarkOrError(AddressableQuark.class).getAddresses().get(0);
+	public RadixAddress getAddress() {
+		return getQuarkOrError(AccountableQuark.class).getAddresses().get(0);
 	}
 
 	@Override
 	public Set<ECPublicKey> getAddresses() {
-		return getQuarkOrError(AddressableQuark.class).getAddresses().stream().map(AccountReference::getKey).collect(Collectors.toSet());
+		return getQuarkOrError(AccountableQuark.class).getAddresses().stream().map(RadixAddress::getPublicKey).collect(Collectors.toSet());
 	}
 
 	public void addConsumerQuantities(long amount, ECKeyPair newOwner, Map<ECKeyPair, Long> consumerQuantities) {
@@ -57,7 +60,7 @@ public class TransferParticle extends Particle {
 		}
 
 		consumerQuantities.merge(newOwner, amount, Long::sum);
-		consumerQuantities.merge(getAddress().getKey().toECKeyPair(), getAmount() - amount, Long::sum);
+		consumerQuantities.merge(getAddress().toECKeyPair(), getAmount() - amount, Long::sum);
 	}
 
 	public FungibleQuark.FungibleType getType() {
@@ -81,12 +84,11 @@ public class TransferParticle extends Particle {
 	}
 
 	public Set<ECPublicKey> getOwnersPublicKeys() {
-		AccountReference accountReference = getQuarkOrError(OwnableQuark.class).getAccountReference();
-		return accountReference == null ? Collections.emptySet() : Collections.singleton(accountReference.getKey());
+		return Collections.singleton(getQuarkOrError(OwnableQuark.class).getOwner());
 	}
 
 	public ECPublicKey getOwner() {
-		return getQuarkOrError(OwnableQuark.class).getAccountReference().getKey();
+		return getQuarkOrError(OwnableQuark.class).getOwner();
 	}
 
 	public RadixHash getHash() {
@@ -99,7 +101,7 @@ public class TransferParticle extends Particle {
 
 	@Override
 	public String toString() {
-		return this.getClass().getSimpleName() + " owners(" + getQuarkOrError(OwnableQuark.class).getAccountReference() + ")"
+		return this.getClass().getSimpleName() + " owners(" + getQuarkOrError(OwnableQuark.class).getOwner() + ")"
 				+ " amount(" + getQuarkOrError(FungibleQuark.class).getAmount() + ")";
 	}
 }

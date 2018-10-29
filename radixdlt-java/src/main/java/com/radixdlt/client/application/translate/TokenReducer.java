@@ -1,12 +1,12 @@
 package com.radixdlt.client.application.translate;
 
-import com.radixdlt.client.core.atoms.TokenClassReference;
+import com.radixdlt.client.atommodel.tokens.TokenClassReference;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
-import com.radixdlt.client.core.atoms.particles.TokenParticle;
-import com.radixdlt.client.core.atoms.particles.TransferParticle;
-import com.radixdlt.client.core.atoms.particles.quarks.FungibleQuark;
+import com.radixdlt.client.atommodel.tokens.TokenParticle;
+import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
+import com.radixdlt.client.atommodel.quarks.FungibleQuark;
 
 import java.math.BigDecimal;
 import java.util.Collections;
@@ -26,8 +26,8 @@ public class TokenReducer implements ParticleReducer<Map<TokenClassReference, To
 	public Map<TokenClassReference, TokenState> reduce(Map<TokenClassReference, TokenState> state, SpunParticle s) {
 		Particle p = s.getParticle();
 		if (!(p instanceof TokenParticle
-			|| (p instanceof TransferParticle && s.getSpin() == Spin.UP
-				&& ((TransferParticle) p).getType() == FungibleQuark.FungibleType.MINTED))) {
+			|| (p instanceof OwnedTokensParticle && s.getSpin() == Spin.UP
+				&& ((OwnedTokensParticle) p).getType() == FungibleQuark.FungibleType.MINTED))) {
 			return state;
 		}
 
@@ -47,7 +47,7 @@ public class TokenReducer implements ParticleReducer<Map<TokenClassReference, To
 				(a, b) -> new TokenState(b.getName(), b.getIso(), b.getDescription(), a.getTotalSupply())
 			);
 		} else {
-			TransferParticle minted = (TransferParticle) p;
+			OwnedTokensParticle minted = (OwnedTokensParticle) p;
 			TokenState tokenState = new TokenState(
 				null,
 				minted.getTokenClassReference().getIso(),

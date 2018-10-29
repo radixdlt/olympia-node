@@ -1,10 +1,10 @@
 package com.radixdlt.client.application.translate;
 
-import com.radixdlt.client.core.atoms.TokenClassReference;
+import com.radixdlt.client.atommodel.tokens.TokenClassReference;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
-import com.radixdlt.client.core.atoms.particles.TokenParticle;
-import com.radixdlt.client.core.atoms.particles.TransferParticle;
-import com.radixdlt.client.core.atoms.particles.quarks.FungibleQuark;
+import com.radixdlt.client.atommodel.tokens.TokenParticle;
+import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
+import com.radixdlt.client.atommodel.quarks.FungibleQuark;
 import org.junit.Test;
 
 import java.math.BigDecimal;
@@ -40,7 +40,7 @@ public class TokenReducerTest {
 		when(tokenParticle.getIso()).thenReturn("ISO");
 		when(tokenParticle.getDescription()).thenReturn("Desc");
 
-		TransferParticle minted = mock(TransferParticle.class);
+		OwnedTokensParticle minted = mock(OwnedTokensParticle.class);
 		when(minted.getAmount()).thenReturn(100L);
 		when(minted.getType()).thenReturn(FungibleQuark.FungibleType.MINTED);
 		when(minted.getTokenClassReference()).thenReturn(tokenRef);

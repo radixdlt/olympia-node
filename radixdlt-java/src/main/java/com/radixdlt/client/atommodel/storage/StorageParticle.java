@@ -1,10 +1,9 @@
-package com.radixdlt.client.core.atoms.particles;
+package com.radixdlt.client.atommodel.storage;
 
-import com.radixdlt.client.core.address.RadixAddress;
-import com.radixdlt.client.core.atoms.AccountReference;
-import com.radixdlt.client.core.atoms.MetadataMap;
-import com.radixdlt.client.core.atoms.particles.quarks.AddressableQuark;
-import com.radixdlt.client.core.atoms.particles.quarks.DataQuark;
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.client.atommodel.quarks.AccountableQuark;
+import com.radixdlt.client.atommodel.quarks.DataQuark;
+import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import org.radix.serialization2.SerializerId2;
 
@@ -22,7 +21,7 @@ import java.util.stream.Collectors;
 @SerializerId2("STORAGEPARTICLE")
 public class StorageParticle extends Particle {
 	public static class StorageParticleBuilder {
-		private final List<AccountReference> addresses = new ArrayList<>();
+		private final List<RadixAddress> addresses = new ArrayList<>();
 		private final MetadataMap metaData = new MetadataMap();
 		private byte[] bytes;
 		public StorageParticleBuilder setMetaData(String key, String value) {
@@ -41,7 +40,7 @@ public class StorageParticle extends Particle {
 		}
 
 		public StorageParticleBuilder account(RadixAddress address) {
-			addresses.add(new AccountReference(address.getPublicKey()));
+			addresses.add(address);
 			return this;
 		}
 
@@ -53,14 +52,14 @@ public class StorageParticle extends Particle {
 	private StorageParticle() {
 	}
 
-	private StorageParticle(byte[] bytes, MetadataMap metaData, List<AccountReference> addresses) {
-		super(new AddressableQuark(addresses), new DataQuark(bytes, metaData));
+	private StorageParticle(byte[] bytes, MetadataMap metaData, List<RadixAddress> addresses) {
+		super(new AccountableQuark(addresses), new DataQuark(bytes, metaData));
 		Objects.requireNonNull(bytes);
 	}
 
 	@Override
 	public Set<ECPublicKey> getAddresses() {
-		return getQuarkOrError(AddressableQuark.class).getAddresses().stream().map(AccountReference::getKey).collect(Collectors.toSet());
+		return getQuarkOrError(AccountableQuark.class).getAddresses().stream().map(RadixAddress::getPublicKey).collect(Collectors.toSet());
 	}
 
 	public String getMetaData(String key) {

@@ -7,8 +7,7 @@ import org.junit.Test;
 import org.radix.serialization2.DsonOutput.Output;
 import org.radix.serialization2.Serialization;
 
-import com.radixdlt.client.core.address.RadixAddress;
-import com.radixdlt.client.core.atoms.AccountReference;
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.Spin;
@@ -25,9 +24,9 @@ public class ValidAtomFilterTest {
 
 	@Test
 	public void testDownWithMissingUp() {
-		AccountReference accountReference = mock(AccountReference.class);
+		RadixAddress accountReference = mock(RadixAddress.class);
 		ECPublicKey ecPublicKey = mock(ECPublicKey.class);
-		when(accountReference.getKey()).thenReturn(ecPublicKey);
+		when(accountReference.getPublicKey()).thenReturn(ecPublicKey);
 
 		RadixAddress address = mock(RadixAddress.class);
 		when(address.ownsKey(any(ECKeyPair.class))).thenReturn(true);
@@ -57,9 +56,9 @@ public class ValidAtomFilterTest {
 
 	@Test
 	public void testDownBeforeUp() {
-		AccountReference accountReference = mock(AccountReference.class);
+		RadixAddress accountReference = mock(RadixAddress.class);
 		ECPublicKey ecPublicKey = mock(ECPublicKey.class);
-		when(accountReference.getKey()).thenReturn(ecPublicKey);
+		when(accountReference.getPublicKey()).thenReturn(ecPublicKey);
 
 		RadixAddress address = mock(RadixAddress.class);
 		when(address.ownsKey(ecPublicKey)).thenReturn(true);

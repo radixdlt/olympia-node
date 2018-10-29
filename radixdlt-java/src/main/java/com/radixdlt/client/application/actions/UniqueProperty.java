@@ -1,6 +1,6 @@
 package com.radixdlt.client.application.actions;
 
-import com.radixdlt.client.core.address.RadixAddress;
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import java.util.Objects;
 
 /**

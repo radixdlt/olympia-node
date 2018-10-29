@@ -2,11 +2,10 @@ package com.radixdlt.client.examples;
 
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
-import com.radixdlt.client.core.atoms.AccountReference;
-import com.radixdlt.client.core.atoms.TokenClassReference;
+import com.radixdlt.client.atommodel.tokens.TokenClassReference;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
-import com.radixdlt.client.core.address.RadixAddress;
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import java.math.BigDecimal;
 
@@ -63,7 +62,7 @@ public class RadixWalletExample {
 
 		// If specified, send money to another address
 		if (TO_ADDRESS_BASE58 != null) {
-			RadixAddress toAddress = RadixAddress.fromString(TO_ADDRESS_BASE58);
+			RadixAddress toAddress = RadixAddress.from(TO_ADDRESS_BASE58);
 			api.sendTokens(toAddress, AMOUNT, token).toObservable()
 				.subscribe(System.out::println, Throwable::printStackTrace);
 		}

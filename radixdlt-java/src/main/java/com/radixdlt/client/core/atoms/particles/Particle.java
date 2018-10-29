@@ -14,7 +14,6 @@ import org.radix.serialization2.SerializerId2;
 import org.radix.serialization2.client.SerializableObject;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.client.core.atoms.particles.quarks.Quark;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 
 /**

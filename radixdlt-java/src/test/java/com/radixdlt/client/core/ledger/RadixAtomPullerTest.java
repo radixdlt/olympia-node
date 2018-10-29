@@ -7,7 +7,7 @@ import java.util.stream.Stream;
 
 import org.junit.Test;
 
-import com.radixdlt.client.core.address.RadixAddress;
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.Atom;
 
 import static org.mockito.ArgumentMatchers.any;

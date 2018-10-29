@@ -1,5 +1,6 @@
 package com.radixdlt.client.core.address;
 
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
