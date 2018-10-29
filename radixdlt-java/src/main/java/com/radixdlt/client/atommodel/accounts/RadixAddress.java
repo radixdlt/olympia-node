@@ -12,8 +12,11 @@ import com.radixdlt.client.core.util.Base58;
 
 public class RadixAddress {
 
-	// The Base58 address string
+	/**
+	 * The Base58 address string
+ 	 */
 	private final String addressBase58;
+
 	private final transient ECPublicKey publicKey;
 
 	public RadixAddress(String addressBase58) {
@@ -55,6 +58,22 @@ public class RadixAddress {
 		this.publicKey = publicKey;
 	}
 
+	private RadixAddress(byte[] raw) {
+		String addressBase58 = Base58.toBase58(raw);
+		RadixHash check = RadixHash.of(raw, 0, raw.length - 4);
+		for (int i = 0; i < 4; ++i) {
+			if (check.get(i) != raw[raw.length - 4 + i]) {
+				throw new IllegalArgumentException("Address " + addressBase58 + " checksum mismatch");
+			}
+		}
+
+		byte[] publicKey = new byte[raw.length - 5];
+		System.arraycopy(raw, 1, publicKey, 0, raw.length - 5);
+
+		this.addressBase58 = addressBase58;
+		this.publicKey = new ECPublicKey(publicKey);
+	}
+
 	public boolean ownsKey(ECKeyPair ecKeyPair) {
 		return this.ownsKey(ecKeyPair.getPublicKey());
 	}
@@ -82,6 +101,10 @@ public class RadixAddress {
 
 	public static RadixAddress from(String addressBase58) {
 		return new RadixAddress(addressBase58);
+	}
+
+	public static RadixAddress from(byte[] raw) {
+		return new RadixAddress(raw);
 	}
 
 	@Override

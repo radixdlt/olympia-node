@@ -1,6 +1,8 @@
 package org.radix.serialization2.mapper;
 
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.client.core.util.Base58;
+import java.util.function.Function;
 import org.radix.common.ID.EUID;
 import org.radix.crypto.Hash;
 import org.radix.serialization2.SerializerDummy;
@@ -48,23 +50,45 @@ public class JacksonCborMapper extends ObjectMapper {
 	 */
 	public static JacksonCborMapper create(SerializerIds idLookup, FilterProvider filterProvider) {
 		SimpleModule cborModule = new SimpleModule();
-		cborModule.addSerializer(EUID.class, new JacksonCborEUIDSerializer());
-		cborModule.addSerializer(Hash.class, new JacksonCborHashSerializer());
-		cborModule.addSerializer(Timestamps.class, new JacksonTimestampsSerializer());
-		cborModule.addSerializer(byte[].class, new JacksonCborBytesSerializer());
-		cborModule.addSerializer(SerializerDummy.class, new JacksonSerializerDummySerializer(idLookup));
-		cborModule.addSerializer(RadixAddress.class, new JacksonCborObjectStringSerializer<>(
-			JacksonCodecConstants.ADDR_VALUE, RadixAddress::toString)
-		);
 
-		cborModule.addDeserializer(EUID.class, new JacksonCborEUIDDeserializer());
-		cborModule.addDeserializer(Hash.class, new JacksonCborHashDeserializer());
+		cborModule.addSerializer(Timestamps.class, new JacksonTimestampsSerializer());
+		cborModule.addSerializer(SerializerDummy.class, new JacksonSerializerDummySerializer(idLookup));
+		cborModule.addSerializer(EUID.class, new JacksonCborEUIDSerializer());
+		cborModule.addSerializer(Hash.class, new JacksonCborObjectBytesSerializer<>(
+			JacksonCodecConstants.HASH_VALUE,
+			Hash::toByteArray
+		));
+		cborModule.addSerializer(byte[].class, new JacksonCborObjectBytesSerializer<>(
+			JacksonCodecConstants.BYTES_VALUE,
+			Function.identity()
+		));
+		cborModule.addSerializer(RadixAddress.class, new JacksonCborObjectBytesSerializer<>(
+			JacksonCodecConstants.ADDR_VALUE,
+			addr -> Base58.fromBase58(addr.toString())
+		));
+
 		cborModule.addDeserializer(Timestamps.class, new JacksonTimestampsDeserializer());
-		cborModule.addDeserializer(byte[].class, new JacksonCborBytesDeserializer());
 		cborModule.addDeserializer(SerializerDummy.class, new JacksonSerializerDummyDeserializer());
-		cborModule.addDeserializer(RadixAddress.class, new JacksonCborObjectStringDeserializer<>(
-			RadixAddress.class, JacksonCodecConstants.ADDR_VALUE, RadixAddress::from)
-		);
+		cborModule.addDeserializer(EUID.class, new JacksonCborObjectBytesDeserializer<>(
+			EUID.class,
+			JacksonCodecConstants.EUID_VALUE,
+			EUID::new
+		));
+		cborModule.addDeserializer(Hash.class, new JacksonCborObjectBytesDeserializer<>(
+			Hash.class,
+			JacksonCodecConstants.HASH_VALUE,
+			Hash::new
+		));
+		cborModule.addDeserializer(byte[].class, new JacksonCborObjectBytesDeserializer<>(
+			byte[].class,
+			JacksonCodecConstants.BYTES_VALUE,
+			Function.identity()
+		));
+		cborModule.addDeserializer(RadixAddress.class, new JacksonCborObjectBytesDeserializer<>(
+			RadixAddress.class,
+			JacksonCodecConstants.ADDR_VALUE,
+			RadixAddress::from
+		));
 
 		JacksonCborMapper mapper = new JacksonCborMapper();
 		mapper.registerModule(cborModule);

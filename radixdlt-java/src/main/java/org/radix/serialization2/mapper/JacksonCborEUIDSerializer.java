@@ -5,7 +5,6 @@ import java.io.IOException;
 import org.radix.common.ID.EUID;
 
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 
@@ -25,8 +24,7 @@ class JacksonCborEUIDSerializer extends StdSerializer<EUID> {
 	}
 
 	@Override
-	public void serialize(EUID value, JsonGenerator jgen, SerializerProvider provider)
-			throws IOException, JsonProcessingException {
+	public void serialize(EUID value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
 		byte[] bytes = new byte[1 + EUID.BYTES];
 		bytes[0] = JacksonCodecConstants.EUID_VALUE;
 		value.toByteArray(bytes, 1);
