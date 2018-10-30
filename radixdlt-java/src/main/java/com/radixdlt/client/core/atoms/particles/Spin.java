@@ -1,7 +1,10 @@
 package com.radixdlt.client.core.atoms.particles;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
+
 public enum Spin {
-	UP(1), DOWN(2);
+	UP(1), NEUTRAL(0), DOWN(-1);
 
 	private final int value;
 
@@ -9,15 +12,18 @@ public enum Spin {
 		this.value = value;
 	}
 
-	public int ordinalValue() {
+	@JsonValue
+	public int intValue() {
 		return value;
 	}
 
-	public static Spin valueOf(int ordinalValue) {
-		switch (ordinalValue) {
+	@JsonCreator
+	public static Spin valueOf(int intValue) {
+		switch (intValue) {
 			case 1: return UP;
-			case 2: return DOWN;
-			default: throw new IllegalArgumentException("No universe type of value: " + ordinalValue);
+			case 0: return NEUTRAL;
+			case -1: return DOWN;
+			default: throw new IllegalArgumentException("No spin type of value: " + intValue);
 		}
 	}
 }

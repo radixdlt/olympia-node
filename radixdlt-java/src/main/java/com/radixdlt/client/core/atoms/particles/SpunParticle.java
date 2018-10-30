@@ -42,7 +42,7 @@ public class SpunParticle<T extends Particle> extends SerializableObject {
 	@JsonProperty("spin")
 	@DsonOutput(value = {DsonOutput.Output.ALL})
 	private int getJsonSpin() {
-		return this.spin.ordinalValue();
+		return this.spin.intValue();
 	}
 
 	@JsonProperty("spin")
