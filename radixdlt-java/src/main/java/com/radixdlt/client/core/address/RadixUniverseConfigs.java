@@ -6,12 +6,16 @@ public final class RadixUniverseConfigs {
 
     private RadixUniverseConfigs() { }
 
+    public static RadixUniverseConfig getBetanet() {
+        return RadixUniverseConfig.fromInputStream(getConfigFileStream("betanet.json"));
+    }
+
     public static RadixUniverseConfig getWinterfell() {
         return RadixUniverseConfig.fromInputStream(getConfigFileStream("testuniverse.json"));
     }
 
     public static RadixUniverseConfig getSunstone() {
-        return RadixUniverseConfig.fromInputStream(getConfigFileStream("testuniverse.json"));
+        return RadixUniverseConfig.fromInputStream(getConfigFileStream("sunstone.json"));
     }
 
     public static RadixUniverseConfig getHighgarden() {

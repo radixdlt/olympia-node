@@ -1,8 +1,5 @@
 package com.radixdlt.client.core.crypto;
 
-import com.google.gson.annotations.SerializedName;
-import com.radixdlt.client.core.address.EUID;
-import com.radixdlt.client.core.atoms.RadixHash;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
@@ -12,6 +9,7 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.security.KeyFactory;
 import java.util.Arrays;
+
 import org.bouncycastle.crypto.params.ECDomainParameters;
 import org.bouncycastle.crypto.params.ECPrivateKeyParameters;
 import org.bouncycastle.crypto.signers.ECDSASigner;
@@ -20,11 +18,29 @@ import org.bouncycastle.jce.spec.ECParameterSpec;
 import org.bouncycastle.jce.spec.ECPrivateKeySpec;
 import org.bouncycastle.jce.spec.ECPublicKeySpec;
 import org.bouncycastle.math.ec.ECPoint;
+import org.radix.common.ID.EUID;
+import org.radix.serialization2.DsonOutput;
+import org.radix.serialization2.DsonOutput.Output;
+import org.radix.serialization2.SerializerId2;
+import org.radix.serialization2.client.SerializableObject;
 
-public class ECKeyPair {
-	@SerializedName("public")
-	private final ECPublicKey publicKey;
-	private final transient byte[] privateKey;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.client.core.atoms.RadixHash;
+
+
+@SerializerId2("ECKEYPAIR")
+public class ECKeyPair extends SerializableObject {
+	@JsonProperty("public")
+	@DsonOutput(Output.ALL)
+	private ECPublicKey publicKey;
+
+	@JsonProperty("private")
+	@DsonOutput(Output.PERSIST)
+	private byte[] privateKey;
+
+	ECKeyPair() {
+		// No-arg constructor for serializer
+	}
 
 	public ECKeyPair(ECPublicKey publicKey) {
 		this.publicKey = publicKey;

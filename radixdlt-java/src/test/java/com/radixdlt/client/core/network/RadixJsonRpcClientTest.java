@@ -1,29 +1,30 @@
 package com.radixdlt.client.core.network;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import org.junit.Test;
+import org.radix.common.ID.EUID;
+import org.radix.serialization2.DsonOutput.Output;
+import org.radix.serialization2.client.GsonJson;
+import org.radix.serialization2.client.Serialize;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.radixdlt.client.core.address.EUID;
-import com.radixdlt.client.core.atoms.ApplicationPayloadAtom;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomObservation;
 import com.radixdlt.client.core.atoms.Shards;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState;
 import com.radixdlt.client.core.network.WebSocketClient.RadixClientStatus;
-import com.radixdlt.client.core.serialization.RadixJson;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import io.reactivex.Completable;
 import io.reactivex.Observable;
 import io.reactivex.observers.TestObserver;
 import io.reactivex.subjects.ReplaySubject;
-import java.math.BigInteger;
-import org.junit.Test;
 
 public class RadixJsonRpcClientTest {
 
@@ -57,7 +58,6 @@ public class RadixJsonRpcClientTest {
 		when(wsClient.connect()).thenReturn(Completable.complete());
 
 		JsonParser parser = new JsonParser();
-		Gson gson = RadixJson.getGson();
 
 		doAnswer(invocation -> {
 			String msg = (String) invocation.getArguments()[0];
@@ -65,18 +65,18 @@ public class RadixJsonRpcClientTest {
 			String id = jsonObject.get("id").getAsString();
 
 			JsonObject data = new JsonObject();
-			JsonObject system = new JsonObject();
+			data.addProperty("serializer", Serialize.getInstance().getIdForClass(RadixSystem.class));
 			JsonObject shards = new JsonObject();
 			shards.addProperty("low", -1);
 			shards.addProperty("high", 1);
-			system.add("shards", shards);
-			data.add("system", system);
+			data.add("shards", shards);
 
 			JsonObject response = new JsonObject();
 			response.addProperty("id", id);
 			response.add("result", data);
+			System.out.println(data);
 
-			messages.onNext(gson.toJson(response));
+			messages.onNext(GsonJson.getInstance().stringFromGson(response));
 			return true;
 		}).when(wsClient).send(any());
 		RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(wsClient);
@@ -99,7 +99,6 @@ public class RadixJsonRpcClientTest {
 		when(wsClient.connect()).thenReturn(Completable.complete());
 
 		JsonParser parser = new JsonParser();
-		Gson gson = RadixJson.getGson();
 
 		doAnswer(invocation -> {
 			String msg = (String) invocation.getArguments()[0];
@@ -112,14 +111,14 @@ public class RadixJsonRpcClientTest {
 			response.addProperty("id", id);
 			response.add("result", atoms);
 
-			messages.onNext(gson.toJson(response));
+			messages.onNext(GsonJson.getInstance().stringFromGson(response));
 			return true;
 		}).when(wsClient).send(any());
 		RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(wsClient);
 
 		TestObserver<Atom> observer = new TestObserver<>();
 
-		jsonRpcClient.getAtom(new EUID(BigInteger.ONE)).subscribe(observer);
+		jsonRpcClient.getAtom(new EUID(1)).subscribe(observer);
 
 		observer.assertValueCount(0);
 		observer.assertComplete();
@@ -136,7 +135,6 @@ public class RadixJsonRpcClientTest {
 		when(wsClient.connect()).thenReturn(Completable.complete());
 
 		JsonParser parser = new JsonParser();
-		Gson gson = RadixJson.getGson();
 
 		doAnswer(invocation -> {
 			String msg = (String) invocation.getArguments()[0];
@@ -144,23 +142,24 @@ public class RadixJsonRpcClientTest {
 			String id = jsonObject.get("id").getAsString();
 
 			JsonArray atoms = new JsonArray();
-			Atom atom = new ApplicationPayloadAtom("Test", null, null, null, null, 1);
-			atoms.add(gson.toJsonTree(atom, Atom.class));
+			Atom atom = new Atom(null);
+			String atomJson = Serialize.getInstance().toJson(atom, Output.API);
+			atoms.add(parser.parse(atomJson));
 
 			JsonObject response = new JsonObject();
 			response.addProperty("id", id);
 			response.add("result", atoms);
 
-			messages.onNext(gson.toJson(response));
+			messages.onNext(GsonJson.getInstance().stringFromGson(response));
 			return true;
 		}).when(wsClient).send(any());
 		RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(wsClient);
 
 		TestObserver<Atom> observer = new TestObserver<>();
 
-		jsonRpcClient.getAtom(new EUID(BigInteger.ONE)).subscribe(observer);
+		jsonRpcClient.getAtom(new EUID(1)).subscribe(observer);
 
-		observer.assertValue(atom -> atom.getAsMessageAtom().getApplicationId().equals("Test"));
+		observer.assertValueCount(1);
 		observer.assertComplete();
 		observer.assertNoErrors();
 	}
@@ -175,7 +174,6 @@ public class RadixJsonRpcClientTest {
 		when(wsClient.connect()).thenReturn(Completable.complete());
 
 		JsonParser parser = new JsonParser();
-		Gson gson = RadixJson.getGson();
 
 		doAnswer(invocation -> {
 			String msg = (String) invocation.getArguments()[0];
@@ -186,7 +184,7 @@ public class RadixJsonRpcClientTest {
 			response.addProperty("id", id);
 			response.add("result", new JsonObject());
 
-			messages.onNext(gson.toJson(response));
+			messages.onNext(GsonJson.getInstance().stringFromGson(response));
 
 			String subscriberId = jsonObject.get("params").getAsJsonObject().get("subscriberId").getAsString();
 			JsonObject notification = new JsonObject();
@@ -195,28 +193,25 @@ public class RadixJsonRpcClientTest {
 			params.addProperty("subscriberId", subscriberId);
 
 			JsonArray atoms = new JsonArray();
-			JsonElement atom = gson.toJsonTree(
-				new ApplicationPayloadAtom("Test", null, null, null, null, 1),
-				Atom.class
-			);
+			Atom atomObject = new Atom(null);
+			JsonElement atom = parser.parse(Serialize.getInstance().toJson(atomObject, Output.API));
 			atoms.add(atom);
 			params.add("atoms", atoms);
 			params.addProperty("isHead", false);
 
 			notification.add("params", params);
 
-			messages.onNext(gson.toJson(notification));
+			messages.onNext(GsonJson.getInstance().stringFromGson(notification));
 			return true;
 		}).when(wsClient).send(any());
 		RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(wsClient);
 
 		TestObserver<AtomObservation> observer = new TestObserver<>();
 
-		jsonRpcClient.getAtoms(new EUID(BigInteger.ONE)).subscribe(observer);
+		jsonRpcClient.getAtoms(new AtomQuery(new EUID(1))).subscribe(observer);
 
 		observer.assertNoErrors();
 		observer.assertValueCount(1);
-		observer.assertValue(observation -> observation.getAtom().getAsMessageAtom().getApplicationId().equals("Test"));
 	}
 
 	@Test
@@ -229,7 +224,6 @@ public class RadixJsonRpcClientTest {
 		when(wsClient.connect()).thenReturn(Completable.complete());
 
 		JsonParser parser = new JsonParser();
-		Gson gson = RadixJson.getGson();
 
 		doAnswer(invocation -> {
 			String msg = (String) invocation.getArguments()[0];
@@ -243,24 +237,22 @@ public class RadixJsonRpcClientTest {
 				response.addProperty("id", id);
 				response.add("result", new JsonObject());
 
-				messages.onNext(gson.toJson(response));
+				messages.onNext(GsonJson.getInstance().stringFromGson(response));
 			} else if (method.equals("Subscription.cancel")) {
 				String subscriberId = jsonObject.get("params").getAsJsonObject().get("subscriberId").getAsString();
 				JsonObject notification = new JsonObject();
 				notification.addProperty("method", "Atoms.subscribeUpdate");
 				JsonObject params = new JsonObject();
 				params.addProperty("subscriberId", subscriberId);
+				Atom atomObject = new Atom(null);
+				JsonElement atom = parser.parse(Serialize.getInstance().toJson(atomObject, Output.API));
 				JsonArray atoms = new JsonArray();
-				JsonElement atom = gson.toJsonTree(
-					new ApplicationPayloadAtom("Test", null, null, null, null, 1),
-					Atom.class
-				);
 				atoms.add(atom);
 				params.add("atoms", atoms);
 
 				notification.add("params", params);
 
-				messages.onNext(gson.toJson(notification));
+				messages.onNext(GsonJson.getInstance().stringFromGson(notification));
 			}
 
 			return true;
@@ -269,7 +261,7 @@ public class RadixJsonRpcClientTest {
 
 		TestObserver<AtomObservation> observer = new TestObserver<>();
 
-		jsonRpcClient.getAtoms(new EUID(BigInteger.ONE))
+		jsonRpcClient.getAtoms(new AtomQuery(new EUID(1)))
 			.subscribe(observer);
 		observer.cancel();
 
@@ -288,7 +280,6 @@ public class RadixJsonRpcClientTest {
 		when(wsClient.connect()).thenReturn(Completable.complete());
 
 		JsonParser parser = new JsonParser();
-		Gson gson = RadixJson.getGson();
 
 		doAnswer(invocation -> {
 			String msg = (String) invocation.getArguments()[0];
@@ -301,7 +292,7 @@ public class RadixJsonRpcClientTest {
 				response.addProperty("id", id);
 				response.add("result", new JsonObject());
 
-				messages.onNext(gson.toJson(response));
+				messages.onNext(GsonJson.getInstance().stringFromGson(response));
 
 				String subscriberId = jsonObject.get("params").getAsJsonObject().get("subscriberId").getAsString();
 				JsonObject notification = new JsonObject();
@@ -312,7 +303,7 @@ public class RadixJsonRpcClientTest {
 
 				notification.add("params", params);
 
-				messages.onNext(gson.toJson(notification));
+				messages.onNext(GsonJson.getInstance().stringFromGson(notification));
 			}
 
 			return true;
@@ -322,7 +313,7 @@ public class RadixJsonRpcClientTest {
 		TestObserver<AtomSubmissionUpdate> observer = new TestObserver<>();
 
 		jsonRpcClient.submitAtom(
-			new ApplicationPayloadAtom("Test", null, null, null, null, 1)
+			new Atom(null)
 		).subscribe(observer);
 
 		observer.assertNoErrors();

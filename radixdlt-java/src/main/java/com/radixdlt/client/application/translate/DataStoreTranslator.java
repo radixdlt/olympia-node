@@ -1,18 +1,28 @@
 package com.radixdlt.client.application.translate;
 
-import com.radixdlt.client.application.actions.DataStore;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonParser;
+import com.radixdlt.client.application.actions.StoreDataAction;
 import com.radixdlt.client.application.objects.Data;
-import com.radixdlt.client.core.atoms.ApplicationPayloadAtom;
-import com.radixdlt.client.core.atoms.AtomBuilder;
+import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.client.core.atoms.particles.SpunParticle;
+import com.radixdlt.client.atommodel.storage.StorageParticle;
+import com.radixdlt.client.atommodel.storage.StorageParticle.StorageParticleBuilder;
+import com.radixdlt.client.atommodel.quarks.DataQuark;
 import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
-import io.reactivex.Completable;
+import com.radixdlt.client.core.crypto.Encryptor;
+
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public class DataStoreTranslator {
 	private static final DataStoreTranslator INSTANCE = new DataStoreTranslator();
+	private static final JsonParser JSON_PARSER = new JsonParser();
 
 	public static DataStoreTranslator getInstance() {
 		return INSTANCE;
@@ -21,37 +31,74 @@ public class DataStoreTranslator {
 	private DataStoreTranslator() {
 	}
 
-	public Completable translate(DataStore dataStore, AtomBuilder atomBuilder) {
-		atomBuilder.type(ApplicationPayloadAtom.class);
-		atomBuilder.payload(dataStore.getData().getBytes());
-
-		if (!dataStore.getData().getProtectors().isEmpty()) {
-			atomBuilder.protectors(dataStore.getData().getProtectors());
+	// TODO: figure out correct method signature here (return Single<AtomBuilder> instead?)
+	public List<SpunParticle> map(StoreDataAction storeDataAction) {
+		if (storeDataAction == null) {
+			return Collections.emptyList();
 		}
 
-		if (dataStore.getData().getMetaData().containsKey("application")) {
-			atomBuilder.applicationId((String) dataStore.getData().getMetaData().get("application"));
+		byte[] payload = storeDataAction.getData().getBytes();
+		String application = (String) storeDataAction.getData().getMetaData().get("application");
+
+		List<SpunParticle> particles = new ArrayList<>();
+		StorageParticle storageParticle = new StorageParticleBuilder()
+				.payload(payload)
+				.setMetaData("application", application)
+				.accounts(storeDataAction.getAddresses())
+				.build();
+		particles.add(SpunParticle.up(storageParticle));
+
+		Encryptor encryptor = storeDataAction.getData().getEncryptor();
+		if (encryptor != null) {
+			JsonArray protectorsJson = new JsonArray();
+			encryptor.getProtectors().stream().map(EncryptedPrivateKey::base64).forEach(protectorsJson::add);
+
+			byte[] encryptorPayload = protectorsJson.toString().getBytes(StandardCharsets.UTF_8);
+			StorageParticle encryptorParticle = new StorageParticleBuilder()
+					.payload(encryptorPayload)
+					.setMetaData("application", "encryptor")
+					.setMetaData("contentType", "application/json")
+					.accounts(storeDataAction.getAddresses())
+					.build();
+			particles.add(SpunParticle.up(encryptorParticle));
 		}
 
-		dataStore.getAddresses().forEach(atomBuilder::addDestination);
-
-		return Completable.complete();
+		return particles;
 	}
 
-	public Data fromAtom(ApplicationPayloadAtom atom) {
-		final List<EncryptedPrivateKey> protectors;
-		if (atom.getEncryptor() != null && atom.getEncryptor().getProtectors() != null) {
-			protectors = atom.getEncryptor().getProtectors();
-		} else {
-			protectors = Collections.emptyList();
+	public Optional<Data> fromAtom(Atom atom) {
+		final Optional<StorageParticle> bytesParticle = atom.getDataParticles().stream()
+				.filter(p -> !"encryptor".equals(p.getMetaData("application")))
+				.findFirst();
+
+		if (!bytesParticle.isPresent()) {
+			return Optional.empty();
 		}
 
+		// TODO: don't pass in maps, utilize a metadata builder?
 		Map<String, Object> metaData = new HashMap<>();
 		metaData.put("timestamp", atom.getTimestamp());
 		metaData.put("signatures", atom.getSignatures());
-		metaData.put("application", atom.getApplicationId());
-		metaData.put("encrypted", !protectors.isEmpty());
 
-		return Data.raw(atom.getPayload().getBytes(), metaData, protectors);
+		bytesParticle.ifPresent(p -> metaData.compute("application", (k, v) -> p.getMetaData("application")));
+
+		final Optional<StorageParticle> encryptorParticle = atom.getDataParticles().stream()
+				.filter(p -> "encryptor".equals(p.getMetaData("application")))
+				.findAny();
+		metaData.put("encrypted", encryptorParticle.isPresent());
+
+		final Encryptor encryptor;
+		if (encryptorParticle.isPresent()) {
+			JsonArray protectorsJson = JSON_PARSER.parse(
+					new String(encryptorParticle.get().getQuarkOrError(DataQuark.class).getBytes(),
+							StandardCharsets.UTF_8)).getAsJsonArray();
+			List<EncryptedPrivateKey> protectors = new ArrayList<>();
+			protectorsJson.forEach(protectorJson -> protectors.add(EncryptedPrivateKey.fromBase64(protectorJson.getAsString())));
+			encryptor = new Encryptor(protectors);
+		} else {
+			encryptor = null;
+		}
+
+		return Optional.of(Data.raw(bytesParticle.get().getQuarkOrError(DataQuark.class).getBytes(), metaData, encryptor));
 	}
 }

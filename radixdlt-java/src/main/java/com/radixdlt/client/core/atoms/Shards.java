@@ -2,7 +2,7 @@ package com.radixdlt.client.core.atoms;
 
 import java.util.Collection;
 
-public class Shards {
+public final class Shards {
 	private final long low;
 	private final long high;
 
@@ -20,7 +20,19 @@ public class Shards {
 	}
 
 	public boolean intersects(Collection<Long> shards) {
-		return shards.stream().anyMatch(shard -> shard >= low && shard <= high);
+		return shards.stream().anyMatch(this::contains);
+	}
+
+	public boolean contains(long shard) {
+		return shard >= low && shard <= high;
+	}
+
+	public long getLow() {
+		return this.low;
+	}
+
+	public long getHigh() {
+		return this.high;
 	}
 
 	@Override
@@ -30,7 +42,7 @@ public class Shards {
 
 	@Override
 	public boolean equals(Object o) {
-		if (o == null || !(o instanceof Shards)) {
+		if (!(o instanceof Shards)) {
 			return false;
 		}
 
@@ -40,7 +52,6 @@ public class Shards {
 
 	@Override
 	public int hashCode() {
-		//TODO: fix HACK
-		return (low + "-" + high).hashCode();
+		return Long.hashCode(high) * 31 + Long.hashCode(low);
 	}
 }

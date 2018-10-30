@@ -1,8 +1,6 @@
 package com.radixdlt.client.core.address;
 
-import com.radixdlt.client.core.serialization.HasOrdinalValue;
-
-public enum RadixUniverseType implements HasOrdinalValue {
+public enum RadixUniverseType {
 	PUBLIC("RADIX_PUBLIC", 1),
 	DEVELOPMENT("RADIX_DEVELOPMENT", 2);
 
@@ -14,8 +12,8 @@ public enum RadixUniverseType implements HasOrdinalValue {
 		this.ordinalValue = ordinalValue;
 	}
 
-	public int ordinalValue() {
-		return ordinalValue;
+	public final int ordinalValue() {
+		return this.ordinalValue;
 	}
 
 	public static RadixUniverseType valueOf(int ordinalValue) {

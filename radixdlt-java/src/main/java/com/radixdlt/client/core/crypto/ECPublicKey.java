@@ -1,7 +1,5 @@
 package com.radixdlt.client.core.crypto;
 
-import com.radixdlt.client.core.address.EUID;
-import com.radixdlt.client.core.atoms.RadixHash;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -9,10 +7,11 @@ import java.math.BigInteger;
 import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
 import java.util.Arrays;
-import org.bouncycastle.util.encoders.Base64;
 import java.util.Random;
+
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+
 import org.bouncycastle.crypto.BufferedBlockCipher;
 import org.bouncycastle.crypto.CipherParameters;
 import org.bouncycastle.crypto.InvalidCipherTextException;
@@ -26,13 +25,25 @@ import org.bouncycastle.crypto.params.KeyParameter;
 import org.bouncycastle.crypto.params.ParametersWithIV;
 import org.bouncycastle.crypto.signers.ECDSASigner;
 import org.bouncycastle.math.ec.ECPoint;
+import org.bouncycastle.util.encoders.Base64;
+import org.radix.common.ID.EUID;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
+import com.radixdlt.client.core.atoms.RadixHash;
 import com.radixdlt.client.core.util.Base64Encoded;
 
 public class ECPublicKey implements Base64Encoded {
 	private final byte[] publicKey;
 
+	@JsonCreator
 	public ECPublicKey(byte[] publicKey) {
 		this.publicKey = Arrays.copyOf(publicKey, publicKey.length);
+	}
+
+	@JsonValue
+	public byte[] getPublicKey() {
+		return publicKey;
 	}
 
 	public void copyPublicKey(byte[] dest, int destPos) {

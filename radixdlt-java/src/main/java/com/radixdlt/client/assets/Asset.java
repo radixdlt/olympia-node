@@ -1,22 +1,27 @@
 package com.radixdlt.client.assets;
 
-import com.radixdlt.client.core.address.EUID;
-import java.math.BigInteger;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
-public class Asset {
+import org.radix.common.ID.EUID;
 
+import com.radixdlt.client.core.atoms.RadixHash;
+
+public final class Asset {
+
+	private static final Charset CHARSET = StandardCharsets.UTF_8;
 	/**
 	 * Radix Token asset. TODO: Read from universe file. Hardcode for now.
 	 */
-	public static final Asset TEST = new Asset("TEST", 100000, new EUID(BigInteger.valueOf("TEST".hashCode())));
-	public static final Asset POW = new Asset("POW", 1, new EUID(BigInteger.valueOf(79416)));
+	public static final Asset TEST = new Asset("XRD", 100000);
+	public static final Asset POW = new Asset("POW",       1);
 
 	private final String iso;
 	private final int subUnits;
 	private final EUID id;
 
-	public Asset(String iso, int subUnits, EUID id) {
+	private Asset(String iso, int subUnits, EUID id) {
 		Objects.requireNonNull(iso);
 		Objects.requireNonNull(id);
 
@@ -27,6 +32,10 @@ public class Asset {
 		this.iso = iso;
 		this.subUnits = subUnits;
 		this.id = id;
+	}
+
+	public Asset(String iso, int subUnits) {
+		this(iso, subUnits, calcEUID(iso));
 	}
 
 	public String getIso() {
@@ -41,9 +50,13 @@ public class Asset {
 		return id;
 	}
 
+	private static EUID calcEUID(String isoCode) {
+		return RadixHash.of(isoCode.getBytes(CHARSET)).toEUID();
+	}
+
 	@Override
 	public boolean equals(Object o) {
-		if (o == null || !(o instanceof Asset)) {
+		if (!(o instanceof Asset)) {
 			return false;
 		}
 
@@ -54,5 +67,10 @@ public class Asset {
 	@Override
 	public int hashCode() {
 		return iso.hashCode();
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s[%s/%s/%s]", getClass().getSimpleName(), iso, subUnits, id);
 	}
 }

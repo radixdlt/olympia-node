@@ -8,7 +8,7 @@ public class RadixUniverseConfigsTestConfig {
 
 	@Test
 	public void createDevelopmentUniverseFromJson() {
-		RadixUniverseConfig winterfell = RadixUniverseConfigs.getWinterfell();
-		assertNotNull(winterfell);
+		RadixUniverseConfig betanet = RadixUniverseConfigs.getBetanet();
+		assertNotNull(betanet);
 	}
 }

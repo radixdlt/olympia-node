@@ -28,6 +28,10 @@ public class AtomObservation {
 		return type == Type.HEAD;
 	}
 
+	public long getReceivedTimestamp() {
+		return receivedTimestamp;
+	}
+
 	public static AtomObservation storeAtom(Atom atom) {
 		return new AtomObservation(atom, Type.STORE, System.currentTimeMillis());
 	}

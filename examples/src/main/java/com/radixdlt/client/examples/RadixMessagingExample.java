@@ -4,7 +4,7 @@ import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
-import com.radixdlt.client.core.address.RadixAddress;
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.dapps.messaging.RadixMessaging;
 
 public class RadixMessagingExample {
@@ -18,7 +18,7 @@ public class RadixMessagingExample {
 	}
 
 	static {
-		RadixUniverse.bootstrap(Bootstrap.WINTERFELL);
+		RadixUniverse.bootstrap(Bootstrap.BETANET);
 	}
 
 	public static void main(String[] args) throws Exception {
@@ -32,7 +32,7 @@ public class RadixMessagingExample {
 		RadixApplicationAPI api = RadixApplicationAPI.create(RadixIdentities.loadOrCreateFile("my.key"));
 
 		// Addresses
-		RadixAddress toAddress = RadixAddress.fromString(TO_ADDRESS_BASE58);
+		RadixAddress toAddress = RadixAddress.from(TO_ADDRESS_BASE58);
 
 		RadixMessaging messaging = new RadixMessaging(api);
 
@@ -41,7 +41,7 @@ public class RadixMessagingExample {
 				// Print out to console all received messages
 				messaging
 					.getAllMessages()
-					.subscribe(System.out::println);
+					.subscribe(System.out::println, Throwable::printStackTrace);
 				break;
 
 			case BY_CONVO:
@@ -51,7 +51,7 @@ public class RadixMessagingExample {
 					.getAllMessagesGroupedByParticipants()
 					.subscribe(convo -> {
 						System.out.println("New Conversation with: " + convo.getKey());
-						convo.subscribe(System.out::println);
+						convo.subscribe(System.out::println, Throwable::printStackTrace);
 					});
 		}
 
@@ -59,6 +59,6 @@ public class RadixMessagingExample {
 		messaging
 			.sendMessage(MESSAGE, toAddress)
 			.toCompletable()
-			.subscribe(() -> System.out.println("Submitted"));
+			.subscribe(() -> System.out.println("Submitted"), Throwable::printStackTrace);
 	}
 }

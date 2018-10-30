@@ -65,7 +65,8 @@ public final class RadixNetwork {
 	}
 
 	public Observable<RadixJsonRpcClient> getRadixClients(Set<Long> shards) {
-		return peers.flatMapMaybe(peer -> peer.servesShards(shards)).map(RadixPeer::getRadixClient)
+		return peers.flatMapMaybe(peer -> peer.servesShards(shards))
+			.map(RadixPeer::getRadixClient)
 			.flatMapMaybe(client -> client.checkAPIVersion().filter(b -> b).map(b -> client));
 	}
 

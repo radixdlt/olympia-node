@@ -1,21 +1,24 @@
 package com.radixdlt.client.dapps.messaging;
 
+import java.util.Map;
+import java.util.Objects;
+
+import org.radix.common.ID.EUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
+import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.application.objects.Data.DataBuilder;
-import com.radixdlt.client.core.address.EUID;
-import com.radixdlt.client.core.address.RadixAddress;
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.crypto.ECSignature;
+
 import io.reactivex.Maybe;
 import io.reactivex.Observable;
 import io.reactivex.observables.GroupedObservable;
-import java.util.Map;
-import java.util.Objects;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * High Level API for Instant Messaging. Currently being used by the Radix Android Mobile Wallet.
@@ -55,6 +58,7 @@ public class RadixMessaging {
 					return Maybe.just(new RadixMessage(from, to, content, timestamp, data.isFromEncryptedSource()));
 				} catch (Exception e) {
 					LOGGER.warn(e.getMessage());
+					LOGGER.warn(new String(data.getData()));
 					return Maybe.empty();
 				}
 			});

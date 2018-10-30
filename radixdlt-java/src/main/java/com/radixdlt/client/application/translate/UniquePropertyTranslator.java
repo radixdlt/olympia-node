@@ -1,28 +1,28 @@
 package com.radixdlt.client.application.translate;
 
 import com.radixdlt.client.application.actions.UniqueProperty;
-import com.radixdlt.client.core.address.EUID;
-import com.radixdlt.client.core.atoms.AtomBuilder;
-import com.radixdlt.client.core.atoms.IdParticle;
-import com.radixdlt.client.core.crypto.ECPublicKey;
-import io.reactivex.Completable;
+import com.radixdlt.client.core.atoms.particles.Particle;
 import io.reactivex.annotations.Nullable;
-import java.util.Objects;
+
+import java.util.List;
 
 /**
  * Translates an application layer unique property object to an atom level object;
  */
 public class UniquePropertyTranslator {
-	public Completable translate(@Nullable UniqueProperty uniqueProperty, AtomBuilder atomBuilder) {
-		Objects.requireNonNull(atomBuilder);
-
+	public List<Particle> map(@Nullable UniqueProperty uniqueProperty) {
 		if (uniqueProperty == null) {
-			return Completable.complete();
+			return null;
 		}
 
+		throw new UnsupportedOperationException("UniqueParticles are currently not supported"); // TODO
+		/*if (uniqueProperty == null) {
+			return Collections.emptyList();
+		}
+
+		byte[] payload = uniqueProperty.getUnique();
 		ECPublicKey ecPublicKey = uniqueProperty.getAddress().getPublicKey();
-		IdParticle particle = IdParticle.create("test", new EUID(uniqueProperty.getUnique()), ecPublicKey);
-		atomBuilder.addParticle(particle);
-		return Completable.complete();
+		UniqueParticle uniqueParticle = UniqueParticle.create(payload, ecPublicKey);
+		return Collections.singletonList(uniqueParticle);*/
 	}
 }

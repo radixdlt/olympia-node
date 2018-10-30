@@ -1,14 +1,19 @@
 package com.radixdlt.client.core.ledger;
 
-import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.atoms.AtomObservation;
-import com.radixdlt.client.core.network.IncreasingRetryTimer;
-import com.radixdlt.client.core.network.RadixJsonRpcClient;
-import io.reactivex.Observable;
-import io.reactivex.Single;
 import java.util.function.Function;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.client.core.atoms.AtomValidationException;
+import com.radixdlt.client.core.network.AtomQuery;
+import com.radixdlt.client.core.network.IncreasingRetryTimer;
+import com.radixdlt.client.core.network.RadixJsonRpcClient;
+
+import io.reactivex.Observable;
+import io.reactivex.Single;
 
 /**
  * Module responsible for selecting a node and fetching atoms and retrying if necessary.
@@ -25,13 +30,30 @@ public class AtomFetcher {
 		this.clientSelector = clientSelector;
 	}
 
-	public Observable<AtomObservation> fetchAtoms(EUID destination) {
-		return clientSelector.apply(destination.getShard())
-			.flatMapObservable(client -> client.getAtoms(destination))
+	public Observable<AtomObservation> fetchAtoms(RadixAddress address) {
+		final AtomQuery atomQuery = new AtomQuery(address.getUID());
+		return Observable.fromCallable(() -> clientSelector.apply(address.getUID().getShard()))
+			.flatMapSingle(c -> c)
+			.flatMap(client -> client.getAtoms(atomQuery))
 			.doOnError(throwable -> {
-				LOGGER.warn("Error on getAllAtoms: {}", destination);
+				LOGGER.warn("Error on getAllAtoms: {}", address);
 			})
 			.retryWhen(new IncreasingRetryTimer())
-			.doOnSubscribe(atoms -> LOGGER.info("Atom Query Subscribe: destination({})", destination));
+			.filter(atomObservation -> {
+				if (atomObservation.isStore()) {
+					LOGGER.info("Received atom " + atomObservation.getAtom().getHid());
+					try {
+						RadixAtomValidator.getInstance().validate(atomObservation.getAtom());
+						return true;
+					} catch (AtomValidationException e) {
+						// TODO: Stop stream and mark client as untrustable
+						LOGGER.error(e.toString());
+						return false;
+					}
+				} else {
+					return true;
+				}
+			})
+			.doOnSubscribe(atoms -> LOGGER.info("Atom Query Subscribe: address({})", address));
 	}
 }

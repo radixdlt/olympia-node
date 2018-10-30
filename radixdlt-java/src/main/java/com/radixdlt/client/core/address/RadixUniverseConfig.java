@@ -1,37 +1,75 @@
 package com.radixdlt.client.core.address;
 
-import com.google.gson.JsonElement;
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.util.Collections;
+import java.util.List;
+
+import org.bouncycastle.util.encoders.Base64;
+import org.radix.serialization2.DsonOutput;
+import org.radix.serialization2.DsonOutput.Output;
+import org.radix.serialization2.SerializerId2;
+import org.radix.serialization2.client.SerializableObject;
+import org.radix.serialization2.client.Serialize;
+import org.radix.utils.RadixConstants;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.io.ByteStreams;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.RadixHash;
 import com.radixdlt.client.core.crypto.ECPublicKey;
-import com.radixdlt.client.core.serialization.Dson;
-import com.radixdlt.client.core.serialization.RadixJson;
 
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.util.Collections;
-import java.util.List;
-import org.bouncycastle.util.encoders.Base64;
+@SerializerId2("UNIVERSE")
+public class RadixUniverseConfig extends SerializableObject {
 
-public class RadixUniverseConfig {
+	@JsonProperty("magic")
+	@DsonOutput(value = Output.HASH, include = false)
+	private long magic;
 
-	private final long magic;
-	private final long port;
-	private final String name;
-	private final String description;
-	private final RadixUniverseType type;
-	private final long timestamp;
-	private final ECPublicKey creator;
-	private final List<Atom> genesis;
+	@JsonProperty("port")
+	@DsonOutput(Output.ALL)
+	private long port;
+
+	@JsonProperty("name")
+	@DsonOutput(Output.ALL)
+	private String name;
+
+	@JsonProperty("description")
+	@DsonOutput(Output.ALL)
+	private String description;
+
+	private RadixUniverseType type;
+
+	@JsonProperty("timestamp")
+	@DsonOutput(Output.ALL)
+	private long timestamp;
+
+	private ECPublicKey creator;
+
+	@JsonProperty("genesis")
+	@DsonOutput(Output.ALL)
+	private List<Atom> genesis;
 
 	public static RadixUniverseConfig fromDsonBase64(String dsonBase64) {
-		JsonElement universeJson = Dson.getInstance().parse(Base64.decode(dsonBase64));
-		System.out.println(universeJson);
-		return RadixJson.getGson().fromJson(universeJson, RadixUniverseConfig.class);
+		byte[] bytes = Base64.decode(dsonBase64);
+		RadixUniverseConfig universe = Serialize.getInstance().fromDson(bytes, RadixUniverseConfig.class);
+		return universe;
 	}
 
 	public static RadixUniverseConfig fromInputStream(InputStream inputStream) {
-		return RadixJson.getGson().fromJson(new InputStreamReader(inputStream), RadixUniverseConfig.class);
+		try {
+			byte[] bytes = ByteStreams.toByteArray(inputStream);
+			String json = new String(bytes, RadixConstants.STANDARD_CHARSET);
+			return Serialize.getInstance().fromJson(json, RadixUniverseConfig.class);
+		} catch (IOException e) {
+			throw new UncheckedIOException("Reading universe configuration", e);
+		}
+	}
+
+	RadixUniverseConfig() {
+		// No-arg constructor for serializer only
 	}
 
 	RadixUniverseConfig(
@@ -76,7 +114,7 @@ public class RadixUniverseConfig {
 	}
 
 	public RadixHash getHash() {
-		return RadixHash.of(Dson.getInstance().toDson(this));
+		return RadixHash.of(Serialize.getInstance().toDson(this, Output.HASH));
 	}
 
 	@Override
@@ -96,5 +134,30 @@ public class RadixUniverseConfig {
 		}
 
 		return this.getHash().equals(((RadixUniverseConfig) o).getHash());
+	}
+
+	// Signature - 1 getter, 1 setter.
+	// Better option would be to make public keys primitive types as the are
+	// very common, or alternatively serialize as an embedded object.
+	@JsonProperty("creator")
+	@DsonOutput(Output.ALL)
+	private byte[] getJsonCreator() {
+		return this.creator.toByteArray();
+	}
+
+	@JsonProperty("creator")
+	private void setJsonCreator(byte[] bytes) {
+		this.creator = new ECPublicKey(bytes);
+	}
+
+	@JsonProperty("type")
+	@DsonOutput(Output.ALL)
+	private int getJsonType() {
+		return this.type.ordinalValue();
+	}
+
+	@JsonProperty("type")
+	private void setJsonType(int type) {
+		this.type = RadixUniverseType.valueOf(type);
 	}
 }

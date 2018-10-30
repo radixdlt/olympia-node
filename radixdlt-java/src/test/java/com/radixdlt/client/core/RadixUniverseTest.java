@@ -13,7 +13,7 @@ public class RadixUniverseTest {
 
 	@Test
 	public void testRadixUniverseCreation() {
-		RadixUniverse.bootstrap(Bootstrap.WINTERFELL);
+		RadixUniverse.bootstrap(Bootstrap.BETANET);
 		RadixUniverse universe = RadixUniverse.getInstance();
 		assertNotNull(universe);
 		assertNotNull(universe.getSystemPublicKey());

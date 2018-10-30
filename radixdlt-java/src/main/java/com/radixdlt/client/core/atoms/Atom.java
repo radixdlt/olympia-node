@@ -1,8 +1,7 @@
 package com.radixdlt.client.core.atoms;
 
-import com.radixdlt.client.core.address.EUID;
-import com.radixdlt.client.core.crypto.ECSignature;
-import com.radixdlt.client.core.serialization.Dson;
+import com.radixdlt.client.atommodel.tokens.TokenClassReference;
+import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -10,69 +9,86 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-public abstract class Atom {
-	private Set<EUID> destinations;
-	private final Map<String, Long> timestamps;
-	private String action;
-	private final List<Particle> particles;
-	private final Map<String, ECSignature> signatures;
+import org.radix.common.ID.EUID;
+import org.radix.serialization2.DsonOutput;
+import org.radix.serialization2.SerializerId2;
+import org.radix.serialization2.client.SerializableObject;
+import org.radix.serialization2.client.Serialize;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.client.core.atoms.particles.Spin;
+import com.radixdlt.client.atommodel.storage.StorageParticle;
+import com.radixdlt.client.atommodel.timestamp.TimestampParticle;
+import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
+import com.radixdlt.client.core.crypto.ECPublicKey;
+import com.radixdlt.client.core.crypto.ECSignature;
+
+/**
+ * An atom is the fundamental atomic unit of storage on the ledger (similar to a block
+ * in a blockchain) and defines the actions that can be issued onto the ledger.
+ */
+@SerializerId2("ATOM")
+public final class Atom extends SerializableObject {
+
+	@JsonProperty("particles")
+	@DsonOutput(DsonOutput.Output.ALL)
+	private List<SpunParticle> particles;
+
+	@JsonProperty("signatures")
+	@DsonOutput(value = {DsonOutput.Output.API, DsonOutput.Output.WIRE, DsonOutput.Output.PERSIST})
+	private Map<String, ECSignature> signatures;
+
 	private transient Map<String, Long> debug = new HashMap<>();
 
-	Atom() {
-		this.destinations = Collections.emptySet();
-		this.timestamps = null;
-		this.particles = null;
-		this.signatures = null;
-		this.action = "STORE";
+	private Atom() {
 	}
 
-	Atom(Set<EUID> destinations, long timestamp, EUID signatureId, ECSignature signature) {
-		this.destinations = destinations;
-		this.particles = null;
-		this.timestamps = Collections.singletonMap("default", timestamp);
-		this.action = "STORE";
-		// HACK
-		// TODO: fix this
-		this.signatures = signatureId == null ? null : Collections.singletonMap(signatureId.toString(), signature);
-	}
-
-	Atom(Set<EUID> destinations, List<Particle> particles, long timestamp) {
-		this.destinations = destinations;
+	public Atom(List<SpunParticle> particles) {
 		this.particles = particles;
-		this.timestamps = Collections.singletonMap("default", timestamp);
 		this.signatures = null;
-		this.action = "STORE";
 	}
 
-	Atom(List<Particle> particles, Set<EUID> destinations, long timestamp, EUID signatureId, ECSignature signature) {
-		this.destinations = destinations;
+	private Atom(
+		List<SpunParticle> particles,
+		EUID signatureId,
+		ECSignature signature
+	) {
 		this.particles = particles;
-		this.timestamps = Collections.singletonMap("default", timestamp);
 		this.signatures = Collections.singletonMap(signatureId.toString(), signature);
-		this.action = "STORE";
 	}
 
-	public String getAction() {
-		return action;
+	public Atom withSignature(ECSignature signature, EUID signatureId) {
+		return new Atom(
+			particles,
+			signatureId,
+			signature
+		);
 	}
 
-	public Set<EUID> getDestinations() {
-		return destinations;
+	public List<SpunParticle> getSpunParticles() {
+		return particles != null ? particles : Collections.emptyList();
 	}
 
-	public Set<Long> getShards() {
-		return destinations.stream().map(EUID::getShard).collect(Collectors.toSet());
+	private Set<Long> getShards() {
+		return getSpunParticles().stream()
+			.map(SpunParticle<Particle>::getParticle)
+			.map(Particle::getAddresses)
+			.flatMap(Set::stream)
+			.map(ECPublicKey::getUID)
+			.map(EUID::getShard)
+			.collect(Collectors.toSet());
 	}
 
 	// HACK
 	public Set<Long> getRequiredFirstShard() {
-		if (this.particles != null
-			&& this.particles.stream().anyMatch(Particle::isConsumer)
-		) {
+		if (this.particles.stream().anyMatch(s -> s.getSpin() == Spin.DOWN)) {
 			return particles.stream()
-				.filter(Particle::isConsumer)
-				.flatMap(particle -> particle.getDestinations().stream())
+				.filter(s -> s.getSpin() == Spin.DOWN)
+				.flatMap(s -> s.getParticle().getAddresses().stream())
+				.map(ECPublicKey::getUID)
 				.map(EUID::getShard)
 				.collect(Collectors.toSet());
 		} else {
@@ -80,8 +96,23 @@ public abstract class Atom {
 		}
 	}
 
+	public Stream<Particle> particles(Spin spin) {
+		return particles.stream().filter(s -> s.getSpin() == spin).map(SpunParticle::getParticle);
+	}
+
+	public Stream<ECPublicKey> addresses() {
+		return particles.stream()
+			.map(SpunParticle<Particle>::getParticle)
+			.map(Particle::getAddresses)
+			.flatMap(Set::stream);
+	}
+
 	public Long getTimestamp() {
-		return timestamps.get("default");
+		return this.getSpunParticles().stream()
+			.map(SpunParticle::getParticle)
+			.filter(p -> p instanceof TimestampParticle)
+			.map(p -> ((TimestampParticle) p).getTimestamp()).findAny()
+			.orElse(0L);
 	}
 
 	public Map<String, ECSignature> getSignatures() {
@@ -92,44 +123,52 @@ public abstract class Atom {
 		return Optional.ofNullable(signatures).map(sigs -> sigs.get(uid.toString()));
 	}
 
-	public List<Particle> getParticles() {
-		return particles == null ? Collections.emptyList() : Collections.unmodifiableList(particles);
+	public Stream<SpunParticle<OwnedTokensParticle>> consumables() {
+		return this.getSpunParticles().stream()
+			.filter(s -> s.getParticle() instanceof OwnedTokensParticle)
+			.map(s -> (SpunParticle<OwnedTokensParticle>) s);
 	}
 
-	public boolean isNullAtom() {
-		return this.getClass() == NullAtom.class;
-	}
-
-	public boolean isMessageAtom() {
-		return this.getClass() == ApplicationPayloadAtom.class;
-	}
-
-	public boolean isTransactionAtom() {
-		return this.getClass() == TransactionAtom.class;
-	}
-
-	public NullAtom getAsNullAtom() {
-		return (NullAtom) this;
-	}
-
-	public ApplicationPayloadAtom getAsMessageAtom() {
-		return (ApplicationPayloadAtom) this;
-	}
-
-	public TransactionAtom getAsTransactionAtom() {
-		return (TransactionAtom) this;
+	public List<OwnedTokensParticle> getConsumables(Spin spin) {
+		return this.getSpunParticles().stream()
+			.filter(s -> s.getSpin() == spin)
+			.map(SpunParticle::getParticle)
+			.filter(p -> p instanceof OwnedTokensParticle)
+			.map(p -> (OwnedTokensParticle) p)
+			.collect(Collectors.toList());
 	}
 
 	public byte[] toDson() {
-		return Dson.getInstance().toDson(this);
+		return Serialize.getInstance().toDson(this, DsonOutput.Output.HASH);
 	}
 
 	public RadixHash getHash() {
-		return RadixHash.of(Dson.getInstance().toDson(this));
+		return RadixHash.of(Serialize.getInstance().toDson(this, DsonOutput.Output.HASH));
 	}
 
 	public EUID getHid() {
 		return getHash().toEUID();
+	}
+
+	public List<StorageParticle> getDataParticles() {
+		return this.getSpunParticles().stream()
+			.map(SpunParticle::getParticle)
+			.filter(p -> p instanceof StorageParticle)
+			.map(p -> (StorageParticle) p)
+			.collect(Collectors.toList());
+	}
+
+	public Map<TokenClassReference, Map<ECPublicKey, Long>> tokenSummary() {
+		return consumables()
+			.collect(Collectors.groupingBy(
+				s -> s.getParticle().getTokenClassReference(),
+				Collectors.groupingBy(
+					s -> s.getParticle().getOwner(),
+					Collectors.summingLong((SpunParticle<OwnedTokensParticle> value) ->
+						(value.getSpin() == Spin.UP ? 1 : -1) * value.getParticle().getAmount()
+					)
+				)
+			));
 	}
 
 	@Override
@@ -163,6 +202,6 @@ public abstract class Atom {
 
 	@Override
 	public String toString() {
-		return "Atom hid(" + getHid().toString() + ") destinations(" + destinations + ")";
+		return "Atom particles(" + getHid().toString() + ")";
 	}
 }

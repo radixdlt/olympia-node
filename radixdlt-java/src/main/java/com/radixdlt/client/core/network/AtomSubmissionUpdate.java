@@ -1,10 +1,15 @@
 package com.radixdlt.client.core.network;
 
-import com.radixdlt.client.core.address.EUID;
 import java.text.SimpleDateFormat;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.TimeZone;
+
+import com.google.gson.JsonElement;
+import com.radixdlt.client.core.atoms.Atom;
 
 public class AtomSubmissionUpdate {
 	public enum AtomSubmissionState {
@@ -30,23 +35,28 @@ public class AtomSubmissionUpdate {
 	}
 
 	private final AtomSubmissionState state;
+	private final JsonElement data;
+	private final Atom atom;
+	private final Map<String, Object> metaData = new HashMap<>();
 	private final long timestamp;
-	private final String message;
-	private final EUID hid;
 
-	public AtomSubmissionUpdate(EUID hid, AtomSubmissionState state, String message, long timestamp) {
-		this.hid = hid;
+	private AtomSubmissionUpdate(Atom atom, AtomSubmissionState state, JsonElement data) {
+		this.atom = atom;
 		this.state = state;
-		this.message = message;
-		this.timestamp = timestamp;
+		this.data = data;
+		this.timestamp = System.currentTimeMillis();
 	}
 
 	public AtomSubmissionState getState() {
 		return state;
 	}
 
-	public String getMessage() {
-		return message;
+	public Atom getAtom() {
+		return atom;
+	}
+
+	public JsonElement getData() {
+		return data;
 	}
 
 	public boolean isComplete() {
@@ -57,12 +67,25 @@ public class AtomSubmissionUpdate {
 		return timestamp;
 	}
 
-	public static AtomSubmissionUpdate now(EUID hid, AtomSubmissionState code) {
-		return new AtomSubmissionUpdate(hid, code, null, System.currentTimeMillis());
+	public AtomSubmissionUpdate putMetaData(String key, Object value) {
+		metaData.put(key, value);
+		return this;
 	}
 
-	public static AtomSubmissionUpdate now(EUID hid, AtomSubmissionState code, String message) {
-		return new AtomSubmissionUpdate(hid, code, message, System.currentTimeMillis());
+	public Object getMetaData(String key) {
+		return metaData.get(key);
+	}
+
+	public Map<String, Object> getMetaData() {
+		return Collections.unmodifiableMap(metaData);
+	}
+
+	public static AtomSubmissionUpdate create(Atom atom, AtomSubmissionState code) {
+		return new AtomSubmissionUpdate(atom, code, null);
+	}
+
+	public static AtomSubmissionUpdate create(Atom atom, AtomSubmissionState code, JsonElement data) {
+		return new AtomSubmissionUpdate(atom, code, data);
 	}
 
 	@Override
@@ -70,6 +93,6 @@ public class AtomSubmissionUpdate {
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS", Locale.getDefault());
 		sdf.setTimeZone(TimeZone.getDefault());
 
-		return sdf.format(new Date(timestamp)) + " atom " + hid + " " + state + (message != null ? ": " + message : "");
+		return sdf.format(new Date(timestamp)) + " atom " + atom.getHid() + " " + state + (data != null ? ": " + data : "");
 	}
 }

@@ -2,25 +2,23 @@ package com.radixdlt.client.examples;
 
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
-import com.radixdlt.client.assets.Asset;
+import com.radixdlt.client.atommodel.tokens.TokenClassReference;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
-import com.radixdlt.client.core.address.RadixAddress;
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.application.identity.RadixIdentity;
-import com.radixdlt.client.dapps.wallet.RadixWallet;
 import java.math.BigDecimal;
-import java.math.BigInteger;
 
 public class RadixWalletExample {
 
-	private static String TO_ADDRESS_BASE58 = "9ejksTjHEXJAPuSwUP1a9GDYNaRmUShJq5RgMkXQXgdHbdEkTbD";
+	private static String TO_ADDRESS_BASE58 = "JFgcgRKq6GbQqP8mZzDRhtr7K7YQM1vZiYopZLRpAeVxcnePRXX";
 	//private static String TO_ADDRESS_BASE58 = null;
-	private static BigDecimal AMOUNT = new BigDecimal("100.0");
-	private static String MESSAGE = "A gift!";
+	private static String MESSAGE = "A gift for you!";
+	private static BigDecimal AMOUNT = new BigDecimal("0.01");
 
 	// Initialize Radix Universe
 	static {
-		RadixUniverse.bootstrap(Bootstrap.ALPHANET);
+		RadixUniverse.bootstrap(Bootstrap.BETANET);
 	}
 
 	public static void main(String[] args) throws Exception {
@@ -38,25 +36,34 @@ public class RadixWalletExample {
 			.getStatusUpdates()
 			.subscribe(System.out::println);
 
-
 		RadixApplicationAPI api = RadixApplicationAPI.create(radixIdentity);
 		api.pull();
 
-		RadixWallet wallet = new RadixWallet(api);
+		System.out.println("My address: " + api.getMyAddress());
+		System.out.println("My public key: " + api.getMyPublicKey());
 
 		// Print out all past and future transactions
-		wallet.getTransactions()
+		api.getMyTokenTransfers()
 			.subscribe(System.out::println);
 
 		// Subscribe to current and future total balance
-		wallet.getBalance()
-			.subscribe(balance -> System.out.println("My Balance: " + balance));
+		api.getBalance(api.getMyAddress())
+			.subscribe(balance -> System.out.println("My Balance:\n" + balance));
+
+		/*
+		api.createFixedSupplyToken("Joshy Token", "JOSH", "The Best Coin Ever", 10000)
+			.toObservable().subscribe(System.out::println);
+			*/
+
+
+		TokenClassReference token = api.getNativeTokenRef();
+		api.getToken(token)
+			.subscribe(System.out::println);
 
 		// If specified, send money to another address
 		if (TO_ADDRESS_BASE58 != null) {
-			RadixAddress toAddress = RadixAddress.fromString(TO_ADDRESS_BASE58);
-			wallet.sendWhenAvailable(AMOUNT, MESSAGE, toAddress)
-				.toObservable()
+			RadixAddress toAddress = RadixAddress.from(TO_ADDRESS_BASE58);
+			api.sendTokens(toAddress, AMOUNT, token).toObservable()
 				.subscribe(System.out::println, Throwable::printStackTrace);
 		}
 	}

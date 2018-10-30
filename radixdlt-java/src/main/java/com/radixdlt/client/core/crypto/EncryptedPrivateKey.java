@@ -7,6 +7,10 @@ import com.radixdlt.client.core.util.Base64Encoded;
 public class EncryptedPrivateKey implements Base64Encoded {
 	private final byte[] encryptedPrivateKey;
 
+	public static EncryptedPrivateKey fromBase64(String base64) {
+		return new EncryptedPrivateKey(Base64.decode(base64));
+	}
+
 	public EncryptedPrivateKey(byte[] encryptedPrivateKey) {
 		this.encryptedPrivateKey = encryptedPrivateKey;
 	}

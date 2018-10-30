@@ -1,11 +1,15 @@
 package com.radixdlt.client.core.ledger;
 
-import com.radixdlt.client.core.address.EUID;
 import com.radixdlt.client.core.atoms.AtomObservation;
-import io.reactivex.Observable;
-import io.reactivex.subjects.ReplaySubject;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+
+import org.radix.serialization2.client.Serialize;
+
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
+
+import io.reactivex.Observable;
+import io.reactivex.subjects.ReplaySubject;
 
 /**
  * Implementation of a data store for all atoms in a shard
@@ -15,27 +19,47 @@ public class InMemoryAtomStore implements AtomStore {
 	/**
 	 * The In Memory Atom Data Store
 	 */
-	private final ConcurrentHashMap<EUID, ReplaySubject<AtomObservation>> cache = new ConcurrentHashMap<>();
+	private final ConcurrentHashMap<RadixAddress, ReplaySubject<AtomObservation>> cache = new ConcurrentHashMap<>();
 
 	/**
 	 * Store an atom under a given destination
 	 * TODO: add synchronization if needed
 	 *
-	 * @param destination destination to store under
+	 * @param address address to store under
 	 * @param atomObservation the atom to store
 	 */
-	public void store(EUID destination, AtomObservation atomObservation) {
-		cache.computeIfAbsent(destination, euid -> ReplaySubject.create()).onNext(atomObservation);
+	public void store(RadixAddress address, AtomObservation atomObservation) {
+		cache.computeIfAbsent(address, euid -> ReplaySubject.create()).onNext(atomObservation);
 	}
 
 	/**
-	 * Returns an unending stream of atoms which are stored at a particular destination.
+	 * Returns an unending stream of validated atoms which are stored at a particular destination.
 	 *
-	 * @param destination destination (which determines shard) to query atoms for
+	 * @param address address (which determines shard) to query atoms for
 	 * @return an Atom Observable
 	 */
-	public Observable<AtomObservation> getAtoms(EUID destination) {
-		Objects.requireNonNull(destination);
-		return cache.computeIfAbsent(destination, euid -> ReplaySubject.create()).distinct();
+	@Override
+	public Observable<AtomObservation> getAtoms(RadixAddress address) {
+		Objects.requireNonNull(address);
+		// TODO: move atom filter outside of class
+		return Observable.fromCallable(() -> new ValidAtomFilter(address, Serialize.getInstance()))
+			.flatMap(atomFilter ->
+				cache.computeIfAbsent(address, euid -> ReplaySubject.create())
+					.distinct(atomObservation -> {
+						// FIXME: make this better
+						if (atomObservation.isHead()) {
+							return Long.toString(atomObservation.getReceivedTimestamp());
+						} else {
+							return atomObservation.getAtom().getHash().toString();
+						}
+					})
+					.flatMap(atomObservation -> {
+						if (atomObservation.isHead()) {
+							return Observable.just(atomObservation);
+						} else {
+							return atomFilter.filter(atomObservation);
+						}
+					})
+			);
 	}
 }
