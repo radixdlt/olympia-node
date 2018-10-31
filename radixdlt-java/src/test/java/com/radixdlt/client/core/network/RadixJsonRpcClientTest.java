@@ -1,5 +1,6 @@
 package com.radixdlt.client.core.network;
 
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import org.junit.Test;
 import org.radix.common.ID.EUID;
 import org.radix.serialization2.DsonOutput.Output;
@@ -42,7 +43,7 @@ public class RadixJsonRpcClientTest {
 
 		TestObserver<NodeRunnerData> observer = new TestObserver<>();
 
-		jsonRpcClient.getSelf().subscribe(observer);
+		jsonRpcClient.getInfo().subscribe(observer);
 
 		observer.assertValueCount(0);
 		observer.assertError(t -> true);
@@ -83,7 +84,7 @@ public class RadixJsonRpcClientTest {
 
 		TestObserver<NodeRunnerData> observer = new TestObserver<>();
 
-		jsonRpcClient.getSelf().subscribe(observer);
+		jsonRpcClient.getInfo().subscribe(observer);
 
 		observer.assertValueCount(1);
 		observer.assertValue(data -> data.getShards().equals(Shards.range(-1, 1)));
@@ -208,7 +209,9 @@ public class RadixJsonRpcClientTest {
 
 		TestObserver<AtomObservation> observer = new TestObserver<>();
 
-		jsonRpcClient.getAtoms(new AtomQuery(new EUID(1))).subscribe(observer);
+		RadixAddress address = mock(RadixAddress.class);
+
+		jsonRpcClient.getAtoms(new AtomQuery(address)).subscribe(observer);
 
 		observer.assertNoErrors();
 		observer.assertValueCount(1);
@@ -261,7 +264,9 @@ public class RadixJsonRpcClientTest {
 
 		TestObserver<AtomObservation> observer = new TestObserver<>();
 
-		jsonRpcClient.getAtoms(new AtomQuery(new EUID(1)))
+		RadixAddress address = mock(RadixAddress.class);
+
+		jsonRpcClient.getAtoms(new AtomQuery(address))
 			.subscribe(observer);
 		observer.cancel();
 

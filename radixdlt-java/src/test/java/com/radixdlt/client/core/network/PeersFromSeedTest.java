@@ -17,7 +17,7 @@ public class PeersFromSeedTest {
 		NodeRunnerData data = mock(NodeRunnerData.class);
 		when(peer.getRadixClient()).thenReturn(client);
 		when(peer.getLocation()).thenReturn("somewhere");
-		when(client.getSelf()).thenReturn(Single.just(data));
+		when(client.getInfo()).thenReturn(Single.just(data));
 		when(client.getLivePeers()).thenReturn(Single.just(Collections.emptyList()));
 
 		TestObserver<RadixPeer> testObserver = TestObserver.create();
@@ -34,7 +34,7 @@ public class PeersFromSeedTest {
 		RadixJsonRpcClient client = mock(RadixJsonRpcClient.class);
 		when(peer.getRadixClient()).thenReturn(client);
 		when(peer.getLocation()).thenReturn("somewhere");
-		when(client.getSelf()).thenReturn(Single.error(new IOException()));
+		when(client.getInfo()).thenReturn(Single.error(new IOException()));
 		when(client.getLivePeers()).thenReturn(Single.error(new IOException()));
 
 		TestObserver<RadixPeer> testObserver = TestObserver.create();

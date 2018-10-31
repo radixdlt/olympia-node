@@ -1,19 +1,19 @@
 package com.radixdlt.client.core.network;
 
-import org.radix.common.ID.EUID;
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
 
 import com.google.gson.JsonObject;
 
 public class AtomQuery {
-	private final EUID destination;
+	private final RadixAddress address;
 
-	public AtomQuery(EUID destination) {
-		this.destination = destination;
+	public AtomQuery(RadixAddress address) {
+		this.address = address;
 	}
 
 	public JsonObject toJson() {
 		JsonObject query = new JsonObject();
-		query.addProperty("destination", destination.toString());
+		query.addProperty("address", address.toString());
 
 		return query;
 	}

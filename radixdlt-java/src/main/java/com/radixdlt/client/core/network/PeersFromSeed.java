@@ -20,7 +20,7 @@ public class PeersFromSeed implements PeerDiscovery {
 		Single<RadixPeer> rawSeed = Single.just(seed).cache();
 		Observable<RadixPeer> connectedSeed =
 			rawSeed
-				.doOnSuccess(seed -> seed.getRadixClient().getSelf().subscribe(
+				.doOnSuccess(seed -> seed.getRadixClient().getInfo().subscribe(
 					seed::data,
 					e -> LOGGER.warn("Unable to load seed info")
 				))
