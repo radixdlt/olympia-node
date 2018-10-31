@@ -1,12 +1,15 @@
 package com.radixdlt.client.examples;
 
 import com.radixdlt.client.application.RadixApplicationAPI;
+import com.radixdlt.client.application.actions.CreateTokenAction.TokenSupplyType;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.atommodel.tokens.TokenClassReference;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.application.identity.RadixIdentity;
+import io.reactivex.Completable;
+import io.reactivex.Observable;
 import java.math.BigDecimal;
 
 public class RadixWalletExample {
@@ -50,20 +53,21 @@ public class RadixWalletExample {
 		api.getBalance(api.getMyAddress())
 			.subscribe(balance -> System.out.println("My Balance:\n" + balance));
 
-		/*
-		api.createFixedSupplyToken("Joshy Token", "JOSH", "The Best Coin Ever", 10000)
-			.toObservable().subscribe(System.out::println);
-			*/
+		api.createToken(
+			"Joshy Token",
+			"JOSH",
+			"The Best Coin Ever",
+			10000,
+			TokenSupplyType.MUTABLE
+		).toObservable().subscribe(System.out::println);
 
-
-		TokenClassReference token = api.getNativeTokenRef();
-		api.getToken(token)
+		api.getToken(TokenClassReference.of(api.getMyAddress(), "JOSH"))
 			.subscribe(System.out::println);
 
 		// If specified, send money to another address
 		if (TO_ADDRESS_BASE58 != null) {
 			RadixAddress toAddress = RadixAddress.from(TO_ADDRESS_BASE58);
-			api.sendTokens(toAddress, AMOUNT, token).toObservable()
+			api.sendTokens(toAddress, AMOUNT, api.getNativeTokenRef()).toObservable()
 				.subscribe(System.out::println, Throwable::printStackTrace);
 		}
 	}

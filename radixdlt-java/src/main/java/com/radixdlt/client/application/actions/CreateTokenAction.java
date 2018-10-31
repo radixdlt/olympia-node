@@ -3,31 +3,37 @@ package com.radixdlt.client.application.actions;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import java.util.Objects;
 
-public class CreateFixedSupplyTokenAction {
+public class CreateTokenAction {
+	public enum TokenSupplyType {
+		FIXED,
+		MUTABLE
+	}
+
 	private final String name;
 	private final String iso;
 	private final String description;
-	private final long fixedSupply;
+	private final long initialSupply;
 	private final RadixAddress address;
+	private final TokenSupplyType tokenSupplyType;
 
-	public CreateFixedSupplyTokenAction(
+	public CreateTokenAction(
 		RadixAddress address,
 		String name,
 		String iso,
 		String description,
-		long fixedSupply
+		long initialSupply,
+		TokenSupplyType tokenSupplyType
 	) {
-		Objects.requireNonNull(address);
-		Objects.requireNonNull(iso);
-		if (fixedSupply <= 0) {
+		if (initialSupply <= 0) {
 			throw new IllegalArgumentException("Fixed supply must be greater than 0.");
 		}
 
-		this.address = address;
-		this.name = name;
-		this.iso = iso;
+		this.address = Objects.requireNonNull(address);
+		this.name = Objects.requireNonNull(name);
+		this.iso = Objects.requireNonNull(iso);
 		this.description = description;
-		this.fixedSupply = fixedSupply;
+		this.initialSupply = initialSupply;
+		this.tokenSupplyType = Objects.requireNonNull(tokenSupplyType);
 	}
 
 	public RadixAddress getAddress() {
@@ -46,7 +52,11 @@ public class CreateFixedSupplyTokenAction {
 		return description;
 	}
 
-	public long getFixedSupply() {
-		return fixedSupply;
+	public long getInitialSupply() {
+		return initialSupply;
+	}
+
+	public TokenSupplyType getTokenSupplyType() {
+		return tokenSupplyType;
 	}
 }

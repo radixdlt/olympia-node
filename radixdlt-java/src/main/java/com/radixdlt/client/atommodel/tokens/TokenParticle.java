@@ -21,6 +21,7 @@ public class TokenParticle extends Particle {
 	public enum MintPermissions {
 		GENESIS_ONLY,
 		SAME_ATOM_ONLY,
+		OWNER_ONLY,
 		POW
 	}
 
