@@ -1,7 +1,9 @@
 package com.radixdlt.client.application;
 
+import com.radixdlt.client.application.actions.BurnTokensAction;
 import com.radixdlt.client.application.actions.CreateTokenAction.TokenSupplyType;
 import com.radixdlt.client.application.actions.MintTokensAction;
+import com.radixdlt.client.application.translate.BurnTokensActionMapper;
 import com.radixdlt.client.application.translate.MintTokensActionMapper;
 import com.radixdlt.client.core.atoms.AtomObservation;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
@@ -104,6 +106,7 @@ public class RadixApplicationAPI {
 	private final TokenTransferTranslator tokenTransferTranslator;
 	private final UniquePropertyTranslator uniquePropertyTranslator;
 	private final MintTokensActionMapper mintTokensActionMapper;
+	private final BurnTokensActionMapper burnTokensActionMapper;
 	private final TokenMapper tokenMapper;
 
 	private final ApplicationStore<Map<TokenClassReference, TokenState>> tokenStore;
@@ -128,6 +131,7 @@ public class RadixApplicationAPI {
 		this.uniquePropertyTranslator = new UniquePropertyTranslator();
 		this.tokenMapper = new TokenMapper();
 		this.mintTokensActionMapper = new MintTokensActionMapper();
+		this.burnTokensActionMapper = new BurnTokensActionMapper(universe);
 
 		this.tokenStore = new ApplicationStore<>(ledger.getParticleStore(), new TokenReducer());
 		this.tokenBalanceStore = new ApplicationStore<>(ledger.getParticleStore(), new TokenBalanceReducer());
@@ -274,13 +278,13 @@ public class RadixApplicationAPI {
 	public Result storeData(Data data, RadixAddress address) {
 		StoreDataAction storeDataAction = new StoreDataAction(data, address);
 
-		return executeTransaction(null, storeDataAction, null, null, null);
+		return executeTransaction(null, storeDataAction, null, null, null, null);
 	}
 
 	public Result storeData(Data data, RadixAddress address0, RadixAddress address1) {
 		StoreDataAction storeDataAction = new StoreDataAction(data, address0, address1);
 
-		return executeTransaction(null, storeDataAction, null, null, null);
+		return executeTransaction(null, storeDataAction, null, null, null, null);
 	}
 
 	public Observable<TransferTokensAction> getMyTokenTransfers() {
@@ -339,7 +343,7 @@ public class RadixApplicationAPI {
 		TokenSupplyType tokenSupplyType
 	) {
 		CreateTokenAction tokenCreation = new CreateTokenAction(getMyAddress(), name, iso, description, initialSupply, tokenSupplyType);
-		return executeTransaction(null, null, tokenCreation, null, null);
+		return executeTransaction(null, null, tokenCreation, null, null, null);
 	}
 
 	/**
@@ -351,7 +355,20 @@ public class RadixApplicationAPI {
 	 */
 	public Result mintTokens(String iso, long amount) {
 		MintTokensAction mintTokensAction = new MintTokensAction(TokenClassReference.of(getMyAddress(), iso), amount);
-		return executeTransaction(null, null, null, mintTokensAction, null);
+		return executeTransaction(null, null, null, mintTokensAction, null, null);
+	}
+
+
+	/**
+	 * Burns an amount of tokens in the user's account
+	 *
+	 * @param iso The symbol of the token to mint
+	 * @param amount The amount to mint
+	 * @return result of the transaction
+	 */
+	public Result burnTokens(String iso, long amount) {
+		BurnTokensAction burnTokensAction = new BurnTokensAction(TokenClassReference.of(getMyAddress(), iso), amount);
+		return executeTransaction(null, null, null, null, burnTokensAction, null);
 	}
 
 	/**
@@ -476,7 +493,7 @@ public class RadixApplicationAPI {
 			uniqueProperty = null;
 		}
 
-		return executeTransaction(transferTokensAction, null, null, null, uniqueProperty);
+		return executeTransaction(transferTokensAction, null, null, null, null, uniqueProperty);
 	}
 
 	// TODO: make this more generic
@@ -485,10 +502,15 @@ public class RadixApplicationAPI {
 		@Nullable StoreDataAction storeDataAction,
 		@Nullable CreateTokenAction tokenCreation,
 		@Nullable MintTokensAction mintTokensAction,
+		@Nullable BurnTokensAction burnTokensAction,
 		@Nullable UniqueProperty uniqueProperty
 	) {
 		if (transferTokensAction != null) {
 			pull(transferTokensAction.getFrom());
+		}
+
+		if (burnTokensAction != null) {
+			pull(burnTokensAction.getTokenClassReference().getAddress());
 		}
 
 		Single<List<SpunParticle>> atomParticles =
@@ -500,6 +522,9 @@ public class RadixApplicationAPI {
 				Observable.just(dataStoreTranslator.map(storeDataAction)),
 				Observable.just(tokenMapper.map(tokenCreation)),
 				Observable.just(mintTokensActionMapper.map(mintTokensAction)),
+				burnTokensAction != null ? tokenBalanceStore.getState(burnTokensAction.getTokenClassReference().getAddress())
+					.firstOrError().toObservable()
+					.map(s -> burnTokensActionMapper.map(burnTokensAction, s)) : Observable.empty(),
 				Observable.just(
 					Collections.singletonList(SpunParticle.up(new TimestampParticle(System.currentTimeMillis())))
 				)

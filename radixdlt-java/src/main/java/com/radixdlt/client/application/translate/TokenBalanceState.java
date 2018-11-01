@@ -1,5 +1,6 @@
 package com.radixdlt.client.application.translate;
 
+import com.radixdlt.client.atommodel.quarks.FungibleQuark.FungibleType;
 import com.radixdlt.client.core.atoms.RadixHash;
 import com.radixdlt.client.atommodel.tokens.TokenClassReference;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
@@ -50,7 +51,17 @@ public class TokenBalanceState {
 			OwnedTokensParticle ownedTokensParticle = s.getParticle();
 			Map<RadixHash, SpunParticle<OwnedTokensParticle>> newMap = new HashMap<>(balance.consumables);
 			newMap.put(RadixHash.of(ownedTokensParticle.getDson()), s);
-			Long newBalance = balance.balance + ((s.getSpin() == Spin.UP) ? 1 : -1) * ownedTokensParticle.getAmount();
+
+			final long sign;
+			if (ownedTokensParticle.getType() == FungibleType.BURNED) {
+				sign = 0;
+			} else if (s.getSpin().equals(Spin.DOWN)) {
+				sign = -1;
+			} else {
+				sign = 1;
+			}
+
+			Long newBalance = balance.balance + sign * ownedTokensParticle.getAmount();
 			return new Balance(newBalance, newMap);
 		}
 	}

@@ -25,10 +25,14 @@ public class TokenMapper {
 		}
 
 		final TokenPermission mintPermissions;
+		final TokenPermission burnPermissions;
+
 		if (tokenCreation.getTokenSupplyType().equals(TokenSupplyType.FIXED)) {
 			mintPermissions = TokenPermission.SAME_ATOM_ONLY;
+			burnPermissions = TokenPermission.NONE;
 		} else if (tokenCreation.getTokenSupplyType().equals(TokenSupplyType.MUTABLE)) {
 			mintPermissions = TokenPermission.TOKEN_OWNER_ONLY;
+			burnPermissions = TokenPermission.TOKEN_OWNER_ONLY;
 		} else {
 			throw new IllegalStateException("Unknown supply type: " + tokenCreation.getTokenSupplyType());
 		}
@@ -40,7 +44,7 @@ public class TokenMapper {
 				tokenCreation.getDescription(),
 				new EnumMap<FungibleType, TokenPermission>(FungibleType.class) {{
 					this.put(FungibleType.MINTED, mintPermissions);
-					this.put(FungibleType.BURNED, TokenPermission.NONE);
+					this.put(FungibleType.BURNED, burnPermissions);
 					this.put(FungibleType.TRANSFERRED, TokenPermission.ALL);
 				}},
 				null

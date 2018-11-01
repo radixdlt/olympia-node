@@ -1,12 +1,12 @@
 package com.radixdlt.client.application.translate;
 
+import com.radixdlt.client.atommodel.quarks.FungibleQuark.FungibleType;
 import com.radixdlt.client.atommodel.tokens.TokenClassReference;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.atommodel.tokens.TokenParticle;
 import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
-import com.radixdlt.client.atommodel.quarks.FungibleQuark;
 
 import java.math.BigDecimal;
 import java.util.Collections;
@@ -27,7 +27,7 @@ public class TokenReducer implements ParticleReducer<Map<TokenClassReference, To
 		Particle p = s.getParticle();
 		if (!(p instanceof TokenParticle
 			|| (p instanceof OwnedTokensParticle && s.getSpin() == Spin.UP
-				&& ((OwnedTokensParticle) p).getType() == FungibleQuark.FungibleType.MINTED))) {
+				&& ((OwnedTokensParticle) p).getType() != FungibleType.TRANSFERRED))) {
 			return state;
 		}
 
@@ -47,15 +47,18 @@ public class TokenReducer implements ParticleReducer<Map<TokenClassReference, To
 				(a, b) -> new TokenState(b.getName(), b.getIso(), b.getDescription(), a.getTotalSupply())
 			);
 		} else {
-			OwnedTokensParticle minted = (OwnedTokensParticle) p;
+			OwnedTokensParticle mintedOrBurned = (OwnedTokensParticle) p;
+
 			TokenState tokenState = new TokenState(
 				null,
-				minted.getTokenClassReference().getIso(),
+				mintedOrBurned.getTokenClassReference().getIso(),
 				null,
-				TokenClassReference.subUnitsToDecimal(minted.getAmount())
+				TokenClassReference.subUnitsToDecimal(
+					(mintedOrBurned.getType() == FungibleType.BURNED ? -1 : 1) * mintedOrBurned.getAmount()
+				)
 			);
 			newMap.merge(
-				minted.getTokenClassReference(),
+				mintedOrBurned.getTokenClassReference(),
 				tokenState,
 				(a, b) -> new TokenState(
 					a.getName(),
