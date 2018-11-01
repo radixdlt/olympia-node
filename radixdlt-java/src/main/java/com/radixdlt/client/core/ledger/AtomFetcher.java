@@ -31,7 +31,7 @@ public class AtomFetcher {
 	}
 
 	public Observable<AtomObservation> fetchAtoms(RadixAddress address) {
-		final AtomQuery atomQuery = new AtomQuery(address.getUID());
+		final AtomQuery atomQuery = new AtomQuery(address);
 		return Observable.fromCallable(() -> clientSelector.apply(address.getUID().getShard()))
 			.flatMapSingle(c -> c)
 			.flatMap(client -> client.getAtoms(atomQuery))
