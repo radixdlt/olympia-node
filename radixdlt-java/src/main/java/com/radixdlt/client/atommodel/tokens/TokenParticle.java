@@ -2,12 +2,16 @@ package com.radixdlt.client.atommodel.tokens;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.client.atommodel.quarks.FungibleQuark.FungibleType;
 import com.radixdlt.client.core.atoms.RadixHash;
 import com.radixdlt.client.atommodel.quarks.AccountableQuark;
 import com.radixdlt.client.atommodel.quarks.NonFungibleQuark;
 import com.radixdlt.client.atommodel.quarks.OwnableQuark;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.crypto.ECPublicKey;
+import java.util.EnumMap;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.DsonOutput.Output;
 import org.radix.serialization2.SerializerId2;
@@ -18,12 +22,6 @@ import java.util.Set;
 
 @SerializerId2("TOKENCLASSPARTICLE")
 public class TokenParticle extends Particle {
-	public enum MintPermissions {
-		GENESIS_ONLY,
-		SAME_ATOM_ONLY,
-		POW
-	}
-
 	@JsonProperty("iso")
 	@DsonOutput(Output.ALL)
 	private String iso;
@@ -40,7 +38,7 @@ public class TokenParticle extends Particle {
 	@DsonOutput(Output.ALL)
 	private byte[] icon;
 
-	private MintPermissions mintPermissions;
+	private Map<FungibleType, TokenPermission> tokenPermissions;
 
 	private TokenParticle() {
 		// Empty constructor for serializer
@@ -51,7 +49,7 @@ public class TokenParticle extends Particle {
 			String name,
 			String iso,
 			String description,
-			MintPermissions mintPermissions,
+			Map<FungibleType, TokenPermission> tokenPermissions,
 			byte[] icon
 	) {
 		super(new NonFungibleQuark(RadixHash.of(Serialize.getInstance()
@@ -60,7 +58,7 @@ public class TokenParticle extends Particle {
 		this.iso = iso;
 		this.name = name;
 		this.description = description;
-		this.mintPermissions = mintPermissions;
+		this.tokenPermissions = Collections.unmodifiableMap(new EnumMap<>(tokenPermissions));
 		this.icon = icon;
 	}
 
@@ -89,14 +87,22 @@ public class TokenParticle extends Particle {
 		return Collections.singleton(getQuarkOrError(AccountableQuark.class).getAddresses().get(0).getPublicKey());
 	}
 
-	@JsonProperty("mint_permissions")
-	@DsonOutput(Output.ALL)
-	private String getJsonMintPermissions() {
-		return mintPermissions == null ? null : mintPermissions.name().toLowerCase();
+	@JsonProperty("permissions")
+	@DsonOutput(value = {Output.ALL})
+	private Map<String, String> getJsonPermissions() {
+		return this.tokenPermissions.entrySet().stream()
+			.collect(Collectors.toMap(e -> e.getKey().getVerbName(), e -> e.getValue().name().toLowerCase()));
 	}
 
-	@JsonProperty("mint_permissions")
-	private void setJsonMintPermissions(String mintPermissions) {
-		this.mintPermissions = mintPermissions == null ? null : MintPermissions.valueOf(mintPermissions.toUpperCase());
+	@JsonProperty("permissions")
+	private void setJsonPermissions(Map<String, String> permissions) {
+		if (permissions != null) {
+			this.tokenPermissions = permissions.entrySet().stream()
+				.collect(Collectors.toMap(
+					e -> FungibleType.fromVerbName(e.getKey()), e -> TokenPermission.valueOf(e.getValue().toUpperCase())
+				));
+		} else {
+			throw new IllegalArgumentException("Permissions cannot be null.");
+		}
 	}
 }

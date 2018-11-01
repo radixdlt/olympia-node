@@ -1,5 +1,10 @@
 package com.radixdlt.client.application;
 
+import com.radixdlt.client.application.actions.BurnTokensAction;
+import com.radixdlt.client.application.actions.CreateTokenAction.TokenSupplyType;
+import com.radixdlt.client.application.actions.MintTokensAction;
+import com.radixdlt.client.application.translate.BurnTokensActionMapper;
+import com.radixdlt.client.application.translate.MintTokensActionMapper;
 import com.radixdlt.client.core.atoms.AtomObservation;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import java.math.BigDecimal;
@@ -20,7 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.gson.JsonObject;
-import com.radixdlt.client.application.actions.CreateFixedSupplyTokenAction;
+import com.radixdlt.client.application.actions.CreateTokenAction;
 import com.radixdlt.client.application.actions.StoreDataAction;
 import com.radixdlt.client.application.actions.TransferTokensAction;
 import com.radixdlt.client.application.actions.UniqueProperty;
@@ -100,6 +105,8 @@ public class RadixApplicationAPI {
 	private final DataStoreTranslator dataStoreTranslator;
 	private final TokenTransferTranslator tokenTransferTranslator;
 	private final UniquePropertyTranslator uniquePropertyTranslator;
+	private final MintTokensActionMapper mintTokensActionMapper;
+	private final BurnTokensActionMapper burnTokensActionMapper;
 	private final TokenMapper tokenMapper;
 
 	private final ApplicationStore<Map<TokenClassReference, TokenState>> tokenStore;
@@ -123,6 +130,8 @@ public class RadixApplicationAPI {
 		this.tokenTransferTranslator = new TokenTransferTranslator(universe);
 		this.uniquePropertyTranslator = new UniquePropertyTranslator();
 		this.tokenMapper = new TokenMapper();
+		this.mintTokensActionMapper = new MintTokensActionMapper();
+		this.burnTokensActionMapper = new BurnTokensActionMapper(universe);
 
 		this.tokenStore = new ApplicationStore<>(ledger.getParticleStore(), new TokenReducer());
 		this.tokenBalanceStore = new ApplicationStore<>(ledger.getParticleStore(), new TokenBalanceReducer());
@@ -269,13 +278,13 @@ public class RadixApplicationAPI {
 	public Result storeData(Data data, RadixAddress address) {
 		StoreDataAction storeDataAction = new StoreDataAction(data, address);
 
-		return executeTransaction(null, storeDataAction, null, null);
+		return executeTransaction(null, storeDataAction, null, null, null, null);
 	}
 
 	public Result storeData(Data data, RadixAddress address0, RadixAddress address1) {
 		StoreDataAction storeDataAction = new StoreDataAction(data, address0, address1);
 
-		return executeTransaction(null, storeDataAction, null, null);
+		return executeTransaction(null, storeDataAction, null, null, null, null);
 	}
 
 	public Observable<TransferTokensAction> getMyTokenTransfers() {
@@ -317,17 +326,49 @@ public class RadixApplicationAPI {
 	}
 
 	/**
-	 * Creates a fixed supply third party token
+	 * Creates a third party token into the user's account
 	 *
 	 * @param name The name of the token to create
 	 * @param iso The symbol of the token to create
 	 * @param description A description of the token
-	 * @param fixedSupply The initial/final amount of supply of this token
+	 * @param initialSupply The initial amount of supply of this token
+	 * @param tokenSupplyType The type of supply for this token: Fixed or Mutable
 	 * @return result of the transaction
 	 */
-	public Result createFixedSupplyToken(String name, String iso, String description, long fixedSupply) {
-		CreateFixedSupplyTokenAction tokenCreation = new CreateFixedSupplyTokenAction(getMyAddress(), name, iso, description, fixedSupply);
-		return executeTransaction(null, null, tokenCreation, null);
+	public Result createToken(
+		String name,
+		String iso,
+		String description,
+		long initialSupply,
+		TokenSupplyType tokenSupplyType
+	) {
+		CreateTokenAction tokenCreation = new CreateTokenAction(getMyAddress(), name, iso, description, initialSupply, tokenSupplyType);
+		return executeTransaction(null, null, tokenCreation, null, null, null);
+	}
+
+	/**
+	 * Mints an amount of new tokens into the user's account
+	 *
+	 * @param iso The symbol of the token to mint
+	 * @param amount The amount to mint
+	 * @return result of the transaction
+	 */
+	public Result mintTokens(String iso, long amount) {
+		MintTokensAction mintTokensAction = new MintTokensAction(TokenClassReference.of(getMyAddress(), iso), amount);
+		return executeTransaction(null, null, null, mintTokensAction, null, null);
+	}
+
+
+	/**
+	 * Burns an amount of tokens in the user's account
+	 *
+	 * @param iso The symbol of the token to mint
+	 * @param amount The amount to mint
+	 * @return result of the transaction
+	 */
+	public Result burnTokens(String iso, long amount) {
+		BurnTokensAction burnTokensAction = new BurnTokensAction(TokenClassReference.of(getMyAddress(), iso), amount);
+		return executeTransaction(null, null, null, null, burnTokensAction, null);
 	}
 
 	/**
@@ -452,18 +493,24 @@ public class RadixApplicationAPI {
 			uniqueProperty = null;
 		}
 
-		return executeTransaction(transferTokensAction, null, null, uniqueProperty);
+		return executeTransaction(transferTokensAction, null, null, null, null, uniqueProperty);
 	}
 
 	// TODO: make this more generic
 	private Result executeTransaction(
 		@Nullable TransferTokensAction transferTokensAction,
 		@Nullable StoreDataAction storeDataAction,
-		@Nullable CreateFixedSupplyTokenAction tokenCreation,
+		@Nullable CreateTokenAction tokenCreation,
+		@Nullable MintTokensAction mintTokensAction,
+		@Nullable BurnTokensAction burnTokensAction,
 		@Nullable UniqueProperty uniqueProperty
 	) {
 		if (transferTokensAction != null) {
 			pull(transferTokensAction.getFrom());
+		}
+
+		if (burnTokensAction != null) {
+			pull(burnTokensAction.getTokenClassReference().getAddress());
 		}
 
 		Single<List<SpunParticle>> atomParticles =
@@ -474,6 +521,10 @@ public class RadixApplicationAPI {
 					.map(s -> tokenTransferTranslator.map(transferTokensAction, s)) : Observable.empty(),
 				Observable.just(dataStoreTranslator.map(storeDataAction)),
 				Observable.just(tokenMapper.map(tokenCreation)),
+				Observable.just(mintTokensActionMapper.map(mintTokensAction)),
+				burnTokensAction != null ? tokenBalanceStore.getState(burnTokensAction.getTokenClassReference().getAddress())
+					.firstOrError().toObservable()
+					.map(s -> burnTokensActionMapper.map(burnTokensAction, s)) : Observable.empty(),
 				Observable.just(
 					Collections.singletonList(SpunParticle.up(new TimestampParticle(System.currentTimeMillis())))
 				)

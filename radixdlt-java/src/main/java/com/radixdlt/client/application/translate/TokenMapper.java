@@ -1,24 +1,40 @@
 package com.radixdlt.client.application.translate;
 
-import com.radixdlt.client.application.actions.CreateFixedSupplyTokenAction;
+import com.radixdlt.client.application.actions.CreateTokenAction;
+import com.radixdlt.client.application.actions.CreateTokenAction.TokenSupplyType;
+import com.radixdlt.client.atommodel.quarks.FungibleQuark.FungibleType;
 import com.radixdlt.client.atommodel.tokens.TokenClassReference;
+import com.radixdlt.client.atommodel.tokens.TokenPermission;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.atommodel.tokens.TokenParticle;
-import com.radixdlt.client.atommodel.tokens.TokenParticle.MintPermissions;
 import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
 import com.radixdlt.client.atommodel.quarks.FungibleQuark;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.List;
 
 /**
- * Maps the CreateFixedSupplyToken action into it's corresponding particles
+ * Maps the CreateToken action into it's corresponding particles
  */
 public class TokenMapper {
-	public List<SpunParticle> map(CreateFixedSupplyTokenAction tokenCreation) {
+	public List<SpunParticle> map(CreateTokenAction tokenCreation) {
 		if (tokenCreation == null) {
 			return Collections.emptyList();
+		}
+
+		final TokenPermission mintPermissions;
+		final TokenPermission burnPermissions;
+
+		if (tokenCreation.getTokenSupplyType().equals(TokenSupplyType.FIXED)) {
+			mintPermissions = TokenPermission.SAME_ATOM_ONLY;
+			burnPermissions = TokenPermission.NONE;
+		} else if (tokenCreation.getTokenSupplyType().equals(TokenSupplyType.MUTABLE)) {
+			mintPermissions = TokenPermission.TOKEN_OWNER_ONLY;
+			burnPermissions = TokenPermission.TOKEN_OWNER_ONLY;
+		} else {
+			throw new IllegalStateException("Unknown supply type: " + tokenCreation.getTokenSupplyType());
 		}
 
 		TokenParticle token = new TokenParticle(
@@ -26,11 +42,15 @@ public class TokenMapper {
 				tokenCreation.getName(),
 				tokenCreation.getIso(),
 				tokenCreation.getDescription(),
-				MintPermissions.SAME_ATOM_ONLY,
+				new EnumMap<FungibleType, TokenPermission>(FungibleType.class) {{
+					this.put(FungibleType.MINTED, mintPermissions);
+					this.put(FungibleType.BURNED, burnPermissions);
+					this.put(FungibleType.TRANSFERRED, TokenPermission.ALL);
+				}},
 				null
 		);
 		OwnedTokensParticle minted = new OwnedTokensParticle(
-				tokenCreation.getFixedSupply() * TokenClassReference.SUB_UNITS,
+				tokenCreation.getInitialSupply() * TokenClassReference.SUB_UNITS,
 				FungibleQuark.FungibleType.MINTED,
 				tokenCreation.getAddress(),
 				System.currentTimeMillis(),
