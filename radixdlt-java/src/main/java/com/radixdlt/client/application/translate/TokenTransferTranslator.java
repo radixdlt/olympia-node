@@ -5,6 +5,7 @@ import com.google.gson.JsonParser;
 import com.radixdlt.client.application.actions.TransferTokensAction;
 import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.application.translate.TokenBalanceState.Balance;
+import com.radixdlt.client.atommodel.quarks.FungibleQuark.FungibleType;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.Atom;
@@ -14,7 +15,6 @@ import com.radixdlt.client.atommodel.storage.StorageParticle;
 import com.radixdlt.client.atommodel.storage.StorageParticle.StorageParticleBuilder;
 import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
 import com.radixdlt.client.atommodel.quarks.DataQuark;
-import com.radixdlt.client.atommodel.quarks.FungibleQuark;
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
@@ -186,7 +186,7 @@ public class TokenTransferTranslator {
 		consumerQuantities.entrySet().stream()
 			.map(entry -> new OwnedTokensParticle(
 				entry.getValue(),
-				FungibleQuark.FungibleType.AMOUNT,
+				FungibleType.TRANSFERRED,
 				universe.getAddressFrom(entry.getKey().getPublicKey()),
 				System.nanoTime(),
 				transfer.getTokenClassReference(),
