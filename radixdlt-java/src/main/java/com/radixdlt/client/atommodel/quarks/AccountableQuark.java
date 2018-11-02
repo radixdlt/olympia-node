@@ -10,6 +10,7 @@ import org.radix.serialization2.SerializerId2;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 /**
  *  A quark which gives it's containing particle the property that it is something to be
@@ -29,11 +30,11 @@ public final class AccountableQuark extends Quark {
 	}
 
 	public AccountableQuark(RadixAddress address) {
-		this(Arrays.asList(address));
+		this(Arrays.asList(Objects.requireNonNull(address, "address is required")));
 	}
 
 	public AccountableQuark(List<RadixAddress> addresses) {
-		this.addresses = new ArrayList<>(addresses);
+		this.addresses = new ArrayList<>(Objects.requireNonNull(addresses, "addresses is required"));
 	}
 
 	public List<RadixAddress> getAddresses() {

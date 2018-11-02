@@ -5,6 +5,8 @@ import com.radixdlt.client.core.atoms.particles.Quark;
 import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.SerializerId2;
 
+import java.util.Objects;
+
 /**
  * A quark that makes a particle fungible: can be cut up into pieces and put back together.
  */
@@ -63,7 +65,7 @@ public final class FungibleQuark extends Quark {
 		}
 
 		this.nonce = nonce;
-		this.type = type;
+		this.type = Objects.requireNonNull(type, "type is required");
 		this.planck = planck;
 		this.amount = amount;
 	}

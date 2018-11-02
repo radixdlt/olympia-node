@@ -5,6 +5,8 @@ import com.radixdlt.client.core.atoms.particles.Quark;
 import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.SerializerId2;
 
+import java.util.Objects;
+
 /**
  * Specifies a uniqueness constraint on an atom. That is, only one atom can
  * contain this particle with this unique quark's byte array contents and its owner.
@@ -19,7 +21,7 @@ public final class UniqueQuark extends Quark {
 	}
 
 	public UniqueQuark(byte[] unique) {
-		this.unique = unique;
+		this.unique = Objects.requireNonNull(unique, "unique is required");
 	}
 
 	public byte[] getUnique() {

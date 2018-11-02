@@ -22,7 +22,7 @@ public final class OwnableQuark extends Quark {
 	}
 
 	public OwnableQuark(ECPublicKey owner) {
-		this.owner = Objects.requireNonNull(owner);
+		this.owner = Objects.requireNonNull(owner, "owner is required");
 	}
 
 	public ECPublicKey getOwner() {

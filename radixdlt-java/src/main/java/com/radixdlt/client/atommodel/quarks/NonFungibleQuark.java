@@ -6,6 +6,8 @@ import org.radix.common.ID.EUID;
 import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.SerializerId2;
 
+import java.util.Objects;
+
 /**
  * A quark that makes a particle non fungible: only one particle with a given ID of its type can exist.
  */
@@ -23,7 +25,7 @@ public final class NonFungibleQuark extends Quark {
 			throw new IllegalArgumentException("uid is null or zero");
 		}
 
-		this.uid = uid;
+		this.uid = Objects.requireNonNull(uid, "uid is required");
 	}
 
 	public EUID getUid() {
