@@ -2,14 +2,12 @@ package com.radixdlt.client.examples;
 
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
-import com.radixdlt.client.assets.Asset;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.address.RadixAddress;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.dapps.wallet.RadixWallet;
 import java.math.BigDecimal;
-import java.math.BigInteger;
 
 public class RadixWalletExample {
 

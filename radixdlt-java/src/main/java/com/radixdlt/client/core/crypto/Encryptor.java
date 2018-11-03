@@ -19,7 +19,7 @@ public class Encryptor {
 			// TODO: remove exception catching
 			try {
 				return accessor.decrypt(data, protector);
-			} catch (MacMismatchException e) {
+			} catch (CryptoException e) {
 			}
 		}
 
