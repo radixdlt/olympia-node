@@ -2,6 +2,7 @@ package com.radixdlt.client.atommodel.tokens;
 
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.RadixHash;
+import com.radixdlt.client.core.atoms.particles.ParticleIndex;
 import java.math.BigDecimal;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -16,7 +17,7 @@ import org.radix.serialization2.client.SerializableObject;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 @SerializerId2("TOKENCLASSREFERENCE")
-public final class TokenClassReference extends SerializableObject {
+public final class TokenClassReference extends ParticleIndex {
 	private static final Charset CHARSET = StandardCharsets.UTF_8;
 
 	private static final int TOKEN_SCALE = 5;
@@ -35,23 +36,19 @@ public final class TokenClassReference extends SerializableObject {
 		return BigDecimal.valueOf(subUnits, TOKEN_SCALE);
 	}
 
-	@JsonProperty("address")
+	@JsonProperty("symbol")
 	@DsonOutput(Output.ALL)
-	private RadixAddress address;
-
-	@JsonProperty("iso")
-	@DsonOutput(Output.ALL)
-	private String iso;
+	private String symbol;
 
 	TokenClassReference() {
 		// No-arg constructor for serializer
 	}
 
-	private TokenClassReference(RadixAddress address, String iso) {
-		Objects.requireNonNull(iso);
+	private TokenClassReference(RadixAddress address, String symbol) {
+		super(address);
+		Objects.requireNonNull(symbol);
 
-		this.address = address;
-		this.iso = iso;
+		this.symbol = symbol;
 	}
 
 	public static TokenClassReference of(RadixAddress address, String reference) {
@@ -62,8 +59,8 @@ public final class TokenClassReference extends SerializableObject {
 		return address;
 	}
 
-	public String getIso() {
-		return iso;
+	public String getSymbol() {
+		return symbol;
 	}
 
 	public static EUID calcEUID(String isoCode) {
@@ -77,7 +74,7 @@ public final class TokenClassReference extends SerializableObject {
 		}
 
 		TokenClassReference tokenClassReference = (TokenClassReference) o;
-		return this.iso.equals(tokenClassReference.iso) && this.address.equals(tokenClassReference.address);
+		return this.symbol.equals(tokenClassReference.symbol) && this.address.equals(tokenClassReference.address);
 	}
 
 	@Override
@@ -87,6 +84,6 @@ public final class TokenClassReference extends SerializableObject {
 
 	@Override
 	public String toString() {
-		return String.format("%s/@%s", address.toString(), iso);
+		return String.format("%s/@%s", address.toString(), symbol);
 	}
 }

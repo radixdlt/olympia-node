@@ -126,7 +126,7 @@ public final class RadixUniverse {
 		final Optional<TokenClassReference> powToken = config.getGenesis().stream()
 			.flatMap(atom -> atom.particles(Spin.UP))
 			.filter(p -> p instanceof TokenParticle)
-			.filter(p -> ((TokenParticle) p).getTokenClassReference().getIso().equals("POW"))
+			.filter(p -> ((TokenParticle) p).getTokenClassReference().getSymbol().equals("POW"))
 			.map(p -> ((TokenParticle) p).getTokenClassReference())
 			.findFirst();
 
@@ -139,7 +139,7 @@ public final class RadixUniverse {
 		final Optional<TokenClassReference> nativeToken = config.getGenesis().stream()
 			.flatMap(atom -> atom.particles(Spin.UP))
 			.filter(p -> p instanceof TokenParticle)
-			.filter(p -> !((TokenParticle) p).getTokenClassReference().getIso().equals("POW"))
+			.filter(p -> !((TokenParticle) p).getTokenClassReference().getSymbol().equals("POW"))
 			.map(p -> ((TokenParticle) p).getTokenClassReference())
 			.findFirst();
 

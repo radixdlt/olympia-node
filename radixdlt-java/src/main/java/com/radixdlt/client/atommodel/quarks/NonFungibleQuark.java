@@ -1,6 +1,7 @@
 package com.radixdlt.client.atommodel.quarks;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.client.core.atoms.particles.ParticleIndex;
 import com.radixdlt.client.core.atoms.particles.Quark;
 import org.radix.common.ID.EUID;
 import org.radix.serialization2.DsonOutput;
@@ -11,22 +12,18 @@ import org.radix.serialization2.SerializerId2;
  */
 @SerializerId2("NONFUNGIBLEQUARK")
 public final class NonFungibleQuark extends Quark {
-	@JsonProperty("uid")
+	@JsonProperty("index")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private EUID uid;
+	private ParticleIndex index;
 
 	private NonFungibleQuark() {
 	}
 
-	public NonFungibleQuark(EUID uid) {
-		if (uid == null || uid.equals(EUID.ZERO)) {
-			throw new IllegalArgumentException("uid is null or zero");
-		}
-
-		this.uid = uid;
+	public NonFungibleQuark(ParticleIndex index) {
+		this.index = index;
 	}
 
-	public EUID getUid() {
-		return uid;
+	public ParticleIndex getIndex() {
+		return index;
 	}
 }

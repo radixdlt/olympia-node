@@ -22,7 +22,7 @@ public class TokenReducerTest {
 		TokenClassReference tokenRef = mock(TokenClassReference.class);
 		when(tokenParticle.getTokenClassReference()).thenReturn(tokenRef);
 		when(tokenParticle.getName()).thenReturn("Name");
-		when(tokenParticle.getIso()).thenReturn("ISO");
+		when(tokenParticle.getSymbol()).thenReturn("ISO");
 		when(tokenParticle.getDescription()).thenReturn("Desc");
 
 		TokenReducer tokenReducer = new TokenReducer();
@@ -37,7 +37,7 @@ public class TokenReducerTest {
 		TokenClassReference tokenRef = mock(TokenClassReference.class);
 		when(tokenParticle.getTokenClassReference()).thenReturn(tokenRef);
 		when(tokenParticle.getName()).thenReturn("Name");
-		when(tokenParticle.getIso()).thenReturn("ISO");
+		when(tokenParticle.getSymbol()).thenReturn("ISO");
 		when(tokenParticle.getDescription()).thenReturn("Desc");
 
 		OwnedTokensParticle minted = mock(OwnedTokensParticle.class);
