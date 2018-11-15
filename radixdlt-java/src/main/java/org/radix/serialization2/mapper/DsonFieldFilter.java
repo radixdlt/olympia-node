@@ -1,6 +1,6 @@
 package org.radix.serialization2.mapper;
 
-import java.awt.Container;
+import java.util.Collection;
 import java.util.Map;
 
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -56,7 +56,7 @@ public class DsonFieldFilter extends SimpleBeanPropertyFilter {
 
 	private boolean shouldInclude(Class<?> cls, String property) {
 		// FIXME: Special cases ideally handled better
-		if (Map.class.isAssignableFrom(cls) || Container.class.isAssignableFrom(cls)) {
+		if (Map.class.isAssignableFrom(cls) || Collection.class.isAssignableFrom(cls)) {
 			return true;
 		}
 		ImmutableSet<String> fieldsForClass = this.includedItems.get(cls);
