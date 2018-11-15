@@ -44,7 +44,7 @@ public class TransferTokensActionTranslatorTest {
 		TokenTransferTranslator transferTranslator = new TokenTransferTranslator(universe);
 
 		TokenClassReference token = mock(TokenClassReference.class);
-		when(token.getIso()).thenReturn("TEST");
+		when(token.getSymbol()).thenReturn("TEST");
 
 		TransferTokensAction transferTokensAction = mock(TransferTokensAction.class);
 		when(transferTokensAction.getAmount()).thenReturn(new BigDecimal("1.0"));

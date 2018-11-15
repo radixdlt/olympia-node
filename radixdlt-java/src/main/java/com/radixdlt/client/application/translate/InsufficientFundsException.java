@@ -10,7 +10,7 @@ public class InsufficientFundsException extends Exception {
 
 	public InsufficientFundsException(TokenClassReference tokenClassReference, BigDecimal available, BigDecimal requestedAmount) {
 		super("Requested " + requestedAmount
-			+ " but only " + available + " " + tokenClassReference.getIso() + " available.");
+			+ " but only " + available + " " + tokenClassReference.getSymbol() + " available.");
 		this.tokenClassReference = tokenClassReference;
 		this.available = available;
 		this.requestedAmount = requestedAmount;

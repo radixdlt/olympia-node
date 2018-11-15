@@ -35,7 +35,7 @@ public class RadixAtomValidatorTest {
 		OwnedTokensParticle consumer = mock(OwnedTokensParticle.class);
 		when(consumer.getOwnersPublicKeys()).thenReturn(Collections.singleton(publicKey));
 		TokenClassReference token = mock(TokenClassReference.class);
-		when(token.getIso()).thenReturn("TEST");
+		when(token.getSymbol()).thenReturn("TEST");
 		when(consumer.getTokenClassReference()).thenReturn(token);
 
 		Atom atom = mock(Atom.class);

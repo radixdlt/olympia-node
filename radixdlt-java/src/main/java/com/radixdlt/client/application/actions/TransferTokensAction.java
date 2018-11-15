@@ -109,7 +109,7 @@ public class TransferTokensAction {
 	@Override
 	public String toString() {
 		Long timestamp = (Long) metaData.get("timestamp");
-		return timestamp + " " + from + " -> " + to + " " + amount + " "  + tokenClassReference.getIso()
+		return timestamp + " " + from + " -> " + to + " " + amount + " "  + tokenClassReference.getSymbol()
 			+ (attachment == null ? "" : " " + attachment);
 	}
 }

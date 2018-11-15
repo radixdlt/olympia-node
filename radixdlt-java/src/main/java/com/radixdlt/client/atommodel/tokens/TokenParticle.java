@@ -22,10 +22,6 @@ import java.util.Set;
 
 @SerializerId2("TOKENCLASSPARTICLE")
 public class TokenParticle extends Particle {
-	@JsonProperty("iso")
-	@DsonOutput(Output.ALL)
-	private String iso;
-
 	@JsonProperty("name")
 	@DsonOutput(Output.ALL)
 	private String name;
@@ -45,33 +41,30 @@ public class TokenParticle extends Particle {
 	}
 
 	public TokenParticle(
-			RadixAddress address,
-			String name,
-			String iso,
-			String description,
-			Map<FungibleType, TokenPermission> tokenPermissions,
-			byte[] icon
+		RadixAddress address,
+		String name,
+		String symbol,
+		String description,
+		Map<FungibleType, TokenPermission> tokenPermissions,
+		byte[] icon
 	) {
-		super(new NonFungibleQuark(RadixHash.of(Serialize.getInstance()
-						.toDson(getTokenClassReference(address, iso), Output.HASH)).toEUID()),
-				new AccountableQuark(address), new OwnableQuark(address.getPublicKey()));
-		this.iso = iso;
+		super(
+			new NonFungibleQuark(TokenClassReference.of(address, symbol)),
+			new AccountableQuark(address),
+			new OwnableQuark(address.getPublicKey())
+		);
 		this.name = name;
 		this.description = description;
 		this.tokenPermissions = Collections.unmodifiableMap(new EnumMap<>(tokenPermissions));
 		this.icon = icon;
 	}
 
-	private static TokenClassReference getTokenClassReference(RadixAddress address, String iso) {
-		return TokenClassReference.of(address, iso);
-	}
-
 	public String getName() {
 		return name;
 	}
 
-	public String getIso() {
-		return iso;
+	public String getSymbol() {
+		return getTokenClassReference().getSymbol();
 	}
 
 	public String getDescription() {
@@ -79,7 +72,7 @@ public class TokenParticle extends Particle {
 	}
 
 	public TokenClassReference getTokenClassReference() {
-		return TokenClassReference.of(getQuarkOrError(AccountableQuark.class).getAddresses().get(0), iso);
+		return (TokenClassReference) this.getQuarkOrError(NonFungibleQuark.class).getIndex();
 	}
 
 	@Override

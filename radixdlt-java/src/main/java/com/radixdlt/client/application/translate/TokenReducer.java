@@ -36,7 +36,7 @@ public class TokenReducer implements ParticleReducer<Map<TokenClassReference, To
 			TokenParticle tokenParticle = (TokenParticle) p;
 			TokenState tokenState = new TokenState(
 				tokenParticle.getName(),
-				tokenParticle.getIso(),
+				tokenParticle.getSymbol(),
 				tokenParticle.getDescription(),
 				BigDecimal.ZERO
 			);
@@ -51,7 +51,7 @@ public class TokenReducer implements ParticleReducer<Map<TokenClassReference, To
 
 			TokenState tokenState = new TokenState(
 				null,
-				mintedOrBurned.getTokenClassReference().getIso(),
+				mintedOrBurned.getTokenClassReference().getSymbol(),
 				null,
 				TokenClassReference.subUnitsToDecimal(
 					(mintedOrBurned.getType() == FungibleType.BURNED ? -1 : 1) * mintedOrBurned.getAmount()
