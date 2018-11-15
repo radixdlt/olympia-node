@@ -5,9 +5,11 @@ import com.radixdlt.client.core.network.RadixJsonRpcClient;
 import com.radixdlt.client.core.network.RadixNetwork;
 import com.radixdlt.client.core.network.WebSocketClient.RadixClientStatus;
 import io.reactivex.Maybe;
+import io.reactivex.Observable;
 import io.reactivex.Single;
 import java.util.Collections;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,6 +30,11 @@ public class ClientSelector {
 	private final boolean checkUniverse;
 
 	/**
+	 * The amount of time to delay in between node connection requests
+	 */
+	private final int delaySecs;
+
+	/**
 	 * The network of peers available to connect to
 	 */
 	private final RadixNetwork radixNetwork;
@@ -36,6 +43,7 @@ public class ClientSelector {
 		this.config = config;
 		this.radixNetwork = radixNetwork;
 		this.checkUniverse = checkUniverse;
+		this.delaySecs = 3;
 	}
 
 	/**
@@ -70,6 +78,7 @@ public class ClientSelector {
 					.toMaybe()
 					.onErrorComplete()
 			)
+			.zipWith(Observable.timer(delaySecs, TimeUnit.SECONDS), (c, t) -> c)
 			.flatMapMaybe(client ->
 				client.getUniverse()
 					.doOnSuccess(cliUniverse -> {

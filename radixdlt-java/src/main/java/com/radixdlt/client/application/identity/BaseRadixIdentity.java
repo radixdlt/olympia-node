@@ -11,7 +11,6 @@ import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.crypto.ECSignature;
 import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
-import com.radixdlt.client.core.crypto.MacMismatchException;
 
 import io.reactivex.Single;
 
@@ -40,7 +39,8 @@ class BaseRadixIdentity implements RadixIdentity {
 				try {
 					byte[] bytes = myKey.decrypt(data.getBytes(), protector);
 					return Single.just(new UnencryptedData(bytes, data.getMetaData(), true));
-				} catch (MacMismatchException e) {
+				} catch (CryptoException e) {
+					// Decryption failed, try the next one
 				}
 			}
 			return Single.error(new CryptoException("Cannot decrypt"));

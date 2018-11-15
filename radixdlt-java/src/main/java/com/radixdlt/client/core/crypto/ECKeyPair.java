@@ -129,7 +129,7 @@ public class ECKeyPair extends SerializableObject {
 		return signature;
 	}
 
-	public byte[] decrypt(byte[] data, EncryptedPrivateKey sharedKey) throws MacMismatchException {
+	public byte[] decrypt(byte[] data, EncryptedPrivateKey sharedKey) throws CryptoException {
 		if (privateKey == null) {
 			throw new IllegalStateException("This key does not contain a private key.");
 		}
@@ -137,15 +137,10 @@ public class ECKeyPair extends SerializableObject {
 		byte[] privateKey = decrypt(sharedKey.toByteArray());
 		final ECKeyPair sharedPrivateKey = new ECKeyPair(privateKey);
 
-		try {
-			return sharedPrivateKey.decrypt(data);
-		} catch (MacMismatchException e) {
-			System.out.println(e.getExpectedBase64() + " " + e.getActualBase64());
-			throw new IllegalStateException("Unable to decrypt with shared private key.");
-		}
+		return sharedPrivateKey.decrypt(data);
 	}
 
-	public byte[] decrypt(byte[] data) throws MacMismatchException {
+	public byte[] decrypt(byte[] data) throws CryptoException {
 		if (privateKey == null) {
 			throw new IllegalStateException("This key does not contain a private key.");
 		}
@@ -153,11 +148,9 @@ public class ECKeyPair extends SerializableObject {
 		try {
 			DataInputStream inputStream = new DataInputStream(new ByteArrayInputStream(data));
 
-
 			// 1. Read the IV
 			byte[] iv = new byte[16];
 			inputStream.readFully(iv);
-
 
 			// 2. Read the ephemeral public key
 			int publicKeySize = inputStream.readUnsignedByte();
@@ -193,15 +186,9 @@ public class ECKeyPair extends SerializableObject {
 			//    and the cipher text as payload. The output is the padded input text.
 			return publicKey.crypt(false, iv, encrypted, keyE);
 		} catch (IOException e) {
-			// TODO: change type of exception thrown
-			throw new RuntimeException("Failed to decrypt", e);
+			throw new CryptoException("Failed to decrypt", e);
 		}
 	}
-
-	public String decryptToAscii(byte[] data) throws MacMismatchException {
-		return new String(this.decrypt(data));
-	}
-
 
 	@Override
 	public int hashCode() {

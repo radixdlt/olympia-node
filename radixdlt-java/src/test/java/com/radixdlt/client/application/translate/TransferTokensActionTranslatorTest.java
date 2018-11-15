@@ -3,11 +3,12 @@ package com.radixdlt.client.application.translate;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.junit.Assert.assertEquals;
 
+import com.radixdlt.client.application.identity.RadixIdentity;
+import com.radixdlt.client.application.objects.TokenTransfer;
 import com.radixdlt.client.core.atoms.Atom;
+import io.reactivex.observers.TestObserver;
 import java.math.BigDecimal;
-import java.util.List;
 import org.junit.Test;
 import com.radixdlt.client.application.actions.TransferTokensAction;
 import com.radixdlt.client.atommodel.tokens.TokenClassReference;
@@ -30,9 +31,9 @@ public class TransferTokensActionTranslatorTest {
 		));
 
 		TokenTransferTranslator tokenTransferTranslator = new TokenTransferTranslator(universe);
-		List<TransferTokensAction> transferTokenActions = tokenTransferTranslator.fromAtom(atom);
-		assertEquals(myAddress, transferTokenActions.get(0).getFrom());
-		assertEquals(myAddress, transferTokenActions.get(0).getTo());
+		TestObserver<TokenTransfer> testObserver = TestObserver.create();
+		tokenTransferTranslator.fromAtom(atom, mock(RadixIdentity.class)).subscribe(testObserver);
+		testObserver.assertValue(transfer -> myAddress.equals(transfer.getFrom()) && myAddress.equals(transfer.getTo()));
 	}
 
 	@Test

@@ -3,6 +3,9 @@ package com.radixdlt.client.application;
 import com.radixdlt.client.application.actions.BurnTokensAction;
 import com.radixdlt.client.application.actions.CreateTokenAction.TokenSupplyType;
 import com.radixdlt.client.application.actions.MintTokensAction;
+import com.radixdlt.client.application.actions.StoreDataAction;
+import com.radixdlt.client.application.actions.TransferTokensAction;
+import com.radixdlt.client.application.objects.TokenTransfer;
 import com.radixdlt.client.application.translate.BurnTokensActionMapper;
 import com.radixdlt.client.application.translate.MintTokensActionMapper;
 import com.radixdlt.client.core.atoms.AtomObservation;
@@ -26,8 +29,6 @@ import org.slf4j.LoggerFactory;
 
 import com.google.gson.JsonObject;
 import com.radixdlt.client.application.actions.CreateTokenAction;
-import com.radixdlt.client.application.actions.StoreDataAction;
-import com.radixdlt.client.application.actions.TransferTokensAction;
 import com.radixdlt.client.application.actions.UniqueProperty;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.objects.Data;
@@ -287,11 +288,11 @@ public class RadixApplicationAPI {
 		return executeTransaction(null, storeDataAction, null, null, null, null);
 	}
 
-	public Observable<TransferTokensAction> getMyTokenTransfers() {
+	public Observable<TokenTransfer> getMyTokenTransfers() {
 		return getTokenTransfers(getMyAddress());
 	}
 
-	public Observable<TransferTokensAction> getTokenTransfers(RadixAddress address) {
+	public Observable<TokenTransfer> getTokenTransfers(RadixAddress address) {
 		Objects.requireNonNull(address);
 
 		pull(address);
@@ -299,7 +300,7 @@ public class RadixApplicationAPI {
 		return ledger.getAtomStore().getAtoms(address)
 			.filter(AtomObservation::isStore)
 			.map(AtomObservation::getAtom)
-			.flatMapIterable(tokenTransferTranslator::fromAtom);
+			.flatMap(atom -> tokenTransferTranslator.fromAtom(atom, this.getMyIdentity()));
 	}
 
 	public Observable<Map<TokenClassReference, BigDecimal>> getBalance(RadixAddress address) {

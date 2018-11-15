@@ -1,7 +1,17 @@
 package com.radixdlt.client.core.crypto;
 
-public class CryptoException extends Exception {
+import java.security.GeneralSecurityException;
+
+public class CryptoException extends GeneralSecurityException {
+	public CryptoException() {
+		super();
+	}
+
 	public CryptoException(String message) {
 		super(message);
+	}
+
+	public CryptoException(String message, Throwable cause) {
+		super(message, cause);
 	}
 }

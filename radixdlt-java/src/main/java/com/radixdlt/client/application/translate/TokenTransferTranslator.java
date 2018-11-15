@@ -25,6 +25,11 @@ import org.radix.serialization2.client.Serialize;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import com.radixdlt.client.application.identity.RadixIdentity;
+import com.radixdlt.client.application.objects.TokenTransfer;
+import com.radixdlt.client.core.crypto.CryptoException;
+import io.reactivex.Observable;
+import io.reactivex.Single;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -42,72 +47,92 @@ public class TokenTransferTranslator {
 		this.universe = universe;
 	}
 
-	public List<TransferTokensAction> fromAtom(Atom atom) {
-		return atom.tokenSummary().entrySet().stream()
-				.filter(e -> !e.getKey().equals(universe.getPOWToken()))
-				.map(e -> {
-					List<Entry<ECPublicKey, Long>> summary = new ArrayList<>(e.getValue().entrySet());
-					if (summary.isEmpty()) {
-						throw new IllegalStateException("Invalid atom: "
-								+ Serialize.getInstance().toJson(atom, DsonOutput.Output.ALL));
-					}
-					if (summary.size() > 2) {
-						throw new IllegalStateException("More than two participants in token transfer. "
-								+ "Unable to handle: " + summary);
-					}
+	public Observable<TokenTransfer> fromAtom(Atom atom, RadixIdentity identity) {
+		return Observable.fromIterable(atom.tokenSummary().entrySet())
+			.filter(e -> !e.getKey().equals(universe.getPOWToken()))
+			.flatMapSingle(e -> {
+				List<Entry<ECPublicKey, Long>> summary = new ArrayList<>(e.getValue().entrySet());
+				if (summary.isEmpty()) {
+					throw new IllegalStateException(
+						"Invalid atom: " + Serialize.getInstance().toJson(atom, DsonOutput.Output.ALL)
+					);
+				}
+				if (summary.size() > 2) {
+					throw new IllegalStateException(
+						"More than two participants in token transfer. " + "Unable to handle: " + summary
+					);
+				}
 
-					final RadixAddress from;
-					final RadixAddress to;
-					if (summary.size() == 1) {
-						from = summary.get(0).getValue() <= 0L ? universe.getAddressFrom(summary.get(0).getKey()) : null;
-						to = summary.get(0).getValue() < 0L ? null : universe.getAddressFrom(summary.get(0).getKey());
+				final RadixAddress from;
+				final RadixAddress to;
+				if (summary.size() == 1) {
+					from = summary.get(0).getValue() <= 0L ? universe.getAddressFrom(summary.get(0).getKey()) : null;
+					to = summary.get(0).getValue() < 0L ? null : universe.getAddressFrom(summary.get(0).getKey());
+				} else {
+					if (summary.get(0).getValue() > 0) {
+						from = universe.getAddressFrom(summary.get(1).getKey());
+						to = universe.getAddressFrom(summary.get(0).getKey());
 					} else {
-						if (summary.get(0).getValue() > 0) {
-							from = universe.getAddressFrom(summary.get(1).getKey());
-							to = universe.getAddressFrom(summary.get(0).getKey());
-						} else {
-							from = universe.getAddressFrom(summary.get(0).getKey());
-							to = universe.getAddressFrom(summary.get(1).getKey());
-						}
+						from = universe.getAddressFrom(summary.get(0).getKey());
+						to = universe.getAddressFrom(summary.get(1).getKey());
 					}
-					final Optional<StorageParticle> bytesParticle = atom.getDataParticles().stream()
-							.filter(p -> !"encryptor".equals(p.getMetaData("application")))
-							.findFirst();
+				}
+				final Optional<StorageParticle> bytesParticle =
+					atom.getDataParticles().stream()
+						.filter(p -> !"encryptor".equals(p.getMetaData("application")))
+						.findFirst();
 
-					// Construct attachment from atom
-					final Data attachment;
-					if (bytesParticle.isPresent()) {
-						Map<String, Object> metaData = new HashMap<>();
+				final BigDecimal amount = TokenClassReference.subUnitsToDecimal(Math.abs(summary.get(0).getValue()));
 
-						final Optional<StorageParticle> encryptorParticle = atom.getDataParticles().stream()
-								.filter(p -> "encryptor".equals(p.getMetaData("application")))
-								.findAny();
-						metaData.put("encrypted", encryptorParticle.isPresent());
+				if (bytesParticle.isPresent()) {
+					Map<String, Object> metaData = new HashMap<>();
 
-						final Encryptor encryptor;
-						if (encryptorParticle.isPresent()) {
-							String encryptorBytes = new String(
-									encryptorParticle.get().getQuarkOrError(DataQuark.class).getBytes(),
-									StandardCharsets.UTF_8);
-							JsonArray protectorsJson = JSON_PARSER.parse(encryptorBytes).getAsJsonArray();
-							List<EncryptedPrivateKey> protectors = new ArrayList<>();
-							protectorsJson.forEach(protectorJson ->
-									protectors.add(EncryptedPrivateKey.fromBase64(protectorJson.getAsString()))
-							);
-							encryptor = new Encryptor(protectors);
-						} else {
-							encryptor = null;
-						}
-						attachment = Data.raw(
-								bytesParticle.get().getQuarkOrError(DataQuark.class).getBytes(), metaData, encryptor);
+					final Optional<StorageParticle> encryptorParticle =
+						atom.getDataParticles().stream()
+							.filter(p -> "encryptor".equals(p.getMetaData("application")))
+							.findAny();
+					metaData.put("encrypted", encryptorParticle.isPresent());
+
+					final Encryptor encryptor;
+					if (encryptorParticle.isPresent()) {
+						String encryptorBytes = new String(
+							encryptorParticle.get().getQuarkOrError(DataQuark.class).getBytes(),
+							StandardCharsets.UTF_8
+						);
+						JsonArray protectorsJson = JSON_PARSER.parse(encryptorBytes).getAsJsonArray();
+						List<EncryptedPrivateKey> protectors = new ArrayList<>();
+						protectorsJson.forEach(
+							protectorJson -> protectors.add(EncryptedPrivateKey.fromBase64(protectorJson.getAsString()))
+						);
+
+						encryptor = new Encryptor(protectors);
 					} else {
-						attachment = null;
+						encryptor = null;
 					}
 
-					final BigDecimal amount = TokenClassReference.subUnitsToDecimal(Math.abs(summary.get(0).getValue()));
-					return TransferTokensAction.create(from, to, amount, e.getKey(), attachment, atom.getTimestamp());
-				})
-				.collect(Collectors.toList());
+					final Data attachment = Data.raw(
+						bytesParticle.get().getQuarkOrError(DataQuark.class).getBytes(),
+						metaData,
+						encryptor
+					);
+
+					return Single.just(attachment).flatMap(identity::decrypt)
+						.map(unencryptedData ->
+							new TokenTransfer(from, to, e.getKey(), amount, unencryptedData, atom.getTimestamp())
+						)
+						.onErrorResumeNext(ex -> {
+							if (ex instanceof CryptoException) {
+								return Single.just(
+									new TokenTransfer(from, to, e.getKey(), amount, null, atom.getTimestamp())
+								);
+							} else {
+								return Single.error(ex);
+							}
+						});
+				} else {
+					return Single.just(new TokenTransfer(from, to, e.getKey(), amount, null, atom.getTimestamp()));
+				}
+			});
 	}
 
 	public List<SpunParticle> map(TransferTokensAction transfer, TokenBalanceState curState) throws InsufficientFundsException {

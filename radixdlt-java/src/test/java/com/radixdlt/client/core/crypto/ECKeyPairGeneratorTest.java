@@ -78,7 +78,7 @@ public class ECKeyPairGeneratorTest {
 	}
 
 	@Test
-	public void encryptionTest() throws MacMismatchException {
+	public void encryptionTest() throws CryptoException {
 		String testPhrase = "Hello World";
 		ECKeyPair ecKeyPair = ECKeyPairGenerator.newInstance().generateKeyPair();
 		byte[] encrypted = ecKeyPair.getPublicKey().encrypt(testPhrase.getBytes());
