@@ -392,4 +392,9 @@ public class RadixJsonRpcClient {
 			});
 		});
 	}
+
+	@Override
+	public String toString() {
+		return wsClient.toString();
+	}
 }

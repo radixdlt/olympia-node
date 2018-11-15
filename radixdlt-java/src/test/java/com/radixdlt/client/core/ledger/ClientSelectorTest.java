@@ -31,7 +31,7 @@ public class ClientSelectorTest {
 		when(client.getUniverse()).thenReturn(Single.error(new IOException()));
 		when(network.getRadixClients(any(Set.class))).thenReturn(Observable.concat(Observable.just(client), Observable.never()));
 
-		ClientSelector clientSelector = new ClientSelector(config, network, true);
+		ClientSelector clientSelector = new ClientSelector(config, network, false);
 		TestObserver<RadixJsonRpcClient> testObserver = TestObserver.create();
 		clientSelector.getRadixClient(1L).subscribe(testObserver);
 
@@ -64,5 +64,29 @@ public class ClientSelectorTest {
 		testObserver.assertValue(clients.get(0));
 
 		verify(clients.get(99), times(0)).getUniverse();
+	}
+
+	@Test
+	public void whenFirstNodeFailsThenSecondNodeShouldConnect() {
+		RadixUniverseConfig config = mock(RadixUniverseConfig.class);
+		RadixNetwork network = mock(RadixNetwork.class);
+		RadixJsonRpcClient badClient = mock(RadixJsonRpcClient.class);
+		when(badClient.getStatus()).thenReturn(Observable.just(RadixClientStatus.OPEN));
+		when(badClient.getUniverse()).thenReturn(Single.error(new IOException()));
+
+		RadixJsonRpcClient goodClient = mock(RadixJsonRpcClient.class);
+		when(goodClient.getStatus()).thenReturn(Observable.just(RadixClientStatus.OPEN));
+		when(goodClient.getUniverse()).thenReturn(Single.just(mock(RadixUniverseConfig.class)));
+
+		when(network.getRadixClients(any(Set.class))).thenReturn(
+			Observable.concat(Observable.just(badClient), Observable.just(goodClient), Observable.never()));
+
+		ClientSelector clientSelector = new ClientSelector(config, network, false);
+		TestObserver<RadixJsonRpcClient> testObserver = TestObserver.create();
+		clientSelector.getRadixClient(1L).subscribe(testObserver);
+
+		testObserver.awaitTerminalEvent();
+		testObserver.assertNoErrors();
+		testObserver.assertValue(goodClient);
 	}
 }

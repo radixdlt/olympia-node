@@ -7,7 +7,6 @@ import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.PublishSubject;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -22,12 +21,10 @@ public class WebSocketClient {
 
 	private WebSocket webSocket;
 	public enum RadixClientStatus {
-		CONNECTING, OPEN, CLOSED, FAILURE
+		CONNECTING, OPEN, CLOSING, CLOSED, FAILURE
 	}
 
 	private final BehaviorSubject<RadixClientStatus> status = BehaviorSubject.createDefault(RadixClientStatus.CLOSED);
-	private final AtomicBoolean closed = new AtomicBoolean(false);
-
 	private final Request endpoint;
 	private final Supplier<OkHttpClient> okHttpClient;
 
@@ -64,7 +61,8 @@ public class WebSocketClient {
 		}
 
 		if (this.webSocket != null) {
-			this.webSocket.close(1000, null);
+			this.status.onNext(RadixClientStatus.CLOSING);
+			this.webSocket.cancel();
 		}
 
 		return true;
@@ -102,7 +100,8 @@ public class WebSocketClient {
 
 			@Override
 			public void onFailure(WebSocket websocket, Throwable t, Response response) {
-				if (closed.get()) {
+				if (status.getValue().equals(RadixClientStatus.CLOSING)) {
+					WebSocketClient.this.status.onNext(RadixClientStatus.CLOSED);
 					return;
 				}
 
@@ -136,5 +135,10 @@ public class WebSocketClient {
 
 	public boolean send(String message) {
 		return this.webSocket.send(message);
+	}
+
+	@Override
+	public String toString() {
+		return endpoint.toString();
 	}
 }
