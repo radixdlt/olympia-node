@@ -3,7 +3,6 @@ package com.radixdlt.client.atommodel.quarks;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.client.core.atoms.particles.ParticleIndex;
 import com.radixdlt.client.core.atoms.particles.Quark;
-import org.radix.common.ID.EUID;
 import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.SerializerId2;
 

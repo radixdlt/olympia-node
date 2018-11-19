@@ -12,7 +12,6 @@ import org.radix.common.ID.EUID;
 import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.DsonOutput.Output;
 import org.radix.serialization2.SerializerId2;
-import org.radix.serialization2.client.SerializableObject;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -55,10 +54,6 @@ public final class TokenClassReference extends ParticleIndex {
 		return new TokenClassReference(address, reference);
 	}
 
-	public RadixAddress getAddress() {
-		return address;
-	}
-
 	public String getSymbol() {
 		return symbol;
 	}
@@ -74,7 +69,7 @@ public final class TokenClassReference extends ParticleIndex {
 		}
 
 		TokenClassReference tokenClassReference = (TokenClassReference) o;
-		return this.symbol.equals(tokenClassReference.symbol) && this.address.equals(tokenClassReference.address);
+		return this.symbol.equals(tokenClassReference.symbol) && this.getAddress().equals(tokenClassReference.getAddress());
 	}
 
 	@Override
@@ -84,6 +79,6 @@ public final class TokenClassReference extends ParticleIndex {
 
 	@Override
 	public String toString() {
-		return String.format("%s/@%s", address.toString(), symbol);
+		return String.format("%s/@%s", this.getAddress().toString(), symbol);
 	}
 }

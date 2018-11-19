@@ -6,14 +6,19 @@ import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.DsonOutput.Output;
 import org.radix.serialization2.client.SerializableObject;
 
-public abstract class ParticleIndex extends SerializableObject{
+public abstract class ParticleIndex extends SerializableObject {
 	@JsonProperty("address")
 	@DsonOutput(Output.ALL)
-	protected RadixAddress address;
+	private RadixAddress address;
 
-	protected ParticleIndex() {}
+	protected ParticleIndex() {
+	}
 
 	protected ParticleIndex(RadixAddress address) {
 		this.address = address;
+	}
+
+	public RadixAddress getAddress() {
+		return address;
 	}
 }
