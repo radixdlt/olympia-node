@@ -10,6 +10,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeMap;
 
 /**
@@ -38,32 +39,34 @@ public final class DataQuark extends Quark {
 	}
 
 	public DataQuark(String stringData) {
-		this.bytes = stringData.getBytes(StandardCharsets.UTF_8);
+		this.bytes = Objects.requireNonNull(stringData, "stringData is required").getBytes(StandardCharsets.UTF_8);
 	}
 
 	public DataQuark(byte[] bytes) {
+		Objects.requireNonNull(bytes, "bytes is required");
 		this.bytes = Arrays.copyOf(bytes, bytes.length);
 	}
 
 	public DataQuark(String stringData, String contentType) {
-		this(stringData.getBytes(StandardCharsets.UTF_8), contentType);
+		this(Objects.requireNonNull(stringData, "stringData is required")
+				.getBytes(StandardCharsets.UTF_8), Objects.requireNonNull(contentType, "contentType is required"));
 	}
 
 	public DataQuark(byte[] bytes, String contentType) {
+		Objects.requireNonNull(bytes, "bytes is required");
 		this.bytes = Arrays.copyOf(bytes, bytes.length);
 		this.metaData = new MetadataMap();
-		this.metaData.put("contentType", contentType);
+		this.metaData.put("contentType", Objects.requireNonNull(contentType, "contentType is required"));
 	}
 
 	public DataQuark(byte[] bytes, Map<String, String> metaData) {
+		Objects.requireNonNull(bytes, "bytes is required");
+		Objects.requireNonNull(metaData, "metaData is required");
+
 		this.bytes = bytes;
-
-		if (metaData != null) {
-			this.metaData = new MetadataMap();
-			this.metaData.putAll(metaData);
-		}
+		this.metaData = new MetadataMap();
+		this.metaData.putAll(metaData);
 	}
-
 
 	// TODO: Make immutable
 	public byte[] getBytes() {

@@ -8,6 +8,8 @@ import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.application.identity.RadixIdentity;
+import io.reactivex.Completable;
+import io.reactivex.Observable;
 import java.math.BigDecimal;
 
 public class RadixWalletExample {
