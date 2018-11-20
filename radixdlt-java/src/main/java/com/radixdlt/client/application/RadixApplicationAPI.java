@@ -277,13 +277,13 @@ public class RadixApplicationAPI {
 	}
 
 	public Result storeData(Data data, RadixAddress address) {
-		StoreDataAction storeDataAction = new StoreDataAction(data, address);
+		StoreDataAction storeDataAction = new StoreDataAction(getMyAddress(), data, address);
 
 		return executeTransaction(null, storeDataAction, null, null, null, null);
 	}
 
 	public Result storeData(Data data, RadixAddress address0, RadixAddress address1) {
-		StoreDataAction storeDataAction = new StoreDataAction(data, address0, address1);
+		StoreDataAction storeDataAction = new StoreDataAction(getMyAddress(), data, address0, address1);
 
 		return executeTransaction(null, storeDataAction, null, null, null, null);
 	}

@@ -5,7 +5,7 @@ import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomObservation;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.Spin;
-import com.radixdlt.client.atommodel.storage.StorageParticle;
+import com.radixdlt.client.atommodel.message.MessageParticle;
 import io.reactivex.Observable;
 import io.reactivex.ObservableEmitter;
 import io.reactivex.observables.ConnectableObservable;
@@ -44,7 +44,7 @@ public class ValidAtomFilter {
 			});
 
 		atom.particles(Spin.UP)
-			.filter(up -> !up.getAddresses().isEmpty() && !(up instanceof StorageParticle) // FIXME: remove hardcode of DataParticle
+			.filter(up -> !up.getAddresses().isEmpty() && !(up instanceof MessageParticle) // FIXME: remove hardcode of DataParticle
 				&& up.getAddresses().stream().allMatch(address::ownsKey))
 			.forEach(up -> {
 				ByteBuffer dson = ByteBuffer.wrap(serializer.toDson(up, Output.HASH));

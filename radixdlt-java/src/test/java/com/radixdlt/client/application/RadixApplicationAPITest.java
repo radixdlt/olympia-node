@@ -117,6 +117,7 @@ public class RadixApplicationAPITest {
 		ECPublicKey key = mock(ECPublicKey.class);
 		RadixAddress address = mock(RadixAddress.class);
 		when(address.getPublicKey()).thenReturn(key);
+		when(api.getMyAddress()).thenReturn(address);
 
 		Data data = mock(Data.class);
 		when(data.getBytes()).thenReturn(new byte[0]);
@@ -130,6 +131,7 @@ public class RadixApplicationAPITest {
 		ECPublicKey key = mock(ECPublicKey.class);
 		RadixAddress address = mock(RadixAddress.class);
 		when(address.getPublicKey()).thenReturn(key);
+		when(api.getMyAddress()).thenReturn(address);
 
 		Data data = mock(Data.class);
 		when(data.getBytes()).thenReturn(new byte[0]);
@@ -145,6 +147,7 @@ public class RadixApplicationAPITest {
 		createMockedAPIWhichAlwaysSucceeds();
 		RadixAddress address = mock(RadixAddress.class);
 		when(address.getPublicKey()).thenReturn(mock(ECPublicKey.class));
+		when(api.getMyAddress()).thenReturn(address);
 
 		Data data = mock(Data.class);
 		when(data.getBytes()).thenReturn(new byte[0]);
@@ -158,6 +161,7 @@ public class RadixApplicationAPITest {
 		RadixApplicationAPI api = createMockedAPI(submitter, euid -> Observable.never());
 		RadixAddress address = mock(RadixAddress.class);
 		when(address.getPublicKey()).thenReturn(mock(ECPublicKey.class));
+		when(api.getMyAddress()).thenReturn(address);
 
 		Data data = mock(Data.class);
 		when(data.getBytes()).thenReturn(new byte[0]);

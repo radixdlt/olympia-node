@@ -11,8 +11,8 @@ import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.atommodel.tokens.TokenClassReference;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
-import com.radixdlt.client.atommodel.storage.StorageParticle;
-import com.radixdlt.client.atommodel.storage.StorageParticle.StorageParticleBuilder;
+import com.radixdlt.client.atommodel.message.MessageParticle;
+import com.radixdlt.client.atommodel.message.MessageParticle.MessageParticleBuilder;
 import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
 import com.radixdlt.client.atommodel.quarks.DataQuark;
 import com.radixdlt.client.core.crypto.ECKeyPair;
@@ -77,7 +77,7 @@ public class TokenTransferTranslator {
 						to = universe.getAddressFrom(summary.get(1).getKey());
 					}
 				}
-				final Optional<StorageParticle> bytesParticle =
+				final Optional<MessageParticle> bytesParticle =
 					atom.getDataParticles().stream()
 						.filter(p -> !"encryptor".equals(p.getMetaData("application")))
 						.findFirst();
@@ -87,7 +87,7 @@ public class TokenTransferTranslator {
 				if (bytesParticle.isPresent()) {
 					Map<String, Object> metaData = new HashMap<>();
 
-					final Optional<StorageParticle> encryptorParticle =
+					final Optional<MessageParticle> encryptorParticle =
 						atom.getDataParticles().stream()
 							.filter(p -> "encryptor".equals(p.getMetaData("application")))
 							.findAny();
@@ -163,10 +163,11 @@ public class TokenTransferTranslator {
 		if (attachment != null) {
 			particles.add(
 				SpunParticle.up(
-					new StorageParticleBuilder()
+					new MessageParticleBuilder()
 						.payload(attachment.getBytes())
 						.account(transfer.getFrom())
 						.account(transfer.getTo())
+						.source(transfer.getFrom())
 						.build()
 				)
 			);
@@ -176,7 +177,7 @@ public class TokenTransferTranslator {
 				encryptor.getProtectors().stream().map(EncryptedPrivateKey::base64).forEach(protectorsJson::add);
 
 				byte[] encryptorPayload = protectorsJson.toString().getBytes(StandardCharsets.UTF_8);
-				StorageParticle encryptorParticle = new StorageParticleBuilder()
+				MessageParticle encryptorParticle = new MessageParticleBuilder()
 						.payload(encryptorPayload)
 						.setMetaData("application", "encryptor")
 						.setMetaData("contentType", "application/json")

@@ -1,4 +1,4 @@
-package com.radixdlt.client.atommodel.storage;
+package com.radixdlt.client.atommodel.message;
 
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.atommodel.quarks.AccountableQuark;
@@ -6,6 +6,7 @@ import com.radixdlt.client.atommodel.quarks.DataQuark;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import org.radix.serialization2.SerializerId2;
+import sun.jvm.hotspot.debugger.Address;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -18,43 +19,53 @@ import java.util.stream.Collectors;
 /**
  * Particle which can hold arbitrary data
  */
-@SerializerId2("STORAGEPARTICLE")
-public class StorageParticle extends Particle {
-	public static class StorageParticleBuilder {
+@SerializerId2("MESSAGEPARTICLE")
+public class MessageParticle extends Particle {
+	public static class MessageParticleBuilder {
+		private RadixAddress source;
 		private final List<RadixAddress> addresses = new ArrayList<>();
 		private final MetadataMap metaData = new MetadataMap();
 		private byte[] bytes;
-		public StorageParticleBuilder setMetaData(String key, String value) {
+		public MessageParticleBuilder setMetaData(String key, String value) {
 			metaData.put(key, value);
 			return this;
 		}
 
-		public StorageParticleBuilder payload(byte[] bytes) {
+		public MessageParticleBuilder payload(byte[] bytes) {
 			this.bytes = bytes;
 			return this;
 		}
 
-		public StorageParticleBuilder accounts(Collection<RadixAddress> addresses) {
+		public MessageParticleBuilder accounts(Collection<RadixAddress> addresses) {
 			addresses.forEach(this::account);
 			return this;
 		}
 
-		public StorageParticleBuilder account(RadixAddress address) {
+		public MessageParticleBuilder account(RadixAddress address) {
 			addresses.add(address);
 			return this;
 		}
 
-		public StorageParticle build() {
-			return new StorageParticle(bytes, metaData.isEmpty() ? null : metaData, addresses);
+		public MessageParticleBuilder source(RadixAddress source) {
+			this.source = source;
+			return this;
+		}
+
+		public MessageParticle build() {
+			return new MessageParticle(source, bytes, metaData.isEmpty() ? null : metaData, addresses);
 		}
 	}
 
-	private StorageParticle() {
+	private MessageParticle() {
 	}
 
-	private StorageParticle(byte[] bytes, MetadataMap metaData, List<RadixAddress> addresses) {
+	private RadixAddress source;
+
+	private MessageParticle(RadixAddress source, byte[] bytes, MetadataMap metaData, List<RadixAddress> addresses) {
 		super(new AccountableQuark(addresses), new DataQuark(bytes, metaData));
 		Objects.requireNonNull(bytes);
+
+		this.source = Objects.requireNonNull(source, "source is required");
 	}
 
 	@Override
@@ -70,5 +81,9 @@ public class StorageParticle extends Particle {
 		}
 
 		return metaData.get(key);
+	}
+
+	public RadixAddress getSource() {
+		return source;
 	}
 }

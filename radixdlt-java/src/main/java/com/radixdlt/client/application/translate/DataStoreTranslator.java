@@ -6,8 +6,8 @@ import com.radixdlt.client.application.actions.StoreDataAction;
 import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
-import com.radixdlt.client.atommodel.storage.StorageParticle;
-import com.radixdlt.client.atommodel.storage.StorageParticle.StorageParticleBuilder;
+import com.radixdlt.client.atommodel.message.MessageParticle;
+import com.radixdlt.client.atommodel.message.MessageParticle.MessageParticleBuilder;
 import com.radixdlt.client.atommodel.quarks.DataQuark;
 import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
 import com.radixdlt.client.core.crypto.Encryptor;
@@ -41,12 +41,13 @@ public class DataStoreTranslator {
 		String application = (String) storeDataAction.getData().getMetaData().get("application");
 
 		List<SpunParticle> particles = new ArrayList<>();
-		StorageParticle storageParticle = new StorageParticleBuilder()
+		MessageParticle messageParticle = new MessageParticleBuilder()
 				.payload(payload)
 				.setMetaData("application", application)
 				.accounts(storeDataAction.getAddresses())
+				.source(storeDataAction.getSource())
 				.build();
-		particles.add(SpunParticle.up(storageParticle));
+		particles.add(SpunParticle.up(messageParticle));
 
 		Encryptor encryptor = storeDataAction.getData().getEncryptor();
 		if (encryptor != null) {
@@ -54,11 +55,12 @@ public class DataStoreTranslator {
 			encryptor.getProtectors().stream().map(EncryptedPrivateKey::base64).forEach(protectorsJson::add);
 
 			byte[] encryptorPayload = protectorsJson.toString().getBytes(StandardCharsets.UTF_8);
-			StorageParticle encryptorParticle = new StorageParticleBuilder()
+			MessageParticle encryptorParticle = new MessageParticleBuilder()
 					.payload(encryptorPayload)
 					.setMetaData("application", "encryptor")
 					.setMetaData("contentType", "application/json")
 					.accounts(storeDataAction.getAddresses())
+					.source(storeDataAction.getSource())
 					.build();
 			particles.add(SpunParticle.up(encryptorParticle));
 		}
@@ -67,7 +69,7 @@ public class DataStoreTranslator {
 	}
 
 	public Optional<Data> fromAtom(Atom atom) {
-		final Optional<StorageParticle> bytesParticle = atom.getDataParticles().stream()
+		final Optional<MessageParticle> bytesParticle = atom.getDataParticles().stream()
 				.filter(p -> !"encryptor".equals(p.getMetaData("application")))
 				.findFirst();
 
@@ -82,7 +84,7 @@ public class DataStoreTranslator {
 
 		bytesParticle.ifPresent(p -> metaData.compute("application", (k, v) -> p.getMetaData("application")));
 
-		final Optional<StorageParticle> encryptorParticle = atom.getDataParticles().stream()
+		final Optional<MessageParticle> encryptorParticle = atom.getDataParticles().stream()
 				.filter(p -> "encryptor".equals(p.getMetaData("application")))
 				.findAny();
 		metaData.put("encrypted", encryptorParticle.isPresent());

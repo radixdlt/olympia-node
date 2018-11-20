@@ -1,4 +1,4 @@
-package com.radixdlt.client.atommodel.storage;
+package com.radixdlt.client.atommodel.message;
 
 import java.util.TreeMap;
 

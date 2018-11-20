@@ -10,15 +10,18 @@ import java.util.List;
  * An Application Layer Action object which stores data into an address or multiple addresses.
  */
 public class StoreDataAction {
+	private final RadixAddress source;
 	private final Data data;
 	private final List<RadixAddress> addresses;
 
-	public StoreDataAction(Data data, RadixAddress address) {
+	public StoreDataAction(RadixAddress source, Data data, RadixAddress address) {
+		this.source = source;
 		this.data = data;
 		this.addresses = Collections.singletonList(address);
 	}
 
-	public StoreDataAction(Data data, RadixAddress address0, RadixAddress address1) {
+	public StoreDataAction(RadixAddress source, Data data, RadixAddress address0, RadixAddress address1) {
+		this.source = source;
 		this.data = data;
 		this.addresses = Arrays.asList(address0, address1);
 	}
@@ -29,5 +32,9 @@ public class StoreDataAction {
 
 	public List<RadixAddress> getAddresses() {
 		return Collections.unmodifiableList(addresses);
+	}
+
+	public RadixAddress getSource() {
+		return source;
 	}
 }
