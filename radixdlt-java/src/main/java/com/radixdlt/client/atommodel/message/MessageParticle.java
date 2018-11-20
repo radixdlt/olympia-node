@@ -1,10 +1,12 @@
 package com.radixdlt.client.atommodel.message;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.atommodel.quarks.AccountableQuark;
 import com.radixdlt.client.atommodel.quarks.DataQuark;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.crypto.ECPublicKey;
+import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.SerializerId2;
 import sun.jvm.hotspot.debugger.Address;
 
@@ -59,6 +61,8 @@ public class MessageParticle extends Particle {
 	private MessageParticle() {
 	}
 
+	@JsonProperty("source")
+	@DsonOutput(DsonOutput.Output.ALL)
 	private RadixAddress source;
 
 	private MessageParticle(RadixAddress source, byte[] bytes, MetadataMap metaData, List<RadixAddress> addresses) {
