@@ -25,8 +25,7 @@ public class TimestampParticle extends Particle {
 		return Collections.emptySet();
 	}
 
-	public Long getTimestamp() {
-		return quarks(ChronoQuark.class).filter(q
-				-> q.getTimestampKey().equals("default")).mapToLong(ChronoQuark::getTimestampValue).findFirst().getAsLong();
+	public long getTimestamp() {
+		return getQuarkOrError(ChronoQuark.class).getTimestamp();
 	}
 }

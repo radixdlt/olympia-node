@@ -20,7 +20,7 @@ import org.radix.serialization2.client.Serialize;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.Spin;
-import com.radixdlt.client.atommodel.storage.StorageParticle;
+import com.radixdlt.client.atommodel.message.MessageParticle;
 import com.radixdlt.client.atommodel.timestamp.TimestampParticle;
 import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
 import com.radixdlt.client.core.crypto.ECPublicKey;
@@ -150,11 +150,11 @@ public final class Atom extends SerializableObject {
 		return getHash().toEUID();
 	}
 
-	public List<StorageParticle> getDataParticles() {
+	public List<MessageParticle> getDataParticles() {
 		return this.getSpunParticles().stream()
 			.map(SpunParticle::getParticle)
-			.filter(p -> p instanceof StorageParticle)
-			.map(p -> (StorageParticle) p)
+			.filter(p -> p instanceof MessageParticle)
+			.map(p -> (MessageParticle) p)
 			.collect(Collectors.toList());
 	}
 
