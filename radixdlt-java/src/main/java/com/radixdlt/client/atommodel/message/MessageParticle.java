@@ -50,7 +50,7 @@ public class MessageParticle extends Particle {
 		}
 
 		public MessageParticle build() {
-			return new MessageParticle(from, bytes, metaData.isEmpty() ? null : metaData, Arrays.asList(from, to));
+			return new MessageParticle(from, bytes, metaData, Arrays.asList(from, to));
 		}
 	}
 
