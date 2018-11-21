@@ -25,7 +25,7 @@ public class TimestampParticle extends Particle {
 		return Collections.emptySet();
 	}
 
-	public Long getTimestamp() {
+	public long getTimestamp() {
 		return getQuarkOrError(ChronoQuark.class).getTimestamp();
 	}
 }
