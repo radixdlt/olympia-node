@@ -82,7 +82,7 @@ public @interface DsonOutput {
 		 */
 		WIRE,
 		/**
-		 * An output mode for use when writing data to persistent message.
+		 * An output mode for use when writing data to persistent storage.
 		 */
 		PERSIST,
 		/**
