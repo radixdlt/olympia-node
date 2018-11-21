@@ -57,20 +57,14 @@
                     "particle": {
                         "serializer": -1611775620,
                         "version": 100,
-                        "quarks": [
-                            {
-                                "timestampValue": 1488326400000,
-                                "serializer": -495126317,
-                                "timestampKey": ":str:default",
-                                "version": 100
+                        "quarks": [{
+                            "timestamps": {
+                                "default": 1488326400000,
+                                "expires": 9223372036854775807
                             },
-                            {
-                                "timestampValue": 9223372036854775807,
-                                "serializer": -495126317,
-                                "timestampKey": ":str:expires",
-                                "version": 100
-                            }
-                        ]
+                            "serializer": -495126317,
+                            "version": 100
+                        }]
                     },
                     "version": 100
                 }
@@ -131,20 +125,14 @@
                     "particle": {
                         "serializer": -1611775620,
                         "version": 100,
-                        "quarks": [
-                            {
-                                "timestampValue": 1488326400000,
-                                "serializer": -495126317,
-                                "timestampKey": ":str:default",
-                                "version": 100
+                        "quarks": [{
+                            "timestamps": {
+                                "default": 1488326400000,
+                                "expires": 9223372036854775807
                             },
-                            {
-                                "timestampValue": 9223372036854775807,
-                                "serializer": -495126317,
-                                "timestampKey": ":str:expires",
-                                "version": 100
-                            }
-                        ]
+                            "serializer": -495126317,
+                            "version": 100
+                        }]
                     },
                     "version": 100
                 }
@@ -209,9 +197,8 @@
                         "serializer": -1611775620,
                         "version": 100,
                         "quarks": [{
-                            "timestampValue": 1488326400000,
+                            "timestamps": {"default": 1488326400000},
                             "serializer": -495126317,
-                            "timestampKey": ":str:default",
                             "version": 100
                         }]
                     },
