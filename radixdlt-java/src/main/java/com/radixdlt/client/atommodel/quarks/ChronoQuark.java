@@ -25,7 +25,9 @@ public final class ChronoQuark extends Quark {
 	}
 
 	public ChronoQuark(String timestampKey, long timestampValue) {
-		this.timestamps.put(Objects.requireNonNull(timestampKey, "timestampKey is required"), timestampValue);
+		Objects.requireNonNull(timestampKey, "timestampKey is required");
+
+		this.timestamps.put(timestampKey, timestampValue);
 	}
 
 	public long getTimestamp() {
@@ -33,11 +35,15 @@ public final class ChronoQuark extends Quark {
 	}
 
 	public long getTimestamp(String type) {
-		return this.timestamps.getOrDefault(Objects.requireNonNull(type, "type is required"), 0L);
+		Objects.requireNonNull(type, "type is required");
+
+		return this.timestamps.getOrDefault(type, 0L);
 	}
 
 	public void setTimestamp(String type, long timestamp) {
-		this.timestamps.put(Objects.requireNonNull(type, "type is required"), timestamp);
+		Objects.requireNonNull(type, "type is required");
+
+		this.timestamps.put(type, timestamp);
 	}
 
 	public Set<String> getTimestampTypes() {
