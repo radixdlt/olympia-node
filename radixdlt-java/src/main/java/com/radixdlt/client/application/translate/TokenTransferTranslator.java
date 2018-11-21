@@ -183,6 +183,7 @@ public class TokenTransferTranslator {
 						.setMetaData("contentType", "application/json")
 						.account(transfer.getFrom())
 						.account(transfer.getTo())
+						.source(transfer.getFrom())
 						.build();
 				particles.add(SpunParticle.up(encryptorParticle));
 			}
