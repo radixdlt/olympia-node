@@ -6,6 +6,14 @@ import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 
+/**
+ * A transitioned particle represents an action/instruction which higher layer protocols use
+ * to update their state. It differs from a SpunParticle in that TransitionedParticles include
+ * the ability to revert previous SpunParticles, thus the particle state machine complexity
+ * increases by a factor of exactly 2.
+ *
+ * @param <T> the type of particle
+ */
 public class TransitionedParticle<T extends Particle> {
 	private final ParticleTransition transition;
 	private final T particle;

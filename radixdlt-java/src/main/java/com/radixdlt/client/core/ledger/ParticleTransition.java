@@ -2,6 +2,10 @@ package com.radixdlt.client.core.ledger;
 
 import com.radixdlt.client.core.atoms.particles.Spin;
 
+/**
+ * Represents an action in the particle state machine. Includes the main instructions
+ * (N2U, U2D) and their reverts respectively (U2N, D2U).
+ */
 public enum ParticleTransition {
 	N2U(Spin.NEUTRAL, Spin.UP),
 	U2D(Spin.UP, Spin.DOWN),
