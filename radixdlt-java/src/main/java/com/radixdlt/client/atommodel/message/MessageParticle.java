@@ -8,7 +8,6 @@ import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.SerializerId2;
-import sun.jvm.hotspot.debugger.Address;
 
 import java.util.ArrayList;
 import java.util.Collection;
