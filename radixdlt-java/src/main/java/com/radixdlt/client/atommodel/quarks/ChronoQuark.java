@@ -4,8 +4,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.client.core.atoms.particles.Quark;
 import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.SerializerId2;
+import org.radix.time.Timestamps;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * A quark that keeps a specific timestamp.
@@ -13,28 +17,31 @@ import java.util.Objects;
  */
 @SerializerId2("CHRONOQUARK")
 public final class ChronoQuark extends Quark {
-	@JsonProperty("timestampKey")
+	@JsonProperty("timestamps")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private String timestampKey;
-
-	@JsonProperty("timestampValue")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private long timestampValue;
+	private Map<String, Long> timestamps = new HashMap<>();
 
 	private ChronoQuark() {
 	}
 
-	public ChronoQuark(String timestampkey, long timestampValue) {
-		this.timestampKey = Objects.requireNonNull(timestampkey);
-		this.timestampValue = timestampValue;
+	public ChronoQuark(String timestampKey, long timestampValue) {
+		this.timestamps.put(Objects.requireNonNull(timestampKey, "timestampKey is required"), timestampValue);
 	}
 
-	public String getTimestampKey() {
-		return this.timestampKey;
+	public long getTimestamp() {
+		return getTimestamp(Timestamps.DEFAULT);
 	}
 
-	public long getTimestampValue() {
-		return this.timestampValue;
+	public long getTimestamp(String type) {
+		return this.timestamps.getOrDefault(Objects.requireNonNull(type, "type is required"), 0L);
+	}
+
+	public void setTimestamp(String type, long timestamp) {
+		this.timestamps.put(Objects.requireNonNull(type, "type is required"), timestamp);
+	}
+
+	public Set<String> getTimestampTypes() {
+		return this.timestamps.keySet();
 	}
 }
 
