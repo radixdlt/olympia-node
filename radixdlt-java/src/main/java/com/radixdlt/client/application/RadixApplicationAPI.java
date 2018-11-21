@@ -497,8 +497,7 @@ public class RadixApplicationAPI {
 		return executeTransaction(transferTokensAction, null, null, null, null, uniqueProperty);
 	}
 
-	// TODO: make this more generic
-	private Result executeTransaction(
+	public Single<UnsignedAtom> mapToAtom(
 		@Nullable TransferTokensAction transferTokensAction,
 		@Nullable StoreDataAction storeDataAction,
 		@Nullable CreateTokenAction tokenCreation,
@@ -514,22 +513,21 @@ public class RadixApplicationAPI {
 			pull(burnTokensAction.getTokenClassReference().getAddress());
 		}
 
-		Single<List<SpunParticle>> atomParticles =
-			Observable.concatArray(
-//				Observable.just(uniquePropertyTranslator.map(uniqueProperty)),
-				transferTokensAction != null ? tokenBalanceStore.getState(transferTokensAction.getFrom())
-					.firstOrError().toObservable()
-					.map(s -> tokenTransferTranslator.map(transferTokensAction, s)) : Observable.empty(),
-				Observable.just(dataStoreTranslator.map(storeDataAction)),
-				Observable.just(tokenMapper.map(tokenCreation)),
-				Observable.just(mintTokensActionMapper.map(mintTokensAction)),
-				burnTokensAction != null ? tokenBalanceStore.getState(burnTokensAction.getTokenClassReference().getAddress())
-					.firstOrError().toObservable()
-					.map(s -> burnTokensActionMapper.map(burnTokensAction, s)) : Observable.empty(),
-				Observable.just(
-					Collections.singletonList(SpunParticle.up(new TimestampParticle(System.currentTimeMillis())))
-				)
+		return Observable.concatArray(
+			//				Observable.just(uniquePropertyTranslator.map(uniqueProperty)),
+			transferTokensAction != null ? tokenBalanceStore.getState(transferTokensAction.getFrom())
+				.firstOrError().toObservable()
+				.map(s -> tokenTransferTranslator.map(transferTokensAction, s)) : Observable.empty(),
+			Observable.just(dataStoreTranslator.map(storeDataAction)),
+			Observable.just(tokenMapper.map(tokenCreation)),
+			Observable.just(mintTokensActionMapper.map(mintTokensAction)),
+			burnTokensAction != null ? tokenBalanceStore.getState(burnTokensAction.getTokenClassReference().getAddress())
+				.firstOrError().toObservable()
+				.map(s -> burnTokensActionMapper.map(burnTokensAction, s)) : Observable.empty(),
+			Observable.just(
+				Collections.singletonList(SpunParticle.up(new TimestampParticle(System.currentTimeMillis())))
 			)
+		)
 			.<List<SpunParticle>>scanWith(
 				ArrayList::new,
 				(a, b) -> Stream.concat(a.stream(), b.stream()).collect(Collectors.toList())
@@ -539,10 +537,26 @@ public class RadixApplicationAPI {
 				List<SpunParticle> allParticles = new ArrayList<>(particles);
 				allParticles.addAll(feeMapper.map(particles, universe, getMyPublicKey()));
 				return allParticles;
-			});
+			})
+			.map(particles -> new UnsignedAtom(new Atom(particles)));
+	}
 
-		ConnectableObservable<AtomSubmissionUpdate> updates = atomParticles
-			.map(list -> new UnsignedAtom(new Atom(list)))
+	// TODO: make this more generic
+	private Result executeTransaction(
+		@Nullable TransferTokensAction transferTokensAction,
+		@Nullable StoreDataAction storeDataAction,
+		@Nullable CreateTokenAction tokenCreation,
+		@Nullable MintTokensAction mintTokensAction,
+		@Nullable BurnTokensAction burnTokensAction,
+		@Nullable UniqueProperty uniqueProperty
+	) {
+		ConnectableObservable<AtomSubmissionUpdate> updates = this.mapToAtom(
+			transferTokensAction,
+			storeDataAction,
+			tokenCreation,
+			mintTokensAction,
+			burnTokensAction,
+			uniqueProperty)
 			.flatMap(identity::sign)
 			.flatMapObservable(ledger.getAtomSubmitter()::submitAtom)
 			.doOnNext(update -> {
