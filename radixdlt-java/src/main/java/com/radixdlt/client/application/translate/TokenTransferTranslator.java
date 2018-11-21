@@ -165,9 +165,8 @@ public class TokenTransferTranslator {
 				SpunParticle.up(
 					new MessageParticleBuilder()
 						.payload(attachment.getBytes())
-						.account(transfer.getFrom())
-						.account(transfer.getTo())
-						.source(transfer.getFrom())
+						.from(transfer.getFrom())
+						.to(transfer.getTo())
 						.build()
 				)
 			);
@@ -181,9 +180,8 @@ public class TokenTransferTranslator {
 						.payload(encryptorPayload)
 						.setMetaData("application", "encryptor")
 						.setMetaData("contentType", "application/json")
-						.account(transfer.getFrom())
-						.account(transfer.getTo())
-						.source(transfer.getFrom())
+						.from(transfer.getFrom())
+						.to(transfer.getTo())
 						.build();
 				particles.add(SpunParticle.up(encryptorParticle));
 			}

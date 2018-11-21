@@ -65,7 +65,7 @@ public class RadixWalletExample {
 		// If specified, send money to another address
 		if (TO_ADDRESS_BASE58 != null) {
 			RadixAddress toAddress = RadixAddress.from(TO_ADDRESS_BASE58);
-			api.sendTokensWithMessage(toAddress, AMOUNT, api.getNativeTokenRef(), "Test Message").toObservable()
+			api.sendTokens(toAddress, AMOUNT, api.getNativeTokenRef(), "Test Message").toObservable()
 				.subscribe(System.out::println, Throwable::printStackTrace);
 		}
 	}

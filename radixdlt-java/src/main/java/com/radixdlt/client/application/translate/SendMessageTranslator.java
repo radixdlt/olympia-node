@@ -2,7 +2,7 @@ package com.radixdlt.client.application.translate;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonParser;
-import com.radixdlt.client.application.actions.StoreDataAction;
+import com.radixdlt.client.application.actions.SendMessageAction;
 import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
@@ -20,36 +20,36 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public class DataStoreTranslator {
-	private static final DataStoreTranslator INSTANCE = new DataStoreTranslator();
+public class SendMessageTranslator {
+	private static final SendMessageTranslator INSTANCE = new SendMessageTranslator();
 	private static final JsonParser JSON_PARSER = new JsonParser();
 
-	public static DataStoreTranslator getInstance() {
+	public static SendMessageTranslator getInstance() {
 		return INSTANCE;
 	}
 
-	private DataStoreTranslator() {
+	private SendMessageTranslator() {
 	}
 
 	// TODO: figure out correct method signature here (return Single<AtomBuilder> instead?)
-	public List<SpunParticle> map(StoreDataAction storeDataAction) {
-		if (storeDataAction == null) {
+	public List<SpunParticle> map(SendMessageAction sendMessageAction) {
+		if (sendMessageAction == null) {
 			return Collections.emptyList();
 		}
 
-		byte[] payload = storeDataAction.getData().getBytes();
-		String application = (String) storeDataAction.getData().getMetaData().get("application");
+		byte[] payload = sendMessageAction.getData().getBytes();
+		String application = (String) sendMessageAction.getData().getMetaData().get("application");
 
 		List<SpunParticle> particles = new ArrayList<>();
 		MessageParticle messageParticle = new MessageParticleBuilder()
 				.payload(payload)
 				.setMetaData("application", application)
-				.accounts(storeDataAction.getAddresses())
-				.source(storeDataAction.getSource())
+				.from(sendMessageAction.getFrom())
+				.to(sendMessageAction.getTo())
 				.build();
 		particles.add(SpunParticle.up(messageParticle));
 
-		Encryptor encryptor = storeDataAction.getData().getEncryptor();
+		Encryptor encryptor = sendMessageAction.getData().getEncryptor();
 		if (encryptor != null) {
 			JsonArray protectorsJson = new JsonArray();
 			encryptor.getProtectors().stream().map(EncryptedPrivateKey::base64).forEach(protectorsJson::add);
@@ -59,8 +59,8 @@ public class DataStoreTranslator {
 					.payload(encryptorPayload)
 					.setMetaData("application", "encryptor")
 					.setMetaData("contentType", "application/json")
-					.accounts(storeDataAction.getAddresses())
-					.source(storeDataAction.getSource())
+					.from(sendMessageAction.getFrom())
+					.to(sendMessageAction.getTo())
 					.build();
 			particles.add(SpunParticle.up(encryptorParticle));
 		}

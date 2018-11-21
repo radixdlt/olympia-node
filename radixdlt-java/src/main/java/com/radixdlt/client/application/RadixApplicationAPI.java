@@ -3,7 +3,7 @@ package com.radixdlt.client.application;
 import com.radixdlt.client.application.actions.BurnTokensAction;
 import com.radixdlt.client.application.actions.CreateTokenAction.TokenSupplyType;
 import com.radixdlt.client.application.actions.MintTokensAction;
-import com.radixdlt.client.application.actions.StoreDataAction;
+import com.radixdlt.client.application.actions.SendMessageAction;
 import com.radixdlt.client.application.actions.TransferTokensAction;
 import com.radixdlt.client.application.objects.TokenTransfer;
 import com.radixdlt.client.application.translate.BurnTokensActionMapper;
@@ -35,7 +35,7 @@ import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.application.objects.Data.DataBuilder;
 import com.radixdlt.client.application.objects.UnencryptedData;
 import com.radixdlt.client.application.translate.ApplicationStore;
-import com.radixdlt.client.application.translate.DataStoreTranslator;
+import com.radixdlt.client.application.translate.SendMessageTranslator;
 import com.radixdlt.client.application.translate.FeeMapper;
 import com.radixdlt.client.application.translate.PowFeeMapper;
 import com.radixdlt.client.application.translate.TokenBalanceReducer;
@@ -103,7 +103,7 @@ public class RadixApplicationAPI {
 	private final RadixUniverse universe;
 
 	// TODO: Translators from application to particles
-	private final DataStoreTranslator dataStoreTranslator;
+	private final SendMessageTranslator sendMessageTranslator;
 	private final TokenTransferTranslator tokenTransferTranslator;
 	private final UniquePropertyTranslator uniquePropertyTranslator;
 	private final MintTokensActionMapper mintTokensActionMapper;
@@ -121,13 +121,13 @@ public class RadixApplicationAPI {
 	private RadixApplicationAPI(
 		RadixIdentity identity,
 		RadixUniverse universe,
-		DataStoreTranslator dataStoreTranslator,
+		SendMessageTranslator sendMessageTranslator,
 		FeeMapper feeMapper,
 		Ledger ledger
 	) {
 		this.identity = identity;
 		this.universe = universe;
-		this.dataStoreTranslator = dataStoreTranslator;
+		this.sendMessageTranslator = sendMessageTranslator;
 		this.tokenTransferTranslator = new TokenTransferTranslator(universe);
 		this.uniquePropertyTranslator = new UniquePropertyTranslator();
 		this.tokenMapper = new TokenMapper();
@@ -146,7 +146,7 @@ public class RadixApplicationAPI {
 		return create(
 			identity,
 			RadixUniverse.getInstance(),
-			DataStoreTranslator.getInstance(),
+			SendMessageTranslator.getInstance(),
 			new PowFeeMapper(p -> new Atom(p).getHash(), new ProofOfWorkBuilder())
 		);
 	}
@@ -154,13 +154,13 @@ public class RadixApplicationAPI {
 	public static RadixApplicationAPI create(
 		RadixIdentity identity,
 		RadixUniverse universe,
-		DataStoreTranslator dataStoreTranslator,
+		SendMessageTranslator sendMessageTranslator,
 		FeeMapper feeMapper
 	) {
 		Objects.requireNonNull(identity);
 		Objects.requireNonNull(universe);
 		Objects.requireNonNull(feeMapper);
-		return new RadixApplicationAPI(identity, universe, dataStoreTranslator, feeMapper, universe.getLedger());
+		return new RadixApplicationAPI(identity, universe, sendMessageTranslator, feeMapper, universe.getLedger());
 	}
 
 	/**
@@ -263,7 +263,7 @@ public class RadixApplicationAPI {
 		return ledger.getAtomStore().getAtoms(address)
 			.filter(AtomObservation::isStore)
 			.map(AtomObservation::getAtom)
-			.map(dataStoreTranslator::fromAtom)
+			.map(sendMessageTranslator::fromAtom)
 			.flatMapMaybe(data -> data.isPresent() ? Maybe.just(data.get()) : Maybe.empty());
 	}
 
@@ -272,20 +272,14 @@ public class RadixApplicationAPI {
 			.flatMapMaybe(data -> identity.decrypt(data).toMaybe().onErrorComplete());
 	}
 
-	public Result storeData(Data data) {
-		return this.storeData(data, getMyAddress());
+	public Result sendMessage(Data data) {
+		return this.sendMessage(data, getMyAddress());
 	}
 
-	public Result storeData(Data data, RadixAddress address) {
-		StoreDataAction storeDataAction = new StoreDataAction(getMyAddress(), data, address);
+	public Result sendMessage(Data data, RadixAddress address) {
+		SendMessageAction sendMessageAction = new SendMessageAction(data, getMyAddress(), address);
 
-		return executeTransaction(null, storeDataAction, null, null, null, null);
-	}
-
-	public Result storeData(Data data, RadixAddress address0, RadixAddress address1) {
-		StoreDataAction storeDataAction = new StoreDataAction(getMyAddress(), data, address0, address1);
-
-		return executeTransaction(null, storeDataAction, null, null, null, null);
+		return executeTransaction(null, sendMessageAction, null, null, null, null);
 	}
 
 	public Observable<TokenTransfer> getMyTokenTransfers() {
@@ -392,8 +386,8 @@ public class RadixApplicationAPI {
 	 * @param message message to be encrypted and attached to transfer
 	 * @return result of the transaction
 	 */
-	public Result sendTokensWithMessage(RadixAddress to, BigDecimal amount, TokenClassReference token, @Nullable String message) {
-		return sendTokensWithMessage(to, amount, token, message, null);
+	public Result sendTokens(RadixAddress to, BigDecimal amount, TokenClassReference token, @Nullable String message) {
+		return sendTokens(to, amount, token, message, null);
 	}
 
 	/**
@@ -404,7 +398,7 @@ public class RadixApplicationAPI {
 	 * @param message message to be encrypted and attached to transfer
 	 * @return result of the transaction
 	 */
-	public Result sendTokensWithMessage(
+	public Result sendTokens(
 		RadixAddress to,
 		BigDecimal amount,
 		TokenClassReference token,
@@ -500,7 +494,7 @@ public class RadixApplicationAPI {
 	// TODO: make this more generic
 	private Result executeTransaction(
 		@Nullable TransferTokensAction transferTokensAction,
-		@Nullable StoreDataAction storeDataAction,
+		@Nullable SendMessageAction sendMessageAction,
 		@Nullable CreateTokenAction tokenCreation,
 		@Nullable MintTokensAction mintTokensAction,
 		@Nullable BurnTokensAction burnTokensAction,
@@ -520,7 +514,7 @@ public class RadixApplicationAPI {
 				transferTokensAction != null ? tokenBalanceStore.getState(transferTokensAction.getFrom())
 					.firstOrError().toObservable()
 					.map(s -> tokenTransferTranslator.map(transferTokensAction, s)) : Observable.empty(),
-				Observable.just(dataStoreTranslator.map(storeDataAction)),
+				Observable.just(sendMessageTranslator.map(sendMessageAction)),
 				Observable.just(tokenMapper.map(tokenCreation)),
 				Observable.just(mintTokensActionMapper.map(mintTokensAction)),
 				burnTokensAction != null ? tokenBalanceStore.getState(burnTokensAction.getTokenClassReference().getAddress())

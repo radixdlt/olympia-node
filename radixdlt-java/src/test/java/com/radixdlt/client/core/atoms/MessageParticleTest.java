@@ -15,7 +15,7 @@ public class MessageParticleTest {
 	public void testApplicationMetaData() {
 		MessageParticle messageParticle = new MessageParticleBuilder()
 			.payload(new byte[0])
-			.source(mock(RadixAddress.class))
+			.from(mock(RadixAddress.class))
 			.setMetaData("application", "test")
 			.build();
 		assertEquals("test", messageParticle.getMetaData("application"));

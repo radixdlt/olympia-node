@@ -27,7 +27,7 @@ import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.crypto.ECSignature;
 
 /**
- * An atom is the fundamental atomic unit of message on the ledger (similar to a block
+ * An atom is the fundamental atomic unit of storage on the ledger (similar to a block
  * in a blockchain) and defines the actions that can be issued onto the ledger.
  */
 @SerializerId2("ATOM")

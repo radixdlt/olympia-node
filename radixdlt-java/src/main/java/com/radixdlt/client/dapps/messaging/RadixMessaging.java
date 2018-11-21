@@ -95,7 +95,7 @@ public class RadixMessaging {
 			.addReader(myAddress.getPublicKey())
 			.build();
 
-		return api.storeData(data, toAddress, myAddress);
+		return api.sendMessage(data, toAddress);
 	}
 
 	public Result sendMessage(String message, RadixAddress toAddress) {

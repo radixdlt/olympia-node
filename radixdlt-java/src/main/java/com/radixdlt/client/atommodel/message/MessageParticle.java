@@ -10,7 +10,9 @@ import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.SerializerId2;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -23,8 +25,8 @@ import java.util.stream.Collectors;
 @SerializerId2("MESSAGEPARTICLE")
 public class MessageParticle extends Particle {
 	public static class MessageParticleBuilder {
-		private RadixAddress source;
-		private final List<RadixAddress> addresses = new ArrayList<>();
+		private RadixAddress from;
+		private RadixAddress to;
 		private final MetadataMap metaData = new MetadataMap();
 		private byte[] bytes;
 		public MessageParticleBuilder setMetaData(String key, String value) {
@@ -37,38 +39,33 @@ public class MessageParticle extends Particle {
 			return this;
 		}
 
-		public MessageParticleBuilder accounts(Collection<RadixAddress> addresses) {
-			addresses.forEach(this::account);
+		public MessageParticleBuilder to(RadixAddress to) {
+			this.to = to;
 			return this;
 		}
 
-		public MessageParticleBuilder account(RadixAddress address) {
-			addresses.add(address);
-			return this;
-		}
-
-		public MessageParticleBuilder source(RadixAddress source) {
-			this.source = source;
+		public MessageParticleBuilder from(RadixAddress from) {
+			this.from = from;
 			return this;
 		}
 
 		public MessageParticle build() {
-			return new MessageParticle(source, bytes, metaData.isEmpty() ? null : metaData, addresses);
+			return new MessageParticle(from, bytes, metaData.isEmpty() ? null : metaData, Arrays.asList(from, to));
 		}
 	}
 
 	private MessageParticle() {
 	}
 
-	@JsonProperty("source")
+	@JsonProperty("from")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private RadixAddress source;
+	private RadixAddress from;
 
-	private MessageParticle(RadixAddress source, byte[] bytes, MetadataMap metaData, List<RadixAddress> addresses) {
+	private MessageParticle(RadixAddress from, byte[] bytes, MetadataMap metaData, List<RadixAddress> addresses) {
 		super(new AccountableQuark(addresses), new DataQuark(bytes, metaData));
 		Objects.requireNonNull(bytes);
 
-		this.source = Objects.requireNonNull(source, "source is required");
+		this.from = Objects.requireNonNull(from, "from is required");
 	}
 
 	@Override
@@ -86,7 +83,7 @@ public class MessageParticle extends Particle {
 		return metaData.get(key);
 	}
 
-	public RadixAddress getSource() {
-		return source;
+	public RadixAddress getFrom() {
+		return from;
 	}
 }

@@ -10,7 +10,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
 import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.application.objects.UnencryptedData;
-import com.radixdlt.client.application.translate.DataStoreTranslator;
+import com.radixdlt.client.application.translate.SendMessageTranslator;
 import com.radixdlt.client.application.translate.FeeMapper;
 import com.radixdlt.client.application.translate.PowFeeMapper;
 import com.radixdlt.client.atommodel.tokens.TokenClassReference;
@@ -55,7 +55,7 @@ public class RadixApplicationAPITest {
 		UnsignedAtom unsignedAtom = mock(UnsignedAtom.class);
 		FeeMapper feeMapper = (a, b, c) -> Collections.emptyList();
 
-		return RadixApplicationAPI.create(identity, universe, DataStoreTranslator.getInstance(), feeMapper);
+		return RadixApplicationAPI.create(identity, universe, SendMessageTranslator.getInstance(), feeMapper);
 	}
 
 	private AtomSubmitter createMockedSubmissionWhichAlwaysSucceeds() {
@@ -121,21 +121,7 @@ public class RadixApplicationAPITest {
 
 		Data data = mock(Data.class);
 		when(data.getBytes()).thenReturn(new byte[0]);
-		Result result = api.storeData(data, address);
-		validateSuccessfulStoreDataResult(result);
-	}
-
-	@Test
-	public void testStoreData2() {
-		RadixApplicationAPI api = createMockedAPIWhichAlwaysSucceeds();
-		ECPublicKey key = mock(ECPublicKey.class);
-		RadixAddress address = mock(RadixAddress.class);
-		when(address.getPublicKey()).thenReturn(key);
-		when(api.getMyAddress()).thenReturn(address);
-
-		Data data = mock(Data.class);
-		when(data.getBytes()).thenReturn(new byte[0]);
-		Result result = api.storeData(data, address, address);
+		Result result = api.sendMessage(data, address);
 		validateSuccessfulStoreDataResult(result);
 	}
 
@@ -151,7 +137,7 @@ public class RadixApplicationAPITest {
 
 		Data data = mock(Data.class);
 		when(data.getBytes()).thenReturn(new byte[0]);
-		api.storeData(data, address, address);
+		api.sendMessage(data, address);
 		verify(submitter, times(1)).submitAtom(any());
 	}
 
@@ -165,7 +151,7 @@ public class RadixApplicationAPITest {
 
 		Data data = mock(Data.class);
 		when(data.getBytes()).thenReturn(new byte[0]);
-		Result result = api.storeData(data, address, address);
+		Result result = api.sendMessage(data, address);
 		Observable observable = result.toObservable();
 		observable.subscribe();
 		observable.subscribe();
@@ -187,7 +173,7 @@ public class RadixApplicationAPITest {
 		when(ledger.getAtomStore()).thenReturn(euid -> Observable.just(atomObservation, atomObservation, atomObservation));
 		when(universe.getLedger()).thenReturn(ledger);
 
-		RadixApplicationAPI api = RadixApplicationAPI.create(identity, universe, DataStoreTranslator.getInstance(), mock(PowFeeMapper.class));
+		RadixApplicationAPI api = RadixApplicationAPI.create(identity, universe, SendMessageTranslator.getInstance(), mock(PowFeeMapper.class));
 		TestObserver<UnencryptedData> observer = TestObserver.create();
 		api.getReadableData(address).subscribe(observer);
 		observer.assertValueCount(0);
@@ -208,8 +194,8 @@ public class RadixApplicationAPITest {
 
 		Data data = mock(Data.class);
 		when(data.getBytes()).thenReturn(new byte[0]);
-		DataStoreTranslator dataStoreTranslator = mock(DataStoreTranslator.class);
-		when(dataStoreTranslator.fromAtom(any(Atom.class))).thenReturn(Optional.of(data), Optional.of(data));
+		SendMessageTranslator sendMessageTranslator = mock(SendMessageTranslator.class);
+		when(sendMessageTranslator.fromAtom(any(Atom.class))).thenReturn(Optional.of(data), Optional.of(data));
 
 		Atom errorAtom = mock(Atom.class);
 		Atom okAtom = mock(Atom.class);
@@ -218,7 +204,7 @@ public class RadixApplicationAPITest {
 		when(ledger.getAtomStore()).thenReturn(euid -> Observable.just(errorAtom, okAtom).map(AtomObservation::storeAtom));
 		when(universe.getLedger()).thenReturn(ledger);
 
-		RadixApplicationAPI api = RadixApplicationAPI.create(identity, universe, dataStoreTranslator, mock(PowFeeMapper.class));
+		RadixApplicationAPI api = RadixApplicationAPI.create(identity, universe, sendMessageTranslator, mock(PowFeeMapper.class));
 		TestObserver observer = TestObserver.create();
 		api.getReadableData(address).subscribe(observer);
 
@@ -238,7 +224,7 @@ public class RadixApplicationAPITest {
 		RadixAddress address = mock(RadixAddress.class);
 		RadixIdentity identity = mock(RadixIdentity.class);
 
-		RadixApplicationAPI api = RadixApplicationAPI.create(identity, universe, DataStoreTranslator.getInstance(), mock(PowFeeMapper.class));
+		RadixApplicationAPI api = RadixApplicationAPI.create(identity, universe, SendMessageTranslator.getInstance(), mock(PowFeeMapper.class));
 		TestObserver<BigDecimal> observer = TestObserver.create();
 		TokenClassReference token = mock(TokenClassReference.class);
 
@@ -262,7 +248,7 @@ public class RadixApplicationAPITest {
 		RadixIdentity identity = mock(RadixIdentity.class);
 		RadixAddress address = mock(RadixAddress.class);
 
-		RadixApplicationAPI api = RadixApplicationAPI.create(identity, universe, DataStoreTranslator.getInstance(), mock(PowFeeMapper.class));
+		RadixApplicationAPI api = RadixApplicationAPI.create(identity, universe, SendMessageTranslator.getInstance(), mock(PowFeeMapper.class));
 		TestObserver<Data> testObserver = TestObserver.create();
 		api.getData(address).subscribe(testObserver);
 		verify(puller, times(1)).pull(address);
@@ -282,7 +268,7 @@ public class RadixApplicationAPITest {
 		RadixIdentity identity = mock(RadixIdentity.class);
 		RadixAddress address = mock(RadixAddress.class);
 
-		RadixApplicationAPI api = RadixApplicationAPI.create(identity, universe, DataStoreTranslator.getInstance(), mock(PowFeeMapper.class));
+		RadixApplicationAPI api = RadixApplicationAPI.create(identity, universe, SendMessageTranslator.getInstance(), mock(PowFeeMapper.class));
 		TestObserver<BigDecimal> testObserver = TestObserver.create();
 		TokenClassReference token = mock(TokenClassReference.class);
 		api.getBalance(address, token).subscribe(testObserver);
