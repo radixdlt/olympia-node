@@ -6,17 +6,21 @@ import io.reactivex.Observable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
-public class ApplicationStore<R> {
+public class ApplicationStore<T> {
 	private final ParticleStore particleStore;
-	private final ParticleReducer<R> reducer;
-	private final ConcurrentHashMap<RadixAddress, Observable<R>> cache = new ConcurrentHashMap<>();
+	private final ParticleReducer<T> reducer;
+	private final ConcurrentHashMap<RadixAddress, Observable<T>> cache = new ConcurrentHashMap<>();
 
-	public ApplicationStore(ParticleStore particleStore, ParticleReducer<R> reducer) {
+
+	public ApplicationStore(
+		ParticleStore particleStore,
+		ParticleReducer<T> reducer
+	) {
 		this.particleStore = particleStore;
 		this.reducer = reducer;
 	}
 
-	public Observable<R> getState(RadixAddress address) {
+	public Observable<T> getState(RadixAddress address) {
 		return cache.computeIfAbsent(address, addr ->
 			particleStore.getParticles(address)
 				.scanWith(reducer::initialState, reducer::reduce)

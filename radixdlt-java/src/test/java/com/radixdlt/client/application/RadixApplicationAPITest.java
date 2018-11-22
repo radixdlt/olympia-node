@@ -20,7 +20,6 @@ import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomObservation;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
-import com.radixdlt.client.core.crypto.CryptoException;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.core.ledger.AtomPuller;
 import com.radixdlt.client.core.crypto.ECPublicKey;
@@ -34,7 +33,6 @@ import io.reactivex.Single;
 import io.reactivex.observers.TestObserver;
 import java.math.BigDecimal;
 import java.util.Collections;
-import java.util.Optional;
 import org.junit.Test;
 
 public class RadixApplicationAPITest {
@@ -183,39 +181,6 @@ public class RadixApplicationAPITest {
 	}
 
 	@Test
-	public void testUndecryptableData() {
-		RadixIdentity identity = mock(RadixIdentity.class);
-		RadixUniverse universe = mock(RadixUniverse.class);
-		RadixAddress address = mock(RadixAddress.class);
-		UnencryptedData unencryptedData = mock(UnencryptedData.class);
-
-		when(identity.decrypt(any()))
-				.thenReturn(Single.error(new CryptoException("Can't decrypt")))
-				.thenReturn(Single.just(unencryptedData));
-
-		Data data = mock(Data.class);
-		when(data.getBytes()).thenReturn(new byte[0]);
-		SendMessageTranslator sendMessageTranslator = mock(SendMessageTranslator.class);
-		when(sendMessageTranslator.fromAtom(any(Atom.class))).thenReturn(Optional.of(data), Optional.of(data));
-
-		Atom errorAtom = mock(Atom.class);
-		Atom okAtom = mock(Atom.class);
-
-		Ledger ledger = mock(Ledger.class);
-		when(ledger.getAtomStore()).thenReturn(euid -> Observable.just(errorAtom, okAtom).map(AtomObservation::storeAtom));
-		when(universe.getLedger()).thenReturn(ledger);
-
-		RadixApplicationAPI api = RadixApplicationAPI.create(identity, universe, sendMessageTranslator,
-				mock(PowFeeMapper.class));
-		TestObserver observer = TestObserver.create();
-		api.getReadableData(address).subscribe(observer);
-
-		observer.assertValueCount(1);
-		observer.assertNoErrors();
-	}
-
-
-	@Test
 	public void testZeroTransactionWallet() {
 		RadixUniverse universe = mock(RadixUniverse.class);
 		Ledger ledger = mock(Ledger.class);
@@ -236,7 +201,6 @@ public class RadixApplicationAPITest {
 		observer.assertValue(amount -> amount.compareTo(BigDecimal.ZERO) == 0);
 	}
 
-
 	@Test
 	public void testPullOnReadDataOfOtherAddresses() {
 		RadixUniverse universe = mock(RadixUniverse.class);
@@ -253,8 +217,8 @@ public class RadixApplicationAPITest {
 
 		RadixApplicationAPI api = RadixApplicationAPI.create(identity, universe, SendMessageTranslator.getInstance(),
 				mock(PowFeeMapper.class));
-		TestObserver<Data> testObserver = TestObserver.create();
-		api.getData(address).subscribe(testObserver);
+		TestObserver<UnencryptedData> testObserver = TestObserver.create();
+		api.getReadableData(address).subscribe(testObserver);
 		verify(puller, times(1)).pull(address);
 	}
 
