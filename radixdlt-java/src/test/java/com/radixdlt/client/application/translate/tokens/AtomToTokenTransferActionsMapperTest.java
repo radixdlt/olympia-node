@@ -27,7 +27,7 @@ public class AtomToTokenTransferActionsMapperTest {
 			Collections.singletonMap(myKey, 0L)
 		));
 
-		AtomToTokenTransferActionsMapper tokenTransferTranslator = new AtomToTokenTransferActionsMapper(universe);
+		AtomToTokenTransfersMapper tokenTransferTranslator = new AtomToTokenTransfersMapper(universe);
 		TestObserver<TokenTransfer> testObserver = TestObserver.create();
 		tokenTransferTranslator.map(atom, mock(RadixIdentity.class)).subscribe(testObserver);
 		testObserver.assertValue(transfer -> myAddress.equals(transfer.getFrom()) && myAddress.equals(transfer.getTo()));

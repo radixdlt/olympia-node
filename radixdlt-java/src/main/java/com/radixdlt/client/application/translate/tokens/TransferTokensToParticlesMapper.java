@@ -1,8 +1,10 @@
-package com.radixdlt.client.application.translate;
+package com.radixdlt.client.application.translate.tokens;
 
 import com.google.gson.JsonArray;
 import com.radixdlt.client.application.actions.TransferTokensAction;
 import com.radixdlt.client.application.objects.Data;
+import com.radixdlt.client.application.translate.InsufficientFundsException;
+import com.radixdlt.client.application.translate.TokenBalanceState;
 import com.radixdlt.client.application.translate.TokenBalanceState.Balance;
 import com.radixdlt.client.atommodel.quarks.FungibleQuark.FungibleType;
 import com.radixdlt.client.core.RadixUniverse;
@@ -25,10 +27,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-public class TokenTransferTranslator {
+public class TransferTokensToParticlesMapper {
 	private final RadixUniverse universe;
 
-	public TokenTransferTranslator(RadixUniverse universe) {
+	public TransferTokensToParticlesMapper(RadixUniverse universe) {
 		this.universe = universe;
 	}
 

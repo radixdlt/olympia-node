@@ -1,23 +1,28 @@
 package com.radixdlt.client.application.actions;
 
-import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 
 /**
- * An Application Layer Action object which stores data into an address or multiple to.
+ * An Action object which sends a data transaction from one account to another.
  */
 public class SendMessageAction {
 	private final RadixAddress from;
 	private final RadixAddress to;
-	private final Data data;
+	private final byte[] data;
+	private final boolean encrypt;
 
-	public SendMessageAction(Data data, RadixAddress from, RadixAddress to) {
+	public SendMessageAction(byte[] data, RadixAddress from, RadixAddress to, boolean encrypt) {
 		this.from = from;
 		this.data = data;
 		this.to = to;
+		this.encrypt = encrypt;
 	}
 
-	public Data getData() {
+	public boolean encrypt() {
+		return encrypt;
+	}
+
+	public byte[] getData() {
 		return data;
 	}
 

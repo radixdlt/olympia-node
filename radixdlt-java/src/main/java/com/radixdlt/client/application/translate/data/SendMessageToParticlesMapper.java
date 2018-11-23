@@ -1,47 +1,59 @@
-package com.radixdlt.client.application.translate;
+package com.radixdlt.client.application.translate.data;
 
 import com.google.gson.JsonArray;
 import com.radixdlt.client.application.actions.SendMessageAction;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.atommodel.message.MessageParticle;
 import com.radixdlt.client.atommodel.message.MessageParticle.MessageParticleBuilder;
+import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
 import com.radixdlt.client.core.crypto.Encryptor;
 
+import com.radixdlt.client.core.crypto.Encryptor.EncryptorBuilder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Supplier;
 
-public class SendMessageTranslator {
-	private static final SendMessageTranslator INSTANCE = new SendMessageTranslator();
+public class SendMessageToParticlesMapper {
+	private final Supplier<ECKeyPair> generator;
 
-	public static SendMessageTranslator getInstance() {
-		return INSTANCE;
+	public SendMessageToParticlesMapper(Supplier<ECKeyPair> generator) {
+		this.generator = generator;
 	}
 
-	private SendMessageTranslator() {
-	}
-
-	// TODO: figure out correct method signature here (return Single<AtomBuilder> instead?)
 	public List<SpunParticle> map(SendMessageAction sendMessageAction) {
 		if (sendMessageAction == null) {
 			return Collections.emptyList();
 		}
 
-		byte[] payload = sendMessageAction.getData().getBytes();
-		String application = (String) sendMessageAction.getData().getMetaData().get("application");
+		final byte[] payload;
+		final Encryptor encryptor;
+		if (sendMessageAction.encrypt()) {
+			EncryptorBuilder encryptorBuilder = new EncryptorBuilder();
+			encryptorBuilder.addReader(sendMessageAction.getFrom().getPublicKey());
+			encryptorBuilder.addReader(sendMessageAction.getTo().getPublicKey());
+			ECKeyPair sharedKey = this.generator.get();
+
+			encryptorBuilder.sharedKey(sharedKey);
+
+			encryptor = encryptorBuilder.build();
+			payload = sharedKey.getPublicKey().encrypt(sendMessageAction.getData());
+		} else {
+			encryptor = null;
+			payload = sendMessageAction.getData();
+		}
 
 		List<SpunParticle> particles = new ArrayList<>();
 		MessageParticle messageParticle = new MessageParticleBuilder()
 				.payload(payload)
-				.setMetaData("application", application)
+				.setMetaData("application", "message")
 				.from(sendMessageAction.getFrom())
 				.to(sendMessageAction.getTo())
 				.build();
 		particles.add(SpunParticle.up(messageParticle));
 
-		Encryptor encryptor = sendMessageAction.getData().getEncryptor();
 		if (encryptor != null) {
 			JsonArray protectorsJson = new JsonArray();
 			encryptor.getProtectors().stream().map(EncryptedPrivateKey::base64).forEach(protectorsJson::add);

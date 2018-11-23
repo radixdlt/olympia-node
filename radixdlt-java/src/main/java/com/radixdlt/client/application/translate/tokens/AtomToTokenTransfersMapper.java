@@ -5,7 +5,7 @@ import com.google.gson.JsonParser;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.application.objects.TokenTransfer;
-import com.radixdlt.client.application.translate.AtomToActionsMapper;
+import com.radixdlt.client.application.translate.AtomToExecutedActionsMapper;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.atommodel.message.MessageParticle;
 import com.radixdlt.client.atommodel.quarks.DataQuark;
@@ -29,11 +29,11 @@ import java.util.Optional;
 import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.client.Serialize;
 
-public class AtomToTokenTransferActionsMapper implements AtomToActionsMapper<TokenTransfer> {
+public class AtomToTokenTransfersMapper implements AtomToExecutedActionsMapper<TokenTransfer> {
 	private static final JsonParser JSON_PARSER = new JsonParser();
 	private final RadixUniverse universe;
 
-	public AtomToTokenTransferActionsMapper(RadixUniverse universe) {
+	public AtomToTokenTransfersMapper(RadixUniverse universe) {
 		this.universe = universe;
 	}
 

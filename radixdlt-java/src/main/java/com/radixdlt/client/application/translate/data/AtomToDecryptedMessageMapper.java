@@ -4,14 +4,19 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonParser;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.objects.Data;
-import com.radixdlt.client.application.objects.UnencryptedData;
-import com.radixdlt.client.application.translate.AtomToActionsMapper;
+import com.radixdlt.client.application.objects.DecryptedMessage;
+import com.radixdlt.client.application.objects.DecryptedMessage.EncryptionState;
+import com.radixdlt.client.application.translate.AtomToExecutedActionsMapper;
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.atommodel.message.MessageParticle;
 import com.radixdlt.client.atommodel.quarks.DataQuark;
+import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.client.core.crypto.CryptoException;
 import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
 import com.radixdlt.client.core.crypto.Encryptor;
 import io.reactivex.Observable;
+import io.reactivex.Single;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -19,10 +24,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public class AtomToMessageActionsMapper implements AtomToActionsMapper<UnencryptedData> {
+public class AtomToDecryptedMessageMapper implements AtomToExecutedActionsMapper<DecryptedMessage> {
 	private static final JsonParser JSON_PARSER = new JsonParser();
+	private final RadixUniverse universe;
 
-	public Observable<UnencryptedData> map(Atom atom, RadixIdentity identity) {
+	public AtomToDecryptedMessageMapper(RadixUniverse universe) {
+		this.universe = universe;
+	}
+
+	public Observable<DecryptedMessage> map(Atom atom, RadixIdentity identity) {
 		final Optional<MessageParticle> bytesParticle = atom.getDataParticles().stream()
 			.filter(p -> !"encryptor".equals(p.getMetaData("application")))
 			.findFirst();
@@ -55,9 +65,32 @@ public class AtomToMessageActionsMapper implements AtomToActionsMapper<Unencrypt
 			encryptor = null;
 		}
 
-		Data data = Data.raw(bytesParticle.get().getQuarkOrError(DataQuark.class).getBytes(), metaData, encryptor);
+		RadixAddress from = bytesParticle.get().getFrom();
+		RadixAddress to = bytesParticle.get().getAddresses().stream()
+			.map(universe::getAddressFrom)
+			.filter(addr -> !addr.equals(from))
+			.findAny()
+			.orElse(from);
 
-		return identity.decrypt(data).toMaybe().onErrorComplete().toObservable();
+		final byte[] bytes = bytesParticle.get().getQuarkOrError(DataQuark.class).getBytes();
+		final Data data = Data.raw(bytes, metaData, encryptor);
+
+		return identity.decrypt(data)
+			.map(u -> {
+				final EncryptionState encryptionState = encryptorParticle.isPresent()
+					? EncryptionState.DECRYPTED : EncryptionState.NOT_ENCRYPTED;
+				return new DecryptedMessage(u.getData(), from, to, encryptionState, atom.getTimestamp());
+			})
+			.onErrorResumeNext(e -> {
+				if (e instanceof CryptoException) {
+					return Single.just(
+						new DecryptedMessage(bytes, from, to, EncryptionState.CANNOT_DECRYPT, atom.getTimestamp())
+					);
+				} else {
+					return Single.error(e);
+				}
+			})
+			.toObservable();
 	}
 
 }

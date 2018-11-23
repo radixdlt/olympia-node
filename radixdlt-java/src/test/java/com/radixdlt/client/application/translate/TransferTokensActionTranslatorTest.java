@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.radixdlt.client.application.translate.tokens.TransferTokensToParticlesMapper;
 import java.math.BigDecimal;
 import org.junit.Test;
 import com.radixdlt.client.application.actions.TransferTokensAction;
@@ -19,7 +20,7 @@ public class TransferTokensActionTranslatorTest {
 		RadixUniverse universe = mock(RadixUniverse.class);
 		RadixAddress address = mock(RadixAddress.class);
 
-		TokenTransferTranslator transferTranslator = new TokenTransferTranslator(universe);
+		TransferTokensToParticlesMapper transferTranslator = new TransferTokensToParticlesMapper(universe);
 
 		TokenClassReference token = mock(TokenClassReference.class);
 		when(token.getSymbol()).thenReturn("TEST");

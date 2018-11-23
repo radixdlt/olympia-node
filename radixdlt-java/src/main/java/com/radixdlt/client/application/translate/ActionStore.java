@@ -8,11 +8,11 @@ import io.reactivex.Observable;
 
 public class ActionStore<T> {
 	private final AtomStore atomStore;
-	private final AtomToActionsMapper<T> actionMapper;
+	private final AtomToExecutedActionsMapper<T> actionMapper;
 
 	public ActionStore(
 		AtomStore atomStore,
-		AtomToActionsMapper<T> actionMapper
+		AtomToExecutedActionsMapper<T> actionMapper
 	) {
 		this.atomStore = atomStore;
 		this.actionMapper = actionMapper;
