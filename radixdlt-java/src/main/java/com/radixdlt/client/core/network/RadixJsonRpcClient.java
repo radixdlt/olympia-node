@@ -279,7 +279,7 @@ public class RadixJsonRpcClient {
 					final String cancelUuid = UUID.randomUUID().toString();
 					JsonObject cancelObject = new JsonObject();
 					cancelObject.addProperty("id", cancelUuid);
-					cancelObject.addProperty("method", "Subscription.cancel");
+					cancelObject.addProperty("method", "Atoms.cancel");
 					JsonObject cancelParams = new JsonObject();
 					cancelParams.addProperty("subscriberId", subscriberId);
 					cancelObject.add("params", cancelParams);

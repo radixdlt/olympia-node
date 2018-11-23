@@ -241,7 +241,7 @@ public class RadixJsonRpcClientTest {
 				response.add("result", new JsonObject());
 
 				messages.onNext(GsonJson.getInstance().stringFromGson(response));
-			} else if (method.equals("Subscription.cancel")) {
+			} else if (method.equals("Atoms.cancel")) {
 				String subscriberId = jsonObject.get("params").getAsJsonObject().get("subscriberId").getAsString();
 				JsonObject notification = new JsonObject();
 				notification.addProperty("method", "Atoms.subscribeUpdate");
