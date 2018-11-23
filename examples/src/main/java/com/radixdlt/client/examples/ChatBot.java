@@ -2,10 +2,10 @@ package com.radixdlt.client.examples;
 
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
+import com.radixdlt.client.application.objects.DecryptedMessage;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.application.identity.RadixIdentity;
-import com.radixdlt.client.dapps.messaging.RadixMessage;
 import com.radixdlt.client.dapps.messaging.RadixMessaging;
 import io.reactivex.Completable;
 import java.sql.Timestamp;
@@ -48,12 +48,12 @@ public class ChatBot {
 				.doOnNext(message -> System.out.println("Received at " + new Timestamp(System.currentTimeMillis()) + ": " + message)) // Print messages
 				.filter(message -> !message.getFrom().equals(api.getMyAddress())) // Don't reply to ourselves!
 				.filter(message -> Math.abs(message.getTimestamp() - System.currentTimeMillis()) < 60000) // Only reply to recent messages
-				.flatMapCompletable(new io.reactivex.functions.Function<RadixMessage, Completable>() {
+				.flatMapCompletable(new io.reactivex.functions.Function<DecryptedMessage, Completable>() {
 					Function<String,String> chatBotAlgorithm = chatBotAlgorithmSupplier.get();
 
 					@Override
-					public Completable apply(RadixMessage message) {
-						return messaging.sendMessage(chatBotAlgorithm.apply(message.getContent()), message.getFrom()).toCompletable();
+					public Completable apply(DecryptedMessage message) {
+						return messaging.sendMessage(chatBotAlgorithm.apply(new String(message.getData())), message.getFrom()).toCompletable();
 					}
 				})
 			).subscribe(

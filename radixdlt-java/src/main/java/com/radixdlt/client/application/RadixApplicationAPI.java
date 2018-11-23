@@ -5,11 +5,15 @@ import com.radixdlt.client.application.actions.CreateTokenAction.TokenSupplyType
 import com.radixdlt.client.application.actions.MintTokensAction;
 import com.radixdlt.client.application.actions.SendMessageAction;
 import com.radixdlt.client.application.actions.TransferTokensAction;
+import com.radixdlt.client.application.objects.DecryptedMessage;
 import com.radixdlt.client.application.objects.TokenTransfer;
+import com.radixdlt.client.application.translate.ActionStore;
 import com.radixdlt.client.application.translate.BurnTokensActionMapper;
 import com.radixdlt.client.application.translate.MintTokensActionMapper;
-import com.radixdlt.client.core.atoms.AtomObservation;
+import com.radixdlt.client.application.translate.data.AtomToDecryptedMessageMapper;
+import com.radixdlt.client.application.translate.tokens.AtomToTokenTransfersMapper;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
+import com.radixdlt.client.core.crypto.ECKeyPairGenerator;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -33,9 +37,8 @@ import com.radixdlt.client.application.actions.UniqueProperty;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.objects.Data;
 import com.radixdlt.client.application.objects.Data.DataBuilder;
-import com.radixdlt.client.application.objects.UnencryptedData;
 import com.radixdlt.client.application.translate.ApplicationStore;
-import com.radixdlt.client.application.translate.SendMessageTranslator;
+import com.radixdlt.client.application.translate.data.SendMessageToParticlesMapper;
 import com.radixdlt.client.application.translate.FeeMapper;
 import com.radixdlt.client.application.translate.PowFeeMapper;
 import com.radixdlt.client.application.translate.TokenBalanceReducer;
@@ -43,7 +46,7 @@ import com.radixdlt.client.application.translate.TokenBalanceState;
 import com.radixdlt.client.application.translate.TokenMapper;
 import com.radixdlt.client.application.translate.TokenReducer;
 import com.radixdlt.client.application.translate.TokenState;
-import com.radixdlt.client.application.translate.TokenTransferTranslator;
+import com.radixdlt.client.application.translate.tokens.TransferTokensToParticlesMapper;
 import com.radixdlt.client.application.translate.UniquePropertyTranslator;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.RadixUniverse.Ledger;
@@ -103,13 +106,15 @@ public class RadixApplicationAPI {
 	private final RadixUniverse universe;
 
 	// TODO: Translators from application to particles
-	private final SendMessageTranslator sendMessageTranslator;
-	private final TokenTransferTranslator tokenTransferTranslator;
+	private final SendMessageToParticlesMapper sendMessageToParticlesMapper;
+	private final TransferTokensToParticlesMapper transferTokensToParticlesMapper;
 	private final UniquePropertyTranslator uniquePropertyTranslator;
 	private final MintTokensActionMapper mintTokensActionMapper;
 	private final BurnTokensActionMapper burnTokensActionMapper;
 	private final TokenMapper tokenMapper;
 
+	private final ActionStore<DecryptedMessage> messageActionStore;
+	private final ActionStore<TokenTransfer> tokenTransferActionStore;
 	private final ApplicationStore<Map<TokenClassReference, TokenState>> tokenStore;
 	private final ApplicationStore<TokenBalanceState> tokenBalanceStore;
 
@@ -121,19 +126,23 @@ public class RadixApplicationAPI {
 	private RadixApplicationAPI(
 		RadixIdentity identity,
 		RadixUniverse universe,
-		SendMessageTranslator sendMessageTranslator,
 		FeeMapper feeMapper,
 		Ledger ledger
 	) {
 		this.identity = identity;
 		this.universe = universe;
-		this.sendMessageTranslator = sendMessageTranslator;
-		this.tokenTransferTranslator = new TokenTransferTranslator(universe);
+
+		this.messageActionStore = new ActionStore<>(ledger.getAtomStore(), new AtomToDecryptedMessageMapper(universe));
+		this.sendMessageToParticlesMapper = new SendMessageToParticlesMapper(ECKeyPairGenerator.newInstance()::generateKeyPair);
+
 		this.uniquePropertyTranslator = new UniquePropertyTranslator();
+
 		this.tokenMapper = new TokenMapper();
+		this.tokenTransferActionStore = new ActionStore<>(ledger.getAtomStore(), new AtomToTokenTransfersMapper(universe));
+		this.transferTokensToParticlesMapper = new TransferTokensToParticlesMapper(universe);
+
 		this.mintTokensActionMapper = new MintTokensActionMapper();
 		this.burnTokensActionMapper = new BurnTokensActionMapper(universe);
-
 		this.tokenStore = new ApplicationStore<>(ledger.getParticleStore(), new TokenReducer());
 		this.tokenBalanceStore = new ApplicationStore<>(ledger.getParticleStore(), new TokenBalanceReducer());
 
@@ -146,7 +155,6 @@ public class RadixApplicationAPI {
 		return create(
 			identity,
 			RadixUniverse.getInstance(),
-			SendMessageTranslator.getInstance(),
 			new PowFeeMapper(p -> new Atom(p).getHash(), new ProofOfWorkBuilder())
 		);
 	}
@@ -154,13 +162,12 @@ public class RadixApplicationAPI {
 	public static RadixApplicationAPI create(
 		RadixIdentity identity,
 		RadixUniverse universe,
-		SendMessageTranslator sendMessageTranslator,
 		FeeMapper feeMapper
 	) {
 		Objects.requireNonNull(identity);
 		Objects.requireNonNull(universe);
 		Objects.requireNonNull(feeMapper);
-		return new RadixApplicationAPI(identity, universe, sendMessageTranslator, feeMapper, universe.getLedger());
+		return new RadixApplicationAPI(identity, universe, feeMapper, universe.getLedger());
 	}
 
 	/**
@@ -255,29 +262,24 @@ public class RadixApplicationAPI {
 		return universe.getAddressFrom(identity.getPublicKey());
 	}
 
-	public Observable<Data> getData(RadixAddress address) {
+	public Observable<DecryptedMessage> getMessages() {
+		return getMessages(this.getMyAddress());
+	}
+
+	public Observable<DecryptedMessage> getMessages(RadixAddress address) {
 		Objects.requireNonNull(address);
 
 		pull(address);
 
-		return ledger.getAtomStore().getAtoms(address)
-			.filter(AtomObservation::isStore)
-			.map(AtomObservation::getAtom)
-			.map(sendMessageTranslator::fromAtom)
-			.flatMapMaybe(data -> data.isPresent() ? Maybe.just(data.get()) : Maybe.empty());
+		return messageActionStore.getActions(address, identity);
 	}
 
-	public Observable<UnencryptedData> getReadableData(RadixAddress address) {
-		return getData(address)
-			.flatMapMaybe(data -> identity.decrypt(data).toMaybe().onErrorComplete());
+	public Result sendMessage(byte[] data, boolean encrypt) {
+		return this.sendMessage(data, encrypt, getMyAddress());
 	}
 
-	public Result sendMessage(Data data) {
-		return this.sendMessage(data, getMyAddress());
-	}
-
-	public Result sendMessage(Data data, RadixAddress address) {
-		SendMessageAction sendMessageAction = new SendMessageAction(data, getMyAddress(), address);
+	public Result sendMessage(byte[] data, boolean encrypt, RadixAddress address) {
+		SendMessageAction sendMessageAction = new SendMessageAction(data, getMyAddress(), address, encrypt);
 
 		return executeTransaction(null, sendMessageAction, null, null, null, null);
 	}
@@ -291,10 +293,7 @@ public class RadixApplicationAPI {
 
 		pull(address);
 
-		return ledger.getAtomStore().getAtoms(address)
-			.filter(AtomObservation::isStore)
-			.map(AtomObservation::getAtom)
-			.flatMap(atom -> tokenTransferTranslator.fromAtom(atom, this.getMyIdentity()));
+		return tokenTransferActionStore.getActions(address, this.getMyIdentity());
 	}
 
 	public Observable<Map<TokenClassReference, BigDecimal>> getBalance(RadixAddress address) {
@@ -511,8 +510,8 @@ public class RadixApplicationAPI {
 			//				Observable.just(uniquePropertyTranslator.map(uniqueProperty)),
 			transferTokensAction != null ? tokenBalanceStore.getState(transferTokensAction.getFrom())
 				.firstOrError().toObservable()
-				.map(s -> tokenTransferTranslator.map(transferTokensAction, s)) : Observable.empty(),
-			Observable.just(sendMessageTranslator.map(sendMessageAction)),
+				.map(s -> transferTokensToParticlesMapper.map(transferTokensAction, s)) : Observable.empty(),
+			Observable.just(sendMessageToParticlesMapper.map(sendMessageAction)),
 			Observable.just(tokenMapper.map(tokenCreation)),
 			Observable.just(mintTokensActionMapper.map(mintTokensAction)),
 			burnTokensAction != null ? tokenBalanceStore.getState(burnTokensAction.getTokenClassReference().getAddress())
