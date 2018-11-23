@@ -24,6 +24,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+/**
+ * Maps an atom to some number of sent message actions and decrypted.
+ */
 public class AtomToDecryptedMessageMapper implements AtomToExecutedActionsMapper<DecryptedMessage> {
 	private static final JsonParser JSON_PARSER = new JsonParser();
 	private final RadixUniverse universe;

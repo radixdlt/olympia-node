@@ -16,6 +16,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 
+/**
+ * Maps a send message action to the particles necessary to be included in an atom.
+ */
 public class SendMessageToParticlesMapper {
 	private final Supplier<ECKeyPair> generator;
 

@@ -27,6 +27,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+/**
+ * Maps a send message action to the particles necessary to be included in an atom.
+ */
 public class TransferTokensToParticlesMapper {
 	private final RadixUniverse universe;
 

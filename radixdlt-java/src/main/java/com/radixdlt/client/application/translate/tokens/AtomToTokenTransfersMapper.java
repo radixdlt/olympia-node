@@ -29,6 +29,9 @@ import java.util.Optional;
 import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.client.Serialize;
 
+/**
+ * Maps an atom to some number of token transfer actions.
+ */
 public class AtomToTokenTransfersMapper implements AtomToExecutedActionsMapper<TokenTransfer> {
 	private static final JsonParser JSON_PARSER = new JsonParser();
 	private final RadixUniverse universe;

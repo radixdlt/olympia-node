@@ -3,10 +3,26 @@ package com.radixdlt.client.application.objects;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import org.bouncycastle.util.encoders.Base64;
 
+/**
+ * An application layer object representing some data found on the ledger.
+ */
 public class DecryptedMessage {
 	public enum EncryptionState {
+		/**
+		 * Specifies that the data in the DecryptedMessage object WAS originally
+		 * encrypted and has been successfully decrypted to it's present byte array.
+		 */
 		DECRYPTED,
+		/**
+		 * Specifies that the data in the DecryptedMessage object was NOT
+		 * encrypted and the present data byte array just represents the original data.
+		 */
 		NOT_ENCRYPTED,
+		/**
+		 * Specifies that the data in the DecryptedMessage object WAS encrypted
+		 * but could not be decrypted. The present data byte array represents the still
+		 * encrypted data.
+		 */
 		CANNOT_DECRYPT,
 	}
 
