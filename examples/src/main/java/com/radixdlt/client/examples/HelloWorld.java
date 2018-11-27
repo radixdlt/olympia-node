@@ -12,7 +12,7 @@ public class HelloWorld {
 
 		// Setup the universe you want to connect to.
 		// Sunstone is the Testnet for Alpha release
-		RadixUniverse.bootstrap(Bootstrap.BETANET);
+		RadixUniverse.bootstrap(Bootstrap.SUNSTONE);
 
 		// Connect to the network and retrieve list of
 		// nodes you can connect to
