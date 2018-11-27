@@ -5,9 +5,13 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
+import java.security.Provider;
 import java.security.SecureRandom;
 import java.security.Security;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -21,21 +25,47 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.jce.spec.ECParameterSpec;
 
 public final class ECKeyPairGenerator {
-	private static final Map<Integer, ECDomainParameters> DOMAINS;
+    private static final Map<Integer, ECDomainParameters> DOMAINS = new HashMap<>();
 
-	static {
-		if (AndroidUtil.isAndroidRuntime()) {
-			Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME);
-		}
-		Security.insertProviderAt(new BouncyCastleProvider(), 1);
-		DOMAINS = Stream.of(256).collect(Collectors.toMap(Integer::new, (bits) -> {
-			final X9ECParameters curve =
-				bits == 256
-					? CustomNamedCurves.getByName("secp" + bits + "k1")
-					: SECNamedCurves.getByName("secp" + bits + "k1");
-			return new ECDomainParameters(curve.getCurve(), curve.getG(), curve.getN(), curve.getH());
-		}));
-	}
+    static {
+        install();
+    }
+
+    /**
+     * Ensures the proper version of BouncyCastle is installed in the Java Security
+     * repository and that correct secpXYZk1 elliptic curves can be derived.
+     */
+    static synchronized void install() {
+        Provider requiredBouncyCastleProvider = new BouncyCastleProvider();
+        Provider currentBouncyCastleProvider = Security.getProvider(BouncyCastleProvider.PROVIDER_NAME);
+
+        // Check if the currently installed version of BouncyCastle is the version
+        // we want. NOTE! That Android has a stripped down version of BouncyCastle
+        // by default.
+        if (currentBouncyCastleProvider == null ||
+                currentBouncyCastleProvider.getVersion() !=
+                        requiredBouncyCastleProvider.getVersion()) {
+
+            if (AndroidUtil.isAndroidRuntime()) {
+                Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME);
+            }
+
+            Security.insertProviderAt(requiredBouncyCastleProvider, 1);
+        }
+
+        // Make sure the corresponding custom elliptic curves are exposed as well.
+        List<Integer> bitSpaces = Collections.singletonList(256);
+        if (!DOMAINS.keySet().containsAll(bitSpaces)) {
+            DOMAINS.putAll(bitSpaces
+                    .stream()
+                    .collect(Collectors.toMap(Integer::new, (bits) -> {
+                        final X9ECParameters curve = bits == 256
+                                ? CustomNamedCurves.getByName("secp" + bits + "k1")
+                                : SECNamedCurves.getByName("secp" + bits + "k1");
+                        return new ECDomainParameters(curve.getCurve(), curve.getG(), curve.getN(), curve.getH());
+                    })));
+        }
+    }
 
 	public static ECDomainParameters getDomain(int numBits) {
 		int roundedNumBits = (((numBits - 1) / 32) + 1) * 32;

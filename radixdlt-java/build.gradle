@@ -40,10 +40,16 @@ dependencies {
     testCompile group: 'org.assertj', name: 'assertj-core', version: '3.11.0'
 }
 
+// TODO: Consider moving to Google Checkstyle format
+// TODO: https://github.com/checkstyle/checkstyle/tree/master/src/main/resources
 checkstyle {
     configFile rootProject.file('.checkstyle.xml')
     toolVersion '8.10.1'
     showViolations = true
+}
+
+checkstyleTest {
+    configFile rootProject.file('.checkstyle_test.xml')
 }
 
 jar {
