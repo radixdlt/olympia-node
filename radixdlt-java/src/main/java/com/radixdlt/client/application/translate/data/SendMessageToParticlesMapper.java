@@ -1,6 +1,8 @@
 package com.radixdlt.client.application.translate.data;
 
 import com.google.gson.JsonArray;
+import com.radixdlt.client.application.translate.Action;
+import com.radixdlt.client.application.translate.ActionToParticlesMapper;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.atommodel.message.MessageParticle;
 import com.radixdlt.client.atommodel.message.MessageParticle.MessageParticleBuilder;
@@ -9,26 +11,28 @@ import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
 import com.radixdlt.client.core.crypto.Encryptor;
 
 import com.radixdlt.client.core.crypto.Encryptor.EncryptorBuilder;
+import io.reactivex.Observable;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 
 /**
  * Maps a send message action to the particles necessary to be included in an atom.
  */
-public class SendMessageToParticlesMapper {
+public class SendMessageToParticlesMapper implements ActionToParticlesMapper {
 	private final Supplier<ECKeyPair> generator;
 
 	public SendMessageToParticlesMapper(Supplier<ECKeyPair> generator) {
 		this.generator = generator;
 	}
 
-	public List<SpunParticle> map(SendMessageAction sendMessageAction) {
-		if (sendMessageAction == null) {
-			return Collections.emptyList();
+	public Observable<SpunParticle> map(Action action) {
+		if (!(action instanceof SendMessageAction)) {
+			return Observable.empty();
 		}
+
+		SendMessageAction sendMessageAction = (SendMessageAction) action;
 
 		final byte[] payload;
 		final Encryptor encryptor;
@@ -71,6 +75,6 @@ public class SendMessageToParticlesMapper {
 			particles.add(SpunParticle.up(encryptorParticle));
 		}
 
-		return particles;
+		return Observable.fromIterable(particles);
 	}
 }

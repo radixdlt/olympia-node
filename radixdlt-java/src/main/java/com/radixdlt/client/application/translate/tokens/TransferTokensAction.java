@@ -1,6 +1,7 @@
 package com.radixdlt.client.application.translate.tokens;
 
 import com.radixdlt.client.application.identity.Data;
+import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.atommodel.tokens.TokenClassReference;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import java.math.BigDecimal;
@@ -8,7 +9,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-public class TransferTokensAction {
+public class TransferTokensAction implements Action {
 	private final RadixAddress from;
 	private final RadixAddress to;
 	private final TokenClassReference tokenClassReference;

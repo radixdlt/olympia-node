@@ -5,7 +5,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.radixdlt.client.application.identity.UnencryptedData;
-import com.radixdlt.client.application.translate.tokens.TokenTransfer;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.atommodel.tokens.TokenClassReference;
 import java.math.BigDecimal;

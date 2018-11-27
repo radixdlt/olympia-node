@@ -1,13 +1,12 @@
 package com.radixdlt.client.application.translate.data;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.radixdlt.client.application.translate.data.SendMessageAction;
-import com.radixdlt.client.application.translate.data.SendMessageToParticlesMapper;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.crypto.ECKeyPair;
+import io.reactivex.observers.TestObserver;
 import org.junit.Test;
 
 public class SendDecryptedMessageToParticlesMapperTest {
@@ -19,6 +18,8 @@ public class SendDecryptedMessageToParticlesMapperTest {
 		when(sendMessageAction.getFrom()).thenReturn(mock(RadixAddress.class));
 		when(sendMessageAction.getTo()).thenReturn(mock(RadixAddress.class));
 		when(sendMessageAction.encrypt()).thenReturn(false);
-		assertThat(sendMessageToParticlesMapper.map(sendMessageAction)).size().isEqualTo(1);
+		TestObserver<SpunParticle> testObserver = TestObserver.create();
+		sendMessageToParticlesMapper.map(sendMessageAction).subscribe(testObserver);
+		testObserver.assertValueCount(1);
 	}
 }

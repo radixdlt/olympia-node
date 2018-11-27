@@ -1,8 +1,9 @@
 package com.radixdlt.client.application.translate.tokenclasses;
 
-import com.radixdlt.client.application.translate.tokenclasses.TokenReducer;
-import com.radixdlt.client.application.translate.tokenclasses.TokenState;
+import com.radixdlt.client.application.translate.tokenclasses.TokenState.TokenSupplyType;
+import com.radixdlt.client.atommodel.quarks.FungibleQuark.FungibleType;
 import com.radixdlt.client.atommodel.tokens.TokenClassReference;
+import com.radixdlt.client.atommodel.tokens.TokenPermission;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.atommodel.tokens.TokenParticle;
 import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
@@ -26,11 +27,14 @@ public class TokenReducerTest {
 		when(tokenParticle.getName()).thenReturn("Name");
 		when(tokenParticle.getSymbol()).thenReturn("ISO");
 		when(tokenParticle.getDescription()).thenReturn("Desc");
+		when(tokenParticle.getTokenPermissions()).thenReturn(Collections.singletonMap(FungibleType.MINTED, TokenPermission.SAME_ATOM_ONLY));
 
 		TokenReducer tokenReducer = new TokenReducer();
 		Map<TokenClassReference, TokenState> state = tokenReducer.reduce(Collections.emptyMap(), SpunParticle.up(tokenParticle));
 		assertThat(state.get(tokenRef))
-				.isEqualToComparingFieldByField(new TokenState("Name", "ISO", "Desc", BigDecimal.ZERO));
+			.isEqualToComparingFieldByField(
+				new TokenState("Name", "ISO", "Desc", BigDecimal.ZERO, TokenSupplyType.FIXED)
+			);
 	}
 
 	@Test
@@ -41,6 +45,7 @@ public class TokenReducerTest {
 		when(tokenParticle.getName()).thenReturn("Name");
 		when(tokenParticle.getSymbol()).thenReturn("ISO");
 		when(tokenParticle.getDescription()).thenReturn("Desc");
+		when(tokenParticle.getTokenPermissions()).thenReturn(Collections.singletonMap(FungibleType.MINTED, TokenPermission.TOKEN_OWNER_ONLY));
 
 		OwnedTokensParticle minted = mock(OwnedTokensParticle.class);
 		when(minted.getAmount()).thenReturn(100L);
@@ -51,8 +56,14 @@ public class TokenReducerTest {
 		Map<TokenClassReference, TokenState> state1 = tokenReducer.reduce(Collections.emptyMap(), SpunParticle.up(tokenParticle));
 		Map<TokenClassReference, TokenState> state2 = tokenReducer.reduce(state1, SpunParticle.up(minted));
 		assertThat(state2.get(tokenRef))
-				.isEqualToComparingFieldByField(
-						new TokenState("Name", "ISO", "Desc", TokenClassReference.subUnitsToDecimal(100L))
-				);
+			.isEqualToComparingFieldByField(
+				new TokenState(
+					"Name",
+					"ISO",
+					"Desc",
+					TokenClassReference.subUnitsToDecimal(100L),
+					TokenSupplyType.MUTABLE
+				)
+			);
 	}
 }

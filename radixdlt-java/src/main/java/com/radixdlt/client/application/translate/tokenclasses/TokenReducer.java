@@ -1,8 +1,10 @@
 package com.radixdlt.client.application.translate.tokenclasses;
 
 import com.radixdlt.client.application.translate.ParticleReducer;
+import com.radixdlt.client.application.translate.tokenclasses.TokenState.TokenSupplyType;
 import com.radixdlt.client.atommodel.quarks.FungibleQuark.FungibleType;
 import com.radixdlt.client.atommodel.tokens.TokenClassReference;
+import com.radixdlt.client.atommodel.tokens.TokenPermission;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
@@ -35,17 +37,29 @@ public class TokenReducer implements ParticleReducer<Map<TokenClassReference, To
 		HashMap<TokenClassReference, TokenState> newMap = new HashMap<>(state);
 		if (p instanceof TokenParticle) {
 			TokenParticle tokenParticle = (TokenParticle) p;
+			TokenPermission mintPermission = tokenParticle.getTokenPermissions().get(FungibleType.MINTED);
+
+			final TokenSupplyType tokenSupplyType;
+			if (mintPermission.equals(TokenPermission.SAME_ATOM_ONLY)) {
+				tokenSupplyType = TokenSupplyType.FIXED;
+			} else if (mintPermission.equals(TokenPermission.TOKEN_OWNER_ONLY)) {
+				tokenSupplyType = TokenSupplyType.MUTABLE;
+			} else {
+				throw new IllegalStateException("TokenParticle with mintPermissions of " + mintPermission + " not supported.");
+			}
+
 			TokenState tokenState = new TokenState(
 				tokenParticle.getName(),
 				tokenParticle.getSymbol(),
 				tokenParticle.getDescription(),
-				BigDecimal.ZERO
+				BigDecimal.ZERO,
+				tokenSupplyType
 			);
 
 			newMap.merge(
 				tokenParticle.getTokenClassReference(),
 				tokenState,
-				(a, b) -> new TokenState(b.getName(), b.getIso(), b.getDescription(), a.getTotalSupply())
+				(a, b) -> new TokenState(b.getName(), b.getIso(), b.getDescription(), a.getTotalSupply(), b.getTokenSupplyType())
 			);
 		} else {
 			OwnedTokensParticle mintedOrBurned = (OwnedTokensParticle) p;
@@ -56,7 +70,8 @@ public class TokenReducer implements ParticleReducer<Map<TokenClassReference, To
 				null,
 				TokenClassReference.subUnitsToDecimal(
 					(mintedOrBurned.getType() == FungibleType.BURNED ? -1 : 1) * mintedOrBurned.getAmount()
-				)
+				),
+				null
 			);
 			newMap.merge(
 				mintedOrBurned.getTokenClassReference(),
@@ -65,7 +80,8 @@ public class TokenReducer implements ParticleReducer<Map<TokenClassReference, To
 					a.getName(),
 					a.getIso(),
 					a.getDescription(),
-					a.getTotalSupply().add(b.getTotalSupply())
+					a.getTotalSupply().add(b.getTotalSupply()),
+					a.getTokenSupplyType()
 				)
 			);
 		}

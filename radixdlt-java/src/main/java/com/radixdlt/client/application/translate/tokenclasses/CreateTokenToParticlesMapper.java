@@ -1,5 +1,7 @@
 package com.radixdlt.client.application.translate.tokenclasses;
 
+import com.radixdlt.client.application.translate.Action;
+import com.radixdlt.client.application.translate.ActionToParticlesMapper;
 import com.radixdlt.client.application.translate.tokenclasses.CreateTokenAction.TokenSupplyType;
 import com.radixdlt.client.atommodel.quarks.FungibleQuark.FungibleType;
 import com.radixdlt.client.atommodel.tokens.TokenClassReference;
@@ -9,19 +11,19 @@ import com.radixdlt.client.atommodel.tokens.TokenParticle;
 import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
 import com.radixdlt.client.atommodel.quarks.FungibleQuark;
 
-import java.util.Arrays;
-import java.util.Collections;
+import io.reactivex.Observable;
 import java.util.EnumMap;
-import java.util.List;
 
 /**
  * Maps the CreateToken action into it's corresponding particles
  */
-public class CreateTokenToParticlesMapper {
-	public List<SpunParticle> map(CreateTokenAction tokenCreation) {
-		if (tokenCreation == null) {
-			return Collections.emptyList();
+public class CreateTokenToParticlesMapper implements ActionToParticlesMapper {
+	public Observable<SpunParticle> map(Action action) {
+		if (!(action instanceof CreateTokenAction)) {
+			return Observable.empty();
 		}
+
+		CreateTokenAction tokenCreation = (CreateTokenAction) action;
 
 		final TokenPermission mintPermissions;
 		final TokenPermission burnPermissions;
@@ -57,6 +59,6 @@ public class CreateTokenToParticlesMapper {
 				System.currentTimeMillis() / 60000L + 60000
 		);
 
-		return Arrays.asList(SpunParticle.up(token), SpunParticle.up(minted));
+		return Observable.just(SpunParticle.up(token), SpunParticle.up(minted));
 	}
 }

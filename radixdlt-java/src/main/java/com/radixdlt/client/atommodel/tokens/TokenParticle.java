@@ -57,6 +57,10 @@ public class TokenParticle extends Particle {
 		this.icon = icon;
 	}
 
+	public Map<FungibleType, TokenPermission> getTokenPermissions() {
+		return tokenPermissions;
+	}
+
 	public String getName() {
 		return name;
 	}

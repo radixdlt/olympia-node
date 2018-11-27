@@ -1,9 +1,10 @@
 package com.radixdlt.client.application.translate.tokenclasses;
 
+import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import java.util.Objects;
 
-public class CreateTokenAction {
+public class CreateTokenAction implements Action {
 	public enum TokenSupplyType {
 		FIXED,
 		MUTABLE

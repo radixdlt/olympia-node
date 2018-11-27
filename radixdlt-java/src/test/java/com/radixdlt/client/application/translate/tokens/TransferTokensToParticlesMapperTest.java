@@ -1,28 +1,25 @@
 package com.radixdlt.client.application.translate.tokens;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.radixdlt.client.application.translate.tokens.InsufficientFundsException;
-import com.radixdlt.client.application.translate.tokens.TokenBalanceState;
-import com.radixdlt.client.application.translate.tokens.TransferTokensToParticlesMapper;
+import com.radixdlt.client.core.atoms.particles.SpunParticle;
+import io.reactivex.Observable;
+import io.reactivex.observers.TestObserver;
 import java.math.BigDecimal;
 import org.junit.Test;
-import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.atommodel.tokens.TokenClassReference;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import java.util.Collections;
 
-public class TransferTokensActionTranslatorTest {
+public class TransferTokensToParticlesMapperTest {
 
 	@Test
 	public void createTransactionWithNoFunds() {
 		RadixUniverse universe = mock(RadixUniverse.class);
 		RadixAddress address = mock(RadixAddress.class);
 
-		TransferTokensToParticlesMapper transferTranslator = new TransferTokensToParticlesMapper(universe);
 
 		TokenClassReference token = mock(TokenClassReference.class);
 		when(token.getSymbol()).thenReturn("TEST");
@@ -35,8 +32,10 @@ public class TransferTokensActionTranslatorTest {
 		TokenBalanceState state = mock(TokenBalanceState.class);
 		when(state.getBalance()).thenReturn(Collections.emptyMap());
 
-		assertThatThrownBy(() -> transferTranslator.map(transferTokensAction, state))
-			.isEqualTo(new InsufficientFundsException(token, BigDecimal.ZERO, new BigDecimal("1.0")));
+		TransferTokensToParticlesMapper transferTranslator = new TransferTokensToParticlesMapper(universe, addr -> Observable.just(state));
+		TestObserver<SpunParticle> testObserver = TestObserver.create();
+		transferTranslator.map(transferTokensAction).subscribe(testObserver);
+		testObserver.assertError(new InsufficientFundsException(token, BigDecimal.ZERO, new BigDecimal("1.0")));
 	}
 
 }

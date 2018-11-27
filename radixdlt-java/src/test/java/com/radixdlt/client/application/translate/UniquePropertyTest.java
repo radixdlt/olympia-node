@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
-import com.radixdlt.client.application.translate.UniqueProperty;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import org.junit.Test;
 

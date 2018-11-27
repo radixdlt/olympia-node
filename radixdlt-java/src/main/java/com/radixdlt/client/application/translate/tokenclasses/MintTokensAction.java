@@ -1,8 +1,9 @@
 package com.radixdlt.client.application.translate.tokenclasses;
 
+import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.atommodel.tokens.TokenClassReference;
 
-public class MintTokensAction {
+public class MintTokensAction implements Action {
 	private final TokenClassReference tokenClassReference;
 	private final long amount;
 

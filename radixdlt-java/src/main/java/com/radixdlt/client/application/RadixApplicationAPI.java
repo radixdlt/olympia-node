@@ -1,5 +1,7 @@
 package com.radixdlt.client.application;
 
+import com.radixdlt.client.application.translate.Action;
+import com.radixdlt.client.application.translate.ActionToParticlesMapper;
 import com.radixdlt.client.application.translate.tokenclasses.BurnTokensAction;
 import com.radixdlt.client.application.translate.tokenclasses.CreateTokenAction.TokenSupplyType;
 import com.radixdlt.client.application.translate.tokenclasses.MintTokensAction;
@@ -12,11 +14,12 @@ import com.radixdlt.client.application.translate.tokenclasses.BurnTokensActionMa
 import com.radixdlt.client.application.translate.tokenclasses.MintTokensActionMapper;
 import com.radixdlt.client.application.translate.data.AtomToDecryptedMessageMapper;
 import com.radixdlt.client.application.translate.tokens.AtomToTokenTransfersMapper;
+import com.radixdlt.client.atommodel.timestamp.TimestampParticle;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.crypto.ECKeyPairGenerator;
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -25,7 +28,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.radixdlt.client.atommodel.timestamp.TimestampParticle;
 import org.radix.serialization2.DsonOutput.Output;
 import org.radix.serialization2.client.Serialize;
 import org.slf4j.Logger;
@@ -33,7 +35,6 @@ import org.slf4j.LoggerFactory;
 
 import com.google.gson.JsonObject;
 import com.radixdlt.client.application.translate.tokenclasses.CreateTokenAction;
-import com.radixdlt.client.application.translate.UniqueProperty;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.identity.Data;
 import com.radixdlt.client.application.identity.Data.DataBuilder;
@@ -106,17 +107,14 @@ public class RadixApplicationAPI {
 	private final RadixUniverse universe;
 
 	// TODO: Translators from application to particles
-	private final SendMessageToParticlesMapper sendMessageToParticlesMapper;
-	private final TransferTokensToParticlesMapper transferTokensToParticlesMapper;
 	private final UniquePropertyTranslator uniquePropertyTranslator;
-	private final MintTokensActionMapper mintTokensActionMapper;
-	private final BurnTokensActionMapper burnTokensActionMapper;
-	private final CreateTokenToParticlesMapper createTokenToParticlesMapper;
 
 	private final ActionStore<DecryptedMessage> messageActionStore;
 	private final ActionStore<TokenTransfer> tokenTransferActionStore;
 	private final ApplicationStore<Map<TokenClassReference, TokenState>> tokenStore;
 	private final ApplicationStore<TokenBalanceState> tokenBalanceStore;
+
+	private final List<ActionToParticlesMapper> actionToParticlesMappers;
 
 	// TODO: Translator from particles to atom
 	private final FeeMapper feeMapper;
@@ -132,19 +130,25 @@ public class RadixApplicationAPI {
 		this.identity = identity;
 		this.universe = universe;
 
-		this.messageActionStore = new ActionStore<>(ledger.getAtomStore(), new AtomToDecryptedMessageMapper(universe));
-		this.sendMessageToParticlesMapper = new SendMessageToParticlesMapper(ECKeyPairGenerator.newInstance()::generateKeyPair);
-
 		this.uniquePropertyTranslator = new UniquePropertyTranslator();
-
-		this.createTokenToParticlesMapper = new CreateTokenToParticlesMapper();
-		this.tokenTransferActionStore = new ActionStore<>(ledger.getAtomStore(), new AtomToTokenTransfersMapper(universe));
-		this.transferTokensToParticlesMapper = new TransferTokensToParticlesMapper(universe);
-
-		this.mintTokensActionMapper = new MintTokensActionMapper();
-		this.burnTokensActionMapper = new BurnTokensActionMapper(universe);
-		this.tokenStore = new ApplicationStore<>(ledger.getParticleStore(), new TokenReducer());
+		this.messageActionStore = new ActionStore<>(ledger.getAtomStore(), new AtomToDecryptedMessageMapper(universe));
 		this.tokenBalanceStore = new ApplicationStore<>(ledger.getParticleStore(), new TokenBalanceReducer());
+		this.tokenTransferActionStore = new ActionStore<>(ledger.getAtomStore(), new AtomToTokenTransfersMapper(universe));
+		this.tokenStore = new ApplicationStore<>(ledger.getParticleStore(), new TokenReducer());
+
+		this.actionToParticlesMappers = Arrays.asList(
+			new SendMessageToParticlesMapper(ECKeyPairGenerator.newInstance()::generateKeyPair),
+			new CreateTokenToParticlesMapper(),
+			new MintTokensActionMapper(),
+			new BurnTokensActionMapper(universe, addr -> {
+				pull(addr);
+					return tokenBalanceStore.getState(addr);
+			}),
+			new TransferTokensToParticlesMapper(universe, addr -> {
+				pull(addr);
+				return tokenBalanceStore.getState(addr);
+			})
+		);
 
 		this.feeMapper = feeMapper;
 		this.ledger = ledger;
@@ -281,7 +285,7 @@ public class RadixApplicationAPI {
 	public Result sendMessage(byte[] data, boolean encrypt, RadixAddress address) {
 		SendMessageAction sendMessageAction = new SendMessageAction(data, getMyAddress(), address, encrypt);
 
-		return executeTransaction(null, sendMessageAction, null, null, null, null);
+		return execute(sendMessageAction);
 	}
 
 	public Observable<TokenTransfer> getMyTokenTransfers() {
@@ -337,7 +341,7 @@ public class RadixApplicationAPI {
 		TokenSupplyType tokenSupplyType
 	) {
 		CreateTokenAction tokenCreation = new CreateTokenAction(getMyAddress(), name, iso, description, initialSupply, tokenSupplyType);
-		return executeTransaction(null, null, tokenCreation, null, null, null);
+		return execute(tokenCreation);
 	}
 
 	/**
@@ -349,7 +353,7 @@ public class RadixApplicationAPI {
 	 */
 	public Result mintTokens(String iso, long amount) {
 		MintTokensAction mintTokensAction = new MintTokensAction(TokenClassReference.of(getMyAddress(), iso), amount);
-		return executeTransaction(null, null, null, mintTokensAction, null, null);
+		return execute(mintTokensAction);
 	}
 
 
@@ -362,7 +366,7 @@ public class RadixApplicationAPI {
 	 */
 	public Result burnTokens(String iso, long amount) {
 		BurnTokensAction burnTokensAction = new BurnTokensAction(TokenClassReference.of(getMyAddress(), iso), amount);
-		return executeTransaction(null, null, null, null, burnTokensAction, null);
+		return execute(burnTokensAction);
 	}
 
 	/**
@@ -374,19 +378,6 @@ public class RadixApplicationAPI {
 	 */
 	public Result sendTokens(RadixAddress to, BigDecimal amount, TokenClassReference token) {
 		return transferTokens(getMyAddress(), to, amount, token);
-	}
-
-
-	/**
-	 * Sends an amount of a token with a message attachment to an address
-	 *
-	 * @param to the address to send tokens to
-	 * @param amount the amount and token type
-	 * @param message message to be encrypted and attached to transfer
-	 * @return result of the transaction
-	 */
-	public Result sendTokens(RadixAddress to, BigDecimal amount, TokenClassReference token, @Nullable String message) {
-		return sendTokens(to, amount, token, message, null);
 	}
 
 	/**
@@ -401,8 +392,7 @@ public class RadixApplicationAPI {
 		RadixAddress to,
 		BigDecimal amount,
 		TokenClassReference token,
-		@Nullable String message,
-		@Nullable byte[] unique
+		@Nullable String message
 	) {
 		final Data attachment;
 		if (message != null) {
@@ -414,7 +404,7 @@ public class RadixApplicationAPI {
 			attachment = null;
 		}
 
-		return transferTokens(getMyAddress(), to, amount, token, attachment, unique);
+		return transferTokens(getMyAddress(), to, amount, token, attachment);
 	}
 
 	/**
@@ -429,6 +419,12 @@ public class RadixApplicationAPI {
 		return transferTokens(getMyAddress(), to, amount, token, attachment);
 	}
 
+
+
+	public Result transferTokens(RadixAddress from, RadixAddress to, BigDecimal amount, TokenClassReference token) {
+		return transferTokens(from, to, amount, token, null);
+	}
+
 	/**
 	 * Sends an amount of a token with a data attachment to an address with a unique property
 	 * meaning that no other transaction can be executed with the same unique bytes
@@ -436,40 +432,14 @@ public class RadixApplicationAPI {
 	 * @param to the address to send tokens to
 	 * @param amount the amount and token type
 	 * @param attachment the data attached to the transaction
-	 * @param unique the bytes representing the unique id of this transaction
 	 * @return result of the transaction
 	 */
-	public Result sendTokens(
-		RadixAddress to,
-		BigDecimal amount,
-		TokenClassReference token,
-		@Nullable Data attachment,
-		@Nullable byte[] unique
-	) {
-		return transferTokens(getMyAddress(), to, amount, token, attachment, unique);
-	}
-
-	public Result transferTokens(RadixAddress from, RadixAddress to, BigDecimal amount, TokenClassReference token) {
-		return transferTokens(from, to, amount, token, null);
-	}
-
 	public Result transferTokens(
 		RadixAddress from,
 		RadixAddress to,
 		BigDecimal amount,
 		TokenClassReference token,
 		@Nullable Data attachment
-	) {
-		return transferTokens(from, to, amount, token, attachment, null);
-	}
-
-	public Result transferTokens(
-		RadixAddress from,
-		RadixAddress to,
-		BigDecimal amount,
-		TokenClassReference token,
-		@Nullable Data attachment,
-		@Nullable byte[] unique // TODO: make unique immutable
 	) {
 		Objects.requireNonNull(from);
 		Objects.requireNonNull(to);
@@ -478,79 +448,46 @@ public class RadixApplicationAPI {
 
 		final TransferTokensAction transferTokensAction =
 			TransferTokensAction.create(from, to, amount, token, attachment);
-		final UniqueProperty uniqueProperty;
-		if (unique != null) {
-			// Unique Property must be the from address so that all validation occurs in a single shard.
-			// Once multi-shard validation is implemented this constraint can be removed.
-			uniqueProperty = new UniqueProperty(unique, from);
-		} else {
-			uniqueProperty = null;
-		}
 
-		return executeTransaction(transferTokensAction, null, null, null, null, uniqueProperty);
+		return execute(transferTokensAction);
 	}
 
-	public Single<UnsignedAtom> mapToAtom(
-		@Nullable TransferTokensAction transferTokensAction,
-		@Nullable SendMessageAction sendMessageAction,
-		@Nullable CreateTokenAction tokenCreation,
-		@Nullable MintTokensAction mintTokensAction,
-		@Nullable BurnTokensAction burnTokensAction,
-		@Nullable UniqueProperty uniqueProperty
-	) {
-		if (transferTokensAction != null) {
-			pull(transferTokensAction.getFrom());
-		}
-
-		if (burnTokensAction != null) {
-			pull(burnTokensAction.getTokenClassReference().getAddress());
-		}
-
-		return Observable.concatArray(
-			//				Observable.just(uniquePropertyTranslator.map(uniqueProperty)),
-			transferTokensAction != null ? tokenBalanceStore.getState(transferTokensAction.getFrom())
-				.firstOrError().toObservable()
-				.map(s -> transferTokensToParticlesMapper.map(transferTokensAction, s)) : Observable.empty(),
-			Observable.just(sendMessageToParticlesMapper.map(sendMessageAction)),
-			Observable.just(createTokenToParticlesMapper.map(tokenCreation)),
-			Observable.just(mintTokensActionMapper.map(mintTokensAction)),
-			burnTokensAction != null ? tokenBalanceStore.getState(burnTokensAction.getTokenClassReference().getAddress())
-				.firstOrError().toObservable()
-				.map(s -> burnTokensActionMapper.map(burnTokensAction, s)) : Observable.empty(),
-			Observable.just(
-				Collections.singletonList(SpunParticle.up(new TimestampParticle(System.currentTimeMillis())))
-
-			)
+	/**
+	 * Builds an unsigned atom given a user action. Note that this is
+	 * method will always return a unique atom even if given the equivalent actions
+	 *
+	 * @param action the user action to translate an atom from
+	 * @return the constructed atom
+	 */
+	public Single<UnsignedAtom> buildAtom(Action action) {
+		return Observable.concat(
+			this.actionToParticlesMappers.stream()
+				.map(m -> m.map(action))
+				.collect(Collectors.toList())
 		)
-			.<List<SpunParticle>>scanWith(
-				ArrayList::new,
-				(a, b) -> Stream.concat(a.stream(), b.stream()).collect(Collectors.toList())
-			)
-			.lastOrError()
-			.map(particles -> {
-				List<SpunParticle> allParticles = new ArrayList<>(particles);
-				allParticles.addAll(feeMapper.map(particles, universe, getMyPublicKey()));
-				return allParticles;
-			})
-			.map(particles -> new UnsignedAtom(new Atom(particles)));
+		.concatWith(Observable.just(SpunParticle.up(new TimestampParticle(System.currentTimeMillis()))))
+		.<List<SpunParticle>>scanWith(
+			ArrayList::new,
+			(a, b) -> Stream.concat(a.stream(), Stream.of(b)).collect(Collectors.toList())
+		)
+		.lastOrError()
+		.map(particles -> {
+			List<SpunParticle> allParticles = new ArrayList<>(particles);
+			allParticles.addAll(feeMapper.map(particles, universe, getMyPublicKey()));
+			return allParticles;
+		})
+		.map(particles -> new UnsignedAtom(new Atom(particles)));
 	}
 
-	// TODO: make this more generic
-	private Result executeTransaction(
-		@Nullable TransferTokensAction transferTokensAction,
-		@Nullable SendMessageAction storeDataAction,
-		@Nullable CreateTokenAction tokenCreation,
-		@Nullable MintTokensAction mintTokensAction,
-		@Nullable BurnTokensAction burnTokensAction,
-		@Nullable UniqueProperty uniqueProperty
-	) {
-		ConnectableObservable<AtomSubmissionUpdate> updates = this.mapToAtom(
-			transferTokensAction,
-			storeDataAction,
-			tokenCreation,
-			mintTokensAction,
-			burnTokensAction,
-			uniqueProperty)
+	/**
+	 * Immediately executes a user action onto the ledger. Note that this method is NOT
+	 * idempotent.
+	 *
+	 * @param action action to execute
+	 * @return results of the execution
+	 */
+	public Result execute(Action action) {
+		ConnectableObservable<AtomSubmissionUpdate> updates = this.buildAtom(action)
 			.flatMap(identity::sign)
 			.flatMapObservable(ledger.getAtomSubmitter()::submitAtom)
 			.doOnNext(update -> {

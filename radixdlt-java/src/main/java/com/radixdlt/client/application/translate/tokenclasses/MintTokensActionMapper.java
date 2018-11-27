@@ -1,17 +1,20 @@
 package com.radixdlt.client.application.translate.tokenclasses;
 
+import com.radixdlt.client.application.translate.Action;
+import com.radixdlt.client.application.translate.ActionToParticlesMapper;
 import com.radixdlt.client.atommodel.quarks.FungibleQuark;
 import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
 import com.radixdlt.client.atommodel.tokens.TokenClassReference;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
-import java.util.Collections;
-import java.util.List;
+import io.reactivex.Observable;
 
-public class MintTokensActionMapper {
-	public List<SpunParticle> map(MintTokensAction mintTokensAction) {
-		if (mintTokensAction == null) {
-			return Collections.emptyList();
+public class MintTokensActionMapper implements ActionToParticlesMapper {
+	public Observable<SpunParticle> map(Action action) {
+		if (!(action instanceof MintTokensAction)) {
+			return Observable.empty();
 		}
+
+		MintTokensAction mintTokensAction = (MintTokensAction) action;
 
 		OwnedTokensParticle minted = new OwnedTokensParticle(
 			mintTokensAction.getAmount() * TokenClassReference.SUB_UNITS,
@@ -22,6 +25,6 @@ public class MintTokensActionMapper {
 			System.currentTimeMillis() / 60000L + 60000
 		);
 
-		return Collections.singletonList(SpunParticle.up(minted));
+		return Observable.just(SpunParticle.up(minted));
 	}
 }
