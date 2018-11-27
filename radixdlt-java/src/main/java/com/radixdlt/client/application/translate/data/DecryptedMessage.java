@@ -1,4 +1,4 @@
-package com.radixdlt.client.application.objects;
+package com.radixdlt.client.application.translate.data;
 
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import org.bouncycastle.util.encoders.Base64;

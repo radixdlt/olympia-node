@@ -1,4 +1,4 @@
-package com.radixdlt.client.application.objects;
+package com.radixdlt.client.application.identity;
 
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECKeyPairGenerator;

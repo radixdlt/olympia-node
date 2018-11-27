@@ -1,13 +1,12 @@
-package com.radixdlt.client.application.actions;
+package com.radixdlt.client.application.translate.tokenclasses;
 
 import com.radixdlt.client.atommodel.tokens.TokenClassReference;
-import java.math.BigDecimal;
 
-public class BurnTokensAction {
+public class MintTokensAction {
 	private final TokenClassReference tokenClassReference;
 	private final long amount;
 
-	public BurnTokensAction(TokenClassReference tokenClassReference, long amount) {
+	public MintTokensAction(TokenClassReference tokenClassReference, long amount) {
 		this.tokenClassReference = tokenClassReference;
 		this.amount = amount;
 	}
@@ -16,7 +15,7 @@ public class BurnTokensAction {
 		return tokenClassReference;
 	}
 
-	public BigDecimal getAmount() {
-		return new BigDecimal(amount);
+	public long getAmount() {
+		return amount;
 	}
 }

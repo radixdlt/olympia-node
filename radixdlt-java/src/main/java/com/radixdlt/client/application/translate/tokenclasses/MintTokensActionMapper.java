@@ -1,6 +1,5 @@
-package com.radixdlt.client.application.translate;
+package com.radixdlt.client.application.translate.tokenclasses;
 
-import com.radixdlt.client.application.actions.MintTokensAction;
 import com.radixdlt.client.atommodel.quarks.FungibleQuark;
 import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
 import com.radixdlt.client.atommodel.tokens.TokenClassReference;

@@ -1,9 +1,11 @@
-package com.radixdlt.client.application.translate;
+package com.radixdlt.client.application.translate.tokens;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.radixdlt.client.application.translate.tokens.TokenBalanceReducer;
+import com.radixdlt.client.application.translate.tokens.TokenBalanceState;
 import com.radixdlt.client.atommodel.tokens.TokenClassReference;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;

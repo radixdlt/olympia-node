@@ -1,15 +1,15 @@
 package com.radixdlt.client.application;
 
-import com.radixdlt.client.application.actions.BurnTokensAction;
-import com.radixdlt.client.application.actions.CreateTokenAction.TokenSupplyType;
-import com.radixdlt.client.application.actions.MintTokensAction;
-import com.radixdlt.client.application.actions.SendMessageAction;
-import com.radixdlt.client.application.actions.TransferTokensAction;
-import com.radixdlt.client.application.objects.DecryptedMessage;
-import com.radixdlt.client.application.objects.TokenTransfer;
+import com.radixdlt.client.application.translate.tokenclasses.BurnTokensAction;
+import com.radixdlt.client.application.translate.tokenclasses.CreateTokenAction.TokenSupplyType;
+import com.radixdlt.client.application.translate.tokenclasses.MintTokensAction;
+import com.radixdlt.client.application.translate.data.SendMessageAction;
+import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
+import com.radixdlt.client.application.translate.data.DecryptedMessage;
+import com.radixdlt.client.application.translate.tokens.TokenTransfer;
 import com.radixdlt.client.application.translate.ActionStore;
-import com.radixdlt.client.application.translate.BurnTokensActionMapper;
-import com.radixdlt.client.application.translate.MintTokensActionMapper;
+import com.radixdlt.client.application.translate.tokenclasses.BurnTokensActionMapper;
+import com.radixdlt.client.application.translate.tokenclasses.MintTokensActionMapper;
 import com.radixdlt.client.application.translate.data.AtomToDecryptedMessageMapper;
 import com.radixdlt.client.application.translate.tokens.AtomToTokenTransfersMapper;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
@@ -32,20 +32,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.gson.JsonObject;
-import com.radixdlt.client.application.actions.CreateTokenAction;
-import com.radixdlt.client.application.actions.UniqueProperty;
+import com.radixdlt.client.application.translate.tokenclasses.CreateTokenAction;
+import com.radixdlt.client.application.translate.UniqueProperty;
 import com.radixdlt.client.application.identity.RadixIdentity;
-import com.radixdlt.client.application.objects.Data;
-import com.radixdlt.client.application.objects.Data.DataBuilder;
+import com.radixdlt.client.application.identity.Data;
+import com.radixdlt.client.application.identity.Data.DataBuilder;
 import com.radixdlt.client.application.translate.ApplicationStore;
 import com.radixdlt.client.application.translate.data.SendMessageToParticlesMapper;
 import com.radixdlt.client.application.translate.FeeMapper;
 import com.radixdlt.client.application.translate.PowFeeMapper;
-import com.radixdlt.client.application.translate.TokenBalanceReducer;
-import com.radixdlt.client.application.translate.TokenBalanceState;
-import com.radixdlt.client.application.translate.TokenMapper;
-import com.radixdlt.client.application.translate.TokenReducer;
-import com.radixdlt.client.application.translate.TokenState;
+import com.radixdlt.client.application.translate.tokens.TokenBalanceReducer;
+import com.radixdlt.client.application.translate.tokens.TokenBalanceState;
+import com.radixdlt.client.application.translate.tokenclasses.CreateTokenToParticlesMapper;
+import com.radixdlt.client.application.translate.tokenclasses.TokenReducer;
+import com.radixdlt.client.application.translate.tokenclasses.TokenState;
 import com.radixdlt.client.application.translate.tokens.TransferTokensToParticlesMapper;
 import com.radixdlt.client.application.translate.UniquePropertyTranslator;
 import com.radixdlt.client.core.RadixUniverse;
@@ -111,7 +111,7 @@ public class RadixApplicationAPI {
 	private final UniquePropertyTranslator uniquePropertyTranslator;
 	private final MintTokensActionMapper mintTokensActionMapper;
 	private final BurnTokensActionMapper burnTokensActionMapper;
-	private final TokenMapper tokenMapper;
+	private final CreateTokenToParticlesMapper createTokenToParticlesMapper;
 
 	private final ActionStore<DecryptedMessage> messageActionStore;
 	private final ActionStore<TokenTransfer> tokenTransferActionStore;
@@ -137,7 +137,7 @@ public class RadixApplicationAPI {
 
 		this.uniquePropertyTranslator = new UniquePropertyTranslator();
 
-		this.tokenMapper = new TokenMapper();
+		this.createTokenToParticlesMapper = new CreateTokenToParticlesMapper();
 		this.tokenTransferActionStore = new ActionStore<>(ledger.getAtomStore(), new AtomToTokenTransfersMapper(universe));
 		this.transferTokensToParticlesMapper = new TransferTokensToParticlesMapper(universe);
 
@@ -211,8 +211,8 @@ public class RadixApplicationAPI {
 	 *
 	 * @return a hot observable of latest state of the native token
 	 */
-	public Observable<TokenState> getNativeTokenState() {
-		return getToken(getNativeTokenRef());
+	public Observable<TokenState> getNativeTokenClass() {
+		return getTokenClass(getNativeTokenRef());
 	}
 
 	/**
@@ -222,7 +222,7 @@ public class RadixApplicationAPI {
 	 * @param address the address of the account to check
 	 * @return a hot observable of the latest state of token classes
 	 */
-	public Observable<Map<TokenClassReference, TokenState>> getTokens(RadixAddress address) {
+	public Observable<Map<TokenClassReference, TokenState>> getTokenClasses(RadixAddress address) {
 		pull(address);
 
 		return tokenStore.getState(address);
@@ -234,8 +234,8 @@ public class RadixApplicationAPI {
 	 *
 	 * @return a hot observable of the latest state of token classes
 	 */
-	public Observable<Map<TokenClassReference, TokenState>> getMyTokens() {
-		return getTokens(getMyAddress());
+	public Observable<Map<TokenClassReference, TokenState>> getMyTokenClasses() {
+		return getTokenClasses(getMyAddress());
 	}
 
 	/**
@@ -243,7 +243,7 @@ public class RadixApplicationAPI {
 	 *
 	 * @return a hot observable of the latest state of the token
 	 */
-	public Observable<TokenState> getToken(TokenClassReference ref) {
+	public Observable<TokenState> getTokenClass(TokenClassReference ref) {
 		pull(ref.getAddress());
 
 		return tokenStore.getState(ref.getAddress())
@@ -512,7 +512,7 @@ public class RadixApplicationAPI {
 				.firstOrError().toObservable()
 				.map(s -> transferTokensToParticlesMapper.map(transferTokensAction, s)) : Observable.empty(),
 			Observable.just(sendMessageToParticlesMapper.map(sendMessageAction)),
-			Observable.just(tokenMapper.map(tokenCreation)),
+			Observable.just(createTokenToParticlesMapper.map(tokenCreation)),
 			Observable.just(mintTokensActionMapper.map(mintTokensAction)),
 			burnTokensAction != null ? tokenBalanceStore.getState(burnTokensAction.getTokenClassReference().getAddress())
 				.firstOrError().toObservable()

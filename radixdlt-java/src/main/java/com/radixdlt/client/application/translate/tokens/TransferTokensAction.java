@@ -1,6 +1,6 @@
-package com.radixdlt.client.application.actions;
+package com.radixdlt.client.application.translate.tokens;
 
-import com.radixdlt.client.application.objects.Data;
+import com.radixdlt.client.application.identity.Data;
 import com.radixdlt.client.atommodel.tokens.TokenClassReference;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import java.math.BigDecimal;

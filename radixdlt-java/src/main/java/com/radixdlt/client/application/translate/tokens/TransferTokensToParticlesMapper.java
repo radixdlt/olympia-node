@@ -1,11 +1,8 @@
 package com.radixdlt.client.application.translate.tokens;
 
 import com.google.gson.JsonArray;
-import com.radixdlt.client.application.actions.TransferTokensAction;
-import com.radixdlt.client.application.objects.Data;
-import com.radixdlt.client.application.translate.InsufficientFundsException;
-import com.radixdlt.client.application.translate.TokenBalanceState;
-import com.radixdlt.client.application.translate.TokenBalanceState.Balance;
+import com.radixdlt.client.application.identity.Data;
+import com.radixdlt.client.application.translate.tokens.TokenBalanceState.Balance;
 import com.radixdlt.client.atommodel.quarks.FungibleQuark.FungibleType;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.atommodel.tokens.TokenClassReference;

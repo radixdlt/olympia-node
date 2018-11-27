@@ -1,6 +1,6 @@
 package com.radixdlt.client.dapps.messaging;
 
-import com.radixdlt.client.application.objects.DecryptedMessage;
+import com.radixdlt.client.application.translate.data.DecryptedMessage;
 import java.util.Objects;
 
 import org.radix.utils.RadixConstants;

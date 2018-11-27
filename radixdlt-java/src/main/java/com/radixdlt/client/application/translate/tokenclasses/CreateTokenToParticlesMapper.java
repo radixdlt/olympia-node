@@ -1,7 +1,6 @@
-package com.radixdlt.client.application.translate;
+package com.radixdlt.client.application.translate.tokenclasses;
 
-import com.radixdlt.client.application.actions.CreateTokenAction;
-import com.radixdlt.client.application.actions.CreateTokenAction.TokenSupplyType;
+import com.radixdlt.client.application.translate.tokenclasses.CreateTokenAction.TokenSupplyType;
 import com.radixdlt.client.atommodel.quarks.FungibleQuark.FungibleType;
 import com.radixdlt.client.atommodel.tokens.TokenClassReference;
 import com.radixdlt.client.atommodel.tokens.TokenPermission;
@@ -18,7 +17,7 @@ import java.util.List;
 /**
  * Maps the CreateToken action into it's corresponding particles
  */
-public class TokenMapper {
+public class CreateTokenToParticlesMapper {
 	public List<SpunParticle> map(CreateTokenAction tokenCreation) {
 		if (tokenCreation == null) {
 			return Collections.emptyList();

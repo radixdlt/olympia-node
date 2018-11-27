@@ -1,5 +1,7 @@
-package com.radixdlt.client.application.translate;
+package com.radixdlt.client.application.translate.tokenclasses;
 
+import com.radixdlt.client.application.translate.tokenclasses.TokenReducer;
+import com.radixdlt.client.application.translate.tokenclasses.TokenState;
 import com.radixdlt.client.atommodel.tokens.TokenClassReference;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.atommodel.tokens.TokenParticle;

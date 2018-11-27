@@ -1,4 +1,4 @@
-package com.radixdlt.client.application.objects;
+package com.radixdlt.client.application.identity;
 
 import java.util.Map;
 

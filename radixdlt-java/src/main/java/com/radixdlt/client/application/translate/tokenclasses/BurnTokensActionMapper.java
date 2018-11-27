@@ -1,7 +1,8 @@
-package com.radixdlt.client.application.translate;
+package com.radixdlt.client.application.translate.tokenclasses;
 
-import com.radixdlt.client.application.actions.BurnTokensAction;
-import com.radixdlt.client.application.translate.TokenBalanceState.Balance;
+import com.radixdlt.client.application.translate.tokens.InsufficientFundsException;
+import com.radixdlt.client.application.translate.tokens.TokenBalanceState;
+import com.radixdlt.client.application.translate.tokens.TokenBalanceState.Balance;
 import com.radixdlt.client.atommodel.quarks.FungibleQuark.FungibleType;
 import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
 import com.radixdlt.client.atommodel.tokens.TokenClassReference;
@@ -24,7 +25,7 @@ public class BurnTokensActionMapper {
 		this.universe = universe;
 	}
 
-	public List<SpunParticle> map(BurnTokensAction burnTokensAction, TokenBalanceState curState) throws InsufficientFundsException {
+	public List<SpunParticle> map(BurnTokensAction burnTokensAction, TokenBalanceState curState) {
 		if (burnTokensAction == null) {
 			return Collections.emptyList();
 		}

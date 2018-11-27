@@ -1,10 +1,10 @@
-package com.radixdlt.client.application.translate;
+package com.radixdlt.client.application.translate.data;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.radixdlt.client.application.actions.SendMessageAction;
+import com.radixdlt.client.application.translate.data.SendMessageAction;
 import com.radixdlt.client.application.translate.data.SendMessageToParticlesMapper;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.crypto.ECKeyPair;

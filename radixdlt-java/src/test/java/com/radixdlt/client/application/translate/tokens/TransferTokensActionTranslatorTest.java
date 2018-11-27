@@ -1,13 +1,15 @@
-package com.radixdlt.client.application.translate;
+package com.radixdlt.client.application.translate.tokens;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.radixdlt.client.application.translate.tokens.InsufficientFundsException;
+import com.radixdlt.client.application.translate.tokens.TokenBalanceState;
 import com.radixdlt.client.application.translate.tokens.TransferTokensToParticlesMapper;
 import java.math.BigDecimal;
 import org.junit.Test;
-import com.radixdlt.client.application.actions.TransferTokensAction;
+import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.atommodel.tokens.TokenClassReference;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;

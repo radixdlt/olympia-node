@@ -1,10 +1,11 @@
-package com.radixdlt.client.application.objects;
+package com.radixdlt.client.application.identity;
 
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertEquals;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.radixdlt.client.application.objects.Data.DataBuilder;
+import com.radixdlt.client.application.identity.Data;
+import com.radixdlt.client.application.identity.Data.DataBuilder;
 import org.junit.Test;
 
 public class DataTest {

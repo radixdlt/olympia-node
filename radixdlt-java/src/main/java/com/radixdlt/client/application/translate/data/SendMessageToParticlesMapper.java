@@ -1,7 +1,6 @@
 package com.radixdlt.client.application.translate.data;
 
 import com.google.gson.JsonArray;
-import com.radixdlt.client.application.actions.SendMessageAction;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.atommodel.message.MessageParticle;
 import com.radixdlt.client.atommodel.message.MessageParticle.MessageParticleBuilder;

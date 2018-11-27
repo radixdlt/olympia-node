@@ -1,5 +1,6 @@
-package com.radixdlt.client.application.translate;
+package com.radixdlt.client.application.translate.tokenclasses;
 
+import com.radixdlt.client.application.translate.ParticleReducer;
 import com.radixdlt.client.atommodel.quarks.FungibleQuark.FungibleType;
 import com.radixdlt.client.atommodel.tokens.TokenClassReference;
 import com.radixdlt.client.core.atoms.particles.Particle;

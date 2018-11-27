@@ -1,4 +1,4 @@
-package com.radixdlt.client.application.translate;
+package com.radixdlt.client.application.translate.tokenclasses;
 
 import java.math.BigDecimal;
 

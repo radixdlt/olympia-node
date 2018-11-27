@@ -1,4 +1,4 @@
-package com.radixdlt.client.application.translate;
+package com.radixdlt.client.application.translate.tokens;
 
 import com.radixdlt.client.atommodel.quarks.FungibleQuark.FungibleType;
 import com.radixdlt.client.core.atoms.RadixHash;
