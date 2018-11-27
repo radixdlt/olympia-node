@@ -10,6 +10,8 @@ import okhttp3.Request;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 
+import javax.xml.ws.WebServiceException;
+
 public class PeersFromNodeFinder implements PeerDiscovery {
 	private final String nodeFinderUrl;
 	private final int port;
@@ -53,6 +55,6 @@ public class PeersFromNodeFinder implements PeerDiscovery {
 			.map(peerUrl -> new PeersFromSeed(new RadixPeer(peerUrl, true, port)))
 			.flatMapObservable(PeersFromSeed::findPeers)
 			.timeout(3, TimeUnit.SECONDS)
-			.retryWhen(new IncreasingRetryTimer());
+			.retryWhen(new IncreasingRetryTimer(WebSocketException.class));
 	}
 }

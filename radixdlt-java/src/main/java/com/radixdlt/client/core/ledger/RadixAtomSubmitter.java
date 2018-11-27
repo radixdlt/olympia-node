@@ -3,6 +3,7 @@ package com.radixdlt.client.core.ledger;
 import java.util.Set;
 import java.util.function.Function;
 
+import com.radixdlt.client.core.network.WebSocketException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,7 +46,7 @@ public class RadixAtomSubmitter implements AtomSubmitter {
 			})
 			.flatMapObservable(client -> client.submitAtom(atom))
 			.doOnError(Throwable::printStackTrace)
-			.retryWhen(new IncreasingRetryTimer());
+			.retryWhen(new IncreasingRetryTimer(WebSocketException.class));
 
 		ConnectableObservable<AtomSubmissionUpdate> replay = status.replay();
 		replay.connect();
