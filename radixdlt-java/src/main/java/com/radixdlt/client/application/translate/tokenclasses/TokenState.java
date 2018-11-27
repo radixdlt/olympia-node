@@ -1,6 +1,7 @@
 package com.radixdlt.client.application.translate.tokenclasses;
 
 import java.math.BigDecimal;
+import java.util.Objects;
 
 /**
  * The state and data of a token at a given moment in time
@@ -53,6 +54,25 @@ public class TokenState {
 
 	public BigDecimal getMaxSupply() {
 		return totalSupply;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(name, iso, description, tokenSupplyType, totalSupply);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (!(o instanceof TokenState)) {
+			return false;
+		}
+
+		TokenState tokenState = (TokenState) o;
+		return this.name.equals(tokenState.name)
+			&& this.iso.equals(tokenState.iso)
+			&& this.tokenSupplyType.equals(tokenState.tokenSupplyType)
+			&& this.description.equals(tokenState.description)
+			&& this.totalSupply.equals(tokenState.totalSupply);
 	}
 
 	@Override

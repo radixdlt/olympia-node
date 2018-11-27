@@ -17,6 +17,7 @@ import com.radixdlt.client.application.translate.tokens.AtomToTokenTransfersMapp
 import com.radixdlt.client.atommodel.timestamp.TimestampParticle;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.crypto.ECKeyPairGenerator;
+import io.reactivex.observables.ConnectableObservable;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -67,7 +68,6 @@ import io.reactivex.Single;
 import io.reactivex.annotations.Nullable;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.disposables.Disposables;
-import io.reactivex.observables.ConnectableObservable;
 
 /**
  * The Radix Dapp API, a high level api which dapps can utilize. The class hides
@@ -77,10 +77,10 @@ public class RadixApplicationAPI {
 	private static final Logger LOGGER = LoggerFactory.getLogger(RadixApplicationAPI.class);
 
 	public static class Result {
-		private final Observable<AtomSubmissionUpdate> updates;
+		private final ConnectableObservable<AtomSubmissionUpdate> updates;
 		private final Completable completable;
 
-		private Result(Observable<AtomSubmissionUpdate> updates) {
+		private Result(ConnectableObservable<AtomSubmissionUpdate> updates) {
 			this.updates = updates;
 
 			this.completable = updates.filter(AtomSubmissionUpdate::isComplete)
@@ -92,6 +92,11 @@ public class RadixApplicationAPI {
 						return Completable.error(new RuntimeException(update.getData().toString()));
 					}
 				});
+		}
+
+		private Result connect() {
+			this.updates.connect();
+			return this;
 		}
 
 		public Observable<AtomSubmissionUpdate> toObservable() {
@@ -479,14 +484,7 @@ public class RadixApplicationAPI {
 		.map(particles -> new UnsignedAtom(new Atom(particles)));
 	}
 
-	/**
-	 * Immediately executes a user action onto the ledger. Note that this method is NOT
-	 * idempotent.
-	 *
-	 * @param action action to execute
-	 * @return results of the execution
-	 */
-	public Result execute(Action action) {
+	private Result buildDisconnectedResult(Action action) {
 		ConnectableObservable<AtomSubmissionUpdate> updates = this.buildAtom(action)
 			.flatMap(identity::sign)
 			.flatMapObservable(ledger.getAtomSubmitter()::submitAtom)
@@ -501,11 +499,34 @@ public class RadixApplicationAPI {
 						Serialize.getInstance().toJson(update.getAtom(), Output.ALL)
 					);
 				}
-			})
-			.replay();
-
-		updates.connect();
+			}).replay();
 
 		return new Result(updates);
+	}
+
+	/**
+	 * Immediately executes a user action onto the ledger. Note that this method is NOT
+	 * idempotent.
+	 *
+	 * @param action action to execute
+	 * @return results of the execution
+	 */
+	public Result execute(Action action) {
+		return this.buildDisconnectedResult(action).connect();
+	}
+
+	/**
+	 * Executes actions sequentially. If an action fails, then the completable this method
+	 * returns will call onError immediately. Note that this method is NEITHER idempotent
+	 * NOR atomic (i.e. if an action fails, all previous actions to that would still have occurred).
+	 *
+	 * @param actions the action to execute sequentially
+	 * @return completion status of all of the actions
+	 */
+	public Completable executeSequentially(Action... actions) {
+		Completable completable = Observable.fromIterable(Arrays.asList(actions))
+			.concatMapCompletable(a -> buildDisconnectedResult(a).toCompletable()).cache();
+		completable.subscribe();
+		return completable;
 	}
 }
