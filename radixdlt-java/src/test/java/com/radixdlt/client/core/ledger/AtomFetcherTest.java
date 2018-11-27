@@ -3,6 +3,7 @@ package com.radixdlt.client.core.ledger;
 import com.radixdlt.client.core.atoms.AtomObservation;
 import java.util.function.Function;
 
+import com.radixdlt.client.core.network.WebSocketException;
 import org.junit.Test;
 import org.radix.common.ID.EUID;
 
@@ -28,7 +29,7 @@ public class AtomFetcherTest {
 		AtomObservation atomObservation = mock(AtomObservation.class);
 		when(atomObservation.getAtom()).thenReturn(atom);
 
-		when(bad.getAtoms(any())).thenReturn(Observable.error(new RuntimeException()));
+		when(bad.getAtoms(any())).thenReturn(Observable.error(new WebSocketException()));
 		when(good.getAtoms(any())).thenReturn(Observable.just(atomObservation));
 
 		Function<Long, Single<RadixJsonRpcClient>> clientSelector = mock(Function.class);

@@ -78,7 +78,7 @@ public class RadixNetworkTest {
 	 */
 	@Test
 	public void testPeerDiscoveryFail() {
-		RadixNetwork network = new RadixNetwork(() -> Observable.error(new IOException()));
+		RadixNetwork network = new RadixNetwork(() -> Observable.error(new WebSocketException()));
 		TestObserver<SimpleImmutableEntry<String, RadixClientStatus>> observer = TestObserver.create();
 		network.getStatusUpdates().subscribe(observer);
 		network.connectAndGetStatusUpdates().subscribe();
