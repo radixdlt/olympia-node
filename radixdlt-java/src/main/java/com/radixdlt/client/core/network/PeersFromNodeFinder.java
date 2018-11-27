@@ -10,8 +10,6 @@ import okhttp3.Request;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 
-import javax.xml.ws.WebServiceException;
-
 public class PeersFromNodeFinder implements PeerDiscovery {
 	private final String nodeFinderUrl;
 	private final int port;
