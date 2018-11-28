@@ -10,7 +10,6 @@ import io.reactivex.Maybe;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.observers.TestObserver;
-import java.io.IOException;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.stream.IntStream;
 import org.junit.Test;
@@ -78,7 +77,7 @@ public class RadixNetworkTest {
 	 */
 	@Test
 	public void testPeerDiscoveryFail() {
-		RadixNetwork network = new RadixNetwork(() -> Observable.error(new IOException()));
+		RadixNetwork network = new RadixNetwork(() -> Observable.error(new WebSocketException()));
 		TestObserver<SimpleImmutableEntry<String, RadixClientStatus>> observer = TestObserver.create();
 		network.getStatusUpdates().subscribe(observer);
 		network.connectAndGetStatusUpdates().subscribe();

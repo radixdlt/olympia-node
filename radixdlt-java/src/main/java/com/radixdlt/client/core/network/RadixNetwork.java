@@ -32,7 +32,7 @@ public final class RadixNetwork {
 		Objects.requireNonNull(peerDiscovery);
 
 		this.peers = peerDiscovery.findPeers()
-			.retryWhen(new IncreasingRetryTimer())
+			.retryWhen(new IncreasingRetryTimer(WebSocketException.class))
 			.doOnNext(peer -> LOGGER.info("Added to peer list: " + peer.getLocation()))
 			.replay().autoConnect(2);
 

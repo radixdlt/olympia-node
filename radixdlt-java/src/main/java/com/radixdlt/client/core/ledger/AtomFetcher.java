@@ -1,19 +1,18 @@
 package com.radixdlt.client.core.ledger;
 
-import com.radixdlt.client.core.atoms.AtomObservation;
-import java.util.function.Function;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.client.core.atoms.AtomObservation;
 import com.radixdlt.client.core.atoms.AtomValidationException;
 import com.radixdlt.client.core.network.AtomQuery;
 import com.radixdlt.client.core.network.IncreasingRetryTimer;
 import com.radixdlt.client.core.network.RadixJsonRpcClient;
-
+import com.radixdlt.client.core.network.WebSocketException;
 import io.reactivex.Observable;
 import io.reactivex.Single;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.function.Function;
 
 /**
  * Module responsible for selecting a node and fetching atoms and retrying if necessary.
@@ -38,7 +37,7 @@ public class AtomFetcher {
 			.doOnError(throwable -> {
 				LOGGER.warn("Error on getAllAtoms: {}", address);
 			})
-			.retryWhen(new IncreasingRetryTimer())
+			.retryWhen(new IncreasingRetryTimer(WebSocketException.class))
 			.filter(atomObservation -> {
 				if (atomObservation.isStore()) {
 					LOGGER.info("Received atom " + atomObservation.getAtom().getHid());
