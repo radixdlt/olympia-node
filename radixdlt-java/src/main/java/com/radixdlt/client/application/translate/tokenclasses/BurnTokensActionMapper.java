@@ -45,10 +45,6 @@ public class BurnTokensActionMapper implements ActionToParticlesMapper {
 	}
 
 	private List<SpunParticle> map(BurnTokensAction burnTokensAction, TokenBalanceState curState) {
-		if (burnTokensAction == null) {
-			return Collections.emptyList();
-		}
-
 		final Map<TokenClassReference, Balance> allConsumables = curState.getBalance();
 
 		final TokenClassReference tokenRef = burnTokensAction.getTokenClassReference();

@@ -31,10 +31,9 @@ public class TokenReducerTest {
 
 		TokenReducer tokenReducer = new TokenReducer();
 		Map<TokenClassReference, TokenState> state = tokenReducer.reduce(Collections.emptyMap(), SpunParticle.up(tokenParticle));
-		assertThat(state.get(tokenRef))
-			.isEqualToComparingFieldByField(
-				new TokenState("Name", "ISO", "Desc", BigDecimal.ZERO, TokenSupplyType.FIXED)
-			);
+		assertThat(state.get(tokenRef)).isEqualTo(
+			new TokenState("Name", "ISO", "Desc", BigDecimal.ZERO, TokenSupplyType.FIXED)
+		);
 	}
 
 	@Test
@@ -55,15 +54,14 @@ public class TokenReducerTest {
 		TokenReducer tokenReducer = new TokenReducer();
 		Map<TokenClassReference, TokenState> state1 = tokenReducer.reduce(Collections.emptyMap(), SpunParticle.up(tokenParticle));
 		Map<TokenClassReference, TokenState> state2 = tokenReducer.reduce(state1, SpunParticle.up(minted));
-		assertThat(state2.get(tokenRef))
-			.isEqualToComparingFieldByField(
-				new TokenState(
-					"Name",
-					"ISO",
-					"Desc",
-					TokenClassReference.subUnitsToDecimal(100L),
-					TokenSupplyType.MUTABLE
-				)
-			);
+		assertThat(state2.get(tokenRef)).isEqualTo(
+			new TokenState(
+				"Name",
+				"ISO",
+				"Desc",
+				TokenClassReference.subUnitsToDecimal(100L),
+				TokenSupplyType.MUTABLE
+			)
+		);
 	}
 }

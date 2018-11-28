@@ -135,6 +135,7 @@ public class RadixApplicationAPI {
 		this.identity = identity;
 		this.universe = universe;
 
+		// TODO: Utilize class loader to discover and load these modules
 		this.uniquePropertyTranslator = new UniquePropertyTranslator();
 		this.messageActionStore = new ActionStore<>(ledger.getAtomStore(), new AtomToDecryptedMessageMapper(universe));
 		this.tokenBalanceStore = new ApplicationStore<>(ledger.getParticleStore(), new TokenBalanceReducer());
@@ -147,7 +148,7 @@ public class RadixApplicationAPI {
 			new MintTokensActionMapper(),
 			new BurnTokensActionMapper(universe, addr -> {
 				pull(addr);
-					return tokenBalanceStore.getState(addr);
+				return tokenBalanceStore.getState(addr);
 			}),
 			new TransferTokensToParticlesMapper(universe, addr -> {
 				pull(addr);
@@ -525,7 +526,7 @@ public class RadixApplicationAPI {
 	 */
 	public Completable executeSequentially(Action... actions) {
 		Completable completable = Observable.fromIterable(Arrays.asList(actions))
-			.concatMapCompletable(a -> buildDisconnectedResult(a).toCompletable()).cache();
+			.concatMapCompletable(a -> buildDisconnectedResult(a).connect().toCompletable()).cache();
 		completable.subscribe();
 		return completable;
 	}

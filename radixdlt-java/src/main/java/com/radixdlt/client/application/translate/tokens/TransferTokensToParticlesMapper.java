@@ -22,6 +22,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
@@ -37,6 +38,80 @@ public class TransferTokensToParticlesMapper implements ActionToParticlesMapper 
 	public TransferTokensToParticlesMapper(RadixUniverse universe, Function<RadixAddress, Observable<TokenBalanceState>> tokenBalanceState) {
 		this.universe = universe;
 		this.tokenBalanceState = tokenBalanceState;
+	}
+
+	private Observable<SpunParticle> mapToParticles(TransferTokensAction transfer, List<OwnedTokensParticle> currentParticles) {
+		return Observable.create(emitter -> {
+			long consumerTotal = 0;
+			final long subUnitAmount = transfer.getAmount().multiply(TokenClassReference.getSubUnits()).longValueExact();
+			Iterator<OwnedTokensParticle> iterator = currentParticles.iterator();
+			Map<ECKeyPair, Long> consumerQuantities = new HashMap<>();
+
+			// HACK for now
+			// TODO: remove this, create a ConsumersCreator
+			// TODO: randomize this to decrease probability of collision
+			while (consumerTotal < subUnitAmount && iterator.hasNext()) {
+				final long left = subUnitAmount - consumerTotal;
+
+				OwnedTokensParticle particle = iterator.next();
+				consumerTotal += particle.getAmount();
+
+				final long amount = Math.min(left, particle.getAmount());
+				particle.addConsumerQuantities(amount, transfer.getTo().toECKeyPair(), consumerQuantities);
+
+				SpunParticle<OwnedTokensParticle> down = SpunParticle.down(particle);
+				emitter.onNext(down);
+			}
+
+			consumerQuantities.entrySet().stream()
+				.map(entry -> new OwnedTokensParticle(
+					entry.getValue(),
+					FungibleType.TRANSFERRED,
+					universe.getAddressFrom(entry.getKey().getPublicKey()),
+					System.nanoTime(),
+					transfer.getTokenClassReference(),
+					System.currentTimeMillis() / 60000L + 60000L
+				))
+				.map(SpunParticle::up)
+				.forEach(emitter::onNext);
+
+			emitter.onComplete();
+		});
+	}
+
+	private Observable<SpunParticle> mapToAttachmentParticles(TransferTokensAction transfer) {
+		return Observable.create(emitter -> {
+			final Data attachment = transfer.getAttachment();
+			if (attachment != null) {
+				emitter.onNext(
+					SpunParticle.up(
+						new MessageParticleBuilder()
+							.payload(attachment.getBytes())
+							.from(transfer.getFrom())
+							.to(transfer.getTo())
+							.build()
+					)
+				);
+
+				Encryptor encryptor = attachment.getEncryptor();
+				if (encryptor != null) {
+					JsonArray protectorsJson = new JsonArray();
+					encryptor.getProtectors().stream().map(EncryptedPrivateKey::base64).forEach(protectorsJson::add);
+
+					byte[] encryptorPayload = protectorsJson.toString().getBytes(StandardCharsets.UTF_8);
+					MessageParticle encryptorParticle = new MessageParticleBuilder()
+						.payload(encryptorPayload)
+						.setMetaData("application", "encryptor")
+						.setMetaData("contentType", "application/json")
+						.from(transfer.getFrom())
+						.to(transfer.getTo())
+						.build();
+					emitter.onNext(SpunParticle.up(encryptorParticle));
+				}
+			}
+
+			emitter.onComplete();
+		});
 	}
 
 	public Observable<SpunParticle> map(Action action) throws InsufficientFundsException {
@@ -66,121 +141,7 @@ public class TransferTokensToParticlesMapper implements ActionToParticlesMapper 
 						.map(bal -> bal.unconsumedConsumables().collect(Collectors.toList()))
 						.orElse(Collections.emptyList())
 			)
-			.<SpunParticle>flatMapObservable(tokenConsumables -> Observable.create(emitter -> {
-				long consumerTotal = 0;
-				final long subUnitAmount = transfer.getAmount().multiply(TokenClassReference.getSubUnits()).longValueExact();
-				Iterator<OwnedTokensParticle> iterator = tokenConsumables.iterator();
-				Map<ECKeyPair, Long> consumerQuantities = new HashMap<>();
-
-				// HACK for now
-				// TODO: remove this, create a ConsumersCreator
-				// TODO: randomize this to decrease probability of collision
-				while (consumerTotal < subUnitAmount && iterator.hasNext()) {
-					final long left = subUnitAmount - consumerTotal;
-
-					OwnedTokensParticle particle = iterator.next();
-					consumerTotal += particle.getAmount();
-
-					final long amount = Math.min(left, particle.getAmount());
-					particle.addConsumerQuantities(amount, transfer.getTo().toECKeyPair(), consumerQuantities);
-
-					SpunParticle<OwnedTokensParticle> down = SpunParticle.down(particle);
-					emitter.onNext(down);
-				}
-
-				consumerQuantities.entrySet().stream()
-					.map(entry -> new OwnedTokensParticle(
-						entry.getValue(),
-						FungibleType.TRANSFERRED,
-						universe.getAddressFrom(entry.getKey().getPublicKey()),
-						System.nanoTime(),
-						transfer.getTokenClassReference(),
-						System.currentTimeMillis() / 60000L + 60000L
-					))
-					.map(SpunParticle::up)
-					.forEach(emitter::onNext);
-
-				emitter.onComplete();
-			}))
-			.concatWith(Observable.create(emitter -> {
-				final Data attachment = transfer.getAttachment();
-				if (attachment != null) {
-					emitter.onNext(
-						SpunParticle.up(
-							new MessageParticleBuilder()
-								.payload(attachment.getBytes())
-								.from(transfer.getFrom())
-								.to(transfer.getTo())
-								.build()
-						)
-					);
-
-					Encryptor encryptor = attachment.getEncryptor();
-					if (encryptor != null) {
-						JsonArray protectorsJson = new JsonArray();
-						encryptor.getProtectors().stream().map(EncryptedPrivateKey::base64).forEach(protectorsJson::add);
-
-						byte[] encryptorPayload = protectorsJson.toString().getBytes(StandardCharsets.UTF_8);
-						MessageParticle encryptorParticle = new MessageParticleBuilder()
-								.payload(encryptorPayload)
-								.setMetaData("application", "encryptor")
-								.setMetaData("contentType", "application/json")
-								.from(transfer.getFrom())
-								.to(transfer.getTo())
-								.build();
-						emitter.onNext(SpunParticle.up(encryptorParticle));
-					}
-				}
-
-				emitter.onComplete();
-			}));
-
-
-
-
-
-			/*
-		final List<OwnedTokensParticle> unconsumedOwnedTokensParticles =
-				;
-
-		List<SpunParticle> particles = new ArrayList<>();
-
-		// Translate attachment to corresponding atom structure
-
-
-		long consumerTotal = 0;
-		final long subUnitAmount = transfer.getAmount().multiply(TokenClassReference.getSubUnits()).longValueExact();
-		Iterator<OwnedTokensParticle> iterator = unconsumedOwnedTokensParticles.iterator();
-		Map<ECKeyPair, Long> consumerQuantities = new HashMap<>();
-
-		// HACK for now
-		// TODO: remove this, create a ConsumersCreator
-		// TODO: randomize this to decrease probability of collision
-		while (consumerTotal < subUnitAmount && iterator.hasNext()) {
-			final long left = subUnitAmount - consumerTotal;
-
-			OwnedTokensParticle particle = iterator.next();
-			consumerTotal += particle.getAmount();
-
-			final long amount = Math.min(left, particle.getAmount());
-			particle.addConsumerQuantities(amount, transfer.getTo().toECKeyPair(), consumerQuantities);
-
-			SpunParticle<OwnedTokensParticle> down = SpunParticle.down(particle);
-			particles.add(down);
-		}
-
-		consumerQuantities.entrySet().stream()
-			.map(entry -> new OwnedTokensParticle(
-				entry.getValue(),
-				FungibleType.TRANSFERRED,
-				universe.getAddressFrom(entry.getKey().getPublicKey()),
-				System.nanoTime(),
-				transfer.getTokenClassReference(),
-				System.currentTimeMillis() / 60000L + 60000L
-			))
-			.map(SpunParticle::up)
-			.forEach(particles::add);
-		return particles;
-		*/
+			.flatMapObservable(tokenConsumables -> this.mapToParticles(transfer, tokenConsumables))
+			.concatWith(this.mapToAttachmentParticles(transfer));
 	}
 }

@@ -68,11 +68,11 @@ public class TokenState {
 		}
 
 		TokenState tokenState = (TokenState) o;
-		return this.name.equals(tokenState.name)
-			&& this.iso.equals(tokenState.iso)
-			&& this.tokenSupplyType.equals(tokenState.tokenSupplyType)
-			&& this.description.equals(tokenState.description)
-			&& this.totalSupply.equals(tokenState.totalSupply);
+		return Objects.equals(this.name, tokenState.name)
+			&& Objects.equals(this.iso, tokenState.iso)
+			&& Objects.equals(this.tokenSupplyType, tokenState.tokenSupplyType)
+			&& Objects.equals(this.description, tokenState.description)
+			&& Objects.equals(this.totalSupply, tokenState.totalSupply);
 	}
 
 	@Override
