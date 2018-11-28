@@ -17,6 +17,7 @@ import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -30,6 +31,8 @@ public class TokenClassesInAccount {
 	@BeforeClass
 	public static void setup() {
 		RadixUniverse.bootstrap(Bootstrap.BETANET);
+		RadixUniverse.getInstance().getNetwork().getRadixClients().subscribe(System.out::println);
+
 		api = RadixApplicationAPI.create(RadixIdentities.createNew());
 	}
 
@@ -57,7 +60,7 @@ public class TokenClassesInAccount {
 	}
 
 	@Test
-	public void given_an_account_with_two_tokens__when_the_account_is_subscribed_for_the_token_state__then_the_two_tokens_are_published() {
+	public void given_an_account_with_two_tokens__when_the_account_is_subscribed_for_the_token_state__then_the_two_tokens_are_published() throws Exception {
 		// Given an account with two tokens
 		Action[] givenActions = new Action[] {
 			buildCreateNewTokenAction("JOSH", 10000),
@@ -80,6 +83,7 @@ public class TokenClassesInAccount {
 		// When execution
 		TestObserver<Map<TokenClassReference, TokenState>> testObserver = TestObserver.create();
 		subscription.get()
+			.debounce(15, TimeUnit.SECONDS)
 			.firstOrError()
 			.subscribe(testObserver);
 
