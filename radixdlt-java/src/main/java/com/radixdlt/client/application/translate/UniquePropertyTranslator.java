@@ -1,6 +1,5 @@
 package com.radixdlt.client.application.translate;
 
-import com.radixdlt.client.application.actions.UniqueProperty;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import io.reactivex.annotations.Nullable;
 

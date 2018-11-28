@@ -1,7 +1,5 @@
 package com.radixdlt.client.application.identity;
 
-import com.radixdlt.client.application.objects.Data;
-import com.radixdlt.client.application.objects.UnencryptedData;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.crypto.ECPublicKey;

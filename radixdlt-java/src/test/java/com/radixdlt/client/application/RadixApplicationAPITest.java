@@ -8,7 +8,7 @@ import static org.mockito.Mockito.when;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
-import com.radixdlt.client.application.objects.DecryptedMessage;
+import com.radixdlt.client.application.translate.data.DecryptedMessage;
 import com.radixdlt.client.application.translate.FeeMapper;
 import com.radixdlt.client.application.translate.PowFeeMapper;
 import com.radixdlt.client.atommodel.tokens.TokenClassReference;

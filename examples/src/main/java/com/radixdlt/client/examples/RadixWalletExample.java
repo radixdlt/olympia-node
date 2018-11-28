@@ -1,15 +1,13 @@
 package com.radixdlt.client.examples;
 
 import com.radixdlt.client.application.RadixApplicationAPI;
-import com.radixdlt.client.application.actions.CreateTokenAction.TokenSupplyType;
+import com.radixdlt.client.application.translate.tokenclasses.CreateTokenAction.TokenSupplyType;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.atommodel.tokens.TokenClassReference;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.application.identity.RadixIdentity;
-import io.reactivex.Completable;
-import io.reactivex.Observable;
 import java.math.BigDecimal;
 
 public class RadixWalletExample {
@@ -61,7 +59,7 @@ public class RadixWalletExample {
 			TokenSupplyType.MUTABLE
 		).toObservable().subscribe(System.out::println);
 
-		api.getToken(TokenClassReference.of(api.getMyAddress(), "JOSH"))
+		api.getTokenClass(TokenClassReference.of(api.getMyAddress(), "JOSH"))
 			.subscribe(System.out::println);
 
 		// If specified, send money to another address
