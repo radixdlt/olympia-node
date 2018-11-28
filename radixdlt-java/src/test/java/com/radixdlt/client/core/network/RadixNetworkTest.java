@@ -10,7 +10,6 @@ import io.reactivex.Maybe;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.observers.TestObserver;
-import java.io.IOException;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.stream.IntStream;
 import org.junit.Test;
