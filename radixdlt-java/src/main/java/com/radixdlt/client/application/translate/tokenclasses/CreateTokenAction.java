@@ -1,8 +1,11 @@
 package com.radixdlt.client.application.translate.tokenclasses;
 
+import java.util.Objects;
+
+import org.radix.utils.UInt256;
+
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import java.util.Objects;
 
 public class CreateTokenAction implements Action {
 	public enum TokenSupplyType {
@@ -13,7 +16,7 @@ public class CreateTokenAction implements Action {
 	private final String name;
 	private final String iso;
 	private final String description;
-	private final long initialSupply;
+	private final UInt256 initialSupply;
 	private final RadixAddress address;
 	private final TokenSupplyType tokenSupplyType;
 
@@ -22,10 +25,11 @@ public class CreateTokenAction implements Action {
 		String name,
 		String iso,
 		String description,
-		long initialSupply,
+		UInt256 initialSupply,
 		TokenSupplyType tokenSupplyType
 	) {
-		if (initialSupply <= 0) {
+		// This will correctly throw an NPE if initialSupply is null
+		if (initialSupply.isZero()) {
 			throw new IllegalArgumentException("Fixed supply must be greater than 0.");
 		}
 
@@ -53,7 +57,7 @@ public class CreateTokenAction implements Action {
 		return description;
 	}
 
-	public long getInitialSupply() {
+	public UInt256 getInitialSupply() {
 		return initialSupply;
 	}
 

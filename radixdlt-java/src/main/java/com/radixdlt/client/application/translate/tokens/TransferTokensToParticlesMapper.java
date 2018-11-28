@@ -1,23 +1,6 @@
 package com.radixdlt.client.application.translate.tokens;
 
-import com.google.gson.JsonArray;
-import com.radixdlt.client.application.identity.Data;
-import com.radixdlt.client.application.translate.Action;
-import com.radixdlt.client.application.translate.ActionToParticlesMapper;
-import com.radixdlt.client.application.translate.tokens.TokenBalanceState.Balance;
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.atommodel.quarks.FungibleQuark.FungibleType;
-import com.radixdlt.client.core.RadixUniverse;
-import com.radixdlt.client.atommodel.tokens.TokenClassReference;
-import com.radixdlt.client.core.atoms.particles.SpunParticle;
-import com.radixdlt.client.atommodel.message.MessageParticle;
-import com.radixdlt.client.atommodel.message.MessageParticle.MessageParticleBuilder;
-import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
-import com.radixdlt.client.core.crypto.ECKeyPair;
-import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
-import com.radixdlt.client.core.crypto.Encryptor;
-
-import io.reactivex.Observable;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
@@ -27,6 +10,28 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import org.radix.utils.UInt256;
+import org.radix.utils.UInt256s;
+
+import com.google.gson.JsonArray;
+import com.radixdlt.client.application.identity.Data;
+import com.radixdlt.client.application.translate.Action;
+import com.radixdlt.client.application.translate.ActionToParticlesMapper;
+import com.radixdlt.client.application.translate.tokens.TokenBalanceState.Balance;
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.client.atommodel.message.MessageParticle;
+import com.radixdlt.client.atommodel.message.MessageParticle.MessageParticleBuilder;
+import com.radixdlt.client.atommodel.quarks.FungibleQuark.FungibleType;
+import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
+import com.radixdlt.client.atommodel.tokens.TokenClassReference;
+import com.radixdlt.client.core.RadixUniverse;
+import com.radixdlt.client.core.atoms.particles.SpunParticle;
+import com.radixdlt.client.core.crypto.ECKeyPair;
+import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
+import com.radixdlt.client.core.crypto.Encryptor;
+
+import io.reactivex.Observable;
 
 /**
  * Maps a send message action to the particles necessary to be included in an atom.
@@ -42,21 +47,21 @@ public class TransferTokensToParticlesMapper implements ActionToParticlesMapper 
 
 	private Observable<SpunParticle> mapToParticles(TransferTokensAction transfer, List<OwnedTokensParticle> currentParticles) {
 		return Observable.create(emitter -> {
-			long consumerTotal = 0;
-			final long subUnitAmount = transfer.getAmount().multiply(TokenClassReference.getSubUnits()).longValueExact();
+			BigInteger consumerTotal = BigInteger.ZERO;
+			final BigInteger subUnitAmount = transfer.getAmount().multiply(TokenClassReference.getSubUnits()).toBigIntegerExact();
 			Iterator<OwnedTokensParticle> iterator = currentParticles.iterator();
-			Map<ECKeyPair, Long> consumerQuantities = new HashMap<>();
+			Map<ECKeyPair, UInt256> consumerQuantities = new HashMap<>();
 
 			// HACK for now
 			// TODO: remove this, create a ConsumersCreator
 			// TODO: randomize this to decrease probability of collision
-			while (consumerTotal < subUnitAmount && iterator.hasNext()) {
-				final long left = subUnitAmount - consumerTotal;
+			while (consumerTotal.compareTo(subUnitAmount) < 0 && iterator.hasNext()) {
+				final BigInteger left = subUnitAmount.subtract(consumerTotal);
 
 				OwnedTokensParticle particle = iterator.next();
-				consumerTotal += particle.getAmount();
+				consumerTotal = consumerTotal.add(UInt256s.toBigInteger(particle.getAmount()));
 
-				final long amount = Math.min(left, particle.getAmount());
+				final UInt256 amount = UInt256s.min(UInt256s.fromBigInteger(left), particle.getAmount());
 				particle.addConsumerQuantities(amount, transfer.getTo().toECKeyPair(), consumerQuantities);
 
 				SpunParticle<OwnedTokensParticle> down = SpunParticle.down(particle);
@@ -114,6 +119,7 @@ public class TransferTokensToParticlesMapper implements ActionToParticlesMapper 
 		});
 	}
 
+	@Override
 	public Observable<SpunParticle> map(Action action) throws InsufficientFundsException {
 		if (!(action instanceof TransferTokensAction)) {
 			return Observable.empty();

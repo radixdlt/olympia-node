@@ -1,11 +1,13 @@
 package com.radixdlt.client.atommodel.quarks;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.client.core.atoms.particles.Quark;
+import java.util.Objects;
+
 import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.SerializerId2;
+import org.radix.utils.UInt256;
 
-import java.util.Objects;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.client.core.atoms.particles.Quark;
 
 /**
  * A quark that makes a particle fungible: can be cut up into pieces and put back together.
@@ -48,20 +50,20 @@ public final class FungibleQuark extends Quark {
 
 	@JsonProperty("amount")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private long amount;
+	private UInt256 amount;
 
 	private FungibleType type;
 
 	private FungibleQuark() {
 	}
 
-	public FungibleQuark(long amount, long planck, FungibleType type) {
+	public FungibleQuark(UInt256 amount, long planck, FungibleType type) {
 		this(amount, planck, System.nanoTime(), type);
 	}
 
-	public FungibleQuark(long amount, long planck, long nonce, FungibleType type) {
-		if (amount < 1) {
-			throw new IllegalArgumentException("Amount is zero or negative");
+	public FungibleQuark(UInt256 amount, long planck, long nonce, FungibleType type) {
+		if (amount.isZero()) {
+			throw new IllegalArgumentException("Amount is zero");
 		}
 
 		this.nonce = nonce;
@@ -70,7 +72,7 @@ public final class FungibleQuark extends Quark {
 		this.amount = amount;
 	}
 
-	public long getAmount() {
+	public UInt256 getAmount() {
 		return this.amount;
 	}
 

@@ -1,14 +1,15 @@
 package com.radixdlt.client.examples;
 
+import java.math.BigDecimal;
+
 import com.radixdlt.client.application.RadixApplicationAPI;
-import com.radixdlt.client.application.translate.tokenclasses.CreateTokenAction.TokenSupplyType;
 import com.radixdlt.client.application.identity.RadixIdentities;
+import com.radixdlt.client.application.identity.RadixIdentity;
+import com.radixdlt.client.application.translate.tokenclasses.CreateTokenAction.TokenSupplyType;
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.atommodel.tokens.TokenClassReference;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.application.identity.RadixIdentity;
-import java.math.BigDecimal;
 
 public class RadixWalletExample {
 
@@ -55,7 +56,7 @@ public class RadixWalletExample {
 			"Joshy Token",
 			"JOSH",
 			"The Best Coin Ever",
-			10000,
+			TokenClassReference.fromUnits(10000),
 			TokenSupplyType.MUTABLE
 		).toObservable().subscribe(System.out::println);
 

@@ -1,7 +1,6 @@
 package com.radixdlt.client.core.atoms;
 
-import com.radixdlt.client.atommodel.tokens.TokenClassReference;
-import com.radixdlt.client.core.atoms.particles.SpunParticle;
+import java.math.BigInteger;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -16,13 +15,16 @@ import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.SerializerId2;
 import org.radix.serialization2.client.SerializableObject;
 import org.radix.serialization2.client.Serialize;
+import org.radix.utils.UInt256s;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.client.core.atoms.particles.Particle;
-import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.atommodel.message.MessageParticle;
 import com.radixdlt.client.atommodel.timestamp.TimestampParticle;
 import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
+import com.radixdlt.client.atommodel.tokens.TokenClassReference;
+import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.client.core.atoms.particles.Spin;
+import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.crypto.ECSignature;
 
@@ -158,17 +160,20 @@ public final class Atom extends SerializableObject {
 			.collect(Collectors.toList());
 	}
 
-	public Map<TokenClassReference, Map<ECPublicKey, Long>> tokenSummary() {
+	public Map<TokenClassReference, Map<ECPublicKey, BigInteger>> tokenSummary() {
 		return consumables()
 			.collect(Collectors.groupingBy(
 				s -> s.getParticle().getTokenClassReference(),
 				Collectors.groupingBy(
 					s -> s.getParticle().getOwner(),
-					Collectors.summingLong((SpunParticle<OwnedTokensParticle> value) ->
-						(value.getSpin() == Spin.UP ? 1 : -1) * value.getParticle().getAmount()
-					)
+					Collectors.reducing(BigInteger.ZERO, Atom::ownedTokensToBigInteger, BigInteger::add)
 				)
 			));
+	}
+
+	private static BigInteger ownedTokensToBigInteger(SpunParticle<OwnedTokensParticle> value) {
+		BigInteger bi = UInt256s.toBigInteger(value.getParticle().getAmount());
+		return (value.getSpin() == Spin.UP) ? bi : bi.negate();
 	}
 
 	@Override

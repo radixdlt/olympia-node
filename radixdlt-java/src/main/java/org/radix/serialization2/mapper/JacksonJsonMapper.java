@@ -1,6 +1,5 @@
 package org.radix.serialization2.mapper;
 
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import java.io.IOException;
 
 import org.radix.common.ID.EUID;
@@ -8,6 +7,7 @@ import org.radix.crypto.Hash;
 import org.radix.serialization2.SerializerDummy;
 import org.radix.serialization2.SerializerIds;
 import org.radix.time.Timestamps;
+import org.radix.utils.UInt256;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -27,6 +27,7 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.FilterProvider;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.fasterxml.jackson.datatype.jsonorg.JsonOrgModule;
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
 
 /**
  * A Jackson {@link ObjectMapper} that will serialize and deserialize
@@ -66,6 +67,12 @@ public class JacksonJsonMapper extends ObjectMapper {
 		jsonModule.addSerializer(RadixAddress.class, new JacksonJsonObjectStringSerializer<>(
 			JacksonCodecConstants.ADDR_STR_VALUE, RadixAddress::toString)
 		);
+		jsonModule.addSerializer(UInt256.class, new JacksonJsonObjectStringSerializer<>(
+			UInt256.class,
+			JacksonCodecConstants.U20_STR_VALUE,
+			UInt256::toString
+		));
+
 		jsonModule.addDeserializer(EUID.class, new JacksonJsonEUIDDeserializer());
 		jsonModule.addDeserializer(Hash.class, new JacksonJsonHashDeserializer());
 		jsonModule.addDeserializer(Timestamps.class, new JacksonTimestampsDeserializer());
@@ -75,19 +82,11 @@ public class JacksonJsonMapper extends ObjectMapper {
 		jsonModule.addDeserializer(RadixAddress.class, new JacksonJsonObjectStringDeserializer<>(
 			RadixAddress.class, JacksonCodecConstants.ADDR_STR_VALUE, RadixAddress::from)
 		);
-
-		jsonModule.addSerializer(EUID.class, new JacksonJsonEUIDSerializer());
-		jsonModule.addSerializer(Hash.class, new JacksonJsonHashSerializer());
-		jsonModule.addSerializer(Timestamps.class, new JacksonTimestampsSerializer());
-		jsonModule.addSerializer(byte[].class, new JacksonJsonBytesSerializer());
-		jsonModule.addSerializer(String.class, new JacksonJsonStringSerializer());
-		jsonModule.addSerializer(SerializerDummy.class, new JacksonSerializerDummySerializer(idLookup));
-		jsonModule.addDeserializer(EUID.class, new JacksonJsonEUIDDeserializer());
-		jsonModule.addDeserializer(Hash.class, new JacksonJsonHashDeserializer());
-		jsonModule.addDeserializer(Timestamps.class, new JacksonTimestampsDeserializer());
-		jsonModule.addDeserializer(byte[].class, new JacksonJsonBytesDeserializer());
-		jsonModule.addDeserializer(String.class, new JacksonJsonStringDeserializer());
-		jsonModule.addDeserializer(SerializerDummy.class, new JacksonSerializerDummyDeserializer());
+		jsonModule.addDeserializer(UInt256.class, new JacksonJsonObjectStringDeserializer<>(
+			UInt256.class,
+			JacksonCodecConstants.U20_STR_VALUE,
+			UInt256::from
+		));
 
 		// Special modifier for Enum values to remove :str: leadin from front
 		jsonModule.setDeserializerModifier(new BeanDeserializerModifier() {

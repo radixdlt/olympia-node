@@ -1,22 +1,24 @@
 package com.radixdlt.client.atommodel.tokens;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.core.atoms.RadixHash;
-import com.radixdlt.client.atommodel.quarks.AccountableQuark;
-import com.radixdlt.client.atommodel.quarks.FungibleQuark;
-import com.radixdlt.client.atommodel.quarks.OwnableQuark;
-import com.radixdlt.client.core.atoms.particles.Particle;
-import com.radixdlt.client.core.crypto.ECKeyPair;
-import com.radixdlt.client.core.crypto.ECPublicKey;
-import org.radix.serialization2.DsonOutput;
-import org.radix.serialization2.SerializerId2;
-import org.radix.serialization2.client.Serialize;
-
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import org.radix.serialization2.DsonOutput;
+import org.radix.serialization2.SerializerId2;
+import org.radix.serialization2.client.Serialize;
+import org.radix.utils.UInt256;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.client.atommodel.quarks.AccountableQuark;
+import com.radixdlt.client.atommodel.quarks.FungibleQuark;
+import com.radixdlt.client.atommodel.quarks.OwnableQuark;
+import com.radixdlt.client.core.atoms.RadixHash;
+import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.client.core.crypto.ECKeyPair;
+import com.radixdlt.client.core.crypto.ECPublicKey;
 
 /**
  *  A particle which represents an amount of fungible tokens owned by some key owner and stored in an account.
@@ -30,7 +32,7 @@ public class OwnedTokensParticle extends Particle {
 	protected OwnedTokensParticle() {
 	}
 
-	public OwnedTokensParticle(long amount, FungibleQuark.FungibleType type, RadixAddress address, long nonce,
+	public OwnedTokensParticle(UInt256 amount, FungibleQuark.FungibleType type, RadixAddress address, long nonce,
 	                        TokenClassReference tokenRef, long planck) {
 		super(new OwnableQuark(address.getPublicKey()), new AccountableQuark(address),
 				new FungibleQuark(amount, planck, nonce, type));
@@ -47,20 +49,20 @@ public class OwnedTokensParticle extends Particle {
 		return getQuarkOrError(AccountableQuark.class).getAddresses().stream().map(RadixAddress::getPublicKey).collect(Collectors.toSet());
 	}
 
-	public void addConsumerQuantities(long amount, ECKeyPair newOwner, Map<ECKeyPair, Long> consumerQuantities) {
-		if (amount > getAmount()) {
+	public void addConsumerQuantities(UInt256 amount, ECKeyPair newOwner, Map<ECKeyPair, UInt256> consumerQuantities) {
+		if (amount.compareTo(getAmount()) > 0) {
 			throw new IllegalArgumentException(
 				"Unable to create consumable with amount " + amount + " (available: " + getAmount() + ")"
 			);
 		}
 
-		if (amount == getAmount()) {
-			consumerQuantities.merge(newOwner, amount, Long::sum);
+		if (amount.equals(getAmount())) {
+			consumerQuantities.merge(newOwner, amount, UInt256::add);
 			return;
 		}
 
-		consumerQuantities.merge(newOwner, amount, Long::sum);
-		consumerQuantities.merge(getAddress().toECKeyPair(), getAmount() - amount, Long::sum);
+		consumerQuantities.merge(newOwner, amount, UInt256::add);
+		consumerQuantities.merge(getAddress().toECKeyPair(), getAmount().subtract(amount), UInt256::add);
 	}
 
 	public FungibleQuark.FungibleType getType() {
@@ -79,7 +81,7 @@ public class OwnedTokensParticle extends Particle {
 		return tokenClassReference;
 	}
 
-	public long getAmount() {
+	public UInt256 getAmount() {
 		return getQuarkOrError(FungibleQuark.class).getAmount();
 	}
 

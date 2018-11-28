@@ -1,12 +1,14 @@
 package org.radix.serialization2.mapper;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import java.io.IOException;
 import java.util.function.Function;
 
-public class JacksonCborObjectBytesSerializer<T> extends StdSerializer<T> {
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+
+class JacksonCborObjectBytesSerializer<T> extends StdSerializer<T> {
+	private static final long serialVersionUID = 290L;
 
 	private final byte prefix;
 	private final Function<T, byte[]> toByteArrayMapper;

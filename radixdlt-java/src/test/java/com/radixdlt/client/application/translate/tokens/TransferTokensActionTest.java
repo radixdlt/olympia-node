@@ -1,13 +1,15 @@
 package com.radixdlt.client.application.translate.tokens;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.mock;
+import java.math.BigDecimal;
+
+import org.junit.Test;
 
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.atommodel.tokens.TokenClassReference;
-import java.math.BigDecimal;
-import org.junit.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
 
 public class TransferTokensActionTest {
 
@@ -17,7 +19,9 @@ public class TransferTokensActionTest {
 		RadixAddress to = mock(RadixAddress.class);
 		TokenClassReference tokenClassReference = mock(TokenClassReference.class);
 
-		assertThatThrownBy(() -> TransferTokensAction.create(from, to, new BigDecimal("0.000001"), tokenClassReference))
+		BigDecimal tooSmall = BigDecimal.valueOf(1L, TokenClassReference.SUB_UNITS_POW_10 + 1);
+
+		assertThatThrownBy(() -> TransferTokensAction.create(from, to, tooSmall, tokenClassReference))
 			.isInstanceOf(IllegalArgumentException.class);
 	}
 

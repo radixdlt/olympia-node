@@ -1,18 +1,21 @@
 package org.radix.serialization2.mapper;
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.function.Function;
+
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.function.Function;
 
 /**
  * Deserializer for translation from CBOR binary data
  * to DSON data for an object which can be represented by a string.
  */
-public class JacksonCborObjectBytesDeserializer<T> extends StdDeserializer<T> {
+class JacksonCborObjectBytesDeserializer<T> extends StdDeserializer<T> {
+	private static final long serialVersionUID = 290L;
+
 	private final byte prefix;
 	private final Function<byte[], T> bytesMapper;
 

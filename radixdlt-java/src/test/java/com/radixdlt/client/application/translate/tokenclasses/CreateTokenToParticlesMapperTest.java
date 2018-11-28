@@ -1,18 +1,21 @@
 package com.radixdlt.client.application.translate.tokenclasses;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import com.radixdlt.client.application.translate.tokenclasses.CreateTokenAction.TokenSupplyType;
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.core.atoms.particles.SpunParticle;
-import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
-import com.radixdlt.client.atommodel.tokens.TokenParticle;
-import com.radixdlt.client.core.crypto.ECPublicKey;
-import io.reactivex.observers.TestObserver;
 import java.util.List;
 
 import org.junit.Test;
+import org.radix.utils.UInt256;
+
+import com.radixdlt.client.application.translate.tokenclasses.CreateTokenAction.TokenSupplyType;
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
+import com.radixdlt.client.atommodel.tokens.TokenParticle;
+import com.radixdlt.client.core.atoms.particles.SpunParticle;
+import com.radixdlt.client.core.crypto.ECPublicKey;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import io.reactivex.observers.TestObserver;
 
 public class CreateTokenToParticlesMapperTest {
 	@Test
@@ -23,7 +26,7 @@ public class CreateTokenToParticlesMapperTest {
 		when(address.getPublicKey()).thenReturn(key);
 		when(tokenCreation.getAddress()).thenReturn(address);
 		when(tokenCreation.getIso()).thenReturn("ISO");
-		when(tokenCreation.getInitialSupply()).thenReturn(1L);
+		when(tokenCreation.getInitialSupply()).thenReturn(UInt256.ONE);
 		when(tokenCreation.getTokenSupplyType()).thenReturn(TokenSupplyType.MUTABLE);
 
 		CreateTokenToParticlesMapper createTokenToParticlesMapper = new CreateTokenToParticlesMapper();

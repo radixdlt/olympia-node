@@ -1,18 +1,21 @@
 package com.radixdlt.client.application.translate;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import java.util.function.Function;
+
+import org.radix.utils.Int128;
+import org.radix.utils.UInt256;
+
+import com.radixdlt.client.atommodel.tokens.FeeParticle;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.atoms.RadixHash;
-import com.radixdlt.client.atommodel.tokens.FeeParticle;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.pow.ProofOfWork;
 import com.radixdlt.client.core.pow.ProofOfWorkBuilder;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import java.util.function.Function;
 
 /**
  * Maps a complete list of particles ready to be submitted to a POW fee particle.
@@ -28,6 +31,7 @@ public class PowFeeMapper implements FeeMapper {
 		this.powBuilder = powBuilder;
 	}
 
+	@Override
 	public List<SpunParticle> map(List<SpunParticle> particles, RadixUniverse universe, ECPublicKey key) {
 		Objects.requireNonNull(key);
 		Objects.requireNonNull(universe);
@@ -37,7 +41,7 @@ public class PowFeeMapper implements FeeMapper {
 		ProofOfWork pow = powBuilder.build(universe.getMagic(), seed, LEADING);
 
 		Particle fee = new FeeParticle(
-				pow.getNonce(),
+				fromNonce(pow.getNonce()),
 				universe.getAddressFrom(key),
 				System.nanoTime(),
 				universe.getPOWToken(),
@@ -45,5 +49,9 @@ public class PowFeeMapper implements FeeMapper {
 		);
 
 		return Collections.singletonList(SpunParticle.up(fee));
+	}
+
+	private static UInt256 fromNonce(long nonce) {
+		return UInt256.from(Int128.from(0L, nonce));
 	}
 }

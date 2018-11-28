@@ -64,7 +64,9 @@ public final class Int128 extends Number implements Comparable<Int128> {
 	};
 
 	// The actual value.
+	// @PackageLocalForTest
 	private final long high;
+	// @PackageLocalForTest
 	private final long low;
 
 	/**
@@ -114,8 +116,10 @@ public final class Int128 extends Number implements Comparable<Int128> {
 			if (low >= 0L && low < NUMBERS.length) {
 				return NUMBERS[(int) low];
 			}
-		} else if (high == -1L && low == -1L) {
-			return MINUS_ONE;
+		} else if (high == -1L) {
+			if (low == -1L) {
+				return MINUS_ONE;
+			}
 		}
 		return new Int128(high, low);
 	}
@@ -239,7 +243,7 @@ public final class Int128 extends Number implements Comparable<Int128> {
 	 * The array must be at least {@code offset + BYTES} long.
 	 *
 	 * @param bytes The array to place the bytes in.
-	 * @param offset The offset in the array to write the data.
+	 * @param offset The offset within the array to place the bytes.
 	 * @return The passed-in value of {@code bytes}.
 	 */
 	public byte[] toByteArray(byte[] bytes, int offset) {
@@ -297,11 +301,34 @@ public final class Int128 extends Number implements Comparable<Int128> {
 			if (multiplicand.isOdd()) {
 				result = result.add(multiplier);
 			}
-
 			multiplier = multiplier.shiftLeft();
 			multiplicand = multiplicand.logicalShiftRight();
 		}
 		return result;
+	}
+
+	/**
+	 * Increment a number.  Equivalent to {@code this.add(Int128.ONE)}, but
+	 * faster.
+	 *
+	 * @return This number incremented by one.
+	 */
+	public Int128 increment() {
+		long l = this.low + 1;
+		long h = (l == 0L) ? this.high + 1 : this.high;
+		return Int128.from(h, l);
+	}
+
+	/**
+	 * Decrement a number.  Equivalent to {@code this.subtract(Int128.ONE)}, but
+	 * faster.
+	 *
+	 * @return This number decremented by one.
+	 */
+	public Int128 decrement() {
+		long l = this.low - 1;
+		long h = (l == -1L) ? this.high - 1 : this.high;
+		return Int128.from(h, l);
 	}
 
 	/**
@@ -429,6 +456,15 @@ public final class Int128 extends Number implements Comparable<Int128> {
 		return Int128.from(h, l);
 	}
 
+	/**
+	 * Return the value of {@code ~this}.
+	 *
+	 * @return The logical inverse of {@code this}.
+	 */
+	public Int128 invert() {
+		return Int128.from(~this.high, ~this.low);
+	}
+
 	@Override
 	public int compareTo(Int128 n) {
 		int cmp = Long.compare(this.high, n.high);
@@ -458,7 +494,8 @@ public final class Int128 extends Number implements Comparable<Int128> {
 
 	/**
 	 * Return the most significant word.
-	 * @return The most significant word
+	 *
+	 * @return the most significant word.
 	 */
 	public long getHigh() {
 		return high;
@@ -466,7 +503,8 @@ public final class Int128 extends Number implements Comparable<Int128> {
 
 	/**
 	 * Return the least significant word.
-	 * @return The least significant word
+	 *
+	 * @return the least significant word.
 	 */
 	public long getLow() {
 		return low;
@@ -512,7 +550,7 @@ public final class Int128 extends Number implements Comparable<Int128> {
 		// Note that it is not possible for this exponent to overflow a double
 		// (128 < 1023).
 		int shift = bitLength(h);
-		long exponent = Long.SIZE + shift - 1L;
+		long exponent = Long.SIZE + shift - 1;
 
 		// Merge all the bits into l, discarding lower bits
 		l >>>= shift;
@@ -595,6 +633,15 @@ public final class Int128 extends Number implements Comparable<Int128> {
 		return (this.high == 0)
 				? Long.SIZE + Long.numberOfLeadingZeros(this.low)
 				: Long.numberOfLeadingZeros(this.high);
+	}
+
+	/**
+	 * Return {@code true} if the {@link Int128} is negative.
+	 *
+	 * @return {@code true} if the {@link Int128} is negative.
+	 */
+	public boolean isNegative() {
+		return this.high < 0L;
 	}
 
 	/**

@@ -1,7 +1,9 @@
 package com.radixdlt.client.application.translate.tokens;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import java.math.BigInteger;
+import java.util.Collections;
+
+import org.junit.Test;
 
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
@@ -9,9 +11,11 @@ import com.radixdlt.client.atommodel.tokens.TokenClassReference;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.crypto.ECPublicKey;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import io.reactivex.observers.TestObserver;
-import java.util.Collections;
-import org.junit.Test;
 
 public class AtomToTokenTransferActionsMapperTest {
 	@Test
@@ -23,7 +27,7 @@ public class AtomToTokenTransferActionsMapperTest {
 		when(universe.getAddressFrom(myKey)).thenReturn(myAddress);
 		TokenClassReference tokenClassReference = mock(TokenClassReference.class);
 		when(atom.tokenSummary()).thenReturn(Collections.singletonMap(tokenClassReference,
-			Collections.singletonMap(myKey, 0L)
+			Collections.singletonMap(myKey, BigInteger.ZERO)
 		));
 
 		AtomToTokenTransfersMapper tokenTransferTranslator = new AtomToTokenTransfersMapper(universe);

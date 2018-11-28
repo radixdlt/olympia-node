@@ -1,13 +1,13 @@
 package org.radix.serialization2.mapper;
 
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.core.util.Base58;
 import java.util.function.Function;
+
 import org.radix.common.ID.EUID;
 import org.radix.crypto.Hash;
 import org.radix.serialization2.SerializerDummy;
 import org.radix.serialization2.SerializerIds;
 import org.radix.time.Timestamps;
+import org.radix.utils.UInt256;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -21,6 +21,8 @@ import com.fasterxml.jackson.databind.ser.FilterProvider;
 import com.fasterxml.jackson.dataformat.cbor.CBORFactory;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.fasterxml.jackson.datatype.jsonorg.JsonOrgModule;
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.client.core.util.Base58;
 
 /**
  * A Jackson {@link ObjectMapper} that will serialize and deserialize
@@ -55,16 +57,24 @@ public class JacksonCborMapper extends ObjectMapper {
 		cborModule.addSerializer(SerializerDummy.class, new JacksonSerializerDummySerializer(idLookup));
 		cborModule.addSerializer(EUID.class, new JacksonCborEUIDSerializer());
 		cborModule.addSerializer(Hash.class, new JacksonCborObjectBytesSerializer<>(
+			Hash.class,
 			JacksonCodecConstants.HASH_VALUE,
 			Hash::toByteArray
 		));
 		cborModule.addSerializer(byte[].class, new JacksonCborObjectBytesSerializer<>(
+			byte[].class,
 			JacksonCodecConstants.BYTES_VALUE,
 			Function.identity()
 		));
 		cborModule.addSerializer(RadixAddress.class, new JacksonCborObjectBytesSerializer<>(
+			RadixAddress.class,
 			JacksonCodecConstants.ADDR_VALUE,
 			addr -> Base58.fromBase58(addr.toString())
+		));
+		cborModule.addSerializer(UInt256.class, new JacksonCborObjectBytesSerializer<>(
+			UInt256.class,
+			JacksonCodecConstants.U20_VALUE,
+			UInt256::toByteArray
 		));
 
 		cborModule.addDeserializer(Timestamps.class, new JacksonTimestampsDeserializer());
@@ -88,6 +98,11 @@ public class JacksonCborMapper extends ObjectMapper {
 			RadixAddress.class,
 			JacksonCodecConstants.ADDR_VALUE,
 			RadixAddress::from
+		));
+		cborModule.addDeserializer(UInt256.class, new JacksonCborObjectBytesDeserializer<>(
+			UInt256.class,
+			JacksonCodecConstants.U20_VALUE,
+			UInt256::from
 		));
 
 		JacksonCborMapper mapper = new JacksonCborMapper();

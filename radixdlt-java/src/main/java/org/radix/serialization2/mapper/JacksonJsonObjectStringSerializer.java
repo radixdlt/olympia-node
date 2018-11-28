@@ -1,13 +1,21 @@
 package org.radix.serialization2.mapper;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import java.io.IOException;
+import java.util.Objects;
 import java.util.function.Function;
 
-public class JacksonJsonObjectStringSerializer<T> extends StdSerializer<T> {
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+
+/**
+ * Serializer for conversion from an object representable by a string
+ * to the appropriate JSON encoding.
+ * @param <T> The type to serialize
+ */
+class JacksonJsonObjectStringSerializer<T> extends StdSerializer<T> {
+	private static final long serialVersionUID = 290L;
+
 	private final String prefix;
 	private final Function<T, String> toStringMapper;
 
@@ -17,13 +25,12 @@ public class JacksonJsonObjectStringSerializer<T> extends StdSerializer<T> {
 
 	JacksonJsonObjectStringSerializer(Class<T> t, String prefix, Function<T, String> toStringMapper) {
 		super(t);
-		this.prefix = prefix;
-		this.toStringMapper = toStringMapper;
+		this.prefix = Objects.requireNonNull(prefix);
+		this.toStringMapper = Objects.requireNonNull(toStringMapper);
 	}
 
 	@Override
-	public void serialize(T value, JsonGenerator jgen, SerializerProvider provider)
-		throws IOException, JsonProcessingException {
+	public void serialize(T value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
 		jgen.writeString(prefix + toStringMapper.apply(value));
 	}
 }

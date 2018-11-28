@@ -1,20 +1,23 @@
 package com.radixdlt.client.application.translate.tokenclasses;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.radix.utils.UInt256s;
+
 import com.radixdlt.client.application.translate.ParticleReducer;
 import com.radixdlt.client.application.translate.tokenclasses.TokenState.TokenSupplyType;
 import com.radixdlt.client.atommodel.quarks.FungibleQuark.FungibleType;
+import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
 import com.radixdlt.client.atommodel.tokens.TokenClassReference;
+import com.radixdlt.client.atommodel.tokens.TokenParticle;
 import com.radixdlt.client.atommodel.tokens.TokenPermission;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
-import com.radixdlt.client.atommodel.tokens.TokenParticle;
-import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
-
-import java.math.BigDecimal;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Reduces particles at an address into concrete Tokens and their states
@@ -63,13 +66,14 @@ public class TokenReducer implements ParticleReducer<Map<TokenClassReference, To
 			);
 		} else {
 			OwnedTokensParticle mintedOrBurned = (OwnedTokensParticle) p;
+			BigInteger mintedOrBurnedAmount = UInt256s.toBigInteger(mintedOrBurned.getAmount());
 
 			TokenState tokenState = new TokenState(
 				null,
 				mintedOrBurned.getTokenClassReference().getSymbol(),
 				null,
 				TokenClassReference.subUnitsToDecimal(
-					(mintedOrBurned.getType() == FungibleType.BURNED ? -1 : 1) * mintedOrBurned.getAmount()
+					(mintedOrBurned.getType() == FungibleType.BURNED) ? mintedOrBurnedAmount.negate() : mintedOrBurnedAmount
 				),
 				null
 			);

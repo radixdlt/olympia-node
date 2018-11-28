@@ -1,5 +1,19 @@
 package com.radixdlt.client.application.translate.tokenclasses;
 
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import org.radix.utils.UInt256;
+import org.radix.utils.UInt256s;
+
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.ActionToParticlesMapper;
 import com.radixdlt.client.application.translate.tokens.InsufficientFundsException;
@@ -12,16 +26,8 @@ import com.radixdlt.client.atommodel.tokens.TokenClassReference;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.crypto.ECKeyPair;
+
 import io.reactivex.Observable;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 public class BurnTokensActionMapper implements ActionToParticlesMapper {
 	private final RadixUniverse universe;
@@ -32,6 +38,7 @@ public class BurnTokensActionMapper implements ActionToParticlesMapper {
 		this.tokenBalanceState = tokenBalanceState;
 	}
 
+	@Override
 	public Observable<SpunParticle> map(Action action) {
 		if (!(action instanceof BurnTokensAction)) {
 			return Observable.empty();
@@ -63,22 +70,23 @@ public class BurnTokensActionMapper implements ActionToParticlesMapper {
 
 		List<SpunParticle> particles = new ArrayList<>();
 
-		long consumerTotal = 0;
-		final long subUnitAmount = burnTokensAction.getAmount().multiply(TokenClassReference.getSubUnits()).longValueExact();
+		BigInteger consumerTotal = BigInteger.ZERO;
+		final BigInteger subUnitAmount = burnTokensAction.getAmount().multiply(TokenClassReference.getSubUnits()).toBigIntegerExact();
 		Iterator<OwnedTokensParticle> iterator = unconsumedOwnedTokensParticles.iterator();
-		Map<ECKeyPair, Long> newUpQuantities = new HashMap<>();
+		Map<ECKeyPair, UInt256> newUpQuantities = new HashMap<>();
 
 		// HACK for now
 		// TODO: remove this, create a ConsumersCreator
 		// TODO: randomize this to decrease probability of collision
-		while (consumerTotal < subUnitAmount && iterator.hasNext()) {
-			final long left = subUnitAmount - consumerTotal;
+		while (consumerTotal.compareTo(subUnitAmount) < 0 && iterator.hasNext()) {
+			final BigInteger left = subUnitAmount.subtract(consumerTotal);
 
 			OwnedTokensParticle particle = iterator.next();
-			consumerTotal += particle.getAmount();
+			BigInteger particleAmount = UInt256s.toBigInteger(particle.getAmount());
+			consumerTotal = consumerTotal.add(particleAmount);
 
-			final long amount = Math.min(left, particle.getAmount());
-			particle.addConsumerQuantities(amount, null, newUpQuantities);
+			final BigInteger amount = left.min(particleAmount);
+			particle.addConsumerQuantities(UInt256s.fromBigInteger(amount), null, newUpQuantities);
 
 			SpunParticle<OwnedTokensParticle> down = SpunParticle.down(particle);
 			particles.add(down);

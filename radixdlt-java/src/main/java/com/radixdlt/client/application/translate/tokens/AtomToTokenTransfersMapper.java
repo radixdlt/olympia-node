@@ -1,9 +1,22 @@
 package com.radixdlt.client.application.translate.tokens;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Optional;
+
+import org.radix.serialization2.DsonOutput;
+import org.radix.serialization2.client.Serialize;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonParser;
-import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.identity.Data;
+import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.AtomToExecutedActionsMapper;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.atommodel.message.MessageParticle;
@@ -15,18 +28,9 @@ import com.radixdlt.client.core.crypto.CryptoException;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
 import com.radixdlt.client.core.crypto.Encryptor;
+
 import io.reactivex.Observable;
 import io.reactivex.Single;
-import java.math.BigDecimal;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Optional;
-import org.radix.serialization2.DsonOutput;
-import org.radix.serialization2.client.Serialize;
 
 /**
  * Maps an atom to some number of token transfer actions.
@@ -39,11 +43,12 @@ public class AtomToTokenTransfersMapper implements AtomToExecutedActionsMapper<T
 		this.universe = universe;
 	}
 
+	@Override
 	public Observable<TokenTransfer> map(Atom atom, RadixIdentity identity) {
 		return Observable.fromIterable(atom.tokenSummary().entrySet())
 			.filter(e -> !e.getKey().equals(universe.getPOWToken()))
 			.flatMapSingle(e -> {
-				List<Entry<ECPublicKey, Long>> summary = new ArrayList<>(e.getValue().entrySet());
+				List<Entry<ECPublicKey, BigInteger>> summary = new ArrayList<>(e.getValue().entrySet());
 				if (summary.isEmpty()) {
 					throw new IllegalStateException(
 						"Invalid atom: " + Serialize.getInstance().toJson(atom, DsonOutput.Output.ALL)
@@ -58,10 +63,10 @@ public class AtomToTokenTransfersMapper implements AtomToExecutedActionsMapper<T
 				final RadixAddress from;
 				final RadixAddress to;
 				if (summary.size() == 1) {
-					from = summary.get(0).getValue() <= 0L ? universe.getAddressFrom(summary.get(0).getKey()) : null;
-					to = summary.get(0).getValue() < 0L ? null : universe.getAddressFrom(summary.get(0).getKey());
+					from = summary.get(0).getValue().signum() <= 0 ? universe.getAddressFrom(summary.get(0).getKey()) : null;
+					to = summary.get(0).getValue().signum() < 0 ? null : universe.getAddressFrom(summary.get(0).getKey());
 				} else {
-					if (summary.get(0).getValue() > 0) {
+					if (summary.get(0).getValue().signum() > 0) {
 						from = universe.getAddressFrom(summary.get(1).getKey());
 						to = universe.getAddressFrom(summary.get(0).getKey());
 					} else {
@@ -74,7 +79,7 @@ public class AtomToTokenTransfersMapper implements AtomToExecutedActionsMapper<T
 						.filter(p -> !"encryptor".equals(p.getMetaData("application")))
 						.findFirst();
 
-				final BigDecimal amount = TokenClassReference.subUnitsToDecimal(Math.abs(summary.get(0).getValue()));
+				final BigDecimal amount = TokenClassReference.subUnitsToDecimal(summary.get(0).getValue().abs());
 
 				if (bytesParticle.isPresent()) {
 					Map<String, Object> metaData = new HashMap<>();

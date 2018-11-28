@@ -1,24 +1,5 @@
 package com.radixdlt.client.application;
 
-import com.radixdlt.client.application.translate.Action;
-import com.radixdlt.client.application.translate.ActionToParticlesMapper;
-import com.radixdlt.client.application.translate.ActionExecutionException;
-import com.radixdlt.client.application.translate.tokenclasses.BurnTokensAction;
-import com.radixdlt.client.application.translate.tokenclasses.CreateTokenAction.TokenSupplyType;
-import com.radixdlt.client.application.translate.tokenclasses.MintTokensAction;
-import com.radixdlt.client.application.translate.data.SendMessageAction;
-import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
-import com.radixdlt.client.application.translate.data.DecryptedMessage;
-import com.radixdlt.client.application.translate.tokens.TokenTransfer;
-import com.radixdlt.client.application.translate.ActionStore;
-import com.radixdlt.client.application.translate.tokenclasses.BurnTokensActionMapper;
-import com.radixdlt.client.application.translate.tokenclasses.MintTokensActionMapper;
-import com.radixdlt.client.application.translate.data.AtomToDecryptedMessageMapper;
-import com.radixdlt.client.application.translate.tokens.AtomToTokenTransfersMapper;
-import com.radixdlt.client.atommodel.timestamp.TimestampParticle;
-import com.radixdlt.client.core.atoms.particles.SpunParticle;
-import com.radixdlt.client.core.crypto.ECKeyPairGenerator;
-import io.reactivex.observables.ConnectableObservable;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,31 +13,50 @@ import java.util.stream.Stream;
 
 import org.radix.serialization2.DsonOutput.Output;
 import org.radix.serialization2.client.Serialize;
+import org.radix.utils.UInt256;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.gson.JsonObject;
-import com.radixdlt.client.application.translate.tokenclasses.CreateTokenAction;
-import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.identity.Data;
 import com.radixdlt.client.application.identity.Data.DataBuilder;
+import com.radixdlt.client.application.identity.RadixIdentity;
+import com.radixdlt.client.application.translate.Action;
+import com.radixdlt.client.application.translate.ActionExecutionException;
+import com.radixdlt.client.application.translate.ActionStore;
+import com.radixdlt.client.application.translate.ActionToParticlesMapper;
 import com.radixdlt.client.application.translate.ApplicationStore;
-import com.radixdlt.client.application.translate.data.SendMessageToParticlesMapper;
 import com.radixdlt.client.application.translate.FeeMapper;
 import com.radixdlt.client.application.translate.PowFeeMapper;
-import com.radixdlt.client.application.translate.tokens.TokenBalanceReducer;
-import com.radixdlt.client.application.translate.tokens.TokenBalanceState;
+import com.radixdlt.client.application.translate.UniquePropertyTranslator;
+import com.radixdlt.client.application.translate.data.AtomToDecryptedMessageMapper;
+import com.radixdlt.client.application.translate.data.DecryptedMessage;
+import com.radixdlt.client.application.translate.data.SendMessageAction;
+import com.radixdlt.client.application.translate.data.SendMessageToParticlesMapper;
+import com.radixdlt.client.application.translate.tokenclasses.BurnTokensAction;
+import com.radixdlt.client.application.translate.tokenclasses.BurnTokensActionMapper;
+import com.radixdlt.client.application.translate.tokenclasses.CreateTokenAction;
+import com.radixdlt.client.application.translate.tokenclasses.CreateTokenAction.TokenSupplyType;
 import com.radixdlt.client.application.translate.tokenclasses.CreateTokenToParticlesMapper;
+import com.radixdlt.client.application.translate.tokenclasses.MintTokensAction;
+import com.radixdlt.client.application.translate.tokenclasses.MintTokensActionMapper;
 import com.radixdlt.client.application.translate.tokenclasses.TokenReducer;
 import com.radixdlt.client.application.translate.tokenclasses.TokenState;
+import com.radixdlt.client.application.translate.tokens.AtomToTokenTransfersMapper;
+import com.radixdlt.client.application.translate.tokens.TokenBalanceReducer;
+import com.radixdlt.client.application.translate.tokens.TokenBalanceState;
+import com.radixdlt.client.application.translate.tokens.TokenTransfer;
+import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.application.translate.tokens.TransferTokensToParticlesMapper;
-import com.radixdlt.client.application.translate.UniquePropertyTranslator;
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.client.atommodel.timestamp.TimestampParticle;
+import com.radixdlt.client.atommodel.tokens.TokenClassReference;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.RadixUniverse.Ledger;
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.atommodel.tokens.TokenClassReference;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
+import com.radixdlt.client.core.atoms.particles.SpunParticle;
+import com.radixdlt.client.core.crypto.ECKeyPairGenerator;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState;
@@ -69,6 +69,7 @@ import io.reactivex.Single;
 import io.reactivex.annotations.Nullable;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.disposables.Disposables;
+import io.reactivex.observables.ConnectableObservable;
 
 /**
  * The Radix Dapp API, a high level api which dapps can utilize. The class hides
@@ -344,7 +345,7 @@ public class RadixApplicationAPI {
 		String name,
 		String iso,
 		String description,
-		long initialSupply,
+		UInt256 initialSupply,
 		TokenSupplyType tokenSupplyType
 	) {
 		CreateTokenAction tokenCreation = new CreateTokenAction(getMyAddress(), name, iso, description, initialSupply, tokenSupplyType);
@@ -358,7 +359,7 @@ public class RadixApplicationAPI {
 	 * @param amount The amount to mint
 	 * @return result of the transaction
 	 */
-	public Result mintTokens(String iso, long amount) {
+	public Result mintTokens(String iso, UInt256 amount) {
 		MintTokensAction mintTokensAction = new MintTokensAction(TokenClassReference.of(getMyAddress(), iso), amount);
 		return execute(mintTokensAction);
 	}
