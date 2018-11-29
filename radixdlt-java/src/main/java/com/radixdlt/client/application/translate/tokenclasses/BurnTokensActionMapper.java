@@ -1,6 +1,5 @@
 package com.radixdlt.client.application.translate.tokenclasses;
 
-import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -70,8 +69,8 @@ public class BurnTokensActionMapper implements ActionToParticlesMapper {
 
 		List<SpunParticle> particles = new ArrayList<>();
 
-		BigInteger consumerTotal = BigInteger.ZERO;
-		final BigInteger subunitAmount = burnTokensAction.getAmount().multiply(TokenClassReference.getSubunits()).toBigIntegerExact();
+		UInt256 consumerTotal = UInt256.ZERO;
+		final UInt256 subunitAmount = TokenClassReference.unitsToSubunits(burnTokensAction.getAmount());
 		Iterator<OwnedTokensParticle> iterator = unconsumedOwnedTokensParticles.iterator();
 		Map<ECKeyPair, UInt256> newUpQuantities = new HashMap<>();
 
@@ -79,14 +78,14 @@ public class BurnTokensActionMapper implements ActionToParticlesMapper {
 		// TODO: remove this, create a ConsumersCreator
 		// TODO: randomize this to decrease probability of collision
 		while (consumerTotal.compareTo(subunitAmount) < 0 && iterator.hasNext()) {
-			final BigInteger left = subunitAmount.subtract(consumerTotal);
+			final UInt256 left = subunitAmount.subtract(consumerTotal);
 
 			OwnedTokensParticle particle = iterator.next();
-			BigInteger particleAmount = UInt256s.toBigInteger(particle.getAmount());
+			UInt256 particleAmount = particle.getAmount();
 			consumerTotal = consumerTotal.add(particleAmount);
 
-			final BigInteger amount = left.min(particleAmount);
-			particle.addConsumerQuantities(UInt256s.fromBigInteger(amount), null, newUpQuantities);
+			final UInt256 amount = UInt256s.min(left, particleAmount);
+			particle.addConsumerQuantities(amount, null, newUpQuantities);
 
 			SpunParticle<OwnedTokensParticle> down = SpunParticle.down(particle);
 			particles.add(down);

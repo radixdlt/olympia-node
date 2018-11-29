@@ -89,7 +89,7 @@ public final class TokenClassReference extends ParticleIndex {
 
 	/**
 	 * Returns the specified number of units as a {@link UInt256} number of
-	 * of units.  This method effectively calculates:
+	 * of subunits.  This method effectively calculates:
 	 * <blockquote>
 	 *    <var>units</var> &times; 10<sup>SUB_UNITS_POW_10</sup>
 	 * </blockquote>
@@ -105,6 +105,25 @@ public final class TokenClassReference extends ParticleIndex {
 		}
 		// 10^18 is approximately 60 bits, so a positive long (63 bits) cannot overflow here
 		return UInt256.from(units).multiply(SUB_UNITS);
+	}
+
+	/**
+	 * Returns the specified number of units as a {@link UInt256} number of
+	 * of subunits.  This method effectively calculates:
+	 * <blockquote>
+	 *    <var>units</var> &times; 10<sup>SUB_UNITS_POW_10</sup>
+	 * </blockquote>
+	 *
+	 * @param units The number of units to convert to subunits
+	 * @return The integer number of subunits represented by {@code units}
+	 * @throws IllegalArgumentException if {@code units} is less than zero
+	 *         or greater than {@link UInt256#MAX_VALUE}
+     * @throws ArithmeticException if {@code units} &times;
+     *         10<sup>SUB_UNITS_POW_10</sup> has a nonzero fractional part.
+	 * @see #SUB_UNITS_POW_10
+	 */
+	public static UInt256 unitsToSubunits(BigDecimal units) {
+		return UInt256s.fromBigDecimal(units.multiply(SUB_UNITS_BIG_DECIMAL));
 	}
 
 	@JsonProperty("symbol")

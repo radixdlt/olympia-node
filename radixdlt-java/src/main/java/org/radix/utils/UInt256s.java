@@ -44,6 +44,7 @@ public final class UInt256s {
 	 *
 	 * @param value The value to convert
 	 * @return The value as a {@link UInt256}
+	 * @throws IllegalArgumentException if {@code value} < 0, or {@code value} > {@link UInt256#MAX_VALUE}.
 	 */
 	public static UInt256 fromBigInteger(BigInteger value) {
 		if (value.signum() < 0) {
@@ -56,10 +57,12 @@ public final class UInt256s {
 	}
 
 	/**
-	 * Returns the specified {@link BigInteger} as a {@link UInt256}.
+	 * Returns the specified {@link BigDecimal} as a {@link UInt256}.
 	 *
 	 * @param value The value to convert
 	 * @return The value as a {@link UInt256}
+     * @throws ArithmeticException if {@code value} has a nonzero fractional part.
+	 * @throws IllegalArgumentException if {@code value} < 0, or {@code value} > {@link UInt256#MAX_VALUE}.
 	 */
 	public static UInt256 fromBigDecimal(BigDecimal value) {
 		return fromBigInteger(value.toBigIntegerExact());
