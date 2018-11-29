@@ -28,7 +28,8 @@ public class CreateTokenAction implements Action {
 		UInt256 initialSupply,
 		TokenSupplyType tokenSupplyType
 	) {
-		// This will correctly throw an NPE if initialSupply is null
+		// Redundant null check added for completeness
+		Objects.requireNonNull(initialSupply);
 		if (initialSupply.isZero()) {
 			throw new IllegalArgumentException("Fixed supply must be greater than 0.");
 		}

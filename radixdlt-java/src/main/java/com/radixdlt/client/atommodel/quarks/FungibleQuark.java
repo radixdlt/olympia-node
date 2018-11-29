@@ -62,6 +62,8 @@ public final class FungibleQuark extends Quark {
 	}
 
 	public FungibleQuark(UInt256 amount, long planck, long nonce, FungibleType type) {
+		// Redundant null check added for completeness
+		Objects.requireNonNull(amount);
 		if (amount.isZero()) {
 			throw new IllegalArgumentException("Amount is zero");
 		}
