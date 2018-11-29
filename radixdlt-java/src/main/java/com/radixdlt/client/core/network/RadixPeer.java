@@ -1,7 +1,6 @@
 package com.radixdlt.client.core.network;
 
 import io.reactivex.Maybe;
-import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.subjects.SingleSubject;
 import java.util.Set;
@@ -68,8 +67,8 @@ public class RadixPeer {
 		return this;
 	}
 
-	public SingleSubject<NodeRunnerData> getData() {
-		return data;
+	public Single<Boolean> servesShards(Set<Long> shards) {
+		return data.map(d -> d.getShards().intersects(shards));
 	}
 
 	public Single<Boolean> servesShards(Set<Long> shards) {
