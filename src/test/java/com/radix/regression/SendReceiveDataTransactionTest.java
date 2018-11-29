@@ -19,9 +19,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * RLAU-162
+ * RLAU-162, RLAU-88, RLAU-89
  */
-public class SendDataTransactionTest {
+public class SendReceiveDataTransactionTest {
 
 	@BeforeClass
 	public static void setup() {
@@ -104,6 +104,29 @@ public class SendDataTransactionTest {
 			.assertValueAt(0, msg -> Arrays.equals(message, msg.getData()))
 			.assertValueAt(0, msg -> msg.getFrom().equals(api.getMyAddress()))
 			.assertValueAt(0, msg -> msg.getTo().equals(api.getMyAddress()))
+			.assertValueAt(0, msg -> msg.getEncryptionState().equals(EncryptionState.NOT_ENCRYPTED));
+	}
+
+	@Test
+	public void given_a_client_listening_to_messages_in_another_account__when_other_account_sends_message_to_itself__then_client_should_receive_message() {
+
+		// Given an account owner listening to own messages
+		TestObserver<DecryptedMessage> clientListener = new TestObserver<>();
+		RadixApplicationAPI clientApi = RadixApplicationAPI.create(RadixIdentities.createNew());
+		RadixApplicationAPI otherAccount = RadixApplicationAPI.create(RadixIdentities.createNew());
+		clientApi.getMessages(otherAccount.getMyAddress()).subscribe(clientListener);
+
+		byte[] message = new byte[] {1, 2, 3, 4};
+
+		// When other account sends message to itself
+		Completable sendMessageStatus = otherAccount.sendMessage(message, false).toCompletable();
+		sendMessageStatus.blockingAwait();
+
+		// Then owner should receive the message
+		clientListener.awaitCount(1)
+			.assertValueAt(0, msg -> Arrays.equals(message, msg.getData()))
+			.assertValueAt(0, msg -> msg.getFrom().equals(otherAccount.getMyAddress()))
+			.assertValueAt(0, msg -> msg.getTo().equals(otherAccount.getMyAddress()))
 			.assertValueAt(0, msg -> msg.getEncryptionState().equals(EncryptionState.NOT_ENCRYPTED));
 	}
 }
