@@ -3,14 +3,13 @@ package com.radixdlt.client.core.network;
 import com.radixdlt.client.core.network.WebSocketClient.RadixClientStatus;
 import io.reactivex.Observable;
 import io.reactivex.observables.ConnectableObservable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Objects;
-import java.util.Set;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * A Radix Network manages connections to Node Runners for a given Universe.
@@ -35,7 +34,6 @@ public final class RadixNetwork {
 		this.peers = peerDiscovery.findPeers()
 			.retryWhen(new IncreasingRetryTimer(WebSocketException.class))
 			.doOnNext(peer -> LOGGER.info("Added to peer list: " + peer.getLocation()))
-				.doOnSubscribe(s -> LOGGER.info("subscribe to peers"))
 			.replay().autoConnect(2);
 
 		this.statusUpdates = peers
@@ -44,18 +42,17 @@ public final class RadixNetwork {
 					status -> new SimpleImmutableEntry<>(peer, status)
 				)
 			)
-				.doOnSubscribe(s -> LOGGER.info("subscribed to status updates"))
 			.publish();
 		this.statusUpdates.connect();
 
-		this.networkState = this.statusUpdates.scan(new RadixNetworkState(Collections.emptyMap()), (previousState, update) -> {
+		this.networkState = peers.flatMap(peer -> peer.getRadixClient().getStatus()
+				.map(status -> new SimpleImmutableEntry<>(peer, status))
+		).scan(new RadixNetworkState(Collections.emptyMap()), (previousState, update) -> {
 			LinkedHashMap<RadixPeer, RadixClientStatus> currentPeers = new LinkedHashMap<>(previousState.peers);
 			currentPeers.put(update.getKey(), update.getValue());
 
 			return new RadixNetworkState(currentPeers);
-		})
-				.skip(1)
-				.doOnSubscribe(s -> LOGGER.info("subscribed to network state"));
+		});
 	}
 
 	public Observable<SimpleImmutableEntry<RadixPeer, RadixClientStatus>> connectAndGetStatusUpdates() {

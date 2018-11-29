@@ -10,6 +10,7 @@ import com.radixdlt.client.core.ledger.selector.ShardFilter;
 import com.radixdlt.client.core.ledger.selector.UniverseFilter;
 import com.radixdlt.client.core.network.RadixJsonRpcClient;
 import com.radixdlt.client.core.network.RadixNetwork;
+import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixPeer;
 import io.reactivex.Observable;
 import io.reactivex.Single;
@@ -106,16 +107,20 @@ public class RadixClientSelector {
 
 	private Single<RadixJsonRpcClient> getRadixClient(RadixPeerSelector selector, List<RadixPeerFilter> filters) {
 		return this.network.getNetworkState()
-				.map(state -> state.peers.entrySet().stream()
-						.filter(entry -> filters.stream()
-								.allMatch(filter -> filter.test(entry.getKey(), entry.getValue())))
-						.map(Map.Entry::getKey)
-						.collect(Collectors.toList()))
+				.map(state -> collectDesirablePeers(filters, state))
 				.filter(viablePeerList -> !viablePeerList.isEmpty())
 				.map(selector::apply)
 				.map(RadixPeer::getRadixClient)
 				.zipWith(Observable.interval(delaySecs, TimeUnit.SECONDS), (c, t) -> c)
 				.firstOrError();
+	}
+
+	private List<RadixPeer> collectDesirablePeers(List<RadixPeerFilter> filters, RadixNetworkState state) {
+		return state.peers.entrySet().stream()
+				.filter(entry -> filters.stream()
+						.allMatch(filter -> filter.test(entry.getKey(), entry.getValue())))
+				.map(Map.Entry::getKey)
+				.collect(Collectors.toList());
 	}
 
 }
