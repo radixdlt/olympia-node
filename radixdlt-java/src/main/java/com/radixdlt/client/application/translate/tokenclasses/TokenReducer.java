@@ -72,7 +72,7 @@ public class TokenReducer implements ParticleReducer<Map<TokenClassReference, To
 				null,
 				mintedOrBurned.getTokenClassReference().getSymbol(),
 				null,
-				TokenClassReference.subUnitsToDecimal(
+				TokenClassReference.subunitsToUnits(
 					(mintedOrBurned.getType() == FungibleType.BURNED) ? mintedOrBurnedAmount.negate() : mintedOrBurnedAmount
 				),
 				null

@@ -48,15 +48,15 @@ public class TransferTokensToParticlesMapper implements ActionToParticlesMapper 
 	private Observable<SpunParticle> mapToParticles(TransferTokensAction transfer, List<OwnedTokensParticle> currentParticles) {
 		return Observable.create(emitter -> {
 			BigInteger consumerTotal = BigInteger.ZERO;
-			final BigInteger subUnitAmount = transfer.getAmount().multiply(TokenClassReference.getSubUnits()).toBigIntegerExact();
+			final BigInteger subunitAmount = transfer.getAmount().multiply(TokenClassReference.getSubunits()).toBigIntegerExact();
 			Iterator<OwnedTokensParticle> iterator = currentParticles.iterator();
 			Map<ECKeyPair, UInt256> consumerQuantities = new HashMap<>();
 
 			// HACK for now
 			// TODO: remove this, create a ConsumersCreator
 			// TODO: randomize this to decrease probability of collision
-			while (consumerTotal.compareTo(subUnitAmount) < 0 && iterator.hasNext()) {
-				final BigInteger left = subUnitAmount.subtract(consumerTotal);
+			while (consumerTotal.compareTo(subunitAmount) < 0 && iterator.hasNext()) {
+				final BigInteger left = subunitAmount.subtract(consumerTotal);
 
 				OwnedTokensParticle particle = iterator.next();
 				consumerTotal = consumerTotal.add(UInt256s.toBigInteger(particle.getAmount()));

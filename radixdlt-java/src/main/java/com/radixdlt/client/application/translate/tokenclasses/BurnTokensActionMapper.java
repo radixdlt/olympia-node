@@ -71,15 +71,15 @@ public class BurnTokensActionMapper implements ActionToParticlesMapper {
 		List<SpunParticle> particles = new ArrayList<>();
 
 		BigInteger consumerTotal = BigInteger.ZERO;
-		final BigInteger subUnitAmount = burnTokensAction.getAmount().multiply(TokenClassReference.getSubUnits()).toBigIntegerExact();
+		final BigInteger subunitAmount = burnTokensAction.getAmount().multiply(TokenClassReference.getSubunits()).toBigIntegerExact();
 		Iterator<OwnedTokensParticle> iterator = unconsumedOwnedTokensParticles.iterator();
 		Map<ECKeyPair, UInt256> newUpQuantities = new HashMap<>();
 
 		// HACK for now
 		// TODO: remove this, create a ConsumersCreator
 		// TODO: randomize this to decrease probability of collision
-		while (consumerTotal.compareTo(subUnitAmount) < 0 && iterator.hasNext()) {
-			final BigInteger left = subUnitAmount.subtract(consumerTotal);
+		while (consumerTotal.compareTo(subunitAmount) < 0 && iterator.hasNext()) {
+			final BigInteger left = subunitAmount.subtract(consumerTotal);
 
 			OwnedTokensParticle particle = iterator.next();
 			BigInteger particleAmount = UInt256s.toBigInteger(particle.getAmount());

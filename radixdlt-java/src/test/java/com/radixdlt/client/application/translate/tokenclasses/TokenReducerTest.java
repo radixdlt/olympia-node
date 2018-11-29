@@ -62,7 +62,7 @@ public class TokenReducerTest {
 				"Name",
 				"ISO",
 				"Desc",
-				TokenClassReference.subUnitsToDecimal(hundred),
+				TokenClassReference.subunitsToUnits(hundred),
 				TokenSupplyType.MUTABLE
 			)
 		);

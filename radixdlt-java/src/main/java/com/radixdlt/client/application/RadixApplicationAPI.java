@@ -337,7 +337,7 @@ public class RadixApplicationAPI {
 	 * @param name The name of the token to create
 	 * @param iso The symbol of the token to create
 	 * @param description A description of the token
-	 * @param initialSupply The initial amount of supply of this token
+	 * @param initialSupply The initial amount in subunits of supply for this token
 	 * @param tokenSupplyType The type of supply for this token: Fixed or Mutable
 	 * @return result of the transaction
 	 */
@@ -356,7 +356,7 @@ public class RadixApplicationAPI {
 	 * Mints an amount of new tokens into the user's account
 	 *
 	 * @param iso The symbol of the token to mint
-	 * @param amount The amount to mint
+	 * @param amount The amount in subunits to mint
 	 * @return result of the transaction
 	 */
 	public Result mintTokens(String iso, UInt256 amount) {

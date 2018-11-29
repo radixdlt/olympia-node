@@ -56,7 +56,7 @@ public class RadixWalletExample {
 			"Joshy Token",
 			"JOSH",
 			"The Best Coin Ever",
-			TokenClassReference.fromUnits(10000),
+			TokenClassReference.unitsToSubunits(10000),
 			TokenSupplyType.MUTABLE
 		).toObservable().subscribe(System.out::println);
 

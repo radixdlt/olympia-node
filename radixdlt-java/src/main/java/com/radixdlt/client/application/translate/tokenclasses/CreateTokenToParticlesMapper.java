@@ -7,7 +7,6 @@ import com.radixdlt.client.application.translate.tokenclasses.CreateTokenAction.
 import com.radixdlt.client.atommodel.quarks.FungibleQuark;
 import com.radixdlt.client.atommodel.quarks.FungibleQuark.FungibleType;
 import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
-import com.radixdlt.client.atommodel.tokens.TokenClassReference;
 import com.radixdlt.client.atommodel.tokens.TokenParticle;
 import com.radixdlt.client.atommodel.tokens.TokenPermission;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
@@ -52,7 +51,7 @@ public class CreateTokenToParticlesMapper implements ActionToParticlesMapper {
 				null
 		);
 		OwnedTokensParticle minted = new OwnedTokensParticle(
-				tokenCreation.getInitialSupply().multiply(TokenClassReference.SUB_UNITS),
+				tokenCreation.getInitialSupply(),
 				FungibleQuark.FungibleType.MINTED,
 				tokenCreation.getAddress(),
 				System.currentTimeMillis(),

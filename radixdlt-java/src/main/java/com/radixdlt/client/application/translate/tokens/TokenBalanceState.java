@@ -40,7 +40,7 @@ public class TokenBalanceState {
 		}
 
 		public BigDecimal getAmount() {
-			return TokenClassReference.subUnitsToDecimal(balance);
+			return TokenClassReference.subunitsToUnits(balance);
 		}
 
 		public Stream<OwnedTokensParticle> unconsumedConsumables() {

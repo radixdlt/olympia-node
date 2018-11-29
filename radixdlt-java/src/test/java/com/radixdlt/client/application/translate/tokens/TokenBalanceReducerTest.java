@@ -28,7 +28,7 @@ public class TokenBalanceReducerTest {
 
 		TokenBalanceReducer reducer = new TokenBalanceReducer();
 		TokenBalanceState tokenBalance = reducer.reduce(new TokenBalanceState(), SpunParticle.up(ownedTokensParticle));
-		BigDecimal tenSubUnits = TokenClassReference.subUnitsToDecimal(UInt256.TEN);
-		assertThat(tokenBalance.getBalance().get(token).getAmount().compareTo(tenSubUnits)).isEqualTo(0);
+		BigDecimal tenSubunits = TokenClassReference.subunitsToUnits(UInt256.TEN);
+		assertThat(tokenBalance.getBalance().get(token).getAmount().compareTo(tenSubunits)).isEqualTo(0);
 	}
 }
