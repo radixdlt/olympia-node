@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.radix.utils.UInt256;
 
 /**
  * RLAU-97
@@ -37,7 +38,7 @@ public class TokenClassesInAccountTest {
 		api = RadixApplicationAPI.create(RadixIdentities.createNew());
 	}
 
-	private CreateTokenAction buildCreateNewTokenAction(String iso, long initialSupply) {
+	private CreateTokenAction buildCreateNewTokenAction(String iso, UInt256 initialSupply) {
 		return new CreateTokenAction(
 			api.getMyAddress(),
 			"Joshy Coin",
@@ -48,12 +49,12 @@ public class TokenClassesInAccountTest {
 		);
 	}
 
-	private Predicate<Map<TokenClassReference, TokenState>> getPredicateCheck(String iso, long initialSupply) {
+	private Predicate<Map<TokenClassReference, TokenState>> getPredicateCheck(String iso, UInt256 initialSupply) {
 		TokenState expectedTokenState = new TokenState(
 			"Joshy Coin",
 			iso,
 			"Ze best coin!",
-			BigDecimal.valueOf(initialSupply * 100000, 5),
+			TokenClassReference.subunitsToUnits(initialSupply),
 			TokenState.TokenSupplyType.FIXED
 		);
 
@@ -64,8 +65,8 @@ public class TokenClassesInAccountTest {
 	public void given_an_account_with_two_tokens__when_the_account_is_subscribed_for_the_token_state__then_the_two_tokens_are_published() throws Exception {
 		// Given an account with two tokens
 		Action[] givenActions = new Action[] {
-			buildCreateNewTokenAction("JOSH", 10000),
-			buildCreateNewTokenAction("JOSH2", 100)
+			buildCreateNewTokenAction("JOSH", UInt256.from(10000)),
+			buildCreateNewTokenAction("JOSH2", UInt256.from(100))
 		};
 
 		// When the account is subscribed for the token state
@@ -73,8 +74,8 @@ public class TokenClassesInAccountTest {
 
 		// Then the two tokens are published
 		List<Predicate> thenChecks = Arrays.asList(
-			getPredicateCheck("JOSH", 10000),
-			getPredicateCheck("JOSH2", 100)
+			getPredicateCheck("JOSH", UInt256.from(10000)),
+			getPredicateCheck("JOSH2", UInt256.from(100))
 		);
 
 		// Given setup execution
