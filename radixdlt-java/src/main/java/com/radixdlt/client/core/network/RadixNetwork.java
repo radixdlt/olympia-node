@@ -33,7 +33,6 @@ public final class RadixNetwork {
 		this.peers = peerDiscovery.findPeers()
 			.retryWhen(new IncreasingRetryTimer(WebSocketException.class))
 			.doOnNext(peer -> LOGGER.info("Added to peer list: " + peer.getLocation()))
-				.doOnSubscribe(s -> LOGGER.info("subscribe to peers"))
 			.replay().autoConnect(2);
 
 		this.statusUpdates = peers
@@ -43,7 +42,6 @@ public final class RadixNetwork {
 						.map(status -> new SimpleImmutableEntry<>(peer, status)
 				)
 			)
-				.doOnSubscribe(s -> LOGGER.info("subscribed to status updates"))
 			.publish();
 		this.statusUpdates.connect();
 
