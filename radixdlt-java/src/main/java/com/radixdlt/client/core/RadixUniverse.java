@@ -90,6 +90,13 @@ public final class RadixUniverse {
 		return bootstrap(bootstrapConfig.getConfig(), bootstrapConfig.getDiscovery());
 	}
 
+	// TODO: cleanup bootstrap/instantiation
+	public static boolean isInstantiated() {
+		synchronized (lock) {
+			return defaultUniverse != null;
+		}
+	}
+
 	/**
 	 * Returns the default RadixUniverse instance
 	 * @return the default RadixUniverse instance
