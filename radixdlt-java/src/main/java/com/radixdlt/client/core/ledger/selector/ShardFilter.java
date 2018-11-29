@@ -1,0 +1,27 @@
+package com.radixdlt.client.core.ledger.selector;
+
+import com.radixdlt.client.core.network.RadixPeer;
+import com.radixdlt.client.core.network.WebSocketClient;
+
+import java.util.Objects;
+import java.util.Set;
+
+/**
+ * A shard filter that tests if peers serve the given shard space
+ */
+public class ShardFilter implements RadixPeerFilter {
+	private final Set<Long> shards;
+
+	public ShardFilter(Set<Long> shards) {
+		Objects.requireNonNull(shards, "shards is required");
+
+		this.shards = shards;
+	}
+
+	@Override
+	public boolean test(RadixPeer radixPeer, WebSocketClient.RadixClientStatus radixClientStatus) {
+		return radixPeer.servesShards(shards)
+				.onErrorReturnItem(false)
+				.blockingGet();
+	}
+}

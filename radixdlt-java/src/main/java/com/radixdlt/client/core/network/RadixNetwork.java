@@ -6,8 +6,7 @@ import io.reactivex.observables.ConnectableObservable;
 
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.LinkedHashMap;
 import java.util.Objects;
 import java.util.Set;
 import org.slf4j.Logger;
@@ -27,8 +26,8 @@ public final class RadixNetwork {
 	/**
 	 * Hot observable which updates subscribers of new connection events
 	 */
-	private final ConnectableObservable<SimpleImmutableEntry<String, RadixClientStatus>> statusUpdates;
-
+	private final ConnectableObservable<SimpleImmutableEntry<RadixPeer, RadixClientStatus>> statusUpdates;
+	private final Observable<RadixNetworkState> networkState;
 
 	public RadixNetwork(PeerDiscovery peerDiscovery) {
 		Objects.requireNonNull(peerDiscovery);
@@ -36,19 +35,30 @@ public final class RadixNetwork {
 		this.peers = peerDiscovery.findPeers()
 			.retryWhen(new IncreasingRetryTimer(WebSocketException.class))
 			.doOnNext(peer -> LOGGER.info("Added to peer list: " + peer.getLocation()))
+				.doOnSubscribe(s -> LOGGER.info("subscribe to peers"))
 			.replay().autoConnect(2);
 
-		this.statusUpdates = peers.map(RadixPeer::getRadixClient)
+		this.statusUpdates = peers
 			.flatMap(
-				client -> client.getStatus().map(
-					status -> new SimpleImmutableEntry<>(client.getLocation(), status)
+				peer -> peer.getRadixClient().getStatus().map(
+					status -> new SimpleImmutableEntry<>(peer, status)
 				)
 			)
+				.doOnSubscribe(s -> LOGGER.info("subscribed to status updates"))
 			.publish();
 		this.statusUpdates.connect();
+
+		this.networkState = this.statusUpdates.scan(new RadixNetworkState(Collections.emptyMap()), (previousState, update) -> {
+			LinkedHashMap<RadixPeer, RadixClientStatus> currentPeers = new LinkedHashMap<>(previousState.peers);
+			currentPeers.put(update.getKey(), update.getValue());
+
+			return new RadixNetworkState(currentPeers);
+		})
+				.skip(1)
+				.doOnSubscribe(s -> LOGGER.info("subscribed to network state"));
 	}
 
-	public Observable<SimpleImmutableEntry<String, RadixClientStatus>> connectAndGetStatusUpdates() {
+	public Observable<SimpleImmutableEntry<RadixPeer, RadixClientStatus>> connectAndGetStatusUpdates() {
 		this.peers.subscribe();
 		return this.getStatusUpdates();
 	}
@@ -70,22 +80,17 @@ public final class RadixNetwork {
 	 *
 	 * @return a hot Observable of status of peers
 	 */
-	public Observable<SimpleImmutableEntry<String, RadixClientStatus>> getStatusUpdates() {
+	public Observable<SimpleImmutableEntry<RadixPeer, RadixClientStatus>> getStatusUpdates() {
 		return statusUpdates;
 	}
 
-	public Observable<RadixJsonRpcClient> getRadixClients() {
-		return peers.map(RadixPeer::getRadixClient);
-	}
-
-	public Observable<RadixJsonRpcClient> getRadixClients(Set<Long> shards) {
-		return peers.flatMapMaybe(peer -> peer.servesShards(shards))
-			.map(RadixPeer::getRadixClient)
-			.flatMapMaybe(client -> client.checkAPIVersion().filter(b -> b).map(b -> client));
-	}
-
-	public Observable<RadixJsonRpcClient> getRadixClients(Long shard) {
-		return this.getRadixClients(Collections.singleton(shard));
+	/**
+	 * Returns a cold observable of network state
+	 *
+	 * @return a cold observable of network state
+	 */
+	public Observable<RadixNetworkState> getNetworkState() {
+		return networkState;
 	}
 
 	/**

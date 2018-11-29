@@ -15,7 +15,7 @@ import com.radixdlt.client.core.ledger.AtomSubmitter;
 import com.radixdlt.client.core.ledger.ParticleStore;
 import com.radixdlt.client.core.ledger.RadixAtomPuller;
 import com.radixdlt.client.core.ledger.RadixAtomSubmitter;
-import com.radixdlt.client.core.ledger.ClientSelector;
+import com.radixdlt.client.core.ledger.RadixClientSelector;
 import com.radixdlt.client.core.ledger.InMemoryAtomStore;
 import com.radixdlt.client.core.network.PeerDiscovery;
 import com.radixdlt.client.core.network.RadixNetwork;
@@ -166,10 +166,10 @@ public final class RadixUniverse {
 		// Hooking up the default configuration
 		// TODO: cleanup
 		this.ledger = new Ledger() {
-			private final ClientSelector clientSelector = new ClientSelector(config, network, CHECK_UNIVERSE);
-			private final AtomFetcher atomFetcher = new AtomFetcher(clientSelector::getRadixClient);
+			private final RadixClientSelector radixClientSelector = CHECK_UNIVERSE ? new RadixClientSelector(network, config) : new RadixClientSelector(network);
+			private final AtomFetcher atomFetcher = new AtomFetcher(radixClientSelector::getRadixClient);
 			private final AtomPuller atomPuller = new RadixAtomPuller(atomFetcher::fetchAtoms, inMemoryAtomStore::store);
-			private final AtomSubmitter atomSubmitter = new RadixAtomSubmitter(clientSelector::getRadixClient);
+			private final AtomSubmitter atomSubmitter = new RadixAtomSubmitter(radixClientSelector::getRadixClient);
 
 			/**
 			* The Particle Data Store

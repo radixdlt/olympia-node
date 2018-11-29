@@ -1,12 +1,12 @@
 package com.radixdlt.client.core.network;
 
 import io.reactivex.Maybe;
+import io.reactivex.Single;
 import io.reactivex.subjects.SingleSubject;
 import java.util.Set;
 import okhttp3.Request;
 
 public class RadixPeer {
-
 	private final String location;
 	private final RadixJsonRpcClient radixClient;
 	private final SingleSubject<NodeRunnerData> data;
@@ -57,8 +57,8 @@ public class RadixPeer {
 		return this;
 	}
 
-	public Maybe<RadixPeer> servesShards(Set<Long> shards) {
-		return data.map(d -> d.getShards().intersects(shards)).flatMapMaybe(intersects -> intersects ? Maybe.just(this) : Maybe.empty());
+	public Single<Boolean> servesShards(Set<Long> shards) {
+		return data.map(d -> d.getShards().intersects(shards));
 	}
 
 	@Override
