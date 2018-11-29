@@ -25,13 +25,14 @@ import org.junit.Test;
 /**
  * RLAU-97
  */
-public class TokenClassesInAccount {
+public class TokenClassesInAccountTest {
 	private static RadixApplicationAPI api;
 
 	@BeforeClass
 	public static void setup() {
-		RadixUniverse.bootstrap(Bootstrap.BETANET);
-		RadixUniverse.getInstance().getNetwork().getRadixClients().subscribe(System.out::println);
+		if (!RadixUniverse.isInstantiated()) {
+			RadixUniverse.bootstrap(Bootstrap.BETANET);
+		}
 
 		api = RadixApplicationAPI.create(RadixIdentities.createNew());
 	}
