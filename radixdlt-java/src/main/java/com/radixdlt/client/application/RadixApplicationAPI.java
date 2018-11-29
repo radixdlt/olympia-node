@@ -2,6 +2,7 @@ package com.radixdlt.client.application;
 
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.ActionToParticlesMapper;
+import com.radixdlt.client.application.translate.ActionExecutionException;
 import com.radixdlt.client.application.translate.tokenclasses.BurnTokensAction;
 import com.radixdlt.client.application.translate.tokenclasses.CreateTokenAction.TokenSupplyType;
 import com.radixdlt.client.application.translate.tokenclasses.MintTokensAction;
@@ -89,7 +90,7 @@ public class RadixApplicationAPI {
 					if (update.getState() == AtomSubmissionState.STORED) {
 						return Completable.complete();
 					} else {
-						return Completable.error(new RuntimeException(update.getData().toString()));
+						return Completable.error(new ActionExecutionException(update.getData().toString()));
 					}
 				});
 		}
