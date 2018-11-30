@@ -10,7 +10,6 @@ import com.radixdlt.client.application.translate.data.SendMessageAction;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
-import com.radixdlt.client.core.network.AtomSubmissionUpdate;
 import io.reactivex.Completable;
 import io.reactivex.observers.TestObserver;
 import java.util.Arrays;
@@ -35,19 +34,19 @@ public class SendReceiveDataTransactionTest {
 
 		// Given account owner listening to own messages
 		RadixApplicationAPI api = RadixApplicationAPI.create(RadixIdentities.createNew());
-		TestObserver<DecryptedMessage> messageListener = TestObserver.create();
+		TestObserver<DecryptedMessage> messageListener = TestObserver.create(Util.loggingObserver("MessageListener"));
 		api.getMessages().subscribe(messageListener);
 
 		// When owner sends message from another account
 		RadixAddress sourceAddress = RadixUniverse.getInstance().getAddressFrom(RadixIdentities.createNew().getPublicKey());
 		Action sendMessageAction = new SendMessageAction(new byte[] {0}, sourceAddress, api.getMyAddress(), false);
-		TestObserver<AtomSubmissionUpdate> submissionStatus = TestObserver.create();
-		api.execute(sendMessageAction).toCompletable()
-			.subscribe(submissionStatus);
+		Completable sendMessageStatus = api.execute(sendMessageAction).toCompletable();
 
 		// Then client should be notified of error
-		submissionStatus.awaitTerminalEvent();
-		submissionStatus.assertError(ActionExecutionException.class);
+		TestObserver submissionObserver = TestObserver.create(Util.loggingObserver("Submission"));
+		sendMessageStatus.subscribe(submissionObserver);
+		submissionObserver.awaitTerminalEvent();
+		submissionObserver.assertError(ActionExecutionException.class);
 
 		// And not receive any messages
 		messageListener.await(5, TimeUnit.SECONDS);
@@ -59,20 +58,19 @@ public class SendReceiveDataTransactionTest {
 	public void given_two_account_owners_listening_to_own_messages__when_one_sends_a_message_to_the_other__then_both_should_receive_message() {
 
 		// Given two account owners listening to own messages
-		TestObserver<DecryptedMessage> messageListener1 = new TestObserver<>();
-		TestObserver<DecryptedMessage> messageListener2 = new TestObserver<>();
+		TestObserver<DecryptedMessage> messageListener1 = new TestObserver<>(Util.loggingObserver("MessageListener1"));
+		TestObserver<DecryptedMessage> messageListener2 = new TestObserver<>(Util.loggingObserver("MessageListener2"));
 		RadixApplicationAPI api1 = RadixApplicationAPI.create(RadixIdentities.createNew());
 		RadixApplicationAPI api2 = RadixApplicationAPI.create(RadixIdentities.createNew());
 		api1.getMessages().subscribe(messageListener1);
 		api2.getMessages().subscribe(messageListener2);
 
-		byte[] message = new byte[] {1, 2, 3, 4};
-
 		// When one sends a message to the other
+		byte[] message = new byte[] {1, 2, 3, 4};
 		Completable sendMessageStatus = api1.sendMessage(message, false, api2.getMyAddress()).toCompletable();
-		sendMessageStatus.blockingAwait();
 
 		// Then both owners should receive the message
+		sendMessageStatus.blockingAwait();
 		messageListener1.awaitCount(1)
 			.assertValueAt(0, msg -> Arrays.equals(message, msg.getData()))
 			.assertValueAt(0, msg -> msg.getFrom().equals(api1.getMyAddress()))
@@ -89,17 +87,16 @@ public class SendReceiveDataTransactionTest {
 	public void given_an_account_owner_listening_to_own_messages__when_owner_sends_message_to_itself__then_owner_should_receive_message() {
 
 		// Given an account owner listening to own messages
-		TestObserver<DecryptedMessage> messageListener = new TestObserver<>();
+		TestObserver<DecryptedMessage> messageListener = new TestObserver<>(Util.loggingObserver("MessageListener"));
 		RadixApplicationAPI api = RadixApplicationAPI.create(RadixIdentities.createNew());
 		api.getMessages().subscribe(messageListener);
 
-		byte[] message = new byte[] {1, 2, 3, 4};
-
 		// When owner sends message to himself
+		byte[] message = new byte[] {1, 2, 3, 4};
 		Completable sendMessageStatus = api.sendMessage(message, false).toCompletable();
-		sendMessageStatus.blockingAwait();
 
 		// Then owner should receive the message
+		sendMessageStatus.blockingAwait();
 		messageListener.awaitCount(1)
 			.assertValueAt(0, msg -> Arrays.equals(message, msg.getData()))
 			.assertValueAt(0, msg -> msg.getFrom().equals(api.getMyAddress()))
@@ -110,19 +107,18 @@ public class SendReceiveDataTransactionTest {
 	@Test
 	public void given_a_client_listening_to_messages_in_another_account__when_other_account_sends_message_to_itself__then_client_should_receive_message() {
 
-		// Given an account owner listening to own messages
-		TestObserver<DecryptedMessage> clientListener = new TestObserver<>();
+		// Given a client listening to messages in another account
+		TestObserver<DecryptedMessage> clientListener = new TestObserver<>(Util.loggingObserver("MessageListener"));
 		RadixApplicationAPI clientApi = RadixApplicationAPI.create(RadixIdentities.createNew());
 		RadixApplicationAPI otherAccount = RadixApplicationAPI.create(RadixIdentities.createNew());
 		clientApi.getMessages(otherAccount.getMyAddress()).subscribe(clientListener);
 
+		// When the other account sends message to itself
 		byte[] message = new byte[] {1, 2, 3, 4};
-
-		// When other account sends message to itself
 		Completable sendMessageStatus = otherAccount.sendMessage(message, false).toCompletable();
-		sendMessageStatus.blockingAwait();
 
-		// Then owner should receive the message
+		// Then client should receive the message
+		sendMessageStatus.blockingAwait();
 		clientListener.awaitCount(1)
 			.assertValueAt(0, msg -> Arrays.equals(message, msg.getData()))
 			.assertValueAt(0, msg -> msg.getFrom().equals(otherAccount.getMyAddress()))

@@ -13,7 +13,6 @@ import io.reactivex.Completable;
 import io.reactivex.Observable;
 import io.reactivex.functions.Predicate;
 import io.reactivex.observers.TestObserver;
-import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -83,7 +82,7 @@ public class TokenClassesInAccountTest {
 		givenCompleted.blockingAwait();
 
 		// When execution
-		TestObserver<Map<TokenClassReference, TokenState>> testObserver = TestObserver.create();
+		TestObserver<Map<TokenClassReference, TokenState>> testObserver = TestObserver.create(Util.loggingObserver("TokenClassListener"));
 		subscription.get()
 			.debounce(15, TimeUnit.SECONDS)
 			.firstOrError()
