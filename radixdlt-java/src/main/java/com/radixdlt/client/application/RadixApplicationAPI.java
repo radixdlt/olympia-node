@@ -132,8 +132,35 @@ public class RadixApplicationAPI {
 		RadixIdentity identity,
 		RadixUniverse universe,
 		FeeMapper feeMapper,
+		Ledger ledger,
+		List<ActionToParticlesMapper> actionToParticlesMappers
+	) {
+		this.identity = identity;
+		this.universe = universe;
+
+		// TODO: Utilize class loader to discover and load these modules
+		this.uniquePropertyTranslator = new UniquePropertyTranslator();
+		this.messageActionStore = new ActionStore<>(ledger.getAtomStore(), new AtomToDecryptedMessageMapper(universe));
+		this.tokenBalanceStore = new ApplicationStore<>(ledger.getParticleStore(), new TokenBalanceReducer());
+		this.tokenTransferActionStore = new ActionStore<>(ledger.getAtomStore(), new AtomToTokenTransfersMapper(universe));
+		this.tokenStore = new ApplicationStore<>(ledger.getParticleStore(), new TokenReducer());
+
+		this.actionToParticlesMappers = actionToParticlesMappers;
+		this.feeMapper = feeMapper;
+		this.ledger = ledger;
+	}
+
+	private RadixApplicationAPI(
+		RadixIdentity identity,
+		RadixUniverse universe,
+		FeeMapper feeMapper,
 		Ledger ledger
 	) {
+		Objects.requireNonNull(identity);
+		Objects.requireNonNull(universe);
+		Objects.requireNonNull(feeMapper);
+		Objects.requireNonNull(ledger);
+
 		this.identity = identity;
 		this.universe = universe;
 
@@ -164,6 +191,7 @@ public class RadixApplicationAPI {
 
 	public static RadixApplicationAPI create(RadixIdentity identity) {
 		Objects.requireNonNull(identity);
+
 		return create(
 			identity,
 			RadixUniverse.getInstance(),
@@ -176,10 +204,29 @@ public class RadixApplicationAPI {
 		RadixUniverse universe,
 		FeeMapper feeMapper
 	) {
-		Objects.requireNonNull(identity);
-		Objects.requireNonNull(universe);
-		Objects.requireNonNull(feeMapper);
 		return new RadixApplicationAPI(identity, universe, feeMapper, universe.getLedger());
+	}
+
+	/**
+	 * For advanced use at the moment.
+	 *
+	 * Create an api based on actionToParticleMappers of own choosing.
+	 *
+	 * @param identity identity for api
+	 * @param actionToParticlesMappers the mappers to utilize for api
+	 * @return api object used to interact with ledger
+	 */
+	public static RadixApplicationAPI create(
+		RadixIdentity identity,
+		List<ActionToParticlesMapper> actionToParticlesMappers
+	) {
+		return new RadixApplicationAPI(
+			identity,
+			RadixUniverse.getInstance(),
+			new PowFeeMapper(p -> new Atom(p).getHash(), new ProofOfWorkBuilder()),
+			RadixUniverse.getInstance().getLedger(),
+			actionToParticlesMappers
+		);
 	}
 
 	/**
