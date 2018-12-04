@@ -47,6 +47,10 @@ public class TokenReducer implements ParticleReducer<Map<TokenClassReference, To
 				tokenSupplyType = TokenSupplyType.FIXED;
 			} else if (mintPermission.equals(TokenPermission.TOKEN_OWNER_ONLY)) {
 				tokenSupplyType = TokenSupplyType.MUTABLE;
+			} else if (mintPermission.equals(TokenPermission.POW) && tokenParticle.getSymbol().equals("POW")) {
+				tokenSupplyType = TokenSupplyType.MUTABLE;
+			} else if (mintPermission.equals(TokenPermission.GENESIS_ONLY)) {
+				tokenSupplyType = TokenSupplyType.FIXED;
 			} else {
 				throw new IllegalStateException("TokenParticle with mintPermissions of " + mintPermission + " not supported.");
 			}
