@@ -1,7 +1,6 @@
 package com.radixdlt.client.core.ledger.selector;
 
 import com.radixdlt.client.core.network.RadixClientStatus;
-import com.radixdlt.client.core.network.RadixPeer;
 import com.radixdlt.client.core.network.RadixPeerState;
 
 /**

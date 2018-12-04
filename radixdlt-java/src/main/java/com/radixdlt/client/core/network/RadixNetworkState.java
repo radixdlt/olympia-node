@@ -3,7 +3,6 @@ package com.radixdlt.client.core.network;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 /**
  * Current state in time of a {@link RadixNetwork}

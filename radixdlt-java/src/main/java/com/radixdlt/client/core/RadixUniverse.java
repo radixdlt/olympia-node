@@ -166,7 +166,8 @@ public final class RadixUniverse {
 		// Hooking up the default configuration
 		// TODO: cleanup
 		this.ledger = new Ledger() {
-			private final RadixClientSupplier radixClientSupplier = CHECK_UNIVERSE ? new RadixClientSupplier(network, config) : new RadixClientSupplier(network);
+			private final RadixClientSupplier radixClientSupplier = CHECK_UNIVERSE ?
+					new RadixClientSupplier(network, config) : new RadixClientSupplier(network);
 			private final AtomFetcher atomFetcher = new AtomFetcher(radixClientSupplier::getRadixClient);
 			private final AtomPuller atomPuller = new RadixAtomPuller(atomFetcher::fetchAtoms, inMemoryAtomStore::store);
 			private final AtomSubmitter atomSubmitter = new RadixAtomSubmitter(radixClientSupplier::getRadixClient);

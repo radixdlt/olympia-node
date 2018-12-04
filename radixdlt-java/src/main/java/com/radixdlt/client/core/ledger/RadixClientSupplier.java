@@ -58,7 +58,9 @@ public class RadixClientSupplier {
 	 * @param network The network
 	 */
 	public RadixClientSupplier(RadixNetwork network) {
-		this(network, new RandomSelector(), Arrays.asList(new ConnectionAliveFilter(), new CompatibleApiVersionFilter(RadixJsonRpcClient.API_VERSION)));
+		this(network, new RandomSelector(), Arrays.asList(
+				new ConnectionAliveFilter(),
+				new CompatibleApiVersionFilter(RadixJsonRpcClient.API_VERSION)));
 	}
 
 	/**
@@ -67,7 +69,10 @@ public class RadixClientSupplier {
 	 * @param config The universe config for the matching universe filter
 	 */
 	public RadixClientSupplier(RadixNetwork network, RadixUniverseConfig config) {
-		this(network, new RandomSelector(), Arrays.asList(new ConnectionAliveFilter(), new CompatibleApiVersionFilter(RadixJsonRpcClient.API_VERSION), new MatchingUniverseFilter(config)));
+		this(network, new RandomSelector(), Arrays.asList(
+				new ConnectionAliveFilter(),
+				new CompatibleApiVersionFilter(RadixJsonRpcClient.API_VERSION),
+				new MatchingUniverseFilter(config)));
 	}
 
 	/**

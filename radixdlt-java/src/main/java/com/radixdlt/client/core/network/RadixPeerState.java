@@ -3,7 +3,7 @@ package com.radixdlt.client.core.network;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
 
 /**
- * Immutable state in time of a {@link RadixPeer}
+ * Immutable state at a certain point in time of a {@link RadixPeer}
  */
 public class RadixPeerState {
 	/**
@@ -36,7 +36,8 @@ public class RadixPeerState {
 	 */
 	public final RadixUniverseConfig universeConfig;
 
-	public RadixPeerState(String location, int port, RadixClientStatus status, NodeRunnerData data, Integer version, RadixUniverseConfig universeConfig) {
+	public RadixPeerState(String location, int port, RadixClientStatus status, NodeRunnerData data, Integer version,
+	                      RadixUniverseConfig universeConfig) {
 		this.location = location;
 		this.port = port;
 		this.status = status;
@@ -58,13 +59,13 @@ public class RadixPeerState {
 
 	@Override
 	public String toString() {
-		return "RadixPeerState{" +
-				"location='" + location + '\'' +
-				", port=" + port +
-				", status=" + status +
-				", data=" + data +
-				", version=" + version +
-				", universeConfig=" + universeConfig +
-				'}';
+		return "RadixPeerState{"
+				+ "location='" + location + '\''
+				+ ", port=" + port
+				+ ", status=" + status
+				+ ", data=" + data
+				+ ", version=" + version
+				+ ", universeConfig=" + universeConfig
+				+ '}';
 	}
 }

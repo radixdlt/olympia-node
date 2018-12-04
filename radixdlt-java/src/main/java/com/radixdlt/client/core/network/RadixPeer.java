@@ -1,11 +1,11 @@
 package com.radixdlt.client.core.network;
 
-import io.reactivex.Maybe;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.subjects.SingleSubject;
-import java.util.Set;
 import okhttp3.Request;
+
+import java.util.Set;
 
 public class RadixPeer {
 	private final String location;
@@ -38,8 +38,10 @@ public class RadixPeer {
 		}
 
 		this.status = Observable
-				.combineLatest(data.toObservable(), this.radixClient.getStatus(), this.radixClient.universe().toObservable(), this.radixClient.apiVersion().toObservable(),
-					(peerData, clientStatus, clientUniverse, clientVersion) -> RadixPeerState.from(this))
+				.combineLatest(data.toObservable(), this.radixClient.getStatus(),
+						this.radixClient.universe().toObservable(), this.radixClient.apiVersion().toObservable(),
+					(peerData, clientStatus, clientUniverse, clientVersion) ->
+						new RadixPeerState(location, port, clientStatus, peerData, clientVersion, clientUniverse))
 				.cache();
 	}
 
