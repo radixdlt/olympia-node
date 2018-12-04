@@ -28,7 +28,6 @@ import com.radixdlt.client.application.translate.ActionToParticlesMapper;
 import com.radixdlt.client.application.translate.ApplicationStore;
 import com.radixdlt.client.application.translate.FeeMapper;
 import com.radixdlt.client.application.translate.PowFeeMapper;
-import com.radixdlt.client.application.translate.UniquePropertyTranslator;
 import com.radixdlt.client.application.translate.data.AtomToDecryptedMessageMapper;
 import com.radixdlt.client.application.translate.data.DecryptedMessage;
 import com.radixdlt.client.application.translate.data.SendMessageAction;
@@ -113,9 +112,6 @@ public class RadixApplicationAPI {
 	private final RadixIdentity identity;
 	private final RadixUniverse universe;
 
-	// TODO: Translators from application to particles
-	private final UniquePropertyTranslator uniquePropertyTranslator;
-
 	private final ActionStore<DecryptedMessage> messageActionStore;
 	private final ActionStore<TokenTransfer> tokenTransferActionStore;
 	private final ApplicationStore<Map<TokenClassReference, TokenState>> tokenStore;
@@ -145,7 +141,6 @@ public class RadixApplicationAPI {
 		this.universe = universe;
 
 		// TODO: Utilize class loader to discover and load these modules
-		this.uniquePropertyTranslator = new UniquePropertyTranslator();
 		this.messageActionStore = new ActionStore<>(ledger.getAtomStore(), new AtomToDecryptedMessageMapper(universe));
 		this.tokenBalanceStore = new ApplicationStore<>(ledger.getParticleStore(), new TokenBalanceReducer());
 		this.tokenTransferActionStore = new ActionStore<>(ledger.getAtomStore(), new AtomToTokenTransfersMapper(universe));
@@ -171,7 +166,6 @@ public class RadixApplicationAPI {
 		this.universe = universe;
 
 		// TODO: Utilize class loader to discover and load these modules
-		this.uniquePropertyTranslator = new UniquePropertyTranslator();
 		this.messageActionStore = new ActionStore<>(ledger.getAtomStore(), new AtomToDecryptedMessageMapper(universe));
 		this.tokenBalanceStore = new ApplicationStore<>(ledger.getParticleStore(), new TokenBalanceReducer());
 		this.tokenTransferActionStore = new ActionStore<>(ledger.getAtomStore(), new AtomToTokenTransfersMapper(universe));
