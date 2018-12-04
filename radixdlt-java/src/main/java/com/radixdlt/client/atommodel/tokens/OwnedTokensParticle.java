@@ -44,11 +44,6 @@ public class OwnedTokensParticle extends Particle {
 		return getQuarkOrError(AccountableQuark.class).getAddresses().get(0);
 	}
 
-	@Override
-	public Set<ECPublicKey> getAddresses() {
-		return getQuarkOrError(AccountableQuark.class).getAddresses().stream().map(RadixAddress::getPublicKey).collect(Collectors.toSet());
-	}
-
 	public void addConsumerQuantities(UInt256 amount, ECKeyPair newOwner, Map<ECKeyPair, UInt256> consumerQuantities) {
 		if (amount.compareTo(getAmount()) > 0) {
 			throw new IllegalArgumentException(

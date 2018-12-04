@@ -20,11 +20,6 @@ public class TimestampParticle extends Particle {
 		super(new ChronoQuark("default", timestamp));
 	}
 
-	@Override
-	public Set<ECPublicKey> getAddresses() {
-		return Collections.emptySet();
-	}
-
 	public long getTimestamp() {
 		return getQuarkOrError(ChronoQuark.class).getTimestamp();
 	}

@@ -77,11 +77,6 @@ public class TokenParticle extends Particle {
 		return (TokenClassReference) this.getQuarkOrError(NonFungibleQuark.class).getIndex();
 	}
 
-	@Override
-	public Set<ECPublicKey> getAddresses() {
-		return Collections.singleton(getQuarkOrError(AccountableQuark.class).getAddresses().get(0).getPublicKey());
-	}
-
 	@JsonProperty("permissions")
 	@DsonOutput(value = {Output.ALL})
 	private Map<String, String> getJsonPermissions() {

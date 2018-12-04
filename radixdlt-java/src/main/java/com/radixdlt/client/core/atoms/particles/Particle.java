@@ -1,5 +1,7 @@
 package com.radixdlt.client.core.atoms.particles;
 
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.client.atommodel.quarks.AccountableQuark;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -7,6 +9,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.radix.serialization2.DsonOutput;
@@ -37,7 +40,13 @@ public abstract class Particle extends SerializableObject {
 		this.quarks = Collections.unmodifiableList(quarks);
 	}
 
-	public abstract Set<ECPublicKey> getAddresses();
+	public final Set<ECPublicKey> getAddresses() {
+		return this.getQuark(AccountableQuark.class)
+			.map(AccountableQuark::getAddresses)
+			.orElse(Collections.emptyList()).stream()
+			.map(RadixAddress::getPublicKey)
+			.collect(Collectors.toSet());
+	}
 
 	/// Methods taken from Particle.java in Core
 

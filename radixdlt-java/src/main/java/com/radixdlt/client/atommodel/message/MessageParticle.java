@@ -65,11 +65,6 @@ public class MessageParticle extends Particle {
 		this.from = Objects.requireNonNull(from, "from is required");
 	}
 
-	@Override
-	public Set<ECPublicKey> getAddresses() {
-		return getQuarkOrError(AccountableQuark.class).getAddresses().stream().map(RadixAddress::getPublicKey).collect(Collectors.toSet());
-	}
-
 	public String getMetaData(String key) {
 		Map<String, String> metaData = this.getQuarkOrError(DataQuark.class).getMetaData();
 
