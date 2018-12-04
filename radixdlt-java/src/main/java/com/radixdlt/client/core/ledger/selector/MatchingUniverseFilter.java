@@ -19,6 +19,6 @@ public class MatchingUniverseFilter implements RadixPeerFilter {
 
 	@Override
 	public boolean test(RadixPeerState peerState) {
-		return peerState.universeConfig != null && peerState.universeConfig.equals(universeConfig);
+		return peerState.getUniverseConfig() != null && peerState.getUniverseConfig().equals(universeConfig);
 	}
 }

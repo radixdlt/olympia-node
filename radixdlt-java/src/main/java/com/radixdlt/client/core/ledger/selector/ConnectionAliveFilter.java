@@ -9,6 +9,6 @@ import com.radixdlt.client.core.network.RadixPeerState;
 public class ConnectionAliveFilter implements RadixPeerFilter {
 	@Override
 	public boolean test(RadixPeerState peerState) {
-		return peerState.status == RadixClientStatus.OPEN || peerState.status == RadixClientStatus.CONNECTING;
+		return peerState.getStatus() == RadixClientStatus.OPEN || peerState.getStatus() == RadixClientStatus.CONNECTING;
 	}
 }

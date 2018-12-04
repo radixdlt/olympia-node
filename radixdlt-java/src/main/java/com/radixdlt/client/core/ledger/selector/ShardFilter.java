@@ -19,6 +19,6 @@ public class ShardFilter implements RadixPeerFilter {
 
 	@Override
 	public boolean test(RadixPeerState peerState) {
-		return peerState.data != null && peerState.data.getShards().intersects(this.shards);
+		return peerState.getData() != null && peerState.getData().getShards().intersects(this.shards);
 	}
 }
