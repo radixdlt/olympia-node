@@ -9,10 +9,10 @@ import java.util.Objects;
 /**
  * A universe filter that checks if peers have the same {@link RadixUniverseConfig}
  */
-public class UniverseFilter implements RadixPeerFilter {
+public class MatchingUniverseFilter implements RadixPeerFilter {
 	private final RadixUniverseConfig universeConfig;
 
-	public UniverseFilter(RadixUniverseConfig universeConfig) {
+	public MatchingUniverseFilter(RadixUniverseConfig universeConfig) {
 		Objects.requireNonNull(universeConfig, "universeConfig is required");
 
 		this.universeConfig = universeConfig;

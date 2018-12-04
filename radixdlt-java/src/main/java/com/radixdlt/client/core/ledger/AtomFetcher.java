@@ -34,9 +34,7 @@ public class AtomFetcher {
 		return Observable.fromCallable(() -> clientSelector.apply(address.getUID().getShard()))
 			.flatMapSingle(c -> c)
 			.flatMap(client -> client.getAtoms(atomQuery))
-			.doOnError(throwable -> {
-				LOGGER.warn("Error on getAllAtoms: {}", address);
-			})
+			.doOnError(throwable -> LOGGER.warn("Error on getAllAtoms: {}", address))
 			.retryWhen(new IncreasingRetryTimer(WebSocketException.class))
 			.filter(atomObservation -> {
 				if (atomObservation.isStore()) {
