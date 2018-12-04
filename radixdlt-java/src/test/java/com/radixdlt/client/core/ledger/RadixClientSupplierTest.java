@@ -1,12 +1,10 @@
 package com.radixdlt.client.core.ledger;
 
-import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.client.core.network.RadixJsonRpcClient;
 import com.radixdlt.client.core.network.RadixNetwork;
-import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixPeer;
-import com.radixdlt.client.core.network.WebSocketClient.RadixClientStatus;
+import com.radixdlt.client.core.network.RadixClientStatus;
 import com.radixdlt.client.core.network.WebSocketException;
 import io.reactivex.Observable;
 import io.reactivex.Single;
@@ -15,8 +13,6 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.AbstractMap;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;

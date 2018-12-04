@@ -1,8 +1,9 @@
 package com.radixdlt.client.core.ledger.selector;
 
 import com.radixdlt.client.core.address.RadixUniverseConfig;
+import com.radixdlt.client.core.network.RadixClientStatus;
 import com.radixdlt.client.core.network.RadixPeer;
-import com.radixdlt.client.core.network.WebSocketClient;
+import com.radixdlt.client.core.network.RadixPeerState;
 
 import java.util.Objects;
 
@@ -19,10 +20,7 @@ public class MatchingUniverseFilter implements RadixPeerFilter {
 	}
 
 	@Override
-	public boolean test(RadixPeer radixPeer, WebSocketClient.RadixClientStatus radixClientStatus) {
-		return radixPeer.getRadixClient().getUniverse()
-				.map(config -> config.equals(universeConfig))
-				.onErrorReturnItem(false)
-				.blockingGet();
+	public boolean test(RadixPeerState peerState) {
+		return peerState.universeConfig != null && peerState.universeConfig.equals(universeConfig);
 	}
 }

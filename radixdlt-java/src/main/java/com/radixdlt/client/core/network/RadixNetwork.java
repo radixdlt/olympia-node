@@ -1,6 +1,5 @@
 package com.radixdlt.client.core.network;
 
-import com.radixdlt.client.core.network.WebSocketClient.RadixClientStatus;
 import io.reactivex.Observable;
 import io.reactivex.observables.ConnectableObservable;
 import org.slf4j.Logger;
@@ -38,17 +37,17 @@ public final class RadixNetwork {
 
 		this.statusUpdates = peers
 			.flatMap(
-				peer -> peer.getRadixClient().getStatus().map(
-					status -> new SimpleImmutableEntry<>(peer, status)
+				peer -> peer.getRadixClient().getStatus()
+						.doOnNext(status -> LOGGER.info("Peer status changed: " + status))
+						.map(status -> new SimpleImmutableEntry<>(peer, status)
 				)
 			)
 			.publish();
 		this.statusUpdates.connect();
 
-		this.networkState = peers.flatMap(peer -> peer.getRadixClient().getStatus()
-				.map(status -> new SimpleImmutableEntry<>(peer, status))
-		).scan(new RadixNetworkState(Collections.emptyMap()), (previousState, update) -> {
-			LinkedHashMap<RadixPeer, RadixClientStatus> currentPeers = new LinkedHashMap<>(previousState.peers);
+		this.networkState = peers.flatMap(peer -> peer.status().map(status -> new SimpleImmutableEntry<>(peer, status)))
+				.scan(new RadixNetworkState(Collections.emptyMap()), (previousState, update) -> {
+			LinkedHashMap<RadixPeer, RadixPeerState> currentPeers = new LinkedHashMap<>(previousState.peers);
 			currentPeers.put(update.getKey(), update.getValue());
 
 			return new RadixNetworkState(currentPeers);

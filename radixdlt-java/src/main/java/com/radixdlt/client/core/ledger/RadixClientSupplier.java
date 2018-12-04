@@ -58,7 +58,7 @@ public class RadixClientSupplier {
 	 * @param network The network
 	 */
 	public RadixClientSupplier(RadixNetwork network) {
-		this(network, new RandomSelector(), Arrays.asList(new ConnectionAliveFilter(), new CompatibleApiVersionFilter()));
+		this(network, new RandomSelector(), Arrays.asList(new ConnectionAliveFilter(), new CompatibleApiVersionFilter(RadixJsonRpcClient.API_VERSION)));
 	}
 
 	/**
@@ -67,7 +67,7 @@ public class RadixClientSupplier {
 	 * @param config The universe config for the matching universe filter
 	 */
 	public RadixClientSupplier(RadixNetwork network, RadixUniverseConfig config) {
-		this(network, new RandomSelector(), Arrays.asList(new ConnectionAliveFilter(), new CompatibleApiVersionFilter(), new MatchingUniverseFilter(config)));
+		this(network, new RandomSelector(), Arrays.asList(new ConnectionAliveFilter(), new CompatibleApiVersionFilter(RadixJsonRpcClient.API_VERSION), new MatchingUniverseFilter(config)));
 	}
 
 	/**
@@ -165,7 +165,7 @@ public class RadixClientSupplier {
 	private List<RadixPeer> collectDesirablePeers(List<RadixPeerFilter> filters, RadixNetworkState state) {
 		return state.peers.entrySet().stream()
 				.filter(entry -> filters.stream()
-						.allMatch(filter -> filter.test(entry.getKey(), entry.getValue())))
+						.allMatch(filter -> filter.test(entry.getValue())))
 				.map(Map.Entry::getKey)
 				.collect(Collectors.toList());
 	}

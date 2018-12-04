@@ -1,7 +1,8 @@
 package com.radixdlt.client.core.ledger.selector;
 
+import com.radixdlt.client.core.network.RadixClientStatus;
 import com.radixdlt.client.core.network.RadixPeer;
-import com.radixdlt.client.core.network.WebSocketClient;
+import com.radixdlt.client.core.network.RadixPeerState;
 
 import java.util.Objects;
 import java.util.Set;
@@ -19,9 +20,7 @@ public class ShardFilter implements RadixPeerFilter {
 	}
 
 	@Override
-	public boolean test(RadixPeer radixPeer, WebSocketClient.RadixClientStatus radixClientStatus) {
-		return radixPeer.servesShards(shards)
-				.onErrorReturnItem(false)
-				.blockingGet();
+	public boolean test(RadixPeerState peerState) {
+		return peerState.data != null && peerState.data.getShards().intersects(this.shards);
 	}
 }

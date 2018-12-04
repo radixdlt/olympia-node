@@ -2,8 +2,11 @@ package com.radixdlt.client.core.network;
 
 import com.google.gson.JsonArray;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
+import io.reactivex.subjects.BehaviorSubject;
+import io.reactivex.subjects.SingleSubject;
 import org.json.JSONObject;
 import org.radix.common.ID.EUID;
 import org.radix.serialization2.DsonOutput.Output;
@@ -22,7 +25,6 @@ import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.client.core.atoms.AtomObservation;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState;
-import com.radixdlt.client.core.network.WebSocketClient.RadixClientStatus;
 
 import io.reactivex.Maybe;
 import io.reactivex.Observable;
@@ -38,15 +40,9 @@ public class RadixJsonRpcClient {
 	private static final Logger LOGGER = LoggerFactory.getLogger(RadixJsonRpcClient.class);
 
 	/**
-	 * Betanet does not yet support version checking
-	 * TODO: this is temporary, remove once supported everywhere
-	 */
-	private static final boolean CHECK_API_VERSION = false;
-
-	/**
 	 * API version of Client, must match with Server
 	 */
-	private static final Integer API_VERSION = 1;
+	public static final Integer API_VERSION = 1;
 
 	/**
 	 * The websocket this is wrapping
@@ -61,12 +57,12 @@ public class RadixJsonRpcClient {
 	/**
 	 * Cached API version of Node
 	 */
-	private final Single<Integer> serverApiVersion;
+	private final SingleSubject<Integer> serverApiVersion;
 
 	/**
 	 * Cached Universe of Node
 	 */
-	private final Single<RadixUniverseConfig> universeConfig;
+	private final SingleSubject<RadixUniverseConfig> universeConfig;
 
 	public RadixJsonRpcClient(WebSocketClient wsClient) {
 		this.wsClient = wsClient;
@@ -77,19 +73,19 @@ public class RadixJsonRpcClient {
 			.publish()
 			.refCount();
 
-		if (!CHECK_API_VERSION) {
-			this.serverApiVersion = Single.just(API_VERSION);
-		} else {
-			this.serverApiVersion = jsonRpcCall("Api.getVersion")
-				.map(result -> result.getAsJsonObject().get("version").getAsInt())
-				.cache();
-		}
+		this.serverApiVersion = SingleSubject.create();
+
+		jsonRpcCall("Api.getVersion")
+			.map(result -> result.getAsJsonObject().get("version").getAsInt())
+			.subscribe(serverApiVersion::onSuccess);
 
 		Serialization serialization = Serialize.getInstance();
-		this.universeConfig = jsonRpcCall("Universe.getUniverse")
+		this.universeConfig = SingleSubject.create();
+
+		jsonRpcCall("Universe.getUniverse")
 			.map(element -> GsonJson.getInstance().stringFromGson(element))
 			.map(result -> serialization.fromJson(result, RadixUniverseConfig.class))
-			.cache();
+			.subscribe(this.universeConfig::onSuccess);
 	}
 
 	/**
@@ -99,7 +95,7 @@ public class RadixJsonRpcClient {
 		return wsClient.getEndpoint().url().toString();
 	}
 
-	public Observable<RadixClientStatus> getStatus() {
+	public BehaviorSubject<RadixClientStatus> getStatus() {
 		return wsClient.getStatus();
 	}
 
@@ -177,12 +173,16 @@ public class RadixJsonRpcClient {
 		return this.jsonRpcCall(method, new JsonObject());
 	}
 
-	public Single<Integer> getAPIVersion() {
-		return serverApiVersion;
+	public Optional<Integer> getAPIVersion() {
+		return Optional.ofNullable(serverApiVersion.getValue());
 	}
 
-	public Single<Boolean> checkAPIVersion() {
-		return this.getAPIVersion().map(API_VERSION::equals);
+	public SingleSubject<Integer> apiVersion() {
+		return this.serverApiVersion;
+	}
+
+	public boolean checkAPIVersion() {
+		return this.getAPIVersion().map(API_VERSION::equals).orElse(false);
 	}
 
 	/**
@@ -190,7 +190,11 @@ public class RadixJsonRpcClient {
 	 *
 	 * @return universe config which the node is supporting
 	 */
-	public Single<RadixUniverseConfig> getUniverse() {
+	public Optional<RadixUniverseConfig> getUniverse() {
+		return Optional.ofNullable(this.universeConfig.getValue());
+	}
+
+	public SingleSubject<RadixUniverseConfig> universe() {
 		return this.universeConfig;
 	}
 

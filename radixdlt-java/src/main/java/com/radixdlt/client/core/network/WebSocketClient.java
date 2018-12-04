@@ -20,9 +20,6 @@ public class WebSocketClient {
 	private static final Logger LOGGER = LoggerFactory.getLogger(WebSocketClient.class);
 
 	private WebSocket webSocket;
-	public enum RadixClientStatus {
-		CONNECTING, OPEN, CLOSING, CLOSED, FAILURE
-	}
 
 	private final BehaviorSubject<RadixClientStatus> status = BehaviorSubject.createDefault(RadixClientStatus.CLOSED);
 	private final Request endpoint;
@@ -51,7 +48,7 @@ public class WebSocketClient {
 		return endpoint;
 	}
 
-	public Observable<RadixClientStatus> getStatus() {
+	public BehaviorSubject<RadixClientStatus> getStatus() {
 		return status;
 	}
 

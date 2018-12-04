@@ -1,6 +1,7 @@
 package com.radixdlt.client.core.network;
 
 import io.reactivex.Maybe;
+import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.subjects.SingleSubject;
 import java.util.Set;
@@ -12,6 +13,7 @@ public class RadixPeer {
 	private final SingleSubject<NodeRunnerData> data;
 	private final boolean useSSL;
 	private final int port;
+	private final Observable<RadixPeerState> status;
 
 	public RadixPeer(String location, boolean useSSL, int port) {
 		this.data = SingleSubject.create();
@@ -34,6 +36,15 @@ public class RadixPeer {
 				)
 			);
 		}
+
+		this.status = Observable
+				.combineLatest(data.toObservable(), this.radixClient.getStatus(), this.radixClient.universe().toObservable(), this.radixClient.apiVersion().toObservable(),
+					(peerData, clientStatus, clientUniverse, clientVersion) -> RadixPeerState.from(this))
+				.cache();
+	}
+
+	public Observable<RadixPeerState> status() {
+		return this.status;
 	}
 
 	public int getPort() {
@@ -55,6 +66,10 @@ public class RadixPeer {
 	public RadixPeer data(NodeRunnerData data) {
 		this.data.onSuccess(data);
 		return this;
+	}
+
+	public SingleSubject<NodeRunnerData> getData() {
+		return data;
 	}
 
 	public Single<Boolean> servesShards(Set<Long> shards) {

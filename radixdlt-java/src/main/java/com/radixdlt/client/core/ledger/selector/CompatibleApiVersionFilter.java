@@ -1,11 +1,19 @@
 package com.radixdlt.client.core.ledger.selector;
 
-import com.radixdlt.client.core.network.RadixPeer;
-import com.radixdlt.client.core.network.WebSocketClient;
+import com.radixdlt.client.core.network.RadixPeerState;
 
+/**
+ * An api version filter that rejects any incompatible peers as determined by the
+ */
 public class CompatibleApiVersionFilter implements RadixPeerFilter {
+	private final int version;
+
+	public CompatibleApiVersionFilter(int version) {
+		this.version = version;
+	}
+
 	@Override
-	public boolean test(RadixPeer radixPeer, WebSocketClient.RadixClientStatus radixClientStatus) {
-		return radixPeer.getRadixClient().checkAPIVersion().onErrorReturnItem(false).blockingGet();
+	public boolean test(RadixPeerState peerState) {
+		return peerState.version != null && peerState.version == this.version;
 	}
 }

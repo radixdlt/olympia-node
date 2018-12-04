@@ -1,12 +1,14 @@
 package com.radixdlt.client.core.ledger.selector;
 
+import com.radixdlt.client.core.network.RadixClientStatus;
 import com.radixdlt.client.core.network.RadixPeer;
-import com.radixdlt.client.core.network.WebSocketClient;
+import com.radixdlt.client.core.network.RadixPeerState;
 
 import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 
 /**
  * Peer filter that test the desirability of a peer
  */
-public interface RadixPeerFilter extends BiPredicate<RadixPeer, WebSocketClient.RadixClientStatus> {
+public interface RadixPeerFilter extends Predicate<RadixPeerState> {
 }
