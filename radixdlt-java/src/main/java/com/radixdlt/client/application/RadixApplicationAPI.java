@@ -135,6 +135,12 @@ public class RadixApplicationAPI {
 		Ledger ledger,
 		List<ActionToParticlesMapper> actionToParticlesMappers
 	) {
+		Objects.requireNonNull(identity);
+		Objects.requireNonNull(universe);
+		Objects.requireNonNull(feeMapper);
+		Objects.requireNonNull(ledger);
+		Objects.requireNonNull(actionToParticlesMappers);
+
 		this.identity = identity;
 		this.universe = universe;
 
@@ -208,9 +214,7 @@ public class RadixApplicationAPI {
 	}
 
 	/**
-	 * For advanced use at the moment.
-	 *
-	 * Create an api based on actionToParticleMappers of own choosing.
+	 * Creates an api based on actionToParticleMappers of own choosing.
 	 *
 	 * @param identity identity for api
 	 * @param actionToParticlesMappers the mappers to utilize for api

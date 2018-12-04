@@ -32,14 +32,29 @@ public class SendMessageToParticlesMapper implements ActionToParticlesMapper {
 	private final Supplier<ECKeyPair> generator;
 
 	/**
-	 * Function describing given an action who do we encrypt a message for
+	 * Function which runs every time a mapping is requested via map(action).
+	 * Determines what public keys to encrypt a message with given an application level
+	 * SendMessageAction.
 	 */
 	private final Function<SendMessageAction, Stream<ECPublicKey>> encryptionScheme;
 
+	/**
+	 * New SendMessage action mapper which by default adds both sender and receiver
+	 * public keys as readers of encrypted messages
+	 *
+	 * @param generator module to be used for creating new securely random ECKeyPairs
+	 */
 	public SendMessageToParticlesMapper(Supplier<ECKeyPair> generator) {
 		this(generator, sendMsg -> Stream.of(sendMsg.getFrom(), sendMsg.getTo()).map(RadixAddress::getPublicKey));
 	}
 
+	/**
+	 * SendMessage action mapper which uses a given eckeypair generator and encryption
+	 * scheme
+	 *
+	 * @param generator module to be used for creating new securely random ECKeyPairs
+	 * @param encryptionScheme function to decide which public keys to encrypt wiht
+	 */
 	public SendMessageToParticlesMapper(Supplier<ECKeyPair> generator, Function<SendMessageAction, Stream<ECPublicKey>> encryptionScheme) {
 		this.generator = generator;
 		this.encryptionScheme = encryptionScheme;
@@ -54,7 +69,7 @@ public class SendMessageToParticlesMapper implements ActionToParticlesMapper {
 	 * with the payload encrypted by the newly created private key.
 	 *
 	 * @param action the action to map to particles
-	 * @return an observable particles of a SendMessageAction. Otherwise, an empty observable
+	 * @return observable of spunparticles to be included in an atom for a given action
 	 */
 	public Observable<SpunParticle> map(Action action) {
 		if (!(action instanceof SendMessageAction)) {
