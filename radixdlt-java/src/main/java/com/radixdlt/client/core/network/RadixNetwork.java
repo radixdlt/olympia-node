@@ -32,12 +32,15 @@ public final class RadixNetwork {
 
 		this.peers = peerDiscovery.findPeers()
 			.retryWhen(new IncreasingRetryTimer(WebSocketException.class))
-			.doOnNext(peer -> LOGGER.info(String.format("Added to peer list: %s", peer.getLocation())))
+			.doOnNext(peer -> {
+				peer.getRadixClient().fetchClientInformation();
+				LOGGER.info(String.format("Added to peer list: %s", peer.getLocation()));
+			})
 			.replay().autoConnect(2);
 
 		this.statusUpdates = peers
 			.flatMap(
-				peer -> peer.getRadixClient().getStatus()
+				peer -> peer.getRadixClient().status()
 						.map(status -> new SimpleImmutableEntry<>(peer, status)
 				)
 			)
@@ -48,7 +51,7 @@ public final class RadixNetwork {
 				.doOnNext(status -> LOGGER.info(String.format("Peer status changed: %s", status)))
 				.map(status -> new SimpleImmutableEntry<>(peer, status)))
 				.scan(new RadixNetworkState(Collections.emptyMap()), (previousState, update) -> {
-			LinkedHashMap<RadixPeer, RadixPeerState> currentPeers = new LinkedHashMap<>(previousState.peers);
+			LinkedHashMap<RadixPeer, RadixPeerState> currentPeers = new LinkedHashMap<>(previousState.getPeers());
 			currentPeers.put(update.getKey(), update.getValue());
 
 			return new RadixNetworkState(currentPeers);

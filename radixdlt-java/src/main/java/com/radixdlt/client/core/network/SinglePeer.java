@@ -18,7 +18,7 @@ public class SinglePeer implements PeerDiscovery {
 		return Single.fromCallable(() -> new RadixPeer(peer, useSSL, port))
 			.flatMap(peer ->
 				peer.getRadixClient().getInfo().map(data -> {
-					peer.data(data);
+					peer.setData(data);
 					return peer;
 				})
 			).toObservable();

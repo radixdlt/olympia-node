@@ -38,8 +38,8 @@ public class RadixPeerState {
 	 */
 	public static RadixPeerState from(RadixPeer peer) {
 		RadixJsonRpcClient client = peer.getRadixClient();
-		return new RadixPeerState(peer.getLocation(), peer.getPort(), client.getStatus().getValue(),
-				peer.getData().getValue(), client.apiVersion().getValue(), client.universe().getValue());
+		return new RadixPeerState(peer.getLocation(), peer.getPort(), client.getStatus().orElse(null),
+				peer.getData().orElse(null), client.getAPIVersion().orElse(null), client.getUniverse().orElse(null));
 	}
 
 	@Override

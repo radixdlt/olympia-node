@@ -98,8 +98,18 @@ public class RadixClientSupplier {
 
 		this.network = network;
 		this.selector = selector;
-		this.filters = filters;
+		this.filters = Collections.unmodifiableList(new ArrayList<>(filters));
 		this.delaySecs = 3;
+	}
+
+	/**
+	 * Returns a cold single of the first peer found which supports
+	 * a set short shards which intersects with a given shard
+	 *
+	 * @return a cold single of the first matching Radix client
+	 */
+	public Single<RadixJsonRpcClient> getRadixClient() {
+		return this.getRadixClients(this.selector, this.filters).firstOrError();
 	}
 
 	/**
@@ -168,7 +178,7 @@ public class RadixClientSupplier {
 	}
 
 	private List<RadixPeer> collectDesirablePeers(List<RadixPeerFilter> filters, RadixNetworkState state) {
-		return state.peers.entrySet().stream()
+		return state.getPeers().entrySet().stream()
 				.filter(entry -> filters.stream()
 						.allMatch(filter -> filter.test(entry.getValue())))
 				.map(Map.Entry::getKey)

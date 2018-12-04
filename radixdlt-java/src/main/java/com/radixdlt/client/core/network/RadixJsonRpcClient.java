@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.SingleSubject;
 import org.json.JSONObject;
 import org.radix.common.ID.EUID;
@@ -74,14 +73,18 @@ public class RadixJsonRpcClient {
 			.refCount();
 
 		this.serverApiVersion = SingleSubject.create();
-		this.serverApiVersion.onSuccess(API_VERSION);
-		jsonRpcCall("Api.getVersion")
-			.map(result -> result.getAsJsonObject().get("version").getAsInt())
-			.subscribe(serverApiVersion::onSuccess, e -> LOGGER.error("Error while requesting Api.getVersion: " + e, e));
-
-		Serialization serialization = Serialize.getInstance();
-
 		this.universeConfig = SingleSubject.create();
+	}
+
+	void fetchClientInformation() {
+		Serialization serialization = Serialize.getInstance();
+		jsonRpcCall("Api.getVersion")
+				.map(result -> result.getAsJsonObject().get("version").getAsInt())
+				.onErrorReturn(e -> {
+					LOGGER.error(String.format("Error while requesting Api.getVersion: %s", e));
+					return API_VERSION; // assume api version matches for now until fixed in core
+				})
+				.subscribe(serverApiVersion::onSuccess);
 		jsonRpcCall("Universe.getUniverse")
 			.map(element -> GsonJson.getInstance().stringFromGson(element))
 			.map(result -> serialization.fromJson(result, RadixUniverseConfig.class))
@@ -95,7 +98,11 @@ public class RadixJsonRpcClient {
 		return wsClient.getEndpoint().url().toString();
 	}
 
-	public BehaviorSubject<RadixClientStatus> getStatus() {
+	public Observable<RadixClientStatus> status() {
+		return wsClient.status();
+	}
+
+	public Optional<RadixClientStatus> getStatus() {
 		return wsClient.getStatus();
 	}
 
@@ -177,7 +184,7 @@ public class RadixJsonRpcClient {
 		return Optional.ofNullable(serverApiVersion.getValue());
 	}
 
-	public SingleSubject<Integer> apiVersion() {
+	public Single<Integer> apiVersion() {
 		return this.serverApiVersion;
 	}
 
@@ -194,7 +201,7 @@ public class RadixJsonRpcClient {
 		return Optional.ofNullable(this.universeConfig.getValue());
 	}
 
-	public SingleSubject<RadixUniverseConfig> universe() {
+	public Single<RadixUniverseConfig> universe() {
 		return this.universeConfig;
 	}
 

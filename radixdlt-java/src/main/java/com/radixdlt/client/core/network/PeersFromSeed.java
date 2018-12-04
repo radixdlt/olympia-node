@@ -21,7 +21,7 @@ public class PeersFromSeed implements PeerDiscovery {
 		Observable<RadixPeer> connectedSeed =
 			rawSeed
 				.doOnSuccess(seed -> seed.getRadixClient().getInfo().subscribe(
-					seed::data,
+					seed::setData,
 					e -> LOGGER.warn("Unable to load seed info")
 				))
 				.toObservable();
@@ -37,7 +37,7 @@ public class PeersFromSeed implements PeerDiscovery {
 					Collections.shuffle(copyList);
 					return copyList;
 				})
-				.map(data -> new RadixPeer(data.getIp(), seed.isSsl(), seed.getPort()).data(data)),
+				.map(data -> new RadixPeer(data.getIp(), seed.isSsl(), seed.getPort()).setData(data)),
 			rawSeed.toObservable()
 		).distinct(RadixPeer::getLocation);
 	}

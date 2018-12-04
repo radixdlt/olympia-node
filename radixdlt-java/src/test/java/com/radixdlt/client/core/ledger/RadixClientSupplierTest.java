@@ -1,28 +1,30 @@
 package com.radixdlt.client.core.ledger;
 
+import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
+import com.radixdlt.client.core.ledger.selector.ConnectionAliveFilter;
+import com.radixdlt.client.core.ledger.selector.GetFirstSelector;
+import com.radixdlt.client.core.network.RadixClientStatus;
 import com.radixdlt.client.core.network.RadixJsonRpcClient;
 import com.radixdlt.client.core.network.RadixNetwork;
+import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixPeer;
-import com.radixdlt.client.core.network.RadixClientStatus;
+import com.radixdlt.client.core.network.RadixPeerState;
 import com.radixdlt.client.core.network.WebSocketException;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.observers.TestObserver;
+import org.junit.Assert;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.util.AbstractMap;
+import java.util.Collections;
 import java.util.List;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -33,15 +35,14 @@ public class RadixClientSupplierTest {
 		RadixUniverseConfig config = mock(RadixUniverseConfig.class);
 		RadixNetwork network = mock(RadixNetwork.class);
 		RadixJsonRpcClient client = mock(RadixJsonRpcClient.class);
-		RadixClientSupplier selector = new RadixClientSupplier(network);
 
-		when(client.getStatus()).thenReturn(Observable.just(RadixClientStatus.OPEN));
-		when(client.getUniverse()).thenReturn(Single.error(new IOException()));
-		when(selector.getRadixClients(any(Set.class))).thenReturn(Observable.concat(Observable.just(client), Observable.never()));
+		RadixPeer peer = mock(RadixPeer.class);
+		RadixPeerState peerState = mock(RadixPeerState.class);
+		when(network.getNetworkState()).thenReturn(Observable.just(new RadixNetworkState(ImmutableMap.of(peer, peerState))));
 
 		RadixClientSupplier clientSelector = new RadixClientSupplier(network, config);
 		TestObserver<RadixJsonRpcClient> testObserver = TestObserver.create();
-		clientSelector.getRadixClient(1L).subscribe(testObserver);
+		clientSelector.getRadixClients(Collections.singleton(1L)).subscribe(testObserver);
 
 		testObserver.assertNoErrors();
 		testObserver.assertNoValues();
@@ -51,48 +52,60 @@ public class RadixClientSupplierTest {
 	public void dontConnectToAllNodesTest() {
 		RadixUniverseConfig config = mock(RadixUniverseConfig.class);
 
-		RadixNetwork network = mock(RadixNetwork.class);
-		RadixClientSupplier selector = spy(new RadixClientSupplier(network));
-
-		List<RadixJsonRpcClient> clients = IntStream.range(0, 100).mapToObj(i -> {
+		List<AbstractMap.SimpleImmutableEntry<RadixPeer, RadixPeerState>> peers = IntStream.range(0, 100).mapToObj(i -> {
+			RadixPeer peer = mock(RadixPeer.class);
 			RadixJsonRpcClient client = mock(RadixJsonRpcClient.class);
-			when(client.getStatus()).thenReturn(Observable.just(RadixClientStatus.CLOSED));
+			when(peer.servesShards(any())).thenReturn(Single.just(true));
+			when(peer.getRadixClient()).thenReturn(client);
+
+			RadixPeerState peerState = mock(RadixPeerState.class);
+			when(peerState.getVersion()).thenReturn(1); // TODO this should be a constant at least, not sure yet
+			when(peerState.getUniverseConfig()).thenReturn(config);
+			when(client.universe()).thenReturn(Single.just(config));
+
 			if (i == 0) {
-				when(client.getUniverse()).thenReturn(Single.timer(1, TimeUnit.SECONDS).map(t -> config));
+				when(peerState.getStatus()).thenReturn(RadixClientStatus.OPEN);
 			} else {
-				when(client.getUniverse()).thenReturn(Single.never());
+				when(peerState.getStatus()).thenReturn(RadixClientStatus.CLOSED);
 			}
-			return client;
+			return new AbstractMap.SimpleImmutableEntry<>(peer, peerState);
 		}).collect(Collectors.toList());
-		doReturn(Observable.fromIterable(clients)).when(selector).getRadixClients(any());
 
+		RadixNetwork network = mock(RadixNetwork.class);
+		when(network.getNetworkState()).thenReturn(Observable.fromIterable(peers).map(e
+				-> new RadixNetworkState(ImmutableMap.of(e.getKey(), e.getValue()))));
+		RadixClientSupplier selector = new RadixClientSupplier(
+				network, new GetFirstSelector(), new ConnectionAliveFilter());
 		TestObserver<RadixJsonRpcClient> testObserver = TestObserver.create();
-		selector.getRadixClient(1L).subscribe(testObserver);
+		selector.getRadixClient().subscribe(testObserver);
 		testObserver.awaitTerminalEvent();
-		testObserver.assertValue(clients.get(0));
+		testObserver.assertValue(peers.get(0).getKey().getRadixClient());
 
-		verify(clients.get(99), times(0)).getUniverse();
+		verify(peers.get(99).getKey().getRadixClient(), times(0)).universe();
 	}
 
 	@Test
 	public void whenFirstNodeFailsThenSecondNodeShouldConnect() {
-		RadixUniverseConfig config = mock(RadixUniverseConfig.class);
 		RadixNetwork network = mock(RadixNetwork.class);
+		RadixPeer badPeer = mock(RadixPeer.class);
 		RadixJsonRpcClient badClient = mock(RadixJsonRpcClient.class);
-		when(badClient.getStatus()).thenReturn(Observable.just(RadixClientStatus.OPEN));
-		when(badClient.getUniverse()).thenReturn(Single.error(new IOException()));
+		when(badPeer.getRadixClient()).thenReturn(badClient);
+		RadixPeerState badPeerState = mock(RadixPeerState.class);
+		when(badPeerState.getStatus()).thenReturn(RadixClientStatus.CLOSED);
 
+		RadixPeer goodPeer = mock(RadixPeer.class);
 		RadixJsonRpcClient goodClient = mock(RadixJsonRpcClient.class);
-		when(goodClient.getStatus()).thenReturn(Observable.just(RadixClientStatus.OPEN));
-		when(goodClient.getUniverse()).thenReturn(Single.just(mock(RadixUniverseConfig.class)));
-		RadixClientSupplier selector = new RadixClientSupplier(network);
+		when(goodPeer.getRadixClient()).thenReturn(goodClient);
+		RadixPeerState goodPeerState = mock(RadixPeerState.class);
+		when(goodPeerState.getStatus()).thenReturn(RadixClientStatus.OPEN);
 
-		when(selector.getRadixClients(any(Set.class))).thenReturn(
-				Observable.concat(Observable.just(badClient), Observable.just(goodClient), Observable.never()));
+		when(network.getNetworkState()).thenReturn(Observable.fromArray(
+				new RadixNetworkState(ImmutableMap.of(badPeer, badPeerState)),
+				new RadixNetworkState(ImmutableMap.of(goodPeer, goodPeerState))));
 
-		RadixClientSupplier clientSelector = new RadixClientSupplier(network, config);
+		RadixClientSupplier selector = new RadixClientSupplier(network, new GetFirstSelector(), new ConnectionAliveFilter());
 		TestObserver<RadixJsonRpcClient> testObserver = TestObserver.create();
-		clientSelector.getRadixClient(1L).subscribe(testObserver);
+		selector.getRadixClient().subscribe(testObserver);
 
 		testObserver.awaitTerminalEvent();
 		testObserver.assertNoErrors();
@@ -100,61 +113,19 @@ public class RadixClientSupplierTest {
 	}
 
 	@Test
-	public void testGetClientsMultipleTimes() {
-		RadixNetwork network = new RadixNetwork(() -> Observable.just(
-				new RadixPeer("1", false, 8080),
-				new RadixPeer("2", false, 8080),
-				new RadixPeer("3", false, 8080)
-		));
-		RadixClientSupplier selector = new RadixClientSupplier(network);
-
-		IntStream.range(0, 10).forEach(i ->
-				selector.getRadixClients()
-						.map(RadixJsonRpcClient::getLocation)
-						.test()
-						.assertValueAt(0, "http://1:8080/rpc")
-						.assertValueAt(1, "http://2:8080/rpc")
-						.assertValueAt(2, "http://3:8080/rpc")
-		);
-	}
-
-	@Test
-	public void testAPIMismatch() {
-		RadixPeer peer = mock(RadixPeer.class);
-		RadixJsonRpcClient client = mock(RadixJsonRpcClient.class);
-		when(peer.servesShards(any())).thenReturn(Single.just(true));
-		when(peer.getRadixClient()).thenReturn(client);
-		when(client.getStatus()).thenReturn(Observable.just(RadixClientStatus.OPEN));
-		when(client.checkAPIVersion()).thenReturn(Single.just(false));
-
-		RadixNetwork network = new RadixNetwork(() -> Observable.just(peer));
-
-		RadixClientSupplier selector = new RadixClientSupplier(network);
-		TestObserver<RadixJsonRpcClient> testObserver = TestObserver.create();
-		selector.getRadixClient(0L).subscribe(testObserver);
-		testObserver
-				.assertComplete()
-				.assertNoErrors()
-				.assertNoValues();
-	}
-
-	@Test
 	public void testValidClient() {
-		RadixUniverseConfig config = mock(RadixUniverseConfig.class);
-		RadixPeer peer = mock(RadixPeer.class);
 		RadixJsonRpcClient client = mock(RadixJsonRpcClient.class);
-		when(peer.servesShards(any())).thenReturn(Single.just(true));
+		RadixPeer peer = mock(RadixPeer.class);
 		when(peer.getRadixClient()).thenReturn(client);
-		when(client.getStatus()).thenReturn(Observable.just(RadixClientStatus.OPEN));
-		when(client.checkAPIVersion()).thenReturn(Single.just(true));
-		when(client.getUniverse()).thenReturn(Single.just(config));
 
-		RadixNetwork network = new RadixNetwork(() -> Observable.just(peer));
-		RadixClientSupplier selector = new RadixClientSupplier(network);
+		RadixPeerState peerState = mock(RadixPeerState.class);
+		when(peerState.getStatus()).thenReturn(RadixClientStatus.OPEN);
 
-		TestObserver<RadixJsonRpcClient> testObserver = TestObserver.create();
-		selector.getRadixClient(0L).subscribe(testObserver);
-		testObserver.assertValue(client);
+		RadixNetwork network = mock(RadixNetwork.class);
+		when(network.getNetworkState()).thenReturn(Observable.just(new RadixNetworkState(ImmutableMap.of(peer, peerState))));
+		RadixClientSupplier selector = new RadixClientSupplier(network, new GetFirstSelector(), new ConnectionAliveFilter());
+
+		Assert.assertEquals(client, selector.getRadixClient().blockingGet());
 	}
 
 

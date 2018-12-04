@@ -6,6 +6,7 @@ import io.reactivex.exceptions.Exceptions;
 import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.PublishSubject;
 import java.io.IOException;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import okhttp3.OkHttpClient;
@@ -48,8 +49,12 @@ public class WebSocketClient {
 		return endpoint;
 	}
 
-	public BehaviorSubject<RadixClientStatus> getStatus() {
-		return status;
+	protected Observable<RadixClientStatus> status() {
+		return this.status;
+	}
+
+	protected Optional<RadixClientStatus> getStatus() {
+		return Optional.ofNullable(this.status.getValue());
 	}
 
 	public boolean close() {
@@ -116,7 +121,7 @@ public class WebSocketClient {
 	 * @return completable which signifies when connection has been made
 	 */
 	public Completable connect() {
-		return this.getStatus()
+		return this.status()
 			.doOnNext(status -> {
 				// TODO: cancel tryConnect on dispose
 				if (status.equals(RadixClientStatus.CLOSED)) {

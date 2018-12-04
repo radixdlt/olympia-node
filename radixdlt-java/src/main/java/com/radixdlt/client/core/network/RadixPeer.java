@@ -5,6 +5,7 @@ import io.reactivex.Single;
 import io.reactivex.subjects.SingleSubject;
 import okhttp3.Request;
 
+import java.util.Optional;
 import java.util.Set;
 
 public class RadixPeer {
@@ -38,7 +39,7 @@ public class RadixPeer {
 		}
 
 		this.status = Observable
-				.combineLatest(data.toObservable(), this.radixClient.getStatus(),
+				.combineLatest(data.toObservable(), this.radixClient.status(),
 						this.radixClient.universe().toObservable(), this.radixClient.apiVersion().toObservable(),
 					(peerData, clientStatus, clientUniverse, clientVersion) ->
 						new RadixPeerState(location, port, clientStatus, peerData, clientVersion, clientUniverse))
@@ -65,13 +66,17 @@ public class RadixPeer {
 		return radixClient;
 	}
 
-	public RadixPeer data(NodeRunnerData data) {
+	public RadixPeer setData(NodeRunnerData data) {
 		this.data.onSuccess(data);
 		return this;
 	}
 
-	public SingleSubject<NodeRunnerData> getData() {
+	public Single<NodeRunnerData> data() {
 		return data;
+	}
+
+	public Optional<NodeRunnerData> getData() {
+		return Optional.ofNullable(data.getValue());
 	}
 
 	public Single<Boolean> servesShards(Set<Long> shards) {
