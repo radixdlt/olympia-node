@@ -29,7 +29,7 @@ public class SendMessageToParticlesMapper implements ActionToParticlesMapper {
 	/**
 	 * A module capable of creating new securely random ECKeyPairs
 	 */
-	private final Supplier<ECKeyPair> generator;
+	private final Supplier<ECKeyPair> keyPairGenerator;
 
 	/**
 	 * Function which runs every time a mapping is requested via map(action).
@@ -42,21 +42,21 @@ public class SendMessageToParticlesMapper implements ActionToParticlesMapper {
 	 * New SendMessage action mapper which by default adds both sender and receiver
 	 * public keys as readers of encrypted messages
 	 *
-	 * @param generator module to be used for creating new securely random ECKeyPairs
+	 * @param keyPairGenerator module to be used for creating new securely random ECKeyPairs
 	 */
-	public SendMessageToParticlesMapper(Supplier<ECKeyPair> generator) {
-		this(generator, sendMsg -> Stream.of(sendMsg.getFrom(), sendMsg.getTo()).map(RadixAddress::getPublicKey));
+	public SendMessageToParticlesMapper(Supplier<ECKeyPair> keyPairGenerator) {
+		this(keyPairGenerator, sendMsg -> Stream.of(sendMsg.getFrom(), sendMsg.getTo()).map(RadixAddress::getPublicKey));
 	}
 
 	/**
 	 * SendMessage action mapper which uses a given eckeypair generator and encryption
 	 * scheme
 	 *
-	 * @param generator module to be used for creating new securely random ECKeyPairs
+	 * @param keyPairGenerator module to be used for creating new securely random ECKeyPairs
 	 * @param encryptionScheme function to decide which public keys to encrypt wiht
 	 */
-	public SendMessageToParticlesMapper(Supplier<ECKeyPair> generator, Function<SendMessageAction, Stream<ECPublicKey>> encryptionScheme) {
-		this.generator = generator;
+	public SendMessageToParticlesMapper(Supplier<ECKeyPair> keyPairGenerator, Function<SendMessageAction, Stream<ECPublicKey>> encryptionScheme) {
+		this.keyPairGenerator = keyPairGenerator;
 		this.encryptionScheme = encryptionScheme;
 	}
 
@@ -71,6 +71,7 @@ public class SendMessageToParticlesMapper implements ActionToParticlesMapper {
 	 * @param action the action to map to particles
 	 * @return observable of spunparticles to be included in an atom for a given action
 	 */
+	@Override
 	public Observable<SpunParticle> map(Action action) {
 		if (!(action instanceof SendMessageAction)) {
 			return Observable.empty();
@@ -84,7 +85,7 @@ public class SendMessageToParticlesMapper implements ActionToParticlesMapper {
 			EncryptorBuilder encryptorBuilder = new EncryptorBuilder();
 			encryptionScheme.apply(sendMessageAction).forEach(encryptorBuilder::addReader);
 
-			ECKeyPair sharedKey = this.generator.get();
+			ECKeyPair sharedKey = this.keyPairGenerator.get();
 
 			encryptorBuilder.sharedKey(sharedKey);
 
