@@ -74,18 +74,18 @@ public class RadixJsonRpcClient {
 			.refCount();
 
 		this.serverApiVersion = SingleSubject.create();
-
+		this.serverApiVersion.onSuccess(API_VERSION);
 		jsonRpcCall("Api.getVersion")
 			.map(result -> result.getAsJsonObject().get("version").getAsInt())
-			.subscribe(serverApiVersion::onSuccess);
+			.subscribe(serverApiVersion::onSuccess, e -> LOGGER.error("Error while requesting Api.getVersion: " + e, e));
 
 		Serialization serialization = Serialize.getInstance();
-		this.universeConfig = SingleSubject.create();
 
+		this.universeConfig = SingleSubject.create();
 		jsonRpcCall("Universe.getUniverse")
 			.map(element -> GsonJson.getInstance().stringFromGson(element))
 			.map(result -> serialization.fromJson(result, RadixUniverseConfig.class))
-			.subscribe(this.universeConfig::onSuccess);
+			.subscribe(universeConfig::onSuccess);
 	}
 
 	/**

@@ -23,10 +23,10 @@ import io.reactivex.observables.ConnectableObservable;
 public class RadixAtomSubmitter implements AtomSubmitter {
 	private static final Logger LOGGER = LoggerFactory.getLogger(RadixAtomSubmitter.class);
 
-	private final Function<Set<Long>, Single<RadixJsonRpcClient>> clientSelector;
+	private final Function<Set<Long>, Single<RadixJsonRpcClient>> clientSupplier;
 
-	public RadixAtomSubmitter(Function<Set<Long>, Single<RadixJsonRpcClient>> clientSelector) {
-		this.clientSelector = clientSelector;
+	public RadixAtomSubmitter(Function<Set<Long>, Single<RadixJsonRpcClient>> clientSupplier) {
+		this.clientSupplier = clientSupplier;
 	}
 
 	/**
@@ -39,11 +39,9 @@ public class RadixAtomSubmitter implements AtomSubmitter {
 	 */
 	@Override
 	public Observable<AtomSubmissionUpdate> submitAtom(Atom atom) {
-		Observable<AtomSubmissionUpdate> status = clientSelector.apply(atom.getRequiredFirstShard())
+		Observable<AtomSubmissionUpdate> status = clientSupplier.apply(atom.getRequiredFirstShard())
 			.doOnSuccess(client -> LOGGER.info("Found client to submit atom {}: {}", atom.getHid(), client.getLocation()))
-			.doOnError(throwable -> {
-				LOGGER.warn("Error on submitAtom {} {}", atom.getHid(), throwable.getMessage());
-			})
+			.doOnError(throwable -> LOGGER.warn("Error on submitAtom {} {}", atom.getHid(), throwable.getMessage()))
 			.flatMapObservable(client -> client.submitAtom(atom))
 			.doOnError(Throwable::printStackTrace)
 			.retryWhen(new IncreasingRetryTimer(WebSocketException.class));
