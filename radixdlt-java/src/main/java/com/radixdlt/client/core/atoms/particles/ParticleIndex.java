@@ -11,14 +11,23 @@ public abstract class ParticleIndex extends SerializableObject {
 	@DsonOutput(Output.ALL)
 	private RadixAddress address;
 
+	@JsonProperty("unique")
+	@DsonOutput(Output.ALL)
+	private String unique;
+
 	protected ParticleIndex() {
 	}
 
-	protected ParticleIndex(RadixAddress address) {
+	protected ParticleIndex(RadixAddress address, String unique) {
 		this.address = address;
+		this.unique = unique;
 	}
 
 	public RadixAddress getAddress() {
 		return address;
+	}
+
+	public String getUnique() {
+		return unique;
 	}
 }

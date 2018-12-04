@@ -126,19 +126,13 @@ public final class TokenClassReference extends ParticleIndex {
 		return UInt256s.fromBigDecimal(units.multiply(SUB_UNITS_BIG_DECIMAL));
 	}
 
-	@JsonProperty("symbol")
-	@DsonOutput(Output.ALL)
-	private String symbol;
-
 	TokenClassReference() {
 		// No-arg constructor for serializer
 	}
 
 	private TokenClassReference(RadixAddress address, String symbol) {
-		super(address);
+		super(address, symbol);
 		Objects.requireNonNull(symbol);
-
-		this.symbol = symbol;
 	}
 
 	public static TokenClassReference of(RadixAddress address, String reference) {
@@ -146,7 +140,7 @@ public final class TokenClassReference extends ParticleIndex {
 	}
 
 	public String getSymbol() {
-		return symbol;
+		return this.getUnique();
 	}
 
 	public static EUID calcEUID(String isoCode) {
@@ -160,7 +154,7 @@ public final class TokenClassReference extends ParticleIndex {
 		}
 
 		TokenClassReference tokenClassReference = (TokenClassReference) o;
-		return this.symbol.equals(tokenClassReference.symbol) && this.getAddress().equals(tokenClassReference.getAddress());
+		return this.getUnique().equals(tokenClassReference.getUnique()) && this.getAddress().equals(tokenClassReference.getAddress());
 	}
 
 	@Override
@@ -170,6 +164,6 @@ public final class TokenClassReference extends ParticleIndex {
 
 	@Override
 	public String toString() {
-		return String.format("%s/@%s", this.getAddress().toString(), symbol);
+		return String.format("%s/tokenclasses/@%s", this.getAddress().toString(), this.getUnique());
 	}
 }
