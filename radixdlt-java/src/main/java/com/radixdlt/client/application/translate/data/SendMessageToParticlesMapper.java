@@ -2,7 +2,7 @@ package com.radixdlt.client.application.translate.data;
 
 import com.google.gson.JsonArray;
 import com.radixdlt.client.application.translate.Action;
-import com.radixdlt.client.application.translate.ActionToParticlesMapper;
+import com.radixdlt.client.application.translate.ContextFreeActionToParticlesMapper;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.atommodel.message.MessageParticle;
@@ -24,7 +24,7 @@ import java.util.stream.Stream;
 /**
  * Maps a send message action to the particles necessary to be included in an atom.
  */
-public class SendMessageToParticlesMapper implements ActionToParticlesMapper {
+public class SendMessageToParticlesMapper implements ContextFreeActionToParticlesMapper {
 
 	/**
 	 * A module capable of creating new securely random ECKeyPairs
@@ -32,7 +32,7 @@ public class SendMessageToParticlesMapper implements ActionToParticlesMapper {
 	private final Supplier<ECKeyPair> keyPairGenerator;
 
 	/**
-	 * Function which runs every time a mapping is requested via map(action).
+	 * Function which runs every time a mapping is requested via mapToParticles(action).
 	 * Determines what public keys to encrypt a message with given an application level
 	 * SendMessageAction.
 	 */
@@ -68,11 +68,11 @@ public class SendMessageToParticlesMapper implements ActionToParticlesMapper {
 	 * users, stores that into a message particles and then creates another message particle
 	 * with the payload encrypted by the newly created private key.
 	 *
-	 * @param action the action to map to particles
+	 * @param action the action to mapToParticles to particles
 	 * @return observable of spunparticles to be included in an atom for a given action
 	 */
 	@Override
-	public Observable<SpunParticle> map(Action action) {
+	public Observable<SpunParticle> mapToParticles(Action action) {
 		if (!(action instanceof SendMessageAction)) {
 			return Observable.empty();
 		}

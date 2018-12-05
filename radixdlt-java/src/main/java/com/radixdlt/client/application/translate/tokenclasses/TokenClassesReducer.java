@@ -2,9 +2,6 @@ package com.radixdlt.client.application.translate.tokenclasses;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.radix.utils.UInt256s;
 
@@ -22,14 +19,14 @@ import com.radixdlt.client.core.atoms.particles.SpunParticle;
 /**
  * Reduces particles at an address into concrete Tokens and their states
  */
-public class TokenReducer implements ParticleReducer<Map<TokenClassReference, TokenState>> {
+public class TokenClassesReducer implements ParticleReducer<TokenClassesState> {
 	@Override
-	public Map<TokenClassReference, TokenState> initialState() {
-		return Collections.emptyMap();
+	public TokenClassesState initialState() {
+		return TokenClassesState.init();
 	}
 
 	@Override
-	public Map<TokenClassReference, TokenState> reduce(Map<TokenClassReference, TokenState> state, SpunParticle s) {
+	public TokenClassesState reduce(TokenClassesState state, SpunParticle s) {
 		Particle p = s.getParticle();
 		if (!(p instanceof TokenParticle
 			|| (p instanceof OwnedTokensParticle && s.getSpin() == Spin.UP
@@ -37,7 +34,6 @@ public class TokenReducer implements ParticleReducer<Map<TokenClassReference, To
 			return state;
 		}
 
-		HashMap<TokenClassReference, TokenState> newMap = new HashMap<>(state);
 		if (p instanceof TokenParticle) {
 			TokenParticle tokenParticle = (TokenParticle) p;
 			TokenPermission mintPermission = tokenParticle.getTokenPermissions().get(FungibleType.MINTED);
@@ -55,45 +51,23 @@ public class TokenReducer implements ParticleReducer<Map<TokenClassReference, To
 				throw new IllegalStateException("TokenParticle with mintPermissions of " + mintPermission + " not supported.");
 			}
 
-			TokenState tokenState = new TokenState(
+			return state.mergeTokenClass(
+				tokenParticle.getTokenClassReference(),
 				tokenParticle.getName(),
 				tokenParticle.getSymbol(),
 				tokenParticle.getDescription(),
-				BigDecimal.ZERO,
 				tokenSupplyType
-			);
-
-			newMap.merge(
-				tokenParticle.getTokenClassReference(),
-				tokenState,
-				(a, b) -> new TokenState(b.getName(), b.getIso(), b.getDescription(), a.getTotalSupply(), b.getTokenSupplyType())
 			);
 		} else {
 			OwnedTokensParticle mintedOrBurned = (OwnedTokensParticle) p;
 			BigInteger mintedOrBurnedAmount = UInt256s.toBigInteger(mintedOrBurned.getAmount());
+			BigDecimal change = TokenClassReference.subunitsToUnits(
+				(mintedOrBurned.getType() == FungibleType.BURNED)
+					? mintedOrBurnedAmount.negate()
+					: mintedOrBurnedAmount
+			);
 
-			TokenState tokenState = new TokenState(
-				null,
-				mintedOrBurned.getTokenClassReference().getSymbol(),
-				null,
-				TokenClassReference.subunitsToUnits(
-					(mintedOrBurned.getType() == FungibleType.BURNED) ? mintedOrBurnedAmount.negate() : mintedOrBurnedAmount
-				),
-				null
-			);
-			newMap.merge(
-				mintedOrBurned.getTokenClassReference(),
-				tokenState,
-				(a, b) -> new TokenState(
-					a.getName(),
-					a.getIso(),
-					a.getDescription(),
-					a.getTotalSupply().add(b.getTotalSupply()),
-					a.getTokenSupplyType()
-				)
-			);
+			return state.mergeSupplyChange(mintedOrBurned.getTokenClassReference(), change);
 		}
-
-		return newMap;
 	}
 }

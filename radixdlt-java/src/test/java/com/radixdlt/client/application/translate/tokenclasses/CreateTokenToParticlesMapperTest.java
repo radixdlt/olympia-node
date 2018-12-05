@@ -31,7 +31,7 @@ public class CreateTokenToParticlesMapperTest {
 
 		CreateTokenToParticlesMapper createTokenToParticlesMapper = new CreateTokenToParticlesMapper();
 		TestObserver<List<SpunParticle>> testObserver = TestObserver.create();
-		createTokenToParticlesMapper.map(tokenCreation).toList().subscribe(testObserver);
+		createTokenToParticlesMapper.mapToParticles(tokenCreation).toList().subscribe(testObserver);
 		testObserver.assertValue(particles ->
 			particles.stream().anyMatch(s -> s.getParticle() instanceof TokenParticle)
 				&& particles.stream().anyMatch(s -> s.getParticle() instanceof OwnedTokensParticle)

@@ -1,5 +1,6 @@
 package com.radixdlt.client.examples;
 
+import com.radixdlt.client.application.translate.data.SendMessageAction;
 import java.math.BigDecimal;
 
 import com.radixdlt.client.application.RadixApplicationAPI;

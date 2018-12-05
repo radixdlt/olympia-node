@@ -7,13 +7,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 import org.radix.common.ID.EUID;
-import org.radix.serialization2.DsonOutput;
-import org.radix.serialization2.DsonOutput.Output;
 import org.radix.serialization2.SerializerId2;
 import org.radix.utils.UInt256;
 import org.radix.utils.UInt256s;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.RadixHash;
 import com.radixdlt.client.core.atoms.particles.ParticleIndex;

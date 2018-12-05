@@ -1,5 +1,6 @@
 package com.radixdlt.client.application.translate.tokens;
 
+import com.radixdlt.client.application.translate.ApplicationState;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Collections;
@@ -20,7 +21,7 @@ import com.radixdlt.client.core.atoms.particles.SpunParticle;
 /**
  * All the token balances at an address at a given point in time.
  */
-public class TokenBalanceState {
+public class TokenBalanceState implements ApplicationState {
 	public static class Balance {
 		private final BigInteger balance;
 		private final Map<RadixHash, SpunParticle<OwnedTokensParticle>> consumables;

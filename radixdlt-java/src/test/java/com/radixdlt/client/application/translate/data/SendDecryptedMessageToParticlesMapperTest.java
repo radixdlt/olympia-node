@@ -19,7 +19,7 @@ public class SendDecryptedMessageToParticlesMapperTest {
 		when(sendMessageAction.getTo()).thenReturn(mock(RadixAddress.class));
 		when(sendMessageAction.encrypt()).thenReturn(false);
 		TestObserver<SpunParticle> testObserver = TestObserver.create();
-		sendMessageToParticlesMapper.map(sendMessageAction).subscribe(testObserver);
+		sendMessageToParticlesMapper.mapToParticles(sendMessageAction).subscribe(testObserver);
 		testObserver.assertValueCount(1);
 	}
 }

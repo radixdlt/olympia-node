@@ -3,7 +3,6 @@ package com.radixdlt.client.atommodel.tokens;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.SerializerId2;
