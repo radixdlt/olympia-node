@@ -135,7 +135,7 @@ public class RadixClientSupplierTest {
 	@Test
 	public void testPeerDiscoveryFail() {
 		RadixNetwork network = new RadixNetwork(() -> Observable.error(new WebSocketException()));
-		TestObserver<AbstractMap.SimpleImmutableEntry<RadixPeer, RadixClientStatus>> observer = TestObserver.create();
+		TestObserver<RadixPeerState> observer = TestObserver.create();
 		network.getStatusUpdates().subscribe(observer);
 		network.connectAndGetStatusUpdates().subscribe();
 		observer.assertNoErrors();

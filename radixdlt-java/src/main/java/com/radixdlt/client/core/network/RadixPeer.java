@@ -38,6 +38,8 @@ public class RadixPeer {
 			);
 		}
 
+		// TODO this only yields state when all parts have given at least one value
+		// - maybe should .startWith empty defaults to give step-by-step output
 		this.status = Observable
 				.combineLatest(data.toObservable(), this.radixClient.status(),
 						this.radixClient.universe().toObservable(), this.radixClient.apiVersion().toObservable(),

@@ -31,17 +31,6 @@ public class RadixPeerState {
 		this.universeConfig = universeConfig;
 	}
 
-	/**
-	 * Create an immutable peer state from the current state of a {@link RadixPeer}
-	 * @param peer The peer
-	 * @return The immutable current state
-	 */
-	public static RadixPeerState from(RadixPeer peer) {
-		RadixJsonRpcClient client = peer.getRadixClient();
-		return new RadixPeerState(peer.getLocation(), peer.getPort(), client.getStatus().orElse(null),
-				peer.getData().orElse(null), client.getAPIVersion().orElse(null), client.getUniverse().orElse(null));
-	}
-
 	@Override
 	public String toString() {
 		return "RadixPeerState{"

@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import io.reactivex.subjects.SingleSubject;
 import org.json.JSONObject;
 import org.radix.common.ID.EUID;
 import org.radix.serialization2.DsonOutput.Output;
@@ -56,12 +55,12 @@ public class RadixJsonRpcClient {
 	/**
 	 * Cached API version of Node
 	 */
-	private final SingleSubject<Integer> serverApiVersion;
+	private final Single<Integer> serverApiVersion;
 
 	/**
 	 * Cached Universe of Node
 	 */
-	private final SingleSubject<RadixUniverseConfig> universeConfig;
+	private final Single<RadixUniverseConfig> universeConfig;
 
 	public RadixJsonRpcClient(WebSocketClient wsClient) {
 		this.wsClient = wsClient;
@@ -72,23 +71,18 @@ public class RadixJsonRpcClient {
 			.publish()
 			.refCount();
 
-		this.serverApiVersion = SingleSubject.create();
-		this.universeConfig = SingleSubject.create();
-	}
-
-	void fetchClientInformation() {
 		Serialization serialization = Serialize.getInstance();
-		jsonRpcCall("Api.getVersion")
-				.map(result -> result.getAsJsonObject().get("version").getAsInt())
-				.onErrorReturn(e -> {
-					LOGGER.error(String.format("Error while requesting Api.getVersion: %s", e));
-					return API_VERSION; // assume api version matches for now until fixed in core
-				})
-				.subscribe(serverApiVersion::onSuccess);
-		jsonRpcCall("Universe.getUniverse")
+		this.serverApiVersion = jsonRpcCall("Api.getVersion")
+			.map(result -> result.getAsJsonObject().get("version").getAsInt())
+			.onErrorReturn(e -> {
+				LOGGER.error(String.format("Error while requesting Api.getVersion: %s", e));
+				return API_VERSION; // TODO assume api version matches for now until fixed in core
+			})
+			.cache();
+		this.universeConfig = jsonRpcCall("Universe.getUniverse")
 			.map(element -> GsonJson.getInstance().stringFromGson(element))
 			.map(result -> serialization.fromJson(result, RadixUniverseConfig.class))
-			.subscribe(universeConfig::onSuccess);
+			.cache();
 	}
 
 	/**
@@ -180,16 +174,8 @@ public class RadixJsonRpcClient {
 		return this.jsonRpcCall(method, new JsonObject());
 	}
 
-	public Optional<Integer> getAPIVersion() {
-		return Optional.ofNullable(serverApiVersion.getValue());
-	}
-
 	public Single<Integer> apiVersion() {
 		return this.serverApiVersion;
-	}
-
-	public boolean checkAPIVersion() {
-		return this.getAPIVersion().map(API_VERSION::equals).orElse(false);
 	}
 
 	/**
@@ -197,10 +183,6 @@ public class RadixJsonRpcClient {
 	 *
 	 * @return universe config which the node is supporting
 	 */
-	public Optional<RadixUniverseConfig> getUniverse() {
-		return Optional.ofNullable(this.universeConfig.getValue());
-	}
-
 	public Single<RadixUniverseConfig> universe() {
 		return this.universeConfig;
 	}
