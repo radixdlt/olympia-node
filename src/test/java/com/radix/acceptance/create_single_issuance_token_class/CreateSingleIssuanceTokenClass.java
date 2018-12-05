@@ -1,4 +1,4 @@
-package com.radix.acceptance.RLAU_40;
+package com.radix.acceptance.create_single_issuance_token_class;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -28,7 +28,10 @@ import cucumber.api.java.en.When;
 import io.reactivex.observers.BaseTestConsumer.TestWaitStrategy;
 import io.reactivex.observers.TestObserver;
 
-public class RLAU_40 {
+/**
+ * See <a href="https://radixdlt.atlassian.net/browse/RLAU-40">RLAU-40</a>.
+ */
+public class CreateSingleIssuanceTokenClass {
 	static {
 		RadixUniverse.bootstrap(Bootstrap.BETANET);
 	}

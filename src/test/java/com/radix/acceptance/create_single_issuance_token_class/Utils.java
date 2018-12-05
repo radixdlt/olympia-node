@@ -1,4 +1,4 @@
-package com.radix.acceptance.RLAU_40;
+package com.radix.acceptance.create_single_issuance_token_class;
 
 final class Utils {
 	private Utils() {

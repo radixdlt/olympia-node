@@ -1,4 +1,3 @@
-# Author: martin@radixdlt.com
 # See: https://radixdlt.atlassian.net/browse/RLAU-40
 
 @rlau-40
