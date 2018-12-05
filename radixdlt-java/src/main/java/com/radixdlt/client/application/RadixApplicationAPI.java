@@ -1,6 +1,7 @@
 package com.radixdlt.client.application;
 
 import com.radixdlt.client.application.translate.ApplicationState;
+import com.radixdlt.client.application.translate.AtomToExecutedActionsMapper;
 import com.radixdlt.client.application.translate.StatefulActionToParticlesMapper;
 import com.radixdlt.client.application.translate.ParticleReducer;
 import com.radixdlt.client.application.translate.tokenclasses.TokenClassesState;
@@ -116,8 +117,7 @@ public class RadixApplicationAPI {
 	private final RadixIdentity identity;
 	private final RadixUniverse universe;
 
-	private final ActionStore<DecryptedMessage> messageActionStore;
-	private final ActionStore<TokenTransfer> tokenTransferActionStore;
+	private final Map<Class<? extends Object>, ActionStore<? extends Object>> actionStores;
 
 	private final Map<Class<? extends ApplicationState>, ApplicationStore<? extends ApplicationState>> applicationStores;
 
@@ -143,7 +143,8 @@ public class RadixApplicationAPI {
 		Ledger ledger,
 		List<StatelessActionToParticlesMapper> statelessActionToParticlesMappers,
 		List<StatefulActionToParticlesMapper> statefulActionToParticlesMappers,
-		List<ParticleReducer<? extends ApplicationState>> particleReducers
+		List<ParticleReducer<? extends ApplicationState>> particleReducers,
+		List<AtomToExecutedActionsMapper<? extends Object>> atomMappers
 	) {
 		Objects.requireNonNull(identity);
 		Objects.requireNonNull(universe);
@@ -155,18 +156,16 @@ public class RadixApplicationAPI {
 
 		this.identity = identity;
 		this.universe = universe;
-
-		// TODO: Utilize class loader to discover and load these modules
-		this.messageActionStore = new ActionStore<>(ledger.getAtomStore(), new AtomToDecryptedMessageMapper(universe));
-		this.tokenTransferActionStore = new ActionStore<>(ledger.getAtomStore(), new AtomToTokenTransfersMapper(universe));
-
+		this.actionStores = atomMappers.stream().collect(Collectors.toMap(
+			AtomToExecutedActionsMapper::actionClass,
+			m -> new ActionStore<>(ledger.getAtomStore(), m)
+		));
 		this.applicationStores = particleReducers.stream().collect(Collectors.toMap(
 			ParticleReducer::stateClass,
 			r -> new ApplicationStore<>(ledger.getParticleStore(), r)
 		));
 		this.statefulActionToParticlesMappers = statefulActionToParticlesMappers;
 		this.statelessActionToParticlesMappers = statelessActionToParticlesMappers;
-
 		this.feeMapper = feeMapper;
 		this.ledger = ledger;
 	}
@@ -178,16 +177,22 @@ public class RadixApplicationAPI {
 		private List<ParticleReducer<? extends ApplicationState>> reducers = new ArrayList<>();
 		private List<StatelessActionToParticlesMapper> statelessActionToParticlesMappers = new ArrayList<>();
 		private List<StatefulActionToParticlesMapper> statefulActionToParticlesMappers = new ArrayList<>();
+		private List<AtomToExecutedActionsMapper<? extends Object>> atomMappers = new ArrayList<>();
 
 		public RadixApplicationAPIBuilder() {
 		}
 
-		public RadixApplicationAPIBuilder addContextFreeMapper(StatelessActionToParticlesMapper mapper) {
+		public RadixApplicationAPIBuilder addAtomMapper(AtomToExecutedActionsMapper<? extends Object> atomMapper) {
+			this.atomMappers.add(atomMapper);
+			return this;
+		}
+
+		public RadixApplicationAPIBuilder addStatelessParticlesMapper(StatelessActionToParticlesMapper mapper) {
 			this.statelessActionToParticlesMappers.add(mapper);
 			return this;
 		}
 
-		public RadixApplicationAPIBuilder addContextRequiredMapper(StatefulActionToParticlesMapper mapper) {
+		public RadixApplicationAPIBuilder addStatefulParticlesMapper(StatefulActionToParticlesMapper mapper) {
 			this.statefulActionToParticlesMappers.add(mapper);
 			return this;
 		}
@@ -232,8 +237,11 @@ public class RadixApplicationAPI {
 				identity,
 				universe,
 				feeMapper,
-				ledger, statelessActionToParticlesMappers, statefulActionToParticlesMappers,
-				reducers
+				ledger,
+				statelessActionToParticlesMappers,
+				statefulActionToParticlesMappers,
+				reducers,
+				atomMappers
 			);
 		}
 	}
@@ -250,19 +258,26 @@ public class RadixApplicationAPI {
 		return new RadixApplicationAPIBuilder()
 			.identity(identity)
 			.feeMapper(new PowFeeMapper(p -> new Atom(p).getHash(), new ProofOfWorkBuilder()))
-			.addContextFreeMapper(new SendMessageToParticlesMapper(ECKeyPairGenerator.newInstance()::generateKeyPair))
-			.addContextFreeMapper(new CreateTokenToParticlesMapper())
-			.addContextFreeMapper(new MintTokensActionMapper())
-			.addContextRequiredMapper(new BurnTokensActionMapper(RadixUniverse.getInstance()))
-			.addContextRequiredMapper(new TransferTokensToParticlesMapper(RadixUniverse.getInstance()))
+			.addStatelessParticlesMapper(new SendMessageToParticlesMapper(ECKeyPairGenerator.newInstance()::generateKeyPair))
+			.addStatelessParticlesMapper(new CreateTokenToParticlesMapper())
+			.addStatelessParticlesMapper(new MintTokensActionMapper())
+			.addStatefulParticlesMapper(new BurnTokensActionMapper(RadixUniverse.getInstance()))
+			.addStatefulParticlesMapper(new TransferTokensToParticlesMapper(RadixUniverse.getInstance()))
 			.addReducer(new TokenClassesReducer())
 			.addReducer(new TokenBalanceReducer())
+			.addAtomMapper(new AtomToDecryptedMessageMapper(RadixUniverse.getInstance()))
+			.addAtomMapper(new AtomToTokenTransfersMapper(RadixUniverse.getInstance()))
 			.build();
 	}
 
 	private ApplicationStore<? extends ApplicationState> getStore(Class<? extends ApplicationState> storeClass) {
 		return Optional.ofNullable(applicationStores.get(storeClass))
 			.orElseThrow(() -> new IllegalArgumentException("No store available for class: " + storeClass));
+	}
+
+	private ActionStore<? extends Object> getActionStore(Class<? extends Object> actionClass) {
+		return Optional.ofNullable(actionStores.get(actionClass))
+			.orElseThrow(() -> new IllegalArgumentException("No action store available for class: " + actionClass));
 	}
 
 	/**
@@ -366,7 +381,9 @@ public class RadixApplicationAPI {
 
 		pull(address);
 
-		return messageActionStore.getActions(address, identity);
+		return this.getActionStore(DecryptedMessage.class)
+			.getActions(address, identity)
+			.map(o -> (DecryptedMessage) o);
 	}
 
 	public Result sendMessage(byte[] data, boolean encrypt) {
@@ -388,7 +405,9 @@ public class RadixApplicationAPI {
 
 		pull(address);
 
-		return tokenTransferActionStore.getActions(address, this.getMyIdentity());
+		return this.getActionStore(TokenTransfer.class)
+			.getActions(address, this.getMyIdentity())
+			.map(o -> (TokenTransfer) o);
 	}
 
 	public Observable<Map<TokenClassReference, BigDecimal>> getBalance(RadixAddress address) {

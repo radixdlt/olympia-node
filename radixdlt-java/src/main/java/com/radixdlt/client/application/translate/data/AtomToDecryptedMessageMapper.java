@@ -34,6 +34,12 @@ public class AtomToDecryptedMessageMapper implements AtomToExecutedActionsMapper
 		this.universe = universe;
 	}
 
+	@Override
+	public Class<DecryptedMessage> actionClass() {
+		return DecryptedMessage.class;
+	}
+
+	@Override
 	public Observable<DecryptedMessage> map(Atom atom, RadixIdentity identity) {
 		final Optional<MessageParticle> bytesParticle = atom.getDataParticles().stream()
 			.filter(p -> !"encryptor".equals(p.getMetaData("application")))

@@ -44,6 +44,11 @@ public class AtomToTokenTransfersMapper implements AtomToExecutedActionsMapper<T
 	}
 
 	@Override
+	public Class<TokenTransfer> actionClass() {
+		return TokenTransfer.class;
+	}
+
+	@Override
 	public Observable<TokenTransfer> map(Atom atom, RadixIdentity identity) {
 		return Observable.fromIterable(atom.tokenSummary().entrySet())
 			.filter(e -> !e.getKey().equals(universe.getPOWToken()))

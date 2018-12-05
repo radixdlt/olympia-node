@@ -9,6 +9,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.radixdlt.client.application.RadixApplicationAPI.RadixApplicationAPIBuilder;
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
+import com.radixdlt.client.application.translate.data.AtomToDecryptedMessageMapper;
 import com.radixdlt.client.application.translate.data.DecryptedMessage;
 import com.radixdlt.client.application.translate.FeeMapper;
 import com.radixdlt.client.application.translate.PowFeeMapper;
@@ -173,6 +174,7 @@ public class RadixApplicationAPITest {
 			.identity(identity)
 			.universe(universe)
 			.feeMapper(mock(PowFeeMapper.class))
+			.addAtomMapper(new AtomToDecryptedMessageMapper(universe))
 			.build();
 		TestObserver<DecryptedMessage> observer = TestObserver.create();
 		api.getMessages(address).subscribe(observer);
@@ -224,6 +226,7 @@ public class RadixApplicationAPITest {
 			.identity(identity)
 			.universe(universe)
 			.feeMapper(mock(PowFeeMapper.class))
+			.addAtomMapper(new AtomToDecryptedMessageMapper(universe))
 			.build();
 		TestObserver<DecryptedMessage> testObserver = TestObserver.create();
 		api.getMessages(address).subscribe(testObserver);
