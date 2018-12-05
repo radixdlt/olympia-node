@@ -2,7 +2,7 @@ package com.radixdlt.client.application.translate.data;
 
 import com.google.gson.JsonArray;
 import com.radixdlt.client.application.translate.Action;
-import com.radixdlt.client.application.translate.ContextFreeActionToParticlesMapper;
+import com.radixdlt.client.application.translate.StatelessActionToParticlesMapper;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.atommodel.message.MessageParticle;
@@ -24,7 +24,7 @@ import java.util.stream.Stream;
 /**
  * Maps a send message action to the particles necessary to be included in an atom.
  */
-public class SendMessageToParticlesMapper implements ContextFreeActionToParticlesMapper {
+public class SendMessageToParticlesMapper implements StatelessActionToParticlesMapper {
 
 	/**
 	 * A module capable of creating new securely random ECKeyPairs

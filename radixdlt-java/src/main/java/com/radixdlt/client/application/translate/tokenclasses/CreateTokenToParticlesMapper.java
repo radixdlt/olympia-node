@@ -2,7 +2,7 @@ package com.radixdlt.client.application.translate.tokenclasses;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.application.translate.Action;
-import com.radixdlt.client.application.translate.ContextFreeActionToParticlesMapper;
+import com.radixdlt.client.application.translate.StatelessActionToParticlesMapper;
 import com.radixdlt.client.application.translate.tokenclasses.CreateTokenAction.TokenSupplyType;
 import com.radixdlt.client.atommodel.quarks.FungibleQuark;
 import com.radixdlt.client.atommodel.quarks.FungibleQuark.FungibleType;
@@ -16,7 +16,7 @@ import io.reactivex.Observable;
 /**
  * Maps the CreateToken action into it's corresponding particles
  */
-public class CreateTokenToParticlesMapper implements ContextFreeActionToParticlesMapper {
+public class CreateTokenToParticlesMapper implements StatelessActionToParticlesMapper {
 	@Override
 	public Observable<SpunParticle> mapToParticles(Action action) {
 		if (!(action instanceof CreateTokenAction)) {

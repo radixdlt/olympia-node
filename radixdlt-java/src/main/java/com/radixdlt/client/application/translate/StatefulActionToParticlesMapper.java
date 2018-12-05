@@ -10,7 +10,7 @@ import java.util.Objects;
  * to construct an atom given a context requirement which this interface describes
  * via requiredContext().
  */
-public interface ContextRequiredActionToParticlesMapper {
+public interface StatefulActionToParticlesMapper {
 	class RequiredShardContext {
 		private final Class<? extends ApplicationState> storeClass;
 		private final RadixAddress address;

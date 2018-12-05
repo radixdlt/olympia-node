@@ -42,7 +42,7 @@ public class ApplicationStoreTest {
 		ParticleReducer<ApplicationState> reducer = mock(ParticleReducer.class);
 		when(reducer.initialState()).thenReturn(o);
 		when(reducer.reduce(any(), any())).thenReturn(o);
-		ApplicationStore<?> applicationStore = new ApplicationStore<>(store, reducer, ApplicationState.class);
+		ApplicationStore<?> applicationStore = new ApplicationStore<>(store, reducer);
 
 		TestObserver<Object> testObserver = TestObserver.create();
 		applicationStore.getState(address).subscribe(testObserver);

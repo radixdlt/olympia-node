@@ -1,7 +1,7 @@
 package com.radixdlt.client.application.translate.tokens;
 
 import com.radixdlt.client.application.translate.ApplicationState;
-import com.radixdlt.client.application.translate.ContextRequiredActionToParticlesMapper;
+import com.radixdlt.client.application.translate.StatefulActionToParticlesMapper;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
@@ -34,7 +34,7 @@ import io.reactivex.Observable;
 /**
  * Maps a send message action to the particles necessary to be included in an atom.
  */
-public class TransferTokensToParticlesMapper implements ContextRequiredActionToParticlesMapper {
+public class TransferTokensToParticlesMapper implements StatefulActionToParticlesMapper {
 	private final RadixUniverse universe;
 
 	public TransferTokensToParticlesMapper(RadixUniverse universe) {

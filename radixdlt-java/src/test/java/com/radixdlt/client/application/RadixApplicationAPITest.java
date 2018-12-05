@@ -7,10 +7,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.radixdlt.client.application.RadixApplicationAPI.RadixApplicationAPIBuilder;
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
 import com.radixdlt.client.application.translate.data.DecryptedMessage;
 import com.radixdlt.client.application.translate.FeeMapper;
 import com.radixdlt.client.application.translate.PowFeeMapper;
+import com.radixdlt.client.application.translate.tokens.TokenBalanceReducer;
 import com.radixdlt.client.atommodel.tokens.TokenClassReference;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.RadixUniverse.Ledger;
@@ -51,7 +53,11 @@ public class RadixApplicationAPITest {
 		UnsignedAtom unsignedAtom = mock(UnsignedAtom.class);
 		FeeMapper feeMapper = (a, b, c) -> Collections.emptyList();
 
-		return RadixApplicationAPI.create(identity, universe, feeMapper);
+		return new RadixApplicationAPIBuilder()
+			.identity(identity)
+			.universe(universe)
+			.feeMapper(feeMapper)
+			.build();
 	}
 
 	private AtomSubmitter createMockedSubmissionWhichAlwaysSucceeds() {
@@ -163,7 +169,11 @@ public class RadixApplicationAPITest {
 		when(ledger.getAtomStore()).thenReturn(euid -> Observable.just(atomObservation, atomObservation, atomObservation));
 		when(universe.getLedger()).thenReturn(ledger);
 
-		RadixApplicationAPI api = RadixApplicationAPI.create(identity, universe, mock(PowFeeMapper.class));
+		RadixApplicationAPI api = new RadixApplicationAPIBuilder()
+			.identity(identity)
+			.universe(universe)
+			.feeMapper(mock(PowFeeMapper.class))
+			.build();
 		TestObserver<DecryptedMessage> observer = TestObserver.create();
 		api.getMessages(address).subscribe(observer);
 		observer.assertValueCount(0);
@@ -182,7 +192,12 @@ public class RadixApplicationAPITest {
 		RadixAddress address = mock(RadixAddress.class);
 		RadixIdentity identity = mock(RadixIdentity.class);
 
-		RadixApplicationAPI api = RadixApplicationAPI.create(identity, universe, mock(PowFeeMapper.class));
+		RadixApplicationAPI api = new RadixApplicationAPIBuilder()
+			.identity(identity)
+			.universe(universe)
+			.feeMapper(mock(PowFeeMapper.class))
+			.addReducer(new TokenBalanceReducer())
+			.build();
 		TestObserver<BigDecimal> observer = TestObserver.create();
 		TokenClassReference token = mock(TokenClassReference.class);
 
@@ -205,7 +220,11 @@ public class RadixApplicationAPITest {
 		RadixIdentity identity = mock(RadixIdentity.class);
 		RadixAddress address = mock(RadixAddress.class);
 
-		RadixApplicationAPI api = RadixApplicationAPI.create(identity, universe, mock(PowFeeMapper.class));
+		RadixApplicationAPI api = new RadixApplicationAPIBuilder()
+			.identity(identity)
+			.universe(universe)
+			.feeMapper(mock(PowFeeMapper.class))
+			.build();
 		TestObserver<DecryptedMessage> testObserver = TestObserver.create();
 		api.getMessages(address).subscribe(testObserver);
 		verify(puller, times(1)).pull(address);
@@ -225,7 +244,12 @@ public class RadixApplicationAPITest {
 		RadixIdentity identity = mock(RadixIdentity.class);
 		RadixAddress address = mock(RadixAddress.class);
 
-		RadixApplicationAPI api = RadixApplicationAPI.create(identity, universe, mock(PowFeeMapper.class));
+		RadixApplicationAPI api = new RadixApplicationAPIBuilder()
+			.identity(identity)
+			.universe(universe)
+			.feeMapper(mock(PowFeeMapper.class))
+			.addReducer(new TokenBalanceReducer())
+			.build();
 		TestObserver<BigDecimal> testObserver = TestObserver.create();
 		TokenClassReference token = mock(TokenClassReference.class);
 		api.getBalance(address, token).subscribe(testObserver);

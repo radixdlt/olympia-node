@@ -7,7 +7,7 @@ import io.reactivex.Observable;
  * Maps a high level application action to lower level spun particles used
  * to construct an atom.
  */
-public interface ContextFreeActionToParticlesMapper {
+public interface StatelessActionToParticlesMapper {
 
 	/**
 	 * Creates new spun particles to be added to an atom given a high level

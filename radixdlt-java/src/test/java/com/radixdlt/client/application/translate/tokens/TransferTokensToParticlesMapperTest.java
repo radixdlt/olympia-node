@@ -3,7 +3,7 @@ package com.radixdlt.client.application.translate.tokens;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.radixdlt.client.application.translate.ContextRequiredActionToParticlesMapper.RequiredShardContext;
+import com.radixdlt.client.application.translate.StatefulActionToParticlesMapper.RequiredShardContext;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import io.reactivex.Observable;
 import io.reactivex.observers.TestObserver;

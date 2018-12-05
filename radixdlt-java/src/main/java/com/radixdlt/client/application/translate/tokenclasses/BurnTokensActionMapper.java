@@ -1,7 +1,7 @@
 package com.radixdlt.client.application.translate.tokenclasses;
 
 import com.radixdlt.client.application.translate.ApplicationState;
-import com.radixdlt.client.application.translate.ContextRequiredActionToParticlesMapper;
+import com.radixdlt.client.application.translate.StatefulActionToParticlesMapper;
 import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -28,7 +28,7 @@ import com.radixdlt.client.core.crypto.ECKeyPair;
 
 import io.reactivex.Observable;
 
-public class BurnTokensActionMapper implements ContextRequiredActionToParticlesMapper {
+public class BurnTokensActionMapper implements StatefulActionToParticlesMapper {
 	private final RadixUniverse universe;
 
 	public BurnTokensActionMapper(RadixUniverse universe) {

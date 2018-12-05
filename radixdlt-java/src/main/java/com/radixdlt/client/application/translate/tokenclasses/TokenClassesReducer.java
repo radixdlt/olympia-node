@@ -20,6 +20,12 @@ import com.radixdlt.client.core.atoms.particles.SpunParticle;
  * Reduces particles at an address into concrete Tokens and their states
  */
 public class TokenClassesReducer implements ParticleReducer<TokenClassesState> {
+
+	@Override
+	public Class<TokenClassesState> stateClass() {
+		return TokenClassesState.class;
+	}
+
 	@Override
 	public TokenClassesState initialState() {
 		return TokenClassesState.init();
