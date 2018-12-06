@@ -8,18 +8,18 @@ import java.util.Objects;
 /**
  * Maps a high level application action to lower level spun particles used
  * to construct an atom given a context requirement which this interface describes
- * via requiredContext().
+ * via requiredState().
  */
 public interface StatefulActionToParticlesMapper {
-	class RequiredShardContext {
-		private final Class<? extends ApplicationState> storeClass;
+	class RequiredShardState {
+		private final Class<? extends ApplicationState> stateClass;
 		private final RadixAddress address;
 
-		public RequiredShardContext(Class<? extends ApplicationState> storeClass, RadixAddress address) {
-			Objects.requireNonNull(storeClass);
+		public RequiredShardState(Class<? extends ApplicationState> stateClass, RadixAddress address) {
+			Objects.requireNonNull(stateClass);
 			Objects.requireNonNull(address);
 
-			this.storeClass = storeClass;
+			this.stateClass = stateClass;
 			this.address = address;
 		}
 
@@ -28,8 +28,8 @@ public interface StatefulActionToParticlesMapper {
 		 *
 		 * @return the type of application state
 		 */
-		public Class<? extends ApplicationState> storeClass() {
-			return storeClass;
+		public Class<? extends ApplicationState> stateClass() {
+			return stateClass;
 		}
 
 		/**
@@ -50,14 +50,14 @@ public interface StatefulActionToParticlesMapper {
 	 * @param action the action to get the required context about
 	 * @return observable of required contexts required to create spun particles for the action
 	 */
-	Observable<RequiredShardContext> requiredContext(Action action);
+	Observable<RequiredShardState> requiredState(Action action);
 
 	/**
 	 * Creates new spun particles to be added to an atom given a high level
 	 * action and application state
 	 *
 	 * @param action the action to map
-	 * @param store application state ordered by
+	 * @param store application state in the same order as returned from requiredState()
 	 * @return observable of spun particles created given an action
 	 */
 	Observable<SpunParticle> mapToParticles(Action action, Observable<Observable<? extends ApplicationState>> store);

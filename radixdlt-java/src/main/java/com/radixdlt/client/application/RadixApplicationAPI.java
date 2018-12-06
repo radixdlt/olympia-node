@@ -572,9 +572,9 @@ public class RadixApplicationAPI {
 					.flatMap(mapper ->
 						Arrays.stream(actions).map(action -> {
 							Observable<Observable<? extends ApplicationState>> context =
-								mapper.requiredContext(action)
+								mapper.requiredState(action)
 									.doOnNext(ctx -> this.pull(ctx.address()))
-									.map(ctx -> this.getStore(ctx.storeClass()).getState(ctx.address()));
+									.map(ctx -> this.getStore(ctx.stateClass()).getState(ctx.address()));
 							return mapper.mapToParticles(action, context);
 						})
 					)

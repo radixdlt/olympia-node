@@ -116,14 +116,14 @@ public class TransferTokensToParticlesMapper implements StatefulActionToParticle
 	}
 
 	@Override
-	public Observable<RequiredShardContext> requiredContext(Action action) {
+	public Observable<RequiredShardState> requiredState(Action action) {
 		if (!(action instanceof TransferTokensAction)) {
 			return Observable.empty();
 		}
 
 		TransferTokensAction transfer = (TransferTokensAction) action;
 
-		return Observable.just(new RequiredShardContext(TokenBalanceState.class, transfer.getFrom()));
+		return Observable.just(new RequiredShardState(TokenBalanceState.class, transfer.getFrom()));
 	}
 
 	@Override
