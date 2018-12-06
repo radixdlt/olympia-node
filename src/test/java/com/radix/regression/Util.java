@@ -4,7 +4,7 @@ import io.reactivex.Observer;
 import io.reactivex.disposables.Disposable;
 
 public class Util {
-	static <T> Observer<T> loggingObserver(String name) {
+	public static <T> Observer<T> loggingObserver(String name) {
 		return new Observer<T>() {
 			@Override
 			public void onSubscribe(Disposable d) {
