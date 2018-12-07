@@ -27,8 +27,8 @@
           "particle": {
             "hid": ":uid:bbaaf180ff5de53a8e7d223be81cadbf",
             "permissions": {
-              "burn": ":str:none",
               "mint": ":str:pow",
+              "burn": ":str:none",
               "transfer": ":str:none"
             },
             "name": ":str:Proof of Work",
@@ -118,8 +118,8 @@
           "particle": {
             "hid": ":uid:3a073f19dd95caf2131c696d589552ed",
             "permissions": {
-              "burn": ":str:none",
               "mint": ":str:genesis_only",
+              "burn": ":str:none",
               "transfer": ":str:all"
             },
             "name": ":str:RADS",
