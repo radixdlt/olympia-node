@@ -9,7 +9,7 @@ import com.radixdlt.client.application.translate.ParticleReducer;
 import com.radixdlt.client.application.translate.atomic.AtomicToParticlesMapper;
 import com.radixdlt.client.application.translate.tokenclasses.TokenClassesState;
 import com.radixdlt.client.application.translate.unique.AlreadyUsedUniqueIdReasonMapper;
-import com.radixdlt.client.application.translate.unique.UniqueIdToParticlesMapper;
+import com.radixdlt.client.application.translate.unique.PutUniqueIdToParticlesMapper;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -282,7 +282,7 @@ public class RadixApplicationAPI {
 			.addStatelessParticlesMapper(new SendMessageToParticlesMapper(ECKeyPairGenerator.newInstance()::generateKeyPair))
 			.addStatelessParticlesMapper(new CreateTokenToParticlesMapper())
 			.addStatelessParticlesMapper(new MintTokensActionMapper())
-			.addStatelessParticlesMapper(new UniqueIdToParticlesMapper())
+			.addStatelessParticlesMapper(new PutUniqueIdToParticlesMapper())
 			.addStatelessParticlesMapper(new AtomicToParticlesMapper())
 			.addStatefulParticlesMapper(new BurnTokensActionMapper(RadixUniverse.getInstance()))
 			.addStatefulParticlesMapper(new TransferTokensToParticlesMapper(RadixUniverse.getInstance()))

@@ -8,7 +8,7 @@ public class AlreadyUsedUniqueIdReason extends ActionExecutionExceptionReason {
 	private final UniqueId uniqueId;
 
 	public AlreadyUsedUniqueIdReason(UniqueId uniqueId) {
-		super(Objects.requireNonNull(uniqueId) + " already used.");
+		super("UniqueId (" + Objects.requireNonNull(uniqueId) + ") already used.");
 
 		this.uniqueId = uniqueId;
 	}

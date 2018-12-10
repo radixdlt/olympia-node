@@ -53,7 +53,17 @@ public interface StatefulActionToParticlesMapper {
 	 */
 	Observable<RequiredShardState> requiredState(Action action);
 
-	Observable<Action> sideEffects(Action action, Observable<Observable<? extends ApplicationState>> store);
+	/**
+	 * Returns an observable of actions which will be added to the list
+	 * actions to be included in the current transaction.
+	 *
+	 * @param action the current action
+	 * @param store application state requested as specified by requiredState()
+	 * @return additional actions to be included
+	 */
+	default Observable<Action> sideEffects(Action action, Observable<Observable<? extends ApplicationState>> store) {
+		return Observable.empty();
+	}
 
 	/**
 	 * Creates new spun particles to be added to an atom given a high level
