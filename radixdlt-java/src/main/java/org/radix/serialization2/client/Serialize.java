@@ -1,6 +1,8 @@
 package org.radix.serialization2.client;
 
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.client.atommodel.unique.UniqueId;
+import com.radixdlt.client.atommodel.unique.UniqueParticle;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.atommodel.tokens.TokenClassReference;
@@ -55,6 +57,7 @@ public final class Serialize {
 				FeeParticle.class,
 				MessageParticle.class,
 				TokenParticle.class,
+				UniqueParticle.class,
 
 				Quark.class,
 				ChronoQuark.class,
@@ -71,6 +74,7 @@ public final class Serialize {
 				RadixUniverseConfig.class,
 				TCPNodeRunnerData.class,
 				TokenClassReference.class,
+				UniqueId.class,
 				UDPNodeRunnerData.class
 			);
 		}

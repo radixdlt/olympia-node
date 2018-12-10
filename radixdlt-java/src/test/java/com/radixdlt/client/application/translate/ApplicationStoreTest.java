@@ -37,9 +37,9 @@ public class ApplicationStoreTest {
 				Observable.<SpunParticle>just(SpunParticle.up(ownedTokensParticle)).concatWith(Observable.never())
 		);
 
-		Object o = mock(Object.class);
+		ApplicationState o = mock(ApplicationState.class);
 
-		ParticleReducer<Object> reducer = mock(ParticleReducer.class);
+		ParticleReducer<ApplicationState> reducer = mock(ParticleReducer.class);
 		when(reducer.initialState()).thenReturn(o);
 		when(reducer.reduce(any(), any())).thenReturn(o);
 		ApplicationStore<?> applicationStore = new ApplicationStore<>(store, reducer);

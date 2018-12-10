@@ -14,7 +14,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import com.radixdlt.client.core.util.AndroidUtil;
 import org.bouncycastle.asn1.sec.SECNamedCurves;
@@ -42,9 +41,8 @@ public final class ECKeyPairGenerator {
         // Check if the currently installed version of BouncyCastle is the version
         // we want. NOTE! That Android has a stripped down version of BouncyCastle
         // by default.
-        if (currentBouncyCastleProvider == null ||
-                currentBouncyCastleProvider.getVersion() !=
-                        requiredBouncyCastleProvider.getVersion()) {
+        if (currentBouncyCastleProvider == null
+			|| currentBouncyCastleProvider.getVersion() != requiredBouncyCastleProvider.getVersion()) {
 
             if (AndroidUtil.isAndroidRuntime()) {
                 Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME);

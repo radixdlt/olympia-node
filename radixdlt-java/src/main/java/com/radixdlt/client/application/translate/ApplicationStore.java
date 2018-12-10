@@ -6,11 +6,10 @@ import io.reactivex.Observable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
-public class ApplicationStore<T> {
+public class ApplicationStore<T extends ApplicationState> {
 	private final ParticleStore particleStore;
 	private final ParticleReducer<T> reducer;
 	private final ConcurrentHashMap<RadixAddress, Observable<T>> cache = new ConcurrentHashMap<>();
-
 
 	public ApplicationStore(
 		ParticleStore particleStore,

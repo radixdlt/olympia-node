@@ -7,7 +7,8 @@ import com.radixdlt.client.core.atoms.particles.SpunParticle;
  *
  * @param <T> The class of the state to manage
  */
-public interface ParticleReducer<T> {
+public interface ParticleReducer<T extends ApplicationState> {
+	Class<T> stateClass();
 	T initialState();
 	T reduce(T state, SpunParticle p);
 }

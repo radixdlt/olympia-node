@@ -7,7 +7,6 @@ import com.radixdlt.client.atommodel.quarks.AccountableQuark;
 import com.radixdlt.client.atommodel.quarks.NonFungibleQuark;
 import com.radixdlt.client.atommodel.quarks.OwnableQuark;
 import com.radixdlt.client.core.atoms.particles.Particle;
-import com.radixdlt.client.core.crypto.ECPublicKey;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -16,7 +15,6 @@ import org.radix.serialization2.DsonOutput.Output;
 import org.radix.serialization2.SerializerId2;
 
 import java.util.Collections;
-import java.util.Set;
 
 @SerializerId2("TOKENCLASSPARTICLE")
 public class TokenParticle extends Particle {
@@ -75,11 +73,6 @@ public class TokenParticle extends Particle {
 
 	public TokenClassReference getTokenClassReference() {
 		return (TokenClassReference) this.getQuarkOrError(NonFungibleQuark.class).getIndex();
-	}
-
-	@Override
-	public Set<ECPublicKey> getAddresses() {
-		return Collections.singleton(getQuarkOrError(AccountableQuark.class).getAddresses().get(0).getPublicKey());
 	}
 
 	@JsonProperty("permissions")

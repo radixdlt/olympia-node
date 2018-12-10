@@ -10,6 +10,12 @@ import com.radixdlt.client.core.atoms.particles.Particle;
  * Reduces particles at an address to it's token balances
  */
 public class TokenBalanceReducer implements ParticleReducer<TokenBalanceState> {
+
+	@Override
+	public Class<TokenBalanceState> stateClass() {
+		return TokenBalanceState.class;
+	}
+
 	@Override
 	public TokenBalanceState initialState() {
 		return new TokenBalanceState();

@@ -1,5 +1,7 @@
 package com.radixdlt.client.application.translate.tokens;
 
+import com.radixdlt.client.application.translate.ApplicationState;
+import com.radixdlt.client.application.translate.StatefulActionToParticlesMapper;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
@@ -7,7 +9,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.radix.utils.UInt256;
@@ -16,9 +17,7 @@ import org.radix.utils.UInt256s;
 import com.google.gson.JsonArray;
 import com.radixdlt.client.application.identity.Data;
 import com.radixdlt.client.application.translate.Action;
-import com.radixdlt.client.application.translate.ActionToParticlesMapper;
 import com.radixdlt.client.application.translate.tokens.TokenBalanceState.Balance;
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.atommodel.message.MessageParticle;
 import com.radixdlt.client.atommodel.message.MessageParticle.MessageParticleBuilder;
 import com.radixdlt.client.atommodel.quarks.FungibleQuark.FungibleType;
@@ -35,13 +34,11 @@ import io.reactivex.Observable;
 /**
  * Maps a send message action to the particles necessary to be included in an atom.
  */
-public class TransferTokensToParticlesMapper implements ActionToParticlesMapper {
+public class TransferTokensToParticlesMapper implements StatefulActionToParticlesMapper {
 	private final RadixUniverse universe;
-	private final Function<RadixAddress, Observable<TokenBalanceState>> tokenBalanceState;
 
-	public TransferTokensToParticlesMapper(RadixUniverse universe, Function<RadixAddress, Observable<TokenBalanceState>> tokenBalanceState) {
+	public TransferTokensToParticlesMapper(RadixUniverse universe) {
 		this.universe = universe;
-		this.tokenBalanceState = tokenBalanceState;
 	}
 
 	private Observable<SpunParticle> mapToParticles(TransferTokensAction transfer, List<OwnedTokensParticle> currentParticles) {
@@ -119,14 +116,35 @@ public class TransferTokensToParticlesMapper implements ActionToParticlesMapper 
 	}
 
 	@Override
-	public Observable<SpunParticle> map(Action action) throws InsufficientFundsException {
+	public Observable<RequiredShardState> requiredState(Action action) {
 		if (!(action instanceof TransferTokensAction)) {
 			return Observable.empty();
 		}
 
 		TransferTokensAction transfer = (TransferTokensAction) action;
 
-		return tokenBalanceState.apply(transfer.getFrom())
+		return Observable.just(new RequiredShardState(TokenBalanceState.class, transfer.getFrom()));
+	}
+
+	@Override
+	public Observable<Action> sideEffects(Action action, Observable<Observable<? extends ApplicationState>> store) {
+		return Observable.empty();
+	}
+
+	@Override
+	public Observable<SpunParticle> mapToParticles(
+		Action action,
+		Observable<Observable<? extends ApplicationState>> store
+	) throws InsufficientFundsException {
+		if (!(action instanceof TransferTokensAction)) {
+			return Observable.empty();
+		}
+
+		TransferTokensAction transfer = (TransferTokensAction) action;
+
+		return store.firstOrError()
+			.flatMapObservable(s -> s)
+			.map(appState -> (TokenBalanceState) appState)
 			.firstOrError()
 			.map(curState -> {
 				final TokenClassReference tokenRef = transfer.getTokenClassReference();
