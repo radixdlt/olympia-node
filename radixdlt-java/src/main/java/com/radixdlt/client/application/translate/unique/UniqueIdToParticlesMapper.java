@@ -7,6 +7,10 @@ import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import io.reactivex.Observable;
 
 public class UniqueIdToParticlesMapper implements StatelessActionToParticlesMapper {
+	@Override
+	public Observable<Action> sideEffects(Action action) {
+		return Observable.empty();
+	}
 
 	@Override
 	public Observable<SpunParticle> mapToParticles(Action action) {

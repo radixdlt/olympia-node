@@ -10,6 +10,11 @@ import io.reactivex.Observable;
 
 public class MintTokensActionMapper implements StatelessActionToParticlesMapper {
 	@Override
+	public Observable<Action> sideEffects(Action action) {
+		return Observable.empty();
+	}
+
+	@Override
 	public Observable<SpunParticle> mapToParticles(Action action) {
 		if (!(action instanceof MintTokensAction)) {
 			return Observable.empty();

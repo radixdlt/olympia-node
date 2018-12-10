@@ -8,6 +8,7 @@ import io.reactivex.Observable;
  * to construct an atom.
  */
 public interface StatelessActionToParticlesMapper {
+	Observable<Action> sideEffects(Action action);
 
 	/**
 	 * Creates new spun particles to be added to an atom given a high level

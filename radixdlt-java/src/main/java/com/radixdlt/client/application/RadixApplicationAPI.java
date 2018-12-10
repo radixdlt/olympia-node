@@ -4,6 +4,7 @@ import com.radixdlt.client.application.translate.ApplicationState;
 import com.radixdlt.client.application.translate.AtomToExecutedActionsMapper;
 import com.radixdlt.client.application.translate.StatefulActionToParticlesMapper;
 import com.radixdlt.client.application.translate.ParticleReducer;
+import com.radixdlt.client.application.translate.atomic.AtomicToParticlesMapper;
 import com.radixdlt.client.application.translate.tokenclasses.TokenClassesState;
 import com.radixdlt.client.application.translate.unique.UniqueIdToParticlesMapper;
 import java.math.BigDecimal;
@@ -263,6 +264,7 @@ public class RadixApplicationAPI {
 			.addStatelessParticlesMapper(new CreateTokenToParticlesMapper())
 			.addStatelessParticlesMapper(new MintTokensActionMapper())
 			.addStatelessParticlesMapper(new UniqueIdToParticlesMapper())
+			.addStatelessParticlesMapper(new AtomicToParticlesMapper())
 			.addStatefulParticlesMapper(new BurnTokensActionMapper(RadixUniverse.getInstance()))
 			.addStatefulParticlesMapper(new TransferTokensToParticlesMapper(RadixUniverse.getInstance()))
 			.addReducer(new TokenClassesReducer())
@@ -566,52 +568,76 @@ public class RadixApplicationAPI {
 		return execute(transferTokensAction);
 	}
 
-	private Observable<SpunParticle> contextualMappers(Action... actions) {
-		return Observable.concat(
-			this.statefulActionToParticlesMappers.stream()
-					.flatMap(mapper ->
-						Arrays.stream(actions).map(action -> {
-							Observable<Observable<? extends ApplicationState>> context =
-								mapper.requiredState(action)
-									.doOnNext(ctx -> this.pull(ctx.address()))
-									.map(ctx -> this.getStore(ctx.stateClass()).getState(ctx.address()));
-							return mapper.mapToParticles(action, context);
-						})
-					)
-					.collect(Collectors.toList())
-		);
+	private Observable<SpunParticle> statefulMappersToParticles(Observable<Action> actions) {
+		return actions.flatMap(action ->
+			Observable
+				.fromIterable(this.statefulActionToParticlesMappers)
+				.flatMap(mapper -> {
+					final Observable<Observable<? extends ApplicationState>> context =
+						mapper.requiredState(action)
+							.doOnNext(ctx -> this.pull(ctx.address()))
+							.map(ctx -> this.getStore(ctx.stateClass()).getState(ctx.address()));
+					return mapper.mapToParticles(action, context);
+				})
+			);
+	}
+
+	private Observable<Action> statefulMappersToSideEffects(Action action) {
+		return Observable
+				.fromIterable(this.statefulActionToParticlesMappers)
+				.flatMap(mapper -> {
+					final Observable<Observable<? extends ApplicationState>> context =
+						mapper.requiredState(action)
+							.doOnNext(ctx -> this.pull(ctx.address()))
+							.map(ctx -> this.getStore(ctx.stateClass()).getState(ctx.address()));
+					return mapper.sideEffects(action, context);
+				});
+	}
+
+	private Observable<Action> collectActionAndEffects(Action action) {
+		Observable<Action> statelessEffects = Observable
+			.fromIterable(this.statelessActionToParticlesMappers)
+			.flatMap(mapper -> mapper.sideEffects(action));
+		Observable<Action> statefulEffects = statefulMappersToSideEffects(action);
+
+		return Observable.concat(statelessEffects, statefulEffects)
+			.flatMap(RadixApplicationAPI.this::collectActionAndEffects)
+			.startWith(action);
 	}
 
 	/**
-	 * Builds an unsigned atom given a user action. Note that this is
-	 * method will always return a unique atom even if given the equivalent actions
+	 * Returns a cold single of an unsigned atom given a user action. Note that this is
+	 * method will always return a unique atom even if given equivalent actions
 	 *
-	 * @param actions actions to combine to build a single atom
-	 * @return the constructed atom
+	 * @param action action to build a single atom
+	 * @return a cold single of an atom mapped from an action
 	 */
-	public Single<UnsignedAtom> buildAtom(Action... actions) {
-		return Observable.concat(
-			this.statelessActionToParticlesMappers.stream()
-				.flatMap(m -> Arrays.stream(actions).map(m::mapToParticles))
-				.collect(Collectors.toList())
-		)
-		.concatWith(contextualMappers(actions))
-		.concatWith(Observable.just(SpunParticle.up(new TimestampParticle(System.currentTimeMillis()))))
-		.<List<SpunParticle>>scanWith(
-			ArrayList::new,
-			(a, b) -> Stream.concat(a.stream(), Stream.of(b)).collect(Collectors.toList())
-		)
-		.lastOrError()
-		.map(particles -> {
-			List<SpunParticle> allParticles = new ArrayList<>(particles);
-			allParticles.addAll(feeMapper.map(particles, universe, getMyPublicKey()));
-			return allParticles;
-		})
-		.map(particles -> new UnsignedAtom(new Atom(particles)));
+	public Single<UnsignedAtom> buildAtom(Action action) {
+		final Observable<Action> allActions = this.collectActionAndEffects(action);
+		final Observable<SpunParticle> statelessParticles = allActions.flatMap(a ->
+			Observable
+				.fromIterable(this.statelessActionToParticlesMappers)
+				.flatMap(mapper -> mapper.mapToParticles(a))
+		);
+		final Observable<SpunParticle> statefulParticles = statefulMappersToParticles(allActions);
+		final Observable<SpunParticle> timestampParticle = Observable.just(SpunParticle.up(new TimestampParticle(System.currentTimeMillis())));
+
+		return Observable.concat(statelessParticles, statefulParticles, timestampParticle)
+			.<List<SpunParticle>>scanWith(
+				ArrayList::new,
+				(a, b) -> Stream.concat(a.stream(), Stream.of(b)).collect(Collectors.toList())
+			)
+			.lastOrError()
+			.map(particles -> {
+				List<SpunParticle> allParticles = new ArrayList<>(particles);
+				allParticles.addAll(feeMapper.map(particles, universe, getMyPublicKey()));
+				return allParticles;
+			})
+			.map(particles -> new UnsignedAtom(new Atom(particles)));
 	}
 
-	private Result buildDisconnectedResult(Action... actions) {
-		ConnectableObservable<AtomSubmissionUpdate> updates = this.buildAtom(actions)
+	private Result buildDisconnectedResult(Action action) {
+		ConnectableObservable<AtomSubmissionUpdate> updates = this.buildAtom(action)
 			.flatMap(identity::sign)
 			.flatMapObservable(ledger.getAtomSubmitter()::submitAtom)
 			.doOnNext(update -> {
@@ -627,6 +653,16 @@ public class RadixApplicationAPI {
 				}
 			}).replay();
 
+		updates.filter(AtomSubmissionUpdate::isComplete)
+			.firstOrError()
+			.flatMapCompletable(update -> {
+				if (update.getState() == AtomSubmissionState.STORED) {
+					return Completable.complete();
+				} else {
+					return Completable.error(new ActionExecutionException(update.getData().toString()));
+				}
+			});
+
 		return new Result(updates);
 	}
 
@@ -639,16 +675,6 @@ public class RadixApplicationAPI {
 	 */
 	public Result execute(Action action) {
 		return this.buildDisconnectedResult(action).connect();
-	}
-
-	/**
-	 * Executes a given list of actions atomically.
-	 *
-	 * @param actions list of actions to execute
-	 * @return results of the execution
-	 */
-	public Result executeAtomically(Action... actions) {
-		return this.buildDisconnectedResult(actions).connect();
 	}
 
 	/**

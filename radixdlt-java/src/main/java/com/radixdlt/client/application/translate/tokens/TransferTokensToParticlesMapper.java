@@ -127,6 +127,11 @@ public class TransferTokensToParticlesMapper implements StatefulActionToParticle
 	}
 
 	@Override
+	public Observable<Action> sideEffects(Action action, Observable<Observable<? extends ApplicationState>> store) {
+		return Observable.empty();
+	}
+
+	@Override
 	public Observable<SpunParticle> mapToParticles(
 		Action action,
 		Observable<Observable<? extends ApplicationState>> store

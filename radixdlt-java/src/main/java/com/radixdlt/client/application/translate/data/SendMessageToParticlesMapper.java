@@ -60,6 +60,11 @@ public class SendMessageToParticlesMapper implements StatelessActionToParticlesM
 		this.encryptionScheme = encryptionScheme;
 	}
 
+	@Override
+	public Observable<Action> sideEffects(Action action) {
+		return Observable.empty();
+	}
+
 	/**
 	 * If SendMessageAction is unencrypted, returns a single message particle containing the
 	 * payload data.

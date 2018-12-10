@@ -42,6 +42,7 @@ public interface StatefulActionToParticlesMapper {
 		}
 	}
 
+
 	/**
 	 * Retrieves the necessary application state to be used in creating new particles
 	 * given a high level action. The returned Observable describes the shardable and
@@ -51,6 +52,8 @@ public interface StatefulActionToParticlesMapper {
 	 * @return observable of required contexts required to create spun particles for the action
 	 */
 	Observable<RequiredShardState> requiredState(Action action);
+
+	Observable<Action> sideEffects(Action action, Observable<Observable<? extends ApplicationState>> store);
 
 	/**
 	 * Creates new spun particles to be added to an atom given a high level

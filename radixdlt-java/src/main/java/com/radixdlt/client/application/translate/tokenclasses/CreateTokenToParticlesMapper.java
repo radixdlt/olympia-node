@@ -18,6 +18,11 @@ import io.reactivex.Observable;
  */
 public class CreateTokenToParticlesMapper implements StatelessActionToParticlesMapper {
 	@Override
+	public Observable<Action> sideEffects(Action action) {
+		return Observable.empty();
+	}
+
+	@Override
 	public Observable<SpunParticle> mapToParticles(Action action) {
 		if (!(action instanceof CreateTokenAction)) {
 			return Observable.empty();
