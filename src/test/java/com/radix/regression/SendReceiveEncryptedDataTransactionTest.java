@@ -1,14 +1,18 @@
 package com.radix.regression;
 
 import com.radixdlt.client.application.RadixApplicationAPI;
+import com.radixdlt.client.application.RadixApplicationAPI.RadixApplicationAPIBuilder;
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
 import com.radixdlt.client.application.identity.RadixIdentities;
+import com.radixdlt.client.application.translate.PowFeeMapper;
 import com.radixdlt.client.application.translate.data.DecryptedMessage;
 import com.radixdlt.client.application.translate.data.DecryptedMessage.EncryptionState;
 import com.radixdlt.client.application.translate.data.SendMessageToParticlesMapper;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
+import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.crypto.ECKeyPairGenerator;
+import com.radixdlt.client.core.pow.ProofOfWorkBuilder;
 import io.reactivex.Completable;
 import io.reactivex.observers.TestObserver;
 import java.util.Collections;
@@ -40,10 +44,11 @@ public class SendReceiveEncryptedDataTransactionTest {
 			ecKeyPairGenerator::generateKeyPair,
 			sendMsg -> Stream.of(ECKeyPairGenerator.newInstance().generateKeyPair().getPublicKey())
 		);
-		RadixApplicationAPI sendMessageWithDifferentKeyApi = RadixApplicationAPI.create(
-			normalApi.getMyIdentity(),
-			Collections.singletonList(msgMapper)
-		);
+		RadixApplicationAPI sendMessageWithDifferentKeyApi = new RadixApplicationAPIBuilder()
+			.defaultFeeMapper()
+			.identity(normalApi.getMyIdentity())
+			.addStatelessParticlesMapper(msgMapper)
+			.build();
 		Result msgSendResult = sendMessageWithDifferentKeyApi.sendMessage(new byte[] {0, 1, 2, 3}, true);
 		msgSendResult.toObservable().subscribe(Util.loggingObserver("MessageSender"));
 		Completable sendMessageStatus = msgSendResult.toCompletable();
