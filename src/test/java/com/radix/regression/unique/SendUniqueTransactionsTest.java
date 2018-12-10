@@ -6,10 +6,13 @@ import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.translate.ActionExecutionException;
 import com.radixdlt.client.application.translate.atomic.AtomicAction;
 import com.radixdlt.client.application.translate.data.SendMessageAction;
-import com.radixdlt.client.application.translate.unique.UniqueIdAction;
+import com.radixdlt.client.application.translate.unique.AlreadyUsedUniqueIdReason;
+import com.radixdlt.client.application.translate.unique.PutUniqueIdAction;
+import com.radixdlt.client.atommodel.unique.UniqueId;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
 import io.reactivex.Completable;
+import io.reactivex.functions.Predicate;
 import io.reactivex.observers.TestObserver;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -35,7 +38,7 @@ public class SendUniqueTransactionsTest {
 		Completable initialUniqueStatus = api.execute(
 			new AtomicAction(
 				new SendMessageAction(new byte[] {0}, api.getMyAddress(), api.getMyAddress(), false),
-				new UniqueIdAction(api.getMyAddress(), uniqueId)
+				new PutUniqueIdAction(api.getMyAddress(), uniqueId)
 			)
 		).toCompletable();
 		initialUniqueStatus.blockingAwait();
@@ -45,14 +48,16 @@ public class SendUniqueTransactionsTest {
 		Completable conflictingUniqueStatus = api.execute(
 			new AtomicAction(
 				new SendMessageAction(new byte[] {1}, api.getMyAddress(), api.getMyAddress(), false),
-				new UniqueIdAction(api.getMyAddress(), uniqueId)
+				new PutUniqueIdAction(api.getMyAddress(), uniqueId)
 			)
 		).toCompletable();
 		conflictingUniqueStatus.subscribe(submissionObserver);
 
 		// Then client should be notified that unique id is already used
 		submissionObserver.awaitTerminalEvent();
+		final AlreadyUsedUniqueIdReason expectedReason = new AlreadyUsedUniqueIdReason(new UniqueId(api.getMyAddress(), uniqueId));
+		final Predicate<ActionExecutionException> hasExpectedUniqueIdCollision = e -> e.getReasons().stream().anyMatch(expectedReason::equals);
+		submissionObserver.assertError(e -> hasExpectedUniqueIdCollision.test((ActionExecutionException) e));
 		submissionObserver.assertError(ActionExecutionException.class);
 	}
-
 }
