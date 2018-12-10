@@ -2,22 +2,21 @@ package com.radix.regression.unique;
 
 import com.radix.regression.Util;
 import com.radixdlt.client.application.RadixApplicationAPI;
-import com.radixdlt.client.application.RadixApplicationAPI.Result;
 import com.radixdlt.client.application.identity.RadixIdentities;
-import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.ActionExecutionException;
-import com.radixdlt.client.application.translate.data.DecryptedMessage;
+import com.radixdlt.client.application.translate.atomic.AtomicAction;
 import com.radixdlt.client.application.translate.data.SendMessageAction;
 import com.radixdlt.client.application.translate.unique.UniqueIdAction;
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
 import io.reactivex.Completable;
 import io.reactivex.observers.TestObserver;
-import java.util.concurrent.TimeUnit;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+/**
+ * RLAU-372
+ */
 public class SendUniqueTransactionsTest {
 
 	@BeforeClass
@@ -32,18 +31,22 @@ public class SendUniqueTransactionsTest {
 
 		// Given account owner which has performed an action with a unique id
 		RadixApplicationAPI api = RadixApplicationAPI.create(RadixIdentities.createNew());
-		final String uniqueId = "This is a unique string :)";
-		Completable initialUniqueStatus = api.executeAtomically(
-			new SendMessageAction(new byte[] {0}, api.getMyAddress(), api.getMyAddress(), false),
-			new UniqueIdAction(api.getMyAddress(), uniqueId)
+		final String uniqueId = "this-is-a-unique-string";
+		Completable initialUniqueStatus = api.execute(
+			new AtomicAction(
+				new SendMessageAction(new byte[] {0}, api.getMyAddress(), api.getMyAddress(), false),
+				new UniqueIdAction(api.getMyAddress(), uniqueId)
+			)
 		).toCompletable();
 		initialUniqueStatus.blockingAwait();
 
 		// When client attempts to use same id
 		TestObserver submissionObserver = TestObserver.create(Util.loggingObserver("Submission"));
-		Completable conflictingUniqueStatus = api.executeAtomically(
-			new SendMessageAction(new byte[] {1}, api.getMyAddress(), api.getMyAddress(), false),
-			new UniqueIdAction(api.getMyAddress(), uniqueId)
+		Completable conflictingUniqueStatus = api.execute(
+			new AtomicAction(
+				new SendMessageAction(new byte[] {1}, api.getMyAddress(), api.getMyAddress(), false),
+				new UniqueIdAction(api.getMyAddress(), uniqueId)
+			)
 		).toCompletable();
 		conflictingUniqueStatus.subscribe(submissionObserver);
 
