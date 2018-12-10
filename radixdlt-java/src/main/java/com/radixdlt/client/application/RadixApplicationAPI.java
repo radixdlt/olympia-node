@@ -119,7 +119,7 @@ public class RadixApplicationAPI {
 	private final RadixIdentity identity;
 	private final RadixUniverse universe;
 
-	private final Map<Class<? extends Object>, ActionStore<? extends Object>> actionStores;
+	private final Map<Class<?>, ActionStore<?>> actionStores;
 
 	private final Map<Class<? extends ApplicationState>, ApplicationStore<? extends ApplicationState>> applicationStores;
 
@@ -209,6 +209,11 @@ public class RadixApplicationAPI {
 			return this;
 		}
 
+		public RadixApplicationAPIBuilder defaultFeeMapper() {
+			this.feeMapper = new PowFeeMapper(p -> new Atom(p).getHash(), new ProofOfWorkBuilder());
+			return this;
+		}
+
 		public RadixApplicationAPIBuilder identity(RadixIdentity identity) {
 			this.identity = identity;
 			return this;
@@ -223,13 +228,11 @@ public class RadixApplicationAPI {
 			Objects.requireNonNull(this.identity, "Identity must be specified");
 			Objects.requireNonNull(this.feeMapper, "Fee Mapper must be specified");
 
-			final RadixUniverse universe;
 			if (this.universe == null && !RadixUniverse.isInstantiated()) {
 				throw new IllegalStateException("No universe available.");
-			} else {
-				universe = this.universe == null ? RadixUniverse.getInstance() : this.universe;
 			}
 
+			final RadixUniverse universe = this.universe == null ? RadixUniverse.getInstance() : this.universe;
 			final Ledger ledger = universe.getLedger();
 			final FeeMapper feeMapper = this.feeMapper;
 			final RadixIdentity identity = this.identity;
@@ -259,7 +262,7 @@ public class RadixApplicationAPI {
 
 		return new RadixApplicationAPIBuilder()
 			.identity(identity)
-			.feeMapper(new PowFeeMapper(p -> new Atom(p).getHash(), new ProofOfWorkBuilder()))
+			.defaultFeeMapper()
 			.addStatelessParticlesMapper(new SendMessageToParticlesMapper(ECKeyPairGenerator.newInstance()::generateKeyPair))
 			.addStatelessParticlesMapper(new CreateTokenToParticlesMapper())
 			.addStatelessParticlesMapper(new MintTokensActionMapper())
@@ -275,13 +278,19 @@ public class RadixApplicationAPI {
 	}
 
 	private ApplicationStore<? extends ApplicationState> getStore(Class<? extends ApplicationState> storeClass) {
-		return Optional.ofNullable(applicationStores.get(storeClass))
-			.orElseThrow(() -> new IllegalArgumentException("No store available for class: " + storeClass));
+		ApplicationStore<? extends ApplicationState> store = applicationStores.get(storeClass);
+		if (store == null) {
+			throw new IllegalArgumentException("No store available for class: " + storeClass);
+		}
+		return store;
 	}
 
-	private ActionStore<? extends Object> getActionStore(Class<? extends Object> actionClass) {
-		return Optional.ofNullable(actionStores.get(actionClass))
-			.orElseThrow(() -> new IllegalArgumentException("No action store available for class: " + actionClass));
+	private ActionStore<?> getActionStore(Class<?> actionClass) {
+		ActionStore<?> store = actionStores.get(actionClass);
+		if (store == null) {
+			throw new IllegalArgumentException("No store available for class: " + actionClass);
+		}
+		return store;
 	}
 
 	/**
@@ -652,16 +661,6 @@ public class RadixApplicationAPI {
 					);
 				}
 			}).replay();
-
-		updates.filter(AtomSubmissionUpdate::isComplete)
-			.firstOrError()
-			.flatMapCompletable(update -> {
-				if (update.getState() == AtomSubmissionState.STORED) {
-					return Completable.complete();
-				} else {
-					return Completable.error(new ActionExecutionException(update.getData().toString()));
-				}
-			});
 
 		return new Result(updates);
 	}
