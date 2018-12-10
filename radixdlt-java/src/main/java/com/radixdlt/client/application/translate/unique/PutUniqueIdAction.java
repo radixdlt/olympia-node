@@ -4,7 +4,7 @@ import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import java.util.Objects;
 
-public class UniqueIdAction implements Action {
+public class PutUniqueIdAction implements Action {
 
 	/**
 	 * Address for uniqueness constraint
@@ -16,7 +16,7 @@ public class UniqueIdAction implements Action {
 	 */
 	private final String unique;
 
-	public UniqueIdAction(RadixAddress address, String unique) {
+	public PutUniqueIdAction(RadixAddress address, String unique) {
 		Objects.requireNonNull(address);
 		Objects.requireNonNull(unique);
 

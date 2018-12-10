@@ -14,11 +14,11 @@ public class UniqueIdToParticlesMapper implements StatelessActionToParticlesMapp
 
 	@Override
 	public Observable<SpunParticle> mapToParticles(Action action) {
-		if (!(action instanceof UniqueIdAction)) {
+		if (!(action instanceof PutUniqueIdAction)) {
 			return Observable.empty();
 		}
 
-		UniqueIdAction uniqueIdAction = (UniqueIdAction) action;
+		PutUniqueIdAction uniqueIdAction = (PutUniqueIdAction) action;
 		UniqueParticle uniqueParticle = new UniqueParticle(uniqueIdAction.getAddress(), uniqueIdAction.getUnique());
 		return Observable.just(SpunParticle.up(uniqueParticle));
 	}
