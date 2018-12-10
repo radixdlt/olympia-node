@@ -1,11 +1,14 @@
 package com.radixdlt.client.application;
 
+import com.radixdlt.client.application.translate.ActionExecutionException.ActionExecutionExceptionBuilder;
 import com.radixdlt.client.application.translate.ApplicationState;
+import com.radixdlt.client.application.translate.AtomErrorToExceptionReasonMapper;
 import com.radixdlt.client.application.translate.AtomToExecutedActionsMapper;
 import com.radixdlt.client.application.translate.StatefulActionToParticlesMapper;
 import com.radixdlt.client.application.translate.ParticleReducer;
 import com.radixdlt.client.application.translate.atomic.AtomicToParticlesMapper;
 import com.radixdlt.client.application.translate.tokenclasses.TokenClassesState;
+import com.radixdlt.client.application.translate.unique.AlreadyUsedUniqueIdReasonMapper;
 import com.radixdlt.client.application.translate.unique.UniqueIdToParticlesMapper;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -18,8 +21,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.radix.serialization2.DsonOutput.Output;
-import org.radix.serialization2.client.Serialize;
 import org.radix.utils.UInt256;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +30,6 @@ import com.radixdlt.client.application.identity.Data;
 import com.radixdlt.client.application.identity.Data.DataBuilder;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.Action;
-import com.radixdlt.client.application.translate.ActionExecutionException;
 import com.radixdlt.client.application.translate.ActionStore;
 import com.radixdlt.client.application.translate.StatelessActionToParticlesMapper;
 import com.radixdlt.client.application.translate.ApplicationStore;
@@ -88,18 +88,9 @@ public class RadixApplicationAPI {
 		private final ConnectableObservable<AtomSubmissionUpdate> updates;
 		private final Completable completable;
 
-		private Result(ConnectableObservable<AtomSubmissionUpdate> updates) {
+		private Result(ConnectableObservable<AtomSubmissionUpdate> updates, Completable completable) {
 			this.updates = updates;
-
-			this.completable = updates.filter(AtomSubmissionUpdate::isComplete)
-				.firstOrError()
-				.flatMapCompletable(update -> {
-					if (update.getState() == AtomSubmissionState.STORED) {
-						return Completable.complete();
-					} else {
-						return Completable.error(new ActionExecutionException(update.getData().toString()));
-					}
-				});
+			this.completable = completable;
 		}
 
 		private Result connect() {
@@ -107,10 +98,20 @@ public class RadixApplicationAPI {
 			return this;
 		}
 
+		/**
+		 * A low level interface, returns an a observable of the status of an atom submission as it occurs.
+		 * @return observable of atom submission status
+		 */
 		public Observable<AtomSubmissionUpdate> toObservable() {
 			return updates;
 		}
 
+		/**
+		 * A high level interface, returns completable of successful completion of action execution.
+		 * If there is an with the ledger, the completable throws an ActionExecutionException.
+		 *
+		 * @return completable of successful execution of action onto ledger.
+		 */
 		public Completable toCompletable() {
 			return completable;
 		}
@@ -133,6 +134,11 @@ public class RadixApplicationAPI {
 	 */
 	private final List<StatefulActionToParticlesMapper> statefulActionToParticlesMappers;
 
+	/**
+	 * Mapper of atom submission errors to application level errors
+	 */
+	private final List<AtomErrorToExceptionReasonMapper> atomErrorMappers;
+
 	// TODO: Translator from particles to atom
 	private final FeeMapper feeMapper;
 
@@ -146,7 +152,8 @@ public class RadixApplicationAPI {
 		List<StatelessActionToParticlesMapper> statelessActionToParticlesMappers,
 		List<StatefulActionToParticlesMapper> statefulActionToParticlesMappers,
 		List<ParticleReducer<? extends ApplicationState>> particleReducers,
-		List<AtomToExecutedActionsMapper<? extends Object>> atomMappers
+		List<AtomToExecutedActionsMapper<? extends Object>> atomMappers,
+		List<AtomErrorToExceptionReasonMapper> atomErrorMappers
 	) {
 		Objects.requireNonNull(identity);
 		Objects.requireNonNull(universe);
@@ -155,6 +162,7 @@ public class RadixApplicationAPI {
 		Objects.requireNonNull(statelessActionToParticlesMappers);
 		Objects.requireNonNull(statefulActionToParticlesMappers);
 		Objects.requireNonNull(particleReducers);
+		Objects.requireNonNull(atomErrorMappers);
 
 		this.identity = identity;
 		this.universe = universe;
@@ -168,6 +176,7 @@ public class RadixApplicationAPI {
 		));
 		this.statefulActionToParticlesMappers = statefulActionToParticlesMappers;
 		this.statelessActionToParticlesMappers = statelessActionToParticlesMappers;
+		this.atomErrorMappers = atomErrorMappers;
 		this.feeMapper = feeMapper;
 		this.ledger = ledger;
 	}
@@ -180,6 +189,7 @@ public class RadixApplicationAPI {
 		private List<StatelessActionToParticlesMapper> statelessActionToParticlesMappers = new ArrayList<>();
 		private List<StatefulActionToParticlesMapper> statefulActionToParticlesMappers = new ArrayList<>();
 		private List<AtomToExecutedActionsMapper<? extends Object>> atomMappers = new ArrayList<>();
+		private List<AtomErrorToExceptionReasonMapper> atomErrorMappers = new ArrayList<>();
 
 		public RadixApplicationAPIBuilder() {
 		}
@@ -201,6 +211,11 @@ public class RadixApplicationAPI {
 
 		public <T extends ApplicationState> RadixApplicationAPIBuilder addReducer(ParticleReducer<T> reducer) {
 			this.reducers.add(reducer);
+			return this;
+		}
+
+		public RadixApplicationAPIBuilder addAtomErrorMapper(AtomErrorToExceptionReasonMapper atomErrorMapper) {
+			this.atomErrorMappers.add(atomErrorMapper);
 			return this;
 		}
 
@@ -246,7 +261,8 @@ public class RadixApplicationAPI {
 				statelessActionToParticlesMappers,
 				statefulActionToParticlesMappers,
 				reducers,
-				atomMappers
+				atomMappers,
+				atomErrorMappers
 			);
 		}
 	}
@@ -274,6 +290,7 @@ public class RadixApplicationAPI {
 			.addReducer(new TokenBalanceReducer())
 			.addAtomMapper(new AtomToDecryptedMessageMapper(RadixUniverse.getInstance()))
 			.addAtomMapper(new AtomToTokenTransfersMapper(RadixUniverse.getInstance()))
+			.addAtomErrorMapper(new AlreadyUsedUniqueIdReasonMapper())
 			.build();
 	}
 
@@ -629,7 +646,8 @@ public class RadixApplicationAPI {
 				.flatMap(mapper -> mapper.mapToParticles(a))
 		);
 		final Observable<SpunParticle> statefulParticles = statefulMappersToParticles(allActions);
-		final Observable<SpunParticle> timestampParticle = Observable.just(SpunParticle.up(new TimestampParticle(System.currentTimeMillis())));
+		final Observable<SpunParticle> timestampParticle =
+			Observable.just(SpunParticle.up(new TimestampParticle(System.currentTimeMillis())));
 
 		return Observable.concat(statelessParticles, statefulParticles, timestampParticle)
 			.<List<SpunParticle>>scanWith(
@@ -649,20 +667,25 @@ public class RadixApplicationAPI {
 		ConnectableObservable<AtomSubmissionUpdate> updates = this.buildAtom(action)
 			.flatMap(identity::sign)
 			.flatMapObservable(ledger.getAtomSubmitter()::submitAtom)
-			.doOnNext(update -> {
-				//TODO: retry on collision
-				if (update.getState() == AtomSubmissionState.COLLISION) {
-					JsonObject data = update.getData().getAsJsonObject();
-					String jsonPointer = data.getAsJsonPrimitive("pointerToIssue").getAsString();
-					LOGGER.info("ParticleConflict: pointer({}) cause({}) atom({})",
-						jsonPointer,
-						data.getAsJsonPrimitive("message").getAsString(),
-						Serialize.getInstance().toJson(update.getAtom(), Output.ALL)
-					);
-				}
-			}).replay();
+			.replay();
 
-		return new Result(updates);
+		Completable completable = updates.filter(AtomSubmissionUpdate::isComplete)
+			.firstOrError()
+			.flatMapCompletable(update -> {
+				if (update.getState() == AtomSubmissionState.STORED) {
+					return Completable.complete();
+				} else {
+					final JsonObject errorData = update.getData().getAsJsonObject();
+					final ActionExecutionExceptionBuilder exceptionBuilder = new ActionExecutionExceptionBuilder()
+						.errorData(errorData);
+					atomErrorMappers.stream()
+						.flatMap(errorMapper -> errorMapper.mapAtomErrorToExceptionReasons(update.getAtom(), errorData))
+						.forEach(exceptionBuilder::addReason);
+					return Completable.error(exceptionBuilder.build());
+				}
+			});
+
+		return new Result(updates, completable);
 	}
 
 	/**

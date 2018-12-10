@@ -1,14 +1,21 @@
 package com.radixdlt.client.application;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.google.gson.JsonObject;
 import com.radixdlt.client.application.RadixApplicationAPI.RadixApplicationAPIBuilder;
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
+import com.radixdlt.client.application.translate.Action;
+import com.radixdlt.client.application.translate.ActionExecutionException;
+import com.radixdlt.client.application.translate.ActionExecutionExceptionReason;
+import com.radixdlt.client.application.translate.AtomErrorToExceptionReasonMapper;
+import com.radixdlt.client.application.translate.StatelessActionToParticlesMapper;
 import com.radixdlt.client.application.translate.data.AtomToDecryptedMessageMapper;
 import com.radixdlt.client.application.translate.data.DecryptedMessage;
 import com.radixdlt.client.application.translate.FeeMapper;
@@ -22,6 +29,8 @@ import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomObservation;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.application.identity.RadixIdentity;
+import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.ledger.AtomPuller;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.ledger.AtomStore;
@@ -34,6 +43,7 @@ import io.reactivex.Single;
 import io.reactivex.observers.TestObserver;
 import java.math.BigDecimal;
 import java.util.Collections;
+import java.util.stream.Stream;
 import org.junit.Test;
 
 public class RadixApplicationAPITest {
@@ -257,5 +267,44 @@ public class RadixApplicationAPITest {
 		TokenClassReference token = mock(TokenClassReference.class);
 		api.getBalance(address, token).subscribe(testObserver);
 		verify(puller, times(1)).pull(address);
+	}
+
+	@Test
+	public void testErrorMapper() {
+		Particle particle = mock(Particle.class);
+		Atom atom = new Atom(Collections.singletonList(SpunParticle.up(particle)));
+		RadixIdentity identity = mock(RadixIdentity.class);
+		when(identity.sign(any())).thenReturn(Single.just(atom));
+		RadixUniverse universe = mock(RadixUniverse.class);
+		JsonObject errorData = new JsonObject();
+
+		AtomSubmitter atomSubmitter = mock(AtomSubmitter.class);
+		when(atomSubmitter.submitAtom(eq(atom)))
+			.thenReturn(Observable.just(AtomSubmissionUpdate.create(atom, AtomSubmissionState.COLLISION, errorData)));
+
+		Ledger ledger = mock(Ledger.class);
+		when(ledger.getAtomSubmitter()).thenReturn(atomSubmitter);
+		when(universe.getLedger()).thenReturn(ledger);
+		Action action = mock(Action.class);
+
+		StatelessActionToParticlesMapper actionMapper = mock(StatelessActionToParticlesMapper.class);
+		when(actionMapper.mapToParticles(eq(action))).thenReturn(Observable.just(SpunParticle.up(particle)));
+		when(actionMapper.sideEffects(any())).thenReturn(Observable.empty());
+		AtomErrorToExceptionReasonMapper errorMapper = mock(AtomErrorToExceptionReasonMapper.class);
+		ActionExecutionExceptionReason reason = mock(ActionExecutionExceptionReason.class);
+		when(errorMapper.mapAtomErrorToExceptionReasons(any(), eq(errorData))).thenReturn(Stream.of(reason));
+
+		RadixApplicationAPI api = new RadixApplicationAPIBuilder()
+			.identity(identity)
+			.universe(universe)
+			.addStatelessParticlesMapper(actionMapper)
+			.feeMapper(mock(PowFeeMapper.class))
+			.addAtomErrorMapper(errorMapper)
+			.build();
+
+		TestObserver testObserver = TestObserver.create();
+		api.execute(action).toCompletable().subscribe(testObserver);
+		testObserver.assertError(ActionExecutionException.class);
+		testObserver.assertError(e -> ((ActionExecutionException) e).getReasons().contains(reason));
 	}
 }
