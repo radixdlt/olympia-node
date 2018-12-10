@@ -60,4 +60,26 @@ public class SendUniqueTransactionsTest {
 		submissionObserver.assertError(e -> hasExpectedUniqueIdCollision.test((ActionExecutionException) e));
 		submissionObserver.assertError(ActionExecutionException.class);
 	}
+
+	@Test
+	public void given_an_account_owner_which_has_not_used_a_unique_id__when_the_client_attempts_to_use_id__then_client_should_be_notified_of_success() throws Exception {
+
+		// Given account owner which has NOT performed an action with a unique id
+		RadixApplicationAPI api = RadixApplicationAPI.create(RadixIdentities.createNew());
+		final String uniqueId = "this-is-a-unique-string";
+
+		// When client attempts to use id
+		TestObserver submissionObserver = TestObserver.create(Util.loggingObserver("Submission"));
+		Completable conflictingUniqueStatus = api.execute(
+			new AtomicAction(
+				new SendMessageAction(new byte[] {1}, api.getMyAddress(), api.getMyAddress(), false),
+				new PutUniqueIdAction(api.getMyAddress(), uniqueId)
+			)
+		).toCompletable();
+		conflictingUniqueStatus.subscribe(submissionObserver);
+
+		// Then client should be notified of success
+		submissionObserver.awaitTerminalEvent();
+		submissionObserver.assertComplete();
+	}
 }
