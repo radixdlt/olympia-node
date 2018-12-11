@@ -3,6 +3,8 @@ package com.radixdlt.client.examples;
 import com.radixdlt.client.application.translate.data.SendMessageAction;
 import java.math.BigDecimal;
 
+import org.radix.utils.UInt256;
+
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
@@ -58,6 +60,7 @@ public class RadixWalletExample {
 			"JOSH",
 			"The Best Coin Ever",
 			TokenClassReference.unitsToSubunits(10000),
+			UInt256.ONE,
 			TokenSupplyType.MUTABLE
 		).toObservable().subscribe(System.out::println);
 

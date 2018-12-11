@@ -28,15 +28,20 @@ public class OwnedTokensParticle extends Particle {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private TokenClassReference tokenClassReference;
 
+	@JsonProperty("granularity")
+	@DsonOutput(DsonOutput.Output.ALL)
+	private UInt256 granularity;
+
 	protected OwnedTokensParticle() {
 	}
 
-	public OwnedTokensParticle(UInt256 amount, FungibleQuark.FungibleType type, RadixAddress address, long nonce,
+	public OwnedTokensParticle(UInt256 amount, UInt256 granularity, FungibleQuark.FungibleType type, RadixAddress address, long nonce,
 	                        TokenClassReference tokenRef, long planck) {
 		super(new OwnableQuark(address.getPublicKey()), new AccountableQuark(address),
 				new FungibleQuark(amount, planck, nonce, type));
 
 		this.tokenClassReference = tokenRef;
+		this.granularity = granularity;
 	}
 
 	public RadixAddress getAddress() {
@@ -77,6 +82,10 @@ public class OwnedTokensParticle extends Particle {
 
 	public UInt256 getAmount() {
 		return getQuarkOrError(FungibleQuark.class).getAmount();
+	}
+
+	public UInt256 getGranularity() {
+		return this.granularity;
 	}
 
 	public Set<ECPublicKey> getOwnersPublicKeys() {

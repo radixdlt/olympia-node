@@ -62,6 +62,7 @@ public class TokenClassesReducer implements ParticleReducer<TokenClassesState> {
 				tokenParticle.getName(),
 				tokenParticle.getSymbol(),
 				tokenParticle.getDescription(),
+				TokenClassReference.subunitsToUnits(tokenParticle.getGranularity()),
 				tokenSupplyType
 			);
 		} else {

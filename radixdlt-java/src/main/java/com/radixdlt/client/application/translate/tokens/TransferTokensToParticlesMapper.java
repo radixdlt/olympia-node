@@ -1,7 +1,6 @@
 package com.radixdlt.client.application.translate.tokens;
 
-import com.radixdlt.client.application.translate.ApplicationState;
-import com.radixdlt.client.application.translate.StatefulActionToParticlesMapper;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
@@ -17,6 +16,8 @@ import org.radix.utils.UInt256s;
 import com.google.gson.JsonArray;
 import com.radixdlt.client.application.identity.Data;
 import com.radixdlt.client.application.translate.Action;
+import com.radixdlt.client.application.translate.ApplicationState;
+import com.radixdlt.client.application.translate.StatefulActionToParticlesMapper;
 import com.radixdlt.client.application.translate.tokens.TokenBalanceState.Balance;
 import com.radixdlt.client.atommodel.message.MessageParticle;
 import com.radixdlt.client.atommodel.message.MessageParticle.MessageParticleBuilder;
@@ -45,6 +46,7 @@ public class TransferTokensToParticlesMapper implements StatefulActionToParticle
 		return Observable.create(emitter -> {
 			UInt256 consumerTotal = UInt256.ZERO;
 			final UInt256 subunitAmount = TokenClassReference.unitsToSubunits(transfer.getAmount());
+			UInt256 granularity = UInt256.ZERO;
 			Iterator<OwnedTokensParticle> iterator = currentParticles.iterator();
 			Map<ECKeyPair, UInt256> consumerQuantities = new HashMap<>();
 
@@ -55,6 +57,9 @@ public class TransferTokensToParticlesMapper implements StatefulActionToParticle
 				final UInt256 left = subunitAmount.subtract(consumerTotal);
 
 				OwnedTokensParticle particle = iterator.next();
+				if (granularity.isZero()) {
+					granularity = particle.getGranularity();
+				}
 				consumerTotal = consumerTotal.add(particle.getAmount());
 
 				final UInt256 amount = UInt256s.min(left, particle.getAmount());
@@ -64,9 +69,11 @@ public class TransferTokensToParticlesMapper implements StatefulActionToParticle
 				emitter.onNext(down);
 			}
 
+			final UInt256 computedGranularity = granularity;
 			consumerQuantities.entrySet().stream()
 				.map(entry -> new OwnedTokensParticle(
 					entry.getValue(),
+					computedGranularity,
 					FungibleType.TRANSFERRED,
 					universe.getAddressFrom(entry.getKey().getPublicKey()),
 					System.nanoTime(),
@@ -150,8 +157,7 @@ public class TransferTokensToParticlesMapper implements StatefulActionToParticle
 				final TokenClassReference tokenRef = transfer.getTokenClassReference();
 				final Map<TokenClassReference, Balance> allConsumables = curState.getBalance();
 				final Balance balance = Optional.ofNullable(
-					allConsumables.get(transfer.getTokenClassReference())).orElse(Balance.empty()
-				);
+					allConsumables.get(transfer.getTokenClassReference())).orElse(Balance.empty(BigInteger.ONE));
 				if (balance.getAmount().compareTo(transfer.getAmount()) < 0) {
 					throw new InsufficientFundsException(
 							tokenRef, balance.getAmount(), transfer.getAmount()

@@ -1,16 +1,5 @@
 package com.radixdlt.client.application;
 
-import com.radixdlt.client.application.translate.ActionExecutionException.ActionExecutionExceptionBuilder;
-import com.radixdlt.client.application.translate.ApplicationState;
-import com.radixdlt.client.application.translate.AtomErrorToExceptionReasonMapper;
-import com.radixdlt.client.application.translate.AtomToExecutedActionsMapper;
-import com.radixdlt.client.application.translate.StatefulActionToParticlesMapper;
-import com.radixdlt.client.application.translate.ParticleReducer;
-import com.radixdlt.client.application.translate.atomic.AtomicToParticlesMapper;
-import com.radixdlt.client.application.translate.tokenclasses.TokenClassesState;
-import com.radixdlt.client.application.translate.unique.AlreadyUsedUniqueIdReasonMapper;
-import com.radixdlt.client.application.translate.unique.PutUniqueIdToParticlesMapper;
-import com.radixdlt.client.core.atoms.AtomObservation;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -31,11 +20,18 @@ import com.radixdlt.client.application.identity.Data;
 import com.radixdlt.client.application.identity.Data.DataBuilder;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.Action;
+import com.radixdlt.client.application.translate.ActionExecutionException.ActionExecutionExceptionBuilder;
 import com.radixdlt.client.application.translate.ActionStore;
-import com.radixdlt.client.application.translate.StatelessActionToParticlesMapper;
+import com.radixdlt.client.application.translate.ApplicationState;
 import com.radixdlt.client.application.translate.ApplicationStore;
+import com.radixdlt.client.application.translate.AtomErrorToExceptionReasonMapper;
+import com.radixdlt.client.application.translate.AtomToExecutedActionsMapper;
 import com.radixdlt.client.application.translate.FeeMapper;
+import com.radixdlt.client.application.translate.ParticleReducer;
 import com.radixdlt.client.application.translate.PowFeeMapper;
+import com.radixdlt.client.application.translate.StatefulActionToParticlesMapper;
+import com.radixdlt.client.application.translate.StatelessActionToParticlesMapper;
+import com.radixdlt.client.application.translate.atomic.AtomicToParticlesMapper;
 import com.radixdlt.client.application.translate.data.AtomToDecryptedMessageMapper;
 import com.radixdlt.client.application.translate.data.DecryptedMessage;
 import com.radixdlt.client.application.translate.data.SendMessageAction;
@@ -48,6 +44,7 @@ import com.radixdlt.client.application.translate.tokenclasses.CreateTokenToParti
 import com.radixdlt.client.application.translate.tokenclasses.MintTokensAction;
 import com.radixdlt.client.application.translate.tokenclasses.MintTokensActionMapper;
 import com.radixdlt.client.application.translate.tokenclasses.TokenClassesReducer;
+import com.radixdlt.client.application.translate.tokenclasses.TokenClassesState;
 import com.radixdlt.client.application.translate.tokenclasses.TokenState;
 import com.radixdlt.client.application.translate.tokens.AtomToTokenTransfersMapper;
 import com.radixdlt.client.application.translate.tokens.TokenBalanceReducer;
@@ -55,12 +52,15 @@ import com.radixdlt.client.application.translate.tokens.TokenBalanceState;
 import com.radixdlt.client.application.translate.tokens.TokenTransfer;
 import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.application.translate.tokens.TransferTokensToParticlesMapper;
+import com.radixdlt.client.application.translate.unique.AlreadyUsedUniqueIdReasonMapper;
+import com.radixdlt.client.application.translate.unique.PutUniqueIdToParticlesMapper;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.atommodel.timestamp.TimestampParticle;
 import com.radixdlt.client.atommodel.tokens.TokenClassReference;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.RadixUniverse.Ledger;
 import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.client.core.atoms.AtomObservation;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.crypto.ECKeyPairGenerator;
@@ -282,9 +282,9 @@ public class RadixApplicationAPI {
 			.defaultFeeMapper()
 			.addStatelessParticlesMapper(new SendMessageToParticlesMapper(ECKeyPairGenerator.newInstance()::generateKeyPair))
 			.addStatelessParticlesMapper(new CreateTokenToParticlesMapper())
-			.addStatelessParticlesMapper(new MintTokensActionMapper())
 			.addStatelessParticlesMapper(new PutUniqueIdToParticlesMapper())
 			.addStatelessParticlesMapper(new AtomicToParticlesMapper())
+			.addStatefulParticlesMapper(new MintTokensActionMapper())
 			.addStatefulParticlesMapper(new BurnTokensActionMapper(RadixUniverse.getInstance()))
 			.addStatefulParticlesMapper(new TransferTokensToParticlesMapper(RadixUniverse.getInstance()))
 			.addReducer(new TokenClassesReducer())
@@ -510,6 +510,7 @@ public class RadixApplicationAPI {
 	 * @param iso The symbol of the token to create
 	 * @param description A description of the token
 	 * @param initialSupply The initial amount in subunits of supply for this token
+	 * @param granularity The least multiple of subunits per transaction for this token
 	 * @param tokenSupplyType The type of supply for this token: Fixed or Mutable
 	 * @return result of the transaction
 	 */
@@ -518,9 +519,10 @@ public class RadixApplicationAPI {
 		String iso,
 		String description,
 		UInt256 initialSupply,
+		UInt256 granularity,
 		TokenSupplyType tokenSupplyType
 	) {
-		CreateTokenAction tokenCreation = new CreateTokenAction(getMyAddress(), name, iso, description, initialSupply, tokenSupplyType);
+		CreateTokenAction tokenCreation = new CreateTokenAction(getMyAddress(), name, iso, description, initialSupply, granularity, tokenSupplyType);
 		return execute(tokenCreation);
 	}
 

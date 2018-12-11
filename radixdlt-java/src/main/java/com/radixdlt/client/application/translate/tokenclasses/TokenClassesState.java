@@ -1,12 +1,13 @@
 package com.radixdlt.client.application.translate.tokenclasses;
 
-import com.radixdlt.client.application.translate.ApplicationState;
-import com.radixdlt.client.application.translate.tokenclasses.TokenState.TokenSupplyType;
-import com.radixdlt.client.atommodel.tokens.TokenClassReference;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+
+import com.radixdlt.client.application.translate.ApplicationState;
+import com.radixdlt.client.application.translate.tokenclasses.TokenState.TokenSupplyType;
+import com.radixdlt.client.atommodel.tokens.TokenClassReference;
 
 public class TokenClassesState implements ApplicationState {
 	private final Map<TokenClassReference, TokenState> state;
@@ -28,14 +29,15 @@ public class TokenClassesState implements ApplicationState {
 		String name,
 		String iso,
 		String description,
+		BigDecimal granularity,
 		TokenSupplyType tokenSupplyType
 	) {
 		Map<TokenClassReference, TokenState> newState = new HashMap<>(state);
 		if (newState.containsKey(ref)) {
 			TokenState tokenState = newState.get(ref);
-			newState.put(ref, new TokenState(name, iso, description, tokenState.getTotalSupply(), tokenSupplyType));
+			newState.put(ref, new TokenState(name, iso, description, tokenState.getTotalSupply(), tokenState.getGranularity(), tokenSupplyType));
 		} else {
-			newState.put(ref, new TokenState(name, iso, description, BigDecimal.ZERO, tokenSupplyType));
+			newState.put(ref, new TokenState(name, iso, description, BigDecimal.ZERO, granularity, tokenSupplyType));
 		}
 
 		return new TokenClassesState(newState);
@@ -50,9 +52,10 @@ public class TokenClassesState implements ApplicationState {
 				tokenState.getIso(),
 				tokenState.getDescription(),
 				tokenState.getTotalSupply() != null ? tokenState.getTotalSupply().add(supplyChange) : supplyChange,
+				tokenState.getGranularity(),
 				tokenState.getTokenSupplyType()));
 		} else {
-			newState.put(ref, new TokenState(null, ref.getSymbol(), null, supplyChange, null));
+			newState.put(ref, new TokenState(null, ref.getSymbol(), null, null, supplyChange, null));
 		}
 
 		return new TokenClassesState(newState);

@@ -48,6 +48,7 @@ public class CreateTokenToParticlesMapper implements StatelessActionToParticlesM
 				tokenCreation.getName(),
 				tokenCreation.getIso(),
 				tokenCreation.getDescription(),
+				tokenCreation.getGranularity(),
 				ImmutableMap.of(
 					FungibleType.MINTED, mintPermissions,
 					FungibleType.BURNED, burnPermissions,
@@ -57,6 +58,7 @@ public class CreateTokenToParticlesMapper implements StatelessActionToParticlesM
 		);
 		OwnedTokensParticle minted = new OwnedTokensParticle(
 				tokenCreation.getInitialSupply(),
+				tokenCreation.getGranularity(),
 				FungibleQuark.FungibleType.MINTED,
 				tokenCreation.getAddress(),
 				System.currentTimeMillis(),

@@ -16,6 +16,7 @@ public class TokenState {
 	private final String iso;
 	private final String description;
 	private final BigDecimal totalSupply;
+	private final BigDecimal granularity;
 	private final TokenSupplyType tokenSupplyType;
 
 	public TokenState(
@@ -23,12 +24,14 @@ public class TokenState {
 		String iso,
 		String description,
 		BigDecimal totalSupply,
+		BigDecimal granularity,
 		TokenSupplyType tokenSupplyType
 	) {
 		this.name = name;
 		this.iso = iso;
 		this.description = description;
 		this.totalSupply = totalSupply;
+		this.granularity = granularity;
 		this.tokenSupplyType = tokenSupplyType;
 	}
 
@@ -46,6 +49,10 @@ public class TokenState {
 
 	public BigDecimal getTotalSupply() {
 		return totalSupply;
+	}
+
+	public BigDecimal getGranularity() {
+		return this.granularity;
 	}
 
 	public TokenSupplyType getTokenSupplyType() {
@@ -72,12 +79,14 @@ public class TokenState {
 			&& Objects.equals(this.iso, tokenState.iso)
 			&& Objects.equals(this.tokenSupplyType, tokenState.tokenSupplyType)
 			&& Objects.equals(this.description, tokenState.description)
-			&& Objects.equals(this.totalSupply, tokenState.totalSupply);
+			// Note BigDecimal.equal does not return true for different scales
+			&& this.granularity.compareTo(tokenState.granularity) == 0
+			&& this.totalSupply.compareTo(tokenState.totalSupply) == 0;
 	}
 
 	@Override
 	public String toString() {
-		return "Token(" + iso + ") name(" + name + ") description(" + description
-			+ ") totalSupply(" + totalSupply + ") maxSupply(" + totalSupply + ")";
+		return String.format("Token(%s) name(%s) description(%s) totalSupply(%s) granularity(%s) maxSupply(%s)",
+				this.iso, this.name, this.description, this.totalSupply, this.granularity, this.totalSupply);
 	}
 }

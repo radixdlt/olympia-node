@@ -17,6 +17,7 @@ public class CreateTokenAction implements Action {
 	private final String iso;
 	private final String description;
 	private final UInt256 initialSupply;
+	private final UInt256 granularity;
 	private final RadixAddress address;
 	private final TokenSupplyType tokenSupplyType;
 
@@ -26,6 +27,7 @@ public class CreateTokenAction implements Action {
 		String iso,
 		String description,
 		UInt256 initialSupply,
+		UInt256 granularity,
 		TokenSupplyType tokenSupplyType
 	) {
 		// Redundant null check added for completeness
@@ -39,6 +41,7 @@ public class CreateTokenAction implements Action {
 		this.iso = Objects.requireNonNull(iso);
 		this.description = description;
 		this.initialSupply = initialSupply;
+		this.granularity = Objects.requireNonNull(granularity);
 		this.tokenSupplyType = Objects.requireNonNull(tokenSupplyType);
 	}
 
@@ -62,7 +65,13 @@ public class CreateTokenAction implements Action {
 		return initialSupply;
 	}
 
+	public UInt256 getGranularity() {
+		// TODO Auto-generated method stub
+		return granularity;
+	}
+
 	public TokenSupplyType getTokenSupplyType() {
 		return tokenSupplyType;
 	}
+
 }

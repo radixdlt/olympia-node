@@ -19,7 +19,8 @@ public class FeeParticle extends OwnedTokensParticle {
 	}
 
 	public FeeParticle(UInt256 quantity, RadixAddress address, long nonce, TokenClassReference tokenRef, long planck) {
-		super(quantity, FungibleQuark.FungibleType.MINTED, address, nonce, tokenRef, planck);
+		// FIXME RLAU-40 Check if the hard-coded granularity here is valid
+		super(quantity, UInt256.ONE, FungibleQuark.FungibleType.MINTED, address, nonce, tokenRef, planck);
 
 		this.service = new EUID(1);
 	}

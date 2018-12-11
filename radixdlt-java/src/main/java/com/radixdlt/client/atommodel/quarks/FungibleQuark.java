@@ -54,7 +54,7 @@ public final class FungibleQuark extends Quark {
 
 	private FungibleType type;
 
-	private FungibleQuark() {
+	FungibleQuark() {
 	}
 
 	public FungibleQuark(UInt256 amount, long planck, FungibleType type) {
@@ -71,7 +71,7 @@ public final class FungibleQuark extends Quark {
 		this.nonce = nonce;
 		this.type = Objects.requireNonNull(type, "type is required");
 		this.planck = planck;
-		this.amount = amount;
+		this.amount = Objects.requireNonNull(amount, "Amount is required");
 	}
 
 	public UInt256 getAmount() {

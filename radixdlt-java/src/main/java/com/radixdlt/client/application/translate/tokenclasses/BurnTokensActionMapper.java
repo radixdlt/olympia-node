@@ -1,8 +1,6 @@
 package com.radixdlt.client.application.translate.tokenclasses;
 
-import com.radixdlt.client.application.translate.ApplicationState;
-import com.radixdlt.client.application.translate.StatefulActionToParticlesMapper;
-import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -16,9 +14,13 @@ import org.radix.utils.UInt256;
 import org.radix.utils.UInt256s;
 
 import com.radixdlt.client.application.translate.Action;
+import com.radixdlt.client.application.translate.ApplicationState;
+import com.radixdlt.client.application.translate.StatefulActionToParticlesMapper;
 import com.radixdlt.client.application.translate.tokens.InsufficientFundsException;
 import com.radixdlt.client.application.translate.tokens.TokenBalanceState;
 import com.radixdlt.client.application.translate.tokens.TokenBalanceState.Balance;
+import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.atommodel.quarks.FungibleQuark.FungibleType;
 import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
 import com.radixdlt.client.atommodel.tokens.TokenClassReference;
@@ -41,14 +43,11 @@ public class BurnTokensActionMapper implements StatefulActionToParticlesMapper {
 			return Observable.empty();
 		}
 
-		TransferTokensAction transfer = (TransferTokensAction) action;
+		BurnTokensAction burnTokensAction = (BurnTokensAction) action;
 
-		return Observable.just(new RequiredShardState(TokenBalanceState.class, transfer.getFrom()));
-	}
+		RadixAddress tokenClassAddress = burnTokensAction.getTokenClassReference().getAddress();
 
-	@Override
-	public Observable<Action> sideEffects(Action action, Observable<Observable<? extends ApplicationState>> store) {
-		return Observable.empty();
+		return Observable.just(new RequiredShardState(TokenBalanceState.class, tokenClassAddress));
 	}
 
 	@Override
@@ -60,27 +59,26 @@ public class BurnTokensActionMapper implements StatefulActionToParticlesMapper {
 		BurnTokensAction burnTokensAction = (BurnTokensAction) action;
 		return store.firstOrError()
 			.flatMapObservable(s -> s)
-			.map(appState -> (TokenBalanceState) appState)
+			.map(TokenBalanceState.class::cast)
 			.firstOrError()
 			.toObservable()
-			.flatMapIterable(state -> this.map(burnTokensAction, state));
+			.flatMapIterable(state -> map(burnTokensAction, state));
 	}
 
 	private List<SpunParticle> map(BurnTokensAction burnTokensAction, TokenBalanceState curState) {
 		final Map<TokenClassReference, Balance> allConsumables = curState.getBalance();
 
 		final TokenClassReference tokenRef = burnTokensAction.getTokenClassReference();
-		final Balance balance =
-			Optional.ofNullable(allConsumables.get(burnTokensAction.getTokenClassReference())).orElse(Balance.empty());
-		if (balance.getAmount().compareTo(burnTokensAction.getAmount()) < 0) {
-			throw new InsufficientFundsException(
-				tokenRef, balance.getAmount(), burnTokensAction.getAmount()
-			);
+		final Balance bal = allConsumables.get(burnTokensAction.getTokenClassReference());
+		final BigDecimal balance = bal == null ? BigDecimal.ZERO : bal.getAmount();
+		if (bal == null || balance.compareTo(burnTokensAction.getAmount()) < 0) {
+			throw new InsufficientFundsException(tokenRef, balance, burnTokensAction.getAmount());
 		}
+		final UInt256 granularity = TokenClassReference.unitsToSubunits(bal.getGranularity());
 
 		final List<OwnedTokensParticle> unconsumedOwnedTokensParticles =
 			Optional.ofNullable(allConsumables.get(burnTokensAction.getTokenClassReference()))
-				.map(bal -> bal.unconsumedConsumables().collect(Collectors.toList()))
+				.map(b -> b.unconsumedConsumables().collect(Collectors.toList()))
 				.orElse(Collections.emptyList());
 
 		List<SpunParticle> particles = new ArrayList<>();
@@ -110,6 +108,7 @@ public class BurnTokensActionMapper implements StatefulActionToParticlesMapper {
 		newUpQuantities.entrySet().stream()
 			.map(e -> new OwnedTokensParticle(
 				e.getValue(),
+				granularity,
 				e.getKey() == null ? FungibleType.BURNED : FungibleType.TRANSFERRED,
 				e.getKey() == null ? burnTokensAction.getTokenClassReference().getAddress()
 					: universe.getAddressFrom(e.getKey().getPublicKey()),

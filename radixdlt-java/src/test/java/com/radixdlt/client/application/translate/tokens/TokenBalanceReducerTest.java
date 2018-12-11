@@ -21,6 +21,7 @@ public class TokenBalanceReducerTest {
 		OwnedTokensParticle ownedTokensParticle = mock(OwnedTokensParticle.class);
 		RadixHash hash = mock(RadixHash.class);
 		when(ownedTokensParticle.getAmount()).thenReturn(UInt256.TEN);
+		when(ownedTokensParticle.getGranularity()).thenReturn(UInt256.ONE);
 		when(ownedTokensParticle.getHash()).thenReturn(hash);
 		when(ownedTokensParticle.getDson()).thenReturn(new byte[] {1});
 		TokenClassReference token = mock(TokenClassReference.class);

@@ -24,24 +24,31 @@ import com.radixdlt.client.core.atoms.particles.SpunParticle;
 public class TokenBalanceState implements ApplicationState {
 	public static class Balance {
 		private final BigInteger balance;
+		private final BigInteger granularity;
 		private final Map<RadixHash, SpunParticle<OwnedTokensParticle>> consumables;
 
-		private Balance(BigInteger balance, Map<RadixHash, SpunParticle<OwnedTokensParticle>> consumables) {
+		private Balance(BigInteger balance, BigInteger granularity, Map<RadixHash, SpunParticle<OwnedTokensParticle>> consumables) {
 			this.balance = balance;
+			this.granularity = granularity;
 			this.consumables = consumables;
 		}
 
-		private Balance(BigInteger balance, SpunParticle<OwnedTokensParticle> s) {
+		private Balance(BigInteger balance, BigInteger granularity, SpunParticle<OwnedTokensParticle> s) {
 			this.balance = balance;
+			this.granularity = granularity;
 			this.consumables = Collections.singletonMap(RadixHash.of(s.getParticle().getDson()), s);
 		}
 
-		public static Balance empty() {
-			return new Balance(BigInteger.ZERO, Collections.emptyMap());
+		public static Balance empty(BigInteger granularity) {
+			return new Balance(BigInteger.ZERO, granularity, Collections.emptyMap());
 		}
 
 		public BigDecimal getAmount() {
 			return TokenClassReference.subunitsToUnits(balance);
+		}
+
+		public BigDecimal getGranularity() {
+			return TokenClassReference.subunitsToUnits(granularity);
 		}
 
 		public Stream<OwnedTokensParticle> unconsumedConsumables() {
@@ -66,7 +73,7 @@ public class TokenBalanceState implements ApplicationState {
 			}
 
 			BigInteger newBalance = balance.balance.add(amount);
-			return new Balance(newBalance, newMap);
+			return new Balance(newBalance, balance.granularity, newMap);
 		}
 	}
 
@@ -87,9 +94,11 @@ public class TokenBalanceState implements ApplicationState {
 	public static TokenBalanceState merge(TokenBalanceState state, SpunParticle<OwnedTokensParticle> s) {
 		HashMap<TokenClassReference, Balance> balance = new HashMap<>(state.balance);
 		OwnedTokensParticle ownedTokensParticle = s.getParticle();
+		BigInteger amount = UInt256s.toBigInteger(ownedTokensParticle.getAmount());
+		BigInteger granularity = UInt256s.toBigInteger(ownedTokensParticle.getGranularity());
 		balance.merge(
 				ownedTokensParticle.getTokenClassReference(),
-				new Balance(UInt256s.toBigInteger(ownedTokensParticle.getAmount()), s),
+				new Balance(amount, granularity, s),
 				(bal1, bal2) -> Balance.merge(bal1, s)
 		);
 
