@@ -1,5 +1,11 @@
 package com.radix.regression;
 
+import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
+
+import org.junit.BeforeClass;
+import org.junit.Test;
+
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.translate.Action;
@@ -10,12 +16,9 @@ import com.radixdlt.client.application.translate.data.SendMessageAction;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
+
 import io.reactivex.Completable;
 import io.reactivex.observers.TestObserver;
-import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
-import org.junit.BeforeClass;
-import org.junit.Test;
 
 /**
  * RLAU-162, RLAU-88, RLAU-89
@@ -43,7 +46,7 @@ public class SendReceiveDataTransactionTest {
 		Completable sendMessageStatus = api.execute(sendMessageAction).toCompletable();
 
 		// Then client should be notified of error
-		TestObserver submissionObserver = TestObserver.create(Util.loggingObserver("Submission"));
+		TestObserver<Object> submissionObserver = TestObserver.create(Util.loggingObserver("Submission"));
 		sendMessageStatus.subscribe(submissionObserver);
 		submissionObserver.awaitTerminalEvent();
 		submissionObserver.assertError(ActionExecutionException.class);

@@ -1,5 +1,14 @@
 package com.radix.regression;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
+
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.radix.utils.UInt256;
+
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.translate.Action;
@@ -10,18 +19,11 @@ import com.radixdlt.client.application.translate.tokenclasses.TokenState;
 import com.radixdlt.client.atommodel.tokens.TokenClassReference;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
+
 import io.reactivex.Completable;
 import io.reactivex.Observable;
 import io.reactivex.functions.Predicate;
 import io.reactivex.observers.TestObserver;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.radix.utils.UInt256;
 
 /**
  * RLAU-97
@@ -38,13 +40,14 @@ public class TokenClassesInAccountTest {
 		api = RadixApplicationAPI.create(RadixIdentities.createNew());
 	}
 
-	private CreateTokenAction buildCreateNewTokenAction(String iso, UInt256 initialSupply) {
+	private static CreateTokenAction buildCreateNewTokenAction(String iso, UInt256 initialSupply) {
 		return new CreateTokenAction(
 			api.getMyAddress(),
 			"Joshy Coin",
 			iso,
 			"Ze best coin!",
 			initialSupply,
+			UInt256.ONE,
 			TokenSupplyType.FIXED
 		);
 	}
@@ -55,6 +58,7 @@ public class TokenClassesInAccountTest {
 			iso,
 			"Ze best coin!",
 			TokenClassReference.subunitsToUnits(initialSupply),
+			TokenClassReference.subunitsToUnits(1),
 			TokenState.TokenSupplyType.FIXED
 		);
 
@@ -73,7 +77,7 @@ public class TokenClassesInAccountTest {
 		Supplier<Observable<TokenClassesState>> subscription = () -> api.getTokenClasses(api.getMyAddress());
 
 		// Then the two tokens are published
-		List<Predicate> thenChecks = Arrays.asList(
+		List<Predicate<TokenClassesState>> thenChecks = Arrays.asList(
 			getPredicateCheck("JOSH", UInt256.from(10000)),
 			getPredicateCheck("JOSH2", UInt256.from(100))
 		);
