@@ -42,10 +42,20 @@ public class TokenParticle extends Particle {
 		// Empty constructor for serializer
 	}
 
-	public TokenParticle(RadixAddress address, String name, String symbol, String description,
-			UInt256 granularity, Map<FungibleType, TokenPermission> tokenPermissions, byte[] icon) {
-		super(new NonFungibleQuark(TokenClassReference.of(address, symbol)),
-				new AccountableQuark(address), new OwnableQuark(address.getPublicKey()));
+	public TokenParticle(
+		RadixAddress address,
+		String name,
+		String symbol,
+		String description,
+		UInt256 granularity,
+		Map<FungibleType, TokenPermission> tokenPermissions,
+		byte[] icon
+	) {
+		super(
+			new NonFungibleQuark(TokenClassReference.of(address, symbol)),
+			new AccountableQuark(address),
+			new OwnableQuark(address.getPublicKey())
+		);
 		this.name = name;
 		this.description = description;
 		this.granularity = granularity;
@@ -78,18 +88,19 @@ public class TokenParticle extends Particle {
 	}
 
 	@JsonProperty("permissions")
-	@DsonOutput(value = { Output.ALL })
+	@DsonOutput(value = {Output.ALL})
 	private Map<String, String> getJsonPermissions() {
 		return this.tokenPermissions.entrySet().stream()
-				.collect(Collectors.toMap(e -> e.getKey().getVerbName(), e -> e.getValue().name().toLowerCase()));
+			.collect(Collectors.toMap(e -> e.getKey().getVerbName(), e -> e.getValue().name().toLowerCase()));
 	}
 
 	@JsonProperty("permissions")
 	private void setJsonPermissions(Map<String, String> permissions) {
 		if (permissions != null) {
 			this.tokenPermissions = permissions.entrySet().stream()
-					.collect(Collectors.toMap(e -> FungibleType.fromVerbName(e.getKey()),
-							e -> TokenPermission.valueOf(e.getValue().toUpperCase())));
+				.collect(Collectors.toMap(
+					e -> FungibleType.fromVerbName(e.getKey()), e -> TokenPermission.valueOf(e.getValue().toUpperCase())
+				));
 		} else {
 			throw new IllegalArgumentException("Permissions cannot be null.");
 		}

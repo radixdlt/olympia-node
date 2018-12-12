@@ -72,5 +72,4 @@ public class CreateTokenAction implements Action {
 	public TokenSupplyType getTokenSupplyType() {
 		return tokenSupplyType;
 	}
-
 }
