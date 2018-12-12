@@ -31,26 +31,27 @@ public final class RadixNetwork {
 		Objects.requireNonNull(peerDiscovery);
 
 		this.peers = peerDiscovery.findPeers()
-			.retryWhen(new IncreasingRetryTimer(WebSocketException.class))
-			.doOnNext(peer -> LOGGER.debug(String.format("Added to peer list: %s", peer.getLocation())))
-			.replay()
-			.autoConnect(2);
+				.retryWhen(new IncreasingRetryTimer(WebSocketException.class))
+				.doOnNext(peer -> LOGGER.debug(String.format("Added to peer list: %s", peer.getLocation())))
+				.replay()
+				.autoConnect(2);
 
 		// this will only give status updates when all data is available for RadixPeerState, see RadixPeer.status
-		this.statusUpdates = peers
-			.flatMap(RadixPeer::status)
-			.publish();
+		this.statusUpdates = this.peers
+				.flatMap(RadixPeer::status)
+				.publish();
 		this.statusUpdates.connect();
 
-		this.networkState = peers.flatMap(peer -> peer.status()
+		this.networkState = this.peers.flatMap(peer -> peer.status()
 				.doOnNext(status -> LOGGER.debug(String.format("Peer status changed: %s", status)))
 				.map(status -> new Pair<>(peer, status)))
 				.scan(new RadixNetworkState(Collections.emptyMap()), (previousState, update) -> {
-			LinkedHashMap<RadixPeer, RadixPeerState> currentPeers = new LinkedHashMap<>(previousState.getPeers());
-			currentPeers.put(update.getFirst(), update.getSecond());
+					LinkedHashMap<RadixPeer, RadixPeerState> currentPeers = new LinkedHashMap<>(previousState.getPeers());
+					currentPeers.put(update.getFirst(), update.getSecond());
 
-			return new RadixNetworkState(currentPeers);
-		});
+					return new RadixNetworkState(currentPeers);
+				})
+				.cache();
 	}
 
 	public Observable<RadixPeerState> connectAndGetStatusUpdates() {
@@ -64,7 +65,7 @@ public final class RadixNetwork {
 	 * @return a hot Observable of status of peers
 	 */
 	public Observable<RadixPeerState> getStatusUpdates() {
-		return statusUpdates;
+		return this.statusUpdates;
 	}
 
 	/**
@@ -73,7 +74,7 @@ public final class RadixNetwork {
 	 * @return a cold observable of network state
 	 */
 	public Observable<RadixNetworkState> getNetworkState() {
-		return networkState;
+		return this.networkState;
 	}
 
 	/**

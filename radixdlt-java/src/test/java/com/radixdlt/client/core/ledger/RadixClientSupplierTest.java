@@ -14,11 +14,9 @@ import com.radixdlt.client.core.network.WebSocketException;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.observers.TestObserver;
-import org.checkerframework.checker.nullness.Opt;
 import org.junit.Assert;
 import org.junit.Test;
 
-import javax.swing.text.html.Option;
 import java.util.AbstractMap;
 import java.util.Collections;
 import java.util.List;

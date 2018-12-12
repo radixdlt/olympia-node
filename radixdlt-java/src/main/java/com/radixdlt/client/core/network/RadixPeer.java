@@ -64,6 +64,7 @@ public class RadixPeer {
 				this.radixClient.universe().toObservable(), this.radixClient.apiVersion().toObservable(),
 				(peerData, clientStatus, clientUniverse, clientVersion) ->
 						new RadixPeerState(location, port, clientStatus, peerData, clientVersion, clientUniverse))
+				.onErrorReturnItem(new RadixPeerState(location, port, RadixClientStatus.FAILURE, null, null, null))
 				.subscribe(this.status);
 
 		this.connected = true;
