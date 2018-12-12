@@ -1,14 +1,14 @@
 package com.radix.acceptance.create_single_issuance_token_class;
 
+import java.math.BigDecimal;
 import java.util.List;
-
-import org.radix.utils.UInt256;
 
 import com.google.common.collect.Lists;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.tokenclasses.CreateTokenAction;
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.atommodel.tokens.TokenClassReference;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
@@ -47,12 +47,12 @@ public class CreateSingleIssuanceTokenClass {
 	private RadixApplicationAPI api;
 	private RadixIdentity identity;
 	private final SpecificProperties properties = SpecificProperties.of(
-		NAME,
-		SYMBOL,
-		DESCRIPTION,
-		TOTAL_SUPPLY,
-		NEW_SUPPLY,
-		GRANULARITY
+		NAME,           "RLAU-40 Test token",
+		SYMBOL,			"RLAU",
+		DESCRIPTION,	"RLAU-40 Test token",
+		TOTAL_SUPPLY,	"1000000000",
+		NEW_SUPPLY,		"1000000000",
+		GRANULARITY,	"1"
 	);
 	private final List<TestObserver<Object>> observers = Lists.newArrayList();
 
@@ -92,6 +92,28 @@ public class CreateSingleIssuanceTokenClass {
 		createToken(CreateTokenAction.TokenSupplyType.FIXED);
 	}
 
+	@When("^I submit a fixed-supply token-creation request with name \"([^\"]*)\", symbol \"([^\"]*)\", totalSupply (\\d+) and granularity (\\d+)$")
+	public void i_submit_a_fixed_supply_token_creation_request_with_name_symbol_totalSupply_and_granularity(
+			String name, String symbol, int totalSupply, int granularity) {
+		this.properties.put(NAME, name);
+		this.properties.put(SYMBOL, symbol);
+		this.properties.put(TOTAL_SUPPLY, Integer.toString(totalSupply));
+		this.properties.put(GRANULARITY, Integer.toString(granularity));
+		createToken(CreateTokenAction.TokenSupplyType.FIXED);
+	}
+
+	@When("^I submit a fixed-supply token-creation request with granularity (\\d+)$")
+	public void i_submit_a_fixed_supply_token_creation_request_with_granularity(int granularity) {
+		this.properties.put(GRANULARITY, Integer.toString(granularity));
+		createToken(CreateTokenAction.TokenSupplyType.FIXED);
+	}
+
+	@When("^I submit a fixed-supply token-creation request with symbol \"([^\"]*)\"$")
+	public void i_submit_a_fixed_supply_token_creation_request_with_symbol(String symbol) {
+		this.properties.put(SYMBOL, symbol);
+		createToken(CreateTokenAction.TokenSupplyType.FIXED);
+	}
+
 	@When("^I submit a mutable-supply token-creation request$")
 	public void i_submit_a_mutable_supply_token_creation_request() {
 		createToken(CreateTokenAction.TokenSupplyType.MUTABLE);
@@ -110,8 +132,26 @@ public class CreateSingleIssuanceTokenClass {
 		this.observers.add(observer);
 	}
 
-	@When("^the atom is accepted$")
-	public void the_atom_is_accepted() throws Throwable {
+	@When("^I submit a token transfer request of (\\d+) for \"([^\"]*)\" to an arbitrary account$")
+	public void i_submit_a_token_transfer_request_of_for_to_an_arbitrary_account(int count, String symbol) {
+		TokenClassReference tokenClass = TokenClassReference.of(api.getMyAddress(), symbol);
+		RadixAddress arbitrary = RadixUniverse.getInstance().getAddressFrom(RadixIdentities.createNew().getPublicKey());
+		// Ensure balance is up-to-date.
+		api.getBalance(api.getMyAddress(), tokenClass)
+			.firstOrError()
+			.blockingGet();
+
+		TestObserver<Object> observer = new TestObserver<>();
+		api.transferTokens(api.getMyAddress(), arbitrary, BigDecimal.valueOf(count), tokenClass)
+			.toObservable()
+			.map(Utils::print)
+			.map(AtomSubmissionUpdate::getState)
+			.subscribe(observer);
+		this.observers.add(observer);
+	}
+
+	@Then("^I observe the atom being accepted$")
+	public void i_observe_the_atom_being_accepted() {
 		// "the atom" = most recent atom
 		i_can_observe_atom_being_accepted(observers.size());
 	}
@@ -149,8 +189,8 @@ public class CreateSingleIssuanceTokenClass {
 				this.properties.get(NAME),
 				this.properties.get(SYMBOL),
 				this.properties.get(DESCRIPTION),
-				UInt256.from(this.properties.get(TOTAL_SUPPLY)),
-				UInt256.from(this.properties.get(TOTAL_SUPPLY)),
+				TokenClassReference.unitsToSubunits(Long.valueOf(this.properties.get(TOTAL_SUPPLY))),
+				TokenClassReference.unitsToSubunits(Long.valueOf(this.properties.get(GRANULARITY))),
 				tokenCreateSupplyType)
 			.toObservable()
 			.map(Utils::print)
