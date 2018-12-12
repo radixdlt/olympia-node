@@ -13,7 +13,7 @@ public class Util {
 
 			@Override
 			public void onNext(T t) {
-				System.out.println(name + ": <RECEIVED> " + t);
+				System.out.println(name + ": <NEXT> " + t);
 			}
 
 			@Override
