@@ -1,4 +1,4 @@
-package com.radix.acceptance.create_single_issuance_token_class;
+package com.radix.acceptance.create_multi_issuance_token_class;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -30,9 +30,9 @@ import io.reactivex.observers.BaseTestConsumer.TestWaitStrategy;
 import io.reactivex.observers.TestObserver;
 
 /**
- * See <a href="https://radixdlt.atlassian.net/browse/RLAU-40">RLAU-40</a>.
+ * See <a href="https://radixdlt.atlassian.net/browse/RLAU-93">RLAU-93</a>.
  */
-public class CreateSingleIssuanceTokenClass {
+public class CreateMultiIssuanceTokenClass {
 	static {
 		RadixUniverse.bootstrap(Bootstrap.BETANET);
 	}
@@ -40,7 +40,7 @@ public class CreateSingleIssuanceTokenClass {
 	private static final String NAME = "name";
 	private static final String SYMBOL = "symbol";
 	private static final String DESCRIPTION = "description";
-	private static final String TOTAL_SUPPLY = "totalSupply";
+	private static final String INITIAL_SUPPLY = "initialSupply";
 	private static final String NEW_SUPPLY = "newSupply";
 	private static final String GRANULARITY = "granularity";
 
@@ -52,7 +52,7 @@ public class CreateSingleIssuanceTokenClass {
 		NAME,           "RLAU-40 Test token",
 		SYMBOL,			"RLAU",
 		DESCRIPTION,	"RLAU-40 Test token",
-		TOTAL_SUPPLY,	"1000000000",
+		INITIAL_SUPPLY,	"1000000000",
 		NEW_SUPPLY,		"1000000000",
 		GRANULARITY,	"1"
 	);
@@ -89,44 +89,55 @@ public class CreateSingleIssuanceTokenClass {
 		this.properties.put(name, Integer.toString(value));
 	}
 
-	@When("^I submit a fixed-supply token-creation request$")
-	public void i_submit_a_fixed_supply_token_creation_request() {
-		createToken(CreateTokenAction.TokenSupplyType.FIXED);
-	}
-
-	@When("^I submit a fixed-supply token-creation request with name \"([^\"]*)\", symbol \"([^\"]*)\", totalSupply (\\d+) and granularity (\\d+)$")
-	public void i_submit_a_fixed_supply_token_creation_request_with_name_symbol_totalSupply_and_granularity(
-			String name, String symbol, int totalSupply, int granularity) {
-		this.properties.put(NAME, name);
-		this.properties.put(SYMBOL, symbol);
-		this.properties.put(TOTAL_SUPPLY, Integer.toString(totalSupply));
-		this.properties.put(GRANULARITY, Integer.toString(granularity));
-		createToken(CreateTokenAction.TokenSupplyType.FIXED);
-	}
-
-	@When("^I submit a fixed-supply token-creation request with granularity (\\d+)$")
-	public void i_submit_a_fixed_supply_token_creation_request_with_granularity(int granularity) {
-		this.properties.put(GRANULARITY, Integer.toString(granularity));
-		createToken(CreateTokenAction.TokenSupplyType.FIXED);
-	}
-
-	@When("^I submit a fixed-supply token-creation request with symbol \"([^\"]*)\"$")
-	public void i_submit_a_fixed_supply_token_creation_request_with_symbol(String symbol) {
-		this.properties.put(SYMBOL, symbol);
-		createToken(CreateTokenAction.TokenSupplyType.FIXED);
-	}
-
 	@When("^I submit a mutable-supply token-creation request$")
 	public void i_submit_a_mutable_supply_token_creation_request() {
 		createToken(CreateTokenAction.TokenSupplyType.MUTABLE);
 	}
 
-	@When("^I submit a mint request$")
-	public void i_submit_a_mint_request() {
+	@When("^I submit a mutable-supply token-creation request with symbol \"([^\"]*)\" and granularity (\\d+)$")
+	public void i_submit_a_mutable_supply_token_creation_request_with_symbol_and_granularity(String symbol, int granularity) {
+		this.properties.put(SYMBOL, symbol);
+		this.properties.put(GRANULARITY, Integer.toString(granularity));
+		createToken(CreateTokenAction.TokenSupplyType.MUTABLE);
+	}
+
+	@When("^I submit a mutable-supply token-creation request with name \"([^\"]*)\", symbol \"([^\"]*)\", initialSupply (\\d+) and granularity (\\d+)$")
+	public void i_submit_a_mutable_supply_token_creation_request_with_name_symbol_initialSupply_and_granularity(
+			String name, String symbol, int initialSupply, int granularity) {
+		this.properties.put(NAME, name);
+		this.properties.put(SYMBOL, symbol);
+		this.properties.put(INITIAL_SUPPLY, Integer.toString(initialSupply));
+		this.properties.put(GRANULARITY, Integer.toString(granularity));
+		createToken(CreateTokenAction.TokenSupplyType.MUTABLE);
+	}
+
+	@When("^I submit a mutable-supply token-creation request with granularity (\\d+)$")
+	public void i_submit_a_mutable_supply_token_creation_request_with_granularity(int granularity) {
+		this.properties.put(GRANULARITY, Integer.toString(granularity));
+		createToken(CreateTokenAction.TokenSupplyType.MUTABLE);
+	}
+
+	@When("^I submit a mutable-supply token-creation request with symbol \"([^\"]*)\"$")
+	public void i_submit_a_mutable_supply_token_creation_request_with_symbol(String symbol) {
+		this.properties.put(SYMBOL, symbol);
+		createToken(CreateTokenAction.TokenSupplyType.MUTABLE);
+	}
+
+	@When("^I submit a mint request of (\\d+) for \"([^\"]*)\"$")
+	public void i_submit_a_mint_request_of_for(int count, String symbol) {
 		TestObserver<Object> observer = new TestObserver<>();
-		api.mintTokens(
-				this.properties.get(SYMBOL),
-				TokenClassReference.unitsToSubunits(Long.valueOf(this.properties.get(TOTAL_SUPPLY))))
+		api.mintTokens(symbol, TokenClassReference.unitsToSubunits(count))
+			.toObservable()
+			.doOnNext(System.out::println)
+			.map(AtomSubmissionUpdate::getState)
+			.subscribe(observer);
+		this.observers.add(observer);
+	}
+
+	@When("^I submit a burn request of (\\d+) for \"([^\"]*)\"$")
+	public void i_submit_a_burn_request_of_for(int count, String symbol) {
+		TestObserver<Object> observer = new TestObserver<>();
+		api.burnTokens(symbol, TokenClassReference.unitsToSubunits(count))
 			.toObservable()
 			.doOnNext(System.out::println)
 			.map(AtomSubmissionUpdate::getState)
@@ -191,7 +202,7 @@ public class CreateSingleIssuanceTokenClass {
 				this.properties.get(NAME),
 				this.properties.get(SYMBOL),
 				this.properties.get(DESCRIPTION),
-				TokenClassReference.unitsToSubunits(Long.valueOf(this.properties.get(TOTAL_SUPPLY))),
+				TokenClassReference.unitsToSubunits(Long.valueOf(this.properties.get(INITIAL_SUPPLY))),
 				TokenClassReference.unitsToSubunits(Long.valueOf(this.properties.get(GRANULARITY))),
 				tokenCreateSupplyType)
 			.toObservable()

@@ -1,4 +1,4 @@
-package com.radix.acceptance.create_single_issuance_token_class;
+package com.radix.acceptance;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -7,7 +7,11 @@ import java.util.Objects;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
-class SpecificProperties {
+/**
+ * Class for maintaining a map of string names to string values,
+ * where allowable names and default values can be specified.
+ */
+public class SpecificProperties {
 	private final ImmutableSet<String> propertyNames;
 	private final ImmutableMap<String, String> defaultValues;
 	private final Map<String, String> propertyValues = new HashMap<>();
@@ -26,7 +30,13 @@ class SpecificProperties {
 		this.propertyValues.putAll(this.defaultValues);
 	}
 
-	String get(String name) {
+	/**
+	 * Retrieves a value for a given property name.
+	 * @param name The property name to retrieve the value for.
+	 * @return The property value
+	 * @throws IllegalArgumentException if the given property does not have a value
+	 */
+	public String get(String name) {
 		Objects.requireNonNull(name);
 		if (!this.propertyValues.containsKey(name)) {
 			throw new IllegalArgumentException("No such property: " + name);
@@ -34,7 +44,13 @@ class SpecificProperties {
 		return this.propertyValues.get(name);
 	}
 
-	void put(String name, String value) {
+	/**
+	 * Associates a value with a given property name.
+	 * @param name The property name
+	 * @param value The property value
+	 * @throws IllegalArgumentException if the specified property name is not known
+	 */
+	public void put(String name, String value) {
 		Objects.requireNonNull(name);
 		Objects.requireNonNull(value);
 		if (!this.propertyNames.contains(name)) {
@@ -43,7 +59,10 @@ class SpecificProperties {
 		this.propertyValues.put(name, value);
 	}
 
-	void clear() {
+	/**
+	 * Resets this property map to default values.
+	 */
+	public void clear() {
 		this.propertyValues.clear();
 		this.propertyValues.putAll(this.defaultValues);
 	}
@@ -73,7 +92,15 @@ class SpecificProperties {
 				getClass().getSimpleName(), propertyNames, defaultValues, propertyValues);
 	}
 
-	static SpecificProperties of(String... propertyNamesAndValues) {
+	/**
+	 * Constructs a properties map of names to default values.
+	 * @param propertyNamesAndValues A sequence of alternating property names and
+	 * 		default values.  A default value of {@code null} may be used to indicate
+	 * 		no default value.  There must therefore be an even number of elements
+	 * 		in this sequence.
+	 * @return The corresponding properties map.
+	 */
+	public static SpecificProperties of(String... propertyNamesAndValues) {
 		if ((propertyNamesAndValues.length % 2) != 0) {
 			throw new IllegalArgumentException("Must specify names and values");
 		}
