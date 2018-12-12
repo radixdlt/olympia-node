@@ -1,5 +1,6 @@
 package com.radixdlt.client.application.translate;
 
+import com.jakewharton.rx.ReplayingShare;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.ledger.ParticleStore;
 import io.reactivex.Observable;
@@ -24,8 +25,7 @@ public class ApplicationStore<T extends ApplicationState> {
 			particleStore.getParticles(address)
 				.scanWith(reducer::initialState, reducer::reduce)
 				.debounce(1000, TimeUnit.MILLISECONDS)
-				.replay(1)
-				.autoConnect()
+				.compose(ReplayingShare.instance())
 		);
 	}
 }

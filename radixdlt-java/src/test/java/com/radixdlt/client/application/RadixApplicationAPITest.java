@@ -200,6 +200,7 @@ public class RadixApplicationAPITest {
 		when(universe.getLedger()).thenReturn(ledger);
 		when(ledger.getAtomStore()).thenReturn(euid -> Observable.empty());
 		when(ledger.getParticleStore()).thenReturn(euid -> Observable.never());
+		when(ledger.getAtomPuller()).thenReturn(address -> Observable.never());
 
 		RadixAddress address = mock(RadixAddress.class);
 		RadixIdentity identity = mock(RadixIdentity.class);
@@ -223,6 +224,7 @@ public class RadixApplicationAPITest {
 		RadixUniverse universe = mock(RadixUniverse.class);
 		Ledger ledger = mock(Ledger.class);
 		AtomPuller puller = mock(AtomPuller.class);
+		when(puller.pull(any())).thenReturn(Observable.never());
 		when(ledger.getAtomPuller()).thenReturn(puller);
 		AtomStore atomStore = mock(AtomStore.class);
 		when(atomStore.getAtoms(any())).thenReturn(Observable.never());
@@ -249,6 +251,7 @@ public class RadixApplicationAPITest {
 		Ledger ledger = mock(Ledger.class);
 		AtomPuller puller = mock(AtomPuller.class);
 		when(ledger.getAtomPuller()).thenReturn(puller);
+		when(puller.pull(any())).thenReturn(Observable.never());
 		ParticleStore particleStore = mock(ParticleStore.class);
 		when(particleStore.getParticles(any())).thenReturn(Observable.never());
 		when(ledger.getParticleStore()).thenReturn(particleStore);
