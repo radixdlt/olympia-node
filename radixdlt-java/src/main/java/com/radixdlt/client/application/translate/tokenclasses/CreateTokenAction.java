@@ -66,7 +66,6 @@ public class CreateTokenAction implements Action {
 	}
 
 	public UInt256 getGranularity() {
-		// TODO Auto-generated method stub
 		return granularity;
 	}
 
