@@ -32,8 +32,6 @@ import java.util.stream.Collectors;
  * Given a network, a selector and filters, yields the {@link RadixJsonRpcClient} to use
  */
 public class RadixClientSupplier {
-	private static final Logger LOGGER = LoggerFactory.getLogger(RadixClientSupplier.class);
-
 	/**
 	 * The amount of time to delay in between node connection requests
 	 */

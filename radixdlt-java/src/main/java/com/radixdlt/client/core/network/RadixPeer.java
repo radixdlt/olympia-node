@@ -122,10 +122,6 @@ public class RadixPeer {
 		return data.map(d -> d.getShards().intersects(shards));
 	}
 
-	public Single<Boolean> servesShards(Set<Long> shards) {
-		return data.map(d -> d.getShards().intersects(shards));
-	}
-
 	@Override
 	public String toString() {
 		return location;
