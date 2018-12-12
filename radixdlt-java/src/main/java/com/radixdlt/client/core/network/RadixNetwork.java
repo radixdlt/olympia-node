@@ -58,18 +58,6 @@ public final class RadixNetwork {
 		return this.getStatusUpdates();
 	}
 
-	public Observable<Map<String, RadixClientStatus>> getNetworkState() {
-		return peers.map(RadixPeer::getRadixClient)
-			.flatMap(
-				client -> client.getStatus().map(
-					status -> new SimpleImmutableEntry<>(client.getLocation(), status)
-				)
-			).scanWith(HashMap<String, RadixClientStatus>::new, (map, entry) -> {
-			map.put(entry.getKey(), entry.getValue());
-			return map;
-		});
-	}
-
 	/**
 	 * Returns a hot observable of the status of peers
 	 *
