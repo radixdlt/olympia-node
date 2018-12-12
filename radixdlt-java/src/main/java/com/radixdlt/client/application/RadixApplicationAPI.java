@@ -522,7 +522,8 @@ public class RadixApplicationAPI {
 		UInt256 granularity,
 		TokenSupplyType tokenSupplyType
 	) {
-		CreateTokenAction tokenCreation = new CreateTokenAction(getMyAddress(), name, iso, description, initialSupply, granularity, tokenSupplyType);
+		CreateTokenAction tokenCreation = new CreateTokenAction(
+				getMyAddress(), name, iso, description, initialSupply, granularity, tokenSupplyType);
 		return execute(tokenCreation);
 	}
 

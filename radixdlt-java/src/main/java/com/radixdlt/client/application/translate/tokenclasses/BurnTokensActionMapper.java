@@ -19,7 +19,6 @@ import com.radixdlt.client.application.translate.StatefulActionToParticlesMapper
 import com.radixdlt.client.application.translate.tokens.InsufficientFundsException;
 import com.radixdlt.client.application.translate.tokens.TokenBalanceState;
 import com.radixdlt.client.application.translate.tokens.TokenBalanceState.Balance;
-import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.atommodel.quarks.FungibleQuark.FungibleType;
 import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
@@ -39,7 +38,7 @@ public class BurnTokensActionMapper implements StatefulActionToParticlesMapper {
 
 	@Override
 	public Observable<RequiredShardState> requiredState(Action action) {
-		if (!(action instanceof TransferTokensAction)) {
+		if (!(action instanceof BurnTokensAction)) {
 			return Observable.empty();
 		}
 

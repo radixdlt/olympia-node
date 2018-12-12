@@ -34,8 +34,8 @@ public class TokenClassesState implements ApplicationState {
 	) {
 		Map<TokenClassReference, TokenState> newState = new HashMap<>(state);
 		if (newState.containsKey(ref)) {
-			TokenState tokenState = newState.get(ref);
-			newState.put(ref, new TokenState(name, iso, description, tokenState.getTotalSupply(), tokenState.getGranularity(), tokenSupplyType));
+			BigDecimal totalSupply = newState.get(ref).getTotalSupply();
+			newState.put(ref, new TokenState(name, iso, description, totalSupply, granularity, tokenSupplyType));
 		} else {
 			newState.put(ref, new TokenState(name, iso, description, BigDecimal.ZERO, granularity, tokenSupplyType));
 		}

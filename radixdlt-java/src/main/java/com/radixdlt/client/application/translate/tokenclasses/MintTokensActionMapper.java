@@ -5,7 +5,6 @@ import org.radix.utils.UInt256;
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.ApplicationState;
 import com.radixdlt.client.application.translate.StatefulActionToParticlesMapper;
-import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.atommodel.quarks.FungibleQuark;
 import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
@@ -19,13 +18,13 @@ public class MintTokensActionMapper implements StatefulActionToParticlesMapper {
 
 	@Override
 	public Observable<RequiredShardState> requiredState(Action action) {
-		if (!(action instanceof TransferTokensAction)) {
+		if (!(action instanceof MintTokensAction)) {
 			return Observable.empty();
 		}
 
-		BurnTokensAction burnTokensAction = (BurnTokensAction) action;
+		MintTokensAction mintTokensAction = (MintTokensAction) action;
 
-		RadixAddress tokenClassAddress = burnTokensAction.getTokenClassReference().getAddress();
+		RadixAddress tokenClassAddress = mintTokensAction.getTokenClassReference().getAddress();
 
 		return Observable.just(new RequiredShardState(TokenClassesState.class, tokenClassAddress));
 	}
