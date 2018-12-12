@@ -1,5 +1,9 @@
 package com.radixdlt.client.core.network;
 
 public enum RadixClientStatus {
-	CONNECTING, OPEN, CLOSING, CLOSED, FAILURE
+	WAITING, CONNECTING, OPEN, CLOSING, CLOSED, FAILURE;
+
+	public boolean isActive() {
+		return this == OPEN || this == CONNECTING;
+	}
 }

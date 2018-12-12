@@ -14,12 +14,15 @@ import com.radixdlt.client.core.network.WebSocketException;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.observers.TestObserver;
+import org.checkerframework.checker.nullness.Opt;
 import org.junit.Assert;
 import org.junit.Test;
 
+import javax.swing.text.html.Option;
 import java.util.AbstractMap;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -56,11 +59,11 @@ public class RadixClientSupplierTest {
 			RadixPeer peer = mock(RadixPeer.class);
 			RadixJsonRpcClient client = mock(RadixJsonRpcClient.class);
 			when(peer.servesShards(any())).thenReturn(Single.just(true));
-			when(peer.getRadixClient()).thenReturn(client);
+			when(peer.getRadixClient()).thenReturn(Optional.of(client));
 
 			RadixPeerState peerState = mock(RadixPeerState.class);
-			when(peerState.getVersion()).thenReturn(1); // TODO this should be a constant at least, not sure yet
-			when(peerState.getUniverseConfig()).thenReturn(config);
+			when(peerState.getVersion()).thenReturn(Optional.of(1)); // TODO this should be a constant at least, not sure yet
+			when(peerState.getUniverseConfig()).thenReturn(Optional.of(config));
 			when(client.universe()).thenReturn(Single.just(config));
 
 			if (i == 0) {
@@ -79,9 +82,9 @@ public class RadixClientSupplierTest {
 		TestObserver<RadixJsonRpcClient> testObserver = TestObserver.create();
 		selector.getRadixClient().subscribe(testObserver);
 		testObserver.awaitTerminalEvent();
-		testObserver.assertValue(peers.get(0).getKey().getRadixClient());
+		testObserver.assertValue(peers.get(0).getKey().getRadixClient().get());
 
-		verify(peers.get(99).getKey().getRadixClient(), times(0)).universe();
+		verify(peers.get(99).getKey().getRadixClient().get(), times(0)).universe();
 	}
 
 	@Test
@@ -89,13 +92,13 @@ public class RadixClientSupplierTest {
 		RadixNetwork network = mock(RadixNetwork.class);
 		RadixPeer badPeer = mock(RadixPeer.class);
 		RadixJsonRpcClient badClient = mock(RadixJsonRpcClient.class);
-		when(badPeer.getRadixClient()).thenReturn(badClient);
+		when(badPeer.getRadixClient()).thenReturn(Optional.of(badClient));
 		RadixPeerState badPeerState = mock(RadixPeerState.class);
 		when(badPeerState.getStatus()).thenReturn(RadixClientStatus.CLOSED);
 
 		RadixPeer goodPeer = mock(RadixPeer.class);
 		RadixJsonRpcClient goodClient = mock(RadixJsonRpcClient.class);
-		when(goodPeer.getRadixClient()).thenReturn(goodClient);
+		when(goodPeer.getRadixClient()).thenReturn(Optional.of(goodClient));
 		RadixPeerState goodPeerState = mock(RadixPeerState.class);
 		when(goodPeerState.getStatus()).thenReturn(RadixClientStatus.OPEN);
 
@@ -116,7 +119,7 @@ public class RadixClientSupplierTest {
 	public void testValidClient() {
 		RadixJsonRpcClient client = mock(RadixJsonRpcClient.class);
 		RadixPeer peer = mock(RadixPeer.class);
-		when(peer.getRadixClient()).thenReturn(client);
+		when(peer.getRadixClient()).thenReturn(Optional.of(client));
 
 		RadixPeerState peerState = mock(RadixPeerState.class);
 		when(peerState.getStatus()).thenReturn(RadixClientStatus.OPEN);

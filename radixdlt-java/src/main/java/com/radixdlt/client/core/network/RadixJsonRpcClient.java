@@ -107,7 +107,7 @@ public class RadixJsonRpcClient {
 	 *
 	 * @return true if websocket was successfully closed, false otherwise
 	 */
-	public boolean tryClose() {
+	protected boolean tryClose() {
 		return this.wsClient.close();
 	}
 

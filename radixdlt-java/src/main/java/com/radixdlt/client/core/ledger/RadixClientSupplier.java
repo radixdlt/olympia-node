@@ -8,6 +8,7 @@ import com.radixdlt.client.core.ledger.selector.RadixPeerSelector;
 import com.radixdlt.client.core.ledger.selector.RandomSelector;
 import com.radixdlt.client.core.ledger.selector.ShardFilter;
 import com.radixdlt.client.core.ledger.selector.MatchingUniverseFilter;
+import com.radixdlt.client.core.network.RadixClientStatus;
 import com.radixdlt.client.core.network.RadixJsonRpcClient;
 import com.radixdlt.client.core.network.RadixNetwork;
 import com.radixdlt.client.core.network.RadixNetworkState;
@@ -52,6 +53,8 @@ public class RadixClientSupplier {
 	 * The filters to test whether a peer is desirable
 	 */
 	private final List<RadixPeerFilter> filters;
+	private final int targetDesirablePeerCount = 1;
+	private final Logger logger = LoggerFactory.getLogger(RadixClientSupplier.class);
 
 	/**
 	 * Create a client selector from a certain network with the default filters and the a randomized selector
@@ -170,11 +173,45 @@ public class RadixClientSupplier {
 
 	private Observable<RadixJsonRpcClient> getRadixClients(RadixPeerSelector selector, List<RadixPeerFilter> filters) {
 		return this.network.getNetworkState()
+				.map(this::manageConnections)
 				.map(state -> collectDesirablePeers(filters, state))
 				.filter(viablePeerList -> !viablePeerList.isEmpty())
 				.map(selector::apply)
 				.map(RadixPeer::getRadixClient)
-				.zipWith(Observable.interval(delaySecs, TimeUnit.SECONDS), (c, t) -> c);
+				.zipWith(Observable.interval(delaySecs, TimeUnit.SECONDS), (c, t) -> c.get());
+	}
+
+	private RadixNetworkState manageConnections(RadixNetworkState state) {
+		long activeDesirablePeerCount = state.getPeers().entrySet().stream()
+				.filter(e -> e.getKey().isConnected())
+				.filter(e -> filters.stream()
+						.allMatch(filter -> filter.test(e.getValue())))
+				.count();
+		long connectingCount = state.getPeers().entrySet().stream()
+				.filter(e -> e.getKey().isConnected() && e.getValue().getStatus() != RadixClientStatus.OPEN)
+				.count();
+
+		if (activeDesirablePeerCount + connectingCount < targetDesirablePeerCount) {
+			logger.info(String.format("Requesting more peer connections, want %d desirable peers but have %d with %d connecting",
+					targetDesirablePeerCount, activeDesirablePeerCount, connectingCount));
+
+			state.getPeers().keySet().stream()
+					.filter(p -> !p.isConnected())
+					.findAny()
+					.ifPresent(RadixPeer::connect);
+		}
+
+		if (activeDesirablePeerCount > targetDesirablePeerCount) {
+			logger.info(String.format("Closing a peer connection, want %d desirable peers but have %d",
+					targetDesirablePeerCount, activeDesirablePeerCount, connectingCount));
+
+			state.getPeers().keySet().stream()
+					.filter(RadixPeer::isConnected)
+					.findAny()
+					.ifPresent(RadixPeer::close);
+		}
+
+		return state;
 	}
 
 	private List<RadixPeer> collectDesirablePeers(List<RadixPeerFilter> filters, RadixNetworkState state) {

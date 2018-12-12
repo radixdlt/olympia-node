@@ -3,6 +3,7 @@ package com.radixdlt.client.core.network;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
 
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Immutable state at a certain point in time of a {@link RadixPeer}
@@ -19,9 +20,6 @@ public class RadixPeerState {
 	                      RadixUniverseConfig universeConfig) {
 		Objects.requireNonNull(location, "location is required");
 		Objects.requireNonNull(status, "status is required");
-		Objects.requireNonNull(data, "data is required");
-		Objects.requireNonNull(version, "version is required");
-		Objects.requireNonNull(universeConfig, "universeConfig is required");
 
 		this.location = location;
 		this.port = port;
@@ -67,21 +65,21 @@ public class RadixPeerState {
 	/**
 	 * Node runner data of {@link RadixPeer}, may be null
 	 */
-	public NodeRunnerData getData() {
-		return data;
+	public Optional<NodeRunnerData> getData() {
+		return Optional.ofNullable(this.data);
 	}
 
 	/**
 	 * API Version of {@link RadixPeer}'s client, may be null
 	 */
-	public Integer getVersion() {
-		return version;
+	public Optional<Integer> getVersion() {
+		return Optional.ofNullable(this.version);
 	}
 
 	/**
 	 * Universe configuration of {@link RadixPeer}'s client, may be null
 	 */
-	public RadixUniverseConfig getUniverseConfig() {
-		return universeConfig;
+	public Optional<RadixUniverseConfig> getUniverseConfig() {
+		return Optional.ofNullable(this.universeConfig);
 	}
 }

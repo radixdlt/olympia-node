@@ -4,6 +4,8 @@ import io.reactivex.Observable;
 import io.reactivex.Single;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Optional;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,7 +22,7 @@ public class PeersFromSeed implements PeerDiscovery {
 		Single<RadixPeer> rawSeed = Single.just(seed).cache();
 		Observable<RadixPeer> connectedSeed =
 			rawSeed
-				.doOnSuccess(seed -> seed.getRadixClient().getInfo().subscribe(
+				.doOnSuccess(seed -> seed.connect().getInfo().subscribe(
 					seed::setData,
 					e -> LOGGER.warn("Unable to load seed info")
 				))
@@ -29,6 +31,7 @@ public class PeersFromSeed implements PeerDiscovery {
 		return Observable.concat(
 			connectedSeed
 				.map(RadixPeer::getRadixClient)
+				.map(Optional::get)
 				.flatMapSingle(client -> client.getLivePeers().doFinally(client::tryClose))
 				.doOnError(e -> LOGGER.warn("Unable to load seed peers"))
 				.doOnNext(list -> LOGGER.info("Got peer list " + list))
