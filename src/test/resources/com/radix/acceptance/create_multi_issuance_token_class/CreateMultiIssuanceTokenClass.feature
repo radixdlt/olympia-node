@@ -1,5 +1,5 @@
-# See: https://radixdlt.atlassian.net/browse/RLAU-40
-@rlau-40
+# See: https://radixdlt.atlassian.net/browse/RLAU-93
+@rlau-93
 Feature: Create Multi Issuance Token Class
 	As an account owner
 	I want to create a mutable supply token in my account with some key properties of an ERC-20 token

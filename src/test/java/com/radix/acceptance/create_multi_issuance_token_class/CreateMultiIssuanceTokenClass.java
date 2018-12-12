@@ -5,7 +5,6 @@ import java.util.List;
 
 import com.google.common.collect.Lists;
 import com.radix.acceptance.SpecificProperties;
-import com.radix.acceptance.Utils;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
@@ -23,9 +22,11 @@ import static com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissi
 import static com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState.SUBMITTING;
 import static com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState.VALIDATION_ERROR;
 
+import cucumber.api.java.After;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
+import io.reactivex.disposables.Disposable;
 import io.reactivex.observers.BaseTestConsumer.TestWaitStrategy;
 import io.reactivex.observers.TestObserver;
 
@@ -57,6 +58,7 @@ public class CreateMultiIssuanceTokenClass {
 		GRANULARITY,	"1"
 	);
 	private final List<TestObserver<Object>> observers = Lists.newArrayList();
+	private final List<Disposable> disposables = Lists.newArrayList();
 
 	@Given("^I have access to suitable development tools$")
 	public void i_have_access_to_suitable_development_tools() {
@@ -72,26 +74,11 @@ public class CreateMultiIssuanceTokenClass {
 	public void i_have_access_to_a_suitable_Radix_network() {
 		this.identity = RadixIdentities.createNew();
 		this.api = RadixApplicationAPI.create(this.identity);
-		this.api.pull();
+		this.disposables.add(this.api.pull());
 
 		// Reset data
 		this.properties.clear();
 		this.observers.clear();
-	}
-
-	@When("^property \"([^\"]*)\" = \"([^\"]*)\"$")
-	public void property(String name, String value) {
-		this.properties.put(name, value);
-	}
-
-	@When("^property \"([^\"]*)\" = (\\d+)$")
-	public void property(String name, int value) {
-		this.properties.put(name, Integer.toString(value));
-	}
-
-	@When("^I submit a mutable-supply token-creation request$")
-	public void i_submit_a_mutable_supply_token_creation_request() {
-		createToken(CreateTokenAction.TokenSupplyType.MUTABLE);
 	}
 
 	@When("^I submit a mutable-supply token-creation request with symbol \"([^\"]*)\" and granularity (\\d+)$")
@@ -149,6 +136,7 @@ public class CreateMultiIssuanceTokenClass {
 	public void i_submit_a_token_transfer_request_of_for_to_an_arbitrary_account(int count, String symbol) {
 		TokenClassReference tokenClass = TokenClassReference.of(api.getMyAddress(), symbol);
 		RadixAddress arbitrary = RadixUniverse.getInstance().getAddressFrom(RadixIdentities.createNew().getPublicKey());
+
 		// Ensure balance is up-to-date.
 		api.getBalance(api.getMyAddress(), tokenClass)
 			.firstOrError()
@@ -157,7 +145,7 @@ public class CreateMultiIssuanceTokenClass {
 		TestObserver<Object> observer = new TestObserver<>();
 		api.transferTokens(api.getMyAddress(), arbitrary, BigDecimal.valueOf(count), tokenClass)
 			.toObservable()
-			.map(Utils::print)
+			.doOnNext(System.out::println)
 			.map(AtomSubmissionUpdate::getState)
 			.subscribe(observer);
 		this.observers.add(observer);
@@ -196,6 +184,12 @@ public class CreateMultiIssuanceTokenClass {
 		awaitAtomStatus(atomNumber, VALIDATION_ERROR);
 	}
 
+	@After
+	public void after() {
+		this.disposables.forEach(Disposable::dispose);
+		this.disposables.clear();
+	}
+
 	private void createToken(CreateTokenAction.TokenSupplyType tokenCreateSupplyType) {
 		TestObserver<Object> observer = new TestObserver<>();
 		api.createToken(
@@ -206,7 +200,7 @@ public class CreateMultiIssuanceTokenClass {
 				TokenClassReference.unitsToSubunits(Long.valueOf(this.properties.get(GRANULARITY))),
 				tokenCreateSupplyType)
 			.toObservable()
-			.map(Utils::print)
+			.doOnNext(System.out::println)
 			.map(AtomSubmissionUpdate::getState)
 			.subscribe(observer);
 		this.observers.add(observer);
