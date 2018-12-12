@@ -45,7 +45,7 @@ public class PowFeeMapper implements FeeMapper {
 				universe.getAddressFrom(key),
 				System.nanoTime(),
 				universe.getPOWToken(),
-				System.currentTimeMillis() * 60000
+				System.currentTimeMillis() / 60000L + 60000L
 		);
 
 		return Collections.singletonList(SpunParticle.up(fee));
