@@ -56,7 +56,6 @@ public class CreateSingleIssuanceTokenClass {
 	public void i_have_access_to_a_suitable_Radix_network() {
 		this.identity = RadixIdentities.createNew();
 		this.api = RadixApplicationAPI.create(identity);
-		api.pull();
 
 		// Reset data
 		resetProperties();
@@ -90,7 +89,7 @@ public class CreateSingleIssuanceTokenClass {
 				TokenClassReference.unitsToSubunits(tokenState.getTotalSupply()),
 				CreateTokenAction.TokenSupplyType.FIXED)
 			.toObservable()
-			.map(Utils::print)
+			.doOnNext(System.out::println)
 			.map(AtomSubmissionUpdate::getState)
 			.subscribe(observer);
 		this.observers.add(observer);

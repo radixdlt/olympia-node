@@ -50,8 +50,10 @@ public class SendReceiveDataTransactionTest {
 
 		// And not receive any messages
 		messageListener.await(5, TimeUnit.SECONDS);
-		messageListener.assertNoErrors();
-		messageListener.assertEmpty();
+		messageListener
+			.assertNoErrors()
+			.assertEmpty()
+			.dispose();
 	}
 
 	@Test
@@ -75,12 +77,14 @@ public class SendReceiveDataTransactionTest {
 			.assertValueAt(0, msg -> Arrays.equals(message, msg.getData()))
 			.assertValueAt(0, msg -> msg.getFrom().equals(api1.getMyAddress()))
 			.assertValueAt(0, msg -> msg.getTo().equals(api2.getMyAddress()))
-			.assertValueAt(0, msg -> msg.getEncryptionState().equals(EncryptionState.NOT_ENCRYPTED));
+			.assertValueAt(0, msg -> msg.getEncryptionState().equals(EncryptionState.NOT_ENCRYPTED))
+			.dispose();
 		messageListener2.awaitCount(1)
 			.assertValueAt(0, msg -> Arrays.equals(message, msg.getData()))
 			.assertValueAt(0, msg -> msg.getFrom().equals(api1.getMyAddress()))
 			.assertValueAt(0, msg -> msg.getTo().equals(api2.getMyAddress()))
-			.assertValueAt(0, msg -> msg.getEncryptionState().equals(EncryptionState.NOT_ENCRYPTED));
+			.assertValueAt(0, msg -> msg.getEncryptionState().equals(EncryptionState.NOT_ENCRYPTED))
+			.dispose();
 	}
 
 	@Test
@@ -101,7 +105,8 @@ public class SendReceiveDataTransactionTest {
 			.assertValueAt(0, msg -> Arrays.equals(message, msg.getData()))
 			.assertValueAt(0, msg -> msg.getFrom().equals(api.getMyAddress()))
 			.assertValueAt(0, msg -> msg.getTo().equals(api.getMyAddress()))
-			.assertValueAt(0, msg -> msg.getEncryptionState().equals(EncryptionState.NOT_ENCRYPTED));
+			.assertValueAt(0, msg -> msg.getEncryptionState().equals(EncryptionState.NOT_ENCRYPTED))
+			.dispose();
 	}
 
 	@Test
@@ -123,6 +128,7 @@ public class SendReceiveDataTransactionTest {
 			.assertValueAt(0, msg -> Arrays.equals(message, msg.getData()))
 			.assertValueAt(0, msg -> msg.getFrom().equals(otherAccount.getMyAddress()))
 			.assertValueAt(0, msg -> msg.getTo().equals(otherAccount.getMyAddress()))
-			.assertValueAt(0, msg -> msg.getEncryptionState().equals(EncryptionState.NOT_ENCRYPTED));
+			.assertValueAt(0, msg -> msg.getEncryptionState().equals(EncryptionState.NOT_ENCRYPTED))
+			.dispose();
 	}
 }

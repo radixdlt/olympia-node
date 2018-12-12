@@ -60,7 +60,7 @@ public class SendReceiveEncryptedDataTransactionTest {
 			.assertValue(msg -> msg.getTo().equals(normalApi.getMyAddress()))
 			.assertValue(msg -> msg.getFrom().equals(normalApi.getMyAddress()))
 			.assertValue(msg -> msg.getData().length > 0)
-		;
+			.dispose();
 	}
 
 }
