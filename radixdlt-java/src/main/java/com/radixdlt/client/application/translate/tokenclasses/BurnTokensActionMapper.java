@@ -70,8 +70,9 @@ public class BurnTokensActionMapper implements StatefulActionToParticlesMapper {
 		final TokenClassReference tokenRef = burnTokensAction.getTokenClassReference();
 		final Balance bal = allConsumables.get(burnTokensAction.getTokenClassReference());
 		final BigDecimal balance = bal == null ? BigDecimal.ZERO : bal.getAmount();
-		if (bal == null || balance.compareTo(burnTokensAction.getAmount()) < 0) {
-			throw new InsufficientFundsException(tokenRef, balance, burnTokensAction.getAmount());
+		final BigDecimal burnUnits = TokenClassReference.subunitsToUnits(burnTokensAction.getAmount());
+		if (bal == null || balance.compareTo(burnUnits) < 0) {
+			throw new InsufficientFundsException(tokenRef, balance, burnUnits);
 		}
 		final UInt256 granularity = TokenClassReference.unitsToSubunits(bal.getGranularity());
 
@@ -83,7 +84,7 @@ public class BurnTokensActionMapper implements StatefulActionToParticlesMapper {
 		List<SpunParticle> particles = new ArrayList<>();
 
 		UInt256 consumerTotal = UInt256.ZERO;
-		final UInt256 subunitAmount = TokenClassReference.unitsToSubunits(burnTokensAction.getAmount());
+		final UInt256 subunitAmount = burnTokensAction.getAmount();
 		Iterator<OwnedTokensParticle> iterator = unconsumedOwnedTokensParticles.iterator();
 		Map<ECKeyPair, UInt256> newUpQuantities = new HashMap<>();
 

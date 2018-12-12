@@ -1,16 +1,17 @@
 package com.radixdlt.client.application.translate.tokenclasses;
 
-import java.math.BigDecimal;
 import java.util.Objects;
+
+import org.radix.utils.UInt256;
 
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.atommodel.tokens.TokenClassReference;
 
 public class BurnTokensAction implements Action {
 	private final TokenClassReference tokenClassReference;
-	private final long amount;
+	private final UInt256 amount;
 
-	public BurnTokensAction(TokenClassReference tokenClassReference, long amount) {
+	public BurnTokensAction(TokenClassReference tokenClassReference, UInt256 amount) {
 		this.tokenClassReference = Objects.requireNonNull(tokenClassReference);
 		this.amount = Objects.requireNonNull(amount);
 	}
@@ -19,7 +20,7 @@ public class BurnTokensAction implements Action {
 		return tokenClassReference;
 	}
 
-	public BigDecimal getAmount() {
-		return new BigDecimal(amount);
+	public UInt256 getAmount() {
+		return amount;
 	}
 }

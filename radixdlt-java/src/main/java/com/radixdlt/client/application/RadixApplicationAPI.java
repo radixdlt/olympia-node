@@ -547,7 +547,7 @@ public class RadixApplicationAPI {
 	 * @param amount The amount to mint
 	 * @return result of the transaction
 	 */
-	public Result burnTokens(String iso, long amount) {
+	public Result burnTokens(String iso, UInt256 amount) {
 		BurnTokensAction burnTokensAction = new BurnTokensAction(TokenClassReference.of(getMyAddress(), iso), amount);
 		return execute(burnTokensAction);
 	}
