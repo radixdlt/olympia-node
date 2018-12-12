@@ -8,6 +8,7 @@ plugins {
 
 repositories {
     jcenter()
+    maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
 }
 
 dependencies {
@@ -33,6 +34,10 @@ dependencies {
     compile('com.fasterxml.jackson.datatype:jackson-datatype-guava:2.9.7') {
         // Use our Guava lib
         exclude group: 'com.google.guava', module: 'guava'
+    }
+
+    compile('com.jakewharton.rx2:replaying-share:2.1.0') {
+        exclude group: 'io.reactivex.rxjava2', module: 'rxjava'
     }
 
     testCompile group: 'junit', name: 'junit', version: '4.12'

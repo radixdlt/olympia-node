@@ -130,7 +130,7 @@ public class RadixJsonRpcClient {
 				requestObject.addProperty("method", method);
 				requestObject.add("params", params);
 
-				messages
+				Disposable d = messages
 					.filter(msg -> msg.has("id"))
 					.filter(msg -> msg.get("id").getAsString().equals(uuid))
 					.firstOrError()
@@ -158,6 +158,11 @@ public class RadixJsonRpcClient {
 							emitter.onError(new RuntimeException(err.getMessage()));
 						}
 					);
+
+				emitter.setCancellable(() -> {
+					d.dispose();
+					this.wsClient.close();
+				});
 			})
 		);
 	}
@@ -251,7 +256,7 @@ public class RadixJsonRpcClient {
 	 */
 	public Observable<JsonElement> jsonRpcSubscribe(String method, JsonObject rawParams, String notificationMethod) {
 		return this.wsClient.connect().andThen(
-			Observable.create(emitter -> {
+			Observable.<JsonElement>create(emitter -> {
 				final String subscriberId = UUID.randomUUID().toString();
 				final JsonObject params = rawParams.deepCopy();
 				params.addProperty("subscriberId", subscriberId);
@@ -283,7 +288,8 @@ public class RadixJsonRpcClient {
 					JsonObject cancelParams = new JsonObject();
 					cancelParams.addProperty("subscriberId", subscriberId);
 					cancelObject.add("params", cancelParams);
-					wsClient.send(GsonJson.getInstance().stringFromGson(cancelObject));
+					this.wsClient.send(GsonJson.getInstance().stringFromGson(cancelObject));
+					this.wsClient.close();
 				});
 			})
 		);
@@ -389,6 +395,7 @@ public class RadixJsonRpcClient {
 			emitter.setCancellable(() -> {
 				methodDisposable.dispose();
 				subscriptionDisposable.dispose();
+				this.wsClient.close();
 			});
 		});
 	}

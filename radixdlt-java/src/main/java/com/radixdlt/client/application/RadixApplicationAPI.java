@@ -10,6 +10,7 @@ import com.radixdlt.client.application.translate.atomic.AtomicToParticlesMapper;
 import com.radixdlt.client.application.translate.tokenclasses.TokenClassesState;
 import com.radixdlt.client.application.translate.unique.AlreadyUsedUniqueIdReasonMapper;
 import com.radixdlt.client.application.translate.unique.PutUniqueIdToParticlesMapper;
+import com.radixdlt.client.core.atoms.AtomObservation;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -331,7 +332,7 @@ public class RadixApplicationAPI {
 		Objects.requireNonNull(address);
 
 		if (ledger.getAtomPuller() != null) {
-			return ledger.getAtomPuller().pull(address);
+			return ledger.getAtomPuller().pull(address).subscribe();
 		} else {
 			return Disposables.disposed();
 		}
@@ -356,6 +357,62 @@ public class RadixApplicationAPI {
 	}
 
 	/**
+	 * Returns a never ending hot observable of the actions performed at a given address.
+	 * If the given address is not currently being pulled this will pull for atoms in that
+	 * address automatically until the observable is disposed.
+	 *
+	 * @param actionClass the Action class
+	 * @param address the address to retrieve the state of
+	 * @param <T> the Action class
+	 * @return a hot observable of the actions at the given address
+	 */
+	public <T> Observable<T> getActions(Class<T> actionClass, RadixAddress address) {
+		final Observable<AtomObservation> atomsPulled = ledger.getAtomPuller() != null
+			? ledger.getAtomPuller().pull(address)
+			: Observable.never();
+		Observable<AtomObservation> auto = atomsPulled.publish()
+			.refCount(2);
+		Disposable d = auto.subscribe();
+
+		return this.getActionStore(actionClass).getActions(address, identity)
+			.map(actionClass::cast)
+			.publish()
+			.autoConnect()
+			.doOnSubscribe(disposable -> auto.subscribe().dispose())
+			.doOnError(e -> d.dispose())
+			.doOnDispose(d::dispose)
+			.doOnComplete(d::dispose);
+	}
+
+	/**
+	 * Returns a never ending hot observable of the state of a given address.
+	 * If the given address is not currently being pulled this will pull for atoms in that
+	 * address automatically until the observable is disposed.
+	 *
+	 * @param stateClass the ApplicationState class
+	 * @param address the address to retrieve the state of
+	 * @param <T> the ApplicationState class
+	 * @return a hot observable of a state of the given address
+	 */
+	public <T extends ApplicationState> Observable<T> getState(Class<T> stateClass, RadixAddress address) {
+		final Observable<AtomObservation> atomsPulled = ledger.getAtomPuller() != null
+				? ledger.getAtomPuller().pull(address)
+				: Observable.never();
+		Observable<AtomObservation> auto = atomsPulled.publish()
+			.refCount(2);
+		Disposable d = auto.subscribe();
+
+		return this.getStore(stateClass).getState(address)
+			.map(stateClass::cast)
+			.publish()
+			.autoConnect()
+			.doOnSubscribe(disposable -> auto.subscribe().dispose())
+			.doOnError(e -> d.dispose())
+			.doOnDispose(d::dispose)
+			.doOnComplete(d::dispose);
+	}
+
+	/**
 	 * Returns a hot observable of the latest state of token classes at a given
 	 * address
 	 *
@@ -363,9 +420,7 @@ public class RadixApplicationAPI {
 	 * @return a hot observable of the latest state of token classes
 	 */
 	public Observable<TokenClassesState> getTokenClasses(RadixAddress address) {
-		pull(address);
-
-		return this.getStore(TokenClassesState.class).getState(address).map(s -> (TokenClassesState) s);
+		return getState(TokenClassesState.class, address);
 	}
 
 	/**
@@ -384,8 +439,6 @@ public class RadixApplicationAPI {
 	 * @return a hot observable of the latest state of the token
 	 */
 	public Observable<TokenState> getTokenClass(TokenClassReference ref) {
-		pull(ref.getAddress());
-
 		return this.getTokenClasses(ref.getAddress())
 			.flatMapMaybe(m -> Optional.ofNullable(m.getState().get(ref)).map(Maybe::just).orElse(Maybe.empty()));
 	}
@@ -408,12 +461,7 @@ public class RadixApplicationAPI {
 
 	public Observable<DecryptedMessage> getMessages(RadixAddress address) {
 		Objects.requireNonNull(address);
-
-		pull(address);
-
-		return this.getActionStore(DecryptedMessage.class)
-			.getActions(address, identity)
-			.map(o -> (DecryptedMessage) o);
+		return getActions(DecryptedMessage.class, address);
 	}
 
 	public Result sendMessage(byte[] data, boolean encrypt) {
@@ -432,22 +480,12 @@ public class RadixApplicationAPI {
 
 	public Observable<TokenTransfer> getTokenTransfers(RadixAddress address) {
 		Objects.requireNonNull(address);
-
-		pull(address);
-
-		return this.getActionStore(TokenTransfer.class)
-			.getActions(address, this.getMyIdentity())
-			.map(o -> (TokenTransfer) o);
+		return getActions(TokenTransfer.class, address);
 	}
 
 	public Observable<Map<TokenClassReference, BigDecimal>> getBalance(RadixAddress address) {
 		Objects.requireNonNull(address);
-
-		pull(address);
-
-		return this.getStore(TokenBalanceState.class)
-			.getState(address)
-			.map(bal -> (TokenBalanceState) bal)
+		return getState(TokenBalanceState.class, address)
 			.map(TokenBalanceState::getBalance)
 			.map(map -> map.entrySet().stream().collect(
 				Collectors.toMap(Entry::getKey, e -> e.getValue().getAmount())
@@ -600,9 +638,7 @@ public class RadixApplicationAPI {
 				.fromIterable(this.statefulActionToParticlesMappers)
 				.flatMap(mapper -> {
 					final Observable<Observable<? extends ApplicationState>> context =
-						mapper.requiredState(action)
-							.doOnNext(ctx -> this.pull(ctx.address()))
-							.map(ctx -> this.getStore(ctx.stateClass()).getState(ctx.address()));
+						mapper.requiredState(action).map(ctx -> this.getState(ctx.stateClass(), ctx.address()));
 					return mapper.mapToParticles(action, context);
 				})
 			);
@@ -613,9 +649,7 @@ public class RadixApplicationAPI {
 				.fromIterable(this.statefulActionToParticlesMappers)
 				.flatMap(mapper -> {
 					final Observable<Observable<? extends ApplicationState>> context =
-						mapper.requiredState(action)
-							.doOnNext(ctx -> this.pull(ctx.address()))
-							.map(ctx -> this.getStore(ctx.stateClass()).getState(ctx.address()));
+						mapper.requiredState(action).map(ctx -> this.getState(ctx.stateClass(), ctx.address()));
 					return mapper.sideEffects(action, context);
 				});
 	}

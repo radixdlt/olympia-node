@@ -6,6 +6,8 @@ import io.reactivex.observables.ConnectableObservable;
 
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import org.slf4j.Logger;
@@ -49,6 +51,18 @@ public final class RadixNetwork {
 	public Observable<SimpleImmutableEntry<String, RadixClientStatus>> connectAndGetStatusUpdates() {
 		this.peers.subscribe();
 		return this.getStatusUpdates();
+	}
+
+	public Observable<Map<String, RadixClientStatus>> getNetworkState() {
+		return peers.map(RadixPeer::getRadixClient)
+			.flatMap(
+				client -> client.getStatus().map(
+					status -> new SimpleImmutableEntry<>(client.getLocation(), status)
+				)
+			).scanWith(HashMap<String, RadixClientStatus>::new, (map, entry) -> {
+			map.put(entry.getKey(), entry.getValue());
+			return map;
+		});
 	}
 
 	/**

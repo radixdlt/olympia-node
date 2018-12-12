@@ -2,7 +2,6 @@ package com.radixdlt.client.core.ledger;
 
 import com.radixdlt.client.core.atoms.AtomObservation;
 import io.reactivex.Observable;
-import io.reactivex.disposables.Disposable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -37,15 +36,22 @@ public class RadixAtomPuller implements AtomPuller {
 		this.atomStore = atomStore;
 	}
 
+	/**
+	 * Fetches atoms and pushes them into the atom store. Multiple pulls on the same address
+	 * will return a disposable to the same observable. As long as there is one subscriber to an
+	 * address this will continue fetching and storing atoms.
+	 *
+	 * @param address shard address to get atoms from
+	 * @return disposable to dispose to stop fetching
+	 */
 	@Override
-	public Disposable pull(RadixAddress address) {
+	public Observable<AtomObservation> pull(RadixAddress address) {
 		return cache.computeIfAbsent(
-			address, destination -> {
-				Observable<AtomObservation> fetchedAtoms = fetcher.apply(destination)
-					.publish().refCount(2);
-				fetchedAtoms.subscribe(atomObservation -> atomStore.accept(address, atomObservation));
-				return fetchedAtoms;
-			}
-		).subscribe();
+			address,
+			destination -> fetcher.apply(destination)
+				.doOnNext(atomObservation -> atomStore.accept(address, atomObservation))
+				.publish()
+				.refCount()
+		);
 	}
 }

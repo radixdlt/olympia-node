@@ -36,7 +36,7 @@ public class RadixAtomPullerTest {
 		List<TestObserver> observers = Stream.iterate(TestObserver.create(), t -> TestObserver.create()).limit(10)
 			.collect(Collectors.toList());
 
-		observers.forEach(observer -> radixAtomPuller.pull(address));
+		observers.forEach(observer -> radixAtomPuller.pull(address).subscribe());
 
 		verify(onSubscribe, times(1)).accept(any());
 	}
