@@ -21,7 +21,7 @@ public class RadixWalletExample {
 
 	// Initialize Radix Universe
 	static {
-		RadixUniverse.bootstrap(Bootstrap.BETANET);
+		RadixUniverse.bootstrap(Bootstrap.SUNSTONE);
 	}
 
 	public static void main(String[] args) throws Exception {
@@ -34,10 +34,10 @@ public class RadixWalletExample {
 		}
 
 		// Network updates
-		RadixUniverse.getInstance()
-			.getNetwork()
-			.getStatusUpdates()
-			.subscribe(System.out::println);
+//		RadixUniverse.getInstance()
+//			.getNetwork()
+//			.getStatusUpdates()
+//			.subscribe(System.out::println);
 
 		RadixApplicationAPI api = RadixApplicationAPI.create(radixIdentity);
 		api.pull();

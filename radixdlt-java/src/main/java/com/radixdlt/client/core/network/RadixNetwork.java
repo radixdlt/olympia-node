@@ -1,17 +1,14 @@
 package com.radixdlt.client.core.network;
 
-import com.radixdlt.client.core.network.WebSocketClient.RadixClientStatus;
 import io.reactivex.Observable;
 import io.reactivex.observables.ConnectableObservable;
-
-import java.util.AbstractMap.SimpleImmutableEntry;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import org.radix.common.tuples.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Objects;
 
 /**
  * A Radix Network manages connections to Node Runners for a given Universe.
@@ -27,42 +24,39 @@ public final class RadixNetwork {
 	/**
 	 * Hot observable which updates subscribers of new connection events
 	 */
-	private final ConnectableObservable<SimpleImmutableEntry<String, RadixClientStatus>> statusUpdates;
-
+	private final ConnectableObservable<RadixPeerState> statusUpdates;
+	private final Observable<RadixNetworkState> networkState;
 
 	public RadixNetwork(PeerDiscovery peerDiscovery) {
 		Objects.requireNonNull(peerDiscovery);
 
 		this.peers = peerDiscovery.findPeers()
-			.retryWhen(new IncreasingRetryTimer(WebSocketException.class))
-			.doOnNext(peer -> LOGGER.info("Added to peer list: " + peer.getLocation()))
-			.replay().autoConnect(2);
+				.retryWhen(new IncreasingRetryTimer(WebSocketException.class))
+				.doOnNext(peer -> LOGGER.debug(String.format("Added to peer list: %s", peer.getLocation())))
+				.replay()
+				.autoConnect(2);
 
-		this.statusUpdates = peers.map(RadixPeer::getRadixClient)
-			.flatMap(
-				client -> client.getStatus().map(
-					status -> new SimpleImmutableEntry<>(client.getLocation(), status)
-				)
-			)
-			.publish();
+		// this will only give status updates when all data is available for RadixPeerState, see RadixPeer.status
+		this.statusUpdates = this.peers
+				.flatMap(RadixPeer::status)
+				.publish();
 		this.statusUpdates.connect();
+
+		this.networkState = this.peers.flatMap(peer -> peer.status()
+				.doOnNext(status -> LOGGER.debug(String.format("Peer status changed: %s", status)))
+				.map(status -> new Pair<>(peer, status)))
+				.scan(new RadixNetworkState(Collections.emptyMap()), (previousState, update) -> {
+					LinkedHashMap<RadixPeer, RadixPeerState> currentPeers = new LinkedHashMap<>(previousState.getPeers());
+					currentPeers.put(update.getFirst(), update.getSecond());
+
+					return new RadixNetworkState(currentPeers);
+				})
+				.cache();
 	}
 
-	public Observable<SimpleImmutableEntry<String, RadixClientStatus>> connectAndGetStatusUpdates() {
+	public Observable<RadixPeerState> connectAndGetStatusUpdates() {
 		this.peers.subscribe();
 		return this.getStatusUpdates();
-	}
-
-	public Observable<Map<String, RadixClientStatus>> getNetworkState() {
-		return peers.map(RadixPeer::getRadixClient)
-			.flatMap(
-				client -> client.getStatus().map(
-					status -> new SimpleImmutableEntry<>(client.getLocation(), status)
-				)
-			).scanWith(HashMap<String, RadixClientStatus>::new, (map, entry) -> {
-			map.put(entry.getKey(), entry.getValue());
-			return map;
-		});
 	}
 
 	/**
@@ -70,22 +64,17 @@ public final class RadixNetwork {
 	 *
 	 * @return a hot Observable of status of peers
 	 */
-	public Observable<SimpleImmutableEntry<String, RadixClientStatus>> getStatusUpdates() {
-		return statusUpdates;
+	public Observable<RadixPeerState> getStatusUpdates() {
+		return this.statusUpdates;
 	}
 
-	public Observable<RadixJsonRpcClient> getRadixClients() {
-		return peers.map(RadixPeer::getRadixClient);
-	}
-
-	public Observable<RadixJsonRpcClient> getRadixClients(Set<Long> shards) {
-		return peers.flatMapMaybe(peer -> peer.servesShards(shards))
-			.map(RadixPeer::getRadixClient)
-			.flatMapMaybe(client -> client.checkAPIVersion().filter(b -> b).map(b -> client));
-	}
-
-	public Observable<RadixJsonRpcClient> getRadixClients(Long shard) {
-		return this.getRadixClients(Collections.singleton(shard));
+	/**
+	 * Returns a cold observable of network state
+	 *
+	 * @return a cold observable of network state
+	 */
+	public Observable<RadixNetworkState> getNetworkState() {
+		return this.networkState;
 	}
 
 	/**

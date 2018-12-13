@@ -1,6 +1,7 @@
 package com.radixdlt.client.core.network;
 
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import io.reactivex.Observable;
 import org.junit.Test;
 import org.radix.common.ID.EUID;
 import org.radix.serialization2.DsonOutput.Output;
@@ -15,7 +16,6 @@ import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomObservation;
 import com.radixdlt.client.core.atoms.Shards;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState;
-import com.radixdlt.client.core.network.WebSocketClient.RadixClientStatus;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
@@ -23,7 +23,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.reactivex.Completable;
-import io.reactivex.Observable;
 import io.reactivex.observers.TestObserver;
 import io.reactivex.subjects.ReplaySubject;
 
@@ -32,7 +31,7 @@ public class RadixJsonRpcClientTest {
 	@Test
 	public void getSelfTestError() {
 		WebSocketClient wsClient = mock(WebSocketClient.class);
-		when(wsClient.getStatus()).thenReturn(Observable.just(RadixClientStatus.OPEN));
+		when(wsClient.status()).thenReturn(Observable.just(RadixClientStatus.OPEN));
 
 		ReplaySubject<String> messages = ReplaySubject.create();
 		when(wsClient.getMessages()).thenReturn(messages);
@@ -52,7 +51,7 @@ public class RadixJsonRpcClientTest {
 	@Test
 	public void getSelfTest() {
 		WebSocketClient wsClient = mock(WebSocketClient.class);
-		when(wsClient.getStatus()).thenReturn(Observable.just(RadixClientStatus.OPEN));
+		when(wsClient.status()).thenReturn(Observable.just(RadixClientStatus.OPEN));
 
 		ReplaySubject<String> messages = ReplaySubject.create();
 		when(wsClient.getMessages()).thenReturn(messages);
@@ -93,7 +92,7 @@ public class RadixJsonRpcClientTest {
 	@Test
 	public void getAtomDoesNotExistTest() {
 		WebSocketClient wsClient = mock(WebSocketClient.class);
-		when(wsClient.getStatus()).thenReturn(Observable.just(RadixClientStatus.OPEN));
+		when(wsClient.status()).thenReturn(Observable.just(RadixClientStatus.OPEN));
 
 		ReplaySubject<String> messages = ReplaySubject.create();
 		when(wsClient.getMessages()).thenReturn(messages);
@@ -129,7 +128,7 @@ public class RadixJsonRpcClientTest {
 	@Test
 	public void getAtomTest() {
 		WebSocketClient wsClient = mock(WebSocketClient.class);
-		when(wsClient.getStatus()).thenReturn(Observable.just(RadixClientStatus.OPEN));
+		when(wsClient.status()).thenReturn(Observable.just(RadixClientStatus.OPEN));
 
 		ReplaySubject<String> messages = ReplaySubject.create();
 		when(wsClient.getMessages()).thenReturn(messages);
@@ -168,7 +167,7 @@ public class RadixJsonRpcClientTest {
 	@Test
 	public void getAtomsTest() {
 		WebSocketClient wsClient = mock(WebSocketClient.class);
-		when(wsClient.getStatus()).thenReturn(Observable.just(RadixClientStatus.OPEN));
+		when(wsClient.status()).thenReturn(Observable.just(RadixClientStatus.OPEN));
 
 		ReplaySubject<String> messages = ReplaySubject.create();
 		when(wsClient.getMessages()).thenReturn(messages);
@@ -220,7 +219,7 @@ public class RadixJsonRpcClientTest {
 	@Test
 	public void getAtomsCancelTest() {
 		WebSocketClient wsClient = mock(WebSocketClient.class);
-		when(wsClient.getStatus()).thenReturn(Observable.just(RadixClientStatus.OPEN));
+		when(wsClient.status()).thenReturn(Observable.just(RadixClientStatus.OPEN));
 
 		ReplaySubject<String> messages = ReplaySubject.create();
 		when(wsClient.getMessages()).thenReturn(messages);
@@ -278,7 +277,7 @@ public class RadixJsonRpcClientTest {
 	@Test
 	public void submitAtomTest() {
 		WebSocketClient wsClient = mock(WebSocketClient.class);
-		when(wsClient.getStatus()).thenReturn(Observable.just(RadixClientStatus.OPEN));
+		when(wsClient.status()).thenReturn(Observable.just(RadixClientStatus.OPEN));
 
 		ReplaySubject<String> messages = ReplaySubject.create();
 		when(wsClient.getMessages()).thenReturn(messages);

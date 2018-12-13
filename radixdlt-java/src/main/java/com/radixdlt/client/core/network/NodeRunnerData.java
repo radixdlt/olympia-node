@@ -1,14 +1,13 @@
 package com.radixdlt.client.core.network;
 
-import java.util.Map;
-
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableMap;
+import com.radixdlt.client.core.atoms.Shards;
 import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.DsonOutput.Output;
 import org.radix.serialization2.client.SerializableObject;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableMap;
-import com.radixdlt.client.core.atoms.Shards;
+import java.util.Map;
 
 public abstract class NodeRunnerData extends SerializableObject {
 	private String ip;
@@ -41,7 +40,7 @@ public abstract class NodeRunnerData extends SerializableObject {
 
 	@Override
 	public String toString() {
-		return ip + ": " + system.getShards();
+		return (ip != null ? (ip + ": ") : "") + "shards=" + system.getShards().toString();
 	}
 
 	@Override

@@ -7,6 +7,8 @@ import io.reactivex.Single;
 import io.reactivex.observers.TestObserver;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.Optional;
+
 import org.junit.Test;
 
 public class PeersFromSeedTest {
@@ -15,8 +17,9 @@ public class PeersFromSeedTest {
 		RadixPeer peer = mock(RadixPeer.class);
 		RadixJsonRpcClient client = mock(RadixJsonRpcClient.class);
 		NodeRunnerData data = mock(NodeRunnerData.class);
-		when(peer.getRadixClient()).thenReturn(client);
+		when(peer.getRadixClient()).thenReturn(Optional.of(client));
 		when(peer.getLocation()).thenReturn("somewhere");
+		when(peer.connect()).thenReturn(client);
 		when(client.getInfo()).thenReturn(Single.just(data));
 		when(client.getLivePeers()).thenReturn(Single.just(Collections.emptyList()));
 
@@ -32,8 +35,9 @@ public class PeersFromSeedTest {
 	public void testFindPeersFail() {
 		RadixPeer peer = mock(RadixPeer.class);
 		RadixJsonRpcClient client = mock(RadixJsonRpcClient.class);
-		when(peer.getRadixClient()).thenReturn(client);
+		when(peer.getRadixClient()).thenReturn(Optional.of(client));
 		when(peer.getLocation()).thenReturn("somewhere");
+		when(peer.connect()).thenReturn(client);
 		when(client.getInfo()).thenReturn(Single.error(new IOException()));
 		when(client.getLivePeers()).thenReturn(Single.error(new IOException()));
 
