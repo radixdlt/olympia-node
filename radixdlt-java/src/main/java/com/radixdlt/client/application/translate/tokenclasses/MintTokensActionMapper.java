@@ -1,5 +1,6 @@
 package com.radixdlt.client.application.translate.tokenclasses;
 
+import com.radixdlt.client.application.translate.tokens.TokenClassReference;
 import org.radix.utils.UInt256;
 
 import com.radixdlt.client.application.translate.Action;
@@ -8,7 +9,6 @@ import com.radixdlt.client.application.translate.StatefulActionToParticlesMapper
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.atommodel.quarks.FungibleQuark;
 import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
-import com.radixdlt.client.atommodel.tokens.TokenClassReference;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 

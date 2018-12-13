@@ -1,5 +1,7 @@
 package com.radixdlt.client.atommodel.tokens;
 
+import com.radixdlt.client.application.translate.tokens.TokenClassReference;
+import com.radixdlt.client.core.atoms.particles.RadixResourceIdentifer;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
@@ -26,7 +28,7 @@ import com.radixdlt.client.core.crypto.ECPublicKey;
 public class OwnedTokensParticle extends Particle {
 	@JsonProperty("token_reference")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private TokenClassReference tokenClassReference;
+	private RadixResourceIdentifer tokenClassReference;
 
 	@JsonProperty("granularity")
 	@DsonOutput(DsonOutput.Output.ALL)
@@ -40,7 +42,7 @@ public class OwnedTokensParticle extends Particle {
 		super(new OwnableQuark(address.getPublicKey()), new AccountableQuark(address),
 				new FungibleQuark(amount, planck, nonce, type));
 
-		this.tokenClassReference = tokenRef;
+		this.tokenClassReference = new RadixResourceIdentifer(tokenRef.getAddress(), "tokenclasses", tokenRef.getSymbol());
 		this.granularity = granularity;
 	}
 
@@ -77,7 +79,7 @@ public class OwnedTokensParticle extends Particle {
 	}
 
 	public TokenClassReference getTokenClassReference() {
-		return tokenClassReference;
+		return TokenClassReference.of(tokenClassReference.getAddress(), tokenClassReference.getUnique());
 	}
 
 	public UInt256 getAmount() {

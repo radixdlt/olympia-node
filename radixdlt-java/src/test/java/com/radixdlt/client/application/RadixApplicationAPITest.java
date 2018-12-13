@@ -21,7 +21,7 @@ import com.radixdlt.client.application.translate.data.DecryptedMessage;
 import com.radixdlt.client.application.translate.FeeMapper;
 import com.radixdlt.client.application.translate.PowFeeMapper;
 import com.radixdlt.client.application.translate.tokens.TokenBalanceReducer;
-import com.radixdlt.client.atommodel.tokens.TokenClassReference;
+import com.radixdlt.client.application.translate.tokens.TokenClassReference;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.RadixUniverse.Ledger;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;

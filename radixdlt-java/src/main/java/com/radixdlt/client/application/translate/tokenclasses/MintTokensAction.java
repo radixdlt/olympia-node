@@ -5,7 +5,7 @@ import java.util.Objects;
 import org.radix.utils.UInt256;
 
 import com.radixdlt.client.application.translate.Action;
-import com.radixdlt.client.atommodel.tokens.TokenClassReference;
+import com.radixdlt.client.application.translate.tokens.TokenClassReference;
 
 public class MintTokensAction implements Action {
 	private final TokenClassReference tokenClassReference;

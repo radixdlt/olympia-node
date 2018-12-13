@@ -1,6 +1,6 @@
 package com.radixdlt.client.core;
 
-import com.radixdlt.client.atommodel.tokens.TokenClassReference;
+import com.radixdlt.client.application.translate.tokens.TokenClassReference;
 import com.radixdlt.client.core.atoms.AtomObservation;
 import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.atommodel.tokens.TokenParticle;

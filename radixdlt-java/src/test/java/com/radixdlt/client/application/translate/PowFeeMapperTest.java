@@ -10,7 +10,7 @@ import static org.mockito.Mockito.when;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.RadixHash;
-import com.radixdlt.client.atommodel.tokens.TokenClassReference;
+import com.radixdlt.client.application.translate.tokens.TokenClassReference;
 import com.radixdlt.client.atommodel.tokens.FeeParticle;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.crypto.ECPublicKey;
@@ -39,6 +39,8 @@ public class PowFeeMapperTest {
 
 		RadixUniverse universe = mock(RadixUniverse.class);
 		TokenClassReference powToken = mock(TokenClassReference.class);
+		when(powToken.getAddress()).thenReturn(mock(RadixAddress.class));
+		when(powToken.getSymbol()).thenReturn("POW");
 		when(universe.getPOWToken()).thenReturn(powToken);
 
 		ECPublicKey key = mock(ECPublicKey.class);

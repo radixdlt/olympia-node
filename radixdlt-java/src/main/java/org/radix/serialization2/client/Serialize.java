@@ -1,13 +1,14 @@
 package org.radix.serialization2.client;
 
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.atommodel.unique.UniqueId;
+import com.radixdlt.client.atommodel.quarks.IdentifiableQuark;
+import com.radixdlt.client.application.translate.unique.UniqueId;
 import com.radixdlt.client.atommodel.unique.UniqueParticle;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.atommodel.tokens.TokenClassReference;
 import com.radixdlt.client.atommodel.tokens.FeeParticle;
 import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.client.core.atoms.particles.RadixResourceIdentifer;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.atommodel.message.MessageParticle;
 import com.radixdlt.client.atommodel.timestamp.TimestampParticle;
@@ -17,7 +18,6 @@ import com.radixdlt.client.atommodel.quarks.AccountableQuark;
 import com.radixdlt.client.atommodel.quarks.ChronoQuark;
 import com.radixdlt.client.atommodel.quarks.DataQuark;
 import com.radixdlt.client.atommodel.quarks.FungibleQuark;
-import com.radixdlt.client.atommodel.quarks.NonFungibleQuark;
 import com.radixdlt.client.atommodel.quarks.OwnableQuark;
 import com.radixdlt.client.core.atoms.particles.Quark;
 import com.radixdlt.client.atommodel.quarks.UniqueQuark;
@@ -63,7 +63,7 @@ public final class Serialize {
 				ChronoQuark.class,
 				DataQuark.class,
 				FungibleQuark.class,
-				NonFungibleQuark.class,
+				IdentifiableQuark.class,
 				OwnableQuark.class,
 				UniqueQuark.class,
 				AccountableQuark.class,
@@ -73,7 +73,7 @@ public final class Serialize {
 				RadixSystem.class,
 				RadixUniverseConfig.class,
 				TCPNodeRunnerData.class,
-				TokenClassReference.class,
+				RadixResourceIdentifer.class,
 				UniqueId.class,
 				UDPNodeRunnerData.class
 			);

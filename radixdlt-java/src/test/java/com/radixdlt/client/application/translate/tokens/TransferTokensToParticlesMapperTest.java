@@ -9,7 +9,6 @@ import io.reactivex.Observable;
 import io.reactivex.observers.TestObserver;
 import java.math.BigDecimal;
 import org.junit.Test;
-import com.radixdlt.client.atommodel.tokens.TokenClassReference;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import java.util.Collections;
