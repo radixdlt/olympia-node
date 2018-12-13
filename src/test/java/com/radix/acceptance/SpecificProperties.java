@@ -5,27 +5,20 @@ import java.util.Map;
 import java.util.Objects;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 
 /**
  * Class for maintaining a map of string names to string values,
  * where allowable names and default values can be specified.
  */
 public class SpecificProperties {
-	private final ImmutableSet<String> propertyNames;
 	private final ImmutableMap<String, String> defaultValues;
 	private final Map<String, String> propertyValues = new HashMap<>();
 
 	SpecificProperties(String... propertyNamesAndValues) {
-		ImmutableSet.Builder<String> names = ImmutableSet.builder();
 		ImmutableMap.Builder<String, String> defaults = ImmutableMap.builder();
 		for (int i = 0; i < propertyNamesAndValues.length; i += 2) {
-			String name = propertyNamesAndValues[i];
-			String value = propertyNamesAndValues[i + 1];
-			names.add(name);
-			defaults.put(name, value);
+			defaults.put(propertyNamesAndValues[i], propertyNamesAndValues[i + 1]);
 		}
-		this.propertyNames = names.build();
 		this.defaultValues = defaults.build();
 		this.propertyValues.putAll(this.defaultValues);
 	}
@@ -53,7 +46,7 @@ public class SpecificProperties {
 	public void put(String name, String value) {
 		Objects.requireNonNull(name);
 		Objects.requireNonNull(value);
-		if (!this.propertyNames.contains(name)) {
+		if (!this.defaultValues.containsKey(name)) {
 			throw new IllegalArgumentException("Invalid property name: " + name);
 		}
 		this.propertyValues.put(name, value);
@@ -69,7 +62,7 @@ public class SpecificProperties {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.propertyNames, this.defaultValues, this.propertyValues);
+		return Objects.hash(this.defaultValues, this.propertyValues);
 	}
 
 	@Override
@@ -79,8 +72,7 @@ public class SpecificProperties {
 		}
 		if (obj instanceof SpecificProperties) {
 			SpecificProperties other = (SpecificProperties) obj;
-			return Objects.equals(this.propertyNames, other.propertyNames) &&
-					Objects.equals(this.defaultValues, other.defaultValues) &&
+			return Objects.equals(this.defaultValues, other.defaultValues) &&
 					Objects.equals(this.propertyValues, other.propertyValues);
 		}
 		return false;
@@ -88,8 +80,8 @@ public class SpecificProperties {
 
 	@Override
 	public String toString() {
-		return String.format("%s[names=%s, defaults=%s, values=%s]",
-				getClass().getSimpleName(), propertyNames, defaultValues, propertyValues);
+		return String.format("%s[defaults=%s, values=%s]",
+				getClass().getSimpleName(), defaultValues, propertyValues);
 	}
 
 	/**
