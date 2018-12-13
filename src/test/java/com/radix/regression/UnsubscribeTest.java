@@ -6,11 +6,11 @@ import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.translate.data.DecryptedMessage;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
-import com.radixdlt.client.core.network.WebSocketClient.RadixClientStatus;
+import com.radixdlt.client.core.network.RadixClientStatus;
+import com.radixdlt.client.core.network.RadixNetworkState;
 import io.reactivex.Observable;
 import io.reactivex.functions.Predicate;
 import io.reactivex.observers.TestObserver;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -19,6 +19,12 @@ import org.junit.Test;
  * RLAU-59
  */
 public class UnsubscribeTest {
+	private final static Predicate<RadixNetworkState> NETWORK_IS_CLOSE =
+		state -> state.getPeers().entrySet().stream().noneMatch(e -> e.getValue().getStatus().equals(RadixClientStatus.OPEN));
+
+	private final static Predicate<RadixNetworkState> NETWORK_IS_OPEN =
+		state -> state.getPeers().entrySet().stream().anyMatch(e -> e.getValue().getStatus().equals(RadixClientStatus.OPEN));
+
 	@BeforeClass
 	public static void setup() {
 		if (!RadixUniverse.isInstantiated()) {
@@ -30,14 +36,13 @@ public class UnsubscribeTest {
 	public void given_i_am_a_library_user_with_no_connections__when_i_send_a_message_to_myself_to_completion__then_i_can_observe_all_network_connections_being_closed() {
 		// Given I am a library user
 		RadixApplicationAPI normalApi = RadixApplicationAPI.create(RadixIdentities.createNew());
-		Observable<Map<String, RadixClientStatus>> networkStatus = RadixUniverse.getInstance()
+		Observable<RadixNetworkState> networkStatus = RadixUniverse.getInstance()
 			.getNetwork()
 			.getNetworkState()
 			.debounce(3, TimeUnit.SECONDS);
 
-		TestObserver<Map<String, RadixClientStatus>> networkListener = TestObserver.create(Util.loggingObserver("NetworkListener"));
-		Predicate<Map<String, RadixClientStatus>> networkCloseCheck = map -> map.entrySet().stream().noneMatch(e -> e.getValue().equals(RadixClientStatus.OPEN));
-		networkStatus.takeUntil(networkCloseCheck).subscribe(networkListener);
+		TestObserver<RadixNetworkState> networkListener = TestObserver.create(Util.loggingObserver("NetworkListener"));
+		networkStatus.takeUntil(NETWORK_IS_CLOSE).subscribe(networkListener);
 		networkListener.awaitTerminalEvent();
 
 		// When I send a message to myself to completion
@@ -48,8 +53,8 @@ public class UnsubscribeTest {
 
 
 		// Then I can observe all network connections being closed
-		TestObserver<Map<String, RadixClientStatus>> networkListener2 = TestObserver.create(Util.loggingObserver("NetworkListener2"));
-		networkStatus.takeUntil(networkCloseCheck).subscribe(networkListener2);
+		TestObserver<RadixNetworkState> networkListener2 = TestObserver.create(Util.loggingObserver("NetworkListener2"));
+		networkStatus.takeUntil(NETWORK_IS_CLOSE).subscribe(networkListener2);
 		networkListener2.awaitTerminalEvent();
 	}
 
@@ -59,23 +64,21 @@ public class UnsubscribeTest {
 		RadixApplicationAPI normalApi = RadixApplicationAPI.create(RadixIdentities.createNew());
 		TestObserver<DecryptedMessage> messageListener = TestObserver.create(Util.loggingObserver("MessageListener"));
 		normalApi.getMessages().subscribe(messageListener);
-		Predicate<Map<String, RadixClientStatus>> networkOpenCheck = map -> map.entrySet().stream().anyMatch(e -> e.getValue().equals(RadixClientStatus.OPEN));
-		Observable<Map<String, RadixClientStatus>> networkStatus = RadixUniverse.getInstance()
+		Observable<RadixNetworkState> networkStatus = RadixUniverse.getInstance()
 			.getNetwork()
 			.getNetworkState()
 			.debounce(3, TimeUnit.SECONDS);
 
-		TestObserver<Map<String, RadixClientStatus>> networkListener = TestObserver.create(Util.loggingObserver("NetworkListener"));
-		networkStatus.takeUntil(networkOpenCheck).subscribe(networkListener);
+		TestObserver<RadixNetworkState> networkListener = TestObserver.create(Util.loggingObserver("NetworkListener"));
+		networkStatus.takeUntil(NETWORK_IS_OPEN).subscribe(networkListener);
 		networkListener.awaitTerminalEvent();
 
 		// When I dispose of the lone subscriber
 		messageListener.dispose();
 
 		// Then I can observe all network connections being closed
-		TestObserver<Map<String, RadixClientStatus>> networkListener2 = TestObserver.create(Util.loggingObserver("NetworkListener2"));
-		Predicate<Map<String, RadixClientStatus>> networkCloseCheck = map -> map.entrySet().stream().noneMatch(e -> e.getValue().equals(RadixClientStatus.OPEN));
-		networkStatus.takeUntil(networkCloseCheck).subscribe(networkListener2);
+		TestObserver<RadixNetworkState> networkListener2 = TestObserver.create(Util.loggingObserver("NetworkListener2"));
+		networkStatus.takeUntil(NETWORK_IS_CLOSE).subscribe(networkListener2);
 		networkListener2.awaitTerminalEvent();
 	}
 
@@ -87,21 +90,20 @@ public class UnsubscribeTest {
 		TestObserver<DecryptedMessage> messageListener2 = TestObserver.create(Util.loggingObserver("MessageListener2"));
 		normalApi.getMessages().subscribe(messageListener1);
 		normalApi.getMessages().subscribe(messageListener2);
-		Predicate<Map<String, RadixClientStatus>> networkOpenCheck = map -> map.entrySet().stream().anyMatch(e -> e.getValue().equals(RadixClientStatus.OPEN));
-		Observable<Map<String, RadixClientStatus>> networkStatus = RadixUniverse.getInstance()
+		Observable<RadixNetworkState> networkStatus = RadixUniverse.getInstance()
 			.getNetwork()
 			.getNetworkState()
 			.debounce(3, TimeUnit.SECONDS);
-		TestObserver<Map<String, RadixClientStatus>> networkListener = TestObserver.create(Util.loggingObserver("NetworkListener"));
-		networkStatus.takeUntil(networkOpenCheck).subscribe(networkListener);
+		TestObserver<RadixNetworkState> networkListener = TestObserver.create(Util.loggingObserver("NetworkListener"));
+		networkStatus.takeUntil(NETWORK_IS_OPEN).subscribe(networkListener);
 		networkListener.awaitTerminalEvent();
 
 		// When I dispose of a subscriber
 		messageListener1.dispose();
 
 		// Then I can observe a network connection still open
-		TestObserver<Map<String, RadixClientStatus>> networkListener2 = TestObserver.create(Util.loggingObserver("NetworkListener2"));
-		networkStatus.takeUntil(networkOpenCheck).subscribe(networkListener2);
+		TestObserver<RadixNetworkState> networkListener2 = TestObserver.create(Util.loggingObserver("NetworkListener2"));
+		networkStatus.takeUntil(NETWORK_IS_OPEN).subscribe(networkListener2);
 		networkListener2.awaitTerminalEvent();
 		messageListener2.dispose();
 	}
