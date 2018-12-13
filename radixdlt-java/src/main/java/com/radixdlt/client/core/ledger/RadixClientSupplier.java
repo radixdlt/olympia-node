@@ -205,7 +205,7 @@ public class RadixClientSupplier {
 			newPeerToConnectTo.ifPresent(RadixPeer::connect);
 
 			if (!newPeerToConnectTo.isPresent()) {
-				this.logger.warn("Could not connect to new peer, don't have any.");
+				this.logger.debug("Could not connect to new peer, don't have any.");
 			}
 		}
 
@@ -220,7 +220,7 @@ public class RadixClientSupplier {
 					.ifPresent(RadixPeer::close);
 
 			if (!peerToClose.isPresent()) {
-				this.logger.warn("Could not close a peer, don't find any.");
+				this.logger.debug("Could not close a peer, don't find any.");
 			}
 		}
 
