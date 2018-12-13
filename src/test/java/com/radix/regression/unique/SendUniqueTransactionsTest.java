@@ -8,7 +8,7 @@ import com.radixdlt.client.application.translate.atomic.AtomicAction;
 import com.radixdlt.client.application.translate.data.SendMessageAction;
 import com.radixdlt.client.application.translate.unique.AlreadyUsedUniqueIdReason;
 import com.radixdlt.client.application.translate.unique.PutUniqueIdAction;
-import com.radixdlt.client.atommodel.unique.UniqueId;
+import com.radixdlt.client.application.translate.unique.UniqueId;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
 import io.reactivex.Completable;
