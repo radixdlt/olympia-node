@@ -1,10 +1,12 @@
 package com.radix.acceptance.create_multi_issuance_token_class;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.List;
 
 import org.radix.utils.UInt256;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.radix.acceptance.SpecificProperties;
 import com.radixdlt.client.application.RadixApplicationAPI;
@@ -18,6 +20,7 @@ import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState;
 
+import static com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState.COLLISION;
 import static com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState.STORED;
 import static com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState.SUBMITTED;
 import static com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState.SUBMITTING;
@@ -180,6 +183,17 @@ public class CreateMultiIssuanceTokenClass {
 		awaitAtomStatus(atomNumber, VALIDATION_ERROR);
 	}
 
+	@Then("^I can observe the atom being rejected with an error$")
+	public void i_can_observe_atom_being_rejected_with_an_error() {
+		// "the atom" = most recent atom
+		i_can_observe_atom_being_rejected_with_an_error(observers.size());
+	}
+
+	@Then("^I can observe atom (\\d+) being rejected with an error$")
+	public void i_can_observe_atom_being_rejected_with_an_error(int atomNumber) {
+		awaitAtomStatus(atomNumber, COLLISION, VALIDATION_ERROR);
+	}
+
 	@Then("^I can observe token \"([^\"]*)\" balance equal to (\\d+)$")
 	public void i_can_observe_token_balance_equal_to(String symbol, int balance) {
 		TokenClassReference tokenClass = TokenClassReference.of(api.getMyAddress(), symbol);
@@ -214,12 +228,16 @@ public class CreateMultiIssuanceTokenClass {
 		this.observers.add(observer);
 	}
 
-	private void awaitAtomStatus(int atomNumber, AtomSubmissionState finalState) {
+	private void awaitAtomStatus(int atomNumber, AtomSubmissionState... finalStates) {
+		ImmutableSet<AtomSubmissionState> allStates = ImmutableSet.<AtomSubmissionState>builder()
+			.add(SUBMITTING, SUBMITTED)
+			.addAll(Arrays.asList(finalStates))
+			.build();
 		this.observers.get(atomNumber - 1)
 			.awaitCount(3, TestWaitStrategy.SLEEP_100MS, TIMEOUT_MS)
 			.assertNoErrors()
 			.assertNoTimeout()
-			.assertValues(SUBMITTING, SUBMITTED, finalState);
+			.assertValueSet(allStates);
 	}
 
 	private static String scaledToUnscaled(int amount) {

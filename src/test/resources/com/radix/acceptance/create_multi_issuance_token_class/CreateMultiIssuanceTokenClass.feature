@@ -15,7 +15,7 @@ Feature: Create Multi Issuance Token Class
     When I submit a mutable-supply token-creation request with symbol "RLAU"
     And I observe the atom being accepted
     And I submit a mutable-supply token-creation request with symbol "RLAU"
-    Then I can observe atom 2 being rejected with a validation error
+    Then I can observe atom 2 being rejected with an error
 
   Scenario: 3: Creating a token with disallowed granularity
     Given I have access to a suitable Radix network
