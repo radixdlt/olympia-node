@@ -196,7 +196,7 @@ public class RadixClientSupplier {
 				.count();
 
 		if (activeDesirablePeerCount + pendingCount < this.targetDesirablePeerCount) {
-			this.logger.info(String.format("Requesting more peer connections, want %d but have %d desirable peers (%d pending)",
+			this.logger.debug(String.format("Requesting more peer connections, want %d but have %d desirable peers (%d pending)",
 					this.targetDesirablePeerCount, activeDesirablePeerCount, pendingCount));
 
 			Optional<RadixPeer> newPeerToConnectTo = state.getPeers().keySet().stream()
@@ -210,7 +210,7 @@ public class RadixClientSupplier {
 		}
 
 		if (activeDesirablePeerCount > this.targetDesirablePeerCount) {
-			this.logger.info(String.format("Closing a peer connection, want %d but have %d desirable peers",
+			this.logger.debug(String.format("Closing a peer connection, want %d but have %d desirable peers",
 					this.targetDesirablePeerCount, activeDesirablePeerCount, pendingCount));
 
 			Optional<RadixPeer> peerToClose = state.getPeers().keySet().stream()
