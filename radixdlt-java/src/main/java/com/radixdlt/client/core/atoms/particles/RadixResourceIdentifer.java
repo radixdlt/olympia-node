@@ -1,34 +1,17 @@
 package com.radixdlt.client.core.atoms.particles;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import org.radix.serialization2.DsonOutput;
-import org.radix.serialization2.DsonOutput.Output;
-import org.radix.serialization2.SerializerId2;
-import org.radix.serialization2.client.SerializableObject;
 
 /**
  * A Radix resource identifier is a human readable index into the Ledger which points to a unique UP particle.
  *
  * TODO: Map this to a unique string e.g. address/index/:type/:name OR shardableType/:shardable/index/:type/:name
  */
-@SerializerId2("RADIXRESOURCEIDENTIFIER")
-public class RadixResourceIdentifer extends SerializableObject {
+public class RadixResourceIdentifer {
 	// TODO: Will replace this with shardable at some point
-	@JsonProperty("address")
-	@DsonOutput(Output.ALL)
 	private RadixAddress address;
-
-	@JsonProperty("unique")
-	@DsonOutput(Output.ALL)
 	private String unique;
-
-	@JsonProperty("type")
-	@DsonOutput(Output.ALL)
 	private String type;
-
-	private RadixResourceIdentifer() {
-	}
 
 	public RadixResourceIdentifer(RadixAddress address, String type, String unique) {
 		this.address = address;
@@ -48,8 +31,21 @@ public class RadixResourceIdentifer extends SerializableObject {
 		return unique;
 	}
 
+	public static RadixResourceIdentifer fromString(String s) {
+		String[] split = s.split("/");
+		if (split.length < 4) {
+			throw new IllegalArgumentException("RRI must be of the format /:address/:type/:unique");
+		}
+
+		RadixAddress address = RadixAddress.from(split[1]);
+		String type = split[2];
+		String unique = s.substring(split[1].length() + split[2].length() + 3);
+
+		return new RadixResourceIdentifer(address, type, unique);
+	}
+
 	@Override
 	public String toString() {
-		return address.toString() + "/" + type + "/" + unique;
+		return "/" + address.toString() + "/" + type + "/" + unique;
 	}
 }
