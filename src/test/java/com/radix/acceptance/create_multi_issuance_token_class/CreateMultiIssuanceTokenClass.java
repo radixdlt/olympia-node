@@ -1,4 +1,4 @@
-package com.radix.acceptance.create_single_issuance_token_class;
+package com.radix.acceptance.create_multi_issuance_token_class;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -36,9 +36,9 @@ import io.reactivex.observers.BaseTestConsumer.TestWaitStrategy;
 import io.reactivex.observers.TestObserver;
 
 /**
- * See <a href="https://radixdlt.atlassian.net/browse/RLAU-40">RLAU-40</a>.
+ * See <a href="https://radixdlt.atlassian.net/browse/RLAU-93">RLAU-93</a>.
  */
-public class CreateSingleIssuanceTokenClass {
+public class CreateMultiIssuanceTokenClass {
 	static {
 		if (!RadixUniverse.isInstantiated()) {
 			RadixUniverse.bootstrap(Bootstrap.BETANET);
@@ -48,7 +48,8 @@ public class CreateSingleIssuanceTokenClass {
 	private static final String NAME = "name";
 	private static final String SYMBOL = "symbol";
 	private static final String DESCRIPTION = "description";
-	private static final String TOTAL_SUPPLY = "totalSupply";
+	private static final String INITIAL_SUPPLY = "initialSupply";
+	private static final String NEW_SUPPLY = "newSupply";
 	private static final String GRANULARITY = "granularity";
 
 	private static final long TIMEOUT_MS = 10_000L; // Timeout in milliseconds
@@ -59,7 +60,8 @@ public class CreateSingleIssuanceTokenClass {
 		NAME,           "RLAU-40 Test token",
 		SYMBOL,			"RLAU",
 		DESCRIPTION,	"RLAU-40 Test token",
-		TOTAL_SUPPLY,	scaledToUnscaled(1_000_000_000),
+		INITIAL_SUPPLY,	scaledToUnscaled(1000000000),
+		NEW_SUPPLY,		scaledToUnscaled(1000000000),
 		GRANULARITY,	"1"
 	);
 	private final List<TestObserver<Object>> observers = Lists.newArrayList();
@@ -76,46 +78,69 @@ public class CreateSingleIssuanceTokenClass {
 		this.observers.clear();
 	}
 
-	@When("^I submit a fixed-supply token-creation request "
-			+ "with name \"([^\"]*)\", symbol \"([^\"]*)\", totalSupply (\\d+) scaled and granularity (\\d+) scaled$")
-	public void i_submit_a_fixed_supply_token_creation_request_with_name_symbol_totalSupply_scaled_and_granularity_scaled(
-			String name, String symbol, int totalSupply, int granularity) {
+	@When("^I submit a mutable-supply token-creation request with symbol \"([^\"]*)\" and granularity (\\d+)$")
+	public void i_submit_a_mutable_supply_token_creation_request_with_symbol_and_granularity(String symbol, int granularity) {
+		this.properties.put(SYMBOL, symbol);
+		this.properties.put(GRANULARITY, scaledToUnscaled(granularity));
+		createToken(CreateTokenAction.TokenSupplyType.MUTABLE);
+	}
+
+	@When("^I submit a mutable-supply token-creation request with name \"([^\"]*)\", symbol \"([^\"]*)\", initialSupply (\\d+) and granularity (\\d+)$")
+	public void i_submit_a_mutable_supply_token_creation_request_with_name_symbol_initialSupply_and_granularity(
+			String name, String symbol, int initialSupply, int granularity) {
 		this.properties.put(NAME, name);
 		this.properties.put(SYMBOL, symbol);
-		this.properties.put(TOTAL_SUPPLY, scaledToUnscaled(totalSupply));
+		this.properties.put(INITIAL_SUPPLY, scaledToUnscaled(initialSupply));
 		this.properties.put(GRANULARITY, scaledToUnscaled(granularity));
-		createToken(CreateTokenAction.TokenSupplyType.FIXED);
+		createToken(CreateTokenAction.TokenSupplyType.MUTABLE);
 	}
 
-	@When("^I submit a fixed-supply token-creation request with symbol \"([^\"]*)\" and totalSupply (\\d+) scaled$")
-	public void i_submit_a_fixed_supply_token_creation_request_with_symbol_totalSupply(String symbol, int totalSupply) {
+	@When("^I submit a mutable-supply token-creation request with symbol \"([^\"]*)\" and initialSupply (\\d+)$")
+	public void i_submit_a_mutable_supply_token_creation_request_with_symbol_and_initialSupply(String symbol, int initialSupply) {
 		this.properties.put(SYMBOL, symbol);
-		this.properties.put(TOTAL_SUPPLY, scaledToUnscaled(totalSupply));
-		createToken(CreateTokenAction.TokenSupplyType.FIXED);
+		this.properties.put(INITIAL_SUPPLY, scaledToUnscaled(initialSupply));
+		createToken(CreateTokenAction.TokenSupplyType.MUTABLE);
 	}
 
-	@When("^I submit a fixed-supply token-creation request with granularity (\\d+) scaled$")
-	public void i_submit_a_fixed_supply_token_creation_request_with_granularity(int granularity) {
+	@When("^I submit a mutable-supply token-creation request with granularity (\\d+)$")
+	public void i_submit_a_mutable_supply_token_creation_request_with_granularity(int granularity) {
 		this.properties.put(GRANULARITY, scaledToUnscaled(granularity));
-		createToken(CreateTokenAction.TokenSupplyType.FIXED);
+		createToken(CreateTokenAction.TokenSupplyType.MUTABLE);
 	}
 
-	@When("^I submit a fixed-supply token-creation request with granularity 0$")
-	public void i_submit_a_fixed_supply_token_creation_request_with_granularity_0() {
-		this.properties.put(GRANULARITY, "0");
-		createToken(CreateTokenAction.TokenSupplyType.FIXED);
-	}
-
-	@When("^I submit a fixed-supply token-creation request with symbol \"([^\"]*)\"$")
-	public void i_submit_a_fixed_supply_token_creation_request_with_symbol(String symbol) {
+	@When("^I submit a mutable-supply token-creation request with symbol \"([^\"]*)\"$")
+	public void i_submit_a_mutable_supply_token_creation_request_with_symbol(String symbol) {
 		this.properties.put(SYMBOL, symbol);
-		createToken(CreateTokenAction.TokenSupplyType.FIXED);
+		createToken(CreateTokenAction.TokenSupplyType.MUTABLE);
 	}
 
-	@When("^I submit a token transfer request of (\\d+) scaled for \"([^\"]*)\" to an arbitrary account$")
+	@When("^I submit a mint request of (\\d+) for \"([^\"]*)\"$")
+	public void i_submit_a_mint_request_of_for(int count, String symbol) {
+		TestObserver<Object> observer = new TestObserver<>();
+		api.mintTokens(symbol, TokenClassReference.unitsToSubunits(count))
+			.toObservable()
+			.doOnNext(System.out::println)
+			.map(AtomSubmissionUpdate::getState)
+			.subscribe(observer);
+		this.observers.add(observer);
+	}
+
+	@When("^I submit a burn request of (\\d+) for \"([^\"]*)\"$")
+	public void i_submit_a_burn_request_of_for(int count, String symbol) {
+		TestObserver<Object> observer = new TestObserver<>();
+		api.burnTokens(symbol, TokenClassReference.unitsToSubunits(count))
+			.toObservable()
+			.doOnNext(System.out::println)
+			.map(AtomSubmissionUpdate::getState)
+			.subscribe(observer);
+		this.observers.add(observer);
+	}
+
+	@When("^I submit a token transfer request of (\\d+) for \"([^\"]*)\" to an arbitrary account$")
 	public void i_submit_a_token_transfer_request_of_for_to_an_arbitrary_account(int count, String symbol) {
 		TokenClassReference tokenClass = TokenClassReference.of(api.getMyAddress(), symbol);
 		RadixAddress arbitrary = RadixUniverse.getInstance().getAddressFrom(RadixIdentities.createNew().getPublicKey());
+
 		// Ensure balance is up-to-date.
 		api.getBalance(api.getMyAddress(), tokenClass)
 			.firstOrError()
@@ -130,7 +155,7 @@ public class CreateSingleIssuanceTokenClass {
 		this.observers.add(observer);
 	}
 
-	@When("^I observe the atom being accepted$")
+	@Then("^I observe the atom being accepted$")
 	public void i_observe_the_atom_being_accepted() {
 		// "the atom" = most recent atom
 		i_can_observe_atom_being_accepted(observers.size());
@@ -169,8 +194,8 @@ public class CreateSingleIssuanceTokenClass {
 		awaitAtomStatus(atomNumber, COLLISION, VALIDATION_ERROR);
 	}
 
-	@Then("^I can observe token \"([^\"]*)\" balance equal to (\\d+) scaled$")
-	public void i_can_observe_token_balance_equal_to_scaled(String symbol, int balance) {
+	@Then("^I can observe token \"([^\"]*)\" balance equal to (\\d+)$")
+	public void i_can_observe_token_balance_equal_to(String symbol, int balance) {
 		TokenClassReference tokenClass = TokenClassReference.of(api.getMyAddress(), symbol);
 		// Ensure balance is up-to-date.
 		BigDecimal tokenBalanceDecimal = api.getBalance(api.getMyAddress(), tokenClass)
@@ -193,7 +218,7 @@ public class CreateSingleIssuanceTokenClass {
 				this.properties.get(NAME),
 				this.properties.get(SYMBOL),
 				this.properties.get(DESCRIPTION),
-				UInt256.from(this.properties.get(TOTAL_SUPPLY)),
+				UInt256.from(this.properties.get(INITIAL_SUPPLY)),
 				UInt256.from(this.properties.get(GRANULARITY)),
 				tokenCreateSupplyType)
 			.toObservable()
@@ -215,7 +240,7 @@ public class CreateSingleIssuanceTokenClass {
 			.assertValueSet(allStates);
 	}
 
-	private static String scaledToUnscaled(int scaled) {
-		return TokenClassReference.unitsToSubunits(scaled).toString();
+	private static String scaledToUnscaled(int amount) {
+		return TokenClassReference.unitsToSubunits(amount).toString();
 	}
 }
