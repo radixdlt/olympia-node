@@ -1,8 +1,9 @@
-package com.radix.acceptance.mint_multi_issuance_tokens;
+package com.radix.acceptance.burn_multi_issuance_tokens;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.radix.utils.UInt256;
 
@@ -12,10 +13,11 @@ import com.radix.acceptance.SpecificProperties;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
+import com.radixdlt.client.application.translate.tokenclasses.BurnTokensAction;
 import com.radixdlt.client.application.translate.tokenclasses.CreateTokenAction;
 import com.radixdlt.client.application.translate.tokenclasses.CreateTokenAction.TokenSupplyType;
-import com.radixdlt.client.application.translate.tokenclasses.MintTokensAction;
 import com.radixdlt.client.application.translate.tokenclasses.TokenClassesState;
+import com.radixdlt.client.application.translate.tokens.InsufficientFundsException;
 import com.radixdlt.client.application.translate.tokens.TokenClassReference;
 import com.radixdlt.client.application.translate.tokens.UnknownTokenException;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
@@ -41,9 +43,9 @@ import io.reactivex.observers.BaseTestConsumer.TestWaitStrategy;
 import io.reactivex.observers.TestObserver;
 
 /**
- * See <a href="https://radixdlt.atlassian.net/browse/RLAU-94">RLAU-94</a>.
+ * See <a href="https://radixdlt.atlassian.net/browse/RLAU-93">RLAU-95</a>.
  */
-public class MintMultiIssuanceTokens {
+public class BurnMultiIssuanceTokens {
 	static {
 		if (!RadixUniverse.isInstantiated()) {
 			RadixUniverse.bootstrap(Bootstrap.BETANET);
@@ -89,7 +91,7 @@ public class MintMultiIssuanceTokens {
 
 		setupApi();
 		this.properties.put(SYMBOL, symbol1);
-		this.properties.put(INITIAL_SUPPLY, Integer.toString(initialSupply));
+		this.properties.put(INITIAL_SUPPLY, scaledToUnscaled(initialSupply).toString());
 		createToken(TokenSupplyType.MUTABLE);
 		awaitAtomStatus(STORED);
 		// Listening on state automatic for library
@@ -108,47 +110,6 @@ public class MintMultiIssuanceTokens {
 	    // FIXME Write code here that turns the phrase above into concrete actions
 		// The "listening to the token class actions" part is missing
 	    throw new PendingException();
-	}
-
-	@Given("^a library client and a token \"([^\"]*)\" which has (\\d+) total supply from three 'MINT (\\d+)' actions$")
-	public void aLibraryClientAndATokenWhichHasTotalSupplyFromThreeMINTActions(String symbol, int totalSupply, int perMint)
-			throws Throwable {
-		assertEquals(totalSupply, 3 * perMint); // Required from wording
-
-		setupApi();
-		this.properties.put(SYMBOL, symbol);
-		this.properties.put(INITIAL_SUPPLY, "0");
-		createToken(CreateTokenAction.TokenSupplyType.MUTABLE);
-		awaitAtomStatus(STORED);
-		for (int i = 0; i < 3; ++i) {
-			mintTokens(scaledToUnscaled(perMint), symbol, RadixAddress.from(this.properties.get(ADDRESS)));
-			awaitAtomStatus(STORED);
-		}
-		TokenClassReference tokenClass = TokenClassReference.of(api.getMyAddress(), symbol);
-		// Ensure balance is up-to-date.
-		BigDecimal tokenBalanceDecimal = api.getBalance(api.getMyAddress(), tokenClass)
-			.firstOrError()
-			.blockingGet();
-		UInt256 tokenBalance = TokenClassReference.unitsToSubunits(tokenBalanceDecimal);
-		UInt256 requiredBalance = TokenClassReference.unitsToSubunits(totalSupply);
-		assertEquals(requiredBalance, tokenBalance);
-	}
-
-	@Given("^a library client who owns an account and created a token with (\\d+) initial subunit supply$")
-	public void a_library_client_who_owns_an_account_and_created_a_token_with_initial_subunit_supply(int initialUnscaledSupply) throws Throwable {
-		setupApi();
-		this.properties.put(INITIAL_SUPPLY, UInt256.from(initialUnscaledSupply).toString());
-		createToken(CreateTokenAction.TokenSupplyType.MUTABLE);
-		awaitAtomStatus(STORED);
-	}
-
-	@Given("^a library client who owns an account and created a token with 2\\^(\\d+) initial subunit supply and is listening to the state of the token$")
-	public void a_library_client_who_owns_an_account_and_created_a_token_with_initial_subunit_supply_and_is_listening_to_the_state_of_the_token(int pow2)
-			throws Throwable {
-		setupApi();
-		this.properties.put(INITIAL_SUPPLY, UInt256.TWO.pow(pow2).toString());
-		createToken(CreateTokenAction.TokenSupplyType.MUTABLE);
-		awaitAtomStatus(STORED);
 	}
 
 	@Given("^a library client who owns an account where token \"([^\"]*)\" does not exist$")
@@ -173,30 +134,15 @@ public class MintMultiIssuanceTokens {
 		this.properties.put(ADDRESS, this.otherApi.getMyAddress().toString());
 	}
 
-	@When("^the client executes mint (\\d+) \"([^\"]*)\" tokens$")
-	public void the_client_executes_mint_tokens(int newSupply, String symbol) throws Throwable {
-		mintTokens(scaledToUnscaled(newSupply), symbol, RadixAddress.from(this.properties.get(ADDRESS)));
-	}
-
-	@When("^the client queries the actions done in token \"([^\"]*)\"$")
-	public void the_client_queries_the_actions_done_in_token(String symbol) throws Throwable {
-		// FIXME Write code here that turns the phrase above into concrete actions
-		throw new PendingException();
-	}
-
-	@When("^the client executes mint (\\d+) tokens$")
-	public void the_client_executes_mint_tokens(int newSupply) throws Throwable {
-		mintTokens(scaledToUnscaled(newSupply), this.properties.get(SYMBOL), RadixAddress.from(this.properties.get(ADDRESS)));
-	}
-
-	@When("^the client executes mint 2\\^(\\d+) subunit tokens$")
-	public void the_client_executes_mint_subunit_tokens(int pow2) throws Throwable {
-		mintTokens(UInt256.TWO.pow(pow2), this.properties.get(SYMBOL), RadixAddress.from(this.properties.get(ADDRESS)));
+	@When("^the client executes 'BURN (\\d+) \"([^\"]*)\" tokens'$")
+	public void the_client_executes_burn_tokens(int newSupply, String symbol) throws Throwable {
+		burnTokens(scaledToUnscaled(newSupply), symbol, RadixAddress.from(this.properties.get(ADDRESS)));
 	}
 
 	@Then("^the client should be notified that \"([^\"]*)\" token has a total supply of (\\d+)$")
 	public void theClientShouldBeNotifiedThatTokenHasATotalSupplyOf(String symbol, int supply) throws Throwable {
 		awaitAtomStatus(STORED);
+		TimeUnit.SECONDS.sleep(1);
 		TokenClassReference tokenClass = TokenClassReference.of(api.getMyAddress(), symbol);
 		// Ensure balance is up-to-date.
 		BigDecimal tokenBalanceDecimal = api.getBalance(api.getMyAddress(), tokenClass)
@@ -207,36 +153,24 @@ public class MintMultiIssuanceTokens {
 		assertEquals(requiredBalance, tokenBalance);
 	}
 
-	@Then("^the client should be notified that a new action of mint (\\d+) \"([^\"]*)\" tokens has been executed$")
-	public void the_client_should_be_notified_that_a_new_action_of_mint_tokens_has_been_executed(int amount, String symbol) throws Throwable {
-	    // FIXME Write code here that turns the phrase above into concrete actions
-	    throw new PendingException();
-	}
-
-	@Then("^the client should receive three 'MINT (\\d+)' actions$")
-	public void the_client_should_receive_three_MINT_actions(int amount) throws Throwable {
-	    // FIXME Write code here that turns the phrase above into concrete actions
-	    throw new PendingException();
-	}
-
-	@Then("^the client should be notified that the action failed because cannot mint with (\\d+) tokens$")
-	public void the_client_should_be_notified_that_the_action_failed_because_cannot_mint_with_tokens(int count) throws Throwable {
-		assertEquals(0, count); // Only thing we check for here
-		awaitAtomException(IllegalArgumentException.class, "Amount is zero");
-	}
-
-	@Then("^the client should be notified that the action failed because it reached the max allowed number of tokens of 2\\^256 - 1$")
-	public void the_client_should_be_notified_that_the_action_failed_because_it_reached_the_max_allowed_number_of_tokens_of() throws Throwable {
-		awaitAtomStatus(VALIDATION_ERROR);
-	}
-
 	@Then("^the client should be notified that the action failed because \"([^\"]*)\" does not exist$")
 	public void the_client_should_be_notified_that_the_action_failed_because_does_not_exist(String arg1) throws Throwable {
 		awaitAtomException(UnknownTokenException.class, "Unknown token");
 	}
 
-	@Then("^the client should be notified that the action failed because the client does not have permission to mint those tokens$")
-	public void the_client_should_be_notified_that_the_action_failed_because_the_client_does_not_have_permission_to_mint_those_tokens() throws Throwable {
+	@Then("^the client should be notified that a new action of 'BURN (\\d+) \"([^\"]*)\" tokens' has been executed$")
+	public void the_client_should_be_notified_that_a_new_action_of_BURN_tokens_has_been_executed(int amount, String symbol) throws Throwable {
+	    // FIXME: Write code here that turns the phrase above into concrete actions
+	    throw new PendingException();
+	}
+
+	@Then("^the client should be notified that the action failed because there's not that many tokens in supply$")
+	public void the_client_should_be_notified_that_the_action_failed_because_there_s_not_that_many_tokens_in_supply() throws Throwable {
+		awaitAtomException(InsufficientFundsException.class, "only 100.0");
+	}
+
+	@Then("^the client should be notified that the action failed because the client does not have permission to burn those tokens$")
+	public void the_client_should_be_notified_that_the_action_failed_because_the_client_does_not_have_permission_to_burn_those_tokens() throws Throwable {
 		awaitAtomStatus(VALIDATION_ERROR);
 	}
 
@@ -276,9 +210,9 @@ public class MintMultiIssuanceTokens {
 		this.observers.add(observer);
 	}
 
-	private void mintTokens(UInt256 amount, String symbol, RadixAddress address) {
+	private void burnTokens(UInt256 amount, String symbol, RadixAddress address) {
 		TokenClassReference tokenClass = TokenClassReference.of(address, symbol);
-		MintTokensAction mta = new MintTokensAction(tokenClass, amount);
+		BurnTokensAction mta = new BurnTokensAction(tokenClass, amount);
 		TestObserver<Object> observer = new TestObserver<>();
 		api.execute(mta)
 			.toObservable()
