@@ -17,6 +17,7 @@ import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.ApplicationState;
 import com.radixdlt.client.application.translate.StatefulActionToParticlesMapper;
 import com.radixdlt.client.application.translate.tokens.InsufficientFundsException;
+import com.radixdlt.client.application.translate.tokens.UnknownTokenException;
 import com.radixdlt.client.application.translate.tokens.TokenBalanceState;
 import com.radixdlt.client.application.translate.tokens.TokenBalanceState.Balance;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
@@ -68,10 +69,13 @@ public class BurnTokensActionMapper implements StatefulActionToParticlesMapper {
 		final Map<TokenClassReference, Balance> allConsumables = curState.getBalance();
 
 		final TokenClassReference tokenRef = burnTokensAction.getTokenClassReference();
-		final Balance bal = allConsumables.get(burnTokensAction.getTokenClassReference());
-		final BigDecimal balance = bal == null ? BigDecimal.ZERO : bal.getAmount();
+		final Balance bal = allConsumables.get(tokenRef);
+		if (bal == null) {
+			throw new UnknownTokenException(tokenRef);
+		}
+		final BigDecimal balance = bal.getAmount();
 		final BigDecimal burnUnits = TokenClassReference.subunitsToUnits(burnTokensAction.getAmount());
-		if (bal == null || balance.compareTo(burnUnits) < 0) {
+		if (balance.compareTo(burnUnits) < 0) {
 			throw new InsufficientFundsException(tokenRef, balance, burnUnits);
 		}
 		final UInt256 granularity = TokenClassReference.unitsToSubunits(bal.getGranularity());

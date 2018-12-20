@@ -1,11 +1,14 @@
 package com.radixdlt.client.application.translate.tokenclasses;
 
 import com.radixdlt.client.application.translate.tokens.TokenClassReference;
+import java.util.Map;
+
 import org.radix.utils.UInt256;
 
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.ApplicationState;
 import com.radixdlt.client.application.translate.StatefulActionToParticlesMapper;
+import com.radixdlt.client.application.translate.tokens.UnknownTokenException;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.atommodel.quarks.FungibleQuark;
 import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
@@ -42,11 +45,19 @@ public class MintTokensActionMapper implements StatefulActionToParticlesMapper {
 			.flatMap(Observable::firstOrError)
 			.map(TokenClassesState.class::cast)
 			.map(TokenClassesState::getState)
-			.map(m -> m.get(tokenClass))
+			.map(m -> getTokenStateOrError(m, tokenClass))
 			.map(TokenState::getGranularity)
 			.map(TokenClassReference::unitsToSubunits)
 			.map(granularity -> createOwnedTokensParticle(mintTokensAction.getAmount(), granularity, tokenClass))
 			.toObservable();
+	}
+
+	private TokenState getTokenStateOrError(Map<TokenClassReference, TokenState> m, TokenClassReference tokenClass) {
+		TokenState ts = m.get(tokenClass);
+		if (ts == null) {
+			throw new UnknownTokenException(tokenClass);
+		}
+		return ts;
 	}
 
 	private SpunParticle createOwnedTokensParticle(UInt256 amount, UInt256 granularity, TokenClassReference tokenClass) {

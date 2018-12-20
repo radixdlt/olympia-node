@@ -56,6 +56,12 @@ public class CreateTokenToParticlesMapper implements StatelessActionToParticlesM
 				),
 				null
 		);
+
+		if (tokenCreation.getInitialSupply().isZero()) {
+			// No initial supply -> just the token particle
+			return Observable.just(SpunParticle.up(token));
+		}
+
 		OwnedTokensParticle minted = new OwnedTokensParticle(
 				tokenCreation.getInitialSupply(),
 				tokenCreation.getGranularity(),
@@ -65,7 +71,6 @@ public class CreateTokenToParticlesMapper implements StatelessActionToParticlesM
 				token.getTokenClassReference(),
 				System.currentTimeMillis() / 60000L + 60000
 		);
-
 		return Observable.just(SpunParticle.up(token), SpunParticle.up(minted));
 	}
 }

@@ -2,8 +2,6 @@ package com.radixdlt.client.application.translate.tokens;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 import org.radix.utils.UInt256;
@@ -12,8 +10,6 @@ import org.radix.utils.UInt256s;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 
 public final class TokenClassReference {
-	private static final Charset CHARSET = StandardCharsets.UTF_8;
-
 	/**
 	 * Number of subunits in a unit as a power of 10, currently {@value #SUB_UNITS_POW_10}.
 	 * In other words, the total number of subunits per unit is 10<sup>{@code SUB_UNITS_POW_10}</sup>.
