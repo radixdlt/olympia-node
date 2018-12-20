@@ -1,13 +1,12 @@
 package com.radixdlt.client.application.translate.tokenclasses;
 
+import com.radixdlt.client.application.translate.ApplicationState;
+import com.radixdlt.client.application.translate.tokenclasses.TokenState.TokenSupplyType;
+import com.radixdlt.client.application.translate.tokens.TokenClassReference;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-
-import com.radixdlt.client.application.translate.ApplicationState;
-import com.radixdlt.client.application.translate.tokenclasses.TokenState.TokenSupplyType;
-import com.radixdlt.client.atommodel.tokens.TokenClassReference;
 
 public class TokenClassesState implements ApplicationState {
 	private final Map<TokenClassReference, TokenState> state;

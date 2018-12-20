@@ -1,5 +1,6 @@
 package org.radix.serialization2.mapper;
 
+import com.radixdlt.client.core.atoms.particles.RadixResourceIdentifer;
 import java.util.function.Function;
 
 import org.radix.common.ID.EUID;
@@ -7,6 +8,7 @@ import org.radix.crypto.Hash;
 import org.radix.serialization2.SerializerDummy;
 import org.radix.serialization2.SerializerIds;
 import org.radix.time.Timestamps;
+import org.radix.utils.RadixConstants;
 import org.radix.utils.UInt256;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
@@ -76,6 +78,11 @@ public class JacksonCborMapper extends ObjectMapper {
 			JacksonCodecConstants.U20_VALUE,
 			UInt256::toByteArray
 		));
+		cborModule.addSerializer(RadixResourceIdentifer.class, new JacksonCborObjectBytesSerializer<>(
+			RadixResourceIdentifer.class,
+			JacksonCodecConstants.RRI_VALUE,
+			id -> id.toString().getBytes(RadixConstants.STANDARD_CHARSET)
+		));
 
 		cborModule.addDeserializer(Timestamps.class, new JacksonTimestampsDeserializer());
 		cborModule.addDeserializer(SerializerDummy.class, new JacksonSerializerDummyDeserializer());
@@ -103,6 +110,11 @@ public class JacksonCborMapper extends ObjectMapper {
 			UInt256.class,
 			JacksonCodecConstants.U20_VALUE,
 			UInt256::from
+		));
+		cborModule.addDeserializer(RadixResourceIdentifer.class, new JacksonCborObjectBytesDeserializer<>(
+			RadixResourceIdentifer.class,
+			JacksonCodecConstants.RRI_VALUE,
+			b -> RadixResourceIdentifer.fromString(new String(b, RadixConstants.STANDARD_CHARSET))
 		));
 
 		JacksonCborMapper mapper = new JacksonCborMapper();

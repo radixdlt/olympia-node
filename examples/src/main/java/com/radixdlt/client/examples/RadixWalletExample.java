@@ -1,6 +1,5 @@
 package com.radixdlt.client.examples;
 
-import com.radixdlt.client.application.translate.data.SendMessageAction;
 import java.math.BigDecimal;
 
 import org.radix.utils.UInt256;
@@ -10,7 +9,7 @@ import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.tokenclasses.CreateTokenAction.TokenSupplyType;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.atommodel.tokens.TokenClassReference;
+import com.radixdlt.client.application.translate.tokens.TokenClassReference;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
 

@@ -1,7 +1,6 @@
 package com.radixdlt.client.application.translate.unique;
 
 import com.radixdlt.client.application.translate.ActionExecutionExceptionReason;
-import com.radixdlt.client.atommodel.unique.UniqueId;
 import java.util.Objects;
 
 public class AlreadyUsedUniqueIdReason extends ActionExecutionExceptionReason {

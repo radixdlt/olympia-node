@@ -1,6 +1,15 @@
 package com.radixdlt.client.atommodel.tokens;
 
 import java.util.Collections;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.client.application.translate.tokens.TokenClassReference;
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.client.atommodel.quarks.FungibleQuark.FungibleType;
+import com.radixdlt.client.atommodel.quarks.AccountableQuark;
+import com.radixdlt.client.atommodel.quarks.IdentifiableQuark;
+import com.radixdlt.client.atommodel.quarks.OwnableQuark;
+import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.client.core.atoms.particles.RadixResourceIdentifer;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -9,14 +18,6 @@ import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.DsonOutput.Output;
 import org.radix.serialization2.SerializerId2;
 import org.radix.utils.UInt256;
-
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.atommodel.quarks.AccountableQuark;
-import com.radixdlt.client.atommodel.quarks.FungibleQuark.FungibleType;
-import com.radixdlt.client.atommodel.quarks.NonFungibleQuark;
-import com.radixdlt.client.atommodel.quarks.OwnableQuark;
-import com.radixdlt.client.core.atoms.particles.Particle;
 
 @SerializerId2("TOKENCLASSPARTICLE")
 public class TokenParticle extends Particle {
@@ -52,7 +53,7 @@ public class TokenParticle extends Particle {
 		byte[] icon
 	) {
 		super(
-			new NonFungibleQuark(TokenClassReference.of(address, symbol)),
+			new IdentifiableQuark(new RadixResourceIdentifer(address, "tokenclasses", symbol)),
 			new AccountableQuark(address),
 			new OwnableQuark(address.getPublicKey())
 		);
@@ -84,7 +85,8 @@ public class TokenParticle extends Particle {
 	}
 
 	public TokenClassReference getTokenClassReference() {
-		return (TokenClassReference) this.getQuarkOrError(NonFungibleQuark.class).getIndex();
+		RadixResourceIdentifer id = this.getQuarkOrError(IdentifiableQuark.class).getId();
+		return TokenClassReference.of(id.getAddress(), id.getUnique());
 	}
 
 	@JsonProperty("permissions")

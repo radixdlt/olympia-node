@@ -1,4 +1,4 @@
-package com.radixdlt.client.atommodel.tokens;
+package com.radixdlt.client.application.translate.tokens;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -6,17 +6,12 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
-import org.radix.common.ID.EUID;
-import org.radix.serialization2.SerializerId2;
 import org.radix.utils.UInt256;
 import org.radix.utils.UInt256s;
 
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.core.atoms.RadixHash;
-import com.radixdlt.client.core.atoms.particles.ParticleIndex;
 
-@SerializerId2("TOKENCLASSREFERENCE")
-public final class TokenClassReference extends ParticleIndex {
+public final class TokenClassReference {
 	private static final Charset CHARSET = StandardCharsets.UTF_8;
 
 	/**
@@ -123,25 +118,26 @@ public final class TokenClassReference extends ParticleIndex {
 		return UInt256s.fromBigDecimal(units.multiply(SUB_UNITS_BIG_DECIMAL));
 	}
 
-	TokenClassReference() {
-		// No-arg constructor for serializer
-	}
+	private final RadixAddress address;
+	private final String symbol;
 
 	private TokenClassReference(RadixAddress address, String symbol) {
-		super(address, symbol);
 		Objects.requireNonNull(symbol);
+		Objects.requireNonNull(address);
+		this.address = address;
+		this.symbol = symbol;
 	}
 
-	public static TokenClassReference of(RadixAddress address, String reference) {
-		return new TokenClassReference(address, reference);
+	public static TokenClassReference of(RadixAddress address, String symbol) {
+		return new TokenClassReference(address, symbol);
 	}
 
 	public String getSymbol() {
-		return this.getUnique();
+		return this.symbol;
 	}
 
-	public static EUID calcEUID(String isoCode) {
-		return RadixHash.of(isoCode.getBytes(CHARSET)).toEUID();
+	public RadixAddress getAddress() {
+		return address;
 	}
 
 	@Override
@@ -151,7 +147,7 @@ public final class TokenClassReference extends ParticleIndex {
 		}
 
 		TokenClassReference tokenClassReference = (TokenClassReference) o;
-		return this.getUnique().equals(tokenClassReference.getUnique()) && this.getAddress().equals(tokenClassReference.getAddress());
+		return this.getSymbol().equals(tokenClassReference.getSymbol()) && this.getAddress().equals(tokenClassReference.getAddress());
 	}
 
 	@Override
@@ -161,6 +157,6 @@ public final class TokenClassReference extends ParticleIndex {
 
 	@Override
 	public String toString() {
-		return String.format("%s/tokenclasses/@%s", this.getAddress().toString(), this.getUnique());
+		return String.format("%s/tokenclasses/@%s", this.getAddress().toString(), this.getSymbol());
 	}
 }

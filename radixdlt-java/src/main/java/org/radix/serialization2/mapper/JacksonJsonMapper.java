@@ -1,5 +1,6 @@
 package org.radix.serialization2.mapper;
 
+import com.radixdlt.client.core.atoms.particles.RadixResourceIdentifer;
 import java.io.IOException;
 
 import org.radix.common.ID.EUID;
@@ -72,6 +73,11 @@ public class JacksonJsonMapper extends ObjectMapper {
 			JacksonCodecConstants.U20_STR_VALUE,
 			UInt256::toString
 		));
+		jsonModule.addSerializer(RadixResourceIdentifer.class, new JacksonJsonObjectStringSerializer<>(
+			RadixResourceIdentifer.class,
+			JacksonCodecConstants.RRI_STR_VALUE,
+			RadixResourceIdentifer::toString
+		));
 
 		jsonModule.addDeserializer(EUID.class, new JacksonJsonEUIDDeserializer());
 		jsonModule.addDeserializer(Hash.class, new JacksonJsonHashDeserializer());
@@ -86,6 +92,11 @@ public class JacksonJsonMapper extends ObjectMapper {
 			UInt256.class,
 			JacksonCodecConstants.U20_STR_VALUE,
 			UInt256::from
+		));
+		jsonModule.addDeserializer(RadixResourceIdentifer.class, new JacksonJsonObjectStringDeserializer<>(
+			RadixResourceIdentifer.class,
+			JacksonCodecConstants.RRI_STR_VALUE,
+			RadixResourceIdentifer::fromString
 		));
 
 		// Special modifier for Enum values to remove :str: leadin from front

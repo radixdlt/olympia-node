@@ -56,7 +56,7 @@ import com.radixdlt.client.application.translate.unique.AlreadyUsedUniqueIdReaso
 import com.radixdlt.client.application.translate.unique.PutUniqueIdToParticlesMapper;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.atommodel.timestamp.TimestampParticle;
-import com.radixdlt.client.atommodel.tokens.TokenClassReference;
+import com.radixdlt.client.application.translate.tokens.TokenClassReference;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.RadixUniverse.Ledger;
 import com.radixdlt.client.core.atoms.Atom;

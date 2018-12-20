@@ -1,5 +1,6 @@
 package com.radixdlt.client.atommodel.tokens;
 
+import com.radixdlt.client.application.translate.tokens.TokenClassReference;
 import org.radix.common.ID.EUID;
 import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.SerializerId2;
