@@ -1,4 +1,4 @@
-package com.radix.acceptance.create_single_issuance_token_class;
+package com.radix.acceptance.mint_multi_issuance_tokens;
 
 import org.junit.runner.RunWith;
 
