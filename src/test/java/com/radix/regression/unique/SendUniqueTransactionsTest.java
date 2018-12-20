@@ -8,7 +8,7 @@ import com.radixdlt.client.application.translate.atomic.AtomicAction;
 import com.radixdlt.client.application.translate.data.SendMessageAction;
 import com.radixdlt.client.application.translate.unique.AlreadyUsedUniqueIdReason;
 import com.radixdlt.client.application.translate.unique.PutUniqueIdAction;
-import com.radixdlt.client.atommodel.unique.UniqueId;
+import com.radixdlt.client.application.translate.unique.UniqueId;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
 import io.reactivex.Completable;
@@ -34,7 +34,7 @@ public class SendUniqueTransactionsTest {
 
 		// Given account owner which has performed an action with a unique id
 		RadixApplicationAPI api = RadixApplicationAPI.create(RadixIdentities.createNew());
-		final String uniqueId = "this-is-a-unique-string";
+		final String uniqueId = "thisisauniquestring";
 		Completable initialUniqueStatus = api.execute(
 			new AtomicAction(
 				new SendMessageAction(new byte[] {0}, api.getMyAddress(), api.getMyAddress(), false),
@@ -66,7 +66,7 @@ public class SendUniqueTransactionsTest {
 
 		// Given account owner which has NOT performed an action with a unique id
 		RadixApplicationAPI api = RadixApplicationAPI.create(RadixIdentities.createNew());
-		final String uniqueId = "this-is-a-unique-string";
+		final String uniqueId = "thisisauniquestring";
 
 		// When client attempts to use id
 		TestObserver submissionObserver = TestObserver.create(Util.loggingObserver("Submission"));

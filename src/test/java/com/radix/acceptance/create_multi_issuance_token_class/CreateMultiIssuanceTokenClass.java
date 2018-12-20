@@ -1,5 +1,6 @@
 package com.radix.acceptance.create_multi_issuance_token_class;
 
+import com.radixdlt.client.application.translate.tokens.TokenClassReference;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
@@ -14,7 +15,6 @@ import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.tokenclasses.CreateTokenAction;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.atommodel.tokens.TokenClassReference;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate;
