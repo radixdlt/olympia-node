@@ -1,5 +1,6 @@
 package com.radix.acceptance.burn_multi_issuance_tokens;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
@@ -19,7 +20,6 @@ import com.radixdlt.client.application.translate.tokenclasses.CreateTokenAction.
 import com.radixdlt.client.application.translate.tokenclasses.TokenClassesState;
 import com.radixdlt.client.application.translate.tokens.InsufficientFundsException;
 import com.radixdlt.client.application.translate.tokens.TokenClassReference;
-import com.radixdlt.client.application.translate.tokens.UnknownTokenException;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
@@ -142,7 +142,8 @@ public class BurnMultiIssuanceTokens {
 	@Then("^the client should be notified that \"([^\"]*)\" token has a total supply of (\\d+)$")
 	public void theClientShouldBeNotifiedThatTokenHasATotalSupplyOf(String symbol, int supply) throws Throwable {
 		awaitAtomStatus(STORED);
-		TimeUnit.SECONDS.sleep(1);
+		// Must be a better way than this.
+		TimeUnit.SECONDS.sleep(2);
 		TokenClassReference tokenClass = TokenClassReference.of(api.getMyAddress(), symbol);
 		// Ensure balance is up-to-date.
 		BigDecimal tokenBalanceDecimal = api.getBalance(api.getMyAddress(), tokenClass)
@@ -155,7 +156,7 @@ public class BurnMultiIssuanceTokens {
 
 	@Then("^the client should be notified that the action failed because \"([^\"]*)\" does not exist$")
 	public void the_client_should_be_notified_that_the_action_failed_because_does_not_exist(String arg1) throws Throwable {
-		awaitAtomException(UnknownTokenException.class, "Unknown token");
+		awaitAtomException(IOException.class, "Unknown token");
 	}
 
 	@Then("^the client should be notified that a new action of 'BURN (\\d+) \"([^\"]*)\" tokens' has been executed$")

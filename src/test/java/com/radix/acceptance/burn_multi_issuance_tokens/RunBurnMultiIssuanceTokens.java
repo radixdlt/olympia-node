@@ -8,6 +8,6 @@ import cucumber.api.junit.Cucumber;
 
 @RunWith(Cucumber.class)
 @CucumberOptions(snippets = SnippetType.UNDERSCORE, strict = true, monochrome = true, plugin = { "pretty" })
-public class RunTests {
+public class RunBurnMultiIssuanceTokens {
 	// Stub for running cucumber tests
 }
