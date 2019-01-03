@@ -9,16 +9,20 @@ import java.util.Objects;
  * Current state in time of a {@link RadixNetwork}
  */
 public class RadixNetworkState {
-	private final Map<RadixPeer, RadixPeerState> peers;
+	private final Map<RadixPeer, RadixClientStatus> peers;
 
-	public RadixNetworkState(Map<RadixPeer, RadixPeerState> peers) {
+	public RadixNetworkState(Map<RadixPeer, RadixClientStatus> peers) {
 		Objects.requireNonNull(peers, "peers is required");
 
-		// use identity map as peer is not immutable, but we want the convenience of one state per peer instance
-		this.peers = Collections.unmodifiableMap(new IdentityHashMap<>(peers));
+		this.peers = Collections.unmodifiableMap(peers);
 	}
 
-	public Map<RadixPeer, RadixPeerState> getPeers() {
+	public Map<RadixPeer, RadixClientStatus> getPeers() {
 		return peers;
+	}
+
+	@Override
+	public String toString() {
+		return peers.toString();
 	}
 }

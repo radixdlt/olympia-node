@@ -30,15 +30,12 @@ public class RadixJsonRpcClientTest {
 
 	@Test
 	public void getSelfTestError() {
-		WebSocketClient wsClient = mock(WebSocketClient.class);
-		when(wsClient.status()).thenReturn(Observable.just(RadixClientStatus.OPEN));
+		PersistentChannel channel = mock(PersistentChannel.class);
 
-		ReplaySubject<String> messages = ReplaySubject.create();
-		when(wsClient.getMessages()).thenReturn(messages);
-		when(wsClient.connect()).thenReturn(Completable.complete());
-		when(wsClient.send(any())).thenReturn(false);
+		when(channel.getMessages()).thenReturn(Observable.never());
+		when(channel.sendMessage(any())).thenReturn(false);
 
-		RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(wsClient);
+		RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(channel);
 
 		TestObserver<NodeRunnerData> observer = new TestObserver<>();
 
@@ -50,12 +47,9 @@ public class RadixJsonRpcClientTest {
 
 	@Test
 	public void getSelfTest() {
-		WebSocketClient wsClient = mock(WebSocketClient.class);
-		when(wsClient.status()).thenReturn(Observable.just(RadixClientStatus.OPEN));
-
+		PersistentChannel channel = mock(PersistentChannel.class);
 		ReplaySubject<String> messages = ReplaySubject.create();
-		when(wsClient.getMessages()).thenReturn(messages);
-		when(wsClient.connect()).thenReturn(Completable.complete());
+		when(channel.getMessages()).thenReturn(messages);
 
 		JsonParser parser = new JsonParser();
 
@@ -78,8 +72,8 @@ public class RadixJsonRpcClientTest {
 
 			messages.onNext(GsonJson.getInstance().stringFromGson(response));
 			return true;
-		}).when(wsClient).send(any());
-		RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(wsClient);
+		}).when(channel).sendMessage(any());
+		RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(channel);
 
 		TestObserver<NodeRunnerData> observer = new TestObserver<>();
 
@@ -91,12 +85,10 @@ public class RadixJsonRpcClientTest {
 
 	@Test
 	public void getAtomDoesNotExistTest() {
-		WebSocketClient wsClient = mock(WebSocketClient.class);
-		when(wsClient.status()).thenReturn(Observable.just(RadixClientStatus.OPEN));
+		PersistentChannel channel = mock(PersistentChannel.class);
 
 		ReplaySubject<String> messages = ReplaySubject.create();
-		when(wsClient.getMessages()).thenReturn(messages);
-		when(wsClient.connect()).thenReturn(Completable.complete());
+		when(channel.getMessages()).thenReturn(messages);
 
 		JsonParser parser = new JsonParser();
 
@@ -113,8 +105,8 @@ public class RadixJsonRpcClientTest {
 
 			messages.onNext(GsonJson.getInstance().stringFromGson(response));
 			return true;
-		}).when(wsClient).send(any());
-		RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(wsClient);
+		}).when(channel).sendMessage(any());
+		RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(channel);
 
 		TestObserver<Atom> observer = new TestObserver<>();
 
@@ -127,12 +119,9 @@ public class RadixJsonRpcClientTest {
 
 	@Test
 	public void getAtomTest() {
-		WebSocketClient wsClient = mock(WebSocketClient.class);
-		when(wsClient.status()).thenReturn(Observable.just(RadixClientStatus.OPEN));
-
+		PersistentChannel channel = mock(PersistentChannel.class);
 		ReplaySubject<String> messages = ReplaySubject.create();
-		when(wsClient.getMessages()).thenReturn(messages);
-		when(wsClient.connect()).thenReturn(Completable.complete());
+		when(channel.getMessages()).thenReturn(messages);
 
 		JsonParser parser = new JsonParser();
 
@@ -152,8 +141,8 @@ public class RadixJsonRpcClientTest {
 
 			messages.onNext(GsonJson.getInstance().stringFromGson(response));
 			return true;
-		}).when(wsClient).send(any());
-		RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(wsClient);
+		}).when(channel).sendMessage(any());
+		RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(channel);
 
 		TestObserver<Atom> observer = new TestObserver<>();
 
@@ -166,12 +155,10 @@ public class RadixJsonRpcClientTest {
 
 	@Test
 	public void getAtomsTest() {
-		WebSocketClient wsClient = mock(WebSocketClient.class);
-		when(wsClient.status()).thenReturn(Observable.just(RadixClientStatus.OPEN));
+		PersistentChannel channel = mock(PersistentChannel.class);
 
 		ReplaySubject<String> messages = ReplaySubject.create();
-		when(wsClient.getMessages()).thenReturn(messages);
-		when(wsClient.connect()).thenReturn(Completable.complete());
+		when(channel.getMessages()).thenReturn(messages);
 
 		JsonParser parser = new JsonParser();
 
@@ -203,8 +190,8 @@ public class RadixJsonRpcClientTest {
 
 			messages.onNext(GsonJson.getInstance().stringFromGson(notification));
 			return true;
-		}).when(wsClient).send(any());
-		RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(wsClient);
+		}).when(channel).sendMessage(any());
+		RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(channel);
 
 		TestObserver<AtomObservation> observer = new TestObserver<>();
 
@@ -218,12 +205,10 @@ public class RadixJsonRpcClientTest {
 
 	@Test
 	public void getAtomsCancelTest() {
-		WebSocketClient wsClient = mock(WebSocketClient.class);
-		when(wsClient.status()).thenReturn(Observable.just(RadixClientStatus.OPEN));
+		PersistentChannel channel = mock(PersistentChannel.class);
 
 		ReplaySubject<String> messages = ReplaySubject.create();
-		when(wsClient.getMessages()).thenReturn(messages);
-		when(wsClient.connect()).thenReturn(Completable.complete());
+		when(channel.getMessages()).thenReturn(messages);
 
 		JsonParser parser = new JsonParser();
 
@@ -258,8 +243,8 @@ public class RadixJsonRpcClientTest {
 			}
 
 			return true;
-		}).when(wsClient).send(any());
-		RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(wsClient);
+		}).when(channel).sendMessage(any());
+		RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(channel);
 
 		TestObserver<AtomObservation> observer = new TestObserver<>();
 
@@ -276,12 +261,10 @@ public class RadixJsonRpcClientTest {
 
 	@Test
 	public void submitAtomTest() {
-		WebSocketClient wsClient = mock(WebSocketClient.class);
-		when(wsClient.status()).thenReturn(Observable.just(RadixClientStatus.OPEN));
+		PersistentChannel channel = mock(PersistentChannel.class);
 
 		ReplaySubject<String> messages = ReplaySubject.create();
-		when(wsClient.getMessages()).thenReturn(messages);
-		when(wsClient.connect()).thenReturn(Completable.complete());
+		when(channel.getMessages()).thenReturn(messages);
 
 		JsonParser parser = new JsonParser();
 
@@ -311,8 +294,8 @@ public class RadixJsonRpcClientTest {
 			}
 
 			return true;
-		}).when(wsClient).send(any());
-		RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(wsClient);
+		}).when(channel).sendMessage(any());
+		RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(channel);
 
 		TestObserver<AtomSubmissionUpdate> observer = new TestObserver<>();
 

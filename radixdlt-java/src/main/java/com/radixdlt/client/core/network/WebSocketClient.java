@@ -1,60 +1,108 @@
 package com.radixdlt.client.core.network;
 
-import io.reactivex.Completable;
 import io.reactivex.Observable;
-import io.reactivex.exceptions.Exceptions;
+import io.reactivex.Single;
 import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.PublishSubject;
-import java.io.IOException;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
+import java.util.function.Function;
 import okhttp3.Response;
 import okhttp3.WebSocket;
 import okhttp3.WebSocketListener;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-public class WebSocketClient {
-	private static final Logger LOGGER = LoggerFactory.getLogger(WebSocketClient.class);
-
+public class WebSocketClient implements PersistentChannel {
+	private final Object lock = new Object();
+	private final BehaviorSubject<RadixClientStatus> state = BehaviorSubject.createDefault(RadixClientStatus.DISCONNECTED);
+	private final Function<WebSocketListener, WebSocket> websocketFactory;
+	private final PublishSubject<String> messages = PublishSubject.create();
 	private WebSocket webSocket;
 
-	private final BehaviorSubject<RadixClientStatus> status = BehaviorSubject.createDefault(RadixClientStatus.CLOSED);
-	private final Request endpoint;
-	private final Supplier<OkHttpClient> okHttpClient;
-
-	private PublishSubject<String> messages = PublishSubject.create();
-
-	public WebSocketClient(Supplier<OkHttpClient> okHttpClient, Request endpoint) {
-		this.okHttpClient = okHttpClient;
-		this.endpoint = endpoint;
-
-		this.status
-			.filter(status -> status.equals(RadixClientStatus.FAILURE))
+	public WebSocketClient(Function<WebSocketListener, WebSocket> websocketFactory) {
+		this.websocketFactory = websocketFactory;
+		this.state
+			.filter(state -> state.equals(RadixClientStatus.FAILED))
 			.debounce(1, TimeUnit.MINUTES)
 			.subscribe(i -> {
-				this.messages = PublishSubject.create();
-				this.status.onNext(RadixClientStatus.CLOSED);
+				synchronized (lock) {
+					if (this.state.getValue().equals(RadixClientStatus.FAILED)) {
+						this.state.onNext(RadixClientStatus.DISCONNECTED);
+					}
+				}
 			});
+	}
+
+	private WebSocket connectWebSocket() {
+		synchronized (lock) {
+			return this.websocketFactory.apply(new WebSocketListener() {
+				@Override
+				public void onOpen(WebSocket webSocket, Response response) {
+					synchronized (lock) {
+						WebSocketClient.this.state.onNext(RadixClientStatus.CONNECTED);
+					}
+				}
+
+				@Override
+				public void onMessage(WebSocket webSocket, String message) {
+					synchronized (lock) {
+						messages.onNext(message);
+					}
+				}
+
+				@Override
+				public void onClosing(WebSocket webSocket, int code, String reason) {
+					webSocket.close(1000, null);
+				}
+
+				@Override
+				public void onClosed(WebSocket webSocket, int code, String reason) {
+					synchronized (lock) {
+						WebSocketClient.this.state.onNext(RadixClientStatus.DISCONNECTED);
+						WebSocketClient.this.webSocket = null;
+					}
+				}
+
+				@Override
+				public void onFailure(WebSocket websocket, Throwable t, Response response) {
+					synchronized (lock) {
+						if (state.getValue().equals(RadixClientStatus.CLOSING)) {
+							WebSocketClient.this.state.onNext(RadixClientStatus.DISCONNECTED);
+							WebSocketClient.this.webSocket = null;
+							return;
+						}
+
+						WebSocketClient.this.state.onNext(RadixClientStatus.FAILED);
+						WebSocketClient.this.webSocket = null;
+					}
+				}
+			});
+		}
+	}
+
+	/**
+	 * Attempts to connect to this Radix node if not already connected
+	 */
+	public void connect() {
+		synchronized (lock) {
+			switch (state.getValue()) {
+				case DISCONNECTED:
+				case FAILED:
+					WebSocketClient.this.state.onNext(RadixClientStatus.CONNECTING);
+					this.webSocket = this.connectWebSocket();
+					return;
+				case CONNECTING:
+				case CONNECTED:
+				case CLOSING:
+					return;
+			}
+		}
 	}
 
 	public Observable<String> getMessages() {
 		return messages;
 	}
 
-	public Request getEndpoint() {
-		return endpoint;
-	}
-
-	protected Observable<RadixClientStatus> status() {
-		return this.status;
-	}
-
-	protected Optional<RadixClientStatus> getStatus() {
-		return Optional.ofNullable(this.status.getValue());
+	public Observable<RadixClientStatus> getState() {
+		return this.state;
 	}
 
 	public boolean close() {
@@ -63,84 +111,22 @@ public class WebSocketClient {
 		}
 
 		if (this.webSocket != null) {
-			this.status.onNext(RadixClientStatus.CLOSING);
-			this.webSocket.cancel();
+			synchronized (lock) {
+				this.state.onNext(RadixClientStatus.CLOSING);
+				this.webSocket.cancel();
+			}
 		}
 
 		return true;
 	}
 
-	private void tryConnect() {
-		// TODO: Race condition here but not fatal, fix later on
-		if (this.status.getValue() == RadixClientStatus.CONNECTING) {
-			return;
+	public boolean sendMessage(String message) {
+		synchronized (lock) {
+			if (!this.state.getValue().equals(RadixClientStatus.CONNECTED)) {
+				return false;
+			}
+
+			return this.webSocket.send(message);
 		}
-
-		this.status.onNext(RadixClientStatus.CONNECTING);
-
-		// HACKISH: fix
-		this.webSocket = this.okHttpClient.get().newWebSocket(endpoint, new WebSocketListener() {
-			@Override
-			public void onOpen(WebSocket webSocket, Response response) {
-				WebSocketClient.this.status.onNext(RadixClientStatus.OPEN);
-			}
-
-			@Override
-			public void onMessage(WebSocket webSocket, String message) {
-				messages.onNext(message);
-			}
-
-			@Override
-			public void onClosing(WebSocket webSocket, int code, String reason) {
-				webSocket.close(1000, null);
-			}
-
-			@Override
-			public void onClosed(WebSocket webSocket, int code, String reason) {
-				WebSocketClient.this.status.onNext(RadixClientStatus.CLOSED);
-			}
-
-			@Override
-			public void onFailure(WebSocket websocket, Throwable t, Response response) {
-				if (status.getValue().equals(RadixClientStatus.CLOSING)) {
-					WebSocketClient.this.status.onNext(RadixClientStatus.CLOSED);
-					return;
-				}
-
-				LOGGER.error(t.toString());
-				WebSocketClient.this.status.onNext(RadixClientStatus.FAILURE);
-
-				WebSocketClient.this.messages.onError(new WebSocketException("Connection Failure."));
-			}
-		});
-	}
-
-	/**
-	 * Attempts to connect to this Radix node on subscribe if not already connected
-	 *
-	 * @return completable which signifies when connection has been made
-	 */
-	public Completable connect() {
-		return this.status()
-			.doOnNext(status -> {
-				// TODO: cancel tryConnect on dispose
-				if (status.equals(RadixClientStatus.CLOSED)) {
-					this.tryConnect();
-				} else if (status.equals(RadixClientStatus.FAILURE)) {
-					throw Exceptions.propagate(new IOException(this.endpoint + ": connection failure"));
-				}
-			})
-			.filter(status -> status.equals(RadixClientStatus.OPEN))
-			.firstOrError()
-			.ignoreElement();
-	}
-
-	public boolean send(String message) {
-		return this.webSocket.send(message);
-	}
-
-	@Override
-	public String toString() {
-		return endpoint.toString();
 	}
 }

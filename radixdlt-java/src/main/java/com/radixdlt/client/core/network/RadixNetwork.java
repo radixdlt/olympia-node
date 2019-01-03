@@ -1,7 +1,12 @@
 package com.radixdlt.client.core.network;
 
+import com.jakewharton.rx.ReplayingShare;
 import io.reactivex.Observable;
 import io.reactivex.observables.ConnectableObservable;
+import io.reactivex.subjects.ReplaySubject;
+import java.sql.Time;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import org.radix.common.tuples.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,50 +16,50 @@ import java.util.LinkedHashMap;
 import java.util.Objects;
 
 /**
- * A Radix Network manages connections to Node Runners for a given Universe.
+ * RadixNetwork manages the state of peers and connections.
  */
 public final class RadixNetwork {
 	private static final Logger LOGGER = LoggerFactory.getLogger(RadixNetwork.class);
 
+	private final Object lock = new Object();
+
 	/**
 	 * Cached observable for keeping track of Radix Peers
 	 */
-	private final Observable<RadixPeer> peers;
+	private final ReplaySubject<RadixPeer> peers;
 
 	/**
 	 * Hot observable which updates subscribers of new connection events
 	 */
-	private final ConnectableObservable<RadixPeerState> statusUpdates;
+	private final ConnectableObservable<Pair<RadixPeer, RadixClientStatus>> statusUpdates;
 	private final Observable<RadixNetworkState> networkState;
 
-	public RadixNetwork(PeerDiscovery peerDiscovery) {
-		Objects.requireNonNull(peerDiscovery);
+	private final ConcurrentHashMap<RadixPeer, WebSocketClient> websockets = new ConcurrentHashMap<>();
 
-		this.peers = peerDiscovery.findPeers()
-				.retryWhen(new IncreasingRetryTimer(WebSocketException.class))
-				.doOnNext(peer -> LOGGER.debug(String.format("Added to peer list: %s", peer.getLocation())))
-				.replay()
-				.autoConnect(2);
+	public RadixNetwork() {
+		this.peers = ReplaySubject.create();
 
-		// this will only give status updates when all data is available for RadixPeerState, see RadixPeer.status
 		this.statusUpdates = this.peers
-				.flatMap(RadixPeer::status)
-				.publish();
+			.flatMap(peer -> websockets.get(peer).getState().map(state -> new Pair<>(peer, state)))
+			.publish();
 		this.statusUpdates.connect();
 
-		this.networkState = this.peers.flatMap(peer -> peer.status()
-				.doOnNext(status -> LOGGER.debug(String.format("Peer status changed: %s", status)))
-				.map(status -> new Pair<>(peer, status)))
-				.scan(new RadixNetworkState(Collections.emptyMap()), (previousState, update) -> {
-					LinkedHashMap<RadixPeer, RadixPeerState> currentPeers = new LinkedHashMap<>(previousState.getPeers());
-					currentPeers.put(update.getFirst(), update.getSecond());
-
-					return new RadixNetworkState(currentPeers);
-				})
-				.cache();
+		this.networkState = this.peers
+			.flatMap(peer -> websockets.get(peer).getState().map(state -> new Pair<>(peer, state)))
+			.doOnNext(status -> LOGGER.debug(String.format("Peer status changed: %s", status)))
+			.scan(new RadixNetworkState(Collections.emptyMap()), (previousState, update) -> {
+				LinkedHashMap<RadixPeer, RadixClientStatus> currentPeers = new LinkedHashMap<>(previousState.getPeers());
+				currentPeers.put(update.getFirst(), update.getSecond());
+				return new RadixNetworkState(currentPeers);
+			})
+			.compose(ReplayingShare.instance());
 	}
 
-	public Observable<RadixPeerState> connectAndGetStatusUpdates() {
+	public WebSocketClient getWsChannel(RadixPeer peer) {
+		return websockets.get(peer);
+	}
+
+	public Observable<Pair<RadixPeer, RadixClientStatus>> connectAndGetStatusUpdates() {
 		this.peers.subscribe();
 		return this.getStatusUpdates();
 	}
@@ -64,7 +69,7 @@ public final class RadixNetwork {
 	 *
 	 * @return a hot Observable of status of peers
 	 */
-	public Observable<RadixPeerState> getStatusUpdates() {
+	public Observable<Pair<RadixPeer, RadixClientStatus>> getStatusUpdates() {
 		return this.statusUpdates;
 	}
 
@@ -75,6 +80,21 @@ public final class RadixNetwork {
 	 */
 	public Observable<RadixNetworkState> getNetworkState() {
 		return this.networkState;
+	}
+
+	public void connect(RadixPeer peer) {
+		websockets.get(peer).connect();
+	}
+
+	public void addPeer(RadixPeer peer) {
+		synchronized (lock) {
+			websockets.computeIfAbsent(
+				peer,
+				p -> new WebSocketClient(listener -> HttpClients.getSslAllTrustingClient().newWebSocket(p.getLocation(), listener))
+			);
+			peers.onNext(peer);
+			LOGGER.debug(String.format("Added to peer list: %s", peer.getLocation()));
+		}
 	}
 
 	/**

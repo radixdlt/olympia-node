@@ -1,30 +1,27 @@
 package com.radixdlt.client.core.network;
 
-import io.reactivex.Observable;
 import io.reactivex.Single;
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.Request;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 
-public class PeersFromNodeFinder implements PeerDiscovery {
+public class NodeFinder {
 	private final String nodeFinderUrl;
 	private final int port;
 
-	public PeersFromNodeFinder(String url, int port) {
+	public NodeFinder(String url, int port) {
 		this.nodeFinderUrl = url;
 		this.port = port;
 	}
 
-	public Observable<RadixPeer> findPeers() {
-		Request request = new Request.Builder()
-			.url(this.nodeFinderUrl)
-			.build();
-
+	public Single<RadixPeer> getSeed() {
 		return Single.<String>create(emitter -> {
+				Request request = new Request.Builder()
+					.url(this.nodeFinderUrl)
+					.build();
 				Call call = HttpClients.getSslAllTrustingClient().newCall(request);
 				emitter.setCancellable(call::cancel);
 				call.enqueue(new Callback() {
@@ -50,9 +47,6 @@ public class PeersFromNodeFinder implements PeerDiscovery {
 					}
 				});
 			})
-			.map(peerUrl -> new PeersFromSeed(new RadixPeer(peerUrl, true, port)))
-			.flatMapObservable(PeersFromSeed::findPeers)
-			.timeout(3, TimeUnit.SECONDS)
-			.retryWhen(new IncreasingRetryTimer(WebSocketException.class));
+			.map(peerUrl -> new RadixPeer(peerUrl, true, port));
 	}
 }
