@@ -1,6 +1,5 @@
 package com.radix.acceptance.mint_multi_issuance_tokens;
 
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
@@ -18,6 +17,7 @@ import com.radixdlt.client.application.translate.tokenclasses.CreateTokenAction.
 import com.radixdlt.client.application.translate.tokenclasses.MintTokensAction;
 import com.radixdlt.client.application.translate.tokenclasses.TokenClassesState;
 import com.radixdlt.client.application.translate.tokens.TokenClassReference;
+import com.radixdlt.client.application.translate.tokens.UnknownTokenException;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
@@ -232,7 +232,7 @@ public class MintMultiIssuanceTokens {
 
 	@Then("^the client should be notified that the action failed because \"([^\"]*)\" does not exist$")
 	public void the_client_should_be_notified_that_the_action_failed_because_does_not_exist(String arg1) throws Throwable {
-		awaitAtomException(IOException.class, "Unknown token");
+		awaitAtomException(UnknownTokenException.class, "Unknown token");
 	}
 
 	@Then("^the client should be notified that the action failed because the client does not have permission to mint those tokens$")
