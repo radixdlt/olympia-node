@@ -314,20 +314,19 @@ public class RadixJsonRpcClient {
 						LOGGER.warn(jsonAtom.toString());
 					}
 
-					AtomSubmissionUpdate update = AtomSubmissionUpdate.create(atom, state, data);
-					update.putMetaData("jsonRpcParams", params);
-					return update;
+					return AtomSubmissionUpdate.create(atom, state, data);
 				}).takeUntil(AtomSubmissionUpdate::isComplete).subscribe(emitter::onNext, emitter::onError, emitter::onComplete);
 
 			this.jsonRpcCall("Universe.submitAtomAndSubscribe", params)
-				.doOnSubscribe(d -> emitter.onNext(AtomSubmissionUpdate.create(atom, AtomSubmissionState.SUBMITTING))).subscribe(resp -> {
-				if (!resp.isSuccess()) {
-					messageListenerDisposable.dispose();
-					emitter.onNext(AtomSubmissionUpdate.create(atom, AtomSubmissionState.FAILED));
-				} else {
-					emitter.onNext(AtomSubmissionUpdate.create(atom, AtomSubmissionState.SUBMITTED));
-				}
-			}, emitter::onError);
+				.doOnSubscribe(d -> emitter.onNext(AtomSubmissionUpdate.create(atom, AtomSubmissionState.SUBMITTING)))
+				.subscribe(resp -> {
+					if (!resp.isSuccess()) {
+						messageListenerDisposable.dispose();
+						emitter.onNext(AtomSubmissionUpdate.create(atom, AtomSubmissionState.FAILED));
+					} else {
+						emitter.onNext(AtomSubmissionUpdate.create(atom, AtomSubmissionState.SUBMITTED));
+					}
+				}, emitter::onError);
 		});
 	}
 }

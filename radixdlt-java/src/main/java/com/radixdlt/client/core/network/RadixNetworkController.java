@@ -7,13 +7,19 @@ import com.radixdlt.client.core.atoms.AtomObservation;
 import com.radixdlt.client.core.atoms.AtomValidationException;
 import com.radixdlt.client.core.ledger.AtomSubmitter;
 import com.radixdlt.client.core.ledger.RadixAtomValidator;
+import com.radixdlt.client.core.ledger.selector.RadixPeerSelector;
+import com.radixdlt.client.core.ledger.selector.RandomSelector;
 import io.reactivex.Observable;
+import io.reactivex.Single;
 import io.reactivex.observables.ConnectableObservable;
+import io.reactivex.subjects.PublishSubject;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -26,12 +32,14 @@ public class RadixNetworkController implements AtomSubmitter {
 	public static class RadixNetworkControllerBuilder {
 		private RadixNetwork network;
 		private RadixUniverseConfig config;
-		private Observable<RadixPeer> seeds;
+		private Observable<RadixPeer> seeds = Observable.empty();
+		private RadixPeerSelector selector = new RandomSelector();
 
 		public RadixNetworkControllerBuilder() {
 		}
 
 		public RadixNetworkControllerBuilder seeds(Observable<RadixPeer> seeds) {
+			Objects.requireNonNull(seeds);
 			this.seeds = seeds;
 			return this;
 		}
@@ -46,34 +54,54 @@ public class RadixNetworkController implements AtomSubmitter {
 			return this;
 		}
 
+		public RadixNetworkControllerBuilder selector(RadixPeerSelector selector) {
+			Objects.requireNonNull(selector);
+			this.selector = selector;
+			return this;
+		}
+
+
 		public RadixNetworkController build() {
 			Objects.requireNonNull(network);
-			Objects.requireNonNull(seeds);
 
-			final RadixClientSupplier clientSupplier = config == null
-				? new RadixClientSupplier(network)
-				: new RadixClientSupplier(network, config);
-
-			return new RadixNetworkController(clientSupplier, network, seeds);
+			return new RadixNetworkController(selector, network, seeds);
 		}
 	}
 
-	private final RadixClientSupplier clientSupplier;
+	/**
+	 * The selector to use to decide between a list of viable peers
+	 */
+	private final RadixPeerSelector selector;
 	private final RadixNetwork network;
 	private final Observable<RadixPeer> seeds;
+	private final Observable<RadixNetworkState> networkState;
 
-	private RadixNetworkController(RadixClientSupplier clientSupplier, RadixNetwork network, Observable<RadixPeer> seeds) {
-		this.clientSupplier = clientSupplier;
+	private final PublishSubject<NodeAtomSubmission> nodeAtomSubmissions = PublishSubject.create();
+	private final ConnectableObservable<AtomSubmissionUpdate> submissionUpdates;
+
+	private RadixNetworkController(RadixPeerSelector selector, RadixNetwork network, Observable<RadixPeer> seeds) {
+		this.selector = selector;
 		this.network = network;
 		this.seeds = seeds;
 
-		// TODO: move this to more appropriate place
-		seeds.subscribe(network::addPeer);
+		this.networkState = this.network.getNetworkState().replay(1).autoConnect(3);
 
-		// TODO: Cleanup discovery
-		network.getNetworkState().debounce(1, TimeUnit.SECONDS).subscribe(this::discover);
+		this.networkState.debounce(1, TimeUnit.SECONDS).subscribe(this::discover);
+		this.networkState.map(RadixNetworkState::getPeers)
+			.takeUntil(i -> !i.isEmpty())
+			.flatMap(i -> seeds)
+			.subscribe(seed -> {
+				LOGGER.info("Adding seed: " + seed);
+				network.addPeer(seed);
+			});
+
+
+		submissionUpdates = this.nodeAtomSubmitter(nodeAtomSubmissions, this.networkState).publish();
+
+		submissionUpdates.connect();
 	}
 
+	// TODO: Cleanup discovery
 	private void discover(RadixNetworkState state) {
 		final Map<RadixClientStatus,List<RadixPeer>> statusMap = Arrays.stream(RadixClientStatus.values())
 			.collect(Collectors.toMap(
@@ -92,9 +120,109 @@ public class RadixNetworkController implements AtomSubmitter {
 		}
 	}
 
-
 	public RadixNetwork getNetwork() {
 		return network;
+	}
+
+	private static List<RadixPeer> getConnectedNodes(RadixNetworkState state) {
+		return state.getPeers().entrySet().stream()
+			.filter(entry -> entry.getValue().equals(RadixClientStatus.CONNECTED))
+			.map(Map.Entry::getKey)
+			.collect(Collectors.toList());
+	}
+
+	private void findConnection(RadixNetworkState state) {
+		final Map<RadixClientStatus,List<RadixPeer>> statusMap = Arrays.stream(RadixClientStatus.values())
+			.collect(Collectors.toMap(
+				Function.identity(),
+				s -> state.getPeers().entrySet().stream().filter(e -> e.getValue().equals(s)).map(Entry::getKey).collect(Collectors.toList())
+			));
+
+		final long activeNodeCount =
+			statusMap.get(RadixClientStatus.CONNECTED).size()
+			+ statusMap.get(RadixClientStatus.CONNECTING).size();
+
+		if (activeNodeCount < 1) {
+			LOGGER.info(String.format("Requesting more node connections, want %d but have %d active nodes", 1, activeNodeCount));
+
+			List<RadixPeer> disconnectedPeers = statusMap.get(RadixClientStatus.DISCONNECTED);
+			if (disconnectedPeers.isEmpty()) {
+				LOGGER.info("Could not connect to new peer, don't have any.");
+			} else {
+				network.connect(disconnectedPeers.get(0));
+			}
+		}
+	}
+
+	private static class NodeAtomSubmission {
+		private final RadixPeer node;
+		private final Atom atom;
+
+		public NodeAtomSubmission(RadixPeer node, Atom atom) {
+			this.node = node;
+			this.atom = atom;
+		}
+	}
+
+	private Single<NodeAtomSubmission> nextNodeAtomSubmission(Atom atom, Observable<RadixNetworkState> networkState) {
+		Observable<RadixNetworkState> syncNetState = networkState
+			.replay(1)
+			.autoConnect(2);
+
+		Observable<List<RadixPeer>> connectedNodes = syncNetState
+			.map(RadixNetworkController::getConnectedNodes)
+			.replay(1)
+			.autoConnect(2);
+
+		// Try and connect if there are no nodes
+		syncNetState.zipWith(connectedNodes.takeWhile(List::isEmpty), (s, n) -> s)
+			.subscribe(this::findConnection);
+
+		Single<RadixPeer> selectedNode = connectedNodes
+			.filter(viablePeerList -> !viablePeerList.isEmpty())
+			.firstOrError()
+			.map(selector::apply);
+
+		return selectedNode.map(n -> new NodeAtomSubmission(n, atom));
+	}
+
+	private Observable<AtomSubmissionUpdate> nodeAtomSubmitter(Observable<NodeAtomSubmission> nodeAtomSubmission, Observable<RadixNetworkState> networkState) {
+		return nodeAtomSubmission
+			.flatMapSingle(submission -> {
+				network.connect(submission.node);
+				return networkState.filter(s -> s.getPeers().get(submission.node).equals(RadixClientStatus.CONNECTED)).firstOrError().map(s -> submission);
+			})
+			.flatMap(submission -> {
+				WebSocketClient ws = network.getWsChannel(submission.node);
+				return new RadixJsonRpcClient(ws).submitAtom(submission.atom)
+					.doOnError(Throwable::printStackTrace)
+					.retryWhen(new IncreasingRetryTimer(WebSocketException.class))
+					// TODO: Better way of cleanup?
+					.doFinally(() -> Observable.timer(2, TimeUnit.SECONDS).subscribe(i -> ws.close()));
+			});
+	}
+
+	// TODO: add sharding check
+	private Single<RadixPeer> connectToNode(Set<Long> shard, Observable<RadixNetworkState> networkState) {
+		Observable<RadixNetworkState> syncNetState = networkState
+			.replay(1)
+			.autoConnect(2);
+
+		Observable<List<RadixPeer>> connectedNodes = syncNetState
+			.map(RadixNetworkController::getConnectedNodes)
+			.publish()
+			.autoConnect(2);
+
+		// Try and connect if there are no nodes
+		syncNetState.zipWith(connectedNodes.takeWhile(List::isEmpty), (s, n) -> s)
+			.subscribe(this::findConnection);
+
+		Single<RadixPeer> selectedNode = connectedNodes
+			.filter(viablePeerList -> !viablePeerList.isEmpty())
+			.firstOrError()
+			.map(selector::apply);
+
+		return selectedNode;
 	}
 
 	/**
@@ -107,18 +235,14 @@ public class RadixNetworkController implements AtomSubmitter {
 	 */
 	@Override
 	public Observable<AtomSubmissionUpdate> submitAtom(Atom atom) {
-		Observable<AtomSubmissionUpdate> status = clientSupplier.getRadixClient(atom.getRequiredFirstShard())
-			.map(network::getWsChannel)
-			.flatMapObservable(c ->
-				new RadixJsonRpcClient(c).submitAtom(atom)
-					.doOnError(Throwable::printStackTrace)
-					.retryWhen(new IncreasingRetryTimer(WebSocketException.class))
-					// TODO: Better way of cleanup?
-					.doFinally(() -> Observable.timer(2, TimeUnit.SECONDS).subscribe(i -> c.close()))
-			);
-
+		Observable<AtomSubmissionUpdate> status = submissionUpdates
+			.filter(u -> u.getAtom().equals(atom))
+			.takeUntil(AtomSubmissionUpdate::isComplete);
 		ConnectableObservable<AtomSubmissionUpdate> replay = status.replay();
 		replay.connect();
+
+		Single<NodeAtomSubmission> nodeAtomSubmission = this.nextNodeAtomSubmission(atom, this.networkState);
+		nodeAtomSubmission.toObservable().subscribe(nodeAtomSubmissions::onNext);
 
 		return replay;
 	}
@@ -126,30 +250,27 @@ public class RadixNetworkController implements AtomSubmitter {
 	public Observable<AtomObservation> fetchAtoms(RadixAddress address) {
 		final AtomQuery atomQuery = new AtomQuery(address);
 
-		return clientSupplier.getRadixClient(address.getUID().getShard())
-			.map(network::getWsChannel)
-			.flatMapObservable(c ->
-				new RadixJsonRpcClient(c).getAtoms(atomQuery)
-					.doOnError(throwable -> LOGGER.warn("Error on getAllAtoms: {}", address))
-					.retryWhen(new IncreasingRetryTimer(WebSocketException.class))
-					.filter(atomObservation -> {
-						if (atomObservation.isStore()) {
-							LOGGER.info("Received atom " + atomObservation.getAtom().getHid());
-							try {
-								RadixAtomValidator.getInstance().validate(atomObservation.getAtom());
-								return true;
-							} catch (AtomValidationException e) {
-								// TODO: Stop stream and mark client as untrustable
-								LOGGER.error(e.toString());
-								return false;
-							}
-						} else {
+		return this.connectToNode(Collections.singleton(address.getUID().getShard()), this.networkState)
+			.flatMapObservable(c -> {
+				WebSocketClient ws = network.getWsChannel(c);
+				return new RadixJsonRpcClient(ws).getAtoms(atomQuery).doOnError(throwable -> LOGGER.warn("Error on getAllAtoms: {}", address))
+					.retryWhen(new IncreasingRetryTimer(WebSocketException.class)).filter(atomObservation -> {
+					if (atomObservation.isStore()) {
+						LOGGER.info("Received atom " + atomObservation.getAtom().getHid());
+						try {
+							RadixAtomValidator.getInstance().validate(atomObservation.getAtom());
 							return true;
+						} catch (AtomValidationException e) {
+							// TODO: Stop stream and mark client as untrustable
+							LOGGER.error(e.toString());
+							return false;
 						}
-					})
-					.doOnSubscribe(atoms -> LOGGER.info("Atom Query Subscribe: address({})", address))
+					} else {
+						return true;
+					}
+				}).doOnSubscribe(atoms -> LOGGER.info("Atom Query Subscribe: address({})", address))
 					// TODO: Better way of cleanup?
-					.doFinally(() -> Observable.timer(2, TimeUnit.SECONDS).subscribe(i -> c.close()))
-			);
+				.doFinally(() -> Observable.timer(2, TimeUnit.SECONDS).subscribe(i -> ws.close()));
+			});
 	}
 }

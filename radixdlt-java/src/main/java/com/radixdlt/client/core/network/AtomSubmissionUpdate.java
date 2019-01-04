@@ -13,6 +13,7 @@ import com.radixdlt.client.core.atoms.Atom;
 
 public class AtomSubmissionUpdate {
 	public enum AtomSubmissionState {
+		SEARCHING_FOR_NODE(false),
 		SUBMITTING(false),
 		SUBMITTED(false),
 		FAILED(true),
@@ -37,7 +38,6 @@ public class AtomSubmissionUpdate {
 	private final AtomSubmissionState state;
 	private final JsonElement data;
 	private final Atom atom;
-	private final Map<String, Object> metaData = new HashMap<>();
 	private final long timestamp;
 
 	private AtomSubmissionUpdate(Atom atom, AtomSubmissionState state, JsonElement data) {
@@ -65,19 +65,6 @@ public class AtomSubmissionUpdate {
 
 	public long getTimestamp() {
 		return timestamp;
-	}
-
-	public AtomSubmissionUpdate putMetaData(String key, Object value) {
-		metaData.put(key, value);
-		return this;
-	}
-
-	public Object getMetaData(String key) {
-		return metaData.get(key);
-	}
-
-	public Map<String, Object> getMetaData() {
-		return Collections.unmodifiableMap(metaData);
 	}
 
 	public static AtomSubmissionUpdate create(Atom atom, AtomSubmissionState code) {

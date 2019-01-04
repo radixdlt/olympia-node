@@ -1,7 +1,6 @@
 package com.radixdlt.client.core.network;
 
 import io.reactivex.Observable;
-import io.reactivex.Single;
 import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.PublishSubject;
 import java.util.concurrent.TimeUnit;
@@ -9,8 +8,11 @@ import java.util.function.Function;
 import okhttp3.Response;
 import okhttp3.WebSocket;
 import okhttp3.WebSocketListener;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class WebSocketClient implements PersistentChannel {
+	private static final Logger LOGGER = LoggerFactory.getLogger(WebSocketClient.class);
 	private final Object lock = new Object();
 	private final BehaviorSubject<RadixClientStatus> state = BehaviorSubject.createDefault(RadixClientStatus.DISCONNECTED);
 	private final Function<WebSocketListener, WebSocket> websocketFactory;
@@ -110,8 +112,8 @@ public class WebSocketClient implements PersistentChannel {
 			return false;
 		}
 
-		if (this.webSocket != null) {
-			synchronized (lock) {
+		synchronized (lock) {
+			if (this.webSocket != null) {
 				this.state.onNext(RadixClientStatus.CLOSING);
 				this.webSocket.cancel();
 			}
@@ -123,6 +125,7 @@ public class WebSocketClient implements PersistentChannel {
 	public boolean sendMessage(String message) {
 		synchronized (lock) {
 			if (!this.state.getValue().equals(RadixClientStatus.CONNECTED)) {
+				LOGGER.error("Most likely a programming bug. Should not end here.");
 				return false;
 			}
 
