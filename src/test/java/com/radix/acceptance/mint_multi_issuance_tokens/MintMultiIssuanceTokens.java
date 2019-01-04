@@ -2,12 +2,14 @@ package com.radix.acceptance.mint_multi_issuance_tokens;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 
 import org.radix.utils.UInt256;
 
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.gson.JsonObject;
 import com.radix.acceptance.SpecificProperties;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
@@ -30,8 +32,8 @@ import static com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissi
 import static com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState.VALIDATION_ERROR;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
-import cucumber.api.PendingException;
 import cucumber.api.java.After;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
@@ -73,7 +75,7 @@ public class MintMultiIssuanceTokens {
 		NEW_SUPPLY,		scaledToUnscaled(1000000000).toString(),
 		GRANULARITY,	"1"
 	);
-	private final List<TestObserver<Object>> observers = Lists.newArrayList();
+	private final List<TestObserver<AtomSubmissionUpdate>> observers = Lists.newArrayList();
 	private final List<Disposable> disposables = Lists.newArrayList();
 
 	@After
@@ -93,45 +95,6 @@ public class MintMultiIssuanceTokens {
 		createToken(TokenSupplyType.MUTABLE);
 		awaitAtomStatus(STORED);
 		// Listening on state automatic for library
-	}
-
-	@Given("^a library client who owns an account and created token \"([^\"]*)\" with (\\d+) initial supply and is listening to the token class actions of this token$")
-	public void a_library_client_who_owns_an_account_and_created_token_with_initial_supply_and_is_listening_to_the_token_class_actions_of_this_token(
-			String symbol, int initialSupply) throws Throwable {
-		setupApi();
-
-		this.properties.put(SYMBOL, symbol);
-		this.properties.put(INITIAL_SUPPLY, scaledToUnscaled(initialSupply).toString());
-		createToken(TokenSupplyType.MUTABLE);
-		awaitAtomStatus(STORED);
-
-	    // FIXME Write code here that turns the phrase above into concrete actions
-		// The "listening to the token class actions" part is missing
-	    throw new PendingException();
-	}
-
-	@Given("^a library client and a token \"([^\"]*)\" which has (\\d+) total supply from three 'MINT (\\d+)' actions$")
-	public void aLibraryClientAndATokenWhichHasTotalSupplyFromThreeMINTActions(String symbol, int totalSupply, int perMint)
-			throws Throwable {
-		assertEquals(totalSupply, 3 * perMint); // Required from wording
-
-		setupApi();
-		this.properties.put(SYMBOL, symbol);
-		this.properties.put(INITIAL_SUPPLY, "0");
-		createToken(CreateTokenAction.TokenSupplyType.MUTABLE);
-		awaitAtomStatus(STORED);
-		for (int i = 0; i < 3; ++i) {
-			mintTokens(scaledToUnscaled(perMint), symbol, RadixAddress.from(this.properties.get(ADDRESS)));
-			awaitAtomStatus(STORED);
-		}
-		TokenClassReference tokenClass = TokenClassReference.of(api.getMyAddress(), symbol);
-		// Ensure balance is up-to-date.
-		BigDecimal tokenBalanceDecimal = api.getBalance(api.getMyAddress(), tokenClass)
-			.firstOrError()
-			.blockingGet();
-		UInt256 tokenBalance = TokenClassReference.unitsToSubunits(tokenBalanceDecimal);
-		UInt256 requiredBalance = TokenClassReference.unitsToSubunits(totalSupply);
-		assertEquals(requiredBalance, tokenBalance);
 	}
 
 	@Given("^a library client who owns an account and created a token with (\\d+) initial subunit supply$")
@@ -178,12 +141,6 @@ public class MintMultiIssuanceTokens {
 		mintTokens(scaledToUnscaled(newSupply), symbol, RadixAddress.from(this.properties.get(ADDRESS)));
 	}
 
-	@When("^the client queries the actions done in token \"([^\"]*)\"$")
-	public void the_client_queries_the_actions_done_in_token(String symbol) throws Throwable {
-		// FIXME Write code here that turns the phrase above into concrete actions
-		throw new PendingException();
-	}
-
 	@When("^the client executes mint (\\d+) tokens$")
 	public void the_client_executes_mint_tokens(int newSupply) throws Throwable {
 		mintTokens(scaledToUnscaled(newSupply), this.properties.get(SYMBOL), RadixAddress.from(this.properties.get(ADDRESS)));
@@ -207,18 +164,6 @@ public class MintMultiIssuanceTokens {
 		assertEquals(requiredBalance, tokenBalance);
 	}
 
-	@Then("^the client should be notified that a new action of mint (\\d+) \"([^\"]*)\" tokens has been executed$")
-	public void the_client_should_be_notified_that_a_new_action_of_mint_tokens_has_been_executed(int amount, String symbol) throws Throwable {
-	    // FIXME Write code here that turns the phrase above into concrete actions
-	    throw new PendingException();
-	}
-
-	@Then("^the client should receive three 'MINT (\\d+)' actions$")
-	public void the_client_should_receive_three_MINT_actions(int amount) throws Throwable {
-	    // FIXME Write code here that turns the phrase above into concrete actions
-	    throw new PendingException();
-	}
-
 	@Then("^the client should be notified that the action failed because cannot mint with (\\d+) tokens$")
 	public void the_client_should_be_notified_that_the_action_failed_because_cannot_mint_with_tokens(int count) throws Throwable {
 		assertEquals(0, count); // Only thing we check for here
@@ -227,7 +172,7 @@ public class MintMultiIssuanceTokens {
 
 	@Then("^the client should be notified that the action failed because it reached the max allowed number of tokens of 2\\^256 - 1$")
 	public void the_client_should_be_notified_that_the_action_failed_because_it_reached_the_max_allowed_number_of_tokens_of() throws Throwable {
-		awaitAtomStatus(VALIDATION_ERROR);
+		awaitAtomValidationError("Mints would overflow maximum");
 	}
 
 	@Then("^the client should be notified that the action failed because \"([^\"]*)\" does not exist$")
@@ -237,7 +182,7 @@ public class MintMultiIssuanceTokens {
 
 	@Then("^the client should be notified that the action failed because the client does not have permission to mint those tokens$")
 	public void the_client_should_be_notified_that_the_action_failed_because_the_client_does_not_have_permission_to_mint_those_tokens() throws Throwable {
-		awaitAtomStatus(VALIDATION_ERROR);
+		awaitAtomValidationError("Only owner can mint");
 	}
 
 	private void setupApi() {
@@ -261,7 +206,7 @@ public class MintMultiIssuanceTokens {
 	}
 
 	private void createToken(RadixApplicationAPI api, CreateTokenAction.TokenSupplyType tokenCreateSupplyType) {
-		TestObserver<Object> observer = new TestObserver<>();
+		TestObserver<AtomSubmissionUpdate> observer = new TestObserver<>();
 		api.createToken(
 				this.properties.get(NAME),
 				this.properties.get(SYMBOL),
@@ -271,7 +216,6 @@ public class MintMultiIssuanceTokens {
 				tokenCreateSupplyType)
 			.toObservable()
 			.doOnNext(System.out::println)
-			.map(AtomSubmissionUpdate::getState)
 			.subscribe(observer);
 		this.observers.add(observer);
 	}
@@ -279,11 +223,10 @@ public class MintMultiIssuanceTokens {
 	private void mintTokens(UInt256 amount, String symbol, RadixAddress address) {
 		TokenClassReference tokenClass = TokenClassReference.of(address, symbol);
 		MintTokensAction mta = new MintTokensAction(tokenClass, amount);
-		TestObserver<Object> observer = new TestObserver<>();
+		TestObserver<AtomSubmissionUpdate> observer = new TestObserver<>();
 		api.execute(mta)
 			.toObservable()
 			.doOnNext(System.out::println)
-			.map(AtomSubmissionUpdate::getState)
 			.subscribe(observer);
 		this.observers.add(observer);
 	}
@@ -293,15 +236,44 @@ public class MintMultiIssuanceTokens {
 	}
 
 	private void awaitAtomStatus(int atomNumber, AtomSubmissionState... finalStates) {
-		ImmutableSet<AtomSubmissionState> allStates = ImmutableSet.<AtomSubmissionState>builder()
+		ImmutableList<AtomSubmissionState> allStates = ImmutableList.<AtomSubmissionState>builder()
 			.add(SUBMITTING, SUBMITTED)
 			.addAll(Arrays.asList(finalStates))
 			.build();
+		Iterator<AtomSubmissionState> stateIterator = allStates.iterator();
 		this.observers.get(atomNumber - 1)
 			.awaitCount(3, TestWaitStrategy.SLEEP_100MS, TIMEOUT_MS)
-			.assertNoErrors()
+			.assertSubscribed()
 			.assertNoTimeout()
-			.assertValueSet(allStates);
+			.assertNoErrors()
+			.values().forEach(update -> {
+				assertTrue("Too many values: " + update.getState(), stateIterator.hasNext());
+				assertEquals(stateIterator.next(), update.getState());
+			});
+	}
+
+	private void awaitAtomValidationError(String partMessage) {
+		awaitAtomValidationError(this.observers.size(), partMessage);
+	}
+
+	private void awaitAtomValidationError(int atomNumber, String partMessage) {
+		ImmutableList<AtomSubmissionState> allStates = ImmutableList.of(SUBMITTING, SUBMITTED, VALIDATION_ERROR);
+		Iterator<AtomSubmissionState> stateIterator = allStates.iterator();
+		this.observers.get(atomNumber - 1)
+			.awaitCount(3, TestWaitStrategy.SLEEP_100MS, TIMEOUT_MS)
+			.assertSubscribed()
+			.assertNoTimeout()
+			.assertNoErrors()
+			.values().forEach(update -> {
+				assertTrue("Too many values: " + update.getState(), stateIterator.hasNext());
+				assertEquals(stateIterator.next(), update.getState());
+				if (VALIDATION_ERROR.equals(update.getState())) {
+					JsonObject jsonObject = update.getData().getAsJsonObject();
+					assertTrue("Validation error does not have a message", jsonObject.has("message"));
+					String message = jsonObject.get("message").getAsString();
+					assertTrue(String.format("'%s' does not contain required string '%s'", message, partMessage), message.contains(partMessage));
+				}
+			});
 	}
 
 	private void awaitAtomException(Class<? extends Throwable> exceptionClass, String partialExceptionMessage) {

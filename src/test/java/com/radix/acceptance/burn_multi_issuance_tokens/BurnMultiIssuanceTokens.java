@@ -2,13 +2,15 @@ package com.radix.acceptance.burn_multi_issuance_tokens;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.radix.utils.UInt256;
 
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.gson.JsonObject;
 import com.radix.acceptance.SpecificProperties;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
@@ -32,8 +34,8 @@ import static com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissi
 import static com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState.VALIDATION_ERROR;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
-import cucumber.api.PendingException;
 import cucumber.api.java.After;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
@@ -43,7 +45,7 @@ import io.reactivex.observers.BaseTestConsumer.TestWaitStrategy;
 import io.reactivex.observers.TestObserver;
 
 /**
- * See <a href="https://radixdlt.atlassian.net/browse/RLAU-93">RLAU-95</a>.
+ * See <a href="https://radixdlt.atlassian.net/browse/RLAU-95">RLAU-95</a>.
  */
 public class BurnMultiIssuanceTokens {
 	static {
@@ -75,7 +77,7 @@ public class BurnMultiIssuanceTokens {
 		NEW_SUPPLY,		scaledToUnscaled(1000000000).toString(),
 		GRANULARITY,	"1"
 	);
-	private final List<TestObserver<Object>> observers = Lists.newArrayList();
+	private final List<TestObserver<AtomSubmissionUpdate>> observers = Lists.newArrayList();
 	private final List<Disposable> disposables = Lists.newArrayList();
 
 	@After
@@ -95,21 +97,6 @@ public class BurnMultiIssuanceTokens {
 		createToken(TokenSupplyType.MUTABLE);
 		awaitAtomStatus(STORED);
 		// Listening on state automatic for library
-	}
-
-	@Given("^a library client who owns an account and created token \"([^\"]*)\" with (\\d+) initial supply and is listening to the token class actions of this token$")
-	public void a_library_client_who_owns_an_account_and_created_token_with_initial_supply_and_is_listening_to_the_token_class_actions_of_this_token(
-			String symbol, int initialSupply) throws Throwable {
-		setupApi();
-
-		this.properties.put(SYMBOL, symbol);
-		this.properties.put(INITIAL_SUPPLY, scaledToUnscaled(initialSupply).toString());
-		createToken(TokenSupplyType.MUTABLE);
-		awaitAtomStatus(STORED);
-
-	    // FIXME Write code here that turns the phrase above into concrete actions
-		// The "listening to the token class actions" part is missing
-	    throw new PendingException();
 	}
 
 	@Given("^a library client who owns an account where token \"([^\"]*)\" does not exist$")
@@ -159,12 +146,6 @@ public class BurnMultiIssuanceTokens {
 		awaitAtomException(UnknownTokenException.class, "Unknown token");
 	}
 
-	@Then("^the client should be notified that a new action of 'BURN (\\d+) \"([^\"]*)\" tokens' has been executed$")
-	public void the_client_should_be_notified_that_a_new_action_of_BURN_tokens_has_been_executed(int amount, String symbol) throws Throwable {
-	    // FIXME: Write code here that turns the phrase above into concrete actions
-	    throw new PendingException();
-	}
-
 	@Then("^the client should be notified that the action failed because there's not that many tokens in supply$")
 	public void the_client_should_be_notified_that_the_action_failed_because_there_s_not_that_many_tokens_in_supply() throws Throwable {
 		awaitAtomException(InsufficientFundsException.class, "only 100.0");
@@ -172,7 +153,7 @@ public class BurnMultiIssuanceTokens {
 
 	@Then("^the client should be notified that the action failed because the client does not have permission to burn those tokens$")
 	public void the_client_should_be_notified_that_the_action_failed_because_the_client_does_not_have_permission_to_burn_those_tokens() throws Throwable {
-		awaitAtomStatus(VALIDATION_ERROR);
+		awaitAtomValidationError("not signed by owner");
 	}
 
 	private void setupApi() {
@@ -196,7 +177,7 @@ public class BurnMultiIssuanceTokens {
 	}
 
 	private void createToken(RadixApplicationAPI api, CreateTokenAction.TokenSupplyType tokenCreateSupplyType) {
-		TestObserver<Object> observer = new TestObserver<>();
+		TestObserver<AtomSubmissionUpdate> observer = new TestObserver<>();
 		api.createToken(
 				this.properties.get(NAME),
 				this.properties.get(SYMBOL),
@@ -206,7 +187,6 @@ public class BurnMultiIssuanceTokens {
 				tokenCreateSupplyType)
 			.toObservable()
 			.doOnNext(System.out::println)
-			.map(AtomSubmissionUpdate::getState)
 			.subscribe(observer);
 		this.observers.add(observer);
 	}
@@ -214,11 +194,10 @@ public class BurnMultiIssuanceTokens {
 	private void burnTokens(UInt256 amount, String symbol, RadixAddress address) {
 		TokenClassReference tokenClass = TokenClassReference.of(address, symbol);
 		BurnTokensAction mta = new BurnTokensAction(tokenClass, amount);
-		TestObserver<Object> observer = new TestObserver<>();
+		TestObserver<AtomSubmissionUpdate> observer = new TestObserver<>();
 		api.execute(mta)
 			.toObservable()
 			.doOnNext(System.out::println)
-			.map(AtomSubmissionUpdate::getState)
 			.subscribe(observer);
 		this.observers.add(observer);
 	}
@@ -228,15 +207,44 @@ public class BurnMultiIssuanceTokens {
 	}
 
 	private void awaitAtomStatus(int atomNumber, AtomSubmissionState... finalStates) {
-		ImmutableSet<AtomSubmissionState> allStates = ImmutableSet.<AtomSubmissionState>builder()
-			.add(SUBMITTING, SUBMITTED)
-			.addAll(Arrays.asList(finalStates))
-			.build();
+		ImmutableList<AtomSubmissionState> allStates = ImmutableList.<AtomSubmissionState>builder()
+				.add(SUBMITTING, SUBMITTED)
+				.addAll(Arrays.asList(finalStates))
+				.build();
+		Iterator<AtomSubmissionState> stateIterator = allStates.iterator();
 		this.observers.get(atomNumber - 1)
 			.awaitCount(3, TestWaitStrategy.SLEEP_100MS, TIMEOUT_MS)
-			.assertNoErrors()
+			.assertSubscribed()
 			.assertNoTimeout()
-			.assertValueSet(allStates);
+			.assertNoErrors()
+			.values().forEach(update -> {
+				assertTrue("Too many values: " + update.getState(), stateIterator.hasNext());
+				assertEquals(stateIterator.next(), update.getState());
+			});
+	}
+
+	private void awaitAtomValidationError(String partMessage) {
+		awaitAtomValidationError(this.observers.size(), partMessage);
+	}
+
+	private void awaitAtomValidationError(int atomNumber, String partMessage) {
+		ImmutableList<AtomSubmissionState> allStates = ImmutableList.of(SUBMITTING, SUBMITTED, VALIDATION_ERROR);
+		Iterator<AtomSubmissionState> stateIterator = allStates.iterator();
+		this.observers.get(atomNumber - 1)
+			.awaitCount(3, TestWaitStrategy.SLEEP_100MS, TIMEOUT_MS)
+			.assertSubscribed()
+			.assertNoTimeout()
+			.assertNoErrors()
+			.values().forEach(update -> {
+				assertTrue("Too many values: " + update.getState(), stateIterator.hasNext());
+				assertEquals(stateIterator.next(), update.getState());
+				if (VALIDATION_ERROR.equals(update.getState())) {
+					JsonObject jsonObject = update.getData().getAsJsonObject();
+					assertTrue("Validation error does not have a message", jsonObject.has("message"));
+					String message = jsonObject.get("message").getAsString();
+					assertTrue(String.format("'%s' does not contain required string '%s'", message, partMessage), message.contains(partMessage));
+				}
+			});
 	}
 
 	private void awaitAtomException(Class<? extends Throwable> exceptionClass, String partialExceptionMessage) {
