@@ -1,5 +1,7 @@
 package com.radixdlt.client.core.network;
 
+import com.radixdlt.client.core.network.RadixJsonRpcClient.NodeAtomSubmissionState;
+import com.radixdlt.client.core.network.RadixJsonRpcClient.NodeAtomSubmissionUpdate;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.Date;
@@ -13,38 +15,59 @@ import com.radixdlt.client.core.atoms.Atom;
 
 public class AtomSubmissionUpdate {
 	public enum AtomSubmissionState {
-		SEARCHING_FOR_NODE(false),
-		SUBMITTING(false),
-		SUBMITTED(false),
-		FAILED(true),
-		STORED(true),
-		COLLISION(true),
-		ILLEGAL_STATE(true),
-		UNSUITABLE_PEER(true),
-		VALIDATION_ERROR(true),
-		UNKNOWN_ERROR(true);
+		SEARCHING_FOR_NODE(false, false),
+		SUBMITTING(false, true),
+		SUBMITTED(false, true),
+		FAILED(true, true),
+		STORED(true, true),
+		COLLISION(true, true),
+		ILLEGAL_STATE(true, true),
+		UNSUITABLE_PEER(true, true),
+		VALIDATION_ERROR(true, true),
+		UNKNOWN_ERROR(true, true);
 
 		private boolean isComplete;
+		private boolean requiresNode;
 
-		AtomSubmissionState(boolean isComplete) {
+		AtomSubmissionState(boolean isComplete, boolean requiresNode) {
 			this.isComplete = isComplete;
+			this.requiresNode = requiresNode;
 		}
 
 		public boolean isComplete() {
 			return isComplete;
 		}
+
+		public static AtomSubmissionState fromNodeAtomSubmissionState(NodeAtomSubmissionState nodeAtomSubmissionState) {
+			return AtomSubmissionState.valueOf(nodeAtomSubmissionState.name());
+		}
 	}
 
 	private final AtomSubmissionState state;
-	private final JsonElement data;
 	private final Atom atom;
+	private final RadixPeer node;
 	private final long timestamp;
+	private final JsonElement data;
 
-	private AtomSubmissionUpdate(Atom atom, AtomSubmissionState state, JsonElement data) {
+	private AtomSubmissionUpdate(Atom atom, AtomSubmissionState state, RadixPeer node, JsonElement data, long timestamp) {
+		if (state.requiresNode == (node == null)) {
+			throw new IllegalArgumentException("AtomState " + state + " requires " + (state.requiresNode ? "a" : "no") + " node"
+				+ " but is " + node);
+		}
+
 		this.atom = atom;
 		this.state = state;
+		this.node = node;
 		this.data = data;
-		this.timestamp = System.currentTimeMillis();
+		this.timestamp = timestamp;
+	}
+
+	public JsonElement getData() {
+		return data;
+	}
+
+	public RadixPeer getNode() {
+		return node;
 	}
 
 	public AtomSubmissionState getState() {
@@ -53,10 +76,6 @@ public class AtomSubmissionUpdate {
 
 	public Atom getAtom() {
 		return atom;
-	}
-
-	public JsonElement getData() {
-		return data;
 	}
 
 	public boolean isComplete() {
@@ -68,11 +87,15 @@ public class AtomSubmissionUpdate {
 	}
 
 	public static AtomSubmissionUpdate create(Atom atom, AtomSubmissionState code) {
-		return new AtomSubmissionUpdate(atom, code, null);
+		return new AtomSubmissionUpdate(atom, code, null, null, System.currentTimeMillis());
 	}
 
-	public static AtomSubmissionUpdate create(Atom atom, AtomSubmissionState code, JsonElement data) {
-		return new AtomSubmissionUpdate(atom, code, data);
+	public static AtomSubmissionUpdate fromNodeUpdate(Atom atom, NodeAtomSubmissionUpdate update, RadixPeer node) {
+		return new AtomSubmissionUpdate(atom, AtomSubmissionState.fromNodeAtomSubmissionState(update.getState()), node, update.getData(), update.getTimestamp());
+	}
+
+	public static AtomSubmissionUpdate create(Atom atom, AtomSubmissionState code, RadixPeer node) {
+		return new AtomSubmissionUpdate(atom, code, node, null, System.currentTimeMillis());
 	}
 
 	@Override
@@ -80,6 +103,6 @@ public class AtomSubmissionUpdate {
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS", Locale.getDefault());
 		sdf.setTimeZone(TimeZone.getDefault());
 
-		return sdf.format(new Date(timestamp)) + " atom " + atom.getHid() + " " + state + (data != null ? ": " + data : "");
+		return sdf.format(new Date(timestamp)) + " atom " + atom.getHid() + " " + state;
 	}
 }

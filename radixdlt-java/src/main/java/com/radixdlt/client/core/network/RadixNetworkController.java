@@ -9,6 +9,7 @@ import com.radixdlt.client.core.ledger.AtomSubmitter;
 import com.radixdlt.client.core.ledger.RadixAtomValidator;
 import com.radixdlt.client.core.ledger.selector.RadixPeerSelector;
 import com.radixdlt.client.core.ledger.selector.RandomSelector;
+import com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.observables.ConnectableObservable;
@@ -76,7 +77,7 @@ public class RadixNetworkController implements AtomSubmitter {
 	private final Observable<RadixPeer> seeds;
 	private final Observable<RadixNetworkState> networkState;
 
-	private final PublishSubject<NodeAtomSubmission> nodeAtomSubmissions = PublishSubject.create();
+	private final PublishSubject<AtomSubmissionUpdate> nodeAtomSubmissions = PublishSubject.create();
 	private final ConnectableObservable<AtomSubmissionUpdate> submissionUpdates;
 
 	private RadixNetworkController(RadixPeerSelector selector, RadixNetwork network, Observable<RadixPeer> seeds) {
@@ -164,7 +165,7 @@ public class RadixNetworkController implements AtomSubmitter {
 		}
 	}
 
-	private Single<NodeAtomSubmission> nextNodeAtomSubmission(Atom atom, Observable<RadixNetworkState> networkState) {
+	private Single<AtomSubmissionUpdate> nextNodeAtomSubmission(Atom atom, Observable<RadixNetworkState> networkState) {
 		Observable<RadixNetworkState> syncNetState = networkState
 			.replay(1)
 			.autoConnect(2);
@@ -183,19 +184,21 @@ public class RadixNetworkController implements AtomSubmitter {
 			.firstOrError()
 			.map(selector::apply);
 
-		return selectedNode.map(n -> new NodeAtomSubmission(n, atom));
+		return selectedNode.map(n -> AtomSubmissionUpdate.create(atom, AtomSubmissionState.SUBMITTING, n));
 	}
 
-	private Observable<AtomSubmissionUpdate> nodeAtomSubmitter(Observable<NodeAtomSubmission> nodeAtomSubmission, Observable<RadixNetworkState> networkState) {
-		return nodeAtomSubmission
-			.flatMapSingle(submission -> {
-				network.connect(submission.node);
-				return networkState.filter(s -> s.getPeers().get(submission.node).equals(RadixClientStatus.CONNECTED)).firstOrError().map(s -> submission);
+	private Observable<AtomSubmissionUpdate> nodeAtomSubmitter(Observable<AtomSubmissionUpdate> updates, Observable<RadixNetworkState> networkState) {
+		return updates
+			.filter(update -> update.getState().equals(AtomSubmissionState.SUBMITTING))
+			.flatMapSingle(update -> {
+				network.connect(update.getNode());
+				return networkState.filter(s -> s.getPeers().get(update.getNode()).equals(RadixClientStatus.CONNECTED)).firstOrError().map(s -> update);
 			})
-			.flatMap(submission -> {
-				WebSocketClient ws = network.getWsChannel(submission.node);
-				return new RadixJsonRpcClient(ws).submitAtom(submission.atom)
+			.flatMap(update -> {
+				WebSocketClient ws = network.getWsChannel(update.getNode());
+				return new RadixJsonRpcClient(ws).submitAtom(update.getAtom())
 					.doOnError(Throwable::printStackTrace)
+					.map(nodeUpdate -> AtomSubmissionUpdate.fromNodeUpdate(update.getAtom(), nodeUpdate, update.getNode()))
 					.retryWhen(new IncreasingRetryTimer(WebSocketException.class))
 					// TODO: Better way of cleanup?
 					.doFinally(() -> Observable.timer(2, TimeUnit.SECONDS).subscribe(i -> ws.close()));
@@ -241,7 +244,7 @@ public class RadixNetworkController implements AtomSubmitter {
 		ConnectableObservable<AtomSubmissionUpdate> replay = status.replay();
 		replay.connect();
 
-		Single<NodeAtomSubmission> nodeAtomSubmission = this.nextNodeAtomSubmission(atom, this.networkState);
+		Single<AtomSubmissionUpdate> nodeAtomSubmission = this.nextNodeAtomSubmission(atom, this.networkState);
 		nodeAtomSubmission.toObservable().subscribe(nodeAtomSubmissions::onNext);
 
 		return replay;

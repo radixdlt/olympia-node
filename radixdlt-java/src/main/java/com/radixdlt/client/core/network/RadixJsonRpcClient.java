@@ -282,6 +282,51 @@ public class RadixJsonRpcClient {
 			});
 	}
 
+	public enum NodeAtomSubmissionState {
+		SUBMITTED(false),
+		FAILED(true),
+		STORED(true),
+		COLLISION(true),
+		ILLEGAL_STATE(true),
+		UNSUITABLE_PEER(true),
+		VALIDATION_ERROR(true),
+		UNKNOWN_ERROR(true);
+
+		private final boolean isComplete;
+
+		NodeAtomSubmissionState(boolean isComplete) {
+			this.isComplete = isComplete;
+		}
+
+		public boolean isComplete() {
+			return isComplete;
+		}
+	}
+
+	public static class NodeAtomSubmissionUpdate {
+		private final NodeAtomSubmissionState state;
+		private final JsonElement data;
+		private final long timestamp;
+
+		public NodeAtomSubmissionUpdate(NodeAtomSubmissionState state, JsonElement data) {
+			this.state = state;
+			this.data = data;
+			this.timestamp = System.currentTimeMillis();
+		}
+
+		public NodeAtomSubmissionState getState() {
+			return state;
+		}
+
+		public JsonElement getData() {
+			return data;
+		}
+
+		public long getTimestamp() {
+			return timestamp;
+		}
+	}
+
 	/**
 	 * Attempt to submit an atom to a node. Returns the status of the atom as it
 	 * gets stored on the node.
@@ -289,7 +334,7 @@ public class RadixJsonRpcClient {
 	 * @param atom the atom to submit
 	 * @return observable of the atom as it gets stored
 	 */
-	public Observable<AtomSubmissionUpdate> submitAtom(Atom atom) {
+	public Observable<NodeAtomSubmissionUpdate> submitAtom(Atom atom) {
 		return Observable.create(emitter -> {
 			JSONObject jsonAtomTemp = Serialize.getInstance().toJsonObject(atom, Output.API);
 			JsonElement jsonAtom = GsonJson.getInstance().toGson(jsonAtomTemp);
@@ -302,7 +347,7 @@ public class RadixJsonRpcClient {
 			Disposable messageListenerDisposable = messages.filter(msg -> msg.has("method"))
 				.filter(msg -> msg.get("method").getAsString().equals("AtomSubmissionState.onNext")).map(msg -> msg.get("params").getAsJsonObject())
 				.filter(p -> p.get("subscriberId").getAsString().equals(subscriberId)).map(p -> {
-					final AtomSubmissionState state = AtomSubmissionState.valueOf(p.get("value").getAsString());
+					final NodeAtomSubmissionState state = NodeAtomSubmissionState.valueOf(p.get("value").getAsString());
 					final JsonElement data;
 					if (p.has("data")) {
 						data = p.get("data");
@@ -310,23 +355,19 @@ public class RadixJsonRpcClient {
 						data = null;
 					}
 
-					if (state == AtomSubmissionState.VALIDATION_ERROR) {
-						LOGGER.warn(jsonAtom.toString());
-					}
-
-					return AtomSubmissionUpdate.create(atom, state, data);
-				}).takeUntil(AtomSubmissionUpdate::isComplete).subscribe(emitter::onNext, emitter::onError, emitter::onComplete);
+					return new NodeAtomSubmissionUpdate(state, data);
+				}).takeUntil(u -> u.state.isComplete)
+				.subscribe(emitter::onNext, emitter::onError, emitter::onComplete);
 
 			this.jsonRpcCall("Universe.submitAtomAndSubscribe", params)
-				.doOnSubscribe(d -> emitter.onNext(AtomSubmissionUpdate.create(atom, AtomSubmissionState.SUBMITTING)))
 				.subscribe(resp -> {
-					if (!resp.isSuccess()) {
-						messageListenerDisposable.dispose();
-						emitter.onNext(AtomSubmissionUpdate.create(atom, AtomSubmissionState.FAILED));
-					} else {
-						emitter.onNext(AtomSubmissionUpdate.create(atom, AtomSubmissionState.SUBMITTED));
-					}
-				}, emitter::onError);
+				if (!resp.isSuccess()) {
+					messageListenerDisposable.dispose();
+					emitter.onNext(new NodeAtomSubmissionUpdate(NodeAtomSubmissionState.FAILED, null));
+				} else {
+					emitter.onNext(new NodeAtomSubmissionUpdate(NodeAtomSubmissionState.SUBMITTED, null));
+				}
+			}, emitter::onError);
 		});
 	}
 }
