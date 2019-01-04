@@ -1,4 +1,4 @@
-package com.radixdlt.client.core.ledger;
+package com.radixdlt.client.core.network;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.core.address.RadixUniverseConfig;

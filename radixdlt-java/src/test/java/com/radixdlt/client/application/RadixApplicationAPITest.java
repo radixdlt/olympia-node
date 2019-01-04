@@ -38,6 +38,7 @@ import com.radixdlt.client.core.ledger.AtomSubmitter;
 import com.radixdlt.client.core.ledger.ParticleStore;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate;
 import com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState;
+import com.radixdlt.client.core.network.RadixPeer;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.observers.TestObserver;
@@ -282,8 +283,14 @@ public class RadixApplicationAPITest {
 		JsonObject errorData = new JsonObject();
 
 		AtomSubmitter atomSubmitter = mock(AtomSubmitter.class);
+		AtomSubmissionUpdate update = mock(AtomSubmissionUpdate.class);
+		when(update.getAtom()).thenReturn(atom);
+		when(update.getState()).thenReturn(AtomSubmissionState.COLLISION);
+		when(update.getData()).thenReturn(errorData);
+		when(update.isComplete()).thenReturn(true);
+
 		when(atomSubmitter.submitAtom(eq(atom)))
-			.thenReturn(Observable.just(AtomSubmissionUpdate.create(atom, AtomSubmissionState.COLLISION, errorData)));
+			.thenReturn(Observable.just(update));
 
 		Ledger ledger = mock(Ledger.class);
 		when(ledger.getAtomSubmitter()).thenReturn(atomSubmitter);

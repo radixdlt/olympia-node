@@ -8,6 +8,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TimeZone;
 
 import com.google.gson.JsonElement;
@@ -50,6 +51,9 @@ public class AtomSubmissionUpdate {
 	private final JsonElement data;
 
 	private AtomSubmissionUpdate(Atom atom, AtomSubmissionState state, RadixPeer node, JsonElement data, long timestamp) {
+		Objects.requireNonNull(atom);
+		Objects.requireNonNull(state);
+
 		if (state.requiresNode == (node == null)) {
 			throw new IllegalArgumentException("AtomState " + state + " requires " + (state.requiresNode ? "a" : "no") + " node"
 				+ " but is " + node);

@@ -1,6 +1,8 @@
 package com.radixdlt.client.core.network;
 
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.client.core.network.RadixJsonRpcClient.NodeAtomSubmissionState;
+import com.radixdlt.client.core.network.RadixJsonRpcClient.NodeAtomSubmissionUpdate;
 import io.reactivex.Observable;
 import org.junit.Test;
 import org.radix.common.ID.EUID;
@@ -297,14 +299,14 @@ public class RadixJsonRpcClientTest {
 		}).when(channel).sendMessage(any());
 		RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(channel);
 
-		TestObserver<AtomSubmissionUpdate> observer = new TestObserver<>();
+		TestObserver<NodeAtomSubmissionUpdate> observer = new TestObserver<>();
 
 		jsonRpcClient.submitAtom(
 			new Atom(null)
 		).subscribe(observer);
 
 		observer.assertNoErrors();
-		observer.assertValueAt(observer.valueCount() - 1, update -> update.getState().equals(AtomSubmissionState.STORED));
+		observer.assertValueAt(observer.valueCount() - 1, update -> update.getState().equals(NodeAtomSubmissionState.STORED));
 		observer.assertComplete();
 	}
 }

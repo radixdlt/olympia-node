@@ -14,6 +14,7 @@ import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.observables.ConnectableObservable;
 import io.reactivex.subjects.PublishSubject;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -35,6 +36,7 @@ public class RadixNetworkController implements AtomSubmitter {
 		private RadixUniverseConfig config;
 		private Observable<RadixPeer> seeds = Observable.empty();
 		private RadixPeerSelector selector = new RandomSelector();
+		private List<AtomSubmissionEpic> epics = new ArrayList<>();
 
 		public RadixNetworkControllerBuilder() {
 		}
@@ -61,11 +63,16 @@ public class RadixNetworkController implements AtomSubmitter {
 			return this;
 		}
 
+		public RadixNetworkControllerBuilder addEpic(AtomSubmissionEpic epic) {
+			this.epics.add(epic);
+			return this;
+		}
+
 
 		public RadixNetworkController build() {
 			Objects.requireNonNull(network);
 
-			return new RadixNetworkController(selector, network, seeds);
+			return new RadixNetworkController(selector, network, seeds, epics);
 		}
 	}
 
@@ -77,10 +84,9 @@ public class RadixNetworkController implements AtomSubmitter {
 	private final Observable<RadixPeer> seeds;
 	private final Observable<RadixNetworkState> networkState;
 
-	private final PublishSubject<AtomSubmissionUpdate> nodeAtomSubmissions = PublishSubject.create();
-	private final ConnectableObservable<AtomSubmissionUpdate> submissionUpdates;
+	private final PublishSubject<AtomSubmissionUpdate> submissionUpdates = PublishSubject.create();
 
-	private RadixNetworkController(RadixPeerSelector selector, RadixNetwork network, Observable<RadixPeer> seeds) {
+	private RadixNetworkController(RadixPeerSelector selector, RadixNetwork network, Observable<RadixPeer> seeds, List<AtomSubmissionEpic> epics) {
 		this.selector = selector;
 		this.network = network;
 		this.seeds = seeds;
@@ -96,10 +102,11 @@ public class RadixNetworkController implements AtomSubmitter {
 				network.addPeer(seed);
 			});
 
+		Set<Observable<AtomSubmissionUpdate>> updates = epics.stream()
+			.map(epic -> epic.epic(submissionUpdates, this.networkState))
+			.collect(Collectors.toSet());
 
-		submissionUpdates = this.nodeAtomSubmitter(nodeAtomSubmissions, this.networkState).publish();
-
-		submissionUpdates.connect();
+		Observable.merge(updates).subscribe(submissionUpdates::onNext);
 	}
 
 	// TODO: Cleanup discovery
@@ -155,56 +162,6 @@ public class RadixNetworkController implements AtomSubmitter {
 		}
 	}
 
-	private static class NodeAtomSubmission {
-		private final RadixPeer node;
-		private final Atom atom;
-
-		public NodeAtomSubmission(RadixPeer node, Atom atom) {
-			this.node = node;
-			this.atom = atom;
-		}
-	}
-
-	private Single<AtomSubmissionUpdate> nextNodeAtomSubmission(Atom atom, Observable<RadixNetworkState> networkState) {
-		Observable<RadixNetworkState> syncNetState = networkState
-			.replay(1)
-			.autoConnect(2);
-
-		Observable<List<RadixPeer>> connectedNodes = syncNetState
-			.map(RadixNetworkController::getConnectedNodes)
-			.replay(1)
-			.autoConnect(2);
-
-		// Try and connect if there are no nodes
-		syncNetState.zipWith(connectedNodes.takeWhile(List::isEmpty), (s, n) -> s)
-			.subscribe(this::findConnection);
-
-		Single<RadixPeer> selectedNode = connectedNodes
-			.filter(viablePeerList -> !viablePeerList.isEmpty())
-			.firstOrError()
-			.map(selector::apply);
-
-		return selectedNode.map(n -> AtomSubmissionUpdate.create(atom, AtomSubmissionState.SUBMITTING, n));
-	}
-
-	private Observable<AtomSubmissionUpdate> nodeAtomSubmitter(Observable<AtomSubmissionUpdate> updates, Observable<RadixNetworkState> networkState) {
-		return updates
-			.filter(update -> update.getState().equals(AtomSubmissionState.SUBMITTING))
-			.flatMapSingle(update -> {
-				network.connect(update.getNode());
-				return networkState.filter(s -> s.getPeers().get(update.getNode()).equals(RadixClientStatus.CONNECTED)).firstOrError().map(s -> update);
-			})
-			.flatMap(update -> {
-				WebSocketClient ws = network.getWsChannel(update.getNode());
-				return new RadixJsonRpcClient(ws).submitAtom(update.getAtom())
-					.doOnError(Throwable::printStackTrace)
-					.map(nodeUpdate -> AtomSubmissionUpdate.fromNodeUpdate(update.getAtom(), nodeUpdate, update.getNode()))
-					.retryWhen(new IncreasingRetryTimer(WebSocketException.class))
-					// TODO: Better way of cleanup?
-					.doFinally(() -> Observable.timer(2, TimeUnit.SECONDS).subscribe(i -> ws.close()));
-			});
-	}
-
 	// TODO: add sharding check
 	private Single<RadixPeer> connectToNode(Set<Long> shard, Observable<RadixNetworkState> networkState) {
 		Observable<RadixNetworkState> syncNetState = networkState
@@ -238,14 +195,13 @@ public class RadixNetworkController implements AtomSubmitter {
 	 */
 	@Override
 	public Observable<AtomSubmissionUpdate> submitAtom(Atom atom) {
-		Observable<AtomSubmissionUpdate> status = submissionUpdates
+		Observable<AtomSubmissionUpdate> status = submissionUpdates.serialize()
 			.filter(u -> u.getAtom().equals(atom))
 			.takeUntil(AtomSubmissionUpdate::isComplete);
 		ConnectableObservable<AtomSubmissionUpdate> replay = status.replay();
 		replay.connect();
 
-		Single<AtomSubmissionUpdate> nodeAtomSubmission = this.nextNodeAtomSubmission(atom, this.networkState);
-		nodeAtomSubmission.toObservable().subscribe(nodeAtomSubmissions::onNext);
+		submissionUpdates.onNext(AtomSubmissionUpdate.create(atom, AtomSubmissionState.SEARCHING_FOR_NODE));
 
 		return replay;
 	}
