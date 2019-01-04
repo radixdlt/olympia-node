@@ -1,20 +1,20 @@
-package com.radixdlt.client.core.network;
+package com.radixdlt.client.core.network.actions;
 
 import com.radixdlt.client.core.network.RadixJsonRpcClient.NodeAtomSubmissionState;
 import com.radixdlt.client.core.network.RadixJsonRpcClient.NodeAtomSubmissionUpdate;
+import com.radixdlt.client.core.network.RadixNodeAction;
+import com.radixdlt.client.core.network.RadixPeer;
 import java.text.SimpleDateFormat;
-import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Objects;
 import java.util.TimeZone;
 
 import com.google.gson.JsonElement;
 import com.radixdlt.client.core.atoms.Atom;
+import java.util.UUID;
 
-public class AtomSubmissionUpdate {
+public class AtomSubmissionUpdate implements RadixNodeAction {
 	public enum AtomSubmissionState {
 		SEARCHING_FOR_NODE(false, false),
 		SUBMITTING(false, true),
@@ -49,8 +49,10 @@ public class AtomSubmissionUpdate {
 	private final RadixPeer node;
 	private final long timestamp;
 	private final JsonElement data;
+	private final String uuid;
 
-	private AtomSubmissionUpdate(Atom atom, AtomSubmissionState state, RadixPeer node, JsonElement data, long timestamp) {
+	private AtomSubmissionUpdate(String uuid, Atom atom, AtomSubmissionState state, RadixPeer node, JsonElement data, long timestamp) {
+		Objects.requireNonNull(uuid);
 		Objects.requireNonNull(atom);
 		Objects.requireNonNull(state);
 
@@ -59,11 +61,16 @@ public class AtomSubmissionUpdate {
 				+ " but is " + node);
 		}
 
+		this.uuid = uuid;
 		this.atom = atom;
 		this.state = state;
 		this.node = node;
 		this.data = data;
 		this.timestamp = timestamp;
+	}
+
+	public String getUuid() {
+		return uuid;
 	}
 
 	public JsonElement getData() {
@@ -90,17 +97,32 @@ public class AtomSubmissionUpdate {
 		return timestamp;
 	}
 
-	public static AtomSubmissionUpdate create(Atom atom, AtomSubmissionState code) {
-		return new AtomSubmissionUpdate(atom, code, null, null, System.currentTimeMillis());
+	public static AtomSubmissionUpdate searchForNode(Atom atom) {
+		return new AtomSubmissionUpdate(
+			UUID.randomUUID().toString(),
+			atom,
+			AtomSubmissionState.SEARCHING_FOR_NODE,
+			null,
+			null,
+			System.currentTimeMillis()
+		);
 	}
 
-	public static AtomSubmissionUpdate fromNodeUpdate(Atom atom, NodeAtomSubmissionUpdate update, RadixPeer node) {
-		return new AtomSubmissionUpdate(atom, AtomSubmissionState.fromNodeAtomSubmissionState(update.getState()), node, update.getData(), update.getTimestamp());
+	public static AtomSubmissionUpdate submit(String uuid, Atom atom, RadixPeer node) {
+		return new AtomSubmissionUpdate(uuid, atom, AtomSubmissionState.SUBMITTING, node, null, System.currentTimeMillis());
 	}
 
-	public static AtomSubmissionUpdate create(Atom atom, AtomSubmissionState code, RadixPeer node) {
-		return new AtomSubmissionUpdate(atom, code, node, null, System.currentTimeMillis());
+	public static AtomSubmissionUpdate update(String uuid, Atom atom, NodeAtomSubmissionUpdate update, RadixPeer node) {
+		return new AtomSubmissionUpdate(
+			uuid,
+			atom,
+			AtomSubmissionState.fromNodeAtomSubmissionState(update.getState()),
+			node,
+			update.getData(),
+			update.getTimestamp()
+		);
 	}
+
 
 	@Override
 	public String toString() {

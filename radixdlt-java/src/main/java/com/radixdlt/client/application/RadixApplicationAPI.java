@@ -65,8 +65,8 @@ import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.crypto.ECKeyPairGenerator;
 import com.radixdlt.client.core.crypto.ECPublicKey;
-import com.radixdlt.client.core.network.AtomSubmissionUpdate;
-import com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState;
+import com.radixdlt.client.core.network.actions.AtomSubmissionUpdate;
+import com.radixdlt.client.core.network.actions.AtomSubmissionUpdate.AtomSubmissionState;
 import com.radixdlt.client.core.pow.ProofOfWorkBuilder;
 
 import io.reactivex.Completable;

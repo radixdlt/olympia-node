@@ -17,14 +17,12 @@ import com.google.gson.JsonParser;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomObservation;
 import com.radixdlt.client.core.atoms.Shards;
-import com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.reactivex.Completable;
 import io.reactivex.observers.TestObserver;
 import io.reactivex.subjects.ReplaySubject;
 

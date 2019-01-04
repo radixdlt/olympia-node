@@ -1,7 +1,7 @@
 package com.radixdlt.client.core.ledger;
 
 import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.network.AtomSubmissionUpdate;
+import com.radixdlt.client.core.network.actions.AtomSubmissionUpdate;
 import io.reactivex.Observable;
 
 public interface AtomSubmitter {

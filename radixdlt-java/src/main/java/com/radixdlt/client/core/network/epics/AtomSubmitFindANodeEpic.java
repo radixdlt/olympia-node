@@ -1,7 +1,14 @@
-package com.radixdlt.client.core.network;
+package com.radixdlt.client.core.network.epics;
 
 import com.radixdlt.client.core.ledger.selector.RadixPeerSelector;
-import com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState;
+import com.radixdlt.client.core.network.actions.AtomSubmissionUpdate;
+import com.radixdlt.client.core.network.actions.AtomSubmissionUpdate.AtomSubmissionState;
+import com.radixdlt.client.core.network.RadixClientStatus;
+import com.radixdlt.client.core.network.RadixNetwork;
+import com.radixdlt.client.core.network.RadixNetworkEpic;
+import com.radixdlt.client.core.network.RadixNetworkState;
+import com.radixdlt.client.core.network.RadixNodeAction;
+import com.radixdlt.client.core.network.RadixPeer;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import java.util.Arrays;
@@ -13,12 +20,12 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class FindANodeEpic implements AtomSubmissionEpic {
-	private static final Logger LOGGER = LoggerFactory.getLogger(FindANodeEpic.class);
+public class AtomSubmitFindANodeEpic implements RadixNetworkEpic {
+	private static final Logger LOGGER = LoggerFactory.getLogger(AtomSubmitFindANodeEpic.class);
 	private final RadixNetwork network;
 	private final RadixPeerSelector selector;
 
-	public FindANodeEpic(RadixNetwork network, RadixPeerSelector selector) {
+	public AtomSubmitFindANodeEpic(RadixNetwork network, RadixPeerSelector selector) {
 		this.network = network;
 		this.selector = selector;
 	}
@@ -54,15 +61,18 @@ public class FindANodeEpic implements AtomSubmissionEpic {
 			.collect(Collectors.toList());
 	}
 
-	public Observable<AtomSubmissionUpdate> epic(Observable<AtomSubmissionUpdate> updates, Observable<RadixNetworkState> networkState) {
-		return updates.filter(update -> update.getState().equals(AtomSubmissionState.SEARCHING_FOR_NODE))
+	public Observable<RadixNodeAction> epic(Observable<RadixNodeAction> updates, Observable<RadixNetworkState> networkState) {
+		return updates
+			.filter(u -> u instanceof AtomSubmissionUpdate)
+			.map(AtomSubmissionUpdate.class::cast)
+			.filter(update -> update.getState().equals(AtomSubmissionState.SEARCHING_FOR_NODE))
 			.flatMapSingle(searchUpdate -> {
 				Observable<RadixNetworkState> syncNetState = networkState
 					.replay(1)
 					.autoConnect(2);
 
 				Observable<List<RadixPeer>> connectedNodes = syncNetState
-					.map(FindANodeEpic::getConnectedNodes)
+					.map(AtomSubmitFindANodeEpic::getConnectedNodes)
 					.replay(1)
 					.autoConnect(2);
 
@@ -75,7 +85,9 @@ public class FindANodeEpic implements AtomSubmissionEpic {
 					.firstOrError()
 					.map(selector::apply);
 
-				return selectedNode.map(n -> AtomSubmissionUpdate.create(searchUpdate.getAtom(), AtomSubmissionState.SUBMITTING, n));
+				return selectedNode.map(n ->
+					AtomSubmissionUpdate.submit(searchUpdate.getUuid(), searchUpdate.getAtom(), n)
+				);
 			});
 	}
 

@@ -1,8 +1,8 @@
 package com.radixdlt.client.core.network;
 
 import com.google.gson.JsonArray;
+import io.reactivex.Completable;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import org.json.JSONObject;
@@ -18,11 +18,9 @@ import org.slf4j.LoggerFactory;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.google.gson.JsonPrimitive;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.client.core.atoms.AtomObservation;
 import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState;
 
 import io.reactivex.Maybe;
 import io.reactivex.Observable;
@@ -222,6 +220,54 @@ public class RadixJsonRpcClient {
 		return this.jsonRpcSubscribe(method, new JsonObject(), notificationMethod);
 	}
 
+	public Observable<JsonObject> observeNotifications(String notificationMethod, String subscriberId) {
+		return messages
+			.filter(msg -> msg.has("method"))
+			.filter(msg -> msg.get("method").getAsString().equals(notificationMethod))
+			.map(msg -> msg.get("params").getAsJsonObject())
+			.filter(p -> p.get("subscriberId").getAsString().equals(subscriberId));
+	}
+
+	public Observable<AtomObservation> observeAtoms(String subscriberId) {
+		return this.observeNotifications("Atoms.subscribeUpdate", subscriberId)
+			.flatMap(observedAtomsJson -> {
+				JsonArray atomsJson = observedAtomsJson.getAsJsonArray("atoms");
+				boolean isHead = observedAtomsJson.has("isHead") && observedAtomsJson.get("isHead").getAsBoolean();
+
+				return Observable.fromIterable(atomsJson)
+					.map(jsonAtom -> Serialize.getInstance().fromJson(jsonAtom.toString(), Atom.class))
+					.map(AtomObservation::storeAtom)
+					.concatWith(Maybe.fromCallable(() -> isHead ? AtomObservation.head() : null));
+			});
+	}
+
+	public Completable cancelAtomsSubscribe(String subscriberId) {
+		final JsonObject cancelParams = new JsonObject();
+		cancelParams.addProperty("subscriberId", subscriberId);
+
+		return this.jsonRpcCall("Atoms.cancel", cancelParams).map(r -> {
+			if (!r.isSuccess) {
+				throw new RuntimeException();
+			} else {
+				return r;
+			}
+		}).ignoreElement();
+	}
+
+	public Completable sendAtomsSubscribe(String subscriberId, AtomQuery atomQuery) {
+		final JsonObject params = new JsonObject();
+		params.add("query", atomQuery.toJson());
+		params.addProperty("subscriberId", subscriberId);
+
+		return this.jsonRpcCall("Atoms.subscribe", params).map(r -> {
+			if (!r.isSuccess) {
+				throw new RuntimeException();
+			} else {
+				return r;
+			}
+		}).ignoreElement();
+	}
+
 	/**
 	 * Generic helper method for creating a subscription via JSON-RPC.
 	 *
@@ -235,18 +281,8 @@ public class RadixJsonRpcClient {
 		final JsonObject params = rawParams.deepCopy();
 		params.addProperty("subscriberId", subscriberId);
 
-		final JsonObject cancelParams = new JsonObject();
-		cancelParams.addProperty("subscriberId", subscriberId);
-
-		Observable<JsonObject> stream = messages
-			.filter(msg -> msg.has("method"))
-			.filter(msg -> msg.get("method").getAsString().equals(notificationMethod))
-			.map(msg -> msg.get("params").getAsJsonObject())
-			.filter(p -> p.get("subscriberId").getAsString().equals(subscriberId))
-			.doOnDispose(() ->
-				// TODO: clean cancellation method
-				this.jsonRpcCall("Atoms.cancel", cancelParams).subscribe(e -> {}, t -> {})
-			);
+		Observable<JsonObject> stream = this.observeNotifications(notificationMethod, subscriberId)
+			.doOnDispose(() -> this.cancelAtomsSubscribe(subscriberId).subscribe());
 
 		Observable<JsonRpcResponse> response = this.jsonRpcCall(method, params).toObservable();
 		return Observable.combineLatest(stream, response, (s, r) -> {
