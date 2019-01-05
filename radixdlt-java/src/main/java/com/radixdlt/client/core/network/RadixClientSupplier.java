@@ -193,7 +193,7 @@ public class RadixClientSupplier {
 			if (disconnectedPeers.isEmpty()) {
 				this.logger.info("Could not connect to new peer, don't have any.");
 			} else {
-				network.connect(disconnectedPeers.get(0));
+				//network.connect(disconnectedPeers.get(0));
 			}
 		}
 	}

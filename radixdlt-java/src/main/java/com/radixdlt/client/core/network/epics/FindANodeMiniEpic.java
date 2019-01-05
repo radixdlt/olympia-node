@@ -2,11 +2,11 @@ package com.radixdlt.client.core.network.epics;
 
 import com.radixdlt.client.core.ledger.selector.RadixPeerSelector;
 import com.radixdlt.client.core.network.RadixClientStatus;
-import com.radixdlt.client.core.network.RadixNetwork;
 import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixPeer;
+import com.radixdlt.client.core.network.actions.NodeUpdate;
+import io.reactivex.Maybe;
 import io.reactivex.Observable;
-import io.reactivex.Single;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -19,17 +19,15 @@ import org.slf4j.LoggerFactory;
 
 public class FindANodeMiniEpic {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(AtomSubmitFindANodeEpic.class);
-	private final RadixNetwork network;
+	private static final Logger LOGGER = LoggerFactory.getLogger(FindANodeMiniEpic.class);
 	private final RadixPeerSelector selector;
 
-	public FindANodeMiniEpic(RadixNetwork network, RadixPeerSelector selector) {
-		this.network = network;
+	public FindANodeMiniEpic(RadixPeerSelector selector) {
 		this.selector = selector;
 	}
 
 	// TODO: check shards
-	private void findConnection(Set<Long> shards, RadixNetworkState state) {
+	private Maybe<NodeUpdate> findConnection(Set<Long> shards, RadixNetworkState state) {
 		final Map<RadixClientStatus,List<RadixPeer>> statusMap = Arrays.stream(RadixClientStatus.values())
 			.collect(Collectors.toMap(
 				Function.identity(),
@@ -47,9 +45,12 @@ public class FindANodeMiniEpic {
 			if (disconnectedPeers.isEmpty()) {
 				LOGGER.info("Could not connect to new peer, don't have any.");
 			} else {
-				network.connect(disconnectedPeers.get(0));
+				//network.connect(disconnectedPeers.get(0));
+				return Maybe.just(NodeUpdate.startConnect(disconnectedPeers.get(0)));
 			}
 		}
+
+		return Maybe.empty();
 	}
 
 	private static List<RadixPeer> getConnectedNodes(Set<Long> shards, RadixNetworkState state) {
@@ -59,7 +60,8 @@ public class FindANodeMiniEpic {
 			.collect(Collectors.toList());
 	}
 
-	public Single<RadixPeer> apply(Set<Long> shards, Observable<RadixNetworkState> networkState) {
+	// TODO: clean this up with more explicit
+	public Observable<NodeUpdate> apply(Set<Long> shards, Observable<RadixNetworkState> networkState) {
 		Observable<RadixNetworkState> syncNetState = networkState
 			.replay(1)
 			.autoConnect(2);
@@ -70,12 +72,18 @@ public class FindANodeMiniEpic {
 			.autoConnect(2);
 
 		// Try and connect if there are no nodes
-		syncNetState.zipWith(connectedNodes.takeWhile(List::isEmpty), (s, n) -> s)
-			.subscribe(state -> findConnection(shards, state));
+		Observable<NodeUpdate> newConnections = syncNetState.zipWith(connectedNodes.takeWhile(List::isEmpty), (s, n) -> s)
+			.flatMapMaybe(state -> findConnection(shards, state));
+			//.subscribe(state -> findConnection(shards, state));
 
-		return connectedNodes
+		Observable<NodeUpdate> selectedNode = connectedNodes
 			.filter(viablePeerList -> !viablePeerList.isEmpty())
 			.firstOrError()
-			.map(selector::apply);
+			.map(selector::apply)
+			.map(NodeUpdate::select)
+			.cache()
+			.toObservable();
+
+		return newConnections.takeUntil(selectedNode).concatWith(selectedNode);
 	}
 }

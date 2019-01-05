@@ -9,7 +9,8 @@ import com.radixdlt.client.core.network.RadixNodeAction;
 import com.radixdlt.client.core.network.RadixPeer;
 import com.radixdlt.client.core.network.actions.AtomSubmissionUpdate;
 import com.radixdlt.client.core.network.actions.AtomsFetchUpdate;
-import com.radixdlt.client.core.network.actions.AddNodeAction;
+import com.radixdlt.client.core.network.actions.NodeUpdate;
+import com.radixdlt.client.core.network.actions.NodeUpdate.NodeUpdateType;
 import io.reactivex.Observable;
 
 public class DiscoverNodesEpic implements RadixNetworkEpic {
@@ -30,7 +31,7 @@ public class DiscoverNodesEpic implements RadixNetworkEpic {
 			.publish()
 			.autoConnect(2);
 
-		Observable<RadixNodeAction> addSeeds = connectedSeeds.map(AddNodeAction::new);
+		Observable<RadixNodeAction> addSeeds = connectedSeeds.map(NodeUpdate::add);
 
 		Observable<RadixNodeAction> addSeedSiblings = connectedSeeds.flatMap(s ->
 				networkState
@@ -42,10 +43,26 @@ public class DiscoverNodesEpic implements RadixNetworkEpic {
 							.toObservable()
 							.flatMapIterable(p -> p)
 							.map(data -> new RadixPeer(data.getIp(), s.isSsl(), s.getPort()))
-							.map(AddNodeAction::new);
+							.map(NodeUpdate::add);
 					})
 			);
 
-		return addSeeds.mergeWith(addSeedSiblings);
+		Observable<RadixNodeAction> getData = updates
+			.filter(u -> u instanceof NodeUpdate)
+			.map(NodeUpdate.class::cast)
+			.filter(u -> u.getType().equals(NodeUpdateType.ADD_NODE))
+			.map(NodeUpdate::getNode)
+			.flatMapSingle(node ->
+				networkState
+					.filter(state -> state.getPeers().get(node) == RadixClientStatus.CONNECTED)
+					.firstOrError()
+					.flatMap(i -> {
+						RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(network.getWsChannel(node));
+						return jsonRpcClient.getInfo()
+							.map(data -> NodeUpdate.nodeData(node, data));
+					})
+			);
+
+		return addSeeds.mergeWith(addSeedSiblings).mergeWith(getData);
 	}
 }

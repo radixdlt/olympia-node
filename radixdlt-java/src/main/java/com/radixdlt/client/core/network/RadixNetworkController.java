@@ -5,7 +5,7 @@ import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomObservation;
 import com.radixdlt.client.core.ledger.AtomSubmitter;
-import com.radixdlt.client.core.network.actions.AddNodeAction;
+import com.radixdlt.client.core.network.actions.NodeUpdate;
 import com.radixdlt.client.core.network.actions.AtomSubmissionUpdate;
 import com.radixdlt.client.core.network.actions.AtomsFetchUpdate;
 import com.radixdlt.client.core.network.actions.AtomsFetchUpdate.AtomsFetchState;
@@ -67,23 +67,24 @@ public class RadixNetworkController implements AtomSubmitter {
 	private RadixNetworkController(RadixNetwork network, List<RadixNetworkEpic> epics) {
 		this.network = network;
 
-		Set<Observable<RadixNodeAction>> updates = Stream.concat(
-				epics.stream(),
-				Stream.of(new RadixNetworkEpic() {
-					@Override
-					public Observable<RadixNodeAction> epic(Observable<RadixNodeAction> update, Observable<RadixNetworkState> networkState) {
-						return update.filter(u -> u instanceof AddNodeAction)
-							.flatMap(a -> {
-								network.addPeer(a.getNode());
-								return Observable.empty();
-							});
-					}
-				})
-		)
-		.map(epic -> epic.epic(nodeActions, network.getNetworkState()))
-		.collect(Collectors.toSet());
+		// Run reducers first
+		ConnectableObservable<RadixNodeAction> reducedNodeActions = nodeActions.doOnNext(action -> {
+			LOGGER.info("NEXT ACTION: " + action.toString());
 
+			if (action instanceof NodeUpdate) {
+				network.reduce(action);
+			}
+			// TODO: turn this into an action/state pair so synchronized
+		}).publish();
+
+
+		// Then run Epics
+		Set<Observable<RadixNodeAction>> updates = epics.stream()
+			.map(epic -> epic.epic(reducedNodeActions, network.getNetworkState()))
+			.collect(Collectors.toSet());
 		Observable.merge(updates).subscribe(nodeActions::onNext);
+
+		reducedNodeActions.connect();
 	}
 
 	public RadixNetwork getNetwork() {

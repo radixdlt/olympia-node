@@ -7,16 +7,20 @@ import com.radixdlt.client.core.network.RadixNetwork;
 import com.radixdlt.client.core.network.RadixNetworkEpic;
 import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixNodeAction;
+import com.radixdlt.client.core.network.actions.AtomsFetchUpdate;
+import com.radixdlt.client.core.network.actions.NodeUpdate;
+import com.radixdlt.client.core.network.actions.NodeUpdate.NodeUpdateType;
 import io.reactivex.Observable;
+import java.util.Collections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class AtomSubmitFindANodeEpic implements RadixNetworkEpic {
 	private static final Logger LOGGER = LoggerFactory.getLogger(AtomSubmitFindANodeEpic.class);
-	private final FindANodeMiniEpic findANodeFunction;
+	private final FindANodeMiniEpic findANode;
 
-	public AtomSubmitFindANodeEpic(RadixNetwork network, RadixPeerSelector selector) {
-		this.findANodeFunction = new FindANodeMiniEpic(network, selector);
+	public AtomSubmitFindANodeEpic(RadixPeerSelector selector) {
+		this.findANode = new FindANodeMiniEpic(selector);
 	}
 
 	public Observable<RadixNodeAction> epic(Observable<RadixNodeAction> updates, Observable<RadixNetworkState> networkState) {
@@ -24,9 +28,13 @@ public class AtomSubmitFindANodeEpic implements RadixNetworkEpic {
 			.filter(u -> u instanceof AtomSubmissionUpdate)
 			.map(AtomSubmissionUpdate.class::cast)
 			.filter(update -> update.getState().equals(AtomSubmissionState.SEARCHING_FOR_NODE))
-			.flatMapSingle(searchUpdate ->
-				findANodeFunction.apply(searchUpdate.getAtom().getRequiredFirstShard(), networkState)
-					.map(n -> AtomSubmissionUpdate.submit(searchUpdate.getUuid(), searchUpdate.getAtom(), n))
+			.flatMap(searchUpdate ->
+				findANode.apply(searchUpdate.getAtom().getRequiredFirstShard(), networkState)
+					.map(a ->
+						a.getType().equals(NodeUpdateType.SELECT_NODE)
+							? AtomSubmissionUpdate.submit(searchUpdate.getUuid(), searchUpdate.getAtom(), a.getNode())
+							: a
+					)
 			);
 	}
 }

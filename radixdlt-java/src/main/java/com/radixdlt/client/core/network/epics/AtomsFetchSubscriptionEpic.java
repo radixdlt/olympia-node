@@ -10,6 +10,7 @@ import com.radixdlt.client.core.network.RadixNodeAction;
 import com.radixdlt.client.core.network.WebSocketClient;
 import com.radixdlt.client.core.network.actions.AtomsFetchUpdate;
 import com.radixdlt.client.core.network.actions.AtomsFetchUpdate.AtomsFetchState;
+import com.radixdlt.client.core.network.actions.NodeUpdate;
 import io.reactivex.Completable;
 import io.reactivex.Observable;
 import io.reactivex.ObservableSource;
@@ -32,13 +33,18 @@ public class AtomsFetchSubscriptionEpic implements RadixNetworkEpic {
 
 	@Override
 	public Observable<RadixNodeAction> epic(Observable<RadixNodeAction> updates, Observable<RadixNetworkState> networkState) {
-		return updates
+		Observable<RadixNodeAction> nodeConnection = updates
+			.filter(u -> u instanceof AtomsFetchUpdate)
+			.map(AtomsFetchUpdate.class::cast)
+			.filter(u -> u.getState().equals(AtomsFetchState.SUBMITTING))
+			.map(u -> NodeUpdate.startConnect(u.getNode()));
+
+		Observable<RadixNodeAction> fetch = updates
 			.filter(u -> u instanceof AtomsFetchUpdate)
 			.map(AtomsFetchUpdate.class::cast)
 			.filter(update -> update.getState().equals(AtomsFetchState.SUBMITTING) || update.getState().equals(AtomsFetchState.ON_CANCEL))
 			.flatMapSingle(update -> {
 				if (update.getState().equals(AtomsFetchState.SUBMITTING)) {
-					network.connect(update.getNode());
 					return networkState.filter(s -> s.getPeers().get(update.getNode()).equals(RadixClientStatus.CONNECTED)).firstOrError().map(s -> update);
 				} else {
 					return Single.just(update);
@@ -82,5 +88,7 @@ public class AtomsFetchSubscriptionEpic implements RadixNetworkEpic {
 					return Observable.empty();
 				}
 			});
+
+		return nodeConnection.mergeWith(fetch);
 	}
 }

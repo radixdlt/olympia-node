@@ -1,24 +1,24 @@
 package com.radixdlt.client.core.network;
 
 import com.jakewharton.rx.ReplayingShare;
+import com.radixdlt.client.core.network.actions.NodeUpdate;
+import com.radixdlt.client.core.network.actions.NodeUpdate.NodeUpdateType;
 import io.reactivex.Observable;
 import io.reactivex.observables.ConnectableObservable;
 import io.reactivex.subjects.ReplaySubject;
-import java.sql.Time;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
+import javax.xml.soap.Node;
 import org.radix.common.tuples.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
-import java.util.Objects;
 
 /**
  * RadixNetwork manages the state of peers and connections.
  */
-public final class RadixNetwork {
+public final class RadixNetwork implements RadixNetworkEpic {
 	private static final Logger LOGGER = LoggerFactory.getLogger(RadixNetwork.class);
 
 	private final Object lock = new Object();
@@ -59,20 +59,6 @@ public final class RadixNetwork {
 		return websockets.get(peer);
 	}
 
-	public Observable<Pair<RadixPeer, RadixClientStatus>> connectAndGetStatusUpdates() {
-		this.peers.subscribe();
-		return this.getStatusUpdates();
-	}
-
-	/**
-	 * Returns a hot observable of the status of peers
-	 *
-	 * @return a hot Observable of status of peers
-	 */
-	public Observable<Pair<RadixPeer, RadixClientStatus>> getStatusUpdates() {
-		return this.statusUpdates;
-	}
-
 	/**
 	 * Returns a cold observable of network state
 	 *
@@ -82,26 +68,30 @@ public final class RadixNetwork {
 		return this.networkState;
 	}
 
-	public void connect(RadixPeer peer) {
-		websockets.get(peer).connect();
+	@Override
+	public Observable<RadixNodeAction> epic(Observable<RadixNodeAction> actions, Observable<RadixNetworkState> networkState) {
+		return actions
+			.filter(a -> a instanceof NodeUpdate)
+			.map(NodeUpdate.class::cast)
+			.filter(u -> u.getType().equals(NodeUpdateType.START_CONNECT))
+			.doOnNext(u -> websockets.get(u.getNode()).connect())
+			.ignoreElements()
+			.toObservable();
 	}
 
-	public void addPeer(RadixPeer peer) {
-		synchronized (lock) {
-			websockets.computeIfAbsent(
-				peer,
-				p -> new WebSocketClient(listener -> HttpClients.getSslAllTrustingClient().newWebSocket(p.getLocation(), listener))
-			);
-			peers.onNext(peer);
-			LOGGER.debug(String.format("Added to peer list: %s", peer.getLocation()));
+	public void reduce(RadixNodeAction action) {
+		if (action instanceof NodeUpdate) {
+			NodeUpdate nodeUpdate = (NodeUpdate) action;
+			synchronized (lock) {
+				if (nodeUpdate.getType().equals(NodeUpdateType.ADD_NODE)) {
+					websockets.computeIfAbsent(action.getNode(),
+						p -> new WebSocketClient(listener -> HttpClients.getSslAllTrustingClient().newWebSocket(p.getLocation(), listener)));
+					peers.onNext(action.getNode());
+					LOGGER.debug(String.format("Added to peer list: %s", action.getNode().getLocation()));
+				} else if (nodeUpdate.getType().equals(NodeUpdateType.ADD_NODE_DATA)) {
+
+				}
+			}
 		}
-	}
-
-	/**
-	 * Free resources cleanly to the best of our ability
-	 */
-	public void close() {
-		// TODO: fix concurrency
-		// TODO: Cleanup objects, etc.
 	}
 }

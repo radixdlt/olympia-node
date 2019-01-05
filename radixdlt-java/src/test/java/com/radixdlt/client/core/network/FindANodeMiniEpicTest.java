@@ -3,11 +3,14 @@ package com.radixdlt.client.core.network;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.core.ledger.selector.GetFirstSelector;
 import com.radixdlt.client.core.ledger.selector.RandomSelector;
+import com.radixdlt.client.core.network.actions.NodeUpdate;
+import com.radixdlt.client.core.network.actions.NodeUpdate.NodeUpdateType;
 import com.radixdlt.client.core.network.epics.FindANodeMiniEpic;
 import io.reactivex.Observable;
 import io.reactivex.observers.TestObserver;
 import io.reactivex.subjects.ReplaySubject;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 
 import java.util.Collections;
@@ -15,10 +18,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class FindANodeMiniEpicTest {
@@ -29,35 +29,32 @@ public class FindANodeMiniEpicTest {
 		when(ws.getMessages()).thenReturn(Observable.never());
 		when(ws.sendMessage(any())).thenReturn(true);
 
-		RadixNetwork network = mock(RadixNetwork.class);
-		when(network.getWsChannel(any())).thenReturn(ws);
-
-		FindANodeMiniEpic findANodeFunction = new FindANodeMiniEpic(network, new GetFirstSelector());
-		TestObserver<RadixPeer> testObserver = TestObserver.create();
+		FindANodeMiniEpic findANodeFunction = new FindANodeMiniEpic(new GetFirstSelector());
+		TestObserver<NodeUpdate> testObserver = TestObserver.create();
 		findANodeFunction.apply(
 			Collections.singleton(1L),
 			Observable.just(new RadixNetworkState(ImmutableMap.of(peer, RadixClientStatus.CONNECTED)))
 		)
 		.subscribe(testObserver);
 
-		testObserver.assertValue(peer);
+		testObserver.awaitTerminalEvent();
+		testObserver.assertValue(u -> u.getNode().equals(peer));
+		testObserver.assertComplete();
 	}
 
 	@Test
 	public void failedNodeConnectionTest() {
-		RadixNetwork network = mock(RadixNetwork.class);
-
 		RadixPeer peer = mock(RadixPeer.class);
-		FindANodeMiniEpic findANodeFunction = new FindANodeMiniEpic(network, new RandomSelector());
-		TestObserver<RadixPeer> testObserver = TestObserver.create();
+		FindANodeMiniEpic findANodeFunction = new FindANodeMiniEpic(new RandomSelector());
+		TestObserver<NodeUpdate> testObserver = TestObserver.create();
 		findANodeFunction.apply(
 			Collections.singleton(1L),
 			Observable.just(new RadixNetworkState(ImmutableMap.of(peer, RadixClientStatus.DISCONNECTED))).concatWith(Observable.never())
 		)
 		.subscribe(testObserver);
 
-		testObserver.assertNoErrors();
-		testObserver.assertNoValues();
+		testObserver.awaitTerminalEvent(50, TimeUnit.MILLISECONDS);
+		testObserver.assertNotComplete();
 	}
 
 	@Test
@@ -76,10 +73,8 @@ public class FindANodeMiniEpicTest {
 			i -> i == 0 ? RadixClientStatus.CONNECTED : RadixClientStatus.DISCONNECTED
 		));
 
-		RadixNetwork network = mock(RadixNetwork.class);
-
-		FindANodeMiniEpic findANodeFunction = new FindANodeMiniEpic(network, new GetFirstSelector());
-		TestObserver<RadixPeer> testObserver = TestObserver.create();
+		FindANodeMiniEpic findANodeFunction = new FindANodeMiniEpic(new GetFirstSelector());
+		TestObserver<NodeUpdate> testObserver = TestObserver.create();
 		findANodeFunction.apply(
 			Collections.singleton(1L),
 			Observable.just(new RadixNetworkState(networkStateMap)).concatWith(Observable.never())
@@ -87,13 +82,11 @@ public class FindANodeMiniEpicTest {
 		.subscribe(testObserver);
 
 		testObserver.awaitTerminalEvent();
-		testObserver.assertValue(connectedPeer);
-		verify(network, times(0)).connect(any());
+		testObserver.assertValue(u -> u.getNode().equals(connectedPeer));
 	}
 
 	@Test
 	public void whenFirstNodeFailsThenSecondNodeShouldConnect() {
-		RadixNetwork network = mock(RadixNetwork.class);
 		RadixPeer badPeer = mock(RadixPeer.class);
 		RadixPeer goodPeer = mock(RadixPeer.class);
 
@@ -104,32 +97,32 @@ public class FindANodeMiniEpicTest {
 			goodPeer, RadixClientStatus.DISCONNECTED
 		)));
 
-		doAnswer(invocation -> {
-			networkState.onNext(new RadixNetworkState(ImmutableMap.of(
-				badPeer, RadixClientStatus.FAILED,
-				goodPeer, RadixClientStatus.DISCONNECTED
-			)));
-			return null;
-		}).when(network).connect(badPeer);
+		FindANodeMiniEpic findANodeFunction = new FindANodeMiniEpic(new GetFirstSelector());
+		TestObserver<NodeUpdate> testObserver = TestObserver.create();
 
-		doAnswer(invocation -> {
-			networkState.onNext(new RadixNetworkState(ImmutableMap.of(
-				badPeer, RadixClientStatus.FAILED,
-				goodPeer, RadixClientStatus.CONNECTED
-			)));
-			return null;
-		}).when(network).connect(goodPeer);
-
-		FindANodeMiniEpic findANodeFunction = new FindANodeMiniEpic(network, new GetFirstSelector());
-		TestObserver<RadixPeer> testObserver = TestObserver.create();
 		findANodeFunction.apply(
 			Collections.singleton(1L),
 			networkState
 		)
+		.doOnNext(i -> {
+			if (i.getNode().equals(badPeer)) {
+				networkState.onNext(new RadixNetworkState(ImmutableMap.of(
+					badPeer, RadixClientStatus.FAILED,
+					goodPeer, RadixClientStatus.DISCONNECTED
+				)));
+			} else {
+				networkState.onNext(new RadixNetworkState(ImmutableMap.of(
+					badPeer, RadixClientStatus.FAILED,
+					goodPeer, RadixClientStatus.CONNECTED
+				)));
+			}
+		})
 		.subscribe(testObserver);
 
 		testObserver.awaitTerminalEvent();
 		testObserver.assertNoErrors();
-		testObserver.assertValue(goodPeer);
+		testObserver.assertValueAt(0, u -> u.getType().equals(NodeUpdateType.START_CONNECT) && u.getNode().equals(badPeer));
+		testObserver.assertValueAt(1, u -> u.getType().equals(NodeUpdateType.START_CONNECT) && u.getNode().equals(goodPeer));
+		testObserver.assertValueAt(2, u -> u.getType().equals(NodeUpdateType.SELECT_NODE) && u.getNode().equals(goodPeer));
 	}
 }

@@ -88,10 +88,11 @@ public final class RadixUniverse {
 			RadixNetworkController controller = new RadixNetworkControllerBuilder()
 				.network(network)
 				.checkUniverse(config)
+				.addEpic(network)
 				.addEpic(new DiscoverNodesEpic(network, seeds))
-				.addEpic(new AtomSubmitFindANodeEpic(network, new RandomSelector()))
+				.addEpic(new AtomSubmitFindANodeEpic(new RandomSelector()))
 				.addEpic(new AtomSubmitSendToNodeEpic(network))
-				.addEpic(new AtomsFetchFindANodeEpic(network, new RandomSelector()))
+				.addEpic(new AtomsFetchFindANodeEpic(new RandomSelector()))
 				.addEpic(new AtomsFetchSubscriptionEpic(network))
 				.build();
 
