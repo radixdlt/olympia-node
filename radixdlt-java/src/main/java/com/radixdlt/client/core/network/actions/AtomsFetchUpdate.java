@@ -3,7 +3,7 @@ package com.radixdlt.client.core.network.actions;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.AtomObservation;
 import com.radixdlt.client.core.network.RadixNodeAction;
-import com.radixdlt.client.core.network.RadixPeer;
+import com.radixdlt.client.core.network.RadixNode;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -15,13 +15,13 @@ public class AtomsFetchUpdate implements RadixNodeAction {
 		ATOM_OBSERVATION,
 	}
 
-	private final RadixPeer node;
+	private final RadixNode node;
 	private final AtomsFetchState state;
 	private final RadixAddress address;
 	private final AtomObservation observation;
 	private final String uuid;
 
-	public AtomsFetchUpdate(String uuid, RadixAddress address, AtomsFetchState state, RadixPeer node, AtomObservation observation) {
+	public AtomsFetchUpdate(String uuid, RadixAddress address, AtomsFetchState state, RadixNode node, AtomObservation observation) {
 		Objects.requireNonNull(uuid);
 		Objects.requireNonNull(address);
 
@@ -36,11 +36,11 @@ public class AtomsFetchUpdate implements RadixNodeAction {
 		return new AtomsFetchUpdate(UUID.randomUUID().toString(), address, AtomsFetchState.SEARCHING_FOR_NODE, null, null);
 	}
 
-	public static AtomsFetchUpdate submitQuery(String uuid, RadixAddress address, RadixPeer node) {
+	public static AtomsFetchUpdate submitQuery(String uuid, RadixAddress address, RadixNode node) {
 		return new AtomsFetchUpdate(uuid, address, AtomsFetchState.SUBMITTING, node, null);
 	}
 
-	public static AtomsFetchUpdate observed(String uuid, RadixAddress address, RadixPeer node, AtomObservation observation) {
+	public static AtomsFetchUpdate observed(String uuid, RadixAddress address, RadixNode node, AtomObservation observation) {
 		return new AtomsFetchUpdate(uuid, address, AtomsFetchState.ATOM_OBSERVATION, node, observation);
 	}
 
@@ -61,11 +61,16 @@ public class AtomsFetchUpdate implements RadixNodeAction {
 	}
 
 	@Override
-	public RadixPeer getNode() {
+	public RadixNode getNode() {
 		return node;
 	}
 
 	public AtomsFetchState getState() {
 		return state;
+	}
+
+	@Override
+	public String toString() {
+		return "ATOM_FETCH(" + state + ") " + node;
 	}
 }

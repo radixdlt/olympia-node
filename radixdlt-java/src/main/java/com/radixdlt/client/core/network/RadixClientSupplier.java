@@ -21,9 +21,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -105,7 +103,7 @@ public class RadixClientSupplier {
 	 *
 	 * @return a cold single of the first matching Radix client
 	 */
-	public Single<RadixPeer> getRadixClient() {
+	public Single<RadixNode> getRadixClient() {
 		return this.getRadixClients(this.selector, this.filters).firstOrError();
 	}
 
@@ -116,7 +114,7 @@ public class RadixClientSupplier {
 	 * @param shard a shards to find an intersection with
 	 * @return a cold single of the first matching Radix client
 	 */
-	public Single<RadixPeer> getRadixClient(Long shard) {
+	public Single<RadixNode> getRadixClient(Long shard) {
 		return this.getRadixClient(Collections.singleton(shard));
 	}
 
@@ -127,7 +125,7 @@ public class RadixClientSupplier {
 	 * @param shards set of shards to find an intersection with
 	 * @return a cold single of the first matching Radix client
 	 */
-	public Single<RadixPeer> getRadixClient(Set<Long> shards) {
+	public Single<RadixNode> getRadixClient(Set<Long> shards) {
 		if (shards.isEmpty()) {
 			throw new IllegalArgumentException("Shards cannot be empty to obtain a radixClient.");
 		}
@@ -144,7 +142,7 @@ public class RadixClientSupplier {
 	 *
 	 * @return A cold observable of clients
 	 */
-	public Observable<RadixPeer> getRadixClients() {
+	public Observable<RadixNode> getRadixClients() {
 		return this.getRadixClients(this.selector, this.filters);
 	}
 
@@ -155,7 +153,7 @@ public class RadixClientSupplier {
 	 * @param shards set of shards to find an intersection with
 	 * @return a cold observable of the first matching Radix client
 	 */
-	public Observable<RadixPeer> getRadixClients(Set<Long> shards) {
+	public Observable<RadixNode> getRadixClients(Set<Long> shards) {
 		if (shards.isEmpty()) {
 			throw new IllegalArgumentException("Shards cannot be empty to obtain a radixClient.");
 		}
@@ -166,7 +164,7 @@ public class RadixClientSupplier {
 		return this.getRadixClients(this.selector, expandedFilters);
 	}
 
-	private Observable<RadixPeer> getRadixClients(RadixPeerSelector selector, List<RadixPeerFilter> filters) {
+	private Observable<RadixNode> getRadixClients(RadixPeerSelector selector, List<RadixPeerFilter> filters) {
 		return this.network.getNetworkState()
 			.doOnNext(this::manageConnections)
 			.map(state -> this.collectDesirablePeers(filters, state))
@@ -175,7 +173,7 @@ public class RadixClientSupplier {
 	}
 
 	private void manageConnections(RadixNetworkState state) {
-		final Map<RadixClientStatus,List<RadixPeer>> statusMap = Arrays.stream(RadixClientStatus.values())
+		final Map<RadixClientStatus,List<RadixNode>> statusMap = Arrays.stream(RadixClientStatus.values())
 			.collect(Collectors.toMap(
 				Function.identity(),
 				s -> state.getPeers().entrySet().stream().filter(e -> e.getValue().equals(s)).map(Entry::getKey).collect(Collectors.toList())
@@ -189,7 +187,7 @@ public class RadixClientSupplier {
 				activeNodeCount)
 			);
 
-			List<RadixPeer> disconnectedPeers = statusMap.get(RadixClientStatus.DISCONNECTED);
+			List<RadixNode> disconnectedPeers = statusMap.get(RadixClientStatus.DISCONNECTED);
 			if (disconnectedPeers.isEmpty()) {
 				this.logger.info("Could not connect to new peer, don't have any.");
 			} else {
@@ -198,7 +196,7 @@ public class RadixClientSupplier {
 		}
 	}
 
-	private List<RadixPeer> collectDesirablePeers(List<RadixPeerFilter> filters, RadixNetworkState state) {
+	private List<RadixNode> collectDesirablePeers(List<RadixPeerFilter> filters, RadixNetworkState state) {
 		return state.getPeers().entrySet().stream()
 				.filter(entry -> entry.getValue().equals(RadixClientStatus.CONNECTED))
 				.map(Map.Entry::getKey)

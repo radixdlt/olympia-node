@@ -6,7 +6,7 @@ import com.radixdlt.client.core.network.RadixNetwork;
 import com.radixdlt.client.core.network.RadixNetworkEpic;
 import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixNodeAction;
-import com.radixdlt.client.core.network.RadixPeer;
+import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.actions.AtomSubmissionUpdate;
 import com.radixdlt.client.core.network.actions.AtomsFetchUpdate;
 import com.radixdlt.client.core.network.actions.NodeUpdate;
@@ -15,16 +15,16 @@ import io.reactivex.Observable;
 
 public class DiscoverNodesEpic implements RadixNetworkEpic {
 	private final RadixNetwork network;
-	private final Observable<RadixPeer> seeds;
+	private final Observable<RadixNode> seeds;
 
-	public DiscoverNodesEpic(RadixNetwork network, Observable<RadixPeer> seeds) {
+	public DiscoverNodesEpic(RadixNetwork network, Observable<RadixNode> seeds) {
 		this.network = network;
 		this.seeds = seeds;
 	}
 
 	@Override
 	public Observable<RadixNodeAction> epic(Observable<RadixNodeAction> updates, Observable<RadixNetworkState> networkState) {
-		Observable<RadixPeer> connectedSeeds = updates
+		Observable<RadixNode> connectedSeeds = updates
 			.filter(u -> u instanceof AtomSubmissionUpdate || u instanceof AtomsFetchUpdate)
 			.firstOrError()
 			.flatMapObservable(i -> seeds)
@@ -42,7 +42,7 @@ public class DiscoverNodesEpic implements RadixNetworkEpic {
 						return jsonRpcClient.getLivePeers()
 							.toObservable()
 							.flatMapIterable(p -> p)
-							.map(data -> new RadixPeer(data.getIp(), s.isSsl(), s.getPort()))
+							.map(data -> new RadixNode(data.getIp(), s.isSsl(), s.getPort()))
 							.map(NodeUpdate::add);
 					})
 			);

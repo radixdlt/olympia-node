@@ -2,7 +2,7 @@ package com.radixdlt.client.core.network.actions;
 
 import com.radixdlt.client.core.network.NodeRunnerData;
 import com.radixdlt.client.core.network.RadixNodeAction;
-import com.radixdlt.client.core.network.RadixPeer;
+import com.radixdlt.client.core.network.RadixNode;
 import java.util.Objects;
 
 public class NodeUpdate implements RadixNodeAction {
@@ -16,11 +16,11 @@ public class NodeUpdate implements RadixNodeAction {
 		SELECT_NODE
 	}
 
-	private final RadixPeer node;
+	private final RadixNode node;
 	private final NodeUpdateType type;
 	private final NodeRunnerData data;
 
-	public NodeUpdate(NodeUpdateType type, RadixPeer node, NodeRunnerData data) {
+	public NodeUpdate(NodeUpdateType type, RadixNode node, NodeRunnerData data) {
 		Objects.requireNonNull(type);
 		Objects.requireNonNull(node);
 
@@ -29,24 +29,24 @@ public class NodeUpdate implements RadixNodeAction {
 		this.data = data;
 	}
 
-	public static NodeUpdate select(RadixPeer node) {
+	public static NodeUpdate select(RadixNode node) {
 		return new NodeUpdate(NodeUpdateType.SELECT_NODE, node, null);
 	}
 
-	public static NodeUpdate startConnect(RadixPeer node) {
+	public static NodeUpdate startConnect(RadixNode node) {
 		return new NodeUpdate(NodeUpdateType.START_CONNECT, node, null);
 	}
 
-	public static NodeUpdate add(RadixPeer node) {
+	public static NodeUpdate add(RadixNode node) {
 		return new NodeUpdate(NodeUpdateType.ADD_NODE, node, null);
 	}
 
-	public static NodeUpdate nodeData(RadixPeer node, NodeRunnerData data) {
+	public static NodeUpdate nodeData(RadixNode node, NodeRunnerData data) {
 		return new NodeUpdate(NodeUpdateType.ADD_NODE_DATA, node, data);
 	}
 
 	@Override
-	public RadixPeer getNode() {
+	public RadixNode getNode() {
 		return node;
 	}
 

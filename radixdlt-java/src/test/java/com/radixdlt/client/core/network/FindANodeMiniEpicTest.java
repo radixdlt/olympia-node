@@ -24,7 +24,7 @@ import static org.mockito.Mockito.when;
 public class FindANodeMiniEpicTest {
 	@Test
 	public void testValidClient() {
-		RadixPeer peer = mock(RadixPeer.class);
+		RadixNode peer = mock(RadixNode.class);
 		WebSocketClient ws = mock(WebSocketClient.class);
 		when(ws.getMessages()).thenReturn(Observable.never());
 		when(ws.sendMessage(any())).thenReturn(true);
@@ -44,7 +44,7 @@ public class FindANodeMiniEpicTest {
 
 	@Test
 	public void failedNodeConnectionTest() {
-		RadixPeer peer = mock(RadixPeer.class);
+		RadixNode peer = mock(RadixNode.class);
 		FindANodeMiniEpic findANodeFunction = new FindANodeMiniEpic(new RandomSelector());
 		TestObserver<NodeUpdate> testObserver = TestObserver.create();
 		findANodeFunction.apply(
@@ -59,15 +59,15 @@ public class FindANodeMiniEpicTest {
 
 	@Test
 	public void dontConnectToAllNodesTest() {
-		RadixPeer connectedPeer = mock(RadixPeer.class);
+		RadixNode connectedPeer = mock(RadixNode.class);
 
-		Map<RadixPeer, RadixClientStatus> networkStateMap = IntStream.range(0, 100).boxed().collect(Collectors.toMap(
+		Map<RadixNode, RadixClientStatus> networkStateMap = IntStream.range(0, 100).boxed().collect(Collectors.toMap(
 			i -> {
 				if (i == 0) {
 					return connectedPeer;
 				}
 
-				RadixPeer peer = mock(RadixPeer.class);
+				RadixNode peer = mock(RadixNode.class);
 				return peer;
 			},
 			i -> i == 0 ? RadixClientStatus.CONNECTED : RadixClientStatus.DISCONNECTED
@@ -87,8 +87,8 @@ public class FindANodeMiniEpicTest {
 
 	@Test
 	public void whenFirstNodeFailsThenSecondNodeShouldConnect() {
-		RadixPeer badPeer = mock(RadixPeer.class);
-		RadixPeer goodPeer = mock(RadixPeer.class);
+		RadixNode badPeer = mock(RadixNode.class);
+		RadixNode goodPeer = mock(RadixNode.class);
 
 		ReplaySubject<RadixNetworkState> networkState = ReplaySubject.create();
 

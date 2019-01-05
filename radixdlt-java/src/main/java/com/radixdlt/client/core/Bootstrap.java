@@ -3,14 +3,14 @@ package com.radixdlt.client.core;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.client.core.address.RadixUniverseConfigs;
 import com.radixdlt.client.core.network.NodeFinder;
-import com.radixdlt.client.core.network.RadixPeer;
+import com.radixdlt.client.core.network.RadixNode;
 import io.reactivex.Observable;
 import java.util.function.Supplier;
 
 public enum Bootstrap implements BootstrapConfig {
 	BETANET(
 		RadixUniverseConfigs::getBetanet,
-		Observable.just(new RadixPeer("localhost", false, 8080))
+		Observable.just(new RadixNode("localhost", false, 8080))
 	),
 	ALPHANET(
 		RadixUniverseConfigs::getAlphanet,
@@ -26,17 +26,17 @@ public enum Bootstrap implements BootstrapConfig {
 	),
 	WINTERFELL(
 		RadixUniverseConfigs::getWinterfell,
-		Observable.just(new RadixPeer("52.190.0.18", false, 8080))
+		Observable.just(new RadixNode("52.190.0.18", false, 8080))
 	),
 	WINTERFELL_LOCAL(
 		RadixUniverseConfigs::getWinterfell,
-		Observable.just(new RadixPeer("localhost", false, 8080))
+		Observable.just(new RadixNode("localhost", false, 8080))
 	);
 
 	private final Supplier<RadixUniverseConfig> config;
-	private final Observable<RadixPeer> seeds;
+	private final Observable<RadixNode> seeds;
 
-	Bootstrap(Supplier<RadixUniverseConfig> config, Observable<RadixPeer> seeds) {
+	Bootstrap(Supplier<RadixUniverseConfig> config, Observable<RadixNode> seeds) {
 		this.config = config;
 		this.seeds = seeds;
 	}
@@ -45,7 +45,7 @@ public enum Bootstrap implements BootstrapConfig {
 		return config.get();
 	}
 
-	public Observable<RadixPeer> getSeeds() {
+	public Observable<RadixNode> getSeeds() {
 		return seeds;
 	}
 }

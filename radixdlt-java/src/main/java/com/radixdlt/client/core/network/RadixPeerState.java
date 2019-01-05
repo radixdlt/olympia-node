@@ -6,7 +6,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * Immutable state at a certain point in time of a {@link RadixPeer}
+ * Immutable state at a certain point in time of a {@link RadixNode}
  */
 public class RadixPeerState {
 	private final String location;
@@ -42,42 +42,42 @@ public class RadixPeerState {
 	}
 
 	/**
-	 * Location of {@link RadixPeer}
+	 * Location of {@link RadixNode}
 	 */
 	public String getLocation() {
 		return location;
 	}
 
 	/**
-	 * Port of {@link RadixPeer}
+	 * Port of {@link RadixNode}
 	 */
 	public int getPort() {
 		return port;
 	}
 
 	/**
-	 * Status of {@link RadixPeer}'s client
+	 * Status of {@link RadixNode}'s client
 	 */
 	public RadixClientStatus getStatus() {
 		return status;
 	}
 
 	/**
-	 * Node runner data of {@link RadixPeer}, may be null
+	 * Node runner data of {@link RadixNode}, may be null
 	 */
 	public Optional<NodeRunnerData> getData() {
 		return Optional.ofNullable(this.data);
 	}
 
 	/**
-	 * API Version of {@link RadixPeer}'s client, may be null
+	 * API Version of {@link RadixNode}'s client, may be null
 	 */
 	public Optional<Integer> getVersion() {
 		return Optional.ofNullable(this.version);
 	}
 
 	/**
-	 * Universe configuration of {@link RadixPeer}'s client, may be null
+	 * Universe configuration of {@link RadixNode}'s client, may be null
 	 */
 	public Optional<RadixUniverseConfig> getUniverseConfig() {
 		return Optional.ofNullable(this.universeConfig);

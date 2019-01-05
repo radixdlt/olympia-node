@@ -3,7 +3,7 @@ package com.radixdlt.client.core.network.epics;
 import com.radixdlt.client.core.ledger.selector.RadixPeerSelector;
 import com.radixdlt.client.core.network.RadixClientStatus;
 import com.radixdlt.client.core.network.RadixNetworkState;
-import com.radixdlt.client.core.network.RadixPeer;
+import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.actions.NodeUpdate;
 import io.reactivex.Maybe;
 import io.reactivex.Observable;
@@ -28,7 +28,7 @@ public class FindANodeMiniEpic {
 
 	// TODO: check shards
 	private Maybe<NodeUpdate> findConnection(Set<Long> shards, RadixNetworkState state) {
-		final Map<RadixClientStatus,List<RadixPeer>> statusMap = Arrays.stream(RadixClientStatus.values())
+		final Map<RadixClientStatus,List<RadixNode>> statusMap = Arrays.stream(RadixClientStatus.values())
 			.collect(Collectors.toMap(
 				Function.identity(),
 				s -> state.getPeers().entrySet().stream().filter(e -> e.getValue().equals(s)).map(Entry::getKey).collect(Collectors.toList())
@@ -41,7 +41,7 @@ public class FindANodeMiniEpic {
 		if (activeNodeCount < 1) {
 			LOGGER.info(String.format("Requesting more node connections, want %d but have %d active nodes", 1, activeNodeCount));
 
-			List<RadixPeer> disconnectedPeers = statusMap.get(RadixClientStatus.DISCONNECTED);
+			List<RadixNode> disconnectedPeers = statusMap.get(RadixClientStatus.DISCONNECTED);
 			if (disconnectedPeers.isEmpty()) {
 				LOGGER.info("Could not connect to new peer, don't have any.");
 			} else {
@@ -53,7 +53,7 @@ public class FindANodeMiniEpic {
 		return Maybe.empty();
 	}
 
-	private static List<RadixPeer> getConnectedNodes(Set<Long> shards, RadixNetworkState state) {
+	private static List<RadixNode> getConnectedNodes(Set<Long> shards, RadixNetworkState state) {
 		return state.getPeers().entrySet().stream()
 			.filter(entry -> entry.getValue().equals(RadixClientStatus.CONNECTED))
 			.map(Map.Entry::getKey)
@@ -66,7 +66,7 @@ public class FindANodeMiniEpic {
 			.replay(1)
 			.autoConnect(2);
 
-		Observable<List<RadixPeer>> connectedNodes = syncNetState
+		Observable<List<RadixNode>> connectedNodes = syncNetState
 			.map(state -> getConnectedNodes(shards, state))
 			.replay(1)
 			.autoConnect(2);

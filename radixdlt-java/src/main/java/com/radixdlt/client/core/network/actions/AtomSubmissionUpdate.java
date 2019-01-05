@@ -3,7 +3,7 @@ package com.radixdlt.client.core.network.actions;
 import com.radixdlt.client.core.network.RadixJsonRpcClient.NodeAtomSubmissionState;
 import com.radixdlt.client.core.network.RadixJsonRpcClient.NodeAtomSubmissionUpdate;
 import com.radixdlt.client.core.network.RadixNodeAction;
-import com.radixdlt.client.core.network.RadixPeer;
+import com.radixdlt.client.core.network.RadixNode;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
@@ -46,12 +46,12 @@ public class AtomSubmissionUpdate implements RadixNodeAction {
 
 	private final AtomSubmissionState state;
 	private final Atom atom;
-	private final RadixPeer node;
+	private final RadixNode node;
 	private final long timestamp;
 	private final JsonElement data;
 	private final String uuid;
 
-	private AtomSubmissionUpdate(String uuid, Atom atom, AtomSubmissionState state, RadixPeer node, JsonElement data, long timestamp) {
+	private AtomSubmissionUpdate(String uuid, Atom atom, AtomSubmissionState state, RadixNode node, JsonElement data, long timestamp) {
 		Objects.requireNonNull(uuid);
 		Objects.requireNonNull(atom);
 		Objects.requireNonNull(state);
@@ -77,7 +77,7 @@ public class AtomSubmissionUpdate implements RadixNodeAction {
 		return data;
 	}
 
-	public RadixPeer getNode() {
+	public RadixNode getNode() {
 		return node;
 	}
 
@@ -108,11 +108,11 @@ public class AtomSubmissionUpdate implements RadixNodeAction {
 		);
 	}
 
-	public static AtomSubmissionUpdate submit(String uuid, Atom atom, RadixPeer node) {
+	public static AtomSubmissionUpdate submit(String uuid, Atom atom, RadixNode node) {
 		return new AtomSubmissionUpdate(uuid, atom, AtomSubmissionState.SUBMITTING, node, null, System.currentTimeMillis());
 	}
 
-	public static AtomSubmissionUpdate update(String uuid, Atom atom, NodeAtomSubmissionUpdate update, RadixPeer node) {
+	public static AtomSubmissionUpdate update(String uuid, Atom atom, NodeAtomSubmissionUpdate update, RadixNode node) {
 		return new AtomSubmissionUpdate(
 			uuid,
 			atom,

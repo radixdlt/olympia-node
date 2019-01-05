@@ -7,7 +7,6 @@ import io.reactivex.Observable;
 import io.reactivex.observables.ConnectableObservable;
 import io.reactivex.subjects.ReplaySubject;
 import java.util.concurrent.ConcurrentHashMap;
-import javax.xml.soap.Node;
 import org.radix.common.tuples.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,15 +25,15 @@ public final class RadixNetwork implements RadixNetworkEpic {
 	/**
 	 * Cached observable for keeping track of Radix Peers
 	 */
-	private final ReplaySubject<RadixPeer> peers;
+	private final ReplaySubject<RadixNode> peers;
 
 	/**
 	 * Hot observable which updates subscribers of new connection events
 	 */
-	private final ConnectableObservable<Pair<RadixPeer, RadixClientStatus>> statusUpdates;
+	private final ConnectableObservable<Pair<RadixNode, RadixClientStatus>> statusUpdates;
 	private final Observable<RadixNetworkState> networkState;
 
-	private final ConcurrentHashMap<RadixPeer, WebSocketClient> websockets = new ConcurrentHashMap<>();
+	private final ConcurrentHashMap<RadixNode, WebSocketClient> websockets = new ConcurrentHashMap<>();
 
 	public RadixNetwork() {
 		this.peers = ReplaySubject.create();
@@ -48,14 +47,14 @@ public final class RadixNetwork implements RadixNetworkEpic {
 			.flatMap(peer -> websockets.get(peer).getState().map(state -> new Pair<>(peer, state)))
 			.doOnNext(status -> LOGGER.debug(String.format("Peer status changed: %s", status)))
 			.scan(new RadixNetworkState(Collections.emptyMap()), (previousState, update) -> {
-				LinkedHashMap<RadixPeer, RadixClientStatus> currentPeers = new LinkedHashMap<>(previousState.getPeers());
+				LinkedHashMap<RadixNode, RadixClientStatus> currentPeers = new LinkedHashMap<>(previousState.getPeers());
 				currentPeers.put(update.getFirst(), update.getSecond());
 				return new RadixNetworkState(currentPeers);
 			})
 			.compose(ReplayingShare.instance());
 	}
 
-	public WebSocketClient getWsChannel(RadixPeer peer) {
+	public WebSocketClient getWsChannel(RadixNode peer) {
 		return websockets.get(peer);
 	}
 

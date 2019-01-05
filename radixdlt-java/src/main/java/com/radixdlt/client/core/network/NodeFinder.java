@@ -17,7 +17,7 @@ public class NodeFinder {
 		this.port = port;
 	}
 
-	public Single<RadixPeer> getSeed() {
+	public Single<RadixNode> getSeed() {
 		return Single.<String>create(emitter -> {
 				Request request = new Request.Builder()
 					.url(this.nodeFinderUrl)
@@ -47,6 +47,6 @@ public class NodeFinder {
 					}
 				});
 			})
-			.map(peerUrl -> new RadixPeer(peerUrl, true, port));
+			.map(peerUrl -> new RadixNode(peerUrl, true, port));
 	}
 }

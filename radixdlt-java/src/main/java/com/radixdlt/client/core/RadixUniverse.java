@@ -19,7 +19,7 @@ import com.radixdlt.client.core.ledger.InMemoryAtomStore;
 import com.radixdlt.client.core.network.RadixNetwork;
 import com.radixdlt.client.core.network.RadixNetworkController;
 import com.radixdlt.client.core.network.RadixNetworkController.RadixNetworkControllerBuilder;
-import com.radixdlt.client.core.network.RadixPeer;
+import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.epics.AtomSubmitSendToNodeEpic;
 import com.radixdlt.client.core.network.epics.AtomsFetchFindANodeEpic;
 import com.radixdlt.client.core.network.epics.AtomsFetchSubscriptionEpic;
@@ -77,7 +77,7 @@ public final class RadixUniverse {
 	 */
 	public static RadixUniverse bootstrap(
 		RadixUniverseConfig config,
-		Observable<RadixPeer> seeds
+		Observable<RadixNode> seeds
 	) {
 		synchronized (lock) {
 			if (defaultUniverse != null) {

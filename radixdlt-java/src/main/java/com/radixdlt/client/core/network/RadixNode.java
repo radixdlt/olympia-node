@@ -4,15 +4,15 @@ import okhttp3.Request;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class RadixPeer {
-	private final Logger logger = LoggerFactory.getLogger(RadixPeer.class);
+public class RadixNode {
+	private final Logger logger = LoggerFactory.getLogger(RadixNode.class);
 	private final String location;
 	private final boolean useSSL;
 	private final int port;
 	private final Request request;
 	private final String url;
 
-	public RadixPeer(String location, boolean useSSL, int port) {
+	public RadixNode(String location, boolean useSSL, int port) {
 		this.location = location;
 		this.useSSL = useSSL;
 		this.port = port;
@@ -44,11 +44,11 @@ public class RadixPeer {
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof RadixPeer)) {
+		if (!(o instanceof RadixNode)) {
 			return false;
 		}
 
-		RadixPeer p = (RadixPeer)o;
+		RadixNode p = (RadixNode)o;
 		return p.url.equals(this.url);
 	}
 }

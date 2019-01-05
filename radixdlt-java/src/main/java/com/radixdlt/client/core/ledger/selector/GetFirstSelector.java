@@ -1,6 +1,6 @@
 package com.radixdlt.client.core.ledger.selector;
 
-import com.radixdlt.client.core.network.RadixPeer;
+import com.radixdlt.client.core.network.RadixNode;
 
 import java.util.List;
 
@@ -9,7 +9,7 @@ import java.util.List;
  */
 public class GetFirstSelector implements RadixPeerSelector {
 	@Override
-	public RadixPeer apply(List<RadixPeer> radixPeers) {
-		return radixPeers.get(0);
+	public RadixNode apply(List<RadixNode> radixNodes) {
+		return radixNodes.get(0);
 	}
 }
