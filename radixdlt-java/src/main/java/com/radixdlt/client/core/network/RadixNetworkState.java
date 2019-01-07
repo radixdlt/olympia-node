@@ -1,11 +1,12 @@
 package com.radixdlt.client.core.network;
 
+import com.radixdlt.client.core.network.epics.RadixNodesEpic;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 
 /**
- * Current state in time of a {@link RadixNetwork}
+ * Current state in time of a {@link RadixNodesEpic}
  */
 public class RadixNetworkState {
 	private final Map<RadixNode, RadixNodeStatus> peers;

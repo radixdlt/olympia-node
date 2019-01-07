@@ -1,28 +1,30 @@
-package com.radixdlt.client.core.network;
+package com.radixdlt.client.core.network.epics;
 
-import com.jakewharton.rx.ReplayingShare;
+import com.radixdlt.client.core.network.HttpClients;
+import com.radixdlt.client.core.network.RadixJsonRpcClient;
+import com.radixdlt.client.core.network.RadixNetworkEpic;
+import com.radixdlt.client.core.network.RadixNetworkState;
+import com.radixdlt.client.core.network.RadixNode;
+import com.radixdlt.client.core.network.RadixNodeAction;
+import com.radixdlt.client.core.network.RadixNodeStatus;
+import com.radixdlt.client.core.network.WebSocketClient;
 import com.radixdlt.client.core.network.actions.NodeUpdate;
 import com.radixdlt.client.core.network.actions.NodeUpdate.NodeUpdateType;
 import io.reactivex.Observable;
-import io.reactivex.observables.ConnectableObservable;
 import io.reactivex.subjects.BehaviorSubject;
-import io.reactivex.subjects.PublishSubject;
-import io.reactivex.subjects.ReplaySubject;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import org.radix.common.tuples.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
-import java.util.LinkedHashMap;
 
 /**
  * RadixNetwork manages the state of peers and connections.
  */
-public final class RadixNetwork implements RadixNetworkEpic {
-	private static final Logger LOGGER = LoggerFactory.getLogger(RadixNetwork.class);
+public final class RadixNodesEpic implements RadixNetworkEpic {
+	private static final Logger LOGGER = LoggerFactory.getLogger(RadixNodesEpic.class);
 
 	/**
 	 * Hot observable which updates subscribers of new connection events
@@ -31,7 +33,7 @@ public final class RadixNetwork implements RadixNetworkEpic {
 
 	private final ConcurrentHashMap<RadixNode, WebSocketClient> websockets = new ConcurrentHashMap<>();
 
-	public RadixNetwork() {
+	public RadixNodesEpic() {
 		this.networkState = BehaviorSubject.createDefault(new RadixNetworkState(Collections.emptyMap()));
 	}
 
@@ -75,7 +77,34 @@ public final class RadixNetwork implements RadixNetworkEpic {
 			.ignoreElements()
 			.toObservable();
 
-		return addNodes.mergeWith(connectNodes);
+		Observable<RadixNodeAction> livePeers = actions
+			.filter(a -> a instanceof NodeUpdate)
+			.map(NodeUpdate.class::cast)
+			.filter(u -> u.getType().equals(NodeUpdateType.GET_LIVE_PEERS))
+			.doOnNext(u -> websockets.get(u.getNode()).connect())
+			.flatMap(u -> {
+				WebSocketClient ws = websockets.get(u.getNode());
+				RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(ws);
+				return jsonRpcClient.getLivePeers()
+					.toObservable()
+					.flatMapIterable(p -> p)
+					.map(data -> new RadixNode(data.getIp(), u.getNode().isSsl(), u.getNode().getPort()))
+					.map(NodeUpdate::add);
+			});
+
+		Observable<RadixNodeAction> nodeData = actions
+			.filter(a -> a instanceof NodeUpdate)
+			.map(NodeUpdate.class::cast)
+			.filter(u -> u.getType().equals(NodeUpdateType.GET_NODE_DATA))
+			.doOnNext(u -> websockets.get(u.getNode()).connect())
+			.flatMapSingle(u -> {
+				WebSocketClient ws = websockets.get(u.getNode());
+				RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(ws);
+				return jsonRpcClient.getInfo()
+					.map(data -> NodeUpdate.nodeData(u.getNode(), data));
+			});
+
+		return Observable.merge(addNodes, connectNodes, livePeers, nodeData);
 	}
 
 	public void reduce(RadixNodeAction action) {
@@ -101,6 +130,7 @@ public final class RadixNetwork implements RadixNetworkEpic {
 					networkState.onNext(new RadixNetworkState(newMap));
 					break;
 				}
+				case ADD_NODE_DATA:
 			}
 		}
 	}

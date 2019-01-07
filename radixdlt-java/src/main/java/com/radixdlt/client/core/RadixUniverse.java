@@ -16,7 +16,7 @@ import com.radixdlt.client.core.ledger.RadixAtomPuller;
 import com.radixdlt.client.core.ledger.selector.RandomSelector;
 import com.radixdlt.client.core.network.epics.AtomSubmitFindANodeEpic;
 import com.radixdlt.client.core.ledger.InMemoryAtomStore;
-import com.radixdlt.client.core.network.RadixNetwork;
+import com.radixdlt.client.core.network.epics.RadixNodesEpic;
 import com.radixdlt.client.core.network.RadixNetworkController;
 import com.radixdlt.client.core.network.RadixNetworkController.RadixNetworkControllerBuilder;
 import com.radixdlt.client.core.network.RadixNode;
@@ -84,12 +84,12 @@ public final class RadixUniverse {
 				throw new IllegalStateException("Default Universe already bootstrapped");
 			}
 
-			RadixNetwork network = new RadixNetwork();
+			RadixNodesEpic network = new RadixNodesEpic();
 			RadixNetworkController controller = new RadixNetworkControllerBuilder()
 				.network(network)
 				.checkUniverse(config)
 				.addEpic(network)
-				.addEpic(new DiscoverNodesEpic(network, seeds))
+				.addEpic(new DiscoverNodesEpic(seeds))
 				.addEpic(new AtomSubmitFindANodeEpic(new RandomSelector()))
 				.addEpic(new AtomSubmitSendToNodeEpic(network))
 				.addEpic(new AtomsFetchFindANodeEpic(new RandomSelector()))
@@ -229,7 +229,7 @@ public final class RadixUniverse {
 		return ledger;
 	}
 
-	public RadixNetwork getNetwork() {
+	public RadixNodesEpic getNetwork() {
 		return networkController.getNetwork();
 	}
 

@@ -11,13 +11,16 @@ public class NodeUpdate implements RadixNodeAction {
 		ADD_NODE,
 		START_CONNECT,
 		ADD_NODE_DATA,
-		WAITING,
 
+		WAITING,
 		CONNECTING,
 		CONNECTED,
 		CLOSING,
 		DISCONNECTED,
 		FAILED,
+
+		GET_LIVE_PEERS,
+		GET_NODE_DATA,
 
 		// Special for mini epic
 		// TODO: remove this
@@ -47,6 +50,14 @@ public class NodeUpdate implements RadixNodeAction {
 
 	public static NodeUpdate add(RadixNode node) {
 		return new NodeUpdate(NodeUpdateType.ADD_NODE, node, null);
+	}
+
+	public static NodeUpdate getLivePeers(RadixNode node) {
+		return new NodeUpdate(NodeUpdateType.GET_LIVE_PEERS, node, null);
+	}
+
+	public static NodeUpdate getNodeData(RadixNode node) {
+		return new NodeUpdate(NodeUpdateType.GET_NODE_DATA, node, null);
 	}
 
 	public static NodeUpdate nodeData(RadixNode node, NodeRunnerData data) {

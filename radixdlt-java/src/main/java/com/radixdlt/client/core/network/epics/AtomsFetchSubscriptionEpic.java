@@ -3,7 +3,6 @@ package com.radixdlt.client.core.network.epics;
 import com.radixdlt.client.core.network.AtomQuery;
 import com.radixdlt.client.core.network.RadixNodeStatus;
 import com.radixdlt.client.core.network.RadixJsonRpcClient;
-import com.radixdlt.client.core.network.RadixNetwork;
 import com.radixdlt.client.core.network.RadixNetworkEpic;
 import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixNodeAction;
@@ -25,9 +24,9 @@ import org.slf4j.LoggerFactory;
 public class AtomsFetchSubscriptionEpic implements RadixNetworkEpic {
 	private static final Logger LOGGER = LoggerFactory.getLogger(AtomsFetchSubscriptionEpic.class);
 
-	private final RadixNetwork network;
+	private final RadixNodesEpic network;
 
-	public AtomsFetchSubscriptionEpic(RadixNetwork network) {
+	public AtomsFetchSubscriptionEpic(RadixNodesEpic network) {
 		this.network = network;
 	}
 

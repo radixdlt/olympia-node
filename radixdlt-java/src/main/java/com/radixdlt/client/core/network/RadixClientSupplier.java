@@ -8,6 +8,7 @@ import com.radixdlt.client.core.ledger.selector.RadixPeerFilter;
 import com.radixdlt.client.core.ledger.selector.RadixPeerSelector;
 import com.radixdlt.client.core.ledger.selector.RandomSelector;
 import com.radixdlt.client.core.ledger.selector.ShardFilter;
+import com.radixdlt.client.core.network.epics.RadixNodesEpic;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import java.util.Map.Entry;
@@ -31,7 +32,7 @@ public class RadixClientSupplier {
 	/**
 	 * The network of peers available to connect to
 	 */
-	private final RadixNetwork network;
+	private final RadixNodesEpic network;
 
 	/**
 	 * The selector to use to decide between a list of viable peers
@@ -50,7 +51,7 @@ public class RadixClientSupplier {
 	 *
 	 * @param network The network
 	 */
-	public RadixClientSupplier(RadixNetwork network) {
+	public RadixClientSupplier(RadixNodesEpic network) {
 		this(network, new RandomSelector(), Arrays.asList(
 				new ConnectionAliveFilter(),
 				new CompatibleApiVersionFilter(RadixJsonRpcClient.API_VERSION)));
@@ -62,7 +63,7 @@ public class RadixClientSupplier {
 	 * @param network The network
 	 * @param config  The universe config for the matching universe filter
 	 */
-	public RadixClientSupplier(RadixNetwork network, RadixUniverseConfig config) {
+	public RadixClientSupplier(RadixNodesEpic network, RadixUniverseConfig config) {
 		this(network, new RandomSelector(), Arrays.asList(
 				new ConnectionAliveFilter(),
 				new CompatibleApiVersionFilter(RadixJsonRpcClient.API_VERSION),
@@ -76,7 +77,7 @@ public class RadixClientSupplier {
 	 * @param selector The selector used to select a peer from the desirable peer list
 	 * @param filters  The filters used to test the desirability of peers
 	 */
-	public RadixClientSupplier(RadixNetwork network, RadixPeerSelector selector, RadixPeerFilter... filters) {
+	public RadixClientSupplier(RadixNodesEpic network, RadixPeerSelector selector, RadixPeerFilter... filters) {
 		this(network, selector, Arrays.asList(filters));
 	}
 
@@ -87,7 +88,7 @@ public class RadixClientSupplier {
 	 * @param selector The selector used to select a peer from the desirable peer list
 	 * @param filters  The filters used to test the desirability of peers
 	 */
-	public RadixClientSupplier(RadixNetwork network, RadixPeerSelector selector, List<RadixPeerFilter> filters) {
+	public RadixClientSupplier(RadixNodesEpic network, RadixPeerSelector selector, List<RadixPeerFilter> filters) {
 		Objects.requireNonNull(network, "network is required");
 		Objects.requireNonNull(selector, "selector is required");
 		Objects.requireNonNull(filters, "filters is required");

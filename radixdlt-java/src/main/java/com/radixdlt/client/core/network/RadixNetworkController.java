@@ -9,6 +9,7 @@ import com.radixdlt.client.core.network.actions.NodeUpdate;
 import com.radixdlt.client.core.network.actions.AtomSubmissionUpdate;
 import com.radixdlt.client.core.network.actions.AtomsFetchUpdate;
 import com.radixdlt.client.core.network.actions.AtomsFetchUpdate.AtomsFetchState;
+import com.radixdlt.client.core.network.epics.RadixNodesEpic;
 import io.reactivex.Observable;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.observables.ConnectableObservable;
@@ -19,7 +20,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,14 +27,14 @@ public class RadixNetworkController implements AtomSubmitter {
 	private static final Logger LOGGER = LoggerFactory.getLogger(RadixNetworkController.class);
 
 	public static class RadixNetworkControllerBuilder {
-		private RadixNetwork network;
+		private RadixNodesEpic network;
 		private RadixUniverseConfig config;
 		private List<RadixNetworkEpic> epics = new ArrayList<>();
 
 		public RadixNetworkControllerBuilder() {
 		}
 
-		public RadixNetworkControllerBuilder network(RadixNetwork network) {
+		public RadixNetworkControllerBuilder network(RadixNodesEpic network) {
 			this.network = network;
 			return this;
 		}
@@ -60,11 +60,11 @@ public class RadixNetworkController implements AtomSubmitter {
 	/**
 	 * The selector to use to decide between a list of viable peers
 	 */
-	private final RadixNetwork network;
+	private final RadixNodesEpic network;
 
 	private final Subject<RadixNodeAction> nodeActions = PublishSubject.<RadixNodeAction>create().toSerialized();
 
-	private RadixNetworkController(RadixNetwork network, List<RadixNetworkEpic> epics) {
+	private RadixNetworkController(RadixNodesEpic network, List<RadixNetworkEpic> epics) {
 		this.network = network;
 
 		// Run reducers first
@@ -87,7 +87,7 @@ public class RadixNetworkController implements AtomSubmitter {
 		reducedNodeActions.connect();
 	}
 
-	public RadixNetwork getNetwork() {
+	public RadixNodesEpic getNetwork() {
 		return network;
 	}
 

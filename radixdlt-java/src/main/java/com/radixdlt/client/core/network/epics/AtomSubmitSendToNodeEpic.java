@@ -5,7 +5,6 @@ import com.radixdlt.client.core.network.actions.AtomSubmissionUpdate.AtomSubmiss
 import com.radixdlt.client.core.network.IncreasingRetryTimer;
 import com.radixdlt.client.core.network.RadixNodeStatus;
 import com.radixdlt.client.core.network.RadixJsonRpcClient;
-import com.radixdlt.client.core.network.RadixNetwork;
 import com.radixdlt.client.core.network.RadixNetworkEpic;
 import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixNodeAction;
@@ -16,9 +15,9 @@ import io.reactivex.Observable;
 import java.util.concurrent.TimeUnit;
 
 public class AtomSubmitSendToNodeEpic implements RadixNetworkEpic {
-	private final RadixNetwork network;
+	private final RadixNodesEpic network;
 
-	public AtomSubmitSendToNodeEpic(RadixNetwork network) {
+	public AtomSubmitSendToNodeEpic(RadixNodesEpic network) {
 		this.network = network;
 	}
 
