@@ -1,6 +1,7 @@
 package com.radixdlt.client.core.network;
 
 import com.google.common.collect.ImmutableMap;
+import com.radixdlt.client.core.atoms.Shards;
 import com.radixdlt.client.core.network.selector.GetFirstSelector;
 import com.radixdlt.client.core.network.selector.RandomSelector;
 import com.radixdlt.client.core.network.actions.NodeUpdate;
@@ -12,6 +13,7 @@ import io.reactivex.Observable;
 import io.reactivex.observers.TestObserver;
 import io.reactivex.subjects.ReplaySubject;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 
@@ -24,6 +26,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class FindANodeMiniEpicTest {
+	private RadixNodeState mockedNodeState(RadixNodeStatus status, long lowShard, long highShard) {
+		RadixNodeState nodeState = mock(RadixNodeState.class);
+		when(nodeState.getStatus()).thenReturn(status);
+		when(nodeState.getShards()).thenReturn(Optional.of(Shards.range(lowShard, highShard)));
+
+		return nodeState;
+	}
+
 	@Test
 	public void testValidClient() {
 		RadixNode node = mock(RadixNode.class);
@@ -35,7 +45,7 @@ public class FindANodeMiniEpicTest {
 		TestObserver<NodeUpdate> testObserver = TestObserver.create();
 		findANodeFunction.apply(
 			Collections.singleton(1L),
-			Observable.just(RadixNetworkState.of(node, RadixNodeState.of(node, RadixNodeStatus.CONNECTED)))
+			Observable.just(RadixNetworkState.of(node, mockedNodeState(RadixNodeStatus.CONNECTED, 1, 1)))
 		)
 		.subscribe(testObserver);
 
@@ -48,10 +58,15 @@ public class FindANodeMiniEpicTest {
 	public void failedNodeConnectionTest() {
 		RadixNode node = mock(RadixNode.class);
 		FindANodeMiniEpic findANodeFunction = new FindANodeMiniEpic(new RandomSelector());
+
+		RadixNodeState nodeState = mock(RadixNodeState.class);
+		when(nodeState.getStatus()).thenReturn(RadixNodeStatus.DISCONNECTED);
+		when(nodeState.getShards()).thenReturn(Optional.of(Shards.range(1,1)));
+
 		TestObserver<NodeUpdate> testObserver = TestObserver.create();
 		findANodeFunction.apply(
 			Collections.singleton(1L),
-			Observable.just(RadixNetworkState.of(node, RadixNodeState.of(node, RadixNodeStatus.DISCONNECTED))).concatWith(Observable.never())
+			Observable.just(RadixNetworkState.of(node, nodeState)).concatWith(Observable.never())
 		)
 		.subscribe(testObserver);
 
@@ -72,7 +87,7 @@ public class FindANodeMiniEpicTest {
 				RadixNode peer = mock(RadixNode.class);
 				return peer;
 			},
-			i -> i == 0 ? RadixNodeState.of(connectedPeer, RadixNodeStatus.CONNECTED) : RadixNodeState.of(mock(RadixNode.class), RadixNodeStatus.DISCONNECTED)
+			i -> mockedNodeState(i == 0 ? RadixNodeStatus.CONNECTED : RadixNodeStatus.DISCONNECTED, 1, 1)
 		));
 
 		FindANodeMiniEpic findANodeFunction = new FindANodeMiniEpic(new GetFirstSelector());
@@ -87,6 +102,7 @@ public class FindANodeMiniEpicTest {
 		testObserver.assertValue(u -> u.getNode().equals(connectedPeer));
 	}
 
+
 	@Test
 	public void whenFirstNodeFailsThenSecondNodeShouldConnect() {
 		RadixNode badPeer = mock(RadixNode.class);
@@ -94,9 +110,10 @@ public class FindANodeMiniEpicTest {
 
 		ReplaySubject<RadixNetworkState> networkState = ReplaySubject.create();
 
+
 		networkState.onNext(new RadixNetworkState(ImmutableMap.of(
-			badPeer, RadixNodeState.of(badPeer, RadixNodeStatus.DISCONNECTED),
-			goodPeer, RadixNodeState.of(goodPeer, RadixNodeStatus.DISCONNECTED)
+			badPeer, mockedNodeState(RadixNodeStatus.DISCONNECTED, 1, 1),
+			goodPeer, mockedNodeState(RadixNodeStatus.DISCONNECTED, 1, 1)
 		)));
 
 		FindANodeMiniEpic findANodeFunction = new FindANodeMiniEpic(new GetFirstSelector());
@@ -109,13 +126,13 @@ public class FindANodeMiniEpicTest {
 		.doOnNext(i -> {
 			if (i.getNode().equals(badPeer)) {
 				networkState.onNext(new RadixNetworkState(ImmutableMap.of(
-					badPeer, RadixNodeState.of(badPeer, RadixNodeStatus.FAILED),
-					goodPeer, RadixNodeState.of(goodPeer, RadixNodeStatus.DISCONNECTED)
+					badPeer, mockedNodeState(RadixNodeStatus.FAILED, 1, 1),
+					goodPeer, mockedNodeState(RadixNodeStatus.DISCONNECTED, 1, 1)
 				)));
 			} else {
 				networkState.onNext(new RadixNetworkState(ImmutableMap.of(
-					badPeer, RadixNodeState.of(badPeer, RadixNodeStatus.FAILED),
-					goodPeer, RadixNodeState.of(goodPeer, RadixNodeStatus.CONNECTED)
+					badPeer, mockedNodeState(RadixNodeStatus.FAILED, 1, 1),
+					goodPeer, mockedNodeState(RadixNodeStatus.CONNECTED, 1, 1)
 				)));
 			}
 		})

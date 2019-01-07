@@ -2,6 +2,7 @@ package com.radixdlt.client.core.network.reducers;
 
 import com.radixdlt.client.core.address.RadixUniverseConfig;
 
+import com.radixdlt.client.core.atoms.Shards;
 import com.radixdlt.client.core.network.NodeRunnerData;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.RadixNodeStatus;
@@ -58,6 +59,10 @@ public class RadixNodeState {
 	 */
 	public RadixNodeStatus getStatus() {
 		return status;
+	}
+
+	public Optional<Shards> getShards() {
+		return getData().map(NodeRunnerData::getShards);
 	}
 
 	/**

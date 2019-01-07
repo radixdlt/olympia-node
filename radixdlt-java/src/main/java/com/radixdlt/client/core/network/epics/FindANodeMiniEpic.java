@@ -32,7 +32,7 @@ public class FindANodeMiniEpic {
 			.collect(Collectors.toMap(
 				Function.identity(),
 				s -> state.getPeers().entrySet().stream()
-					.filter(entry -> entry.getValue().getData().map(NodeRunnerData::getShards).map(sh -> sh.intersects(shards)).orElse(false))
+					.filter(entry -> entry.getValue().getShards().map(sh -> sh.intersects(shards)).orElse(false))
 					.filter(e -> e.getValue().getStatus().equals(s))
 					.map(Entry::getKey)
 					.collect(Collectors.toList())
@@ -58,7 +58,7 @@ public class FindANodeMiniEpic {
 	private static List<RadixNode> getConnectedNodes(Set<Long> shards, RadixNetworkState state) {
 		return state.getPeers().entrySet().stream()
 			.filter(entry -> entry.getValue().getStatus().equals(RadixNodeStatus.CONNECTED))
-			.filter(entry -> entry.getValue().getData().map(NodeRunnerData::getShards).map(s -> s.intersects(shards)).orElse(false))
+			.filter(entry -> entry.getValue().getShards().map(s -> s.intersects(shards)).orElse(false))
 			.map(Map.Entry::getKey)
 			.collect(Collectors.toList());
 	}
