@@ -34,9 +34,7 @@ public class FindANodeMiniEpic {
 				s -> state.getPeers().entrySet().stream().filter(e -> e.getValue().equals(s)).map(Entry::getKey).collect(Collectors.toList())
 			));
 
-		final long activeNodeCount =
-			statusMap.get(RadixNodeStatus.CONNECTED).size()
-				+ statusMap.get(RadixNodeStatus.CONNECTING).size();
+		final long activeNodeCount = statusMap.get(RadixNodeStatus.CONNECTED).size() + statusMap.get(RadixNodeStatus.CONNECTING).size();
 
 		if (activeNodeCount < 1) {
 			LOGGER.info(String.format("Requesting more node connections, want %d but have %d active nodes", 1, activeNodeCount));

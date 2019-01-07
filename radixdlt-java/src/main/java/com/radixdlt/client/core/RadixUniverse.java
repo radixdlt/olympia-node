@@ -20,9 +20,7 @@ import com.radixdlt.client.core.network.epics.RadixNodesEpic;
 import com.radixdlt.client.core.network.RadixNetworkController;
 import com.radixdlt.client.core.network.RadixNetworkController.RadixNetworkControllerBuilder;
 import com.radixdlt.client.core.network.RadixNode;
-import com.radixdlt.client.core.network.epics.AtomSubmitSendToNodeEpic;
 import com.radixdlt.client.core.network.epics.AtomsFetchFindANodeEpic;
-import com.radixdlt.client.core.network.epics.AtomsFetchSubscriptionEpic;
 import com.radixdlt.client.core.network.epics.DiscoverNodesEpic;
 import io.reactivex.Observable;
 import java.util.Optional;
@@ -91,9 +89,7 @@ public final class RadixUniverse {
 				.addEpic(network)
 				.addEpic(new DiscoverNodesEpic(seeds))
 				.addEpic(new AtomSubmitFindANodeEpic(new RandomSelector()))
-				.addEpic(new AtomSubmitSendToNodeEpic(network))
 				.addEpic(new AtomsFetchFindANodeEpic(new RandomSelector()))
-				.addEpic(new AtomsFetchSubscriptionEpic(network))
 				.build();
 
 			defaultUniverse = new RadixUniverse(config, controller);

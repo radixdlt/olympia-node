@@ -1,6 +1,7 @@
 package com.radixdlt.client.core.network.epics;
 
 import com.radixdlt.client.core.network.HttpClients;
+import com.radixdlt.client.core.network.IncreasingRetryTimer;
 import com.radixdlt.client.core.network.RadixJsonRpcClient;
 import com.radixdlt.client.core.network.RadixNetworkEpic;
 import com.radixdlt.client.core.network.RadixNetworkState;
@@ -8,6 +9,9 @@ import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.RadixNodeAction;
 import com.radixdlt.client.core.network.RadixNodeStatus;
 import com.radixdlt.client.core.network.WebSocketClient;
+import com.radixdlt.client.core.network.WebSocketException;
+import com.radixdlt.client.core.network.actions.AtomSubmissionUpdate;
+import com.radixdlt.client.core.network.actions.AtomSubmissionUpdate.AtomSubmissionState;
 import com.radixdlt.client.core.network.actions.NodeUpdate;
 import com.radixdlt.client.core.network.actions.NodeUpdate.NodeUpdateType;
 import io.reactivex.Observable;
@@ -15,6 +19,7 @@ import io.reactivex.subjects.BehaviorSubject;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,14 +36,9 @@ public final class RadixNodesEpic implements RadixNetworkEpic {
 	 */
 	private final BehaviorSubject<RadixNetworkState> networkState;
 
-	private final ConcurrentHashMap<RadixNode, WebSocketClient> websockets = new ConcurrentHashMap<>();
 
 	public RadixNodesEpic() {
 		this.networkState = BehaviorSubject.createDefault(new RadixNetworkState(Collections.emptyMap()));
-	}
-
-	public WebSocketClient getWsChannel(RadixNode peer) {
-		return websockets.get(peer);
 	}
 
 	/**
@@ -52,6 +52,8 @@ public final class RadixNodesEpic implements RadixNetworkEpic {
 
 	@Override
 	public Observable<RadixNodeAction> epic(Observable<RadixNodeAction> actions, Observable<RadixNetworkState> networkState) {
+		final ConcurrentHashMap<RadixNode, WebSocketClient> websockets = new ConcurrentHashMap<>();
+
 		Observable<RadixNodeAction> addNodes = actions
 			.filter(a -> a instanceof NodeUpdate)
 			.map(NodeUpdate.class::cast)
@@ -77,34 +79,14 @@ public final class RadixNodesEpic implements RadixNetworkEpic {
 			.ignoreElements()
 			.toObservable();
 
-		Observable<RadixNodeAction> livePeers = actions
-			.filter(a -> a instanceof NodeUpdate)
-			.map(NodeUpdate.class::cast)
-			.filter(u -> u.getType().equals(NodeUpdateType.GET_LIVE_PEERS))
-			.doOnNext(u -> websockets.get(u.getNode()).connect())
-			.flatMap(u -> {
-				WebSocketClient ws = websockets.get(u.getNode());
-				RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(ws);
-				return jsonRpcClient.getLivePeers()
-					.toObservable()
-					.flatMapIterable(p -> p)
-					.map(data -> new RadixNode(data.getIp(), u.getNode().isSsl(), u.getNode().getPort()))
-					.map(NodeUpdate::add);
-			});
+		Observable<RadixNodeAction> jsonRpcEpics = Observable.merge(
+			RadixNodeJsonRpcEpics.livePeers(websockets).epic(actions, networkState),
+			RadixNodeJsonRpcEpics.nodeData(websockets).epic(actions, networkState),
+			RadixNodeJsonRpcEpics.submitAtom(websockets).epic(actions, networkState),
+			RadixNodeJsonRpcEpics.fetchAtoms(websockets).epic(actions, networkState)
+		);
 
-		Observable<RadixNodeAction> nodeData = actions
-			.filter(a -> a instanceof NodeUpdate)
-			.map(NodeUpdate.class::cast)
-			.filter(u -> u.getType().equals(NodeUpdateType.GET_NODE_DATA))
-			.doOnNext(u -> websockets.get(u.getNode()).connect())
-			.flatMapSingle(u -> {
-				WebSocketClient ws = websockets.get(u.getNode());
-				RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(ws);
-				return jsonRpcClient.getInfo()
-					.map(data -> NodeUpdate.nodeData(u.getNode(), data));
-			});
-
-		return Observable.merge(addNodes, connectNodes, livePeers, nodeData);
+		return Observable.merge(addNodes, connectNodes, jsonRpcEpics);
 	}
 
 	public void reduce(RadixNodeAction action) {
