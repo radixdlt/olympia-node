@@ -1,6 +1,6 @@
 package com.radixdlt.client.core.network.epics;
 
-import com.radixdlt.client.core.network.RadixClientStatus;
+import com.radixdlt.client.core.network.RadixNodeStatus;
 import com.radixdlt.client.core.network.RadixJsonRpcClient;
 import com.radixdlt.client.core.network.RadixNetwork;
 import com.radixdlt.client.core.network.RadixNetworkEpic;
@@ -35,7 +35,7 @@ public class DiscoverNodesEpic implements RadixNetworkEpic {
 
 		Observable<RadixNodeAction> addSeedSiblings = connectedSeeds.flatMap(s ->
 				networkState
-					.filter(state -> state.getPeers().get(s) == RadixClientStatus.CONNECTED)
+					.filter(state -> state.getPeers().get(s) == RadixNodeStatus.CONNECTED)
 					.firstOrError()
 					.flatMapObservable(i -> {
 						RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(network.getWsChannel(s));
@@ -54,7 +54,7 @@ public class DiscoverNodesEpic implements RadixNetworkEpic {
 			.map(NodeUpdate::getNode)
 			.flatMapSingle(node ->
 				networkState
-					.filter(state -> state.getPeers().get(node) == RadixClientStatus.CONNECTED)
+					.filter(state -> state.getPeers().get(node) == RadixNodeStatus.CONNECTED)
 					.firstOrError()
 					.flatMap(i -> {
 						RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(network.getWsChannel(node));

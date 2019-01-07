@@ -1,7 +1,7 @@
 package com.radixdlt.client.core.network.epics;
 
 import com.radixdlt.client.core.network.AtomQuery;
-import com.radixdlt.client.core.network.RadixClientStatus;
+import com.radixdlt.client.core.network.RadixNodeStatus;
 import com.radixdlt.client.core.network.RadixJsonRpcClient;
 import com.radixdlt.client.core.network.RadixNetwork;
 import com.radixdlt.client.core.network.RadixNetworkEpic;
@@ -45,7 +45,7 @@ public class AtomsFetchSubscriptionEpic implements RadixNetworkEpic {
 			.filter(update -> update.getState().equals(AtomsFetchState.SUBMITTING) || update.getState().equals(AtomsFetchState.ON_CANCEL))
 			.flatMapSingle(update -> {
 				if (update.getState().equals(AtomsFetchState.SUBMITTING)) {
-					return networkState.filter(s -> s.getPeers().get(update.getNode()).equals(RadixClientStatus.CONNECTED)).firstOrError().map(s -> update);
+					return networkState.filter(s -> s.getPeers().get(update.getNode()).equals(RadixNodeStatus.CONNECTED)).firstOrError().map(s -> update);
 				} else {
 					return Single.just(update);
 				}

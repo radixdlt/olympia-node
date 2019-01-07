@@ -1,6 +1,7 @@
 package com.radixdlt.client.core.network.actions;
 
 import com.radixdlt.client.core.network.NodeRunnerData;
+import com.radixdlt.client.core.network.RadixNodeStatus;
 import com.radixdlt.client.core.network.RadixNodeAction;
 import com.radixdlt.client.core.network.RadixNode;
 import java.util.Objects;
@@ -10,6 +11,13 @@ public class NodeUpdate implements RadixNodeAction {
 		ADD_NODE,
 		START_CONNECT,
 		ADD_NODE_DATA,
+		WAITING,
+
+		CONNECTING,
+		CONNECTED,
+		CLOSING,
+		DISCONNECTED,
+		FAILED,
 
 		// Special for mini epic
 		// TODO: remove this
@@ -43,6 +51,10 @@ public class NodeUpdate implements RadixNodeAction {
 
 	public static NodeUpdate nodeData(RadixNode node, NodeRunnerData data) {
 		return new NodeUpdate(NodeUpdateType.ADD_NODE_DATA, node, data);
+	}
+
+	public static NodeUpdate nodeStatus(RadixNode node, RadixNodeStatus status) {
+		return new NodeUpdate(NodeUpdateType.valueOf(status.name()), node, null);
 	}
 
 	@Override

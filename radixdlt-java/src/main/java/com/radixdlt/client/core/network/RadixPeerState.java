@@ -11,12 +11,12 @@ import java.util.Optional;
 public class RadixPeerState {
 	private final String location;
 	private final int port;
-	private final RadixClientStatus status;
+	private final RadixNodeStatus status;
 	private final NodeRunnerData data;
 	private final Integer version;
 	private final RadixUniverseConfig universeConfig;
 
-	public RadixPeerState(String location, int port, RadixClientStatus status, NodeRunnerData data, Integer version,
+	public RadixPeerState(String location, int port, RadixNodeStatus status, NodeRunnerData data, Integer version,
 	                      RadixUniverseConfig universeConfig) {
 		Objects.requireNonNull(location, "location is required");
 		Objects.requireNonNull(status, "status is required");
@@ -58,7 +58,7 @@ public class RadixPeerState {
 	/**
 	 * Status of {@link RadixNode}'s client
 	 */
-	public RadixClientStatus getStatus() {
+	public RadixNodeStatus getStatus() {
 		return status;
 	}
 

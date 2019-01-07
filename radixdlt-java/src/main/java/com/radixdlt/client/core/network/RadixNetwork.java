@@ -5,7 +5,11 @@ import com.radixdlt.client.core.network.actions.NodeUpdate;
 import com.radixdlt.client.core.network.actions.NodeUpdate.NodeUpdateType;
 import io.reactivex.Observable;
 import io.reactivex.observables.ConnectableObservable;
+import io.reactivex.subjects.BehaviorSubject;
+import io.reactivex.subjects.PublishSubject;
 import io.reactivex.subjects.ReplaySubject;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.radix.common.tuples.Pair;
 import org.slf4j.Logger;
@@ -20,38 +24,15 @@ import java.util.LinkedHashMap;
 public final class RadixNetwork implements RadixNetworkEpic {
 	private static final Logger LOGGER = LoggerFactory.getLogger(RadixNetwork.class);
 
-	private final Object lock = new Object();
-
-	/**
-	 * Cached observable for keeping track of Radix Peers
-	 */
-	private final ReplaySubject<RadixNode> peers;
-
 	/**
 	 * Hot observable which updates subscribers of new connection events
 	 */
-	private final ConnectableObservable<Pair<RadixNode, RadixClientStatus>> statusUpdates;
-	private final Observable<RadixNetworkState> networkState;
+	private final BehaviorSubject<RadixNetworkState> networkState;
 
 	private final ConcurrentHashMap<RadixNode, WebSocketClient> websockets = new ConcurrentHashMap<>();
 
 	public RadixNetwork() {
-		this.peers = ReplaySubject.create();
-
-		this.statusUpdates = this.peers
-			.flatMap(peer -> websockets.get(peer).getState().map(state -> new Pair<>(peer, state)))
-			.publish();
-		this.statusUpdates.connect();
-
-		this.networkState = this.peers
-			.flatMap(peer -> websockets.get(peer).getState().map(state -> new Pair<>(peer, state)))
-			.doOnNext(status -> LOGGER.debug(String.format("Peer status changed: %s", status)))
-			.scan(new RadixNetworkState(Collections.emptyMap()), (previousState, update) -> {
-				LinkedHashMap<RadixNode, RadixClientStatus> currentPeers = new LinkedHashMap<>(previousState.getPeers());
-				currentPeers.put(update.getFirst(), update.getSecond());
-				return new RadixNetworkState(currentPeers);
-			})
-			.compose(ReplayingShare.instance());
+		this.networkState = BehaviorSubject.createDefault(new RadixNetworkState(Collections.emptyMap()));
 	}
 
 	public WebSocketClient getWsChannel(RadixNode peer) {
@@ -69,26 +50,56 @@ public final class RadixNetwork implements RadixNetworkEpic {
 
 	@Override
 	public Observable<RadixNodeAction> epic(Observable<RadixNodeAction> actions, Observable<RadixNetworkState> networkState) {
-		return actions
+		Observable<RadixNodeAction> addNodes = actions
+			.filter(a -> a instanceof NodeUpdate)
+			.map(NodeUpdate.class::cast)
+			.filter(u -> u.getType().equals(NodeUpdateType.ADD_NODE))
+			.flatMap(u -> {
+				if (websockets.containsKey(u.getNode())) {
+					return Observable.empty();
+				}
+
+				WebSocketClient ws = new WebSocketClient(
+					listener -> HttpClients.getSslAllTrustingClient().newWebSocket(u.getNode().getLocation(), listener)
+				);
+				websockets.put(u.getNode(), ws);
+
+				return ws.getState().map(s -> NodeUpdate.nodeStatus(u.getNode(), s));
+			});
+
+		Observable<RadixNodeAction> connectNodes = actions
 			.filter(a -> a instanceof NodeUpdate)
 			.map(NodeUpdate.class::cast)
 			.filter(u -> u.getType().equals(NodeUpdateType.START_CONNECT))
 			.doOnNext(u -> websockets.get(u.getNode()).connect())
 			.ignoreElements()
 			.toObservable();
+
+		return addNodes.mergeWith(connectNodes);
 	}
 
 	public void reduce(RadixNodeAction action) {
 		if (action instanceof NodeUpdate) {
 			NodeUpdate nodeUpdate = (NodeUpdate) action;
-			synchronized (lock) {
-				if (nodeUpdate.getType().equals(NodeUpdateType.ADD_NODE)) {
-					websockets.computeIfAbsent(action.getNode(),
-						p -> new WebSocketClient(listener -> HttpClients.getSslAllTrustingClient().newWebSocket(p.getLocation(), listener)));
-					peers.onNext(action.getNode());
+			switch(nodeUpdate.getType()) {
+				case ADD_NODE: {
+					RadixNetworkState prev = networkState.getValue();
+					Map<RadixNode, RadixNodeStatus> newMap = new HashMap<>(prev.getPeers());
+					newMap.put(action.getNode(), RadixNodeStatus.DISCONNECTED);
+					networkState.onNext(new RadixNetworkState(newMap));
 					LOGGER.debug(String.format("Added to peer list: %s", action.getNode().getLocation()));
-				} else if (nodeUpdate.getType().equals(NodeUpdateType.ADD_NODE_DATA)) {
-
+					break;
+				}
+				case DISCONNECTED:
+				case CONNECTING:
+				case CONNECTED:
+				case CLOSING:
+				case FAILED: {
+					RadixNetworkState prev = networkState.getValue();
+					Map<RadixNode, RadixNodeStatus> newMap = new HashMap<>(prev.getPeers());
+					newMap.put(action.getNode(), RadixNodeStatus.valueOf(nodeUpdate.getType().name()));
+					networkState.onNext(new RadixNetworkState(newMap));
+					break;
 				}
 			}
 		}

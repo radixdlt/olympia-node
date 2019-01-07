@@ -1,6 +1,6 @@
 package com.radixdlt.client.core.ledger.selector;
 
-import com.radixdlt.client.core.network.RadixClientStatus;
+import com.radixdlt.client.core.network.RadixNodeStatus;
 import com.radixdlt.client.core.network.RadixPeerState;
 
 /**
@@ -9,6 +9,6 @@ import com.radixdlt.client.core.network.RadixPeerState;
 public class ConnectionAliveFilter implements RadixPeerFilter {
 	@Override
 	public boolean test(RadixPeerState peerState) {
-		return peerState.getStatus() == RadixClientStatus.CONNECTED || peerState.getStatus() == RadixClientStatus.CONNECTING;
+		return peerState.getStatus() == RadixNodeStatus.CONNECTED || peerState.getStatus() == RadixNodeStatus.CONNECTING;
 	}
 }

@@ -3,7 +3,6 @@ package com.radixdlt.client.core.network;
 import static org.mockito.Mockito.mock;
 
 import io.reactivex.observers.TestObserver;
-import java.io.IOException;
 import okhttp3.Response;
 import okhttp3.WebSocket;
 import org.junit.Test;
@@ -25,15 +24,15 @@ public class WebSocketClientTest {
 			return webSocket;
 		});
 
-		TestObserver<RadixClientStatus> testObserver = TestObserver.create();
+		TestObserver<RadixNodeStatus> testObserver = TestObserver.create();
 		client.getState().subscribe(testObserver);
 		client.connect();
 
 		testObserver.awaitCount(3);
 		testObserver.assertValues(
-			RadixClientStatus.DISCONNECTED,
-			RadixClientStatus.CONNECTING,
-			RadixClientStatus.FAILED
+			RadixNodeStatus.DISCONNECTED,
+			RadixNodeStatus.CONNECTING,
+			RadixNodeStatus.FAILED
 		);
 	}
 

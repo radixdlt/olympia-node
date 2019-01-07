@@ -8,15 +8,15 @@ import java.util.Objects;
  * Current state in time of a {@link RadixNetwork}
  */
 public class RadixNetworkState {
-	private final Map<RadixNode, RadixClientStatus> peers;
+	private final Map<RadixNode, RadixNodeStatus> peers;
 
-	public RadixNetworkState(Map<RadixNode, RadixClientStatus> peers) {
+	public RadixNetworkState(Map<RadixNode, RadixNodeStatus> peers) {
 		Objects.requireNonNull(peers, "peers is required");
 
 		this.peers = Collections.unmodifiableMap(peers);
 	}
 
-	public Map<RadixNode, RadixClientStatus> getPeers() {
+	public Map<RadixNode, RadixNodeStatus> getPeers() {
 		return peers;
 	}
 

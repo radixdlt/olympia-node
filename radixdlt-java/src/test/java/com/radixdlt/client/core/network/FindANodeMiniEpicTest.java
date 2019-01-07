@@ -33,7 +33,7 @@ public class FindANodeMiniEpicTest {
 		TestObserver<NodeUpdate> testObserver = TestObserver.create();
 		findANodeFunction.apply(
 			Collections.singleton(1L),
-			Observable.just(new RadixNetworkState(ImmutableMap.of(peer, RadixClientStatus.CONNECTED)))
+			Observable.just(new RadixNetworkState(ImmutableMap.of(peer, RadixNodeStatus.CONNECTED)))
 		)
 		.subscribe(testObserver);
 
@@ -49,7 +49,7 @@ public class FindANodeMiniEpicTest {
 		TestObserver<NodeUpdate> testObserver = TestObserver.create();
 		findANodeFunction.apply(
 			Collections.singleton(1L),
-			Observable.just(new RadixNetworkState(ImmutableMap.of(peer, RadixClientStatus.DISCONNECTED))).concatWith(Observable.never())
+			Observable.just(new RadixNetworkState(ImmutableMap.of(peer, RadixNodeStatus.DISCONNECTED))).concatWith(Observable.never())
 		)
 		.subscribe(testObserver);
 
@@ -61,7 +61,7 @@ public class FindANodeMiniEpicTest {
 	public void dontConnectToAllNodesTest() {
 		RadixNode connectedPeer = mock(RadixNode.class);
 
-		Map<RadixNode, RadixClientStatus> networkStateMap = IntStream.range(0, 100).boxed().collect(Collectors.toMap(
+		Map<RadixNode, RadixNodeStatus> networkStateMap = IntStream.range(0, 100).boxed().collect(Collectors.toMap(
 			i -> {
 				if (i == 0) {
 					return connectedPeer;
@@ -70,7 +70,7 @@ public class FindANodeMiniEpicTest {
 				RadixNode peer = mock(RadixNode.class);
 				return peer;
 			},
-			i -> i == 0 ? RadixClientStatus.CONNECTED : RadixClientStatus.DISCONNECTED
+			i -> i == 0 ? RadixNodeStatus.CONNECTED : RadixNodeStatus.DISCONNECTED
 		));
 
 		FindANodeMiniEpic findANodeFunction = new FindANodeMiniEpic(new GetFirstSelector());
@@ -93,8 +93,8 @@ public class FindANodeMiniEpicTest {
 		ReplaySubject<RadixNetworkState> networkState = ReplaySubject.create();
 
 		networkState.onNext(new RadixNetworkState(ImmutableMap.of(
-			badPeer, RadixClientStatus.DISCONNECTED,
-			goodPeer, RadixClientStatus.DISCONNECTED
+			badPeer, RadixNodeStatus.DISCONNECTED,
+			goodPeer, RadixNodeStatus.DISCONNECTED
 		)));
 
 		FindANodeMiniEpic findANodeFunction = new FindANodeMiniEpic(new GetFirstSelector());
@@ -107,13 +107,13 @@ public class FindANodeMiniEpicTest {
 		.doOnNext(i -> {
 			if (i.getNode().equals(badPeer)) {
 				networkState.onNext(new RadixNetworkState(ImmutableMap.of(
-					badPeer, RadixClientStatus.FAILED,
-					goodPeer, RadixClientStatus.DISCONNECTED
+					badPeer, RadixNodeStatus.FAILED,
+					goodPeer, RadixNodeStatus.DISCONNECTED
 				)));
 			} else {
 				networkState.onNext(new RadixNetworkState(ImmutableMap.of(
-					badPeer, RadixClientStatus.FAILED,
-					goodPeer, RadixClientStatus.CONNECTED
+					badPeer, RadixNodeStatus.FAILED,
+					goodPeer, RadixNodeStatus.CONNECTED
 				)));
 			}
 		})

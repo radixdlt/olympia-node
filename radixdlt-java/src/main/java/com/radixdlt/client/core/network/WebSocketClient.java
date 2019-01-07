@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory;
 public class WebSocketClient implements PersistentChannel {
 	private static final Logger LOGGER = LoggerFactory.getLogger(WebSocketClient.class);
 	private final Object lock = new Object();
-	private final BehaviorSubject<RadixClientStatus> state = BehaviorSubject.createDefault(RadixClientStatus.DISCONNECTED);
+	private final BehaviorSubject<RadixNodeStatus> state = BehaviorSubject.createDefault(RadixNodeStatus.DISCONNECTED);
 	private final Function<WebSocketListener, WebSocket> websocketFactory;
 	private final PublishSubject<String> messages = PublishSubject.create();
 	private WebSocket webSocket;
@@ -22,12 +22,12 @@ public class WebSocketClient implements PersistentChannel {
 	public WebSocketClient(Function<WebSocketListener, WebSocket> websocketFactory) {
 		this.websocketFactory = websocketFactory;
 		this.state
-			.filter(state -> state.equals(RadixClientStatus.FAILED))
+			.filter(state -> state.equals(RadixNodeStatus.FAILED))
 			.debounce(1, TimeUnit.MINUTES)
 			.subscribe(i -> {
 				synchronized (lock) {
-					if (this.state.getValue().equals(RadixClientStatus.FAILED)) {
-						this.state.onNext(RadixClientStatus.DISCONNECTED);
+					if (this.state.getValue().equals(RadixNodeStatus.FAILED)) {
+						this.state.onNext(RadixNodeStatus.DISCONNECTED);
 					}
 				}
 			});
@@ -39,7 +39,7 @@ public class WebSocketClient implements PersistentChannel {
 				@Override
 				public void onOpen(WebSocket webSocket, Response response) {
 					synchronized (lock) {
-						WebSocketClient.this.state.onNext(RadixClientStatus.CONNECTED);
+						WebSocketClient.this.state.onNext(RadixNodeStatus.CONNECTED);
 					}
 				}
 
@@ -58,7 +58,7 @@ public class WebSocketClient implements PersistentChannel {
 				@Override
 				public void onClosed(WebSocket webSocket, int code, String reason) {
 					synchronized (lock) {
-						WebSocketClient.this.state.onNext(RadixClientStatus.DISCONNECTED);
+						WebSocketClient.this.state.onNext(RadixNodeStatus.DISCONNECTED);
 						WebSocketClient.this.webSocket = null;
 					}
 				}
@@ -66,13 +66,13 @@ public class WebSocketClient implements PersistentChannel {
 				@Override
 				public void onFailure(WebSocket websocket, Throwable t, Response response) {
 					synchronized (lock) {
-						if (state.getValue().equals(RadixClientStatus.CLOSING)) {
-							WebSocketClient.this.state.onNext(RadixClientStatus.DISCONNECTED);
+						if (state.getValue().equals(RadixNodeStatus.CLOSING)) {
+							WebSocketClient.this.state.onNext(RadixNodeStatus.DISCONNECTED);
 							WebSocketClient.this.webSocket = null;
 							return;
 						}
 
-						WebSocketClient.this.state.onNext(RadixClientStatus.FAILED);
+						WebSocketClient.this.state.onNext(RadixNodeStatus.FAILED);
 						WebSocketClient.this.webSocket = null;
 					}
 				}
@@ -88,7 +88,7 @@ public class WebSocketClient implements PersistentChannel {
 			switch (state.getValue()) {
 				case DISCONNECTED:
 				case FAILED:
-					WebSocketClient.this.state.onNext(RadixClientStatus.CONNECTING);
+					WebSocketClient.this.state.onNext(RadixNodeStatus.CONNECTING);
 					this.webSocket = this.connectWebSocket();
 					return;
 				case CONNECTING:
@@ -103,7 +103,7 @@ public class WebSocketClient implements PersistentChannel {
 		return messages;
 	}
 
-	public Observable<RadixClientStatus> getState() {
+	public Observable<RadixNodeStatus> getState() {
 		return this.state;
 	}
 
@@ -114,7 +114,7 @@ public class WebSocketClient implements PersistentChannel {
 
 		synchronized (lock) {
 			if (this.webSocket != null) {
-				this.state.onNext(RadixClientStatus.CLOSING);
+				this.state.onNext(RadixNodeStatus.CLOSING);
 				this.webSocket.cancel();
 			}
 		}
@@ -124,7 +124,7 @@ public class WebSocketClient implements PersistentChannel {
 
 	public boolean sendMessage(String message) {
 		synchronized (lock) {
-			if (!this.state.getValue().equals(RadixClientStatus.CONNECTED)) {
+			if (!this.state.getValue().equals(RadixNodeStatus.CONNECTED)) {
 				LOGGER.error("Most likely a programming bug. Should not end here.");
 				return false;
 			}

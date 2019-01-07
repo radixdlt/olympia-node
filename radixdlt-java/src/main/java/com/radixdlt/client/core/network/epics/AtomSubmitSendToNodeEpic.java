@@ -3,7 +3,7 @@ package com.radixdlt.client.core.network.epics;
 import com.radixdlt.client.core.network.actions.AtomSubmissionUpdate;
 import com.radixdlt.client.core.network.actions.AtomSubmissionUpdate.AtomSubmissionState;
 import com.radixdlt.client.core.network.IncreasingRetryTimer;
-import com.radixdlt.client.core.network.RadixClientStatus;
+import com.radixdlt.client.core.network.RadixNodeStatus;
 import com.radixdlt.client.core.network.RadixJsonRpcClient;
 import com.radixdlt.client.core.network.RadixNetwork;
 import com.radixdlt.client.core.network.RadixNetworkEpic;
@@ -35,7 +35,7 @@ public class AtomSubmitSendToNodeEpic implements RadixNetworkEpic {
 			.map(AtomSubmissionUpdate.class::cast)
 			.filter(update -> update.getState().equals(AtomSubmissionState.SUBMITTING))
 			.flatMapSingle(update ->
-				networkState.filter(s -> s.getPeers().get(update.getNode()).equals(RadixClientStatus.CONNECTED)).firstOrError().map(s -> update)
+				networkState.filter(s -> s.getPeers().get(update.getNode()).equals(RadixNodeStatus.CONNECTED)).firstOrError().map(s -> update)
 			)
 			.flatMap(update -> {
 				WebSocketClient ws = network.getWsChannel(update.getNode());

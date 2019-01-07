@@ -173,13 +173,13 @@ public class RadixClientSupplier {
 	}
 
 	private void manageConnections(RadixNetworkState state) {
-		final Map<RadixClientStatus,List<RadixNode>> statusMap = Arrays.stream(RadixClientStatus.values())
+		final Map<RadixNodeStatus,List<RadixNode>> statusMap = Arrays.stream(RadixNodeStatus.values())
 			.collect(Collectors.toMap(
 				Function.identity(),
 				s -> state.getPeers().entrySet().stream().filter(e -> e.getValue().equals(s)).map(Entry::getKey).collect(Collectors.toList())
 			));
-		final long activeNodeCount = statusMap.get(RadixClientStatus.CONNECTED).size()
-			+ statusMap.get(RadixClientStatus.CONNECTING).size();
+		final long activeNodeCount = statusMap.get(RadixNodeStatus.CONNECTED).size()
+			+ statusMap.get(RadixNodeStatus.CONNECTING).size();
 		if (activeNodeCount < this.targetDesirablePeerCount) {
 			this.logger.info(
 				String.format("Requesting more peer connections, want %d but have %d desirable peers",
@@ -187,7 +187,7 @@ public class RadixClientSupplier {
 				activeNodeCount)
 			);
 
-			List<RadixNode> disconnectedPeers = statusMap.get(RadixClientStatus.DISCONNECTED);
+			List<RadixNode> disconnectedPeers = statusMap.get(RadixNodeStatus.DISCONNECTED);
 			if (disconnectedPeers.isEmpty()) {
 				this.logger.info("Could not connect to new peer, don't have any.");
 			} else {
@@ -198,7 +198,7 @@ public class RadixClientSupplier {
 
 	private List<RadixNode> collectDesirablePeers(List<RadixPeerFilter> filters, RadixNetworkState state) {
 		return state.getPeers().entrySet().stream()
-				.filter(entry -> entry.getValue().equals(RadixClientStatus.CONNECTED))
+				.filter(entry -> entry.getValue().equals(RadixNodeStatus.CONNECTED))
 				.map(Map.Entry::getKey)
 				.collect(Collectors.toList());
 	}
