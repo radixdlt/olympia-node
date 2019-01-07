@@ -4,9 +4,11 @@ import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomObservation;
 import com.radixdlt.client.core.ledger.AtomSubmitter;
-import com.radixdlt.client.core.network.actions.SubmitAtomAction;
 import com.radixdlt.client.core.network.actions.FetchAtomsAction;
-import com.radixdlt.client.core.network.actions.FetchAtomsAction.FetchAtomsActionType;
+import com.radixdlt.client.core.network.actions.FetchAtomsCancelAction;
+import com.radixdlt.client.core.network.actions.FetchAtomsRequestAction;
+import com.radixdlt.client.core.network.actions.SubmitAtomAction;
+import com.radixdlt.client.core.network.actions.FetchAtomsObservationAction;
 import com.radixdlt.client.core.network.reducers.RadixNetwork;
 import io.reactivex.Observable;
 import io.reactivex.disposables.Disposable;
@@ -110,19 +112,18 @@ public class RadixNetworkController implements AtomSubmitter {
 
 	public Observable<AtomObservation> fetchAtoms(RadixAddress address) {
 		return Observable.create(emitter -> {
-			FetchAtomsAction initialAction = FetchAtomsAction.findANode(address);
+			FetchAtomsAction initialAction = FetchAtomsRequestAction.newRequest(address);
 
 			Disposable d = nodeActions
-				.filter(a -> a instanceof FetchAtomsAction)
-				.map(FetchAtomsAction.class::cast)
+				.filter(a -> a instanceof FetchAtomsObservationAction)
+				.map(FetchAtomsObservationAction.class::cast)
 				.filter(a -> a.getUuid().equals(initialAction.getUuid()))
-				.filter(a -> a.getType().equals(FetchAtomsActionType.RECEIVED_ATOM_OBSERVATION))
-				.map(FetchAtomsAction::getObservation)
+				.map(FetchAtomsObservationAction::getObservation)
 				.subscribe(emitter::onNext, emitter::onError, emitter::onComplete);
 
 			emitter.setCancellable(() -> {
 				d.dispose();
-				nodeActions.onNext(FetchAtomsAction.cancel(initialAction.getUuid(), initialAction.getAddress()));
+				nodeActions.onNext(FetchAtomsCancelAction.of(initialAction.getUuid(), initialAction.getAddress()));
 			});
 
 			nodeActions.onNext(initialAction);
