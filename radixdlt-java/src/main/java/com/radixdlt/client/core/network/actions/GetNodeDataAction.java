@@ -4,14 +4,14 @@ import com.radixdlt.client.core.network.jsonrpc.NodeRunnerData;
 import com.radixdlt.client.core.network.RadixNode;
 import java.util.Objects;
 
-public class GetNodeData implements JsonRpcAction {
-	public enum GetNodeDataType {
+public class GetNodeDataAction implements JsonRpcAction {
+	public enum GetNodeDataActionType {
 		GET_NODE_DATA_REQUEST(JsonRpcActionType.REQUEST),
 		GET_NODE_DATA_RESULT(JsonRpcActionType.RESULT);
 
 		private final JsonRpcActionType jsonRpcActionType;
 
-		GetNodeDataType(JsonRpcActionType jsonRpcActionType) {
+		GetNodeDataActionType(JsonRpcActionType jsonRpcActionType) {
 			this.jsonRpcActionType = jsonRpcActionType;
 		}
 
@@ -20,11 +20,11 @@ public class GetNodeData implements JsonRpcAction {
 		}
 	}
 
-	private final GetNodeDataType type;
+	private final GetNodeDataActionType type;
 	private final RadixNode node;
 	private final NodeRunnerData result;
 
-	private GetNodeData(GetNodeDataType type, RadixNode node, NodeRunnerData result) {
+	private GetNodeDataAction(GetNodeDataActionType type, RadixNode node, NodeRunnerData result) {
 		Objects.requireNonNull(type);
 		Objects.requireNonNull(node);
 
@@ -33,7 +33,7 @@ public class GetNodeData implements JsonRpcAction {
 		this.result = result;
 	}
 
-	public GetNodeDataType getType() {
+	public GetNodeDataActionType getType() {
 		 return type;
 	}
 
@@ -51,12 +51,12 @@ public class GetNodeData implements JsonRpcAction {
 		return result;
 	}
 
-	public static GetNodeData request(RadixNode node) {
-		return new GetNodeData(GetNodeDataType.GET_NODE_DATA_REQUEST, node, null);
+	public static GetNodeDataAction request(RadixNode node) {
+		return new GetNodeDataAction(GetNodeDataActionType.GET_NODE_DATA_REQUEST, node, null);
 	}
 
-	public static GetNodeData result(RadixNode node, NodeRunnerData result) {
-		return new GetNodeData(GetNodeDataType.GET_NODE_DATA_RESULT, node, result);
+	public static GetNodeDataAction result(RadixNode node, NodeRunnerData result) {
+		return new GetNodeDataAction(GetNodeDataActionType.GET_NODE_DATA_RESULT, node, result);
 	}
 
 	@Override

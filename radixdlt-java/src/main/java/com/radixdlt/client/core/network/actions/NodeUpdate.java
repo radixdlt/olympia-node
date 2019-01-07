@@ -1,7 +1,6 @@
 package com.radixdlt.client.core.network.actions;
 
 import com.radixdlt.client.core.network.jsonrpc.NodeRunnerData;
-import com.radixdlt.client.core.network.websocket.WebSocketStatus;
 import com.radixdlt.client.core.network.RadixNodeAction;
 import com.radixdlt.client.core.network.RadixNode;
 import java.util.Objects;
@@ -9,14 +8,7 @@ import java.util.Objects;
 public class NodeUpdate implements RadixNodeAction {
 	public enum NodeUpdateType {
 		ADD_NODE,
-		START_CONNECT,
-
-		WAITING,
-		CONNECTING,
-		CONNECTED,
-		CLOSING,
-		DISCONNECTED,
-		FAILED,
+		WEBSOCKET_CONNECT,
 
 		// Special for mini epic
 		// TODO: remove this
@@ -27,7 +19,7 @@ public class NodeUpdate implements RadixNodeAction {
 	private final NodeUpdateType type;
 	private final NodeRunnerData data;
 
-	public NodeUpdate(NodeUpdateType type, RadixNode node, NodeRunnerData data) {
+	private NodeUpdate(NodeUpdateType type, RadixNode node, NodeRunnerData data) {
 		Objects.requireNonNull(type);
 		Objects.requireNonNull(node);
 
@@ -40,8 +32,8 @@ public class NodeUpdate implements RadixNodeAction {
 		return new NodeUpdate(NodeUpdateType.SELECT_NODE, node, null);
 	}
 
-	public static NodeUpdate startConnect(RadixNode node) {
-		return new NodeUpdate(NodeUpdateType.START_CONNECT, node, null);
+	public static NodeUpdate wsConnect(RadixNode node) {
+		return new NodeUpdate(NodeUpdateType.WEBSOCKET_CONNECT, node, null);
 	}
 
 	public static NodeUpdate add(RadixNode node) {
@@ -50,10 +42,6 @@ public class NodeUpdate implements RadixNodeAction {
 
 	public static NodeUpdate add(RadixNode node, NodeRunnerData data) {
 		return new NodeUpdate(NodeUpdateType.ADD_NODE, node, data);
-	}
-
-	public static NodeUpdate nodeStatus(RadixNode node, WebSocketStatus status) {
-		return new NodeUpdate(NodeUpdateType.valueOf(status.name()), node, null);
 	}
 
 	@Override

@@ -1,36 +1,56 @@
 package com.radixdlt.client.core.network.epics;
 
-import com.radixdlt.client.core.network.selector.RadixPeerSelector;
-import com.radixdlt.client.core.network.actions.AtomSubmissionUpdate;
-import com.radixdlt.client.core.network.actions.AtomSubmissionUpdate.AtomSubmissionState;
 import com.radixdlt.client.core.network.RadixNetworkEpic;
 import com.radixdlt.client.core.network.RadixNetworkState;
+import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.RadixNodeAction;
-import com.radixdlt.client.core.network.actions.NodeUpdate.NodeUpdateType;
+import com.radixdlt.client.core.network.actions.SubmitAtomAction;
+import com.radixdlt.client.core.network.actions.SubmitAtomAction.SubmitAtomActionType;
+import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient;
+import com.radixdlt.client.core.network.websocket.WebSocketClient;
+import com.radixdlt.client.core.network.websocket.WebSocketException;
+import com.radixdlt.client.core.network.websocket.WebSocketStatus;
+import com.radixdlt.client.core.util.IncreasingRetryTimer;
 import io.reactivex.Observable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 public class SubmitAtomEpic implements RadixNetworkEpic {
-	private static final Logger LOGGER = LoggerFactory.getLogger(SubmitAtomEpic.class);
-	private final FindANodeMiniEpic findANode;
-
-	public SubmitAtomEpic(RadixPeerSelector selector) {
-		this.findANode = new FindANodeMiniEpic(selector);
+	private final ConcurrentHashMap<RadixNode, WebSocketClient> websockets;
+	public SubmitAtomEpic(ConcurrentHashMap<RadixNode, WebSocketClient> websockets) {
+		this.websockets = websockets;
 	}
 
-	public Observable<RadixNodeAction> epic(Observable<RadixNodeAction> updates, Observable<RadixNetworkState> networkState) {
-		return updates
-			.filter(u -> u instanceof AtomSubmissionUpdate)
-			.map(AtomSubmissionUpdate.class::cast)
-			.filter(update -> update.getState().equals(AtomSubmissionState.SEARCHING_FOR_NODE))
-			.flatMap(searchUpdate ->
-				findANode.apply(searchUpdate.getAtom().getRequiredFirstShard(), networkState)
-					.map(a ->
-						a.getType().equals(NodeUpdateType.SELECT_NODE)
-							? AtomSubmissionUpdate.submit(searchUpdate.getUuid(), searchUpdate.getAtom(), a.getNode())
-							: a
-					)
-			);
+	@Override
+	public Observable<RadixNodeAction> epic(Observable<RadixNodeAction> actions, Observable<RadixNetworkState> networkState) {
+		return actions
+			.filter(u -> u instanceof SubmitAtomAction)
+			.map(SubmitAtomAction.class::cast)
+			.filter(update -> update.getType().equals(SubmitAtomActionType.SUBMIT))
+			.flatMap(u -> {
+				final WebSocketClient ws = websockets.get(u.getNode());
+				return ws.getState()
+					.doOnNext(s -> {
+						if (s.equals(WebSocketStatus.DISCONNECTED)) {
+							ws.connect();
+						}
+					})
+					.filter(s -> s.equals(WebSocketStatus.CONNECTED))
+					.firstOrError()
+					.flatMapObservable(i -> {
+						RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(ws);
+						return jsonRpcClient.submitAtom(u.getAtom())
+							.doOnError(Throwable::printStackTrace)
+							.map(nodeUpdate -> SubmitAtomAction.update(
+								u.getUuid(),
+								u.getAtom(),
+								nodeUpdate,
+								u.getNode()
+							))
+							.retryWhen(new IncreasingRetryTimer(WebSocketException.class))
+							// TODO: Better way of cleanup?
+							.doFinally(() -> Observable.timer(5, TimeUnit.SECONDS).subscribe(t -> ws.close()));
+					});
+			});
 	}
 }

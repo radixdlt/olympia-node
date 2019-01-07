@@ -1,38 +1,89 @@
 package com.radixdlt.client.core.network.epics;
 
-import com.radixdlt.client.core.network.selector.RadixPeerSelector;
 import com.radixdlt.client.core.network.RadixNetworkEpic;
 import com.radixdlt.client.core.network.RadixNetworkState;
+import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.RadixNodeAction;
-import com.radixdlt.client.core.network.actions.AtomsFetchUpdate;
-import com.radixdlt.client.core.network.actions.AtomsFetchUpdate.AtomsFetchState;
-import com.radixdlt.client.core.network.actions.NodeUpdate.NodeUpdateType;
+import com.radixdlt.client.core.network.actions.FetchAtomsAction;
+import com.radixdlt.client.core.network.actions.FetchAtomsAction.FetchAtomsActionType;
+import com.radixdlt.client.core.network.jsonrpc.AtomQuery;
+import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient;
+import com.radixdlt.client.core.network.websocket.WebSocketClient;
+import com.radixdlt.client.core.network.websocket.WebSocketStatus;
+import io.reactivex.Completable;
 import io.reactivex.Observable;
-import java.util.Collections;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import io.reactivex.disposables.Disposable;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 public class FetchAtomsEpic implements RadixNetworkEpic {
-	private static final Logger LOGGER = LoggerFactory.getLogger(SubmitAtomEpic.class);
-	private final FindANodeMiniEpic findANode;
-
-	public FetchAtomsEpic(RadixPeerSelector selector) {
-		this.findANode = new FindANodeMiniEpic(selector);
+	private final ConcurrentHashMap<RadixNode, WebSocketClient> websockets;
+	public FetchAtomsEpic(ConcurrentHashMap<RadixNode, WebSocketClient> websockets) {
+		this.websockets = websockets;
 	}
 
-	public Observable<RadixNodeAction> epic(Observable<RadixNodeAction> updates, Observable<RadixNetworkState> networkState) {
-		return updates
-			.filter(u -> u instanceof AtomsFetchUpdate)
-			.map(AtomsFetchUpdate.class::cast)
-			.filter(update -> update.getState().equals(AtomsFetchState.SEARCHING_FOR_NODE))
-			.flatMap(searchUpdate ->
-				findANode.apply(Collections.singleton(searchUpdate.getAddress().getUID().getShard()), networkState)
-					.map(a ->
-						a.getType().equals(NodeUpdateType.SELECT_NODE)
-							? AtomsFetchUpdate.submitQuery(searchUpdate.getUuid(), searchUpdate.getAddress(), a.getNode())
-							: a
-					)
-			);
-	}
+	@Override
+	public Observable<RadixNodeAction> epic(Observable<RadixNodeAction> actions, Observable<RadixNetworkState> networkState) {
+		final ConcurrentHashMap<String, Disposable> disposables = new ConcurrentHashMap<>();
+		final Observable<RadixNodeAction> cancelFetch =
+			actions
+				.filter(u -> u instanceof FetchAtomsAction)
+				.map(FetchAtomsAction.class::cast)
+				.filter(u -> u.getType().equals(FetchAtomsActionType.CANCEL))
+				.doOnNext(u -> {
+					Disposable d = disposables.remove(u.getUuid());
+					if (d != null) {
+						d.dispose();
+					}
+				})
+				.ignoreElements()
+				.toObservable();
 
+		final Observable<RadixNodeAction> fetch =
+			actions
+				.filter(u -> u instanceof FetchAtomsAction)
+				.map(FetchAtomsAction.class::cast)
+				.filter(update -> update.getType().equals(FetchAtomsActionType.SUBSCRIBE))
+				.flatMap(update -> {
+					final WebSocketClient ws = websockets.get(update.getNode());
+					return ws.getState()
+						.doOnNext(s -> {
+							if (s.equals(WebSocketStatus.DISCONNECTED)) {
+								ws.connect();
+							}
+						})
+						.filter(s -> s.equals(WebSocketStatus.CONNECTED))
+						.firstOrError()
+						.flatMapObservable(i ->
+							Observable.<FetchAtomsAction>create(emitter -> {
+								RadixJsonRpcClient client = new RadixJsonRpcClient(ws);
+
+								Disposable d = client.observeAtoms(update.getUuid()).map(
+									observation -> FetchAtomsAction.observed(
+										update.getUuid(),
+										update.getAddress(),
+										update.getNode(),
+										observation
+									))
+									.subscribe(emitter::onNext);
+								AtomQuery atomQuery = new AtomQuery(update.getAddress());
+								client.sendAtomsSubscribe(update.getUuid(), atomQuery).subscribe();
+
+								emitter.setCancellable(() -> {
+									d.dispose();
+									client.cancelAtomsSubscribe(update.getUuid())
+										.andThen(
+											Observable.timer(5, TimeUnit.SECONDS)
+												.flatMapCompletable(t -> {
+													ws.close();
+													return Completable.complete();
+												})
+										).subscribe();
+								});
+							}).doOnSubscribe(d -> disposables.put(update.getUuid(), d))
+						);
+				});
+
+		return Observable.merge(cancelFetch, fetch);
+	}
 }

@@ -318,7 +318,7 @@ public class RadixJsonRpcClient {
 	}
 
 	public enum NodeAtomSubmissionState {
-		SUBMITTED(false),
+		RECEIVED(false),
 		FAILED(true),
 		STORED(true),
 		COLLISION(true),
@@ -401,7 +401,7 @@ public class RadixJsonRpcClient {
 					messageListenerDisposable.dispose();
 					emitter.onNext(new NodeAtomSubmissionUpdate(NodeAtomSubmissionState.FAILED, null));
 				} else {
-					emitter.onNext(new NodeAtomSubmissionUpdate(NodeAtomSubmissionState.SUBMITTED, null));
+					emitter.onNext(new NodeAtomSubmissionUpdate(NodeAtomSubmissionState.RECEIVED, null));
 				}
 			}, emitter::onError);
 		});

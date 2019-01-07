@@ -142,8 +142,8 @@ public class FindANodeMiniEpicTest {
 
 		testObserver.awaitTerminalEvent();
 		testObserver.assertNoErrors();
-		testObserver.assertValueAt(0, u -> u.getType().equals(NodeUpdateType.START_CONNECT) && u.getNode().equals(badPeer));
-		testObserver.assertValueAt(1, u -> u.getType().equals(NodeUpdateType.START_CONNECT) && u.getNode().equals(goodPeer));
+		testObserver.assertValueAt(0, u -> u.getType().equals(NodeUpdateType.WEBSOCKET_CONNECT) && u.getNode().equals(badPeer));
+		testObserver.assertValueAt(1, u -> u.getType().equals(NodeUpdateType.WEBSOCKET_CONNECT) && u.getNode().equals(goodPeer));
 		testObserver.assertValueAt(2, u -> u.getType().equals(NodeUpdateType.SELECT_NODE) && u.getNode().equals(goodPeer));
 	}
 }

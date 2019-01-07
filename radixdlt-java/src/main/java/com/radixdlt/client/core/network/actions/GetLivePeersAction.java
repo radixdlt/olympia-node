@@ -7,14 +7,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-public class GetLivePeers implements JsonRpcAction {
-	public enum GetLivePeersType {
+public class GetLivePeersAction implements JsonRpcAction {
+	public enum GetLivePeersActionType {
 		GET_LIVE_PEERS_REQUEST(JsonRpcActionType.REQUEST),
 		GET_LIVE_PEERS_RESULT(JsonRpcActionType.RESULT);
 
 		private final JsonRpcActionType jsonRpcActionType;
 
-		GetLivePeersType(JsonRpcActionType jsonRpcActionType)  {
+		GetLivePeersActionType(JsonRpcActionType jsonRpcActionType)  {
 			this.jsonRpcActionType = jsonRpcActionType;
 		}
 
@@ -23,11 +23,11 @@ public class GetLivePeers implements JsonRpcAction {
 		}
 	}
 
-	private final GetLivePeersType type;
+	private final GetLivePeersActionType type;
 	private final RadixNode node;
 	private final List<NodeRunnerData> result;
 
-	private GetLivePeers(GetLivePeersType type, RadixNode node, List<NodeRunnerData> result) {
+	private GetLivePeersAction(GetLivePeersActionType type, RadixNode node, List<NodeRunnerData> result) {
 		Objects.requireNonNull(type);
 		Objects.requireNonNull(node);
 
@@ -36,7 +36,7 @@ public class GetLivePeers implements JsonRpcAction {
 		this.result = result == null ? null : Collections.unmodifiableList(new ArrayList<>(result));
 	}
 
-	public GetLivePeersType getType() {
+	public GetLivePeersActionType getType() {
 		return type;
 	}
 
@@ -54,12 +54,12 @@ public class GetLivePeers implements JsonRpcAction {
 		return result;
 	}
 
-	public static GetLivePeers request(RadixNode node) {
-		return new GetLivePeers(GetLivePeersType.GET_LIVE_PEERS_REQUEST, node, null);
+	public static GetLivePeersAction request(RadixNode node) {
+		return new GetLivePeersAction(GetLivePeersActionType.GET_LIVE_PEERS_REQUEST, node, null);
 	}
 
-	public static GetLivePeers result(RadixNode node, List<NodeRunnerData> result) {
-		return new GetLivePeers(GetLivePeersType.GET_LIVE_PEERS_RESULT, node, result);
+	public static GetLivePeersAction result(RadixNode node, List<NodeRunnerData> result) {
+		return new GetLivePeersAction(GetLivePeersActionType.GET_LIVE_PEERS_RESULT, node, result);
 	}
 
 	@Override

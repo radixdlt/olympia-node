@@ -46,7 +46,7 @@ public class FindANodeMiniEpic {
 			if (disconnectedPeers.isEmpty()) {
 				LOGGER.info("Could not connect to new peer, don't have any.");
 			} else {
-				return Maybe.just(NodeUpdate.startConnect(disconnectedPeers.get(0)));
+				return Maybe.just(NodeUpdate.wsConnect(disconnectedPeers.get(0)));
 			}
 		}
 
