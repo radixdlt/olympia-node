@@ -1,8 +1,8 @@
 package com.radixdlt.client.core.network;
 
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.client.core.ledger.selector.GetFirstSelector;
-import com.radixdlt.client.core.ledger.selector.RandomSelector;
+import com.radixdlt.client.core.network.selector.GetFirstSelector;
+import com.radixdlt.client.core.network.selector.RandomSelector;
 import com.radixdlt.client.core.network.actions.NodeUpdate;
 import com.radixdlt.client.core.network.actions.NodeUpdate.NodeUpdateType;
 import com.radixdlt.client.core.network.epics.FindANodeMiniEpic;

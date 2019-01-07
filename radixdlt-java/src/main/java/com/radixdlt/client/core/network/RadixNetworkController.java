@@ -71,10 +71,7 @@ public class RadixNetworkController implements AtomSubmitter {
 		// Run reducers first
 		ConnectableObservable<RadixNodeAction> reducedNodeActions = nodeActions.doOnNext(action -> {
 			LOGGER.info("NEXT ACTION: " + action.toString());
-
-			if (action instanceof NodeUpdate) {
-				network.reduce(action);
-			}
+			network.reduce(action);
 			// TODO: turn this into an action/state pair so synchronized
 		}).publish();
 

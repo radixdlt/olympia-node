@@ -1,6 +1,5 @@
 package com.radixdlt.client.core.network.epics;
 
-import com.radixdlt.client.core.network.RadixNodeStatus;
 import com.radixdlt.client.core.network.RadixNetworkEpic;
 import com.radixdlt.client.core.network.reducers.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixNodeAction;
@@ -11,8 +10,6 @@ import com.radixdlt.client.core.network.actions.GetLivePeers;
 import com.radixdlt.client.core.network.actions.GetLivePeers.GetLivePeersType;
 import com.radixdlt.client.core.network.actions.GetNodeData;
 import com.radixdlt.client.core.network.actions.NodeUpdate;
-import com.radixdlt.client.core.network.actions.NodeUpdate.NodeUpdateType;
-import com.radixdlt.client.core.network.reducers.RadixNodeState;
 import io.reactivex.Observable;
 
 public class DiscoverNodesEpic implements RadixNetworkEpic {
@@ -29,34 +26,11 @@ public class DiscoverNodesEpic implements RadixNetworkEpic {
 			.firstOrError()
 			.flatMapObservable(i -> seeds)
 			.publish()
-			.autoConnect(2);
+			.autoConnect(3);
 
 		Observable<RadixNodeAction> addSeeds = connectedSeeds.map(NodeUpdate::add);
-
-		Observable<RadixNodeAction> addSeedSiblings = connectedSeeds.flatMapSingle(seed ->
-			networkState
-				.filter(state -> {
-					RadixNodeState nodeState = state.getPeers().get(seed);
-					return nodeState != null && nodeState.getStatus().equals(RadixNodeStatus.CONNECTED);
-				})
-				.firstOrError()
-				.map(i -> GetLivePeers.request(seed))
-		);
-
-		Observable<RadixNodeAction> getData = updates
-			.filter(u -> u instanceof NodeUpdate)
-			.map(NodeUpdate.class::cast)
-			.filter(u -> u.getType().equals(NodeUpdateType.ADD_NODE))
-			.map(NodeUpdate::getNode)
-			.flatMapSingle(node ->
-				networkState
-					.filter(state -> {
-						RadixNodeState nodeState = state.getPeers().get(node);
-						return nodeState != null && nodeState.getStatus().equals(RadixNodeStatus.CONNECTED);
-					})
-					.firstOrError()
-					.map(i -> GetNodeData.request(node))
-			);
+		Observable<RadixNodeAction> addSeedData = connectedSeeds.map(GetNodeData::request);
+		Observable<RadixNodeAction> addSeedSiblings = connectedSeeds.map(GetLivePeers::request);
 
 		Observable<RadixNodeAction> addNodes = updates
 			.filter(u -> u instanceof GetLivePeers)
@@ -67,6 +41,6 @@ public class DiscoverNodesEpic implements RadixNetworkEpic {
 					.map(d -> NodeUpdate.add(new RadixNode(d.getIp(), u.getNode().isSsl(), u.getNode().getPort()), d))
 			);
 
-		return addSeeds.mergeWith(addSeedSiblings).mergeWith(getData);
+		return addSeeds.mergeWith(addSeedData).mergeWith(addSeedSiblings).mergeWith(addNodes);
 	}
 }

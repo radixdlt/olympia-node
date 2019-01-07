@@ -1,6 +1,6 @@
 package com.radixdlt.client.core.network.epics;
 
-import com.radixdlt.client.core.ledger.selector.RadixPeerSelector;
+import com.radixdlt.client.core.network.selector.RadixPeerSelector;
 import com.radixdlt.client.core.network.actions.AtomSubmissionUpdate;
 import com.radixdlt.client.core.network.actions.AtomSubmissionUpdate.AtomSubmissionState;
 import com.radixdlt.client.core.network.RadixNetworkEpic;

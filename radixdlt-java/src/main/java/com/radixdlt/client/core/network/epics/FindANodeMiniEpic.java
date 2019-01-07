@@ -1,6 +1,7 @@
 package com.radixdlt.client.core.network.epics;
 
-import com.radixdlt.client.core.ledger.selector.RadixPeerSelector;
+import com.radixdlt.client.core.network.NodeRunnerData;
+import com.radixdlt.client.core.network.selector.RadixPeerSelector;
 import com.radixdlt.client.core.network.RadixNodeStatus;
 import com.radixdlt.client.core.network.reducers.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixNode;
@@ -26,12 +27,12 @@ public class FindANodeMiniEpic {
 		this.selector = selector;
 	}
 
-	// TODO: check shards
 	private Maybe<NodeUpdate> findConnection(Set<Long> shards, RadixNetworkState state) {
 		final Map<RadixNodeStatus,List<RadixNode>> statusMap = Arrays.stream(RadixNodeStatus.values())
 			.collect(Collectors.toMap(
 				Function.identity(),
 				s -> state.getPeers().entrySet().stream()
+					.filter(entry -> entry.getValue().getData().map(NodeRunnerData::getShards).map(sh -> sh.intersects(shards)).orElse(false))
 					.filter(e -> e.getValue().getStatus().equals(s))
 					.map(Entry::getKey)
 					.collect(Collectors.toList())
@@ -57,11 +58,11 @@ public class FindANodeMiniEpic {
 	private static List<RadixNode> getConnectedNodes(Set<Long> shards, RadixNetworkState state) {
 		return state.getPeers().entrySet().stream()
 			.filter(entry -> entry.getValue().getStatus().equals(RadixNodeStatus.CONNECTED))
+			.filter(entry -> entry.getValue().getData().map(NodeRunnerData::getShards).map(s -> s.intersects(shards)).orElse(false))
 			.map(Map.Entry::getKey)
 			.collect(Collectors.toList());
 	}
 
-	// TODO: clean this up with more explicit
 	public Observable<NodeUpdate> apply(Set<Long> shards, Observable<RadixNetworkState> networkState) {
 		Observable<RadixNetworkState> syncNetState = networkState
 			.replay(1)

@@ -13,7 +13,7 @@ import com.radixdlt.client.core.ledger.AtomStore;
 import com.radixdlt.client.core.ledger.AtomSubmitter;
 import com.radixdlt.client.core.ledger.ParticleStore;
 import com.radixdlt.client.core.ledger.RadixAtomPuller;
-import com.radixdlt.client.core.ledger.selector.RandomSelector;
+import com.radixdlt.client.core.network.selector.RandomSelector;
 import com.radixdlt.client.core.network.epics.AtomSubmitFindANodeEpic;
 import com.radixdlt.client.core.ledger.InMemoryAtomStore;
 import com.radixdlt.client.core.network.epics.RadixNodesEpic;

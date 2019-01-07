@@ -1,4 +1,4 @@
-package com.radixdlt.client.core.ledger.selector;
+package com.radixdlt.client.core.network.selector;
 
 import com.radixdlt.client.core.network.RadixNode;
 

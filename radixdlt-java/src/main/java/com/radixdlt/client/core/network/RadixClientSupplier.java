@@ -1,13 +1,13 @@
 package com.radixdlt.client.core.network;
 
 import com.radixdlt.client.core.address.RadixUniverseConfig;
-import com.radixdlt.client.core.ledger.selector.CompatibleApiVersionFilter;
-import com.radixdlt.client.core.ledger.selector.ConnectionAliveFilter;
-import com.radixdlt.client.core.ledger.selector.MatchingUniverseFilter;
-import com.radixdlt.client.core.ledger.selector.RadixPeerFilter;
-import com.radixdlt.client.core.ledger.selector.RadixPeerSelector;
-import com.radixdlt.client.core.ledger.selector.RandomSelector;
-import com.radixdlt.client.core.ledger.selector.ShardFilter;
+import com.radixdlt.client.core.network.selector.CompatibleApiVersionFilter;
+import com.radixdlt.client.core.network.selector.ConnectionAliveFilter;
+import com.radixdlt.client.core.network.selector.MatchingUniverseFilter;
+import com.radixdlt.client.core.network.selector.RadixPeerFilter;
+import com.radixdlt.client.core.network.selector.RadixPeerSelector;
+import com.radixdlt.client.core.network.selector.RandomSelector;
+import com.radixdlt.client.core.network.selector.ShardFilter;
 import com.radixdlt.client.core.network.epics.RadixNodesEpic;
 import com.radixdlt.client.core.network.reducers.RadixNetworkState;
 import io.reactivex.Observable;
