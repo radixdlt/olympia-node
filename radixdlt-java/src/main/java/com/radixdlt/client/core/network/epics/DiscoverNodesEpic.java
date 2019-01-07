@@ -1,7 +1,6 @@
 package com.radixdlt.client.core.network.epics;
 
 import com.radixdlt.client.core.network.RadixNodeStatus;
-import com.radixdlt.client.core.network.RadixJsonRpcClient;
 import com.radixdlt.client.core.network.RadixNetworkEpic;
 import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixNodeAction;
@@ -9,6 +8,7 @@ import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.actions.AtomSubmissionUpdate;
 import com.radixdlt.client.core.network.actions.AtomsFetchUpdate;
 import com.radixdlt.client.core.network.actions.GetLivePeers;
+import com.radixdlt.client.core.network.actions.GetLivePeers.GetLivePeersType;
 import com.radixdlt.client.core.network.actions.GetNodeData;
 import com.radixdlt.client.core.network.actions.NodeUpdate;
 import com.radixdlt.client.core.network.actions.NodeUpdate.NodeUpdateType;
@@ -49,6 +49,15 @@ public class DiscoverNodesEpic implements RadixNetworkEpic {
 					.filter(state -> state.getPeers().get(node) == RadixNodeStatus.CONNECTED)
 					.firstOrError()
 					.map(i -> GetNodeData.request(node))
+			);
+
+		Observable<RadixNodeAction> addNodes = updates
+			.filter(u -> u instanceof GetLivePeers)
+			.map(GetLivePeers.class::cast)
+			.filter(u -> u.getType().equals(GetLivePeersType.GET_LIVE_PEERS_RESULT))
+			.flatMap(u ->
+				Observable.fromIterable(u.getResult())
+					.map(d -> NodeUpdate.add(new RadixNode(d.getIp(), u.getNode().isSsl(), u.getNode().getPort()), d))
 			);
 
 		return addSeeds.mergeWith(addSeedSiblings).mergeWith(getData);

@@ -48,6 +48,10 @@ public class NodeUpdate implements RadixNodeAction {
 		return new NodeUpdate(NodeUpdateType.ADD_NODE, node, null);
 	}
 
+	public static NodeUpdate add(RadixNode node, NodeRunnerData data) {
+		return new NodeUpdate(NodeUpdateType.ADD_NODE, node, data);
+	}
+
 	public static NodeUpdate nodeStatus(RadixNode node, RadixNodeStatus status) {
 		return new NodeUpdate(NodeUpdateType.valueOf(status.name()), node, null);
 	}

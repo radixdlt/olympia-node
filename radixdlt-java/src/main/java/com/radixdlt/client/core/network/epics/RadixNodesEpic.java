@@ -97,21 +97,7 @@ public final class RadixNodesEpic implements RadixNetworkEpic {
 	}
 
 	public void reduce(RadixNodeAction action) {
-		if (action instanceof GetLivePeers) {
-			GetLivePeers getLivePeers = (GetLivePeers) action;
-			switch(getLivePeers.getType()) {
-				case GET_LIVE_PEERS_RESULT:
-					RadixNetworkState prev = networkState.getValue();
-					Map<RadixNode, RadixNodeStatus> newMap = new HashMap<>(prev.getPeers());
-					getLivePeers.getResult().forEach(data -> {
-						final RadixNode node = new RadixNode(data.getIp(), getLivePeers.getNode().isSsl(), getLivePeers.getNode().getPort());
-						if (!newMap.containsKey(node)) {
-							newMap.put(node, RadixNodeStatus.DISCONNECTED);
-						}
-					});
-			}
-
-		} if (action instanceof NodeUpdate) {
+		if (action instanceof NodeUpdate) {
 			NodeUpdate nodeUpdate = (NodeUpdate) action;
 			switch(nodeUpdate.getType()) {
 				case ADD_NODE: {
