@@ -2,10 +2,10 @@ package com.radixdlt.client.core.network.epics;
 
 import com.radixdlt.client.core.network.RadixNetworkEpic;
 import com.radixdlt.client.core.network.RadixNetworkState;
-import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.RadixNodeAction;
 import com.radixdlt.client.core.network.actions.FetchAtomsAction;
 import com.radixdlt.client.core.network.actions.FetchAtomsAction.FetchAtomsActionType;
+import com.radixdlt.client.core.network.epics.WebSocketsEpic.WebSockets;
 import com.radixdlt.client.core.network.jsonrpc.AtomQuery;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient;
 import com.radixdlt.client.core.network.websocket.WebSocketClient;
@@ -17,9 +17,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 public class FetchAtomsEpic implements RadixNetworkEpic {
-	private final ConcurrentHashMap<RadixNode, WebSocketClient> websockets;
-	public FetchAtomsEpic(ConcurrentHashMap<RadixNode, WebSocketClient> websockets) {
-		this.websockets = websockets;
+	private final WebSockets webSockets;
+
+	public FetchAtomsEpic(WebSockets webSockets) {
+		this.webSockets = webSockets;
 	}
 
 	@Override
@@ -45,7 +46,7 @@ public class FetchAtomsEpic implements RadixNetworkEpic {
 				.map(FetchAtomsAction.class::cast)
 				.filter(update -> update.getType().equals(FetchAtomsActionType.SUBSCRIBE))
 				.flatMap(update -> {
-					final WebSocketClient ws = websockets.get(update.getNode());
+					final WebSocketClient ws = webSockets.get(update.getNode());
 					return ws.getState()
 						.doOnNext(s -> {
 							if (s.equals(WebSocketStatus.DISCONNECTED)) {

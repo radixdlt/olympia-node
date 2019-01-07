@@ -2,23 +2,23 @@ package com.radixdlt.client.core.network.epics;
 
 import com.radixdlt.client.core.network.RadixNetworkEpic;
 import com.radixdlt.client.core.network.RadixNetworkState;
-import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.RadixNodeAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction.SubmitAtomActionType;
+import com.radixdlt.client.core.network.epics.WebSocketsEpic.WebSockets;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient;
 import com.radixdlt.client.core.network.websocket.WebSocketClient;
 import com.radixdlt.client.core.network.websocket.WebSocketException;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
 import com.radixdlt.client.core.util.IncreasingRetryTimer;
 import io.reactivex.Observable;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 public class SubmitAtomEpic implements RadixNetworkEpic {
-	private final ConcurrentHashMap<RadixNode, WebSocketClient> websockets;
-	public SubmitAtomEpic(ConcurrentHashMap<RadixNode, WebSocketClient> websockets) {
-		this.websockets = websockets;
+	private final WebSockets webSockets;
+
+	public SubmitAtomEpic(WebSockets webSockets) {
+		this.webSockets = webSockets;
 	}
 
 	@Override
@@ -28,7 +28,7 @@ public class SubmitAtomEpic implements RadixNetworkEpic {
 			.map(SubmitAtomAction.class::cast)
 			.filter(update -> update.getType().equals(SubmitAtomActionType.SUBMIT))
 			.flatMap(u -> {
-				final WebSocketClient ws = websockets.get(u.getNode());
+				final WebSocketClient ws = webSockets.get(u.getNode());
 				return ws.getState()
 					.doOnNext(s -> {
 						if (s.equals(WebSocketStatus.DISCONNECTED)) {
