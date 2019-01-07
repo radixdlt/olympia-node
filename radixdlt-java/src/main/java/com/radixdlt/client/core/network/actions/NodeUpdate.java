@@ -10,7 +10,6 @@ public class NodeUpdate implements RadixNodeAction {
 	public enum NodeUpdateType {
 		ADD_NODE,
 		START_CONNECT,
-		ADD_NODE_DATA,
 
 		WAITING,
 		CONNECTING,
@@ -18,8 +17,6 @@ public class NodeUpdate implements RadixNodeAction {
 		CLOSING,
 		DISCONNECTED,
 		FAILED,
-
-		GET_NODE_DATA,
 
 		// Special for mini epic
 		// TODO: remove this
@@ -49,14 +46,6 @@ public class NodeUpdate implements RadixNodeAction {
 
 	public static NodeUpdate add(RadixNode node) {
 		return new NodeUpdate(NodeUpdateType.ADD_NODE, node, null);
-	}
-
-	public static NodeUpdate getNodeData(RadixNode node) {
-		return new NodeUpdate(NodeUpdateType.GET_NODE_DATA, node, null);
-	}
-
-	public static NodeUpdate nodeData(RadixNode node, NodeRunnerData data) {
-		return new NodeUpdate(NodeUpdateType.ADD_NODE_DATA, node, data);
 	}
 
 	public static NodeUpdate nodeStatus(RadixNode node, RadixNodeStatus status) {

@@ -15,8 +15,8 @@ import com.radixdlt.client.core.network.actions.AtomsFetchUpdate;
 import com.radixdlt.client.core.network.actions.AtomsFetchUpdate.AtomsFetchState;
 import com.radixdlt.client.core.network.actions.GetLivePeers;
 import com.radixdlt.client.core.network.actions.GetLivePeers.GetLivePeersType;
-import com.radixdlt.client.core.network.actions.NodeUpdate;
-import com.radixdlt.client.core.network.actions.NodeUpdate.NodeUpdateType;
+import com.radixdlt.client.core.network.actions.GetNodeData;
+import com.radixdlt.client.core.network.actions.GetNodeData.GetNodeDataType;
 import io.reactivex.Completable;
 import io.reactivex.Observable;
 import io.reactivex.disposables.Disposable;
@@ -55,9 +55,9 @@ public class RadixNodeJsonRpcEpics {
 	public static RadixNetworkEpic nodeData(ConcurrentHashMap<RadixNode,WebSocketClient> websockets) {
 		return (actions, stateObservable) ->
 			actions
-				.filter(a -> a instanceof NodeUpdate)
-				.map(NodeUpdate.class::cast)
-				.filter(u -> u.getType().equals(NodeUpdateType.GET_NODE_DATA))
+				.filter(a -> a instanceof GetNodeData)
+				.map(GetNodeData.class::cast)
+				.filter(u -> u.getType().equals(GetNodeDataType.GET_NODE_DATA_REQUEST))
 				.flatMapSingle(u -> {
 					WebSocketClient ws = websockets.get(u.getNode());
 					return ws.getState()
@@ -71,7 +71,7 @@ public class RadixNodeJsonRpcEpics {
 						.flatMap(i -> {
 							RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(ws);
 							return jsonRpcClient.getInfo()
-								.map(data -> NodeUpdate.nodeData(u.getNode(), data));
+								.map(data -> GetNodeData.result(u.getNode(), data));
 						});
 				});
 	}

@@ -128,7 +128,6 @@ public final class RadixNodesEpic implements RadixNetworkEpic {
 					networkState.onNext(new RadixNetworkState(newMap));
 					break;
 				}
-				case ADD_NODE_DATA:
 			}
 		}
 	}
