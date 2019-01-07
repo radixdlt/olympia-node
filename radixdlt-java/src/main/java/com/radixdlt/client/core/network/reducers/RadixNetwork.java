@@ -6,72 +6,50 @@ import com.radixdlt.client.core.network.RadixNodeStatus;
 import com.radixdlt.client.core.network.actions.GetNodeData;
 import com.radixdlt.client.core.network.actions.GetNodeData.GetNodeDataType;
 import com.radixdlt.client.core.network.actions.NodeUpdate;
-import io.reactivex.Observable;
-import io.reactivex.subjects.BehaviorSubject;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 public class RadixNetwork {
-	/**
-	 * Hot observable which updates subscribers of new connection events
-	 */
-	private final BehaviorSubject<RadixNetworkState> networkState;
-
-
 	public RadixNetwork() {
-		this.networkState = BehaviorSubject.createDefault(new RadixNetworkState(Collections.emptyMap()));
 	}
 
-	/**
-	 * Returns a cold observable of network state
-	 *
-	 * @return a cold observable of network state
-	 */
-	public Observable<RadixNetworkState> getNetworkState() {
-		return this.networkState;
-	}
-
-	public void reduce(RadixNodeAction action) {
+	public RadixNetworkState reduce(RadixNetworkState state, RadixNodeAction action) {
 		if (action instanceof GetNodeData) {
 			final GetNodeData getNodeData = (GetNodeData) action;
 			if (getNodeData.getType().equals(GetNodeDataType.GET_NODE_DATA_RESULT)) {
-				RadixNetworkState prev = networkState.getValue();
-				Map<RadixNode, RadixNodeState> newMap = new HashMap<>(prev.getPeers());
+				Map<RadixNode, RadixNodeState> newMap = new HashMap<>(state.getPeers());
 				newMap.merge(
 					getNodeData.getNode(),
 					RadixNodeState.of(action.getNode(), RadixNodeStatus.CONNECTED, getNodeData.getResult()),
 					(old, val) -> RadixNodeState.of(old.getNode(), old.getStatus(), val.getData().orElse(null))
 				);
-				networkState.onNext(new RadixNetworkState(newMap));
+				return new RadixNetworkState(newMap);
 			}
 		} else if (action instanceof NodeUpdate) {
 			final NodeUpdate nodeUpdate = (NodeUpdate) action;
 			final RadixNode node = nodeUpdate.getNode();
 			switch(nodeUpdate.getType()) {
 				case ADD_NODE: {
-					RadixNetworkState prev = networkState.getValue();
-					Map<RadixNode, RadixNodeState> newMap = new HashMap<>(prev.getPeers());
+					Map<RadixNode, RadixNodeState> newMap = new HashMap<>(state.getPeers());
 					newMap.put(nodeUpdate.getNode(), RadixNodeState.of(nodeUpdate.getNode(), RadixNodeStatus.DISCONNECTED, nodeUpdate.getData()));
-					networkState.onNext(new RadixNetworkState(newMap));
-					break;
+					return new RadixNetworkState(newMap);
 				}
 				case DISCONNECTED:
 				case CONNECTING:
 				case CONNECTED:
 				case CLOSING:
 				case FAILED: {
-					RadixNetworkState prev = networkState.getValue();
-					Map<RadixNode, RadixNodeState> newMap = new HashMap<>(prev.getPeers());
+					Map<RadixNode, RadixNodeState> newMap = new HashMap<>(state.getPeers());
 					newMap.merge(
 						node,
 						RadixNodeState.of(node, RadixNodeStatus.valueOf(nodeUpdate.getType().name())),
 						(old, val) -> RadixNodeState.of(old.getNode(), val.getStatus(), old.getData().orElse(null))
 					);
-					networkState.onNext(new RadixNetworkState(newMap));
-					break;
+					return new RadixNetworkState(newMap);
 				}
 			}
 		}
+
+		return null;
 	}
 }

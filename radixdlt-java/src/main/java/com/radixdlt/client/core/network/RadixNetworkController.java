@@ -14,9 +14,11 @@ import com.radixdlt.client.core.network.reducers.RadixNetworkState;
 import io.reactivex.Observable;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.observables.ConnectableObservable;
+import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.PublishSubject;
 import io.reactivex.subjects.Subject;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -29,7 +31,6 @@ public class RadixNetworkController implements AtomSubmitter {
 
 	public static class RadixNetworkControllerBuilder {
 		private RadixNetwork network;
-		private RadixUniverseConfig config;
 		private List<RadixNetworkEpic> epics = new ArrayList<>();
 
 		public RadixNetworkControllerBuilder() {
@@ -40,16 +41,10 @@ public class RadixNetworkController implements AtomSubmitter {
 			return this;
 		}
 
-		public RadixNetworkControllerBuilder checkUniverse(RadixUniverseConfig config) {
-			this.config = config;
-			return this;
-		}
-
 		public RadixNetworkControllerBuilder addEpic(RadixNetworkEpic epic) {
 			this.epics.add(epic);
 			return this;
 		}
-
 
 		public RadixNetworkController build() {
 			Objects.requireNonNull(network);
@@ -58,27 +53,29 @@ public class RadixNetworkController implements AtomSubmitter {
 		}
 	}
 
-	/**
-	 * The selector to use to decide between a list of viable peers
-	 */
-	private final RadixNetwork network;
+	private final BehaviorSubject<RadixNetworkState> networkState;
 
 	private final Subject<RadixNodeAction> nodeActions = PublishSubject.<RadixNodeAction>create().toSerialized();
 
 	private RadixNetworkController(RadixNetwork network, List<RadixNetworkEpic> epics) {
-		this.network = network;
+		this.networkState = BehaviorSubject.createDefault(new RadixNetworkState(Collections.emptyMap()));
 
 		// Run reducers first
 		ConnectableObservable<RadixNodeAction> reducedNodeActions = nodeActions.doOnNext(action -> {
 			LOGGER.info("NEXT ACTION: " + action.toString());
-			network.reduce(action);
+			RadixNetworkState nextState = network.reduce(networkState.getValue(), action);
+
+			// TODO: remove null check and just check for equality
+			if (nextState != null) {
+				networkState.onNext(nextState);
+			}
+
 			// TODO: turn this into an action/state pair so synchronized
 		}).publish();
 
-
 		// Then run Epics
 		Set<Observable<RadixNodeAction>> updates = epics.stream()
-			.map(epic -> epic.epic(reducedNodeActions, network.getNetworkState()))
+			.map(epic -> epic.epic(reducedNodeActions, networkState))
 			.collect(Collectors.toSet());
 		Observable.merge(updates).subscribe(nodeActions::onNext);
 
@@ -86,7 +83,7 @@ public class RadixNetworkController implements AtomSubmitter {
 	}
 
 	public Observable<RadixNetworkState> getNetwork() {
-		return network.getNetworkState();
+		return networkState;
 	}
 
 	/**
