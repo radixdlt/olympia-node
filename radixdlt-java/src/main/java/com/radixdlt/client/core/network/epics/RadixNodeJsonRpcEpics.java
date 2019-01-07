@@ -17,6 +17,8 @@ import com.radixdlt.client.core.network.actions.GetLivePeers;
 import com.radixdlt.client.core.network.actions.GetLivePeers.GetLivePeersType;
 import com.radixdlt.client.core.network.actions.GetNodeData;
 import com.radixdlt.client.core.network.actions.GetNodeData.GetNodeDataType;
+import com.radixdlt.client.core.network.actions.JsonRpcAction;
+import com.radixdlt.client.core.network.actions.JsonRpcAction.JsonRpcActionType;
 import io.reactivex.Completable;
 import io.reactivex.Observable;
 import io.reactivex.disposables.Disposable;
@@ -26,6 +28,18 @@ import java.util.concurrent.TimeUnit;
 public class RadixNodeJsonRpcEpics {
 	private RadixNodeJsonRpcEpics() {
 		throw new IllegalStateException("Cannot instantiate.");
+	}
+
+	public static RadixNetworkEpic autoCloseWebsocket(ConcurrentHashMap<RadixNode,WebSocketClient> websockets) {
+		return (actions, stateObservable) ->
+			actions
+				.filter(a -> a instanceof JsonRpcAction)
+				.map(JsonRpcAction.class::cast)
+				.filter(a -> a.getJsonRpcActionType().equals(JsonRpcActionType.RESULT))
+				.delay(5, TimeUnit.SECONDS)
+				.doOnNext(a -> websockets.get(a.getNode()).close())
+				.ignoreElements()
+				.toObservable();
 	}
 
 	public static RadixNetworkEpic livePeers(ConcurrentHashMap<RadixNode,WebSocketClient> websockets) {

@@ -2,16 +2,25 @@ package com.radixdlt.client.core.network.actions;
 
 import com.radixdlt.client.core.network.NodeRunnerData;
 import com.radixdlt.client.core.network.RadixNode;
-import com.radixdlt.client.core.network.RadixNodeAction;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-public class GetLivePeers implements RadixNodeAction {
+public class GetLivePeers implements JsonRpcAction {
 	public enum GetLivePeersType {
-		GET_LIVE_PEERS_REQUEST,
-		GET_LIVE_PEERS_RESULT,
+		GET_LIVE_PEERS_REQUEST(JsonRpcActionType.REQUEST),
+		GET_LIVE_PEERS_RESULT(JsonRpcActionType.RESULT);
+
+		private final JsonRpcActionType jsonRpcActionType;
+
+		GetLivePeersType(JsonRpcActionType jsonRpcActionType)  {
+			this.jsonRpcActionType = jsonRpcActionType;
+		}
+
+		public JsonRpcActionType getJsonRpcActionType() {
+			return jsonRpcActionType;
+		}
 	}
 
 	private final GetLivePeersType type;
@@ -29,6 +38,11 @@ public class GetLivePeers implements RadixNodeAction {
 
 	public GetLivePeersType getType() {
 		return type;
+	}
+
+	@Override
+	public JsonRpcActionType getJsonRpcActionType() {
+		return type.getJsonRpcActionType();
 	}
 
 	@Override

@@ -88,7 +88,12 @@ public final class RadixNodesEpic implements RadixNetworkEpic {
 			RadixNodeJsonRpcEpics.fetchAtoms(websockets).epic(actions, networkState)
 		);
 
-		return Observable.merge(addNodes, connectNodes, jsonRpcEpics);
+		return Observable.merge(
+			addNodes,
+			connectNodes,
+			jsonRpcEpics,
+			RadixNodeJsonRpcEpics.autoCloseWebsocket(websockets).epic(actions, networkState)
+		);
 	}
 
 	public void reduce(RadixNodeAction action) {

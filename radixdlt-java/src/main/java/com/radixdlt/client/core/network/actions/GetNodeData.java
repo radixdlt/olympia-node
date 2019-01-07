@@ -2,13 +2,22 @@ package com.radixdlt.client.core.network.actions;
 
 import com.radixdlt.client.core.network.NodeRunnerData;
 import com.radixdlt.client.core.network.RadixNode;
-import com.radixdlt.client.core.network.RadixNodeAction;
 import java.util.Objects;
 
-public class GetNodeData implements RadixNodeAction {
+public class GetNodeData implements JsonRpcAction {
 	public enum GetNodeDataType {
-		GET_NODE_DATA_REQUEST,
-		GET_NODE_DATA_RESULT,
+		GET_NODE_DATA_REQUEST(JsonRpcActionType.REQUEST),
+		GET_NODE_DATA_RESULT(JsonRpcActionType.RESULT);
+
+		private final JsonRpcActionType jsonRpcActionType;
+
+		GetNodeDataType(JsonRpcActionType jsonRpcActionType) {
+			this.jsonRpcActionType = jsonRpcActionType;
+		}
+
+		public JsonRpcActionType getJsonRpcActionType() {
+			return jsonRpcActionType;
+		}
 	}
 
 	private final GetNodeDataType type;
@@ -26,6 +35,11 @@ public class GetNodeData implements RadixNodeAction {
 
 	public GetNodeDataType getType() {
 		 return type;
+	}
+
+	@Override
+	public JsonRpcActionType getJsonRpcActionType() {
+		return type.getJsonRpcActionType();
 	}
 
 	@Override

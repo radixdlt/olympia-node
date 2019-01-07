@@ -148,7 +148,7 @@ public class RadixJsonRpcClient {
 	 * @param method name of JSON-RPC method
 	 * @return response from rpc method
 	 */
-	private Single<JsonRpcResponse> jsonRpcCall(String method) {
+	public Single<JsonRpcResponse> jsonRpcCall(String method) {
 		return this.jsonRpcCall(method, new JsonObject());
 	}
 
