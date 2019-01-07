@@ -8,6 +8,7 @@ import com.radixdlt.client.core.network.RadixNodeAction;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.actions.AtomSubmissionUpdate;
 import com.radixdlt.client.core.network.actions.AtomsFetchUpdate;
+import com.radixdlt.client.core.network.actions.GetLivePeers;
 import com.radixdlt.client.core.network.actions.NodeUpdate;
 import com.radixdlt.client.core.network.actions.NodeUpdate.NodeUpdateType;
 import io.reactivex.Observable;
@@ -34,7 +35,7 @@ public class DiscoverNodesEpic implements RadixNetworkEpic {
 			networkState
 				.filter(state -> state.getPeers().get(s) == RadixNodeStatus.CONNECTED)
 				.firstOrError()
-				.map(i -> NodeUpdate.getLivePeers(s))
+				.map(i -> GetLivePeers.request(s))
 		);
 
 		Observable<RadixNodeAction> getData = updates

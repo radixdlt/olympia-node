@@ -12,6 +12,8 @@ import com.radixdlt.client.core.network.WebSocketClient;
 import com.radixdlt.client.core.network.WebSocketException;
 import com.radixdlt.client.core.network.actions.AtomSubmissionUpdate;
 import com.radixdlt.client.core.network.actions.AtomSubmissionUpdate.AtomSubmissionState;
+import com.radixdlt.client.core.network.actions.GetLivePeers;
+import com.radixdlt.client.core.network.actions.GetLivePeers.GetLivePeersType;
 import com.radixdlt.client.core.network.actions.NodeUpdate;
 import com.radixdlt.client.core.network.actions.NodeUpdate.NodeUpdateType;
 import io.reactivex.Observable;
@@ -90,7 +92,21 @@ public final class RadixNodesEpic implements RadixNetworkEpic {
 	}
 
 	public void reduce(RadixNodeAction action) {
-		if (action instanceof NodeUpdate) {
+		if (action instanceof GetLivePeers) {
+			GetLivePeers getLivePeers = (GetLivePeers) action;
+			switch(getLivePeers.getType()) {
+				case GET_LIVE_PEERS_RESULT:
+					RadixNetworkState prev = networkState.getValue();
+					Map<RadixNode, RadixNodeStatus> newMap = new HashMap<>(prev.getPeers());
+					getLivePeers.getResult().forEach(data -> {
+						final RadixNode node = new RadixNode(data.getIp(), getLivePeers.getNode().isSsl(), getLivePeers.getNode().getPort());
+						if (!newMap.containsKey(node)) {
+							newMap.put(node, RadixNodeStatus.DISCONNECTED);
+						}
+					});
+			}
+
+		} if (action instanceof NodeUpdate) {
 			NodeUpdate nodeUpdate = (NodeUpdate) action;
 			switch(nodeUpdate.getType()) {
 				case ADD_NODE: {

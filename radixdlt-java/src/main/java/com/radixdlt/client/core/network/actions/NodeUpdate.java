@@ -19,7 +19,6 @@ public class NodeUpdate implements RadixNodeAction {
 		DISCONNECTED,
 		FAILED,
 
-		GET_LIVE_PEERS,
 		GET_NODE_DATA,
 
 		// Special for mini epic
@@ -50,10 +49,6 @@ public class NodeUpdate implements RadixNodeAction {
 
 	public static NodeUpdate add(RadixNode node) {
 		return new NodeUpdate(NodeUpdateType.ADD_NODE, node, null);
-	}
-
-	public static NodeUpdate getLivePeers(RadixNode node) {
-		return new NodeUpdate(NodeUpdateType.GET_LIVE_PEERS, node, null);
 	}
 
 	public static NodeUpdate getNodeData(RadixNode node) {
