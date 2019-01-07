@@ -1,7 +1,7 @@
 package com.radixdlt.client.core.ledger.selector;
 
 import com.radixdlt.client.core.address.RadixUniverseConfig;
-import com.radixdlt.client.core.network.RadixPeerState;
+import com.radixdlt.client.core.network.reducers.RadixNodeState;
 
 import java.util.Objects;
 
@@ -18,7 +18,7 @@ public class MatchingUniverseFilter implements RadixPeerFilter {
 	}
 
 	@Override
-	public boolean test(RadixPeerState peerState) {
+	public boolean test(RadixNodeState peerState) {
 		return peerState.getUniverseConfig().map(universeConfig::equals).orElse(false);
 	}
 }

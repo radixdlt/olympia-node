@@ -1,29 +1,16 @@
 package com.radixdlt.client.core.network.epics;
 
 import com.radixdlt.client.core.network.HttpClients;
-import com.radixdlt.client.core.network.IncreasingRetryTimer;
-import com.radixdlt.client.core.network.RadixJsonRpcClient;
 import com.radixdlt.client.core.network.RadixNetworkEpic;
-import com.radixdlt.client.core.network.RadixNetworkState;
+import com.radixdlt.client.core.network.reducers.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.RadixNodeAction;
-import com.radixdlt.client.core.network.RadixNodeStatus;
 import com.radixdlt.client.core.network.WebSocketClient;
-import com.radixdlt.client.core.network.WebSocketException;
-import com.radixdlt.client.core.network.actions.AtomSubmissionUpdate;
-import com.radixdlt.client.core.network.actions.AtomSubmissionUpdate.AtomSubmissionState;
-import com.radixdlt.client.core.network.actions.GetLivePeers;
-import com.radixdlt.client.core.network.actions.GetLivePeers.GetLivePeersType;
 import com.radixdlt.client.core.network.actions.NodeUpdate;
 import com.radixdlt.client.core.network.actions.NodeUpdate.NodeUpdateType;
 import io.reactivex.Observable;
 import io.reactivex.subjects.BehaviorSubject;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 
@@ -31,8 +18,6 @@ import java.util.Collections;
  * RadixNetwork manages the state of peers and connections.
  */
 public final class RadixNodesEpic implements RadixNetworkEpic {
-	private static final Logger LOGGER = LoggerFactory.getLogger(RadixNodesEpic.class);
-
 	/**
 	 * Hot observable which updates subscribers of new connection events
 	 */
@@ -96,30 +81,4 @@ public final class RadixNodesEpic implements RadixNetworkEpic {
 		);
 	}
 
-	public void reduce(RadixNodeAction action) {
-		if (action instanceof NodeUpdate) {
-			NodeUpdate nodeUpdate = (NodeUpdate) action;
-			switch(nodeUpdate.getType()) {
-				case ADD_NODE: {
-					RadixNetworkState prev = networkState.getValue();
-					Map<RadixNode, RadixNodeStatus> newMap = new HashMap<>(prev.getPeers());
-					newMap.put(action.getNode(), RadixNodeStatus.DISCONNECTED);
-					networkState.onNext(new RadixNetworkState(newMap));
-					LOGGER.debug(String.format("Added to peer list: %s", action.getNode().getLocation()));
-					break;
-				}
-				case DISCONNECTED:
-				case CONNECTING:
-				case CONNECTED:
-				case CLOSING:
-				case FAILED: {
-					RadixNetworkState prev = networkState.getValue();
-					Map<RadixNode, RadixNodeStatus> newMap = new HashMap<>(prev.getPeers());
-					newMap.put(action.getNode(), RadixNodeStatus.valueOf(nodeUpdate.getType().name()));
-					networkState.onNext(new RadixNetworkState(newMap));
-					break;
-				}
-			}
-		}
-	}
 }

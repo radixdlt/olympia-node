@@ -22,6 +22,8 @@ import com.radixdlt.client.core.network.RadixNetworkController.RadixNetworkContr
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.epics.AtomsFetchFindANodeEpic;
 import com.radixdlt.client.core.network.epics.DiscoverNodesEpic;
+import com.radixdlt.client.core.network.reducers.RadixNetwork;
+import com.radixdlt.client.core.network.reducers.RadixNetworkState;
 import io.reactivex.Observable;
 import java.util.Optional;
 
@@ -82,11 +84,10 @@ public final class RadixUniverse {
 				throw new IllegalStateException("Default Universe already bootstrapped");
 			}
 
-			RadixNodesEpic network = new RadixNodesEpic();
 			RadixNetworkController controller = new RadixNetworkControllerBuilder()
-				.network(network)
+				.network(new RadixNetwork())
 				.checkUniverse(config)
-				.addEpic(network)
+				.addEpic(new RadixNodesEpic())
 				.addEpic(new DiscoverNodesEpic(seeds))
 				.addEpic(new AtomSubmitFindANodeEpic(new RandomSelector()))
 				.addEpic(new AtomsFetchFindANodeEpic(new RandomSelector()))
@@ -209,6 +210,10 @@ public final class RadixUniverse {
 		};
 	}
 
+	public Observable<RadixNetworkState> getNetworkState() {
+		return networkController.getNetwork();
+	}
+
 	public TokenClassReference getPOWToken() {
 		return powToken;
 	}
@@ -223,10 +228,6 @@ public final class RadixUniverse {
 
 	public Ledger getLedger() {
 		return ledger;
-	}
-
-	public RadixNodesEpic getNetwork() {
-		return networkController.getNetwork();
 	}
 
 	/**

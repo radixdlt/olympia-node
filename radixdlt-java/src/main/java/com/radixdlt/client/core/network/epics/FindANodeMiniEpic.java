@@ -2,7 +2,7 @@ package com.radixdlt.client.core.network.epics;
 
 import com.radixdlt.client.core.ledger.selector.RadixPeerSelector;
 import com.radixdlt.client.core.network.RadixNodeStatus;
-import com.radixdlt.client.core.network.RadixNetworkState;
+import com.radixdlt.client.core.network.reducers.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.actions.NodeUpdate;
 import io.reactivex.Maybe;
@@ -31,7 +31,10 @@ public class FindANodeMiniEpic {
 		final Map<RadixNodeStatus,List<RadixNode>> statusMap = Arrays.stream(RadixNodeStatus.values())
 			.collect(Collectors.toMap(
 				Function.identity(),
-				s -> state.getPeers().entrySet().stream().filter(e -> e.getValue().equals(s)).map(Entry::getKey).collect(Collectors.toList())
+				s -> state.getPeers().entrySet().stream()
+					.filter(e -> e.getValue().getStatus().equals(s))
+					.map(Entry::getKey)
+					.collect(Collectors.toList())
 			));
 
 		final long activeNodeCount = statusMap.get(RadixNodeStatus.CONNECTED).size() + statusMap.get(RadixNodeStatus.CONNECTING).size();
@@ -53,7 +56,7 @@ public class FindANodeMiniEpic {
 
 	private static List<RadixNode> getConnectedNodes(Set<Long> shards, RadixNetworkState state) {
 		return state.getPeers().entrySet().stream()
-			.filter(entry -> entry.getValue().equals(RadixNodeStatus.CONNECTED))
+			.filter(entry -> entry.getValue().getStatus().equals(RadixNodeStatus.CONNECTED))
 			.map(Map.Entry::getKey)
 			.collect(Collectors.toList());
 	}

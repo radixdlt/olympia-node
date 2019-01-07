@@ -2,7 +2,7 @@ package com.radixdlt.client.core.network.epics;
 
 import com.radixdlt.client.core.ledger.selector.RadixPeerSelector;
 import com.radixdlt.client.core.network.RadixNetworkEpic;
-import com.radixdlt.client.core.network.RadixNetworkState;
+import com.radixdlt.client.core.network.reducers.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixNodeAction;
 import com.radixdlt.client.core.network.actions.AtomsFetchUpdate;
 import com.radixdlt.client.core.network.actions.AtomsFetchUpdate.AtomsFetchState;

@@ -1,5 +1,6 @@
 package com.radixdlt.client.application;
 
+import com.radixdlt.client.core.network.reducers.RadixNetworkState;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -293,6 +294,10 @@ public class RadixApplicationAPI {
 			.addAtomMapper(new AtomToTokenTransfersMapper(RadixUniverse.getInstance()))
 			.addAtomErrorMapper(new AlreadyUsedUniqueIdReasonMapper())
 			.build();
+	}
+
+	public Observable<RadixNetworkState> getNetworkState() {
+		return universe.getNetworkState();
 	}
 
 	private ApplicationStore<? extends ApplicationState> getStore(Class<? extends ApplicationState> storeClass) {

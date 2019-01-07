@@ -9,6 +9,7 @@ import com.radixdlt.client.core.ledger.selector.RadixPeerSelector;
 import com.radixdlt.client.core.ledger.selector.RandomSelector;
 import com.radixdlt.client.core.ledger.selector.ShardFilter;
 import com.radixdlt.client.core.network.epics.RadixNodesEpic;
+import com.radixdlt.client.core.network.reducers.RadixNetworkState;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import java.util.Map.Entry;

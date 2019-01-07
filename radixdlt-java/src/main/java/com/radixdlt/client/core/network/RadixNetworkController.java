@@ -9,7 +9,8 @@ import com.radixdlt.client.core.network.actions.NodeUpdate;
 import com.radixdlt.client.core.network.actions.AtomSubmissionUpdate;
 import com.radixdlt.client.core.network.actions.AtomsFetchUpdate;
 import com.radixdlt.client.core.network.actions.AtomsFetchUpdate.AtomsFetchState;
-import com.radixdlt.client.core.network.epics.RadixNodesEpic;
+import com.radixdlt.client.core.network.reducers.RadixNetwork;
+import com.radixdlt.client.core.network.reducers.RadixNetworkState;
 import io.reactivex.Observable;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.observables.ConnectableObservable;
@@ -27,14 +28,14 @@ public class RadixNetworkController implements AtomSubmitter {
 	private static final Logger LOGGER = LoggerFactory.getLogger(RadixNetworkController.class);
 
 	public static class RadixNetworkControllerBuilder {
-		private RadixNodesEpic network;
+		private RadixNetwork network;
 		private RadixUniverseConfig config;
 		private List<RadixNetworkEpic> epics = new ArrayList<>();
 
 		public RadixNetworkControllerBuilder() {
 		}
 
-		public RadixNetworkControllerBuilder network(RadixNodesEpic network) {
+		public RadixNetworkControllerBuilder network(RadixNetwork network) {
 			this.network = network;
 			return this;
 		}
@@ -60,11 +61,11 @@ public class RadixNetworkController implements AtomSubmitter {
 	/**
 	 * The selector to use to decide between a list of viable peers
 	 */
-	private final RadixNodesEpic network;
+	private final RadixNetwork network;
 
 	private final Subject<RadixNodeAction> nodeActions = PublishSubject.<RadixNodeAction>create().toSerialized();
 
-	private RadixNetworkController(RadixNodesEpic network, List<RadixNetworkEpic> epics) {
+	private RadixNetworkController(RadixNetwork network, List<RadixNetworkEpic> epics) {
 		this.network = network;
 
 		// Run reducers first
@@ -87,8 +88,8 @@ public class RadixNetworkController implements AtomSubmitter {
 		reducedNodeActions.connect();
 	}
 
-	public RadixNodesEpic getNetwork() {
-		return network;
+	public Observable<RadixNetworkState> getNetwork() {
+		return network.getNetworkState();
 	}
 
 	/**

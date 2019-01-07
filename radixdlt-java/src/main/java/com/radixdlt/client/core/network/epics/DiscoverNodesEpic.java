@@ -2,7 +2,7 @@ package com.radixdlt.client.core.network.epics;
 
 import com.radixdlt.client.core.network.RadixNodeStatus;
 import com.radixdlt.client.core.network.RadixNetworkEpic;
-import com.radixdlt.client.core.network.RadixNetworkState;
+import com.radixdlt.client.core.network.reducers.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixNodeAction;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.actions.AtomSubmissionUpdate;
@@ -12,6 +12,7 @@ import com.radixdlt.client.core.network.actions.GetLivePeers.GetLivePeersType;
 import com.radixdlt.client.core.network.actions.GetNodeData;
 import com.radixdlt.client.core.network.actions.NodeUpdate;
 import com.radixdlt.client.core.network.actions.NodeUpdate.NodeUpdateType;
+import com.radixdlt.client.core.network.reducers.RadixNodeState;
 import io.reactivex.Observable;
 
 public class DiscoverNodesEpic implements RadixNetworkEpic {
@@ -32,11 +33,14 @@ public class DiscoverNodesEpic implements RadixNetworkEpic {
 
 		Observable<RadixNodeAction> addSeeds = connectedSeeds.map(NodeUpdate::add);
 
-		Observable<RadixNodeAction> addSeedSiblings = connectedSeeds.flatMapSingle(s ->
+		Observable<RadixNodeAction> addSeedSiblings = connectedSeeds.flatMapSingle(seed ->
 			networkState
-				.filter(state -> state.getPeers().get(s) == RadixNodeStatus.CONNECTED)
+				.filter(state -> {
+					RadixNodeState nodeState = state.getPeers().get(seed);
+					return nodeState != null && nodeState.getStatus().equals(RadixNodeStatus.CONNECTED);
+				})
 				.firstOrError()
-				.map(i -> GetLivePeers.request(s))
+				.map(i -> GetLivePeers.request(seed))
 		);
 
 		Observable<RadixNodeAction> getData = updates
@@ -46,7 +50,10 @@ public class DiscoverNodesEpic implements RadixNetworkEpic {
 			.map(NodeUpdate::getNode)
 			.flatMapSingle(node ->
 				networkState
-					.filter(state -> state.getPeers().get(node) == RadixNodeStatus.CONNECTED)
+					.filter(state -> {
+						RadixNodeState nodeState = state.getPeers().get(node);
+						return nodeState != null && nodeState.getStatus().equals(RadixNodeStatus.CONNECTED);
+					})
 					.firstOrError()
 					.map(i -> GetNodeData.request(node))
 			);

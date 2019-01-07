@@ -1,39 +1,47 @@
-package com.radixdlt.client.core.network;
+package com.radixdlt.client.core.network.reducers;
 
 import com.radixdlt.client.core.address.RadixUniverseConfig;
 
+import com.radixdlt.client.core.network.NodeRunnerData;
+import com.radixdlt.client.core.network.RadixNode;
+import com.radixdlt.client.core.network.RadixNodeStatus;
 import java.util.Objects;
 import java.util.Optional;
 
 /**
  * Immutable state at a certain point in time of a {@link RadixNode}
  */
-public class RadixPeerState {
-	private final String location;
-	private final int port;
+public class RadixNodeState {
+	private final RadixNode node;
 	private final RadixNodeStatus status;
 	private final NodeRunnerData data;
 	private final Integer version;
 	private final RadixUniverseConfig universeConfig;
 
-	public RadixPeerState(String location, int port, RadixNodeStatus status, NodeRunnerData data, Integer version,
+	public RadixNodeState(RadixNode node, RadixNodeStatus status, NodeRunnerData data, Integer version,
 	                      RadixUniverseConfig universeConfig) {
-		Objects.requireNonNull(location, "location is required");
+		Objects.requireNonNull(node, "node is required");
 		Objects.requireNonNull(status, "status is required");
 
-		this.location = location;
-		this.port = port;
+		this.node = node;
 		this.status = status;
 		this.data = data;
 		this.version = version;
 		this.universeConfig = universeConfig;
 	}
 
+	public static RadixNodeState of(RadixNode node, RadixNodeStatus status) {
+		return new RadixNodeState(node, status, null, null, null);
+	}
+
+	public static RadixNodeState of(RadixNode node, RadixNodeStatus status, NodeRunnerData data) {
+		return new RadixNodeState(node, status, data, null, null);
+	}
+
 	@Override
 	public String toString() {
 		return "RadixPeerState{"
-				+ "location='" + location + '\''
-				+ ", port=" + port
+				+ "node='" + node + '\''
 				+ ", status=" + status
 				+ ", data=" + data
 				+ ", version=" + version
@@ -41,18 +49,8 @@ public class RadixPeerState {
 				+ '}';
 	}
 
-	/**
-	 * Location of {@link RadixNode}
-	 */
-	public String getLocation() {
-		return location;
-	}
-
-	/**
-	 * Port of {@link RadixNode}
-	 */
-	public int getPort() {
-		return port;
+	public RadixNode getNode() {
+		return node;
 	}
 
 	/**

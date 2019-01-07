@@ -1,7 +1,7 @@
 package com.radixdlt.client.core.ledger.selector;
 
 import com.radixdlt.client.core.network.NodeRunnerData;
-import com.radixdlt.client.core.network.RadixPeerState;
+import com.radixdlt.client.core.network.reducers.RadixNodeState;
 
 import java.util.Objects;
 import java.util.Set;
@@ -19,7 +19,7 @@ public class ShardFilter implements RadixPeerFilter {
 	}
 
 	@Override
-	public boolean test(RadixPeerState peerState) {
+	public boolean test(RadixNodeState peerState) {
 		return peerState.getData().map(NodeRunnerData::getShards).map(s -> s.intersects(this.shards)).orElse(false);
 	}
 }

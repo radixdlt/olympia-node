@@ -61,6 +61,10 @@ public class NodeUpdate implements RadixNodeAction {
 		return node;
 	}
 
+	public NodeRunnerData getData() {
+		return data;
+	}
+
 	public NodeUpdateType getType() {
 		return type;
 	}

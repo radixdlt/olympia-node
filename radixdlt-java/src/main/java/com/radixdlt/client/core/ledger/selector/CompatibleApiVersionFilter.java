@@ -1,6 +1,6 @@
 package com.radixdlt.client.core.ledger.selector;
 
-import com.radixdlt.client.core.network.RadixPeerState;
+import com.radixdlt.client.core.network.reducers.RadixNodeState;
 
 /**
  * An api version filter that rejects any incompatible peers as determined by the
@@ -13,7 +13,7 @@ public class CompatibleApiVersionFilter implements RadixPeerFilter {
 	}
 
 	@Override
-	public boolean test(RadixPeerState peerState) {
+	public boolean test(RadixNodeState peerState) {
 		return peerState.getVersion().map(v -> v == this.version).orElse(false);
 	}
 }
