@@ -14,16 +14,16 @@ import com.radixdlt.client.core.ledger.AtomSubmitter;
 import com.radixdlt.client.core.ledger.ParticleStore;
 import com.radixdlt.client.core.ledger.RadixAtomPuller;
 import com.radixdlt.client.core.network.selector.RandomSelector;
-import com.radixdlt.client.core.network.epics.AtomSubmitFindANodeEpic;
+import com.radixdlt.client.core.network.epics.SubmitAtomEpic;
 import com.radixdlt.client.core.ledger.InMemoryAtomStore;
 import com.radixdlt.client.core.network.epics.RadixNodesEpic;
 import com.radixdlt.client.core.network.RadixNetworkController;
 import com.radixdlt.client.core.network.RadixNetworkController.RadixNetworkControllerBuilder;
 import com.radixdlt.client.core.network.RadixNode;
-import com.radixdlt.client.core.network.epics.AtomsFetchFindANodeEpic;
+import com.radixdlt.client.core.network.epics.FetchAtomsEpic;
 import com.radixdlt.client.core.network.epics.DiscoverNodesEpic;
 import com.radixdlt.client.core.network.reducers.RadixNetwork;
-import com.radixdlt.client.core.network.reducers.RadixNetworkState;
+import com.radixdlt.client.core.network.RadixNetworkState;
 import io.reactivex.Observable;
 import java.util.Optional;
 
@@ -88,8 +88,8 @@ public final class RadixUniverse {
 				.network(new RadixNetwork())
 				.addEpic(new RadixNodesEpic())
 				.addEpic(new DiscoverNodesEpic(seeds))
-				.addEpic(new AtomSubmitFindANodeEpic(new RandomSelector()))
-				.addEpic(new AtomsFetchFindANodeEpic(new RandomSelector()))
+				.addEpic(new SubmitAtomEpic(new RandomSelector()))
+				.addEpic(new FetchAtomsEpic(new RandomSelector()))
 				.build();
 
 			defaultUniverse = new RadixUniverse(config, controller);

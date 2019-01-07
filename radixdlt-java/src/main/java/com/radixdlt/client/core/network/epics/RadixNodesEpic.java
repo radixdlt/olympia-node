@@ -2,10 +2,10 @@ package com.radixdlt.client.core.network.epics;
 
 import com.radixdlt.client.core.network.HttpClients;
 import com.radixdlt.client.core.network.RadixNetworkEpic;
-import com.radixdlt.client.core.network.reducers.RadixNetworkState;
+import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.RadixNodeAction;
-import com.radixdlt.client.core.network.WebSocketClient;
+import com.radixdlt.client.core.network.websocket.WebSocketClient;
 import com.radixdlt.client.core.network.actions.NodeUpdate;
 import com.radixdlt.client.core.network.actions.NodeUpdate.NodeUpdateType;
 import io.reactivex.Observable;

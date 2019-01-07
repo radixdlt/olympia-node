@@ -1,4 +1,4 @@
-package com.radixdlt.client.core.network;
+package com.radixdlt.client.core.network.jsonrpc;
 
 import org.radix.serialization2.SerializerId2;
 

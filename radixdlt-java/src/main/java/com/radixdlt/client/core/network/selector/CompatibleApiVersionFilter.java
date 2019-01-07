@@ -1,6 +1,6 @@
 package com.radixdlt.client.core.network.selector;
 
-import com.radixdlt.client.core.network.reducers.RadixNodeState;
+import com.radixdlt.client.core.network.RadixNodeState;
 
 /**
  * An api version filter that rejects any incompatible peers as determined by the

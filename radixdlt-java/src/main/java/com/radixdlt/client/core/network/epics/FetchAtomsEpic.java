@@ -2,7 +2,7 @@ package com.radixdlt.client.core.network.epics;
 
 import com.radixdlt.client.core.network.selector.RadixPeerSelector;
 import com.radixdlt.client.core.network.RadixNetworkEpic;
-import com.radixdlt.client.core.network.reducers.RadixNetworkState;
+import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixNodeAction;
 import com.radixdlt.client.core.network.actions.AtomsFetchUpdate;
 import com.radixdlt.client.core.network.actions.AtomsFetchUpdate.AtomsFetchState;
@@ -12,11 +12,11 @@ import java.util.Collections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class AtomsFetchFindANodeEpic implements RadixNetworkEpic {
-	private static final Logger LOGGER = LoggerFactory.getLogger(AtomSubmitFindANodeEpic.class);
+public class FetchAtomsEpic implements RadixNetworkEpic {
+	private static final Logger LOGGER = LoggerFactory.getLogger(SubmitAtomEpic.class);
 	private final FindANodeMiniEpic findANode;
 
-	public AtomsFetchFindANodeEpic(RadixPeerSelector selector) {
+	public FetchAtomsEpic(RadixPeerSelector selector) {
 		this.findANode = new FindANodeMiniEpic(selector);
 	}
 

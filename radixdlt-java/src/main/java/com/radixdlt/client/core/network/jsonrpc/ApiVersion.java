@@ -1,4 +1,4 @@
-package com.radixdlt.client.core.network;
+package com.radixdlt.client.core.network.jsonrpc;
 
 /**
  * Simple API Version used for syncing between server/client

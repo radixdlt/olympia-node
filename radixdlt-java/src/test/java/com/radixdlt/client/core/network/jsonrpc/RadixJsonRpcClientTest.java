@@ -1,8 +1,8 @@
-package com.radixdlt.client.core.network;
+package com.radixdlt.client.core.network.jsonrpc;
 
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.core.network.RadixJsonRpcClient.NodeAtomSubmissionState;
-import com.radixdlt.client.core.network.RadixJsonRpcClient.NodeAtomSubmissionUpdate;
+import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.NodeAtomSubmissionState;
+import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.NodeAtomSubmissionUpdate;
 import io.reactivex.Observable;
 import org.junit.Test;
 import org.radix.common.ID.EUID;

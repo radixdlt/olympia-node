@@ -1,14 +1,16 @@
-package com.radixdlt.client.core.network;
+package com.radixdlt.client.core.network.epics;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.core.atoms.Shards;
+import com.radixdlt.client.core.network.RadixNetworkState;
+import com.radixdlt.client.core.network.RadixNode;
+import com.radixdlt.client.core.network.RadixNodeState;
 import com.radixdlt.client.core.network.selector.GetFirstSelector;
 import com.radixdlt.client.core.network.selector.RandomSelector;
 import com.radixdlt.client.core.network.actions.NodeUpdate;
 import com.radixdlt.client.core.network.actions.NodeUpdate.NodeUpdateType;
-import com.radixdlt.client.core.network.epics.FindANodeMiniEpic;
-import com.radixdlt.client.core.network.reducers.RadixNetworkState;
-import com.radixdlt.client.core.network.reducers.RadixNodeState;
+import com.radixdlt.client.core.network.websocket.WebSocketClient;
+import com.radixdlt.client.core.network.websocket.WebSocketStatus;
 import io.reactivex.Observable;
 import io.reactivex.observers.TestObserver;
 import io.reactivex.subjects.ReplaySubject;
@@ -26,7 +28,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class FindANodeMiniEpicTest {
-	private RadixNodeState mockedNodeState(RadixNodeStatus status, long lowShard, long highShard) {
+	private RadixNodeState mockedNodeState(WebSocketStatus status, long lowShard, long highShard) {
 		RadixNodeState nodeState = mock(RadixNodeState.class);
 		when(nodeState.getStatus()).thenReturn(status);
 		when(nodeState.getShards()).thenReturn(Optional.of(Shards.range(lowShard, highShard)));
@@ -45,7 +47,7 @@ public class FindANodeMiniEpicTest {
 		TestObserver<NodeUpdate> testObserver = TestObserver.create();
 		findANodeFunction.apply(
 			Collections.singleton(1L),
-			Observable.just(RadixNetworkState.of(node, mockedNodeState(RadixNodeStatus.CONNECTED, 1, 1)))
+			Observable.just(RadixNetworkState.of(node, mockedNodeState(WebSocketStatus.CONNECTED, 1, 1)))
 		)
 		.subscribe(testObserver);
 
@@ -60,8 +62,8 @@ public class FindANodeMiniEpicTest {
 		FindANodeMiniEpic findANodeFunction = new FindANodeMiniEpic(new RandomSelector());
 
 		RadixNodeState nodeState = mock(RadixNodeState.class);
-		when(nodeState.getStatus()).thenReturn(RadixNodeStatus.DISCONNECTED);
-		when(nodeState.getShards()).thenReturn(Optional.of(Shards.range(1,1)));
+		when(nodeState.getStatus()).thenReturn(WebSocketStatus.DISCONNECTED);
+		when(nodeState.getShards()).thenReturn(Optional.of(Shards.range(1, 1)));
 
 		TestObserver<NodeUpdate> testObserver = TestObserver.create();
 		findANodeFunction.apply(
@@ -87,7 +89,7 @@ public class FindANodeMiniEpicTest {
 				RadixNode peer = mock(RadixNode.class);
 				return peer;
 			},
-			i -> mockedNodeState(i == 0 ? RadixNodeStatus.CONNECTED : RadixNodeStatus.DISCONNECTED, 1, 1)
+			i -> mockedNodeState(i == 0 ? WebSocketStatus.CONNECTED : WebSocketStatus.DISCONNECTED, 1, 1)
 		));
 
 		FindANodeMiniEpic findANodeFunction = new FindANodeMiniEpic(new GetFirstSelector());
@@ -112,8 +114,8 @@ public class FindANodeMiniEpicTest {
 
 
 		networkState.onNext(new RadixNetworkState(ImmutableMap.of(
-			badPeer, mockedNodeState(RadixNodeStatus.DISCONNECTED, 1, 1),
-			goodPeer, mockedNodeState(RadixNodeStatus.DISCONNECTED, 1, 1)
+			badPeer, mockedNodeState(WebSocketStatus.DISCONNECTED, 1, 1),
+			goodPeer, mockedNodeState(WebSocketStatus.DISCONNECTED, 1, 1)
 		)));
 
 		FindANodeMiniEpic findANodeFunction = new FindANodeMiniEpic(new GetFirstSelector());
@@ -126,13 +128,13 @@ public class FindANodeMiniEpicTest {
 		.doOnNext(i -> {
 			if (i.getNode().equals(badPeer)) {
 				networkState.onNext(new RadixNetworkState(ImmutableMap.of(
-					badPeer, mockedNodeState(RadixNodeStatus.FAILED, 1, 1),
-					goodPeer, mockedNodeState(RadixNodeStatus.DISCONNECTED, 1, 1)
+					badPeer, mockedNodeState(WebSocketStatus.FAILED, 1, 1),
+					goodPeer, mockedNodeState(WebSocketStatus.DISCONNECTED, 1, 1)
 				)));
 			} else {
 				networkState.onNext(new RadixNetworkState(ImmutableMap.of(
-					badPeer, mockedNodeState(RadixNodeStatus.FAILED, 1, 1),
-					goodPeer, mockedNodeState(RadixNodeStatus.CONNECTED, 1, 1)
+					badPeer, mockedNodeState(WebSocketStatus.FAILED, 1, 1),
+					goodPeer, mockedNodeState(WebSocketStatus.CONNECTED, 1, 1)
 				)));
 			}
 		})

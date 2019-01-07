@@ -1,7 +1,7 @@
 package com.radixdlt.client.core.network.actions;
 
-import com.radixdlt.client.core.network.NodeRunnerData;
-import com.radixdlt.client.core.network.RadixNodeStatus;
+import com.radixdlt.client.core.network.jsonrpc.NodeRunnerData;
+import com.radixdlt.client.core.network.websocket.WebSocketStatus;
 import com.radixdlt.client.core.network.RadixNodeAction;
 import com.radixdlt.client.core.network.RadixNode;
 import java.util.Objects;
@@ -52,7 +52,7 @@ public class NodeUpdate implements RadixNodeAction {
 		return new NodeUpdate(NodeUpdateType.ADD_NODE, node, data);
 	}
 
-	public static NodeUpdate nodeStatus(RadixNode node, RadixNodeStatus status) {
+	public static NodeUpdate nodeStatus(RadixNode node, WebSocketStatus status) {
 		return new NodeUpdate(NodeUpdateType.valueOf(status.name()), node, null);
 	}
 

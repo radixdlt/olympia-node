@@ -1,4 +1,4 @@
-package com.radixdlt.client.core.network;
+package com.radixdlt.client.core.network.jsonrpc;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;

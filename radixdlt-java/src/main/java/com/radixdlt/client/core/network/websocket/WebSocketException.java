@@ -1,4 +1,4 @@
-package com.radixdlt.client.core.network;
+package com.radixdlt.client.core.network.websocket;
 
 import java.io.IOException;
 

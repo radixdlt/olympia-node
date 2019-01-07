@@ -1,6 +1,6 @@
-package com.radixdlt.client.core.network;
+package com.radixdlt.client.core.network.websocket;
 
-public enum RadixNodeStatus {
+public enum WebSocketStatus {
 	WAITING, CONNECTING, CONNECTED, CLOSING, DISCONNECTED, FAILED;
 
 	public boolean isActive() {

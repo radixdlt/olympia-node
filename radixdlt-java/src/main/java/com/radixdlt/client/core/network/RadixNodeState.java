@@ -1,11 +1,10 @@
-package com.radixdlt.client.core.network.reducers;
+package com.radixdlt.client.core.network;
 
 import com.radixdlt.client.core.address.RadixUniverseConfig;
 
 import com.radixdlt.client.core.atoms.Shards;
-import com.radixdlt.client.core.network.NodeRunnerData;
-import com.radixdlt.client.core.network.RadixNode;
-import com.radixdlt.client.core.network.RadixNodeStatus;
+import com.radixdlt.client.core.network.jsonrpc.NodeRunnerData;
+import com.radixdlt.client.core.network.websocket.WebSocketStatus;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -14,12 +13,12 @@ import java.util.Optional;
  */
 public class RadixNodeState {
 	private final RadixNode node;
-	private final RadixNodeStatus status;
+	private final WebSocketStatus status;
 	private final NodeRunnerData data;
 	private final Integer version;
 	private final RadixUniverseConfig universeConfig;
 
-	public RadixNodeState(RadixNode node, RadixNodeStatus status, NodeRunnerData data, Integer version,
+	public RadixNodeState(RadixNode node, WebSocketStatus status, NodeRunnerData data, Integer version,
 	                      RadixUniverseConfig universeConfig) {
 		Objects.requireNonNull(node, "node is required");
 		Objects.requireNonNull(status, "status is required");
@@ -31,11 +30,11 @@ public class RadixNodeState {
 		this.universeConfig = universeConfig;
 	}
 
-	public static RadixNodeState of(RadixNode node, RadixNodeStatus status) {
+	public static RadixNodeState of(RadixNode node, WebSocketStatus status) {
 		return new RadixNodeState(node, status, null, null, null);
 	}
 
-	public static RadixNodeState of(RadixNode node, RadixNodeStatus status, NodeRunnerData data) {
+	public static RadixNodeState of(RadixNode node, WebSocketStatus status, NodeRunnerData data) {
 		return new RadixNodeState(node, status, data, null, null);
 	}
 
@@ -57,7 +56,7 @@ public class RadixNodeState {
 	/**
 	 * Status of {@link RadixNode}'s client
 	 */
-	public RadixNodeStatus getStatus() {
+	public WebSocketStatus getStatus() {
 		return status;
 	}
 

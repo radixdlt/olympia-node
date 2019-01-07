@@ -1,7 +1,7 @@
 package com.radixdlt.client.core.network.actions;
 
-import com.radixdlt.client.core.network.RadixJsonRpcClient.NodeAtomSubmissionState;
-import com.radixdlt.client.core.network.RadixJsonRpcClient.NodeAtomSubmissionUpdate;
+import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.NodeAtomSubmissionState;
+import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.NodeAtomSubmissionUpdate;
 import com.radixdlt.client.core.network.RadixNodeAction;
 import com.radixdlt.client.core.network.RadixNode;
 import java.text.SimpleDateFormat;

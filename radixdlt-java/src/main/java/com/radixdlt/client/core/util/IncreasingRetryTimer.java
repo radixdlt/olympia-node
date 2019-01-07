@@ -1,4 +1,4 @@
-package com.radixdlt.client.core.network;
+package com.radixdlt.client.core.util;
 
 import io.reactivex.Observable;
 import io.reactivex.ObservableSource;

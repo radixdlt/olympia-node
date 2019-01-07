@@ -1,14 +1,14 @@
 package com.radixdlt.client.core.network.epics;
 
-import com.radixdlt.client.core.network.AtomQuery;
-import com.radixdlt.client.core.network.IncreasingRetryTimer;
-import com.radixdlt.client.core.network.RadixJsonRpcClient;
+import com.radixdlt.client.core.network.jsonrpc.AtomQuery;
+import com.radixdlt.client.core.util.IncreasingRetryTimer;
+import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient;
 import com.radixdlt.client.core.network.RadixNetworkEpic;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.RadixNodeAction;
-import com.radixdlt.client.core.network.RadixNodeStatus;
-import com.radixdlt.client.core.network.WebSocketClient;
-import com.radixdlt.client.core.network.WebSocketException;
+import com.radixdlt.client.core.network.websocket.WebSocketStatus;
+import com.radixdlt.client.core.network.websocket.WebSocketClient;
+import com.radixdlt.client.core.network.websocket.WebSocketException;
 import com.radixdlt.client.core.network.actions.AtomSubmissionUpdate;
 import com.radixdlt.client.core.network.actions.AtomSubmissionUpdate.AtomSubmissionState;
 import com.radixdlt.client.core.network.actions.AtomsFetchUpdate;
@@ -30,7 +30,7 @@ public class RadixNodeJsonRpcEpics {
 		throw new IllegalStateException("Cannot instantiate.");
 	}
 
-	public static RadixNetworkEpic autoCloseWebsocket(ConcurrentHashMap<RadixNode,WebSocketClient> websockets) {
+	public static RadixNetworkEpic autoCloseWebsocket(ConcurrentHashMap<RadixNode, WebSocketClient> websockets) {
 		return (actions, stateObservable) ->
 			actions
 				.filter(a -> a instanceof JsonRpcAction)
@@ -42,7 +42,7 @@ public class RadixNodeJsonRpcEpics {
 				.toObservable();
 	}
 
-	public static RadixNetworkEpic livePeers(ConcurrentHashMap<RadixNode,WebSocketClient> websockets) {
+	public static RadixNetworkEpic livePeers(ConcurrentHashMap<RadixNode, WebSocketClient> websockets) {
 		return (actions, stateObservable) ->
 			actions
 				.filter(a -> a instanceof GetLivePeers)
@@ -52,11 +52,11 @@ public class RadixNodeJsonRpcEpics {
 					final WebSocketClient ws = websockets.get(u.getNode());
 					return ws.getState()
 						.doOnNext(s -> {
-							if (s.equals(RadixNodeStatus.DISCONNECTED)) {
+							if (s.equals(WebSocketStatus.DISCONNECTED)) {
 								ws.connect();
 							}
 						})
-						.filter(s -> s.equals(RadixNodeStatus.CONNECTED))
+						.filter(s -> s.equals(WebSocketStatus.CONNECTED))
 						.firstOrError()
 						.flatMap(i -> {
 							RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(ws);
@@ -66,7 +66,7 @@ public class RadixNodeJsonRpcEpics {
 				});
 	}
 
-	public static RadixNetworkEpic nodeData(ConcurrentHashMap<RadixNode,WebSocketClient> websockets) {
+	public static RadixNetworkEpic nodeData(ConcurrentHashMap<RadixNode, WebSocketClient> websockets) {
 		return (actions, stateObservable) ->
 			actions
 				.filter(a -> a instanceof GetNodeData)
@@ -76,11 +76,11 @@ public class RadixNodeJsonRpcEpics {
 					WebSocketClient ws = websockets.get(u.getNode());
 					return ws.getState()
 						.doOnNext(s -> {
-							if (s.equals(RadixNodeStatus.DISCONNECTED)) {
+							if (s.equals(WebSocketStatus.DISCONNECTED)) {
 								ws.connect();
 							}
 						})
-						.filter(s -> s.equals(RadixNodeStatus.CONNECTED))
+						.filter(s -> s.equals(WebSocketStatus.CONNECTED))
 						.firstOrError()
 						.flatMap(i -> {
 							RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(ws);
@@ -90,7 +90,7 @@ public class RadixNodeJsonRpcEpics {
 				});
 	}
 
-	public static RadixNetworkEpic submitAtom(ConcurrentHashMap<RadixNode,WebSocketClient> websockets) {
+	public static RadixNetworkEpic submitAtom(ConcurrentHashMap<RadixNode, WebSocketClient> websockets) {
 		return (actions, stateObservable) ->
 			actions
 				.filter(u -> u instanceof AtomSubmissionUpdate)
@@ -100,17 +100,22 @@ public class RadixNodeJsonRpcEpics {
 					final WebSocketClient ws = websockets.get(u.getNode());
 					return ws.getState()
 						.doOnNext(s -> {
-							if (s.equals(RadixNodeStatus.DISCONNECTED)) {
+							if (s.equals(WebSocketStatus.DISCONNECTED)) {
 								ws.connect();
 							}
 						})
-						.filter(s -> s.equals(RadixNodeStatus.CONNECTED))
+						.filter(s -> s.equals(WebSocketStatus.CONNECTED))
 						.firstOrError()
 						.flatMapObservable(i -> {
 							RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(ws);
 							return jsonRpcClient.submitAtom(u.getAtom())
 								.doOnError(Throwable::printStackTrace)
-								.map(nodeUpdate -> AtomSubmissionUpdate.update(u.getUuid(), u.getAtom(), nodeUpdate, u.getNode()))
+								.map(nodeUpdate -> AtomSubmissionUpdate.update(
+									u.getUuid(),
+									u.getAtom(),
+									nodeUpdate,
+									u.getNode()
+								))
 								.retryWhen(new IncreasingRetryTimer(WebSocketException.class))
 								// TODO: Better way of cleanup?
 								.doFinally(() -> Observable.timer(5, TimeUnit.SECONDS).subscribe(t -> ws.close()));
@@ -144,19 +149,24 @@ public class RadixNodeJsonRpcEpics {
 						final WebSocketClient ws = websockets.get(update.getNode());
 						return ws.getState()
 							.doOnNext(s -> {
-								if (s.equals(RadixNodeStatus.DISCONNECTED)) {
+								if (s.equals(WebSocketStatus.DISCONNECTED)) {
 									ws.connect();
 								}
 							})
-							.filter(s -> s.equals(RadixNodeStatus.CONNECTED))
+							.filter(s -> s.equals(WebSocketStatus.CONNECTED))
 							.firstOrError()
 							.flatMapObservable(i ->
 								Observable.<AtomsFetchUpdate>create(emitter -> {
 									RadixJsonRpcClient client = new RadixJsonRpcClient(ws);
 
 									Disposable d = client.observeAtoms(update.getUuid()).map(
-										observation -> AtomsFetchUpdate.observed(update.getUuid(), update.getAddress(), update.getNode(), observation))
-											.subscribe(emitter::onNext);
+										observation -> AtomsFetchUpdate.observed(
+											update.getUuid(),
+											update.getAddress(),
+											update.getNode(),
+											observation
+										))
+										.subscribe(emitter::onNext);
 									AtomQuery atomQuery = new AtomQuery(update.getAddress());
 									client.sendAtomsSubscribe(update.getUuid(), atomQuery).subscribe();
 

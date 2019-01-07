@@ -1,4 +1,4 @@
-package com.radixdlt.client.core.network;
+package com.radixdlt.client.core.network.websocket;
 
 import static org.mockito.Mockito.mock;
 
@@ -24,15 +24,15 @@ public class WebSocketClientTest {
 			return webSocket;
 		});
 
-		TestObserver<RadixNodeStatus> testObserver = TestObserver.create();
+		TestObserver<WebSocketStatus> testObserver = TestObserver.create();
 		client.getState().subscribe(testObserver);
 		client.connect();
 
 		testObserver.awaitCount(3);
 		testObserver.assertValues(
-			RadixNodeStatus.DISCONNECTED,
-			RadixNodeStatus.CONNECTING,
-			RadixNodeStatus.FAILED
+			WebSocketStatus.DISCONNECTED,
+			WebSocketStatus.CONNECTING,
+			WebSocketStatus.FAILED
 		);
 	}
 

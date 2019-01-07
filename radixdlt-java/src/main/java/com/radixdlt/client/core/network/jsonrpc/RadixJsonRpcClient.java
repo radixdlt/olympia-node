@@ -1,4 +1,4 @@
-package com.radixdlt.client.core.network;
+package com.radixdlt.client.core.network.jsonrpc;
 
 import com.google.gson.JsonArray;
 import io.reactivex.Completable;
@@ -89,8 +89,7 @@ public class RadixJsonRpcClient {
 		this.messages = this.channel.getMessages()
 			.map(msg -> parser.parse(msg).getAsJsonObject())
 			.publish()
-			.refCount()
-;
+			.refCount();
 
 		Serialization serialization = Serialize.getInstance();
 		this.serverApiVersion = jsonRpcCall("Api.getVersion")
@@ -381,7 +380,8 @@ public class RadixJsonRpcClient {
 			params.add("atom", jsonAtom);
 
 			Disposable messageListenerDisposable = messages.filter(msg -> msg.has("method"))
-				.filter(msg -> msg.get("method").getAsString().equals("AtomSubmissionState.onNext")).map(msg -> msg.get("params").getAsJsonObject())
+				.filter(msg -> msg.get("method").getAsString().equals("AtomSubmissionState.onNext"))
+				.map(msg -> msg.get("params").getAsJsonObject())
 				.filter(p -> p.get("subscriberId").getAsString().equals(subscriberId)).map(p -> {
 					final NodeAtomSubmissionState state = NodeAtomSubmissionState.valueOf(p.get("value").getAsString());
 					final JsonElement data;

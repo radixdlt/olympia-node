@@ -1,7 +1,7 @@
 package com.radixdlt.client.core.network.selector;
 
-import com.radixdlt.client.core.network.RadixNodeStatus;
-import com.radixdlt.client.core.network.reducers.RadixNodeState;
+import com.radixdlt.client.core.network.websocket.WebSocketStatus;
+import com.radixdlt.client.core.network.RadixNodeState;
 
 /**
  * A connection status filter that filters out inactive peers
@@ -9,6 +9,6 @@ import com.radixdlt.client.core.network.reducers.RadixNodeState;
 public class ConnectionAliveFilter implements RadixPeerFilter {
 	@Override
 	public boolean test(RadixNodeState peerState) {
-		return peerState.getStatus() == RadixNodeStatus.CONNECTED || peerState.getStatus() == RadixNodeStatus.CONNECTING;
+		return peerState.getStatus() == WebSocketStatus.CONNECTED || peerState.getStatus() == WebSocketStatus.CONNECTING;
 	}
 }

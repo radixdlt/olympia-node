@@ -1,5 +1,6 @@
-package com.radixdlt.client.core.network;
+package com.radixdlt.client.util;
 
+import com.radixdlt.client.core.util.IncreasingRetryTimer;
 import io.reactivex.Observable;
 import io.reactivex.functions.Predicate;
 import io.reactivex.observers.TestObserver;

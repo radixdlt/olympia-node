@@ -3,7 +3,7 @@ package org.radix.serialization2;
 import org.junit.Test;
 import org.radix.serialization2.client.Serialize;
 
-import com.radixdlt.client.core.network.RadixSystem;
+import com.radixdlt.client.core.network.jsonrpc.RadixSystem;
 
 import static org.junit.Assert.assertNotNull;
 

@@ -1,7 +1,7 @@
 package com.radixdlt.client.core.network.selector;
 
-import com.radixdlt.client.core.network.NodeRunnerData;
-import com.radixdlt.client.core.network.reducers.RadixNodeState;
+import com.radixdlt.client.core.network.jsonrpc.NodeRunnerData;
+import com.radixdlt.client.core.network.RadixNodeState;
 
 import java.util.Objects;
 import java.util.Set;

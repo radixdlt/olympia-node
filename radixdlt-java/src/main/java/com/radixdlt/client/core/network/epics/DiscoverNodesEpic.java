@@ -1,7 +1,7 @@
 package com.radixdlt.client.core.network.epics;
 
 import com.radixdlt.client.core.network.RadixNetworkEpic;
-import com.radixdlt.client.core.network.reducers.RadixNetworkState;
+import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixNodeAction;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.actions.AtomSubmissionUpdate;

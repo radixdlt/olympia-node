@@ -1,11 +1,8 @@
 package com.radixdlt.client.core.network;
 
 import okhttp3.Request;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class RadixNode {
-	private final Logger logger = LoggerFactory.getLogger(RadixNode.class);
 	private final String location;
 	private final boolean useSSL;
 	private final int port;
@@ -16,7 +13,7 @@ public class RadixNode {
 		this.location = location;
 		this.useSSL = useSSL;
 		this.port = port;
-		this.url = (useSSL ? "wss://" : "ws://")+ location + ":" + port + "/rpc";
+		this.url = (useSSL ? "wss://" : "ws://") + location + ":" + port + "/rpc";
 		this.request = new Request.Builder().url(url).build();
 	}
 
@@ -48,7 +45,7 @@ public class RadixNode {
 			return false;
 		}
 
-		RadixNode p = (RadixNode)o;
+		RadixNode p = (RadixNode) o;
 		return p.url.equals(this.url);
 	}
 }

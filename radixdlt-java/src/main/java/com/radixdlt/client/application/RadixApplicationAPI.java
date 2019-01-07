@@ -1,6 +1,6 @@
 package com.radixdlt.client.application;
 
-import com.radixdlt.client.core.network.reducers.RadixNetworkState;
+import com.radixdlt.client.core.network.RadixNetworkState;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;

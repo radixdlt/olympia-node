@@ -1,5 +1,7 @@
-package com.radixdlt.client.core.network;
+package com.radixdlt.client.core.network.bootstrap;
 
+import com.radixdlt.client.core.network.HttpClients;
+import com.radixdlt.client.core.network.RadixNode;
 import io.reactivex.Single;
 import java.io.IOException;
 import okhttp3.Call;

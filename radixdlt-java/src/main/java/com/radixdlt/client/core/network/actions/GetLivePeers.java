@@ -1,6 +1,6 @@
 package com.radixdlt.client.core.network.actions;
 
-import com.radixdlt.client.core.network.NodeRunnerData;
+import com.radixdlt.client.core.network.jsonrpc.NodeRunnerData;
 import com.radixdlt.client.core.network.RadixNode;
 import java.util.ArrayList;
 import java.util.Collections;
