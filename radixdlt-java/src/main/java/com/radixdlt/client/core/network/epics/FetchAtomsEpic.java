@@ -25,6 +25,8 @@ import java.util.concurrent.TimeUnit;
  * Epic which emits atoms on a FETCH_ATOMS_REQUEST query forever until a FETCH_ATOMS_CANCEL action occurs.
  */
 public class FetchAtomsEpic implements RadixNetworkEpic {
+	private final static int DELAY_CLOSE_SECS = 5;
+
 	private final WebSockets webSockets;
 
 	public FetchAtomsEpic(WebSockets webSockets) {
@@ -64,7 +66,7 @@ public class FetchAtomsEpic implements RadixNetworkEpic {
 				d.dispose();
 				client.cancelAtomsSubscribe(uuid)
 					.andThen(
-						Observable.timer(5, TimeUnit.SECONDS)
+						Observable.timer(DELAY_CLOSE_SECS, TimeUnit.SECONDS)
 							.flatMapCompletable(t -> {
 								ws.close();
 								return Completable.complete();

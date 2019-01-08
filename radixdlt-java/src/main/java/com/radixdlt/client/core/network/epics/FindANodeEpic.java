@@ -2,7 +2,9 @@ package com.radixdlt.client.core.network.epics;
 
 import com.radixdlt.client.core.network.RadixNetworkEpic;
 import com.radixdlt.client.core.network.RadixNodeAction;
+import com.radixdlt.client.core.network.actions.CloseWebSocketAction;
 import com.radixdlt.client.core.network.actions.ConnectWebSocketAction;
+import com.radixdlt.client.core.network.actions.DiscoverMoreNodesAction;
 import com.radixdlt.client.core.network.actions.FindANodeRequestAction;
 import com.radixdlt.client.core.network.actions.FindANodeResultAction;
 import com.radixdlt.client.core.network.selector.RadixPeerSelector;
@@ -16,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -26,6 +29,8 @@ import org.slf4j.LoggerFactory;
  * then the epic attempts to start connections.
  */
 public class FindANodeEpic implements RadixNetworkEpic {
+	private static final int MAX_SIMULTANEOUS_CONNECTION_REQUESTS = 2;
+	private static final int NEXT_CONNECTION_THROTTLE_TIMEOUT_SECS = 1;
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(FindANodeEpic.class);
 	private final RadixPeerSelector selector;
@@ -34,7 +39,7 @@ public class FindANodeEpic implements RadixNetworkEpic {
 		this.selector = selector;
 	}
 
-	private Maybe<RadixNodeAction> findConnection(Set<Long> shards, RadixNetworkState state) {
+	private Maybe<RadixNodeAction> nextConnectionRequest(Set<Long> shards, RadixNetworkState state) {
 		final Map<WebSocketStatus, List<RadixNode>> statusMap = Arrays.stream(WebSocketStatus.values())
 			.collect(Collectors.toMap(
 				Function.identity(),
@@ -45,16 +50,15 @@ public class FindANodeEpic implements RadixNetworkEpic {
 					.collect(Collectors.toList())
 			));
 
-		final long activeNodeCount = statusMap.get(WebSocketStatus.CONNECTED).size() + statusMap.get(WebSocketStatus.CONNECTING).size();
+		final long connectingNodeCount = statusMap.get(WebSocketStatus.CONNECTING).size();
 
-		if (activeNodeCount < 1) {
-			LOGGER.info(String.format("Requesting more node connections, want %d but have %d active nodes", 1, activeNodeCount));
+		if (connectingNodeCount < MAX_SIMULTANEOUS_CONNECTION_REQUESTS) {
 
 			List<RadixNode> disconnectedPeers = statusMap.get(WebSocketStatus.DISCONNECTED);
 			if (disconnectedPeers.isEmpty()) {
-				LOGGER.info("Could not connect to new peer, don't have any.");
+				return Maybe.just(DiscoverMoreNodesAction.instance());
 			} else {
-				return Maybe.just(ConnectWebSocketAction.of(disconnectedPeers.get(0)));
+				return Maybe.just(ConnectWebSocketAction.of(selector.apply(disconnectedPeers)));
 			}
 		}
 
@@ -73,20 +77,12 @@ public class FindANodeEpic implements RadixNetworkEpic {
 	public Observable<RadixNodeAction> epic(Observable<RadixNodeAction> actions, Observable<RadixNetworkState> stateObservable) {
 		return actions.ofType(FindANodeRequestAction.class)
 			.flatMap(a -> {
-				Observable<RadixNetworkState> syncNetState = stateObservable
-					.replay(1)
-					.autoConnect(2);
-
-				Observable<List<RadixNode>> connectedNodes = syncNetState
+				Observable<List<RadixNode>> connectedNodes = stateObservable
 					.map(state -> getConnectedNodes(a.getShards(), state))
 					.replay(1)
 					.autoConnect(2);
 
-				// Try and connect if there are no nodes
-				Observable<RadixNodeAction> newConnections = syncNetState
-					.zipWith(connectedNodes.takeWhile(List::isEmpty), (s, n) -> s)
-					.flatMapMaybe(state -> findConnection(a.getShards(), state));
-
+				// Stream to find node
 				Observable<RadixNodeAction> selectedNode = connectedNodes
 					.filter(viablePeerList -> !viablePeerList.isEmpty())
 					.firstOrError()
@@ -95,7 +91,33 @@ public class FindANodeEpic implements RadixNetworkEpic {
 					.cache()
 					.toObservable();
 
-				return newConnections.takeUntil(selectedNode).concatWith(selectedNode);
+				// Stream of new actions to find a new node
+				Observable<RadixNodeAction> findConnectionActionsStream = connectedNodes
+					.filter(List::isEmpty)
+					.firstOrError()
+					.ignoreElement()
+					.andThen(
+						Observable
+							.interval(0, NEXT_CONNECTION_THROTTLE_TIMEOUT_SECS, TimeUnit.SECONDS)
+							.withLatestFrom(stateObservable, (i, s) -> s)
+							.flatMapMaybe(state -> nextConnectionRequest(a.getShards(), state))
+					)
+					.takeUntil(selectedNode)
+					.replay(1)
+					.autoConnect(2);
+
+				// Cleanup and close connections which never worked out
+				Observable<RadixNodeAction> cleanupConnections = findConnectionActionsStream
+					.ofType(ConnectWebSocketAction.class)
+					.flatMap(c -> {
+						final RadixNode node = c.getNode();
+						return selectedNode
+							.map(RadixNodeAction::getNode)
+							.filter(selected -> !node.equals(selected))
+							.map(i -> CloseWebSocketAction.of(node));
+					});
+
+				return findConnectionActionsStream.concatWith(selectedNode).mergeWith(cleanupConnections);
 			});
 	}
 }

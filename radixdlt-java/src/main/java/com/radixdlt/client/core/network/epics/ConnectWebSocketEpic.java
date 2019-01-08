@@ -3,6 +3,7 @@ package com.radixdlt.client.core.network.epics;
 import com.radixdlt.client.core.network.RadixNetworkEpic;
 import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixNodeAction;
+import com.radixdlt.client.core.network.actions.CloseWebSocketAction;
 import com.radixdlt.client.core.network.actions.ConnectWebSocketAction;
 import com.radixdlt.client.core.network.epics.WebSocketsEpic.WebSockets;
 import io.reactivex.Observable;
@@ -19,11 +20,20 @@ public class ConnectWebSocketEpic implements RadixNetworkEpic {
 
 	@Override
 	public Observable<RadixNodeAction> epic(Observable<RadixNodeAction> actions, Observable<RadixNetworkState> networkState) {
-		return
+		final Observable<RadixNodeAction> onConnect =
 			actions
 				.filter(a -> a instanceof ConnectWebSocketAction)
 				.doOnNext(u -> webSockets.get(u.getNode()).connect())
 				.ignoreElements()
 				.toObservable();
+
+		final Observable<RadixNodeAction> onClose =
+			actions
+				.filter(a -> a instanceof CloseWebSocketAction)
+				.doOnNext(u -> webSockets.get(u.getNode()).close())
+				.ignoreElements()
+				.toObservable();
+
+		return Observable.merge(onConnect, onClose);
 	}
 }

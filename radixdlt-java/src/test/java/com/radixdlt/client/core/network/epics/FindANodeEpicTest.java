@@ -6,6 +6,7 @@ import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.RadixNodeAction;
 import com.radixdlt.client.core.network.RadixNodeState;
+import com.radixdlt.client.core.network.actions.CloseWebSocketAction;
 import com.radixdlt.client.core.network.actions.ConnectWebSocketAction;
 import com.radixdlt.client.core.network.actions.FindANodeRequestAction;
 import com.radixdlt.client.core.network.actions.FindANodeResultAction;
@@ -78,6 +79,7 @@ public class FindANodeEpicTest {
 		)
 		.subscribe(testObserver);
 
+		testObserver.awaitCount(1);
 		testObserver.assertValue(u -> u instanceof ConnectWebSocketAction);
 		testObserver.assertValue(u -> u.getNode().equals(node));
 		testObserver.assertNotComplete();
@@ -114,9 +116,53 @@ public class FindANodeEpicTest {
 		testObserver.assertValue(u -> ((FindANodeResultAction) u).getRequest().equals(request));
 	}
 
+	@Test
+	public void when_first_node_takes_too_long__then_second_node_should_connect() {
+		RadixNode badPeer = mock(RadixNode.class);
+		RadixNode goodPeer = mock(RadixNode.class);
+
+		ReplaySubject<RadixNetworkState> networkState = ReplaySubject.create();
+
+
+		networkState.onNext(new RadixNetworkState(ImmutableMap.of(
+			badPeer, mockedNodeState(WebSocketStatus.DISCONNECTED, 1, 1),
+			goodPeer, mockedNodeState(WebSocketStatus.DISCONNECTED, 1, 1)
+		)));
+
+		FindANodeEpic findANodeEpic = new FindANodeEpic(new GetFirstSelector());
+		TestObserver<RadixNodeAction> testObserver = TestObserver.create();
+
+		FindANodeRequestAction request = mock(FindANodeRequestAction.class);
+		when(request.getShards()).thenReturn(Collections.singleton(1L));
+
+		findANodeEpic.epic(
+			Observable.<RadixNodeAction>just(request).concatWith(Observable.never()),
+			networkState
+		)
+			.doOnNext(i -> {
+				if (i.getNode().equals(badPeer)) {
+					networkState.onNext(new RadixNetworkState(ImmutableMap.of(
+						badPeer, mockedNodeState(WebSocketStatus.CONNECTING, 1, 1),
+						goodPeer, mockedNodeState(WebSocketStatus.DISCONNECTED, 1, 1)
+					)));
+				} else {
+					networkState.onNext(new RadixNetworkState(ImmutableMap.of(
+						badPeer, mockedNodeState(WebSocketStatus.CONNECTING, 1, 1),
+						goodPeer, mockedNodeState(WebSocketStatus.CONNECTED, 1, 1)
+					)));
+				}
+			})
+			.subscribe(testObserver);
+
+		testObserver.awaitCount(4);
+		testObserver.assertValueAt(0, u -> u instanceof ConnectWebSocketAction && u.getNode().equals(badPeer));
+		testObserver.assertValueAt(1, u -> u instanceof ConnectWebSocketAction && u.getNode().equals(goodPeer));
+		testObserver.assertValueAt(2, u -> u instanceof CloseWebSocketAction && u.getNode().equals(badPeer));
+		testObserver.assertValueAt(3, u -> ((FindANodeResultAction) u).getRequest().equals(request) && u.getNode().equals(goodPeer));
+	}
 
 	@Test
-	public void whenFirstNodeFailsThenSecondNodeShouldConnect() {
+	public void when_first_node_fails__then_seconde_node_should_connect() {
 		RadixNode badPeer = mock(RadixNode.class);
 		RadixNode goodPeer = mock(RadixNode.class);
 
@@ -153,8 +199,10 @@ public class FindANodeEpicTest {
 		})
 		.subscribe(testObserver);
 
+		testObserver.awaitCount(4);
 		testObserver.assertValueAt(0, u -> u instanceof ConnectWebSocketAction && u.getNode().equals(badPeer));
 		testObserver.assertValueAt(1, u -> u instanceof ConnectWebSocketAction && u.getNode().equals(goodPeer));
-		testObserver.assertValueAt(2, u -> ((FindANodeResultAction) u).getRequest().equals(request) && u.getNode().equals(goodPeer));
+		testObserver.assertValueAt(2, u -> u instanceof CloseWebSocketAction && u.getNode().equals(badPeer));
+		testObserver.assertValueAt(3, u -> ((FindANodeResultAction) u).getRequest().equals(request) && u.getNode().equals(goodPeer));
 	}
 }
