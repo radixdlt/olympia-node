@@ -9,6 +9,8 @@ import com.radixdlt.client.core.network.actions.FetchAtomsCancelAction;
 import com.radixdlt.client.core.network.actions.FetchAtomsRequestAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
 import com.radixdlt.client.core.network.actions.FetchAtomsObservationAction;
+import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
+import com.radixdlt.client.core.network.actions.SubmitAtomResultAction;
 import com.radixdlt.client.core.network.reducers.RadixNetwork;
 import io.reactivex.Observable;
 import io.reactivex.disposables.Disposable;
@@ -95,13 +97,13 @@ public class RadixNetworkController implements AtomSubmitter {
 	 */
 	@Override
 	public Observable<SubmitAtomAction> submitAtom(Atom atom) {
-		SubmitAtomAction initialAction = SubmitAtomAction.searchForNode(atom);
+		SubmitAtomAction initialAction = SubmitAtomRequestAction.newRequest(atom);
 
 		Observable<SubmitAtomAction> status = nodeActions
 			.filter(a -> a instanceof SubmitAtomAction)
 			.map(SubmitAtomAction.class::cast)
 			.filter(u -> u.getUuid().equals(initialAction.getUuid()))
-			.takeUntil(SubmitAtomAction::isComplete);
+			.takeUntil(u -> u instanceof SubmitAtomResultAction);
 		ConnectableObservable<SubmitAtomAction> replay = status.replay();
 		replay.connect();
 

@@ -29,21 +29,12 @@ public class FetchAtomsRequestAction implements FetchAtomsAction, FindANodeActio
 		return new FetchAtomsRequestAction(UUID.randomUUID().toString(), address);
 	}
 
-	/**
-	 * The unique id representing a fetch atoms flow. That is, each type of action in a single flow instance
-	 * must have the same unique id.
-	 *
-	 * @return the id of the flow the action is a part of
-	 */
+	@Override
 	public String getUuid() {
 		return uuid;
 	}
 
-	/**
-	 * The address on which to query atoms from
-	 *
-	 * @return the address to query atoms from
-	 */
+	@Override
 	public RadixAddress getAddress() {
 		return address;
 	}

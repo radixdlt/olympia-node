@@ -1,6 +1,8 @@
 package com.radixdlt.client.application;
 
 import com.radixdlt.client.core.network.RadixNetworkState;
+import com.radixdlt.client.core.network.actions.SubmitAtomResultAction;
+import com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -67,7 +69,6 @@ import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.crypto.ECKeyPairGenerator;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
-import com.radixdlt.client.core.network.actions.SubmitAtomAction.SubmitAtomActionType;
 import com.radixdlt.client.core.pow.ProofOfWorkBuilder;
 
 import io.reactivex.Completable;
@@ -711,10 +712,12 @@ public class RadixApplicationAPI {
 			.flatMapObservable(ledger.getAtomSubmitter()::submitAtom)
 			.replay();
 
-		Completable completable = updates.filter(SubmitAtomAction::isComplete)
+		Completable completable = updates
+			.filter(SubmitAtomResultAction.class::isInstance)
+			.map(SubmitAtomResultAction.class::cast)
 			.firstOrError()
 			.flatMapCompletable(update -> {
-				if (update.getType() == SubmitAtomActionType.STORED) {
+				if (update.getType() == SubmitAtomResultActionType.STORED) {
 					return Completable.complete();
 				} else {
 					final JsonObject errorData = update.getData().getAsJsonObject();
