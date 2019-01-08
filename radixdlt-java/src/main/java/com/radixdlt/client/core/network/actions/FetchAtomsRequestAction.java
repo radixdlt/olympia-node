@@ -8,9 +8,9 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * The initial dispatchable fetch atoms action which signals a node must be found to continue the flow.
+ * The initial dispatchable fetch atoms action which signals a new fetch atoms query request
  */
-public class FetchAtomsRequestAction implements FetchAtomsAction, FindANodeAction {
+public final class FetchAtomsRequestAction implements FetchAtomsAction, FindANodeRequestAction {
 	private final String uuid;
 	private final RadixAddress address;
 

@@ -1,5 +1,9 @@
 package com.radixdlt.client.core.network.epics;
 
+import com.radixdlt.client.core.network.RadixNetworkEpic;
+import com.radixdlt.client.core.network.RadixNodeAction;
+import com.radixdlt.client.core.network.actions.FindANodeRequestAction;
+import com.radixdlt.client.core.network.actions.FindANodeResultAction;
 import com.radixdlt.client.core.network.selector.RadixPeerSelector;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
 import com.radixdlt.client.core.network.RadixNetworkState;
@@ -17,12 +21,12 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class FindANodeMiniEpic {
+public class FindANodeEpic implements RadixNetworkEpic {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(FindANodeMiniEpic.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(FindANodeEpic.class);
 	private final RadixPeerSelector selector;
 
-	public FindANodeMiniEpic(RadixPeerSelector selector) {
+	public FindANodeEpic(RadixPeerSelector selector) {
 		this.selector = selector;
 	}
 
@@ -61,28 +65,34 @@ public class FindANodeMiniEpic {
 			.collect(Collectors.toList());
 	}
 
-	public Observable<NodeUpdate> apply(Set<Long> shards, Observable<RadixNetworkState> networkState) {
-		Observable<RadixNetworkState> syncNetState = networkState
-			.replay(1)
-			.autoConnect(2);
+	@Override
+	public Observable<RadixNodeAction> epic(Observable<RadixNodeAction> actions, Observable<RadixNetworkState> stateObservable) {
+		return actions
+			.filter(a -> a instanceof FindANodeRequestAction)
+			.map(FindANodeRequestAction.class::cast)
+			.flatMap(a -> {
+				Observable<RadixNetworkState> syncNetState = stateObservable
+					.replay(1)
+					.autoConnect(2);
 
-		Observable<List<RadixNode>> connectedNodes = syncNetState
-			.map(state -> getConnectedNodes(shards, state))
-			.replay(1)
-			.autoConnect(2);
+				Observable<List<RadixNode>> connectedNodes = syncNetState
+					.map(state -> getConnectedNodes(a.getShards(), state))
+					.replay(1)
+					.autoConnect(2);
 
-		// Try and connect if there are no nodes
-		Observable<NodeUpdate> newConnections = syncNetState.zipWith(connectedNodes.takeWhile(List::isEmpty), (s, n) -> s)
-			.flatMapMaybe(state -> findConnection(shards, state));
+				// Try and connect if there are no nodes
+				Observable<RadixNodeAction> newConnections = syncNetState.zipWith(connectedNodes.takeWhile(List::isEmpty), (s, n) -> s)
+					.flatMapMaybe(state -> findConnection(a.getShards(), state));
 
-		Observable<NodeUpdate> selectedNode = connectedNodes
-			.filter(viablePeerList -> !viablePeerList.isEmpty())
-			.firstOrError()
-			.map(selector::apply)
-			.map(NodeUpdate::select)
-			.cache()
-			.toObservable();
+				Observable<RadixNodeAction> selectedNode = connectedNodes
+					.filter(viablePeerList -> !viablePeerList.isEmpty())
+					.firstOrError()
+					.map(selector::apply)
+					.<RadixNodeAction>map(n -> new FindANodeResultAction(n, a))
+					.cache()
+					.toObservable();
 
-		return newConnections.takeUntil(selectedNode).concatWith(selectedNode);
+				return newConnections.takeUntil(selectedNode).concatWith(selectedNode);
+			});
 	}
 }

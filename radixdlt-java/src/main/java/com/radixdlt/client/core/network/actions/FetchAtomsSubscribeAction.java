@@ -7,7 +7,7 @@ import java.util.Objects;
 /**
  * A dispatchable fetch atoms action which represents a fetch atom query submitted to a specific node.
  */
-public class FetchAtomsSubscribeAction implements FetchAtomsAction {
+public final class FetchAtomsSubscribeAction implements FetchAtomsAction {
 	private final String uuid;
 	private final RadixAddress address;
 	private final RadixNode node;
@@ -30,29 +30,17 @@ public class FetchAtomsSubscribeAction implements FetchAtomsAction {
 		return new FetchAtomsSubscribeAction(uuid, address, node);
 	}
 
-	/**
-	 * The unique id representing a fetch atoms flow. That is, each type of action in a single flow instance
-	 * must have the same unique id.
-	 *
-	 * @return the id of the flow the action is a part of
-	 */
+	@Override
 	public String getUuid() {
 		return uuid;
 	}
 
-	/**
-	 * The address on which to query atoms from
-	 *
-	 * @return the address to query atoms from
-	 */
+	@Override
 	public RadixAddress getAddress() {
 		return address;
 	}
 
-	/**
-	 * The node which contains the address to query from
-	 * @return node to send query
-	 */
+	@Override
 	public RadixNode getNode() {
 		return node;
 	}

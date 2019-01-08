@@ -13,6 +13,7 @@ import com.radixdlt.client.core.ledger.AtomStore;
 import com.radixdlt.client.core.ledger.AtomSubmitter;
 import com.radixdlt.client.core.ledger.ParticleStore;
 import com.radixdlt.client.core.ledger.RadixAtomPuller;
+import com.radixdlt.client.core.network.epics.FindANodeEpic;
 import com.radixdlt.client.core.network.epics.WebSocketEventsEpic;
 import com.radixdlt.client.core.network.epics.ConnectWebSocketEpic;
 import com.radixdlt.client.core.network.epics.FetchAtomsEpic;
@@ -22,12 +23,10 @@ import com.radixdlt.client.core.network.epics.RadixJsonRpcMethodsEpic;
 import com.radixdlt.client.core.network.epics.WebSocketsEpic.WebSocketsEpicBuilder;
 import com.radixdlt.client.core.network.epics.SubmitAtomEpic;
 import com.radixdlt.client.core.network.selector.RandomSelector;
-import com.radixdlt.client.core.network.epics.SubmitAtomRequestEpic;
 import com.radixdlt.client.core.ledger.InMemoryAtomStore;
 import com.radixdlt.client.core.network.RadixNetworkController;
 import com.radixdlt.client.core.network.RadixNetworkController.RadixNetworkControllerBuilder;
 import com.radixdlt.client.core.network.RadixNode;
-import com.radixdlt.client.core.network.epics.FetchAtomsRequestEpic;
 import com.radixdlt.client.core.network.epics.DiscoverNodesEpic;
 import com.radixdlt.client.core.network.reducers.RadixNetwork;
 import com.radixdlt.client.core.network.RadixNetworkState;
@@ -105,8 +104,7 @@ public final class RadixUniverse {
 						.build()
 				)
 				.addEpic(new DiscoverNodesEpic(seeds))
-				.addEpic(new SubmitAtomRequestEpic(new RandomSelector()))
-				.addEpic(new FetchAtomsRequestEpic(new RandomSelector()))
+				.addEpic(new FindANodeEpic(new RandomSelector()))
 				.build();
 
 			defaultUniverse = new RadixUniverse(config, controller);

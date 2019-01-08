@@ -55,16 +55,22 @@ public class SubmitAtomResultAction implements SubmitAtomAction {
 		return new SubmitAtomResultAction(uuid, atom, node, SubmitAtomResultActionType.from(update.getState()), update.getData());
 	}
 
+	/**
+	 * The end result type of the atom submission
+	 * @return The end result type
+	 */
+	public SubmitAtomResultActionType getType() {
+		return type;
+	}
+
+	@Override
 	public String getUuid() {
 		return this.uuid;
 	}
 
+	@Override
 	public Atom getAtom() {
 		return this.atom;
-	}
-
-	public SubmitAtomResultActionType getType() {
-		return type;
 	}
 
 	@Override

@@ -9,10 +9,6 @@ public class NodeUpdate implements RadixNodeAction {
 	public enum NodeUpdateType {
 		ADD_NODE,
 		WEBSOCKET_CONNECT,
-
-		// Special for mini epic
-		// TODO: remove this
-		SELECT_NODE
 	}
 
 	private final RadixNode node;
@@ -26,10 +22,6 @@ public class NodeUpdate implements RadixNodeAction {
 		this.type = type;
 		this.node = node;
 		this.data = data;
-	}
-
-	public static NodeUpdate select(RadixNode node) {
-		return new NodeUpdate(NodeUpdateType.SELECT_NODE, node, null);
 	}
 
 	public static NodeUpdate wsConnect(RadixNode node) {

@@ -6,7 +6,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
-public class SubmitAtomRequestAction implements SubmitAtomAction, FindANodeAction {
+public class SubmitAtomRequestAction implements SubmitAtomAction, FindANodeRequestAction {
 	private final String uuid;
 	private final Atom atom;
 
@@ -22,10 +22,12 @@ public class SubmitAtomRequestAction implements SubmitAtomAction, FindANodeActio
 		return new SubmitAtomRequestAction(UUID.randomUUID().toString(), atom);
 	}
 
+	@Override
 	public String getUuid() {
 		return uuid;
 	}
 
+	@Override
 	public Atom getAtom() {
 		return atom;
 	}

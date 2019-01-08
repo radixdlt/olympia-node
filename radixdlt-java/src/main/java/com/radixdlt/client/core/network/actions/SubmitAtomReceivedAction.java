@@ -23,14 +23,17 @@ public class SubmitAtomReceivedAction implements SubmitAtomAction {
 		return new SubmitAtomReceivedAction(uuid, atom, node);
 	}
 
+	@Override
 	public String getUuid() {
 		return this.uuid;
 	}
 
+	@Override
 	public Atom getAtom() {
 		return this.atom;
 	}
 
+	// TODO: Get rid of this method. Maybe create a new RadixNetworkAction interface?
 	@Override
 	public RadixNode getNode() {
 		return this.node;

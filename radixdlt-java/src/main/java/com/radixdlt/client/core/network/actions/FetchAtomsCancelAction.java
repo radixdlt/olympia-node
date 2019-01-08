@@ -7,14 +7,11 @@ import java.util.Objects;
 /**
  * A dispatchable fetch atoms action which represents a request to cancel a fetch atoms flow
  */
-public class FetchAtomsCancelAction implements FetchAtomsAction {
+public final class FetchAtomsCancelAction implements FetchAtomsAction {
 	private final String uuid;
 	private final RadixAddress address;
 
-	private FetchAtomsCancelAction(
-		String uuid,
-		RadixAddress address
-	) {
+	private FetchAtomsCancelAction(String uuid, RadixAddress address) {
 		Objects.requireNonNull(uuid);
 		Objects.requireNonNull(address);
 
@@ -26,25 +23,17 @@ public class FetchAtomsCancelAction implements FetchAtomsAction {
 		return new FetchAtomsCancelAction(uuid, address);
 	}
 
-	/**
-	 * The unique id representing a fetch atoms flow. That is, each type of action in a single flow instance
-	 * must have the same unique id.
-	 *
-	 * @return the id of the flow the action is a part of
-	 */
+	@Override
 	public String getUuid() {
 		return uuid;
 	}
 
-	/**
-	 * The address on which to query atoms from
-	 *
-	 * @return the address to query atoms from
-	 */
+	@Override
 	public RadixAddress getAddress() {
 		return address;
 	}
 
+	// TODO: Get rid of this method. Maybe create a new RadixNetworkAction interface?
 	@Override
 	public RadixNode getNode() {
 		throw new UnsupportedOperationException();

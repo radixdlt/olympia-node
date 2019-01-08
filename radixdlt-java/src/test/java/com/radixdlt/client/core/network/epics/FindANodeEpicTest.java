@@ -4,7 +4,10 @@ import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.core.atoms.Shards;
 import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixNode;
+import com.radixdlt.client.core.network.RadixNodeAction;
 import com.radixdlt.client.core.network.RadixNodeState;
+import com.radixdlt.client.core.network.actions.FindANodeRequestAction;
+import com.radixdlt.client.core.network.actions.FindANodeResultAction;
 import com.radixdlt.client.core.network.selector.GetFirstSelector;
 import com.radixdlt.client.core.network.selector.RandomSelector;
 import com.radixdlt.client.core.network.actions.NodeUpdate;
@@ -27,7 +30,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class FindANodeMiniEpicTest {
+public class FindANodeEpicTest {
 	private RadixNodeState mockedNodeState(WebSocketStatus status, long lowShard, long highShard) {
 		RadixNodeState nodeState = mock(RadixNodeState.class);
 		when(nodeState.getStatus()).thenReturn(status);
@@ -43,36 +46,42 @@ public class FindANodeMiniEpicTest {
 		when(ws.getMessages()).thenReturn(Observable.never());
 		when(ws.sendMessage(any())).thenReturn(true);
 
-		FindANodeMiniEpic findANodeFunction = new FindANodeMiniEpic(new GetFirstSelector());
-		TestObserver<NodeUpdate> testObserver = TestObserver.create();
-		findANodeFunction.apply(
-			Collections.singleton(1L),
+		FindANodeRequestAction request = mock(FindANodeRequestAction.class);
+		when(request.getShards()).thenReturn(Collections.singleton(1L));
+
+		FindANodeEpic findANodeFunction = new FindANodeEpic(new GetFirstSelector());
+		TestObserver<RadixNodeAction> testObserver = TestObserver.create();
+		findANodeFunction.epic(
+			Observable.<RadixNodeAction>just(request).concatWith(Observable.never()),
 			Observable.just(RadixNetworkState.of(node, mockedNodeState(WebSocketStatus.CONNECTED, 1, 1)))
 		)
 		.subscribe(testObserver);
 
-		testObserver.awaitTerminalEvent();
+		testObserver.awaitCount(1);
 		testObserver.assertValue(u -> u.getNode().equals(node));
-		testObserver.assertComplete();
 	}
 
 	@Test
-	public void failedNodeConnectionTest() {
+	public void disconnectedNodeConnectionTest() {
 		RadixNode node = mock(RadixNode.class);
-		FindANodeMiniEpic findANodeFunction = new FindANodeMiniEpic(new RandomSelector());
+		FindANodeEpic findANodeEpic = new FindANodeEpic(new RandomSelector());
 
 		RadixNodeState nodeState = mock(RadixNodeState.class);
 		when(nodeState.getStatus()).thenReturn(WebSocketStatus.DISCONNECTED);
 		when(nodeState.getShards()).thenReturn(Optional.of(Shards.range(1, 1)));
 
-		TestObserver<NodeUpdate> testObserver = TestObserver.create();
-		findANodeFunction.apply(
-			Collections.singleton(1L),
+		FindANodeRequestAction request = mock(FindANodeRequestAction.class);
+		when(request.getShards()).thenReturn(Collections.singleton(1L));
+
+		TestObserver<RadixNodeAction> testObserver = TestObserver.create();
+		findANodeEpic.epic(
+			Observable.<RadixNodeAction>just(request).concatWith(Observable.never()),
 			Observable.just(RadixNetworkState.of(node, nodeState)).concatWith(Observable.never())
 		)
 		.subscribe(testObserver);
 
-		testObserver.awaitTerminalEvent(50, TimeUnit.MILLISECONDS);
+		testObserver.assertValue(u -> ((NodeUpdate)u).getType().equals(NodeUpdateType.WEBSOCKET_CONNECT));
+		testObserver.assertValue(u -> u.getNode().equals(node));
 		testObserver.assertNotComplete();
 	}
 
@@ -92,16 +101,19 @@ public class FindANodeMiniEpicTest {
 			i -> mockedNodeState(i == 0 ? WebSocketStatus.CONNECTED : WebSocketStatus.DISCONNECTED, 1, 1)
 		));
 
-		FindANodeMiniEpic findANodeFunction = new FindANodeMiniEpic(new GetFirstSelector());
-		TestObserver<NodeUpdate> testObserver = TestObserver.create();
-		findANodeFunction.apply(
-			Collections.singleton(1L),
+		FindANodeRequestAction request = mock(FindANodeRequestAction.class);
+		when(request.getShards()).thenReturn(Collections.singleton(1L));
+
+		FindANodeEpic findANodeFunction = new FindANodeEpic(new GetFirstSelector());
+		TestObserver<RadixNodeAction> testObserver = TestObserver.create();
+		findANodeFunction.epic(
+			Observable.<RadixNodeAction>just(request).concatWith(Observable.never()),
 			Observable.just(new RadixNetworkState(networkStateMap)).concatWith(Observable.never())
 		)
 		.subscribe(testObserver);
 
-		testObserver.awaitTerminalEvent();
 		testObserver.assertValue(u -> u.getNode().equals(connectedPeer));
+		testObserver.assertValue(u -> ((FindANodeResultAction)u).getRequest().equals(request));
 	}
 
 
@@ -118,11 +130,14 @@ public class FindANodeMiniEpicTest {
 			goodPeer, mockedNodeState(WebSocketStatus.DISCONNECTED, 1, 1)
 		)));
 
-		FindANodeMiniEpic findANodeFunction = new FindANodeMiniEpic(new GetFirstSelector());
-		TestObserver<NodeUpdate> testObserver = TestObserver.create();
+		FindANodeEpic findANodeEpic = new FindANodeEpic(new GetFirstSelector());
+		TestObserver<RadixNodeAction> testObserver = TestObserver.create();
 
-		findANodeFunction.apply(
-			Collections.singleton(1L),
+		FindANodeRequestAction request = mock(FindANodeRequestAction.class);
+		when(request.getShards()).thenReturn(Collections.singleton(1L));
+
+		findANodeEpic.epic(
+			Observable.<RadixNodeAction>just(request).concatWith(Observable.never()),
 			networkState
 		)
 		.doOnNext(i -> {
@@ -140,10 +155,8 @@ public class FindANodeMiniEpicTest {
 		})
 		.subscribe(testObserver);
 
-		testObserver.awaitTerminalEvent();
-		testObserver.assertNoErrors();
-		testObserver.assertValueAt(0, u -> u.getType().equals(NodeUpdateType.WEBSOCKET_CONNECT) && u.getNode().equals(badPeer));
-		testObserver.assertValueAt(1, u -> u.getType().equals(NodeUpdateType.WEBSOCKET_CONNECT) && u.getNode().equals(goodPeer));
-		testObserver.assertValueAt(2, u -> u.getType().equals(NodeUpdateType.SELECT_NODE) && u.getNode().equals(goodPeer));
+		testObserver.assertValueAt(0, u -> ((NodeUpdate)u).getType().equals(NodeUpdateType.WEBSOCKET_CONNECT) && u.getNode().equals(badPeer));
+		testObserver.assertValueAt(1, u -> ((NodeUpdate)u).getType().equals(NodeUpdateType.WEBSOCKET_CONNECT) && u.getNode().equals(goodPeer));
+		testObserver.assertValueAt(2, u -> ((FindANodeResultAction)u).getRequest().equals(request) && u.getNode().equals(goodPeer));
 	}
 }

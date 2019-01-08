@@ -9,9 +9,9 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * 	 * Creates a dispatchable fetch atoms action which represents an atom observed from a specific node for an atom fetch flow.
+ * A dispatchable fetch atoms action which represents an atom observed event from a specific node for an atom fetch flow.
  */
-public class FetchAtomsObservationAction implements FetchAtomsAction {
+public final class FetchAtomsObservationAction implements FetchAtomsAction {
 	private final String uuid;
 	private final RadixAddress address;
 	private final RadixNode node;
@@ -38,35 +38,23 @@ public class FetchAtomsObservationAction implements FetchAtomsAction {
 		return new FetchAtomsObservationAction(uuid, address, node, observation);
 	}
 
-	/**
-	 * The unique id representing a fetch atoms flow. That is, each type of action in a single flow instance
-	 * must have the same unique id.
-	 *
-	 * @return the id of the flow the action is a part of
-	 */
+	@Override
 	public String getUuid() {
 		return uuid;
 	}
 
-	/**
-	 * The address on which to query atoms from
-	 *
-	 * @return the address to query atoms from
-	 */
+	@Override
 	public RadixAddress getAddress() {
 		return address;
 	}
 
-	/**
-	 * The node which contains the address to query from
-	 * @return node to send query
-	 */
+	@Override
 	public RadixNode getNode() {
 		return node;
 	}
 
 	/**
-	 * The atom observation associated with this action. Should only be called when type == RECEIVED_ATOM_OBSERVATION.
+	 * The atom observation associated with this action.
 	 *
 	 * @return the atom observation of the action
 	 */
