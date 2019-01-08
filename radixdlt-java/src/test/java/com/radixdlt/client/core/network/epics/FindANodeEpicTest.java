@@ -111,7 +111,7 @@ public class FindANodeEpicTest {
 		.subscribe(testObserver);
 
 		testObserver.assertValue(u -> u.getNode().equals(connectedPeer));
-		testObserver.assertValue(u -> ((FindANodeResultAction)u).getRequest().equals(request));
+		testObserver.assertValue(u -> ((FindANodeResultAction) u).getRequest().equals(request));
 	}
 
 
@@ -155,6 +155,6 @@ public class FindANodeEpicTest {
 
 		testObserver.assertValueAt(0, u -> u instanceof ConnectWebSocketAction && u.getNode().equals(badPeer));
 		testObserver.assertValueAt(1, u -> u instanceof ConnectWebSocketAction && u.getNode().equals(goodPeer));
-		testObserver.assertValueAt(2, u -> ((FindANodeResultAction)u).getRequest().equals(request) && u.getNode().equals(goodPeer));
+		testObserver.assertValueAt(2, u -> ((FindANodeResultAction) u).getRequest().equals(request) && u.getNode().equals(goodPeer));
 	}
 }

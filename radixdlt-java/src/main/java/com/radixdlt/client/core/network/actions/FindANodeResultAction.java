@@ -35,4 +35,9 @@ public class FindANodeResultAction implements RadixNodeAction {
 	public FindANodeRequestAction getRequest() {
 		return request;
 	}
+
+	@Override
+	public String toString() {
+		return "FIND_A_NODE_RESULT " + selectedNode + " " + request;
+	}
 }

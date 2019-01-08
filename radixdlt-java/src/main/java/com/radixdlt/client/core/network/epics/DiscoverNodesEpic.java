@@ -13,6 +13,9 @@ import com.radixdlt.client.core.network.actions.FetchAtomsObservationAction;
 import io.reactivex.Maybe;
 import io.reactivex.Observable;
 
+/**
+ * Epic which manages simple bootstrapping and discovers nodes one degree out from the initial seeds.
+ */
 public class DiscoverNodesEpic implements RadixNetworkEpic {
 	private final Observable<RadixNode> seeds;
 

@@ -6,6 +6,9 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
+/**
+ * The initial dispatchable action to begin an atom submission flow.
+ */
 public class SubmitAtomRequestAction implements SubmitAtomAction, FindANodeRequestAction {
 	private final String uuid;
 	private final Atom atom;
@@ -32,6 +35,7 @@ public class SubmitAtomRequestAction implements SubmitAtomAction, FindANodeReque
 		return atom;
 	}
 
+	// TODO: Get rid of this method. Maybe create a new RadixNetworkAction interface?
 	@Override
 	public RadixNode getNode() {
 		throw new UnsupportedOperationException();

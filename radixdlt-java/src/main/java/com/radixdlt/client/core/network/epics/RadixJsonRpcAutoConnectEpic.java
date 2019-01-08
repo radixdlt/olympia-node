@@ -9,6 +9,9 @@ import com.radixdlt.client.core.network.websocket.WebSocketClient;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
 import io.reactivex.Observable;
 
+/**
+ * Epic which attempts to open a websocket when a Json Rpc method onto a given node is dispatched.
+ */
 public class RadixJsonRpcAutoConnectEpic implements RadixNetworkEpic {
 	private final WebSockets webSockets;
 	public RadixJsonRpcAutoConnectEpic(WebSockets webSockets) {

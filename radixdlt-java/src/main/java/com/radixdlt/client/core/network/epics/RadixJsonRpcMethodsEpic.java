@@ -15,6 +15,10 @@ import com.radixdlt.client.core.network.websocket.WebSocketClient;
 import io.reactivex.Maybe;
 import io.reactivex.Observable;
 
+/**
+ * Epic which executes Json Rpc methods over the websocket as Json Rpc requests come in. The responses
+ * are emitted.
+ */
 public class RadixJsonRpcMethodsEpic implements RadixNetworkEpic {
 	private final WebSockets webSockets;
 	public RadixJsonRpcMethodsEpic(WebSockets webSockets) {

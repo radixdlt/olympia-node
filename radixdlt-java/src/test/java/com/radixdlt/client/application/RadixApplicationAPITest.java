@@ -27,7 +27,6 @@ import com.radixdlt.client.core.RadixUniverse.Ledger;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomObservation;
-import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
@@ -64,7 +63,6 @@ public class RadixApplicationAPITest {
 		Atom atom = mock(Atom.class);
 		when(identity.sign(any())).thenReturn(Single.just(atom));
 
-		UnsignedAtom unsignedAtom = mock(UnsignedAtom.class);
 		FeeMapper feeMapper = (a, b, c) -> Collections.emptyList();
 
 		return new RadixApplicationAPIBuilder()
@@ -109,7 +107,7 @@ public class RadixApplicationAPITest {
 		updatesObserver.assertValueAt(1, atomUpdate ->
 			atomUpdate instanceof SubmitAtomReceivedAction);
 		updatesObserver.assertValueAt(2, atomUpdate ->
-			((SubmitAtomResultAction)atomUpdate).getType().equals(SubmitAtomResultActionType.STORED));
+			((SubmitAtomResultAction) atomUpdate).getType().equals(SubmitAtomResultActionType.STORED));
 	}
 
 	@Test

@@ -8,6 +8,9 @@ import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.NodeAtomSubmi
 import java.util.Arrays;
 import java.util.Objects;
 
+/**
+ * A dispatchable event action which signifies the end result of an atom submission flow
+ */
 public class SubmitAtomResultAction implements SubmitAtomAction {
 	public enum SubmitAtomResultActionType {
 		FAILED(NodeAtomSubmissionState.FAILED),
@@ -84,6 +87,6 @@ public class SubmitAtomResultAction implements SubmitAtomAction {
 
 	@Override
 	public String toString() {
-		return "SUBMIT_ATOM_EVENT " + uuid + " " + atom.getHid() + " " + node + " " + type;
+		return "SUBMIT_ATOM_RESULT " + uuid + " " + atom.getHid() + " " + node + " " + type;
 	}
 }

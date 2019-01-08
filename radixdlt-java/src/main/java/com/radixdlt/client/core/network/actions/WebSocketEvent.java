@@ -5,9 +5,11 @@ import com.radixdlt.client.core.network.RadixNodeAction;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
 import java.util.Objects;
 
+/**
+ * A dispatchable event action signifying an event which has occurred to a websocket.
+ */
 public class WebSocketEvent implements RadixNodeAction {
 	public enum WebSocketEventType {
-		WAITING,
 		CONNECTING,
 		CONNECTED,
 		CLOSING,

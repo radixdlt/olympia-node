@@ -21,6 +21,10 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Epic which finds a connected sharded node when a FindANode request is received. If there are none found,
+ * then the epic attempts to start connections.
+ */
 public class FindANodeEpic implements RadixNetworkEpic {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(FindANodeEpic.class);
@@ -81,7 +85,8 @@ public class FindANodeEpic implements RadixNetworkEpic {
 					.autoConnect(2);
 
 				// Try and connect if there are no nodes
-				Observable<RadixNodeAction> newConnections = syncNetState.zipWith(connectedNodes.takeWhile(List::isEmpty), (s, n) -> s)
+				Observable<RadixNodeAction> newConnections = syncNetState
+					.zipWith(connectedNodes.takeWhile(List::isEmpty), (s, n) -> s)
 					.flatMapMaybe(state -> findConnection(a.getShards(), state));
 
 				Observable<RadixNodeAction> selectedNode = connectedNodes

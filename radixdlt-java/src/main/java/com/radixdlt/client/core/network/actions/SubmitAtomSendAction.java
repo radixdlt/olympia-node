@@ -5,6 +5,9 @@ import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.RadixNodeAction;
 import java.util.Objects;
 
+/**
+ * A dispatchable event action which signifies that the atom was sent to the given node.
+ */
 public class SubmitAtomSendAction implements SubmitAtomAction, RadixNodeAction {
 	private final String uuid;
 	private final Atom atom;
@@ -39,6 +42,6 @@ public class SubmitAtomSendAction implements SubmitAtomAction, RadixNodeAction {
 
 	@Override
 	public String toString() {
-		return "SUBMIT_ATOM_SUBSCRIBE " + uuid + " " + atom.getHid() + " " + node;
+		return "SUBMIT_ATOM_SEND " + uuid + " " + atom.getHid() + " " + node;
 	}
 }

@@ -12,9 +12,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Reducer which controls state transitions as new network actions occur
+ * Reducer which controls state transitions as new network actions occur.
+ * Explicitly does not contain state and should be maintained as a pure function.
  */
-public class RadixNetwork {
+public final class RadixNetwork {
 	public RadixNetwork() {
 	}
 
@@ -45,8 +46,8 @@ public class RadixNetwork {
 				RadixNodeState.of(node, WebSocketStatus.valueOf(wsEvent.getType().name())),
 				(old, val) -> RadixNodeState.of(old.getNode(), val.getStatus(), old.getData().orElse(null))
 			);
-	}
+		}
 
-	return newMap != null ? new RadixNetworkState(newMap) : null;
+		return newMap != null ? new RadixNetworkState(newMap) : null;
 	}
 }

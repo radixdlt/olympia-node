@@ -2,6 +2,9 @@ package com.radixdlt.client.core.network;
 
 import okhttp3.Request;
 
+/**
+ * Unique network identifier for a node.
+ */
 public class RadixNode {
 	private final String location;
 	private final boolean useSSL;

@@ -12,6 +12,9 @@ import okhttp3.WebSocketListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Manages the state for a single websocket.
+ */
 public class WebSocketClient implements PersistentChannel {
 	private static final Logger LOGGER = LoggerFactory.getLogger(WebSocketClient.class);
 	private final Object lock = new Object();

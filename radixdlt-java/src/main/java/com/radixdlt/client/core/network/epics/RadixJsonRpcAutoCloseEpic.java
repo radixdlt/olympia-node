@@ -8,6 +8,10 @@ import com.radixdlt.client.core.network.epics.WebSocketsEpic.WebSockets;
 import io.reactivex.Observable;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Epic which attempts to close a websocket when a Json Rpc method is finished executing.
+ * Note that the websocket won't close if there are still listeners.
+ */
 public class RadixJsonRpcAutoCloseEpic implements RadixNetworkEpic {
 	private final WebSockets webSockets;
 	public RadixJsonRpcAutoCloseEpic(WebSockets webSockets) {

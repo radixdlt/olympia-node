@@ -4,6 +4,9 @@ import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.network.RadixNode;
 import java.util.Objects;
 
+/**
+ * A dispatchable action which signifies that an atom being submitted was received by the node.
+ */
 public class SubmitAtomReceivedAction implements SubmitAtomAction {
 	private final String uuid;
 	private final Atom atom;
@@ -33,7 +36,6 @@ public class SubmitAtomReceivedAction implements SubmitAtomAction {
 		return this.atom;
 	}
 
-	// TODO: Get rid of this method. Maybe create a new RadixNetworkAction interface?
 	@Override
 	public RadixNode getNode() {
 		return this.node;

@@ -15,9 +15,14 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * Manages the store of low level webSockets and connects epics dependent on useage of these webSockets.
+ * Epic which manages the store of low level webSockets and connects epics dependent on useage of these webSockets.
  */
 public final class WebSocketsEpic implements RadixNetworkEpic {
+
+	/**
+	 * Builds a WebSocketsEpic composed of epics which require websockets. After being built, all epics
+	 * share the same set of websockets which can be used.
+	 */
 	public static class WebSocketsEpicBuilder {
 		private final List<Function<WebSockets, RadixNetworkEpic>> webSocketEpics = new ArrayList<>();
 
@@ -31,12 +36,21 @@ public final class WebSocketsEpic implements RadixNetworkEpic {
 		}
 	}
 
+	/**
+	 * All websockets are created and managed here.
+	 */
 	public static class WebSockets {
 		private final ConcurrentHashMap<RadixNode, WebSocketClient> webSockets = new ConcurrentHashMap<>();
 
 		private WebSockets() {
 		}
 
+		/**
+		 * Returns the unique websocket for a given node. Will never return null.
+		 *
+		 * @param node a radix node to get the websocket client for
+		 * @return a websocket client mapped to the node
+		 */
 		public WebSocketClient get(RadixNode node) {
 			return webSockets.computeIfAbsent(
 				node,

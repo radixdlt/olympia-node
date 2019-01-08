@@ -2,11 +2,8 @@ package com.radixdlt.client.core.network.actions;
 
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.AtomObservation;
-import com.radixdlt.client.core.network.RadixNodeAction;
 import com.radixdlt.client.core.network.RadixNode;
-import io.reactivex.annotations.Nullable;
 import java.util.Objects;
-import java.util.UUID;
 
 /**
  * A dispatchable fetch atoms action which represents an atom observed event from a specific node for an atom fetch flow.

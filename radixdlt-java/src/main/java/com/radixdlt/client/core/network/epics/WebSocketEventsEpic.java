@@ -8,6 +8,9 @@ import com.radixdlt.client.core.network.actions.WebSocketEvent;
 import com.radixdlt.client.core.network.epics.WebSocketsEpic.WebSockets;
 import io.reactivex.Observable;
 
+/**
+ * Epic which emits websocket events from each node
+ */
 public class WebSocketEventsEpic implements RadixNetworkEpic {
 	private final WebSockets webSockets;
 

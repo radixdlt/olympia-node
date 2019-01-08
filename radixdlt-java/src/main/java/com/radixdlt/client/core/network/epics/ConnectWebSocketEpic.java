@@ -7,8 +7,12 @@ import com.radixdlt.client.core.network.actions.ConnectWebSocketAction;
 import com.radixdlt.client.core.network.epics.WebSocketsEpic.WebSockets;
 import io.reactivex.Observable;
 
+/**
+ * Epic which begins a websocket connection when a ConnectWebSocketAction is seen.
+ */
 public class ConnectWebSocketEpic implements RadixNetworkEpic {
 	private final WebSockets webSockets;
+
 	public ConnectWebSocketEpic(WebSockets webSockets) {
 		this.webSockets = webSockets;
 	}
@@ -22,5 +26,4 @@ public class ConnectWebSocketEpic implements RadixNetworkEpic {
 				.ignoreElements()
 				.toObservable();
 	}
-
 }

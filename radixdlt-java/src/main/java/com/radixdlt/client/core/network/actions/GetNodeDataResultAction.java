@@ -7,7 +7,7 @@ import java.util.Objects;
 /**
  * A dispatchable action response for a given node data request
  */
-public class GetNodeDataResultAction implements JsonRpcResultAction<NodeRunnerData>{
+public class GetNodeDataResultAction implements JsonRpcResultAction<NodeRunnerData> {
 	private final RadixNode node;
 	private final NodeRunnerData data;
 

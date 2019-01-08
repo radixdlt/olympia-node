@@ -27,6 +27,10 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * The meat and bones of the Networking module. This module connects all the epics and reducers
+ * to produce a stream of actions and states from those actions.
+ */
 public class RadixNetworkController implements AtomSubmitter {
 	private static final Logger LOGGER = LoggerFactory.getLogger(RadixNetworkController.class);
 
@@ -87,7 +91,8 @@ public class RadixNetworkController implements AtomSubmitter {
 		return networkState;
 	}
 
-	public void dispatch(RadixNodeAction action) {
+	// TODO: make this public
+	private void dispatch(RadixNodeAction action) {
 		nodeActions.onNext(action);
 	}
 
