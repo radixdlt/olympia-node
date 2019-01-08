@@ -53,6 +53,10 @@ public class RadixJsonRpcClient {
 		public JsonElement getResult() {
 			return jsonResponse.getAsJsonObject().get("result");
 		}
+
+		public JsonElement getError() {
+			return jsonResponse.getAsJsonObject().get("error");
+		}
 	}
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(RadixJsonRpcClient.class);
@@ -399,7 +403,7 @@ public class RadixJsonRpcClient {
 				.subscribe(resp -> {
 				if (!resp.isSuccess()) {
 					messageListenerDisposable.dispose();
-					emitter.onNext(new NodeAtomSubmissionUpdate(NodeAtomSubmissionState.FAILED, null));
+					emitter.onNext(new NodeAtomSubmissionUpdate(NodeAtomSubmissionState.FAILED, resp.getError()));
 				} else {
 					emitter.onNext(new NodeAtomSubmissionUpdate(NodeAtomSubmissionState.RECEIVED, null));
 				}
