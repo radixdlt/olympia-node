@@ -5,6 +5,7 @@ import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixNodeAction;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.actions.AddNodeAction;
+import com.radixdlt.client.core.network.actions.FetchAtomsAction;
 import com.radixdlt.client.core.network.actions.GetLivePeersRequestAction;
 import com.radixdlt.client.core.network.actions.GetLivePeersResultAction;
 import com.radixdlt.client.core.network.actions.GetNodeDataRequestAction;
@@ -26,7 +27,7 @@ public class DiscoverNodesEpic implements RadixNetworkEpic {
 	@Override
 	public Observable<RadixNodeAction> epic(Observable<RadixNodeAction> updates, Observable<RadixNetworkState> networkState) {
 		Observable<RadixNode> connectedSeeds = updates
-			.filter(u -> u instanceof SubmitAtomAction || u instanceof FetchAtomsObservationAction)
+			.filter(u -> u instanceof SubmitAtomAction || u instanceof FetchAtomsAction)
 			.firstOrError()
 			.flatMapObservable(i -> seeds)
 			.publish()

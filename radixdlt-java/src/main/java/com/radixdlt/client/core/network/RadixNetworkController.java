@@ -91,8 +91,11 @@ public class RadixNetworkController implements AtomSubmitter {
 		return networkState;
 	}
 
-	// TODO: make this public
-	private void dispatch(RadixNodeAction action) {
+	public Observable<RadixNodeAction> getActions() {
+		return nodeActions;
+	}
+
+	public void dispatch(RadixNodeAction action) {
 		nodeActions.onNext(action);
 	}
 

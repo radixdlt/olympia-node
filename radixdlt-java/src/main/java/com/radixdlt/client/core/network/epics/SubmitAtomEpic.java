@@ -43,7 +43,7 @@ public class SubmitAtomEpic implements RadixNetworkEpic {
 			.ignoreElement();
 	}
 
-	private Observable<RadixNodeAction> submitAtom(SubmitAtomRequestAction request, RadixNode node) {
+	private Observable<RadixNodeAction> submitAtom(SubmitAtomSendAction request, RadixNode node) {
 		final WebSocketClient ws = webSockets.get(node);
 		final RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(ws);
 		return jsonRpcClient.submitAtom(request.getAtom())
@@ -55,7 +55,6 @@ public class SubmitAtomEpic implements RadixNetworkEpic {
 					return SubmitAtomResultAction.fromUpdate(request.getUuid(), request.getAtom(), node, nodeUpdate);
 				}
 			})
-			.<RadixNodeAction>startWith(SubmitAtomSendAction.of(request.getUuid(), request.getAtom(), node))
 			.retryWhen(new IncreasingRetryTimer(WebSocketException.class))
 			// TODO: Better way of cleanup?
 			.doFinally(() -> Observable.timer(5, TimeUnit.SECONDS).subscribe(t -> ws.close()));
@@ -63,15 +62,23 @@ public class SubmitAtomEpic implements RadixNetworkEpic {
 
 	@Override
 	public Observable<RadixNodeAction> epic(Observable<RadixNodeAction> actions, Observable<RadixNetworkState> networkState) {
-		return actions
-			.filter(a -> a instanceof FindANodeResultAction)
+		final Observable<RadixNodeAction> foundNode = actions.filter(a -> a instanceof FindANodeResultAction)
 			.map(FindANodeResultAction.class::cast)
 			.filter(a -> a.getRequest() instanceof SubmitAtomRequestAction)
-			.flatMap(u -> {
-				final SubmitAtomRequestAction request = (SubmitAtomRequestAction) u.getRequest();
-				final RadixNode node = u.getNode();
-				return waitForConnection(node)
-					.andThen(this.submitAtom(request, node));
+			.map(a -> {
+				final SubmitAtomRequestAction request = (SubmitAtomRequestAction) a.getRequest();
+				return SubmitAtomSendAction.of(request.getUuid(), request.getAtom(), a.getNode());
 			});
+
+		final Observable<RadixNodeAction> submitToNode = actions
+			.filter(a -> a instanceof SubmitAtomSendAction)
+			.map(SubmitAtomSendAction.class::cast)
+			.flatMap(a -> {
+				final RadixNode node = a.getNode();
+				return waitForConnection(node)
+					.andThen(this.submitAtom(a, node));
+			});
+
+		return foundNode.mergeWith(submitToNode);
 	}
 }

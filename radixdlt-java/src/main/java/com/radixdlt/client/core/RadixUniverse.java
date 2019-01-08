@@ -224,6 +224,10 @@ public final class RadixUniverse {
 		};
 	}
 
+	public RadixNetworkController getNetworkController() {
+		return networkController;
+	}
+
 	public Observable<RadixNetworkState> getNetworkState() {
 		return networkController.getNetwork();
 	}

@@ -6,7 +6,7 @@ import com.radixdlt.client.core.network.RadixNodeAction;
 import java.util.Objects;
 
 /**
- * A dispatchable event action which signifies that the atom was sent to the given node.
+ * A dispatchable action which signifies to send an atom to a node
  */
 public class SubmitAtomSendAction implements SubmitAtomAction, RadixNodeAction {
 	private final String uuid;
