@@ -1,5 +1,10 @@
 package com.radix.regression;
 
+import java.util.concurrent.TimeUnit;
+
+import org.junit.BeforeClass;
+import org.junit.Test;
+
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
 import com.radixdlt.client.application.identity.RadixIdentities;
@@ -8,12 +13,10 @@ import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.network.RadixClientStatus;
 import com.radixdlt.client.core.network.RadixNetworkState;
+
 import io.reactivex.Observable;
 import io.reactivex.functions.Predicate;
 import io.reactivex.observers.TestObserver;
-import java.util.concurrent.TimeUnit;
-import org.junit.BeforeClass;
-import org.junit.Test;
 
 /**
  * RLAU-59
@@ -47,7 +50,7 @@ public class UnsubscribeTest {
 
 		// When I send a message to myself to completion
 		Result result = normalApi.sendMessage(new byte[] {0}, false);
-		TestObserver completion = TestObserver.create(Util.loggingObserver("MessageSent"));
+		TestObserver<Object> completion = TestObserver.create(Util.loggingObserver("MessageSent"));
 		result.toCompletable().subscribe(completion);
 		completion.awaitTerminalEvent();
 

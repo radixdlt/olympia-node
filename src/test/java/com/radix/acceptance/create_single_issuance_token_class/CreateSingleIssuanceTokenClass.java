@@ -1,6 +1,5 @@
 package com.radix.acceptance.create_single_issuance_token_class;
 
-import com.radixdlt.client.application.translate.tokens.TokenClassReference;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;

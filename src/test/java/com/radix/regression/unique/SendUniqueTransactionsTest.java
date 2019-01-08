@@ -1,5 +1,8 @@
 package com.radix.regression.unique;
 
+import org.junit.BeforeClass;
+import org.junit.Test;
+
 import com.radix.regression.Util;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
@@ -11,11 +14,10 @@ import com.radixdlt.client.application.translate.unique.PutUniqueIdAction;
 import com.radixdlt.client.application.translate.unique.UniqueId;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
+
 import io.reactivex.Completable;
 import io.reactivex.functions.Predicate;
 import io.reactivex.observers.TestObserver;
-import org.junit.BeforeClass;
-import org.junit.Test;
 
 /**
  * RLAU-372
@@ -44,7 +46,7 @@ public class SendUniqueTransactionsTest {
 		initialUniqueStatus.blockingAwait();
 
 		// When client attempts to use same id
-		TestObserver submissionObserver = TestObserver.create(Util.loggingObserver("Submission"));
+		TestObserver<Object> submissionObserver = TestObserver.create(Util.loggingObserver("Submission"));
 		Completable conflictingUniqueStatus = api.execute(
 			new AtomicAction(
 				new SendMessageAction(new byte[] {1}, api.getMyAddress(), api.getMyAddress(), false),
@@ -69,7 +71,7 @@ public class SendUniqueTransactionsTest {
 		final String uniqueId = "thisisauniquestring";
 
 		// When client attempts to use id
-		TestObserver submissionObserver = TestObserver.create(Util.loggingObserver("Submission"));
+		TestObserver<Object> submissionObserver = TestObserver.create(Util.loggingObserver("Submission"));
 		Completable conflictingUniqueStatus = api.execute(
 			new AtomicAction(
 				new SendMessageAction(new byte[] {1}, api.getMyAddress(), api.getMyAddress(), false),
