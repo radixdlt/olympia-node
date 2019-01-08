@@ -3,8 +3,7 @@ package com.radixdlt.client.core.network.epics;
 import com.radixdlt.client.core.network.RadixNetworkEpic;
 import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixNodeAction;
-import com.radixdlt.client.core.network.actions.NodeUpdate;
-import com.radixdlt.client.core.network.actions.NodeUpdate.NodeUpdateType;
+import com.radixdlt.client.core.network.actions.AddNodeAction;
 import com.radixdlt.client.core.network.actions.WebSocketEvent;
 import com.radixdlt.client.core.network.epics.WebSocketsEpic.WebSockets;
 import io.reactivex.Observable;
@@ -20,9 +19,7 @@ public class WebSocketEventsEpic implements RadixNetworkEpic {
 	public Observable<RadixNodeAction> epic(Observable<RadixNodeAction> actions, Observable<RadixNetworkState> networkState) {
 		return
 			actions
-				.filter(a -> a instanceof NodeUpdate)
-				.map(NodeUpdate.class::cast)
-				.filter(u -> u.getType().equals(NodeUpdateType.ADD_NODE))
+				.filter(a -> a instanceof AddNodeAction)
 				.flatMap(u ->
 					webSockets.get(u.getNode())
 						.getState()

@@ -2,13 +2,13 @@ package com.radixdlt.client.core.network.epics;
 
 import com.radixdlt.client.core.network.RadixNetworkEpic;
 import com.radixdlt.client.core.network.RadixNodeAction;
+import com.radixdlt.client.core.network.actions.ConnectWebSocketAction;
 import com.radixdlt.client.core.network.actions.FindANodeRequestAction;
 import com.radixdlt.client.core.network.actions.FindANodeResultAction;
 import com.radixdlt.client.core.network.selector.RadixPeerSelector;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
 import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixNode;
-import com.radixdlt.client.core.network.actions.NodeUpdate;
 import io.reactivex.Maybe;
 import io.reactivex.Observable;
 import java.util.Arrays;
@@ -30,7 +30,7 @@ public class FindANodeEpic implements RadixNetworkEpic {
 		this.selector = selector;
 	}
 
-	private Maybe<NodeUpdate> findConnection(Set<Long> shards, RadixNetworkState state) {
+	private Maybe<RadixNodeAction> findConnection(Set<Long> shards, RadixNetworkState state) {
 		final Map<WebSocketStatus, List<RadixNode>> statusMap = Arrays.stream(WebSocketStatus.values())
 			.collect(Collectors.toMap(
 				Function.identity(),
@@ -50,7 +50,7 @@ public class FindANodeEpic implements RadixNetworkEpic {
 			if (disconnectedPeers.isEmpty()) {
 				LOGGER.info("Could not connect to new peer, don't have any.");
 			} else {
-				return Maybe.just(NodeUpdate.wsConnect(disconnectedPeers.get(0)));
+				return Maybe.just(ConnectWebSocketAction.of(disconnectedPeers.get(0)));
 			}
 		}
 

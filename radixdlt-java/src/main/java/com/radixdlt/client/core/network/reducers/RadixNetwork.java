@@ -4,10 +4,10 @@ import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.RadixNodeAction;
 import com.radixdlt.client.core.network.RadixNodeState;
+import com.radixdlt.client.core.network.actions.AddNodeAction;
 import com.radixdlt.client.core.network.actions.GetNodeDataResultAction;
 import com.radixdlt.client.core.network.actions.WebSocketEvent;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
-import com.radixdlt.client.core.network.actions.NodeUpdate;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -29,19 +29,13 @@ public class RadixNetwork {
 				(old, val) -> RadixNodeState.of(old.getNode(), old.getStatus(), val.getData().orElse(null))
 			);
 			return new RadixNetworkState(newMap);
-		} else if (action instanceof NodeUpdate) {
-			final NodeUpdate nodeUpdate = (NodeUpdate) action;
-			switch (nodeUpdate.getType()) {
-				case ADD_NODE:
-					newMap = new HashMap<>(state.getNodes());
-					newMap.put(
-						nodeUpdate.getNode(),
-						RadixNodeState.of(nodeUpdate.getNode(), WebSocketStatus.DISCONNECTED, nodeUpdate.getData())
-					);
-					break;
-				default:
-					break;
-			}
+		} else if (action instanceof AddNodeAction) {
+			final AddNodeAction addNodeAction = (AddNodeAction) action;
+			newMap = new HashMap<>(state.getNodes());
+			newMap.put(
+				addNodeAction.getNode(),
+				RadixNodeState.of(addNodeAction.getNode(), WebSocketStatus.DISCONNECTED, addNodeAction.getData().orElse(null))
+			);
 		} else if (action instanceof WebSocketEvent) {
 			final WebSocketEvent wsEvent = (WebSocketEvent) action;
 			final RadixNode node = wsEvent.getNode();

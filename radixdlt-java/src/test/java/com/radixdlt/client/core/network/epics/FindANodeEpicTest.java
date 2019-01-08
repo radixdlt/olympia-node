@@ -6,12 +6,11 @@ import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.RadixNodeAction;
 import com.radixdlt.client.core.network.RadixNodeState;
+import com.radixdlt.client.core.network.actions.ConnectWebSocketAction;
 import com.radixdlt.client.core.network.actions.FindANodeRequestAction;
 import com.radixdlt.client.core.network.actions.FindANodeResultAction;
 import com.radixdlt.client.core.network.selector.GetFirstSelector;
 import com.radixdlt.client.core.network.selector.RandomSelector;
-import com.radixdlt.client.core.network.actions.NodeUpdate;
-import com.radixdlt.client.core.network.actions.NodeUpdate.NodeUpdateType;
 import com.radixdlt.client.core.network.websocket.WebSocketClient;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
 import io.reactivex.Observable;
@@ -19,7 +18,6 @@ import io.reactivex.observers.TestObserver;
 import io.reactivex.subjects.ReplaySubject;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 
 import java.util.Collections;
@@ -80,7 +78,7 @@ public class FindANodeEpicTest {
 		)
 		.subscribe(testObserver);
 
-		testObserver.assertValue(u -> ((NodeUpdate)u).getType().equals(NodeUpdateType.WEBSOCKET_CONNECT));
+		testObserver.assertValue(u -> u instanceof ConnectWebSocketAction);
 		testObserver.assertValue(u -> u.getNode().equals(node));
 		testObserver.assertNotComplete();
 	}
@@ -155,8 +153,8 @@ public class FindANodeEpicTest {
 		})
 		.subscribe(testObserver);
 
-		testObserver.assertValueAt(0, u -> ((NodeUpdate)u).getType().equals(NodeUpdateType.WEBSOCKET_CONNECT) && u.getNode().equals(badPeer));
-		testObserver.assertValueAt(1, u -> ((NodeUpdate)u).getType().equals(NodeUpdateType.WEBSOCKET_CONNECT) && u.getNode().equals(goodPeer));
+		testObserver.assertValueAt(0, u -> u instanceof ConnectWebSocketAction && u.getNode().equals(badPeer));
+		testObserver.assertValueAt(1, u -> u instanceof ConnectWebSocketAction && u.getNode().equals(goodPeer));
 		testObserver.assertValueAt(2, u -> ((FindANodeResultAction)u).getRequest().equals(request) && u.getNode().equals(goodPeer));
 	}
 }

@@ -4,12 +4,13 @@ import com.radixdlt.client.core.network.RadixNetworkEpic;
 import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixNodeAction;
 import com.radixdlt.client.core.network.RadixNode;
+import com.radixdlt.client.core.network.actions.AddNodeAction;
 import com.radixdlt.client.core.network.actions.GetLivePeersRequestAction;
 import com.radixdlt.client.core.network.actions.GetLivePeersResultAction;
 import com.radixdlt.client.core.network.actions.GetNodeDataRequestAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
 import com.radixdlt.client.core.network.actions.FetchAtomsObservationAction;
-import com.radixdlt.client.core.network.actions.NodeUpdate;
+import io.reactivex.Maybe;
 import io.reactivex.Observable;
 
 public class DiscoverNodesEpic implements RadixNetworkEpic {
@@ -28,7 +29,7 @@ public class DiscoverNodesEpic implements RadixNetworkEpic {
 			.publish()
 			.autoConnect(3);
 
-		Observable<RadixNodeAction> addSeeds = connectedSeeds.map(NodeUpdate::add);
+		Observable<RadixNodeAction> addSeeds = connectedSeeds.map(AddNodeAction::of);
 		Observable<RadixNodeAction> addSeedData = connectedSeeds.map(GetNodeDataRequestAction::of);
 		Observable<RadixNodeAction> addSeedSiblings = connectedSeeds.map(GetLivePeersRequestAction::of);
 
@@ -36,8 +37,19 @@ public class DiscoverNodesEpic implements RadixNetworkEpic {
 			.filter(u -> u instanceof GetLivePeersResultAction)
 			.map(GetLivePeersResultAction.class::cast)
 			.flatMap(u ->
-				Observable.fromIterable(u.getResult())
-					.map(d -> NodeUpdate.add(new RadixNode(d.getIp(), u.getNode().isSsl(), u.getNode().getPort()), d))
+				Observable.combineLatest(
+					Observable.fromIterable(u.getResult()),
+					networkState.firstOrError().toObservable(),
+					(data, s) -> {
+						RadixNode node = new RadixNode(data.getIp(), u.getNode().isSsl(), u.getNode().getPort());
+
+						if (!s.getNodes().containsKey(node)) {
+							return Maybe.just(AddNodeAction.of(node, data));
+						} else {
+							return Maybe.<RadixNodeAction>empty();
+						}
+					}
+				).flatMapMaybe(i -> i)
 			);
 
 		return addSeeds.mergeWith(addSeedData).mergeWith(addSeedSiblings).mergeWith(addNodes);
