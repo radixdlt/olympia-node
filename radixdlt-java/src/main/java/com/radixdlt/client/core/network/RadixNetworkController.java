@@ -78,13 +78,17 @@ public class RadixNetworkController implements AtomSubmitter {
 		Set<Observable<RadixNodeAction>> updates = epics.stream()
 			.map(epic -> epic.epic(reducedNodeActions, networkState))
 			.collect(Collectors.toSet());
-		Observable.merge(updates).subscribe(nodeActions::onNext);
+		Observable.merge(updates).subscribe(this::dispatch);
 
 		reducedNodeActions.connect();
 	}
 
 	public Observable<RadixNetworkState> getNetwork() {
 		return networkState;
+	}
+
+	public void dispatch(RadixNodeAction action) {
+		nodeActions.onNext(action);
 	}
 
 	/**
@@ -107,7 +111,7 @@ public class RadixNetworkController implements AtomSubmitter {
 		ConnectableObservable<SubmitAtomAction> replay = status.replay();
 		replay.connect();
 
-		nodeActions.onNext(initialAction);
+		this.dispatch(initialAction);
 
 		return replay;
 	}
@@ -125,10 +129,10 @@ public class RadixNetworkController implements AtomSubmitter {
 
 			emitter.setCancellable(() -> {
 				d.dispose();
-				nodeActions.onNext(FetchAtomsCancelAction.of(initialAction.getUuid(), initialAction.getAddress()));
+				this.dispatch(FetchAtomsCancelAction.of(initialAction.getUuid(), initialAction.getAddress()));
 			});
 
-			nodeActions.onNext(initialAction);
+			this.dispatch(initialAction);
 		});
 	}
 }

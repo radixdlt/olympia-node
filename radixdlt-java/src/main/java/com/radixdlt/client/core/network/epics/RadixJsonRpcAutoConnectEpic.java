@@ -3,8 +3,7 @@ package com.radixdlt.client.core.network.epics;
 import com.radixdlt.client.core.network.RadixNetworkEpic;
 import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixNodeAction;
-import com.radixdlt.client.core.network.actions.JsonRpcAction;
-import com.radixdlt.client.core.network.actions.JsonRpcAction.JsonRpcActionType;
+import com.radixdlt.client.core.network.actions.JsonRpcMethodAction;
 import com.radixdlt.client.core.network.epics.WebSocketsEpic.WebSockets;
 import com.radixdlt.client.core.network.websocket.WebSocketClient;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
@@ -20,9 +19,7 @@ public class RadixJsonRpcAutoConnectEpic implements RadixNetworkEpic {
 	public Observable<RadixNodeAction> epic(Observable<RadixNodeAction> actions, Observable<RadixNetworkState> networkState) {
 		return
 			actions
-				.filter(a -> a instanceof JsonRpcAction)
-				.map(JsonRpcAction.class::cast)
-				.filter(a -> a.getJsonRpcActionType().equals(JsonRpcActionType.REQUEST))
+				.filter(a -> a instanceof JsonRpcMethodAction)
 				.flatMap(a -> {
 					final WebSocketClient ws = webSockets.get(a.getNode());
 					return ws.getState()

@@ -1,16 +1,17 @@
 package com.radixdlt.client.core.network.epics;
 
 import com.radixdlt.client.core.network.RadixNetworkState;
+import com.radixdlt.client.core.network.actions.GetLivePeersRequestAction;
+import com.radixdlt.client.core.network.actions.GetLivePeersResultAction;
+import com.radixdlt.client.core.network.actions.GetNodeDataRequestAction;
+import com.radixdlt.client.core.network.actions.GetNodeDataResultAction;
+import com.radixdlt.client.core.network.actions.JsonRpcMethodAction;
 import com.radixdlt.client.core.network.epics.WebSocketsEpic.WebSockets;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient;
 import com.radixdlt.client.core.network.RadixNetworkEpic;
 import com.radixdlt.client.core.network.RadixNodeAction;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
 import com.radixdlt.client.core.network.websocket.WebSocketClient;
-import com.radixdlt.client.core.network.actions.GetLivePeersAction;
-import com.radixdlt.client.core.network.actions.GetNodeDataAction;
-import com.radixdlt.client.core.network.actions.JsonRpcAction;
-import com.radixdlt.client.core.network.actions.JsonRpcAction.JsonRpcActionType;
 import io.reactivex.Maybe;
 import io.reactivex.Observable;
 
@@ -23,25 +24,24 @@ public class RadixJsonRpcMethodsEpic implements RadixNetworkEpic {
 	@Override
 	public Observable<RadixNodeAction> epic(Observable<RadixNodeAction> actions, Observable<RadixNetworkState> networkState) {
 		return actions
-				.filter(a -> a instanceof JsonRpcAction)
-				.map(JsonRpcAction.class::cast)
-				.filter(u -> u.getJsonRpcActionType().equals(JsonRpcActionType.REQUEST))
-				.flatMapMaybe(u -> {
-					final WebSocketClient ws = webSockets.get(u.getNode());
+				.filter(a -> a instanceof JsonRpcMethodAction)
+				.map(JsonRpcMethodAction.class::cast)
+				.flatMapMaybe(a -> {
+					final WebSocketClient ws = webSockets.get(a.getNode());
 					return ws.getState()
 						.filter(s -> s.equals(WebSocketStatus.CONNECTED))
 						.firstOrError()
 						.flatMapMaybe(i -> {
 							RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(ws);
-							if (u instanceof GetLivePeersAction) {
+							if (a instanceof GetLivePeersRequestAction) {
 								return jsonRpcClient.getLivePeers()
-									.map(l -> GetLivePeersAction.result(u.getNode(), l))
+									.map(l -> GetLivePeersResultAction.of(a.getNode(), l))
 									.toMaybe();
 							}
 
-							if (u instanceof GetNodeDataAction) {
+							if (a instanceof GetNodeDataRequestAction) {
 								return jsonRpcClient.getInfo()
-									.map(data -> GetNodeDataAction.result(u.getNode(), data))
+									.map(d -> GetNodeDataResultAction.of(a.getNode(), d))
 									.toMaybe();
 							}
 
