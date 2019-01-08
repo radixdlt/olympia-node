@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * The meat and bones of the Networking module. This module connects all the epics and reducers
- * to produce a stream of actions and states from those actions.
+ * to produce a stream of actions and states.
  */
 public class RadixNetworkController implements AtomSubmitter {
 	private static final Logger LOGGER = LoggerFactory.getLogger(RadixNetworkController.class);
@@ -111,11 +111,10 @@ public class RadixNetworkController implements AtomSubmitter {
 	public Observable<SubmitAtomAction> submitAtom(Atom atom) {
 		SubmitAtomAction initialAction = SubmitAtomRequestAction.newRequest(atom);
 
-		Observable<SubmitAtomAction> status = nodeActions
-			.filter(a -> a instanceof SubmitAtomAction)
-			.map(SubmitAtomAction.class::cast)
-			.filter(u -> u.getUuid().equals(initialAction.getUuid()))
-			.takeUntil(u -> u instanceof SubmitAtomResultAction);
+		Observable<SubmitAtomAction> status =
+			nodeActions.ofType(SubmitAtomAction.class)
+				.filter(u -> u.getUuid().equals(initialAction.getUuid()))
+				.takeUntil(u -> u instanceof SubmitAtomResultAction);
 		ConnectableObservable<SubmitAtomAction> replay = status.replay();
 		replay.connect();
 
@@ -128,9 +127,7 @@ public class RadixNetworkController implements AtomSubmitter {
 		return Observable.create(emitter -> {
 			FetchAtomsAction initialAction = FetchAtomsRequestAction.newRequest(address);
 
-			Disposable d = nodeActions
-				.filter(a -> a instanceof FetchAtomsObservationAction)
-				.map(FetchAtomsObservationAction.class::cast)
+			Disposable d = nodeActions.ofType(FetchAtomsObservationAction.class)
 				.filter(a -> a.getUuid().equals(initialAction.getUuid()))
 				.map(FetchAtomsObservationAction::getObservation)
 				.subscribe(emitter::onNext, emitter::onError, emitter::onComplete);

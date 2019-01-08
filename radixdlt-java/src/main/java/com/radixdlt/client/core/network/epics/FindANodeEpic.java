@@ -71,9 +71,7 @@ public class FindANodeEpic implements RadixNetworkEpic {
 
 	@Override
 	public Observable<RadixNodeAction> epic(Observable<RadixNodeAction> actions, Observable<RadixNetworkState> stateObservable) {
-		return actions
-			.filter(a -> a instanceof FindANodeRequestAction)
-			.map(FindANodeRequestAction.class::cast)
+		return actions.ofType(FindANodeRequestAction.class)
 			.flatMap(a -> {
 				Observable<RadixNetworkState> syncNetState = stateObservable
 					.replay(1)

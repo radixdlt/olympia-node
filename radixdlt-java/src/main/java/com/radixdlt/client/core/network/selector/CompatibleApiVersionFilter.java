@@ -13,7 +13,7 @@ public class CompatibleApiVersionFilter implements RadixPeerFilter {
 	}
 
 	@Override
-	public boolean test(RadixNodeState peerState) {
-		return peerState.getVersion().map(v -> v == this.version).orElse(false);
+	public boolean test(RadixNodeState nodeState) {
+		return nodeState.getVersion().map(v -> v == this.version).orElse(false);
 	}
 }

@@ -27,13 +27,11 @@ public class RadixJsonRpcMethodsEpic implements RadixNetworkEpic {
 
 	@Override
 	public Observable<RadixNodeAction> epic(Observable<RadixNodeAction> actions, Observable<RadixNetworkState> networkState) {
-		return actions
-				.filter(a -> a instanceof JsonRpcMethodAction)
-				.map(JsonRpcMethodAction.class::cast)
+		return actions.ofType(JsonRpcMethodAction.class)
 				.flatMapMaybe(a -> {
 					final WebSocketClient ws = webSockets.get(a.getNode());
 					return ws.getState()
-						.filter(s -> s.equals(WebSocketStatus.CONNECTED))
+						.filter(WebSocketStatus.CONNECTED::equals)
 						.firstOrError()
 						.flatMapMaybe(i -> {
 							RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(ws);

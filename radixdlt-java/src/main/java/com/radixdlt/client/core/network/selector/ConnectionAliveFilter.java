@@ -8,7 +8,7 @@ import com.radixdlt.client.core.network.RadixNodeState;
  */
 public class ConnectionAliveFilter implements RadixPeerFilter {
 	@Override
-	public boolean test(RadixNodeState peerState) {
-		return peerState.getStatus() == WebSocketStatus.CONNECTED || peerState.getStatus() == WebSocketStatus.CONNECTING;
+	public boolean test(RadixNodeState nodeState) {
+		return nodeState.getStatus() == WebSocketStatus.CONNECTED || nodeState.getStatus() == WebSocketStatus.CONNECTING;
 	}
 }

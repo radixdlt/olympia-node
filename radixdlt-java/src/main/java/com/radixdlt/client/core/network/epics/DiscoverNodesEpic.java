@@ -38,8 +38,7 @@ public class DiscoverNodesEpic implements RadixNetworkEpic {
 		Observable<RadixNodeAction> addSeedSiblings = connectedSeeds.map(GetLivePeersRequestAction::of);
 
 		Observable<RadixNodeAction> addNodes = updates
-			.filter(u -> u instanceof GetLivePeersResultAction)
-			.map(GetLivePeersResultAction.class::cast)
+			.ofType(GetLivePeersResultAction.class)
 			.flatMap(u ->
 				Observable.combineLatest(
 					Observable.fromIterable(u.getResult()),

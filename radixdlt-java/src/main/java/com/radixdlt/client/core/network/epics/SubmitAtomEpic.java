@@ -25,6 +25,8 @@ import java.util.concurrent.TimeUnit;
  * is accepted by the network.
  */
 public class SubmitAtomEpic implements RadixNetworkEpic {
+	private final static int DELAY_CLOSE_SECS = 5;
+
 	private final WebSockets webSockets;
 
 	public SubmitAtomEpic(WebSockets webSockets) {
@@ -57,27 +59,26 @@ public class SubmitAtomEpic implements RadixNetworkEpic {
 			})
 			.retryWhen(new IncreasingRetryTimer(WebSocketException.class))
 			// TODO: Better way of cleanup?
-			.doFinally(() -> Observable.timer(5, TimeUnit.SECONDS).subscribe(t -> ws.close()));
+			.doFinally(() -> Observable.timer(DELAY_CLOSE_SECS, TimeUnit.SECONDS).subscribe(t -> ws.close()));
 	}
 
 	@Override
 	public Observable<RadixNodeAction> epic(Observable<RadixNodeAction> actions, Observable<RadixNetworkState> networkState) {
-		final Observable<RadixNodeAction> foundNode = actions.filter(a -> a instanceof FindANodeResultAction)
-			.map(FindANodeResultAction.class::cast)
-			.filter(a -> a.getRequest() instanceof SubmitAtomRequestAction)
-			.map(a -> {
-				final SubmitAtomRequestAction request = (SubmitAtomRequestAction) a.getRequest();
-				return SubmitAtomSendAction.of(request.getUuid(), request.getAtom(), a.getNode());
-			});
+		final Observable<RadixNodeAction> foundNode =
+			actions.ofType(FindANodeResultAction.class)
+				.filter(a -> a.getRequest() instanceof SubmitAtomRequestAction)
+				.map(a -> {
+					final SubmitAtomRequestAction request = (SubmitAtomRequestAction) a.getRequest();
+					return SubmitAtomSendAction.of(request.getUuid(), request.getAtom(), a.getNode());
+				});
 
-		final Observable<RadixNodeAction> submitToNode = actions
-			.filter(a -> a instanceof SubmitAtomSendAction)
-			.map(SubmitAtomSendAction.class::cast)
-			.flatMap(a -> {
-				final RadixNode node = a.getNode();
-				return waitForConnection(node)
-					.andThen(this.submitAtom(a, node));
-			});
+		final Observable<RadixNodeAction> submitToNode =
+			actions.ofType(SubmitAtomSendAction.class)
+				.flatMap(a -> {
+					final RadixNode node = a.getNode();
+					return waitForConnection(node)
+						.andThen(this.submitAtom(a, node));
+				});
 
 		return foundNode.mergeWith(submitToNode);
 	}

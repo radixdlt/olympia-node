@@ -80,9 +80,7 @@ public class FetchAtomsEpic implements RadixNetworkEpic {
 		final ConcurrentHashMap<String, Disposable> disposables = new ConcurrentHashMap<>();
 
 		final Observable<RadixNodeAction> cancelFetch =
-			actions
-				.filter(u -> u instanceof FetchAtomsCancelAction)
-				.map(FetchAtomsCancelAction.class::cast)
+			actions.ofType(FetchAtomsCancelAction.class)
 				.doOnNext(u -> {
 					Disposable d = disposables.remove(u.getUuid());
 					if (d != null) {
@@ -93,9 +91,7 @@ public class FetchAtomsEpic implements RadixNetworkEpic {
 				.toObservable();
 
 		final Observable<RadixNodeAction> fetch =
-			actions
-				.filter(a -> a instanceof FindANodeResultAction)
-				.map(FindANodeResultAction.class::cast)
+			actions.ofType(FindANodeResultAction.class)
 				.filter(a -> a.getRequest() instanceof FetchAtomsRequestAction)
 				.flatMap(nodeFound -> {
 					final FetchAtomsRequestAction request = (FetchAtomsRequestAction) nodeFound.getRequest();

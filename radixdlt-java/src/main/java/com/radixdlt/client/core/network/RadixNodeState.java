@@ -40,7 +40,7 @@ public class RadixNodeState {
 
 	@Override
 	public String toString() {
-		return "RadixPeerState{"
+		return "RadixNodeState{"
 				+ "node='" + node + '\''
 				+ ", status=" + status
 				+ ", data=" + data
