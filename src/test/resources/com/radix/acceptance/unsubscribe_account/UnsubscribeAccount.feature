@@ -1,4 +1,4 @@
-# See: https://radixdlt.atlassian.net/browse/RLAU-94
+# See: https://radixdlt.atlassian.net/browse/RLAU-59
 @rlau-59
 Feature: Unsubscribe Account
   As an API client subscribed to an account listening for atoms
@@ -7,13 +7,17 @@ Feature: Unsubscribe Account
 
   Scenario: 1: WebSocket Cancel Subscription
     Given a node connected websocket client who has an atom subscription to an empty account
-    When the client sends a cancel subscription request followed by a message to this account
-    Then the client should not receive any atom notification
+    When the client sends a cancel subscription request to his account
+    And the client sends a message to himself
+    Then the client should not receive any new atom notifications in his account
 
   Scenario: 2: WebSocket Cancel One Subscription out of Two
-    Given a node connected websocket client who has an atom subscription to two accounts, A and B
-    When the client sends a cancel subscription request to account A followed by messages to both accounts
-    Then the client should only receive a cancel subscription successful message with A and the message sent to B
+    Given a node connected websocket client who has an atom subscription to an empty account
+    And the websocket client has an atom subscription to another account
+    When the client sends a cancel subscription request to his account
+    And the client sends a message to the other account
+    Then the client should not receive any new atom notifications in his account
+    And the client should receive the sent atom in the other subscription
 
   Scenario: 3: WebSocket Subscribe then Unsubscribe then Sunscribe
     Given a node connected websocket client who has an atom subscription to an account with two messages, Y and Z

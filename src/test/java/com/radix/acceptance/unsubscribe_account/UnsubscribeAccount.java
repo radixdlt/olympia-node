@@ -1,38 +1,20 @@
 package com.radix.acceptance.unsubscribe_account;
 
-import static com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType.STORED;
-import static com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType.VALIDATION_ERROR;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.radix.acceptance.SpecificProperties;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.data.SendMessageAction;
-import com.radixdlt.client.application.translate.data.SendMessageToParticlesMapper;
-import com.radixdlt.client.application.translate.tokenclasses.CreateTokenAction.TokenSupplyType;
-import com.radixdlt.client.application.translate.tokenclasses.MintTokensAction;
-import com.radixdlt.client.application.translate.tokenclasses.TokenClassesState;
-import com.radixdlt.client.application.translate.tokens.TokenClassReference;
-import com.radixdlt.client.application.translate.tokens.UnknownTokenException;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.atommodel.timestamp.TimestampParticle;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
+import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomObservation;
-import com.radixdlt.client.core.atoms.particles.SpunParticle;
-import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECKeyPairGenerator;
 import com.radixdlt.client.core.network.HttpClients;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
-import com.radixdlt.client.core.network.actions.SubmitAtomReceivedAction;
-import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
-import com.radixdlt.client.core.network.actions.SubmitAtomResultAction;
-import com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType;
-import com.radixdlt.client.core.network.actions.SubmitAtomSendAction;
 import com.radixdlt.client.core.network.jsonrpc.AtomQuery;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.NodeAtomSubmissionUpdate;
@@ -42,20 +24,15 @@ import cucumber.api.java.After;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
-import io.reactivex.Observable;
 import io.reactivex.disposables.Disposable;
-import io.reactivex.observers.BaseTestConsumer.TestWaitStrategy;
 import io.reactivex.observers.TestObserver;
-import java.math.BigDecimal;
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import okhttp3.Request;
-import org.radix.utils.UInt256;
 
 /**
- * See <a href="https://radixdlt.atlassian.net/browse/RLAU-94">RLAU-94</a>.
+ * See <a href="https://radixdlt.atlassian.net/browse/RLAU-94">RLAU-59</a>.
  */
 public class UnsubscribeAccount {
 	static {
@@ -75,12 +52,19 @@ public class UnsubscribeAccount {
 	private static final long TIMEOUT_MS = 10_000L; // Timeout in milliseconds
 
 	private WebSocketClient webSocketClient;
-	private ECKeyPair keyPair;
 	private RadixJsonRpcClient jsonRpcClient;
-	private TestObserver<AtomObservation> observer;
+
 	private RadixApplicationAPI api;
+
+	private Atom atom;
+
 	private RadixIdentity identity;
 	private String uuid;
+	private TestObserver<AtomObservation> observer;
+
+	private RadixAddress otherAccount;
+	private String otherUuid;
+	private TestObserver<AtomObservation> otherObserver;
 
 	private final SpecificProperties properties = SpecificProperties.of(
 		ADDRESS,        "unknown",
@@ -94,8 +78,26 @@ public class UnsubscribeAccount {
 
 	@After
 	public void after() {
+		this.atom = null;
+
+		this.jsonRpcClient = null;
+
+		this.uuid = null;
+		this.otherUuid = null;
+
 		this.observer.dispose();
+		this.observer = null;
+
+		if (this.otherObserver != null) {
+			this.otherObserver.dispose();
+			this.otherObserver = null;
+		}
+
 		this.webSocketClient.close();
+		this.webSocketClient.getState()
+			.filter(WebSocketStatus.DISCONNECTED::equals)
+			.firstOrError()
+			.blockingGet();
 	}
 
 	@Given("^a node connected websocket client who has an atom subscription to an empty account$")
@@ -106,8 +108,7 @@ public class UnsubscribeAccount {
 		this.uuid = UUID.randomUUID().toString();
 		this.observer = TestObserver.create();
 		this.jsonRpcClient.observeAtoms(this.uuid)
-			.doOnNext(System.out::println)
-			.subscribe(observer);
+			.subscribe(this.observer);
 
 		TestObserver completionObserver = TestObserver.create();
 		this.jsonRpcClient.sendAtomsSubscribe(this.uuid, new AtomQuery(this.api.getMyAddress()))
@@ -115,17 +116,41 @@ public class UnsubscribeAccount {
 		completionObserver.awaitTerminalEvent(3, TimeUnit.SECONDS);
 		completionObserver.assertComplete();
 
-		observer.awaitCount(1);
-		observer.assertValue(AtomObservation::isHead);
+		this.observer.awaitCount(1);
+		this.observer.assertValue(AtomObservation::isHead);
 	}
 
-	@When("the client sends a cancel subscription request followed by a message to this account$")
+	@Given("^the websocket client has an atom subscription to another account$")
+	public void the_websocket_client_has_an_atom_subscription_to_another_account() throws Throwable {
+		this.jsonRpcClient = new RadixJsonRpcClient(this.webSocketClient);
+
+		this.otherAccount = RadixUniverse.getInstance().getAddressFrom(ECKeyPairGenerator.newInstance().generateKeyPair().getPublicKey());
+
+		this.otherUuid = UUID.randomUUID().toString();
+		this.otherObserver = TestObserver.create();
+		this.jsonRpcClient.observeAtoms(this.otherUuid)
+			.subscribe(this.otherObserver);
+
+		TestObserver completionObserver = TestObserver.create();
+		this.jsonRpcClient.sendAtomsSubscribe(this.otherUuid, new AtomQuery(this.otherAccount))
+			.subscribe(completionObserver);
+		completionObserver.awaitTerminalEvent(3, TimeUnit.SECONDS);
+		completionObserver.assertComplete();
+
+		this.otherObserver.awaitCount(1);
+		this.otherObserver.assertValue(AtomObservation::isHead);
+	}
+
+	@When("the client sends a cancel subscription request to his account$")
 	public void the_client_sends_a_cancel_subscription_request_followed_by_a_message() throws Throwable {
 		TestObserver completionObserver = TestObserver.create();
 		this.jsonRpcClient.cancelAtomsSubscribe(this.uuid).subscribe(completionObserver);
 		completionObserver.awaitTerminalEvent(3, TimeUnit.SECONDS);
 		completionObserver.assertComplete();
+	}
 
+	@When("the client sends a message to himself$")
+	public void the_client_sends_a_message_to_himself() throws Throwable {
 		TestObserver<NodeAtomSubmissionUpdate> atomSubmission = TestObserver.create();
 		this.api.buildAtom(new SendMessageAction(new byte[]{1, 2, 3, 4}, this.api.getMyAddress(), this.api.getMyAddress(), false))
 			.flatMap(this.identity::sign)
@@ -136,11 +161,33 @@ public class UnsubscribeAccount {
 		atomSubmission.assertComplete();
 	}
 
-	@Then("^the client should not receive any atom notification$")
-	public void the_client_should_not_receive_any_atom_notifications() throws Throwable {
+	@When("the client sends a message to the other account$")
+	public void the_client_sends_a_message_to_the_other_account() throws Throwable {
+		TestObserver<NodeAtomSubmissionUpdate> atomSubmission = TestObserver.create();
+		this.api.buildAtom(new SendMessageAction(new byte[]{1, 2, 3, 4}, this.api.getMyAddress(), this.otherAccount, false))
+			.flatMap(this.identity::sign)
+			.doOnSuccess(atom -> this.atom = atom)
+			.flatMapObservable(this.jsonRpcClient::submitAtom)
+			.subscribe(atomSubmission);
+		atomSubmission.awaitTerminalEvent(5, TimeUnit.SECONDS);
+		atomSubmission.assertNoErrors();
+		atomSubmission.assertComplete();
+	}
+
+	@Then("^the client should not receive any new atom notifications in his account$")
+	public void the_client_should_not_receive_any_new_atom_notifications_in_his_account() throws Throwable {
 		observer.await(5, TimeUnit.SECONDS);
 		observer.assertValue(AtomObservation::isHead);
 		observer.assertNotComplete();
+	}
+
+	@Then("^the client should receive the sent atom in the other subscription$")
+	public void the_client_should_receive_the_sent_atom_in_the_other_subscription() throws Throwable {
+		otherObserver.awaitCount(2);
+		otherObserver.assertValueAt(0, AtomObservation::isHead);
+		otherObserver.assertValueAt(1, AtomObservation::isStore);
+		otherObserver.assertValueAt(1, o -> o.getAtom().equals(this.atom));
+		otherObserver.assertNotComplete();
 	}
 
 	private void setupWebSocket() {
