@@ -22,12 +22,6 @@ public class RadixMessagingExample {
 	}
 
 	public static void main(String[] args) throws Exception {
-		// Display network connectivity
-		RadixUniverse.getInstance()
-			.getNetwork()
-			.getStatusUpdates()
-			.subscribe(System.out::println);
-
 		// Identity Manager which manages user's keys, signing, encrypting and decrypting
 		RadixApplicationAPI api = RadixApplicationAPI.create(RadixIdentities.loadOrCreateFile("my.key"));
 

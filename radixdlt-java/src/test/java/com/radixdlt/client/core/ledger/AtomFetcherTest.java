@@ -3,13 +3,13 @@ package com.radixdlt.client.core.ledger;
 import com.radixdlt.client.core.atoms.AtomObservation;
 import java.util.function.Function;
 
-import com.radixdlt.client.core.network.WebSocketException;
+import com.radixdlt.client.core.network.websocket.WebSocketException;
 import org.junit.Test;
 import org.radix.common.ID.EUID;
 
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.network.RadixJsonRpcClient;
+import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;

@@ -1,5 +1,8 @@
 package com.radixdlt.client.application;
 
+import com.radixdlt.client.core.network.RadixNetworkState;
+import com.radixdlt.client.core.network.actions.SubmitAtomResultAction;
+import com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -65,8 +68,7 @@ import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.crypto.ECKeyPairGenerator;
 import com.radixdlt.client.core.crypto.ECPublicKey;
-import com.radixdlt.client.core.network.AtomSubmissionUpdate;
-import com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState;
+import com.radixdlt.client.core.network.actions.SubmitAtomAction;
 import com.radixdlt.client.core.pow.ProofOfWorkBuilder;
 
 import io.reactivex.Completable;
@@ -86,10 +88,10 @@ public class RadixApplicationAPI {
 	private static final Logger LOGGER = LoggerFactory.getLogger(RadixApplicationAPI.class);
 
 	public static class Result {
-		private final ConnectableObservable<AtomSubmissionUpdate> updates;
+		private final ConnectableObservable<SubmitAtomAction> updates;
 		private final Completable completable;
 
-		private Result(ConnectableObservable<AtomSubmissionUpdate> updates, Completable completable) {
+		private Result(ConnectableObservable<SubmitAtomAction> updates, Completable completable) {
 			this.updates = updates;
 			this.completable = completable;
 		}
@@ -103,7 +105,7 @@ public class RadixApplicationAPI {
 		 * A low level interface, returns an a observable of the status of an atom submission as it occurs.
 		 * @return observable of atom submission status
 		 */
-		public Observable<AtomSubmissionUpdate> toObservable() {
+		public Observable<SubmitAtomAction> toObservable() {
 			return updates;
 		}
 
@@ -293,6 +295,10 @@ public class RadixApplicationAPI {
 			.addAtomMapper(new AtomToTokenTransfersMapper(RadixUniverse.getInstance()))
 			.addAtomErrorMapper(new AlreadyUsedUniqueIdReasonMapper())
 			.build();
+	}
+
+	public Observable<RadixNetworkState> getNetworkState() {
+		return universe.getNetworkState();
 	}
 
 	private ApplicationStore<? extends ApplicationState> getStore(Class<? extends ApplicationState> storeClass) {
@@ -701,15 +707,17 @@ public class RadixApplicationAPI {
 	}
 
 	private Result buildDisconnectedResult(Action action) {
-		ConnectableObservable<AtomSubmissionUpdate> updates = this.buildAtom(action)
+		ConnectableObservable<SubmitAtomAction> updates = this.buildAtom(action)
 			.flatMap(identity::sign)
 			.flatMapObservable(ledger.getAtomSubmitter()::submitAtom)
 			.replay();
 
-		Completable completable = updates.filter(AtomSubmissionUpdate::isComplete)
+		Completable completable = updates
+			.filter(SubmitAtomResultAction.class::isInstance)
+			.map(SubmitAtomResultAction.class::cast)
 			.firstOrError()
 			.flatMapCompletable(update -> {
-				if (update.getState() == AtomSubmissionState.STORED) {
+				if (update.getType() == SubmitAtomResultActionType.STORED) {
 					return Completable.complete();
 				} else {
 					final JsonObject errorData = update.getData().getAsJsonObject();

@@ -27,7 +27,6 @@ import com.radixdlt.client.core.RadixUniverse.Ledger;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomObservation;
-import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
@@ -36,8 +35,11 @@ import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.ledger.AtomStore;
 import com.radixdlt.client.core.ledger.AtomSubmitter;
 import com.radixdlt.client.core.ledger.ParticleStore;
-import com.radixdlt.client.core.network.AtomSubmissionUpdate;
-import com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState;
+import com.radixdlt.client.core.network.actions.SubmitAtomAction;
+import com.radixdlt.client.core.network.actions.SubmitAtomReceivedAction;
+import com.radixdlt.client.core.network.actions.SubmitAtomResultAction;
+import com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType;
+import com.radixdlt.client.core.network.actions.SubmitAtomSendAction;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.observers.TestObserver;
@@ -61,7 +63,6 @@ public class RadixApplicationAPITest {
 		Atom atom = mock(Atom.class);
 		when(identity.sign(any())).thenReturn(Single.just(atom));
 
-		UnsignedAtom unsignedAtom = mock(UnsignedAtom.class);
 		FeeMapper feeMapper = (a, b, c) -> Collections.emptyList();
 
 		return new RadixApplicationAPIBuilder()
@@ -74,16 +75,12 @@ public class RadixApplicationAPITest {
 	private AtomSubmitter createMockedSubmissionWhichAlwaysSucceeds() {
 		AtomSubmitter submission = mock(AtomSubmitter.class);
 
-		AtomSubmissionUpdate submitting = mock(AtomSubmissionUpdate.class);
-		AtomSubmissionUpdate submitted = mock(AtomSubmissionUpdate.class);
-		AtomSubmissionUpdate stored = mock(AtomSubmissionUpdate.class);
-		when(submitting.isComplete()).thenCallRealMethod();
-		when(submitted.isComplete()).thenCallRealMethod();
-		when(stored.isComplete()).thenCallRealMethod();
+		SubmitAtomAction submitting = mock(SubmitAtomSendAction.class);
 
-		when(submitting.getState()).thenReturn(AtomSubmissionState.SUBMITTING);
-		when(submitted.getState()).thenReturn(AtomSubmissionState.SUBMITTED);
-		when(stored.getState()).thenReturn(AtomSubmissionState.STORED);
+		SubmitAtomReceivedAction submitted = mock(SubmitAtomReceivedAction.class);
+
+		SubmitAtomResultAction stored = mock(SubmitAtomResultAction.class);
+		when(stored.getType()).thenReturn(SubmitAtomResultActionType.STORED);
 
 		when(submission.submitAtom(any())).thenReturn(Observable.just(submitting, submitted, stored));
 
@@ -96,7 +93,7 @@ public class RadixApplicationAPITest {
 
 	private void validateSuccessfulStoreDataResult(Result result) {
 		TestObserver completionObserver = TestObserver.create();
-		TestObserver<AtomSubmissionUpdate> updatesObserver = TestObserver.create();
+		TestObserver<SubmitAtomAction> updatesObserver = TestObserver.create();
 		result.toCompletable().subscribe(completionObserver);
 		completionObserver.assertNoErrors();
 		completionObserver.assertComplete();
@@ -105,9 +102,12 @@ public class RadixApplicationAPITest {
 		updatesObserver.assertNoErrors();
 		updatesObserver.assertComplete();
 		updatesObserver.assertValueCount(3);
-		updatesObserver.assertValueAt(0, atomUpdate -> atomUpdate.getState().equals(AtomSubmissionState.SUBMITTING));
-		updatesObserver.assertValueAt(1, atomUpdate -> atomUpdate.getState().equals(AtomSubmissionState.SUBMITTED));
-		updatesObserver.assertValueAt(2, atomUpdate -> atomUpdate.getState().equals(AtomSubmissionState.STORED));
+		updatesObserver.assertValueAt(0, atomUpdate ->
+			atomUpdate instanceof SubmitAtomSendAction);
+		updatesObserver.assertValueAt(1, atomUpdate ->
+			atomUpdate instanceof SubmitAtomReceivedAction);
+		updatesObserver.assertValueAt(2, atomUpdate ->
+			((SubmitAtomResultAction) atomUpdate).getType().equals(SubmitAtomResultActionType.STORED));
 	}
 
 	@Test
@@ -282,8 +282,13 @@ public class RadixApplicationAPITest {
 		JsonObject errorData = new JsonObject();
 
 		AtomSubmitter atomSubmitter = mock(AtomSubmitter.class);
+		SubmitAtomResultAction update = mock(SubmitAtomResultAction.class);
+		when(update.getAtom()).thenReturn(atom);
+		when(update.getType()).thenReturn(SubmitAtomResultActionType.COLLISION);
+		when(update.getData()).thenReturn(errorData);
+
 		when(atomSubmitter.submitAtom(eq(atom)))
-			.thenReturn(Observable.just(AtomSubmissionUpdate.create(atom, AtomSubmissionState.COLLISION, errorData)));
+			.thenReturn(Observable.just(update));
 
 		Ledger ledger = mock(Ledger.class);
 		when(ledger.getAtomSubmitter()).thenReturn(atomSubmitter);

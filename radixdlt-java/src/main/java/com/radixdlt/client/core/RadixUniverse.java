@@ -8,17 +8,29 @@ import com.radixdlt.client.core.ledger.RadixParticleStore;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.client.core.crypto.ECPublicKey;
-import com.radixdlt.client.core.ledger.AtomFetcher;
 import com.radixdlt.client.core.ledger.AtomPuller;
 import com.radixdlt.client.core.ledger.AtomStore;
 import com.radixdlt.client.core.ledger.AtomSubmitter;
 import com.radixdlt.client.core.ledger.ParticleStore;
 import com.radixdlt.client.core.ledger.RadixAtomPuller;
-import com.radixdlt.client.core.ledger.RadixAtomSubmitter;
-import com.radixdlt.client.core.ledger.RadixClientSupplier;
+import com.radixdlt.client.core.network.epics.FindANodeEpic;
+import com.radixdlt.client.core.network.epics.WebSocketEventsEpic;
+import com.radixdlt.client.core.network.epics.ConnectWebSocketEpic;
+import com.radixdlt.client.core.network.epics.FetchAtomsEpic;
+import com.radixdlt.client.core.network.epics.RadixJsonRpcAutoCloseEpic;
+import com.radixdlt.client.core.network.epics.RadixJsonRpcAutoConnectEpic;
+import com.radixdlt.client.core.network.epics.RadixJsonRpcMethodEpic;
+import com.radixdlt.client.core.network.epics.WebSocketsEpic.WebSocketsEpicBuilder;
+import com.radixdlt.client.core.network.epics.SubmitAtomEpic;
+import com.radixdlt.client.core.network.selector.RandomSelector;
 import com.radixdlt.client.core.ledger.InMemoryAtomStore;
-import com.radixdlt.client.core.network.PeerDiscovery;
-import com.radixdlt.client.core.network.RadixNetwork;
+import com.radixdlt.client.core.network.RadixNetworkController;
+import com.radixdlt.client.core.network.RadixNetworkController.RadixNetworkControllerBuilder;
+import com.radixdlt.client.core.network.RadixNode;
+import com.radixdlt.client.core.network.epics.DiscoverNodesEpic;
+import com.radixdlt.client.core.network.reducers.RadixNetwork;
+import com.radixdlt.client.core.network.RadixNetworkState;
+import io.reactivex.Observable;
 import java.util.Optional;
 
 /**
@@ -66,28 +78,44 @@ public final class RadixUniverse {
 	 * Initializes the default universe with a Peer Discovery mechanism.
 	 * Should only be called once at the start of the program.
 	 *
-	 * @param peerDiscovery The peer discovery mechanism
+	 * @param seeds The seed nodes
 	 * @return The default universe created, can also be retrieved with RadixUniverse.getInstance()
 	 */
 	public static RadixUniverse bootstrap(
 		RadixUniverseConfig config,
-		PeerDiscovery peerDiscovery
+		Observable<RadixNode> seeds
 	) {
 		synchronized (lock) {
 			if (defaultUniverse != null) {
 				throw new IllegalStateException("Default Universe already bootstrapped");
 			}
 
-			RadixNetwork network = new RadixNetwork(peerDiscovery);
+			RadixNetworkController controller = new RadixNetworkControllerBuilder()
+				.setNetwork(new RadixNetwork())
+				.addEpic(
+					new WebSocketsEpicBuilder()
+						.add(WebSocketEventsEpic::new)
+						.add(ConnectWebSocketEpic::new)
+						.add(SubmitAtomEpic::new)
+						.add(FetchAtomsEpic::new)
+						.add(RadixJsonRpcMethodEpic::createGetLivePeersEpic)
+						.add(RadixJsonRpcMethodEpic::createGetNodeDataEpic)
+						.add(RadixJsonRpcAutoConnectEpic::new)
+						.add(RadixJsonRpcAutoCloseEpic::new)
+						.build()
+				)
+				.addEpic(new DiscoverNodesEpic(seeds))
+				.addEpic(new FindANodeEpic(new RandomSelector()))
+				.build();
 
-			defaultUniverse = new RadixUniverse(config, network);
+			defaultUniverse = new RadixUniverse(config, controller);
 
 			return defaultUniverse;
 		}
 	}
 
 	public static RadixUniverse bootstrap(BootstrapConfig bootstrapConfig) {
-		return bootstrap(bootstrapConfig.getConfig(), bootstrapConfig.getDiscovery());
+		return bootstrap(bootstrapConfig.getConfig(), bootstrapConfig.getSeeds());
 	}
 
 	// TODO: cleanup bootstrap/instantiation
@@ -113,7 +141,7 @@ public final class RadixUniverse {
 	/**
 	 * Network Interface
 	 */
-	private final RadixNetwork network;
+	private final RadixNetworkController networkController;
 
 	/**
 	 * Universe Configuration
@@ -126,9 +154,9 @@ public final class RadixUniverse {
 
 	private final TokenClassReference nativeToken;
 
-	private RadixUniverse(RadixUniverseConfig config, RadixNetwork network) {
+	private RadixUniverse(RadixUniverseConfig config, RadixNetworkController networkController) {
 		this.config = config;
-		this.network = network;
+		this.networkController = networkController;
 
 		final Optional<TokenClassReference> powToken = config.getGenesis().stream()
 			.flatMap(atom -> atom.particles(Spin.UP))
@@ -166,11 +194,8 @@ public final class RadixUniverse {
 		// Hooking up the default configuration
 		// TODO: cleanup
 		this.ledger = new Ledger() {
-			private final RadixClientSupplier radixClientSupplier = CHECK_UNIVERSE
-					? new RadixClientSupplier(network, config) : new RadixClientSupplier(network);
-			private final AtomFetcher atomFetcher = new AtomFetcher(radixClientSupplier::getRadixClient);
-			private final AtomPuller atomPuller = new RadixAtomPuller(atomFetcher::fetchAtoms, inMemoryAtomStore::store);
-			private final AtomSubmitter atomSubmitter = new RadixAtomSubmitter(radixClientSupplier::getRadixClient);
+
+			private final AtomPuller atomPuller = new RadixAtomPuller(networkController::fetchAtoms, inMemoryAtomStore::store);
 
 			/**
 			* The Particle Data Store
@@ -195,9 +220,17 @@ public final class RadixUniverse {
 
 			@Override
 			public AtomSubmitter getAtomSubmitter() {
-				return atomSubmitter;
+				return networkController;
 			}
 		};
+	}
+
+	public RadixNetworkController getNetworkController() {
+		return networkController;
+	}
+
+	public Observable<RadixNetworkState> getNetworkState() {
+		return networkController.getNetwork();
 	}
 
 	public TokenClassReference getPOWToken() {
@@ -214,10 +247,6 @@ public final class RadixUniverse {
 
 	public Ledger getLedger() {
 		return ledger;
-	}
-
-	public RadixNetwork getNetwork() {
-		return network;
 	}
 
 	/**
@@ -238,13 +267,6 @@ public final class RadixUniverse {
 	 */
 	public RadixAddress getAddressFrom(ECPublicKey publicKey) {
 		return new RadixAddress(config, publicKey);
-	}
-
-	/**
-	 * Attempts to gracefully free all resources associated with this Universe
-	 */
-	public void disconnect() {
-		network.close();
 	}
 
 	public RadixUniverseConfig getConfig() {

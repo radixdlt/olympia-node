@@ -1,24 +1,31 @@
 package com.radixdlt.client.core.network;
 
-import java.util.Collections;
-import java.util.IdentityHashMap;
+import com.google.common.collect.ImmutableMap;
 import java.util.Map;
 import java.util.Objects;
 
 /**
- * Current state in time of a {@link RadixNetwork}
+ * Current state of nodes connected to
  */
-public class RadixNetworkState {
-	private final Map<RadixPeer, RadixPeerState> peers;
+public final class RadixNetworkState {
+	private final Map<RadixNode, RadixNodeState> nodes;
 
-	public RadixNetworkState(Map<RadixPeer, RadixPeerState> peers) {
-		Objects.requireNonNull(peers, "peers is required");
+	public RadixNetworkState(Map<RadixNode, RadixNodeState> nodes) {
+		Objects.requireNonNull(nodes, "nodes is required");
 
-		// use identity map as peer is not immutable, but we want the convenience of one state per peer instance
-		this.peers = Collections.unmodifiableMap(new IdentityHashMap<>(peers));
+		this.nodes = ImmutableMap.copyOf(nodes);
 	}
 
-	public Map<RadixPeer, RadixPeerState> getPeers() {
-		return peers;
+	public static RadixNetworkState of(RadixNode node, RadixNodeState state) {
+		return new RadixNetworkState(ImmutableMap.of(node, state));
+	}
+
+	public Map<RadixNode, RadixNodeState> getNodes() {
+		return nodes;
+	}
+
+	@Override
+	public String toString() {
+		return nodes.toString();
 	}
 }

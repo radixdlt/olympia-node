@@ -1,0 +1,141 @@
+package com.radixdlt.client.core.network.websocket;
+
+import com.radixdlt.client.core.network.jsonrpc.PersistentChannel;
+import io.reactivex.Observable;
+import io.reactivex.subjects.BehaviorSubject;
+import io.reactivex.subjects.PublishSubject;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import okhttp3.Response;
+import okhttp3.WebSocket;
+import okhttp3.WebSocketListener;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * Manages the state for a single websocket.
+ */
+public class WebSocketClient implements PersistentChannel {
+	private static final Logger LOGGER = LoggerFactory.getLogger(WebSocketClient.class);
+	private final Object lock = new Object();
+	private final BehaviorSubject<WebSocketStatus> state = BehaviorSubject.createDefault(WebSocketStatus.DISCONNECTED);
+	private final Function<WebSocketListener, WebSocket> websocketFactory;
+	private final PublishSubject<String> messages = PublishSubject.create();
+	private WebSocket webSocket;
+
+	public WebSocketClient(Function<WebSocketListener, WebSocket> websocketFactory) {
+		this.websocketFactory = websocketFactory;
+
+		// FIXME: This disposable is never disposed of. Need to clean this up.
+		this.state
+			.filter(state -> state.equals(WebSocketStatus.FAILED))
+			.debounce(1, TimeUnit.MINUTES)
+			.subscribe(i -> {
+				synchronized (lock) {
+					if (this.state.getValue().equals(WebSocketStatus.FAILED)) {
+						this.state.onNext(WebSocketStatus.DISCONNECTED);
+					}
+				}
+			});
+	}
+
+	private WebSocket connectWebSocket() {
+		synchronized (lock) {
+			return this.websocketFactory.apply(new WebSocketListener() {
+				@Override
+				public void onOpen(WebSocket webSocket, Response response) {
+					synchronized (lock) {
+						WebSocketClient.this.state.onNext(WebSocketStatus.CONNECTED);
+					}
+				}
+
+				@Override
+				public void onMessage(WebSocket webSocket, String message) {
+					synchronized (lock) {
+						messages.onNext(message);
+					}
+				}
+
+				@Override
+				public void onClosing(WebSocket webSocket, int code, String reason) {
+					webSocket.close(1000, null);
+				}
+
+				@Override
+				public void onClosed(WebSocket webSocket, int code, String reason) {
+					synchronized (lock) {
+						WebSocketClient.this.state.onNext(WebSocketStatus.DISCONNECTED);
+						WebSocketClient.this.webSocket = null;
+					}
+				}
+
+				@Override
+				public void onFailure(WebSocket websocket, Throwable t, Response response) {
+					synchronized (lock) {
+						if (state.getValue().equals(WebSocketStatus.CLOSING)) {
+							WebSocketClient.this.state.onNext(WebSocketStatus.DISCONNECTED);
+							WebSocketClient.this.webSocket = null;
+							return;
+						}
+
+						WebSocketClient.this.state.onNext(WebSocketStatus.FAILED);
+						WebSocketClient.this.webSocket = null;
+					}
+				}
+			});
+		}
+	}
+
+	/**
+	 * Attempts to connect to this Radix node if not already connected
+	 */
+	public void connect() {
+		synchronized (lock) {
+			switch (state.getValue()) {
+				case DISCONNECTED:
+				case FAILED:
+					WebSocketClient.this.state.onNext(WebSocketStatus.CONNECTING);
+					this.webSocket = this.connectWebSocket();
+					return;
+				case CONNECTING:
+				case CONNECTED:
+				case CLOSING:
+					return;
+			}
+		}
+	}
+
+	public Observable<String> getMessages() {
+		return messages;
+	}
+
+	public Observable<WebSocketStatus> getState() {
+		return this.state;
+	}
+
+	public boolean close() {
+		if (messages.hasObservers()) {
+			return false;
+		}
+
+		synchronized (lock) {
+			if (this.webSocket != null) {
+				this.state.onNext(WebSocketStatus.CLOSING);
+				this.webSocket.cancel();
+			}
+		}
+
+		return true;
+	}
+
+	public boolean sendMessage(String message) {
+		synchronized (lock) {
+			if (!this.state.getValue().equals(WebSocketStatus.CONNECTED)) {
+				LOGGER.error("Most likely a programming bug. Should not end here.");
+				return false;
+			}
+
+			return this.webSocket.send(message);
+		}
+	}
+}

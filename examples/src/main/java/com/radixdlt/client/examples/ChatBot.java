@@ -65,11 +65,6 @@ public class ChatBot {
 	public static void main(String[] args) throws Exception {
 		RadixUniverse.bootstrap(Bootstrap.BETANET);
 
-		RadixUniverse.getInstance()
-			.getNetwork()
-			.getStatusUpdates()
-			.subscribe(System.out::println);
-
 		// Setup Identity of Chatbot
 		RadixIdentity radixIdentity = RadixIdentities.loadOrCreateFile("chatbot.key");
 
