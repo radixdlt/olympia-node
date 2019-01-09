@@ -1,5 +1,12 @@
 package com.radix.acceptance.create_single_issuance_token_class;
 
+import com.radixdlt.client.application.translate.tokens.TokenClassReference;
+import com.radixdlt.client.core.network.actions.SubmitAtomAction;
+import com.radixdlt.client.core.network.actions.SubmitAtomReceivedAction;
+import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
+import com.radixdlt.client.core.network.actions.SubmitAtomResultAction;
+import com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType;
+import com.radixdlt.client.core.network.actions.SubmitAtomSendAction;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
@@ -17,14 +24,13 @@ import com.radixdlt.client.application.translate.tokens.TokenClassReference;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
-import com.radixdlt.client.core.network.AtomSubmissionUpdate;
-import com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState;
 
-import static com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState.COLLISION;
-import static com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState.STORED;
-import static com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState.SUBMITTED;
-import static com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState.SUBMITTING;
-import static com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState.VALIDATION_ERROR;
+
+import static com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType.STORED;
+import static com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType.VALIDATION_ERROR;
+import static com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType.COLLISION;
+
+
 import static org.junit.Assert.assertEquals;
 
 import cucumber.api.java.After;
@@ -125,7 +131,6 @@ public class CreateSingleIssuanceTokenClass {
 		api.transferTokens(api.getMyAddress(), arbitrary, BigDecimal.valueOf(count), tokenClass)
 			.toObservable()
 			.doOnNext(System.out::println)
-			.map(AtomSubmissionUpdate::getState)
 			.subscribe(observer);
 		this.observers.add(observer);
 	}
@@ -198,21 +203,24 @@ public class CreateSingleIssuanceTokenClass {
 				tokenCreateSupplyType)
 			.toObservable()
 			.doOnNext(System.out::println)
-			.map(AtomSubmissionUpdate::getState)
 			.subscribe(observer);
 		this.observers.add(observer);
 	}
 
-	private void awaitAtomStatus(int atomNumber, AtomSubmissionState... finalStates) {
-		ImmutableSet<AtomSubmissionState> allStates = ImmutableSet.<AtomSubmissionState>builder()
-			.add(SUBMITTING, SUBMITTED)
+	private void awaitAtomStatus(int atomNumber, SubmitAtomResultActionType... finalStates) {
+		ImmutableSet<SubmitAtomResultActionType> finalStatesSet = ImmutableSet.<SubmitAtomResultActionType>builder()
 			.addAll(Arrays.asList(finalStates))
 			.build();
+
 		this.observers.get(atomNumber - 1)
-			.awaitCount(3, TestWaitStrategy.SLEEP_100MS, TIMEOUT_MS)
+			.awaitCount(4, TestWaitStrategy.SLEEP_100MS, TIMEOUT_MS)
 			.assertNoErrors()
 			.assertNoTimeout()
-			.assertValueSet(allStates);
+			.assertValueAt(0, SubmitAtomRequestAction.class::isInstance)
+			.assertValueAt(1, SubmitAtomSendAction.class::isInstance)
+			.assertValueAt(2, SubmitAtomReceivedAction.class::isInstance)
+			.assertValueAt(3, SubmitAtomResultAction.class::isInstance)
+			.assertValueAt(3, i -> finalStatesSet.contains(SubmitAtomResultAction.class.cast(i).getType()));
 	}
 
 	private static String scaledToUnscaled(int scaled) {

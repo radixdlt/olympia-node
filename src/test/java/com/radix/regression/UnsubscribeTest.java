@@ -1,5 +1,6 @@
 package com.radix.regression;
 
+import com.radixdlt.client.core.network.websocket.WebSocketStatus;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.BeforeClass;
@@ -11,9 +12,7 @@ import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.translate.data.DecryptedMessage;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
-import com.radixdlt.client.core.network.RadixClientStatus;
 import com.radixdlt.client.core.network.RadixNetworkState;
-
 import io.reactivex.Observable;
 import io.reactivex.functions.Predicate;
 import io.reactivex.observers.TestObserver;
@@ -23,10 +22,10 @@ import io.reactivex.observers.TestObserver;
  */
 public class UnsubscribeTest {
 	private final static Predicate<RadixNetworkState> NETWORK_IS_CLOSE =
-		state -> state.getPeers().entrySet().stream().noneMatch(e -> e.getValue().getStatus().equals(RadixClientStatus.OPEN));
+		state -> state.getNodes().entrySet().stream().noneMatch(e -> e.getValue().getStatus().equals(WebSocketStatus.CONNECTED));
 
 	private final static Predicate<RadixNetworkState> NETWORK_IS_OPEN =
-		state -> state.getPeers().entrySet().stream().anyMatch(e -> e.getValue().getStatus().equals(RadixClientStatus.OPEN));
+		state -> state.getNodes().entrySet().stream().anyMatch(e -> e.getValue().getStatus().equals(WebSocketStatus.CONNECTED));
 
 	@BeforeClass
 	public static void setup() {
@@ -39,8 +38,7 @@ public class UnsubscribeTest {
 	public void given_i_am_a_library_user_with_no_connections__when_i_send_a_message_to_myself_to_completion__then_i_can_observe_all_network_connections_being_closed() {
 		// Given I am a library user
 		RadixApplicationAPI normalApi = RadixApplicationAPI.create(RadixIdentities.createNew());
-		Observable<RadixNetworkState> networkStatus = RadixUniverse.getInstance()
-			.getNetwork()
+		Observable<RadixNetworkState> networkStatus = normalApi
 			.getNetworkState()
 			.debounce(3, TimeUnit.SECONDS);
 
@@ -67,8 +65,7 @@ public class UnsubscribeTest {
 		RadixApplicationAPI normalApi = RadixApplicationAPI.create(RadixIdentities.createNew());
 		TestObserver<DecryptedMessage> messageListener = TestObserver.create(Util.loggingObserver("MessageListener"));
 		normalApi.getMessages().subscribe(messageListener);
-		Observable<RadixNetworkState> networkStatus = RadixUniverse.getInstance()
-			.getNetwork()
+		Observable<RadixNetworkState> networkStatus = normalApi
 			.getNetworkState()
 			.debounce(3, TimeUnit.SECONDS);
 
@@ -93,8 +90,7 @@ public class UnsubscribeTest {
 		TestObserver<DecryptedMessage> messageListener2 = TestObserver.create(Util.loggingObserver("MessageListener2"));
 		normalApi.getMessages().subscribe(messageListener1);
 		normalApi.getMessages().subscribe(messageListener2);
-		Observable<RadixNetworkState> networkStatus = RadixUniverse.getInstance()
-			.getNetwork()
+		Observable<RadixNetworkState> networkStatus = normalApi
 			.getNetworkState()
 			.debounce(3, TimeUnit.SECONDS);
 		TestObserver<RadixNetworkState> networkListener = TestObserver.create(Util.loggingObserver("NetworkListener"));

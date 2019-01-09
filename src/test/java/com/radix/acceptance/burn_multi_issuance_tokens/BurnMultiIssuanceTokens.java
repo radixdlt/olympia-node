@@ -1,16 +1,20 @@
 package com.radix.acceptance.burn_multi_issuance_tokens;
 
+import com.google.common.collect.ImmutableSet;
+import com.radixdlt.client.core.network.actions.SubmitAtomAction;
+import com.radixdlt.client.core.network.actions.SubmitAtomReceivedAction;
+import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
+import com.radixdlt.client.core.network.actions.SubmitAtomResultAction;
+import com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType;
+import com.radixdlt.client.core.network.actions.SubmitAtomSendAction;
 import java.math.BigDecimal;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.radix.utils.UInt256;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.google.gson.JsonObject;
 import com.radix.acceptance.SpecificProperties;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
@@ -25,16 +29,12 @@ import com.radixdlt.client.application.translate.tokens.UnknownTokenException;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
-import com.radixdlt.client.core.network.AtomSubmissionUpdate;
-import com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState;
 
-import static com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState.STORED;
-import static com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState.SUBMITTED;
-import static com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState.SUBMITTING;
-import static com.radixdlt.client.core.network.AtomSubmissionUpdate.AtomSubmissionState.VALIDATION_ERROR;
+import static com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType.STORED;
+import static com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType.VALIDATION_ERROR;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 import cucumber.api.java.After;
 import cucumber.api.java.en.Given;
@@ -77,7 +77,7 @@ public class BurnMultiIssuanceTokens {
 		NEW_SUPPLY,		scaledToUnscaled(1000000000).toString(),
 		GRANULARITY,	"1"
 	);
-	private final List<TestObserver<AtomSubmissionUpdate>> observers = Lists.newArrayList();
+	private final List<TestObserver<SubmitAtomAction>> observers = Lists.newArrayList();
 	private final List<Disposable> disposables = Lists.newArrayList();
 
 	@After
@@ -177,7 +177,7 @@ public class BurnMultiIssuanceTokens {
 	}
 
 	private void createToken(RadixApplicationAPI api, CreateTokenAction.TokenSupplyType tokenCreateSupplyType) {
-		TestObserver<AtomSubmissionUpdate> observer = new TestObserver<>();
+		TestObserver<SubmitAtomAction> observer = new TestObserver<>();
 		api.createToken(
 				this.properties.get(NAME),
 				this.properties.get(SYMBOL),
@@ -194,7 +194,7 @@ public class BurnMultiIssuanceTokens {
 	private void burnTokens(UInt256 amount, String symbol, RadixAddress address) {
 		TokenClassReference tokenClass = TokenClassReference.of(address, symbol);
 		BurnTokensAction mta = new BurnTokensAction(tokenClass, amount);
-		TestObserver<AtomSubmissionUpdate> observer = new TestObserver<>();
+		TestObserver<SubmitAtomAction> observer = new TestObserver<>();
 		api.execute(mta)
 			.toObservable()
 			.doOnNext(System.out::println)
@@ -202,25 +202,25 @@ public class BurnMultiIssuanceTokens {
 		this.observers.add(observer);
 	}
 
-	private void awaitAtomStatus(AtomSubmissionState... finalStates) {
+	private void awaitAtomStatus(SubmitAtomResultActionType... finalStates) {
 		awaitAtomStatus(this.observers.size(), finalStates);
 	}
 
-	private void awaitAtomStatus(int atomNumber, AtomSubmissionState... finalStates) {
-		ImmutableList<AtomSubmissionState> allStates = ImmutableList.<AtomSubmissionState>builder()
-				.add(SUBMITTING, SUBMITTED)
-				.addAll(Arrays.asList(finalStates))
-				.build();
-		Iterator<AtomSubmissionState> stateIterator = allStates.iterator();
+	private void awaitAtomStatus(int atomNumber, SubmitAtomResultActionType... finalStates) {
+		ImmutableSet<SubmitAtomResultActionType> finalStatesSet = ImmutableSet.<SubmitAtomResultActionType>builder()
+			.addAll(Arrays.asList(finalStates))
+			.build();
+
 		this.observers.get(atomNumber - 1)
-			.awaitCount(3, TestWaitStrategy.SLEEP_100MS, TIMEOUT_MS)
+			.awaitCount(4, TestWaitStrategy.SLEEP_100MS, TIMEOUT_MS)
 			.assertSubscribed()
 			.assertNoTimeout()
 			.assertNoErrors()
-			.values().forEach(update -> {
-				assertTrue("Too many values: " + update.getState(), stateIterator.hasNext());
-				assertEquals(stateIterator.next(), update.getState());
-			});
+			.assertValueAt(0, SubmitAtomRequestAction.class::isInstance)
+			.assertValueAt(1, SubmitAtomSendAction.class::isInstance)
+			.assertValueAt(2, SubmitAtomReceivedAction.class::isInstance)
+			.assertValueAt(3, SubmitAtomResultAction.class::isInstance)
+			.assertValueAt(3, i -> finalStatesSet.contains(SubmitAtomResultAction.class.cast(i).getType()));
 	}
 
 	private void awaitAtomValidationError(String partMessage) {
@@ -228,22 +228,20 @@ public class BurnMultiIssuanceTokens {
 	}
 
 	private void awaitAtomValidationError(int atomNumber, String partMessage) {
-		ImmutableList<AtomSubmissionState> allStates = ImmutableList.of(SUBMITTING, SUBMITTED, VALIDATION_ERROR);
-		Iterator<AtomSubmissionState> stateIterator = allStates.iterator();
 		this.observers.get(atomNumber - 1)
-			.awaitCount(3, TestWaitStrategy.SLEEP_100MS, TIMEOUT_MS)
+			.awaitCount(4, TestWaitStrategy.SLEEP_100MS, TIMEOUT_MS)
 			.assertSubscribed()
 			.assertNoTimeout()
 			.assertNoErrors()
-			.values().forEach(update -> {
-				assertTrue("Too many values: " + update.getState(), stateIterator.hasNext());
-				assertEquals(stateIterator.next(), update.getState());
-				if (VALIDATION_ERROR.equals(update.getState())) {
-					JsonObject jsonObject = update.getData().getAsJsonObject();
-					assertTrue("Validation error does not have a message", jsonObject.has("message"));
-					String message = jsonObject.get("message").getAsString();
-					assertTrue(String.format("'%s' does not contain required string '%s'", message, partMessage), message.contains(partMessage));
-				}
+			.assertValueAt(0, SubmitAtomRequestAction.class::isInstance)
+			.assertValueAt(1, SubmitAtomSendAction.class::isInstance)
+			.assertValueAt(2, SubmitAtomReceivedAction.class::isInstance)
+			.assertValueAt(3, SubmitAtomResultAction.class::isInstance)
+			.assertValueAt(3, i -> SubmitAtomResultAction.class.cast(i).getType().equals(VALIDATION_ERROR))
+			.assertValueAt(3, i -> SubmitAtomResultAction.class.cast(i).getData().getAsJsonObject().has("message"))
+			.assertValueAt(3, i -> {
+				String message = SubmitAtomResultAction.class.cast(i).getData().getAsJsonObject().get("message").getAsString();
+				return message.contains(partMessage);
 			});
 	}
 
