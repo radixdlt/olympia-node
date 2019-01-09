@@ -1,5 +1,6 @@
 package com.radix.regression;
 
+import com.radixdlt.client.core.network.websocket.WebSocketStatus;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.BeforeClass;
