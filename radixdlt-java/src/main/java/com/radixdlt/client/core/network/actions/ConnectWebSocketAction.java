@@ -7,7 +7,7 @@ import java.util.Objects;
 /**
  * A dispatchable action to request to start a websocket connection with a given node.
  */
-public class ConnectWebSocketAction implements RadixNodeAction {
+public final class ConnectWebSocketAction implements RadixNodeAction {
 	private final RadixNode node;
 
 	private ConnectWebSocketAction(RadixNode node) {

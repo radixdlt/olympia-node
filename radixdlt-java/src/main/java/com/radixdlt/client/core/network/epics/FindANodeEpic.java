@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
  * Epic which finds a connected sharded node when a FindANode request is received. If there are none found,
  * then the epic attempts to start connections.
  */
-public class FindANodeEpic implements RadixNetworkEpic {
+public final class FindANodeEpic implements RadixNetworkEpic {
 	private static final int MAX_SIMULTANEOUS_CONNECTION_REQUESTS = 2;
 	private static final int NEXT_CONNECTION_THROTTLE_TIMEOUT_SECS = 1;
 

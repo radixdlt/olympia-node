@@ -8,7 +8,7 @@ import java.util.Objects;
 /**
  * A dispatchable event action signifying an event which has occurred to a websocket.
  */
-public class WebSocketEvent implements RadixNodeAction {
+public final class WebSocketEvent implements RadixNodeAction {
 	public enum WebSocketEventType {
 		CONNECTING,
 		CONNECTED,

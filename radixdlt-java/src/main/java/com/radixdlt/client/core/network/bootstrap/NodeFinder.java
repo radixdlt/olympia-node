@@ -14,7 +14,7 @@ import okhttp3.ResponseBody;
  * The node-finder is a service which allows one to bootstrap into a random node in the radix network.
  * This class exposes that service.
  */
-public class NodeFinder {
+public final class NodeFinder {
 	private final String nodeFinderUrl;
 	private final int port;
 

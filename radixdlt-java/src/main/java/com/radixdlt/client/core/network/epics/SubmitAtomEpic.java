@@ -24,8 +24,8 @@ import java.util.concurrent.TimeUnit;
  * Epic which submits an atom to a node over websocket and emits events as the atom
  * is accepted by the network.
  */
-public class SubmitAtomEpic implements RadixNetworkEpic {
-	private final static int DELAY_CLOSE_SECS = 5;
+public final class SubmitAtomEpic implements RadixNetworkEpic {
+	private static final int DELAY_CLOSE_SECS = 5;
 
 	private final WebSockets webSockets;
 
@@ -35,11 +35,12 @@ public class SubmitAtomEpic implements RadixNetworkEpic {
 
 	private Completable waitForConnection(RadixNode node) {
 		final WebSocketClient ws = webSockets.get(node);
-		return ws.getState().doOnNext(s -> {
-			if (s.equals(WebSocketStatus.DISCONNECTED)) {
-				ws.connect();
-			}
-		})
+		return ws.getState()
+			.doOnNext(s -> {
+				if (s.equals(WebSocketStatus.DISCONNECTED)) {
+					ws.connect();
+				}
+			})
 			.filter(s -> s.equals(WebSocketStatus.CONNECTED))
 			.firstOrError()
 			.ignoreElement();

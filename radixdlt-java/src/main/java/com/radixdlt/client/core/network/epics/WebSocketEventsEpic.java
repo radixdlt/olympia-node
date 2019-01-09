@@ -11,7 +11,7 @@ import io.reactivex.Observable;
 /**
  * Epic which emits websocket events from each node
  */
-public class WebSocketEventsEpic implements RadixNetworkEpic {
+public final class WebSocketEventsEpic implements RadixNetworkEpic {
 	private final WebSockets webSockets;
 
 	public WebSocketEventsEpic(WebSockets webSockets) {

@@ -65,21 +65,21 @@ public class RadixNodeState {
 	}
 
 	/**
-	 * Node runner data of {@link RadixNode}, may be null
+	 * Node runner data of {@link RadixNode}
 	 */
 	public Optional<NodeRunnerData> getData() {
 		return Optional.ofNullable(this.data);
 	}
 
 	/**
-	 * API Version of {@link RadixNode}'s client, may be null
+	 * API Version of {@link RadixNode}'s client
 	 */
 	public Optional<Integer> getVersion() {
 		return Optional.ofNullable(this.version);
 	}
 
 	/**
-	 * Universe configuration of {@link RadixNode}'s client, may be null
+	 * Universe configuration of {@link RadixNode}'s client
 	 */
 	public Optional<RadixUniverseConfig> getUniverseConfig() {
 		return Optional.ofNullable(this.universeConfig);

@@ -8,7 +8,7 @@ import java.util.Objects;
 /**
  * A dispatchable action which signifies to send an atom to a node
  */
-public class SubmitAtomSendAction implements SubmitAtomAction, RadixNodeAction {
+public final class SubmitAtomSendAction implements SubmitAtomAction, RadixNodeAction {
 	private final String uuid;
 	private final Atom atom;
 	private final RadixNode node;

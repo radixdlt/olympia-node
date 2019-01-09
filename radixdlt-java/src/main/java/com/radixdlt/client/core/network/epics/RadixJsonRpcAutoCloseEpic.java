@@ -12,8 +12,8 @@ import java.util.concurrent.TimeUnit;
  * Epic which attempts to close a websocket when a Json Rpc method is finished executing.
  * Note that the websocket won't close if there are still listeners.
  */
-public class RadixJsonRpcAutoCloseEpic implements RadixNetworkEpic {
-	private final static int DELAY_CLOSE_SECS = 5;
+public final class RadixJsonRpcAutoCloseEpic implements RadixNetworkEpic {
+	private static final int DELAY_CLOSE_SECS = 5;
 
 	private final WebSockets webSockets;
 

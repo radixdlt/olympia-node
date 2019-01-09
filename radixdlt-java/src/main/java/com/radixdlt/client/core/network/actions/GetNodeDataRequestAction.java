@@ -6,7 +6,7 @@ import java.util.Objects;
 /**
  * A dispatchable action request for the node data of a given node
  */
-public class GetNodeDataRequestAction implements JsonRpcMethodAction {
+public final class GetNodeDataRequestAction implements JsonRpcMethodAction {
 	private final RadixNode node;
 
 	private GetNodeDataRequestAction(RadixNode node) {

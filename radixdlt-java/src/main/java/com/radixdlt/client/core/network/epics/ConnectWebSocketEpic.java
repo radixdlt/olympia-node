@@ -11,7 +11,7 @@ import io.reactivex.Observable;
 /**
  * Epic which begins a websocket connection when a ConnectWebSocketAction is seen.
  */
-public class ConnectWebSocketEpic implements RadixNetworkEpic {
+public final class ConnectWebSocketEpic implements RadixNetworkEpic {
 	private final WebSockets webSockets;
 
 	public ConnectWebSocketEpic(WebSockets webSockets) {

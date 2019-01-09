@@ -29,7 +29,6 @@ public final class RadixNetwork {
 				RadixNodeState.of(action.getNode(), WebSocketStatus.CONNECTED, result.getResult()),
 				(old, val) -> RadixNodeState.of(old.getNode(), old.getStatus(), val.getData().orElse(null))
 			);
-			return new RadixNetworkState(newMap);
 		} else if (action instanceof AddNodeAction) {
 			final AddNodeAction addNodeAction = (AddNodeAction) action;
 			newMap = new HashMap<>(state.getNodes());
@@ -48,6 +47,6 @@ public final class RadixNetwork {
 			);
 		}
 
-		return newMap != null ? new RadixNetworkState(newMap) : null;
+		return newMap != null ? new RadixNetworkState(newMap) : state;
 	}
 }

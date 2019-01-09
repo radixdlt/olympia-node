@@ -9,7 +9,7 @@ import java.util.UUID;
 /**
  * The initial dispatchable action to begin an atom submission flow.
  */
-public class SubmitAtomRequestAction implements SubmitAtomAction, FindANodeRequestAction {
+public final class SubmitAtomRequestAction implements SubmitAtomAction, FindANodeRequestAction {
 	private final String uuid;
 	private final Atom atom;
 

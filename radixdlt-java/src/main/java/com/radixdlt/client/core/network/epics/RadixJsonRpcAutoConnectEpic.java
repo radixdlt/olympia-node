@@ -12,8 +12,9 @@ import io.reactivex.Observable;
 /**
  * Epic which attempts to open a websocket when a Json Rpc method onto a given node is dispatched.
  */
-public class RadixJsonRpcAutoConnectEpic implements RadixNetworkEpic {
+public final class RadixJsonRpcAutoConnectEpic implements RadixNetworkEpic {
 	private final WebSockets webSockets;
+
 	public RadixJsonRpcAutoConnectEpic(WebSockets webSockets) {
 		this.webSockets = webSockets;
 	}

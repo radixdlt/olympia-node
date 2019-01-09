@@ -5,33 +5,44 @@ import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.NodeAtomSubmissionState;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.NodeAtomSubmissionUpdate;
-import java.util.Arrays;
 import java.util.Objects;
 
 /**
  * A dispatchable event action which signifies the end result of an atom submission flow
  */
-public class SubmitAtomResultAction implements SubmitAtomAction {
+public final class SubmitAtomResultAction implements SubmitAtomAction {
 	public enum SubmitAtomResultActionType {
-		FAILED(NodeAtomSubmissionState.FAILED),
-		STORED(NodeAtomSubmissionState.STORED),
-		COLLISION(NodeAtomSubmissionState.COLLISION),
-		ILLEGAL_STATE(NodeAtomSubmissionState.ILLEGAL_STATE),
-		UNSUITABLE_PEER(NodeAtomSubmissionState.UNSUITABLE_PEER),
-		VALIDATION_ERROR(NodeAtomSubmissionState.VALIDATION_ERROR),
-		UNKNOWN_ERROR(NodeAtomSubmissionState.UNKNOWN_ERROR);
-
-		private final NodeAtomSubmissionState mapsTo;
-
-		SubmitAtomResultActionType(NodeAtomSubmissionState mapsTo) {
-			this.mapsTo = mapsTo;
-		}
+		FAILED,
+		STORED,
+		COLLISION,
+		ILLEGAL_STATE,
+		UNSUITABLE_PEER,
+		VALIDATION_ERROR,
+		UNKNOWN_ERROR;
 
 		public static SubmitAtomResultActionType from(NodeAtomSubmissionState nodeAtomSubmissionState) {
-			return Arrays.stream(SubmitAtomResultActionType.values())
-				.filter(t -> nodeAtomSubmissionState == t.mapsTo)
-				.findAny()
-				.orElseThrow(() -> new IllegalArgumentException("Unable to find match for " + nodeAtomSubmissionState));
+			Objects.requireNonNull(nodeAtomSubmissionState);
+
+			switch (nodeAtomSubmissionState) {
+				case FAILED:
+					return FAILED;
+				case STORED:
+					return STORED;
+				case COLLISION:
+					return COLLISION;
+				case ILLEGAL_STATE:
+					return ILLEGAL_STATE;
+				case UNSUITABLE_PEER:
+					return UNSUITABLE_PEER;
+				case VALIDATION_ERROR:
+					return VALIDATION_ERROR;
+				case UNKNOWN_ERROR:
+					return UNKNOWN_ERROR;
+				case RECEIVED:
+					throw new IllegalArgumentException("RECEIVED event is not a terminal result event");
+			}
+
+			throw new IllegalArgumentException("Unable to find match for " + nodeAtomSubmissionState);
 		}
 	}
 
@@ -42,15 +53,11 @@ public class SubmitAtomResultAction implements SubmitAtomAction {
 	private final JsonElement data;
 
 	private SubmitAtomResultAction(String uuid, Atom atom, RadixNode node, SubmitAtomResultActionType type, JsonElement data) {
-		Objects.requireNonNull(uuid);
-		Objects.requireNonNull(atom);
-		Objects.requireNonNull(node);
-		Objects.requireNonNull(type);
+		this.uuid = Objects.requireNonNull(uuid);
+		this.atom = Objects.requireNonNull(atom);
+		this.node = Objects.requireNonNull(node);
+		this.type = Objects.requireNonNull(type);
 
-		this.uuid = uuid;
-		this.atom = atom;
-		this.node = node;
-		this.type = type;
 		this.data = data;
 	}
 

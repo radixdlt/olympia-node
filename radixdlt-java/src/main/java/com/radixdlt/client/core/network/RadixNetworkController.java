@@ -41,7 +41,7 @@ public class RadixNetworkController implements AtomSubmitter {
 		public RadixNetworkControllerBuilder() {
 		}
 
-		public RadixNetworkControllerBuilder network(RadixNetwork network) {
+		public RadixNetworkControllerBuilder setNetwork(RadixNetwork network) {
 			this.network = network;
 			return this;
 		}
@@ -52,7 +52,9 @@ public class RadixNetworkController implements AtomSubmitter {
 		}
 
 		public RadixNetworkController build() {
-			Objects.requireNonNull(network);
+			if (network == null) {
+				network = new RadixNetwork();
+			}
 
 			return new RadixNetworkController(network, epics);
 		}
@@ -63,15 +65,20 @@ public class RadixNetworkController implements AtomSubmitter {
 	private final Subject<RadixNodeAction> nodeActions = PublishSubject.<RadixNodeAction>create().toSerialized();
 
 	private RadixNetworkController(RadixNetwork network, List<RadixNetworkEpic> epics) {
+		Objects.requireNonNull(network);
+		Objects.requireNonNull(epics);
+
 		this.networkState = BehaviorSubject.createDefault(new RadixNetworkState(Collections.emptyMap()));
 
 		// Run reducers first
 		ConnectableObservable<RadixNodeAction> reducedNodeActions = nodeActions.doOnNext(action -> {
 			LOGGER.info("NEXT ACTION: " + action.toString());
-			RadixNetworkState nextState = network.reduce(networkState.getValue(), action);
 
-			// TODO: remove null check and just check for equality
-			if (nextState != null) {
+			final RadixNetworkState curState = networkState.getValue();
+			RadixNetworkState nextState = network.reduce(curState, action);
+
+			// TODO: also add equals check
+			if (nextState != curState) {
 				networkState.onNext(nextState);
 			}
 
@@ -82,6 +89,8 @@ public class RadixNetworkController implements AtomSubmitter {
 		Set<Observable<RadixNodeAction>> updates = epics.stream()
 			.map(epic -> epic.epic(reducedNodeActions, networkState))
 			.collect(Collectors.toSet());
+
+		// FIXME: Cleanup disposable
 		Observable.merge(updates).subscribe(this::dispatch);
 
 		reducedNodeActions.connect();
@@ -103,6 +112,8 @@ public class RadixNetworkController implements AtomSubmitter {
 	 * Immediately submits an atom into the ledger without waiting for subscription. The returned
 	 * observable is a full replay of the status of the atom, from submission to acceptance by
 	 * the network.
+	 *
+	 * TODO: refactor out
 	 *
 	 * @param atom atom to submit into the ledger
 	 * @return Observable emitting status updates to submission

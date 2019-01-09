@@ -7,7 +7,7 @@ import java.util.Objects;
 /**
  * A dispatchable action to request to close a websocket connection with a given node.
  */
-public class CloseWebSocketAction implements RadixNodeAction {
+public final class CloseWebSocketAction implements RadixNodeAction {
 	private final RadixNode node;
 
 	private CloseWebSocketAction(RadixNode node) {

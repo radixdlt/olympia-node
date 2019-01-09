@@ -25,6 +25,8 @@ public class WebSocketClient implements PersistentChannel {
 
 	public WebSocketClient(Function<WebSocketListener, WebSocket> websocketFactory) {
 		this.websocketFactory = websocketFactory;
+
+		// FIXME: This disposable is never disposed of. Need to clean this up.
 		this.state
 			.filter(state -> state.equals(WebSocketStatus.FAILED))
 			.debounce(1, TimeUnit.MINUTES)
@@ -98,7 +100,6 @@ public class WebSocketClient implements PersistentChannel {
 				case CONNECTING:
 				case CONNECTED:
 				case CLOSING:
-				default:
 					return;
 			}
 		}

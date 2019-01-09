@@ -162,7 +162,7 @@ public class FindANodeEpicTest {
 	}
 
 	@Test
-	public void when_first_node_fails__then_seconde_node_should_connect() {
+	public void when_first_node_fails__then_second_node_should_connect() {
 		RadixNode badPeer = mock(RadixNode.class);
 		RadixNode goodPeer = mock(RadixNode.class);
 

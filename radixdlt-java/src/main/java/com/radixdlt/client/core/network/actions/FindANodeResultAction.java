@@ -5,7 +5,7 @@ import com.radixdlt.client.core.network.RadixNodeAction;
 import java.util.Objects;
 
 /**
- * The result of a FindANodeRequestAction.
+ * The result of a {@link FindANodeRequestAction}.
  */
 public class FindANodeResultAction implements RadixNodeAction {
 	private final RadixNode selectedNode;

@@ -6,19 +6,16 @@ import com.radixdlt.client.core.network.RadixNodeAction;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.actions.AddNodeAction;
 import com.radixdlt.client.core.network.actions.DiscoverMoreNodesAction;
-import com.radixdlt.client.core.network.actions.FetchAtomsAction;
 import com.radixdlt.client.core.network.actions.GetLivePeersRequestAction;
 import com.radixdlt.client.core.network.actions.GetLivePeersResultAction;
 import com.radixdlt.client.core.network.actions.GetNodeDataRequestAction;
-import com.radixdlt.client.core.network.actions.SubmitAtomAction;
-import com.radixdlt.client.core.network.actions.FetchAtomsObservationAction;
 import io.reactivex.Maybe;
 import io.reactivex.Observable;
 
 /**
  * Epic which manages simple bootstrapping and discovers nodes one degree out from the initial seeds.
  */
-public class DiscoverNodesEpic implements RadixNetworkEpic {
+public final class DiscoverNodesEpic implements RadixNetworkEpic {
 	private final Observable<RadixNode> seeds;
 
 	public DiscoverNodesEpic(Observable<RadixNode> seeds) {

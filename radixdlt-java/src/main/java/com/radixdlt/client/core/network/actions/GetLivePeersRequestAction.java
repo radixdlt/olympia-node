@@ -6,7 +6,7 @@ import java.util.Objects;
 /**
  * A dispatchable action request for the live peers of a node
  */
-public class GetLivePeersRequestAction implements JsonRpcMethodAction {
+public final class GetLivePeersRequestAction implements JsonRpcMethodAction {
 	private final RadixNode node;
 
 	private GetLivePeersRequestAction(RadixNode node) {

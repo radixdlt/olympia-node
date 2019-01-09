@@ -9,7 +9,7 @@ import java.util.Optional;
 /**
  * A dispatchable action to request to add a node to the network state.
  */
-public class AddNodeAction implements RadixNodeAction {
+public final class AddNodeAction implements RadixNodeAction {
 	private final RadixNode node;
 	private final NodeRunnerData data;
 

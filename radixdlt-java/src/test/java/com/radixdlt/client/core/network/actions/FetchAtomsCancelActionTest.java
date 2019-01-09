@@ -8,7 +8,7 @@ import org.junit.Test;
 
 public class FetchAtomsCancelActionTest {
 	@Test
-	public void when_initializing_with_null__npe_should_be_thrown() {
+	public void when_initializing_with_null__npe_is_thrown() {
 		assertThatThrownBy(() -> FetchAtomsCancelAction.of(null, mock(RadixAddress.class)))
 			.isInstanceOf(NullPointerException.class);
 

@@ -19,7 +19,7 @@ import com.radixdlt.client.core.network.epics.ConnectWebSocketEpic;
 import com.radixdlt.client.core.network.epics.FetchAtomsEpic;
 import com.radixdlt.client.core.network.epics.RadixJsonRpcAutoCloseEpic;
 import com.radixdlt.client.core.network.epics.RadixJsonRpcAutoConnectEpic;
-import com.radixdlt.client.core.network.epics.RadixJsonRpcMethodsEpic;
+import com.radixdlt.client.core.network.epics.RadixJsonRpcMethodEpic;
 import com.radixdlt.client.core.network.epics.WebSocketsEpic.WebSocketsEpicBuilder;
 import com.radixdlt.client.core.network.epics.SubmitAtomEpic;
 import com.radixdlt.client.core.network.selector.RandomSelector;
@@ -91,14 +91,15 @@ public final class RadixUniverse {
 			}
 
 			RadixNetworkController controller = new RadixNetworkControllerBuilder()
-				.network(new RadixNetwork())
+				.setNetwork(new RadixNetwork())
 				.addEpic(
 					new WebSocketsEpicBuilder()
 						.add(WebSocketEventsEpic::new)
 						.add(ConnectWebSocketEpic::new)
 						.add(SubmitAtomEpic::new)
 						.add(FetchAtomsEpic::new)
-						.add(RadixJsonRpcMethodsEpic::new)
+						.add(RadixJsonRpcMethodEpic::createGetLivePeersEpic)
+						.add(RadixJsonRpcMethodEpic::createGetNodeDataEpic)
 						.add(RadixJsonRpcAutoConnectEpic::new)
 						.add(RadixJsonRpcAutoCloseEpic::new)
 						.build()
