@@ -1,15 +1,18 @@
 package com.radixdlt.client.core.network.jsonrpc;
 
+import java.util.Map;
+
+import org.radix.serialization2.DsonOutput;
+import org.radix.serialization2.DsonOutput.Output;
+import org.radix.serialization2.SerializerId2;
+import org.radix.serialization2.client.SerializableObject;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.core.atoms.Shards;
-import org.radix.serialization2.DsonOutput;
-import org.radix.serialization2.DsonOutput.Output;
-import org.radix.serialization2.client.SerializableObject;
 
-import java.util.Map;
-
-public abstract class NodeRunnerData extends SerializableObject {
+@SerializerId2("PEER")
+public class NodeRunnerData extends SerializableObject {
 	private String ip;
 
 	@JsonProperty("system")

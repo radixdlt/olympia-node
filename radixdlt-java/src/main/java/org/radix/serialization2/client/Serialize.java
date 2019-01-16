@@ -23,6 +23,7 @@ import com.radixdlt.client.core.atoms.particles.Quark;
 import com.radixdlt.client.atommodel.quarks.UniqueQuark;
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECSignature;
+import com.radixdlt.client.core.network.jsonrpc.NodeRunnerData;
 import com.radixdlt.client.core.network.jsonrpc.RadixSystem;
 import com.radixdlt.client.core.network.jsonrpc.TCPNodeRunnerData;
 import com.radixdlt.client.core.network.jsonrpc.UDPNodeRunnerData;
@@ -70,6 +71,7 @@ public final class Serialize {
 
 				ECKeyPair.class,
 				ECSignature.class,
+				NodeRunnerData.class,
 				RadixSystem.class,
 				RadixUniverseConfig.class,
 				TCPNodeRunnerData.class,
