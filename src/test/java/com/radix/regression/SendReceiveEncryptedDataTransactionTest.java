@@ -11,7 +11,7 @@ import com.radixdlt.client.application.RadixApplicationAPI.Result;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.translate.data.DecryptedMessage;
 import com.radixdlt.client.application.translate.data.DecryptedMessage.EncryptionState;
-import com.radixdlt.client.application.translate.data.SendMessageToParticlesMapper;
+import com.radixdlt.client.application.translate.data.SendMessageToParticleGroupsMapper;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.crypto.ECKeyPairGenerator;
@@ -39,7 +39,7 @@ public class SendReceiveEncryptedDataTransactionTest {
 
 		// When I send a message to myself encrypted with a different key
 		ECKeyPairGenerator ecKeyPairGenerator = ECKeyPairGenerator.newInstance();
-		SendMessageToParticlesMapper msgMapper = new SendMessageToParticlesMapper(
+		SendMessageToParticleGroupsMapper msgMapper = new SendMessageToParticleGroupsMapper(
 			ecKeyPairGenerator::generateKeyPair,
 			sendMsg -> Stream.of(ECKeyPairGenerator.newInstance().generateKeyPair().getPublicKey())
 		);
