@@ -29,8 +29,7 @@ public class AlreadyUsedUniqueIdReasonMapper implements AtomErrorToExceptionReas
 
 			if (spunParticle.isPresent() && spunParticle.get().getParticle() instanceof UniqueParticle) {
 				UniqueParticle uniqueParticle = (UniqueParticle) spunParticle.get().getParticle();
-				IdentifiableQuark identifiableQuark = uniqueParticle.getQuarkOrError(IdentifiableQuark.class);
-				RadixResourceIdentifer id = identifiableQuark.getId();
+				RadixResourceIdentifer id = uniqueParticle.getRri();
 				UniqueId uniqueId = new UniqueId(id.getAddress(), id.getUnique());
 				return Stream.of(new AlreadyUsedUniqueIdReason(uniqueId));
 			}

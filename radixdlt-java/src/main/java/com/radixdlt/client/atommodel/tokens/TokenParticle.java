@@ -6,7 +6,6 @@ import com.radixdlt.client.application.translate.tokens.TokenClassReference;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.atommodel.quarks.FungibleQuark.FungibleType;
 import com.radixdlt.client.atommodel.quarks.AccountableQuark;
-import com.radixdlt.client.atommodel.quarks.IdentifiableQuark;
 import com.radixdlt.client.atommodel.quarks.OwnableQuark;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.RadixResourceIdentifer;
@@ -24,6 +23,10 @@ public class TokenParticle extends Particle {
 	@JsonProperty("name")
 	@DsonOutput(Output.ALL)
 	private String name;
+
+	@JsonProperty("symbol")
+	@DsonOutput(DsonOutput.Output.ALL)
+	private String symbol;
 
 	@JsonProperty("description")
 	@DsonOutput(Output.ALL)
@@ -53,11 +56,11 @@ public class TokenParticle extends Particle {
 		byte[] icon
 	) {
 		super(
-			new IdentifiableQuark(new RadixResourceIdentifer(address, "tokenclasses", symbol)),
 			new AccountableQuark(address),
 			new OwnableQuark(address.getPublicKey())
 		);
 		this.name = name;
+		this.symbol = symbol;
 		this.description = description;
 		this.granularity = granularity;
 		this.tokenPermissions = Collections.unmodifiableMap(new EnumMap<>(tokenPermissions));
@@ -85,8 +88,7 @@ public class TokenParticle extends Particle {
 	}
 
 	public TokenClassReference getTokenClassReference() {
-		RadixResourceIdentifer id = this.getQuarkOrError(IdentifiableQuark.class).getId();
-		return TokenClassReference.of(id.getAddress(), id.getUnique());
+		return TokenClassReference.of(getQuarkOrError(AccountableQuark.class).getAddresses().get(0), symbol);
 	}
 
 	@JsonProperty("permissions")
