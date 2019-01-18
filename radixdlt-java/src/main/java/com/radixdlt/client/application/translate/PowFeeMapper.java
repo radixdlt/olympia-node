@@ -5,14 +5,16 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 
+import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import org.radix.utils.Int128;
 import org.radix.utils.UInt256;
 
 import com.radixdlt.client.atommodel.tokens.FeeParticle;
 import com.radixdlt.client.core.RadixUniverse;
+import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.RadixHash;
 import com.radixdlt.client.core.atoms.particles.Particle;
-import com.radixdlt.client.core.atoms.particles.SpunParticle;
+import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.pow.ProofOfWork;
 import com.radixdlt.client.core.pow.ProofOfWorkBuilder;
@@ -23,22 +25,22 @@ import com.radixdlt.client.core.pow.ProofOfWorkBuilder;
 public class PowFeeMapper implements FeeMapper {
 	private static final int LEADING = 16;
 
-	private final Function<List<SpunParticle>, RadixHash> hasher;
+	private final Function<List<ParticleGroup>, RadixHash> hasher;
 	private final ProofOfWorkBuilder powBuilder;
 
-	public PowFeeMapper(Function<List<SpunParticle>, RadixHash> hasher, ProofOfWorkBuilder powBuilder) {
-		this.hasher = hasher;
-		this.powBuilder = powBuilder;
+	public PowFeeMapper(Function<List<ParticleGroup>, RadixHash> hasher, ProofOfWorkBuilder powBuilder) {
+		this.hasher = Objects.requireNonNull(hasher, "hasher is required");
+		this.powBuilder = Objects.requireNonNull(powBuilder, "powBuilder is required");
 	}
 
 	@Override
-	public List<SpunParticle> map(List<SpunParticle> particles, RadixUniverse universe, ECPublicKey key) {
+	public List<ParticleGroup> map(List<ParticleGroup> particleGroups, RadixUniverse universe, ECPublicKey key) {
 		Objects.requireNonNull(key);
 		Objects.requireNonNull(universe);
-		Objects.requireNonNull(particles);
+		Objects.requireNonNull(particleGroups);
 
-		final byte[] seed = hasher.apply(particles).toByteArray();
-		ProofOfWork pow = powBuilder.build(universe.getMagic(), seed, LEADING);
+		final byte[] seed = this.hasher.apply(particleGroups).toByteArray();
+		ProofOfWork pow = this.powBuilder.build(universe.getMagic(), seed, LEADING);
 
 		Particle fee = new FeeParticle(
 				fromNonce(pow.getNonce()),
@@ -48,7 +50,7 @@ public class PowFeeMapper implements FeeMapper {
 				System.currentTimeMillis() / 60000L + 60000L
 		);
 
-		return Collections.singletonList(SpunParticle.up(fee));
+		return Collections.singletonList(ParticleGroup.of(SpunParticle.up(fee)));
 	}
 
 	private static UInt256 fromNonce(long nonce) {

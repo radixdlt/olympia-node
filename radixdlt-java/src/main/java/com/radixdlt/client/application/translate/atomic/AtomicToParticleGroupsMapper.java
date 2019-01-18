@@ -1,11 +1,11 @@
 package com.radixdlt.client.application.translate.atomic;
 
 import com.radixdlt.client.application.translate.Action;
-import com.radixdlt.client.application.translate.StatelessActionToParticlesMapper;
-import com.radixdlt.client.core.atoms.particles.SpunParticle;
+import com.radixdlt.client.application.translate.StatelessActionToParticleGroupsMapper;
+import com.radixdlt.client.core.atoms.ParticleGroup;
 import io.reactivex.Observable;
 
-public class AtomicToParticlesMapper implements StatelessActionToParticlesMapper {
+public class AtomicToParticleGroupsMapper implements StatelessActionToParticleGroupsMapper {
 	@Override
 	public Observable<Action> sideEffects(Action action) {
 		if (!(action instanceof AtomicAction)) {
@@ -18,7 +18,7 @@ public class AtomicToParticlesMapper implements StatelessActionToParticlesMapper
 	}
 
 	@Override
-	public Observable<SpunParticle> mapToParticles(Action action) {
+	public Observable<ParticleGroup> mapToParticleGroups(Action action) {
 		return Observable.empty();
 	}
 }

@@ -23,8 +23,9 @@ public class MessageParticle extends Particle {
 		private RadixAddress to;
 		private final MetadataMap metaData = new MetadataMap();
 		private byte[] bytes;
-		public MessageParticleBuilder setMetaData(String key, String value) {
-			metaData.put(key, value);
+
+		public MessageParticleBuilder metaData(String key, String value) {
+			this.metaData.put(key, value);
 			return this;
 		}
 
@@ -44,7 +45,7 @@ public class MessageParticle extends Particle {
 		}
 
 		public MessageParticle build() {
-			return new MessageParticle(from, bytes, metaData, Arrays.asList(from, to));
+			return new MessageParticle(this.from, this.bytes, this.metaData, Arrays.asList(this.from, this.to));
 		}
 	}
 
@@ -73,6 +74,6 @@ public class MessageParticle extends Particle {
 	}
 
 	public RadixAddress getFrom() {
-		return from;
+		return this.from;
 	}
 }

@@ -67,10 +67,11 @@ public final class SubmitAtomResultAction implements SubmitAtomAction {
 
 	/**
 	 * The end result type of the atom submission
+	 *
 	 * @return The end result type
 	 */
 	public SubmitAtomResultActionType getType() {
-		return type;
+		return this.type;
 	}
 
 	@Override
@@ -94,6 +95,6 @@ public final class SubmitAtomResultAction implements SubmitAtomAction {
 
 	@Override
 	public String toString() {
-		return "SUBMIT_ATOM_RESULT " + uuid + " " + atom.getHid() + " " + node + " " + type;
+		return "SUBMIT_ATOM_RESULT " + this.uuid + " " + this.atom.getHid() + " " + this.node + " " + this.type;
 	}
 }

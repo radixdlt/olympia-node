@@ -2,6 +2,7 @@ package com.radixdlt.client.application.translate.tokenclasses;
 
 import java.util.List;
 
+import com.radixdlt.client.core.atoms.ParticleGroup;
 import org.junit.Test;
 import org.radix.utils.UInt256;
 
@@ -9,7 +10,6 @@ import com.radixdlt.client.application.translate.tokenclasses.CreateTokenAction.
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
 import com.radixdlt.client.atommodel.tokens.TokenParticle;
-import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 
 import static org.mockito.Mockito.mock;
@@ -17,7 +17,7 @@ import static org.mockito.Mockito.when;
 
 import io.reactivex.observers.TestObserver;
 
-public class CreateTokenToParticlesMapperTest {
+public class CreateTokenToParticleGroupsMapperTest {
 	@Test
 	public void testNormalConstruction() {
 		CreateTokenAction tokenCreation = mock(CreateTokenAction.class);
@@ -29,13 +29,13 @@ public class CreateTokenToParticlesMapperTest {
 		when(tokenCreation.getInitialSupply()).thenReturn(UInt256.ONE);
 		when(tokenCreation.getTokenSupplyType()).thenReturn(TokenSupplyType.MUTABLE);
 
-		CreateTokenToParticlesMapper createTokenToParticlesMapper = new CreateTokenToParticlesMapper();
-		TestObserver<List<SpunParticle>> testObserver = TestObserver.create();
-		createTokenToParticlesMapper.mapToParticles(tokenCreation).toList().subscribe(testObserver);
-		testObserver.assertValue(particles ->
-			particles.stream().anyMatch(s -> s.getParticle() instanceof TokenParticle)
-				&& particles.stream().anyMatch(s -> s.getParticle() instanceof OwnedTokensParticle)
-				&& particles.size() == 2
+		CreateTokenToParticleGroupsMapper createTokenToParticlesMapper = new CreateTokenToParticleGroupsMapper();
+		TestObserver<List<ParticleGroup>> testObserver = TestObserver.create();
+		createTokenToParticlesMapper.mapToParticleGroups(tokenCreation).toList().subscribe(testObserver);
+		testObserver.assertValue(particleGroups ->
+			particleGroups.stream().flatMap(ParticleGroup::spunParticles).anyMatch(s -> s.getParticle() instanceof TokenParticle)
+				&& particleGroups.stream().flatMap(ParticleGroup::spunParticles).anyMatch(s -> s.getParticle() instanceof OwnedTokensParticle)
+				&& particleGroups.stream().flatMap(ParticleGroup::spunParticles).count() == 2
 		);
 	}
 }

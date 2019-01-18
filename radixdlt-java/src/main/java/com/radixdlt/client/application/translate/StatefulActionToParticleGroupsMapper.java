@@ -1,8 +1,9 @@
 package com.radixdlt.client.application.translate;
 
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.core.atoms.particles.SpunParticle;
+import com.radixdlt.client.core.atoms.ParticleGroup;
 import io.reactivex.Observable;
+
 import java.util.Objects;
 
 /**
@@ -10,7 +11,7 @@ import java.util.Objects;
  * to construct an atom given a context requirement which this interface describes
  * via requiredState().
  */
-public interface StatefulActionToParticlesMapper {
+public interface StatefulActionToParticleGroupsMapper {
 	class RequiredShardState {
 		private final Class<? extends ApplicationState> stateClass;
 		private final RadixAddress address;
@@ -29,7 +30,7 @@ public interface StatefulActionToParticlesMapper {
 		 * @return the type of application state
 		 */
 		public Class<? extends ApplicationState> stateClass() {
-			return stateClass;
+			return this.stateClass;
 		}
 
 		/**
@@ -38,7 +39,7 @@ public interface StatefulActionToParticlesMapper {
 		 * @return the shardable address
 		 */
 		public RadixAddress address() {
-			return address;
+			return this.address;
 		}
 	}
 
@@ -58,7 +59,7 @@ public interface StatefulActionToParticlesMapper {
 	 * actions to be included in the current transaction.
 	 *
 	 * @param action the current action
-	 * @param store application state requested as specified by requiredState()
+	 * @param store  application state requested as specified by requiredState()
 	 * @return additional actions to be included
 	 */
 	default Observable<Action> sideEffects(Action action, Observable<Observable<? extends ApplicationState>> store) {
@@ -70,8 +71,8 @@ public interface StatefulActionToParticlesMapper {
 	 * action and application state
 	 *
 	 * @param action the action to map
-	 * @param store application state in the same order as returned from requiredState()
+	 * @param store  application state in the same order as returned from requiredState()
 	 * @return observable of spun particles created given an action
 	 */
-	Observable<SpunParticle> mapToParticles(Action action, Observable<Observable<? extends ApplicationState>> store);
+	Observable<ParticleGroup> mapToParticleGroups(Action action, Observable<Observable<? extends ApplicationState>> store);
 }

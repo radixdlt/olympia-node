@@ -17,27 +17,27 @@ import com.google.gson.JsonArray;
 import com.radixdlt.client.application.identity.Data;
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.ApplicationState;
-import com.radixdlt.client.application.translate.StatefulActionToParticlesMapper;
+import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.tokens.TokenBalanceState.Balance;
 import com.radixdlt.client.atommodel.message.MessageParticle;
 import com.radixdlt.client.atommodel.message.MessageParticle.MessageParticleBuilder;
 import com.radixdlt.client.atommodel.quarks.FungibleQuark.FungibleType;
 import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
 import com.radixdlt.client.core.RadixUniverse;
+import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
 import com.radixdlt.client.core.crypto.Encryptor;
-
 import io.reactivex.Observable;
 
 /**
  * Maps a send message action to the particles necessary to be included in an atom.
  */
-public class TransferTokensToParticlesMapper implements StatefulActionToParticlesMapper {
+public class TransferTokensToParticleGroupsMapper implements StatefulActionToParticleGroupsMapper {
 	private final RadixUniverse universe;
 
-	public TransferTokensToParticlesMapper(RadixUniverse universe) {
+	public TransferTokensToParticleGroupsMapper(RadixUniverse universe) {
 		this.universe = universe;
 	}
 
@@ -74,7 +74,7 @@ public class TransferTokensToParticlesMapper implements StatefulActionToParticle
 					entry.getValue(),
 					computedGranularity,
 					FungibleType.TRANSFERRED,
-					universe.getAddressFrom(entry.getKey().getPublicKey()),
+					this.universe.getAddressFrom(entry.getKey().getPublicKey()),
 					System.nanoTime(),
 					transfer.getTokenClassReference(),
 					System.currentTimeMillis() / 60000L + 60000L
@@ -108,8 +108,8 @@ public class TransferTokensToParticlesMapper implements StatefulActionToParticle
 					byte[] encryptorPayload = protectorsJson.toString().getBytes(StandardCharsets.UTF_8);
 					MessageParticle encryptorParticle = new MessageParticleBuilder()
 						.payload(encryptorPayload)
-						.setMetaData("application", "encryptor")
-						.setMetaData("contentType", "application/json")
+						.metaData("application", "encryptor")
+						.metaData("contentType", "application/json")
 						.from(transfer.getFrom())
 						.to(transfer.getTo())
 						.build();
@@ -138,9 +138,9 @@ public class TransferTokensToParticlesMapper implements StatefulActionToParticle
 	}
 
 	@Override
-	public Observable<SpunParticle> mapToParticles(
-		Action action,
-		Observable<Observable<? extends ApplicationState>> store
+	public Observable<ParticleGroup> mapToParticleGroups(
+			Action action,
+			Observable<Observable<? extends ApplicationState>> store
 	) throws InsufficientFundsException {
 		if (!(action instanceof TransferTokensAction)) {
 			return Observable.empty();
@@ -159,17 +159,20 @@ public class TransferTokensToParticlesMapper implements StatefulActionToParticle
 					allConsumables.get(transfer.getTokenClassReference())).orElse(Balance.empty(BigInteger.ONE));
 				if (balance.getAmount().compareTo(transfer.getAmount()) < 0) {
 					throw new InsufficientFundsException(
-							tokenRef, balance.getAmount(), transfer.getAmount()
+						tokenRef, balance.getAmount(), transfer.getAmount()
 					);
 				}
 				return allConsumables;
 			})
 			.map(allConsumables ->
 				Optional.ofNullable(allConsumables.get(transfer.getTokenClassReference()))
-						.map(bal -> bal.unconsumedConsumables().collect(Collectors.toList()))
-						.orElse(Collections.emptyList())
-			)
+					.map(bal -> bal.unconsumedConsumables().collect(Collectors.toList()))
+					.orElse(Collections.emptyList())
+		)
 			.flatMapObservable(tokenConsumables -> this.mapToParticles(transfer, tokenConsumables))
-			.concatWith(this.mapToAttachmentParticles(transfer));
+			.concatWith(this.mapToAttachmentParticles(transfer))
+			.toList()
+			.map(ParticleGroup::of)
+			.toObservable();
 	}
 }

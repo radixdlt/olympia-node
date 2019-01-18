@@ -26,6 +26,8 @@ import static org.mockito.Mockito.when;
 import io.reactivex.observers.TestObserver;
 import io.reactivex.subjects.ReplaySubject;
 
+import java.util.Collections;
+
 public class RadixJsonRpcClientTest {
 
 	@Test
@@ -131,7 +133,7 @@ public class RadixJsonRpcClientTest {
 			String id = jsonObject.get("id").getAsString();
 
 			JsonArray atoms = new JsonArray();
-			Atom atom = new Atom(null);
+			Atom atom = new Atom(Collections.emptyList());
 			String atomJson = Serialize.getInstance().toJson(atom, Output.API);
 			atoms.add(parser.parse(atomJson));
 
@@ -180,7 +182,7 @@ public class RadixJsonRpcClientTest {
 			params.addProperty("subscriberId", subscriberId);
 
 			JsonArray atoms = new JsonArray();
-			Atom atomObject = new Atom(null);
+			Atom atomObject = new Atom(Collections.emptyList());
 			JsonElement atom = parser.parse(Serialize.getInstance().toJson(atomObject, Output.API));
 			atoms.add(atom);
 			params.add("atoms", atoms);
@@ -231,7 +233,7 @@ public class RadixJsonRpcClientTest {
 				notification.addProperty("method", "Atoms.subscribeUpdate");
 				JsonObject params = new JsonObject();
 				params.addProperty("subscriberId", subscriberId);
-				Atom atomObject = new Atom(null);
+				Atom atomObject = new Atom(Collections.emptyList());
 				JsonElement atom = parser.parse(Serialize.getInstance().toJson(atomObject, Output.API));
 				JsonArray atoms = new JsonArray();
 				atoms.add(atom);
@@ -300,7 +302,7 @@ public class RadixJsonRpcClientTest {
 		TestObserver<NodeAtomSubmissionUpdate> observer = new TestObserver<>();
 
 		jsonRpcClient.submitAtom(
-			new Atom(null)
+			new Atom(Collections.emptyList())
 		).subscribe(observer);
 
 		observer.assertNoErrors();

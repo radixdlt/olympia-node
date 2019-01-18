@@ -3,11 +3,12 @@ package com.radixdlt.client.application.translate.tokenclasses;
 import com.radixdlt.client.application.translate.tokens.TokenClassReference;
 import java.util.Map;
 
+import com.radixdlt.client.core.atoms.ParticleGroup;
 import org.radix.utils.UInt256;
 
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.ApplicationState;
-import com.radixdlt.client.application.translate.StatefulActionToParticlesMapper;
+import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.tokens.UnknownTokenException;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.atommodel.quarks.FungibleQuark;
@@ -17,7 +18,7 @@ import com.radixdlt.client.core.atoms.particles.SpunParticle;
 
 import io.reactivex.Observable;
 
-public class MintTokensActionMapper implements StatefulActionToParticlesMapper {
+public class MintTokensActionMapper implements StatefulActionToParticleGroupsMapper {
 
 	@Override
 	public Observable<RequiredShardState> requiredState(Action action) {
@@ -33,7 +34,7 @@ public class MintTokensActionMapper implements StatefulActionToParticlesMapper {
 	}
 
 	@Override
-	public Observable<SpunParticle> mapToParticles(Action action, Observable<Observable<? extends ApplicationState>> store) {
+	public Observable<ParticleGroup> mapToParticleGroups(Action action, Observable<Observable<? extends ApplicationState>> store) {
 		if (!(action instanceof MintTokensAction)) {
 			return Observable.empty();
 		}
@@ -49,6 +50,7 @@ public class MintTokensActionMapper implements StatefulActionToParticlesMapper {
 			.map(TokenState::getGranularity)
 			.map(TokenClassReference::unitsToSubunits)
 			.map(granularity -> createOwnedTokensParticle(mintTokensAction.getAmount(), granularity, tokenClass))
+			.map(ParticleGroup::of)
 			.toObservable();
 	}
 

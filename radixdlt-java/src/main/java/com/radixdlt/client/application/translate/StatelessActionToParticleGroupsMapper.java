@@ -1,13 +1,13 @@
 package com.radixdlt.client.application.translate;
 
-import com.radixdlt.client.core.atoms.particles.SpunParticle;
+import com.radixdlt.client.core.atoms.ParticleGroup;
 import io.reactivex.Observable;
 
 /**
  * Maps a high level application action to lower level spun particles used
  * to construct an atom.
  */
-public interface StatelessActionToParticlesMapper {
+public interface StatelessActionToParticleGroupsMapper {
 
 	/**
 	 * Returns an observable of actions which will be added to the list
@@ -27,5 +27,5 @@ public interface StatelessActionToParticlesMapper {
 	 * @param action the action to map
 	 * @return observable of spun particles created given an action
 	 */
-	Observable<SpunParticle> mapToParticles(Action action);
+	Observable<ParticleGroup> mapToParticleGroups(Action action);
 }

@@ -4,8 +4,6 @@ import com.radixdlt.client.core.atoms.AtomObservation;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.radix.serialization2.client.Serialize;
-
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 
 import io.reactivex.Observable;
@@ -42,7 +40,7 @@ public class InMemoryAtomStore implements AtomStore {
 	public Observable<AtomObservation> getAtoms(RadixAddress address) {
 		Objects.requireNonNull(address);
 		// TODO: move atom filter outside of class
-		return Observable.fromCallable(() -> new ValidAtomFilter(address, Serialize.getInstance()))
+		return Observable.fromCallable(ValidAtomFilter::new)
 			.flatMap(atomFilter ->
 				cache.computeIfAbsent(address, euid -> ReplaySubject.create())
 					.distinct(atomObservation -> {

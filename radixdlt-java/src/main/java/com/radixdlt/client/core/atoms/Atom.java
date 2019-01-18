@@ -1,10 +1,11 @@
 package com.radixdlt.client.core.atoms;
 
 import java.math.BigInteger;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -18,10 +19,10 @@ import org.radix.serialization2.client.Serialize;
 import org.radix.utils.UInt256s;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.client.application.translate.tokens.TokenClassReference;
 import com.radixdlt.client.atommodel.message.MessageParticle;
 import com.radixdlt.client.atommodel.timestamp.TimestampParticle;
 import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
-import com.radixdlt.client.application.translate.tokens.TokenClassReference;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
@@ -34,48 +35,46 @@ import com.radixdlt.client.core.crypto.ECSignature;
  */
 @SerializerId2("ATOM")
 public final class Atom extends SerializableObject {
-
-	@JsonProperty("particles")
+	@JsonProperty("particleGroups")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private List<SpunParticle> particles;
+	private final List<ParticleGroup> particleGroups = new ArrayList<>();
 
 	@JsonProperty("signatures")
 	@DsonOutput(value = {DsonOutput.Output.API, DsonOutput.Output.WIRE, DsonOutput.Output.PERSIST})
-	private Map<String, ECSignature> signatures;
-
-	private transient Map<String, Long> debug = new HashMap<>();
+	private final Map<String, ECSignature> signatures = new HashMap<>();
 
 	private Atom() {
 	}
 
-	public Atom(List<SpunParticle> particles) {
-		this.particles = particles;
-		this.signatures = null;
+	public Atom(List<ParticleGroup> particleGroups) {
+		Objects.requireNonNull(particleGroups, "particleGroups is required");
+
+		this.particleGroups.addAll(particleGroups);
 	}
 
 	private Atom(
-		List<SpunParticle> particles,
+		List<ParticleGroup> particleGroups,
 		EUID signatureId,
 		ECSignature signature
 	) {
-		this.particles = particles;
-		this.signatures = Collections.singletonMap(signatureId.toString(), signature);
+		this(particleGroups);
+
+		Objects.requireNonNull(signatureId, "signatureId is required");
+		Objects.requireNonNull(signature, "signature is required");
+
+		this.signatures.put(signatureId.toString(), signature);
 	}
 
 	public Atom withSignature(ECSignature signature, EUID signatureId) {
 		return new Atom(
-			particles,
+			this.particleGroups,
 			signatureId,
 			signature
 		);
 	}
 
-	public List<SpunParticle> getSpunParticles() {
-		return particles != null ? particles : Collections.emptyList();
-	}
-
 	private Set<Long> getShards() {
-		return getSpunParticles().stream()
+		return this.spunParticles()
 			.map(SpunParticle<Particle>::getParticle)
 			.map(Particle::getAddresses)
 			.flatMap(Set::stream)
@@ -86,31 +85,39 @@ public final class Atom extends SerializableObject {
 
 	// HACK
 	public Set<Long> getRequiredFirstShard() {
-		if (this.particles.stream().anyMatch(s -> s.getSpin() == Spin.DOWN)) {
-			return particles.stream()
+		if (this.spunParticles().anyMatch(s -> s.getSpin() == Spin.DOWN)) {
+			return this.spunParticles()
 				.filter(s -> s.getSpin() == Spin.DOWN)
 				.flatMap(s -> s.getParticle().getAddresses().stream())
 				.map(ECPublicKey::getUID)
 				.map(EUID::getShard)
 				.collect(Collectors.toSet());
 		} else {
-			return getShards();
+			return this.getShards();
 		}
 	}
 
+	public Stream<ParticleGroup> particleGroups() {
+		return this.particleGroups.stream();
+	}
+
+	public Stream<SpunParticle> spunParticles() {
+		return this.particleGroups.stream().flatMap(ParticleGroup::spunParticles);
+	}
+
 	public Stream<Particle> particles(Spin spin) {
-		return particles.stream().filter(s -> s.getSpin() == spin).map(SpunParticle::getParticle);
+		return this.spunParticles().filter(s -> s.getSpin() == spin).map(SpunParticle::getParticle);
 	}
 
 	public Stream<ECPublicKey> addresses() {
-		return particles.stream()
+		return this.spunParticles()
 			.map(SpunParticle<Particle>::getParticle)
 			.map(Particle::getAddresses)
 			.flatMap(Set::stream);
 	}
 
 	public Long getTimestamp() {
-		return this.getSpunParticles().stream()
+		return this.spunParticles()
 			.map(SpunParticle::getParticle)
 			.filter(p -> p instanceof TimestampParticle)
 			.map(p -> ((TimestampParticle) p).getTimestamp()).findAny()
@@ -118,21 +125,21 @@ public final class Atom extends SerializableObject {
 	}
 
 	public Map<String, ECSignature> getSignatures() {
-		return signatures;
+		return this.signatures;
 	}
 
 	public Optional<ECSignature> getSignature(EUID uid) {
-		return Optional.ofNullable(signatures).map(sigs -> sigs.get(uid.toString()));
+		return Optional.ofNullable(this.signatures).map(sigs -> sigs.get(uid.toString()));
 	}
 
 	public Stream<SpunParticle<OwnedTokensParticle>> consumables() {
-		return this.getSpunParticles().stream()
+		return this.spunParticles()
 			.filter(s -> s.getParticle() instanceof OwnedTokensParticle)
 			.map(s -> (SpunParticle<OwnedTokensParticle>) s);
-	}
+}
 
 	public List<OwnedTokensParticle> getConsumables(Spin spin) {
-		return this.getSpunParticles().stream()
+		return this.spunParticles()
 			.filter(s -> s.getSpin() == spin)
 			.map(SpunParticle::getParticle)
 			.filter(p -> p instanceof OwnedTokensParticle)
@@ -149,11 +156,11 @@ public final class Atom extends SerializableObject {
 	}
 
 	public EUID getHid() {
-		return getHash().toEUID();
+		return this.getHash().toEUID();
 	}
 
 	public List<MessageParticle> getDataParticles() {
-		return this.getSpunParticles().stream()
+		return this.spunParticles()
 			.map(SpunParticle::getParticle)
 			.filter(p -> p instanceof MessageParticle)
 			.map(p -> (MessageParticle) p)
@@ -161,7 +168,7 @@ public final class Atom extends SerializableObject {
 	}
 
 	public Map<TokenClassReference, Map<ECPublicKey, BigInteger>> tokenSummary() {
-		return consumables()
+		return this.consumables()
 			.collect(Collectors.groupingBy(
 				s -> s.getParticle().getTokenClassReference(),
 				Collectors.groupingBy(
@@ -183,30 +190,16 @@ public final class Atom extends SerializableObject {
 		}
 
 		Atom atom = (Atom) o;
-		return getHash().equals(atom.getHash());
+		return this.getHash().equals(atom.getHash());
 	}
 
 	@Override
 	public int hashCode() {
-		return getHash().hashCode();
-	}
-
-	public long getDebug(String name) {
-		if (debug == null) {
-			debug = new HashMap<>();
-		}
-		return debug.get(name);
-	}
-
-	public void putDebug(String name, long value) {
-		if (debug == null) {
-			debug = new HashMap<>();
-		}
-		debug.put(name, value);
+		return this.getHash().hashCode();
 	}
 
 	@Override
 	public String toString() {
-		return "Atom particles(" + getHid().toString() + ")";
+		return "Atom (" + this.getHid().toString() + ")";
 	}
 }

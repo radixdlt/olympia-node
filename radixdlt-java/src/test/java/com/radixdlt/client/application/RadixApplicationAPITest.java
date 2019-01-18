@@ -15,7 +15,7 @@ import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.ActionExecutionException;
 import com.radixdlt.client.application.translate.ActionExecutionExceptionReason;
 import com.radixdlt.client.application.translate.AtomErrorToExceptionReasonMapper;
-import com.radixdlt.client.application.translate.StatelessActionToParticlesMapper;
+import com.radixdlt.client.application.translate.StatelessActionToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.data.AtomToDecryptedMessageMapper;
 import com.radixdlt.client.application.translate.data.DecryptedMessage;
 import com.radixdlt.client.application.translate.FeeMapper;
@@ -28,7 +28,9 @@ import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomObservation;
 import com.radixdlt.client.application.identity.RadixIdentity;
+import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.ledger.AtomPuller;
 import com.radixdlt.client.core.crypto.ECPublicKey;
@@ -275,7 +277,7 @@ public class RadixApplicationAPITest {
 	@Test
 	public void testErrorMapper() {
 		Particle particle = mock(Particle.class);
-		Atom atom = new Atom(Collections.singletonList(SpunParticle.up(particle)));
+		Atom atom = new Atom(Collections.singletonList(ParticleGroup.of(SpunParticle.up(particle))));
 		RadixIdentity identity = mock(RadixIdentity.class);
 		when(identity.sign(any())).thenReturn(Single.just(atom));
 		RadixUniverse universe = mock(RadixUniverse.class);
@@ -295,8 +297,8 @@ public class RadixApplicationAPITest {
 		when(universe.getLedger()).thenReturn(ledger);
 		Action action = mock(Action.class);
 
-		StatelessActionToParticlesMapper actionMapper = mock(StatelessActionToParticlesMapper.class);
-		when(actionMapper.mapToParticles(eq(action))).thenReturn(Observable.just(SpunParticle.up(particle)));
+		StatelessActionToParticleGroupsMapper actionMapper = mock(StatelessActionToParticleGroupsMapper.class);
+		when(actionMapper.mapToParticleGroups(eq(action))).thenReturn(Observable.just(ParticleGroup.of(SpunParticle.up(particle))));
 		when(actionMapper.sideEffects(any())).thenReturn(Observable.empty());
 		AtomErrorToExceptionReasonMapper errorMapper = mock(AtomErrorToExceptionReasonMapper.class);
 		ActionExecutionExceptionReason reason = mock(ActionExecutionExceptionReason.class);

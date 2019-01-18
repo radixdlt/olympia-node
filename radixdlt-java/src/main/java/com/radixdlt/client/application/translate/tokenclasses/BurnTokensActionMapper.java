@@ -10,12 +10,13 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import com.radixdlt.client.core.atoms.ParticleGroup;
 import org.radix.utils.UInt256;
 import org.radix.utils.UInt256s;
 
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.ApplicationState;
-import com.radixdlt.client.application.translate.StatefulActionToParticlesMapper;
+import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.tokens.InsufficientFundsException;
 import com.radixdlt.client.application.translate.tokens.UnknownTokenException;
 import com.radixdlt.client.application.translate.tokens.TokenBalanceState;
@@ -30,7 +31,7 @@ import com.radixdlt.client.core.crypto.ECKeyPair;
 
 import io.reactivex.Observable;
 
-public class BurnTokensActionMapper implements StatefulActionToParticlesMapper {
+public class BurnTokensActionMapper implements StatefulActionToParticleGroupsMapper {
 	private final RadixUniverse universe;
 
 	public BurnTokensActionMapper(RadixUniverse universe) {
@@ -51,7 +52,7 @@ public class BurnTokensActionMapper implements StatefulActionToParticlesMapper {
 	}
 
 	@Override
-	public Observable<SpunParticle> mapToParticles(Action action, Observable<Observable<? extends ApplicationState>> store) {
+	public Observable<ParticleGroup> mapToParticleGroups(Action action, Observable<Observable<? extends ApplicationState>> store) {
 		if (!(action instanceof BurnTokensAction)) {
 			return Observable.empty();
 		}
@@ -62,10 +63,10 @@ public class BurnTokensActionMapper implements StatefulActionToParticlesMapper {
 			.map(TokenBalanceState.class::cast)
 			.firstOrError()
 			.toObservable()
-			.flatMapIterable(state -> map(burnTokensAction, state));
+			.flatMap(state -> Observable.just(this.map(burnTokensAction, state)));
 	}
 
-	private List<SpunParticle> map(BurnTokensAction burnTokensAction, TokenBalanceState curState) {
+	private ParticleGroup map(BurnTokensAction burnTokensAction, TokenBalanceState curState) {
 		final Map<TokenClassReference, Balance> allConsumables = curState.getBalance();
 
 		final TokenClassReference tokenRef = burnTokensAction.getTokenClassReference();
@@ -115,13 +116,13 @@ public class BurnTokensActionMapper implements StatefulActionToParticlesMapper {
 				granularity,
 				e.getKey() == null ? FungibleType.BURNED : FungibleType.TRANSFERRED,
 				e.getKey() == null ? burnTokensAction.getTokenClassReference().getAddress()
-					: universe.getAddressFrom(e.getKey().getPublicKey()),
+					: this.universe.getAddressFrom(e.getKey().getPublicKey()),
 				System.nanoTime(),
 				burnTokensAction.getTokenClassReference(),
 				System.currentTimeMillis() / 60000L + 60000L
 			))
 			.map(SpunParticle::up)
 			.forEach(particles::add);
-		return particles;
+		return ParticleGroup.of(particles);
 	}
 }

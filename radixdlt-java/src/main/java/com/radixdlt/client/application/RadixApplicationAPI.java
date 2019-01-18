@@ -1,5 +1,7 @@
 package com.radixdlt.client.application;
 
+import com.google.gson.JsonElement;
+import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.actions.SubmitAtomResultAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType;
@@ -32,18 +34,18 @@ import com.radixdlt.client.application.translate.AtomToExecutedActionsMapper;
 import com.radixdlt.client.application.translate.FeeMapper;
 import com.radixdlt.client.application.translate.ParticleReducer;
 import com.radixdlt.client.application.translate.PowFeeMapper;
-import com.radixdlt.client.application.translate.StatefulActionToParticlesMapper;
-import com.radixdlt.client.application.translate.StatelessActionToParticlesMapper;
-import com.radixdlt.client.application.translate.atomic.AtomicToParticlesMapper;
+import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
+import com.radixdlt.client.application.translate.StatelessActionToParticleGroupsMapper;
+import com.radixdlt.client.application.translate.atomic.AtomicToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.data.AtomToDecryptedMessageMapper;
 import com.radixdlt.client.application.translate.data.DecryptedMessage;
 import com.radixdlt.client.application.translate.data.SendMessageAction;
-import com.radixdlt.client.application.translate.data.SendMessageToParticlesMapper;
+import com.radixdlt.client.application.translate.data.SendMessageToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.tokenclasses.BurnTokensAction;
 import com.radixdlt.client.application.translate.tokenclasses.BurnTokensActionMapper;
 import com.radixdlt.client.application.translate.tokenclasses.CreateTokenAction;
 import com.radixdlt.client.application.translate.tokenclasses.CreateTokenAction.TokenSupplyType;
-import com.radixdlt.client.application.translate.tokenclasses.CreateTokenToParticlesMapper;
+import com.radixdlt.client.application.translate.tokenclasses.CreateTokenToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.tokenclasses.MintTokensAction;
 import com.radixdlt.client.application.translate.tokenclasses.MintTokensActionMapper;
 import com.radixdlt.client.application.translate.tokenclasses.TokenClassesReducer;
@@ -54,9 +56,9 @@ import com.radixdlt.client.application.translate.tokens.TokenBalanceReducer;
 import com.radixdlt.client.application.translate.tokens.TokenBalanceState;
 import com.radixdlt.client.application.translate.tokens.TokenTransfer;
 import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
-import com.radixdlt.client.application.translate.tokens.TransferTokensToParticlesMapper;
+import com.radixdlt.client.application.translate.tokens.TransferTokensToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.unique.AlreadyUsedUniqueIdReasonMapper;
-import com.radixdlt.client.application.translate.unique.PutUniqueIdToParticlesMapper;
+import com.radixdlt.client.application.translate.unique.PutUniqueIdToParticleGroupsMapper;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.atommodel.timestamp.TimestampParticle;
 import com.radixdlt.client.application.translate.tokens.TokenClassReference;
@@ -128,14 +130,14 @@ public class RadixApplicationAPI {
 	private final Map<Class<? extends ApplicationState>, ApplicationStore<? extends ApplicationState>> applicationStores;
 
 	/**
-	 * Action to Particle Mappers which can mapToParticles without any dependency on ledger state
+	 * Action to Particle Mappers which can mapToParticleGroups without any dependency on ledger state
 	 */
-	private final List<StatelessActionToParticlesMapper> statelessActionToParticlesMappers;
+	private final List<StatelessActionToParticleGroupsMapper> statelessActionToParticleGroupsMappers;
 
 	/**
 	 * Action to Particle Mappers which require dependencies on the ledger
 	 */
-	private final List<StatefulActionToParticlesMapper> statefulActionToParticlesMappers;
+	private final List<StatefulActionToParticleGroupsMapper> statefulActionToParticleGroupsMappers;
 
 	/**
 	 * Mapper of atom submission errors to application level errors
@@ -152,8 +154,8 @@ public class RadixApplicationAPI {
 		RadixUniverse universe,
 		FeeMapper feeMapper,
 		Ledger ledger,
-		List<StatelessActionToParticlesMapper> statelessActionToParticlesMappers,
-		List<StatefulActionToParticlesMapper> statefulActionToParticlesMappers,
+		List<StatelessActionToParticleGroupsMapper> statelessActionToParticleGroupsMappers,
+		List<StatefulActionToParticleGroupsMapper> statefulActionToParticleGroupsMappers,
 		List<ParticleReducer<? extends ApplicationState>> particleReducers,
 		List<AtomToExecutedActionsMapper<? extends Object>> atomMappers,
 		List<AtomErrorToExceptionReasonMapper> atomErrorMappers
@@ -162,8 +164,8 @@ public class RadixApplicationAPI {
 		Objects.requireNonNull(universe);
 		Objects.requireNonNull(feeMapper);
 		Objects.requireNonNull(ledger);
-		Objects.requireNonNull(statelessActionToParticlesMappers);
-		Objects.requireNonNull(statefulActionToParticlesMappers);
+		Objects.requireNonNull(statelessActionToParticleGroupsMappers);
+		Objects.requireNonNull(statefulActionToParticleGroupsMappers);
 		Objects.requireNonNull(particleReducers);
 		Objects.requireNonNull(atomErrorMappers);
 
@@ -177,8 +179,8 @@ public class RadixApplicationAPI {
 			ParticleReducer::stateClass,
 			r -> new ApplicationStore<>(ledger.getParticleStore(), r)
 		));
-		this.statefulActionToParticlesMappers = statefulActionToParticlesMappers;
-		this.statelessActionToParticlesMappers = statelessActionToParticlesMappers;
+		this.statefulActionToParticleGroupsMappers = statefulActionToParticleGroupsMappers;
+		this.statelessActionToParticleGroupsMappers = statelessActionToParticleGroupsMappers;
 		this.atomErrorMappers = atomErrorMappers;
 		this.feeMapper = feeMapper;
 		this.ledger = ledger;
@@ -189,8 +191,8 @@ public class RadixApplicationAPI {
 		private RadixUniverse universe;
 		private FeeMapper feeMapper;
 		private List<ParticleReducer<? extends ApplicationState>> reducers = new ArrayList<>();
-		private List<StatelessActionToParticlesMapper> statelessActionToParticlesMappers = new ArrayList<>();
-		private List<StatefulActionToParticlesMapper> statefulActionToParticlesMappers = new ArrayList<>();
+		private List<StatelessActionToParticleGroupsMapper> statelessActionToParticleGroupsMappers = new ArrayList<>();
+		private List<StatefulActionToParticleGroupsMapper> statefulActionToParticleGroupsMappers = new ArrayList<>();
 		private List<AtomToExecutedActionsMapper<? extends Object>> atomMappers = new ArrayList<>();
 		private List<AtomErrorToExceptionReasonMapper> atomErrorMappers = new ArrayList<>();
 
@@ -202,13 +204,13 @@ public class RadixApplicationAPI {
 			return this;
 		}
 
-		public RadixApplicationAPIBuilder addStatelessParticlesMapper(StatelessActionToParticlesMapper mapper) {
-			this.statelessActionToParticlesMappers.add(mapper);
+		public RadixApplicationAPIBuilder addStatelessParticlesMapper(StatelessActionToParticleGroupsMapper mapper) {
+			this.statelessActionToParticleGroupsMappers.add(mapper);
 			return this;
 		}
 
-		public RadixApplicationAPIBuilder addStatefulParticlesMapper(StatefulActionToParticlesMapper mapper) {
-			this.statefulActionToParticlesMappers.add(mapper);
+		public RadixApplicationAPIBuilder addStatefulParticlesMapper(StatefulActionToParticleGroupsMapper mapper) {
+			this.statefulActionToParticleGroupsMappers.add(mapper);
 			return this;
 		}
 
@@ -228,7 +230,8 @@ public class RadixApplicationAPI {
 		}
 
 		public RadixApplicationAPIBuilder defaultFeeMapper() {
-			this.feeMapper = new PowFeeMapper(p -> new Atom(p).getHash(), new ProofOfWorkBuilder());
+			this.feeMapper = new PowFeeMapper(particleGroups -> new Atom(particleGroups).getHash(),
+					new ProofOfWorkBuilder());
 			return this;
 		}
 
@@ -261,8 +264,8 @@ public class RadixApplicationAPI {
 				universe,
 				feeMapper,
 				ledger,
-				statelessActionToParticlesMappers,
-				statefulActionToParticlesMappers,
+				statelessActionToParticleGroupsMappers,
+				statefulActionToParticleGroupsMappers,
 				reducers,
 				atomMappers,
 				atomErrorMappers
@@ -279,30 +282,39 @@ public class RadixApplicationAPI {
 	public static RadixApplicationAPI create(RadixIdentity identity) {
 		Objects.requireNonNull(identity);
 
+		return createDefaultBuilder()
+				.identity(identity)
+				.build();
+	}
+
+	/**
+	 * Creates a default API builder with the default actions and reducers without an identity
+	 *
+	 * @return an api builder instance
+	 */
+	public static RadixApplicationAPIBuilder createDefaultBuilder() {
 		return new RadixApplicationAPIBuilder()
-			.identity(identity)
 			.defaultFeeMapper()
-			.addStatelessParticlesMapper(new SendMessageToParticlesMapper(ECKeyPairGenerator.newInstance()::generateKeyPair))
-			.addStatelessParticlesMapper(new CreateTokenToParticlesMapper())
-			.addStatelessParticlesMapper(new PutUniqueIdToParticlesMapper())
-			.addStatelessParticlesMapper(new AtomicToParticlesMapper())
+			.addStatelessParticlesMapper(new SendMessageToParticleGroupsMapper(ECKeyPairGenerator.newInstance()::generateKeyPair))
+			.addStatelessParticlesMapper(new CreateTokenToParticleGroupsMapper())
+			.addStatelessParticlesMapper(new PutUniqueIdToParticleGroupsMapper())
+			.addStatelessParticlesMapper(new AtomicToParticleGroupsMapper())
 			.addStatefulParticlesMapper(new MintTokensActionMapper())
 			.addStatefulParticlesMapper(new BurnTokensActionMapper(RadixUniverse.getInstance()))
-			.addStatefulParticlesMapper(new TransferTokensToParticlesMapper(RadixUniverse.getInstance()))
+			.addStatefulParticlesMapper(new TransferTokensToParticleGroupsMapper(RadixUniverse.getInstance()))
 			.addReducer(new TokenClassesReducer())
 			.addReducer(new TokenBalanceReducer())
 			.addAtomMapper(new AtomToDecryptedMessageMapper(RadixUniverse.getInstance()))
 			.addAtomMapper(new AtomToTokenTransfersMapper(RadixUniverse.getInstance()))
-			.addAtomErrorMapper(new AlreadyUsedUniqueIdReasonMapper())
-			.build();
+			.addAtomErrorMapper(new AlreadyUsedUniqueIdReasonMapper());
 	}
 
 	public Observable<RadixNetworkState> getNetworkState() {
-		return universe.getNetworkState();
+		return this.universe.getNetworkState();
 	}
 
 	private ApplicationStore<? extends ApplicationState> getStore(Class<? extends ApplicationState> storeClass) {
-		ApplicationStore<? extends ApplicationState> store = applicationStores.get(storeClass);
+		ApplicationStore<? extends ApplicationState> store = this.applicationStores.get(storeClass);
 		if (store == null) {
 			throw new IllegalArgumentException("No store available for class: " + storeClass);
 		}
@@ -609,7 +621,6 @@ public class RadixApplicationAPI {
 	}
 
 
-
 	public Result transferTokens(RadixAddress from, RadixAddress to, BigDecimal amount, TokenClassReference token) {
 		return transferTokens(from, to, amount, token, null);
 	}
@@ -636,26 +647,26 @@ public class RadixApplicationAPI {
 		Objects.requireNonNull(token);
 
 		final TransferTokensAction transferTokensAction =
-			TransferTokensAction.create(from, to, amount, token, attachment);
+				TransferTokensAction.create(from, to, amount, token, attachment);
 
-		return execute(transferTokensAction);
+		return this.execute(transferTokensAction);
 	}
 
-	private Observable<SpunParticle> statefulMappersToParticles(Observable<Action> actions) {
+	private Observable<ParticleGroup> statefulMappersToParticleGroups(Observable<Action> actions) {
 		return actions.flatMap(action ->
 			Observable
-				.fromIterable(this.statefulActionToParticlesMappers)
+				.fromIterable(this.statefulActionToParticleGroupsMappers)
 				.flatMap(mapper -> {
 					final Observable<Observable<? extends ApplicationState>> context =
-						mapper.requiredState(action).map(ctx -> this.getState(ctx.stateClass(), ctx.address()));
-					return mapper.mapToParticles(action, context);
+							mapper.requiredState(action).map(ctx -> this.getState(ctx.stateClass(), ctx.address()));
+					return mapper.mapToParticleGroups(action, context);
 				})
-			);
+		);
 	}
 
 	private Observable<Action> statefulMappersToSideEffects(Action action) {
 		return Observable
-				.fromIterable(this.statefulActionToParticlesMappers)
+				.fromIterable(this.statefulActionToParticleGroupsMappers)
 				.flatMap(mapper -> {
 					final Observable<Observable<? extends ApplicationState>> context =
 						mapper.requiredState(action).map(ctx -> this.getState(ctx.stateClass(), ctx.address()));
@@ -665,9 +676,9 @@ public class RadixApplicationAPI {
 
 	private Observable<Action> collectActionAndEffects(Action action) {
 		Observable<Action> statelessEffects = Observable
-			.fromIterable(this.statelessActionToParticlesMappers)
+			.fromIterable(this.statelessActionToParticleGroupsMappers)
 			.flatMap(mapper -> mapper.sideEffects(action));
-		Observable<Action> statefulEffects = statefulMappersToSideEffects(action);
+		Observable<Action> statefulEffects = this.statefulMappersToSideEffects(action);
 
 		return Observable.concat(statelessEffects, statefulEffects)
 			.flatMap(RadixApplicationAPI.this::collectActionAndEffects)
@@ -683,44 +694,44 @@ public class RadixApplicationAPI {
 	 */
 	public Single<UnsignedAtom> buildAtom(Action action) {
 		final Observable<Action> allActions = this.collectActionAndEffects(action);
-		final Observable<SpunParticle> statelessParticles = allActions.flatMap(a ->
+		final Observable<ParticleGroup> statelessParticleGroups = allActions.flatMap(a ->
 			Observable
-				.fromIterable(this.statelessActionToParticlesMappers)
-				.flatMap(mapper -> mapper.mapToParticles(a))
+				.fromIterable(this.statelessActionToParticleGroupsMappers)
+				.flatMap(mapper -> mapper.mapToParticleGroups(a))
 		);
-		final Observable<SpunParticle> statefulParticles = statefulMappersToParticles(allActions);
-		final Observable<SpunParticle> timestampParticle =
-			Observable.just(SpunParticle.up(new TimestampParticle(System.currentTimeMillis())));
+		final Observable<ParticleGroup> statefulParticleGroups = this.statefulMappersToParticleGroups(allActions);
+		final Observable<ParticleGroup> timestampParticle =
+			Observable.just(ParticleGroup.of(SpunParticle.up(new TimestampParticle(System.currentTimeMillis()))));
 
-		return Observable.concat(statelessParticles, statefulParticles, timestampParticle)
-			.<List<SpunParticle>>scanWith(
-				ArrayList::new,
-				(a, b) -> Stream.concat(a.stream(), Stream.of(b)).collect(Collectors.toList())
+		return Observable.concat(statelessParticleGroups, statefulParticleGroups, timestampParticle)
+			.<List<ParticleGroup>>scanWith(
+					ArrayList::new,
+					(a, b) -> Stream.concat(a.stream(), Stream.of(b)).collect(Collectors.toList())
 			)
 			.lastOrError()
-			.map(particles -> {
-				List<SpunParticle> allParticles = new ArrayList<>(particles);
-				allParticles.addAll(feeMapper.map(particles, universe, getMyPublicKey()));
-				return allParticles;
+			.map(particleGroups -> {
+				List<ParticleGroup> allParticleGroups = new ArrayList<>(particleGroups);
+				allParticleGroups.addAll(this.feeMapper.map(particleGroups, this.universe, this.getMyPublicKey()));
+				return allParticleGroups;
 			})
-			.map(particles -> new UnsignedAtom(new Atom(particles)));
+			.map(particleGroups -> new UnsignedAtom(new Atom(particleGroups)));
 	}
 
 	private Result buildDisconnectedResult(Action action) {
 		ConnectableObservable<SubmitAtomAction> updates = this.buildAtom(action)
-			.flatMap(identity::sign)
-			.flatMapObservable(ledger.getAtomSubmitter()::submitAtom)
+			.flatMap(this.identity::sign)
+			.flatMapObservable(this.ledger.getAtomSubmitter()::submitAtom)
 			.replay();
 
 		Completable completable = updates
-			.filter(SubmitAtomResultAction.class::isInstance)
-			.map(SubmitAtomResultAction.class::cast)
+			.ofType(SubmitAtomResultAction.class)
 			.firstOrError()
 			.flatMapCompletable(update -> {
 				if (update.getType() == SubmitAtomResultActionType.STORED) {
 					return Completable.complete();
 				} else {
-					final JsonObject errorData = update.getData().getAsJsonObject();
+					JsonElement data = update.getData();
+					final JsonObject errorData = data == null ? null : data.getAsJsonObject();
 					final ActionExecutionExceptionBuilder exceptionBuilder = new ActionExecutionExceptionBuilder()
 						.errorData(errorData);
 					atomErrorMappers.stream()

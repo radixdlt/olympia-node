@@ -2,28 +2,29 @@ package com.radixdlt.client.application.translate.tokenclasses;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.application.translate.Action;
-import com.radixdlt.client.application.translate.StatelessActionToParticlesMapper;
+import com.radixdlt.client.application.translate.StatelessActionToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.tokenclasses.CreateTokenAction.TokenSupplyType;
 import com.radixdlt.client.atommodel.quarks.FungibleQuark;
 import com.radixdlt.client.atommodel.quarks.FungibleQuark.FungibleType;
 import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
 import com.radixdlt.client.atommodel.tokens.TokenParticle;
 import com.radixdlt.client.atommodel.tokens.TokenPermission;
+import com.radixdlt.client.core.atoms.ParticleGroup;
+import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
-
 import io.reactivex.Observable;
 
 /**
  * Maps the CreateToken action into it's corresponding particles
  */
-public class CreateTokenToParticlesMapper implements StatelessActionToParticlesMapper {
+public class CreateTokenToParticleGroupsMapper implements StatelessActionToParticleGroupsMapper {
 	@Override
 	public Observable<Action> sideEffects(Action action) {
 		return Observable.empty();
 	}
 
 	@Override
-	public Observable<SpunParticle> mapToParticles(Action action) {
+	public Observable<ParticleGroup> mapToParticleGroups(Action action) {
 		if (!(action instanceof CreateTokenAction)) {
 			return Observable.empty();
 		}
@@ -59,7 +60,7 @@ public class CreateTokenToParticlesMapper implements StatelessActionToParticlesM
 
 		if (tokenCreation.getInitialSupply().isZero()) {
 			// No initial supply -> just the token particle
-			return Observable.just(SpunParticle.up(token));
+			return Observable.just(ParticleGroup.of(SpunParticle.up(token)));
 		}
 
 		OwnedTokensParticle minted = new OwnedTokensParticle(
@@ -71,6 +72,6 @@ public class CreateTokenToParticlesMapper implements StatelessActionToParticlesM
 				token.getTokenClassReference(),
 				System.currentTimeMillis() / 60000L + 60000
 		);
-		return Observable.just(SpunParticle.up(token), SpunParticle.up(minted));
+		return Observable.just(ParticleGroup.of(SpunParticle.up(token), SpunParticle.up(minted)));
 	}
 }

@@ -3,8 +3,8 @@ package com.radixdlt.client.application.translate.tokens;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.radixdlt.client.application.translate.StatefulActionToParticlesMapper.RequiredShardState;
-import com.radixdlt.client.core.atoms.particles.SpunParticle;
+import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper.RequiredShardState;
+import com.radixdlt.client.core.atoms.ParticleGroup;
 import io.reactivex.Observable;
 import io.reactivex.observers.TestObserver;
 import java.math.BigDecimal;
@@ -13,13 +13,12 @@ import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import java.util.Collections;
 
-public class TransferTokensToParticlesMapperTest {
+public class TransferTokensToParticleGroupsMapperTest {
 
 	@Test
 	public void createTransactionWithNoFunds() {
 		RadixUniverse universe = mock(RadixUniverse.class);
 		RadixAddress address = mock(RadixAddress.class);
-
 
 		TokenClassReference token = mock(TokenClassReference.class);
 		when(token.getSymbol()).thenReturn("TEST");
@@ -32,7 +31,7 @@ public class TransferTokensToParticlesMapperTest {
 		TokenBalanceState state = mock(TokenBalanceState.class);
 		when(state.getBalance()).thenReturn(Collections.emptyMap());
 
-		TransferTokensToParticlesMapper transferTranslator = new TransferTokensToParticlesMapper(universe);
+		TransferTokensToParticleGroupsMapper transferTranslator = new TransferTokensToParticleGroupsMapper(universe);
 
 		TestObserver<RequiredShardState> contextTestObserver = TestObserver.create();
 		transferTranslator.requiredState(transferTokensAction).subscribe(contextTestObserver);
@@ -40,8 +39,8 @@ public class TransferTokensToParticlesMapperTest {
 			.assertValue(ctx -> ctx.address().equals(address))
 			.assertValue(ctx -> ctx.stateClass().equals(TokenBalanceState.class));
 
-		TestObserver<SpunParticle> testObserver = TestObserver.create();
-		transferTranslator.mapToParticles(transferTokensAction, Observable.just(Observable.just(state))).subscribe(testObserver);
+		TestObserver<ParticleGroup> testObserver = TestObserver.create();
+		transferTranslator.mapToParticleGroups(transferTokensAction, Observable.just(Observable.just(state))).subscribe(testObserver);
 		testObserver.assertError(new InsufficientFundsException(token, BigDecimal.ZERO, new BigDecimal("1.0")));
 	}
 

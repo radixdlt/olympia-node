@@ -16,7 +16,7 @@ public class MessageParticleTest {
 		MessageParticle messageParticle = new MessageParticleBuilder()
 			.payload(new byte[0])
 			.from(mock(RadixAddress.class))
-			.setMetaData("application", "test")
+			.metaData("application", "test")
 			.build();
 		assertEquals("test", messageParticle.getMetaData("application"));
 		assertNull(messageParticle.getMetaData("missing"));
@@ -24,7 +24,7 @@ public class MessageParticleTest {
 
 	@Test
 	public void testNullDataParticle() {
-		assertThatThrownBy(() -> new MessageParticleBuilder().setMetaData("application", "hello").build())
+		assertThatThrownBy(() -> new MessageParticleBuilder().metaData("application", "hello").build())
 			.isInstanceOf(NullPointerException.class);
 	}
 }
