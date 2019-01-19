@@ -231,6 +231,7 @@ public class SendingADataTransaction {
 		messageTestObserver.assertSubscribed();
 		messageTestObserver.assertNoErrors();
 		messageTestObserver.assertValue(m -> new String(m.getData()).equals(message));
+		messageTestObserver.dispose();
 	}
 
 	@When("^I can observe a message with \"([^\"]*)\" from myself$")
@@ -241,6 +242,7 @@ public class SendingADataTransaction {
 		messageTestObserver.assertSubscribed();
 		messageTestObserver.assertNoErrors();
 		messageTestObserver.assertValue(m -> new String(m.getData()).equals(message) && m.getFrom().equals(this.api.getMyAddress()));
+		messageTestObserver.dispose();
 	}
 
 	@When("^another client can observe a message with \"([^\"]*)\"$")
@@ -251,5 +253,6 @@ public class SendingADataTransaction {
 		messageTestObserver.assertSubscribed();
 		messageTestObserver.assertNoErrors();
 		messageTestObserver.assertValue(m -> new String(m.getData()).equals(message));
+		messageTestObserver.dispose();
 	}
 }
