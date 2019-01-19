@@ -4,7 +4,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.radixdlt.client.application.translate.ActionExecutionExceptionReason;
 import com.radixdlt.client.application.translate.AtomErrorToExceptionReasonMapper;
-import com.radixdlt.client.atommodel.quarks.IdentifiableQuark;
 import com.radixdlt.client.atommodel.unique.UniqueParticle;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.ParticleGroup;

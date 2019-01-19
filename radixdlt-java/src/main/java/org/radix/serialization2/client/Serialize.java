@@ -1,7 +1,6 @@
 package org.radix.serialization2.client;
 
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.atommodel.quarks.IdentifiableQuark;
 import com.radixdlt.client.application.translate.unique.UniqueId;
 import com.radixdlt.client.atommodel.unique.UniqueParticle;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
@@ -66,7 +65,6 @@ public final class Serialize {
 				ChronoQuark.class,
 				DataQuark.class,
 				FungibleQuark.class,
-				IdentifiableQuark.class,
 				OwnableQuark.class,
 				UniqueQuark.class,
 				AccountableQuark.class,
