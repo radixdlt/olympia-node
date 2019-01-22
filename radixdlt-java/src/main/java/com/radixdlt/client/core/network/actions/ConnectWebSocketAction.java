@@ -24,6 +24,7 @@ public final class ConnectWebSocketAction implements RadixNodeAction {
 		return node;
 	}
 
+	@Override
 	public String toString() {
 		return "CONNECT_WEB_SOCKET_ACTION " + node;
 	}

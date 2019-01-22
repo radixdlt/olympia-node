@@ -37,6 +37,7 @@ public final class AddNodeAction implements RadixNodeAction {
 		return Optional.ofNullable(data);
 	}
 
+	@Override
 	public String toString() {
 		return "ADD_NODE_ACTION " + node + " " + data;
 	}

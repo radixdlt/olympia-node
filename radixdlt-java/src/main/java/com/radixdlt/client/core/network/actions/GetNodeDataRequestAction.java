@@ -23,6 +23,7 @@ public final class GetNodeDataRequestAction implements JsonRpcMethodAction {
 		return node;
 	}
 
+	@Override
 	public String toString() {
 		return "GET_NODE_DATA_REQUEST " + node;
 	}

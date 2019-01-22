@@ -27,10 +27,12 @@ public final class SubmitAtomSendAction implements SubmitAtomAction, RadixNodeAc
 		return new SubmitAtomSendAction(uuid, atom, node);
 	}
 
+	@Override
 	public String getUuid() {
 		return uuid;
 	}
 
+	@Override
 	public Atom getAtom() {
 		return atom;
 	}

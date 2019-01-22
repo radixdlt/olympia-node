@@ -25,6 +25,7 @@ public final class GetLivePeersResultAction implements JsonRpcResultAction<List<
 		return new GetLivePeersResultAction(node, data);
 	}
 
+	@Override
 	public List<NodeRunnerData> getResult() {
 		return data;
 	}
@@ -34,6 +35,7 @@ public final class GetLivePeersResultAction implements JsonRpcResultAction<List<
 		return node;
 	}
 
+	@Override
 	public String toString() {
 		return "GET_LIVE_PEERS_RESULT " + node;
 	}

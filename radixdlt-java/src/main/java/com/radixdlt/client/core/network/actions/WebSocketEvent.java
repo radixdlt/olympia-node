@@ -28,6 +28,7 @@ public final class WebSocketEvent implements RadixNodeAction {
 		this.node = node;
 	}
 
+	@Override
 	public RadixNode getNode() {
 		return node;
 	}
@@ -40,6 +41,7 @@ public final class WebSocketEvent implements RadixNodeAction {
 		return new WebSocketEvent(WebSocketEventType.valueOf(status.name()), node);
 	}
 
+	@Override
 	public String toString() {
 		return "WEBSOCKET_EVENT(" + type + ") " + node;
 	}

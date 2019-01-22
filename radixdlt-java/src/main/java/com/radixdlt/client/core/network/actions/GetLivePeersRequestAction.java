@@ -23,6 +23,7 @@ public final class GetLivePeersRequestAction implements JsonRpcMethodAction {
 		return node;
 	}
 
+	@Override
 	public String toString() {
 		return "GET_LIVE_PEERS_REQUEST " + node;
 	}

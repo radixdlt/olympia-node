@@ -4,8 +4,8 @@ import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.StatelessActionToParticleGroupsMapper;
 import com.radixdlt.client.atommodel.unique.UniqueParticle;
 import com.radixdlt.client.core.atoms.ParticleGroup;
-import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
+
 import io.reactivex.Observable;
 
 public class PutUniqueIdToParticleGroupsMapper implements StatelessActionToParticleGroupsMapper {

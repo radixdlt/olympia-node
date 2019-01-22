@@ -41,10 +41,12 @@ public enum Bootstrap implements BootstrapConfig {
 		this.seeds = seeds;
 	}
 
+	@Override
 	public RadixUniverseConfig getConfig() {
 		return config.get();
 	}
 
+	@Override
 	public Observable<RadixNode> getSeeds() {
 		return seeds;
 	}

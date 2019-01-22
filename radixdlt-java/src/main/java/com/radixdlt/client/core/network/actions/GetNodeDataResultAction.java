@@ -33,6 +33,7 @@ public final class GetNodeDataResultAction implements JsonRpcResultAction<NodeRu
 		return node;
 	}
 
+	@Override
 	public String toString() {
 		return "GET_NODE_DATA_RESPONSE " + node + " " + data;
 	}

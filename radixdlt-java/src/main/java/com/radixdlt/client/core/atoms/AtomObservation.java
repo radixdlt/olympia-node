@@ -4,7 +4,7 @@ public class AtomObservation {
 	public enum Type {
 		STORE,
 		HEAD
-	};
+	}
 
 	private final Atom atom;
 	private final Type type;

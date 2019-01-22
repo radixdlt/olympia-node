@@ -24,6 +24,7 @@ public final class CloseWebSocketAction implements RadixNodeAction {
 		return node;
 	}
 
+	@Override
 	public String toString() {
 		return "CLOSE_WEBSOCKET_ACTION " + node;
 	}

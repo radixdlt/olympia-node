@@ -66,6 +66,7 @@ public class RadixAtomValidator implements AtomValidator {
 		}
 	}
 
+	@Override
 	public void validate(Atom atom) throws AtomValidationException {
 		// TODO: check with universe genesis timestamp
 		if (atom.getTimestamp() == null || atom.getTimestamp() == 0L) {

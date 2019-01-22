@@ -105,6 +105,7 @@ public class WebSocketClient implements PersistentChannel {
 		}
 	}
 
+	@Override
 	public Observable<String> getMessages() {
 		return messages;
 	}
@@ -128,6 +129,7 @@ public class WebSocketClient implements PersistentChannel {
 		return true;
 	}
 
+	@Override
 	public boolean sendMessage(String message) {
 		synchronized (lock) {
 			if (!this.state.getValue().equals(WebSocketStatus.CONNECTED)) {
