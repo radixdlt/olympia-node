@@ -171,9 +171,13 @@ public final class EUID implements Comparable<EUID> {
 		return this.value.hashCode();
 	}
 
+	public String toHexString() {
+		return Bytes.toHexString(value.toByteArray());
+	}
+
 	@Override
 	public String toString() {
-		return Bytes.toHexString(value.toByteArray());
+		return toHexString();
 	}
 
 	private static Int128 ringClosest(Int128 a, Int128 b) {

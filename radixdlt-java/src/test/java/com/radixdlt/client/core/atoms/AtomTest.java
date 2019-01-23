@@ -16,11 +16,9 @@ public class AtomTest {
 		assertTrue(atom.getDataParticles().isEmpty());
 		assertTrue(atom.getConsumables(Spin.UP).isEmpty());
 		assertTrue(atom.getConsumables(Spin.DOWN).isEmpty());
-		assertNotNull(atom.getHash());
-		assertNotNull(atom.getHid());
+		assertEquals("1b1cff72cb4f79d2eb50b5fb2777d65bebb5cad146e2006f25cde7a53445ffe7", atom.getHash().toHexString());
+		assertEquals("1b1cff72cb4f79d2eb50b5fb2777d65b", atom.getHid().toHexString());
 		assertEquals(new Long(0), atom.getTimestamp());
-		assertNotNull(atom.toString());
-
 		assertEquals(atom, new Atom(Collections.emptyList()));
 	}
 }

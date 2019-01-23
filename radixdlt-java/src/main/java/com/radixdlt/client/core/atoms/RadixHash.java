@@ -4,6 +4,7 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
+import okio.ByteString;
 import org.bouncycastle.util.encoders.Base64;
 import org.radix.common.ID.EUID;
 
@@ -73,4 +74,6 @@ public final class RadixHash {
 	public String toString() {
 		return Base64.toBase64String(hash);
 	}
+
+	public String toHexString() { return ByteString.of(hash).hex(); }
 }
