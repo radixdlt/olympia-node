@@ -152,7 +152,7 @@ public final class Atom extends SerializableObject {
 	}
 
 	public RadixHash getHash() {
-		return RadixHash.of(Serialize.getInstance().toDson(this, DsonOutput.Output.HASH));
+		return RadixHash.of(toDson());
 	}
 
 	public EUID getHid() {
