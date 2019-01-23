@@ -1,7 +1,7 @@
 package com.radixdlt.client.core.pow;
 
 import com.radixdlt.client.core.atoms.RadixHash;
-import okio.ByteString;
+import org.radix.utils.primitives.Bytes;
 
 import java.nio.ByteBuffer;
 import java.util.BitSet;
@@ -25,12 +25,12 @@ public class ProofOfWorkBuilder {
 		buffer.putInt(magic);
 		buffer.put(seed);
 
-		String targetHex = ByteString.of(target).hex();
+		String targetHex = Bytes.toHexString(target);
 
 		while (true) {
 			buffer.position(32 + 4);
 			buffer.putLong(nonce);
-			String hashHex = ByteString.of(RadixHash.of(buffer.array()).toByteArray()).hex();
+			String hashHex = Bytes.toHexString(RadixHash.of(buffer.array()).toByteArray());
 			if (hashHex.compareTo(targetHex) < 0) {
 				return new ProofOfWork(nonce, magic, seed, target);
 			}

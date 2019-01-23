@@ -4,13 +4,13 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-import okio.ByteString;
 import org.bouncycastle.util.encoders.Base64;
 import org.radix.common.ID.EUID;
 
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.crypto.ECSignature;
 import com.radixdlt.client.core.util.Hash;
+import org.radix.utils.primitives.Bytes;
 
 public final class RadixHash {
 	private final byte[] hash;
@@ -75,5 +75,7 @@ public final class RadixHash {
 		return Base64.toBase64String(hash);
 	}
 
-	public String toHexString() { return ByteString.of(hash).hex(); }
+	public String toHexString() {
+		return Bytes.toHexString(hash);
+	}
 }

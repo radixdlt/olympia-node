@@ -30,8 +30,8 @@ import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
-import okio.ByteString;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.radix.utils.primitives.Bytes;
 
 public final class PrivateKeyEncrypter {
 
@@ -59,7 +59,7 @@ public final class PrivateKeyEncrypter {
 
     public static String createEncryptedPrivateKey(String password) throws GeneralSecurityException {
         ECKeyPair ecKeyPair = ECKeyPairGenerator.newInstance().generateKeyPair();
-        String privateKey = ByteString.of(ecKeyPair.getPrivateKey()).hex();
+        String privateKey = Bytes.toHexString(ecKeyPair.getPrivateKey());
         byte[] salt = getSalt().getBytes(StandardCharsets.UTF_8);
 
         SecretKey derivedKey = getSecretKey(password, salt, ITERATIONS, KEY_LENGTH);
@@ -69,7 +69,7 @@ public final class PrivateKeyEncrypter {
         byte[] iv = cipher.getParameters().getParameterSpec(IvParameterSpec.class).getIV();
 
         String cipherText = encrypt(cipher, privateKey);
-        byte[] mac = generateMac(derivedKey.getEncoded(), ByteString.decodeHex(cipherText).toByteArray());
+        byte[] mac = generateMac(derivedKey.getEncoded(), Bytes.fromHexString(cipherText));
 
         Keystore keystore = createKeystore(ecKeyPair, cipherText, mac, iv, salt);
 
@@ -82,9 +82,9 @@ public final class PrivateKeyEncrypter {
         byte[] salt = keystore.getCrypto().getPbkdfparams().getSalt().getBytes(StandardCharsets.UTF_8);
         int iterations = keystore.getCrypto().getPbkdfparams().getIterations();
         int keyLen = keystore.getCrypto().getPbkdfparams().getKeylen();
-        byte[] iv = ByteString.decodeHex(keystore.getCrypto().getCipherparams().getIv()).toByteArray();
-        byte[] mac = ByteString.decodeHex(keystore.getCrypto().getMac()).toByteArray();
-        byte[] cipherText = ByteString.decodeHex(keystore.getCrypto().getCiphertext()).toByteArray();
+        byte[] iv = Bytes.fromHexString(keystore.getCrypto().getCipherparams().getIv());
+        byte[] mac = Bytes.fromHexString(keystore.getCrypto().getMac());
+        byte[] cipherText = Bytes.fromHexString(keystore.getCrypto().getCiphertext());
 
         SecretKey derivedKey = getSecretKey(password, salt, iterations, keyLen);
 
@@ -99,7 +99,7 @@ public final class PrivateKeyEncrypter {
 
         String privateKey = decrypt(cipher, cipherText);
 
-        return ByteString.decodeHex(privateKey).toByteArray();
+        return Bytes.fromHexString(privateKey);
     }
 
     private static SecretKey getSecretKey(String passPhrase, byte[] salt, int iterations, int keyLength)
@@ -124,7 +124,7 @@ public final class PrivateKeyEncrypter {
         Crypto crypto = new Crypto();
         crypto.setCipher(ALGORITHM);
         crypto.setCiphertext(cipherText);
-        crypto.setMac(ByteString.of(mac).hex());
+        crypto.setMac(Bytes.toHexString(mac));
 
         Pbkdfparams pbkdfparams = new Pbkdfparams();
         pbkdfparams.setDigest(DIGEST);
@@ -133,7 +133,7 @@ public final class PrivateKeyEncrypter {
         pbkdfparams.setSalt(new String(salt, StandardCharsets.UTF_8));
 
         Cipherparams cipherparams = new Cipherparams();
-        cipherparams.setIv(ByteString.of(iv).hex());
+        cipherparams.setIv(Bytes.toHexString(iv));
 
         crypto.setCipherparams(cipherparams);
         crypto.setPbkdfparams(pbkdfparams);
@@ -146,7 +146,7 @@ public final class PrivateKeyEncrypter {
     private static String encrypt(Cipher cipher, String encrypt) throws GeneralSecurityException {
         byte[] bytes = encrypt.getBytes(StandardCharsets.UTF_8);
         byte[] encrypted = cipher.doFinal(bytes);
-        return ByteString.of(encrypted).hex();
+        return Bytes.toHexString(encrypted);
     }
 
     private static String decrypt(Cipher cipher, byte[] encrypted) throws GeneralSecurityException {
@@ -164,7 +164,7 @@ public final class PrivateKeyEncrypter {
     private static String getSalt() {
         byte[] salt = new byte[32];
         getSecureRandom().nextBytes(salt);
-        return ByteString.of(salt).hex();
+        return Bytes.toHexString(salt);
     }
 
     private static SecureRandom getSecureRandom() {
