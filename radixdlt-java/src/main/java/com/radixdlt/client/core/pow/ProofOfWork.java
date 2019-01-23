@@ -1,10 +1,10 @@
 package com.radixdlt.client.core.pow;
 
 import com.radixdlt.client.core.atoms.RadixHash;
-import okio.ByteString;
 
 import java.nio.ByteBuffer;
 import org.bouncycastle.util.encoders.Base64;
+import org.radix.utils.primitives.Bytes;
 
 public class ProofOfWork {
 	private final long nonce;
@@ -20,7 +20,7 @@ public class ProofOfWork {
 	}
 
 	public String getTargetHex() {
-		return ByteString.of(target).hex();
+		return Bytes.toHexString(target);
 	}
 
 	public long getNonce() {
@@ -33,7 +33,7 @@ public class ProofOfWork {
 		byteBuffer.putInt(magic);
 		byteBuffer.put(seed);
 		byteBuffer.putLong(nonce);
-		String hashHex = ByteString.of(RadixHash.of(byteBuffer.array()).toByteArray()).hex();
+		String hashHex = Bytes.toHexString(RadixHash.of(byteBuffer.array()).toByteArray());
 		if (hashHex.compareTo(targetHex) > 0) {
 			throw new ProofOfWorkException(hashHex, targetHex);
 		}

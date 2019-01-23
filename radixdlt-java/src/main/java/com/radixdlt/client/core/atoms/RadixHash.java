@@ -10,6 +10,7 @@ import org.radix.common.ID.EUID;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.crypto.ECSignature;
 import com.radixdlt.client.core.util.Hash;
+import org.radix.utils.primitives.Bytes;
 
 public final class RadixHash {
 	private final byte[] hash;
@@ -72,5 +73,9 @@ public final class RadixHash {
 	@Override
 	public String toString() {
 		return Base64.toBase64String(hash);
+	}
+
+	public String toHexString() {
+		return Bytes.toHexString(hash);
 	}
 }

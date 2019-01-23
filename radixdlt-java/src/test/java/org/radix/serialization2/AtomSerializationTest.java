@@ -1,17 +1,19 @@
 package org.radix.serialization2;
 
+import com.radixdlt.client.core.atoms.RadixHash;
 import org.junit.Test;
 import org.radix.serialization2.client.Serialize;
 
 import com.radixdlt.client.core.atoms.Atom;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 public class AtomSerializationTest {
 
 	@Test
 	public void testAtomSerialization() {
-		String atom = "{\"dataParticles\":[{\"bytes\":\":byt:0AGgg7FFonQOWyDN0CbvbSED9Lwy7NQs17U34hb0pu+ds"
+		String atomString = "{\"dataParticles\":[{\"bytes\":\":byt:0AGgg7FFonQOWyDN0CbvbSED9Lwy7NQs17U34hb0pu+ds"
 				+ "/EIzxoqZ6UkYEWoYYK2Sx0AAAAQ7DvCu1Mw3rAsMW50OroUR26DLNRsdj+3eMYf1KNgMH8MgDlQfVkSDL4/u03SP"
 				+ "cro\",\"serializer\":473758768,\"version\":100},{\"metaData\":{\"application\":\":str:en"
 				+ "cryptor\",\"contentType\":\":str:application/json\"},\"bytes\":\":byt:WyJvWE1xTGcvWWtiNS"
@@ -42,13 +44,9 @@ public class AtomSerializationTest {
 				+ ":AL3/nYW7FGVRNndA3x1tRBS4vfPKrGHLKTGwcDEhYCcp\",\"s\":\":byt:AIDk+93m2xSNpBO6WO+Pim25k0u"
 				+ "yqaBf8E1TwRhOZfcm\",\"serializer\":-434788200,\"version\":100}},\"chronoParticle\":{\"ti"
 				+ "mestamps\":{\"default\":1539178735739},\"serializer\":1080087081,\"version\":100}}";
-		Atom a = Serialize.getInstance().fromJson(atom, Atom.class);
-		assertNotNull(a);
-		byte[] hashBytes = a.getHash().toByteArray();
-		for (int i = 0; i < hashBytes.length; ++i) {
-			System.out.format("%02x", hashBytes[i] & 0xFF);
-		}
-		System.out.println();
+		Atom atom = Serialize.getInstance().fromJson(atomString, Atom.class);
+		assertNotNull(atom);
+		assertEquals("1b1cff72cb4f79d2eb50b5fb2777d65bebb5cad146e2006f25cde7a53445ffe7", atom.getHash().toHexString());
 	}
 
 }
