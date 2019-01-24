@@ -40,7 +40,7 @@ public class AtomToDecryptedMessageMapper implements AtomToExecutedActionsMapper
 
 	@Override
 	public Observable<DecryptedMessage> map(Atom atom, RadixIdentity identity) {
-		final Optional<MessageParticle> bytesParticle = atom.getDataParticles().stream()
+		final Optional<MessageParticle> bytesParticle = atom.getMessageParticles().stream()
 			.filter(p -> !"encryptor".equals(p.getMetaData("application")))
 			.findFirst();
 
@@ -55,7 +55,7 @@ public class AtomToDecryptedMessageMapper implements AtomToExecutedActionsMapper
 
 		bytesParticle.ifPresent(p -> metaData.compute("application", (k, v) -> p.getMetaData("application")));
 
-		final Optional<MessageParticle> encryptorParticle = atom.getDataParticles().stream()
+		final Optional<MessageParticle> encryptorParticle = atom.getMessageParticles().stream()
 			.filter(p -> "encryptor".equals(p.getMetaData("application")))
 			.findAny();
 		metaData.put("encrypted", encryptorParticle.isPresent());

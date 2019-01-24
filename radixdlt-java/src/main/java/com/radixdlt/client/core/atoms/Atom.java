@@ -132,13 +132,13 @@ public final class Atom extends SerializableObject {
 		return Optional.ofNullable(this.signatures).map(sigs -> sigs.get(uid.toString()));
 	}
 
-	public Stream<SpunParticle<OwnedTokensParticle>> consumables() {
+	public Stream<SpunParticle<OwnedTokensParticle>> ownedTokensParticles() {
 		return this.spunParticles()
 			.filter(s -> s.getParticle() instanceof OwnedTokensParticle)
 			.map(s -> (SpunParticle<OwnedTokensParticle>) s);
 }
 
-	public List<OwnedTokensParticle> getConsumables(Spin spin) {
+	public List<OwnedTokensParticle> getOwnedTokensParticles(Spin spin) {
 		return this.spunParticles()
 			.filter(s -> s.getSpin() == spin)
 			.map(SpunParticle::getParticle)
@@ -159,7 +159,7 @@ public final class Atom extends SerializableObject {
 		return this.getHash().toEUID();
 	}
 
-	public List<MessageParticle> getDataParticles() {
+	public List<MessageParticle> getMessageParticles() {
 		return this.spunParticles()
 			.map(SpunParticle::getParticle)
 			.filter(p -> p instanceof MessageParticle)
@@ -168,7 +168,7 @@ public final class Atom extends SerializableObject {
 	}
 
 	public Map<TokenClassReference, Map<ECPublicKey, BigInteger>> tokenSummary() {
-		return this.consumables()
+		return this.ownedTokensParticles()
 			.collect(Collectors.groupingBy(
 				s -> s.getParticle().getTokenClassReference(),
 				Collectors.groupingBy(
