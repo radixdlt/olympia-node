@@ -1,4 +1,4 @@
-package com.radix.acceptance.token_symbol_length;
+package com.radix.acceptance.token_character_set;
 
 import java.util.Arrays;
 import java.util.List;
@@ -34,7 +34,7 @@ import io.reactivex.disposables.Disposable;
 import io.reactivex.observers.BaseTestConsumer.TestWaitStrategy;
 import io.reactivex.observers.TestObserver;
 
-public class TokenSymbolLength {
+public class TokenSymbolCharacterSet {
 	static {
 		if (!RadixUniverse.isInstantiated()) {
 			RadixUniverse.bootstrap(Bootstrap.BETANET);
@@ -103,13 +103,13 @@ public class TokenSymbolLength {
 	}
 
 	@Then("^I can observe the atom being rejected with a failure$")
-	public void i_can_observe_the_atom_being_rejected_with_a_failure() {
+	public void i_can_observe_the_atom_being_rejected_as_a_failure() {
 		// "the atom" = most recent atom
-		i_can_observe_atom_being_rejected_with_a_failure(observers.size());
+		i_can_observe_atom_being_rejected_as_a_failure(observers.size());
 	}
 
 	@Then("^I can observe atom (\\d+) being rejected with a failure$")
-	public void i_can_observe_atom_being_rejected_with_a_failure(int atomNumber) {
+	public void i_can_observe_atom_being_rejected_as_a_failure(int atomNumber) {
 		awaitAtomStatus3(atomNumber, FAILED);
 	}
 
@@ -140,7 +140,7 @@ public class TokenSymbolLength {
 			.build();
 
 		this.observers.get(atomNumber - 1)
-			.awaitCount(3, TestWaitStrategy.SLEEP_100MS, TIMEOUT_MS)
+			.awaitCount(4, TestWaitStrategy.SLEEP_100MS, TIMEOUT_MS)
 			.assertNoErrors()
 			.assertNoTimeout()
 			.assertValueAt(0, SubmitAtomRequestAction.class::isInstance)
@@ -166,12 +166,12 @@ public class TokenSymbolLength {
 	}
 
 	private void printSubmitAtomAction(SubmitAtomAction saa) {
-		System.out.print(saa);
+		System.out.println(saa);
 		if (saa instanceof SubmitAtomResultAction) {
 			SubmitAtomResultAction sara = (SubmitAtomResultAction) saa;
-			System.out.format(": %s %s", sara.getType(), sara.getData());
+			System.out.println(sara.getType());
+			System.out.println(sara.getData());
 		}
-		System.out.println();
 	}
 
 	private static String scaledToUnscaled(int amount) {
