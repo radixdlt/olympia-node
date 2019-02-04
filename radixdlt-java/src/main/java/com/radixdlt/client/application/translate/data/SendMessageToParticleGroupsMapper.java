@@ -56,7 +56,11 @@ public class SendMessageToParticleGroupsMapper implements StatelessActionToParti
 	 * @param keyPairGenerator module to be used for creating new securely random ECKeyPairs
 	 * @param encryptionScheme function to decide which public keys to encrypt wiht
 	 */
-	public SendMessageToParticleGroupsMapper(Supplier<ECKeyPair> keyPairGenerator, Function<SendMessageAction, Stream<ECPublicKey>> encryptionScheme) {
+	public SendMessageToParticleGroupsMapper(
+		Supplier<ECKeyPair> keyPairGenerator,
+		Function<SendMessageAction,
+		Stream<ECPublicKey>> encryptionScheme
+	) {
 		this.keyPairGenerator = keyPairGenerator;
 		this.encryptionScheme = encryptionScheme;
 	}

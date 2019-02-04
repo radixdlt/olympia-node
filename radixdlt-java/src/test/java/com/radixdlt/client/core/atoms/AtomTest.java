@@ -1,15 +1,12 @@
 package com.radixdlt.client.core.atoms;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import com.radixdlt.client.core.atoms.particles.Spin;
-import com.radixdlt.client.core.util.Hash;
 import org.junit.Test;
 import org.radix.utils.primitives.Bytes;
 
-import java.io.UnsupportedEncodingException;
 import java.util.Collections;
 
 public class AtomTest {

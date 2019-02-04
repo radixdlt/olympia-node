@@ -34,7 +34,8 @@ public class CreateTokenToParticleGroupsMapperTest {
 		createTokenToParticlesMapper.mapToParticleGroups(tokenCreation).toList().subscribe(testObserver);
 		testObserver.assertValue(particleGroups ->
 			particleGroups.stream().flatMap(ParticleGroup::spunParticles).anyMatch(s -> s.getParticle() instanceof TokenParticle)
-				&& particleGroups.stream().flatMap(ParticleGroup::spunParticles).anyMatch(s -> s.getParticle() instanceof OwnedTokensParticle)
+				&& particleGroups.stream().flatMap(ParticleGroup::spunParticles)
+					.anyMatch(s -> s.getParticle() instanceof OwnedTokensParticle)
 				&& particleGroups.stream().flatMap(ParticleGroup::spunParticles).count() == 2
 		);
 	}

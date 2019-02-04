@@ -12,7 +12,8 @@ import org.junit.Test;
 public class SendDecryptedMessageToParticleGroupsMapperTest {
 	@Test
 	public void testNoEncryption() {
-		SendMessageToParticleGroupsMapper sendMessageToParticleGroupsMapper = new SendMessageToParticleGroupsMapper(() -> mock(ECKeyPair.class));
+		SendMessageToParticleGroupsMapper sendMessageToParticleGroupsMapper =
+			new SendMessageToParticleGroupsMapper(() -> mock(ECKeyPair.class));
 		SendMessageAction sendMessageAction = mock(SendMessageAction.class);
 		when(sendMessageAction.getData()).thenReturn(new byte[] {});
 		when(sendMessageAction.getFrom()).thenReturn(mock(RadixAddress.class));

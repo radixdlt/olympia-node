@@ -1,6 +1,5 @@
 package com.radixdlt.client.util;
 
-import com.radixdlt.client.core.address.RadixUniverseConfigs;
 import org.junit.Test;
 
 import static junit.framework.TestCase.assertEquals;
