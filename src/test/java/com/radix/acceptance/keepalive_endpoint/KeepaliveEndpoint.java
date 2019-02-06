@@ -51,7 +51,7 @@ public class KeepaliveEndpoint {
     public void i_call_the_keepalive_endpoint() throws Throwable {
         this.observer =  TestObserver.create();
 
-        this.jsonRpcClient.jsonRpcCall("Network.ping").subscribe(this.observer);
+        this.jsonRpcClient.jsonRpcCall("Ping").subscribe(this.observer);
     }
 
     @Then("^I should receive a small reply confirming that the connection is still active$")
