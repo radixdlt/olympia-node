@@ -1,7 +1,12 @@
 package com.radixdlt.client.examples;
 
+import com.radixdlt.client.application.translate.data.SendMessageAction;
+import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import java.math.BigDecimal;
 
+import java.util.concurrent.TimeUnit;
+import org.radix.serialization2.DsonOutput.Output;
+import org.radix.serialization2.client.Serialize;
 import org.radix.utils.UInt256;
 
 import com.radixdlt.client.application.RadixApplicationAPI;
@@ -54,6 +59,7 @@ public class RadixWalletExample {
 		api.getBalance(api.getMyAddress())
 			.subscribe(balance -> System.out.println("My Balance:\n" + balance));
 
+		/*
 		api.createToken(
 			"Joshy Token",
 			"JOSH",
@@ -62,9 +68,16 @@ public class RadixWalletExample {
 			UInt256.ONE,
 			TokenSupplyType.MUTABLE
 		).toObservable().subscribe(System.out::println);
+		*/
 
 		api.getTokenClass(TokenClassReference.of(api.getMyAddress(), "JOSH"))
 			.subscribe(System.out::println);
+
+		TimeUnit.SECONDS.sleep(4);
+
+		api.buildAtom(TransferTokensAction.create(api.getMyAddress(), api.getMyAddress(), AMOUNT, TokenClassReference.of(api.getMyAddress(), "JOSH")))
+		.flatMap(api.getMyIdentity()::sign)
+		.subscribe(atom -> System.out.println(Serialize.getInstance().toJson(atom, Output.ALL)));
 
 		// If specified, send money to another address
 		if (TO_ADDRESS_BASE58 != null) {

@@ -1,7 +1,10 @@
 package com.radixdlt.client.atommodel.timestamp;
 
-import com.radixdlt.client.atommodel.quarks.ChronoQuark;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.client.core.atoms.particles.Particle;
+import java.util.HashMap;
+import java.util.Map;
+import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.SerializerId2;
 
 /**
@@ -9,14 +12,18 @@ import org.radix.serialization2.SerializerId2;
  */
 @SerializerId2("TIMESTAMPPARTICLE")
 public class TimestampParticle extends Particle {
+	@JsonProperty("timestamps")
+	@DsonOutput(DsonOutput.Output.ALL)
+	private Map<String, Long> timestamps = new HashMap<>();
+
 	private TimestampParticle() {
 	}
 
 	public TimestampParticle(long timestamp) {
-		super(new ChronoQuark("default", timestamp));
+		this.timestamps.put("default", timestamp);
 	}
 
 	public long getTimestamp() {
-		return getQuarkOrError(ChronoQuark.class).getTimestamp();
+		return timestamps.get("default");
 	}
 }
