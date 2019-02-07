@@ -78,7 +78,7 @@ public class AtomToTokenTransfersMapper implements AtomToExecutedActionsMapper<T
 					}
 				}
 				final Optional<MessageParticle> bytesParticle =
-					atom.getDataParticles().stream()
+					atom.getMessageParticles().stream()
 						.filter(p -> !"encryptor".equals(p.getMetaData("application")))
 						.findFirst();
 
@@ -88,7 +88,7 @@ public class AtomToTokenTransfersMapper implements AtomToExecutedActionsMapper<T
 					Map<String, Object> metaData = new HashMap<>();
 
 					final Optional<MessageParticle> encryptorParticle =
-						atom.getDataParticles().stream()
+						atom.getMessageParticles().stream()
 							.filter(p -> "encryptor".equals(p.getMetaData("application")))
 							.findAny();
 					metaData.put("encrypted", encryptorParticle.isPresent());

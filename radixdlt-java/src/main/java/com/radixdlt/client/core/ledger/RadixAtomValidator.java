@@ -29,7 +29,7 @@ public class RadixAtomValidator implements AtomValidator {
 	public void validateSignatures(Atom atom) throws AtomValidationException {
 		RadixHash hash = atom.getHash();
 
-		Optional<AtomValidationException> exception = atom.getConsumables(Spin.DOWN).stream()
+		Optional<AtomValidationException> exception = atom.getOwnedTokensParticles(Spin.DOWN).stream()
 			.map(down -> {
 				if (down.getOwnersPublicKeys().isEmpty()) {
 					return new AtomValidationException("No owners in particle");
