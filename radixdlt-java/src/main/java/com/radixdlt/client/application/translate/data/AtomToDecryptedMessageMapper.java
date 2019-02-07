@@ -8,7 +8,6 @@ import com.radixdlt.client.application.translate.data.DecryptedMessage.Encryptio
 import com.radixdlt.client.application.translate.AtomToExecutedActionsMapper;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.atommodel.message.MessageParticle;
-import com.radixdlt.client.atommodel.quarks.DataQuark;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.crypto.CryptoException;
@@ -64,7 +63,7 @@ public class AtomToDecryptedMessageMapper implements AtomToExecutedActionsMapper
 		final Encryptor encryptor;
 		if (encryptorParticle.isPresent()) {
 			JsonArray protectorsJson = JSON_PARSER.parse(
-				new String(encryptorParticle.get().getQuarkOrError(DataQuark.class).getBytes(),
+				new String(encryptorParticle.get().getBytes(),
 					StandardCharsets.UTF_8)).getAsJsonArray();
 			List<EncryptedPrivateKey> protectors = new ArrayList<>();
 			protectorsJson.forEach(protectorJson -> protectors.add(EncryptedPrivateKey.fromBase64(protectorJson.getAsString())));
@@ -80,7 +79,7 @@ public class AtomToDecryptedMessageMapper implements AtomToExecutedActionsMapper
 			.findAny()
 			.orElse(from);
 
-		final byte[] bytes = bytesParticle.get().getQuarkOrError(DataQuark.class).getBytes();
+		final byte[] bytes = bytesParticle.get().getBytes();
 		final Data data = Data.raw(bytes, metaData, encryptor);
 
 		return identity.decrypt(data)

@@ -20,7 +20,6 @@ import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.AtomToExecutedActionsMapper;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.atommodel.message.MessageParticle;
-import com.radixdlt.client.atommodel.quarks.DataQuark;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.crypto.CryptoException;
@@ -97,7 +96,7 @@ public class AtomToTokenTransfersMapper implements AtomToExecutedActionsMapper<T
 					final Encryptor encryptor;
 					if (encryptorParticle.isPresent()) {
 						String encryptorBytes = new String(
-							encryptorParticle.get().getQuarkOrError(DataQuark.class).getBytes(),
+							encryptorParticle.get().getBytes(),
 							StandardCharsets.UTF_8
 						);
 						JsonArray protectorsJson = JSON_PARSER.parse(encryptorBytes).getAsJsonArray();
@@ -112,7 +111,7 @@ public class AtomToTokenTransfersMapper implements AtomToExecutedActionsMapper<T
 					}
 
 					final Data attachment = Data.raw(
-						bytesParticle.get().getQuarkOrError(DataQuark.class).getBytes(),
+						bytesParticle.get().getBytes(),
 						metaData,
 						encryptor
 					);
