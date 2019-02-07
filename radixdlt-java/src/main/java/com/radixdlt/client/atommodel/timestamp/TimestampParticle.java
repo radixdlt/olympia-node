@@ -12,6 +12,8 @@ import org.radix.serialization2.SerializerId2;
  */
 @SerializerId2("TIMESTAMPPARTICLE")
 public class TimestampParticle extends Particle {
+	private static final String DEFAULT_KEY = "default";
+
 	@JsonProperty("timestamps")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private Map<String, Long> timestamps = new HashMap<>();
@@ -20,10 +22,10 @@ public class TimestampParticle extends Particle {
 	}
 
 	public TimestampParticle(long timestamp) {
-		this.timestamps.put("default", timestamp);
+		this.timestamps.put(DEFAULT_KEY, timestamp);
 	}
 
 	public long getTimestamp() {
-		return timestamps.get("default");
+		return timestamps.get(DEFAULT_KEY);
 	}
 }
