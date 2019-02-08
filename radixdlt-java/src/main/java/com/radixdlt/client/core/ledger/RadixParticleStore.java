@@ -23,7 +23,7 @@ public class RadixParticleStore implements ParticleStore {
 			.filter(AtomObservation::isStore)
 			.map(AtomObservation::getAtom)
 			.flatMapIterable(a -> a.spunParticles().collect(Collectors.toList()))
-			.filter(s -> s.getParticle().getAddresses().contains(address.getPublicKey()))
+			.filter(s -> s.getParticle().getKeyDestinations().contains(address.getPublicKey()))
 			.cache()
 		);
 	}

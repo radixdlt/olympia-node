@@ -1,6 +1,7 @@
 package com.radixdlt.client.atommodel.unique;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.client.atommodel.Identifiable;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.RadixResourceIdentifer;
@@ -8,7 +9,7 @@ import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.SerializerId2;
 
 @SerializerId2("UNIQUEIDPARTICLE")
-public class UniqueParticle extends Particle {
+public class UniqueParticle extends Particle implements Identifiable {
 	@JsonProperty("name")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private String name;
@@ -30,7 +31,7 @@ public class UniqueParticle extends Particle {
 		return name;
 	}
 
-	public RadixResourceIdentifer getRri() {
+	public RadixResourceIdentifer getRRI() {
 		return new RadixResourceIdentifer(address, "unique", name);
 	}
 }

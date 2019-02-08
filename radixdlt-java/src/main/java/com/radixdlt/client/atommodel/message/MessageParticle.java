@@ -1,15 +1,16 @@
 package com.radixdlt.client.atommodel.message;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableSet;
+import com.radixdlt.client.atommodel.Accountable;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.atommodel.quarks.AccountableQuark;
 import com.radixdlt.client.core.atoms.particles.Particle;
+import java.util.Set;
 import java.util.TreeMap;
 import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.SerializerId2;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -17,7 +18,7 @@ import java.util.Objects;
  * Particle which can hold arbitrary data
  */
 @SerializerId2("MESSAGEPARTICLE")
-public class MessageParticle extends Particle {
+public class MessageParticle extends Particle implements Accountable {
 	public static class MessageParticleBuilder {
 		private RadixAddress from;
 		private RadixAddress to;
@@ -45,7 +46,7 @@ public class MessageParticle extends Particle {
 		}
 
 		public MessageParticle build() {
-			return new MessageParticle(this.from, this.bytes, this.metaData, Arrays.asList(this.from, this.to));
+			return new MessageParticle(this.from, this.to, this.bytes, this.metaData);
 		}
 	}
 
@@ -55,6 +56,11 @@ public class MessageParticle extends Particle {
 	@JsonProperty("from")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private RadixAddress from;
+
+
+	@JsonProperty("to")
+	@DsonOutput(DsonOutput.Output.ALL)
+	private RadixAddress to;
 
 	/**
 	 * Metadata, aka data about the data (e.g. contentType).
@@ -72,13 +78,19 @@ public class MessageParticle extends Particle {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private byte[] bytes;
 
-	private MessageParticle(RadixAddress from, byte[] bytes, MetadataMap metaData, List<RadixAddress> addresses) {
-		super(new AccountableQuark(addresses));
+	private MessageParticle(RadixAddress from, RadixAddress to, byte[] bytes, MetadataMap metaData) {
+		super();
 		Objects.requireNonNull(bytes);
 
 		this.from = Objects.requireNonNull(from, "from is required");
+		this.to = Objects.requireNonNull(to, "to is required");
 		this.bytes = Arrays.copyOf(bytes, bytes.length);
 		this.metaData.putAll(metaData);
+	}
+
+	@Override
+	public Set<RadixAddress> getAddresses() {
+		return ImmutableSet.of(from, to);
 	}
 
 	public String getMetaData(String key) {
@@ -87,6 +99,10 @@ public class MessageParticle extends Particle {
 
 	public RadixAddress getFrom() {
 		return this.from;
+	}
+
+	public RadixAddress getTo() {
+		return this.to;
 	}
 
 	public byte[] getBytes() {

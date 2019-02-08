@@ -1,11 +1,12 @@
 package com.radixdlt.client.atommodel.tokens;
 
+import com.radixdlt.client.atommodel.Identifiable;
+import com.radixdlt.client.core.atoms.particles.RadixResourceIdentifer;
 import java.util.Collections;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.client.application.translate.tokens.TokenClassReference;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.atommodel.quarks.FungibleQuark.FungibleType;
-import com.radixdlt.client.atommodel.quarks.AccountableQuark;
 import com.radixdlt.client.atommodel.quarks.OwnableQuark;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import java.util.EnumMap;
@@ -18,7 +19,11 @@ import org.radix.serialization2.SerializerId2;
 import org.radix.utils.UInt256;
 
 @SerializerId2("TOKENCLASSPARTICLE")
-public class TokenParticle extends Particle {
+public class TokenParticle extends Particle implements Identifiable {
+	@JsonProperty("address")
+	@DsonOutput(Output.ALL)
+	private RadixAddress address;
+
 	@JsonProperty("name")
 	@DsonOutput(Output.ALL)
 	private String name;
@@ -54,16 +59,19 @@ public class TokenParticle extends Particle {
 		Map<FungibleType, TokenPermission> tokenPermissions,
 		byte[] icon
 	) {
-		super(
-			new AccountableQuark(address),
-			new OwnableQuark(address.getPublicKey())
-		);
+		super(new OwnableQuark(address.getPublicKey()));
+		this.address = address;
 		this.name = name;
 		this.symbol = symbol;
 		this.description = description;
 		this.granularity = granularity;
 		this.tokenPermissions = Collections.unmodifiableMap(new EnumMap<>(tokenPermissions));
 		this.icon = icon;
+	}
+
+	@Override
+	public RadixResourceIdentifer getRRI() {
+		return new RadixResourceIdentifer(address, "tokenclasses", this.symbol);
 	}
 
 	public Map<FungibleType, TokenPermission> getTokenPermissions() {
@@ -87,7 +95,7 @@ public class TokenParticle extends Particle {
 	}
 
 	public TokenClassReference getTokenClassReference() {
-		return TokenClassReference.of(getQuarkOrError(AccountableQuark.class).getAddresses().get(0), symbol);
+		return TokenClassReference.of(address, symbol);
 	}
 
 	@JsonProperty("permissions")
