@@ -14,7 +14,6 @@ import com.radixdlt.client.atommodel.message.MessageParticle;
 import com.radixdlt.client.atommodel.timestamp.TimestampParticle;
 import com.radixdlt.client.atommodel.tokens.TokenParticle;
 import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
-import com.radixdlt.client.atommodel.quarks.AccountableQuark;
 import com.radixdlt.client.atommodel.quarks.FungibleQuark;
 import com.radixdlt.client.atommodel.quarks.OwnableQuark;
 import com.radixdlt.client.core.atoms.particles.Quark;
@@ -63,7 +62,6 @@ public final class Serialize {
 				FungibleQuark.class,
 				OwnableQuark.class,
 				UniqueQuark.class,
-				AccountableQuark.class,
 
 				ECKeyPair.class,
 				ECSignature.class,
