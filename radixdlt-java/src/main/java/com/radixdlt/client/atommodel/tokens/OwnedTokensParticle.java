@@ -1,19 +1,20 @@
 package com.radixdlt.client.atommodel.tokens;
 
 import com.radixdlt.client.application.translate.tokens.TokenClassReference;
+import com.radixdlt.client.atommodel.Accountable;
 import com.radixdlt.client.core.atoms.particles.RadixResourceIdentifer;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
 import org.radix.serialization2.DsonOutput;
+import org.radix.serialization2.DsonOutput.Output;
 import org.radix.serialization2.SerializerId2;
 import org.radix.serialization2.client.Serialize;
 import org.radix.utils.UInt256;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.atommodel.quarks.AccountableQuark;
 import com.radixdlt.client.atommodel.quarks.FungibleQuark;
 import com.radixdlt.client.atommodel.quarks.OwnableQuark;
 import com.radixdlt.client.core.atoms.RadixHash;
@@ -25,7 +26,11 @@ import com.radixdlt.client.core.crypto.ECPublicKey;
  *  A particle which represents an amount of fungible tokens owned by some key owner and stored in an account.
  */
 @SerializerId2("OWNEDTOKENSPARTICLE")
-public class OwnedTokensParticle extends Particle {
+public class OwnedTokensParticle extends Particle implements Accountable {
+	@JsonProperty("address")
+	@DsonOutput(Output.ALL)
+	private RadixAddress address;
+
 	@JsonProperty("token_reference")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private RadixResourceIdentifer tokenClassReference;
@@ -39,15 +44,20 @@ public class OwnedTokensParticle extends Particle {
 
 	public OwnedTokensParticle(UInt256 amount, UInt256 granularity, FungibleQuark.FungibleType type, RadixAddress address, long nonce,
 	                        TokenClassReference tokenRef, long planck) {
-		super(new OwnableQuark(address.getPublicKey()), new AccountableQuark(address),
-				new FungibleQuark(amount, planck, nonce, type));
+		super(new OwnableQuark(address.getPublicKey()), new FungibleQuark(amount, planck, nonce, type));
 
+		this.address = address;
 		this.tokenClassReference = new RadixResourceIdentifer(tokenRef.getAddress(), "tokenclasses", tokenRef.getSymbol());
 		this.granularity = granularity;
 	}
 
+	@Override
+	public Set<RadixAddress> getAddresses() {
+		return Collections.singleton(address);
+	}
+
 	public RadixAddress getAddress() {
-		return getQuarkOrError(AccountableQuark.class).getAddresses().get(0);
+		return address;
 	}
 
 	public void addConsumerQuantities(UInt256 amount, ECKeyPair newOwner, Map<ECKeyPair, UInt256> consumerQuantities) {
