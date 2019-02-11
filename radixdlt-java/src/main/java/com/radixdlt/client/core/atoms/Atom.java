@@ -43,6 +43,10 @@ public final class Atom extends SerializableObject {
 	@DsonOutput(value = {DsonOutput.Output.API, DsonOutput.Output.WIRE, DsonOutput.Output.PERSIST})
 	private final Map<String, ECSignature> signatures = new HashMap<>();
 
+	@JsonProperty("metaData")
+	@DsonOutput(DsonOutput.Output.ALL)
+	private Map<String, String> metaData = new HashMap<>();
+
 	private Atom() {
 	}
 
@@ -52,12 +56,21 @@ public final class Atom extends SerializableObject {
 		this.particleGroups.addAll(particleGroups);
 	}
 
+	public Atom(List<ParticleGroup> particleGroups, Map<String, String> metaData) {
+		Objects.requireNonNull(particleGroups, "particleGroups is required");
+		Objects.requireNonNull(metaData, "particleGroups is required");
+
+		this.particleGroups.addAll(particleGroups);
+		this.metaData.putAll(metaData);
+	}
+
 	private Atom(
 		List<ParticleGroup> particleGroups,
+		Map<String, String> metaData,
 		EUID signatureId,
 		ECSignature signature
 	) {
-		this(particleGroups);
+		this(particleGroups, metaData);
 
 		Objects.requireNonNull(signatureId, "signatureId is required");
 		Objects.requireNonNull(signature, "signature is required");
@@ -68,6 +81,7 @@ public final class Atom extends SerializableObject {
 	public Atom withSignature(ECSignature signature, EUID signatureId) {
 		return new Atom(
 			this.particleGroups,
+			this.metaData,
 			signatureId,
 			signature
 		);
@@ -201,5 +215,9 @@ public final class Atom extends SerializableObject {
 	@Override
 	public String toString() {
 		return "Atom (" + this.getHid().toString() + ")";
+	}
+
+	public Map<String, String> getMetaData() {
+		return this.metaData;
 	}
 }

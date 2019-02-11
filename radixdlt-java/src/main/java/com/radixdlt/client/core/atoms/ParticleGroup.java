@@ -9,9 +9,7 @@ import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.SerializerId2;
 import org.radix.serialization2.client.SerializableObject;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Stream;
 
 /**
@@ -25,6 +23,12 @@ public class ParticleGroup extends SerializableObject {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final ImmutableList<SpunParticle> particles;
 
+
+	@JsonProperty("metaData")
+	@DsonOutput(DsonOutput.Output.ALL)
+	private Map<String, String> metaData = new HashMap<>();
+
+
 	private ParticleGroup() {
 		this.particles = ImmutableList.of();
 	}
@@ -34,6 +38,16 @@ public class ParticleGroup extends SerializableObject {
 
 		this.particles = ImmutableList.copyOf(particles);
 	}
+
+	public ParticleGroup(Iterable<SpunParticle> particles, Map<String, String> metaData) {
+		Objects.requireNonNull(particles, "particles is required");
+		Objects.requireNonNull(metaData, "metaData is required");
+
+		this.particles = ImmutableList.copyOf(particles);
+		this.metaData.putAll(metaData);
+	}
+
+
 
 	/**
 	 * Get a stream of the spun particles in this group
@@ -77,6 +91,13 @@ public class ParticleGroup extends SerializableObject {
 		return !this.particles.isEmpty();
 	}
 
+	/** Get the metadata associated with the particle group
+	 * @return a map of the metadata
+	 */
+	public Map<String, String> getMetaData() {
+		return this.metaData;
+	}
+
 	/**
 	 * Get a build for a single {@link ParticleGroup}
 	 * @return The {@link ParticleGroupBuilder}
@@ -90,6 +111,7 @@ public class ParticleGroup extends SerializableObject {
 	 */
 	public static class ParticleGroupBuilder {
 		private List<SpunParticle> particles = new ArrayList<>();
+		private Map<String, String> metaData = new HashMap<>();
 
 		private ParticleGroupBuilder() {
 		}
@@ -112,8 +134,18 @@ public class ParticleGroup extends SerializableObject {
 			return this;
 		}
 
+		public final ParticleGroupBuilder addMetaData(String key, String value) {
+			Objects.requireNonNull(key, "key is required");
+			Objects.requireNonNull(value, "value is required");
+
+			this.metaData.put(key, value);
+
+			return this;
+		}
+
+
 		public ParticleGroup build() {
-			return new ParticleGroup(ImmutableList.copyOf(this.particles));
+			return new ParticleGroup(ImmutableList.copyOf(this.particles), metaData);
 		}
 	}
 }
