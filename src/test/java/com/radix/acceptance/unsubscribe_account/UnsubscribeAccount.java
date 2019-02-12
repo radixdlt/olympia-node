@@ -1,6 +1,10 @@
 package com.radix.acceptance.unsubscribe_account;
 
 
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+
 import com.google.common.collect.Lists;
 import com.radix.acceptance.SpecificProperties;
 import com.radixdlt.client.application.RadixApplicationAPI;
@@ -21,15 +25,13 @@ import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.NodeAtomSubmi
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.NodeAtomSubmissionUpdate;
 import com.radixdlt.client.core.network.websocket.WebSocketClient;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
+
 import cucumber.api.java.After;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.observers.TestObserver;
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 import okhttp3.Request;
 
 /**
@@ -235,11 +237,13 @@ public class UnsubscribeAccount {
 
 	@Then("the client should receive both atom messages in the other subscription$")
 	public void the_client_should_receive_both_atom_messages_in_the_other_subscription() throws Throwable {
+		// Some special magic here, as the atoms are not necessarily sent in the same order
+		List<Atom> atoms = Lists.newArrayList(this.atom, this.otherAtom);
 		otherObserver.awaitCount(3);
 		otherObserver.assertValueAt(0, AtomObservation::isStore);
-		otherObserver.assertValueAt(0, o -> o.getAtom().equals(this.atom));
+		otherObserver.assertValueAt(0, o -> atoms.remove(o.getAtom()));
 		otherObserver.assertValueAt(1, AtomObservation::isStore);
-		otherObserver.assertValueAt(1, o -> o.getAtom().equals(this.otherAtom));
+		otherObserver.assertValueAt(1, o -> atoms.remove(o.getAtom()));
 		otherObserver.assertNotComplete();
 	}
 
