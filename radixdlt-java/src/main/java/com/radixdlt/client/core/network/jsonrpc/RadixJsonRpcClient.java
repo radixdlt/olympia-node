@@ -1,7 +1,5 @@
 package com.radixdlt.client.core.network.jsonrpc;
 
-import com.google.gson.JsonArray;
-import io.reactivex.Completable;
 import java.util.List;
 import java.util.UUID;
 
@@ -15,13 +13,15 @@ import org.radix.serialization2.client.Serialize;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
-import com.radixdlt.client.core.atoms.AtomObservation;
 import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.client.core.atoms.AtomObservation;
 
+import io.reactivex.Completable;
 import io.reactivex.Maybe;
 import io.reactivex.Observable;
 import io.reactivex.Single;
@@ -376,6 +376,9 @@ public class RadixJsonRpcClient {
 	public Observable<NodeAtomSubmissionUpdate> submitAtom(Atom atom) {
 		return Observable.create(emitter -> {
 			JSONObject jsonAtomTemp = Serialize.getInstance().toJsonObject(atom, Output.API);
+			if (LOGGER.isDebugEnabled()) {
+				LOGGER.debug("Submitting atom: {}", jsonAtomTemp.toString(4));
+			}
 			JsonElement jsonAtom = GsonJson.getInstance().toGson(jsonAtomTemp);
 
 			final String subscriberId = UUID.randomUUID().toString();
