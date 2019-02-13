@@ -8,9 +8,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.google.common.collect.ImmutableMap;
 import org.radix.common.ID.EUID;
 import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.SerializerId2;
@@ -45,15 +47,17 @@ public final class Atom extends SerializableObject {
 
 	@JsonProperty("metaData")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private Map<String, String> metaData = new HashMap<>();
+	private final ImmutableMap<String, String> metaData;
 
 	private Atom() {
+		this.metaData = ImmutableMap.of();
 	}
 
 	public Atom(List<ParticleGroup> particleGroups) {
 		Objects.requireNonNull(particleGroups, "particleGroups is required");
 
 		this.particleGroups.addAll(particleGroups);
+		this.metaData = ImmutableMap.of();
 	}
 
 	public Atom(List<ParticleGroup> particleGroups, Map<String, String> metaData) {
@@ -61,7 +65,7 @@ public final class Atom extends SerializableObject {
 		Objects.requireNonNull(metaData, "particleGroups is required");
 
 		this.particleGroups.addAll(particleGroups);
-		this.metaData.putAll(metaData);
+		this.metaData = ImmutableMap.copyOf(metaData);
 	}
 
 	private Atom(
@@ -197,6 +201,12 @@ public final class Atom extends SerializableObject {
 		return (value.getSpin() == Spin.UP) ? bi : bi.negate();
 	}
 
+
+
+	public ImmutableMap<String, String> getMetaData() {
+		return this.metaData;
+	}
+
 	@Override
 	public boolean equals(Object o) {
 		if (!(o instanceof Atom)) {
@@ -215,9 +225,5 @@ public final class Atom extends SerializableObject {
 	@Override
 	public String toString() {
 		return "Atom (" + this.getHid().toString() + ")";
-	}
-
-	public Map<String, String> getMetaData() {
-		return this.metaData;
 	}
 }

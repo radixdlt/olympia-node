@@ -2,6 +2,7 @@ package com.radixdlt.client.core.atoms;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
@@ -9,7 +10,12 @@ import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.SerializerId2;
 import org.radix.serialization2.client.SerializableObject;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 /**
@@ -26,17 +32,19 @@ public class ParticleGroup extends SerializableObject {
 
 	@JsonProperty("metaData")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private Map<String, String> metaData = new HashMap<>();
+	private final ImmutableMap<String, String> metaData;
 
 
 	private ParticleGroup() {
 		this.particles = ImmutableList.of();
+		this.metaData = ImmutableMap.of();
 	}
 
 	public ParticleGroup(Iterable<SpunParticle> particles) {
 		Objects.requireNonNull(particles, "particles is required");
 
 		this.particles = ImmutableList.copyOf(particles);
+		this.metaData = ImmutableMap.of();
 	}
 
 	public ParticleGroup(Iterable<SpunParticle> particles, Map<String, String> metaData) {
@@ -44,7 +52,7 @@ public class ParticleGroup extends SerializableObject {
 		Objects.requireNonNull(metaData, "metaData is required");
 
 		this.particles = ImmutableList.copyOf(particles);
-		this.metaData.putAll(metaData);
+		this.metaData = ImmutableMap.copyOf(metaData);
 	}
 
 
@@ -66,13 +74,30 @@ public class ParticleGroup extends SerializableObject {
 		return this.spunParticles().filter(p -> p.getSpin() == spin).map(SpunParticle::getParticle);
 	}
 
+	/** Get the metadata associated with the particle group
+	 * @return a map of the metadata
+	 */
+	public ImmutableMap<String, String> getMetaData() {
+		return this.metaData;
+	}
+
 	/**
 	 * Get a {@link ParticleGroup} consisting of the given particles
 	 */
 	public static ParticleGroup of(Iterable<SpunParticle> particles) {
 		Objects.requireNonNull(particles, "particles is required");
 
-		return new ParticleGroup(ImmutableList.copyOf(particles));
+		return new ParticleGroup(particles);
+	}
+
+	/**
+	 * Get a {@link ParticleGroup} consisting of the given particles
+	 */
+	public static ParticleGroup of(Iterable<SpunParticle> particles, Map<String, String> metaData) {
+		Objects.requireNonNull(particles, "particles is required");
+		Objects.requireNonNull(metaData, "metaData is required");
+
+		return new ParticleGroup(particles, metaData);
 	}
 
 	/**
@@ -81,7 +106,7 @@ public class ParticleGroup extends SerializableObject {
 	public static ParticleGroup of(SpunParticle<?>... particles) {
 		Objects.requireNonNull(particles, "particles is required");
 
-		return new ParticleGroup(ImmutableList.copyOf(particles));
+		return new ParticleGroup(Arrays.asList(particles));
 	}
 
 	/**
@@ -89,13 +114,6 @@ public class ParticleGroup extends SerializableObject {
 	 */
 	public boolean hasParticles() {
 		return !this.particles.isEmpty();
-	}
-
-	/** Get the metadata associated with the particle group
-	 * @return a map of the metadata
-	 */
-	public Map<String, String> getMetaData() {
-		return this.metaData;
 	}
 
 	/**
@@ -145,7 +163,7 @@ public class ParticleGroup extends SerializableObject {
 
 
 		public ParticleGroup build() {
-			return new ParticleGroup(ImmutableList.copyOf(this.particles), metaData);
+			return new ParticleGroup(this.particles, metaData);
 		}
 	}
 }
