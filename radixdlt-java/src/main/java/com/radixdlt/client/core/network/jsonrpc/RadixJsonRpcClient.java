@@ -37,7 +37,7 @@ public class RadixJsonRpcClient {
 		private final boolean isSuccess;
 		private final JsonElement jsonResponse;
 
-		private JsonRpcResponse(boolean isSuccess, JsonElement jsonResponse) {
+		public JsonRpcResponse(boolean isSuccess, JsonElement jsonResponse) {
 			this.isSuccess = isSuccess;
 			this.jsonResponse = jsonResponse;
 		}
