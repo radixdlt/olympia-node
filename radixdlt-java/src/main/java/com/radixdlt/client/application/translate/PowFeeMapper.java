@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 
+import com.radixdlt.client.core.atoms.Atom;
 import org.radix.utils.Int128;
 import org.radix.utils.UInt256;
 
@@ -24,21 +25,21 @@ import com.radixdlt.client.core.pow.ProofOfWorkBuilder;
 public class PowFeeMapper implements FeeMapper {
 	private static final int LEADING = 16;
 
-	private final Function<List<ParticleGroup>, RadixHash> hasher;
+	private final Function<Atom, RadixHash> hasher;
 	private final ProofOfWorkBuilder powBuilder;
 
-	public PowFeeMapper(Function<List<ParticleGroup>, RadixHash> hasher, ProofOfWorkBuilder powBuilder) {
+	public PowFeeMapper(Function<Atom, RadixHash> hasher, ProofOfWorkBuilder powBuilder) {
 		this.hasher = Objects.requireNonNull(hasher, "hasher is required");
 		this.powBuilder = Objects.requireNonNull(powBuilder, "powBuilder is required");
 	}
 
 	@Override
-	public List<ParticleGroup> map(List<ParticleGroup> particleGroups, RadixUniverse universe, ECPublicKey key) {
+	public List<ParticleGroup> map(Atom atom, RadixUniverse universe, ECPublicKey key) {
 		Objects.requireNonNull(key);
 		Objects.requireNonNull(universe);
-		Objects.requireNonNull(particleGroups);
+		Objects.requireNonNull(atom);
 
-		final byte[] seed = this.hasher.apply(particleGroups).toByteArray();
+		final byte[] seed = this.hasher.apply(atom).toByteArray();
 		ProofOfWork pow = this.powBuilder.build(universe.getMagic(), seed, LEADING);
 
 		Particle fee = new FeeParticle(

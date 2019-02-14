@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.RadixHash;
 import com.radixdlt.client.application.translate.tokens.TokenClassReference;
@@ -34,7 +35,7 @@ public class PowFeeMapperTest {
 		when(builder.build(anyInt(), any(), anyInt())).thenReturn(pow);
 		when(pow.getNonce()).thenReturn(1L);
 
-		Function<List<ParticleGroup>, RadixHash> hasher = mock(Function.class);
+		Function<Atom, RadixHash> hasher = mock(Function.class);
 		when(hasher.apply(any())).thenReturn(hash);
 		PowFeeMapper powFeeMapper = new PowFeeMapper(hasher, builder);
 
@@ -49,7 +50,7 @@ public class PowFeeMapperTest {
 		when(address.getPublicKey()).thenReturn(key);
 		when(universe.getAddressFrom(key)).thenReturn(address);
 
-		List<ParticleGroup> particles = powFeeMapper.map(Collections.emptyList(), universe, key);
+		List<ParticleGroup> particles = powFeeMapper.map(new Atom(Collections.emptyList()), universe, key);
 		assertThat(particles)
 				.hasOnlyOneElementSatisfying(s -> {
 					SpunParticle feeParticle = s.spunParticles().findAny().get();

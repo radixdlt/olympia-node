@@ -37,7 +37,7 @@ public class RadixJsonRpcClient {
 		private final boolean isSuccess;
 		private final JsonElement jsonResponse;
 
-		private JsonRpcResponse(boolean isSuccess, JsonElement jsonResponse) {
+		public JsonRpcResponse(boolean isSuccess, JsonElement jsonResponse) {
 			this.isSuccess = isSuccess;
 			this.jsonResponse = jsonResponse;
 		}
@@ -118,7 +118,7 @@ public class RadixJsonRpcClient {
 	 * @param method name of JSON-RPC method
 	 * @return response from rpc method
 	 */
-	private Single<JsonRpcResponse> jsonRpcCall(String method, JsonObject params) {
+	public Single<JsonRpcResponse> jsonRpcCall(String method, JsonObject params) {
 		return Single.create(emitter -> {
 			final String uuid = UUID.randomUUID().toString();
 

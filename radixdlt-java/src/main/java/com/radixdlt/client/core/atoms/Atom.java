@@ -11,6 +11,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.google.common.collect.ImmutableMap;
 import org.radix.common.ID.EUID;
 import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.SerializerId2;
@@ -43,21 +44,36 @@ public final class Atom extends SerializableObject {
 	@DsonOutput(value = {DsonOutput.Output.API, DsonOutput.Output.WIRE, DsonOutput.Output.PERSIST})
 	private final Map<String, ECSignature> signatures = new HashMap<>();
 
+	@JsonProperty("metaData")
+	@DsonOutput(DsonOutput.Output.ALL)
+	private final ImmutableMap<String, String> metaData;
+
 	private Atom() {
+		this.metaData = ImmutableMap.of();
 	}
 
 	public Atom(List<ParticleGroup> particleGroups) {
 		Objects.requireNonNull(particleGroups, "particleGroups is required");
 
 		this.particleGroups.addAll(particleGroups);
+		this.metaData = ImmutableMap.of();
+	}
+
+	public Atom(List<ParticleGroup> particleGroups, Map<String, String> metaData) {
+		Objects.requireNonNull(particleGroups, "particleGroups is required");
+		Objects.requireNonNull(metaData, "particleGroups is required");
+
+		this.particleGroups.addAll(particleGroups);
+		this.metaData = ImmutableMap.copyOf(metaData);
 	}
 
 	private Atom(
 		List<ParticleGroup> particleGroups,
+		Map<String, String> metaData,
 		EUID signatureId,
 		ECSignature signature
 	) {
-		this(particleGroups);
+		this(particleGroups, metaData);
 
 		Objects.requireNonNull(signatureId, "signatureId is required");
 		Objects.requireNonNull(signature, "signature is required");
@@ -68,6 +84,7 @@ public final class Atom extends SerializableObject {
 	public Atom withSignature(ECSignature signature, EUID signatureId) {
 		return new Atom(
 			this.particleGroups,
+			this.metaData,
 			signatureId,
 			signature
 		);
@@ -181,6 +198,14 @@ public final class Atom extends SerializableObject {
 	private static BigInteger ownedTokensToBigInteger(SpunParticle<OwnedTokensParticle> value) {
 		BigInteger bi = UInt256s.toBigInteger(value.getParticle().getAmount());
 		return (value.getSpin() == Spin.UP) ? bi : bi.negate();
+	}
+
+	/**
+	 * Get the metadata associated with the atom
+	 * @return an immutable map of the meta data
+	 */
+	public Map<String, String> getMetaData() {
+		return this.metaData;
 	}
 
 	@Override

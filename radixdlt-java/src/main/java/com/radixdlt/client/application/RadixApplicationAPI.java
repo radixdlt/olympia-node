@@ -230,7 +230,7 @@ public class RadixApplicationAPI {
 		}
 
 		public RadixApplicationAPIBuilder defaultFeeMapper() {
-			this.feeMapper = new PowFeeMapper(particleGroups -> new Atom(particleGroups).getHash(),
+			this.feeMapper = new PowFeeMapper(atom -> atom.getHash(),
 					new ProofOfWorkBuilder());
 			return this;
 		}
@@ -711,7 +711,8 @@ public class RadixApplicationAPI {
 			.lastOrError()
 			.map(particleGroups -> {
 				List<ParticleGroup> allParticleGroups = new ArrayList<>(particleGroups);
-				allParticleGroups.addAll(this.feeMapper.map(particleGroups, this.universe, this.getMyPublicKey()));
+				Atom atom = new Atom(particleGroups);
+				allParticleGroups.addAll(this.feeMapper.map(atom, this.universe, this.getMyPublicKey()));
 				return allParticleGroups;
 			})
 			.map(particleGroups -> new UnsignedAtom(new Atom(particleGroups)));
