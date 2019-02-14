@@ -200,9 +200,11 @@ public final class Atom extends SerializableObject {
 		return (value.getSpin() == Spin.UP) ? bi : bi.negate();
 	}
 
-
-
-	public ImmutableMap<String, String> getMetaData() {
+	/**
+	 * Get the metadata associated with the atom
+	 * @return an immutable map of the meta data
+	 */
+	public Map<String, String> getMetaData() {
 		return this.metaData;
 	}
 

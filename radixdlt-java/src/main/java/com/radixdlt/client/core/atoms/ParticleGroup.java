@@ -75,9 +75,9 @@ public class ParticleGroup extends SerializableObject {
 	}
 
 	/** Get the metadata associated with the particle group
-	 * @return a map of the metadata
+	 * @return an immutable map of the metadata
 	 */
-	public ImmutableMap<String, String> getMetaData() {
+	public Map<String, String> getMetaData() {
 		return this.metaData;
 	}
 
