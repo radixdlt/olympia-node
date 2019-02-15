@@ -4,6 +4,7 @@ apply plugin: 'jacoco'
 apply plugin: 'checkstyle'
 apply plugin: 'org.sonarqube'
 apply plugin: 'project-report'
+apply plugin: 'com.adarshr.test-logger'
 
 repositories {
     jcenter()
@@ -50,6 +51,10 @@ checkstyle {
     configFile rootProject.file('.checkstyle.xml')
     toolVersion '8.10.1'
     showViolations = true
+}
+
+testlogger {
+    theme 'plain'
 }
 
 checkstyleTest {

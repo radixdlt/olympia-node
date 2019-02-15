@@ -6,6 +6,7 @@ buildscript {
     dependencies {
         classpath 'org.eclipse.jgit:org.eclipse.jgit:5.0.1.201806211838-r'
         classpath 'org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:2.7'
+        classpath 'com.adarshr:gradle-test-logger-plugin:1.6.0'
     }
 }
 
