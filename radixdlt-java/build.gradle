@@ -1,10 +1,9 @@
-plugins {
-    id 'java-library'
-    id 'maven'
-    id 'jacoco'
-    id 'checkstyle'
-    id 'org.sonarqube' version '2.6.2'
-}
+apply plugin: 'java-library'
+apply plugin: 'maven'
+apply plugin: 'jacoco'
+apply plugin: 'checkstyle'
+apply plugin: 'org.sonarqube'
+apply plugin: 'project-report'
 
 repositories {
     jcenter()
