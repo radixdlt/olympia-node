@@ -149,7 +149,7 @@ public final class Atom extends SerializableObject {
 	 * @return The timestamp in milliseconds since epoch
 	 */
 	public long getTimestamp() {
-		// TODO !!! not quite happy with this error handling
+		// TODO Not happy with this error handling as it moves some validation work into the atom data. See RLAU-951
 		try {
 			return Long.parseLong(this.metaData.get(METADATA_TIMESTAMP_KEY));
 		} catch (NumberFormatException e) {
