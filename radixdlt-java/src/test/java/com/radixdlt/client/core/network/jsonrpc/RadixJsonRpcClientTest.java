@@ -1,9 +1,7 @@
 package com.radixdlt.client.core.network.jsonrpc;
 
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.NodeAtomSubmissionState;
-import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.NodeAtomSubmissionUpdate;
-import io.reactivex.Observable;
+import java.util.Collections;
+
 import org.junit.Test;
 import org.radix.common.ID.EUID;
 import org.radix.serialization2.DsonOutput.Output;
@@ -14,19 +12,20 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomObservation;
 import com.radixdlt.client.core.atoms.Shards;
+import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.NodeAtomSubmissionState;
+import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.NodeAtomSubmissionUpdate;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.reactivex.Observable;
 import io.reactivex.observers.TestObserver;
 import io.reactivex.subjects.ReplaySubject;
-
-import java.util.Collections;
 
 public class RadixJsonRpcClientTest {
 
@@ -55,7 +54,7 @@ public class RadixJsonRpcClientTest {
 
 		JsonParser parser = new JsonParser();
 
-		doAnswer(invocation -> {
+		when(channel.sendMessage(any())).then(invocation -> {
 			String msg = (String) invocation.getArguments()[0];
 			JsonObject jsonObject = parser.parse(msg).getAsJsonObject();
 			String id = jsonObject.get("id").getAsString();
@@ -74,7 +73,7 @@ public class RadixJsonRpcClientTest {
 
 			messages.onNext(GsonJson.getInstance().stringFromGson(response));
 			return true;
-		}).when(channel).sendMessage(any());
+		});
 		RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(channel);
 
 		TestObserver<NodeRunnerData> observer = new TestObserver<>();
@@ -94,7 +93,7 @@ public class RadixJsonRpcClientTest {
 
 		JsonParser parser = new JsonParser();
 
-		doAnswer(invocation -> {
+		when(channel.sendMessage(any())).then(invocation -> {
 			String msg = (String) invocation.getArguments()[0];
 			JsonObject jsonObject = parser.parse(msg).getAsJsonObject();
 			String id = jsonObject.get("id").getAsString();
@@ -107,7 +106,7 @@ public class RadixJsonRpcClientTest {
 
 			messages.onNext(GsonJson.getInstance().stringFromGson(response));
 			return true;
-		}).when(channel).sendMessage(any());
+		});
 		RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(channel);
 
 		TestObserver<Atom> observer = new TestObserver<>();
@@ -127,7 +126,7 @@ public class RadixJsonRpcClientTest {
 
 		JsonParser parser = new JsonParser();
 
-		doAnswer(invocation -> {
+		when(channel.sendMessage(any())).then(invocation -> {
 			String msg = (String) invocation.getArguments()[0];
 			JsonObject jsonObject = parser.parse(msg).getAsJsonObject();
 			String id = jsonObject.get("id").getAsString();
@@ -143,7 +142,7 @@ public class RadixJsonRpcClientTest {
 
 			messages.onNext(GsonJson.getInstance().stringFromGson(response));
 			return true;
-		}).when(channel).sendMessage(any());
+		});
 		RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(channel);
 
 		TestObserver<Atom> observer = new TestObserver<>();
@@ -164,7 +163,7 @@ public class RadixJsonRpcClientTest {
 
 		JsonParser parser = new JsonParser();
 
-		doAnswer(invocation -> {
+		when(channel.sendMessage(any())).then(invocation -> {
 			String msg = (String) invocation.getArguments()[0];
 			JsonObject jsonObject = parser.parse(msg).getAsJsonObject();
 			String id = jsonObject.get("id").getAsString();
@@ -192,7 +191,7 @@ public class RadixJsonRpcClientTest {
 
 			messages.onNext(GsonJson.getInstance().stringFromGson(notification));
 			return true;
-		}).when(channel).sendMessage(any());
+		});
 		RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(channel);
 
 		TestObserver<AtomObservation> observer = new TestObserver<>();
@@ -214,7 +213,7 @@ public class RadixJsonRpcClientTest {
 
 		JsonParser parser = new JsonParser();
 
-		doAnswer(invocation -> {
+		when(channel.sendMessage(any())).then(invocation -> {
 			String msg = (String) invocation.getArguments()[0];
 			JsonObject jsonObject = parser.parse(msg).getAsJsonObject();
 			String id = jsonObject.get("id").getAsString();
@@ -245,7 +244,7 @@ public class RadixJsonRpcClientTest {
 			}
 
 			return true;
-		}).when(channel).sendMessage(any());
+		});
 		RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(channel);
 
 		TestObserver<AtomObservation> observer = new TestObserver<>();
@@ -270,7 +269,7 @@ public class RadixJsonRpcClientTest {
 
 		JsonParser parser = new JsonParser();
 
-		doAnswer(invocation -> {
+		when(channel.sendMessage(any())).then(invocation -> {
 			String msg = (String) invocation.getArguments()[0];
 			JsonObject jsonObject = parser.parse(msg).getAsJsonObject();
 			String id = jsonObject.get("id").getAsString();
@@ -296,7 +295,7 @@ public class RadixJsonRpcClientTest {
 			}
 
 			return true;
-		}).when(channel).sendMessage(any());
+		});
 		RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(channel);
 
 		TestObserver<NodeAtomSubmissionUpdate> observer = new TestObserver<>();
