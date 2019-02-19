@@ -1,5 +1,6 @@
 package com.radixdlt.client.application;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.gson.JsonElement;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.network.RadixNetworkState;
@@ -60,7 +61,6 @@ import com.radixdlt.client.application.translate.tokens.TransferTokensToParticle
 import com.radixdlt.client.application.translate.unique.AlreadyUsedUniqueIdReasonMapper;
 import com.radixdlt.client.application.translate.unique.PutUniqueIdToParticleGroupsMapper;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.atommodel.timestamp.TimestampParticle;
 import com.radixdlt.client.application.translate.tokens.TokenClassReference;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.RadixUniverse.Ledger;
@@ -700,10 +700,8 @@ public class RadixApplicationAPI {
 				.flatMap(mapper -> mapper.mapToParticleGroups(a))
 		);
 		final Observable<ParticleGroup> statefulParticleGroups = this.statefulMappersToParticleGroups(allActions);
-		final Observable<ParticleGroup> timestampParticle =
-			Observable.just(ParticleGroup.of(SpunParticle.up(new TimestampParticle(System.currentTimeMillis()))));
 
-		return Observable.concat(statelessParticleGroups, statefulParticleGroups, timestampParticle)
+		return Observable.concat(statelessParticleGroups, statefulParticleGroups)
 			.<List<ParticleGroup>>scanWith(
 					ArrayList::new,
 					(a, b) -> Stream.concat(a.stream(), Stream.of(b)).collect(Collectors.toList())
@@ -711,11 +709,12 @@ public class RadixApplicationAPI {
 			.lastOrError()
 			.map(particleGroups -> {
 				List<ParticleGroup> allParticleGroups = new ArrayList<>(particleGroups);
-				Atom atom = new Atom(particleGroups);
+				ImmutableMap<String, String> metaData = ImmutableMap.of(
+					Atom.METADATA_TIMESTAMP_KEY, String.valueOf(System.currentTimeMillis()));
+				Atom atom = new Atom(particleGroups, metaData);
 				allParticleGroups.addAll(this.feeMapper.map(atom, this.universe, this.getMyPublicKey()));
-				return allParticleGroups;
-			})
-			.map(particleGroups -> new UnsignedAtom(new Atom(particleGroups)));
+				return new UnsignedAtom(new Atom(allParticleGroups, metaData));
+			});
 	}
 
 	private Result buildDisconnectedResult(Action action) {

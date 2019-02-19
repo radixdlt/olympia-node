@@ -22,7 +22,6 @@ import org.radix.utils.UInt256s;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.client.application.translate.tokens.TokenClassReference;
 import com.radixdlt.client.atommodel.message.MessageParticle;
-import com.radixdlt.client.atommodel.timestamp.TimestampParticle;
 import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.Spin;
@@ -36,6 +35,8 @@ import com.radixdlt.client.core.crypto.ECSignature;
  */
 @SerializerId2("ATOM")
 public final class Atom extends SerializableObject {
+	public static final String METADATA_TIMESTAMP_KEY = "timestamp";
+
 	@JsonProperty("particleGroups")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final List<ParticleGroup> particleGroups = new ArrayList<>();
@@ -49,14 +50,19 @@ public final class Atom extends SerializableObject {
 	private final ImmutableMap<String, String> metaData;
 
 	private Atom() {
-		this.metaData = ImmutableMap.of();
+		this(0);
+	}
+
+	public Atom(long timestamp) {
+		this.metaData = ImmutableMap.of(METADATA_TIMESTAMP_KEY, String.valueOf(timestamp));
 	}
 
 	public Atom(List<ParticleGroup> particleGroups) {
+		this();
+
 		Objects.requireNonNull(particleGroups, "particleGroups is required");
 
 		this.particleGroups.addAll(particleGroups);
-		this.metaData = ImmutableMap.of();
 	}
 
 	public Atom(List<ParticleGroup> particleGroups, Map<String, String> metaData) {
@@ -133,12 +139,22 @@ public final class Atom extends SerializableObject {
 			.flatMap(Set::stream);
 	}
 
-	public Long getTimestamp() {
-		return this.spunParticles()
-			.map(SpunParticle::getParticle)
-			.filter(p -> p instanceof TimestampParticle)
-			.map(p -> ((TimestampParticle) p).getTimestamp()).findAny()
-			.orElse(0L);
+	public boolean hasTimestamp() {
+		return this.metaData.containsKey(METADATA_TIMESTAMP_KEY);
+	}
+
+	/**
+	 * Convenience method to retrieve timestamp
+	 *
+	 * @return The timestamp in milliseconds since epoch
+	 */
+	public long getTimestamp() {
+		// TODO !!! not quite happy with this error handling
+		try {
+			return Long.parseLong(this.metaData.get(METADATA_TIMESTAMP_KEY));
+		} catch (NumberFormatException e) {
+			throw new IllegalStateException("Timestamp is missing or invalid: " + e, e);
+		}
 	}
 
 	public Map<String, ECSignature> getSignatures() {
