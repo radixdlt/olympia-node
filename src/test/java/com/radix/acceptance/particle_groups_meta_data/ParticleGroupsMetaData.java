@@ -1,6 +1,7 @@
 package com.radix.acceptance.particle_groups_meta_data;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -9,7 +10,6 @@ import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.FeeMapper;
 import com.radixdlt.client.application.translate.PowFeeMapper;
 import com.radixdlt.client.atommodel.message.MessageParticle;
-import com.radixdlt.client.atommodel.timestamp.TimestampParticle;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.atoms.Atom;
@@ -21,7 +21,6 @@ import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient;
 import com.radixdlt.client.core.network.websocket.WebSocketClient;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
 import com.radixdlt.client.core.pow.ProofOfWorkBuilder;
-import cucumber.api.PendingException;
 import cucumber.api.java.After;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
@@ -33,10 +32,6 @@ import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.client.GsonJson;
 import org.radix.serialization2.client.Serialize;
 
-import javax.xml.bind.DatatypeConverter;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -292,15 +287,11 @@ public class ParticleGroupsMetaData {
 
         particleGroups.add(ParticleGroup.of(ImmutableList.of(SpunParticle.up(messageParticle)), metaData));
 
-        // Add timestamp
-        particleGroups.add(ParticleGroup.of(SpunParticle.up(new TimestampParticle(System.currentTimeMillis()))));
-
-
+        ImmutableMap<String, String> atomMetaData = ImmutableMap.of("timestamp", System.currentTimeMillis() + "");
         // Add fee
-        particleGroups.addAll(feeMapper.map(new Atom(particleGroups), universe, this.identity.getPublicKey()));
+        particleGroups.addAll(feeMapper.map(new Atom(particleGroups, atomMetaData), universe, this.identity.getPublicKey()));
 
-
-        return new UnsignedAtom(new Atom(particleGroups));
+        return new UnsignedAtom(new Atom(particleGroups, atomMetaData));
     }
 
 }
