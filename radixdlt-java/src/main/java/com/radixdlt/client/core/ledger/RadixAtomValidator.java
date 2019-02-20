@@ -74,7 +74,7 @@ public class RadixAtomValidator implements AtomValidator {
 		}
 
 		if (atom.getTimestamp() < 0L) {
-			throw new AtomValidationException("Atom timestamp must be greater than zero but was " + atom.getTimestamp());
+			throw new AtomValidationException("Atom timestamp must be positive " + atom.getTimestamp());
 		}
 
 		validateSignatures(atom);
