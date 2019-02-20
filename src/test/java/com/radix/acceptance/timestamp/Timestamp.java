@@ -120,7 +120,7 @@ public class Timestamp {
         Map<String, String> metaData = new HashMap();
         metaData.put("test", "123");
         metaData.put("test2", "456");
-        metaData.put("timestamp", System.currentTimeMillis() + "");
+        metaData.put("timestamp", String.valueOf(System.currentTimeMillis()));
 
         UnsignedAtom atom = constructTestAtom(metaData);
 
@@ -181,7 +181,7 @@ public class Timestamp {
     public void iSubmitAValidAtomWithMetadataExceedingMaxAtomSizeBytes() throws Throwable {
         // Construct atom
         Map<String, String> metaData = new HashMap();
-        metaData.put("timestamp", System.currentTimeMillis() + "");
+        metaData.put("timestamp", String.valueOf(System.currentTimeMillis()));
         metaData.put("super big test", generateStringOfLength(655360));
 
         UnsignedAtom atom = constructTestAtom(metaData);
