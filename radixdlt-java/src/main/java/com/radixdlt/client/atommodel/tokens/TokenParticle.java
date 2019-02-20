@@ -7,7 +7,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.client.application.translate.tokens.TokenClassReference;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.atommodel.quarks.FungibleQuark.FungibleType;
-import com.radixdlt.client.atommodel.quarks.OwnableQuark;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import java.util.EnumMap;
 import java.util.Map;
@@ -59,7 +58,7 @@ public class TokenParticle extends Particle implements Identifiable {
 		Map<FungibleType, TokenPermission> tokenPermissions,
 		byte[] icon
 	) {
-		super(new OwnableQuark(address.getPublicKey()));
+		super();
 		this.address = address;
 		this.name = name;
 		this.symbol = symbol;
