@@ -12,7 +12,7 @@ import java.util.Collections;
 public class AtomTest {
 	@Test
 	public void testEmptyAtom() {
-		Atom atom = new Atom(Collections.emptyList());
+		Atom atom = new Atom(Collections.emptyList(), 0L);
 		assertTrue(atom.getMessageParticles().isEmpty());
 		assertTrue(atom.getOwnedTokensParticles(Spin.UP).isEmpty());
 		assertTrue(atom.getOwnedTokensParticles(Spin.DOWN).isEmpty());
@@ -22,6 +22,6 @@ public class AtomTest {
 		assertEquals("823e52dbdbcf7c91ea100f03b68ead290b2a2838251c70917368eb322caa70ff", atom.getHash().toHexString());
 		assertEquals("823e52dbdbcf7c91ea100f03b68ead29", atom.getHid().toHexString());
 		assertEquals(0, atom.getTimestamp());
-		assertEquals(atom, new Atom(Collections.emptyList()));
+		assertEquals(atom, new Atom(Collections.emptyList(), 0L));
 	}
 }

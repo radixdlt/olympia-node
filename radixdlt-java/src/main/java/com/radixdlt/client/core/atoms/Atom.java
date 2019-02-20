@@ -57,8 +57,8 @@ public final class Atom extends SerializableObject {
 		this.metaData = ImmutableMap.of(METADATA_TIMESTAMP_KEY, String.valueOf(timestamp));
 	}
 
-	public Atom(List<ParticleGroup> particleGroups) {
-		this();
+	public Atom(List<ParticleGroup> particleGroups, long timestamp) {
+		this(timestamp);
 
 		Objects.requireNonNull(particleGroups, "particleGroups is required");
 
@@ -153,7 +153,7 @@ public final class Atom extends SerializableObject {
 		try {
 			return Long.parseLong(this.metaData.get(METADATA_TIMESTAMP_KEY));
 		} catch (NumberFormatException e) {
-			throw new IllegalStateException("Timestamp is missing or invalid: " + e, e);
+			return Long.MIN_VALUE;
 		}
 	}
 

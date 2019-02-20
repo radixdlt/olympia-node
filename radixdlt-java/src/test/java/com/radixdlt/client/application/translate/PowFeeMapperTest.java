@@ -50,7 +50,7 @@ public class PowFeeMapperTest {
 		when(address.getPublicKey()).thenReturn(key);
 		when(universe.getAddressFrom(key)).thenReturn(address);
 
-		List<ParticleGroup> particles = powFeeMapper.map(new Atom(Collections.emptyList()), universe, key);
+		List<ParticleGroup> particles = powFeeMapper.map(new Atom(Collections.emptyList(), 0L), universe, key);
 		assertThat(particles)
 				.hasOnlyOneElementSatisfying(s -> {
 					SpunParticle feeParticle = s.spunParticles().findAny().get();

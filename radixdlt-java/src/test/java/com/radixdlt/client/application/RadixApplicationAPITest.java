@@ -276,7 +276,7 @@ public class RadixApplicationAPITest {
 	@Test
 	public void testErrorMapper() {
 		Particle particle = mock(Particle.class);
-		Atom atom = new Atom(Collections.singletonList(ParticleGroup.of(SpunParticle.up(particle))));
+		Atom atom = new Atom(Collections.singletonList(ParticleGroup.of(SpunParticle.up(particle))), 0L);
 		RadixIdentity identity = mock(RadixIdentity.class);
 		when(identity.sign(any())).thenReturn(Single.just(atom));
 		RadixUniverse universe = mock(RadixUniverse.class);

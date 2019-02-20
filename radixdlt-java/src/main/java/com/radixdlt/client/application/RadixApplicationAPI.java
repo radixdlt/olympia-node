@@ -710,11 +710,16 @@ public class RadixApplicationAPI {
 			.map(particleGroups -> {
 				List<ParticleGroup> allParticleGroups = new ArrayList<>(particleGroups);
 				ImmutableMap<String, String> metaData = ImmutableMap.of(
-					Atom.METADATA_TIMESTAMP_KEY, String.valueOf(System.currentTimeMillis()));
+					Atom.METADATA_TIMESTAMP_KEY, String.valueOf(generateTimestamp()));
 				Atom atom = new Atom(particleGroups, metaData);
 				allParticleGroups.addAll(this.feeMapper.map(atom, this.universe, this.getMyPublicKey()));
+
 				return new UnsignedAtom(new Atom(allParticleGroups, metaData));
 			});
+	}
+
+	private long generateTimestamp() {
+		return System.currentTimeMillis();
 	}
 
 	private Result buildDisconnectedResult(Action action) {
