@@ -1,5 +1,6 @@
 package com.radix.acceptance.atoms;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -8,7 +9,6 @@ import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.FeeMapper;
 import com.radixdlt.client.application.translate.PowFeeMapper;
 import com.radixdlt.client.atommodel.message.MessageParticle;
-import com.radixdlt.client.atommodel.timestamp.TimestampParticle;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.atoms.Atom;
@@ -20,13 +20,10 @@ import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient;
 import com.radixdlt.client.core.network.websocket.WebSocketClient;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
 import com.radixdlt.client.core.pow.ProofOfWorkBuilder;
-import cucumber.api.PendingException;
 import cucumber.api.java.After;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
-import io.reactivex.Single;
-import io.reactivex.disposables.Disposable;
 import io.reactivex.observers.TestObserver;
 import okhttp3.Request;
 import org.json.JSONObject;
@@ -276,6 +273,7 @@ public class AtomMetaData {
 
     private UnsignedAtom constructTestAtom(Map<String, String> metaData) {
         List<ParticleGroup> particleGroups = new ArrayList<>();
+        metaData.put("timestamp", System.currentTimeMillis() + "");
 
         // Add content
         MessageParticle messageParticle = new MessageParticle.MessageParticleBuilder()
@@ -287,13 +285,8 @@ public class AtomMetaData {
 
         particleGroups.add(ParticleGroup.of(SpunParticle.up(messageParticle)));
 
-        // Add timestamp
-        particleGroups.add(ParticleGroup.of(SpunParticle.up(new TimestampParticle(System.currentTimeMillis()))));
-
-
         // Add fee
         particleGroups.addAll(feeMapper.map(new Atom(particleGroups, metaData) , universe, this.identity.getPublicKey()));
-
 
         return new UnsignedAtom(new Atom(particleGroups, metaData));
     }

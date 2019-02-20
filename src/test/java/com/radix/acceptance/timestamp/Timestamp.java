@@ -1,4 +1,4 @@
-package com.radix.acceptance.particle_groups_meta_data;
+package com.radix.acceptance.timestamp;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -41,7 +41,7 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-public class ParticleGroupsMetaData {
+public class Timestamp {
     static {
         if (!RadixUniverse.isInstantiated()) {
             RadixUniverse.bootstrap(Bootstrap.BETANET);
@@ -89,8 +89,6 @@ public class ParticleGroupsMetaData {
     }
 
 
-
-
     @Given("^that I have access to a suitable Radix network$")
     public void thatIHaveAccessToASuitableRadixNetwork() throws Throwable {
         setupWebSocket();
@@ -116,7 +114,57 @@ public class ParticleGroupsMetaData {
         this.jsonRpcClient.submitAtom(signedAtom).subscribe(this.observer);
     }
 
-    @When("^I submit an atom with particle groups which have no metadata$")
+    @When("^I submit a valid atom with arbitrary metadata containing a valid timestamp$")
+    public void iSubmitAValidAtomWithArbitraryMetadataContainingAValidTimestamp() throws Throwable {
+        // Construct atom
+        Map<String, String> metaData = new HashMap();
+        metaData.put("test", "123");
+        metaData.put("test2", "456");
+        metaData.put("timestamp", String.valueOf(System.currentTimeMillis()));
+
+        UnsignedAtom atom = constructTestAtom(metaData);
+
+        // Sign and submit
+        Atom signedAtom = this.identity.sign(atom).blockingGet();
+
+        this.observer = TestObserver.create();
+        this.jsonRpcClient.submitAtom(signedAtom).subscribe(this.observer);
+    }
+
+    @When("^I submit a valid atom with arbitrary metadata containing an invalid timestamp$")
+    public void iSubmitAValidAtomWithArbitraryMetadataContainingAnInvalidTimestamp() throws Throwable {
+        // Construct atom
+        Map<String, String> metaData = new HashMap();
+        metaData.put("test", "123");
+        metaData.put("test2", "456");
+        metaData.put("timestamp", "invalid");
+
+        UnsignedAtom atom = constructTestAtom(metaData);
+
+        // Sign and submit
+        Atom signedAtom = this.identity.sign(atom).blockingGet();
+
+        this.observer = TestObserver.create();
+        this.jsonRpcClient.submitAtom(signedAtom).subscribe(this.observer);
+    }
+
+    @When("^I submit a valid atom with arbitrary metadata without a valid timestamp$")
+    public void iSubmitAValidAtomWithArbitraryMetadataWithoutAValidTimestamp() throws Throwable {
+        // Construct atom
+        Map<String, String> metaData = new HashMap();
+        metaData.put("test", "123");
+        metaData.put("test2", "456");
+
+        UnsignedAtom atom = constructTestAtom(metaData);
+
+        // Sign and submit
+        Atom signedAtom = this.identity.sign(atom).blockingGet();
+
+        this.observer = TestObserver.create();
+        this.jsonRpcClient.submitAtom(signedAtom).subscribe(this.observer);
+    }
+
+    @When("^I submit a valid atom with no metadata$")
     public void iSubmitAValidAtomWithNoMetadata() throws Throwable {
         // Construct atom
         UnsignedAtom atom = constructTestAtom(new HashMap<>());
@@ -133,6 +181,7 @@ public class ParticleGroupsMetaData {
     public void iSubmitAValidAtomWithMetadataExceedingMaxAtomSizeBytes() throws Throwable {
         // Construct atom
         Map<String, String> metaData = new HashMap();
+        metaData.put("timestamp", String.valueOf(System.currentTimeMillis()));
         metaData.put("super big test", generateStringOfLength(655360));
 
         UnsignedAtom atom = constructTestAtom(metaData);
@@ -231,7 +280,6 @@ public class ParticleGroupsMetaData {
     }
 
 
-
     @Then("^I should observe the atom being accepted$")
     public void iShouldObserveTheAtomBeingAccepted() throws Throwable {
         this.observer.awaitTerminalEvent(5, TimeUnit.SECONDS);
@@ -279,19 +327,17 @@ public class ParticleGroupsMetaData {
 
         // Add content
         MessageParticle messageParticle = new MessageParticle.MessageParticleBuilder()
-                .payload("test".getBytes())
-                .metaData("application", "message")
-                .from(universe.getAddressFrom(this.identity.getPublicKey()))
-                .to(universe.getAddressFrom(this.identity.getPublicKey()))
-                .build();
+            .payload("test".getBytes())
+            .metaData("application", "message")
+            .from(universe.getAddressFrom(this.identity.getPublicKey()))
+            .to(universe.getAddressFrom(this.identity.getPublicKey()))
+            .build();
 
-        particleGroups.add(ParticleGroup.of(ImmutableList.of(SpunParticle.up(messageParticle)), metaData));
+        particleGroups.add(ParticleGroup.of(SpunParticle.up(messageParticle)));
 
-        ImmutableMap<String, String> atomMetaData = ImmutableMap.of("timestamp", System.currentTimeMillis() + "");
         // Add fee
-        particleGroups.addAll(feeMapper.map(new Atom(particleGroups, atomMetaData), universe, this.identity.getPublicKey()));
+        particleGroups.addAll(feeMapper.map(new Atom(particleGroups, metaData) , universe, this.identity.getPublicKey()));
 
-        return new UnsignedAtom(new Atom(particleGroups, atomMetaData));
+        return new UnsignedAtom(new Atom(particleGroups, metaData));
     }
-
 }
