@@ -13,7 +13,6 @@ import com.radixdlt.client.atommodel.message.MessageParticle;
 import com.radixdlt.client.atommodel.quarks.FungibleQuark;
 import com.radixdlt.client.atommodel.quarks.OwnableQuark;
 import com.radixdlt.client.atommodel.quarks.UniqueQuark;
-import com.radixdlt.client.atommodel.timestamp.TimestampParticle;
 import com.radixdlt.client.atommodel.tokens.FeeParticle;
 import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
 import com.radixdlt.client.atommodel.tokens.TokenParticle;
@@ -53,7 +52,6 @@ public final class Serialize {
 				ParticleGroup.class,
 				Particle.class,
 				SpunParticle.class,
-				TimestampParticle.class,
 				OwnedTokensParticle.class,
 				FeeParticle.class,
 				MessageParticle.class,

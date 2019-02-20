@@ -62,8 +62,8 @@ public class RadixECKeyPairsTest {
                 .newInstance()
                 .generateKeyPairFromSeed(seed);
 
-        Atom atom1 = new Atom(Collections.emptyList());
-        Atom atom2 = new Atom(Collections.emptyList());
+        Atom atom1 = new Atom(Collections.emptyList(), 0L);
+        Atom atom2 = new Atom(Collections.emptyList(), 0L);
         ECSignature signature1 = keyPair1.sign(atom1.toDson());
         ECSignature signature2 = keyPair2.sign(atom2.toDson());
 

@@ -69,8 +69,12 @@ public class RadixAtomValidator implements AtomValidator {
 	@Override
 	public void validate(Atom atom) throws AtomValidationException {
 		// TODO: check with universe genesis timestamp
-		if (atom.getTimestamp() == null || atom.getTimestamp() == 0L) {
-			throw new AtomValidationException("Null or Zero Timestamp");
+		if (!atom.hasTimestamp()) {
+			throw new AtomValidationException("Atom does not contain a timestamp");
+		}
+
+		if (atom.getTimestamp() < 0L) {
+			throw new AtomValidationException("Atom timestamp must be positive " + atom.getTimestamp());
 		}
 
 		validateSignatures(atom);
