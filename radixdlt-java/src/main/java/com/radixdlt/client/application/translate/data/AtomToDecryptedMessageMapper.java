@@ -1,20 +1,5 @@
 package com.radixdlt.client.application.translate.data;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonParser;
-import com.radixdlt.client.application.identity.RadixIdentity;
-import com.radixdlt.client.application.identity.Data;
-import com.radixdlt.client.application.translate.data.DecryptedMessage.EncryptionState;
-import com.radixdlt.client.application.translate.AtomToExecutedActionsMapper;
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.atommodel.message.MessageParticle;
-import com.radixdlt.client.core.RadixUniverse;
-import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.crypto.CryptoException;
-import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
-import com.radixdlt.client.core.crypto.Encryptor;
-import io.reactivex.Observable;
-import io.reactivex.Single;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -22,16 +7,27 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonParser;
+import com.radixdlt.client.application.identity.Data;
+import com.radixdlt.client.application.identity.RadixIdentity;
+import com.radixdlt.client.application.translate.AtomToExecutedActionsMapper;
+import com.radixdlt.client.application.translate.data.DecryptedMessage.EncryptionState;
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.client.atommodel.message.MessageParticle;
+import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.client.core.crypto.CryptoException;
+import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
+import com.radixdlt.client.core.crypto.Encryptor;
+
+import io.reactivex.Observable;
+import io.reactivex.Single;
+
 /**
  * Maps an atom to some number of sent message actions and decrypted.
  */
 public class AtomToDecryptedMessageMapper implements AtomToExecutedActionsMapper<DecryptedMessage> {
 	private static final JsonParser JSON_PARSER = new JsonParser();
-	private final RadixUniverse universe;
-
-	public AtomToDecryptedMessageMapper(RadixUniverse universe) {
-		this.universe = universe;
-	}
 
 	@Override
 	public Class<DecryptedMessage> actionClass() {

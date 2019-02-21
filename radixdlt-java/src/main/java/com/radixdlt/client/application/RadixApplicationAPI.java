@@ -231,8 +231,7 @@ public class RadixApplicationAPI {
 		}
 
 		public RadixApplicationAPIBuilder defaultFeeMapper() {
-			this.feeMapper = new PowFeeMapper(atom -> atom.getHash(),
-					new ProofOfWorkBuilder());
+			this.feeMapper = new PowFeeMapper(Atom::getHash, new ProofOfWorkBuilder());
 			return this;
 		}
 
@@ -305,7 +304,7 @@ public class RadixApplicationAPI {
 			.addStatefulParticlesMapper(new TransferTokensToParticleGroupsMapper(RadixUniverse.getInstance()))
 			.addReducer(new TokenClassesReducer())
 			.addReducer(new TokenBalanceReducer())
-			.addAtomMapper(new AtomToDecryptedMessageMapper(RadixUniverse.getInstance()))
+			.addAtomMapper(new AtomToDecryptedMessageMapper())
 			.addAtomMapper(new AtomToTokenTransfersMapper(RadixUniverse.getInstance()))
 			.addAtomErrorMapper(new AlreadyUsedUniqueIdReasonMapper());
 	}

@@ -1,38 +1,36 @@
 package com.radixdlt.client.application;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import java.math.BigDecimal;
+import java.util.Collections;
+import java.util.stream.Stream;
+
+import org.junit.Test;
 
 import com.google.gson.JsonObject;
 import com.radixdlt.client.application.RadixApplicationAPI.RadixApplicationAPIBuilder;
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
+import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.ActionExecutionException;
 import com.radixdlt.client.application.translate.ActionExecutionExceptionReason;
 import com.radixdlt.client.application.translate.AtomErrorToExceptionReasonMapper;
+import com.radixdlt.client.application.translate.FeeMapper;
+import com.radixdlt.client.application.translate.PowFeeMapper;
 import com.radixdlt.client.application.translate.StatelessActionToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.data.AtomToDecryptedMessageMapper;
 import com.radixdlt.client.application.translate.data.DecryptedMessage;
-import com.radixdlt.client.application.translate.FeeMapper;
-import com.radixdlt.client.application.translate.PowFeeMapper;
 import com.radixdlt.client.application.translate.tokens.TokenBalanceReducer;
 import com.radixdlt.client.application.translate.tokens.TokenClassReference;
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.RadixUniverse.Ledger;
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomObservation;
-import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
-import com.radixdlt.client.core.ledger.AtomPuller;
 import com.radixdlt.client.core.crypto.ECPublicKey;
+import com.radixdlt.client.core.ledger.AtomPuller;
 import com.radixdlt.client.core.ledger.AtomStore;
 import com.radixdlt.client.core.ledger.AtomSubmitter;
 import com.radixdlt.client.core.ledger.ParticleStore;
@@ -41,13 +39,18 @@ import com.radixdlt.client.core.network.actions.SubmitAtomReceivedAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomResultAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType;
 import com.radixdlt.client.core.network.actions.SubmitAtomSendAction;
+
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.observers.TestObserver;
-import java.math.BigDecimal;
-import java.util.Collections;
-import java.util.stream.Stream;
-import org.junit.Test;
 
 public class RadixApplicationAPITest {
 	private RadixApplicationAPI createMockedAPI(
@@ -185,7 +188,7 @@ public class RadixApplicationAPITest {
 			.identity(identity)
 			.universe(universe)
 			.feeMapper(mock(PowFeeMapper.class))
-			.addAtomMapper(new AtomToDecryptedMessageMapper(universe))
+			.addAtomMapper(new AtomToDecryptedMessageMapper())
 			.build();
 		TestObserver<DecryptedMessage> observer = TestObserver.create();
 		api.getMessages(address).subscribe(observer);
@@ -239,7 +242,7 @@ public class RadixApplicationAPITest {
 			.identity(identity)
 			.universe(universe)
 			.feeMapper(mock(PowFeeMapper.class))
-			.addAtomMapper(new AtomToDecryptedMessageMapper(universe))
+			.addAtomMapper(new AtomToDecryptedMessageMapper())
 			.build();
 		TestObserver<DecryptedMessage> testObserver = TestObserver.create();
 		api.getMessages(address).subscribe(testObserver);

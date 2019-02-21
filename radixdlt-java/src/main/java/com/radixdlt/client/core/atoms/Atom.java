@@ -2,6 +2,7 @@ package com.radixdlt.client.core.atoms;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -11,7 +12,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.google.common.collect.ImmutableMap;
 import org.radix.common.ID.EUID;
 import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.SerializerId2;
@@ -20,6 +20,7 @@ import org.radix.serialization2.client.Serialize;
 import org.radix.utils.UInt256s;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.application.translate.tokens.TokenClassReference;
 import com.radixdlt.client.atommodel.message.MessageParticle;
 import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
@@ -54,20 +55,16 @@ public final class Atom extends SerializableObject {
 	}
 
 	public Atom(long timestamp) {
-		this.metaData = ImmutableMap.of(METADATA_TIMESTAMP_KEY, String.valueOf(timestamp));
+		this(Collections.emptyList(), timestamp);
 	}
 
 	public Atom(List<ParticleGroup> particleGroups, long timestamp) {
-		this(timestamp);
-
-		Objects.requireNonNull(particleGroups, "particleGroups is required");
-
-		this.particleGroups.addAll(particleGroups);
+		this(particleGroups, ImmutableMap.of(METADATA_TIMESTAMP_KEY, String.valueOf(timestamp)));
 	}
 
 	public Atom(List<ParticleGroup> particleGroups, Map<String, String> metaData) {
 		Objects.requireNonNull(particleGroups, "particleGroups is required");
-		Objects.requireNonNull(metaData, "particleGroups is required");
+		Objects.requireNonNull(metaData, "metaData is required");
 
 		this.particleGroups.addAll(particleGroups);
 		this.metaData = ImmutableMap.copyOf(metaData);
