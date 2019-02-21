@@ -1,24 +1,24 @@
 package com.radixdlt.client.atommodel.tokens;
 
-import com.radixdlt.client.atommodel.Identifiable;
-import com.radixdlt.client.atommodel.Ownable;
-import com.radixdlt.client.core.atoms.particles.RadixResourceIdentifer;
 import java.util.Collections;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.client.application.translate.tokens.TokenClassReference;
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.atommodel.quarks.FungibleQuark.FungibleType;
-import com.radixdlt.client.core.atoms.particles.Particle;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import com.radixdlt.client.core.crypto.ECKeyPair;
-import com.radixdlt.client.core.crypto.ECPublicKey;
 import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.DsonOutput.Output;
 import org.radix.serialization2.SerializerId2;
 import org.radix.utils.UInt256;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.client.application.translate.tokens.TokenClassReference;
+import com.radixdlt.client.atommodel.Identifiable;
+import com.radixdlt.client.atommodel.Ownable;
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.client.atommodel.quarks.FungibleQuark.FungibleType;
+import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.client.core.atoms.particles.RadixResourceIdentifer;
+import com.radixdlt.client.core.crypto.ECPublicKey;
 
 @SerializerId2("TOKENCLASSPARTICLE")
 public class TokenParticle extends Particle implements Identifiable, Ownable {
