@@ -11,6 +11,8 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.radix.serialization2.DsonOutput;
+import org.radix.serialization2.client.Serialize;
 import org.radix.utils.UInt256;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -712,6 +714,10 @@ public class RadixApplicationAPI {
 					Atom.METADATA_TIMESTAMP_KEY, String.valueOf(generateTimestamp()));
 				Atom atom = new Atom(particleGroups, metaData);
 				allParticleGroups.addAll(this.feeMapper.map(atom, this.universe, this.getMyPublicKey()));
+
+				System.out.println(action + ":");
+				System.out.println(Serialize.getInstance().toJson(new Atom(allParticleGroups, metaData), DsonOutput.Output.WIRE));
+				System.out.println();
 
 				return new UnsignedAtom(new Atom(allParticleGroups, metaData));
 			});

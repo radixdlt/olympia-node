@@ -26,10 +26,6 @@ public class TokenParticle extends Particle implements Identifiable, Ownable {
 	@DsonOutput(Output.ALL)
 	private RadixAddress address;
 
-	@JsonProperty("owner")
-	@DsonOutput(Output.ALL)
-	private ECPublicKey owner;
-
 	@JsonProperty("name")
 	@DsonOutput(Output.ALL)
 	private String name;
@@ -58,7 +54,6 @@ public class TokenParticle extends Particle implements Identifiable, Ownable {
 
 	public TokenParticle(
 		RadixAddress address,
-		ECPublicKey owner,
 		String name,
 		String symbol,
 		String description,
@@ -68,14 +63,12 @@ public class TokenParticle extends Particle implements Identifiable, Ownable {
 	) {
 		super();
 		this.address = address;
-		this.owner = owner;
 		this.name = name;
 		this.symbol = symbol;
 		this.description = description;
 		this.granularity = granularity;
 		this.tokenPermissions = Collections.unmodifiableMap(new EnumMap<>(tokenPermissions));
 		this.icon = icon;
-		this.owner = owner;
 	}
 
 	@Override
@@ -89,7 +82,7 @@ public class TokenParticle extends Particle implements Identifiable, Ownable {
 
 	@Override
 	public ECPublicKey getOwner() {
-		return this.owner;
+		return this.address.getPublicKey();
 	}
 
 	public String getName() {
