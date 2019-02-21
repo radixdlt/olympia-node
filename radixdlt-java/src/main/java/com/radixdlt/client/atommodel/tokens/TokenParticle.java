@@ -1,6 +1,7 @@
 package com.radixdlt.client.atommodel.tokens;
 
 import com.radixdlt.client.atommodel.Identifiable;
+import com.radixdlt.client.atommodel.Ownable;
 import com.radixdlt.client.core.atoms.particles.RadixResourceIdentifer;
 import java.util.Collections;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -12,16 +13,22 @@ import java.util.EnumMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import com.radixdlt.client.core.crypto.ECKeyPair;
+import com.radixdlt.client.core.crypto.ECPublicKey;
 import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.DsonOutput.Output;
 import org.radix.serialization2.SerializerId2;
 import org.radix.utils.UInt256;
 
 @SerializerId2("TOKENCLASSPARTICLE")
-public class TokenParticle extends Particle implements Identifiable {
+public class TokenParticle extends Particle implements Identifiable, Ownable {
 	@JsonProperty("address")
 	@DsonOutput(Output.ALL)
 	private RadixAddress address;
+
+	@JsonProperty("owner")
+	@DsonOutput(Output.ALL)
+	private ECPublicKey owner;
 
 	@JsonProperty("name")
 	@DsonOutput(Output.ALL)
@@ -51,6 +58,7 @@ public class TokenParticle extends Particle implements Identifiable {
 
 	public TokenParticle(
 		RadixAddress address,
+		ECPublicKey owner,
 		String name,
 		String symbol,
 		String description,
@@ -60,12 +68,14 @@ public class TokenParticle extends Particle implements Identifiable {
 	) {
 		super();
 		this.address = address;
+		this.owner = owner;
 		this.name = name;
 		this.symbol = symbol;
 		this.description = description;
 		this.granularity = granularity;
 		this.tokenPermissions = Collections.unmodifiableMap(new EnumMap<>(tokenPermissions));
 		this.icon = icon;
+		this.owner = owner;
 	}
 
 	@Override
@@ -75,6 +85,11 @@ public class TokenParticle extends Particle implements Identifiable {
 
 	public Map<FungibleType, TokenPermission> getTokenPermissions() {
 		return tokenPermissions;
+	}
+
+	@Override
+	public ECPublicKey getOwner() {
+		return this.owner;
 	}
 
 	public String getName() {

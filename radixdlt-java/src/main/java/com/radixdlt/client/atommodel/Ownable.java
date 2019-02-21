@@ -1,6 +1,5 @@
 package com.radixdlt.client.atommodel;
 
-import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 
 /**

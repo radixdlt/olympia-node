@@ -104,6 +104,7 @@ public class OwnedTokensParticle extends Particle implements Accountable, Ownabl
 		return Collections.singleton(this.address.getPublicKey());
 	}
 
+	@Override
 	public ECPublicKey getOwner() {
 		return this.address.getPublicKey();
 	}
