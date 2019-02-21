@@ -46,7 +46,7 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 
 		TokenParticle token = new TokenParticle(
 				tokenCreation.getAddress(),
-				tokenCreation.getName(),
+			tokenCreation.getName(),
 				tokenCreation.getIso(),
 				tokenCreation.getDescription(),
 				tokenCreation.getGranularity(),

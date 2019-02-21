@@ -2,6 +2,7 @@ package com.radixdlt.client.atommodel.tokens;
 
 import com.radixdlt.client.application.translate.tokens.TokenClassReference;
 import com.radixdlt.client.atommodel.Accountable;
+import com.radixdlt.client.atommodel.Ownable;
 import com.radixdlt.client.core.atoms.particles.RadixResourceIdentifer;
 import java.util.Collections;
 import java.util.Map;
@@ -16,7 +17,6 @@ import org.radix.utils.UInt256;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.atommodel.quarks.FungibleQuark;
-import com.radixdlt.client.atommodel.quarks.OwnableQuark;
 import com.radixdlt.client.core.atoms.RadixHash;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.crypto.ECKeyPair;
@@ -26,7 +26,7 @@ import com.radixdlt.client.core.crypto.ECPublicKey;
  *  A particle which represents an amount of fungible tokens owned by some key owner and stored in an account.
  */
 @SerializerId2("OWNEDTOKENSPARTICLE")
-public class OwnedTokensParticle extends Particle implements Accountable {
+public class OwnedTokensParticle extends Particle implements Accountable, Ownable {
 	@JsonProperty("address")
 	@DsonOutput(Output.ALL)
 	private RadixAddress address;
@@ -44,7 +44,7 @@ public class OwnedTokensParticle extends Particle implements Accountable {
 
 	public OwnedTokensParticle(UInt256 amount, UInt256 granularity, FungibleQuark.FungibleType type, RadixAddress address, long nonce,
 	                        TokenClassReference tokenRef, long planck) {
-		super(new OwnableQuark(address.getPublicKey()), new FungibleQuark(amount, planck, nonce, type));
+		super(new FungibleQuark(amount, planck, nonce, type));
 
 		this.address = address;
 		this.tokenClassReference = new RadixResourceIdentifer(tokenRef.getAddress(), "tokenclasses", tokenRef.getSymbol());
@@ -101,11 +101,12 @@ public class OwnedTokensParticle extends Particle implements Accountable {
 	}
 
 	public Set<ECPublicKey> getOwnersPublicKeys() {
-		return Collections.singleton(getQuarkOrError(OwnableQuark.class).getOwner());
+		return Collections.singleton(this.address.getPublicKey());
 	}
 
+	@Override
 	public ECPublicKey getOwner() {
-		return getQuarkOrError(OwnableQuark.class).getOwner();
+		return this.address.getPublicKey();
 	}
 
 	public RadixHash getHash() {
@@ -118,7 +119,7 @@ public class OwnedTokensParticle extends Particle implements Accountable {
 
 	@Override
 	public String toString() {
-		return this.getClass().getSimpleName() + " owners(" + getQuarkOrError(OwnableQuark.class).getOwner() + ")"
+		return this.getClass().getSimpleName() + " owners(" + this.address.getPublicKey() + ")"
 				+ " amount(" + getQuarkOrError(FungibleQuark.class).getAmount() + ")";
 	}
 }
