@@ -11,7 +11,7 @@ import java.util.stream.Stream;
 
 import org.radix.utils.UInt256s;
 
-import com.radixdlt.client.atommodel.quarks.FungibleQuark.FungibleType;
+import com.radixdlt.client.atommodel.FungibleType;
 import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
 import com.radixdlt.client.core.atoms.RadixHash;
 import com.radixdlt.client.core.atoms.particles.Spin;

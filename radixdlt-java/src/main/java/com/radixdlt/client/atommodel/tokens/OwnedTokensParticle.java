@@ -2,6 +2,8 @@ package com.radixdlt.client.atommodel.tokens;
 
 import com.radixdlt.client.application.translate.tokens.TokenClassReference;
 import com.radixdlt.client.atommodel.Accountable;
+import com.radixdlt.client.atommodel.Fungible;
+import com.radixdlt.client.atommodel.FungibleType;
 import com.radixdlt.client.atommodel.Ownable;
 import com.radixdlt.client.core.atoms.particles.RadixResourceIdentifer;
 import java.util.Collections;
@@ -16,7 +18,6 @@ import org.radix.utils.UInt256;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.atommodel.quarks.FungibleQuark;
 import com.radixdlt.client.core.atoms.RadixHash;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.crypto.ECKeyPair;
@@ -26,7 +27,7 @@ import com.radixdlt.client.core.crypto.ECPublicKey;
  *  A particle which represents an amount of fungible tokens owned by some key owner and stored in an account.
  */
 @SerializerId2("OWNEDTOKENSPARTICLE")
-public class OwnedTokensParticle extends Particle implements Accountable, Ownable {
+public class OwnedTokensParticle extends Particle implements Accountable, Ownable, Fungible {
 	@JsonProperty("address")
 	@DsonOutput(Output.ALL)
 	private RadixAddress address;
@@ -39,16 +40,34 @@ public class OwnedTokensParticle extends Particle implements Accountable, Ownabl
 	@DsonOutput(DsonOutput.Output.ALL)
 	private UInt256 granularity;
 
+	@JsonProperty("planck")
+	@DsonOutput(DsonOutput.Output.ALL)
+	private long planck;
+
+	@JsonProperty("nonce")
+	@DsonOutput(DsonOutput.Output.ALL)
+	private long nonce;
+
+	@JsonProperty("amount")
+	@DsonOutput(DsonOutput.Output.ALL)
+	private UInt256 amount;
+
+	private FungibleType type;
+
 	protected OwnedTokensParticle() {
 	}
 
-	public OwnedTokensParticle(UInt256 amount, UInt256 granularity, FungibleQuark.FungibleType type, RadixAddress address, long nonce,
-	                        TokenClassReference tokenRef, long planck) {
-		super(new FungibleQuark(amount, planck, nonce, type));
+	public OwnedTokensParticle(UInt256 amount, UInt256 granularity, FungibleType type, RadixAddress address, long nonce,
+	                           TokenClassReference tokenRef, long planck) {
+		super();
 
 		this.address = address;
 		this.tokenClassReference = new RadixResourceIdentifer(tokenRef.getAddress(), "tokenclasses", tokenRef.getSymbol());
 		this.granularity = granularity;
+		this.planck = planck;
+		this.nonce = nonce;
+		this.amount = amount;
+		this.type = type;
 	}
 
 	@Override
@@ -76,24 +95,28 @@ public class OwnedTokensParticle extends Particle implements Accountable, Ownabl
 		consumerQuantities.merge(getAddress().toECKeyPair(), getAmount().subtract(amount), UInt256::add);
 	}
 
-	public FungibleQuark.FungibleType getType() {
-		return getQuarkOrError(FungibleQuark.class).getType();
+	@Override
+	public FungibleType getType() {
+		return this.type;
 	}
 
+	@Override
 	public long getPlanck() {
-		return getQuarkOrError(FungibleQuark.class).getPlanck();
+		return this.planck;
 	}
 
+	@Override
 	public long getNonce() {
-		return getQuarkOrError(FungibleQuark.class).getNonce();
+		return this.nonce;
 	}
 
 	public TokenClassReference getTokenClassReference() {
 		return TokenClassReference.of(tokenClassReference.getAddress(), tokenClassReference.getUnique());
 	}
 
+	@Override
 	public UInt256 getAmount() {
-		return getQuarkOrError(FungibleQuark.class).getAmount();
+		return this.amount;
 	}
 
 	public UInt256 getGranularity() {
@@ -120,6 +143,17 @@ public class OwnedTokensParticle extends Particle implements Accountable, Ownabl
 	@Override
 	public String toString() {
 		return this.getClass().getSimpleName() + " owners(" + this.address.getPublicKey() + ")"
-				+ " amount(" + getQuarkOrError(FungibleQuark.class).getAmount() + ")";
+				+ " amount(" + this.amount + ")";
+	}
+
+	@JsonProperty("type")
+	@DsonOutput(DsonOutput.Output.ALL)
+	private String getJsonType() {
+		return this.type == null ? null : this.type.name().toLowerCase();
+	}
+
+	@JsonProperty("type")
+	private void setJsonType(String type) {
+		this.type = type == null ? null : FungibleType.valueOf(type.toUpperCase());
 	}
 }

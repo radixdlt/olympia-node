@@ -7,8 +7,7 @@ import org.junit.Test;
 import org.radix.utils.UInt256;
 
 import com.radixdlt.client.application.translate.tokenclasses.TokenState.TokenSupplyType;
-import com.radixdlt.client.atommodel.quarks.FungibleQuark;
-import com.radixdlt.client.atommodel.quarks.FungibleQuark.FungibleType;
+import com.radixdlt.client.atommodel.FungibleType;
 import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
 import com.radixdlt.client.application.translate.tokens.TokenClassReference;
 import com.radixdlt.client.atommodel.tokens.TokenParticle;
@@ -52,7 +51,7 @@ public class TokenClassesReducerTest {
 
 		OwnedTokensParticle minted = mock(OwnedTokensParticle.class);
 		when(minted.getAmount()).thenReturn(hundred);
-		when(minted.getType()).thenReturn(FungibleQuark.FungibleType.MINTED);
+		when(minted.getType()).thenReturn(FungibleType.MINTED);
 		when(minted.getTokenClassReference()).thenReturn(tokenRef);
 
 		TokenClassesReducer tokenClassesReducer = new TokenClassesReducer();

@@ -10,7 +10,6 @@ import org.radix.serialization2.SerializerIds;
 import com.radixdlt.client.application.translate.unique.UniqueId;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.atommodel.message.MessageParticle;
-import com.radixdlt.client.atommodel.quarks.FungibleQuark;
 import com.radixdlt.client.atommodel.quarks.UniqueQuark;
 import com.radixdlt.client.atommodel.tokens.FeeParticle;
 import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
@@ -58,7 +57,6 @@ public final class Serialize {
 				UniqueParticle.class,
 
 				Quark.class,
-				FungibleQuark.class,
 				UniqueQuark.class,
 
 				ECKeyPair.class,
