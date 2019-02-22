@@ -8,6 +8,7 @@ import com.radixdlt.client.atommodel.Ownable;
 import com.radixdlt.client.core.atoms.particles.RadixResourceIdentifer;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import org.radix.serialization2.DsonOutput;
@@ -60,6 +61,12 @@ public class OwnedTokensParticle extends Particle implements Accountable, Ownabl
 	public OwnedTokensParticle(UInt256 amount, UInt256 granularity, FungibleType type, RadixAddress address, long nonce,
 	                           TokenClassReference tokenRef, long planck) {
 		super();
+
+		// Redundant null check added for completeness
+		Objects.requireNonNull(amount, "amount is required");
+		if (amount.isZero()) {
+			throw new IllegalArgumentException("Amount is zero");
+		}
 
 		this.address = address;
 		this.tokenClassReference = new RadixResourceIdentifer(tokenRef.getAddress(), "tokenclasses", tokenRef.getSymbol());
