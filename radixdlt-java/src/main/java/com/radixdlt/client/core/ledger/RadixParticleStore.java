@@ -25,7 +25,7 @@ public class RadixParticleStore implements ParticleStore {
 			.flatMap(observation -> Observable.<TransitionedParticle>create(emitter -> {
 				try {
 					observation.getAtom().spunParticles()
-						.filter(s -> s.getParticle().getKeyDestinations().contains(address.getPublicKey()))
+						.filter(s -> s.getParticle().getKeyDestinations().contains(address))
 						.forEach(s -> emitter.onNext(TransitionedParticle.fromSpunParticle(s, observation.getType())));
 				} catch (Throwable e) {
 					emitter.onError(e);

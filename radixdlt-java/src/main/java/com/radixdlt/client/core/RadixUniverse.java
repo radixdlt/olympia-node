@@ -178,7 +178,6 @@ public final class RadixUniverse {
 		final InMemoryAtomStore inMemoryAtomStore = new InMemoryAtomStore();
 		config.getGenesis().forEach(atom ->
 			atom.addresses()
-				.map(this::getAddressFrom)
 				.forEach(addr -> inMemoryAtomStore.store(addr, AtomObservation.stored(atom)))
 		);
 

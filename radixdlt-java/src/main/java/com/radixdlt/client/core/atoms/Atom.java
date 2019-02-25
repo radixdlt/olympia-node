@@ -21,6 +21,8 @@ import org.radix.utils.UInt256s;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -99,7 +101,7 @@ public final class Atom extends SerializableObject {
 			.map(SpunParticle<Particle>::getParticle)
 			.map(Particle::getKeyDestinations)
 			.flatMap(Set::stream)
-			.map(ECPublicKey::getUID)
+			.map(RadixAddress::getUID)
 			.map(EUID::getShard)
 			.collect(Collectors.toSet());
 	}
@@ -110,7 +112,7 @@ public final class Atom extends SerializableObject {
 			return this.spunParticles()
 				.filter(s -> s.getSpin() == Spin.DOWN)
 				.flatMap(s -> s.getParticle().getKeyDestinations().stream())
-				.map(ECPublicKey::getUID)
+				.map(RadixAddress::getUID)
 				.map(EUID::getShard)
 				.collect(Collectors.toSet());
 		} else {
@@ -130,7 +132,7 @@ public final class Atom extends SerializableObject {
 		return this.spunParticles().filter(s -> s.getSpin() == spin).map(SpunParticle::getParticle);
 	}
 
-	public Stream<ECPublicKey> addresses() {
+	public Stream<RadixAddress> addresses() {
 		return this.spunParticles()
 			.map(SpunParticle<Particle>::getParticle)
 			.map(Particle::getKeyDestinations)

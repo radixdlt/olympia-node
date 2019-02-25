@@ -24,7 +24,7 @@ public abstract class Particle extends SerializableObject {
 	protected Particle() {
 	}
 
-	public final Set<ECPublicKey> getKeyDestinations() {
+	public final Set<RadixAddress> getKeyDestinations() {
 		Set<RadixAddress> addresses = new HashSet<>();
 
 		if (this instanceof Accountable) {
@@ -37,7 +37,7 @@ public abstract class Particle extends SerializableObject {
 			addresses.add(i.getRRI().getAddress());
 		}
 
-		return addresses.stream().map(RadixAddress::getPublicKey).collect(Collectors.toSet());
+		return new HashSet<>(addresses);
 	}
 
 	public final byte[] toDson() {
