@@ -33,6 +33,14 @@ public class AtomObservation {
 		return atom;
 	}
 
+	public Type getType() {
+		return type;
+	}
+
+	public boolean hasAtom() {
+		return type == Type.STORE || type == Type.DELETE;
+	}
+
 	public boolean isStore() {
 		return type == Type.STORE;
 	}

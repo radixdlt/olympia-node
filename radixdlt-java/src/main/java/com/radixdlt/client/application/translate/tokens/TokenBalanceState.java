@@ -1,6 +1,7 @@
 package com.radixdlt.client.application.translate.tokens;
 
 import com.radixdlt.client.application.translate.ApplicationState;
+import com.radixdlt.client.core.ledger.TransitionedParticle;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Collections;

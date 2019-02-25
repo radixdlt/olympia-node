@@ -7,11 +7,11 @@ import org.junit.Test;
 import org.radix.utils.UInt256;
 
 import com.radixdlt.client.core.atoms.RadixHash;
-import com.radixdlt.client.core.atoms.particles.SpunParticle;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import com.radixdlt.client.core.ledger.TransitionedParticle;
 
 public class TokenBalanceReducerTest {
 
@@ -26,7 +26,7 @@ public class TokenBalanceReducerTest {
 		when(minted.getTokenTypeReference()).thenReturn(token);
 
 		TokenBalanceReducer reducer = new TokenBalanceReducer();
-		TokenBalanceState tokenBalance = reducer.reduce(new TokenBalanceState(), SpunParticle.up(minted));
+		TokenBalanceState tokenBalance = reducer.reduce(new TokenBalanceState(), TransitionedParticle.n2u(minted));
 		BigDecimal tenSubunits = TokenTypeReference.subunitsToUnits(UInt256.TEN);
 		assertThat(tokenBalance.getBalance().get(token).getAmount().compareTo(tenSubunits)).isEqualTo(0);
 	}
