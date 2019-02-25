@@ -99,7 +99,7 @@ public final class Atom extends SerializableObject {
 	private Set<Long> getShards() {
 		return this.spunParticles()
 			.map(SpunParticle<Particle>::getParticle)
-			.map(Particle::getKeyDestinations)
+			.map(Particle::getShardables)
 			.flatMap(Set::stream)
 			.map(RadixAddress::getUID)
 			.map(EUID::getShard)
@@ -111,7 +111,7 @@ public final class Atom extends SerializableObject {
 		if (this.spunParticles().anyMatch(s -> s.getSpin() == Spin.DOWN)) {
 			return this.spunParticles()
 				.filter(s -> s.getSpin() == Spin.DOWN)
-				.flatMap(s -> s.getParticle().getKeyDestinations().stream())
+				.flatMap(s -> s.getParticle().getShardables().stream())
 				.map(RadixAddress::getUID)
 				.map(EUID::getShard)
 				.collect(Collectors.toSet());
@@ -135,7 +135,7 @@ public final class Atom extends SerializableObject {
 	public Stream<RadixAddress> addresses() {
 		return this.spunParticles()
 			.map(SpunParticle<Particle>::getParticle)
-			.map(Particle::getKeyDestinations)
+			.map(Particle::getShardables)
 			.flatMap(Set::stream);
 	}
 

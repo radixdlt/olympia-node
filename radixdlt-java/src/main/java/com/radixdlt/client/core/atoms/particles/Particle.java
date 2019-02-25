@@ -24,7 +24,7 @@ public abstract class Particle extends SerializableObject {
 	protected Particle() {
 	}
 
-	public final Set<RadixAddress> getKeyDestinations() {
+	public final Set<RadixAddress> getShardables() {
 		Set<RadixAddress> addresses = new HashSet<>();
 
 		if (this instanceof Accountable) {

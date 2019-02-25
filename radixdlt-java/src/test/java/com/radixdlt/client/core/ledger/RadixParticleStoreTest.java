@@ -21,7 +21,7 @@ public class RadixParticleStoreTest {
 		RadixAddress address = mock(RadixAddress.class);
 
 		Particle particle = mock(Particle.class);
-		when(particle.getKeyDestinations()).thenReturn(Collections.singleton(address));
+		when(particle.getShardables()).thenReturn(Collections.singleton(address));
 
 		Atom atom = new Atom(Collections.singletonList(ParticleGroup.of(SpunParticle.up(particle))), 0);
 		AtomStore atomStore = mock(AtomStore.class);
