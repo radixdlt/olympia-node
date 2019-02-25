@@ -29,7 +29,7 @@ public enum ParticleTransition {
 	}
 
 	public ParticleTransition revert() {
-		switch(this) {
+		switch (this) {
 			case N2U: return U2N;
 			case U2D: return D2U;
 			case U2N: return N2U;

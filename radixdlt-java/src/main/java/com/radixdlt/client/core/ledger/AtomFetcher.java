@@ -2,7 +2,6 @@ package com.radixdlt.client.core.ledger;
 
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.AtomObservation;
-import com.radixdlt.client.core.atoms.AtomValidationException;
 import com.radixdlt.client.core.network.jsonrpc.AtomQuery;
 import com.radixdlt.client.core.util.IncreasingRetryTimer;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient;

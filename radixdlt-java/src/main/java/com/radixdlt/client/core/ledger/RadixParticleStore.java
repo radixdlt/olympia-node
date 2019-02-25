@@ -2,12 +2,9 @@ package com.radixdlt.client.core.ledger;
 
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.AtomObservation;
-import com.radixdlt.client.core.atoms.particles.Spin;
-import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import io.reactivex.Observable;
 
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 public class RadixParticleStore implements ParticleStore {
 	private final AtomStore atomStore;

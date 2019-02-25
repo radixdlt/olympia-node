@@ -31,6 +31,14 @@ public class TransitionedParticle<T extends Particle> {
 		return transition.getSpinTo();
 	}
 
+	public Spin getSpinFrom() {
+		return transition.getSpinFrom();
+	}
+
+	public ParticleTransition getTransition() {
+		return transition;
+	}
+
 	public static <T extends Particle> TransitionedParticle<T> fromSpunParticle(
 		SpunParticle<T> s, AtomObservation.Type observationType
 	) {
@@ -41,5 +49,17 @@ public class TransitionedParticle<T extends Particle> {
 
 	public static <T extends Particle> TransitionedParticle<T> n2u(T particle) {
 		return new TransitionedParticle<>(ParticleTransition.N2U, particle);
+	}
+
+	public static <T extends Particle> TransitionedParticle<T> u2n(T particle) {
+		return new TransitionedParticle<>(ParticleTransition.U2N, particle);
+	}
+
+	public static <T extends Particle> TransitionedParticle<T> u2d(T particle) {
+		return new TransitionedParticle<>(ParticleTransition.U2D, particle);
+	}
+
+	public static <T extends Particle> TransitionedParticle<T> d2u(T particle) {
+		return new TransitionedParticle<>(ParticleTransition.D2U, particle);
 	}
 }

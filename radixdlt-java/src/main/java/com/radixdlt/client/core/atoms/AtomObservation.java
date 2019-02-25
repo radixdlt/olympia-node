@@ -62,6 +62,10 @@ public class AtomObservation {
 		return new AtomObservation(atom, Type.STORE, System.currentTimeMillis());
 	}
 
+	public static AtomObservation deleted(Atom atom) {
+		return new AtomObservation(atom, Type.DELETE, System.currentTimeMillis());
+	}
+
 	public static AtomObservation head() {
 		return new AtomObservation(null, Type.HEAD, System.currentTimeMillis());
 	}
