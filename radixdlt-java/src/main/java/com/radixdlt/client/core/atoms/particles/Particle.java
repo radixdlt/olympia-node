@@ -26,20 +26,7 @@ import com.radixdlt.client.core.crypto.ECPublicKey;
  */
 @SerializerId2("PARTICLE")
 public abstract class Particle extends SerializableObject {
-	@JsonProperty("quarks")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private final List<Quark> quarks; // immutable for now, later on will be able to modify after construction
-
 	protected Particle() {
-		this.quarks = Collections.emptyList();
-	}
-
-	protected Particle(Quark... quarks) {
-		this.quarks = Arrays.asList(quarks);
-	}
-
-	protected Particle(List<Quark> quarks) {
-		this.quarks = Collections.unmodifiableList(quarks);
 	}
 
 	public final Set<ECPublicKey> getKeyDestinations() {
@@ -56,73 +43,5 @@ public abstract class Particle extends SerializableObject {
 		}
 
 		return addresses.stream().map(RadixAddress::getPublicKey).collect(Collectors.toSet());
-	}
-
-	/// Methods taken from Particle.java in Core
-
-	public final <T extends Quark> Optional<T> getQuark(Class<T> type) {
-		Objects.requireNonNull(type, "type is required");
-
-		if (this.quarks != null) {
-			for (Quark quark : this.quarks) {
-				// all quark classes must be final
-				if (type == quark.getClass()) {
-					return Optional.of((T) quark);
-				}
-			}
-		}
-
-		return Optional.empty();
-	}
-
-	public final <T extends Quark> T getQuarkOrError(Class<T> type) {
-		Objects.requireNonNull(type, "type is required");
-
-		if (this.quarks != null) {
-			for (Quark quark : this.quarks) {
-				// all quark classes must be final
-				if (type == quark.getClass()) {
-					return (T) quark;
-				}
-			}
-		}
-
-		throw new RuntimeException("No quark with type " + type + " found in this particle");
-	}
-
-	public final List<Quark> getQuarks() {
-		return Collections.unmodifiableList(this.quarks);
-	}
-
-	public final <T extends Quark> List<T> getQuarks(Class<T> type) {
-		Objects.requireNonNull(type, "type is required");
-
-		List<Quark> quarks = new ArrayList<>();
-
-		if (this.quarks != null) {
-			for (Quark quark : this.quarks) {
-				if (type == quark.getClass()) {
-					quarks.add(quark);
-				}
-			}
-		}
-
-		return (List<T>) Collections.unmodifiableList(quarks);
-	}
-
-	public final <T extends Quark> Stream<T> quarks(Class<T> type) {
-		if (this.quarks != null) {
-			return this.quarks.stream().filter(q -> type == null || type == q.getClass()).map(q -> (T) q);
-		} else {
-			return Stream.empty();
-		}
-	}
-
-	public final <T extends Quark> boolean containsQuark(Class<T> type) {
-		if (this.quarks != null) {
-			return this.quarks.stream().anyMatch(q -> type == null || type == q.getClass());
-		} else {
-			return false;
-		}
 	}
 }
