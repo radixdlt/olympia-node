@@ -178,7 +178,7 @@ public class RadixApplicationAPITest {
 		when(address.getPublicKey()).thenReturn(mock(ECPublicKey.class));
 		Atom atom = mock(Atom.class);
 		when(atom.getMessageParticles()).thenReturn(Collections.emptyList());
-		AtomObservation atomObservation = AtomObservation.storeAtom(atom);
+		AtomObservation atomObservation = AtomObservation.stored(atom);
 
 		Ledger ledger = mock(Ledger.class);
 		when(ledger.getAtomStore()).thenReturn(euid -> Observable.just(atomObservation, atomObservation, atomObservation));

@@ -4,6 +4,7 @@ import com.radixdlt.client.application.translate.tokens.TokenTypeReference;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.atommodel.tokens.TokenParticle;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
+import com.radixdlt.client.core.atoms.AtomObservation;
 import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.ledger.AtomPuller;
@@ -175,6 +176,11 @@ public final class RadixUniverse {
 			.orElseThrow(() -> new IllegalStateException("No Native Token defined in universe"));
 
 		final InMemoryAtomStore inMemoryAtomStore = new InMemoryAtomStore();
+		config.getGenesis().forEach(atom ->
+			atom.addresses()
+				.map(this::getAddressFrom)
+				.forEach(addr -> inMemoryAtomStore.store(addr, AtomObservation.stored(atom)))
+		);
 
 		// Hooking up the default configuration
 		// TODO: cleanup

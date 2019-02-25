@@ -1,5 +1,6 @@
 package com.radixdlt.client.core.network.jsonrpc;
 
+import com.radixdlt.client.core.atoms.AtomEvent;
 import java.util.List;
 import java.util.UUID;
 
@@ -234,12 +235,12 @@ public class RadixJsonRpcClient {
 	public Observable<AtomObservation> observeAtoms(String subscriberId) {
 		return this.observeNotifications("Atoms.subscribeUpdate", subscriberId)
 			.flatMap(observedAtomsJson -> {
-				JsonArray atomsJson = observedAtomsJson.getAsJsonArray("atoms");
+				JsonArray atomEvents = observedAtomsJson.getAsJsonArray("atomEvents");
 				boolean isHead = observedAtomsJson.has("isHead") && observedAtomsJson.get("isHead").getAsBoolean();
 
-				return Observable.fromIterable(atomsJson)
-					.map(jsonAtom -> Serialize.getInstance().fromJson(jsonAtom.toString(), Atom.class))
-					.map(AtomObservation::storeAtom)
+				return Observable.fromIterable(atomEvents)
+					.map(jsonAtom -> Serialize.getInstance().fromJson(jsonAtom.toString(), AtomEvent.class))
+					.map(AtomObservation::ofEvent)
 					.concatWith(Maybe.fromCallable(() -> isHead ? AtomObservation.head() : null));
 			});
 	}
@@ -311,12 +312,12 @@ public class RadixJsonRpcClient {
 		return this.jsonRpcSubscribe("Atoms.subscribe", params, "Atoms.subscribeUpdate")
 			.map(JsonElement::getAsJsonObject)
 			.flatMap(observedAtomsJson -> {
-				JsonArray atomsJson = observedAtomsJson.getAsJsonArray("atoms");
+				JsonArray atomEvents = observedAtomsJson.getAsJsonArray("atomEvents");
 				boolean isHead = observedAtomsJson.has("isHead") && observedAtomsJson.get("isHead").getAsBoolean();
 
-				return Observable.fromIterable(atomsJson)
-					.map(jsonAtom -> Serialize.getInstance().fromJson(jsonAtom.toString(), Atom.class))
-					.map(AtomObservation::storeAtom)
+				return Observable.fromIterable(atomEvents)
+					.map(jsonAtom -> Serialize.getInstance().fromJson(jsonAtom.toString(), AtomEvent.class))
+					.map(AtomObservation::ofEvent)
 					.concatWith(Maybe.fromCallable(() -> isHead ? AtomObservation.head() : null));
 			});
 	}

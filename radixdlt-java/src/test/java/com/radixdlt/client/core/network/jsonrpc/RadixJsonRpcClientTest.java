@@ -1,5 +1,7 @@
 package com.radixdlt.client.core.network.jsonrpc;
 
+import com.radixdlt.client.core.atoms.AtomEvent;
+import com.radixdlt.client.core.atoms.AtomEvent.AtomEventType;
 import java.util.Collections;
 
 import org.junit.Test;
@@ -155,7 +157,7 @@ public class RadixJsonRpcClientTest {
 	}
 
 	@Test
-	public void getAtomsTest() {
+	public void getAtomEventsTest() {
 		PersistentChannel channel = mock(PersistentChannel.class);
 
 		ReplaySubject<String> messages = ReplaySubject.create();
@@ -180,11 +182,12 @@ public class RadixJsonRpcClientTest {
 			JsonObject params = new JsonObject();
 			params.addProperty("subscriberId", subscriberId);
 
-			JsonArray atoms = new JsonArray();
-			Atom atomObject = new Atom(Collections.emptyList(), 0L);
-			JsonElement atom = parser.parse(Serialize.getInstance().toJson(atomObject, Output.API));
-			atoms.add(atom);
-			params.add("atoms", atoms);
+			JsonArray atomEvents = new JsonArray();
+			Atom atom = new Atom(Collections.emptyList(), 0L);
+			AtomEvent atomEvent = new AtomEvent(atom, AtomEventType.STORE);
+			JsonElement atomEventJson = parser.parse(Serialize.getInstance().toJson(atomEvent, Output.API));
+			atomEvents.add(atomEventJson);
+			params.add("atomEvents", atomEvents);
 			params.addProperty("isHead", false);
 
 			notification.add("params", params);
