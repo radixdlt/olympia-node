@@ -153,7 +153,7 @@ public class BurnMultiIssuanceTokens {
 
 	@Then("^the client should be notified that the action failed because the client does not have permission to burn those tokens$")
 	public void the_client_should_be_notified_that_the_action_failed_because_the_client_does_not_have_permission_to_burn_those_tokens() throws Throwable {
-		awaitAtomValidationError("not signed by owner");
+		awaitAtomValidationError("owner");
 	}
 
 	private void setupApi() {
@@ -253,7 +253,7 @@ public class BurnMultiIssuanceTokens {
 		this.observers.get(atomNumber - 1)
 			.awaitCount(3, TestWaitStrategy.SLEEP_100MS, TIMEOUT_MS)
 			.assertError(exceptionClass)
-			.assertError(t -> t.getMessage().contains(partialExceptionMessage));
+			.assertError(t -> t.getMessage().toLowerCase().contains(partialExceptionMessage.toLowerCase()));
 	}
 
 	private static UInt256 scaledToUnscaled(int amount) {
