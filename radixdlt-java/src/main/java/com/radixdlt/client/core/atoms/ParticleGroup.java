@@ -120,7 +120,9 @@ public class ParticleGroup extends SerializableObject {
 
 	@Override
 	public String toString() {
-		String particlesStr = (this.particles == null) ? "null" : particles.stream().map(SpunParticle::toString).collect(Collectors.joining(","));
+		String particlesStr = (this.particles == null)
+			? "null"
+			: particles.stream().map(SpunParticle::toString).collect(Collectors.joining(","));
 		return String.format("%s[%s]", getClass().getSimpleName(), particlesStr);
 	}
 
