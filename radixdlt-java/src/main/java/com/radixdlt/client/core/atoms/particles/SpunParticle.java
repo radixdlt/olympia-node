@@ -1,9 +1,10 @@
 package com.radixdlt.client.core.atoms.particles;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.SerializerId2;
 import org.radix.serialization2.client.SerializableObject;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @SerializerId2("SPUNPARTICLE")
 public class SpunParticle<T extends Particle> extends SerializableObject {
@@ -52,5 +53,11 @@ public class SpunParticle<T extends Particle> extends SerializableObject {
 	@JsonProperty("spin")
 	private void setJsonSpin(int spin) {
 		this.spin = Spin.valueOf(spin);
+	}
+
+	@Override
+	public String toString() {
+		String hid = (this.particle == null) ? "null" : this.particle.getHid().toString();
+		return String.format("%s[%s:%s:%s]", getClass().getSimpleName(), hid, String.valueOf(spin), String.valueOf(particle));
 	}
 }

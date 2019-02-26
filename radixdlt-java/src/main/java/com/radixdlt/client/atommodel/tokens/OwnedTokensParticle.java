@@ -1,11 +1,5 @@
 package com.radixdlt.client.atommodel.tokens;
 
-import com.radixdlt.client.application.translate.tokens.TokenClassReference;
-import com.radixdlt.client.atommodel.Accountable;
-import com.radixdlt.client.atommodel.Fungible;
-import com.radixdlt.client.atommodel.FungibleType;
-import com.radixdlt.client.atommodel.Ownable;
-import com.radixdlt.client.core.atoms.particles.RadixResourceIdentifer;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
@@ -18,9 +12,15 @@ import org.radix.serialization2.client.Serialize;
 import org.radix.utils.UInt256;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.client.application.translate.tokens.TokenClassReference;
+import com.radixdlt.client.atommodel.Accountable;
+import com.radixdlt.client.atommodel.Fungible;
+import com.radixdlt.client.atommodel.FungibleType;
+import com.radixdlt.client.atommodel.Ownable;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.RadixHash;
 import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.client.core.atoms.particles.RadixResourceIdentifer;
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 
@@ -149,8 +149,15 @@ public class OwnedTokensParticle extends Particle implements Accountable, Ownabl
 
 	@Override
 	public String toString() {
-		return this.getClass().getSimpleName() + " owners(" + this.address.getPublicKey() + ")"
-				+ " amount(" + this.amount + ")";
+		return String.format("%s[%s:%s:%s:%s:%s:%s:%s]",
+			getClass().getSimpleName(),
+			String.valueOf(tokenClassReference),
+			String.valueOf(amount),
+			String.valueOf(granularity),
+			String.valueOf(address),
+			planck,
+			nonce,
+			String.valueOf(type));
 	}
 
 	@JsonProperty("type")

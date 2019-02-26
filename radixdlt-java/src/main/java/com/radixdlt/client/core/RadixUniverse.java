@@ -1,37 +1,36 @@
 package com.radixdlt.client.core;
 
 import com.radixdlt.client.application.translate.tokens.TokenClassReference;
-import com.radixdlt.client.core.atoms.AtomObservation;
-import com.radixdlt.client.core.atoms.particles.Spin;
-import com.radixdlt.client.atommodel.tokens.TokenParticle;
-import com.radixdlt.client.core.ledger.RadixParticleStore;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.client.atommodel.tokens.TokenParticle;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
+import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.ledger.AtomPuller;
 import com.radixdlt.client.core.ledger.AtomStore;
 import com.radixdlt.client.core.ledger.AtomSubmitter;
+import com.radixdlt.client.core.ledger.InMemoryAtomStore;
 import com.radixdlt.client.core.ledger.ParticleStore;
 import com.radixdlt.client.core.ledger.RadixAtomPuller;
-import com.radixdlt.client.core.network.epics.FindANodeEpic;
-import com.radixdlt.client.core.network.epics.WebSocketEventsEpic;
+import com.radixdlt.client.core.ledger.RadixParticleStore;
+import com.radixdlt.client.core.network.RadixNetworkController;
+import com.radixdlt.client.core.network.RadixNetworkController.RadixNetworkControllerBuilder;
+import com.radixdlt.client.core.network.RadixNetworkState;
+import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.epics.ConnectWebSocketEpic;
+import com.radixdlt.client.core.network.epics.DiscoverNodesEpic;
 import com.radixdlt.client.core.network.epics.FetchAtomsEpic;
+import com.radixdlt.client.core.network.epics.FindANodeEpic;
 import com.radixdlt.client.core.network.epics.RadixJsonRpcAutoCloseEpic;
 import com.radixdlt.client.core.network.epics.RadixJsonRpcAutoConnectEpic;
 import com.radixdlt.client.core.network.epics.RadixJsonRpcMethodEpic;
-import com.radixdlt.client.core.network.epics.WebSocketsEpic.WebSocketsEpicBuilder;
 import com.radixdlt.client.core.network.epics.SubmitAtomEpic;
-import com.radixdlt.client.core.network.selector.RandomSelector;
-import com.radixdlt.client.core.ledger.InMemoryAtomStore;
-import com.radixdlt.client.core.network.RadixNetworkController;
-import com.radixdlt.client.core.network.RadixNetworkController.RadixNetworkControllerBuilder;
-import com.radixdlt.client.core.network.RadixNode;
-import com.radixdlt.client.core.network.epics.DiscoverNodesEpic;
+import com.radixdlt.client.core.network.epics.WebSocketEventsEpic;
+import com.radixdlt.client.core.network.epics.WebSocketsEpic.WebSocketsEpicBuilder;
 import com.radixdlt.client.core.network.reducers.RadixNetwork;
-import com.radixdlt.client.core.network.RadixNetworkState;
+import com.radixdlt.client.core.network.selector.RandomSelector;
+
 import io.reactivex.Observable;
-import java.util.Optional;
 
 /**
  * A RadixUniverse represents the interface through which a client can interact
@@ -158,38 +157,23 @@ public final class RadixUniverse {
 		this.config = config;
 		this.networkController = networkController;
 
-		final Optional<TokenClassReference> powToken = config.getGenesis().stream()
+		this.powToken = config.getGenesis().stream()
 			.flatMap(atom -> atom.particles(Spin.UP))
 			.filter(p -> p instanceof TokenParticle)
 			.filter(p -> ((TokenParticle) p).getTokenClassReference().getSymbol().equals("POW"))
 			.map(p -> ((TokenParticle) p).getTokenClassReference())
-			.findFirst();
+			.findFirst()
+			.orElseThrow(() -> new IllegalStateException("No POW Token defined in universe"));
 
-		if (!powToken.isPresent()) {
-			throw new IllegalStateException("No POW Token defined in universe");
-		}
-
-		this.powToken = powToken.get();
-
-		final Optional<TokenClassReference> nativeToken = config.getGenesis().stream()
+		this.nativeToken = config.getGenesis().stream()
 			.flatMap(atom -> atom.particles(Spin.UP))
 			.filter(p -> p instanceof TokenParticle)
 			.filter(p -> !((TokenParticle) p).getTokenClassReference().getSymbol().equals("POW"))
 			.map(p -> ((TokenParticle) p).getTokenClassReference())
-			.findFirst();
-
-		if (!nativeToken.isPresent()) {
-			throw new IllegalStateException("No Native Token defined in universe");
-		}
-
-		this.nativeToken = nativeToken.get();
+			.findFirst()
+			.orElseThrow(() -> new IllegalStateException("No Native Token defined in universe"));
 
 		final InMemoryAtomStore inMemoryAtomStore = new InMemoryAtomStore();
-		config.getGenesis().forEach(atom ->
-			atom.addresses()
-				.map(this::getAddressFrom)
-				.forEach(addr -> inMemoryAtomStore.store(addr, AtomObservation.storeAtom(atom)))
-		);
 
 		// Hooking up the default configuration
 		// TODO: cleanup

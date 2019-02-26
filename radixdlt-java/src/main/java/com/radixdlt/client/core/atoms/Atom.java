@@ -238,6 +238,7 @@ public final class Atom extends SerializableObject {
 
 	@Override
 	public String toString() {
-		return "Atom (" + this.getHid().toString() + ")";
+		String particleGroupsStr = this.particleGroups.stream().map(ParticleGroup::toString).collect(Collectors.joining(","));
+		return String.format("%s[%s:%s]", getClass().getSimpleName(), getHid(), particleGroupsStr);
 	}
 }

@@ -1,22 +1,24 @@
 package com.radixdlt.client.core.atoms;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.radixdlt.client.core.atoms.particles.Particle;
-import com.radixdlt.client.core.atoms.particles.Spin;
-import com.radixdlt.client.core.atoms.particles.SpunParticle;
-import org.radix.serialization2.DsonOutput;
-import org.radix.serialization2.SerializerId2;
-import org.radix.serialization2.client.SerializableObject;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import org.radix.serialization2.DsonOutput;
+import org.radix.serialization2.SerializerId2;
+import org.radix.serialization2.client.SerializableObject;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.client.core.atoms.particles.Spin;
+import com.radixdlt.client.core.atoms.particles.SpunParticle;
 
 /**
  * A group of particles representing one intent, e.g. a transfer.
@@ -114,6 +116,12 @@ public class ParticleGroup extends SerializableObject {
 	 */
 	public boolean hasParticles() {
 		return !this.particles.isEmpty();
+	}
+
+	@Override
+	public String toString() {
+		String particlesStr = (this.particles == null) ? "null" : particles.stream().map(SpunParticle::toString).collect(Collectors.joining(","));
+		return String.format("%s[%s]", getClass().getSimpleName(), particlesStr);
 	}
 
 	/**
