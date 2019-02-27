@@ -56,6 +56,7 @@ public class BurnMultiIssuanceTokens {
 	}
 
 	private static final String ADDRESS = "address";
+	private static final String OTHER_ADDRESS = "otherAddress";
 	private static final String NAME = "name";
 	private static final String SYMBOL = "symbol";
 	private static final String DESCRIPTION = "description";
@@ -71,6 +72,7 @@ public class BurnMultiIssuanceTokens {
 	private RadixIdentity otherIdentity;
 	private final SpecificProperties properties = SpecificProperties.of(
 		ADDRESS,        "unknown",
+		OTHER_ADDRESS,  "unknown",
 		NAME,           "RLAU-40 Test token",
 		SYMBOL,			"RLAU",
 		DESCRIPTION,	"RLAU-40 Test token",
@@ -111,20 +113,27 @@ public class BurnMultiIssuanceTokens {
 		assertFalse(tokenClassesState.getState().containsKey(tokenClass));
 	}
 
-	@Given("^a library client who does not own a token class \"([^\"]*)\" on another account$")
-	public void a_library_client_who_does_not_own_a_token_class_on_another_account(String symbol) throws Throwable {
+	@Given("^a library client who does not own a token class \"([^\"]*)\" on another account with (\\d+) initial supply$")
+	public void a_library_client_who_does_not_own_a_token_class_on_another_account(String symbol, int initialSupply) throws Throwable {
 		setupApi();
 
 		this.properties.put(SYMBOL, symbol);
 		createToken(this.otherApi, TokenSupplyType.MUTABLE);
 		awaitAtomStatus(STORED);
 
-		this.properties.put(ADDRESS, this.otherApi.getMyAddress().toString());
+		this.properties.put(ADDRESS, this.api.getMyAddress().toString());
+		this.properties.put(OTHER_ADDRESS, this.otherApi.getMyAddress().toString());
+		this.properties.put(INITIAL_SUPPLY, scaledToUnscaled(initialSupply).toString());
+	}
+
+	@When("^the client executes 'BURN (\\d+) \"([^\"]*)\" tokens' on the other account$")
+	public void the_client_executes_burn_tokens_on_the_other_account(int newSupply, String symbol) throws Throwable {
+		burnTokens(scaledToUnscaled(newSupply), symbol, RadixAddress.from(this.properties.get(OTHER_ADDRESS)), RadixAddress.from(this.properties.get(OTHER_ADDRESS)));
 	}
 
 	@When("^the client executes 'BURN (\\d+) \"([^\"]*)\" tokens'$")
 	public void the_client_executes_burn_tokens(int newSupply, String symbol) throws Throwable {
-		burnTokens(scaledToUnscaled(newSupply), symbol, RadixAddress.from(this.properties.get(ADDRESS)));
+		burnTokens(scaledToUnscaled(newSupply), symbol, RadixAddress.from(this.properties.get(ADDRESS)), RadixAddress.from(this.properties.get(ADDRESS)));
 	}
 
 	@When("^the client waits to be notified that \"([^\"]*)\" token has a total supply of (\\d+)$")
@@ -223,9 +232,9 @@ public class BurnMultiIssuanceTokens {
 		this.observers.add(observer);
 	}
 
-	private void burnTokens(UInt256 amount, String symbol, RadixAddress address) {
-		TokenClassReference tokenClass = TokenClassReference.of(address, symbol);
-		BurnTokensAction mta = new BurnTokensAction(tokenClass, amount);
+	private void burnTokens(UInt256 amount, String symbol, RadixAddress tokenAddress, RadixAddress address) {
+		TokenClassReference tokenClass = TokenClassReference.of(tokenAddress, symbol);
+		BurnTokensAction mta = new BurnTokensAction(address, tokenClass, amount);
 		TestObserver<SubmitAtomAction> observer = new TestObserver<>();
 		api.execute(mta)
 			.toObservable()

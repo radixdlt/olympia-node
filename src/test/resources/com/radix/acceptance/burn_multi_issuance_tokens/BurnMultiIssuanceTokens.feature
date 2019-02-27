@@ -18,14 +18,19 @@ Feature: Burn Multi-Issuance Tokens
   Scenario: 3: Burn Tokens on non-existing token
     Given a library client who owns an account where token "JOSH" does not exist
     When the client executes 'BURN 1 "JOSH" tokens'
-    Then the client should be notified that the action failed because "JOSH" does not exist
+    Then the client should be notified that the action failed because there's not that many tokens in supply
 
-  Scenario: 4: Burn Tokens on unowned account
-    Given a library client who does not own a token class "JOSH" on another account
-    When the client executes 'BURN 1 "JOSH" tokens'
+  Scenario: 4: Burn Tokens on unowned token
+    Given a library client who does not own a token class "JOSH" on another account with 100 initial supply
+    When the client executes 'BURN 1 "JOSH" tokens' on the other account
     Then the client should be notified that the action failed because the client does not have permission to burn those tokens
 
-  Scenario: 5: Transfer Burn Tokens
+  Scenario: 5: Burn Tokens on unowned token with no funds
+    Given a library client who does not own a token class "JOSH" on another account with 100 initial supply
+    When the client executes 'BURN 1 "JOSH" tokens'
+    Then the client should be notified that the action failed because there's not that many tokens in supply
+
+  Scenario: 6: Transfer Burn Tokens
     Given a library client who owns an account and created token "JOSH" with 100 initial supply and is listening to the state of "JOSH"
     When the client executes 'BURN 100 "JOSH" tokens'
     And the client waits to be notified that "JOSH" token has a total supply of 0
