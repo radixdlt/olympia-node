@@ -1,6 +1,7 @@
 package com.radix.acceptance.burn_multi_issuance_tokens;
 
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomReceivedAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
@@ -126,6 +127,26 @@ public class BurnMultiIssuanceTokens {
 		burnTokens(scaledToUnscaled(newSupply), symbol, RadixAddress.from(this.properties.get(ADDRESS)));
 	}
 
+	@When("^the client waits to be notified that \"([^\"]*)\" token has a total supply of (\\d+)$")
+	public void theClientWaitsToBeNotifiedThatTokenHasATotalSupplyOf(String symbol, int supply) throws Throwable {
+		awaitAtomStatus(STORED);
+		// Must be a better way than this.
+		TimeUnit.SECONDS.sleep(2);
+		TokenClassReference tokenClass = TokenClassReference.of(api.getMyAddress(), symbol);
+		// Ensure balance is up-to-date.
+		BigDecimal tokenBalanceDecimal = api.getBalance(api.getMyAddress(), tokenClass)
+			.firstOrError()
+			.blockingGet();
+		UInt256 tokenBalance = TokenClassReference.unitsToSubunits(tokenBalanceDecimal);
+		UInt256 requiredBalance = TokenClassReference.unitsToSubunits(supply);
+		assertEquals(requiredBalance, tokenBalance);
+	}
+
+	@When("^the client executes 'TRANSFER (\\d+) \"([^\"]*)\" tokens' to himself$")
+	public void the_client_executes_token_transfer_to_self(int amount, String symbol) throws Throwable {
+		transferTokens(BigDecimal.valueOf(amount), symbol, RadixAddress.from(this.properties.get(ADDRESS)));
+	}
+
 	@Then("^the client should be notified that \"([^\"]*)\" token has a total supply of (\\d+)$")
 	public void theClientShouldBeNotifiedThatTokenHasATotalSupplyOf(String symbol, int supply) throws Throwable {
 		awaitAtomStatus(STORED);
@@ -148,7 +169,7 @@ public class BurnMultiIssuanceTokens {
 
 	@Then("^the client should be notified that the action failed because there's not that many tokens in supply$")
 	public void the_client_should_be_notified_that_the_action_failed_because_there_s_not_that_many_tokens_in_supply() throws Throwable {
-		awaitAtomException(InsufficientFundsException.class, "only 100.0");
+		awaitAtomException(InsufficientFundsException.class, "Requested");
 	}
 
 	@Then("^the client should be notified that the action failed because the client does not have permission to burn those tokens$")
@@ -191,6 +212,17 @@ public class BurnMultiIssuanceTokens {
 		this.observers.add(observer);
 	}
 
+	private void transferTokens(BigDecimal amount, String symbol, RadixAddress address) {
+		TokenClassReference tokenClass = TokenClassReference.of(address, symbol);
+		TransferTokensAction tta = TransferTokensAction.create(address, address, amount, tokenClass);
+		TestObserver<SubmitAtomAction> observer = new TestObserver<>();
+		api.execute(tta)
+			.toObservable()
+			.doOnNext(System.out::println)
+			.subscribe(observer);
+		this.observers.add(observer);
+	}
+
 	private void burnTokens(UInt256 amount, String symbol, RadixAddress address) {
 		TokenClassReference tokenClass = TokenClassReference.of(address, symbol);
 		BurnTokensAction mta = new BurnTokensAction(tokenClass, amount);
@@ -200,6 +232,7 @@ public class BurnMultiIssuanceTokens {
 			.doOnNext(System.out::println)
 			.subscribe(observer);
 		this.observers.add(observer);
+		observer.awaitTerminalEvent();
 	}
 
 	private void awaitAtomStatus(SubmitAtomResultActionType... finalStates) {
