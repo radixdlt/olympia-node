@@ -54,7 +54,7 @@ public class TokenBalanceState implements ApplicationState {
 			return consumables.entrySet().stream()
 				.map(Entry::getValue)
 				.filter(c -> c.getSpin() == Spin.UP)
-				.filter(c -> !c.getParticle().getType().equals(FungibleType.BURNED))
+				.filter(c -> c.getParticle().getType() != FungibleType.BURNED)
 				.map(SpunParticle::getParticle);
 		}
 
