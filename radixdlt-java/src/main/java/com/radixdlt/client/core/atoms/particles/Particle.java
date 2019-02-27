@@ -17,7 +17,7 @@ import com.radixdlt.client.core.atoms.RadixHash;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 
 /**
- * A logical action on the ledger, composed of distinct {@link Quark} properties
+ * A logical action on the ledger
  */
 @SerializerId2("PARTICLE")
 public abstract class Particle extends SerializableObject {

@@ -83,7 +83,7 @@ public class BurnTokensActionMapper implements StatefulActionToParticleGroupsMap
 
 		final List<OwnedTokensParticle> unconsumedOwnedTokensParticles =
 			Optional.ofNullable(allConsumables.get(burnTokensAction.getTokenClassReference()))
-				.map(b -> b.unconsumedConsumables().collect(Collectors.toList()))
+				.map(b -> b.unconsumedTransferrable().collect(Collectors.toList()))
 				.orElse(Collections.emptyList());
 
 		List<SpunParticle> particles = new ArrayList<>();

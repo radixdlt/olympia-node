@@ -166,7 +166,7 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 			})
 			.map(allConsumables ->
 				Optional.ofNullable(allConsumables.get(transfer.getTokenClassReference()))
-					.map(bal -> bal.unconsumedConsumables().collect(Collectors.toList()))
+					.map(bal -> bal.unconsumedTransferrable().collect(Collectors.toList()))
 					.orElse(Collections.emptyList())
 		)
 			.flatMapObservable(tokenConsumables -> this.mapToParticles(transfer, tokenConsumables))

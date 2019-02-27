@@ -50,10 +50,11 @@ public class TokenBalanceState implements ApplicationState {
 			return TokenClassReference.subunitsToUnits(granularity);
 		}
 
-		public Stream<OwnedTokensParticle> unconsumedConsumables() {
+		public Stream<OwnedTokensParticle> unconsumedTransferrable() {
 			return consumables.entrySet().stream()
 				.map(Entry::getValue)
 				.filter(c -> c.getSpin() == Spin.UP)
+				.filter(c -> c.getParticle().getType() != FungibleType.BURNED)
 				.map(SpunParticle::getParticle);
 		}
 
