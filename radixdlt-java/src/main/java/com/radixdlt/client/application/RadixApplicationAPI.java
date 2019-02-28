@@ -564,7 +564,7 @@ public class RadixApplicationAPI {
 	 * @return result of the transaction
 	 */
 	public Result burnTokens(String iso, UInt256 amount) {
-		BurnTokensAction burnTokensAction = new BurnTokensAction(TokenClassReference.of(getMyAddress(), iso), amount);
+		BurnTokensAction burnTokensAction = new BurnTokensAction(getMyAddress(), TokenClassReference.of(getMyAddress(), iso), amount);
 		return execute(burnTokensAction);
 	}
 

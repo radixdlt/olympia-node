@@ -46,9 +46,9 @@ public class BurnTokensActionMapper implements StatefulActionToParticleGroupsMap
 
 		BurnTokensAction burnTokensAction = (BurnTokensAction) action;
 
-		RadixAddress tokenClassAddress = burnTokensAction.getTokenClassReference().getAddress();
+		RadixAddress address = burnTokensAction.getAddress();
 
-		return Observable.just(new RequiredShardState(TokenBalanceState.class, tokenClassAddress));
+		return Observable.just(new RequiredShardState(TokenBalanceState.class, address));
 	}
 
 	@Override
@@ -70,12 +70,12 @@ public class BurnTokensActionMapper implements StatefulActionToParticleGroupsMap
 		final Map<TokenClassReference, Balance> allConsumables = curState.getBalance();
 
 		final TokenClassReference tokenRef = burnTokensAction.getTokenClassReference();
+		final BigDecimal burnUnits = TokenClassReference.subunitsToUnits(burnTokensAction.getAmount());
 		final Balance bal = allConsumables.get(tokenRef);
 		if (bal == null) {
-			throw new UnknownTokenException(tokenRef);
+			throw new InsufficientFundsException(tokenRef, BigDecimal.ZERO, burnUnits);
 		}
 		final BigDecimal balance = bal.getAmount();
-		final BigDecimal burnUnits = TokenClassReference.subunitsToUnits(burnTokensAction.getAmount());
 		if (balance.compareTo(burnUnits) < 0) {
 			throw new InsufficientFundsException(tokenRef, balance, burnUnits);
 		}
