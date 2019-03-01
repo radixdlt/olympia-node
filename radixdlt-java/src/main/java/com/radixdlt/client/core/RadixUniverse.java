@@ -99,11 +99,12 @@ public final class RadixUniverse {
 						.add(FetchAtomsEpic::new)
 						.add(RadixJsonRpcMethodEpic::createGetLivePeersEpic)
 						.add(RadixJsonRpcMethodEpic::createGetNodeDataEpic)
+						.add(RadixJsonRpcMethodEpic::createGetUniverseEpic)
 						.add(RadixJsonRpcAutoConnectEpic::new)
 						.add(RadixJsonRpcAutoCloseEpic::new)
 						.build()
 				)
-				.addEpic(new DiscoverNodesEpic(seeds))
+				.addEpic(new DiscoverNodesEpic(seeds, config))
 				.addEpic(new FindANodeEpic(new RandomSelector()))
 				.build();
 

@@ -37,6 +37,6 @@ public final class GetLivePeersResultAction implements JsonRpcResultAction<List<
 
 	@Override
 	public String toString() {
-		return "GET_LIVE_PEERS_RESULT " + node;
+		return "GET_LIVE_PEERS_RESULT " + node + " " + data.size() + " peers";
 	}
 }

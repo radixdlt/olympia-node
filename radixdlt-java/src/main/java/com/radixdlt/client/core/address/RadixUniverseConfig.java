@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.bouncycastle.util.encoders.Base64;
+import org.radix.common.ID.EUID;
 import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.DsonOutput.Output;
 import org.radix.serialization2.SerializerId2;
@@ -117,9 +118,13 @@ public class RadixUniverseConfig extends SerializableObject {
 		return RadixHash.of(Serialize.getInstance().toDson(this, Output.HASH));
 	}
 
+	public EUID getHid() {
+		return this.getHash().toEUID();
+	}
+
 	@Override
 	public String toString() {
-		return name + " " + magic;
+		return name + " " + magic + " " + getHid();
 	}
 
 	@Override
