@@ -13,10 +13,10 @@ import com.radixdlt.client.core.network.actions.GetNodeDataRequestAction;
 import com.radixdlt.client.core.network.actions.GetUniverseRequestAction;
 import com.radixdlt.client.core.network.actions.GetUniverseResultAction;
 import com.radixdlt.client.core.network.actions.NodeUniverseMismatch;
-import io.reactivex.Maybe;
 import io.reactivex.Observable;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * Epic which manages simple bootstrapping and discovers nodes one degree out from the initial seeds.
@@ -59,18 +59,17 @@ public final class DiscoverNodesEpic implements RadixNetworkEpic {
 			.ofType(GetLivePeersResultAction.class)
 			.flatMap(u ->
 				Observable.combineLatest(
-					Observable.fromIterable(u.getResult()),
-					networkState.firstOrError().toObservable(),
-					(data, s) -> {
-						RadixNode node = new RadixNode(data.getIp(), u.getNode().isSsl(), u.getNode().getPort());
-
-						if (!s.getNodes().containsKey(node)) {
-							return Maybe.just(AddNodeAction.of(node, data));
-						} else {
-							return Maybe.<RadixNodeAction>empty();
-						}
-					}
-				).flatMapMaybe(i -> i)
+					Observable.just(u.getResult()),
+					Observable.concat(networkState.firstOrError().toObservable(), Observable.never()),
+					(data, state) ->
+						data.stream()
+							.map(d -> {
+								RadixNode node = new RadixNode(d.getIp(), u.getNode().isSsl(), u.getNode().getPort());
+								return state.getNodes().containsKey(node) ? null : AddNodeAction.of(node, d);
+							})
+							.filter(Objects::nonNull)
+							.collect(Collectors.toSet())
+				).flatMapIterable(i -> i)
 			);
 
 		return Observable.merge(Arrays.asList(
