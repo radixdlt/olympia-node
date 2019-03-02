@@ -15,8 +15,8 @@ public class AtomTest {
 	public void testEmptyAtom() {
 		Atom atom = new Atom(Collections.emptyList(), 0L);
 		assertTrue(atom.getMessageParticles().isEmpty());
-		assertTrue(atom.getOwnedTokensParticles(Spin.UP).isEmpty());
-		assertTrue(atom.getOwnedTokensParticles(Spin.DOWN).isEmpty());
+		assertTrue(atom.getConsumableParticles(Spin.UP).isEmpty());
+		assertTrue(atom.getConsumableParticles(Spin.DOWN).isEmpty());
 		/// The origin of these hashes are this library it self, commit: acbc5307cf5c9f7e1c30300f7438ef5dbc3bb629
 		/// These hashes can be used as a reference for other Radix libraries, e.g. Swift.
 		assertEquals("bf686d65746144617461bf6974696d657374616d706130ff6a73657269616c697a65721a001ed1516776657273696f6e1864ff",

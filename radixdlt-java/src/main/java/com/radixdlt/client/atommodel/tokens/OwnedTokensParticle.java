@@ -55,28 +55,6 @@ public class OwnedTokensParticle extends Particle implements Accountable, Ownabl
 
 	private FungibleType type;
 
-	protected OwnedTokensParticle() {
-	}
-
-	public OwnedTokensParticle(UInt256 amount, UInt256 granularity, FungibleType type, RadixAddress address, long nonce,
-	                           TokenTypeReference tokenRef, long planck) {
-		super();
-
-		// Redundant null check added for completeness
-		Objects.requireNonNull(amount, "amount is required");
-		if (amount.isZero()) {
-			throw new IllegalArgumentException("Amount is zero");
-		}
-
-		this.address = address;
-		this.tokenClassReference = new RadixResourceIdentifer(tokenRef.getAddress(), "tokenclasses", tokenRef.getSymbol());
-		this.granularity = granularity;
-		this.planck = planck;
-		this.nonce = nonce;
-		this.amount = amount;
-		this.type = type;
-	}
-
 	@Override
 	public Set<RadixAddress> getAddresses() {
 		return Collections.singleton(address);
@@ -115,10 +93,6 @@ public class OwnedTokensParticle extends Particle implements Accountable, Ownabl
 	@Override
 	public long getNonce() {
 		return this.nonce;
-	}
-
-	public TokenTypeReference getTokenClassReference() {
-		return TokenTypeReference.of(tokenClassReference.getAddress(), tokenClassReference.getUnique());
 	}
 
 	@Override

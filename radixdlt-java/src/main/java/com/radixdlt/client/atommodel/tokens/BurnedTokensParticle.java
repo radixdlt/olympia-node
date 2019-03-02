@@ -27,7 +27,7 @@ import java.util.Set;
  *  A particle which represents an amount of fungible tokens owned by some key owner and stored in an account.
  */
 @SerializerId2("BURNEDTOKENSPARTICLE")
-public class BurnedTokensParticle extends Particle implements Accountable, Ownable, Fungible {
+public class BurnedTokensParticle extends Particle implements Accountable, Ownable, Fungible, ConsumingTokens {
 	@JsonProperty("address")
 	@DsonOutput(Output.ALL)
 	private RadixAddress address;
@@ -113,6 +113,7 @@ public class BurnedTokensParticle extends Particle implements Accountable, Ownab
 		return this.nonce;
 	}
 
+	@Override
 	public TokenTypeReference getTokenTypeReference() {
 		return TokenTypeReference.of(tokenTypeReference.getAddress(), tokenTypeReference.getUnique());
 	}

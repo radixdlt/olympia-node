@@ -1,5 +1,24 @@
 package com.radixdlt.client.core.atoms;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableMap;
+import com.radixdlt.client.application.translate.tokens.TokenTypeReference;
+import com.radixdlt.client.atommodel.message.MessageParticle;
+import com.radixdlt.client.atommodel.tokens.ConsumableTokens;
+import com.radixdlt.client.atommodel.tokens.ConsumingTokens;
+import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.client.core.atoms.particles.Spin;
+import com.radixdlt.client.core.atoms.particles.SpunParticle;
+import com.radixdlt.client.core.crypto.ECPublicKey;
+import com.radixdlt.client.core.crypto.ECSignature;
+import org.radix.common.ID.EUID;
+import org.radix.common.tuples.Pair;
+import org.radix.serialization2.DsonOutput;
+import org.radix.serialization2.SerializerId2;
+import org.radix.serialization2.client.SerializableObject;
+import org.radix.serialization2.client.Serialize;
+import org.radix.utils.UInt256s;
+
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -11,24 +30,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import org.radix.common.ID.EUID;
-import org.radix.serialization2.DsonOutput;
-import org.radix.serialization2.SerializerId2;
-import org.radix.serialization2.client.SerializableObject;
-import org.radix.serialization2.client.Serialize;
-import org.radix.utils.UInt256s;
-
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableMap;
-import com.radixdlt.client.application.translate.tokens.TokenTypeReference;
-import com.radixdlt.client.atommodel.message.MessageParticle;
-import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
-import com.radixdlt.client.core.atoms.particles.Particle;
-import com.radixdlt.client.core.atoms.particles.Spin;
-import com.radixdlt.client.core.atoms.particles.SpunParticle;
-import com.radixdlt.client.core.crypto.ECPublicKey;
-import com.radixdlt.client.core.crypto.ECSignature;
 
 /**
  * An atom is the fundamental atomic unit of storage on the ledger (similar to a block
@@ -162,18 +163,24 @@ public final class Atom extends SerializableObject {
 		return Optional.ofNullable(this.signatures).map(sigs -> sigs.get(uid.toString()));
 	}
 
-	public Stream<SpunParticle<OwnedTokensParticle>> ownedTokensParticles() {
+	public Stream<Pair<ConsumableTokens, Spin>> consumableTokens() {
 		return this.spunParticles()
-			.filter(s -> s.getParticle() instanceof OwnedTokensParticle)
-			.map(s -> (SpunParticle<OwnedTokensParticle>) s);
-}
+			.filter(s -> s.getParticle() instanceof ConsumableTokens)
+			.map(s -> Pair.of((ConsumableTokens) s.getParticle(), s.getSpin()));
+	}
 
-	public List<OwnedTokensParticle> getOwnedTokensParticles(Spin spin) {
+	public Stream<Pair<ConsumingTokens, Spin>> consumingTokens() {
+		return this.spunParticles()
+			.filter(s -> s.getParticle() instanceof ConsumingTokens)
+			.map(s -> Pair.of((ConsumingTokens) s.getParticle(), s.getSpin()));
+	}
+
+	public List<ConsumableTokens> getConsumableParticles(Spin spin) {
 		return this.spunParticles()
 			.filter(s -> s.getSpin() == spin)
 			.map(SpunParticle::getParticle)
-			.filter(p -> p instanceof OwnedTokensParticle)
-			.map(p -> (OwnedTokensParticle) p)
+			.filter(p -> p instanceof ConsumableTokens)
+			.map(p -> (ConsumableTokens) p)
 			.collect(Collectors.toList());
 	}
 
@@ -198,19 +205,52 @@ public final class Atom extends SerializableObject {
 	}
 
 	public Map<TokenTypeReference, Map<ECPublicKey, BigInteger>> tokenSummary() {
-		return this.ownedTokensParticles()
+		Map<TokenTypeReference, Map<ECPublicKey, BigInteger>> consumableTokens = this.consumableTokens()
 			.collect(Collectors.groupingBy(
-				s -> s.getParticle().getTokenClassReference(),
+				tokens -> tokens.getFirst().getTokenTypeReference(),
 				Collectors.groupingBy(
-					s -> s.getParticle().getOwner(),
-					Collectors.reducing(BigInteger.ZERO, Atom::ownedTokensToBigInteger, BigInteger::add)
+					tokens -> tokens.getFirst().getOwner(),
+					Collectors.reducing(BigInteger.ZERO, this::consumableToAmount, BigInteger::add)
 				)
 			));
+
+		Map<TokenTypeReference, Map<ECPublicKey, BigInteger>> consumingTokens = this.consumingTokens()
+			.collect(Collectors.groupingBy(
+				tokens -> tokens.getFirst().getTokenTypeReference(),
+				Collectors.groupingBy(
+					tokens -> tokens.getFirst().getOwner(),
+					Collectors.reducing(BigInteger.ZERO, this::consumingToAmount, BigInteger::add)
+				)
+			));
+
+		return Stream.of(consumableTokens, consumingTokens)
+			.flatMap(map -> map.entrySet().stream())
+			.collect(
+				Collectors.toMap(
+					Map.Entry::getKey,
+					Map.Entry::getValue,
+					(consumables, consuming) ->
+						Stream.of(consumables, consuming)
+							.flatMap(map -> map.entrySet().stream())
+							.collect(
+								Collectors.toMap(
+									Map.Entry::getKey,
+									Map.Entry::getValue,
+									BigInteger::add
+								)
+							)
+				)
+			);
 	}
 
-	private static BigInteger ownedTokensToBigInteger(SpunParticle<OwnedTokensParticle> value) {
-		BigInteger bi = UInt256s.toBigInteger(value.getParticle().getAmount());
-		return (value.getSpin() == Spin.UP) ? bi : bi.negate();
+	private BigInteger consumableToAmount(Pair<ConsumableTokens, Spin> tokens) {
+		BigInteger amount = UInt256s.toBigInteger(tokens.getFirst().getAmount());
+		return tokens.getSecond() == Spin.DOWN ? amount.negate() : amount;
+	}
+
+	private BigInteger consumingToAmount(Pair<ConsumingTokens, Spin> tokens) {
+		BigInteger amount = UInt256s.toBigInteger(tokens.getFirst().getAmount());
+		return tokens.getSecond() == Spin.DOWN ? amount.negate() : amount;
 	}
 
 	/**

@@ -74,7 +74,7 @@ public class TokenClassesReducer implements ParticleReducer<TokenClassesState> {
 					: mintedOrBurnedAmount
 			);
 
-			return state.mergeSupplyChange(mintedOrBurned.getTokenClassReference(), change);
+			return state.mergeSupplyChange(mintedOrBurned.getTokenTypeReference(), change);
 		}
 	}
 }

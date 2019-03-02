@@ -36,12 +36,12 @@ public class RadixAtomValidatorTest {
 		when(consumer.getOwnersPublicKeys()).thenReturn(Collections.singleton(publicKey));
 		TokenTypeReference token = mock(TokenTypeReference.class);
 		when(token.getSymbol()).thenReturn("TEST");
-		when(consumer.getTokenClassReference()).thenReturn(token);
+		when(consumer.getTokenTypeReference()).thenReturn(token);
 
 		Atom atom = mock(Atom.class);
 		when(atom.getHash()).thenReturn(hash);
 		when(atom.getSignature(any())).thenReturn(Optional.empty());
-		when(atom.getOwnedTokensParticles(Spin.DOWN)).thenReturn(Arrays.asList(consumer));
+		when(atom.getConsumableParticles(Spin.DOWN)).thenReturn(Arrays.asList(consumer));
 
 		RadixAtomValidator validator = RadixAtomValidator.getInstance();
 		assertThatThrownBy(() -> validator.validateSignatures(atom))

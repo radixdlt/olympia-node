@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import com.radixdlt.client.atommodel.tokens.TransferredTokensParticle;
 import org.radix.utils.UInt256;
 import org.radix.utils.UInt256s;
 
@@ -70,10 +71,9 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 
 			final UInt256 computedGranularity = granularity;
 			consumerQuantities.entrySet().stream()
-				.map(entry -> new OwnedTokensParticle(
+				.map(entry -> new TransferredTokensParticle(
 					entry.getValue(),
 					computedGranularity,
-					FungibleType.TRANSFERRED,
 					this.universe.getAddressFrom(entry.getKey().getPublicKey()),
 					System.nanoTime(),
 					transfer.getTokenTypeReference(),

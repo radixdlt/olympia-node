@@ -4,6 +4,7 @@ import com.radixdlt.client.application.translate.tokens.TokenTypeReference;
 import java.util.Map;
 
 import com.radixdlt.client.atommodel.FungibleType;
+import com.radixdlt.client.atommodel.tokens.MintedTokensParticle;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import org.radix.utils.UInt256;
 
@@ -63,10 +64,9 @@ public class MintTokensActionMapper implements StatefulActionToParticleGroupsMap
 	}
 
 	private SpunParticle createOwnedTokensParticle(UInt256 amount, UInt256 granularity, TokenTypeReference tokenClass) {
-		Particle minted = new OwnedTokensParticle(
+		Particle minted = new MintedTokensParticle(
 			amount,
 			granularity,
-			FungibleType.MINTED,
 			tokenClass.getAddress(),
 			System.currentTimeMillis(),
 			tokenClass,

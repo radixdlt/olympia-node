@@ -31,7 +31,7 @@ public class ApplicationStoreTest {
 		when(ownedTokensParticle.getHash()).thenReturn(hash);
 		when(ownedTokensParticle.getDson()).thenReturn(new byte[] {1});
 		TokenTypeReference token = mock(TokenTypeReference.class);
-		when(ownedTokensParticle.getTokenClassReference()).thenReturn(token);
+		when(ownedTokensParticle.getTokenTypeReference()).thenReturn(token);
 
 		when(store.getParticles(address)).thenReturn(
 				Observable.<SpunParticle>just(SpunParticle.up(ownedTokensParticle)).concatWith(Observable.never())

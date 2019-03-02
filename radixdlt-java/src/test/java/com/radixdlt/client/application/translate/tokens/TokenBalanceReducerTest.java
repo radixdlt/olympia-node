@@ -24,7 +24,7 @@ public class TokenBalanceReducerTest {
 		when(ownedTokensParticle.getHash()).thenReturn(hash);
 		when(ownedTokensParticle.getDson()).thenReturn(new byte[] {1});
 		TokenTypeReference token = mock(TokenTypeReference.class);
-		when(ownedTokensParticle.getTokenClassReference()).thenReturn(token);
+		when(ownedTokensParticle.getTokenTypeReference()).thenReturn(token);
 
 		TokenBalanceReducer reducer = new TokenBalanceReducer();
 		TokenBalanceState tokenBalance = reducer.reduce(new TokenBalanceState(), SpunParticle.up(ownedTokensParticle));

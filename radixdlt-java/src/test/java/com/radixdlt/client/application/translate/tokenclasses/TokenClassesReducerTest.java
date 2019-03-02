@@ -3,6 +3,7 @@ package com.radixdlt.client.application.translate.tokenclasses;
 import java.math.BigDecimal;
 import java.util.Collections;
 
+import com.radixdlt.client.atommodel.tokens.MintedTokensParticle;
 import org.junit.Test;
 import org.radix.utils.UInt256;
 
@@ -49,10 +50,10 @@ public class TokenClassesReducerTest {
 		when(tokenParticle.getGranularity()).thenReturn(UInt256.ONE);
 		when(tokenParticle.getTokenPermissions()).thenReturn(Collections.singletonMap(FungibleType.MINTED, TokenPermission.TOKEN_OWNER_ONLY));
 
-		OwnedTokensParticle minted = mock(OwnedTokensParticle.class);
+		MintedTokensParticle minted = mock(MintedTokensParticle.class);
 		when(minted.getAmount()).thenReturn(hundred);
 		when(minted.getType()).thenReturn(FungibleType.MINTED);
-		when(minted.getTokenClassReference()).thenReturn(tokenRef);
+		when(minted.getTokenTypeReference()).thenReturn(tokenRef);
 
 		TokenClassesReducer tokenClassesReducer = new TokenClassesReducer();
 		TokenClassesState state1 = tokenClassesReducer.reduce(TokenClassesState.init(), SpunParticle.up(tokenParticle));

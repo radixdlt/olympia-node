@@ -5,6 +5,7 @@ import com.radixdlt.client.core.atoms.AtomValidationException;
 import com.radixdlt.client.core.atoms.AtomValidator;
 import com.radixdlt.client.core.atoms.RadixHash;
 import com.radixdlt.client.core.atoms.particles.Spin;
+import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.crypto.ECSignature;
 import java.util.Objects;
 import java.util.Optional;
@@ -29,35 +30,28 @@ public class RadixAtomValidator implements AtomValidator {
 	public void validateSignatures(Atom atom) throws AtomValidationException {
 		RadixHash hash = atom.getHash();
 
-		Optional<AtomValidationException> exception = atom.getOwnedTokensParticles(Spin.DOWN).stream()
+		Optional<AtomValidationException> exception = atom.getConsumableParticles(Spin.DOWN).stream()
 			.map(down -> {
-				if (down.getOwnersPublicKeys().isEmpty()) {
-					return new AtomValidationException("No owners in particle");
+				ECPublicKey owner = down.getOwner();
+				if (owner == null) {
+					return new AtomValidationException("No owner");
 				}
 
-				if (down.getTokenClassReference().getSymbol().equals("POW")) {
+				if (down.getTokenTypeReference().getSymbol().equals("POW")) {
 					return null;
 				}
 
-				Optional<AtomValidationException> consumerException = down.getOwnersPublicKeys().stream().map(owner -> {
-					Optional<ECSignature> signature = atom.getSignature(owner.getUID());
-					if (!signature.isPresent()) {
-						return new AtomValidationException("Missing signature");
-					}
+				Optional<ECSignature> signature = atom.getSignature(owner.getUID());
+				if (!signature.isPresent()) {
+					return new AtomValidationException("Missing signature");
+				}
 
-					if (!hash.verifySelf(owner, signature.get())) {
-						return new AtomValidationException("Bad signature");
-					}
-
-					return null;
-				}).filter(Objects::nonNull).findAny();
-
-				if (consumerException.isPresent()) {
-					return consumerException.get();
+				if (!hash.verifySelf(owner, signature.get())) {
+					return new AtomValidationException("Bad signature");
 				}
 
 				return null;
-		})
+			})
 		.filter(Objects::nonNull)
 		.findAny();
 

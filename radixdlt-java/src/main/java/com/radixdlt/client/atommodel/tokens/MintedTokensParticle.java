@@ -27,7 +27,7 @@ import java.util.Set;
  *  A particle which represents an amount of fungible tokens owned by some key owner and stored in an account.
  */
 @SerializerId2("MINTEDTOKENSPARTICLE")
-public class MintedTokensParticle extends Particle implements Accountable, Ownable, Fungible {
+public class MintedTokensParticle extends Particle implements Accountable, Ownable, Fungible, ConsumableTokens {
 	@JsonProperty("address")
 	@DsonOutput(Output.ALL)
 	private RadixAddress address;

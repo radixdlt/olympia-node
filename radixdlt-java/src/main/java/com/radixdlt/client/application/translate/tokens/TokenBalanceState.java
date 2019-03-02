@@ -97,7 +97,7 @@ public class TokenBalanceState implements ApplicationState {
 		BigInteger amount = UInt256s.toBigInteger(ownedTokensParticle.getAmount());
 		BigInteger granularity = UInt256s.toBigInteger(ownedTokensParticle.getGranularity());
 		balance.merge(
-				ownedTokensParticle.getTokenClassReference(),
+				ownedTokensParticle.getTokenTypeReference(),
 				new Balance(amount, granularity, s),
 				(bal1, bal2) -> Balance.merge(bal1, s)
 		);

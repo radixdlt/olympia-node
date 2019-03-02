@@ -18,7 +18,7 @@ public class TokenBalanceStateTest {
 		when(burnedToken.getAmount()).thenReturn(UInt256.ONE);
 		when(burnedToken.getGranularity()).thenReturn(UInt256.ONE);
 		when(burnedToken.getDson()).thenReturn(new byte[] {0});
-		when(burnedToken.getTokenClassReference()).thenReturn(tokenTypeReference);
+		when(burnedToken.getTokenTypeReference()).thenReturn(tokenTypeReference);
 		when(burnedToken.getType()).thenReturn(FungibleType.BURNED);
 
 		TokenBalanceState nextState = TokenBalanceState.merge(new TokenBalanceState(), SpunParticle.up(burnedToken));
