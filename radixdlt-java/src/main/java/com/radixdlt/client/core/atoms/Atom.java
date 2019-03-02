@@ -21,7 +21,7 @@ import org.radix.utils.UInt256s;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.client.application.translate.tokens.TokenClassReference;
+import com.radixdlt.client.application.translate.tokens.TokenTypeReference;
 import com.radixdlt.client.atommodel.message.MessageParticle;
 import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
 import com.radixdlt.client.core.atoms.particles.Particle;
@@ -197,7 +197,7 @@ public final class Atom extends SerializableObject {
 			.collect(Collectors.toList());
 	}
 
-	public Map<TokenClassReference, Map<ECPublicKey, BigInteger>> tokenSummary() {
+	public Map<TokenTypeReference, Map<ECPublicKey, BigInteger>> tokenSummary() {
 		return this.ownedTokensParticles()
 			.collect(Collectors.groupingBy(
 				s -> s.getParticle().getTokenClassReference(),

@@ -5,19 +5,19 @@ import java.util.Objects;
 import org.radix.utils.UInt256;
 
 import com.radixdlt.client.application.translate.Action;
-import com.radixdlt.client.application.translate.tokens.TokenClassReference;
+import com.radixdlt.client.application.translate.tokens.TokenTypeReference;
 
 public class MintTokensAction implements Action {
-	private final TokenClassReference tokenClassReference;
+	private final TokenTypeReference tokenTypeReference;
 	private final UInt256 amount;
 
-	public MintTokensAction(TokenClassReference tokenClassReference, UInt256 amount) {
-		this.tokenClassReference = Objects.requireNonNull(tokenClassReference);
+	public MintTokensAction(TokenTypeReference tokenTypeReference, UInt256 amount) {
+		this.tokenTypeReference = Objects.requireNonNull(tokenTypeReference);
 		this.amount = Objects.requireNonNull(amount);
 	}
 
-	public TokenClassReference getTokenClassReference() {
-		return tokenClassReference;
+	public TokenTypeReference getTokenTypeReference() {
+		return tokenTypeReference;
 	}
 
 	public UInt256 getAmount() {

@@ -9,7 +9,7 @@ import org.radix.utils.UInt256;
 import com.radixdlt.client.application.translate.tokenclasses.TokenState.TokenSupplyType;
 import com.radixdlt.client.atommodel.FungibleType;
 import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
-import com.radixdlt.client.application.translate.tokens.TokenClassReference;
+import com.radixdlt.client.application.translate.tokens.TokenTypeReference;
 import com.radixdlt.client.atommodel.tokens.TokenParticle;
 import com.radixdlt.client.atommodel.tokens.TokenPermission;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
@@ -22,7 +22,7 @@ public class TokenClassesReducerTest {
 	@Test
 	public void testTokenWithNoMint() {
 		TokenParticle tokenParticle = mock(TokenParticle.class);
-		TokenClassReference tokenRef = mock(TokenClassReference.class);
+		TokenTypeReference tokenRef = mock(TokenTypeReference.class);
 		when(tokenParticle.getTokenClassReference()).thenReturn(tokenRef);
 		when(tokenParticle.getName()).thenReturn("Name");
 		when(tokenParticle.getSymbol()).thenReturn("ISO");
@@ -33,7 +33,7 @@ public class TokenClassesReducerTest {
 		TokenClassesReducer tokenClassesReducer = new TokenClassesReducer();
 		TokenClassesState state = tokenClassesReducer.reduce(TokenClassesState.init(), SpunParticle.up(tokenParticle));
 		assertThat(state.getState().get(tokenRef)).isEqualTo(
-			new TokenState("Name", "ISO", "Desc", BigDecimal.ZERO, TokenClassReference.subunitsToUnits(1), TokenSupplyType.FIXED)
+			new TokenState("Name", "ISO", "Desc", BigDecimal.ZERO, TokenTypeReference.subunitsToUnits(1), TokenSupplyType.FIXED)
 		);
 	}
 
@@ -41,7 +41,7 @@ public class TokenClassesReducerTest {
 	public void testTokenWithMint() {
 		final UInt256 hundred = UInt256.TEN.pow(2);
 		TokenParticle tokenParticle = mock(TokenParticle.class);
-		TokenClassReference tokenRef = mock(TokenClassReference.class);
+		TokenTypeReference tokenRef = mock(TokenTypeReference.class);
 		when(tokenParticle.getTokenClassReference()).thenReturn(tokenRef);
 		when(tokenParticle.getName()).thenReturn("Name");
 		when(tokenParticle.getSymbol()).thenReturn("ISO");
@@ -62,8 +62,8 @@ public class TokenClassesReducerTest {
 				"Name",
 				"ISO",
 				"Desc",
-				TokenClassReference.subunitsToUnits(hundred),
-				TokenClassReference.subunitsToUnits(1),
+				TokenTypeReference.subunitsToUnits(hundred),
+				TokenTypeReference.subunitsToUnits(1),
 				TokenSupplyType.MUTABLE
 			)
 		);

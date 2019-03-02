@@ -12,7 +12,7 @@ import org.radix.serialization2.client.Serialize;
 import org.radix.utils.UInt256;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.client.application.translate.tokens.TokenClassReference;
+import com.radixdlt.client.application.translate.tokens.TokenTypeReference;
 import com.radixdlt.client.atommodel.Accountable;
 import com.radixdlt.client.atommodel.Fungible;
 import com.radixdlt.client.atommodel.FungibleType;
@@ -59,7 +59,7 @@ public class OwnedTokensParticle extends Particle implements Accountable, Ownabl
 	}
 
 	public OwnedTokensParticle(UInt256 amount, UInt256 granularity, FungibleType type, RadixAddress address, long nonce,
-	                           TokenClassReference tokenRef, long planck) {
+	                           TokenTypeReference tokenRef, long planck) {
 		super();
 
 		// Redundant null check added for completeness
@@ -117,8 +117,8 @@ public class OwnedTokensParticle extends Particle implements Accountable, Ownabl
 		return this.nonce;
 	}
 
-	public TokenClassReference getTokenClassReference() {
-		return TokenClassReference.of(tokenClassReference.getAddress(), tokenClassReference.getUnique());
+	public TokenTypeReference getTokenClassReference() {
+		return TokenTypeReference.of(tokenClassReference.getAddress(), tokenClassReference.getUnique());
 	}
 
 	@Override

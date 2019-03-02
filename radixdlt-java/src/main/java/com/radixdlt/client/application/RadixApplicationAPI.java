@@ -51,7 +51,7 @@ import com.radixdlt.client.application.translate.tokenclasses.TokenState;
 import com.radixdlt.client.application.translate.tokens.AtomToTokenTransfersMapper;
 import com.radixdlt.client.application.translate.tokens.TokenBalanceReducer;
 import com.radixdlt.client.application.translate.tokens.TokenBalanceState;
-import com.radixdlt.client.application.translate.tokens.TokenClassReference;
+import com.radixdlt.client.application.translate.tokens.TokenTypeReference;
 import com.radixdlt.client.application.translate.tokens.TokenTransfer;
 import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.application.translate.tokens.TransferTokensToParticleGroupsMapper;
@@ -359,7 +359,7 @@ public class RadixApplicationAPI {
 	 *
 	 * @return the native token reference
 	 */
-	public TokenClassReference getNativeTokenRef() {
+	public TokenTypeReference getNativeTokenRef() {
 		return universe.getNativeToken();
 	}
 
@@ -454,7 +454,7 @@ public class RadixApplicationAPI {
 	 *
 	 * @return a hot observable of the latest state of the token
 	 */
-	public Observable<TokenState> getTokenClass(TokenClassReference ref) {
+	public Observable<TokenState> getTokenClass(TokenTypeReference ref) {
 		return this.getTokenClasses(ref.getAddress())
 			.flatMapMaybe(m -> Optional.ofNullable(m.getState().get(ref)).map(Maybe::just).orElse(Maybe.empty()));
 	}
@@ -499,7 +499,7 @@ public class RadixApplicationAPI {
 		return getActions(TokenTransfer.class, address);
 	}
 
-	public Observable<Map<TokenClassReference, BigDecimal>> getBalance(RadixAddress address) {
+	public Observable<Map<TokenTypeReference, BigDecimal>> getBalance(RadixAddress address) {
 		Objects.requireNonNull(address);
 		return getState(TokenBalanceState.class, address)
 			.map(TokenBalanceState::getBalance)
@@ -508,11 +508,11 @@ public class RadixApplicationAPI {
 			));
 	}
 
-	public Observable<BigDecimal> getMyBalance(TokenClassReference tokenClassReference) {
-		return getBalance(getMyAddress(), tokenClassReference);
+	public Observable<BigDecimal> getMyBalance(TokenTypeReference tokenTypeReference) {
+		return getBalance(getMyAddress(), tokenTypeReference);
 	}
 
-	public Observable<BigDecimal> getBalance(RadixAddress address, TokenClassReference token) {
+	public Observable<BigDecimal> getBalance(RadixAddress address, TokenTypeReference token) {
 		Objects.requireNonNull(token);
 
 		return getBalance(address)
@@ -551,7 +551,7 @@ public class RadixApplicationAPI {
 	 * @return result of the transaction
 	 */
 	public Result mintTokens(String iso, UInt256 amount) {
-		MintTokensAction mintTokensAction = new MintTokensAction(TokenClassReference.of(getMyAddress(), iso), amount);
+		MintTokensAction mintTokensAction = new MintTokensAction(TokenTypeReference.of(getMyAddress(), iso), amount);
 		return execute(mintTokensAction);
 	}
 
@@ -564,7 +564,7 @@ public class RadixApplicationAPI {
 	 * @return result of the transaction
 	 */
 	public Result burnTokens(String iso, UInt256 amount) {
-		BurnTokensAction burnTokensAction = new BurnTokensAction(getMyAddress(), TokenClassReference.of(getMyAddress(), iso), amount);
+		BurnTokensAction burnTokensAction = new BurnTokensAction(getMyAddress(), TokenTypeReference.of(getMyAddress(), iso), amount);
 		return execute(burnTokensAction);
 	}
 
@@ -575,7 +575,7 @@ public class RadixApplicationAPI {
 	 * @param amount the amount and token type
 	 * @return result of the transaction
 	 */
-	public Result sendTokens(RadixAddress to, BigDecimal amount, TokenClassReference token) {
+	public Result sendTokens(RadixAddress to, BigDecimal amount, TokenTypeReference token) {
 		return transferTokens(getMyAddress(), to, amount, token);
 	}
 
@@ -590,7 +590,7 @@ public class RadixApplicationAPI {
 	public Result sendTokens(
 		RadixAddress to,
 		BigDecimal amount,
-		TokenClassReference token,
+		TokenTypeReference token,
 		@Nullable String message
 	) {
 		final Data attachment;
@@ -614,12 +614,12 @@ public class RadixApplicationAPI {
 	 * @param attachment the data attached to the transaction
 	 * @return result of the transaction
 	 */
-	public Result sendTokens(RadixAddress to, BigDecimal amount, TokenClassReference token, @Nullable Data attachment) {
+	public Result sendTokens(RadixAddress to, BigDecimal amount, TokenTypeReference token, @Nullable Data attachment) {
 		return transferTokens(getMyAddress(), to, amount, token, attachment);
 	}
 
 
-	public Result transferTokens(RadixAddress from, RadixAddress to, BigDecimal amount, TokenClassReference token) {
+	public Result transferTokens(RadixAddress from, RadixAddress to, BigDecimal amount, TokenTypeReference token) {
 		return transferTokens(from, to, amount, token, null);
 	}
 
@@ -636,7 +636,7 @@ public class RadixApplicationAPI {
 		RadixAddress from,
 		RadixAddress to,
 		BigDecimal amount,
-		TokenClassReference token,
+		TokenTypeReference token,
 		@Nullable Data attachment
 	) {
 		Objects.requireNonNull(from);

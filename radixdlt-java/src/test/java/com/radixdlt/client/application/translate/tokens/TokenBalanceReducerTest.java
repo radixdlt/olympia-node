@@ -23,12 +23,12 @@ public class TokenBalanceReducerTest {
 		when(ownedTokensParticle.getGranularity()).thenReturn(UInt256.ONE);
 		when(ownedTokensParticle.getHash()).thenReturn(hash);
 		when(ownedTokensParticle.getDson()).thenReturn(new byte[] {1});
-		TokenClassReference token = mock(TokenClassReference.class);
+		TokenTypeReference token = mock(TokenTypeReference.class);
 		when(ownedTokensParticle.getTokenClassReference()).thenReturn(token);
 
 		TokenBalanceReducer reducer = new TokenBalanceReducer();
 		TokenBalanceState tokenBalance = reducer.reduce(new TokenBalanceState(), SpunParticle.up(ownedTokensParticle));
-		BigDecimal tenSubunits = TokenClassReference.subunitsToUnits(UInt256.TEN);
+		BigDecimal tenSubunits = TokenTypeReference.subunitsToUnits(UInt256.TEN);
 		assertThat(tokenBalance.getBalance().get(token).getAmount().compareTo(tenSubunits)).isEqualTo(0);
 	}
 }

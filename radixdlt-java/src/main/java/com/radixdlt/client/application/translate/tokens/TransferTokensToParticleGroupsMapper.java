@@ -44,7 +44,7 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 	private Observable<SpunParticle> mapToParticles(TransferTokensAction transfer, List<OwnedTokensParticle> currentParticles) {
 		return Observable.create(emitter -> {
 			UInt256 consumerTotal = UInt256.ZERO;
-			final UInt256 subunitAmount = TokenClassReference.unitsToSubunits(transfer.getAmount());
+			final UInt256 subunitAmount = TokenTypeReference.unitsToSubunits(transfer.getAmount());
 			UInt256 granularity = UInt256.ZERO;
 			Iterator<OwnedTokensParticle> iterator = currentParticles.iterator();
 			Map<ECKeyPair, UInt256> consumerQuantities = new HashMap<>();
@@ -76,7 +76,7 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 					FungibleType.TRANSFERRED,
 					this.universe.getAddressFrom(entry.getKey().getPublicKey()),
 					System.nanoTime(),
-					transfer.getTokenClassReference(),
+					transfer.getTokenTypeReference(),
 					System.currentTimeMillis() / 60000L + 60000L
 				))
 				.map(SpunParticle::up)
@@ -153,10 +153,10 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 			.map(appState -> (TokenBalanceState) appState)
 			.firstOrError()
 			.map(curState -> {
-				final TokenClassReference tokenRef = transfer.getTokenClassReference();
-				final Map<TokenClassReference, Balance> allConsumables = curState.getBalance();
+				final TokenTypeReference tokenRef = transfer.getTokenTypeReference();
+				final Map<TokenTypeReference, Balance> allConsumables = curState.getBalance();
 				final Balance balance = Optional.ofNullable(
-					allConsumables.get(transfer.getTokenClassReference())).orElse(Balance.empty(BigInteger.ONE));
+					allConsumables.get(transfer.getTokenTypeReference())).orElse(Balance.empty(BigInteger.ONE));
 				if (balance.getAmount().compareTo(transfer.getAmount()) < 0) {
 					throw new InsufficientFundsException(
 						tokenRef, balance.getAmount(), transfer.getAmount()
@@ -165,7 +165,7 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 				return allConsumables;
 			})
 			.map(allConsumables ->
-				Optional.ofNullable(allConsumables.get(transfer.getTokenClassReference()))
+				Optional.ofNullable(allConsumables.get(transfer.getTokenTypeReference()))
 					.map(bal -> bal.unconsumedTransferrable().collect(Collectors.toList()))
 					.orElse(Collections.emptyList())
 		)

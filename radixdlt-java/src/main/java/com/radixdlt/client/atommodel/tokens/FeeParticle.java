@@ -1,6 +1,6 @@
 package com.radixdlt.client.atommodel.tokens;
 
-import com.radixdlt.client.application.translate.tokens.TokenClassReference;
+import com.radixdlt.client.application.translate.tokens.TokenTypeReference;
 import com.radixdlt.client.atommodel.FungibleType;
 import org.radix.common.ID.EUID;
 import org.radix.serialization2.DsonOutput;
@@ -19,7 +19,7 @@ public class FeeParticle extends OwnedTokensParticle {
 	private FeeParticle() {
 	}
 
-	public FeeParticle(UInt256 quantity, RadixAddress address, long nonce, TokenClassReference tokenRef, long planck) {
+	public FeeParticle(UInt256 quantity, RadixAddress address, long nonce, TokenTypeReference tokenRef, long planck) {
 		// FIXME RLAU-40 Check if the hard-coded granularity here is valid
 		super(quantity, UInt256.ONE, FungibleType.MINTED, address, nonce, tokenRef, planck);
 

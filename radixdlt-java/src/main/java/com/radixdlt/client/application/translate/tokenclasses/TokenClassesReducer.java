@@ -9,7 +9,7 @@ import com.radixdlt.client.application.translate.ParticleReducer;
 import com.radixdlt.client.application.translate.tokenclasses.TokenState.TokenSupplyType;
 import com.radixdlt.client.atommodel.FungibleType;
 import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
-import com.radixdlt.client.application.translate.tokens.TokenClassReference;
+import com.radixdlt.client.application.translate.tokens.TokenTypeReference;
 import com.radixdlt.client.atommodel.tokens.TokenParticle;
 import com.radixdlt.client.atommodel.tokens.TokenPermission;
 import com.radixdlt.client.core.atoms.particles.Particle;
@@ -62,13 +62,13 @@ public class TokenClassesReducer implements ParticleReducer<TokenClassesState> {
 				tokenParticle.getName(),
 				tokenParticle.getSymbol(),
 				tokenParticle.getDescription(),
-				TokenClassReference.subunitsToUnits(tokenParticle.getGranularity()),
+				TokenTypeReference.subunitsToUnits(tokenParticle.getGranularity()),
 				tokenSupplyType
 			);
 		} else {
 			OwnedTokensParticle mintedOrBurned = (OwnedTokensParticle) p;
 			BigInteger mintedOrBurnedAmount = UInt256s.toBigInteger(mintedOrBurned.getAmount());
-			BigDecimal change = TokenClassReference.subunitsToUnits(
+			BigDecimal change = TokenTypeReference.subunitsToUnits(
 				(mintedOrBurned.getType() == FungibleType.BURNED)
 					? mintedOrBurnedAmount.negate()
 					: mintedOrBurnedAmount

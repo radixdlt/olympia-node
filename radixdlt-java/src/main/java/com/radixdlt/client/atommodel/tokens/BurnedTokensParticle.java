@@ -1,7 +1,7 @@
 package com.radixdlt.client.atommodel.tokens;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.client.application.translate.tokens.TokenClassReference;
+import com.radixdlt.client.application.translate.tokens.TokenTypeReference;
 import com.radixdlt.client.atommodel.Accountable;
 import com.radixdlt.client.atommodel.Fungible;
 import com.radixdlt.client.atommodel.FungibleType;
@@ -56,7 +56,7 @@ public class BurnedTokensParticle extends Particle implements Accountable, Ownab
 	}
 
 	public BurnedTokensParticle(UInt256 amount, UInt256 granularity, RadixAddress address, long nonce,
-	                            TokenClassReference tokenTypeReference, long planck) {
+	                            TokenTypeReference tokenTypeReference, long planck) {
 		super();
 
 		// Redundant null check added for completeness
@@ -113,8 +113,8 @@ public class BurnedTokensParticle extends Particle implements Accountable, Ownab
 		return this.nonce;
 	}
 
-	public TokenClassReference getTokenTypeReference() {
-		return TokenClassReference.of(tokenTypeReference.getAddress(), tokenTypeReference.getUnique());
+	public TokenTypeReference getTokenTypeReference() {
+		return TokenTypeReference.of(tokenTypeReference.getAddress(), tokenTypeReference.getUnique());
 	}
 
 	@Override

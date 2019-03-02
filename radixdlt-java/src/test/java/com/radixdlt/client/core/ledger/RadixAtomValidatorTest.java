@@ -3,7 +3,7 @@ package com.radixdlt.client.core.ledger;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomValidationException;
 import com.radixdlt.client.core.atoms.RadixHash;
-import com.radixdlt.client.application.translate.tokens.TokenClassReference;
+import com.radixdlt.client.application.translate.tokens.TokenTypeReference;
 import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
 import com.radixdlt.client.core.crypto.ECKeyPair;
@@ -34,7 +34,7 @@ public class RadixAtomValidatorTest {
 
 		OwnedTokensParticle consumer = mock(OwnedTokensParticle.class);
 		when(consumer.getOwnersPublicKeys()).thenReturn(Collections.singleton(publicKey));
-		TokenClassReference token = mock(TokenClassReference.class);
+		TokenTypeReference token = mock(TokenTypeReference.class);
 		when(token.getSymbol()).thenReturn("TEST");
 		when(consumer.getTokenClassReference()).thenReturn(token);
 

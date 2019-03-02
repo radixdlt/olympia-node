@@ -24,8 +24,8 @@ public class AtomToTokenTransferActionsMapperTest {
 		ECPublicKey myKey = mock(ECPublicKey.class);
 		RadixAddress myAddress = mock(RadixAddress.class);
 		when(universe.getAddressFrom(myKey)).thenReturn(myAddress);
-		TokenClassReference tokenClassReference = mock(TokenClassReference.class);
-		when(atom.tokenSummary()).thenReturn(Collections.singletonMap(tokenClassReference,
+		TokenTypeReference tokenTypeReference = mock(TokenTypeReference.class);
+		when(atom.tokenSummary()).thenReturn(Collections.singletonMap(tokenTypeReference,
 			Collections.singletonMap(myKey, BigInteger.ZERO)
 		));
 
