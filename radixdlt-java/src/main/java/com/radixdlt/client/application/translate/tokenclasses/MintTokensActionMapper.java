@@ -3,7 +3,6 @@ package com.radixdlt.client.application.translate.tokenclasses;
 import com.radixdlt.client.application.translate.tokens.TokenTypeReference;
 import java.util.Map;
 
-import com.radixdlt.client.atommodel.FungibleType;
 import com.radixdlt.client.atommodel.tokens.MintedTokensParticle;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import org.radix.utils.UInt256;
@@ -13,7 +12,6 @@ import com.radixdlt.client.application.translate.ApplicationState;
 import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.tokens.UnknownTokenException;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 
@@ -31,7 +29,7 @@ public class MintTokensActionMapper implements StatefulActionToParticleGroupsMap
 
 		RadixAddress tokenClassAddress = mintTokensAction.getTokenTypeReference().getAddress();
 
-		return Observable.just(new RequiredShardState(TokenClassesState.class, tokenClassAddress));
+		return Observable.just(new RequiredShardState(TokenTypesState.class, tokenClassAddress));
 	}
 
 	@Override
@@ -45,12 +43,12 @@ public class MintTokensActionMapper implements StatefulActionToParticleGroupsMap
 
 		return store.firstOrError()
 			.flatMap(Observable::firstOrError)
-			.map(TokenClassesState.class::cast)
-			.map(TokenClassesState::getState)
+			.map(TokenTypesState.class::cast)
+			.map(TokenTypesState::getState)
 			.map(m -> getTokenStateOrError(m, tokenClass))
 			.map(TokenState::getGranularity)
 			.map(TokenTypeReference::unitsToSubunits)
-			.map(granularity -> createOwnedTokensParticle(mintTokensAction.getAmount(), granularity, tokenClass))
+			.map(granularity -> createMintedTokensParticle(mintTokensAction.getAmount(), granularity, tokenClass))
 			.map(ParticleGroup::of)
 			.toObservable();
 	}
@@ -63,7 +61,7 @@ public class MintTokensActionMapper implements StatefulActionToParticleGroupsMap
 		return ts;
 	}
 
-	private SpunParticle createOwnedTokensParticle(UInt256 amount, UInt256 granularity, TokenTypeReference tokenClass) {
+	private SpunParticle createMintedTokensParticle(UInt256 amount, UInt256 granularity, TokenTypeReference tokenClass) {
 		Particle minted = new MintedTokensParticle(
 			amount,
 			granularity,

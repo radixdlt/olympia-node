@@ -7,7 +7,6 @@ import com.radixdlt.client.atommodel.Fungible;
 import com.radixdlt.client.atommodel.FungibleType;
 import com.radixdlt.client.atommodel.tokens.BurnedTokensParticle;
 import com.radixdlt.client.atommodel.tokens.MintedTokensParticle;
-import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
 import com.radixdlt.client.atommodel.tokens.TokenParticle;
 import com.radixdlt.client.atommodel.tokens.TokenPermission;
 import com.radixdlt.client.core.atoms.particles.Particle;
@@ -21,20 +20,20 @@ import java.math.BigInteger;
 /**
  * Reduces particles at an address into concrete Tokens and their states
  */
-public class TokenClassesReducer implements ParticleReducer<TokenClassesState> {
+public class TokenTypesReducer implements ParticleReducer<TokenTypesState> {
 
 	@Override
-	public Class<TokenClassesState> stateClass() {
-		return TokenClassesState.class;
+	public Class<TokenTypesState> stateClass() {
+		return TokenTypesState.class;
 	}
 
 	@Override
-	public TokenClassesState initialState() {
-		return TokenClassesState.init();
+	public TokenTypesState initialState() {
+		return TokenTypesState.init();
 	}
 
 	@Override
-	public TokenClassesState reduce(TokenClassesState state, SpunParticle s) {
+	public TokenTypesState reduce(TokenTypesState state, SpunParticle s) {
 		Particle p = s.getParticle();
 
 		if (p instanceof TokenParticle) {
@@ -55,7 +54,7 @@ public class TokenClassesReducer implements ParticleReducer<TokenClassesState> {
 			}
 
 			return state.mergeTokenClass(
-				tokenParticle.getTokenClassReference(),
+				tokenParticle.getTokenTypeReference(),
 				tokenParticle.getName(),
 				tokenParticle.getSymbol(),
 				tokenParticle.getDescription(),

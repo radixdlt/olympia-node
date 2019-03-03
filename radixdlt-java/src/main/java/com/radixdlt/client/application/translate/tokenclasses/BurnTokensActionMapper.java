@@ -26,12 +26,9 @@ import com.radixdlt.client.application.translate.tokens.InsufficientFundsExcepti
 import com.radixdlt.client.application.translate.tokens.TokenBalanceState;
 import com.radixdlt.client.application.translate.tokens.TokenBalanceState.Balance;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.atommodel.FungibleType;
-import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
 import com.radixdlt.client.application.translate.tokens.TokenTypeReference;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
-import com.radixdlt.client.core.crypto.ECKeyPair;
 
 import io.reactivex.Observable;
 

@@ -6,7 +6,6 @@ import com.radixdlt.client.atommodel.tokens.MintedTokensParticle;
 import org.junit.Test;
 import org.radix.utils.UInt256;
 
-import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
 import com.radixdlt.client.core.atoms.RadixHash;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 

@@ -8,22 +8,22 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-public class TokenClassesState implements ApplicationState {
+public class TokenTypesState implements ApplicationState {
 	private final Map<TokenTypeReference, TokenState> state;
 
-	private TokenClassesState(Map<TokenTypeReference, TokenState> state) {
+	private TokenTypesState(Map<TokenTypeReference, TokenState> state) {
 		this.state = Collections.unmodifiableMap(state);
 	}
 
-	public static TokenClassesState init() {
-		return new TokenClassesState(Collections.emptyMap());
+	public static TokenTypesState init() {
+		return new TokenTypesState(Collections.emptyMap());
 	}
 
 	public Map<TokenTypeReference, TokenState> getState() {
 		return state;
 	}
 
-	public TokenClassesState mergeTokenClass(
+	public TokenTypesState mergeTokenClass(
 		TokenTypeReference ref,
 		String name,
 		String iso,
@@ -39,10 +39,10 @@ public class TokenClassesState implements ApplicationState {
 			newState.put(ref, new TokenState(name, iso, description, BigDecimal.ZERO, granularity, tokenSupplyType));
 		}
 
-		return new TokenClassesState(newState);
+		return new TokenTypesState(newState);
 	}
 
-	public TokenClassesState mergeSupplyChange(TokenTypeReference ref, BigDecimal supplyChange) {
+	public TokenTypesState mergeSupplyChange(TokenTypeReference ref, BigDecimal supplyChange) {
 		Map<TokenTypeReference, TokenState> newState = new HashMap<>(state);
 		if (newState.containsKey(ref)) {
 			TokenState tokenState = newState.get(ref);
@@ -57,6 +57,6 @@ public class TokenClassesState implements ApplicationState {
 			newState.put(ref, new TokenState(null, ref.getSymbol(), null, null, supplyChange, null));
 		}
 
-		return new TokenClassesState(newState);
+		return new TokenTypesState(newState);
 	}
 }

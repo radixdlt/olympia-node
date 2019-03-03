@@ -90,7 +90,7 @@ public class TokenParticle extends Particle implements Identifiable, Ownable {
 	}
 
 	public String getSymbol() {
-		return getTokenClassReference().getSymbol();
+		return getTokenTypeReference().getSymbol();
 	}
 
 	public String getDescription() {
@@ -101,7 +101,7 @@ public class TokenParticle extends Particle implements Identifiable, Ownable {
 		return this.granularity;
 	}
 
-	public TokenTypeReference getTokenClassReference() {
+	public TokenTypeReference getTokenTypeReference() {
 		return TokenTypeReference.of(address, symbol);
 	}
 

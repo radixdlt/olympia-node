@@ -10,14 +10,11 @@ import java.util.Map.Entry;
 import java.util.stream.Stream;
 
 import com.radixdlt.client.atommodel.tokens.ConsumableTokens;
-import com.radixdlt.client.atommodel.tokens.ConsumingTokens;
 import org.radix.utils.UInt256s;
 
 import com.radixdlt.client.atommodel.FungibleType;
-import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
 import com.radixdlt.client.core.atoms.RadixHash;
 import com.radixdlt.client.core.atoms.particles.Spin;
-import com.radixdlt.client.core.atoms.particles.SpunParticle;
 
 /**
  * All the token balances at an address at a given point in time.

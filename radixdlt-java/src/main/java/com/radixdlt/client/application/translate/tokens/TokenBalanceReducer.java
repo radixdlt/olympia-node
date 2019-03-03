@@ -2,10 +2,7 @@ package com.radixdlt.client.application.translate.tokens;
 
 import com.radixdlt.client.application.translate.ParticleReducer;
 import com.radixdlt.client.atommodel.tokens.ConsumableTokens;
-import com.radixdlt.client.atommodel.tokens.ConsumingTokens;
-import com.radixdlt.client.atommodel.tokens.FeeParticle;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
-import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
 import com.radixdlt.client.core.atoms.particles.Particle;
 
 /**
