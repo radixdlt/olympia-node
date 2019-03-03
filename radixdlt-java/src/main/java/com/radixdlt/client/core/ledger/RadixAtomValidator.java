@@ -28,7 +28,7 @@ public class RadixAtomValidator implements AtomValidator {
 	 * @throws AtomValidationException if atom has missing/bad signatures for a particle
 	 */
 	public void validateSignatures(Atom atom) throws AtomValidationException {
-		RadixHash hash = atom.getHash();
+		RadixHash hash = atom.hash();
 
 		Optional<AtomValidationException> exception = atom.getConsumableParticles(Spin.DOWN).stream()
 			.map(down -> {

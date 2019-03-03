@@ -2,6 +2,7 @@ package com.radixdlt.client.application.translate.tokens;
 
 import java.math.BigDecimal;
 
+import com.radixdlt.client.atommodel.tokens.MintedTokensParticle;
 import org.junit.Test;
 import org.radix.utils.UInt256;
 
@@ -17,11 +18,11 @@ public class TokenBalanceReducerTest {
 
 	@Test
 	public void testSimpleBalance() {
-		OwnedTokensParticle ownedTokensParticle = mock(OwnedTokensParticle.class);
+		MintedTokensParticle ownedTokensParticle = mock(MintedTokensParticle.class);
 		RadixHash hash = mock(RadixHash.class);
 		when(ownedTokensParticle.getAmount()).thenReturn(UInt256.TEN);
 		when(ownedTokensParticle.getGranularity()).thenReturn(UInt256.ONE);
-		when(ownedTokensParticle.getHash()).thenReturn(hash);
+		when(ownedTokensParticle.hash()).thenReturn(hash);
 		when(ownedTokensParticle.getDson()).thenReturn(new byte[] {1});
 		TokenTypeReference token = mock(TokenTypeReference.class);
 		when(ownedTokensParticle.getTokenTypeReference()).thenReturn(token);

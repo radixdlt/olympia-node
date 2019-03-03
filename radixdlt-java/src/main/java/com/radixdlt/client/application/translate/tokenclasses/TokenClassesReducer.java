@@ -1,20 +1,22 @@
 package com.radixdlt.client.application.translate.tokenclasses;
 
-import java.math.BigDecimal;
-import java.math.BigInteger;
-
-import org.radix.utils.UInt256s;
-
 import com.radixdlt.client.application.translate.ParticleReducer;
 import com.radixdlt.client.application.translate.tokenclasses.TokenState.TokenSupplyType;
-import com.radixdlt.client.atommodel.FungibleType;
-import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
 import com.radixdlt.client.application.translate.tokens.TokenTypeReference;
+import com.radixdlt.client.atommodel.Fungible;
+import com.radixdlt.client.atommodel.FungibleType;
+import com.radixdlt.client.atommodel.tokens.BurnedTokensParticle;
+import com.radixdlt.client.atommodel.tokens.MintedTokensParticle;
+import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
 import com.radixdlt.client.atommodel.tokens.TokenParticle;
 import com.radixdlt.client.atommodel.tokens.TokenPermission;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
+import org.radix.utils.UInt256s;
+
+import java.math.BigDecimal;
+import java.math.BigInteger;
 
 /**
  * Reduces particles at an address into concrete Tokens and their states
@@ -34,11 +36,6 @@ public class TokenClassesReducer implements ParticleReducer<TokenClassesState> {
 	@Override
 	public TokenClassesState reduce(TokenClassesState state, SpunParticle s) {
 		Particle p = s.getParticle();
-		if (!(p instanceof TokenParticle
-			|| (p instanceof OwnedTokensParticle && s.getSpin() == Spin.UP
-				&& ((OwnedTokensParticle) p).getType() != FungibleType.TRANSFERRED))) {
-			return state;
-		}
 
 		if (p instanceof TokenParticle) {
 			TokenParticle tokenParticle = (TokenParticle) p;
@@ -65,16 +62,21 @@ public class TokenClassesReducer implements ParticleReducer<TokenClassesState> {
 				TokenTypeReference.subunitsToUnits(tokenParticle.getGranularity()),
 				tokenSupplyType
 			);
-		} else {
-			OwnedTokensParticle mintedOrBurned = (OwnedTokensParticle) p;
-			BigInteger mintedOrBurnedAmount = UInt256s.toBigInteger(mintedOrBurned.getAmount());
-			BigDecimal change = TokenTypeReference.subunitsToUnits(
-				(mintedOrBurned.getType() == FungibleType.BURNED)
-					? mintedOrBurnedAmount.negate()
-					: mintedOrBurnedAmount
-			);
+		} else if (s.getSpin() == Spin.UP) {
+			if (p instanceof MintedTokensParticle || p instanceof BurnedTokensParticle) {
+				BigInteger mintedOrBurnedAmount = UInt256s.toBigInteger(((Fungible) p).getAmount());
+				BigDecimal change = TokenTypeReference.subunitsToUnits(
+					(p instanceof BurnedTokensParticle)
+						? mintedOrBurnedAmount.negate()
+						: mintedOrBurnedAmount
+				);
 
-			return state.mergeSupplyChange(mintedOrBurned.getTokenTypeReference(), change);
+				TokenTypeReference tokenTypeReference = p instanceof MintedTokensParticle ?
+					((MintedTokensParticle) p).getTokenTypeReference() : ((BurnedTokensParticle) p).getTokenTypeReference();
+				return state.mergeSupplyChange(tokenTypeReference, change);
+			}
 		}
+
+		return state;
 	}
 }

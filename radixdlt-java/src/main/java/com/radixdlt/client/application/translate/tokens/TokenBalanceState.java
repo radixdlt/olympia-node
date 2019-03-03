@@ -9,6 +9,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Stream;
 
+import com.radixdlt.client.atommodel.tokens.ConsumableTokens;
+import com.radixdlt.client.atommodel.tokens.ConsumingTokens;
 import org.radix.utils.UInt256s;
 
 import com.radixdlt.client.atommodel.FungibleType;
@@ -24,18 +26,16 @@ public class TokenBalanceState implements ApplicationState {
 	public static class Balance {
 		private final BigInteger balance;
 		private final BigInteger granularity;
-		private final Map<RadixHash, SpunParticle<OwnedTokensParticle>> consumables;
+		private final Map<RadixHash, ConsumableTokens> consumables;
 
-		private Balance(BigInteger balance, BigInteger granularity, Map<RadixHash, SpunParticle<OwnedTokensParticle>> consumables) {
+		private Balance(BigInteger balance, BigInteger granularity, Map<RadixHash, ConsumableTokens> consumables) {
 			this.balance = balance;
 			this.granularity = granularity;
 			this.consumables = consumables;
 		}
 
-		private Balance(BigInteger balance, BigInteger granularity, SpunParticle<OwnedTokensParticle> s) {
-			this.balance = balance;
-			this.granularity = granularity;
-			this.consumables = Collections.singletonMap(RadixHash.of(s.getParticle().getDson()), s);
+		private Balance(BigInteger balance, BigInteger granularity, ConsumableTokens s) {
+			this(balance, granularity, Collections.singletonMap(s.hash(), s));
 		}
 
 		public static Balance empty(BigInteger granularity) {
@@ -50,26 +50,22 @@ public class TokenBalanceState implements ApplicationState {
 			return TokenTypeReference.subunitsToUnits(granularity);
 		}
 
-		public Stream<OwnedTokensParticle> unconsumedTransferrable() {
+		public Stream<ConsumableTokens> unconsumedTransferrable() {
 			return consumables.entrySet().stream()
-				.map(Entry::getValue)
-				.filter(c -> c.getSpin() == Spin.UP)
-				.filter(c -> c.getParticle().getType() != FungibleType.BURNED)
-				.map(SpunParticle::getParticle);
+				.map(Entry::getValue);
 		}
 
-		public static Balance merge(Balance balance, SpunParticle<OwnedTokensParticle> s) {
-			OwnedTokensParticle ownedTokensParticle = s.getParticle();
-			Map<RadixHash, SpunParticle<OwnedTokensParticle>> newMap = new HashMap<>(balance.consumables);
-			newMap.put(RadixHash.of(ownedTokensParticle.getDson()), s);
+		public static Balance merge(Balance balance, ConsumableTokens tokens, Spin spin) {
+			Map<RadixHash, ConsumableTokens> newMap = new HashMap<>(balance.consumables);
+			newMap.put(tokens.hash(), tokens);
 
 			final BigInteger amount;
-			if (ownedTokensParticle.getType() == FungibleType.BURNED) {
+			if (tokens.getType() == FungibleType.BURNED) {
 				amount = BigInteger.ZERO;
-			} else if (s.getSpin().equals(Spin.DOWN)) {
-				amount = UInt256s.toBigInteger(ownedTokensParticle.getAmount()).negate();
+			} else if (spin == Spin.DOWN) {
+				amount = UInt256s.toBigInteger(tokens.getAmount()).negate();
 			} else {
-				amount = UInt256s.toBigInteger(ownedTokensParticle.getAmount());
+				amount = UInt256s.toBigInteger(tokens.getAmount());
 			}
 
 			BigInteger newBalance = balance.balance.add(amount);
@@ -91,15 +87,14 @@ public class TokenBalanceState implements ApplicationState {
 		return Collections.unmodifiableMap(balance);
 	}
 
-	public static TokenBalanceState merge(TokenBalanceState state, SpunParticle<OwnedTokensParticle> s) {
+	public static TokenBalanceState merge(TokenBalanceState state, ConsumableTokens tokens, Spin spin) {
 		HashMap<TokenTypeReference, Balance> balance = new HashMap<>(state.balance);
-		OwnedTokensParticle ownedTokensParticle = s.getParticle();
-		BigInteger amount = UInt256s.toBigInteger(ownedTokensParticle.getAmount());
-		BigInteger granularity = UInt256s.toBigInteger(ownedTokensParticle.getGranularity());
+		BigInteger amount = UInt256s.toBigInteger(tokens.getAmount());
+		BigInteger granularity = UInt256s.toBigInteger(tokens.getGranularity());
 		balance.merge(
-				ownedTokensParticle.getTokenTypeReference(),
-				new Balance(amount, granularity, s),
-				(bal1, bal2) -> Balance.merge(bal1, s)
+				tokens.getTokenTypeReference(),
+				new Balance(amount, granularity, tokens),
+				(bal1, bal2) -> Balance.merge(bal1, tokens, spin)
 		);
 
 		return new TokenBalanceState(balance);

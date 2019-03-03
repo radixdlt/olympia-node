@@ -18,7 +18,7 @@ public class InMemoryAtomStoreTest {
 		InMemoryAtomStore inMemoryAtomStore = new InMemoryAtomStore();
 		Atom atom = mock(Atom.class);
 		RadixHash hash = mock(RadixHash.class);
-		when(atom.getHash()).thenReturn(hash);
+		when(atom.hash()).thenReturn(hash);
 		AtomObservation atomObservation = mock(AtomObservation.class);
 		when(atomObservation.getAtom()).thenReturn(atom);
 		when(atomObservation.isStore()).thenReturn(true);
@@ -40,7 +40,7 @@ public class InMemoryAtomStoreTest {
 		AtomObservation atomObservation = mock(AtomObservation.class);
 		Atom atom = mock(Atom.class);
 		RadixHash hash = mock(RadixHash.class);
-		when(atom.getHash()).thenReturn(hash);
+		when(atom.hash()).thenReturn(hash);
 		when(atomObservation.getAtom()).thenReturn(atom);
 		when(atomObservation.isStore()).thenReturn(true);
 		when(atomObservation.isHead()).thenReturn(false);

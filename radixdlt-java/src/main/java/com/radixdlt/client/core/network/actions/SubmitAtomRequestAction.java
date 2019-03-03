@@ -48,6 +48,6 @@ public final class SubmitAtomRequestAction implements SubmitAtomAction, FindANod
 
 	@Override
 	public String toString() {
-		return "SUBMIT_ATOM_REQUEST " + uuid + " " + atom.getHid();
+		return "SUBMIT_ATOM_REQUEST " + uuid + " " + atom.hid();
 	}
 }

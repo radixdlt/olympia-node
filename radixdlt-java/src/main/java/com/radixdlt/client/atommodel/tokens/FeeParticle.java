@@ -69,6 +69,11 @@ public class FeeParticle extends Particle implements ConsumableTokens {
 	}
 
 	@Override
+	public UInt256 getGranularity() {
+		return this.granularity;
+	}
+
+	@Override
 	public long getPlanck() {
 		return this.planck;
 	}

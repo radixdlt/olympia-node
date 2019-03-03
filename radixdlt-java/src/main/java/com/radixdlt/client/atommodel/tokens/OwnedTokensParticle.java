@@ -64,22 +64,6 @@ public class OwnedTokensParticle extends Particle implements Accountable, Ownabl
 		return address;
 	}
 
-	public void addConsumerQuantities(UInt256 amount, ECKeyPair newOwner, Map<ECKeyPair, UInt256> consumerQuantities) {
-		if (amount.compareTo(getAmount()) > 0) {
-			throw new IllegalArgumentException(
-				"Unable to create consumable with amount " + amount + " (available: " + getAmount() + ")"
-			);
-		}
-
-		if (amount.equals(getAmount())) {
-			consumerQuantities.merge(newOwner, amount, UInt256::add);
-			return;
-		}
-
-		consumerQuantities.merge(newOwner, amount, UInt256::add);
-		consumerQuantities.merge(getAddress().toECKeyPair(), getAmount().subtract(amount), UInt256::add);
-	}
-
 	@Override
 	public FungibleType getType() {
 		return this.type;
@@ -113,7 +97,7 @@ public class OwnedTokensParticle extends Particle implements Accountable, Ownabl
 		return this.address.getPublicKey();
 	}
 
-	public RadixHash getHash() {
+	public RadixHash hash() {
 		return RadixHash.of(getDson());
 	}
 

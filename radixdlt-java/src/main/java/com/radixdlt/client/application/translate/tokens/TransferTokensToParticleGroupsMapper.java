@@ -10,7 +10,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import com.radixdlt.client.atommodel.tokens.ConsumableTokens;
 import com.radixdlt.client.atommodel.tokens.TransferredTokensParticle;
+import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.client.core.crypto.ECPublicKey;
 import org.radix.utils.UInt256;
 import org.radix.utils.UInt256s;
 
@@ -42,13 +45,13 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 		this.universe = universe;
 	}
 
-	private Observable<SpunParticle> mapToParticles(TransferTokensAction transfer, List<OwnedTokensParticle> currentParticles) {
+	private Observable<SpunParticle> mapToParticles(TransferTokensAction transfer, List<ConsumableTokens> currentParticles) {
 		return Observable.create(emitter -> {
 			UInt256 consumerTotal = UInt256.ZERO;
 			final UInt256 subunitAmount = TokenTypeReference.unitsToSubunits(transfer.getAmount());
 			UInt256 granularity = UInt256.ZERO;
-			Iterator<OwnedTokensParticle> iterator = currentParticles.iterator();
-			Map<ECKeyPair, UInt256> consumerQuantities = new HashMap<>();
+			Iterator<ConsumableTokens> iterator = currentParticles.iterator();
+			Map<ECPublicKey, UInt256> consumerQuantities = new HashMap<>();
 
 			// HACK for now
 			// TODO: remove this, create a ConsumersCreator
@@ -56,17 +59,16 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 			while (consumerTotal.compareTo(subunitAmount) < 0 && iterator.hasNext()) {
 				final UInt256 left = subunitAmount.subtract(consumerTotal);
 
-				OwnedTokensParticle particle = iterator.next();
+				ConsumableTokens particle = iterator.next();
 				if (granularity.isZero()) {
 					granularity = particle.getGranularity();
 				}
 				consumerTotal = consumerTotal.add(particle.getAmount());
 
 				final UInt256 amount = UInt256s.min(left, particle.getAmount());
-				particle.addConsumerQuantities(amount, transfer.getTo().toECKeyPair(), consumerQuantities);
+				addConsumerQuantities(particle.getAmount(), particle.getOwner(), transfer.getTo().getPublicKey(), amount, consumerQuantities);
 
-				SpunParticle<OwnedTokensParticle> down = SpunParticle.down(particle);
-				emitter.onNext(down);
+				emitter.onNext(SpunParticle.down(((Particle) particle)));
 			}
 
 			final UInt256 computedGranularity = granularity;
@@ -74,7 +76,7 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 				.map(entry -> new TransferredTokensParticle(
 					entry.getValue(),
 					computedGranularity,
-					this.universe.getAddressFrom(entry.getKey().getPublicKey()),
+					this.universe.getAddressFrom(entry.getKey()),
 					System.nanoTime(),
 					transfer.getTokenTypeReference(),
 					System.currentTimeMillis() / 60000L + 60000L
@@ -84,6 +86,23 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 
 			emitter.onComplete();
 		});
+	}
+
+	// TODO this and same method in BurnTokensActionMapper could be moved to a utility class, abstractions not clear yet
+	private static void addConsumerQuantities(UInt256 amount, ECPublicKey oldOwner, ECPublicKey newOwner, UInt256 usedAmount, Map<ECPublicKey, UInt256> consumerQuantities) {
+		if (amount.compareTo(amount) > 0) {
+			throw new IllegalArgumentException(
+				"Unable to create consumable with amount " + amount + " (available: " + amount + ")"
+			);
+		}
+
+		if (amount.equals(amount)) {
+			consumerQuantities.merge(newOwner, amount, UInt256::add);
+			return;
+		}
+
+		consumerQuantities.merge(newOwner, amount, UInt256::add);
+		consumerQuantities.merge(oldOwner, amount.subtract(amount), UInt256::add);
 	}
 
 	private Observable<SpunParticle> mapToAttachmentParticles(TransferTokensAction transfer) {

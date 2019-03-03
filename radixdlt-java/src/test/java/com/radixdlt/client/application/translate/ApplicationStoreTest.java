@@ -1,5 +1,6 @@
 package com.radixdlt.client.application.translate;
 
+import com.radixdlt.client.atommodel.tokens.MintedTokensParticle;
 import org.junit.Test;
 import org.radix.utils.UInt256;
 
@@ -25,10 +26,10 @@ public class ApplicationStoreTest {
 	public void testCache() {
 		RadixAddress address = mock(RadixAddress.class);
 		ParticleStore store = mock(ParticleStore.class);
-		OwnedTokensParticle ownedTokensParticle = mock(OwnedTokensParticle.class);
+		MintedTokensParticle ownedTokensParticle = mock(MintedTokensParticle.class);
 		RadixHash hash = mock(RadixHash.class);
 		when(ownedTokensParticle.getAmount()).thenReturn(UInt256.TEN);
-		when(ownedTokensParticle.getHash()).thenReturn(hash);
+		when(ownedTokensParticle.hash()).thenReturn(hash);
 		when(ownedTokensParticle.getDson()).thenReturn(new byte[] {1});
 		TokenTypeReference token = mock(TokenTypeReference.class);
 		when(ownedTokensParticle.getTokenTypeReference()).thenReturn(token);
