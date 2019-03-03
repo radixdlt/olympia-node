@@ -3,6 +3,9 @@ package org.radix.serialization2.client;
 import java.util.Arrays;
 import java.util.Collection;
 
+import com.radixdlt.client.atommodel.tokens.BurnedTokensParticle;
+import com.radixdlt.client.atommodel.tokens.MintedTokensParticle;
+import com.radixdlt.client.atommodel.tokens.TransferredTokensParticle;
 import org.radix.serialization2.Serialization;
 import org.radix.serialization2.SerializationPolicy;
 import org.radix.serialization2.SerializerIds;
@@ -11,7 +14,6 @@ import com.radixdlt.client.application.translate.unique.UniqueId;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.atommodel.message.MessageParticle;
 import com.radixdlt.client.atommodel.tokens.FeeParticle;
-import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
 import com.radixdlt.client.atommodel.tokens.TokenParticle;
 import com.radixdlt.client.atommodel.unique.UniqueParticle;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
@@ -48,10 +50,12 @@ public final class Serialize {
 				ParticleGroup.class,
 				Particle.class,
 				SpunParticle.class,
-				OwnedTokensParticle.class,
 				FeeParticle.class,
 				MessageParticle.class,
 				TokenParticle.class,
+				MintedTokensParticle.class,
+				TransferredTokensParticle.class,
+				BurnedTokensParticle.class,
 				UniqueParticle.class,
 
 				ECKeyPair.class,

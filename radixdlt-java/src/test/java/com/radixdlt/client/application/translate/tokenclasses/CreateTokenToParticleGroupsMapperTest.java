@@ -9,7 +9,6 @@ import org.radix.utils.UInt256;
 
 import com.radixdlt.client.application.translate.tokenclasses.CreateTokenAction.TokenSupplyType;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
 import com.radixdlt.client.atommodel.tokens.TokenParticle;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 
