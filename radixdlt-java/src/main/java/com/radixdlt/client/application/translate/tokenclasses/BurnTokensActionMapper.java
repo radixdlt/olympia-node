@@ -137,19 +137,20 @@ public class BurnTokensActionMapper implements StatefulActionToParticleGroupsMap
 		return ParticleGroup.of(particles);
 	}
 
+	// TODO this and same method in TransferTokensToParticleGroupsMapper could be moved to a utility class, abstractions not clear yet
 	private static void addConsumerQuantities(UInt256 amount, ECPublicKey oldOwner, ECPublicKey newOwner, UInt256 usedAmount, Map<ECPublicKey, UInt256> consumerQuantities) {
-		if (amount.compareTo(amount) > 0) {
+		if (usedAmount.compareTo(amount) > 0) {
 			throw new IllegalArgumentException(
-				"Unable to create consumable with amount " + amount + " (available: " + amount + ")"
+				"Unable to create consumable with amount " + usedAmount + " (available: " + amount + ")"
 			);
 		}
 
-		if (amount.equals(amount)) {
+		if (amount.equals(usedAmount)) {
 			consumerQuantities.merge(newOwner, amount, UInt256::add);
 			return;
 		}
 
-		consumerQuantities.merge(newOwner, amount, UInt256::add);
-		consumerQuantities.merge(oldOwner, amount.subtract(amount), UInt256::add);
+		consumerQuantities.merge(newOwner, usedAmount, UInt256::add);
+		consumerQuantities.merge(oldOwner, amount.subtract(usedAmount), UInt256::add);
 	}
 }
