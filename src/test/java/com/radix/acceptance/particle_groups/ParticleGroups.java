@@ -11,6 +11,7 @@ import com.radixdlt.client.application.translate.ApplicationState;
 import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.StatelessActionToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.atomic.AtomicAction;
+import com.radixdlt.client.application.translate.data.SendMessageAction;
 import com.radixdlt.client.application.translate.tokenclasses.CreateTokenAction;
 import com.radixdlt.client.application.translate.tokens.TokenTypeReference;
 import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
@@ -205,7 +206,8 @@ public class ParticleGroups {
 
 	@When("^I submit an arbitrary atom with an empty particle group$")
 	public void i_submit_an_arbitrary_atom_with_an_empty_particle_group() {
-		createAtomic(new CreateEmptyGroupAction());
+		createAtomic(new SendMessageAction("Hello!".getBytes(), this.api.getMyAddress(), this.api.getMyAddress(), false),
+			new CreateEmptyGroupAction());
 	}
 
 	private void createTwoTokens(CreateTokenAction.TokenSupplyType tokenSupplyType) {
