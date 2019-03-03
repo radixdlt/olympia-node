@@ -12,7 +12,7 @@ import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.tokenclasses.CreateTokenAction;
-import com.radixdlt.client.application.translate.tokens.TokenClassReference;
+import com.radixdlt.client.application.translate.tokens.TokenTypeReference;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
@@ -175,6 +175,6 @@ public class TokenSymbolLength {
 	}
 
 	private static String scaledToUnscaled(int amount) {
-		return TokenClassReference.unitsToSubunits(amount).toString();
+		return TokenTypeReference.unitsToSubunits(amount).toString();
 	}
 }

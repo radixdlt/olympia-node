@@ -13,6 +13,7 @@ import com.radixdlt.client.atommodel.message.MessageParticle;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.client.core.atoms.Hashable;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
@@ -58,7 +59,7 @@ public class ParticleGroupsMetaData {
     private TestObserver<RadixJsonRpcClient.NodeAtomSubmissionUpdate> observer;
     private TestObserver<RadixJsonRpcClient.JsonRpcResponse> observer2;
 
-    private FeeMapper feeMapper = new PowFeeMapper(atom -> atom.getHash(),
+    private FeeMapper feeMapper = new PowFeeMapper(Hashable::hash,
             new ProofOfWorkBuilder());
 
 

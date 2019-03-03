@@ -1,6 +1,6 @@
 package com.radix.acceptance.create_multi_issuance_token_class;
 
-import com.radixdlt.client.application.translate.tokens.TokenClassReference;
+import com.radixdlt.client.application.translate.tokens.TokenTypeReference;
 import com.radixdlt.client.core.network.actions.SubmitAtomReceivedAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomResultAction;
@@ -119,7 +119,7 @@ public class CreateMultiIssuanceTokenClass {
 	@When("^I submit a mint request of (\\d+) for \"([^\"]*)\"$")
 	public void i_submit_a_mint_request_of_for(int count, String symbol) {
 		TestObserver<Object> observer = new TestObserver<>();
-		api.mintTokens(symbol, TokenClassReference.unitsToSubunits(count))
+		api.mintTokens(symbol, TokenTypeReference.unitsToSubunits(count))
 			.toObservable()
 			.doOnNext(System.out::println)
 			.subscribe(observer);
@@ -129,7 +129,7 @@ public class CreateMultiIssuanceTokenClass {
 	@When("^I submit a burn request of (\\d+) for \"([^\"]*)\"$")
 	public void i_submit_a_burn_request_of_for(int count, String symbol) {
 		TestObserver<Object> observer = new TestObserver<>();
-		api.burnTokens(symbol, TokenClassReference.unitsToSubunits(count))
+		api.burnTokens(symbol, TokenTypeReference.unitsToSubunits(count))
 			.toObservable()
 			.doOnNext(System.out::println)
 			.subscribe(observer);
@@ -138,7 +138,7 @@ public class CreateMultiIssuanceTokenClass {
 
 	@When("^I submit a token transfer request of (\\d+) for \"([^\"]*)\" to an arbitrary account$")
 	public void i_submit_a_token_transfer_request_of_for_to_an_arbitrary_account(int count, String symbol) {
-		TokenClassReference tokenClass = TokenClassReference.of(api.getMyAddress(), symbol);
+		TokenTypeReference tokenClass = TokenTypeReference.of(api.getMyAddress(), symbol);
 		RadixAddress arbitrary = RadixUniverse.getInstance().getAddressFrom(RadixIdentities.createNew().getPublicKey());
 
 		// Ensure balance is up-to-date.
@@ -195,13 +195,13 @@ public class CreateMultiIssuanceTokenClass {
 
 	@Then("^I can observe token \"([^\"]*)\" balance equal to (\\d+)$")
 	public void i_can_observe_token_balance_equal_to(String symbol, int balance) {
-		TokenClassReference tokenClass = TokenClassReference.of(api.getMyAddress(), symbol);
+		TokenTypeReference tokenClass = TokenTypeReference.of(api.getMyAddress(), symbol);
 		// Ensure balance is up-to-date.
 		BigDecimal tokenBalanceDecimal = api.getBalance(api.getMyAddress(), tokenClass)
 			.firstOrError()
 			.blockingGet();
-		UInt256 tokenBalance = TokenClassReference.unitsToSubunits(tokenBalanceDecimal);
-		UInt256 requiredBalance = TokenClassReference.unitsToSubunits(balance);
+		UInt256 tokenBalance = TokenTypeReference.unitsToSubunits(tokenBalanceDecimal);
+		UInt256 requiredBalance = TokenTypeReference.unitsToSubunits(balance);
 		assertEquals(requiredBalance, tokenBalance);
 	}
 
@@ -243,6 +243,6 @@ public class CreateMultiIssuanceTokenClass {
 	}
 
 	private static String scaledToUnscaled(int amount) {
-		return TokenClassReference.unitsToSubunits(amount).toString();
+		return TokenTypeReference.unitsToSubunits(amount).toString();
 	}
 }

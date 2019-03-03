@@ -2,8 +2,6 @@ package com.radix.acceptance.sending_a_data_transaction;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
-import com.radix.acceptance.SpecificProperties;
-import com.radix.acceptance.particle_groups.ParticleGroups;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
@@ -11,13 +9,6 @@ import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.atomic.AtomicAction;
 import com.radixdlt.client.application.translate.data.DecryptedMessage;
 import com.radixdlt.client.application.translate.data.SendMessageAction;
-import com.radixdlt.client.application.translate.tokenclasses.CreateTokenAction.TokenSupplyType;
-import com.radixdlt.client.application.translate.tokenclasses.MintTokensAction;
-import com.radixdlt.client.application.translate.tokenclasses.TokenClassesState;
-import com.radixdlt.client.application.translate.tokens.TokenClassReference;
-import com.radixdlt.client.application.translate.tokens.TransferTokensToParticleGroupsMapper;
-import com.radixdlt.client.application.translate.tokens.UnknownTokenException;
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
@@ -26,26 +17,20 @@ import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomResultAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType;
 import com.radixdlt.client.core.network.actions.SubmitAtomSendAction;
-import cucumber.api.PendingException;
 import cucumber.api.java.After;
-import cucumber.api.java.en.And;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.observers.BaseTestConsumer.TestWaitStrategy;
 import io.reactivex.observers.TestObserver;
-import org.radix.utils.UInt256;
 
-import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 
 import static com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType.COLLISION;
 import static com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType.STORED;
 import static com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType.VALIDATION_ERROR;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 
 /**
  * See <a href="https://radixdlt.atlassian.net/browse/RLAU-94">RLAU-94</a>.
