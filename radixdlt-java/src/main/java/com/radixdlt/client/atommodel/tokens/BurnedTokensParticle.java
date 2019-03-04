@@ -10,7 +10,6 @@ import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.RadixHash;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.RadixResourceIdentifer;
-import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.DsonOutput.Output;
@@ -19,12 +18,12 @@ import org.radix.serialization2.client.Serialize;
 import org.radix.utils.UInt256;
 
 import java.util.Collections;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
 /**
- *  A particle which represents an amount of fungible tokens owned by some key owner and stored in an account.
+ *  A particle which represents an amount of consuming, burned fungible tokens
+ *  owned by some key owner and stored in an account.
  */
 @SerializerId2("BURNEDTOKENSPARTICLE")
 public class BurnedTokensParticle extends Particle implements Accountable, Ownable, Fungible, ConsumingTokens {
