@@ -26,7 +26,7 @@ import java.util.Set;
  *  owned by some key owner and stored in an account.
  */
 @SerializerId2("MINTEDTOKENSPARTICLE")
-public class MintedTokensParticle extends Particle implements Accountable, Ownable, Fungible, ConsumableTokens {
+public final class MintedTokensParticle extends Particle implements Accountable, Ownable, Fungible, ConsumableTokens {
 	@JsonProperty("address")
 	@DsonOutput(Output.ALL)
 	private RadixAddress address;
