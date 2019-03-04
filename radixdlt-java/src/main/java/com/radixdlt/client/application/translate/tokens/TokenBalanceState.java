@@ -14,7 +14,6 @@ import com.radixdlt.client.atommodel.tokens.ConsumableTokens;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import org.radix.utils.UInt256s;
 
-import com.radixdlt.client.atommodel.FungibleType;
 import com.radixdlt.client.core.atoms.RadixHash;
 import com.radixdlt.client.core.atoms.particles.Spin;
 

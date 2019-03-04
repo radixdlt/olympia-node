@@ -4,7 +4,7 @@ import com.radixdlt.client.application.translate.ParticleReducer;
 import com.radixdlt.client.application.translate.tokenclasses.TokenState.TokenSupplyType;
 import com.radixdlt.client.application.translate.tokens.TokenTypeReference;
 import com.radixdlt.client.atommodel.Fungible;
-import com.radixdlt.client.atommodel.FungibleType;
+import com.radixdlt.client.atommodel.tokens.TokensKind;
 import com.radixdlt.client.atommodel.tokens.BurnedTokensParticle;
 import com.radixdlt.client.atommodel.tokens.MintedTokensParticle;
 import com.radixdlt.client.atommodel.tokens.TokenParticle;
@@ -38,7 +38,7 @@ public class TokenTypesReducer implements ParticleReducer<TokenTypesState> {
 
 		if (p instanceof TokenParticle) {
 			TokenParticle tokenParticle = (TokenParticle) p;
-			TokenPermission mintPermission = tokenParticle.getTokenPermissions().get(FungibleType.MINTED);
+			TokenPermission mintPermission = tokenParticle.getTokenPermissions().get(TokensKind.MINTED);
 
 			final TokenSupplyType tokenSupplyType;
 			if (mintPermission.equals(TokenPermission.SAME_ATOM_ONLY)) {

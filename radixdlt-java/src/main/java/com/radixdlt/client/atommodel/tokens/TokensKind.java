@@ -1,13 +1,13 @@
-package com.radixdlt.client.atommodel;
+package com.radixdlt.client.atommodel.tokens;
 
-public enum FungibleType {
+public enum TokensKind {
 	MINTED("mint"),
 	TRANSFERRED("transfer"),
 	BURNED("burn");
 
 	private final String verb;
 
-	FungibleType(String verb) {
+	TokensKind(String verb) {
 		this.verb = verb;
 	}
 
@@ -15,8 +15,8 @@ public enum FungibleType {
 		return verb;
 	}
 
-	public static FungibleType fromVerbName(String verb) {
-		for (FungibleType type : FungibleType.values()) {
+	public static TokensKind fromVerbName(String verb) {
+		for (TokensKind type : TokensKind.values()) {
 			if (type.verb.equals(verb)) {
 				return type;
 			}

@@ -15,7 +15,6 @@ import com.radixdlt.client.application.translate.tokens.TokenTypeReference;
 import com.radixdlt.client.atommodel.Identifiable;
 import com.radixdlt.client.atommodel.Ownable;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.atommodel.FungibleType;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.RadixResourceIdentifer;
 import com.radixdlt.client.core.crypto.ECPublicKey;
@@ -46,7 +45,7 @@ public class TokenParticle extends Particle implements Identifiable, Ownable {
 	@DsonOutput(Output.ALL)
 	private byte[] icon;
 
-	private Map<FungibleType, TokenPermission> tokenPermissions;
+	private Map<TokensKind, TokenPermission> tokenPermissions;
 
 	private TokenParticle() {
 		// Empty constructor for serializer
@@ -58,7 +57,7 @@ public class TokenParticle extends Particle implements Identifiable, Ownable {
 		String symbol,
 		String description,
 		UInt256 granularity,
-		Map<FungibleType, TokenPermission> tokenPermissions,
+		Map<TokensKind, TokenPermission> tokenPermissions,
 		byte[] icon
 	) {
 		super();
@@ -76,7 +75,7 @@ public class TokenParticle extends Particle implements Identifiable, Ownable {
 		return new RadixResourceIdentifer(address, "tokenclasses", this.symbol);
 	}
 
-	public Map<FungibleType, TokenPermission> getTokenPermissions() {
+	public Map<TokensKind, TokenPermission> getTokenPermissions() {
 		return tokenPermissions;
 	}
 
@@ -117,7 +116,7 @@ public class TokenParticle extends Particle implements Identifiable, Ownable {
 		if (permissions != null) {
 			this.tokenPermissions = permissions.entrySet().stream()
 				.collect(Collectors.toMap(
-					e -> FungibleType.fromVerbName(e.getKey()), e -> TokenPermission.valueOf(e.getValue().toUpperCase())
+					e -> TokensKind.fromVerbName(e.getKey()), e -> TokenPermission.valueOf(e.getValue().toUpperCase())
 				));
 		} else {
 			throw new IllegalArgumentException("Permissions cannot be null.");

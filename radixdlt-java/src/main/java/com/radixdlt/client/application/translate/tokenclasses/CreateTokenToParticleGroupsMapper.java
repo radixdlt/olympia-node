@@ -4,7 +4,7 @@ import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.StatelessActionToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.tokenclasses.CreateTokenAction.TokenSupplyType;
-import com.radixdlt.client.atommodel.FungibleType;
+import com.radixdlt.client.atommodel.tokens.TokensKind;
 import com.radixdlt.client.atommodel.tokens.MintedTokensParticle;
 import com.radixdlt.client.atommodel.tokens.TokenParticle;
 import com.radixdlt.client.atommodel.tokens.TokenPermission;
@@ -50,9 +50,9 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 				tokenCreation.getDescription(),
 				tokenCreation.getGranularity(),
 				ImmutableMap.of(
-					FungibleType.MINTED, mintPermissions,
-					FungibleType.BURNED, burnPermissions,
-					FungibleType.TRANSFERRED, TokenPermission.ALL
+					TokensKind.MINTED, mintPermissions,
+					TokensKind.BURNED, burnPermissions,
+					TokensKind.TRANSFERRED, TokenPermission.ALL
 				),
 				null
 		);
