@@ -52,7 +52,6 @@ public class TokenTypesReducerTest {
 
 		MintedTokensParticle minted = mock(MintedTokensParticle.class);
 		when(minted.getAmount()).thenReturn(hundred);
-		when(minted.getType()).thenReturn(FungibleType.MINTED);
 		when(minted.getTokenTypeReference()).thenReturn(tokenRef);
 
 		TokenTypesReducer tokenTypesReducer = new TokenTypesReducer();

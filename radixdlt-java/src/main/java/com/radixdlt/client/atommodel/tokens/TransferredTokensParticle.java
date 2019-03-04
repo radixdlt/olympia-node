@@ -80,11 +80,6 @@ public final class TransferredTokensParticle extends Particle implements Account
 	}
 
 	@Override
-	public FungibleType getType() {
-		return FungibleType.TRANSFERRED;
-	}
-
-	@Override
 	public long getPlanck() {
 		return this.planck;
 	}

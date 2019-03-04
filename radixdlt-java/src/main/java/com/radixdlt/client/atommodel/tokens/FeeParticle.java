@@ -83,11 +83,6 @@ public class FeeParticle extends Particle implements ConsumableTokens {
 	}
 
 	@Override
-	public FungibleType getType() {
-		return FungibleType.MINTED;
-	}
-
-	@Override
 	public ECPublicKey getOwner() {
 		return this.address.getPublicKey();
 	}

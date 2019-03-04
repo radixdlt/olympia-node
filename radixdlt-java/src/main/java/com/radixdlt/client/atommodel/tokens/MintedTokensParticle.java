@@ -80,11 +80,6 @@ public final class MintedTokensParticle extends Particle implements Accountable,
 	}
 
 	@Override
-	public FungibleType getType() {
-		return FungibleType.MINTED;
-	}
-
-	@Override
 	public long getPlanck() {
 		return this.planck;
 	}

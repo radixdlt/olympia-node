@@ -80,11 +80,6 @@ public final class BurnedTokensParticle extends Particle implements Accountable,
 	}
 
 	@Override
-	public FungibleType getType() {
-		return FungibleType.BURNED;
-	}
-
-	@Override
 	public long getPlanck() {
 		return this.planck;
 	}
