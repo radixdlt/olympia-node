@@ -9,7 +9,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Stream;
 
-import com.radixdlt.client.atommodel.tokens.BurnedTokensParticle;
 import com.radixdlt.client.atommodel.tokens.ConsumableTokens;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import org.radix.utils.UInt256s;
@@ -58,9 +57,7 @@ public class TokenBalanceState implements ApplicationState {
 			newMap.put(((Particle) tokens).getHash(), tokens);
 
 			final BigInteger amount;
-			if (tokens instanceof BurnedTokensParticle) {
-				amount = BigInteger.ZERO;
-			} else if (spin == Spin.DOWN) {
+			if (spin == Spin.DOWN) {
 				amount = UInt256s.toBigInteger(tokens.getAmount()).negate();
 			} else {
 				amount = UInt256s.toBigInteger(tokens.getAmount());
