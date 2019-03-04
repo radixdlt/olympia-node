@@ -129,7 +129,7 @@ public class TokenParticle extends Particle implements Identifiable, Ownable {
 	private static final BiMap<Class<? extends Particle>, String> tokensClassToVerb = ImmutableBiMap.of(
 		MintedTokensParticle.class, "mint",
 		TransferredTokensParticle.class, "transfer",
-		BurnedTokensParticle.class, "burned"
+		BurnedTokensParticle.class, "burn"
 	);
 	private static final BiMap<String, Class<? extends Particle>> verbToTokenClass = tokensClassToVerb.inverse();
 
