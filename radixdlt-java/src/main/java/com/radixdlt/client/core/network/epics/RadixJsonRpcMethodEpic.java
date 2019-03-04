@@ -6,6 +6,8 @@ import com.radixdlt.client.core.network.actions.GetLivePeersRequestAction;
 import com.radixdlt.client.core.network.actions.GetLivePeersResultAction;
 import com.radixdlt.client.core.network.actions.GetNodeDataRequestAction;
 import com.radixdlt.client.core.network.actions.GetNodeDataResultAction;
+import com.radixdlt.client.core.network.actions.GetUniverseRequestAction;
+import com.radixdlt.client.core.network.actions.GetUniverseResultAction;
 import com.radixdlt.client.core.network.actions.JsonRpcMethodAction;
 import com.radixdlt.client.core.network.actions.JsonRpcResultAction;
 import com.radixdlt.client.core.network.epics.WebSocketsEpic.WebSockets;
@@ -73,6 +75,14 @@ public final class RadixJsonRpcMethodEpic<T extends JsonRpcMethodAction> impleme
 			ws,
 			(client, action) -> client.getInfo().map(l -> GetNodeDataResultAction.of(action.getNode(), l)),
 			GetNodeDataRequestAction.class
+		);
+	}
+
+	public static RadixNetworkEpic createGetUniverseEpic(WebSockets ws) {
+		return new RadixJsonRpcMethodEpic<>(
+			ws,
+			(client, action) -> client.universe().map(u -> GetUniverseResultAction.of(action.getNode(), u)),
+			GetUniverseRequestAction.class
 		);
 	}
 }

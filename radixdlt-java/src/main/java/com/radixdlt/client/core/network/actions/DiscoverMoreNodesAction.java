@@ -19,4 +19,9 @@ public final class DiscoverMoreNodesAction implements RadixNodeAction {
 	public RadixNode getNode() {
 		throw new UnsupportedOperationException();
 	}
+
+	@Override
+	public String toString() {
+		return "DISCOVER_MORE_NODES";
+	}
 }
