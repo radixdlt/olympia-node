@@ -205,7 +205,7 @@ public final class Atom extends SerializableObject {
 	}
 
 	public Map<TokenTypeReference, Map<ECPublicKey, BigInteger>> tokenSummary() {
-		Map<TokenTypeReference, Map<ECPublicKey, BigInteger>> consumableTokens = this.consumableTokens()
+		return this.consumableTokens()
 			.collect(Collectors.groupingBy(
 				tokens -> tokens.getFirst().getTokenTypeReference(),
 				Collectors.groupingBy(
@@ -213,46 +213,12 @@ public final class Atom extends SerializableObject {
 					Collectors.reducing(BigInteger.ZERO, this::consumableToAmount, BigInteger::add)
 				)
 			));
-
-		Map<TokenTypeReference, Map<ECPublicKey, BigInteger>> consumingTokens = this.consumingTokens()
-			.collect(Collectors.groupingBy(
-				tokens -> tokens.getFirst().getTokenTypeReference(),
-				Collectors.groupingBy(
-					tokens -> tokens.getFirst().getOwner(),
-					Collectors.reducing(BigInteger.ZERO, this::consumingToAmount, BigInteger::add)
-				)
-			));
-
-		return Stream.of(consumableTokens, consumingTokens)
-			.flatMap(map -> map.entrySet().stream())
-			.collect(
-				Collectors.toMap(
-					Map.Entry::getKey,
-					Map.Entry::getValue,
-					(consumables, consuming) ->
-						Stream.of(consumables, consuming)
-							.flatMap(map -> map.entrySet().stream())
-							.collect(
-								Collectors.toMap(
-									Map.Entry::getKey,
-									Map.Entry::getValue,
-									BigInteger::add
-								)
-							)
-				)
-			);
 	}
 
 	private BigInteger consumableToAmount(Pair<ConsumableTokens, Spin> tokens) {
 		BigInteger amount = UInt256s.toBigInteger(tokens.getFirst().getAmount());
 		return tokens.getSecond() == Spin.DOWN ? amount.negate() : amount;
 	}
-
-	private BigInteger consumingToAmount(Pair<ConsumingTokens, Spin> tokens) {
-		BigInteger amount = UInt256s.toBigInteger(tokens.getFirst().getAmount());
-		return tokens.getSecond() == Spin.DOWN ? amount.negate() : amount;
-	}
-
 	/**
 	 * Get the metadata associated with the atom
 	 * @return an immutable map of the meta data

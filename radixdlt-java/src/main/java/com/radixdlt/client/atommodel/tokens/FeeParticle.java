@@ -47,10 +47,9 @@ public class FeeParticle extends Particle implements ConsumableTokens {
 	}
 
 	public FeeParticle(UInt256 amount, RadixAddress address, long nonce, TokenTypeReference tokenTypeReference, long planck) {
-		// FIXME RLAU-40 Check if the hard-coded granularity here is valid
-
 		this.address = address;
 		this.tokenTypeReference = new RadixResourceIdentifer(tokenTypeReference.getAddress(), "tokenclasses", tokenTypeReference.getSymbol());
+		// FIXME RLAU-40 Check if the hard-coded granularity here is valid
 		this.granularity = UInt256.ONE;
 		this.planck = planck;
 		this.nonce = nonce;

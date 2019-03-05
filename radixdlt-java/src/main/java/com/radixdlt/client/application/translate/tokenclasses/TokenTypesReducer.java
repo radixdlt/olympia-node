@@ -61,19 +61,17 @@ public class TokenTypesReducer implements ParticleReducer<TokenTypesState> {
 				TokenTypeReference.subunitsToUnits(tokenParticle.getGranularity()),
 				tokenSupplyType
 			);
-		} else if (s.getSpin() == Spin.UP) {
-			if (p instanceof MintedTokensParticle || p instanceof BurnedTokensParticle) {
-				BigInteger mintedOrBurnedAmount = UInt256s.toBigInteger(((Fungible) p).getAmount());
-				BigDecimal change = TokenTypeReference.subunitsToUnits(
-					(p instanceof BurnedTokensParticle)
-						? mintedOrBurnedAmount.negate()
-						: mintedOrBurnedAmount
-				);
+		} else if (s.getSpin() == Spin.UP && (p instanceof MintedTokensParticle || p instanceof BurnedTokensParticle)) {
+			BigInteger mintedOrBurnedAmount = UInt256s.toBigInteger(((Fungible) p).getAmount());
+			BigDecimal change = TokenTypeReference.subunitsToUnits(
+				(p instanceof BurnedTokensParticle)
+					? mintedOrBurnedAmount.negate()
+					: mintedOrBurnedAmount
+			);
 
-				TokenTypeReference tokenTypeReference = p instanceof MintedTokensParticle ?
-					((MintedTokensParticle) p).getTokenTypeReference() : ((BurnedTokensParticle) p).getTokenTypeReference();
-				return state.mergeSupplyChange(tokenTypeReference, change);
-			}
+			TokenTypeReference tokenTypeReference = p instanceof MintedTokensParticle ?
+				((MintedTokensParticle) p).getTokenTypeReference() : ((BurnedTokensParticle) p).getTokenTypeReference();
+			return state.mergeSupplyChange(tokenTypeReference, change);
 		}
 
 		return state;

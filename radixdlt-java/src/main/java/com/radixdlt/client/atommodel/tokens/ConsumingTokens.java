@@ -11,7 +11,7 @@ import org.radix.utils.UInt256;
 public interface ConsumingTokens extends Fungible, Ownable {
 	/**
 	 * Get the token type that this Particle type consumes
-	 * @return THe consumed type
+	 * @return The consumed type
 	 */
 	TokenTypeReference getTokenTypeReference();
 
