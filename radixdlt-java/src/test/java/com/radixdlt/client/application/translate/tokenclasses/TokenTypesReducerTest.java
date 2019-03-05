@@ -27,7 +27,8 @@ public class TokenTypesReducerTest {
 		when(tokenParticle.getSymbol()).thenReturn("ISO");
 		when(tokenParticle.getDescription()).thenReturn("Desc");
 		when(tokenParticle.getGranularity()).thenReturn(UInt256.ONE);
-		when(tokenParticle.getTokenPermissions()).thenReturn(Collections.singletonMap(MintedTokensParticle.class, TokenPermission.SAME_ATOM_ONLY));
+		when(tokenParticle.getTokenPermissions()).thenReturn(Collections.singletonMap(MintedTokensParticle.class,
+			TokenPermission.SAME_ATOM_ONLY));
 
 		TokenTypesReducer tokenTypesReducer = new TokenTypesReducer();
 		TokenTypesState state = tokenTypesReducer.reduce(TokenTypesState.init(), SpunParticle.up(tokenParticle));
@@ -47,7 +48,8 @@ public class TokenTypesReducerTest {
 		when(tokenParticle.getSymbol()).thenReturn("ISO");
 		when(tokenParticle.getDescription()).thenReturn("Desc");
 		when(tokenParticle.getGranularity()).thenReturn(UInt256.ONE);
-		when(tokenParticle.getTokenPermissions()).thenReturn(Collections.singletonMap(MintedTokensParticle.class, TokenPermission.TOKEN_OWNER_ONLY));
+		when(tokenParticle.getTokenPermissions()).thenReturn(Collections.singletonMap(MintedTokensParticle.class,
+			TokenPermission.TOKEN_OWNER_ONLY));
 
 		MintedTokensParticle minted = mock(MintedTokensParticle.class);
 		when(minted.getAmount()).thenReturn(hundred);

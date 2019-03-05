@@ -1,7 +1,5 @@
 package com.radixdlt.client.atommodel.tokens;
 
-import java.util.Collections;
-import java.util.EnumMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -126,18 +124,18 @@ public class TokenParticle extends Particle implements Identifiable, Ownable {
 		}
 	}
 
-	private static final BiMap<Class<? extends Particle>, String> tokensClassToVerb = ImmutableBiMap.of(
+	private static final BiMap<Class<? extends Particle>, String> TOKENS_CLASS_TO_VERB = ImmutableBiMap.of(
 		MintedTokensParticle.class, "mint",
 		TransferredTokensParticle.class, "transfer",
 		BurnedTokensParticle.class, "burn"
 	);
-	private static final BiMap<String, Class<? extends Particle>> verbToTokenClass = tokensClassToVerb.inverse();
+	private static final BiMap<String, Class<? extends Particle>> VERB_TO_TOKEN_CLASS = TOKENS_CLASS_TO_VERB.inverse();
 
 	public static String tokenClassToVerb(Class<? extends Particle> particleClass) {
-		return tokensClassToVerb.get(particleClass);
+		return TOKENS_CLASS_TO_VERB.get(particleClass);
 	}
 
 	public static Class<? extends Particle> verbToTokenClass(String verb) {
-		return verbToTokenClass.get(verb);
+		return VERB_TO_TOKEN_CLASS.get(verb);
 	}
 }
