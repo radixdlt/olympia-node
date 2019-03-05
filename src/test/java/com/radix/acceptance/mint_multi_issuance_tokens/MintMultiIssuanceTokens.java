@@ -24,8 +24,8 @@ import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.tokenclasses.CreateTokenAction;
 import com.radixdlt.client.application.translate.tokenclasses.CreateTokenAction.TokenSupplyType;
 import com.radixdlt.client.application.translate.tokenclasses.MintTokensAction;
-import com.radixdlt.client.application.translate.tokenclasses.TokenClassesState;
-import com.radixdlt.client.application.translate.tokens.TokenClassReference;
+import com.radixdlt.client.application.translate.tokenclasses.TokenTypesState;
+import com.radixdlt.client.application.translate.tokens.TokenTypeReference;
 import com.radixdlt.client.application.translate.tokens.UnknownTokenException;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.Bootstrap;
@@ -122,8 +122,8 @@ public class MintMultiIssuanceTokens {
 	public void a_library_client_who_owns_an_account_where_token_does_not_exist(String symbol) throws Throwable {
 		setupApi();
 		// No tokens exist for this account, because it is a freshly created account
-		TokenClassReference tokenClass = TokenClassReference.of(api.getMyAddress(), symbol);
-		TokenClassesState tokenClassesState = api.getMyTokenClasses()
+		TokenTypeReference tokenClass = TokenTypeReference.of(api.getMyAddress(), symbol);
+		TokenTypesState tokenClassesState = api.getMyTokenClasses()
 			.firstOrError()
 			.blockingGet();
 		assertFalse(tokenClassesState.getState().containsKey(tokenClass));
@@ -158,13 +158,13 @@ public class MintMultiIssuanceTokens {
 	@Then("^the client should be notified that \"([^\"]*)\" token has a total supply of (\\d+)$")
 	public void theClientShouldBeNotifiedThatTokenHasATotalSupplyOf(String symbol, int supply) throws Throwable {
 		awaitAtomStatus(STORED);
-		TokenClassReference tokenClass = TokenClassReference.of(api.getMyAddress(), symbol);
+		TokenTypeReference tokenClass = TokenTypeReference.of(api.getMyAddress(), symbol);
 		// Ensure balance is up-to-date.
 		BigDecimal tokenBalanceDecimal = api.getBalance(api.getMyAddress(), tokenClass)
 			.firstOrError()
 			.blockingGet();
-		UInt256 tokenBalance = TokenClassReference.unitsToSubunits(tokenBalanceDecimal);
-		UInt256 requiredBalance = TokenClassReference.unitsToSubunits(supply);
+		UInt256 tokenBalance = TokenTypeReference.unitsToSubunits(tokenBalanceDecimal);
+		UInt256 requiredBalance = TokenTypeReference.unitsToSubunits(supply);
 		assertEquals(requiredBalance, tokenBalance);
 	}
 
@@ -225,7 +225,7 @@ public class MintMultiIssuanceTokens {
 	}
 
 	private void mintTokens(UInt256 amount, String symbol, RadixAddress address) {
-		TokenClassReference tokenClass = TokenClassReference.of(address, symbol);
+		TokenTypeReference tokenClass = TokenTypeReference.of(address, symbol);
 		MintTokensAction mta = new MintTokensAction(tokenClass, amount);
 		TestObserver<SubmitAtomAction> observer = new TestObserver<>();
 		api.execute(mta)
@@ -290,6 +290,6 @@ public class MintMultiIssuanceTokens {
 	}
 
 	private static UInt256 scaledToUnscaled(int amount) {
-		return TokenClassReference.unitsToSubunits(amount);
+		return TokenTypeReference.unitsToSubunits(amount);
 	}
 }

@@ -11,8 +11,9 @@ import com.radixdlt.client.application.translate.ApplicationState;
 import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.StatelessActionToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.atomic.AtomicAction;
+import com.radixdlt.client.application.translate.data.SendMessageAction;
 import com.radixdlt.client.application.translate.tokenclasses.CreateTokenAction;
-import com.radixdlt.client.application.translate.tokens.TokenClassReference;
+import com.radixdlt.client.application.translate.tokens.TokenTypeReference;
 import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.application.translate.tokens.TransferTokensToParticleGroupsMapper;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
@@ -205,7 +206,8 @@ public class ParticleGroups {
 
 	@When("^I submit an arbitrary atom with an empty particle group$")
 	public void i_submit_an_arbitrary_atom_with_an_empty_particle_group() {
-		createAtomic(new CreateEmptyGroupAction());
+		createAtomic(new SendMessageAction("Hello!".getBytes(), this.api.getMyAddress(), this.api.getMyAddress(), false),
+			new CreateEmptyGroupAction());
 	}
 
 	private void createTwoTokens(CreateTokenAction.TokenSupplyType tokenSupplyType) {
@@ -242,7 +244,7 @@ public class ParticleGroups {
 			api.getMyAddress(),
 			new RadixAddress(RadixUniverse.getInstance().getConfig(), ecKeyPairGenerator.generateKeyPair().getPublicKey()),
 			BigDecimal.valueOf(amount),
-			TokenClassReference.of(api.getMyAddress(), symbol)
+			TokenTypeReference.of(api.getMyAddress(), symbol)
 		);
 	}
 
@@ -273,7 +275,7 @@ public class ParticleGroups {
 
 	@When("^I submit a token transfer request of (\\d+) scaled for \"([^\"]*)\" to an arbitrary account$")
 	public void i_submit_a_token_transfer_request_of_for_to_an_arbitrary_account(int count, String symbol) {
-		TokenClassReference tokenClass = TokenClassReference.of(api.getMyAddress(), symbol);
+		TokenTypeReference tokenClass = TokenTypeReference.of(api.getMyAddress(), symbol);
 		RadixAddress arbitrary = RadixUniverse.getInstance().getAddressFrom(RadixIdentities.createNew().getPublicKey());
 		// Ensure balance is up-to-date.
 		api.getBalance(api.getMyAddress(), tokenClass)
@@ -329,13 +331,13 @@ public class ParticleGroups {
 
 	@Then("^I can observe token \"([^\"]*)\" balance equal to (\\d+) scaled$")
 	public void i_can_observe_token_balance_equal_to_scaled(String symbol, int balance) {
-		TokenClassReference tokenClass = TokenClassReference.of(api.getMyAddress(), symbol);
+		TokenTypeReference tokenClass = TokenTypeReference.of(api.getMyAddress(), symbol);
 		// Ensure balance is up-to-date.
 		BigDecimal tokenBalanceDecimal = api.getBalance(api.getMyAddress(), tokenClass)
 			.firstOrError()
 			.blockingGet();
-		UInt256 tokenBalance = TokenClassReference.unitsToSubunits(tokenBalanceDecimal);
-		UInt256 requiredBalance = TokenClassReference.unitsToSubunits(balance);
+		UInt256 tokenBalance = TokenTypeReference.unitsToSubunits(tokenBalanceDecimal);
+		UInt256 requiredBalance = TokenTypeReference.unitsToSubunits(balance);
 		assertEquals(requiredBalance, tokenBalance);
 	}
 
@@ -377,6 +379,6 @@ public class ParticleGroups {
 	}
 
 	private static String scaledToUnscaled(int scaled) {
-		return TokenClassReference.unitsToSubunits(scaled).toString();
+		return TokenTypeReference.unitsToSubunits(scaled).toString();
 	}
 }

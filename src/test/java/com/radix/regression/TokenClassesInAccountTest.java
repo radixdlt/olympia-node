@@ -1,6 +1,7 @@
 package com.radix.regression;
 
-import com.radixdlt.client.application.translate.tokens.TokenClassReference;
+import com.radixdlt.client.application.translate.tokenclasses.TokenTypesState;
+import com.radixdlt.client.application.translate.tokens.TokenTypeReference;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -15,7 +16,6 @@ import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.tokenclasses.CreateTokenAction;
 import com.radixdlt.client.application.translate.tokenclasses.CreateTokenAction.TokenSupplyType;
-import com.radixdlt.client.application.translate.tokenclasses.TokenClassesState;
 import com.radixdlt.client.application.translate.tokenclasses.TokenState;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
@@ -52,17 +52,17 @@ public class TokenClassesInAccountTest {
 		);
 	}
 
-	private Predicate<TokenClassesState> getPredicateCheck(String iso, UInt256 initialSupply) {
+	private Predicate<TokenTypesState> getPredicateCheck(String iso, UInt256 initialSupply) {
 		TokenState expectedTokenState = new TokenState(
 			"Joshy Coin",
 			iso,
 			"Ze best coin!",
-			TokenClassReference.subunitsToUnits(initialSupply),
-			TokenClassReference.subunitsToUnits(1),
+			TokenTypeReference.subunitsToUnits(initialSupply),
+			TokenTypeReference.subunitsToUnits(1),
 			TokenState.TokenSupplyType.FIXED
 		);
 
-		return tokens -> tokens.getState().get(TokenClassReference.of(api.getMyAddress(), iso)).equals(expectedTokenState);
+		return tokens -> tokens.getState().get(TokenTypeReference.of(api.getMyAddress(), iso)).equals(expectedTokenState);
 	}
 
 	@Test
@@ -74,10 +74,10 @@ public class TokenClassesInAccountTest {
 		};
 
 		// When the account is subscribed for the token state
-		Supplier<Observable<TokenClassesState>> subscription = () -> api.getTokenClasses(api.getMyAddress());
+		Supplier<Observable<TokenTypesState>> subscription = () -> api.getTokenClasses(api.getMyAddress());
 
 		// Then the two tokens are published
-		List<Predicate<TokenClassesState>> thenChecks = Arrays.asList(
+		List<Predicate<TokenTypesState>> thenChecks = Arrays.asList(
 			getPredicateCheck("JOSH", UInt256.from(10000)),
 			getPredicateCheck("JOSH2", UInt256.from(100))
 		);
@@ -87,7 +87,7 @@ public class TokenClassesInAccountTest {
 		givenCompleted.blockingAwait();
 
 		// When execution
-		TestObserver<TokenClassesState> testObserver = TestObserver.create(Util.loggingObserver("TokenClassListener"));
+		TestObserver<TokenTypesState> testObserver = TestObserver.create(Util.loggingObserver("TokenClassListener"));
 		subscription.get()
 			.debounce(15, TimeUnit.SECONDS)
 			.firstOrError()
