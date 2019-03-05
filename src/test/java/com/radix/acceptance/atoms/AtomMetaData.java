@@ -57,7 +57,7 @@ public class AtomMetaData {
     private TestObserver<RadixJsonRpcClient.NodeAtomSubmissionUpdate> observer;
     private TestObserver<RadixJsonRpcClient.JsonRpcResponse> observer2;
 
-    private FeeMapper feeMapper = new PowFeeMapper(atom -> atom.hash(),
+    private FeeMapper feeMapper = new PowFeeMapper(Atom::getHash,
             new ProofOfWorkBuilder());
 
 
