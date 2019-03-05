@@ -21,8 +21,8 @@ public class AtomTest {
 		/// These hashes can be used as a reference for other Radix libraries, e.g. Swift.
 		assertEquals("bf686d65746144617461bf6974696d657374616d706130ff6a73657269616c697a65721a001ed1516776657273696f6e1864ff",
 			Bytes.toHexString(atom.toDson()));
-		assertEquals("823e52dbdbcf7c91ea100f03b68ead290b2a2838251c70917368eb322caa70ff", atom.hash().toHexString());
-		assertEquals("823e52dbdbcf7c91ea100f03b68ead29", atom.hid().toHexString());
+		assertEquals("823e52dbdbcf7c91ea100f03b68ead290b2a2838251c70917368eb322caa70ff", atom.getHash().toHexString());
+		assertEquals("823e52dbdbcf7c91ea100f03b68ead29", atom.getHid().toHexString());
 		assertEquals(0, atom.getTimestamp());
 		assertEquals(atom, new Atom(Collections.emptyList(), 0L));
 	}

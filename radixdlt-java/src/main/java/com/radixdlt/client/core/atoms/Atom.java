@@ -36,7 +36,7 @@ import java.util.stream.Stream;
  * in a blockchain) and defines the actions that can be issued onto the ledger.
  */
 @SerializerId2("ATOM")
-public final class Atom extends SerializableObject implements Hashable {
+public final class Atom extends SerializableObject {
 	public static final String METADATA_TIMESTAMP_KEY = "timestamp";
 
 	@JsonProperty("particleGroups")
@@ -188,9 +188,12 @@ public final class Atom extends SerializableObject implements Hashable {
 		return Serialize.getInstance().toDson(this, DsonOutput.Output.HASH);
 	}
 
-	@Override
-	public RadixHash hash() {
+	public RadixHash getHash() {
 		return RadixHash.of(toDson());
+	}
+
+	public EUID getHid() {
+		return this.getHash().toEUID();
 	}
 
 	public List<MessageParticle> getMessageParticles() {
@@ -265,17 +268,17 @@ public final class Atom extends SerializableObject implements Hashable {
 		}
 
 		Atom atom = (Atom) o;
-		return this.hash().equals(atom.hash());
+		return this.getHash().equals(atom.getHash());
 	}
 
 	@Override
 	public int hashCode() {
-		return this.hash().hashCode();
+		return this.getHash().hashCode();
 	}
 
 	@Override
 	public String toString() {
 		String particleGroupsStr = this.particleGroups.stream().map(ParticleGroup::toString).collect(Collectors.joining(","));
-		return String.format("%s[%s:%s]", getClass().getSimpleName(), hid(), particleGroupsStr);
+		return String.format("%s[%s:%s]", getClass().getSimpleName(), getHid(), particleGroupsStr);
 	}
 }

@@ -10,6 +10,7 @@ import java.util.Map.Entry;
 import java.util.stream.Stream;
 
 import com.radixdlt.client.atommodel.tokens.ConsumableTokens;
+import com.radixdlt.client.core.atoms.particles.Particle;
 import org.radix.utils.UInt256s;
 
 import com.radixdlt.client.atommodel.FungibleType;
@@ -32,7 +33,7 @@ public class TokenBalanceState implements ApplicationState {
 		}
 
 		private Balance(BigInteger balance, BigInteger granularity, ConsumableTokens s) {
-			this(balance, granularity, Collections.singletonMap(s.hash(), s));
+			this(balance, granularity, Collections.singletonMap(((Particle) s).getHash(), s));
 		}
 
 		public static Balance empty(BigInteger granularity) {
@@ -54,7 +55,7 @@ public class TokenBalanceState implements ApplicationState {
 
 		public static Balance merge(Balance balance, ConsumableTokens tokens, Spin spin) {
 			Map<RadixHash, ConsumableTokens> newMap = new HashMap<>(balance.consumables);
-			newMap.put(tokens.hash(), tokens);
+			newMap.put(((Particle) tokens).getHash(), tokens);
 
 			final BigInteger amount;
 			if (tokens.getType() == FungibleType.BURNED) {

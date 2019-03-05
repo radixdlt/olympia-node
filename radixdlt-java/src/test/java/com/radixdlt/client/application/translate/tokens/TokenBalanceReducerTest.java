@@ -17,17 +17,16 @@ public class TokenBalanceReducerTest {
 
 	@Test
 	public void testSimpleBalance() {
-		MintedTokensParticle ownedTokensParticle = mock(MintedTokensParticle.class);
+		MintedTokensParticle minted = mock(MintedTokensParticle.class);
 		RadixHash hash = mock(RadixHash.class);
-		when(ownedTokensParticle.getAmount()).thenReturn(UInt256.TEN);
-		when(ownedTokensParticle.getGranularity()).thenReturn(UInt256.ONE);
-		when(ownedTokensParticle.hash()).thenReturn(hash);
-		when(ownedTokensParticle.getDson()).thenReturn(new byte[] {1});
+		when(minted.getAmount()).thenReturn(UInt256.TEN);
+		when(minted.getGranularity()).thenReturn(UInt256.ONE);
+		when(minted.getHash()).thenReturn(hash);
 		TokenTypeReference token = mock(TokenTypeReference.class);
-		when(ownedTokensParticle.getTokenTypeReference()).thenReturn(token);
+		when(minted.getTokenTypeReference()).thenReturn(token);
 
 		TokenBalanceReducer reducer = new TokenBalanceReducer();
-		TokenBalanceState tokenBalance = reducer.reduce(new TokenBalanceState(), SpunParticle.up(ownedTokensParticle));
+		TokenBalanceState tokenBalance = reducer.reduce(new TokenBalanceState(), SpunParticle.up(minted));
 		BigDecimal tenSubunits = TokenTypeReference.subunitsToUnits(UInt256.TEN);
 		assertThat(tokenBalance.getBalance().get(token).getAmount().compareTo(tenSubunits)).isEqualTo(0);
 	}

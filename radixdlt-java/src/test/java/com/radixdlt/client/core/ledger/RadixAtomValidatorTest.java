@@ -39,7 +39,7 @@ public class RadixAtomValidatorTest {
 		when(consumer.getTokenTypeReference()).thenReturn(token);
 
 		Atom atom = mock(Atom.class);
-		when(atom.hash()).thenReturn(hash);
+		when(atom.getHash()).thenReturn(hash);
 		when(atom.getSignature(any())).thenReturn(Optional.empty());
 		when(atom.getConsumableParticles(Spin.DOWN)).thenReturn(Arrays.asList(consumer));
 
@@ -59,7 +59,7 @@ public class RadixAtomValidatorTest {
 		when(publicKey.getUID()).thenReturn(new EUID(1));
 
 		Atom atom = mock(Atom.class);
-		when(atom.hash()).thenReturn(hash);
+		when(atom.getHash()).thenReturn(hash);
 		when(atom.getSignature(any())).thenReturn(Optional.empty());
 
 		RadixAtomValidator validator = RadixAtomValidator.getInstance();

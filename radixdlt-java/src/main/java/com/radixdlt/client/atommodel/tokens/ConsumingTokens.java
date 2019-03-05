@@ -3,13 +3,12 @@ package com.radixdlt.client.atommodel.tokens;
 import com.radixdlt.client.application.translate.tokens.TokenTypeReference;
 import com.radixdlt.client.atommodel.Fungible;
 import com.radixdlt.client.atommodel.Ownable;
-import com.radixdlt.client.core.atoms.Hashable;
 import org.radix.utils.UInt256;
 
 /**
  * Particle types that *consumes* tokens instances
  */
-public interface ConsumingTokens extends Fungible, Ownable, Hashable {
+public interface ConsumingTokens extends Fungible, Ownable {
 	/**
 	 * Get the token type that this Particle type consumes
 	 * @return THe consumed type

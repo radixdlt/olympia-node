@@ -48,7 +48,7 @@ public class InMemoryAtomStore implements AtomStore {
 						if (atomObservation.isHead()) {
 							return Long.toString(atomObservation.getReceivedTimestamp());
 						} else {
-							return atomObservation.getAtom().hash().toString();
+							return atomObservation.getAtom().getHash().toString();
 						}
 					})
 					.flatMap(atomObservation -> {

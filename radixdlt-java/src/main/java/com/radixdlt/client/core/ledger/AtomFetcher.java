@@ -38,7 +38,7 @@ public class AtomFetcher {
 			.retryWhen(new IncreasingRetryTimer(WebSocketException.class))
 			.filter(atomObservation -> {
 				if (atomObservation.isStore()) {
-					LOGGER.info("Received atom " + atomObservation.getAtom().hid());
+					LOGGER.info("Received atom " + atomObservation.getAtom().getHid());
 					try {
 						RadixAtomValidator.getInstance().validate(atomObservation.getAtom());
 						return true;

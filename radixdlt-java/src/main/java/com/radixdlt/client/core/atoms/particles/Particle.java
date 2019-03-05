@@ -4,7 +4,6 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.radixdlt.client.core.atoms.Hashable;
 import org.radix.common.ID.EUID;
 import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.SerializerId2;
@@ -21,7 +20,7 @@ import com.radixdlt.client.core.crypto.ECPublicKey;
  * A logical action on the ledger
  */
 @SerializerId2("PARTICLE")
-public abstract class Particle extends SerializableObject implements Hashable {
+public abstract class Particle extends SerializableObject {
 	protected Particle() {
 	}
 
@@ -41,12 +40,15 @@ public abstract class Particle extends SerializableObject implements Hashable {
 		return addresses.stream().map(RadixAddress::getPublicKey).collect(Collectors.toSet());
 	}
 
-	private byte[] toDson() {
+	public final byte[] toDson() {
 		return Serialize.getInstance().toDson(this, DsonOutput.Output.HASH);
 	}
 
-	@Override
-	public RadixHash hash() {
+	public final RadixHash getHash() {
 		return RadixHash.of(toDson());
+	}
+
+	public final EUID getHid() {
+		return this.getHash().toEUID();
 	}
 }

@@ -229,7 +229,7 @@ public class RadixApplicationAPI {
 		}
 
 		public RadixApplicationAPIBuilder defaultFeeMapper() {
-			this.feeMapper = new PowFeeMapper(Atom::hash, new ProofOfWorkBuilder());
+			this.feeMapper = new PowFeeMapper(Atom::getHash, new ProofOfWorkBuilder());
 			return this;
 		}
 

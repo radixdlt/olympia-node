@@ -15,7 +15,7 @@ public class UnsignedAtom {
 	}
 
 	public RadixHash getHash() {
-		return atom.hash();
+		return atom.getHash();
 	}
 
 	public Atom sign(ECSignature signature, EUID signatureId) {

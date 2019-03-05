@@ -95,6 +95,6 @@ public final class SubmitAtomResultAction implements SubmitAtomAction {
 
 	@Override
 	public String toString() {
-		return "SUBMIT_ATOM_RESULT " + this.uuid + " " + this.atom.hid() + " " + this.node + " " + this.type + " " + this.data;
+		return "SUBMIT_ATOM_RESULT " + this.uuid + " " + this.atom.getHid() + " " + this.node + " " + this.type + " " + this.data;
 	}
 }

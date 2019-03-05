@@ -25,16 +25,15 @@ public class ApplicationStoreTest {
 	public void testCache() {
 		RadixAddress address = mock(RadixAddress.class);
 		ParticleStore store = mock(ParticleStore.class);
-		MintedTokensParticle ownedTokensParticle = mock(MintedTokensParticle.class);
+		MintedTokensParticle minted = mock(MintedTokensParticle.class);
 		RadixHash hash = mock(RadixHash.class);
-		when(ownedTokensParticle.getAmount()).thenReturn(UInt256.TEN);
-		when(ownedTokensParticle.hash()).thenReturn(hash);
-		when(ownedTokensParticle.getDson()).thenReturn(new byte[] {1});
+		when(minted.getAmount()).thenReturn(UInt256.TEN);
+		when(minted.getHash()).thenReturn(hash);
 		TokenTypeReference token = mock(TokenTypeReference.class);
-		when(ownedTokensParticle.getTokenTypeReference()).thenReturn(token);
+		when(minted.getTokenTypeReference()).thenReturn(token);
 
 		when(store.getParticles(address)).thenReturn(
-				Observable.<SpunParticle>just(SpunParticle.up(ownedTokensParticle)).concatWith(Observable.never())
+				Observable.<SpunParticle>just(SpunParticle.up(minted)).concatWith(Observable.never())
 		);
 
 		ApplicationState o = mock(ApplicationState.class);

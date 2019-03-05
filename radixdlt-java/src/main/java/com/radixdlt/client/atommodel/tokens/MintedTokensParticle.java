@@ -118,14 +118,6 @@ public final class MintedTokensParticle extends Particle implements Accountable,
 		return this.address.getPublicKey();
 	}
 
-	public RadixHash hash() {
-		return RadixHash.of(getDson());
-	}
-
-	public byte[] getDson() {
-		return Serialize.getInstance().toDson(this, Output.HASH);
-	}
-
 	@Override
 	public String toString() {
 		return String.format("%s[%s:%s:%s:%s:%s:%s]",
