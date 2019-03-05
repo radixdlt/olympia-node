@@ -1,11 +1,11 @@
 package com.radixdlt.client.application.translate;
 
+import com.radixdlt.client.atommodel.tokens.MintedTokensParticle;
 import org.junit.Test;
 import org.radix.utils.UInt256;
 
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
-import com.radixdlt.client.application.translate.tokens.TokenClassReference;
+import com.radixdlt.client.application.translate.tokens.TokenTypeReference;
 import com.radixdlt.client.core.atoms.RadixHash;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.ledger.ParticleStore;
@@ -25,16 +25,15 @@ public class ApplicationStoreTest {
 	public void testCache() {
 		RadixAddress address = mock(RadixAddress.class);
 		ParticleStore store = mock(ParticleStore.class);
-		OwnedTokensParticle ownedTokensParticle = mock(OwnedTokensParticle.class);
+		MintedTokensParticle minted = mock(MintedTokensParticle.class);
 		RadixHash hash = mock(RadixHash.class);
-		when(ownedTokensParticle.getAmount()).thenReturn(UInt256.TEN);
-		when(ownedTokensParticle.getHash()).thenReturn(hash);
-		when(ownedTokensParticle.getDson()).thenReturn(new byte[] {1});
-		TokenClassReference token = mock(TokenClassReference.class);
-		when(ownedTokensParticle.getTokenClassReference()).thenReturn(token);
+		when(minted.getAmount()).thenReturn(UInt256.TEN);
+		when(minted.getHash()).thenReturn(hash);
+		TokenTypeReference token = mock(TokenTypeReference.class);
+		when(minted.getTokenTypeReference()).thenReturn(token);
 
 		when(store.getParticles(address)).thenReturn(
-				Observable.<SpunParticle>just(SpunParticle.up(ownedTokensParticle)).concatWith(Observable.never())
+				Observable.<SpunParticle>just(SpunParticle.up(minted)).concatWith(Observable.never())
 		);
 
 		ApplicationState o = mock(ApplicationState.class);

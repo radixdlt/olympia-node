@@ -5,7 +5,7 @@ import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.StatelessActionToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.tokenclasses.CreateTokenAction.TokenSupplyType;
 import com.radixdlt.client.atommodel.FungibleType;
-import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
+import com.radixdlt.client.atommodel.tokens.MintedTokensParticle;
 import com.radixdlt.client.atommodel.tokens.TokenParticle;
 import com.radixdlt.client.atommodel.tokens.TokenPermission;
 import com.radixdlt.client.core.atoms.ParticleGroup;
@@ -62,13 +62,12 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 			return Observable.just(ParticleGroup.of(SpunParticle.up(token)));
 		}
 
-		OwnedTokensParticle minted = new OwnedTokensParticle(
+		MintedTokensParticle minted = new MintedTokensParticle(
 				tokenCreation.getInitialSupply(),
 				tokenCreation.getGranularity(),
-				FungibleType.MINTED,
 				tokenCreation.getAddress(),
 				System.currentTimeMillis(),
-				token.getTokenClassReference(),
+				token.getTokenTypeReference(),
 				System.currentTimeMillis() / 60000L + 60000
 		);
 		return Observable.just(ParticleGroup.of(SpunParticle.up(token), SpunParticle.up(minted)));

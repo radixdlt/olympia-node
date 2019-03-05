@@ -16,11 +16,11 @@ public class TransferTokensActionTest {
 	public void testBadBigDecimalScale() {
 		RadixAddress from = mock(RadixAddress.class);
 		RadixAddress to = mock(RadixAddress.class);
-		TokenClassReference tokenClassReference = mock(TokenClassReference.class);
+		TokenTypeReference tokenTypeReference = mock(TokenTypeReference.class);
 
-		BigDecimal tooSmall = BigDecimal.valueOf(1L, TokenClassReference.SUB_UNITS_POW_10 + 1);
+		BigDecimal tooSmall = BigDecimal.valueOf(1L, TokenTypeReference.SUB_UNITS_POW_10 + 1);
 
-		assertThatThrownBy(() -> TransferTokensAction.create(from, to, tooSmall, tokenClassReference))
+		assertThatThrownBy(() -> TransferTokensAction.create(from, to, tooSmall, tokenTypeReference))
 			.isInstanceOf(IllegalArgumentException.class);
 	}
 
@@ -28,17 +28,17 @@ public class TransferTokensActionTest {
 	public void testSmallestAllowedAmount() {
 		RadixAddress from = mock(RadixAddress.class);
 		RadixAddress to = mock(RadixAddress.class);
-		TokenClassReference tokenClassReference = mock(TokenClassReference.class);
+		TokenTypeReference tokenTypeReference = mock(TokenTypeReference.class);
 
-		assertThat(TransferTokensAction.create(from, to, new BigDecimal("0.00001"), tokenClassReference).toString()).isNotNull();
+		assertThat(TransferTokensAction.create(from, to, new BigDecimal("0.00001"), tokenTypeReference).toString()).isNotNull();
 	}
 
 	@Test
 	public void testSmallestAllowedAmountLargeScale() {
 		RadixAddress from = mock(RadixAddress.class);
 		RadixAddress to = mock(RadixAddress.class);
-		TokenClassReference tokenClassReference = mock(TokenClassReference.class);
+		TokenTypeReference tokenTypeReference = mock(TokenTypeReference.class);
 
-		assertThat(TransferTokensAction.create(from, to, new BigDecimal("0.000010000"), tokenClassReference).toString()).isNotNull();
+		assertThat(TransferTokensAction.create(from, to, new BigDecimal("0.000010000"), tokenTypeReference).toString()).isNotNull();
 	}
 }

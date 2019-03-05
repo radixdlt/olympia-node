@@ -3,14 +3,14 @@ package com.radixdlt.client.application.translate.tokens;
 import java.math.BigDecimal;
 
 public class InsufficientFundsException extends RuntimeException {
-	private final TokenClassReference tokenClassReference;
+	private final TokenTypeReference tokenTypeReference;
 	private final BigDecimal available;
 	private final BigDecimal requestedAmount;
 
-	public InsufficientFundsException(TokenClassReference tokenClassReference, BigDecimal available, BigDecimal requestedAmount) {
+	public InsufficientFundsException(TokenTypeReference tokenTypeReference, BigDecimal available, BigDecimal requestedAmount) {
 		super("Requested " + requestedAmount
-			+ " but only " + available + " " + tokenClassReference.getSymbol() + " available.");
-		this.tokenClassReference = tokenClassReference;
+			+ " but only " + available + " " + tokenTypeReference.getSymbol() + " available.");
+		this.tokenTypeReference = tokenTypeReference;
 		this.available = available;
 		this.requestedAmount = requestedAmount;
 	}
@@ -30,7 +30,7 @@ public class InsufficientFundsException extends RuntimeException {
 		}
 
 		InsufficientFundsException o = (InsufficientFundsException) obj;
-		return this.tokenClassReference.equals(o.tokenClassReference)
+		return this.tokenTypeReference.equals(o.tokenTypeReference)
 			&& this.available.compareTo(o.available) == 0
 			&& this.requestedAmount.compareTo(o.requestedAmount) == 0;
 	}

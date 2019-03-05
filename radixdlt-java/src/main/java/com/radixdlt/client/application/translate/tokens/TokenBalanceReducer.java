@@ -1,9 +1,8 @@
 package com.radixdlt.client.application.translate.tokens;
 
 import com.radixdlt.client.application.translate.ParticleReducer;
-import com.radixdlt.client.atommodel.tokens.FeeParticle;
+import com.radixdlt.client.atommodel.tokens.ConsumableTokens;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
-import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
 import com.radixdlt.client.core.atoms.particles.Particle;
 
 /**
@@ -23,11 +22,11 @@ public class TokenBalanceReducer implements ParticleReducer<TokenBalanceState> {
 
 	@Override
 	public TokenBalanceState reduce(TokenBalanceState state, SpunParticle s) {
-		Particle p = s.getParticle();
-		if (!(p instanceof OwnedTokensParticle) || p instanceof FeeParticle) {
-			return state;
+		Particle particle = s.getParticle();
+		if (particle instanceof ConsumableTokens) {
+			return TokenBalanceState.merge(state, (ConsumableTokens) particle, s.getSpin());
 		}
 
-		return TokenBalanceState.merge(state, (SpunParticle<OwnedTokensParticle>) s);
+		return state;
 	}
 }

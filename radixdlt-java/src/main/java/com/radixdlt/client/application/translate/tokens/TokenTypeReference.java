@@ -9,7 +9,7 @@ import org.radix.utils.UInt256s;
 
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 
-public final class TokenClassReference {
+public final class TokenTypeReference {
 	/**
 	 * Number of subunits in a unit as a power of 10, currently {@value #SUB_UNITS_POW_10}.
 	 * In other words, the total number of subunits per unit is 10<sup>{@code SUB_UNITS_POW_10}</sup>.
@@ -117,15 +117,15 @@ public final class TokenClassReference {
 	private final RadixAddress address;
 	private final String symbol;
 
-	private TokenClassReference(RadixAddress address, String symbol) {
+	private TokenTypeReference(RadixAddress address, String symbol) {
 		Objects.requireNonNull(symbol);
 		Objects.requireNonNull(address);
 		this.address = address;
 		this.symbol = symbol;
 	}
 
-	public static TokenClassReference of(RadixAddress address, String symbol) {
-		return new TokenClassReference(address, symbol);
+	public static TokenTypeReference of(RadixAddress address, String symbol) {
+		return new TokenTypeReference(address, symbol);
 	}
 
 	public String getSymbol() {
@@ -138,12 +138,12 @@ public final class TokenClassReference {
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof TokenClassReference)) {
+		if (!(o instanceof TokenTypeReference)) {
 			return false;
 		}
 
-		TokenClassReference tokenClassReference = (TokenClassReference) o;
-		return this.getSymbol().equals(tokenClassReference.getSymbol()) && this.getAddress().equals(tokenClassReference.getAddress());
+		TokenTypeReference tokenTypeReference = (TokenTypeReference) o;
+		return this.getSymbol().equals(tokenTypeReference.getSymbol()) && this.getAddress().equals(tokenTypeReference.getAddress());
 	}
 
 	@Override

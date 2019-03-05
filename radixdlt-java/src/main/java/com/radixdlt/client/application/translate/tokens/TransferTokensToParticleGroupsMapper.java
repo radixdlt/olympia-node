@@ -10,6 +10,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import com.radixdlt.client.atommodel.tokens.ConsumableTokens;
+import com.radixdlt.client.atommodel.tokens.TransferredTokensParticle;
+import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.client.core.crypto.ECPublicKey;
 import org.radix.utils.UInt256;
 import org.radix.utils.UInt256s;
 
@@ -21,12 +25,9 @@ import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsM
 import com.radixdlt.client.application.translate.tokens.TokenBalanceState.Balance;
 import com.radixdlt.client.atommodel.message.MessageParticle;
 import com.radixdlt.client.atommodel.message.MessageParticle.MessageParticleBuilder;
-import com.radixdlt.client.atommodel.FungibleType;
-import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
-import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
 import com.radixdlt.client.core.crypto.Encryptor;
 import io.reactivex.Observable;
@@ -41,13 +42,13 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 		this.universe = universe;
 	}
 
-	private Observable<SpunParticle> mapToParticles(TransferTokensAction transfer, List<OwnedTokensParticle> currentParticles) {
+	private Observable<SpunParticle> mapToParticles(TransferTokensAction transfer, List<ConsumableTokens> currentParticles) {
 		return Observable.create(emitter -> {
 			UInt256 consumerTotal = UInt256.ZERO;
-			final UInt256 subunitAmount = TokenClassReference.unitsToSubunits(transfer.getAmount());
+			final UInt256 subunitAmount = TokenTypeReference.unitsToSubunits(transfer.getAmount());
 			UInt256 granularity = UInt256.ZERO;
-			Iterator<OwnedTokensParticle> iterator = currentParticles.iterator();
-			Map<ECKeyPair, UInt256> consumerQuantities = new HashMap<>();
+			Iterator<ConsumableTokens> iterator = currentParticles.iterator();
+			Map<ECPublicKey, UInt256> consumerQuantities = new HashMap<>();
 
 			// HACK for now
 			// TODO: remove this, create a ConsumersCreator
@@ -55,28 +56,26 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 			while (consumerTotal.compareTo(subunitAmount) < 0 && iterator.hasNext()) {
 				final UInt256 left = subunitAmount.subtract(consumerTotal);
 
-				OwnedTokensParticle particle = iterator.next();
+				ConsumableTokens particle = iterator.next();
 				if (granularity.isZero()) {
 					granularity = particle.getGranularity();
 				}
 				consumerTotal = consumerTotal.add(particle.getAmount());
 
 				final UInt256 amount = UInt256s.min(left, particle.getAmount());
-				particle.addConsumerQuantities(amount, transfer.getTo().toECKeyPair(), consumerQuantities);
+				addConsumerQuantities(particle.getAmount(), particle.getOwner(), transfer.getTo().getPublicKey(), amount, consumerQuantities);
 
-				SpunParticle<OwnedTokensParticle> down = SpunParticle.down(particle);
-				emitter.onNext(down);
+				emitter.onNext(SpunParticle.down(((Particle) particle)));
 			}
 
 			final UInt256 computedGranularity = granularity;
 			consumerQuantities.entrySet().stream()
-				.map(entry -> new OwnedTokensParticle(
+				.map(entry -> new TransferredTokensParticle(
 					entry.getValue(),
 					computedGranularity,
-					FungibleType.TRANSFERRED,
-					this.universe.getAddressFrom(entry.getKey().getPublicKey()),
+					this.universe.getAddressFrom(entry.getKey()),
 					System.nanoTime(),
-					transfer.getTokenClassReference(),
+					transfer.getTokenTypeReference(),
 					System.currentTimeMillis() / 60000L + 60000L
 				))
 				.map(SpunParticle::up)
@@ -84,6 +83,23 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 
 			emitter.onComplete();
 		});
+	}
+
+	// TODO this and same method in BurnTokensActionMapper could be moved to a utility class, abstractions not clear yet
+	private static void addConsumerQuantities(UInt256 amount, ECPublicKey oldOwner, ECPublicKey newOwner, UInt256 usedAmount, Map<ECPublicKey, UInt256> consumerQuantities) {
+		if (usedAmount.compareTo(amount) > 0) {
+			throw new IllegalArgumentException(
+				"Unable to create consumable with amount " + usedAmount + " (available: " + amount + ")"
+			);
+		}
+
+		if (amount.equals(usedAmount)) {
+			consumerQuantities.merge(newOwner, amount, UInt256::add);
+			return;
+		}
+
+		consumerQuantities.merge(newOwner, usedAmount, UInt256::add);
+		consumerQuantities.merge(oldOwner, amount.subtract(usedAmount), UInt256::add);
 	}
 
 	private Observable<SpunParticle> mapToAttachmentParticles(TransferTokensAction transfer) {
@@ -153,10 +169,10 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 			.map(appState -> (TokenBalanceState) appState)
 			.firstOrError()
 			.map(curState -> {
-				final TokenClassReference tokenRef = transfer.getTokenClassReference();
-				final Map<TokenClassReference, Balance> allConsumables = curState.getBalance();
+				final TokenTypeReference tokenRef = transfer.getTokenTypeReference();
+				final Map<TokenTypeReference, Balance> allConsumables = curState.getBalance();
 				final Balance balance = Optional.ofNullable(
-					allConsumables.get(transfer.getTokenClassReference())).orElse(Balance.empty(BigInteger.ONE));
+					allConsumables.get(transfer.getTokenTypeReference())).orElse(Balance.empty(BigInteger.ONE));
 				if (balance.getAmount().compareTo(transfer.getAmount()) < 0) {
 					throw new InsufficientFundsException(
 						tokenRef, balance.getAmount(), transfer.getAmount()
@@ -165,7 +181,7 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 				return allConsumables;
 			})
 			.map(allConsumables ->
-				Optional.ofNullable(allConsumables.get(transfer.getTokenClassReference()))
+				Optional.ofNullable(allConsumables.get(transfer.getTokenTypeReference()))
 					.map(bal -> bal.unconsumedTransferrable().collect(Collectors.toList()))
 					.orElse(Collections.emptyList())
 		)

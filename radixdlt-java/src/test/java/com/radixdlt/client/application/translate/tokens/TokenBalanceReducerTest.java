@@ -2,10 +2,10 @@ package com.radixdlt.client.application.translate.tokens;
 
 import java.math.BigDecimal;
 
+import com.radixdlt.client.atommodel.tokens.MintedTokensParticle;
 import org.junit.Test;
 import org.radix.utils.UInt256;
 
-import com.radixdlt.client.atommodel.tokens.OwnedTokensParticle;
 import com.radixdlt.client.core.atoms.RadixHash;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 
@@ -17,18 +17,17 @@ public class TokenBalanceReducerTest {
 
 	@Test
 	public void testSimpleBalance() {
-		OwnedTokensParticle ownedTokensParticle = mock(OwnedTokensParticle.class);
+		MintedTokensParticle minted = mock(MintedTokensParticle.class);
 		RadixHash hash = mock(RadixHash.class);
-		when(ownedTokensParticle.getAmount()).thenReturn(UInt256.TEN);
-		when(ownedTokensParticle.getGranularity()).thenReturn(UInt256.ONE);
-		when(ownedTokensParticle.getHash()).thenReturn(hash);
-		when(ownedTokensParticle.getDson()).thenReturn(new byte[] {1});
-		TokenClassReference token = mock(TokenClassReference.class);
-		when(ownedTokensParticle.getTokenClassReference()).thenReturn(token);
+		when(minted.getAmount()).thenReturn(UInt256.TEN);
+		when(minted.getGranularity()).thenReturn(UInt256.ONE);
+		when(minted.getHash()).thenReturn(hash);
+		TokenTypeReference token = mock(TokenTypeReference.class);
+		when(minted.getTokenTypeReference()).thenReturn(token);
 
 		TokenBalanceReducer reducer = new TokenBalanceReducer();
-		TokenBalanceState tokenBalance = reducer.reduce(new TokenBalanceState(), SpunParticle.up(ownedTokensParticle));
-		BigDecimal tenSubunits = TokenClassReference.subunitsToUnits(UInt256.TEN);
+		TokenBalanceState tokenBalance = reducer.reduce(new TokenBalanceState(), SpunParticle.up(minted));
+		BigDecimal tenSubunits = TokenTypeReference.subunitsToUnits(UInt256.TEN);
 		assertThat(tokenBalance.getBalance().get(token).getAmount().compareTo(tenSubunits)).isEqualTo(0);
 	}
 }

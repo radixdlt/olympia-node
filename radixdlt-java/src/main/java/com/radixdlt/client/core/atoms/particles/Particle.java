@@ -40,15 +40,15 @@ public abstract class Particle extends SerializableObject {
 		return addresses.stream().map(RadixAddress::getPublicKey).collect(Collectors.toSet());
 	}
 
-	public byte[] toDson() {
+	public final byte[] toDson() {
 		return Serialize.getInstance().toDson(this, DsonOutput.Output.HASH);
 	}
 
-	public RadixHash getHash() {
+	public final RadixHash getHash() {
 		return RadixHash.of(toDson());
 	}
 
-	public EUID getHid() {
+	public final EUID getHid() {
 		return this.getHash().toEUID();
 	}
 }

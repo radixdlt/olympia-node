@@ -12,7 +12,7 @@ import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.RadixHash;
-import com.radixdlt.client.application.translate.tokens.TokenClassReference;
+import com.radixdlt.client.application.translate.tokens.TokenTypeReference;
 import com.radixdlt.client.atommodel.tokens.FeeParticle;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.crypto.ECPublicKey;
@@ -40,7 +40,7 @@ public class PowFeeMapperTest {
 		PowFeeMapper powFeeMapper = new PowFeeMapper(hasher, builder);
 
 		RadixUniverse universe = mock(RadixUniverse.class);
-		TokenClassReference powToken = mock(TokenClassReference.class);
+		TokenTypeReference powToken = mock(TokenTypeReference.class);
 		when(powToken.getAddress()).thenReturn(mock(RadixAddress.class));
 		when(powToken.getSymbol()).thenReturn("POW");
 		when(universe.getPOWToken()).thenReturn(powToken);
@@ -56,7 +56,7 @@ public class PowFeeMapperTest {
 					SpunParticle feeParticle = s.spunParticles().findAny().get();
 					assertThat(feeParticle.getParticle()).isInstanceOf(FeeParticle.class);
 					FeeParticle a = (FeeParticle) feeParticle.getParticle();
-					assertThat(a.getTokenClassReference()).isEqualTo(powToken);
+					assertThat(a.getTokenTypeReference()).isEqualTo(powToken);
 				});
 
 		verify(builder, times(1)).build(anyInt(), any(), anyInt());

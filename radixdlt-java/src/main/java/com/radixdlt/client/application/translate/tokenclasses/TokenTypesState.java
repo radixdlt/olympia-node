@@ -2,36 +2,36 @@ package com.radixdlt.client.application.translate.tokenclasses;
 
 import com.radixdlt.client.application.translate.ApplicationState;
 import com.radixdlt.client.application.translate.tokenclasses.TokenState.TokenSupplyType;
-import com.radixdlt.client.application.translate.tokens.TokenClassReference;
+import com.radixdlt.client.application.translate.tokens.TokenTypeReference;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-public class TokenClassesState implements ApplicationState {
-	private final Map<TokenClassReference, TokenState> state;
+public class TokenTypesState implements ApplicationState {
+	private final Map<TokenTypeReference, TokenState> state;
 
-	private TokenClassesState(Map<TokenClassReference, TokenState> state) {
+	private TokenTypesState(Map<TokenTypeReference, TokenState> state) {
 		this.state = Collections.unmodifiableMap(state);
 	}
 
-	public static TokenClassesState init() {
-		return new TokenClassesState(Collections.emptyMap());
+	public static TokenTypesState init() {
+		return new TokenTypesState(Collections.emptyMap());
 	}
 
-	public Map<TokenClassReference, TokenState> getState() {
+	public Map<TokenTypeReference, TokenState> getState() {
 		return state;
 	}
 
-	public TokenClassesState mergeTokenClass(
-		TokenClassReference ref,
+	public TokenTypesState mergeTokenClass(
+		TokenTypeReference ref,
 		String name,
 		String iso,
 		String description,
 		BigDecimal granularity,
 		TokenSupplyType tokenSupplyType
 	) {
-		Map<TokenClassReference, TokenState> newState = new HashMap<>(state);
+		Map<TokenTypeReference, TokenState> newState = new HashMap<>(state);
 		if (newState.containsKey(ref)) {
 			BigDecimal totalSupply = newState.get(ref).getTotalSupply();
 			newState.put(ref, new TokenState(name, iso, description, totalSupply, granularity, tokenSupplyType));
@@ -39,11 +39,11 @@ public class TokenClassesState implements ApplicationState {
 			newState.put(ref, new TokenState(name, iso, description, BigDecimal.ZERO, granularity, tokenSupplyType));
 		}
 
-		return new TokenClassesState(newState);
+		return new TokenTypesState(newState);
 	}
 
-	public TokenClassesState mergeSupplyChange(TokenClassReference ref, BigDecimal supplyChange) {
-		Map<TokenClassReference, TokenState> newState = new HashMap<>(state);
+	public TokenTypesState mergeSupplyChange(TokenTypeReference ref, BigDecimal supplyChange) {
+		Map<TokenTypeReference, TokenState> newState = new HashMap<>(state);
 		if (newState.containsKey(ref)) {
 			TokenState tokenState = newState.get(ref);
 			newState.put(ref, new TokenState(
@@ -57,6 +57,6 @@ public class TokenClassesState implements ApplicationState {
 			newState.put(ref, new TokenState(null, ref.getSymbol(), null, null, supplyChange, null));
 		}
 
-		return new TokenClassesState(newState);
+		return new TokenTypesState(newState);
 	}
 }

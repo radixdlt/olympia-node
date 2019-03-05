@@ -11,7 +11,7 @@ import org.radix.serialization2.SerializerId2;
 import org.radix.utils.UInt256;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.client.application.translate.tokens.TokenClassReference;
+import com.radixdlt.client.application.translate.tokens.TokenTypeReference;
 import com.radixdlt.client.atommodel.Identifiable;
 import com.radixdlt.client.atommodel.Ownable;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
@@ -90,7 +90,7 @@ public class TokenParticle extends Particle implements Identifiable, Ownable {
 	}
 
 	public String getSymbol() {
-		return getTokenClassReference().getSymbol();
+		return getTokenTypeReference().getSymbol();
 	}
 
 	public String getDescription() {
@@ -101,8 +101,8 @@ public class TokenParticle extends Particle implements Identifiable, Ownable {
 		return this.granularity;
 	}
 
-	public TokenClassReference getTokenClassReference() {
-		return TokenClassReference.of(address, symbol);
+	public TokenTypeReference getTokenTypeReference() {
+		return TokenTypeReference.of(address, symbol);
 	}
 
 	@JsonProperty("permissions")

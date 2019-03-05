@@ -8,7 +8,7 @@ import java.util.Optional;
 public class TokenTransfer {
 	private final RadixAddress from;
 	private final RadixAddress to;
-	private final TokenClassReference tokenClass;
+	private final TokenTypeReference tokenClass;
 	private final BigDecimal amount;
 	private final UnencryptedData attachment;
 	private final long timestamp;
@@ -16,7 +16,7 @@ public class TokenTransfer {
 	public TokenTransfer(
 		RadixAddress from,
 		RadixAddress to,
-		TokenClassReference tokenClass,
+		TokenTypeReference tokenClass,
 		BigDecimal amount,
 		UnencryptedData attachment,
 		long timestamp
@@ -41,7 +41,7 @@ public class TokenTransfer {
 		return to;
 	}
 
-	public TokenClassReference getTokenClass() {
+	public TokenTypeReference getTokenClass() {
 		return tokenClass;
 	}
 

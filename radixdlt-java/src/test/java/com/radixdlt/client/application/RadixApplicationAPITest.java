@@ -20,7 +20,7 @@ import com.radixdlt.client.application.translate.StatelessActionToParticleGroups
 import com.radixdlt.client.application.translate.data.AtomToDecryptedMessageMapper;
 import com.radixdlt.client.application.translate.data.DecryptedMessage;
 import com.radixdlt.client.application.translate.tokens.TokenBalanceReducer;
-import com.radixdlt.client.application.translate.tokens.TokenClassReference;
+import com.radixdlt.client.application.translate.tokens.TokenTypeReference;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.RadixUniverse.Ledger;
@@ -216,7 +216,7 @@ public class RadixApplicationAPITest {
 			.addReducer(new TokenBalanceReducer())
 			.build();
 		TestObserver<BigDecimal> observer = TestObserver.create();
-		TokenClassReference token = mock(TokenClassReference.class);
+		TokenTypeReference token = mock(TokenTypeReference.class);
 
 		api.getBalance(address, token).subscribe(observer);
 		observer.awaitCount(1);
@@ -271,7 +271,7 @@ public class RadixApplicationAPITest {
 			.addReducer(new TokenBalanceReducer())
 			.build();
 		TestObserver<BigDecimal> testObserver = TestObserver.create();
-		TokenClassReference token = mock(TokenClassReference.class);
+		TokenTypeReference token = mock(TokenTypeReference.class);
 		api.getBalance(address, token).subscribe(testObserver);
 		verify(puller, times(1)).pull(address);
 	}
