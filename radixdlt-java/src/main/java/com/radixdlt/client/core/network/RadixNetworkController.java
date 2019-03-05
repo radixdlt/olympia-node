@@ -125,9 +125,7 @@ public class RadixNetworkController implements AtomSubmitter {
 	@Override
 	public Observable<SubmitAtomAction> submitAtom(Atom atom) {
 		SubmitAtomAction initialAction = SubmitAtomRequestAction.newRequest(atom);
-
-		TestUtils.dumpJsonForHash(atom);
-
+		
 		Observable<SubmitAtomAction> status =
 			nodeActions.ofType(SubmitAtomAction.class)
 				.filter(u -> u.getUuid().equals(initialAction.getUuid()))
