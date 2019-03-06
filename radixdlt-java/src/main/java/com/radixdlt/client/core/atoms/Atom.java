@@ -22,7 +22,6 @@ import org.radix.utils.UInt256s;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
