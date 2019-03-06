@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.client.application.translate.tokens.TokenTypeReference;
 import com.radixdlt.client.atommodel.Accountable;
 import com.radixdlt.client.atommodel.Fungible;
-import com.radixdlt.client.atommodel.FungibleType;
 import com.radixdlt.client.atommodel.Ownable;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.particles.Particle;
@@ -77,11 +76,6 @@ public final class TransferredTokensParticle extends Particle implements Account
 
 	public RadixAddress getAddress() {
 		return this.address;
-	}
-
-	@Override
-	public FungibleType getType() {
-		return FungibleType.TRANSFERRED;
 	}
 
 	@Override

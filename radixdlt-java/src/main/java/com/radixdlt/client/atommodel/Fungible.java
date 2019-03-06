@@ -11,6 +11,4 @@ public interface Fungible {
 	long getPlanck();
 
 	long getNonce();
-
-	FungibleType getType();
 }

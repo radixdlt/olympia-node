@@ -1,7 +1,6 @@
 package com.radixdlt.client.atommodel.tokens;
 
 import com.radixdlt.client.application.translate.tokens.TokenTypeReference;
-import com.radixdlt.client.atommodel.FungibleType;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.RadixResourceIdentifer;
 import com.radixdlt.client.core.crypto.ECPublicKey;
@@ -80,11 +79,6 @@ public class FeeParticle extends Particle implements ConsumableTokens {
 	@Override
 	public long getNonce() {
 		return this.nonce;
-	}
-
-	@Override
-	public FungibleType getType() {
-		return FungibleType.MINTED;
 	}
 
 	@Override

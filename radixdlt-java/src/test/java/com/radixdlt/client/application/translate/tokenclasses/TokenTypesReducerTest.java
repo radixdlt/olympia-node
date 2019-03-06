@@ -8,7 +8,6 @@ import org.junit.Test;
 import org.radix.utils.UInt256;
 
 import com.radixdlt.client.application.translate.tokenclasses.TokenState.TokenSupplyType;
-import com.radixdlt.client.atommodel.FungibleType;
 import com.radixdlt.client.application.translate.tokens.TokenTypeReference;
 import com.radixdlt.client.atommodel.tokens.TokenParticle;
 import com.radixdlt.client.atommodel.tokens.TokenPermission;
@@ -28,7 +27,8 @@ public class TokenTypesReducerTest {
 		when(tokenParticle.getSymbol()).thenReturn("ISO");
 		when(tokenParticle.getDescription()).thenReturn("Desc");
 		when(tokenParticle.getGranularity()).thenReturn(UInt256.ONE);
-		when(tokenParticle.getTokenPermissions()).thenReturn(Collections.singletonMap(FungibleType.MINTED, TokenPermission.SAME_ATOM_ONLY));
+		when(tokenParticle.getTokenPermissions()).thenReturn(Collections.singletonMap(MintedTokensParticle.class,
+			TokenPermission.SAME_ATOM_ONLY));
 
 		TokenTypesReducer tokenTypesReducer = new TokenTypesReducer();
 		TokenTypesState state = tokenTypesReducer.reduce(TokenTypesState.init(), SpunParticle.up(tokenParticle));
@@ -48,11 +48,11 @@ public class TokenTypesReducerTest {
 		when(tokenParticle.getSymbol()).thenReturn("ISO");
 		when(tokenParticle.getDescription()).thenReturn("Desc");
 		when(tokenParticle.getGranularity()).thenReturn(UInt256.ONE);
-		when(tokenParticle.getTokenPermissions()).thenReturn(Collections.singletonMap(FungibleType.MINTED, TokenPermission.TOKEN_OWNER_ONLY));
+		when(tokenParticle.getTokenPermissions()).thenReturn(Collections.singletonMap(MintedTokensParticle.class,
+			TokenPermission.TOKEN_OWNER_ONLY));
 
 		MintedTokensParticle minted = mock(MintedTokensParticle.class);
 		when(minted.getAmount()).thenReturn(hundred);
-		when(minted.getType()).thenReturn(FungibleType.MINTED);
 		when(minted.getTokenTypeReference()).thenReturn(tokenRef);
 
 		TokenTypesReducer tokenTypesReducer = new TokenTypesReducer();
