@@ -4,11 +4,11 @@ import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.client.core.network.RadixNode;
 import java.util.Objects;
 
-public class GetUniverseResultAction implements JsonRpcResultAction<RadixUniverseConfig> {
+public class GetUniverseResponseAction implements JsonRpcResultAction<RadixUniverseConfig> {
 	private final RadixNode node;
 	private final RadixUniverseConfig config;
 
-	private GetUniverseResultAction(RadixNode node, RadixUniverseConfig config) {
+	private GetUniverseResponseAction(RadixNode node, RadixUniverseConfig config) {
 		Objects.requireNonNull(node);
 		Objects.requireNonNull(config);
 
@@ -16,8 +16,8 @@ public class GetUniverseResultAction implements JsonRpcResultAction<RadixUnivers
 		this.config = config;
 	}
 
-	public static GetUniverseResultAction of(RadixNode node, RadixUniverseConfig config) {
-		return new GetUniverseResultAction(node, config);
+	public static GetUniverseResponseAction of(RadixNode node, RadixUniverseConfig config) {
+		return new GetUniverseResponseAction(node, config);
 	}
 
 	@Override

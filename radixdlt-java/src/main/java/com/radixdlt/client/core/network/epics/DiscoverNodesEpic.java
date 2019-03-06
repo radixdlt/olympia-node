@@ -11,7 +11,7 @@ import com.radixdlt.client.core.network.actions.GetLivePeersRequestAction;
 import com.radixdlt.client.core.network.actions.GetLivePeersResultAction;
 import com.radixdlt.client.core.network.actions.GetNodeDataRequestAction;
 import com.radixdlt.client.core.network.actions.GetUniverseRequestAction;
-import com.radixdlt.client.core.network.actions.GetUniverseResultAction;
+import com.radixdlt.client.core.network.actions.GetUniverseResponseAction;
 import com.radixdlt.client.core.network.actions.NodeUniverseMismatch;
 import io.reactivex.Observable;
 import java.util.Arrays;
@@ -40,14 +40,14 @@ public final class DiscoverNodesEpic implements RadixNetworkEpic {
 
 		// TODO: Store universes in node table instead and filter out node in FindANodeEpic
 		Observable<RadixNodeAction> seedUniverseMismatch = updates
-			.ofType(GetUniverseResultAction.class)
+			.ofType(GetUniverseResponseAction.class)
 			.filter(u -> !u.getResult().equals(config))
 			.map(u -> new NodeUniverseMismatch(u.getNode(), config, u.getResult()));
 
 		Observable<RadixNode> connectedSeeds = updates
-			.ofType(GetUniverseResultAction.class)
+			.ofType(GetUniverseResponseAction.class)
 			.filter(u -> u.getResult().equals(config))
-			.map(GetUniverseResultAction::getNode)
+			.map(GetUniverseResponseAction::getNode)
 			.publish()
 			.autoConnect(3);
 

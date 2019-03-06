@@ -1,6 +1,11 @@
 package com.radixdlt.client.core.ledger;
 
 import com.radixdlt.client.core.atoms.AtomObservation;
+import com.radixdlt.client.core.atoms.AtomObservation.Type;
+import com.radixdlt.client.core.atoms.RadixHash;
+import io.reactivex.functions.Predicate;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -43,12 +48,27 @@ public class InMemoryAtomStore implements AtomStore {
 		return Observable.fromCallable(ValidAtomFilter::new)
 			.flatMap(atomFilter ->
 				cache.computeIfAbsent(address, euid -> ReplaySubject.create())
-					.distinct(atomObservation -> {
-						// FIXME: make this better
-						if (atomObservation.isHead()) {
-							return Long.toString(atomObservation.getReceivedTimestamp());
-						} else {
-							return atomObservation.getAtom().getHash().toString();
+					.filter(new Predicate<AtomObservation>() {
+						private final Map<RadixHash, Type> curAtomState = new HashMap<>();
+
+						@Override
+						public boolean test(AtomObservation observation) {
+							if (observation.getAtom() != null) {
+								Type curState = curAtomState.get(observation.getAtom().getHash());
+								final boolean shouldUpdate;
+								if (curState == null) {
+									shouldUpdate = observation.getType() == Type.STORE;
+								} else {
+									shouldUpdate = observation.getType() != curState;
+								}
+
+								if (shouldUpdate) {
+									curAtomState.put(observation.getAtom().getHash(), observation.getType());
+								}
+								return shouldUpdate;
+							} else {
+								return true;
+							}
 						}
 					})
 					.flatMap(atomObservation -> {

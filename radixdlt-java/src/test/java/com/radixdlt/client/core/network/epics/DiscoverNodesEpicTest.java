@@ -11,7 +11,7 @@ import com.radixdlt.client.core.network.actions.AddNodeAction;
 import com.radixdlt.client.core.network.actions.DiscoverMoreNodesAction;
 import com.radixdlt.client.core.network.actions.GetLivePeersResultAction;
 import com.radixdlt.client.core.network.actions.GetUniverseRequestAction;
-import com.radixdlt.client.core.network.actions.GetUniverseResultAction;
+import com.radixdlt.client.core.network.actions.GetUniverseResponseAction;
 import com.radixdlt.client.core.network.actions.NodeUniverseMismatch;
 import com.radixdlt.client.core.network.jsonrpc.NodeRunnerData;
 import io.reactivex.Observable;
@@ -43,7 +43,7 @@ public class DiscoverNodesEpicTest {
 
 		testObserver.awaitCount(1);
 		testObserver.assertValueAt(0, a -> a instanceof GetUniverseRequestAction);
-		actions.onNext(GetUniverseResultAction.of(node, badUniverse));
+		actions.onNext(GetUniverseResponseAction.of(node, badUniverse));
 
 		testObserver.awaitCount(2);
 		testObserver.assertValueAt(1, a -> a instanceof NodeUniverseMismatch);

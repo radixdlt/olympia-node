@@ -2,7 +2,6 @@ package com.radixdlt.client.core.ledger;
 
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.AtomObservation;
-import com.radixdlt.client.core.atoms.AtomValidationException;
 import com.radixdlt.client.core.network.jsonrpc.AtomQuery;
 import com.radixdlt.client.core.util.IncreasingRetryTimer;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient;
@@ -36,6 +35,8 @@ public class AtomFetcher {
 			.flatMap(client -> client.getAtoms(atomQuery))
 			.doOnError(throwable -> LOGGER.warn("Error on getAllAtoms: {}", address))
 			.retryWhen(new IncreasingRetryTimer(WebSocketException.class))
+			// FIXME: Remove the following for now as we will initially assume full trust of server client connects with
+			/*
 			.filter(atomObservation -> {
 				if (atomObservation.isStore()) {
 					LOGGER.info("Received atom " + atomObservation.getAtom().getHid());
@@ -51,6 +52,7 @@ public class AtomFetcher {
 					return true;
 				}
 			})
+			*/
 			.doOnSubscribe(atoms -> LOGGER.info("Atom Query Subscribe: address({})", address));
 	}
 }

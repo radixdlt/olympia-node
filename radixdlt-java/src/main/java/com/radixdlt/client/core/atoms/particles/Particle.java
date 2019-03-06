@@ -2,19 +2,18 @@ package com.radixdlt.client.core.atoms.particles;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.radix.common.ID.EUID;
 import org.radix.serialization2.DsonOutput;
+import com.radixdlt.client.atommodel.Accountable;
+import com.radixdlt.client.atommodel.Identifiable;
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
+
 import org.radix.serialization2.SerializerId2;
 import org.radix.serialization2.client.SerializableObject;
 import org.radix.serialization2.client.Serialize;
 
-import com.radixdlt.client.atommodel.Accountable;
-import com.radixdlt.client.atommodel.Identifiable;
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.RadixHash;
-import com.radixdlt.client.core.crypto.ECPublicKey;
 
 /**
  * A logical action on the ledger
@@ -24,7 +23,7 @@ public abstract class Particle extends SerializableObject {
 	protected Particle() {
 	}
 
-	public final Set<ECPublicKey> getKeyDestinations() {
+	public final Set<RadixAddress> getShardables() {
 		Set<RadixAddress> addresses = new HashSet<>();
 
 		if (this instanceof Accountable) {
@@ -37,7 +36,7 @@ public abstract class Particle extends SerializableObject {
 			addresses.add(i.getRRI().getAddress());
 		}
 
-		return addresses.stream().map(RadixAddress::getPublicKey).collect(Collectors.toSet());
+		return new HashSet<>(addresses);
 	}
 
 	public final byte[] toDson() {

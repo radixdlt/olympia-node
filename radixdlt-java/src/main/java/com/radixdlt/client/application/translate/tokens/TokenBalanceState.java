@@ -1,6 +1,9 @@
 package com.radixdlt.client.application.translate.tokens;
 
 import com.radixdlt.client.application.translate.ApplicationState;
+import com.radixdlt.client.core.atoms.RadixHash;
+import com.radixdlt.client.core.atoms.particles.Spin;
+
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Collections;
@@ -12,9 +15,6 @@ import java.util.stream.Stream;
 import com.radixdlt.client.atommodel.tokens.ConsumableTokens;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import org.radix.utils.UInt256s;
-
-import com.radixdlt.client.core.atoms.RadixHash;
-import com.radixdlt.client.core.atoms.particles.Spin;
 
 /**
  * All the token balances at an address at a given point in time.
@@ -57,7 +57,7 @@ public class TokenBalanceState implements ApplicationState {
 			newMap.put(((Particle) tokens).getHash(), tokens);
 
 			final BigInteger amount;
-			if (spin == Spin.DOWN) {
+			if (spin == Spin.DOWN || spin == Spin.NEUTRAL) {
 				amount = UInt256s.toBigInteger(tokens.getAmount()).negate();
 			} else {
 				amount = UInt256s.toBigInteger(tokens.getAmount());
@@ -87,9 +87,9 @@ public class TokenBalanceState implements ApplicationState {
 		BigInteger amount = UInt256s.toBigInteger(tokens.getAmount());
 		BigInteger granularity = UInt256s.toBigInteger(tokens.getGranularity());
 		balance.merge(
-				tokens.getTokenTypeReference(),
-				new Balance(amount, granularity, tokens),
-				(bal1, bal2) -> Balance.merge(bal1, tokens, spin)
+			tokens.getTokenTypeReference(),
+			new Balance(amount, granularity, tokens),
+			(bal1, bal2) -> Balance.merge(bal1, tokens, spin)
 		);
 
 		return new TokenBalanceState(balance);

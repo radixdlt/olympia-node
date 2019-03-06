@@ -73,10 +73,17 @@ public class RadixNetworkController implements AtomSubmitter {
 
 		// Run reducers first
 		ConnectableObservable<RadixNodeAction> reducedNodeActions = nodeActions.doOnNext(action -> {
-			LOGGER.info("NEXT ACTION: " + action.toString());
 
 			final RadixNetworkState curState = networkState.getValue();
 			RadixNetworkState nextState = network.reduce(curState, action);
+			/*
+			LOGGER.info(
+				"\n" +
+				"CUR_STATE:   " + curState + "\n" +
+				"NEXT_ACTION: " + action.toString() + "\n" +
+				"NEXT_STATE:  " + nextState
+			);
+			*/
 
 			// TODO: also add equals check
 			if (nextState != curState) {

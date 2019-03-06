@@ -7,7 +7,6 @@ import org.radix.utils.UInt256;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.application.translate.tokens.TokenTypeReference;
 import com.radixdlt.client.core.atoms.RadixHash;
-import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.ledger.ParticleStore;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -16,6 +15,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.radixdlt.client.core.ledger.TransitionedParticle;
 import io.reactivex.Observable;
 import io.reactivex.observers.TestObserver;
 
@@ -33,7 +33,7 @@ public class ApplicationStoreTest {
 		when(minted.getTokenTypeReference()).thenReturn(token);
 
 		when(store.getParticles(address)).thenReturn(
-				Observable.<SpunParticle>just(SpunParticle.up(minted)).concatWith(Observable.never())
+			Observable.<TransitionedParticle>just(TransitionedParticle.n2u(minted)).concatWith(Observable.never())
 		);
 
 		ApplicationState o = mock(ApplicationState.class);

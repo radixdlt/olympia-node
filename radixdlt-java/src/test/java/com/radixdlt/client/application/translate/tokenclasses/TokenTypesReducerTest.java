@@ -1,5 +1,6 @@
 package com.radixdlt.client.application.translate.tokenclasses;
 
+import com.radixdlt.client.core.ledger.TransitionedParticle;
 import java.math.BigDecimal;
 import java.util.Collections;
 
@@ -11,7 +12,6 @@ import com.radixdlt.client.application.translate.tokenclasses.TokenState.TokenSu
 import com.radixdlt.client.application.translate.tokens.TokenTypeReference;
 import com.radixdlt.client.atommodel.tokens.TokenParticle;
 import com.radixdlt.client.atommodel.tokens.TokenPermission;
-import com.radixdlt.client.core.atoms.particles.SpunParticle;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -31,7 +31,7 @@ public class TokenTypesReducerTest {
 			TokenPermission.SAME_ATOM_ONLY));
 
 		TokenTypesReducer tokenTypesReducer = new TokenTypesReducer();
-		TokenTypesState state = tokenTypesReducer.reduce(TokenTypesState.init(), SpunParticle.up(tokenParticle));
+		TokenTypesState state = tokenTypesReducer.reduce(TokenTypesState.init(), TransitionedParticle.n2u(tokenParticle));
 		assertThat(state.getState().get(tokenRef)).isEqualTo(
 			new TokenState("Name", "ISO", "Desc", BigDecimal.ZERO,
 				TokenTypeReference.subunitsToUnits(1), TokenSupplyType.FIXED)
@@ -56,8 +56,8 @@ public class TokenTypesReducerTest {
 		when(minted.getTokenTypeReference()).thenReturn(tokenRef);
 
 		TokenTypesReducer tokenTypesReducer = new TokenTypesReducer();
-		TokenTypesState state1 = tokenTypesReducer.reduce(TokenTypesState.init(), SpunParticle.up(tokenParticle));
-		TokenTypesState state2 = tokenTypesReducer.reduce(state1, SpunParticle.up(minted));
+		TokenTypesState state1 = tokenTypesReducer.reduce(TokenTypesState.init(), TransitionedParticle.n2u(tokenParticle));
+		TokenTypesState state2 = tokenTypesReducer.reduce(state1, TransitionedParticle.n2u(minted));
 		assertThat(state2.getState().get(tokenRef)).isEqualTo(
 			new TokenState(
 				"Name",
