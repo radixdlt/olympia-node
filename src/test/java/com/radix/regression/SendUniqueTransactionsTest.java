@@ -1,4 +1,4 @@
-package com.radix.regression.unique;
+package com.radix.regression;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
