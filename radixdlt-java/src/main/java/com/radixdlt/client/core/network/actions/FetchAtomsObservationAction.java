@@ -61,6 +61,6 @@ public final class FetchAtomsObservationAction implements FetchAtomsAction {
 
 	@Override
 	public String toString() {
-		return "FETCH_ATOMS_OBSERVATION " + uuid + " " + address + " " + node;
+		return "FETCH_ATOMS_OBSERVATION " + node + " " + uuid + " " + observation;
 	}
 }

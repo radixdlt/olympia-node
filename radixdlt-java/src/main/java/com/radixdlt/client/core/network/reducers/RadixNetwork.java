@@ -6,6 +6,7 @@ import com.radixdlt.client.core.network.RadixNodeAction;
 import com.radixdlt.client.core.network.RadixNodeState;
 import com.radixdlt.client.core.network.actions.AddNodeAction;
 import com.radixdlt.client.core.network.actions.GetNodeDataResultAction;
+import com.radixdlt.client.core.network.actions.GetUniverseResponseAction;
 import com.radixdlt.client.core.network.actions.WebSocketEvent;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
 import java.util.HashMap;
@@ -27,14 +28,28 @@ public final class RadixNetwork {
 			newMap.merge(
 				result.getNode(),
 				RadixNodeState.of(action.getNode(), WebSocketStatus.CONNECTED, result.getResult()),
-				(old, val) -> RadixNodeState.of(old.getNode(), old.getStatus(), val.getData().orElse(null))
+				(old, val) -> RadixNodeState.of(old.getNode(), old.getStatus(), val.getData().orElse(null), old.getUniverseConfig().orElse(null))
+			);
+		} else if (action instanceof GetUniverseResponseAction) {
+			final GetUniverseResponseAction getUniverseResponseAction = (GetUniverseResponseAction) action;
+			final RadixNode node = action.getNode();
+			newMap = new HashMap<>(state.getNodes());
+			newMap.merge(
+				node,
+				RadixNodeState.of(node, WebSocketStatus.CONNECTED, null, getUniverseResponseAction.getResult()),
+				(old, val) -> RadixNodeState.of(old.getNode(), old.getStatus(), old.getData().orElse(null), val.getUniverseConfig().orElse(null))
 			);
 		} else if (action instanceof AddNodeAction) {
 			final AddNodeAction addNodeAction = (AddNodeAction) action;
+			final RadixNode node = action.getNode();
 			newMap = new HashMap<>(state.getNodes());
-			newMap.put(
-				addNodeAction.getNode(),
-				RadixNodeState.of(addNodeAction.getNode(), WebSocketStatus.DISCONNECTED, addNodeAction.getData().orElse(null))
+			newMap.merge(
+				node,
+				RadixNodeState.of(node, WebSocketStatus.DISCONNECTED, addNodeAction.getData().orElse(null)),
+				(old, val) -> RadixNodeState.of(old.getNode(), val.getStatus(),
+					val.getData().orElse(old.getData().orElse(null)),
+					old.getUniverseConfig().orElse(null)
+				)
 			);
 		} else if (action instanceof WebSocketEvent) {
 			final WebSocketEvent wsEvent = (WebSocketEvent) action;
@@ -43,9 +58,10 @@ public final class RadixNetwork {
 			newMap.merge(
 				node,
 				RadixNodeState.of(node, WebSocketStatus.valueOf(wsEvent.getType().name())),
-				(old, val) -> RadixNodeState.of(old.getNode(), val.getStatus(), old.getData().orElse(null))
+				(old, val) -> RadixNodeState.of(old.getNode(), val.getStatus(), old.getData().orElse(null), old.getUniverseConfig().orElse(null))
 			);
 		}
+
 
 		return newMap != null ? new RadixNetworkState(newMap) : state;
 	}

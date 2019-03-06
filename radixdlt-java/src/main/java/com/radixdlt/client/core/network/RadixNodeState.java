@@ -38,13 +38,16 @@ public class RadixNodeState {
 		return new RadixNodeState(node, status, data, null, null);
 	}
 
+	public static RadixNodeState of(RadixNode node, WebSocketStatus status, NodeRunnerData data, RadixUniverseConfig universeConfig) {
+		return new RadixNodeState(node, status, data, null, universeConfig);
+	}
+
 	@Override
 	public String toString() {
 		return "RadixNodeState{"
 				+ "node='" + node + '\''
 				+ ", status=" + status
 				+ ", data=" + data
-				+ ", version=" + version
 				+ ", universeConfig=" + universeConfig
 				+ '}';
 	}
