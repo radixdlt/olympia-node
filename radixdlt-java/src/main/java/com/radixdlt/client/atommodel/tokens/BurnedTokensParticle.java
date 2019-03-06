@@ -7,14 +7,12 @@ import com.radixdlt.client.atommodel.Fungible;
 import com.radixdlt.client.atommodel.FungibleType;
 import com.radixdlt.client.atommodel.Ownable;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.core.atoms.RadixHash;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.RadixResourceIdentifer;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.DsonOutput.Output;
 import org.radix.serialization2.SerializerId2;
-import org.radix.serialization2.client.Serialize;
 import org.radix.utils.UInt256;
 
 import java.util.Collections;

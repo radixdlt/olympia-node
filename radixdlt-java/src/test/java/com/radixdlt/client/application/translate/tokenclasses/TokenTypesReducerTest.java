@@ -33,7 +33,8 @@ public class TokenTypesReducerTest {
 		TokenTypesReducer tokenTypesReducer = new TokenTypesReducer();
 		TokenTypesState state = tokenTypesReducer.reduce(TokenTypesState.init(), SpunParticle.up(tokenParticle));
 		assertThat(state.getState().get(tokenRef)).isEqualTo(
-			new TokenState("Name", "ISO", "Desc", BigDecimal.ZERO, TokenTypeReference.subunitsToUnits(1), TokenSupplyType.FIXED)
+			new TokenState("Name", "ISO", "Desc", BigDecimal.ZERO,
+				TokenTypeReference.subunitsToUnits(1), TokenSupplyType.FIXED)
 		);
 	}
 

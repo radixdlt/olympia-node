@@ -12,7 +12,6 @@ import com.radixdlt.client.core.network.actions.FetchAtomsObservationAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomResultAction;
 import com.radixdlt.client.core.network.reducers.RadixNetwork;
-import com.radixdlt.client.core.util.TestUtils;
 import io.reactivex.Observable;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.observables.ConnectableObservable;
@@ -26,8 +25,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.radix.serialization2.DsonOutput;
-import org.radix.serialization2.client.Serialize;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -125,7 +122,6 @@ public class RadixNetworkController implements AtomSubmitter {
 	@Override
 	public Observable<SubmitAtomAction> submitAtom(Atom atom) {
 		SubmitAtomAction initialAction = SubmitAtomRequestAction.newRequest(atom);
-		
 		Observable<SubmitAtomAction> status =
 			nodeActions.ofType(SubmitAtomAction.class)
 				.filter(u -> u.getUuid().equals(initialAction.getUuid()))

@@ -138,7 +138,8 @@ public class BurnTokensActionMapper implements StatefulActionToParticleGroupsMap
 	}
 
 	// TODO this and same method in TransferTokensToParticleGroupsMapper could be moved to a utility class, abstractions not clear yet
-	private static void addConsumerQuantities(UInt256 amount, ECPublicKey oldOwner, ECPublicKey newOwner, UInt256 usedAmount, Map<ECPublicKey, UInt256> consumerQuantities) {
+	private static void addConsumerQuantities(UInt256 amount, ECPublicKey oldOwner, ECPublicKey newOwner,
+	                                          UInt256 usedAmount, Map<ECPublicKey, UInt256> consumerQuantities) {
 		if (usedAmount.compareTo(amount) > 0) {
 			throw new IllegalArgumentException(
 				"Unable to create consumable with amount " + usedAmount + " (available: " + amount + ")"
