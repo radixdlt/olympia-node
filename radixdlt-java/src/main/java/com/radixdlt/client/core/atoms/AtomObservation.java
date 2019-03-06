@@ -69,4 +69,9 @@ public class AtomObservation {
 	public static AtomObservation head() {
 		return new AtomObservation(null, Type.HEAD, System.currentTimeMillis());
 	}
+
+	@Override
+	public String toString() {
+		return type + " " + atom;
+	}
 }
