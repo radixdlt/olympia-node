@@ -10,7 +10,10 @@ import java.util.function.Supplier;
 public enum Bootstrap implements BootstrapConfig {
 	BETANET(
 		RadixUniverseConfigs::getBetanet,
-		Observable.just(new RadixNode("localhost", false, 8080))
+		Observable.just(
+			new RadixNode("localhost", false, 8080),
+			new RadixNode("localhost", false, 8081)
+		)
 	),
 	ALPHANET(
 		RadixUniverseConfigs::getAlphanet,
