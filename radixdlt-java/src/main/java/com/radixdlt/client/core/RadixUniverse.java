@@ -185,7 +185,7 @@ public final class RadixUniverse {
 		// TODO: cleanup
 		this.ledger = new Ledger() {
 
-			private final AtomPuller atomPuller = new RadixAtomPuller(networkController::fetchAtoms, inMemoryAtomStore::store);
+			private final AtomPuller atomPuller = new RadixAtomPuller(networkController, inMemoryAtomStore::store);
 
 			/**
 			* The Particle Data Store

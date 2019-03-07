@@ -140,22 +140,4 @@ public class RadixNetworkController implements AtomSubmitter {
 
 		return replay;
 	}
-
-	public Observable<AtomObservation> fetchAtoms(RadixAddress address) {
-		return Observable.create(emitter -> {
-			FetchAtomsAction initialAction = FetchAtomsRequestAction.newRequest(address);
-
-			Disposable d = nodeActions.ofType(FetchAtomsObservationAction.class)
-				.filter(a -> a.getUuid().equals(initialAction.getUuid()))
-				.map(FetchAtomsObservationAction::getObservation)
-				.subscribe(emitter::onNext, emitter::onError, emitter::onComplete);
-
-			emitter.setCancellable(() -> {
-				d.dispose();
-				this.dispatch(FetchAtomsCancelAction.of(initialAction.getUuid(), initialAction.getAddress()));
-			});
-
-			this.dispatch(initialAction);
-		});
-	}
 }

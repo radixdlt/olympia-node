@@ -1,5 +1,7 @@
 package com.radixdlt.client.core.ledger;
 
+import com.radixdlt.client.core.network.RadixNetworkController;
+import com.radixdlt.client.core.network.actions.FetchAtomsRequestAction;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -10,6 +12,7 @@ import org.junit.Test;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -27,11 +30,11 @@ public class RadixAtomPullerTest {
 		Consumer<Disposable> onSubscribe = mock(Consumer.class);
 		Observable atoms = Observable.never().doOnSubscribe(onSubscribe);
 
-		Function<RadixAddress, Observable<AtomObservation>> fetcher = mock(Function.class);
-		when(fetcher.apply(any())).thenReturn(atoms);
+		RadixNetworkController controller = mock(RadixNetworkController.class);
+		when(controller.getActions()).thenReturn(atoms);
 		RadixAddress address = mock(RadixAddress.class);
 
-		RadixAtomPuller radixAtomPuller = new RadixAtomPuller(fetcher, (a, b) -> { });
+		RadixAtomPuller radixAtomPuller = new RadixAtomPuller(controller, (a, b) -> { });
 
 		List<TestObserver> observers = Stream.iterate(TestObserver.create(), t -> TestObserver.create()).limit(10)
 			.collect(Collectors.toList());

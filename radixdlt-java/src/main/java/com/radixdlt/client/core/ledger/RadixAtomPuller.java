@@ -1,12 +1,17 @@
 package com.radixdlt.client.core.ledger;
 
 import com.radixdlt.client.core.atoms.AtomObservation;
+import com.radixdlt.client.core.network.RadixNetworkController;
+import com.radixdlt.client.core.network.actions.FetchAtomsAction;
+import com.radixdlt.client.core.network.actions.FetchAtomsCancelAction;
+import com.radixdlt.client.core.network.actions.FetchAtomsObservationAction;
+import com.radixdlt.client.core.network.actions.FetchAtomsRequestAction;
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import io.reactivex.Observable;
+import io.reactivex.disposables.Disposable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
-import java.util.function.Function;
 
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
 
 /**
  * Module responsible for fetches and merges of new atoms into the Atom Store.
@@ -21,7 +26,7 @@ public class RadixAtomPuller implements AtomPuller {
 	/**
 	 * The mechanism by which to fetch atoms
 	 */
-	private final Function<RadixAddress, Observable<AtomObservation>> fetcher;
+	private final RadixNetworkController controller;
 
 	/**
 	 * The mechanism by which to merge or store atoms
@@ -29,10 +34,10 @@ public class RadixAtomPuller implements AtomPuller {
 	private final BiConsumer<RadixAddress, AtomObservation> atomStore;
 
 	public RadixAtomPuller(
-		Function<RadixAddress, Observable<AtomObservation>> fetcher,
+		RadixNetworkController controller,
 		BiConsumer<RadixAddress, AtomObservation> atomStore
 	) {
-		this.fetcher = fetcher;
+		this.controller = controller;
 		this.atomStore = atomStore;
 	}
 
@@ -48,7 +53,22 @@ public class RadixAtomPuller implements AtomPuller {
 	public Observable<AtomObservation> pull(RadixAddress address) {
 		return cache.computeIfAbsent(
 			address,
-			destination -> fetcher.apply(destination)
+			destination ->
+				Observable.<AtomObservation>create(emitter -> {
+					FetchAtomsAction initialAction = FetchAtomsRequestAction.newRequest(address);
+
+					Disposable d = controller.getActions().ofType(FetchAtomsObservationAction.class)
+						.filter(a -> a.getUuid().equals(initialAction.getUuid()))
+						.map(FetchAtomsObservationAction::getObservation)
+						.subscribe(emitter::onNext, emitter::onError, emitter::onComplete);
+
+					emitter.setCancellable(() -> {
+						d.dispose();
+						controller.dispatch(FetchAtomsCancelAction.of(initialAction.getUuid(), initialAction.getAddress()));
+					});
+
+					controller.dispatch(initialAction);
+				})
 				.doOnNext(atomObservation -> atomStore.accept(address, atomObservation))
 				.publish()
 				.refCount()
