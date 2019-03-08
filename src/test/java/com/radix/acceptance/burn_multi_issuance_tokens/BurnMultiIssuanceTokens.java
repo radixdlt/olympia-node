@@ -13,7 +13,6 @@ import com.radixdlt.client.core.network.actions.SubmitAtomSendAction;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import org.radix.utils.UInt256;
 
@@ -140,7 +139,6 @@ public class BurnMultiIssuanceTokens {
 	public void theClientWaitsToBeNotifiedThatTokenHasATotalSupplyOf(String symbol, int supply) throws Throwable {
 		awaitAtomStatus(STORED);
 		// Must be a better way than this.
-		TimeUnit.SECONDS.sleep(2);
 		TokenTypeReference tokenClass = TokenTypeReference.of(api.getMyAddress(), symbol);
 		// Ensure balance is up-to-date.
 		BigDecimal tokenBalanceDecimal = api.getBalance(api.getMyAddress(), tokenClass)
@@ -160,7 +158,6 @@ public class BurnMultiIssuanceTokens {
 	public void theClientShouldBeNotifiedThatTokenHasATotalSupplyOf(String symbol, int supply) throws Throwable {
 		awaitAtomStatus(STORED);
 		// Must be a better way than this.
-		TimeUnit.SECONDS.sleep(2);
 		TokenTypeReference tokenClass = TokenTypeReference.of(api.getMyAddress(), symbol);
 		// Ensure balance is up-to-date.
 		BigDecimal tokenBalanceDecimal = api.getBalance(api.getMyAddress(), tokenClass)

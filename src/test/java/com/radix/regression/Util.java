@@ -8,22 +8,22 @@ public class Util {
 		return new Observer<T>() {
 			@Override
 			public void onSubscribe(Disposable d) {
-				System.out.println(name + ": <SUBSCRIBED>");
+				System.out.println(System.currentTimeMillis() + " " + name + ": <SUBSCRIBED>");
 			}
 
 			@Override
 			public void onNext(T t) {
-				System.out.println(name + ": <NEXT> " + t);
+				System.out.println(System.currentTimeMillis() + " " + name + ": <NEXT> " + t);
 			}
 
 			@Override
 			public void onError(Throwable e) {
-				System.out.println(name + ": <ERROR> " + e);
+				System.out.println(System.currentTimeMillis() + " " + name + ": <ERROR> " + e);
 			}
 
 			@Override
 			public void onComplete() {
-				System.out.println(name + ": <COMPLETE>");
+				System.out.println(System.currentTimeMillis() + " " + name + ": <COMPLETE>");
 			}
 		};
 	}
