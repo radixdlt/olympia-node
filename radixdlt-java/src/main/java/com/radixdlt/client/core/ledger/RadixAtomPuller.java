@@ -1,13 +1,21 @@
 package com.radixdlt.client.core.ledger;
 
 import com.radixdlt.client.core.atoms.AtomObservation;
+import com.radixdlt.client.core.atoms.RadixHash;
+import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.network.RadixNetworkController;
+import com.radixdlt.client.core.network.RadixNode;
+import com.radixdlt.client.core.network.RadixNodeAction;
 import com.radixdlt.client.core.network.actions.FetchAtomsAction;
 import com.radixdlt.client.core.network.actions.FetchAtomsCancelAction;
 import com.radixdlt.client.core.network.actions.FetchAtomsObservationAction;
 import com.radixdlt.client.core.network.actions.FetchAtomsRequestAction;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.client.core.network.actions.SubmitAtomResultAction;
+import com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType;
+import io.reactivex.Maybe;
 import io.reactivex.Observable;
+import io.reactivex.Single;
 import io.reactivex.disposables.Disposable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
@@ -55,11 +63,52 @@ public class RadixAtomPuller implements AtomPuller {
 			address,
 			destination ->
 				Observable.<AtomObservation>create(emitter -> {
+					ConcurrentHashMap<RadixHash, Spin> particleSpins = new ConcurrentHashMap<>();
+
 					FetchAtomsAction initialAction = FetchAtomsRequestAction.newRequest(address);
 
-					Disposable d = controller.getActions().ofType(FetchAtomsObservationAction.class)
+					Observable<AtomObservation>	fetched = controller.getActions()
+						.ofType(FetchAtomsObservationAction.class)
 						.filter(a -> a.getUuid().equals(initialAction.getUuid()))
-						.map(FetchAtomsObservationAction::getObservation)
+						.doOnNext(a -> {
+							AtomObservation observation = a.getObservation();
+							if (observation.hasAtom()) {
+								observation.getAtom().spunParticles()
+									.filter(s -> s.getParticle().getShardables().contains(address))
+									.map(s -> TransitionedParticle.fromSpunParticle(s, observation.getType()))
+									.forEach(t -> {
+										TransitionedParticle tp = (TransitionedParticle) t;
+										particleSpins.put(tp.getParticle().getHash(), tp.getSpinTo());
+									});
+							}
+						})
+						.map(FetchAtomsObservationAction::getObservation);
+
+					// Soft store can only be used if fetched atoms are from the same node
+					// otherwise, deletes can mess up synchronization
+					Single<RadixNode> pullNode = controller.getActions()
+						.ofType(FetchAtomsObservationAction.class)
+						.filter(a -> a.getUuid().equals(initialAction.getUuid()))
+						.map(RadixNodeAction::getNode)
+						.firstOrError()
+						.cache();
+
+					// Soft storage of atoms so that atoms which are submitted and stored can
+					// be immediately be used instead of having to wait for fetch atom events.
+					// TODO: Replace this with constraint machine to check for conflicts
+					Observable<AtomObservation> stored = controller.getActions()
+						.ofType(SubmitAtomResultAction.class)
+						.filter(a -> a.getType() == SubmitAtomResultActionType.STORED)
+						.filter(a -> a.getAtom().addresses().anyMatch(address::equals))
+						.filter(a -> a.getAtom()
+							.spunParticles()
+							.noneMatch(s -> s.getSpin() == Spin.DOWN
+								&& particleSpins.get(s.getParticle().getHash()) == Spin.DOWN)
+						)
+						.flatMapMaybe(a -> pullNode.flatMapMaybe(n -> a.getNode().equals(n) ? Maybe.just(a) : Maybe.empty()))
+						.map(a -> AtomObservation.softStored(a.getAtom()));
+
+					Disposable d = Observable.merge(fetched, stored)
 						.subscribe(emitter::onNext, emitter::onError, emitter::onComplete);
 
 					emitter.setCancellable(() -> {

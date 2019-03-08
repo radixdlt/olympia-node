@@ -1,19 +1,12 @@
 package com.radixdlt.client.core.network;
 
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.atoms.AtomObservation;
 import com.radixdlt.client.core.ledger.AtomSubmitter;
-import com.radixdlt.client.core.network.actions.FetchAtomsAction;
-import com.radixdlt.client.core.network.actions.FetchAtomsCancelAction;
-import com.radixdlt.client.core.network.actions.FetchAtomsRequestAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
-import com.radixdlt.client.core.network.actions.FetchAtomsObservationAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomResultAction;
 import com.radixdlt.client.core.network.reducers.RadixNetwork;
 import io.reactivex.Observable;
-import io.reactivex.disposables.Disposable;
 import io.reactivex.observables.ConnectableObservable;
 import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.PublishSubject;

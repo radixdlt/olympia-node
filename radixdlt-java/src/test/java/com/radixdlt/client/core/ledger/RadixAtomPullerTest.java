@@ -1,9 +1,9 @@
 package com.radixdlt.client.core.ledger;
 
 import com.radixdlt.client.core.network.RadixNetworkController;
+import com.radixdlt.client.core.network.RadixNodeAction;
 import com.radixdlt.client.core.network.actions.FetchAtomsRequestAction;
 import java.util.List;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -12,26 +12,20 @@ import org.junit.Test;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.radixdlt.client.core.atoms.AtomObservation;
 import io.reactivex.Observable;
-import io.reactivex.disposables.Disposable;
-import io.reactivex.functions.Consumer;
 import io.reactivex.observers.TestObserver;
 
 public class RadixAtomPullerTest {
 	@Test
-	public void testClientAPICalledOnceWithManySubscibers() throws Exception {
-		Consumer<Disposable> onSubscribe = mock(Consumer.class);
-		Observable atoms = Observable.never().doOnSubscribe(onSubscribe);
-
+	 public void when_many_subscribers_pull_atoms_on_the_same_address__fetch_atoms_action_should_be_emitted_once() {
+		Observable<RadixNodeAction> actions = Observable.never();
 		RadixNetworkController controller = mock(RadixNetworkController.class);
-		when(controller.getActions()).thenReturn(atoms);
+		when(controller.getActions()).thenReturn(actions);
 		RadixAddress address = mock(RadixAddress.class);
 
 		RadixAtomPuller radixAtomPuller = new RadixAtomPuller(controller, (a, b) -> { });
@@ -41,6 +35,6 @@ public class RadixAtomPullerTest {
 
 		observers.forEach(observer -> radixAtomPuller.pull(address).subscribe());
 
-		verify(onSubscribe, times(1)).accept(any());
+		verify(controller, times(1)).dispatch(any(FetchAtomsRequestAction.class));
 	}
 }

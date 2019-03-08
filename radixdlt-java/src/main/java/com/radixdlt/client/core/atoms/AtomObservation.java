@@ -22,11 +22,13 @@ public class AtomObservation {
 	private final Atom atom;
 	private final Type type;
 	private final long receivedTimestamp;
+	private final boolean soft;
 
-	private AtomObservation(Atom atom, Type type, long receivedTimestamp) {
+	private AtomObservation(Atom atom, Type type, long receivedTimestamp, boolean soft) {
 		this.atom = atom;
 		this.type = type;
 		this.receivedTimestamp = receivedTimestamp;
+		this.soft = soft;
 	}
 
 	public Atom getAtom() {
@@ -55,19 +57,34 @@ public class AtomObservation {
 
 	public static AtomObservation ofEvent(AtomEvent atomEvent) {
 		final Type type = Type.fromAtomEventType(atomEvent.getType());
-		return new AtomObservation(atomEvent.getAtom(), type, System.currentTimeMillis());
+		return new AtomObservation(atomEvent.getAtom(), type, System.currentTimeMillis(), false);
+	}
+
+	/**
+	 * An atom stored observation marked as soft, meaning that it has been confirmed
+	 * to being stored by a server but is not part of the normal fetch atom flow
+	 *
+	 * @param atom the atom which is soft stored
+	 * @return the atom stored observation
+	 */
+	public static AtomObservation softStored(Atom atom) {
+		return new AtomObservation(atom, Type.STORE, System.currentTimeMillis(), true);
 	}
 
 	public static AtomObservation stored(Atom atom) {
-		return new AtomObservation(atom, Type.STORE, System.currentTimeMillis());
+		return new AtomObservation(atom, Type.STORE, System.currentTimeMillis(), false);
+	}
+
+	public boolean isSoft() {
+		return soft;
 	}
 
 	public static AtomObservation deleted(Atom atom) {
-		return new AtomObservation(atom, Type.DELETE, System.currentTimeMillis());
+		return new AtomObservation(atom, Type.DELETE, System.currentTimeMillis(), false);
 	}
 
 	public static AtomObservation head() {
-		return new AtomObservation(null, Type.HEAD, System.currentTimeMillis());
+		return new AtomObservation(null, Type.HEAD, System.currentTimeMillis(), false);
 	}
 
 	@Override
