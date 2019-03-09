@@ -62,7 +62,9 @@ public class AtomObservation {
 
 	/**
 	 * An atom stored observation marked as soft, meaning that it has been confirmed
-	 * to being stored by a server but is not part of the normal fetch atom flow
+	 * to being stored by a server via a submission but is not part of the normal server fetch
+	 * atom flow and so must be handled as "soft state", state which to the clients knowledge
+	 * is stored but can easily be replaced by "harder" state.
 	 *
 	 * @param atom the atom which is soft stored
 	 * @return the atom stored observation
