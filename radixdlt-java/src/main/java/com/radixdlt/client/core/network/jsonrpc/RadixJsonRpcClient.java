@@ -1,6 +1,6 @@
 package com.radixdlt.client.core.network.jsonrpc;
 
-import com.radixdlt.client.core.atoms.AtomEvent;
+import com.radixdlt.client.core.ledger.AtomEvent;
 import java.util.List;
 import java.util.UUID;
 
@@ -20,7 +20,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.atoms.AtomObservation;
+import com.radixdlt.client.core.ledger.AtomObservation;
 
 import io.reactivex.Completable;
 import io.reactivex.Maybe;

@@ -1,7 +1,8 @@
 package com.radixdlt.client.core.ledger;
 
-import com.radixdlt.client.core.atoms.AtomObservation;
+import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.RadixHash;
+import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.network.RadixNetworkController;
 import com.radixdlt.client.core.network.RadixNode;
@@ -13,12 +14,16 @@ import com.radixdlt.client.core.network.actions.FetchAtomsRequestAction;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.network.actions.SubmitAtomResultAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType;
-import io.reactivex.Maybe;
 import io.reactivex.Observable;
-import io.reactivex.Single;
-import io.reactivex.disposables.Disposable;
+import io.reactivex.ObservableEmitter;
+import io.reactivex.functions.Cancellable;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import org.radix.common.tuples.Pair;
 
 
 /**
@@ -49,6 +54,95 @@ public class RadixAtomPuller implements AtomPuller {
 		this.atomStore = atomStore;
 	}
 
+
+	// HACK
+	// TODO: Move this into a proper reducer framework
+	private static class AtomReducer implements Consumer<RadixNodeAction> {
+		private RadixNode pullNode = null;
+		private final ConcurrentHashMap<RadixHash, Pair<Spin, AtomObservation>> particleSpins = new ConcurrentHashMap<>();
+		private final FetchAtomsAction initialAction;
+		private final ObservableEmitter<AtomObservation> emitter;
+		private final BiConsumer<RadixAddress, AtomObservation> atomStore;
+		private final RadixAddress address;
+
+		AtomReducer(
+			BiConsumer<RadixAddress, AtomObservation> atomStore,
+			FetchAtomsAction initialAction,
+			ObservableEmitter<AtomObservation> emitter
+		) {
+			this.atomStore = atomStore;
+			this.initialAction = initialAction;
+			this.address = initialAction.getAddress();
+			this.emitter = emitter;
+		}
+
+		// TODO: Replace the following checks with constraint machine to
+		// check for conflicts rather than just DOWN particle conflicts
+		private Optional<Atom> getAtomConflict(Atom atom, Particle particle, Spin spin) {
+			Pair<Spin, AtomObservation> lastObservation = particleSpins.get(particle.getHash());
+
+			return Optional.ofNullable(lastObservation)
+				.flatMap(o -> !o.getSecond().getAtom().equals(atom) && spin == Spin.DOWN && o.getFirst() == Spin.DOWN
+						? Optional.of(o.getSecond().getAtom())
+						: Optional.empty());
+		}
+
+		@Override
+		public void accept(RadixNodeAction action) {
+			final List<AtomObservation> observations = new ArrayList<>();
+
+			if (action instanceof FetchAtomsObservationAction) {
+				FetchAtomsObservationAction fetchAtomsObservationAction = (FetchAtomsObservationAction) action;
+				if (fetchAtomsObservationAction.getUuid().equals(initialAction.getUuid())) {
+					if (pullNode == null) {
+						pullNode = action.getNode();
+					}
+
+					AtomObservation observation = fetchAtomsObservationAction.getObservation();
+					if (observation.hasAtom()) {
+						observation.getAtom().spunParticles()
+							.map(s -> TransitionedParticle.fromSpunParticle(s, observation.getType()))
+							.forEach(t -> {
+								final TransitionedParticle tp = (TransitionedParticle) t;
+								final Particle particle = tp.getParticle();
+
+								// If a new observed atoms conflicts with a previously soft stored atom,
+								// soft stored atom must be deleted
+								getAtomConflict(observation.getAtom(), particle, tp.getSpinTo())
+									.ifPresent(a -> observations.add(AtomObservation.softDeleted(a)));
+
+								particleSpins.put(particle.getHash(), new Pair<>(tp.getSpinTo(), observation));
+							});
+					}
+					observations.add(observation);
+				}
+			} else if (action instanceof SubmitAtomResultAction) {
+
+				// Soft storage of atoms so that atoms which are submitted and stored can
+				// be immediately used instead of having to wait for fetch atom events.
+				final SubmitAtomResultAction submitAtomResultAction = (SubmitAtomResultAction) action;
+				final Atom atom = submitAtomResultAction.getAtom();
+
+				if (submitAtomResultAction.getType() == SubmitAtomResultActionType.STORED
+					&& atom.addresses().anyMatch(address::equals)
+					&& atom.spunParticles().noneMatch(s -> getAtomConflict(atom, s.getParticle(), s.getSpin()).isPresent())
+				) {
+					final AtomObservation observation = AtomObservation.softStored(atom);
+					atom.spunParticles()
+						.forEach(s -> particleSpins.put(s.getParticle().getHash(), new Pair<>(s.getSpin(), observation)));
+
+					observations.add(observation);
+					observations.add(AtomObservation.head());
+				}
+			}
+
+			observations.forEach(o -> {
+				atomStore.accept(address, o);
+				emitter.onNext(o);
+			});
+		}
+	}
+
 	/**
 	 * Fetches atoms and pushes them into the atom store. Multiple pulls on the same address
 	 * will return a disposable to the same observable. As long as there is one subscriber to an
@@ -63,62 +157,19 @@ public class RadixAtomPuller implements AtomPuller {
 			address,
 			destination ->
 				Observable.<AtomObservation>create(emitter -> {
-					ConcurrentHashMap<RadixHash, Spin> particleSpins = new ConcurrentHashMap<>();
+					final FetchAtomsAction initialAction = FetchAtomsRequestAction.newRequest(address);
 
-					FetchAtomsAction initialAction = FetchAtomsRequestAction.newRequest(address);
-
-					Observable<AtomObservation>	fetched = controller.getActions()
-						.ofType(FetchAtomsObservationAction.class)
-						.filter(a -> a.getUuid().equals(initialAction.getUuid()))
-						.doOnNext(a -> {
-							AtomObservation observation = a.getObservation();
-							if (observation.hasAtom()) {
-								observation.getAtom().spunParticles()
-									.filter(s -> s.getParticle().getShardables().contains(address))
-									.map(s -> TransitionedParticle.fromSpunParticle(s, observation.getType()))
-									.forEach(t -> {
-										TransitionedParticle tp = (TransitionedParticle) t;
-										particleSpins.put(tp.getParticle().getHash(), tp.getSpinTo());
-									});
-							}
-						})
-						.map(FetchAtomsObservationAction::getObservation);
-
-					// Soft store can only be used if fetched atoms are from the same node
-					// otherwise, deletes can mess up synchronization
-					Single<RadixNode> pullNode = controller.getActions()
-						.ofType(FetchAtomsObservationAction.class)
-						.filter(a -> a.getUuid().equals(initialAction.getUuid()))
-						.map(RadixNodeAction::getNode)
-						.firstOrError()
-						.cache();
-
-					// Soft storage of atoms so that atoms which are submitted and stored can
-					// be immediately used instead of having to wait for fetch atom events.
-					// TODO: Replace this with constraint machine to check for conflicts
-					Observable<AtomObservation> stored = controller.getActions()
-						.ofType(SubmitAtomResultAction.class)
-						.filter(a -> a.getType() == SubmitAtomResultActionType.STORED)
-						.filter(a -> a.getAtom().addresses().anyMatch(address::equals))
-						.filter(a -> a.getAtom()
-							.spunParticles()
-							.noneMatch(s -> s.getSpin() == Spin.DOWN
-								&& particleSpins.get(s.getParticle().getHash()) == Spin.DOWN)
-						)
-						.flatMapMaybe(a -> pullNode.flatMapMaybe(n -> a.getNode().equals(n) ? Maybe.just(a) : Maybe.empty()))
-						.map(a -> AtomObservation.softStored(a.getAtom()));
-
-					Disposable d = Observable.merge(fetched, stored)
-						.subscribe(emitter::onNext, emitter::onError, emitter::onComplete);
+					// TODO: Move hack this into a proper reducer framework
+					final AtomReducer atomReducer = new AtomReducer(atomStore, initialAction, emitter);
+					final Cancellable cancellable = controller.addReducer(atomReducer);
 
 					emitter.setCancellable(() -> {
-						d.dispose();
+						cancellable.cancel();
 						controller.dispatch(FetchAtomsCancelAction.of(initialAction.getUuid(), initialAction.getAddress()));
 					});
 
 					controller.dispatch(initialAction);
 				})
-				.doOnNext(atomObservation -> atomStore.accept(address, atomObservation))
 				.publish()
 				.refCount()
 		);

@@ -6,7 +6,6 @@ import static org.mockito.Mockito.when;
 
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.atoms.AtomObservation;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
@@ -30,8 +29,8 @@ public class RadixParticleStoreTest {
 		when(atomStore.getAtoms(eq(address))).thenReturn(Observable.just(observation));
 		RadixParticleStore radixParticleStore = new RadixParticleStore(atomStore);
 
-		TestObserver<TransitionedParticle> testObserver = TestObserver.create();
+		TestObserver<ParticleObservation> testObserver = TestObserver.create();
 		radixParticleStore.getParticles(address).subscribe(testObserver);
-		testObserver.assertValue(t -> t.getTransition().equals(ParticleTransition.U2N));
+		testObserver.assertValue(t -> t.getParticle().getTransition().equals(ParticleTransition.U2N));
 	}
 }

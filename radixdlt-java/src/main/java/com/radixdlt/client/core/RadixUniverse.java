@@ -4,7 +4,7 @@ import com.radixdlt.client.application.translate.tokens.TokenTypeReference;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.atommodel.tokens.TokenParticle;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
-import com.radixdlt.client.core.atoms.AtomObservation;
+import com.radixdlt.client.core.ledger.AtomObservation;
 import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.ledger.AtomPuller;

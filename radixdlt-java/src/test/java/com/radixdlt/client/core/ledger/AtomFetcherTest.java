@@ -1,6 +1,5 @@
 package com.radixdlt.client.core.ledger;
 
-import com.radixdlt.client.core.atoms.AtomObservation;
 import java.util.function.Function;
 
 import com.radixdlt.client.core.network.websocket.WebSocketException;

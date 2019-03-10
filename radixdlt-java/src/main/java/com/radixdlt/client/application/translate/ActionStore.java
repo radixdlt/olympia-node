@@ -2,7 +2,7 @@ package com.radixdlt.client.application.translate;
 
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.core.atoms.AtomObservation;
+import com.radixdlt.client.core.ledger.AtomObservation;
 import com.radixdlt.client.core.ledger.AtomStore;
 import io.reactivex.Observable;
 

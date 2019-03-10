@@ -4,7 +4,6 @@ import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.ledger.ParticleStore;
 import io.reactivex.Observable;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 
 public class ApplicationStore<T extends ApplicationState> {
 	private final ParticleStore particleStore;
@@ -19,11 +18,39 @@ public class ApplicationStore<T extends ApplicationState> {
 		this.reducer = reducer;
 	}
 
+	private static class HeadableApplicationState<T extends ApplicationState> {
+		private final T state;
+		private final boolean isHead;
+
+		HeadableApplicationState(T state, boolean isHead) {
+			this.state = state;
+			this.isHead = isHead;
+		}
+
+		boolean isHead() {
+			return isHead;
+		}
+
+		T getState() {
+			return state;
+		}
+	}
+
 	public Observable<T> getState(RadixAddress address) {
 		return cache.computeIfAbsent(address, addr ->
 			particleStore.getParticles(address)
-				.scanWith(reducer::initialState, reducer::reduce)
-				.debounce(1000, TimeUnit.MILLISECONDS)
+				.scanWith(
+					() -> new HeadableApplicationState<>(reducer.initialState(), false),
+					(s, p) -> {
+						if (p.isHead()) {
+							return new HeadableApplicationState<>(s.state, true);
+						} else {
+							return new HeadableApplicationState<>(reducer.reduce(s.state, p.getParticle()), false);
+						}
+					}
+				)
+				.filter(HeadableApplicationState::isHead)
+				.map(HeadableApplicationState::getState)
 		);
 	}
 }

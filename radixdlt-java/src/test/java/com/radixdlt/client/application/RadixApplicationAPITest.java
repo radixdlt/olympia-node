@@ -1,5 +1,6 @@
 package com.radixdlt.client.application;
 
+import com.radixdlt.client.core.ledger.ParticleObservation;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.stream.Stream;
@@ -25,7 +26,7 @@ import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.RadixUniverse.Ledger;
 import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.atoms.AtomObservation;
+import com.radixdlt.client.core.ledger.AtomObservation;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
@@ -203,7 +204,9 @@ public class RadixApplicationAPITest {
 		Ledger ledger = mock(Ledger.class);
 		when(universe.getLedger()).thenReturn(ledger);
 		when(ledger.getAtomStore()).thenReturn(euid -> Observable.empty());
-		when(ledger.getParticleStore()).thenReturn(euid -> Observable.never());
+		when(ledger.getParticleStore()).thenReturn(
+			euid -> Observable.concat(Observable.just(ParticleObservation.head()), Observable.never())
+		);
 		when(ledger.getAtomPuller()).thenReturn(address -> Observable.never());
 
 		RadixAddress address = mock(RadixAddress.class);

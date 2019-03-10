@@ -1,5 +1,6 @@
 package com.radixdlt.client.application.translate;
 
+import com.radixdlt.client.core.ledger.ParticleObservation;
 import org.junit.Test;
 
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
@@ -23,7 +24,11 @@ public class ApplicationStoreTest {
 		ParticleStore store = mock(ParticleStore.class);
 
 		when(store.getParticles(address)).thenReturn(
-			Observable.just(mock(TransitionedParticle.class)).concatWith(Observable.never())
+			Observable.concat(
+				Observable.just(ParticleObservation.ofParticle(mock(TransitionedParticle.class))),
+				Observable.just(ParticleObservation.head()),
+				Observable.never()
+			)
 		);
 
 		ApplicationState initialState = mock(ApplicationState.class);

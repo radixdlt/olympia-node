@@ -61,7 +61,7 @@ import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.RadixUniverse.Ledger;
 import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.atoms.AtomObservation;
+import com.radixdlt.client.core.ledger.AtomObservation;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.crypto.ECKeyPairGenerator;
