@@ -1,12 +1,8 @@
 package com.radixdlt.client.application.translate;
 
-import com.radixdlt.client.atommodel.tokens.MintedTokensParticle;
 import org.junit.Test;
-import org.radix.utils.UInt256;
 
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.application.translate.tokens.TokenTypeReference;
-import com.radixdlt.client.core.atoms.RadixHash;
 import com.radixdlt.client.core.ledger.ParticleStore;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -22,36 +18,27 @@ import io.reactivex.observers.TestObserver;
 public class ApplicationStoreTest {
 
 	@Test
-	public void testCache() {
+	public void when_transitioned_particle_is_immediately_seen__initial_state_should_be_debounced() {
 		RadixAddress address = mock(RadixAddress.class);
 		ParticleStore store = mock(ParticleStore.class);
-		MintedTokensParticle minted = mock(MintedTokensParticle.class);
-		RadixHash hash = mock(RadixHash.class);
-		when(minted.getAmount()).thenReturn(UInt256.TEN);
-		when(minted.getHash()).thenReturn(hash);
-		TokenTypeReference token = mock(TokenTypeReference.class);
-		when(minted.getTokenTypeReference()).thenReturn(token);
 
 		when(store.getParticles(address)).thenReturn(
-			Observable.<TransitionedParticle>just(TransitionedParticle.n2u(minted)).concatWith(Observable.never())
+			Observable.just(mock(TransitionedParticle.class)).concatWith(Observable.never())
 		);
 
-		ApplicationState o = mock(ApplicationState.class);
+		ApplicationState initialState = mock(ApplicationState.class);
+		ApplicationState nextState = mock(ApplicationState.class);
 
 		ParticleReducer<ApplicationState> reducer = mock(ParticleReducer.class);
-		when(reducer.initialState()).thenReturn(o);
-		when(reducer.reduce(any(), any())).thenReturn(o);
+		when(reducer.initialState()).thenReturn(initialState);
+		when(reducer.reduce(any(), any())).thenReturn(nextState);
 		ApplicationStore<?> applicationStore = new ApplicationStore<>(store, reducer);
 
 		TestObserver<Object> testObserver = TestObserver.create();
 		applicationStore.getState(address).subscribe(testObserver);
 		testObserver.awaitCount(1);
-		testObserver.assertValue(o);
+		testObserver.assertValue(nextState);
 		testObserver.dispose();
-
-		TestObserver<Object> testObserver2 = TestObserver.create();
-		applicationStore.getState(address).subscribe(testObserver2);
-		testObserver2.assertValue(o);
 
 		verify(store, times(1)).getParticles(address);
 	}
