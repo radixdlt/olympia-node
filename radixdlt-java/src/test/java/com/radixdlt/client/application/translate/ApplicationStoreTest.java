@@ -25,7 +25,7 @@ public class ApplicationStoreTest {
 
 		when(store.getParticles(address)).thenReturn(
 			Observable.concat(
-				Observable.just(ParticleObservation.ofParticle(mock(TransitionedParticle.class))),
+				Observable.just(ParticleObservation.ofTransitionedParticle(mock(TransitionedParticle.class))),
 				Observable.just(ParticleObservation.head()),
 				Observable.never()
 			)

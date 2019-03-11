@@ -23,7 +23,7 @@ public class RadixParticleStore implements ParticleStore {
 							final TransitionedParticle tp =
 								TransitionedParticle.fromSpunParticle(s, observation.getType());
 
-							final ParticleObservation p = ParticleObservation.ofParticle(tp);
+							final ParticleObservation p = ParticleObservation.ofTransitionedParticle(tp);
 							emitter.onNext(p);
 						});
 				} else if (observation.isHead()) {

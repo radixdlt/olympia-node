@@ -24,7 +24,7 @@ public class AtomObservation {
 	 * Describes the type of observation including whether the update is "soft", or a weakly
 	 * supported atom which could possibly be deleted soon
 	 */
-	public static class AtomObservationUpdateType {
+	static final class AtomObservationUpdateType {
 		private final Type type;
 		private final boolean soft;
 
@@ -106,7 +106,7 @@ public class AtomObservation {
 		return new AtomObservation(atom, Type.STORE, System.currentTimeMillis(), false);
 	}
 
-	public AtomObservationUpdateType getUpdateType() {
+	AtomObservationUpdateType getUpdateType() {
 		return updateType;
 	}
 

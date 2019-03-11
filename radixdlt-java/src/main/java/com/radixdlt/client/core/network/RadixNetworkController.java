@@ -73,18 +73,10 @@ public class RadixNetworkController implements AtomSubmitter {
 		this.networkState = BehaviorSubject.createDefault(new RadixNetworkState(Collections.emptyMap()));
 
 		// Run reducers first
-		final ConnectableObservable<RadixNodeAction> reducedNodeActions = nodeActions.doOnNext(action -> {
+		final ConnectableObservable<RadixNodeAction> connectableReducedNodeActions = nodeActions.doOnNext(action -> {
 
 			final RadixNetworkState curState = networkState.getValue();
 			RadixNetworkState nextState = network.reduce(curState, action);
-			/*
-			LOGGER.info(
-				"\n" +
-				"CUR_STATE:   " + curState + "\n" +
-				"NEXT_ACTION: " + action.toString() + "\n" +
-				"NEXT_STATE:  " + nextState
-			);
-			*/
 
 			// TODO: Move this into a proper reducer framework
 			reducers.forEach(r -> r.accept(action));
@@ -99,15 +91,15 @@ public class RadixNetworkController implements AtomSubmitter {
 
 		// Then run Epics
 		Set<Observable<RadixNodeAction>> updates = epics.stream()
-			.map(epic -> epic.epic(reducedNodeActions, networkState))
+			.map(epic -> epic.epic(connectableReducedNodeActions, networkState))
 			.collect(Collectors.toSet());
 
 		// FIXME: Cleanup disposable
 		Observable.merge(updates).subscribe(this::dispatch);
 
-		this.reducedNodeActions = reducedNodeActions;
+		this.reducedNodeActions = connectableReducedNodeActions;
 
-		reducedNodeActions.connect();
+		connectableReducedNodeActions.connect();
 	}
 
 	// HACK
@@ -131,6 +123,12 @@ public class RadixNetworkController implements AtomSubmitter {
 		return reducedNodeActions;
 	}
 
+	/**
+	 * Dispatches an action into the system. That is it will be processed through reducers
+	 * and then subsequently epics
+	 *
+	 * @param action the action to dispatch
+	 */
 	public void dispatch(RadixNodeAction action) {
 		nodeActions.onNext(action);
 	}

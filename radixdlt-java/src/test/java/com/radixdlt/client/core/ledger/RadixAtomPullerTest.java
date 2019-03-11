@@ -37,8 +37,6 @@ import static org.mockito.Mockito.when;
 import io.reactivex.observers.TestObserver;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 public class RadixAtomPullerTest {
 	@Test
@@ -82,14 +80,11 @@ public class RadixAtomPullerTest {
 
 		final AtomicReference<Consumer<RadixNodeAction>> reducer = new AtomicReference<>();
 
-		doAnswer(new Answer() {
-			@Override
-			public Cancellable answer(InvocationOnMock invocation) {
-				Consumer<RadixNodeAction> c = invocation.getArgument(0);
-				reducer.set(c);
-				return () -> {
-				};
-			}
+		doAnswer(i -> {
+			Consumer<RadixNodeAction> c = i.getArgument(0);
+			reducer.set(c);
+			return (Cancellable) () -> {
+			};
 		}).when(controller).addReducer(any(Consumer.class));
 
 		doAnswer(i -> {
@@ -116,14 +111,11 @@ public class RadixAtomPullerTest {
 
 		final AtomicReference<Consumer<RadixNodeAction>> reducer = new AtomicReference<>();
 
-		doAnswer(new Answer() {
-			@Override
-			public Cancellable answer(InvocationOnMock invocation) {
-				Consumer<RadixNodeAction> c = invocation.getArgument(0);
-				reducer.set(c);
-				return () -> {
-				};
-			}
+		doAnswer(i -> {
+			Consumer<RadixNodeAction> c = i.getArgument(0);
+			reducer.set(c);
+			return (Cancellable) () -> {
+			};
 		}).when(controller).addReducer(any(Consumer.class));
 
 		final Atom atom = mock(Atom.class);

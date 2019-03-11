@@ -24,9 +24,9 @@ public class InMemoryAtomStore implements AtomStore {
 	private final ConcurrentHashMap<RadixAddress, ReplaySubject<AtomObservation>> cache = new ConcurrentHashMap<>();
 
 	/**
-	 * The In Memory Atom Data Store
+	 * Total observation observationCountPerAddress per address
 	 */
-	private final ConcurrentHashMap<RadixAddress, Long> count = new ConcurrentHashMap<>();
+	private final ConcurrentHashMap<RadixAddress, Long> observationCountPerAddress = new ConcurrentHashMap<>();
 
 	/**
 	 * Store an atom under a given destination
@@ -36,7 +36,7 @@ public class InMemoryAtomStore implements AtomStore {
 	 * @param atomObservation the atom to store
 	 */
 	public void store(RadixAddress address, AtomObservation atomObservation) {
-		count.merge(address, 1L, Long::sum);
+		observationCountPerAddress.merge(address, 1L, Long::sum);
 		cache.computeIfAbsent(address, addr -> ReplaySubject.create()).onNext(atomObservation);
 	}
 
@@ -67,37 +67,38 @@ public class InMemoryAtomStore implements AtomStore {
 	public Observable<AtomObservation> getAtoms(RadixAddress address) {
 		Objects.requireNonNull(address);
 		return Observable.fromCallable(AtomObservationsState::new)
-			.flatMap(atomsObservationState ->
-				cache.computeIfAbsent(address, addr -> ReplaySubject.create())
-					.filter(observation -> {
-						atomsObservationState.curCount++;
+			.flatMap(atomsObservationState -> cache.computeIfAbsent(address, addr -> ReplaySubject.create())
+				.filter(observation -> {
+					atomsObservationState.curCount++;
 
-						if (observation.getAtom() != null) {
-							AtomObservationUpdateType nextUpdate = observation.getUpdateType();
-							AtomObservationUpdateType lastUpdate = atomsObservationState.get(observation.getAtom());
+					if (observation.getAtom() != null) {
+						AtomObservationUpdateType nextUpdate = observation.getUpdateType();
+						AtomObservationUpdateType lastUpdate = atomsObservationState.get(observation.getAtom());
 
-							final boolean filter;
-							if (lastUpdate == null) {
-								filter = nextUpdate.getType() == Type.STORE;
-							} else {
-								// Soft observation should not be able to update a hard state
-								// Only update if type changes
-								filter = (!nextUpdate.isSoft() || lastUpdate.isSoft())
-									&& nextUpdate.getType() != lastUpdate.getType();
-							}
 
-							final boolean update = lastUpdate == null || !nextUpdate.isSoft() && lastUpdate.isSoft();
-
-							if (filter || update) {
-								atomsObservationState.put(observation.getAtom(), nextUpdate);
-							}
-
-							return filter;
+						final boolean include;
+						if (lastUpdate == null) {
+							include = nextUpdate.getType() == Type.STORE;
 						} else {
-							// Only send HEAD if we've processed all known atoms
-							return atomsObservationState.curCount >= count.getOrDefault(address, 0L);
+							// Soft observation should not be able to update a hard state
+							// Only update if type changes
+							include = (!nextUpdate.isSoft() || lastUpdate.isSoft())
+								&& nextUpdate.getType() != lastUpdate.getType();
 						}
-					})
+
+						// Should always update observation state if going from soft to hard observation
+						final boolean isSoftToHard = lastUpdate != null && lastUpdate.isSoft() && !nextUpdate.isSoft();
+
+						if (include || isSoftToHard) {
+							atomsObservationState.put(observation.getAtom(), nextUpdate);
+						}
+
+						return include;
+					} else {
+						// Only send HEAD if we've processed all known atoms
+						return atomsObservationState.curCount >= observationCountPerAddress.getOrDefault(address, 0L);
+					}
+				})
 			);
 	}
 }

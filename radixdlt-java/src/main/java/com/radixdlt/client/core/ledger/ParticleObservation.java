@@ -6,6 +6,8 @@ import java.util.Objects;
  * A helper wrapper class for transitioned particles which can also represent HEAD events
  */
 public class ParticleObservation {
+	private static final ParticleObservation HEAD = new ParticleObservation(null);
+
 	private final TransitionedParticle particle;
 
 	private ParticleObservation(TransitionedParticle particle) {
@@ -21,10 +23,10 @@ public class ParticleObservation {
 	}
 
 	public static ParticleObservation head() {
-		return new ParticleObservation(null);
+		return HEAD;
 	}
 
-	public static ParticleObservation ofParticle(TransitionedParticle particle) {
+	public static ParticleObservation ofTransitionedParticle(TransitionedParticle particle) {
 		Objects.requireNonNull(particle);
 
 		return new ParticleObservation(particle);

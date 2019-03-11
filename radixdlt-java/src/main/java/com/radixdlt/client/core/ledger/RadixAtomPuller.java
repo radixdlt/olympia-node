@@ -5,7 +5,6 @@ import com.radixdlt.client.core.atoms.RadixHash;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.network.RadixNetworkController;
-import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.RadixNodeAction;
 import com.radixdlt.client.core.network.actions.FetchAtomsAction;
 import com.radixdlt.client.core.network.actions.FetchAtomsCancelAction;
@@ -58,7 +57,6 @@ public class RadixAtomPuller implements AtomPuller {
 	// HACK
 	// TODO: Move this into a proper reducer framework
 	private static class AtomReducer implements Consumer<RadixNodeAction> {
-		private RadixNode pullNode = null;
 		private final ConcurrentHashMap<RadixHash, Pair<Spin, AtomObservation>> particleSpins = new ConcurrentHashMap<>();
 		private final FetchAtomsAction initialAction;
 		private final ObservableEmitter<AtomObservation> emitter;
@@ -99,9 +97,6 @@ public class RadixAtomPuller implements AtomPuller {
 
 				FetchAtomsObservationAction fetchAtomsObservationAction = (FetchAtomsObservationAction) action;
 				if (fetchAtomsObservationAction.getUuid().equals(initialAction.getUuid())) {
-					if (pullNode == null) {
-						pullNode = action.getNode();
-					}
 
 					AtomObservation observation = fetchAtomsObservationAction.getObservation();
 					if (observation.hasAtom()) {
