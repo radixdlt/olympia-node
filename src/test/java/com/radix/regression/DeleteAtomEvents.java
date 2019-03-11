@@ -95,13 +95,13 @@ public class DeleteAtomEvents {
 		// Then the account balances should resolve to one transfer
 		TestObserver<BigDecimal> transferredObserver = TestObserver.create(Util.loggingObserver("Transferred Balance"));
 		api2.getMyBalance(tokenRef)
-			.debounce(5, TimeUnit.SECONDS)
+			.debounce(10, TimeUnit.SECONDS)
 			.firstOrError()
 			.subscribe(transferredObserver);
 
 		TestObserver<BigDecimal> myBalanceObserver2 = TestObserver.create(Util.loggingObserver("My Balance 2"));
 		api.getMyBalance(tokenRef)
-			.debounce(5, TimeUnit.SECONDS)
+			.debounce(10, TimeUnit.SECONDS)
 			.firstOrError()
 			.subscribe(myBalanceObserver2);
 
