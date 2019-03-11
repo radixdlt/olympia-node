@@ -79,10 +79,14 @@ public class RadixAtomPuller implements AtomPuller {
 		// TODO: Replace the following checks with constraint machine to
 		// check for conflicts rather than just DOWN particle conflicts
 		private Optional<Atom> getAtomConflict(Atom atom, Particle particle, Spin spin) {
+			if (spin != Spin.DOWN) {
+				return Optional.empty();
+			}
+
 			Pair<Spin, AtomObservation> lastObservation = particleSpins.get(particle.getHash());
 
 			return Optional.ofNullable(lastObservation)
-				.flatMap(o -> !o.getSecond().getAtom().equals(atom) && spin == Spin.DOWN && o.getFirst() == Spin.DOWN
+				.flatMap(o -> !o.getSecond().getAtom().equals(atom) && o.getFirst() == Spin.DOWN
 						? Optional.of(o.getSecond().getAtom())
 						: Optional.empty());
 		}
@@ -92,6 +96,7 @@ public class RadixAtomPuller implements AtomPuller {
 			final List<AtomObservation> observations = new ArrayList<>();
 
 			if (action instanceof FetchAtomsObservationAction) {
+
 				FetchAtomsObservationAction fetchAtomsObservationAction = (FetchAtomsObservationAction) action;
 				if (fetchAtomsObservationAction.getUuid().equals(initialAction.getUuid())) {
 					if (pullNode == null) {
