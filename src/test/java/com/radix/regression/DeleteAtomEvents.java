@@ -9,6 +9,9 @@ import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.network.RadixNode;
+import com.radixdlt.client.core.network.RadixNodeAction;
+import com.radixdlt.client.core.network.actions.FetchAtomsObservationAction;
+import com.radixdlt.client.core.network.actions.SubmitAtomAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomResultAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomSendAction;
 import io.reactivex.Observable;
@@ -92,24 +95,25 @@ public class DeleteAtomEvents {
 			)
 			.subscribe(submissionObserver);
 
-		// Then the account balances should resolve to one transfer
-		TestObserver<BigDecimal> transferredObserver = TestObserver.create(Util.loggingObserver("Transferred Balance"));
+		TestObserver<BigDecimal> transferredObserver = TestObserver.create(Util.loggingObserver("Other Balance"));
 		api2.getMyBalance(tokenRef)
-			.debounce(10, TimeUnit.SECONDS)
-			.firstOrError()
 			.subscribe(transferredObserver);
 
-		TestObserver<BigDecimal> myBalanceObserver2 = TestObserver.create(Util.loggingObserver("My Balance 2"));
-		api.getMyBalance(tokenRef)
+		// Wait for network to resolve conflict
+		TestObserver<RadixNodeAction> lastUpdateObserver = TestObserver.create(Util.loggingObserver("Last Update"));
+		RadixUniverse.getInstance().getNetworkController()
+			.getActions()
+			.filter(a -> a instanceof FetchAtomsObservationAction || a instanceof SubmitAtomAction)
 			.debounce(10, TimeUnit.SECONDS)
 			.firstOrError()
-			.subscribe(myBalanceObserver2);
+			.subscribe(lastUpdateObserver);
+		lastUpdateObserver.awaitTerminalEvent();
 
+		// Then the account balances should resolve to one transfer
 		submissionObserver.awaitTerminalEvent();
-		transferredObserver.awaitTerminalEvent();
-		transferredObserver.assertValue(b -> b.compareTo(BigDecimal.ONE) == 0);
-		myBalanceObserver2.awaitTerminalEvent();
-		myBalanceObserver2.assertValue(b -> b.compareTo(BigDecimal.ZERO) == 0);
+		transferredObserver.assertValueAt(transferredObserver.valueCount() - 1, b -> b.compareTo(BigDecimal.ONE) == 0);
+		transferredObserver.dispose();
+		myBalanceObserver.assertValueAt(myBalanceObserver.valueCount() - 1, b -> b.compareTo(BigDecimal.ZERO) == 0);
 		myBalanceObserver.dispose();
 	}
 }

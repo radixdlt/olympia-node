@@ -1,6 +1,7 @@
 package com.radix.acceptance.unsubscribe_account;
 
 
+import com.radixdlt.client.core.ledger.AtomObservation;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -15,7 +16,6 @@ import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.atoms.AtomObservation;
 import com.radixdlt.client.core.crypto.ECKeyPairGenerator;
 import com.radixdlt.client.core.network.HttpClients;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
