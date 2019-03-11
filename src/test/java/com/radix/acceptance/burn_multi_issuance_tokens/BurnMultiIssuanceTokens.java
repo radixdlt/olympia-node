@@ -138,7 +138,6 @@ public class BurnMultiIssuanceTokens {
 	@When("^the client waits to be notified that \"([^\"]*)\" token has a total supply of (\\d+)$")
 	public void theClientWaitsToBeNotifiedThatTokenHasATotalSupplyOf(String symbol, int supply) throws Throwable {
 		awaitAtomStatus(STORED);
-		// Must be a better way than this.
 		TokenTypeReference tokenClass = TokenTypeReference.of(api.getMyAddress(), symbol);
 		// Ensure balance is up-to-date.
 		BigDecimal tokenBalanceDecimal = api.getBalance(api.getMyAddress(), tokenClass)
