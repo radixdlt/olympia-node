@@ -1,7 +1,6 @@
 package com.radixdlt.client.core.ledger;
 
-import com.radixdlt.client.core.atoms.AtomObservation;
-import com.radixdlt.client.core.atoms.AtomObservation.Type;
+import com.radixdlt.client.core.ledger.AtomObservation.Type;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;

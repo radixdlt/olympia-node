@@ -1,11 +1,11 @@
 package com.radixdlt.client.core.ledger;
 
 import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.atoms.AtomObservation.Type;
+import com.radixdlt.client.core.ledger.AtomObservation.AtomObservationUpdateType;
+import com.radixdlt.client.core.ledger.AtomObservation.Type;
 import com.radixdlt.client.core.atoms.RadixHash;
 import org.junit.Test;
 
-import com.radixdlt.client.core.atoms.AtomObservation;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 
 import static org.mockito.Mockito.mock;
@@ -25,6 +25,7 @@ public class InMemoryAtomStoreTest {
 		when(atomObservation.isStore()).thenReturn(true);
 		when(atomObservation.isHead()).thenReturn(false);
 		when(atomObservation.getType()).thenReturn(Type.STORE);
+		when(atomObservation.getUpdateType()).thenReturn(AtomObservationUpdateType.of(Type.STORE, false));
 
 		TestObserver<AtomObservation> testObserver = TestObserver.create();
 
@@ -47,6 +48,7 @@ public class InMemoryAtomStoreTest {
 		when(atomObservation.isStore()).thenReturn(true);
 		when(atomObservation.isHead()).thenReturn(false);
 		when(atomObservation.getType()).thenReturn(Type.STORE);
+		when(atomObservation.getUpdateType()).thenReturn(AtomObservationUpdateType.of(Type.STORE, false));
 
 		TestObserver<AtomObservation> testObserver = TestObserver.create();
 		RadixAddress address = mock(RadixAddress.class);
@@ -70,6 +72,7 @@ public class InMemoryAtomStoreTest {
 		when(deleteObservation.isStore()).thenReturn(false);
 		when(deleteObservation.isHead()).thenReturn(false);
 		when(deleteObservation.getType()).thenReturn(Type.DELETE);
+		when(deleteObservation.getUpdateType()).thenReturn(AtomObservationUpdateType.of(Type.DELETE, false));
 
 
 		Atom atom2 = mock(Atom.class);
@@ -82,6 +85,7 @@ public class InMemoryAtomStoreTest {
 		when(storeObservation.isStore()).thenReturn(true);
 		when(storeObservation.isHead()).thenReturn(false);
 		when(storeObservation.getType()).thenReturn(Type.STORE);
+		when(storeObservation.getUpdateType()).thenReturn(AtomObservationUpdateType.of(Type.STORE, false));
 
 		RadixAddress address = mock(RadixAddress.class);
 		inMemoryAtomStore.store(address, deleteObservation);
@@ -105,12 +109,14 @@ public class InMemoryAtomStoreTest {
 		when(storeObservation.isStore()).thenReturn(true);
 		when(storeObservation.isHead()).thenReturn(false);
 		when(storeObservation.getType()).thenReturn(Type.STORE);
+		when(storeObservation.getUpdateType()).thenReturn(AtomObservationUpdateType.of(Type.STORE, false));
 
 		AtomObservation deleteObservation = mock(AtomObservation.class);
 		when(deleteObservation.getAtom()).thenReturn(atom);
 		when(deleteObservation.isStore()).thenReturn(false);
 		when(deleteObservation.isHead()).thenReturn(false);
 		when(deleteObservation.getType()).thenReturn(Type.DELETE);
+		when(deleteObservation.getUpdateType()).thenReturn(AtomObservationUpdateType.of(Type.DELETE, false));
 
 		RadixAddress address = mock(RadixAddress.class);
 		inMemoryAtomStore.store(address, storeObservation);

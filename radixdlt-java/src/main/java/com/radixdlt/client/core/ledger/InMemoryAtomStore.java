@@ -1,8 +1,9 @@
 package com.radixdlt.client.core.ledger;
 
-import com.radixdlt.client.core.atoms.AtomObservation;
-import com.radixdlt.client.core.atoms.AtomObservation.Type;
+import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.client.core.ledger.AtomObservation.Type;
 import com.radixdlt.client.core.atoms.RadixHash;
+import com.radixdlt.client.core.ledger.AtomObservation.AtomObservationUpdateType;
 import java.util.HashMap;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -23,6 +24,11 @@ public class InMemoryAtomStore implements AtomStore {
 	private final ConcurrentHashMap<RadixAddress, ReplaySubject<AtomObservation>> cache = new ConcurrentHashMap<>();
 
 	/**
+	 * Total observation observationCountPerAddress per address
+	 */
+	private final ConcurrentHashMap<RadixAddress, Long> observationCountPerAddress = new ConcurrentHashMap<>();
+
+	/**
 	 * Store an atom under a given destination
 	 * TODO: add synchronization if needed
 	 *
@@ -30,7 +36,25 @@ public class InMemoryAtomStore implements AtomStore {
 	 * @param atomObservation the atom to store
 	 */
 	public void store(RadixAddress address, AtomObservation atomObservation) {
+		observationCountPerAddress.merge(address, 1L, Long::sum);
 		cache.computeIfAbsent(address, addr -> ReplaySubject.create()).onNext(atomObservation);
+	}
+
+	private static class AtomObservationsState {
+		private final HashMap<RadixHash, AtomObservationUpdateType> curAtomState = new HashMap<>();
+		private long curCount;
+
+		AtomObservationsState() {
+			this.curCount = 0;
+		}
+
+		AtomObservationUpdateType get(Atom atom) {
+			return curAtomState.get(atom.getHash());
+		}
+
+		void put(Atom atom, AtomObservationUpdateType update) {
+			curAtomState.put(atom.getHash(), update);
+		}
 	}
 
 	/**
@@ -42,28 +66,39 @@ public class InMemoryAtomStore implements AtomStore {
 	@Override
 	public Observable<AtomObservation> getAtoms(RadixAddress address) {
 		Objects.requireNonNull(address);
-		return Observable.fromCallable(HashMap<RadixHash, Type>::new)
-			.flatMap(curAtomState ->
-				cache.computeIfAbsent(address, addr -> ReplaySubject.create())
-					.filter(observation -> {
-						if (observation.getAtom() != null) {
-							Type curState = curAtomState.get(observation.getAtom().getHash());
-							final boolean shouldUpdate;
-							if (curState == null) {
-								shouldUpdate = observation.getType() == Type.STORE;
-							} else {
-								// Soft observation should not be able to update a state
-								shouldUpdate = !observation.isSoft() && observation.getType() != curState;
-							}
+		return Observable.fromCallable(AtomObservationsState::new)
+			.flatMap(atomsObservationState -> cache.computeIfAbsent(address, addr -> ReplaySubject.create())
+				.filter(observation -> {
+					atomsObservationState.curCount++;
 
-							if (shouldUpdate) {
-								curAtomState.put(observation.getAtom().getHash(), observation.getType());
-							}
-							return shouldUpdate;
+					if (observation.getAtom() != null) {
+						AtomObservationUpdateType nextUpdate = observation.getUpdateType();
+						AtomObservationUpdateType lastUpdate = atomsObservationState.get(observation.getAtom());
+
+
+						final boolean include;
+						if (lastUpdate == null) {
+							include = nextUpdate.getType() == Type.STORE;
 						} else {
-							return true;
+							// Soft observation should not be able to update a hard state
+							// Only update if type changes
+							include = (!nextUpdate.isSoft() || lastUpdate.isSoft())
+								&& nextUpdate.getType() != lastUpdate.getType();
 						}
-					})
+
+						// Should always update observation state if going from soft to hard observation
+						final boolean isSoftToHard = lastUpdate != null && lastUpdate.isSoft() && !nextUpdate.isSoft();
+
+						if (include || isSoftToHard) {
+							atomsObservationState.put(observation.getAtom(), nextUpdate);
+						}
+
+						return include;
+					} else {
+						// Only send HEAD if we've processed all known atoms
+						return atomsObservationState.curCount >= observationCountPerAddress.getOrDefault(address, 0L);
+					}
+				})
 			);
 	}
 }

@@ -7,6 +7,7 @@ import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomResultAction;
 import com.radixdlt.client.core.network.reducers.RadixNetwork;
 import io.reactivex.Observable;
+import io.reactivex.functions.Cancellable;
 import io.reactivex.observables.ConnectableObservable;
 import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.PublishSubject;
@@ -16,6 +17,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -58,6 +61,11 @@ public class RadixNetworkController implements AtomSubmitter {
 
 	private final Subject<RadixNodeAction> nodeActions = PublishSubject.<RadixNodeAction>create().toSerialized();
 
+	private final Observable<RadixNodeAction> reducedNodeActions;
+
+	// TODO: Move this into a proper reducer framework
+	private final CopyOnWriteArrayList<Consumer<RadixNodeAction>> reducers = new CopyOnWriteArrayList<>();
+
 	private RadixNetworkController(RadixNetwork network, List<RadixNetworkEpic> epics) {
 		Objects.requireNonNull(network);
 		Objects.requireNonNull(epics);
@@ -65,18 +73,13 @@ public class RadixNetworkController implements AtomSubmitter {
 		this.networkState = BehaviorSubject.createDefault(new RadixNetworkState(Collections.emptyMap()));
 
 		// Run reducers first
-		ConnectableObservable<RadixNodeAction> reducedNodeActions = nodeActions.doOnNext(action -> {
+		final ConnectableObservable<RadixNodeAction> connectableReducedNodeActions = nodeActions.doOnNext(action -> {
 
 			final RadixNetworkState curState = networkState.getValue();
 			RadixNetworkState nextState = network.reduce(curState, action);
-			/*
-			LOGGER.info(
-				"\n" +
-				"CUR_STATE:   " + curState + "\n" +
-				"NEXT_ACTION: " + action.toString() + "\n" +
-				"NEXT_STATE:  " + nextState
-			);
-			*/
+
+			// TODO: Move this into a proper reducer framework
+			reducers.forEach(r -> r.accept(action));
 
 			// TODO: also add equals check
 			if (nextState != curState) {
@@ -88,23 +91,44 @@ public class RadixNetworkController implements AtomSubmitter {
 
 		// Then run Epics
 		Set<Observable<RadixNodeAction>> updates = epics.stream()
-			.map(epic -> epic.epic(reducedNodeActions, networkState))
+			.map(epic -> epic.epic(connectableReducedNodeActions, networkState))
 			.collect(Collectors.toSet());
 
 		// FIXME: Cleanup disposable
 		Observable.merge(updates).subscribe(this::dispatch);
 
-		reducedNodeActions.connect();
+		this.reducedNodeActions = connectableReducedNodeActions;
+
+		connectableReducedNodeActions.connect();
+	}
+
+	// HACK
+	// TODO: Move this into a proper reducer framework
+	public Cancellable addReducer(Consumer<RadixNodeAction> reducer) {
+		this.reducers.add(reducer);
+		return () -> this.reducers.remove(reducer);
 	}
 
 	public Observable<RadixNetworkState> getNetwork() {
 		return networkState;
 	}
 
+	/**
+	 * Get an observable of all actions which have occurred in the network system.
+	 * Actions are only emitted after they have been processed by all reducers.
+	 *
+	 * @return observable of actions in the system
+	 */
 	public Observable<RadixNodeAction> getActions() {
-		return nodeActions;
+		return reducedNodeActions;
 	}
 
+	/**
+	 * Dispatches an action into the system. That is it will be processed through reducers
+	 * and then subsequently epics
+	 *
+	 * @param action the action to dispatch
+	 */
 	public void dispatch(RadixNodeAction action) {
 		nodeActions.onNext(action);
 	}
@@ -123,7 +147,7 @@ public class RadixNetworkController implements AtomSubmitter {
 	public Observable<SubmitAtomAction> submitAtom(Atom atom) {
 		SubmitAtomAction initialAction = SubmitAtomRequestAction.newRequest(atom);
 		Observable<SubmitAtomAction> status =
-			nodeActions.ofType(SubmitAtomAction.class)
+			reducedNodeActions.ofType(SubmitAtomAction.class)
 				.filter(u -> u.getUuid().equals(initialAction.getUuid()))
 				.takeUntil(u -> u instanceof SubmitAtomResultAction);
 		ConnectableObservable<SubmitAtomAction> replay = status.replay();

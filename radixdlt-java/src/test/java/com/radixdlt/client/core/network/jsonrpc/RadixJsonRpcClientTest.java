@@ -1,7 +1,7 @@
 package com.radixdlt.client.core.network.jsonrpc;
 
-import com.radixdlt.client.core.atoms.AtomEvent;
-import com.radixdlt.client.core.atoms.AtomEvent.AtomEventType;
+import com.radixdlt.client.core.ledger.AtomEvent;
+import com.radixdlt.client.core.ledger.AtomEvent.AtomEventType;
 import java.util.Collections;
 
 import org.junit.Test;
@@ -16,7 +16,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.atoms.AtomObservation;
+import com.radixdlt.client.core.ledger.AtomObservation;
 import com.radixdlt.client.core.atoms.Shards;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.NodeAtomSubmissionState;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.NodeAtomSubmissionUpdate;

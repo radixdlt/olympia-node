@@ -1,6 +1,7 @@
-package com.radixdlt.client.core.atoms;
+package com.radixdlt.client.core.ledger;
 
-import com.radixdlt.client.core.atoms.AtomEvent.AtomEventType;
+import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.client.core.ledger.AtomEvent.AtomEventType;
 
 public class AtomObservation {
 	public enum Type {
@@ -19,16 +20,40 @@ public class AtomObservation {
 		}
 	}
 
+	/**
+	 * Describes the type of observation including whether the update is "soft", or a weakly
+	 * supported atom which could possibly be deleted soon
+	 */
+	static final class AtomObservationUpdateType {
+		private final Type type;
+		private final boolean soft;
+
+		private AtomObservationUpdateType(Type type, boolean soft) {
+			this.type = type;
+			this.soft = soft;
+		}
+
+		public static AtomObservationUpdateType of(Type type, boolean soft) {
+			return new AtomObservationUpdateType(type, soft);
+		}
+
+		public boolean isSoft() {
+			return soft;
+		}
+
+		public Type getType() {
+			return type;
+		}
+	}
+
 	private final Atom atom;
-	private final Type type;
 	private final long receivedTimestamp;
-	private final boolean soft;
+	private final AtomObservationUpdateType updateType;
 
 	private AtomObservation(Atom atom, Type type, long receivedTimestamp, boolean soft) {
 		this.atom = atom;
-		this.type = type;
 		this.receivedTimestamp = receivedTimestamp;
-		this.soft = soft;
+		this.updateType = new AtomObservationUpdateType(type, soft);
 	}
 
 	public Atom getAtom() {
@@ -36,19 +61,19 @@ public class AtomObservation {
 	}
 
 	public Type getType() {
-		return type;
+		return updateType.type;
 	}
 
 	public boolean hasAtom() {
-		return type == Type.STORE || type == Type.DELETE;
+		return updateType.type == Type.STORE || updateType.type == Type.DELETE;
 	}
 
 	public boolean isStore() {
-		return type == Type.STORE;
+		return updateType.type == Type.STORE;
 	}
 
 	public boolean isHead() {
-		return type == Type.HEAD;
+		return updateType.type == Type.HEAD;
 	}
 
 	public long getReceivedTimestamp() {
@@ -73,12 +98,16 @@ public class AtomObservation {
 		return new AtomObservation(atom, Type.STORE, System.currentTimeMillis(), true);
 	}
 
+	public static AtomObservation softDeleted(Atom atom) {
+		return new AtomObservation(atom, Type.DELETE, System.currentTimeMillis(), true);
+	}
+
 	public static AtomObservation stored(Atom atom) {
 		return new AtomObservation(atom, Type.STORE, System.currentTimeMillis(), false);
 	}
 
-	public boolean isSoft() {
-		return soft;
+	AtomObservationUpdateType getUpdateType() {
+		return updateType;
 	}
 
 	public static AtomObservation deleted(Atom atom) {
@@ -91,6 +120,6 @@ public class AtomObservation {
 
 	@Override
 	public String toString() {
-		return type + " " + atom;
+		return updateType.type + " " + atom;
 	}
 }
