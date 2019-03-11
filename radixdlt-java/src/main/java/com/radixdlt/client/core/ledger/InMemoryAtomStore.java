@@ -30,7 +30,7 @@ public class InMemoryAtomStore implements AtomStore {
 	 * @param atomObservation the atom to store
 	 */
 	public void store(RadixAddress address, AtomObservation atomObservation) {
-		cache.computeIfAbsent(address, euid -> ReplaySubject.create()).onNext(atomObservation);
+		cache.computeIfAbsent(address, addr -> ReplaySubject.create()).onNext(atomObservation);
 	}
 
 	/**
@@ -44,7 +44,7 @@ public class InMemoryAtomStore implements AtomStore {
 		Objects.requireNonNull(address);
 		return Observable.fromCallable(HashMap<RadixHash, Type>::new)
 			.flatMap(curAtomState ->
-				cache.computeIfAbsent(address, euid -> ReplaySubject.create())
+				cache.computeIfAbsent(address, addr -> ReplaySubject.create())
 					.filter(observation -> {
 						if (observation.getAtom() != null) {
 							Type curState = curAtomState.get(observation.getAtom().getHash());

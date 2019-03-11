@@ -94,7 +94,7 @@ public class RadixAtomPuller implements AtomPuller {
 						.cache();
 
 					// Soft storage of atoms so that atoms which are submitted and stored can
-					// be immediately be used instead of having to wait for fetch atom events.
+					// be immediately used instead of having to wait for fetch atom events.
 					// TODO: Replace this with constraint machine to check for conflicts
 					Observable<AtomObservation> stored = controller.getActions()
 						.ofType(SubmitAtomResultAction.class)
