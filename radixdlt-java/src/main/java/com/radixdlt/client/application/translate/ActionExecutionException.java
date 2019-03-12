@@ -13,15 +13,29 @@ public class ActionExecutionException extends RuntimeException {
 	private final JsonObject errorData;
 
 	private ActionExecutionException(JsonObject errorData, List<ActionExecutionExceptionReason> reasons) {
-		super(reasons.toString());
+		super(reasons != null && !reasons.isEmpty()
+                ? reasons.toString()
+                : String.valueOf(errorData));
 
 		this.errorData = errorData;
 		this.reasons = Collections.unmodifiableList(reasons);
 	}
 
+    /**
+     * @return The reasons that caused this exception.
+     */
 	public List<ActionExecutionExceptionReason> getReasons() {
 		return reasons;
 	}
+
+    /**
+     * @return The optional JSON representation of the raw error data. May be empty but never null.
+     */
+	public JsonObject getErrorData() {
+	    return errorData != null
+                ? errorData.deepCopy()
+                : new JsonObject();
+    }
 
 	public static class ActionExecutionExceptionBuilder {
 		private ActionExecutionException built;
