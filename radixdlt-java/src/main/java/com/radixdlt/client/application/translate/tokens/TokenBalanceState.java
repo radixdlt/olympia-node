@@ -54,13 +54,14 @@ public class TokenBalanceState implements ApplicationState {
 
 		public static Balance merge(Balance balance, ConsumableTokens tokens, Spin spin) {
 			Map<RadixHash, ConsumableTokens> newMap = new HashMap<>(balance.consumables);
-			newMap.put(((Particle) tokens).getHash(), tokens);
 
 			final BigInteger amount;
 			if (spin == Spin.DOWN || spin == Spin.NEUTRAL) {
 				amount = UInt256s.toBigInteger(tokens.getAmount()).negate();
+				newMap.remove(((Particle) tokens).getHash());
 			} else {
 				amount = UInt256s.toBigInteger(tokens.getAmount());
+				newMap.put(((Particle) tokens).getHash(), tokens);
 			}
 
 			BigInteger newBalance = balance.balance.add(amount);
