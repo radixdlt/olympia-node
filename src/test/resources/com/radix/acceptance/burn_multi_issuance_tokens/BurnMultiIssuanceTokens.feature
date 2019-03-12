@@ -36,3 +36,9 @@ Feature: Burn Multi-Issuance Tokens
     And the client waits to be notified that "JOSH" token has a total supply of 0
     And the client executes 'TRANSFER 1 "JOSH" tokens' to himself
     Then the client should be notified that the action failed because there's not that many tokens in supply
+
+  Scenario: 7: Burn twice
+    Given a library client who owns an account and created token "JOSH" with 100 initial supply and is listening to the state of "JOSH"
+    When the client executes 'BURN 50 "JOSH" tokens'
+    And the client executes 'BURN 50 "JOSH" tokens'
+    Then the client should be notified that "JOSH" token has a total supply of 0
