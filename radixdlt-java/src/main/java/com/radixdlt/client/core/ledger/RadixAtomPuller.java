@@ -155,9 +155,9 @@ public class RadixAtomPuller implements AtomPuller {
 	public Observable<AtomObservation> pull(RadixAddress address) {
 		return cache.computeIfAbsent(
 			address,
-			destination ->
+			addr ->
 				Observable.<AtomObservation>create(emitter -> {
-					final FetchAtomsAction initialAction = FetchAtomsRequestAction.newRequest(address);
+					final FetchAtomsAction initialAction = FetchAtomsRequestAction.newRequest(addr);
 
 					// TODO: Move hack this into a proper reducer framework
 					final AtomReducer atomReducer = new AtomReducer(atomStore, initialAction, emitter);
@@ -170,6 +170,7 @@ public class RadixAtomPuller implements AtomPuller {
 
 					controller.dispatch(initialAction);
 				})
+				.doOnSubscribe(d -> atomStore.accept(address, AtomObservation.resync()))
 				.publish()
 				.refCount()
 		);

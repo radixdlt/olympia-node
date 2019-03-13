@@ -94,9 +94,11 @@ public class InMemoryAtomStore implements AtomStore {
 						}
 
 						return include;
-					} else {
+					} else if (observation.isHead()) {
 						// Only send HEAD if we've processed all known atoms
 						return atomsObservationState.curCount >= observationCountPerAddress.getOrDefault(address, 0L);
+					} else {
+						return false;
 					}
 				})
 			);
