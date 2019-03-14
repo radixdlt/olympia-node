@@ -21,16 +21,17 @@ Feature: Particle Groups
     When I submit a fixed-supply token-creation request with name "RLAU Test", symbol "RLAU", totalSupply 100 scaled and granularity 1 scaled
     And I can observe atom 1 being accepted
     And I submit two token transfer requests of 100 for "RLAU" in separate particle groups
-    Then I can observe atom 2 being rejected with a validation error
+    Then I can observe atom 2 being rejected with a validation erro
 
-  Scenario: 4: Different token types within particle group
-    Given I have access to a suitable Radix network
-    When I submit a fixed-supply token-creation request with name "RLAU 1", symbol "RLAU1", totalSupply 100 scaled and granularity 1 scaled
-    And I submit a fixed-supply token-creation request with name "RLAU 2", symbol "RLAU2", totalSupply 100 scaled and granularity 1 scaled
-    And I can observe atom 1 being accepted
-    And I can observe atom 2 being accepted
-    And I submit one token transfer requests of 100 for "RLAU1" and of 100 for "RLAU2" in one particle group
-    Then I can observe atom 3 being rejected with a validation error
+#  No longer relevant: There can be multiple token types per ParticleGroup as of commit 075d8d3e98667e5d5a02a724c8634fa30190e990 on RadixCore.
+#  Scenario: 4: Different token types within particle group
+#    Given I have access to a suitable Radix network
+#    When I submit a fixed-supply token-creation request with name "RLAU 1", symbol "RLAU1", totalSupply 100 scaled and granularity 1 scaled
+#    And I submit a fixed-supply token-creation request with name "RLAU 2", symbol "RLAU2", totalSupply 100 scaled and granularity 1 scaled
+#    And I can observe atom 1 being accepted
+#    And I can observe atom 2 being accepted
+#    And I submit one token transfer requests of 100 for "RLAU1" and of 100 for "RLAU2" in one particle group
+#    Then I can observe atom 3 being rejected with a validation error
 
   Scenario: 5: Empty particle group
     Given I have access to a suitable Radix network
