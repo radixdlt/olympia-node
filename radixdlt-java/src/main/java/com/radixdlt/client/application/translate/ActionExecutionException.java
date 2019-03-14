@@ -14,8 +14,8 @@ public class ActionExecutionException extends RuntimeException {
 
 	private ActionExecutionException(JsonObject errorData, List<ActionExecutionExceptionReason> reasons) {
 		super(reasons != null && !reasons.isEmpty()
-		? reasons.toString()
-		: String.valueOf(errorData));
+			? reasons.toString()
+			: String.valueOf(errorData));
 
 		this.errorData = errorData;
 		this.reasons = ImmutableList.copyOf(reasons);
@@ -33,8 +33,8 @@ public class ActionExecutionException extends RuntimeException {
 	 */
 	public JsonObject getErrorData() {
 		return errorData != null
-		? errorData.deepCopy()
-		: new JsonObject();
+			? errorData.deepCopy()
+			: new JsonObject();
 	}
 
 	public static class ActionExecutionExceptionBuilder {
