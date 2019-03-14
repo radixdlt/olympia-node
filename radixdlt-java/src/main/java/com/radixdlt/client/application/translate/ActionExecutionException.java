@@ -1,8 +1,8 @@
 package com.radixdlt.client.application.translate;
 
+import com.google.common.collect.ImmutableList;
 import com.google.gson.JsonObject;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -14,28 +14,28 @@ public class ActionExecutionException extends RuntimeException {
 
 	private ActionExecutionException(JsonObject errorData, List<ActionExecutionExceptionReason> reasons) {
 		super(reasons != null && !reasons.isEmpty()
-                ? reasons.toString()
-                : String.valueOf(errorData));
+		? reasons.toString()
+		: String.valueOf(errorData));
 
 		this.errorData = errorData;
-		this.reasons = Collections.unmodifiableList(reasons);
+		this.reasons = ImmutableList.copyOf(reasons);
 	}
 
-    /**
-     * @return The reasons that caused this exception.
-     */
+	/**
+	 * @return The reasons that caused this exception.
+	 */
 	public List<ActionExecutionExceptionReason> getReasons() {
 		return reasons;
 	}
 
-    /**
-     * @return The optional JSON representation of the raw error data. May be empty but never null.
-     */
+	/**
+	 * @return The optional JSON representation of the raw error data. May be empty but never null.
+	 */
 	public JsonObject getErrorData() {
-	    return errorData != null
-                ? errorData.deepCopy()
-                : new JsonObject();
-    }
+		return errorData != null
+		? errorData.deepCopy()
+		: new JsonObject();
+	}
 
 	public static class ActionExecutionExceptionBuilder {
 		private ActionExecutionException built;
