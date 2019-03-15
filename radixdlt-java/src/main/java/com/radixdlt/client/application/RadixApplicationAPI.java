@@ -393,7 +393,7 @@ public class RadixApplicationAPI {
 		return this.getActionStore(actionClass).getActions(address, identity)
 			.map(actionClass::cast)
 			.publish()
-			.autoConnect()
+			.refCount()
 			.doOnSubscribe(disposable -> auto.subscribe().dispose())
 			.doOnError(e -> d.dispose())
 			.doOnDispose(d::dispose)
@@ -414,14 +414,15 @@ public class RadixApplicationAPI {
 		final Observable<AtomObservation> atomsPulled = ledger.getAtomPuller() != null
 				? ledger.getAtomPuller().pull(address)
 				: Observable.never();
-		Observable<AtomObservation> auto = atomsPulled.publish()
+		Observable<AtomObservation> auto = atomsPulled
+			.publish()
 			.refCount(2);
 		Disposable d = auto.subscribe();
 
 		return this.getStore(stateClass).getState(address)
 			.map(stateClass::cast)
 			.publish()
-			.autoConnect()
+			.refCount()
 			.doOnSubscribe(disposable -> auto.subscribe().dispose())
 			.doOnError(e -> d.dispose())
 			.doOnDispose(d::dispose)
