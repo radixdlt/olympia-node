@@ -20,13 +20,13 @@ public class TransferTokensToParticleGroupsMapperTest {
 		RadixUniverse universe = mock(RadixUniverse.class);
 		RadixAddress address = mock(RadixAddress.class);
 
-		TokenTypeReference token = mock(TokenTypeReference.class);
+		TokenDefinitionReference token = mock(TokenDefinitionReference.class);
 		when(token.getSymbol()).thenReturn("TEST");
 
 		TransferTokensAction transferTokensAction = mock(TransferTokensAction.class);
 		when(transferTokensAction.getAmount()).thenReturn(new BigDecimal("1.0"));
 		when(transferTokensAction.getFrom()).thenReturn(address);
-		when(transferTokensAction.getTokenTypeReference()).thenReturn(token);
+		when(transferTokensAction.getTokenDefinitionReference()).thenReturn(token);
 
 		TokenBalanceState state = mock(TokenBalanceState.class);
 		when(state.getBalance()).thenReturn(Collections.emptyMap());

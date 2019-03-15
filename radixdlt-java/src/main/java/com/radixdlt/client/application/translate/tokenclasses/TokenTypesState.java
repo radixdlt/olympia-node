@@ -2,16 +2,16 @@ package com.radixdlt.client.application.translate.tokenclasses;
 
 import com.radixdlt.client.application.translate.ApplicationState;
 import com.radixdlt.client.application.translate.tokenclasses.TokenState.TokenSupplyType;
-import com.radixdlt.client.application.translate.tokens.TokenTypeReference;
+import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 public class TokenTypesState implements ApplicationState {
-	private final Map<TokenTypeReference, TokenState> state;
+	private final Map<TokenDefinitionReference, TokenState> state;
 
-	private TokenTypesState(Map<TokenTypeReference, TokenState> state) {
+	private TokenTypesState(Map<TokenDefinitionReference, TokenState> state) {
 		this.state = Collections.unmodifiableMap(state);
 	}
 
@@ -19,19 +19,19 @@ public class TokenTypesState implements ApplicationState {
 		return new TokenTypesState(Collections.emptyMap());
 	}
 
-	public Map<TokenTypeReference, TokenState> getState() {
+	public Map<TokenDefinitionReference, TokenState> getState() {
 		return state;
 	}
 
 	public TokenTypesState mergeTokenClass(
-		TokenTypeReference ref,
+		TokenDefinitionReference ref,
 		String name,
 		String iso,
 		String description,
 		BigDecimal granularity,
 		TokenSupplyType tokenSupplyType
 	) {
-		Map<TokenTypeReference, TokenState> newState = new HashMap<>(state);
+		Map<TokenDefinitionReference, TokenState> newState = new HashMap<>(state);
 		if (newState.containsKey(ref)) {
 			BigDecimal totalSupply = newState.get(ref).getTotalSupply();
 			newState.put(ref, new TokenState(name, iso, description, totalSupply, granularity, tokenSupplyType));
@@ -42,8 +42,8 @@ public class TokenTypesState implements ApplicationState {
 		return new TokenTypesState(newState);
 	}
 
-	public TokenTypesState mergeSupplyChange(TokenTypeReference ref, BigDecimal supplyChange) {
-		Map<TokenTypeReference, TokenState> newState = new HashMap<>(state);
+	public TokenTypesState mergeSupplyChange(TokenDefinitionReference ref, BigDecimal supplyChange) {
+		Map<TokenDefinitionReference, TokenState> newState = new HashMap<>(state);
 		if (newState.containsKey(ref)) {
 			TokenState tokenState = newState.get(ref);
 			newState.put(ref, new TokenState(

@@ -40,11 +40,11 @@ public class TokenBalanceState implements ApplicationState {
 		}
 
 		public BigDecimal getAmount() {
-			return TokenTypeReference.subunitsToUnits(balance);
+			return TokenDefinitionReference.subunitsToUnits(balance);
 		}
 
 		public BigDecimal getGranularity() {
-			return TokenTypeReference.subunitsToUnits(granularity);
+			return TokenDefinitionReference.subunitsToUnits(granularity);
 		}
 
 		public Stream<ConsumableTokens> unconsumedTransferrable() {
@@ -69,22 +69,22 @@ public class TokenBalanceState implements ApplicationState {
 		}
 	}
 
-	private final Map<TokenTypeReference, Balance> balance;
+	private final Map<TokenDefinitionReference, Balance> balance;
 
 	public TokenBalanceState() {
 		this.balance = Collections.emptyMap();
 	}
 
-	public TokenBalanceState(Map<TokenTypeReference, Balance> balance) {
+	public TokenBalanceState(Map<TokenDefinitionReference, Balance> balance) {
 		this.balance = balance;
 	}
 
-	public Map<TokenTypeReference, Balance> getBalance() {
+	public Map<TokenDefinitionReference, Balance> getBalance() {
 		return Collections.unmodifiableMap(balance);
 	}
 
 	public static TokenBalanceState merge(TokenBalanceState state, ConsumableTokens tokens, Spin spin) {
-		HashMap<TokenTypeReference, Balance> balance = new HashMap<>(state.balance);
+		HashMap<TokenDefinitionReference, Balance> balance = new HashMap<>(state.balance);
 		BigInteger amount = UInt256s.toBigInteger(tokens.getAmount());
 		BigInteger granularity = UInt256s.toBigInteger(tokens.getGranularity());
 		balance.merge(

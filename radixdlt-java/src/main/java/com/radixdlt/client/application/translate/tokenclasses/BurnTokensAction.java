@@ -6,16 +6,16 @@ import java.util.Objects;
 import org.radix.utils.UInt256;
 
 import com.radixdlt.client.application.translate.Action;
-import com.radixdlt.client.application.translate.tokens.TokenTypeReference;
+import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
 
 public class BurnTokensAction implements Action {
 	private final RadixAddress address;
-	private final TokenTypeReference tokenTypeReference;
+	private final TokenDefinitionReference tokenDefinitionReference;
 	private final UInt256 amount;
 
-	public BurnTokensAction(RadixAddress address, TokenTypeReference tokenTypeReference, UInt256 amount) {
+	public BurnTokensAction(RadixAddress address, TokenDefinitionReference tokenDefinitionReference, UInt256 amount) {
 		this.address = Objects.requireNonNull(address);
-		this.tokenTypeReference = Objects.requireNonNull(tokenTypeReference);
+		this.tokenDefinitionReference = Objects.requireNonNull(tokenDefinitionReference);
 		this.amount = Objects.requireNonNull(amount);
 	}
 
@@ -23,8 +23,8 @@ public class BurnTokensAction implements Action {
 		return address;
 	}
 
-	public TokenTypeReference getTokenTypeReference() {
-		return tokenTypeReference;
+	public TokenDefinitionReference getTokenDefinitionReference() {
+		return tokenDefinitionReference;
 	}
 
 	public UInt256 getAmount() {

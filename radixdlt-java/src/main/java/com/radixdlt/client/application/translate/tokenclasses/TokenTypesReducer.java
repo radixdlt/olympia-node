@@ -3,15 +3,15 @@ package com.radixdlt.client.application.translate.tokenclasses;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 
+import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle;
 import org.radix.utils.UInt256s;
 
 import com.radixdlt.client.application.translate.ParticleReducer;
 import com.radixdlt.client.application.translate.tokenclasses.TokenState.TokenSupplyType;
-import com.radixdlt.client.application.translate.tokens.TokenTypeReference;
+import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
 import com.radixdlt.client.atommodel.Fungible;
 import com.radixdlt.client.atommodel.tokens.BurnedTokensParticle;
 import com.radixdlt.client.atommodel.tokens.MintedTokensParticle;
-import com.radixdlt.client.atommodel.tokens.TokenParticle;
 import com.radixdlt.client.atommodel.tokens.TokenPermission;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.Spin;
@@ -37,42 +37,42 @@ public class TokenTypesReducer implements ParticleReducer<TokenTypesState> {
 	public TokenTypesState reduce(TokenTypesState state, TransitionedParticle t) {
 		Particle p = t.getParticle();
 
-		if (p instanceof TokenParticle) {
-			TokenParticle tokenParticle = (TokenParticle) p;
-			TokenPermission mintPermission = tokenParticle.getTokenPermissions().get(MintedTokensParticle.class);
+		if (p instanceof TokenDefinitionParticle) {
+			TokenDefinitionParticle tokenDefinitionParticle = (TokenDefinitionParticle) p;
+			TokenPermission mintPermission = tokenDefinitionParticle.getTokenPermissions().get(MintedTokensParticle.class);
 
 			final TokenSupplyType tokenSupplyType;
 			if (mintPermission.equals(TokenPermission.SAME_ATOM_ONLY)) {
 				tokenSupplyType = TokenSupplyType.FIXED;
 			} else if (mintPermission.equals(TokenPermission.TOKEN_OWNER_ONLY)) {
 				tokenSupplyType = TokenSupplyType.MUTABLE;
-			} else if (mintPermission.equals(TokenPermission.POW) && tokenParticle.getSymbol().equals("POW")) {
+			} else if (mintPermission.equals(TokenPermission.POW) && tokenDefinitionParticle.getSymbol().equals("POW")) {
 				tokenSupplyType = TokenSupplyType.MUTABLE;
 			} else if (mintPermission.equals(TokenPermission.GENESIS_ONLY)) {
 				tokenSupplyType = TokenSupplyType.FIXED;
 			} else {
-				throw new IllegalStateException("TokenParticle with mintPermissions of " + mintPermission + " not supported.");
+				throw new IllegalStateException("TokenDefinitionParticle with mintPermissions of " + mintPermission + " not supported.");
 			}
 
 			return state.mergeTokenClass(
-				tokenParticle.getTokenTypeReference(),
-				tokenParticle.getName(),
-				tokenParticle.getSymbol(),
-				tokenParticle.getDescription(),
-				TokenTypeReference.subunitsToUnits(tokenParticle.getGranularity()),
+				tokenDefinitionParticle.getTokenTypeReference(),
+				tokenDefinitionParticle.getName(),
+				tokenDefinitionParticle.getSymbol(),
+				tokenDefinitionParticle.getDescription(),
+				TokenDefinitionReference.subunitsToUnits(tokenDefinitionParticle.getGranularity()),
 				tokenSupplyType
 			);
 		} else if (t.getSpinTo() == Spin.UP && (p instanceof MintedTokensParticle || p instanceof BurnedTokensParticle)) {
 			BigInteger mintedOrBurnedAmount = UInt256s.toBigInteger(((Fungible) p).getAmount());
-			BigDecimal change = TokenTypeReference.subunitsToUnits(
+			BigDecimal change = TokenDefinitionReference.subunitsToUnits(
 				(p instanceof BurnedTokensParticle)
 					? mintedOrBurnedAmount.negate()
 					: mintedOrBurnedAmount
 			);
 
-			TokenTypeReference tokenTypeReference = p instanceof MintedTokensParticle
+			TokenDefinitionReference tokenDefinitionReference = p instanceof MintedTokensParticle
 				? ((MintedTokensParticle) p).getTokenTypeReference() : ((BurnedTokensParticle) p).getTokenTypeReference();
-			return state.mergeSupplyChange(tokenTypeReference, change);
+			return state.mergeSupplyChange(tokenDefinitionReference, change);
 		}
 
 		return state;

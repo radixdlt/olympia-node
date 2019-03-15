@@ -14,14 +14,14 @@ import org.radix.serialization2.DsonOutput.Output;
 import org.radix.serialization2.SerializerId2;
 import org.radix.utils.UInt256;
 
-import com.radixdlt.client.application.translate.tokens.TokenTypeReference;
+import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
 import com.radixdlt.client.atommodel.Identifiable;
 import com.radixdlt.client.atommodel.Ownable;
 import com.radixdlt.client.core.atoms.particles.RadixResourceIdentifer;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 
-@SerializerId2("TOKENCLASSPARTICLE")
-public class TokenParticle extends Particle implements Identifiable, Ownable {
+@SerializerId2("TOKENDEFINITIONPARTICLE")
+public class TokenDefinitionParticle extends Particle implements Identifiable, Ownable {
 	@JsonProperty("address")
 	@DsonOutput(Output.ALL)
 	private RadixAddress address;
@@ -48,11 +48,11 @@ public class TokenParticle extends Particle implements Identifiable, Ownable {
 
 	private Map<Class<? extends Particle>, TokenPermission> tokenPermissions;
 
-	private TokenParticle() {
+	private TokenDefinitionParticle() {
 		// Empty constructor for serializer
 	}
 
-	public TokenParticle(
+	public TokenDefinitionParticle(
 		RadixAddress address,
 		String name,
 		String symbol,
@@ -73,7 +73,7 @@ public class TokenParticle extends Particle implements Identifiable, Ownable {
 
 	@Override
 	public RadixResourceIdentifer getRRI() {
-		return new RadixResourceIdentifer(address, "tokenclasses", this.symbol);
+		return new RadixResourceIdentifer(address, "tokens", this.symbol);
 	}
 
 	public Map<Class<? extends Particle>, TokenPermission> getTokenPermissions() {
@@ -101,8 +101,8 @@ public class TokenParticle extends Particle implements Identifiable, Ownable {
 		return this.granularity;
 	}
 
-	public TokenTypeReference getTokenTypeReference() {
-		return TokenTypeReference.of(address, symbol);
+	public TokenDefinitionReference getTokenTypeReference() {
+		return TokenDefinitionReference.of(address, symbol);
 	}
 
 	@JsonProperty("permissions")

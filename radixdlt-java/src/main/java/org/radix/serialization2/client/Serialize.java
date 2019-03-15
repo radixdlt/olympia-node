@@ -14,7 +14,7 @@ import com.radixdlt.client.application.translate.unique.UniqueId;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.atommodel.message.MessageParticle;
 import com.radixdlt.client.atommodel.tokens.FeeParticle;
-import com.radixdlt.client.atommodel.tokens.TokenParticle;
+import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.client.atommodel.unique.UniqueParticle;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.client.core.atoms.Atom;
@@ -54,7 +54,7 @@ public final class Serialize {
 				SpunParticle.class,
 				FeeParticle.class,
 				MessageParticle.class,
-				TokenParticle.class,
+				TokenDefinitionParticle.class,
 				MintedTokensParticle.class,
 				TransferredTokensParticle.class,
 				BurnedTokensParticle.class,

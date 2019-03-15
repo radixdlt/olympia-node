@@ -9,7 +9,7 @@ import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.tokenclasses.CreateTokenAction.TokenSupplyType;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.application.translate.tokens.TokenTypeReference;
+import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
 
@@ -58,12 +58,12 @@ public class RadixWalletExample {
 			"Joshy Token",
 			"JOSH",
 			"The Best Coin Ever",
-			TokenTypeReference.unitsToSubunits(10000),
+			TokenDefinitionReference.unitsToSubunits(10000),
 			UInt256.ONE,
 			TokenSupplyType.MUTABLE
 		).toObservable().subscribe(System.out::println);
 
-		api.getTokenClass(TokenTypeReference.of(api.getMyAddress(), "JOSH"))
+		api.getTokenClass(TokenDefinitionReference.of(api.getMyAddress(), "JOSH"))
 			.subscribe(System.out::println);
 
 		// If specified, send money to another address

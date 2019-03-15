@@ -12,7 +12,7 @@ import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.RadixHash;
-import com.radixdlt.client.application.translate.tokens.TokenTypeReference;
+import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
 import com.radixdlt.client.atommodel.tokens.FeeParticle;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.crypto.ECPublicKey;
@@ -40,7 +40,7 @@ public class PowFeeMapperTest {
 		PowFeeMapper powFeeMapper = new PowFeeMapper(hasher, builder);
 
 		RadixUniverse universe = mock(RadixUniverse.class);
-		TokenTypeReference powToken = mock(TokenTypeReference.class);
+		TokenDefinitionReference powToken = mock(TokenDefinitionReference.class);
 		when(powToken.getAddress()).thenReturn(mock(RadixAddress.class));
 		when(powToken.getSymbol()).thenReturn("POW");
 		when(universe.getPOWToken()).thenReturn(powToken);

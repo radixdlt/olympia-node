@@ -11,7 +11,7 @@ import java.util.Map;
 public class TransferTokensAction implements Action {
 	private final RadixAddress from;
 	private final RadixAddress to;
-	private final TokenTypeReference tokenTypeReference;
+	private final TokenDefinitionReference tokenDefinitionReference;
 	private final Map<String, Object> metaData;
 	private final BigDecimal amount;
 	private final Data attachment;
@@ -20,17 +20,17 @@ public class TransferTokensAction implements Action {
 		RadixAddress from,
 		RadixAddress to,
 		BigDecimal amount,
-		TokenTypeReference tokenTypeReference,
+		TokenDefinitionReference tokenDefinitionReference,
 		Data attachment,
 		Map<String, Object> metaData
 	) {
-		if (amount.stripTrailingZeros().scale() > TokenTypeReference.getTokenScale()) {
-			throw new IllegalArgumentException("Amount must scale by " + TokenTypeReference.getTokenScale());
+		if (amount.stripTrailingZeros().scale() > TokenDefinitionReference.getTokenScale()) {
+			throw new IllegalArgumentException("Amount must scale by " + TokenDefinitionReference.getTokenScale());
 		}
 
 		this.from = from;
 		this.to = to;
-		this.tokenTypeReference = tokenTypeReference;
+		this.tokenDefinitionReference = tokenDefinitionReference;
 		this.amount = amount;
 		this.attachment = attachment;
 		this.metaData = metaData;
@@ -40,46 +40,46 @@ public class TransferTokensAction implements Action {
 		RadixAddress from,
 		RadixAddress to,
 		BigDecimal amount,
-		TokenTypeReference tokenTypeReference
+		TokenDefinitionReference tokenDefinitionReference
 	) {
-		return new TransferTokensAction(from, to, amount, tokenTypeReference, null, Collections.emptyMap());
+		return new TransferTokensAction(from, to, amount, tokenDefinitionReference, null, Collections.emptyMap());
 	}
 
 	public static TransferTokensAction create(
 		RadixAddress from,
 		RadixAddress to,
 		BigDecimal amount,
-		TokenTypeReference tokenTypeReference,
+		TokenDefinitionReference tokenDefinitionReference,
 		Data attachment
 	) {
-		return new TransferTokensAction(from, to, amount, tokenTypeReference, attachment, Collections.emptyMap());
+		return new TransferTokensAction(from, to, amount, tokenDefinitionReference, attachment, Collections.emptyMap());
 	}
 
 	public static TransferTokensAction create(
 		RadixAddress from,
 		RadixAddress to,
 		BigDecimal amount,
-		TokenTypeReference tokenTypeReference,
+		TokenDefinitionReference tokenDefinitionReference,
 		Long timestamp
 	) {
 		Map<String, Object> metaData = new HashMap<>();
 		metaData.put("timestamp", timestamp);
 
-		return new TransferTokensAction(from, to, amount, tokenTypeReference, null, metaData);
+		return new TransferTokensAction(from, to, amount, tokenDefinitionReference, null, metaData);
 	}
 
 	public static TransferTokensAction create(
 		RadixAddress from,
 		RadixAddress to,
 		BigDecimal amount,
-		TokenTypeReference tokenTypeReference,
+		TokenDefinitionReference tokenDefinitionReference,
 		Data attachment,
 		Long timestamp
 	) {
 		Map<String, Object> metaData = new HashMap<>();
 		metaData.put("timestamp", timestamp);
 
-		return new TransferTokensAction(from, to, amount, tokenTypeReference, attachment, metaData);
+		return new TransferTokensAction(from, to, amount, tokenDefinitionReference, attachment, metaData);
 	}
 
 	public Data getAttachment() {
@@ -94,8 +94,8 @@ public class TransferTokensAction implements Action {
 		return to;
 	}
 
-	public TokenTypeReference getTokenTypeReference() {
-		return tokenTypeReference;
+	public TokenDefinitionReference getTokenDefinitionReference() {
+		return tokenDefinitionReference;
 	}
 
 	public BigDecimal getAmount() {
@@ -109,7 +109,7 @@ public class TransferTokensAction implements Action {
 	@Override
 	public String toString() {
 		Long timestamp = (Long) metaData.get("timestamp");
-		return timestamp + " " + from + " -> " + to + " " + amount + " "  + tokenTypeReference.getSymbol()
+		return timestamp + " " + from + " -> " + to + " " + amount + " "  + tokenDefinitionReference.getSymbol()
 			+ (attachment == null ? "" : " " + attachment);
 	}
 }

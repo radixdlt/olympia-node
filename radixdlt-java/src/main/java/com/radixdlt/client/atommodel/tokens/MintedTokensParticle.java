@@ -1,7 +1,7 @@
 package com.radixdlt.client.atommodel.tokens;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.client.application.translate.tokens.TokenTypeReference;
+import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
 import com.radixdlt.client.atommodel.Accountable;
 import com.radixdlt.client.atommodel.Fungible;
 import com.radixdlt.client.atommodel.Ownable;
@@ -28,7 +28,7 @@ public final class MintedTokensParticle extends Particle implements Accountable,
 	@DsonOutput(Output.ALL)
 	private RadixAddress address;
 
-	@JsonProperty("tokenTypeReference")
+	@JsonProperty("tokenDefinitionReference")
 	@DsonOutput(Output.ALL)
 	private RadixResourceIdentifer tokenTypeReference;
 
@@ -52,7 +52,7 @@ public final class MintedTokensParticle extends Particle implements Accountable,
 	}
 
 	public MintedTokensParticle(UInt256 amount, UInt256 granularity, RadixAddress address, long nonce,
-	                            TokenTypeReference tokenTypeReference, long planck) {
+	                            TokenDefinitionReference tokenDefinitionReference, long planck) {
 		super();
 
 		// Redundant null check added for completeness
@@ -62,7 +62,7 @@ public final class MintedTokensParticle extends Particle implements Accountable,
 		}
 
 		this.address = address;
-		this.tokenTypeReference = new RadixResourceIdentifer(tokenTypeReference.getAddress(), "tokenclasses", tokenTypeReference.getSymbol());
+		this.tokenTypeReference = new RadixResourceIdentifer(tokenDefinitionReference.getAddress(), "tokenclasses", tokenDefinitionReference.getSymbol());
 		this.granularity = granularity;
 		this.planck = planck;
 		this.nonce = nonce;
@@ -88,8 +88,8 @@ public final class MintedTokensParticle extends Particle implements Accountable,
 		return this.nonce;
 	}
 
-	public TokenTypeReference getTokenTypeReference() {
-		return TokenTypeReference.of(tokenTypeReference.getAddress(), tokenTypeReference.getUnique());
+	public TokenDefinitionReference getTokenTypeReference() {
+		return TokenDefinitionReference.of(tokenTypeReference.getAddress(), tokenTypeReference.getUnique());
 	}
 
 	@Override

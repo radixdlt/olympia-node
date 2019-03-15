@@ -26,7 +26,7 @@ import com.radixdlt.client.application.translate.tokens.InsufficientFundsExcepti
 import com.radixdlt.client.application.translate.tokens.TokenBalanceState;
 import com.radixdlt.client.application.translate.tokens.TokenBalanceState.Balance;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.application.translate.tokens.TokenTypeReference;
+import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 
@@ -68,10 +68,10 @@ public class BurnTokensActionMapper implements StatefulActionToParticleGroupsMap
 	}
 
 	private ParticleGroup map(BurnTokensAction burnTokensAction, TokenBalanceState curState) {
-		final Map<TokenTypeReference, Balance> allConsumables = curState.getBalance();
+		final Map<TokenDefinitionReference, Balance> allConsumables = curState.getBalance();
 
-		final TokenTypeReference tokenRef = burnTokensAction.getTokenTypeReference();
-		final BigDecimal burnUnits = TokenTypeReference.subunitsToUnits(burnTokensAction.getAmount());
+		final TokenDefinitionReference tokenRef = burnTokensAction.getTokenDefinitionReference();
+		final BigDecimal burnUnits = TokenDefinitionReference.subunitsToUnits(burnTokensAction.getAmount());
 		final Balance bal = allConsumables.get(tokenRef);
 		if (bal == null) {
 			throw new InsufficientFundsException(tokenRef, BigDecimal.ZERO, burnUnits);
@@ -80,10 +80,10 @@ public class BurnTokensActionMapper implements StatefulActionToParticleGroupsMap
 		if (balance.compareTo(burnUnits) < 0) {
 			throw new InsufficientFundsException(tokenRef, balance, burnUnits);
 		}
-		final UInt256 granularity = TokenTypeReference.unitsToSubunits(bal.getGranularity());
+		final UInt256 granularity = TokenDefinitionReference.unitsToSubunits(bal.getGranularity());
 
 		final List<ConsumableTokens> unconsumedConsumables =
-			Optional.ofNullable(allConsumables.get(burnTokensAction.getTokenTypeReference()))
+			Optional.ofNullable(allConsumables.get(burnTokensAction.getTokenDefinitionReference()))
 				.map(b -> b.unconsumedTransferrable().collect(Collectors.toList()))
 				.orElse(Collections.emptyList());
 
@@ -116,9 +116,9 @@ public class BurnTokensActionMapper implements StatefulActionToParticleGroupsMap
 					return new BurnedTokensParticle(
 						e.getValue(),
 						granularity,
-						burnTokensAction.getTokenTypeReference().getAddress(),
+						burnTokensAction.getTokenDefinitionReference().getAddress(),
 						System.nanoTime(),
-						burnTokensAction.getTokenTypeReference(),
+						burnTokensAction.getTokenDefinitionReference(),
 						System.currentTimeMillis() / 60000L + 60000L
 					);
 				} else {
@@ -127,7 +127,7 @@ public class BurnTokensActionMapper implements StatefulActionToParticleGroupsMap
 						granularity,
 						this.universe.getAddressFrom(e.getKey()),
 						System.nanoTime(),
-						burnTokensAction.getTokenTypeReference(),
+						burnTokensAction.getTokenDefinitionReference(),
 						System.currentTimeMillis() / 60000L + 60000L
 					);
 				}

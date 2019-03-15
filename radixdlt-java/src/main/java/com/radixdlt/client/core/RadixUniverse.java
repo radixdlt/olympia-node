@@ -1,8 +1,8 @@
 package com.radixdlt.client.core;
 
-import com.radixdlt.client.application.translate.tokens.TokenTypeReference;
+import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.atommodel.tokens.TokenParticle;
+import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.client.core.ledger.AtomObservation;
 import com.radixdlt.client.core.atoms.particles.Spin;
@@ -151,9 +151,9 @@ public final class RadixUniverse {
 
 	private final Ledger ledger;
 
-	private final TokenTypeReference powToken;
+	private final TokenDefinitionReference powToken;
 
-	private final TokenTypeReference nativeToken;
+	private final TokenDefinitionReference nativeToken;
 
 	private RadixUniverse(RadixUniverseConfig config, RadixNetworkController networkController) {
 		this.config = config;
@@ -161,17 +161,17 @@ public final class RadixUniverse {
 
 		this.powToken = config.getGenesis().stream()
 			.flatMap(atom -> atom.particles(Spin.UP))
-			.filter(p -> p instanceof TokenParticle)
-			.filter(p -> ((TokenParticle) p).getTokenTypeReference().getSymbol().equals("POW"))
-			.map(p -> ((TokenParticle) p).getTokenTypeReference())
+			.filter(p -> p instanceof TokenDefinitionParticle)
+			.filter(p -> ((TokenDefinitionParticle) p).getTokenTypeReference().getSymbol().equals("POW"))
+			.map(p -> ((TokenDefinitionParticle) p).getTokenTypeReference())
 			.findFirst()
 			.orElseThrow(() -> new IllegalStateException("No POW Token defined in universe"));
 
 		this.nativeToken = config.getGenesis().stream()
 			.flatMap(atom -> atom.particles(Spin.UP))
-			.filter(p -> p instanceof TokenParticle)
-			.filter(p -> !((TokenParticle) p).getTokenTypeReference().getSymbol().equals("POW"))
-			.map(p -> ((TokenParticle) p).getTokenTypeReference())
+			.filter(p -> p instanceof TokenDefinitionParticle)
+			.filter(p -> !((TokenDefinitionParticle) p).getTokenTypeReference().getSymbol().equals("POW"))
+			.map(p -> ((TokenDefinitionParticle) p).getTokenTypeReference())
 			.findFirst()
 			.orElseThrow(() -> new IllegalStateException("No Native Token defined in universe"));
 
@@ -223,11 +223,11 @@ public final class RadixUniverse {
 		return networkController.getNetwork();
 	}
 
-	public TokenTypeReference getPOWToken() {
+	public TokenDefinitionReference getPOWToken() {
 		return powToken;
 	}
 
-	public TokenTypeReference getNativeToken() {
+	public TokenDefinitionReference getNativeToken() {
 		return nativeToken;
 	}
 
