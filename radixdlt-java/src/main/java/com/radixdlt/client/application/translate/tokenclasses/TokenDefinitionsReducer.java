@@ -51,7 +51,8 @@ public class TokenDefinitionsReducer implements ParticleReducer<TokenDefinitions
 			} else if (mintPermission.equals(TokenPermission.GENESIS_ONLY)) {
 				tokenSupplyType = TokenSupplyType.FIXED;
 			} else {
-				throw new IllegalStateException("TokenDefinitionParticle with mintPermissions of " + mintPermission + " not supported.");
+				throw new IllegalStateException(
+					"TokenDefinitionParticle with mintPermissions of " + mintPermission + " not supported.");
 			}
 
 			return state.mergeTokenClass(

@@ -143,7 +143,8 @@ public final class TokenDefinitionReference {
 		}
 
 		TokenDefinitionReference tokenDefinitionReference = (TokenDefinitionReference) o;
-		return this.getSymbol().equals(tokenDefinitionReference.getSymbol()) && this.getAddress().equals(tokenDefinitionReference.getAddress());
+		return this.getSymbol().equals(tokenDefinitionReference.getSymbol())
+			&& this.getAddress().equals(tokenDefinitionReference.getAddress());
 	}
 
 	@Override

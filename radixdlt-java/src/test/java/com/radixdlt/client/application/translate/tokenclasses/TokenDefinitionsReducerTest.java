@@ -31,7 +31,8 @@ public class TokenDefinitionsReducerTest {
 			TokenPermission.SAME_ATOM_ONLY));
 
 		TokenDefinitionsReducer tokenDefinitionsReducer = new TokenDefinitionsReducer();
-		TokenDefinitionsState state = tokenDefinitionsReducer.reduce(TokenDefinitionsState.init(), TransitionedParticle.n2u(tokenDefinitionParticle));
+		TokenDefinitionsState state = tokenDefinitionsReducer.reduce(
+			TokenDefinitionsState.init(), TransitionedParticle.n2u(tokenDefinitionParticle));
 		assertThat(state.getState().get(tokenRef)).isEqualTo(
 			new TokenState("Name", "ISO", "Desc", BigDecimal.ZERO,
 				TokenDefinitionReference.subunitsToUnits(1), TokenSupplyType.FIXED)
@@ -56,7 +57,8 @@ public class TokenDefinitionsReducerTest {
 		when(minted.getTokenDefinitionReference()).thenReturn(tokenRef);
 
 		TokenDefinitionsReducer tokenDefinitionsReducer = new TokenDefinitionsReducer();
-		TokenDefinitionsState state1 = tokenDefinitionsReducer.reduce(TokenDefinitionsState.init(), TransitionedParticle.n2u(tokenDefinitionParticle));
+		TokenDefinitionsState state1 = tokenDefinitionsReducer.reduce(
+			TokenDefinitionsState.init(), TransitionedParticle.n2u(tokenDefinitionParticle));
 		TokenDefinitionsState state2 = tokenDefinitionsReducer.reduce(state1, TransitionedParticle.n2u(minted));
 		assertThat(state2.getState().get(tokenRef)).isEqualTo(
 			new TokenState(

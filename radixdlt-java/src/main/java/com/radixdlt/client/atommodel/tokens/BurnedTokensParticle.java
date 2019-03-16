@@ -62,7 +62,8 @@ public final class BurnedTokensParticle extends Particle implements Accountable,
 		}
 
 		this.address = address;
-		this.tokenDefinitionReference = new RadixResourceIdentifer(tokenDefinitionReference.getAddress(), "tokens", tokenDefinitionReference.getSymbol());
+		this.tokenDefinitionReference = new RadixResourceIdentifer(
+			tokenDefinitionReference.getAddress(), "tokens", tokenDefinitionReference.getSymbol());
 		this.granularity = granularity;
 		this.planck = planck;
 		this.nonce = nonce;
