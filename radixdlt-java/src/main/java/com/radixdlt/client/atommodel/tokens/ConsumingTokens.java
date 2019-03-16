@@ -13,7 +13,7 @@ public interface ConsumingTokens extends Fungible, Ownable {
 	 * Get the token type that this Particle type consumes
 	 * @return The consumed type
 	 */
-	TokenDefinitionReference getTokenTypeReference();
+	TokenDefinitionReference getTokenDefinitionReference();
 
 	/**
 	 * Get the granularity of the consumed token type

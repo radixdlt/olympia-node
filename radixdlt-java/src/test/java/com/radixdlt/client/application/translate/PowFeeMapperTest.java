@@ -56,7 +56,7 @@ public class PowFeeMapperTest {
 					SpunParticle feeParticle = s.spunParticles().findAny().get();
 					assertThat(feeParticle.getParticle()).isInstanceOf(FeeParticle.class);
 					FeeParticle a = (FeeParticle) feeParticle.getParticle();
-					assertThat(a.getTokenTypeReference()).isEqualTo(powToken);
+					assertThat(a.getTokenDefinitionReference()).isEqualTo(powToken);
 				});
 
 		verify(builder, times(1)).build(anyInt(), any(), anyInt());

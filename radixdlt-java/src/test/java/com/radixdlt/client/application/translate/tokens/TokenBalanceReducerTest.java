@@ -23,7 +23,7 @@ public class TokenBalanceReducerTest {
 		when(minted.getGranularity()).thenReturn(UInt256.ONE);
 		when(minted.getHash()).thenReturn(hash);
 		TokenDefinitionReference token = mock(TokenDefinitionReference.class);
-		when(minted.getTokenTypeReference()).thenReturn(token);
+		when(minted.getTokenDefinitionReference()).thenReturn(token);
 
 		TokenBalanceReducer reducer = new TokenBalanceReducer();
 		TokenBalanceState tokenBalance = reducer.reduce(new TokenBalanceState(), TransitionedParticle.n2u(minted));
@@ -39,7 +39,7 @@ public class TokenBalanceReducerTest {
 		when(ownedTokensParticle.getHash()).thenReturn(hash);
 		when(ownedTokensParticle.getGranularity()).thenReturn(UInt256.ONE);
 		TokenDefinitionReference token = mock(TokenDefinitionReference.class);
-		when(ownedTokensParticle.getTokenTypeReference()).thenReturn(token);
+		when(ownedTokensParticle.getTokenDefinitionReference()).thenReturn(token);
 
 		TokenBalanceReducer reducer = new TokenBalanceReducer();
 		TokenBalanceState tokenBalance0 = reducer.reduce(new TokenBalanceState(), TransitionedParticle.n2u(ownedTokensParticle));
@@ -58,7 +58,7 @@ public class TokenBalanceReducerTest {
 		when(ownedTokensParticle.getHash()).thenReturn(hash);
 		when(ownedTokensParticle.getGranularity()).thenReturn(UInt256.ONE);
 		TokenDefinitionReference token = mock(TokenDefinitionReference.class);
-		when(ownedTokensParticle.getTokenTypeReference()).thenReturn(token);
+		when(ownedTokensParticle.getTokenDefinitionReference()).thenReturn(token);
 
 		TokenBalanceReducer reducer = new TokenBalanceReducer();
 		TokenBalanceState tokenBalance0 = reducer.reduce(new TokenBalanceState(), TransitionedParticle.n2u(ownedTokensParticle));

@@ -27,9 +27,9 @@ public class MintTokensActionMapper implements StatefulActionToParticleGroupsMap
 
 		MintTokensAction mintTokensAction = (MintTokensAction) action;
 
-		RadixAddress tokenClassAddress = mintTokensAction.getTokenDefinitionReference().getAddress();
+		RadixAddress tokenDefinitionAddress = mintTokensAction.getTokenDefinitionReference().getAddress();
 
-		return Observable.just(new RequiredShardState(TokenTypesState.class, tokenClassAddress));
+		return Observable.just(new RequiredShardState(TokenDefinitionsState.class, tokenDefinitionAddress));
 	}
 
 	@Override
@@ -39,35 +39,35 @@ public class MintTokensActionMapper implements StatefulActionToParticleGroupsMap
 		}
 
 		MintTokensAction mintTokensAction = (MintTokensAction) action;
-		TokenDefinitionReference tokenClass = mintTokensAction.getTokenDefinitionReference();
+		TokenDefinitionReference tokenDefinition = mintTokensAction.getTokenDefinitionReference();
 
 		return store.firstOrError()
 			.flatMap(Observable::firstOrError)
-			.map(TokenTypesState.class::cast)
-			.map(TokenTypesState::getState)
-			.map(m -> getTokenStateOrError(m, tokenClass))
+			.map(TokenDefinitionsState.class::cast)
+			.map(TokenDefinitionsState::getState)
+			.map(m -> getTokenStateOrError(m, tokenDefinition))
 			.map(TokenState::getGranularity)
 			.map(TokenDefinitionReference::unitsToSubunits)
-			.map(granularity -> createMintedTokensParticle(mintTokensAction.getAmount(), granularity, tokenClass))
+			.map(granularity -> createMintedTokensParticle(mintTokensAction.getAmount(), granularity, tokenDefinition))
 			.map(ParticleGroup::of)
 			.toObservable();
 	}
 
-	private TokenState getTokenStateOrError(Map<TokenDefinitionReference, TokenState> m, TokenDefinitionReference tokenClass) {
-		TokenState ts = m.get(tokenClass);
+	private TokenState getTokenStateOrError(Map<TokenDefinitionReference, TokenState> m, TokenDefinitionReference tokenDefinition) {
+		TokenState ts = m.get(tokenDefinition);
 		if (ts == null) {
-			throw new UnknownTokenException(tokenClass);
+			throw new UnknownTokenException(tokenDefinition);
 		}
 		return ts;
 	}
 
-	private SpunParticle createMintedTokensParticle(UInt256 amount, UInt256 granularity, TokenDefinitionReference tokenClass) {
+	private SpunParticle createMintedTokensParticle(UInt256 amount, UInt256 granularity, TokenDefinitionReference tokenDefinition) {
 		Particle minted = new MintedTokensParticle(
 			amount,
 			granularity,
-			tokenClass.getAddress(),
+			tokenDefinition.getAddress(),
 			System.currentTimeMillis(),
-			tokenClass,
+			tokenDefinition,
 			System.currentTimeMillis() / 60000L + 60000);
 		return SpunParticle.up(minted);
 	}

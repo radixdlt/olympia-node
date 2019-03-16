@@ -90,7 +90,7 @@ public class TokenDefinitionParticle extends Particle implements Identifiable, O
 	}
 
 	public String getSymbol() {
-		return getTokenTypeReference().getSymbol();
+		return getTokenDefinitionReference().getSymbol();
 	}
 
 	public String getDescription() {
@@ -101,7 +101,7 @@ public class TokenDefinitionParticle extends Particle implements Identifiable, O
 		return this.granularity;
 	}
 
-	public TokenDefinitionReference getTokenTypeReference() {
+	public TokenDefinitionReference getTokenDefinitionReference() {
 		return TokenDefinitionReference.of(address, symbol);
 	}
 
@@ -109,7 +109,7 @@ public class TokenDefinitionParticle extends Particle implements Identifiable, O
 	@DsonOutput(value = {Output.ALL})
 	private Map<String, String> getJsonPermissions() {
 		return this.tokenPermissions.entrySet().stream()
-			.collect(Collectors.toMap(e -> tokenClassToVerb(e.getKey()), e -> e.getValue().name().toLowerCase()));
+			.collect(Collectors.toMap(e -> tokenDefinitionToVerb(e.getKey()), e -> e.getValue().name().toLowerCase()));
 	}
 
 	@JsonProperty("permissions")
@@ -131,7 +131,7 @@ public class TokenDefinitionParticle extends Particle implements Identifiable, O
 	);
 	private static final BiMap<String, Class<? extends Particle>> VERB_TO_TOKEN_CLASS = TOKENS_CLASS_TO_VERB.inverse();
 
-	public static String tokenClassToVerb(Class<? extends Particle> particleClass) {
+	public static String tokenDefinitionToVerb(Class<? extends Particle> particleClass) {
 		return TOKENS_CLASS_TO_VERB.get(particleClass);
 	}
 

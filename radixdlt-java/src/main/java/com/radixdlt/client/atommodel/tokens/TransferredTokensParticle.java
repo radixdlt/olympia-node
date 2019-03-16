@@ -30,7 +30,7 @@ public final class TransferredTokensParticle extends Particle implements Account
 
 	@JsonProperty("tokenDefinitionReference")
 	@DsonOutput(Output.ALL)
-	private RadixResourceIdentifer tokenTypeReference;
+	private RadixResourceIdentifer tokenDefinitionReference;
 
 	@JsonProperty("granularity")
 	@DsonOutput(Output.ALL)
@@ -62,7 +62,7 @@ public final class TransferredTokensParticle extends Particle implements Account
 		}
 
 		this.address = address;
-		this.tokenTypeReference = new RadixResourceIdentifer(tokenDefinitionReference.getAddress(), "tokenclasses", tokenDefinitionReference.getSymbol());
+		this.tokenDefinitionReference = new RadixResourceIdentifer(tokenDefinitionReference.getAddress(), "tokens", tokenDefinitionReference.getSymbol());
 		this.granularity = granularity;
 		this.planck = planck;
 		this.nonce = nonce;
@@ -88,8 +88,8 @@ public final class TransferredTokensParticle extends Particle implements Account
 		return this.nonce;
 	}
 
-	public TokenDefinitionReference getTokenTypeReference() {
-		return TokenDefinitionReference.of(tokenTypeReference.getAddress(), tokenTypeReference.getUnique());
+	public TokenDefinitionReference getTokenDefinitionReference() {
+		return TokenDefinitionReference.of(tokenDefinitionReference.getAddress(), tokenDefinitionReference.getUnique());
 	}
 
 	@Override
@@ -115,7 +115,7 @@ public final class TransferredTokensParticle extends Particle implements Account
 	public String toString() {
 		return String.format("%s[%s:%s:%s:%s:%s:%s]",
 			getClass().getSimpleName(),
-			String.valueOf(tokenTypeReference),
+			String.valueOf(tokenDefinitionReference),
 			String.valueOf(amount),
 			String.valueOf(granularity),
 			String.valueOf(address),

@@ -208,7 +208,7 @@ public final class Atom extends SerializableObject {
 	public Map<TokenDefinitionReference, Map<ECPublicKey, BigInteger>> tokenSummary() {
 		return this.consumableTokens()
 			.collect(Collectors.groupingBy(
-				tokens -> tokens.getFirst().getTokenTypeReference(),
+				tokens -> tokens.getFirst().getTokenDefinitionReference(),
 				Collectors.groupingBy(
 					tokens -> tokens.getFirst().getOwner(),
 					Collectors.reducing(BigInteger.ZERO, this::consumableToAmount, BigInteger::add)

@@ -45,8 +45,8 @@ import com.radixdlt.client.application.translate.tokenclasses.CreateTokenAction.
 import com.radixdlt.client.application.translate.tokenclasses.CreateTokenToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.tokenclasses.MintTokensAction;
 import com.radixdlt.client.application.translate.tokenclasses.MintTokensActionMapper;
-import com.radixdlt.client.application.translate.tokenclasses.TokenTypesReducer;
-import com.radixdlt.client.application.translate.tokenclasses.TokenTypesState;
+import com.radixdlt.client.application.translate.tokenclasses.TokenDefinitionsReducer;
+import com.radixdlt.client.application.translate.tokenclasses.TokenDefinitionsState;
 import com.radixdlt.client.application.translate.tokenclasses.TokenState;
 import com.radixdlt.client.application.translate.tokens.AtomToTokenTransfersMapper;
 import com.radixdlt.client.application.translate.tokens.TokenBalanceReducer;
@@ -300,7 +300,7 @@ public class RadixApplicationAPI {
 			.addStatefulParticlesMapper(new MintTokensActionMapper())
 			.addStatefulParticlesMapper(new BurnTokensActionMapper(RadixUniverse.getInstance()))
 			.addStatefulParticlesMapper(new TransferTokensToParticleGroupsMapper(RadixUniverse.getInstance()))
-			.addReducer(new TokenTypesReducer())
+			.addReducer(new TokenDefinitionsReducer())
 			.addReducer(new TokenBalanceReducer())
 			.addAtomMapper(new AtomToDecryptedMessageMapper())
 			.addAtomMapper(new AtomToTokenTransfersMapper(RadixUniverse.getInstance()))
@@ -436,8 +436,8 @@ public class RadixApplicationAPI {
 	 * @param address the address of the account to check
 	 * @return a hot observable of the latest state of token classes
 	 */
-	public Observable<TokenTypesState> getTokenClasses(RadixAddress address) {
-		return getState(TokenTypesState.class, address);
+	public Observable<TokenDefinitionsState> getTokenClasses(RadixAddress address) {
+		return getState(TokenDefinitionsState.class, address);
 	}
 
 	/**
@@ -446,7 +446,7 @@ public class RadixApplicationAPI {
 	 *
 	 * @return a hot observable of the latest state of token classes
 	 */
-	public Observable<TokenTypesState> getMyTokenClasses() {
+	public Observable<TokenDefinitionsState> getMyTokenClasses() {
 		return getTokenClasses(getMyAddress());
 	}
 

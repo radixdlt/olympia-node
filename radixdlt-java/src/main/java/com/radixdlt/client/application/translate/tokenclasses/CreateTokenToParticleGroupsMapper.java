@@ -68,7 +68,7 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 				tokenCreation.getGranularity(),
 				tokenCreation.getAddress(),
 				System.currentTimeMillis(),
-				token.getTokenTypeReference(),
+				token.getTokenDefinitionReference(),
 				System.currentTimeMillis() / 60000L + 60000
 		);
 		return Observable.just(ParticleGroup.of(SpunParticle.up(token), SpunParticle.up(minted)));

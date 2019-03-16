@@ -30,7 +30,7 @@ public final class MintedTokensParticle extends Particle implements Accountable,
 
 	@JsonProperty("tokenDefinitionReference")
 	@DsonOutput(Output.ALL)
-	private RadixResourceIdentifer tokenTypeReference;
+	private RadixResourceIdentifer tokenDefinitionReference;
 
 	@JsonProperty("granularity")
 	@DsonOutput(Output.ALL)
@@ -62,7 +62,7 @@ public final class MintedTokensParticle extends Particle implements Accountable,
 		}
 
 		this.address = address;
-		this.tokenTypeReference = new RadixResourceIdentifer(tokenDefinitionReference.getAddress(), "tokenclasses", tokenDefinitionReference.getSymbol());
+		this.tokenDefinitionReference = new RadixResourceIdentifer(tokenDefinitionReference.getAddress(), "tokens", tokenDefinitionReference.getSymbol());
 		this.granularity = granularity;
 		this.planck = planck;
 		this.nonce = nonce;
@@ -88,8 +88,8 @@ public final class MintedTokensParticle extends Particle implements Accountable,
 		return this.nonce;
 	}
 
-	public TokenDefinitionReference getTokenTypeReference() {
-		return TokenDefinitionReference.of(tokenTypeReference.getAddress(), tokenTypeReference.getUnique());
+	public TokenDefinitionReference getTokenDefinitionReference() {
+		return TokenDefinitionReference.of(tokenDefinitionReference.getAddress(), tokenDefinitionReference.getUnique());
 	}
 
 	@Override
@@ -114,7 +114,7 @@ public final class MintedTokensParticle extends Particle implements Accountable,
 	public String toString() {
 		return String.format("%s[%s:%s:%s:%s:%s:%s]",
 			getClass().getSimpleName(),
-			String.valueOf(tokenTypeReference),
+			String.valueOf(tokenDefinitionReference),
 			String.valueOf(amount),
 			String.valueOf(granularity),
 			String.valueOf(address),

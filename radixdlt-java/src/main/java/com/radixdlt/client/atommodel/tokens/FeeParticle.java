@@ -18,9 +18,9 @@ public class FeeParticle extends Particle implements ConsumableTokens {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private RadixAddress address;
 
-	@JsonProperty("tokenTypeReference")
+	@JsonProperty("tokenDefinitionReference")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private RadixResourceIdentifer tokenTypeReference;
+	private RadixResourceIdentifer tokenDefinitionReference;
 
 	@JsonProperty("granularity")
 	@DsonOutput(DsonOutput.Output.ALL)
@@ -47,7 +47,7 @@ public class FeeParticle extends Particle implements ConsumableTokens {
 
 	public FeeParticle(UInt256 amount, RadixAddress address, long nonce, TokenDefinitionReference tokenDefinitionReference, long planck) {
 		this.address = address;
-		this.tokenTypeReference = new RadixResourceIdentifer(tokenDefinitionReference.getAddress(), "tokenclasses", tokenDefinitionReference.getSymbol());
+		this.tokenDefinitionReference = new RadixResourceIdentifer(tokenDefinitionReference.getAddress(), "tokens", tokenDefinitionReference.getSymbol());
 		// FIXME RLAU-40 Check if the hard-coded granularity here is valid
 		this.granularity = UInt256.ONE;
 		this.planck = planck;
@@ -57,8 +57,8 @@ public class FeeParticle extends Particle implements ConsumableTokens {
 	}
 
 	@Override
-	public TokenDefinitionReference getTokenTypeReference() {
-		return TokenDefinitionReference.of(tokenTypeReference.getAddress(), tokenTypeReference.getUnique());
+	public TokenDefinitionReference getTokenDefinitionReference() {
+		return TokenDefinitionReference.of(tokenDefinitionReference.getAddress(), tokenDefinitionReference.getUnique());
 	}
 
 	@Override

@@ -162,16 +162,16 @@ public final class RadixUniverse {
 		this.powToken = config.getGenesis().stream()
 			.flatMap(atom -> atom.particles(Spin.UP))
 			.filter(p -> p instanceof TokenDefinitionParticle)
-			.filter(p -> ((TokenDefinitionParticle) p).getTokenTypeReference().getSymbol().equals("POW"))
-			.map(p -> ((TokenDefinitionParticle) p).getTokenTypeReference())
+			.filter(p -> ((TokenDefinitionParticle) p).getTokenDefinitionReference().getSymbol().equals("POW"))
+			.map(p -> ((TokenDefinitionParticle) p).getTokenDefinitionReference())
 			.findFirst()
 			.orElseThrow(() -> new IllegalStateException("No POW Token defined in universe"));
 
 		this.nativeToken = config.getGenesis().stream()
 			.flatMap(atom -> atom.particles(Spin.UP))
 			.filter(p -> p instanceof TokenDefinitionParticle)
-			.filter(p -> !((TokenDefinitionParticle) p).getTokenTypeReference().getSymbol().equals("POW"))
-			.map(p -> ((TokenDefinitionParticle) p).getTokenTypeReference())
+			.filter(p -> !((TokenDefinitionParticle) p).getTokenDefinitionReference().getSymbol().equals("POW"))
+			.map(p -> ((TokenDefinitionParticle) p).getTokenDefinitionReference())
 			.findFirst()
 			.orElseThrow(() -> new IllegalStateException("No Native Token defined in universe"));
 

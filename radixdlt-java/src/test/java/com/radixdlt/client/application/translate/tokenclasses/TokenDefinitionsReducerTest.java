@@ -17,12 +17,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class TokenTypesReducerTest {
+public class TokenDefinitionsReducerTest {
 	@Test
 	public void testTokenWithNoMint() {
 		TokenDefinitionParticle tokenDefinitionParticle = mock(TokenDefinitionParticle.class);
 		TokenDefinitionReference tokenRef = mock(TokenDefinitionReference.class);
-		when(tokenDefinitionParticle.getTokenTypeReference()).thenReturn(tokenRef);
+		when(tokenDefinitionParticle.getTokenDefinitionReference()).thenReturn(tokenRef);
 		when(tokenDefinitionParticle.getName()).thenReturn("Name");
 		when(tokenDefinitionParticle.getSymbol()).thenReturn("ISO");
 		when(tokenDefinitionParticle.getDescription()).thenReturn("Desc");
@@ -30,8 +30,8 @@ public class TokenTypesReducerTest {
 		when(tokenDefinitionParticle.getTokenPermissions()).thenReturn(Collections.singletonMap(MintedTokensParticle.class,
 			TokenPermission.SAME_ATOM_ONLY));
 
-		TokenTypesReducer tokenTypesReducer = new TokenTypesReducer();
-		TokenTypesState state = tokenTypesReducer.reduce(TokenTypesState.init(), TransitionedParticle.n2u(tokenDefinitionParticle));
+		TokenDefinitionsReducer tokenDefinitionsReducer = new TokenDefinitionsReducer();
+		TokenDefinitionsState state = tokenDefinitionsReducer.reduce(TokenDefinitionsState.init(), TransitionedParticle.n2u(tokenDefinitionParticle));
 		assertThat(state.getState().get(tokenRef)).isEqualTo(
 			new TokenState("Name", "ISO", "Desc", BigDecimal.ZERO,
 				TokenDefinitionReference.subunitsToUnits(1), TokenSupplyType.FIXED)
@@ -43,7 +43,7 @@ public class TokenTypesReducerTest {
 		final UInt256 hundred = UInt256.TEN.pow(2);
 		TokenDefinitionParticle tokenDefinitionParticle = mock(TokenDefinitionParticle.class);
 		TokenDefinitionReference tokenRef = mock(TokenDefinitionReference.class);
-		when(tokenDefinitionParticle.getTokenTypeReference()).thenReturn(tokenRef);
+		when(tokenDefinitionParticle.getTokenDefinitionReference()).thenReturn(tokenRef);
 		when(tokenDefinitionParticle.getName()).thenReturn("Name");
 		when(tokenDefinitionParticle.getSymbol()).thenReturn("ISO");
 		when(tokenDefinitionParticle.getDescription()).thenReturn("Desc");
@@ -53,11 +53,11 @@ public class TokenTypesReducerTest {
 
 		MintedTokensParticle minted = mock(MintedTokensParticle.class);
 		when(minted.getAmount()).thenReturn(hundred);
-		when(minted.getTokenTypeReference()).thenReturn(tokenRef);
+		when(minted.getTokenDefinitionReference()).thenReturn(tokenRef);
 
-		TokenTypesReducer tokenTypesReducer = new TokenTypesReducer();
-		TokenTypesState state1 = tokenTypesReducer.reduce(TokenTypesState.init(), TransitionedParticle.n2u(tokenDefinitionParticle));
-		TokenTypesState state2 = tokenTypesReducer.reduce(state1, TransitionedParticle.n2u(minted));
+		TokenDefinitionsReducer tokenDefinitionsReducer = new TokenDefinitionsReducer();
+		TokenDefinitionsState state1 = tokenDefinitionsReducer.reduce(TokenDefinitionsState.init(), TransitionedParticle.n2u(tokenDefinitionParticle));
+		TokenDefinitionsState state2 = tokenDefinitionsReducer.reduce(state1, TransitionedParticle.n2u(minted));
 		assertThat(state2.getState().get(tokenRef)).isEqualTo(
 			new TokenState(
 				"Name",

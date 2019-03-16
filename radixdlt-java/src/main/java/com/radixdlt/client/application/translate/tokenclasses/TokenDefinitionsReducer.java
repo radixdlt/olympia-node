@@ -21,20 +21,20 @@ import com.radixdlt.client.core.ledger.TransitionedParticle;
 /**
  * Reduces particles at an address into concrete Tokens and their states
  */
-public class TokenTypesReducer implements ParticleReducer<TokenTypesState> {
+public class TokenDefinitionsReducer implements ParticleReducer<TokenDefinitionsState> {
 
 	@Override
-	public Class<TokenTypesState> stateClass() {
-		return TokenTypesState.class;
+	public Class<TokenDefinitionsState> stateClass() {
+		return TokenDefinitionsState.class;
 	}
 
 	@Override
-	public TokenTypesState initialState() {
-		return TokenTypesState.init();
+	public TokenDefinitionsState initialState() {
+		return TokenDefinitionsState.init();
 	}
 
 	@Override
-	public TokenTypesState reduce(TokenTypesState state, TransitionedParticle t) {
+	public TokenDefinitionsState reduce(TokenDefinitionsState state, TransitionedParticle t) {
 		Particle p = t.getParticle();
 
 		if (p instanceof TokenDefinitionParticle) {
@@ -55,7 +55,7 @@ public class TokenTypesReducer implements ParticleReducer<TokenTypesState> {
 			}
 
 			return state.mergeTokenClass(
-				tokenDefinitionParticle.getTokenTypeReference(),
+				tokenDefinitionParticle.getTokenDefinitionReference(),
 				tokenDefinitionParticle.getName(),
 				tokenDefinitionParticle.getSymbol(),
 				tokenDefinitionParticle.getDescription(),
@@ -71,7 +71,7 @@ public class TokenTypesReducer implements ParticleReducer<TokenTypesState> {
 			);
 
 			TokenDefinitionReference tokenDefinitionReference = p instanceof MintedTokensParticle
-				? ((MintedTokensParticle) p).getTokenTypeReference() : ((BurnedTokensParticle) p).getTokenTypeReference();
+				? ((MintedTokensParticle) p).getTokenDefinitionReference() : ((BurnedTokensParticle) p).getTokenDefinitionReference();
 			return state.mergeSupplyChange(tokenDefinitionReference, change);
 		}
 

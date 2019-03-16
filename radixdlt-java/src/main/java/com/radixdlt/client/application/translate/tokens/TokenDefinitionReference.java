@@ -153,6 +153,6 @@ public final class TokenDefinitionReference {
 
 	@Override
 	public String toString() {
-		return String.format("%s/tokenclasses/@%s", this.getAddress().toString(), this.getSymbol());
+		return String.format("%s/tokens/@%s", this.getAddress().toString(), this.getSymbol());
 	}
 }
