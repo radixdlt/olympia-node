@@ -4,7 +4,7 @@ import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.translate.tokenclasses.CreateTokenAction.TokenSupplyType;
-import com.radixdlt.client.application.translate.tokens.TokenTypeReference;
+import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
 import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
@@ -47,12 +47,12 @@ public class DeleteAtomEvents {
 	public void executeDoubleSpend() {
 		RadixApplicationAPI api = RadixApplicationAPI.create(RadixIdentities.createNew());
 
-		TokenTypeReference tokenRef = TokenTypeReference.of(api.getMyAddress(), "JOSH");
+		TokenDefinitionReference tokenRef = TokenDefinitionReference.of(api.getMyAddress(), "JOSH");
 		TestObserver<BigDecimal> myBalanceObserver = TestObserver.create(Util.loggingObserver("My Balance"));
 		api.getMyBalance(tokenRef).subscribe(myBalanceObserver);
 
 		// Given an account with a josh token with one supply
-		Result result = api.createToken("Joshy Token", "JOSH", "Cool token", TokenTypeReference.unitsToSubunits(1), UInt256.ONE, TokenSupplyType.FIXED);
+		Result result = api.createToken("Joshy Token", "JOSH", "Cool token", TokenDefinitionReference.unitsToSubunits(1), UInt256.ONE, TokenSupplyType.FIXED);
 		result.toCompletable().blockingAwait();
 
 		// Wait until funds have been received

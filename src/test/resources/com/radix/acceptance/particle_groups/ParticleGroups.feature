@@ -21,7 +21,7 @@ Feature: Particle Groups
     When I submit a fixed-supply token-creation request with name "RLAU Test", symbol "RLAU", totalSupply 100 scaled and granularity 1 scaled
     And I can observe atom 1 being accepted
     And I submit two token transfer requests of 100 for "RLAU" in separate particle groups
-    Then I can observe atom 2 being rejected with a validation erro
+    Then I can observe atom 2 being rejected with a validation error
 
 #  No longer relevant: There can be multiple token types per ParticleGroup as of commit 075d8d3e98667e5d5a02a724c8634fa30190e990 on RadixCore.
 #  Scenario: 4: Different token types within particle group

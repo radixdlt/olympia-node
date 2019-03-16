@@ -1,7 +1,7 @@
 package com.radix.regression;
 
-import com.radixdlt.client.application.translate.tokenclasses.TokenTypesState;
-import com.radixdlt.client.application.translate.tokens.TokenTypeReference;
+import com.radixdlt.client.application.translate.tokenclasses.TokenDefinitionsState;
+import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -52,17 +52,17 @@ public class TokenClassesInAccountTest {
 		);
 	}
 
-	private Predicate<TokenTypesState> getPredicateCheck(String iso, UInt256 initialSupply) {
+	private Predicate<TokenDefinitionsState> getPredicateCheck(String iso, UInt256 initialSupply) {
 		TokenState expectedTokenState = new TokenState(
 			"Joshy Coin",
 			iso,
 			"Ze best coin!",
-			TokenTypeReference.subunitsToUnits(initialSupply),
-			TokenTypeReference.subunitsToUnits(1),
+			TokenDefinitionReference.subunitsToUnits(initialSupply),
+			TokenDefinitionReference.subunitsToUnits(1),
 			TokenState.TokenSupplyType.FIXED
 		);
 
-		return tokens -> tokens.getState().get(TokenTypeReference.of(api.getMyAddress(), iso)).equals(expectedTokenState);
+		return tokens -> tokens.getState().get(TokenDefinitionReference.of(api.getMyAddress(), iso)).equals(expectedTokenState);
 	}
 
 	@Test
@@ -74,10 +74,10 @@ public class TokenClassesInAccountTest {
 		};
 
 		// When the account is subscribed for the token state
-		Supplier<Observable<TokenTypesState>> subscription = () -> api.getTokenClasses(api.getMyAddress());
+		Supplier<Observable<TokenDefinitionsState>> subscription = () -> api.getTokenClasses(api.getMyAddress());
 
 		// Then the two tokens are published
-		List<Predicate<TokenTypesState>> thenChecks = Arrays.asList(
+		List<Predicate<TokenDefinitionsState>> thenChecks = Arrays.asList(
 			getPredicateCheck("JOSH", UInt256.from(10000)),
 			getPredicateCheck("JOSH2", UInt256.from(100))
 		);
@@ -87,7 +87,7 @@ public class TokenClassesInAccountTest {
 		givenCompleted.blockingAwait();
 
 		// When execution
-		TestObserver<TokenTypesState> testObserver = TestObserver.create(Util.loggingObserver("TokenClassListener"));
+		TestObserver<TokenDefinitionsState> testObserver = TestObserver.create(Util.loggingObserver("TokenClassListener"));
 		subscription.get()
 			.debounce(15, TimeUnit.SECONDS)
 			.firstOrError()
