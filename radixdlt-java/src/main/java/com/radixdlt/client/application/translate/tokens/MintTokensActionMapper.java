@@ -1,6 +1,5 @@
-package com.radixdlt.client.application.translate.tokenclasses;
+package com.radixdlt.client.application.translate.tokens;
 
-import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
 import java.util.Map;
 
 import com.radixdlt.client.atommodel.tokens.MintedTokensParticle;
@@ -10,7 +9,6 @@ import org.radix.utils.UInt256;
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.ApplicationState;
 import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
-import com.radixdlt.client.application.translate.tokens.UnknownTokenException;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;

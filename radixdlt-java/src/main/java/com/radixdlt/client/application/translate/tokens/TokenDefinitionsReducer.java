@@ -1,4 +1,4 @@
-package com.radixdlt.client.application.translate.tokenclasses;
+package com.radixdlt.client.application.translate.tokens;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -7,8 +7,7 @@ import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle;
 import org.radix.utils.UInt256s;
 
 import com.radixdlt.client.application.translate.ParticleReducer;
-import com.radixdlt.client.application.translate.tokenclasses.TokenState.TokenSupplyType;
-import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
+import com.radixdlt.client.application.translate.tokens.TokenState.TokenSupplyType;
 import com.radixdlt.client.atommodel.Fungible;
 import com.radixdlt.client.atommodel.tokens.BurnedTokensParticle;
 import com.radixdlt.client.atommodel.tokens.MintedTokensParticle;

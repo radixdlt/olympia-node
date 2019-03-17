@@ -1,8 +1,8 @@
-package com.radixdlt.client.application.translate.tokenclasses;
+package com.radixdlt.client.application.translate.tokens;
 
 import com.radixdlt.client.application.translate.ApplicationState;
-import com.radixdlt.client.application.translate.tokenclasses.TokenState.TokenSupplyType;
-import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
+import com.radixdlt.client.application.translate.tokens.TokenState.TokenSupplyType;
+
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.HashMap;

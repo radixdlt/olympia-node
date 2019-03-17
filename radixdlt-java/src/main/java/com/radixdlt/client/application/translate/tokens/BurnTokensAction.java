@@ -1,4 +1,4 @@
-package com.radixdlt.client.application.translate.tokenclasses;
+package com.radixdlt.client.application.translate.tokens;
 
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import java.util.Objects;

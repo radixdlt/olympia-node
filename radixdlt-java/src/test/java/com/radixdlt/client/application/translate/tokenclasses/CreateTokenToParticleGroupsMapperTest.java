@@ -2,13 +2,15 @@ package com.radixdlt.client.application.translate.tokenclasses;
 
 import java.util.List;
 
+import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
+import com.radixdlt.client.application.translate.tokens.CreateTokenToParticleGroupsMapper;
 import com.radixdlt.client.atommodel.tokens.MintedTokensParticle;
 import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import org.junit.Test;
 import org.radix.utils.UInt256;
 
-import com.radixdlt.client.application.translate.tokenclasses.CreateTokenAction.TokenSupplyType;
+import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 
