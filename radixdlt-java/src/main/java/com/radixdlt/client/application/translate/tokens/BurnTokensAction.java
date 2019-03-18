@@ -6,7 +6,6 @@ import java.util.Objects;
 import org.radix.utils.UInt256;
 
 import com.radixdlt.client.application.translate.Action;
-import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
 
 public class BurnTokensAction implements Action {
 	private final RadixAddress address;

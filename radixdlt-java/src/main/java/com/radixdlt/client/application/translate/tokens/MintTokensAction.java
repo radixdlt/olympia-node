@@ -5,7 +5,6 @@ import java.util.Objects;
 import org.radix.utils.UInt256;
 
 import com.radixdlt.client.application.translate.Action;
-import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
 
 public class MintTokensAction implements Action {
 	private final TokenDefinitionReference tokenDefinitionReference;

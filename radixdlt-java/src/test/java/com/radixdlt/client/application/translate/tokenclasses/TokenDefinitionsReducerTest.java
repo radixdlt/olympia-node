@@ -1,8 +1,5 @@
-package com.radixdlt.client.application.translate.tokenclasses;
+package com.radixdlt.client.application.translate.tokens;
 
-import com.radixdlt.client.application.translate.tokens.TokenDefinitionsReducer;
-import com.radixdlt.client.application.translate.tokens.TokenDefinitionsState;
-import com.radixdlt.client.application.translate.tokens.TokenState;
 import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.client.core.ledger.TransitionedParticle;
 import java.math.BigDecimal;
@@ -13,7 +10,6 @@ import org.junit.Test;
 import org.radix.utils.UInt256;
 
 import com.radixdlt.client.application.translate.tokens.TokenState.TokenSupplyType;
-import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
 import com.radixdlt.client.atommodel.tokens.TokenPermission;
 
 import static org.assertj.core.api.Assertions.assertThat;

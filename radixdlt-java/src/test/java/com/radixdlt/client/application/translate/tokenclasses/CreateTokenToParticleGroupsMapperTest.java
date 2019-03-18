@@ -1,9 +1,7 @@
-package com.radixdlt.client.application.translate.tokenclasses;
+package com.radixdlt.client.application.translate.tokens;
 
 import java.util.List;
 
-import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
-import com.radixdlt.client.application.translate.tokens.CreateTokenToParticleGroupsMapper;
 import com.radixdlt.client.atommodel.tokens.MintedTokensParticle;
 import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.client.core.atoms.ParticleGroup;
