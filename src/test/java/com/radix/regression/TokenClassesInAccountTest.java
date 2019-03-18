@@ -1,6 +1,6 @@
 package com.radix.regression;
 
-import com.radixdlt.client.application.translate.tokenclasses.TokenDefinitionsState;
+import com.radixdlt.client.application.translate.tokens.TokenDefinitionsState;
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
 import java.util.Arrays;
 import java.util.List;
@@ -14,9 +14,9 @@ import org.radix.utils.UInt256;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.translate.Action;
-import com.radixdlt.client.application.translate.tokenclasses.CreateTokenAction;
-import com.radixdlt.client.application.translate.tokenclasses.CreateTokenAction.TokenSupplyType;
-import com.radixdlt.client.application.translate.tokenclasses.TokenState;
+import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
+import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
+import com.radixdlt.client.application.translate.tokens.TokenState;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
 

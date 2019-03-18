@@ -1,7 +1,7 @@
 package com.radix.acceptance.burn_multi_issuance_tokens;
 
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.client.application.translate.tokenclasses.TokenDefinitionsState;
+import com.radixdlt.client.application.translate.tokens.TokenDefinitionsState;
 import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
@@ -21,9 +21,9 @@ import com.radix.acceptance.SpecificProperties;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
-import com.radixdlt.client.application.translate.tokenclasses.BurnTokensAction;
-import com.radixdlt.client.application.translate.tokenclasses.CreateTokenAction;
-import com.radixdlt.client.application.translate.tokenclasses.CreateTokenAction.TokenSupplyType;
+import com.radixdlt.client.application.translate.tokens.BurnTokensAction;
+import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
+import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
 import com.radixdlt.client.application.translate.tokens.InsufficientFundsException;
 import com.radixdlt.client.application.translate.tokens.UnknownTokenException;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
