@@ -15,7 +15,7 @@ public class TokenTransferTest {
 	public void testNoAttachment() {
 		RadixAddress from = mock(RadixAddress.class);
 		RadixAddress to = mock(RadixAddress.class);
-		TokenTypeReference token = mock(TokenTypeReference.class);
+		TokenDefinitionReference token = mock(TokenDefinitionReference.class);
 		TokenTransfer tokenTransfer = new TokenTransfer(from, to, token, BigDecimal.ONE, null, 1L);
 		assertThat(tokenTransfer.toString()).isNotNull();
 		assertThat(tokenTransfer.getAttachment()).isNotPresent();
@@ -26,7 +26,7 @@ public class TokenTransferTest {
 	public void testWithAttachment() {
 		RadixAddress from = mock(RadixAddress.class);
 		RadixAddress to = mock(RadixAddress.class);
-		TokenTypeReference token = mock(TokenTypeReference.class);
+		TokenDefinitionReference token = mock(TokenDefinitionReference.class);
 		UnencryptedData attachment = mock(UnencryptedData.class);
 		when(attachment.getData()).thenReturn("Hello".getBytes());
 		TokenTransfer tokenTransfer = new TokenTransfer(from, to, token, BigDecimal.ONE, attachment, 1L);

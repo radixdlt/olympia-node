@@ -1,12 +1,12 @@
-package com.radixdlt.client.application.translate.tokenclasses;
+package com.radixdlt.client.application.translate.tokens;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.StatelessActionToParticleGroupsMapper;
-import com.radixdlt.client.application.translate.tokenclasses.CreateTokenAction.TokenSupplyType;
+import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
 import com.radixdlt.client.atommodel.tokens.BurnedTokensParticle;
 import com.radixdlt.client.atommodel.tokens.MintedTokensParticle;
-import com.radixdlt.client.atommodel.tokens.TokenParticle;
+import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.client.atommodel.tokens.TokenPermission;
 import com.radixdlt.client.atommodel.tokens.TransferredTokensParticle;
 import com.radixdlt.client.core.atoms.ParticleGroup;
@@ -44,7 +44,7 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 			throw new IllegalStateException("Unknown supply type: " + tokenCreation.getTokenSupplyType());
 		}
 
-		TokenParticle token = new TokenParticle(
+		TokenDefinitionParticle token = new TokenDefinitionParticle(
 				tokenCreation.getAddress(),
 			tokenCreation.getName(),
 				tokenCreation.getIso(),
@@ -68,7 +68,7 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 				tokenCreation.getGranularity(),
 				tokenCreation.getAddress(),
 				System.currentTimeMillis(),
-				token.getTokenTypeReference(),
+				token.getTokenDefinitionReference(),
 				System.currentTimeMillis() / 60000L + 60000
 		);
 		return Observable.just(ParticleGroup.of(SpunParticle.up(token), SpunParticle.up(minted)));

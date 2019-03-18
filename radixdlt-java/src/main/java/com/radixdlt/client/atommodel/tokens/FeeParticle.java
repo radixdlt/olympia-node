@@ -1,6 +1,6 @@
 package com.radixdlt.client.atommodel.tokens;
 
-import com.radixdlt.client.application.translate.tokens.TokenTypeReference;
+import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.RadixResourceIdentifer;
 import com.radixdlt.client.core.crypto.ECPublicKey;
@@ -18,9 +18,9 @@ public class FeeParticle extends Particle implements ConsumableTokens {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private RadixAddress address;
 
-	@JsonProperty("tokenTypeReference")
+	@JsonProperty("tokenDefinitionReference")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private RadixResourceIdentifer tokenTypeReference;
+	private RadixResourceIdentifer tokenDefinitionReference;
 
 	@JsonProperty("granularity")
 	@DsonOutput(DsonOutput.Output.ALL)
@@ -45,9 +45,10 @@ public class FeeParticle extends Particle implements ConsumableTokens {
 	private FeeParticle() {
 	}
 
-	public FeeParticle(UInt256 amount, RadixAddress address, long nonce, TokenTypeReference tokenTypeReference, long planck) {
+	public FeeParticle(UInt256 amount, RadixAddress address, long nonce, TokenDefinitionReference tokenDefinitionReference, long planck) {
 		this.address = address;
-		this.tokenTypeReference = new RadixResourceIdentifer(tokenTypeReference.getAddress(), "tokenclasses", tokenTypeReference.getSymbol());
+		this.tokenDefinitionReference = new RadixResourceIdentifer(
+			tokenDefinitionReference.getAddress(), "tokens", tokenDefinitionReference.getSymbol());
 		// FIXME RLAU-40 Check if the hard-coded granularity here is valid
 		this.granularity = UInt256.ONE;
 		this.planck = planck;
@@ -57,8 +58,8 @@ public class FeeParticle extends Particle implements ConsumableTokens {
 	}
 
 	@Override
-	public TokenTypeReference getTokenTypeReference() {
-		return TokenTypeReference.of(tokenTypeReference.getAddress(), tokenTypeReference.getUnique());
+	public TokenDefinitionReference getTokenDefinitionReference() {
+		return TokenDefinitionReference.of(tokenDefinitionReference.getAddress(), tokenDefinitionReference.getUnique());
 	}
 
 	@Override

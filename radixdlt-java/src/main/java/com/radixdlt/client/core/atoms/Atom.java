@@ -2,7 +2,7 @@ package com.radixdlt.client.core.atoms;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.client.application.translate.tokens.TokenTypeReference;
+import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
 import com.radixdlt.client.atommodel.message.MessageParticle;
 import com.radixdlt.client.atommodel.tokens.ConsumableTokens;
 import com.radixdlt.client.atommodel.tokens.ConsumingTokens;
@@ -205,10 +205,10 @@ public final class Atom extends SerializableObject {
 			.collect(Collectors.toList());
 	}
 
-	public Map<TokenTypeReference, Map<ECPublicKey, BigInteger>> tokenSummary() {
+	public Map<TokenDefinitionReference, Map<ECPublicKey, BigInteger>> tokenSummary() {
 		return this.consumableTokens()
 			.collect(Collectors.groupingBy(
-				tokens -> tokens.getFirst().getTokenTypeReference(),
+				tokens -> tokens.getFirst().getTokenDefinitionReference(),
 				Collectors.groupingBy(
 					tokens -> tokens.getFirst().getOwner(),
 					Collectors.reducing(BigInteger.ZERO, this::consumableToAmount, BigInteger::add)

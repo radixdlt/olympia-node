@@ -1,15 +1,15 @@
-package com.radixdlt.client.application.translate.tokenclasses;
+package com.radixdlt.client.application.translate.tokens;
 
 import java.util.List;
 
 import com.radixdlt.client.atommodel.tokens.MintedTokensParticle;
+import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import org.junit.Test;
 import org.radix.utils.UInt256;
 
-import com.radixdlt.client.application.translate.tokenclasses.CreateTokenAction.TokenSupplyType;
+import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.atommodel.tokens.TokenParticle;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 
 import static org.mockito.Mockito.mock;
@@ -33,7 +33,9 @@ public class CreateTokenToParticleGroupsMapperTest {
 		TestObserver<List<ParticleGroup>> testObserver = TestObserver.create();
 		createTokenToParticlesMapper.mapToParticleGroups(tokenCreation).toList().subscribe(testObserver);
 		testObserver.assertValue(particleGroups ->
-			particleGroups.stream().flatMap(ParticleGroup::spunParticles).anyMatch(s -> s.getParticle() instanceof TokenParticle)
+			particleGroups.stream()
+				.flatMap(ParticleGroup::spunParticles)
+				.anyMatch(s -> s.getParticle() instanceof TokenDefinitionParticle)
 				&& particleGroups.stream().flatMap(ParticleGroup::spunParticles)
 					.anyMatch(s -> s.getParticle() instanceof MintedTokensParticle)
 				&& particleGroups.stream().flatMap(ParticleGroup::spunParticles).count() == 2

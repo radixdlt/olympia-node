@@ -5,18 +5,18 @@ package com.radixdlt.client.application.translate.tokens;
  */
 public class UnknownTokenException extends RuntimeException {
 	private static final long serialVersionUID = -1684509326376059175L;
-	private final TokenTypeReference tokenTypeReference;
+	private final TokenDefinitionReference tokenDefinitionReference;
 
     /**
      * Constructs a new unknown token exception with the specified token class reference.
      *
-     * @param tokenTypeReference the token class that could not be found.
+     * @param tokenDefinitionReference the token class that could not be found.
      *     Note that {@link #getMessage()} will include the token class name
      *     in the exception detail message.
      */
-	public UnknownTokenException(TokenTypeReference tokenTypeReference) {
-		super("Unknown token: " + tokenTypeReference);
-		this.tokenTypeReference = tokenTypeReference;
+	public UnknownTokenException(TokenDefinitionReference tokenDefinitionReference) {
+		super("Unknown token: " + tokenDefinitionReference);
+		this.tokenDefinitionReference = tokenDefinitionReference;
 	}
 
 	@Override
@@ -27,7 +27,7 @@ public class UnknownTokenException extends RuntimeException {
 
 		if (obj instanceof UnknownTokenException) {
 			UnknownTokenException o = (UnknownTokenException) obj;
-			return this.tokenTypeReference.equals(o.tokenTypeReference);
+			return this.tokenDefinitionReference.equals(o.tokenDefinitionReference);
 		}
 
 		return false;
@@ -35,6 +35,6 @@ public class UnknownTokenException extends RuntimeException {
 
 	@Override
 	public int hashCode() {
-		return this.tokenTypeReference.hashCode();
+		return this.tokenDefinitionReference.hashCode();
 	}
 }

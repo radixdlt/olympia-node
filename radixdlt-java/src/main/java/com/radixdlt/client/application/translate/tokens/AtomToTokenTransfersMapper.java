@@ -82,7 +82,7 @@ public class AtomToTokenTransfersMapper implements AtomToExecutedActionsMapper<T
 						.filter(p -> !"encryptor".equals(p.getMetaData("application")))
 						.findFirst();
 
-				final BigDecimal amount = TokenTypeReference.subunitsToUnits(summary.get(0).getValue().abs());
+				final BigDecimal amount = TokenDefinitionReference.subunitsToUnits(summary.get(0).getValue().abs());
 
 				if (bytesParticle.isPresent()) {
 					Map<String, Object> metaData = new HashMap<>();

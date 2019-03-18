@@ -1,7 +1,7 @@
 package com.radixdlt.client.atommodel.tokens;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.client.application.translate.tokens.TokenTypeReference;
+import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
 import com.radixdlt.client.atommodel.Accountable;
 import com.radixdlt.client.atommodel.Fungible;
 import com.radixdlt.client.atommodel.Ownable;
@@ -28,9 +28,9 @@ public final class BurnedTokensParticle extends Particle implements Accountable,
 	@DsonOutput(Output.ALL)
 	private RadixAddress address;
 
-	@JsonProperty("tokenTypeReference")
+	@JsonProperty("tokenDefinitionReference")
 	@DsonOutput(Output.ALL)
-	private RadixResourceIdentifer tokenTypeReference;
+	private RadixResourceIdentifer tokenDefinitionReference;
 
 	@JsonProperty("granularity")
 	@DsonOutput(Output.ALL)
@@ -52,7 +52,7 @@ public final class BurnedTokensParticle extends Particle implements Accountable,
 	}
 
 	public BurnedTokensParticle(UInt256 amount, UInt256 granularity, RadixAddress address, long nonce,
-	                            TokenTypeReference tokenTypeReference, long planck) {
+	                            TokenDefinitionReference tokenDefinitionReference, long planck) {
 		super();
 
 		// Redundant null check added for completeness
@@ -62,7 +62,8 @@ public final class BurnedTokensParticle extends Particle implements Accountable,
 		}
 
 		this.address = address;
-		this.tokenTypeReference = new RadixResourceIdentifer(tokenTypeReference.getAddress(), "tokenclasses", tokenTypeReference.getSymbol());
+		this.tokenDefinitionReference = new RadixResourceIdentifer(
+			tokenDefinitionReference.getAddress(), "tokens", tokenDefinitionReference.getSymbol());
 		this.granularity = granularity;
 		this.planck = planck;
 		this.nonce = nonce;
@@ -89,8 +90,8 @@ public final class BurnedTokensParticle extends Particle implements Accountable,
 	}
 
 	@Override
-	public TokenTypeReference getTokenTypeReference() {
-		return TokenTypeReference.of(tokenTypeReference.getAddress(), tokenTypeReference.getUnique());
+	public TokenDefinitionReference getTokenDefinitionReference() {
+		return TokenDefinitionReference.of(tokenDefinitionReference.getAddress(), tokenDefinitionReference.getUnique());
 	}
 
 	@Override
@@ -115,7 +116,7 @@ public final class BurnedTokensParticle extends Particle implements Accountable,
 	public String toString() {
 		return String.format("%s[%s:%s:%s:%s:%s:%s]",
 			getClass().getSimpleName(),
-			String.valueOf(tokenTypeReference),
+			String.valueOf(tokenDefinitionReference),
 			String.valueOf(amount),
 			String.valueOf(granularity),
 			String.valueOf(address),

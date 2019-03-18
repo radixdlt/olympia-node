@@ -8,7 +8,7 @@ import java.util.Optional;
 public class TokenTransfer {
 	private final RadixAddress from;
 	private final RadixAddress to;
-	private final TokenTypeReference tokenClass;
+	private final TokenDefinitionReference tokenDefinition;
 	private final BigDecimal amount;
 	private final UnencryptedData attachment;
 	private final long timestamp;
@@ -16,14 +16,14 @@ public class TokenTransfer {
 	public TokenTransfer(
 		RadixAddress from,
 		RadixAddress to,
-		TokenTypeReference tokenClass,
+		TokenDefinitionReference tokenDefinition,
 		BigDecimal amount,
 		UnencryptedData attachment,
 		long timestamp
 	) {
 		this.from = from;
 		this.to = to;
-		this.tokenClass = tokenClass;
+		this.tokenDefinition = tokenDefinition;
 		this.amount = amount;
 		this.attachment = attachment;
 		this.timestamp = timestamp;
@@ -41,8 +41,8 @@ public class TokenTransfer {
 		return to;
 	}
 
-	public TokenTypeReference getTokenClass() {
-		return tokenClass;
+	public TokenDefinitionReference getTokenClass() {
+		return tokenDefinition;
 	}
 
 	public Optional<UnencryptedData> getAttachment() {
