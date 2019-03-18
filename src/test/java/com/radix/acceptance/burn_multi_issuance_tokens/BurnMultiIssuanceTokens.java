@@ -1,9 +1,9 @@
 package com.radix.acceptance.burn_multi_issuance_tokens;
 
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.client.application.translate.tokenclasses.TokenTypesState;
+import com.radixdlt.client.application.translate.tokens.TokenDefinitionsState;
 import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
-import com.radixdlt.client.application.translate.tokens.TokenTypeReference;
+import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomReceivedAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
@@ -21,9 +21,9 @@ import com.radix.acceptance.SpecificProperties;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
-import com.radixdlt.client.application.translate.tokenclasses.BurnTokensAction;
-import com.radixdlt.client.application.translate.tokenclasses.CreateTokenAction;
-import com.radixdlt.client.application.translate.tokenclasses.CreateTokenAction.TokenSupplyType;
+import com.radixdlt.client.application.translate.tokens.BurnTokensAction;
+import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
+import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
 import com.radixdlt.client.application.translate.tokens.InsufficientFundsException;
 import com.radixdlt.client.application.translate.tokens.UnknownTokenException;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
@@ -105,8 +105,8 @@ public class BurnMultiIssuanceTokens {
 	public void a_library_client_who_owns_an_account_where_token_does_not_exist(String symbol) throws Throwable {
 		setupApi();
 		// No tokens exist for this account, because it is a freshly created account
-		TokenTypeReference tokenClass = TokenTypeReference.of(api.getMyAddress(), symbol);
-		TokenTypesState tokenClassesState = api.getMyTokenClasses()
+		TokenDefinitionReference tokenClass = TokenDefinitionReference.of(api.getMyAddress(), symbol);
+		TokenDefinitionsState tokenClassesState = api.getMyTokenClasses()
 			.firstOrError()
 			.blockingGet();
 		assertFalse(tokenClassesState.getState().containsKey(tokenClass));
@@ -138,13 +138,13 @@ public class BurnMultiIssuanceTokens {
 	@When("^the client waits to be notified that \"([^\"]*)\" token has a total supply of (\\d+)$")
 	public void theClientWaitsToBeNotifiedThatTokenHasATotalSupplyOf(String symbol, int supply) throws Throwable {
 		awaitAtomStatus(STORED);
-		TokenTypeReference tokenClass = TokenTypeReference.of(api.getMyAddress(), symbol);
+		TokenDefinitionReference tokenClass = TokenDefinitionReference.of(api.getMyAddress(), symbol);
 		// Ensure balance is up-to-date.
 		BigDecimal tokenBalanceDecimal = api.getBalance(api.getMyAddress(), tokenClass)
 			.firstOrError()
 			.blockingGet();
-		UInt256 tokenBalance = TokenTypeReference.unitsToSubunits(tokenBalanceDecimal);
-		UInt256 requiredBalance = TokenTypeReference.unitsToSubunits(supply);
+		UInt256 tokenBalance = TokenDefinitionReference.unitsToSubunits(tokenBalanceDecimal);
+		UInt256 requiredBalance = TokenDefinitionReference.unitsToSubunits(supply);
 		assertEquals(requiredBalance, tokenBalance);
 	}
 
@@ -157,13 +157,13 @@ public class BurnMultiIssuanceTokens {
 	public void theClientShouldBeNotifiedThatTokenHasATotalSupplyOf(String symbol, int supply) throws Throwable {
 		awaitAtomStatus(STORED);
 		// Must be a better way than this.
-		TokenTypeReference tokenClass = TokenTypeReference.of(api.getMyAddress(), symbol);
+		TokenDefinitionReference tokenClass = TokenDefinitionReference.of(api.getMyAddress(), symbol);
 		// Ensure balance is up-to-date.
 		BigDecimal tokenBalanceDecimal = api.getBalance(api.getMyAddress(), tokenClass)
 			.firstOrError()
 			.blockingGet();
-		UInt256 tokenBalance = TokenTypeReference.unitsToSubunits(tokenBalanceDecimal);
-		UInt256 requiredBalance = TokenTypeReference.unitsToSubunits(supply);
+		UInt256 tokenBalance = TokenDefinitionReference.unitsToSubunits(tokenBalanceDecimal);
+		UInt256 requiredBalance = TokenDefinitionReference.unitsToSubunits(supply);
 		assertEquals(requiredBalance, tokenBalance);
 	}
 
@@ -218,7 +218,7 @@ public class BurnMultiIssuanceTokens {
 	}
 
 	private void transferTokens(BigDecimal amount, String symbol, RadixAddress address) {
-		TokenTypeReference tokenClass = TokenTypeReference.of(address, symbol);
+		TokenDefinitionReference tokenClass = TokenDefinitionReference.of(address, symbol);
 		TransferTokensAction tta = TransferTokensAction.create(address, address, amount, tokenClass);
 		TestObserver<SubmitAtomAction> observer = new TestObserver<>();
 		api.execute(tta)
@@ -229,7 +229,7 @@ public class BurnMultiIssuanceTokens {
 	}
 
 	private void burnTokens(UInt256 amount, String symbol, RadixAddress tokenAddress, RadixAddress address) {
-		TokenTypeReference tokenClass = TokenTypeReference.of(tokenAddress, symbol);
+		TokenDefinitionReference tokenClass = TokenDefinitionReference.of(tokenAddress, symbol);
 		BurnTokensAction mta = new BurnTokensAction(address, tokenClass, amount);
 		TestObserver<SubmitAtomAction> observer = new TestObserver<>();
 		api.execute(mta)
@@ -295,6 +295,6 @@ public class BurnMultiIssuanceTokens {
 	}
 
 	private static UInt256 scaledToUnscaled(int amount) {
-		return TokenTypeReference.unitsToSubunits(amount);
+		return TokenDefinitionReference.unitsToSubunits(amount);
 	}
 }

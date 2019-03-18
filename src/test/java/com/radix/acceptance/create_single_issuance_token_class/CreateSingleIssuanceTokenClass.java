@@ -1,6 +1,6 @@
 package com.radix.acceptance.create_single_issuance_token_class;
 
-import com.radixdlt.client.application.translate.tokens.TokenTypeReference;
+import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomReceivedAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
@@ -19,8 +19,8 @@ import com.radix.acceptance.SpecificProperties;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
-import com.radixdlt.client.application.translate.tokenclasses.CreateTokenAction;
-import com.radixdlt.client.application.translate.tokens.TokenTypeReference;
+import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
+import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
@@ -120,7 +120,7 @@ public class CreateSingleIssuanceTokenClass {
 
 	@When("^I submit a token transfer request of (\\d+) scaled for \"([^\"]*)\" to an arbitrary account$")
 	public void i_submit_a_token_transfer_request_of_for_to_an_arbitrary_account(int count, String symbol) {
-		TokenTypeReference tokenClass = TokenTypeReference.of(api.getMyAddress(), symbol);
+		TokenDefinitionReference tokenClass = TokenDefinitionReference.of(api.getMyAddress(), symbol);
 		RadixAddress arbitrary = RadixUniverse.getInstance().getAddressFrom(RadixIdentities.createNew().getPublicKey());
 		// Ensure balance is up-to-date.
 		api.getBalance(api.getMyAddress(), tokenClass)
@@ -176,13 +176,13 @@ public class CreateSingleIssuanceTokenClass {
 
 	@Then("^I can observe token \"([^\"]*)\" balance equal to (\\d+) scaled$")
 	public void i_can_observe_token_balance_equal_to_scaled(String symbol, int balance) {
-		TokenTypeReference tokenClass = TokenTypeReference.of(api.getMyAddress(), symbol);
+		TokenDefinitionReference tokenClass = TokenDefinitionReference.of(api.getMyAddress(), symbol);
 		// Ensure balance is up-to-date.
 		BigDecimal tokenBalanceDecimal = api.getBalance(api.getMyAddress(), tokenClass)
 			.firstOrError()
 			.blockingGet();
-		UInt256 tokenBalance = TokenTypeReference.unitsToSubunits(tokenBalanceDecimal);
-		UInt256 requiredBalance = TokenTypeReference.unitsToSubunits(balance);
+		UInt256 tokenBalance = TokenDefinitionReference.unitsToSubunits(tokenBalanceDecimal);
+		UInt256 requiredBalance = TokenDefinitionReference.unitsToSubunits(balance);
 		assertEquals(requiredBalance, tokenBalance);
 	}
 
@@ -224,6 +224,6 @@ public class CreateSingleIssuanceTokenClass {
 	}
 
 	private static String scaledToUnscaled(int scaled) {
-		return TokenTypeReference.unitsToSubunits(scaled).toString();
+		return TokenDefinitionReference.unitsToSubunits(scaled).toString();
 	}
 }
