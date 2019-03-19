@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -59,16 +60,36 @@ public class DeleteAtomEvents {
 		myBalanceObserver.awaitCount(2);
 
 		// Retrieve two nodes in the network
-		Observable<RadixNode> nodes = api.getNetworkState()
+		Single<List<RadixNode>> twoNodes = api.getNetworkState()
 			.filter(network -> network.getNodes().entrySet().stream()
 				.filter(e -> e.getValue().getData().isPresent() && e.getValue().getUniverseConfig().isPresent())
 				.count() >= 2)
 			.firstOrError()
-			.flatMapObservable(state ->
-				Observable.fromIterable(state.getNodes().entrySet())
+			.map(state ->
+				state.getNodes().entrySet().stream()
 					.filter(e -> e.getValue().getUniverseConfig().isPresent())
-					.map(Entry::getKey))
-			.take(2);
+					.map(Entry::getKey)
+					.collect(Collectors.toList())
+			);
+
+		// If two nodes don't exist in the network just use one node
+		Single<List<RadixNode>> oneNode = api.getNetworkState()
+			.filter(network -> network.getNodes().entrySet().stream()
+				.filter(e -> e.getValue().getData().isPresent() && e.getValue().getUniverseConfig().isPresent())
+				.count() == 1)
+			.debounce(3, TimeUnit.SECONDS)
+			.firstOrError()
+			.map(state ->
+				state.getNodes().entrySet().stream()
+					.filter(e -> e.getValue().getUniverseConfig().isPresent())
+					.map(Entry::getKey)
+					.collect(Collectors.toList())
+			);
+
+		Observable<RadixNode> nodes = Observable.merge(twoNodes.toObservable(), oneNode.toObservable())
+			.firstOrError()
+			.flatMapObservable(l -> l.size() == 1 ? Observable.just(l.get(0), l.get(0)) : Observable.fromIterable(l));
+
 
 		// When the account executes two transfers via two different nodes at the same time
 		RadixApplicationAPI api2 = RadixApplicationAPI.create(RadixIdentities.createNew());
