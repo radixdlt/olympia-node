@@ -12,6 +12,8 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.radixdlt.client.application.translate.tokens.MintAndTransferTokensActionMapper;
+import org.radix.utils.UInt256;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -298,6 +300,7 @@ public class RadixApplicationAPI {
 			.addStatelessParticlesMapper(new PutUniqueIdToParticleGroupsMapper())
 			.addStatelessParticlesMapper(new AtomicToParticleGroupsMapper())
 			.addStatefulParticlesMapper(new MintTokensActionMapper())
+			.addStatefulParticlesMapper(new MintAndTransferTokensActionMapper())
 			.addStatefulParticlesMapper(new BurnTokensActionMapper(RadixUniverse.getInstance()))
 			.addStatefulParticlesMapper(new TransferTokensToParticleGroupsMapper(RadixUniverse.getInstance()))
 			.addReducer(new TokenDefinitionsReducer())

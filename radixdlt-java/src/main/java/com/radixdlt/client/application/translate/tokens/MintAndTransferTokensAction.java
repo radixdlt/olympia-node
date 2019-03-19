@@ -1,0 +1,48 @@
+package com.radixdlt.client.application.translate.tokens;
+
+import com.google.common.collect.ImmutableMap;
+import com.radixdlt.client.application.translate.Action;
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import org.radix.utils.UInt256;
+
+import java.math.BigDecimal;
+import java.util.Map;
+import java.util.Objects;
+
+/**
+ * An mint and transfer of a certain token as an atomic transaction.
+ * Note: This is a semi-temporary action until this library supports atomic transactions, see RLAU-1050.
+ */
+public final class MintAndTransferTokensAction implements Action {
+	private final TokenDefinitionReference tokenDefinitionReference;
+	private final BigDecimal amount;
+	private final RadixAddress to;
+	private final Map<String, Object> metaData;
+
+	public MintAndTransferTokensAction(TokenDefinitionReference tokenDefinitionReference, BigDecimal amount, RadixAddress to, Map<String, Object> metaData) {
+		if (amount.stripTrailingZeros().scale() > TokenDefinitionReference.getTokenScale()) {
+			throw new IllegalArgumentException("Amount must scale by " + TokenDefinitionReference.getTokenScale());
+		}
+
+		this.tokenDefinitionReference = Objects.requireNonNull(tokenDefinitionReference);
+		this.amount = Objects.requireNonNull(amount);
+		this.to = Objects.requireNonNull(to);
+		this.metaData = ImmutableMap.copyOf(metaData);
+	}
+
+	public TokenDefinitionReference getTokenDefinitionReference() {
+		return this.tokenDefinitionReference;
+	}
+
+	public RadixAddress getTo() {
+		return to;
+	}
+
+	public BigDecimal getAmount() {
+		return this.amount;
+	}
+
+	public Map<String, Object> getMetaData() {
+		return metaData;
+	}
+}
