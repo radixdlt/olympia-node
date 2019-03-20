@@ -7,12 +7,20 @@ import com.radix.acceptance.SpecificProperties;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
+import com.radixdlt.client.application.translate.tokens.AtomToTokenTransfersMapper;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
+import com.radixdlt.client.application.translate.tokens.CreateTokenToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.tokens.MintAndTransferTokensAction;
+import com.radixdlt.client.application.translate.tokens.MintAndTransferTokensActionMapper;
+import com.radixdlt.client.application.translate.tokens.TokenBalanceReducer;
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
+import com.radixdlt.client.application.translate.tokens.TokenDefinitionsReducer;
+import com.radixdlt.client.application.translate.tokens.TransferTokensToParticleGroupsMapper;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
+import com.radixdlt.client.core.atoms.ParticleGroup;
+import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.network.actions.SubmitAtomReceivedAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomResultAction;
@@ -29,6 +37,7 @@ import org.radix.utils.UInt256;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType.COLLISION;
@@ -79,12 +88,23 @@ public class AtomicTransactionsWithDependence {
 		this.observers.clear();
 	}
 
-	@When("^I submit a particle group spending a consumable that was created in a group with a lower index$")
-	public void iSubmitAParticleGroupSpendingAConsumableThatWasCreatedInAGroupWithALowerIndex() {
+	private void mintAndTransferTokensWith(MintAndTransferTokensActionMapper actionMapper) {
+		RadixApplicationAPI api = new RadixApplicationAPI.RadixApplicationAPIBuilder()
+			.defaultFeeMapper()
+			.addStatelessParticlesMapper(new CreateTokenToParticleGroupsMapper())
+			.addStatefulParticlesMapper(actionMapper)
+			.addStatefulParticlesMapper(new TransferTokensToParticleGroupsMapper(RadixUniverse.getInstance()))
+			.addReducer(new TokenDefinitionsReducer())
+			.addReducer(new TokenBalanceReducer())
+			.addAtomMapper(new AtomToTokenTransfersMapper(RadixUniverse.getInstance()))
+			.identity(RadixIdentities.createNew())
+			.build();
+
 		this.properties.put(SYMBOL, "TEST0");
-		createToken(CreateTokenAction.TokenSupplyType.MUTABLE);
+		createToken(CreateTokenAction.TokenSupplyType.MUTABLE, api);
 		TokenDefinitionReference tokenRef = TokenDefinitionReference.of(api.getMyAddress(), "TEST0");
 		i_can_observe_atom_being_accepted(1);
+		this.observers.clear();
 
 		RadixIdentity toIdentity = RadixIdentities.createNew();
 		RadixAddress toAddress = RadixUniverse.getInstance().getAddressFrom(toIdentity.getPublicKey());
@@ -95,100 +115,24 @@ public class AtomicTransactionsWithDependence {
 		observers.add(observer);
 	}
 
+	@When("^I submit a particle group spending a consumable that was created in a group with a lower index$")
+	public void iSubmitAParticleGroupSpendingAConsumableThatWasCreatedInAGroupWithALowerIndex() {
+		mintAndTransferTokensWith(new MintAndTransferTokensActionMapper()); // correct behaviour is the default behaviour
+	}
+
 	@When("^I submit a particle group spending a consumable that was created in same group$")
 	public void iSubmitAParticleGroupSpendingAConsumableThatWasCreatedInSameGroup() {
-
+		mintAndTransferTokensWith(new MintAndTransferTokensActionMapper((mint, transfer) -> Collections.singletonList(
+			ParticleGroup.of(SpunParticle.up(mint), SpunParticle.down(mint), SpunParticle.up(transfer)))
+		));
 	}
 
 	@When("^I submit a particle group spending a consumable that was created in a group with a higher index$")
 	public void iSubmitAParticleGroupSpendingAConsumableThatWasCreatedInAGroupWithAHigherIndex() {
-
-	}
-
-	@When("^I submit a mutable-supply token-creation request with symbol \"([^\"]*)\" and granularity (\\d+)$")
-	public void i_submit_a_mutable_supply_token_creation_request_with_symbol_and_granularity(String symbol, int granularity) {
-		this.properties.put(SYMBOL, symbol);
-		this.properties.put(GRANULARITY, scaledToUnscaled(granularity));
-		createToken(CreateTokenAction.TokenSupplyType.MUTABLE);
-	}
-
-	@When("^I submit a mutable-supply token-creation request with name \"([^\"]*)\", symbol \"([^\"]*)\", initialSupply (\\d+) and granularity (\\d+)$")
-	public void i_submit_a_mutable_supply_token_creation_request_with_name_symbol_initialSupply_and_granularity(
-			String name, String symbol, int initialSupply, int granularity) {
-		this.properties.put(NAME, name);
-		this.properties.put(SYMBOL, symbol);
-		this.properties.put(INITIAL_SUPPLY, scaledToUnscaled(initialSupply));
-		this.properties.put(GRANULARITY, scaledToUnscaled(granularity));
-		createToken(CreateTokenAction.TokenSupplyType.MUTABLE);
-	}
-
-	@When("^I submit a mutable-supply token-creation request with symbol \"([^\"]*)\" and initialSupply (\\d+)$")
-	public void i_submit_a_mutable_supply_token_creation_request_with_symbol_and_initialSupply(String symbol, int initialSupply) {
-		this.properties.put(SYMBOL, symbol);
-		this.properties.put(INITIAL_SUPPLY, scaledToUnscaled(initialSupply));
-		createToken(CreateTokenAction.TokenSupplyType.MUTABLE);
-	}
-
-	@When("^I submit a mutable-supply token-creation request with granularity (\\d+)$")
-	public void i_submit_a_mutable_supply_token_creation_request_with_granularity(int granularity) {
-		this.properties.put(GRANULARITY, scaledToUnscaled(granularity));
-		createToken(CreateTokenAction.TokenSupplyType.MUTABLE);
-	}
-
-	@When("^I submit a mutable-supply token-creation request with symbol \"([^\"]*)\"$")
-	public void i_submit_a_mutable_supply_token_creation_request_with_symbol(String symbol) {
-		this.properties.put(SYMBOL, symbol);
-		createToken(CreateTokenAction.TokenSupplyType.MUTABLE);
-	}
-
-	@When("^I submit a mint request of (\\d+) for \"([^\"]*)\"$")
-	public void i_submit_a_mint_request_of_for(int count, String symbol) {
-		TestObserver<Object> observer = new TestObserver<>();
-		api.mintTokens(symbol, TokenDefinitionReference.unitsToSubunits(count))
-			.toObservable()
-			.doOnNext(System.out::println)
-			.subscribe(observer);
-		this.observers.add(observer);
-	}
-
-	@When("^I submit a burn request of (\\d+) for \"([^\"]*)\"$")
-	public void i_submit_a_burn_request_of_for(int count, String symbol) {
-		TestObserver<Object> observer = new TestObserver<>();
-		api.burnTokens(symbol, TokenDefinitionReference.unitsToSubunits(count))
-			.toObservable()
-			.doOnNext(System.out::println)
-			.subscribe(observer);
-		this.observers.add(observer);
-	}
-
-	@When("^I submit a token transfer request of (\\d+) for \"([^\"]*)\" to an arbitrary account$")
-	public void i_submit_a_token_transfer_request_of_for_to_an_arbitrary_account(int count, String symbol) {
-		TokenDefinitionReference tokenClass = TokenDefinitionReference.of(api.getMyAddress(), symbol);
-		RadixAddress arbitrary = RadixUniverse.getInstance().getAddressFrom(RadixIdentities.createNew().getPublicKey());
-
-		// Ensure balance is up-to-date.
-		api.getBalance(api.getMyAddress(), tokenClass)
-			.firstOrError()
-			.blockingGet();
-
-		TestObserver<Object> observer = new TestObserver<>();
-		api.transferTokens(api.getMyAddress(), arbitrary, BigDecimal.valueOf(count), tokenClass)
-			.toObservable()
-			.doOnNext(System.out::println)
-			.subscribe(observer);
-		this.observers.add(observer);
-	}
-
-	@Then("^I observe the atom being accepted$")
-	public void i_observe_the_atom_being_accepted() {
-		// "the atom" = most recent atom
-		i_can_observe_atom_being_accepted(observers.size());
-	}
-
-	@Then("^I can observe the atom being accepted$")
-	public void i_can_observe_the_atom_being_accepted() {
-		// "the atom" = most recent atom
-		i_can_observe_atom_being_accepted(observers.size());
+		mintAndTransferTokensWith(new MintAndTransferTokensActionMapper((mint, transfer) -> Arrays.asList(
+			ParticleGroup.of(SpunParticle.down(mint), SpunParticle.up(transfer)),
+			ParticleGroup.of(SpunParticle.up(mint)))
+		));
 	}
 
 	@Then("^I can observe atom (\\d+) being accepted$")
@@ -207,36 +151,13 @@ public class AtomicTransactionsWithDependence {
 		awaitAtomStatus(atomNumber, VALIDATION_ERROR);
 	}
 
-	@Then("^I can observe the atom being rejected with an error$")
-	public void i_can_observe_atom_being_rejected_with_an_error() {
-		// "the atom" = most recent atom
-		i_can_observe_atom_being_rejected_with_an_error(observers.size());
-	}
-
-	@Then("^I can observe atom (\\d+) being rejected with an error$")
-	public void i_can_observe_atom_being_rejected_with_an_error(int atomNumber) {
-		awaitAtomStatus(atomNumber, COLLISION, VALIDATION_ERROR);
-	}
-
-	@Then("^I can observe token \"([^\"]*)\" balance equal to (\\d+)$")
-	public void i_can_observe_token_balance_equal_to(String symbol, int balance) {
-		TokenDefinitionReference tokenClass = TokenDefinitionReference.of(api.getMyAddress(), symbol);
-		// Ensure balance is up-to-date.
-		BigDecimal tokenBalanceDecimal = api.getBalance(api.getMyAddress(), tokenClass)
-			.firstOrError()
-			.blockingGet();
-		UInt256 tokenBalance = TokenDefinitionReference.unitsToSubunits(tokenBalanceDecimal);
-		UInt256 requiredBalance = TokenDefinitionReference.unitsToSubunits(balance);
-		assertEquals(requiredBalance, tokenBalance);
-	}
-
 	@After
 	public void after() {
 		this.disposables.forEach(Disposable::dispose);
 		this.disposables.clear();
 	}
 
-	private void createToken(CreateTokenAction.TokenSupplyType tokenCreateSupplyType) {
+	private void createToken(CreateTokenAction.TokenSupplyType tokenCreateSupplyType, RadixApplicationAPI api) {
 		TestObserver<Object> observer = new TestObserver<>();
 		api.createToken(
 				this.properties.get(NAME),
