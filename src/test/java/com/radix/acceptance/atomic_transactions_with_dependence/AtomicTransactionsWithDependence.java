@@ -1,6 +1,5 @@
 package com.radix.acceptance.atomic_transactions_with_dependence;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.radix.acceptance.SpecificProperties;
@@ -40,7 +39,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType.COLLISION;
 import static com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType.STORED;
 import static com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType.VALIDATION_ERROR;
 import static org.junit.Assert.assertEquals;
@@ -109,7 +107,7 @@ public class AtomicTransactionsWithDependence {
 		RadixIdentity toIdentity = RadixIdentities.createNew();
 		RadixAddress toAddress = RadixUniverse.getInstance().getAddressFrom(toIdentity.getPublicKey());
 		TestObserver observer = new TestObserver();
-		api.execute(new MintAndTransferTokensAction(tokenRef, BigDecimal.TEN, toAddress, ImmutableMap.of()))
+		api.mintAndTransferTokens("TEST0", UInt256.SEVEN, toAddress)
 			.toObservable()
 			.subscribe(observer);
 		observers.add(observer);
