@@ -1,6 +1,7 @@
 package com.radix.acceptance.mint_multi_issuance_tokens;
 
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomReceivedAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
@@ -72,9 +73,9 @@ public class MintMultiIssuanceTokens {
 		NAME,           "RLAU-40 Test token",
 		SYMBOL,			"RLAU",
 		DESCRIPTION,	"RLAU-40 Test token",
-		INITIAL_SUPPLY,	scaledToUnscaled(1000000000).toString(),
-		NEW_SUPPLY,		scaledToUnscaled(1000000000).toString(),
-		GRANULARITY,	"1"
+		INITIAL_SUPPLY,	"1000000000",
+		NEW_SUPPLY,		"1000000000",
+		GRANULARITY,	BigDecimal.ONE.scaleByPowerOfTen(-18).toString()
 	);
 	private final List<TestObserver<SubmitAtomAction>> observers = Lists.newArrayList();
 	private final List<Disposable> disposables = Lists.newArrayList();
@@ -101,7 +102,7 @@ public class MintMultiIssuanceTokens {
 	@Given("^a library client who owns an account and created a token with (\\d+) initial subunit supply$")
 	public void a_library_client_who_owns_an_account_and_created_a_token_with_initial_subunit_supply(int initialUnscaledSupply) throws Throwable {
 		setupApi();
-		this.properties.put(INITIAL_SUPPLY, UInt256.from(initialUnscaledSupply).toString());
+		this.properties.put(INITIAL_SUPPLY, BigDecimal.valueOf(initialUnscaledSupply).scaleByPowerOfTen(-18).toString());
 		createToken(CreateTokenAction.TokenSupplyType.MUTABLE);
 		awaitAtomStatus(STORED);
 	}
@@ -110,7 +111,7 @@ public class MintMultiIssuanceTokens {
 	public void a_library_client_who_owns_an_account_and_created_a_token_with_initial_subunit_supply_and_is_listening_to_the_state_of_the_token(int pow2)
 			throws Throwable {
 		setupApi();
-		this.properties.put(INITIAL_SUPPLY, UInt256.TWO.pow(pow2).toString());
+		this.properties.put(INITIAL_SUPPLY, BigDecimal.valueOf(2).pow(pow2).scaleByPowerOfTen(-18).toString());
 		createToken(CreateTokenAction.TokenSupplyType.MUTABLE);
 		awaitAtomStatus(STORED);
 	}
@@ -139,17 +140,17 @@ public class MintMultiIssuanceTokens {
 
 	@When("^the client executes mint (\\d+) \"([^\"]*)\" tokens$")
 	public void the_client_executes_mint_tokens(int newSupply, String symbol) throws Throwable {
-		mintTokens(scaledToUnscaled(newSupply), symbol, RadixAddress.from(this.properties.get(ADDRESS)));
+		mintTokens(BigDecimal.valueOf(newSupply), symbol, RadixAddress.from(this.properties.get(ADDRESS)));
 	}
 
 	@When("^the client executes mint (\\d+) tokens$")
 	public void the_client_executes_mint_tokens(int newSupply) throws Throwable {
-		mintTokens(scaledToUnscaled(newSupply), this.properties.get(SYMBOL), RadixAddress.from(this.properties.get(ADDRESS)));
+		mintTokens(BigDecimal.valueOf(newSupply), this.properties.get(SYMBOL), RadixAddress.from(this.properties.get(ADDRESS)));
 	}
 
 	@When("^the client executes mint 2\\^(\\d+) subunit tokens$")
 	public void the_client_executes_mint_subunit_tokens(int pow2) throws Throwable {
-		mintTokens(UInt256.TWO.pow(pow2), this.properties.get(SYMBOL), RadixAddress.from(this.properties.get(ADDRESS)));
+		mintTokens(BigDecimal.valueOf(2).pow(pow2).scaleByPowerOfTen(-18), this.properties.get(SYMBOL), RadixAddress.from(this.properties.get(ADDRESS)));
 	}
 
 	@Then("^the client should be notified that \"([^\"]*)\" token has a total supply of (\\d+)$")
@@ -160,8 +161,8 @@ public class MintMultiIssuanceTokens {
 		BigDecimal tokenBalanceDecimal = api.getBalance(api.getMyAddress(), tokenClass)
 			.firstOrError()
 			.blockingGet();
-		UInt256 tokenBalance = TokenDefinitionReference.unitsToSubunits(tokenBalanceDecimal);
-		UInt256 requiredBalance = TokenDefinitionReference.unitsToSubunits(supply);
+		UInt256 tokenBalance = TokenUnitConversions.unitsToSubunits(tokenBalanceDecimal);
+		UInt256 requiredBalance = TokenUnitConversions.unitsToSubunits(supply);
 		assertEquals(requiredBalance, tokenBalance);
 	}
 
@@ -212,8 +213,8 @@ public class MintMultiIssuanceTokens {
 				this.properties.get(NAME),
 				this.properties.get(SYMBOL),
 				this.properties.get(DESCRIPTION),
-				UInt256.from(this.properties.get(INITIAL_SUPPLY)),
-				UInt256.from(this.properties.get(GRANULARITY)),
+				new BigDecimal(this.properties.get(INITIAL_SUPPLY)),
+				new BigDecimal(this.properties.get(GRANULARITY)),
 				tokenCreateSupplyType)
 			.toObservable()
 			.doOnNext(System.out::println)
@@ -221,9 +222,9 @@ public class MintMultiIssuanceTokens {
 		this.observers.add(observer);
 	}
 
-	private void mintTokens(UInt256 amount, String symbol, RadixAddress address) {
+	private void mintTokens(BigDecimal amount, String symbol, RadixAddress address) {
 		TokenDefinitionReference tokenClass = TokenDefinitionReference.of(address, symbol);
-		MintTokensAction mta = new MintTokensAction(tokenClass, amount);
+		MintTokensAction mta = MintTokensAction.create(tokenClass, amount);
 		TestObserver<SubmitAtomAction> observer = new TestObserver<>();
 		api.execute(mta)
 			.toObservable()
@@ -284,9 +285,5 @@ public class MintMultiIssuanceTokens {
 			.awaitCount(3, TestWaitStrategy.SLEEP_100MS, TIMEOUT_MS)
 			.assertError(exceptionClass)
 			.assertError(t -> t.getMessage().contains(partialExceptionMessage));
-	}
-
-	private static UInt256 scaledToUnscaled(int amount) {
-		return TokenDefinitionReference.unitsToSubunits(amount);
 	}
 }

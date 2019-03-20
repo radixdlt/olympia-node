@@ -14,6 +14,7 @@ import com.radixdlt.client.application.translate.atomic.AtomicAction;
 import com.radixdlt.client.application.translate.data.SendMessageAction;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
+import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
 import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.application.translate.tokens.TransferTokensToParticleGroupsMapper;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
@@ -72,14 +73,14 @@ public class ParticleGroups {
 			NAME,           "RLAU-40 Test token",
 			SYMBOL,			"RLAU",
 			DESCRIPTION,	"RLAU-40 Test token",
-			TOTAL_SUPPLY,	scaledToUnscaled(1_000_000_000),
+			TOTAL_SUPPLY,	"1000000000",
 			GRANULARITY,	"1"
 	);
 	private final SpecificProperties properties2 = SpecificProperties.of(
 			NAME,           "RLAU-40 Test token",
 			SYMBOL,			"RLAU",
 			DESCRIPTION,	"RLAU-40 Test token",
-			TOTAL_SUPPLY,	scaledToUnscaled(1_000_000_000),
+			TOTAL_SUPPLY,	"1000000000",
 			GRANULARITY,	"1"
 	);
 	private final List<TestObserver<Object>> observers = Lists.newArrayList();
@@ -172,8 +173,8 @@ public class ParticleGroups {
 			String name, String symbol, int totalSupply, int granularity) {
 		this.properties1.put(NAME, name);
 		this.properties1.put(SYMBOL, symbol);
-		this.properties1.put(TOTAL_SUPPLY, scaledToUnscaled(totalSupply));
-		this.properties1.put(GRANULARITY, scaledToUnscaled(granularity));
+		this.properties1.put(TOTAL_SUPPLY, Long.toString(totalSupply));
+		this.properties1.put(GRANULARITY, Long.toString(granularity));
 		createToken(CreateTokenAction.TokenSupplyType.FIXED);
 	}
 
@@ -229,13 +230,13 @@ public class ParticleGroups {
 	}
 
 	private CreateTokenAction buildCreateTokenAction(SpecificProperties properties, CreateTokenAction.TokenSupplyType tokenSupplyType) {
-		return new CreateTokenAction(
+		return CreateTokenAction.create(
 			this.api.getMyAddress(),
 			properties.get(NAME),
 			properties.get(SYMBOL),
 			properties.get(DESCRIPTION),
-			UInt256.from(properties.get(TOTAL_SUPPLY)),
-			UInt256.from(properties.get(GRANULARITY)),
+			BigDecimal.valueOf(Long.valueOf(properties.get(TOTAL_SUPPLY))),
+			BigDecimal.valueOf(Long.valueOf(properties.get(GRANULARITY))),
 			tokenSupplyType);
 	}
 
@@ -251,13 +252,13 @@ public class ParticleGroups {
 	@When("^I submit a fixed-supply token-creation request with symbol \"([^\"]*)\" and totalSupply (\\d+) scaled$")
 	public void i_submit_a_fixed_supply_token_creation_request_with_symbol_totalSupply(String symbol, int totalSupply) {
 		this.properties1.put(SYMBOL, symbol);
-		this.properties1.put(TOTAL_SUPPLY, scaledToUnscaled(totalSupply));
+		this.properties1.put(TOTAL_SUPPLY, Long.toString(totalSupply));
 		createToken(CreateTokenAction.TokenSupplyType.FIXED);
 	}
 
 	@When("^I submit a fixed-supply token-creation request with granularity (\\d+) scaled$")
 	public void i_submit_a_fixed_supply_token_creation_request_with_granularity(int granularity) {
-		this.properties1.put(GRANULARITY, scaledToUnscaled(granularity));
+		this.properties1.put(GRANULARITY, Long.toString(granularity));
 		createToken(CreateTokenAction.TokenSupplyType.FIXED);
 	}
 
@@ -336,8 +337,8 @@ public class ParticleGroups {
 		BigDecimal tokenBalanceDecimal = api.getBalance(api.getMyAddress(), tokenClass)
 			.firstOrError()
 			.blockingGet();
-		UInt256 tokenBalance = TokenDefinitionReference.unitsToSubunits(tokenBalanceDecimal);
-		UInt256 requiredBalance = TokenDefinitionReference.unitsToSubunits(balance);
+		UInt256 tokenBalance = TokenUnitConversions.unitsToSubunits(tokenBalanceDecimal);
+		UInt256 requiredBalance = TokenUnitConversions.unitsToSubunits(balance);
 		assertEquals(requiredBalance, tokenBalance);
 	}
 
@@ -353,8 +354,8 @@ public class ParticleGroups {
 				this.properties1.get(NAME),
 				this.properties1.get(SYMBOL),
 				this.properties1.get(DESCRIPTION),
-				UInt256.from(this.properties1.get(TOTAL_SUPPLY)),
-				UInt256.from(this.properties1.get(GRANULARITY)),
+				BigDecimal.valueOf(Long.valueOf(this.properties1.get(TOTAL_SUPPLY))),
+				BigDecimal.valueOf(Long.valueOf(this.properties1.get(GRANULARITY))),
 				tokenCreateSupplyType)
 			.toObservable()
 			.doOnNext(System.out::println)
@@ -376,9 +377,5 @@ public class ParticleGroups {
 			.assertValueAt(2, SubmitAtomReceivedAction.class::isInstance)
 			.assertValueAt(3, SubmitAtomResultAction.class::isInstance)
 			.assertValueAt(3, i -> finalStatesSet.contains(SubmitAtomResultAction.class.cast(i).getType()));
-	}
-
-	private static String scaledToUnscaled(int scaled) {
-		return TokenDefinitionReference.unitsToSubunits(scaled).toString();
 	}
 }

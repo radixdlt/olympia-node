@@ -2,6 +2,7 @@ package com.radix.acceptance.burn_multi_issuance_tokens;
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionsState;
+import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
 import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
@@ -75,8 +76,8 @@ public class BurnMultiIssuanceTokens {
 		NAME,           "RLAU-40 Test token",
 		SYMBOL,			"RLAU",
 		DESCRIPTION,	"RLAU-40 Test token",
-		INITIAL_SUPPLY,	scaledToUnscaled(1000000000).toString(),
-		NEW_SUPPLY,		scaledToUnscaled(1000000000).toString(),
+		INITIAL_SUPPLY,	"1000000000",
+		NEW_SUPPLY,		"1000000000",
 		GRANULARITY,	"1"
 	);
 	private final List<TestObserver<SubmitAtomAction>> observers = Lists.newArrayList();
@@ -95,7 +96,7 @@ public class BurnMultiIssuanceTokens {
 
 		setupApi();
 		this.properties.put(SYMBOL, symbol1);
-		this.properties.put(INITIAL_SUPPLY, scaledToUnscaled(initialSupply).toString());
+		this.properties.put(INITIAL_SUPPLY, Integer.toString(initialSupply));
 		createToken(TokenSupplyType.MUTABLE);
 		awaitAtomStatus(STORED);
 		// Listening on state automatic for library
@@ -122,17 +123,17 @@ public class BurnMultiIssuanceTokens {
 
 		this.properties.put(ADDRESS, this.api.getMyAddress().toString());
 		this.properties.put(OTHER_ADDRESS, this.otherApi.getMyAddress().toString());
-		this.properties.put(INITIAL_SUPPLY, scaledToUnscaled(initialSupply).toString());
+		this.properties.put(INITIAL_SUPPLY, Integer.toString(initialSupply));
 	}
 
 	@When("^the client executes 'BURN (\\d+) \"([^\"]*)\" tokens' on the other account$")
 	public void the_client_executes_burn_tokens_on_the_other_account(int newSupply, String symbol) throws Throwable {
-		burnTokens(scaledToUnscaled(newSupply), symbol, RadixAddress.from(this.properties.get(OTHER_ADDRESS)), RadixAddress.from(this.properties.get(OTHER_ADDRESS)));
+		burnTokens(BigDecimal.valueOf(newSupply), symbol, RadixAddress.from(this.properties.get(OTHER_ADDRESS)), RadixAddress.from(this.properties.get(OTHER_ADDRESS)));
 	}
 
 	@When("^the client executes 'BURN (\\d+) \"([^\"]*)\" tokens'$")
 	public void the_client_executes_burn_tokens(int newSupply, String symbol) throws Throwable {
-		burnTokens(scaledToUnscaled(newSupply), symbol, RadixAddress.from(this.properties.get(ADDRESS)), RadixAddress.from(this.properties.get(ADDRESS)));
+		burnTokens(BigDecimal.valueOf(newSupply), symbol, RadixAddress.from(this.properties.get(ADDRESS)), RadixAddress.from(this.properties.get(ADDRESS)));
 	}
 
 	@When("^the client waits to be notified that \"([^\"]*)\" token has a total supply of (\\d+)$")
@@ -143,8 +144,8 @@ public class BurnMultiIssuanceTokens {
 		BigDecimal tokenBalanceDecimal = api.getBalance(api.getMyAddress(), tokenClass)
 			.firstOrError()
 			.blockingGet();
-		UInt256 tokenBalance = TokenDefinitionReference.unitsToSubunits(tokenBalanceDecimal);
-		UInt256 requiredBalance = TokenDefinitionReference.unitsToSubunits(supply);
+		UInt256 tokenBalance = TokenUnitConversions.unitsToSubunits(tokenBalanceDecimal);
+		UInt256 requiredBalance = TokenUnitConversions.unitsToSubunits(supply);
 		assertEquals(requiredBalance, tokenBalance);
 	}
 
@@ -162,8 +163,8 @@ public class BurnMultiIssuanceTokens {
 		BigDecimal tokenBalanceDecimal = api.getBalance(api.getMyAddress(), tokenClass)
 			.firstOrError()
 			.blockingGet();
-		UInt256 tokenBalance = TokenDefinitionReference.unitsToSubunits(tokenBalanceDecimal);
-		UInt256 requiredBalance = TokenDefinitionReference.unitsToSubunits(supply);
+		UInt256 tokenBalance = TokenUnitConversions.unitsToSubunits(tokenBalanceDecimal);
+		UInt256 requiredBalance = TokenUnitConversions.unitsToSubunits(supply);
 		assertEquals(requiredBalance, tokenBalance);
 	}
 
@@ -208,8 +209,8 @@ public class BurnMultiIssuanceTokens {
 				this.properties.get(NAME),
 				this.properties.get(SYMBOL),
 				this.properties.get(DESCRIPTION),
-				UInt256.from(this.properties.get(INITIAL_SUPPLY)),
-				UInt256.from(this.properties.get(GRANULARITY)),
+				BigDecimal.valueOf(Long.valueOf(this.properties.get(INITIAL_SUPPLY))),
+				BigDecimal.valueOf(Long.valueOf(this.properties.get(GRANULARITY))),
 				tokenCreateSupplyType)
 			.toObservable()
 			.doOnNext(System.out::println)
@@ -228,9 +229,9 @@ public class BurnMultiIssuanceTokens {
 		this.observers.add(observer);
 	}
 
-	private void burnTokens(UInt256 amount, String symbol, RadixAddress tokenAddress, RadixAddress address) {
+	private void burnTokens(BigDecimal amount, String symbol, RadixAddress tokenAddress, RadixAddress address) {
 		TokenDefinitionReference tokenClass = TokenDefinitionReference.of(tokenAddress, symbol);
-		BurnTokensAction mta = new BurnTokensAction(address, tokenClass, amount);
+		BurnTokensAction mta = BurnTokensAction.create(address, tokenClass, amount);
 		TestObserver<SubmitAtomAction> observer = new TestObserver<>();
 		api.execute(mta)
 			.toObservable()
@@ -292,9 +293,5 @@ public class BurnMultiIssuanceTokens {
 			.awaitCount(3, TestWaitStrategy.SLEEP_100MS, TIMEOUT_MS)
 			.assertError(exceptionClass)
 			.assertError(t -> t.getMessage().toLowerCase().contains(partialExceptionMessage.toLowerCase()));
-	}
-
-	private static UInt256 scaledToUnscaled(int amount) {
-		return TokenDefinitionReference.unitsToSubunits(amount);
 	}
 }

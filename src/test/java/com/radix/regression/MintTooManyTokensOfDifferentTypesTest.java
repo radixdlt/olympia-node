@@ -2,17 +2,16 @@ package com.radix.regression;
 
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
-import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
+import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
-import io.reactivex.observers.BaseTestConsumer;
 import io.reactivex.observers.BaseTestConsumer.TestWaitStrategy;
 import io.reactivex.observers.TestObserver;
+import java.math.BigDecimal;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.radix.utils.UInt256;
 
 public class MintTooManyTokensOfDifferentTypesTest {
 	@BeforeClass
@@ -46,9 +45,10 @@ public class MintTooManyTokensOfDifferentTypesTest {
 			"TestToken",
 			"TEST",
 			"TestToken",
-			UInt256.MAX_VALUE,
-			UInt256.ONE,
-			CreateTokenAction.TokenSupplyType.MUTABLE)
+			BigDecimal.valueOf(2).pow(256).subtract(BigDecimal.ONE).scaleByPowerOfTen(-18),
+			TokenUnitConversions.getMinimumGranularity(),
+			CreateTokenAction.TokenSupplyType.MUTABLE
+		)
 			.toObservable()
 			.doOnNext(System.out::println)
 			.subscribe(observer);

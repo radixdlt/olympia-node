@@ -53,7 +53,7 @@ public class DeleteAtomEvents {
 		api.getMyBalance(tokenRef).subscribe(myBalanceObserver);
 
 		// Given an account with a josh token with one supply
-		Result result = api.createToken("Joshy Token", "JOSH", "Cool token", TokenDefinitionReference.unitsToSubunits(1), UInt256.ONE, TokenSupplyType.FIXED);
+		Result result = api.createToken("Joshy Token", "JOSH", "Cool token", BigDecimal.ONE, BigDecimal.ONE, TokenSupplyType.FIXED);
 		result.toCompletable().blockingAwait();
 
 		// Wait until funds have been received

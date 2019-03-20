@@ -2,6 +2,8 @@ package com.radix.regression;
 
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionsState;
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
+import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
+import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -9,7 +11,6 @@ import java.util.function.Supplier;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.radix.utils.UInt256;
 
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
@@ -40,25 +41,25 @@ public class TokenClassesInAccountTest {
 		api = RadixApplicationAPI.create(RadixIdentities.createNew());
 	}
 
-	private static CreateTokenAction buildCreateNewTokenAction(String iso, UInt256 initialSupply) {
-		return new CreateTokenAction(
+	private static CreateTokenAction buildCreateNewTokenAction(String iso, BigDecimal initialSupply) {
+		return CreateTokenAction.create(
 			api.getMyAddress(),
 			"Joshy Coin",
 			iso,
 			"Ze best coin!",
 			initialSupply,
-			UInt256.ONE,
+			TokenUnitConversions.getMinimumGranularity(),
 			TokenSupplyType.FIXED
 		);
 	}
 
-	private Predicate<TokenDefinitionsState> getPredicateCheck(String iso, UInt256 initialSupply) {
+	private Predicate<TokenDefinitionsState> getPredicateCheck(String iso, BigDecimal initialSupply) {
 		TokenState expectedTokenState = new TokenState(
 			"Joshy Coin",
 			iso,
 			"Ze best coin!",
-			TokenDefinitionReference.subunitsToUnits(initialSupply),
-			TokenDefinitionReference.subunitsToUnits(1),
+			initialSupply,
+			TokenUnitConversions.getMinimumGranularity(),
 			TokenState.TokenSupplyType.FIXED
 		);
 
@@ -69,8 +70,8 @@ public class TokenClassesInAccountTest {
 	public void given_an_account_with_two_tokens__when_the_account_is_subscribed_for_the_token_state__then_the_two_tokens_are_published() throws Exception {
 		// Given an account with two tokens
 		Action[] givenActions = new Action[] {
-			buildCreateNewTokenAction("JOSH", UInt256.from(10000)),
-			buildCreateNewTokenAction("JOSH2", UInt256.from(100))
+			buildCreateNewTokenAction("JOSH", BigDecimal.valueOf(10000)),
+			buildCreateNewTokenAction("JOSH2", BigDecimal.valueOf(100))
 		};
 
 		// When the account is subscribed for the token state
@@ -78,8 +79,8 @@ public class TokenClassesInAccountTest {
 
 		// Then the two tokens are published
 		List<Predicate<TokenDefinitionsState>> thenChecks = Arrays.asList(
-			getPredicateCheck("JOSH", UInt256.from(10000)),
-			getPredicateCheck("JOSH2", UInt256.from(100))
+			getPredicateCheck("JOSH", BigDecimal.valueOf(10000)),
+			getPredicateCheck("JOSH2", BigDecimal.valueOf(100))
 		);
 
 		// Given setup execution
