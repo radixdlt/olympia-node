@@ -28,6 +28,12 @@ public final class RadixUniverseConfigs {
 
     private static InputStream getConfigFileStream(String name) {
         String source = "/universe/" + name;
-        return RadixUniverseConfig.class.getResourceAsStream(source);
+        InputStream configFileStream = RadixUniverseConfig.class.getResourceAsStream(source);
+
+        if (configFileStream == null) {
+            throw new RuntimeException("Config file from " + source + " not found");
+        }
+
+        return configFileStream;
     }
 }

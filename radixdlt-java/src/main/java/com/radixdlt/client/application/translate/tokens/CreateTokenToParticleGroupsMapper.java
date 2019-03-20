@@ -8,12 +8,9 @@ import com.radixdlt.client.atommodel.tokens.BurnedTokensParticle;
 import com.radixdlt.client.atommodel.tokens.MintedTokensParticle;
 import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.client.atommodel.tokens.TokenPermission;
-import com.radixdlt.client.atommodel.tokens.TransferredTokensParticle;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
-
 import io.reactivex.Observable;
-import java.math.BigDecimal;
 
 /**
  * Maps the CreateToken action into it's corresponding particles
@@ -46,27 +43,26 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 		}
 
 		TokenDefinitionParticle token = new TokenDefinitionParticle(
-			tokenCreation.getAddress(),
+				tokenCreation.getAddress(),
 			tokenCreation.getName(),
-			tokenCreation.getIso(),
-			tokenCreation.getDescription(),
-			TokenUnitConversions.unitsToSubunits(tokenCreation.getGranularity()),
-			ImmutableMap.of(
-				MintedTokensParticle.class, mintPermissions,
-				BurnedTokensParticle.class, burnPermissions,
-				TransferredTokensParticle.class, TokenPermission.ALL
-			),
-			null
+				tokenCreation.getIso(),
+				tokenCreation.getDescription(),
+				tokenCreation.getGranularity(),
+				ImmutableMap.of(
+					MintedTokensParticle.class, mintPermissions,
+					BurnedTokensParticle.class, burnPermissions
+				),
+				null
 		);
 
-		if (tokenCreation.getInitialSupply().compareTo(BigDecimal.ZERO) == 0) {
+		if (tokenCreation.getInitialSupply().isZero()) {
 			// No initial supply -> just the token particle
 			return Observable.just(ParticleGroup.of(SpunParticle.up(token)));
 		}
 
 		MintedTokensParticle minted = new MintedTokensParticle(
-				TokenUnitConversions.unitsToSubunits(tokenCreation.getInitialSupply()),
-				TokenUnitConversions.unitsToSubunits(tokenCreation.getGranularity()),
+				tokenCreation.getInitialSupply(),
+				tokenCreation.getGranularity(),
 				tokenCreation.getAddress(),
 				System.currentTimeMillis(),
 				token.getTokenDefinitionReference(),
