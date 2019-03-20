@@ -14,6 +14,7 @@ import com.radixdlt.client.application.translate.atomic.AtomicAction;
 import com.radixdlt.client.application.translate.data.SendMessageAction;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
+import com.radixdlt.client.application.translate.tokens.TokenUnitConvert;
 import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.application.translate.tokens.TransferTokensToParticleGroupsMapper;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
@@ -336,8 +337,8 @@ public class ParticleGroups {
 		BigDecimal tokenBalanceDecimal = api.getBalance(api.getMyAddress(), tokenClass)
 			.firstOrError()
 			.blockingGet();
-		UInt256 tokenBalance = TokenDefinitionReference.unitsToSubunits(tokenBalanceDecimal);
-		UInt256 requiredBalance = TokenDefinitionReference.unitsToSubunits(balance);
+		UInt256 tokenBalance = TokenUnitConvert.unitsToSubunits(tokenBalanceDecimal);
+		UInt256 requiredBalance = TokenUnitConvert.unitsToSubunits(balance);
 		assertEquals(requiredBalance, tokenBalance);
 	}
 

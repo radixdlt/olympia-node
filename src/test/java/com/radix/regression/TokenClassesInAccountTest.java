@@ -2,6 +2,7 @@ package com.radix.regression;
 
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionsState;
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
+import com.radixdlt.client.application.translate.tokens.TokenUnitConvert;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
@@ -59,7 +60,7 @@ public class TokenClassesInAccountTest {
 			iso,
 			"Ze best coin!",
 			initialSupply,
-			TokenDefinitionReference.subunitsToUnits(1),
+			TokenUnitConvert.subunitsToUnits(1),
 			TokenState.TokenSupplyType.FIXED
 		);
 

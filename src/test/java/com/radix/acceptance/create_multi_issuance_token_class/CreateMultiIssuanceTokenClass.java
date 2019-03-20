@@ -1,6 +1,7 @@
 package com.radix.acceptance.create_multi_issuance_token_class;
 
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
+import com.radixdlt.client.application.translate.tokens.TokenUnitConvert;
 import com.radixdlt.client.core.network.actions.SubmitAtomReceivedAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomResultAction;
@@ -200,8 +201,8 @@ public class CreateMultiIssuanceTokenClass {
 		BigDecimal tokenBalanceDecimal = api.getBalance(api.getMyAddress(), tokenClass)
 			.firstOrError()
 			.blockingGet();
-		UInt256 tokenBalance = TokenDefinitionReference.unitsToSubunits(tokenBalanceDecimal);
-		UInt256 requiredBalance = TokenDefinitionReference.unitsToSubunits(balance);
+		UInt256 tokenBalance = TokenUnitConvert.unitsToSubunits(tokenBalanceDecimal);
+		UInt256 requiredBalance = TokenUnitConvert.unitsToSubunits(balance);
 		assertEquals(requiredBalance, tokenBalance);
 	}
 

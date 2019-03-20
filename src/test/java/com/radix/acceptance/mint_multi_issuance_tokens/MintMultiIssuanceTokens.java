@@ -1,6 +1,7 @@
 package com.radix.acceptance.mint_multi_issuance_tokens;
 
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.client.application.translate.tokens.TokenUnitConvert;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomReceivedAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
@@ -149,9 +150,6 @@ public class MintMultiIssuanceTokens {
 
 	@When("^the client executes mint 2\\^(\\d+) subunit tokens$")
 	public void the_client_executes_mint_subunit_tokens(int pow2) throws Throwable {
-		System.out.println("HELLO");
-		System.out.println(TokenDefinitionReference.unitsToSubunits(BigDecimal.valueOf(2).pow(255).scaleByPowerOfTen(-18)).toString(16));
-		System.out.println(UInt256.TWO.pow(255).toString(16));
 		mintTokens(BigDecimal.valueOf(2).pow(pow2).scaleByPowerOfTen(-18), this.properties.get(SYMBOL), RadixAddress.from(this.properties.get(ADDRESS)));
 	}
 
@@ -163,8 +161,8 @@ public class MintMultiIssuanceTokens {
 		BigDecimal tokenBalanceDecimal = api.getBalance(api.getMyAddress(), tokenClass)
 			.firstOrError()
 			.blockingGet();
-		UInt256 tokenBalance = TokenDefinitionReference.unitsToSubunits(tokenBalanceDecimal);
-		UInt256 requiredBalance = TokenDefinitionReference.unitsToSubunits(supply);
+		UInt256 tokenBalance = TokenUnitConvert.unitsToSubunits(tokenBalanceDecimal);
+		UInt256 requiredBalance = TokenUnitConvert.unitsToSubunits(supply);
 		assertEquals(requiredBalance, tokenBalance);
 	}
 

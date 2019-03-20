@@ -2,6 +2,7 @@ package com.radix.acceptance.burn_multi_issuance_tokens;
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionsState;
+import com.radixdlt.client.application.translate.tokens.TokenUnitConvert;
 import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
@@ -143,8 +144,8 @@ public class BurnMultiIssuanceTokens {
 		BigDecimal tokenBalanceDecimal = api.getBalance(api.getMyAddress(), tokenClass)
 			.firstOrError()
 			.blockingGet();
-		UInt256 tokenBalance = TokenDefinitionReference.unitsToSubunits(tokenBalanceDecimal);
-		UInt256 requiredBalance = TokenDefinitionReference.unitsToSubunits(supply);
+		UInt256 tokenBalance = TokenUnitConvert.unitsToSubunits(tokenBalanceDecimal);
+		UInt256 requiredBalance = TokenUnitConvert.unitsToSubunits(supply);
 		assertEquals(requiredBalance, tokenBalance);
 	}
 
@@ -162,8 +163,8 @@ public class BurnMultiIssuanceTokens {
 		BigDecimal tokenBalanceDecimal = api.getBalance(api.getMyAddress(), tokenClass)
 			.firstOrError()
 			.blockingGet();
-		UInt256 tokenBalance = TokenDefinitionReference.unitsToSubunits(tokenBalanceDecimal);
-		UInt256 requiredBalance = TokenDefinitionReference.unitsToSubunits(supply);
+		UInt256 tokenBalance = TokenUnitConvert.unitsToSubunits(tokenBalanceDecimal);
+		UInt256 requiredBalance = TokenUnitConvert.unitsToSubunits(supply);
 		assertEquals(requiredBalance, tokenBalance);
 	}
 
