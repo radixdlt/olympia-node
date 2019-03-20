@@ -27,7 +27,7 @@ public class TokenBalanceReducerTest {
 
 		TokenBalanceReducer reducer = new TokenBalanceReducer();
 		TokenBalanceState tokenBalance = reducer.reduce(new TokenBalanceState(), TransitionedParticle.n2u(minted));
-		BigDecimal tenSubunits = TokenDefinitionReference.subunitsToUnits(UInt256.TEN);
+		BigDecimal tenSubunits = TokenUnitConversions.subunitsToUnits(UInt256.TEN);
 		assertThat(tokenBalance.getBalance().get(token).getAmount().compareTo(tenSubunits)).isEqualTo(0);
 	}
 
@@ -65,7 +65,7 @@ public class TokenBalanceReducerTest {
 		TokenBalanceState tokenBalance1 = reducer.reduce(tokenBalance0, TransitionedParticle.u2d(ownedTokensParticle));
 		TokenBalanceState tokenBalance2 = reducer.reduce(tokenBalance1, TransitionedParticle.d2u(ownedTokensParticle));
 
-		BigDecimal tenSubunits = TokenDefinitionReference.subunitsToUnits(UInt256.TEN);
+		BigDecimal tenSubunits = TokenUnitConversions.subunitsToUnits(UInt256.TEN);
 		assertThat(tokenBalance1.getBalance().get(token).getAmount()).isEqualByComparingTo(BigDecimal.ZERO);
 		assertThat(tokenBalance1.getBalance().get(token).unconsumedTransferrable().count()).isEqualTo(0);
 		assertThat(tokenBalance2.getBalance().get(token).getAmount()).isEqualByComparingTo(tenSubunits);

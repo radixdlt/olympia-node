@@ -40,11 +40,11 @@ public class TokenBalanceState implements ApplicationState {
 		}
 
 		public BigDecimal getAmount() {
-			return TokenDefinitionReference.subunitsToUnits(balance);
+			return TokenUnitConversions.subunitsToUnits(balance);
 		}
 
 		public BigDecimal getGranularity() {
-			return TokenDefinitionReference.subunitsToUnits(granularity);
+			return TokenUnitConversions.subunitsToUnits(granularity);
 		}
 
 		public Stream<ConsumableTokens> unconsumedTransferrable() {

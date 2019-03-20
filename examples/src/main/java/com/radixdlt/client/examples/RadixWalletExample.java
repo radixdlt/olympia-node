@@ -1,8 +1,7 @@
 package com.radixdlt.client.examples;
 
+import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
 import java.math.BigDecimal;
-
-import org.radix.utils.UInt256;
 
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
@@ -34,12 +33,6 @@ public class RadixWalletExample {
 			radixIdentity = RadixIdentities.loadOrCreateFile("my.key");
 		}
 
-		// Network updates
-//		RadixUniverse.getInstance()
-//			.getNetwork()
-//			.getStatusUpdates()
-//			.subscribe(System.out::println);
-
 		RadixApplicationAPI api = RadixApplicationAPI.create(radixIdentity);
 		api.pull();
 
@@ -58,8 +51,8 @@ public class RadixWalletExample {
 			"Joshy Token",
 			"JOSH",
 			"The Best Coin Ever",
-			TokenDefinitionReference.unitsToSubunits(10000),
-			UInt256.ONE,
+			BigDecimal.valueOf(10000),
+			TokenUnitConversions.getMinimumGranularity(),
 			TokenSupplyType.MUTABLE
 		).toObservable().subscribe(System.out::println);
 

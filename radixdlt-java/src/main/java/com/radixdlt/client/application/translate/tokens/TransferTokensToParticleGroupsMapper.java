@@ -45,7 +45,7 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 	private Observable<SpunParticle> mapToParticles(TransferTokensAction transfer, List<ConsumableTokens> currentParticles) {
 		return Observable.create(emitter -> {
 			UInt256 consumerTotal = UInt256.ZERO;
-			final UInt256 subunitAmount = TokenDefinitionReference.unitsToSubunits(transfer.getAmount());
+			final UInt256 subunitAmount = TokenUnitConversions.unitsToSubunits(transfer.getAmount());
 			UInt256 granularity = UInt256.ZERO;
 			Iterator<ConsumableTokens> iterator = currentParticles.iterator();
 			Map<ECPublicKey, UInt256> consumerQuantities = new HashMap<>();
