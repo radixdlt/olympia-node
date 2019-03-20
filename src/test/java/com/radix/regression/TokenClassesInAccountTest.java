@@ -2,7 +2,7 @@ package com.radix.regression;
 
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionsState;
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
-import com.radixdlt.client.application.translate.tokens.TokenUnitConvert;
+import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
@@ -11,7 +11,6 @@ import java.util.function.Supplier;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.radix.utils.UInt256;
 
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
@@ -49,7 +48,7 @@ public class TokenClassesInAccountTest {
 			iso,
 			"Ze best coin!",
 			initialSupply,
-			BigDecimal.ONE.scaleByPowerOfTen(-18),
+			TokenUnitConversions.getMinimumGranularity(),
 			TokenSupplyType.FIXED
 		);
 	}
@@ -60,7 +59,7 @@ public class TokenClassesInAccountTest {
 			iso,
 			"Ze best coin!",
 			initialSupply,
-			TokenUnitConvert.subunitsToUnits(1),
+			TokenUnitConversions.getMinimumGranularity(),
 			TokenState.TokenSupplyType.FIXED
 		);
 
