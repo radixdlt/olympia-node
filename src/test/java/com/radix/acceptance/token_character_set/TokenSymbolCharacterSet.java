@@ -1,5 +1,6 @@
 package com.radix.acceptance.token_character_set;
 
+import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 
@@ -56,8 +57,8 @@ public class TokenSymbolCharacterSet {
 		NAME,           "RLAU-40 Test token",
 		SYMBOL,			"RLAU",
 		DESCRIPTION,	"RLAU-40 Test token",
-		INITIAL_SUPPLY,	scaledToUnscaled(1000000000),
-		NEW_SUPPLY,		scaledToUnscaled(1000000000),
+		INITIAL_SUPPLY,	"1000000000",
+		NEW_SUPPLY,		"1000000000",
 		GRANULARITY,	"1"
 	);
 	private final List<TestObserver<Object>> observers = Lists.newArrayList();
@@ -125,8 +126,8 @@ public class TokenSymbolCharacterSet {
 				this.properties.get(NAME),
 				this.properties.get(SYMBOL),
 				this.properties.get(DESCRIPTION),
-				UInt256.from(this.properties.get(INITIAL_SUPPLY)),
-				UInt256.from(this.properties.get(GRANULARITY)),
+				BigDecimal.valueOf(Long.valueOf(this.properties.get(INITIAL_SUPPLY))),
+				BigDecimal.valueOf(Long.valueOf(this.properties.get(GRANULARITY))),
 				tokenCreateSupplyType)
 			.toObservable()
 			.doOnNext(this::printSubmitAtomAction)
@@ -172,9 +173,5 @@ public class TokenSymbolCharacterSet {
 			System.out.println(sara.getType());
 			System.out.println(sara.getData());
 		}
-	}
-
-	private static String scaledToUnscaled(int amount) {
-		return TokenDefinitionReference.unitsToSubunits(amount).toString();
 	}
 }

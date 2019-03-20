@@ -45,7 +45,7 @@ public class MultipleSubscriptionsToSameAddress {
 			.subscribe(api0Balance);
 
 		System.out.println("Mint 5 TEST");
-		api0.mintTokens("TEST", UInt256.FIVE).toCompletable().blockingAwait();
+		api0.mintTokens("TEST", BigDecimal.valueOf(5)).toCompletable().blockingAwait();
 
 		System.out.println("Subscribe api1");
 		Observer<Object> api1Balance = Util.loggingObserver("api1");
@@ -53,10 +53,10 @@ public class MultipleSubscriptionsToSameAddress {
 			.subscribe(api1Balance);
 
 		System.out.println("Mint 6 TEST");
-		api0.mintTokens("TEST", UInt256.SIX).toCompletable().blockingAwait();
+		api0.mintTokens("TEST", BigDecimal.valueOf(6)).toCompletable().blockingAwait();
 
 		System.out.println("Burn 2 TEST");
-		api0.burnTokens("TEST", UInt256.TWO).toCompletable().blockingAwait();
+		api0.burnTokens("TEST", BigDecimal.valueOf(2)).toCompletable().blockingAwait();
 	}
 
 	private static TestObserver createToken(RadixApplicationAPI api) {
@@ -65,8 +65,8 @@ public class MultipleSubscriptionsToSameAddress {
 			"TestToken",
 			"TEST",
 			"TestToken",
-			UInt256.THREE,
-			UInt256.ONE,
+			BigDecimal.valueOf(3),
+			BigDecimal.ONE,
 			CreateTokenAction.TokenSupplyType.MUTABLE)
 			.toObservable()
 			.doOnNext(System.out::println)

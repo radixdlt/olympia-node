@@ -62,8 +62,8 @@ public class CreateMultiIssuanceTokenClass {
 		NAME,           "RLAU-40 Test token",
 		SYMBOL,			"RLAU",
 		DESCRIPTION,	"RLAU-40 Test token",
-		INITIAL_SUPPLY,	scaledToUnscaled(1000000000),
-		NEW_SUPPLY,		scaledToUnscaled(1000000000),
+		INITIAL_SUPPLY,	"1000000000",
+		NEW_SUPPLY,		"1000000000",
 		GRANULARITY,	"1"
 	);
 	private final List<TestObserver<Object>> observers = Lists.newArrayList();
@@ -83,7 +83,7 @@ public class CreateMultiIssuanceTokenClass {
 	@When("^I submit a mutable-supply token-creation request with symbol \"([^\"]*)\" and granularity (\\d+)$")
 	public void i_submit_a_mutable_supply_token_creation_request_with_symbol_and_granularity(String symbol, int granularity) {
 		this.properties.put(SYMBOL, symbol);
-		this.properties.put(GRANULARITY, scaledToUnscaled(granularity));
+		this.properties.put(GRANULARITY, Long.toString(granularity));
 		createToken(CreateTokenAction.TokenSupplyType.MUTABLE);
 	}
 
@@ -92,21 +92,21 @@ public class CreateMultiIssuanceTokenClass {
 			String name, String symbol, int initialSupply, int granularity) {
 		this.properties.put(NAME, name);
 		this.properties.put(SYMBOL, symbol);
-		this.properties.put(INITIAL_SUPPLY, scaledToUnscaled(initialSupply));
-		this.properties.put(GRANULARITY, scaledToUnscaled(granularity));
+		this.properties.put(INITIAL_SUPPLY, Long.toString(initialSupply));
+		this.properties.put(GRANULARITY, Long.toString(granularity));
 		createToken(CreateTokenAction.TokenSupplyType.MUTABLE);
 	}
 
 	@When("^I submit a mutable-supply token-creation request with symbol \"([^\"]*)\" and initialSupply (\\d+)$")
 	public void i_submit_a_mutable_supply_token_creation_request_with_symbol_and_initialSupply(String symbol, int initialSupply) {
 		this.properties.put(SYMBOL, symbol);
-		this.properties.put(INITIAL_SUPPLY, scaledToUnscaled(initialSupply));
+		this.properties.put(INITIAL_SUPPLY, Long.toString(initialSupply));
 		createToken(CreateTokenAction.TokenSupplyType.MUTABLE);
 	}
 
 	@When("^I submit a mutable-supply token-creation request with granularity (\\d+)$")
 	public void i_submit_a_mutable_supply_token_creation_request_with_granularity(int granularity) {
-		this.properties.put(GRANULARITY, scaledToUnscaled(granularity));
+		this.properties.put(GRANULARITY, Long.toString(granularity));
 		createToken(CreateTokenAction.TokenSupplyType.MUTABLE);
 	}
 
@@ -119,7 +119,7 @@ public class CreateMultiIssuanceTokenClass {
 	@When("^I submit a mint request of (\\d+) for \"([^\"]*)\"$")
 	public void i_submit_a_mint_request_of_for(int count, String symbol) {
 		TestObserver<Object> observer = new TestObserver<>();
-		api.mintTokens(symbol, TokenDefinitionReference.unitsToSubunits(count))
+		api.mintTokens(symbol, new BigDecimal(count))
 			.toObservable()
 			.doOnNext(System.out::println)
 			.subscribe(observer);
@@ -129,7 +129,7 @@ public class CreateMultiIssuanceTokenClass {
 	@When("^I submit a burn request of (\\d+) for \"([^\"]*)\"$")
 	public void i_submit_a_burn_request_of_for(int count, String symbol) {
 		TestObserver<Object> observer = new TestObserver<>();
-		api.burnTokens(symbol, TokenDefinitionReference.unitsToSubunits(count))
+		api.burnTokens(symbol, BigDecimal.valueOf(count))
 			.toObservable()
 			.doOnNext(System.out::println)
 			.subscribe(observer);
@@ -217,8 +217,8 @@ public class CreateMultiIssuanceTokenClass {
 				this.properties.get(NAME),
 				this.properties.get(SYMBOL),
 				this.properties.get(DESCRIPTION),
-				UInt256.from(this.properties.get(INITIAL_SUPPLY)),
-				UInt256.from(this.properties.get(GRANULARITY)),
+				BigDecimal.valueOf(Long.valueOf(this.properties.get(INITIAL_SUPPLY))),
+				BigDecimal.valueOf(Long.valueOf(this.properties.get(GRANULARITY))),
 				tokenCreateSupplyType)
 			.toObservable()
 			.doOnNext(System.out::println)
@@ -240,9 +240,5 @@ public class CreateMultiIssuanceTokenClass {
 			.assertValueAt(2, SubmitAtomReceivedAction.class::isInstance)
 			.assertValueAt(3, SubmitAtomResultAction.class::isInstance)
 			.assertValueAt(3, i -> finalStatesSet.contains(SubmitAtomResultAction.class.cast(i).getType()));
-	}
-
-	private static String scaledToUnscaled(int amount) {
-		return TokenDefinitionReference.unitsToSubunits(amount).toString();
 	}
 }

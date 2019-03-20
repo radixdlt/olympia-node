@@ -65,7 +65,7 @@ public class CreateSingleIssuanceTokenClass {
 		NAME,           "RLAU-40 Test token",
 		SYMBOL,			"RLAU",
 		DESCRIPTION,	"RLAU-40 Test token",
-		TOTAL_SUPPLY,	scaledToUnscaled(1_000_000_000),
+		TOTAL_SUPPLY,	"1000000000",
 		GRANULARITY,	"1"
 	);
 	private final List<TestObserver<Object>> observers = Lists.newArrayList();
@@ -88,21 +88,21 @@ public class CreateSingleIssuanceTokenClass {
 			String name, String symbol, int totalSupply, int granularity) {
 		this.properties.put(NAME, name);
 		this.properties.put(SYMBOL, symbol);
-		this.properties.put(TOTAL_SUPPLY, scaledToUnscaled(totalSupply));
-		this.properties.put(GRANULARITY, scaledToUnscaled(granularity));
+		this.properties.put(TOTAL_SUPPLY, Integer.toString(totalSupply));
+		this.properties.put(GRANULARITY, Integer.toString(granularity));
 		createToken(CreateTokenAction.TokenSupplyType.FIXED);
 	}
 
 	@When("^I submit a fixed-supply token-creation request with symbol \"([^\"]*)\" and totalSupply (\\d+) scaled$")
 	public void i_submit_a_fixed_supply_token_creation_request_with_symbol_totalSupply(String symbol, int totalSupply) {
 		this.properties.put(SYMBOL, symbol);
-		this.properties.put(TOTAL_SUPPLY, scaledToUnscaled(totalSupply));
+		this.properties.put(TOTAL_SUPPLY, Integer.toString(totalSupply));
 		createToken(CreateTokenAction.TokenSupplyType.FIXED);
 	}
 
 	@When("^I submit a fixed-supply token-creation request with granularity (\\d+) scaled$")
 	public void i_submit_a_fixed_supply_token_creation_request_with_granularity(int granularity) {
-		this.properties.put(GRANULARITY, scaledToUnscaled(granularity));
+		this.properties.put(GRANULARITY, Integer.toString(granularity));
 		createToken(CreateTokenAction.TokenSupplyType.FIXED);
 	}
 
@@ -198,8 +198,8 @@ public class CreateSingleIssuanceTokenClass {
 				this.properties.get(NAME),
 				this.properties.get(SYMBOL),
 				this.properties.get(DESCRIPTION),
-				UInt256.from(this.properties.get(TOTAL_SUPPLY)),
-				UInt256.from(this.properties.get(GRANULARITY)),
+				BigDecimal.valueOf(Long.valueOf(this.properties.get(TOTAL_SUPPLY))),
+				BigDecimal.valueOf(Long.valueOf(this.properties.get(GRANULARITY))),
 				tokenCreateSupplyType)
 			.toObservable()
 			.doOnNext(System.out::println)
@@ -221,9 +221,5 @@ public class CreateSingleIssuanceTokenClass {
 			.assertValueAt(2, SubmitAtomReceivedAction.class::isInstance)
 			.assertValueAt(3, SubmitAtomResultAction.class::isInstance)
 			.assertValueAt(3, i -> finalStatesSet.contains(SubmitAtomResultAction.class.cast(i).getType()));
-	}
-
-	private static String scaledToUnscaled(int scaled) {
-		return TokenDefinitionReference.unitsToSubunits(scaled).toString();
 	}
 }
