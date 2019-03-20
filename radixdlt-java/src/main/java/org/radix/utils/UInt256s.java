@@ -53,7 +53,15 @@ public final class UInt256s {
 		if (value.compareTo(MAX_UINT256) > 0) {
 			throw new IllegalArgumentException("value must be <= " + MAX_UINT256 + ": " + value);
 		}
-		return UInt256.from(value.toByteArray());
+
+		final byte[] byteArray = value.toByteArray();
+
+		// Handle possible padded zeroes
+		if (byteArray.length > UInt256.BYTES) {
+			return UInt256.from(byteArray, byteArray.length - UInt256.BYTES);
+		} else {
+			return UInt256.from(byteArray);
+		}
 	}
 
 	/**
