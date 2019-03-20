@@ -34,7 +34,7 @@ public class TokenDefinitionsReducerTest {
 			TokenDefinitionsState.init(), TransitionedParticle.n2u(tokenDefinitionParticle));
 		assertThat(state.getState().get(tokenRef)).isEqualTo(
 			new TokenState("Name", "ISO", "Desc", BigDecimal.ZERO,
-				TokenUnitConvert.subunitsToUnits(1), TokenSupplyType.FIXED)
+				TokenUnitConversions.subunitsToUnits(1), TokenSupplyType.FIXED)
 		);
 	}
 
@@ -64,8 +64,8 @@ public class TokenDefinitionsReducerTest {
 				"Name",
 				"ISO",
 				"Desc",
-				TokenUnitConvert.subunitsToUnits(hundred),
-				TokenUnitConvert.subunitsToUnits(1),
+				TokenUnitConversions.subunitsToUnits(hundred),
+				TokenUnitConversions.subunitsToUnits(1),
 				TokenSupplyType.MUTABLE
 			)
 		);

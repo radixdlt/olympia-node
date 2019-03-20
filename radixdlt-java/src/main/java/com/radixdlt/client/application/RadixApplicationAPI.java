@@ -1,6 +1,6 @@
 package com.radixdlt.client.application;
 
-import com.radixdlt.client.application.translate.tokens.TokenUnitConvert;
+import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -535,7 +535,7 @@ public class RadixApplicationAPI {
 			iso,
 			null,
 			BigDecimal.ZERO,
-			TokenUnitConvert.getMinimumGranularity(),
+			TokenUnitConversions.getMinimumGranularity(),
 			TokenSupplyType.MUTABLE
 		);
 		return execute(tokenCreation);
@@ -561,7 +561,7 @@ public class RadixApplicationAPI {
 			iso,
 			description,
 			BigDecimal.ZERO,
-			TokenUnitConvert.getMinimumGranularity(),
+			TokenUnitConversions.getMinimumGranularity(),
 			TokenSupplyType.MUTABLE
 		);
 		return execute(tokenCreation);

@@ -46,7 +46,7 @@ public class MintTokensActionMapper implements StatefulActionToParticleGroupsMap
 			.map(TokenDefinitionsState::getState)
 			.map(m -> getTokenStateOrError(m, tokenDefinition))
 			.map(TokenState::getGranularity)
-			.map(TokenUnitConvert::unitsToSubunits)
+			.map(TokenUnitConversions::unitsToSubunits)
 			.map(granularity -> createMintedTokensParticle(mintTokensAction.getAmount(), granularity, tokenDefinition))
 			.map(ParticleGroup::of)
 			.toObservable();
@@ -62,7 +62,7 @@ public class MintTokensActionMapper implements StatefulActionToParticleGroupsMap
 
 	private SpunParticle createMintedTokensParticle(BigDecimal amount, UInt256 granularity, TokenDefinitionReference tokenDefinition) {
 		Particle minted = new MintedTokensParticle(
-			TokenUnitConvert.unitsToSubunits(amount),
+			TokenUnitConversions.unitsToSubunits(amount),
 			granularity,
 			tokenDefinition.getAddress(),
 			System.currentTimeMillis(),

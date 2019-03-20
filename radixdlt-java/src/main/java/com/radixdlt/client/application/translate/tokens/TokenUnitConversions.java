@@ -8,9 +8,9 @@ import org.radix.utils.UInt256s;
 /**
  * Utility class for converting token units between UInt256 and BigDecimal
  */
-public final class TokenUnitConvert {
+public final class TokenUnitConversions {
 
-	private TokenUnitConvert() {
+	private TokenUnitConversions() {
 		throw new IllegalStateException("Not initializable");
 	}
 

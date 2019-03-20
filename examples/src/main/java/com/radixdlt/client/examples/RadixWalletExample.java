@@ -1,6 +1,6 @@
 package com.radixdlt.client.examples;
 
-import com.radixdlt.client.application.translate.tokens.TokenUnitConvert;
+import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
 import java.math.BigDecimal;
 
 import com.radixdlt.client.application.RadixApplicationAPI;
@@ -52,7 +52,7 @@ public class RadixWalletExample {
 			"JOSH",
 			"The Best Coin Ever",
 			BigDecimal.valueOf(10000),
-			TokenUnitConvert.getMinimumGranularity(),
+			TokenUnitConversions.getMinimumGranularity(),
 			TokenSupplyType.MUTABLE
 		).toObservable().subscribe(System.out::println);
 

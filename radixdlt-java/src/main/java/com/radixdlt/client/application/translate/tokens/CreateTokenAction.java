@@ -31,7 +31,12 @@ public class CreateTokenAction implements Action {
 	) {
 		// Redundant null check added for completeness
 		Objects.requireNonNull(initialSupply);
-		if (tokenSupplyType.equals(TokenSupplyType.FIXED) && initialSupply.compareTo(BigDecimal.ZERO) <= 0) {
+
+		if (initialSupply.compareTo(BigDecimal.ZERO) < 0) {
+			throw new IllegalArgumentException("Supply cannot be less than 0.");
+		}
+
+		if (tokenSupplyType.equals(TokenSupplyType.FIXED) && initialSupply.compareTo(BigDecimal.ZERO) == 0) {
 			throw new IllegalArgumentException("Fixed supply must be greater than 0.");
 		}
 
