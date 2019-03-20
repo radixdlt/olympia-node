@@ -3,7 +3,6 @@ package com.radixdlt.client.application.translate.tokens;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import org.radix.utils.UInt256;
 
 import java.math.BigDecimal;
 import java.util.Map;
@@ -17,9 +16,8 @@ public final class MintAndTransferTokensAction implements Action {
 	private final TokenDefinitionReference tokenDefinitionReference;
 	private final BigDecimal amount;
 	private final RadixAddress to;
-	private final Map<String, Object> metaData;
 
-	public MintAndTransferTokensAction(TokenDefinitionReference tokenDefinitionReference, BigDecimal amount, RadixAddress to, Map<String, Object> metaData) {
+	public MintAndTransferTokensAction(TokenDefinitionReference tokenDefinitionReference, BigDecimal amount, RadixAddress to) {
 		if (amount.stripTrailingZeros().scale() > TokenDefinitionReference.getTokenScale()) {
 			throw new IllegalArgumentException("Amount must scale by " + TokenDefinitionReference.getTokenScale());
 		}
@@ -27,7 +25,6 @@ public final class MintAndTransferTokensAction implements Action {
 		this.tokenDefinitionReference = Objects.requireNonNull(tokenDefinitionReference);
 		this.amount = Objects.requireNonNull(amount);
 		this.to = Objects.requireNonNull(to);
-		this.metaData = ImmutableMap.copyOf(metaData);
 	}
 
 	public TokenDefinitionReference getTokenDefinitionReference() {
@@ -40,9 +37,5 @@ public final class MintAndTransferTokensAction implements Action {
 
 	public BigDecimal getAmount() {
 		return this.amount;
-	}
-
-	public Map<String, Object> getMetaData() {
-		return metaData;
 	}
 }

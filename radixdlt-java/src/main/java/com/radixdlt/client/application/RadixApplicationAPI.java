@@ -12,8 +12,10 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.radixdlt.client.application.translate.tokens.MintAndTransferTokensAction;
 import com.radixdlt.client.application.translate.tokens.MintAndTransferTokensActionMapper;
 import org.radix.utils.UInt256;
+import org.radix.utils.UInt256s;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -606,6 +608,22 @@ public class RadixApplicationAPI {
 		return execute(mintTokensAction);
 	}
 
+	/**
+	 * Mints an amount of new tokens and transfers it to another account
+	 *
+	 * @param iso The symbol of the token to mint
+	 * @param amount The amount in subunits to mint
+	 * @param toAddress The address that the minted tokens should be sent to
+	 * @return result of the transaction
+	 */
+	public Result mintAndTransferTokens(String iso, UInt256 amount, RadixAddress toAddress) {
+		MintAndTransferTokensAction mintTokensAction = new MintAndTransferTokensAction(
+			TokenDefinitionReference.of(getMyAddress(), iso),
+			UInt256s.toBigDecimal(amount),
+			toAddress
+		);
+		return execute(mintTokensAction);
+	}
 
 	/**
 	 * Burns an amount of tokens in the user's account
@@ -620,25 +638,25 @@ public class RadixApplicationAPI {
 	}
 
 	/**
-	 * Sends an amount of a token to an address
+	 * Transfers an amount of a token to an address
 	 *
-	 * @param to the address to send tokens to
+	 * @param to the address to transfer tokens to
 	 * @param amount the amount and token type
 	 * @return result of the transaction
 	 */
-	public Result sendTokens(RadixAddress to, BigDecimal amount, TokenDefinitionReference token) {
+	public Result transferTokens(RadixAddress to, BigDecimal amount, TokenDefinitionReference token) {
 		return transferTokens(getMyAddress(), to, amount, token);
 	}
 
 	/**
-	 * Sends an amount of a token with a message attachment to an address
+	 * Transfers an amount of a token with a message attachment to an address
 	 *
-	 * @param to the address to send tokens to
+	 * @param to the address to transfer tokens to
 	 * @param amount the amount and token type
 	 * @param message message to be encrypted and attached to transfer
 	 * @return result of the transaction
 	 */
-	public Result sendTokens(
+	public Result transferTokens(
 		RadixAddress to,
 		BigDecimal amount,
 		TokenDefinitionReference token,
@@ -658,14 +676,14 @@ public class RadixApplicationAPI {
 	}
 
 	/**
-	 * Sends an amount of a token with a data attachment to an address
+	 * Transfers an amount of a token with a data attachment to an address
 	 *
 	 * @param to the address to send tokens to
 	 * @param amount the amount and token type
 	 * @param attachment the data attached to the transaction
 	 * @return result of the transaction
 	 */
-	public Result sendTokens(RadixAddress to, BigDecimal amount, TokenDefinitionReference token, @Nullable Data attachment) {
+	public Result transferTokens(RadixAddress to, BigDecimal amount, TokenDefinitionReference token, @Nullable Data attachment) {
 		return transferTokens(getMyAddress(), to, amount, token, attachment);
 	}
 
@@ -675,7 +693,7 @@ public class RadixApplicationAPI {
 	}
 
 	/**
-	 * Sends an amount of a token with a data attachment to an address with a unique property
+	 * Transfers an amount of a token with a data attachment to an address with a unique property
 	 * meaning that no other transaction can be executed with the same unique bytes
 	 *
 	 * @param to the address to send tokens to

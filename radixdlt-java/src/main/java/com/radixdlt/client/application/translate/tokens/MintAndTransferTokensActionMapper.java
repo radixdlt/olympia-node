@@ -7,16 +7,32 @@ import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.atommodel.tokens.MintedTokensParticle;
 import com.radixdlt.client.atommodel.tokens.TransferredTokensParticle;
 import com.radixdlt.client.core.atoms.ParticleGroup;
-import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import io.reactivex.Observable;
 import org.radix.utils.UInt256;
 import org.radix.utils.UInt256s;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.function.BiFunction;
 
 public class MintAndTransferTokensActionMapper implements StatefulActionToParticleGroupsMapper {
+	private final BiFunction<MintedTokensParticle, TransferredTokensParticle, List<ParticleGroup>> mintAndTransferToGroupMapper;
+
+	public MintAndTransferTokensActionMapper() {
+		this((mint, transfer) -> Arrays.asList(
+			ParticleGroup.of(SpunParticle.up(mint)),
+			ParticleGroup.of(SpunParticle.down(mint), SpunParticle.up(transfer))
+		));
+	}
+
+	public MintAndTransferTokensActionMapper(BiFunction<MintedTokensParticle, TransferredTokensParticle, List<ParticleGroup>> mintAndTransferToGroupMapper) {
+		this.mintAndTransferToGroupMapper = Objects.requireNonNull(mintAndTransferToGroupMapper);
+	}
+
 	@Override
 	public Observable<RequiredShardState> requiredState(Action action) {
 		if (!(action instanceof MintAndTransferTokensAction)) {
@@ -45,11 +61,17 @@ public class MintAndTransferTokensActionMapper implements StatefulActionToPartic
 			.map(state -> getTokenStateOrError(state, tokenDefinition))
 			.map(TokenState::getGranularity)
 			.map(TokenDefinitionReference::unitsToSubunits)
-			.map(granularity -> createMintedTokensParticle(mintTransferAction.getAmount(), granularity, tokenDefinition))
-			.flatMapObservable(mint -> Observable.just(
-				ParticleGroup.of(SpunParticle.up(mint)),
-				ParticleGroup.of(SpunParticle.down(mint), SpunParticle.up(createTransfer(mint, mintTransferAction)))
-			));
+			.map(granularity -> createMint(mintTransferAction.getAmount(), granularity, tokenDefinition))
+			.map(mint -> mintAndTransferToGroupMapper.apply(mint, createTransfer(mint, mintTransferAction)))
+			.flatMapObservable(Observable::fromIterable);
+	}
+
+	private TokenState getTokenStateOrError(Map<TokenDefinitionReference, TokenState> m, TokenDefinitionReference tokenDefinition) {
+		TokenState ts = m.get(tokenDefinition);
+		if (ts == null) {
+			throw new UnknownTokenException(tokenDefinition);
+		}
+		return ts;
 	}
 
 	private TransferredTokensParticle createTransfer(MintedTokensParticle mint, MintAndTransferTokensAction action) {
@@ -63,15 +85,7 @@ public class MintAndTransferTokensActionMapper implements StatefulActionToPartic
 		);
 	}
 
-	private TokenState getTokenStateOrError(Map<TokenDefinitionReference, TokenState> m, TokenDefinitionReference tokenDefinition) {
-		TokenState ts = m.get(tokenDefinition);
-		if (ts == null) {
-			throw new UnknownTokenException(tokenDefinition);
-		}
-		return ts;
-	}
-
-	private MintedTokensParticle createMintedTokensParticle(BigDecimal amount, UInt256 granularity, TokenDefinitionReference tokenDefinition) {
+	private MintedTokensParticle createMint(BigDecimal amount, UInt256 granularity, TokenDefinitionReference tokenDefinition) {
 		return new MintedTokensParticle(
 			UInt256s.fromBigDecimal(amount),
 			granularity,
