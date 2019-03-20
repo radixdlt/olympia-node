@@ -34,12 +34,6 @@ public class RadixWalletExample {
 			radixIdentity = RadixIdentities.loadOrCreateFile("my.key");
 		}
 
-		// Network updates
-//		RadixUniverse.getInstance()
-//			.getNetwork()
-//			.getStatusUpdates()
-//			.subscribe(System.out::println);
-
 		RadixApplicationAPI api = RadixApplicationAPI.create(radixIdentity);
 		api.pull();
 
@@ -58,8 +52,8 @@ public class RadixWalletExample {
 			"Joshy Token",
 			"JOSH",
 			"The Best Coin Ever",
-			TokenDefinitionReference.unitsToSubunits(10000),
-			UInt256.ONE,
+			BigDecimal.valueOf(10000),
+			TokenDefinitionReference.getMinimumGranularity(),
 			TokenSupplyType.MUTABLE
 		).toObservable().subscribe(System.out::println);
 

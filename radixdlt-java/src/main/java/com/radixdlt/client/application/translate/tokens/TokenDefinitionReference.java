@@ -22,12 +22,18 @@ public final class TokenDefinitionReference {
 	public static final UInt256 SUB_UNITS = UInt256.TEN.pow(SUB_UNITS_POW_10);
 	private static final BigDecimal SUB_UNITS_BIG_DECIMAL = UInt256s.toBigDecimal(SUB_UNITS);
 
+	private static final BigDecimal MINIMUM_GRANULARITY_BIG_DECIMAL = BigDecimal.ONE.scaleByPowerOfTen(-1 * SUB_UNITS_POW_10);
+
 	public static int getTokenScale() {
 		return SUB_UNITS_POW_10;
 	}
 
 	public static BigDecimal getSubunits() {
 		return SUB_UNITS_BIG_DECIMAL;
+	}
+
+	public static BigDecimal getMinimumGranularity() {
+		return MINIMUM_GRANULARITY_BIG_DECIMAL;
 	}
 
 	/**

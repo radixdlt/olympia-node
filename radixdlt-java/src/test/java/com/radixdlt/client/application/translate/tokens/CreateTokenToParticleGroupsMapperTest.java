@@ -6,7 +6,6 @@ import com.radixdlt.client.atommodel.tokens.MintedTokensParticle;
 import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import org.junit.Test;
-import org.radix.utils.UInt256;
 
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
@@ -26,7 +25,8 @@ public class CreateTokenToParticleGroupsMapperTest {
 		when(address.getPublicKey()).thenReturn(key);
 		when(tokenCreation.getAddress()).thenReturn(address);
 		when(tokenCreation.getIso()).thenReturn("ISO");
-		when(tokenCreation.getInitialSupply()).thenReturn(UInt256.ONE);
+		when(tokenCreation.getInitialSupply()).thenReturn(TokenDefinitionReference.getMinimumGranularity());
+		when(tokenCreation.getGranularity()).thenReturn(TokenDefinitionReference.getMinimumGranularity());
 		when(tokenCreation.getTokenSupplyType()).thenReturn(TokenSupplyType.MUTABLE);
 
 		CreateTokenToParticleGroupsMapper createTokenToParticlesMapper = new CreateTokenToParticleGroupsMapper();

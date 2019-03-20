@@ -1,5 +1,6 @@
 package com.radixdlt.client.application.translate.tokens;
 
+import java.math.BigDecimal;
 import java.util.Map;
 
 import com.radixdlt.client.atommodel.tokens.MintedTokensParticle;
@@ -59,9 +60,9 @@ public class MintTokensActionMapper implements StatefulActionToParticleGroupsMap
 		return ts;
 	}
 
-	private SpunParticle createMintedTokensParticle(UInt256 amount, UInt256 granularity, TokenDefinitionReference tokenDefinition) {
+	private SpunParticle createMintedTokensParticle(BigDecimal amount, UInt256 granularity, TokenDefinitionReference tokenDefinition) {
 		Particle minted = new MintedTokensParticle(
-			amount,
+			TokenDefinitionReference.unitsToSubunits(amount),
 			granularity,
 			tokenDefinition.getAddress(),
 			System.currentTimeMillis(),

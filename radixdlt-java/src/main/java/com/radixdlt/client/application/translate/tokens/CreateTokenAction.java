@@ -1,8 +1,7 @@
 package com.radixdlt.client.application.translate.tokens;
 
+import java.math.BigDecimal;
 import java.util.Objects;
-
-import org.radix.utils.UInt256;
 
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
@@ -16,23 +15,23 @@ public class CreateTokenAction implements Action {
 	private final String name;
 	private final String iso;
 	private final String description;
-	private final UInt256 initialSupply;
-	private final UInt256 granularity;
+	private final BigDecimal initialSupply;
+	private final BigDecimal granularity;
 	private final RadixAddress address;
 	private final TokenSupplyType tokenSupplyType;
 
-	public CreateTokenAction(
+	private CreateTokenAction(
 		RadixAddress address,
 		String name,
 		String iso,
 		String description,
-		UInt256 initialSupply,
-		UInt256 granularity,
+		BigDecimal initialSupply,
+		BigDecimal granularity,
 		TokenSupplyType tokenSupplyType
 	) {
 		// Redundant null check added for completeness
 		Objects.requireNonNull(initialSupply);
-		if (tokenSupplyType.equals(TokenSupplyType.FIXED) && initialSupply.isZero()) {
+		if (tokenSupplyType.equals(TokenSupplyType.FIXED) && initialSupply.compareTo(BigDecimal.ZERO) <= 0) {
 			throw new IllegalArgumentException("Fixed supply must be greater than 0.");
 		}
 
@@ -43,6 +42,18 @@ public class CreateTokenAction implements Action {
 		this.initialSupply = initialSupply;
 		this.granularity = Objects.requireNonNull(granularity);
 		this.tokenSupplyType = Objects.requireNonNull(tokenSupplyType);
+	}
+
+	public static CreateTokenAction create(
+		RadixAddress address,
+		String name,
+		String iso,
+		String description,
+		BigDecimal initialSupply,
+		BigDecimal granularity,
+		TokenSupplyType tokenSupplyType
+	) {
+		return new CreateTokenAction(address, name, iso, description, initialSupply, granularity, tokenSupplyType);
 	}
 
 	public RadixAddress getAddress() {
@@ -61,11 +72,11 @@ public class CreateTokenAction implements Action {
 		return description;
 	}
 
-	public UInt256 getInitialSupply() {
+	public BigDecimal getInitialSupply() {
 		return initialSupply;
 	}
 
-	public UInt256 getGranularity() {
+	public BigDecimal getGranularity() {
 		return granularity;
 	}
 

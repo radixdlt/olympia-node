@@ -1,25 +1,31 @@
 package com.radixdlt.client.application.translate.tokens;
 
+import java.math.BigDecimal;
 import java.util.Objects;
-
-import org.radix.utils.UInt256;
 
 import com.radixdlt.client.application.translate.Action;
 
 public class MintTokensAction implements Action {
 	private final TokenDefinitionReference tokenDefinitionReference;
-	private final UInt256 amount;
+	private final BigDecimal amount;
 
-	public MintTokensAction(TokenDefinitionReference tokenDefinitionReference, UInt256 amount) {
+	private MintTokensAction(TokenDefinitionReference tokenDefinitionReference, BigDecimal amount) {
 		this.tokenDefinitionReference = Objects.requireNonNull(tokenDefinitionReference);
 		this.amount = Objects.requireNonNull(amount);
+	}
+
+	public static MintTokensAction create(
+		TokenDefinitionReference tokenDefinitionReference,
+		BigDecimal amount
+	) {
+		return new MintTokensAction(tokenDefinitionReference, amount);
 	}
 
 	public TokenDefinitionReference getTokenDefinitionReference() {
 		return tokenDefinitionReference;
 	}
 
-	public UInt256 getAmount() {
+	public BigDecimal getAmount() {
 		return amount;
 	}
 }

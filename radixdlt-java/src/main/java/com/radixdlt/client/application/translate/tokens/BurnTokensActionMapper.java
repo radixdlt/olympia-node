@@ -68,14 +68,14 @@ public class BurnTokensActionMapper implements StatefulActionToParticleGroupsMap
 		final Map<TokenDefinitionReference, Balance> allConsumables = curState.getBalance();
 
 		final TokenDefinitionReference tokenRef = burnTokensAction.getTokenDefinitionReference();
-		final BigDecimal burnUnits = TokenDefinitionReference.subunitsToUnits(burnTokensAction.getAmount());
+		final BigDecimal burnAmount = burnTokensAction.getAmount();
 		final Balance bal = allConsumables.get(tokenRef);
 		if (bal == null) {
-			throw new InsufficientFundsException(tokenRef, BigDecimal.ZERO, burnUnits);
+			throw new InsufficientFundsException(tokenRef, BigDecimal.ZERO, burnAmount);
 		}
 		final BigDecimal balance = bal.getAmount();
-		if (balance.compareTo(burnUnits) < 0) {
-			throw new InsufficientFundsException(tokenRef, balance, burnUnits);
+		if (balance.compareTo(burnAmount) < 0) {
+			throw new InsufficientFundsException(tokenRef, balance, burnAmount);
 		}
 		final UInt256 granularity = TokenDefinitionReference.unitsToSubunits(bal.getGranularity());
 
@@ -87,7 +87,7 @@ public class BurnTokensActionMapper implements StatefulActionToParticleGroupsMap
 		List<SpunParticle> particles = new ArrayList<>();
 
 		UInt256 consumerTotal = UInt256.ZERO;
-		final UInt256 subunitAmount = burnTokensAction.getAmount();
+		final UInt256 subunitAmount = TokenDefinitionReference.unitsToSubunits(burnTokensAction.getAmount());
 		Iterator<ConsumableTokens> iterator = unconsumedConsumables.iterator();
 		Map<ECPublicKey, UInt256> newUpQuantities = new HashMap<>();
 

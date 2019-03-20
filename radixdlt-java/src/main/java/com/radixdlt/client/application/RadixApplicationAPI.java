@@ -11,7 +11,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.radix.utils.UInt256;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -521,6 +520,53 @@ public class RadixApplicationAPI {
 	}
 
 	/**
+	 * Creates a third party multi-issuance token into the user's account with
+	 * zero initial supply, 10^-18 granularity and no description.
+	 *
+	 * @param name The name of the token to create
+	 * @param iso The symbol of the token to create
+	 * @return result of the transaction
+	 */
+	public Result createMultiIssuanceToken(String name, String iso) {
+		final CreateTokenAction tokenCreation = CreateTokenAction.create(
+			getMyAddress(),
+			name,
+			iso,
+			null,
+			BigDecimal.ZERO,
+			TokenDefinitionReference.getMinimumGranularity(),
+			TokenSupplyType.MUTABLE
+		);
+		return execute(tokenCreation);
+	}
+
+	/**
+	 * Creates a third party multi-issuance token into the user's account with
+	 * zero initial supply and 10^-18 granularity
+	 *
+	 * @param name The name of the token to create
+	 * @param iso The symbol of the token to create
+	 * @param description A description of the token
+	 * @return result of the transaction
+	 */
+	public Result createMultiIssuanceToken(
+		String name,
+		String iso,
+		String description
+	) {
+		final CreateTokenAction tokenCreation = CreateTokenAction.create(
+			getMyAddress(),
+			name,
+			iso,
+			description,
+			BigDecimal.ZERO,
+			TokenDefinitionReference.getMinimumGranularity(),
+			TokenSupplyType.MUTABLE
+		);
+		return execute(tokenCreation);
+	}
+
+	/**
 	 * Creates a third party token into the user's account
 	 *
 	 * @param name The name of the token to create
@@ -535,11 +581,11 @@ public class RadixApplicationAPI {
 		String name,
 		String iso,
 		String description,
-		UInt256 initialSupply,
-		UInt256 granularity,
+		BigDecimal initialSupply,
+		BigDecimal granularity,
 		TokenSupplyType tokenSupplyType
 	) {
-		CreateTokenAction tokenCreation = new CreateTokenAction(
+		CreateTokenAction tokenCreation = CreateTokenAction.create(
 				getMyAddress(), name, iso, description, initialSupply, granularity, tokenSupplyType);
 		return execute(tokenCreation);
 	}
@@ -548,11 +594,11 @@ public class RadixApplicationAPI {
 	 * Mints an amount of new tokens into the user's account
 	 *
 	 * @param iso The symbol of the token to mint
-	 * @param amount The amount in subunits to mint
+	 * @param amount The amount to mint
 	 * @return result of the transaction
 	 */
-	public Result mintTokens(String iso, UInt256 amount) {
-		MintTokensAction mintTokensAction = new MintTokensAction(TokenDefinitionReference.of(getMyAddress(), iso), amount);
+	public Result mintTokens(String iso, BigDecimal amount) {
+		MintTokensAction mintTokensAction = MintTokensAction.create(TokenDefinitionReference.of(getMyAddress(), iso), amount);
 		return execute(mintTokensAction);
 	}
 
@@ -564,8 +610,8 @@ public class RadixApplicationAPI {
 	 * @param amount The amount to mint
 	 * @return result of the transaction
 	 */
-	public Result burnTokens(String iso, UInt256 amount) {
-		BurnTokensAction burnTokensAction = new BurnTokensAction(getMyAddress(), TokenDefinitionReference.of(getMyAddress(), iso), amount);
+	public Result burnTokens(String iso, BigDecimal amount) {
+		BurnTokensAction burnTokensAction = BurnTokensAction.create(getMyAddress(), TokenDefinitionReference.of(getMyAddress(), iso), amount);
 		return execute(burnTokensAction);
 	}
 
