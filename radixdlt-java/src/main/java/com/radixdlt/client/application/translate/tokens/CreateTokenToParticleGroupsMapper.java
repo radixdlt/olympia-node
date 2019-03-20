@@ -33,7 +33,7 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 		final TokenPermission burnPermissions;
 
 		if (tokenCreation.getTokenSupplyType().equals(TokenSupplyType.FIXED)) {
-			mintPermissions = TokenPermission.SAME_ATOM_ONLY;
+			mintPermissions = TokenPermission.TOKEN_CREATION_ONLY;
 			burnPermissions = TokenPermission.NONE;
 		} else if (tokenCreation.getTokenSupplyType().equals(TokenSupplyType.MUTABLE)) {
 			mintPermissions = TokenPermission.TOKEN_OWNER_ONLY;

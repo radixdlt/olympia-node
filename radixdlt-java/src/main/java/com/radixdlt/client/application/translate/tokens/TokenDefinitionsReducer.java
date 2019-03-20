@@ -41,14 +41,10 @@ public class TokenDefinitionsReducer implements ParticleReducer<TokenDefinitions
 			TokenPermission mintPermission = tokenDefinitionParticle.getTokenPermissions().get(MintedTokensParticle.class);
 
 			final TokenSupplyType tokenSupplyType;
-			if (mintPermission.equals(TokenPermission.SAME_ATOM_ONLY)) {
+			if (mintPermission.equals(TokenPermission.TOKEN_CREATION_ONLY) || mintPermission.equals(TokenPermission.ALL)) {
 				tokenSupplyType = TokenSupplyType.FIXED;
-			} else if (mintPermission.equals(TokenPermission.TOKEN_OWNER_ONLY)) {
+			} else if (mintPermission.equals(TokenPermission.TOKEN_OWNER_ONLY) || mintPermission.equals(TokenPermission.NONE)) {
 				tokenSupplyType = TokenSupplyType.MUTABLE;
-			} else if (mintPermission.equals(TokenPermission.POW) && tokenDefinitionParticle.getSymbol().equals("POW")) {
-				tokenSupplyType = TokenSupplyType.MUTABLE;
-			} else if (mintPermission.equals(TokenPermission.GENESIS_ONLY)) {
-				tokenSupplyType = TokenSupplyType.FIXED;
 			} else {
 				throw new IllegalStateException(
 					"TokenDefinitionParticle with mintPermissions of " + mintPermission + " not supported.");
