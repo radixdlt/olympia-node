@@ -29,7 +29,8 @@ public class MintAndTransferTokensActionMapper implements StatefulActionToPartic
 		));
 	}
 
-	public MintAndTransferTokensActionMapper(BiFunction<MintedTokensParticle, TransferredTokensParticle, List<ParticleGroup>> mintAndTransferToGroupMapper) {
+	public MintAndTransferTokensActionMapper(
+		BiFunction<MintedTokensParticle, TransferredTokensParticle, List<ParticleGroup>> mintAndTransferToGroupMapper) {
 		this.mintAndTransferToGroupMapper = Objects.requireNonNull(mintAndTransferToGroupMapper);
 	}
 

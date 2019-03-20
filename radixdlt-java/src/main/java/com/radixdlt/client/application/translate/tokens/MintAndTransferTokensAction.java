@@ -1,11 +1,9 @@
 package com.radixdlt.client.application.translate.tokens;
 
-import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 
 import java.math.BigDecimal;
-import java.util.Map;
 import java.util.Objects;
 
 /**
