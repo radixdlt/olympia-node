@@ -25,8 +25,8 @@ public class CreateTokenToParticleGroupsMapperTest {
 		when(address.getPublicKey()).thenReturn(key);
 		when(tokenCreation.getAddress()).thenReturn(address);
 		when(tokenCreation.getIso()).thenReturn("ISO");
-		when(tokenCreation.getInitialSupply()).thenReturn(TokenDefinitionReference.getMinimumGranularity());
-		when(tokenCreation.getGranularity()).thenReturn(TokenDefinitionReference.getMinimumGranularity());
+		when(tokenCreation.getInitialSupply()).thenReturn(TokenUnitConvert.getMinimumGranularity());
+		when(tokenCreation.getGranularity()).thenReturn(TokenUnitConvert.getMinimumGranularity());
 		when(tokenCreation.getTokenSupplyType()).thenReturn(TokenSupplyType.MUTABLE);
 
 		CreateTokenToParticleGroupsMapper createTokenToParticlesMapper = new CreateTokenToParticleGroupsMapper();

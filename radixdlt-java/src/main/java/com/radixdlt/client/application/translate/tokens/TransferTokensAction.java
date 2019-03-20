@@ -24,8 +24,8 @@ public class TransferTokensAction implements Action {
 		Data attachment,
 		Map<String, Object> metaData
 	) {
-		if (amount.stripTrailingZeros().scale() > TokenDefinitionReference.getTokenScale()) {
-			throw new IllegalArgumentException("Amount must scale by " + TokenDefinitionReference.getTokenScale());
+		if (amount.stripTrailingZeros().scale() > TokenUnitConvert.getTokenScale()) {
+			throw new IllegalArgumentException("Amount must scale by " + TokenUnitConvert.getTokenScale());
 		}
 
 		this.from = from;

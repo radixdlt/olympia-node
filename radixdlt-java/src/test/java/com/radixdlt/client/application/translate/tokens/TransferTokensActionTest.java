@@ -18,7 +18,7 @@ public class TransferTokensActionTest {
 		RadixAddress to = mock(RadixAddress.class);
 		TokenDefinitionReference tokenDefinitionReference = mock(TokenDefinitionReference.class);
 
-		BigDecimal tooSmall = BigDecimal.valueOf(1L, TokenDefinitionReference.SUB_UNITS_POW_10 + 1);
+		BigDecimal tooSmall = BigDecimal.valueOf(1L, TokenUnitConvert.getTokenScale() + 1);
 
 		assertThatThrownBy(() -> TransferTokensAction.create(from, to, tooSmall, tokenDefinitionReference))
 			.isInstanceOf(IllegalArgumentException.class);

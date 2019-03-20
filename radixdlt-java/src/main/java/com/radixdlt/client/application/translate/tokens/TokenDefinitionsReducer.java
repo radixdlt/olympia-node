@@ -59,12 +59,12 @@ public class TokenDefinitionsReducer implements ParticleReducer<TokenDefinitions
 				tokenDefinitionParticle.getName(),
 				tokenDefinitionParticle.getSymbol(),
 				tokenDefinitionParticle.getDescription(),
-				TokenDefinitionReference.subunitsToUnits(tokenDefinitionParticle.getGranularity()),
+				TokenUnitConvert.subunitsToUnits(tokenDefinitionParticle.getGranularity()),
 				tokenSupplyType
 			);
 		} else if (t.getSpinTo() == Spin.UP && (p instanceof MintedTokensParticle || p instanceof BurnedTokensParticle)) {
 			BigInteger mintedOrBurnedAmount = UInt256s.toBigInteger(((Fungible) p).getAmount());
-			BigDecimal change = TokenDefinitionReference.subunitsToUnits(
+			BigDecimal change = TokenUnitConvert.subunitsToUnits(
 				(p instanceof BurnedTokensParticle)
 					? mintedOrBurnedAmount.negate()
 					: mintedOrBurnedAmount

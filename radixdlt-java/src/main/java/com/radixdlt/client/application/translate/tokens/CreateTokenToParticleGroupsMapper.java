@@ -50,7 +50,7 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 			tokenCreation.getName(),
 			tokenCreation.getIso(),
 			tokenCreation.getDescription(),
-			TokenDefinitionReference.unitsToSubunits(tokenCreation.getGranularity()),
+			TokenUnitConvert.unitsToSubunits(tokenCreation.getGranularity()),
 			ImmutableMap.of(
 				MintedTokensParticle.class, mintPermissions,
 				BurnedTokensParticle.class, burnPermissions,
@@ -65,8 +65,8 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 		}
 
 		MintedTokensParticle minted = new MintedTokensParticle(
-				TokenDefinitionReference.unitsToSubunits(tokenCreation.getInitialSupply()),
-				TokenDefinitionReference.unitsToSubunits(tokenCreation.getGranularity()),
+				TokenUnitConvert.unitsToSubunits(tokenCreation.getInitialSupply()),
+				TokenUnitConvert.unitsToSubunits(tokenCreation.getGranularity()),
 				tokenCreation.getAddress(),
 				System.currentTimeMillis(),
 				token.getTokenDefinitionReference(),
