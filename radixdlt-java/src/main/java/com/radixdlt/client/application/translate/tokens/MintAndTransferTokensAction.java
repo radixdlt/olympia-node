@@ -16,10 +16,6 @@ public final class MintAndTransferTokensAction implements Action {
 	private final RadixAddress to;
 
 	public MintAndTransferTokensAction(TokenDefinitionReference tokenDefinitionReference, BigDecimal amount, RadixAddress to) {
-		if (amount.stripTrailingZeros().scale() > TokenDefinitionReference.getTokenScale()) {
-			throw new IllegalArgumentException("Amount must scale by " + TokenDefinitionReference.getTokenScale());
-		}
-
 		this.tokenDefinitionReference = Objects.requireNonNull(tokenDefinitionReference);
 		this.amount = Objects.requireNonNull(amount);
 		this.to = Objects.requireNonNull(to);

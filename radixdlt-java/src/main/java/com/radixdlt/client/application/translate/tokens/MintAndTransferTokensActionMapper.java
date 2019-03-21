@@ -61,7 +61,7 @@ public class MintAndTransferTokensActionMapper implements StatefulActionToPartic
 			.map(TokenDefinitionsState::getState)
 			.map(state -> getTokenStateOrError(state, tokenDefinition))
 			.map(TokenState::getGranularity)
-			.map(TokenDefinitionReference::unitsToSubunits)
+			.map(TokenUnitConversions::unitsToSubunits)
 			.map(granularity -> createMint(mintTransferAction.getAmount(), granularity, tokenDefinition))
 			.map(mint -> mintAndTransferToGroupMapper.apply(mint, createTransfer(mint, mintTransferAction)))
 			.flatMapObservable(Observable::fromIterable);
