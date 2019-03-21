@@ -34,8 +34,6 @@ import io.reactivex.disposables.Disposable;
  * calls.
  */
 public class RadixJsonRpcClient {
-	private static final Logger LOG = LoggerFactory.getLogger(RadixJsonRpcClient.class);
-
 	public static class JsonRpcResponse {
 		private final boolean isSuccess;
 		private final JsonElement jsonResponse;
@@ -237,7 +235,7 @@ public class RadixJsonRpcClient {
 	public Observable<AtomObservation> observeAtoms(String subscriberId) {
 		return this.observeNotifications("Atoms.subscribeUpdate", subscriberId)
 			.flatMap(observedAtomsJson -> {
-				LOG.debug("Received Atoms.subscribeUpdate: for {}: {}", subscriberId, observedAtomsJson);
+				LOGGER.debug("Received Atoms.subscribeUpdate: for {}: {}", subscriberId, observedAtomsJson);
 				JsonArray atomEvents = observedAtomsJson.getAsJsonArray("atomEvents");
 				boolean isHead = observedAtomsJson.has("isHead") && observedAtomsJson.get("isHead").getAsBoolean();
 
