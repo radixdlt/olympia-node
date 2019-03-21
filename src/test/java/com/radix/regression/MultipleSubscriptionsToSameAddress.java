@@ -8,12 +8,10 @@ import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
-import io.reactivex.Observer;
 import io.reactivex.observers.BaseTestConsumer;
 import io.reactivex.observers.TestObserver;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.radix.utils.UInt256;
 
 import java.math.BigDecimal;
 
@@ -27,6 +25,7 @@ public class MultipleSubscriptionsToSameAddress {
 
 	@Test
 	public void enter_test_name_here() {
+
 		RadixIdentity identity = RadixIdentities.createNew();
 		RadixApplicationAPI api0 = RadixApplicationAPI.create(identity);
 		RadixApplicationAPI api1 = RadixApplicationAPI.create(identity);
@@ -40,7 +39,7 @@ public class MultipleSubscriptionsToSameAddress {
 		System.out.println("Create TEST with 3 supply");
 		System.out.println("Subscribe api0");
 
-		Observer<Object> api0Balance = Util.loggingObserver("api0");
+		TestObserver<Object> api0Balance = TestObserver.create(Util.loggingObserver("api0"));
 		api0.getMyBalance(TokenDefinitionReference.of(api0.getMyAddress(), "TEST"))
 			.subscribe(api0Balance);
 
@@ -48,7 +47,7 @@ public class MultipleSubscriptionsToSameAddress {
 		api0.mintTokens("TEST", BigDecimal.valueOf(5)).toCompletable().blockingAwait();
 
 		System.out.println("Subscribe api1");
-		Observer<Object> api1Balance = Util.loggingObserver("api1");
+		TestObserver<Object> api1Balance = TestObserver.create(Util.loggingObserver("api1"));
 		api1.getMyBalance(TokenDefinitionReference.of(api0.getMyAddress(), "TEST"))
 			.subscribe(api1Balance);
 
@@ -57,6 +56,9 @@ public class MultipleSubscriptionsToSameAddress {
 
 		System.out.println("Burn 2 TEST");
 		api0.burnTokens("TEST", BigDecimal.valueOf(2)).toCompletable().blockingAwait();
+
+		api0Balance.dispose();
+		api1Balance.dispose();
 	}
 
 	private static TestObserver createToken(RadixApplicationAPI api) {
