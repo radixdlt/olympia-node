@@ -1,10 +1,13 @@
-package com.radix.regression;
+package com.radix.regression.doublespend;
 
+import com.radix.regression.Util;
+import com.radix.regression.doublespend.DoubleSpendTestCreator.DoubleSpendTest;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.ApplicationState;
+import com.radixdlt.client.application.translate.ShardedAppStateId;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
 import com.radixdlt.client.application.translate.tokens.TokenBalanceState;
@@ -27,17 +30,21 @@ import io.reactivex.observers.TestObserver;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.assertj.core.api.Condition;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.radix.common.tuples.Pair;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class DeleteAtomEvents {
 	@BeforeClass
@@ -56,51 +63,62 @@ public class DeleteAtomEvents {
 			});
 	}
 
+	private static class DoubleTransferTestCreator implements DoubleSpendTestCreator {
 
-	private List<Action> init(RadixApplicationAPI api) {
-		return Collections.singletonList(
-			CreateTokenAction.create(
-				api.getMyAddress(),
-				"Joshy Token",
-				"JOSH",
-				"Cool Token",
-				BigDecimal.ONE,
-				BigDecimal.ONE,
-				TokenSupplyType.FIXED
-			)
-		);
-	}
+		@Override
+		public DoubleSpendTest create(final RadixAddress apiAddress) {
+			final RadixAddress toAddress = RadixUniverse.getInstance().getAddressFrom(RadixIdentities.createNew().getPublicKey());
+			final TokenDefinitionReference tokenRef = TokenDefinitionReference.of(apiAddress, "JOSH");
 
-	private List<Action> doubleSpendActions(RadixApplicationAPI api, RadixApplicationAPI api2) {
-		TokenDefinitionReference tokenRef = TokenDefinitionReference.of(api.getMyAddress(), "JOSH");
-		TransferTokensAction action = TransferTokensAction.create(api.getMyAddress(), api2.getMyAddress(), BigDecimal.ONE, tokenRef);
+			return new DoubleSpendTest() {
+				@Override
+				public List<Action> initialActions() {
+					return Collections.singletonList(
+						CreateTokenAction.create(
+							apiAddress,
+							"Joshy Token",
+							"JOSH",
+							"Cool Token",
+							BigDecimal.ONE,
+							BigDecimal.ONE,
+							TokenSupplyType.FIXED
+						)
+					);
+				}
 
-		return Arrays.asList(action, action);
-	}
+				@Override
+				public List<Action> concurrentDoubleSpendActions() {
+					TransferTokensAction action = TransferTokensAction.create(apiAddress, toAddress, BigDecimal.ONE, tokenRef);
+					return Arrays.asList(action, action);
+				}
 
-	private List<Pair<Class<? extends ApplicationState>, RadixAddress>> requiredStatesForCheck(RadixApplicationAPI api, RadixApplicationAPI api2) {
-		return Arrays.asList(
-			Pair.of(TokenBalanceState.class, api.getMyAddress()),
-			Pair.of(TokenBalanceState.class, api2.getMyAddress())
-		);
-	}
+				@Override
+				public PostConsensusCondition postConsensusCondition() {
+					Set<Pair<String, ShardedAppStateId>> stateRequired = new HashSet<>();
+					stateRequired.add(Pair.of("Balance 1", ShardedAppStateId.of(TokenBalanceState.class, apiAddress)));
+					stateRequired.add(Pair.of("Balance 2", ShardedAppStateId.of(TokenBalanceState.class, toAddress)));
 
-	private Predicate<Map<Pair<Class<? extends ApplicationState>, RadixAddress>, ApplicationState>> check(RadixApplicationAPI api, RadixApplicationAPI api2) {
-		TokenDefinitionReference tokenRef = TokenDefinitionReference.of(api.getMyAddress(), "JOSH");
-
-		return state -> {
-			TokenBalanceState tokenBalanceState1 = (TokenBalanceState) state.get(Pair.of(TokenBalanceState.class, api.getMyAddress()));
-			TokenBalanceState tokenBalanceState2 = (TokenBalanceState) state.get(Pair.of(TokenBalanceState.class, api2.getMyAddress()));
-			return tokenBalanceState1.getBalance().get(tokenRef).getAmount().compareTo(BigDecimal.ZERO) == 0 &&
-				tokenBalanceState2.getBalance().get(tokenRef).getAmount().compareTo(BigDecimal.ONE) == 0;
-		};
+					return new PostConsensusCondition(
+						stateRequired,
+						new Condition<>(map -> {
+							TokenBalanceState tokenBalanceState1 = (TokenBalanceState) map.get(ShardedAppStateId.of(TokenBalanceState.class, apiAddress));
+							TokenBalanceState tokenBalanceState2 = (TokenBalanceState) map.get(ShardedAppStateId.of(TokenBalanceState.class, toAddress));
+							return tokenBalanceState1.getBalance().get(tokenRef).getAmount().compareTo(BigDecimal.ZERO) == 0 &&
+									tokenBalanceState2.getBalance().get(tokenRef).getAmount().compareTo(BigDecimal.ONE) == 0;
+						}, "")
+					);
+				}
+			};
+		}
 	}
 
 	public void executeDoubleSpend() {
 		RadixApplicationAPI api = RadixApplicationAPI.create(RadixIdentities.createNew());
-		RadixApplicationAPI api2 = RadixApplicationAPI.create(RadixIdentities.createNew());
 
-		List<Action> initialActions = init(api);
+		DoubleSpendTestCreator creator = new DoubleTransferTestCreator();
+		DoubleSpendTest doubleSpendTest = creator.create(api.getMyAddress());
+
+		List<Action> initialActions = doubleSpendTest.initialActions();
 		Disposable d = api.pull();
 		initialActions.stream()
 			.map(api::execute)
@@ -144,7 +162,7 @@ public class DeleteAtomEvents {
 		Single<List<SubmitAtomSendAction>> conflictingAtoms =
 			Observable.zip(
 				nodes,
-				Observable.fromIterable(doubleSpendActions(api, api2)),
+				Observable.fromIterable(doubleSpendTest.concurrentDoubleSpendActions()),
 				(client, action) ->
 					api.buildAtom(action)
 						.flatMap(api.getMyIdentity()::sign)
@@ -166,14 +184,18 @@ public class DeleteAtomEvents {
 			)
 			.subscribe(submissionObserver);
 
-		List<Pair<Pair<Class<? extends ApplicationState>, RadixAddress>, TestObserver<ApplicationState>>> testObservers = requiredStatesForCheck(api, api2).stream()
-			.map(p -> {
-				RadixApplicationAPI apiOther = RadixApplicationAPI.create(RadixIdentities.createNew());
-				TestObserver<ApplicationState> testObserver = TestObserver.create(Util.loggingObserver("Balance"));
-				apiOther.getState(p.getFirst(), p.getSecond()).subscribe(testObserver);
-				return Pair.of(p, testObserver);
-			})
-			.collect(Collectors.toList());
+		Map<ShardedAppStateId, TestObserver<ApplicationState>> testObservers = doubleSpendTest.postConsensusCondition().getStateRequired().stream()
+			.collect(Collectors.toMap(
+				Pair::getSecond,
+				pair -> {
+					final String name = pair.getFirst();
+					final ShardedAppStateId id = pair.getSecond();
+					final RadixApplicationAPI newApi = RadixApplicationAPI.create(RadixIdentities.createNew());
+					final TestObserver<ApplicationState> testObserver = TestObserver.create(Util.loggingObserver(name));
+					newApi.getState(id.stateClass(), id.address()).subscribe(testObserver);
+					return testObserver;
+				}
+			));
 
 		// Wait for network to resolve conflict
 		TestObserver<RadixNodeAction> lastUpdateObserver = TestObserver.create(Util.loggingObserver("Last Update"));
@@ -186,15 +208,16 @@ public class DeleteAtomEvents {
 		lastUpdateObserver.awaitTerminalEvent();
 		submissionObserver.awaitTerminalEvent();
 
-		Map<Pair<Class<? extends ApplicationState>, RadixAddress>, ApplicationState> state = testObservers.stream()
-			.map(o -> {
-				List<ApplicationState> values = o.getSecond().values();
-				o.getSecond().dispose();
-				return Pair.of(o.getFirst(), values.get(values.size() - 1));
-			})
-			.collect(Collectors.toMap(Pair::getFirst, Pair::getSecond));
+		Map<ShardedAppStateId, ApplicationState> state = testObservers.entrySet().stream()
+			.collect(Collectors.toMap(
+				Entry::getKey,
+				e -> {
+					List<ApplicationState> values = e.getValue().values();
+					return values.get(values.size() - 1);
+				}
+			));
+		testObservers.forEach((k,v) -> v.dispose());
 
-		// Then the account balances should resolve to one transfer
-		assert(check(api, api2).test(state));
+		assertThat(state).is(doubleSpendTest.postConsensusCondition().getCondition());
 	}
 }
