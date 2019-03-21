@@ -34,6 +34,8 @@ import io.reactivex.disposables.Disposable;
  * calls.
  */
 public class RadixJsonRpcClient {
+	private static final Logger log = LoggerFactory.getLogger(RadixJsonRpcClient.class);
+
 	public static class JsonRpcResponse {
 		private final boolean isSuccess;
 		private final JsonElement jsonResponse;
@@ -235,6 +237,7 @@ public class RadixJsonRpcClient {
 	public Observable<AtomObservation> observeAtoms(String subscriberId) {
 		return this.observeNotifications("Atoms.subscribeUpdate", subscriberId)
 			.flatMap(observedAtomsJson -> {
+				log.debug("Received Atoms.subscribeUpdate: for {}: {}", subscriberId, observedAtomsJson);
 				JsonArray atomEvents = observedAtomsJson.getAsJsonArray("atomEvents");
 				boolean isHead = observedAtomsJson.has("isHead") && observedAtomsJson.get("isHead").getAsBoolean();
 
@@ -377,15 +380,14 @@ public class RadixJsonRpcClient {
 	public Observable<NodeAtomSubmissionUpdate> submitAtom(Atom atom) {
 		return Observable.create(emitter -> {
 			JSONObject jsonAtomTemp = Serialize.getInstance().toJsonObject(atom, Output.API);
-			if (LOGGER.isDebugEnabled()) {
-				LOGGER.debug("Submitting atom: {}", jsonAtomTemp.toString(4));
-			}
 			JsonElement jsonAtom = GsonJson.getInstance().toGson(jsonAtomTemp);
 
 			final String subscriberId = UUID.randomUUID().toString();
 			JsonObject params = new JsonObject();
 			params.addProperty("subscriberId", subscriberId);
 			params.add("atom", jsonAtom);
+
+			LOGGER.debug("Submitting atom for {}: {}", subscriberId, jsonAtomTemp);
 
 			Disposable messageListenerDisposable = messages.filter(msg -> msg.has("method"))
 				.filter(msg -> msg.get("method").getAsString().equals("AtomSubmissionState.onNext"))
