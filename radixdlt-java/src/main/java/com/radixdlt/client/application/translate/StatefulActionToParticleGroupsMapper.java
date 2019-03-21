@@ -1,10 +1,7 @@
 package com.radixdlt.client.application.translate;
 
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import io.reactivex.Observable;
-
-import java.util.Objects;
 
 /**
  * Maps a high level application action to lower level spun particles used
@@ -12,36 +9,6 @@ import java.util.Objects;
  * via requiredState().
  */
 public interface StatefulActionToParticleGroupsMapper {
-	class RequiredShardState {
-		private final Class<? extends ApplicationState> stateClass;
-		private final RadixAddress address;
-
-		public RequiredShardState(Class<? extends ApplicationState> stateClass, RadixAddress address) {
-			Objects.requireNonNull(stateClass);
-			Objects.requireNonNull(address);
-
-			this.stateClass = stateClass;
-			this.address = address;
-		}
-
-		/**
-		 * Retrieves the type of application state needed for this requirement
-		 *
-		 * @return the type of application state
-		 */
-		public Class<? extends ApplicationState> stateClass() {
-			return this.stateClass;
-		}
-
-		/**
-		 * Retrieves the shardable address which needs to be queried to construct the application state
-		 *
-		 * @return the shardable address
-		 */
-		public RadixAddress address() {
-			return this.address;
-		}
-	}
 
 
 	/**
@@ -52,7 +19,7 @@ public interface StatefulActionToParticleGroupsMapper {
 	 * @param action the action to get the required context about
 	 * @return observable of required contexts required to create spun particles for the action
 	 */
-	Observable<RequiredShardState> requiredState(Action action);
+	Observable<ShardedAppStateId> requiredState(Action action);
 
 	/**
 	 * Returns an observable of actions which will be added to the list

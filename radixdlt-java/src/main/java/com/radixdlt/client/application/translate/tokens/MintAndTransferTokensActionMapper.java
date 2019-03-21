@@ -2,6 +2,7 @@ package com.radixdlt.client.application.translate.tokens;
 
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.ApplicationState;
+import com.radixdlt.client.application.translate.ShardedAppStateId;
 import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.atommodel.tokens.MintedTokensParticle;
@@ -34,7 +35,7 @@ public class MintAndTransferTokensActionMapper implements StatefulActionToPartic
 	}
 
 	@Override
-	public Observable<RequiredShardState> requiredState(Action action) {
+	public Observable<ShardedAppStateId> requiredState(Action action) {
 		if (!(action instanceof MintAndTransferTokensAction)) {
 			return Observable.empty();
 		}
@@ -42,7 +43,7 @@ public class MintAndTransferTokensActionMapper implements StatefulActionToPartic
 		MintAndTransferTokensAction mintAndTransferTokensAction = (MintAndTransferTokensAction) action;
 		RadixAddress tokenDefinitionAddress = mintAndTransferTokensAction.getTokenDefinitionReference().getAddress();
 
-		return Observable.just(new RequiredShardState(TokenDefinitionsState.class, tokenDefinitionAddress));
+		return Observable.just(ShardedAppStateId.of(TokenDefinitionsState.class, tokenDefinitionAddress));
 	}
 
 	@Override

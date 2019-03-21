@@ -1,5 +1,6 @@
 package com.radixdlt.client.application.translate.tokens;
 
+import com.radixdlt.client.application.translate.ShardedAppStateId;
 import java.math.BigDecimal;
 import java.util.Map;
 
@@ -19,7 +20,7 @@ import io.reactivex.Observable;
 public class MintTokensActionMapper implements StatefulActionToParticleGroupsMapper {
 
 	@Override
-	public Observable<RequiredShardState> requiredState(Action action) {
+	public Observable<ShardedAppStateId> requiredState(Action action) {
 		if (!(action instanceof MintTokensAction)) {
 			return Observable.empty();
 		}
@@ -27,7 +28,7 @@ public class MintTokensActionMapper implements StatefulActionToParticleGroupsMap
 		MintTokensAction mintTokensAction = (MintTokensAction) action;
 		RadixAddress tokenDefinitionAddress = mintTokensAction.getTokenDefinitionReference().getAddress();
 
-		return Observable.just(new RequiredShardState(TokenDefinitionsState.class, tokenDefinitionAddress));
+		return Observable.just(ShardedAppStateId.of(TokenDefinitionsState.class, tokenDefinitionAddress));
 	}
 
 	@Override

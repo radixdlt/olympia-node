@@ -3,7 +3,7 @@ package com.radixdlt.client.application.translate.tokens;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper.RequiredShardState;
+import com.radixdlt.client.application.translate.ShardedAppStateId;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import io.reactivex.Observable;
 import io.reactivex.observers.TestObserver;
@@ -33,7 +33,7 @@ public class TransferTokensToParticleGroupsMapperTest {
 
 		TransferTokensToParticleGroupsMapper transferTranslator = new TransferTokensToParticleGroupsMapper(universe);
 
-		TestObserver<RequiredShardState> contextTestObserver = TestObserver.create();
+		TestObserver<ShardedAppStateId> contextTestObserver = TestObserver.create();
 		transferTranslator.requiredState(transferTokensAction).subscribe(contextTestObserver);
 		contextTestObserver
 			.assertValue(ctx -> ctx.address().equals(address))

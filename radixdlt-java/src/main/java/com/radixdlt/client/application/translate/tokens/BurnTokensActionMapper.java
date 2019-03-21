@@ -1,5 +1,6 @@
 package com.radixdlt.client.application.translate.tokens;
 
+import com.radixdlt.client.application.translate.ShardedAppStateId;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -37,7 +38,7 @@ public class BurnTokensActionMapper implements StatefulActionToParticleGroupsMap
 	}
 
 	@Override
-	public Observable<RequiredShardState> requiredState(Action action) {
+	public Observable<ShardedAppStateId> requiredState(Action action) {
 		if (!(action instanceof BurnTokensAction)) {
 			return Observable.empty();
 		}
@@ -46,7 +47,7 @@ public class BurnTokensActionMapper implements StatefulActionToParticleGroupsMap
 
 		RadixAddress address = burnTokensAction.getAddress();
 
-		return Observable.just(new RequiredShardState(TokenBalanceState.class, address));
+		return Observable.just(ShardedAppStateId.of(TokenBalanceState.class, address));
 	}
 
 	@Override

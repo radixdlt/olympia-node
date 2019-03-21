@@ -1,5 +1,6 @@
 package com.radixdlt.client.application.translate.tokens;
 
+import com.radixdlt.client.application.translate.ShardedAppStateId;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
@@ -140,14 +141,14 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 	}
 
 	@Override
-	public Observable<RequiredShardState> requiredState(Action action) {
+	public Observable<ShardedAppStateId> requiredState(Action action) {
 		if (!(action instanceof TransferTokensAction)) {
 			return Observable.empty();
 		}
 
 		TransferTokensAction transfer = (TransferTokensAction) action;
 
-		return Observable.just(new RequiredShardState(TokenBalanceState.class, transfer.getFrom()));
+		return Observable.just(ShardedAppStateId.of(TokenBalanceState.class, transfer.getFrom()));
 	}
 
 	@Override
