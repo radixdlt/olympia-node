@@ -14,8 +14,6 @@ import java.util.stream.Stream;
 
 import com.radixdlt.client.application.translate.tokens.MintAndTransferTokensAction;
 import com.radixdlt.client.application.translate.tokens.MintAndTransferTokensActionMapper;
-import org.radix.utils.UInt256;
-import org.radix.utils.UInt256s;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -616,10 +614,10 @@ public class RadixApplicationAPI {
 	 * @param toAddress The address that the minted tokens should be sent to
 	 * @return result of the transaction
 	 */
-	public Result mintAndTransferTokens(String iso, UInt256 amount, RadixAddress toAddress) {
+	public Result mintAndTransferTokens(String iso, BigDecimal amount, RadixAddress toAddress) {
 		MintAndTransferTokensAction mintTokensAction = new MintAndTransferTokensAction(
 			TokenDefinitionReference.of(getMyAddress(), iso),
-			UInt256s.toBigDecimal(amount),
+			amount,
 			toAddress
 		);
 		return execute(mintTokensAction);

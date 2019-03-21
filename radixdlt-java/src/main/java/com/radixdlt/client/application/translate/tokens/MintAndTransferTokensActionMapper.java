@@ -10,7 +10,6 @@ import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import io.reactivex.Observable;
 import org.radix.utils.UInt256;
-import org.radix.utils.UInt256s;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -88,7 +87,7 @@ public class MintAndTransferTokensActionMapper implements StatefulActionToPartic
 
 	private MintedTokensParticle createMint(BigDecimal amount, UInt256 granularity, TokenDefinitionReference tokenDefinition) {
 		return new MintedTokensParticle(
-			UInt256s.fromBigDecimal(amount),
+			TokenUnitConversions.unitsToSubunits(amount),
 			granularity,
 			tokenDefinition.getAddress(),
 			System.currentTimeMillis(),
