@@ -67,6 +67,11 @@ public class TokenBalanceState implements ApplicationState {
 			BigInteger newBalance = balance.balance.add(amount);
 			return new Balance(newBalance, balance.granularity, newMap);
 		}
+
+		@Override
+		public String toString() {
+			return balance.toString();
+		}
 	}
 
 	private final Map<TokenDefinitionReference, Balance> balance;
@@ -94,5 +99,10 @@ public class TokenBalanceState implements ApplicationState {
 		);
 
 		return new TokenBalanceState(balance);
+	}
+
+	@Override
+	public String toString() {
+		return balance.toString();
 	}
 }
