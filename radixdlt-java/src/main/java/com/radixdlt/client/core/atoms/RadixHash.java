@@ -67,7 +67,7 @@ public final class RadixHash {
 
 	@Override
 	public int hashCode() {
-		return new BigInteger(hash).hashCode();
+		return new BigInteger(1, hash).hashCode();
 	}
 
 	@Override

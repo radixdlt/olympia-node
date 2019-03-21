@@ -140,4 +140,48 @@ public class BytesTest {
 		assertThatThrownBy(() -> Bytes.fromHexString("[")).isInstanceOf(IllegalArgumentException.class);
 		assertThatThrownBy(() -> Bytes.fromHexString("~")).isInstanceOf(IllegalArgumentException.class);
 	}
+
+	/**
+	 * Various test cases for trimLeadingZeros.
+	 */
+	@Test
+	public void testTrimLeadingZeros() {
+		assertEquals(null, Bytes.trimLeadingZeros(null)); // Null -> noop
+
+		byte[] emptyBytes = new byte[0];
+		assertEquals(emptyBytes, Bytes.trimLeadingZeros(emptyBytes)); // Empty -> noop
+
+		// All size 1 byte arrays -> noop
+		for (int i = 0; i < 255; ++i) {
+			byte[] oneByte = new byte[1];
+			oneByte[0] = (byte) i;
+			assertEquals(oneByte, Bytes.trimLeadingZeros(oneByte));
+		}
+
+		// All size 2 byte arrays -> trimmed
+		for (int i = 0; i < 255; ++i) {
+			byte[] oneByte = new byte[1];
+			byte[] twoBytes = new byte[2];
+			oneByte[0] = (byte) i;
+			twoBytes[1] = (byte) i;
+			assertArrayEquals(oneByte, Bytes.trimLeadingZeros(twoBytes));
+		}
+
+		byte[] noLeadingZeros = new byte[] {
+			1, 2, 3, 4, 5, 6, 7, 8, 9
+		};
+		assertEquals(noLeadingZeros, Bytes.trimLeadingZeros(noLeadingZeros));
+
+		byte[] singleZero = new byte[1];
+		byte[] severalZeros = new byte[10];
+		assertArrayEquals(singleZero, Bytes.trimLeadingZeros(severalZeros));
+
+		byte[] zeroRemoved = new byte[] {
+			1, 2, 3, 4, 5, 6, 7, 8, 9
+		};
+		byte[] withZero = new byte[] {
+			0, 1, 2, 3, 4, 5, 6, 7, 8, 9
+		};
+		assertArrayEquals(zeroRemoved, Bytes.trimLeadingZeros(withZero));
+	}
 }

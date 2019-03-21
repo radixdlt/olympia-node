@@ -1,5 +1,6 @@
 package org.radix.utils.primitives;
 
+import java.util.Arrays;
 import java.util.Base64;
 
 import org.radix.utils.RadixConstants;
@@ -176,5 +177,24 @@ public class Bytes {
 			return (byte) (10 + c - 'a');
 		}
 		throw new IllegalArgumentException("Unknown hex digit: " + value);
+	}
+
+	/**
+	 * Trims any leading zero bytes from {@code bytes} until either no
+	 * leading zero exists, or only a single zero byte exists.
+	 *
+	 * @param bytes the byte a
+	 * @return @code bytes} with leading zeros removed, if any
+	 */
+	public static byte[] trimLeadingZeros(byte[] bytes) {
+		if (bytes == null || bytes.length <= 1 || bytes[0] != 0) {
+			return bytes;
+		}
+		int trimLeadingZeros = 1;
+		int maxTrim = bytes.length - 1;
+		while (trimLeadingZeros < maxTrim && bytes[trimLeadingZeros] == 0) {
+			trimLeadingZeros += 1;
+		}
+		return Arrays.copyOfRange(bytes, trimLeadingZeros, bytes.length);
 	}
 }

@@ -22,11 +22,7 @@ public final class UInt256s {
 	 * @return The value as a {@link BigInteger}
 	 */
 	public static BigInteger toBigInteger(UInt256 value) {
-		// unsigned -> zero extend
-		byte[] bytes = new byte[UInt256.BYTES + 1];
-		bytes[0] = 0;
-		value.toByteArray(bytes, 1);
-		return new BigInteger(bytes);
+		return new BigInteger(1, value.toByteArray());
 	}
 
 	/**

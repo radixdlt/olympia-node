@@ -7,6 +7,7 @@ import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.DsonOutput.Output;
 import org.radix.serialization2.SerializerId2;
 import org.radix.serialization2.client.SerializableObject;
+import org.radix.utils.primitives.Bytes;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -20,8 +21,8 @@ public class ECSignature extends SerializableObject {
 	}
 
 	public ECSignature(BigInteger r, BigInteger s) {
-		this.r = r.toByteArray();
-		this.s = s.toByteArray();
+		this.r = Bytes.trimLeadingZeros(r.toByteArray());
+		this.s = Bytes.trimLeadingZeros(s.toByteArray());
 	}
 
 	public String getRBase64() {
@@ -29,11 +30,11 @@ public class ECSignature extends SerializableObject {
 	}
 
 	public BigInteger getR() {
-		return new BigInteger(r);
+		return new BigInteger(1, r);
 	}
 
 	public BigInteger getS() {
-		return new BigInteger(s);
+		return new BigInteger(1, s);
 	}
 
 	@JsonProperty("r")
