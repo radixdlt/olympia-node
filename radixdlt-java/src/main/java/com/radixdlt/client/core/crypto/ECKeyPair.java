@@ -120,14 +120,32 @@ public class ECKeyPair extends SerializableObject {
 		return Arrays.copyOf(privateKey, privateKey.length);
 	}
 
-
 	public ECSignature sign(byte[] data) {
+		return sign(data, true);
+	}
+
+	public ECSignature sign(byte[] data, boolean enforceLowSAccordingToBip62) {
 		ECDomainParameters domain = ECKeyPairGenerator.getDomain((getPublicKey().length() - 1) * 8);
 		ECDSASigner signer = new ECDSASigner();
 		signer.init(true, new ECPrivateKeyParameters(new BigInteger(1, getPrivateKey()), domain));
 		BigInteger[] components = signer.generateSignature(data);
-		ECSignature signature = new ECSignature(components[0], components[1]);
-		return signature;
+
+		BigInteger r = components[0];
+		BigInteger s = components[1];
+
+		BigInteger curveOrder = domain.getN();
+		BigInteger halvCurveOrder = curveOrder.shiftRight(1);
+		/**
+		 * `true `if the `S` component is "low", that means it is below halvCurveOrder. See:
+		 * https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki#Low_S_values_in_signatures
+		 */
+		boolean sIsLowAccordingToBip62 = s.compareTo(halvCurveOrder) <= 0;
+
+		if (enforceLowSAccordingToBip62 && !sIsLowAccordingToBip62) {
+			s = curveOrder.subtract(s);
+		}
+
+		return new ECSignature(r, s);
 	}
 
 	public byte[] decrypt(byte[] data, EncryptedPrivateKey sharedKey) throws CryptoException {
