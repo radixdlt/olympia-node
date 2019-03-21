@@ -1,20 +1,15 @@
 package com.radix.regression.doublespend;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.radix.regression.Util;
-import com.radix.regression.doublespend.DoubleSpendTestCreator.DoubleSpendTest;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.ApplicationState;
 import com.radixdlt.client.application.translate.ShardedAppStateId;
-import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
-import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
-import com.radixdlt.client.application.translate.tokens.TokenBalanceState;
-import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
-import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.RadixNodeAction;
@@ -27,98 +22,37 @@ import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.observers.TestObserver;
-import java.math.BigDecimal;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.assertj.core.api.Condition;
-import org.junit.BeforeClass;
-import org.junit.Test;
 import org.radix.common.tuples.Pair;
 
-import static org.assertj.core.api.Assertions.assertThat;
+public final class DoubleSpendTestRunner {
+	private final Function<RadixAddress, DoubleSpendTestConfig> testSupplier;
 
-public class DeleteAtomEvents {
-	@BeforeClass
-	public static void setup() {
-		if (!RadixUniverse.isInstantiated()) {
-			RadixUniverse.bootstrap(Bootstrap.BETANET);
-		}
+	public DoubleSpendTestRunner(Function<RadixAddress, DoubleSpendTestConfig> testSupplier) {
+		this.testSupplier = testSupplier;
 	}
 
-	@Test
-	public void given_an_account_with_a_josh_token_with_one_supply__when_the_account_executes_two_transfers_via_two_different_nodes_at_the_same_time__then_the_account_balances_should_resolve_to_only_one_transfer() {
-		IntStream.range(0, 10)
+	public void execute(int numRounds) {
+		IntStream.range(0, numRounds)
 			.forEach(i -> {
 				System.out.println("Round " + (i + 1));
-				executeDoubleSpend();
+				execute();
 			});
 	}
 
-	private static class DoubleTransferTestCreator implements DoubleSpendTestCreator {
-
-		@Override
-		public DoubleSpendTest create(final RadixAddress apiAddress) {
-			final RadixAddress toAddress = RadixUniverse.getInstance().getAddressFrom(RadixIdentities.createNew().getPublicKey());
-			final TokenDefinitionReference tokenRef = TokenDefinitionReference.of(apiAddress, "JOSH");
-
-			return new DoubleSpendTest() {
-				@Override
-				public List<Action> initialActions() {
-					return Collections.singletonList(
-						CreateTokenAction.create(
-							apiAddress,
-							"Joshy Token",
-							"JOSH",
-							"Cool Token",
-							BigDecimal.ONE,
-							BigDecimal.ONE,
-							TokenSupplyType.FIXED
-						)
-					);
-				}
-
-				@Override
-				public List<Action> concurrentDoubleSpendActions() {
-					TransferTokensAction action = TransferTokensAction.create(apiAddress, toAddress, BigDecimal.ONE, tokenRef);
-					return Arrays.asList(action, action);
-				}
-
-				@Override
-				public PostConsensusCondition postConsensusCondition() {
-					Set<Pair<String, ShardedAppStateId>> stateRequired = new HashSet<>();
-					stateRequired.add(Pair.of("Balance 1", ShardedAppStateId.of(TokenBalanceState.class, apiAddress)));
-					stateRequired.add(Pair.of("Balance 2", ShardedAppStateId.of(TokenBalanceState.class, toAddress)));
-
-					return new PostConsensusCondition(
-						stateRequired,
-						new Condition<>(map -> {
-							TokenBalanceState tokenBalanceState1 = (TokenBalanceState) map.get(ShardedAppStateId.of(TokenBalanceState.class, apiAddress));
-							TokenBalanceState tokenBalanceState2 = (TokenBalanceState) map.get(ShardedAppStateId.of(TokenBalanceState.class, toAddress));
-							return tokenBalanceState1.getBalance().get(tokenRef).getAmount().compareTo(BigDecimal.ZERO) == 0 &&
-									tokenBalanceState2.getBalance().get(tokenRef).getAmount().compareTo(BigDecimal.ONE) == 0;
-						}, "")
-					);
-				}
-			};
-		}
-	}
-
-	public void executeDoubleSpend() {
+	public void execute() {
 		RadixApplicationAPI api = RadixApplicationAPI.create(RadixIdentities.createNew());
 
-		DoubleSpendTestCreator creator = new DoubleTransferTestCreator();
-		DoubleSpendTest doubleSpendTest = creator.create(api.getMyAddress());
+		DoubleSpendTestConfig doubleSpendTestConfig = testSupplier.apply(api.getMyAddress());
 
-		List<Action> initialActions = doubleSpendTest.initialActions();
+		List<Action> initialActions = doubleSpendTestConfig.initialActions();
 		Disposable d = api.pull();
 		initialActions.stream()
 			.map(api::execute)
@@ -162,14 +96,14 @@ public class DeleteAtomEvents {
 		Single<List<SubmitAtomSendAction>> conflictingAtoms =
 			Observable.zip(
 				nodes,
-				Observable.fromIterable(doubleSpendTest.concurrentDoubleSpendActions()),
+				Observable.fromIterable(doubleSpendTestConfig.conflictingActions()),
 				(client, action) ->
 					api.buildAtom(action)
 						.flatMap(api.getMyIdentity()::sign)
 						.map(atom -> SubmitAtomSendAction.of(UUID.randomUUID().toString(), atom, client))
 			)
-			.flatMapSingle(a -> a)
-			.toList();
+				.flatMapSingle(a -> a)
+				.toList();
 
 		TestObserver<SubmitAtomResultAction> submissionObserver = TestObserver.create(Util.loggingObserver("Submission"));
 		conflictingAtoms
@@ -184,7 +118,7 @@ public class DeleteAtomEvents {
 			)
 			.subscribe(submissionObserver);
 
-		Map<ShardedAppStateId, TestObserver<ApplicationState>> testObservers = doubleSpendTest.postConsensusCondition().getStateRequired().stream()
+		Map<ShardedAppStateId, TestObserver<ApplicationState>> testObservers = doubleSpendTestConfig.postConsensusCondition().getStateRequired().stream()
 			.collect(Collectors.toMap(
 				Pair::getSecond,
 				pair -> {
@@ -218,6 +152,6 @@ public class DeleteAtomEvents {
 			));
 		testObservers.forEach((k,v) -> v.dispose());
 
-		assertThat(state).is(doubleSpendTest.postConsensusCondition().getCondition());
+		assertThat(state).is(doubleSpendTestConfig.postConsensusCondition().getCondition());
 	}
 }

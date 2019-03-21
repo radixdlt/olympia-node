@@ -10,7 +10,7 @@ import java.util.Set;
 import org.assertj.core.api.Condition;
 import org.radix.common.tuples.Pair;
 
-public interface DoubleSpendTestCreator {
+public interface DoubleSpendTestConfig {
 	class PostConsensusCondition {
 		private final Condition<Map<ShardedAppStateId, ApplicationState>> condition;
 		private final Set<Pair<String, ShardedAppStateId>> stateRequired;
@@ -32,11 +32,7 @@ public interface DoubleSpendTestCreator {
 		}
 	}
 
-	interface DoubleSpendTest {
-		List<Action> initialActions();
-		List<Action> concurrentDoubleSpendActions();
-		PostConsensusCondition postConsensusCondition();
-	}
-
-	DoubleSpendTest create(RadixAddress apiAddress);
+	List<Action> initialActions();
+	List<Action> conflictingActions();
+	PostConsensusCondition postConsensusCondition();
 }
