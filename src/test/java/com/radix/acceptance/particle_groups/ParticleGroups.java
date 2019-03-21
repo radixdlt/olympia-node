@@ -8,6 +8,7 @@ import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.ApplicationState;
+import com.radixdlt.client.application.translate.ShardedAppStateId;
 import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.StatelessActionToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.atomic.AtomicAction;
@@ -116,7 +117,7 @@ public class ParticleGroups {
 		}
 
 		@Override
-		public Observable<RequiredShardState> requiredState(Action action) {
+		public Observable<ShardedAppStateId> requiredState(Action action) {
 			return Observable.fromArray(mappers)
 				.flatMap(mapper -> mapper.requiredState(action));
 		}
