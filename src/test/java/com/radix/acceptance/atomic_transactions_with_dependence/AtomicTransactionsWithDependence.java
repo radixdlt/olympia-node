@@ -14,6 +14,7 @@ import com.radixdlt.client.application.translate.tokens.MintAndTransferTokensAct
 import com.radixdlt.client.application.translate.tokens.TokenBalanceReducer;
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionsReducer;
+import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
 import com.radixdlt.client.application.translate.tokens.TransferTokensToParticleGroupsMapper;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.Bootstrap;
@@ -107,7 +108,7 @@ public class AtomicTransactionsWithDependence {
 		RadixIdentity toIdentity = RadixIdentities.createNew();
 		RadixAddress toAddress = RadixUniverse.getInstance().getAddressFrom(toIdentity.getPublicKey());
 		TestObserver observer = new TestObserver();
-		api.mintAndTransferTokens("TEST0", UInt256.SEVEN, toAddress)
+		api.mintAndTransferTokens("TEST0", BigDecimal.valueOf(7), toAddress)
 			.toObservable()
 			.subscribe(observer);
 		observers.add(observer);
@@ -161,8 +162,8 @@ public class AtomicTransactionsWithDependence {
 				this.properties.get(NAME),
 				this.properties.get(SYMBOL),
 				this.properties.get(DESCRIPTION),
-				UInt256.from(this.properties.get(INITIAL_SUPPLY)),
-				UInt256.from(this.properties.get(GRANULARITY)),
+				new BigDecimal(this.properties.get(INITIAL_SUPPLY)),
+				new BigDecimal(this.properties.get(GRANULARITY)),
 				tokenCreateSupplyType)
 			.toObservable()
 			.doOnNext(System.out::println)
@@ -187,6 +188,6 @@ public class AtomicTransactionsWithDependence {
 	}
 
 	private static String scaledToUnscaled(int amount) {
-		return TokenDefinitionReference.unitsToSubunits(amount).toString();
+		return TokenUnitConversions.unitsToSubunits(amount).toString();
 	}
 }
