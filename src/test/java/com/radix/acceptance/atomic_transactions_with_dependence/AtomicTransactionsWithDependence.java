@@ -100,9 +100,11 @@ public class AtomicTransactionsWithDependence {
 			.build();
 
 		this.properties.put(SYMBOL, "TEST0");
+		Disposable d = api.pull();
 		createToken(CreateTokenAction.TokenSupplyType.MUTABLE, api);
 		TokenDefinitionReference tokenRef = TokenDefinitionReference.of(api.getMyAddress(), "TEST0");
 		i_can_observe_atom_being_accepted(1);
+		d.dispose();
 		this.observers.clear();
 
 		RadixIdentity toIdentity = RadixIdentities.createNew();
