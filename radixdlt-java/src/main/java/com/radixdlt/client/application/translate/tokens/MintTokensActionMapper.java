@@ -25,7 +25,6 @@ public class MintTokensActionMapper implements StatefulActionToParticleGroupsMap
 		}
 
 		MintTokensAction mintTokensAction = (MintTokensAction) action;
-
 		RadixAddress tokenDefinitionAddress = mintTokensAction.getTokenDefinitionReference().getAddress();
 
 		return Observable.just(new RequiredShardState(TokenDefinitionsState.class, tokenDefinitionAddress));
