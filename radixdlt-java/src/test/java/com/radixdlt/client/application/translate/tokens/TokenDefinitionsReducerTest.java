@@ -27,7 +27,7 @@ public class TokenDefinitionsReducerTest {
 		when(tokenDefinitionParticle.getDescription()).thenReturn("Desc");
 		when(tokenDefinitionParticle.getGranularity()).thenReturn(UInt256.ONE);
 		when(tokenDefinitionParticle.getTokenPermissions()).thenReturn(Collections.singletonMap(MintedTokensParticle.class,
-			TokenPermission.SAME_ATOM_ONLY));
+			TokenPermission.TOKEN_CREATION_ONLY));
 
 		TokenDefinitionsReducer tokenDefinitionsReducer = new TokenDefinitionsReducer();
 		TokenDefinitionsState state = tokenDefinitionsReducer.reduce(

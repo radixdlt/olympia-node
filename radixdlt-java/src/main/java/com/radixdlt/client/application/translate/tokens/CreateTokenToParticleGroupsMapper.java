@@ -8,11 +8,10 @@ import com.radixdlt.client.atommodel.tokens.BurnedTokensParticle;
 import com.radixdlt.client.atommodel.tokens.MintedTokensParticle;
 import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.client.atommodel.tokens.TokenPermission;
-import com.radixdlt.client.atommodel.tokens.TransferredTokensParticle;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
-
 import io.reactivex.Observable;
+
 import java.math.BigDecimal;
 
 /**
@@ -36,7 +35,7 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 		final TokenPermission burnPermissions;
 
 		if (tokenCreation.getTokenSupplyType().equals(TokenSupplyType.FIXED)) {
-			mintPermissions = TokenPermission.SAME_ATOM_ONLY;
+			mintPermissions = TokenPermission.TOKEN_CREATION_ONLY;
 			burnPermissions = TokenPermission.NONE;
 		} else if (tokenCreation.getTokenSupplyType().equals(TokenSupplyType.MUTABLE)) {
 			mintPermissions = TokenPermission.TOKEN_OWNER_ONLY;
@@ -53,8 +52,7 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 			TokenUnitConversions.unitsToSubunits(tokenCreation.getGranularity()),
 			ImmutableMap.of(
 				MintedTokensParticle.class, mintPermissions,
-				BurnedTokensParticle.class, burnPermissions,
-				TransferredTokensParticle.class, TokenPermission.ALL
+				BurnedTokensParticle.class, burnPermissions
 			),
 			null
 		);
@@ -72,6 +70,6 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 				token.getTokenDefinitionReference(),
 				System.currentTimeMillis() / 60000L + 60000
 		);
-		return Observable.just(ParticleGroup.of(SpunParticle.up(token), SpunParticle.up(minted)));
+		return Observable.just(ParticleGroup.of(SpunParticle.up(token)), ParticleGroup.of(SpunParticle.up(minted)));
 	}
 }
