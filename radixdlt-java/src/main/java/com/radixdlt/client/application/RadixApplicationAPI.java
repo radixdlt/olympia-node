@@ -1,7 +1,6 @@
 package com.radixdlt.client.application;
 
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
-import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.network.RadixNetworkController;
 import java.math.BigDecimal;
@@ -859,9 +858,14 @@ public class RadixApplicationAPI {
 	public List<Result> executeSequentially(List<Action> actions) {
 		List<Result> results = actions.stream().map(this::buildDisconnectedResult).collect(Collectors.toList());
 
-		Observable.fromIterable(results).concatMapCompletable(result -> result.connect().toCompletable()).subscribe(
-			() -> {}, e -> {}
-		);
+		Observable.fromIterable(results)
+			.concatMap(result -> result.connect().toObservable())
+			.takeUntil(a ->
+				a instanceof SubmitAtomResultAction
+					&& ((SubmitAtomResultAction) a).getType() != SubmitAtomResultActionType.STORED
+			)
+			.publish()
+			.connect();
 
 		return results;
 	}
