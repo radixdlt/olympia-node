@@ -45,16 +45,16 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 		}
 
 		TokenDefinitionParticle token = new TokenDefinitionParticle(
-				tokenCreation.getAddress(),
+			tokenCreation.getAddress(),
 			tokenCreation.getName(),
-				tokenCreation.getIso(),
-				tokenCreation.getDescription(),
-				TokenUnitConversions.unitsToSubunits(tokenCreation.getGranularity()),
-				ImmutableMap.of(
-					MintedTokensParticle.class, mintPermissions,
-					BurnedTokensParticle.class, burnPermissions
-				),
-				null
+			tokenCreation.getIso(),
+			tokenCreation.getDescription(),
+			TokenUnitConversions.unitsToSubunits(tokenCreation.getGranularity()),
+			ImmutableMap.of(
+				MintedTokensParticle.class, mintPermissions,
+				BurnedTokensParticle.class, burnPermissions
+			),
+			null
 		);
 
 		if (tokenCreation.getInitialSupply().compareTo(BigDecimal.ZERO) == 0) {
