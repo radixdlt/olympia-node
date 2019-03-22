@@ -70,7 +70,7 @@ public class TokenBalanceState implements ApplicationState {
 
 		@Override
 		public String toString() {
-			return balance.toString();
+			return "{BAL:" + getAmount().toString() + " CONSUMABLES:" + consumables.size() + "}";
 		}
 	}
 
