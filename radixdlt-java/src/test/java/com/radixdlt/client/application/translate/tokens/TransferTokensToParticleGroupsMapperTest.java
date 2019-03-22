@@ -9,7 +9,6 @@ import io.reactivex.Observable;
 import io.reactivex.observers.TestObserver;
 import java.math.BigDecimal;
 import org.junit.Test;
-import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import java.util.Collections;
 
@@ -17,7 +16,6 @@ public class TransferTokensToParticleGroupsMapperTest {
 
 	@Test
 	public void createTransactionWithNoFunds() {
-		RadixUniverse universe = mock(RadixUniverse.class);
 		RadixAddress address = mock(RadixAddress.class);
 
 		TokenDefinitionReference token = mock(TokenDefinitionReference.class);
@@ -31,7 +29,7 @@ public class TransferTokensToParticleGroupsMapperTest {
 		TokenBalanceState state = mock(TokenBalanceState.class);
 		when(state.getBalance()).thenReturn(Collections.emptyMap());
 
-		TransferTokensToParticleGroupsMapper transferTranslator = new TransferTokensToParticleGroupsMapper(universe);
+		TransferTokensToParticleGroupsMapper transferTranslator = new TransferTokensToParticleGroupsMapper();
 
 		TestObserver<ShardedAppStateId> contextTestObserver = TestObserver.create();
 		transferTranslator.requiredState(transferTokensAction).subscribe(contextTestObserver);

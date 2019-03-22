@@ -3,7 +3,6 @@ package com.radixdlt.client.atommodel.tokens;
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.RadixResourceIdentifer;
-import com.radixdlt.client.core.crypto.ECPublicKey;
 import org.radix.common.ID.EUID;
 import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.SerializerId2;
@@ -83,7 +82,7 @@ public class FeeParticle extends Particle implements ConsumableTokens {
 	}
 
 	@Override
-	public ECPublicKey getOwner() {
-		return this.address.getPublicKey();
+	public RadixAddress getAddress() {
+		return address;
 	}
 }

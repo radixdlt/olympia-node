@@ -63,12 +63,10 @@ public class ChatBot {
 	}
 
 	public static void main(String[] args) throws Exception {
-		RadixUniverse.bootstrap(Bootstrap.BETANET);
-
 		// Setup Identity of Chatbot
 		RadixIdentity radixIdentity = RadixIdentities.loadOrCreateFile("chatbot.key");
 
-		RadixApplicationAPI api = RadixApplicationAPI.create(radixIdentity);
+		RadixApplicationAPI api = RadixApplicationAPI.create(Bootstrap.LOCALHOST, radixIdentity);
 
 		ChatBot chatBot = new ChatBot(api, () -> new Function<String, String>() {
 			int messageCount = 0;

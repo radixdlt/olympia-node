@@ -9,7 +9,6 @@ import com.radixdlt.client.atommodel.tokens.ConsumingTokens;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
-import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.crypto.ECSignature;
 import org.radix.common.ID.EUID;
 import org.radix.common.tuples.Pair;
@@ -205,12 +204,12 @@ public final class Atom extends SerializableObject {
 			.collect(Collectors.toList());
 	}
 
-	public Map<TokenDefinitionReference, Map<ECPublicKey, BigInteger>> tokenSummary() {
+	public Map<TokenDefinitionReference, Map<RadixAddress, BigInteger>> tokenSummary() {
 		return this.consumableTokens()
 			.collect(Collectors.groupingBy(
 				tokens -> tokens.getFirst().getTokenDefinitionReference(),
 				Collectors.groupingBy(
-					tokens -> tokens.getFirst().getOwner(),
+					tokens -> tokens.getFirst().getAddress(),
 					Collectors.reducing(BigInteger.ZERO, this::consumableToAmount, BigInteger::add)
 				)
 			));

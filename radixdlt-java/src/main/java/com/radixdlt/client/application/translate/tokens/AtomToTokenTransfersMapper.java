@@ -20,10 +20,8 @@ import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.AtomToExecutedActionsMapper;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.atommodel.message.MessageParticle;
-import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.crypto.CryptoException;
-import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
 import com.radixdlt.client.core.crypto.Encryptor;
 
@@ -35,10 +33,8 @@ import io.reactivex.Single;
  */
 public class AtomToTokenTransfersMapper implements AtomToExecutedActionsMapper<TokenTransfer> {
 	private static final JsonParser JSON_PARSER = new JsonParser();
-	private final RadixUniverse universe;
 
-	public AtomToTokenTransfersMapper(RadixUniverse universe) {
-		this.universe = universe;
+	public AtomToTokenTransfersMapper() {
 	}
 
 	@Override
@@ -49,9 +45,9 @@ public class AtomToTokenTransfersMapper implements AtomToExecutedActionsMapper<T
 	@Override
 	public Observable<TokenTransfer> map(Atom atom, RadixIdentity identity) {
 		return Observable.fromIterable(atom.tokenSummary().entrySet())
-			.filter(e -> !e.getKey().equals(universe.getPOWToken()))
+			.filter(e -> !e.getKey().getSymbol().equals("POW")) // HACK: Fix this
 			.flatMapSingle(e -> {
-				List<Entry<ECPublicKey, BigInteger>> summary = new ArrayList<>(e.getValue().entrySet());
+				List<Entry<RadixAddress, BigInteger>> summary = new ArrayList<>(e.getValue().entrySet());
 				if (summary.isEmpty()) {
 					throw new IllegalStateException(
 						"Invalid atom: " + Serialize.getInstance().toJson(atom, DsonOutput.Output.ALL)
@@ -66,15 +62,15 @@ public class AtomToTokenTransfersMapper implements AtomToExecutedActionsMapper<T
 				final RadixAddress from;
 				final RadixAddress to;
 				if (summary.size() == 1) {
-					from = summary.get(0).getValue().signum() <= 0 ? universe.getAddressFrom(summary.get(0).getKey()) : null;
-					to = summary.get(0).getValue().signum() < 0 ? null : universe.getAddressFrom(summary.get(0).getKey());
+					from = summary.get(0).getValue().signum() <= 0 ? summary.get(0).getKey() : null;
+					to = summary.get(0).getValue().signum() < 0 ? null : summary.get(0).getKey();
 				} else {
 					if (summary.get(0).getValue().signum() > 0) {
-						from = universe.getAddressFrom(summary.get(1).getKey());
-						to = universe.getAddressFrom(summary.get(0).getKey());
+						from = summary.get(1).getKey();
+						to = summary.get(0).getKey();
 					} else {
-						from = universe.getAddressFrom(summary.get(0).getKey());
-						to = universe.getAddressFrom(summary.get(1).getKey());
+						from = summary.get(0).getKey();
+						to = summary.get(1).getKey();
 					}
 				}
 				final Optional<MessageParticle> bytesParticle =

@@ -18,7 +18,6 @@ import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference
 import com.radixdlt.client.atommodel.Identifiable;
 import com.radixdlt.client.atommodel.Ownable;
 import com.radixdlt.client.core.atoms.particles.RadixResourceIdentifer;
-import com.radixdlt.client.core.crypto.ECPublicKey;
 
 @SerializerId2("TOKENDEFINITIONPARTICLE")
 public class TokenDefinitionParticle extends Particle implements Identifiable, Ownable {
@@ -81,8 +80,8 @@ public class TokenDefinitionParticle extends Particle implements Identifiable, O
 	}
 
 	@Override
-	public ECPublicKey getOwner() {
-		return this.address.getPublicKey();
+	public RadixAddress getAddress() {
+		return this.address;
 	}
 
 	public String getName() {

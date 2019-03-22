@@ -16,7 +16,6 @@ import com.radixdlt.client.atommodel.tokens.ConsumableTokens;
 import com.radixdlt.client.atommodel.tokens.TransferredTokensParticle;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.particles.Particle;
-import com.radixdlt.client.core.crypto.ECPublicKey;
 import org.radix.utils.UInt256;
 import org.radix.utils.UInt256s;
 
@@ -25,16 +24,12 @@ import com.radixdlt.client.application.translate.ApplicationState;
 import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.tokens.TokenBalanceState.Balance;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 
 import io.reactivex.Observable;
 
 public class BurnTokensActionMapper implements StatefulActionToParticleGroupsMapper {
-	private final RadixUniverse universe;
-
-	public BurnTokensActionMapper(RadixUniverse universe) {
-		this.universe = universe;
+	public BurnTokensActionMapper() {
 	}
 
 	@Override
@@ -90,7 +85,7 @@ public class BurnTokensActionMapper implements StatefulActionToParticleGroupsMap
 		UInt256 consumerTotal = UInt256.ZERO;
 		final UInt256 subunitAmount = TokenUnitConversions.unitsToSubunits(burnTokensAction.getAmount());
 		Iterator<ConsumableTokens> iterator = unconsumedConsumables.iterator();
-		Map<ECPublicKey, UInt256> newUpQuantities = new HashMap<>();
+		Map<RadixAddress, UInt256> newUpQuantities = new HashMap<>();
 
 		// HACK for now
 		// TODO: remove this, create a ConsumersCreator
@@ -103,7 +98,7 @@ public class BurnTokensActionMapper implements StatefulActionToParticleGroupsMap
 			consumerTotal = consumerTotal.add(particleAmount);
 
 			final UInt256 amount = UInt256s.min(left, particleAmount);
-			addConsumerQuantities(particle.getAmount(), particle.getOwner(), null, amount, newUpQuantities);
+			addConsumerQuantities(particle.getAmount(), particle.getAddress(), null, amount, newUpQuantities);
 
 			particles.add(SpunParticle.down(((Particle) particle)));
 		}
@@ -123,7 +118,7 @@ public class BurnTokensActionMapper implements StatefulActionToParticleGroupsMap
 					return new TransferredTokensParticle(
 						e.getValue(),
 						granularity,
-						this.universe.getAddressFrom(e.getKey()),
+						e.getKey(),
 						System.nanoTime(),
 						burnTokensAction.getTokenDefinitionReference(),
 						System.currentTimeMillis() / 60000L + 60000L
@@ -136,8 +131,8 @@ public class BurnTokensActionMapper implements StatefulActionToParticleGroupsMap
 	}
 
 	// TODO this and same method in TransferTokensToParticleGroupsMapper could be moved to a utility class, abstractions not clear yet
-	private static void addConsumerQuantities(UInt256 amount, ECPublicKey oldOwner, ECPublicKey newOwner,
-	                                          UInt256 usedAmount, Map<ECPublicKey, UInt256> consumerQuantities) {
+	private static void addConsumerQuantities(UInt256 amount, RadixAddress oldOwner, RadixAddress newOwner,
+	                                          UInt256 usedAmount, Map<RadixAddress, UInt256> consumerQuantities) {
 		if (usedAmount.compareTo(amount) > 0) {
 			throw new IllegalArgumentException(
 				"Unable to create consumable with amount " + usedAmount + " (available: " + amount + ")"

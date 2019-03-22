@@ -75,6 +75,7 @@ public final class MintedTokensParticle extends Particle implements Accountable,
 		return Collections.singleton(this.address);
 	}
 
+	@Override
 	public RadixAddress getAddress() {
 		return this.address;
 	}
@@ -104,11 +105,6 @@ public final class MintedTokensParticle extends Particle implements Accountable,
 
 	public Set<ECPublicKey> getOwnersPublicKeys() {
 		return Collections.singleton(this.address.getPublicKey());
-	}
-
-	@Override
-	public ECPublicKey getOwner() {
-		return this.address.getPublicKey();
 	}
 
 	@Override

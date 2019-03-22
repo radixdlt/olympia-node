@@ -17,13 +17,11 @@ public class RadixMessagingExample {
 		BY_CONVO
 	}
 
-	static {
-		RadixUniverse.bootstrap(Bootstrap.BETANET);
-	}
-
 	public static void main(String[] args) throws Exception {
-		// Identity Manager which manages user's keys, signing, encrypting and decrypting
-		RadixApplicationAPI api = RadixApplicationAPI.create(RadixIdentities.loadOrCreateFile("my.key"));
+		RadixApplicationAPI api = RadixApplicationAPI.create(
+			Bootstrap.LOCALHOST,
+			RadixIdentities.loadOrCreateFile("my.key")
+		);
 
 		// Addresses
 		RadixAddress toAddress = RadixAddress.from(TO_ADDRESS_BASE58);

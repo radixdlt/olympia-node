@@ -8,7 +8,6 @@ import com.radixdlt.client.atommodel.Ownable;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.RadixResourceIdentifer;
-import com.radixdlt.client.core.crypto.ECPublicKey;
 import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.DsonOutput.Output;
 import org.radix.serialization2.SerializerId2;
@@ -75,6 +74,7 @@ public final class BurnedTokensParticle extends Particle implements Accountable,
 		return Collections.singleton(address);
 	}
 
+	@Override
 	public RadixAddress getAddress() {
 		return address;
 	}
@@ -101,15 +101,6 @@ public final class BurnedTokensParticle extends Particle implements Accountable,
 
 	public UInt256 getGranularity() {
 		return this.granularity;
-	}
-
-	public Set<ECPublicKey> getOwnersPublicKeys() {
-		return Collections.singleton(this.address.getPublicKey());
-	}
-
-	@Override
-	public ECPublicKey getOwner() {
-		return this.address.getPublicKey();
 	}
 
 	@Override
