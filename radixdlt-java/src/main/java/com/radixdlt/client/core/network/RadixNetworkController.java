@@ -146,8 +146,6 @@ public class RadixNetworkController implements AtomSubmitter {
 	 */
 	@Override
 	public Observable<SubmitAtomAction> submitAtom(Atom atom) {
-		TestUtils.dumpJsonForHash(atom);
-
 		SubmitAtomAction initialAction = SubmitAtomRequestAction.newRequest(atom);
 		Observable<SubmitAtomAction> status =
 			reducedNodeActions.ofType(SubmitAtomAction.class)
