@@ -22,6 +22,7 @@ public final class UInt256s {
 	 * @return The value as a {@link BigInteger}
 	 */
 	public static BigInteger toBigInteger(UInt256 value) {
+		// Set sign to positive to stop BigInteger interpreting high bit as sign
 		return new BigInteger(1, value.toByteArray());
 	}
 

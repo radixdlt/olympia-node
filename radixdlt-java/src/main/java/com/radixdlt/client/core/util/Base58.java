@@ -32,7 +32,8 @@ public class Base58 {
 			++lz;
 		}
 
-		StringBuffer s = new StringBuffer();
+		StringBuilder s = new StringBuilder();
+		// Set sign to positive to stop BigInteger interpreting high bit as sign
 		BigInteger n = new BigInteger(1, b);
 		while (n.compareTo(BigInteger.ZERO) > 0) {
 			BigInteger[] r = n.divideAndRemainder(BigInteger.valueOf(58));

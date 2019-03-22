@@ -59,6 +59,7 @@ public class ECKeyPair extends SerializableObject {
 		try {
 			ECDomainParameters domain = ECKeyPairGenerator.getDomain(((this.privateKey.length - 1) * 8));
 			ECPrivateKeySpec privateKeySpec = new ECPrivateKeySpec(
+				// Set sign to positive to stop BigInteger interpreting high bit as sign
 				new BigInteger(1, this.privateKey),
 				new ECParameterSpec(domain.getCurve(), domain.getG(), domain.getN(), domain.getH())
 			);

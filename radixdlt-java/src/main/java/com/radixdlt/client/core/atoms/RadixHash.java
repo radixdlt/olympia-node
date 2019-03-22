@@ -67,6 +67,7 @@ public final class RadixHash {
 
 	@Override
 	public int hashCode() {
+		// Set sign to positive to stop BigInteger interpreting high bit as sign
 		return new BigInteger(1, hash).hashCode();
 	}
 

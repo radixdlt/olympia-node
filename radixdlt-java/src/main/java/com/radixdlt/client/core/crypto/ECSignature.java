@@ -30,10 +30,12 @@ public class ECSignature extends SerializableObject {
 	}
 
 	public BigInteger getR() {
+		// Set sign to positive to stop BigInteger interpreting high bit as sign
 		return new BigInteger(1, r);
 	}
 
 	public BigInteger getS() {
+		// Set sign to positive to stop BigInteger interpreting high bit as sign
 		return new BigInteger(1, s);
 	}
 
