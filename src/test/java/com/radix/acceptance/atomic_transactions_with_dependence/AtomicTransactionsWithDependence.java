@@ -92,10 +92,10 @@ public class AtomicTransactionsWithDependence {
 			.defaultFeeMapper()
 			.addStatelessParticlesMapper(new CreateTokenToParticleGroupsMapper())
 			.addStatefulParticlesMapper(actionMapper)
-			.addStatefulParticlesMapper(new TransferTokensToParticleGroupsMapper(RadixUniverse.getInstance()))
+			.addStatefulParticlesMapper(new TransferTokensToParticleGroupsMapper())
 			.addReducer(new TokenDefinitionsReducer())
 			.addReducer(new TokenBalanceReducer())
-			.addAtomMapper(new AtomToTokenTransfersMapper(RadixUniverse.getInstance()))
+			.addAtomMapper(new AtomToTokenTransfersMapper())
 			.identity(RadixIdentities.createNew())
 			.build();
 

@@ -148,7 +148,7 @@ public class ParticleGroups {
 		this.api = RadixApplicationAPI.createDefaultBuilder()
 			.identity(this.identity)
 			.addStatelessParticlesMapper(new CreateEmptyGroupActionToParticleGroupsMapper())
-			.addStatefulParticlesMapper(new MergeStatefulActionToParticleGroupsMapper(new TransferTokensToParticleGroupsMapper(RadixUniverse.getInstance())))
+			.addStatefulParticlesMapper(new MergeStatefulActionToParticleGroupsMapper(new TransferTokensToParticleGroupsMapper()))
 			.build();
 		this.disposables.add(this.api.pull());
 
