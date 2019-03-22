@@ -6,21 +6,31 @@ import com.radix.regression.Util;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
 import com.radixdlt.client.application.identity.RadixIdentities;
+import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.ApplicationState;
 import com.radixdlt.client.application.translate.ShardedAppStateId;
 import com.radixdlt.client.core.Bootstrap;
+import com.radixdlt.client.core.BootstrapConfig;
+import com.radixdlt.client.core.RadixUniverse;
+import com.radixdlt.client.core.address.RadixUniverseConfig;
+import com.radixdlt.client.core.address.RadixUniverseConfigs;
+import com.radixdlt.client.core.network.RadixNetworkEpic;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.RadixNodeAction;
 import com.radixdlt.client.core.network.actions.FetchAtomsObservationAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomResultAction;
+import com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType;
 import com.radixdlt.client.core.network.actions.SubmitAtomSendAction;
+import com.radixdlt.client.core.network.epics.DiscoverSingleNodeEpic;
 import io.reactivex.Completable;
+import io.reactivex.Maybe;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.observers.TestObserver;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -46,7 +56,29 @@ public final class DoubleSpendTestRunner {
 			});
 	}
 
-	public void execute() {
+	private static class SingleNodeAPI {
+		private final RadixApplicationAPI api;
+		private final RadixNode node;
+
+		public SingleNodeAPI(RadixNode node, RadixIdentity identity) {
+			this.node = node;
+			this.api = RadixApplicationAPI.create(
+				new BootstrapConfig() {
+				    @Override
+				    public RadixUniverseConfig getConfig() {
+					    return RadixUniverseConfigs.getBetanet();
+				    }
+
+				    @Override
+				    public List<RadixNetworkEpic> getDiscoveryEpics() {
+					    return Collections.singletonList(new DiscoverSingleNodeEpic(node, RadixUniverseConfigs.getBetanet()));
+				    }
+			    },
+				identity);
+		}
+	}
+
+	void execute() {
 		RadixApplicationAPI api = RadixApplicationAPI.create(Bootstrap.LOCALHOST, RadixIdentities.createNew());
 
 		DoubleSpendTestConfig doubleSpendTestConfig = testSupplier.apply(api);
@@ -58,6 +90,14 @@ public final class DoubleSpendTestRunner {
 			.map(Result::toCompletable)
 			.forEach(Completable::blockingAwait);
 		d.dispose();
+
+		// Wait for network to sync
+		// TODO: implement faster mechanism for this
+		try {
+			TimeUnit.SECONDS.sleep(2);
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+		}
 
 		// Retrieve two nodes in the network
 		Single<List<RadixNode>> twoNodes = api.getNetworkState()
@@ -86,71 +126,79 @@ public final class DoubleSpendTestRunner {
 					.collect(Collectors.toList())
 			);
 
-		Observable<RadixNode> nodes = Observable.merge(twoNodes.toObservable(), oneNode.toObservable())
+		Observable<SingleNodeAPI> singleNodeApis = Observable.merge(twoNodes.toObservable(), oneNode.toObservable())
 			.firstOrError()
-			.flatMapObservable(l -> l.size() == 1 ? Observable.just(l.get(0), l.get(0)) : Observable.fromIterable(l));
+			.flatMapObservable(l -> l.size() == 1 ? Observable.just(l.get(0), l.get(0)) : Observable.fromIterable(l))
+			.map(node -> new SingleNodeAPI(node, api.getMyIdentity()))
+			.cache();
 
 
 		// When the account executes two transfers via two different nodes at the same time
-		Single<List<SubmitAtomSendAction>> conflictingAtoms =
+		Observable<Pair<SingleNodeAPI, List<Action>>> conflictingAtoms =
 			Observable.zip(
-				nodes,
+				singleNodeApis,
 				Observable.fromIterable(doubleSpendTestConfig.conflictingActions()),
-				(client, action) ->
-					api.buildAtom(action)
-						.flatMap(api.getMyIdentity()::sign)
-						.map(atom -> SubmitAtomSendAction.of(UUID.randomUUID().toString(), atom, client))
-			)
-				.flatMapSingle(a -> a)
-				.toList();
+				Pair::of
+			);
 
-		TestObserver<SubmitAtomResultAction> submissionObserver = TestObserver.create(Util.loggingObserver("Submission"));
+		TestObserver<SubmitAtomAction> submissionObserver = TestObserver.create(Util.loggingObserver("Submission"));
 		conflictingAtoms
-			.flattenAsObservable(l -> l)
-			.doAfterNext(a -> api.getNetworkController().dispatch(a))
-			.flatMap(a ->
-				api.getNetworkController()
-					.getActions()
-					.ofType(SubmitAtomResultAction.class)
-					.filter(action -> action.getUuid().equals(a.getUuid()))
-					.take(1)
+			.flatMap(a -> Observable.fromIterable(a.getFirst().api.executeSequentially(a.getSecond()))
+				.flatMap(Result::toObservable)
+				.takeUntil(s -> {
+					if (s instanceof SubmitAtomResultAction) {
+						SubmitAtomResultAction submitAtomResultAction = (SubmitAtomResultAction) s;
+						return submitAtomResultAction.getType() != SubmitAtomResultActionType.STORED;
+					}
+					return false;
+				})
 			)
 			.subscribe(submissionObserver);
 
-		Map<ShardedAppStateId, TestObserver<ApplicationState>> testObservers = doubleSpendTestConfig.postConsensusCondition().getStateRequired().stream()
-			.collect(Collectors.toMap(
-				Pair::getSecond,
-				pair -> {
-					final String name = pair.getFirst();
-					final ShardedAppStateId id = pair.getSecond();
-					final RadixApplicationAPI newApi = RadixApplicationAPI.create(Bootstrap.LOCALHOST, RadixIdentities.createNew());
-					final TestObserver<ApplicationState> testObserver = TestObserver.create(Util.loggingObserver(name));
-					newApi.getState(id.stateClass(), id.address()).subscribe(testObserver);
-					return testObserver;
-				}
-			));
+		List<Map<ShardedAppStateId, TestObserver<ApplicationState>>> testObserversPerApi = singleNodeApis
+			.map(singleNodeApi ->
+				doubleSpendTestConfig.postConsensusCondition().getStateRequired().stream()
+					.collect(Collectors.toMap(
+						Pair::getSecond,
+						pair -> {
+							final String name = pair.getFirst();
+							final ShardedAppStateId id = pair.getSecond();
+							final TestObserver<ApplicationState> testObserver =
+								TestObserver.create(Util.loggingObserver(singleNodeApi.node + " " + name));
+
+							singleNodeApi.api.getState(id.stateClass(), id.address()).subscribe(testObserver);
+							return testObserver;
+						}
+					))
+			)
+			.toList()
+			.blockingGet();
 
 		// Wait for network to resolve conflict
 		TestObserver<RadixNodeAction> lastUpdateObserver = TestObserver.create(Util.loggingObserver("Last Update"));
-		api.getNetworkController()
+		singleNodeApis.flatMap(singleNodeApi ->
+			singleNodeApi.api.getNetworkController()
 			.getActions()
 			.filter(a -> a instanceof FetchAtomsObservationAction || a instanceof SubmitAtomAction)
+		)
 			.debounce(10, TimeUnit.SECONDS)
 			.firstOrError()
 			.subscribe(lastUpdateObserver);
 		lastUpdateObserver.awaitTerminalEvent();
 		submissionObserver.awaitTerminalEvent();
 
-		Map<ShardedAppStateId, ApplicationState> state = testObservers.entrySet().stream()
-			.collect(Collectors.toMap(
-				Entry::getKey,
-				e -> {
-					List<ApplicationState> values = e.getValue().values();
-					return values.get(values.size() - 1);
-				}
-			));
-		testObservers.forEach((k,v) -> v.dispose());
+		testObserversPerApi.forEach(testObservers -> {
+			Map<ShardedAppStateId, ApplicationState> state = testObservers.entrySet().stream()
+				.collect(Collectors.toMap(
+					Entry::getKey,
+					e -> {
+						List<ApplicationState> values = e.getValue().values();
+						return values.get(values.size() - 1);
+					}
+				));
+			testObservers.forEach((k,v) -> v.dispose());
 
-		assertThat(state).is(doubleSpendTestConfig.postConsensusCondition().getCondition());
+			assertThat(state).is(doubleSpendTestConfig.postConsensusCondition().getCondition());
+		});
 	}
 }

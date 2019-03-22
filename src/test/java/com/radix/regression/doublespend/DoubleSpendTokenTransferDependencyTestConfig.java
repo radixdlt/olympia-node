@@ -19,12 +19,12 @@ import java.util.Set;
 import org.assertj.core.api.Condition;
 import org.radix.common.tuples.Pair;
 
-class DoubleSpendTokenTransferTestConfig implements DoubleSpendTestConfig {
+public class DoubleSpendTokenTransferDependencyTestConfig implements DoubleSpendTestConfig {
 	private final RadixAddress apiAddress;
 	private final RadixAddress toAddress;
 	private final TokenDefinitionReference tokenRef;
 
-	DoubleSpendTokenTransferTestConfig(RadixAddress apiAddress, RadixAddress toAddress) {
+	DoubleSpendTokenTransferDependencyTestConfig(RadixAddress apiAddress, RadixAddress toAddress) {
 		this.tokenRef = TokenDefinitionReference.of(apiAddress, "JOSH");
 		this.apiAddress = apiAddress;
 		this.toAddress = toAddress;
@@ -38,7 +38,7 @@ class DoubleSpendTokenTransferTestConfig implements DoubleSpendTestConfig {
 				"Joshy Token",
 				"JOSH",
 				"Cool Token",
-				BigDecimal.ONE,
+				BigDecimal.valueOf(2),
 				BigDecimal.ONE,
 				TokenSupplyType.FIXED
 			)
@@ -47,8 +47,15 @@ class DoubleSpendTokenTransferTestConfig implements DoubleSpendTestConfig {
 
 	@Override
 	public List<List<Action>> conflictingActions() {
-		TransferTokensAction action = TransferTokensAction.create(apiAddress, toAddress, BigDecimal.ONE, tokenRef);
-		return Arrays.asList(Collections.singletonList(action), Collections.singletonList(action));
+		return Arrays.asList(
+			Arrays.asList(
+				TransferTokensAction.create(apiAddress, toAddress, BigDecimal.ONE, tokenRef),
+				TransferTokensAction.create(apiAddress, toAddress, BigDecimal.ONE, tokenRef)
+			),
+			Collections.singletonList(
+				TransferTokensAction.create(apiAddress, toAddress, BigDecimal.valueOf(2), tokenRef)
+			)
+		);
 	}
 
 	@Override
@@ -63,8 +70,8 @@ class DoubleSpendTokenTransferTestConfig implements DoubleSpendTestConfig {
 				TokenBalanceState tokenBalanceState1 = (TokenBalanceState) map.get(ShardedAppStateId.of(TokenBalanceState.class, apiAddress));
 				TokenBalanceState tokenBalanceState2 = (TokenBalanceState) map.get(ShardedAppStateId.of(TokenBalanceState.class, toAddress));
 				return tokenBalanceState1.getBalance().get(tokenRef).getAmount().compareTo(BigDecimal.ZERO) == 0 &&
-						tokenBalanceState2.getBalance().get(tokenRef).getAmount().compareTo(BigDecimal.ONE) == 0;
-			}, "Transfer of 1 JOSH from one account to another")
+					tokenBalanceState2.getBalance().get(tokenRef).getAmount().compareTo(BigDecimal.valueOf(2)) == 0;
+			}, "Transfer of 2 JOSH from one account to another")
 		);
 	}
 }
