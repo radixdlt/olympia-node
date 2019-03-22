@@ -1,7 +1,7 @@
 package com.radixdlt.client.application;
 
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
-import com.radixdlt.client.core.Bootstrap;
+import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.network.RadixNetworkController;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -277,7 +277,7 @@ public class RadixApplicationAPI {
 	 * @param identity the identity of user of API
 	 * @return an api instance
 	 */
-	public static RadixApplicationAPI create(Bootstrap bootstrap, RadixIdentity identity) {
+	public static RadixApplicationAPI create(BootstrapConfig bootstrap, RadixIdentity identity) {
 		Objects.requireNonNull(identity);
 
 		return createDefaultBuilder(bootstrap)
@@ -290,7 +290,7 @@ public class RadixApplicationAPI {
 	 *
 	 * @return an api builder instance
 	 */
-	public static RadixApplicationAPIBuilder createDefaultBuilder(Bootstrap bootstrap) {
+	public static RadixApplicationAPIBuilder createDefaultBuilder(BootstrapConfig bootstrap) {
 		return new RadixApplicationAPIBuilder()
 			.universe(RadixUniverse.create(bootstrap))
 			.defaultFeeMapper()
@@ -836,17 +836,37 @@ public class RadixApplicationAPI {
 	}
 
 	/**
-	 * Executes actions sequentially. If an action fails, then the completable this method
-	 * returns will call onError immediately. Note that this method is NEITHER idempotent
-	 * NOR atomic (i.e. if an action fails, all previous actions to that would still have occurred).
+	 * Executes actions sequentially. If an action fails, then all subsequent Results will never emit.
+	 * Note that this method is NEITHER idempotent NOR atomic (i.e. if an action fails,
+	 * all previous actions to that would still have occurred).
 	 *
 	 * @param actions the action to execute sequentially
-	 * @return completion status of all of the actions
+	 * @return list of results
 	 */
-	public Completable executeSequentially(Action... actions) {
-		Completable completable = Observable.fromIterable(Arrays.asList(actions))
-			.concatMapCompletable(a -> buildDisconnectedResult(a).connect().toCompletable()).cache();
-		completable.subscribe();
-		return completable;
+	public List<Result> executeSequentially(Action... actions) {
+		return executeSequentially(Arrays.asList(actions));
+	}
+
+	/**
+	 * Executes actions sequentially. If an action fails, then all subsequent Results will never emit.
+	 * Note that this method is NEITHER idempotent NOR atomic (i.e. if an action fails,
+	 * all previous actions to that would still have occurred).
+	 *
+	 * @param actions the action to execute sequentially
+	 * @return list of results
+	 */
+	public List<Result> executeSequentially(List<Action> actions) {
+		List<Result> results = actions.stream().map(this::buildDisconnectedResult).collect(Collectors.toList());
+
+		Observable.fromIterable(results)
+			.concatMap(result -> result.connect().toObservable())
+			.takeUntil(a ->
+				a instanceof SubmitAtomResultAction
+					&& ((SubmitAtomResultAction) a).getType() != SubmitAtomResultActionType.STORED
+			)
+			.publish()
+			.connect();
+
+		return results;
 	}
 }
