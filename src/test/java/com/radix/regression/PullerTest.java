@@ -4,14 +4,12 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Assert;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
 import com.radixdlt.client.core.Bootstrap;
-import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.RadixUniverse.Ledger;
 import com.radixdlt.client.core.ledger.AtomObservation;
 
@@ -19,13 +17,6 @@ import io.reactivex.Observable;
 import io.reactivex.disposables.Disposable;
 
 public class PullerTest {
-	@BeforeClass
-	public static void setup() {
-		if (!RadixUniverse.isInstantiated()) {
-			RadixUniverse.bootstrap(Bootstrap.BETANET);
-		}
-	}
-
 	void printAtomObservation(String what, AtomObservation atomObservation, Semaphore s) {
 		System.out.println(what + ": " + atomObservation);
 		if (atomObservation.isHead() && s != null) {
@@ -40,12 +31,11 @@ public class PullerTest {
 
 	@Test
 	public void test() throws InterruptedException {
-		RadixApplicationAPI api = RadixApplicationAPI.create(RadixIdentities.createNew());
+		RadixApplicationAPI api = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, RadixIdentities.createNew());
 
 		TokenDefinitionReference ttr = api.getNativeTokenRef();
 
-		RadixUniverse universe = RadixUniverse.getInstance();
-		Ledger l = universe.getLedger();
+		Ledger l = api.getLedger();
 
 		System.out.println("Pull using atomPuller from native token address");
 		Semaphore head1Semaphore = new Semaphore(0);

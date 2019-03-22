@@ -24,10 +24,10 @@ class DoubleSpendTokenTransferTestConfig implements DoubleSpendTestConfig {
 	private final RadixAddress toAddress;
 	private final TokenDefinitionReference tokenRef;
 
-	DoubleSpendTokenTransferTestConfig(RadixAddress apiAddress) {
+	DoubleSpendTokenTransferTestConfig(RadixAddress apiAddress, RadixAddress toAddress) {
 		this.tokenRef = TokenDefinitionReference.of(apiAddress, "JOSH");
 		this.apiAddress = apiAddress;
-		this.toAddress = RadixUniverse.getInstance().getAddressFrom(RadixIdentities.createNew().getPublicKey());
+		this.toAddress = toAddress;
 	}
 
 	@Override

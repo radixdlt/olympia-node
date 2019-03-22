@@ -22,7 +22,6 @@ import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.Bootstrap;
-import com.radixdlt.client.core.RadixUniverse;
 
 import static com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType.STORED;
 import static com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType.VALIDATION_ERROR;
@@ -42,12 +41,6 @@ import io.reactivex.observers.TestObserver;
  * See <a href="https://radixdlt.atlassian.net/browse/RLAU-93">RLAU-93</a>.
  */
 public class CreateMultiIssuanceTokenClass {
-	static {
-		if (!RadixUniverse.isInstantiated()) {
-			RadixUniverse.bootstrap(Bootstrap.BETANET);
-		}
-	}
-
 	private static final String NAME = "name";
 	private static final String SYMBOL = "symbol";
 	private static final String DESCRIPTION = "description";
@@ -73,7 +66,7 @@ public class CreateMultiIssuanceTokenClass {
 	@Given("^I have access to a suitable Radix network$")
 	public void i_have_access_to_a_suitable_Radix_network() {
 		this.identity = RadixIdentities.createNew();
-		this.api = RadixApplicationAPI.create(this.identity);
+		this.api = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, this.identity);
 		this.disposables.add(this.api.pull());
 
 		// Reset data
@@ -140,7 +133,7 @@ public class CreateMultiIssuanceTokenClass {
 	@When("^I submit a token transfer request of (\\d+) for \"([^\"]*)\" to an arbitrary account$")
 	public void i_submit_a_token_transfer_request_of_for_to_an_arbitrary_account(int count, String symbol) {
 		TokenDefinitionReference tokenClass = TokenDefinitionReference.of(api.getMyAddress(), symbol);
-		RadixAddress arbitrary = RadixUniverse.getInstance().getAddressFrom(RadixIdentities.createNew().getPublicKey());
+		RadixAddress arbitrary = api.getAddressFromKey(RadixIdentities.createNew().getPublicKey());
 
 		// Ensure balance is up-to-date.
 		api.getBalance(api.getMyAddress(), tokenClass)

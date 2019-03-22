@@ -20,7 +20,6 @@ import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.application.translate.tokens.TransferTokensToParticleGroupsMapper;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.Bootstrap;
-import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.crypto.ECKeyPairGenerator;
 import com.radixdlt.client.core.network.actions.SubmitAtomReceivedAction;
@@ -54,12 +53,6 @@ import static org.junit.Assert.assertEquals;
  * See <a href="https://radixdlt.atlassian.net/browse/RLAU-326">RLAU-326</a>.
  */
 public class ParticleGroups {
-	static {
-		if (!RadixUniverse.isInstantiated()) {
-			RadixUniverse.bootstrap(Bootstrap.BETANET);
-		}
-	}
-
 	private static final String NAME = "name";
 	private static final String SYMBOL = "symbol";
 	private static final String DESCRIPTION = "description";
@@ -145,7 +138,7 @@ public class ParticleGroups {
 	@Given("^I have access to a suitable Radix network$")
 	public void i_have_access_to_a_suitable_Radix_network() {
 		this.identity = RadixIdentities.createNew();
-		this.api = RadixApplicationAPI.createDefaultBuilder()
+		this.api = RadixApplicationAPI.createDefaultBuilder(Bootstrap.LOCALHOST_SINGLENODE)
 			.identity(this.identity)
 			.addStatelessParticlesMapper(new CreateEmptyGroupActionToParticleGroupsMapper())
 			.addStatefulParticlesMapper(new MergeStatefulActionToParticleGroupsMapper(new TransferTokensToParticleGroupsMapper()))
@@ -244,7 +237,7 @@ public class ParticleGroups {
 	private TransferTokensAction buildTransferTokenAction(String symbol, long amount) {
 		return TransferTokensAction.create(
 			api.getMyAddress(),
-			new RadixAddress(RadixUniverse.getInstance().getConfig(), ecKeyPairGenerator.generateKeyPair().getPublicKey()),
+			api.getAddressFromKey(ecKeyPairGenerator.generateKeyPair().getPublicKey()),
 			BigDecimal.valueOf(amount),
 			TokenDefinitionReference.of(api.getMyAddress(), symbol)
 		);
@@ -278,7 +271,7 @@ public class ParticleGroups {
 	@When("^I submit a token transfer request of (\\d+) scaled for \"([^\"]*)\" to an arbitrary account$")
 	public void i_submit_a_token_transfer_request_of_for_to_an_arbitrary_account(int count, String symbol) {
 		TokenDefinitionReference tokenClass = TokenDefinitionReference.of(api.getMyAddress(), symbol);
-		RadixAddress arbitrary = RadixUniverse.getInstance().getAddressFrom(RadixIdentities.createNew().getPublicKey());
+		RadixAddress arbitrary = api.getAddressFromKey(RadixIdentities.createNew().getPublicKey());
 		// Ensure balance is up-to-date.
 		api.getBalance(api.getMyAddress(), tokenClass)
 			.firstOrError()

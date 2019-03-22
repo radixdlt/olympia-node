@@ -19,7 +19,6 @@ import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
 import com.radixdlt.client.application.translate.tokens.TokenState;
 import com.radixdlt.client.core.Bootstrap;
-import com.radixdlt.client.core.RadixUniverse;
 
 import io.reactivex.Completable;
 import io.reactivex.Observable;
@@ -34,11 +33,7 @@ public class TokenClassesInAccountTest {
 
 	@BeforeClass
 	public static void setup() {
-		if (!RadixUniverse.isInstantiated()) {
-			RadixUniverse.bootstrap(Bootstrap.BETANET);
-		}
-
-		api = RadixApplicationAPI.create(RadixIdentities.createNew());
+		api = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, RadixIdentities.createNew());
 	}
 
 	private static CreateTokenAction buildCreateNewTokenAction(String iso, BigDecimal initialSupply) {

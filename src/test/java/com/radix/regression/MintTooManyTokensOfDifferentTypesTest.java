@@ -5,26 +5,17 @@ import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
 import com.radixdlt.client.core.Bootstrap;
-import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
 import io.reactivex.observers.BaseTestConsumer.TestWaitStrategy;
 import io.reactivex.observers.TestObserver;
 import java.math.BigDecimal;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class MintTooManyTokensOfDifferentTypesTest {
-	@BeforeClass
-	public static void setup() {
-		if (!RadixUniverse.isInstantiated()) {
-			RadixUniverse.bootstrap(Bootstrap.BETANET);
-		}
-	}
-
 	@Test
 	public void given_a_token_with_max_supply_created_in_one_account__when_another_token_with_max_supply_is_created_in_another_account__then_the_client_should_be_notified_of_success() {
-		RadixApplicationAPI api0 = RadixApplicationAPI.create(RadixIdentities.createNew());
-		RadixApplicationAPI api1 = RadixApplicationAPI.create(RadixIdentities.createNew());
+		RadixApplicationAPI api0 = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, RadixIdentities.createNew());
+		RadixApplicationAPI api1 = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, RadixIdentities.createNew());
 
 		createToken(api0)
 			.awaitCount(4, TestWaitStrategy.SLEEP_100MS, 10000)

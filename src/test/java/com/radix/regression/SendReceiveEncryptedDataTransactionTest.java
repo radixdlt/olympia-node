@@ -2,7 +2,6 @@ package com.radix.regression;
 
 import java.util.stream.Stream;
 
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.radixdlt.client.application.RadixApplicationAPI;
@@ -20,20 +19,13 @@ import io.reactivex.Completable;
 import io.reactivex.observers.TestObserver;
 
 public class SendReceiveEncryptedDataTransactionTest {
-	@BeforeClass
-	public static void setup() {
-		if (!RadixUniverse.isInstantiated()) {
-			RadixUniverse.bootstrap(Bootstrap.BETANET);
-		}
-	}
-
 	/**
 	 * RLAU-90
 	 */
 	@Test
 	public void given_i_own_a_key_pair_associated_with_an_address_and_listening_to_messages__when_i_send_an_endecryptable_message_to_myself__then_i_will_receive_a_message_marked_that_it_is_not_decryptable() {
 		// Given I own a key pair associated with an address and listening to messages
-		RadixApplicationAPI normalApi = RadixApplicationAPI.create(RadixIdentities.createNew());
+		RadixApplicationAPI normalApi = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, RadixIdentities.createNew());
 		TestObserver<DecryptedMessage> messageListener = TestObserver.create(Util.loggingObserver("MessageListener"));
 		normalApi.getMessages().subscribe(messageListener);
 
@@ -45,6 +37,7 @@ public class SendReceiveEncryptedDataTransactionTest {
 		);
 		RadixApplicationAPI sendMessageWithDifferentKeyApi = new RadixApplicationAPIBuilder()
 			.defaultFeeMapper()
+			.universe(RadixUniverse.create(Bootstrap.LOCALHOST_SINGLENODE))
 			.identity(normalApi.getMyIdentity())
 			.addStatelessParticlesMapper(msgMapper)
 			.build();

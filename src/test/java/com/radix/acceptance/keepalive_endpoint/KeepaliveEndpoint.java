@@ -16,12 +16,6 @@ import okhttp3.Request;
 import java.util.concurrent.TimeUnit;
 
 public class KeepaliveEndpoint {
-    static {
-        if (!RadixUniverse.isInstantiated()) {
-            RadixUniverse.bootstrap(Bootstrap.BETANET);
-        }
-    }
-
     private WebSocketClient webSocketClient;
     private RadixJsonRpcClient jsonRpcClient;
 

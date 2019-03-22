@@ -9,8 +9,7 @@ import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.ApplicationState;
 import com.radixdlt.client.application.translate.ShardedAppStateId;
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.core.RadixUniverse;
+import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.RadixNodeAction;
 import com.radixdlt.client.core.network.actions.FetchAtomsObservationAction;
@@ -33,9 +32,9 @@ import java.util.stream.IntStream;
 import org.radix.common.tuples.Pair;
 
 public final class DoubleSpendTestRunner {
-	private final Function<RadixAddress, DoubleSpendTestConfig> testSupplier;
+	private final Function<RadixApplicationAPI, DoubleSpendTestConfig> testSupplier;
 
-	public DoubleSpendTestRunner(Function<RadixAddress, DoubleSpendTestConfig> testSupplier) {
+	public DoubleSpendTestRunner(Function<RadixApplicationAPI, DoubleSpendTestConfig> testSupplier) {
 		this.testSupplier = testSupplier;
 	}
 
@@ -48,9 +47,9 @@ public final class DoubleSpendTestRunner {
 	}
 
 	public void execute() {
-		RadixApplicationAPI api = RadixApplicationAPI.create(RadixIdentities.createNew());
+		RadixApplicationAPI api = RadixApplicationAPI.create(Bootstrap.LOCALHOST, RadixIdentities.createNew());
 
-		DoubleSpendTestConfig doubleSpendTestConfig = testSupplier.apply(api.getMyAddress());
+		DoubleSpendTestConfig doubleSpendTestConfig = testSupplier.apply(api);
 
 		List<Action> initialActions = doubleSpendTestConfig.initialActions();
 		Disposable d = api.pull();
@@ -61,7 +60,7 @@ public final class DoubleSpendTestRunner {
 		d.dispose();
 
 		// Retrieve two nodes in the network
-		Single<List<RadixNode>> twoNodes = RadixUniverse.getInstance().getNetworkController().getNetwork()
+		Single<List<RadixNode>> twoNodes = api.getNetworkState()
 			.filter(network -> network.getNodes().entrySet().stream()
 				.filter(e -> e.getValue().getData().isPresent() && e.getValue().getUniverseConfig().isPresent())
 				.count() >= 2)
@@ -74,7 +73,7 @@ public final class DoubleSpendTestRunner {
 			);
 
 		// If two nodes don't exist in the network just use one node
-		Single<List<RadixNode>> oneNode = RadixUniverse.getInstance().getNetworkController().getNetwork()
+		Single<List<RadixNode>> oneNode = api.getNetworkState()
 			.filter(network -> network.getNodes().entrySet().stream()
 				.filter(e -> e.getValue().getData().isPresent() && e.getValue().getUniverseConfig().isPresent())
 				.count() == 1)
@@ -108,9 +107,9 @@ public final class DoubleSpendTestRunner {
 		TestObserver<SubmitAtomResultAction> submissionObserver = TestObserver.create(Util.loggingObserver("Submission"));
 		conflictingAtoms
 			.flattenAsObservable(l -> l)
-			.doAfterNext(a -> RadixUniverse.getInstance().getNetworkController().dispatch(a))
+			.doAfterNext(a -> api.getNetworkController().dispatch(a))
 			.flatMap(a ->
-				RadixUniverse.getInstance().getNetworkController()
+				api.getNetworkController()
 					.getActions()
 					.ofType(SubmitAtomResultAction.class)
 					.filter(action -> action.getUuid().equals(a.getUuid()))
@@ -124,7 +123,7 @@ public final class DoubleSpendTestRunner {
 				pair -> {
 					final String name = pair.getFirst();
 					final ShardedAppStateId id = pair.getSecond();
-					final RadixApplicationAPI newApi = RadixApplicationAPI.create(RadixIdentities.createNew());
+					final RadixApplicationAPI newApi = RadixApplicationAPI.create(Bootstrap.LOCALHOST, RadixIdentities.createNew());
 					final TestObserver<ApplicationState> testObserver = TestObserver.create(Util.loggingObserver(name));
 					newApi.getState(id.stateClass(), id.address()).subscribe(testObserver);
 					return testObserver;
@@ -133,7 +132,7 @@ public final class DoubleSpendTestRunner {
 
 		// Wait for network to resolve conflict
 		TestObserver<RadixNodeAction> lastUpdateObserver = TestObserver.create(Util.loggingObserver("Last Update"));
-		RadixUniverse.getInstance().getNetworkController()
+		api.getNetworkController()
 			.getActions()
 			.filter(a -> a instanceof FetchAtomsObservationAction || a instanceof SubmitAtomAction)
 			.debounce(10, TimeUnit.SECONDS)

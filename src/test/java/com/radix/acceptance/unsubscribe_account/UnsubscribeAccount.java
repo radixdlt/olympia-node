@@ -14,7 +14,6 @@ import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.data.SendMessageAction;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.Bootstrap;
-import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.crypto.ECKeyPairGenerator;
 import com.radixdlt.client.core.network.HttpClients;
@@ -38,12 +37,6 @@ import okhttp3.Request;
  * See <a href="https://radixdlt.atlassian.net/browse/RLAU-94">RLAU-59</a>.
  */
 public class UnsubscribeAccount {
-	static {
-		if (!RadixUniverse.isInstantiated()) {
-			RadixUniverse.bootstrap(Bootstrap.BETANET);
-		}
-	}
-
 	private static final String ADDRESS = "address";
 	private static final String NAME = "name";
 	private static final String SYMBOL = "symbol";
@@ -130,7 +123,7 @@ public class UnsubscribeAccount {
 	public void the_websocket_client_has_an_atom_subscription_to_another_account() throws Throwable {
 		this.jsonRpcClient = new RadixJsonRpcClient(this.webSocketClient);
 
-		this.otherAccount = RadixUniverse.getInstance().getAddressFrom(ECKeyPairGenerator.newInstance().generateKeyPair().getPublicKey());
+		this.otherAccount = api.getAddressFromKey(ECKeyPairGenerator.newInstance().generateKeyPair().getPublicKey());
 
 		this.otherUuid = UUID.randomUUID().toString();
 		this.otherObserver = TestObserver.create();
@@ -249,7 +242,7 @@ public class UnsubscribeAccount {
 
 	private void setupWebSocket() {
 		this.identity = RadixIdentities.createNew();
-		this.api = RadixApplicationAPI.create(this.identity);
+		this.api = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, this.identity);
 
 		Request localhost = new Request.Builder().url("ws://localhost:8080/rpc").build();
 		this.webSocketClient = new WebSocketClient(listener -> HttpClients.getSslAllTrustingClient().newWebSocket(localhost, listener));
