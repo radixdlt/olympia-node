@@ -9,7 +9,6 @@ import com.radixdlt.client.atommodel.tokens.ConsumingTokens;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
-import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.crypto.ECSignature;
 import org.radix.common.ID.EUID;
 import org.radix.common.tuples.Pair;

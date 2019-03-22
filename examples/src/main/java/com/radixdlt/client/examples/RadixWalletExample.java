@@ -10,7 +10,6 @@ import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenS
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
 import com.radixdlt.client.core.Bootstrap;
-import com.radixdlt.client.core.RadixUniverse;
 
 public class RadixWalletExample {
 
@@ -18,11 +17,6 @@ public class RadixWalletExample {
 	//private static String TO_ADDRESS_BASE58 = null;
 	private static String MESSAGE = "A gift for you!";
 	private static BigDecimal AMOUNT = new BigDecimal("0.01");
-
-	// Initialize Radix Universe
-	static {
-		RadixUniverse.bootstrap(Bootstrap.BETANET);
-	}
 
 	public static void main(String[] args) throws Exception {
 		// Identity Manager which manages user's keys, signing, encrypting and decrypting
@@ -33,7 +27,7 @@ public class RadixWalletExample {
 			radixIdentity = RadixIdentities.loadOrCreateFile("my.key");
 		}
 
-		RadixApplicationAPI api = RadixApplicationAPI.create(radixIdentity);
+		RadixApplicationAPI api = RadixApplicationAPI.create(Bootstrap.LOCALHOST, radixIdentity);
 		api.pull();
 
 		System.out.println("My address: " + api.getMyAddress());

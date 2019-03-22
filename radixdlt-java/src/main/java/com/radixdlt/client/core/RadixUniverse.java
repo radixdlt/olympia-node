@@ -16,6 +16,7 @@ import com.radixdlt.client.core.ledger.RadixAtomPuller;
 import com.radixdlt.client.core.ledger.RadixParticleStore;
 import com.radixdlt.client.core.network.RadixNetworkController;
 import com.radixdlt.client.core.network.RadixNetworkController.RadixNetworkControllerBuilder;
+import com.radixdlt.client.core.network.RadixNetworkEpic;
 import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.epics.ConnectWebSocketEpic;
@@ -32,6 +33,8 @@ import com.radixdlt.client.core.network.reducers.RadixNetwork;
 import com.radixdlt.client.core.network.selector.RandomSelector;
 
 import io.reactivex.Observable;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * A RadixUniverse represents the interface through which a client can interact
@@ -61,82 +64,52 @@ public final class RadixUniverse {
 	}
 
 	/**
-	 * Lock to protect default Radix Universe instance
-	 */
-	private static Object lock = new Object();
-
-	/**
-	 * Default Universe Instance
-	 */
-	private static RadixUniverse defaultUniverse;
-
-	// TODO: don't check universe for betanet, enable in future
-	private static final boolean CHECK_UNIVERSE = false;
-
-
-	/**
-	 * Initializes the default universe with a Peer Discovery mechanism.
-	 * Should only be called once at the start of the program.
+	 * Creates a universe with peer discovery through seed nodes
 	 *
 	 * @param seeds The seed nodes
-	 * @return The default universe created, can also be retrieved with RadixUniverse.getInstance()
+	 * @return the created universe
 	 */
-	public static RadixUniverse bootstrap(
+	public static RadixUniverse create(
 		RadixUniverseConfig config,
 		Observable<RadixNode> seeds
 	) {
-		synchronized (lock) {
-			if (defaultUniverse != null) {
-				throw new IllegalStateException("Default Universe already bootstrapped");
-			}
-
-			RadixNetworkController controller = new RadixNetworkControllerBuilder()
-				.setNetwork(new RadixNetwork())
-				.addEpic(
-					new WebSocketsEpicBuilder()
-						.add(WebSocketEventsEpic::new)
-						.add(ConnectWebSocketEpic::new)
-						.add(SubmitAtomEpic::new)
-						.add(FetchAtomsEpic::new)
-						.add(RadixJsonRpcMethodEpic::createGetLivePeersEpic)
-						.add(RadixJsonRpcMethodEpic::createGetNodeDataEpic)
-						.add(RadixJsonRpcMethodEpic::createGetUniverseEpic)
-						.add(RadixJsonRpcAutoConnectEpic::new)
-						.add(RadixJsonRpcAutoCloseEpic::new)
-						.build()
-				)
-				.addEpic(new DiscoverNodesEpic(seeds, config))
-				.addEpic(new FindANodeEpic(new RandomSelector()))
-				.build();
-
-			defaultUniverse = new RadixUniverse(config, controller);
-
-			return defaultUniverse;
-		}
-	}
-
-	public static RadixUniverse bootstrap(BootstrapConfig bootstrapConfig) {
-		return bootstrap(bootstrapConfig.getConfig(), bootstrapConfig.getSeeds());
-	}
-
-	// TODO: cleanup bootstrap/instantiation
-	public static boolean isInstantiated() {
-		synchronized (lock) {
-			return defaultUniverse != null;
-		}
+		return create(config, Collections.singletonList(new DiscoverNodesEpic(seeds, config)));
 	}
 
 	/**
-	 * Returns the default RadixUniverse instance
-	 * @return the default RadixUniverse instance
+	 * Creates a universe with peer discovery through epics
+	 *
+	 * @param discoveryEpics epics which are responsible for peer discovery
+	 * @return the created universe
 	 */
-	public static RadixUniverse getInstance() {
-		synchronized (lock) {
-			if (defaultUniverse == null) {
-				throw new IllegalStateException("Default Universe was not initialized via RadixUniverse.bootstrap()");
-			}
-			return defaultUniverse;
-		}
+	public static RadixUniverse create(
+		RadixUniverseConfig config,
+		List<RadixNetworkEpic> discoveryEpics
+	) {
+		RadixNetworkControllerBuilder builder = new RadixNetworkControllerBuilder()
+			.setNetwork(new RadixNetwork())
+			.addEpic(
+				new WebSocketsEpicBuilder()
+					.add(WebSocketEventsEpic::new)
+					.add(ConnectWebSocketEpic::new)
+					.add(SubmitAtomEpic::new)
+					.add(FetchAtomsEpic::new)
+					.add(RadixJsonRpcMethodEpic::createGetLivePeersEpic)
+					.add(RadixJsonRpcMethodEpic::createGetNodeDataEpic)
+					.add(RadixJsonRpcMethodEpic::createGetUniverseEpic)
+					.add(RadixJsonRpcAutoConnectEpic::new)
+					.add(RadixJsonRpcAutoCloseEpic::new)
+					.build()
+			)
+			.addEpic(new FindANodeEpic(new RandomSelector()));
+
+		discoveryEpics.forEach(builder::addEpic);
+
+		return new RadixUniverse(config, builder.build());
+	}
+
+	public static RadixUniverse create(BootstrapConfig bootstrapConfig) {
+		return create(bootstrapConfig.getConfig(), bootstrapConfig.getDiscoveryEpics());
 	}
 
 	/**

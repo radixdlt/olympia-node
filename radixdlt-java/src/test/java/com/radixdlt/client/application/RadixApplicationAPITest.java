@@ -117,7 +117,7 @@ public class RadixApplicationAPITest {
 
 	@Test
 	public void testNull() {
-		assertThatThrownBy(() -> RadixApplicationAPI.create(null))
+		assertThatThrownBy(() -> RadixApplicationAPI.create(null, null))
 				.isInstanceOf(NullPointerException.class);
 
 		RadixApplicationAPI api = createMockedAPIWhichAlwaysSucceeds();

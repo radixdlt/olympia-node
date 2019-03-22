@@ -7,9 +7,7 @@ import org.junit.Test;
 
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.crypto.ECPublicKey;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;

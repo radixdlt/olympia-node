@@ -1,6 +1,8 @@
 package com.radixdlt.client.application;
 
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
+import com.radixdlt.client.core.Bootstrap;
+import com.radixdlt.client.core.network.RadixNetworkController;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -248,12 +250,8 @@ public class RadixApplicationAPI {
 		public RadixApplicationAPI build() {
 			Objects.requireNonNull(this.identity, "Identity must be specified");
 			Objects.requireNonNull(this.feeMapper, "Fee Mapper must be specified");
+			Objects.requireNonNull(this.universe, "Universe must be specified");
 
-			if (this.universe == null && !RadixUniverse.isInstantiated() ) {
-				throw new IllegalStateException("No universe available.");
-			}
-
-			final RadixUniverse universe = this.universe == null ? RadixUniverse.getInstance() : this.universe;
 			final Ledger ledger = universe.getLedger();
 			final FeeMapper feeMapper = this.feeMapper;
 			final RadixIdentity identity = this.identity;
@@ -279,10 +277,10 @@ public class RadixApplicationAPI {
 	 * @param identity the identity of user of API
 	 * @return an api instance
 	 */
-	public static RadixApplicationAPI create(RadixIdentity identity) {
+	public static RadixApplicationAPI create(Bootstrap bootstrap, RadixIdentity identity) {
 		Objects.requireNonNull(identity);
 
-		return createDefaultBuilder()
+		return createDefaultBuilder(bootstrap)
 				.identity(identity)
 				.build();
 	}
@@ -292,8 +290,9 @@ public class RadixApplicationAPI {
 	 *
 	 * @return an api builder instance
 	 */
-	public static RadixApplicationAPIBuilder createDefaultBuilder() {
+	public static RadixApplicationAPIBuilder createDefaultBuilder(Bootstrap bootstrap) {
 		return new RadixApplicationAPIBuilder()
+			.universe(RadixUniverse.create(bootstrap))
 			.defaultFeeMapper()
 			.addStatelessParticlesMapper(new SendMessageToParticleGroupsMapper(ECKeyPairGenerator.newInstance()::generateKeyPair))
 			.addStatelessParticlesMapper(new CreateTokenToParticleGroupsMapper())
@@ -312,6 +311,14 @@ public class RadixApplicationAPI {
 
 	public Observable<RadixNetworkState> getNetworkState() {
 		return this.universe.getNetworkState();
+	}
+
+	public Ledger getLedger() {
+		return this.ledger;
+	}
+
+	public RadixNetworkController getNetworkController() {
+		return this.universe.getNetworkController();
 	}
 
 	private ApplicationStore<? extends ApplicationState> getStore(Class<? extends ApplicationState> storeClass) {
@@ -473,6 +480,10 @@ public class RadixApplicationAPI {
 
 	public RadixAddress getMyAddress() {
 		return universe.getAddressFrom(identity.getPublicKey());
+	}
+
+	public RadixAddress getAddressFromKey(ECPublicKey publicKey) {
+		return universe.getAddressFrom(publicKey);
 	}
 
 	public Observable<DecryptedMessage> getMessages() {
