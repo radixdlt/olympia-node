@@ -33,6 +33,6 @@ public interface DoubleSpendTestConfig {
 	}
 
 	List<Action> initialActions();
-	List<Action> conflictingActions();
+	List<List<Action>> conflictingActions();
 	PostConsensusCondition postConsensusCondition();
 }

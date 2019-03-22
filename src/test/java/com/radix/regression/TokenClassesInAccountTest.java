@@ -1,5 +1,6 @@
 package com.radix.regression;
 
+import com.radixdlt.client.application.RadixApplicationAPI.Result;
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionsState;
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
@@ -79,7 +80,7 @@ public class TokenClassesInAccountTest {
 		);
 
 		// Given setup execution
-		Completable givenCompleted = api.executeSequentially(givenActions);
+		Completable givenCompleted = Observable.fromIterable(api.executeSequentially(givenActions)).flatMapCompletable(Result::toCompletable);
 		givenCompleted.blockingAwait();
 
 		// When execution
