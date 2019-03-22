@@ -836,9 +836,9 @@ public class RadixApplicationAPI {
 	}
 
 	/**
-	 * Executes actions sequentially. If an action fails, then the completable this method
-	 * returns will call onError immediately. Note that this method is NEITHER idempotent
-	 * NOR atomic (i.e. if an action fails, all previous actions to that would still have occurred).
+	 * Executes actions sequentially. If an action fails, then all subsequent Results will never emit.
+	 * Note that this method is NEITHER idempotent NOR atomic (i.e. if an action fails,
+	 * all previous actions to that would still have occurred).
 	 *
 	 * @param actions the action to execute sequentially
 	 * @return list of results
@@ -848,9 +848,9 @@ public class RadixApplicationAPI {
 	}
 
 	/**
-	 * Executes actions sequentially. If an action fails, then the completable this method
-	 * returns will call onError immediately. Note that this method is NEITHER idempotent
-	 * NOR atomic (i.e. if an action fails, all previous actions to that would still have occurred).
+	 * Executes actions sequentially. If an action fails, then all subsequent Results will never emit.
+	 * Note that this method is NEITHER idempotent NOR atomic (i.e. if an action fails,
+	 * all previous actions to that would still have occurred).
 	 *
 	 * @param actions the action to execute sequentially
 	 * @return list of results
