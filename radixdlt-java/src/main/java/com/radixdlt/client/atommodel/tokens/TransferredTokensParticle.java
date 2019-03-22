@@ -75,6 +75,7 @@ public final class TransferredTokensParticle extends Particle implements Account
 		return Collections.singleton(this.address);
 	}
 
+	@Override
 	public RadixAddress getAddress() {
 		return this.address;
 	}

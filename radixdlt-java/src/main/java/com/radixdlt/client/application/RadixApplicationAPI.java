@@ -249,7 +249,7 @@ public class RadixApplicationAPI {
 			Objects.requireNonNull(this.identity, "Identity must be specified");
 			Objects.requireNonNull(this.feeMapper, "Fee Mapper must be specified");
 
-			if (this.universe == null && !RadixUniverse.isInstantiated()) {
+			if (this.universe == null && !RadixUniverse.isInstantiated() ) {
 				throw new IllegalStateException("No universe available.");
 			}
 
@@ -301,12 +301,12 @@ public class RadixApplicationAPI {
 			.addStatelessParticlesMapper(new AtomicToParticleGroupsMapper())
 			.addStatefulParticlesMapper(new MintTokensActionMapper())
 			.addStatefulParticlesMapper(new MintAndTransferTokensActionMapper())
-			.addStatefulParticlesMapper(new BurnTokensActionMapper(RadixUniverse.getInstance()))
-			.addStatefulParticlesMapper(new TransferTokensToParticleGroupsMapper(RadixUniverse.getInstance()))
+			.addStatefulParticlesMapper(new BurnTokensActionMapper())
+			.addStatefulParticlesMapper(new TransferTokensToParticleGroupsMapper())
 			.addReducer(new TokenDefinitionsReducer())
 			.addReducer(new TokenBalanceReducer())
 			.addAtomMapper(new AtomToDecryptedMessageMapper())
-			.addAtomMapper(new AtomToTokenTransfersMapper(RadixUniverse.getInstance()))
+			.addAtomMapper(new AtomToTokenTransfersMapper())
 			.addAtomErrorMapper(new AlreadyUsedUniqueIdReasonMapper());
 	}
 

@@ -75,6 +75,7 @@ public final class BurnedTokensParticle extends Particle implements Accountable,
 		return Collections.singleton(address);
 	}
 
+	@Override
 	public RadixAddress getAddress() {
 		return address;
 	}

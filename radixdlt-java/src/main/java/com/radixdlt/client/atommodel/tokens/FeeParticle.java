@@ -86,4 +86,9 @@ public class FeeParticle extends Particle implements ConsumableTokens {
 	public ECPublicKey getOwner() {
 		return this.address.getPublicKey();
 	}
+
+	@Override
+	public RadixAddress getAddress() {
+		return address;
+	}
 }

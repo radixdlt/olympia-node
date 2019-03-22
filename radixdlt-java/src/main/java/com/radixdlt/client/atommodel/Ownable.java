@@ -1,5 +1,6 @@
 package com.radixdlt.client.atommodel;
 
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 
 /**
@@ -7,4 +8,5 @@ import com.radixdlt.client.core.crypto.ECPublicKey;
  */
 public interface Ownable {
 	ECPublicKey getOwner();
+	RadixAddress getAddress();
 }

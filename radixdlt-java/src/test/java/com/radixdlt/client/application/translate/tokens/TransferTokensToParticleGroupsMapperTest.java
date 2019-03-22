@@ -17,7 +17,6 @@ public class TransferTokensToParticleGroupsMapperTest {
 
 	@Test
 	public void createTransactionWithNoFunds() {
-		RadixUniverse universe = mock(RadixUniverse.class);
 		RadixAddress address = mock(RadixAddress.class);
 
 		TokenDefinitionReference token = mock(TokenDefinitionReference.class);
@@ -31,7 +30,7 @@ public class TransferTokensToParticleGroupsMapperTest {
 		TokenBalanceState state = mock(TokenBalanceState.class);
 		when(state.getBalance()).thenReturn(Collections.emptyMap());
 
-		TransferTokensToParticleGroupsMapper transferTranslator = new TransferTokensToParticleGroupsMapper(universe);
+		TransferTokensToParticleGroupsMapper transferTranslator = new TransferTokensToParticleGroupsMapper();
 
 		TestObserver<ShardedAppStateId> contextTestObserver = TestObserver.create();
 		transferTranslator.requiredState(transferTokensAction).subscribe(contextTestObserver);

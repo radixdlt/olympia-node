@@ -85,6 +85,11 @@ public class TokenDefinitionParticle extends Particle implements Identifiable, O
 		return this.address.getPublicKey();
 	}
 
+	@Override
+	public RadixAddress getAddress() {
+		return this.address;
+	}
+
 	public String getName() {
 		return name;
 	}
