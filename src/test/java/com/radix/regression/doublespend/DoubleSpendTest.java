@@ -6,7 +6,10 @@ import com.radixdlt.client.core.RadixUniverse;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class DoubleSpendTokenTransferTest {
+public class DoubleSpendTest {
+	// Remove once permission dependencies have been implemented
+	private boolean testPermissionDependencies = false;
+
 	@Test
 	public void given_an_account_with_a_josh_token_with_one_supply__when_the_account_executes_two_transfers_via_two_different_nodes_at_the_same_time__then_the_account_balances_should_resolve_to_only_one_transfer() {
 		DoubleSpendTestRunner testRunner = new DoubleSpendTestRunner(
@@ -26,5 +29,13 @@ public class DoubleSpendTokenTransferTest {
 				api.getAddressFromKey(RadixIdentities.createNew().getPublicKey())
 			));
 		testRunner.execute(10);
+	}
+
+	@Test
+	public void given_an_account__when_the_account_executes_two_token_creation_via_two_different_nodes_at_the_same_time__then_the_account_balances_should_resolve_to_only_one_token_creation() {
+		if (testPermissionDependencies) {
+			DoubleSpendTestRunner testRunner = new DoubleSpendTestRunner(api -> new DoubleSpendTokenCreationTestConfig(api.getMyAddress()));
+			testRunner.execute(10);
+		}
 	}
 }
