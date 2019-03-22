@@ -6,7 +6,6 @@ import com.radixdlt.client.core.network.actions.SubmitAtomAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomResultAction;
 import com.radixdlt.client.core.network.reducers.RadixNetwork;
-import com.radixdlt.client.core.util.TestUtils;
 import io.reactivex.Observable;
 import io.reactivex.functions.Cancellable;
 import io.reactivex.observables.ConnectableObservable;
