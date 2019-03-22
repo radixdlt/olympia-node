@@ -184,7 +184,7 @@ public class Bytes {
 	 * leading zero exists, or only a single zero byte exists.
 	 *
 	 * @param bytes the byte a
-	 * @return @code bytes} with leading zeros removed, if any
+	 * @return {@code bytes} with leading zeros removed, if any
 	 */
 	public static byte[] trimLeadingZeros(byte[] bytes) {
 		if (bytes == null || bytes.length <= 1 || bytes[0] != 0) {
