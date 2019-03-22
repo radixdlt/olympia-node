@@ -12,6 +12,8 @@ import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import io.reactivex.Observable;
 
+import java.math.BigDecimal;
+
 /**
  * Maps the CreateToken action into it's corresponding particles
  */
@@ -47,7 +49,7 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 			tokenCreation.getName(),
 				tokenCreation.getIso(),
 				tokenCreation.getDescription(),
-				tokenCreation.getGranularity(),
+				TokenUnitConversions.unitsToSubunits(tokenCreation.getGranularity()),
 				ImmutableMap.of(
 					MintedTokensParticle.class, mintPermissions,
 					BurnedTokensParticle.class, burnPermissions
@@ -55,19 +57,19 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 				null
 		);
 
-		if (tokenCreation.getInitialSupply().isZero()) {
+		if (tokenCreation.getInitialSupply().compareTo(BigDecimal.ZERO) == 0) {
 			// No initial supply -> just the token particle
 			return Observable.just(ParticleGroup.of(SpunParticle.up(token)));
 		}
 
 		MintedTokensParticle minted = new MintedTokensParticle(
-				tokenCreation.getInitialSupply(),
-				tokenCreation.getGranularity(),
+				TokenUnitConversions.unitsToSubunits(tokenCreation.getInitialSupply()),
+				TokenUnitConversions.unitsToSubunits(tokenCreation.getGranularity()),
 				tokenCreation.getAddress(),
 				System.currentTimeMillis(),
 				token.getTokenDefinitionReference(),
 				System.currentTimeMillis() / 60000L + 60000
 		);
-		return Observable.just(ParticleGroup.of(SpunParticle.up(token), SpunParticle.up(minted)));
+		return Observable.just(ParticleGroup.of(SpunParticle.up(token)), ParticleGroup.of(SpunParticle.up(minted)));
 	}
 }
