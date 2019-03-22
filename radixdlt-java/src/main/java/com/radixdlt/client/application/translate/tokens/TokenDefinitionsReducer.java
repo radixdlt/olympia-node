@@ -41,9 +41,9 @@ public class TokenDefinitionsReducer implements ParticleReducer<TokenDefinitions
 			TokenPermission mintPermission = tokenDefinitionParticle.getTokenPermissions().get(MintedTokensParticle.class);
 
 			final TokenSupplyType tokenSupplyType;
-			if (mintPermission.equals(TokenPermission.TOKEN_CREATION_ONLY) || mintPermission.equals(TokenPermission.ALL)) {
+			if (mintPermission.equals(TokenPermission.TOKEN_CREATION_ONLY) || mintPermission.equals(TokenPermission.NONE)) {
 				tokenSupplyType = TokenSupplyType.FIXED;
-			} else if (mintPermission.equals(TokenPermission.TOKEN_OWNER_ONLY) || mintPermission.equals(TokenPermission.NONE)) {
+			} else if (mintPermission.equals(TokenPermission.TOKEN_OWNER_ONLY) || mintPermission.equals(TokenPermission.ALL)) {
 				tokenSupplyType = TokenSupplyType.MUTABLE;
 			} else {
 				throw new IllegalStateException(
