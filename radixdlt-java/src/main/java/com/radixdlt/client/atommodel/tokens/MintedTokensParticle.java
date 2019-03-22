@@ -108,11 +108,6 @@ public final class MintedTokensParticle extends Particle implements Accountable,
 	}
 
 	@Override
-	public ECPublicKey getOwner() {
-		return this.address.getPublicKey();
-	}
-
-	@Override
 	public String toString() {
 		return String.format("%s[%s:%s:%s:%s:%s:%s]",
 			getClass().getSimpleName(),
