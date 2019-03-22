@@ -6,29 +6,20 @@ import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
 import com.radixdlt.client.core.Bootstrap;
-import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
 import io.reactivex.observers.BaseTestConsumer;
 import io.reactivex.observers.TestObserver;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.math.BigDecimal;
 
 public class MultipleSubscriptionsToSameAddress {
-	@BeforeClass
-	public static void setup() {
-		if (!RadixUniverse.isInstantiated()) {
-			RadixUniverse.bootstrap(Bootstrap.BETANET);
-		}
-	}
-
 	@Test
 	public void enter_test_name_here() {
 
 		RadixIdentity identity = RadixIdentities.createNew();
-		RadixApplicationAPI api0 = RadixApplicationAPI.create(identity);
-		RadixApplicationAPI api1 = RadixApplicationAPI.create(identity);
+		RadixApplicationAPI api0 = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, identity);
+		RadixApplicationAPI api1 = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, identity);
 
 		createToken(api0)
 			.awaitCount(4, BaseTestConsumer.TestWaitStrategy.SLEEP_100MS, 10000)

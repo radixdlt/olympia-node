@@ -9,7 +9,6 @@ import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.tokens.AtomToTokenTransfersMapper;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.application.translate.tokens.CreateTokenToParticleGroupsMapper;
-import com.radixdlt.client.application.translate.tokens.MintAndTransferTokensAction;
 import com.radixdlt.client.application.translate.tokens.MintAndTransferTokensActionMapper;
 import com.radixdlt.client.application.translate.tokens.TokenBalanceReducer;
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
@@ -33,7 +32,6 @@ import cucumber.api.java.en.When;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.observers.BaseTestConsumer.TestWaitStrategy;
 import io.reactivex.observers.TestObserver;
-import org.radix.utils.UInt256;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -48,12 +46,6 @@ import static org.junit.Assert.assertEquals;
  * See <a href="https://radixdlt.atlassian.net/browse/RLAU-645">RLAU-645</a>.
  */
 public class AtomicTransactionsWithDependence {
-	static {
-		if (!RadixUniverse.isInstantiated()) {
-			RadixUniverse.bootstrap(Bootstrap.BETANET);
-		}
-	}
-
 	private static final String NAME = "name";
 	private static final String SYMBOL = "symbol";
 	private static final String DESCRIPTION = "description";
@@ -79,7 +71,7 @@ public class AtomicTransactionsWithDependence {
 	@Given("^I have access to a suitable Radix network$")
 	public void i_have_access_to_a_suitable_Radix_network() {
 		this.identity = RadixIdentities.createNew();
-		this.api = RadixApplicationAPI.create(this.identity);
+		this.api = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, this.identity);
 		this.disposables.add(this.api.pull());
 
 		// Reset data
@@ -90,12 +82,13 @@ public class AtomicTransactionsWithDependence {
 	private void mintAndTransferTokensWith(MintAndTransferTokensActionMapper actionMapper) {
 		RadixApplicationAPI api = new RadixApplicationAPI.RadixApplicationAPIBuilder()
 			.defaultFeeMapper()
+			.universe(RadixUniverse.create(Bootstrap.LOCALHOST_SINGLENODE))
 			.addStatelessParticlesMapper(new CreateTokenToParticleGroupsMapper())
 			.addStatefulParticlesMapper(actionMapper)
-			.addStatefulParticlesMapper(new TransferTokensToParticleGroupsMapper(RadixUniverse.getInstance()))
+			.addStatefulParticlesMapper(new TransferTokensToParticleGroupsMapper())
 			.addReducer(new TokenDefinitionsReducer())
 			.addReducer(new TokenBalanceReducer())
-			.addAtomMapper(new AtomToTokenTransfersMapper(RadixUniverse.getInstance()))
+			.addAtomMapper(new AtomToTokenTransfersMapper())
 			.identity(RadixIdentities.createNew())
 			.build();
 
@@ -108,7 +101,7 @@ public class AtomicTransactionsWithDependence {
 		this.observers.clear();
 
 		RadixIdentity toIdentity = RadixIdentities.createNew();
-		RadixAddress toAddress = RadixUniverse.getInstance().getAddressFrom(toIdentity.getPublicKey());
+		RadixAddress toAddress = api.getAddressFromKey(toIdentity.getPublicKey());
 		TestObserver observer = new TestObserver();
 		api.mintAndTransferTokens("TEST0", BigDecimal.valueOf(7), toAddress)
 			.toObservable()

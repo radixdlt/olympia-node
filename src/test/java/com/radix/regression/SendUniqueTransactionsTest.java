@@ -1,9 +1,7 @@
 package com.radix.regression;
 
-import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.radix.regression.Util;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.translate.ActionExecutionException;
@@ -13,7 +11,6 @@ import com.radixdlt.client.application.translate.unique.AlreadyUsedUniqueIdReaso
 import com.radixdlt.client.application.translate.unique.PutUniqueIdAction;
 import com.radixdlt.client.application.translate.unique.UniqueId;
 import com.radixdlt.client.core.Bootstrap;
-import com.radixdlt.client.core.RadixUniverse;
 
 import io.reactivex.Completable;
 import io.reactivex.functions.Predicate;
@@ -23,19 +20,11 @@ import io.reactivex.observers.TestObserver;
  * RLAU-372
  */
 public class SendUniqueTransactionsTest {
-
-	@BeforeClass
-	public static void setup() {
-		if (!RadixUniverse.isInstantiated()) {
-			RadixUniverse.bootstrap(Bootstrap.BETANET);
-		}
-	}
-
 	@Test
 	public void given_an_account_owner_which_has_performed_an_action_with_a_unique_id__when_the_client_attempts_to_use_same_id__then_client_should_be_notified_that_unique_id_is_already_used() throws Exception {
 
 		// Given account owner which has performed an action with a unique id
-		RadixApplicationAPI api = RadixApplicationAPI.create(RadixIdentities.createNew());
+		RadixApplicationAPI api = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, RadixIdentities.createNew());
 		final String uniqueId = "thisisauniquestring";
 		Completable initialUniqueStatus = api.execute(
 			new AtomicAction(
@@ -67,7 +56,7 @@ public class SendUniqueTransactionsTest {
 	public void given_an_account_owner_which_has_not_used_a_unique_id__when_the_client_attempts_to_use_id__then_client_should_be_notified_of_success() throws Exception {
 
 		// Given account owner which has NOT performed an action with a unique id
-		RadixApplicationAPI api = RadixApplicationAPI.create(RadixIdentities.createNew());
+		RadixApplicationAPI api = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, RadixIdentities.createNew());
 		final String uniqueId = "thisisauniquestring";
 
 		// When client attempts to use id

@@ -10,7 +10,6 @@ import com.radixdlt.client.application.translate.atomic.AtomicAction;
 import com.radixdlt.client.application.translate.data.DecryptedMessage;
 import com.radixdlt.client.application.translate.data.SendMessageAction;
 import com.radixdlt.client.core.Bootstrap;
-import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomReceivedAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
@@ -36,12 +35,6 @@ import static com.radixdlt.client.core.network.actions.SubmitAtomResultAction.Su
  * See <a href="https://radixdlt.atlassian.net/browse/RLAU-94">RLAU-94</a>.
  */
 public class SendingADataTransaction {
-	static {
-		if (!RadixUniverse.isInstantiated()) {
-			RadixUniverse.bootstrap(Bootstrap.BETANET);
-		}
-	}
-
 	private static final String ADDRESS = "address";
 	private static final String NAME = "name";
 	private static final String SYMBOL = "symbol";
@@ -68,11 +61,11 @@ public class SendingADataTransaction {
 
 	private void setupApi() {
 		this.identity = RadixIdentities.createNew();
-		this.api = RadixApplicationAPI.create(this.identity);
+		this.api = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, this.identity);
 		this.disposables.add(this.api.pull());
 
 		this.otherIdentity = RadixIdentities.createNew();
-		this.otherApi = RadixApplicationAPI.create(this.otherIdentity);
+		this.otherApi = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, this.otherIdentity);
 		this.disposables.add(this.otherApi.pull());
 
 		this.observers.clear();
@@ -82,10 +75,10 @@ public class SendingADataTransaction {
 	public void i_have_access_to_a_suitable_Radix_network() {
 		this.identity = RadixIdentities.createNew();
 		this.otherIdentity = RadixIdentities.createNew();
-		this.api = RadixApplicationAPI.createDefaultBuilder()
+		this.api = RadixApplicationAPI.createDefaultBuilder(Bootstrap.LOCALHOST_SINGLENODE)
 			.identity(this.identity)
 			.build();
-		this.otherApi = RadixApplicationAPI.createDefaultBuilder()
+		this.otherApi = RadixApplicationAPI.createDefaultBuilder(Bootstrap.LOCALHOST_SINGLENODE)
 			.identity(this.otherIdentity)
 			.build();
 		this.disposables.add(this.api.pull());

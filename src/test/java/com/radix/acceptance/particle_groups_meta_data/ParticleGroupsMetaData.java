@@ -42,13 +42,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 public class ParticleGroupsMetaData {
-    static {
-        if (!RadixUniverse.isInstantiated()) {
-            RadixUniverse.bootstrap(Bootstrap.BETANET);
-        }
-    }
-
-    private RadixUniverse universe = RadixUniverse.getInstance();
+    private RadixUniverse universe = RadixUniverse.create(Bootstrap.LOCALHOST_SINGLENODE);
 
     private RadixIdentity identity;
 
