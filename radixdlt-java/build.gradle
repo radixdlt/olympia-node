@@ -21,7 +21,7 @@ dependencies {
     
     // Preferred versions for org.json and guava
     compile 'org.json:json:20180813'
-    compile 'com.google.guava:guava:27.0.1-jre'
+    compile 'com.google.guava:guava:27.1-jre'
 
     // Jackson serializer
     compile 'com.fasterxml.jackson.core:jackson-core:2.9.7'
