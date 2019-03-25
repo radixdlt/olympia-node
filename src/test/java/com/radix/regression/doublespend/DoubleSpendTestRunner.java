@@ -191,15 +191,20 @@ public final class DoubleSpendTestRunner {
 		singleNodeApis.flatMap(singleNodeApi ->
 			singleNodeApi.api.getNetworkController()
 			.getActions()
-			.filter(a -> a instanceof FetchAtomsObservationAction || a instanceof SubmitAtomAction)
 			.doOnNext(a -> {
 				if (a instanceof FetchAtomsObservationAction) {
 					FetchAtomsObservationAction f = (FetchAtomsObservationAction) a;
 					if (f.getObservation().getType() == Type.DELETE) {
-						System.out.println(System.currentTimeMillis() + " " + singleNodeApi + " DELETE: " + f.getObservation().getAtom());
+						System.out.println(System.currentTimeMillis() + " " + singleNodeApi + " DELETE: " + f.getObservation().getAtom().getHid());
+					}
+				} else if (a instanceof SubmitAtomResultAction) {
+					SubmitAtomResultAction r = (SubmitAtomResultAction) a;
+					if (r.getType() == SubmitAtomResultActionType.VALIDATION_ERROR) {
+						System.out.println(System.currentTimeMillis() + " " + singleNodeApi + " VALIDATION_ERROR: " + r.getAtom().getHid());
 					}
 				}
 			})
+			.filter(a -> a instanceof FetchAtomsObservationAction || a instanceof SubmitAtomAction)
 		)
 			.debounce(10, TimeUnit.SECONDS)
 			.firstOrError()
