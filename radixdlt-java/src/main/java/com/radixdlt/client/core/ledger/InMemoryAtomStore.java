@@ -4,11 +4,9 @@ import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.ledger.AtomObservation.Type;
-import com.radixdlt.client.core.atoms.RadixHash;
 import com.radixdlt.client.core.ledger.AtomObservation.AtomObservationUpdateType;
 import io.reactivex.subjects.Subject;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -111,8 +109,10 @@ public class InMemoryAtomStore implements AtomStore {
 						List<AtomObservation> missingDeletes = new ArrayList<>();
 						if (nextUpdate.getType() == Type.DELETE && include) {
 							List<AtomObservation> observationsContainingDown = observation.getAtom().particles(Spin.UP)
-								.flatMap(p -> atomsObservationState.atomContainingDown(p).map(o -> o.isStore() ? Stream.of(o) : Stream.<AtomObservation>empty())
-									.orElse(Stream.empty()))
+								.flatMap(p -> atomsObservationState.atomContainingDown(p)
+									.map(o -> o.isStore() ? Stream.of(o) : Stream.<AtomObservation>empty())
+									.orElse(Stream.empty())
+								)
 								.collect(Collectors.toList());
 
 							if (!observationsContainingDown.isEmpty()) {

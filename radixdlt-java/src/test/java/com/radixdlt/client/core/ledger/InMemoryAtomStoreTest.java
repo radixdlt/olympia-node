@@ -12,6 +12,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.reactivex.observers.TestObserver;
+import org.radix.common.ID.EUID;
 
 public class InMemoryAtomStoreTest {
 	@Test
@@ -19,6 +20,8 @@ public class InMemoryAtomStoreTest {
 		InMemoryAtomStore inMemoryAtomStore = new InMemoryAtomStore();
 		Atom atom = mock(Atom.class);
 		RadixHash hash = mock(RadixHash.class);
+		EUID hid = mock(EUID.class);
+		when(atom.getHid()).thenReturn(hid);
 		when(atom.getHash()).thenReturn(hash);
 		AtomObservation atomObservation = mock(AtomObservation.class);
 		when(atomObservation.getAtom()).thenReturn(atom);
@@ -43,6 +46,8 @@ public class InMemoryAtomStoreTest {
 		AtomObservation atomObservation = mock(AtomObservation.class);
 		Atom atom = mock(Atom.class);
 		RadixHash hash = mock(RadixHash.class);
+		EUID hid = mock(EUID.class);
+		when(atom.getHid()).thenReturn(hid);
 		when(atom.getHash()).thenReturn(hash);
 		when(atomObservation.getAtom()).thenReturn(atom);
 		when(atomObservation.isStore()).thenReturn(true);
@@ -65,6 +70,8 @@ public class InMemoryAtomStoreTest {
 		Atom atom = mock(Atom.class);
 		RadixHash hash = mock(RadixHash.class);
 		when(hash.toString()).thenReturn("hash");
+		EUID hid = mock(EUID.class);
+		when(atom.getHid()).thenReturn(hid);
 		when(atom.getHash()).thenReturn(hash);
 
 		AtomObservation deleteObservation = mock(AtomObservation.class);
@@ -77,6 +84,8 @@ public class InMemoryAtomStoreTest {
 
 		Atom atom2 = mock(Atom.class);
 		RadixHash hash2 = mock(RadixHash.class);
+		EUID hid2 = mock(EUID.class);
+		when(atom2.getHid()).thenReturn(hid2);
 		when(hash2.toString()).thenReturn("hash2");
 		when(atom2.getHash()).thenReturn(hash2);
 
@@ -101,6 +110,8 @@ public class InMemoryAtomStoreTest {
 		InMemoryAtomStore inMemoryAtomStore = new InMemoryAtomStore();
 		Atom atom = mock(Atom.class);
 		RadixHash hash = mock(RadixHash.class);
+		EUID hid = mock(EUID.class);
+		when(atom.getHid()).thenReturn(hid);
 		when(hash.toString()).thenReturn("hash");
 		when(atom.getHash()).thenReturn(hash);
 
