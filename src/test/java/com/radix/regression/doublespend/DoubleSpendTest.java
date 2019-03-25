@@ -33,7 +33,7 @@ public class DoubleSpendTest {
 	}
 
 	@Test
-	@Ignore
+	@Ignore("Won't work until RLAU-953 is finished")
 	public void given_an_account__when_the_account_executes_two_token_creation_and_mint_via_two_different_nodes_at_the_same_time__then_the_account_balances_should_resolve_to_only_one_token_creation() {
 		DoubleSpendTestRunner testRunner = new DoubleSpendTestRunner(api -> new DoubleSpendCreateAndMintTokenTestConfig(api.getMyAddress()));
 		testRunner.execute(10);
