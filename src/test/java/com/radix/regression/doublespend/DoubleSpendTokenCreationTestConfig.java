@@ -57,7 +57,7 @@ public class DoubleSpendTokenCreationTestConfig implements DoubleSpendTestConfig
 					"Cool Token",
 					BigDecimal.ONE,
 					BigDecimal.ONE,
-					TokenSupplyType.MUTABLE
+					TokenSupplyType.FIXED
 				)
 			)
 		);
