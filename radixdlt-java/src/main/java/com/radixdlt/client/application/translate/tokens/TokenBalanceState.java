@@ -66,6 +66,7 @@ public class TokenBalanceState implements ApplicationState {
 			}
 
 			BigInteger newBalance = balance.balance.add(amount);
+
 			return new Balance(newBalance, balance.granularity, newMap);
 		}
 
@@ -87,7 +88,11 @@ public class TokenBalanceState implements ApplicationState {
 		@Override
 		public String toString() {
 			return "{BAL:" + getAmount().toString() + " CONSUMABLES:" + consumables.size()
-				+ "(" + (consumables.size() == 1 ? consumables.keySet().asList().get(0) : consumables.hashCode()) + ")}";
+				+ "("
+				+ (consumables.size() == 1
+					? consumables.keySet().asList().get(0) + " " + consumables.entrySet().asList().get(0).getValue().getAmount()
+					: consumables.hashCode())
+				+ ")}";
 		}
 	}
 
