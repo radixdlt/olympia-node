@@ -1,5 +1,6 @@
 package com.radixdlt.client.application.translate.tokens;
 
+import com.radixdlt.client.core.ledger.ParticleTransition;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 
@@ -13,8 +14,6 @@ import com.radixdlt.client.atommodel.tokens.BurnedTokensParticle;
 import com.radixdlt.client.atommodel.tokens.MintedTokensParticle;
 import com.radixdlt.client.atommodel.tokens.TokenPermission;
 import com.radixdlt.client.core.atoms.particles.Particle;
-import com.radixdlt.client.core.atoms.particles.Spin;
-
 import com.radixdlt.client.core.ledger.TransitionedParticle;
 
 /**
@@ -58,17 +57,30 @@ public class TokenDefinitionsReducer implements ParticleReducer<TokenDefinitions
 				TokenUnitConversions.subunitsToUnits(tokenDefinitionParticle.getGranularity()),
 				tokenSupplyType
 			);
-		} else if (t.getSpinTo() == Spin.UP && (p instanceof MintedTokensParticle || p instanceof BurnedTokensParticle)) {
-			BigInteger mintedOrBurnedAmount = UInt256s.toBigInteger(((Fungible) p).getAmount());
-			BigDecimal change = TokenUnitConversions.subunitsToUnits(
-				(p instanceof BurnedTokensParticle)
-					? mintedOrBurnedAmount.negate()
-					: mintedOrBurnedAmount
-			);
+		} else if (p instanceof MintedTokensParticle || p instanceof BurnedTokensParticle) {
+			if (t.getTransition() == ParticleTransition.N2U) {
+				BigInteger mintedOrBurnedAmount = UInt256s.toBigInteger(((Fungible) p).getAmount());
+				BigDecimal change = TokenUnitConversions.subunitsToUnits(
+					(p instanceof BurnedTokensParticle)
+						? mintedOrBurnedAmount.negate()
+						: mintedOrBurnedAmount
+				);
 
-			TokenDefinitionReference tokenDefinitionReference = p instanceof MintedTokensParticle
-				? ((MintedTokensParticle) p).getTokenDefinitionReference() : ((BurnedTokensParticle) p).getTokenDefinitionReference();
-			return state.mergeSupplyChange(tokenDefinitionReference, change);
+				TokenDefinitionReference tokenDefinitionReference = p instanceof MintedTokensParticle
+					? ((MintedTokensParticle) p).getTokenDefinitionReference() : ((BurnedTokensParticle) p).getTokenDefinitionReference();
+				return state.mergeSupplyChange(tokenDefinitionReference, change);
+			} else if (t.getTransition() == ParticleTransition.U2N) {
+				BigInteger mintedOrBurnedAmount = UInt256s.toBigInteger(((Fungible) p).getAmount());
+				BigDecimal change = TokenUnitConversions.subunitsToUnits(
+					(p instanceof BurnedTokensParticle)
+						? mintedOrBurnedAmount
+						: mintedOrBurnedAmount.negate()
+				);
+
+				TokenDefinitionReference tokenDefinitionReference = p instanceof MintedTokensParticle
+					? ((MintedTokensParticle) p).getTokenDefinitionReference() : ((BurnedTokensParticle) p).getTokenDefinitionReference();
+				return state.mergeSupplyChange(tokenDefinitionReference, change);
+			}
 		}
 
 		return state;

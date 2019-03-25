@@ -1,5 +1,6 @@
 package com.radixdlt.client.application.translate.tokens;
 
+import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.application.translate.ApplicationState;
 import com.radixdlt.client.application.translate.tokens.TokenState.TokenSupplyType;
 
@@ -9,10 +10,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class TokenDefinitionsState implements ApplicationState {
-	private final Map<TokenDefinitionReference, TokenState> state;
+	private final ImmutableMap<TokenDefinitionReference, TokenState> state;
 
 	private TokenDefinitionsState(Map<TokenDefinitionReference, TokenState> state) {
-		this.state = Collections.unmodifiableMap(state);
+		this.state = ImmutableMap.copyOf(state);
 	}
 
 	public static TokenDefinitionsState init() {
@@ -58,5 +59,25 @@ public class TokenDefinitionsState implements ApplicationState {
 		}
 
 		return new TokenDefinitionsState(newState);
+	}
+
+	@Override
+	public int hashCode() {
+		return state.hashCode();
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (!(o instanceof TokenDefinitionsState)) {
+			return false;
+		}
+
+		TokenDefinitionsState t = (TokenDefinitionsState) o;
+		return t.state.equals(this.state);
+	}
+
+	@Override
+	public String toString() {
+		return state.toString();
 	}
 }
