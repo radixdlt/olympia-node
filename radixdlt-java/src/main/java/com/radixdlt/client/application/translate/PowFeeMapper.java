@@ -1,23 +1,20 @@
 package com.radixdlt.client.application.translate;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import java.util.function.Function;
-
-import com.radixdlt.client.core.atoms.Atom;
-import org.radix.utils.Int128;
-import org.radix.utils.UInt256;
-
-import com.radixdlt.client.atommodel.tokens.FeeParticle;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.core.RadixUniverse;
+import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.RadixHash;
-import com.radixdlt.client.core.atoms.particles.Particle;
-import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.pow.ProofOfWork;
 import com.radixdlt.client.core.pow.ProofOfWorkBuilder;
+import org.radix.common.tuples.Pair;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.Function;
 
 /**
  * Maps a complete list of particles ready to be submitted to a POW fee particle.
@@ -34,7 +31,7 @@ public class PowFeeMapper implements FeeMapper {
 	}
 
 	@Override
-	public List<ParticleGroup> map(Atom atom, RadixUniverse universe, ECPublicKey key) {
+	public Pair<Map<String, String>, List<ParticleGroup>> map(Atom atom, RadixUniverse universe, ECPublicKey key) {
 		Objects.requireNonNull(key);
 		Objects.requireNonNull(universe);
 		Objects.requireNonNull(atom);
@@ -42,18 +39,6 @@ public class PowFeeMapper implements FeeMapper {
 		final byte[] seed = this.hasher.apply(atom).toByteArray();
 		ProofOfWork pow = this.powBuilder.build(universe.getMagic(), seed, LEADING);
 
-		Particle fee = new FeeParticle(
-				fromNonce(pow.getNonce()),
-				universe.getAddressFrom(key),
-				System.nanoTime(),
-				universe.getPOWToken(),
-				System.currentTimeMillis() / 60000L + 60000L
-		);
-
-		return Collections.singletonList(ParticleGroup.of(SpunParticle.up(fee)));
-	}
-
-	private static UInt256 fromNonce(long nonce) {
-		return UInt256.from(Int128.from(0L, nonce));
+		return Pair.of(ImmutableMap.of(Atom.METADATA_POW_NONCE_KEY, String.valueOf(pow.getNonce())), ImmutableList.of());
 	}
 }

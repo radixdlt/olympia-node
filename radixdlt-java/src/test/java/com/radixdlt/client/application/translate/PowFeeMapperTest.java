@@ -13,15 +13,15 @@ import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.RadixHash;
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
-import com.radixdlt.client.atommodel.tokens.FeeParticle;
-import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.pow.ProofOfWork;
 import com.radixdlt.client.core.pow.ProofOfWorkBuilder;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import org.junit.Test;
+import org.radix.common.tuples.Pair;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -50,14 +50,8 @@ public class PowFeeMapperTest {
 		when(address.getPublicKey()).thenReturn(key);
 		when(universe.getAddressFrom(key)).thenReturn(address);
 
-		List<ParticleGroup> particles = powFeeMapper.map(new Atom(Collections.emptyList(), 0L), universe, key);
-		assertThat(particles)
-				.hasOnlyOneElementSatisfying(s -> {
-					SpunParticle feeParticle = s.spunParticles().findAny().get();
-					assertThat(feeParticle.getParticle()).isInstanceOf(FeeParticle.class);
-					FeeParticle a = (FeeParticle) feeParticle.getParticle();
-					assertThat(a.getTokenDefinitionReference()).isEqualTo(powToken);
-				});
+		Pair<Map<String, String>, List<ParticleGroup>> output = powFeeMapper.map(new Atom(Collections.emptyList(), 0L), universe, key);
+		assertThat(output.getFirst()).containsOnlyKeys(Atom.METADATA_POW_NONCE_KEY);
 
 		verify(builder, times(1)).build(anyInt(), any(), anyInt());
 		verify(hasher, times(1)).apply(any());

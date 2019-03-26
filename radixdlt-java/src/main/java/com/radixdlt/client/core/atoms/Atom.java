@@ -38,6 +38,7 @@ import java.util.stream.Stream;
 @SerializerId2("ATOM")
 public final class Atom extends SerializableObject {
 	public static final String METADATA_TIMESTAMP_KEY = "timestamp";
+	public static final String METADATA_POW_NONCE_KEY = "powNonce";
 
 	@JsonProperty("particleGroups")
 	@DsonOutput(DsonOutput.Output.ALL)

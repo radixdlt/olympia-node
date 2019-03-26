@@ -4,9 +4,12 @@ import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.crypto.ECPublicKey;
+import org.radix.common.tuples.Pair;
 
 import java.util.List;
+import java.util.Map;
 
 public interface FeeMapper {
-	List<ParticleGroup> map(Atom atom, RadixUniverse universe, ECPublicKey key);
+	// TODO maybe all Mappers should be able to return metadata as well..?
+	Pair<Map<String, String>, List<ParticleGroup>> map(Atom atom, RadixUniverse universe, ECPublicKey key);
 }

@@ -1,5 +1,7 @@
 package com.radixdlt.client.application;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.core.ledger.ParticleObservation;
 import java.math.BigDecimal;
 import java.util.Collections;
@@ -52,6 +54,7 @@ import static org.mockito.Mockito.when;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.observers.TestObserver;
+import org.radix.common.tuples.Pair;
 
 public class RadixApplicationAPITest {
 	private RadixApplicationAPI createMockedAPI(
@@ -68,7 +71,7 @@ public class RadixApplicationAPITest {
 		Atom atom = mock(Atom.class);
 		when(identity.sign(any())).thenReturn(Single.just(atom));
 
-		FeeMapper feeMapper = (a, b, c) -> Collections.emptyList();
+		FeeMapper feeMapper = (a, b, c) -> Pair.of(ImmutableMap.of(), ImmutableList.of());
 
 		return new RadixApplicationAPIBuilder()
 			.identity(identity)
@@ -313,7 +316,7 @@ public class RadixApplicationAPITest {
 			.identity(identity)
 			.universe(universe)
 			.addStatelessParticlesMapper(actionMapper)
-			.feeMapper(mock(PowFeeMapper.class))
+			.feeMapper((x, y, z) -> Pair.of(ImmutableMap.of(), ImmutableList.of()))
 			.addAtomErrorMapper(errorMapper)
 			.build();
 
