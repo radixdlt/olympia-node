@@ -1,5 +1,6 @@
 package com.radixdlt.client.application.translate.tokens;
 
+import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.application.translate.ApplicationState;
 import com.radixdlt.client.core.atoms.RadixHash;
 import com.radixdlt.client.core.atoms.particles.Spin;
@@ -23,12 +24,12 @@ public class TokenBalanceState implements ApplicationState {
 	public static class Balance {
 		private final BigInteger balance;
 		private final BigInteger granularity;
-		private final Map<RadixHash, ConsumableTokens> consumables;
+		private final ImmutableMap<RadixHash, ConsumableTokens> consumables;
 
 		private Balance(BigInteger balance, BigInteger granularity, Map<RadixHash, ConsumableTokens> consumables) {
 			this.balance = balance;
 			this.granularity = granularity;
-			this.consumables = consumables;
+			this.consumables = ImmutableMap.copyOf(consumables);
 		}
 
 		private Balance(BigInteger balance, BigInteger granularity, ConsumableTokens s) {
@@ -65,23 +66,44 @@ public class TokenBalanceState implements ApplicationState {
 			}
 
 			BigInteger newBalance = balance.balance.add(amount);
+
 			return new Balance(newBalance, balance.granularity, newMap);
 		}
 
 		@Override
+		public int hashCode() {
+			return consumables.hashCode();
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if (!(o instanceof Balance)) {
+				return false;
+			}
+
+			Balance b = (Balance) o;
+			return b.consumables.keySet().equals(consumables.keySet());
+		}
+
+		@Override
 		public String toString() {
-			return "{BAL:" + getAmount().toString() + " CONSUMABLES:" + consumables.size() + "}";
+			return "{BAL:" + getAmount().toString() + " CONSUMABLES:" + consumables.size()
+				+ "("
+				+ (consumables.size() == 1
+					? consumables.keySet().asList().get(0) + " " + consumables.entrySet().asList().get(0).getValue().getAmount()
+					: consumables.hashCode())
+				+ ")}";
 		}
 	}
 
-	private final Map<TokenDefinitionReference, Balance> balance;
+	private final ImmutableMap<TokenDefinitionReference, Balance> balance;
 
 	public TokenBalanceState() {
-		this.balance = Collections.emptyMap();
+		this.balance = ImmutableMap.of();
 	}
 
 	public TokenBalanceState(Map<TokenDefinitionReference, Balance> balance) {
-		this.balance = balance;
+		this.balance = ImmutableMap.copyOf(balance);
 	}
 
 	public Map<TokenDefinitionReference, Balance> getBalance() {
@@ -104,5 +126,21 @@ public class TokenBalanceState implements ApplicationState {
 	@Override
 	public String toString() {
 		return balance.toString();
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (!(o instanceof TokenBalanceState)) {
+			return false;
+		}
+
+		TokenBalanceState s = (TokenBalanceState) o;
+
+		return s.balance.equals(balance);
+	}
+
+	@Override
+	public int hashCode() {
+		return balance.hashCode();
 	}
 }

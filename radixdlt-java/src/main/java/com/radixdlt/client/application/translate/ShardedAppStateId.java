@@ -54,4 +54,9 @@ public final class ShardedAppStateId {
 	public int hashCode() {
 		return Objects.hash(stateClass, address);
 	}
+
+	@Override
+	public String toString() {
+		return address + "/" + stateClass.getSimpleName();
+	}
 }
