@@ -2,6 +2,7 @@ package com.radix.regression.doublespend;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.google.common.collect.ImmutableMap;
 import com.radix.regression.Util;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
@@ -15,10 +16,12 @@ import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.client.core.address.RadixUniverseConfigs;
+import com.radixdlt.client.core.ledger.AtomObservation.Type;
 import com.radixdlt.client.core.network.RadixNetworkEpic;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.RadixNodeAction;
 import com.radixdlt.client.core.network.actions.FetchAtomsObservationAction;
+import com.radixdlt.client.core.network.actions.FetchAtomsRequestAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomResultAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType;
@@ -36,6 +39,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -59,8 +63,10 @@ public final class DoubleSpendTestRunner {
 	private static class SingleNodeAPI {
 		private final RadixApplicationAPI api;
 		private final RadixNode node;
+		private final int clientId;
 
-		public SingleNodeAPI(RadixNode node, RadixIdentity identity) {
+		public SingleNodeAPI(int clientId, RadixNode node, RadixIdentity identity) {
+			this.clientId = clientId;
 			this.node = node;
 			this.api = RadixApplicationAPI.create(
 				new BootstrapConfig() {
@@ -75,6 +81,10 @@ public final class DoubleSpendTestRunner {
 				    }
 			    },
 				identity);
+		}
+
+		public String toString() {
+			return "Client " + clientId + " " + node;
 		}
 	}
 
@@ -126,10 +136,12 @@ public final class DoubleSpendTestRunner {
 					.collect(Collectors.toList())
 			);
 
+		AtomicInteger clientId = new AtomicInteger(1);
+
 		Observable<SingleNodeAPI> singleNodeApis = Observable.merge(twoNodes.toObservable(), oneNode.toObservable())
 			.firstOrError()
 			.flatMapObservable(l -> l.size() == 1 ? Observable.just(l.get(0), l.get(0)) : Observable.fromIterable(l))
-			.map(node -> new SingleNodeAPI(node, api.getMyIdentity()))
+			.map(node -> new SingleNodeAPI(clientId.getAndIncrement(), node, api.getMyIdentity()))
 			.cache();
 
 
@@ -164,7 +176,7 @@ public final class DoubleSpendTestRunner {
 							final String name = pair.getFirst();
 							final ShardedAppStateId id = pair.getSecond();
 							final TestObserver<ApplicationState> testObserver =
-								TestObserver.create(Util.loggingObserver(singleNodeApi.node + " " + name));
+								TestObserver.create(Util.loggingObserver(singleNodeApi + " " + name));
 
 							singleNodeApi.api.getState(id.stateClass(), id.address()).subscribe(testObserver);
 							return testObserver;
@@ -179,6 +191,19 @@ public final class DoubleSpendTestRunner {
 		singleNodeApis.flatMap(singleNodeApi ->
 			singleNodeApi.api.getNetworkController()
 			.getActions()
+			.doOnNext(a -> {
+				if (a instanceof FetchAtomsObservationAction) {
+					FetchAtomsObservationAction f = (FetchAtomsObservationAction) a;
+					if (f.getObservation().getType() == Type.DELETE) {
+						System.out.println(System.currentTimeMillis() + " " + singleNodeApi + " DELETE: " + f.getObservation().getAtom().getHid());
+					}
+				} else if (a instanceof SubmitAtomResultAction) {
+					SubmitAtomResultAction r = (SubmitAtomResultAction) a;
+					if (r.getType() == SubmitAtomResultActionType.VALIDATION_ERROR) {
+						System.out.println(System.currentTimeMillis() + " " + singleNodeApi + " VALIDATION_ERROR: " + r.getAtom().getHid());
+					}
+				}
+			})
 			.filter(a -> a instanceof FetchAtomsObservationAction || a instanceof SubmitAtomAction)
 		)
 			.debounce(10, TimeUnit.SECONDS)
@@ -187,9 +212,9 @@ public final class DoubleSpendTestRunner {
 		lastUpdateObserver.awaitTerminalEvent();
 		submissionObserver.awaitTerminalEvent();
 
-		testObserversPerApi.forEach(testObservers -> {
-			Map<ShardedAppStateId, ApplicationState> state = testObservers.entrySet().stream()
-				.collect(Collectors.toMap(
+		List<ImmutableMap<ShardedAppStateId, ApplicationState>> states = testObserversPerApi.stream().map(testObservers -> {
+			ImmutableMap<ShardedAppStateId, ApplicationState> state = testObservers.entrySet().stream()
+				.collect(ImmutableMap.toImmutableMap(
 					Entry::getKey,
 					e -> {
 						List<ApplicationState> values = e.getValue().values();
@@ -197,8 +222,17 @@ public final class DoubleSpendTestRunner {
 					}
 				));
 			testObservers.forEach((k,v) -> v.dispose());
+			return state;
+		}).collect(Collectors.toList());
 
-			assertThat(state).is(doubleSpendTestConfig.postConsensusCondition().getCondition());
-		});
+		states.forEach(s -> assertThat(s).is(doubleSpendTestConfig.postConsensusCondition().getCondition()));
+
+		// All clients should see the same state
+		for (ImmutableMap<ShardedAppStateId, ApplicationState> state0 : states) {
+			for (ImmutableMap<ShardedAppStateId, ApplicationState> state1 : states) {
+				assertThat(state0).isEqualTo(state1);
+			}
+		}
+
 	}
 }
