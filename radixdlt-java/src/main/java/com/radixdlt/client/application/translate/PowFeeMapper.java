@@ -9,6 +9,7 @@ import com.radixdlt.client.core.atoms.RadixHash;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.pow.ProofOfWork;
 import com.radixdlt.client.core.pow.ProofOfWorkBuilder;
+import com.radixdlt.client.core.util.TestUtils;
 import org.radix.common.tuples.Pair;
 
 import java.util.List;
