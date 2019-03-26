@@ -279,8 +279,9 @@ public class AtomMetaData {
 
         particleGroups.add(ParticleGroup.of(SpunParticle.up(messageParticle)));
 
-        // Add fee
-        particleGroups.addAll(feeMapper.map(new Atom(particleGroups, metaData) , universe, this.identity.getPublicKey()));
+        Map<String, String> atomMetaData = new HashMap<>();
+        atomMetaData.put("timestamp", System.currentTimeMillis() + "");
+        atomMetaData.putAll(feeMapper.map(new Atom(particleGroups, atomMetaData), universe, this.identity.getPublicKey()).getFirst());
 
         return new UnsignedAtom(new Atom(particleGroups, metaData));
     }

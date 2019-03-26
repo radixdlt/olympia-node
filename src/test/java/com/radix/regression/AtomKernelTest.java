@@ -24,6 +24,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -115,10 +116,12 @@ public class AtomKernelTest {
 		List<ParticleGroup> particleGroups = new ArrayList<>();
 		particleGroups.add(ParticleGroup.of(ImmutableList.copyOf(spunParticles), metaData));
 
-		ImmutableMap<String, String> atomMetaData = ImmutableMap.of("timestamp", timestamp);
+
+		Map<String, String> atomMetaData = new HashMap<>();
+		atomMetaData.put("timestamp", System.currentTimeMillis() + "");
 
 		if (addFee) {
-			particleGroups.addAll(feeMapper.map(new Atom(particleGroups, atomMetaData), universe, this.identity.getPublicKey()));
+			atomMetaData.putAll(feeMapper.map(new Atom(particleGroups, atomMetaData), universe, this.identity.getPublicKey()).getFirst());
 		}
 
 		UnsignedAtom unsignedAtom = new UnsignedAtom(new Atom(particleGroups, atomMetaData));
