@@ -12,7 +12,6 @@ import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.RadixHash;
-import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.pow.ProofOfWork;
 import com.radixdlt.client.core.pow.ProofOfWorkBuilder;
@@ -40,10 +39,6 @@ public class PowFeeMapperTest {
 		PowFeeMapper powFeeMapper = new PowFeeMapper(hasher, builder);
 
 		RadixUniverse universe = mock(RadixUniverse.class);
-		TokenDefinitionReference powToken = mock(TokenDefinitionReference.class);
-		when(powToken.getAddress()).thenReturn(mock(RadixAddress.class));
-		when(powToken.getSymbol()).thenReturn("POW");
-		when(universe.getPOWToken()).thenReturn(powToken);
 
 		ECPublicKey key = mock(ECPublicKey.class);
 		RadixAddress address = mock(RadixAddress.class);
