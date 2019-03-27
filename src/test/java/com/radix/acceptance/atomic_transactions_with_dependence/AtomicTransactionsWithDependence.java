@@ -19,6 +19,9 @@ import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.atoms.ParticleGroup;
+import com.radixdlt.client.core.atoms.ParticleGroup.ParticleGroupBuilder;
+import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.network.actions.SubmitAtomReceivedAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
@@ -105,6 +108,7 @@ public class AtomicTransactionsWithDependence {
 		TestObserver observer = new TestObserver();
 		api.mintAndTransferTokens("TEST0", BigDecimal.valueOf(7), toAddress)
 			.toObservable()
+			.doOnNext(System.out::println)
 			.subscribe(observer);
 		observers.add(observer);
 	}
@@ -116,17 +120,38 @@ public class AtomicTransactionsWithDependence {
 
 	@When("^I submit a particle group spending a consumable that was created in same group$")
 	public void iSubmitAParticleGroupSpendingAConsumableThatWasCreatedInSameGroup() {
-		mintAndTransferTokensWith(new MintAndTransferTokensActionMapper((mint, transfer) -> Collections.singletonList(
-			ParticleGroup.of(SpunParticle.up(mint), SpunParticle.down(mint), SpunParticle.up(transfer)))
-		));
+		mintAndTransferTokensWith(new MintAndTransferTokensActionMapper((mintTransition, transferTransition) -> {
+
+			ParticleGroupBuilder groupBuilder = ParticleGroup.builder();
+			mintTransition.getRemoved().stream().map(t -> (Particle) t).forEach(p -> groupBuilder.addParticle(p, Spin.DOWN));
+			mintTransition.getMigrated().stream().map(t -> (Particle) t).forEach(p -> groupBuilder.addParticle(p, Spin.UP));
+			mintTransition.getTransitioned().stream().map(t -> (Particle) t).forEach(p -> groupBuilder.addParticle(p, Spin.UP));
+			transferTransition.getRemoved().stream().map(t -> (Particle) t).forEach(p -> groupBuilder.addParticle(p, Spin.DOWN));
+			transferTransition.getMigrated().stream().map(t -> (Particle) t).forEach(p -> groupBuilder.addParticle(p, Spin.UP));
+			transferTransition.getTransitioned().stream().map(t -> (Particle) t).forEach(p -> groupBuilder.addParticle(p, Spin.UP));
+
+			return Collections.singletonList(groupBuilder.build());
+		}));
 	}
 
 	@When("^I submit a particle group spending a consumable that was created in a group with a higher index$")
 	public void iSubmitAParticleGroupSpendingAConsumableThatWasCreatedInAGroupWithAHigherIndex() {
-		mintAndTransferTokensWith(new MintAndTransferTokensActionMapper((mint, transfer) -> Arrays.asList(
-			ParticleGroup.of(SpunParticle.down(mint), SpunParticle.up(transfer)),
-			ParticleGroup.of(SpunParticle.up(mint)))
-		));
+		mintAndTransferTokensWith(new MintAndTransferTokensActionMapper((mint, transfer) -> {
+			ParticleGroupBuilder mintParticleGroupBuilder = ParticleGroup.builder();
+			mint.getRemoved().stream().map(t -> (Particle) t).forEach(p -> mintParticleGroupBuilder.addParticle(p, Spin.DOWN));
+			mint.getMigrated().stream().map(t -> (Particle) t).forEach(p -> mintParticleGroupBuilder.addParticle(p, Spin.UP));
+			mint.getTransitioned().stream().map(t -> (Particle) t).forEach(p -> mintParticleGroupBuilder.addParticle(p, Spin.UP));
+
+			ParticleGroupBuilder transferParticleGroupBuilder = ParticleGroup.builder();
+			transfer.getRemoved().stream().map(t -> (Particle) t).forEach(p -> transferParticleGroupBuilder.addParticle(p, Spin.DOWN));
+			transfer.getMigrated().stream().map(t -> (Particle) t).forEach(p -> transferParticleGroupBuilder.addParticle(p, Spin.UP));
+			transfer.getTransitioned().stream().map(t -> (Particle) t).forEach(p -> transferParticleGroupBuilder.addParticle(p, Spin.UP));
+
+			return Arrays.asList(
+				transferParticleGroupBuilder.build(),
+				mintParticleGroupBuilder.build()
+			);
+		}));
 	}
 
 	@Then("^I can observe atom (\\d+) being accepted$")
