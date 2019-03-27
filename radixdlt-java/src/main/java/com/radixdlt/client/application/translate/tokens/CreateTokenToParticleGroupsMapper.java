@@ -8,11 +8,13 @@ import com.radixdlt.client.atommodel.tokens.BurnedTokensParticle;
 import com.radixdlt.client.atommodel.tokens.MintedTokensParticle;
 import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.client.atommodel.tokens.TokenPermission;
+import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import io.reactivex.Observable;
 
 import java.math.BigDecimal;
+import org.radix.utils.UInt256;
 
 /**
  * Maps the CreateToken action into it's corresponding particles
@@ -57,19 +59,51 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 			null
 		);
 
+		UnallocatedTokensParticle unallocated = new UnallocatedTokensParticle(
+			TokenUnitConversions.unitsToSubunits(tokenCreation.getInitialSupply()),
+			TokenUnitConversions.unitsToSubunits(tokenCreation.getGranularity()),
+			tokenCreation.getAddress(),
+			System.currentTimeMillis(),
+			token.getTokenDefinitionReference(),
+			System.currentTimeMillis() / 60000L + 60000
+		);
+
 		if (tokenCreation.getInitialSupply().compareTo(BigDecimal.ZERO) == 0) {
 			// No initial supply -> just the token particle
-			return Observable.just(ParticleGroup.of(SpunParticle.up(token)));
+			return Observable.just(
+				ParticleGroup.of(SpunParticle.up(token)),
+				ParticleGroup.of(SpunParticle.up(unallocated))
+			);
 		}
 
-		MintedTokensParticle minted = new MintedTokensParticle(
-				TokenUnitConversions.unitsToSubunits(tokenCreation.getInitialSupply()),
-				TokenUnitConversions.unitsToSubunits(tokenCreation.getGranularity()),
-				tokenCreation.getAddress(),
-				System.nanoTime(),
-				token.getTokenDefinitionReference(),
-				System.currentTimeMillis() / 60000L + 60000
+		/*
+		UnallocatedTokensParticle unallocatedLeftOver = new UnallocatedTokensParticle(
+			TokenUnitConversions.unitsToSubunits(tokenCreation.getInitialSupply()),
+			UInt256.MAX_VALUE.subtract(TokenUnitConversions.unitsToSubunits(tokenCreation.getInitialSupply())),
+			TokenUnitConversions.unitsToSubunits(tokenCreation.getGranularity()),
+			tokenCreation.getAddress(),
+			System.currentTimeMillis(),
+			token.getTokenDefinitionReference(),
+			System.currentTimeMillis() / 60000L + 60000
 		);
-		return Observable.just(ParticleGroup.of(SpunParticle.up(token)), ParticleGroup.of(SpunParticle.up(minted)));
+		*/
+
+		MintedTokensParticle minted = new MintedTokensParticle(
+			TokenUnitConversions.unitsToSubunits(tokenCreation.getInitialSupply()),
+			TokenUnitConversions.unitsToSubunits(tokenCreation.getGranularity()),
+			tokenCreation.getAddress(),
+			System.nanoTime(),
+			token.getTokenDefinitionReference(),
+			System.currentTimeMillis() / 60000L + 60000
+		);
+
+		return Observable.just(
+			ParticleGroup.of(SpunParticle.up(token)),
+			ParticleGroup.of(SpunParticle.up(unallocated)),
+			ParticleGroup.of(
+				SpunParticle.down(unallocated),
+				SpunParticle.up(minted)
+			)
+		);
 	}
 }

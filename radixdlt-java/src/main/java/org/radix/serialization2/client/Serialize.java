@@ -1,5 +1,6 @@
 package org.radix.serialization2.client;
 
+import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
 import java.util.Arrays;
 import java.util.Collection;
 
@@ -53,6 +54,7 @@ public final class Serialize {
 				SpunParticle.class,
 				MessageParticle.class,
 				TokenDefinitionParticle.class,
+				UnallocatedTokensParticle.class,
 				MintedTokensParticle.class,
 				TransferredTokensParticle.class,
 				BurnedTokensParticle.class,

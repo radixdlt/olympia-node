@@ -8,50 +8,49 @@ import com.radixdlt.client.atommodel.Ownable;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.RadixResourceIdentifer;
-import org.radix.serialization2.DsonOutput;
-import org.radix.serialization2.DsonOutput.Output;
-import org.radix.serialization2.SerializerId2;
-import org.radix.utils.UInt256;
-
 import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
+import org.radix.serialization2.DsonOutput;
+import org.radix.serialization2.SerializerId2;
+import org.radix.utils.UInt256;
 
 /**
- *  A particle which represents an amount of consumable and consuming, tranferable fungible tokens
- *  owned by some key owner and stored in an account.
+ *  A particle which represents an amount of unallocated tokens which can be minted.
  */
-@SerializerId2("TRANSFERREDTOKENSPARTICLE")
-public final class TransferredTokensParticle extends Particle implements Accountable, Ownable, Fungible, ConsumingTokens, ConsumableTokens {
+@SerializerId2("UNALLOCATEDTOKENSPARTICLE")
+public class UnallocatedTokensParticle extends Particle implements Accountable, Ownable, Fungible, ConsumingTokens, ConsumableTokens {
+
 	@JsonProperty("address")
-	@DsonOutput(Output.ALL)
+	@DsonOutput(DsonOutput.Output.ALL)
 	private RadixAddress address;
 
 	@JsonProperty("tokenDefinitionReference")
-	@DsonOutput(Output.ALL)
+	@DsonOutput(DsonOutput.Output.ALL)
 	private RadixResourceIdentifer tokenDefinitionReference;
 
 	@JsonProperty("granularity")
-	@DsonOutput(Output.ALL)
+	@DsonOutput(DsonOutput.Output.ALL)
 	private UInt256 granularity;
 
 	@JsonProperty("planck")
-	@DsonOutput(Output.ALL)
+	@DsonOutput(DsonOutput.Output.ALL)
 	private long planck;
 
 	@JsonProperty("nonce")
-	@DsonOutput(Output.ALL)
+	@DsonOutput(DsonOutput.Output.ALL)
 	private long nonce;
 
 	@JsonProperty("amount")
-	@DsonOutput(Output.ALL)
+	@DsonOutput(DsonOutput.Output.ALL)
 	private UInt256 amount;
 
-	protected TransferredTokensParticle() {
+	public UnallocatedTokensParticle() {
+		super();
 	}
 
-	public TransferredTokensParticle(UInt256 amount, UInt256 granularity, RadixAddress address, long nonce,
-	                                 TokenDefinitionReference tokenDefinitionReference, long planck) {
+	public UnallocatedTokensParticle(UInt256 amount, UInt256 granularity, RadixAddress address, long nonce,
+		TokenDefinitionReference tokenDefinitionReference, long planck) {
 		super();
 
 		// Redundant null check added for completeness
@@ -74,34 +73,22 @@ public final class TransferredTokensParticle extends Particle implements Account
 		return Collections.singleton(this.address);
 	}
 
-	@Override
 	public RadixAddress getAddress() {
 		return this.address;
 	}
 
-	@Override
-	public long getPlanck() {
-		return this.planck;
+	public RadixResourceIdentifer getTokDefRef() {
+		return this.tokenDefinitionReference;
 	}
 
-	@Override
-	public long getNonce() {
-		return this.nonce;
+	public UInt256 getGranularity() {
+		return this.granularity;
 	}
+
 
 	@Override
 	public TokenDefinitionReference getTokenDefinitionReference() {
 		return TokenDefinitionReference.of(tokenDefinitionReference.getAddress(), tokenDefinitionReference.getUnique());
-	}
-
-	@Override
-	public UInt256 getAmount() {
-		return this.amount;
-	}
-
-	@Override
-	public UInt256 getGranularity() {
-		return this.granularity;
 	}
 
 	@Override
@@ -114,5 +101,20 @@ public final class TransferredTokensParticle extends Particle implements Account
 			String.valueOf(address),
 			planck,
 			nonce);
+	}
+
+	@Override
+	public UInt256 getAmount() {
+		return this.amount;
+	}
+
+	@Override
+	public long getPlanck() {
+		return this.planck;
+	}
+
+	@Override
+	public long getNonce() {
+		return this.nonce;
 	}
 }
