@@ -45,7 +45,6 @@ public class AtomToTokenTransfersMapper implements AtomToExecutedActionsMapper<T
 	@Override
 	public Observable<TokenTransfer> map(Atom atom, RadixIdentity identity) {
 		return Observable.fromIterable(atom.tokenSummary().entrySet())
-			.filter(e -> !e.getKey().getSymbol().equals("POW")) // HACK: Fix this
 			.flatMapSingle(e -> {
 				List<Entry<RadixAddress, BigInteger>> summary = new ArrayList<>(e.getValue().entrySet());
 				if (summary.isEmpty()) {

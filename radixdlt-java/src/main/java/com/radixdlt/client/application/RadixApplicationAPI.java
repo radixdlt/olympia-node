@@ -6,6 +6,7 @@ import com.radixdlt.client.core.network.RadixNetworkController;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -16,10 +17,10 @@ import java.util.stream.Stream;
 
 import com.radixdlt.client.application.translate.tokens.MintAndTransferTokensAction;
 import com.radixdlt.client.application.translate.tokens.MintAndTransferTokensActionMapper;
+import org.radix.common.tuples.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.radixdlt.client.application.identity.Data;
@@ -785,10 +786,13 @@ public class RadixApplicationAPI {
 			.lastOrError()
 			.map(particleGroups -> {
 				List<ParticleGroup> allParticleGroups = new ArrayList<>(particleGroups);
-				ImmutableMap<String, String> metaData = ImmutableMap.of(
-					Atom.METADATA_TIMESTAMP_KEY, String.valueOf(generateTimestamp()));
+				Map<String, String> metaData = new HashMap<>();
+				metaData.put(Atom.METADATA_TIMESTAMP_KEY, String.valueOf(generateTimestamp()));
 				Atom atom = new Atom(particleGroups, metaData);
-				allParticleGroups.addAll(this.feeMapper.map(atom, this.universe, this.getMyPublicKey()));
+				Pair<Map<String, String>, List<ParticleGroup>> fee = this.feeMapper.map(atom, this.universe, this.getMyPublicKey());
+				allParticleGroups.addAll(fee.getSecond());
+				metaData.putAll(fee.getFirst());
+
 				return new UnsignedAtom(new Atom(allParticleGroups, metaData));
 			});
 	}

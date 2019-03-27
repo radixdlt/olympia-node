@@ -124,26 +124,15 @@ public final class RadixUniverse {
 
 	private final Ledger ledger;
 
-	private final TokenDefinitionReference powToken;
-
 	private final TokenDefinitionReference nativeToken;
 
 	private RadixUniverse(RadixUniverseConfig config, RadixNetworkController networkController) {
 		this.config = config;
 		this.networkController = networkController;
 
-		this.powToken = config.getGenesis().stream()
-			.flatMap(atom -> atom.particles(Spin.UP))
-			.filter(p -> p instanceof TokenDefinitionParticle)
-			.filter(p -> ((TokenDefinitionParticle) p).getTokenDefinitionReference().getSymbol().equals("POW"))
-			.map(p -> ((TokenDefinitionParticle) p).getTokenDefinitionReference())
-			.findFirst()
-			.orElseThrow(() -> new IllegalStateException("No POW Token defined in universe"));
-
 		this.nativeToken = config.getGenesis().stream()
 			.flatMap(atom -> atom.particles(Spin.UP))
 			.filter(p -> p instanceof TokenDefinitionParticle)
-			.filter(p -> !((TokenDefinitionParticle) p).getTokenDefinitionReference().getSymbol().equals("POW"))
 			.map(p -> ((TokenDefinitionParticle) p).getTokenDefinitionReference())
 			.findFirst()
 			.orElseThrow(() -> new IllegalStateException("No Native Token defined in universe"));
@@ -194,10 +183,6 @@ public final class RadixUniverse {
 
 	public Observable<RadixNetworkState> getNetworkState() {
 		return networkController.getNetwork();
-	}
-
-	public TokenDefinitionReference getPOWToken() {
-		return powToken;
 	}
 
 	public TokenDefinitionReference getNativeToken() {

@@ -5,6 +5,7 @@ import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.client.core.network.actions.NodeUniverseMismatch;
 import com.radixdlt.client.dapps.messaging.RadixMessaging;
 
 public class RadixMessagingExample {
@@ -22,6 +23,10 @@ public class RadixMessagingExample {
 			Bootstrap.LOCALHOST,
 			RadixIdentities.loadOrCreateFile("my.key")
 		);
+
+		api.getNetworkController().getActions()
+			.ofType(NodeUniverseMismatch.class)
+			.subscribe(System.out::println);
 
 		// Addresses
 		RadixAddress toAddress = RadixAddress.from(TO_ADDRESS_BASE58);
