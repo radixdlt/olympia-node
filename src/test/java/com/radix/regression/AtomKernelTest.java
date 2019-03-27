@@ -76,6 +76,22 @@ public class AtomKernelTest {
 	}
 
 	@Test
+	public void testAtomBadPowFee() {
+		TestObserver<RadixJsonRpcClient.NodeAtomSubmissionUpdate> observer = submitAtom(ImmutableMap.of(
+			Atom.METADATA_POW_NONCE_KEY, "1337"
+		), false, System.currentTimeMillis() + "", SpunParticle.up(new MessageParticle.MessageParticleBuilder()
+			.payload(new byte[10])
+			.metaData("application", "message")
+			.from(universe.getAddressFrom(this.identity.getPublicKey()))
+			.to(universe.getAddressFrom(this.identity.getPublicKey()))
+			.build()));
+		observer.awaitTerminalEvent(5, TimeUnit.SECONDS);
+		observer.assertNoErrors();
+		observer.assertComplete();
+		observer.assertValueAt(1, state -> state.getState() == RadixJsonRpcClient.NodeAtomSubmissionState.VALIDATION_ERROR);
+	}
+
+	@Test
 	public void testAtomInvalidTimestamp() {
 		TestObserver<RadixJsonRpcClient.NodeAtomSubmissionUpdate> observer = submitAtom(ImmutableMap.of(), false, "invalid", SpunParticle.up(new MessageParticle.MessageParticleBuilder()
 			.payload(new byte[10])
@@ -118,6 +134,7 @@ public class AtomKernelTest {
 
 
 		Map<String, String> atomMetaData = new HashMap<>();
+		atomMetaData.putAll(metaData);
 		atomMetaData.put("timestamp", System.currentTimeMillis() + "");
 
 		if (addFee) {
