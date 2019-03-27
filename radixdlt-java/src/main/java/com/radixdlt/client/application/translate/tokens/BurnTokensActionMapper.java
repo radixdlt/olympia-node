@@ -1,14 +1,13 @@
 package com.radixdlt.client.application.translate.tokens;
 
 import com.radixdlt.client.application.translate.ShardedAppStateId;
+import com.radixdlt.client.core.atoms.ParticleGroup.ParticleGroupBuilder;
+import com.radixdlt.client.core.atoms.particles.Spin;
+import com.radixdlt.client.core.fungible.FungibleParticleTransitioner;
+import com.radixdlt.client.core.fungible.FungibleParticleTransitioner.FungibleParticleTransition;
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import com.radixdlt.client.atommodel.tokens.BurnedTokensParticle;
@@ -16,17 +15,15 @@ import com.radixdlt.client.atommodel.tokens.ConsumableTokens;
 import com.radixdlt.client.atommodel.tokens.TransferredTokensParticle;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.particles.Particle;
-import org.radix.utils.UInt256;
-import org.radix.utils.UInt256s;
 
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.ApplicationState;
 import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.tokens.TokenBalanceState.Balance;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.core.atoms.particles.SpunParticle;
 
 import io.reactivex.Observable;
+import org.radix.utils.UInt256;
 
 public class BurnTokensActionMapper implements StatefulActionToParticleGroupsMapper {
 	public BurnTokensActionMapper() {
@@ -62,89 +59,64 @@ public class BurnTokensActionMapper implements StatefulActionToParticleGroupsMap
 
 	private ParticleGroup map(BurnTokensAction burnTokensAction, TokenBalanceState curState) {
 		final Map<TokenDefinitionReference, Balance> allConsumables = curState.getBalance();
-
 		final TokenDefinitionReference tokenRef = burnTokensAction.getTokenDefinitionReference();
 		final BigDecimal burnAmount = burnTokensAction.getAmount();
+
 		final Balance bal = allConsumables.get(tokenRef);
 		if (bal == null) {
 			throw new InsufficientFundsException(tokenRef, BigDecimal.ZERO, burnAmount);
 		}
+
 		final BigDecimal balance = bal.getAmount();
 		if (balance.compareTo(burnAmount) < 0) {
 			throw new InsufficientFundsException(tokenRef, balance, burnAmount);
 		}
-		final UInt256 granularity = TokenUnitConversions.unitsToSubunits(bal.getGranularity());
 
-		final List<ConsumableTokens> unconsumedConsumables =
-			Optional.ofNullable(allConsumables.get(burnTokensAction.getTokenDefinitionReference()))
-				.map(b -> b.unconsumedTransferrable().collect(Collectors.toList()))
-				.orElse(Collections.emptyList());
-
-		List<SpunParticle> particles = new ArrayList<>();
-
-		UInt256 consumerTotal = UInt256.ZERO;
-		final UInt256 subunitAmount = TokenUnitConversions.unitsToSubunits(burnTokensAction.getAmount());
-		Iterator<ConsumableTokens> iterator = unconsumedConsumables.iterator();
-		Map<RadixAddress, UInt256> newUpQuantities = new HashMap<>();
-
-		// HACK for now
-		// TODO: remove this, create a ConsumersCreator
-		// TODO: randomize this to decrease probability of collision
-		while (consumerTotal.compareTo(subunitAmount) < 0 && iterator.hasNext()) {
-			final UInt256 left = subunitAmount.subtract(consumerTotal);
-
-			ConsumableTokens particle = iterator.next();
-			UInt256 particleAmount = particle.getAmount();
-			consumerTotal = consumerTotal.add(particleAmount);
-
-			final UInt256 amount = UInt256s.min(left, particleAmount);
-			addConsumerQuantities(particle.getAmount(), particle.getAddress(), null, amount, newUpQuantities);
-
-			particles.add(SpunParticle.down(((Particle) particle)));
-		}
-
-		newUpQuantities.entrySet().stream()
-			.map(e -> {
-				if (e.getKey() == null) {
-					return new BurnedTokensParticle(
-						e.getValue(),
-						granularity,
-						burnTokensAction.getTokenDefinitionReference().getAddress(),
-						System.nanoTime(),
-						burnTokensAction.getTokenDefinitionReference(),
-						System.currentTimeMillis() / 60000L + 60000L
-					);
-				} else {
-					return new TransferredTokensParticle(
-						e.getValue(),
-						granularity,
-						e.getKey(),
-						System.nanoTime(),
-						burnTokensAction.getTokenDefinitionReference(),
-						System.currentTimeMillis() / 60000L + 60000L
-					);
-				}
-			})
-			.map(SpunParticle::up)
-			.forEach(particles::add);
-		return ParticleGroup.of(particles);
-	}
-
-	// TODO this and same method in TransferTokensToParticleGroupsMapper could be moved to a utility class, abstractions not clear yet
-	private static void addConsumerQuantities(UInt256 amount, RadixAddress oldOwner, RadixAddress newOwner,
-	                                          UInt256 usedAmount, Map<RadixAddress, UInt256> consumerQuantities) {
-		if (usedAmount.compareTo(amount) > 0) {
-			throw new IllegalArgumentException(
-				"Unable to create consumable with amount " + usedAmount + " (available: " + amount + ")"
+		final FungibleParticleTransitioner<ConsumableTokens, BurnedTokensParticle> transitioner =
+			new FungibleParticleTransitioner<>(
+				(amt, consumable) -> new BurnedTokensParticle(
+					amt,
+					consumable.getGranularity(),
+					burnTokensAction.getTokenDefinitionReference().getAddress(),
+					System.nanoTime(),
+					burnTokensAction.getTokenDefinitionReference(),
+					System.currentTimeMillis() / 60000L + 60000L
+				),
+				burnedList -> burnedList,
+				(amt, consumable) -> new TransferredTokensParticle(
+					amt,
+					consumable.getGranularity(),
+					consumable.getAddress(),
+					System.nanoTime(),
+					burnTokensAction.getTokenDefinitionReference(),
+					System.currentTimeMillis() / 60000L + 60000L
+				),
+				transferredList -> transferredList.stream()
+					.map(ConsumableTokens::getAmount)
+					.reduce(UInt256::add)
+					.map(amt -> Collections.<ConsumableTokens>singletonList(
+						new TransferredTokensParticle(
+							amt,
+							transferredList.get(0).getGranularity(),
+							transferredList.get(0).getAddress(),
+							System.nanoTime(),
+							burnTokensAction.getTokenDefinitionReference(),
+							System.currentTimeMillis() / 60000L + 60000L
+						)
+					)).orElse(Collections.emptyList()),
+				ConsumableTokens::getAmount
 			);
-		}
 
-		if (amount.equals(usedAmount)) {
-			consumerQuantities.merge(newOwner, amount, UInt256::add);
-			return;
-		}
+		FungibleParticleTransition<ConsumableTokens, BurnedTokensParticle> transition = transitioner.createTransition(
+			bal.unconsumedTransferrable().collect(Collectors.toList()),
+			TokenUnitConversions.unitsToSubunits(burnAmount)
+		);
 
-		consumerQuantities.merge(newOwner, usedAmount, UInt256::add);
-		consumerQuantities.merge(oldOwner, amount.subtract(usedAmount), UInt256::add);
+		ParticleGroupBuilder particleGroupBuilder = ParticleGroup.builder();
+		transition.getRemoved().stream().map(t -> (Particle) t).forEach(p -> particleGroupBuilder.addParticle(p, Spin.DOWN));
+		transition.getMigrated().stream().map(t -> (Particle) t).forEach(p -> particleGroupBuilder.addParticle(p, Spin.UP));
+		transition.getTransitioned().stream().map(t -> (Particle) t).forEach(p -> particleGroupBuilder.addParticle(p, Spin.UP));
+
+		return particleGroupBuilder.build();
 	}
 }
