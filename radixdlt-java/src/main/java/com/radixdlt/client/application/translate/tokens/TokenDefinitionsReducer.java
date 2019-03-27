@@ -1,5 +1,7 @@
 package com.radixdlt.client.application.translate.tokens;
 
+import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
+import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.ledger.ParticleTransition;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -81,6 +83,9 @@ public class TokenDefinitionsReducer implements ParticleReducer<TokenDefinitions
 					? ((MintedTokensParticle) p).getTokenDefinitionReference() : ((BurnedTokensParticle) p).getTokenDefinitionReference();
 				return state.mergeSupplyChange(tokenDefinitionReference, change);
 			}
+		} else if (p instanceof UnallocatedTokensParticle) {
+			UnallocatedTokensParticle u = (UnallocatedTokensParticle) p;
+			return state.mergeUnallocated(u, t.getSpinTo() == Spin.UP);
 		}
 
 		return state;

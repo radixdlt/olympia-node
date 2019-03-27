@@ -19,7 +19,7 @@ import org.radix.utils.UInt256;
  *  A particle which represents an amount of unallocated tokens which can be minted.
  */
 @SerializerId2("UNALLOCATEDTOKENSPARTICLE")
-public class UnallocatedTokensParticle extends Particle implements Accountable, Ownable, Fungible, ConsumingTokens, ConsumableTokens {
+public class UnallocatedTokensParticle extends Particle implements Accountable, Ownable, Fungible {
 
 	@JsonProperty("address")
 	@DsonOutput(DsonOutput.Output.ALL)
@@ -85,8 +85,6 @@ public class UnallocatedTokensParticle extends Particle implements Accountable, 
 		return this.granularity;
 	}
 
-
-	@Override
 	public TokenDefinitionReference getTokenDefinitionReference() {
 		return TokenDefinitionReference.of(tokenDefinitionReference.getAddress(), tokenDefinitionReference.getUnique());
 	}

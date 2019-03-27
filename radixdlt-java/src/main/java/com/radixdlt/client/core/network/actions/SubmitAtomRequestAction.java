@@ -22,6 +22,10 @@ public final class SubmitAtomRequestAction implements SubmitAtomAction, FindANod
 	}
 
 	public static SubmitAtomRequestAction newRequest(Atom atom) {
+		if (atom.getRequiredFirstShard().isEmpty()) {
+			throw new IllegalStateException("Atom has no destinations: " + atom);
+		}
+
 		return new SubmitAtomRequestAction(UUID.randomUUID().toString(), atom);
 	}
 

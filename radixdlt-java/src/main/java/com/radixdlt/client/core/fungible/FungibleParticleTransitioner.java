@@ -42,7 +42,7 @@ public class FungibleParticleTransitioner<T, U> {
 		private final ImmutableList<T> migrated;
 		private final ImmutableList<U> transitioned;
 
-		private FungibleParticleTransition(
+		public FungibleParticleTransition(
 			ImmutableList<T> removed,
 			ImmutableList<T> migrated,
 			ImmutableList<U> transitioned

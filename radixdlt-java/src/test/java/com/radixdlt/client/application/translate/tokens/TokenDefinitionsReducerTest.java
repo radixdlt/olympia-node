@@ -1,5 +1,6 @@
 package com.radixdlt.client.application.translate.tokens;
 
+import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.client.core.ledger.TransitionedParticle;
 import java.math.BigDecimal;
@@ -32,9 +33,10 @@ public class TokenDefinitionsReducerTest {
 		TokenDefinitionsReducer tokenDefinitionsReducer = new TokenDefinitionsReducer();
 		TokenDefinitionsState state = tokenDefinitionsReducer.reduce(
 			TokenDefinitionsState.init(), TransitionedParticle.n2u(tokenDefinitionParticle));
+
 		assertThat(state.getState().get(tokenRef)).isEqualTo(
 			new TokenState("Name", "ISO", "Desc", BigDecimal.ZERO,
-				TokenUnitConversions.subunitsToUnits(1), TokenSupplyType.FIXED)
+				TokenUnitConversions.subunitsToUnits(1), TokenSupplyType.FIXED, ImmutableMap.of())
 		);
 	}
 
@@ -66,7 +68,8 @@ public class TokenDefinitionsReducerTest {
 				"Desc",
 				TokenUnitConversions.subunitsToUnits(hundred),
 				TokenUnitConversions.subunitsToUnits(1),
-				TokenSupplyType.MUTABLE
+				TokenSupplyType.MUTABLE,
+				ImmutableMap.of()
 			)
 		);
 	}

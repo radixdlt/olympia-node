@@ -10,6 +10,8 @@ import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.client.atommodel.tokens.TokenPermission;
 import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.core.atoms.ParticleGroup;
+import com.radixdlt.client.core.atoms.ParticleGroup.ParticleGroupBuilder;
+import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import io.reactivex.Observable;
 
@@ -60,7 +62,7 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 		);
 
 		UnallocatedTokensParticle unallocated = new UnallocatedTokensParticle(
-			TokenUnitConversions.unitsToSubunits(tokenCreation.getInitialSupply()),
+			UInt256.MAX_VALUE,
 			TokenUnitConversions.unitsToSubunits(tokenCreation.getGranularity()),
 			tokenCreation.getAddress(),
 			System.currentTimeMillis(),
@@ -76,18 +78,6 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 			);
 		}
 
-		/*
-		UnallocatedTokensParticle unallocatedLeftOver = new UnallocatedTokensParticle(
-			TokenUnitConversions.unitsToSubunits(tokenCreation.getInitialSupply()),
-			UInt256.MAX_VALUE.subtract(TokenUnitConversions.unitsToSubunits(tokenCreation.getInitialSupply())),
-			TokenUnitConversions.unitsToSubunits(tokenCreation.getGranularity()),
-			tokenCreation.getAddress(),
-			System.currentTimeMillis(),
-			token.getTokenDefinitionReference(),
-			System.currentTimeMillis() / 60000L + 60000
-		);
-		*/
-
 		MintedTokensParticle minted = new MintedTokensParticle(
 			TokenUnitConversions.unitsToSubunits(tokenCreation.getInitialSupply()),
 			TokenUnitConversions.unitsToSubunits(tokenCreation.getGranularity()),
@@ -97,13 +87,29 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 			System.currentTimeMillis() / 60000L + 60000
 		);
 
+		ParticleGroupBuilder mintGroupBuilder = ParticleGroup.builder()
+			.addParticle(unallocated, Spin.DOWN)
+			.addParticle(minted, Spin.UP);
+
+		final UInt256 leftOver = UInt256.MAX_VALUE.subtract(TokenUnitConversions.unitsToSubunits(tokenCreation.getInitialSupply()));
+
+		if (!leftOver.isZero()) {
+			UnallocatedTokensParticle unallocatedLeftOver = new UnallocatedTokensParticle(
+				leftOver,
+				TokenUnitConversions.unitsToSubunits(tokenCreation.getGranularity()),
+				tokenCreation.getAddress(),
+				System.currentTimeMillis(),
+				token.getTokenDefinitionReference(),
+				System.currentTimeMillis() / 60000L + 60000
+			);
+
+			mintGroupBuilder.addParticle(unallocatedLeftOver, Spin.UP);
+		}
+
 		return Observable.just(
 			ParticleGroup.of(SpunParticle.up(token)),
 			ParticleGroup.of(SpunParticle.up(unallocated)),
-			ParticleGroup.of(
-				SpunParticle.down(unallocated),
-				SpunParticle.up(minted)
-			)
+			mintGroupBuilder.build()
 		);
 	}
 }
