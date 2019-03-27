@@ -281,9 +281,9 @@ public class ParticleGroupsMetaData {
 
         particleGroups.add(ParticleGroup.of(ImmutableList.of(SpunParticle.up(messageParticle)), metaData));
 
-        ImmutableMap<String, String> atomMetaData = ImmutableMap.of("timestamp", System.currentTimeMillis() + "");
-        // Add fee
-        particleGroups.addAll(feeMapper.map(new Atom(particleGroups, atomMetaData), universe, this.identity.getPublicKey()));
+        Map<String, String> atomMetaData = new HashMap<>();
+        atomMetaData.put("timestamp", System.currentTimeMillis() + "");
+        atomMetaData.putAll(feeMapper.map(new Atom(particleGroups, atomMetaData), universe, this.identity.getPublicKey()).getFirst());
 
         return new UnsignedAtom(new Atom(particleGroups, atomMetaData));
     }

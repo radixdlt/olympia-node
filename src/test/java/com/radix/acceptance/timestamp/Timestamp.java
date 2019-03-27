@@ -328,9 +328,10 @@ public class Timestamp {
 
         particleGroups.add(ParticleGroup.of(SpunParticle.up(messageParticle)));
 
-        // Add fee
-        particleGroups.addAll(feeMapper.map(new Atom(particleGroups, metaData) , universe, this.identity.getPublicKey()));
+        Map<String, String> atomMetaData = new HashMap<>();
+        atomMetaData.putAll(metaData);
+        atomMetaData.putAll(feeMapper.map(new Atom(particleGroups, atomMetaData), universe, this.identity.getPublicKey()).getFirst());
 
-        return new UnsignedAtom(new Atom(particleGroups, metaData));
+        return new UnsignedAtom(new Atom(particleGroups, atomMetaData));
     }
 }
