@@ -4,6 +4,7 @@ import com.radixdlt.client.application.translate.ShardedAppStateId;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -15,6 +16,7 @@ import java.util.stream.Collectors;
 import com.radixdlt.client.atommodel.tokens.ConsumableTokens;
 import com.radixdlt.client.atommodel.tokens.TransferredTokensParticle;
 import com.radixdlt.client.core.atoms.particles.Particle;
+import java.util.stream.Stream;
 import org.radix.utils.UInt256;
 import org.radix.utils.UInt256s;
 
@@ -39,48 +41,48 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 	public TransferTokensToParticleGroupsMapper() {
 	}
 
-	private Observable<SpunParticle> mapToParticles(TransferTokensAction transfer, List<ConsumableTokens> currentParticles) {
-		return Observable.create(emitter -> {
-			UInt256 consumerTotal = UInt256.ZERO;
-			final UInt256 subunitAmount = TokenUnitConversions.unitsToSubunits(transfer.getAmount());
-			UInt256 granularity = UInt256.ZERO;
-			Iterator<ConsumableTokens> iterator = currentParticles.iterator();
-			Map<RadixAddress, UInt256> consumerQuantities = new HashMap<>();
+	private List<SpunParticle> mapToParticles(TransferTokensAction transfer, List<ConsumableTokens> currentParticles) {
+		List<SpunParticle> spunParticles = new ArrayList<>();
 
-			// HACK for now
-			// TODO: remove this, create a ConsumersCreator
-			// TODO: randomize this to decrease probability of collision
-			while (consumerTotal.compareTo(subunitAmount) < 0 && iterator.hasNext()) {
-				final UInt256 left = subunitAmount.subtract(consumerTotal);
+		UInt256 consumerTotal = UInt256.ZERO;
+		final UInt256 subunitAmount = TokenUnitConversions.unitsToSubunits(transfer.getAmount());
+		UInt256 granularity = UInt256.ZERO;
+		Iterator<ConsumableTokens> iterator = currentParticles.iterator();
+		Map<RadixAddress, UInt256> consumerQuantities = new HashMap<>();
 
-				ConsumableTokens particle = iterator.next();
-				if (granularity.isZero()) {
-					granularity = particle.getGranularity();
-				}
-				consumerTotal = consumerTotal.add(particle.getAmount());
+		// HACK for now
+		// TODO: remove this, create a ConsumersCreator
+		// TODO: randomize this to decrease probability of collision
+		while (consumerTotal.compareTo(subunitAmount) < 0 && iterator.hasNext()) {
+			final UInt256 left = subunitAmount.subtract(consumerTotal);
 
-				final UInt256 amount = UInt256s.min(left, particle.getAmount());
-				addConsumerQuantities(particle.getAmount(), particle.getAddress(), transfer.getTo(),
-					amount, consumerQuantities);
-
-				emitter.onNext(SpunParticle.down(((Particle) particle)));
+			ConsumableTokens particle = iterator.next();
+			if (granularity.isZero()) {
+				granularity = particle.getGranularity();
 			}
+			consumerTotal = consumerTotal.add(particle.getAmount());
 
-			final UInt256 computedGranularity = granularity;
-			consumerQuantities.entrySet().stream()
-				.map(entry -> new TransferredTokensParticle(
-					entry.getValue(),
-					computedGranularity,
-					entry.getKey(),
-					System.nanoTime(),
-					transfer.getTokenDefinitionReference(),
-					System.currentTimeMillis() / 60000L + 60000L
-				))
-				.map(SpunParticle::up)
-				.forEach(emitter::onNext);
+			final UInt256 amount = UInt256s.min(left, particle.getAmount());
+			addConsumerQuantities(particle.getAmount(), particle.getAddress(), transfer.getTo(),
+				amount, consumerQuantities);
 
-			emitter.onComplete();
-		});
+			spunParticles.add(SpunParticle.down(((Particle) particle)));
+		}
+
+		final UInt256 computedGranularity = granularity;
+		consumerQuantities.entrySet().stream()
+			.map(entry -> new TransferredTokensParticle(
+				entry.getValue(),
+				computedGranularity,
+				entry.getKey(),
+				System.nanoTime(),
+				transfer.getTokenDefinitionReference(),
+				System.currentTimeMillis() / 60000L + 60000L
+			))
+			.map(SpunParticle::up)
+			.forEach(spunParticles::add);
+
+		return spunParticles;
 	}
 
 	// TODO this and same method in BurnTokensActionMapper could be moved to a utility class, abstractions not clear yet
@@ -101,39 +103,40 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 		consumerQuantities.merge(oldOwner, amount.subtract(usedAmount), UInt256::add);
 	}
 
-	private Observable<SpunParticle> mapToAttachmentParticles(TransferTokensAction transfer) {
-		return Observable.create(emitter -> {
-			final Data attachment = transfer.getAttachment();
-			if (attachment != null) {
-				emitter.onNext(
-					SpunParticle.up(
-						new MessageParticleBuilder()
-							.payload(attachment.getBytes())
-							.from(transfer.getFrom())
-							.to(transfer.getTo())
-							.build()
-					)
-				);
-
-				Encryptor encryptor = attachment.getEncryptor();
-				if (encryptor != null) {
-					JsonArray protectorsJson = new JsonArray();
-					encryptor.getProtectors().stream().map(EncryptedPrivateKey::base64).forEach(protectorsJson::add);
-
-					byte[] encryptorPayload = protectorsJson.toString().getBytes(StandardCharsets.UTF_8);
-					MessageParticle encryptorParticle = new MessageParticleBuilder()
-						.payload(encryptorPayload)
-						.metaData("application", "encryptor")
-						.metaData("contentType", "application/json")
+	private List<SpunParticle> mapToAttachmentParticles(TransferTokensAction transfer) {
+		final Data attachment = transfer.getAttachment();
+		if (attachment != null) {
+			List<SpunParticle> spunParticles = new ArrayList<>();
+			spunParticles.add(
+				SpunParticle.up(
+					new MessageParticleBuilder()
+						.payload(attachment.getBytes())
 						.from(transfer.getFrom())
 						.to(transfer.getTo())
-						.build();
-					emitter.onNext(SpunParticle.up(encryptorParticle));
-				}
+						.build()
+				)
+			);
+
+			Encryptor encryptor = attachment.getEncryptor();
+			if (encryptor != null) {
+				JsonArray protectorsJson = new JsonArray();
+				encryptor.getProtectors().stream().map(EncryptedPrivateKey::base64).forEach(protectorsJson::add);
+
+				byte[] encryptorPayload = protectorsJson.toString().getBytes(StandardCharsets.UTF_8);
+				MessageParticle encryptorParticle = new MessageParticleBuilder()
+					.payload(encryptorPayload)
+					.metaData("application", "encryptor")
+					.metaData("contentType", "application/json")
+					.from(transfer.getFrom())
+					.to(transfer.getTo())
+					.build();
+				spunParticles.add(SpunParticle.up(encryptorParticle));
 			}
 
-			emitter.onComplete();
-		});
+			return spunParticles;
+		} else {
+			return Collections.emptyList();
+		}
 	}
 
 	@Override
@@ -184,9 +187,11 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 					.map(bal -> bal.unconsumedTransferrable().collect(Collectors.toList()))
 					.orElse(Collections.emptyList())
 		)
-			.flatMapObservable(tokenConsumables -> this.mapToParticles(transfer, tokenConsumables))
-			.concatWith(this.mapToAttachmentParticles(transfer))
-			.toList()
+			.map(tokenConsumables -> {
+				List<SpunParticle> transferParticles = this.mapToParticles(transfer, tokenConsumables);
+				List<SpunParticle> attachmentParticles = this.mapToAttachmentParticles(transfer);
+				return Stream.concat(transferParticles.stream(), attachmentParticles.stream()).collect(Collectors.toList());
+			})
 			.map(ParticleGroup::of)
 			.toObservable();
 	}
