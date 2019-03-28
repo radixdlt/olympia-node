@@ -24,7 +24,7 @@ public class TokenState {
 	private final BigDecimal totalSupply;
 	private final BigDecimal granularity;
 	private final TokenSupplyType tokenSupplyType;
-	private final Map<EUID, UnallocatedTokensParticle> unallocatedTokens;
+	private final ImmutableMap<EUID, UnallocatedTokensParticle> unallocatedTokens;
 
 	public TokenState(
 		String name,
@@ -87,7 +87,7 @@ public class TokenState {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(name, iso, description, tokenSupplyType, totalSupply);
+		return Objects.hash(name, iso, description, tokenSupplyType, totalSupply, unallocatedTokens);
 	}
 
 	@Override
@@ -104,12 +104,22 @@ public class TokenState {
 			// Note BigDecimal.equal does not return true for different scales
 			&& this.granularity.compareTo(tokenState.granularity) == 0
 			&& this.totalSupply.compareTo(tokenState.totalSupply) == 0
-			&& Objects.equals(this.unallocatedTokens, tokenState.unallocatedTokens);
+			&& Objects.equals(this.unallocatedTokens.keySet(), tokenState.unallocatedTokens.keySet());
 	}
 
 	@Override
 	public String toString() {
-		return String.format("Token(%s) name(%s) description(%s) totalSupply(%s) granularity(%s) maxSupply(%s)",
-				this.iso, this.name, this.description, this.totalSupply, this.granularity, this.totalSupply);
+		return String.format("Token(%s) name(%s) description(%s) totalSupply(%s) granularity(%s) maxSupply(%s) unallocatedTokens(SIZE:%d %s)",
+			this.iso,
+			this.name,
+			this.description,
+			this.totalSupply,
+			this.granularity,
+			this.totalSupply,
+			this.unallocatedTokens.size(),
+			this.unallocatedTokens.size() == 1
+				? "EUID:" + this.unallocatedTokens.keySet().asList().get(0)
+				: "HASH:" + this.unallocatedTokens.hashCode()
+		);
 	}
 }
