@@ -110,6 +110,10 @@ public class RadixJsonRpcClient {
 			.map(JsonRpcResponse::getResult)
 			.map(element -> GsonJson.getInstance().stringFromGson(element))
 			.map(result -> serialization.fromJson(result, RadixUniverseConfig.class))
+			.onErrorReturn(e -> {
+				LOGGER.error(String.format("Error while requesting Universe.getUniverse: %s", e));
+				return null; // TODO until we have a better option
+			})
 			.cache();
 	}
 
