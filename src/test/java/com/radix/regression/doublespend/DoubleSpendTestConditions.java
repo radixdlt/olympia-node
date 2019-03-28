@@ -1,5 +1,6 @@
 package com.radix.regression.doublespend;
 
+import com.radixdlt.client.application.RadixApplicationAPI.RadixApplicationAPIBuilder;
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.ApplicationState;
 import com.radixdlt.client.application.translate.ShardedAppStateId;
@@ -10,7 +11,7 @@ import java.util.Set;
 import org.assertj.core.api.Condition;
 import org.radix.common.tuples.Pair;
 
-public interface DoubleSpendTestConfig {
+public interface DoubleSpendTestConditions {
 	class PostConsensusCondition {
 		private final Condition<Map<ShardedAppStateId, ApplicationState>> condition;
 		private final Set<Pair<String, ShardedAppStateId>> stateRequired;
