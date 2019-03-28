@@ -10,9 +10,13 @@ import java.math.BigInteger;
 import java.security.KeyFactory;
 import java.util.Arrays;
 
+import org.bouncycastle.crypto.digests.SHA256Digest;
 import org.bouncycastle.crypto.params.ECDomainParameters;
 import org.bouncycastle.crypto.params.ECPrivateKeyParameters;
+import org.bouncycastle.crypto.signers.DSAKCalculator;
 import org.bouncycastle.crypto.signers.ECDSASigner;
+import org.bouncycastle.crypto.signers.HMacDSAKCalculator;
+import org.bouncycastle.crypto.signers.RandomDSAKCalculator;
 import org.bouncycastle.jce.interfaces.ECPrivateKey;
 import org.bouncycastle.jce.spec.ECParameterSpec;
 import org.bouncycastle.jce.spec.ECPrivateKeySpec;
@@ -121,12 +125,26 @@ public class ECKeyPair extends SerializableObject {
 	}
 
 	public ECSignature sign(byte[] data) {
-		return sign(data, true);
+		boolean enforceLowS = true;
+		boolean useDeterministicSignatures = false;
+		return sign(data, enforceLowS, useDeterministicSignatures);
 	}
 
-	public ECSignature sign(byte[] data, boolean enforceLowSAccordingToBip62) {
+	/**
+	 * Signs data using the ECPrivateKey resulting in an ECDSA signature.
+	 *
+	 * @param data The data to sign
+	 * @param enforceLowS If signature should enforce low values of signature part `S`, according to
+	 * <a href="https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki#Low_S_values_in_signatures">BIP-62</a>
+	 * @param beDeterministic If signing should use randomness or be deterministic according to
+	 * <a href="https://tools.ietf.org/html/rfc6979">RFC6979</a>.
+	 * @return An ECDSA Signature.
+	 */
+	public ECSignature sign(byte[] data, boolean enforceLowS, boolean beDeterministic) {
 		ECDomainParameters domain = ECKeyPairGenerator.getDomain((getPublicKey().length() - 1) * 8);
-		ECDSASigner signer = new ECDSASigner();
+
+		final DSAKCalculator kCalculator = beDeterministic ? new HMacDSAKCalculator(new SHA256Digest()) : new RandomDSAKCalculator();
+		ECDSASigner signer = new ECDSASigner(kCalculator);
 		signer.init(true, new ECPrivateKeyParameters(new BigInteger(1, getPrivateKey()), domain));
 		BigInteger[] components = signer.generateSignature(data);
 
@@ -135,13 +153,10 @@ public class ECKeyPair extends SerializableObject {
 
 		BigInteger curveOrder = domain.getN();
 		BigInteger halvCurveOrder = curveOrder.shiftRight(1);
-		/**
-		 * `true `if the `S` component is "low", that means it is below halvCurveOrder. See:
-		 * https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki#Low_S_values_in_signatures
-		 */
-		boolean sIsLowAccordingToBip62 = s.compareTo(halvCurveOrder) <= 0;
 
-		if (enforceLowSAccordingToBip62 && !sIsLowAccordingToBip62) {
+		boolean sIsLow = s.compareTo(halvCurveOrder) <= 0;
+
+		if (enforceLowS && !sIsLow) {
 			s = curveOrder.subtract(s);
 		}
 
