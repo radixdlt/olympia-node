@@ -1,9 +1,14 @@
 package com.radixdlt.client.core.ledger;
 
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.client.core.atoms.particles.SpunParticle;
+import com.radixdlt.client.core.ledger.AtomObservation.Type;
 import io.reactivex.Observable;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 public class RadixParticleStore implements ParticleStore {
 	private final AtomStore atomStore;
@@ -18,7 +23,14 @@ public class RadixParticleStore implements ParticleStore {
 		return cache.computeIfAbsent(address, addr -> atomStore.getAtoms(address)
 			.flatMap(observation -> Observable.create(emitter -> {
 				if (observation.hasAtom()) {
-					observation.getAtom().spunParticles().filter(s -> s.getParticle().getShardables().contains(address))
+					final List<SpunParticle> spunParticleList = observation.getAtom().spunParticles().collect(Collectors.toList());
+
+					if (observation.getType() == Type.DELETE) {
+						Collections.reverse(spunParticleList);
+					}
+
+					spunParticleList.stream()
+						.filter(s -> s.getParticle().getShardables().contains(address))
 						.forEach(s -> {
 							final TransitionedParticle tp =
 								TransitionedParticle.fromSpunParticle(s, observation.getType());

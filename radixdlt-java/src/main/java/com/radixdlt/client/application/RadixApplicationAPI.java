@@ -243,6 +243,11 @@ public class RadixApplicationAPI {
 			return this;
 		}
 
+		public RadixApplicationAPIBuilder bootstrap(BootstrapConfig bootstrapConfig) {
+			this.universe = RadixUniverse.create(bootstrapConfig);
+			return this;
+		}
+
 		public RadixApplicationAPIBuilder universe(RadixUniverse universe) {
 			this.universe = universe;
 			return this;
@@ -281,7 +286,8 @@ public class RadixApplicationAPI {
 	public static RadixApplicationAPI create(BootstrapConfig bootstrap, RadixIdentity identity) {
 		Objects.requireNonNull(identity);
 
-		return createDefaultBuilder(bootstrap)
+		return defaultBuilder()
+				.bootstrap(bootstrap)
 				.identity(identity)
 				.build();
 	}
@@ -291,9 +297,8 @@ public class RadixApplicationAPI {
 	 *
 	 * @return an api builder instance
 	 */
-	public static RadixApplicationAPIBuilder createDefaultBuilder(BootstrapConfig bootstrap) {
+	public static RadixApplicationAPIBuilder defaultBuilder() {
 		return new RadixApplicationAPIBuilder()
-			.universe(RadixUniverse.create(bootstrap))
 			.defaultFeeMapper()
 			.addStatelessParticlesMapper(new SendMessageToParticleGroupsMapper(ECKeyPairGenerator.newInstance()::generateKeyPair))
 			.addStatelessParticlesMapper(new CreateTokenToParticleGroupsMapper())
@@ -309,6 +314,7 @@ public class RadixApplicationAPI {
 			.addAtomMapper(new AtomToTokenTransfersMapper())
 			.addAtomErrorMapper(new AlreadyUsedUniqueIdReasonMapper());
 	}
+
 
 	public Observable<RadixNetworkState> getNetworkState() {
 		return this.universe.getNetworkState();
