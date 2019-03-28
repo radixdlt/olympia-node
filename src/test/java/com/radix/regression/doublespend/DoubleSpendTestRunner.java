@@ -73,10 +73,10 @@ public final class DoubleSpendTestRunner {
 		private final RadixNode node;
 		private final int clientId;
 
-		SingleNodeAPI(int clientId, RadixNode node, RadixIdentity identity) {
+		SingleNodeAPI(int clientId, RadixNode node, RadixIdentity identity, BiFunction<BootstrapConfig, RadixIdentity, RadixApplicationAPI> apiSupplier) {
 			this.clientId = clientId;
 			this.node = node;
-			this.api = RadixApplicationAPI.create(
+			this.api = apiSupplier.apply(
 				new BootstrapConfig() {
 				    @Override
 				    public RadixUniverseConfig getConfig() {
@@ -148,7 +148,7 @@ public final class DoubleSpendTestRunner {
 		Observable<SingleNodeAPI> singleNodeApis = Observable.merge(twoNodes.toObservable(), oneNode.toObservable())
 			.firstOrError()
 			.flatMapObservable(l -> l.size() == 1 ? Observable.just(l.get(0), l.get(0)) : Observable.fromIterable(l))
-			.map(node -> new SingleNodeAPI(clientId.getAndIncrement(), node, api.getMyIdentity()))
+			.map(node -> new SingleNodeAPI(clientId.getAndIncrement(), node, api.getMyIdentity(), apiSupplier))
 			.cache();
 
 
@@ -201,8 +201,9 @@ public final class DoubleSpendTestRunner {
 			.doOnNext(a -> {
 				if (a instanceof FetchAtomsObservationAction) {
 					FetchAtomsObservationAction f = (FetchAtomsObservationAction) a;
-					if (f.getObservation().getType() == Type.DELETE) {
-						System.out.println(System.currentTimeMillis() + " " + singleNodeApi + " DELETE: " + f.getObservation().getAtom().getHid());
+					if (f.getObservation().getType() == Type.DELETE || f.getObservation().getType() == Type.STORE) {
+						System.out.println(System.currentTimeMillis() + " " + singleNodeApi + " " + f.getObservation().getType() + ": "
+							+ f.getObservation().getAtom().getHid());
 					}
 				} else if (a instanceof SubmitAtomResultAction) {
 					SubmitAtomResultAction r = (SubmitAtomResultAction) a;
@@ -213,7 +214,7 @@ public final class DoubleSpendTestRunner {
 			})
 			.filter(a -> a instanceof FetchAtomsObservationAction || a instanceof SubmitAtomAction)
 		)
-			.debounce(30, TimeUnit.SECONDS)
+			.debounce(10, TimeUnit.SECONDS)
 			.firstOrError()
 			.subscribe(lastUpdateObserver);
 		lastUpdateObserver.awaitTerminalEvent();
