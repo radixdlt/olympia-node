@@ -66,7 +66,7 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 				TokenUnitConversions.unitsToSubunits(tokenCreation.getInitialSupply()),
 				TokenUnitConversions.unitsToSubunits(tokenCreation.getGranularity()),
 				tokenCreation.getAddress(),
-				System.currentTimeMillis(),
+				System.nanoTime(),
 				token.getTokenDefinitionReference(),
 				System.currentTimeMillis() / 60000L + 60000
 		);
