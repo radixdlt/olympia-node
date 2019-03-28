@@ -78,6 +78,8 @@ public class RadixNetworkController implements AtomSubmitter {
 			final RadixNetworkState curState = networkState.getValue();
 			RadixNetworkState nextState = network.reduce(curState, action);
 
+			LOGGER.debug("{}", action);
+
 			// TODO: Move this into a proper reducer framework
 			reducers.forEach(r -> r.accept(action));
 

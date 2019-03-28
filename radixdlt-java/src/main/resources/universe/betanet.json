@@ -1,8 +1,8 @@
 {
     "magic": 63799298,
     "creator": ":byt:A3hanCWf3pmR5E+i+wtWWfKleBrDOQduLb/vcFKOSt9o",
-    "signature.r": ":byt:8RWOxnS40riuaOWkat1nsFlnl8N+ykXnaggaptWMtgQ=",
-    "signature.s": ":byt:1/W86Ot3yxUCr51aHLg9Gn3sIF3e1Z5ttH0enw1RV2E=",
+    "signature.r": ":byt:XSYeBX5uNGklh9ABJM47ltjkCQiTvhl7wPXBuj7Zx28=",
+    "signature.s": ":byt:pCVwvMjPLX24/18w6S8ZQ4EhCm4mz9sy30v7UlYCnRk=",
     "serializer": 492321349,
     "description": ":str:The Radix development Universe",
     "type": 2,
@@ -63,7 +63,7 @@
                         "granularity": ":u20:1",
                         "serializer": 1745075425,
                         "version": 100,
-                        "nonce": 224819402118670,
+                        "nonce": 3519267211457,
                         "tokenDefinitionReference": ":rri:/JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor/tokens/XRD",
                         "planck": 24805440
                     },
@@ -73,18 +73,19 @@
             }
         ],
         "signatures": {"56abab3870585f04d015d55adf600bc7": {
-            "r": ":byt:xjlJm3LExGyPir/F3+oMUqjWBk4Xi3KqGjRMirTH/Mw=",
-            "s": ":byt:iWtKgjn6cig8aonvFmE8+L+fNI4N1sWvrzdZH+ei4ME=",
+            "r": ":byt:d2iiXObrMvbUSWjbso0D1kApVqztyO6y8Xj+Rldh/5Y=",
+            "s": ":byt:p9kgxWA/PQ8Ygd0eVE60sIwFdQnxhscqCWC+klxatwA=",
             "serializer": -434788200,
             "version": 100
         }},
         "temporalProof": {
             "vertices": [{
-                "owner": ":byt:AwXD1q1wqvyc7Sj6o8QF6dS2MPphe5p6FD8makW5kkUx",
+                "owner": ":byt:AiDi9s7Y2EOIS7Jt7WJ09KempPMII3hb3HeBV/MaA/qm",
+                "rclock": 1553712663318,
                 "previous": ":uid:00000000000000000000000000000000",
                 "signature": {
-                    "r": ":byt:Ri2QJ1PWj89qQyPdCKLMGCHMog6jDlAoAwkJoz6qdpg=",
-                    "s": ":byt:/8eH3LETHzRBoRfrxqDt0Bfv3OlPdACOXeEYTJGAN20=",
+                    "r": ":byt:d8LBMhKM5nyH5kxuTjyLBwER6iCdU+qKthAIJXA0nhE=",
+                    "s": ":byt:u46o7cHzxcMsp3j+kgtA7je4IsG7WEbVLigNBxQnU4g=",
                     "serializer": -434788200,
                     "version": 100
                 },
@@ -96,7 +97,7 @@
             }],
             "serializer": 1905172290,
             "version": 100,
-            "object": ":hsh:33b6bc66b0d8018091a27bbc712886fafb159d920239af1bd8dfa1f71624e1e3"
+            "object": ":hsh:beb73c553756d15cdc5b2e0203a0cca7b0d10563be3600cb17476d2e562b77a7"
         }
     }],
     "port": 30000,

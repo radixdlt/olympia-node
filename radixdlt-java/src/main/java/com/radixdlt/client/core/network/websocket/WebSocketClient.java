@@ -44,6 +44,9 @@ public class WebSocketClient implements PersistentChannel {
 			return this.websocketFactory.apply(new WebSocketListener() {
 				@Override
 				public void onOpen(WebSocket webSocket, Response response) {
+					if (LOGGER.isDebugEnabled()) {
+						LOGGER.debug("Websocket {} opened", System.identityHashCode(WebSocketClient.this));
+					}
 					synchronized (lock) {
 						WebSocketClient.this.state.onNext(WebSocketStatus.CONNECTED);
 					}
@@ -51,6 +54,9 @@ public class WebSocketClient implements PersistentChannel {
 
 				@Override
 				public void onMessage(WebSocket webSocket, String message) {
+					if (LOGGER.isDebugEnabled()) {
+						LOGGER.debug("Websocket {} message: {}", System.identityHashCode(WebSocketClient.this), message);
+					}
 					synchronized (lock) {
 						messages.onNext(message);
 					}
@@ -58,11 +64,17 @@ public class WebSocketClient implements PersistentChannel {
 
 				@Override
 				public void onClosing(WebSocket webSocket, int code, String reason) {
+					if (LOGGER.isDebugEnabled()) {
+						LOGGER.debug("Websocket {} closing ({}/{})", System.identityHashCode(WebSocketClient.this), code, reason);
+					}
 					webSocket.close(1000, null);
 				}
 
 				@Override
 				public void onClosed(WebSocket webSocket, int code, String reason) {
+					if (LOGGER.isDebugEnabled()) {
+						LOGGER.debug("Websocket {} closed ({}/{})", System.identityHashCode(WebSocketClient.this), code, reason);
+					}
 					synchronized (lock) {
 						WebSocketClient.this.state.onNext(WebSocketStatus.DISCONNECTED);
 						WebSocketClient.this.webSocket = null;
@@ -71,6 +83,10 @@ public class WebSocketClient implements PersistentChannel {
 
 				@Override
 				public void onFailure(WebSocket websocket, Throwable t, Response response) {
+					if (LOGGER.isDebugEnabled()) {
+						String msg = String.format("Websocket %s failed", System.identityHashCode(WebSocketClient.this));
+						LOGGER.debug(msg, t);
+					}
 					synchronized (lock) {
 						if (state.getValue().equals(WebSocketStatus.CLOSING)) {
 							WebSocketClient.this.state.onNext(WebSocketStatus.DISCONNECTED);
@@ -131,6 +147,9 @@ public class WebSocketClient implements PersistentChannel {
 
 	@Override
 	public boolean sendMessage(String message) {
+		if (LOGGER.isDebugEnabled()) {
+			LOGGER.debug("Websocket {} send: {}", System.identityHashCode(this), message);
+		}
 		synchronized (lock) {
 			if (!this.state.getValue().equals(WebSocketStatus.CONNECTED)) {
 				LOGGER.error("Most likely a programming bug. Should not end here.");

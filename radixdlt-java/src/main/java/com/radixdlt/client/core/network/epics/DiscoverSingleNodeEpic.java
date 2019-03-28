@@ -10,6 +10,8 @@ import com.radixdlt.client.core.network.actions.DiscoverMoreNodesAction;
 import com.radixdlt.client.core.network.actions.GetNodeDataRequestAction;
 import com.radixdlt.client.core.network.actions.GetUniverseRequestAction;
 import com.radixdlt.client.core.network.actions.GetUniverseResponseAction;
+import com.radixdlt.client.core.network.actions.NodeUniverseMismatch;
+
 import io.reactivex.Observable;
 import java.util.Arrays;
 
@@ -31,6 +33,12 @@ public class DiscoverSingleNodeEpic implements RadixNetworkEpic {
 			.ofType(DiscoverMoreNodesAction.class)
 			.map(a -> GetUniverseRequestAction.of(node));
 
+		// TODO: Store universes in node table instead and filter out node in FindANodeEpic
+		Observable<RadixNodeAction> seedUniverseMismatch = updates
+			.ofType(GetUniverseResponseAction.class)
+			.filter(u -> !u.getResult().equals(config))
+			.map(u -> new NodeUniverseMismatch(u.getNode(), config, u.getResult()));
+
 		Observable<RadixNode> connected = updates
 			.ofType(GetUniverseResponseAction.class)
 			.filter(u -> u.getResult().equals(config))
@@ -44,6 +52,7 @@ public class DiscoverSingleNodeEpic implements RadixNetworkEpic {
 		Observable<RadixNodeAction> addData = connected.map(GetNodeDataRequestAction::of);
 
 		return Observable.merge(Arrays.asList(
+			seedUniverseMismatch,
 			getUniverse,
 			addNode,
 			addData
