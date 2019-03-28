@@ -63,7 +63,9 @@ public final class DoubleSpendTestRunner {
 	public void execute(int numRounds) {
 		IntStream.range(0, numRounds)
 			.forEach(i -> {
+				System.out.println("================================================================");
 				System.out.println("Round " + (i + 1));
+				System.out.println("================================================================");
 				execute();
 			});
 	}

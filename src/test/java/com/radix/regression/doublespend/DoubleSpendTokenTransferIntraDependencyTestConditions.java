@@ -17,12 +17,12 @@ import java.util.Set;
 import org.assertj.core.api.Condition;
 import org.radix.common.tuples.Pair;
 
-public class DoubleSpendTokenTransferDependencyTestConditions implements DoubleSpendTestConditions {
+public class DoubleSpendTokenTransferIntraDependencyTestConditions implements DoubleSpendTestConditions {
 	private final RadixAddress apiAddress;
 	private final RadixAddress toAddress;
 	private final TokenDefinitionReference tokenRef;
 
-	DoubleSpendTokenTransferDependencyTestConditions(RadixAddress apiAddress, RadixAddress toAddress) {
+	DoubleSpendTokenTransferIntraDependencyTestConditions(RadixAddress apiAddress, RadixAddress toAddress) {
 		this.tokenRef = TokenDefinitionReference.of(apiAddress, "JOSH");
 		this.apiAddress = apiAddress;
 		this.toAddress = toAddress;
@@ -50,8 +50,9 @@ public class DoubleSpendTokenTransferDependencyTestConditions implements DoubleS
 				TransferTokensAction.create(apiAddress, toAddress, BigDecimal.ONE, tokenRef),
 				TransferTokensAction.create(apiAddress, toAddress, BigDecimal.ONE, tokenRef)
 			),
-			Collections.singletonList(
-				TransferTokensAction.create(apiAddress, toAddress, BigDecimal.valueOf(2), tokenRef)
+			Arrays.asList(
+				TransferTokensAction.create(apiAddress, toAddress, BigDecimal.ONE, tokenRef),
+				TransferTokensAction.create(apiAddress, toAddress, BigDecimal.ONE, tokenRef)
 			)
 		);
 	}

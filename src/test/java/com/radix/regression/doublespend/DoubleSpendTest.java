@@ -19,7 +19,7 @@ public class DoubleSpendTest {
 	@Test
 	public void given_an_account_with_a_josh_token_with_two_supply__when_the_account_executes_two_transfers_via_two_different_nodes_at_the_same_time__then_the_account_balances_should_resolve_to_only_one_transfer() {
 		DoubleSpendTestRunner testRunner = new DoubleSpendTestRunner(
-			api -> new DoubleSpendTokenTransferDependencyTestConditions(
+			api -> new DoubleSpendTokenTransferIntraDependencyTestConditions(
 				api.getMyAddress(),
 				api.getAddressFromKey(RadixIdentities.createNew().getPublicKey())
 			));
