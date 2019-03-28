@@ -59,17 +59,23 @@ public class TokenDefinitionsState implements ApplicationState {
 		String iso,
 		String description,
 		BigDecimal granularity,
-		TokenSupplyType tokenSupplyType
+		TokenSupplyType tokenSupplyType,
+		boolean add
 	) {
 		Map<TokenDefinitionReference, TokenState> newState = new HashMap<>(state);
-		if (newState.containsKey(ref)) {
-			final TokenState curState = newState.get(ref);
-			final BigDecimal totalSupply = curState.getTotalSupply();
-			final Map<EUID, UnallocatedTokensParticle> unallocatedTokens = curState.getUnallocatedTokens();
+		if (add) {
+			if (newState.containsKey(ref)) {
+				final TokenState curState = newState.get(ref);
+				final BigDecimal totalSupply = curState.getTotalSupply();
+				final Map<EUID, UnallocatedTokensParticle> unallocatedTokens = curState.getUnallocatedTokens();
 
-			newState.put(ref, new TokenState(name, iso, description, totalSupply, granularity, tokenSupplyType, unallocatedTokens));
+				newState.put(ref, new TokenState(name, iso, description, totalSupply, granularity, tokenSupplyType, unallocatedTokens));
+			} else {
+				newState.put(ref, new TokenState(name, iso, description, BigDecimal.ZERO, granularity, tokenSupplyType, Collections.emptyMap()));
+			}
 		} else {
-			newState.put(ref, new TokenState(name, iso, description, BigDecimal.ZERO, granularity, tokenSupplyType, Collections.emptyMap()));
+			final TokenState curState = newState.get(ref);
+			newState.put(ref, new TokenState(null, ref.getSymbol(), null, curState.getTotalSupply(), null, null, curState.getUnallocatedTokens()));
 		}
 
 		return new TokenDefinitionsState(newState);
@@ -87,8 +93,15 @@ public class TokenDefinitionsState implements ApplicationState {
 				tokenState.getGranularity(),
 				tokenState.getTokenSupplyType(),
 				tokenState.getUnallocatedTokens()));
+
+			if (newState.get(ref).getTotalSupply().compareTo(BigDecimal.ZERO) < 0) {
+				System.out.println("OOOPS 2");
+			}
 		} else {
-			newState.put(ref, new TokenState(null, ref.getSymbol(), null, null, supplyChange, null, null));
+			if (supplyChange.compareTo(BigDecimal.ZERO) < 0) {
+				System.out.println("OOOPS");
+			}
+			newState.put(ref, new TokenState(null, ref.getSymbol(), null, supplyChange, null, null, null));
 		}
 
 		return new TokenDefinitionsState(newState);

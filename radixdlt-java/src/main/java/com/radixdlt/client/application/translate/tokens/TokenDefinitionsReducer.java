@@ -57,7 +57,8 @@ public class TokenDefinitionsReducer implements ParticleReducer<TokenDefinitions
 				tokenDefinitionParticle.getSymbol(),
 				tokenDefinitionParticle.getDescription(),
 				TokenUnitConversions.subunitsToUnits(tokenDefinitionParticle.getGranularity()),
-				tokenSupplyType
+				tokenSupplyType,
+				t.getSpinTo() == Spin.UP
 			);
 		} else if (p instanceof MintedTokensParticle || p instanceof BurnedTokensParticle) {
 			if (t.getTransition() == ParticleTransition.N2U) {

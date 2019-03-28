@@ -108,9 +108,10 @@ public class InMemoryAtomStore implements AtomStore {
 						// That is, create soft deletes for any known missing deletes from dependent atoms
 						List<AtomObservation> missingDeletes = new ArrayList<>();
 						if (nextUpdate.getType() == Type.DELETE && include) {
+							// TODO: Should we DELETE atoms which are dependent on these atoms as well?
 							List<AtomObservation> observationsContainingDown = observation.getAtom().particles(Spin.UP)
 								.flatMap(p -> atomsObservationState.atomContainingDown(p)
-									.map(o -> o.isStore() ? Stream.of(o) : Stream.<AtomObservation>empty())
+									.map(o -> o.isStore() && !o.getAtom().getHid().equals(observation.getAtom().getHid()) ? Stream.of(o) : Stream.<AtomObservation>empty())
 									.orElse(Stream.empty())
 								)
 								.collect(Collectors.toList());
