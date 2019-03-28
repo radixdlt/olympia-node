@@ -138,7 +138,8 @@ public class ParticleGroups {
 	@Given("^I have access to a suitable Radix network$")
 	public void i_have_access_to_a_suitable_Radix_network() {
 		this.identity = RadixIdentities.createNew();
-		this.api = RadixApplicationAPI.createDefaultBuilder(Bootstrap.LOCALHOST_SINGLENODE)
+		this.api = RadixApplicationAPI.defaultBuilder()
+			.bootstrap(Bootstrap.LOCALHOST_SINGLENODE)
 			.identity(this.identity)
 			.addStatelessParticlesMapper(new CreateEmptyGroupActionToParticleGroupsMapper())
 			.addStatefulParticlesMapper(new MergeStatefulActionToParticleGroupsMapper(new TransferTokensToParticleGroupsMapper()))

@@ -1,6 +1,5 @@
 package com.radix.regression.doublespend;
 
-import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.ShardedAppStateId;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
@@ -9,7 +8,6 @@ import com.radixdlt.client.application.translate.tokens.TokenBalanceState;
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
 import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.core.RadixUniverse;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Collections;
@@ -19,12 +17,12 @@ import java.util.Set;
 import org.assertj.core.api.Condition;
 import org.radix.common.tuples.Pair;
 
-public class DoubleSpendTokenTransferDependencyTestConfig implements DoubleSpendTestConfig {
+class DoubleSpendTokenTransferTestConditions implements DoubleSpendTestConditions {
 	private final RadixAddress apiAddress;
 	private final RadixAddress toAddress;
 	private final TokenDefinitionReference tokenRef;
 
-	DoubleSpendTokenTransferDependencyTestConfig(RadixAddress apiAddress, RadixAddress toAddress) {
+	DoubleSpendTokenTransferTestConditions(RadixAddress apiAddress, RadixAddress toAddress) {
 		this.tokenRef = TokenDefinitionReference.of(apiAddress, "JOSH");
 		this.apiAddress = apiAddress;
 		this.toAddress = toAddress;
@@ -38,7 +36,7 @@ public class DoubleSpendTokenTransferDependencyTestConfig implements DoubleSpend
 				"Joshy Token",
 				"JOSH",
 				"Cool Token",
-				BigDecimal.valueOf(2),
+				BigDecimal.ONE,
 				BigDecimal.ONE,
 				TokenSupplyType.FIXED
 			)
@@ -47,15 +45,8 @@ public class DoubleSpendTokenTransferDependencyTestConfig implements DoubleSpend
 
 	@Override
 	public List<List<Action>> conflictingActions() {
-		return Arrays.asList(
-			Arrays.asList(
-				TransferTokensAction.create(apiAddress, toAddress, BigDecimal.ONE, tokenRef),
-				TransferTokensAction.create(apiAddress, toAddress, BigDecimal.ONE, tokenRef)
-			),
-			Collections.singletonList(
-				TransferTokensAction.create(apiAddress, toAddress, BigDecimal.valueOf(2), tokenRef)
-			)
-		);
+		TransferTokensAction action = TransferTokensAction.create(apiAddress, toAddress, BigDecimal.ONE, tokenRef);
+		return Arrays.asList(Collections.singletonList(action), Collections.singletonList(action));
 	}
 
 	@Override
@@ -70,8 +61,8 @@ public class DoubleSpendTokenTransferDependencyTestConfig implements DoubleSpend
 				TokenBalanceState tokenBalanceState1 = (TokenBalanceState) map.get(ShardedAppStateId.of(TokenBalanceState.class, apiAddress));
 				TokenBalanceState tokenBalanceState2 = (TokenBalanceState) map.get(ShardedAppStateId.of(TokenBalanceState.class, toAddress));
 				return tokenBalanceState1.getBalance().get(tokenRef).getAmount().compareTo(BigDecimal.ZERO) == 0 &&
-					tokenBalanceState2.getBalance().get(tokenRef).getAmount().compareTo(BigDecimal.valueOf(2)) == 0;
-			}, "Transfer of 2 JOSH from one account to another")
+						tokenBalanceState2.getBalance().get(tokenRef).getAmount().compareTo(BigDecimal.ONE) == 0;
+			}, "Transfer of 1 JOSH from one account to another")
 		);
 	}
 }

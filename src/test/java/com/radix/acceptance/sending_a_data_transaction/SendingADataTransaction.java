@@ -75,10 +75,12 @@ public class SendingADataTransaction {
 	public void i_have_access_to_a_suitable_Radix_network() {
 		this.identity = RadixIdentities.createNew();
 		this.otherIdentity = RadixIdentities.createNew();
-		this.api = RadixApplicationAPI.createDefaultBuilder(Bootstrap.LOCALHOST_SINGLENODE)
+		this.api = RadixApplicationAPI.defaultBuilder()
+			.bootstrap(Bootstrap.LOCALHOST_SINGLENODE)
 			.identity(this.identity)
 			.build();
-		this.otherApi = RadixApplicationAPI.createDefaultBuilder(Bootstrap.LOCALHOST_SINGLENODE)
+		this.otherApi = RadixApplicationAPI.defaultBuilder()
+			.bootstrap(Bootstrap.LOCALHOST_SINGLENODE)
 			.identity(this.otherIdentity)
 			.build();
 		this.disposables.add(this.api.pull());
