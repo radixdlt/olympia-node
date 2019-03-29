@@ -82,7 +82,7 @@ public class SendUniqueTransactionsTest {
 		RadixApplicationAPI api2 = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, RadixIdentities.createNew());
 		final String uniqueId = "thisisauniquestring";
 
-		// When client attempts to use id
+		// When client attempts to use id in ANOTHER account
 		TestObserver<Object> submissionObserver = TestObserver.create(Util.loggingObserver("Submission"));
 		Completable conflictingUniqueStatus = api1.execute(
 			new AtomicAction(
@@ -92,7 +92,7 @@ public class SendUniqueTransactionsTest {
 		).toCompletable();
 		conflictingUniqueStatus.subscribe(submissionObserver);
 
-		// Then client should be notified of success
+		// Then client should be notified of error
 		submissionObserver.awaitTerminalEvent();
 		submissionObserver.assertError(ActionExecutionException.class);
 	}
