@@ -73,4 +73,27 @@ public class SendUniqueTransactionsTest {
 		submissionObserver.awaitTerminalEvent();
 		submissionObserver.assertComplete();
 	}
+
+	@Test
+	public void given_an_account_owner_which_has_not_used_a_unique_id__when_the_client_attempts_to_use_id_in_another_account__then_client_should_be_notified_of_error() throws Exception {
+
+		// Given account owner which has NOT performed an action with a unique id
+		RadixApplicationAPI api1 = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, RadixIdentities.createNew());
+		RadixApplicationAPI api2 = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, RadixIdentities.createNew());
+		final String uniqueId = "thisisauniquestring";
+
+		// When client attempts to use id in ANOTHER account
+		TestObserver<Object> submissionObserver = TestObserver.create(Util.loggingObserver("Submission"));
+		Completable conflictingUniqueStatus = api1.execute(
+			new AtomicAction(
+				new SendMessageAction(new byte[] {1}, api1.getMyAddress(), api1.getMyAddress(), false),
+				new PutUniqueIdAction(api2.getMyAddress(), uniqueId)
+			)
+		).toCompletable();
+		conflictingUniqueStatus.subscribe(submissionObserver);
+
+		// Then client should be notified of error
+		submissionObserver.awaitTerminalEvent();
+		submissionObserver.assertError(ActionExecutionException.class);
+	}
 }
