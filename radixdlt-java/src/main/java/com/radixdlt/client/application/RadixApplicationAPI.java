@@ -17,6 +17,7 @@ import java.util.stream.Stream;
 
 import com.radixdlt.client.application.translate.tokens.MintAndTransferTokensAction;
 import com.radixdlt.client.application.translate.tokens.MintAndTransferTokensActionMapper;
+import org.checkerframework.checker.signedness.qual.Unsigned;
 import org.radix.common.tuples.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -123,6 +124,14 @@ public class RadixApplicationAPI {
 		 */
 		public Completable toCompletable() {
 			return completable;
+		}
+
+		/**
+		 * Block until the execution of the action is stored on the node ledger.
+		 * Throws an exception if there are any issues.
+		 */
+		public void blockUntilComplete() {
+			completable.blockingAwait();
 		}
 	}
 
@@ -769,6 +778,25 @@ public class RadixApplicationAPI {
 	}
 
 	/**
+	 * Returns an unsigned atom with the appropriate fees given a list of
+	 * particle groups to compose the atom.
+	 *
+	 * @param particleGroups particle groups to include in atom
+	 * @return unsigned atom with appropriate fees
+	 */
+	public UnsignedAtom buildAtomWithFee(List<ParticleGroup> particleGroups) {
+		List<ParticleGroup> allParticleGroups = new ArrayList<>(particleGroups);
+		Map<String, String> metaData = new HashMap<>();
+		metaData.put(Atom.METADATA_TIMESTAMP_KEY, String.valueOf(generateTimestamp()));
+		Atom atom = new Atom(particleGroups, metaData);
+		Pair<Map<String, String>, List<ParticleGroup>> fee = this.feeMapper.map(atom, this.universe, this.getMyPublicKey());
+		allParticleGroups.addAll(fee.getSecond());
+		metaData.putAll(fee.getFirst());
+
+		return new UnsignedAtom(new Atom(allParticleGroups, metaData));
+	}
+
+	/**
 	 * Returns a cold single of an unsigned atom given a user action. Note that this is
 	 * method will always return a unique atom even if given equivalent actions
 	 *
@@ -790,17 +818,7 @@ public class RadixApplicationAPI {
 					(a, b) -> Stream.concat(a.stream(), Stream.of(b)).collect(Collectors.toList())
 			)
 			.lastOrError()
-			.map(particleGroups -> {
-				List<ParticleGroup> allParticleGroups = new ArrayList<>(particleGroups);
-				Map<String, String> metaData = new HashMap<>();
-				metaData.put(Atom.METADATA_TIMESTAMP_KEY, String.valueOf(generateTimestamp()));
-				Atom atom = new Atom(particleGroups, metaData);
-				Pair<Map<String, String>, List<ParticleGroup>> fee = this.feeMapper.map(atom, this.universe, this.getMyPublicKey());
-				allParticleGroups.addAll(fee.getSecond());
-				metaData.putAll(fee.getFirst());
-
-				return new UnsignedAtom(new Atom(allParticleGroups, metaData));
-			});
+			.map(this::buildAtomWithFee);
 	}
 
 	private long generateTimestamp() {
