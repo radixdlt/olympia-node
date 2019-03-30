@@ -156,7 +156,7 @@
         }
       },
       "temporalProof": {
-        "hid": ":uid:3dc208cb1735f0734e3e52ff03461226",
+        "hid": ":uid:ba3e93283b2a8d140a8ead8c72d76eee",
         "vertices": [
           {
             "owner": ":byt:AtjPzcFVv/5yKDcxsO9qXjqtVeowz7lWmCX1cqEg5KnQ",
@@ -179,19 +179,19 @@
             "version": 100
           },
           {
-            "owner": ":byt:AnP9PKnWvk+sobI6SbMEvbkn8Hjn8kH3CfQr9TGObeeV",
-            "rclock": 1553854174706,
-            "hid": ":uid:efafdb1806999d6ceb76d9a357a233fe",
+            "owner": ":byt:Aonv/XJFUO4a1QqYXplI9snDNHnXx6kMg4D1Ik4mvwTN",
+            "rclock": 1553923880105,
+            "hid": ":uid:197739a627c30edf35be980eef856fca",
             "previous": ":uid:6c9b5d2f15e10de8477e0800ca07ad34",
             "signature": {
-              "r": ":byt:SsJsnej3CstA/PEnNg4SN7eQ8sJnOYw/HsLESGuRKQk=",
-              "hid": ":uid:556c80dc473b3ca6a1cf1ee46dfeac3e",
-              "s": ":byt:gd2RMGCEgBA0HrCX0sqJvdIRTG/aPUFneOUjezQjuIw=",
+              "r": ":byt:t+p3Acgn480Eg/M98i6giiakND8HqeFubODunPlQt28=",
+              "hid": ":uid:bd0d0f7796bf6a114c827219b14ebfa8",
+              "s": ":byt:wH0gZxOqGYzdv0CiaEc5b/+y306nhXXrdnjSzzCvcso=",
               "serializer": -434788200,
               "version": 100
             },
             "timestamps": {
-              "default": 1553854174706
+              "default": 1553923880105
             },
             "serializer": -909337786,
             "commitment": ":hsh:0000000000000000000000000000000000000000000000000000000000000000",
