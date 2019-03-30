@@ -5,9 +5,8 @@ import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
-import com.radixdlt.client.atommodel.tokens.BurnedTokensParticle;
-import com.radixdlt.client.atommodel.tokens.MintedTokensParticle;
 import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle;
+import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle.TokenTransition;
 import com.radixdlt.client.atommodel.tokens.TokenPermission;
 import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.core.Bootstrap;
@@ -39,8 +38,8 @@ public class UnallocatedTokensParticleTest {
 			"Best Token",
 			UInt256.ONE,
 			ImmutableMap.of(
-				MintedTokensParticle.class, TokenPermission.TOKEN_OWNER_ONLY,
-				BurnedTokensParticle.class, TokenPermission.NONE
+				TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY,
+				TokenTransition.BURN, TokenPermission.NONE
 			),
 			null
 		);
@@ -81,10 +80,9 @@ public class UnallocatedTokensParticleTest {
 		UnallocatedTokensParticle unallocatedParticle = new UnallocatedTokensParticle(
 			UInt256.MAX_VALUE,
 			UInt256.ONE,
-			api.getMyAddress(),
 			System.currentTimeMillis(),
 			TokenDefinitionReference.of(api.getMyAddress(), "JOSH"),
-			System.currentTimeMillis() / 60000L + 60000
+			ImmutableMap.of(TokenTransition.MINT, TokenPermission.TOKEN_CREATION_ONLY, TokenTransition.BURN, TokenPermission.TOKEN_CREATION_ONLY)
 		);
 
 		groups.add(ParticleGroup.of(SpunParticle.up(unallocatedParticle)));
@@ -114,19 +112,17 @@ public class UnallocatedTokensParticleTest {
 		UnallocatedTokensParticle unallocatedParticle0 = new UnallocatedTokensParticle(
 			UInt256.MAX_VALUE,
 			UInt256.ONE,
-			api.getMyAddress(),
 			System.nanoTime(),
 			TokenDefinitionReference.of(api.getMyAddress(), "JOSH"),
-			System.currentTimeMillis() / 60000L + 60000
+			ImmutableMap.of(TokenTransition.MINT, TokenPermission.TOKEN_CREATION_ONLY, TokenTransition.BURN, TokenPermission.TOKEN_CREATION_ONLY)
 		);
 
 		UnallocatedTokensParticle unallocatedParticle1 = new UnallocatedTokensParticle(
 			UInt256.MAX_VALUE,
 			UInt256.ONE,
-			api.getMyAddress(),
 			System.nanoTime(),
 			TokenDefinitionReference.of(api.getMyAddress(), "JOSH"),
-			System.currentTimeMillis() / 60000L + 60000
+			ImmutableMap.of(TokenTransition.MINT, TokenPermission.TOKEN_CREATION_ONLY, TokenTransition.BURN, TokenPermission.TOKEN_CREATION_ONLY)
 		);
 
 		TokenDefinitionParticle tokenDefinitionParticle = new TokenDefinitionParticle(
@@ -136,8 +132,8 @@ public class UnallocatedTokensParticleTest {
 			"Coolest token",
 			UInt256.ONE,
 			ImmutableMap.of(
-				MintedTokensParticle.class, TokenPermission.TOKEN_OWNER_ONLY,
-				BurnedTokensParticle.class, TokenPermission.NONE
+				TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY,
+				TokenTransition.BURN, TokenPermission.NONE
 			),
 			null
 		);
