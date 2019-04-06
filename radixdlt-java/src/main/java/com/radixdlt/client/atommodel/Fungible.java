@@ -8,7 +8,5 @@ import org.radix.utils.UInt256;
 public interface Fungible {
 	UInt256 getAmount();
 
-	long getPlanck();
-
 	long getNonce();
 }

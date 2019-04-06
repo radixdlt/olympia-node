@@ -151,10 +151,8 @@ public class MintAndTransferTokensActionMapper implements StatefulActionToPartic
 				(amt, consumable) -> new UnallocatedTokensParticle(
 					amt,
 					consumable.getGranularity(),
-					consumable.getAddress(),
 					System.nanoTime(),
-					tokenDefRef,
-					System.currentTimeMillis() / 60000L + 60000L
+					tokenDefRef
 				),
 				unallocated -> unallocated,
 				UnallocatedTokensParticle::getAmount

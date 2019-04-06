@@ -82,10 +82,8 @@ public class MintTokensActionMapper implements StatefulActionToParticleGroupsMap
 						(amt, consumable) -> new UnallocatedTokensParticle(
 							amt,
 							consumable.getGranularity(),
-							consumable.getAddress(),
 							System.nanoTime(),
-							tokenDefinition,
-							System.currentTimeMillis() / 60000L + 60000L
+							tokenDefinition
 						),
 						unallocated -> unallocated,
 						UnallocatedTokensParticle::getAmount

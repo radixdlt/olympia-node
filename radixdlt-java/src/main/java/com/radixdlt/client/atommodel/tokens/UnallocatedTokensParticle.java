@@ -21,10 +21,6 @@ import org.radix.utils.UInt256;
 @SerializerId2("UNALLOCATEDTOKENSPARTICLE")
 public class UnallocatedTokensParticle extends Particle implements Accountable, Ownable, Fungible {
 
-	@JsonProperty("address")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private RadixAddress address;
-
 	@JsonProperty("tokenDefinitionReference")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private RadixResourceIdentifer tokenDefinitionReference;
@@ -32,10 +28,6 @@ public class UnallocatedTokensParticle extends Particle implements Accountable, 
 	@JsonProperty("granularity")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private UInt256 granularity;
-
-	@JsonProperty("planck")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private long planck;
 
 	@JsonProperty("nonce")
 	@DsonOutput(DsonOutput.Output.ALL)
@@ -49,8 +41,8 @@ public class UnallocatedTokensParticle extends Particle implements Accountable, 
 		super();
 	}
 
-	public UnallocatedTokensParticle(UInt256 amount, UInt256 granularity, RadixAddress address, long nonce,
-		TokenDefinitionReference tokenDefinitionReference, long planck) {
+	public UnallocatedTokensParticle(UInt256 amount, UInt256 granularity, long nonce,
+		TokenDefinitionReference tokenDefinitionReference) {
 		super();
 
 		// Redundant null check added for completeness
@@ -59,22 +51,20 @@ public class UnallocatedTokensParticle extends Particle implements Accountable, 
 			throw new IllegalArgumentException("Amount is zero");
 		}
 
-		this.address = address;
 		this.tokenDefinitionReference = new RadixResourceIdentifer(
 			tokenDefinitionReference.getAddress(), "tokens", tokenDefinitionReference.getSymbol());
 		this.granularity = granularity;
-		this.planck = planck;
 		this.nonce = nonce;
 		this.amount = amount;
 	}
 
 	@Override
 	public Set<RadixAddress> getAddresses() {
-		return Collections.singleton(this.address);
+		return Collections.singleton(this.tokenDefinitionReference.getAddress());
 	}
 
 	public RadixAddress getAddress() {
-		return this.address;
+		return this.tokenDefinitionReference.getAddress();
 	}
 
 	public RadixResourceIdentifer getTokDefRef() {
@@ -91,24 +81,17 @@ public class UnallocatedTokensParticle extends Particle implements Accountable, 
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s:%s:%s:%s:%s:%s]",
+		return String.format("%s[%s:%s:%s:%s]",
 			getClass().getSimpleName(),
 			String.valueOf(tokenDefinitionReference),
 			String.valueOf(amount),
 			String.valueOf(granularity),
-			String.valueOf(address),
-			planck,
 			nonce);
 	}
 
 	@Override
 	public UInt256 getAmount() {
 		return this.amount;
-	}
-
-	@Override
-	public long getPlanck() {
-		return this.planck;
 	}
 
 	@Override

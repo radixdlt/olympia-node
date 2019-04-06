@@ -64,10 +64,8 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 		UnallocatedTokensParticle unallocated = new UnallocatedTokensParticle(
 			UInt256.MAX_VALUE,
 			TokenUnitConversions.unitsToSubunits(tokenCreation.getGranularity()),
-			tokenCreation.getAddress(),
 			System.currentTimeMillis(),
-			token.getTokenDefinitionReference(),
-			System.currentTimeMillis() / 60000L + 60000
+			token.getTokenDefinitionReference()
 		);
 
 		if (tokenCreation.getInitialSupply().compareTo(BigDecimal.ZERO) == 0) {
@@ -96,10 +94,8 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 			UnallocatedTokensParticle unallocatedLeftOver = new UnallocatedTokensParticle(
 				leftOver,
 				TokenUnitConversions.unitsToSubunits(tokenCreation.getGranularity()),
-				tokenCreation.getAddress(),
 				System.currentTimeMillis(),
-				token.getTokenDefinitionReference(),
-				System.currentTimeMillis() / 60000L + 60000
+				token.getTokenDefinitionReference()
 			);
 
 			mintGroupBuilder.addParticle(unallocatedLeftOver, Spin.UP);

@@ -80,11 +80,6 @@ public final class TransferredTokensParticle extends Particle implements Account
 	}
 
 	@Override
-	public long getPlanck() {
-		return this.planck;
-	}
-
-	@Override
 	public long getNonce() {
 		return this.nonce;
 	}

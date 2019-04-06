@@ -80,11 +80,6 @@ public final class BurnedTokensParticle extends Particle implements Accountable,
 	}
 
 	@Override
-	public long getPlanck() {
-		return this.planck;
-	}
-
-	@Override
 	public long getNonce() {
 		return this.nonce;
 	}
