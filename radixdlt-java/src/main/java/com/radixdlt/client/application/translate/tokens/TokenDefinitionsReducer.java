@@ -1,5 +1,6 @@
 package com.radixdlt.client.application.translate.tokens;
 
+import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle.TokenTransition;
 import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.ledger.ParticleTransition;
@@ -39,7 +40,7 @@ public class TokenDefinitionsReducer implements ParticleReducer<TokenDefinitions
 
 		if (p instanceof TokenDefinitionParticle) {
 			TokenDefinitionParticle tokenDefinitionParticle = (TokenDefinitionParticle) p;
-			TokenPermission mintPermission = tokenDefinitionParticle.getTokenPermissions().get(MintedTokensParticle.class);
+			TokenPermission mintPermission = tokenDefinitionParticle.getTokenPermissions().get(TokenTransition.MINT);
 
 			final TokenSupplyType tokenSupplyType;
 			if (mintPermission.equals(TokenPermission.TOKEN_CREATION_ONLY) || mintPermission.equals(TokenPermission.NONE)) {

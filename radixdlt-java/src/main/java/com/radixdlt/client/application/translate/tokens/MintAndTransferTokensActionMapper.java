@@ -10,6 +10,7 @@ import com.radixdlt.client.application.translate.tokens.TokenState.TokenSupplyTy
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.atommodel.tokens.BurnedTokensParticle;
 import com.radixdlt.client.atommodel.tokens.MintedTokensParticle;
+import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle.TokenTransition;
 import com.radixdlt.client.atommodel.tokens.TokenPermission;
 import com.radixdlt.client.atommodel.tokens.TransferredTokensParticle;
 import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
@@ -96,8 +97,8 @@ public class MintAndTransferTokensActionMapper implements StatefulActionToPartic
 
 				final TransferredTokensParticle transferredTokensParticle = createTransfer(
 					state.getTokenSupplyType() == TokenSupplyType.FIXED
-						? ImmutableMap.of(MintedTokensParticle.class, TokenPermission.TOKEN_CREATION_ONLY, BurnedTokensParticle.class, TokenPermission.TOKEN_CREATION_ONLY)
-						: ImmutableMap.of(MintedTokensParticle.class, TokenPermission.TOKEN_OWNER_ONLY, BurnedTokensParticle.class, TokenPermission.TOKEN_OWNER_ONLY),
+						? ImmutableMap.of(TokenTransition.MINT, TokenPermission.TOKEN_CREATION_ONLY, TokenTransition.BURN, TokenPermission.TOKEN_CREATION_ONLY)
+						: ImmutableMap.of(TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY, TokenTransition.BURN, TokenPermission.TOKEN_OWNER_ONLY),
 					TokenUnitConversions.unitsToSubunits(state.getGranularity()),
 					mintTransferAction
 				);
@@ -122,7 +123,7 @@ public class MintAndTransferTokensActionMapper implements StatefulActionToPartic
 		return ts;
 	}
 
-	private TransferredTokensParticle createTransfer(Map<Class<? extends Particle>, TokenPermission> permissions, UInt256 granularity, MintAndTransferTokensAction action) {
+	private TransferredTokensParticle createTransfer(Map<TokenTransition, TokenPermission> permissions, UInt256 granularity, MintAndTransferTokensAction action) {
 		return new TransferredTokensParticle(
 			TokenUnitConversions.unitsToSubunits(action.getAmount()),
 			granularity,

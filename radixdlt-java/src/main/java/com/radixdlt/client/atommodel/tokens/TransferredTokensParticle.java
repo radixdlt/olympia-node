@@ -7,6 +7,7 @@ import com.radixdlt.client.atommodel.Accountable;
 import com.radixdlt.client.atommodel.Fungible;
 import com.radixdlt.client.atommodel.Ownable;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle.TokenTransition;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.RadixResourceIdentifer;
 import java.util.Map;
@@ -50,7 +51,7 @@ public final class TransferredTokensParticle extends Particle implements Account
 	@DsonOutput(Output.ALL)
 	private UInt256 amount;
 
-	private Map<Class<? extends Particle>, TokenPermission> tokenPermissions;
+	private Map<TokenTransition, TokenPermission> tokenPermissions;
 
 	protected TransferredTokensParticle() {
 	}
@@ -62,7 +63,7 @@ public final class TransferredTokensParticle extends Particle implements Account
 		long nonce,
 		TokenDefinitionReference tokenDefinitionReference,
 		long planck,
-		Map<Class<? extends Particle>, TokenPermission> tokenPermissions
+		Map<TokenTransition, TokenPermission> tokenPermissions
 	) {
 		super();
 
@@ -82,7 +83,7 @@ public final class TransferredTokensParticle extends Particle implements Account
 		this.tokenPermissions = ImmutableMap.copyOf(tokenPermissions);
 	}
 
-	public Map<Class<? extends Particle>, TokenPermission> getTokenPermissions() {
+	public Map<TokenTransition, TokenPermission> getTokenPermissions() {
 		return tokenPermissions;
 	}
 
@@ -90,7 +91,7 @@ public final class TransferredTokensParticle extends Particle implements Account
 	@DsonOutput(value = {Output.ALL})
 	private Map<String, String> getJsonPermissions() {
 		return this.tokenPermissions.entrySet().stream()
-			.collect(Collectors.toMap(e -> TokenDefinitionParticle.tokenDefinitionToVerb(e.getKey()), e -> e.getValue().name().toLowerCase()));
+			.collect(Collectors.toMap(e -> e.getKey().name().toLowerCase(), e -> e.getValue().name().toLowerCase()));
 	}
 
 	@JsonProperty("permissions")
@@ -98,7 +99,7 @@ public final class TransferredTokensParticle extends Particle implements Account
 		if (permissions != null) {
 			this.tokenPermissions = permissions.entrySet().stream()
 				.collect(Collectors.toMap(
-					e -> TokenDefinitionParticle.verbToTokenClass(e.getKey()), e -> TokenPermission.valueOf(e.getValue().toUpperCase())
+					e -> TokenTransition.valueOf(e.getKey().toUpperCase()), e -> TokenPermission.valueOf(e.getValue().toUpperCase())
 				));
 		} else {
 			throw new IllegalArgumentException("Permissions cannot be null.");
