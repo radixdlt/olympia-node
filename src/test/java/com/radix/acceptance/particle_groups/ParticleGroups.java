@@ -90,12 +90,12 @@ public class ParticleGroups {
 	private class CreateEmptyGroupActionToParticleGroupsMapper implements StatelessActionToParticleGroupsMapper {
 
 		@Override
-		public Observable<ParticleGroup> mapToParticleGroups(Action action) {
+		public List<ParticleGroup> mapToParticleGroups(Action action) {
 			if (!(action instanceof CreateEmptyGroupAction)) {
-				return Observable.empty();
+				return Collections.emptyList();
 			}
 
-			return Observable.just(new ParticleGroup(Collections.emptyList()));
+			return Collections.singletonList(new ParticleGroup(Collections.emptyList()));
 		}
 	}
 
