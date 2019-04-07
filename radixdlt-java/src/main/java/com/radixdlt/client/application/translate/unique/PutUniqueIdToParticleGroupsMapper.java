@@ -7,7 +7,6 @@ import com.radixdlt.client.atommodel.unique.UniqueParticle;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 
-import io.reactivex.Observable;
 import java.util.Collections;
 import java.util.List;
 

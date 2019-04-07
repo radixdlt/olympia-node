@@ -3,7 +3,6 @@ package com.radixdlt.client.application.translate.atomic;
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.StatelessActionToParticleGroupsMapper;
 import com.radixdlt.client.core.atoms.ParticleGroup;
-import io.reactivex.Observable;
 import java.util.Collections;
 import java.util.List;
 

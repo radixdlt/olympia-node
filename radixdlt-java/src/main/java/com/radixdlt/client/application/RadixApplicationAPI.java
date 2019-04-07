@@ -756,7 +756,9 @@ public class RadixApplicationAPI {
 					final Set<ShardedAppStateId> requiredState = mapper.requiredState(action);
 					return Observable.fromIterable(requiredState)
 						.flatMapSingle(ctx -> this.getState(ctx.stateClass(), ctx.address()).firstOrError().map(s -> new SimpleEntry<>(ctx, s)))
-						.reduceWith(ImmutableMap::<ShardedAppStateId, ApplicationState>of, (a, b) -> new ImmutableMap.Builder<ShardedAppStateId, ApplicationState>().putAll(a).put(b).build())
+						.reduceWith(
+							ImmutableMap::<ShardedAppStateId, ApplicationState>of,
+							(a, b) -> new ImmutableMap.Builder<ShardedAppStateId, ApplicationState>().putAll(a).put(b).build())
 						.map(ctxState -> mapper.mapToParticleGroups(action, ctxState));
 				})
 		);
@@ -769,7 +771,9 @@ public class RadixApplicationAPI {
 					final Set<ShardedAppStateId> requiredState = mapper.requiredState(action);
 					return Observable.fromIterable(requiredState)
 						.flatMapSingle(ctx -> this.getState(ctx.stateClass(), ctx.address()).firstOrError().map(s -> new SimpleEntry<>(ctx, s)))
-						.reduceWith(ImmutableMap::<ShardedAppStateId, ApplicationState>of, (a, b) -> new ImmutableMap.Builder<ShardedAppStateId, ApplicationState>().putAll(a).put(b).build())
+						.reduceWith(
+							ImmutableMap::<ShardedAppStateId, ApplicationState>of,
+							(a, b) -> new ImmutableMap.Builder<ShardedAppStateId, ApplicationState>().putAll(a).put(b).build())
 						.map(ctxState -> mapper.sideEffects(action, ctxState));
 				});
 	}

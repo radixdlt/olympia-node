@@ -5,9 +5,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.crypto.ECKeyPair;
-import io.reactivex.observers.TestObserver;
 import org.junit.Test;
 
 public class SendDecryptedMessageToParticleGroupsMapperTest {

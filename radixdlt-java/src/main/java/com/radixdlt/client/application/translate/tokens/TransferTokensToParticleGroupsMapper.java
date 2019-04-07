@@ -169,7 +169,10 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 
 		List<SpunParticle> transferParticles = this.mapToParticles(transfer, tokenConsumables);
 		List<SpunParticle> attachmentParticles = this.mapToAttachmentParticles(transfer);
+		List<SpunParticle> sparticles = Stream.concat(transferParticles.stream(), attachmentParticles.stream()).collect(Collectors.toList());
 
-		return Collections.singletonList(ParticleGroup.of(Stream.concat(transferParticles.stream(), attachmentParticles.stream()).collect(Collectors.toList())));
+		return Collections.singletonList(
+			ParticleGroup.of(sparticles)
+		);
 	}
 }

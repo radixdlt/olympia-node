@@ -77,7 +77,8 @@ public class MintTokensActionMapper implements StatefulActionToParticleGroupsMap
 			throw new IllegalArgumentException("Mint amount must be greater than 0.");
 		}
 
-		TokenDefinitionsState tokenDefinitionsState = (TokenDefinitionsState) store.get(ShardedAppStateId.of(TokenDefinitionsState.class, tokenDefinition.getAddress()));
+		ShardedAppStateId shardedAppStateId = ShardedAppStateId.of(TokenDefinitionsState.class, tokenDefinition.getAddress());
+		TokenDefinitionsState tokenDefinitionsState = (TokenDefinitionsState) store.get(shardedAppStateId);
 		TokenState tokenState = getTokenStateOrError(tokenDefinitionsState.getState(), tokenDefinition);
 		final BigDecimal unallocatedSupply = tokenState.getUnallocatedSupply();
 

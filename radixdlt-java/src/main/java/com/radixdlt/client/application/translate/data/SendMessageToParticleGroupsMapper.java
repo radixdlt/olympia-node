@@ -13,7 +13,6 @@ import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
 import com.radixdlt.client.core.crypto.Encryptor;
 import com.radixdlt.client.core.crypto.Encryptor.EncryptorBuilder;
-import io.reactivex.Observable;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;

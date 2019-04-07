@@ -35,7 +35,9 @@ public class TransferTokensToParticleGroupsMapperTest {
 		assertThat(transferTranslator.requiredState(transferTokensAction))
 			.containsExactly(ShardedAppStateId.of(TokenBalanceState.class, address));
 
-		assertThatThrownBy(() -> transferTranslator.mapToParticleGroups(transferTokensAction, ImmutableMap.of(ShardedAppStateId.of(TokenBalanceState.class, address), state)))
+		ShardedAppStateId shardedAppStateId = ShardedAppStateId.of(TokenBalanceState.class, address);
+
+		assertThatThrownBy(() -> transferTranslator.mapToParticleGroups(transferTokensAction, ImmutableMap.of(shardedAppStateId, state)))
 			.isEqualTo(new InsufficientFundsException(token, BigDecimal.ZERO, new BigDecimal("1.0")));
 	}
 

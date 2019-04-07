@@ -1,7 +1,6 @@
 package com.radixdlt.client.application.translate;
 
 import com.radixdlt.client.core.atoms.ParticleGroup;
-import io.reactivex.Observable;
 import java.util.Collections;
 import java.util.List;
 

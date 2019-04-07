@@ -85,8 +85,9 @@ public class MintAndTransferTokensActionMapper implements StatefulActionToPartic
 
 		MintAndTransferTokensAction mintTransferAction = (MintAndTransferTokensAction) action;
 		RRI tokenDefinition = mintTransferAction.getTokenDefinitionReference();
+		ShardedAppStateId shardedAppStateId = ShardedAppStateId.of(TokenDefinitionsState.class, tokenDefinition.getAddress());
 
-		TokenDefinitionsState state = (TokenDefinitionsState) store.get(ShardedAppStateId.of(TokenDefinitionsState.class, tokenDefinition.getAddress()));
+		TokenDefinitionsState state = (TokenDefinitionsState) store.get(shardedAppStateId);
 		TokenState tokenState = getTokenStateOrError(state.getState(), tokenDefinition);
 
 		final FungibleParticleTransition<UnallocatedTokensParticle, TransferrableTokensParticle> mintTransition =
