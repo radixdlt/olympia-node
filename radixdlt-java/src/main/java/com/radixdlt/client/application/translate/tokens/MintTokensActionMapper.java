@@ -25,8 +25,6 @@ import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsM
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.particles.Particle;
 
-import io.reactivex.Observable;
-
 public class MintTokensActionMapper implements StatefulActionToParticleGroupsMapper {
 	private final FungibleParticleTransitioner<UnallocatedTokensParticle, TransferrableTokensParticle> transitioner;
 

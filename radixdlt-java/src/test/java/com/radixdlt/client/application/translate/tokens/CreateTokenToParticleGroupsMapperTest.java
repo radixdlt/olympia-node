@@ -38,6 +38,6 @@ public class CreateTokenToParticleGroupsMapperTest {
 		assertThat(particleGroups).anyMatch(p -> p.spunParticles().anyMatch(s -> s.getParticle() instanceof TransferrableTokensParticle));
 		assertThat(particleGroups).anyMatch(p -> p.spunParticles().anyMatch(s -> s.getParticle() instanceof UnallocatedTokensParticle));
 		assertThat(particleGroups).anyMatch(p -> p.spunParticles().anyMatch(s -> s.getParticle() instanceof RRIParticle));
-		assertThat(particleGroups.stream().flatMap(ParticleGroup::spunParticles).count()).isEqualTo(5);
+		assertThat(particleGroups.stream().flatMap(ParticleGroup::spunParticles).count()).isEqualTo(6);
 	}
 }

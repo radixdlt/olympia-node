@@ -78,7 +78,7 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 		if (tokenCreation.getInitialSupply().compareTo(BigDecimal.ZERO) == 0) {
 			// No initial supply -> just the token particle
 			return Collections.singletonList(
-				ParticleGroup.of(SpunParticle.up(token), SpunParticle.up(unallocated))
+				tokenCreationGroup
 			);
 		}
 
@@ -111,7 +111,7 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 		}
 
 		return Arrays.asList(
-			ParticleGroup.of(SpunParticle.up(token), SpunParticle.up(unallocated)),
+			tokenCreationGroup,
 			mintGroupBuilder.build()
 		);
 	}

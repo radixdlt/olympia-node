@@ -19,7 +19,6 @@ import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.fungible.FungibleParticleTransitioner;
 import com.radixdlt.client.core.fungible.FungibleParticleTransitioner.FungibleParticleTransition;
-import io.reactivex.Observable;
 import java.util.Collections;
 import java.util.Map.Entry;
 import java.util.Set;
