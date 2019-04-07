@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.UnaryOperator;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
@@ -31,7 +32,6 @@ import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
 import com.radixdlt.client.core.crypto.Encryptor;
-import io.reactivex.Observable;
 
 /**
  * Maps a send message action to the particles necessary to be included in an atom.
@@ -52,23 +52,7 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 						transferredList.get(0).getGranularity(),
 						transferredList.get(0).getAddress(),
 						System.nanoTime(),
-						transfer.getTokenDefinitionReference(),
-						System.currentTimeMillis() / 60000L + 60000L,
-						transferredList.get(0).getTokenPermissions()
-					)
-				)).orElse(Collections.emptyList());
-
-		UnaryOperator<List<TransferrableTokensParticle>> combiner2 =
-			transferredList -> transferredList.stream()
-				.map(TransferrableTokensParticle::getAmount)
-				.reduce(UInt256::add)
-				.map(amt -> Collections.singletonList(
-					new TransferrableTokensParticle(
-						amt,
-						transferredList.get(0).getGranularity(),
-						transferredList.get(0).getAddress(),
-						System.nanoTime(),
-						transfer.getTokenDefinitionReference(),
+						transferredList.get(0).getTokenDefinitionReference(),
 						System.currentTimeMillis() / 60000L + 60000L,
 						transferredList.get(0).getTokenPermissions()
 					)
@@ -81,7 +65,7 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 					consumable.getGranularity(),
 					transfer.getTo(),
 					System.nanoTime(),
-					transfer.getTokenDefinitionReference(),
+					consumable.getTokenDefinitionReference(),
 					System.currentTimeMillis() / 60000L + 60000L,
 					consumable.getTokenPermissions()
 				),
@@ -91,11 +75,11 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 					consumable.getGranularity(),
 					consumable.getAddress(),
 					System.nanoTime(),
-					transfer.getTokenDefinitionReference(),
+					consumable.getTokenDefinitionReference(),
 					System.currentTimeMillis() / 60000L + 60000L,
 					consumable.getTokenPermissions()
 				),
-				 combiner2,
+				combiner,
 				TransferrableTokensParticle::getAmount
 			);
 
@@ -149,59 +133,43 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 	}
 
 	@Override
-	public Observable<ShardedAppStateId> requiredState(Action action) {
+	public Set<ShardedAppStateId> requiredState(Action action) {
 		if (!(action instanceof TransferTokensAction)) {
-			return Observable.empty();
+			return Collections.emptySet();
 		}
 
 		TransferTokensAction transfer = (TransferTokensAction) action;
 
-		return Observable.just(ShardedAppStateId.of(TokenBalanceState.class, transfer.getFrom()));
+		return Collections.singleton(ShardedAppStateId.of(TokenBalanceState.class, transfer.getFrom()));
 	}
 
 	@Override
-	public Observable<Action> sideEffects(Action action, Observable<Observable<? extends ApplicationState>> store) {
-		return Observable.empty();
-	}
-
-	@Override
-	public Observable<ParticleGroup> mapToParticleGroups(
-			Action action,
-			Observable<Observable<? extends ApplicationState>> store
-	) throws InsufficientFundsException {
+	public List<ParticleGroup> mapToParticleGroups(Action action, Map<ShardedAppStateId, ? extends ApplicationState> store)
+		throws InsufficientFundsException {
 		if (!(action instanceof TransferTokensAction)) {
-			return Observable.empty();
+			return Collections.emptyList();
 		}
 
 		TransferTokensAction transfer = (TransferTokensAction) action;
+		TokenBalanceState tokenBalanceState = (TokenBalanceState) store.get(ShardedAppStateId.of(TokenBalanceState.class, transfer.getFrom()));
+		final RRI tokenRef = transfer.getTokenDefRef();
+		final Map<RRI, Balance> allConsumables = tokenBalanceState.getBalance();
+		final Balance balance = Optional.ofNullable(
+			allConsumables.get(transfer.getTokenDefRef())).orElse(Balance.empty(BigInteger.ONE));
 
-		return store.firstOrError()
-			.flatMapObservable(s -> s)
-			.map(appState -> (TokenBalanceState) appState)
-			.firstOrError()
-			.map(curState -> {
-				final RRI tokenRef = transfer.getTokenDefinitionReference();
-				final Map<RRI, Balance> allConsumables = curState.getBalance();
-				final Balance balance = Optional.ofNullable(
-					allConsumables.get(transfer.getTokenDefinitionReference())).orElse(Balance.empty(BigInteger.ONE));
-				if (balance.getAmount().compareTo(transfer.getAmount()) < 0) {
-					throw new InsufficientFundsException(
-						tokenRef, balance.getAmount(), transfer.getAmount()
-					);
-				}
-				return allConsumables;
-			})
-			.map(allConsumables ->
-				Optional.ofNullable(allConsumables.get(transfer.getTokenDefinitionReference()))
-					.map(bal -> bal.unconsumedTransferrable().collect(Collectors.toList()))
-					.orElse(Collections.emptyList())
-		)
-			.map(tokenConsumables -> {
-				List<SpunParticle> transferParticles = this.mapToParticles(transfer, tokenConsumables);
-				List<SpunParticle> attachmentParticles = this.mapToAttachmentParticles(transfer);
-				return Stream.concat(transferParticles.stream(), attachmentParticles.stream()).collect(Collectors.toList());
-			})
-			.map(ParticleGroup::of)
-			.toObservable();
+		if (balance.getAmount().compareTo(transfer.getAmount()) < 0) {
+			throw new InsufficientFundsException(
+				tokenRef, balance.getAmount(), transfer.getAmount()
+			);
+		}
+
+		List<TransferrableTokensParticle> tokenConsumables = Optional.ofNullable(allConsumables.get(transfer.getTokenDefRef()))
+			.map(bal -> bal.unconsumedTransferrable().collect(Collectors.toList()))
+			.orElse(Collections.emptyList());
+
+		List<SpunParticle> transferParticles = this.mapToParticles(transfer, tokenConsumables);
+		List<SpunParticle> attachmentParticles = this.mapToAttachmentParticles(transfer);
+
+		return Collections.singletonList(ParticleGroup.of(Stream.concat(transferParticles.stream(), attachmentParticles.stream()).collect(Collectors.toList())));
 	}
 }

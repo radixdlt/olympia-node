@@ -20,7 +20,9 @@ import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.fungible.FungibleParticleTransitioner;
 import com.radixdlt.client.core.fungible.FungibleParticleTransitioner.FungibleParticleTransition;
 import io.reactivex.Observable;
+import java.util.Collections;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.radix.utils.UInt256;
 
@@ -65,57 +67,52 @@ public class MintAndTransferTokensActionMapper implements StatefulActionToPartic
 	}
 
 	@Override
-	public Observable<ShardedAppStateId> requiredState(Action action) {
+	public Set<ShardedAppStateId> requiredState(Action action) {
 		if (!(action instanceof MintAndTransferTokensAction)) {
-			return Observable.empty();
+			return Collections.emptySet();
 		}
 
 		MintAndTransferTokensAction mintAndTransferTokensAction = (MintAndTransferTokensAction) action;
 		RadixAddress tokenDefinitionAddress = mintAndTransferTokensAction.getTokenDefinitionReference().getAddress();
 
-		return Observable.just(ShardedAppStateId.of(TokenDefinitionsState.class, tokenDefinitionAddress));
+		return Collections.singleton(ShardedAppStateId.of(TokenDefinitionsState.class, tokenDefinitionAddress));
 	}
 
 	@Override
-	public Observable<ParticleGroup> mapToParticleGroups(Action action, Observable<Observable<? extends ApplicationState>> store) {
+	public List<ParticleGroup> mapToParticleGroups(Action action, Map<ShardedAppStateId, ? extends ApplicationState> store) {
 		if (!(action instanceof MintAndTransferTokensAction)) {
-			return Observable.empty();
+			return Collections.emptyList();
 		}
 
 		MintAndTransferTokensAction mintTransferAction = (MintAndTransferTokensAction) action;
 		RRI tokenDefinition = mintTransferAction.getTokenDefinitionReference();
 
-		return store.firstOrError()
-			.flatMap(Observable::firstOrError)
-			.map(TokenDefinitionsState.class::cast)
-			.map(TokenDefinitionsState::getState)
-			.map(state -> getTokenStateOrError(state, tokenDefinition))
-			.map(state -> {
-				final FungibleParticleTransition<UnallocatedTokensParticle, TransferrableTokensParticle> mintTransition =
-					createMint(mintTransferAction.getAmount(), tokenDefinition, state);
+		TokenDefinitionsState state = (TokenDefinitionsState) store.get(ShardedAppStateId.of(TokenDefinitionsState.class, tokenDefinition.getAddress()));
+		TokenState tokenState = getTokenStateOrError(state.getState(), tokenDefinition);
 
-				final TransferrableTokensParticle transferrableTokensParticle = createTransfer(
-					state.getTokenSupplyType() == TokenSupplyType.FIXED
-						? ImmutableMap.of(
-							TokenTransition.MINT, TokenPermission.TOKEN_CREATION_ONLY,
-							TokenTransition.BURN, TokenPermission.TOKEN_CREATION_ONLY)
-						: ImmutableMap.of(
-							TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY,
-							TokenTransition.BURN, TokenPermission.TOKEN_OWNER_ONLY),
-					TokenUnitConversions.unitsToSubunits(state.getGranularity()),
-					mintTransferAction
-				);
+		final FungibleParticleTransition<UnallocatedTokensParticle, TransferrableTokensParticle> mintTransition =
+					createMint(mintTransferAction.getAmount(), tokenDefinition, tokenState);
 
-				final FungibleParticleTransition<TransferrableTokensParticle, TransferrableTokensParticle> transferTransition =
-					new FungibleParticleTransition<>(
-						ImmutableList.copyOf(mintTransition.getTransitioned()),
-						ImmutableList.of(),
-						ImmutableList.of(transferrableTokensParticle)
-					);
+		final TransferrableTokensParticle transferredTokensParticle = createTransfer(
+			tokenState.getTokenSupplyType() == TokenSupplyType.FIXED
+				? ImmutableMap.of(
+					TokenTransition.MINT, TokenPermission.TOKEN_CREATION_ONLY,
+					TokenTransition.BURN, TokenPermission.TOKEN_CREATION_ONLY)
+				: ImmutableMap.of(
+					TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY,
+					TokenTransition.BURN, TokenPermission.TOKEN_OWNER_ONLY),
+			TokenUnitConversions.unitsToSubunits(tokenState.getGranularity()),
+			mintTransferAction
+		);
 
-				return mintAndTransferToGroupMapper.apply(mintTransition, transferTransition);
-			})
-			.flatMapObservable(Observable::fromIterable);
+		final FungibleParticleTransition<TransferrableTokensParticle, TransferrableTokensParticle> transferTransition =
+			new FungibleParticleTransition<>(
+				ImmutableList.copyOf(mintTransition.getTransitioned()),
+				ImmutableList.of(),
+				ImmutableList.of(transferredTokensParticle)
+			);
+
+		return mintAndTransferToGroupMapper.apply(mintTransition, transferTransition);
 	}
 
 	private TokenState getTokenStateOrError(Map<RRI, TokenState> m, RRI tokenDefinition) {

@@ -9,7 +9,9 @@ import com.radixdlt.client.core.fungible.FungibleParticleTransitioner;
 import com.radixdlt.client.core.fungible.FungibleParticleTransitioner.FungibleParticleTransition;
 import java.math.BigDecimal;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
@@ -22,39 +24,70 @@ import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsM
 import com.radixdlt.client.application.translate.tokens.TokenBalanceState.Balance;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 
-import io.reactivex.Observable;
 import org.radix.utils.UInt256;
 
 public class BurnTokensActionMapper implements StatefulActionToParticleGroupsMapper {
+	private final FungibleParticleTransitioner<TransferrableTokensParticle, UnallocatedTokensParticle> transitioner;
+
 	public BurnTokensActionMapper() {
+		this.transitioner = new FungibleParticleTransitioner<>(
+			(amt, consumable) -> new UnallocatedTokensParticle(
+				amt,
+				consumable.getGranularity(),
+				System.nanoTime(),
+				consumable.getTokenDefinitionReference(),
+				consumable.getTokenPermissions()
+			),
+			burnedList -> burnedList,
+			(amt, consumable) -> new TransferrableTokensParticle(
+				amt,
+				consumable.getGranularity(),
+				consumable.getAddress(),
+				System.nanoTime(),
+				consumable.getTokenDefinitionReference(),
+				System.currentTimeMillis() / 60000L + 60000L,
+				consumable.getTokenPermissions()
+			),
+			transferredList -> transferredList.stream()
+				.map(TransferrableTokensParticle::getAmount)
+				.reduce(UInt256::add)
+				.map(amt -> Collections.singletonList(
+					new TransferrableTokensParticle(
+						amt,
+						transferredList.get(0).getGranularity(),
+						transferredList.get(0).getAddress(),
+						System.nanoTime(),
+						transferredList.get(0).getTokenDefinitionReference(),
+						System.currentTimeMillis() / 60000L + 60000L,
+						transferredList.get(0).getTokenPermissions()
+					)
+				)).orElse(Collections.emptyList()),
+			TransferrableTokensParticle::getAmount
+		);
 	}
 
 	@Override
-	public Observable<ShardedAppStateId> requiredState(Action action) {
+	public Set<ShardedAppStateId> requiredState(Action action) {
 		if (!(action instanceof BurnTokensAction)) {
-			return Observable.empty();
+			return Collections.emptySet();
 		}
 
 		BurnTokensAction burnTokensAction = (BurnTokensAction) action;
 
 		RadixAddress address = burnTokensAction.getAddress();
 
-		return Observable.just(ShardedAppStateId.of(TokenBalanceState.class, address));
+		return Collections.singleton(ShardedAppStateId.of(TokenBalanceState.class, address));
 	}
 
 	@Override
-	public Observable<ParticleGroup> mapToParticleGroups(Action action, Observable<Observable<? extends ApplicationState>> store) {
+	public List<ParticleGroup> mapToParticleGroups(Action action, Map<ShardedAppStateId, ? extends ApplicationState> store) {
 		if (!(action instanceof BurnTokensAction)) {
-			return Observable.empty();
+			return Collections.emptyList();
 		}
 
 		BurnTokensAction burnTokensAction = (BurnTokensAction) action;
-		return store.firstOrError()
-			.flatMapObservable(s -> s)
-			.map(TokenBalanceState.class::cast)
-			.firstOrError()
-			.toObservable()
-			.flatMap(state -> Observable.just(this.map(burnTokensAction, state)));
+		TokenBalanceState state = (TokenBalanceState) store.get(ShardedAppStateId.of(TokenBalanceState.class, burnTokensAction.getAddress()));
+		return Collections.singletonList(this.map(burnTokensAction, state));
 	}
 
 	private ParticleGroup map(BurnTokensAction burnTokensAction, TokenBalanceState curState) {
@@ -71,42 +104,6 @@ public class BurnTokensActionMapper implements StatefulActionToParticleGroupsMap
 		if (balance.compareTo(burnAmount) < 0) {
 			throw new InsufficientFundsException(tokenRef, balance, burnAmount);
 		}
-
-		final FungibleParticleTransitioner<TransferrableTokensParticle, UnallocatedTokensParticle> transitioner =
-			new FungibleParticleTransitioner<>(
-				(amt, consumable) -> new UnallocatedTokensParticle(
-					amt,
-					consumable.getGranularity(),
-					System.nanoTime(),
-					burnTokensAction.getTokenDefinitionReference(),
-					consumable.getTokenPermissions()
-				),
-				burnedList -> burnedList,
-				(amt, consumable) -> new TransferrableTokensParticle(
-					amt,
-					consumable.getGranularity(),
-					consumable.getAddress(),
-					System.nanoTime(),
-					burnTokensAction.getTokenDefinitionReference(),
-					System.currentTimeMillis() / 60000L + 60000L,
-					consumable.getTokenPermissions()
-				),
-				transferredList -> transferredList.stream()
-					.map(TransferrableTokensParticle::getAmount)
-					.reduce(UInt256::add)
-					.map(amt -> Collections.singletonList(
-						new TransferrableTokensParticle(
-							amt,
-							transferredList.get(0).getGranularity(),
-							transferredList.get(0).getAddress(),
-							System.nanoTime(),
-							burnTokensAction.getTokenDefinitionReference(),
-							System.currentTimeMillis() / 60000L + 60000L,
-							transferredList.get(0).getTokenPermissions()
-						)
-					)).orElse(Collections.emptyList()),
-				TransferrableTokensParticle::getAmount
-			);
 
 		FungibleParticleTransition<TransferrableTokensParticle, UnallocatedTokensParticle> transition = transitioner.createTransition(
 			bal.unconsumedTransferrable().collect(Collectors.toList()),

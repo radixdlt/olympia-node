@@ -2,6 +2,10 @@ package com.radixdlt.client.application.translate;
 
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import io.reactivex.Observable;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Maps a high level application action to lower level spun particles used
@@ -17,9 +21,9 @@ public interface StatefulActionToParticleGroupsMapper {
 	 * the type of state needed to create particles.
 	 *
 	 * @param action the action to get the required context about
-	 * @return observable of required contexts required to create spun particles for the action
+	 * @return required contexts required to create spun particles for the action
 	 */
-	Observable<ShardedAppStateId> requiredState(Action action);
+	Set<ShardedAppStateId> requiredState(Action action);
 
 	/**
 	 * Returns an observable of actions which will be added to the list
@@ -29,17 +33,17 @@ public interface StatefulActionToParticleGroupsMapper {
 	 * @param store  application state requested as specified by requiredState()
 	 * @return additional actions to be included
 	 */
-	default Observable<Action> sideEffects(Action action, Observable<Observable<? extends ApplicationState>> store) {
-		return Observable.empty();
+	default List<Action> sideEffects(Action action, Map<ShardedAppStateId, ? extends ApplicationState> store) {
+		return Collections.emptyList();
 	}
 
 	/**
-	 * Creates new spun particles to be added to an atom given a high level
+	 * Creates new particle groups to be added to an atom given a high level
 	 * action and application state
 	 *
 	 * @param action the action to map
 	 * @param store  application state in the same order as returned from requiredState()
-	 * @return observable of spun particles created given an action
+	 * @return Particle groups created given an action
 	 */
-	Observable<ParticleGroup> mapToParticleGroups(Action action, Observable<Observable<? extends ApplicationState>> store);
+	List<ParticleGroup> mapToParticleGroups(Action action, Map<ShardedAppStateId, ? extends ApplicationState> store);
 }
