@@ -1,5 +1,6 @@
 package com.radix.regression.doublespend;
 
+import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.ApplicationState;
@@ -11,6 +12,8 @@ import com.radixdlt.client.application.translate.tokens.TokenBalanceState;
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle.TokenTransition;
+import com.radixdlt.client.atommodel.tokens.TokenPermission;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.RRI;
@@ -21,6 +24,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 import org.assertj.core.api.Condition;
@@ -41,59 +45,54 @@ public class DoubleSpendWithInterDependencyTest {
 
 	private static class SendToSelfTwiceActionMapper implements StatefulActionToParticleGroupsMapper {
 		@Override
-		public Observable<ShardedAppStateId> requiredState(Action action) {
+		public Set<ShardedAppStateId> requiredState(Action action) {
 			if (!(action instanceof SendToSelfTwiceAction)) {
-				return Observable.empty();
+				return Collections.emptySet();
 			}
 
 			SendToSelfTwiceAction s = (SendToSelfTwiceAction) action;
 
-			return Observable.just(ShardedAppStateId.of(TokenBalanceState.class, s.self));
+			return Collections.singleton(ShardedAppStateId.of(TokenBalanceState.class, s.self));
 		}
 
 		@Override
-		public Observable<ParticleGroup> mapToParticleGroups(Action action, Observable<Observable<? extends ApplicationState>> store) {
+		public List<ParticleGroup> mapToParticleGroups(Action action, Map<ShardedAppStateId, ? extends ApplicationState> store) {
 			if (!(action instanceof SendToSelfTwiceAction)) {
-				return Observable.empty();
+				return Collections.emptyList();
 			}
 
 			SendToSelfTwiceAction s = (SendToSelfTwiceAction) action;
+			TokenBalanceState tokenBalanceState = (TokenBalanceState) store.get(ShardedAppStateId.of(TokenBalanceState.class, s.self));
 
-			return store.firstOrError()
-				.flatMap(Observable::firstOrError)
-				.map(appState -> {
-					TokenBalanceState tokenBalanceState = (TokenBalanceState) appState;
-					TransferrableTokensParticle consumable = tokenBalanceState.getBalance().get(s.tokDefRef).unconsumedTransferrable()
-						.findFirst()
-						.orElseThrow(IllegalStateException::new);
+			TransferrableTokensParticle consumable = tokenBalanceState.getBalance().get(s.tokDefRef).unconsumedTransferrable()
+				.findFirst()
+				.orElseThrow(IllegalStateException::new);
 
-					final UInt256 amount = consumable.getAmount();
-					final Supplier<TransferrableTokensParticle> particleSupplier = () -> new TransferrableTokensParticle(
-						amount,
-						TokenUnitConversions.unitsToSubunits(BigDecimal.ONE),
-						s.self,
-						System.nanoTime(),
-						s.tokDefRef,
-						System.currentTimeMillis() / 60000L + 60000L,
-						consumable.getTokenPermissions()
-					);
+			final UInt256 amount = consumable.getAmount();
+			final Supplier<TransferrableTokensParticle> particleSupplier = () -> new TransferrableTokensParticle(
+				amount,
+				TokenUnitConversions.unitsToSubunits(BigDecimal.ONE),
+				s.self,
+				System.nanoTime(),
+				s.tokDefRef,
+				System.currentTimeMillis() / 60000L + 60000L,
+				ImmutableMap.of(TokenTransition.MINT, TokenPermission.TOKEN_CREATION_ONLY, TokenTransition.BURN, TokenPermission.TOKEN_CREATION_ONLY)
+			);
 
-					TransferrableTokensParticle transferredTokensParticle0 = particleSupplier.get();
-					TransferrableTokensParticle transferredTokensParticle1 = particleSupplier.get();
+			TransferrableTokensParticle transferredTokensParticle0 = particleSupplier.get();
+			TransferrableTokensParticle transferredTokensParticle1 = particleSupplier.get();
 
-					return Arrays.asList(
-						ParticleGroup.of(
-							SpunParticle.down((Particle) consumable),
-							SpunParticle.up(transferredTokensParticle0)
-						),
-						ParticleGroup.of(
-							SpunParticle.down(transferredTokensParticle0),
-							SpunParticle.up(transferredTokensParticle1)
-						)
-					);
-				})
-				.toObservable()
-				.flatMapIterable(l -> l);
+
+			return Arrays.asList(
+				ParticleGroup.of(
+					SpunParticle.down((Particle) consumable),
+					SpunParticle.up(transferredTokensParticle0)
+				),
+				ParticleGroup.of(
+					SpunParticle.down(transferredTokensParticle0),
+					SpunParticle.up(transferredTokensParticle1)
+				)
+			);
 		}
 	}
 
