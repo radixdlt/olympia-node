@@ -1,5 +1,6 @@
 package com.radixdlt.client.application.translate.tokens;
 
+import com.radixdlt.client.atommodel.rri.RRIParticle;
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
 import java.util.List;
@@ -12,6 +13,7 @@ import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenS
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -31,17 +33,11 @@ public class CreateTokenToParticleGroupsMapperTest {
 		when(tokenCreation.getTokenSupplyType()).thenReturn(TokenSupplyType.MUTABLE);
 
 		CreateTokenToParticleGroupsMapper createTokenToParticlesMapper = new CreateTokenToParticleGroupsMapper();
-		TestObserver<List<ParticleGroup>> testObserver = TestObserver.create();
-		createTokenToParticlesMapper.mapToParticleGroups(tokenCreation).toList().subscribe(testObserver);
-		testObserver.assertValue(particleGroups ->
-			particleGroups.stream()
-				.flatMap(ParticleGroup::spunParticles)
-				.anyMatch(s -> s.getParticle() instanceof TokenDefinitionParticle)
-				&& particleGroups.stream().flatMap(ParticleGroup::spunParticles)
-					.anyMatch(s -> s.getParticle() instanceof TransferrableTokensParticle)
-				&& particleGroups.stream().flatMap(ParticleGroup::spunParticles)
-					.anyMatch(s -> s.getParticle() instanceof UnallocatedTokensParticle)
-				&& particleGroups.stream().flatMap(ParticleGroup::spunParticles).count() == 6
-		);
+		List<ParticleGroup> particleGroups = createTokenToParticlesMapper.mapToParticleGroups(tokenCreation);
+		assertThat(particleGroups).anyMatch(p -> p.spunParticles().anyMatch(s -> s.getParticle() instanceof TokenDefinitionParticle));
+		assertThat(particleGroups).anyMatch(p -> p.spunParticles().anyMatch(s -> s.getParticle() instanceof TransferrableTokensParticle));
+		assertThat(particleGroups).anyMatch(p -> p.spunParticles().anyMatch(s -> s.getParticle() instanceof UnallocatedTokensParticle));
+		assertThat(particleGroups).anyMatch(p -> p.spunParticles().anyMatch(s -> s.getParticle() instanceof RRIParticle));
+		assertThat(particleGroups.stream().flatMap(ParticleGroup::spunParticles).count()).isEqualTo(5);
 	}
 }

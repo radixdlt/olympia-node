@@ -10,6 +10,7 @@ import java.math.BigDecimal;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -773,15 +774,15 @@ public class RadixApplicationAPI {
 				});
 	}
 
-	private Observable<Action> collectActionAndEffects(Action action) {
-		Observable<Action> statelessEffects = Observable
+	private Observable<List<Action>> collectActionAndEffects(Action action) {
+		Observable<List<Action>> statelessEffects = Observable
 			.fromIterable(this.statelessActionToParticleGroupsMappers)
-			.flatMap(mapper -> mapper.sideEffects(action));
+			.map(mapper -> mapper.sideEffects(action));
 		Observable<List<Action>> statefulEffects = this.statefulMappersToSideEffects(action);
 
-		return Observable.concat(statelessEffects, statefulEffects.flatMapIterable(l -> l))
+		return Observable.concat(statelessEffects.flatMapIterable(l -> l), statefulEffects.flatMapIterable(l -> l))
 			.flatMap(RadixApplicationAPI.this::collectActionAndEffects)
-			.startWith(action);
+			.startWith(Collections.singletonList(action));
 	}
 
 	/**
@@ -811,11 +812,11 @@ public class RadixApplicationAPI {
 	 * @return a cold single of an atom mapped from an action
 	 */
 	public Single<UnsignedAtom> buildAtom(Action action) {
-		final Observable<Action> allActions = this.collectActionAndEffects(action);
+		final Observable<Action> allActions = this.collectActionAndEffects(action).flatMapIterable(l -> l);
 		final Observable<ParticleGroup> statelessParticleGroups = allActions.flatMap(a ->
 			Observable
 				.fromIterable(this.statelessActionToParticleGroupsMappers)
-				.flatMap(mapper -> mapper.mapToParticleGroups(a))
+				.flatMapIterable(mapper -> mapper.mapToParticleGroups(a))
 		);
 		final Observable<List<ParticleGroup>> statefulParticleGroups = this.statefulMappersToParticleGroups(allActions);
 

@@ -17,6 +17,7 @@ import io.reactivex.Observable;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -65,11 +66,6 @@ public class SendMessageToParticleGroupsMapper implements StatelessActionToParti
 		this.encryptionScheme = encryptionScheme;
 	}
 
-	@Override
-	public Observable<Action> sideEffects(Action action) {
-		return Observable.empty();
-	}
-
 	/**
 	 * If SendMessageAction is unencrypted, returns a single message particle containing the
 	 * payload data.
@@ -82,9 +78,9 @@ public class SendMessageToParticleGroupsMapper implements StatelessActionToParti
 	 * @return observable of spunparticles to be included in an atom for a given action
 	 */
 	@Override
-	public Observable<ParticleGroup> mapToParticleGroups(Action action) {
+	public List<ParticleGroup> mapToParticleGroups(Action action) {
 		if (!(action instanceof SendMessageAction)) {
-			return Observable.empty();
+			return Collections.emptyList();
 		}
 
 		SendMessageAction sendMessageAction = (SendMessageAction) action;
@@ -127,6 +123,6 @@ public class SendMessageToParticleGroupsMapper implements StatelessActionToParti
 				.build();
 		particles.add(SpunParticle.up(messageParticle));
 
-		return Observable.just(ParticleGroup.of(particles));
+		return Collections.singletonList(ParticleGroup.of(particles));
 	}
 }
