@@ -11,8 +11,6 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import com.radixdlt.client.atommodel.tokens.BurnedTokensParticle;
-import com.radixdlt.client.atommodel.tokens.ConsumableTokens;
 import com.radixdlt.client.atommodel.tokens.TransferredTokensParticle;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.particles.Particle;
@@ -106,7 +104,7 @@ public class BurnTokensActionMapper implements StatefulActionToParticleGroupsMap
 							transferredList.get(0).getTokenPermissions()
 						)
 					)).orElse(Collections.emptyList()),
-				ConsumableTokens::getAmount
+				TransferredTokensParticle::getAmount
 			);
 
 		FungibleParticleTransition<TransferredTokensParticle, UnallocatedTokensParticle> transition = transitioner.createTransition(

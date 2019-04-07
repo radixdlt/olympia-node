@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
 import com.radixdlt.client.atommodel.Accountable;
-import com.radixdlt.client.atommodel.Fungible;
 import com.radixdlt.client.atommodel.Ownable;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle.TokenTransition;
@@ -24,7 +23,7 @@ import org.radix.utils.UInt256;
  *  A particle which represents an amount of unallocated tokens which can be minted.
  */
 @SerializerId2("UNALLOCATEDTOKENSPARTICLE")
-public class UnallocatedTokensParticle extends Particle implements Accountable, Ownable, Fungible {
+public class UnallocatedTokensParticle extends Particle implements Accountable, Ownable {
 
 	@JsonProperty("tokenDefinitionReference")
 	@DsonOutput(DsonOutput.Output.ALL)
@@ -125,12 +124,10 @@ public class UnallocatedTokensParticle extends Particle implements Accountable, 
 			nonce);
 	}
 
-	@Override
 	public UInt256 getAmount() {
 		return this.amount;
 	}
 
-	@Override
 	public long getNonce() {
 		return this.nonce;
 	}

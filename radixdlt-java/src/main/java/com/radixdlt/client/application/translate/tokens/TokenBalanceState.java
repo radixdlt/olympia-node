@@ -14,8 +14,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Stream;
 
-import com.radixdlt.client.atommodel.tokens.ConsumableTokens;
-import com.radixdlt.client.core.atoms.particles.Particle;
 import org.radix.utils.UInt256s;
 
 /**

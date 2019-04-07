@@ -1,9 +1,9 @@
 package com.radixdlt.client.application.translate.tokens;
 
+import com.radixdlt.client.atommodel.tokens.TransferredTokensParticle;
 import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
 import java.util.List;
 
-import com.radixdlt.client.atommodel.tokens.MintedTokensParticle;
 import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import org.junit.Test;
@@ -38,7 +38,7 @@ public class CreateTokenToParticleGroupsMapperTest {
 				.flatMap(ParticleGroup::spunParticles)
 				.anyMatch(s -> s.getParticle() instanceof TokenDefinitionParticle)
 				&& particleGroups.stream().flatMap(ParticleGroup::spunParticles)
-					.anyMatch(s -> s.getParticle() instanceof MintedTokensParticle)
+					.anyMatch(s -> s.getParticle() instanceof TransferredTokensParticle)
 				&& particleGroups.stream().flatMap(ParticleGroup::spunParticles)
 					.anyMatch(s -> s.getParticle() instanceof UnallocatedTokensParticle)
 				&& particleGroups.stream().flatMap(ParticleGroup::spunParticles).count() == 5

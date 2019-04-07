@@ -4,8 +4,6 @@ import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.StatelessActionToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
-import com.radixdlt.client.atommodel.tokens.BurnedTokensParticle;
-import com.radixdlt.client.atommodel.tokens.MintedTokensParticle;
 import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle.TokenTransition;
 import com.radixdlt.client.atommodel.tokens.TokenPermission;

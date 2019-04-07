@@ -4,8 +4,6 @@ import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
 import java.util.Arrays;
 import java.util.Collection;
 
-import com.radixdlt.client.atommodel.tokens.BurnedTokensParticle;
-import com.radixdlt.client.atommodel.tokens.MintedTokensParticle;
 import com.radixdlt.client.atommodel.tokens.TransferredTokensParticle;
 import org.radix.serialization2.Serialization;
 import org.radix.serialization2.SerializationPolicy;
@@ -55,9 +53,7 @@ public final class Serialize {
 				MessageParticle.class,
 				TokenDefinitionParticle.class,
 				UnallocatedTokensParticle.class,
-				MintedTokensParticle.class,
 				TransferredTokensParticle.class,
-				BurnedTokensParticle.class,
 				UniqueParticle.class,
 
 				ECKeyPair.class,

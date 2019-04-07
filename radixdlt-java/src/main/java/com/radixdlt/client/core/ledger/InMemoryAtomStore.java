@@ -111,7 +111,8 @@ public class InMemoryAtomStore implements AtomStore {
 							// TODO: Should we DELETE atoms which are dependent on these atoms as well?
 							List<AtomObservation> observationsContainingDown = observation.getAtom().particles(Spin.UP)
 								.flatMap(p -> atomsObservationState.atomContainingDown(p)
-									.map(o -> o.isStore() && !o.getAtom().getHid().equals(observation.getAtom().getHid()) ? Stream.of(o) : Stream.<AtomObservation>empty())
+									.map(o -> o.isStore() && !o.getAtom().getHid().equals(observation.getAtom().getHid())
+										? Stream.of(o) : Stream.<AtomObservation>empty())
 									.orElse(Stream.empty())
 								)
 								.collect(Collectors.toList());

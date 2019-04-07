@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
 import com.radixdlt.client.atommodel.Accountable;
-import com.radixdlt.client.atommodel.Fungible;
 import com.radixdlt.client.atommodel.Ownable;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle.TokenTransition;
@@ -26,7 +25,7 @@ import java.util.Set;
  *  owned by some key owner and stored in an account.
  */
 @SerializerId2("TRANSFERREDTOKENSPARTICLE")
-public final class TransferredTokensParticle extends Particle implements Accountable, Ownable, Fungible, ConsumingTokens, ConsumableTokens {
+public final class TransferredTokensParticle extends Particle implements Accountable, Ownable {
 	@JsonProperty("address")
 	@DsonOutput(Output.ALL)
 	private RadixAddress address;
@@ -116,22 +115,18 @@ public final class TransferredTokensParticle extends Particle implements Account
 		return this.address;
 	}
 
-	@Override
 	public long getNonce() {
 		return this.nonce;
 	}
 
-	@Override
 	public TokenDefinitionReference getTokenDefinitionReference() {
 		return TokenDefinitionReference.of(tokenDefinitionReference.getAddress(), tokenDefinitionReference.getUnique());
 	}
 
-	@Override
 	public UInt256 getAmount() {
 		return this.amount;
 	}
 
-	@Override
 	public UInt256 getGranularity() {
 		return this.granularity;
 	}

@@ -13,7 +13,6 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import com.radixdlt.client.atommodel.tokens.ConsumableTokens;
 import com.radixdlt.client.atommodel.tokens.TransferredTokensParticle;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import java.util.stream.Stream;
@@ -44,7 +43,7 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 		// FIXME: figure out way to combine the following two similar combiners
 		Function<List<TransferredTokensParticle>, List<TransferredTokensParticle>> combiner =
 			transferredList -> transferredList.stream()
-				.map(ConsumableTokens::getAmount)
+				.map(TransferredTokensParticle::getAmount)
 				.reduce(UInt256::add)
 				.map(amt -> Collections.singletonList(
 					new TransferredTokensParticle(
@@ -96,7 +95,7 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 					consumable.getTokenPermissions()
 				),
 				 combiner2,
-				ConsumableTokens::getAmount
+				TransferredTokensParticle::getAmount
 			);
 
 		FungibleParticleTransition<TransferredTokensParticle, TransferredTokensParticle> transition = transitioner.createTransition(
