@@ -8,6 +8,7 @@ import com.radixdlt.client.atommodel.tokens.BurnedTokensParticle;
 import com.radixdlt.client.atommodel.tokens.MintedTokensParticle;
 import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.client.atommodel.tokens.TokenPermission;
+import com.radixdlt.client.atommodel.tokens.TransferredTokensParticle;
 import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.ParticleGroup.ParticleGroupBuilder;
@@ -65,7 +66,8 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 			UInt256.MAX_VALUE,
 			TokenUnitConversions.unitsToSubunits(tokenCreation.getGranularity()),
 			System.currentTimeMillis(),
-			token.getTokenDefinitionReference()
+			token.getTokenDefinitionReference(),
+			token.getTokenPermissions()
 		);
 
 		if (tokenCreation.getInitialSupply().compareTo(BigDecimal.ZERO) == 0) {
@@ -75,13 +77,14 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 			);
 		}
 
-		MintedTokensParticle minted = new MintedTokensParticle(
+		TransferredTokensParticle minted = new TransferredTokensParticle(
 			TokenUnitConversions.unitsToSubunits(tokenCreation.getInitialSupply()),
 			TokenUnitConversions.unitsToSubunits(tokenCreation.getGranularity()),
 			tokenCreation.getAddress(),
 			System.nanoTime(),
 			token.getTokenDefinitionReference(),
-			System.currentTimeMillis() / 60000L + 60000
+			System.currentTimeMillis() / 60000L + 60000,
+			token.getTokenPermissions()
 		);
 
 		ParticleGroupBuilder mintGroupBuilder = ParticleGroup.builder()
@@ -95,7 +98,8 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 				leftOver,
 				TokenUnitConversions.unitsToSubunits(tokenCreation.getGranularity()),
 				System.currentTimeMillis(),
-				token.getTokenDefinitionReference()
+				token.getTokenDefinitionReference(),
+				token.getTokenPermissions()
 			);
 
 			mintGroupBuilder.addParticle(unallocatedLeftOver, Spin.UP);

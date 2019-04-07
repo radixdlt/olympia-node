@@ -9,7 +9,9 @@ import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import org.radix.common.ID.EUID;
+import org.radix.utils.UInt256;
 
 public class TokenDefinitionsState implements ApplicationState {
 	private final ImmutableMap<TokenDefinitionReference, TokenState> state;
@@ -40,11 +42,16 @@ public class TokenDefinitionsState implements ApplicationState {
 			newTokenUnallocated.remove(unallocatedTokensParticle.getHid());
 		}
 
+		UInt256 unallocatedAmount = newTokenUnallocated.entrySet().stream()
+			.map(Entry::getValue)
+			.map(UnallocatedTokensParticle::getAmount)
+			.reduce(UInt256.ZERO, UInt256::add);
+
 		newState.put(ref, new TokenState(
 			tokenState.getName(),
 			tokenState.getIso(),
 			tokenState.getDescription(),
-			tokenState.getTotalSupply(),
+			TokenUnitConversions.subunitsToUnits(UInt256.MAX_VALUE.subtract(unallocatedAmount)),
 			tokenState.getGranularity(),
 			tokenState.getTokenSupplyType(),
 			newTokenUnallocated

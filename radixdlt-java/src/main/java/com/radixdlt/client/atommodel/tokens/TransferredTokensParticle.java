@@ -1,6 +1,7 @@
 package com.radixdlt.client.atommodel.tokens;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
 import com.radixdlt.client.atommodel.Accountable;
 import com.radixdlt.client.atommodel.Fungible;
@@ -8,6 +9,8 @@ import com.radixdlt.client.atommodel.Ownable;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.RadixResourceIdentifer;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.DsonOutput.Output;
 import org.radix.serialization2.SerializerId2;
@@ -47,11 +50,20 @@ public final class TransferredTokensParticle extends Particle implements Account
 	@DsonOutput(Output.ALL)
 	private UInt256 amount;
 
+	private Map<Class<? extends Particle>, TokenPermission> tokenPermissions;
+
 	protected TransferredTokensParticle() {
 	}
 
-	public TransferredTokensParticle(UInt256 amount, UInt256 granularity, RadixAddress address, long nonce,
-	                                 TokenDefinitionReference tokenDefinitionReference, long planck) {
+	public TransferredTokensParticle(
+		UInt256 amount,
+		UInt256 granularity,
+		RadixAddress address,
+		long nonce,
+		TokenDefinitionReference tokenDefinitionReference,
+		long planck,
+		Map<Class<? extends Particle>, TokenPermission> tokenPermissions
+	) {
 		super();
 
 		// Redundant null check added for completeness
@@ -67,6 +79,30 @@ public final class TransferredTokensParticle extends Particle implements Account
 		this.planck = planck;
 		this.nonce = nonce;
 		this.amount = amount;
+		this.tokenPermissions = ImmutableMap.copyOf(tokenPermissions);
+	}
+
+	public Map<Class<? extends Particle>, TokenPermission> getTokenPermissions() {
+		return tokenPermissions;
+	}
+
+	@JsonProperty("permissions")
+	@DsonOutput(value = {Output.ALL})
+	private Map<String, String> getJsonPermissions() {
+		return this.tokenPermissions.entrySet().stream()
+			.collect(Collectors.toMap(e -> TokenDefinitionParticle.tokenDefinitionToVerb(e.getKey()), e -> e.getValue().name().toLowerCase()));
+	}
+
+	@JsonProperty("permissions")
+	private void setJsonPermissions(Map<String, String> permissions) {
+		if (permissions != null) {
+			this.tokenPermissions = permissions.entrySet().stream()
+				.collect(Collectors.toMap(
+					e -> TokenDefinitionParticle.verbToTokenClass(e.getKey()), e -> TokenPermission.valueOf(e.getValue().toUpperCase())
+				));
+		} else {
+			throw new IllegalArgumentException("Permissions cannot be null.");
+		}
 	}
 
 	@Override

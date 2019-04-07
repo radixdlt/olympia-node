@@ -40,7 +40,7 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 	public TransferTokensToParticleGroupsMapper() {
 	}
 
-	private List<SpunParticle> mapToParticles(TransferTokensAction transfer, List<ConsumableTokens> currentParticles) {
+	private List<SpunParticle> mapToParticles(TransferTokensAction transfer, List<TransferredTokensParticle> currentParticles) {
 		// FIXME: figure out way to combine the following two similar combiners
 		Function<List<TransferredTokensParticle>, List<TransferredTokensParticle>> combiner =
 			transferredList -> transferredList.stream()
@@ -53,26 +53,28 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 						transferredList.get(0).getAddress(),
 						System.nanoTime(),
 						transfer.getTokenDefinitionReference(),
-						System.currentTimeMillis() / 60000L + 60000L
+						System.currentTimeMillis() / 60000L + 60000L,
+						transferredList.get(0).getTokenPermissions()
 					)
 				)).orElse(Collections.emptyList());
 
-		Function<List<ConsumableTokens>, List<ConsumableTokens>> combiner2 =
+		Function<List<TransferredTokensParticle>, List<TransferredTokensParticle>> combiner2 =
 			transferredList -> transferredList.stream()
-				.map(ConsumableTokens::getAmount)
+				.map(TransferredTokensParticle::getAmount)
 				.reduce(UInt256::add)
-				.map(amt -> Collections.<ConsumableTokens>singletonList(
+				.map(amt -> Collections.singletonList(
 					new TransferredTokensParticle(
 						amt,
 						transferredList.get(0).getGranularity(),
 						transferredList.get(0).getAddress(),
 						System.nanoTime(),
 						transfer.getTokenDefinitionReference(),
-						System.currentTimeMillis() / 60000L + 60000L
+						System.currentTimeMillis() / 60000L + 60000L,
+						transferredList.get(0).getTokenPermissions()
 					)
 				)).orElse(Collections.emptyList());
 
-		final FungibleParticleTransitioner<ConsumableTokens, TransferredTokensParticle> transitioner =
+		final FungibleParticleTransitioner<TransferredTokensParticle, TransferredTokensParticle> transitioner =
 			new FungibleParticleTransitioner<>(
 				(amt, consumable) -> new TransferredTokensParticle(
 					amt,
@@ -80,7 +82,8 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 					transfer.getTo(),
 					System.nanoTime(),
 					transfer.getTokenDefinitionReference(),
-					System.currentTimeMillis() / 60000L + 60000L
+					System.currentTimeMillis() / 60000L + 60000L,
+					consumable.getTokenPermissions()
 				),
 				combiner,
 				(amt, consumable) -> new TransferredTokensParticle(
@@ -89,13 +92,14 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 					consumable.getAddress(),
 					System.nanoTime(),
 					transfer.getTokenDefinitionReference(),
-					System.currentTimeMillis() / 60000L + 60000L
+					System.currentTimeMillis() / 60000L + 60000L,
+					consumable.getTokenPermissions()
 				),
 				 combiner2,
 				ConsumableTokens::getAmount
 			);
 
-		FungibleParticleTransition<ConsumableTokens, TransferredTokensParticle> transition = transitioner.createTransition(
+		FungibleParticleTransition<TransferredTokensParticle, TransferredTokensParticle> transition = transitioner.createTransition(
 			currentParticles,
 			TokenUnitConversions.unitsToSubunits(transfer.getAmount())
 		);

@@ -1,6 +1,7 @@
 package com.radixdlt.client.application.translate.tokens;
 
 import com.radixdlt.client.application.translate.ShardedAppStateId;
+import com.radixdlt.client.atommodel.tokens.TransferredTokensParticle;
 import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.core.atoms.ParticleGroup.ParticleGroupBuilder;
 import com.radixdlt.client.core.atoms.particles.Spin;
@@ -9,7 +10,6 @@ import com.radixdlt.client.core.fungible.FungibleParticleTransitioner.FungiblePa
 import java.math.BigDecimal;
 import java.util.Map;
 
-import com.radixdlt.client.atommodel.tokens.MintedTokensParticle;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
@@ -20,7 +20,6 @@ import com.radixdlt.client.application.translate.ApplicationState;
 import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.particles.Particle;
-import com.radixdlt.client.core.atoms.particles.SpunParticle;
 
 import io.reactivex.Observable;
 
@@ -68,28 +67,30 @@ public class MintTokensActionMapper implements StatefulActionToParticleGroupsMap
 					);
 				}
 
-				final FungibleParticleTransitioner<UnallocatedTokensParticle, MintedTokensParticle> transitioner =
+				final FungibleParticleTransitioner<UnallocatedTokensParticle, TransferredTokensParticle> transitioner =
 					new FungibleParticleTransitioner<>(
-						(amt, consumable) -> new MintedTokensParticle(
+						(amt, consumable) -> new TransferredTokensParticle(
 							amt,
 							consumable.getGranularity(),
 							tokenDefinition.getAddress(),
 							System.nanoTime(),
 							tokenDefinition,
-							System.currentTimeMillis() / 60000L + 60000L
+							System.currentTimeMillis() / 60000L + 60000L,
+							consumable.getTokenPermissions()
 						),
 						mintedTokens -> mintedTokens,
 						(amt, consumable) -> new UnallocatedTokensParticle(
 							amt,
 							consumable.getGranularity(),
 							System.nanoTime(),
-							tokenDefinition
+							tokenDefinition,
+							consumable.getTokenPermissions()
 						),
 						unallocated -> unallocated,
 						UnallocatedTokensParticle::getAmount
 					);
 
-				FungibleParticleTransition<UnallocatedTokensParticle, MintedTokensParticle> transition = transitioner.createTransition(
+				FungibleParticleTransition<UnallocatedTokensParticle, TransferredTokensParticle> transition = transitioner.createTransition(
 					tokenState.getUnallocatedTokens().entrySet().stream()
 						.map(Entry::getValue)
 						.collect(Collectors.toList()),
@@ -112,16 +113,5 @@ public class MintTokensActionMapper implements StatefulActionToParticleGroupsMap
 			throw new UnknownTokenException(tokenDefinition);
 		}
 		return ts;
-	}
-
-	private SpunParticle createMintedTokensParticle(BigDecimal amount, UInt256 granularity, TokenDefinitionReference tokenDefinition) {
-		Particle minted = new MintedTokensParticle(
-			TokenUnitConversions.unitsToSubunits(amount),
-			granularity,
-			tokenDefinition.getAddress(),
-			System.currentTimeMillis(),
-			tokenDefinition,
-			System.currentTimeMillis() / 60000L + 60000);
-		return SpunParticle.up(minted);
 	}
 }

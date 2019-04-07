@@ -2,6 +2,7 @@ package com.radixdlt.client.application.translate.tokens;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.application.translate.ApplicationState;
+import com.radixdlt.client.atommodel.tokens.TransferredTokensParticle;
 import com.radixdlt.client.core.atoms.RadixHash;
 import com.radixdlt.client.core.atoms.particles.Spin;
 
@@ -24,16 +25,16 @@ public class TokenBalanceState implements ApplicationState {
 	public static class Balance {
 		private final BigInteger balance;
 		private final BigInteger granularity;
-		private final ImmutableMap<RadixHash, ConsumableTokens> consumables;
+		private final ImmutableMap<RadixHash, TransferredTokensParticle> consumables;
 
-		private Balance(BigInteger balance, BigInteger granularity, Map<RadixHash, ConsumableTokens> consumables) {
+		private Balance(BigInteger balance, BigInteger granularity, Map<RadixHash, TransferredTokensParticle> consumables) {
 			this.balance = balance;
 			this.granularity = granularity;
 			this.consumables = ImmutableMap.copyOf(consumables);
 		}
 
-		private Balance(BigInteger balance, BigInteger granularity, ConsumableTokens s) {
-			this(balance, granularity, Collections.singletonMap(((Particle) s).getHash(), s));
+		private Balance(BigInteger balance, BigInteger granularity, TransferredTokensParticle s) {
+			this(balance, granularity, Collections.singletonMap(s.getHash(), s));
 		}
 
 		public static Balance empty(BigInteger granularity) {
@@ -48,21 +49,27 @@ public class TokenBalanceState implements ApplicationState {
 			return TokenUnitConversions.subunitsToUnits(granularity);
 		}
 
-		public Stream<ConsumableTokens> unconsumedTransferrable() {
+		public Stream<TransferredTokensParticle> unconsumedTransferrable() {
 			return consumables.entrySet().stream()
 				.map(Entry::getValue);
 		}
 
-		public static Balance merge(Balance balance, ConsumableTokens tokens, Spin spin) {
-			Map<RadixHash, ConsumableTokens> newMap = new HashMap<>(balance.consumables);
+		public static Balance merge(Balance balance, TransferredTokensParticle tokens, Spin spin) {
+			Map<RadixHash, TransferredTokensParticle> newMap = new HashMap<>(balance.consumables);
 
 			final BigInteger amount;
 			if (spin == Spin.DOWN || spin == Spin.NEUTRAL) {
 				amount = UInt256s.toBigInteger(tokens.getAmount()).negate();
-				newMap.remove(((Particle) tokens).getHash());
+				if (!newMap.containsKey(tokens.getHash())) {
+					System.out.println("ISSUE: Trying to Delete particle when it doesn't exist " + tokens.getHash());
+				}
+				newMap.remove(tokens.getHash());
 			} else {
 				amount = UInt256s.toBigInteger(tokens.getAmount());
-				newMap.put(((Particle) tokens).getHash(), tokens);
+				if (newMap.containsKey(tokens.getHash())) {
+					System.out.println("ISSUE: Trying to Create particle when it already exists " + tokens.getHash());
+				}
+				newMap.put(tokens.getHash(), tokens);
 			}
 
 			BigInteger newBalance = balance.balance.add(amount);
@@ -110,7 +117,7 @@ public class TokenBalanceState implements ApplicationState {
 		return Collections.unmodifiableMap(balance);
 	}
 
-	public static TokenBalanceState merge(TokenBalanceState state, ConsumableTokens tokens, Spin spin) {
+	public static TokenBalanceState merge(TokenBalanceState state, TransferredTokensParticle tokens, Spin spin) {
 		HashMap<TokenDefinitionReference, Balance> balance = new HashMap<>(state.balance);
 		BigInteger amount = UInt256s.toBigInteger(tokens.getAmount());
 		BigInteger granularity = UInt256s.toBigInteger(tokens.getGranularity());
