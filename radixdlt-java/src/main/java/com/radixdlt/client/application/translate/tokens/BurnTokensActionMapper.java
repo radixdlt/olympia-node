@@ -11,7 +11,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import com.radixdlt.client.atommodel.tokens.TransferredTokensParticle;
+import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.particles.Particle;
 
@@ -71,7 +71,7 @@ public class BurnTokensActionMapper implements StatefulActionToParticleGroupsMap
 			throw new InsufficientFundsException(tokenRef, balance, burnAmount);
 		}
 
-		final FungibleParticleTransitioner<TransferredTokensParticle, UnallocatedTokensParticle> transitioner =
+		final FungibleParticleTransitioner<TransferrableTokensParticle, UnallocatedTokensParticle> transitioner =
 			new FungibleParticleTransitioner<>(
 				(amt, consumable) -> new UnallocatedTokensParticle(
 					amt,
@@ -81,7 +81,7 @@ public class BurnTokensActionMapper implements StatefulActionToParticleGroupsMap
 					consumable.getTokenPermissions()
 				),
 				burnedList -> burnedList,
-				(amt, consumable) -> new TransferredTokensParticle(
+				(amt, consumable) -> new TransferrableTokensParticle(
 					amt,
 					consumable.getGranularity(),
 					consumable.getAddress(),
@@ -91,10 +91,10 @@ public class BurnTokensActionMapper implements StatefulActionToParticleGroupsMap
 					consumable.getTokenPermissions()
 				),
 				transferredList -> transferredList.stream()
-					.map(TransferredTokensParticle::getAmount)
+					.map(TransferrableTokensParticle::getAmount)
 					.reduce(UInt256::add)
 					.map(amt -> Collections.singletonList(
-						new TransferredTokensParticle(
+						new TransferrableTokensParticle(
 							amt,
 							transferredList.get(0).getGranularity(),
 							transferredList.get(0).getAddress(),
@@ -104,10 +104,10 @@ public class BurnTokensActionMapper implements StatefulActionToParticleGroupsMap
 							transferredList.get(0).getTokenPermissions()
 						)
 					)).orElse(Collections.emptyList()),
-				TransferredTokensParticle::getAmount
+				TransferrableTokensParticle::getAmount
 			);
 
-		FungibleParticleTransition<TransferredTokensParticle, UnallocatedTokensParticle> transition = transitioner.createTransition(
+		FungibleParticleTransition<TransferrableTokensParticle, UnallocatedTokensParticle> transition = transitioner.createTransition(
 			bal.unconsumedTransferrable().collect(Collectors.toList()),
 			TokenUnitConversions.unitsToSubunits(burnAmount)
 		);

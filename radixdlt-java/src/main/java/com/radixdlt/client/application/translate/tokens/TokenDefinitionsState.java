@@ -100,14 +100,7 @@ public class TokenDefinitionsState implements ApplicationState {
 				tokenState.getGranularity(),
 				tokenState.getTokenSupplyType(),
 				tokenState.getUnallocatedTokens()));
-
-			if (newState.get(ref).getTotalSupply().compareTo(BigDecimal.ZERO) < 0) {
-				System.out.println("OOOPS 2");
-			}
 		} else {
-			if (supplyChange.compareTo(BigDecimal.ZERO) < 0) {
-				System.out.println("OOOPS");
-			}
 			newState.put(ref, new TokenState(null, ref.getSymbol(), null, supplyChange, null, null, null));
 		}
 

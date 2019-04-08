@@ -1,7 +1,7 @@
 package com.radixdlt.client.application.translate.tokens;
 
 import com.radixdlt.client.application.translate.ShardedAppStateId;
-import com.radixdlt.client.atommodel.tokens.TransferredTokensParticle;
+import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.core.atoms.ParticleGroup.ParticleGroupBuilder;
 import com.radixdlt.client.core.atoms.particles.Spin;
@@ -67,9 +67,9 @@ public class MintTokensActionMapper implements StatefulActionToParticleGroupsMap
 					);
 				}
 
-				final FungibleParticleTransitioner<UnallocatedTokensParticle, TransferredTokensParticle> transitioner =
+				final FungibleParticleTransitioner<UnallocatedTokensParticle, TransferrableTokensParticle> transitioner =
 					new FungibleParticleTransitioner<>(
-						(amt, consumable) -> new TransferredTokensParticle(
+						(amt, consumable) -> new TransferrableTokensParticle(
 							amt,
 							consumable.getGranularity(),
 							tokenDefinition.getAddress(),
@@ -90,7 +90,7 @@ public class MintTokensActionMapper implements StatefulActionToParticleGroupsMap
 						UnallocatedTokensParticle::getAmount
 					);
 
-				FungibleParticleTransition<UnallocatedTokensParticle, TransferredTokensParticle> transition = transitioner.createTransition(
+				FungibleParticleTransition<UnallocatedTokensParticle, TransferrableTokensParticle> transition = transitioner.createTransition(
 					tokenState.getUnallocatedTokens().entrySet().stream()
 						.map(Entry::getValue)
 						.collect(Collectors.toList()),

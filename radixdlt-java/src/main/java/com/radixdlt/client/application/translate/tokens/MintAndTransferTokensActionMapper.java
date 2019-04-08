@@ -10,7 +10,7 @@ import com.radixdlt.client.application.translate.tokens.TokenState.TokenSupplyTy
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle.TokenTransition;
 import com.radixdlt.client.atommodel.tokens.TokenPermission;
-import com.radixdlt.client.atommodel.tokens.TransferredTokensParticle;
+import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.ParticleGroup.ParticleGroupBuilder;
@@ -32,8 +32,8 @@ import java.util.function.BiFunction;
 
 public class MintAndTransferTokensActionMapper implements StatefulActionToParticleGroupsMapper {
 	private final BiFunction<
-		FungibleParticleTransition<UnallocatedTokensParticle, TransferredTokensParticle>,
-		FungibleParticleTransition<TransferredTokensParticle, TransferredTokensParticle>,
+		FungibleParticleTransition<UnallocatedTokensParticle, TransferrableTokensParticle>,
+		FungibleParticleTransition<TransferrableTokensParticle, TransferrableTokensParticle>,
 		List<ParticleGroup>> mintAndTransferToGroupMapper;
 
 	public MintAndTransferTokensActionMapper() {
@@ -57,8 +57,8 @@ public class MintAndTransferTokensActionMapper implements StatefulActionToPartic
 
 	public MintAndTransferTokensActionMapper(
 		BiFunction<
-			FungibleParticleTransition<UnallocatedTokensParticle, TransferredTokensParticle>,
-			FungibleParticleTransition<TransferredTokensParticle, TransferredTokensParticle>,
+			FungibleParticleTransition<UnallocatedTokensParticle, TransferrableTokensParticle>,
+			FungibleParticleTransition<TransferrableTokensParticle, TransferrableTokensParticle>,
 			List<ParticleGroup>> mintAndTransferToGroupMapper) {
 		this.mintAndTransferToGroupMapper = Objects.requireNonNull(mintAndTransferToGroupMapper);
 	}
@@ -90,10 +90,10 @@ public class MintAndTransferTokensActionMapper implements StatefulActionToPartic
 			.map(TokenDefinitionsState::getState)
 			.map(state -> getTokenStateOrError(state, tokenDefinition))
 			.map(state -> {
-				final FungibleParticleTransition<UnallocatedTokensParticle, TransferredTokensParticle> mintTransition =
+				final FungibleParticleTransition<UnallocatedTokensParticle, TransferrableTokensParticle> mintTransition =
 					createMint(mintTransferAction.getAmount(), tokenDefinition, state);
 
-				final TransferredTokensParticle transferredTokensParticle = createTransfer(
+				final TransferrableTokensParticle transferrableTokensParticle = createTransfer(
 					state.getTokenSupplyType() == TokenSupplyType.FIXED
 						? ImmutableMap.of(
 							TokenTransition.MINT, TokenPermission.TOKEN_CREATION_ONLY,
@@ -105,11 +105,11 @@ public class MintAndTransferTokensActionMapper implements StatefulActionToPartic
 					mintTransferAction
 				);
 
-				final FungibleParticleTransition<TransferredTokensParticle, TransferredTokensParticle> transferTransition =
+				final FungibleParticleTransition<TransferrableTokensParticle, TransferrableTokensParticle> transferTransition =
 					new FungibleParticleTransition<>(
 						ImmutableList.copyOf(mintTransition.getTransitioned()),
 						ImmutableList.of(),
-						ImmutableList.of(transferredTokensParticle)
+						ImmutableList.of(transferrableTokensParticle)
 					);
 
 				return mintAndTransferToGroupMapper.apply(mintTransition, transferTransition);
@@ -125,12 +125,12 @@ public class MintAndTransferTokensActionMapper implements StatefulActionToPartic
 		return ts;
 	}
 
-	private TransferredTokensParticle createTransfer(
+	private TransferrableTokensParticle createTransfer(
 		Map<TokenTransition, TokenPermission> permissions,
 		UInt256 granularity,
 		MintAndTransferTokensAction action
 	) {
-		return new TransferredTokensParticle(
+		return new TransferrableTokensParticle(
 			TokenUnitConversions.unitsToSubunits(action.getAmount()),
 			granularity,
 			action.getTo(),
@@ -141,7 +141,7 @@ public class MintAndTransferTokensActionMapper implements StatefulActionToPartic
 		);
 	}
 
-	private FungibleParticleTransition<UnallocatedTokensParticle, TransferredTokensParticle> createMint(
+	private FungibleParticleTransition<UnallocatedTokensParticle, TransferrableTokensParticle> createMint(
 		BigDecimal amount,
 		TokenDefinitionReference tokenDefRef,
 		TokenState tokenState
@@ -152,9 +152,9 @@ public class MintAndTransferTokensActionMapper implements StatefulActionToPartic
 			throw new InsufficientFundsException(tokenDefRef, unallocatedSupply, amount);
 		}
 
-		final FungibleParticleTransitioner<UnallocatedTokensParticle, TransferredTokensParticle> transitioner =
+		final FungibleParticleTransitioner<UnallocatedTokensParticle, TransferrableTokensParticle> transitioner =
 			new FungibleParticleTransitioner<>(
-				(amt, consumable) -> new TransferredTokensParticle(
+				(amt, consumable) -> new TransferrableTokensParticle(
 					amt,
 					consumable.getGranularity(),
 					tokenDefRef.getAddress(),
@@ -175,7 +175,7 @@ public class MintAndTransferTokensActionMapper implements StatefulActionToPartic
 				UnallocatedTokensParticle::getAmount
 			);
 
-		FungibleParticleTransition<UnallocatedTokensParticle, TransferredTokensParticle> transition = transitioner.createTransition(
+		FungibleParticleTransition<UnallocatedTokensParticle, TransferrableTokensParticle> transition = transitioner.createTransition(
 			tokenState.getUnallocatedTokens().entrySet().stream()
 				.map(Entry::getValue)
 				.collect(Collectors.toList()),

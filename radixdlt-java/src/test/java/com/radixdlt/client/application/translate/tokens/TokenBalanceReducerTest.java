@@ -1,6 +1,6 @@
 package com.radixdlt.client.application.translate.tokens;
 
-import com.radixdlt.client.atommodel.tokens.TransferredTokensParticle;
+import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
 import java.math.BigDecimal;
 
 import org.junit.Test;
@@ -17,7 +17,7 @@ public class TokenBalanceReducerTest {
 
 	@Test
 	public void testSimpleBalance() {
-		TransferredTokensParticle minted = mock(TransferredTokensParticle.class);
+		TransferrableTokensParticle minted = mock(TransferrableTokensParticle.class);
 		RadixHash hash = mock(RadixHash.class);
 		when(minted.getAmount()).thenReturn(UInt256.TEN);
 		when(minted.getGranularity()).thenReturn(UInt256.ONE);
@@ -33,7 +33,7 @@ public class TokenBalanceReducerTest {
 
 	@Test
 	public void transitionAndRevertTest() {
-		TransferredTokensParticle ownedTokensParticle = mock(TransferredTokensParticle.class);
+		TransferrableTokensParticle ownedTokensParticle = mock(TransferrableTokensParticle.class);
 		RadixHash hash = mock(RadixHash.class);
 		when(ownedTokensParticle.getAmount()).thenReturn(UInt256.TEN);
 		when(ownedTokensParticle.getHash()).thenReturn(hash);
@@ -52,7 +52,7 @@ public class TokenBalanceReducerTest {
 
 	@Test
 	public void twoTransitionsAndRevertTest() {
-		TransferredTokensParticle ownedTokensParticle = mock(TransferredTokensParticle.class);
+		TransferrableTokensParticle ownedTokensParticle = mock(TransferrableTokensParticle.class);
 		RadixHash hash = mock(RadixHash.class);
 		when(ownedTokensParticle.getAmount()).thenReturn(UInt256.TEN);
 		when(ownedTokensParticle.getHash()).thenReturn(hash);

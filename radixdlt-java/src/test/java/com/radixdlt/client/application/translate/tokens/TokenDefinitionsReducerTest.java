@@ -3,7 +3,7 @@ package com.radixdlt.client.application.translate.tokens;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle.TokenTransition;
-import com.radixdlt.client.atommodel.tokens.TransferredTokensParticle;
+import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.core.ledger.TransitionedParticle;
 import java.math.BigDecimal;
@@ -56,7 +56,7 @@ public class TokenDefinitionsReducerTest {
 		when(tokenDefinitionParticle.getTokenPermissions()).thenReturn(Collections.singletonMap(TokenTransition.MINT,
 			TokenPermission.TOKEN_OWNER_ONLY));
 
-		TransferredTokensParticle minted = mock(TransferredTokensParticle.class);
+		TransferrableTokensParticle minted = mock(TransferrableTokensParticle.class);
 		when(minted.getAmount()).thenReturn(hundred);
 		when(minted.getTokenDefinitionReference()).thenReturn(tokenRef);
 

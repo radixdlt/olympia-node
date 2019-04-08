@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
 import com.radixdlt.client.atommodel.message.MessageParticle;
-import com.radixdlt.client.atommodel.tokens.TransferredTokensParticle;
+import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
@@ -163,10 +163,10 @@ public final class Atom extends SerializableObject {
 		return Optional.ofNullable(this.signatures).map(sigs -> sigs.get(uid.toString()));
 	}
 
-	public Stream<Pair<TransferredTokensParticle, Spin>> consumableTokens() {
+	public Stream<Pair<TransferrableTokensParticle, Spin>> consumableTokens() {
 		return this.spunParticles()
-			.filter(s -> s.getParticle() instanceof TransferredTokensParticle)
-			.map(s -> Pair.of((TransferredTokensParticle) s.getParticle(), s.getSpin()));
+			.filter(s -> s.getParticle() instanceof TransferrableTokensParticle)
+			.map(s -> Pair.of((TransferrableTokensParticle) s.getParticle(), s.getSpin()));
 	}
 
 	public byte[] toDson() {
@@ -200,7 +200,7 @@ public final class Atom extends SerializableObject {
 			));
 	}
 
-	private BigInteger consumableToAmount(Pair<TransferredTokensParticle, Spin> tokens) {
+	private BigInteger consumableToAmount(Pair<TransferrableTokensParticle, Spin> tokens) {
 		BigInteger amount = UInt256s.toBigInteger(tokens.getFirst().getAmount());
 		return tokens.getSecond() == Spin.DOWN ? amount.negate() : amount;
 	}

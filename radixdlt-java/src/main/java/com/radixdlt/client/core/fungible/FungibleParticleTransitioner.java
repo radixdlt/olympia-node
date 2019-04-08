@@ -6,6 +6,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import org.radix.utils.UInt256;
 import org.radix.utils.UInt256s;
 
@@ -18,16 +19,16 @@ import org.radix.utils.UInt256s;
  */
 public class FungibleParticleTransitioner<T, U> {
 	private final BiFunction<UInt256, T, U> transitioner;
-	private final Function<List<U>, List<U>> transitionedCombiner;
+	private final UnaryOperator<List<U>> transitionedCombiner;
 	private final BiFunction<UInt256, T, T> migrator;
-	private final Function<List<T>, List<T>> migratedCombiner;
+	private final UnaryOperator<List<T>> migratedCombiner;
 	private final Function<T, UInt256> amountMapper;
 
 	public FungibleParticleTransitioner(
 		BiFunction<UInt256, T, U> transitioner,
-		Function<List<U>, List<U>> transitionedCombiner,
+		UnaryOperator<List<U>> transitionedCombiner,
 		BiFunction<UInt256, T, T> migrator,
-		Function<List<T>, List<T>> migratedCombiner,
+		UnaryOperator<List<T>> migratedCombiner,
 		Function<T, UInt256> amountMapper
 	) {
 		this.transitioner = transitioner;
@@ -110,7 +111,7 @@ public class FungibleParticleTransitioner<T, U> {
 	) {
 		UInt256 balance = unconsumedFungibles.stream().map(amountMapper).reduce(UInt256.ZERO, UInt256::add);
 		if (balance.compareTo(toAmount) < 0) {
-			throw new RuntimeException("Not enough to cannot create transition");
+			throw new RuntimeException("Not enough to create transition");
 		}
 
 		UInt256 consumerTotal = UInt256.ZERO;

@@ -10,10 +10,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
-import com.radixdlt.client.atommodel.tokens.TransferredTokensParticle;
+import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import java.util.stream.Stream;
 import org.radix.utils.UInt256;
@@ -39,14 +39,14 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 	public TransferTokensToParticleGroupsMapper() {
 	}
 
-	private List<SpunParticle> mapToParticles(TransferTokensAction transfer, List<TransferredTokensParticle> currentParticles) {
+	private List<SpunParticle> mapToParticles(TransferTokensAction transfer, List<TransferrableTokensParticle> currentParticles) {
 		// FIXME: figure out way to combine the following two similar combiners
-		Function<List<TransferredTokensParticle>, List<TransferredTokensParticle>> combiner =
+		UnaryOperator<List<TransferrableTokensParticle>> combiner =
 			transferredList -> transferredList.stream()
-				.map(TransferredTokensParticle::getAmount)
+				.map(TransferrableTokensParticle::getAmount)
 				.reduce(UInt256::add)
 				.map(amt -> Collections.singletonList(
-					new TransferredTokensParticle(
+					new TransferrableTokensParticle(
 						amt,
 						transferredList.get(0).getGranularity(),
 						transferredList.get(0).getAddress(),
@@ -57,12 +57,12 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 					)
 				)).orElse(Collections.emptyList());
 
-		Function<List<TransferredTokensParticle>, List<TransferredTokensParticle>> combiner2 =
+		UnaryOperator<List<TransferrableTokensParticle>> combiner2 =
 			transferredList -> transferredList.stream()
-				.map(TransferredTokensParticle::getAmount)
+				.map(TransferrableTokensParticle::getAmount)
 				.reduce(UInt256::add)
 				.map(amt -> Collections.singletonList(
-					new TransferredTokensParticle(
+					new TransferrableTokensParticle(
 						amt,
 						transferredList.get(0).getGranularity(),
 						transferredList.get(0).getAddress(),
@@ -73,9 +73,9 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 					)
 				)).orElse(Collections.emptyList());
 
-		final FungibleParticleTransitioner<TransferredTokensParticle, TransferredTokensParticle> transitioner =
+		final FungibleParticleTransitioner<TransferrableTokensParticle, TransferrableTokensParticle> transitioner =
 			new FungibleParticleTransitioner<>(
-				(amt, consumable) -> new TransferredTokensParticle(
+				(amt, consumable) -> new TransferrableTokensParticle(
 					amt,
 					consumable.getGranularity(),
 					transfer.getTo(),
@@ -85,7 +85,7 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 					consumable.getTokenPermissions()
 				),
 				combiner,
-				(amt, consumable) -> new TransferredTokensParticle(
+				(amt, consumable) -> new TransferrableTokensParticle(
 					amt,
 					consumable.getGranularity(),
 					consumable.getAddress(),
@@ -95,10 +95,10 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 					consumable.getTokenPermissions()
 				),
 				 combiner2,
-				TransferredTokensParticle::getAmount
+				TransferrableTokensParticle::getAmount
 			);
 
-		FungibleParticleTransition<TransferredTokensParticle, TransferredTokensParticle> transition = transitioner.createTransition(
+		FungibleParticleTransition<TransferrableTokensParticle, TransferrableTokensParticle> transition = transitioner.createTransition(
 			currentParticles,
 			TokenUnitConversions.unitsToSubunits(transfer.getAmount())
 		);

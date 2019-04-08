@@ -1,8 +1,9 @@
 package com.radixdlt.client.application.translate.tokens;
 
 import java.math.BigDecimal;
+import java.util.Objects;
 
-public class TokenOverMintException extends RuntimeException {
+public final class TokenOverMintException extends RuntimeException {
 	private final TokenDefinitionReference tokenDefinitionReference;
 	private final BigDecimal maxAmount;
 	private final BigDecimal currentAmount;
@@ -15,10 +16,10 @@ public class TokenOverMintException extends RuntimeException {
 		BigDecimal requestedAmount
 	) {
 		super("Mint amount of " + requestedAmount + " would overflow maximum of " + maxAmount + ". Current is " + currentAmount + ".");
-		this.tokenDefinitionReference = tokenDefinitionReference;
-		this.maxAmount = maxAmount;
-		this.currentAmount = currentAmount;
-		this.requestedAmount = requestedAmount;
+		this.tokenDefinitionReference = Objects.requireNonNull(tokenDefinitionReference);
+		this.maxAmount = Objects.requireNonNull(maxAmount);
+		this.currentAmount = Objects.requireNonNull(currentAmount);
+		this.requestedAmount = Objects.requireNonNull(requestedAmount);
 	}
 
 	public BigDecimal getMaxAmount() {
