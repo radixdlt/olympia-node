@@ -18,7 +18,6 @@ import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
-import io.reactivex.Observable;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Collections;
