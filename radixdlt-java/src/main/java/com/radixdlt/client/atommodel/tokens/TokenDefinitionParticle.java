@@ -6,8 +6,6 @@ import com.radixdlt.client.core.atoms.particles.Particle;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import com.google.common.collect.BiMap;
-import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
 import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.DsonOutput.Output;
@@ -21,6 +19,11 @@ import com.radixdlt.client.core.atoms.particles.RadixResourceIdentifer;
 
 @SerializerId2("TOKENDEFINITIONPARTICLE")
 public class TokenDefinitionParticle extends Particle implements Identifiable, Ownable {
+	public enum TokenTransition {
+		MINT,
+		BURN
+	}
+
 	@JsonProperty("address")
 	@DsonOutput(Output.ALL)
 	private RadixAddress address;
@@ -45,7 +48,7 @@ public class TokenDefinitionParticle extends Particle implements Identifiable, O
 	@DsonOutput(Output.ALL)
 	private byte[] icon;
 
-	private Map<Class<? extends Particle>, TokenPermission> tokenPermissions;
+	private Map<TokenTransition, TokenPermission> tokenPermissions;
 
 	private TokenDefinitionParticle() {
 		// Empty constructor for serializer
@@ -57,7 +60,7 @@ public class TokenDefinitionParticle extends Particle implements Identifiable, O
 		String symbol,
 		String description,
 		UInt256 granularity,
-		Map<Class<? extends Particle>, TokenPermission> tokenPermissions,
+		Map<TokenTransition, TokenPermission> tokenPermissions,
 		byte[] icon
 	) {
 		super();
@@ -75,7 +78,7 @@ public class TokenDefinitionParticle extends Particle implements Identifiable, O
 		return new RadixResourceIdentifer(address, "tokens", this.symbol);
 	}
 
-	public Map<Class<? extends Particle>, TokenPermission> getTokenPermissions() {
+	public Map<TokenTransition, TokenPermission> getTokenPermissions() {
 		return tokenPermissions;
 	}
 
@@ -108,7 +111,7 @@ public class TokenDefinitionParticle extends Particle implements Identifiable, O
 	@DsonOutput(value = {Output.ALL})
 	private Map<String, String> getJsonPermissions() {
 		return this.tokenPermissions.entrySet().stream()
-			.collect(Collectors.toMap(e -> tokenDefinitionToVerb(e.getKey()), e -> e.getValue().name().toLowerCase()));
+			.collect(Collectors.toMap(e -> e.getKey().name().toLowerCase(), e -> e.getValue().name().toLowerCase()));
 	}
 
 	@JsonProperty("permissions")
@@ -116,24 +119,10 @@ public class TokenDefinitionParticle extends Particle implements Identifiable, O
 		if (permissions != null) {
 			this.tokenPermissions = permissions.entrySet().stream()
 				.collect(Collectors.toMap(
-					e -> verbToTokenClass(e.getKey()), e -> TokenPermission.valueOf(e.getValue().toUpperCase())
+					e -> TokenTransition.valueOf(e.getKey().toUpperCase()), e -> TokenPermission.valueOf(e.getValue().toUpperCase())
 				));
 		} else {
 			throw new IllegalArgumentException("Permissions cannot be null.");
 		}
-	}
-
-	private static final BiMap<Class<? extends Particle>, String> TOKENS_CLASS_TO_VERB = ImmutableBiMap.of(
-		MintedTokensParticle.class, "mint",
-		BurnedTokensParticle.class, "burn"
-	);
-	private static final BiMap<String, Class<? extends Particle>> VERB_TO_TOKEN_CLASS = TOKENS_CLASS_TO_VERB.inverse();
-
-	public static String tokenDefinitionToVerb(Class<? extends Particle> particleClass) {
-		return TOKENS_CLASS_TO_VERB.get(particleClass);
-	}
-
-	public static Class<? extends Particle> verbToTokenClass(String verb) {
-		return VERB_TO_TOKEN_CLASS.get(verb);
 	}
 }

@@ -1,13 +1,16 @@
 package com.radixdlt.client.atommodel.tokens;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
 import com.radixdlt.client.atommodel.Accountable;
-import com.radixdlt.client.atommodel.Fungible;
 import com.radixdlt.client.atommodel.Ownable;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle.TokenTransition;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.RadixResourceIdentifer;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.DsonOutput.Output;
 import org.radix.serialization2.SerializerId2;
@@ -18,11 +21,11 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- *  A particle which represents an amount of consuming, burned fungible tokens
+ *  A particle which represents an amount of consumable and consuming, tranferable fungible tokens
  *  owned by some key owner and stored in an account.
  */
-@SerializerId2("BURNEDTOKENSPARTICLE")
-public final class BurnedTokensParticle extends Particle implements Accountable, Ownable, Fungible, ConsumingTokens {
+@SerializerId2("TRANSFERRABLETOKENSPARTICLE")
+public final class TransferrableTokensParticle extends Particle implements Accountable, Ownable {
 	@JsonProperty("address")
 	@DsonOutput(Output.ALL)
 	private RadixAddress address;
@@ -47,11 +50,20 @@ public final class BurnedTokensParticle extends Particle implements Accountable,
 	@DsonOutput(Output.ALL)
 	private UInt256 amount;
 
-	protected BurnedTokensParticle() {
+	private Map<TokenTransition, TokenPermission> tokenPermissions;
+
+	protected TransferrableTokensParticle() {
 	}
 
-	public BurnedTokensParticle(UInt256 amount, UInt256 granularity, RadixAddress address, long nonce,
-	                            TokenDefinitionReference tokenDefinitionReference, long planck) {
+	public TransferrableTokensParticle(
+		UInt256 amount,
+		UInt256 granularity,
+		RadixAddress address,
+		long nonce,
+		TokenDefinitionReference tokenDefinitionReference,
+		long planck,
+		Map<TokenTransition, TokenPermission> tokenPermissions
+	) {
 		super();
 
 		// Redundant null check added for completeness
@@ -67,34 +79,50 @@ public final class BurnedTokensParticle extends Particle implements Accountable,
 		this.planck = planck;
 		this.nonce = nonce;
 		this.amount = amount;
+		this.tokenPermissions = ImmutableMap.copyOf(tokenPermissions);
+	}
+
+	public Map<TokenTransition, TokenPermission> getTokenPermissions() {
+		return tokenPermissions;
+	}
+
+	@JsonProperty("permissions")
+	@DsonOutput(value = {Output.ALL})
+	private Map<String, String> getJsonPermissions() {
+		return this.tokenPermissions.entrySet().stream()
+			.collect(Collectors.toMap(e -> e.getKey().name().toLowerCase(), e -> e.getValue().name().toLowerCase()));
+	}
+
+	@JsonProperty("permissions")
+	private void setJsonPermissions(Map<String, String> permissions) {
+		if (permissions != null) {
+			this.tokenPermissions = permissions.entrySet().stream()
+				.collect(Collectors.toMap(
+					e -> TokenTransition.valueOf(e.getKey().toUpperCase()), e -> TokenPermission.valueOf(e.getValue().toUpperCase())
+				));
+		} else {
+			throw new IllegalArgumentException("Permissions cannot be null.");
+		}
 	}
 
 	@Override
 	public Set<RadixAddress> getAddresses() {
-		return Collections.singleton(address);
+		return Collections.singleton(this.address);
 	}
 
 	@Override
 	public RadixAddress getAddress() {
-		return address;
+		return this.address;
 	}
 
-	@Override
-	public long getPlanck() {
-		return this.planck;
-	}
-
-	@Override
 	public long getNonce() {
 		return this.nonce;
 	}
 
-	@Override
 	public TokenDefinitionReference getTokenDefinitionReference() {
 		return TokenDefinitionReference.of(tokenDefinitionReference.getAddress(), tokenDefinitionReference.getUnique());
 	}
 
-	@Override
 	public UInt256 getAmount() {
 		return this.amount;
 	}

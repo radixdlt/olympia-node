@@ -1,22 +1,22 @@
 package com.radixdlt.client.application.translate.tokens;
 
 import com.radixdlt.client.application.translate.ShardedAppStateId;
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.client.core.fungible.FungibleParticleTransitioner;
+import com.radixdlt.client.core.fungible.FungibleParticleTransitioner.FungibleParticleTransition;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
-import com.radixdlt.client.atommodel.tokens.ConsumableTokens;
-import com.radixdlt.client.atommodel.tokens.TransferredTokensParticle;
+import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.client.core.atoms.particles.Particle;
+import java.util.stream.Stream;
 import org.radix.utils.UInt256;
-import org.radix.utils.UInt256s;
 
 import com.google.gson.JsonArray;
 import com.radixdlt.client.application.identity.Data;
@@ -39,101 +39,112 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 	public TransferTokensToParticleGroupsMapper() {
 	}
 
-	private Observable<SpunParticle> mapToParticles(TransferTokensAction transfer, List<ConsumableTokens> currentParticles) {
-		return Observable.create(emitter -> {
-			UInt256 consumerTotal = UInt256.ZERO;
-			final UInt256 subunitAmount = TokenUnitConversions.unitsToSubunits(transfer.getAmount());
-			UInt256 granularity = UInt256.ZERO;
-			Iterator<ConsumableTokens> iterator = currentParticles.iterator();
-			Map<RadixAddress, UInt256> consumerQuantities = new HashMap<>();
+	private List<SpunParticle> mapToParticles(TransferTokensAction transfer, List<TransferrableTokensParticle> currentParticles) {
+		// FIXME: figure out way to combine the following two similar combiners
+		UnaryOperator<List<TransferrableTokensParticle>> combiner =
+			transferredList -> transferredList.stream()
+				.map(TransferrableTokensParticle::getAmount)
+				.reduce(UInt256::add)
+				.map(amt -> Collections.singletonList(
+					new TransferrableTokensParticle(
+						amt,
+						transferredList.get(0).getGranularity(),
+						transferredList.get(0).getAddress(),
+						System.nanoTime(),
+						transfer.getTokenDefinitionReference(),
+						System.currentTimeMillis() / 60000L + 60000L,
+						transferredList.get(0).getTokenPermissions()
+					)
+				)).orElse(Collections.emptyList());
 
-			// HACK for now
-			// TODO: remove this, create a ConsumersCreator
-			// TODO: randomize this to decrease probability of collision
-			while (consumerTotal.compareTo(subunitAmount) < 0 && iterator.hasNext()) {
-				final UInt256 left = subunitAmount.subtract(consumerTotal);
+		UnaryOperator<List<TransferrableTokensParticle>> combiner2 =
+			transferredList -> transferredList.stream()
+				.map(TransferrableTokensParticle::getAmount)
+				.reduce(UInt256::add)
+				.map(amt -> Collections.singletonList(
+					new TransferrableTokensParticle(
+						amt,
+						transferredList.get(0).getGranularity(),
+						transferredList.get(0).getAddress(),
+						System.nanoTime(),
+						transfer.getTokenDefinitionReference(),
+						System.currentTimeMillis() / 60000L + 60000L,
+						transferredList.get(0).getTokenPermissions()
+					)
+				)).orElse(Collections.emptyList());
 
-				ConsumableTokens particle = iterator.next();
-				if (granularity.isZero()) {
-					granularity = particle.getGranularity();
-				}
-				consumerTotal = consumerTotal.add(particle.getAmount());
-
-				final UInt256 amount = UInt256s.min(left, particle.getAmount());
-				addConsumerQuantities(particle.getAmount(), particle.getAddress(), transfer.getTo(),
-					amount, consumerQuantities);
-
-				emitter.onNext(SpunParticle.down(((Particle) particle)));
-			}
-
-			final UInt256 computedGranularity = granularity;
-			consumerQuantities.entrySet().stream()
-				.map(entry -> new TransferredTokensParticle(
-					entry.getValue(),
-					computedGranularity,
-					entry.getKey(),
+		final FungibleParticleTransitioner<TransferrableTokensParticle, TransferrableTokensParticle> transitioner =
+			new FungibleParticleTransitioner<>(
+				(amt, consumable) -> new TransferrableTokensParticle(
+					amt,
+					consumable.getGranularity(),
+					transfer.getTo(),
 					System.nanoTime(),
 					transfer.getTokenDefinitionReference(),
-					System.currentTimeMillis() / 60000L + 60000L
-				))
-				.map(SpunParticle::up)
-				.forEach(emitter::onNext);
-
-			emitter.onComplete();
-		});
-	}
-
-	// TODO this and same method in BurnTokensActionMapper could be moved to a utility class, abstractions not clear yet
-	private static void addConsumerQuantities(UInt256 amount, RadixAddress oldOwner, RadixAddress newOwner,
-	                                          UInt256 usedAmount, Map<RadixAddress, UInt256> consumerQuantities) {
-		if (usedAmount.compareTo(amount) > 0) {
-			throw new IllegalArgumentException(
-				"Unable to create consumable with amount " + usedAmount + " (available: " + amount + ")"
+					System.currentTimeMillis() / 60000L + 60000L,
+					consumable.getTokenPermissions()
+				),
+				combiner,
+				(amt, consumable) -> new TransferrableTokensParticle(
+					amt,
+					consumable.getGranularity(),
+					consumable.getAddress(),
+					System.nanoTime(),
+					transfer.getTokenDefinitionReference(),
+					System.currentTimeMillis() / 60000L + 60000L,
+					consumable.getTokenPermissions()
+				),
+				 combiner2,
+				TransferrableTokensParticle::getAmount
 			);
-		}
 
-		if (amount.equals(usedAmount)) {
-			consumerQuantities.merge(newOwner, amount, UInt256::add);
-			return;
-		}
+		FungibleParticleTransition<TransferrableTokensParticle, TransferrableTokensParticle> transition = transitioner.createTransition(
+			currentParticles,
+			TokenUnitConversions.unitsToSubunits(transfer.getAmount())
+		);
 
-		consumerQuantities.merge(newOwner, usedAmount, UInt256::add);
-		consumerQuantities.merge(oldOwner, amount.subtract(usedAmount), UInt256::add);
+		List<SpunParticle> spunParticles = new ArrayList<>();
+		transition.getRemoved().stream().map(t -> (Particle) t).forEach(p -> spunParticles.add(SpunParticle.down(p)));
+		transition.getMigrated().stream().map(t -> (Particle) t).forEach(p -> spunParticles.add(SpunParticle.up(p)));
+		transition.getTransitioned().stream().map(t -> (Particle) t).forEach(p -> spunParticles.add(SpunParticle.up(p)));
+
+		return spunParticles;
 	}
 
-	private Observable<SpunParticle> mapToAttachmentParticles(TransferTokensAction transfer) {
-		return Observable.create(emitter -> {
-			final Data attachment = transfer.getAttachment();
-			if (attachment != null) {
-				emitter.onNext(
-					SpunParticle.up(
-						new MessageParticleBuilder()
-							.payload(attachment.getBytes())
-							.from(transfer.getFrom())
-							.to(transfer.getTo())
-							.build()
-					)
-				);
-
-				Encryptor encryptor = attachment.getEncryptor();
-				if (encryptor != null) {
-					JsonArray protectorsJson = new JsonArray();
-					encryptor.getProtectors().stream().map(EncryptedPrivateKey::base64).forEach(protectorsJson::add);
-
-					byte[] encryptorPayload = protectorsJson.toString().getBytes(StandardCharsets.UTF_8);
-					MessageParticle encryptorParticle = new MessageParticleBuilder()
-						.payload(encryptorPayload)
-						.metaData("application", "encryptor")
-						.metaData("contentType", "application/json")
+	private List<SpunParticle> mapToAttachmentParticles(TransferTokensAction transfer) {
+		final Data attachment = transfer.getAttachment();
+		if (attachment != null) {
+			List<SpunParticle> spunParticles = new ArrayList<>();
+			spunParticles.add(
+				SpunParticle.up(
+					new MessageParticleBuilder()
+						.payload(attachment.getBytes())
 						.from(transfer.getFrom())
 						.to(transfer.getTo())
-						.build();
-					emitter.onNext(SpunParticle.up(encryptorParticle));
-				}
+						.build()
+				)
+			);
+
+			Encryptor encryptor = attachment.getEncryptor();
+			if (encryptor != null) {
+				JsonArray protectorsJson = new JsonArray();
+				encryptor.getProtectors().stream().map(EncryptedPrivateKey::base64).forEach(protectorsJson::add);
+
+				byte[] encryptorPayload = protectorsJson.toString().getBytes(StandardCharsets.UTF_8);
+				MessageParticle encryptorParticle = new MessageParticleBuilder()
+					.payload(encryptorPayload)
+					.metaData("application", "encryptor")
+					.metaData("contentType", "application/json")
+					.from(transfer.getFrom())
+					.to(transfer.getTo())
+					.build();
+				spunParticles.add(SpunParticle.up(encryptorParticle));
 			}
 
-			emitter.onComplete();
-		});
+			return spunParticles;
+		} else {
+			return Collections.emptyList();
+		}
 	}
 
 	@Override
@@ -184,9 +195,11 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 					.map(bal -> bal.unconsumedTransferrable().collect(Collectors.toList()))
 					.orElse(Collections.emptyList())
 		)
-			.flatMapObservable(tokenConsumables -> this.mapToParticles(transfer, tokenConsumables))
-			.concatWith(this.mapToAttachmentParticles(transfer))
-			.toList()
+			.map(tokenConsumables -> {
+				List<SpunParticle> transferParticles = this.mapToParticles(transfer, tokenConsumables);
+				List<SpunParticle> attachmentParticles = this.mapToAttachmentParticles(transfer);
+				return Stream.concat(transferParticles.stream(), attachmentParticles.stream()).collect(Collectors.toList());
+			})
 			.map(ParticleGroup::of)
 			.toObservable();
 	}
