@@ -5,6 +5,8 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.client.atommodel.Accountable;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.particles.Particle;
+
+import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
 
@@ -21,11 +23,12 @@ import java.util.Objects;
 @SerializerId2("MESSAGEPARTICLE")
 public class MessageParticle extends Particle implements Accountable {
 	public static class MessageParticleBuilder {
+		private static final Random rng = new Random();
 		private RadixAddress from;
 		private RadixAddress to;
 		private final MetadataMap metaData = new MetadataMap();
 		private byte[] bytes;
-		private long nonce = System.nanoTime();
+		private long nonce = rng.nextLong();
 
 		public MessageParticleBuilder metaData(String key, String value) {
 			this.metaData.put(key, value);
