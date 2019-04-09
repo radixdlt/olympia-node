@@ -4,25 +4,36 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
+import java.math.BigDecimal;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import org.json.JSONArray;
-import org.json.JSONObject;
-import org.junit.Test;
-
-import com.google.common.io.CharStreams;
-
-import static java.lang.Math.abs;
-import static junit.framework.TestCase.fail;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+import org.junit.Test;
+
+import com.google.common.io.CharStreams;
+import com.radixdlt.client.application.RadixApplicationAPI;
+import com.radixdlt.client.application.identity.RadixIdentities;
+import com.radixdlt.client.application.identity.RadixIdentity;
+import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
+import com.radixdlt.client.core.Bootstrap;
+import com.radixdlt.client.core.network.actions.SubmitAtomAction;
+import com.radixdlt.client.core.network.actions.SubmitAtomResultAction;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import io.reactivex.observers.TestObserver;
+import io.reactivex.observers.BaseTestConsumer.TestWaitStrategy;
 
 public class RTP {
 
@@ -38,6 +49,60 @@ public class RTP {
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    @Test
+    public void test_submitted_atom_two_vertex_timestamps_are_close() throws InterruptedException {
+    	RadixIdentity identity = RadixIdentities.createNew();
+    	// Connects to localhost:8080
+    	RadixApplicationAPI api = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, identity);
+		TestObserver<SubmitAtomAction> observer = new TestObserver<>();
+		api.createToken("Token", "TOKEN", "Token", BigDecimal.ZERO, BigDecimal.ONE, TokenSupplyType.MUTABLE)
+			.toObservable()
+			.subscribe(observer);
+		observer.awaitCount(4, TestWaitStrategy.SLEEP_100MS, 10_000)
+			.assertSubscribed()
+			.assertNoTimeout()
+			.assertNoErrors()
+			.assertComplete();
+
+		// Make sure last event was a SubmitAtomResult
+		observer.assertValueAt(observer.valueCount() - 1, saa -> saa instanceof SubmitAtomResultAction);
+
+		// Extract HID for query of "other" node
+		String atomHID = observer.values().get(observer.valueCount() - 1).getAtom().getHid().toString();
+
+		long timeout = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(5);
+		JSONArray atomArray;
+		do {
+			if (System.currentTimeMillis() > timeout) {
+				fail("Took too long for second node to sync atom " + atomHID);
+			}
+
+			// Wait for a little bit to give the node a chance to do some stuff
+			TimeUnit.MILLISECONDS.sleep(100);
+
+			// Get atom from the "other" node
+			String result = getURL("http://localhost:8081/api/atoms?uid=" + atomHID);
+			JSONObject json = new JSONObject(result);
+			atomArray = json.getJSONArray("data");
+		} while (atomArray.isEmpty());
+
+		assertTrue("Only one atom", atomArray.length() == 1);
+
+        JSONObject atom = atomArray.getJSONObject(0);
+    	JSONObject temporalProof = atom.getJSONObject("temporalProof");
+    	JSONArray verticesArray = temporalProof.getJSONArray("vertices");
+    	assertTrue("Vertices array has two elements", verticesArray.length() == 2);
+
+        JSONObject firstVertex = verticesArray.getJSONObject(0);
+        JSONObject secondVertex = verticesArray.getJSONObject(1);
+
+        long rclock1 = firstVertex.getLong("rclock");
+        long rclock2 = secondVertex.getLong("rclock");
+
+        assertTrue("Timestamps in order", rclock1 <= rclock2);
+        assertTrue("Timestamps fairly close", Math.abs(rclock1 - rclock2) < 2000);
     }
 
     // Given that I have a connection to a Radix node,
@@ -97,6 +162,10 @@ public class RTP {
         String result = getURL("http://localhost:8080/api/rtp/timestamp");
         JSONObject json = new JSONObject(result);
         assertTrue("Has radix time", json.has("radix_time"));
+
+        long rclock = json.getLong("radix_time");
+        long now = System.currentTimeMillis() + 50; // Some padding for TCP round trip
+        assertTrue("RTP Clock is too far in the past", rclock < now);
     }
 
     // Given that I have a connection to two different Radix nodes,
