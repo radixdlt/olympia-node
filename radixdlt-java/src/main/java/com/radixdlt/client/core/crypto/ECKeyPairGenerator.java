@@ -35,6 +35,11 @@ public final class ECKeyPairGenerator {
      * repository and that correct secpXYZk1 elliptic curves can be derived.
      */
     static synchronized void install() {
+
+		if (AndroidUtil.isAndroidRuntime()) {
+			Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME);
+		}
+
         Provider requiredBouncyCastleProvider = new BouncyCastleProvider();
         Provider currentBouncyCastleProvider = Security.getProvider(BouncyCastleProvider.PROVIDER_NAME);
 
@@ -43,10 +48,6 @@ public final class ECKeyPairGenerator {
         // by default.
         if (currentBouncyCastleProvider == null
 			|| currentBouncyCastleProvider.getVersion() != requiredBouncyCastleProvider.getVersion()) {
-
-            if (AndroidUtil.isAndroidRuntime()) {
-                Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME);
-            }
 
             Security.insertProviderAt(requiredBouncyCastleProvider, 1);
         }
