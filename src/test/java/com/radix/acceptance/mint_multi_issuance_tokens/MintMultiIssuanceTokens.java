@@ -1,6 +1,8 @@
 package com.radix.acceptance.mint_multi_issuance_tokens;
 
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.client.application.translate.tokens.InsufficientFundsException;
+import com.radixdlt.client.application.translate.tokens.TokenOverMintException;
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomReceivedAction;
@@ -162,12 +164,12 @@ public class MintMultiIssuanceTokens {
 	@Then("^the client should be notified that the action failed because cannot mint with (\\d+) tokens$")
 	public void the_client_should_be_notified_that_the_action_failed_because_cannot_mint_with_tokens(int count) throws Throwable {
 		assertEquals(0, count); // Only thing we check for here
-		awaitAtomException(IllegalArgumentException.class, "Amount is zero");
+		awaitAtomException(IllegalArgumentException.class, "Mint amount must be greater than 0.");
 	}
 
 	@Then("^the client should be notified that the action failed because it reached the max allowed number of tokens of 2\\^256 - 1$")
 	public void the_client_should_be_notified_that_the_action_failed_because_it_reached_the_max_allowed_number_of_tokens_of() throws Throwable {
-		awaitAtomValidationError("Mints would overflow maximum");
+		awaitAtomException(TokenOverMintException.class, "would overflow maximum");
 	}
 
 	@Then("^the client should be notified that the action failed because \"([^\"]*)\" does not exist$")

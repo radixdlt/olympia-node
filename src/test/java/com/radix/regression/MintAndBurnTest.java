@@ -5,8 +5,6 @@ import com.radixdlt.client.application.RadixApplicationAPI.Result;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
 import com.radixdlt.client.core.Bootstrap;
-import com.radixdlt.client.core.network.actions.SubmitAtomResultAction;
-import com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType;
 import org.junit.Test;
 import org.radix.utils.UInt256;
 
@@ -16,18 +14,18 @@ public class MintAndBurnTest {
 		RadixApplicationAPI api = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, RadixIdentities.createNew());
 		Result result0 = api.createMultiIssuanceToken("Joshy Token", "JOSH", "Best token");
 		result0.toObservable().subscribe(System.out::println);
-		result0.toCompletable().blockingAwait();
+		result0.blockUntilComplete();
 
 		Result result1 = api.mintTokens("JOSH", TokenUnitConversions.subunitsToUnits(UInt256.MAX_VALUE));
 		result1.toObservable().subscribe(System.out::println);
-		result1.toCompletable().blockingAwait();
+		result1.blockUntilComplete();
 
 		Result result2 = api.burnTokens("JOSH", TokenUnitConversions.subunitsToUnits(UInt256.MAX_VALUE));
 		result2.toObservable().subscribe(System.out::println);
-		result2.toCompletable().blockingAwait();
+		result2.blockUntilComplete();
 
 		Result result3 = api.mintTokens("JOSH", TokenUnitConversions.subunitsToUnits(UInt256.MAX_VALUE));
 		result3.toObservable().subscribe(System.out::println);
-		result3.toCompletable().blockingAwait();
+		result3.blockUntilComplete();
 	}
 }

@@ -11,8 +11,7 @@ import com.radixdlt.client.application.translate.tokens.TokenBalanceState;
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.atommodel.tokens.ConsumableTokens;
-import com.radixdlt.client.atommodel.tokens.TransferredTokensParticle;
+import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
@@ -64,22 +63,23 @@ public class DoubleSpendWithInterDependencyTest {
 				.flatMap(Observable::firstOrError)
 				.map(appState -> {
 					TokenBalanceState tokenBalanceState = (TokenBalanceState) appState;
-					ConsumableTokens consumable = tokenBalanceState.getBalance().get(s.tokDefRef).unconsumedTransferrable()
+					TransferrableTokensParticle consumable = tokenBalanceState.getBalance().get(s.tokDefRef).unconsumedTransferrable()
 						.findFirst()
 						.orElseThrow(IllegalStateException::new);
 
 					final UInt256 amount = consumable.getAmount();
-					final Supplier<TransferredTokensParticle> particleSupplier = () -> new TransferredTokensParticle(
+					final Supplier<TransferrableTokensParticle> particleSupplier = () -> new TransferrableTokensParticle(
 						amount,
 						TokenUnitConversions.unitsToSubunits(BigDecimal.ONE),
 						s.self,
 						System.nanoTime(),
 						s.tokDefRef,
-						System.currentTimeMillis() / 60000L + 60000L
+						System.currentTimeMillis() / 60000L + 60000L,
+						consumable.getTokenPermissions()
 					);
 
-					TransferredTokensParticle transferredTokensParticle0 = particleSupplier.get();
-					TransferredTokensParticle transferredTokensParticle1 = particleSupplier.get();
+					TransferrableTokensParticle transferredTokensParticle0 = particleSupplier.get();
+					TransferrableTokensParticle transferredTokensParticle1 = particleSupplier.get();
 
 					return Arrays.asList(
 						ParticleGroup.of(

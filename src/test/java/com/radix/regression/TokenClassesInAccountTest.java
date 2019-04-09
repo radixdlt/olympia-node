@@ -50,16 +50,15 @@ public class TokenClassesInAccountTest {
 	}
 
 	private Predicate<TokenDefinitionsState> getPredicateCheck(String iso, BigDecimal initialSupply) {
-		TokenState expectedTokenState = new TokenState(
-			"Joshy Coin",
-			iso,
-			"Ze best coin!",
-			initialSupply,
-			TokenUnitConversions.getMinimumGranularity(),
-			TokenState.TokenSupplyType.FIXED
-		);
-
-		return tokens -> tokens.getState().get(TokenDefinitionReference.of(api.getMyAddress(), iso)).equals(expectedTokenState);
+		return tokens -> {
+			TokenState tokenState = tokens.getState().get(TokenDefinitionReference.of(api.getMyAddress(), iso));
+			return tokenState.getName().equals("Joshy Coin")
+				&& tokenState.getIso().equals(iso)
+				&& tokenState.getDescription().equals("Ze best coin!")
+				&& tokenState.getTotalSupply().compareTo(initialSupply) == 0
+				&& tokenState.getGranularity().equals(TokenUnitConversions.getMinimumGranularity())
+				&& tokenState.getTokenSupplyType().equals(TokenState.TokenSupplyType.FIXED);
+		};
 	}
 
 	@Test
@@ -86,7 +85,6 @@ public class TokenClassesInAccountTest {
 		// When execution
 		TestObserver<TokenDefinitionsState> testObserver = TestObserver.create(Util.loggingObserver("TokenClassListener"));
 		subscription.get()
-			.debounce(15, TimeUnit.SECONDS)
 			.firstOrError()
 			.subscribe(testObserver);
 
