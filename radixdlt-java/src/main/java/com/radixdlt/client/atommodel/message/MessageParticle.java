@@ -25,6 +25,7 @@ public class MessageParticle extends Particle implements Accountable {
 		private RadixAddress to;
 		private final MetadataMap metaData = new MetadataMap();
 		private byte[] bytes;
+		private long nonce = System.nanoTime();
 
 		public MessageParticleBuilder metaData(String key, String value) {
 			this.metaData.put(key, value);
@@ -46,8 +47,13 @@ public class MessageParticle extends Particle implements Accountable {
 			return this;
 		}
 
+		public MessageParticleBuilder nonce(long nonce) {
+			this.nonce = nonce;
+			return this;
+		}
+
 		public MessageParticle build() {
-			return new MessageParticle(this.from, this.to, this.bytes, this.metaData);
+			return new MessageParticle(this.from, this.to, this.bytes, this.metaData, nonce);
 		}
 	}
 
@@ -79,7 +85,14 @@ public class MessageParticle extends Particle implements Accountable {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private byte[] bytes;
 
-	private MessageParticle(RadixAddress from, RadixAddress to, byte[] bytes, MetadataMap metaData) {
+	/**
+	 * Nonce to make every Message unique
+	 */
+	@JsonProperty("nonce")
+	@DsonOutput(DsonOutput.Output.ALL)
+	private long nonce;
+
+	private MessageParticle(RadixAddress from, RadixAddress to, byte[] bytes, MetadataMap metaData, long nonce) {
 		super();
 		Objects.requireNonNull(bytes);
 
@@ -87,6 +100,7 @@ public class MessageParticle extends Particle implements Accountable {
 		this.to = Objects.requireNonNull(to, "to is required");
 		this.bytes = Arrays.copyOf(bytes, bytes.length);
 		this.metaData.putAll(metaData);
+		this.nonce = nonce;
 	}
 
 	@Override
