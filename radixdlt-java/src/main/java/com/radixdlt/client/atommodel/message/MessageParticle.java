@@ -23,12 +23,12 @@ import java.util.Objects;
 @SerializerId2("MESSAGEPARTICLE")
 public class MessageParticle extends Particle implements Accountable {
 	public static class MessageParticleBuilder {
-		private static final Random rng = new Random();
+		private static final Random RNG = new Random();
 		private RadixAddress from;
 		private RadixAddress to;
 		private final MetadataMap metaData = new MetadataMap();
 		private byte[] bytes;
-		private long nonce = rng.nextLong();
+		private long nonce = RNG.nextLong();
 
 		public MessageParticleBuilder metaData(String key, String value) {
 			this.metaData.put(key, value);
