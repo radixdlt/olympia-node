@@ -135,7 +135,7 @@ public class AtomKernelTest {
 
 		Map<String, String> atomMetaData = new HashMap<>();
 		atomMetaData.putAll(metaData);
-		atomMetaData.put("timestamp", System.currentTimeMillis() + "");
+		atomMetaData.put("timestamp", timestamp);
 
 		if (addFee) {
 			atomMetaData.putAll(feeMapper.map(new Atom(particleGroups, atomMetaData), universe, this.identity.getPublicKey()).getFirst());
