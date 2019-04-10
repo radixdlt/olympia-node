@@ -17,7 +17,7 @@ import com.radixdlt.client.atommodel.Identifiable;
 import com.radixdlt.client.atommodel.Ownable;
 import com.radixdlt.client.core.atoms.particles.RadixResourceIdentifer;
 
-@SerializerId2("TOKENDEFINITIONPARTICLE")
+@SerializerId2("radix.particles.token_definition")
 public class TokenDefinitionParticle extends Particle implements Identifiable, Ownable {
 	public enum TokenTransition {
 		MINT,

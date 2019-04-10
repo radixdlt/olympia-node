@@ -6,7 +6,7 @@ import org.radix.serialization2.client.SerializableObject;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-@SerializerId2("SPUNPARTICLE")
+@SerializerId2("radix.spun_particle")
 public class SpunParticle<T extends Particle> extends SerializableObject {
 
 	@JsonProperty("particle")

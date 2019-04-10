@@ -22,7 +22,7 @@ import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.RadixHash;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 
-@SerializerId2("UNIVERSE")
+@SerializerId2("radix.universe")
 public class RadixUniverseConfig extends SerializableObject {
 
 	@JsonProperty("magic")

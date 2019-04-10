@@ -32,7 +32,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.client.core.atoms.RadixHash;
 
 
-@SerializerId2("ECKEYPAIR")
+@SerializerId2("crypto.ec_key_pair")
 public class ECKeyPair extends SerializableObject {
 	@JsonProperty("public")
 	@DsonOutput(Output.ALL)

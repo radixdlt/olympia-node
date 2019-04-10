@@ -8,7 +8,7 @@ import com.radixdlt.client.core.atoms.particles.RadixResourceIdentifer;
 import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.SerializerId2;
 
-@SerializerId2("UNIQUEIDPARTICLE")
+@SerializerId2("radix.particles.unique")
 public class UniqueParticle extends Particle implements Identifiable {
 	@JsonProperty("name")
 	@DsonOutput(DsonOutput.Output.ALL)

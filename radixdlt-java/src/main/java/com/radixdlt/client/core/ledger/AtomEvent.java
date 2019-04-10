@@ -7,7 +7,7 @@ import org.radix.serialization2.DsonOutput.Output;
 import org.radix.serialization2.SerializerId2;
 import org.radix.serialization2.client.SerializableObject;
 
-@SerializerId2("ATOMEVENT")
+@SerializerId2("api.atom_event")
 public class AtomEvent extends SerializableObject {
 	public enum AtomEventType {
 		STORE, DELETE

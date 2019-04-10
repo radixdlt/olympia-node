@@ -24,7 +24,7 @@ import java.util.Set;
  *  A particle which represents an amount of consumable and consuming, tranferable fungible tokens
  *  owned by some key owner and stored in an account.
  */
-@SerializerId2("TRANSFERRABLETOKENSPARTICLE")
+@SerializerId2("radix.particles.transferrable_tokens")
 public final class TransferrableTokensParticle extends Particle implements Accountable, Ownable {
 	@JsonProperty("address")
 	@DsonOutput(Output.ALL)

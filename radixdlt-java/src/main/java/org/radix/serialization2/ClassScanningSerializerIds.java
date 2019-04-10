@@ -22,9 +22,9 @@ import static org.radix.serialization2.SerializerConstants.SERIALIZER_ID_ANNOTAT
 public abstract class ClassScanningSerializerIds implements SerializerIds {
 
 	// Assuming that lookups from class to ID will be more common
-	private final Map<Class<?>, Long> classIdMap = Maps.newHashMap();
+	private final Map<Class<?>, String> classIdMap = Maps.newHashMap();
 	// Inverse view of same data
-	private final BiMap<Long, Class<?>> idClassMap = HashBiMap.create();
+	private final BiMap<String, Class<?>> idClassMap = HashBiMap.create();
 
 	private final HashSet<Class<?>> serializableSupertypes = new HashSet<>();
 
@@ -37,7 +37,7 @@ public abstract class ClassScanningSerializerIds implements SerializerIds {
 	 *			found with the same {@code SerializerId}
 	 */
 	protected ClassScanningSerializerIds(Collection<Class<?>> classes) {
-		Map<Long, List<Class<?>>> polymorphicMap = new HashMap<>();
+		Map<String, List<Class<?>>> polymorphicMap = new HashMap<>();
 
 		for (Class<?> cls : classes) {
 			SerializerId2 sid = cls.getDeclaredAnnotation(SERIALIZER_ID_ANNOTATION);
@@ -74,21 +74,20 @@ public abstract class ClassScanningSerializerIds implements SerializerIds {
 //				continue;
 //			}
 
-			long id = sid.value().hashCode();
-
+			String sidValue = sid.value();
 			if (Polymorphic.class.isAssignableFrom(cls)) {
 				// Polymorphic class hierarchy checked later
 //				if (log.hasLevel(Logging.DEBUG)) {
 //					log.debug("Polymorphic class:" + cls.getName() + " with ID:" + id);
 //				}
-				polymorphicMap.computeIfAbsent(id, k -> new ArrayList<>()).add(cls);
+				polymorphicMap.computeIfAbsent(sidValue, k -> new ArrayList<>()).add(cls);
 			} else {
 				// Check for duplicates
-				Class<?> dupClass = idClassMap.put(id, cls);
+				Class<?> dupClass = idClassMap.put(sidValue, cls);
 				if (dupClass != null) {
 					throw new SerializerIdsException(
 							String.format("Aborting, duplicate ID %s discovered in classes: [%s, %s]",
-									id, cls.getName(), dupClass.getName()));
+								sidValue, cls.getName(), dupClass.getName()));
 				}
 //				if (log.hasLevel(Logging.DEBUG)) {
 //					log.debug("Putting Class:" + cls.getName() + " with ID:" + id);
@@ -99,15 +98,15 @@ public abstract class ClassScanningSerializerIds implements SerializerIds {
 
 		classIdMap.putAll(idClassMap.inverse());
 		// Check polymorphic hierarchy consistency
-		for (Map.Entry<Long, List<Class<?>>> entry : polymorphicMap.entrySet()) {
-			Long id = entry.getKey();
+		for (Map.Entry<String, List<Class<?>>> entry : polymorphicMap.entrySet()) {
+			String id = entry.getKey();
 			if (!idClassMap.containsKey(id)) {
 				throw new SerializerIdsException(
 						String.format("No concrete class with ID '%s' for polymorphic classes %s",
 								entry.getKey(), entry.getValue()));
 			}
 			for (Class<?> cls : entry.getValue()) {
-				Long dupId = classIdMap.put(cls, id);
+				String dupId = classIdMap.put(cls, id);
 				if (dupId != null) {
 					throw new SerializerIdsException(
 							String.format("Aborting, class %s has duplicate IDs %s and %s",
@@ -125,7 +124,7 @@ public abstract class ClassScanningSerializerIds implements SerializerIds {
 	}
 
 	@Override
-	public Long getIdForClass(Class<?> cls) {
+	public String getIdForClass(Class<?> cls) {
 		if (!this.classIdMap.containsKey(cls)) {
 			throw new IllegalArgumentException("Class " + cls + " could not be found");
 		}
@@ -134,7 +133,7 @@ public abstract class ClassScanningSerializerIds implements SerializerIds {
 	}
 
 	@Override
-	public Class<?> getClassForId(long id) {
+	public Class<?> getClassForId(String id) {
 		if (!this.idClassMap.containsKey(id)) {
 			throw new IllegalArgumentException("Class id " + id + " could not be found");
 		}

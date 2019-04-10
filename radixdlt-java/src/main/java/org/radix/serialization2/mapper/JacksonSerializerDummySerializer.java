@@ -31,11 +31,11 @@ class JacksonSerializerDummySerializer extends StdSerializer<SerializerDummy> {
 	public void serialize(SerializerDummy value, JsonGenerator jgen, SerializerProvider provider)
 			throws IOException, JsonProcessingException {
 		Object parent = jgen.getOutputContext().getCurrentValue();
-		Long id = idLookup.getIdForClass(parent.getClass());
+		String id = idLookup.getIdForClass(parent.getClass());
 		if (id == null) {
 			throw new IllegalStateException("Can't find ID for class: " + parent.getClass().getName());
 		}
-		jgen.writeNumber(id.longValue());
+		jgen.writeString(id);
 	}
 
     @Override

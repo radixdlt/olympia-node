@@ -11,7 +11,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.core.atoms.Shards;
 
-@SerializerId2("PEER")
+@SerializerId2("network.peer")
 public class NodeRunnerData extends SerializableObject {
 	private String ip;
 

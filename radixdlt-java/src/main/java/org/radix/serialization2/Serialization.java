@@ -257,7 +257,7 @@ public class Serialization {
 	 * @param cls The class to look up the ID for
 	 * @return The serializer ID, or {@code null} if no serializer for the specified class.
 	 */
-	public Long getIdForClass(Class<?> cls) {
+	public String getIdForClass(Class<?> cls) {
 		return idLookup.getIdForClass(cls);
 	}
 
@@ -267,7 +267,7 @@ public class Serialization {
 	 * @param id The ID to look up the class for
 	 * @return The class, or {@code null} if serializer ID unknown.
 	 */
-	public Class<?> getClassForId(long id) {
+	public Class<?> getClassForId(String id) {
 		return idLookup.getClassForId(id);
 	}
 
