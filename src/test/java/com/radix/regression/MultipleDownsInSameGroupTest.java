@@ -118,7 +118,7 @@ public class MultipleDownsInSameGroupTest {
 			.assertComplete()
 			.assertValueAt(1, state
 				-> state.getState() == RadixJsonRpcClient.NodeAtomSubmissionState.VALIDATION_ERROR
-					&& state.getData().toString().contains("0") && state.getData().toString().contains("1"));
+					&& state.getData().toString().contains("in group 2: [0, 1]"));
 	}
 
 	@Test
@@ -154,7 +154,7 @@ public class MultipleDownsInSameGroupTest {
 			.assertComplete()
 			.assertValueAt(1, state
 				-> state.getState() == RadixJsonRpcClient.NodeAtomSubmissionState.VALIDATION_ERROR
-				&& state.getData().toString().contains("0") && state.getData().toString().contains("1") && state.getData().toString().contains("2"));
+					&& state.getData().toString().contains("in group 2: [0, 1, 2]"));
 	}
 
 	private TransferrableTokensParticle createTransferrableTokens(RadixAddress myAddress, TokenDefinitionParticle tokenDefinition, UInt256 amount) {
@@ -196,7 +196,7 @@ public class MultipleDownsInSameGroupTest {
 
 	private TestObserver<RadixJsonRpcClient.NodeAtomSubmissionUpdate> submitAtom(List<ParticleGroup> particleGroups) {
 		Map<String, String> atomMetaData = new HashMap<>();
-		atomMetaData.put("timestamp", System.currentTimeMillis() + "");
+		atomMetaData.put("timestamp", String.valueOf(System.currentTimeMillis()));
 		atomMetaData.putAll(feeMapper.map(new Atom(particleGroups, atomMetaData), universe, this.identity.getPublicKey()).getFirst());
 
 		UnsignedAtom unsignedAtom = new UnsignedAtom(new Atom(particleGroups, atomMetaData));
