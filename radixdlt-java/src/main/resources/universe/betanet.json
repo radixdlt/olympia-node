@@ -1,8 +1,8 @@
 {
     "magic": 63799298,
     "creator": ":byt:A3hanCWf3pmR5E+i+wtWWfKleBrDOQduLb/vcFKOSt9o",
-    "signature.r": ":byt:W9p1kB8Lo0fBlwkZX6MGnm7Drt3+1+TzVKwo/z4UKbM=",
-    "signature.s": ":byt:rxwV3m/SvuQVJNPxBleLTeyA5MuA0gC20dhBLscKB4g=",
+    "signature.r": ":byt:8+ZGK30jwrDYRR3INLxXftu7HwL8jPHEmyJmEhM8gy8=",
+    "signature.s": ":byt:5FouJ61bqRxgNIOWeif+9+kruhsM44f2TWcv8R+yr2E=",
     "serializer": "radix.universe",
     "description": ":str:The Radix development Universe",
     "type": 2,
@@ -24,7 +24,7 @@
                         "from": ":adr:JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor",
                         "to": ":adr:JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor",
                         "version": 100,
-                        "nonce": 92545740840478
+                        "nonce": 155906069964633
                     },
                     "version": 100
                 }],
@@ -64,7 +64,7 @@
                             },
                             "serializer": "radix.particles.unallocated_tokens",
                             "version": 100,
-                            "nonce": 92545740859518,
+                            "nonce": 155906069982796,
                             "tokenDefinitionReference": ":rri:/JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor/tokens/XRD"
                         },
                         "version": 100
@@ -87,7 +87,7 @@
                             },
                             "serializer": "radix.particles.unallocated_tokens",
                             "version": 100,
-                            "nonce": 92545740859518,
+                            "nonce": 155906069982796,
                             "tokenDefinitionReference": ":rri:/JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor/tokens/XRD"
                         },
                         "version": 100
@@ -104,7 +104,7 @@
                             },
                             "serializer": "radix.particles.unallocated_tokens",
                             "version": 100,
-                            "nonce": 92545740873017,
+                            "nonce": 155906069995176,
                             "tokenDefinitionReference": ":rri:/JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor/tokens/XRD"
                         },
                         "version": 100
@@ -122,7 +122,7 @@
                             },
                             "serializer": "radix.particles.transferrable_tokens",
                             "version": 100,
-                            "nonce": 92545740870926,
+                            "nonce": 155906069993376,
                             "tokenDefinitionReference": ":rri:/JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor/tokens/XRD",
                             "planck": 24805440
                         },
@@ -133,9 +133,9 @@
             }
         ],
         "signatures": {"56abab3870585f04d015d55adf600bc7": {
-            "r": ":byt:FPUcrekx/e+nsXSFeAKQYGwdFA4GGxBasAXCBADqbNo=",
-            "s": ":byt:vi5Iw5SSRiw7TNmaEkFhkjp/Tx5/dc6z/rNNZJLx0/Q=",
-            "serializer": "crypto.ec_signature",
+            "r": ":byt:fy3G4ly8eVeTfbN7yBpr77kyTHKszghbjBudpNnrzoQ=",
+            "s": ":byt:+3a22OJO5aOZioTllTQmjWHXp0Kemu1c5EsZ4ojtnuE=",
+            "serializer": "crypto.ecdsa_signature",
             "version": 100
         }},
         "temporalProof": {
@@ -144,9 +144,9 @@
                 "rclock": 1488326400000,
                 "previous": ":uid:00000000000000000000000000000000",
                 "signature": {
-                    "r": ":byt:X1vgbA5eU0nc8EZ7t2VDnVnIfLNxe0MkwGdljXyUY/U=",
-                    "s": ":byt:+rDhUrNL6BXC+APUWiiVPgV6/hwKjV3c7Qk99C3mTxM=",
-                    "serializer": "crypto.ec_signature",
+                    "r": ":byt:2xz/KUZqI2PHDeFjQ+wW4+cd8q8+rZ7qG5LVkAYn65I=",
+                    "s": ":byt:uKxzVA4LtEzwvv9p4GV7i9xDl2eVkePb70kJBQjbxtI=",
+                    "serializer": "crypto.ecdsa_signature",
                     "version": 100
                 },
                 "timestamps": {"default": 1488326400000},
@@ -157,7 +157,7 @@
             }],
             "serializer": "tempo.temporal_proof",
             "version": 100,
-            "object": ":hsh:7d10eeaca28fab7e52c23d4fc6c2e5483dbfdfd316ea1a61195120cf5c29a30a"
+            "object": ":hsh:bff8b419c626af311b91d1d4ffb250dffe5878b574de099fc9357d4801893b4b"
         }
     }],
     "port": 30000,
