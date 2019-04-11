@@ -29,21 +29,6 @@ public class ECSignature extends SerializableObject {
 		this.s = Bytes.trimLeadingZeros(s.toByteArray());
 	}
 
-	public ECSignature(byte[] bytes) {
-		DLSequence seq;
-		ASN1Integer r, s;
-		try (ASN1InputStream decoder = new ASN1InputStream(bytes)) {
-			seq = (DLSequence) decoder.readObject();
-			r = (ASN1Integer) seq.getObjectAt(0);
-			s = (ASN1Integer) seq.getObjectAt(1);
-		} catch (ClassCastException | IOException e) {
-			throw new IllegalArgumentException(e);
-		}
-
-		this.r = r.getPositiveValue().toByteArray();
-		this.s = s.getPositiveValue().toByteArray();
-	}
-
 	public String getRBase64() {
 		return Base64.toBase64String(r);
 	}
@@ -78,5 +63,19 @@ public class ECSignature extends SerializableObject {
 	@JsonProperty("s")
 	private void setJsonS(byte[] s) {
 		this.s = s.clone();
+	}
+
+	public static ECSignature fromASN1(byte[] bytes) {
+		DLSequence seq;
+		ASN1Integer r, s;
+		try (ASN1InputStream decoder = new ASN1InputStream(bytes)) {
+			seq = (DLSequence) decoder.readObject();
+			r = (ASN1Integer) seq.getObjectAt(0);
+			s = (ASN1Integer) seq.getObjectAt(1);
+		} catch (ClassCastException | IOException e) {
+			throw new IllegalArgumentException(e);
+		}
+
+		return new ECSignature(r.getPositiveValue(), s.getPositiveValue());
 	}
 }
