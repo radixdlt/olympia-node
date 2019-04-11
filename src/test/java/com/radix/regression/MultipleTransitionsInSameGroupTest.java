@@ -35,7 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-public class MultipleDownsInSameGroupTest {
+public class MultipleTransitionsInSameGroupTest {
 	private RadixUniverse universe = RadixUniverse.create(Bootstrap.LOCALHOST_SINGLENODE);
 	private RadixIdentity identity;
 	private FeeMapper feeMapper = new PowFeeMapper(Atom::getHash, new ProofOfWorkBuilder());
@@ -69,7 +69,7 @@ public class MultipleDownsInSameGroupTest {
 		);
 		TransferrableTokensParticle output = createTransferrableTokens(myAddress, tokenDefinition, mintedTokens.getAmount());
 
-		ParticleGroup doubleSpendGroup = ParticleGroup.of(
+		ParticleGroup duplicateTransitionsGroup = ParticleGroup.of(
 			SpunParticle.down(mintedTokens),
 			SpunParticle.up(output)
 		);
@@ -77,7 +77,7 @@ public class MultipleDownsInSameGroupTest {
 		TestObserver<RadixJsonRpcClient.NodeAtomSubmissionUpdate> result = submitAtom(Arrays.asList(
 			definitionGroup,
 			mintGroup,
-			doubleSpendGroup
+			duplicateTransitionsGroup
 		));
 		result.awaitTerminalEvent(5, TimeUnit.SECONDS);
 		result.assertNoErrors()
@@ -102,7 +102,7 @@ public class MultipleDownsInSameGroupTest {
 		);
 		TransferrableTokensParticle output = createTransferrableTokens(myAddress, tokenDefinition, mintedTokens.getAmount().multiply(UInt256.TWO));
 
-		ParticleGroup doubleSpendGroup = ParticleGroup.of(
+		ParticleGroup duplicateTransitionsGroup = ParticleGroup.of(
 			SpunParticle.down(mintedTokens),
 			SpunParticle.down(mintedTokens),
 			SpunParticle.up(output)
@@ -111,7 +111,7 @@ public class MultipleDownsInSameGroupTest {
 		TestObserver<RadixJsonRpcClient.NodeAtomSubmissionUpdate> result = submitAtom(Arrays.asList(
 			definitionGroup,
 			mintGroup,
-			doubleSpendGroup
+			duplicateTransitionsGroup
 		));
 		result.awaitTerminalEvent(5, TimeUnit.SECONDS);
 		result.assertNoErrors()
@@ -137,7 +137,7 @@ public class MultipleDownsInSameGroupTest {
 		);
 		TransferrableTokensParticle output = createTransferrableTokens(myAddress, tokenDefinition, mintedTokens.getAmount().multiply(UInt256.THREE));
 
-		ParticleGroup doubleSpendGroup = ParticleGroup.of(
+		ParticleGroup duplicateTransitionsGroup = ParticleGroup.of(
 			SpunParticle.down(mintedTokens),
 			SpunParticle.down(mintedTokens),
 			SpunParticle.down(mintedTokens),
@@ -147,7 +147,7 @@ public class MultipleDownsInSameGroupTest {
 		TestObserver<RadixJsonRpcClient.NodeAtomSubmissionUpdate> result = submitAtom(Arrays.asList(
 			definitionGroup,
 			mintGroup,
-			doubleSpendGroup
+			duplicateTransitionsGroup
 		));
 		result.awaitTerminalEvent(5, TimeUnit.SECONDS);
 		result.assertNoErrors()
@@ -167,6 +167,40 @@ public class MultipleDownsInSameGroupTest {
 			System.currentTimeMillis() / 60000L + 60000L,
 			tokenDefinition.getTokenPermissions()
 		);
+	}
+
+	public void when_submitting_an_atom_with_two_ups_of_same_consumable_within_a_group__then_atom_is_rejected() {
+		RadixAddress myAddress = this.universe.getAddressFrom(this.identity.getPublicKey());
+		TokenDefinitionParticle tokenDefinition = createTokenDefinition(myAddress);
+		UnallocatedTokensParticle unallocatedTokens = createUnallocatedTokens(tokenDefinition);
+		TransferrableTokensParticle mintedTokens = createTransferrableTokens(myAddress, tokenDefinition, unallocatedTokens.getAmount());
+		ParticleGroup definitionGroup = ParticleGroup.of(
+			SpunParticle.up(tokenDefinition),
+			SpunParticle.up(unallocatedTokens)
+		);
+		ParticleGroup mintGroup = ParticleGroup.of(
+			SpunParticle.down(unallocatedTokens),
+			SpunParticle.up(mintedTokens)
+		);
+		TransferrableTokensParticle output = createTransferrableTokens(myAddress, tokenDefinition, mintedTokens.getAmount().divide(UInt256.TWO));
+
+		ParticleGroup duplicateTransitionsGroup = ParticleGroup.of(
+			SpunParticle.down(mintedTokens),
+			SpunParticle.up(output),
+			SpunParticle.up(output)
+		);
+
+		TestObserver<RadixJsonRpcClient.NodeAtomSubmissionUpdate> result = submitAtom(Arrays.asList(
+			definitionGroup,
+			mintGroup,
+			duplicateTransitionsGroup
+		));
+		result.awaitTerminalEvent(5, TimeUnit.SECONDS);
+		result.assertNoErrors()
+			.assertComplete()
+			.assertValueAt(1, state
+				-> state.getState() == RadixJsonRpcClient.NodeAtomSubmissionState.VALIDATION_ERROR
+				&& state.getData().toString().contains("in group 2: [1, 2]"));
 	}
 
 	private UnallocatedTokensParticle createUnallocatedTokens(TokenDefinitionParticle tokenDefinition) {
