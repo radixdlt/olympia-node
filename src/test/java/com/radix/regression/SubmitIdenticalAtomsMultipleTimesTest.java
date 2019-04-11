@@ -3,6 +3,7 @@ package com.radix.regression;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.FeeMapper;
@@ -22,6 +23,7 @@ import com.radixdlt.client.core.pow.ProofOfWorkBuilder;
 import io.reactivex.functions.Predicate;
 import io.reactivex.observers.TestObserver;
 import okhttp3.Request;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -31,6 +33,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class SubmitIdenticalAtomsMultipleTimesTest {
 	private RadixUniverse universe = RadixUniverse.create(Bootstrap.LOCALHOST_SINGLENODE);
@@ -51,7 +55,7 @@ public class SubmitIdenticalAtomsMultipleTimesTest {
 	}
 
 	@Test
-	public void testSubmitSameAtomTwoTimes() {
+	public void testSubmitSameAtomTwoTimesSequentially() {
 		Atom atom = buildAtom(ImmutableMap.of(), true, System.currentTimeMillis() + "", SpunParticle.up(
 			new MessageParticle.MessageParticleBuilder()
 			.payload(new byte[10])
@@ -60,12 +64,62 @@ public class SubmitIdenticalAtomsMultipleTimesTest {
 			.to(universe.getAddressFrom(this.identity.getPublicKey()))
 			.build()));
 
-		submitAndAwaitResult(atom, state -> state.getState() == RadixJsonRpcClient.NodeAtomSubmissionState.STORED);
-		submitAndAwaitResult(atom, state -> state.getState() == RadixJsonRpcClient.NodeAtomSubmissionState.VALIDATION_ERROR);
+		submitAndAwaitResult(atom, state
+			-> state.getState() == RadixJsonRpcClient.NodeAtomSubmissionState.STORED
+				&& state.getData().getAsJsonObject().get("justStored").getAsBoolean());
+		submitAndAwaitResult(atom, state
+			-> state.getState() == RadixJsonRpcClient.NodeAtomSubmissionState.STORED
+				&& !state.getData().getAsJsonObject().get("justStored").getAsBoolean());
+	}
+
+	@Test
+	public void testSubmitSameAtomTwoTimesConcurrently() {
+		submitSameAtomXTimesConcurrently(2);
+	}
+
+	@Test
+	public void testSubmitSameAtomManyTimesConcurrently() {
+		submitSameAtomXTimesConcurrently(16);
+	}
+
+	public void submitSameAtomXTimesConcurrently(int times) {
+		Atom atom = buildAtom(ImmutableMap.of(), true, System.currentTimeMillis() + "", SpunParticle.up(
+			new MessageParticle.MessageParticleBuilder()
+			.payload(new byte[10])
+			.metaData("application", "message")
+			.from(universe.getAddressFrom(this.identity.getPublicKey()))
+			.to(universe.getAddressFrom(this.identity.getPublicKey()))
+			.build()));
+
+		List<TestObserver<RadixJsonRpcClient.NodeAtomSubmissionUpdate>> submissions =
+			IntStream.range(0, times)
+			.mapToObj(x -> submitAtom(atom))
+			.collect(Collectors.toList()); // collect to make sure all get submitted
+
+		int firstStoredNotifications = submissions.stream()
+			.mapToInt(submission -> {
+				submission.awaitTerminalEvent(5, TimeUnit.SECONDS);
+				submission.assertNoErrors();
+				submission.assertComplete();
+
+				RadixJsonRpcClient.NodeAtomSubmissionUpdate terminalState = submission.values().get(1);
+				Assert.assertSame("All submissions must be STORED", RadixJsonRpcClient.NodeAtomSubmissionState.STORED, terminalState.getState());
+				JsonObject jsonData = terminalState.getData().getAsJsonObject();
+
+				return jsonData.get("justStored").getAsBoolean() ? 1 : 0;
+			})
+			.sum();
+
+		Assert.assertSame("Concurrent submissions must only have one 'first stored' notification",
+							1, firstStoredNotifications);
 	}
 
 	private void submitAndAwaitResult(Atom atom, Predicate<RadixJsonRpcClient.NodeAtomSubmissionUpdate> updatePredicate) {
 		TestObserver<RadixJsonRpcClient.NodeAtomSubmissionUpdate> observer = submitAtom(atom);
+		awaitResult(updatePredicate, observer);
+	}
+
+	private void awaitResult(Predicate<RadixJsonRpcClient.NodeAtomSubmissionUpdate> updatePredicate, TestObserver<RadixJsonRpcClient.NodeAtomSubmissionUpdate> observer) {
 		observer.awaitTerminalEvent(5, TimeUnit.SECONDS);
 		observer.assertNoErrors();
 		observer.assertComplete();
@@ -81,8 +135,9 @@ public class SubmitIdenticalAtomsMultipleTimesTest {
 	private TestObserver<RadixJsonRpcClient.NodeAtomSubmissionUpdate> submitAtom(Atom atom) {
 		TestObserver<RadixJsonRpcClient.NodeAtomSubmissionUpdate> observer = TestObserver.create();
 		jsonRpcClient.submitAtom(atom)
-			.doOnNext(update -> System.out.printf("%d %s %s%n",
+			.doOnNext(update -> System.out.printf("%d %s %s %s%n",
 				update.getTimestamp(),
+				atom.getHid(),
 				update.getState(),
 				Optional.ofNullable(update.getData())
 					.map(JsonElement::toString)
