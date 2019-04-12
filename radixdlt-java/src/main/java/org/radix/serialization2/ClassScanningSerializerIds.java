@@ -10,6 +10,7 @@ import java.util.Map;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.Maps;
+import org.radix.common.ID.EUID;
 
 import static org.radix.serialization2.SerializerConstants.SERIALIZER_ID_ANNOTATION;
 
@@ -97,6 +98,7 @@ public abstract class ClassScanningSerializerIds implements SerializerIds {
 		}
 
 		classIdMap.putAll(idClassMap.inverse());
+		Map<EUID, String> idNumericMap = new HashMap<>();
 		// Check polymorphic hierarchy consistency
 		for (Map.Entry<String, List<Class<?>>> entry : polymorphicMap.entrySet()) {
 			String id = entry.getKey();
@@ -104,6 +106,12 @@ public abstract class ClassScanningSerializerIds implements SerializerIds {
 				throw new SerializerIdsException(
 						String.format("No concrete class with ID '%s' for polymorphic classes %s",
 								entry.getKey(), entry.getValue()));
+			}
+			EUID numericId = SerializationUtils.stringToNumericID(id);
+			String dupNumericId = idNumericMap.put(numericId, id);
+			if (dupNumericId != null) {
+				throw new SerializerIdsException(String.format("Aborting, numeric id %s of %s clashes with %s",
+					numericId, id, dupNumericId));
 			}
 			for (Class<?> cls : entry.getValue()) {
 				String dupId = classIdMap.put(cls, id);
