@@ -12,7 +12,7 @@ import com.radixdlt.client.core.atoms.Shards;
 
 import static org.radix.serialization2.MapHelper.mapOf;
 
-@SerializerId2("internal.system")
+@SerializerId2("network.system")
 public class RadixSystem extends SerializableObject {
 	private Shards shards;
 
