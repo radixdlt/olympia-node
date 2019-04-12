@@ -2,7 +2,7 @@ package com.radixdlt.client.core.network.jsonrpc;
 
 import org.radix.serialization2.SerializerId2;
 
-@SerializerId2("UDPPEER")
+@SerializerId2("network.udp_peer")
 public class UDPNodeRunnerData extends NodeRunnerData {
 	UDPNodeRunnerData() {
 		// No-arg constructor for serializer

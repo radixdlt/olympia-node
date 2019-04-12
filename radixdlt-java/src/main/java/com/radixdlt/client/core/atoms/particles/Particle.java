@@ -18,7 +18,7 @@ import com.radixdlt.client.core.atoms.RadixHash;
 /**
  * A logical action on the ledger
  */
-@SerializerId2("PARTICLE")
+@SerializerId2("radix.particle")
 public abstract class Particle extends SerializableObject {
 	protected Particle() {
 	}

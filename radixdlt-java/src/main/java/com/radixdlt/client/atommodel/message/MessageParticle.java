@@ -20,7 +20,7 @@ import java.util.Objects;
 /**
  * Particle which can hold arbitrary data
  */
-@SerializerId2("MESSAGEPARTICLE")
+@SerializerId2("radix.particles.message")
 public class MessageParticle extends Particle implements Accountable {
 	public static class MessageParticleBuilder {
 		private static final Random RNG = new Random();

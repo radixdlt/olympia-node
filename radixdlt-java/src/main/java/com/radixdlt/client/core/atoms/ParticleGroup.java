@@ -25,7 +25,7 @@ import com.radixdlt.client.core.atoms.particles.SpunParticle;
  * <p>
  * * @author flotothemoon
  */
-@SerializerId2("PARTICLEGROUP")
+@SerializerId2("radix.particle_group")
 public class ParticleGroup extends SerializableObject {
 	@JsonProperty("particles")
 	@DsonOutput(DsonOutput.Output.ALL)

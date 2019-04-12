@@ -11,7 +11,7 @@ public interface SerializerIds {
 	 * @param cls The class to retrieve the serializer ID for.
 	 * @return The serializer ID, or {@code null} if no serializer known.
 	 */
-	Long getIdForClass(Class<?> cls);
+	String getIdForClass(Class<?> cls);
 
 	/**
 	 * Return an object's class, given the ID.  If the serializer ID
@@ -21,7 +21,7 @@ public interface SerializerIds {
 	 * @return The class corresponding to the serializer ID, or {@code null}
 	 *			if serializer ID unknown.
 	 */
-	Class<?> getClassForId(long id);
+	Class<?> getClassForId(String id);
 
 	/**
 	 * Return true if class is serializable, or a supertype of

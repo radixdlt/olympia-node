@@ -33,20 +33,17 @@ public class DsonTypeIdResolver extends TypeIdResolverBase {
 
 	@Override
 	public String idFromValue(Object value) {
-		Long id = this.idLookup.getIdForClass(value.getClass());
-		return String.valueOf(id);
+		return this.idLookup.getIdForClass(value.getClass());
 	}
 
 	@Override
 	public String idFromValueAndType(Object value, Class<?> type) {
-		Long id = this.idLookup.getIdForClass(type);
-		return String.valueOf(id);
+		return this.idLookup.getIdForClass(type);
 	}
 
 	@Override
 	public JavaType typeFromId(DatabindContext context, String id) throws IOException {
-		long lid = Long.parseLong(id);
-		return _typeFactory.constructType(idLookup.getClassForId(lid));
+		return _typeFactory.constructType(idLookup.getClassForId(id));
 	}
 
 	@Override

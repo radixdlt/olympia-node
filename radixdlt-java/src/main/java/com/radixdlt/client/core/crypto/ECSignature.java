@@ -11,7 +11,7 @@ import org.radix.utils.primitives.Bytes;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-@SerializerId2("SIGNATURE")
+@SerializerId2("crypto.ecdsa_signature")
 public class ECSignature extends SerializableObject {
 	private byte[] r;
 	private byte[] s;

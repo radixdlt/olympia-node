@@ -22,7 +22,7 @@ import org.radix.utils.UInt256;
 /**
  *  A particle which represents an amount of unallocated tokens which can be minted.
  */
-@SerializerId2("UNALLOCATEDTOKENSPARTICLE")
+@SerializerId2("radix.particles.unallocated_tokens")
 public class UnallocatedTokensParticle extends Particle implements Accountable, Ownable {
 
 	@JsonProperty("tokenDefinitionReference")
