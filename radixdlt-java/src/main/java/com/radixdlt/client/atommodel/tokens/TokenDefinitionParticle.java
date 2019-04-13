@@ -15,7 +15,7 @@ import org.radix.utils.UInt256;
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
 import com.radixdlt.client.atommodel.Identifiable;
 import com.radixdlt.client.atommodel.Ownable;
-import com.radixdlt.client.core.atoms.particles.RadixResourceIdentifer;
+import com.radixdlt.client.core.atoms.particles.RRI;
 
 @SerializerId2("radix.particles.token_definition")
 public class TokenDefinitionParticle extends Particle implements Identifiable, Ownable {
@@ -74,8 +74,8 @@ public class TokenDefinitionParticle extends Particle implements Identifiable, O
 	}
 
 	@Override
-	public RadixResourceIdentifer getRRI() {
-		return new RadixResourceIdentifer(address, "tokens", this.symbol);
+	public RRI getRRI() {
+		return RRI.of(address, this.symbol);
 	}
 
 	public Map<TokenTransition, TokenPermission> getTokenPermissions() {

@@ -8,7 +8,7 @@ import com.radixdlt.client.atommodel.Ownable;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle.TokenTransition;
 import com.radixdlt.client.core.atoms.particles.Particle;
-import com.radixdlt.client.core.atoms.particles.RadixResourceIdentifer;
+import com.radixdlt.client.core.atoms.particles.RRI;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
@@ -27,7 +27,7 @@ public class UnallocatedTokensParticle extends Particle implements Accountable, 
 
 	@JsonProperty("tokenDefinitionReference")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private RadixResourceIdentifer tokenDefinitionReference;
+	private RRI tokenDefinitionReference;
 
 	@JsonProperty("granularity")
 	@DsonOutput(DsonOutput.Output.ALL)
@@ -62,8 +62,7 @@ public class UnallocatedTokensParticle extends Particle implements Accountable, 
 			throw new IllegalArgumentException("Amount is zero");
 		}
 
-		this.tokenDefinitionReference = new RadixResourceIdentifer(
-			tokenDefinitionReference.getAddress(), "tokens", tokenDefinitionReference.getSymbol());
+		this.tokenDefinitionReference = RRI.of(tokenDefinitionReference.getAddress(), tokenDefinitionReference.getSymbol());
 		this.granularity = granularity;
 		this.nonce = nonce;
 		this.amount = amount;
@@ -102,7 +101,7 @@ public class UnallocatedTokensParticle extends Particle implements Accountable, 
 		return this.tokenDefinitionReference.getAddress();
 	}
 
-	public RadixResourceIdentifer getTokDefRef() {
+	public RRI getTokDefRef() {
 		return this.tokenDefinitionReference;
 	}
 

@@ -8,7 +8,7 @@ import com.radixdlt.client.atommodel.Ownable;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle.TokenTransition;
 import com.radixdlt.client.core.atoms.particles.Particle;
-import com.radixdlt.client.core.atoms.particles.RadixResourceIdentifer;
+import com.radixdlt.client.core.atoms.particles.RRI;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.radix.serialization2.DsonOutput;
@@ -32,7 +32,7 @@ public final class TransferrableTokensParticle extends Particle implements Accou
 
 	@JsonProperty("tokenDefinitionReference")
 	@DsonOutput(Output.ALL)
-	private RadixResourceIdentifer tokenDefinitionReference;
+	private RRI tokenDefinitionReference;
 
 	@JsonProperty("granularity")
 	@DsonOutput(Output.ALL)
@@ -73,8 +73,7 @@ public final class TransferrableTokensParticle extends Particle implements Accou
 		}
 
 		this.address = address;
-		this.tokenDefinitionReference = new RadixResourceIdentifer(
-			tokenDefinitionReference.getAddress(), "tokens", tokenDefinitionReference.getSymbol());
+		this.tokenDefinitionReference = RRI.of(tokenDefinitionReference.getAddress(), tokenDefinitionReference.getSymbol());
 		this.granularity = granularity;
 		this.planck = planck;
 		this.nonce = nonce;

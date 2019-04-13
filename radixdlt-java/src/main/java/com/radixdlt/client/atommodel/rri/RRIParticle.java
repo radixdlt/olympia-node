@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.client.atommodel.Accountable;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.particles.Particle;
-import com.radixdlt.client.core.atoms.particles.RadixResourceIdentifer;
+import com.radixdlt.client.core.atoms.particles.RRI;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
@@ -15,7 +15,7 @@ import org.radix.serialization2.SerializerId2;
 public class RRIParticle extends Particle implements Accountable {
 	@JsonProperty("rri")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private RadixResourceIdentifer rri;
+	private RRI rri;
 
 	@JsonProperty("nonce")
 	@DsonOutput(DsonOutput.Output.ALL)
@@ -24,14 +24,14 @@ public class RRIParticle extends Particle implements Accountable {
 	private RRIParticle() {
 	}
 
-	public RRIParticle(RadixResourceIdentifer rri) {
+	public RRIParticle(RRI rri) {
 		super();
 
 		this.rri = Objects.requireNonNull(rri);
 		this.nonce = 0;
 	}
 
-	public RadixResourceIdentifer getRri() {
+	public RRI getRri() {
 		return rri;
 	}
 

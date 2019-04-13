@@ -20,7 +20,7 @@ import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.ledger.AtomEvent;
 import com.radixdlt.client.core.atoms.particles.Particle;
-import com.radixdlt.client.core.atoms.particles.RadixResourceIdentifer;
+import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import com.radixdlt.client.core.crypto.ECSignature;
@@ -65,7 +65,7 @@ public final class Serialize {
 				RadixSystem.class,
 				RadixUniverseConfig.class,
 				TCPNodeRunnerData.class,
-				RadixResourceIdentifer.class,
+				RRI.class,
 				UniqueId.class,
 				UDPNodeRunnerData.class
 			);
