@@ -101,7 +101,7 @@ public class TokenSymbolLength {
 
 	@Then("^I can observe atom (\\d+) being rejected with a failure$")
 	public void i_can_observe_atom_being_rejected_with_a_failure(int atomNumber) {
-		awaitAtomStatus3(atomNumber, FAILED);
+		awaitAtomStatus3(atomNumber, VALIDATION_ERROR);
 	}
 
 	@After
