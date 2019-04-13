@@ -7,6 +7,7 @@ import com.radixdlt.client.application.translate.FeeMapper;
 import com.radixdlt.client.application.translate.PowFeeMapper;
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.client.atommodel.rri.RRIParticle;
 import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle.TokenTransition;
 import com.radixdlt.client.atommodel.tokens.TokenPermission;
@@ -60,6 +61,7 @@ public class MultipleTransitionsInSameGroupTest {
 		UnallocatedTokensParticle unallocatedTokens = createUnallocatedTokens(tokenDefinition);
 		TransferrableTokensParticle mintedTokens = createTransferrableTokens(myAddress, tokenDefinition, unallocatedTokens.getAmount());
 		ParticleGroup definitionGroup = ParticleGroup.of(
+			SpunParticle.down(new RRIParticle(tokenDefinition.getRRI())),
 			SpunParticle.up(tokenDefinition),
 			SpunParticle.up(unallocatedTokens)
 		);
@@ -93,6 +95,7 @@ public class MultipleTransitionsInSameGroupTest {
 		UnallocatedTokensParticle unallocatedTokens = createUnallocatedTokens(tokenDefinition);
 		TransferrableTokensParticle mintedTokens = createTransferrableTokens(myAddress, tokenDefinition, unallocatedTokens.getAmount());
 		ParticleGroup definitionGroup = ParticleGroup.of(
+			SpunParticle.down(new RRIParticle(tokenDefinition.getRRI())),
 			SpunParticle.up(tokenDefinition),
 			SpunParticle.up(unallocatedTokens)
 		);
@@ -128,6 +131,7 @@ public class MultipleTransitionsInSameGroupTest {
 		UnallocatedTokensParticle unallocatedTokens = createUnallocatedTokens(tokenDefinition);
 		TransferrableTokensParticle mintedTokens = createTransferrableTokens(myAddress, tokenDefinition, unallocatedTokens.getAmount());
 		ParticleGroup definitionGroup = ParticleGroup.of(
+			SpunParticle.down(new RRIParticle(tokenDefinition.getRRI())),
 			SpunParticle.up(tokenDefinition),
 			SpunParticle.up(unallocatedTokens)
 		);
@@ -175,6 +179,7 @@ public class MultipleTransitionsInSameGroupTest {
 		UnallocatedTokensParticle unallocatedTokens = createUnallocatedTokens(tokenDefinition);
 		TransferrableTokensParticle mintedTokens = createTransferrableTokens(myAddress, tokenDefinition, unallocatedTokens.getAmount());
 		ParticleGroup definitionGroup = ParticleGroup.of(
+			SpunParticle.down(new RRIParticle(tokenDefinition.getRRI())),
 			SpunParticle.up(tokenDefinition),
 			SpunParticle.up(unallocatedTokens)
 		);
@@ -205,7 +210,7 @@ public class MultipleTransitionsInSameGroupTest {
 
 	private UnallocatedTokensParticle createUnallocatedTokens(TokenDefinitionParticle tokenDefinition) {
 		return new UnallocatedTokensParticle(
-			TokenUnitConversions.unitsToSubunits(100),
+			UInt256.MAX_VALUE,
 			UInt256.ONE,
 			System.nanoTime(),
 			tokenDefinition.getTokenDefinitionReference(),
