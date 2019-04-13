@@ -1,5 +1,6 @@
 package com.radixdlt.client.application.translate.tokens;
 
+import com.radixdlt.client.core.atoms.particles.RRI;
 import java.math.BigInteger;
 import java.util.Collections;
 
@@ -19,8 +20,8 @@ public class AtomToTokenTransferActionsMapperTest {
 	public void testSendToSelfTest() {
 		Atom atom = mock(Atom.class);
 		RadixAddress myAddress = mock(RadixAddress.class);
-		TokenDefinitionReference tokenDefinitionReference = mock(TokenDefinitionReference.class);
-		when(tokenDefinitionReference.getSymbol()).thenReturn("JOSH");
+		RRI tokenDefinitionReference = mock(RRI.class);
+		when(tokenDefinitionReference.getName()).thenReturn("JOSH");
 		when(atom.tokenSummary()).thenReturn(Collections.singletonMap(tokenDefinitionReference,
 			Collections.singletonMap(myAddress, BigInteger.ZERO)
 		));

@@ -1,11 +1,13 @@
 package com.radixdlt.client.application.translate.tokens;
 
+import com.radixdlt.client.core.atoms.particles.RRI;
+
 /**
  * Exception thrown when information on an unknown token is requested.
  */
 public class UnknownTokenException extends RuntimeException {
 	private static final long serialVersionUID = -1684509326376059175L;
-	private final TokenDefinitionReference tokenDefinitionReference;
+	private final RRI tokenDefinitionReference;
 
     /**
      * Constructs a new unknown token exception with the specified token class reference.
@@ -14,7 +16,7 @@ public class UnknownTokenException extends RuntimeException {
      *     Note that {@link #getMessage()} will include the token class name
      *     in the exception detail message.
      */
-	public UnknownTokenException(TokenDefinitionReference tokenDefinitionReference) {
+	public UnknownTokenException(RRI tokenDefinitionReference) {
 		super("Unknown token: " + tokenDefinitionReference);
 		this.tokenDefinitionReference = tokenDefinitionReference;
 	}

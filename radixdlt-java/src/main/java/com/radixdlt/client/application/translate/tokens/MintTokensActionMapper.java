@@ -4,6 +4,7 @@ import com.radixdlt.client.application.translate.ShardedAppStateId;
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.core.atoms.ParticleGroup.ParticleGroupBuilder;
+import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.fungible.FungibleParticleTransitioner;
 import com.radixdlt.client.core.fungible.FungibleParticleTransitioner.FungibleParticleTransition;
@@ -44,7 +45,7 @@ public class MintTokensActionMapper implements StatefulActionToParticleGroupsMap
 		}
 
 		MintTokensAction mintTokensAction = (MintTokensAction) action;
-		TokenDefinitionReference tokenDefinition = mintTokensAction.getTokenDefinitionReference();
+		RRI tokenDefinition = mintTokensAction.getTokenDefinitionReference();
 
 		if (mintTokensAction.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
 			throw new IllegalArgumentException("Mint amount must be greater than 0.");
@@ -107,7 +108,7 @@ public class MintTokensActionMapper implements StatefulActionToParticleGroupsMap
 			.toObservable();
 	}
 
-	private TokenState getTokenStateOrError(Map<TokenDefinitionReference, TokenState> m, TokenDefinitionReference tokenDefinition) {
+	private TokenState getTokenStateOrError(Map<RRI, TokenState> m, RRI tokenDefinition) {
 		TokenState ts = m.get(tokenDefinition);
 		if (ts == null) {
 			throw new UnknownTokenException(tokenDefinition);

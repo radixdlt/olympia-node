@@ -5,6 +5,7 @@ import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle.TokenTransition;
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
+import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.ledger.TransitionedParticle;
 import java.math.BigDecimal;
 import java.util.Collections;
@@ -24,8 +25,8 @@ public class TokenDefinitionsReducerTest {
 	@Test
 	public void testTokenWithNoMint() {
 		TokenDefinitionParticle tokenDefinitionParticle = mock(TokenDefinitionParticle.class);
-		TokenDefinitionReference tokenRef = mock(TokenDefinitionReference.class);
-		when(tokenDefinitionParticle.getTokenDefinitionReference()).thenReturn(tokenRef);
+		RRI tokenRef = mock(RRI.class);
+		when(tokenDefinitionParticle.getRRI()).thenReturn(tokenRef);
 		when(tokenDefinitionParticle.getName()).thenReturn("Name");
 		when(tokenDefinitionParticle.getSymbol()).thenReturn("ISO");
 		when(tokenDefinitionParticle.getDescription()).thenReturn("Desc");
@@ -47,8 +48,8 @@ public class TokenDefinitionsReducerTest {
 	public void testTokenWithMint() {
 		final UInt256 hundred = UInt256.TEN.pow(2);
 		TokenDefinitionParticle tokenDefinitionParticle = mock(TokenDefinitionParticle.class);
-		TokenDefinitionReference tokenRef = mock(TokenDefinitionReference.class);
-		when(tokenDefinitionParticle.getTokenDefinitionReference()).thenReturn(tokenRef);
+		RRI tokenRef = mock(RRI.class);
+		when(tokenDefinitionParticle.getRRI()).thenReturn(tokenRef);
 		when(tokenDefinitionParticle.getName()).thenReturn("Name");
 		when(tokenDefinitionParticle.getSymbol()).thenReturn("ISO");
 		when(tokenDefinitionParticle.getDescription()).thenReturn("Desc");
@@ -62,7 +63,7 @@ public class TokenDefinitionsReducerTest {
 
 		UnallocatedTokensParticle unallocatedTokensParticle = mock(UnallocatedTokensParticle.class);
 		when(unallocatedTokensParticle.getAmount()).thenReturn(UInt256.MAX_VALUE.subtract(hundred));
-		when(unallocatedTokensParticle.getTokenDefinitionReference()).thenReturn(tokenRef);
+		when(unallocatedTokensParticle.getTokDefRef()).thenReturn(tokenRef);
 		when(unallocatedTokensParticle.getHid()).thenReturn(EUID.ONE);
 
 		TokenDefinitionsReducer tokenDefinitionsReducer = new TokenDefinitionsReducer();

@@ -1,9 +1,9 @@
 package com.radixdlt.client.core;
 
-import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
+import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.ledger.AtomObservation;
 import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.crypto.ECPublicKey;
@@ -124,7 +124,7 @@ public final class RadixUniverse {
 
 	private final Ledger ledger;
 
-	private final TokenDefinitionReference nativeToken;
+	private final RRI nativeToken;
 
 	private RadixUniverse(RadixUniverseConfig config, RadixNetworkController networkController) {
 		this.config = config;
@@ -133,7 +133,7 @@ public final class RadixUniverse {
 		this.nativeToken = config.getGenesis().stream()
 			.flatMap(atom -> atom.particles(Spin.UP))
 			.filter(p -> p instanceof TokenDefinitionParticle)
-			.map(p -> ((TokenDefinitionParticle) p).getTokenDefinitionReference())
+			.map(p -> ((TokenDefinitionParticle) p).getRRI())
 			.findFirst()
 			.orElseThrow(() -> new IllegalStateException("No Native Token defined in universe"));
 
@@ -185,7 +185,7 @@ public final class RadixUniverse {
 		return networkController.getNetwork();
 	}
 
-	public TokenDefinitionReference getNativeToken() {
+	public RRI getNativeToken() {
 		return nativeToken;
 	}
 

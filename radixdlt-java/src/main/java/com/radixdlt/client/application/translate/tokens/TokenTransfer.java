@@ -2,13 +2,14 @@ package com.radixdlt.client.application.translate.tokens;
 
 import com.radixdlt.client.application.identity.UnencryptedData;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.client.core.atoms.particles.RRI;
 import java.math.BigDecimal;
 import java.util.Optional;
 
 public class TokenTransfer {
 	private final RadixAddress from;
 	private final RadixAddress to;
-	private final TokenDefinitionReference tokenDefinition;
+	private final RRI tokenDefinition;
 	private final BigDecimal amount;
 	private final UnencryptedData attachment;
 	private final long timestamp;
@@ -16,7 +17,7 @@ public class TokenTransfer {
 	public TokenTransfer(
 		RadixAddress from,
 		RadixAddress to,
-		TokenDefinitionReference tokenDefinition,
+		RRI tokenDefinition,
 		BigDecimal amount,
 		UnencryptedData attachment,
 		long timestamp
@@ -41,7 +42,7 @@ public class TokenTransfer {
 		return to;
 	}
 
-	public TokenDefinitionReference getTokenClass() {
+	public RRI getTokenClass() {
 		return tokenDefinition;
 	}
 

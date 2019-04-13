@@ -2,7 +2,6 @@ package com.radixdlt.client.atommodel.tokens;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
 import com.radixdlt.client.atommodel.Accountable;
 import com.radixdlt.client.atommodel.Ownable;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
@@ -51,7 +50,7 @@ public class UnallocatedTokensParticle extends Particle implements Accountable, 
 		UInt256 amount,
 		UInt256 granularity,
 		long nonce,
-		TokenDefinitionReference tokenDefinitionReference,
+		RRI tokenDefinitionReference,
 		Map<TokenTransition, TokenPermission> tokenPermissions
 	) {
 		super();
@@ -62,7 +61,7 @@ public class UnallocatedTokensParticle extends Particle implements Accountable, 
 			throw new IllegalArgumentException("Amount is zero");
 		}
 
-		this.tokenDefinitionReference = RRI.of(tokenDefinitionReference.getAddress(), tokenDefinitionReference.getSymbol());
+		this.tokenDefinitionReference = tokenDefinitionReference;
 		this.granularity = granularity;
 		this.nonce = nonce;
 		this.amount = amount;
@@ -107,10 +106,6 @@ public class UnallocatedTokensParticle extends Particle implements Accountable, 
 
 	public UInt256 getGranularity() {
 		return this.granularity;
-	}
-
-	public TokenDefinitionReference getTokenDefinitionReference() {
-		return TokenDefinitionReference.of(tokenDefinitionReference.getAddress(), tokenDefinitionReference.getUnique());
 	}
 
 	@Override

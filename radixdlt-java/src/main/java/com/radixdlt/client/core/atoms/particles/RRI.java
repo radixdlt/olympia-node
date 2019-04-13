@@ -4,17 +4,17 @@ import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import java.util.Objects;
 
 /**
- * A Radix resource identifier is a human readable index into the Ledger which points to a unique state machine
+ * A Radix resource identifier is a human readable index into the Ledger which points to a name state machine
  * instance.
  */
 public final class RRI {
 	// TODO: Will replace this with shardable at some point
 	private RadixAddress address;
-	private String unique;
+	private String name;
 
-	RRI(RadixAddress address, String unique) {
+	RRI(RadixAddress address, String name) {
 		this.address = address;
-		this.unique = unique;
+		this.name = name;
 	}
 
 	public static RRI of(RadixAddress address, String unique) {
@@ -25,14 +25,14 @@ public final class RRI {
 		return address;
 	}
 
-	public String getUnique() {
-		return unique;
+	public String getName() {
+		return name;
 	}
 
 	public static RRI fromString(String s) {
 		String[] split = s.split("/");
 		if (split.length < 2) {
-			throw new IllegalArgumentException("RRI must be of the format /:address/:type/:unique");
+			throw new IllegalArgumentException("RRI must be of the format /:address/:type/:name");
 		}
 
 		RadixAddress address = RadixAddress.from(split[1]);
@@ -43,12 +43,12 @@ public final class RRI {
 
 	@Override
 	public String toString() {
-		return "/" + address.toString() + "/" + unique;
+		return "/" + address.toString() + "/" + name;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(address, unique);
+		return Objects.hash(address, name);
 	}
 
 	@Override
@@ -59,6 +59,6 @@ public final class RRI {
 
 		RRI rri = (RRI) o;
 		return Objects.equals(address, rri.address)
-			&& Objects.equals(unique, rri.unique);
+			&& Objects.equals(name, rri.name);
 	}
 }

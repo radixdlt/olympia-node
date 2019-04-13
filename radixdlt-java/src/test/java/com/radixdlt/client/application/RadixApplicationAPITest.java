@@ -2,6 +2,7 @@ package com.radixdlt.client.application;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.ledger.ParticleObservation;
 import java.math.BigDecimal;
 import java.util.Collections;
@@ -23,7 +24,6 @@ import com.radixdlt.client.application.translate.StatelessActionToParticleGroups
 import com.radixdlt.client.application.translate.data.AtomToDecryptedMessageMapper;
 import com.radixdlt.client.application.translate.data.DecryptedMessage;
 import com.radixdlt.client.application.translate.tokens.TokenBalanceReducer;
-import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.RadixUniverse.Ledger;
@@ -222,7 +222,7 @@ public class RadixApplicationAPITest {
 			.addReducer(new TokenBalanceReducer())
 			.build();
 		TestObserver<BigDecimal> observer = TestObserver.create();
-		TokenDefinitionReference token = mock(TokenDefinitionReference.class);
+		RRI token = mock(RRI.class);
 
 		api.getBalance(address, token).subscribe(observer);
 		observer.awaitCount(1);
@@ -277,7 +277,7 @@ public class RadixApplicationAPITest {
 			.addReducer(new TokenBalanceReducer())
 			.build();
 		TestObserver<BigDecimal> testObserver = TestObserver.create();
-		TokenDefinitionReference token = mock(TokenDefinitionReference.class);
+		RRI token = mock(RRI.class);
 		api.getBalance(address, token).subscribe(testObserver);
 		verify(puller, times(1)).pull(address);
 	}

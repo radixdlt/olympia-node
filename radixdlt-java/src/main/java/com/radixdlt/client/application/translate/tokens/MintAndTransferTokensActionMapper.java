@@ -15,6 +15,7 @@ import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.ParticleGroup.ParticleGroupBuilder;
 import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.fungible.FungibleParticleTransitioner;
 import com.radixdlt.client.core.fungible.FungibleParticleTransitioner.FungibleParticleTransition;
@@ -82,7 +83,7 @@ public class MintAndTransferTokensActionMapper implements StatefulActionToPartic
 		}
 
 		MintAndTransferTokensAction mintTransferAction = (MintAndTransferTokensAction) action;
-		TokenDefinitionReference tokenDefinition = mintTransferAction.getTokenDefinitionReference();
+		RRI tokenDefinition = mintTransferAction.getTokenDefinitionReference();
 
 		return store.firstOrError()
 			.flatMap(Observable::firstOrError)
@@ -117,7 +118,7 @@ public class MintAndTransferTokensActionMapper implements StatefulActionToPartic
 			.flatMapObservable(Observable::fromIterable);
 	}
 
-	private TokenState getTokenStateOrError(Map<TokenDefinitionReference, TokenState> m, TokenDefinitionReference tokenDefinition) {
+	private TokenState getTokenStateOrError(Map<RRI, TokenState> m, RRI tokenDefinition) {
 		TokenState ts = m.get(tokenDefinition);
 		if (ts == null) {
 			throw new UnknownTokenException(tokenDefinition);
@@ -143,7 +144,7 @@ public class MintAndTransferTokensActionMapper implements StatefulActionToPartic
 
 	private FungibleParticleTransition<UnallocatedTokensParticle, TransferrableTokensParticle> createMint(
 		BigDecimal amount,
-		TokenDefinitionReference tokenDefRef,
+		RRI tokenDefRef,
 		TokenState tokenState
 	) {
 		final BigDecimal unallocatedSupply = tokenState.getUnallocatedSupply();
