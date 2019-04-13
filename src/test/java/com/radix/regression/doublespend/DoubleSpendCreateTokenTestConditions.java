@@ -4,10 +4,10 @@ import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.ShardedAppStateId;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
-import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionsState;
 import com.radixdlt.client.application.translate.tokens.TokenState;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.client.core.atoms.particles.RRI;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Collections;
@@ -19,10 +19,10 @@ import org.radix.common.tuples.Pair;
 
 public class DoubleSpendCreateTokenTestConditions implements DoubleSpendTestConditions {
 	private final RadixAddress apiAddress;
-	private final TokenDefinitionReference tokenRef;
+	private final RRI tokenRef;
 
 	DoubleSpendCreateTokenTestConditions(RadixAddress apiAddress) {
-		this.tokenRef = TokenDefinitionReference.of(apiAddress, "JOSH");
+		this.tokenRef = RRI.of(apiAddress, "JOSH");
 		this.apiAddress = apiAddress;
 	}
 

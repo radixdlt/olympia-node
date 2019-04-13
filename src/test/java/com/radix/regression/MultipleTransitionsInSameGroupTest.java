@@ -167,7 +167,7 @@ public class MultipleTransitionsInSameGroupTest {
 			UInt256.ONE,
 			myAddress,
 			System.nanoTime(),
-			tokenDefinition.getTokenDefinitionReference(),
+			tokenDefinition.getRRI(),
 			System.currentTimeMillis() / 60000L + 60000L,
 			tokenDefinition.getTokenPermissions()
 		);
@@ -213,7 +213,7 @@ public class MultipleTransitionsInSameGroupTest {
 			UInt256.MAX_VALUE,
 			UInt256.ONE,
 			System.nanoTime(),
-			tokenDefinition.getTokenDefinitionReference(),
+			tokenDefinition.getRRI(),
 			tokenDefinition.getTokenPermissions()
 		);
 	}

@@ -4,7 +4,7 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionsState;
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
 import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
-import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
+import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomReceivedAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
@@ -15,7 +15,6 @@ import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 
-import java.util.concurrent.TimeUnit;
 import org.radix.utils.UInt256;
 
 import com.google.common.collect.Lists;
@@ -100,7 +99,7 @@ public class BurnMultiIssuanceTokens {
 	public void a_library_client_who_owns_an_account_where_token_does_not_exist(String symbol) throws Throwable {
 		setupApi();
 		// No tokens exist for this account, because it is a freshly created account
-		TokenDefinitionReference tokenClass = TokenDefinitionReference.of(api.getMyAddress(), symbol);
+		RRI tokenClass = RRI.of(api.getMyAddress(), symbol);
 		TokenDefinitionsState tokenClassesState = api.getMyTokenClasses()
 			.firstOrError()
 			.blockingGet();
@@ -133,7 +132,7 @@ public class BurnMultiIssuanceTokens {
 	@When("^the client waits to be notified that \"([^\"]*)\" token has a total supply of (\\d+)$")
 	public void theClientWaitsToBeNotifiedThatTokenHasATotalSupplyOf(String symbol, int supply) throws Throwable {
 		awaitAtomStatus(STORED);
-		TokenDefinitionReference tokenClass = TokenDefinitionReference.of(api.getMyAddress(), symbol);
+		RRI tokenClass = RRI.of(api.getMyAddress(), symbol);
 		// Ensure balance is up-to-date.
 		BigDecimal tokenBalanceDecimal = api.getBalance(api.getMyAddress(), tokenClass)
 			.firstOrError()
@@ -152,7 +151,7 @@ public class BurnMultiIssuanceTokens {
 	public void theClientShouldBeNotifiedThatTokenHasATotalSupplyOf(String symbol, int supply) throws Throwable {
 		awaitAtomStatus(STORED);
 		// Must be a better way than this.
-		TokenDefinitionReference tokenClass = TokenDefinitionReference.of(api.getMyAddress(), symbol);
+		RRI tokenClass = RRI.of(api.getMyAddress(), symbol);
 		// Ensure balance is up-to-date.
 		BigDecimal tokenBalanceDecimal = api.getBalance(api.getMyAddress(), tokenClass)
 			.firstOrError()
@@ -213,7 +212,7 @@ public class BurnMultiIssuanceTokens {
 	}
 
 	private void transferTokens(BigDecimal amount, String symbol, RadixAddress address) {
-		TokenDefinitionReference tokenClass = TokenDefinitionReference.of(address, symbol);
+		RRI tokenClass = RRI.of(address, symbol);
 		TransferTokensAction tta = TransferTokensAction.create(address, address, amount, tokenClass);
 		TestObserver<SubmitAtomAction> observer = new TestObserver<>();
 		api.execute(tta)
@@ -224,7 +223,7 @@ public class BurnMultiIssuanceTokens {
 	}
 
 	private void burnTokens(BigDecimal amount, String symbol, RadixAddress tokenAddress, RadixAddress address) {
-		TokenDefinitionReference tokenClass = TokenDefinitionReference.of(tokenAddress, symbol);
+		RRI tokenClass = RRI.of(tokenAddress, symbol);
 		BurnTokensAction mta = BurnTokensAction.create(address, tokenClass, amount);
 		TestObserver<SubmitAtomAction> observer = new TestObserver<>();
 		api.execute(mta)

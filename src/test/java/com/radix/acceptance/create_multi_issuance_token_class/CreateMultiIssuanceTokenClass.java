@@ -1,7 +1,7 @@
 package com.radix.acceptance.create_multi_issuance_token_class;
 
-import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
+import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.network.actions.SubmitAtomReceivedAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomResultAction;
@@ -132,7 +132,7 @@ public class CreateMultiIssuanceTokenClass {
 
 	@When("^I submit a token transfer request of (\\d+) for \"([^\"]*)\" to an arbitrary account$")
 	public void i_submit_a_token_transfer_request_of_for_to_an_arbitrary_account(int count, String symbol) {
-		TokenDefinitionReference tokenClass = TokenDefinitionReference.of(api.getMyAddress(), symbol);
+		RRI tokenClass = RRI.of(api.getMyAddress(), symbol);
 		RadixAddress arbitrary = api.getAddressFromKey(RadixIdentities.createNew().getPublicKey());
 
 		// Ensure balance is up-to-date.
@@ -189,7 +189,7 @@ public class CreateMultiIssuanceTokenClass {
 
 	@Then("^I can observe token \"([^\"]*)\" balance equal to (\\d+)$")
 	public void i_can_observe_token_balance_equal_to(String symbol, int balance) {
-		TokenDefinitionReference tokenClass = TokenDefinitionReference.of(api.getMyAddress(), symbol);
+		RRI tokenClass = RRI.of(api.getMyAddress(), symbol);
 		// Ensure balance is up-to-date.
 		BigDecimal tokenBalanceDecimal = api.getBalance(api.getMyAddress(), tokenClass)
 			.firstOrError()

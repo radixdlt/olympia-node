@@ -4,7 +4,6 @@ import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
-import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
 import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle.TokenTransition;
 import com.radixdlt.client.atommodel.tokens.TokenPermission;
@@ -12,6 +11,7 @@ import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
+import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomResultAction;
@@ -81,7 +81,7 @@ public class UnallocatedTokensParticleTest {
 			UInt256.MAX_VALUE,
 			UInt256.ONE,
 			System.currentTimeMillis(),
-			TokenDefinitionReference.of(api.getMyAddress(), "JOSH"),
+			RRI.of(api.getMyAddress(), "JOSH"),
 			ImmutableMap.of(TokenTransition.MINT, TokenPermission.TOKEN_CREATION_ONLY, TokenTransition.BURN, TokenPermission.TOKEN_CREATION_ONLY)
 		);
 
@@ -113,7 +113,7 @@ public class UnallocatedTokensParticleTest {
 			UInt256.MAX_VALUE,
 			UInt256.ONE,
 			System.nanoTime(),
-			TokenDefinitionReference.of(api.getMyAddress(), "JOSH"),
+			RRI.of(api.getMyAddress(), "JOSH"),
 			ImmutableMap.of(TokenTransition.MINT, TokenPermission.TOKEN_CREATION_ONLY, TokenTransition.BURN, TokenPermission.TOKEN_CREATION_ONLY)
 		);
 
@@ -121,7 +121,7 @@ public class UnallocatedTokensParticleTest {
 			UInt256.MAX_VALUE,
 			UInt256.ONE,
 			System.nanoTime(),
-			TokenDefinitionReference.of(api.getMyAddress(), "JOSH"),
+			RRI.of(api.getMyAddress(), "JOSH"),
 			ImmutableMap.of(TokenTransition.MINT, TokenPermission.TOKEN_CREATION_ONLY, TokenTransition.BURN, TokenPermission.TOKEN_CREATION_ONLY)
 		);
 

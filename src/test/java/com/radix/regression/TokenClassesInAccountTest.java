@@ -2,12 +2,11 @@ package com.radix.regression;
 
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionsState;
-import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
+import com.radixdlt.client.core.atoms.particles.RRI;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import org.junit.BeforeClass;
@@ -51,7 +50,7 @@ public class TokenClassesInAccountTest {
 
 	private Predicate<TokenDefinitionsState> getPredicateCheck(String iso, BigDecimal initialSupply) {
 		return tokens -> {
-			TokenState tokenState = tokens.getState().get(TokenDefinitionReference.of(api.getMyAddress(), iso));
+			TokenState tokenState = tokens.getState().get(RRI.of(api.getMyAddress(), iso));
 			return tokenState.getName().equals("Joshy Coin")
 				&& tokenState.getIso().equals(iso)
 				&& tokenState.getDescription().equals("Ze best coin!")

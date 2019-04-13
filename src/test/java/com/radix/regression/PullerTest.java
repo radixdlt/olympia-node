@@ -1,5 +1,6 @@
 package com.radix.regression;
 
+import com.radixdlt.client.core.atoms.particles.RRI;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
@@ -8,7 +9,6 @@ import org.junit.Test;
 
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
-import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse.Ledger;
 import com.radixdlt.client.core.ledger.AtomObservation;
@@ -33,7 +33,7 @@ public class PullerTest {
 	public void test() throws InterruptedException {
 		RadixApplicationAPI api = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, RadixIdentities.createNew());
 
-		TokenDefinitionReference ttr = api.getNativeTokenRef();
+		RRI ttr = api.getNativeTokenRef();
 
 		Ledger l = api.getLedger();
 
