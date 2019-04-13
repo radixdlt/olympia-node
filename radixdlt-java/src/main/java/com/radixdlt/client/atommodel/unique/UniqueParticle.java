@@ -18,6 +18,10 @@ public class UniqueParticle extends Particle implements Identifiable {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private RadixAddress address;
 
+	@JsonProperty("nonce")
+	@DsonOutput(DsonOutput.Output.ALL)
+	private long nonce;
+
 	private UniqueParticle() {
 		super();
 	}
@@ -25,6 +29,7 @@ public class UniqueParticle extends Particle implements Identifiable {
 	public UniqueParticle(RadixAddress address, String unique) {
 		this.address = address;
 		this.name = unique;
+		this.nonce = System.nanoTime();
 	}
 
 	public String getName() {

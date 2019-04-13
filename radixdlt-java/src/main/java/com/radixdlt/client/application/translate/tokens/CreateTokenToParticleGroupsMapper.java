@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.StatelessActionToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
+import com.radixdlt.client.atommodel.rri.RRIParticle;
 import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle.TokenTransition;
 import com.radixdlt.client.atommodel.tokens.TokenPermission;
@@ -69,11 +70,16 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 			token.getTokenPermissions()
 		);
 
+		RRIParticle rriParticle = new RRIParticle(token.getRRI());
+		ParticleGroup tokenCreationGroup = ParticleGroup.of(
+			SpunParticle.down(rriParticle),
+			SpunParticle.up(token),
+			SpunParticle.up(unallocated)
+		);
+
 		if (tokenCreation.getInitialSupply().compareTo(BigDecimal.ZERO) == 0) {
 			// No initial supply -> just the token particle
-			return Observable.just(
-				ParticleGroup.of(SpunParticle.up(token), SpunParticle.up(unallocated))
-			);
+			return Observable.just(tokenCreationGroup);
 		}
 
 		TransferrableTokensParticle minted = new TransferrableTokensParticle(
@@ -105,7 +111,7 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 		}
 
 		return Observable.just(
-			ParticleGroup.of(SpunParticle.up(token), SpunParticle.up(unallocated)),
+			tokenCreationGroup,
 			mintGroupBuilder.build()
 		);
 	}

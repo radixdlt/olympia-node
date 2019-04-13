@@ -1,6 +1,7 @@
 package com.radixdlt.client.core.atoms.particles;
 
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import java.util.Objects;
 
 /**
  * A Radix resource identifier is a human readable index into the Ledger which points to a unique UP particle.
@@ -47,5 +48,22 @@ public class RadixResourceIdentifer {
 	@Override
 	public String toString() {
 		return "/" + address.toString() + "/" + type + "/" + unique;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(address, unique, type);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (!(o instanceof RadixResourceIdentifer)) {
+			return false;
+		}
+
+		RadixResourceIdentifer rri = (RadixResourceIdentifer) o;
+		return Objects.equals(address, rri.address)
+			&& Objects.equals(unique, rri.unique)
+			&& Objects.equals(type, rri.type);
 	}
 }

@@ -2,6 +2,7 @@ package com.radixdlt.client.application.translate.unique;
 
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.StatelessActionToParticleGroupsMapper;
+import com.radixdlt.client.atommodel.rri.RRIParticle;
 import com.radixdlt.client.atommodel.unique.UniqueParticle;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
@@ -22,6 +23,13 @@ public class PutUniqueIdToParticleGroupsMapper implements StatelessActionToParti
 
 		PutUniqueIdAction uniqueIdAction = (PutUniqueIdAction) action;
 		UniqueParticle uniqueParticle = new UniqueParticle(uniqueIdAction.getAddress(), uniqueIdAction.getUnique());
-		return Observable.just(ParticleGroup.of(SpunParticle.up(uniqueParticle)));
+		RRIParticle rriParticle = new RRIParticle(uniqueParticle.getRRI());
+
+		return Observable.just(
+			ParticleGroup.of(
+				SpunParticle.down(rriParticle),
+				SpunParticle.up(uniqueParticle)
+			)
+		);
 	}
 }

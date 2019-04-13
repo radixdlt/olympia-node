@@ -41,7 +41,7 @@ public class CreateTokenToParticleGroupsMapperTest {
 					.anyMatch(s -> s.getParticle() instanceof TransferrableTokensParticle)
 				&& particleGroups.stream().flatMap(ParticleGroup::spunParticles)
 					.anyMatch(s -> s.getParticle() instanceof UnallocatedTokensParticle)
-				&& particleGroups.stream().flatMap(ParticleGroup::spunParticles).count() == 5
+				&& particleGroups.stream().flatMap(ParticleGroup::spunParticles).count() == 6
 		);
 	}
 }

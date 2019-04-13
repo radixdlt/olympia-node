@@ -4,11 +4,13 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.radixdlt.client.application.translate.ActionExecutionExceptionReason;
 import com.radixdlt.client.application.translate.AtomErrorToExceptionReasonMapper;
+import com.radixdlt.client.atommodel.rri.RRIParticle;
 import com.radixdlt.client.atommodel.unique.UniqueParticle;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.ParticleGroup;
-import com.radixdlt.client.core.atoms.particles.RadixResourceIdentifer;
+import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
+import org.radix.common.tuples.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,13 +26,17 @@ public class AlreadyUsedUniqueIdReasonMapper implements AtomErrorToExceptionReas
 	public Stream<ActionExecutionExceptionReason> mapAtomErrorToExceptionReasons(Atom atom, JsonObject errorData) {
 		if (errorData.has("pointerToIssue")) {
 			JsonElement pointerToIssueJson = errorData.get("pointerToIssue");
-			Optional<SpunParticle<?>> spunParticle = this.extractParticleFromPointerToIssue(atom, pointerToIssueJson);
+			Optional<Pair<ParticleGroup, SpunParticle<?>>> particleIssue = this.extractParticleFromPointerToIssue(atom, pointerToIssueJson);
 
-			if (spunParticle.isPresent() && spunParticle.get().getParticle() instanceof UniqueParticle) {
-				UniqueParticle uniqueParticle = (UniqueParticle) spunParticle.get().getParticle();
-				RadixResourceIdentifer id = uniqueParticle.getRRI();
-				UniqueId uniqueId = new UniqueId(id.getAddress(), id.getUnique());
-				return Stream.of(new AlreadyUsedUniqueIdReason(uniqueId));
+			if (particleIssue.isPresent() && particleIssue.get().getSecond().getParticle() instanceof RRIParticle) {
+				RRIParticle rriParticle = (RRIParticle) particleIssue.get().getSecond().getParticle();
+
+				return particleIssue.get().getFirst()
+					.particles(Spin.UP)
+					.filter(UniqueParticle.class::isInstance)
+					.map(UniqueParticle.class::cast)
+					.filter(u -> u.getRRI().equals(rriParticle.getRri()))
+					.map(p -> new AlreadyUsedUniqueIdReason(new UniqueId(p.getRRI().getAddress(), p.getName())));
 			}
 		}
 
@@ -44,7 +50,7 @@ public class AlreadyUsedUniqueIdReasonMapper implements AtomErrorToExceptionReas
 	 * @param pointerToIssueJson The pointer to issue in Json form returned by the node
 	 * @return The SpunParticle if it could be extracted
 	 */
-	private Optional<SpunParticle<?>> extractParticleFromPointerToIssue(Atom atom, JsonElement pointerToIssueJson) {
+	private Optional<Pair<ParticleGroup, SpunParticle<?>>> extractParticleFromPointerToIssue(Atom atom, JsonElement pointerToIssueJson) {
 		try {
 			String pointerToIssue = pointerToIssueJson.getAsString();
 			String groupIndexStr = pointerToIssue.split("/")[2];
@@ -55,7 +61,8 @@ public class AlreadyUsedUniqueIdReasonMapper implements AtomErrorToExceptionReas
 
 			ParticleGroup particleGroup = atom.particleGroups().collect(Collectors.toList()).get(groupIndex);
 
-			return Optional.of((SpunParticle<?>) particleGroup.spunParticles().collect(Collectors.toList()).get(particleIndex));
+			return Optional.of(Pair.of(particleGroup,
+				(SpunParticle<?>) particleGroup.spunParticles().collect(Collectors.toList()).get(particleIndex)));
 		} catch (NumberFormatException | ArrayIndexOutOfBoundsException e) {
 			LOGGER.error("Malformed pointerToIssue");
 
