@@ -31,7 +31,7 @@ public class RRIParticle extends Particle implements Accountable {
 		this.nonce = 0;
 	}
 
-	public RRI getRri() {
+	public RRI getRRI() {
 		return rri;
 	}
 
