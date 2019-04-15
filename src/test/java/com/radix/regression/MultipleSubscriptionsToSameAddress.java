@@ -4,8 +4,8 @@ import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
-import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
 import com.radixdlt.client.core.Bootstrap;
+import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
 import io.reactivex.observers.BaseTestConsumer;
 import io.reactivex.observers.TestObserver;
@@ -31,7 +31,7 @@ public class MultipleSubscriptionsToSameAddress {
 		System.out.println("Subscribe api0");
 
 		TestObserver<Object> api0Balance = TestObserver.create(Util.loggingObserver("api0"));
-		api0.getMyBalance(TokenDefinitionReference.of(api0.getMyAddress(), "TEST"))
+		api0.getMyBalance(RRI.of(api0.getMyAddress(), "TEST"))
 			.subscribe(api0Balance);
 
 		System.out.println("Mint 5 TEST");
@@ -39,7 +39,7 @@ public class MultipleSubscriptionsToSameAddress {
 
 		System.out.println("Subscribe api1");
 		TestObserver<Object> api1Balance = TestObserver.create(Util.loggingObserver("api1"));
-		api1.getMyBalance(TokenDefinitionReference.of(api0.getMyAddress(), "TEST"))
+		api1.getMyBalance(RRI.of(api0.getMyAddress(), "TEST"))
 			.subscribe(api1Balance);
 
 		System.out.println("Mint 6 TEST");

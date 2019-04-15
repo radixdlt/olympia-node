@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.client.application.translate.tokens.InsufficientFundsException;
 import com.radixdlt.client.application.translate.tokens.TokenOverMintException;
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
+import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomReceivedAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
@@ -25,7 +26,6 @@ import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
 import com.radixdlt.client.application.translate.tokens.MintTokensAction;
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionsState;
-import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
 import com.radixdlt.client.application.translate.tokens.UnknownTokenException;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.Bootstrap;
@@ -35,7 +35,6 @@ import static com.radixdlt.client.core.network.actions.SubmitAtomResultAction.Su
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 import cucumber.api.java.After;
 import cucumber.api.java.en.Given;
@@ -115,7 +114,7 @@ public class MintMultiIssuanceTokens {
 	public void a_library_client_who_owns_an_account_where_token_does_not_exist(String symbol) throws Throwable {
 		setupApi();
 		// No tokens exist for this account, because it is a freshly created account
-		TokenDefinitionReference tokenClass = TokenDefinitionReference.of(api.getMyAddress(), symbol);
+		RRI tokenClass = RRI.of(api.getMyAddress(), symbol);
 		TokenDefinitionsState tokenClassesState = api.getMyTokenClasses()
 			.firstOrError()
 			.blockingGet();
@@ -151,7 +150,7 @@ public class MintMultiIssuanceTokens {
 	@Then("^the client should be notified that \"([^\"]*)\" token has a total supply of (\\d+)$")
 	public void theClientShouldBeNotifiedThatTokenHasATotalSupplyOf(String symbol, int supply) throws Throwable {
 		awaitAtomStatus(STORED);
-		TokenDefinitionReference tokenClass = TokenDefinitionReference.of(api.getMyAddress(), symbol);
+		RRI tokenClass = RRI.of(api.getMyAddress(), symbol);
 		// Ensure balance is up-to-date.
 		BigDecimal tokenBalanceDecimal = api.getBalance(api.getMyAddress(), tokenClass)
 			.firstOrError()
@@ -218,7 +217,7 @@ public class MintMultiIssuanceTokens {
 	}
 
 	private void mintTokens(BigDecimal amount, String symbol, RadixAddress address) {
-		TokenDefinitionReference tokenClass = TokenDefinitionReference.of(address, symbol);
+		RRI tokenClass = RRI.of(address, symbol);
 		MintTokensAction mta = MintTokensAction.create(tokenClass, amount);
 		TestObserver<SubmitAtomAction> observer = new TestObserver<>();
 		api.execute(mta)

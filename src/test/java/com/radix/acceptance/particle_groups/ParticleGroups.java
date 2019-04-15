@@ -14,13 +14,13 @@ import com.radixdlt.client.application.translate.StatelessActionToParticleGroups
 import com.radixdlt.client.application.translate.atomic.AtomicAction;
 import com.radixdlt.client.application.translate.data.SendMessageAction;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
-import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
 import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.application.translate.tokens.TransferTokensToParticleGroupsMapper;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.atoms.ParticleGroup;
+import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.crypto.ECKeyPairGenerator;
 import com.radixdlt.client.core.network.actions.SubmitAtomReceivedAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
@@ -240,7 +240,7 @@ public class ParticleGroups {
 			api.getMyAddress(),
 			api.getAddressFromKey(ecKeyPairGenerator.generateKeyPair().getPublicKey()),
 			BigDecimal.valueOf(amount),
-			TokenDefinitionReference.of(api.getMyAddress(), symbol)
+			RRI.of(api.getMyAddress(), symbol)
 		);
 	}
 
@@ -271,7 +271,7 @@ public class ParticleGroups {
 
 	@When("^I submit a token transfer request of (\\d+) scaled for \"([^\"]*)\" to an arbitrary account$")
 	public void i_submit_a_token_transfer_request_of_for_to_an_arbitrary_account(int count, String symbol) {
-		TokenDefinitionReference tokenClass = TokenDefinitionReference.of(api.getMyAddress(), symbol);
+		RRI tokenClass = RRI.of(api.getMyAddress(), symbol);
 		RadixAddress arbitrary = api.getAddressFromKey(RadixIdentities.createNew().getPublicKey());
 		// Ensure balance is up-to-date.
 		api.getBalance(api.getMyAddress(), tokenClass)
@@ -327,7 +327,7 @@ public class ParticleGroups {
 
 	@Then("^I can observe token \"([^\"]*)\" balance equal to (\\d+) scaled$")
 	public void i_can_observe_token_balance_equal_to_scaled(String symbol, int balance) {
-		TokenDefinitionReference tokenClass = TokenDefinitionReference.of(api.getMyAddress(), symbol);
+		RRI tokenClass = RRI.of(api.getMyAddress(), symbol);
 		// Ensure balance is up-to-date.
 		BigDecimal tokenBalanceDecimal = api.getBalance(api.getMyAddress(), tokenClass)
 			.firstOrError()

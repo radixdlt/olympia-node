@@ -8,12 +8,12 @@ import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsM
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
 import com.radixdlt.client.application.translate.tokens.TokenBalanceState;
-import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import io.reactivex.Observable;
 import java.math.BigDecimal;
@@ -31,9 +31,9 @@ import org.radix.utils.UInt256;
 public class DoubleSpendWithInterDependencyTest {
 	private static class SendToSelfTwiceAction implements Action {
 		private final RadixAddress self;
-		private final TokenDefinitionReference tokDefRef;
+		private final RRI tokDefRef;
 
-		SendToSelfTwiceAction(TokenDefinitionReference tokDefRef, RadixAddress self) {
+		SendToSelfTwiceAction(RRI tokDefRef, RadixAddress self) {
 			this.tokDefRef = tokDefRef;
 			this.self = self;
 		}
@@ -99,10 +99,10 @@ public class DoubleSpendWithInterDependencyTest {
 
 	private static class DoubleSpendWithInnerDependencyConditions implements DoubleSpendTestConditions {
 		private final RadixAddress apiAddress;
-		private final TokenDefinitionReference tokenRef;
+		private final RRI tokenRef;
 
 		DoubleSpendWithInnerDependencyConditions(RadixAddress apiAddress) {
-			this.tokenRef = TokenDefinitionReference.of(apiAddress,"JOSH");
+			this.tokenRef = RRI.of(apiAddress,"JOSH");
 			this.apiAddress = apiAddress;
 		}
 
