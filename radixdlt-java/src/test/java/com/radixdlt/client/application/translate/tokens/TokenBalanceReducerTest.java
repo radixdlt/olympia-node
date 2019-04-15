@@ -1,6 +1,7 @@
 package com.radixdlt.client.application.translate.tokens;
 
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.client.core.atoms.particles.RRI;
 import java.math.BigDecimal;
 
 import org.junit.Test;
@@ -22,7 +23,7 @@ public class TokenBalanceReducerTest {
 		when(minted.getAmount()).thenReturn(UInt256.TEN);
 		when(minted.getGranularity()).thenReturn(UInt256.ONE);
 		when(minted.getHash()).thenReturn(hash);
-		TokenDefinitionReference token = mock(TokenDefinitionReference.class);
+		RRI token = mock(RRI.class);
 		when(minted.getTokenDefinitionReference()).thenReturn(token);
 
 		TokenBalanceReducer reducer = new TokenBalanceReducer();
@@ -38,7 +39,7 @@ public class TokenBalanceReducerTest {
 		when(ownedTokensParticle.getAmount()).thenReturn(UInt256.TEN);
 		when(ownedTokensParticle.getHash()).thenReturn(hash);
 		when(ownedTokensParticle.getGranularity()).thenReturn(UInt256.ONE);
-		TokenDefinitionReference token = mock(TokenDefinitionReference.class);
+		RRI token = mock(RRI.class);
 		when(ownedTokensParticle.getTokenDefinitionReference()).thenReturn(token);
 
 		TokenBalanceReducer reducer = new TokenBalanceReducer();
@@ -57,7 +58,7 @@ public class TokenBalanceReducerTest {
 		when(ownedTokensParticle.getAmount()).thenReturn(UInt256.TEN);
 		when(ownedTokensParticle.getHash()).thenReturn(hash);
 		when(ownedTokensParticle.getGranularity()).thenReturn(UInt256.ONE);
-		TokenDefinitionReference token = mock(TokenDefinitionReference.class);
+		RRI token = mock(RRI.class);
 		when(ownedTokensParticle.getTokenDefinitionReference()).thenReturn(token);
 
 		TokenBalanceReducer reducer = new TokenBalanceReducer();

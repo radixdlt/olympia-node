@@ -35,7 +35,7 @@ public class AlreadyUsedUniqueIdReasonMapper implements AtomErrorToExceptionReas
 					.particles(Spin.UP)
 					.filter(UniqueParticle.class::isInstance)
 					.map(UniqueParticle.class::cast)
-					.filter(u -> u.getRRI().equals(rriParticle.getRri()))
+					.filter(u -> u.getRRI().equals(rriParticle.getRRI()))
 					.map(p -> new AlreadyUsedUniqueIdReason(new UniqueId(p.getRRI().getAddress(), p.getName())));
 			}
 		}

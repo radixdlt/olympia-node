@@ -5,6 +5,7 @@ import static org.mockito.Mockito.when;
 
 import com.radixdlt.client.application.translate.ShardedAppStateId;
 import com.radixdlt.client.core.atoms.ParticleGroup;
+import com.radixdlt.client.core.atoms.particles.RRI;
 import io.reactivex.Observable;
 import io.reactivex.observers.TestObserver;
 import java.math.BigDecimal;
@@ -18,8 +19,8 @@ public class TransferTokensToParticleGroupsMapperTest {
 	public void createTransactionWithNoFunds() {
 		RadixAddress address = mock(RadixAddress.class);
 
-		TokenDefinitionReference token = mock(TokenDefinitionReference.class);
-		when(token.getSymbol()).thenReturn("TEST");
+		RRI token = mock(RRI.class);
+		when(token.getName()).thenReturn("TEST");
 
 		TransferTokensAction transferTokensAction = mock(TransferTokensAction.class);
 		when(transferTokensAction.getAmount()).thenReturn(new BigDecimal("1.0"));

@@ -2,15 +2,16 @@ package com.radixdlt.client.application.translate.tokens;
 
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.application.translate.Action;
+import com.radixdlt.client.core.atoms.particles.RRI;
 import java.math.BigDecimal;
 import java.util.Objects;
 
 public class BurnTokensAction implements Action {
 	private final RadixAddress address;
-	private final TokenDefinitionReference tokenDefinitionReference;
+	private final RRI tokenDefinitionReference;
 	private final BigDecimal amount;
 
-	private BurnTokensAction(RadixAddress address, TokenDefinitionReference tokenDefinitionReference, BigDecimal amount) {
+	private BurnTokensAction(RadixAddress address, RRI tokenDefinitionReference, BigDecimal amount) {
 		this.address = Objects.requireNonNull(address);
 		this.tokenDefinitionReference = Objects.requireNonNull(tokenDefinitionReference);
 		this.amount = Objects.requireNonNull(amount);
@@ -18,7 +19,7 @@ public class BurnTokensAction implements Action {
 
 	public static BurnTokensAction create(
 		RadixAddress address,
-		TokenDefinitionReference tokenDefinitionReference,
+		RRI tokenDefinitionReference,
 		BigDecimal amount
 	) {
 		return new BurnTokensAction(address, tokenDefinitionReference, amount);
@@ -28,7 +29,7 @@ public class BurnTokensAction implements Action {
 		return address;
 	}
 
-	public TokenDefinitionReference getTokenDefinitionReference() {
+	public RRI getTokenDefinitionReference() {
 		return tokenDefinitionReference;
 	}
 

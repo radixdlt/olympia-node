@@ -3,6 +3,7 @@ package com.radixdlt.client.application.translate.tokens;
 import com.radixdlt.client.application.translate.ShardedAppStateId;
 import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.core.atoms.ParticleGroup.ParticleGroupBuilder;
+import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.fungible.FungibleParticleTransitioner;
 import com.radixdlt.client.core.fungible.FungibleParticleTransitioner.FungibleParticleTransition;
@@ -57,8 +58,8 @@ public class BurnTokensActionMapper implements StatefulActionToParticleGroupsMap
 	}
 
 	private ParticleGroup map(BurnTokensAction burnTokensAction, TokenBalanceState curState) {
-		final Map<TokenDefinitionReference, Balance> allConsumables = curState.getBalance();
-		final TokenDefinitionReference tokenRef = burnTokensAction.getTokenDefinitionReference();
+		final Map<RRI, Balance> allConsumables = curState.getBalance();
+		final RRI tokenRef = burnTokensAction.getTokenDefinitionReference();
 		final BigDecimal burnAmount = burnTokensAction.getAmount();
 
 		final Balance bal = allConsumables.get(tokenRef);

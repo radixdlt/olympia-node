@@ -12,10 +12,9 @@ import org.radix.serialization2.DsonOutput.Output;
 import org.radix.serialization2.SerializerId2;
 import org.radix.utils.UInt256;
 
-import com.radixdlt.client.application.translate.tokens.TokenDefinitionReference;
 import com.radixdlt.client.atommodel.Identifiable;
 import com.radixdlt.client.atommodel.Ownable;
-import com.radixdlt.client.core.atoms.particles.RadixResourceIdentifer;
+import com.radixdlt.client.core.atoms.particles.RRI;
 
 @SerializerId2("radix.particles.token_definition")
 public class TokenDefinitionParticle extends Particle implements Identifiable, Ownable {
@@ -74,8 +73,8 @@ public class TokenDefinitionParticle extends Particle implements Identifiable, O
 	}
 
 	@Override
-	public RadixResourceIdentifer getRRI() {
-		return new RadixResourceIdentifer(address, "tokens", this.symbol);
+	public RRI getRRI() {
+		return RRI.of(address, this.symbol);
 	}
 
 	public Map<TokenTransition, TokenPermission> getTokenPermissions() {
@@ -92,7 +91,7 @@ public class TokenDefinitionParticle extends Particle implements Identifiable, O
 	}
 
 	public String getSymbol() {
-		return getTokenDefinitionReference().getSymbol();
+		return symbol;
 	}
 
 	public String getDescription() {
@@ -101,10 +100,6 @@ public class TokenDefinitionParticle extends Particle implements Identifiable, O
 
 	public UInt256 getGranularity() {
 		return this.granularity;
-	}
-
-	public TokenDefinitionReference getTokenDefinitionReference() {
-		return TokenDefinitionReference.of(address, symbol);
 	}
 
 	@JsonProperty("permissions")

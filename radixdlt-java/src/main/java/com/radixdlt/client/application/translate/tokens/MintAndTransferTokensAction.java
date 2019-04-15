@@ -3,6 +3,7 @@ package com.radixdlt.client.application.translate.tokens;
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 
+import com.radixdlt.client.core.atoms.particles.RRI;
 import java.math.BigDecimal;
 import java.util.Objects;
 
@@ -11,17 +12,17 @@ import java.util.Objects;
  * Note: This is a semi-temporary action until this library supports atomic transactions, see RLAU-1050.
  */
 public final class MintAndTransferTokensAction implements Action {
-	private final TokenDefinitionReference tokenDefinitionReference;
+	private final RRI tokenDefinitionReference;
 	private final BigDecimal amount;
 	private final RadixAddress to;
 
-	public MintAndTransferTokensAction(TokenDefinitionReference tokenDefinitionReference, BigDecimal amount, RadixAddress to) {
+	public MintAndTransferTokensAction(RRI tokenDefinitionReference, BigDecimal amount, RadixAddress to) {
 		this.tokenDefinitionReference = Objects.requireNonNull(tokenDefinitionReference);
 		this.amount = Objects.requireNonNull(amount);
 		this.to = Objects.requireNonNull(to);
 	}
 
-	public TokenDefinitionReference getTokenDefinitionReference() {
+	public RRI getTokenDefinitionReference() {
 		return this.tokenDefinitionReference;
 	}
 

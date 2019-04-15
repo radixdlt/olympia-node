@@ -3,6 +3,7 @@ package com.radixdlt.client.application.translate.tokens;
 import com.radixdlt.client.application.identity.Data;
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.client.core.atoms.particles.RRI;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.HashMap;
@@ -11,7 +12,7 @@ import java.util.Map;
 public class TransferTokensAction implements Action {
 	private final RadixAddress from;
 	private final RadixAddress to;
-	private final TokenDefinitionReference tokenDefinitionReference;
+	private final RRI tokenDefinitionReference;
 	private final Map<String, Object> metaData;
 	private final BigDecimal amount;
 	private final Data attachment;
@@ -20,7 +21,7 @@ public class TransferTokensAction implements Action {
 		RadixAddress from,
 		RadixAddress to,
 		BigDecimal amount,
-		TokenDefinitionReference tokenDefinitionReference,
+		RRI tokenDefinitionReference,
 		Data attachment,
 		Map<String, Object> metaData
 	) {
@@ -40,7 +41,7 @@ public class TransferTokensAction implements Action {
 		RadixAddress from,
 		RadixAddress to,
 		BigDecimal amount,
-		TokenDefinitionReference tokenDefinitionReference
+		RRI tokenDefinitionReference
 	) {
 		return new TransferTokensAction(from, to, amount, tokenDefinitionReference, null, Collections.emptyMap());
 	}
@@ -49,7 +50,7 @@ public class TransferTokensAction implements Action {
 		RadixAddress from,
 		RadixAddress to,
 		BigDecimal amount,
-		TokenDefinitionReference tokenDefinitionReference,
+		RRI tokenDefinitionReference,
 		Data attachment
 	) {
 		return new TransferTokensAction(from, to, amount, tokenDefinitionReference, attachment, Collections.emptyMap());
@@ -59,7 +60,7 @@ public class TransferTokensAction implements Action {
 		RadixAddress from,
 		RadixAddress to,
 		BigDecimal amount,
-		TokenDefinitionReference tokenDefinitionReference,
+		RRI tokenDefinitionReference,
 		Long timestamp
 	) {
 		Map<String, Object> metaData = new HashMap<>();
@@ -72,7 +73,7 @@ public class TransferTokensAction implements Action {
 		RadixAddress from,
 		RadixAddress to,
 		BigDecimal amount,
-		TokenDefinitionReference tokenDefinitionReference,
+		RRI tokenDefinitionReference,
 		Data attachment,
 		Long timestamp
 	) {
@@ -94,7 +95,7 @@ public class TransferTokensAction implements Action {
 		return to;
 	}
 
-	public TokenDefinitionReference getTokenDefinitionReference() {
+	public RRI getTokenDefinitionReference() {
 		return tokenDefinitionReference;
 	}
 
@@ -109,7 +110,7 @@ public class TransferTokensAction implements Action {
 	@Override
 	public String toString() {
 		Long timestamp = (Long) metaData.get("timestamp");
-		return timestamp + " " + from + " -> " + to + " " + amount + " "  + tokenDefinitionReference.getSymbol()
+		return timestamp + " " + from + " -> " + to + " " + amount + " "  + tokenDefinitionReference.getName()
 			+ (attachment == null ? "" : " " + attachment);
 	}
 }

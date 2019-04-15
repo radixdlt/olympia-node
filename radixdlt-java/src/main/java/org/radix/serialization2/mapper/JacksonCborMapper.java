@@ -22,7 +22,7 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.fasterxml.jackson.datatype.jsonorg.JsonOrgModule;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.core.atoms.particles.RadixResourceIdentifer;
+import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.util.Base58;
 
 /**
@@ -76,8 +76,8 @@ public class JacksonCborMapper extends ObjectMapper {
 			JacksonCodecConstants.U20_VALUE,
 			UInt256::toByteArray
 		));
-		cborModule.addSerializer(RadixResourceIdentifer.class, new JacksonCborObjectBytesSerializer<>(
-			RadixResourceIdentifer.class,
+		cborModule.addSerializer(RRI.class, new JacksonCborObjectBytesSerializer<>(
+			RRI.class,
 			JacksonCodecConstants.RRI_VALUE,
 			id -> id.toString().getBytes(RadixConstants.STANDARD_CHARSET)
 		));
@@ -108,10 +108,10 @@ public class JacksonCborMapper extends ObjectMapper {
 			JacksonCodecConstants.U20_VALUE,
 			UInt256::from
 		));
-		cborModule.addDeserializer(RadixResourceIdentifer.class, new JacksonCborObjectBytesDeserializer<>(
-			RadixResourceIdentifer.class,
+		cborModule.addDeserializer(RRI.class, new JacksonCborObjectBytesDeserializer<>(
+			RRI.class,
 			JacksonCodecConstants.RRI_VALUE,
-			b -> RadixResourceIdentifer.fromString(new String(b, RadixConstants.STANDARD_CHARSET))
+			b -> RRI.fromString(new String(b, RadixConstants.STANDARD_CHARSET))
 		));
 
 		JacksonCborMapper mapper = new JacksonCborMapper();

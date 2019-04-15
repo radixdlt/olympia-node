@@ -1,15 +1,16 @@
 package com.radixdlt.client.application.translate.tokens;
 
+import com.radixdlt.client.core.atoms.particles.RRI;
 import java.math.BigDecimal;
 
 public class InsufficientFundsException extends RuntimeException {
-	private final TokenDefinitionReference tokenDefinitionReference;
+	private final RRI tokenDefinitionReference;
 	private final BigDecimal available;
 	private final BigDecimal requestedAmount;
 
-	public InsufficientFundsException(TokenDefinitionReference tokenDefinitionReference, BigDecimal available, BigDecimal requestedAmount) {
+	public InsufficientFundsException(RRI tokenDefinitionReference, BigDecimal available, BigDecimal requestedAmount) {
 		super("Requested " + requestedAmount
-			+ " but only " + available + " " + tokenDefinitionReference.getSymbol() + " available.");
+			+ " but only " + available + " " + tokenDefinitionReference.getName() + " available.");
 		this.tokenDefinitionReference = tokenDefinitionReference;
 		this.available = available;
 		this.requestedAmount = requestedAmount;

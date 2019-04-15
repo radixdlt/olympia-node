@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.application.translate.ApplicationState;
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.client.core.atoms.RadixHash;
+import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.atoms.particles.Spin;
 
 import java.math.BigDecimal;
@@ -95,22 +96,22 @@ public class TokenBalanceState implements ApplicationState {
 		}
 	}
 
-	private final ImmutableMap<TokenDefinitionReference, Balance> balance;
+	private final ImmutableMap<RRI, Balance> balance;
 
 	public TokenBalanceState() {
 		this.balance = ImmutableMap.of();
 	}
 
-	public TokenBalanceState(Map<TokenDefinitionReference, Balance> balance) {
+	public TokenBalanceState(Map<RRI, Balance> balance) {
 		this.balance = ImmutableMap.copyOf(balance);
 	}
 
-	public Map<TokenDefinitionReference, Balance> getBalance() {
+	public Map<RRI, Balance> getBalance() {
 		return Collections.unmodifiableMap(balance);
 	}
 
 	public static TokenBalanceState merge(TokenBalanceState state, TransferrableTokensParticle tokens, Spin spin) {
-		HashMap<TokenDefinitionReference, Balance> balance = new HashMap<>(state.balance);
+		HashMap<RRI, Balance> balance = new HashMap<>(state.balance);
 		BigInteger amount = UInt256s.toBigInteger(tokens.getAmount());
 		BigInteger granularity = UInt256s.toBigInteger(tokens.getGranularity());
 		balance.merge(

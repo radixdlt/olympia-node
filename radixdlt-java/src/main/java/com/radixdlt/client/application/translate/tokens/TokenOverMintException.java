@@ -1,16 +1,17 @@
 package com.radixdlt.client.application.translate.tokens;
 
+import com.radixdlt.client.core.atoms.particles.RRI;
 import java.math.BigDecimal;
 import java.util.Objects;
 
 public final class TokenOverMintException extends RuntimeException {
-	private final TokenDefinitionReference tokenDefinitionReference;
+	private final RRI tokenDefinitionReference;
 	private final BigDecimal maxAmount;
 	private final BigDecimal currentAmount;
 	private final BigDecimal requestedAmount;
 
 	public TokenOverMintException(
-		TokenDefinitionReference tokenDefinitionReference,
+		RRI tokenDefinitionReference,
 		BigDecimal maxAmount,
 		BigDecimal currentAmount,
 		BigDecimal requestedAmount

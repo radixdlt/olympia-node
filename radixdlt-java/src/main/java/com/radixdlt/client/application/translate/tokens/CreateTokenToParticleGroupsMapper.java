@@ -66,7 +66,7 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 			UInt256.MAX_VALUE,
 			TokenUnitConversions.unitsToSubunits(tokenCreation.getGranularity()),
 			System.currentTimeMillis(),
-			token.getTokenDefinitionReference(),
+			token.getRRI(),
 			token.getTokenPermissions()
 		);
 
@@ -87,7 +87,7 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 			TokenUnitConversions.unitsToSubunits(tokenCreation.getGranularity()),
 			tokenCreation.getAddress(),
 			System.nanoTime(),
-			token.getTokenDefinitionReference(),
+			token.getRRI(),
 			System.currentTimeMillis() / 60000L + 60000,
 			token.getTokenPermissions()
 		);
@@ -103,7 +103,7 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 				leftOver,
 				TokenUnitConversions.unitsToSubunits(tokenCreation.getGranularity()),
 				System.currentTimeMillis(),
-				token.getTokenDefinitionReference(),
+				token.getRRI(),
 				token.getTokenPermissions()
 			);
 

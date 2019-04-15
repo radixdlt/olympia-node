@@ -1,5 +1,6 @@
 package com.radixdlt.client.application.translate.tokens;
 
+import com.radixdlt.client.core.atoms.particles.RRI;
 import java.math.BigDecimal;
 
 import org.junit.Test;
@@ -16,7 +17,7 @@ public class TransferTokensActionTest {
 	public void testBadBigDecimalScale() {
 		RadixAddress from = mock(RadixAddress.class);
 		RadixAddress to = mock(RadixAddress.class);
-		TokenDefinitionReference tokenDefinitionReference = mock(TokenDefinitionReference.class);
+		RRI tokenDefinitionReference = mock(RRI.class);
 
 		BigDecimal tooSmall = BigDecimal.valueOf(1L, TokenUnitConversions.getTokenScale() + 1);
 
@@ -28,7 +29,7 @@ public class TransferTokensActionTest {
 	public void testSmallestAllowedAmount() {
 		RadixAddress from = mock(RadixAddress.class);
 		RadixAddress to = mock(RadixAddress.class);
-		TokenDefinitionReference tokenDefinitionReference = mock(TokenDefinitionReference.class);
+		RRI tokenDefinitionReference = mock(RRI.class);
 
 		assertThat(TransferTokensAction.create(from, to, new BigDecimal("0.00001"), tokenDefinitionReference).toString()).isNotNull();
 	}
@@ -37,7 +38,7 @@ public class TransferTokensActionTest {
 	public void testSmallestAllowedAmountLargeScale() {
 		RadixAddress from = mock(RadixAddress.class);
 		RadixAddress to = mock(RadixAddress.class);
-		TokenDefinitionReference tokenDefinitionReference = mock(TokenDefinitionReference.class);
+		RRI tokenDefinitionReference = mock(RRI.class);
 
 		assertThat(TransferTokensAction.create(from, to, new BigDecimal("0.000010000"), tokenDefinitionReference).toString()).isNotNull();
 	}

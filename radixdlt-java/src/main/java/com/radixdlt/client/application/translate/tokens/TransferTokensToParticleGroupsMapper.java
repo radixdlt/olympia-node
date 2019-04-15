@@ -1,6 +1,7 @@
 package com.radixdlt.client.application.translate.tokens;
 
 import com.radixdlt.client.application.translate.ShardedAppStateId;
+import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.fungible.FungibleParticleTransitioner;
 import com.radixdlt.client.core.fungible.FungibleParticleTransitioner.FungibleParticleTransition;
 import java.math.BigInteger;
@@ -179,8 +180,8 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 			.map(appState -> (TokenBalanceState) appState)
 			.firstOrError()
 			.map(curState -> {
-				final TokenDefinitionReference tokenRef = transfer.getTokenDefinitionReference();
-				final Map<TokenDefinitionReference, Balance> allConsumables = curState.getBalance();
+				final RRI tokenRef = transfer.getTokenDefinitionReference();
+				final Map<RRI, Balance> allConsumables = curState.getBalance();
 				final Balance balance = Optional.ofNullable(
 					allConsumables.get(transfer.getTokenDefinitionReference())).orElse(Balance.empty(BigInteger.ONE));
 				if (balance.getAmount().compareTo(transfer.getAmount()) < 0) {

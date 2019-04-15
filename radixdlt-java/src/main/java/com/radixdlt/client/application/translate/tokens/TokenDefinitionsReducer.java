@@ -46,7 +46,7 @@ public class TokenDefinitionsReducer implements ParticleReducer<TokenDefinitions
 			}
 
 			return state.mergeTokenClass(
-				tokenDefinitionParticle.getTokenDefinitionReference(),
+				tokenDefinitionParticle.getRRI(),
 				tokenDefinitionParticle.getName(),
 				tokenDefinitionParticle.getSymbol(),
 				tokenDefinitionParticle.getDescription(),

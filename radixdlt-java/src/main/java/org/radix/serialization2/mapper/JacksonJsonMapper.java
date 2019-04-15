@@ -27,7 +27,7 @@ import com.fasterxml.jackson.databind.ser.FilterProvider;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.fasterxml.jackson.datatype.jsonorg.JsonOrgModule;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.core.atoms.particles.RadixResourceIdentifer;
+import com.radixdlt.client.core.atoms.particles.RRI;
 
 /**
  * A Jackson {@link ObjectMapper} that will serialize and deserialize
@@ -71,10 +71,10 @@ public class JacksonJsonMapper extends ObjectMapper {
 			JacksonCodecConstants.U20_STR_VALUE,
 			UInt256::toString
 		));
-		jsonModule.addSerializer(RadixResourceIdentifer.class, new JacksonJsonObjectStringSerializer<>(
-			RadixResourceIdentifer.class,
+		jsonModule.addSerializer(RRI.class, new JacksonJsonObjectStringSerializer<>(
+			RRI.class,
 			JacksonCodecConstants.RRI_STR_VALUE,
-			RadixResourceIdentifer::toString
+			RRI::toString
 		));
 
 		jsonModule.addDeserializer(EUID.class, new JacksonJsonEUIDDeserializer());
@@ -90,10 +90,10 @@ public class JacksonJsonMapper extends ObjectMapper {
 			JacksonCodecConstants.U20_STR_VALUE,
 			UInt256::from
 		));
-		jsonModule.addDeserializer(RadixResourceIdentifer.class, new JacksonJsonObjectStringDeserializer<>(
-			RadixResourceIdentifer.class,
+		jsonModule.addDeserializer(RRI.class, new JacksonJsonObjectStringDeserializer<>(
+			RRI.class,
 			JacksonCodecConstants.RRI_STR_VALUE,
-			RadixResourceIdentifer::fromString
+			RRI::fromString
 		));
 
 		// Special modifier for Enum values to remove :str: leadin from front
