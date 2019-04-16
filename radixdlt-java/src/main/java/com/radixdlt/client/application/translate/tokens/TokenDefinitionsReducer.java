@@ -2,7 +2,6 @@ package com.radixdlt.client.application.translate.tokens;
 
 import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle.TokenTransition;
 import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
-import com.radixdlt.client.core.atoms.particles.Spin;
 
 import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle;
 
@@ -10,10 +9,6 @@ import com.radixdlt.client.application.translate.ParticleReducer;
 import com.radixdlt.client.application.translate.tokens.TokenState.TokenSupplyType;
 import com.radixdlt.client.atommodel.tokens.TokenPermission;
 import com.radixdlt.client.core.atoms.particles.Particle;
-import com.radixdlt.client.core.ledger.TransitionedParticle;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Reduces particles at an address into concrete Tokens and their states

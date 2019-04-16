@@ -6,11 +6,9 @@ import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle.TokenTransit
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.core.atoms.particles.RRI;
-import com.radixdlt.client.core.ledger.TransitionedParticle;
 import java.math.BigDecimal;
 import java.util.Collections;
 
-import java.util.stream.Stream;
 import org.junit.Test;
 import org.radix.common.ID.EUID;
 import org.radix.utils.UInt256;

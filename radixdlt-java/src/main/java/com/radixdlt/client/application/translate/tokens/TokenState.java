@@ -8,7 +8,6 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import org.radix.common.ID.EUID;
 import org.radix.utils.UInt256;
-import org.radix.utils.UInt256s;
 
 /**
  * The state and data of a token at a given moment in time

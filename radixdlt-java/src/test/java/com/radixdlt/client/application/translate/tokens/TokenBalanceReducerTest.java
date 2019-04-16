@@ -4,7 +4,6 @@ import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import java.math.BigDecimal;
 
-import java.util.stream.Stream;
 import org.junit.Test;
 import org.radix.utils.UInt256;
 
@@ -13,7 +12,6 @@ import com.radixdlt.client.core.atoms.RadixHash;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import com.radixdlt.client.core.ledger.TransitionedParticle;
 
 public class TokenBalanceReducerTest {
 

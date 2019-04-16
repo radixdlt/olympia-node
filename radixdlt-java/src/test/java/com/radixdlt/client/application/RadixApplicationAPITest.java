@@ -3,7 +3,6 @@ package com.radixdlt.client.application;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.core.atoms.particles.RRI;
-import com.radixdlt.client.core.ledger.ParticleObservation;
 import com.radixdlt.client.core.network.RadixNetworkController;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.actions.FetchAtomsObservationAction;
@@ -39,7 +38,6 @@ import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.ledger.AtomPuller;
 import com.radixdlt.client.core.ledger.AtomStore;
 import com.radixdlt.client.core.ledger.AtomSubmitter;
-import com.radixdlt.client.core.ledger.ParticleStore;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomReceivedAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomResultAction;
@@ -216,7 +214,9 @@ public class RadixApplicationAPITest {
 		RadixNetworkController controller = mock(RadixNetworkController.class);
 		when(universe.getNetworkController()).thenReturn(controller);
 		AtomStore atomStore = mock(AtomStore.class);
-		when(atomStore.getAtoms(any())).thenReturn(Stream.empty());
+		when(atomStore.onSync(any())).thenReturn(Observable.just(System.currentTimeMillis()));
+
+
 		when(ledger.getAtomStore()).thenReturn(atomStore);
 		when(ledger.getAtomPuller()).thenReturn(address -> Observable.never());
 
@@ -270,9 +270,15 @@ public class RadixApplicationAPITest {
 	public void testPullOnGetBalanceOfOtherAddresses() {
 		RadixUniverse universe = mock(RadixUniverse.class);
 		Ledger ledger = mock(Ledger.class);
+
 		RadixNetworkController controller = mock(RadixNetworkController.class);
 		when(universe.getNetworkController()).thenReturn(controller);
 		when(controller.getActions()).thenReturn(Observable.never());
+
+		AtomStore atomStore = mock(AtomStore.class);
+		when(atomStore.onSync(any())).thenReturn(Observable.just(System.currentTimeMillis()));
+		when(ledger.getAtomStore()).thenReturn(atomStore);
+
 		AtomPuller puller = mock(AtomPuller.class);
 		when(ledger.getAtomPuller()).thenReturn(puller);
 		when(puller.pull(any())).thenReturn(Observable.never());

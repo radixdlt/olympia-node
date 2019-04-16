@@ -5,7 +5,6 @@ import com.radixdlt.client.application.translate.ApplicationState;
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.client.core.atoms.RadixHash;
 import com.radixdlt.client.core.atoms.particles.RRI;
-import com.radixdlt.client.core.atoms.particles.Spin;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;

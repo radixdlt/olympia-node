@@ -7,15 +7,11 @@ import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.ledger.AtomObservation.Type;
 import com.radixdlt.client.core.ledger.AtomObservation.AtomObservationUpdateType;
-import io.reactivex.Completable;
-import io.reactivex.CompletableEmitter;
+import com.radixdlt.client.core.spins.SpinStateMachine;
 import io.reactivex.Observable;
 import io.reactivex.ObservableEmitter;
-import io.reactivex.Single;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -24,21 +20,22 @@ import java.util.stream.Stream;
 
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 
-
 /**
- * Implementation of a data store for all atoms in a shard
+ * An in memory storage of atoms and particles
  */
 public class InMemoryAtomStore implements AtomStore {
 	private final Map<Atom, AtomObservation> atoms = new ConcurrentHashMap<>();
 	private final Map<Particle, Set<Atom>> particleIndex = new ConcurrentHashMap<>();
-	private final CopyOnWriteArrayList<ObservableEmitter<AtomObservation>> observers = new CopyOnWriteArrayList<>();
-	private final CopyOnWriteArrayList<ObservableEmitter<Long>> syncers = new CopyOnWriteArrayList<>();
+
+	private final Map<RadixAddress, CopyOnWriteArrayList<ObservableEmitter<AtomObservation>>> allObservers = new ConcurrentHashMap<>();
+	private final Map<RadixAddress, CopyOnWriteArrayList<ObservableEmitter<Long>>> allSyncers = new ConcurrentHashMap<>();
+
 	private final Object lock = new Object();
-	private Map<RadixAddress, Boolean> syncedMap = new HashMap<>();
+	private final Map<RadixAddress, Boolean> syncedMap = new HashMap<>();
 
 	private void softDeleteDependentsOf(Atom atom) {
 		atom.particles(Spin.UP)
-			.forEach(p -> {
+			.forEach(p ->
 				particleIndex.get(p).forEach(a -> {
 					AtomObservation observation = atoms.get(a);
 					if (observation.getAtom().equals(atom)) {
@@ -51,8 +48,8 @@ public class InMemoryAtomStore implements AtomStore {
 
 						atoms.put(observation.getAtom(), AtomObservation.softDeleted(observation.getAtom()));
 					}
-				});
-			});
+				})
+			);
 	}
 
 	/**
@@ -101,14 +98,23 @@ public class InMemoryAtomStore implements AtomStore {
 				}
 
 				if (include) {
-					observers.forEach(e -> e.onNext(atomObservation));
+					final CopyOnWriteArrayList<ObservableEmitter<AtomObservation>> observers = allObservers.get(address);
+					if (observers != null) {
+						observers.forEach(e -> e.onNext(atomObservation));
+					}
 				}
 			} else {
-				observers.forEach(e -> e.onNext(atomObservation));
+				final CopyOnWriteArrayList<ObservableEmitter<AtomObservation>> observers = allObservers.get(address);
+				if (observers != null) {
+					observers.forEach(e -> e.onNext(atomObservation));
+				}
 			}
 
 			if (synced) {
-				syncers.forEach(e -> e.onNext(System.currentTimeMillis()));
+				final CopyOnWriteArrayList<ObservableEmitter<Long>> syncers = allSyncers.get(address);
+				if (syncers != null) {
+					syncers.forEach(e -> e.onNext(System.currentTimeMillis()));
+				}
 			}
 		}
 	}
@@ -119,21 +125,19 @@ public class InMemoryAtomStore implements AtomStore {
 			synchronized (lock) {
 				if (syncedMap.getOrDefault(address, false)) {
 					emitter.onNext(System.currentTimeMillis());
-				} else {
-					syncers.add(emitter);
-					emitter.setCancellable(() -> syncers.remove(emitter));
 				}
+
+				final CopyOnWriteArrayList<ObservableEmitter<Long>> syncers;
+				if (!allSyncers.containsKey(address)) {
+					syncers = new CopyOnWriteArrayList<>();
+					allSyncers.put(address, syncers);
+				} else {
+					syncers = allSyncers.get(address);
+				}
+				syncers.add(emitter);
+				emitter.setCancellable(() -> syncers.remove(emitter));
 			}
 		});
-	}
-
-	@Override
-	public Stream<Atom> getAtoms(RadixAddress address) {
-		synchronized (lock) {
-			return atoms.entrySet().stream()
-				.filter(e -> e.getValue().isStore() && e.getKey().addresses().anyMatch(address::equals))
-				.map(Map.Entry::getKey);
-		}
 	}
 
 	@Override
@@ -150,7 +154,7 @@ public class InMemoryAtomStore implements AtomStore {
 						} else {
 							return Stream.empty();
 						}
-					}).count() == 1
+					}).reduce(Spin.NEUTRAL, (s0, s1) -> SpinStateMachine.isAfter(s0, s1) ? s0 : s1) == Spin.UP
 				)
 				.map(Map.Entry::getKey);
 		}
@@ -160,6 +164,13 @@ public class InMemoryAtomStore implements AtomStore {
 	public Observable<AtomObservation> getAtomObservations(RadixAddress address) {
 		return Observable.create(emitter -> {
 			synchronized (lock) {
+				final CopyOnWriteArrayList<ObservableEmitter<AtomObservation>> observers;
+				if (!allObservers.containsKey(address)) {
+					observers = new CopyOnWriteArrayList<>();
+					allObservers.put(address, observers);
+				} else {
+					observers = allObservers.get(address);
+				}
 				observers.add(emitter);
 				atoms.entrySet().stream()
 					.filter(e -> e.getValue().isStore() && e.getKey().addresses().anyMatch(address::equals))
