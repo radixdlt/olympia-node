@@ -11,6 +11,9 @@ import com.radixdlt.client.application.translate.tokens.TokenState.TokenSupplyTy
 import com.radixdlt.client.atommodel.tokens.TokenPermission;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.ledger.TransitionedParticle;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Reduces particles at an address into concrete Tokens and their states
@@ -28,9 +31,7 @@ public class TokenDefinitionsReducer implements ParticleReducer<TokenDefinitions
 	}
 
 	@Override
-	public TokenDefinitionsState reduce(TokenDefinitionsState state, TransitionedParticle t) {
-		Particle p = t.getParticle();
-
+	public TokenDefinitionsState reduce(TokenDefinitionsState state, Particle p) {
 		if (p instanceof TokenDefinitionParticle) {
 			TokenDefinitionParticle tokenDefinitionParticle = (TokenDefinitionParticle) p;
 			TokenPermission mintPermission = tokenDefinitionParticle.getTokenPermissions().get(TokenTransition.MINT);
@@ -51,14 +52,20 @@ public class TokenDefinitionsReducer implements ParticleReducer<TokenDefinitions
 				tokenDefinitionParticle.getSymbol(),
 				tokenDefinitionParticle.getDescription(),
 				TokenUnitConversions.subunitsToUnits(tokenDefinitionParticle.getGranularity()),
-				tokenSupplyType,
-				t.getSpinTo() == Spin.UP
+				tokenSupplyType
 			);
-		} else if (p instanceof UnallocatedTokensParticle) {
+		}
+
+		if (p instanceof UnallocatedTokensParticle) {
 			UnallocatedTokensParticle u = (UnallocatedTokensParticle) p;
-			return state.mergeUnallocated(u, t.getSpinTo() == Spin.UP);
+			return state.mergeUnallocated(u);
 		}
 
 		return state;
+	}
+
+	@Override
+	public TokenDefinitionsState combine(TokenDefinitionsState state0, TokenDefinitionsState state1) {
+		return TokenDefinitionsState.combine(state0, state1);
 	}
 }

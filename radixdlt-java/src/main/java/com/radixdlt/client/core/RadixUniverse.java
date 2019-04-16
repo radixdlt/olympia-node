@@ -11,9 +11,7 @@ import com.radixdlt.client.core.ledger.AtomPuller;
 import com.radixdlt.client.core.ledger.AtomStore;
 import com.radixdlt.client.core.ledger.AtomSubmitter;
 import com.radixdlt.client.core.ledger.InMemoryAtomStore;
-import com.radixdlt.client.core.ledger.ParticleStore;
 import com.radixdlt.client.core.ledger.RadixAtomPuller;
-import com.radixdlt.client.core.ledger.RadixParticleStore;
 import com.radixdlt.client.core.network.RadixNetworkController;
 import com.radixdlt.client.core.network.RadixNetworkController.RadixNetworkControllerBuilder;
 import com.radixdlt.client.core.network.RadixNetworkEpic;
@@ -55,8 +53,6 @@ import java.util.List;
 public final class RadixUniverse {
 	public interface Ledger {
 		AtomPuller getAtomPuller();
-
-		ParticleStore getParticleStore();
 
 		AtomStore getAtomStore();
 
@@ -149,20 +145,9 @@ public final class RadixUniverse {
 
 			private final AtomPuller atomPuller = new RadixAtomPuller(networkController, inMemoryAtomStore::store);
 
-			/**
-			* The Particle Data Store
-			* TODO: actually change it into the particle data store
-			*/
-			private final RadixParticleStore particleStore = new RadixParticleStore(inMemoryAtomStore);
-
 			@Override
 			public AtomPuller getAtomPuller() {
 				return atomPuller;
-			}
-
-			@Override
-			public RadixParticleStore getParticleStore() {
-				return particleStore;
 			}
 
 			@Override

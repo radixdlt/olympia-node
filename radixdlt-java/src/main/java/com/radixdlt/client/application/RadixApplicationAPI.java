@@ -34,9 +34,7 @@ import com.radixdlt.client.application.identity.Data.DataBuilder;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.ActionExecutionException.ActionExecutionExceptionBuilder;
-import com.radixdlt.client.application.translate.ActionStore;
 import com.radixdlt.client.application.translate.ApplicationState;
-import com.radixdlt.client.application.translate.ApplicationStore;
 import com.radixdlt.client.application.translate.AtomErrorToExceptionReasonMapper;
 import com.radixdlt.client.application.translate.AtomToExecutedActionsMapper;
 import com.radixdlt.client.application.translate.FeeMapper;
@@ -142,9 +140,9 @@ public class RadixApplicationAPI {
 	private final RadixIdentity identity;
 	private final RadixUniverse universe;
 
-	private final Map<Class<?>, ActionStore<?>> actionStores;
+	private final Map<Class<?>, AtomToExecutedActionsMapper> actionStores;
 
-	private final Map<Class<? extends ApplicationState>, ApplicationStore<? extends ApplicationState>> applicationStores;
+	private final Map<Class<? extends ApplicationState>, ParticleReducer> applicationStores;
 
 	/**
 	 * Action to Particle Mappers which can mapToParticleGroups without any dependency on ledger state
@@ -190,12 +188,9 @@ public class RadixApplicationAPI {
 		this.universe = universe;
 		this.actionStores = atomMappers.stream().collect(Collectors.toMap(
 			AtomToExecutedActionsMapper::actionClass,
-			m -> new ActionStore<>(ledger.getAtomStore(), m)
+			m -> m
 		));
-		this.applicationStores = particleReducers.stream().collect(Collectors.toMap(
-			ParticleReducer::stateClass,
-			r -> new ApplicationStore<>(ledger.getParticleStore(), r)
-		));
+		this.applicationStores = particleReducers.stream().collect(Collectors.toMap(ParticleReducer::stateClass, r -> r));
 		this.statefulActionToParticleGroupsMappers = statefulActionToParticleGroupsMappers;
 		this.statelessActionToParticleGroupsMappers = statelessActionToParticleGroupsMappers;
 		this.atomErrorMappers = atomErrorMappers;
@@ -341,16 +336,16 @@ public class RadixApplicationAPI {
 		return this.universe.getNetworkController();
 	}
 
-	private ApplicationStore<? extends ApplicationState> getStore(Class<? extends ApplicationState> storeClass) {
-		ApplicationStore<? extends ApplicationState> store = this.applicationStores.get(storeClass);
+	private <T extends ApplicationState> ParticleReducer<T> getStateReducer(Class<T> storeClass) {
+		ParticleReducer<T> store = this.applicationStores.get(storeClass);
 		if (store == null) {
 			throw new IllegalArgumentException("No store available for class: " + storeClass);
 		}
 		return store;
 	}
 
-	private ActionStore<?> getActionStore(Class<?> actionClass) {
-		ActionStore<?> store = actionStores.get(actionClass);
+	private <T> AtomToExecutedActionsMapper<T> getActionMapper(Class<T> actionClass) {
+		AtomToExecutedActionsMapper<T> store = actionStores.get(actionClass);
 		if (store == null) {
 			throw new IllegalArgumentException("No store available for class: " + actionClass);
 		}
@@ -420,8 +415,13 @@ public class RadixApplicationAPI {
 			.refCount(2);
 		Disposable d = auto.subscribe();
 
-		return this.getActionStore(actionClass).getActions(address, identity)
-			.map(actionClass::cast)
+		final AtomToExecutedActionsMapper<T> mapper = this.getActionMapper(actionClass);
+
+		return ledger.getAtomStore()
+			.getAtomObservations(address)
+			.filter(AtomObservation::isStore)
+			.map(AtomObservation::getAtom)
+			.flatMap(a -> mapper.map(a, identity))
 			.publish()
 			.refCount()
 			.doOnSubscribe(disposable -> auto.subscribe().dispose())
@@ -449,14 +449,19 @@ public class RadixApplicationAPI {
 			.refCount(2);
 		Disposable d = auto.subscribe();
 
-		return this.getStore(stateClass).getState(address)
-			.map(stateClass::cast)
-			.publish()
-			.refCount()
-			.doOnSubscribe(disposable -> auto.subscribe().dispose())
-			.doOnError(e -> d.dispose())
-			.doOnDispose(d::dispose)
-			.doOnComplete(d::dispose);
+		final ParticleReducer<T> reducer = this.getStateReducer(stateClass);
+
+		return ledger.getAtomStore().onSync(address)
+				.map(a ->
+					ledger.getAtomStore().getUpParticles(address)
+						.reduce(reducer.initialState(), reducer::reduce, reducer::combine)
+				)
+				.publish()
+				.refCount()
+				.doOnSubscribe(disposable -> auto.subscribe().dispose())
+				.doOnError(e -> d.dispose())
+				.doOnDispose(d::dispose)
+				.doOnComplete(d::dispose);
 	}
 
 	/**

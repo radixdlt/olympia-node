@@ -3,7 +3,7 @@ package com.radixdlt.client.core.ledger;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.ledger.AtomEvent.AtomEventType;
 
-public class AtomObservation {
+public final class AtomObservation {
 	public enum Type {
 		STORE,
 		DELETE,
