@@ -1,9 +1,6 @@
 package com.radixdlt.client.core.ledger;
 
 import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.atoms.RadixHash;
-import com.radixdlt.client.core.atoms.particles.Particle;
-import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.network.RadixNetworkController;
 import com.radixdlt.client.core.network.RadixNodeAction;
 import com.radixdlt.client.core.network.actions.FetchAtomsAction;
@@ -13,18 +10,14 @@ import com.radixdlt.client.core.network.actions.FetchAtomsRequestAction;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.network.actions.SubmitAtomResultAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType;
-import com.radixdlt.client.core.spins.SpinStateMachine;
 import io.reactivex.Observable;
 import io.reactivex.ObservableEmitter;
 import io.reactivex.functions.Cancellable;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import org.radix.common.tuples.Pair;
-
 
 /**
  * Module responsible for fetches and merges of new atoms into the Atom Store.
@@ -58,7 +51,6 @@ public class RadixAtomPuller implements AtomPuller {
 	// HACK
 	// TODO: Move this into a proper reducer framework
 	private static class AtomReducer implements Consumer<RadixNodeAction> {
-		private final ConcurrentHashMap<RadixHash, Pair<Spin, AtomObservation>> particleSpins = new ConcurrentHashMap<>();
 		private final FetchAtomsAction initialAction;
 		private final ObservableEmitter<AtomObservation> emitter;
 		private final BiConsumer<RadixAddress, AtomObservation> atomStore;
@@ -75,45 +67,14 @@ public class RadixAtomPuller implements AtomPuller {
 			this.emitter = emitter;
 		}
 
-		// TODO: Replace the following checks with constraint machine to
-		// check for conflicts rather than just DOWN particle conflicts
-		private Optional<Atom> getAtomConflict(Atom atom, Particle particle, Spin spin) {
-			if (spin != Spin.DOWN) {
-				return Optional.empty();
-			}
-
-			Pair<Spin, AtomObservation> lastObservation = particleSpins.get(particle.getHash());
-
-			return Optional.ofNullable(lastObservation)
-				.flatMap(o -> !o.getSecond().getAtom().equals(atom) && o.getFirst() == Spin.DOWN
-						? Optional.of(o.getSecond().getAtom())
-						: Optional.empty());
-		}
-
 		@Override
 		public void accept(RadixNodeAction action) {
 			final List<AtomObservation> observations = new ArrayList<>();
 
 			if (action instanceof FetchAtomsObservationAction) {
-
 				FetchAtomsObservationAction fetchAtomsObservationAction = (FetchAtomsObservationAction) action;
 				if (fetchAtomsObservationAction.getUuid().equals(initialAction.getUuid())) {
-
 					AtomObservation observation = fetchAtomsObservationAction.getObservation();
-					if (observation.hasAtom()) {
-						observation.getAtom().spunParticles()
-							.forEach(s -> {
-								final Particle particle = s.getParticle();
-								final Spin spinTo = observation.isStore() ? s.getSpin() : SpinStateMachine.revert(s.getSpin());
-
-								// If a new observed atoms conflicts with a previously soft stored atom,
-								// soft stored atom must be deleted
-								getAtomConflict(observation.getAtom(), particle, spinTo)
-									.ifPresent(a -> observations.add(AtomObservation.softDeleted(a)));
-
-								particleSpins.put(particle.getHash(), new Pair<>(spinTo, observation));
-							});
-					}
 					observations.add(observation);
 				}
 			} else if (action instanceof SubmitAtomResultAction) {
@@ -125,12 +86,8 @@ public class RadixAtomPuller implements AtomPuller {
 
 				if (submitAtomResultAction.getType() == SubmitAtomResultActionType.STORED
 					&& atom.addresses().anyMatch(address::equals)
-					&& atom.spunParticles().noneMatch(s -> getAtomConflict(atom, s.getParticle(), s.getSpin()).isPresent())
 				) {
 					final AtomObservation observation = AtomObservation.softStored(atom);
-					atom.spunParticles()
-						.forEach(s -> particleSpins.put(s.getParticle().getHash(), new Pair<>(s.getSpin(), observation)));
-
 					observations.add(observation);
 					observations.add(AtomObservation.head());
 				}

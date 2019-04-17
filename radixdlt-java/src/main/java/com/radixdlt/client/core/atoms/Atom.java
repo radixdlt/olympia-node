@@ -59,6 +59,10 @@ public final class Atom extends SerializableObject {
 		this(Collections.emptyList(), timestamp);
 	}
 
+	public Atom(ParticleGroup particleGroup, long timestamp) {
+		this(Collections.singletonList(particleGroup), ImmutableMap.of(METADATA_TIMESTAMP_KEY, String.valueOf(timestamp)));
+	}
+
 	public Atom(List<ParticleGroup> particleGroups, long timestamp) {
 		this(particleGroups, ImmutableMap.of(METADATA_TIMESTAMP_KEY, String.valueOf(timestamp)));
 	}

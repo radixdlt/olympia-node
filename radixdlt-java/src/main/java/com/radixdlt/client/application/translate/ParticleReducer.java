@@ -5,7 +5,7 @@ import com.radixdlt.client.core.atoms.particles.Particle;
 /**
  * Temporary class for reducing up particles into an application state.
  * TODO: Introduce the AtomOS layer in between Application and Particles
- * TODO: which will reduce fungible, indexable, and payload particle types
+ * TODO: which will reduce fungible, indexable, and single state particle types
  * TODO: into a state machine upon which application state can be built on
  * TODO: top of
  *

@@ -72,6 +72,25 @@ public class InMemoryAtomStore implements AtomStore {
 				final AtomObservationUpdateType nextUpdate = atomObservation.getUpdateType();
 				final AtomObservationUpdateType lastUpdate = curObservation != null ? curObservation.getUpdateType() : null;
 
+				// If a new hard observed atoms conflicts with a previously stored atom,
+				// stored atom must be deleted
+				if (nextUpdate.getType() == Type.STORE && !nextUpdate.isSoft()) {
+					atom.spunParticles().forEach(s -> {
+						Map<Spin, Set<Atom>> spinParticleIndex = particleIndex.getOrDefault(s.getParticle(), Collections.emptyMap());
+						spinParticleIndex.getOrDefault(s.getSpin(), Collections.emptySet())
+							.forEach(a -> {
+								if (a.equals(atom)) {
+									return;
+								}
+								AtomObservation oldObservation = atoms.get(a);
+								if (oldObservation.isStore()) {
+									softDeleteDependentsOf(a);
+									atoms.put(a, AtomObservation.softDeleted(a));
+								}
+							});
+					});
+				}
+
 				final boolean include;
 				if (lastUpdate == null) {
 					include = nextUpdate.getType() == Type.STORE;
@@ -157,8 +176,12 @@ public class InMemoryAtomStore implements AtomStore {
 					final Map<Spin, Set<Atom>> spinParticleIndex = e.getValue();
 					final boolean hasDown = spinParticleIndex.getOrDefault(Spin.DOWN, Collections.emptySet())
 						.stream().anyMatch(a -> atoms.get(a).isStore());
-					return !hasDown && spinParticleIndex.getOrDefault(Spin.UP, Collections.emptySet())
-						.stream().anyMatch(a -> atoms.get(a).isStore());
+					if (hasDown) {
+						return false;
+					}
+
+					Set<Atom> uppingAtoms = spinParticleIndex.getOrDefault(Spin.UP, Collections.emptySet());
+					return uppingAtoms.stream().anyMatch(a -> atoms.get(a).isStore());
 				})
 				.map(Map.Entry::getKey);
 		}
