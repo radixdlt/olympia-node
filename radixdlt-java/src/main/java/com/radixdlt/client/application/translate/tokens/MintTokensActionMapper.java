@@ -9,10 +9,13 @@ import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.fungible.FungibleParticleTransitioner;
 import com.radixdlt.client.core.fungible.FungibleParticleTransitioner.FungibleParticleTransition;
 import java.math.BigDecimal;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.radix.utils.UInt256;
 
@@ -22,26 +25,49 @@ import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsM
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.particles.Particle;
 
-import io.reactivex.Observable;
-
 public class MintTokensActionMapper implements StatefulActionToParticleGroupsMapper {
+	private final FungibleParticleTransitioner<UnallocatedTokensParticle, TransferrableTokensParticle> transitioner;
+
+	public MintTokensActionMapper() {
+		this.transitioner = new FungibleParticleTransitioner<>(
+			(amt, consumable) -> new TransferrableTokensParticle(
+				amt,
+				consumable.getGranularity(),
+				consumable.getAddress(),
+				System.nanoTime(),
+				consumable.getTokDefRef(),
+				System.currentTimeMillis() / 60000L + 60000L,
+				consumable.getTokenPermissions()
+			),
+			mintedTokens -> mintedTokens,
+			(amt, consumable) -> new UnallocatedTokensParticle(
+				amt,
+				consumable.getGranularity(),
+				System.nanoTime(),
+				consumable.getTokDefRef(),
+				consumable.getTokenPermissions()
+			),
+			unallocated -> unallocated,
+			UnallocatedTokensParticle::getAmount
+		);
+	}
 
 	@Override
-	public Observable<ShardedAppStateId> requiredState(Action action) {
+	public Set<ShardedAppStateId> requiredState(Action action) {
 		if (!(action instanceof MintTokensAction)) {
-			return Observable.empty();
+			return Collections.emptySet();
 		}
 
 		MintTokensAction mintTokensAction = (MintTokensAction) action;
 		RadixAddress tokenDefinitionAddress = mintTokensAction.getTokenDefinitionReference().getAddress();
 
-		return Observable.just(ShardedAppStateId.of(TokenDefinitionsState.class, tokenDefinitionAddress));
+		return Collections.singleton(ShardedAppStateId.of(TokenDefinitionsState.class, tokenDefinitionAddress));
 	}
 
 	@Override
-	public Observable<ParticleGroup> mapToParticleGroups(Action action, Observable<Observable<? extends ApplicationState>> store) {
+	public List<ParticleGroup> mapToParticleGroups(Action action, Map<ShardedAppStateId, ? extends ApplicationState> store) {
 		if (!(action instanceof MintTokensAction)) {
-			return Observable.empty();
+			return Collections.emptyList();
 		}
 
 		MintTokensAction mintTokensAction = (MintTokensAction) action;
@@ -51,61 +77,33 @@ public class MintTokensActionMapper implements StatefulActionToParticleGroupsMap
 			throw new IllegalArgumentException("Mint amount must be greater than 0.");
 		}
 
-		return store.firstOrError()
-			.flatMap(Observable::firstOrError)
-			.map(TokenDefinitionsState.class::cast)
-			.map(TokenDefinitionsState::getState)
-			.map(m -> getTokenStateOrError(m, tokenDefinition))
-			.map(tokenState -> {
-				final BigDecimal unallocatedSupply = tokenState.getUnallocatedSupply();
+		ShardedAppStateId shardedAppStateId = ShardedAppStateId.of(TokenDefinitionsState.class, tokenDefinition.getAddress());
+		TokenDefinitionsState tokenDefinitionsState = (TokenDefinitionsState) store.get(shardedAppStateId);
+		TokenState tokenState = getTokenStateOrError(tokenDefinitionsState.getState(), tokenDefinition);
+		final BigDecimal unallocatedSupply = tokenState.getUnallocatedSupply();
 
-				if (unallocatedSupply.compareTo(mintTokensAction.getAmount()) < 0) {
-					throw new TokenOverMintException(
-						mintTokensAction.getTokenDefinitionReference(),
-						TokenUnitConversions.subunitsToUnits(UInt256.MAX_VALUE),
-						TokenUnitConversions.subunitsToUnits(UInt256.MAX_VALUE).subtract(unallocatedSupply),
-						mintTokensAction.getAmount()
-					);
-				}
+		if (unallocatedSupply.compareTo(mintTokensAction.getAmount()) < 0) {
+			throw new TokenOverMintException(
+				mintTokensAction.getTokenDefinitionReference(),
+				TokenUnitConversions.subunitsToUnits(UInt256.MAX_VALUE),
+				TokenUnitConversions.subunitsToUnits(UInt256.MAX_VALUE).subtract(unallocatedSupply),
+				mintTokensAction.getAmount()
+			);
+		}
 
-				final FungibleParticleTransitioner<UnallocatedTokensParticle, TransferrableTokensParticle> transitioner =
-					new FungibleParticleTransitioner<>(
-						(amt, consumable) -> new TransferrableTokensParticle(
-							amt,
-							consumable.getGranularity(),
-							tokenDefinition.getAddress(),
-							System.nanoTime(),
-							tokenDefinition,
-							System.currentTimeMillis() / 60000L + 60000L,
-							consumable.getTokenPermissions()
-						),
-						mintedTokens -> mintedTokens,
-						(amt, consumable) -> new UnallocatedTokensParticle(
-							amt,
-							consumable.getGranularity(),
-							System.nanoTime(),
-							tokenDefinition,
-							consumable.getTokenPermissions()
-						),
-						unallocated -> unallocated,
-						UnallocatedTokensParticle::getAmount
-					);
+		FungibleParticleTransition<UnallocatedTokensParticle, TransferrableTokensParticle> transition = transitioner.createTransition(
+			tokenState.getUnallocatedTokens().entrySet().stream()
+				.map(Entry::getValue)
+				.collect(Collectors.toList()),
+			TokenUnitConversions.unitsToSubunits(mintTokensAction.getAmount())
+		);
 
-				FungibleParticleTransition<UnallocatedTokensParticle, TransferrableTokensParticle> transition = transitioner.createTransition(
-					tokenState.getUnallocatedTokens().entrySet().stream()
-						.map(Entry::getValue)
-						.collect(Collectors.toList()),
-					TokenUnitConversions.unitsToSubunits(mintTokensAction.getAmount())
-				);
+		ParticleGroupBuilder particleGroupBuilder = ParticleGroup.builder();
+		transition.getRemoved().stream().map(t -> (Particle) t).forEach(p -> particleGroupBuilder.addParticle(p, Spin.DOWN));
+		transition.getMigrated().stream().map(t -> (Particle) t).forEach(p -> particleGroupBuilder.addParticle(p, Spin.UP));
+		transition.getTransitioned().stream().map(t -> (Particle) t).forEach(p -> particleGroupBuilder.addParticle(p, Spin.UP));
 
-				ParticleGroupBuilder particleGroupBuilder = ParticleGroup.builder();
-				transition.getRemoved().stream().map(t -> (Particle) t).forEach(p -> particleGroupBuilder.addParticle(p, Spin.DOWN));
-				transition.getMigrated().stream().map(t -> (Particle) t).forEach(p -> particleGroupBuilder.addParticle(p, Spin.UP));
-				transition.getTransitioned().stream().map(t -> (Particle) t).forEach(p -> particleGroupBuilder.addParticle(p, Spin.UP));
-
-				return particleGroupBuilder.build();
-			})
-			.toObservable();
+		return Collections.singletonList(particleGroupBuilder.build());
 	}
 
 	private TokenState getTokenStateOrError(Map<RRI, TokenState> m, RRI tokenDefinition) {

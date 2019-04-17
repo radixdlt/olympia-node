@@ -1,144 +1,217 @@
 package com.radixdlt.client.core.ledger;
 
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.ledger.AtomObservation.Type;
 import com.radixdlt.client.core.ledger.AtomObservation.AtomObservationUpdateType;
-import io.reactivex.subjects.Subject;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import io.reactivex.Observable;
+import io.reactivex.ObservableEmitter;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Stream;
 
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 
-import io.reactivex.Observable;
-import io.reactivex.subjects.ReplaySubject;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import org.radix.common.ID.EUID;
-
 /**
- * Implementation of a data store for all atoms in a shard
+ * An in memory storage of atoms and particles
  */
 public class InMemoryAtomStore implements AtomStore {
+	private final Map<Atom, AtomObservation> atoms = new ConcurrentHashMap<>();
+	private final Map<Particle, Map<Spin, Set<Atom>>> particleIndex = new ConcurrentHashMap<>();
 
-	/**
-	 * The In Memory Atom Data Store
-	 */
-	private final ConcurrentHashMap<RadixAddress, Subject<AtomObservation>> cache = new ConcurrentHashMap<>();
+	private final Map<RadixAddress, CopyOnWriteArrayList<ObservableEmitter<AtomObservation>>> allObservers = new ConcurrentHashMap<>();
+	private final Map<RadixAddress, CopyOnWriteArrayList<ObservableEmitter<Long>>> allSyncers = new ConcurrentHashMap<>();
 
-	/**
-	 * Total observation observationCountPerAddress per address
-	 */
-	private final ConcurrentHashMap<RadixAddress, Long> observationCountPerAddress = new ConcurrentHashMap<>();
+	private final Object lock = new Object();
+	private final Map<RadixAddress, Boolean> syncedMap = new HashMap<>();
+
+	private void softDeleteDependentsOf(Atom atom) {
+		atom.particles(Spin.UP)
+			.forEach(p -> {
+				Map<Spin, Set<Atom>> particleSpinIndex = particleIndex.get(p);
+				particleSpinIndex.getOrDefault(Spin.DOWN, Collections.emptySet())
+					.forEach(a -> {
+						AtomObservation observation = atoms.get(a);
+						if (observation.getAtom().equals(atom)) {
+							return;
+						}
+
+						if (observation.getUpdateType().getType() == Type.STORE || !observation.getUpdateType().isSoft()) {
+							// This first so that leaves get deleted first
+							softDeleteDependentsOf(observation.getAtom());
+
+							atoms.put(observation.getAtom(), AtomObservation.softDeleted(observation.getAtom()));
+						}
+					});
+			});
+	}
+
 
 	/**
 	 * Store an atom under a given destination
-	 * TODO: add synchronization if needed
 	 *
 	 * @param address address to store under
 	 * @param atomObservation the atom to store
 	 */
 	public void store(RadixAddress address, AtomObservation atomObservation) {
-		observationCountPerAddress.merge(address, 1L, Long::sum);
-		cache.computeIfAbsent(address, addr -> ReplaySubject.<AtomObservation>create().toSerialized()).onNext(atomObservation);
-	}
+		synchronized (lock) {
+			final boolean synced = atomObservation.isHead();
+			syncedMap.put(address, synced);
 
-	private static class AtomObservationsState {
-		private final ConcurrentHashMap<EUID, AtomObservation> curAtomState = new ConcurrentHashMap<>();
-		private final ConcurrentHashMap<EUID, EUID> downParticlesToAtoms = new ConcurrentHashMap<>();
-		private long curCount;
+			final Atom atom = atomObservation.getAtom();
+			if (atom != null) {
 
-		AtomObservationsState() {
-			this.curCount = 0;
-		}
+				final AtomObservation curObservation = atoms.get(atom);
+				final AtomObservationUpdateType nextUpdate = atomObservation.getUpdateType();
+				final AtomObservationUpdateType lastUpdate = curObservation != null ? curObservation.getUpdateType() : null;
 
-		AtomObservationUpdateType get(Atom atom) {
-			AtomObservation o = curAtomState.get(atom.getHid());
-			return o == null ? null : o.getUpdateType();
-		}
+				// If a new hard observed atoms conflicts with a previously stored atom,
+				// stored atom must be deleted
+				if (nextUpdate.getType() == Type.STORE && !nextUpdate.isSoft()) {
+					atom.spunParticles().forEach(s -> {
+						Map<Spin, Set<Atom>> spinParticleIndex = particleIndex.getOrDefault(s.getParticle(), Collections.emptyMap());
+						spinParticleIndex.getOrDefault(s.getSpin(), Collections.emptySet())
+							.forEach(a -> {
+								if (a.equals(atom)) {
+									return;
+								}
+								AtomObservation oldObservation = atoms.get(a);
+								if (oldObservation.isStore()) {
+									softDeleteDependentsOf(a);
+									atoms.put(a, AtomObservation.softDeleted(a));
+								}
+							});
+					});
+				}
 
-		void put(AtomObservation atomObservation) {
-			curAtomState.put(atomObservation.getAtom().getHid(), atomObservation);
+				final boolean include;
+				if (lastUpdate == null) {
+					include = nextUpdate.getType() == Type.STORE;
+					atom.spunParticles().forEach(s -> {
+						Map<Spin, Set<Atom>> spinParticleIndex = particleIndex.get(s.getParticle());
+						if (spinParticleIndex == null) {
+							spinParticleIndex = new EnumMap<>(Spin.class);
+							particleIndex.put(s.getParticle(), spinParticleIndex);
+						}
+						spinParticleIndex.merge(
+							s.getSpin(),
+							Collections.singleton(atom),
+							(a, b) -> new ImmutableSet.Builder<Atom>().addAll(a).addAll(b).build()
+						);
+					});
+				} else {
+					// Soft observation should not be able to update a hard state
+					// Only update if type changes
+					include = (!nextUpdate.isSoft() || lastUpdate.isSoft())
+						&& nextUpdate.getType() != lastUpdate.getType();
+				}
 
-			if (atomObservation.isStore()) {
-				atomObservation.getAtom().particles(Spin.DOWN)
-					.forEach(p -> downParticlesToAtoms.put(p.getHid(), atomObservation.getAtom().getHid()));
+				if (nextUpdate.getType() == Type.DELETE && include) {
+					softDeleteDependentsOf(atom);
+				}
+
+				final boolean isSoftToHard = lastUpdate != null && lastUpdate.isSoft() && !nextUpdate.isSoft();
+				if (include || isSoftToHard) {
+					atoms.put(atom, atomObservation);
+				}
+
+				if (include) {
+					atom.addresses().forEach(addr -> {
+						final CopyOnWriteArrayList<ObservableEmitter<AtomObservation>> observers = allObservers.get(addr);
+						if (observers != null) {
+							observers.forEach(e -> e.onNext(atomObservation));
+						}
+					});
+				}
+			} else {
+				final CopyOnWriteArrayList<ObservableEmitter<AtomObservation>> observers = allObservers.get(address);
+				if (observers != null) {
+					observers.forEach(e -> e.onNext(atomObservation));
+				}
+			}
+
+			if (synced) {
+				final CopyOnWriteArrayList<ObservableEmitter<Long>> syncers = allSyncers.get(address);
+				if (syncers != null) {
+					syncers.forEach(e -> e.onNext(System.currentTimeMillis()));
+				}
 			}
 		}
+	}
 
-		Optional<AtomObservation> atomContainingDown(Particle p) {
-			return Optional.ofNullable(downParticlesToAtoms.get(p.getHid())).map(curAtomState::get);
+	@Override
+	public Observable<Long> onSync(RadixAddress address) {
+		return Observable.create(emitter -> {
+			synchronized (lock) {
+				if (syncedMap.getOrDefault(address, false)) {
+					emitter.onNext(System.currentTimeMillis());
+				}
+
+				final CopyOnWriteArrayList<ObservableEmitter<Long>> syncers;
+				if (!allSyncers.containsKey(address)) {
+					syncers = new CopyOnWriteArrayList<>();
+					allSyncers.put(address, syncers);
+				} else {
+					syncers = allSyncers.get(address);
+				}
+				syncers.add(emitter);
+				emitter.setCancellable(() -> syncers.remove(emitter));
+			}
+		});
+	}
+
+	@Override
+	public Stream<Particle> getUpParticles(RadixAddress address) {
+		synchronized (lock) {
+			return particleIndex.entrySet().stream()
+				.filter(e -> {
+					if (!e.getKey().getShardables().contains(address)) {
+						return false;
+					}
+					final Map<Spin, Set<Atom>> spinParticleIndex = e.getValue();
+					final boolean hasDown = spinParticleIndex.getOrDefault(Spin.DOWN, Collections.emptySet())
+						.stream().anyMatch(a -> atoms.get(a).isStore());
+					if (hasDown) {
+						return false;
+					}
+
+					Set<Atom> uppingAtoms = spinParticleIndex.getOrDefault(Spin.UP, Collections.emptySet());
+					return uppingAtoms.stream().anyMatch(a -> atoms.get(a).isStore());
+				})
+				.map(Map.Entry::getKey);
 		}
 	}
 
-	/**
-	 * Returns an unending stream of validated atoms which are stored at a particular destination.
-	 *
-	 * @param address address (which determines shard) to query atoms for
-	 * @return an Atom Observable
-	 */
 	@Override
-	public Observable<AtomObservation> getAtoms(RadixAddress address) {
-		Objects.requireNonNull(address);
-		return Observable.fromCallable(AtomObservationsState::new)
-			.flatMap(atomsObservationState -> cache.computeIfAbsent(address, addr -> ReplaySubject.<AtomObservation>create().toSerialized())
-				.concatMap(observation -> {
-					atomsObservationState.curCount++;
+	public Observable<AtomObservation> getAtomObservations(RadixAddress address) {
+		return Observable.create(emitter -> {
+			synchronized (lock) {
+				final CopyOnWriteArrayList<ObservableEmitter<AtomObservation>> observers;
+				if (!allObservers.containsKey(address)) {
+					observers = new CopyOnWriteArrayList<>();
+					allObservers.put(address, observers);
+				} else {
+					observers = allObservers.get(address);
+				}
+				observers.add(emitter);
+				atoms.entrySet().stream()
+					.filter(e -> e.getValue().isStore() && e.getKey().addresses().anyMatch(address::equals))
+					.map(Map.Entry::getValue)
+					.forEach(emitter::onNext);
 
-					if (observation.getAtom() != null) {
-						AtomObservationUpdateType nextUpdate = observation.getUpdateType();
-						AtomObservationUpdateType lastUpdate = atomsObservationState.get(observation.getAtom());
-
-
-						final boolean include;
-						if (lastUpdate == null) {
-							include = nextUpdate.getType() == Type.STORE;
-						} else {
-							// Soft observation should not be able to update a hard state
-							// Only update if type changes
-							include = (!nextUpdate.isSoft() || lastUpdate.isSoft())
-								&& nextUpdate.getType() != lastUpdate.getType();
-						}
-
-						// Core currently does not guarantee DELETEs being emitted in order so need this hack for now
-						// That is, create soft deletes for any known missing deletes from dependent atoms
-						List<AtomObservation> missingDeletes = new ArrayList<>();
-						if (nextUpdate.getType() == Type.DELETE && include) {
-							// TODO: Should we DELETE atoms which are dependent on these atoms as well?
-							List<AtomObservation> observationsContainingDown = observation.getAtom().particles(Spin.UP)
-								.flatMap(p -> atomsObservationState.atomContainingDown(p)
-									.map(o -> o.isStore() && !o.getAtom().getHid().equals(observation.getAtom().getHid())
-										? Stream.of(o) : Stream.<AtomObservation>empty())
-									.orElse(Stream.empty())
-								)
-								.collect(Collectors.toList());
-
-							if (!observationsContainingDown.isEmpty()) {
-								observationsContainingDown.forEach(o -> missingDeletes.add(AtomObservation.softDeleted(o.getAtom())));
-							}
-						}
-
-						// Should always update observation state if going from soft to hard observation
-						final boolean isSoftToHard = lastUpdate != null && lastUpdate.isSoft() && !nextUpdate.isSoft();
-
-						if (include || isSoftToHard) {
-							atomsObservationState.put(observation);
-							missingDeletes.forEach(atomsObservationState::put);
-						}
-
-						return include ? Observable.fromIterable(missingDeletes).concatWith(Observable.just(observation)) : Observable.empty();
-					} else if (observation.isHead()) {
-						// Only send HEAD if we've processed all known atoms
-						final boolean include = atomsObservationState.curCount >= observationCountPerAddress.getOrDefault(address, 0L);
-						return include ? Observable.just(observation) : Observable.empty();
-					} else {
-						return Observable.empty();
+				emitter.setCancellable(() -> {
+					synchronized (lock) {
+						observers.remove(emitter);
 					}
-				})
-			);
+				});
+			}
+		});
 	}
 }

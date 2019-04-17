@@ -96,6 +96,7 @@ public final class SubmitAtomResultAction implements SubmitAtomAction {
 	@Override
 	public String toString() {
 		return "SUBMIT_ATOM_RESULT " + this.uuid + " " + this.atom.getHid() + " " + this.node + " " + this.type + " " + this.data
-			+ (this.type == SubmitAtomResultActionType.VALIDATION_ERROR ? this.atom : "");
+			+ (this.type == SubmitAtomResultActionType.VALIDATION_ERROR || this.type == SubmitAtomResultActionType.COLLISION
+			? this.atom : "");
 	}
 }

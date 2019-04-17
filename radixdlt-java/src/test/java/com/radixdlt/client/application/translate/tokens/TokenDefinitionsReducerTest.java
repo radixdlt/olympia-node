@@ -6,7 +6,6 @@ import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle.TokenTransit
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.core.atoms.particles.RRI;
-import com.radixdlt.client.core.ledger.TransitionedParticle;
 import java.math.BigDecimal;
 import java.util.Collections;
 
@@ -36,7 +35,7 @@ public class TokenDefinitionsReducerTest {
 
 		TokenDefinitionsReducer tokenDefinitionsReducer = new TokenDefinitionsReducer();
 		TokenDefinitionsState state = tokenDefinitionsReducer.reduce(
-			TokenDefinitionsState.init(), TransitionedParticle.n2u(tokenDefinitionParticle));
+			TokenDefinitionsState.init(), tokenDefinitionParticle);
 
 		assertThat(state.getState().get(tokenRef)).isEqualTo(
 			new TokenState("Name", "ISO", "Desc", BigDecimal.ZERO,
@@ -67,10 +66,9 @@ public class TokenDefinitionsReducerTest {
 		when(unallocatedTokensParticle.getHid()).thenReturn(EUID.ONE);
 
 		TokenDefinitionsReducer tokenDefinitionsReducer = new TokenDefinitionsReducer();
-		TokenDefinitionsState state1 = tokenDefinitionsReducer.reduce(
-			TokenDefinitionsState.init(), TransitionedParticle.n2u(tokenDefinitionParticle));
-		TokenDefinitionsState state2 = tokenDefinitionsReducer.reduce(state1, TransitionedParticle.n2u(minted));
-		TokenDefinitionsState state3 = tokenDefinitionsReducer.reduce(state2, TransitionedParticle.n2u(unallocatedTokensParticle));
+		TokenDefinitionsState state1 = tokenDefinitionsReducer.reduce(TokenDefinitionsState.init(), tokenDefinitionParticle);
+		TokenDefinitionsState state2 = tokenDefinitionsReducer.reduce(state1, unallocatedTokensParticle);
+		TokenDefinitionsState state3 = tokenDefinitionsReducer.reduce(state2, minted);
 		assertThat(state3.getState().get(tokenRef).getTotalSupply()).isEqualTo(TokenUnitConversions.subunitsToUnits(hundred));
 		assertThat(state3.getState().get(tokenRef).getName()).isEqualTo("Name");
 		assertThat(state3.getState().get(tokenRef).getIso()).isEqualTo("ISO");

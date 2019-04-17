@@ -32,7 +32,7 @@ public final class RRI {
 	public static RRI fromString(String s) {
 		String[] split = s.split("/");
 		if (split.length < 2) {
-			throw new IllegalArgumentException("RRI must be of the format /:address/:type/:name");
+			throw new IllegalArgumentException("RRI must be of the format /:address/:name");
 		}
 
 		RadixAddress address = RadixAddress.from(split[1]);

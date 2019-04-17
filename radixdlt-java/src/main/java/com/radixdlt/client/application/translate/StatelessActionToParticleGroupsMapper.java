@@ -1,7 +1,8 @@
 package com.radixdlt.client.application.translate;
 
 import com.radixdlt.client.core.atoms.ParticleGroup;
-import io.reactivex.Observable;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Maps a high level application action to lower level spun particles used
@@ -16,8 +17,8 @@ public interface StatelessActionToParticleGroupsMapper {
 	 * @param action the current action
 	 * @return additional actions to be included
 	 */
-	default Observable<Action> sideEffects(Action action) {
-		return Observable.empty();
+	default List<Action> sideEffects(Action action) {
+		return Collections.emptyList();
 	}
 
 	/**
@@ -27,5 +28,5 @@ public interface StatelessActionToParticleGroupsMapper {
 	 * @param action the action to map
 	 * @return observable of spun particles created given an action
 	 */
-	Observable<ParticleGroup> mapToParticleGroups(Action action);
+	List<ParticleGroup> mapToParticleGroups(Action action);
 }

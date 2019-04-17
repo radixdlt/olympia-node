@@ -50,4 +50,20 @@ public abstract class Particle extends SerializableObject {
 	public final EUID getHid() {
 		return this.getHash().toEUID();
 	}
+
+
+	@Override
+	public boolean equals(Object o) {
+		if (!(o instanceof Particle)) {
+			return false;
+		}
+
+		Particle particle = (Particle) o;
+		return this.getHash().equals(particle.getHash());
+	}
+
+	@Override
+	public int hashCode() {
+		return this.getHash().hashCode();
+	}
 }

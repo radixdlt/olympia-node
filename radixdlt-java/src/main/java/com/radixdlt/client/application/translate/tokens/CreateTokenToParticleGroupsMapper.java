@@ -14,9 +14,11 @@ import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.ParticleGroup.ParticleGroupBuilder;
 import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
-import io.reactivex.Observable;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import org.radix.utils.UInt256;
 
 /**
@@ -24,14 +26,9 @@ import org.radix.utils.UInt256;
  */
 public class CreateTokenToParticleGroupsMapper implements StatelessActionToParticleGroupsMapper {
 	@Override
-	public Observable<Action> sideEffects(Action action) {
-		return Observable.empty();
-	}
-
-	@Override
-	public Observable<ParticleGroup> mapToParticleGroups(Action action) {
+	public List<ParticleGroup> mapToParticleGroups(Action action) {
 		if (!(action instanceof CreateTokenAction)) {
-			return Observable.empty();
+			return Collections.emptyList();
 		}
 
 		CreateTokenAction tokenCreation = (CreateTokenAction) action;
@@ -79,7 +76,9 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 
 		if (tokenCreation.getInitialSupply().compareTo(BigDecimal.ZERO) == 0) {
 			// No initial supply -> just the token particle
-			return Observable.just(tokenCreationGroup);
+			return Collections.singletonList(
+				tokenCreationGroup
+			);
 		}
 
 		TransferrableTokensParticle minted = new TransferrableTokensParticle(
@@ -110,7 +109,7 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 			mintGroupBuilder.addParticle(unallocatedLeftOver, Spin.UP);
 		}
 
-		return Observable.just(
+		return Arrays.asList(
 			tokenCreationGroup,
 			mintGroupBuilder.build()
 		);

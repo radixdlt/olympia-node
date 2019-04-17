@@ -3,7 +3,9 @@ package com.radixdlt.client.application;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.core.atoms.particles.RRI;
-import com.radixdlt.client.core.ledger.ParticleObservation;
+import com.radixdlt.client.core.network.RadixNetworkController;
+import com.radixdlt.client.core.network.RadixNode;
+import com.radixdlt.client.core.network.actions.FetchAtomsObservationAction;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.stream.Stream;
@@ -36,7 +38,6 @@ import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.ledger.AtomPuller;
 import com.radixdlt.client.core.ledger.AtomStore;
 import com.radixdlt.client.core.ledger.AtomSubmitter;
-import com.radixdlt.client.core.ledger.ParticleStore;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomReceivedAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomResultAction;
@@ -96,7 +97,8 @@ public class RadixApplicationAPITest {
 	}
 
 	private RadixApplicationAPI createMockedAPIWhichAlwaysSucceeds() {
-		return createMockedAPI(createMockedSubmissionWhichAlwaysSucceeds(), euid -> Observable.never());
+		AtomStore atomStore = mock(AtomStore.class);
+		return createMockedAPI(createMockedSubmissionWhichAlwaysSucceeds(), atomStore);
 	}
 
 	private void validateSuccessfulStoreDataResult(Result result) {
@@ -147,9 +149,9 @@ public class RadixApplicationAPITest {
 	@Test
 	public void testStoreWithoutSubscription() {
 		AtomSubmitter submitter = createMockedSubmissionWhichAlwaysSucceeds();
-		RadixApplicationAPI api = createMockedAPI(submitter, euid -> Observable.never());
+		AtomStore atomStore = mock(AtomStore.class);
+		RadixApplicationAPI api = createMockedAPI(submitter, atomStore);
 
-		createMockedAPIWhichAlwaysSucceeds();
 		RadixAddress address = mock(RadixAddress.class);
 		when(address.getPublicKey()).thenReturn(mock(ECPublicKey.class));
 		when(api.getMyAddress()).thenReturn(address);
@@ -161,7 +163,8 @@ public class RadixApplicationAPITest {
 	@Test
 	public void testStoreWithMultipleSubscribes() {
 		AtomSubmitter submitter = createMockedSubmissionWhichAlwaysSucceeds();
-		RadixApplicationAPI api = createMockedAPI(submitter, euid -> Observable.never());
+		AtomStore atomStore = mock(AtomStore.class);
+		RadixApplicationAPI api = createMockedAPI(submitter, atomStore);
 		RadixAddress address = mock(RadixAddress.class);
 		when(address.getPublicKey()).thenReturn(mock(ECPublicKey.class));
 		when(api.getMyAddress()).thenReturn(address);
@@ -185,7 +188,9 @@ public class RadixApplicationAPITest {
 		AtomObservation atomObservation = AtomObservation.stored(atom);
 
 		Ledger ledger = mock(Ledger.class);
-		when(ledger.getAtomStore()).thenReturn(euid -> Observable.just(atomObservation, atomObservation, atomObservation));
+		AtomStore atomStore = mock(AtomStore.class);
+		when(atomStore.getAtomObservations(any())).thenReturn(Observable.just(atomObservation, atomObservation, atomObservation));
+		when(ledger.getAtomStore()).thenReturn(atomStore);
 		when(universe.getLedger()).thenReturn(ledger);
 
 		RadixApplicationAPI api = new RadixApplicationAPIBuilder()
@@ -206,13 +211,19 @@ public class RadixApplicationAPITest {
 		RadixUniverse universe = mock(RadixUniverse.class);
 		Ledger ledger = mock(Ledger.class);
 		when(universe.getLedger()).thenReturn(ledger);
-		when(ledger.getAtomStore()).thenReturn(euid -> Observable.empty());
-		when(ledger.getParticleStore()).thenReturn(
-			euid -> Observable.concat(Observable.just(ParticleObservation.head()), Observable.never())
-		);
+		RadixNetworkController controller = mock(RadixNetworkController.class);
+		when(universe.getNetworkController()).thenReturn(controller);
+		AtomStore atomStore = mock(AtomStore.class);
+		when(atomStore.onSync(any())).thenReturn(Observable.just(System.currentTimeMillis()));
+
+
+		when(ledger.getAtomStore()).thenReturn(atomStore);
 		when(ledger.getAtomPuller()).thenReturn(address -> Observable.never());
 
 		RadixAddress address = mock(RadixAddress.class);
+		when(controller.getActions()).thenReturn(Observable.just(
+			FetchAtomsObservationAction.of("uuid", address, mock(RadixNode.class), AtomObservation.head())
+		));
 		RadixIdentity identity = mock(RadixIdentity.class);
 
 		RadixApplicationAPI api = new RadixApplicationAPIBuilder()
@@ -237,7 +248,7 @@ public class RadixApplicationAPITest {
 		when(puller.pull(any())).thenReturn(Observable.never());
 		when(ledger.getAtomPuller()).thenReturn(puller);
 		AtomStore atomStore = mock(AtomStore.class);
-		when(atomStore.getAtoms(any())).thenReturn(Observable.never());
+		when(atomStore.getAtomObservations(any())).thenReturn(Observable.never());
 		when(ledger.getAtomStore()).thenReturn(atomStore);
 		when(universe.getLedger()).thenReturn(ledger);
 
@@ -259,12 +270,18 @@ public class RadixApplicationAPITest {
 	public void testPullOnGetBalanceOfOtherAddresses() {
 		RadixUniverse universe = mock(RadixUniverse.class);
 		Ledger ledger = mock(Ledger.class);
+
+		RadixNetworkController controller = mock(RadixNetworkController.class);
+		when(universe.getNetworkController()).thenReturn(controller);
+		when(controller.getActions()).thenReturn(Observable.never());
+
+		AtomStore atomStore = mock(AtomStore.class);
+		when(atomStore.onSync(any())).thenReturn(Observable.just(System.currentTimeMillis()));
+		when(ledger.getAtomStore()).thenReturn(atomStore);
+
 		AtomPuller puller = mock(AtomPuller.class);
 		when(ledger.getAtomPuller()).thenReturn(puller);
 		when(puller.pull(any())).thenReturn(Observable.never());
-		ParticleStore particleStore = mock(ParticleStore.class);
-		when(particleStore.getParticles(any())).thenReturn(Observable.never());
-		when(ledger.getParticleStore()).thenReturn(particleStore);
 		when(universe.getLedger()).thenReturn(ledger);
 
 		RadixIdentity identity = mock(RadixIdentity.class);
@@ -306,8 +323,8 @@ public class RadixApplicationAPITest {
 		Action action = mock(Action.class);
 
 		StatelessActionToParticleGroupsMapper actionMapper = mock(StatelessActionToParticleGroupsMapper.class);
-		when(actionMapper.mapToParticleGroups(eq(action))).thenReturn(Observable.just(ParticleGroup.of(SpunParticle.up(particle))));
-		when(actionMapper.sideEffects(any())).thenReturn(Observable.empty());
+		when(actionMapper.mapToParticleGroups(eq(action))).thenReturn(Collections.singletonList(ParticleGroup.of(SpunParticle.up(particle))));
+		when(actionMapper.sideEffects(any())).thenReturn(Collections.emptyList());
 		AtomErrorToExceptionReasonMapper errorMapper = mock(AtomErrorToExceptionReasonMapper.class);
 		ActionExecutionExceptionReason reason = mock(ActionExecutionExceptionReason.class);
 		when(errorMapper.mapAtomErrorToExceptionReasons(any(), eq(errorData))).thenReturn(Stream.of(reason));

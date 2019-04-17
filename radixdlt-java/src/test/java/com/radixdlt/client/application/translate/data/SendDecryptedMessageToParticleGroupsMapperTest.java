@@ -1,12 +1,11 @@
 package com.radixdlt.client.application.translate.data;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.crypto.ECKeyPair;
-import io.reactivex.observers.TestObserver;
 import org.junit.Test;
 
 public class SendDecryptedMessageToParticleGroupsMapperTest {
@@ -19,8 +18,6 @@ public class SendDecryptedMessageToParticleGroupsMapperTest {
 		when(sendMessageAction.getFrom()).thenReturn(mock(RadixAddress.class));
 		when(sendMessageAction.getTo()).thenReturn(mock(RadixAddress.class));
 		when(sendMessageAction.encrypt()).thenReturn(false);
-		TestObserver<ParticleGroup> testObserver = TestObserver.create();
-		sendMessageToParticleGroupsMapper.mapToParticleGroups(sendMessageAction).subscribe(testObserver);
-		testObserver.assertValueCount(1);
+		assertThat(sendMessageToParticleGroupsMapper.mapToParticleGroups(sendMessageAction)).hasSize(1);
 	}
 }

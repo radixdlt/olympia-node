@@ -1,5 +1,7 @@
 package com.radixdlt.client.core.network;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableList.Builder;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.ledger.AtomSubmitter;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
@@ -7,17 +9,13 @@ import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomResultAction;
 import com.radixdlt.client.core.network.reducers.RadixNetwork;
 import io.reactivex.Observable;
-import io.reactivex.functions.Cancellable;
 import io.reactivex.observables.ConnectableObservable;
 import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.PublishSubject;
 import io.reactivex.subjects.Subject;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -33,9 +31,15 @@ public class RadixNetworkController implements AtomSubmitter {
 
 	public static class RadixNetworkControllerBuilder {
 		private RadixNetwork network;
-		private List<RadixNetworkEpic> epics = new ArrayList<>();
+		private final ImmutableList.Builder<RadixNetworkEpic> epics = new Builder<>();
+		private final ImmutableList.Builder<Consumer<RadixNodeAction>> reducers = new Builder<>();
 
 		public RadixNetworkControllerBuilder() {
+		}
+
+		public RadixNetworkControllerBuilder addReducer(Consumer<RadixNodeAction> reducer) {
+			this.reducers.add(reducer);
+			return this;
 		}
 
 		public RadixNetworkControllerBuilder setNetwork(RadixNetwork network) {
@@ -53,22 +57,24 @@ public class RadixNetworkController implements AtomSubmitter {
 				network = new RadixNetwork();
 			}
 
-			return new RadixNetworkController(network, epics);
+			return new RadixNetworkController(network, epics.build(), reducers.build());
 		}
 	}
 
 	private final BehaviorSubject<RadixNetworkState> networkState;
-
 	private final Subject<RadixNodeAction> nodeActions = PublishSubject.<RadixNodeAction>create().toSerialized();
-
 	private final Observable<RadixNodeAction> reducedNodeActions;
 
 	// TODO: Move this into a proper reducer framework
-	private final CopyOnWriteArrayList<Consumer<RadixNodeAction>> reducers = new CopyOnWriteArrayList<>();
 
-	private RadixNetworkController(RadixNetwork network, List<RadixNetworkEpic> epics) {
+	private RadixNetworkController(
+		RadixNetwork network,
+		ImmutableList<RadixNetworkEpic> epics,
+		ImmutableList<Consumer<RadixNodeAction>> reducers
+	) {
 		Objects.requireNonNull(network);
 		Objects.requireNonNull(epics);
+		Objects.requireNonNull(reducers);
 
 		this.networkState = BehaviorSubject.createDefault(new RadixNetworkState(Collections.emptyMap()));
 
@@ -77,11 +83,10 @@ public class RadixNetworkController implements AtomSubmitter {
 
 			final RadixNetworkState curState = networkState.getValue();
 			RadixNetworkState nextState = network.reduce(curState, action);
-
-			LOGGER.debug("{}", action);
-
 			// TODO: Move this into a proper reducer framework
 			reducers.forEach(r -> r.accept(action));
+
+			LOGGER.debug("{}", action);
 
 			// TODO: also add equals check
 			if (nextState != curState) {
@@ -102,13 +107,6 @@ public class RadixNetworkController implements AtomSubmitter {
 		this.reducedNodeActions = connectableReducedNodeActions;
 
 		connectableReducedNodeActions.connect();
-	}
-
-	// HACK
-	// TODO: Move this into a proper reducer framework
-	public Cancellable addReducer(Consumer<RadixNodeAction> reducer) {
-		this.reducers.add(reducer);
-		return () -> this.reducers.remove(reducer);
 	}
 
 	public Observable<RadixNetworkState> getNetwork() {

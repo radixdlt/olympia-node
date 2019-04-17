@@ -3,13 +3,13 @@ package com.radixdlt.client.application.translate.unique;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import java.util.Objects;
 
-public class UniqueId {
+public final class UniqueId {
 	private final RadixAddress address;
 	private final String unique;
 
 	public UniqueId(RadixAddress address, String unique) {
-		this.address = address;
-		this.unique = unique;
+		this.address = Objects.requireNonNull(address);
+		this.unique = Objects.requireNonNull(unique);
 	}
 
 	public RadixAddress getAddress() {
@@ -22,7 +22,7 @@ public class UniqueId {
 
 	@Override
 	public String toString() {
-		return this.getAddress().toString() + "/unique/" + this.getUnique();
+		return this.getAddress().toString() + "/" + this.getUnique();
 	}
 
 	@Override

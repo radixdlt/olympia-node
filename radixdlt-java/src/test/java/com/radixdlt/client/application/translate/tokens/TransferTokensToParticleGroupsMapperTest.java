@@ -1,13 +1,13 @@
 package com.radixdlt.client.application.translate.tokens;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.application.translate.ShardedAppStateId;
-import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.particles.RRI;
-import io.reactivex.Observable;
-import io.reactivex.observers.TestObserver;
 import java.math.BigDecimal;
 import org.junit.Test;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
@@ -25,22 +25,20 @@ public class TransferTokensToParticleGroupsMapperTest {
 		TransferTokensAction transferTokensAction = mock(TransferTokensAction.class);
 		when(transferTokensAction.getAmount()).thenReturn(new BigDecimal("1.0"));
 		when(transferTokensAction.getFrom()).thenReturn(address);
-		when(transferTokensAction.getTokenDefinitionReference()).thenReturn(token);
+		when(transferTokensAction.getTokenDefRef()).thenReturn(token);
 
 		TokenBalanceState state = mock(TokenBalanceState.class);
 		when(state.getBalance()).thenReturn(Collections.emptyMap());
 
 		TransferTokensToParticleGroupsMapper transferTranslator = new TransferTokensToParticleGroupsMapper();
 
-		TestObserver<ShardedAppStateId> contextTestObserver = TestObserver.create();
-		transferTranslator.requiredState(transferTokensAction).subscribe(contextTestObserver);
-		contextTestObserver
-			.assertValue(ctx -> ctx.address().equals(address))
-			.assertValue(ctx -> ctx.stateClass().equals(TokenBalanceState.class));
+		assertThat(transferTranslator.requiredState(transferTokensAction))
+			.containsExactly(ShardedAppStateId.of(TokenBalanceState.class, address));
 
-		TestObserver<ParticleGroup> testObserver = TestObserver.create();
-		transferTranslator.mapToParticleGroups(transferTokensAction, Observable.just(Observable.just(state))).subscribe(testObserver);
-		testObserver.assertError(new InsufficientFundsException(token, BigDecimal.ZERO, new BigDecimal("1.0")));
+		ShardedAppStateId shardedAppStateId = ShardedAppStateId.of(TokenBalanceState.class, address);
+
+		assertThatThrownBy(() -> transferTranslator.mapToParticleGroups(transferTokensAction, ImmutableMap.of(shardedAppStateId, state)))
+			.isEqualTo(new InsufficientFundsException(token, BigDecimal.ZERO, new BigDecimal("1.0")));
 	}
 
 }

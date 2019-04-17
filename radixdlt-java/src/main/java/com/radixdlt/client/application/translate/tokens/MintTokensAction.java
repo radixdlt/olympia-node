@@ -16,10 +16,10 @@ public class MintTokensAction implements Action {
 	}
 
 	public static MintTokensAction create(
-		RRI tokenDefinitionReference,
+		RRI tokenDefRef,
 		BigDecimal amount
 	) {
-		return new MintTokensAction(tokenDefinitionReference, amount);
+		return new MintTokensAction(tokenDefRef, amount);
 	}
 
 	public RRI getTokenDefinitionReference() {

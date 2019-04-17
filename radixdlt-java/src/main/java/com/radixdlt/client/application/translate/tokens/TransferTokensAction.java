@@ -95,7 +95,7 @@ public class TransferTokensAction implements Action {
 		return to;
 	}
 
-	public RRI getTokenDefinitionReference() {
+	public RRI getTokenDefRef() {
 		return tokenDefinitionReference;
 	}
 

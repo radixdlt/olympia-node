@@ -2,8 +2,42 @@ package com.radixdlt.client.core.ledger;
 
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 
+import com.radixdlt.client.core.atoms.particles.Particle;
 import io.reactivex.Observable;
+import java.util.stream.Stream;
 
+/**
+ * The interface in which a client retrieves the state of the ledger.
+ * Particle conflict handling along with Atom DELETEs and STOREs all
+ * occur at this layer.
+ */
 public interface AtomStore {
-	Observable<AtomObservation> getAtoms(RadixAddress address);
+
+	/**
+	 * Temporary interface for propagating when the current store
+	 * is synced with some node on a given address.
+	 * TODO: This is probably the wrong place for this and will probably
+	 * TODO: move this into a different layer but good enough for now
+	 *
+	 * @param address The address to check for sync
+	 * @return a never ending observable which emits when local store is
+	 * synced with some origin
+	 */
+	Observable<Long> onSync(RadixAddress address);
+
+	/**
+	 * Retrieve the current set of validated up particles at a given shardable.
+	 * @param address the address to get the particles under
+	 * @return a stream of all up particles of the current local view
+	 */
+	Stream<Particle> getUpParticles(RadixAddress address);
+
+	/**
+	 * Retrieve a never ending observable of atom observations (STORED and DELETED)
+	 * which are then processed by the local store.
+	 *
+	 * @param address the address to get the updates from
+	 * @return a never ending observable of updates
+	 */
+	Observable<AtomObservation> getAtomObservations(RadixAddress address);
 }

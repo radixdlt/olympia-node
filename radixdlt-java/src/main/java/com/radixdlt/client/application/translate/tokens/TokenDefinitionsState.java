@@ -17,31 +17,47 @@ import org.radix.utils.UInt256;
 public class TokenDefinitionsState implements ApplicationState {
 	private final ImmutableMap<RRI, TokenState> state;
 
-	private TokenDefinitionsState(Map<RRI, TokenState> state) {
-		this.state = ImmutableMap.copyOf(state);
+	private TokenDefinitionsState(ImmutableMap<RRI, TokenState> state) {
+		this.state = state;
 	}
 
 	public static TokenDefinitionsState init() {
-		return new TokenDefinitionsState(Collections.emptyMap());
+		return new TokenDefinitionsState(ImmutableMap.of());
 	}
 
 	public Map<RRI, TokenState> getState() {
 		return state;
 	}
 
-	public TokenDefinitionsState mergeUnallocated(UnallocatedTokensParticle unallocatedTokensParticle, boolean add) {
+	public static TokenDefinitionsState combine(TokenDefinitionsState state0, TokenDefinitionsState state1) {
+		HashMap<RRI, TokenState> newState = new HashMap<>(state0.getState());
+		state1.getState().forEach((rri, tokenState1) ->
+			newState.merge(rri, tokenState1, TokenState::combine)
+		);
+
+		return new TokenDefinitionsState(ImmutableMap.copyOf(newState));
+	}
+
+	public TokenDefinitionsState mergeUnallocated(UnallocatedTokensParticle unallocatedTokensParticle) {
 		RRI ref = unallocatedTokensParticle.getTokDefRef();
-		if (!state.containsKey(ref)) {
-			throw new IllegalStateException("TokenParticle should have been created");
-		}
-		Map<RRI, TokenState> newState = new HashMap<>(state);
+
+		HashMap<RRI, TokenState> newState = new HashMap<>(state);
 		final TokenState tokenState = state.get(ref);
-		Map<EUID, UnallocatedTokensParticle> newTokenUnallocated = new HashMap<>(tokenState.getUnallocatedTokens());
-		if (add) {
-			newTokenUnallocated.put(unallocatedTokensParticle.getHid(), unallocatedTokensParticle);
-		} else {
-			newTokenUnallocated.remove(unallocatedTokensParticle.getHid());
+		if (tokenState == null) {
+			newState.put(ref, new TokenState(
+				null,
+				null,
+				null,
+				TokenUnitConversions.subunitsToUnits(UInt256.MAX_VALUE.subtract(unallocatedTokensParticle.getAmount())),
+				TokenUnitConversions.subunitsToUnits(unallocatedTokensParticle.getGranularity()),
+				null,
+				Collections.singletonMap(unallocatedTokensParticle.getHid(), unallocatedTokensParticle)
+			));
+			return new TokenDefinitionsState(ImmutableMap.copyOf(newState));
 		}
+
+		Map<EUID, UnallocatedTokensParticle> newTokenUnallocated = new HashMap<>(tokenState.getUnallocatedTokens());
+		newTokenUnallocated.put(unallocatedTokensParticle.getHid(), unallocatedTokensParticle);
 
 		UInt256 unallocatedAmount = newTokenUnallocated.entrySet().stream()
 			.map(Entry::getValue)
@@ -58,7 +74,7 @@ public class TokenDefinitionsState implements ApplicationState {
 			newTokenUnallocated
 		));
 
-		return new TokenDefinitionsState(newState);
+		return new TokenDefinitionsState(ImmutableMap.copyOf(newState));
 	}
 
 	public TokenDefinitionsState mergeTokenClass(
@@ -67,45 +83,21 @@ public class TokenDefinitionsState implements ApplicationState {
 		String iso,
 		String description,
 		BigDecimal granularity,
-		TokenSupplyType tokenSupplyType,
-		boolean add
+		TokenSupplyType tokenSupplyType
 	) {
-		Map<RRI, TokenState> newState = new HashMap<>(state);
-		if (add) {
-			if (newState.containsKey(ref)) {
-				final TokenState curState = newState.get(ref);
-				final BigDecimal totalSupply = curState.getTotalSupply();
-				final Map<EUID, UnallocatedTokensParticle> unallocatedTokens = curState.getUnallocatedTokens();
+		HashMap<RRI, TokenState> newState = new HashMap<>(state);
 
-				newState.put(ref, new TokenState(name, iso, description, totalSupply, granularity, tokenSupplyType, unallocatedTokens));
-			} else {
-				newState.put(ref, new TokenState(name, iso, description, BigDecimal.ZERO, granularity, tokenSupplyType, Collections.emptyMap()));
-			}
+		if (state.containsKey(ref)) {
+			final TokenState curState = state.get(ref);
+			final BigDecimal totalSupply = curState.getTotalSupply();
+			final Map<EUID, UnallocatedTokensParticle> unallocatedTokens = curState.getUnallocatedTokens();
+
+			newState.put(ref, new TokenState(name, iso, description, totalSupply, granularity, tokenSupplyType, unallocatedTokens));
 		} else {
-			final TokenState curState = newState.get(ref);
-			newState.put(ref, new TokenState(null, ref.getName(), null, curState.getTotalSupply(), null, null, curState.getUnallocatedTokens()));
+			newState.put(ref, new TokenState(name, iso, description, BigDecimal.ZERO, granularity, tokenSupplyType, Collections.emptyMap()));
 		}
 
-		return new TokenDefinitionsState(newState);
-	}
-
-	public TokenDefinitionsState mergeSupplyChange(RRI ref, BigDecimal supplyChange) {
-		Map<RRI, TokenState> newState = new HashMap<>(state);
-		if (newState.containsKey(ref)) {
-			TokenState tokenState = newState.get(ref);
-			newState.put(ref, new TokenState(
-				tokenState.getName(),
-				tokenState.getIso(),
-				tokenState.getDescription(),
-				tokenState.getTotalSupply() != null ? tokenState.getTotalSupply().add(supplyChange) : supplyChange,
-				tokenState.getGranularity(),
-				tokenState.getTokenSupplyType(),
-				tokenState.getUnallocatedTokens()));
-		} else {
-			newState.put(ref, new TokenState(null, ref.getName(), null, supplyChange, null, null, null));
-		}
-
-		return new TokenDefinitionsState(newState);
+		return new TokenDefinitionsState(ImmutableMap.copyOf(newState));
 	}
 
 	@Override

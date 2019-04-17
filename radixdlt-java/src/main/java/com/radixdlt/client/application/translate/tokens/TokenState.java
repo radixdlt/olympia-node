@@ -44,6 +44,28 @@ public class TokenState {
 		this.unallocatedTokens = ImmutableMap.copyOf(unallocatedTokens);
 	}
 
+	public static TokenState combine(TokenState state0, TokenState state1) {
+		Map<EUID, UnallocatedTokensParticle> unallocated = new ImmutableMap.Builder<EUID, UnallocatedTokensParticle>()
+				.putAll(state0.unallocatedTokens)
+				.putAll(state1.unallocatedTokens)
+				.build();
+
+		UInt256 unallocatedAmount = unallocated.entrySet().stream()
+			.map(Entry::getValue)
+			.map(UnallocatedTokensParticle::getAmount)
+			.reduce(UInt256.ZERO, UInt256::add);
+
+		return new TokenState(
+			state0.name != null ? state0.name : state1.name,
+			state0.iso != null ? state0.iso : state1.iso,
+			state0.description != null ? state0.description : state1.description,
+			TokenUnitConversions.subunitsToUnits(UInt256.MAX_VALUE.subtract(unallocatedAmount)),
+			state0.granularity != null ? state0.granularity : state1.granularity,
+			state0.tokenSupplyType != null ? state0.tokenSupplyType : state1.tokenSupplyType,
+			unallocated
+		);
+	}
+
 	public String getName() {
 		return name;
 	}

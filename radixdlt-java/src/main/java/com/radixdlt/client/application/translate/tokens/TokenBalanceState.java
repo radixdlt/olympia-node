@@ -5,7 +5,6 @@ import com.radixdlt.client.application.translate.ApplicationState;
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.client.core.atoms.RadixHash;
 import com.radixdlt.client.core.atoms.particles.RRI;
-import com.radixdlt.client.core.atoms.particles.Spin;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -53,17 +52,22 @@ public class TokenBalanceState implements ApplicationState {
 				.map(Entry::getValue);
 		}
 
-		public static Balance merge(Balance balance, TransferrableTokensParticle tokens, Spin spin) {
+		public static Balance combine(Balance balance0, Balance balance1) {
+			return new Balance(
+				balance0.balance.add(balance1.balance),
+				balance0.granularity,
+				new ImmutableMap.Builder<RadixHash, TransferrableTokensParticle>()
+					.putAll(balance0.consumables)
+					.putAll(balance1.consumables)
+					.build()
+			);
+		}
+
+		public static Balance merge(Balance balance, TransferrableTokensParticle tokens) {
 			Map<RadixHash, TransferrableTokensParticle> newMap = new HashMap<>(balance.consumables);
 
-			final BigInteger amount;
-			if (spin == Spin.DOWN || spin == Spin.NEUTRAL) {
-				amount = UInt256s.toBigInteger(tokens.getAmount()).negate();
-				newMap.remove(tokens.getHash());
-			} else {
-				amount = UInt256s.toBigInteger(tokens.getAmount());
-				newMap.put(tokens.getHash(), tokens);
-			}
+			final BigInteger amount = UInt256s.toBigInteger(tokens.getAmount());
+			newMap.put(tokens.getHash(), tokens);
 
 			BigInteger newBalance = balance.balance.add(amount);
 
@@ -110,14 +114,24 @@ public class TokenBalanceState implements ApplicationState {
 		return Collections.unmodifiableMap(balance);
 	}
 
-	public static TokenBalanceState merge(TokenBalanceState state, TransferrableTokensParticle tokens, Spin spin) {
+	public static TokenBalanceState combine(TokenBalanceState state0, TokenBalanceState state1) {
+		if (state0 == state1) {
+			return state0;
+		}
+
+		HashMap<RRI, Balance> balance = new HashMap<>(state0.balance);
+		state1.balance.forEach((rri, bal) -> balance.merge(rri, bal, Balance::combine));
+		return new TokenBalanceState(balance);
+	}
+
+	public static TokenBalanceState merge(TokenBalanceState state, TransferrableTokensParticle tokens) {
 		HashMap<RRI, Balance> balance = new HashMap<>(state.balance);
 		BigInteger amount = UInt256s.toBigInteger(tokens.getAmount());
 		BigInteger granularity = UInt256s.toBigInteger(tokens.getGranularity());
 		balance.merge(
 			tokens.getTokenDefinitionReference(),
 			new Balance(amount, granularity, tokens),
-			(bal1, bal2) -> Balance.merge(bal1, tokens, spin)
+			Balance::combine
 		);
 
 		return new TokenBalanceState(balance);
