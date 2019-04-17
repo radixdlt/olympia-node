@@ -138,7 +138,8 @@ public final class Atom extends SerializableObject {
 		return this.spunParticles()
 			.map(SpunParticle<Particle>::getParticle)
 			.map(Particle::getShardables)
-			.flatMap(Set::stream);
+			.flatMap(Set::stream)
+			.distinct();
 	}
 
 	public boolean hasTimestamp() {

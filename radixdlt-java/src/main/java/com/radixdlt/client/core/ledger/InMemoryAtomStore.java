@@ -123,10 +123,12 @@ public class InMemoryAtomStore implements AtomStore {
 				}
 
 				if (include) {
-					final CopyOnWriteArrayList<ObservableEmitter<AtomObservation>> observers = allObservers.get(address);
-					if (observers != null) {
-						observers.forEach(e -> e.onNext(atomObservation));
-					}
+					atom.addresses().forEach(addr -> {
+						final CopyOnWriteArrayList<ObservableEmitter<AtomObservation>> observers = allObservers.get(addr);
+						if (observers != null) {
+							observers.forEach(e -> e.onNext(atomObservation));
+						}
+					});
 				}
 			} else {
 				final CopyOnWriteArrayList<ObservableEmitter<AtomObservation>> observers = allObservers.get(address);
@@ -203,9 +205,7 @@ public class InMemoryAtomStore implements AtomStore {
 					.filter(e -> e.getValue().isStore() && e.getKey().addresses().anyMatch(address::equals))
 					.map(Map.Entry::getValue)
 					.forEach(emitter::onNext);
-				if (syncedMap.getOrDefault(address, false)) {
-					emitter.onNext(AtomObservation.head());
-				}
+
 				emitter.setCancellable(() -> {
 					synchronized (lock) {
 						observers.remove(emitter);

@@ -25,7 +25,12 @@ public class InMemoryAtomStoreTest {
 		EUID hid = mock(EUID.class);
 		when(atom.getHid()).thenReturn(hid);
 		when(atom.getHash()).thenReturn(hash);
-		when(atom.addresses()).thenReturn(Stream.of(address), Stream.of(address), Stream.of(address));
+		when(atom.addresses()).thenReturn(
+			Stream.of(address),
+			Stream.of(address),
+			Stream.of(address),
+			Stream.of(address)
+		);
 
 		return AtomObservation.deleted(atom);
 	}
@@ -35,7 +40,12 @@ public class InMemoryAtomStoreTest {
 		EUID hid = mock(EUID.class);
 		when(atom.getHid()).thenReturn(hid);
 		when(atom.getHash()).thenReturn(hash);
-		when(atom.addresses()).thenReturn(Stream.of(address), Stream.of(address), Stream.of(address));
+		when(atom.addresses()).thenReturn(
+			Stream.of(address),
+			Stream.of(address),
+			Stream.of(address),
+			Stream.of(address)
+		);
 
 		return AtomObservation.stored(atom);
 	}
