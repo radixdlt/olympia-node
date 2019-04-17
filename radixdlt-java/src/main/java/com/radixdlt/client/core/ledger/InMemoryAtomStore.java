@@ -4,13 +4,12 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.Spin;
-import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.ledger.AtomObservation.Type;
 import com.radixdlt.client.core.ledger.AtomObservation.AtomObservationUpdateType;
-import com.radixdlt.client.core.spins.SpinStateMachine;
 import io.reactivex.Observable;
 import io.reactivex.ObservableEmitter;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -25,7 +24,7 @@ import com.radixdlt.client.atommodel.accounts.RadixAddress;
  */
 public class InMemoryAtomStore implements AtomStore {
 	private final Map<Atom, AtomObservation> atoms = new ConcurrentHashMap<>();
-	private final Map<Particle, Set<Atom>> particleIndex = new ConcurrentHashMap<>();
+	private final Map<Particle, Map<Spin, Set<Atom>>> particleIndex = new ConcurrentHashMap<>();
 
 	private final Map<RadixAddress, CopyOnWriteArrayList<ObservableEmitter<AtomObservation>>> allObservers = new ConcurrentHashMap<>();
 	private final Map<RadixAddress, CopyOnWriteArrayList<ObservableEmitter<Long>>> allSyncers = new ConcurrentHashMap<>();
@@ -35,21 +34,23 @@ public class InMemoryAtomStore implements AtomStore {
 
 	private void softDeleteDependentsOf(Atom atom) {
 		atom.particles(Spin.UP)
-			.forEach(p ->
-				particleIndex.get(p).forEach(a -> {
-					AtomObservation observation = atoms.get(a);
-					if (observation.getAtom().equals(atom)) {
-						return;
-					}
+			.forEach(p -> {
+				Map<Spin, Set<Atom>> particleSpinIndex = particleIndex.get(p);
+				particleSpinIndex.getOrDefault(Spin.DOWN, Collections.emptySet())
+					.forEach(a -> {
+						AtomObservation observation = atoms.get(a);
+						if (observation.getAtom().equals(atom)) {
+							return;
+						}
 
-					if (observation.getUpdateType().getType() == Type.STORE || !observation.getUpdateType().isSoft()) {
-						// This first so that leaves get deleted first
-						softDeleteDependentsOf(observation.getAtom());
+						if (observation.getUpdateType().getType() == Type.STORE || !observation.getUpdateType().isSoft()) {
+							// This first so that leaves get deleted first
+							softDeleteDependentsOf(observation.getAtom());
 
-						atoms.put(observation.getAtom(), AtomObservation.softDeleted(observation.getAtom()));
-					}
-				})
-			);
+							atoms.put(observation.getAtom(), AtomObservation.softDeleted(observation.getAtom()));
+						}
+					});
+			});
 	}
 
 	/**
@@ -74,13 +75,18 @@ public class InMemoryAtomStore implements AtomStore {
 				final boolean include;
 				if (lastUpdate == null) {
 					include = nextUpdate.getType() == Type.STORE;
-					atom.spunParticles().forEach(s -> particleIndex
-						.merge(
-							s.getParticle(),
+					atom.spunParticles().forEach(s -> {
+						Map<Spin, Set<Atom>> spinParticleIndex = particleIndex.get(s.getParticle());
+						if (spinParticleIndex == null) {
+							spinParticleIndex = new EnumMap<>(Spin.class);
+							particleIndex.put(s.getParticle(), spinParticleIndex);
+						}
+						spinParticleIndex.merge(
+							s.getSpin(),
 							Collections.singleton(atom),
 							(a, b) -> new ImmutableSet.Builder<Atom>().addAll(a).addAll(b).build()
-						)
-					);
+						);
+					});
 				} else {
 					// Soft observation should not be able to update a hard state
 					// Only update if type changes
@@ -144,18 +150,16 @@ public class InMemoryAtomStore implements AtomStore {
 	public Stream<Particle> getUpParticles(RadixAddress address) {
 		synchronized (lock) {
 			return particleIndex.entrySet().stream()
-				.filter(e -> e.getKey().getShardables().contains(address)
-					&& e.getValue().stream().flatMap(a -> {
-						AtomObservation observation = atoms.get(a);
-						if (observation.isStore()) {
-							return observation.getAtom().spunParticles()
-								.filter(s -> s.getParticle().equals(e.getKey()))
-								.map(SpunParticle::getSpin);
-						} else {
-							return Stream.empty();
-						}
-					}).reduce(Spin.NEUTRAL, (s0, s1) -> SpinStateMachine.isAfter(s0, s1) ? s0 : s1) == Spin.UP
-				)
+				.filter(e -> {
+					if (!e.getKey().getShardables().contains(address)) {
+						return false;
+					}
+					final Map<Spin, Set<Atom>> spinParticleIndex = e.getValue();
+					final boolean hasDown = spinParticleIndex.getOrDefault(Spin.DOWN, Collections.emptySet())
+						.stream().anyMatch(a -> atoms.get(a).isStore());
+					return !hasDown && spinParticleIndex.getOrDefault(Spin.UP, Collections.emptySet())
+						.stream().anyMatch(a -> atoms.get(a).isStore());
+				})
 				.map(Map.Entry::getKey);
 		}
 	}
