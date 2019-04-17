@@ -8,7 +8,7 @@ public class RadixUniverseConfigsTestConfig {
 
 	@Test
 	public void createDevelopmentUniverseFromJson() {
-		RadixUniverseConfig betanet = RadixUniverseConfigs.getBetanet();
+		RadixUniverseConfig betanet = RadixUniverseConfigs.getLocalnet();
 		assertNotNull(betanet);
 	}
 }

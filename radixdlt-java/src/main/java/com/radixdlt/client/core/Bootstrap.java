@@ -15,12 +15,12 @@ import java.util.function.Supplier;
 
 public enum Bootstrap implements BootstrapConfig {
 	LOCALHOST(
-		RadixUniverseConfigs::getBetanet,
+		RadixUniverseConfigs::getLocalnet,
 		new RadixNode("localhost", false, 8080),
 		new RadixNode("localhost", false, 8081)
 	),
 	LOCALHOST_SINGLENODE(
-		RadixUniverseConfigs::getBetanet,
+		RadixUniverseConfigs::getLocalnet,
 		new RadixNode("localhost", false, 8080)
 	),
 	ALPHANET(
@@ -34,6 +34,10 @@ public enum Bootstrap implements BootstrapConfig {
 	SUNSTONE(
 		RadixUniverseConfigs::getSunstone,
 		new NodeFinder("https://sunstone.radixdlt.com/node-finder", 443).getSeed().toObservable()
+	),
+	BETANET(
+		RadixUniverseConfigs::getBetanet,
+		new NodeFinder("https://betanet.radixdlt.com/node-finder", 443).getSeed().toObservable()
 	),
 	WINTERFELL(
 		RadixUniverseConfigs::getWinterfell,

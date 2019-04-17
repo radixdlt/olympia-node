@@ -17,7 +17,7 @@ public class RadixAddressTest {
 	@Test
 	public void createAddressFromPublicKey() {
 		ECPublicKey publicKey = new ECPublicKey(Base64.decode("A455PdOZNwyRWaSWFXyYYkbj7Wv9jtgCCqUYhuOHiPLC"));
-		RadixAddress address = new RadixAddress(RadixUniverseConfigs.getBetanet(), publicKey);
+		RadixAddress address = new RadixAddress(RadixUniverseConfigs.getLocalnet(), publicKey);
 		assertEquals("JHB89drvftPj6zVCNjnaijURk8D8AMFw4mVja19aoBGmRXWchnJ", address.toString());
 		assertEquals(address, RadixAddress.from("JHB89drvftPj6zVCNjnaijURk8D8AMFw4mVja19aoBGmRXWchnJ"));
 	}
@@ -25,7 +25,7 @@ public class RadixAddressTest {
 	@Test(expected = IllegalArgumentException.class)
 	public void createAddressFromBadPublicKey() {
 		ECPublicKey publicKey = new ECPublicKey(Base64.decode("BADKEY"));
-		new RadixAddress(RadixUniverseConfigs.getBetanet(), publicKey);
+		new RadixAddress(RadixUniverseConfigs.getLocalnet(), publicKey);
 	}
 
 	@Test
@@ -36,7 +36,7 @@ public class RadixAddressTest {
 
 	@Test
 	public void generateAddress() {
-		new RadixAddress(RadixUniverseConfigs.getBetanet(), new ECPublicKey(new byte[33]));
+		new RadixAddress(RadixUniverseConfigs.getLocalnet(), new ECPublicKey(new byte[33]));
 	}
 
 	@Test

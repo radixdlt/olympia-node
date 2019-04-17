@@ -6,6 +6,10 @@ public final class RadixUniverseConfigs {
 
     private RadixUniverseConfigs() { }
 
+    public static RadixUniverseConfig getLocalnet() {
+        return RadixUniverseConfig.fromInputStream(getConfigFileStream("localnet.json"));
+    }
+
     public static RadixUniverseConfig getBetanet() {
         return RadixUniverseConfig.fromInputStream(getConfigFileStream("betanet.json"));
     }
