@@ -27,6 +27,7 @@ import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomResultAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType;
 import com.radixdlt.client.core.network.actions.SubmitAtomSendAction;
+import com.radixdlt.client.core.network.epics.RadixJsonRpcMethodEpic;
 import cucumber.api.java.After;
 import cucumber.api.java.en.And;
 import cucumber.api.java.en.Given;
@@ -36,6 +37,9 @@ import io.reactivex.Observable;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.observers.BaseTestConsumer.TestWaitStrategy;
 import io.reactivex.observers.TestObserver;
+import java.util.AbstractMap;
+import java.util.Map;
+import java.util.Set;
 import org.radix.utils.UInt256;
 
 import java.math.BigDecimal;
@@ -87,12 +91,12 @@ public class ParticleGroups {
 	private class CreateEmptyGroupActionToParticleGroupsMapper implements StatelessActionToParticleGroupsMapper {
 
 		@Override
-		public Observable<ParticleGroup> mapToParticleGroups(Action action) {
+		public List<ParticleGroup> mapToParticleGroups(Action action) {
 			if (!(action instanceof CreateEmptyGroupAction)) {
-				return Observable.empty();
+				return Collections.emptyList();
 			}
 
-			return Observable.just(new ParticleGroup(Collections.emptyList()));
+			return Collections.singletonList(new ParticleGroup(Collections.emptyList()));
 		}
 	}
 
@@ -110,28 +114,21 @@ public class ParticleGroups {
 		}
 
 		@Override
-		public Observable<ShardedAppStateId> requiredState(Action action) {
-			return Observable.fromArray(mappers)
-				.flatMap(mapper -> mapper.requiredState(action));
+		public Set<ShardedAppStateId> requiredState(Action action) {
+			return Arrays.stream(mappers).flatMap(mapper -> mapper.requiredState(action).stream()).collect(Collectors.toSet());
 		}
 
 		@Override
-		public Observable<ParticleGroup> mapToParticleGroups(Action action, Observable<Observable<? extends ApplicationState>> store) {
+		public List<ParticleGroup> mapToParticleGroups(Action action, Map<ShardedAppStateId, ? extends ApplicationState> store) {
 			if (!(action instanceof MergeAction)) {
-				return Observable.empty();
+				return Collections.emptyList();
 			}
 
-			return Observable.fromArray(((MergeAction) action).actions)
-				.flatMap(a -> Observable.fromArray(this.mappers)
-					.flatMap(mapper -> {
-						final Observable<Observable<? extends ApplicationState>> context =
-							mapper.requiredState(a).map(ctx -> api.getState(ctx.stateClass(), ctx.address()));
-						return mapper.mapToParticleGroups(a, context);
-					}))
-				.toList()
-				.map(particleGroups -> particleGroups.stream().flatMap(ParticleGroup::spunParticles).collect(Collectors.toList()))
-				.map(ParticleGroup::new)
-				.toObservable();
+			MergeAction mergeAction = (MergeAction) action;
+
+			return Arrays.stream(mergeAction.actions)
+				.flatMap(a -> Arrays.stream(this.mappers).flatMap(mapper -> mapper.mapToParticleGroups(a, store).stream()))
+				.collect(Collectors.toList());
 		}
 	}
 

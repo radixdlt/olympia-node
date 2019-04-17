@@ -42,7 +42,6 @@ import java.util.List;
 
 import static com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType.STORED;
 import static com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType.VALIDATION_ERROR;
-import static org.junit.Assert.assertEquals;
 
 /**
  * See <a href="https://radixdlt.atlassian.net/browse/RLAU-645">RLAU-645</a>.
@@ -97,7 +96,6 @@ public class AtomicTransactionsWithDependence {
 		this.properties.put(SYMBOL, "TEST0");
 		Disposable d = api.pull();
 		createToken(CreateTokenAction.TokenSupplyType.MUTABLE, api);
-		RRI tokenRef = RRI.of(api.getMyAddress(), "TEST0");
 		i_can_observe_atom_being_accepted(1);
 		d.dispose();
 		this.observers.clear();
