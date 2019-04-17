@@ -843,11 +843,10 @@ public class RadixApplicationAPI {
 		return System.currentTimeMillis();
 	}
 
-	private Result buildDisconnectedResult(Action action) {
-		final ConnectableObservable<SubmitAtomAction> updates = this.buildAtom(action)
-			.flatMap(this.identity::sign)
-			.flatMapObservable(atom -> {
-				SubmitAtomAction initialAction = SubmitAtomRequestAction.newRequest(atom);
+	private Result buildDisconnectedAtomSubmit(Single<Atom> atom) {
+		final ConnectableObservable<SubmitAtomAction> updates = atom
+			.flatMapObservable(a -> {
+				SubmitAtomRequestAction initialAction = SubmitAtomRequestAction.newRequest(a);
 				Observable<SubmitAtomAction> status =
 				getNetworkController().getActions().ofType(SubmitAtomAction.class)
 					.filter(u -> u.getUuid().equals(initialAction.getUuid()))
@@ -880,6 +879,26 @@ public class RadixApplicationAPI {
 			});
 
 		return new Result(updates, completable);
+	}
+
+	private Result buildDisconnectedAtomSubmit(Atom atom) {
+		return buildDisconnectedAtomSubmit(Single.just(atom));
+	}
+
+	private Result buildDisconnectedResult(Action action) {
+		final Single<Atom> atom = this.buildAtom(action)
+			.flatMap(this.identity::sign);
+
+		return buildDisconnectedAtomSubmit(atom);
+	}
+
+	/**
+	 * Low level call to submit an atom into the network.
+	 * @param atom atom to submit
+	 * @return the result of the submission
+	 */
+	public Result submitAtom(Atom atom) {
+		return buildDisconnectedAtomSubmit(atom).connect();
 	}
 
 	/**
