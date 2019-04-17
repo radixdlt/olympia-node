@@ -13,6 +13,7 @@ import com.radixdlt.client.core.network.actions.FetchAtomsRequestAction;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.network.actions.SubmitAtomResultAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType;
+import com.radixdlt.client.core.spins.SpinStateMachine;
 import io.reactivex.Observable;
 import io.reactivex.ObservableEmitter;
 import io.reactivex.functions.Cancellable;
@@ -101,17 +102,16 @@ public class RadixAtomPuller implements AtomPuller {
 					AtomObservation observation = fetchAtomsObservationAction.getObservation();
 					if (observation.hasAtom()) {
 						observation.getAtom().spunParticles()
-							.map(s -> TransitionedParticle.fromSpunParticle(s, observation.getType()))
-							.forEach(t -> {
-								final TransitionedParticle tp = (TransitionedParticle) t;
-								final Particle particle = tp.getParticle();
+							.forEach(s -> {
+								final Particle particle = s.getParticle();
+								final Spin spinTo = observation.isStore() ? s.getSpin() : SpinStateMachine.revert(s.getSpin());
 
 								// If a new observed atoms conflicts with a previously soft stored atom,
 								// soft stored atom must be deleted
-								getAtomConflict(observation.getAtom(), particle, tp.getSpinTo())
+								getAtomConflict(observation.getAtom(), particle, spinTo)
 									.ifPresent(a -> observations.add(AtomObservation.softDeleted(a)));
 
-								particleSpins.put(particle.getHash(), new Pair<>(tp.getSpinTo(), observation));
+								particleSpins.put(particle.getHash(), new Pair<>(spinTo, observation));
 							});
 					}
 					observations.add(observation);

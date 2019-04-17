@@ -93,6 +93,16 @@ public final class SpinStateMachine {
 			DOWN, EnumSet.of(NEUTRAL, UP)
 		);
 	}
+
+	public static Spin revert(Spin spin) {
+		switch(spin) {
+			case UP: return NEUTRAL;
+			case DOWN: return UP;
+			default:
+				throw new IllegalArgumentException("Cannot revert spin " + spin);
+		}
+	}
+
 	/**
 	 * Checks if a spin state is after a given spin state non-inclusive in
 	 * the sequential spin state machine.
