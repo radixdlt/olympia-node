@@ -11,6 +11,7 @@ import com.radixdlt.client.core.ledger.AtomPuller;
 import com.radixdlt.client.core.ledger.AtomStore;
 import com.radixdlt.client.core.ledger.AtomSubmitter;
 import com.radixdlt.client.core.ledger.InMemoryAtomStore;
+import com.radixdlt.client.core.ledger.InMemoryAtomStoreReducer;
 import com.radixdlt.client.core.ledger.RadixAtomPuller;
 import com.radixdlt.client.core.network.RadixNetworkController;
 import com.radixdlt.client.core.network.RadixNetworkController.RadixNetworkControllerBuilder;
@@ -82,8 +83,17 @@ public final class RadixUniverse {
 		RadixUniverseConfig config,
 		List<RadixNetworkEpic> discoveryEpics
 	) {
+		final InMemoryAtomStore inMemoryAtomStore = new InMemoryAtomStore();
+		config.getGenesis().forEach(atom ->
+			atom.addresses()
+				.forEach(addr -> inMemoryAtomStore.store(addr, AtomObservation.stored(atom)))
+		);
+
+		final InMemoryAtomStoreReducer atomStoreReducer = new InMemoryAtomStoreReducer(inMemoryAtomStore);
+
 		RadixNetworkControllerBuilder builder = new RadixNetworkControllerBuilder()
 			.setNetwork(new RadixNetwork())
+			.addReducer(atomStoreReducer::reduce)
 			.addEpic(
 				new WebSocketsEpicBuilder()
 					.add(WebSocketEventsEpic::new)
@@ -101,7 +111,7 @@ public final class RadixUniverse {
 
 		discoveryEpics.forEach(builder::addEpic);
 
-		return new RadixUniverse(config, builder.build());
+		return new RadixUniverse(config, builder.build(), inMemoryAtomStore);
 	}
 
 	public static RadixUniverse create(BootstrapConfig bootstrapConfig) {
@@ -122,10 +132,9 @@ public final class RadixUniverse {
 
 	private final RRI nativeToken;
 
-	private RadixUniverse(RadixUniverseConfig config, RadixNetworkController networkController) {
+	private RadixUniverse(RadixUniverseConfig config, RadixNetworkController networkController, AtomStore atomStore) {
 		this.config = config;
 		this.networkController = networkController;
-
 		this.nativeToken = config.getGenesis().stream()
 			.flatMap(atom -> atom.particles(Spin.UP))
 			.filter(p -> p instanceof TokenDefinitionParticle)
@@ -133,17 +142,13 @@ public final class RadixUniverse {
 			.findFirst()
 			.orElseThrow(() -> new IllegalStateException("No Native Token defined in universe"));
 
-		final InMemoryAtomStore inMemoryAtomStore = new InMemoryAtomStore();
-		config.getGenesis().forEach(atom ->
-			atom.addresses()
-				.forEach(addr -> inMemoryAtomStore.store(addr, AtomObservation.stored(atom)))
-		);
+
 
 		// Hooking up the default configuration
 		// TODO: cleanup
 		this.ledger = new Ledger() {
 
-			private final AtomPuller atomPuller = new RadixAtomPuller(networkController, inMemoryAtomStore::store);
+			private final AtomPuller atomPuller = new RadixAtomPuller(networkController);
 
 			@Override
 			public AtomPuller getAtomPuller() {
@@ -152,7 +157,7 @@ public final class RadixUniverse {
 
 			@Override
 			public AtomStore getAtomStore() {
-				return inMemoryAtomStore;
+				return atomStore;
 			}
 
 			@Override

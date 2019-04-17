@@ -7,8 +7,7 @@ public final class AtomObservation {
 	public enum Type {
 		STORE,
 		DELETE,
-		HEAD,
-		RESYNC;
+		HEAD;
 
 		public static Type fromAtomEventType(AtomEventType type) {
 			if (type == AtomEventType.STORE) {
@@ -117,10 +116,6 @@ public final class AtomObservation {
 
 	public static AtomObservation head() {
 		return new AtomObservation(null, Type.HEAD, System.currentTimeMillis(), false);
-	}
-
-	public static AtomObservation resync() {
-		return new AtomObservation(null, Type.RESYNC, System.currentTimeMillis(), false);
 	}
 
 	@Override

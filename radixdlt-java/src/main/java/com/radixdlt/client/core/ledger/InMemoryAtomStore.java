@@ -53,9 +53,9 @@ public class InMemoryAtomStore implements AtomStore {
 			});
 	}
 
+
 	/**
 	 * Store an atom under a given destination
-	 * TODO: add synchronization if needed
 	 *
 	 * @param address address to store under
 	 * @param atomObservation the atom to store

@@ -408,10 +408,10 @@ public class RadixApplicationAPI {
 	 * @return a hot observable of the actions at the given address
 	 */
 	public <T> Observable<T> getActions(Class<T> actionClass, RadixAddress address) {
-		final Observable<AtomObservation> atomsPulled = ledger.getAtomPuller() != null
+		final Observable<Object> atomsPulled = ledger.getAtomPuller() != null
 			? ledger.getAtomPuller().pull(address)
 			: Observable.never();
-		Observable<AtomObservation> auto = atomsPulled.publish()
+		Observable<Object> auto = atomsPulled.publish()
 			.refCount(2);
 		Disposable d = auto.subscribe();
 
@@ -441,10 +441,10 @@ public class RadixApplicationAPI {
 	 * @return a hot observable of a state of the given address
 	 */
 	public <T extends ApplicationState> Observable<T> getState(Class<T> stateClass, RadixAddress address) {
-		final Observable<AtomObservation> atomsPulled = ledger.getAtomPuller() != null
+		final Observable<Object> atomsPulled = ledger.getAtomPuller() != null
 				? ledger.getAtomPuller().pull(address)
 				: Observable.never();
-		Observable<AtomObservation> auto = atomsPulled
+		Observable<Object> auto = atomsPulled
 			.publish()
 			.refCount(2);
 		Disposable d = auto.subscribe();
