@@ -2,11 +2,6 @@ package com.radixdlt.client.core.network;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
-import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.ledger.AtomSubmitter;
-import com.radixdlt.client.core.network.actions.SubmitAtomAction;
-import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
-import com.radixdlt.client.core.network.actions.SubmitAtomResultAction;
 import com.radixdlt.client.core.network.reducers.RadixNetwork;
 import io.reactivex.Observable;
 import io.reactivex.observables.ConnectableObservable;
@@ -26,7 +21,7 @@ import org.slf4j.LoggerFactory;
  * The meat and bones of the Networking module. This module connects all the epics and reducers
  * to produce a stream of actions and states.
  */
-public class RadixNetworkController implements AtomSubmitter {
+public class RadixNetworkController {
 	private static final Logger LOGGER = LoggerFactory.getLogger(RadixNetworkController.class);
 
 	public static class RadixNetworkControllerBuilder {
@@ -131,30 +126,5 @@ public class RadixNetworkController implements AtomSubmitter {
 	 */
 	public void dispatch(RadixNodeAction action) {
 		nodeActions.onNext(action);
-	}
-
-	/**
-	 * Immediately submits an atom into the ledger without waiting for subscription. The returned
-	 * observable is a full replay of the status of the atom, from submission to acceptance by
-	 * the network.
-	 *
-	 * TODO: refactor out
-	 *
-	 * @param atom atom to submit into the ledger
-	 * @return Observable emitting status updates to submission
-	 */
-	@Override
-	public Observable<SubmitAtomAction> submitAtom(Atom atom) {
-		SubmitAtomAction initialAction = SubmitAtomRequestAction.newRequest(atom);
-		Observable<SubmitAtomAction> status =
-			reducedNodeActions.ofType(SubmitAtomAction.class)
-				.filter(u -> u.getUuid().equals(initialAction.getUuid()))
-				.takeUntil(u -> u instanceof SubmitAtomResultAction);
-		ConnectableObservable<SubmitAtomAction> replay = status.replay();
-		replay.connect();
-
-		this.dispatch(initialAction);
-
-		return replay;
 	}
 }

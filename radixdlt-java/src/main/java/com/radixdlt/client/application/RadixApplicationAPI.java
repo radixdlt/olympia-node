@@ -6,6 +6,7 @@ import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
 import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.network.RadixNetworkController;
+import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
 import java.math.BigDecimal;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
@@ -843,12 +844,24 @@ public class RadixApplicationAPI {
 	}
 
 	private Result buildDisconnectedResult(Action action) {
-		ConnectableObservable<SubmitAtomAction> updates = this.buildAtom(action)
+		final ConnectableObservable<SubmitAtomAction> updates = this.buildAtom(action)
 			.flatMap(this.identity::sign)
-			.flatMapObservable(this.ledger.getAtomSubmitter()::submitAtom)
+			.flatMapObservable(atom -> {
+				SubmitAtomAction initialAction = SubmitAtomRequestAction.newRequest(atom);
+				Observable<SubmitAtomAction> status =
+				getNetworkController().getActions().ofType(SubmitAtomAction.class)
+					.filter(u -> u.getUuid().equals(initialAction.getUuid()))
+					.takeUntil(u -> u instanceof SubmitAtomResultAction);
+				ConnectableObservable<SubmitAtomAction> replay = status.replay();
+				replay.connect();
+
+				getNetworkController().dispatch(initialAction);
+
+				return replay;
+			})
 			.replay();
 
-		Completable completable = updates
+		final Completable completable = updates
 			.ofType(SubmitAtomResultAction.class)
 			.firstOrError()
 			.flatMapCompletable(update -> {
