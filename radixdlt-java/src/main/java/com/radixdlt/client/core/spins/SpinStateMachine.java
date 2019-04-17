@@ -95,7 +95,7 @@ public final class SpinStateMachine {
 	}
 
 	public static Spin revert(Spin spin) {
-		switch(spin) {
+		switch (spin) {
 			case UP: return NEUTRAL;
 			case DOWN: return UP;
 			default:
