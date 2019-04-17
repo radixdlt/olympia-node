@@ -57,7 +57,7 @@ public class PullerTest {
 
 		System.out.println("Subscribe to atom store for native token address");
 		Semaphore head3Semaphore = new Semaphore(0);
-		l.getAtomStore().getAtoms(rri.getAddress())
+		l.getAtomStore().getAtomObservations(rri.getAddress())
 			.subscribe(ao -> printAtomObservation("head3", ao, head3Semaphore), this::printTokenError);
 
 		Assert.assertTrue("Timeout awaiting head3Semaphore", head3Semaphore.tryAcquire(5, TimeUnit.SECONDS));

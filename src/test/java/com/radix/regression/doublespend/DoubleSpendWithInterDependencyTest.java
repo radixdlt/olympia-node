@@ -75,7 +75,10 @@ public class DoubleSpendWithInterDependencyTest {
 				System.nanoTime(),
 				s.tokDefRef,
 				System.currentTimeMillis() / 60000L + 60000L,
-				ImmutableMap.of(TokenTransition.MINT, TokenPermission.TOKEN_CREATION_ONLY, TokenTransition.BURN, TokenPermission.TOKEN_CREATION_ONLY)
+				ImmutableMap.of(
+					TokenTransition.MINT, TokenPermission.TOKEN_CREATION_ONLY,
+					TokenTransition.BURN, TokenPermission.NONE
+				)
 			);
 
 			TransferrableTokensParticle transferredTokensParticle0 = particleSupplier.get();

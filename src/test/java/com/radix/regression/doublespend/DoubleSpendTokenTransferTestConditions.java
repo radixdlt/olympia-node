@@ -60,7 +60,7 @@ class DoubleSpendTokenTransferTestConditions implements DoubleSpendTestCondition
 			new Condition<>(map -> {
 				TokenBalanceState tokenBalanceState1 = (TokenBalanceState) map.get(ShardedAppStateId.of(TokenBalanceState.class, apiAddress));
 				TokenBalanceState tokenBalanceState2 = (TokenBalanceState) map.get(ShardedAppStateId.of(TokenBalanceState.class, toAddress));
-				return tokenBalanceState1.getBalance().get(tokenRef).getAmount().compareTo(BigDecimal.ZERO) == 0 &&
+				return tokenBalanceState1.getBalance().get(tokenRef) == null &&
 						tokenBalanceState2.getBalance().get(tokenRef).getAmount().compareTo(BigDecimal.ONE) == 0;
 			}, "Transfer of 1 JOSH from one account to another")
 		);
