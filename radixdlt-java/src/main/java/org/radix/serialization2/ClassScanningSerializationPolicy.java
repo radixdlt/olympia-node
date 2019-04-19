@@ -82,7 +82,7 @@ public abstract class ClassScanningSerializationPolicy implements SerializationP
 					JsonProperty jsonProperty = method.getDeclaredAnnotation(JsonProperty.class);
 					JsonAnyGetter jsonAnyGetter = method.getDeclaredAnnotation(JsonAnyGetter.class);
 					if (dsonOutput == null && jsonProperty != null) {
-						if (method.getParameterCount() == 1) {
+						if (method.getParameterTypes().length == 1) {
 							// Ignore setter
 							continue;
 						}
@@ -102,7 +102,7 @@ public abstract class ClassScanningSerializationPolicy implements SerializationP
 					}
 					if (dsonOutput != null && jsonProperty != null) {
 						String fieldName = jsonProperty.value();
-						if (method.getParameterCount() != 0) {
+						if (method.getParameterTypes().length != 0) {
 							throw new IllegalStateException(
 									String.format("Property %s in class %s not a getter",
 											fieldName, outerCls.getName()));
