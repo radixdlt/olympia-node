@@ -61,7 +61,7 @@ public final class Longs {
 	 * @param bytes The byte array to decode to a long
 	 * @param offset The offset within the array to start decoding
 	 * @return The decoded long value
-	 */
+	 * */
 	public static long fromByteArray(byte[] bytes, int offset) {
 		Objects.requireNonNull(bytes, "bytes is null for 'long' conversion");
 		long value = 0;
@@ -88,5 +88,20 @@ public final class Longs {
 	public static long fromBytes(byte b0, byte b1, byte b2, byte b3, byte b4, byte b5, byte b6, byte b7) {
 		return (b0 & 0xFFL) << 56 | (b1 & 0xFFL) << 48 | (b2 & 0xFFL) << 40 | (b3 & 0xFFL) << 32
 			 | (b4 & 0xFFL) << 24 | (b5 & 0xFFL) << 16 | (b6 & 0xFFL) <<  8 | (b7 & 0xFFL);
+	}
+
+	/**
+	 * Compares two {@code long} values numerically treating the values
+	 * as unsigned.
+	 *
+	 * @param  x the first {@code long} to compare
+	 * @param  y the second {@code long} to compare
+	 * @return the value {@code 0} if {@code x == y}; a value less
+	 *         than {@code 0} if {@code x < y} as unsigned values; and
+	 *         a value greater than {@code 0} if {@code x > y} as
+	 *         unsigned values
+	 */
+	public static int compareUnsigned(long x, long y) {
+		return Long.compare(x + Long.MIN_VALUE, y + Long.MIN_VALUE);
 	}
 }

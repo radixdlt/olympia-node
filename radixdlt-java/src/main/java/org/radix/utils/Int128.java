@@ -469,7 +469,7 @@ public final class Int128 extends Number implements Comparable<Int128> {
 	public int compareTo(Int128 n) {
 		int cmp = Long.compare(this.high, n.high);
 		if (cmp == 0) {
-			cmp = Long.compareUnsigned(this.low, n.low);
+			cmp = Longs.compareUnsigned(this.low, n.low);
 		}
 		return cmp;
 	}
@@ -485,9 +485,9 @@ public final class Int128 extends Number implements Comparable<Int128> {
      *         unsigned values
      */
 	public int compareToUnsigned(Int128 n) {
-		int cmp = Long.compareUnsigned(this.high, n.high);
+		int cmp = Longs.compareUnsigned(this.high, n.high);
 		if (cmp == 0) {
-			cmp = Long.compareUnsigned(this.low, n.low);
+			cmp = Longs.compareUnsigned(this.low, n.low);
 		}
 		return cmp;
 	}
