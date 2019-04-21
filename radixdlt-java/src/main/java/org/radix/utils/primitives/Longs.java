@@ -61,7 +61,7 @@ public final class Longs {
 	 * @param bytes The byte array to decode to a long
 	 * @param offset The offset within the array to start decoding
 	 * @return The decoded long value
-	 * */
+	 */
 	public static long fromByteArray(byte[] bytes, int offset) {
 		Objects.requireNonNull(bytes, "bytes is null for 'long' conversion");
 		long value = 0;
