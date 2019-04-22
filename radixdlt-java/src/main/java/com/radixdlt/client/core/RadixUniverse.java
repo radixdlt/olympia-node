@@ -9,7 +9,6 @@ import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.ledger.AtomPuller;
 import com.radixdlt.client.core.ledger.AtomStore;
-import com.radixdlt.client.core.ledger.AtomSubmitter;
 import com.radixdlt.client.core.ledger.InMemoryAtomStore;
 import com.radixdlt.client.core.ledger.InMemoryAtomStoreReducer;
 import com.radixdlt.client.core.ledger.RadixAtomPuller;
@@ -56,8 +55,6 @@ public final class RadixUniverse {
 		AtomPuller getAtomPuller();
 
 		AtomStore getAtomStore();
-
-		AtomSubmitter getAtomSubmitter();
 	}
 
 	/**
@@ -142,12 +139,9 @@ public final class RadixUniverse {
 			.findFirst()
 			.orElseThrow(() -> new IllegalStateException("No Native Token defined in universe"));
 
-
-
 		// Hooking up the default configuration
 		// TODO: cleanup
 		this.ledger = new Ledger() {
-
 			private final AtomPuller atomPuller = new RadixAtomPuller(networkController);
 
 			@Override
@@ -158,11 +152,6 @@ public final class RadixUniverse {
 			@Override
 			public AtomStore getAtomStore() {
 				return atomStore;
-			}
-
-			@Override
-			public AtomSubmitter getAtomSubmitter() {
-				return networkController;
 			}
 		};
 	}

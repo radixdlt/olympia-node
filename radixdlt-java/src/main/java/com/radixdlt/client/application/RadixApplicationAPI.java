@@ -6,6 +6,7 @@ import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
 import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.network.RadixNetworkController;
+import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
 import java.math.BigDecimal;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
@@ -842,13 +843,24 @@ public class RadixApplicationAPI {
 		return System.currentTimeMillis();
 	}
 
-	private Result buildDisconnectedResult(Action action) {
-		ConnectableObservable<SubmitAtomAction> updates = this.buildAtom(action)
-			.flatMap(this.identity::sign)
-			.flatMapObservable(this.ledger.getAtomSubmitter()::submitAtom)
+	private Result buildDisconnectedAtomSubmit(Single<Atom> atom) {
+		final ConnectableObservable<SubmitAtomAction> updates = atom
+			.flatMapObservable(a -> {
+				SubmitAtomRequestAction initialAction = SubmitAtomRequestAction.newRequest(a);
+				Observable<SubmitAtomAction> status =
+				getNetworkController().getActions().ofType(SubmitAtomAction.class)
+					.filter(u -> u.getUuid().equals(initialAction.getUuid()))
+					.takeUntil(u -> u instanceof SubmitAtomResultAction);
+				ConnectableObservable<SubmitAtomAction> replay = status.replay();
+				replay.connect();
+
+				getNetworkController().dispatch(initialAction);
+
+				return replay;
+			})
 			.replay();
 
-		Completable completable = updates
+		final Completable completable = updates
 			.ofType(SubmitAtomResultAction.class)
 			.firstOrError()
 			.flatMapCompletable(update -> {
@@ -867,6 +879,26 @@ public class RadixApplicationAPI {
 			});
 
 		return new Result(updates, completable);
+	}
+
+	private Result buildDisconnectedAtomSubmit(Atom atom) {
+		return buildDisconnectedAtomSubmit(Single.just(atom));
+	}
+
+	private Result buildDisconnectedResult(Action action) {
+		final Single<Atom> atom = this.buildAtom(action)
+			.flatMap(this.identity::sign);
+
+		return buildDisconnectedAtomSubmit(atom);
+	}
+
+	/**
+	 * Low level call to submit an atom into the network.
+	 * @param atom atom to submit
+	 * @return the result of the submission
+	 */
+	public Result submitAtom(Atom atom) {
+		return buildDisconnectedAtomSubmit(atom).connect();
 	}
 
 	/**
