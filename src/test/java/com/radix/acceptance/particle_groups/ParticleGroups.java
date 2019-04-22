@@ -27,17 +27,12 @@ import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomResultAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType;
 import com.radixdlt.client.core.network.actions.SubmitAtomSendAction;
-import com.radixdlt.client.core.network.epics.RadixJsonRpcMethodEpic;
-import cucumber.api.java.After;
 import cucumber.api.java.en.And;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
-import io.reactivex.Observable;
-import io.reactivex.disposables.Disposable;
 import io.reactivex.observers.BaseTestConsumer.TestWaitStrategy;
 import io.reactivex.observers.TestObserver;
-import java.util.AbstractMap;
 import java.util.Map;
 import java.util.Set;
 import org.radix.utils.UInt256;
@@ -82,7 +77,6 @@ public class ParticleGroups {
 			GRANULARITY,	"1"
 	);
 	private final List<TestObserver<Object>> observers = Lists.newArrayList();
-	private final List<Disposable> disposables = Lists.newArrayList();
 	private ECKeyPairGenerator ecKeyPairGenerator = ECKeyPairGenerator.newInstance();
 
 	private class CreateEmptyGroupAction implements Action {
@@ -141,7 +135,6 @@ public class ParticleGroups {
 			.addStatelessParticlesMapper(new CreateEmptyGroupActionToParticleGroupsMapper())
 			.addStatefulParticlesMapper(new MergeStatefulActionToParticleGroupsMapper(new TransferTokensToParticleGroupsMapper()))
 			.build();
-		this.disposables.add(this.api.pull());
 
 		// Reset data
 		this.properties1.clear();
@@ -332,12 +325,6 @@ public class ParticleGroups {
 		UInt256 tokenBalance = TokenUnitConversions.unitsToSubunits(tokenBalanceDecimal);
 		UInt256 requiredBalance = TokenUnitConversions.unitsToSubunits(balance);
 		assertEquals(requiredBalance, tokenBalance);
-	}
-
-	@After
-	public void after() {
-		this.disposables.forEach(Disposable::dispose);
-		this.disposables.clear();
 	}
 
 	private void createToken(CreateTokenAction.TokenSupplyType tokenCreateSupplyType) {

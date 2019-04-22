@@ -23,11 +23,9 @@ import static com.radixdlt.client.core.network.actions.SubmitAtomResultAction.Su
 import static com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType.STORED;
 import static com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType.VALIDATION_ERROR;
 
-import cucumber.api.java.After;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
-import io.reactivex.disposables.Disposable;
 import io.reactivex.observers.BaseTestConsumer.TestWaitStrategy;
 import io.reactivex.observers.TestObserver;
 
@@ -52,13 +50,11 @@ public class TokenSymbolCharacterSet {
 		GRANULARITY,	"1"
 	);
 	private final List<TestObserver<Object>> observers = Lists.newArrayList();
-	private final List<Disposable> disposables = Lists.newArrayList();
 
 	@Given("^I have access to a suitable Radix network$")
 	public void i_have_access_to_a_suitable_Radix_network() {
 		this.identity = RadixIdentities.createNew();
 		this.api = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, this.identity);
-		this.disposables.add(this.api.pull());
 
 		// Reset data
 		this.properties.clear();
@@ -102,12 +98,6 @@ public class TokenSymbolCharacterSet {
 	@Then("^I can observe atom (\\d+) being rejected with a failure$")
 	public void i_can_observe_atom_being_rejected_as_a_failure(int atomNumber) {
 		awaitAtomStatus3(atomNumber, FAILED);
-	}
-
-	@After
-	public void after() {
-		this.disposables.forEach(Disposable::dispose);
-		this.disposables.clear();
 	}
 
 	private void createToken(CreateTokenAction.TokenSupplyType tokenCreateSupplyType) {

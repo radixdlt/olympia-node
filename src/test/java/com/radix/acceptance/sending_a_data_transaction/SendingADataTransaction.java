@@ -16,11 +16,9 @@ import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomResultAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType;
 import com.radixdlt.client.core.network.actions.SubmitAtomSendAction;
-import cucumber.api.java.After;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
-import io.reactivex.disposables.Disposable;
 import io.reactivex.observers.BaseTestConsumer.TestWaitStrategy;
 import io.reactivex.observers.TestObserver;
 
@@ -51,22 +49,13 @@ public class SendingADataTransaction {
 	private RadixIdentity otherIdentity;
 
 	private final List<TestObserver<SubmitAtomAction>> observers = Lists.newArrayList();
-	private final List<Disposable> disposables = Lists.newArrayList();
-
-	@After
-	public void after() {
-		this.disposables.forEach(Disposable::dispose);
-		this.disposables.clear();
-	}
 
 	private void setupApi() {
 		this.identity = RadixIdentities.createNew();
 		this.api = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, this.identity);
-		this.disposables.add(this.api.pull());
 
 		this.otherIdentity = RadixIdentities.createNew();
 		this.otherApi = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, this.otherIdentity);
-		this.disposables.add(this.otherApi.pull());
 
 		this.observers.clear();
 	}
@@ -83,7 +72,6 @@ public class SendingADataTransaction {
 			.bootstrap(Bootstrap.LOCALHOST_SINGLENODE)
 			.identity(this.otherIdentity)
 			.build();
-		this.disposables.add(this.api.pull());
 
 		this.observers.clear();
 	}
