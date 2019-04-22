@@ -3,6 +3,7 @@ package com.radix.regression.doublespend;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.radix.regression.Util;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
@@ -23,7 +24,6 @@ import com.radixdlt.client.core.network.actions.FetchAtomsObservationAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomResultAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType;
-import com.radixdlt.client.core.network.epics.DiscoverSingleNodeEpic;
 import io.reactivex.Completable;
 import io.reactivex.Observable;
 import io.reactivex.Single;
@@ -33,6 +33,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
@@ -87,8 +88,13 @@ public final class DoubleSpendTestRunner {
 
 				    @Override
 				    public List<RadixNetworkEpic> getDiscoveryEpics() {
-					    return Collections.singletonList(new DiscoverSingleNodeEpic(node, RadixUniverseConfigs.getBetanet()));
+					    return Collections.emptyList();
 				    }
+
+				    @Override
+				    public Set<RadixNode> getInitialNetwork() {
+				    	return ImmutableSet.of(node);
+					}
 			    },
 				identity);
 		}
