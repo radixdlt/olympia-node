@@ -2,8 +2,14 @@ package com.radixdlt.client.application;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Sets;
+import com.radixdlt.client.core.BootstrapConfig;
+import com.radixdlt.client.core.address.RadixUniverseConfig;
+import com.radixdlt.client.core.address.RadixUniverseConfigs;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.network.RadixNetworkController;
+import com.radixdlt.client.core.network.RadixNetworkEpic;
+import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.RadixNodeAction;
 import com.radixdlt.client.core.network.actions.FetchAtomsObservationAction;
@@ -12,6 +18,8 @@ import io.reactivex.subjects.PublishSubject;
 import io.reactivex.subjects.ReplaySubject;
 import java.math.BigDecimal;
 import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import org.junit.Test;
@@ -359,5 +367,35 @@ public class RadixApplicationAPITest {
 		api.execute(action).toCompletable().subscribe(testObserver);
 		testObserver.assertError(ActionExecutionException.class);
 		testObserver.assertError(e -> ((ActionExecutionException) e).getReasons().contains(reason));
+	}
+
+	@Test
+	public void when_an_api_is_created_with_set_nodes_and_get_network_state_is_called__the_nodes_should_be_returned() {
+		RadixIdentity identity = mock(RadixIdentity.class);
+		RadixUniverseConfig universeConfig = RadixUniverseConfigs.getBetanet();
+		BootstrapConfig config = new BootstrapConfig() {
+			@Override
+			public RadixUniverseConfig getConfig() {
+				return universeConfig;
+			}
+
+			@Override
+			public List<RadixNetworkEpic> getDiscoveryEpics() {
+				return Collections.emptyList();
+			}
+
+			@Override
+			public Set<RadixNode> getInitialNetwork() {
+				return Sets.newHashSet(
+					new RadixNode("localhost", false, 8080),
+					new RadixNode("localhost", false, 8081)
+				);
+			}
+		};
+
+		TestObserver<RadixNetworkState> testObserver = TestObserver.create();
+		RadixApplicationAPI api = RadixApplicationAPI.create(config, identity);
+		api.getNetworkState().subscribe(testObserver);
+		testObserver.assertValue(state -> state.getNodes().size() == 2);
 	}
 }

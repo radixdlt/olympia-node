@@ -7,9 +7,11 @@ import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.RadixNodeAction;
 import com.radixdlt.client.core.network.websocket.WebSocketClient;
 import io.reactivex.Observable;
+import io.reactivex.subjects.PublishSubject;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Map;
 
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -40,7 +42,9 @@ public final class WebSocketsEpic implements RadixNetworkEpic {
 	 * All websockets are created and managed here.
 	 */
 	public static class WebSockets {
-		private final ConcurrentHashMap<RadixNode, WebSocketClient> webSockets = new ConcurrentHashMap<>();
+		private final Map<RadixNode, WebSocketClient> webSockets = new HashMap<>();
+		private final PublishSubject<RadixNode> newNodes = PublishSubject.create();
+		private final Object lock = new Object();
 
 		private WebSockets() {
 		}
@@ -51,11 +55,24 @@ public final class WebSocketsEpic implements RadixNetworkEpic {
 		 * @param node a radix node to get the websocket client for
 		 * @return a websocket client mapped to the node
 		 */
-		public WebSocketClient get(RadixNode node) {
-			return webSockets.computeIfAbsent(
-				node,
-				n -> new WebSocketClient(listener -> HttpClients.getSslAllTrustingClient().newWebSocket(n.getLocation(), listener))
-			);
+		public WebSocketClient getOrCreate(RadixNode node) {
+			synchronized (lock)	 {
+				final WebSocketClient curClient = webSockets.get(node);
+				if (curClient != null) {
+					return curClient;
+				}
+				final WebSocketClient newClient = new WebSocketClient(
+					listener -> HttpClients.getSslAllTrustingClient().newWebSocket(node.getLocation(), listener)
+				);
+				webSockets.put(node, newClient);
+				newNodes.onNext(node);
+
+				return newClient;
+			}
+		}
+
+		public Observable<RadixNode> getNewNodes() {
+			return newNodes;
 		}
 	}
 

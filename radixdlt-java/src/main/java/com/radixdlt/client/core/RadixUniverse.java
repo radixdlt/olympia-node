@@ -15,7 +15,6 @@ import com.radixdlt.client.core.ledger.RadixAtomPuller;
 import com.radixdlt.client.core.network.RadixNetworkController;
 import com.radixdlt.client.core.network.RadixNetworkController.RadixNetworkControllerBuilder;
 import com.radixdlt.client.core.network.RadixNetworkEpic;
-import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.epics.ConnectWebSocketEpic;
 import com.radixdlt.client.core.network.epics.DiscoverNodesEpic;
@@ -33,6 +32,7 @@ import com.radixdlt.client.core.network.selector.RandomSelector;
 import io.reactivex.Observable;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 /**
  * A RadixUniverse represents the interface through which a client can interact
@@ -65,9 +65,10 @@ public final class RadixUniverse {
 	 */
 	public static RadixUniverse create(
 		RadixUniverseConfig config,
-		Observable<RadixNode> seeds
+		Observable<RadixNode> seeds,
+		Set<RadixNode> initialNetwork
 	) {
-		return create(config, Collections.singletonList(new DiscoverNodesEpic(seeds, config)));
+		return create(config, Collections.singletonList(new DiscoverNodesEpic(seeds, config)), initialNetwork);
 	}
 
 	/**
@@ -78,7 +79,8 @@ public final class RadixUniverse {
 	 */
 	public static RadixUniverse create(
 		RadixUniverseConfig config,
-		List<RadixNetworkEpic> discoveryEpics
+		List<RadixNetworkEpic> discoveryEpics,
+		Set<RadixNode> initialNetwork
 	) {
 		final InMemoryAtomStore inMemoryAtomStore = new InMemoryAtomStore();
 		config.getGenesis().forEach(atom ->
@@ -90,6 +92,7 @@ public final class RadixUniverse {
 
 		RadixNetworkControllerBuilder builder = new RadixNetworkControllerBuilder()
 			.setNetwork(new RadixNetwork())
+			.addInitialNodes(initialNetwork)
 			.addReducer(atomStoreReducer::reduce)
 			.addEpic(
 				new WebSocketsEpicBuilder()
@@ -112,7 +115,11 @@ public final class RadixUniverse {
 	}
 
 	public static RadixUniverse create(BootstrapConfig bootstrapConfig) {
-		return create(bootstrapConfig.getConfig(), bootstrapConfig.getDiscoveryEpics());
+		return create(
+			bootstrapConfig.getConfig(),
+			bootstrapConfig.getDiscoveryEpics(),
+			bootstrapConfig.getInitialNetwork()
+		);
 	}
 
 	/**
@@ -158,10 +165,6 @@ public final class RadixUniverse {
 
 	public RadixNetworkController getNetworkController() {
 		return networkController;
-	}
-
-	public Observable<RadixNetworkState> getNetworkState() {
-		return networkController.getNetwork();
 	}
 
 	public RRI getNativeToken() {

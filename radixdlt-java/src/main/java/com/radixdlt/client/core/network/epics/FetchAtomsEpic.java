@@ -34,7 +34,7 @@ public final class FetchAtomsEpic implements RadixNetworkEpic {
 	}
 
 	private Completable waitForConnection(RadixNode node) {
-		final WebSocketClient ws = webSockets.get(node);
+		final WebSocketClient ws = webSockets.getOrCreate(node);
 		return ws.getState().doOnNext(s -> {
 			if (s.equals(WebSocketStatus.DISCONNECTED)) {
 				ws.connect();
@@ -46,7 +46,7 @@ public final class FetchAtomsEpic implements RadixNetworkEpic {
 	}
 
 	private Observable<RadixNodeAction> fetchAtoms(FetchAtomsRequestAction request, RadixNode node) {
-		final WebSocketClient ws = webSockets.get(node);
+		final WebSocketClient ws = webSockets.getOrCreate(node);
 		final String uuid = request.getUuid();
 		final RadixAddress address = request.getAddress();
 

@@ -326,7 +326,7 @@ public class RadixApplicationAPI {
 
 
 	public Observable<RadixNetworkState> getNetworkState() {
-		return this.universe.getNetworkState();
+		return this.universe.getNetworkController().getNetwork();
 	}
 
 	public Ledger getLedger() {
