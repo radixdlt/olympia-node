@@ -1,8 +1,8 @@
 package org.radix.utils.primitives;
 
 import java.util.Arrays;
-import java.util.Base64;
 
+import org.bouncycastle.util.encoders.Base64;
 import org.radix.utils.RadixConstants;
 
 /**
@@ -150,7 +150,7 @@ public class Bytes {
 	 * @return The base-64 encoded string
 	 */
 	public static String toBase64String(byte[] bytes) {
-		byte[] result = Base64.getEncoder().encode(bytes);
+		byte[] result = Base64.encode(bytes);
 		return Strings.fromAsciiBytes(result, 0, result.length);
 	}
 
@@ -161,7 +161,7 @@ public class Bytes {
 	 * @return The decoded bytes
 	 */
 	public static byte[] fromBase64String(String s) {
-		return Base64.getDecoder().decode(s);
+		return Base64.decode(s);
 	}
 
 	private static char toHexChar(int value) {
