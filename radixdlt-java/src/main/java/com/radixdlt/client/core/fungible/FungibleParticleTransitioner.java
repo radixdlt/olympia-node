@@ -108,10 +108,10 @@ public class FungibleParticleTransitioner<T, U> {
 	public FungibleParticleTransition<T, U> createTransition(
 		List<T> unconsumedFungibles,
 		UInt256 toAmount
-	) {
+	) throws NotEnoughFungibleException {
 		UInt256 balance = unconsumedFungibles.stream().map(amountMapper).reduce(UInt256.ZERO, UInt256::add);
 		if (balance.compareTo(toAmount) < 0) {
-			throw new RuntimeException("Not enough to create transition");
+			throw new NotEnoughFungibleException(toAmount, balance);
 		}
 
 		UInt256 consumerTotal = UInt256.ZERO;

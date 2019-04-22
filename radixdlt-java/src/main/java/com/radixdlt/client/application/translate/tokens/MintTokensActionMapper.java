@@ -8,6 +8,7 @@ import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.fungible.FungibleParticleTransitioner;
 import com.radixdlt.client.core.fungible.FungibleParticleTransitioner.FungibleParticleTransition;
+import com.radixdlt.client.core.fungible.NotEnoughFungibleException;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
@@ -80,23 +81,24 @@ public class MintTokensActionMapper implements StatefulActionToParticleGroupsMap
 		ShardedAppStateId shardedAppStateId = ShardedAppStateId.of(TokenDefinitionsState.class, tokenDefinition.getAddress());
 		TokenDefinitionsState tokenDefinitionsState = (TokenDefinitionsState) store.get(shardedAppStateId);
 		TokenState tokenState = getTokenStateOrError(tokenDefinitionsState.getState(), tokenDefinition);
-		final BigDecimal unallocatedSupply = tokenState.getUnallocatedSupply();
 
-		if (unallocatedSupply.compareTo(mintTokensAction.getAmount()) < 0) {
+		final FungibleParticleTransition<UnallocatedTokensParticle, TransferrableTokensParticle> transition;
+		try {
+			transition = transitioner.createTransition(
+				tokenState.getUnallocatedTokens().entrySet().stream()
+					.map(Entry::getValue)
+					.collect(Collectors.toList()),
+				TokenUnitConversions.unitsToSubunits(mintTokensAction.getAmount())
+			);
+		} catch (NotEnoughFungibleException e) {
 			throw new TokenOverMintException(
 				mintTokensAction.getTokenDefinitionReference(),
 				TokenUnitConversions.subunitsToUnits(UInt256.MAX_VALUE),
-				TokenUnitConversions.subunitsToUnits(UInt256.MAX_VALUE).subtract(unallocatedSupply),
+				TokenUnitConversions.subunitsToUnits(UInt256.MAX_VALUE.subtract(e.getCurrent())),
 				mintTokensAction.getAmount()
 			);
 		}
 
-		FungibleParticleTransition<UnallocatedTokensParticle, TransferrableTokensParticle> transition = transitioner.createTransition(
-			tokenState.getUnallocatedTokens().entrySet().stream()
-				.map(Entry::getValue)
-				.collect(Collectors.toList()),
-			TokenUnitConversions.unitsToSubunits(mintTokensAction.getAmount())
-		);
 
 		ParticleGroupBuilder particleGroupBuilder = ParticleGroup.builder();
 		transition.getRemoved().stream().map(t -> (Particle) t).forEach(p -> particleGroupBuilder.addParticle(p, Spin.DOWN));

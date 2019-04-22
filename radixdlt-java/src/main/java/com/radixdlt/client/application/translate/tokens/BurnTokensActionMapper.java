@@ -7,6 +7,7 @@ import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.fungible.FungibleParticleTransitioner;
 import com.radixdlt.client.core.fungible.FungibleParticleTransitioner.FungibleParticleTransition;
+import com.radixdlt.client.core.fungible.NotEnoughFungibleException;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
@@ -100,15 +101,15 @@ public class BurnTokensActionMapper implements StatefulActionToParticleGroupsMap
 			throw new InsufficientFundsException(tokenRef, BigDecimal.ZERO, burnAmount);
 		}
 
-		final BigDecimal balance = bal.getAmount();
-		if (balance.compareTo(burnAmount) < 0) {
-			throw new InsufficientFundsException(tokenRef, balance, burnAmount);
+		final FungibleParticleTransition<TransferrableTokensParticle, UnallocatedTokensParticle> transition;
+		try {
+			transition = transitioner.createTransition(
+				bal.unconsumedTransferrable().collect(Collectors.toList()),
+				TokenUnitConversions.unitsToSubunits(burnAmount)
+			);
+		} catch (NotEnoughFungibleException e) {
+			throw new InsufficientFundsException(tokenRef, TokenUnitConversions.subunitsToUnits(e.getCurrent()), burnAmount);
 		}
-
-		FungibleParticleTransition<TransferrableTokensParticle, UnallocatedTokensParticle> transition = transitioner.createTransition(
-			bal.unconsumedTransferrable().collect(Collectors.toList()),
-			TokenUnitConversions.unitsToSubunits(burnAmount)
-		);
 
 		ParticleGroupBuilder particleGroupBuilder = ParticleGroup.builder();
 		transition.getRemoved().stream().map(t -> (Particle) t).forEach(p -> particleGroupBuilder.addParticle(p, Spin.DOWN));

@@ -19,6 +19,7 @@ import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.fungible.FungibleParticleTransitioner;
 import com.radixdlt.client.core.fungible.FungibleParticleTransitioner.FungibleParticleTransition;
+import com.radixdlt.client.core.fungible.NotEnoughFungibleException;
 import java.util.Collections;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -144,12 +145,6 @@ public class MintAndTransferTokensActionMapper implements StatefulActionToPartic
 		RRI tokenDefRef,
 		TokenState tokenState
 	) {
-		final BigDecimal unallocatedSupply = tokenState.getUnallocatedSupply();
-
-		if (unallocatedSupply.compareTo(amount) < 0) {
-			throw new InsufficientFundsException(tokenDefRef, unallocatedSupply, amount);
-		}
-
 		final FungibleParticleTransitioner<UnallocatedTokensParticle, TransferrableTokensParticle> transitioner =
 			new FungibleParticleTransitioner<>(
 				(amt, consumable) -> new TransferrableTokensParticle(
@@ -173,12 +168,17 @@ public class MintAndTransferTokensActionMapper implements StatefulActionToPartic
 				UnallocatedTokensParticle::getAmount
 			);
 
-		FungibleParticleTransition<UnallocatedTokensParticle, TransferrableTokensParticle> transition = transitioner.createTransition(
-			tokenState.getUnallocatedTokens().entrySet().stream()
-				.map(Entry::getValue)
-				.collect(Collectors.toList()),
-			TokenUnitConversions.unitsToSubunits(amount)
-		);
+		final FungibleParticleTransition<UnallocatedTokensParticle, TransferrableTokensParticle> transition;
+		try {
+			transition = transitioner.createTransition(
+				tokenState.getUnallocatedTokens().entrySet().stream()
+					.map(Entry::getValue)
+					.collect(Collectors.toList()),
+				TokenUnitConversions.unitsToSubunits(amount)
+			);
+		} catch (NotEnoughFungibleException e) {
+			throw new InsufficientFundsException(tokenDefRef, TokenUnitConversions.subunitsToUnits(e.getCurrent()), amount);
+		}
 
 		return transition;
 	}
