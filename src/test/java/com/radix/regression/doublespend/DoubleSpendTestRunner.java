@@ -27,7 +27,6 @@ import com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAto
 import io.reactivex.Completable;
 import io.reactivex.Observable;
 import io.reactivex.Single;
-import io.reactivex.disposables.Disposable;
 import io.reactivex.observers.TestObserver;
 import java.util.Collections;
 import java.util.List;
@@ -109,12 +108,10 @@ public final class DoubleSpendTestRunner {
 		DoubleSpendTestConditions doubleSpendTestConditions = testSupplier.apply(api);
 
 		List<Action> initialActions = doubleSpendTestConditions.initialActions();
-		Disposable d = api.pull();
 		initialActions.stream()
 			.map(api::execute)
 			.map(Result::toCompletable)
 			.forEach(Completable::blockingAwait);
-		d.dispose();
 
 		// Wait for network to sync
 		// TODO: implement faster mechanism for this
@@ -139,16 +136,11 @@ public final class DoubleSpendTestRunner {
 
 		// If two nodes don't exist in the network just use one node
 		Single<List<RadixNode>> oneNode = api.getNetworkState()
-			.filter(network -> network.getNodes().entrySet().stream()
-				.filter(e -> e.getValue().getData().isPresent() && e.getValue().getUniverseConfig().isPresent())
-				.count() == 1)
 			.debounce(3, TimeUnit.SECONDS)
 			.firstOrError()
-			.map(state ->
-				state.getNodes().entrySet().stream()
-					.filter(e -> e.getValue().getUniverseConfig().isPresent())
-					.map(Entry::getKey)
-					.collect(Collectors.toList())
+			.map(state -> state.getNodes().entrySet().stream()
+				.map(Entry::getKey)
+				.collect(Collectors.toList())
 			);
 
 		AtomicInteger clientId = new AtomicInteger(1);
