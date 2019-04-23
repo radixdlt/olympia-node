@@ -1,6 +1,8 @@
 package com.radixdlt.client.application.translate.tokens;
 
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.client.application.translate.ShardedParticleStateId;
+import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.core.atoms.ParticleGroup.ParticleGroupBuilder;
@@ -8,7 +10,7 @@ import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.fungible.FungibleParticleTransitioner;
 import com.radixdlt.client.core.fungible.FungibleParticleTransitioner.FungibleParticleTransition;
-import com.radixdlt.client.core.fungible.NotEnoughFungibleException;
+import com.radixdlt.client.core.fungible.NotEnoughFungiblesException;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
@@ -61,7 +63,10 @@ public class MintTokensActionMapper implements StatefulActionToParticleGroupsMap
 		MintTokensAction mintTokensAction = (MintTokensAction) action;
 		RadixAddress tokenDefinitionAddress = mintTokensAction.getTokenDefinitionReference().getAddress();
 
-		return Collections.singleton(ShardedParticleStateId.of(UnallocatedTokensParticle.class, tokenDefinitionAddress));
+		return ImmutableSet.of(
+			ShardedParticleStateId.of(UnallocatedTokensParticle.class, tokenDefinitionAddress),
+			ShardedParticleStateId.of(TokenDefinitionParticle.class, tokenDefinitionAddress)
+		);
 	}
 
 	@Override
@@ -77,25 +82,31 @@ public class MintTokensActionMapper implements StatefulActionToParticleGroupsMap
 			throw new IllegalArgumentException("Mint amount must be greater than 0.");
 		}
 
+		Map<Class<? extends Particle>, List<Particle>> particles = store.collect(Collectors.groupingBy(Particle::getClass));
+		final List<Particle> tokDefParticles = particles.get(TokenDefinitionParticle.class);
+		if (tokDefParticles == null
+			|| tokDefParticles.stream().noneMatch(p -> ((TokenDefinitionParticle) p).getRRI().equals(tokenDefinition))
+		) {
+			throw new UnknownTokenException(mintTokensAction.getTokenDefinitionReference());
+		}
+
 		final FungibleParticleTransition<UnallocatedTokensParticle, TransferrableTokensParticle> transition;
 		try {
 			transition = transitioner.createTransition(
-				store.map(UnallocatedTokensParticle.class::cast)
+				particles.getOrDefault(UnallocatedTokensParticle.class, Collections.emptyList())
+					.stream()
+					.map(UnallocatedTokensParticle.class::cast)
 					.filter(p -> p.getTokDefRef().equals(tokenDefinition))
 					.collect(Collectors.toList()),
 				TokenUnitConversions.unitsToSubunits(mintTokensAction.getAmount())
 			);
-		} catch (NotEnoughFungibleException e) {
-			if (e.getCurrent().equals(UInt256.ZERO)) {
-				throw new UnknownTokenException(mintTokensAction.getTokenDefinitionReference());
-			} else {
-				throw new TokenOverMintException(
-					mintTokensAction.getTokenDefinitionReference(),
-					TokenUnitConversions.subunitsToUnits(UInt256.MAX_VALUE),
-					TokenUnitConversions.subunitsToUnits(UInt256.MAX_VALUE.subtract(e.getCurrent())),
-					mintTokensAction.getAmount()
-				);
-			}
+		} catch (NotEnoughFungiblesException e) {
+			throw new TokenOverMintException(
+				mintTokensAction.getTokenDefinitionReference(),
+				TokenUnitConversions.subunitsToUnits(UInt256.MAX_VALUE),
+				TokenUnitConversions.subunitsToUnits(UInt256.MAX_VALUE.subtract(e.getCurrent())),
+				mintTokensAction.getAmount()
+			);
 		}
 
 
@@ -105,13 +116,5 @@ public class MintTokensActionMapper implements StatefulActionToParticleGroupsMap
 		transition.getTransitioned().stream().map(t -> (Particle) t).forEach(p -> particleGroupBuilder.addParticle(p, Spin.UP));
 
 		return Collections.singletonList(particleGroupBuilder.build());
-	}
-
-	private TokenState getTokenStateOrError(Map<RRI, TokenState> m, RRI tokenDefinition) {
-		TokenState ts = m.get(tokenDefinition);
-		if (ts == null) {
-			throw new UnknownTokenException(tokenDefinition);
-		}
-		return ts;
 	}
 }

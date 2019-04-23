@@ -56,19 +56,20 @@ public final class WebSocketsEpic implements RadixNetworkEpic {
 		 * @return a websocket client mapped to the node
 		 */
 		public WebSocketClient getOrCreate(RadixNode node) {
+			final WebSocketClient newClient;
 			synchronized (lock)	 {
 				final WebSocketClient curClient = webSockets.get(node);
 				if (curClient != null) {
 					return curClient;
 				}
-				final WebSocketClient newClient = new WebSocketClient(
+				newClient = new WebSocketClient(
 					listener -> HttpClients.getSslAllTrustingClient().newWebSocket(node.getLocation(), listener)
 				);
 				webSockets.put(node, newClient);
-				newNodes.onNext(node);
-
-				return newClient;
 			}
+			newNodes.onNext(node);
+
+			return newClient;
 		}
 
 		public Observable<RadixNode> getNewNodes() {

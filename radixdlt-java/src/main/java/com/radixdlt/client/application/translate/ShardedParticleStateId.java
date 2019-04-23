@@ -5,7 +5,7 @@ import com.radixdlt.client.core.atoms.particles.Particle;
 import java.util.Objects;
 
 /**
- * Identifier for application state for a particular address.
+ * Identifier for particle state for a particular address.
  */
 public final class ShardedParticleStateId {
 	private final Class<? extends Particle> particleClass;

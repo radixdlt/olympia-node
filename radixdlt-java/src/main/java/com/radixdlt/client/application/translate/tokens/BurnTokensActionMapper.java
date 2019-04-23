@@ -7,7 +7,7 @@ import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.fungible.FungibleParticleTransitioner;
 import com.radixdlt.client.core.fungible.FungibleParticleTransitioner.FungibleParticleTransition;
-import com.radixdlt.client.core.fungible.NotEnoughFungibleException;
+import com.radixdlt.client.core.fungible.NotEnoughFungiblesException;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
@@ -97,7 +97,7 @@ public class BurnTokensActionMapper implements StatefulActionToParticleGroupsMap
 					.collect(Collectors.toList()),
 				TokenUnitConversions.unitsToSubunits(burnAmount)
 			);
-		} catch (NotEnoughFungibleException e) {
+		} catch (NotEnoughFungiblesException e) {
 			throw new InsufficientFundsException(tokenRef, TokenUnitConversions.subunitsToUnits(e.getCurrent()), burnAmount);
 		}
 

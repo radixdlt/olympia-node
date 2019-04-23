@@ -2,7 +2,6 @@ package com.radixdlt.client.application.translate.tokens;
 
 import java.math.BigDecimal;
 import java.util.Objects;
-import java.util.Optional;
 
 /**
  * The state and data of a token at a given moment in time
@@ -37,12 +36,18 @@ public class TokenState {
 	}
 
 	public static TokenState combine(TokenState state0, TokenState state1) {
+		final BigDecimal totalSupply;
+		if (state0.totalSupply != null) {
+			totalSupply = state1.totalSupply != null ? state0.totalSupply.add(state1.totalSupply) : state0.totalSupply;
+		} else {
+			totalSupply = state1.totalSupply;
+		}
+
 		return new TokenState(
 			state0.name != null ? state0.name : state1.name,
 			state0.iso != null ? state0.iso : state1.iso,
 			state0.description != null ? state0.description : state1.description,
-			Optional.ofNullable(state0.totalSupply).orElse(BigDecimal.ZERO)
-				.add(Optional.ofNullable(state1.totalSupply).orElse(BigDecimal.ZERO)),
+			totalSupply,
 			state0.granularity != null ? state0.granularity : state1.granularity,
 			state0.tokenSupplyType != null ? state0.tokenSupplyType : state1.tokenSupplyType
 		);

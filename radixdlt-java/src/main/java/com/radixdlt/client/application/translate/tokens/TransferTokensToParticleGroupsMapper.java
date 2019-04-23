@@ -4,7 +4,7 @@ import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.fungible.FungibleParticleTransitioner;
 import com.radixdlt.client.core.fungible.FungibleParticleTransitioner.FungibleParticleTransition;
-import com.radixdlt.client.core.fungible.NotEnoughFungibleException;
+import com.radixdlt.client.core.fungible.NotEnoughFungiblesException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -37,7 +37,7 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 	}
 
 	private List<SpunParticle> mapToParticles(TransferTokensAction transfer, List<TransferrableTokensParticle> currentParticles)
-		throws NotEnoughFungibleException {
+		throws NotEnoughFungiblesException {
 		final UnaryOperator<List<TransferrableTokensParticle>> combiner =
 			transferredList -> transferredList.stream()
 				.map(TransferrableTokensParticle::getAmount)
@@ -158,7 +158,7 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 		final List<SpunParticle> transferParticles;
 		try {
 			transferParticles = this.mapToParticles(transfer, tokenConsumables);
-		} catch (NotEnoughFungibleException e) {
+		} catch (NotEnoughFungiblesException e) {
 			throw new InsufficientFundsException(
 				tokenRef, TokenUnitConversions.subunitsToUnits(e.getCurrent()), transfer.getAmount()
 			);

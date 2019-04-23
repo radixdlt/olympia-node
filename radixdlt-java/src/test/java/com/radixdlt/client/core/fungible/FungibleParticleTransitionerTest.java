@@ -43,7 +43,7 @@ public class FungibleParticleTransitionerTest {
 
 	@Test
 	public void when_creating_a_transition_from_one_to_one__then_transitioned_should_be_one_migrated_should_be_empty_removed_should_be_one()
-		throws NotEnoughFungibleException {
+		throws NotEnoughFungiblesException {
 		FungibleParticleTransition<TestParticle, TestParticle> transition =
 			transitioner.createTransition(Collections.singletonList(new TestParticle(UInt256.ONE)), UInt256.ONE);
 		assertThat(transition.getTransitioned()).asList().containsExactly(new TestParticle(UInt256.ONE));
@@ -53,7 +53,7 @@ public class FungibleParticleTransitionerTest {
 
 	@Test
 	public void when_creating_a_transition_from_two_to_one__then_transitioned_should_be_one_migrated_should_be_one_removed_should_be_a_two()
-		throws NotEnoughFungibleException {
+		throws NotEnoughFungiblesException {
 		FungibleParticleTransition<TestParticle, TestParticle> transition =
 			transitioner.createTransition(Collections.singletonList(new TestParticle(UInt256.TWO)), UInt256.ONE);
 		assertThat(transition.getTransitioned()).asList().containsExactly(new TestParticle(UInt256.ONE));
@@ -64,11 +64,11 @@ public class FungibleParticleTransitionerTest {
 	@Test
 	public void when_creating_a_transition_with_not_enough_input__an_exception_should_be_thrown() {
 		assertThatThrownBy(() -> transitioner.createTransition(Collections.singletonList(new TestParticle(UInt256.ONE)), UInt256.TWO))
-			.isInstanceOf(NotEnoughFungibleException.class)
+			.isInstanceOf(NotEnoughFungiblesException.class)
 			.matches(e -> {
-				NotEnoughFungibleException notEnoughFungibleException = (NotEnoughFungibleException) e;
-				return notEnoughFungibleException.getCurrent().equals(UInt256.ONE)
-					&& notEnoughFungibleException.getRequested().equals(UInt256.TWO);
+				NotEnoughFungiblesException notEnoughFungiblesException = (NotEnoughFungiblesException) e;
+				return notEnoughFungiblesException.getCurrent().equals(UInt256.ONE)
+					&& notEnoughFungiblesException.getRequested().equals(UInt256.TWO);
 			});
 	}
 }

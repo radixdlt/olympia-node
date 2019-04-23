@@ -387,8 +387,8 @@ public class RadixApplicationAPITest {
 			@Override
 			public Set<RadixNode> getInitialNetwork() {
 				return Sets.newHashSet(
-					new RadixNode("localhost", false, 8080),
-					new RadixNode("localhost", false, 8081)
+					mock(RadixNode.class),
+					mock(RadixNode.class)
 				);
 			}
 		};
