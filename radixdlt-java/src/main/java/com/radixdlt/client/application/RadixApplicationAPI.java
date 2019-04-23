@@ -758,16 +758,18 @@ public class RadixApplicationAPI {
 				.fromIterable(this.statefulActionToParticleGroupsMappers)
 				.flatMapMaybe(mapper -> {
 					final Set<ShardedParticleStateId> requiredState = mapper.requiredState(action);
+					List<Disposable> d = requiredState.stream().map(ShardedParticleStateId::address).distinct()
+						.map(addr -> ledger.getAtomPuller().pull(addr).subscribe())
+						.collect(Collectors.toList());
 
 					return Observable.fromIterable(requiredState)
-						.flatMapSingle(ctx -> {
-							Disposable d = ledger.getAtomPuller().pull(ctx.address()).subscribe();
-							return ledger.getAtomStore().onSync(ctx.address())
+						.flatMapSingle(ctx ->
+							ledger.getAtomStore().onSync(ctx.address())
 								.firstOrError()
-								.doOnSuccess(i -> d.dispose())
+								.doOnSuccess(i -> d.forEach(Disposable::dispose))
 								.map(a -> ledger.getAtomStore().getUpParticles(ctx.address())
-								.filter(ctx.particleClass()::isInstance));
-						})
+								.filter(ctx.particleClass()::isInstance))
+						)
 						.reduce(Stream::concat)
 						.map(ctxState -> mapper.mapToParticleGroups(action, ctxState));
 				})

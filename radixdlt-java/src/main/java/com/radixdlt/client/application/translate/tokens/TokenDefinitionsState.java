@@ -7,11 +7,9 @@ import com.radixdlt.client.application.translate.tokens.TokenState.TokenSupplyTy
 import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import java.math.BigDecimal;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
-import org.radix.common.ID.EUID;
+import java.util.Optional;
 import org.radix.utils.UInt256;
 
 public class TokenDefinitionsState implements ApplicationState {
@@ -50,28 +48,20 @@ public class TokenDefinitionsState implements ApplicationState {
 				null,
 				TokenUnitConversions.subunitsToUnits(UInt256.MAX_VALUE.subtract(unallocatedTokensParticle.getAmount())),
 				TokenUnitConversions.subunitsToUnits(unallocatedTokensParticle.getGranularity()),
-				null,
-				Collections.singletonMap(unallocatedTokensParticle.getHid(), unallocatedTokensParticle)
+				null
 			));
 			return new TokenDefinitionsState(ImmutableMap.copyOf(newState));
 		}
-
-		Map<EUID, UnallocatedTokensParticle> newTokenUnallocated = new HashMap<>(tokenState.getUnallocatedTokens());
-		newTokenUnallocated.put(unallocatedTokensParticle.getHid(), unallocatedTokensParticle);
-
-		UInt256 unallocatedAmount = newTokenUnallocated.entrySet().stream()
-			.map(Entry::getValue)
-			.map(UnallocatedTokensParticle::getAmount)
-			.reduce(UInt256.ZERO, UInt256::add);
 
 		newState.put(ref, new TokenState(
 			tokenState.getName(),
 			tokenState.getIso(),
 			tokenState.getDescription(),
-			TokenUnitConversions.subunitsToUnits(UInt256.MAX_VALUE.subtract(unallocatedAmount)),
+			Optional.ofNullable(tokenState.getTotalSupply())
+				.orElse(TokenUnitConversions.subunitsToUnits(UInt256.MAX_VALUE))
+				.subtract(TokenUnitConversions.subunitsToUnits(unallocatedTokensParticle.getAmount())),
 			tokenState.getGranularity(),
-			tokenState.getTokenSupplyType(),
-			newTokenUnallocated
+			tokenState.getTokenSupplyType()
 		));
 
 		return new TokenDefinitionsState(ImmutableMap.copyOf(newState));
@@ -90,11 +80,10 @@ public class TokenDefinitionsState implements ApplicationState {
 		if (state.containsKey(ref)) {
 			final TokenState curState = state.get(ref);
 			final BigDecimal totalSupply = curState.getTotalSupply();
-			final Map<EUID, UnallocatedTokensParticle> unallocatedTokens = curState.getUnallocatedTokens();
 
-			newState.put(ref, new TokenState(name, iso, description, totalSupply, granularity, tokenSupplyType, unallocatedTokens));
+			newState.put(ref, new TokenState(name, iso, description, totalSupply, granularity, tokenSupplyType));
 		} else {
-			newState.put(ref, new TokenState(name, iso, description, BigDecimal.ZERO, granularity, tokenSupplyType, Collections.emptyMap()));
+			newState.put(ref, new TokenState(name, iso, description, null, granularity, tokenSupplyType));
 		}
 
 		return new TokenDefinitionsState(ImmutableMap.copyOf(newState));

@@ -1,12 +1,10 @@
 package com.radixdlt.client.application.translate.tokens;
 
-import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle.TokenTransition;
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.core.atoms.particles.RRI;
-import java.math.BigDecimal;
 import java.util.Collections;
 
 import org.junit.Test;
@@ -38,8 +36,8 @@ public class TokenDefinitionsReducerTest {
 			TokenDefinitionsState.init(), tokenDefinitionParticle);
 
 		assertThat(state.getState().get(tokenRef)).isEqualTo(
-			new TokenState("Name", "ISO", "Desc", BigDecimal.ZERO,
-				TokenUnitConversions.subunitsToUnits(1), TokenSupplyType.FIXED, ImmutableMap.of())
+			new TokenState("Name", "ISO", "Desc", null,
+				TokenUnitConversions.subunitsToUnits(1), TokenSupplyType.FIXED)
 		);
 	}
 
