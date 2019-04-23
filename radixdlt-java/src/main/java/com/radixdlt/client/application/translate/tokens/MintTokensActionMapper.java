@@ -1,6 +1,6 @@
 package com.radixdlt.client.application.translate.tokens;
 
-import com.radixdlt.client.application.translate.ShardedAppStateId;
+import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.core.atoms.ParticleGroup.ParticleGroupBuilder;
@@ -15,13 +15,12 @@ import java.util.List;
 import java.util.Map;
 
 import com.radixdlt.client.core.atoms.ParticleGroup;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.radix.utils.UInt256;
 
 import com.radixdlt.client.application.translate.Action;
-import com.radixdlt.client.application.translate.ApplicationState;
 import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.particles.Particle;
@@ -54,7 +53,7 @@ public class MintTokensActionMapper implements StatefulActionToParticleGroupsMap
 	}
 
 	@Override
-	public Set<ShardedAppStateId> requiredState(Action action) {
+	public Set<ShardedParticleStateId> requiredState(Action action) {
 		if (!(action instanceof MintTokensAction)) {
 			return Collections.emptySet();
 		}
@@ -62,11 +61,11 @@ public class MintTokensActionMapper implements StatefulActionToParticleGroupsMap
 		MintTokensAction mintTokensAction = (MintTokensAction) action;
 		RadixAddress tokenDefinitionAddress = mintTokensAction.getTokenDefinitionReference().getAddress();
 
-		return Collections.singleton(ShardedAppStateId.of(TokenDefinitionsState.class, tokenDefinitionAddress));
+		return Collections.singleton(ShardedParticleStateId.of(UnallocatedTokensParticle.class, tokenDefinitionAddress));
 	}
 
 	@Override
-	public List<ParticleGroup> mapToParticleGroups(Action action, Map<ShardedAppStateId, ? extends ApplicationState> store) {
+	public List<ParticleGroup> mapToParticleGroups(Action action, Stream<Particle> store) {
 		if (!(action instanceof MintTokensAction)) {
 			return Collections.emptyList();
 		}
@@ -78,25 +77,25 @@ public class MintTokensActionMapper implements StatefulActionToParticleGroupsMap
 			throw new IllegalArgumentException("Mint amount must be greater than 0.");
 		}
 
-		ShardedAppStateId shardedAppStateId = ShardedAppStateId.of(TokenDefinitionsState.class, tokenDefinition.getAddress());
-		TokenDefinitionsState tokenDefinitionsState = (TokenDefinitionsState) store.get(shardedAppStateId);
-		TokenState tokenState = getTokenStateOrError(tokenDefinitionsState.getState(), tokenDefinition);
-
 		final FungibleParticleTransition<UnallocatedTokensParticle, TransferrableTokensParticle> transition;
 		try {
 			transition = transitioner.createTransition(
-				tokenState.getUnallocatedTokens().entrySet().stream()
-					.map(Entry::getValue)
+				store.map(UnallocatedTokensParticle.class::cast)
+					.filter(p -> p.getTokDefRef().equals(tokenDefinition))
 					.collect(Collectors.toList()),
 				TokenUnitConversions.unitsToSubunits(mintTokensAction.getAmount())
 			);
 		} catch (NotEnoughFungibleException e) {
-			throw new TokenOverMintException(
-				mintTokensAction.getTokenDefinitionReference(),
-				TokenUnitConversions.subunitsToUnits(UInt256.MAX_VALUE),
-				TokenUnitConversions.subunitsToUnits(UInt256.MAX_VALUE.subtract(e.getCurrent())),
-				mintTokensAction.getAmount()
-			);
+			if (e.getCurrent().equals(UInt256.ZERO)) {
+				throw new UnknownTokenException(mintTokensAction.getTokenDefinitionReference());
+			} else {
+				throw new TokenOverMintException(
+					mintTokensAction.getTokenDefinitionReference(),
+					TokenUnitConversions.subunitsToUnits(UInt256.MAX_VALUE),
+					TokenUnitConversions.subunitsToUnits(UInt256.MAX_VALUE.subtract(e.getCurrent())),
+					mintTokensAction.getAmount()
+				);
+			}
 		}
 
 

@@ -1,6 +1,6 @@
 package com.radixdlt.client.application.translate.tokens;
 
-import com.radixdlt.client.application.translate.ShardedAppStateId;
+import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.core.atoms.ParticleGroup.ParticleGroupBuilder;
 import com.radixdlt.client.core.atoms.particles.RRI;
@@ -11,7 +11,6 @@ import com.radixdlt.client.core.fungible.NotEnoughFungibleException;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -20,11 +19,10 @@ import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.particles.Particle;
 
 import com.radixdlt.client.application.translate.Action;
-import com.radixdlt.client.application.translate.ApplicationState;
 import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
-import com.radixdlt.client.application.translate.tokens.TokenBalanceState.Balance;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 
+import java.util.stream.Stream;
 import org.radix.utils.UInt256;
 
 public class BurnTokensActionMapper implements StatefulActionToParticleGroupsMapper {
@@ -68,7 +66,7 @@ public class BurnTokensActionMapper implements StatefulActionToParticleGroupsMap
 	}
 
 	@Override
-	public Set<ShardedAppStateId> requiredState(Action action) {
+	public Set<ShardedParticleStateId> requiredState(Action action) {
 		if (!(action instanceof BurnTokensAction)) {
 			return Collections.emptySet();
 		}
@@ -77,34 +75,26 @@ public class BurnTokensActionMapper implements StatefulActionToParticleGroupsMap
 
 		RadixAddress address = burnTokensAction.getAddress();
 
-		return Collections.singleton(ShardedAppStateId.of(TokenBalanceState.class, address));
+		return Collections.singleton(ShardedParticleStateId.of(TransferrableTokensParticle.class, address));
 	}
 
 	@Override
-	public List<ParticleGroup> mapToParticleGroups(Action action, Map<ShardedAppStateId, ? extends ApplicationState> store) {
+	public List<ParticleGroup> mapToParticleGroups(Action action, Stream<Particle> store) {
 		if (!(action instanceof BurnTokensAction)) {
 			return Collections.emptyList();
 		}
 
 		BurnTokensAction burnTokensAction = (BurnTokensAction) action;
-		TokenBalanceState state = (TokenBalanceState) store.get(ShardedAppStateId.of(TokenBalanceState.class, burnTokensAction.getAddress()));
-		return Collections.singletonList(this.map(burnTokensAction, state));
-	}
 
-	private ParticleGroup map(BurnTokensAction burnTokensAction, TokenBalanceState curState) {
-		final Map<RRI, Balance> allConsumables = curState.getBalance();
 		final RRI tokenRef = burnTokensAction.getTokenDefinitionReference();
 		final BigDecimal burnAmount = burnTokensAction.getAmount();
-
-		final Balance bal = allConsumables.get(tokenRef);
-		if (bal == null) {
-			throw new InsufficientFundsException(tokenRef, BigDecimal.ZERO, burnAmount);
-		}
 
 		final FungibleParticleTransition<TransferrableTokensParticle, UnallocatedTokensParticle> transition;
 		try {
 			transition = transitioner.createTransition(
-				bal.unconsumedTransferrable().collect(Collectors.toList()),
+				store.map(TransferrableTokensParticle.class::cast)
+					.filter(p -> p.getTokenDefinitionReference().equals(tokenRef))
+					.collect(Collectors.toList()),
 				TokenUnitConversions.unitsToSubunits(burnAmount)
 			);
 		} catch (NotEnoughFungibleException e) {
@@ -116,6 +106,6 @@ public class BurnTokensActionMapper implements StatefulActionToParticleGroupsMap
 		transition.getMigrated().stream().map(t -> (Particle) t).forEach(p -> particleGroupBuilder.addParticle(p, Spin.UP));
 		transition.getTransitioned().stream().map(t -> (Particle) t).forEach(p -> particleGroupBuilder.addParticle(p, Spin.UP));
 
-		return particleGroupBuilder.build();
+		return Collections.singletonList(particleGroupBuilder.build());
 	}
 }

@@ -60,3 +60,4 @@ public final class ShardedAppStateId {
 		return address + "/" + stateClass.getSimpleName();
 	}
 }
+

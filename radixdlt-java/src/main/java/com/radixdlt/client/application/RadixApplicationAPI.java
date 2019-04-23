@@ -1,14 +1,12 @@
 package com.radixdlt.client.application;
 
-import com.google.common.collect.ImmutableMap;
-import com.radixdlt.client.application.translate.ShardedAppStateId;
+import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
 import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.network.RadixNetworkController;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
 import java.math.BigDecimal;
-import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -758,13 +756,19 @@ public class RadixApplicationAPI {
 		return actions.flatMap(action ->
 			Observable
 				.fromIterable(this.statefulActionToParticleGroupsMappers)
-				.flatMapSingle(mapper -> {
-					final Set<ShardedAppStateId> requiredState = mapper.requiredState(action);
+				.flatMapMaybe(mapper -> {
+					final Set<ShardedParticleStateId> requiredState = mapper.requiredState(action);
+
 					return Observable.fromIterable(requiredState)
-						.flatMapSingle(ctx -> this.getState(ctx.stateClass(), ctx.address()).firstOrError().map(s -> new SimpleEntry<>(ctx, s)))
-						.reduceWith(
-							ImmutableMap::<ShardedAppStateId, ApplicationState>of,
-							(a, b) -> new ImmutableMap.Builder<ShardedAppStateId, ApplicationState>().putAll(a).put(b).build())
+						.flatMapSingle(ctx -> {
+							Disposable d = ledger.getAtomPuller().pull(ctx.address()).subscribe();
+							return ledger.getAtomStore().onSync(ctx.address())
+								.firstOrError()
+								.doOnSuccess(i -> d.dispose())
+								.map(a -> ledger.getAtomStore().getUpParticles(ctx.address())
+								.filter(ctx.particleClass()::isInstance));
+						})
+						.reduce(Stream::concat)
 						.map(ctxState -> mapper.mapToParticleGroups(action, ctxState));
 				})
 		);
@@ -773,13 +777,18 @@ public class RadixApplicationAPI {
 	private Observable<List<Action>> statefulMappersToSideEffects(Action action) {
 		return Observable
 				.fromIterable(this.statefulActionToParticleGroupsMappers)
-				.flatMapSingle(mapper -> {
-					final Set<ShardedAppStateId> requiredState = mapper.requiredState(action);
+				.flatMapMaybe(mapper -> {
+					final Set<ShardedParticleStateId> requiredState = mapper.requiredState(action);
 					return Observable.fromIterable(requiredState)
-						.flatMapSingle(ctx -> this.getState(ctx.stateClass(), ctx.address()).firstOrError().map(s -> new SimpleEntry<>(ctx, s)))
-						.reduceWith(
-							ImmutableMap::<ShardedAppStateId, ApplicationState>of,
-							(a, b) -> new ImmutableMap.Builder<ShardedAppStateId, ApplicationState>().putAll(a).put(b).build())
+						.flatMapSingle(ctx -> {
+							Disposable d = ledger.getAtomPuller().pull(ctx.address()).subscribe();
+							return ledger.getAtomStore().onSync(ctx.address())
+								.firstOrError()
+								.doOnSuccess(i -> d.dispose())
+								.map(a -> ledger.getAtomStore().getUpParticles(ctx.address())
+								.filter(ctx.particleClass()::isInstance));
+						})
+						.reduce(Stream::concat)
 						.map(ctxState -> mapper.sideEffects(action, ctxState));
 				});
 	}
