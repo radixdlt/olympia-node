@@ -16,6 +16,7 @@ import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.client.core.address.RadixUniverseConfigs;
+import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.ledger.AtomObservation.Type;
 import com.radixdlt.client.core.network.RadixNetworkEpic;
 import com.radixdlt.client.core.network.RadixNode;
@@ -220,6 +221,12 @@ public final class DoubleSpendTestRunner {
 		lastUpdateObserver.awaitTerminalEvent();
 		submissionObserver.awaitTerminalEvent();
 
+		List<Set<Particle>> lastParticleState = singleNodeApis.map(singleNodeAPI ->
+			doubleSpendTestConditions.postConsensusCondition().getStateRequired().stream()
+				.flatMap(p -> singleNodeAPI.api.getLedger().getAtomStore().getUpParticles(p.getSecond().address()))
+				.collect(Collectors.toSet())
+		).toList().blockingGet();
+
 		List<ImmutableMap<ShardedAppStateId, ApplicationState>> states = testObserversPerApi.stream().map(testObservers -> {
 			ImmutableMap<ShardedAppStateId, ApplicationState> state = testObservers.entrySet().stream()
 				.collect(ImmutableMap.toImmutableMap(
@@ -235,12 +242,18 @@ public final class DoubleSpendTestRunner {
 
 		states.forEach(s -> assertThat(s).is(doubleSpendTestConditions.postConsensusCondition().getCondition()));
 
-		// All clients should see the same state
+		// All clients should see the same app state
 		for (ImmutableMap<ShardedAppStateId, ApplicationState> state0 : states) {
 			for (ImmutableMap<ShardedAppStateId, ApplicationState> state1 : states) {
 				assertThat(state0).isEqualTo(state1);
 			}
 		}
 
+		// All clients should see the same particle state
+		for (Set<Particle> state0 : lastParticleState) {
+			for (Set<Particle> state1 : lastParticleState) {
+				assertThat(state0).isEqualTo(state1);
+			}
+		}
 	}
 }
