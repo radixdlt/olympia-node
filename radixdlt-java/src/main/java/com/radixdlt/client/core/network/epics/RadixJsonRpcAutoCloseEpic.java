@@ -27,7 +27,7 @@ public final class RadixJsonRpcAutoCloseEpic implements RadixNetworkEpic {
 			actions
 				.filter(a -> a instanceof JsonRpcResultAction)
 				.delay(DELAY_CLOSE_SECS, TimeUnit.SECONDS)
-				.doOnNext(a -> webSockets.get(a.getNode()).close())
+				.doOnNext(a -> webSockets.getOrCreate(a.getNode()).close())
 				.ignoreElements()
 				.toObservable();
 	}

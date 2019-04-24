@@ -1,16 +1,14 @@
 package com.radixdlt.client.application.translate.tokens;
 
-import com.radixdlt.client.application.translate.ShardedAppStateId;
+import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.fungible.FungibleParticleTransitioner;
 import com.radixdlt.client.core.fungible.FungibleParticleTransitioner.FungibleParticleTransition;
-import java.math.BigInteger;
+import com.radixdlt.client.core.fungible.NotEnoughFungiblesException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.function.UnaryOperator;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -23,9 +21,7 @@ import org.radix.utils.UInt256;
 import com.google.gson.JsonArray;
 import com.radixdlt.client.application.identity.Data;
 import com.radixdlt.client.application.translate.Action;
-import com.radixdlt.client.application.translate.ApplicationState;
 import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
-import com.radixdlt.client.application.translate.tokens.TokenBalanceState.Balance;
 import com.radixdlt.client.atommodel.message.MessageParticle;
 import com.radixdlt.client.atommodel.message.MessageParticle.MessageParticleBuilder;
 import com.radixdlt.client.core.atoms.ParticleGroup;
@@ -40,9 +36,9 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 	public TransferTokensToParticleGroupsMapper() {
 	}
 
-	private List<SpunParticle> mapToParticles(TransferTokensAction transfer, List<TransferrableTokensParticle> currentParticles) {
-		// FIXME: figure out way to combine the following two similar combiners
-		UnaryOperator<List<TransferrableTokensParticle>> combiner =
+	private List<SpunParticle> mapToParticles(TransferTokensAction transfer, List<TransferrableTokensParticle> currentParticles)
+		throws NotEnoughFungiblesException {
+		final UnaryOperator<List<TransferrableTokensParticle>> combiner =
 			transferredList -> transferredList.stream()
 				.map(TransferrableTokensParticle::getAmount)
 				.reduce(UInt256::add)
@@ -133,43 +129,42 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 	}
 
 	@Override
-	public Set<ShardedAppStateId> requiredState(Action action) {
+	public Set<ShardedParticleStateId> requiredState(Action action) {
 		if (!(action instanceof TransferTokensAction)) {
 			return Collections.emptySet();
 		}
 
 		TransferTokensAction transfer = (TransferTokensAction) action;
 
-		return Collections.singleton(ShardedAppStateId.of(TokenBalanceState.class, transfer.getFrom()));
+		return Collections.singleton(ShardedParticleStateId.of(TransferrableTokensParticle.class, transfer.getFrom()));
 	}
 
 	@Override
-	public List<ParticleGroup> mapToParticleGroups(Action action, Map<ShardedAppStateId, ? extends ApplicationState> store)
+	public List<ParticleGroup> mapToParticleGroups(Action action, Stream<Particle> store)
 		throws InsufficientFundsException {
 		if (!(action instanceof TransferTokensAction)) {
 			return Collections.emptyList();
 		}
 
 		TransferTokensAction transfer = (TransferTokensAction) action;
-		TokenBalanceState tokenBalanceState = (TokenBalanceState) store.get(ShardedAppStateId.of(TokenBalanceState.class, transfer.getFrom()));
 		final RRI tokenRef = transfer.getTokenDefRef();
-		final Map<RRI, Balance> allConsumables = tokenBalanceState.getBalance();
-		final Balance balance = Optional.ofNullable(
-			allConsumables.get(transfer.getTokenDefRef())).orElse(Balance.empty(BigInteger.ONE));
 
-		if (balance.getAmount().compareTo(transfer.getAmount()) < 0) {
+		List<TransferrableTokensParticle> tokenConsumables = store
+			.map(TransferrableTokensParticle.class::cast)
+			.filter(p -> p.getTokenDefinitionReference().equals(tokenRef))
+			.collect(Collectors.toList());
+
+
+		final List<SpunParticle> transferParticles;
+		try {
+			transferParticles = this.mapToParticles(transfer, tokenConsumables);
+		} catch (NotEnoughFungiblesException e) {
 			throw new InsufficientFundsException(
-				tokenRef, balance.getAmount(), transfer.getAmount()
+				tokenRef, TokenUnitConversions.subunitsToUnits(e.getCurrent()), transfer.getAmount()
 			);
 		}
-
-		List<TransferrableTokensParticle> tokenConsumables = Optional.ofNullable(allConsumables.get(transfer.getTokenDefRef()))
-			.map(bal -> bal.unconsumedTransferrable().collect(Collectors.toList()))
-			.orElse(Collections.emptyList());
-
-		List<SpunParticle> transferParticles = this.mapToParticles(transfer, tokenConsumables);
-		List<SpunParticle> attachmentParticles = this.mapToAttachmentParticles(transfer);
-		List<SpunParticle> sparticles = Stream.concat(transferParticles.stream(), attachmentParticles.stream()).collect(Collectors.toList());
+		final List<SpunParticle> attachmentParticles = this.mapToAttachmentParticles(transfer);
+		final List<SpunParticle> sparticles = Stream.concat(transferParticles.stream(), attachmentParticles.stream()).collect(Collectors.toList());
 
 		return Collections.singletonList(
 			ParticleGroup.of(sparticles)

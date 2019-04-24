@@ -1,12 +1,9 @@
 package com.radixdlt.client.application.translate.tokens;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.application.translate.Action;
-import com.radixdlt.client.application.translate.ApplicationState;
-import com.radixdlt.client.application.translate.ShardedAppStateId;
+import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
-import com.radixdlt.client.application.translate.tokens.TokenState.TokenSupplyType;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle.TokenTransition;
 import com.radixdlt.client.atommodel.tokens.TokenPermission;
@@ -19,10 +16,11 @@ import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.fungible.FungibleParticleTransitioner;
 import com.radixdlt.client.core.fungible.FungibleParticleTransitioner.FungibleParticleTransition;
+import com.radixdlt.client.core.fungible.NotEnoughFungiblesException;
 import java.util.Collections;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.radix.utils.UInt256;
 
 import java.math.BigDecimal;
@@ -66,7 +64,7 @@ public class MintAndTransferTokensActionMapper implements StatefulActionToPartic
 	}
 
 	@Override
-	public Set<ShardedAppStateId> requiredState(Action action) {
+	public Set<ShardedParticleStateId> requiredState(Action action) {
 		if (!(action instanceof MintAndTransferTokensAction)) {
 			return Collections.emptySet();
 		}
@@ -74,34 +72,29 @@ public class MintAndTransferTokensActionMapper implements StatefulActionToPartic
 		MintAndTransferTokensAction mintAndTransferTokensAction = (MintAndTransferTokensAction) action;
 		RadixAddress tokenDefinitionAddress = mintAndTransferTokensAction.getTokenDefinitionReference().getAddress();
 
-		return Collections.singleton(ShardedAppStateId.of(TokenDefinitionsState.class, tokenDefinitionAddress));
+		return Collections.singleton(ShardedParticleStateId.of(UnallocatedTokensParticle.class, tokenDefinitionAddress));
 	}
 
 	@Override
-	public List<ParticleGroup> mapToParticleGroups(Action action, Map<ShardedAppStateId, ? extends ApplicationState> store) {
+	public List<ParticleGroup> mapToParticleGroups(Action action, Stream<Particle> store) {
 		if (!(action instanceof MintAndTransferTokensAction)) {
 			return Collections.emptyList();
 		}
 
 		MintAndTransferTokensAction mintTransferAction = (MintAndTransferTokensAction) action;
 		RRI tokenDefinition = mintTransferAction.getTokenDefinitionReference();
-		ShardedAppStateId shardedAppStateId = ShardedAppStateId.of(TokenDefinitionsState.class, tokenDefinition.getAddress());
 
-		TokenDefinitionsState state = (TokenDefinitionsState) store.get(shardedAppStateId);
-		TokenState tokenState = getTokenStateOrError(state.getState(), tokenDefinition);
+		List<UnallocatedTokensParticle> unallocatedTokensParticles = store
+			.map(UnallocatedTokensParticle.class::cast)
+			.filter(p -> p.getTokDefRef().equals(tokenDefinition))
+			.collect(Collectors.toList());
 
 		final FungibleParticleTransition<UnallocatedTokensParticle, TransferrableTokensParticle> mintTransition =
-					createMint(mintTransferAction.getAmount(), tokenDefinition, tokenState);
+					createMint(mintTransferAction.getAmount(), tokenDefinition, unallocatedTokensParticles);
 
 		final TransferrableTokensParticle transferredTokensParticle = createTransfer(
-			tokenState.getTokenSupplyType() == TokenSupplyType.FIXED
-				? ImmutableMap.of(
-					TokenTransition.MINT, TokenPermission.TOKEN_CREATION_ONLY,
-					TokenTransition.BURN, TokenPermission.TOKEN_CREATION_ONLY)
-				: ImmutableMap.of(
-					TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY,
-					TokenTransition.BURN, TokenPermission.TOKEN_OWNER_ONLY),
-			TokenUnitConversions.unitsToSubunits(tokenState.getGranularity()),
+			mintTransition.getTransitioned().get(0).getTokenPermissions(),
+			mintTransition.getTransitioned().get(0).getGranularity(),
 			mintTransferAction
 		);
 
@@ -113,14 +106,6 @@ public class MintAndTransferTokensActionMapper implements StatefulActionToPartic
 			);
 
 		return mintAndTransferToGroupMapper.apply(mintTransition, transferTransition);
-	}
-
-	private TokenState getTokenStateOrError(Map<RRI, TokenState> m, RRI tokenDefinition) {
-		TokenState ts = m.get(tokenDefinition);
-		if (ts == null) {
-			throw new UnknownTokenException(tokenDefinition);
-		}
-		return ts;
 	}
 
 	private TransferrableTokensParticle createTransfer(
@@ -142,14 +127,8 @@ public class MintAndTransferTokensActionMapper implements StatefulActionToPartic
 	private FungibleParticleTransition<UnallocatedTokensParticle, TransferrableTokensParticle> createMint(
 		BigDecimal amount,
 		RRI tokenDefRef,
-		TokenState tokenState
+		List<UnallocatedTokensParticle> unallocatedTokensParticles
 	) {
-		final BigDecimal unallocatedSupply = tokenState.getUnallocatedSupply();
-
-		if (unallocatedSupply.compareTo(amount) < 0) {
-			throw new InsufficientFundsException(tokenDefRef, unallocatedSupply, amount);
-		}
-
 		final FungibleParticleTransitioner<UnallocatedTokensParticle, TransferrableTokensParticle> transitioner =
 			new FungibleParticleTransitioner<>(
 				(amt, consumable) -> new TransferrableTokensParticle(
@@ -173,12 +152,15 @@ public class MintAndTransferTokensActionMapper implements StatefulActionToPartic
 				UnallocatedTokensParticle::getAmount
 			);
 
-		FungibleParticleTransition<UnallocatedTokensParticle, TransferrableTokensParticle> transition = transitioner.createTransition(
-			tokenState.getUnallocatedTokens().entrySet().stream()
-				.map(Entry::getValue)
-				.collect(Collectors.toList()),
-			TokenUnitConversions.unitsToSubunits(amount)
-		);
+		final FungibleParticleTransition<UnallocatedTokensParticle, TransferrableTokensParticle> transition;
+		try {
+			transition = transitioner.createTransition(
+				unallocatedTokensParticles,
+				TokenUnitConversions.unitsToSubunits(amount)
+			);
+		} catch (NotEnoughFungiblesException e) {
+			throw new InsufficientFundsException(tokenDefRef, TokenUnitConversions.subunitsToUnits(e.getCurrent()), amount);
+		}
 
 		return transition;
 	}

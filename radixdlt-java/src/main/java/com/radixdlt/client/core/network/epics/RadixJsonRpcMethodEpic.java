@@ -39,7 +39,7 @@ public final class RadixJsonRpcMethodEpic<T extends JsonRpcMethodAction> impleme
 	}
 
 	private Single<WebSocketClient> waitForConnection(RadixNode node) {
-		final WebSocketClient ws = webSockets.get(node);
+		final WebSocketClient ws = webSockets.getOrCreate(node);
 		return ws.getState()
 			.doOnNext(s -> {
 				if (s.equals(WebSocketStatus.DISCONNECTED)) {

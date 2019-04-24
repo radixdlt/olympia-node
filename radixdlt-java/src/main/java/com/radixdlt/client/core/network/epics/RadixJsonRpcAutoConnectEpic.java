@@ -25,7 +25,7 @@ public final class RadixJsonRpcAutoConnectEpic implements RadixNetworkEpic {
 			actions
 				.filter(a -> a instanceof JsonRpcMethodAction)
 				.flatMap(a -> {
-					final WebSocketClient ws = webSockets.get(a.getNode());
+					final WebSocketClient ws = webSockets.getOrCreate(a.getNode());
 					return ws.getState()
 						.doOnNext(s -> {
 							if (s.equals(WebSocketStatus.DISCONNECTED)) {

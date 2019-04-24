@@ -34,7 +34,7 @@ public final class SubmitAtomEpic implements RadixNetworkEpic {
 	}
 
 	private Completable waitForConnection(RadixNode node) {
-		final WebSocketClient ws = webSockets.get(node);
+		final WebSocketClient ws = webSockets.getOrCreate(node);
 		return ws.getState()
 			.doOnNext(s -> {
 				if (s.equals(WebSocketStatus.DISCONNECTED)) {
@@ -47,7 +47,7 @@ public final class SubmitAtomEpic implements RadixNetworkEpic {
 	}
 
 	private Observable<RadixNodeAction> submitAtom(SubmitAtomSendAction request, RadixNode node) {
-		final WebSocketClient ws = webSockets.get(node);
+		final WebSocketClient ws = webSockets.getOrCreate(node);
 		final RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(ws);
 		return jsonRpcClient.submitAtom(request.getAtom())
 			.doOnError(Throwable::printStackTrace)

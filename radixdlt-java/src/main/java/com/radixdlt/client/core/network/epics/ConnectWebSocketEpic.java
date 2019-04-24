@@ -23,14 +23,14 @@ public final class ConnectWebSocketEpic implements RadixNetworkEpic {
 		final Observable<RadixNodeAction> onConnect =
 			actions
 				.filter(a -> a instanceof ConnectWebSocketAction)
-				.doOnNext(u -> webSockets.get(u.getNode()).connect())
+				.doOnNext(u -> webSockets.getOrCreate(u.getNode()).connect())
 				.ignoreElements()
 				.toObservable();
 
 		final Observable<RadixNodeAction> onClose =
 			actions
 				.filter(a -> a instanceof CloseWebSocketAction)
-				.doOnNext(u -> webSockets.get(u.getNode()).close())
+				.doOnNext(u -> webSockets.getOrCreate(u.getNode()).close())
 				.ignoreElements()
 				.toObservable();
 

@@ -3,7 +3,6 @@ package com.radixdlt.client.application.translate.tokens;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.application.translate.ApplicationState;
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
-import com.radixdlt.client.core.atoms.RadixHash;
 import com.radixdlt.client.core.atoms.particles.RRI;
 
 import java.math.BigDecimal;
@@ -11,8 +10,7 @@ import java.math.BigInteger;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.stream.Stream;
+import java.util.Objects;
 
 import org.radix.utils.UInt256s;
 
@@ -23,20 +21,14 @@ public class TokenBalanceState implements ApplicationState {
 	public static class Balance {
 		private final BigInteger balance;
 		private final BigInteger granularity;
-		private final ImmutableMap<RadixHash, TransferrableTokensParticle> consumables;
 
-		private Balance(BigInteger balance, BigInteger granularity, Map<RadixHash, TransferrableTokensParticle> consumables) {
+		private Balance(BigInteger balance, BigInteger granularity) {
 			this.balance = balance;
 			this.granularity = granularity;
-			this.consumables = ImmutableMap.copyOf(consumables);
-		}
-
-		private Balance(BigInteger balance, BigInteger granularity, TransferrableTokensParticle s) {
-			this(balance, granularity, Collections.singletonMap(s.getHash(), s));
 		}
 
 		public static Balance empty(BigInteger granularity) {
-			return new Balance(BigInteger.ZERO, granularity, Collections.emptyMap());
+			return new Balance(BigInteger.ZERO, granularity);
 		}
 
 		public BigDecimal getAmount() {
@@ -47,36 +39,22 @@ public class TokenBalanceState implements ApplicationState {
 			return TokenUnitConversions.subunitsToUnits(granularity);
 		}
 
-		public Stream<TransferrableTokensParticle> unconsumedTransferrable() {
-			return consumables.entrySet().stream()
-				.map(Entry::getValue);
-		}
-
 		public static Balance combine(Balance balance0, Balance balance1) {
 			return new Balance(
 				balance0.balance.add(balance1.balance),
-				balance0.granularity,
-				new ImmutableMap.Builder<RadixHash, TransferrableTokensParticle>()
-					.putAll(balance0.consumables)
-					.putAll(balance1.consumables)
-					.build()
+				balance0.granularity
 			);
 		}
 
 		public static Balance merge(Balance balance, TransferrableTokensParticle tokens) {
-			Map<RadixHash, TransferrableTokensParticle> newMap = new HashMap<>(balance.consumables);
-
 			final BigInteger amount = UInt256s.toBigInteger(tokens.getAmount());
-			newMap.put(tokens.getHash(), tokens);
-
-			BigInteger newBalance = balance.balance.add(amount);
-
-			return new Balance(newBalance, balance.granularity, newMap);
+			final BigInteger newBalance = balance.balance.add(amount);
+			return new Balance(newBalance, balance.granularity);
 		}
 
 		@Override
 		public int hashCode() {
-			return consumables.hashCode();
+			return Objects.hash(balance, granularity);
 		}
 
 		@Override
@@ -86,17 +64,13 @@ public class TokenBalanceState implements ApplicationState {
 			}
 
 			Balance b = (Balance) o;
-			return b.consumables.keySet().equals(consumables.keySet());
+			return Objects.equals(b.balance, balance)
+				&& Objects.equals(b.granularity, granularity);
 		}
 
 		@Override
 		public String toString() {
-			return "{BAL:" + getAmount().toString() + " CONSUMABLES:" + consumables.size()
-				+ "("
-				+ (consumables.size() == 1
-					? consumables.keySet().asList().get(0) + " " + consumables.entrySet().asList().get(0).getValue().getAmount()
-					: consumables.hashCode())
-				+ ")}";
+			return "{BAL:" + getAmount().toString() + "}";
 		}
 	}
 
@@ -130,7 +104,7 @@ public class TokenBalanceState implements ApplicationState {
 		BigInteger granularity = UInt256s.toBigInteger(tokens.getGranularity());
 		balance.merge(
 			tokens.getTokenDefinitionReference(),
-			new Balance(amount, granularity, tokens),
+			new Balance(amount, granularity),
 			Balance::combine
 		);
 

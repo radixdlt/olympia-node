@@ -1,24 +1,23 @@
 package com.radixdlt.client.core;
 
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.client.core.address.RadixUniverseConfigs;
 import com.radixdlt.client.core.network.RadixNetworkEpic;
 import com.radixdlt.client.core.network.bootstrap.NodeFinder;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.epics.DiscoverNodesEpic;
-import com.radixdlt.client.core.network.epics.DiscoverSingleNodeEpic;
 import io.reactivex.Observable;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Supplier;
 
 public enum Bootstrap implements BootstrapConfig {
 	LOCALHOST(
 		RadixUniverseConfigs::getBetanet,
-		Observable.just(
-			new RadixNode("localhost", false, 8080),
-			new RadixNode("localhost", false, 8081)
-		)
+		new RadixNode("localhost", false, 8080),
+		new RadixNode("localhost", false, 8081)
 	),
 	LOCALHOST_SINGLENODE(
 		RadixUniverseConfigs::getBetanet,
@@ -47,18 +46,20 @@ public enum Bootstrap implements BootstrapConfig {
 
 	private final Supplier<RadixUniverseConfig> config;
 	private final Supplier<List<RadixNetworkEpic>> discoveryEpics;
+	private final ImmutableSet<RadixNode> initialNetwork;
 
 	Bootstrap(Supplier<RadixUniverseConfig> config, Observable<RadixNode> seeds) {
 		this.config = config;
 		this.discoveryEpics = () -> Collections.singletonList(new DiscoverNodesEpic(seeds, config.get()));
+		this.initialNetwork = ImmutableSet.of();
 	}
 
-	Bootstrap(Supplier<RadixUniverseConfig> config, RadixNode singleNode) {
+	Bootstrap(Supplier<RadixUniverseConfig> config, RadixNode node, RadixNode... nodes) {
 		this.config = config;
-		this.discoveryEpics = () -> Collections.singletonList(
-			new DiscoverSingleNodeEpic(singleNode, config.get())
-		);
+		this.discoveryEpics = Collections::emptyList;
+		this.initialNetwork = new ImmutableSet.Builder<RadixNode>().add(node).add(nodes).build();
 	}
+
 
 	@Override
 	public RadixUniverseConfig getConfig() {
@@ -68,5 +69,10 @@ public enum Bootstrap implements BootstrapConfig {
 	@Override
 	public List<RadixNetworkEpic> getDiscoveryEpics() {
 		return discoveryEpics.get();
+	}
+
+	@Override
+	public Set<RadixNode> getInitialNetwork() {
+		return initialNetwork;
 	}
 }

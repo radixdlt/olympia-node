@@ -5,10 +5,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.google.common.collect.ImmutableMap;
-import com.radixdlt.client.application.translate.ShardedAppStateId;
+import com.radixdlt.client.application.translate.ShardedParticleStateId;
+import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import java.math.BigDecimal;
+import java.util.stream.Stream;
 import org.junit.Test;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import java.util.Collections;
@@ -33,11 +34,9 @@ public class TransferTokensToParticleGroupsMapperTest {
 		TransferTokensToParticleGroupsMapper transferTranslator = new TransferTokensToParticleGroupsMapper();
 
 		assertThat(transferTranslator.requiredState(transferTokensAction))
-			.containsExactly(ShardedAppStateId.of(TokenBalanceState.class, address));
+			.containsExactly(ShardedParticleStateId.of(TransferrableTokensParticle.class, address));
 
-		ShardedAppStateId shardedAppStateId = ShardedAppStateId.of(TokenBalanceState.class, address);
-
-		assertThatThrownBy(() -> transferTranslator.mapToParticleGroups(transferTokensAction, ImmutableMap.of(shardedAppStateId, state)))
+		assertThatThrownBy(() -> transferTranslator.mapToParticleGroups(transferTokensAction, Stream.empty()))
 			.isEqualTo(new InsufficientFundsException(token, BigDecimal.ZERO, new BigDecimal("1.0")));
 	}
 
