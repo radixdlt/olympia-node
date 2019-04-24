@@ -20,7 +20,6 @@ import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.ParticleGroup.ParticleGroupBuilder;
 import com.radixdlt.client.core.atoms.particles.Particle;
-import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.network.actions.SubmitAtomReceivedAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
@@ -31,7 +30,6 @@ import cucumber.api.java.After;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
-import io.reactivex.disposables.Disposable;
 import io.reactivex.observers.BaseTestConsumer.TestWaitStrategy;
 import io.reactivex.observers.TestObserver;
 
@@ -67,13 +65,11 @@ public class AtomicTransactionsWithDependence {
 		GRANULARITY,	"1"
 	);
 	private final List<TestObserver<Object>> observers = Lists.newArrayList();
-	private final List<Disposable> disposables = Lists.newArrayList();
 
 	@Given("^I have access to a suitable Radix network$")
 	public void i_have_access_to_a_suitable_Radix_network() {
 		this.identity = RadixIdentities.createNew();
 		this.api = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, this.identity);
-		this.disposables.add(this.api.pull());
 
 		// Reset data
 		this.properties.clear();
@@ -94,10 +90,8 @@ public class AtomicTransactionsWithDependence {
 			.build();
 
 		this.properties.put(SYMBOL, "TEST0");
-		Disposable d = api.pull();
 		createToken(CreateTokenAction.TokenSupplyType.MUTABLE, api);
 		i_can_observe_atom_being_accepted(1);
-		d.dispose();
 		this.observers.clear();
 
 		RadixIdentity toIdentity = RadixIdentities.createNew();
@@ -165,12 +159,6 @@ public class AtomicTransactionsWithDependence {
 	@Then("^I can observe atom (\\d+) being rejected with a validation error$")
 	public void i_can_observe_atom_being_rejected_as_a_validation_error(int atomNumber) {
 		awaitAtomStatus(atomNumber, VALIDATION_ERROR);
-	}
-
-	@After
-	public void after() {
-		this.disposables.forEach(Disposable::dispose);
-		this.disposables.clear();
 	}
 
 	private void createToken(CreateTokenAction.TokenSupplyType tokenCreateSupplyType, RadixApplicationAPI api) {

@@ -5,6 +5,7 @@ import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.ApplicationState;
 import com.radixdlt.client.application.translate.ShardedAppStateId;
+import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
@@ -26,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 import org.assertj.core.api.Condition;
 import org.junit.Test;
 import org.radix.common.tuples.Pair;
@@ -44,30 +46,29 @@ public class DoubleSpendWithInterDependencyTest {
 
 	private static class SendToSelfTwiceActionMapper implements StatefulActionToParticleGroupsMapper {
 		@Override
-		public Set<ShardedAppStateId> requiredState(Action action) {
+		public Set<ShardedParticleStateId> requiredState(Action action) {
 			if (!(action instanceof SendToSelfTwiceAction)) {
 				return Collections.emptySet();
 			}
 
 			SendToSelfTwiceAction s = (SendToSelfTwiceAction) action;
 
-			return Collections.singleton(ShardedAppStateId.of(TokenBalanceState.class, s.self));
+			return Collections.singleton(ShardedParticleStateId.of(TransferrableTokensParticle.class, s.self));
 		}
 
 		@Override
-		public List<ParticleGroup> mapToParticleGroups(Action action, Map<ShardedAppStateId, ? extends ApplicationState> store) {
+		public List<ParticleGroup> mapToParticleGroups(Action action, Stream<Particle> store) {
 			if (!(action instanceof SendToSelfTwiceAction)) {
 				return Collections.emptyList();
 			}
 
 			SendToSelfTwiceAction s = (SendToSelfTwiceAction) action;
-			TokenBalanceState tokenBalanceState = (TokenBalanceState) store.get(ShardedAppStateId.of(TokenBalanceState.class, s.self));
 
-			TransferrableTokensParticle consumable = tokenBalanceState.getBalance().get(s.tokDefRef).unconsumedTransferrable()
-				.findFirst()
-				.orElseThrow(IllegalStateException::new);
+			TransferrableTokensParticle consumable = store.map(TransferrableTokensParticle.class::cast)
+				.findFirst().orElseThrow(IllegalStateException::new);
 
 			final UInt256 amount = consumable.getAmount();
+
 			final Supplier<TransferrableTokensParticle> particleSupplier = () -> new TransferrableTokensParticle(
 				amount,
 				TokenUnitConversions.unitsToSubunits(BigDecimal.ONE),

@@ -1,6 +1,5 @@
 package com.radix.acceptance.unsubscribe_account;
 
-
 import com.radixdlt.client.core.ledger.AtomObservation;
 import java.util.List;
 import java.util.UUID;
@@ -29,7 +28,6 @@ import cucumber.api.java.After;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
-import io.reactivex.disposables.Disposable;
 import io.reactivex.observers.TestObserver;
 import okhttp3.Request;
 
@@ -71,7 +69,6 @@ public class UnsubscribeAccount {
 		GRANULARITY,	"1"
 	);
 	private final List<TestObserver<SubmitAtomAction>> observers = Lists.newArrayList();
-	private final List<Disposable> disposables = Lists.newArrayList();
 
 	@After
 	public void after() {

@@ -3,6 +3,7 @@ package com.radix.regression.doublespend;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.radix.regression.Util;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
@@ -15,6 +16,7 @@ import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.client.core.address.RadixUniverseConfigs;
+import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.ledger.AtomObservation.Type;
 import com.radixdlt.client.core.network.RadixNetworkEpic;
 import com.radixdlt.client.core.network.RadixNode;
@@ -23,16 +25,15 @@ import com.radixdlt.client.core.network.actions.FetchAtomsObservationAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomResultAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType;
-import com.radixdlt.client.core.network.epics.DiscoverSingleNodeEpic;
 import io.reactivex.Completable;
 import io.reactivex.Observable;
 import io.reactivex.Single;
-import io.reactivex.disposables.Disposable;
 import io.reactivex.observers.TestObserver;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
@@ -87,8 +88,13 @@ public final class DoubleSpendTestRunner {
 
 				    @Override
 				    public List<RadixNetworkEpic> getDiscoveryEpics() {
-					    return Collections.singletonList(new DiscoverSingleNodeEpic(node, RadixUniverseConfigs.getBetanet()));
+					    return Collections.emptyList();
 				    }
+
+				    @Override
+				    public Set<RadixNode> getInitialNetwork() {
+				    	return ImmutableSet.of(node);
+					}
 			    },
 				identity);
 		}
@@ -103,12 +109,10 @@ public final class DoubleSpendTestRunner {
 		DoubleSpendTestConditions doubleSpendTestConditions = testSupplier.apply(api);
 
 		List<Action> initialActions = doubleSpendTestConditions.initialActions();
-		Disposable d = api.pull();
 		initialActions.stream()
 			.map(api::execute)
 			.map(Result::toCompletable)
 			.forEach(Completable::blockingAwait);
-		d.dispose();
 
 		// Wait for network to sync
 		// TODO: implement faster mechanism for this
@@ -133,16 +137,11 @@ public final class DoubleSpendTestRunner {
 
 		// If two nodes don't exist in the network just use one node
 		Single<List<RadixNode>> oneNode = api.getNetworkState()
-			.filter(network -> network.getNodes().entrySet().stream()
-				.filter(e -> e.getValue().getData().isPresent() && e.getValue().getUniverseConfig().isPresent())
-				.count() == 1)
 			.debounce(3, TimeUnit.SECONDS)
 			.firstOrError()
-			.map(state ->
-				state.getNodes().entrySet().stream()
-					.filter(e -> e.getValue().getUniverseConfig().isPresent())
-					.map(Entry::getKey)
-					.collect(Collectors.toList())
+			.map(state -> state.getNodes().entrySet().stream()
+				.map(Entry::getKey)
+				.collect(Collectors.toList())
 			);
 
 		AtomicInteger clientId = new AtomicInteger(1);
@@ -222,6 +221,12 @@ public final class DoubleSpendTestRunner {
 		lastUpdateObserver.awaitTerminalEvent();
 		submissionObserver.awaitTerminalEvent();
 
+		List<Set<Particle>> lastParticleState = singleNodeApis.map(singleNodeAPI ->
+			doubleSpendTestConditions.postConsensusCondition().getStateRequired().stream()
+				.flatMap(p -> singleNodeAPI.api.getLedger().getAtomStore().getUpParticles(p.getSecond().address()))
+				.collect(Collectors.toSet())
+		).toList().blockingGet();
+
 		List<ImmutableMap<ShardedAppStateId, ApplicationState>> states = testObserversPerApi.stream().map(testObservers -> {
 			ImmutableMap<ShardedAppStateId, ApplicationState> state = testObservers.entrySet().stream()
 				.collect(ImmutableMap.toImmutableMap(
@@ -237,12 +242,18 @@ public final class DoubleSpendTestRunner {
 
 		states.forEach(s -> assertThat(s).is(doubleSpendTestConditions.postConsensusCondition().getCondition()));
 
-		// All clients should see the same state
+		// All clients should see the same app state
 		for (ImmutableMap<ShardedAppStateId, ApplicationState> state0 : states) {
 			for (ImmutableMap<ShardedAppStateId, ApplicationState> state1 : states) {
 				assertThat(state0).isEqualTo(state1);
 			}
 		}
 
+		// All clients should see the same particle state
+		for (Set<Particle> state0 : lastParticleState) {
+			for (Set<Particle> state1 : lastParticleState) {
+				assertThat(state0).isEqualTo(state1);
+			}
+		}
 	}
 }

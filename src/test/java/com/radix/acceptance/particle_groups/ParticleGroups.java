@@ -7,8 +7,7 @@ import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.Action;
-import com.radixdlt.client.application.translate.ApplicationState;
-import com.radixdlt.client.application.translate.ShardedAppStateId;
+import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.StatelessActionToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.atomic.AtomicAction;
@@ -20,6 +19,7 @@ import com.radixdlt.client.application.translate.tokens.TransferTokensToParticle
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.atoms.ParticleGroup;
+import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.crypto.ECKeyPairGenerator;
 import com.radixdlt.client.core.network.actions.SubmitAtomReceivedAction;
@@ -27,19 +27,14 @@ import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomResultAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType;
 import com.radixdlt.client.core.network.actions.SubmitAtomSendAction;
-import com.radixdlt.client.core.network.epics.RadixJsonRpcMethodEpic;
-import cucumber.api.java.After;
 import cucumber.api.java.en.And;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
-import io.reactivex.Observable;
-import io.reactivex.disposables.Disposable;
 import io.reactivex.observers.BaseTestConsumer.TestWaitStrategy;
 import io.reactivex.observers.TestObserver;
-import java.util.AbstractMap;
-import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 import org.radix.utils.UInt256;
 
 import java.math.BigDecimal;
@@ -82,7 +77,6 @@ public class ParticleGroups {
 			GRANULARITY,	"1"
 	);
 	private final List<TestObserver<Object>> observers = Lists.newArrayList();
-	private final List<Disposable> disposables = Lists.newArrayList();
 	private ECKeyPairGenerator ecKeyPairGenerator = ECKeyPairGenerator.newInstance();
 
 	private class CreateEmptyGroupAction implements Action {
@@ -114,20 +108,22 @@ public class ParticleGroups {
 		}
 
 		@Override
-		public Set<ShardedAppStateId> requiredState(Action action) {
+		public Set<ShardedParticleStateId> requiredState(Action action) {
 			return Arrays.stream(mappers).flatMap(mapper -> mapper.requiredState(action).stream()).collect(Collectors.toSet());
 		}
 
 		@Override
-		public List<ParticleGroup> mapToParticleGroups(Action action, Map<ShardedAppStateId, ? extends ApplicationState> store) {
+		public List<ParticleGroup> mapToParticleGroups(Action action, Stream<Particle> store) {
 			if (!(action instanceof MergeAction)) {
 				return Collections.emptyList();
 			}
 
 			MergeAction mergeAction = (MergeAction) action;
 
+			List<Particle> particles = store.collect(Collectors.toList());
+
 			return Arrays.stream(mergeAction.actions)
-				.flatMap(a -> Arrays.stream(this.mappers).flatMap(mapper -> mapper.mapToParticleGroups(a, store).stream()))
+				.flatMap(a -> Arrays.stream(this.mappers).flatMap(mapper -> mapper.mapToParticleGroups(a, particles.stream()).stream()))
 				.collect(Collectors.toList());
 		}
 	}
@@ -141,7 +137,6 @@ public class ParticleGroups {
 			.addStatelessParticlesMapper(new CreateEmptyGroupActionToParticleGroupsMapper())
 			.addStatefulParticlesMapper(new MergeStatefulActionToParticleGroupsMapper(new TransferTokensToParticleGroupsMapper()))
 			.build();
-		this.disposables.add(this.api.pull());
 
 		// Reset data
 		this.properties1.clear();
@@ -332,12 +327,6 @@ public class ParticleGroups {
 		UInt256 tokenBalance = TokenUnitConversions.unitsToSubunits(tokenBalanceDecimal);
 		UInt256 requiredBalance = TokenUnitConversions.unitsToSubunits(balance);
 		assertEquals(requiredBalance, tokenBalance);
-	}
-
-	@After
-	public void after() {
-		this.disposables.forEach(Disposable::dispose);
-		this.disposables.clear();
 	}
 
 	private void createToken(CreateTokenAction.TokenSupplyType tokenCreateSupplyType) {
