@@ -65,7 +65,7 @@ public class ECSignature extends SerializableObject {
 		this.s = s.clone();
 	}
 
-	public static ECSignature fromASN1(byte[] bytes) {
+	public static ECSignature decodeFromDER(byte[] bytes) {
 		DLSequence seq;
 		ASN1Integer r, s;
 		try (ASN1InputStream decoder = new ASN1InputStream(bytes)) {
