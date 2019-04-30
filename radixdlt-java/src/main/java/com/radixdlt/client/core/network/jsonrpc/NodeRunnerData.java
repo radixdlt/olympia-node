@@ -9,7 +9,6 @@ import org.radix.serialization2.client.SerializableObject;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.client.core.atoms.Shards;
 
 @SerializerId2("network.peer")
 public class NodeRunnerData extends SerializableObject {
@@ -23,17 +22,12 @@ public class NodeRunnerData extends SerializableObject {
 		// No-arg constructor for serializer
 	}
 
-	protected NodeRunnerData(String ip, long lowShard, long highShard) {
-		this.ip = ip;
-		this.system = new RadixSystem(lowShard, highShard);
-	}
-
 	protected NodeRunnerData(RadixSystem system) {
 		this.ip = null;
 		this.system = system;
 	}
 
-	public Shards getShards() {
+	public ShardSpace getShards() {
 		return system.getShards();
 	}
 

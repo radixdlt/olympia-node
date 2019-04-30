@@ -7,8 +7,4 @@ public class RadixLocalSystem extends RadixSystem {
 	RadixLocalSystem() {
 		// No-arg constructor for serializer
 	}
-
-	RadixLocalSystem(long low, long high) {
-		super(low, high);
-	}
 }

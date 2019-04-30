@@ -2,8 +2,8 @@ package com.radixdlt.client.core.network;
 
 import com.radixdlt.client.core.address.RadixUniverseConfig;
 
-import com.radixdlt.client.core.atoms.Shards;
 import com.radixdlt.client.core.network.jsonrpc.NodeRunnerData;
+import com.radixdlt.client.core.network.jsonrpc.ShardSpace;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
 import java.util.Objects;
 import java.util.Optional;
@@ -63,7 +63,7 @@ public class RadixNodeState {
 		return status;
 	}
 
-	public Optional<Shards> getShards() {
+	public Optional<ShardSpace> getShards() {
 		return getData().map(NodeRunnerData::getShards);
 	}
 

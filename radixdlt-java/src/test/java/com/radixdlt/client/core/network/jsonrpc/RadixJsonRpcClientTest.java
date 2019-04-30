@@ -17,7 +17,6 @@ import com.google.gson.JsonParser;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.ledger.AtomObservation;
-import com.radixdlt.client.core.atoms.Shards;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.NodeAtomSubmissionState;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.NodeAtomSubmissionUpdate;
 
@@ -46,44 +45,6 @@ public class RadixJsonRpcClientTest {
 
 		observer.assertValueCount(0);
 		observer.assertError(t -> true);
-	}
-
-	@Test
-	public void getSelfTest() {
-		PersistentChannel channel = mock(PersistentChannel.class);
-		ReplaySubject<String> messages = ReplaySubject.create();
-		when(channel.getMessages()).thenReturn(messages);
-
-		JsonParser parser = new JsonParser();
-
-		when(channel.sendMessage(any())).then(invocation -> {
-			String msg = (String) invocation.getArguments()[0];
-			JsonObject jsonObject = parser.parse(msg).getAsJsonObject();
-			String id = jsonObject.get("id").getAsString();
-
-			JsonObject data = new JsonObject();
-			data.addProperty("serializer", Serialize.getInstance().getIdForClass(RadixSystem.class));
-			JsonObject shards = new JsonObject();
-			shards.addProperty("low", -1);
-			shards.addProperty("high", 1);
-			data.add("shards", shards);
-
-			JsonObject response = new JsonObject();
-			response.addProperty("id", id);
-			response.add("result", data);
-			System.out.println(data);
-
-			messages.onNext(GsonJson.getInstance().stringFromGson(response));
-			return true;
-		});
-		RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(channel);
-
-		TestObserver<NodeRunnerData> observer = new TestObserver<>();
-
-		jsonRpcClient.getInfo().subscribe(observer);
-
-		observer.assertValueCount(1);
-		observer.assertValue(data -> data.getShards().equals(Shards.range(-1, 1)));
 	}
 
 	@Test

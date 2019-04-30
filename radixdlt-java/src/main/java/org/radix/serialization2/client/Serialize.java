@@ -2,6 +2,8 @@ package org.radix.serialization2.client;
 
 import com.radixdlt.client.atommodel.rri.RRIParticle;
 import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
+import com.radixdlt.client.core.network.jsonrpc.ShardRange;
+import com.radixdlt.client.core.network.jsonrpc.ShardSpace;
 import java.util.Arrays;
 import java.util.Collection;
 
@@ -27,8 +29,6 @@ import com.radixdlt.client.core.crypto.ECSignature;
 import com.radixdlt.client.core.network.jsonrpc.NodeRunnerData;
 import com.radixdlt.client.core.network.jsonrpc.RadixLocalSystem;
 import com.radixdlt.client.core.network.jsonrpc.RadixSystem;
-import com.radixdlt.client.core.network.jsonrpc.TCPNodeRunnerData;
-import com.radixdlt.client.core.network.jsonrpc.UDPNodeRunnerData;
 
 public final class Serialize {
 
@@ -61,13 +61,13 @@ public final class Serialize {
 				ECKeyPair.class,
 				ECSignature.class,
 				NodeRunnerData.class,
+				ShardSpace.class,
+				ShardRange.class,
 				RadixLocalSystem.class,
 				RadixSystem.class,
 				RadixUniverseConfig.class,
-				TCPNodeRunnerData.class,
 				RRI.class,
-				UniqueId.class,
-				UDPNodeRunnerData.class
+				UniqueId.class
 			);
 		}
 	}

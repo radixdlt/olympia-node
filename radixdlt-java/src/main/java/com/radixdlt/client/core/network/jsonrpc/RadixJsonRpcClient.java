@@ -182,7 +182,7 @@ public class RadixJsonRpcClient {
 		return this.jsonRpcCall("Network.getInfo")
 			.map(JsonRpcResponse::getResult)
 			.map(result -> Serialize.getInstance().fromJson(result.toString(), RadixSystem.class))
-			.map(UDPNodeRunnerData::new);
+			.map(NodeRunnerData::new);
 	}
 
 	/**
