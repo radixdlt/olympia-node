@@ -5,10 +5,10 @@ import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
 import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.network.RadixNetworkController;
+import com.radixdlt.client.core.network.actions.FetchAtomsObservationAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -923,26 +923,34 @@ public class RadixApplicationAPI {
 		return this.buildDisconnectedResult(action).connect();
 	}
 
+
+	private Observable<AtomObservation> syncAtom(Atom atom) {
+		final Disposable disposable = pull(atom.addresses().findFirst().orElseThrow(() -> new IllegalStateException("")));
+		return getNetworkController().getActions().ofType(FetchAtomsObservationAction.class)
+			.filter(u -> u.getObservation().hasAtom() && u.getObservation().getAtom().equals(atom))
+			.map(FetchAtomsObservationAction::getObservation)
+			.doOnSubscribe(d -> {
+				final SubmitAtomRequestAction initialAction = SubmitAtomRequestAction.newRequest(atom);
+				getNetworkController().dispatch(initialAction);
+			})
+			.doOnDispose(disposable::dispose);
+	}
+
 	/**
-	 * Executes actions sequentially. If an action fails, then all subsequent Results will never emit.
-	 * Note that this method is NEITHER idempotent NOR atomic (i.e. if an action fails,
-	 * all previous actions to that would still have occurred).
+	 * Executes actions sequentially. Advanced functionality will be moved into
+	 * AtomStore in the future.
+	 *
+	 * TODO: Move logic into AtomStore
 	 *
 	 * @param actions the action to execute sequentially
-	 * @return list of results
 	 */
-	public List<Result> executeSequentially(List<Action> actions) {
-		List<Result> results = actions.stream().map(this::buildDisconnectedResult).collect(Collectors.toList());
-
-		Observable.fromIterable(results)
-			.concatMap(result -> result.connect().toObservable())
-			.takeUntil(a ->
-				a instanceof SubmitAtomResultAction
-					&& ((SubmitAtomResultAction) a).getType() != SubmitAtomResultActionType.STORED
-			)
-			.publish()
-			.connect();
-
-		return results;
+	public Observable<AtomObservation> executeSequentially(List<Action> actions) {
+		return Observable.fromIterable(actions)
+			.concatMap(action ->
+				this.buildAtom(action)
+					.flatMap(this.identity::sign)
+					.flatMapObservable(this::syncAtom)
+					.takeUntil(AtomObservation::isStore)
+			);
 	}
 }
