@@ -1,5 +1,10 @@
 package com.radix.acceptance.RTP;
 
+import com.radixdlt.client.application.RadixApplicationAPI.Result;
+import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
+import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.client.core.atoms.UnsignedAtom;
+import io.reactivex.Single;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -83,7 +88,7 @@ public class RTP {
 			TimeUnit.MILLISECONDS.sleep(100);
 
 			// Get atom from the "other" node
-			String result = getURL("http://localhost:8081/api/atoms?uid=" + atomHID);
+			String result = getURL("http://localhost:8081/api/atoms?hid=" + atomHID);
 			JSONObject json = new JSONObject(result);
 			atomArray = json.getJSONArray("data");
 		} while (atomArray.isEmpty());
@@ -111,7 +116,25 @@ public class RTP {
 
     @Test
     public void test_atom_has_an_rclock_in_its_tp() {
-        String result = getURL("http://localhost:8080/api/atoms");
+    	RadixIdentity identity = RadixIdentities.createNew();
+    	// Connects to localhost:8080
+    	RadixApplicationAPI api = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, identity);
+		Single<UnsignedAtom> unsignedAtom = api.buildAtom(
+			CreateTokenAction.create(
+				api.getMyAddress(),
+				"Token",
+				"HI",
+				"Token",
+				BigDecimal.ZERO,
+				BigDecimal.ONE,
+				TokenSupplyType.MUTABLE
+			)
+		);
+		Atom atom = unsignedAtom.flatMap(identity::sign).blockingGet();
+		Result submissionResult = api.submitAtom(atom);
+		submissionResult.blockUntilComplete();
+
+        String result = getURL("http://localhost:8080/api/atoms?hid=" + atom.getHid());
         JSONObject json = new JSONObject(result);
         assertTrue("Has data element", json.has("data"));
 
