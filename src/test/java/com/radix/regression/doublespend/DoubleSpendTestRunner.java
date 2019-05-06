@@ -17,6 +17,7 @@ import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.client.core.address.RadixUniverseConfigs;
 import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.client.core.ledger.AtomObservation;
 import com.radixdlt.client.core.ledger.AtomObservation.Type;
 import com.radixdlt.client.core.network.RadixNetworkEpic;
 import com.radixdlt.client.core.network.RadixNode;
@@ -117,7 +118,7 @@ public final class DoubleSpendTestRunner {
 		// Wait for network to sync
 		// TODO: implement faster mechanism for this
 		try {
-			TimeUnit.SECONDS.sleep(2);
+			TimeUnit.SECONDS.sleep(5);
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 		}
@@ -161,18 +162,9 @@ public final class DoubleSpendTestRunner {
 				Pair::of
 			);
 
-		TestObserver<SubmitAtomAction> submissionObserver = TestObserver.create(Util.loggingObserver("Submission"));
+		TestObserver<AtomObservation> submissionObserver = TestObserver.create(Util.loggingObserver("Submission"));
 		conflictingAtoms
-			.flatMap(a -> Observable.fromIterable(a.getFirst().api.executeSequentially(a.getSecond()))
-				.flatMap(Result::toObservable)
-				.takeUntil(s -> {
-					if (s instanceof SubmitAtomResultAction) {
-						SubmitAtomResultAction submitAtomResultAction = (SubmitAtomResultAction) s;
-						return submitAtomResultAction.getType() != SubmitAtomResultActionType.STORED;
-					}
-					return false;
-				})
-			)
+			.flatMap(a -> a.getFirst().api.executeSequentially(a.getSecond()))
 			.subscribe(submissionObserver);
 
 		List<Map<ShardedAppStateId, TestObserver<ApplicationState>>> testObserversPerApi = singleNodeApis
@@ -215,11 +207,11 @@ public final class DoubleSpendTestRunner {
 			})
 			.filter(a -> a instanceof FetchAtomsObservationAction || a instanceof SubmitAtomAction)
 		)
-			.debounce(10, TimeUnit.SECONDS)
+			.debounce(15, TimeUnit.SECONDS)
 			.firstOrError()
 			.subscribe(lastUpdateObserver);
 		lastUpdateObserver.awaitTerminalEvent();
-		submissionObserver.awaitTerminalEvent();
+		submissionObserver.dispose();
 
 		List<Set<Particle>> lastParticleState = singleNodeApis.map(singleNodeAPI ->
 			doubleSpendTestConditions.postConsensusCondition().getStateRequired().stream()
