@@ -931,18 +931,6 @@ public class RadixApplicationAPI {
 	 * @param actions the action to execute sequentially
 	 * @return list of results
 	 */
-	public List<Result> executeSequentially(Action... actions) {
-		return executeSequentially(Arrays.asList(actions));
-	}
-
-	/**
-	 * Executes actions sequentially. If an action fails, then all subsequent Results will never emit.
-	 * Note that this method is NEITHER idempotent NOR atomic (i.e. if an action fails,
-	 * all previous actions to that would still have occurred).
-	 *
-	 * @param actions the action to execute sequentially
-	 * @return list of results
-	 */
 	public List<Result> executeSequentially(List<Action> actions) {
 		List<Result> results = actions.stream().map(this::buildDisconnectedResult).collect(Collectors.toList());
 
