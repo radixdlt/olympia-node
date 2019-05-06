@@ -1,6 +1,5 @@
 package com.radix.regression;
 
-import com.radixdlt.client.application.RadixApplicationAPI.Result;
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionsState;
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
 import com.radixdlt.client.core.atoms.particles.RRI;
@@ -20,7 +19,6 @@ import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenS
 import com.radixdlt.client.application.translate.tokens.TokenState;
 import com.radixdlt.client.core.Bootstrap;
 
-import io.reactivex.Completable;
 import io.reactivex.Observable;
 import io.reactivex.functions.Predicate;
 import io.reactivex.observers.TestObserver;
@@ -61,7 +59,7 @@ public class TokenClassesInAccountTest {
 	}
 
 	@Test
-	public void given_an_account_with_two_tokens__when_the_account_is_subscribed_for_the_token_state__then_the_two_tokens_are_published() throws Exception {
+	public void given_an_account_with_two_tokens__when_the_account_is_subscribed_for_the_token_state__then_the_two_tokens_are_published() {
 		// Given an account with two tokens
 		Action[] givenActions = new Action[] {
 			buildCreateNewTokenAction("JOSH", BigDecimal.valueOf(10000)),
@@ -78,8 +76,9 @@ public class TokenClassesInAccountTest {
 		);
 
 		// Given setup execution
-		Completable givenCompleted = Observable.fromIterable(api.executeSequentially(givenActions)).flatMapCompletable(Result::toCompletable);
-		givenCompleted.blockingAwait();
+		for (Action action : givenActions) {
+			api.execute(action).blockUntilComplete();
+		}
 
 		// When execution
 		TestObserver<TokenDefinitionsState> testObserver = TestObserver.create(Util.loggingObserver("TokenClassListener"));
