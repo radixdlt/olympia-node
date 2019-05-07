@@ -77,7 +77,7 @@ public class RTP {
 		// Extract HID for query of "other" node
 		String atomHID = observer.values().get(observer.valueCount() - 1).getAtom().getHid().toString();
 
-		long timeout = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(5);
+		long timeout = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(10);
 		JSONArray atomArray;
 		do {
 			if (System.currentTimeMillis() > timeout) {
