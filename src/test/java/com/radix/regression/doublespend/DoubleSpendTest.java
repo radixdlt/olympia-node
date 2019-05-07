@@ -1,7 +1,6 @@
 package com.radix.regression.doublespend;
 
 import com.radixdlt.client.application.identity.RadixIdentities;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class DoubleSpendTest {

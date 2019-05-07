@@ -6,7 +6,6 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.Lists;
-import com.radix.acceptance.SpecificProperties;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
@@ -16,7 +15,6 @@ import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.crypto.ECKeyPairGenerator;
 import com.radixdlt.client.core.network.HttpClients;
-import com.radixdlt.client.core.network.actions.SubmitAtomAction;
 import com.radixdlt.client.core.network.jsonrpc.AtomQuery;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.NodeAtomSubmissionState;
@@ -35,16 +33,6 @@ import okhttp3.Request;
  * See <a href="https://radixdlt.atlassian.net/browse/RLAU-94">RLAU-59</a>.
  */
 public class UnsubscribeAccount {
-	private static final String ADDRESS = "address";
-	private static final String NAME = "name";
-	private static final String SYMBOL = "symbol";
-	private static final String DESCRIPTION = "description";
-	private static final String INITIAL_SUPPLY = "initialSupply";
-	private static final String NEW_SUPPLY = "newSupply";
-	private static final String GRANULARITY = "granularity";
-
-	private static final long TIMEOUT_MS = 10_000L; // Timeout in milliseconds
-
 	private WebSocketClient webSocketClient;
 	private RadixJsonRpcClient jsonRpcClient;
 
@@ -60,15 +48,6 @@ public class UnsubscribeAccount {
 	private RadixAddress otherAccount;
 	private String otherUuid;
 	private TestObserver<AtomObservation> otherObserver;
-
-	private final SpecificProperties properties = SpecificProperties.of(
-		ADDRESS,        "unknown",
-		NAME,           "RLAU-40 Test token",
-		SYMBOL,			"RLAU",
-		DESCRIPTION,	"RLAU-40 Test token",
-		GRANULARITY,	"1"
-	);
-	private final List<TestObserver<SubmitAtomAction>> observers = Lists.newArrayList();
 
 	@After
 	public void after() {
@@ -106,7 +85,7 @@ public class UnsubscribeAccount {
 		this.jsonRpcClient.observeAtoms(this.uuid)
 			.subscribe(this.observer);
 
-		TestObserver completionObserver = TestObserver.create();
+		TestObserver<Object> completionObserver = TestObserver.create();
 		this.jsonRpcClient.sendAtomsSubscribe(this.uuid, new AtomQuery(this.api.getMyAddress()))
 			.subscribe(completionObserver);
 		completionObserver.awaitTerminalEvent(3, TimeUnit.SECONDS);
@@ -127,7 +106,7 @@ public class UnsubscribeAccount {
 		this.jsonRpcClient.observeAtoms(this.otherUuid)
 			.subscribe(this.otherObserver);
 
-		TestObserver completionObserver = TestObserver.create();
+		TestObserver<Object> completionObserver = TestObserver.create();
 		this.jsonRpcClient.sendAtomsSubscribe(this.otherUuid, new AtomQuery(this.otherAccount))
 			.subscribe(completionObserver);
 		completionObserver.awaitTerminalEvent(3, TimeUnit.SECONDS);
@@ -139,7 +118,7 @@ public class UnsubscribeAccount {
 
 	@When("the client sends a cancel subscription request to his account$")
 	public void the_client_sends_a_cancel_subscription_request_to_his_account() throws Throwable {
-		TestObserver completionObserver = TestObserver.create();
+		TestObserver<Object> completionObserver = TestObserver.create();
 		this.jsonRpcClient.cancelAtomsSubscribe(this.uuid).subscribe(completionObserver);
 		completionObserver.awaitTerminalEvent(3, TimeUnit.SECONDS);
 		completionObserver.assertComplete();
@@ -153,7 +132,7 @@ public class UnsubscribeAccount {
 		this.jsonRpcClient.observeAtoms(this.otherUuid)
 			.subscribe(this.otherObserver);
 
-		TestObserver completionObserver = TestObserver.create();
+		TestObserver<Object> completionObserver = TestObserver.create();
 		this.jsonRpcClient.sendAtomsSubscribe(this.otherUuid, new AtomQuery(this.api.getMyAddress()))
 			.subscribe(completionObserver);
 		completionObserver.awaitTerminalEvent(3, TimeUnit.SECONDS);

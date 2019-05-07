@@ -100,6 +100,7 @@ public final class DoubleSpendTestRunner {
 				identity);
 		}
 
+		@Override
 		public String toString() {
 			return "Client " + clientId + " " + node;
 		}

@@ -26,7 +26,6 @@ import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomResultAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType;
 import com.radixdlt.client.core.network.actions.SubmitAtomSendAction;
-import cucumber.api.java.After;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
@@ -54,8 +53,6 @@ public class AtomicTransactionsWithDependence {
 
 	private static final long TIMEOUT_MS = 10_000L; // Timeout in milliseconds
 
-	private RadixApplicationAPI api;
-	private RadixIdentity identity;
 	private final SpecificProperties properties = SpecificProperties.of(
 		NAME,           "RLAU-40 Test token",
 		SYMBOL,			"RLAU",
@@ -68,9 +65,6 @@ public class AtomicTransactionsWithDependence {
 
 	@Given("^I have access to a suitable Radix network$")
 	public void i_have_access_to_a_suitable_Radix_network() {
-		this.identity = RadixIdentities.createNew();
-		this.api = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, this.identity);
-
 		// Reset data
 		this.properties.clear();
 		this.observers.clear();
@@ -96,7 +90,7 @@ public class AtomicTransactionsWithDependence {
 
 		RadixIdentity toIdentity = RadixIdentities.createNew();
 		RadixAddress toAddress = api.getAddressFromKey(toIdentity.getPublicKey());
-		TestObserver observer = new TestObserver();
+		TestObserver<Object> observer = new TestObserver<>();
 		api.mintAndTransferTokens("TEST0", BigDecimal.valueOf(7), toAddress)
 			.toObservable()
 			.doOnNext(System.out::println)

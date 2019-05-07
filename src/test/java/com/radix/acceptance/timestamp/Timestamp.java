@@ -92,7 +92,7 @@ public class Timestamp {
     @When("^I submit an atom with particle groups which have some arbitrary metadata$")
     public void iSubmitAValidAtomWithSomeArbitraryMetadata() throws Throwable {
         // Construct atom
-        Map<String, String> metaData = new HashMap();
+        Map<String, String> metaData = new HashMap<>();
         metaData.put("test", "123");
         metaData.put("test2", "456");
 
@@ -108,7 +108,7 @@ public class Timestamp {
     @When("^I submit a valid atom with arbitrary metadata containing a valid timestamp$")
     public void iSubmitAValidAtomWithArbitraryMetadataContainingAValidTimestamp() throws Throwable {
         // Construct atom
-        Map<String, String> metaData = new HashMap();
+        Map<String, String> metaData = new HashMap<>();
         metaData.put("test", "123");
         metaData.put("test2", "456");
         metaData.put("timestamp", String.valueOf(System.currentTimeMillis()));
@@ -125,7 +125,7 @@ public class Timestamp {
     @When("^I submit a valid atom with arbitrary metadata containing an invalid timestamp$")
     public void iSubmitAValidAtomWithArbitraryMetadataContainingAnInvalidTimestamp() throws Throwable {
         // Construct atom
-        Map<String, String> metaData = new HashMap();
+        Map<String, String> metaData = new HashMap<>();
         metaData.put("test", "123");
         metaData.put("test2", "456");
         metaData.put("timestamp", "invalid");
@@ -142,7 +142,7 @@ public class Timestamp {
     @When("^I submit a valid atom with arbitrary metadata without a valid timestamp$")
     public void iSubmitAValidAtomWithArbitraryMetadataWithoutAValidTimestamp() throws Throwable {
         // Construct atom
-        Map<String, String> metaData = new HashMap();
+        Map<String, String> metaData = new HashMap<>();
         metaData.put("test", "123");
         metaData.put("test2", "456");
 
@@ -171,7 +171,7 @@ public class Timestamp {
     @When("^I submit an atom with particle groups which have metadata exceeding the max allowed atom size 65536 bytes$")
     public void iSubmitAValidAtomWithMetadataExceedingMaxAtomSizeBytes() throws Throwable {
         // Construct atom
-        Map<String, String> metaData = new HashMap();
+        Map<String, String> metaData = new HashMap<>();
         metaData.put("timestamp", String.valueOf(System.currentTimeMillis()));
         metaData.put("super big test", generateStringOfLength(655360));
 
@@ -192,7 +192,7 @@ public class Timestamp {
         String invalidMetaData = "This will break \" the json },:";
 
         // Construct atom
-        Map<String, String> metaData = new HashMap();
+        Map<String, String> metaData = new HashMap<>();
         metaData.put("test", validMetaData);
 
         UnsignedAtom atom = constructTestAtom(metaData);
@@ -244,7 +244,7 @@ public class Timestamp {
     @When("^I submit an atom with particle groups which have the metadata field as something other than a map$")
     public void iSubmitAnAtomWithTheMetadataFieldAsSomethingOtherThanAMap() throws Throwable {
         // Construct atom
-        Map<String, String> metaData = new HashMap();
+        Map<String, String> metaData = new HashMap<>();
         metaData.put("test", "123456");
 
         UnsignedAtom atom = constructTestAtom(metaData);

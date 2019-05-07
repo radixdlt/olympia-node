@@ -52,7 +52,7 @@ public class MultipleSubscriptionsToSameAddress {
 		api1Balance.dispose();
 	}
 
-	private static TestObserver createToken(RadixApplicationAPI api) {
+	private static TestObserver<SubmitAtomAction> createToken(RadixApplicationAPI api) {
 		TestObserver<SubmitAtomAction> observer = new TestObserver<>();
 		api.createToken(
 			"TestToken",

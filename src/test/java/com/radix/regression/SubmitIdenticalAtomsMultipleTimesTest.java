@@ -126,12 +126,6 @@ public class SubmitIdenticalAtomsMultipleTimesTest {
 		observer.assertValueAt(1, updatePredicate);
 	}
 
-	private TestObserver<RadixJsonRpcClient.NodeAtomSubmissionUpdate> buildAndSubmitAtom(Map<String, String> metaData, boolean addFee, String timestamp, SpunParticle<?>... spunParticles) {
-		Atom signedAtom = buildAtom(metaData, addFee, timestamp, spunParticles);
-
-		return submitAtom(signedAtom);
-	}
-
 	private TestObserver<RadixJsonRpcClient.NodeAtomSubmissionUpdate> submitAtom(Atom atom) {
 		TestObserver<RadixJsonRpcClient.NodeAtomSubmissionUpdate> observer = TestObserver.create();
 		jsonRpcClient.submitAtom(atom)

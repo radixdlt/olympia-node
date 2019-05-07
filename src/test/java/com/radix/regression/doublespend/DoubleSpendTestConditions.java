@@ -1,10 +1,8 @@
 package com.radix.regression.doublespend;
 
-import com.radixdlt.client.application.RadixApplicationAPI.RadixApplicationAPIBuilder;
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.ApplicationState;
 import com.radixdlt.client.application.translate.ShardedAppStateId;
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;

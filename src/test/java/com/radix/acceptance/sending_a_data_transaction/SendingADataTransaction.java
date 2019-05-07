@@ -33,14 +33,6 @@ import static com.radixdlt.client.core.network.actions.SubmitAtomResultAction.Su
  * See <a href="https://radixdlt.atlassian.net/browse/RLAU-94">RLAU-94</a>.
  */
 public class SendingADataTransaction {
-	private static final String ADDRESS = "address";
-	private static final String NAME = "name";
-	private static final String SYMBOL = "symbol";
-	private static final String DESCRIPTION = "description";
-	private static final String INITIAL_SUPPLY = "initialSupply";
-	private static final String NEW_SUPPLY = "newSupply";
-	private static final String GRANULARITY = "granularity";
-
 	private static final long TIMEOUT_MS = 10_000L; // Timeout in milliseconds
 
 	private RadixApplicationAPI api;
@@ -49,16 +41,6 @@ public class SendingADataTransaction {
 	private RadixIdentity otherIdentity;
 
 	private final List<TestObserver<SubmitAtomAction>> observers = Lists.newArrayList();
-
-	private void setupApi() {
-		this.identity = RadixIdentities.createNew();
-		this.api = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, this.identity);
-
-		this.otherIdentity = RadixIdentities.createNew();
-		this.otherApi = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, this.otherIdentity);
-
-		this.observers.clear();
-	}
 
 	@Given("^I have access to a suitable Radix network$")
 	public void i_have_access_to_a_suitable_Radix_network() {
@@ -89,10 +71,6 @@ public class SendingADataTransaction {
 		this.observers.add(observer);
 	}
 
-	private void awaitAtomStatus(SubmitAtomResultActionType... finalStates) {
-		awaitAtomStatus(this.observers.size(), finalStates);
-	}
-
 	private void awaitAtomStatus(int atomNumber, SubmitAtomResultActionType... finalStates) {
 		ImmutableSet<SubmitAtomResultActionType> finalStatesSet = ImmutableSet.<SubmitAtomResultActionType>builder()
 			.addAll(Arrays.asList(finalStates))
@@ -108,39 +86,6 @@ public class SendingADataTransaction {
 			.assertValueAt(2, SubmitAtomReceivedAction.class::isInstance)
 			.assertValueAt(3, SubmitAtomResultAction.class::isInstance)
 			.assertValueAt(3, i -> finalStatesSet.contains(SubmitAtomResultAction.class.cast(i).getType()));
-	}
-
-	private void awaitAtomValidationError(String partMessage) {
-		awaitAtomValidationError(this.observers.size(), partMessage);
-	}
-
-	private void awaitAtomValidationError(int atomNumber, String partMessage) {
-		this.observers.get(atomNumber - 1)
-			.awaitCount(4, TestWaitStrategy.SLEEP_100MS, TIMEOUT_MS)
-			.assertSubscribed()
-			.assertNoTimeout()
-			.assertNoErrors()
-			.assertValueAt(0, SubmitAtomRequestAction.class::isInstance)
-			.assertValueAt(1, SubmitAtomSendAction.class::isInstance)
-			.assertValueAt(2, SubmitAtomReceivedAction.class::isInstance)
-			.assertValueAt(3, SubmitAtomResultAction.class::isInstance)
-			.assertValueAt(3, i -> SubmitAtomResultAction.class.cast(i).getType().equals(VALIDATION_ERROR))
-			.assertValueAt(3, i -> SubmitAtomResultAction.class.cast(i).getData().getAsJsonObject().has("message"))
-			.assertValueAt(3, i -> {
-				String message = SubmitAtomResultAction.class.cast(i).getData().getAsJsonObject().get("message").getAsString();
-				return message.contains(partMessage);
-			});
-	}
-
-	private void awaitAtomException(Class<? extends Throwable> exceptionClass, String partialExceptionMessage) {
-		awaitAtomException(this.observers.size(), exceptionClass, partialExceptionMessage);
-	}
-
-	private void awaitAtomException(int atomNumber, Class<? extends Throwable> exceptionClass, String partialExceptionMessage) {
-		this.observers.get(atomNumber - 1)
-			.awaitCount(3, TestWaitStrategy.SLEEP_100MS, TIMEOUT_MS)
-			.assertError(exceptionClass)
-			.assertError(t -> t.getMessage().contains(partialExceptionMessage));
 	}
 
 	@Then("^I can observe the atom being accepted$")

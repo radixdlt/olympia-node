@@ -1,7 +1,6 @@
 package com.radix.acceptance.particle_groups_meta_data;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -97,7 +96,7 @@ public class ParticleGroupsMetaData {
     @When("^I submit an atom with particle groups which have some arbitrary metadata$")
     public void iSubmitAValidAtomWithSomeArbitraryMetadata() throws Throwable {
         // Construct atom
-        Map<String, String> metaData = new HashMap();
+        Map<String, String> metaData = new HashMap<>();
         metaData.put("test", "123");
         metaData.put("test2", "456");
 
@@ -126,7 +125,7 @@ public class ParticleGroupsMetaData {
     @When("^I submit an atom with particle groups which have metadata exceeding the max allowed atom size 65536 bytes$")
     public void iSubmitAValidAtomWithMetadataExceedingMaxAtomSizeBytes() throws Throwable {
         // Construct atom
-        Map<String, String> metaData = new HashMap();
+        Map<String, String> metaData = new HashMap<>();
         metaData.put("super big test", generateStringOfLength(655360));
 
         UnsignedAtom atom = constructTestAtom(metaData);
@@ -146,7 +145,7 @@ public class ParticleGroupsMetaData {
         String invalidMetaData = "This will break \" the json },:";
 
         // Construct atom
-        Map<String, String> metaData = new HashMap();
+        Map<String, String> metaData = new HashMap<>();
         metaData.put("test", validMetaData);
 
         UnsignedAtom atom = constructTestAtom(metaData);
@@ -198,7 +197,7 @@ public class ParticleGroupsMetaData {
     @When("^I submit an atom with particle groups which have the metadata field as something other than a map$")
     public void iSubmitAnAtomWithTheMetadataFieldAsSomethingOtherThanAMap() throws Throwable {
         // Construct atom
-        Map<String, String> metaData = new HashMap();
+        Map<String, String> metaData = new HashMap<>();
         metaData.put("test", "123456");
 
         UnsignedAtom atom = constructTestAtom(metaData);

@@ -30,7 +30,7 @@ public class MintTooManyTokensOfDifferentTypesTest {
 			.assertNoErrors();
 	}
 
-	private static TestObserver createToken(RadixApplicationAPI api) {
+	private static TestObserver<SubmitAtomAction> createToken(RadixApplicationAPI api) {
 		TestObserver<SubmitAtomAction> observer = new TestObserver<>();
 		api.createToken(
 			"TestToken",
