@@ -16,6 +16,7 @@ import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.client.core.address.RadixUniverseConfigs;
+import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.ledger.AtomObservation;
 import com.radixdlt.client.core.ledger.AtomObservation.Type;
@@ -29,6 +30,8 @@ import com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAto
 import io.reactivex.Completable;
 import io.reactivex.Observable;
 import io.reactivex.Single;
+import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.disposables.Disposables;
 import io.reactivex.observers.TestObserver;
 import java.util.Collections;
 import java.util.List;
@@ -41,6 +44,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.radix.common.ID.EUID;
 import org.radix.common.tuples.Pair;
 
 public final class DoubleSpendTestRunner {
@@ -163,10 +167,12 @@ public final class DoubleSpendTestRunner {
 				Pair::of
 			);
 
-		TestObserver<AtomObservation> submissionObserver = TestObserver.create(Util.loggingObserver("Submission"));
-		conflictingAtoms
-			.flatMap(a -> a.getFirst().api.executeSequentially(a.getSecond()))
-			.subscribe(submissionObserver);
+		List<TestObserver<AtomObservation>> submissionObservers = conflictingAtoms.map(a -> {
+			TestObserver<AtomObservation> submissionObserver =
+				TestObserver.create(Util.loggingObserver("Client " + a.getFirst().clientId + " Submission" ));
+			a.getFirst().api.executeSequentially(a.getSecond()).subscribe(submissionObserver);
+			return submissionObserver;
+		}).toList().blockingGet();
 
 		List<Map<ShardedAppStateId, TestObserver<ApplicationState>>> testObserversPerApi = singleNodeApis
 			.map(singleNodeApi ->
@@ -208,45 +214,87 @@ public final class DoubleSpendTestRunner {
 			})
 			.filter(a -> a instanceof FetchAtomsObservationAction || a instanceof SubmitAtomAction)
 		)
-			.debounce(15, TimeUnit.SECONDS)
+			.debounce(20, TimeUnit.SECONDS)
 			.firstOrError()
 			.subscribe(lastUpdateObserver);
 		lastUpdateObserver.awaitTerminalEvent();
-		submissionObserver.dispose();
+		submissionObservers.forEach(TestObserver::dispose);
 
-		List<Set<Particle>> lastParticleState = singleNodeApis.map(singleNodeAPI ->
-			doubleSpendTestConditions.postConsensusCondition().getStateRequired().stream()
-				.flatMap(p -> singleNodeAPI.api.getLedger().getAtomStore().getUpParticles(p.getSecond().address()))
-				.collect(Collectors.toSet())
-		).toList().blockingGet();
+		final long startTime = System.currentTimeMillis();
+		final CompositeDisposable compositeDisposable = new CompositeDisposable();
+		singleNodeApis.map(singleNodeAPI -> doubleSpendTestConditions.postConsensusCondition().getStateRequired().stream()
+			.map(p -> singleNodeAPI.api.pull(p.getSecond().address())))
+			.subscribe(s -> s.forEach(compositeDisposable::add));
 
-		List<ImmutableMap<ShardedAppStateId, ApplicationState>> states = testObserversPerApi.stream().map(testObservers -> {
-			ImmutableMap<ShardedAppStateId, ApplicationState> state = testObservers.entrySet().stream()
-				.collect(ImmutableMap.toImmutableMap(
-					Entry::getKey,
-					e -> {
-						List<ApplicationState> values = e.getValue().values();
-						return values.get(values.size() - 1);
+		try {
+			while (true) {
+				Map<String, Set<Atom>> lastAtomState = singleNodeApis.map(
+					singleNodeAPI -> {
+						Set<Atom> particles = doubleSpendTestConditions.postConsensusCondition().getStateRequired().stream()
+							.flatMap(p -> singleNodeAPI.api.getLedger().getAtomStore().getStoredAtoms(p.getSecond().address()))
+							.collect(Collectors.toSet());
+
+						return Pair.of("Client " + singleNodeAPI.clientId, particles);
+					}).toMap(Pair::getFirst, Pair::getSecond).blockingGet();
+
+				List<ImmutableMap<ShardedAppStateId, ApplicationState>> states = testObserversPerApi.stream().map(testObservers -> {
+					ImmutableMap<ShardedAppStateId, ApplicationState> state = testObservers.entrySet().stream()
+						.collect(ImmutableMap.toImmutableMap(Entry::getKey, e -> {
+							List<ApplicationState> values = e.getValue().values();
+							return values.get(values.size() - 1);
+						}));
+					return state;
+				}).collect(Collectors.toList());
+
+				// TODO: Remove 160 seconds when atom sync speed is fixed
+				final long cur = System.currentTimeMillis();
+				final long timeUntilResolved = startTime + TimeUnit.SECONDS.toMillis(500) - cur;
+
+				if (timeUntilResolved > 0) {
+					if (states.stream().allMatch(s -> doubleSpendTestConditions.postConsensusCondition().getCondition().matches(s))
+							&& states.stream().allMatch(s0 -> states.stream().allMatch(s1 -> s1.equals(s0)))
+							&& lastAtomState.entrySet().stream().map(Entry::getValue)
+								.allMatch(s0 -> lastAtomState.entrySet().stream().map(Entry::getValue).allMatch(s1 -> s1.equals(s0))
+					)) {
+						break;
+					} else {
+						try {
+							System.out.println(cur + " States don't match retrying 5 seconds...Time until resolved: " + (timeUntilResolved / 1000));
+							for (Entry<String, Set<Atom>> e : lastAtomState.entrySet()) {
+								System.out.println(e.getKey() + ": " + e.getValue().stream().map(Atom::getHid).map(EUID::toString).collect(Collectors.toSet()));
+							}
+
+							TimeUnit.SECONDS.sleep(5);
+							System.out.println("Retrying...");
+
+						} catch (InterruptedException e) {
+						}
 					}
-				));
-			testObservers.forEach((k,v) -> v.dispose());
-			return state;
-		}).collect(Collectors.toList());
+				} else {
+					states.forEach(s -> assertThat(s)
+						.is(doubleSpendTestConditions.postConsensusCondition().getCondition()));
+						//.as(doubleSpendTestConditions.postConsensusCondition().getCondition().description().toString())));
 
-		states.forEach(s -> assertThat(s).is(doubleSpendTestConditions.postConsensusCondition().getCondition()));
+					// All clients should see the same app state
+					for (ImmutableMap<ShardedAppStateId, ApplicationState> state0 : states) {
+						for (ImmutableMap<ShardedAppStateId, ApplicationState> state1 : states) {
+							assertThat(state0).isEqualTo(state1);
+						}
+					}
 
-		// All clients should see the same app state
-		for (ImmutableMap<ShardedAppStateId, ApplicationState> state0 : states) {
-			for (ImmutableMap<ShardedAppStateId, ApplicationState> state1 : states) {
-				assertThat(state0).isEqualTo(state1);
+					// All clients should see the same atom state
+					for (Entry<String, Set<Atom>> state0 : lastAtomState.entrySet()) {
+						for (Entry<String, Set<Atom>> state1 : lastAtomState.entrySet()) {
+							assertThat(state0.getValue()).isEqualTo(state1.getValue());
+						}
+					}
+
+					break;
+				}
 			}
-		}
-
-		// All clients should see the same particle state
-		for (Set<Particle> state0 : lastParticleState) {
-			for (Set<Particle> state1 : lastParticleState) {
-				assertThat(state0).isEqualTo(state1);
-			}
+		} finally {
+			compositeDisposable.dispose();
+			testObserversPerApi.forEach(testObservers -> testObservers.forEach((k,v) -> v.dispose()));
 		}
 	}
 }

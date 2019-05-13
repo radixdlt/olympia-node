@@ -72,7 +72,8 @@ public class DoubleSpendCreateAndMintTokenTestConditions implements DoubleSpendT
 			stateRequired,
 			new Condition<>(map -> {
 				TokenBalanceState balanceState = (TokenBalanceState) map.get(ShardedAppStateId.of(TokenBalanceState.class, apiAddress));
-				return balanceState.getBalance().get(tokenRef).getAmount().compareTo(BigDecimal.ONE) == 0;
+				BigDecimal balance = balanceState.getBalance().get(tokenRef).getAmount();
+				return  balance != null && balance.compareTo(BigDecimal.ONE) == 0;
 			}, "1 JOSH in account")
 		);
 	}

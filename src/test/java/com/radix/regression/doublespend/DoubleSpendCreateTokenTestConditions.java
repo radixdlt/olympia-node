@@ -70,11 +70,13 @@ public class DoubleSpendCreateTokenTestConditions implements DoubleSpendTestCond
 				TokenDefinitionsState tokenDef = (TokenDefinitionsState) map.get(ShardedAppStateId.of(TokenDefinitionsState.class, apiAddress));
 				TokenState tokenState = tokenDef.getState().get(tokenRef);
 				return  (
-					tokenState.getTotalSupply().compareTo(BigDecimal.valueOf(2)) == 0
+					tokenState.getTotalSupply() != null
+					&& tokenState.getTotalSupply().compareTo(BigDecimal.valueOf(2)) == 0
 					&& tokenState.getName().endsWith("2")
 					&& tokenState.getDescription().endsWith("2")
 				) || (
-					tokenState.getTotalSupply().compareTo(BigDecimal.ONE) == 0
+					tokenState.getTotalSupply() != null
+					&& tokenState.getTotalSupply().compareTo(BigDecimal.ONE) == 0
 					&& !tokenState.getName().endsWith("2")
 					&& !tokenState.getDescription().endsWith("2")
 				);
