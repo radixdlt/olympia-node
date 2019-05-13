@@ -2,6 +2,7 @@ package com.radixdlt.client.core.ledger;
 
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 
+import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import io.reactivex.Observable;
 import java.util.stream.Stream;
@@ -31,6 +32,13 @@ public interface AtomStore {
 	 * @return a stream of all up particles of the current local view
 	 */
 	Stream<Particle> getUpParticles(RadixAddress address);
+
+	/**
+	 * Retrieve the current set of validated atoms at a given shardable
+	 * @param address the address to get the atoms under
+	 * @return a stream of all stored atoms of the current local view
+	 */
+	Stream<Atom> getStoredAtoms(RadixAddress address);
 
 	/**
 	 * Retrieve a never ending observable of atom observations (STORED and DELETED)

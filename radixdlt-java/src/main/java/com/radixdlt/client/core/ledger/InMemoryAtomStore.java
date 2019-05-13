@@ -168,6 +168,17 @@ public class InMemoryAtomStore implements AtomStore {
 	}
 
 	@Override
+	public Stream<Atom> getStoredAtoms(RadixAddress address) {
+		synchronized (lock) {
+			return atoms.entrySet().stream()
+				.filter(e -> e.getValue().isStore() && e.getKey().addresses().anyMatch(address::equals))
+				.map(Map.Entry::getValue)
+				.map(AtomObservation::getAtom);
+		}
+	}
+
+
+	@Override
 	public Stream<Particle> getUpParticles(RadixAddress address) {
 		synchronized (lock) {
 			return particleIndex.entrySet().stream()
