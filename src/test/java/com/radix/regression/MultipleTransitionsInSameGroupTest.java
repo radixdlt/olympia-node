@@ -120,7 +120,7 @@ public class MultipleTransitionsInSameGroupTest {
 			.assertComplete()
 			.assertValueAt(1, state
 				-> state.getState() == RadixJsonRpcClient.NodeAtomSubmissionState.VALIDATION_ERROR
-					&& state.getData().toString().contains("in group 2: [0, 1]"));
+					&& state.getData().toString().contains("Duplicate particles in group"));
 	}
 
 	@Test
@@ -157,7 +157,7 @@ public class MultipleTransitionsInSameGroupTest {
 			.assertComplete()
 			.assertValueAt(1, state
 				-> state.getState() == RadixJsonRpcClient.NodeAtomSubmissionState.VALIDATION_ERROR
-					&& state.getData().toString().contains("in group 2: [0, 1, 2]"));
+					&& state.getData().toString().contains("Duplicate particles in group"));
 	}
 
 	private TransferrableTokensParticle createTransferrableTokens(RadixAddress myAddress, TokenDefinitionParticle tokenDefinition, UInt256 amount) {
@@ -204,7 +204,7 @@ public class MultipleTransitionsInSameGroupTest {
 			.assertComplete()
 			.assertValueAt(1, state
 				-> state.getState() == RadixJsonRpcClient.NodeAtomSubmissionState.VALIDATION_ERROR
-				&& state.getData().toString().contains("in group 2: [1, 2]"));
+				&& state.getData().toString().contains("Duplicate particles in group"));
 	}
 
 	private UnallocatedTokensParticle createUnallocatedTokens(TokenDefinitionParticle tokenDefinition) {
