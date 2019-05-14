@@ -3,6 +3,7 @@ package com.radixdlt.client.core.atoms;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.Objects;
 
 import org.bouncycastle.util.encoders.Base64;
 import org.radix.common.ID.EUID;
@@ -21,6 +22,22 @@ public final class RadixHash {
 
 	public byte[] toByteArray() {
 		return Arrays.copyOf(hash, hash.length);
+	}
+
+	public void copyTo(byte[] array, int offset) {
+		copyTo(array, offset, this.hash.length);
+	}
+
+	public void copyTo(byte[] array, int offset, int length) {
+		Objects.requireNonNull(array, "array is required");
+		if (array.length - offset < this.hash.length) {
+			throw new IllegalArgumentException(String.format(
+				"Array must be bigger than offset + %d but was %d",
+				this.hash.length, array.length)
+			);
+		}
+
+		System.arraycopy(this.hash, 0, array, offset, length);
 	}
 
 	public EUID toEUID() {

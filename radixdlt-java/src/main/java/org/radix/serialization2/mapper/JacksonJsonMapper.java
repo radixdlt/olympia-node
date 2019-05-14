@@ -2,6 +2,7 @@ package org.radix.serialization2.mapper;
 
 import java.io.IOException;
 
+import org.radix.common.ID.AID;
 import org.radix.common.ID.EUID;
 import org.radix.crypto.Hash;
 import org.radix.serialization2.SerializerDummy;
@@ -76,6 +77,7 @@ public class JacksonJsonMapper extends ObjectMapper {
 			JacksonCodecConstants.RRI_STR_VALUE,
 			RRI::toString
 		));
+		jsonModule.addSerializer(AID.class, new JacksonJsonAIDSerializer());
 
 		jsonModule.addDeserializer(EUID.class, new JacksonJsonEUIDDeserializer());
 		jsonModule.addDeserializer(Hash.class, new JacksonJsonHashDeserializer());
@@ -95,6 +97,7 @@ public class JacksonJsonMapper extends ObjectMapper {
 			JacksonCodecConstants.RRI_STR_VALUE,
 			RRI::fromString
 		));
+		jsonModule.addDeserializer(AID.class, new JacksonJsonAIDDeserializer());
 
 		// Special modifier for Enum values to remove :str: leadin from front
 		jsonModule.setDeserializerModifier(new BeanDeserializerModifier() {
