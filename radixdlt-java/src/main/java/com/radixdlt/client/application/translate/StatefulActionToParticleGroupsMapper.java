@@ -2,7 +2,6 @@ package com.radixdlt.client.application.translate;
 
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.particles.Particle;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -24,18 +23,6 @@ public interface StatefulActionToParticleGroupsMapper {
 	 * @return required contexts required to create spun particles for the action
 	 */
 	Set<ShardedParticleStateId> requiredState(Action action);
-
-	/**
-	 * Returns an observable of actions which will be added to the list
-	 * actions to be included in the current transaction.
-	 *
-	 * @param action the current action
-	 * @param store particles as requested by requiredState()
-	 * @return additional actions to be included
-	 */
-	default List<Action> sideEffects(Action action, Stream<Particle> store) {
-		return Collections.emptyList();
-	}
 
 	/**
 	 * Creates new particle groups to be added to an atom given a high level

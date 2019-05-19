@@ -9,8 +9,8 @@ import com.radixdlt.client.core.network.actions.FetchAtomsObservationAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -752,58 +752,45 @@ public class RadixApplicationAPI {
 		return this.execute(transferTokensAction);
 	}
 
-	private Observable<List<ParticleGroup>> statefulMappersToParticleGroups(Observable<Action> actions) {
-		return actions.flatMap(action ->
-			Observable
-				.fromIterable(this.statefulActionToParticleGroupsMappers)
-				.flatMapMaybe(mapper -> {
-					final Set<ShardedParticleStateId> requiredState = mapper.requiredState(action);
-					List<Disposable> d = requiredState.stream().map(ShardedParticleStateId::address).distinct()
-						.map(addr -> ledger.getAtomPuller().pull(addr).subscribe())
-						.collect(Collectors.toList());
+	private Observable<List<ParticleGroup>> statefulMappersToParticleGroups(List<Action> actions) {
+		return Observable.fromIterable(actions)
+			.flatMap(action ->
+				Observable
+					.fromIterable(this.statefulActionToParticleGroupsMappers)
+					.flatMapMaybe(mapper -> {
+						final Set<ShardedParticleStateId> requiredState = mapper.requiredState(action);
+						List<Disposable> d = requiredState.stream().map(ShardedParticleStateId::address).distinct()
+							.map(addr -> ledger.getAtomPuller().pull(addr).subscribe())
+							.collect(Collectors.toList());
 
-					return Observable.fromIterable(requiredState)
-						.flatMapSingle(ctx ->
-							ledger.getAtomStore().onSync(ctx.address())
-								.firstOrError()
-								.doOnSuccess(i -> d.forEach(Disposable::dispose))
-								.map(a -> ledger.getAtomStore().getUpParticles(ctx.address())
-								.filter(ctx.particleClass()::isInstance))
-						)
-						.reduce(Stream::concat)
-						.map(ctxState -> mapper.mapToParticleGroups(action, ctxState));
-				})
-		);
+						return Observable.fromIterable(requiredState)
+							.flatMapSingle(ctx ->
+								ledger.getAtomStore().onSync(ctx.address())
+									.firstOrError()
+									.doOnSuccess(i -> d.forEach(Disposable::dispose))
+									.map(a -> ledger.getAtomStore().getUpParticles(ctx.address())
+									.filter(ctx.particleClass()::isInstance))
+							)
+							.reduce(Stream::concat)
+							.map(ctxState -> mapper.mapToParticleGroups(action, ctxState));
+					})
+			);
 	}
 
-	private Observable<List<Action>> statefulMappersToSideEffects(Action action) {
-		return Observable
-				.fromIterable(this.statefulActionToParticleGroupsMappers)
-				.flatMapMaybe(mapper -> {
-					final Set<ShardedParticleStateId> requiredState = mapper.requiredState(action);
-					return Observable.fromIterable(requiredState)
-						.flatMapSingle(ctx -> {
-							Disposable d = ledger.getAtomPuller().pull(ctx.address()).subscribe();
-							return ledger.getAtomStore().onSync(ctx.address())
-								.firstOrError()
-								.doOnSuccess(i -> d.dispose())
-								.map(a -> ledger.getAtomStore().getUpParticles(ctx.address())
-								.filter(ctx.particleClass()::isInstance));
-						})
-						.reduce(Stream::concat)
-						.map(ctxState -> mapper.sideEffects(action, ctxState));
-				});
-	}
+	private List<Action> collectActionAndEffects(Action action) {
+		final LinkedList<Action> actions = new LinkedList<>();
+		for (StatelessActionToParticleGroupsMapper mapper : statelessActionToParticleGroupsMappers) {
+			actions.addAll(mapper.sideEffects(action));
+		}
 
-	private Observable<List<Action>> collectActionAndEffects(Action action) {
-		Observable<List<Action>> statelessEffects = Observable
-			.fromIterable(this.statelessActionToParticleGroupsMappers)
-			.map(mapper -> mapper.sideEffects(action));
-		Observable<List<Action>> statefulEffects = this.statefulMappersToSideEffects(action);
+		final List<Action> sideEffects = actions.stream()
+			.flatMap(a -> collectActionAndEffects(a).stream()).collect(Collectors.toList());
 
-		return Observable.concat(statelessEffects.flatMapIterable(l -> l), statefulEffects.flatMapIterable(l -> l))
-			.flatMap(RadixApplicationAPI.this::collectActionAndEffects)
-			.startWith(Collections.singletonList(action));
+		final List<Action> actionAndEffects = new ArrayList<>();
+		actionAndEffects.add(action);
+		actionAndEffects.addAll(sideEffects);
+
+		return actionAndEffects;
 	}
 
 	/**
@@ -833,15 +820,17 @@ public class RadixApplicationAPI {
 	 * @return a cold single of an atom mapped from an action
 	 */
 	public Single<UnsignedAtom> buildAtom(Action action) {
-		final Observable<Action> allActions = this.collectActionAndEffects(action).flatMapIterable(l -> l);
-		final Observable<ParticleGroup> statelessParticleGroups = allActions.flatMap(a ->
-			Observable
-				.fromIterable(this.statelessActionToParticleGroupsMappers)
-				.flatMapIterable(mapper -> mapper.mapToParticleGroups(a))
-		);
-		final Observable<List<ParticleGroup>> statefulParticleGroups = this.statefulMappersToParticleGroups(allActions);
+		final List<Action> allActions = this.collectActionAndEffects(action);
+		final List<ParticleGroup> statelessParticleGroups = allActions.stream()
+			.flatMap(a -> this.statelessActionToParticleGroupsMappers.stream()
+				.flatMap(mapper -> mapper.mapToParticleGroups(a).stream()))
+			.collect(Collectors.toList());
+		Observable<List<ParticleGroup>> statefulParticleGroups = this.statefulMappersToParticleGroups(allActions);
 
-		return Observable.concat(statelessParticleGroups, statefulParticleGroups.flatMapIterable(l -> l))
+		return Observable.concat(
+			Observable.fromIterable(statelessParticleGroups),
+			statefulParticleGroups.flatMapIterable(l -> l)
+		)
 			.<List<ParticleGroup>>scanWith(
 					ArrayList::new,
 					(a, b) -> Stream.concat(a.stream(), Stream.of(b)).collect(Collectors.toList())
