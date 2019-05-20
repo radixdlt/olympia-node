@@ -34,6 +34,7 @@ import io.reactivex.Single;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.observers.TestObserver;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -44,6 +45,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import javafx.application.Application;
 import org.radix.common.ID.EUID;
 import org.radix.common.tuples.Pair;
 
@@ -72,7 +74,13 @@ public final class DoubleSpendTestRunner {
 				System.out.println("================================================================");
 				System.out.println("Round " + (i + 1));
 				System.out.println("================================================================");
-				execute();
+
+				final ImmutableMap<ShardedAppStateId, ApplicationState> finalState = execute();
+
+				System.out.println();
+				System.out.println("Final State:");
+				System.out.println(finalState);
+				System.out.println();
 			});
 	}
 
@@ -110,7 +118,7 @@ public final class DoubleSpendTestRunner {
 		}
 	}
 
-	void execute() {
+	ImmutableMap<ShardedAppStateId, ApplicationState> execute() {
 		RadixApplicationAPI api = apiSupplier.apply(Bootstrap.LOCALHOST, RadixIdentities.createNew());
 		DoubleSpendTestConditions doubleSpendTestConditions = testSupplier.apply(api);
 
@@ -263,12 +271,7 @@ public final class DoubleSpendTestRunner {
 							&& lastAtomState.entrySet().stream().map(Entry::getValue)
 								.allMatch(s0 -> lastAtomState.entrySet().stream().map(Entry::getValue).allMatch(s1 -> s1.equals(s0))
 					)) {
-						System.out.println();
-						System.out.println("Final State");
-						System.out.println();
-						System.out.println(states.iterator().next());
-						System.out.println();
-						break;
+						return states.iterator().next();
 					} else {
 						try {
 							System.out.println(cur + " States don't match retrying 5 seconds...Time until resolved: " + (timeUntilResolved / 1000));
@@ -304,9 +307,12 @@ public final class DoubleSpendTestRunner {
 					break;
 				}
 			}
+
 		} finally {
 			compositeDisposable.dispose();
 			testObserversPerApi.forEach(testObservers -> testObservers.forEach((k,v) -> v.dispose()));
 		}
+
+		throw new IllegalStateException();
 	}
 }

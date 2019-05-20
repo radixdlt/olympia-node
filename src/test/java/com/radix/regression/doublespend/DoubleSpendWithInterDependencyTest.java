@@ -72,7 +72,7 @@ public class DoubleSpendWithInterDependencyTest {
 				stateRequired,
 				new Condition<>(map -> {
 					TokenBalanceState balanceState = (TokenBalanceState) map.get(ShardedAppStateId.of(TokenBalanceState.class, apiAddress));
-					return balanceState.getBalance().get(tokenRef).getAmount().compareTo(BigDecimal.ONE) == 0;
+					return balanceState.getBalance().get(tokenRef).compareTo(BigDecimal.ONE) == 0;
 				}, "1 JOSH in account")
 			);
 		}

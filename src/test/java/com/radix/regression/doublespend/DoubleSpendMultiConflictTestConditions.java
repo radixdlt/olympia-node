@@ -5,7 +5,6 @@ import com.radixdlt.client.application.translate.ShardedAppStateId;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
 import com.radixdlt.client.application.translate.tokens.TokenBalanceState;
-import com.radixdlt.client.application.translate.tokens.TokenBalanceState.Balance;
 import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.particles.RRI;
@@ -36,7 +35,7 @@ public class DoubleSpendMultiConflictTestConditions implements DoubleSpendTestCo
 
 	@Override
 	public List<BatchedActions> initialActions() {
-		return Arrays.asList(
+		return Collections.singletonList(
 			new BatchedActions(
 				CreateTokenAction.create(
 					apiAddress,
@@ -47,26 +46,6 @@ public class DoubleSpendMultiConflictTestConditions implements DoubleSpendTestCo
 					BigDecimal.ONE,
 					TokenSupplyType.FIXED
 				)
-			),
-			new BatchedActions(
-				CreateTokenAction.create(
-					apiAddress,
-					"Joshy Token 2",
-					"JOSH2",
-					"Cool Token",
-					BigDecimal.ONE,
-					BigDecimal.ONE,
-					TokenSupplyType.FIXED
-				),
-				CreateTokenAction.create(
-					apiAddress,
-					"Joshy Token 3",
-					"JOSH3",
-					"Cool Token",
-					BigDecimal.ONE,
-					BigDecimal.ONE,
-					TokenSupplyType.FIXED
-				)
 			)
 		);
 	}
@@ -74,7 +53,18 @@ public class DoubleSpendMultiConflictTestConditions implements DoubleSpendTestCo
 	@Override
 	public List<List<BatchedActions>> conflictingActions() {
 		return Arrays.asList(
-			Collections.singletonList(
+			Arrays.asList(
+				new BatchedActions(
+					CreateTokenAction.create(
+						apiAddress,
+						"Joshy Token 3",
+						"JOSH3",
+						"Cool Token",
+						BigDecimal.ONE,
+						BigDecimal.ONE,
+						TokenSupplyType.FIXED
+					)
+				),
 				new BatchedActions(
 					TransferTokensAction.create(apiAddress, toAddress, BigDecimal.ONE, tokenRef1),
 					CreateTokenAction.create(
@@ -88,7 +78,18 @@ public class DoubleSpendMultiConflictTestConditions implements DoubleSpendTestCo
 					)
 				)
 			),
-			Collections.singletonList(
+			Arrays.asList(
+				new BatchedActions(
+					CreateTokenAction.create(
+						apiAddress,
+						"Joshy Token 2",
+						"JOSH2",
+						"Cool Token",
+						BigDecimal.ONE,
+						BigDecimal.ONE,
+						TokenSupplyType.FIXED
+					)
+				),
 				new BatchedActions(
 					TransferTokensAction.create(apiAddress, toAddress, BigDecimal.ONE, tokenRef1),
 					CreateTokenAction.create(
@@ -115,22 +116,18 @@ public class DoubleSpendMultiConflictTestConditions implements DoubleSpendTestCo
 			new Condition<>(map -> {
 				TokenBalanceState balanceState = (TokenBalanceState) map.get(ShardedAppStateId.of(TokenBalanceState.class, apiAddress));
 
-				Map<RRI, Balance> balances = balanceState.getBalance();
+				Map<RRI, BigDecimal> balances = balanceState.getBalance();
 
 				if (balances.containsKey(tokenRef1) && balances.containsKey(tokenRef2) && balances.containsKey(tokenRef3)) {
-					return balances.get(tokenRef1).getAmount().compareTo(BigDecimal.TEN) == 0
-						&& balances.get(tokenRef2).getAmount().compareTo(BigDecimal.ONE) == 0
-						&& balances.get(tokenRef3).getAmount().compareTo(BigDecimal.ONE) == 0;
-				}
-
-				if (balances.containsKey(tokenRef1) && balances.containsKey(tokenRef2) && !balances.containsKey(tokenRef3)) {
-					return balances.get(tokenRef1).getAmount().compareTo(BigDecimal.valueOf(9)) == 0
-						&& balances.get(tokenRef2).getAmount().compareTo(BigDecimal.TEN) == 0;
-				}
-
-				if (balances.containsKey(tokenRef1) && !balances.containsKey(tokenRef2) && balances.containsKey(tokenRef3)) {
-					return balances.get(tokenRef1).getAmount().compareTo(BigDecimal.valueOf(9)) == 0
-						&& balances.get(tokenRef3).getAmount().compareTo(BigDecimal.TEN) == 0;
+					return (balances.get(tokenRef1).compareTo(BigDecimal.TEN) == 0
+						&& balances.get(tokenRef2).compareTo(BigDecimal.ONE) == 0
+						&& balances.get(tokenRef3).compareTo(BigDecimal.ONE) == 0)
+					||	(balances.get(tokenRef1).compareTo(BigDecimal.valueOf(9)) == 0
+						&& balances.get(tokenRef2).compareTo(BigDecimal.TEN) == 0
+						&& balances.get(tokenRef3).compareTo(BigDecimal.ONE) == 0)
+					||	(balances.get(tokenRef1).compareTo(BigDecimal.valueOf(9)) == 0
+						&& balances.get(tokenRef2).compareTo(BigDecimal.ONE) == 0
+						&& balances.get(tokenRef3).compareTo(BigDecimal.TEN) == 0);
 				}
 
 				return false;
