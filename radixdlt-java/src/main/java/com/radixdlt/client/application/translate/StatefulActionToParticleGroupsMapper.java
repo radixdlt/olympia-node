@@ -12,8 +12,6 @@ import java.util.stream.Stream;
  * via requiredState().
  */
 public interface StatefulActionToParticleGroupsMapper {
-
-
 	/**
 	 * Retrieves the necessary application state to be used in creating new particles
 	 * given a high level action. The returned Observable describes the shardable and

@@ -345,6 +345,7 @@ public class RadixApplicationAPITest {
 		when(universe.getNetworkController()).thenReturn(controller);
 
 		Ledger ledger = mock(Ledger.class);
+		when(ledger.getAtomStore()).thenReturn(mock(AtomStore.class));
 		when(universe.getLedger()).thenReturn(ledger);
 		Action action = mock(Action.class);
 

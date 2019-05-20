@@ -3,8 +3,10 @@ package com.radixdlt.client.core.ledger;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 
 import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import io.reactivex.Observable;
+import java.util.List;
 import java.util.stream.Stream;
 
 /**
@@ -39,6 +41,18 @@ public interface AtomStore {
 	 * @return a stream of all stored atoms of the current local view
 	 */
 	Stream<Atom> getStoredAtoms(RadixAddress address);
+
+	/**
+	 * Adds the particle group to the staging area
+	 * @param particleGroup the particle group to add to staging area
+	 */
+	void stageParticleGroup(ParticleGroup particleGroup);
+
+	/**
+	 * Retrieves all staged particle groups and clears
+	 * @return all staged particle groups in order
+	 */
+	List<ParticleGroup> getStagedAndClear();
 
 	/**
 	 * Retrieve a never ending observable of atom observations (STORED and DELETED)

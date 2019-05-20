@@ -788,13 +788,12 @@ public class RadixApplicationAPI {
 		return new UnsignedAtom(new Atom(allParticleGroups, metaData));
 	}
 
-	private List<ParticleGroup> getParticleGroups(List<Action> actions) {
-		final List<ParticleGroup> particleGroups = actions.stream()
-			.flatMap(a -> this.statelessActionToParticleGroupsMappers.stream()
-				.flatMap(mapper -> mapper.mapToParticleGroups(a).stream()))
-			.collect(Collectors.toList());
-
+	private void stageActions(List<Action> actions) {
 		for (Action action : actions) {
+			for (StatelessActionToParticleGroupsMapper mapper : statelessActionToParticleGroupsMappers) {
+				mapper.mapToParticleGroups(action).forEach(pg -> ledger.getAtomStore().stageParticleGroup(pg));
+			}
+
 			for (StatefulActionToParticleGroupsMapper mapper : statefulActionToParticleGroupsMappers) {
 				Set<ShardedParticleStateId> required = mapper.requiredState(action);
 				if (required.isEmpty()) {
@@ -805,12 +804,10 @@ public class RadixApplicationAPI {
 						.getUpParticles(ctx.address())
 						.filter(ctx.particleClass()::isInstance)
 					);
-				List<ParticleGroup> statefulParticleGroups = mapper.mapToParticleGroups(action, particles);
-				particleGroups.addAll(statefulParticleGroups);
+
+				mapper.mapToParticleGroups(action, particles).forEach(pg -> ledger.getAtomStore().stageParticleGroup(pg));
 			}
 		}
-
-		return particleGroups;
 	}
 
 	/**
@@ -827,7 +824,7 @@ public class RadixApplicationAPI {
 			.flatMap(a -> statefulActionToParticleGroupsMappers.stream().flatMap(mapper -> mapper.requiredState(a).stream()))
 			.collect(Collectors.toSet());
 
-		return Observable.<ParticleGroup>create(emitter -> {
+		return Completable.create(emitter -> {
 			Map<RadixAddress, Disposable> disposables = requiredState.stream()
 				.map(ShardedParticleStateId::address)
 				.distinct()
@@ -846,7 +843,7 @@ public class RadixApplicationAPI {
 				.ignoreElements()
 				.subscribe(() -> {
 					try {
-						getParticleGroups(allActions).forEach(emitter::onNext);
+						stageActions(allActions);
 					} catch (Exception e) {
 						emitter.onError(e);
 						return;
@@ -854,8 +851,10 @@ public class RadixApplicationAPI {
 					emitter.onComplete();
 				}, emitter::onError);
 		})
-			.toList()
-			.map(this::buildAtomWithFee);
+			.andThen(Single.create(emitter -> {
+				List<ParticleGroup> pgs = ledger.getAtomStore().getStagedAndClear();
+				emitter.onSuccess(buildAtomWithFee(pgs));
+			}));
 	}
 
 	private long generateTimestamp() {
