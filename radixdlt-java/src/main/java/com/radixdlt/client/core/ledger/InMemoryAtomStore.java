@@ -36,8 +36,8 @@ public class InMemoryAtomStore implements AtomStore {
 	private final Object lock = new Object();
 	private final Map<RadixAddress, Boolean> syncedMap = new HashMap<>();
 
-	private Atom stagedAtom = null;
-	private final Map<Particle, Spin> stagedParticleIndex = new ConcurrentHashMap<>();
+	private final Map<String, Atom> stagedAtoms = new ConcurrentHashMap<>();
+	private final Map<String, Map<Particle, Spin>> stagedParticleIndex = new ConcurrentHashMap<>();
 
 	private void softDeleteDependentsOf(Atom atom) {
 		atom.particles(Spin.UP)
@@ -60,24 +60,29 @@ public class InMemoryAtomStore implements AtomStore {
 			});
 	}
 
-	public void stageParticleGroup(ParticleGroup particleGroup) {
+	public void stageParticleGroup(String uuid, ParticleGroup particleGroup) {
 		synchronized (lock) {
+			Atom stagedAtom = stagedAtoms.get(uuid);
 			if (stagedAtom == null) {
 				stagedAtom = new Atom(particleGroup, System.currentTimeMillis());
 			} else {
 				List<ParticleGroup> groups = Stream.concat(stagedAtom.particleGroups(), Stream.of(particleGroup)).collect(Collectors.toList());
 				stagedAtom = new Atom(groups, System.currentTimeMillis());
 			}
+			stagedAtoms.put(uuid, stagedAtom);
 
-			particleGroup.spunParticles().forEach(sp -> stagedParticleIndex.put(sp.getParticle(), sp.getSpin()));
+			particleGroup.spunParticles().forEach(sp -> {
+				Map<Particle, Spin> index = stagedParticleIndex.getOrDefault(uuid, new HashMap<>());
+				index.put(sp.getParticle(), sp.getSpin());
+				stagedParticleIndex.put(uuid, index);
+			});
 		}
 	}
 
-	public List<ParticleGroup> getStagedAndClear() {
+	public List<ParticleGroup> getStagedAndClear(String uuid) {
 		synchronized (lock) {
-			final Atom atom = stagedAtom;
-			stagedAtom = null;
-			stagedParticleIndex.clear();
+			final Atom atom = stagedAtoms.remove(uuid);
+			stagedParticleIndex.get(uuid).clear();
 			return atom.particleGroups().collect(Collectors.toList());
 		}
 	}
@@ -207,7 +212,7 @@ public class InMemoryAtomStore implements AtomStore {
 
 
 	@Override
-	public Stream<Particle> getUpParticles(RadixAddress address) {
+	public Stream<Particle> getUpParticles(RadixAddress address, String stagedUuid) {
 		synchronized (lock) {
 			Set<Particle> upParticles = particleIndex.entrySet().stream()
 				.filter(e -> {
@@ -221,7 +226,7 @@ public class InMemoryAtomStore implements AtomStore {
 						return false;
 					}
 
-					if (stagedParticleIndex.get(e.getKey()) == Spin.DOWN) {
+					if (stagedUuid != null && stagedParticleIndex.getOrDefault(stagedUuid, Collections.emptyMap()).get(e.getKey()) == Spin.DOWN) {
 						return false;
 					}
 
@@ -230,10 +235,14 @@ public class InMemoryAtomStore implements AtomStore {
 				})
 				.map(Map.Entry::getKey)
 				.collect(Collectors.toSet());
-			stagedParticleIndex.entrySet().stream()
-				.filter(e -> e.getValue() == Spin.UP)
-				.map(Entry::getKey)
-				.forEach(upParticles::add);
+
+			if (stagedUuid != null) {
+				stagedParticleIndex.getOrDefault(stagedUuid, Collections.emptyMap()).entrySet().stream()
+					.filter(e -> e.getValue() == Spin.UP)
+					.map(Entry::getKey)
+					.forEach(upParticles::add);
+			}
+
 
 			return upParticles.stream();
 		}

@@ -29,30 +29,11 @@ public interface AtomStore {
 	Observable<Long> onSync(RadixAddress address);
 
 	/**
-	 * Retrieve the current set of validated up particles at a given shardable.
-	 * @param address the address to get the particles under
-	 * @return a stream of all up particles of the current local view
-	 */
-	Stream<Particle> getUpParticles(RadixAddress address);
-
-	/**
 	 * Retrieve the current set of validated atoms at a given shardable
 	 * @param address the address to get the atoms under
 	 * @return a stream of all stored atoms of the current local view
 	 */
 	Stream<Atom> getStoredAtoms(RadixAddress address);
-
-	/**
-	 * Adds the particle group to the staging area
-	 * @param particleGroup the particle group to add to staging area
-	 */
-	void stageParticleGroup(ParticleGroup particleGroup);
-
-	/**
-	 * Retrieves all staged particle groups and clears
-	 * @return all staged particle groups in order
-	 */
-	List<ParticleGroup> getStagedAndClear();
 
 	/**
 	 * Retrieve a never ending observable of atom observations (STORED and DELETED)
@@ -62,4 +43,23 @@ public interface AtomStore {
 	 * @return a never ending observable of updates
 	 */
 	Observable<AtomObservation> getAtomObservations(RadixAddress address);
+
+	/**
+	 * Retrieve the current set of validated up particles at a given shardable.
+	 * @param address the address to get the particles under
+	 * @return a stream of all up particles of the current local view
+	 */
+	Stream<Particle> getUpParticles(RadixAddress address, String uuid);
+
+	/**
+	 * Adds the particle group to the staging area
+	 * @param particleGroup the particle group to add to staging area
+	 */
+	void stageParticleGroup(String uuid, ParticleGroup particleGroup);
+
+	/**
+	 * Retrieves all staged particle groups and clears
+	 * @return all staged particle groups in order
+	 */
+	List<ParticleGroup> getStagedAndClear(String uuid);
 }

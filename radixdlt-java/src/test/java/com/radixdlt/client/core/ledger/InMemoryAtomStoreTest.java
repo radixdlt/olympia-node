@@ -178,7 +178,7 @@ public class InMemoryAtomStoreTest {
 	@Test
 	public void when_getting_up_particles_with_an_empty_store__store_should_return_an_empty_stream() {
 		InMemoryAtomStore inMemoryAtomStore = new InMemoryAtomStore();
-		Stream<Particle> upParticles = inMemoryAtomStore.getUpParticles(mock(RadixAddress.class));
+		Stream<Particle> upParticles = inMemoryAtomStore.getUpParticles(mock(RadixAddress.class), null);
 		assertThat(upParticles).isEmpty();
 	}
 
@@ -188,7 +188,7 @@ public class InMemoryAtomStoreTest {
 		InMemoryAtomStore inMemoryAtomStore = new InMemoryAtomStore();
 		RadixAddress someAddress = mock(RadixAddress.class);
 		inMemoryAtomStore.store(someAddress, mockStoredAtom(someAddress));
-		Stream<Particle> upParticles = inMemoryAtomStore.getUpParticles(someAddress);
+		Stream<Particle> upParticles = inMemoryAtomStore.getUpParticles(someAddress, null);
 		assertThat(upParticles).isEmpty();
 	}
 
@@ -199,7 +199,7 @@ public class InMemoryAtomStoreTest {
 		Particle particle = mock(Particle.class);
 		when(particle.getShardables()).thenReturn(Collections.singleton(someAddress));
 		inMemoryAtomStore.store(someAddress, mockStoredAtom(mock(Atom.class), SpunParticle.up(particle), someAddress));
-		Stream<Particle> upParticles = inMemoryAtomStore.getUpParticles(someAddress);
+		Stream<Particle> upParticles = inMemoryAtomStore.getUpParticles(someAddress, null);
 		assertThat(upParticles).containsExactly(particle);
 	}
 
@@ -210,7 +210,7 @@ public class InMemoryAtomStoreTest {
 		Particle particle = mock(Particle.class);
 		when(particle.getShardables()).thenReturn(Collections.singleton(someAddress));
 		inMemoryAtomStore.store(someAddress, mockStoredAtom(mock(Atom.class), SpunParticle.down(particle), someAddress));
-		Stream<Particle> upParticles = inMemoryAtomStore.getUpParticles(someAddress);
+		Stream<Particle> upParticles = inMemoryAtomStore.getUpParticles(someAddress, null);
 		assertThat(upParticles).isEmpty();
 	}
 
@@ -224,7 +224,7 @@ public class InMemoryAtomStoreTest {
 		inMemoryAtomStore.store(someAddress, mockStoredAtom(atom, SpunParticle.up(particle), someAddress));
 		inMemoryAtomStore.store(someAddress, mockDeletedAtom(atom, someAddress));
 
-		Stream<Particle> upParticles = inMemoryAtomStore.getUpParticles(someAddress);
+		Stream<Particle> upParticles = inMemoryAtomStore.getUpParticles(someAddress, null);
 		assertThat(upParticles).isEmpty();
 	}
 
@@ -248,7 +248,7 @@ public class InMemoryAtomStoreTest {
 		);
 		inMemoryAtomStore.store(someAddress, mockDeletedAtom(atom0, someAddress));
 
-		Stream<Particle> upParticles = inMemoryAtomStore.getUpParticles(someAddress);
+		Stream<Particle> upParticles = inMemoryAtomStore.getUpParticles(someAddress, null);
 		assertThat(upParticles).isEmpty();
 	}
 
@@ -280,7 +280,7 @@ public class InMemoryAtomStoreTest {
 			1
 		);
 		inMemoryAtomStore.store(someAddress, AtomObservation.stored(atom1));
-		Stream<Particle> upParticles = inMemoryAtomStore.getUpParticles(someAddress);
+		Stream<Particle> upParticles = inMemoryAtomStore.getUpParticles(someAddress, null);
 		assertThat(upParticles).containsExactly(particle2);
 	}
 }
