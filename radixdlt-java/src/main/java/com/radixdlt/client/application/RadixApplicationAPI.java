@@ -768,20 +768,36 @@ public class RadixApplicationAPI {
 		return new UnsignedAtom(new Atom(allParticleGroups, metaData));
 	}
 
+	/**
+	 * Represents an atomic transaction to be committed to the ledger
+	 */
 	public final class Transaction {
 		private final ArrayList<Action> actions = new ArrayList<>();
 		private Transaction() {
 		}
 
+		/**
+		 * Execute an action within this transaction
+		 * @param action the action to execute
+		 */
 		public void execute(Action action) {
 			this.actions.add(action);
 		}
 
+		/**
+		 * Commit the transaction onto the ledger
+		 * @return the results of committing
+		 */
 		public Result commit() {
 			return buildDisconnectedResult(actions.toArray(new Action[0])).connect();
 		}
 	}
 
+	/**
+	 * Create a new transaction
+	 *
+	 * @return a new transaction
+	 */
 	public Transaction transaction() {
 		return new Transaction();
 	}
@@ -808,6 +824,13 @@ public class RadixApplicationAPI {
 		}
 	}
 
+	/**
+	 * Returns a cold single of an unsigned atom given a user action. Note that this is
+	 * method will always return a unique atom even if given equivalent actions
+	 *
+	 * @param action action to build a single atom
+	 * @return a cold single of an atom mapped from an action
+	 */
 	public Single<UnsignedAtom> buildAtom(Action action) {
 		return buildAtom(Collections.singletonList(action));
 	}

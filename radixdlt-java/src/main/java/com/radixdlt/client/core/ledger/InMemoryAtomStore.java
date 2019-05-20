@@ -60,6 +60,7 @@ public class InMemoryAtomStore implements AtomStore {
 			});
 	}
 
+	@Override
 	public void stageParticleGroup(String uuid, ParticleGroup particleGroup) {
 		synchronized (lock) {
 			Atom stagedAtom = stagedAtoms.get(uuid);
@@ -79,6 +80,7 @@ public class InMemoryAtomStore implements AtomStore {
 		}
 	}
 
+	@Override
 	public List<ParticleGroup> getStagedAndClear(String uuid) {
 		synchronized (lock) {
 			final Atom atom = stagedAtoms.remove(uuid);
