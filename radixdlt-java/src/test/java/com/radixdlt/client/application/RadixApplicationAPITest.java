@@ -351,7 +351,6 @@ public class RadixApplicationAPITest {
 
 		StatelessActionToParticleGroupsMapper actionMapper = mock(StatelessActionToParticleGroupsMapper.class);
 		when(actionMapper.mapToParticleGroups(eq(action))).thenReturn(Collections.singletonList(ParticleGroup.of(SpunParticle.up(particle))));
-		when(actionMapper.sideEffects(any())).thenReturn(Collections.emptyList());
 		AtomErrorToExceptionReasonMapper errorMapper = mock(AtomErrorToExceptionReasonMapper.class);
 		ActionExecutionExceptionReason reason = mock(ActionExecutionExceptionReason.class);
 		when(errorMapper.mapAtomErrorToExceptionReasons(any(), eq(errorData))).thenReturn(Stream.of(reason));
