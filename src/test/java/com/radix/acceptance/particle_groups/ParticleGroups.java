@@ -4,13 +4,13 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.radix.acceptance.SpecificProperties;
 import com.radixdlt.client.application.RadixApplicationAPI;
+import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.StatelessActionToParticleGroupsMapper;
-import com.radixdlt.client.application.translate.atomic.AtomicAction;
 import com.radixdlt.client.application.translate.data.SendMessageAction;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
@@ -206,9 +206,11 @@ public class ParticleGroups {
 	private void createAtomic(Action... actions) {
 		TestObserver<Object> observer = new TestObserver<>();
 
-		this.api.execute(new AtomicAction(
-			actions
-		))
+		Transaction transaction = this.api.transaction();
+		for (Action action : actions) {
+			transaction.execute(action);
+		}
+		transaction.commit()
 			.toObservable()
 			.doOnNext(System.out::println)
 			.subscribe(observer);

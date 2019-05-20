@@ -1,102 +1,25 @@
 package com.radix.regression.doublespend;
 
-import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.ShardedAppStateId;
-import com.radixdlt.client.application.translate.ShardedParticleStateId;
-import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
 import com.radixdlt.client.application.translate.tokens.TokenBalanceState;
-import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
+import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
-import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle.TokenTransition;
-import com.radixdlt.client.atommodel.tokens.TokenPermission;
-import com.radixdlt.client.core.atoms.ParticleGroup;
-import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.RRI;
-import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Supplier;
-import java.util.stream.Stream;
 import org.assertj.core.api.Condition;
 import org.junit.Test;
 import org.radix.common.tuples.Pair;
-import org.radix.utils.UInt256;
 
 public class DoubleSpendWithInterDependencyTest {
-	private static class SendToSelfTwiceAction implements Action {
-		private final RadixAddress self;
-		private final RRI tokDefRef;
-
-		SendToSelfTwiceAction(RRI tokDefRef, RadixAddress self) {
-			this.tokDefRef = tokDefRef;
-			this.self = self;
-		}
-	}
-
-	private static class SendToSelfTwiceActionMapper implements StatefulActionToParticleGroupsMapper {
-		@Override
-		public Set<ShardedParticleStateId> requiredState(Action action) {
-			if (!(action instanceof SendToSelfTwiceAction)) {
-				return Collections.emptySet();
-			}
-
-			SendToSelfTwiceAction s = (SendToSelfTwiceAction) action;
-
-			return Collections.singleton(ShardedParticleStateId.of(TransferrableTokensParticle.class, s.self));
-		}
-
-		@Override
-		public List<ParticleGroup> mapToParticleGroups(Action action, Stream<Particle> store) {
-			if (!(action instanceof SendToSelfTwiceAction)) {
-				return Collections.emptyList();
-			}
-
-			SendToSelfTwiceAction s = (SendToSelfTwiceAction) action;
-
-			TransferrableTokensParticle consumable = store.map(TransferrableTokensParticle.class::cast)
-				.findFirst().orElseThrow(IllegalStateException::new);
-
-			final UInt256 amount = consumable.getAmount();
-
-			final Supplier<TransferrableTokensParticle> particleSupplier = () -> new TransferrableTokensParticle(
-				amount,
-				TokenUnitConversions.unitsToSubunits(BigDecimal.ONE),
-				s.self,
-				System.nanoTime(),
-				s.tokDefRef,
-				System.currentTimeMillis() / 60000L + 60000L,
-				ImmutableMap.of(
-					TokenTransition.MINT, TokenPermission.TOKEN_CREATION_ONLY,
-					TokenTransition.BURN, TokenPermission.NONE
-				)
-			);
-
-			TransferrableTokensParticle transferredTokensParticle0 = particleSupplier.get();
-			TransferrableTokensParticle transferredTokensParticle1 = particleSupplier.get();
-
-
-			return Arrays.asList(
-				ParticleGroup.of(
-					SpunParticle.down((Particle) consumable),
-					SpunParticle.up(transferredTokensParticle0)
-				),
-				ParticleGroup.of(
-					SpunParticle.down(transferredTokensParticle0),
-					SpunParticle.up(transferredTokensParticle1)
-				)
-			);
-		}
-	}
-
 	private static class DoubleSpendWithInnerDependencyConditions implements DoubleSpendTestConditions {
 		private final RadixAddress apiAddress;
 		private final RRI tokenRef;
@@ -122,10 +45,20 @@ public class DoubleSpendWithInterDependencyTest {
 		}
 
 		@Override
-		public List<List<Action>> conflictingActions() {
+		public List<List<BatchedActions>> conflictingActions() {
 			return Arrays.asList(
-				Collections.singletonList(new SendToSelfTwiceAction(tokenRef, apiAddress)),
-				Collections.singletonList(new SendToSelfTwiceAction(tokenRef, apiAddress))
+				Collections.singletonList(
+					new BatchedActions(
+						TransferTokensAction.create(apiAddress, apiAddress, BigDecimal.ONE, tokenRef),
+						TransferTokensAction.create(apiAddress, apiAddress, BigDecimal.ONE, tokenRef)
+					)
+				),
+				Collections.singletonList(
+					new BatchedActions(
+						TransferTokensAction.create(apiAddress, apiAddress, BigDecimal.ONE, tokenRef),
+						TransferTokensAction.create(apiAddress, apiAddress, BigDecimal.ONE, tokenRef)
+					)
+				)
 			);
 		}
 
@@ -149,7 +82,6 @@ public class DoubleSpendWithInterDependencyTest {
 		DoubleSpendTestRunner testRunner = new DoubleSpendTestRunner(
 			api -> new DoubleSpendWithInnerDependencyConditions(api.getMyAddress()),
 			(bootstrap, identity) -> RadixApplicationAPI.defaultBuilder()
-				.addStatefulParticlesMapper(new SendToSelfTwiceActionMapper())
 				.bootstrap(bootstrap)
 				.identity(identity)
 				.build()

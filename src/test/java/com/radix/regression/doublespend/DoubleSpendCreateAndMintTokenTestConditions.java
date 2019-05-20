@@ -32,32 +32,38 @@ public class DoubleSpendCreateAndMintTokenTestConditions implements DoubleSpendT
 	}
 
 	@Override
-	public List<List<Action>> conflictingActions() {
+	public List<List<BatchedActions>> conflictingActions() {
 		return Arrays.asList(
 			Arrays.asList(
-				CreateTokenAction.create(
-					apiAddress,
-					"Joshy Token",
-					"JOSH",
-					"Cool Token",
-					BigDecimal.ZERO,
-					BigDecimal.ONE,
-					TokenSupplyType.MUTABLE
-				),
-				MintTokensAction.create(
-					tokenRef,
-					BigDecimal.ONE
+				new BatchedActions(
+					CreateTokenAction.create(
+						apiAddress,
+						"Joshy Token",
+						"JOSH",
+						"Cool Token",
+						BigDecimal.ZERO,
+						BigDecimal.ONE,
+						TokenSupplyType.MUTABLE
+					))
+				,
+				new BatchedActions(
+					MintTokensAction.create(
+						tokenRef,
+						BigDecimal.ONE
+					)
 				)
 			),
 			Collections.singletonList(
-				CreateTokenAction.create(
-					apiAddress,
-					"Joshy Token",
-					"JOSH",
-					"Cool Token",
-					BigDecimal.ONE,
-					BigDecimal.ONE,
-					TokenSupplyType.FIXED
+				new BatchedActions(
+					CreateTokenAction.create(
+						apiAddress,
+						"Joshy Token",
+						"JOSH",
+						"Cool Token",
+						BigDecimal.ONE,
+						BigDecimal.ONE,
+						TokenSupplyType.FIXED
+					)
 				)
 			)
 		);

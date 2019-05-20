@@ -3,10 +3,10 @@ package com.radix.acceptance.sending_a_data_transaction;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.radixdlt.client.application.RadixApplicationAPI;
+import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.Action;
-import com.radixdlt.client.application.translate.atomic.AtomicAction;
 import com.radixdlt.client.application.translate.data.DecryptedMessage;
 import com.radixdlt.client.application.translate.data.SendMessageAction;
 import com.radixdlt.client.core.Bootstrap;
@@ -61,9 +61,11 @@ public class SendingADataTransaction {
 	private void createAtomic(RadixApplicationAPI api, Action... actions) {
 		TestObserver<SubmitAtomAction> observer = new TestObserver<>();
 
-		api.execute(new AtomicAction(
-			actions
-		))
+		Transaction transaction = api.transaction();
+		for (Action action : actions) {
+			transaction.execute(action);
+		}
+		transaction.commit()
 			.toObservable()
 			.doOnNext(System.out::println)
 			.subscribe(observer);

@@ -1,5 +1,6 @@
 package com.radix.regression.doublespend;
 
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.ApplicationState;
 import com.radixdlt.client.application.translate.ShardedAppStateId;
@@ -31,7 +32,22 @@ public interface DoubleSpendTestConditions {
 		}
 	}
 
+	class BatchedActions {
+		private final ImmutableList<Action> actions;
+		public BatchedActions(Action... actions) {
+			this.actions = ImmutableList.copyOf(actions);
+		}
+
+		public BatchedActions(Action action) {
+			this.actions = ImmutableList.of(action);
+		}
+
+		public List<Action> getActions() {
+			return actions;
+		}
+	}
+
 	List<Action> initialActions();
-	List<List<Action>> conflictingActions();
+	List<List<BatchedActions>> conflictingActions();
 	PostConsensusCondition postConsensusCondition();
 }

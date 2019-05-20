@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.radix.regression.Util;
+import com.radix.regression.doublespend.DoubleSpendTestConditions.BatchedActions;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
 import com.radixdlt.client.application.identity.RadixIdentities;
@@ -158,10 +159,11 @@ public final class DoubleSpendTestRunner {
 
 
 		// When the account executes two transfers via two different nodes at the same time
-		Observable<Pair<SingleNodeAPI, List<Action>>> conflictingAtoms =
+		Observable<Pair<SingleNodeAPI, List<List<Action>>>> conflictingAtoms =
 			Observable.zip(
 				singleNodeApis,
-				Observable.fromIterable(doubleSpendTestConditions.conflictingActions()),
+				Observable.fromIterable(doubleSpendTestConditions.conflictingActions())
+					.map(l -> l.stream().map(BatchedActions::getActions).collect(Collectors.toList())),
 				Pair::of
 			);
 
@@ -246,7 +248,7 @@ public final class DoubleSpendTestRunner {
 
 				// TODO: Remove 160 seconds when atom sync speed is fixed
 				final long cur = System.currentTimeMillis();
-				final long timeUntilResolved = startTime + TimeUnit.SECONDS.toMillis(500) - cur;
+				final long timeUntilResolved = startTime + TimeUnit.SECONDS.toMillis(1000) - cur;
 
 				if (timeUntilResolved > 0) {
 					if (states.stream().allMatch(s -> doubleSpendTestConditions.postConsensusCondition().getCondition().matches(s))
