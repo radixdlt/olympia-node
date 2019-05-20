@@ -20,41 +20,22 @@ import org.radix.utils.UInt256s;
 public class TokenBalanceState implements ApplicationState {
 	public static class Balance {
 		private final BigInteger balance;
-		private final BigInteger granularity;
 
-		private Balance(BigInteger balance, BigInteger granularity) {
+		private Balance(BigInteger balance) {
 			this.balance = balance;
-			this.granularity = granularity;
-		}
-
-		public static Balance empty(BigInteger granularity) {
-			return new Balance(BigInteger.ZERO, granularity);
 		}
 
 		public BigDecimal getAmount() {
 			return TokenUnitConversions.subunitsToUnits(balance);
 		}
 
-		public BigDecimal getGranularity() {
-			return TokenUnitConversions.subunitsToUnits(granularity);
-		}
-
 		public static Balance combine(Balance balance0, Balance balance1) {
-			return new Balance(
-				balance0.balance.add(balance1.balance),
-				balance0.granularity
-			);
-		}
-
-		public static Balance merge(Balance balance, TransferrableTokensParticle tokens) {
-			final BigInteger amount = UInt256s.toBigInteger(tokens.getAmount());
-			final BigInteger newBalance = balance.balance.add(amount);
-			return new Balance(newBalance, balance.granularity);
+			return new Balance(balance0.balance.add(balance1.balance));
 		}
 
 		@Override
 		public int hashCode() {
-			return Objects.hash(balance, granularity);
+			return Objects.hash(balance);
 		}
 
 		@Override
@@ -64,13 +45,12 @@ public class TokenBalanceState implements ApplicationState {
 			}
 
 			Balance b = (Balance) o;
-			return Objects.equals(b.balance, balance)
-				&& Objects.equals(b.granularity, granularity);
+			return Objects.equals(b.balance, balance);
 		}
 
 		@Override
 		public String toString() {
-			return "{BAL:" + getAmount().toString() + "}";
+			return getAmount().toString();
 		}
 	}
 
@@ -101,10 +81,9 @@ public class TokenBalanceState implements ApplicationState {
 	public static TokenBalanceState merge(TokenBalanceState state, TransferrableTokensParticle tokens) {
 		HashMap<RRI, Balance> balance = new HashMap<>(state.balance);
 		BigInteger amount = UInt256s.toBigInteger(tokens.getAmount());
-		BigInteger granularity = UInt256s.toBigInteger(tokens.getGranularity());
 		balance.merge(
 			tokens.getTokenDefinitionReference(),
-			new Balance(amount, granularity),
+			new Balance(amount),
 			Balance::combine
 		);
 
