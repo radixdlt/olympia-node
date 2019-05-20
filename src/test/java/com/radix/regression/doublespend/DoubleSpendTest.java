@@ -36,4 +36,15 @@ public class DoubleSpendTest {
 		DoubleSpendTestRunner testRunner = new DoubleSpendTestRunner(api -> new DoubleSpendCreateAndMintTokenTestConditions(api.getMyAddress()));
 		testRunner.execute(10);
 	}
+
+	@Test
+	public void given_an_account_with_three_tokens__when_two_conflicting_transfers_which_also_conflict_with_token_creations__then_neither_transfer_should_be_successful() {
+		DoubleSpendTestRunner testRunner = new DoubleSpendTestRunner(
+			api -> new DoubleSpendMultiConflictTestConditions(
+				api.getMyAddress(),
+				api.getAddressFromKey(RadixIdentities.createNew().getPublicKey())
+			)
+		);
+		testRunner.execute(30);
+	}
 }

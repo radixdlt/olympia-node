@@ -263,6 +263,11 @@ public final class DoubleSpendTestRunner {
 							&& lastAtomState.entrySet().stream().map(Entry::getValue)
 								.allMatch(s0 -> lastAtomState.entrySet().stream().map(Entry::getValue).allMatch(s1 -> s1.equals(s0))
 					)) {
+						System.out.println();
+						System.out.println("Final State");
+						System.out.println();
+						System.out.println(states.iterator().next());
+						System.out.println();
 						break;
 					} else {
 						try {
