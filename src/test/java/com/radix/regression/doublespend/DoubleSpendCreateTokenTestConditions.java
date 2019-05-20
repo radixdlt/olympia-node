@@ -27,7 +27,7 @@ public class DoubleSpendCreateTokenTestConditions implements DoubleSpendTestCond
 	}
 
 	@Override
-	public List<Action> initialActions() {
+	public List<BatchedActions> initialActions() {
 		return Collections.emptyList();
 	}
 

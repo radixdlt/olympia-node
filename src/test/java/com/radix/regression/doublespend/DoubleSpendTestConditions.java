@@ -47,7 +47,7 @@ public interface DoubleSpendTestConditions {
 		}
 	}
 
-	List<Action> initialActions();
+	List<BatchedActions> initialActions();
 	List<List<BatchedActions>> conflictingActions();
 	PostConsensusCondition postConsensusCondition();
 }

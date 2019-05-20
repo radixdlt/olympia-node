@@ -29,16 +29,18 @@ class DoubleSpendTokenTransferTestConditions implements DoubleSpendTestCondition
 	}
 
 	@Override
-	public List<Action> initialActions() {
+	public List<BatchedActions> initialActions() {
 		return Collections.singletonList(
-			CreateTokenAction.create(
-				apiAddress,
-				"Joshy Token",
-				"JOSH",
-				"Cool Token",
-				BigDecimal.ONE,
-				BigDecimal.ONE,
-				TokenSupplyType.FIXED
+			new BatchedActions(
+				CreateTokenAction.create(
+					apiAddress,
+					"Joshy Token",
+					"JOSH",
+					"Cool Token",
+					BigDecimal.ONE,
+					BigDecimal.ONE,
+					TokenSupplyType.FIXED
+				)
 			)
 		);
 	}

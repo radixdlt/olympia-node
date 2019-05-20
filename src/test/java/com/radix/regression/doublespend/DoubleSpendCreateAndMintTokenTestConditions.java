@@ -27,7 +27,7 @@ public class DoubleSpendCreateAndMintTokenTestConditions implements DoubleSpendT
 	}
 
 	@Override
-	public List<Action> initialActions() {
+	public List<BatchedActions> initialActions() {
 		return Collections.emptyList();
 	}
 

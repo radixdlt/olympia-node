@@ -1,7 +1,6 @@
 package com.radix.regression.doublespend;
 
 import com.radixdlt.client.application.RadixApplicationAPI;
-import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.ShardedAppStateId;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
@@ -30,16 +29,18 @@ public class DoubleSpendWithInterDependencyTest {
 		}
 
 		@Override
-		public List<Action> initialActions() {
+		public List<BatchedActions> initialActions() {
 			return Collections.singletonList(
-				CreateTokenAction.create(
-					apiAddress,
-					"Joshy Token",
-					"JOSH",
-					"Cool Token",
-					BigDecimal.ONE,
-					BigDecimal.ONE,
-					TokenSupplyType.FIXED
+				new BatchedActions(
+					CreateTokenAction.create(
+						apiAddress,
+						"Joshy Token",
+						"JOSH",
+						"Cool Token",
+						BigDecimal.ONE,
+						BigDecimal.ONE,
+						TokenSupplyType.FIXED
+					)
 				)
 			);
 		}

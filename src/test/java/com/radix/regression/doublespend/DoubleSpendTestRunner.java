@@ -8,6 +8,7 @@ import com.radix.regression.Util;
 import com.radix.regression.doublespend.DoubleSpendTestConditions.BatchedActions;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
+import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.Action;
@@ -113,9 +114,15 @@ public final class DoubleSpendTestRunner {
 		RadixApplicationAPI api = apiSupplier.apply(Bootstrap.LOCALHOST, RadixIdentities.createNew());
 		DoubleSpendTestConditions doubleSpendTestConditions = testSupplier.apply(api);
 
-		List<Action> initialActions = doubleSpendTestConditions.initialActions();
+		List<BatchedActions> initialActions = doubleSpendTestConditions.initialActions();
 		initialActions.stream()
-			.map(api::execute)
+			.map(batched -> {
+				Transaction transaction = api.transaction();
+				for (Action action : batched.getActions()) {
+					transaction.execute(action);
+				}
+				return transaction.commit();
+			})
 			.map(Result::toCompletable)
 			.forEach(Completable::blockingAwait);
 
