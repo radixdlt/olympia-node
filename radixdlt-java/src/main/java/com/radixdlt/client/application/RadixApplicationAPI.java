@@ -15,7 +15,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -542,10 +541,7 @@ public class RadixApplicationAPI {
 	public Observable<Map<RRI, BigDecimal>> getBalance(RadixAddress address) {
 		Objects.requireNonNull(address);
 		return getState(TokenBalanceState.class, address)
-			.map(TokenBalanceState::getBalance)
-			.map(map -> map.entrySet().stream().collect(
-				Collectors.toMap(Entry::getKey, e -> e.getValue().getAmount())
-			));
+			.map(TokenBalanceState::getBalance);
 	}
 
 	public Observable<BigDecimal> getMyBalance(RRI tokenDefinitionReference) {

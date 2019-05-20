@@ -6,65 +6,25 @@ import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.client.core.atoms.particles.RRI;
 
 import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
-
-import org.radix.utils.UInt256s;
 
 /**
  * All the token balances at an address at a given point in time.
  */
 public class TokenBalanceState implements ApplicationState {
-	public static class Balance {
-		private final BigInteger balance;
-
-		private Balance(BigInteger balance) {
-			this.balance = balance;
-		}
-
-		public BigDecimal getAmount() {
-			return TokenUnitConversions.subunitsToUnits(balance);
-		}
-
-		public static Balance combine(Balance balance0, Balance balance1) {
-			return new Balance(balance0.balance.add(balance1.balance));
-		}
-
-		@Override
-		public int hashCode() {
-			return Objects.hash(balance);
-		}
-
-		@Override
-		public boolean equals(Object o) {
-			if (!(o instanceof Balance)) {
-				return false;
-			}
-
-			Balance b = (Balance) o;
-			return Objects.equals(b.balance, balance);
-		}
-
-		@Override
-		public String toString() {
-			return getAmount().toString();
-		}
-	}
-
-	private final ImmutableMap<RRI, Balance> balance;
+	private final ImmutableMap<RRI, BigDecimal> balance;
 
 	public TokenBalanceState() {
 		this.balance = ImmutableMap.of();
 	}
 
-	public TokenBalanceState(Map<RRI, Balance> balance) {
+	public TokenBalanceState(Map<RRI, BigDecimal> balance) {
 		this.balance = ImmutableMap.copyOf(balance);
 	}
 
-	public Map<RRI, Balance> getBalance() {
+	public Map<RRI, BigDecimal> getBalance() {
 		return Collections.unmodifiableMap(balance);
 	}
 
@@ -73,18 +33,18 @@ public class TokenBalanceState implements ApplicationState {
 			return state0;
 		}
 
-		HashMap<RRI, Balance> balance = new HashMap<>(state0.balance);
-		state1.balance.forEach((rri, bal) -> balance.merge(rri, bal, Balance::combine));
+		HashMap<RRI, BigDecimal> balance = new HashMap<>(state0.balance);
+		state1.balance.forEach((rri, bal) -> balance.merge(rri, bal, BigDecimal::add));
 		return new TokenBalanceState(balance);
 	}
 
 	public static TokenBalanceState merge(TokenBalanceState state, TransferrableTokensParticle tokens) {
-		HashMap<RRI, Balance> balance = new HashMap<>(state.balance);
-		BigInteger amount = UInt256s.toBigInteger(tokens.getAmount());
+		HashMap<RRI, BigDecimal> balance = new HashMap<>(state.balance);
+		BigDecimal amount = TokenUnitConversions.subunitsToUnits(tokens.getAmount());
 		balance.merge(
 			tokens.getTokenDefinitionReference(),
-			new Balance(amount),
-			Balance::combine
+			amount,
+			BigDecimal::add
 		);
 
 		return new TokenBalanceState(balance);
