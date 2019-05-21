@@ -206,7 +206,7 @@ public class ParticleGroups {
 	private void createAtomic(Action... actions) {
 		TestObserver<Object> observer = new TestObserver<>();
 
-		Transaction transaction = this.api.transaction();
+		Transaction transaction = this.api.createTransaction();
 		for (Action action : actions) {
 			transaction.execute(action);
 		}

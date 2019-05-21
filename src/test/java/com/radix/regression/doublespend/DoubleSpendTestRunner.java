@@ -125,7 +125,7 @@ public final class DoubleSpendTestRunner {
 		List<BatchedActions> initialActions = doubleSpendTestConditions.initialActions();
 		initialActions.stream()
 			.map(batched -> {
-				Transaction transaction = api.transaction();
+				Transaction transaction = api.createTransaction();
 				for (Action action : batched.getActions()) {
 					transaction.execute(action);
 				}

@@ -61,7 +61,7 @@ public class SendingADataTransaction {
 	private void createAtomic(RadixApplicationAPI api, Action... actions) {
 		TestObserver<SubmitAtomAction> observer = new TestObserver<>();
 
-		Transaction transaction = api.transaction();
+		Transaction transaction = api.createTransaction();
 		for (Action action : actions) {
 			transaction.execute(action);
 		}
