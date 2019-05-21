@@ -6,7 +6,6 @@ import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.client.core.atoms.particles.RRI;
 
 import java.math.BigDecimal;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -25,7 +24,7 @@ public class TokenBalanceState implements ApplicationState {
 	}
 
 	public Map<RRI, BigDecimal> getBalance() {
-		return Collections.unmodifiableMap(balance);
+		return balance;
 	}
 
 	public static TokenBalanceState combine(TokenBalanceState state0, TokenBalanceState state1) {

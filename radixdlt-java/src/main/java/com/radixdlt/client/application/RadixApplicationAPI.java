@@ -10,7 +10,6 @@ import com.radixdlt.client.core.network.actions.FetchAtomsObservationAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -24,6 +23,7 @@ import java.util.stream.Stream;
 
 import com.radixdlt.client.application.translate.tokens.MintAndTransferTokensAction;
 import com.radixdlt.client.application.translate.tokens.MintAndTransferTokensActionMapper;
+import java.util.stream.StreamSupport;
 import org.radix.common.tuples.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -789,20 +789,21 @@ public class RadixApplicationAPI {
 		 * @return the results of committing
 		 */
 		public Result commit() {
-			return buildDisconnectedResult(actions.toArray(new Action[0])).connect();
+			return buildDisconnectedResult(actions).connect();
 		}
 	}
 
 	/**
-	 * Create a new transaction
+	 * Create a new transaction which is based off of the
+	 * current data in the atom store.
 	 *
 	 * @return a new transaction
 	 */
-	public Transaction transaction() {
+	public Transaction createTransaction() {
 		return new Transaction();
 	}
 
-	private void stageActions(String uuid, List<Action> actions) {
+	private void stageActions(String uuid, Iterable<Action> actions) {
 		for (Action action : actions) {
 			for (StatelessActionToParticleGroupsMapper mapper : statelessActionToParticleGroupsMappers) {
 				mapper.mapToParticleGroups(action).forEach(pg -> ledger.getAtomStore().stageParticleGroup(uuid, pg));
@@ -836,14 +837,14 @@ public class RadixApplicationAPI {
 	}
 
 	/**
-	 * Returns a cold single of an unsigned atom given a user action. Note that this is
-	 * method will always return a unique atom even if given equivalent actions
+	 * Returns a cold single of an unsigned atom given an ordered iterable of user actions.
+	 * Note that this method will always return a unique atom even if given equivalent actions
 	 *
-	 * @param actions actions to build a single atom
+	 * @param actions ordered actions to build a single atom
 	 * @return a cold single of an atom mapped from an action
 	 */
-	public Single<UnsignedAtom> buildAtom(List<Action> actions) {
-		final Set<ShardedParticleStateId> requiredState = actions.stream()
+	public Single<UnsignedAtom> buildAtom(Iterable<Action> actions) {
+		final Set<ShardedParticleStateId> requiredState = StreamSupport.stream(actions.spliterator(), false)
 			.flatMap(a -> statefulActionToParticleGroupsMappers.stream().flatMap(mapper -> mapper.requiredState(a).stream()))
 			.collect(Collectors.toSet());
 		final String uuid = UUID.randomUUID().toString();
@@ -927,8 +928,8 @@ public class RadixApplicationAPI {
 		return buildDisconnectedAtomSubmit(Single.just(atom));
 	}
 
-	private Result buildDisconnectedResult(Action... actions) {
-		final Single<Atom> atom = this.buildAtom(Arrays.asList(actions))
+	private Result buildDisconnectedResult(Iterable<Action> actions) {
+		final Single<Atom> atom = this.buildAtom(actions)
 			.flatMap(this.identity::sign);
 
 		return buildDisconnectedAtomSubmit(atom);
@@ -951,7 +952,7 @@ public class RadixApplicationAPI {
 	 * @return results of the execution
 	 */
 	public Result execute(Action action) {
-		return this.buildDisconnectedResult(action).connect();
+		return this.buildDisconnectedResult(Collections.singleton(action)).connect();
 	}
 
 

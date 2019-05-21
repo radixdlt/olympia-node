@@ -9,12 +9,14 @@ import com.radixdlt.client.core.ledger.AtomObservation.Type;
 import com.radixdlt.client.core.ledger.AtomObservation.AtomObservationUpdateType;
 import io.reactivex.Observable;
 import io.reactivex.ObservableEmitter;
+import io.reactivex.annotations.Nullable;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -62,6 +64,9 @@ public class InMemoryAtomStore implements AtomStore {
 
 	@Override
 	public void stageParticleGroup(String uuid, ParticleGroup particleGroup) {
+		Objects.requireNonNull(uuid);
+		Objects.requireNonNull(particleGroup);
+
 		synchronized (lock) {
 			Atom stagedAtom = stagedAtoms.get(uuid);
 			if (stagedAtom == null) {
@@ -82,6 +87,8 @@ public class InMemoryAtomStore implements AtomStore {
 
 	@Override
 	public List<ParticleGroup> getStagedAndClear(String uuid) {
+		Objects.requireNonNull(uuid);
+
 		synchronized (lock) {
 			final Atom atom = stagedAtoms.remove(uuid);
 			stagedParticleIndex.get(uuid).clear();
@@ -214,7 +221,7 @@ public class InMemoryAtomStore implements AtomStore {
 
 
 	@Override
-	public Stream<Particle> getUpParticles(RadixAddress address, String stagedUuid) {
+	public Stream<Particle> getUpParticles(RadixAddress address, @Nullable String stagedUuid) {
 		synchronized (lock) {
 			Set<Particle> upParticles = particleIndex.entrySet().stream()
 				.filter(e -> {
