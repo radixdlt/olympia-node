@@ -129,7 +129,7 @@ public final class AID implements Comparable<AID> {
 		}
 
 		// select the shard indexed by the first hash byte
-		int selectedShardIndex = hash.getFirstByte() % shards.size();
+		int selectedShardIndex = (hash.getFirstByte() - Byte.MIN_VALUE) % shards.size();
 		long selectedShard = shards.toArray(new Long[0])[selectedShardIndex];
 		byte[] bytes = new byte[BYTES];
 		hash.copyTo(bytes, 0, HASH_BYTES);
