@@ -256,6 +256,10 @@ public final class DoubleSpendTestRunner {
 					ImmutableMap<ShardedAppStateId, ApplicationState> state = testObservers.entrySet().stream()
 						.collect(ImmutableMap.toImmutableMap(Entry::getKey, e -> {
 							List<ApplicationState> values = e.getValue().values();
+							if (values.isEmpty()) {
+								throw new IllegalStateException("Application state for " + e.getKey() + " is empty");
+							}
+
 							return values.get(values.size() - 1);
 						}));
 					return state;
