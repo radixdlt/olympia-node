@@ -17,12 +17,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.reactivex.observers.TestObserver;
-import org.radix.common.ID.EUID;
+import org.radix.common.ID.AID;
 
 public class InMemoryAtomStoreTest {
 	private AtomObservation mockDeletedAtom(Atom atom, RadixAddress address) {
 		RadixHash hash = mock(RadixHash.class);
-		EUID hid = mock(EUID.class);
+		AID hid = mock(AID.class);
 		when(atom.getAid()).thenReturn(hid);
 		when(atom.getHash()).thenReturn(hash);
 		when(atom.addresses()).thenReturn(
@@ -37,7 +37,7 @@ public class InMemoryAtomStoreTest {
 
 	private AtomObservation mockStoredAtom(Atom atom, RadixAddress address) {
 		RadixHash hash = mock(RadixHash.class);
-		EUID hid = mock(EUID.class);
+		AID hid = mock(AID.class);
 		when(atom.getAid()).thenReturn(hid);
 		when(atom.getHash()).thenReturn(hash);
 		when(atom.addresses()).thenReturn(
@@ -52,7 +52,7 @@ public class InMemoryAtomStoreTest {
 
 	private AtomObservation mockStoredAtom(Atom atom, SpunParticle spun0, SpunParticle spun1, RadixAddress address) {
 		RadixHash hash = mock(RadixHash.class);
-		EUID hid = mock(EUID.class);
+		AID hid = mock(AID.class);
 		when(atom.spunParticles()).thenReturn(
 			Stream.of(spun0, spun1),
 			Stream.of(spun0, spun1),
@@ -69,7 +69,7 @@ public class InMemoryAtomStoreTest {
 
 	private AtomObservation mockStoredAtom(Atom atom, SpunParticle spun, RadixAddress address, boolean soft) {
 		RadixHash hash = mock(RadixHash.class);
-		EUID hid = mock(EUID.class);
+		AID hid = mock(AID.class);
 		when(atom.spunParticles()).thenReturn(Stream.of(spun), Stream.of(spun), Stream.of(spun));
 		when(atom.particles(any())).thenCallRealMethod().thenCallRealMethod().thenCallRealMethod();
 		when(atom.getAid()).thenReturn(hid);

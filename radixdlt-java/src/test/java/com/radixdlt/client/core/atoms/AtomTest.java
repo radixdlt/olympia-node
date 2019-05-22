@@ -24,7 +24,7 @@ public class AtomTest {
 		/// The origin of these hashes are this library it self, commit: acbc5307cf5c9f7e1c30300f7438ef5dbc3bb629
 		/// These hashes can be used as a reference for other Radix libraries, e.g. Swift.
 
-		assertEquals("e50964da69e6672a98d5e3c1b1d73fb3", atom.getAid().toHexString());
+		assertEquals("e50964da69e6672a98d5e3c1b1d73fb3", atom.getAid().toString());
 		assertEquals("Two empty atoms should equal", atom, new Atom(Collections.emptyList(), 0L));
 
 		byte[] seed = Hash.sha256("Radix".getBytes(StandardCharsets.UTF_8));
