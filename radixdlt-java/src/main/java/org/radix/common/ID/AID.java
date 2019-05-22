@@ -11,7 +11,7 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * An Atom ID, made up of 192 bits of truncated hash and 64 bits of the lowest shard of an atom.
+ * An Atom ID, made up of 192 bits of truncated hash and 64 bits of a selected shard.
  * The Atom ID is used so that Atoms can be located using just their hid.
  * The lowest shard is chosen for no particular reason, it only needs to be deterministic between implementations.
  */
