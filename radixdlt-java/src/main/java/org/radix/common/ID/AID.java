@@ -48,7 +48,9 @@ public final class AID implements Comparable<AID> {
 	/**
 	 * Get the shard encoded in this AID
 	 */
-	public long getShard() { return Longs.fromByteArray(this.bytes, HASH_BYTES); };
+	public long getShard() {
+		return Longs.fromByteArray(this.bytes, HASH_BYTES);
+	};
 
 	/**
 	 * Copy this AID to a byte array with some offset
