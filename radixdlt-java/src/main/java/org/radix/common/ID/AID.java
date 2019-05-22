@@ -25,6 +25,7 @@ public final class AID implements Comparable<AID> {
 	private byte[] bytes;
 
 	private AID() {
+		// empty constructor for serializer
 	}
 
 	private AID(byte[] bytes) {

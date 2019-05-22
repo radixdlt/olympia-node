@@ -28,8 +28,9 @@ class JacksonJsonAIDDeserializer extends StdDeserializer<AID> {
 	public AID deserialize(JsonParser p, DeserializationContext ctxt)
 			throws IOException, JsonProcessingException {
 		String value = p.getValueAsString();
-		if (!value.startsWith(JacksonCodecConstants.AID_STR_VALUE))
+		if (!value.startsWith(JacksonCodecConstants.AID_STR_VALUE)) {
 			throw new InvalidFormatException(p, "Expecting AID", value, AID.class);
+		}
 		return AID.from(value.substring(JacksonCodecConstants.STR_VALUE_LEN));
 	}
 }
