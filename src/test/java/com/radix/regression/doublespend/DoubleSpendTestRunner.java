@@ -218,12 +218,12 @@ public final class DoubleSpendTestRunner {
 					FetchAtomsObservationAction f = (FetchAtomsObservationAction) a;
 					if (f.getObservation().getType() == Type.DELETE || f.getObservation().getType() == Type.STORE) {
 						System.out.println(System.currentTimeMillis() + " " + singleNodeApi + " " + f.getObservation().getType() + ": "
-							+ f.getObservation().getAtom().getHid());
+							+ f.getObservation().getAtom().getAid());
 					}
 				} else if (a instanceof SubmitAtomResultAction) {
 					SubmitAtomResultAction r = (SubmitAtomResultAction) a;
 					if (r.getType() == SubmitAtomResultActionType.VALIDATION_ERROR) {
-						System.out.println(System.currentTimeMillis() + " " + singleNodeApi + " VALIDATION_ERROR: " + r.getAtom().getHid());
+						System.out.println(System.currentTimeMillis() + " " + singleNodeApi + " VALIDATION_ERROR: " + r.getAtom().getAid());
 					}
 				}
 			})
@@ -276,7 +276,7 @@ public final class DoubleSpendTestRunner {
 						try {
 							System.out.println(cur + " States don't match retrying 5 seconds...Time until resolved: " + (timeUntilResolved / 1000));
 							for (Entry<String, Set<Atom>> e : lastAtomState.entrySet()) {
-								System.out.println(e.getKey() + ": " + e.getValue().stream().map(Atom::getHid).map(EUID::toString).collect(Collectors.toSet()));
+								System.out.println(e.getKey() + ": " + e.getValue().stream().map(Atom::getAid).map(Object::toString).collect(Collectors.toSet()));
 							}
 
 							TimeUnit.SECONDS.sleep(5);

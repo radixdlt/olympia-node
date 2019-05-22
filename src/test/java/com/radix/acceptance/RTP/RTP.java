@@ -79,7 +79,7 @@ public class RTP {
 		observer.assertValueAt(observer.valueCount() - 1, saa -> saa instanceof SubmitAtomResultAction);
 
 		// Extract HID for query of "other" node
-		String atomHID = observer.values().get(observer.valueCount() - 1).getAtom().getHid().toString();
+		String atomHID = observer.values().get(observer.valueCount() - 1).getAtom().getAid().toString();
 
 		long timeout = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(10);
 		JSONArray atomArray;
@@ -138,7 +138,7 @@ public class RTP {
 		Result submissionResult = api.submitAtom(atom);
 		submissionResult.blockUntilComplete();
 
-        String result = getURL("http://localhost:8080/api/atoms?aid=" + atom.getHid());
+        String result = getURL("http://localhost:8080/api/atoms?aid=" + atom.getAid());
         JSONObject json = new JSONObject(result);
         assertTrue("Has data element", json.has("data"));
 

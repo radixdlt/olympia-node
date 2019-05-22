@@ -131,7 +131,7 @@ public class SubmitIdenticalAtomsMultipleTimesTest {
 		jsonRpcClient.submitAtom(atom)
 			.doOnNext(update -> System.out.printf("%d %s %s %s%n",
 				update.getTimestamp(),
-				atom.getHid(),
+				atom.getAid(),
 				update.getState(),
 				Optional.ofNullable(update.getData())
 					.map(JsonElement::toString)
