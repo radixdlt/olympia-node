@@ -183,10 +183,6 @@ public final class Atom extends SerializableObject {
 		return RadixHash.of(toDson());
 	}
 
-	public EUID getHid() {
-		return this.getHash().toEUID();
-	}
-
 	public AID getAid() {
 		return AID.from(getHash(), getShards());
 	}

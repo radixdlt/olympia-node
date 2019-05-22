@@ -38,7 +38,7 @@ public class AtomFetcher {
 			/*
 			.filter(atomObservation -> {
 				if (atomObservation.isStore()) {
-					LOGGER.info("Received atom " + atomObservation.getAtom().getHid());
+					LOGGER.info("Received atom " + atomObservation.getAtom().getAid());
 					try {
 						RadixAtomValidator.getInstance().validate(atomObservation.getAtom());
 						return true;
