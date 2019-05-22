@@ -45,8 +45,8 @@ public class StaticShardingAcceptance {
 
 		// This test indirectly does what is written above, by showing that shards
 		// *are* passed between nodes via the API.
-        checkPeersHaveShards(getNonEmptyPeersFrom(PRIMARY_HOST));
-        checkPeersHaveShards(getNonEmptyPeersFrom(OTHER_HOST));
+		checkPeersHaveShards(getNonEmptyPeersFrom(PRIMARY_HOST));
+		checkPeersHaveShards(getNonEmptyPeersFrom(OTHER_HOST));
 	}
 
 	@Test
@@ -120,26 +120,26 @@ public class StaticShardingAcceptance {
 		assertTrue("Peer was removed", found);
 	}
 
-    private byte[] fromBase64(String string) {
-    	if (!string.startsWith(":byt:")) {
-    		throw new IllegalArgumentException("Does not start with :byt: " + string);
-    	}
-    	return Bytes.fromBase64String(string.substring(5));
+	private byte[] fromBase64(String string) {
+		if (!string.startsWith(":byt:")) {
+			throw new IllegalArgumentException("Does not start with :byt: " + string);
+		}
+		return Bytes.fromBase64String(string.substring(5));
 	}
 
 	private void checkPeersHaveShards(JSONArray peers) {
-    	for (Object peerObject : peers) {
-    		JSONObject peer = (JSONObject) peerObject;
-    		assertTrue("Peer has no system object", peer.has("system"));
-    		JSONObject system = (JSONObject) peer.get("system");
-    		assertTrue("Peer's system has no shards object", system.has("shards"));
-    		JSONObject shards = (JSONObject) system.get("shards");
-    		assertTrue("Peer's shards has no anchor", shards.has("anchor"));
-    		assertTrue("Peer's shards has no range", shards.has("range"));
-    	}
+		for (Object peerObject : peers) {
+			JSONObject peer = (JSONObject) peerObject;
+			assertTrue("Peer has no system object", peer.has("system"));
+			JSONObject system = (JSONObject) peer.get("system");
+			assertTrue("Peer's system has no shards object", system.has("shards"));
+			JSONObject shards = (JSONObject) system.get("shards");
+			assertTrue("Peer's shards has no anchor", shards.has("anchor"));
+			assertTrue("Peer's shards has no range", shards.has("range"));
+		}
 	}
 
-    private String newPeer(String key, long anchor, long high, long low, String ip) {
+	private String newPeer(String key, long anchor, long high, long low, String ip) {
 		String query = String.format(
 			"http://localhost:8080/api/test/newpeer?key=%s&anchor=%s&high=%s&low=%s&ip=%s",
 			key, anchor, high, low, ip);
@@ -147,26 +147,26 @@ public class StaticShardingAcceptance {
 		JSONObject nidResult = new JSONObject(result);
 		assertTrue("result has no NID", nidResult.has("nid"));
 		return ":uid:" + nidResult.getString("nid");
-    }
+	}
 
 	private JSONArray getNonEmptyPeersFrom(String urlPrefix) {
-        String result = getURL(urlPrefix + "/api/network/peers");
-        JSONArray json = new JSONArray(result);
-        assertFalse("Peers list is empty", json.isEmpty());
-        return json;
+		String result = getURL(urlPrefix + "/api/network/peers");
+		JSONArray json = new JSONArray(result);
+		assertFalse("Peers list is empty", json.isEmpty());
+		return json;
 	}
 
 	public String getURL(String url) {
-        try {
-            URL requestUrl = new URL(url);
-            HttpURLConnection connection = (HttpURLConnection) requestUrl.openConnection();
-            connection.setRequestProperty("Accept", "application/json");
-            connection.setRequestProperty("Accept-Charset", "utf-8");
-            try (InputStream inputStream = connection.getInputStream()) {
-                return CharStreams.toString(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
-            }
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-    }
+		try {
+			URL requestUrl = new URL(url);
+			HttpURLConnection connection = (HttpURLConnection) requestUrl.openConnection();
+			connection.setRequestProperty("Accept", "application/json");
+			connection.setRequestProperty("Accept-Charset", "utf-8");
+			try (InputStream inputStream = connection.getInputStream()) {
+				return CharStreams.toString(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
+			}
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
+	}
 }
