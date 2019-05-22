@@ -1,6 +1,5 @@
 package org.radix.common.ID;
 
-
 import com.radixdlt.client.core.atoms.RadixHash;
 import org.bouncycastle.util.encoders.Hex;
 import org.radix.utils.primitives.Longs;
@@ -18,8 +17,8 @@ import java.util.Set;
  */
 public final class AID implements Comparable<AID> {
 	public static final int BYTES = 32;
-	public static final int HASH_BYTES = 24;
-	public static final int SHARD_BYTES = 8;
+	static final int HASH_BYTES = 24;
+	static final int SHARD_BYTES = 8;
 
 	public static final AID ZERO = new AID(new byte[BYTES]);
 
@@ -38,10 +37,24 @@ public final class AID implements Comparable<AID> {
 		}
 	}
 
+	/**
+	 * Get the lowest 4 bytes of this AID as a long
+	 */
 	public long getLow() {
 		return Longs.fromByteArray(this.bytes);
 	}
 
+	/**
+	 * Get the shard encoded in this AID
+	 */
+	public long getShard() { return Longs.fromByteArray(this.bytes, HASH_BYTES); };
+
+	/**
+	 * Copy this AID to a byte array with some offset
+	 * Note that the array must fit the offset + AID.BYTES
+	 * @param array The array
+	 * @param offset The offset into that array
+	 */
 	public void copyTo(byte[] array, int offset) {
 		Objects.requireNonNull(array, "array is required");
 		if (array.length - offset < BYTES) {
@@ -54,7 +67,12 @@ public final class AID implements Comparable<AID> {
 		System.arraycopy(this.bytes, 0, array, offset, BYTES);
 	}
 
+	/**
+	 * Copy this AID to an output stream
+	 * @param out The output stream
+	 */
 	public void copyTo(OutputStream out) throws IOException {
+		Objects.requireNonNull(out, "out is required");
 		out.write(bytes);
 	}
 
@@ -96,6 +114,13 @@ public final class AID implements Comparable<AID> {
 		return bytes.clone();
 	}
 
+	/**
+	 * Create an AID from a hash and a set of shards
+	 * The AID will contain 192 first bits of shard + 64 bits of selected shard
+	 * @param hash The hash
+	 * @param shards The shards
+	 * @return The AID
+	 */
 	public static AID from(RadixHash hash, Set<Long> shards) {
 		Objects.requireNonNull(hash, "hash is required");
 		Objects.requireNonNull(shards, "shards is required");
@@ -103,20 +128,21 @@ public final class AID implements Comparable<AID> {
 			throw new IllegalArgumentException("Shards cannot be empty");
 		}
 
-		long lowestShard = Long.MAX_VALUE;
-		for (Long shard : shards) {
-			if (shard < lowestShard) {
-				lowestShard = shard;
-			}
-		}
-
+		// select the shard indexed by the first hash byte
+		int selectedShardIndex = hash.getFirstByte() % shards.size();
+		long selectedShard = shards.toArray(new Long[0])[selectedShardIndex];
 		byte[] bytes = new byte[BYTES];
 		hash.copyTo(bytes, 0, HASH_BYTES);
-		Longs.copyTo(lowestShard, bytes, HASH_BYTES);
+		Longs.copyTo(selectedShard, bytes, HASH_BYTES);
 
 		return new AID(bytes);
 	}
 
+	/**
+	 * Create an AID from its bytes
+	 * @param bytes The bytes (must be of length AID.BYTES)
+	 * @return An AID with those bytes
+	 */
 	public static AID from(byte[] bytes) {
 		Objects.requireNonNull(bytes, "bytes is required");
 		if (bytes.length != BYTES) {
@@ -129,6 +155,11 @@ public final class AID implements Comparable<AID> {
 		return new AID(bytes);
 	}
 
+	/**
+	 * Create an AID from its hex bytes
+	 * @param hexBytes The bytes in hex (must be of length AID.BYTES * 2)
+	 * @return An AID with those bytes
+	 */
 	public static AID from(String hexBytes) {
 		Objects.requireNonNull(hexBytes, "hexBytes is required");
 		if (hexBytes.length() != BYTES * 2) {

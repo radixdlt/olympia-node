@@ -24,6 +24,11 @@ public final class RadixHash {
 		return Arrays.copyOf(hash, hash.length);
 	}
 
+	public byte getFirstByte() {
+		assert hash.length > 0;
+		return hash[0];
+	}
+
 	public void copyTo(byte[] array, int offset) {
 		copyTo(array, offset, this.hash.length);
 	}
