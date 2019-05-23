@@ -121,7 +121,7 @@ public final class AID {
 
 		// select the shard indexed by the first hash byte
 		int selectedShardIndex = (hash.getFirstByte() & 0xff) % shards.size();
-		long selectedShard = shards.stream().sorted().skip(selectedShardIndex).findFirst()
+		long selectedShard = shards.stream().sorted(Long::compareUnsigned).skip(selectedShardIndex).findFirst()
 			.orElseThrow(() -> new IllegalStateException("Missing"));
 		byte[] bytes = new byte[BYTES];
 		hash.copyTo(bytes, 0, HASH_BYTES);
