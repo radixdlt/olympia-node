@@ -38,13 +38,13 @@ public class AIDTest {
 		}
 
 		AID aid1 = AID.from(bytes1);
-		assertArrayEquals(bytes1, aid1.toByteArray());
+		assertArrayEquals(bytes1, aid1.getBytes());
 		byte[] bytes1Copy = new byte[AID.BYTES];
 		aid1.copyTo(bytes1Copy, 0);
 		assertArrayEquals(bytes1Copy, bytes1);
 
 		AID aid2 = AID.from(bytes2);
-		assertArrayEquals(bytes2, aid2.toByteArray());
+		assertArrayEquals(bytes2, aid2.getBytes());
 
 		assertNotEquals(aid1, aid2);
 	}

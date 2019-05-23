@@ -85,7 +85,7 @@ public class JacksonCborMapper extends ObjectMapper {
 		cborModule.addSerializer(AID.class, new JacksonCborObjectBytesSerializer<AID>(
 			AID.class,
 			JacksonCodecConstants.AID_VALUE,
-			AID::toByteArray
+			AID::getBytes
 		));
 
 		cborModule.addDeserializer(SerializerDummy.class, new JacksonSerializerDummyDeserializer());

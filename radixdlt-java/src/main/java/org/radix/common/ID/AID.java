@@ -97,8 +97,12 @@ public final class AID {
 		return Arrays.hashCode(bytes);
 	}
 
-	public byte[] toByteArray() {
-		return bytes.clone();
+	/**
+	 * Gets the underlying bytes of this AID.
+	 * Note that this is NOT a copy and is the actual underlying byte array.
+	 */
+	public byte[] getBytes() {
+		return this.bytes;
 	}
 
 	/**
