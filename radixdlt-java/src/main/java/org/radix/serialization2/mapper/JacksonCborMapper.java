@@ -2,6 +2,7 @@ package org.radix.serialization2.mapper;
 
 import java.util.function.Function;
 
+import org.radix.common.ID.AID;
 import org.radix.common.ID.EUID;
 import org.radix.crypto.Hash;
 import org.radix.serialization2.SerializerDummy;
@@ -81,6 +82,11 @@ public class JacksonCborMapper extends ObjectMapper {
 			JacksonCodecConstants.RRI_VALUE,
 			id -> id.toString().getBytes(RadixConstants.STANDARD_CHARSET)
 		));
+		cborModule.addSerializer(AID.class, new JacksonCborObjectBytesSerializer<AID>(
+			AID.class,
+			JacksonCodecConstants.AID_VALUE,
+			AID::getBytes
+		));
 
 		cborModule.addDeserializer(SerializerDummy.class, new JacksonSerializerDummyDeserializer());
 		cborModule.addDeserializer(EUID.class, new JacksonCborObjectBytesDeserializer<>(
@@ -112,6 +118,11 @@ public class JacksonCborMapper extends ObjectMapper {
 			RRI.class,
 			JacksonCodecConstants.RRI_VALUE,
 			b -> RRI.fromString(new String(b, RadixConstants.STANDARD_CHARSET))
+		));
+		cborModule.addDeserializer(AID.class, new JacksonCborObjectBytesDeserializer<>(
+			AID.class,
+			JacksonCodecConstants.AID_VALUE,
+			AID::from
 		));
 
 		JacksonCborMapper mapper = new JacksonCborMapper();

@@ -9,6 +9,7 @@ import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.crypto.ECSignature;
+import org.radix.common.ID.AID;
 import org.radix.common.ID.EUID;
 import org.radix.common.tuples.Pair;
 import org.radix.serialization2.DsonOutput;
@@ -182,8 +183,8 @@ public final class Atom extends SerializableObject {
 		return RadixHash.of(toDson());
 	}
 
-	public EUID getHid() {
-		return this.getHash().toEUID();
+	public AID getAid() {
+		return AID.from(getHash(), getShards());
 	}
 
 	public List<MessageParticle> getMessageParticles() {
@@ -235,6 +236,6 @@ public final class Atom extends SerializableObject {
 	@Override
 	public String toString() {
 		String particleGroupsStr = this.particleGroups.stream().map(ParticleGroup::toString).collect(Collectors.joining(","));
-		return String.format("%s[%s:%s]", getClass().getSimpleName(), getHid(), particleGroupsStr);
+		return String.format("%s[%s:%s]", getClass().getSimpleName(), getAid(), particleGroupsStr);
 	}
 }
