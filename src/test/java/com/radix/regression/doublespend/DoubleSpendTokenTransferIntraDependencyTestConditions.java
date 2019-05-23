@@ -29,30 +29,32 @@ public class DoubleSpendTokenTransferIntraDependencyTestConditions implements Do
 	}
 
 	@Override
-	public List<Action> initialActions() {
+	public List<BatchedActions> initialActions() {
 		return Collections.singletonList(
-			CreateTokenAction.create(
-				apiAddress,
-				"Joshy Token",
-				"JOSH",
-				"Cool Token",
-				BigDecimal.valueOf(2),
-				BigDecimal.ONE,
-				TokenSupplyType.FIXED
+			new BatchedActions(
+				CreateTokenAction.create(
+					apiAddress,
+					"Joshy Token",
+					"JOSH",
+					"Cool Token",
+					BigDecimal.valueOf(2),
+					BigDecimal.ONE,
+					TokenSupplyType.FIXED
+				)
 			)
 		);
 	}
 
 	@Override
-	public List<List<Action>> conflictingActions() {
+	public List<List<BatchedActions>> conflictingActions() {
 		return Arrays.asList(
 			Arrays.asList(
-				TransferTokensAction.create(apiAddress, toAddress, BigDecimal.ONE, tokenRef),
-				TransferTokensAction.create(apiAddress, toAddress, BigDecimal.ONE, tokenRef)
+				new BatchedActions(TransferTokensAction.create(apiAddress, toAddress, BigDecimal.ONE, tokenRef)),
+				new BatchedActions(TransferTokensAction.create(apiAddress, toAddress, BigDecimal.ONE, tokenRef))
 			),
 			Arrays.asList(
-				TransferTokensAction.create(apiAddress, toAddress, BigDecimal.ONE, tokenRef),
-				TransferTokensAction.create(apiAddress, toAddress, BigDecimal.ONE, tokenRef)
+				new BatchedActions(TransferTokensAction.create(apiAddress, toAddress, BigDecimal.ONE, tokenRef)),
+				new BatchedActions(TransferTokensAction.create(apiAddress, toAddress, BigDecimal.ONE, tokenRef))
 			)
 		);
 	}
@@ -69,7 +71,7 @@ public class DoubleSpendTokenTransferIntraDependencyTestConditions implements Do
 				TokenBalanceState tokenBalanceState1 = (TokenBalanceState) map.get(ShardedAppStateId.of(TokenBalanceState.class, apiAddress));
 				TokenBalanceState tokenBalanceState2 = (TokenBalanceState) map.get(ShardedAppStateId.of(TokenBalanceState.class, toAddress));
 				return tokenBalanceState1.getBalance().get(tokenRef) == null &&
-					tokenBalanceState2.getBalance().get(tokenRef).getAmount().compareTo(BigDecimal.valueOf(2)) == 0;
+					tokenBalanceState2.getBalance().get(tokenRef).compareTo(BigDecimal.valueOf(2)) == 0;
 			}, "Transfer of 2 JOSH from one account to another")
 		);
 	}

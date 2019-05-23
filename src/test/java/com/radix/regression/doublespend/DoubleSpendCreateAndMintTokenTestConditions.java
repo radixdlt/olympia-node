@@ -27,37 +27,43 @@ public class DoubleSpendCreateAndMintTokenTestConditions implements DoubleSpendT
 	}
 
 	@Override
-	public List<Action> initialActions() {
+	public List<BatchedActions> initialActions() {
 		return Collections.emptyList();
 	}
 
 	@Override
-	public List<List<Action>> conflictingActions() {
+	public List<List<BatchedActions>> conflictingActions() {
 		return Arrays.asList(
 			Arrays.asList(
-				CreateTokenAction.create(
-					apiAddress,
-					"Joshy Token",
-					"JOSH",
-					"Cool Token",
-					BigDecimal.ZERO,
-					BigDecimal.ONE,
-					TokenSupplyType.MUTABLE
-				),
-				MintTokensAction.create(
-					tokenRef,
-					BigDecimal.ONE
+				new BatchedActions(
+					CreateTokenAction.create(
+						apiAddress,
+						"Joshy Token",
+						"JOSH",
+						"Cool Token",
+						BigDecimal.ZERO,
+						BigDecimal.ONE,
+						TokenSupplyType.MUTABLE
+					))
+				,
+				new BatchedActions(
+					MintTokensAction.create(
+						tokenRef,
+						BigDecimal.ONE
+					)
 				)
 			),
 			Collections.singletonList(
-				CreateTokenAction.create(
-					apiAddress,
-					"Joshy Token",
-					"JOSH",
-					"Cool Token",
-					BigDecimal.ONE,
-					BigDecimal.ONE,
-					TokenSupplyType.FIXED
+				new BatchedActions(
+					CreateTokenAction.create(
+						apiAddress,
+						"Joshy Token",
+						"JOSH",
+						"Cool Token",
+						BigDecimal.ONE,
+						BigDecimal.ONE,
+						TokenSupplyType.FIXED
+					)
 				)
 			)
 		);
@@ -72,7 +78,7 @@ public class DoubleSpendCreateAndMintTokenTestConditions implements DoubleSpendT
 			stateRequired,
 			new Condition<>(map -> {
 				TokenBalanceState balanceState = (TokenBalanceState) map.get(ShardedAppStateId.of(TokenBalanceState.class, apiAddress));
-				BigDecimal balance = balanceState.getBalance().get(tokenRef).getAmount();
+				BigDecimal balance = balanceState.getBalance().get(tokenRef);
 				return  balance != null && balance.compareTo(BigDecimal.ONE) == 0;
 			}, "1 JOSH in account")
 		);

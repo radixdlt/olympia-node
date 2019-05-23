@@ -1,6 +1,8 @@
 package com.radix.regression.doublespend;
 
+import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class DoubleSpendTest {
@@ -34,6 +36,29 @@ public class DoubleSpendTest {
 	@Test
 	public void given_an_account__when_the_account_executes_two_token_creation_and_mint_via_two_different_nodes_at_the_same_time__then_the_account_balances_should_resolve_to_only_one_token_creation() {
 		DoubleSpendTestRunner testRunner = new DoubleSpendTestRunner(api -> new DoubleSpendCreateAndMintTokenTestConditions(api.getMyAddress()));
+		testRunner.execute(10);
+	}
+
+	@Test
+	public void given_an_account_with_three_tokens__when_two_conflicting_transfers_which_also_conflict_with_token_creations__then_neither_transfer_should_be_successful() {
+		DoubleSpendTestRunner testRunner = new DoubleSpendTestRunner(
+			api -> new DoubleSpendMultiConflictTestConditions(
+				api.getMyAddress(),
+				api.getAddressFromKey(RadixIdentities.createNew().getPublicKey())
+			)
+		);
+		testRunner.execute(10);
+	}
+
+	@Test
+	public void given_an_account__when_the_account_executes_two_send_to_self_atomic_transactions__then_the_account_balances_should_resolve_to_only_one_send_to_self_atomic_transactio() {
+		DoubleSpendTestRunner testRunner = new DoubleSpendTestRunner(
+			api -> new DoubleSpendWithInnerDependencyConditions(api.getMyAddress()),
+			(bootstrap, identity) -> RadixApplicationAPI.defaultBuilder()
+				.bootstrap(bootstrap)
+				.identity(identity)
+				.build()
+		);
 		testRunner.execute(10);
 	}
 }

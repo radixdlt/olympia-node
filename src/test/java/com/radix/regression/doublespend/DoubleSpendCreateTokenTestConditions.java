@@ -27,33 +27,37 @@ public class DoubleSpendCreateTokenTestConditions implements DoubleSpendTestCond
 	}
 
 	@Override
-	public List<Action> initialActions() {
+	public List<BatchedActions> initialActions() {
 		return Collections.emptyList();
 	}
 
 	@Override
-	public List<List<Action>> conflictingActions() {
+	public List<List<BatchedActions>> conflictingActions() {
 		return Arrays.asList(
 			Collections.singletonList(
-				CreateTokenAction.create(
-					apiAddress,
-					"Joshy Token",
-					"JOSH",
-					"Cool Token",
-					BigDecimal.ONE,
-					BigDecimal.ONE,
-					TokenSupplyType.MUTABLE
+				new BatchedActions(
+					CreateTokenAction.create(
+						apiAddress,
+						"Joshy Token",
+						"JOSH",
+						"Cool Token",
+						BigDecimal.ONE,
+						BigDecimal.ONE,
+						TokenSupplyType.MUTABLE
+					)
 				)
 			),
 			Collections.singletonList(
-				CreateTokenAction.create(
-					apiAddress,
-					"Joshy Token 2",
-					"JOSH",
-					"Cool Token 2",
-					BigDecimal.valueOf(2),
-					BigDecimal.ONE,
-					TokenSupplyType.FIXED
+				new BatchedActions(
+					CreateTokenAction.create(
+						apiAddress,
+						"Joshy Token 2",
+						"JOSH",
+						"Cool Token 2",
+						BigDecimal.valueOf(2),
+						BigDecimal.ONE,
+						TokenSupplyType.FIXED
+					)
 				)
 			)
 		);

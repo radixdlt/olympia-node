@@ -1,6 +1,5 @@
 package com.radix.regression.doublespend;
 
-import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.ShardedAppStateId;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
@@ -17,15 +16,13 @@ import java.util.Set;
 import org.assertj.core.api.Condition;
 import org.radix.common.tuples.Pair;
 
-class DoubleSpendTokenTransferTestConditions implements DoubleSpendTestConditions {
+class DoubleSpendWithInnerDependencyConditions implements DoubleSpendTestConditions {
 	private final RadixAddress apiAddress;
-	private final RadixAddress toAddress;
 	private final RRI tokenRef;
 
-	DoubleSpendTokenTransferTestConditions(RadixAddress apiAddress, RadixAddress toAddress) {
-		this.tokenRef = RRI.of(apiAddress, "JOSH");
+	DoubleSpendWithInnerDependencyConditions(RadixAddress apiAddress) {
+		this.tokenRef = RRI.of(apiAddress,"JOSH");
 		this.apiAddress = apiAddress;
-		this.toAddress = toAddress;
 	}
 
 	@Override
@@ -47,24 +44,33 @@ class DoubleSpendTokenTransferTestConditions implements DoubleSpendTestCondition
 
 	@Override
 	public List<List<BatchedActions>> conflictingActions() {
-		BatchedActions action = new BatchedActions(TransferTokensAction.create(apiAddress, toAddress, BigDecimal.ONE, tokenRef));
-		return Arrays.asList(Collections.singletonList(action), Collections.singletonList(action));
+		return Arrays.asList(
+			Collections.singletonList(
+				new BatchedActions(
+					TransferTokensAction.create(apiAddress, apiAddress, BigDecimal.ONE, tokenRef),
+					TransferTokensAction.create(apiAddress, apiAddress, BigDecimal.ONE, tokenRef)
+				)
+			),
+			Collections.singletonList(
+				new BatchedActions(
+					TransferTokensAction.create(apiAddress, apiAddress, BigDecimal.ONE, tokenRef),
+					TransferTokensAction.create(apiAddress, apiAddress, BigDecimal.ONE, tokenRef)
+				)
+			)
+		);
 	}
 
 	@Override
 	public PostConsensusCondition postConsensusCondition() {
 		Set<Pair<String, ShardedAppStateId>> stateRequired = new HashSet<>();
-		stateRequired.add(Pair.of("Balance 1", ShardedAppStateId.of(TokenBalanceState.class, apiAddress)));
-		stateRequired.add(Pair.of("Balance 2", ShardedAppStateId.of(TokenBalanceState.class, toAddress)));
+		stateRequired.add(Pair.of("Balance", ShardedAppStateId.of(TokenBalanceState.class, apiAddress)));
 
 		return new PostConsensusCondition(
 			stateRequired,
 			new Condition<>(map -> {
-				TokenBalanceState tokenBalanceState1 = (TokenBalanceState) map.get(ShardedAppStateId.of(TokenBalanceState.class, apiAddress));
-				TokenBalanceState tokenBalanceState2 = (TokenBalanceState) map.get(ShardedAppStateId.of(TokenBalanceState.class, toAddress));
-				return tokenBalanceState1.getBalance().get(tokenRef) == null &&
-						tokenBalanceState2.getBalance().get(tokenRef).compareTo(BigDecimal.ONE) == 0;
-			}, "Transfer of 1 JOSH from one account to another")
+				TokenBalanceState balanceState = (TokenBalanceState) map.get(ShardedAppStateId.of(TokenBalanceState.class, apiAddress));
+				return balanceState.getBalance().get(tokenRef).compareTo(BigDecimal.ONE) == 0;
+			}, "1 JOSH in account")
 		);
 	}
 }

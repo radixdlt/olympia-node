@@ -5,8 +5,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.radix.regression.Util;
+import com.radix.regression.doublespend.DoubleSpendTestConditions.BatchedActions;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
+import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.Action;
@@ -32,6 +34,7 @@ import io.reactivex.Single;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.observers.TestObserver;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -42,6 +45,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import javafx.application.Application;
 import org.radix.common.ID.EUID;
 import org.radix.common.tuples.Pair;
 
@@ -70,7 +74,13 @@ public final class DoubleSpendTestRunner {
 				System.out.println("================================================================");
 				System.out.println("Round " + (i + 1));
 				System.out.println("================================================================");
-				execute();
+
+				final ImmutableMap<ShardedAppStateId, ApplicationState> finalState = execute();
+
+				System.out.println();
+				System.out.println("Final State:");
+				System.out.println(finalState);
+				System.out.println();
 			});
 	}
 
@@ -108,13 +118,19 @@ public final class DoubleSpendTestRunner {
 		}
 	}
 
-	void execute() {
+	ImmutableMap<ShardedAppStateId, ApplicationState> execute() {
 		RadixApplicationAPI api = apiSupplier.apply(Bootstrap.LOCALHOST, RadixIdentities.createNew());
 		DoubleSpendTestConditions doubleSpendTestConditions = testSupplier.apply(api);
 
-		List<Action> initialActions = doubleSpendTestConditions.initialActions();
+		List<BatchedActions> initialActions = doubleSpendTestConditions.initialActions();
 		initialActions.stream()
-			.map(api::execute)
+			.map(batched -> {
+				Transaction transaction = api.createTransaction();
+				for (Action action : batched.getActions()) {
+					transaction.execute(action);
+				}
+				return transaction.commit();
+			})
 			.map(Result::toCompletable)
 			.forEach(Completable::blockingAwait);
 
@@ -158,10 +174,11 @@ public final class DoubleSpendTestRunner {
 
 
 		// When the account executes two transfers via two different nodes at the same time
-		Observable<Pair<SingleNodeAPI, List<Action>>> conflictingAtoms =
+		Observable<Pair<SingleNodeAPI, List<List<Action>>>> conflictingAtoms =
 			Observable.zip(
 				singleNodeApis,
-				Observable.fromIterable(doubleSpendTestConditions.conflictingActions()),
+				Observable.fromIterable(doubleSpendTestConditions.conflictingActions())
+					.map(l -> l.stream().map(BatchedActions::getActions).collect(Collectors.toList())),
 				Pair::of
 			);
 
@@ -246,7 +263,7 @@ public final class DoubleSpendTestRunner {
 
 				// TODO: Remove 160 seconds when atom sync speed is fixed
 				final long cur = System.currentTimeMillis();
-				final long timeUntilResolved = startTime + TimeUnit.SECONDS.toMillis(500) - cur;
+				final long timeUntilResolved = startTime + TimeUnit.SECONDS.toMillis(1000) - cur;
 
 				if (timeUntilResolved > 0) {
 					if (states.stream().allMatch(s -> doubleSpendTestConditions.postConsensusCondition().getCondition().matches(s))
@@ -254,7 +271,7 @@ public final class DoubleSpendTestRunner {
 							&& lastAtomState.entrySet().stream().map(Entry::getValue)
 								.allMatch(s0 -> lastAtomState.entrySet().stream().map(Entry::getValue).allMatch(s1 -> s1.equals(s0))
 					)) {
-						break;
+						return states.iterator().next();
 					} else {
 						try {
 							System.out.println(cur + " States don't match retrying 5 seconds...Time until resolved: " + (timeUntilResolved / 1000));
@@ -290,9 +307,12 @@ public final class DoubleSpendTestRunner {
 					break;
 				}
 			}
+
 		} finally {
 			compositeDisposable.dispose();
 			testObserversPerApi.forEach(testObservers -> testObservers.forEach((k,v) -> v.dispose()));
 		}
+
+		throw new IllegalStateException();
 	}
 }
