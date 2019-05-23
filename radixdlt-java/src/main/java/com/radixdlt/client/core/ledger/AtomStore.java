@@ -3,9 +3,12 @@ package com.radixdlt.client.core.ledger;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 
 import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import io.reactivex.Observable;
+import java.util.List;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 /**
  * The interface in which a client retrieves the state of the ledger.
@@ -27,14 +30,8 @@ public interface AtomStore {
 	Observable<Long> onSync(RadixAddress address);
 
 	/**
-	 * Retrieve the current set of validated up particles at a given shardable.
-	 * @param address the address to get the particles under
-	 * @return a stream of all up particles of the current local view
-	 */
-	Stream<Particle> getUpParticles(RadixAddress address);
-
-	/**
 	 * Retrieve the current set of validated atoms at a given shardable
+	 *
 	 * @param address the address to get the atoms under
 	 * @return a stream of all stored atoms of the current local view
 	 */
@@ -48,4 +45,32 @@ public interface AtomStore {
 	 * @return a never ending observable of updates
 	 */
 	Observable<AtomObservation> getAtomObservations(RadixAddress address);
+
+	/**
+	 * Retrieve the current set of validated up particles at a given shardable.
+	 * If uuid is provided also retrieves and staged particles under that uuid.
+	 *
+	 * @param address the address to get the particles under
+	 * @param uuid uuid of staged particles to include
+	 * @return a stream of all up particles of the current local view
+	 */
+	Stream<Particle> getUpParticles(RadixAddress address, @Nullable String uuid);
+
+	/**
+	 * Adds the particle group to the staging area for the given uuid
+	 *
+	 * @param uuid the uuid to add the particle group to
+	 * @param particleGroup the particle group to add to staging area
+	 */
+	void stageParticleGroup(String uuid, ParticleGroup particleGroup);
+
+	/**
+	 * Retrieves all staged particle groups and clears the staging area
+	 * for the given uuid.
+	 * TODO: Cleanup interface
+	 *
+	 * @param uuid uuid to retrieve the staged particle groups for
+	 * @return all staged particle groups in the order they were staged
+	 */
+	List<ParticleGroup> getStagedAndClear(String uuid);
 }

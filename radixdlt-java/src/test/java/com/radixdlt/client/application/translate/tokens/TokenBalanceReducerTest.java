@@ -28,6 +28,6 @@ public class TokenBalanceReducerTest {
 		TokenBalanceReducer reducer = new TokenBalanceReducer();
 		TokenBalanceState tokenBalance = reducer.reduce(new TokenBalanceState(), minted);
 		BigDecimal tenSubunits = TokenUnitConversions.subunitsToUnits(UInt256.TEN);
-		assertThat(tokenBalance.getBalance().get(token).getAmount().compareTo(tenSubunits)).isEqualTo(0);
+		assertThat(tokenBalance.getBalance().get(token).compareTo(tenSubunits)).isEqualTo(0);
 	}
 }

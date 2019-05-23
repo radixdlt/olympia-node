@@ -2,19 +2,25 @@ package com.radixdlt.client.core.ledger;
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.ledger.AtomObservation.Type;
 import com.radixdlt.client.core.ledger.AtomObservation.AtomObservationUpdateType;
 import io.reactivex.Observable;
 import io.reactivex.ObservableEmitter;
+import io.reactivex.annotations.Nullable;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
@@ -31,6 +37,9 @@ public class InMemoryAtomStore implements AtomStore {
 
 	private final Object lock = new Object();
 	private final Map<RadixAddress, Boolean> syncedMap = new HashMap<>();
+
+	private final Map<String, Atom> stagedAtoms = new ConcurrentHashMap<>();
+	private final Map<String, Map<Particle, Spin>> stagedParticleIndex = new ConcurrentHashMap<>();
 
 	private void softDeleteDependentsOf(Atom atom) {
 		atom.particles(Spin.UP)
@@ -53,6 +62,39 @@ public class InMemoryAtomStore implements AtomStore {
 			});
 	}
 
+	@Override
+	public void stageParticleGroup(String uuid, ParticleGroup particleGroup) {
+		Objects.requireNonNull(uuid);
+		Objects.requireNonNull(particleGroup);
+
+		synchronized (lock) {
+			Atom stagedAtom = stagedAtoms.get(uuid);
+			if (stagedAtom == null) {
+				stagedAtom = new Atom(particleGroup, System.currentTimeMillis());
+			} else {
+				List<ParticleGroup> groups = Stream.concat(stagedAtom.particleGroups(), Stream.of(particleGroup)).collect(Collectors.toList());
+				stagedAtom = new Atom(groups, System.currentTimeMillis());
+			}
+			stagedAtoms.put(uuid, stagedAtom);
+
+			particleGroup.spunParticles().forEach(sp -> {
+				Map<Particle, Spin> index = stagedParticleIndex.getOrDefault(uuid, new HashMap<>());
+				index.put(sp.getParticle(), sp.getSpin());
+				stagedParticleIndex.put(uuid, index);
+			});
+		}
+	}
+
+	@Override
+	public List<ParticleGroup> getStagedAndClear(String uuid) {
+		Objects.requireNonNull(uuid);
+
+		synchronized (lock) {
+			final Atom atom = stagedAtoms.remove(uuid);
+			stagedParticleIndex.get(uuid).clear();
+			return atom.particleGroups().collect(Collectors.toList());
+		}
+	}
 
 	/**
 	 * Store an atom under a given destination
@@ -179,9 +221,9 @@ public class InMemoryAtomStore implements AtomStore {
 
 
 	@Override
-	public Stream<Particle> getUpParticles(RadixAddress address) {
+	public Stream<Particle> getUpParticles(RadixAddress address, @Nullable String stagedUuid) {
 		synchronized (lock) {
-			return particleIndex.entrySet().stream()
+			Set<Particle> upParticles = particleIndex.entrySet().stream()
 				.filter(e -> {
 					if (!e.getKey().getShardables().contains(address)) {
 						return false;
@@ -193,10 +235,25 @@ public class InMemoryAtomStore implements AtomStore {
 						return false;
 					}
 
+					if (stagedUuid != null && stagedParticleIndex.getOrDefault(stagedUuid, Collections.emptyMap()).get(e.getKey()) == Spin.DOWN) {
+						return false;
+					}
+
 					Set<Atom> uppingAtoms = spinParticleIndex.getOrDefault(Spin.UP, Collections.emptySet());
 					return uppingAtoms.stream().anyMatch(a -> atoms.get(a).isStore());
 				})
-				.map(Map.Entry::getKey);
+				.map(Map.Entry::getKey)
+				.collect(Collectors.toSet());
+
+			if (stagedUuid != null) {
+				stagedParticleIndex.getOrDefault(stagedUuid, Collections.emptyMap()).entrySet().stream()
+					.filter(e -> e.getValue() == Spin.UP)
+					.map(Entry::getKey)
+					.forEach(upParticles::add);
+			}
+
+
+			return upParticles.stream();
 		}
 	}
 

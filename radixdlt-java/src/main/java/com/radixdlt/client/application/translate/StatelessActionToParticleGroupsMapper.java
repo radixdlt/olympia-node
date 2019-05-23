@@ -1,7 +1,6 @@
 package com.radixdlt.client.application.translate;
 
 import com.radixdlt.client.core.atoms.ParticleGroup;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -9,18 +8,6 @@ import java.util.List;
  * to construct an atom.
  */
 public interface StatelessActionToParticleGroupsMapper {
-
-	/**
-	 * Returns an observable of actions which will be added to the list
-	 * actions to be included in the current transaction.
-	 *
-	 * @param action the current action
-	 * @return additional actions to be included
-	 */
-	default List<Action> sideEffects(Action action) {
-		return Collections.emptyList();
-	}
-
 	/**
 	 * Creates new spun particles to be added to an atom given a high level
 	 * action.
