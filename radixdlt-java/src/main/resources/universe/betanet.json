@@ -1,8 +1,8 @@
 {
     "magic": 63799298,
     "creator": ":byt:A3hanCWf3pmR5E+i+wtWWfKleBrDOQduLb/vcFKOSt9o",
-    "signature.r": ":byt:0ZXspqCqq2hI7fM2JxoLZlTeTSBu86bp/GYF/zmW3hs=",
-    "signature.s": ":byt:qdPqMRcO5w5HUsH2hES7Rgx41xxTA8Fn44nsMYnurr8=",
+    "signature.r": ":byt:xj2vJbcXTxMPkCdvnAfVUeGNIP0Jj2fOPKPZsPHUZHI=",
+    "signature.s": ":byt:3GH072/fRq3+DrOUrx7P0BOYQgZZ4r7HfmcPH2NDN9E=",
     "serializer": "radix.universe",
     "description": ":str:The Radix development Universe",
     "type": 2,
@@ -24,7 +24,7 @@
                         "from": ":adr:JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor",
                         "to": ":adr:JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor",
                         "version": 100,
-                        "nonce": 2772537948161132
+                        "nonce": 2799886739734330
                     },
                     "version": 100
                 }],
@@ -75,7 +75,7 @@
                             },
                             "serializer": "radix.particles.unallocated_tokens",
                             "version": 100,
-                            "nonce": 2772537948182640,
+                            "nonce": 2799886739756965,
                             "tokenDefinitionReference": ":rri:/JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor/XRD"
                         },
                         "version": 100
@@ -98,7 +98,7 @@
                             },
                             "serializer": "radix.particles.unallocated_tokens",
                             "version": 100,
-                            "nonce": 2772537948182640,
+                            "nonce": 2799886739756965,
                             "tokenDefinitionReference": ":rri:/JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor/XRD"
                         },
                         "version": 100
@@ -115,7 +115,7 @@
                             },
                             "serializer": "radix.particles.unallocated_tokens",
                             "version": 100,
-                            "nonce": 2772537948266622,
+                            "nonce": 2799886739769753,
                             "tokenDefinitionReference": ":rri:/JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor/XRD"
                         },
                         "version": 100
@@ -133,7 +133,7 @@
                             },
                             "serializer": "radix.particles.transferrable_tokens",
                             "version": 100,
-                            "nonce": 2772537948208801,
+                            "nonce": 2799886739767846,
                             "tokenDefinitionReference": ":rri:/JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor/XRD",
                             "planck": 24805440
                         },
@@ -144,8 +144,8 @@
             }
         ],
         "signatures": {"56abab3870585f04d015d55adf600bc7": {
-            "r": ":byt:Pjqmh8qqUo3si5OVq7SsFX752BRzYTU6LBgQmhXNgL0=",
-            "s": ":byt:gYocZRQuQh5L6N3uDzz1PiI3oT+3MWHzJ3n5meowIuY=",
+            "r": ":byt:0EtMc+57sUCo9BuNACggcL7lV1slMdGg6hynBPnP45A=",
+            "s": ":byt:zdNofbMdo8vccM7s7MVApnZNX1d1JuMCzQrAtmaHGi8=",
             "serializer": "crypto.ecdsa_signature",
             "version": 100
         }},
@@ -155,8 +155,8 @@
                 "rclock": 1488326400000,
                 "previous": ":uid:00000000000000000000000000000000",
                 "signature": {
-                    "r": ":byt:mudSyHpjOuTksTImQMm5C0q8dNwSZk2DIJaL6zWjs7c=",
-                    "s": ":byt:yQ5HxamhjpyJYeAOP8ulvve7vy6SjxDjtiPfDvAijZw=",
+                    "r": ":byt:Z30Jmk5noedPBuGpeet7wiy8lNVb4+Olg8/n5v4Dvww=",
+                    "s": ":byt:sS5w99fcy+bpSb5j4KBYacR2nbuloPlYS2bcuvWxmLQ=",
                     "serializer": "crypto.ecdsa_signature",
                     "version": 100
                 },
@@ -168,8 +168,7 @@
             }],
             "serializer": "tempo.temporal_proof",
             "version": 100,
-            "aid": ":aid:27d45dbbd4eae8d8efb5d1b093cceca045ab5cf21155c3ae56abab3870585f04",
-            "object": ":hsh:27d45dbbd4eae8d8efb5d1b093cceca045ab5cf21155c3ae980c8ebb99948a28"
+            "aid": ":aid:5952a7d7853bd8e500a711d538339b88a85ec581ff4b79bd56abab3870585f04"
         }
     }],
     "port": 30000,
