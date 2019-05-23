@@ -16,7 +16,7 @@ import org.radix.utils.primitives.Bytes;
 public final class RadixHash {
 	private final byte[] hash;
 
-	public RadixHash(byte[] hash) {
+	private RadixHash(byte[] hash) {
 		this.hash = Objects.requireNonNull(hash, "hash is required");
 	}
 

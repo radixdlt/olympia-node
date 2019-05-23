@@ -1,32 +1,27 @@
 package org.radix.common.ID;
 
+import com.google.common.primitives.UnsignedBytes;
 import com.radixdlt.client.core.atoms.RadixHash;
-import org.bouncycastle.util.encoders.Hex;
+import org.radix.utils.primitives.Bytes;
 import org.radix.utils.primitives.Longs;
 
-import java.io.IOException;
-import java.io.OutputStream;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Objects;
 import java.util.Set;
 
 /**
  * An Atom ID, made up of 192 bits of truncated hash and 64 bits of a selected shard.
  * The Atom ID is used so that Atoms can be located using just their hid.
- * The lowest shard is chosen for no particular reason, it only needs to be deterministic between implementations.
  */
-public final class AID implements Comparable<AID> {
+public final class AID {
 	public static final int BYTES = 32;
 	static final int HASH_BYTES = 24;
 	static final int SHARD_BYTES = 8;
 
 	public static final AID ZERO = new AID(new byte[BYTES]);
 
-	private byte[] bytes;
-
-	private AID() {
-		// empty constructor for serializer
-	}
+	private final byte[] bytes;
 
 	private AID(byte[] bytes) {
 		this.bytes = Objects.requireNonNull(bytes, "bytes is required");
@@ -39,22 +34,35 @@ public final class AID implements Comparable<AID> {
 	}
 
 	/**
-	 * Get the lowest 4 bytes of this AID as a long
+	 * Gets the lowest 4 bytes of this AID as a long.
 	 */
 	public long getLow() {
 		return Longs.fromByteArray(this.bytes);
 	}
 
 	/**
-	 * Get the shard encoded in this AID
+	 * Gets the shard encoded in this AID.
 	 */
 	public long getShard() {
 		return Longs.fromByteArray(this.bytes, HASH_BYTES);
-	};
+	}
 
 	/**
-	 * Copy this AID to a byte array with some offset
-	 * Note that the array must fit the offset + AID.BYTES
+	 * Checks whether this AID is zero.
+	 */
+	public boolean isZero() {
+		for (byte aByte : bytes) {
+			if (aByte != 0) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * Copies this AID to a byte array with some offset.
+	 * Note that the array must fit the offset + AID.BYTES.
 	 * @param array The array
 	 * @param offset The offset into that array
 	 */
@@ -70,42 +78,18 @@ public final class AID implements Comparable<AID> {
 		System.arraycopy(this.bytes, 0, array, offset, BYTES);
 	}
 
-	/**
-	 * Copy this AID to an output stream
-	 * @param out The output stream
-	 */
-	public void copyTo(OutputStream out) throws IOException {
-		Objects.requireNonNull(out, "out is required");
-		out.write(bytes);
-	}
-
 	@Override
 	public String toString() {
-		return Hex.toHexString(this.bytes);
+		return Bytes.toHexString(this.bytes);
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (o == null || getClass() != o.getClass()) {
+		if (!(o instanceof AID)) {
 			return false;
 		}
-		AID aid = (AID) o;
-		return Arrays.equals(this.bytes, aid.bytes);
-	}
 
-	@Override
-	public int compareTo(AID other) {
-		for (int i = 0; i < BYTES; i++) {
-			int diff = other.bytes[i] - this.bytes[i];
-			if (diff != 0) {
-				return diff;
-			}
-		}
-
-		return 0;
+		return Arrays.equals(this.bytes, ((AID) o).bytes);
 	}
 
 	@Override
@@ -132,8 +116,9 @@ public final class AID implements Comparable<AID> {
 		}
 
 		// select the shard indexed by the first hash byte
-		int selectedShardIndex = (hash.getFirstByte() - Byte.MIN_VALUE) % shards.size();
-		long selectedShard = shards.toArray(new Long[0])[selectedShardIndex];
+		int selectedShardIndex = (hash.getFirstByte() & 0xff) % shards.size();
+		long selectedShard = shards.stream().sorted().skip(selectedShardIndex).findFirst()
+			.orElseThrow(() -> new IllegalStateException("Missing"));
 		byte[] bytes = new byte[BYTES];
 		hash.copyTo(bytes, 0, HASH_BYTES);
 		Longs.copyTo(selectedShard, bytes, HASH_BYTES);
@@ -155,7 +140,25 @@ public final class AID implements Comparable<AID> {
 			);
 		}
 
-		return new AID(bytes);
+		return new AID(bytes.clone());
+	}
+
+	/**
+	 * Create an AID from a portion of a byte array
+	 * @param bytes The bytes (must be of length AID.BYTES)
+	 * @param offset The offset into the bytes array
+	 * @return An AID with those bytes
+	 */
+	public static AID from(byte[] bytes, int offset) {
+		Objects.requireNonNull(bytes, "bytes is required");
+		if (offset + BYTES < bytes.length) {
+			throw new IllegalArgumentException(String.format(
+				"Bytes length must be %d but is %d",
+				BYTES, bytes.length)
+			);
+		}
+
+		return new AID(Arrays.copyOfRange(bytes, offset, offset + BYTES));
 	}
 
 	/**
@@ -172,6 +175,18 @@ public final class AID implements Comparable<AID> {
 			);
 		}
 
-		return new AID(Hex.decode(hexBytes));
+		return new AID(Bytes.fromHexString(hexBytes));
+	}
+
+	private static final class LexicalComparatorHolder {
+		private static final Comparator<byte[]> BYTES_COMPARATOR = UnsignedBytes.lexicographicalComparator();
+		private static final Comparator<AID> INSTANCE = (o1, o2) -> BYTES_COMPARATOR.compare(o1.bytes, o2.bytes);
+	}
+
+	/**
+	 * Get a lexical comparator for this type.
+	 */
+	public static Comparator<AID> lexicalComparator() {
+		return LexicalComparatorHolder.INSTANCE;
 	}
 }

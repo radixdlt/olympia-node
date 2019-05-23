@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.client.core.atoms.RadixHash;
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
+import org.mockito.stubbing.Answer;
 import org.radix.crypto.Hash;
 
 import java.util.Set;
@@ -11,6 +12,9 @@ import java.util.Set;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class AIDTest {
 	@Test
@@ -51,7 +55,14 @@ public class AIDTest {
 		for (int i = 0; i < Hash.BYTES; i++) {
 			hashBytes[i] = (byte) (i + 3);
 		}
-		RadixHash hash = new RadixHash(hashBytes);
+		RadixHash hash = mock(RadixHash.class);
+		when(hash.getFirstByte()).thenReturn(hashBytes[0]);
+		doAnswer((Answer<Object>) invocation -> {
+			byte[] destination = (byte[]) invocation.getArguments()[0];
+			System.arraycopy(hashBytes, 0, destination, 0, AID.HASH_BYTES);
+			return null;
+		}).when(hash).copyTo(new byte[0], 0, 0);
+
 		Set<Long> shards = ImmutableSet.of(1L, 2L);
 
 		AID aid = AID.from(hash, shards);

@@ -82,7 +82,11 @@ public class JacksonCborMapper extends ObjectMapper {
 			JacksonCodecConstants.RRI_VALUE,
 			id -> id.toString().getBytes(RadixConstants.STANDARD_CHARSET)
 		));
-		cborModule.addSerializer(AID.class, new JacksonCborAIDSerializer());
+		cborModule.addSerializer(AID.class, new JacksonCborObjectBytesSerializer<AID>(
+			AID.class,
+			JacksonCodecConstants.AID_VALUE,
+			AID::toByteArray
+		));
 
 		cborModule.addDeserializer(SerializerDummy.class, new JacksonSerializerDummyDeserializer());
 		cborModule.addDeserializer(EUID.class, new JacksonCborObjectBytesDeserializer<>(
