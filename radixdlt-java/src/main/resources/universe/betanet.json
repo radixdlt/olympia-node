@@ -1,8 +1,8 @@
 {
     "magic": 63799298,
     "creator": ":byt:A3hanCWf3pmR5E+i+wtWWfKleBrDOQduLb/vcFKOSt9o",
-    "signature.r": ":byt:xj2vJbcXTxMPkCdvnAfVUeGNIP0Jj2fOPKPZsPHUZHI=",
-    "signature.s": ":byt:3GH072/fRq3+DrOUrx7P0BOYQgZZ4r7HfmcPH2NDN9E=",
+    "signature.r": ":byt:cigFidCHiP299Z9fLHqrRfRmb4qBu4cl2HobStAxssQ=",
+    "signature.s": ":byt:hsiXj0O+qgyJqyzRWd+WBC9SRu4hbz/C2X9YILSAS7c=",
     "serializer": "radix.universe",
     "description": ":str:The Radix development Universe",
     "type": 2,
@@ -24,7 +24,7 @@
                         "from": ":adr:JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor",
                         "to": ":adr:JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor",
                         "version": 100,
-                        "nonce": 2799886739734330
+                        "nonce": 457319993455376
                     },
                     "version": 100
                 }],
@@ -75,7 +75,7 @@
                             },
                             "serializer": "radix.particles.unallocated_tokens",
                             "version": 100,
-                            "nonce": 2799886739756965,
+                            "nonce": 457319993476994,
                             "tokenDefinitionReference": ":rri:/JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor/XRD"
                         },
                         "version": 100
@@ -98,7 +98,7 @@
                             },
                             "serializer": "radix.particles.unallocated_tokens",
                             "version": 100,
-                            "nonce": 2799886739756965,
+                            "nonce": 457319993476994,
                             "tokenDefinitionReference": ":rri:/JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor/XRD"
                         },
                         "version": 100
@@ -115,7 +115,7 @@
                             },
                             "serializer": "radix.particles.unallocated_tokens",
                             "version": 100,
-                            "nonce": 2799886739769753,
+                            "nonce": 457319993489092,
                             "tokenDefinitionReference": ":rri:/JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor/XRD"
                         },
                         "version": 100
@@ -133,7 +133,7 @@
                             },
                             "serializer": "radix.particles.transferrable_tokens",
                             "version": 100,
-                            "nonce": 2799886739767846,
+                            "nonce": 457319993487119,
                             "tokenDefinitionReference": ":rri:/JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor/XRD",
                             "planck": 24805440
                         },
@@ -144,19 +144,19 @@
             }
         ],
         "signatures": {"56abab3870585f04d015d55adf600bc7": {
-            "r": ":byt:0EtMc+57sUCo9BuNACggcL7lV1slMdGg6hynBPnP45A=",
-            "s": ":byt:zdNofbMdo8vccM7s7MVApnZNX1d1JuMCzQrAtmaHGi8=",
+            "r": ":byt:IcUy5htTnfgjnZX/x4rhfoENhiCD00O8cgZfpSjAMYI=",
+            "s": ":byt:5ch3YhZ7NjpGlsuA7OiFeFadta5g1jUzzruKyqXj09c=",
             "serializer": "crypto.ecdsa_signature",
             "version": 100
         }},
         "temporalProof": {
             "vertices": [{
-                "owner": ":byt:AwXD1q1wqvyc7Sj6o8QF6dS2MPphe5p6FD8makW5kkUx",
+                "owner": ":byt:A7mRn1O2okTw8CowCRHchkTjXdWb/CZcE8EqO9ibx11f",
                 "rclock": 1488326400000,
                 "previous": ":uid:00000000000000000000000000000000",
                 "signature": {
-                    "r": ":byt:Z30Jmk5noedPBuGpeet7wiy8lNVb4+Olg8/n5v4Dvww=",
-                    "s": ":byt:sS5w99fcy+bpSb5j4KBYacR2nbuloPlYS2bcuvWxmLQ=",
+                    "r": ":byt:MnHvAu/JY7WfvTbCCSP7vx60Y6udR1lXKkfAWf7se60=",
+                    "s": ":byt:q/0JDC4We0/qTW++OxO1PkWRVwXhWjc+46aeivU9b5Y=",
                     "serializer": "crypto.ecdsa_signature",
                     "version": 100
                 },
@@ -168,7 +168,7 @@
             }],
             "serializer": "tempo.temporal_proof",
             "version": 100,
-            "aid": ":aid:5952a7d7853bd8e500a711d538339b88a85ec581ff4b79bd56abab3870585f04"
+            "aid": ":aid:9c8b48089dff417033bb7a6c8b999b1ce8dd210a7ff6e74456abab3870585f04"
         }
     }],
     "port": 30000,
