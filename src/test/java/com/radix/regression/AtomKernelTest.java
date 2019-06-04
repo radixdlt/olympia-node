@@ -50,7 +50,7 @@ public class AtomKernelTest {
 	@Test
 	public void testAtomTooBig() {
 		TestObserver<RadixJsonRpcClient.NodeAtomSubmissionUpdate> observer = submitAtom(ImmutableMap.of(), true, System.currentTimeMillis() + "", SpunParticle.up(new MessageParticle.MessageParticleBuilder()
-			.payload(new byte[70000])
+			.payload(new byte[1 << 20])
 			.metaData("application", "message")
 			.from(universe.getAddressFrom(this.identity.getPublicKey()))
 			.to(universe.getAddressFrom(this.identity.getPublicKey()))

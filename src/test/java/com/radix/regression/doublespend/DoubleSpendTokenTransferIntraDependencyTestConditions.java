@@ -1,6 +1,5 @@
 package com.radix.regression.doublespend;
 
-import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.ShardedAppStateId;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
