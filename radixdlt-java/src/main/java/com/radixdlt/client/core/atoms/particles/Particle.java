@@ -1,14 +1,19 @@
 package com.radixdlt.client.core.atoms.particles;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.Objects;
 import java.util.Set;
 
+import java.util.TreeSet;
 import org.radix.common.ID.EUID;
 import org.radix.serialization2.DsonOutput;
 import com.radixdlt.client.atommodel.Accountable;
 import com.radixdlt.client.atommodel.Identifiable;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 
+import org.radix.serialization2.DsonOutput.Output;
 import org.radix.serialization2.SerializerId2;
 import org.radix.serialization2.client.SerializableObject;
 import org.radix.serialization2.client.Serialize;
@@ -20,7 +25,22 @@ import com.radixdlt.client.core.atoms.RadixHash;
  */
 @SerializerId2("radix.particle")
 public abstract class Particle extends SerializableObject {
-	protected Particle() {
+
+	@JsonProperty("destinations")
+	@DsonOutput(Output.ALL)
+	private LinkedHashSet<EUID> destinations = new LinkedHashSet<>();
+
+	public Particle() {
+	}
+
+	public Particle(EUID destination) {
+		Objects.requireNonNull(destination);
+		this.destinations.add(destination);
+	}
+
+	public Particle(Set<EUID> destinations) {
+		Objects.requireNonNull(destinations);
+		this.destinations.addAll(new TreeSet<>(destinations));
 	}
 
 	public final Set<RadixAddress> getShardables() {
@@ -51,6 +71,9 @@ public abstract class Particle extends SerializableObject {
 		return this.getHash().toEUID();
 	}
 
+	public Set<EUID> getDestinations() {
+		return destinations;
+	}
 
 	@Override
 	public boolean equals(Object o) {

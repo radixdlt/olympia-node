@@ -25,7 +25,7 @@ public class RRIParticle extends Particle implements Accountable {
 	}
 
 	public RRIParticle(RRI rri) {
-		super();
+		super(rri.getAddress().getUID());
 
 		this.rri = Objects.requireNonNull(rri);
 		this.nonce = 0;

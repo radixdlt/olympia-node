@@ -7,16 +7,20 @@ import static org.mockito.Mockito.when;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.crypto.ECKeyPair;
 import org.junit.Test;
+import org.radix.common.ID.EUID;
 
 public class SendDecryptedMessageToParticleGroupsMapperTest {
 	@Test
 	public void testNoEncryption() {
+		RadixAddress address = mock(RadixAddress.class);
+		when(address.getUID()).thenReturn(mock(EUID.class), mock(EUID.class));
+
 		SendMessageToParticleGroupsMapper sendMessageToParticleGroupsMapper =
 			new SendMessageToParticleGroupsMapper(() -> mock(ECKeyPair.class));
 		SendMessageAction sendMessageAction = mock(SendMessageAction.class);
 		when(sendMessageAction.getData()).thenReturn(new byte[] {});
-		when(sendMessageAction.getFrom()).thenReturn(mock(RadixAddress.class));
-		when(sendMessageAction.getTo()).thenReturn(mock(RadixAddress.class));
+		when(sendMessageAction.getFrom()).thenReturn(address);
+		when(sendMessageAction.getTo()).thenReturn(address);
 		when(sendMessageAction.encrypt()).thenReturn(false);
 		assertThat(sendMessageToParticleGroupsMapper.mapToParticleGroups(sendMessageAction)).hasSize(1);
 	}
