@@ -19,7 +19,7 @@ import static org.mockito.Mockito.when;
 
 import io.reactivex.observers.TestObserver;
 
-public class BaseRadixIdentityTest {
+public class LocalRadixIdentityTest {
 
 	@Test
 	public void signTest() {
@@ -35,7 +35,7 @@ public class BaseRadixIdentityTest {
 		UnsignedAtom atom = mock(UnsignedAtom.class);
 		when(atom.sign(any(), any())).thenReturn(signedAtom);
 		when(atom.getHash()).thenReturn(hash);
-		BaseRadixIdentity identity = new BaseRadixIdentity(keyPair);
+		LocalRadixIdentity identity = new LocalRadixIdentity(keyPair);
 		TestObserver<Atom> testObserver = TestObserver.create();
 		identity.sign(atom).subscribe(testObserver);
 

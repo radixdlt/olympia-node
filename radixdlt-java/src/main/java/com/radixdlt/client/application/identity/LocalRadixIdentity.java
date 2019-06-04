@@ -12,19 +12,24 @@ import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
 
 import io.reactivex.Single;
 
-class BaseRadixIdentity implements RadixIdentity {
+public class LocalRadixIdentity implements RadixIdentity {
 	private final ECKeyPair myKey;
 
-	BaseRadixIdentity(ECKeyPair myKey) {
+	LocalRadixIdentity(ECKeyPair myKey) {
 		this.myKey = myKey;
 	}
 
+	public Atom syncSign(UnsignedAtom unsignedAtom) {
+		ECSignature signature = myKey.sign(unsignedAtom.getHash().toByteArray());
+		EUID signatureId = myKey.getUID();
+		return unsignedAtom.sign(signature, signatureId);
+	}
+
 	@Override
-	public Single<Atom> sign(UnsignedAtom atom) {
+	public Single<Atom> sign(UnsignedAtom unsignedAtom) {
 		return Single.create(emitter -> {
-			ECSignature signature = myKey.sign(atom.getHash().toByteArray());
-			EUID signatureId = myKey.getUID();
-			emitter.onSuccess(atom.sign(signature, signatureId));
+			final Atom atom = syncSign(unsignedAtom);
+			emitter.onSuccess(atom);
 		});
 	}
 
