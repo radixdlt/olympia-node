@@ -43,9 +43,9 @@ public class TokenDefinitionParticle extends Particle implements Identifiable, O
 	@DsonOutput(Output.ALL)
 	private UInt256 granularity;
 
-	@JsonProperty("icon")
+	@JsonProperty("icon_url")
 	@DsonOutput(Output.ALL)
-	private byte[] icon;
+	private String iconUrl;
 
 	private Map<TokenTransition, TokenPermission> tokenPermissions;
 
@@ -60,7 +60,7 @@ public class TokenDefinitionParticle extends Particle implements Identifiable, O
 		String description,
 		UInt256 granularity,
 		Map<TokenTransition, TokenPermission> tokenPermissions,
-		byte[] icon
+		String iconUrl
 	) {
 		super();
 		this.address = address;
@@ -69,7 +69,7 @@ public class TokenDefinitionParticle extends Particle implements Identifiable, O
 		this.description = description;
 		this.granularity = granularity;
 		this.tokenPermissions = ImmutableMap.copyOf(tokenPermissions);
-		this.icon = icon;
+		this.iconUrl = iconUrl;
 	}
 
 	@Override
