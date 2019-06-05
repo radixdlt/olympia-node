@@ -1,12 +1,11 @@
 package com.radixdlt.client.core.atoms.particles;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableSet;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
 
-import java.util.TreeSet;
 import org.radix.common.ID.EUID;
 import org.radix.serialization2.DsonOutput;
 import com.radixdlt.client.atommodel.Accountable;
@@ -28,19 +27,20 @@ public abstract class Particle extends SerializableObject {
 
 	@JsonProperty("destinations")
 	@DsonOutput(Output.ALL)
-	private LinkedHashSet<EUID> destinations = new LinkedHashSet<>();
+	private ImmutableSet<EUID> destinations;
 
 	public Particle() {
+		this.destinations = ImmutableSet.of();
 	}
 
 	public Particle(EUID destination) {
 		Objects.requireNonNull(destination);
-		this.destinations.add(destination);
+		this.destinations = ImmutableSet.of(destination);
 	}
 
 	public Particle(Set<EUID> destinations) {
 		Objects.requireNonNull(destinations);
-		this.destinations.addAll(new TreeSet<>(destinations));
+		this.destinations = ImmutableSet.copyOf(destinations);
 	}
 
 	public final Set<RadixAddress> getShardables() {
