@@ -10,6 +10,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
 
+import org.radix.common.ID.EUID;
 import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.SerializerId2;
 
@@ -61,6 +62,7 @@ public class MessageParticle extends Particle implements Accountable {
 	}
 
 	private MessageParticle() {
+		super();
 	}
 
 	@JsonProperty("from")
@@ -96,7 +98,19 @@ public class MessageParticle extends Particle implements Accountable {
 	private long nonce;
 
 	private MessageParticle(RadixAddress from, RadixAddress to, byte[] bytes, MetadataMap metaData, long nonce) {
-		super();
+		this(from, to, bytes, metaData, nonce, ImmutableSet.of(from.getUID(), to.getUID()));
+	}
+
+	public MessageParticle(
+		RadixAddress from,
+		RadixAddress to,
+		byte[] bytes,
+		MetadataMap metaData,
+		long nonce,
+		ImmutableSet<EUID> destinations
+	) {
+		super(destinations);
+
 		Objects.requireNonNull(bytes);
 
 		this.from = Objects.requireNonNull(from, "from is required");

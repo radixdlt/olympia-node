@@ -27,6 +27,7 @@ public class UniqueParticle extends Particle implements Identifiable {
 	}
 
 	public UniqueParticle(RadixAddress address, String unique) {
+		super(address.getUID());
 		this.address = address;
 		this.name = unique;
 		this.nonce = System.nanoTime();

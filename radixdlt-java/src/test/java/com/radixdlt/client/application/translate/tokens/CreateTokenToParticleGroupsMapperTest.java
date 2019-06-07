@@ -12,6 +12,7 @@ import org.junit.Test;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.crypto.ECPublicKey;
+import org.radix.common.ID.EUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -22,6 +23,7 @@ public class CreateTokenToParticleGroupsMapperTest {
 	public void testNormalConstruction() {
 		CreateTokenAction tokenCreation = mock(CreateTokenAction.class);
 		RadixAddress address = mock(RadixAddress.class);
+		when(address.getUID()).thenReturn(mock(EUID.class));
 		ECPublicKey key = mock(ECPublicKey.class);
 		when(address.getPublicKey()).thenReturn(key);
 		when(tokenCreation.getAddress()).thenReturn(address);

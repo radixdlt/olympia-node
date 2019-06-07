@@ -53,7 +53,7 @@ public class UnallocatedTokensParticle extends Particle implements Accountable, 
 		RRI tokenDefinitionReference,
 		Map<TokenTransition, TokenPermission> tokenPermissions
 	) {
-		super();
+		super(tokenDefinitionReference.getAddress().getUID());
 
 		// Redundant null check added for completeness
 		Objects.requireNonNull(amount, "amount is required");

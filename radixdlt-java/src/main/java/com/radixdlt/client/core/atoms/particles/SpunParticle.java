@@ -58,6 +58,7 @@ public class SpunParticle<T extends Particle> extends SerializableObject {
 	@Override
 	public String toString() {
 		String hid = (this.particle == null) ? "null" : this.particle.getHid().toString();
-		return String.format("%s[%s:%s:%s]", getClass().getSimpleName(), hid, String.valueOf(spin), String.valueOf(particle));
+		return String.format("%s[%s:%s:%s:%s]", getClass().getSimpleName(), hid, String.valueOf(spin), String.valueOf(particle),
+			String.valueOf(this.particle != null ? particle.getDestinations() : "null"));
 	}
 }

@@ -1,6 +1,9 @@
 package com.radixdlt.client.core.atoms.particles;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableSet;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 import org.radix.common.ID.EUID;
@@ -9,6 +12,7 @@ import com.radixdlt.client.atommodel.Accountable;
 import com.radixdlt.client.atommodel.Identifiable;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 
+import org.radix.serialization2.DsonOutput.Output;
 import org.radix.serialization2.SerializerId2;
 import org.radix.serialization2.client.SerializableObject;
 import org.radix.serialization2.client.Serialize;
@@ -20,7 +24,23 @@ import com.radixdlt.client.core.atoms.RadixHash;
  */
 @SerializerId2("radix.particle")
 public abstract class Particle extends SerializableObject {
-	protected Particle() {
+
+	@JsonProperty("destinations")
+	@DsonOutput(Output.ALL)
+	private ImmutableSet<EUID> destinations;
+
+	public Particle() {
+		this.destinations = ImmutableSet.of();
+	}
+
+	public Particle(EUID destination) {
+		Objects.requireNonNull(destination);
+		this.destinations = ImmutableSet.of(destination);
+	}
+
+	public Particle(Set<EUID> destinations) {
+		Objects.requireNonNull(destinations);
+		this.destinations = ImmutableSet.copyOf(destinations);
 	}
 
 	public final Set<RadixAddress> getShardables() {
@@ -51,6 +71,9 @@ public abstract class Particle extends SerializableObject {
 		return this.getHash().toEUID();
 	}
 
+	public Set<EUID> getDestinations() {
+		return destinations;
+	}
 
 	@Override
 	public boolean equals(Object o) {

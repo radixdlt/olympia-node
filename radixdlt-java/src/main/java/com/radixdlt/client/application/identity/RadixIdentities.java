@@ -27,15 +27,15 @@ public class RadixIdentities {
 	 */
 	public static RadixIdentity fromPrivateKeyBase64(String privateKeyBase64) {
 		final ECKeyPair myKey = new ECKeyPair(Base64.decode(privateKeyBase64));
-		return new BaseRadixIdentity(myKey);
+		return new LocalRadixIdentity(myKey);
 	}
 
 	/**
 	 * Creates a new radix identity which is not stored anywhere
 	 * @return an unstored radix identity
 	 */
-	public static RadixIdentity createNew() {
-		return new BaseRadixIdentity(ECKeyPairGenerator.newInstance().generateKeyPair());
+	public static LocalRadixIdentity createNew() {
+		return new LocalRadixIdentity(ECKeyPairGenerator.newInstance().generateKeyPair());
 	}
 
 	/**
@@ -56,7 +56,7 @@ public class RadixIdentities {
 			}
 		}
 
-		return new BaseRadixIdentity(ecKeyPair);
+		return new LocalRadixIdentity(ecKeyPair);
 	}
 
 	/**
@@ -126,6 +126,6 @@ public class RadixIdentities {
 	 */
 	public static RadixIdentity readEncryptedIdentity(Reader reader, String password) throws IOException, GeneralSecurityException {
 		final ECKeyPair key = new ECKeyPair(PrivateKeyEncrypter.decryptPrivateKey(password, reader));
-		return new BaseRadixIdentity(key);
+		return new LocalRadixIdentity(key);
 	}
 }

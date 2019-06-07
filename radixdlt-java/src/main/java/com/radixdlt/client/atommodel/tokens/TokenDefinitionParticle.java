@@ -62,7 +62,7 @@ public class TokenDefinitionParticle extends Particle implements Identifiable, O
 		Map<TokenTransition, TokenPermission> tokenPermissions,
 		String iconUrl
 	) {
-		super();
+		super(address.getUID());
 		this.address = address;
 		this.name = name;
 		this.symbol = symbol;
