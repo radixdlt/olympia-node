@@ -43,7 +43,7 @@ public class TokenDefinitionParticle extends Particle implements Identifiable, O
 	@DsonOutput(Output.ALL)
 	private UInt256 granularity;
 
-	@JsonProperty("icon_url")
+	@JsonProperty("iconUrl")
 	@DsonOutput(Output.ALL)
 	private String iconUrl;
 
