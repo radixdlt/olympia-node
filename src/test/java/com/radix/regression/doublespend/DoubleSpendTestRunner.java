@@ -93,7 +93,7 @@ public final class DoubleSpendTestRunner {
 				new BootstrapConfig() {
 				    @Override
 				    public RadixUniverseConfig getConfig() {
-					    return RadixUniverseConfigs.getBetanet();
+					    return RadixUniverseConfigs.getLocalnet();
 				    }
 
 				    @Override
