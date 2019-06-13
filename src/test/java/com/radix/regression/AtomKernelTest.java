@@ -15,6 +15,7 @@ import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.network.HttpClients;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient;
+import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.NodeAtomSubmissionState;
 import com.radixdlt.client.core.network.websocket.WebSocketClient;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
 import com.radixdlt.client.core.pow.ProofOfWorkBuilder;
@@ -125,7 +126,7 @@ public class AtomKernelTest {
 		observer.awaitTerminalEvent(5, TimeUnit.SECONDS);
 		observer.assertNoErrors();
 		observer.assertComplete();
-		observer.assertValueAt(1, state -> state.getState() == RadixJsonRpcClient.NodeAtomSubmissionState.UNKNOWN_ERROR);
+		observer.assertValueAt(0, state -> state.getState() == NodeAtomSubmissionState.FAILED);
 	}
 
 	private TestObserver<RadixJsonRpcClient.NodeAtomSubmissionUpdate> submitAtom(Map<String, String> metaData, boolean addFee, String timestamp, SpunParticle<?>... spunParticles) {
@@ -145,7 +146,7 @@ public class AtomKernelTest {
 		// Sign and submit
 		Atom signedAtom = this.identity.sign(unsignedAtom).blockingGet();
 
-		TestObserver<RadixJsonRpcClient.NodeAtomSubmissionUpdate> observer = TestObserver.create();
+		TestObserver<RadixJsonRpcClient.NodeAtomSubmissionUpdate> observer = TestObserver.create(Util.loggingObserver("Submission"));
 		jsonRpcClient.submitAtom(signedAtom).subscribe(observer);
 
 		return observer;

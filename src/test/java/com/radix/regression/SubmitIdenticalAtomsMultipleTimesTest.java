@@ -55,24 +55,6 @@ public class SubmitIdenticalAtomsMultipleTimesTest {
 	}
 
 	@Test
-	public void testSubmitSameAtomTwoTimesSequentially() {
-		Atom atom = buildAtom(ImmutableMap.of(), true, System.currentTimeMillis() + "", SpunParticle.up(
-			new MessageParticle.MessageParticleBuilder()
-			.payload(new byte[10])
-			.metaData("application", "message")
-			.from(universe.getAddressFrom(this.identity.getPublicKey()))
-			.to(universe.getAddressFrom(this.identity.getPublicKey()))
-			.build()));
-
-		submitAndAwaitResult(atom, state
-			-> state.getState() == RadixJsonRpcClient.NodeAtomSubmissionState.STORED
-				&& state.getData().getAsJsonObject().get("justStored").getAsBoolean());
-		submitAndAwaitResult(atom, state
-			-> state.getState() == RadixJsonRpcClient.NodeAtomSubmissionState.STORED
-				&& !state.getData().getAsJsonObject().get("justStored").getAsBoolean());
-	}
-
-	@Test
 	public void testSubmitSameAtomTwoTimesConcurrently() {
 		submitSameAtomXTimesConcurrently(2);
 	}

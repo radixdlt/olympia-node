@@ -36,4 +36,4 @@ Feature: Particle Groups
   Scenario: 5: Empty particle group
     Given I have access to a suitable Radix network
     When I submit an arbitrary atom with an empty particle group
-    Then I can observe atom 1 being rejected with a validation error
+    Then I can observe atom 1 being rejected with a failure
