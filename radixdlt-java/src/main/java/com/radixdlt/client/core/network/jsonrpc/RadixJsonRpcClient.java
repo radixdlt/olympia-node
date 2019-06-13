@@ -348,7 +348,7 @@ public class RadixJsonRpcClient {
 		}
 	}
 
-	public static class NodeAtomSubmissionUpdate {
+	public final static class NodeAtomSubmissionUpdate {
 		private final NodeAtomSubmissionState state;
 		private final JsonElement data;
 		private final long timestamp;
@@ -369,6 +369,11 @@ public class RadixJsonRpcClient {
 
 		public long getTimestamp() {
 			return timestamp;
+		}
+
+		@Override
+		public String toString() {
+			return timestamp + " " + state + " " + data;
 		}
 	}
 
@@ -412,6 +417,7 @@ public class RadixJsonRpcClient {
 				if (!resp.isSuccess()) {
 					messageListenerDisposable.dispose();
 					emitter.onNext(new NodeAtomSubmissionUpdate(NodeAtomSubmissionState.FAILED, resp.getError()));
+					emitter.onComplete();
 				} else {
 					emitter.onNext(new NodeAtomSubmissionUpdate(NodeAtomSubmissionState.RECEIVED, null));
 				}
