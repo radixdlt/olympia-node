@@ -1,0 +1,10 @@
+package com.radixdlt.client.core.atoms;
+
+public enum AtomStatus {
+	DOES_NOT_EXIST,
+	PENDING_CM_VERIFICATION,
+	PENDING_DEPENDENCY_VERIFICATION,
+	PENDING_MISSING_DEPENDENCY,
+	CONFLICTED,
+	STORED
+}

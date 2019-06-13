@@ -1,10 +1,13 @@
 package com.radixdlt.client.core.network.jsonrpc;
 
+import com.google.gson.JsonPrimitive;
+import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.ledger.AtomEvent;
 import java.util.List;
 import java.util.UUID;
 
 import org.json.JSONObject;
+import org.radix.common.ID.AID;
 import org.radix.common.ID.EUID;
 import org.radix.serialization2.DsonOutput.Output;
 import org.radix.serialization2.JsonJavaType;
@@ -123,7 +126,7 @@ public class RadixJsonRpcClient {
 	 * @param method name of JSON-RPC method
 	 * @return response from rpc method
 	 */
-	public Single<JsonRpcResponse> jsonRpcCall(String method, JsonObject params) {
+	public Single<JsonRpcResponse> jsonRpcCall(String method, JsonElement params) {
 		return Single.create(emitter -> {
 			final String uuid = UUID.randomUUID().toString();
 
@@ -197,6 +200,19 @@ public class RadixJsonRpcClient {
 				.map(result -> Serialize.getInstance().fromJson(result.toString(), listOfNodeRunnerData));
 	}
 
+	/**
+	 * Get the current status of an atom for this node
+	 * @param aid the aid of the atom
+	 * @return the status of the atom
+	 */
+	public Single<AtomStatus> getAtomStatus(AID aid) {
+		JsonObject params = new JsonObject();
+		params.addProperty("aid", aid.toString());
+		return this.jsonRpcCall("Atoms.getAtomStatus", params)
+			.map(JsonRpcResponse::getResult)
+			.map(JsonElement::getAsJsonObject)
+			.map(json -> AtomStatus.valueOf(json.get("status").getAsString()));
+	}
 
 	/**
 	 * Queries for an atom by HID.
