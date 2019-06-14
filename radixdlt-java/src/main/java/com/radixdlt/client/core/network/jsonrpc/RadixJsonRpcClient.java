@@ -200,6 +200,42 @@ public class RadixJsonRpcClient {
 				.map(result -> Serialize.getInstance().fromJson(result.toString(), listOfNodeRunnerData));
 	}
 
+
+	public Completable closeAtomStatusNotifications(String subscriberId) {
+		final JsonObject cancelParams = new JsonObject();
+		cancelParams.addProperty("subscriberId", subscriberId);
+
+		return this.jsonRpcCall("Atoms.closeAtomStatusNotifications", cancelParams).map(r -> {
+			if (!r.isSuccess) {
+				throw new RuntimeException();
+			} else {
+				return r;
+			}
+		}).ignoreElement();
+	}
+
+	public Completable sendGetAtomStatusNotifications(String subscriberId, AID aid) {
+		final JsonObject params = new JsonObject();
+		params.addProperty("aid", aid.toString());
+		params.addProperty("subscriberId", subscriberId);
+
+		return this.jsonRpcCall("Atoms.getAtomStatusNotifications", params).map(r -> {
+			if (!r.isSuccess) {
+				throw new RuntimeException();
+			} else {
+				return r;
+			}
+		}).ignoreElement();
+	}
+
+	public Observable<AtomStatus> observeAtomStatusNotifications(String subscriberId) {
+		return this.observeNotifications("Atoms.nextStatusEvent", subscriberId)
+			.map(observedStatus -> {
+				AtomStatus atomStatus = AtomStatus.valueOf(observedStatus.get("status").getAsString());
+				return atomStatus;
+			});
+	}
+
 	/**
 	 * Get the current status of an atom for this node
 	 * @param aid the aid of the atom
@@ -231,17 +267,6 @@ public class RadixJsonRpcClient {
 			.map(JsonRpcResponse::getResult)
 			.<List<Atom>>map(result -> Serialize.getInstance().fromJson(result.toString(), listOfAtom))
 			.flatMapMaybe(list -> list.isEmpty() ? Maybe.empty() : Maybe.just(list.get(0)));
-	}
-
-	/**
-	 * Generic helper method for creating a subscription via JSON-RPC.
-	 *
-	 * @param method name of subscription method
-	 * @param notificationMethod name of the JSON-RPC notification method
-	 * @return Observable of emitted subscription json elements
-	 */
-	public Observable<JsonElement> jsonRpcSubscribe(String method, String notificationMethod) {
-		return this.jsonRpcSubscribe(method, new JsonObject(), notificationMethod);
 	}
 
 	public Observable<JsonObject> observeNotifications(String notificationMethod, String subscriberId) {
