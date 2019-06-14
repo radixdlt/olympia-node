@@ -1,5 +1,9 @@
 package com.radix.regression;
 
+import com.radixdlt.client.application.RadixApplicationAPI;
+import com.radixdlt.client.application.identity.RadixIdentities;
+import com.radixdlt.client.application.translate.unique.PutUniqueIdAction;
+import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.address.RadixUniverseConfigs;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomStatus;
@@ -8,6 +12,7 @@ import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient;
 import com.radixdlt.client.core.network.websocket.WebSocketClient;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
 import io.reactivex.observers.TestObserver;
+import java.util.UUID;
 import okhttp3.Request;
 import org.junit.Before;
 import org.junit.Test;
@@ -44,5 +49,28 @@ public class AtomStatusTest {
 			.subscribe(atomStatusTestObserver);
 		atomStatusTestObserver.awaitTerminalEvent();
 		atomStatusTestObserver.assertValue(AtomStatus.DOES_NOT_EXIST);
+	}
+
+	@Test
+	public void given_a_subscription_to_status_notifications__when_the_atom_is_stored__a_store_notification_should_be_sent() {
+		RadixApplicationAPI api = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, RadixIdentities.createNew());
+		Atom atom = api.buildAtom(new PutUniqueIdAction(api.getMyAddress(), "test"))
+			.flatMap(api.getMyIdentity()::sign)
+			.blockingGet();
+		AID aid = atom.getAid();
+
+		String subscriberId = UUID.randomUUID().toString();
+
+		TestObserver<AtomStatus> testObserver = TestObserver.create(Util.loggingObserver("Atom Status"));
+		rpcClient.observeAtomStatusNotifications(subscriberId).subscribe(testObserver);
+		rpcClient.sendGetAtomStatusNotifications(subscriberId, aid).blockingAwait();
+		testObserver.assertNoValues();
+		testObserver.assertNotComplete();
+
+		api.submitAtom(atom).blockUntilComplete();
+
+		testObserver.awaitCount(1);
+		testObserver.assertValueAt(0, AtomStatus.STORED);
+		rpcClient.closeAtomStatusNotifications(subscriberId).blockingAwait();
 	}
 }
