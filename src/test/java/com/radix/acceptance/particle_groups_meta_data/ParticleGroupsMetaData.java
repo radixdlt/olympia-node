@@ -12,6 +12,8 @@ import com.radixdlt.client.atommodel.message.MessageParticle;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.client.core.atoms.AtomStatus;
+import com.radixdlt.client.core.atoms.AtomStatusNotification;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
@@ -48,7 +50,8 @@ public class ParticleGroupsMetaData {
     private WebSocketClient webSocketClient;
     private RadixJsonRpcClient jsonRpcClient;
 
-    private TestObserver<RadixJsonRpcClient.NodeAtomSubmissionUpdate> observer;
+    private TestObserver<AtomStatusNotification> observer;
+	private TestObserver atomPushObserver;
     private TestObserver<RadixJsonRpcClient.JsonRpcResponse> observer2;
 
     private FeeMapper feeMapper = new PowFeeMapper(Atom::getHash,
@@ -106,7 +109,10 @@ public class ParticleGroupsMetaData {
         Atom signedAtom = this.identity.sign(atom).blockingGet();
 
         this.observer = TestObserver.create();
-        this.jsonRpcClient.submitAtom(signedAtom).subscribe(this.observer);
+        final String subscriberId = UUID.randomUUID().toString();
+        this.jsonRpcClient.observeAtomStatusNotifications(subscriberId).subscribe(this.observer);
+        this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, signedAtom.getAid()).blockingAwait();
+        this.jsonRpcClient.pushAtom(signedAtom).blockingAwait();
     }
 
     @When("^I submit an atom with particle groups which have no metadata$")
@@ -118,7 +124,10 @@ public class ParticleGroupsMetaData {
         Atom signedAtom = this.identity.sign(atom).blockingGet();
 
         this.observer = TestObserver.create();
-        this.jsonRpcClient.submitAtom(signedAtom).subscribe(this.observer);
+		final String subscriberId = UUID.randomUUID().toString();
+        this.jsonRpcClient.observeAtomStatusNotifications(subscriberId).subscribe(this.observer);
+        this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, signedAtom.getAid()).blockingAwait();
+        this.jsonRpcClient.pushAtom(signedAtom).blockingAwait();
     }
 
 
@@ -133,10 +142,8 @@ public class ParticleGroupsMetaData {
         // Sign and submit
         Atom signedAtom = this.identity.sign(atom).blockingGet();
 
-
-
-        this.observer = TestObserver.create();
-        this.jsonRpcClient.submitAtom(signedAtom).subscribe(this.observer);
+        this.atomPushObserver = TestObserver.create();
+        this.jsonRpcClient.pushAtom(signedAtom).subscribe(this.atomPushObserver);
     }
 
     @When("^I submit an atom with particle groups which have invalid json in the metadata field$")
@@ -227,18 +234,16 @@ public class ParticleGroupsMetaData {
 
     @Then("^I should observe the atom being accepted$")
     public void iShouldObserveTheAtomBeingAccepted() throws Throwable {
-        this.observer.awaitTerminalEvent(5, TimeUnit.SECONDS);
-        this.observer.assertNoErrors();
-        this.observer.assertComplete();
-        this.observer.assertValueAt(1, state -> state.getState() == RadixJsonRpcClient.NodeAtomSubmissionState.STORED);
+    	this.observer.awaitCount(1);
+        this.observer.assertValue(notification -> notification.getAtomStatus() == AtomStatus.STORED);
+        this.observer.dispose();
     }
 
     @Then("^I should observe the atom being rejected$")
     public void iShouldObserveTheAtomBeingRejected() throws Throwable {
-        this.observer.awaitTerminalEvent(5, TimeUnit.SECONDS);
-        this.observer.assertNoErrors();
-        this.observer.assertComplete();
-        this.observer.assertValueAt(1, state -> state.getState() == RadixJsonRpcClient.NodeAtomSubmissionState.VALIDATION_ERROR);
+    	this.atomPushObserver.awaitTerminalEvent();
+        this.atomPushObserver.assertError(RuntimeException.class);
+        this.atomPushObserver.dispose();
     }
 
     @Then("^I should get a deserialization error$")
