@@ -2,7 +2,6 @@ package com.radixdlt.client.core.network.epics;
 
 import com.google.gson.JsonObject;
 import com.radixdlt.client.core.atoms.AtomStatus;
-import com.radixdlt.client.core.atoms.AtomStatusNotification;
 import com.radixdlt.client.core.network.RadixNetworkEpic;
 import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixNode;
@@ -17,14 +16,10 @@ import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.NodeAtomSubmissionState;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.NodeAtomSubmissionUpdate;
 import com.radixdlt.client.core.network.websocket.WebSocketClient;
-import com.radixdlt.client.core.network.websocket.WebSocketException;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
-import com.radixdlt.client.core.util.IncreasingRetryTimer;
 import io.reactivex.Completable;
 import io.reactivex.Observable;
-import io.reactivex.Single;
 import io.reactivex.disposables.Disposable;
-import io.reactivex.subjects.PublishSubject;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -64,7 +59,7 @@ public final class SubmitAtomEpic implements RadixNetworkEpic {
 				.map(statusNotification -> {
 					final AtomStatus status = statusNotification.getAtomStatus();
 					final JsonObject data = statusNotification.getData();
-					switch(status) {
+					switch (status) {
 						case STORED:
 							return new NodeAtomSubmissionUpdate(NodeAtomSubmissionState.STORED, data);
 						case EVICTED_CONFLICT_LOSER:

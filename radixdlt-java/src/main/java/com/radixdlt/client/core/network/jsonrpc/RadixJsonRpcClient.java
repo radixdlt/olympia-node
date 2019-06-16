@@ -1,6 +1,5 @@
 package com.radixdlt.client.core.network.jsonrpc;
 
-import com.google.gson.JsonPrimitive;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.AtomStatusNotification;
 import com.radixdlt.client.core.ledger.AtomEvent;
@@ -404,7 +403,9 @@ public class RadixJsonRpcClient {
 		}
 	}
 
-	public final static class NodeAtomSubmissionUpdate {
+
+	// TODO: Remove this class
+	public static final class NodeAtomSubmissionUpdate {
 		private final NodeAtomSubmissionState state;
 		private final JsonElement data;
 		private final long timestamp;
