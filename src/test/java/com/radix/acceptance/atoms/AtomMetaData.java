@@ -50,8 +50,8 @@ public class AtomMetaData {
     private RadixJsonRpcClient jsonRpcClient;
 
 	private TestObserver<AtomStatusNotification> observer;
-    private TestObserver atomPushObserver;
-    private TestObserver<RadixJsonRpcClient.JsonRpcResponse> observer2;
+	private TestObserver atomPushObserver;
+	private TestObserver<RadixJsonRpcClient.JsonRpcResponse> observer2;
 
     private FeeMapper feeMapper = new PowFeeMapper(Atom::getHash,
             new ProofOfWorkBuilder());
@@ -114,36 +114,36 @@ public class AtomMetaData {
 		this.jsonRpcClient.pushAtom(signedAtom).blockingAwait();
     }
 
-    @When("^I submit a valid atom with no metadata$")
-    public void iSubmitAValidAtomWithNoMetadata() throws Throwable {
-        // Construct atom
-        UnsignedAtom atom = constructTestAtom(new HashMap<>());
+	@When("^I submit a valid atom with no metadata$")
+	public void iSubmitAValidAtomWithNoMetadata() throws Throwable {
+		// Construct atom
+		UnsignedAtom atom = constructTestAtom(new HashMap<>());
 
-        // Sign and submit
-        Atom signedAtom = this.identity.sign(atom).blockingGet();
+		// Sign and submit
+		Atom signedAtom = this.identity.sign(atom).blockingGet();
 
-        this.observer = TestObserver.create();
+		this.observer = TestObserver.create();
 		final String subscriberId = UUID.randomUUID().toString();
-        this.jsonRpcClient.observeAtomStatusNotifications(subscriberId).subscribe(this.observer);
+		this.jsonRpcClient.observeAtomStatusNotifications(subscriberId).subscribe(this.observer);
 		this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, signedAtom.getAid()).blockingAwait();
 		this.jsonRpcClient.pushAtom(signedAtom).blockingAwait();
-    }
+	}
 
 
-    @When("^I submit a valid atom with metadata exceeding max atom size 65536 bytes$")
-    public void iSubmitAValidAtomWithMetadataExceedingMaxAtomSizeBytes() throws Throwable {
+	@When("^I submit a valid atom with metadata exceeding max atom size 65536 bytes$")
+	public void iSubmitAValidAtomWithMetadataExceedingMaxAtomSizeBytes() throws Throwable {
 		// Construct atom
 		Map<String, String> metaData = new HashMap<>();
 		metaData.put("super big test", generateStringOfLength(655360));
 
 		UnsignedAtom atom = constructTestAtom(metaData);
 
-        // Sign and submit
-        Atom signedAtom = this.identity.sign(atom).blockingGet();
+		// Sign and submit
+		Atom signedAtom = this.identity.sign(atom).blockingGet();
 
-        this.atomPushObserver = TestObserver.create();
+		this.atomPushObserver = TestObserver.create();
 		this.jsonRpcClient.pushAtom(signedAtom).subscribe(this.atomPushObserver);
-    }
+	}
 
     @When("^I submit an atom with invalid json in the metadata field$")
     public void iSubmitAnAtomWithInvalidJsonInTheMetadataField() throws Throwable {
