@@ -2,6 +2,9 @@ package com.radixdlt.client.core.atoms;
 
 import com.google.gson.JsonObject;
 
+/**
+ * An event where an atom's status has changed.
+ */
 public final class AtomStatusNotification {
 	private final AtomStatus atomStatus;
 	private final JsonObject data;

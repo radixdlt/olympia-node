@@ -200,6 +200,11 @@ public class RadixJsonRpcClient {
 				.map(result -> Serialize.getInstance().fromJson(result.toString(), listOfNodeRunnerData));
 	}
 
+	/**
+	 * Submits an atom to the node.
+	 * @param atom the atom to submit
+	 * @return a completable which completes when the atom is queued
+	 */
 	public Completable pushAtom(Atom atom) {
 		JSONObject jsonAtomTemp = Serialize.getInstance().toJsonObject(atom, Output.API);
 		JsonElement jsonAtom = GsonJson.getInstance().toGson(jsonAtomTemp);
@@ -213,20 +218,12 @@ public class RadixJsonRpcClient {
 		}).ignoreElement();
 	}
 
-
-	public Completable closeAtomStatusNotifications(String subscriberId) {
-		final JsonObject cancelParams = new JsonObject();
-		cancelParams.addProperty("subscriberId", subscriberId);
-
-		return this.jsonRpcCall("Atoms.closeAtomStatusNotifications", cancelParams).map(r -> {
-			if (!r.isSuccess) {
-				throw new RuntimeException();
-			} else {
-				return r;
-			}
-		}).ignoreElement();
-	}
-
+	/**
+	 * Sends a request to receive streaming updates on an atom's status.
+	 * @param subscriberId the subscriberId for the streaming updates
+	 * @param aid the AID of the atom
+	 * @return a completable which completes when subscription is registered
+	 */
 	public Completable sendGetAtomStatusNotifications(String subscriberId, AID aid) {
 		final JsonObject params = new JsonObject();
 		params.addProperty("aid", aid.toString());
@@ -241,6 +238,29 @@ public class RadixJsonRpcClient {
 		}).ignoreElement();
 	}
 
+	/**
+	 * Closes a streaming status subscription
+	 * @param subscriberId the subscriberId for the streaming updates
+	 * @return a completable which completes when subscription is closed
+	 */
+	public Completable closeAtomStatusNotifications(String subscriberId) {
+		final JsonObject cancelParams = new JsonObject();
+		cancelParams.addProperty("subscriberId", subscriberId);
+
+		return this.jsonRpcCall("Atoms.closeAtomStatusNotifications", cancelParams).map(r -> {
+			if (!r.isSuccess) {
+				throw new RuntimeException();
+			} else {
+				return r;
+			}
+		}).ignoreElement();
+	}
+
+	/**
+	 * Listens to atom status notifications
+	 * @param subscriberId the subscription to listen for
+	 * @return observable of status notifications
+	 */
 	public Observable<AtomStatusNotification> observeAtomStatusNotifications(String subscriberId) {
 		return this.observeNotifications("Atoms.nextStatusEvent", subscriberId)
 			.map(observedStatus -> {

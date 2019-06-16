@@ -1,5 +1,8 @@
 package com.radixdlt.client.core.atoms;
 
+/**
+ * The different states an atom can be in.
+ */
 public enum AtomStatus {
 	DOES_NOT_EXIST,
 	EVICTED_FAILED_CM_VERIFICATION,
