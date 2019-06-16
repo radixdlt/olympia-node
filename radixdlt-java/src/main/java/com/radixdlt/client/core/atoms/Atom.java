@@ -102,9 +102,8 @@ public final class Atom extends SerializableObject {
 	private Set<Long> getShards() {
 		return this.spunParticles()
 			.map(SpunParticle<Particle>::getParticle)
-			.map(Particle::getShardables)
+			.map(Particle::getDestinations)
 			.flatMap(Set::stream)
-			.map(RadixAddress::getUID)
 			.map(EUID::getShard)
 			.collect(Collectors.toSet());
 	}
