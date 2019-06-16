@@ -2,6 +2,7 @@ package com.radixdlt.client.core.network.jsonrpc;
 
 import com.google.gson.JsonPrimitive;
 import com.radixdlt.client.core.atoms.AtomStatus;
+import com.radixdlt.client.core.atoms.AtomStatusNotification;
 import com.radixdlt.client.core.ledger.AtomEvent;
 import java.util.List;
 import java.util.UUID;
@@ -200,6 +201,19 @@ public class RadixJsonRpcClient {
 				.map(result -> Serialize.getInstance().fromJson(result.toString(), listOfNodeRunnerData));
 	}
 
+	public Completable pushAtom(Atom atom) {
+		JSONObject jsonAtomTemp = Serialize.getInstance().toJsonObject(atom, Output.API);
+		JsonElement jsonAtom = GsonJson.getInstance().toGson(jsonAtomTemp);
+
+		return this.jsonRpcCall("Atoms.submitAtom", jsonAtom).map(r -> {
+			if (!r.isSuccess || r.getError() != null) {
+				throw new RuntimeException();
+			} else {
+				return r;
+			}
+		}).ignoreElement();
+	}
+
 
 	public Completable closeAtomStatusNotifications(String subscriberId) {
 		final JsonObject cancelParams = new JsonObject();
@@ -228,11 +242,12 @@ public class RadixJsonRpcClient {
 		}).ignoreElement();
 	}
 
-	public Observable<AtomStatus> observeAtomStatusNotifications(String subscriberId) {
+	public Observable<AtomStatusNotification> observeAtomStatusNotifications(String subscriberId) {
 		return this.observeNotifications("Atoms.nextStatusEvent", subscriberId)
 			.map(observedStatus -> {
 				AtomStatus atomStatus = AtomStatus.valueOf(observedStatus.get("status").getAsString());
-				return atomStatus;
+				JsonObject data = observedStatus.get("data").getAsJsonObject();
+				return new AtomStatusNotification(atomStatus, data);
 			});
 	}
 

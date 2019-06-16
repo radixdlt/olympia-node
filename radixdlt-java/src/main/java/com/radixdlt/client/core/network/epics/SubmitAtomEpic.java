@@ -1,5 +1,8 @@
 package com.radixdlt.client.core.network.epics;
 
+import com.google.gson.JsonObject;
+import com.radixdlt.client.core.atoms.AtomStatus;
+import com.radixdlt.client.core.atoms.AtomStatusNotification;
 import com.radixdlt.client.core.network.RadixNetworkEpic;
 import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixNode;
@@ -12,12 +15,17 @@ import com.radixdlt.client.core.network.actions.SubmitAtomSendAction;
 import com.radixdlt.client.core.network.epics.WebSocketsEpic.WebSockets;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.NodeAtomSubmissionState;
+import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.NodeAtomSubmissionUpdate;
 import com.radixdlt.client.core.network.websocket.WebSocketClient;
 import com.radixdlt.client.core.network.websocket.WebSocketException;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
 import com.radixdlt.client.core.util.IncreasingRetryTimer;
 import io.reactivex.Completable;
 import io.reactivex.Observable;
+import io.reactivex.Single;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.subjects.PublishSubject;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -49,17 +57,59 @@ public final class SubmitAtomEpic implements RadixNetworkEpic {
 	private Observable<RadixNodeAction> submitAtom(SubmitAtomSendAction request, RadixNode node) {
 		final WebSocketClient ws = webSockets.getOrCreate(node);
 		final RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(ws);
-		return jsonRpcClient.submitAtom(request.getAtom())
-			.doOnError(Throwable::printStackTrace)
-			.<RadixNodeAction>map(nodeUpdate -> {
-				if (nodeUpdate.getState().equals(NodeAtomSubmissionState.RECEIVED)) {
-					return SubmitAtomReceivedAction.of(request.getUuid(), request.getAtom(), node);
-				} else {
-					return SubmitAtomResultAction.fromUpdate(request.getUuid(), request.getAtom(), node, nodeUpdate);
-				}
-			})
-			.retryWhen(new IncreasingRetryTimer(WebSocketException.class))
-			// TODO: Better way of cleanup?
+		final String subscriberId = UUID.randomUUID().toString();
+
+		return Observable.<RadixNodeAction>create(emitter -> {
+			Disposable d = jsonRpcClient.observeAtomStatusNotifications(subscriberId)
+				.map(statusNotification -> {
+					final AtomStatus status = statusNotification.getAtomStatus();
+					final JsonObject data = statusNotification.getData();
+					switch(status) {
+						case STORED:
+							return new NodeAtomSubmissionUpdate(NodeAtomSubmissionState.STORED, data);
+						case EVICTED_CONFLICT_LOSER:
+						case CONFLICT_LOSER:
+							return new NodeAtomSubmissionUpdate(NodeAtomSubmissionState.COLLISION, data);
+						case EVICTED_FAILED_CM_VERIFICATION:
+							return new NodeAtomSubmissionUpdate(NodeAtomSubmissionState.VALIDATION_ERROR, data);
+						default:
+							return new NodeAtomSubmissionUpdate(NodeAtomSubmissionState.UNKNOWN_ERROR, data);
+					}
+				})
+				.map(update -> SubmitAtomResultAction.fromUpdate(
+					request.getUuid(),
+					request.getAtom(),
+					node,
+					update
+				))
+				.subscribe(emitter::onNext, emitter::onError, emitter::onComplete);
+
+			emitter.setCancellable(() -> {
+				d.dispose();
+				jsonRpcClient.closeAtomStatusNotifications(subscriberId)
+					.andThen(
+						Observable.timer(DELAY_CLOSE_SECS, TimeUnit.SECONDS)
+							.flatMapCompletable(t -> {
+								ws.close();
+								return Completable.complete();
+							})
+					).subscribe();
+			});
+
+			jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, request.getAtom().getAid())
+					.andThen(jsonRpcClient.pushAtom(request.getAtom()))
+					.subscribe(
+						() -> emitter.onNext(SubmitAtomReceivedAction.of(request.getUuid(), request.getAtom(), node)),
+						e -> emitter.onNext(
+							SubmitAtomResultAction.fromUpdate(
+								request.getUuid(),
+								request.getAtom(),
+								node,
+								new NodeAtomSubmissionUpdate(NodeAtomSubmissionState.FAILED, new JsonObject())
+							))
+					);
+		})
+			.takeUntil(e -> e instanceof SubmitAtomResultAction)
 			.doFinally(() -> Observable.timer(DELAY_CLOSE_SECS, TimeUnit.SECONDS).subscribe(t -> ws.close()));
 	}
 
