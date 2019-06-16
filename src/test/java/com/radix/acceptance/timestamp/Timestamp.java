@@ -3,6 +3,7 @@ package com.radix.acceptance.timestamp;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.radix.regression.Util;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.FeeMapper;
@@ -11,6 +12,8 @@ import com.radixdlt.client.atommodel.message.MessageParticle;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.client.core.atoms.AtomStatus;
+import com.radixdlt.client.core.atoms.AtomStatusNotification;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
@@ -47,7 +50,7 @@ public class Timestamp {
     private WebSocketClient webSocketClient;
     private RadixJsonRpcClient jsonRpcClient;
 
-    private TestObserver<RadixJsonRpcClient.NodeAtomSubmissionUpdate> observer;
+	private TestObserver<AtomStatusNotification> observer;
     private TestObserver<RadixJsonRpcClient.JsonRpcResponse> observer2;
 
     private FeeMapper feeMapper = new PowFeeMapper(Atom::getHash,
@@ -102,7 +105,10 @@ public class Timestamp {
         Atom signedAtom = this.identity.sign(atom).blockingGet();
 
         this.observer = TestObserver.create();
-        this.jsonRpcClient.submitAtom(signedAtom).subscribe(this.observer);
+        final String subscriberId = UUID.randomUUID().toString();
+        this.jsonRpcClient.observeAtomStatusNotifications(subscriberId).subscribe(this.observer);
+        this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, signedAtom.getAid()).blockingAwait();
+        this.jsonRpcClient.pushAtom(signedAtom).blockingAwait();
     }
 
     @When("^I submit a valid atom with arbitrary metadata containing a valid timestamp$")
@@ -118,8 +124,11 @@ public class Timestamp {
         // Sign and submit
         Atom signedAtom = this.identity.sign(atom).blockingGet();
 
-        this.observer = TestObserver.create();
-        this.jsonRpcClient.submitAtom(signedAtom).subscribe(this.observer);
+		this.observer = TestObserver.create(Util.loggingObserver("Valid Timestamp"));
+		final String subscriberId = UUID.randomUUID().toString();
+        this.jsonRpcClient.observeAtomStatusNotifications(subscriberId).subscribe(this.observer);
+        this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, signedAtom.getAid()).blockingAwait();
+        this.jsonRpcClient.pushAtom(signedAtom).blockingAwait();
     }
 
     @When("^I submit a valid atom with arbitrary metadata containing an invalid timestamp$")
@@ -135,8 +144,11 @@ public class Timestamp {
         // Sign and submit
         Atom signedAtom = this.identity.sign(atom).blockingGet();
 
-        this.observer = TestObserver.create();
-        this.jsonRpcClient.submitAtom(signedAtom).subscribe(this.observer);
+		this.observer = TestObserver.create(Util.loggingObserver("Invalid Timestamp"));
+        final String subscriberId = UUID.randomUUID().toString();
+        this.jsonRpcClient.observeAtomStatusNotifications(subscriberId).subscribe(this.observer);
+        this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, signedAtom.getAid()).blockingAwait();
+        this.jsonRpcClient.pushAtom(signedAtom).blockingAwait();
     }
 
     @When("^I submit a valid atom with arbitrary metadata without a valid timestamp$")
@@ -152,7 +164,10 @@ public class Timestamp {
         Atom signedAtom = this.identity.sign(atom).blockingGet();
 
         this.observer = TestObserver.create();
-        this.jsonRpcClient.submitAtom(signedAtom).subscribe(this.observer);
+        final String subscriberId = UUID.randomUUID().toString();
+        this.jsonRpcClient.observeAtomStatusNotifications(subscriberId).subscribe(this.observer);
+        this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, signedAtom.getAid()).blockingAwait();
+        this.jsonRpcClient.pushAtom(signedAtom).blockingAwait();
     }
 
     @When("^I submit a valid atom with no metadata$")
@@ -164,7 +179,10 @@ public class Timestamp {
         Atom signedAtom = this.identity.sign(atom).blockingGet();
 
         this.observer = TestObserver.create();
-        this.jsonRpcClient.submitAtom(signedAtom).subscribe(this.observer);
+        final String subscriberId = UUID.randomUUID().toString();
+        this.jsonRpcClient.observeAtomStatusNotifications(subscriberId).subscribe(this.observer);
+        this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, signedAtom.getAid()).blockingAwait();
+        this.jsonRpcClient.pushAtom(signedAtom).blockingAwait();
     }
 
 
@@ -180,10 +198,11 @@ public class Timestamp {
         // Sign and submit
         Atom signedAtom = this.identity.sign(atom).blockingGet();
 
-
-
         this.observer = TestObserver.create();
-        this.jsonRpcClient.submitAtom(signedAtom).subscribe(this.observer);
+        final String subscriberId = UUID.randomUUID().toString();
+        this.jsonRpcClient.observeAtomStatusNotifications(subscriberId).subscribe(this.observer);
+        this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, signedAtom.getAid()).blockingAwait();
+        this.jsonRpcClient.pushAtom(signedAtom).blockingAwait();
     }
 
     @When("^I submit an atom with particle groups which have invalid json in the metadata field$")
@@ -273,18 +292,16 @@ public class Timestamp {
 
     @Then("^I should observe the atom being accepted$")
     public void iShouldObserveTheAtomBeingAccepted() throws Throwable {
-        this.observer.awaitTerminalEvent(5, TimeUnit.SECONDS);
-        this.observer.assertNoErrors();
-        this.observer.assertComplete();
-        this.observer.assertValueAt(1, state -> state.getState() == RadixJsonRpcClient.NodeAtomSubmissionState.STORED);
+		this.observer.awaitCount(1);
+        this.observer.assertValue(notification -> notification.getAtomStatus() == AtomStatus.STORED);
+        this.observer.dispose();
     }
 
     @Then("^I should observe the atom being rejected$")
     public void iShouldObserveTheAtomBeingRejected() throws Throwable {
-        this.observer.awaitTerminalEvent(5, TimeUnit.SECONDS);
-        this.observer.assertNoErrors();
-        this.observer.assertComplete();
-        this.observer.assertValueAt(1, state -> state.getState() == RadixJsonRpcClient.NodeAtomSubmissionState.VALIDATION_ERROR);
+		this.observer.awaitCount(1);
+        this.observer.assertValue(notification -> notification.getAtomStatus() == AtomStatus.EVICTED_FAILED_CM_VERIFICATION);
+        this.observer.dispose();
     }
 
     @Then("^I should get a deserialization error$")

@@ -15,6 +15,8 @@ import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.client.core.atoms.AtomStatus;
+import com.radixdlt.client.core.atoms.AtomStatusNotification;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
@@ -24,6 +26,7 @@ import com.radixdlt.client.core.network.websocket.WebSocketClient;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
 import com.radixdlt.client.core.pow.ProofOfWorkBuilder;
 import io.reactivex.observers.TestObserver;
+import java.util.UUID;
 import okhttp3.Request;
 import org.junit.Before;
 import org.junit.Test;
@@ -75,16 +78,15 @@ public class MultipleTransitionsInSameGroupTest {
 			SpunParticle.up(output)
 		);
 
-		TestObserver<RadixJsonRpcClient.NodeAtomSubmissionUpdate> result = submitAtom(Arrays.asList(
+		TestObserver<AtomStatusNotification> result = submitAtom(Arrays.asList(
 			definitionGroup,
 			mintGroup,
 			duplicateTransitionsGroup
 		));
-		result.awaitTerminalEvent(5, TimeUnit.SECONDS);
-		result.assertNoErrors()
-			.assertComplete()
-			.assertValueAt(1, state
-				-> state.getState() == RadixJsonRpcClient.NodeAtomSubmissionState.STORED);
+
+		result.awaitCount(1);
+		result.assertValue(n -> n.getAtomStatus() == AtomStatus.STORED);
+		result.dispose();
 	}
 
 	@Test
@@ -110,17 +112,15 @@ public class MultipleTransitionsInSameGroupTest {
 			SpunParticle.up(output)
 		);
 
-		TestObserver<RadixJsonRpcClient.NodeAtomSubmissionUpdate> result = submitAtom(Arrays.asList(
+		TestObserver<AtomStatusNotification> result = submitAtom(Arrays.asList(
 			definitionGroup,
 			mintGroup,
 			duplicateTransitionsGroup
 		));
-		result.awaitTerminalEvent(5, TimeUnit.SECONDS);
-		result.assertNoErrors()
-			.assertComplete()
-			.assertValueAt(1, state
-				-> state.getState() == RadixJsonRpcClient.NodeAtomSubmissionState.VALIDATION_ERROR
-					&& state.getData().toString().contains("Duplicate particles in group"));
+
+		result.awaitCount(1);
+		result.assertValue(n -> n.getAtomStatus() == AtomStatus.EVICTED_FAILED_CM_VERIFICATION);
+		result.dispose();
 	}
 
 	@Test
@@ -147,17 +147,15 @@ public class MultipleTransitionsInSameGroupTest {
 			SpunParticle.up(output)
 		);
 
-		TestObserver<RadixJsonRpcClient.NodeAtomSubmissionUpdate> result = submitAtom(Arrays.asList(
+		TestObserver<AtomStatusNotification> result = submitAtom(Arrays.asList(
 			definitionGroup,
 			mintGroup,
 			duplicateTransitionsGroup
 		));
-		result.awaitTerminalEvent(5, TimeUnit.SECONDS);
-		result.assertNoErrors()
-			.assertComplete()
-			.assertValueAt(1, state
-				-> state.getState() == RadixJsonRpcClient.NodeAtomSubmissionState.VALIDATION_ERROR
-					&& state.getData().toString().contains("Duplicate particles in group"));
+
+		result.awaitCount(1);
+		result.assertValue(n -> n.getAtomStatus() == AtomStatus.EVICTED_FAILED_CM_VERIFICATION);
+		result.dispose();
 	}
 
 	private TransferrableTokensParticle createTransferrableTokens(RadixAddress myAddress, TokenDefinitionParticle tokenDefinition, UInt256 amount) {
@@ -194,17 +192,14 @@ public class MultipleTransitionsInSameGroupTest {
 			SpunParticle.up(output)
 		);
 
-		TestObserver<RadixJsonRpcClient.NodeAtomSubmissionUpdate> result = submitAtom(Arrays.asList(
+		TestObserver<AtomStatusNotification> result = submitAtom(Arrays.asList(
 			definitionGroup,
 			mintGroup,
 			duplicateTransitionsGroup
 		));
-		result.awaitTerminalEvent(5, TimeUnit.SECONDS);
-		result.assertNoErrors()
-			.assertComplete()
-			.assertValueAt(1, state
-				-> state.getState() == RadixJsonRpcClient.NodeAtomSubmissionState.VALIDATION_ERROR
-				&& state.getData().toString().contains("Duplicate particles in group"));
+		result.awaitCount(1);
+		result.assertValue(n -> n.getAtomStatus() == AtomStatus.EVICTED_FAILED_CM_VERIFICATION);
+		result.dispose();
 	}
 
 	private UnallocatedTokensParticle createUnallocatedTokens(TokenDefinitionParticle tokenDefinition) {
@@ -232,7 +227,7 @@ public class MultipleTransitionsInSameGroupTest {
 		);
 	}
 
-	private TestObserver<RadixJsonRpcClient.NodeAtomSubmissionUpdate> submitAtom(List<ParticleGroup> particleGroups) {
+	private TestObserver<AtomStatusNotification> submitAtom(List<ParticleGroup> particleGroups) {
 		Map<String, String> atomMetaData = new HashMap<>();
 		atomMetaData.put("timestamp", String.valueOf(System.currentTimeMillis()));
 		atomMetaData.putAll(feeMapper.map(new Atom(particleGroups, atomMetaData), universe, this.identity.getPublicKey()).getFirst());
@@ -241,8 +236,12 @@ public class MultipleTransitionsInSameGroupTest {
 		// Sign and submit
 		Atom signedAtom = this.identity.sign(unsignedAtom).blockingGet();
 
-		TestObserver<RadixJsonRpcClient.NodeAtomSubmissionUpdate> observer = TestObserver.create();
-		jsonRpcClient.submitAtom(signedAtom).subscribe(observer);
+		TestObserver<AtomStatusNotification> observer = TestObserver.create();
+
+		final String subscriberId = UUID.randomUUID().toString();
+		this.jsonRpcClient.observeAtomStatusNotifications(subscriberId).subscribe(observer);
+		this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, signedAtom.getAid()).blockingAwait();
+		this.jsonRpcClient.pushAtom(signedAtom).blockingAwait();
 
 		return observer;
 	}

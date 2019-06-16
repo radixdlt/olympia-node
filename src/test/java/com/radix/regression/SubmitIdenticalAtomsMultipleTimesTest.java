@@ -12,6 +12,8 @@ import com.radixdlt.client.atommodel.message.MessageParticle;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.client.core.atoms.AtomStatus;
+import com.radixdlt.client.core.atoms.AtomStatusNotification;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
@@ -22,6 +24,7 @@ import com.radixdlt.client.core.network.websocket.WebSocketStatus;
 import com.radixdlt.client.core.pow.ProofOfWorkBuilder;
 import io.reactivex.functions.Predicate;
 import io.reactivex.observers.TestObserver;
+import java.util.UUID;
 import okhttp3.Request;
 import org.junit.Assert;
 import org.junit.Before;
@@ -73,52 +76,32 @@ public class SubmitIdenticalAtomsMultipleTimesTest {
 			.to(universe.getAddressFrom(this.identity.getPublicKey()))
 			.build()));
 
-		List<TestObserver<RadixJsonRpcClient.NodeAtomSubmissionUpdate>> submissions =
+		TestObserver<AtomStatusNotification> observer = TestObserver.create();
+		final String subscriberId = UUID.randomUUID().toString();
+		this.jsonRpcClient.observeAtomStatusNotifications(subscriberId).subscribe(observer);
+		this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, atom.getAid()).blockingAwait();
+
+		List<TestObserver> submissions =
 			IntStream.range(0, times)
 			.mapToObj(x -> submitAtom(atom))
 			.collect(Collectors.toList()); // collect to make sure all get submitted
 
-		int firstStoredNotifications = submissions.stream()
-			.mapToInt(submission -> {
-				submission.awaitTerminalEvent(5, TimeUnit.SECONDS);
-				submission.assertNoErrors();
-				submission.assertComplete();
 
-				RadixJsonRpcClient.NodeAtomSubmissionUpdate terminalState = submission.values().get(1);
-				Assert.assertSame("All submissions must be STORED", RadixJsonRpcClient.NodeAtomSubmissionState.STORED, terminalState.getState());
-				JsonObject jsonData = terminalState.getData().getAsJsonObject();
+		submissions.forEach(submission -> {
+			submission.awaitTerminalEvent();
+			submission.assertNoErrors();
+			submission.assertComplete();
+		});
 
-				return jsonData.get("justStored").getAsBoolean() ? 1 : 0;
-			})
-			.sum();
-
-		Assert.assertSame("Concurrent submissions must only have one 'first stored' notification",
-							1, firstStoredNotifications);
+		observer.awaitCount(1);
+		observer.assertValue(notification -> notification.getAtomStatus() == AtomStatus.STORED);
+		observer.dispose();
 	}
 
-	private void submitAndAwaitResult(Atom atom, Predicate<RadixJsonRpcClient.NodeAtomSubmissionUpdate> updatePredicate) {
-		TestObserver<RadixJsonRpcClient.NodeAtomSubmissionUpdate> observer = submitAtom(atom);
-		awaitResult(updatePredicate, observer);
-	}
+	private TestObserver submitAtom(Atom atom) {
+		TestObserver observer = TestObserver.create();
 
-	private void awaitResult(Predicate<RadixJsonRpcClient.NodeAtomSubmissionUpdate> updatePredicate, TestObserver<RadixJsonRpcClient.NodeAtomSubmissionUpdate> observer) {
-		observer.awaitTerminalEvent(5, TimeUnit.SECONDS);
-		observer.assertNoErrors();
-		observer.assertComplete();
-		observer.assertValueAt(1, updatePredicate);
-	}
-
-	private TestObserver<RadixJsonRpcClient.NodeAtomSubmissionUpdate> submitAtom(Atom atom) {
-		TestObserver<RadixJsonRpcClient.NodeAtomSubmissionUpdate> observer = TestObserver.create();
-		jsonRpcClient.submitAtom(atom)
-			.doOnNext(update -> System.out.printf("%d %s %s %s%n",
-				update.getTimestamp(),
-				atom.getAid(),
-				update.getState(),
-				Optional.ofNullable(update.getData())
-					.map(JsonElement::toString)
-					.orElse("<none>")))
-			.subscribe(observer);
+		this.jsonRpcClient.pushAtom(atom).subscribe(observer);
 
 		return observer;
 	}
