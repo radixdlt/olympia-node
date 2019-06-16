@@ -18,4 +18,9 @@ public final class AtomStatusNotification {
 	public JsonObject getData() {
 		return data;
 	}
+
+	@Override
+	public String toString() {
+		return atomStatus.toString();
+	}
 }

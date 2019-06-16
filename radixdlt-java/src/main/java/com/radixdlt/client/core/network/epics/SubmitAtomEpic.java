@@ -82,6 +82,20 @@ public final class SubmitAtomEpic implements RadixNetworkEpic {
 					node,
 					update
 				))
+				.doOnSubscribe(disposable -> {
+					jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, request.getAtom().getAid())
+						.andThen(jsonRpcClient.pushAtom(request.getAtom()))
+						.subscribe(
+							() -> emitter.onNext(SubmitAtomReceivedAction.of(request.getUuid(), request.getAtom(), node)),
+							e -> emitter.onNext(
+								SubmitAtomResultAction.fromUpdate(
+									request.getUuid(),
+									request.getAtom(),
+									node,
+									new NodeAtomSubmissionUpdate(NodeAtomSubmissionState.FAILED, new JsonObject())
+								))
+						);
+				})
 				.subscribe(emitter::onNext, emitter::onError, emitter::onComplete);
 
 			emitter.setCancellable(() -> {
@@ -95,19 +109,6 @@ public final class SubmitAtomEpic implements RadixNetworkEpic {
 							})
 					).subscribe();
 			});
-
-			jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, request.getAtom().getAid())
-					.andThen(jsonRpcClient.pushAtom(request.getAtom()))
-					.subscribe(
-						() -> emitter.onNext(SubmitAtomReceivedAction.of(request.getUuid(), request.getAtom(), node)),
-						e -> emitter.onNext(
-							SubmitAtomResultAction.fromUpdate(
-								request.getUuid(),
-								request.getAtom(),
-								node,
-								new NodeAtomSubmissionUpdate(NodeAtomSubmissionState.FAILED, new JsonObject())
-							))
-					);
 		})
 			.takeUntil(e -> e instanceof SubmitAtomResultAction)
 			.doFinally(() -> Observable.timer(DELAY_CLOSE_SECS, TimeUnit.SECONDS).subscribe(t -> ws.close()));

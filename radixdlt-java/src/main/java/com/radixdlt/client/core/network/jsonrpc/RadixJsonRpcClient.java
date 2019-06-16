@@ -138,7 +138,7 @@ public class RadixJsonRpcClient {
 
 			Disposable d = messages
 				.filter(msg -> msg.has("id"))
-				.filter(msg -> msg.get("id").getAsString().equals(uuid))
+				.filter(msg -> msg.get("id").isJsonNull() || msg.get("id").getAsString().equals(uuid))
 				.firstOrError()
 				.map(msg -> {
 					final JsonObject jsonResponse = msg.getAsJsonObject();
@@ -431,53 +431,5 @@ public class RadixJsonRpcClient {
 		public String toString() {
 			return timestamp + " " + state + " " + data;
 		}
-	}
-
-	/**
-	 * Attempt to submit an atom to a node. Returns the status of the atom as it
-	 * gets stored on the node.
-	 *
-	 * @param atom the atom to submit
-	 * @return observable of the atom as it gets stored
-	 */
-	public Observable<NodeAtomSubmissionUpdate> submitAtom(Atom atom) {
-		return Observable.create(emitter -> {
-			JSONObject jsonAtomTemp = Serialize.getInstance().toJsonObject(atom, Output.API);
-			JsonElement jsonAtom = GsonJson.getInstance().toGson(jsonAtomTemp);
-
-			final String subscriberId = UUID.randomUUID().toString();
-			JsonObject params = new JsonObject();
-			params.addProperty("subscriberId", subscriberId);
-			params.add("atom", jsonAtom);
-
-			LOGGER.debug("Submitting atom for {}: {}", subscriberId, jsonAtomTemp);
-
-			Disposable messageListenerDisposable = messages.filter(msg -> msg.has("method"))
-				.filter(msg -> msg.get("method").getAsString().equals("AtomSubmissionState.onNext"))
-				.map(msg -> msg.get("params").getAsJsonObject())
-				.filter(p -> p.get("subscriberId").getAsString().equals(subscriberId)).map(p -> {
-					final NodeAtomSubmissionState state = NodeAtomSubmissionState.valueOf(p.get("value").getAsString());
-					final JsonElement data;
-					if (p.has("data")) {
-						data = p.get("data");
-					} else {
-						data = null;
-					}
-
-					return new NodeAtomSubmissionUpdate(state, data);
-				}).takeUntil(u -> u.state.isComplete)
-				.subscribe(emitter::onNext, emitter::onError, emitter::onComplete);
-
-			this.jsonRpcCall("Universe.submitAtomAndSubscribe", params)
-				.subscribe(resp -> {
-				if (!resp.isSuccess()) {
-					messageListenerDisposable.dispose();
-					emitter.onNext(new NodeAtomSubmissionUpdate(NodeAtomSubmissionState.FAILED, resp.getError()));
-					emitter.onComplete();
-				} else {
-					emitter.onNext(new NodeAtomSubmissionUpdate(NodeAtomSubmissionState.RECEIVED, null));
-				}
-			}, emitter::onError);
-		});
 	}
 }
