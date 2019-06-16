@@ -7,6 +7,7 @@ import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.address.RadixUniverseConfigs;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomStatus;
+import com.radixdlt.client.core.atoms.AtomStatusNotification;
 import com.radixdlt.client.core.network.HttpClients;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient;
 import com.radixdlt.client.core.network.websocket.WebSocketClient;
@@ -61,7 +62,7 @@ public class AtomStatusTest {
 
 		String subscriberId = UUID.randomUUID().toString();
 
-		TestObserver<AtomStatus> testObserver = TestObserver.create(Util.loggingObserver("Atom Status"));
+		TestObserver<AtomStatusNotification> testObserver = TestObserver.create(Util.loggingObserver("Atom Status"));
 		rpcClient.observeAtomStatusNotifications(subscriberId).subscribe(testObserver);
 		rpcClient.sendGetAtomStatusNotifications(subscriberId, aid).blockingAwait();
 		testObserver.assertNoValues();
@@ -70,7 +71,7 @@ public class AtomStatusTest {
 		api.submitAtom(atom).blockUntilComplete();
 
 		testObserver.awaitCount(1);
-		testObserver.assertValueAt(0, AtomStatus.STORED);
+		testObserver.assertValueAt(0, n -> n.getAtomStatus().equals(AtomStatus.STORED));
 		rpcClient.closeAtomStatusNotifications(subscriberId).blockingAwait();
 	}
 }
