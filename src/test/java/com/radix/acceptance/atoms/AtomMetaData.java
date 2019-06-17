@@ -231,12 +231,12 @@ public class AtomMetaData {
 
 
 
-    @Then("^I should observe the atom being accepted$")
-    public void iShouldObserveTheAtomBeingAccepted() throws Throwable {
+	@Then("^I should observe the atom being accepted$")
+	public void iShouldObserveTheAtomBeingAccepted() throws Throwable {
 		this.observer.awaitCount(1);
-        this.observer.assertValue(notification-> notification.getAtomStatus() == AtomStatus.STORED);
-        this.observer.dispose();
-    }
+		this.observer.assertValue(notification-> notification.getAtomStatus() == AtomStatus.STORED);
+		this.observer.dispose();
+	}
 
     @Then("^I should observe the atom being rejected$")
     public void iShouldObserveTheAtomBeingRejected() throws Throwable {
