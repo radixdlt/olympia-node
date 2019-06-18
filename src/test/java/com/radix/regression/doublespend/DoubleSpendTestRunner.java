@@ -109,11 +109,21 @@ public final class DoubleSpendTestRunner {
 				identity);
 		}
 
+		Observable<SubmitAtomAction> executeSequentially(List<List<Action>> actions) {
+			return Observable.fromIterable(actions)
+				.concatMap(transaction ->
+					api.buildAtom(transaction)
+						.flatMap(api.getMyIdentity()::sign)
+						.flatMapObservable(a -> api.submitAtom(a, true).toObservable())
+				);
+		}
+
 		@Override
 		public String toString() {
 			return "Client " + clientId + " " + node;
 		}
 	}
+
 
 	ImmutableMap<ShardedAppStateId, ApplicationState> execute() {
 		RadixApplicationAPI api = apiSupplier.apply(Bootstrap.LOCALHOST, RadixIdentities.createNew());
@@ -179,10 +189,10 @@ public final class DoubleSpendTestRunner {
 				Pair::of
 			);
 
-		List<TestObserver<AtomObservation>> submissionObservers = conflictingAtoms.map(a -> {
-			TestObserver<AtomObservation> submissionObserver =
+		List<TestObserver<SubmitAtomAction>> submissionObservers = conflictingAtoms.map(a -> {
+			TestObserver<SubmitAtomAction> submissionObserver =
 				TestObserver.create(Util.loggingObserver("Client " + a.getFirst().clientId + " Submission" ));
-			a.getFirst().api.executeSequentially(a.getSecond()).subscribe(submissionObserver);
+			a.getFirst().executeSequentially(a.getSecond()).subscribe(submissionObserver);
 			return submissionObserver;
 		}).toList().blockingGet();
 
