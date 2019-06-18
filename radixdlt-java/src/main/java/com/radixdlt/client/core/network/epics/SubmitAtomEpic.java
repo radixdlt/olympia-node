@@ -56,15 +56,28 @@ public final class SubmitAtomEpic implements RadixNetworkEpic {
 
 		return Observable.<RadixNodeAction>create(emitter -> {
 			Disposable d = jsonRpcClient.observeAtomStatusNotifications(subscriberId)
-				.flatMap(statusNotification -> Observable.just(
-					SubmitAtomStatusAction.fromStatusNotification(
-						request.getUuid(),
-						request.getAtom(),
-						node,
-						statusNotification
-					),
-					SubmitAtomCompleteAction.of(request.getUuid(), request.getAtom(), node)
-				))
+				.flatMap(statusNotification -> {
+					if (statusNotification.getAtomStatus() == AtomStatus.STORED || !request.isCompleteOnStoreOnly()) {
+						return Observable.just(
+							SubmitAtomStatusAction.fromStatusNotification(
+								request.getUuid(),
+								request.getAtom(),
+								node,
+								statusNotification
+							),
+							SubmitAtomCompleteAction.of(request.getUuid(), request.getAtom(), node)
+						);
+					} else {
+						return Observable.just(
+							SubmitAtomStatusAction.fromStatusNotification(
+								request.getUuid(),
+								request.getAtom(),
+								node,
+								statusNotification
+							)
+						);
+					}
+				})
 				.doOnSubscribe(disposable -> {
 					jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, request.getAtom().getAid())
 						.andThen(jsonRpcClient.pushAtom(request.getAtom()))
@@ -107,7 +120,7 @@ public final class SubmitAtomEpic implements RadixNetworkEpic {
 				.filter(a -> a.getRequest() instanceof SubmitAtomRequestAction)
 				.map(a -> {
 					final SubmitAtomRequestAction request = (SubmitAtomRequestAction) a.getRequest();
-					return SubmitAtomSendAction.of(request.getUuid(), request.getAtom(), a.getNode());
+					return SubmitAtomSendAction.of(request.getUuid(), request.getAtom(), a.getNode(), request.isCompleteOnStoreOnly());
 				});
 
 		final Observable<RadixNodeAction> submitToNode =

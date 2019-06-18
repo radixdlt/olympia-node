@@ -7,7 +7,6 @@ import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.network.RadixNetworkController;
-import com.radixdlt.client.core.network.actions.FetchAtomsObservationAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomCompleteAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
 import java.math.BigDecimal;
@@ -813,7 +812,7 @@ public class RadixApplicationAPI {
 			final Single<Atom> atom = buildAtom(actions)
 				.flatMap(identity::sign);
 
-			return createAtomSubmission(atom).connect();
+			return createAtomSubmission(atom, false).connect();
 		}
 	}
 
@@ -906,11 +905,10 @@ public class RadixApplicationAPI {
 			}));
 	}
 
-
-	private Result createAtomSubmission(Single<Atom> atom) {
+	private Result createAtomSubmission(Single<Atom> atom, boolean completeOnStoreOnly) {
 		final ConnectableObservable<SubmitAtomAction> updates = atom
 			.flatMapObservable(a -> {
-				SubmitAtomRequestAction initialAction = SubmitAtomRequestAction.newRequest(a);
+				SubmitAtomRequestAction initialAction = SubmitAtomRequestAction.newRequest(a, completeOnStoreOnly);
 				Observable<SubmitAtomAction> status =
 					getNetworkController().getActions().ofType(SubmitAtomAction.class)
 						.filter(u -> u.getUuid().equals(initialAction.getUuid()))
@@ -930,10 +928,22 @@ public class RadixApplicationAPI {
 	/**
 	 * Low level call to submit an atom into the network.
 	 * @param atom atom to submit
+	 * @param completeOnStoreOnly if true, result will only complete on a store event
+	 * @return the result of the submission
+	 */
+	public Result submitAtom(Atom atom, boolean completeOnStoreOnly) {
+		return createAtomSubmission(Single.just(atom), completeOnStoreOnly).connect();
+	}
+
+
+	/**
+	 * Low level call to submit an atom into the network. Result will complete
+	 * on the first STORED event.
+	 * @param atom atom to submit
 	 * @return the result of the submission
 	 */
 	public Result submitAtom(Atom atom) {
-		return createAtomSubmission(Single.just(atom)).connect();
+		return createAtomSubmission(Single.just(atom), false).connect();
 	}
 
 	/**
@@ -947,37 +957,6 @@ public class RadixApplicationAPI {
 		final Single<Atom> atom = this.buildAtom(Collections.singleton(action))
 			.flatMap(this.identity::sign);
 
-		return createAtomSubmission(atom).connect();
-	}
-
-	// TODO: Remove use of pull + submit, utilize statusNotifications + push instead
-	private Observable<AtomObservation> syncAtom(Atom atom) {
-		final Disposable disposable = pull(atom.addresses().findFirst().orElseThrow(() -> new IllegalStateException("")));
-		return getNetworkController().getActions().ofType(FetchAtomsObservationAction.class)
-			.filter(u -> u.getObservation().hasAtom() && u.getObservation().getAtom().equals(atom))
-			.map(FetchAtomsObservationAction::getObservation)
-			.doOnSubscribe(d -> {
-				final SubmitAtomRequestAction initialAction = SubmitAtomRequestAction.newRequest(atom);
-				getNetworkController().dispatch(initialAction);
-			})
-			.doOnDispose(disposable::dispose);
-	}
-
-	/**
-	 * Executes actions sequentially. Advanced functionality will be moved into
-	 * AtomStore in the future.
-	 *
-	 * TODO: Move logic into AtomStore
-	 *
-	 * @param actions the action to execute sequentially
-	 */
-	public Observable<AtomObservation> executeSequentially(List<List<Action>> actions) {
-		return Observable.fromIterable(actions)
-			.concatMap(transaction ->
-				this.buildAtom(transaction)
-					.flatMap(this.identity::sign)
-					.flatMapObservable(this::syncAtom)
-					.takeUntil(AtomObservation::isStore)
-			);
+		return createAtomSubmission(atom, false).connect();
 	}
 }
