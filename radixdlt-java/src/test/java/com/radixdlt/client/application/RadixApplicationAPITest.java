@@ -6,6 +6,8 @@ import com.google.common.collect.Sets;
 import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.client.core.address.RadixUniverseConfigs;
+import com.radixdlt.client.core.atoms.AtomStatus;
+import com.radixdlt.client.core.atoms.AtomStatusNotification;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.network.RadixNetworkController;
 import com.radixdlt.client.core.network.RadixNetworkEpic;
@@ -51,8 +53,7 @@ import com.radixdlt.client.core.ledger.AtomPuller;
 import com.radixdlt.client.core.ledger.AtomStore;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomReceivedAction;
-import com.radixdlt.client.core.network.actions.SubmitAtomResultAction;
-import com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType;
+import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomSendAction;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -103,8 +104,8 @@ public class RadixApplicationAPITest {
 			when(submitting.getUuid()).thenReturn(request.getUuid());
 			SubmitAtomReceivedAction received = mock(SubmitAtomReceivedAction.class);
 			when(received.getUuid()).thenReturn(request.getUuid());
-			SubmitAtomResultAction stored = mock(SubmitAtomResultAction.class);
-			when(stored.getType()).thenReturn(SubmitAtomResultActionType.STORED);
+			SubmitAtomStatusAction stored = mock(SubmitAtomStatusAction.class);
+			when(stored.getStatusNotification()).thenReturn(new AtomStatusNotification(AtomStatus.STORED));
 			when(stored.getUuid()).thenReturn(request.getUuid());
 			nodeActions.onNext(submitting);
 			nodeActions.onNext(received);
@@ -130,7 +131,7 @@ public class RadixApplicationAPITest {
 		updatesObserver.assertValueAt(1, atomUpdate ->
 			atomUpdate instanceof SubmitAtomReceivedAction);
 		updatesObserver.assertValueAt(2, atomUpdate ->
-			((SubmitAtomResultAction) atomUpdate).getType().equals(SubmitAtomResultActionType.STORED));
+			((SubmitAtomStatusAction) atomUpdate).getStatusNotification().getAtomStatus().equals(AtomStatus.STORED));
 	}
 
 	@Test
@@ -333,11 +334,10 @@ public class RadixApplicationAPITest {
 
 		doAnswer(a -> {
 			SubmitAtomRequestAction request = a.getArgument(0);
-			SubmitAtomResultAction update = mock(SubmitAtomResultAction.class);
+			SubmitAtomStatusAction update = mock(SubmitAtomStatusAction.class);
 			when(update.getUuid()).thenReturn(request.getUuid());
 			when(update.getAtom()).thenReturn(atom);
-			when(update.getType()).thenReturn(SubmitAtomResultActionType.COLLISION);
-			when(update.getData()).thenReturn(errorData);
+			when(update.getStatusNotification()).thenReturn(new AtomStatusNotification(AtomStatus.EVICTED_CONFLICT_LOSER, errorData));
 			nodeActions.onNext(update);
 			return null;
 		}).when(controller).dispatch(any(SubmitAtomRequestAction.class));

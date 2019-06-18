@@ -2,6 +2,7 @@ package com.radixdlt.client.core.network.epics;
 
 import com.google.gson.JsonObject;
 import com.radixdlt.client.core.atoms.AtomStatus;
+import com.radixdlt.client.core.atoms.AtomStatusNotification;
 import com.radixdlt.client.core.network.RadixNetworkEpic;
 import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixNode;
@@ -9,12 +10,10 @@ import com.radixdlt.client.core.network.RadixNodeAction;
 import com.radixdlt.client.core.network.actions.FindANodeResultAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomReceivedAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
-import com.radixdlt.client.core.network.actions.SubmitAtomResultAction;
+import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomSendAction;
 import com.radixdlt.client.core.network.epics.WebSocketsEpic.WebSockets;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient;
-import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.NodeAtomSubmissionState;
-import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.NodeAtomSubmissionUpdate;
 import com.radixdlt.client.core.network.websocket.WebSocketClient;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
 import io.reactivex.Completable;
@@ -56,26 +55,11 @@ public final class SubmitAtomEpic implements RadixNetworkEpic {
 
 		return Observable.<RadixNodeAction>create(emitter -> {
 			Disposable d = jsonRpcClient.observeAtomStatusNotifications(subscriberId)
-				.map(statusNotification -> {
-					final AtomStatus status = statusNotification.getAtomStatus();
-					final JsonObject data = statusNotification.getData();
-					switch (status) {
-						case STORED:
-							return new NodeAtomSubmissionUpdate(NodeAtomSubmissionState.STORED, data);
-						case EVICTED_CONFLICT_LOSER:
-						case CONFLICT_LOSER:
-							return new NodeAtomSubmissionUpdate(NodeAtomSubmissionState.COLLISION, data);
-						case EVICTED_FAILED_CM_VERIFICATION:
-							return new NodeAtomSubmissionUpdate(NodeAtomSubmissionState.VALIDATION_ERROR, data);
-						default:
-							return new NodeAtomSubmissionUpdate(NodeAtomSubmissionState.UNKNOWN_ERROR, data);
-					}
-				})
-				.map(update -> SubmitAtomResultAction.fromUpdate(
+				.map(statusNotification -> SubmitAtomStatusAction.fromStatusNotification(
 					request.getUuid(),
 					request.getAtom(),
 					node,
-					update
+					statusNotification
 				))
 				.doOnSubscribe(disposable -> {
 					jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, request.getAtom().getAid())
@@ -83,11 +67,11 @@ public final class SubmitAtomEpic implements RadixNetworkEpic {
 						.subscribe(
 							() -> emitter.onNext(SubmitAtomReceivedAction.of(request.getUuid(), request.getAtom(), node)),
 							e -> emitter.onNext(
-								SubmitAtomResultAction.fromUpdate(
+								SubmitAtomStatusAction.fromStatusNotification(
 									request.getUuid(),
 									request.getAtom(),
 									node,
-									new NodeAtomSubmissionUpdate(NodeAtomSubmissionState.FAILED, new JsonObject())
+									new AtomStatusNotification(AtomStatus.EVICTED_INVALID_ATOM, new JsonObject())
 								))
 						);
 				})
@@ -105,7 +89,7 @@ public final class SubmitAtomEpic implements RadixNetworkEpic {
 					).subscribe();
 			});
 		})
-			.takeUntil(e -> e instanceof SubmitAtomResultAction)
+			.takeUntil(e -> e instanceof SubmitAtomStatusAction)
 			.doFinally(() -> Observable.timer(DELAY_CLOSE_SECS, TimeUnit.SECONDS).subscribe(t -> ws.close()));
 	}
 

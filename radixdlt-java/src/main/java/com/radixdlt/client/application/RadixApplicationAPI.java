@@ -3,6 +3,7 @@ package com.radixdlt.client.application;
 import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
 import com.radixdlt.client.core.BootstrapConfig;
+import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.network.RadixNetworkController;
@@ -76,8 +77,7 @@ import com.radixdlt.client.core.crypto.ECKeyPairGenerator;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
-import com.radixdlt.client.core.network.actions.SubmitAtomResultAction;
-import com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType;
+import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
 import com.radixdlt.client.core.pow.ProofOfWorkBuilder;
 
 import io.reactivex.Completable;
@@ -893,7 +893,7 @@ public class RadixApplicationAPI {
 				Observable<SubmitAtomAction> status =
 				getNetworkController().getActions().ofType(SubmitAtomAction.class)
 					.filter(u -> u.getUuid().equals(initialAction.getUuid()))
-					.takeUntil(u -> u instanceof SubmitAtomResultAction);
+					.takeUntil(u -> u instanceof SubmitAtomStatusAction);
 				ConnectableObservable<SubmitAtomAction> replay = status.replay();
 				replay.connect();
 
@@ -904,18 +904,18 @@ public class RadixApplicationAPI {
 			.replay();
 
 		final Completable completable = updates
-			.ofType(SubmitAtomResultAction.class)
+			.ofType(SubmitAtomStatusAction.class)
 			.firstOrError()
-			.flatMapCompletable(update -> {
-				if (update.getType() == SubmitAtomResultActionType.STORED) {
+			.flatMapCompletable(status -> {
+				if (status.getStatusNotification().getAtomStatus() == AtomStatus.STORED) {
 					return Completable.complete();
 				} else {
-					JsonElement data = update.getData();
+					JsonElement data = status.getStatusNotification().getData();
 					final JsonObject errorData = data == null ? null : data.getAsJsonObject();
 					final ActionExecutionExceptionBuilder exceptionBuilder = new ActionExecutionExceptionBuilder()
 						.errorData(errorData);
 					atomErrorMappers.stream()
-						.flatMap(errorMapper -> errorMapper.mapAtomErrorToExceptionReasons(update.getAtom(), errorData))
+						.flatMap(errorMapper -> errorMapper.mapAtomErrorToExceptionReasons(status.getAtom(), errorData))
 						.forEach(exceptionBuilder::addReason);
 					return Completable.error(exceptionBuilder.build());
 				}
