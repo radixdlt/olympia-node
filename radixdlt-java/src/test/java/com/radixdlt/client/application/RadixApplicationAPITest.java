@@ -15,6 +15,7 @@ import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.RadixNodeAction;
 import com.radixdlt.client.core.network.actions.FetchAtomsObservationAction;
+import com.radixdlt.client.core.network.actions.SubmitAtomCompleteAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
 import io.reactivex.subjects.PublishSubject;
 import io.reactivex.subjects.ReplaySubject;
@@ -107,9 +108,12 @@ public class RadixApplicationAPITest {
 			SubmitAtomStatusAction stored = mock(SubmitAtomStatusAction.class);
 			when(stored.getStatusNotification()).thenReturn(new AtomStatusNotification(AtomStatus.STORED));
 			when(stored.getUuid()).thenReturn(request.getUuid());
+			SubmitAtomCompleteAction complete = mock(SubmitAtomCompleteAction.class);
+			when(complete.getUuid()).thenReturn(request.getUuid());
 			nodeActions.onNext(submitting);
 			nodeActions.onNext(received);
 			nodeActions.onNext(stored);
+			nodeActions.onNext(complete);
 			return null;
 		}).when(controller).dispatch(any(SubmitAtomRequestAction.class));
 		return createMockedAPI(controller, atomStore);
@@ -123,6 +127,7 @@ public class RadixApplicationAPITest {
 		completionObserver.assertComplete();
 
 		result.toObservable().subscribe(updatesObserver);
+		updatesObserver.awaitTerminalEvent();
 		updatesObserver.assertNoErrors();
 		updatesObserver.assertComplete();
 		updatesObserver.assertValueCount(3);
@@ -338,7 +343,10 @@ public class RadixApplicationAPITest {
 			when(update.getUuid()).thenReturn(request.getUuid());
 			when(update.getAtom()).thenReturn(atom);
 			when(update.getStatusNotification()).thenReturn(new AtomStatusNotification(AtomStatus.EVICTED_CONFLICT_LOSER, errorData));
+			SubmitAtomCompleteAction complete = mock(SubmitAtomCompleteAction.class);
+			when(complete.getUuid()).thenReturn(request.getUuid());
 			nodeActions.onNext(update);
+			nodeActions.onNext(complete);
 			return null;
 		}).when(controller).dispatch(any(SubmitAtomRequestAction.class));
 
