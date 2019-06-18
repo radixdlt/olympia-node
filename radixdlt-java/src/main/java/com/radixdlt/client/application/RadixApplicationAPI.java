@@ -8,6 +8,7 @@ import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.network.RadixNetworkController;
 import com.radixdlt.client.core.network.actions.FetchAtomsObservationAction;
+import com.radixdlt.client.core.network.actions.SubmitAtomCompleteAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -904,8 +905,10 @@ public class RadixApplicationAPI {
 			.replay();
 
 		final Completable completable = updates
+			.ofType(SubmitAtomAction.class)
+			.takeWhile(s -> !(s instanceof SubmitAtomCompleteAction))
 			.ofType(SubmitAtomStatusAction.class)
-			.firstOrError()
+			.lastOrError()
 			.flatMapCompletable(status -> {
 				if (status.getStatusNotification().getAtomStatus() == AtomStatus.STORED) {
 					return Completable.complete();

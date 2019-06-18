@@ -8,6 +8,7 @@ import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.RadixNodeAction;
 import com.radixdlt.client.core.network.actions.FindANodeResultAction;
+import com.radixdlt.client.core.network.actions.SubmitAtomCompleteAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomReceivedAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
@@ -55,24 +56,30 @@ public final class SubmitAtomEpic implements RadixNetworkEpic {
 
 		return Observable.<RadixNodeAction>create(emitter -> {
 			Disposable d = jsonRpcClient.observeAtomStatusNotifications(subscriberId)
-				.map(statusNotification -> SubmitAtomStatusAction.fromStatusNotification(
-					request.getUuid(),
-					request.getAtom(),
-					node,
-					statusNotification
+				.flatMap(statusNotification -> Observable.just(
+					SubmitAtomStatusAction.fromStatusNotification(
+						request.getUuid(),
+						request.getAtom(),
+						node,
+						statusNotification
+					),
+					SubmitAtomCompleteAction.of(request.getUuid(), request.getAtom(), node)
 				))
 				.doOnSubscribe(disposable -> {
 					jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, request.getAtom().getAid())
 						.andThen(jsonRpcClient.pushAtom(request.getAtom()))
 						.subscribe(
 							() -> emitter.onNext(SubmitAtomReceivedAction.of(request.getUuid(), request.getAtom(), node)),
-							e -> emitter.onNext(
-								SubmitAtomStatusAction.fromStatusNotification(
-									request.getUuid(),
-									request.getAtom(),
-									node,
-									new AtomStatusNotification(AtomStatus.EVICTED_INVALID_ATOM, new JsonObject())
-								))
+							e -> {
+								emitter.onNext(
+									SubmitAtomStatusAction.fromStatusNotification(
+										request.getUuid(),
+										request.getAtom(),
+										node,
+										new AtomStatusNotification(AtomStatus.EVICTED_INVALID_ATOM, new JsonObject())
+									));
+								emitter.onNext(SubmitAtomCompleteAction.of(request.getUuid(), request.getAtom(), node));
+							}
 						);
 				})
 				.subscribe(emitter::onNext, emitter::onError, emitter::onComplete);
@@ -89,7 +96,7 @@ public final class SubmitAtomEpic implements RadixNetworkEpic {
 					).subscribe();
 			});
 		})
-			.takeUntil(e -> e instanceof SubmitAtomStatusAction)
+			.takeUntil(e -> e instanceof SubmitAtomCompleteAction)
 			.doFinally(() -> Observable.timer(DELAY_CLOSE_SECS, TimeUnit.SECONDS).subscribe(t -> ws.close()));
 	}
 
