@@ -3,12 +3,12 @@ package com.radix.acceptance.mint_multi_issuance_tokens;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.client.application.translate.tokens.TokenOverMintException;
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
+import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomReceivedAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
-import com.radixdlt.client.core.network.actions.SubmitAtomResultAction;
-import com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType;
+import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomSendAction;
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -28,9 +28,6 @@ import com.radixdlt.client.application.translate.tokens.TokenDefinitionsState;
 import com.radixdlt.client.application.translate.tokens.UnknownTokenException;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.Bootstrap;
-
-import static com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType.STORED;
-import static com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType.VALIDATION_ERROR;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -79,7 +76,7 @@ public class MintMultiIssuanceTokens {
 		this.properties.put(SYMBOL, symbol1);
 		this.properties.put(INITIAL_SUPPLY, Integer.toString(initialSupply));
 		createToken(TokenSupplyType.MUTABLE);
-		awaitAtomStatus(STORED);
+		awaitAtomStatus(AtomStatus.STORED);
 		// Listening on state automatic for library
 	}
 
@@ -88,7 +85,7 @@ public class MintMultiIssuanceTokens {
 		setupApi();
 		this.properties.put(INITIAL_SUPPLY, BigDecimal.valueOf(initialUnscaledSupply).scaleByPowerOfTen(-18).toString());
 		createToken(CreateTokenAction.TokenSupplyType.MUTABLE);
-		awaitAtomStatus(STORED);
+		awaitAtomStatus(AtomStatus.STORED);
 	}
 
 	@Given("^a library client who owns an account and created a token with 2\\^(\\d+) initial subunit supply and is listening to the state of the token$")
@@ -97,7 +94,7 @@ public class MintMultiIssuanceTokens {
 		setupApi();
 		this.properties.put(INITIAL_SUPPLY, BigDecimal.valueOf(2).pow(pow2).scaleByPowerOfTen(-18).toString());
 		createToken(CreateTokenAction.TokenSupplyType.MUTABLE);
-		awaitAtomStatus(STORED);
+		awaitAtomStatus(AtomStatus.STORED);
 	}
 
 	@Given("^a library client who owns an account where token \"([^\"]*)\" does not exist$")
@@ -117,7 +114,7 @@ public class MintMultiIssuanceTokens {
 
 		this.properties.put(SYMBOL, symbol);
 		createToken(this.otherApi, TokenSupplyType.MUTABLE);
-		awaitAtomStatus(STORED);
+		awaitAtomStatus(AtomStatus.STORED);
 
 		this.properties.put(ADDRESS, this.otherApi.getMyAddress().toString());
 	}
@@ -139,7 +136,7 @@ public class MintMultiIssuanceTokens {
 
 	@Then("^the client should be notified that \"([^\"]*)\" token has a total supply of (\\d+)$")
 	public void theClientShouldBeNotifiedThatTokenHasATotalSupplyOf(String symbol, int supply) throws Throwable {
-		awaitAtomStatus(STORED);
+		awaitAtomStatus(AtomStatus.STORED);
 		RRI tokenClass = RRI.of(api.getMyAddress(), symbol);
 		// Ensure balance is up-to-date.
 		BigDecimal tokenBalanceDecimal = api.getBalance(api.getMyAddress(), tokenClass)
@@ -215,12 +212,12 @@ public class MintMultiIssuanceTokens {
 		this.observers.add(observer);
 	}
 
-	private void awaitAtomStatus(SubmitAtomResultActionType... finalStates) {
+	private void awaitAtomStatus(AtomStatus... finalStates) {
 		awaitAtomStatus(this.observers.size(), finalStates);
 	}
 
-	private void awaitAtomStatus(int atomNumber, SubmitAtomResultActionType... finalStates) {
-		ImmutableSet<SubmitAtomResultActionType> finalStatesSet = ImmutableSet.<SubmitAtomResultActionType>builder()
+	private void awaitAtomStatus(int atomNumber, AtomStatus... finalStates) {
+		ImmutableSet<AtomStatus> finalStatesSet = ImmutableSet.<AtomStatus>builder()
 			.addAll(Arrays.asList(finalStates))
 			.build();
 
@@ -232,8 +229,8 @@ public class MintMultiIssuanceTokens {
 			.assertValueAt(0, SubmitAtomRequestAction.class::isInstance)
 			.assertValueAt(1, SubmitAtomSendAction.class::isInstance)
 			.assertValueAt(2, SubmitAtomReceivedAction.class::isInstance)
-			.assertValueAt(3, SubmitAtomResultAction.class::isInstance)
-			.assertValueAt(3, i -> finalStatesSet.contains(SubmitAtomResultAction.class.cast(i).getType()));
+			.assertValueAt(3, SubmitAtomStatusAction.class::isInstance)
+			.assertValueAt(3, i -> finalStatesSet.contains(SubmitAtomStatusAction.class.cast(i).getStatusNotification().getAtomStatus()));
 	}
 
 	private void awaitAtomValidationError(String partMessage) {
@@ -249,11 +246,11 @@ public class MintMultiIssuanceTokens {
 			.assertValueAt(0, SubmitAtomRequestAction.class::isInstance)
 			.assertValueAt(1, SubmitAtomSendAction.class::isInstance)
 			.assertValueAt(2, SubmitAtomReceivedAction.class::isInstance)
-			.assertValueAt(3, SubmitAtomResultAction.class::isInstance)
-			.assertValueAt(3, i -> SubmitAtomResultAction.class.cast(i).getType().equals(VALIDATION_ERROR))
-			.assertValueAt(3, i -> SubmitAtomResultAction.class.cast(i).getData().getAsJsonObject().has("message"))
+			.assertValueAt(3, SubmitAtomStatusAction.class::isInstance)
+			.assertValueAt(3, i -> SubmitAtomStatusAction.class.cast(i).getStatusNotification().getAtomStatus().equals(AtomStatus.EVICTED_FAILED_CM_VERIFICATION))
+			.assertValueAt(3, i -> SubmitAtomStatusAction.class.cast(i).getStatusNotification().getData().getAsJsonObject().has("message"))
 			.assertValueAt(3, i -> {
-				String message = SubmitAtomResultAction.class.cast(i).getData().getAsJsonObject().get("message").getAsString();
+				String message = SubmitAtomStatusAction.class.cast(i).getStatusNotification().getData().getAsJsonObject().get("message").getAsString();
 				return message.contains(partMessage);
 			});
 	}

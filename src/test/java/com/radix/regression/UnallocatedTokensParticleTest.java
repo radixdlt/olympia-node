@@ -9,13 +9,13 @@ import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle.TokenTransit
 import com.radixdlt.client.atommodel.tokens.TokenPermission;
 import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.core.Bootstrap;
+import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
-import com.radixdlt.client.core.network.actions.SubmitAtomResultAction;
-import com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType;
+import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
 import io.reactivex.Observable;
 import io.reactivex.observers.TestObserver;
 import java.math.BigDecimal;
@@ -52,14 +52,14 @@ public class UnallocatedTokensParticleTest {
 			.sign(unsignedAtom)
 			.flatMapObservable(a -> api.submitAtom(a).toObservable());
 
-		TestObserver<SubmitAtomResultAction> testObserver = TestObserver.create();
+		TestObserver<SubmitAtomStatusAction> testObserver = TestObserver.create();
 		updates
 			.doOnNext(System.out::println)
-			.ofType(SubmitAtomResultAction.class)
+			.ofType(SubmitAtomStatusAction.class)
 			.subscribe(testObserver);
 
 		testObserver.awaitTerminalEvent();
-		testObserver.assertValue(i -> i.getType() == SubmitAtomResultActionType.VALIDATION_ERROR);
+		testObserver.assertValue(i -> i.getStatusNotification().getAtomStatus() == AtomStatus.EVICTED_FAILED_CM_VERIFICATION);
 	}
 
 	@Test
@@ -93,14 +93,14 @@ public class UnallocatedTokensParticleTest {
 			.sign(unsignedAtom)
 			.flatMapObservable(a -> api.submitAtom(a).toObservable());
 
-		TestObserver<SubmitAtomResultAction> testObserver = TestObserver.create();
+		TestObserver<SubmitAtomStatusAction> testObserver = TestObserver.create();
 		updates
 			.doOnNext(System.out::println)
-			.ofType(SubmitAtomResultAction.class)
+			.ofType(SubmitAtomStatusAction.class)
 			.subscribe(testObserver);
 
 		testObserver.awaitTerminalEvent();
-		testObserver.assertValue(i -> i.getType() == SubmitAtomResultActionType.VALIDATION_ERROR);
+		testObserver.assertValue(i -> i.getStatusNotification().getAtomStatus() == AtomStatus.EVICTED_FAILED_CM_VERIFICATION);
 	}
 
 	@Test
@@ -150,13 +150,13 @@ public class UnallocatedTokensParticleTest {
 			.sign(unsignedAtom)
 			.flatMapObservable(a -> api.submitAtom(a).toObservable());
 
-		TestObserver<SubmitAtomResultAction> testObserver = TestObserver.create();
+		TestObserver<SubmitAtomStatusAction> testObserver = TestObserver.create();
 		updates
 			.doOnNext(System.out::println)
-			.ofType(SubmitAtomResultAction.class)
+			.ofType(SubmitAtomStatusAction.class)
 			.subscribe(testObserver);
 
 		testObserver.awaitTerminalEvent();
-		testObserver.assertValue(i -> i.getType() == SubmitAtomResultActionType.VALIDATION_ERROR);
+		testObserver.assertValue(i -> i.getStatusNotification().getAtomStatus() == AtomStatus.EVICTED_FAILED_CM_VERIFICATION);
 	}
 }

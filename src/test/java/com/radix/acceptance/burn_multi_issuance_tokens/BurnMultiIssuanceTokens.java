@@ -4,12 +4,12 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionsState;
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
 import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
+import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomReceivedAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
-import com.radixdlt.client.core.network.actions.SubmitAtomResultAction;
-import com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType;
+import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomSendAction;
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -30,8 +30,8 @@ import com.radixdlt.client.application.translate.tokens.UnknownTokenException;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.Bootstrap;
 
-import static com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType.STORED;
-import static com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType.VALIDATION_ERROR;
+import static com.radixdlt.client.core.atoms.AtomStatus.STORED;
+import static com.radixdlt.client.core.atoms.AtomStatus.EVICTED_FAILED_CM_VERIFICATION;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -223,12 +223,12 @@ public class BurnMultiIssuanceTokens {
 		observer.awaitTerminalEvent();
 	}
 
-	private void awaitAtomStatus(SubmitAtomResultActionType... finalStates) {
+	private void awaitAtomStatus(AtomStatus... finalStates) {
 		awaitAtomStatus(this.observers.size(), finalStates);
 	}
 
-	private void awaitAtomStatus(int atomNumber, SubmitAtomResultActionType... finalStates) {
-		ImmutableSet<SubmitAtomResultActionType> finalStatesSet = ImmutableSet.<SubmitAtomResultActionType>builder()
+	private void awaitAtomStatus(int atomNumber, AtomStatus... finalStates) {
+		ImmutableSet<AtomStatus> finalStatesSet = ImmutableSet.<AtomStatus>builder()
 			.addAll(Arrays.asList(finalStates))
 			.build();
 
@@ -240,8 +240,8 @@ public class BurnMultiIssuanceTokens {
 			.assertValueAt(0, SubmitAtomRequestAction.class::isInstance)
 			.assertValueAt(1, SubmitAtomSendAction.class::isInstance)
 			.assertValueAt(2, SubmitAtomReceivedAction.class::isInstance)
-			.assertValueAt(3, SubmitAtomResultAction.class::isInstance)
-			.assertValueAt(3, i -> finalStatesSet.contains(SubmitAtomResultAction.class.cast(i).getType()));
+			.assertValueAt(3, SubmitAtomStatusAction.class::isInstance)
+			.assertValueAt(3, i -> finalStatesSet.contains(SubmitAtomStatusAction.class.cast(i).getStatusNotification().getAtomStatus()));
 	}
 
 	private void awaitAtomValidationError(String partMessage) {
@@ -257,11 +257,11 @@ public class BurnMultiIssuanceTokens {
 			.assertValueAt(0, SubmitAtomRequestAction.class::isInstance)
 			.assertValueAt(1, SubmitAtomSendAction.class::isInstance)
 			.assertValueAt(2, SubmitAtomReceivedAction.class::isInstance)
-			.assertValueAt(3, SubmitAtomResultAction.class::isInstance)
-			.assertValueAt(3, i -> SubmitAtomResultAction.class.cast(i).getType().equals(VALIDATION_ERROR))
-			.assertValueAt(3, i -> SubmitAtomResultAction.class.cast(i).getData().getAsJsonObject().has("message"))
+			.assertValueAt(3, SubmitAtomStatusAction.class::isInstance)
+			.assertValueAt(3, i -> SubmitAtomStatusAction.class.cast(i).getStatusNotification().getAtomStatus().equals(EVICTED_FAILED_CM_VERIFICATION))
+			.assertValueAt(3, i -> SubmitAtomStatusAction.class.cast(i).getStatusNotification().getData().getAsJsonObject().has("message"))
 			.assertValueAt(3, i -> {
-				String message = SubmitAtomResultAction.class.cast(i).getData().getAsJsonObject().get("message").getAsString();
+				String message = SubmitAtomStatusAction.class.cast(i).getStatusNotification().getData().getAsJsonObject().get("message").getAsString();
 				return message.contains(partMessage);
 			});
 	}

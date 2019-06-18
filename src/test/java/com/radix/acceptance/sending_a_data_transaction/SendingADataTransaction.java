@@ -10,11 +10,11 @@ import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.data.DecryptedMessage;
 import com.radixdlt.client.application.translate.data.SendMessageAction;
 import com.radixdlt.client.core.Bootstrap;
+import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomReceivedAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
-import com.radixdlt.client.core.network.actions.SubmitAtomResultAction;
-import com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType;
+import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomSendAction;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
@@ -24,10 +24,6 @@ import io.reactivex.observers.TestObserver;
 
 import java.util.Arrays;
 import java.util.List;
-
-import static com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType.COLLISION;
-import static com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType.STORED;
-import static com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType.VALIDATION_ERROR;
 
 /**
  * See <a href="https://radixdlt.atlassian.net/browse/RLAU-94">RLAU-94</a>.
@@ -73,8 +69,8 @@ public class SendingADataTransaction {
 		this.observers.add(observer);
 	}
 
-	private void awaitAtomStatus(int atomNumber, SubmitAtomResultActionType... finalStates) {
-		ImmutableSet<SubmitAtomResultActionType> finalStatesSet = ImmutableSet.<SubmitAtomResultActionType>builder()
+	private void awaitAtomStatus(int atomNumber, AtomStatus... finalStates) {
+		ImmutableSet<AtomStatus> finalStatesSet = ImmutableSet.<AtomStatus>builder()
 			.addAll(Arrays.asList(finalStates))
 			.build();
 
@@ -86,8 +82,8 @@ public class SendingADataTransaction {
 			.assertValueAt(0, SubmitAtomRequestAction.class::isInstance)
 			.assertValueAt(1, SubmitAtomSendAction.class::isInstance)
 			.assertValueAt(2, SubmitAtomReceivedAction.class::isInstance)
-			.assertValueAt(3, SubmitAtomResultAction.class::isInstance)
-			.assertValueAt(3, i -> finalStatesSet.contains(SubmitAtomResultAction.class.cast(i).getType()));
+			.assertValueAt(3, SubmitAtomStatusAction.class::isInstance)
+			.assertValueAt(3, i -> finalStatesSet.contains(SubmitAtomStatusAction.class.cast(i).getStatusNotification().getAtomStatus()));
 	}
 
 	@Then("^I can observe the atom being accepted$")
@@ -98,7 +94,7 @@ public class SendingADataTransaction {
 
 	@Then("^I can observe atom (\\d+) being accepted$")
 	public void i_can_observe_atom_being_accepted(int atomNumber) {
-		awaitAtomStatus(atomNumber, STORED);
+		awaitAtomStatus(atomNumber, AtomStatus.STORED);
 	}
 
 	@Then("^I can observe the atom being rejected with a validation error$")
@@ -109,7 +105,7 @@ public class SendingADataTransaction {
 
 	@Then("^I can observe atom (\\d+) being rejected with a validation error$")
 	public void i_can_observe_atom_being_rejected_as_a_validation_error(int atomNumber) {
-		awaitAtomStatus(atomNumber, VALIDATION_ERROR);
+		awaitAtomStatus(atomNumber, AtomStatus.EVICTED_FAILED_CM_VERIFICATION);
 	}
 
 	@Then("^I can observe the atom being rejected with an error$")
@@ -120,7 +116,7 @@ public class SendingADataTransaction {
 
 	@Then("^I can observe atom (\\d+) being rejected with an error$")
 	public void i_can_observe_atom_being_rejected_with_an_error(int atomNumber) {
-		awaitAtomStatus(atomNumber, COLLISION, VALIDATION_ERROR);
+		awaitAtomStatus(atomNumber, AtomStatus.EVICTED_CONFLICT_LOSER, AtomStatus.EVICTED_FAILED_CM_VERIFICATION);
 	}
 
 	@When("^I submit a message with \"([^\"]*)\" to another client claiming to be another client$")

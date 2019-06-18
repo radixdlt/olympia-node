@@ -1,5 +1,6 @@
 package com.radix.acceptance.token_character_set;
 
+import com.radixdlt.client.core.atoms.AtomStatus;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
@@ -15,13 +16,8 @@ import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomReceivedAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
-import com.radixdlt.client.core.network.actions.SubmitAtomResultAction;
-import com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType;
+import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomSendAction;
-
-import static com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType.FAILED;
-import static com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType.STORED;
-import static com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType.VALIDATION_ERROR;
 
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
@@ -75,7 +71,7 @@ public class TokenSymbolCharacterSet {
 
 	@Then("^I can observe atom (\\d+) being accepted$")
 	public void i_can_observe_atom_being_accepted(int atomNumber) {
-		awaitAtomStatus4(atomNumber, STORED);
+		awaitAtomStatus4(atomNumber, AtomStatus.STORED);
 	}
 
 	@Then("^I can observe the atom being rejected with a validation error$")
@@ -86,7 +82,7 @@ public class TokenSymbolCharacterSet {
 
 	@Then("^I can observe atom (\\d+) being rejected with a validation error$")
 	public void i_can_observe_atom_being_rejected_as_a_validation_error(int atomNumber) {
-		awaitAtomStatus4(atomNumber, VALIDATION_ERROR);
+		awaitAtomStatus4(atomNumber, AtomStatus.EVICTED_FAILED_CM_VERIFICATION);
 	}
 
 	@Then("^I can observe the atom being rejected with a failure$")
@@ -97,7 +93,7 @@ public class TokenSymbolCharacterSet {
 
 	@Then("^I can observe atom (\\d+) being rejected with a failure$")
 	public void i_can_observe_atom_being_rejected_as_a_failure(int atomNumber) {
-		awaitAtomStatus3(atomNumber, FAILED);
+		awaitAtomStatus3(atomNumber, AtomStatus.EVICTED_INVALID_ATOM);
 	}
 
 	private void createToken(CreateTokenAction.TokenSupplyType tokenCreateSupplyType) {
@@ -115,8 +111,8 @@ public class TokenSymbolCharacterSet {
 		this.observers.add(observer);
 	}
 
-	private void awaitAtomStatus3(int atomNumber, SubmitAtomResultActionType... finalStates) {
-		ImmutableSet<SubmitAtomResultActionType> finalStatesSet = ImmutableSet.<SubmitAtomResultActionType>builder()
+	private void awaitAtomStatus3(int atomNumber, AtomStatus... finalStates) {
+		ImmutableSet<AtomStatus> finalStatesSet = ImmutableSet.<AtomStatus>builder()
 			.addAll(Arrays.asList(finalStates))
 			.build();
 
@@ -126,12 +122,12 @@ public class TokenSymbolCharacterSet {
 			.assertNoTimeout()
 			.assertValueAt(0, SubmitAtomRequestAction.class::isInstance)
 			.assertValueAt(1, SubmitAtomSendAction.class::isInstance)
-			.assertValueAt(2, SubmitAtomResultAction.class::isInstance)
-			.assertValueAt(2, i -> finalStatesSet.contains(SubmitAtomResultAction.class.cast(i).getType()));
+			.assertValueAt(2, SubmitAtomStatusAction.class::isInstance)
+			.assertValueAt(2, i -> finalStatesSet.contains(SubmitAtomStatusAction.class.cast(i).getStatusNotification().getAtomStatus()));
 	}
 
-	private void awaitAtomStatus4(int atomNumber, SubmitAtomResultActionType... finalStates) {
-		ImmutableSet<SubmitAtomResultActionType> finalStatesSet = ImmutableSet.<SubmitAtomResultActionType>builder()
+	private void awaitAtomStatus4(int atomNumber, AtomStatus... finalStates) {
+		ImmutableSet<AtomStatus> finalStatesSet = ImmutableSet.<AtomStatus>builder()
 			.addAll(Arrays.asList(finalStates))
 			.build();
 
@@ -142,16 +138,16 @@ public class TokenSymbolCharacterSet {
 			.assertValueAt(0, SubmitAtomRequestAction.class::isInstance)
 			.assertValueAt(1, SubmitAtomSendAction.class::isInstance)
 			.assertValueAt(2, SubmitAtomReceivedAction.class::isInstance)
-			.assertValueAt(3, SubmitAtomResultAction.class::isInstance)
-			.assertValueAt(3, i -> finalStatesSet.contains(SubmitAtomResultAction.class.cast(i).getType()));
+			.assertValueAt(3, SubmitAtomStatusAction.class::isInstance)
+			.assertValueAt(3, i -> finalStatesSet.contains(SubmitAtomStatusAction.class.cast(i).getStatusNotification().getAtomStatus()));
 	}
 
 	private void printSubmitAtomAction(SubmitAtomAction saa) {
 		System.out.println(saa);
-		if (saa instanceof SubmitAtomResultAction) {
-			SubmitAtomResultAction sara = (SubmitAtomResultAction) saa;
-			System.out.println(sara.getType());
-			System.out.println(sara.getData());
+		if (saa instanceof SubmitAtomStatusAction) {
+			SubmitAtomStatusAction sara = (SubmitAtomStatusAction) saa;
+			System.out.println(sara.getStatusNotification().getAtomStatus());
+			System.out.println(sara.getStatusNotification().getData());
 		}
 	}
 }

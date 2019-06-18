@@ -31,7 +31,7 @@ import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
-import com.radixdlt.client.core.network.actions.SubmitAtomResultAction;
+import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -76,7 +76,7 @@ public class RTP {
 			.assertComplete();
 
 		// Make sure last event was a SubmitAtomResult
-		observer.assertValueAt(observer.valueCount() - 1, saa -> saa instanceof SubmitAtomResultAction);
+		observer.assertValueAt(observer.valueCount() - 1, saa -> saa instanceof SubmitAtomStatusAction);
 
 		// Extract HID for query of "other" node
 		String atomHID = observer.values().get(observer.valueCount() - 1).getAtom().getAid().toString();

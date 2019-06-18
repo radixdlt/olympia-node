@@ -6,16 +6,15 @@ import com.radixdlt.client.application.RadixApplicationAPI.Result;
 import com.radixdlt.client.application.identity.LocalRadixIdentity;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.atommodel.message.MessageParticle;
-import com.radixdlt.client.atommodel.message.MessageParticle.MessageParticleBuilder;
 import com.radixdlt.client.atommodel.message.MetadataMap;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
-import com.radixdlt.client.core.network.actions.SubmitAtomResultAction;
-import com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType;
+import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
 import io.reactivex.observers.TestObserver;
 import java.util.concurrent.TimeUnit;
 import org.junit.Before;
@@ -50,8 +49,8 @@ public class TranslucentAtomTest {
 		testObserver.assertNoErrors();
 		testObserver.assertComplete();
 		testObserver.assertValueAt(3, action -> {
-			SubmitAtomResultAction res = (SubmitAtomResultAction) action;
-			return res.getType().equals(SubmitAtomResultActionType.VALIDATION_ERROR);
+			SubmitAtomStatusAction res = (SubmitAtomStatusAction) action;
+			return res.getStatusNotification().getAtomStatus() == AtomStatus.EVICTED_FAILED_CM_VERIFICATION;
 		});
 	}
 
@@ -73,8 +72,8 @@ public class TranslucentAtomTest {
 		testObserver.assertNoErrors();
 		testObserver.assertComplete();
 		testObserver.assertValueAt(3, action -> {
-			SubmitAtomResultAction res = (SubmitAtomResultAction) action;
-			return res.getType().equals(SubmitAtomResultActionType.VALIDATION_ERROR);
+			SubmitAtomStatusAction res = (SubmitAtomStatusAction) action;
+			return res.getStatusNotification().getAtomStatus() == AtomStatus.EVICTED_FAILED_CM_VERIFICATION;
 		});
 	}
 }
