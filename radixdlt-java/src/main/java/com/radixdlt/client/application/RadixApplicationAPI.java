@@ -956,6 +956,7 @@ public class RadixApplicationAPI {
 	}
 
 
+	// TODO: Remove use of pull + submit, utilize statusNotifications + push instead
 	private Observable<AtomObservation> syncAtom(Atom atom) {
 		final Disposable disposable = pull(atom.addresses().findFirst().orElseThrow(() -> new IllegalStateException("")));
 		return getNetworkController().getActions().ofType(FetchAtomsObservationAction.class)

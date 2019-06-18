@@ -1,10 +1,13 @@
 package com.radixdlt.client.core.network.jsonrpc;
 
+import com.radixdlt.client.core.atoms.AtomStatus;
+import com.radixdlt.client.core.atoms.AtomStatusNotification;
 import com.radixdlt.client.core.ledger.AtomEvent;
 import java.util.List;
 import java.util.UUID;
 
 import org.json.JSONObject;
+import org.radix.common.ID.AID;
 import org.radix.common.ID.EUID;
 import org.radix.serialization2.DsonOutput.Output;
 import org.radix.serialization2.JsonJavaType;
@@ -123,7 +126,7 @@ public class RadixJsonRpcClient {
 	 * @param method name of JSON-RPC method
 	 * @return response from rpc method
 	 */
-	public Single<JsonRpcResponse> jsonRpcCall(String method, JsonObject params) {
+	public Single<JsonRpcResponse> jsonRpcCall(String method, JsonElement params) {
 		return Single.create(emitter -> {
 			final String uuid = UUID.randomUUID().toString();
 
@@ -134,7 +137,7 @@ public class RadixJsonRpcClient {
 
 			Disposable d = messages
 				.filter(msg -> msg.has("id"))
-				.filter(msg -> msg.get("id").getAsString().equals(uuid))
+				.filter(msg -> msg.get("id").isJsonNull() || msg.get("id").getAsString().equals(uuid))
 				.firstOrError()
 				.map(msg -> {
 					final JsonObject jsonResponse = msg.getAsJsonObject();
@@ -197,6 +200,89 @@ public class RadixJsonRpcClient {
 				.map(result -> Serialize.getInstance().fromJson(result.toString(), listOfNodeRunnerData));
 	}
 
+	/**
+	 * Submits an atom to the node.
+	 * @param atom the atom to submit
+	 * @return a completable which completes when the atom is queued
+	 */
+	public Completable pushAtom(Atom atom) {
+		JSONObject jsonAtomTemp = Serialize.getInstance().toJsonObject(atom, Output.API);
+		JsonElement jsonAtom = GsonJson.getInstance().toGson(jsonAtomTemp);
+
+		return this.jsonRpcCall("Atoms.submitAtom", jsonAtom).map(r -> {
+			if (!r.isSuccess || r.getError() != null) {
+				throw new RuntimeException();
+			} else {
+				return r;
+			}
+		}).ignoreElement();
+	}
+
+	/**
+	 * Sends a request to receive streaming updates on an atom's status.
+	 * @param subscriberId the subscriberId for the streaming updates
+	 * @param aid the AID of the atom
+	 * @return a completable which completes when subscription is registered
+	 */
+	public Completable sendGetAtomStatusNotifications(String subscriberId, AID aid) {
+		final JsonObject params = new JsonObject();
+		params.addProperty("aid", aid.toString());
+		params.addProperty("subscriberId", subscriberId);
+
+		return this.jsonRpcCall("Atoms.getAtomStatusNotifications", params).map(r -> {
+			if (!r.isSuccess) {
+				throw new RuntimeException();
+			} else {
+				return r;
+			}
+		}).ignoreElement();
+	}
+
+	/**
+	 * Closes a streaming status subscription
+	 * @param subscriberId the subscriberId for the streaming updates
+	 * @return a completable which completes when subscription is closed
+	 */
+	public Completable closeAtomStatusNotifications(String subscriberId) {
+		final JsonObject cancelParams = new JsonObject();
+		cancelParams.addProperty("subscriberId", subscriberId);
+
+		return this.jsonRpcCall("Atoms.closeAtomStatusNotifications", cancelParams).map(r -> {
+			if (!r.isSuccess) {
+				throw new RuntimeException();
+			} else {
+				return r;
+			}
+		}).ignoreElement();
+	}
+
+	/**
+	 * Listens to atom status notifications
+	 * @param subscriberId the subscription to listen for
+	 * @return observable of status notifications
+	 */
+	public Observable<AtomStatusNotification> observeAtomStatusNotifications(String subscriberId) {
+		return this.observeNotifications("Atoms.nextStatusEvent", subscriberId)
+			.map(observedStatus -> {
+				AtomStatus atomStatus = AtomStatus.valueOf(observedStatus.get("status").getAsString());
+				JsonObject data = observedStatus.get("data").getAsJsonObject();
+				return new AtomStatusNotification(atomStatus, data);
+			});
+	}
+
+	/**
+	 * Get the current status of an atom for this node
+	 * @param aid the aid of the atom
+	 * @return the status of the atom
+	 */
+	public Single<AtomStatus> getAtomStatus(AID aid) {
+		JsonObject params = new JsonObject();
+		params.addProperty("aid", aid.toString());
+		return this.jsonRpcCall("Atoms.getAtomStatus", params)
+			.map(JsonRpcResponse::getResult)
+			.map(JsonElement::getAsJsonObject)
+			.map(json -> AtomStatus.valueOf(json.get("status").getAsString()));
+	}
 
 	/**
 	 * Queries for an atom by HID.
@@ -215,17 +301,6 @@ public class RadixJsonRpcClient {
 			.map(JsonRpcResponse::getResult)
 			.<List<Atom>>map(result -> Serialize.getInstance().fromJson(result.toString(), listOfAtom))
 			.flatMapMaybe(list -> list.isEmpty() ? Maybe.empty() : Maybe.just(list.get(0)));
-	}
-
-	/**
-	 * Generic helper method for creating a subscription via JSON-RPC.
-	 *
-	 * @param method name of subscription method
-	 * @param notificationMethod name of the JSON-RPC notification method
-	 * @return Observable of emitted subscription json elements
-	 */
-	public Observable<JsonElement> jsonRpcSubscribe(String method, String notificationMethod) {
-		return this.jsonRpcSubscribe(method, new JsonObject(), notificationMethod);
 	}
 
 	public Observable<JsonObject> observeNotifications(String notificationMethod, String subscriberId) {
@@ -348,7 +423,9 @@ public class RadixJsonRpcClient {
 		}
 	}
 
-	public static class NodeAtomSubmissionUpdate {
+
+	// TODO: Remove this class
+	public static final class NodeAtomSubmissionUpdate {
 		private final NodeAtomSubmissionState state;
 		private final JsonElement data;
 		private final long timestamp;
@@ -370,52 +447,10 @@ public class RadixJsonRpcClient {
 		public long getTimestamp() {
 			return timestamp;
 		}
-	}
 
-	/**
-	 * Attempt to submit an atom to a node. Returns the status of the atom as it
-	 * gets stored on the node.
-	 *
-	 * @param atom the atom to submit
-	 * @return observable of the atom as it gets stored
-	 */
-	public Observable<NodeAtomSubmissionUpdate> submitAtom(Atom atom) {
-		return Observable.create(emitter -> {
-			JSONObject jsonAtomTemp = Serialize.getInstance().toJsonObject(atom, Output.API);
-			JsonElement jsonAtom = GsonJson.getInstance().toGson(jsonAtomTemp);
-
-			final String subscriberId = UUID.randomUUID().toString();
-			JsonObject params = new JsonObject();
-			params.addProperty("subscriberId", subscriberId);
-			params.add("atom", jsonAtom);
-
-			LOGGER.debug("Submitting atom for {}: {}", subscriberId, jsonAtomTemp);
-
-			Disposable messageListenerDisposable = messages.filter(msg -> msg.has("method"))
-				.filter(msg -> msg.get("method").getAsString().equals("AtomSubmissionState.onNext"))
-				.map(msg -> msg.get("params").getAsJsonObject())
-				.filter(p -> p.get("subscriberId").getAsString().equals(subscriberId)).map(p -> {
-					final NodeAtomSubmissionState state = NodeAtomSubmissionState.valueOf(p.get("value").getAsString());
-					final JsonElement data;
-					if (p.has("data")) {
-						data = p.get("data");
-					} else {
-						data = null;
-					}
-
-					return new NodeAtomSubmissionUpdate(state, data);
-				}).takeUntil(u -> u.state.isComplete)
-				.subscribe(emitter::onNext, emitter::onError, emitter::onComplete);
-
-			this.jsonRpcCall("Universe.submitAtomAndSubscribe", params)
-				.subscribe(resp -> {
-				if (!resp.isSuccess()) {
-					messageListenerDisposable.dispose();
-					emitter.onNext(new NodeAtomSubmissionUpdate(NodeAtomSubmissionState.FAILED, resp.getError()));
-				} else {
-					emitter.onNext(new NodeAtomSubmissionUpdate(NodeAtomSubmissionState.RECEIVED, null));
-				}
-			}, emitter::onError);
-		});
+		@Override
+		public String toString() {
+			return timestamp + " " + state + " " + data;
+		}
 	}
 }

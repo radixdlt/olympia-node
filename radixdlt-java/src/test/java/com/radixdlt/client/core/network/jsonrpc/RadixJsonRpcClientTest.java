@@ -17,8 +17,6 @@ import com.google.gson.JsonParser;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.ledger.AtomObservation;
-import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.NodeAtomSubmissionState;
-import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.NodeAtomSubmissionUpdate;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -222,54 +220,5 @@ public class RadixJsonRpcClientTest {
 		observer.assertSubscribed();
 		observer.assertNoErrors();
 		observer.assertValueCount(0);
-	}
-
-	@Test
-	public void submitAtomTest() {
-		PersistentChannel channel = mock(PersistentChannel.class);
-
-		ReplaySubject<String> messages = ReplaySubject.create();
-		when(channel.getMessages()).thenReturn(messages);
-
-		JsonParser parser = new JsonParser();
-
-		when(channel.sendMessage(any())).then(invocation -> {
-			String msg = (String) invocation.getArguments()[0];
-			JsonObject jsonObject = parser.parse(msg).getAsJsonObject();
-			String id = jsonObject.get("id").getAsString();
-			String method = jsonObject.get("method").getAsString();
-
-			if (method.equals("Universe.submitAtomAndSubscribe")) {
-				JsonObject response = new JsonObject();
-				response.addProperty("id", id);
-				response.add("result", new JsonObject());
-
-				messages.onNext(GsonJson.getInstance().stringFromGson(response));
-
-				String subscriberId = jsonObject.get("params").getAsJsonObject().get("subscriberId").getAsString();
-				JsonObject notification = new JsonObject();
-				notification.addProperty("method", "AtomSubmissionState.onNext");
-				JsonObject params = new JsonObject();
-				params.addProperty("subscriberId", subscriberId);
-				params.addProperty("value", "STORED");
-
-				notification.add("params", params);
-
-				messages.onNext(GsonJson.getInstance().stringFromGson(notification));
-			}
-
-			return true;
-		});
-		RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(channel);
-
-		TestObserver<NodeAtomSubmissionUpdate> observer = new TestObserver<>();
-
-		jsonRpcClient.submitAtom(
-			new Atom(Collections.emptyList(), 0L)
-		).subscribe(observer);
-
-		observer.assertNoErrors();
-		observer.assertValueAt(observer.valueCount() - 1, update -> update.getState().equals(NodeAtomSubmissionState.STORED));
-		observer.assertComplete();
 	}
 }
