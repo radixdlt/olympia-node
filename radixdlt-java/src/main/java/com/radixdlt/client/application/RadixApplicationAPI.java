@@ -97,13 +97,29 @@ import io.reactivex.observables.ConnectableObservable;
 public class RadixApplicationAPI {
 	private static final Logger LOGGER = LoggerFactory.getLogger(RadixApplicationAPI.class);
 
-	public static class Result {
+	public class Result {
 		private final ConnectableObservable<SubmitAtomAction> updates;
 		private final Completable completable;
 
-		private Result(ConnectableObservable<SubmitAtomAction> updates, Completable completable) {
+		private Result(ConnectableObservable<SubmitAtomAction> updates) {
 			this.updates = updates;
-			this.completable = completable;
+			this.completable = updates
+				.ofType(SubmitAtomStatusAction.class)
+				.lastOrError()
+				.flatMapCompletable(status -> {
+					if (status.getStatusNotification().getAtomStatus() == AtomStatus.STORED) {
+						return Completable.complete();
+					} else {
+						JsonElement data = status.getStatusNotification().getData();
+						final JsonObject errorData = data == null ? null : data.getAsJsonObject();
+						final ActionExecutionExceptionBuilder exceptionBuilder = new ActionExecutionExceptionBuilder()
+							.errorData(errorData);
+						atomErrorMappers.stream()
+							.flatMap(errorMapper -> errorMapper.mapAtomErrorToExceptionReasons(status.getAtom(), errorData))
+							.forEach(exceptionBuilder::addReason);
+						return Completable.error(exceptionBuilder.build());
+					}
+				});
 		}
 
 		private Result connect() {
@@ -750,6 +766,10 @@ public class RadixApplicationAPI {
 		return this.execute(transferTokensAction);
 	}
 
+	private long generateTimestamp() {
+		return System.currentTimeMillis();
+	}
+
 	/**
 	 * Returns an unsigned atom with the appropriate fees given a list of
 	 * particle groups to compose the atom.
@@ -790,7 +810,10 @@ public class RadixApplicationAPI {
 		 * @return the results of committing
 		 */
 		public Result commit() {
-			return buildDisconnectedResult(actions).connect();
+			final Single<Atom> atom = buildAtom(actions)
+				.flatMap(identity::sign);
+
+			return createAtomSubmission(atom).connect();
 		}
 	}
 
@@ -883,18 +906,15 @@ public class RadixApplicationAPI {
 			}));
 	}
 
-	private long generateTimestamp() {
-		return System.currentTimeMillis();
-	}
 
-	private Result buildDisconnectedAtomSubmit(Single<Atom> atom) {
+	private Result createAtomSubmission(Single<Atom> atom) {
 		final ConnectableObservable<SubmitAtomAction> updates = atom
 			.flatMapObservable(a -> {
 				SubmitAtomRequestAction initialAction = SubmitAtomRequestAction.newRequest(a);
 				Observable<SubmitAtomAction> status =
-				getNetworkController().getActions().ofType(SubmitAtomAction.class)
-					.filter(u -> u.getUuid().equals(initialAction.getUuid()))
-					.takeUntil(u -> u instanceof SubmitAtomStatusAction);
+					getNetworkController().getActions().ofType(SubmitAtomAction.class)
+						.filter(u -> u.getUuid().equals(initialAction.getUuid()))
+						.takeWhile(s -> !(s instanceof SubmitAtomCompleteAction));
 				ConnectableObservable<SubmitAtomAction> replay = status.replay();
 				replay.connect();
 
@@ -904,38 +924,7 @@ public class RadixApplicationAPI {
 			})
 			.replay();
 
-		final Completable completable = updates
-			.ofType(SubmitAtomAction.class)
-			.takeWhile(s -> !(s instanceof SubmitAtomCompleteAction))
-			.ofType(SubmitAtomStatusAction.class)
-			.lastOrError()
-			.flatMapCompletable(status -> {
-				if (status.getStatusNotification().getAtomStatus() == AtomStatus.STORED) {
-					return Completable.complete();
-				} else {
-					JsonElement data = status.getStatusNotification().getData();
-					final JsonObject errorData = data == null ? null : data.getAsJsonObject();
-					final ActionExecutionExceptionBuilder exceptionBuilder = new ActionExecutionExceptionBuilder()
-						.errorData(errorData);
-					atomErrorMappers.stream()
-						.flatMap(errorMapper -> errorMapper.mapAtomErrorToExceptionReasons(status.getAtom(), errorData))
-						.forEach(exceptionBuilder::addReason);
-					return Completable.error(exceptionBuilder.build());
-				}
-			});
-
-		return new Result(updates, completable);
-	}
-
-	private Result buildDisconnectedAtomSubmit(Atom atom) {
-		return buildDisconnectedAtomSubmit(Single.just(atom));
-	}
-
-	private Result buildDisconnectedResult(Iterable<Action> actions) {
-		final Single<Atom> atom = this.buildAtom(actions)
-			.flatMap(this.identity::sign);
-
-		return buildDisconnectedAtomSubmit(atom);
+		return new Result(updates);
 	}
 
 	/**
@@ -944,7 +933,7 @@ public class RadixApplicationAPI {
 	 * @return the result of the submission
 	 */
 	public Result submitAtom(Atom atom) {
-		return buildDisconnectedAtomSubmit(atom).connect();
+		return createAtomSubmission(Single.just(atom)).connect();
 	}
 
 	/**
@@ -955,9 +944,11 @@ public class RadixApplicationAPI {
 	 * @return results of the execution
 	 */
 	public Result execute(Action action) {
-		return this.buildDisconnectedResult(Collections.singleton(action)).connect();
-	}
+		final Single<Atom> atom = this.buildAtom(Collections.singleton(action))
+			.flatMap(this.identity::sign);
 
+		return createAtomSubmission(atom).connect();
+	}
 
 	// TODO: Remove use of pull + submit, utilize statusNotifications + push instead
 	private Observable<AtomObservation> syncAtom(Atom atom) {
