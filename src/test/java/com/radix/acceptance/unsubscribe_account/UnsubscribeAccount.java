@@ -1,5 +1,8 @@
 package com.radix.acceptance.unsubscribe_account;
 
+import com.radix.regression.Util;
+import com.radixdlt.client.core.atoms.AtomStatus;
+import com.radixdlt.client.core.atoms.AtomStatusNotification;
 import com.radixdlt.client.core.ledger.AtomObservation;
 import java.util.List;
 import java.util.UUID;
@@ -102,7 +105,7 @@ public class UnsubscribeAccount {
 		this.otherAccount = api.getAddressFromKey(ECKeyPairGenerator.newInstance().generateKeyPair().getPublicKey());
 
 		this.otherUuid = UUID.randomUUID().toString();
-		this.otherObserver = TestObserver.create();
+		this.otherObserver = TestObserver.create(Util.loggingObserver("Other observer"));
 		this.jsonRpcClient.observeAtoms(this.otherUuid)
 			.subscribe(this.otherObserver);
 
@@ -141,51 +144,57 @@ public class UnsubscribeAccount {
 
 	@When("the client sends a message to himself$")
 	public void the_client_sends_a_message_to_himself() throws Throwable {
-		TestObserver<NodeAtomSubmissionUpdate> atomSubmission = TestObserver.create();
-		this.api.buildAtom(new SendMessageAction(new byte[]{1}, this.api.getMyAddress(), this.api.getMyAddress(), false))
+		TestObserver<AtomStatusNotification> atomSubmission = TestObserver.create(Util.loggingObserver("Atom Submission"));
+		final String subscriberId = UUID.randomUUID().toString();
+		this.jsonRpcClient.observeAtomStatusNotifications(subscriberId).subscribe(atomSubmission);
+
+		this.atom = this.api.buildAtom(new SendMessageAction(new byte[]{1}, this.api.getMyAddress(), this.api.getMyAddress(), false))
 			.flatMap(this.identity::sign)
-			.doOnSuccess(atom -> this.atom = atom)
-			.doOnSuccess(System.out::println)
-			.flatMapObservable(this.jsonRpcClient::submitAtom)
-			.doOnNext(System.out::println)
-			.subscribe(atomSubmission);
-		atomSubmission.awaitTerminalEvent(5, TimeUnit.SECONDS);
-		atomSubmission.assertNoErrors();
-		atomSubmission.assertComplete();
-		atomSubmission.assertValueAt(0, u -> u.getState().equals(NodeAtomSubmissionState.RECEIVED));
-		atomSubmission.assertValueAt(1, u -> u.getState().equals(NodeAtomSubmissionState.STORED));
+			.blockingGet();
+
+		this.jsonRpcClient.pushAtom(this.atom).blockingAwait();
+		this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, this.atom.getAid()).blockingAwait();
+
+		atomSubmission.awaitCount(1);
+		atomSubmission.assertValue(n -> n.getAtomStatus() == AtomStatus.STORED);
+		atomSubmission.dispose();
 	}
 
 	@When("the client sends another message to himself$")
 	public void the_client_sends_another_message_to_himself() throws Throwable {
-		TestObserver<NodeAtomSubmissionUpdate> atomSubmission = TestObserver.create();
-		this.api.buildAtom(new SendMessageAction(new byte[]{2}, this.api.getMyAddress(), this.api.getMyAddress(), false))
+		TestObserver<AtomStatusNotification> atomSubmission = TestObserver.create(Util.loggingObserver("Atom Submission"));
+		final String subscriberId = UUID.randomUUID().toString();
+		this.jsonRpcClient.observeAtomStatusNotifications(subscriberId).subscribe(atomSubmission);
+
+
+		this.otherAtom = this.api.buildAtom(new SendMessageAction(new byte[]{2}, this.api.getMyAddress(), this.api.getMyAddress(), false))
 			.flatMap(this.identity::sign)
-			.doOnSuccess(atom -> this.otherAtom = atom)
-			.doOnSuccess(System.out::println)
-			.flatMapObservable(this.jsonRpcClient::submitAtom)
-			.doOnNext(System.out::println)
-			.subscribe(atomSubmission);
-		atomSubmission.awaitTerminalEvent(5, TimeUnit.SECONDS);
-		atomSubmission.assertNoErrors();
-		atomSubmission.assertComplete();
-		atomSubmission.assertValueAt(0, u -> u.getState().equals(NodeAtomSubmissionState.RECEIVED));
-		atomSubmission.assertValueAt(1, u -> u.getState().equals(NodeAtomSubmissionState.STORED));
+			.blockingGet();
+
+		this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, this.otherAtom.getAid()).blockingAwait();
+		this.jsonRpcClient.pushAtom(this.otherAtom).blockingAwait();
+
+		atomSubmission.awaitCount(1);
+		atomSubmission.assertValue(n -> n.getAtomStatus() == AtomStatus.STORED);
+		atomSubmission.dispose();
 	}
 
 	@When("the client sends a message to the other account$")
 	public void the_client_sends_a_message_to_the_other_account() throws Throwable {
-		TestObserver<NodeAtomSubmissionUpdate> atomSubmission = TestObserver.create();
-		this.api.buildAtom(new SendMessageAction(new byte[]{3}, this.api.getMyAddress(), this.otherAccount, false))
+		TestObserver<AtomStatusNotification> atomSubmission = TestObserver.create(Util.loggingObserver("Atom Submission"));
+		final String subscriberId = UUID.randomUUID().toString();
+		this.jsonRpcClient.observeAtomStatusNotifications(subscriberId).subscribe(atomSubmission);
+
+		this.atom = this.api.buildAtom(new SendMessageAction(new byte[]{3}, this.api.getMyAddress(), this.otherAccount, false))
 			.flatMap(this.identity::sign)
-			.doOnSuccess(atom -> this.atom = atom)
-			.flatMapObservable(this.jsonRpcClient::submitAtom)
-			.subscribe(atomSubmission);
-		atomSubmission.awaitTerminalEvent(5, TimeUnit.SECONDS);
-		atomSubmission.assertNoErrors();
-		atomSubmission.assertComplete();
-		atomSubmission.assertValueAt(0, u -> u.getState().equals(NodeAtomSubmissionState.RECEIVED));
-		atomSubmission.assertValueAt(1, u -> u.getState().equals(NodeAtomSubmissionState.STORED));
+			.blockingGet();
+
+		this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, this.atom.getAid()).blockingAwait();
+		this.jsonRpcClient.pushAtom(this.atom).blockingAwait();
+
+		atomSubmission.awaitCount(1);
+		atomSubmission.assertValue(n -> n.getAtomStatus() == AtomStatus.STORED);
+		atomSubmission.dispose();
 	}
 
 	@Then("^the client should not receive any new atom notifications in his account$")

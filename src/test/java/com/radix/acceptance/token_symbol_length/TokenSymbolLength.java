@@ -19,6 +19,7 @@ import com.radixdlt.client.core.network.actions.SubmitAtomResultAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType;
 import com.radixdlt.client.core.network.actions.SubmitAtomSendAction;
 
+import static com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType.FAILED;
 import static com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType.STORED;
 import static com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType.VALIDATION_ERROR;
 
@@ -96,7 +97,7 @@ public class TokenSymbolLength {
 
 	@Then("^I can observe atom (\\d+) being rejected with a failure$")
 	public void i_can_observe_atom_being_rejected_with_a_failure(int atomNumber) {
-		awaitAtomStatus3(atomNumber, VALIDATION_ERROR);
+		awaitAtomStatus3(atomNumber, FAILED);
 	}
 
 	private void createToken(CreateTokenAction.TokenSupplyType tokenCreateSupplyType) {

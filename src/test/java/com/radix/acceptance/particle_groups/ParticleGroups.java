@@ -308,6 +308,11 @@ public class ParticleGroups {
 		awaitAtomStatus(atomNumber, VALIDATION_ERROR);
 	}
 
+	@Then("^I can observe atom (\\d+) being rejected with a failure$")
+	public void i_can_observe_atom_being_rejected_with_a_failure(int atomNumber) {
+		awaitAtomInvalid(atomNumber);
+	}
+
 	@Then("^I can observe the atom being rejected with an error$")
 	public void i_can_observe_atom_being_rejected_with_an_error() {
 		// "the atom" = most recent atom
@@ -360,5 +365,16 @@ public class ParticleGroups {
 			.assertValueAt(2, SubmitAtomReceivedAction.class::isInstance)
 			.assertValueAt(3, SubmitAtomResultAction.class::isInstance)
 			.assertValueAt(3, i -> finalStatesSet.contains(SubmitAtomResultAction.class.cast(i).getType()));
+	}
+
+	private void awaitAtomInvalid(int atomNumber) {
+		this.observers.get(atomNumber - 1)
+			.awaitCount(4, TestWaitStrategy.SLEEP_100MS, TIMEOUT_MS)
+			.assertNoErrors()
+			.assertNoTimeout()
+			.assertValueAt(0, SubmitAtomRequestAction.class::isInstance)
+			.assertValueAt(1, SubmitAtomSendAction.class::isInstance)
+			.assertValueAt(2, SubmitAtomResultAction.class::isInstance)
+			.assertValueAt(2, i -> SubmitAtomResultAction.class.cast(i).getType().equals(SubmitAtomResultActionType.FAILED));
 	}
 }
