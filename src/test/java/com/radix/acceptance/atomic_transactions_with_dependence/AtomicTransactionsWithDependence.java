@@ -36,6 +36,8 @@ import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 /**
  * See <a href="https://radixdlt.atlassian.net/browse/RLAU-645">RLAU-645</a>.
@@ -172,15 +174,20 @@ public class AtomicTransactionsWithDependence {
 			.addAll(Arrays.asList(finalStates))
 			.build();
 
-		this.observers.get(atomNumber - 1)
-			.awaitCount(4, TestWaitStrategy.SLEEP_100MS, TIMEOUT_MS)
-			.assertNoErrors()
-			.assertNoTimeout()
-			.assertValueAt(0, SubmitAtomRequestAction.class::isInstance)
-			.assertValueAt(1, SubmitAtomSendAction.class::isInstance)
-			.assertValueAt(2, SubmitAtomReceivedAction.class::isInstance)
-			.assertValueAt(3, SubmitAtomStatusAction.class::isInstance)
-			.assertValueAt(3, i -> finalStatesSet.contains(SubmitAtomStatusAction.class.cast(i).getStatusNotification().getAtomStatus()));
+		TestObserver<Object> testObserver = this.observers.get(atomNumber - 1);
+		testObserver.awaitTerminalEvent();
+		testObserver.assertNoErrors();
+		testObserver.assertNoTimeout();
+		List<Object> events = testObserver.values();
+		assertThat(events).extracting(o -> o.getClass().toString())
+			.startsWith(
+				SubmitAtomRequestAction.class.toString(),
+				SubmitAtomSendAction.class.toString()
+			);
+		assertThat(events).last()
+			.isInstanceOf(SubmitAtomStatusAction.class)
+			.<AtomStatus>extracting(o -> SubmitAtomStatusAction.class.cast(o).getStatusNotification().getAtomStatus())
+			.isIn(finalStatesSet);
 	}
 
 	private static String scaledToUnscaled(int amount) {

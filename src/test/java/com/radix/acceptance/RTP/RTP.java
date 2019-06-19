@@ -69,7 +69,8 @@ public class RTP {
 		api.createToken("Token", "TOKEN", "Token", BigDecimal.ZERO, BigDecimal.ONE, TokenSupplyType.MUTABLE)
 			.toObservable()
 			.subscribe(observer);
-		observer.awaitCount(4, TestWaitStrategy.SLEEP_100MS, 10_000)
+		observer.awaitTerminalEvent();
+		observer
 			.assertSubscribed()
 			.assertNoTimeout()
 			.assertNoErrors()

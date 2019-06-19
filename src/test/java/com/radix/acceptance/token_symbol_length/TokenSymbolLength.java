@@ -1,5 +1,7 @@
 package com.radix.acceptance.token_symbol_length;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.radixdlt.client.core.atoms.AtomStatus;
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -93,7 +95,7 @@ public class TokenSymbolLength {
 
 	@Then("^I can observe atom (\\d+) being rejected with a failure$")
 	public void i_can_observe_atom_being_rejected_with_a_failure(int atomNumber) {
-		awaitAtomStatus3(atomNumber, AtomStatus.EVICTED_INVALID_ATOM);
+		awaitAtomStatus4(atomNumber, AtomStatus.EVICTED_INVALID_ATOM);
 	}
 
 	private void createToken(CreateTokenAction.TokenSupplyType tokenCreateSupplyType) {
@@ -112,35 +114,25 @@ public class TokenSymbolLength {
 		this.observers.add(observer);
 	}
 
-	private void awaitAtomStatus3(int atomNumber, AtomStatus... finalStates) {
-		ImmutableSet<AtomStatus> finalStatesSet = ImmutableSet.<AtomStatus>builder()
-			.addAll(Arrays.asList(finalStates))
-			.build();
-
-		this.observers.get(atomNumber - 1)
-			.awaitCount(3, TestWaitStrategy.SLEEP_100MS, TIMEOUT_MS)
-			.assertNoErrors()
-			.assertNoTimeout()
-			.assertValueAt(0, SubmitAtomRequestAction.class::isInstance)
-			.assertValueAt(1, SubmitAtomSendAction.class::isInstance)
-			.assertValueAt(2, SubmitAtomStatusAction.class::isInstance)
-			.assertValueAt(2, i -> finalStatesSet.contains(SubmitAtomStatusAction.class.cast(i).getStatusNotification().getAtomStatus()));
-	}
-
 	private void awaitAtomStatus4(int atomNumber, AtomStatus... finalStates) {
 		ImmutableSet<AtomStatus> finalStatesSet = ImmutableSet.<AtomStatus>builder()
 			.addAll(Arrays.asList(finalStates))
 			.build();
 
-		this.observers.get(atomNumber - 1)
-			.awaitCount(4, TestWaitStrategy.SLEEP_100MS, TIMEOUT_MS)
-			.assertNoErrors()
-			.assertNoTimeout()
-
-			.assertValueAt(1, SubmitAtomSendAction.class::isInstance)
-			.assertValueAt(2, SubmitAtomReceivedAction.class::isInstance)
-			.assertValueAt(3, SubmitAtomStatusAction.class::isInstance)
-			.assertValueAt(3, i -> finalStatesSet.contains(SubmitAtomStatusAction.class.cast(i).getStatusNotification().getAtomStatus()));
+		TestObserver<Object> testObserver = this.observers.get(atomNumber - 1);
+		testObserver.awaitTerminalEvent();
+		testObserver.assertNoErrors();
+		testObserver.assertNoTimeout();
+		List<Object> events = testObserver.values();
+		assertThat(events).extracting(o -> o.getClass().toString())
+			.startsWith(
+				SubmitAtomRequestAction.class.toString(),
+				SubmitAtomSendAction.class.toString()
+			);
+		assertThat(events).last()
+			.isInstanceOf(SubmitAtomStatusAction.class)
+			.<AtomStatus>extracting(o -> SubmitAtomStatusAction.class.cast(o).getStatusNotification().getAtomStatus())
+			.isIn(finalStatesSet);
 	}
 
 	private void printSubmitAtomAction(SubmitAtomAction saa) {
