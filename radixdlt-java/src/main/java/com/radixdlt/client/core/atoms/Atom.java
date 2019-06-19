@@ -2,23 +2,17 @@ package com.radixdlt.client.core.atoms;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.client.atommodel.message.MessageParticle;
-import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.client.core.atoms.particles.Particle;
-import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.crypto.ECSignature;
 import org.radix.common.ID.AID;
 import org.radix.common.ID.EUID;
-import org.radix.common.tuples.Pair;
 import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.SerializerId2;
 import org.radix.serialization2.client.SerializableObject;
 import org.radix.serialization2.client.Serialize;
-import org.radix.utils.UInt256s;
 
-import java.math.BigInteger;
 import java.util.ArrayList;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import java.util.Collections;
@@ -168,12 +162,6 @@ public final class Atom extends SerializableObject {
 		return Optional.ofNullable(this.signatures).map(sigs -> sigs.get(uid.toString()));
 	}
 
-	public Stream<Pair<TransferrableTokensParticle, Spin>> consumableTokens() {
-		return this.spunParticles()
-			.filter(s -> s.getParticle() instanceof TransferrableTokensParticle)
-			.map(s -> Pair.of((TransferrableTokensParticle) s.getParticle(), s.getSpin()));
-	}
-
 	public byte[] toDson() {
 		return Serialize.getInstance().toDson(this, DsonOutput.Output.HASH);
 	}
@@ -186,29 +174,6 @@ public final class Atom extends SerializableObject {
 		return AID.from(getHash(), getShards());
 	}
 
-	public List<MessageParticle> getMessageParticles() {
-		return this.spunParticles()
-			.map(SpunParticle::getParticle)
-			.filter(p -> p instanceof MessageParticle)
-			.map(p -> (MessageParticle) p)
-			.collect(Collectors.toList());
-	}
-
-	public Map<RRI, Map<RadixAddress, BigInteger>> tokenSummary() {
-		return this.consumableTokens()
-			.collect(Collectors.groupingBy(
-				tokens -> tokens.getFirst().getTokenDefinitionReference(),
-				Collectors.groupingBy(
-					tokens -> tokens.getFirst().getAddress(),
-					Collectors.reducing(BigInteger.ZERO, this::consumableToAmount, BigInteger::add)
-				)
-			));
-	}
-
-	private BigInteger consumableToAmount(Pair<TransferrableTokensParticle, Spin> tokens) {
-		BigInteger amount = UInt256s.toBigInteger(tokens.getFirst().getAmount());
-		return tokens.getSecond() == Spin.DOWN ? amount.negate() : amount;
-	}
 	/**
 	 * Get the metadata associated with the atom
 	 * @return an immutable map of the meta data

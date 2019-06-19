@@ -205,7 +205,6 @@ public class RadixApplicationAPITest {
 		RadixAddress address = mock(RadixAddress.class);
 		when(address.getPublicKey()).thenReturn(mock(ECPublicKey.class));
 		Atom atom = mock(Atom.class);
-		when(atom.getMessageParticles()).thenReturn(Collections.emptyList());
 		AtomObservation atomObservation = AtomObservation.stored(atom);
 
 		Ledger ledger = mock(Ledger.class);
