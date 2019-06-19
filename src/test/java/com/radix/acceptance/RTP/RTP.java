@@ -4,6 +4,7 @@ import com.radixdlt.client.application.RadixApplicationAPI.Result;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
+import com.radixdlt.client.core.atoms.particles.RRI;
 import io.reactivex.Single;
 import java.io.IOException;
 import java.io.InputStream;
@@ -66,7 +67,8 @@ public class RTP {
     	// Connects to localhost:8080
     	RadixApplicationAPI api = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, identity);
 		TestObserver<SubmitAtomAction> observer = new TestObserver<>();
-		api.createToken("Token", "TOKEN", "Token", BigDecimal.ZERO, BigDecimal.ONE, TokenSupplyType.MUTABLE)
+		RRI tokenRRI = RRI.of(api.getMyAddress(), "TOKEN");
+		api.createToken(tokenRRI, "Token", "Token", BigDecimal.ZERO, BigDecimal.ONE, TokenSupplyType.MUTABLE)
 			.toObservable()
 			.subscribe(observer);
 		observer.awaitTerminalEvent();
@@ -124,11 +126,11 @@ public class RTP {
     	RadixIdentity identity = RadixIdentities.createNew();
     	// Connects to localhost:8080
     	RadixApplicationAPI api = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, identity);
+    	RRI tokenRRI = RRI.of(api.getMyAddress(), "HI");
 		Single<UnsignedAtom> unsignedAtom = api.buildAtom(
 			CreateTokenAction.create(
-				api.getMyAddress(),
+				tokenRRI,
 				"Token",
-				"HI",
 				"Token",
 				BigDecimal.ZERO,
 				BigDecimal.ONE,

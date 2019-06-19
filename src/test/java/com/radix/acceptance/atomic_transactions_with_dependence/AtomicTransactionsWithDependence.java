@@ -185,8 +185,8 @@ public class AtomicTransactionsWithDependence {
 	private void createToken(CreateTokenAction.TokenSupplyType tokenCreateSupplyType, RadixApplicationAPI api) {
 		TestObserver<Object> observer = new TestObserver<>();
 		api.createToken(
+				RRI.of(api.getMyAddress(), this.properties.get(SYMBOL)),
 				this.properties.get(NAME),
-				this.properties.get(SYMBOL),
 				this.properties.get(DESCRIPTION),
 				new BigDecimal(this.properties.get(INITIAL_SUPPLY)),
 				new BigDecimal(this.properties.get(GRANULARITY)),

@@ -37,9 +37,8 @@ public class DoubleSpendMultiConflictTestConditions implements DoubleSpendTestCo
 		return Collections.singletonList(
 			new BatchedActions(
 				CreateTokenAction.create(
-					apiAddress,
+					this.tokenRef1,
 					"Joshy Token",
-					"JOSH1",
 					"Cool Token",
 					BigDecimal.TEN,
 					BigDecimal.ONE,
@@ -55,9 +54,8 @@ public class DoubleSpendMultiConflictTestConditions implements DoubleSpendTestCo
 			Arrays.asList(
 				new BatchedActions(
 					CreateTokenAction.create(
-						apiAddress,
+						this.tokenRef3,
 						"Joshy Token 3",
-						"JOSH3",
 						"Cool Token",
 						BigDecimal.ONE,
 						BigDecimal.ONE,
@@ -67,9 +65,8 @@ public class DoubleSpendMultiConflictTestConditions implements DoubleSpendTestCo
 				new BatchedActions(
 					TransferTokensAction.create(apiAddress, toAddress, BigDecimal.ONE, tokenRef1),
 					CreateTokenAction.create(
-						apiAddress,
+						this.tokenRef2,
 						"Joshy Token 2",
-						"JOSH2",
 						"Cool Token",
 						BigDecimal.TEN,
 						BigDecimal.ONE,
@@ -80,9 +77,8 @@ public class DoubleSpendMultiConflictTestConditions implements DoubleSpendTestCo
 			Arrays.asList(
 				new BatchedActions(
 					CreateTokenAction.create(
-						apiAddress,
+						this.tokenRef2,
 						"Joshy Token 2",
-						"JOSH2",
 						"Cool Token",
 						BigDecimal.ONE,
 						BigDecimal.ONE,
@@ -92,9 +88,8 @@ public class DoubleSpendMultiConflictTestConditions implements DoubleSpendTestCo
 				new BatchedActions(
 					TransferTokensAction.create(apiAddress, toAddress, BigDecimal.ONE, tokenRef1),
 					CreateTokenAction.create(
-						apiAddress,
+						this.tokenRef3,
 						"Joshy Token 3",
-						"JOSH3",
 						"Cool Token",
 						BigDecimal.TEN,
 						BigDecimal.ONE,

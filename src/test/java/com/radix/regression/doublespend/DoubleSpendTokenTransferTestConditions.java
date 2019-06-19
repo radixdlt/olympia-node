@@ -32,9 +32,8 @@ class DoubleSpendTokenTransferTestConditions implements DoubleSpendTestCondition
 		return Collections.singletonList(
 			new BatchedActions(
 				CreateTokenAction.create(
-					apiAddress,
+					this.tokenRef,
 					"Joshy Token",
-					"JOSH",
 					"Cool Token",
 					BigDecimal.ONE,
 					BigDecimal.ONE,

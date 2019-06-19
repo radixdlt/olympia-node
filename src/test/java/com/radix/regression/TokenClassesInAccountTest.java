@@ -34,11 +34,10 @@ public class TokenClassesInAccountTest {
 		api = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, RadixIdentities.createNew());
 	}
 
-	private static CreateTokenAction buildCreateNewTokenAction(String iso, BigDecimal initialSupply) {
+	private static CreateTokenAction buildCreateNewTokenAction(String symbol, BigDecimal initialSupply) {
 		return CreateTokenAction.create(
-			api.getMyAddress(),
+			RRI.of(api.getMyAddress(), symbol),
 			"Joshy Coin",
-			iso,
 			"Ze best coin!",
 			initialSupply,
 			TokenUnitConversions.getMinimumGranularity(),
@@ -46,11 +45,11 @@ public class TokenClassesInAccountTest {
 		);
 	}
 
-	private Predicate<TokenDefinitionsState> getPredicateCheck(String iso, BigDecimal initialSupply) {
+	private Predicate<TokenDefinitionsState> getPredicateCheck(String symbol, BigDecimal initialSupply) {
 		return tokens -> {
-			TokenState tokenState = tokens.getState().get(RRI.of(api.getMyAddress(), iso));
+			TokenState tokenState = tokens.getState().get(RRI.of(api.getMyAddress(), symbol));
 			return tokenState.getName().equals("Joshy Coin")
-				&& tokenState.getIso().equals(iso)
+				&& tokenState.getIso().equals(symbol)
 				&& tokenState.getDescription().equals("Ze best coin!")
 				&& tokenState.getTotalSupply().compareTo(initialSupply) == 0
 				&& tokenState.getGranularity().equals(TokenUnitConversions.getMinimumGranularity())

@@ -36,9 +36,8 @@ public class DoubleSpendCreateAndMintTokenTestConditions implements DoubleSpendT
 			Arrays.asList(
 				new BatchedActions(
 					CreateTokenAction.create(
-						apiAddress,
+						this.tokenRef,
 						"Joshy Token",
-						"JOSH",
 						"Cool Token",
 						BigDecimal.ZERO,
 						BigDecimal.ONE,
@@ -55,9 +54,8 @@ public class DoubleSpendCreateAndMintTokenTestConditions implements DoubleSpendT
 			Collections.singletonList(
 				new BatchedActions(
 					CreateTokenAction.create(
-						apiAddress,
+						this.tokenRef,
 						"Joshy Token",
-						"JOSH",
 						"Cool Token",
 						BigDecimal.ONE,
 						BigDecimal.ONE,

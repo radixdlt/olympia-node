@@ -219,9 +219,8 @@ public class ParticleGroups {
 
 	private CreateTokenAction buildCreateTokenAction(SpecificProperties properties, CreateTokenAction.TokenSupplyType tokenSupplyType) {
 		return CreateTokenAction.create(
-			this.api.getMyAddress(),
+			RRI.of(this.api.getMyAddress(), properties.get(SYMBOL)),
 			properties.get(NAME),
-			properties.get(SYMBOL),
 			properties.get(DESCRIPTION),
 			BigDecimal.valueOf(Long.valueOf(properties.get(TOTAL_SUPPLY))),
 			BigDecimal.valueOf(Long.valueOf(properties.get(GRANULARITY))),
@@ -272,7 +271,7 @@ public class ParticleGroups {
 			.blockingGet();
 
 		TestObserver<Object> observer = new TestObserver<>();
-		api.transferTokens(api.getMyAddress(), arbitrary, BigDecimal.valueOf(count), tokenClass)
+		api.transferTokens(tokenClass, api.getMyAddress(), arbitrary, BigDecimal.valueOf(count))
 			.toObservable()
 			.doOnNext(System.out::println)
 			.subscribe(observer);
@@ -338,8 +337,8 @@ public class ParticleGroups {
 	private void createToken(CreateTokenAction.TokenSupplyType tokenCreateSupplyType) {
 		TestObserver<Object> observer = new TestObserver<>();
 		api.createToken(
+				RRI.of(api.getMyAddress(), this.properties1.get(SYMBOL)),
 				this.properties1.get(NAME),
-				this.properties1.get(SYMBOL),
 				this.properties1.get(DESCRIPTION),
 				BigDecimal.valueOf(Long.valueOf(this.properties1.get(TOTAL_SUPPLY))),
 				BigDecimal.valueOf(Long.valueOf(this.properties1.get(GRANULARITY))),

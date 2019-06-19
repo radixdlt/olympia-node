@@ -191,8 +191,8 @@ public class MintMultiIssuanceTokens {
 	private void createToken(RadixApplicationAPI api, CreateTokenAction.TokenSupplyType tokenCreateSupplyType) {
 		TestObserver<SubmitAtomAction> observer = new TestObserver<>();
 		api.createToken(
+				RRI.of(api.getMyAddress(), this.properties.get(SYMBOL)),
 				this.properties.get(NAME),
-				this.properties.get(SYMBOL),
 				this.properties.get(DESCRIPTION),
 				new BigDecimal(this.properties.get(INITIAL_SUPPLY)),
 				new BigDecimal(this.properties.get(GRANULARITY)),

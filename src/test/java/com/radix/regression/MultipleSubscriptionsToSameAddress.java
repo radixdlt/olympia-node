@@ -30,23 +30,25 @@ public class MultipleSubscriptionsToSameAddress {
 		System.out.println("Create TEST with 3 supply");
 		System.out.println("Subscribe api0");
 
+		RRI token = RRI.of(api0.getMyAddress(), "TEST");
+
 		TestObserver<Object> api0Balance = TestObserver.create(Util.loggingObserver("api0"));
-		api0.getMyBalance(RRI.of(api0.getMyAddress(), "TEST"))
+		api0.getMyBalance(token)
 			.subscribe(api0Balance);
 
 		System.out.println("Mint 5 TEST");
-		api0.mintTokens("TEST", BigDecimal.valueOf(5)).toCompletable().blockingAwait();
+		api0.mintTokens(token, BigDecimal.valueOf(5)).toCompletable().blockingAwait();
 
 		System.out.println("Subscribe api1");
 		TestObserver<Object> api1Balance = TestObserver.create(Util.loggingObserver("api1"));
-		api1.getMyBalance(RRI.of(api0.getMyAddress(), "TEST"))
+		api1.getMyBalance(token)
 			.subscribe(api1Balance);
 
 		System.out.println("Mint 6 TEST");
-		api0.mintTokens("TEST", BigDecimal.valueOf(6)).toCompletable().blockingAwait();
+		api0.mintTokens(token, BigDecimal.valueOf(6)).toCompletable().blockingAwait();
 
 		System.out.println("Burn 2 TEST");
-		api0.burnTokens("TEST", BigDecimal.valueOf(2)).toCompletable().blockingAwait();
+		api0.burnTokens(token, BigDecimal.valueOf(2)).toCompletable().blockingAwait();
 
 		api0Balance.dispose();
 		api1Balance.dispose();
@@ -55,8 +57,8 @@ public class MultipleSubscriptionsToSameAddress {
 	private static TestObserver<SubmitAtomAction> createToken(RadixApplicationAPI api) {
 		TestObserver<SubmitAtomAction> observer = new TestObserver<>();
 		api.createToken(
+			RRI.of(api.getMyAddress(), "TEST"),
 			"TestToken",
-			"TEST",
 			"TestToken",
 			BigDecimal.valueOf(3),
 			BigDecimal.ONE,

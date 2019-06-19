@@ -252,7 +252,7 @@ public final class DoubleSpendTestRunner {
 				Map<String, Set<Atom>> lastAtomState = singleNodeApis.map(
 					singleNodeAPI -> {
 						Set<Atom> particles = doubleSpendTestConditions.postConsensusCondition().getStateRequired().stream()
-							.flatMap(p -> singleNodeAPI.api.getLedger().getAtomStore().getStoredAtoms(p.getSecond().address()))
+							.flatMap(p -> singleNodeAPI.api.getAtomStore().getStoredAtoms(p.getSecond().address()))
 							.collect(Collectors.toSet());
 
 						return Pair.of("Client " + singleNodeAPI.clientId, particles);

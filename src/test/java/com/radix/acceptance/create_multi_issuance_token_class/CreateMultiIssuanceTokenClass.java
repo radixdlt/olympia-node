@@ -107,7 +107,7 @@ public class CreateMultiIssuanceTokenClass {
 	@When("^I submit a mint request of (\\d+) for \"([^\"]*)\"$")
 	public void i_submit_a_mint_request_of_for(int count, String symbol) {
 		TestObserver<Object> observer = new TestObserver<>();
-		api.mintTokens(symbol, new BigDecimal(count))
+		api.mintTokens(RRI.of(api.getMyAddress(), symbol), new BigDecimal(count))
 			.toObservable()
 			.doOnNext(System.out::println)
 			.subscribe(observer);
@@ -117,7 +117,7 @@ public class CreateMultiIssuanceTokenClass {
 	@When("^I submit a burn request of (\\d+) for \"([^\"]*)\"$")
 	public void i_submit_a_burn_request_of_for(int count, String symbol) {
 		TestObserver<Object> observer = new TestObserver<>();
-		api.burnTokens(symbol, BigDecimal.valueOf(count))
+		api.burnTokens(RRI.of(api.getMyAddress(), symbol), BigDecimal.valueOf(count))
 			.toObservable()
 			.doOnNext(System.out::println)
 			.subscribe(observer);
@@ -135,7 +135,7 @@ public class CreateMultiIssuanceTokenClass {
 			.blockingGet();
 
 		TestObserver<Object> observer = new TestObserver<>();
-		api.transferTokens(api.getMyAddress(), arbitrary, BigDecimal.valueOf(count), tokenClass)
+		api.transferTokens(tokenClass, api.getMyAddress(), arbitrary, BigDecimal.valueOf(count))
 			.toObservable()
 			.doOnNext(System.out::println)
 			.subscribe(observer);
@@ -196,8 +196,8 @@ public class CreateMultiIssuanceTokenClass {
 	private void createToken(CreateTokenAction.TokenSupplyType tokenCreateSupplyType) {
 		TestObserver<Object> observer = new TestObserver<>();
 		api.createToken(
+				RRI.of(api.getMyAddress(), this.properties.get(SYMBOL)),
 				this.properties.get(NAME),
-				this.properties.get(SYMBOL),
 				this.properties.get(DESCRIPTION),
 				BigDecimal.valueOf(Long.valueOf(this.properties.get(INITIAL_SUPPLY))),
 				BigDecimal.valueOf(Long.valueOf(this.properties.get(GRANULARITY))),
