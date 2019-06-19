@@ -47,9 +47,9 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 		}
 
 		TokenDefinitionParticle token = new TokenDefinitionParticle(
-			tokenCreation.getAddress(),
+			tokenCreation.getTokenRRI().getAddress(),
 			tokenCreation.getName(),
-			tokenCreation.getIso(),
+			tokenCreation.getTokenRRI().getName(),
 			tokenCreation.getDescription(),
 			TokenUnitConversions.unitsToSubunits(tokenCreation.getGranularity()),
 			ImmutableMap.of(
@@ -84,7 +84,7 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 		TransferrableTokensParticle minted = new TransferrableTokensParticle(
 			TokenUnitConversions.unitsToSubunits(tokenCreation.getInitialSupply()),
 			TokenUnitConversions.unitsToSubunits(tokenCreation.getGranularity()),
-			tokenCreation.getAddress(),
+			tokenCreation.getTokenRRI().getAddress(),
 			System.nanoTime(),
 			token.getRRI(),
 			System.currentTimeMillis() / 60000L + 60000,

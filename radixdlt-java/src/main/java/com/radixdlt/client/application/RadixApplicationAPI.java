@@ -503,9 +503,9 @@ public class RadixApplicationAPI {
 	 *
 	 * @return a hot observable of the latest state of the token
 	 */
-	public Observable<TokenState> getTokenClass(RRI ref) {
-		return this.getTokenClasses(ref.getAddress())
-			.flatMapMaybe(m -> Optional.ofNullable(m.getState().get(ref)).map(Maybe::just).orElse(Maybe.empty()));
+	public Observable<TokenState> getTokenClass(RRI tokenRRI) {
+		return this.getTokenClasses(tokenRRI.getAddress())
+			.flatMapMaybe(m -> Optional.ofNullable(m.getState().get(tokenRRI)).map(Maybe::just).orElse(Maybe.empty()));
 	}
 
 	public ECPublicKey getMyPublicKey() {
@@ -558,8 +558,8 @@ public class RadixApplicationAPI {
 			.map(TokenBalanceState::getBalance);
 	}
 
-	public Observable<BigDecimal> getMyBalance(RRI tokenDefinitionReference) {
-		return getBalance(getMyAddress(), tokenDefinitionReference);
+	public Observable<BigDecimal> getMyBalance(RRI tokenRRI) {
+		return getBalance(getMyAddress(), tokenRRI);
 	}
 
 	public Observable<BigDecimal> getBalance(RadixAddress address, RRI token) {
@@ -570,18 +570,17 @@ public class RadixApplicationAPI {
 	}
 
 	/**
-	 * Creates a third party multi-issuance token into the user's account with
+	 * Creates a multi-issuance token registered into the user's account with
 	 * zero initial supply, 10^-18 granularity and no description.
 	 *
+	 * @param tokenRRI The symbol of the token to create
 	 * @param name The name of the token to create
-	 * @param iso The symbol of the token to create
 	 * @return result of the transaction
 	 */
-	public Result createMultiIssuanceToken(String name, String iso) {
+	public Result createMultiIssuanceToken(RRI tokenRRI, String name) {
 		final CreateTokenAction tokenCreation = CreateTokenAction.create(
-			getMyAddress(),
+			tokenRRI,
 			name,
-			iso,
 			null,
 			BigDecimal.ZERO,
 			TokenUnitConversions.getMinimumGranularity(),
@@ -591,23 +590,22 @@ public class RadixApplicationAPI {
 	}
 
 	/**
-	 * Creates a third party multi-issuance token into the user's account with
+	 * Creates a multi-issuance token registered into the user's account with
 	 * zero initial supply and 10^-18 granularity
 	 *
+	 * @param tokenRRI The symbol of the token to create
 	 * @param name The name of the token to create
-	 * @param iso The symbol of the token to create
 	 * @param description A description of the token
 	 * @return result of the transaction
 	 */
 	public Result createMultiIssuanceToken(
+		RRI tokenRRI,
 		String name,
-		String iso,
 		String description
 	) {
 		final CreateTokenAction tokenCreation = CreateTokenAction.create(
-			getMyAddress(),
+			tokenRRI,
 			name,
-			iso,
 			description,
 			BigDecimal.ZERO,
 			TokenUnitConversions.getMinimumGranularity(),
@@ -617,50 +615,77 @@ public class RadixApplicationAPI {
 	}
 
 	/**
-	 * Creates a third party token into the user's account
+	 * Creates a fixed-supply token registered into the user's account with
+	 * 10^-18 granularity
 	 *
+	 * @param tokenRRI The symbol of the token to create
 	 * @param name The name of the token to create
-	 * @param iso The symbol of the token to create
 	 * @param description A description of the token
-	 * @param initialSupply The initial amount in subunits of supply for this token
+	 * @param supply The supply of the created token
+	 * @return result of the transaction
+	 */
+	public Result createFixedSupplyToken(
+		RRI tokenRRI,
+		String name,
+		String description,
+		BigDecimal supply
+	) {
+		final CreateTokenAction tokenCreation = CreateTokenAction.create(
+			tokenRRI,
+			name,
+			description,
+			supply,
+			TokenUnitConversions.getMinimumGranularity(),
+			TokenSupplyType.FIXED
+		);
+		return execute(tokenCreation);
+	}
+
+	/**
+	 * Creates a token registered into the user's account
+	 *
+	 * @param tokenRRI The symbol of the token to create
+	 * @param name The name of the token to create
+	 * @param description A description of the token
+	 * @param initialSupply The initial amount of supply for this token
 	 * @param granularity The least multiple of subunits per transaction for this token
 	 * @param tokenSupplyType The type of supply for this token: Fixed or Mutable
 	 * @return result of the transaction
 	 */
 	public Result createToken(
+		RRI tokenRRI,
 		String name,
-		String iso,
 		String description,
 		BigDecimal initialSupply,
 		BigDecimal granularity,
 		TokenSupplyType tokenSupplyType
 	) {
-		CreateTokenAction tokenCreation = CreateTokenAction.create(
-				getMyAddress(), name, iso, description, initialSupply, granularity, tokenSupplyType);
+		CreateTokenAction tokenCreation = CreateTokenAction.create(tokenRRI,
+				name, description, initialSupply, granularity, tokenSupplyType);
 		return execute(tokenCreation);
 	}
 
 	/**
 	 * Mints an amount of new tokens into the user's account
 	 *
-	 * @param iso The symbol of the token to mint
+	 * @param token The symbol of the token to mint
 	 * @param amount The amount to mint
 	 * @return result of the transaction
 	 */
-	public Result mintTokens(String iso, BigDecimal amount) {
-		MintTokensAction mintTokensAction = MintTokensAction.create(RRI.of(getMyAddress(), iso), amount);
+	public Result mintTokens(RRI token, BigDecimal amount) {
+		MintTokensAction mintTokensAction = MintTokensAction.create(token, amount);
 		return execute(mintTokensAction);
 	}
 
 	/**
 	 * Burns an amount of tokens in the user's account
 	 *
-	 * @param iso The symbol of the token to mint
+	 * @param token The symbol of the token to mint
 	 * @param amount The amount to mint
 	 * @return result of the transaction
 	 */
-	public Result burnTokens(String iso, BigDecimal amount) {
-		BurnTokensAction burnTokensAction = BurnTokensAction.create(getMyAddress(), RRI.of(getMyAddress(), iso), amount);
+	public Result burnTokens(RRI token, BigDecimal amount) {
+		BurnTokensAction burnTokensAction = BurnTokensAction.create(getMyAddress(), token, amount);
 		return execute(burnTokensAction);
 	}
 
@@ -671,8 +696,8 @@ public class RadixApplicationAPI {
 	 * @param amount the amount and token type
 	 * @return result of the transaction
 	 */
-	public Result transferTokens(RadixAddress to, BigDecimal amount, RRI token) {
-		return transferTokens(getMyAddress(), to, amount, token);
+	public Result transferTokens(RRI token, RadixAddress to, BigDecimal amount) {
+		return transferTokens(token, getMyAddress(), to, amount);
 	}
 
 	/**
@@ -684,9 +709,9 @@ public class RadixApplicationAPI {
 	 * @return result of the transaction
 	 */
 	public Result transferTokens(
+		RRI token,
 		RadixAddress to,
 		BigDecimal amount,
-		RRI token,
 		@Nullable String message
 	) {
 		final Data attachment;
@@ -699,7 +724,7 @@ public class RadixApplicationAPI {
 			attachment = null;
 		}
 
-		return transferTokens(getMyAddress(), to, amount, token, attachment);
+		return transferTokens(token, getMyAddress(), to, amount, attachment);
 	}
 
 	/**
@@ -710,13 +735,13 @@ public class RadixApplicationAPI {
 	 * @param attachment the data attached to the transaction
 	 * @return result of the transaction
 	 */
-	public Result transferTokens(RadixAddress to, BigDecimal amount, RRI token, @Nullable Data attachment) {
-		return transferTokens(getMyAddress(), to, amount, token, attachment);
+	public Result transferTokens(RRI token, RadixAddress to, BigDecimal amount, @Nullable Data attachment) {
+		return transferTokens(token, getMyAddress(), to, amount, attachment);
 	}
 
 
-	public Result transferTokens(RadixAddress from, RadixAddress to, BigDecimal amount, RRI token) {
-		return transferTokens(from, to, amount, token, null);
+	public Result transferTokens(RRI token, RadixAddress from, RadixAddress to, BigDecimal amount) {
+		return transferTokens(token, from, to, amount, null);
 	}
 
 	/**
@@ -729,10 +754,10 @@ public class RadixApplicationAPI {
 	 * @return result of the transaction
 	 */
 	public Result transferTokens(
+		RRI token,
 		RadixAddress from,
 		RadixAddress to,
 		BigDecimal amount,
-		RRI token,
 		@Nullable Data attachment
 	) {
 		Objects.requireNonNull(from);

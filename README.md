@@ -5,12 +5,12 @@
 radixdlt-java is a Java/Android Client library for interacting with a [Radix](https://www.radixdlt.com) Distributed Ledger.
 
 ## Features
-* Connection to the Alphanet test network 
+* Connection to the Betanet test network 
 * Fee-less transactions for testnets
-* Identity Creation
+* Public Key Identity Creation
 * Native token transfers
+* Fixed-supply/Mutable-supply Token Creation
 * Immutable data storage
-* Instant Messaging and TEST token wallet Dapp implementation
 * RXJava 2 based
 * Utilizes JSON-RPC over Websockets
 
@@ -44,22 +44,24 @@ This will either create or load a file with a public/private key and encrypted w
 A Universe is an instance of a Radix Distributed Ledger which is defined by a genesis atom and
 a dynamic set of unpermissioned nodes forming a network.
 
-To bootstrap to the Alphanet test network:
-```
-RadixUniverse.bootstrap(Bootstrap.ALPHANET);
-```
-NOTE: No network connections will be made yet until it is required.
-
-# Radix Dapp API
+# Radix Application API
 The Radix Application API is a client side API exposing high level abstractions to make
 DAPP creation easier.
 
 To initialize the API:
 ```
-RadixUniverse.bootstrap(Bootstrap.ALPHANET); // This must be called before RadixApplicationAPI.create()
-RadixApplicationAPI api = RadixApplicationAPI.create(identity);
+RadixApplicationAPI api = RadixApplicationAPI.create(Bootstrap.BETANET, identity);
 ```
 
+To continually sync and pull from the network ledger on your account:
+```
+Disposable d = api.pull();
+```
+
+To stop syncing:
+```
+d.dispose();
+```
 
 ## Addresses
 An address is a reference to an account and allows a user to receive tokens and/or data from other users.
@@ -80,52 +82,69 @@ selected identities can read the data.
 
 To store the encrypted string `Hello` which only the user can read:
 ```
-ECPublicKey myPublicKey = api.getMyPublicKey();
-Data data = new DataBuilder()
-    .bytes("Hello".getBytes(StandardCharsets.UTF_8))
-    .addReader(myPublicKey)
-    .build();
-Result result = api.storeData(data, <address>);
+Result result = api.sendMessage("Hello".getBytes(StandardCharsets.UTF_8), true);
+result.blockUntilComplete();
 ```
 
 To store the unencrypted string `Hello`:
 ```
-Data data = new DataBuilder()
-    .bytes("Hello".getBytes(StandardCharsets.UTF_8))
-    .unencrypted()
-    .build();
-Result result = api.storeData(data, <address>);
-```
-
-The returned `Result` object exposes RXJava interfaces from which you can get
-notified of the status of the storage action:
-
-```
-result.toCompletable().subscribe(<on-success>, <on-error>);
+Result result = api.sendMessage("Hello".getBytes(StandardCharsets.UTF_8), false);
+result.blockUntilComplete();
 ```
 
 To then read (and decrypt if necessary) all the readable data at an address:
 ```
-Observable<UnencryptedData> readable = api.getReadableData(<address>);
+Observable<DecryptedMessage> readable = api.getMessages();
 readable.subscribe(data -> { ... });
 ```
 
-NOTE: data which is not decryptable by the user's key is simply ignored
+## Creating Tokens
+To create a token, an RRI or radix resource identifier must first be constructed:
+```
+RRI tokenRRI = RRI.of(api.getMyAddress(), "NEW");
+```
+
+To create a fixed-supply token:
+```
+Result result = api.createFixedSupplyToken(tokenRRI, "New Token", "The Best Token", BigDecimal.valueOf(1000.0));
+result.blockUntilComplete();
+```
+
+To create a multi-issuance token:
+```
+Result result = api.createMultiIssuance(tokenRRI, "New Token", "The Best Token");
+result.blockUntilComplete();
+```
+
+## Minting Tokens
+To mint 1000 tokens (must be multi-issuance) in your account:
+```
+Result result = api.mintTokens(tokenRRI, BigDecimal.valueOf(1000.0));
+result.blockUntilComplete();
+```
+
+## Burning Tokens
+To burn 1000 tokens (must be multi-issuance) in your account:
+```
+Result result = api.burnTokens(tokenRRI, BigDecimal.valueOf(1000.0));
+result.blockUntilComplete();
+```
 
 ## Sending and Retrieving Tokens
-To send an amount of TEST (the testnet native token) from my account to another address:
+To send an amount from my address to another address:
 ```
-Result result = api.sendTokens(<to-address>, Amount.of(10, Asset.TEST));
+Result result = api.transferTokens(tokenRRI, BigDecimal.valueOf(10.99), <to-address>);
+result.blockUntilComplete();
 ```
 
 To retrieve all of the token transfers which have occurred in my account:
 ```
-Observable<TokenTransfer> transfers = api.getMyTokenTransfers(Asset.TEST);
+Observable<TokenTransfer> transfers = api.getMyTokenTransfers();
 transfers.subscribe(tx -> { ... });
 ```
 
-To get a stream of the balance of TEST tokens in my account:
+To get a stream of the balance of tokens in my account:
 ```
-Observable<Amount> balance = api.getMyBalance(Asset.TEST);
+Observable<BigDecimal> balance = api.getMyBalance(tokenRRI);
 balance.subscribe(bal -> { ... });
 ```

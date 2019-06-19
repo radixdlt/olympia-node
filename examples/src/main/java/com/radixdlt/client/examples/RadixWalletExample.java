@@ -42,8 +42,8 @@ public class RadixWalletExample {
 			.subscribe(balance -> System.out.println("My Balance:\n" + balance));
 
 		api.createToken(
+			RRI.of(api.getMyAddress(), "JOSH"),
 			"Joshy Token",
-			"JOSH",
 			"The Best Coin Ever",
 			BigDecimal.valueOf(10000),
 			TokenUnitConversions.getMinimumGranularity(),
@@ -56,7 +56,7 @@ public class RadixWalletExample {
 		// If specified, send money to another address
 		if (TO_ADDRESS_BASE58 != null) {
 			RadixAddress toAddress = RadixAddress.from(TO_ADDRESS_BASE58);
-			api.transferTokens(toAddress, AMOUNT, api.getNativeTokenRef(), "Test Message").toObservable()
+			api.transferTokens(api.getNativeTokenRef(), toAddress, AMOUNT, "Test Message").toObservable()
 				.subscribe(System.out::println, Throwable::printStackTrace);
 		}
 	}
