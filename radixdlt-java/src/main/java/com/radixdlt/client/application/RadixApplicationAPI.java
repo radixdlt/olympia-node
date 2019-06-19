@@ -96,11 +96,11 @@ import io.reactivex.observables.ConnectableObservable;
 public class RadixApplicationAPI {
 	private static final Logger LOGGER = LoggerFactory.getLogger(RadixApplicationAPI.class);
 
-	public class Result {
+	public static class Result {
 		private final ConnectableObservable<SubmitAtomAction> updates;
 		private final Completable completable;
 
-		private Result(ConnectableObservable<SubmitAtomAction> updates) {
+		private Result(ConnectableObservable<SubmitAtomAction> updates, List<AtomErrorToExceptionReasonMapper> atomErrorMappers) {
 			this.updates = updates;
 			this.completable = updates
 				.ofType(SubmitAtomStatusAction.class)
@@ -109,6 +109,7 @@ public class RadixApplicationAPI {
 					if (status.getStatusNotification().getAtomStatus() == AtomStatus.STORED) {
 						return Completable.complete();
 					} else {
+						// TODO: Move jsonElement and error mapping logic somewhere else
 						JsonElement data = status.getStatusNotification().getData();
 						final JsonObject errorData = data == null ? null : data.getAsJsonObject();
 						final ActionExecutionExceptionBuilder exceptionBuilder = new ActionExecutionExceptionBuilder()
@@ -922,7 +923,7 @@ public class RadixApplicationAPI {
 			})
 			.replay();
 
-		return new Result(updates);
+		return new Result(updates, atomErrorMappers);
 	}
 
 	/**

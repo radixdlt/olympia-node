@@ -18,7 +18,6 @@ public final class AtomStatusNotification {
 		this(atomStatus, null);
 	}
 
-
 	public AtomStatus getAtomStatus() {
 		return atomStatus;
 	}
