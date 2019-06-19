@@ -746,6 +746,19 @@ public class RadixApplicationAPI {
 		return this.execute(transferTokensAction);
 	}
 
+	/**
+	 * Immediately executes a user action onto the ledger. Note that this method is NOT
+	 * idempotent.
+	 *
+	 * @param action action to execute
+	 * @return results of the execution
+	 */
+	public Result execute(Action action) {
+		Transaction transaction = this.createTransaction();
+		transaction.execute(action);
+		return transaction.commit();
+	}
+
 	private long generateTimestamp() {
 		return System.currentTimeMillis();
 	}
@@ -886,6 +899,26 @@ public class RadixApplicationAPI {
 			}));
 	}
 
+	/**
+	 * Low level call to submit an atom into the network.
+	 * @param atom atom to submit
+	 * @param completeOnStoreOnly if true, result will only complete on a store event
+	 * @return the result of the submission
+	 */
+	public Result submitAtom(Atom atom, boolean completeOnStoreOnly) {
+		return createAtomSubmission(Single.just(atom), completeOnStoreOnly).connect();
+	}
+
+	/**
+	 * Low level call to submit an atom into the network. Result will complete
+	 * on the first STORED event.
+	 * @param atom atom to submit
+	 * @return the result of the submission
+	 */
+	public Result submitAtom(Atom atom) {
+		return createAtomSubmission(Single.just(atom), false).connect();
+	}
+
 	private Result createAtomSubmission(Single<Atom> atom, boolean completeOnStoreOnly) {
 		final ConnectableObservable<SubmitAtomAction> updates = atom
 			.flatMapObservable(a -> {
@@ -904,40 +937,5 @@ public class RadixApplicationAPI {
 			.replay();
 
 		return new Result(updates, atomErrorMappers);
-	}
-
-	/**
-	 * Low level call to submit an atom into the network.
-	 * @param atom atom to submit
-	 * @param completeOnStoreOnly if true, result will only complete on a store event
-	 * @return the result of the submission
-	 */
-	public Result submitAtom(Atom atom, boolean completeOnStoreOnly) {
-		return createAtomSubmission(Single.just(atom), completeOnStoreOnly).connect();
-	}
-
-
-	/**
-	 * Low level call to submit an atom into the network. Result will complete
-	 * on the first STORED event.
-	 * @param atom atom to submit
-	 * @return the result of the submission
-	 */
-	public Result submitAtom(Atom atom) {
-		return createAtomSubmission(Single.just(atom), false).connect();
-	}
-
-	/**
-	 * Immediately executes a user action onto the ledger. Note that this method is NOT
-	 * idempotent.
-	 *
-	 * @param action action to execute
-	 * @return results of the execution
-	 */
-	public Result execute(Action action) {
-		final Single<Atom> atom = this.buildAtom(Collections.singleton(action))
-			.flatMap(this.identity::sign);
-
-		return createAtomSubmission(atom, false).connect();
 	}
 }
