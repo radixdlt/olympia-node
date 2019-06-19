@@ -29,6 +29,8 @@ import com.radixdlt.client.application.translate.tokens.UnknownTokenException;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.Bootstrap;
 
+import static com.radixdlt.client.core.atoms.AtomStatus.EVICTED_FAILED_CM_VERIFICATION;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
@@ -221,16 +223,20 @@ public class MintMultiIssuanceTokens {
 			.addAll(Arrays.asList(finalStates))
 			.build();
 
-		this.observers.get(atomNumber - 1)
-			.awaitCount(4, TestWaitStrategy.SLEEP_100MS, TIMEOUT_MS)
-			.assertSubscribed()
-			.assertNoTimeout()
-			.assertNoErrors()
-			.assertValueAt(0, SubmitAtomRequestAction.class::isInstance)
-			.assertValueAt(1, SubmitAtomSendAction.class::isInstance)
-			.assertValueAt(2, SubmitAtomReceivedAction.class::isInstance)
-			.assertValueAt(3, SubmitAtomStatusAction.class::isInstance)
-			.assertValueAt(3, i -> finalStatesSet.contains(SubmitAtomStatusAction.class.cast(i).getStatusNotification().getAtomStatus()));
+		TestObserver<SubmitAtomAction> testObserver = this.observers.get(atomNumber - 1);
+		testObserver.awaitTerminalEvent();
+		testObserver.assertNoErrors();
+		testObserver.assertNoTimeout();
+		List<SubmitAtomAction> events = testObserver.values();
+		assertThat(events).extracting(o -> o.getClass().toString())
+			.startsWith(
+				SubmitAtomRequestAction.class.toString(),
+				SubmitAtomSendAction.class.toString()
+			);
+		assertThat(events).last()
+			.isInstanceOf(SubmitAtomStatusAction.class)
+			.<AtomStatus>extracting(o -> SubmitAtomStatusAction.class.cast(o).getStatusNotification().getAtomStatus())
+			.isIn(finalStatesSet);
 	}
 
 	private void awaitAtomValidationError(String partMessage) {
@@ -238,20 +244,23 @@ public class MintMultiIssuanceTokens {
 	}
 
 	private void awaitAtomValidationError(int atomNumber, String partMessage) {
-		this.observers.get(atomNumber - 1)
-			.awaitCount(4, TestWaitStrategy.SLEEP_100MS, TIMEOUT_MS)
-			.assertSubscribed()
-			.assertNoTimeout()
-			.assertNoErrors()
-			.assertValueAt(0, SubmitAtomRequestAction.class::isInstance)
-			.assertValueAt(1, SubmitAtomSendAction.class::isInstance)
-			.assertValueAt(2, SubmitAtomReceivedAction.class::isInstance)
-			.assertValueAt(3, SubmitAtomStatusAction.class::isInstance)
-			.assertValueAt(3, i -> SubmitAtomStatusAction.class.cast(i).getStatusNotification().getAtomStatus().equals(AtomStatus.EVICTED_FAILED_CM_VERIFICATION))
-			.assertValueAt(3, i -> SubmitAtomStatusAction.class.cast(i).getStatusNotification().getData().getAsJsonObject().has("message"))
-			.assertValueAt(3, i -> {
-				String message = SubmitAtomStatusAction.class.cast(i).getStatusNotification().getData().getAsJsonObject().get("message").getAsString();
-				return message.contains(partMessage);
+		TestObserver<SubmitAtomAction> testObserver = this.observers.get(atomNumber - 1);
+		testObserver.awaitTerminalEvent();
+		testObserver.assertNoErrors();
+		testObserver.assertNoTimeout();
+		List<SubmitAtomAction> events = testObserver.values();
+		assertThat(events).extracting(o -> o.getClass().toString())
+			.startsWith(
+				SubmitAtomRequestAction.class.toString(),
+				SubmitAtomSendAction.class.toString()
+			);
+		assertThat(events).last()
+			.isInstanceOf(SubmitAtomStatusAction.class)
+			.satisfies(s -> {
+				SubmitAtomStatusAction action = SubmitAtomStatusAction.class.cast(s);
+				assertThat(action.getStatusNotification().getAtomStatus()).isEqualTo(EVICTED_FAILED_CM_VERIFICATION);
+				assertThat(action.getStatusNotification().getData().getAsJsonObject().has("message")).isTrue();
+				assertThat(action.getStatusNotification().getData().getAsJsonObject().get("message").getAsString()).contains(partMessage);
 			});
 	}
 

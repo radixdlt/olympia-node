@@ -1,5 +1,7 @@
 package com.radix.acceptance.sending_a_data_transaction;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.radixdlt.client.application.RadixApplicationAPI;
@@ -74,16 +76,20 @@ public class SendingADataTransaction {
 			.addAll(Arrays.asList(finalStates))
 			.build();
 
-		this.observers.get(atomNumber - 1)
-			.awaitCount(4, TestWaitStrategy.SLEEP_100MS, TIMEOUT_MS)
-			.assertSubscribed()
-			.assertNoTimeout()
-			.assertNoErrors()
-			.assertValueAt(0, SubmitAtomRequestAction.class::isInstance)
-			.assertValueAt(1, SubmitAtomSendAction.class::isInstance)
-			.assertValueAt(2, SubmitAtomReceivedAction.class::isInstance)
-			.assertValueAt(3, SubmitAtomStatusAction.class::isInstance)
-			.assertValueAt(3, i -> finalStatesSet.contains(SubmitAtomStatusAction.class.cast(i).getStatusNotification().getAtomStatus()));
+		TestObserver<SubmitAtomAction> testObserver = this.observers.get(atomNumber - 1);
+		testObserver.awaitTerminalEvent();
+		testObserver.assertNoErrors();
+		testObserver.assertNoTimeout();
+		List<SubmitAtomAction> events = testObserver.values();
+		assertThat(events).extracting(o -> o.getClass().toString())
+			.startsWith(
+				SubmitAtomRequestAction.class.toString(),
+				SubmitAtomSendAction.class.toString()
+			);
+		assertThat(events).last()
+			.isInstanceOf(SubmitAtomStatusAction.class)
+			.<AtomStatus>extracting(o -> SubmitAtomStatusAction.class.cast(o).getStatusNotification().getAtomStatus())
+			.isIn(finalStatesSet);
 	}
 
 	@Then("^I can observe the atom being accepted$")
