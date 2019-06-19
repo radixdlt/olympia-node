@@ -184,9 +184,7 @@ public class CreateSingleIssuanceTokenClass {
 	}
 
 	private void awaitAtomStatus(int atomNumber, AtomStatus... finalStates) {
-		ImmutableSet<AtomStatus> finalStatesSet = ImmutableSet.<AtomStatus>builder()
-			.addAll(Arrays.asList(finalStates))
-			.build();
+		ImmutableSet<AtomStatus> finalStatesSet = ImmutableSet.copyOf(finalStates);
 
 		this.observers.get(atomNumber - 1)
 			.awaitCount(4, TestWaitStrategy.SLEEP_100MS, TIMEOUT_MS)
