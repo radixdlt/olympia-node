@@ -6,6 +6,7 @@ import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.RRI;
+import com.radixdlt.client.core.ledger.AtomStore;
 import com.radixdlt.client.core.network.RadixNetworkController;
 import com.radixdlt.client.core.network.actions.SubmitAtomCompleteAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
@@ -87,8 +88,8 @@ import io.reactivex.disposables.Disposables;
 import io.reactivex.observables.ConnectableObservable;
 
 /**
- * The Radix Dapp API, a high level api which dapps can utilize. The class hides
- * the complexity of Atoms and cryptography and exposes a simple high level interface.
+ * The Radix Application API, a high level api. The class hides the complexity of atoms and cryptography
+ * and exposes a simple high level interface for interaction with a Radix ledger.
  */
 public class RadixApplicationAPI {
 	private static final Logger LOGGER = LoggerFactory.getLogger(RadixApplicationAPI.class);
@@ -335,18 +336,6 @@ public class RadixApplicationAPI {
 			.addAtomErrorMapper(new AlreadyUsedUniqueIdReasonMapper());
 	}
 
-
-	public Observable<RadixNetworkState> getNetworkState() {
-		return this.universe.getNetworkController().getNetwork();
-	}
-
-	public Ledger getLedger() {
-		return this.ledger;
-	}
-
-	public RadixNetworkController getNetworkController() {
-		return this.universe.getNetworkController();
-	}
 
 	private <T extends ApplicationState> ParticleReducer<T> getStateReducer(Class<T> storeClass) {
 		ParticleReducer<T> store = this.applicationStores.get(storeClass);
@@ -920,6 +909,7 @@ public class RadixApplicationAPI {
 			}));
 	}
 
+
 	/**
 	 * Low level call to submit an atom into the network.
 	 * @param atom atom to submit
@@ -958,5 +948,33 @@ public class RadixApplicationAPI {
 			.replay();
 
 		return new Result(updates, atomErrorMappers);
+	}
+
+	/**
+	 * Retrieve the atom store used by the API
+	 *
+	 * @return the atom store
+	 */
+	public AtomStore getAtomStore() {
+		return this.ledger.getAtomStore();
+	}
+
+	/**
+	 * Get a stream of updated network states as they occur.
+	 *
+	 * @return a hot observable of the current network state
+	 */
+	public Observable<RadixNetworkState> getNetworkState() {
+		return this.universe.getNetworkController().getNetwork();
+	}
+
+	/**
+	 * Low level call to retrieve the network controller used
+	 * by the API.
+	 *
+	 * @return the network controller
+	 */
+	public RadixNetworkController getNetworkController() {
+		return this.universe.getNetworkController();
 	}
 }
