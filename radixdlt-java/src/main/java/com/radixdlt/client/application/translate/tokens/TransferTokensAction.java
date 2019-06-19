@@ -1,6 +1,5 @@
 package com.radixdlt.client.application.translate.tokens;
 
-import com.radixdlt.client.application.identity.Data;
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.particles.RRI;
@@ -15,14 +14,14 @@ public class TransferTokensAction implements Action {
 	private final RRI tokenDefinitionReference;
 	private final Map<String, Object> metaData;
 	private final BigDecimal amount;
-	private final Data attachment;
+	private final byte[] attachment;
 
 	private TransferTokensAction(
 		RadixAddress from,
 		RadixAddress to,
 		BigDecimal amount,
 		RRI tokenDefinitionReference,
-		Data attachment,
+		byte[] attachment,
 		Map<String, Object> metaData
 	) {
 		if (amount.stripTrailingZeros().scale() > TokenUnitConversions.getTokenScale()) {
@@ -51,7 +50,7 @@ public class TransferTokensAction implements Action {
 		RadixAddress to,
 		BigDecimal amount,
 		RRI tokenDefinitionReference,
-		Data attachment
+		byte[] attachment
 	) {
 		return new TransferTokensAction(from, to, amount, tokenDefinitionReference, attachment, Collections.emptyMap());
 	}
@@ -74,7 +73,7 @@ public class TransferTokensAction implements Action {
 		RadixAddress to,
 		BigDecimal amount,
 		RRI tokenDefinitionReference,
-		Data attachment,
+		byte[] attachment,
 		Long timestamp
 	) {
 		Map<String, Object> metaData = new HashMap<>();
@@ -83,7 +82,7 @@ public class TransferTokensAction implements Action {
 		return new TransferTokensAction(from, to, amount, tokenDefinitionReference, attachment, metaData);
 	}
 
-	public Data getAttachment() {
+	public byte[] getAttachment() {
 		return attachment;
 	}
 

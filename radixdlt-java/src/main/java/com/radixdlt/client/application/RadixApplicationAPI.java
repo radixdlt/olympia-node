@@ -24,13 +24,12 @@ import java.util.stream.Stream;
 
 import java.util.stream.StreamSupport;
 import org.radix.common.tuples.Pair;
+import org.radix.utils.RadixConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.radixdlt.client.application.identity.Data;
-import com.radixdlt.client.application.identity.Data.DataBuilder;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.ActionExecutionException.ActionExecutionExceptionBuilder;
@@ -714,12 +713,9 @@ public class RadixApplicationAPI {
 		BigDecimal amount,
 		@Nullable String message
 	) {
-		final Data attachment;
+		final byte[] attachment;
 		if (message != null) {
-			attachment = new DataBuilder()
-				.addReader(to.getPublicKey())
-				.addReader(getMyPublicKey())
-				.bytes(message.getBytes()).build();
+			attachment = message.getBytes(RadixConstants.STANDARD_CHARSET);
 		} else {
 			attachment = null;
 		}
@@ -735,7 +731,7 @@ public class RadixApplicationAPI {
 	 * @param attachment the data attached to the transaction
 	 * @return result of the transaction
 	 */
-	public Result transferTokens(RRI token, RadixAddress to, BigDecimal amount, @Nullable Data attachment) {
+	public Result transferTokens(RRI token, RadixAddress to, BigDecimal amount, @Nullable byte[] attachment) {
 		return transferTokens(token, getMyAddress(), to, amount, attachment);
 	}
 
@@ -758,7 +754,7 @@ public class RadixApplicationAPI {
 		RadixAddress from,
 		RadixAddress to,
 		BigDecimal amount,
-		@Nullable Data attachment
+		@Nullable byte[] attachment
 	) {
 		Objects.requireNonNull(from);
 		Objects.requireNonNull(to);

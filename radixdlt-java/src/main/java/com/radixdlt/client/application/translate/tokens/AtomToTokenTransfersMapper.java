@@ -1,32 +1,25 @@
 package com.radixdlt.client.application.translate.tokens;
 
+import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.client.core.atoms.particles.RRI;
+import com.radixdlt.client.core.atoms.particles.Spin;
+import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Optional;
 
-import org.radix.serialization2.DsonOutput;
-import org.radix.serialization2.client.Serialize;
+import java.util.stream.Collectors;
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonParser;
-import com.radixdlt.client.application.identity.Data;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.AtomToExecutedActionsMapper;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.atommodel.message.MessageParticle;
 import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.crypto.CryptoException;
-import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
-import com.radixdlt.client.core.crypto.Encryptor;
 
 import io.reactivex.Observable;
-import io.reactivex.Single;
+import org.radix.utils.RadixConstants;
 
 /**
  * Maps an atom to some number of token transfer actions.
@@ -42,91 +35,67 @@ public class AtomToTokenTransfersMapper implements AtomToExecutedActionsMapper<T
 		return TokenTransfer.class;
 	}
 
+
+	private BigDecimal consumableToAmount(SpunParticle<TransferrableTokensParticle> sp) {
+		BigDecimal amount = TokenUnitConversions.subunitsToUnits(sp.getParticle().getAmount());
+		return sp.getSpin() == Spin.DOWN ? amount.negate() : amount;
+	}
+
 	@Override
 	public Observable<TokenTransfer> map(Atom atom, RadixIdentity identity) {
-		return Observable.fromIterable(atom.tokenSummary().entrySet())
-			.flatMapSingle(e -> {
-				List<Entry<RadixAddress, BigInteger>> summary = new ArrayList<>(e.getValue().entrySet());
-				if (summary.isEmpty()) {
-					throw new IllegalStateException(
-						"Invalid atom: " + Serialize.getInstance().toJson(atom, DsonOutput.Output.ALL)
-					);
-				}
-				if (summary.size() > 2) {
-					throw new IllegalStateException(
-						"More than two participants in token transfer. " + "Unable to handle: " + summary
-					);
-				}
-
-				final RadixAddress from;
-				final RadixAddress to;
-				if (summary.size() == 1) {
-					from = summary.get(0).getValue().signum() <= 0 ? summary.get(0).getKey() : null;
-					to = summary.get(0).getValue().signum() < 0 ? null : summary.get(0).getKey();
-				} else {
-					if (summary.get(0).getValue().signum() > 0) {
-						from = summary.get(1).getKey();
-						to = summary.get(0).getKey();
-					} else {
-						from = summary.get(0).getKey();
-						to = summary.get(1).getKey();
-					}
-				}
-				final Optional<MessageParticle> bytesParticle =
-					atom.getMessageParticles().stream()
-						.filter(p -> !"encryptor".equals(p.getMetaData("application")))
-						.findFirst();
-
-				final BigDecimal amount = TokenUnitConversions.subunitsToUnits(summary.get(0).getValue().abs());
-
-				if (bytesParticle.isPresent()) {
-					Map<String, Object> metaData = new HashMap<>();
-
-					final Optional<MessageParticle> encryptorParticle =
-						atom.getMessageParticles().stream()
-							.filter(p -> "encryptor".equals(p.getMetaData("application")))
-							.findAny();
-					metaData.put("encrypted", encryptorParticle.isPresent());
-
-					final Encryptor encryptor;
-					if (encryptorParticle.isPresent()) {
-						String encryptorBytes = new String(
-							encryptorParticle.get().getBytes(),
-							StandardCharsets.UTF_8
-						);
-						JsonArray protectorsJson = JSON_PARSER.parse(encryptorBytes).getAsJsonArray();
-						List<EncryptedPrivateKey> protectors = new ArrayList<>();
-						protectorsJson.forEach(
-							protectorJson -> protectors.add(EncryptedPrivateKey.fromBase64(protectorJson.getAsString()))
-						);
-
-						encryptor = new Encryptor(protectors);
-					} else {
-						encryptor = null;
-					}
-
-					final Data attachment = Data.raw(
-						bytesParticle.get().getBytes(),
-						metaData,
-						encryptor
-					);
-
-					return Single.just(attachment).flatMap(identity::decrypt)
-						.map(unencryptedData ->
-							new TokenTransfer(from, to, e.getKey(), amount, unencryptedData, atom.getTimestamp())
+		List<TokenTransfer> tokenTransfers = atom.particleGroups()
+			.flatMap(pg -> {
+				Map<RRI, Map<RadixAddress, BigDecimal>> tokenSummary = pg.spunParticles()
+					.filter(sp -> sp.getParticle() instanceof TransferrableTokensParticle)
+					.map(sp -> (SpunParticle<TransferrableTokensParticle>) sp)
+					.collect(
+						Collectors.groupingBy(
+							sp -> sp.getParticle().getTokenDefinitionReference(),
+							Collectors.groupingBy(
+								sp -> sp.getParticle().getAddress(),
+								Collectors.reducing(BigDecimal.ZERO, this::consumableToAmount, BigDecimal::add)
+							)
 						)
-						.onErrorResumeNext(ex -> {
-							if (ex instanceof CryptoException) {
-								return Single.just(
-									new TokenTransfer(from, to, e.getKey(), amount, null, atom.getTimestamp())
-								);
+					);
+
+				return tokenSummary.entrySet().stream()
+					.map(e -> {
+
+						List<Entry<RadixAddress, BigDecimal>> summary = new ArrayList<>(e.getValue().entrySet());
+						if (summary.size() > 2) {
+							throw new IllegalStateException(
+								"More than two participants in token transfer. " + "Unable to handle: " + summary
+							);
+						}
+
+						final RadixAddress from;
+						final RadixAddress to;
+						if (summary.size() == 1) {
+							from = summary.get(0).getValue().signum() <= 0 ? summary.get(0).getKey() : null;
+							to = summary.get(0).getValue().signum() < 0 ? null : summary.get(0).getKey();
+						} else {
+							if (summary.get(0).getValue().signum() > 0) {
+								from = summary.get(1).getKey();
+								to = summary.get(0).getKey();
 							} else {
-								return Single.error(ex);
+								from = summary.get(0).getKey();
+								to = summary.get(1).getKey();
 							}
-						});
-				} else {
-					return Single.just(new TokenTransfer(from, to, e.getKey(), amount, null, atom.getTimestamp()));
-				}
-			});
+						}
+
+						String attachment = pg.getMetaData().get("attachment");
+						return new TokenTransfer(
+							from,
+							to,
+							e.getKey(),
+							summary.get(0).getValue().abs(),
+							attachment == null ? null : attachment.getBytes(RadixConstants.STANDARD_CHARSET),
+							atom.getTimestamp()
+						);
+					});
+			})
+			.collect(Collectors.toList());
+
+		return Observable.fromIterable(tokenTransfers);
 	}
 }

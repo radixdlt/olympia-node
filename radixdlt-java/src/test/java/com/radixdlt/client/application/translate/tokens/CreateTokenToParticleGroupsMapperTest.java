@@ -3,6 +3,7 @@ package com.radixdlt.client.application.translate.tokens;
 import com.radixdlt.client.atommodel.rri.RRIParticle;
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
+import com.radixdlt.client.core.atoms.particles.RRI;
 import java.util.List;
 
 import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle;
@@ -26,8 +27,7 @@ public class CreateTokenToParticleGroupsMapperTest {
 		when(address.getUID()).thenReturn(mock(EUID.class));
 		ECPublicKey key = mock(ECPublicKey.class);
 		when(address.getPublicKey()).thenReturn(key);
-		when(tokenCreation.getAddress()).thenReturn(address);
-		when(tokenCreation.getIso()).thenReturn("ISO");
+		when(tokenCreation.getTokenRRI()).thenReturn(RRI.of(address, "ISO"));
 		when(tokenCreation.getInitialSupply()).thenReturn(TokenUnitConversions.getMinimumGranularity());
 		when(tokenCreation.getGranularity()).thenReturn(TokenUnitConversions.getMinimumGranularity());
 		when(tokenCreation.getTokenSupplyType()).thenReturn(TokenSupplyType.MUTABLE);

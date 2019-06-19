@@ -5,7 +5,6 @@ import java.math.BigDecimal;
 import java.util.Objects;
 
 import com.radixdlt.client.application.translate.Action;
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
 
 public class CreateTokenAction implements Action {
 	public enum TokenSupplyType {
