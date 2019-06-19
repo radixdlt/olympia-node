@@ -14,6 +14,10 @@ public final class AtomStatusNotification {
 		this.data = data;
 	}
 
+	public AtomStatusNotification(AtomStatus atomStatus) {
+		this(atomStatus, null);
+	}
+
 	public AtomStatus getAtomStatus() {
 		return atomStatus;
 	}

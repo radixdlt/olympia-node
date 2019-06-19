@@ -9,12 +9,12 @@ import static org.mockito.Mockito.when;
 
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.client.core.atoms.AtomStatus;
+import com.radixdlt.client.core.atoms.AtomStatusNotification;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.RadixNodeAction;
 import com.radixdlt.client.core.network.actions.FetchAtomsObservationAction;
-import com.radixdlt.client.core.network.actions.SubmitAtomResultAction;
-import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.NodeAtomSubmissionState;
-import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.NodeAtomSubmissionUpdate;
+import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
 import java.util.stream.Stream;
 import org.junit.Test;
 import org.mockito.InOrder;
@@ -40,11 +40,11 @@ public class InMemoryAtomStoreReducerTest {
 		final Atom atom = mock(Atom.class);
 		when(atom.addresses()).thenReturn(Stream.of(address), Stream.of(address));
 		RadixNode node = mock(RadixNode.class);
-		RadixNodeAction action = SubmitAtomResultAction.fromUpdate(
+		RadixNodeAction action = SubmitAtomStatusAction.fromStatusNotification(
 				"different-id",
 				atom,
 				node,
-				new NodeAtomSubmissionUpdate(NodeAtomSubmissionState.STORED, null)
+				new AtomStatusNotification(AtomStatus.STORED, null)
 			);
 		reducer.reduce(action);
 

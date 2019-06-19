@@ -3,10 +3,11 @@ package com.radixdlt.client.application;
 import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
 import com.radixdlt.client.core.BootstrapConfig;
+import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.network.RadixNetworkController;
-import com.radixdlt.client.core.network.actions.FetchAtomsObservationAction;
+import com.radixdlt.client.core.network.actions.SubmitAtomCompleteAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -76,8 +77,7 @@ import com.radixdlt.client.core.crypto.ECKeyPairGenerator;
 import com.radixdlt.client.core.crypto.ECPublicKey;
 import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
-import com.radixdlt.client.core.network.actions.SubmitAtomResultAction;
-import com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType;
+import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
 import com.radixdlt.client.core.pow.ProofOfWorkBuilder;
 
 import io.reactivex.Completable;
@@ -100,9 +100,26 @@ public class RadixApplicationAPI {
 		private final ConnectableObservable<SubmitAtomAction> updates;
 		private final Completable completable;
 
-		private Result(ConnectableObservable<SubmitAtomAction> updates, Completable completable) {
+		private Result(ConnectableObservable<SubmitAtomAction> updates, List<AtomErrorToExceptionReasonMapper> atomErrorMappers) {
 			this.updates = updates;
-			this.completable = completable;
+			this.completable = updates
+				.ofType(SubmitAtomStatusAction.class)
+				.lastOrError()
+				.flatMapCompletable(status -> {
+					if (status.getStatusNotification().getAtomStatus() == AtomStatus.STORED) {
+						return Completable.complete();
+					} else {
+						// TODO: Move jsonElement and error mapping logic somewhere else
+						JsonElement data = status.getStatusNotification().getData();
+						final JsonObject errorData = data == null ? null : data.getAsJsonObject();
+						final ActionExecutionExceptionBuilder exceptionBuilder = new ActionExecutionExceptionBuilder()
+							.errorData(errorData);
+						atomErrorMappers.stream()
+							.flatMap(errorMapper -> errorMapper.mapAtomErrorToExceptionReasons(status.getAtom(), errorData))
+							.forEach(exceptionBuilder::addReason);
+						return Completable.error(exceptionBuilder.build());
+					}
+				});
 		}
 
 		private Result connect() {
@@ -749,6 +766,10 @@ public class RadixApplicationAPI {
 		return this.execute(transferTokensAction);
 	}
 
+	private long generateTimestamp() {
+		return System.currentTimeMillis();
+	}
+
 	/**
 	 * Returns an unsigned atom with the appropriate fees given a list of
 	 * particle groups to compose the atom.
@@ -789,7 +810,10 @@ public class RadixApplicationAPI {
 		 * @return the results of committing
 		 */
 		public Result commit() {
-			return buildDisconnectedResult(actions).connect();
+			final Single<Atom> atom = buildAtom(actions)
+				.flatMap(identity::sign);
+
+			return createAtomSubmission(atom, false).connect();
 		}
 	}
 
@@ -882,18 +906,14 @@ public class RadixApplicationAPI {
 			}));
 	}
 
-	private long generateTimestamp() {
-		return System.currentTimeMillis();
-	}
-
-	private Result buildDisconnectedAtomSubmit(Single<Atom> atom) {
+	private Result createAtomSubmission(Single<Atom> atom, boolean completeOnStoreOnly) {
 		final ConnectableObservable<SubmitAtomAction> updates = atom
 			.flatMapObservable(a -> {
-				SubmitAtomRequestAction initialAction = SubmitAtomRequestAction.newRequest(a);
+				SubmitAtomRequestAction initialAction = SubmitAtomRequestAction.newRequest(a, completeOnStoreOnly);
 				Observable<SubmitAtomAction> status =
-				getNetworkController().getActions().ofType(SubmitAtomAction.class)
-					.filter(u -> u.getUuid().equals(initialAction.getUuid()))
-					.takeUntil(u -> u instanceof SubmitAtomResultAction);
+					getNetworkController().getActions().ofType(SubmitAtomAction.class)
+						.filter(u -> u.getUuid().equals(initialAction.getUuid()))
+						.takeWhile(s -> !(s instanceof SubmitAtomCompleteAction));
 				ConnectableObservable<SubmitAtomAction> replay = status.replay();
 				replay.connect();
 
@@ -903,45 +923,28 @@ public class RadixApplicationAPI {
 			})
 			.replay();
 
-		final Completable completable = updates
-			.ofType(SubmitAtomResultAction.class)
-			.firstOrError()
-			.flatMapCompletable(update -> {
-				if (update.getType() == SubmitAtomResultActionType.STORED) {
-					return Completable.complete();
-				} else {
-					JsonElement data = update.getData();
-					final JsonObject errorData = data == null ? null : data.getAsJsonObject();
-					final ActionExecutionExceptionBuilder exceptionBuilder = new ActionExecutionExceptionBuilder()
-						.errorData(errorData);
-					atomErrorMappers.stream()
-						.flatMap(errorMapper -> errorMapper.mapAtomErrorToExceptionReasons(update.getAtom(), errorData))
-						.forEach(exceptionBuilder::addReason);
-					return Completable.error(exceptionBuilder.build());
-				}
-			});
-
-		return new Result(updates, completable);
-	}
-
-	private Result buildDisconnectedAtomSubmit(Atom atom) {
-		return buildDisconnectedAtomSubmit(Single.just(atom));
-	}
-
-	private Result buildDisconnectedResult(Iterable<Action> actions) {
-		final Single<Atom> atom = this.buildAtom(actions)
-			.flatMap(this.identity::sign);
-
-		return buildDisconnectedAtomSubmit(atom);
+		return new Result(updates, atomErrorMappers);
 	}
 
 	/**
 	 * Low level call to submit an atom into the network.
 	 * @param atom atom to submit
+	 * @param completeOnStoreOnly if true, result will only complete on a store event
+	 * @return the result of the submission
+	 */
+	public Result submitAtom(Atom atom, boolean completeOnStoreOnly) {
+		return createAtomSubmission(Single.just(atom), completeOnStoreOnly).connect();
+	}
+
+
+	/**
+	 * Low level call to submit an atom into the network. Result will complete
+	 * on the first STORED event.
+	 * @param atom atom to submit
 	 * @return the result of the submission
 	 */
 	public Result submitAtom(Atom atom) {
-		return buildDisconnectedAtomSubmit(atom).connect();
+		return createAtomSubmission(Single.just(atom), false).connect();
 	}
 
 	/**
@@ -952,38 +955,9 @@ public class RadixApplicationAPI {
 	 * @return results of the execution
 	 */
 	public Result execute(Action action) {
-		return this.buildDisconnectedResult(Collections.singleton(action)).connect();
-	}
+		final Single<Atom> atom = this.buildAtom(Collections.singleton(action))
+			.flatMap(this.identity::sign);
 
-
-	// TODO: Remove use of pull + submit, utilize statusNotifications + push instead
-	private Observable<AtomObservation> syncAtom(Atom atom) {
-		final Disposable disposable = pull(atom.addresses().findFirst().orElseThrow(() -> new IllegalStateException("")));
-		return getNetworkController().getActions().ofType(FetchAtomsObservationAction.class)
-			.filter(u -> u.getObservation().hasAtom() && u.getObservation().getAtom().equals(atom))
-			.map(FetchAtomsObservationAction::getObservation)
-			.doOnSubscribe(d -> {
-				final SubmitAtomRequestAction initialAction = SubmitAtomRequestAction.newRequest(atom);
-				getNetworkController().dispatch(initialAction);
-			})
-			.doOnDispose(disposable::dispose);
-	}
-
-	/**
-	 * Executes actions sequentially. Advanced functionality will be moved into
-	 * AtomStore in the future.
-	 *
-	 * TODO: Move logic into AtomStore
-	 *
-	 * @param actions the action to execute sequentially
-	 */
-	public Observable<AtomObservation> executeSequentially(List<List<Action>> actions) {
-		return Observable.fromIterable(actions)
-			.concatMap(transaction ->
-				this.buildAtom(transaction)
-					.flatMap(this.identity::sign)
-					.flatMapObservable(this::syncAtom)
-					.takeUntil(AtomObservation::isStore)
-			);
+		return createAtomSubmission(atom, false).connect();
 	}
 }

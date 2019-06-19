@@ -12,21 +12,27 @@ import java.util.UUID;
 public final class SubmitAtomRequestAction implements SubmitAtomAction, FindANodeRequestAction {
 	private final String uuid;
 	private final Atom atom;
+	private final boolean completeOnStoreOnly;
 
-	private SubmitAtomRequestAction(String uuid, Atom atom) {
+	private SubmitAtomRequestAction(String uuid, Atom atom, boolean completeOnStoreOnly) {
 		Objects.requireNonNull(uuid);
 		Objects.requireNonNull(atom);
 
 		this.uuid = uuid;
 		this.atom = atom;
+		this.completeOnStoreOnly = completeOnStoreOnly;
 	}
 
-	public static SubmitAtomRequestAction newRequest(Atom atom) {
+	public static SubmitAtomRequestAction newRequest(Atom atom, boolean completeOnStoreOnly) {
 		if (atom.getRequiredFirstShard().isEmpty()) {
 			throw new IllegalStateException("Atom has no destinations: " + atom);
 		}
 
-		return new SubmitAtomRequestAction(UUID.randomUUID().toString(), atom);
+		return new SubmitAtomRequestAction(UUID.randomUUID().toString(), atom, completeOnStoreOnly);
+	}
+
+	public boolean isCompleteOnStoreOnly() {
+		return completeOnStoreOnly;
 	}
 
 	@Override

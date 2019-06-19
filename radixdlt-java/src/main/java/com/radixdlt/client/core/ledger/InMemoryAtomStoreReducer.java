@@ -1,10 +1,10 @@
 package com.radixdlt.client.core.ledger;
 
 import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.network.RadixNodeAction;
 import com.radixdlt.client.core.network.actions.FetchAtomsObservationAction;
-import com.radixdlt.client.core.network.actions.SubmitAtomResultAction;
-import com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType;
+import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
 
 /**
  * Wrapper reducer class for the Atom Store
@@ -21,14 +21,14 @@ public final class InMemoryAtomStoreReducer {
 			FetchAtomsObservationAction fetchAtomsObservationAction = (FetchAtomsObservationAction) action;
 			AtomObservation observation = fetchAtomsObservationAction.getObservation();
 			this.atomStore.store(fetchAtomsObservationAction.getAddress(), observation);
-		} else if (action instanceof SubmitAtomResultAction) {
+		} else if (action instanceof SubmitAtomStatusAction) {
 
 			// Soft storage of atoms so that atoms which are submitted and stored can
 			// be immediately used instead of having to wait for fetch atom events.
-			final SubmitAtomResultAction submitAtomResultAction = (SubmitAtomResultAction) action;
-			final Atom atom = submitAtomResultAction.getAtom();
+			final SubmitAtomStatusAction submitAtomStatusAction = (SubmitAtomStatusAction) action;
+			final Atom atom = submitAtomStatusAction.getAtom();
 
-			if (submitAtomResultAction.getType() == SubmitAtomResultActionType.STORED) {
+			if (submitAtomStatusAction.getStatusNotification().getAtomStatus() == AtomStatus.STORED) {
 				atom.addresses().forEach(address -> {
 					this.atomStore.store(address, AtomObservation.softStored(atom));
 					this.atomStore.store(address, AtomObservation.head());

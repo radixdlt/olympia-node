@@ -12,8 +12,9 @@ public final class SubmitAtomSendAction implements SubmitAtomAction, RadixNodeAc
 	private final String uuid;
 	private final Atom atom;
 	private final RadixNode node;
+	private final boolean completeOnStoreOnly;
 
-	private SubmitAtomSendAction(String uuid, Atom atom, RadixNode node) {
+	private SubmitAtomSendAction(String uuid, Atom atom, RadixNode node, boolean completeOnStoreOnly) {
 		Objects.requireNonNull(uuid);
 		Objects.requireNonNull(atom);
 		Objects.requireNonNull(node);
@@ -21,10 +22,15 @@ public final class SubmitAtomSendAction implements SubmitAtomAction, RadixNodeAc
 		this.uuid = uuid;
 		this.atom = atom;
 		this.node = node;
+		this.completeOnStoreOnly = completeOnStoreOnly;
 	}
 
-	public static SubmitAtomSendAction of(String uuid, Atom atom, RadixNode node) {
-		return new SubmitAtomSendAction(uuid, atom, node);
+	public static SubmitAtomSendAction of(String uuid, Atom atom, RadixNode node, boolean completeOnStoreOnly) {
+		return new SubmitAtomSendAction(uuid, atom, node, completeOnStoreOnly);
+	}
+
+	public boolean isCompleteOnStoreOnly() {
+		return completeOnStoreOnly;
 	}
 
 	@Override
