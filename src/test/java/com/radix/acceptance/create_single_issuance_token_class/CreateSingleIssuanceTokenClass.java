@@ -1,11 +1,11 @@
 package com.radix.acceptance.create_single_issuance_token_class;
 
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
+import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.network.actions.SubmitAtomReceivedAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
-import com.radixdlt.client.core.network.actions.SubmitAtomResultAction;
-import com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType;
+import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomSendAction;
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -22,12 +22,6 @@ import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.Bootstrap;
-
-
-import static com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType.STORED;
-import static com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType.VALIDATION_ERROR;
-import static com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType.COLLISION;
-
 
 import static org.junit.Assert.assertEquals;
 
@@ -137,7 +131,7 @@ public class CreateSingleIssuanceTokenClass {
 
 	@Then("^I can observe atom (\\d+) being accepted$")
 	public void i_can_observe_atom_being_accepted(int atomNumber) {
-		awaitAtomStatus(atomNumber, STORED);
+		awaitAtomStatus(atomNumber, AtomStatus.STORED);
 	}
 
 	@Then("^I can observe the atom being rejected with a validation error$")
@@ -148,7 +142,7 @@ public class CreateSingleIssuanceTokenClass {
 
 	@Then("^I can observe atom (\\d+) being rejected with a validation error$")
 	public void i_can_observe_atom_being_rejected_as_a_validation_error(int atomNumber) {
-		awaitAtomStatus(atomNumber, VALIDATION_ERROR);
+		awaitAtomStatus(atomNumber, AtomStatus.EVICTED_FAILED_CM_VERIFICATION);
 	}
 
 	@Then("^I can observe the atom being rejected with an error$")
@@ -159,7 +153,7 @@ public class CreateSingleIssuanceTokenClass {
 
 	@Then("^I can observe atom (\\d+) being rejected with an error$")
 	public void i_can_observe_atom_being_rejected_with_an_error(int atomNumber) {
-		awaitAtomStatus(atomNumber, COLLISION, VALIDATION_ERROR);
+		awaitAtomStatus(atomNumber, AtomStatus.CONFLICT_LOSER, AtomStatus.EVICTED_FAILED_CM_VERIFICATION);
 	}
 
 	@Then("^I can observe token \"([^\"]*)\" balance equal to (\\d+) scaled$")
@@ -189,10 +183,8 @@ public class CreateSingleIssuanceTokenClass {
 		this.observers.add(observer);
 	}
 
-	private void awaitAtomStatus(int atomNumber, SubmitAtomResultActionType... finalStates) {
-		ImmutableSet<SubmitAtomResultActionType> finalStatesSet = ImmutableSet.<SubmitAtomResultActionType>builder()
-			.addAll(Arrays.asList(finalStates))
-			.build();
+	private void awaitAtomStatus(int atomNumber, AtomStatus... finalStates) {
+		ImmutableSet<AtomStatus> finalStatesSet = ImmutableSet.copyOf(finalStates);
 
 		this.observers.get(atomNumber - 1)
 			.awaitCount(4, TestWaitStrategy.SLEEP_100MS, TIMEOUT_MS)
@@ -201,7 +193,7 @@ public class CreateSingleIssuanceTokenClass {
 			.assertValueAt(0, SubmitAtomRequestAction.class::isInstance)
 			.assertValueAt(1, SubmitAtomSendAction.class::isInstance)
 			.assertValueAt(2, SubmitAtomReceivedAction.class::isInstance)
-			.assertValueAt(3, SubmitAtomResultAction.class::isInstance)
-			.assertValueAt(3, i -> finalStatesSet.contains(SubmitAtomResultAction.class.cast(i).getType()));
+			.assertValueAt(3, SubmitAtomStatusAction.class::isInstance)
+			.assertValueAt(3, i -> finalStatesSet.contains(SubmitAtomStatusAction.class.cast(i).getStatusNotification().getAtomStatus()));
 	}
 }

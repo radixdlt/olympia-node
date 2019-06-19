@@ -18,14 +18,14 @@ import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.application.translate.tokens.TransferTokensToParticleGroupsMapper;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.Bootstrap;
+import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.crypto.ECKeyPairGenerator;
 import com.radixdlt.client.core.network.actions.SubmitAtomReceivedAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
-import com.radixdlt.client.core.network.actions.SubmitAtomResultAction;
-import com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType;
+import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomSendAction;
 import cucumber.api.java.en.And;
 import cucumber.api.java.en.Given;
@@ -43,9 +43,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType.COLLISION;
-import static com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType.STORED;
-import static com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType.VALIDATION_ERROR;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -294,7 +291,7 @@ public class ParticleGroups {
 
 	@Then("^I can observe atom (\\d+) being accepted$")
 	public void i_can_observe_atom_being_accepted(int atomNumber) {
-		awaitAtomStatus(atomNumber, STORED);
+		awaitAtomStatus(atomNumber, AtomStatus.STORED);
 	}
 
 	@Then("^I can observe the atom being rejected with a validation error$")
@@ -305,7 +302,7 @@ public class ParticleGroups {
 
 	@Then("^I can observe atom (\\d+) being rejected with a validation error$")
 	public void i_can_observe_atom_being_rejected_as_a_validation_error(int atomNumber) {
-		awaitAtomStatus(atomNumber, VALIDATION_ERROR);
+		awaitAtomStatus(atomNumber, AtomStatus.EVICTED_FAILED_CM_VERIFICATION);
 	}
 
 	@Then("^I can observe atom (\\d+) being rejected with a failure$")
@@ -321,7 +318,7 @@ public class ParticleGroups {
 
 	@Then("^I can observe atom (\\d+) being rejected with an error$")
 	public void i_can_observe_atom_being_rejected_with_an_error(int atomNumber) {
-		awaitAtomStatus(atomNumber, COLLISION, VALIDATION_ERROR);
+		awaitAtomStatus(atomNumber, AtomStatus.EVICTED_CONFLICT_LOSER, AtomStatus.EVICTED_FAILED_CM_VERIFICATION);
 	}
 
 	@Then("^I can observe token \"([^\"]*)\" balance equal to (\\d+) scaled$")
@@ -351,8 +348,8 @@ public class ParticleGroups {
 		this.observers.add(observer);
 	}
 
-	private void awaitAtomStatus(int atomNumber, SubmitAtomResultActionType... finalStates) {
-		ImmutableSet<SubmitAtomResultActionType> finalStatesSet = ImmutableSet.<SubmitAtomResultActionType>builder()
+	private void awaitAtomStatus(int atomNumber, AtomStatus... finalStates) {
+		ImmutableSet<AtomStatus> finalStatesSet = ImmutableSet.<AtomStatus>builder()
 			.addAll(Arrays.asList(finalStates))
 			.build();
 
@@ -363,8 +360,8 @@ public class ParticleGroups {
 			.assertValueAt(0, SubmitAtomRequestAction.class::isInstance)
 			.assertValueAt(1, SubmitAtomSendAction.class::isInstance)
 			.assertValueAt(2, SubmitAtomReceivedAction.class::isInstance)
-			.assertValueAt(3, SubmitAtomResultAction.class::isInstance)
-			.assertValueAt(3, i -> finalStatesSet.contains(SubmitAtomResultAction.class.cast(i).getType()));
+			.assertValueAt(3, SubmitAtomStatusAction.class::isInstance)
+			.assertValueAt(3, i -> finalStatesSet.contains(SubmitAtomStatusAction.class.cast(i).getStatusNotification().getAtomStatus()));
 	}
 
 	private void awaitAtomInvalid(int atomNumber) {
@@ -374,7 +371,7 @@ public class ParticleGroups {
 			.assertNoTimeout()
 			.assertValueAt(0, SubmitAtomRequestAction.class::isInstance)
 			.assertValueAt(1, SubmitAtomSendAction.class::isInstance)
-			.assertValueAt(2, SubmitAtomResultAction.class::isInstance)
-			.assertValueAt(2, i -> SubmitAtomResultAction.class.cast(i).getType().equals(SubmitAtomResultActionType.FAILED));
+			.assertValueAt(2, SubmitAtomStatusAction.class::isInstance)
+			.assertValueAt(2, i -> SubmitAtomStatusAction.class.cast(i).getStatusNotification().getAtomStatus().equals(AtomStatus.EVICTED_INVALID_ATOM));
 	}
 }

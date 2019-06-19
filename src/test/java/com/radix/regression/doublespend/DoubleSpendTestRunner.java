@@ -19,15 +19,14 @@ import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.client.core.address.RadixUniverseConfigs;
 import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.ledger.AtomObservation;
+import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.ledger.AtomObservation.Type;
 import com.radixdlt.client.core.network.RadixNetworkEpic;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.RadixNodeAction;
 import com.radixdlt.client.core.network.actions.FetchAtomsObservationAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
-import com.radixdlt.client.core.network.actions.SubmitAtomResultAction;
-import com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType;
+import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
 import io.reactivex.Completable;
 import io.reactivex.Observable;
 import io.reactivex.Single;
@@ -109,11 +108,21 @@ public final class DoubleSpendTestRunner {
 				identity);
 		}
 
+		Observable<SubmitAtomAction> executeSequentially(List<List<Action>> actions) {
+			return Observable.fromIterable(actions)
+				.concatMap(transaction ->
+					api.buildAtom(transaction)
+						.flatMap(api.getMyIdentity()::sign)
+						.flatMapObservable(a -> api.submitAtom(a, true).toObservable())
+				);
+		}
+
 		@Override
 		public String toString() {
 			return "Client " + clientId + " " + node;
 		}
 	}
+
 
 	ImmutableMap<ShardedAppStateId, ApplicationState> execute() {
 		RadixApplicationAPI api = apiSupplier.apply(Bootstrap.LOCALHOST, RadixIdentities.createNew());
@@ -179,10 +188,10 @@ public final class DoubleSpendTestRunner {
 				Pair::of
 			);
 
-		List<TestObserver<AtomObservation>> submissionObservers = conflictingAtoms.map(a -> {
-			TestObserver<AtomObservation> submissionObserver =
+		List<TestObserver<SubmitAtomAction>> submissionObservers = conflictingAtoms.map(a -> {
+			TestObserver<SubmitAtomAction> submissionObserver =
 				TestObserver.create(Util.loggingObserver("Client " + a.getFirst().clientId + " Submission" ));
-			a.getFirst().api.executeSequentially(a.getSecond()).subscribe(submissionObserver);
+			a.getFirst().executeSequentially(a.getSecond()).subscribe(submissionObserver);
 			return submissionObserver;
 		}).toList().blockingGet();
 
@@ -217,9 +226,9 @@ public final class DoubleSpendTestRunner {
 						System.out.println(System.currentTimeMillis() + " " + singleNodeApi + " " + f.getObservation().getType() + ": "
 							+ f.getObservation().getAtom().getAid());
 					}
-				} else if (a instanceof SubmitAtomResultAction) {
-					SubmitAtomResultAction r = (SubmitAtomResultAction) a;
-					if (r.getType() == SubmitAtomResultActionType.VALIDATION_ERROR) {
+				} else if (a instanceof SubmitAtomStatusAction) {
+					SubmitAtomStatusAction r = (SubmitAtomStatusAction) a;
+					if (r.getStatusNotification().getAtomStatus() == AtomStatus.EVICTED_FAILED_CM_VERIFICATION) {
 						System.out.println(System.currentTimeMillis() + " " + singleNodeApi + " VALIDATION_ERROR: " + r.getAtom().getAid());
 					}
 				}

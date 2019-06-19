@@ -17,14 +17,14 @@ import com.radixdlt.client.application.translate.tokens.TransferTokensToParticle
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
+import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.ParticleGroup.ParticleGroupBuilder;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.network.actions.SubmitAtomReceivedAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
-import com.radixdlt.client.core.network.actions.SubmitAtomResultAction;
-import com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType;
+import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomSendAction;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
@@ -36,9 +36,6 @@ import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
-import static com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType.STORED;
-import static com.radixdlt.client.core.network.actions.SubmitAtomResultAction.SubmitAtomResultActionType.VALIDATION_ERROR;
 
 /**
  * See <a href="https://radixdlt.atlassian.net/browse/RLAU-645">RLAU-645</a>.
@@ -141,7 +138,7 @@ public class AtomicTransactionsWithDependence {
 
 	@Then("^I can observe atom (\\d+) being accepted$")
 	public void i_can_observe_atom_being_accepted(int atomNumber) {
-		awaitAtomStatus(atomNumber, STORED);
+		awaitAtomStatus(atomNumber, AtomStatus.STORED);
 	}
 
 	@Then("^I can observe the atom being rejected with a validation error$")
@@ -152,7 +149,7 @@ public class AtomicTransactionsWithDependence {
 
 	@Then("^I can observe atom (\\d+) being rejected with a validation error$")
 	public void i_can_observe_atom_being_rejected_as_a_validation_error(int atomNumber) {
-		awaitAtomStatus(atomNumber, VALIDATION_ERROR);
+		awaitAtomStatus(atomNumber, AtomStatus.EVICTED_FAILED_CM_VERIFICATION);
 	}
 
 	private void createToken(CreateTokenAction.TokenSupplyType tokenCreateSupplyType, RadixApplicationAPI api) {
@@ -170,8 +167,8 @@ public class AtomicTransactionsWithDependence {
 		observers.add(observer);
 	}
 
-	private void awaitAtomStatus(int atomNumber, SubmitAtomResultActionType... finalStates) {
-		ImmutableSet<SubmitAtomResultActionType> finalStatesSet = ImmutableSet.<SubmitAtomResultActionType>builder()
+	private void awaitAtomStatus(int atomNumber, AtomStatus... finalStates) {
+		ImmutableSet<AtomStatus> finalStatesSet = ImmutableSet.<AtomStatus>builder()
 			.addAll(Arrays.asList(finalStates))
 			.build();
 
@@ -182,8 +179,8 @@ public class AtomicTransactionsWithDependence {
 			.assertValueAt(0, SubmitAtomRequestAction.class::isInstance)
 			.assertValueAt(1, SubmitAtomSendAction.class::isInstance)
 			.assertValueAt(2, SubmitAtomReceivedAction.class::isInstance)
-			.assertValueAt(3, SubmitAtomResultAction.class::isInstance)
-			.assertValueAt(3, i -> finalStatesSet.contains(SubmitAtomResultAction.class.cast(i).getType()));
+			.assertValueAt(3, SubmitAtomStatusAction.class::isInstance)
+			.assertValueAt(3, i -> finalStatesSet.contains(SubmitAtomStatusAction.class.cast(i).getStatusNotification().getAtomStatus()));
 	}
 
 	private static String scaledToUnscaled(int amount) {
