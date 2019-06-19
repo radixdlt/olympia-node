@@ -22,8 +22,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.radixdlt.client.application.translate.tokens.MintAndTransferTokensAction;
-import com.radixdlt.client.application.translate.tokens.MintAndTransferTokensActionMapper;
 import java.util.stream.StreamSupport;
 import org.radix.common.tuples.Pair;
 import org.slf4j.Logger;
@@ -329,7 +327,6 @@ public class RadixApplicationAPI {
 			.addStatelessParticlesMapper(new CreateTokenToParticleGroupsMapper())
 			.addStatelessParticlesMapper(new PutUniqueIdToParticleGroupsMapper())
 			.addStatefulParticlesMapper(new MintTokensActionMapper())
-			.addStatefulParticlesMapper(new MintAndTransferTokensActionMapper())
 			.addStatefulParticlesMapper(new BurnTokensActionMapper())
 			.addStatefulParticlesMapper(new TransferTokensToParticleGroupsMapper())
 			.addReducer(new TokenDefinitionsReducer())
@@ -652,23 +649,6 @@ public class RadixApplicationAPI {
 	 */
 	public Result mintTokens(String iso, BigDecimal amount) {
 		MintTokensAction mintTokensAction = MintTokensAction.create(RRI.of(getMyAddress(), iso), amount);
-		return execute(mintTokensAction);
-	}
-
-	/**
-	 * Mints an amount of new tokens and transfers it to another account
-	 *
-	 * @param iso The symbol of the token to mint
-	 * @param amount The amount in subunits to mint
-	 * @param toAddress The address that the minted tokens should be sent to
-	 * @return result of the transaction
-	 */
-	public Result mintAndTransferTokens(String iso, BigDecimal amount, RadixAddress toAddress) {
-		MintAndTransferTokensAction mintTokensAction = new MintAndTransferTokensAction(
-			RRI.of(getMyAddress(), iso),
-			amount,
-			toAddress
-		);
 		return execute(mintTokensAction);
 	}
 
