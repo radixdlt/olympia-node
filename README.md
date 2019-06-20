@@ -19,9 +19,8 @@ radixdlt-java is a Java/Android Client library for interacting with a [Radix](ht
 * Connection to the Betanet test network 
 * Fee-less transactions for testnets
 * Public Key Identity Creation
-* Native token transfers
-* Fixed-supply/Mutable-supply Token Creation
-* Immutable data storage
+* Token Creation (ERC-777 style)
+* Message sending
 * RXJava 2 based
 * Utilizes JSON-RPC over Websockets
 
@@ -49,7 +48,7 @@ as well as decrypt data.
 
 To create/load an identity from a file:
 ```java
-RadixIdentity identity = RadixIdentities.loadOrCreateEncryptedFile("filename.key", "password");
+RadixIdentity identity = RadixIdentities.loadOrCreateEncryptedFile("filename.key", "password123");
 ```
 This will either create or load a file with a public/private key and encrypted with the given password.
 
