@@ -1,6 +1,5 @@
 package com.radixdlt.client.core.network.epics;
 
-import com.google.gson.JsonObject;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.AtomStatusNotification;
 import com.radixdlt.client.core.network.RadixNetworkEpic;
@@ -15,6 +14,7 @@ import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomSendAction;
 import com.radixdlt.client.core.network.epics.WebSocketsEpic.WebSockets;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient;
+import com.radixdlt.client.core.network.jsonrpc.SubmitAtomException;
 import com.radixdlt.client.core.network.websocket.WebSocketClient;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
 import io.reactivex.Completable;
@@ -84,14 +84,19 @@ public final class SubmitAtomEpic implements RadixNetworkEpic {
 						.subscribe(
 							() -> emitter.onNext(SubmitAtomReceivedAction.of(request.getUuid(), request.getAtom(), node)),
 							e -> {
-								emitter.onNext(
-									SubmitAtomStatusAction.fromStatusNotification(
-										request.getUuid(),
-										request.getAtom(),
-										node,
-										new AtomStatusNotification(AtomStatus.EVICTED_INVALID_ATOM, new JsonObject())
-									));
-								emitter.onNext(SubmitAtomCompleteAction.of(request.getUuid(), request.getAtom(), node));
+								if (e instanceof SubmitAtomException) {
+									SubmitAtomException submitAtomException = (SubmitAtomException) e;
+									emitter.onNext(
+										SubmitAtomStatusAction.fromStatusNotification(
+											request.getUuid(),
+											request.getAtom(),
+											node,
+											new AtomStatusNotification(AtomStatus.EVICTED_INVALID_ATOM, submitAtomException.getData())
+										));
+									emitter.onNext(SubmitAtomCompleteAction.of(request.getUuid(), request.getAtom(), node));
+								} else {
+									emitter.onError(e);
+								}
 							}
 						);
 				})

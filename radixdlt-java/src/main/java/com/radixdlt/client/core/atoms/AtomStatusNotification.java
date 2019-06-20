@@ -28,6 +28,6 @@ public final class AtomStatusNotification {
 
 	@Override
 	public String toString() {
-		return atomStatus.toString();
+		return atomStatus.toString() + " " + data;
 	}
 }
