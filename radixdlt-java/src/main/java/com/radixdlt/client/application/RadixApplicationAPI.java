@@ -22,8 +22,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.radixdlt.client.application.translate.tokens.MintAndTransferTokensAction;
-import com.radixdlt.client.application.translate.tokens.MintAndTransferTokensActionMapper;
 import java.util.stream.StreamSupport;
 import org.radix.common.tuples.Pair;
 import org.slf4j.Logger;
@@ -329,7 +327,6 @@ public class RadixApplicationAPI {
 			.addStatelessParticlesMapper(new CreateTokenToParticleGroupsMapper())
 			.addStatelessParticlesMapper(new PutUniqueIdToParticleGroupsMapper())
 			.addStatefulParticlesMapper(new MintTokensActionMapper())
-			.addStatefulParticlesMapper(new MintAndTransferTokensActionMapper())
 			.addStatefulParticlesMapper(new BurnTokensActionMapper())
 			.addStatefulParticlesMapper(new TransferTokensToParticleGroupsMapper())
 			.addReducer(new TokenDefinitionsReducer())
@@ -656,23 +653,6 @@ public class RadixApplicationAPI {
 	}
 
 	/**
-	 * Mints an amount of new tokens and transfers it to another account
-	 *
-	 * @param iso The symbol of the token to mint
-	 * @param amount The amount in subunits to mint
-	 * @param toAddress The address that the minted tokens should be sent to
-	 * @return result of the transaction
-	 */
-	public Result mintAndTransferTokens(String iso, BigDecimal amount, RadixAddress toAddress) {
-		MintAndTransferTokensAction mintTokensAction = new MintAndTransferTokensAction(
-			RRI.of(getMyAddress(), iso),
-			amount,
-			toAddress
-		);
-		return execute(mintTokensAction);
-	}
-
-	/**
 	 * Burns an amount of tokens in the user's account
 	 *
 	 * @param iso The symbol of the token to mint
@@ -764,6 +744,19 @@ public class RadixApplicationAPI {
 				TransferTokensAction.create(from, to, amount, token, attachment);
 
 		return this.execute(transferTokensAction);
+	}
+
+	/**
+	 * Immediately executes a user action onto the ledger. Note that this method is NOT
+	 * idempotent.
+	 *
+	 * @param action action to execute
+	 * @return results of the execution
+	 */
+	public Result execute(Action action) {
+		Transaction transaction = this.createTransaction();
+		transaction.execute(action);
+		return transaction.commit();
 	}
 
 	private long generateTimestamp() {
@@ -906,6 +899,26 @@ public class RadixApplicationAPI {
 			}));
 	}
 
+	/**
+	 * Low level call to submit an atom into the network.
+	 * @param atom atom to submit
+	 * @param completeOnStoreOnly if true, result will only complete on a store event
+	 * @return the result of the submission
+	 */
+	public Result submitAtom(Atom atom, boolean completeOnStoreOnly) {
+		return createAtomSubmission(Single.just(atom), completeOnStoreOnly).connect();
+	}
+
+	/**
+	 * Low level call to submit an atom into the network. Result will complete
+	 * on the first STORED event.
+	 * @param atom atom to submit
+	 * @return the result of the submission
+	 */
+	public Result submitAtom(Atom atom) {
+		return createAtomSubmission(Single.just(atom), false).connect();
+	}
+
 	private Result createAtomSubmission(Single<Atom> atom, boolean completeOnStoreOnly) {
 		final ConnectableObservable<SubmitAtomAction> updates = atom
 			.flatMapObservable(a -> {
@@ -924,40 +937,5 @@ public class RadixApplicationAPI {
 			.replay();
 
 		return new Result(updates, atomErrorMappers);
-	}
-
-	/**
-	 * Low level call to submit an atom into the network.
-	 * @param atom atom to submit
-	 * @param completeOnStoreOnly if true, result will only complete on a store event
-	 * @return the result of the submission
-	 */
-	public Result submitAtom(Atom atom, boolean completeOnStoreOnly) {
-		return createAtomSubmission(Single.just(atom), completeOnStoreOnly).connect();
-	}
-
-
-	/**
-	 * Low level call to submit an atom into the network. Result will complete
-	 * on the first STORED event.
-	 * @param atom atom to submit
-	 * @return the result of the submission
-	 */
-	public Result submitAtom(Atom atom) {
-		return createAtomSubmission(Single.just(atom), false).connect();
-	}
-
-	/**
-	 * Immediately executes a user action onto the ledger. Note that this method is NOT
-	 * idempotent.
-	 *
-	 * @param action action to execute
-	 * @return results of the execution
-	 */
-	public Result execute(Action action) {
-		final Single<Atom> atom = this.buildAtom(Collections.singleton(action))
-			.flatMap(this.identity::sign);
-
-		return createAtomSubmission(atom, false).connect();
 	}
 }
