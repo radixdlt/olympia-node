@@ -67,8 +67,8 @@ public class UnallocatedTokensParticleTest {
 		RadixApplicationAPI api = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, RadixIdentities.createNew());
 
 		api.createToken(
+			RRI.of(api.getMyAddress(), "JOSH"),
 			"Joshy Token",
-			"JOSH",
 			"Coolest Token",
 			BigDecimal.ONE,
 			BigDecimal.ONE,

@@ -112,7 +112,7 @@ public class CreateSingleIssuanceTokenClass {
 			.blockingGet();
 
 		TestObserver<Object> observer = new TestObserver<>();
-		api.transferTokens(api.getMyAddress(), arbitrary, BigDecimal.valueOf(count), tokenClass)
+		api.sendTokens(tokenClass, api.getMyAddress(), arbitrary, BigDecimal.valueOf(count))
 			.toObservable()
 			.doOnNext(System.out::println)
 			.subscribe(observer);
@@ -173,8 +173,8 @@ public class CreateSingleIssuanceTokenClass {
 	private void createToken(CreateTokenAction.TokenSupplyType tokenCreateSupplyType) {
 		TestObserver<Object> observer = new TestObserver<>();
 		api.createToken(
+				RRI.of(api.getMyAddress(), this.properties.get(SYMBOL)),
 				this.properties.get(NAME),
-				this.properties.get(SYMBOL),
 				this.properties.get(DESCRIPTION),
 				BigDecimal.valueOf(Long.valueOf(this.properties.get(TOTAL_SUPPLY))),
 				BigDecimal.valueOf(Long.valueOf(this.properties.get(GRANULARITY))),

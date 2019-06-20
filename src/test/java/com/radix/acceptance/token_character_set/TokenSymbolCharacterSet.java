@@ -3,6 +3,7 @@ package com.radix.acceptance.token_character_set;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.client.core.atoms.AtomStatus;
+import com.radixdlt.client.core.atoms.particles.RRI;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
@@ -101,8 +102,8 @@ public class TokenSymbolCharacterSet {
 	private void createToken(CreateTokenAction.TokenSupplyType tokenCreateSupplyType) {
 		TestObserver<Object> observer = new TestObserver<>();
 		api.createToken(
+				RRI.of(api.getMyAddress(), this.properties.get(SYMBOL)),
 				this.properties.get(NAME),
-				this.properties.get(SYMBOL),
 				this.properties.get(DESCRIPTION),
 				BigDecimal.valueOf(Long.valueOf(this.properties.get(INITIAL_SUPPLY))),
 				BigDecimal.valueOf(Long.valueOf(this.properties.get(GRANULARITY))),

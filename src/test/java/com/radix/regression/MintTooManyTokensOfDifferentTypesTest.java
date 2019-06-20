@@ -5,6 +5,7 @@ import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
 import com.radixdlt.client.core.Bootstrap;
+import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
 import io.reactivex.observers.BaseTestConsumer.TestWaitStrategy;
 import io.reactivex.observers.TestObserver;
@@ -33,8 +34,8 @@ public class MintTooManyTokensOfDifferentTypesTest {
 	private static TestObserver<SubmitAtomAction> createToken(RadixApplicationAPI api) {
 		TestObserver<SubmitAtomAction> observer = new TestObserver<>();
 		api.createToken(
+			RRI.of(api.getMyAddress(), "TEST"),
 			"TestToken",
-			"TEST",
 			"TestToken",
 			BigDecimal.valueOf(2).pow(256).subtract(BigDecimal.ONE).scaleByPowerOfTen(-18),
 			TokenUnitConversions.getMinimumGranularity(),

@@ -92,7 +92,7 @@ public class BurnMultiIssuanceTokens {
 		setupApi();
 		// No tokens exist for this account, because it is a freshly created account
 		RRI tokenClass = RRI.of(api.getMyAddress(), symbol);
-		TokenDefinitionsState tokenClassesState = api.getMyTokenClasses()
+		TokenDefinitionsState tokenClassesState = api.getTokenDefs()
 			.firstOrError()
 			.blockingGet();
 		assertFalse(tokenClassesState.getState().containsKey(tokenClass));
@@ -189,8 +189,8 @@ public class BurnMultiIssuanceTokens {
 	private void createToken(RadixApplicationAPI api, CreateTokenAction.TokenSupplyType tokenCreateSupplyType) {
 		TestObserver<SubmitAtomAction> observer = new TestObserver<>();
 		api.createToken(
+			RRI.of(api.getMyAddress(), this.properties.get(SYMBOL)),
 				this.properties.get(NAME),
-				this.properties.get(SYMBOL),
 				this.properties.get(DESCRIPTION),
 				BigDecimal.valueOf(Long.valueOf(this.properties.get(INITIAL_SUPPLY))),
 				BigDecimal.valueOf(Long.valueOf(this.properties.get(GRANULARITY))),

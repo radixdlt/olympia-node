@@ -36,9 +36,8 @@ public class DoubleSpendCreateTokenTestConditions implements DoubleSpendTestCond
 			Collections.singletonList(
 				new BatchedActions(
 					CreateTokenAction.create(
-						apiAddress,
+						this.tokenRef,
 						"Joshy Token",
-						"JOSH",
 						"Cool Token",
 						BigDecimal.ONE,
 						BigDecimal.ONE,
@@ -49,9 +48,8 @@ public class DoubleSpendCreateTokenTestConditions implements DoubleSpendTestCond
 			Collections.singletonList(
 				new BatchedActions(
 					CreateTokenAction.create(
-						apiAddress,
+						this.tokenRef,
 						"Joshy Token 2",
-						"JOSH",
 						"Cool Token 2",
 						BigDecimal.valueOf(2),
 						BigDecimal.ONE,

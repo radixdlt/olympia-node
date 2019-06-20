@@ -32,9 +32,8 @@ public class DoubleSpendTokenTransferIntraDependencyTestConditions implements Do
 		return Collections.singletonList(
 			new BatchedActions(
 				CreateTokenAction.create(
-					apiAddress,
+					this.tokenRef,
 					"Joshy Token",
-					"JOSH",
 					"Cool Token",
 					BigDecimal.valueOf(2),
 					BigDecimal.ONE,

@@ -104,7 +104,7 @@ public class MintMultiIssuanceTokens {
 		setupApi();
 		// No tokens exist for this account, because it is a freshly created account
 		RRI tokenClass = RRI.of(api.getMyAddress(), symbol);
-		TokenDefinitionsState tokenClassesState = api.getMyTokenClasses()
+		TokenDefinitionsState tokenClassesState = api.getTokenDefs()
 			.firstOrError()
 			.blockingGet();
 		assertFalse(tokenClassesState.getState().containsKey(tokenClass));
@@ -191,8 +191,8 @@ public class MintMultiIssuanceTokens {
 	private void createToken(RadixApplicationAPI api, CreateTokenAction.TokenSupplyType tokenCreateSupplyType) {
 		TestObserver<SubmitAtomAction> observer = new TestObserver<>();
 		api.createToken(
+				RRI.of(api.getMyAddress(), this.properties.get(SYMBOL)),
 				this.properties.get(NAME),
-				this.properties.get(SYMBOL),
 				this.properties.get(DESCRIPTION),
 				new BigDecimal(this.properties.get(INITIAL_SUPPLY)),
 				new BigDecimal(this.properties.get(GRANULARITY)),
