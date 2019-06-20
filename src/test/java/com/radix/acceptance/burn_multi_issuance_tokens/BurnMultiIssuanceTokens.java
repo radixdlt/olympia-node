@@ -92,7 +92,7 @@ public class BurnMultiIssuanceTokens {
 		setupApi();
 		// No tokens exist for this account, because it is a freshly created account
 		RRI tokenClass = RRI.of(api.getMyAddress(), symbol);
-		TokenDefinitionsState tokenClassesState = api.getMyTokenClasses()
+		TokenDefinitionsState tokenClassesState = api.getTokenDefs()
 			.firstOrError()
 			.blockingGet();
 		assertFalse(tokenClassesState.getState().containsKey(tokenClass));

@@ -112,7 +112,7 @@ public class CreateSingleIssuanceTokenClass {
 			.blockingGet();
 
 		TestObserver<Object> observer = new TestObserver<>();
-		api.transferTokens(tokenClass, api.getMyAddress(), arbitrary, BigDecimal.valueOf(count))
+		api.sendTokens(tokenClass, api.getMyAddress(), arbitrary, BigDecimal.valueOf(count))
 			.toObservable()
 			.doOnNext(System.out::println)
 			.subscribe(observer);
