@@ -88,8 +88,8 @@ import io.reactivex.disposables.Disposables;
 import io.reactivex.observables.ConnectableObservable;
 
 /**
- * The Radix Application API, a high level api. The class hides the complexity of atoms and cryptography
- * and exposes a simple high level interface for interaction with a Radix ledger.
+ * The Radix Application API, a high level api which hides the complexity of atoms, cryptography, and
+ * consensus. It exposes a simple high level interface for interaction with a Radix ledger.
  */
 public class RadixApplicationAPI {
 	private static final Logger LOGGER = LoggerFactory.getLogger(RadixApplicationAPI.class);
@@ -395,7 +395,7 @@ public class RadixApplicationAPI {
 	 * @return a hot observable of latest state of the native token
 	 */
 	public Observable<TokenState> getNativeTokenClass() {
-		return getTokenClass(getNativeTokenRef());
+		return getTokenDef(getNativeTokenRef());
 	}
 
 	/**
@@ -466,24 +466,24 @@ public class RadixApplicationAPI {
 	}
 
 	/**
-	 * Returns a hot observable of the latest state of token classes at a given
+	 * Returns a hot observable of the latest state of token definitions at a given
 	 * address
 	 *
 	 * @param address the address of the account to check
-	 * @return a hot observable of the latest state of token classes
+	 * @return a hot observable of the latest state of token definitions
 	 */
-	public Observable<TokenDefinitionsState> getTokenClasses(RadixAddress address) {
+	public Observable<TokenDefinitionsState> getTokenDefs(RadixAddress address) {
 		return getState(TokenDefinitionsState.class, address);
 	}
 
 	/**
-	 * Returns a hot observable of the latest state of token classes at the user's
+	 * Returns a hot observable of the latest state of token definitions at the user's
 	 * address
 	 *
-	 * @return a hot observable of the latest state of token classes
+	 * @return a hot observable of the latest state of token definitions
 	 */
-	public Observable<TokenDefinitionsState> getMyTokenClasses() {
-		return getTokenClasses(getMyAddress());
+	public Observable<TokenDefinitionsState> getTokenDefs() {
+		return getTokenDefs(getMyAddress());
 	}
 
 	/**
@@ -491,8 +491,8 @@ public class RadixApplicationAPI {
 	 *
 	 * @return a hot observable of the latest state of the token
 	 */
-	public Observable<TokenState> getTokenClass(RRI tokenRRI) {
-		return this.getTokenClasses(tokenRRI.getAddress())
+	public Observable<TokenState> getTokenDef(RRI tokenRRI) {
+		return this.getTokenDefs(tokenRRI.getAddress())
 			.flatMapMaybe(m -> Optional.ofNullable(m.getState().get(tokenRRI)).map(Maybe::just).orElse(Maybe.empty()));
 	}
 
@@ -531,7 +531,7 @@ public class RadixApplicationAPI {
 		return execute(sendMessageAction);
 	}
 
-	public Observable<TokenTransfer> getMyTokenTransfers() {
+	public Observable<TokenTransfer> getTokenTransfers() {
 		return getTokenTransfers(getMyAddress());
 	}
 
@@ -540,20 +540,20 @@ public class RadixApplicationAPI {
 		return getActions(TokenTransfer.class, address);
 	}
 
-	public Observable<Map<RRI, BigDecimal>> getBalance(RadixAddress address) {
+	public Observable<Map<RRI, BigDecimal>> getBalances(RadixAddress address) {
 		Objects.requireNonNull(address);
 		return getState(TokenBalanceState.class, address)
 			.map(TokenBalanceState::getBalance);
 	}
 
-	public Observable<BigDecimal> getMyBalance(RRI tokenRRI) {
+	public Observable<BigDecimal> getBalance(RRI tokenRRI) {
 		return getBalance(getMyAddress(), tokenRRI);
 	}
 
 	public Observable<BigDecimal> getBalance(RadixAddress address, RRI token) {
 		Objects.requireNonNull(token);
 
-		return getBalance(address)
+		return getBalances(address)
 			.map(balances -> Optional.ofNullable(balances.get(token)).orElse(BigDecimal.ZERO));
 	}
 
@@ -684,8 +684,8 @@ public class RadixApplicationAPI {
 	 * @param amount the amount and token type
 	 * @return result of the transaction
 	 */
-	public Result transferTokens(RRI token, RadixAddress to, BigDecimal amount) {
-		return transferTokens(token, getMyAddress(), to, amount);
+	public Result sendTokens(RRI token, RadixAddress to, BigDecimal amount) {
+		return sendTokens(token, getMyAddress(), to, amount);
 	}
 
 	/**
@@ -696,7 +696,7 @@ public class RadixApplicationAPI {
 	 * @param message message to be encrypted and attached to transfer
 	 * @return result of the transaction
 	 */
-	public Result transferTokens(
+	public Result sendTokens(
 		RRI token,
 		RadixAddress to,
 		BigDecimal amount,
@@ -709,24 +709,30 @@ public class RadixApplicationAPI {
 			attachment = null;
 		}
 
-		return transferTokens(token, getMyAddress(), to, amount, attachment);
+		return sendTokens(token, getMyAddress(), to, amount, attachment);
 	}
 
 	/**
-	 * Transfers an amount of a token with a data attachment to an address
+	 * Transfers an amount of tokens with an attachment to an address
 	 *
 	 * @param to the address to send tokens to
 	 * @param amount the amount and token type
 	 * @param attachment the data attached to the transaction
 	 * @return result of the transaction
 	 */
-	public Result transferTokens(RRI token, RadixAddress to, BigDecimal amount, @Nullable byte[] attachment) {
-		return transferTokens(token, getMyAddress(), to, amount, attachment);
+	public Result sendTokens(RRI token, RadixAddress to, BigDecimal amount, @Nullable byte[] attachment) {
+		return sendTokens(token, getMyAddress(), to, amount, attachment);
 	}
 
-
-	public Result transferTokens(RRI token, RadixAddress from, RadixAddress to, BigDecimal amount) {
-		return transferTokens(token, from, to, amount, null);
+	/**
+	 * Transfers an amount of tokens to an address
+	 *
+	 * @param to the address to send tokens to
+	 * @param amount the amount and token type
+	 * @return result of the transaction
+	 */
+	public Result sendTokens(RRI token, RadixAddress from, RadixAddress to, BigDecimal amount) {
+		return sendTokens(token, from, to, amount, null);
 	}
 
 	/**
@@ -738,7 +744,7 @@ public class RadixApplicationAPI {
 	 * @param attachment the data attached to the transaction
 	 * @return result of the transaction
 	 */
-	public Result transferTokens(
+	public Result sendTokens(
 		RRI token,
 		RadixAddress from,
 		RadixAddress to,

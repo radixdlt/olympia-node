@@ -133,18 +133,18 @@ result.blockUntilComplete();
 ## Sending and Retrieving Tokens
 To send an amount from my address to another address:
 ```
-Result result = api.transferTokens(tokenRRI, BigDecimal.valueOf(10.99), <to-address>);
+Result result = api.sendTokens(tokenRRI, BigDecimal.valueOf(10.99), <to-address>);
 result.blockUntilComplete();
 ```
 
 To retrieve all of the token transfers which have occurred in my account:
 ```
-Observable<TokenTransfer> transfers = api.getMyTokenTransfers();
+Observable<TokenTransfer> transfers = api.getTokenTransfers();
 transfers.subscribe(tx -> { ... });
 ```
 
 To get a stream of the balance of tokens in my account:
 ```
-Observable<BigDecimal> balance = api.getMyBalance(tokenRRI);
+Observable<BigDecimal> balance = api.getBalance(tokenRRI);
 balance.subscribe(bal -> { ... });
 ```
