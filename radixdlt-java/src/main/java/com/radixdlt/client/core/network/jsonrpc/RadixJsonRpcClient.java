@@ -211,7 +211,7 @@ public class RadixJsonRpcClient {
 
 		return this.jsonRpcCall("Atoms.submitAtom", jsonAtom).map(r -> {
 			if (!r.isSuccess || r.getError() != null) {
-				throw new RuntimeException();
+				throw new SubmitAtomException(r.getError().getAsJsonObject());
 			} else {
 				return r;
 			}
