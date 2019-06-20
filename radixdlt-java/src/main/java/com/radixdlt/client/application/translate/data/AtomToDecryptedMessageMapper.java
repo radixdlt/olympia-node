@@ -1,5 +1,6 @@
 package com.radixdlt.client.application.translate.data;
 
+import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -36,7 +37,10 @@ public class AtomToDecryptedMessageMapper implements AtomToExecutedActionsMapper
 
 	@Override
 	public Observable<DecryptedMessage> map(Atom atom, RadixIdentity identity) {
-		final Optional<MessageParticle> bytesParticle = atom.getMessageParticles().stream()
+		final Optional<MessageParticle> bytesParticle = atom.spunParticles()
+			.map(SpunParticle::getParticle)
+			.filter(p -> p instanceof MessageParticle)
+			.map(p -> (MessageParticle) p)
 			.filter(p -> !"encryptor".equals(p.getMetaData("application")))
 			.findFirst();
 
@@ -51,7 +55,10 @@ public class AtomToDecryptedMessageMapper implements AtomToExecutedActionsMapper
 
 		bytesParticle.ifPresent(p -> metaData.compute("application", (k, v) -> p.getMetaData("application")));
 
-		final Optional<MessageParticle> encryptorParticle = atom.getMessageParticles().stream()
+		final Optional<MessageParticle> encryptorParticle = atom.spunParticles()
+			.map(SpunParticle::getParticle)
+			.filter(p -> p instanceof MessageParticle)
+			.map(p -> (MessageParticle) p)
 			.filter(p -> "encryptor".equals(p.getMetaData("application")))
 			.findAny();
 		metaData.put("encrypted", encryptorParticle.isPresent());

@@ -2,13 +2,12 @@ package com.radixdlt.client.application.translate.tokens;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
-import com.radixdlt.client.application.identity.UnencryptedData;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import java.math.BigDecimal;
 import org.junit.Test;
+import org.radix.utils.RadixConstants;
 
 public class TokenTransferTest {
 
@@ -28,8 +27,7 @@ public class TokenTransferTest {
 		RadixAddress from = mock(RadixAddress.class);
 		RadixAddress to = mock(RadixAddress.class);
 		RRI token = mock(RRI.class);
-		UnencryptedData attachment = mock(UnencryptedData.class);
-		when(attachment.getData()).thenReturn("Hello".getBytes());
+		byte[] attachment = "Hello".getBytes(RadixConstants.STANDARD_CHARSET);
 		TokenTransfer tokenTransfer = new TokenTransfer(from, to, token, BigDecimal.ONE, attachment, 1L);
 		assertThat(tokenTransfer.toString()).isNotNull();
 		assertThat(tokenTransfer.getAttachment()).isPresent();

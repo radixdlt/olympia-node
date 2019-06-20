@@ -6,6 +6,7 @@ import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.RRI;
+import com.radixdlt.client.core.ledger.AtomStore;
 import com.radixdlt.client.core.network.RadixNetworkController;
 import com.radixdlt.client.core.network.actions.SubmitAtomCompleteAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
@@ -24,13 +25,12 @@ import java.util.stream.Stream;
 
 import java.util.stream.StreamSupport;
 import org.radix.common.tuples.Pair;
+import org.radix.utils.RadixConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.radixdlt.client.application.identity.Data;
-import com.radixdlt.client.application.identity.Data.DataBuilder;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.ActionExecutionException.ActionExecutionExceptionBuilder;
@@ -88,8 +88,8 @@ import io.reactivex.disposables.Disposables;
 import io.reactivex.observables.ConnectableObservable;
 
 /**
- * The Radix Dapp API, a high level api which dapps can utilize. The class hides
- * the complexity of Atoms and cryptography and exposes a simple high level interface.
+ * The Radix Application API, a high level api which hides the complexity of atoms, cryptography, and
+ * consensus. It exposes a simple high level interface for interaction with a Radix ledger.
  */
 public class RadixApplicationAPI {
 	private static final Logger LOGGER = LoggerFactory.getLogger(RadixApplicationAPI.class);
@@ -337,18 +337,6 @@ public class RadixApplicationAPI {
 	}
 
 
-	public Observable<RadixNetworkState> getNetworkState() {
-		return this.universe.getNetworkController().getNetwork();
-	}
-
-	public Ledger getLedger() {
-		return this.ledger;
-	}
-
-	public RadixNetworkController getNetworkController() {
-		return this.universe.getNetworkController();
-	}
-
 	private <T extends ApplicationState> ParticleReducer<T> getStateReducer(Class<T> storeClass) {
 		ParticleReducer<T> store = this.applicationStores.get(storeClass);
 		if (store == null) {
@@ -407,7 +395,7 @@ public class RadixApplicationAPI {
 	 * @return a hot observable of latest state of the native token
 	 */
 	public Observable<TokenState> getNativeTokenClass() {
-		return getTokenClass(getNativeTokenRef());
+		return getTokenDef(getNativeTokenRef());
 	}
 
 	/**
@@ -478,24 +466,24 @@ public class RadixApplicationAPI {
 	}
 
 	/**
-	 * Returns a hot observable of the latest state of token classes at a given
+	 * Returns a hot observable of the latest state of token definitions at a given
 	 * address
 	 *
 	 * @param address the address of the account to check
-	 * @return a hot observable of the latest state of token classes
+	 * @return a hot observable of the latest state of token definitions
 	 */
-	public Observable<TokenDefinitionsState> getTokenClasses(RadixAddress address) {
+	public Observable<TokenDefinitionsState> getTokenDefs(RadixAddress address) {
 		return getState(TokenDefinitionsState.class, address);
 	}
 
 	/**
-	 * Returns a hot observable of the latest state of token classes at the user's
+	 * Returns a hot observable of the latest state of token definitions at the user's
 	 * address
 	 *
-	 * @return a hot observable of the latest state of token classes
+	 * @return a hot observable of the latest state of token definitions
 	 */
-	public Observable<TokenDefinitionsState> getMyTokenClasses() {
-		return getTokenClasses(getMyAddress());
+	public Observable<TokenDefinitionsState> getTokenDefs() {
+		return getTokenDefs(getMyAddress());
 	}
 
 	/**
@@ -503,9 +491,9 @@ public class RadixApplicationAPI {
 	 *
 	 * @return a hot observable of the latest state of the token
 	 */
-	public Observable<TokenState> getTokenClass(RRI ref) {
-		return this.getTokenClasses(ref.getAddress())
-			.flatMapMaybe(m -> Optional.ofNullable(m.getState().get(ref)).map(Maybe::just).orElse(Maybe.empty()));
+	public Observable<TokenState> getTokenDef(RRI tokenRRI) {
+		return this.getTokenDefs(tokenRRI.getAddress())
+			.flatMapMaybe(m -> Optional.ofNullable(m.getState().get(tokenRRI)).map(Maybe::just).orElse(Maybe.empty()));
 	}
 
 	public ECPublicKey getMyPublicKey() {
@@ -543,7 +531,7 @@ public class RadixApplicationAPI {
 		return execute(sendMessageAction);
 	}
 
-	public Observable<TokenTransfer> getMyTokenTransfers() {
+	public Observable<TokenTransfer> getTokenTransfers() {
 		return getTokenTransfers(getMyAddress());
 	}
 
@@ -552,36 +540,35 @@ public class RadixApplicationAPI {
 		return getActions(TokenTransfer.class, address);
 	}
 
-	public Observable<Map<RRI, BigDecimal>> getBalance(RadixAddress address) {
+	public Observable<Map<RRI, BigDecimal>> getBalances(RadixAddress address) {
 		Objects.requireNonNull(address);
 		return getState(TokenBalanceState.class, address)
 			.map(TokenBalanceState::getBalance);
 	}
 
-	public Observable<BigDecimal> getMyBalance(RRI tokenDefinitionReference) {
-		return getBalance(getMyAddress(), tokenDefinitionReference);
+	public Observable<BigDecimal> getBalance(RRI tokenRRI) {
+		return getBalance(getMyAddress(), tokenRRI);
 	}
 
 	public Observable<BigDecimal> getBalance(RadixAddress address, RRI token) {
 		Objects.requireNonNull(token);
 
-		return getBalance(address)
+		return getBalances(address)
 			.map(balances -> Optional.ofNullable(balances.get(token)).orElse(BigDecimal.ZERO));
 	}
 
 	/**
-	 * Creates a third party multi-issuance token into the user's account with
+	 * Creates a multi-issuance token registered into the user's account with
 	 * zero initial supply, 10^-18 granularity and no description.
 	 *
+	 * @param tokenRRI The symbol of the token to create
 	 * @param name The name of the token to create
-	 * @param iso The symbol of the token to create
 	 * @return result of the transaction
 	 */
-	public Result createMultiIssuanceToken(String name, String iso) {
+	public Result createMultiIssuanceToken(RRI tokenRRI, String name) {
 		final CreateTokenAction tokenCreation = CreateTokenAction.create(
-			getMyAddress(),
+			tokenRRI,
 			name,
-			iso,
 			null,
 			BigDecimal.ZERO,
 			TokenUnitConversions.getMinimumGranularity(),
@@ -591,23 +578,22 @@ public class RadixApplicationAPI {
 	}
 
 	/**
-	 * Creates a third party multi-issuance token into the user's account with
+	 * Creates a multi-issuance token registered into the user's account with
 	 * zero initial supply and 10^-18 granularity
 	 *
+	 * @param tokenRRI The symbol of the token to create
 	 * @param name The name of the token to create
-	 * @param iso The symbol of the token to create
 	 * @param description A description of the token
 	 * @return result of the transaction
 	 */
 	public Result createMultiIssuanceToken(
+		RRI tokenRRI,
 		String name,
-		String iso,
 		String description
 	) {
 		final CreateTokenAction tokenCreation = CreateTokenAction.create(
-			getMyAddress(),
+			tokenRRI,
 			name,
-			iso,
 			description,
 			BigDecimal.ZERO,
 			TokenUnitConversions.getMinimumGranularity(),
@@ -617,50 +603,77 @@ public class RadixApplicationAPI {
 	}
 
 	/**
-	 * Creates a third party token into the user's account
+	 * Creates a fixed-supply token registered into the user's account with
+	 * 10^-18 granularity
 	 *
+	 * @param tokenRRI The symbol of the token to create
 	 * @param name The name of the token to create
-	 * @param iso The symbol of the token to create
 	 * @param description A description of the token
-	 * @param initialSupply The initial amount in subunits of supply for this token
+	 * @param supply The supply of the created token
+	 * @return result of the transaction
+	 */
+	public Result createFixedSupplyToken(
+		RRI tokenRRI,
+		String name,
+		String description,
+		BigDecimal supply
+	) {
+		final CreateTokenAction tokenCreation = CreateTokenAction.create(
+			tokenRRI,
+			name,
+			description,
+			supply,
+			TokenUnitConversions.getMinimumGranularity(),
+			TokenSupplyType.FIXED
+		);
+		return execute(tokenCreation);
+	}
+
+	/**
+	 * Creates a token registered into the user's account
+	 *
+	 * @param tokenRRI The symbol of the token to create
+	 * @param name The name of the token to create
+	 * @param description A description of the token
+	 * @param initialSupply The initial amount of supply for this token
 	 * @param granularity The least multiple of subunits per transaction for this token
 	 * @param tokenSupplyType The type of supply for this token: Fixed or Mutable
 	 * @return result of the transaction
 	 */
 	public Result createToken(
+		RRI tokenRRI,
 		String name,
-		String iso,
 		String description,
 		BigDecimal initialSupply,
 		BigDecimal granularity,
 		TokenSupplyType tokenSupplyType
 	) {
-		CreateTokenAction tokenCreation = CreateTokenAction.create(
-				getMyAddress(), name, iso, description, initialSupply, granularity, tokenSupplyType);
+		CreateTokenAction tokenCreation = CreateTokenAction.create(tokenRRI,
+				name, description, initialSupply, granularity, tokenSupplyType);
 		return execute(tokenCreation);
 	}
 
 	/**
 	 * Mints an amount of new tokens into the user's account
 	 *
-	 * @param iso The symbol of the token to mint
+	 * @param token The symbol of the token to mint
 	 * @param amount The amount to mint
 	 * @return result of the transaction
 	 */
-	public Result mintTokens(String iso, BigDecimal amount) {
-		MintTokensAction mintTokensAction = MintTokensAction.create(RRI.of(getMyAddress(), iso), amount);
+	public Result mintTokens(RRI token, BigDecimal amount) {
+		MintTokensAction mintTokensAction = MintTokensAction.create(token, amount);
 		return execute(mintTokensAction);
 	}
 
 	/**
 	 * Burns an amount of tokens in the user's account
 	 *
-	 * @param iso The symbol of the token to mint
+	 * @param token The symbol of the token to mint
 	 * @param amount The amount to mint
 	 * @return result of the transaction
 	 */
-	public Result burnTokens(String iso, BigDecimal amount) {
-		BurnTokensAction burnTokensAction = BurnTokensAction.create(getMyAddress(), RRI.of(getMyAddress(), iso), amount);
+	public Result burnTokens(RRI token, BigDecimal amount) {
+		BurnTokensAction burnTokensAction = BurnTokensAction.create(getMyAddress(), token, amount);
 		return execute(burnTokensAction);
 	}
 
@@ -671,8 +684,8 @@ public class RadixApplicationAPI {
 	 * @param amount the amount and token type
 	 * @return result of the transaction
 	 */
-	public Result transferTokens(RadixAddress to, BigDecimal amount, RRI token) {
-		return transferTokens(getMyAddress(), to, amount, token);
+	public Result sendTokens(RRI token, RadixAddress to, BigDecimal amount) {
+		return sendTokens(token, getMyAddress(), to, amount);
 	}
 
 	/**
@@ -683,40 +696,43 @@ public class RadixApplicationAPI {
 	 * @param message message to be encrypted and attached to transfer
 	 * @return result of the transaction
 	 */
-	public Result transferTokens(
+	public Result sendTokens(
+		RRI token,
 		RadixAddress to,
 		BigDecimal amount,
-		RRI token,
 		@Nullable String message
 	) {
-		final Data attachment;
+		final byte[] attachment;
 		if (message != null) {
-			attachment = new DataBuilder()
-				.addReader(to.getPublicKey())
-				.addReader(getMyPublicKey())
-				.bytes(message.getBytes()).build();
+			attachment = message.getBytes(RadixConstants.STANDARD_CHARSET);
 		} else {
 			attachment = null;
 		}
 
-		return transferTokens(getMyAddress(), to, amount, token, attachment);
+		return sendTokens(token, getMyAddress(), to, amount, attachment);
 	}
 
 	/**
-	 * Transfers an amount of a token with a data attachment to an address
+	 * Transfers an amount of tokens with an attachment to an address
 	 *
 	 * @param to the address to send tokens to
 	 * @param amount the amount and token type
 	 * @param attachment the data attached to the transaction
 	 * @return result of the transaction
 	 */
-	public Result transferTokens(RadixAddress to, BigDecimal amount, RRI token, @Nullable Data attachment) {
-		return transferTokens(getMyAddress(), to, amount, token, attachment);
+	public Result sendTokens(RRI token, RadixAddress to, BigDecimal amount, @Nullable byte[] attachment) {
+		return sendTokens(token, getMyAddress(), to, amount, attachment);
 	}
 
-
-	public Result transferTokens(RadixAddress from, RadixAddress to, BigDecimal amount, RRI token) {
-		return transferTokens(from, to, amount, token, null);
+	/**
+	 * Transfers an amount of tokens to an address
+	 *
+	 * @param to the address to send tokens to
+	 * @param amount the amount and token type
+	 * @return result of the transaction
+	 */
+	public Result sendTokens(RRI token, RadixAddress from, RadixAddress to, BigDecimal amount) {
+		return sendTokens(token, from, to, amount, null);
 	}
 
 	/**
@@ -728,12 +744,12 @@ public class RadixApplicationAPI {
 	 * @param attachment the data attached to the transaction
 	 * @return result of the transaction
 	 */
-	public Result transferTokens(
+	public Result sendTokens(
+		RRI token,
 		RadixAddress from,
 		RadixAddress to,
 		BigDecimal amount,
-		RRI token,
-		@Nullable Data attachment
+		@Nullable byte[] attachment
 	) {
 		Objects.requireNonNull(from);
 		Objects.requireNonNull(to);
@@ -899,6 +915,7 @@ public class RadixApplicationAPI {
 			}));
 	}
 
+
 	/**
 	 * Low level call to submit an atom into the network.
 	 * @param atom atom to submit
@@ -937,5 +954,33 @@ public class RadixApplicationAPI {
 			.replay();
 
 		return new Result(updates, atomErrorMappers);
+	}
+
+	/**
+	 * Retrieve the atom store used by the API
+	 *
+	 * @return the atom store
+	 */
+	public AtomStore getAtomStore() {
+		return this.ledger.getAtomStore();
+	}
+
+	/**
+	 * Get a stream of updated network states as they occur.
+	 *
+	 * @return a hot observable of the current network state
+	 */
+	public Observable<RadixNetworkState> getNetworkState() {
+		return this.universe.getNetworkController().getNetwork();
+	}
+
+	/**
+	 * Low level call to retrieve the network controller used
+	 * by the API.
+	 *
+	 * @return the network controller
+	 */
+	public RadixNetworkController getNetworkController() {
+		return this.universe.getNetworkController();
 	}
 }
