@@ -2,6 +2,7 @@ package com.radixdlt.client.application.translate.data;
 
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import org.bouncycastle.util.encoders.Base64;
+import org.radix.common.ID.EUID;
 
 /**
  * An application layer object representing some data found on the ledger.
@@ -31,13 +32,23 @@ public class DecryptedMessage {
 	private final byte[] data;
 	private final EncryptionState encryptionState;
 	private final long timestamp;
+	private final EUID actionId;
 
-	public DecryptedMessage(byte[] data, RadixAddress from, RadixAddress to, EncryptionState encryptionState, long timestamp) {
+	public DecryptedMessage(byte[] data, RadixAddress from, RadixAddress to, EncryptionState encryptionState, long timestamp, EUID actionId) {
 		this.from = from;
 		this.data = data;
 		this.to = to;
 		this.encryptionState = encryptionState;
 		this.timestamp = timestamp;
+		this.actionId = actionId;
+	}
+
+	/**
+	 * The unique id for the this message action
+	 * @return euid for the action
+	 */
+	public EUID getActionId() {
+		return actionId;
 	}
 
 	public EncryptionState getEncryptionState() {
