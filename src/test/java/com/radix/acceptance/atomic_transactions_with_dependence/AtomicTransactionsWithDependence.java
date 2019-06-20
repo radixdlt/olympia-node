@@ -4,15 +4,17 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.radix.acceptance.SpecificProperties;
 import com.radixdlt.client.application.RadixApplicationAPI;
+import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.tokens.AtomToTokenTransfersMapper;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.application.translate.tokens.CreateTokenToParticleGroupsMapper;
-import com.radixdlt.client.application.translate.tokens.MintAndTransferTokensActionMapper;
+import com.radixdlt.client.application.translate.tokens.MintTokensAction;
 import com.radixdlt.client.application.translate.tokens.TokenBalanceReducer;
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionsReducer;
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
+import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.application.translate.tokens.TransferTokensToParticleGroupsMapper;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.Bootstrap;
@@ -21,15 +23,14 @@ import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.ParticleGroup.ParticleGroupBuilder;
 import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.atoms.particles.Spin;
-import com.radixdlt.client.core.network.actions.SubmitAtomReceivedAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomSendAction;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
-import io.reactivex.observers.BaseTestConsumer.TestWaitStrategy;
 import io.reactivex.observers.TestObserver;
 
 import java.math.BigDecimal;
@@ -37,7 +38,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.tuple;
 
 /**
  * See <a href="https://radixdlt.atlassian.net/browse/RLAU-645">RLAU-645</a>.
@@ -90,20 +90,48 @@ public class AtomicTransactionsWithDependence {
 		RadixIdentity toIdentity = RadixIdentities.createNew();
 		RadixAddress toAddress = api.getAddressFromKey(toIdentity.getPublicKey());
 		TestObserver<Object> observer = new TestObserver<>();
-		api.mintAndTransferTokens("TEST0", BigDecimal.valueOf(7), toAddress)
+		api.execute(new MintAndTransferTokensAction(RRI.of(api.getMyAddress(), "TEST0"), BigDecimal.valueOf(7), toAddress))
 			.toObservable()
-			.doOnNext(System.out::println)
 			.subscribe(observer);
 		observers.add(observer);
 	}
 
 	@When("^I submit a particle group spending a consumable that was created in a group with a lower index$")
 	public void iSubmitAParticleGroupSpendingAConsumableThatWasCreatedInAGroupWithALowerIndex() {
-		mintAndTransferTokensWith(new MintAndTransferTokensActionMapper()); // correct behaviour is the default behaviour
+		RadixApplicationAPI api = new RadixApplicationAPI.RadixApplicationAPIBuilder()
+			.defaultFeeMapper()
+			.universe(RadixUniverse.create(Bootstrap.LOCALHOST_SINGLENODE))
+			.addStatelessParticlesMapper(new CreateTokenToParticleGroupsMapper())
+			.addStatefulParticlesMapper(new TransferTokensToParticleGroupsMapper())
+			.addReducer(new TokenDefinitionsReducer())
+			.addReducer(new TokenBalanceReducer())
+			.addAtomMapper(new AtomToTokenTransfersMapper())
+			.identity(RadixIdentities.createNew())
+			.build();
+
+		this.properties.put(SYMBOL, "TEST0");
+		createToken(CreateTokenAction.TokenSupplyType.MUTABLE, api);
+		i_can_observe_atom_being_accepted(1);
+		this.observers.clear();
+
+		RadixIdentity toIdentity = RadixIdentities.createNew();
+		RadixAddress toAddress = api.getAddressFromKey(toIdentity.getPublicKey());
+		TestObserver<Object> observer = new TestObserver<>();
+		Transaction transaction = api.createTransaction();
+		transaction.execute(MintTokensAction.create(RRI.of(api.getMyAddress(), "TEST0"), BigDecimal.valueOf(7)));
+		transaction.execute(TransferTokensAction.create(api.getMyAddress(), toAddress, BigDecimal.valueOf(7), RRI.of(api.getMyAddress(), "TEST0")));
+		transaction.commit()
+			.toObservable()
+			.doOnNext(System.out::println)
+			.subscribe(observer);
+		observers.add(observer);
 	}
 
 	@When("^I submit a particle group spending a consumable that was created in same group$")
 	public void iSubmitAParticleGroupSpendingAConsumableThatWasCreatedInSameGroup() {
+
+
+
 		mintAndTransferTokensWith(new MintAndTransferTokensActionMapper((mintTransition, transferTransition) -> {
 
 			ParticleGroupBuilder groupBuilder = ParticleGroup.builder();
