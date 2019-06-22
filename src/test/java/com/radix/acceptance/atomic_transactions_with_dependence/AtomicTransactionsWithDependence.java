@@ -73,9 +73,9 @@ public class AtomicTransactionsWithDependence {
 		RadixApplicationAPI api = new RadixApplicationAPI.RadixApplicationAPIBuilder()
 			.defaultFeeMapper()
 			.universe(RadixUniverse.create(Bootstrap.LOCALHOST_SINGLENODE))
-			.addStatelessParticlesMapper(new CreateTokenToParticleGroupsMapper())
-			.addStatefulParticlesMapper(actionMapper)
-			.addStatefulParticlesMapper(new TransferTokensToParticleGroupsMapper())
+			.addStatelessParticlesMapper(CreateTokenAction.class, new CreateTokenToParticleGroupsMapper())
+			.addStatefulParticlesMapper(MintAndTransferTokensAction.class, actionMapper)
+			.addStatefulParticlesMapper(TransferTokensAction.class, new TransferTokensToParticleGroupsMapper())
 			.addReducer(new TokenDefinitionsReducer())
 			.addReducer(new TokenBalanceReducer())
 			.addAtomMapper(new AtomToTokenTransfersMapper())
@@ -98,14 +98,8 @@ public class AtomicTransactionsWithDependence {
 
 	@When("^I submit a particle group spending a consumable that was created in a group with a lower index$")
 	public void iSubmitAParticleGroupSpendingAConsumableThatWasCreatedInAGroupWithALowerIndex() {
-		RadixApplicationAPI api = new RadixApplicationAPI.RadixApplicationAPIBuilder()
-			.defaultFeeMapper()
+		RadixApplicationAPI api = RadixApplicationAPI.defaultBuilder()
 			.universe(RadixUniverse.create(Bootstrap.LOCALHOST_SINGLENODE))
-			.addStatelessParticlesMapper(new CreateTokenToParticleGroupsMapper())
-			.addStatefulParticlesMapper(new TransferTokensToParticleGroupsMapper())
-			.addReducer(new TokenDefinitionsReducer())
-			.addReducer(new TokenBalanceReducer())
-			.addAtomMapper(new AtomToTokenTransfersMapper())
 			.identity(RadixIdentities.createNew())
 			.build();
 

@@ -1,5 +1,6 @@
 package com.radix.regression;
 
+import com.radixdlt.client.application.translate.data.SendMessageAction;
 import java.util.stream.Stream;
 
 import org.junit.Test;
@@ -39,7 +40,7 @@ public class SendReceiveEncryptedDataTransactionTest {
 			.defaultFeeMapper()
 			.universe(RadixUniverse.create(Bootstrap.LOCALHOST_SINGLENODE))
 			.identity(normalApi.getMyIdentity())
-			.addStatelessParticlesMapper(msgMapper)
+			.addStatelessParticlesMapper(SendMessageAction.class, msgMapper)
 			.build();
 		Result msgSendResult = sendMessageWithDifferentKeyApi.sendMessage(new byte[] {0, 1, 2, 3}, true);
 		msgSendResult.toObservable().subscribe(Util.loggingObserver("MessageSender"));
