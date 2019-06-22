@@ -19,7 +19,6 @@ import java.util.stream.Stream;
 import org.bouncycastle.util.encoders.Base64;
 import org.radix.utils.UInt256;
 
-import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
@@ -27,7 +26,7 @@ import com.radixdlt.client.core.atoms.particles.SpunParticle;
 /**
  * Maps a send message action to the particles necessary to be included in an atom.
  */
-public class TransferTokensToParticleGroupsMapper implements StatefulActionToParticleGroupsMapper {
+public class TransferTokensToParticleGroupsMapper implements StatefulActionToParticleGroupsMapper<TransferTokensAction> {
 	public TransferTokensToParticleGroupsMapper() {
 	}
 
@@ -88,24 +87,12 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 	}
 
 	@Override
-	public Set<ShardedParticleStateId> requiredState(Action action) {
-		if (!(action instanceof TransferTokensAction)) {
-			return Collections.emptySet();
-		}
-
-		TransferTokensAction transfer = (TransferTokensAction) action;
-
+	public Set<ShardedParticleStateId> requiredState(TransferTokensAction transfer) {
 		return Collections.singleton(ShardedParticleStateId.of(TransferrableTokensParticle.class, transfer.getFrom()));
 	}
 
 	@Override
-	public List<ParticleGroup> mapToParticleGroups(Action action, Stream<Particle> store)
-		throws InsufficientFundsException {
-		if (!(action instanceof TransferTokensAction)) {
-			return Collections.emptyList();
-		}
-
-		TransferTokensAction transfer = (TransferTokensAction) action;
+	public List<ParticleGroup> mapToParticleGroups(TransferTokensAction transfer, Stream<Particle> store) {
 		final RRI tokenRef = transfer.getTokenDefRef();
 
 		List<TransferrableTokensParticle> tokenConsumables = store

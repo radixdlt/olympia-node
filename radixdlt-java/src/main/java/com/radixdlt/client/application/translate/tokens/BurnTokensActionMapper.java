@@ -18,14 +18,13 @@ import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.particles.Particle;
 
-import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 
 import java.util.stream.Stream;
 import org.radix.utils.UInt256;
 
-public class BurnTokensActionMapper implements StatefulActionToParticleGroupsMapper {
+public class BurnTokensActionMapper implements StatefulActionToParticleGroupsMapper<BurnTokensAction> {
 	private final FungibleParticleTransitioner<TransferrableTokensParticle, UnallocatedTokensParticle> transitioner;
 
 	public BurnTokensActionMapper() {
@@ -66,26 +65,13 @@ public class BurnTokensActionMapper implements StatefulActionToParticleGroupsMap
 	}
 
 	@Override
-	public Set<ShardedParticleStateId> requiredState(Action action) {
-		if (!(action instanceof BurnTokensAction)) {
-			return Collections.emptySet();
-		}
-
-		BurnTokensAction burnTokensAction = (BurnTokensAction) action;
-
+	public Set<ShardedParticleStateId> requiredState(BurnTokensAction burnTokensAction) {
 		RadixAddress address = burnTokensAction.getAddress();
-
 		return Collections.singleton(ShardedParticleStateId.of(TransferrableTokensParticle.class, address));
 	}
 
 	@Override
-	public List<ParticleGroup> mapToParticleGroups(Action action, Stream<Particle> store) {
-		if (!(action instanceof BurnTokensAction)) {
-			return Collections.emptyList();
-		}
-
-		BurnTokensAction burnTokensAction = (BurnTokensAction) action;
-
+	public List<ParticleGroup> mapToParticleGroups(BurnTokensAction burnTokensAction, Stream<Particle> store) {
 		final RRI tokenRef = burnTokensAction.getTokenDefinitionReference();
 		final BigDecimal burnAmount = burnTokensAction.getAmount();
 
