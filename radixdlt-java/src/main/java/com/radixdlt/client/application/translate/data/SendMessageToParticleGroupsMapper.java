@@ -1,7 +1,6 @@
 package com.radixdlt.client.application.translate.data;
 
 import com.google.gson.JsonArray;
-import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.StatelessActionToParticleGroupsMapper;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.atommodel.message.MessageParticle;
@@ -25,7 +24,7 @@ import java.util.stream.Stream;
 /**
  * Maps a send message action to the particles necessary to be included in an atom.
  */
-public class SendMessageToParticleGroupsMapper implements StatelessActionToParticleGroupsMapper {
+public class SendMessageToParticleGroupsMapper implements StatelessActionToParticleGroupsMapper<SendMessageAction> {
 
 	/**
 	 * A module capable of creating new securely random ECKeyPairs
@@ -77,18 +76,13 @@ public class SendMessageToParticleGroupsMapper implements StatelessActionToParti
 	 * @return observable of spunparticles to be included in an atom for a given action
 	 */
 	@Override
-	public List<ParticleGroup> mapToParticleGroups(Action action) {
-		if (!(action instanceof SendMessageAction)) {
-			return Collections.emptyList();
-		}
-
-		SendMessageAction sendMessageAction = (SendMessageAction) action;
+	public List<ParticleGroup> mapToParticleGroups(SendMessageAction action) {
 		List<SpunParticle> particles = new ArrayList<>();
 
 		final byte[] payload;
-		if (sendMessageAction.encrypt()) {
+		if (action.encrypt()) {
 			EncryptorBuilder encryptorBuilder = new EncryptorBuilder();
-			this.encryptionScheme.apply(sendMessageAction).forEach(encryptorBuilder::addReader);
+			this.encryptionScheme.apply(action).forEach(encryptorBuilder::addReader);
 
 			ECKeyPair sharedKey = this.keyPairGenerator.get();
 
@@ -104,21 +98,21 @@ public class SendMessageToParticleGroupsMapper implements StatelessActionToParti
 					.payload(encryptorPayload)
 					.metaData("application", "encryptor")
 					.metaData("contentType", "application/json")
-					.from(sendMessageAction.getFrom())
-					.to(sendMessageAction.getTo())
+					.from(action.getFrom())
+					.to(action.getTo())
 					.build();
 			particles.add(SpunParticle.up(encryptorParticle));
 
-			payload = sharedKey.getPublicKey().encrypt(sendMessageAction.getData());
+			payload = sharedKey.getPublicKey().encrypt(action.getData());
 		} else {
-			payload = sendMessageAction.getData();
+			payload = action.getData();
 		}
 
 		MessageParticle messageParticle = new MessageParticleBuilder()
 				.payload(payload)
 				.metaData("application", "message")
-				.from(sendMessageAction.getFrom())
-				.to(sendMessageAction.getTo())
+				.from(action.getFrom())
+				.to(action.getTo())
 				.build();
 		particles.add(SpunParticle.up(messageParticle));
 

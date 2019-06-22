@@ -2,6 +2,7 @@ package com.radixdlt.client.application;
 
 import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
+import com.radixdlt.client.application.translate.unique.PutUniqueIdAction;
 import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.particles.Particle;
@@ -20,6 +21,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -162,7 +164,7 @@ public class RadixApplicationAPI {
 	/**
 	 * Action to Particle Mappers which can mapToParticleGroups without any dependency on ledger state
 	 */
-	private final List<StatelessActionToParticleGroupsMapper> statelessActionToParticleGroupsMappers;
+	private final Map<Class<? extends Action>, Function<Action, List<ParticleGroup>>> statelessActionToParticleGroupsMappers;
 
 	/**
 	 * Action to Particle Mappers which require dependencies on the ledger
@@ -184,7 +186,7 @@ public class RadixApplicationAPI {
 		RadixUniverse universe,
 		FeeMapper feeMapper,
 		Ledger ledger,
-		List<StatelessActionToParticleGroupsMapper> statelessActionToParticleGroupsMappers,
+		Map<Class<? extends Action>, Function<Action, List<ParticleGroup>>> statelessActionToParticleGroupsMappers,
 		List<StatefulActionToParticleGroupsMapper> statefulActionToParticleGroupsMappers,
 		List<ParticleReducer<? extends ApplicationState>> particleReducers,
 		List<AtomToExecutedActionsMapper<? extends Object>> atomMappers,
@@ -218,7 +220,7 @@ public class RadixApplicationAPI {
 		private RadixUniverse universe;
 		private FeeMapper feeMapper;
 		private List<ParticleReducer<? extends ApplicationState>> reducers = new ArrayList<>();
-		private List<StatelessActionToParticleGroupsMapper> statelessActionToParticleGroupsMappers = new ArrayList<>();
+		private Map<Class<? extends Action>, Function<Action, List<ParticleGroup>>> statelessActionToParticleGroupsMappers = new HashMap<>();
 		private List<StatefulActionToParticleGroupsMapper> statefulActionToParticleGroupsMappers = new ArrayList<>();
 		private List<AtomToExecutedActionsMapper<? extends Object>> atomMappers = new ArrayList<>();
 		private List<AtomErrorToExceptionReasonMapper> atomErrorMappers = new ArrayList<>();
@@ -231,8 +233,11 @@ public class RadixApplicationAPI {
 			return this;
 		}
 
-		public RadixApplicationAPIBuilder addStatelessParticlesMapper(StatelessActionToParticleGroupsMapper mapper) {
-			this.statelessActionToParticleGroupsMappers.add(mapper);
+		public <T extends Action> RadixApplicationAPIBuilder addStatelessParticlesMapper(
+			Class<T> actionClass,
+			StatelessActionToParticleGroupsMapper<T> mapper
+		) {
+			this.statelessActionToParticleGroupsMappers.put(actionClass, a -> mapper.mapToParticleGroups(actionClass.cast(a)));
 			return this;
 		}
 
@@ -323,9 +328,12 @@ public class RadixApplicationAPI {
 	public static RadixApplicationAPIBuilder defaultBuilder() {
 		return new RadixApplicationAPIBuilder()
 			.defaultFeeMapper()
-			.addStatelessParticlesMapper(new SendMessageToParticleGroupsMapper(ECKeyPairGenerator.newInstance()::generateKeyPair))
-			.addStatelessParticlesMapper(new CreateTokenToParticleGroupsMapper())
-			.addStatelessParticlesMapper(new PutUniqueIdToParticleGroupsMapper())
+			.addStatelessParticlesMapper(
+				SendMessageAction.class,
+				new SendMessageToParticleGroupsMapper(ECKeyPairGenerator.newInstance()::generateKeyPair)
+			)
+			.addStatelessParticlesMapper(CreateTokenAction.class, new CreateTokenToParticleGroupsMapper())
+			.addStatelessParticlesMapper(PutUniqueIdAction.class, new PutUniqueIdToParticleGroupsMapper())
 			.addStatefulParticlesMapper(new MintTokensActionMapper())
 			.addStatefulParticlesMapper(new BurnTokensActionMapper())
 			.addStatefulParticlesMapper(new TransferTokensToParticleGroupsMapper())
@@ -838,22 +846,26 @@ public class RadixApplicationAPI {
 
 	private void stageActions(String uuid, Iterable<Action> actions) {
 		for (Action action : actions) {
-			for (StatelessActionToParticleGroupsMapper mapper : statelessActionToParticleGroupsMappers) {
-				mapper.mapToParticleGroups(action).forEach(pg -> ledger.getAtomStore().stageParticleGroup(uuid, pg));
-			}
-
-			for (StatefulActionToParticleGroupsMapper mapper : statefulActionToParticleGroupsMappers) {
-				Set<ShardedParticleStateId> required = mapper.requiredState(action);
-				if (required.isEmpty()) {
-					continue;
+			Function<Action, List<ParticleGroup>> statelessMapper = statelessActionToParticleGroupsMappers.get(action.getClass());
+			if (statelessMapper != null) {
+				List<ParticleGroup> pgs = statelessMapper.apply(action);
+				for (ParticleGroup pg : pgs) {
+					ledger.getAtomStore().stageParticleGroup(uuid, pg);
 				}
-				Stream<Particle> particles = required.stream()
-					.flatMap(ctx -> ledger.getAtomStore()
-						.getUpParticles(ctx.address(), uuid)
-						.filter(ctx.particleClass()::isInstance)
-					);
+			} else {
+				for (StatefulActionToParticleGroupsMapper mapper : statefulActionToParticleGroupsMappers) {
+					Set<ShardedParticleStateId> required = mapper.requiredState(action);
+					if (required.isEmpty()) {
+						continue;
+					}
+					Stream<Particle> particles = required.stream()
+						.flatMap(ctx -> ledger.getAtomStore()
+							.getUpParticles(ctx.address(), uuid)
+							.filter(ctx.particleClass()::isInstance)
+						);
 
-				mapper.mapToParticleGroups(action, particles).forEach(pg -> ledger.getAtomStore().stageParticleGroup(uuid, pg));
+					mapper.mapToParticleGroups(action, particles).forEach(pg -> ledger.getAtomStore().stageParticleGroup(uuid, pg));
+				}
 			}
 		}
 	}

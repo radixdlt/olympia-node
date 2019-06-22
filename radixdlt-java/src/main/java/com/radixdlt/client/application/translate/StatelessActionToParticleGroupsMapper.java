@@ -7,7 +7,7 @@ import java.util.List;
  * Maps a high level application action to lower level spun particles used
  * to construct an atom.
  */
-public interface StatelessActionToParticleGroupsMapper {
+public interface StatelessActionToParticleGroupsMapper<T extends Action> {
 	/**
 	 * Creates new spun particles to be added to an atom given a high level
 	 * action.
@@ -15,5 +15,5 @@ public interface StatelessActionToParticleGroupsMapper {
 	 * @param action the action to map
 	 * @return observable of spun particles created given an action
 	 */
-	List<ParticleGroup> mapToParticleGroups(Action action);
+	List<ParticleGroup> mapToParticleGroups(T action);
 }

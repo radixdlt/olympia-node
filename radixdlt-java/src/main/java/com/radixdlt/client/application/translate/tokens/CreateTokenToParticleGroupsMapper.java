@@ -1,7 +1,6 @@
 package com.radixdlt.client.application.translate.tokens;
 
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.StatelessActionToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
 import com.radixdlt.client.atommodel.rri.RRIParticle;
@@ -24,15 +23,9 @@ import org.radix.utils.UInt256;
 /**
  * Maps the CreateToken action into it's corresponding particles
  */
-public class CreateTokenToParticleGroupsMapper implements StatelessActionToParticleGroupsMapper {
+public class CreateTokenToParticleGroupsMapper implements StatelessActionToParticleGroupsMapper<CreateTokenAction> {
 	@Override
-	public List<ParticleGroup> mapToParticleGroups(Action action) {
-		if (!(action instanceof CreateTokenAction)) {
-			return Collections.emptyList();
-		}
-
-		CreateTokenAction tokenCreation = (CreateTokenAction) action;
-
+	public List<ParticleGroup> mapToParticleGroups(CreateTokenAction tokenCreation) {
 		final TokenPermission mintPermissions;
 		final TokenPermission burnPermissions;
 

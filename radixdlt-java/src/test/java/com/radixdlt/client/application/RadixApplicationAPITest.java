@@ -87,7 +87,7 @@ public class RadixApplicationAPITest {
 
 		FeeMapper feeMapper = (a, b, c) -> Pair.of(ImmutableMap.of(), ImmutableList.of());
 
-		return new RadixApplicationAPIBuilder()
+		return RadixApplicationAPI.defaultBuilder()
 			.identity(identity)
 			.universe(universe)
 			.feeMapper(feeMapper)
@@ -160,6 +160,7 @@ public class RadixApplicationAPITest {
 		RadixAddress address = mock(RadixAddress.class);
 		when(address.getPublicKey()).thenReturn(key);
 		when(api.getMyAddress()).thenReturn(address);
+		when(address.getUID()).thenReturn(EUID.ONE);
 
 		Result result = api.sendMessage(new byte[0], false, address);
 		validateSuccessfulStoreDataResult(result);
@@ -174,6 +175,7 @@ public class RadixApplicationAPITest {
 
 		RadixAddress address = mock(RadixAddress.class);
 		when(address.getPublicKey()).thenReturn(mock(ECPublicKey.class));
+		when(address.getUID()).thenReturn(EUID.ONE);
 		when(api.getMyAddress()).thenReturn(address);
 
 		api.sendMessage(new byte[0], false, address);
@@ -189,6 +191,7 @@ public class RadixApplicationAPITest {
 		RadixAddress address = mock(RadixAddress.class);
 		when(address.getPublicKey()).thenReturn(mock(ECPublicKey.class));
 		when(api.getMyAddress()).thenReturn(address);
+		when(address.getUID()).thenReturn(EUID.ONE);
 
 		Result result = api.sendMessage(new byte[0], false, address);
 		Observable observable = result.toObservable();
@@ -366,7 +369,7 @@ public class RadixApplicationAPITest {
 		RadixApplicationAPI api = new RadixApplicationAPIBuilder()
 			.identity(identity)
 			.universe(universe)
-			.addStatelessParticlesMapper(actionMapper)
+			.addStatelessParticlesMapper(action.getClass(), actionMapper)
 			.feeMapper((x, y, z) -> Pair.of(ImmutableMap.of(), ImmutableList.of()))
 			.addAtomErrorMapper(errorMapper)
 			.build();
