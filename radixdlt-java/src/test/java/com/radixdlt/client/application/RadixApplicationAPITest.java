@@ -264,32 +264,6 @@ public class RadixApplicationAPITest {
 	}
 
 	@Test
-	public void testPullOnReadDataOfOtherAddresses() {
-		RadixUniverse universe = mock(RadixUniverse.class);
-		Ledger ledger = mock(Ledger.class);
-		AtomPuller puller = mock(AtomPuller.class);
-		when(puller.pull(any())).thenReturn(Observable.never());
-		when(ledger.getAtomPuller()).thenReturn(puller);
-		AtomStore atomStore = mock(AtomStore.class);
-		when(atomStore.getAtomObservations(any())).thenReturn(Observable.never());
-		when(ledger.getAtomStore()).thenReturn(atomStore);
-		when(universe.getLedger()).thenReturn(ledger);
-
-		RadixIdentity identity = mock(RadixIdentity.class);
-		RadixAddress address = mock(RadixAddress.class);
-
-		RadixApplicationAPI api = new RadixApplicationAPIBuilder()
-			.identity(identity)
-			.universe(universe)
-			.feeMapper(mock(PowFeeMapper.class))
-			.addAtomMapper(new AtomToDecryptedMessageMapper())
-			.build();
-		TestObserver<DecryptedMessage> testObserver = TestObserver.create();
-		api.getMessages(address).subscribe(testObserver);
-		verify(puller, times(1)).pull(address);
-	}
-
-	@Test
 	public void testPullOnGetBalanceOfOtherAddresses() {
 		RadixUniverse universe = mock(RadixUniverse.class);
 		Ledger ledger = mock(Ledger.class);

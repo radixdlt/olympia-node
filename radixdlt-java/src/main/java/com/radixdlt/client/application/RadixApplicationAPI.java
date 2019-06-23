@@ -410,36 +410,21 @@ public class RadixApplicationAPI {
 	}
 
 	/**
-	 * Returns a never ending hot observable of the actions performed at a given address.
-	 * If the given address is not currently being pulled this will pull for atoms in that
-	 * address automatically until the observable is disposed.
+	 * Returns a never ending stream of actions performed at a given address with the
+	 * given Atom Store. pull() must be called to continually retrieve the latest actions
 	 *
 	 * @param actionClass the Action class
 	 * @param address the address to retrieve the state of
 	 * @param <T> the Action class
-	 * @return a hot observable of the actions at the given address
+	 * @return a cold observable of the actions at the given address
 	 */
 	public <T> Observable<T> getActions(Class<T> actionClass, RadixAddress address) {
-		final Observable<Object> atomsPulled = ledger.getAtomPuller() != null
-			? ledger.getAtomPuller().pull(address)
-			: Observable.never();
-		Observable<Object> auto = atomsPulled.publish()
-			.refCount(2);
-		Disposable d = auto.subscribe();
-
 		final AtomToExecutedActionsMapper<T> mapper = this.getActionMapper(actionClass);
-
 		return ledger.getAtomStore()
 			.getAtomObservations(address)
 			.filter(AtomObservation::isStore)
 			.map(AtomObservation::getAtom)
-			.flatMap(a -> mapper.map(a, identity))
-			.publish()
-			.refCount()
-			.doOnSubscribe(disposable -> auto.subscribe().dispose())
-			.doOnError(e -> d.dispose())
-			.doOnDispose(d::dispose)
-			.doOnComplete(d::dispose);
+			.flatMap(a -> mapper.map(a, identity));
 	}
 
 	/**
@@ -523,10 +508,23 @@ public class RadixApplicationAPI {
 		return universe.getAddressFrom(publicKey);
 	}
 
+	/**
+	 * Returns a never ending stream of messages stored at the current address.
+	 * pull() must be called to continually retrieve the latest messages.
+	 *
+	 * @return a cold observable of the messages at the current address
+	 */
 	public Observable<DecryptedMessage> getMessages() {
 		return getMessages(this.getMyAddress());
 	}
 
+	/**
+	 * Returns a never ending stream of messages stored at a given address.
+	 * pull() must be called to continually retrieve the latest messages.
+	 *
+	 * @param address the address to retrieve the messages from
+	 * @return a cold observable of the messages at the given address
+	 */
 	public Observable<DecryptedMessage> getMessages(RadixAddress address) {
 		Objects.requireNonNull(address);
 		return getActions(DecryptedMessage.class, address);
@@ -542,10 +540,23 @@ public class RadixApplicationAPI {
 		return execute(sendMessageAction);
 	}
 
+	/**
+	 * Returns a never ending stream of token transfers stored at the current address.
+	 * pull() must be called to continually retrieve the latest transfers.
+	 *
+	 * @return a cold observable of the token transfers at the current address
+	 */
 	public Observable<TokenTransfer> getTokenTransfers() {
 		return getTokenTransfers(getMyAddress());
 	}
 
+	/**
+	 * Returns a never ending stream of token transfers stored at a given address.
+	 * pull() must be called to continually retrieve the latest transfers.
+	 *
+	 * @param address the address to retrieve the token transfers from
+	 * @return a cold observable of the token transfers at the given address
+	 */
 	public Observable<TokenTransfer> getTokenTransfers(RadixAddress address) {
 		Objects.requireNonNull(address);
 		return getActions(TokenTransfer.class, address);
@@ -851,7 +862,7 @@ public class RadixApplicationAPI {
 		for (Action action : actions) {
 			BiFunction<Action, Stream<Particle>, List<ParticleGroup>> statefulMapper = actionMappers.get(action.getClass());
 			if (statefulMapper == null) {
-				throw new IllegalArgumentException("Unknown action class: " + action.getClass());
+				throw new IllegalArgumentException("Unknown action class: " + action.getClass() + ". Available: " + actionMappers.keySet());
 			}
 
 			Function<Action, Set<ShardedParticleStateId>> requiredStateMapper = requiredStateMappers.get(action.getClass());
