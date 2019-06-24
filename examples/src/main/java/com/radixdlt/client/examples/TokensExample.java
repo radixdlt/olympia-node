@@ -1,6 +1,9 @@
 package com.radixdlt.client.examples;
 
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
+import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
+import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
+import com.radixdlt.client.application.translate.tokens.MintTokensAction;
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import java.math.BigDecimal;
@@ -13,11 +16,7 @@ import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.Bootstrap;
 
 public class TokensExample {
-
-	private static String TO_ADDRESS_BASE58 = "JFgcgRKq6GbQqP8mZzDRhtr7K7YQM1vZiYopZLRpAeVxcnePRXX";
-	private static BigDecimal AMOUNT = new BigDecimal("0.01");
-
-	public static void main(String[] args) throws Exception {
+	public static void main(String[] args) {
 		// Create a new public key identity
 		final RadixIdentity radixIdentity = RadixIdentities.createNew();
 
@@ -34,17 +33,22 @@ public class TokensExample {
 		api.getTokenTransfers()
 			.subscribe(System.out::println);
 
-		// Create a token
+		// Create and mint token atomic transaction
 		RRI tokenRRI = RRI.of(api.getMyAddress(), "JOSH");
-		Result tokenCreation = api.createToken(
+		Transaction transaction = api.createTransaction();
+		// Create
+		transaction.execute(CreateTokenAction.create(
 			tokenRRI,
 			"Joshy Token",
 			"The Best Coin Ever",
-			BigDecimal.valueOf(10000.0),
+			BigDecimal.ZERO,
 			TokenUnitConversions.getMinimumGranularity(),
 			TokenSupplyType.MUTABLE
-		);
-		tokenCreation.toObservable().blockingSubscribe(System.out::println);
+		));
+		// Mint
+		transaction.execute(MintTokensAction.create(tokenRRI, BigDecimal.valueOf(1000000.0)));
+		Result createTokenAndMint = transaction.commit();
+		createTokenAndMint.toObservable().blockingSubscribe(System.out::println);
 
 		// Get token definition
 		api.getTokenDef(tokenRRI)
@@ -63,8 +67,8 @@ public class TokensExample {
 		burn.toObservable().blockingSubscribe(System.out::println);
 
 		// Send tokens
-		RadixAddress toAddress = RadixAddress.from(TO_ADDRESS_BASE58);
-		api.sendTokens(tokenRRI, toAddress, AMOUNT, "Test Message").toObservable()
+		RadixAddress toAddress = RadixAddress.from("JEbhKQzBn4qJzWJFBbaPioA2GTeaQhuUjYWkanTE6N8VvvPpvM8");
+		api.sendTokens(tokenRRI, toAddress, BigDecimal.valueOf(10000.0), "Test Message").toObservable()
 			.subscribe(System.out::println, Throwable::printStackTrace);
 	}
 }
