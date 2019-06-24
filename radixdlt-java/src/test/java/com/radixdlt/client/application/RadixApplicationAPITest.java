@@ -43,7 +43,6 @@ import com.radixdlt.client.application.translate.data.DecryptedMessage;
 import com.radixdlt.client.application.translate.tokens.TokenBalanceReducer;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.RadixUniverse;
-import com.radixdlt.client.core.RadixUniverse.Ledger;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.ledger.AtomObservation;
 import com.radixdlt.client.core.atoms.ParticleGroup;
@@ -74,9 +73,7 @@ import org.radix.common.tuples.Pair;
 public class RadixApplicationAPITest {
 	private RadixApplicationAPI createMockedAPI(RadixNetworkController controller, AtomStore atomStore) {
 		RadixUniverse universe = mock(RadixUniverse.class);
-		Ledger ledger = mock(Ledger.class);
-		when(ledger.getAtomStore()).thenReturn(atomStore);
-		when(universe.getLedger()).thenReturn(ledger);
+		when(universe.getAtomStore()).thenReturn(atomStore);
 		when(universe.getNetworkController()).thenReturn(controller);
 		RadixIdentity identity = mock(RadixIdentity.class);
 
@@ -209,11 +206,9 @@ public class RadixApplicationAPITest {
 		Atom atom = mock(Atom.class);
 		AtomObservation atomObservation = AtomObservation.stored(atom);
 
-		Ledger ledger = mock(Ledger.class);
 		AtomStore atomStore = mock(AtomStore.class);
 		when(atomStore.getAtomObservations(any())).thenReturn(Observable.just(atomObservation, atomObservation, atomObservation));
-		when(ledger.getAtomStore()).thenReturn(atomStore);
-		when(universe.getLedger()).thenReturn(ledger);
+		when(universe.getAtomStore()).thenReturn(atomStore);
 
 		RadixApplicationAPI api = new RadixApplicationAPIBuilder()
 			.identity(identity)
@@ -231,16 +226,14 @@ public class RadixApplicationAPITest {
 	@Test
 	public void testZeroTransactionWallet() {
 		RadixUniverse universe = mock(RadixUniverse.class);
-		Ledger ledger = mock(Ledger.class);
-		when(universe.getLedger()).thenReturn(ledger);
 		RadixNetworkController controller = mock(RadixNetworkController.class);
 		when(universe.getNetworkController()).thenReturn(controller);
 		AtomStore atomStore = mock(AtomStore.class);
 		when(atomStore.onSync(any())).thenReturn(Observable.just(System.currentTimeMillis()));
 
 
-		when(ledger.getAtomStore()).thenReturn(atomStore);
-		when(ledger.getAtomPuller()).thenReturn(address -> Observable.never());
+		when(universe.getAtomStore()).thenReturn(atomStore);
+		when(universe.getAtomPuller()).thenReturn(address -> Observable.never());
 
 		RadixAddress address = mock(RadixAddress.class);
 		when(controller.getActions()).thenReturn(Observable.just(
@@ -295,9 +288,7 @@ public class RadixApplicationAPITest {
 		when(controller.getActions()).thenReturn(nodeActions);
 		when(universe.getNetworkController()).thenReturn(controller);
 
-		Ledger ledger = mock(Ledger.class);
-		when(ledger.getAtomStore()).thenReturn(mock(AtomStore.class));
-		when(universe.getLedger()).thenReturn(ledger);
+		when(universe.getAtomStore()).thenReturn(mock(AtomStore.class));
 		Action action = mock(Action.class);
 
 		StatelessActionToParticleGroupsMapper actionMapper = mock(StatelessActionToParticleGroupsMapper.class);

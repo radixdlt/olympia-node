@@ -71,7 +71,6 @@ import com.radixdlt.client.application.translate.unique.AlreadyUsedUniqueIdReaso
 import com.radixdlt.client.application.translate.unique.PutUniqueIdToParticleGroupsMapper;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.RadixUniverse;
-import com.radixdlt.client.core.RadixUniverse.Ledger;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.ledger.AtomObservation;
 import com.radixdlt.client.core.atoms.ParticleGroup;
@@ -175,13 +174,10 @@ public class RadixApplicationAPI {
 	// TODO: Translator from particles to atom
 	private final FeeMapper feeMapper;
 
-	private final Ledger ledger;
-
 	private RadixApplicationAPI(
 		RadixIdentity identity,
 		RadixUniverse universe,
 		FeeMapper feeMapper,
-		Ledger ledger,
 		ImmutableMap<Class<? extends Action>, Function<Action, Set<ShardedParticleStateId>>> requiredStateMappers,
 		ImmutableMap<Class<? extends Action>, BiFunction<Action, Stream<Particle>, List<ParticleGroup>>> actionMappers,
 		List<ParticleReducer<? extends ApplicationState>> particleReducers,
@@ -191,7 +187,6 @@ public class RadixApplicationAPI {
 		Objects.requireNonNull(identity);
 		Objects.requireNonNull(universe);
 		Objects.requireNonNull(feeMapper);
-		Objects.requireNonNull(ledger);
 		Objects.requireNonNull(requiredStateMappers);
 		Objects.requireNonNull(actionMappers);
 		Objects.requireNonNull(particleReducers);
@@ -208,7 +203,6 @@ public class RadixApplicationAPI {
 		this.requiredStateMappers = requiredStateMappers;
 		this.atomErrorMappers = atomErrorMappers;
 		this.feeMapper = feeMapper;
-		this.ledger = ledger;
 	}
 
 	public static class RadixApplicationAPIBuilder {
@@ -289,7 +283,6 @@ public class RadixApplicationAPI {
 			Objects.requireNonNull(this.feeMapper, "Fee Mapper must be specified");
 			Objects.requireNonNull(this.universe, "Universe must be specified");
 
-			final Ledger ledger = universe.getLedger();
 			final FeeMapper feeMapper = this.feeMapper;
 			final RadixIdentity identity = this.identity;
 			final List<ParticleReducer<? extends ApplicationState>> reducers = this.reducers;
@@ -298,7 +291,6 @@ public class RadixApplicationAPI {
 				identity,
 				universe,
 				feeMapper,
-				ledger,
 				requiredStateMappers.build(),
 				actionMappers.build(),
 				reducers,
@@ -401,8 +393,8 @@ public class RadixApplicationAPI {
 	public Disposable pull(RadixAddress address) {
 		Objects.requireNonNull(address);
 
-		if (ledger.getAtomPuller() != null) {
-			return ledger.getAtomPuller().pull(address).subscribe();
+		if (universe.getAtomPuller() != null) {
+			return universe.getAtomPuller().pull(address).subscribe();
 		} else {
 			return Disposables.disposed();
 		}
@@ -437,7 +429,7 @@ public class RadixApplicationAPI {
 	 */
 	public <T> Observable<T> getActions(Class<T> actionClass, RadixAddress address) {
 		final AtomToExecutedActionsMapper<T> mapper = this.getActionMapper(actionClass);
-		return ledger.getAtomStore()
+		return universe.getAtomStore()
 			.getAtomObservations(address)
 			.filter(AtomObservation::isStore)
 			.map(AtomObservation::getAtom)
@@ -455,9 +447,9 @@ public class RadixApplicationAPI {
 	 */
 	public <T extends ApplicationState> Observable<T> getState(Class<T> stateClass, RadixAddress address) {
 		final ParticleReducer<T> reducer = this.getStateReducer(stateClass);
-		return ledger.getAtomStore().onSync(address)
+		return universe.getAtomStore().onSync(address)
 				.map(a ->
-					ledger.getAtomStore().getUpParticles(address, null)
+					universe.getAtomStore().getUpParticles(address, null)
 						.reduce(reducer.initialState(), reducer::reduce, reducer::combine)
 				);
 	}
@@ -872,14 +864,14 @@ public class RadixApplicationAPI {
 			Function<Action, Set<ShardedParticleStateId>> requiredStateMapper = requiredStateMappers.get(action.getClass());
 			Set<ShardedParticleStateId> required = requiredStateMapper != null ? requiredStateMapper.apply(action) : ImmutableSet.of();
 			Stream<Particle> particles = required.stream()
-				.flatMap(ctx -> ledger.getAtomStore()
+				.flatMap(ctx -> universe.getAtomStore()
 					.getUpParticles(ctx.address(), uuid)
 					.filter(ctx.particleClass()::isInstance)
 				);
 
 			List<ParticleGroup> pgs = statefulMapper.apply(action, particles);
 			for (ParticleGroup pg : pgs) {
-				ledger.getAtomStore().stageParticleGroup(uuid, pg);
+				universe.getAtomStore().stageParticleGroup(uuid, pg);
 			}
 		}
 	}
@@ -915,12 +907,12 @@ public class RadixApplicationAPI {
 				.distinct()
 				.collect(Collectors.toMap(
 					addr -> addr,
-					addr -> ledger.getAtomPuller().pull(addr).subscribe()
+					addr -> universe.getAtomPuller().pull(addr).subscribe()
 				));
 
 			Observable.fromIterable(requiredState)
 				.map(ShardedParticleStateId::address)
-				.flatMapSingle(addr -> ledger.getAtomStore()
+				.flatMapSingle(addr -> universe.getAtomStore()
 					.onSync(addr)
 					.firstOrError()
 					.doOnSuccess(i -> disposables.get(addr).dispose())
@@ -937,7 +929,7 @@ public class RadixApplicationAPI {
 				}, emitter::onError);
 		})
 			.andThen(Single.create(emitter -> {
-				List<ParticleGroup> pgs = ledger.getAtomStore().getStagedAndClear(uuid);
+				List<ParticleGroup> pgs = universe.getAtomStore().getStagedAndClear(uuid);
 				emitter.onSuccess(buildAtomWithFee(pgs));
 			}));
 	}
@@ -989,7 +981,7 @@ public class RadixApplicationAPI {
 	 * @return the atom store
 	 */
 	public AtomStore getAtomStore() {
-		return this.ledger.getAtomStore();
+		return this.universe.getAtomStore();
 	}
 
 	/**
