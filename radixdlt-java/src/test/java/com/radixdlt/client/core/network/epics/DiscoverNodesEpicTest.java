@@ -9,6 +9,7 @@ import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.RadixNodeAction;
 import com.radixdlt.client.core.network.actions.AddNodeAction;
 import com.radixdlt.client.core.network.actions.DiscoverMoreNodesAction;
+import com.radixdlt.client.core.network.actions.DiscoverMoreNodesErrorAction;
 import com.radixdlt.client.core.network.actions.GetLivePeersResultAction;
 import com.radixdlt.client.core.network.actions.GetUniverseRequestAction;
 import com.radixdlt.client.core.network.actions.GetUniverseResponseAction;
@@ -23,6 +24,25 @@ import java.util.List;
 import org.junit.Test;
 
 public class DiscoverNodesEpicTest {
+	@Test
+	public void when_seeds_return_an_error__epic_should_not_fail() {
+		Observable<RadixNode> seeds = Observable.error(new RuntimeException("BAD EXCEPTION!"));
+		RadixUniverseConfig universe = mock(RadixUniverseConfig.class);
+		DiscoverNodesEpic discoverNodesEpic = new DiscoverNodesEpic(seeds, universe);
+
+		ReplaySubject<RadixNodeAction> actions = ReplaySubject.create();
+		Observable<RadixNetworkState> networkState = Observable.just(mock(RadixNetworkState.class));
+		Observable<RadixNodeAction> output = discoverNodesEpic.epic(actions, networkState);
+
+		TestObserver<RadixNodeAction> testObserver = TestObserver.create();
+		output.subscribe(testObserver);
+
+		actions.onNext(DiscoverMoreNodesAction.instance());
+		testObserver.assertNoErrors();
+		testObserver.awaitCount(1);
+		testObserver.assertValue(a -> a instanceof DiscoverMoreNodesErrorAction);
+	}
+
 	@Test
 	public void when_seeds_return_a_non_matching_universe__a_node_mismatch_universe_event_should_be_emitted() {
 		RadixNode node = mock(RadixNode.class);

@@ -121,7 +121,13 @@ public class RadixNetworkController {
 			.collect(Collectors.toSet());
 
 		// FIXME: Cleanup disposable
-		Observable.merge(updates).subscribe(this::dispatch);
+		Observable.merge(updates).subscribe(
+			this::dispatch,
+			e -> {
+				LOGGER.error(e.getMessage());
+				networkState.onError(e);
+			}
+		);
 
 		this.reducedNodeActions = connectableReducedNodeActions;
 
