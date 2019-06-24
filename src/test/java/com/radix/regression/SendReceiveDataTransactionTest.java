@@ -1,5 +1,6 @@
 package com.radix.regression;
 
+import io.reactivex.disposables.Disposable;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
@@ -59,6 +60,8 @@ public class SendReceiveDataTransactionTest {
 		RadixApplicationAPI api2 = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, RadixIdentities.createNew());
 		api1.getMessages().subscribe(messageListener1);
 		api2.getMessages().subscribe(messageListener2);
+		Disposable d1 = api1.pull();
+		Disposable d2 = api2.pull();
 
 		// When one sends a message to the other
 		byte[] message = new byte[] {1, 2, 3, 4};
@@ -78,6 +81,8 @@ public class SendReceiveDataTransactionTest {
 			.assertValueAt(0, msg -> msg.getTo().equals(api2.getMyAddress()))
 			.assertValueAt(0, msg -> msg.getEncryptionState().equals(EncryptionState.NOT_ENCRYPTED))
 			.dispose();
+		d1.dispose();
+		d2.dispose();
 	}
 
 	@Test
@@ -110,6 +115,7 @@ public class SendReceiveDataTransactionTest {
 		RadixApplicationAPI clientApi = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, RadixIdentities.createNew());
 		RadixApplicationAPI otherAccount = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, RadixIdentities.createNew());
 		clientApi.getMessages(otherAccount.getMyAddress()).subscribe(clientListener);
+		Disposable d = clientApi.pull(otherAccount.getMyAddress());
 
 		// When the other account sends message to itself
 		byte[] message = new byte[] {1, 2, 3, 4};
@@ -123,5 +129,7 @@ public class SendReceiveDataTransactionTest {
 			.assertValueAt(0, msg -> msg.getTo().equals(otherAccount.getMyAddress()))
 			.assertValueAt(0, msg -> msg.getEncryptionState().equals(EncryptionState.NOT_ENCRYPTED))
 			.dispose();
+
+		d.dispose();
 	}
 }

@@ -48,10 +48,12 @@ public class SendingADataTransaction {
 			.bootstrap(Bootstrap.LOCALHOST_SINGLENODE)
 			.identity(this.identity)
 			.build();
+		this.api.pull();
 		this.otherApi = RadixApplicationAPI.defaultBuilder()
 			.bootstrap(Bootstrap.LOCALHOST_SINGLENODE)
 			.identity(this.otherIdentity)
 			.build();
+		this.otherApi.pull();
 
 		this.observers.clear();
 	}

@@ -171,9 +171,11 @@ public class BurnMultiIssuanceTokens {
 	private void setupApi() {
 		this.identity = RadixIdentities.createNew();
 		this.api = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, this.identity);
+		this.api.pull();
 
 		this.otherIdentity = RadixIdentities.createNew();
 		this.otherApi = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, this.otherIdentity);
+		this.otherApi.pull();
 
 		// Reset data
 		this.properties.clear();

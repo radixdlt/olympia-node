@@ -1,6 +1,7 @@
 package com.radix.regression;
 
 import com.radixdlt.client.application.translate.data.SendMessageAction;
+import io.reactivex.disposables.Disposable;
 import java.util.stream.Stream;
 
 import org.junit.Test;
@@ -29,6 +30,7 @@ public class SendReceiveEncryptedDataTransactionTest {
 		RadixApplicationAPI normalApi = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, RadixIdentities.createNew());
 		TestObserver<DecryptedMessage> messageListener = TestObserver.create(Util.loggingObserver("MessageListener"));
 		normalApi.getMessages().subscribe(messageListener);
+		Disposable d = normalApi.pull();
 
 		// When I send a message to myself encrypted with a different key
 		ECKeyPairGenerator ecKeyPairGenerator = ECKeyPairGenerator.newInstance();
@@ -54,6 +56,7 @@ public class SendReceiveEncryptedDataTransactionTest {
 			.assertValue(msg -> msg.getFrom().equals(normalApi.getMyAddress()))
 			.assertValue(msg -> msg.getData().length > 0)
 			.dispose();
+		d.dispose();
 	}
 
 }

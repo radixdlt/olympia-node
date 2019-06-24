@@ -1,6 +1,7 @@
 package com.radix.regression;
 
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
+import io.reactivex.disposables.Disposable;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
@@ -56,6 +57,7 @@ public class UnsubscribeTest {
 		RadixApplicationAPI normalApi = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, RadixIdentities.createNew());
 		TestObserver<DecryptedMessage> messageListener = TestObserver.create(Util.loggingObserver("MessageListener"));
 		normalApi.getMessages().subscribe(messageListener);
+		Disposable d = normalApi.pull();
 		Observable<RadixNetworkState> networkStatus = normalApi
 			.getNetworkState()
 			.debounce(3, TimeUnit.SECONDS);
@@ -66,6 +68,7 @@ public class UnsubscribeTest {
 
 		// When I dispose of the lone subscriber
 		messageListener.dispose();
+		d.dispose();
 
 		// Then I can observe all network connections being closed
 		TestObserver<RadixNetworkState> networkListener2 = TestObserver.create(Util.loggingObserver("NetworkListener2"));
@@ -81,6 +84,8 @@ public class UnsubscribeTest {
 		TestObserver<DecryptedMessage> messageListener2 = TestObserver.create(Util.loggingObserver("MessageListener2"));
 		normalApi.getMessages().subscribe(messageListener1);
 		normalApi.getMessages().subscribe(messageListener2);
+		Disposable d = normalApi.pull();
+
 		Observable<RadixNetworkState> networkStatus = normalApi
 			.getNetworkState()
 			.debounce(3, TimeUnit.SECONDS);
@@ -96,7 +101,6 @@ public class UnsubscribeTest {
 		networkStatus.takeUntil(NETWORK_IS_OPEN).subscribe(networkListener2);
 		networkListener2.awaitTerminalEvent();
 		messageListener2.dispose();
+		d.dispose();
 	}
-
-
 }

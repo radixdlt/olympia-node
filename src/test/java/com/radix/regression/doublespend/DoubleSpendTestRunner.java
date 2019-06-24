@@ -214,6 +214,12 @@ public final class DoubleSpendTestRunner {
 			.toList()
 			.blockingGet();
 
+		final long startTime = System.currentTimeMillis();
+		final CompositeDisposable compositeDisposable = new CompositeDisposable();
+		singleNodeApis.map(singleNodeAPI -> doubleSpendTestConditions.postConsensusCondition().getStateRequired().stream()
+			.map(p -> singleNodeAPI.api.pull(p.getSecond().address())))
+			.subscribe(s -> s.forEach(compositeDisposable::add));
+
 		// Wait for network to resolve conflict
 		TestObserver<RadixNodeAction> lastUpdateObserver = TestObserver.create(Util.loggingObserver("Last Update"));
 		singleNodeApis.flatMap(singleNodeApi ->
@@ -240,12 +246,6 @@ public final class DoubleSpendTestRunner {
 			.subscribe(lastUpdateObserver);
 		lastUpdateObserver.awaitTerminalEvent();
 		submissionObservers.forEach(TestObserver::dispose);
-
-		final long startTime = System.currentTimeMillis();
-		final CompositeDisposable compositeDisposable = new CompositeDisposable();
-		singleNodeApis.map(singleNodeAPI -> doubleSpendTestConditions.postConsensusCondition().getStateRequired().stream()
-			.map(p -> singleNodeAPI.api.pull(p.getSecond().address())))
-			.subscribe(s -> s.forEach(compositeDisposable::add));
 
 		try {
 			while (true) {
