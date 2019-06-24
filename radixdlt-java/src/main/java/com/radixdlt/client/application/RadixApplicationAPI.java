@@ -364,6 +364,23 @@ public class RadixApplicationAPI {
 		return store;
 	}
 
+	public ECPublicKey getMyPublicKey() {
+		return identity.getPublicKey();
+	}
+
+	public RadixIdentity getMyIdentity() {
+		return identity;
+	}
+
+	public RadixAddress getMyAddress() {
+		return universe.getAddressFrom(identity.getPublicKey());
+	}
+
+	public RadixAddress getAddressFromKey(ECPublicKey publicKey) {
+		return universe.getAddressFrom(publicKey);
+	}
+
+
 	/**
 	 * Idempotent method which prefetches atoms in user's account
 	 * TODO: what to do when no puller available
@@ -411,7 +428,7 @@ public class RadixApplicationAPI {
 
 	/**
 	 * Returns a never ending stream of actions performed at a given address with the
-	 * given Atom Store. pull() must be called to continually retrieve the latest actions
+	 * given Atom Store. pull() must be called to continually retrieve the latest actions.
 	 *
 	 * @param actionClass the Action class
 	 * @param address the address to retrieve the state of
@@ -428,9 +445,8 @@ public class RadixApplicationAPI {
 	}
 
 	/**
-	 * Returns a never ending hot observable of the state of a given address.
-	 * If the given address is not currently being pulled this will pull for atoms in that
-	 * address automatically until the observable is disposed.
+	 * Returns a never ending stream of a state of a given address with the
+	 * given Atom store. pull() must be called to continually retrieve the latest state.
 	 *
 	 * @param stateClass the ApplicationState class
 	 * @param address the address to retrieve the state of
@@ -438,75 +454,45 @@ public class RadixApplicationAPI {
 	 * @return a hot observable of a state of the given address
 	 */
 	public <T extends ApplicationState> Observable<T> getState(Class<T> stateClass, RadixAddress address) {
-		final Observable<Object> atomsPulled = ledger.getAtomPuller() != null
-				? ledger.getAtomPuller().pull(address)
-				: Observable.never();
-		Observable<Object> auto = atomsPulled
-			.publish()
-			.refCount(2);
-		Disposable d = auto.subscribe();
-
 		final ParticleReducer<T> reducer = this.getStateReducer(stateClass);
-
 		return ledger.getAtomStore().onSync(address)
 				.map(a ->
 					ledger.getAtomStore().getUpParticles(address, null)
 						.reduce(reducer.initialState(), reducer::reduce, reducer::combine)
-				)
-				.publish()
-				.refCount()
-				.doOnSubscribe(disposable -> auto.subscribe().dispose())
-				.doOnError(e -> d.dispose())
-				.doOnDispose(d::dispose)
-				.doOnComplete(d::dispose);
+				);
 	}
 
 	/**
-	 * Returns a hot observable of the latest state of token definitions at a given
+	 * Returns a stream of the latest state of token definitions at a given
 	 * address
 	 *
 	 * @param address the address of the account to check
-	 * @return a hot observable of the latest state of token definitions
+	 * @return a cold observable of the latest state of token definitions
 	 */
 	public Observable<TokenDefinitionsState> getTokenDefs(RadixAddress address) {
 		return getState(TokenDefinitionsState.class, address);
 	}
 
 	/**
-	 * Returns a hot observable of the latest state of token definitions at the user's
+	 * Returns a stream of the latest state of token definitions at the user's
 	 * address
 	 *
-	 * @return a hot observable of the latest state of token definitions
+	 * @return a cold observable of the latest state of token definitions
 	 */
 	public Observable<TokenDefinitionsState> getTokenDefs() {
 		return getTokenDefs(getMyAddress());
 	}
 
 	/**
-	 * Returns a hot observable of the latest state of a given token
+	 * Returns a stream of the latest state of a given token
 	 *
-	 * @return a hot observable of the latest state of the token
+	 * @return a cold observable of the latest state of the token
 	 */
 	public Observable<TokenState> getTokenDef(RRI tokenRRI) {
 		return this.getTokenDefs(tokenRRI.getAddress())
 			.flatMapMaybe(m -> Optional.ofNullable(m.getState().get(tokenRRI)).map(Maybe::just).orElse(Maybe.empty()));
 	}
 
-	public ECPublicKey getMyPublicKey() {
-		return identity.getPublicKey();
-	}
-
-	public RadixIdentity getMyIdentity() {
-		return identity;
-	}
-
-	public RadixAddress getMyAddress() {
-		return universe.getAddressFrom(identity.getPublicKey());
-	}
-
-	public RadixAddress getAddressFromKey(ECPublicKey publicKey) {
-		return universe.getAddressFrom(publicKey);
-	}
 
 	/**
 	 * Returns a never ending stream of messages stored at the current address.
@@ -562,16 +548,34 @@ public class RadixApplicationAPI {
 		return getActions(TokenTransfer.class, address);
 	}
 
+	/**
+	 * Returns a stream of the latest balances at a given address.
+	 * pull() must be called to continually retrieve the latest balances.
+	 *
+	 * @return a cold observable of the latest balances at an address
+	 */
 	public Observable<Map<RRI, BigDecimal>> getBalances(RadixAddress address) {
 		Objects.requireNonNull(address);
 		return getState(TokenBalanceState.class, address)
 			.map(TokenBalanceState::getBalance);
 	}
 
+	/**
+	 * Returns a stream of the latest balances at the current address
+	 * pull() must be called to continually retrieve the latest balances.
+	 *
+	 * @return a cold observable of the latest balances at the current address
+	 */
 	public Observable<BigDecimal> getBalance(RRI tokenRRI) {
 		return getBalance(getMyAddress(), tokenRRI);
 	}
 
+	/**
+	 * Returns a stream of the latest balance of a given token at a given address
+	 * pull() must be called to continually retrieve the latest balance.
+	 *
+	 * @return a cold observable of the latest balance of a token at a given address
+	 */
 	public Observable<BigDecimal> getBalance(RadixAddress address, RRI token) {
 		Objects.requireNonNull(token);
 

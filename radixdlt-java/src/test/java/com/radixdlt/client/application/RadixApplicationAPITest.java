@@ -50,7 +50,6 @@ import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.crypto.ECPublicKey;
-import com.radixdlt.client.core.ledger.AtomPuller;
 import com.radixdlt.client.core.ledger.AtomStore;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomReceivedAction;
@@ -261,39 +260,6 @@ public class RadixApplicationAPITest {
 		api.getBalance(address, token).subscribe(observer);
 		observer.awaitCount(1);
 		observer.assertValue(amount -> amount.compareTo(BigDecimal.ZERO) == 0);
-	}
-
-	@Test
-	public void testPullOnGetBalanceOfOtherAddresses() {
-		RadixUniverse universe = mock(RadixUniverse.class);
-		Ledger ledger = mock(Ledger.class);
-
-		RadixNetworkController controller = mock(RadixNetworkController.class);
-		when(universe.getNetworkController()).thenReturn(controller);
-		when(controller.getActions()).thenReturn(Observable.never());
-
-		AtomStore atomStore = mock(AtomStore.class);
-		when(atomStore.onSync(any())).thenReturn(Observable.just(System.currentTimeMillis()));
-		when(ledger.getAtomStore()).thenReturn(atomStore);
-
-		AtomPuller puller = mock(AtomPuller.class);
-		when(ledger.getAtomPuller()).thenReturn(puller);
-		when(puller.pull(any())).thenReturn(Observable.never());
-		when(universe.getLedger()).thenReturn(ledger);
-
-		RadixIdentity identity = mock(RadixIdentity.class);
-		RadixAddress address = mock(RadixAddress.class);
-
-		RadixApplicationAPI api = new RadixApplicationAPIBuilder()
-			.identity(identity)
-			.universe(universe)
-			.feeMapper(mock(PowFeeMapper.class))
-			.addReducer(new TokenBalanceReducer())
-			.build();
-		TestObserver<BigDecimal> testObserver = TestObserver.create();
-		RRI token = mock(RRI.class);
-		api.getBalance(address, token).subscribe(testObserver);
-		verify(puller, times(1)).pull(address);
 	}
 
 	@Test
