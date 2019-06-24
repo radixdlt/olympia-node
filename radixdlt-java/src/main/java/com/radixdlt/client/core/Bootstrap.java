@@ -37,7 +37,7 @@ public enum Bootstrap implements BootstrapConfig {
 	),
 	BETANET(
 		RadixUniverseConfigs::getBetanet,
-		new NodeFinder("https://betanet.radixdlt.com/node-finder", 443).getSeed().toObservable()
+		new NodeFinder("https://betanet-staging.radixdlt.com/node-finder", 443).getSeed().toObservable()
 	),
 	WINTERFELL(
 		RadixUniverseConfigs::getWinterfell,
