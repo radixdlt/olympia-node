@@ -16,7 +16,6 @@ import com.radixdlt.client.core.network.actions.SubmitAtomCompleteAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +28,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import java.util.stream.StreamSupport;
 import org.radix.common.tuples.Pair;
 import org.radix.utils.RadixConstants;
 import org.slf4j.Logger;
@@ -410,11 +408,11 @@ public class RadixApplicationAPI {
 			Disposable d = universe.getAtomPuller()
 				.pull(address).subscribe();
 
+			emitter.setCancellable(d::dispose);
+
 			universe.getAtomStore().onSync(address).firstOrError()
 				.ignoreElement()
 				.subscribe(emitter::onComplete, emitter::onError);
-
-			emitter.setCancellable(d::dispose);
 		});
 	}
 
@@ -839,16 +837,50 @@ public class RadixApplicationAPI {
 	 */
 	public final class Transaction {
 		private final String uuid;
+		private List<Action> workingArea = new ArrayList<>();
 
 		private Transaction() {
 			this.uuid = UUID.randomUUID().toString();
 		}
 
 		/**
-		 * Execute an action within this transaction
-		 * @param action the action to execute
+		 * Add an action to the working area
+		 * @param action action to add to the working area
 		 */
-		public void stage(Action action) throws StageActionException {
+		public void addToWorkingArea(Action action) {
+			workingArea.add(action);
+		}
+
+		/**
+		 * Retrieves the shards and particle types required to execute the
+		 * actions in the current working area.
+		 *
+		 * @return set of shard + particle types
+		 */
+		public Set<ShardedParticleStateId> getWorkingAreaRequirements() {
+			return workingArea.stream()
+				.filter(a -> requiredStateMappers.containsKey(a.getClass()))
+				.flatMap(a -> requiredStateMappers.get(a.getClass()).apply(a).stream())
+				.collect(Collectors.toSet());
+		}
+
+		/**
+		 * Move all actions in the current working area to staging
+		 */
+		public void stageWorkingArea() throws StageActionException {
+			for (Action action : workingArea) {
+				stage(action);
+			}
+			workingArea.clear();
+		}
+
+		/**
+		 * Add an action to staging area in preparation for commit.
+		 * Collects the necessary particles to make the action happen.
+		 *
+		 * @param action action to add to staging area.
+		 */
+		public void stage(Action action) {
 			BiFunction<Action, Stream<Particle>, List<ParticleGroup>> statefulMapper = actionMappers.get(action.getClass());
 			if (statefulMapper == null) {
 				throw new IllegalArgumentException("Unknown action class: " + action.getClass() + ". Available: " + actionMappers.keySet());
@@ -857,10 +889,7 @@ public class RadixApplicationAPI {
 			Function<Action, Set<ShardedParticleStateId>> requiredStateMapper = requiredStateMappers.get(action.getClass());
 			Set<ShardedParticleStateId> required = requiredStateMapper != null ? requiredStateMapper.apply(action) : ImmutableSet.of();
 			Stream<Particle> particles = required.stream()
-				.flatMap(ctx -> universe.getAtomStore()
-					.getUpParticles(ctx.address(), uuid)
-					.filter(ctx.particleClass()::isInstance)
-				);
+				.flatMap(ctx -> universe.getAtomStore().getUpParticles(ctx.address(), uuid).filter(ctx.particleClass()::isInstance));
 
 			List<ParticleGroup> pgs = statefulMapper.apply(action, particles);
 			for (ParticleGroup pg : pgs) {
@@ -868,6 +897,10 @@ public class RadixApplicationAPI {
 			}
 		}
 
+		/**
+		 * Creates an atom composed of all of the currently staged particles.
+		 * @return an unsigned atom
+		 */
 		public UnsignedAtom buildAtom() {
 			List<ParticleGroup> pgs = universe.getAtomStore().getStagedAndClear(uuid);
 			return buildAtomWithFee(pgs);
@@ -892,20 +925,6 @@ public class RadixApplicationAPI {
 	 */
 	public Transaction createTransaction() {
 		return new Transaction();
-	}
-
-	/**
-	 * Retrieves the shards and particle types required to execute high level
-	 * actions.
-	 *
-	 * @param actions the actions to retrieve shards and particle types for
-	 * @return set of shard + particle types
-	 */
-	public Set<ShardedParticleStateId> getRequiredShards(Iterable<Action> actions) {
-		return StreamSupport.stream(actions.spliterator(), false)
-			.filter(a -> requiredStateMappers.containsKey(a.getClass()))
-			.flatMap(a -> requiredStateMappers.get(a.getClass()).apply(a).stream())
-			.collect(Collectors.toSet());
 	}
 
 	/**
