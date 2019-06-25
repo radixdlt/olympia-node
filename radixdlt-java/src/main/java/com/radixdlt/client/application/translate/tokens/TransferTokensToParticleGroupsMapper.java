@@ -1,6 +1,7 @@
 package com.radixdlt.client.application.translate.tokens;
 
 import com.google.common.collect.ImmutableMap;
+import com.radixdlt.client.application.translate.StageActionException;
 import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.fungible.FungibleParticleTransitioner;
@@ -92,7 +93,7 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 	}
 
 	@Override
-	public List<ParticleGroup> mapToParticleGroups(TransferTokensAction transfer, Stream<Particle> store) {
+	public List<ParticleGroup> mapToParticleGroups(TransferTokensAction transfer, Stream<Particle> store) throws StageActionException {
 		final RRI tokenRef = transfer.getTokenDefRef();
 
 		List<TransferrableTokensParticle> tokenConsumables = store

@@ -1,5 +1,6 @@
 package com.radixdlt.client.application.translate.tokens;
 
+import com.radixdlt.client.application.translate.StageActionException;
 import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.core.atoms.ParticleGroup.ParticleGroupBuilder;
@@ -71,7 +72,7 @@ public class BurnTokensActionMapper implements StatefulActionToParticleGroupsMap
 	}
 
 	@Override
-	public List<ParticleGroup> mapToParticleGroups(BurnTokensAction burnTokensAction, Stream<Particle> store) {
+	public List<ParticleGroup> mapToParticleGroups(BurnTokensAction burnTokensAction, Stream<Particle> store) throws StageActionException {
 		final RRI tokenRef = burnTokensAction.getTokenDefinitionReference();
 		final BigDecimal burnAmount = burnTokensAction.getAmount();
 

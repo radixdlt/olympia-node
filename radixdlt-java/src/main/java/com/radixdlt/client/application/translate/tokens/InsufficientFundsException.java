@@ -1,9 +1,10 @@
 package com.radixdlt.client.application.translate.tokens;
 
+import com.radixdlt.client.application.translate.StageActionException;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import java.math.BigDecimal;
 
-public class InsufficientFundsException extends RuntimeException {
+public class InsufficientFundsException extends StageActionException {
 	private final RRI tokenDefinitionReference;
 	private final BigDecimal available;
 	private final BigDecimal requestedAmount;

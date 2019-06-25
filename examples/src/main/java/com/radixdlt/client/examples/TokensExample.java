@@ -23,7 +23,7 @@ public class TokensExample {
 		// Initialize api layer
 		RadixApplicationAPI api = RadixApplicationAPI.create(Bootstrap.LOCALHOST, radixIdentity);
 
-		// Sync with network
+		// Constantly sync account with network
 		api.pull();
 
 		System.out.println("My address: " + api.getMyAddress());

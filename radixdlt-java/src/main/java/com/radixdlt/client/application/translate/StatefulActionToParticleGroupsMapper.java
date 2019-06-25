@@ -30,5 +30,5 @@ public interface StatefulActionToParticleGroupsMapper<T extends Action> {
 	 * @param store particles as requested by requiredState()
 	 * @return Particle groups created given an action
 	 */
-	List<ParticleGroup> mapToParticleGroups(T action, Stream<Particle> store);
+	List<ParticleGroup> mapToParticleGroups(T action, Stream<Particle> store) throws StageActionException;
 }

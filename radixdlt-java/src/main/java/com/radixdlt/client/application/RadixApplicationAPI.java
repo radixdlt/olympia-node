@@ -2,6 +2,7 @@ package com.radixdlt.client.application;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.client.application.translate.StageActionException;
 import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
 import com.radixdlt.client.application.translate.unique.PutUniqueIdAction;
@@ -372,7 +373,6 @@ public class RadixApplicationAPI {
 		return universe.getAddressFrom(publicKey);
 	}
 
-
 	/**
 	 * Idempotent method which prefetches atoms in user's account
 	 * TODO: what to do when no puller available
@@ -398,6 +398,24 @@ public class RadixApplicationAPI {
 		} else {
 			return Disposables.disposed();
 		}
+	}
+
+	/**
+	 * Retrieves atoms until the node returns a synced message.
+	 * @param address the address to pull atoms for
+	 * @return a cold completable which on subscribe pulls atoms from a source
+	 */
+	public Completable pullOnce(RadixAddress address) {
+		return Completable.create(emitter -> {
+			Disposable d = universe.getAtomPuller()
+				.pull(address).subscribe();
+
+			universe.getAtomStore().onSync(address).firstOrError()
+				.ignoreElement()
+				.subscribe(emitter::onComplete, emitter::onError);
+
+			emitter.setCancellable(d::dispose);
+		});
 	}
 
 	/**
@@ -836,10 +854,9 @@ public class RadixApplicationAPI {
 		 * Commit the transaction onto the ledger
 		 * @return the results of committing
 		 */
-		public Result commit() {
-			final Single<Atom> atom = buildAtom(actions)
-				.flatMap(identity::sign);
-
+		public Result commit() throws StageActionException {
+			final UnsignedAtom unsignedAtom = buildAtom(actions);
+			final Single<Atom> atom = identity.sign(unsignedAtom);
 			return createAtomSubmission(atom, false).connect();
 		}
 	}
@@ -854,7 +871,7 @@ public class RadixApplicationAPI {
 		return new Transaction();
 	}
 
-	private void stageActions(String uuid, Iterable<Action> actions) {
+	private void stageActions(String uuid, Iterable<Action> actions) throws StageActionException {
 		for (Action action : actions) {
 			BiFunction<Action, Stream<Particle>, List<ParticleGroup>> statefulMapper = actionMappers.get(action.getClass());
 			if (statefulMapper == null) {
@@ -877,61 +894,41 @@ public class RadixApplicationAPI {
 	}
 
 	/**
-	 * Returns a cold single of an unsigned atom given a user action. Note that this is
-	 * method will always return a unique atom even if given equivalent actions
+	 * Retrieves the shards and particle types required to execute high level
+	 * actions.
+	 *
+	 * @param actions the actions to retrieve shards and particle types for
+	 * @return set of shard + particle types
+	 */
+	public Set<ShardedParticleStateId> getRequiredShards(Iterable<Action> actions) {
+		return StreamSupport.stream(actions.spliterator(), false)
+			.filter(a -> requiredStateMappers.containsKey(a.getClass()))
+			.flatMap(a -> requiredStateMappers.get(a.getClass()).apply(a).stream())
+			.collect(Collectors.toSet());
+	}
+
+	/**
+	 * Returns an unsigned atom constructed from the current atom store, given a user action.
 	 *
 	 * @param action action to build a single atom
-	 * @return a cold single of an atom mapped from an action
+	 * @return an unsigned atom mapped from an action
 	 */
-	public Single<UnsignedAtom> buildAtom(Action action) {
+	public UnsignedAtom buildAtom(Action action) throws StageActionException {
 		return buildAtom(Collections.singletonList(action));
 	}
 
 	/**
-	 * Returns a cold single of an unsigned atom given an ordered iterable of user actions.
-	 * Note that this method will always return a unique atom even if given equivalent actions
+	 * Returns an unsigned atom constructed from the current atom store, given an ordered iterable
+	 * of user actions.
 	 *
 	 * @param actions ordered actions to build a single atom
-	 * @return a cold single of an atom mapped from an action
+	 * @return an atom mapped from an iterable of actions
 	 */
-	public Single<UnsignedAtom> buildAtom(Iterable<Action> actions) {
-		final Set<ShardedParticleStateId> requiredState = StreamSupport.stream(actions.spliterator(), false)
-			.filter(a -> requiredStateMappers.containsKey(a.getClass()))
-			.flatMap(a -> requiredStateMappers.get(a.getClass()).apply(a).stream())
-			.collect(Collectors.toSet());
+	public UnsignedAtom buildAtom(Iterable<Action> actions) throws StageActionException {
 		final String uuid = UUID.randomUUID().toString();
-
-		return Completable.create(emitter -> {
-			Map<RadixAddress, Disposable> disposables = requiredState.stream()
-				.map(ShardedParticleStateId::address)
-				.distinct()
-				.collect(Collectors.toMap(
-					addr -> addr,
-					addr -> universe.getAtomPuller().pull(addr).subscribe()
-				));
-
-			Observable.fromIterable(requiredState)
-				.map(ShardedParticleStateId::address)
-				.flatMapSingle(addr -> universe.getAtomStore()
-					.onSync(addr)
-					.firstOrError()
-					.doOnSuccess(i -> disposables.get(addr).dispose())
-				)
-				.ignoreElements()
-				.subscribe(() -> {
-					try {
-						stageActions(uuid, actions);
-					} catch (Exception e) {
-						emitter.onError(e);
-						return;
-					}
-					emitter.onComplete();
-				}, emitter::onError);
-		})
-			.andThen(Single.create(emitter -> {
-				List<ParticleGroup> pgs = universe.getAtomStore().getStagedAndClear(uuid);
-				emitter.onSuccess(buildAtomWithFee(pgs));
-			}));
+		stageActions(uuid, actions);
+		List<ParticleGroup> pgs = universe.getAtomStore().getStagedAndClear(uuid);
+		return buildAtomWithFee(pgs);
 	}
 
 
