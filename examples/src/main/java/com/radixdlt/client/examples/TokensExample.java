@@ -37,7 +37,7 @@ public class TokensExample {
 		RRI tokenRRI = RRI.of(api.getMyAddress(), "JOSH");
 		Transaction transaction = api.createTransaction();
 		// Create
-		transaction.execute(CreateTokenAction.create(
+		transaction.stage(CreateTokenAction.create(
 			tokenRRI,
 			"Joshy Token",
 			"The Best Coin Ever",
@@ -46,7 +46,7 @@ public class TokensExample {
 			TokenSupplyType.MUTABLE
 		));
 		// Mint
-		transaction.execute(MintTokensAction.create(tokenRRI, BigDecimal.valueOf(1000000.0)));
+		transaction.stage(MintTokensAction.create(tokenRRI, BigDecimal.valueOf(1000000.0)));
 		Result createTokenAndMint = transaction.commit();
 		createTokenAndMint.toObservable().blockingSubscribe(System.out::println);
 

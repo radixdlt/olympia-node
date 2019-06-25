@@ -807,7 +807,7 @@ public class RadixApplicationAPI {
 	 */
 	public Result execute(Action action) {
 		Transaction transaction = this.createTransaction();
-		transaction.execute(action);
+		transaction.stage(action);
 		return transaction.commit();
 	}
 
@@ -838,25 +838,47 @@ public class RadixApplicationAPI {
 	 * Represents an atomic transaction to be committed to the ledger
 	 */
 	public final class Transaction {
-		private final ArrayList<Action> actions = new ArrayList<>();
+		private final String uuid;
 
 		private Transaction() {
+			this.uuid = UUID.randomUUID().toString();
 		}
 
 		/**
 		 * Execute an action within this transaction
 		 * @param action the action to execute
 		 */
-		public void execute(Action action) {
-			this.actions.add(action);
+		public void stage(Action action) throws StageActionException {
+			BiFunction<Action, Stream<Particle>, List<ParticleGroup>> statefulMapper = actionMappers.get(action.getClass());
+			if (statefulMapper == null) {
+				throw new IllegalArgumentException("Unknown action class: " + action.getClass() + ". Available: " + actionMappers.keySet());
+			}
+
+			Function<Action, Set<ShardedParticleStateId>> requiredStateMapper = requiredStateMappers.get(action.getClass());
+			Set<ShardedParticleStateId> required = requiredStateMapper != null ? requiredStateMapper.apply(action) : ImmutableSet.of();
+			Stream<Particle> particles = required.stream()
+				.flatMap(ctx -> universe.getAtomStore()
+					.getUpParticles(ctx.address(), uuid)
+					.filter(ctx.particleClass()::isInstance)
+				);
+
+			List<ParticleGroup> pgs = statefulMapper.apply(action, particles);
+			for (ParticleGroup pg : pgs) {
+				universe.getAtomStore().stageParticleGroup(uuid, pg);
+			}
+		}
+
+		public UnsignedAtom buildAtom() {
+			List<ParticleGroup> pgs = universe.getAtomStore().getStagedAndClear(uuid);
+			return buildAtomWithFee(pgs);
 		}
 
 		/**
 		 * Commit the transaction onto the ledger
 		 * @return the results of committing
 		 */
-		public Result commit() throws StageActionException {
-			final UnsignedAtom unsignedAtom = buildAtom(actions);
+		public Result commit() {
+			final UnsignedAtom unsignedAtom = buildAtom();
 			final Single<Atom> atom = identity.sign(unsignedAtom);
 			return createAtomSubmission(atom, false).connect();
 		}
@@ -872,26 +894,6 @@ public class RadixApplicationAPI {
 		return new Transaction();
 	}
 
-	private void stageAction(String uuid, Action action) throws StageActionException {
-		BiFunction<Action, Stream<Particle>, List<ParticleGroup>> statefulMapper = actionMappers.get(action.getClass());
-		if (statefulMapper == null) {
-			throw new IllegalArgumentException("Unknown action class: " + action.getClass() + ". Available: " + actionMappers.keySet());
-		}
-
-		Function<Action, Set<ShardedParticleStateId>> requiredStateMapper = requiredStateMappers.get(action.getClass());
-		Set<ShardedParticleStateId> required = requiredStateMapper != null ? requiredStateMapper.apply(action) : ImmutableSet.of();
-		Stream<Particle> particles = required.stream()
-			.flatMap(ctx -> universe.getAtomStore()
-				.getUpParticles(ctx.address(), uuid)
-				.filter(ctx.particleClass()::isInstance)
-			);
-
-		List<ParticleGroup> pgs = statefulMapper.apply(action, particles);
-		for (ParticleGroup pg : pgs) {
-			universe.getAtomStore().stageParticleGroup(uuid, pg);
-		}
-	}
-
 	/**
 	 * Retrieves the shards and particle types required to execute high level
 	 * actions.
@@ -905,33 +907,6 @@ public class RadixApplicationAPI {
 			.flatMap(a -> requiredStateMappers.get(a.getClass()).apply(a).stream())
 			.collect(Collectors.toSet());
 	}
-
-	/**
-	 * Returns an unsigned atom constructed from the current atom store, given a user action.
-	 *
-	 * @param action action to build a single atom
-	 * @return an unsigned atom mapped from an action
-	 */
-	public UnsignedAtom buildAtom(Action action) throws StageActionException {
-		return buildAtom(Collections.singletonList(action));
-	}
-
-	/**
-	 * Returns an unsigned atom constructed from the current atom store, given an ordered iterable
-	 * of user actions.
-	 *
-	 * @param actions ordered actions to build a single atom
-	 * @return an atom mapped from an iterable of actions
-	 */
-	public UnsignedAtom buildAtom(Iterable<Action> actions) throws StageActionException {
-		final String uuid = UUID.randomUUID().toString();
-		for (Action action : actions) {
-			stageAction(uuid, action);
-		}
-		List<ParticleGroup> pgs = universe.getAtomStore().getStagedAndClear(uuid);
-		return buildAtomWithFee(pgs);
-	}
-
 
 	/**
 	 * Low level call to submit an atom into the network.
