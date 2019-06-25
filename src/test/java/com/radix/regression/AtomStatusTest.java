@@ -55,8 +55,7 @@ public class AtomStatusTest {
 	@Test
 	public void given_a_subscription_to_status_notifications__when_the_atom_is_stored__a_store_notification_should_be_sent() {
 		RadixApplicationAPI api = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, RadixIdentities.createNew());
-		Atom atom = api.buildAtom(new PutUniqueIdAction(api.getMyAddress(), "test"))
-			.flatMap(api.getMyIdentity()::sign)
+		Atom atom = api.getMyIdentity().sign(api.buildAtom(new PutUniqueIdAction(api.getMyAddress(), "test")))
 			.blockingGet();
 		AID aid = atom.getAid();
 

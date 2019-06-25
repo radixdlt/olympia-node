@@ -1,6 +1,7 @@
 package com.radix.acceptance.burn_multi_issuance_tokens;
 
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.client.application.translate.StageActionException;
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionsState;
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
 import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
@@ -73,6 +74,7 @@ public class BurnMultiIssuanceTokens {
 		GRANULARITY,	"1"
 	);
 	private final List<TestObserver<SubmitAtomAction>> observers = Lists.newArrayList();
+	private final List<StageActionException> actionExceptions = Lists.newArrayList();
 
 	@Given("^a library client who owns an account and created token \"([^\"]*)\" with (\\d+) initial supply and is listening to the state of \"([^\"]*)\"$")
 	public void a_library_client_who_owns_an_account_and_created_token_with_initial_supply_and_is_listening_to_the_state_of(
@@ -155,12 +157,12 @@ public class BurnMultiIssuanceTokens {
 
 	@Then("^the client should be notified that the action failed because \"([^\"]*)\" does not exist$")
 	public void the_client_should_be_notified_that_the_action_failed_because_does_not_exist(String arg1) throws Throwable {
-		awaitAtomException(UnknownTokenException.class, "Unknown token");
+		assertThat(actionExceptions.get(0)).isExactlyInstanceOf(UnknownTokenException.class);
 	}
 
 	@Then("^the client should be notified that the action failed because there's not that many tokens in supply$")
 	public void the_client_should_be_notified_that_the_action_failed_because_there_s_not_that_many_tokens_in_supply() throws Throwable {
-		awaitAtomException(InsufficientFundsException.class, "Requested");
+		assertThat(actionExceptions.get(0)).isExactlyInstanceOf(InsufficientFundsException.class);
 	}
 
 	@Then("^the client should be notified that the action failed because the client does not have permission to burn those tokens$")
@@ -180,6 +182,7 @@ public class BurnMultiIssuanceTokens {
 		// Reset data
 		this.properties.clear();
 		this.observers.clear();
+		this.actionExceptions.clear();
 
 		this.properties.put(ADDRESS, api.getMyAddress().toString());
 	}
@@ -207,23 +210,27 @@ public class BurnMultiIssuanceTokens {
 		RRI tokenClass = RRI.of(address, symbol);
 		TransferTokensAction tta = TransferTokensAction.create(address, address, amount, tokenClass);
 		TestObserver<SubmitAtomAction> observer = new TestObserver<>();
-		api.execute(tta)
-			.toObservable()
-			.doOnNext(System.out::println)
-			.subscribe(observer);
-		this.observers.add(observer);
+		api.pullOnce(address).blockingAwait();
+		try {
+			api.execute(tta).toObservable().doOnNext(System.out::println).subscribe(observer);
+			this.observers.add(observer);
+		} catch (StageActionException e) {
+			this.actionExceptions.add(e);
+		}
 	}
 
 	private void burnTokens(BigDecimal amount, String symbol, RadixAddress tokenAddress, RadixAddress address) {
 		RRI tokenClass = RRI.of(tokenAddress, symbol);
 		BurnTokensAction mta = BurnTokensAction.create(address, tokenClass, amount);
 		TestObserver<SubmitAtomAction> observer = new TestObserver<>();
-		api.execute(mta)
-			.toObservable()
-			.doOnNext(System.out::println)
-			.subscribe(observer);
-		this.observers.add(observer);
-		observer.awaitTerminalEvent();
+		api.pullOnce(tokenAddress).blockingAwait();
+		try {
+			api.execute(mta).toObservable().doOnNext(System.out::println).subscribe(observer);
+			this.observers.add(observer);
+			observer.awaitTerminalEvent();
+		} catch (StageActionException e) {
+			this.actionExceptions.add(e);
+		}
 	}
 
 	private void awaitAtomStatus(AtomStatus... finalStates) {

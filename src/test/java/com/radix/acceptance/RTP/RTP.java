@@ -127,7 +127,7 @@ public class RTP {
     	// Connects to localhost:8080
     	RadixApplicationAPI api = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, identity);
     	RRI tokenRRI = RRI.of(api.getMyAddress(), "HI");
-		Single<UnsignedAtom> unsignedAtom = api.buildAtom(
+		UnsignedAtom unsignedAtom = api.buildAtom(
 			CreateTokenAction.create(
 				tokenRRI,
 				"Token",
@@ -137,7 +137,7 @@ public class RTP {
 				TokenSupplyType.MUTABLE
 			)
 		);
-		Atom atom = unsignedAtom.flatMap(identity::sign).blockingGet();
+		Atom atom = identity.sign(unsignedAtom).blockingGet();
 		Result submissionResult = api.submitAtom(atom);
 		submissionResult.blockUntilComplete();
 

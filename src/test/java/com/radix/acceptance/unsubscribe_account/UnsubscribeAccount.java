@@ -3,6 +3,7 @@ package com.radix.acceptance.unsubscribe_account;
 import com.radix.regression.Util;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.AtomStatusNotification;
+import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.ledger.AtomObservation;
 import java.util.List;
 import java.util.UUID;
@@ -146,9 +147,8 @@ public class UnsubscribeAccount {
 		final String subscriberId = UUID.randomUUID().toString();
 		this.jsonRpcClient.observeAtomStatusNotifications(subscriberId).subscribe(atomSubmission);
 
-		this.atom = this.api.buildAtom(new SendMessageAction(new byte[]{1}, this.api.getMyAddress(), this.api.getMyAddress(), false))
-			.flatMap(this.identity::sign)
-			.blockingGet();
+		UnsignedAtom unsignedAtom = this.api.buildAtom(new SendMessageAction(new byte[]{1}, this.api.getMyAddress(), this.api.getMyAddress(), false));
+		this.atom = this.identity.sign(unsignedAtom).blockingGet();
 
 		this.jsonRpcClient.pushAtom(this.atom).blockingAwait();
 		this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, this.atom.getAid()).blockingAwait();
@@ -164,10 +164,8 @@ public class UnsubscribeAccount {
 		final String subscriberId = UUID.randomUUID().toString();
 		this.jsonRpcClient.observeAtomStatusNotifications(subscriberId).subscribe(atomSubmission);
 
-
-		this.otherAtom = this.api.buildAtom(new SendMessageAction(new byte[]{2}, this.api.getMyAddress(), this.api.getMyAddress(), false))
-			.flatMap(this.identity::sign)
-			.blockingGet();
+		UnsignedAtom unsignedAtom = this.api.buildAtom(new SendMessageAction(new byte[]{2}, this.api.getMyAddress(), this.api.getMyAddress(), false));
+		this.otherAtom = this.identity.sign(unsignedAtom).blockingGet();
 
 		this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, this.otherAtom.getAid()).blockingAwait();
 		this.jsonRpcClient.pushAtom(this.otherAtom).blockingAwait();
@@ -183,9 +181,8 @@ public class UnsubscribeAccount {
 		final String subscriberId = UUID.randomUUID().toString();
 		this.jsonRpcClient.observeAtomStatusNotifications(subscriberId).subscribe(atomSubmission);
 
-		this.atom = this.api.buildAtom(new SendMessageAction(new byte[]{3}, this.api.getMyAddress(), this.otherAccount, false))
-			.flatMap(this.identity::sign)
-			.blockingGet();
+		UnsignedAtom unsignedAtom = this.api.buildAtom(new SendMessageAction(new byte[]{3}, this.api.getMyAddress(), this.otherAccount, false));
+		this.atom = this.identity.sign(unsignedAtom).blockingGet();
 
 		this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, this.atom.getAid()).blockingAwait();
 		this.jsonRpcClient.pushAtom(this.atom).blockingAwait();

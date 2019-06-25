@@ -14,12 +14,14 @@ import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.ApplicationState;
 import com.radixdlt.client.application.translate.ShardedAppStateId;
+import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.client.core.address.RadixUniverseConfigs;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomStatus;
+import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.ledger.AtomObservation.Type;
 import com.radixdlt.client.core.network.RadixNetworkEpic;
 import com.radixdlt.client.core.network.RadixNode;
@@ -31,6 +33,7 @@ import io.reactivex.Completable;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.disposables.Disposable;
 import io.reactivex.observers.TestObserver;
 import java.util.Collections;
 import java.util.List;
@@ -110,11 +113,17 @@ public final class DoubleSpendTestRunner {
 
 		Observable<SubmitAtomAction> executeSequentially(List<List<Action>> actions) {
 			return Observable.fromIterable(actions)
-				.concatMap(transaction ->
-					api.buildAtom(transaction)
-						.flatMap(api.getMyIdentity()::sign)
-						.flatMapObservable(a -> api.submitAtom(a, true).toObservable())
-				);
+				.concatMap(transaction -> {
+					api.getRequiredShards(transaction).stream()
+						.map(ShardedParticleStateId::address)
+						.distinct()
+						.map(api::pullOnce)
+						.forEach(Completable::blockingAwait);
+
+					UnsignedAtom unsignedAtom = api.buildAtom(transaction);
+					return api.getMyIdentity().sign(unsignedAtom)
+						.flatMapObservable(a -> api.submitAtom(a, true).toObservable());
+				});
 		}
 
 		@Override
