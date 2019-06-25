@@ -839,6 +839,7 @@ public class RadixApplicationAPI {
 	 */
 	public final class Transaction {
 		private final ArrayList<Action> actions = new ArrayList<>();
+
 		private Transaction() {
 		}
 
@@ -871,25 +872,23 @@ public class RadixApplicationAPI {
 		return new Transaction();
 	}
 
-	private void stageActions(String uuid, Iterable<Action> actions) throws StageActionException {
-		for (Action action : actions) {
-			BiFunction<Action, Stream<Particle>, List<ParticleGroup>> statefulMapper = actionMappers.get(action.getClass());
-			if (statefulMapper == null) {
-				throw new IllegalArgumentException("Unknown action class: " + action.getClass() + ". Available: " + actionMappers.keySet());
-			}
+	private void stageAction(String uuid, Action action) throws StageActionException {
+		BiFunction<Action, Stream<Particle>, List<ParticleGroup>> statefulMapper = actionMappers.get(action.getClass());
+		if (statefulMapper == null) {
+			throw new IllegalArgumentException("Unknown action class: " + action.getClass() + ". Available: " + actionMappers.keySet());
+		}
 
-			Function<Action, Set<ShardedParticleStateId>> requiredStateMapper = requiredStateMappers.get(action.getClass());
-			Set<ShardedParticleStateId> required = requiredStateMapper != null ? requiredStateMapper.apply(action) : ImmutableSet.of();
-			Stream<Particle> particles = required.stream()
-				.flatMap(ctx -> universe.getAtomStore()
-					.getUpParticles(ctx.address(), uuid)
-					.filter(ctx.particleClass()::isInstance)
-				);
+		Function<Action, Set<ShardedParticleStateId>> requiredStateMapper = requiredStateMappers.get(action.getClass());
+		Set<ShardedParticleStateId> required = requiredStateMapper != null ? requiredStateMapper.apply(action) : ImmutableSet.of();
+		Stream<Particle> particles = required.stream()
+			.flatMap(ctx -> universe.getAtomStore()
+				.getUpParticles(ctx.address(), uuid)
+				.filter(ctx.particleClass()::isInstance)
+			);
 
-			List<ParticleGroup> pgs = statefulMapper.apply(action, particles);
-			for (ParticleGroup pg : pgs) {
-				universe.getAtomStore().stageParticleGroup(uuid, pg);
-			}
+		List<ParticleGroup> pgs = statefulMapper.apply(action, particles);
+		for (ParticleGroup pg : pgs) {
+			universe.getAtomStore().stageParticleGroup(uuid, pg);
 		}
 	}
 
@@ -926,7 +925,9 @@ public class RadixApplicationAPI {
 	 */
 	public UnsignedAtom buildAtom(Iterable<Action> actions) throws StageActionException {
 		final String uuid = UUID.randomUUID().toString();
-		stageActions(uuid, actions);
+		for (Action action : actions) {
+			stageAction(uuid, action);
+		}
 		List<ParticleGroup> pgs = universe.getAtomStore().getStagedAndClear(uuid);
 		return buildAtomWithFee(pgs);
 	}
