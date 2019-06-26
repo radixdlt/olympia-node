@@ -23,8 +23,6 @@ import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.crypto.ECKeyPairGenerator;
-import com.radixdlt.client.core.network.actions.SubmitAtomAction;
-import com.radixdlt.client.core.network.actions.SubmitAtomReceivedAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomSendAction;
@@ -202,7 +200,7 @@ public class ParticleGroups {
 		for (Action action : actions) {
 			transaction.stage(action);
 		}
-		transaction.commit()
+		transaction.commitAndPush()
 			.toObservable()
 			.doOnNext(System.out::println)
 			.subscribe(observer);

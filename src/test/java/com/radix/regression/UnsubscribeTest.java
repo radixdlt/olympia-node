@@ -21,10 +21,10 @@ import io.reactivex.observers.TestObserver;
  */
 public class UnsubscribeTest {
 	private final static Predicate<RadixNetworkState> NETWORK_IS_CLOSE =
-		state -> state.getNodes().entrySet().stream().noneMatch(e -> e.getValue().getStatus().equals(WebSocketStatus.CONNECTED));
+		state -> state.getNodeStates().entrySet().stream().noneMatch(e -> e.getValue().getStatus().equals(WebSocketStatus.CONNECTED));
 
 	private final static Predicate<RadixNetworkState> NETWORK_IS_OPEN =
-		state -> state.getNodes().entrySet().stream().anyMatch(e -> e.getValue().getStatus().equals(WebSocketStatus.CONNECTED));
+		state -> state.getNodeStates().entrySet().stream().anyMatch(e -> e.getValue().getStatus().equals(WebSocketStatus.CONNECTED));
 
 	@Test
 	public void given_i_am_a_library_user_with_no_connections__when_i_send_a_message_to_myself_to_completion__then_i_can_observe_all_network_connections_being_closed() {

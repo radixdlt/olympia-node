@@ -14,14 +14,12 @@ import com.radixdlt.client.application.translate.data.SendMessageAction;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
-import com.radixdlt.client.core.network.actions.SubmitAtomReceivedAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomSendAction;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
-import io.reactivex.observers.BaseTestConsumer.TestWaitStrategy;
 import io.reactivex.observers.TestObserver;
 
 import java.util.Arrays;
@@ -65,7 +63,7 @@ public class SendingADataTransaction {
 		for (Action action : actions) {
 			transaction.stage(action);
 		}
-		transaction.commit()
+		transaction.commitAndPush()
 			.toObservable()
 			.doOnNext(System.out::println)
 			.subscribe(observer);

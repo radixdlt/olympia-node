@@ -29,7 +29,7 @@ public class SendUniqueTransactionsTest {
 		Transaction transaction = api.createTransaction();
 		transaction.stage(new SendMessageAction(new byte[] {0}, api.getMyAddress(), api.getMyAddress(), false));
 		transaction.stage(new PutUniqueIdAction(api.getMyAddress(), uniqueId));
-		Completable initialUniqueStatus = transaction.commit().toCompletable();
+		Completable initialUniqueStatus = transaction.commitAndPush().toCompletable();
 		initialUniqueStatus.blockingAwait();
 
 		// When client attempts to use same id
@@ -37,7 +37,7 @@ public class SendUniqueTransactionsTest {
 		Transaction transaction1 = api.createTransaction();
 		transaction1.stage(new SendMessageAction(new byte[] {1}, api.getMyAddress(), api.getMyAddress(), false));
 		transaction1.stage(new PutUniqueIdAction(api.getMyAddress(), uniqueId));
-		Completable conflictingUniqueStatus = transaction1.commit().toCompletable();
+		Completable conflictingUniqueStatus = transaction1.commitAndPush().toCompletable();
 		conflictingUniqueStatus.subscribe(submissionObserver);
 
 		// Then client should be notified that unique id is already used
@@ -60,7 +60,7 @@ public class SendUniqueTransactionsTest {
 		Transaction transaction = api.createTransaction();
 		transaction.stage(new SendMessageAction(new byte[] {1}, api.getMyAddress(), api.getMyAddress(), false));
 		transaction.stage(new PutUniqueIdAction(api.getMyAddress(), uniqueId));
-		Completable conflictingUniqueStatus = transaction.commit().toCompletable();
+		Completable conflictingUniqueStatus = transaction.commitAndPush().toCompletable();
 		conflictingUniqueStatus.subscribe(submissionObserver);
 
 		// Then client should be notified of success
@@ -81,7 +81,7 @@ public class SendUniqueTransactionsTest {
 		Transaction transaction = api1.createTransaction();
 		transaction.stage(new SendMessageAction(new byte[] {1}, api1.getMyAddress(), api1.getMyAddress(), false));
 		transaction.stage(new PutUniqueIdAction(api2.getMyAddress(), uniqueId));
-		Completable conflictingUniqueStatus = transaction.commit().toCompletable();
+		Completable conflictingUniqueStatus = transaction.commitAndPush().toCompletable();
 		conflictingUniqueStatus.subscribe(submissionObserver);
 
 		// Then client should be notified of error
