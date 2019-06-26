@@ -1,6 +1,7 @@
 package com.radix.acceptance.unsubscribe_account;
 
 import com.radix.regression.Util;
+import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.AtomStatusNotification;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
@@ -147,7 +148,9 @@ public class UnsubscribeAccount {
 		final String subscriberId = UUID.randomUUID().toString();
 		this.jsonRpcClient.observeAtomStatusNotifications(subscriberId).subscribe(atomSubmission);
 
-		UnsignedAtom unsignedAtom = this.api.buildAtom(new SendMessageAction(new byte[]{1}, this.api.getMyAddress(), this.api.getMyAddress(), false));
+		Transaction transaction = this.api.createTransaction();
+		transaction.stage(new SendMessageAction(new byte[]{1}, this.api.getMyAddress(), this.api.getMyAddress(), false));
+		UnsignedAtom unsignedAtom = transaction.buildAtom();
 		this.atom = this.identity.sign(unsignedAtom).blockingGet();
 
 		this.jsonRpcClient.pushAtom(this.atom).blockingAwait();
@@ -164,7 +167,9 @@ public class UnsubscribeAccount {
 		final String subscriberId = UUID.randomUUID().toString();
 		this.jsonRpcClient.observeAtomStatusNotifications(subscriberId).subscribe(atomSubmission);
 
-		UnsignedAtom unsignedAtom = this.api.buildAtom(new SendMessageAction(new byte[]{2}, this.api.getMyAddress(), this.api.getMyAddress(), false));
+		Transaction transaction = this.api.createTransaction();
+		transaction.stage(new SendMessageAction(new byte[]{1}, this.api.getMyAddress(), this.api.getMyAddress(), false));
+		UnsignedAtom unsignedAtom = transaction.buildAtom();
 		this.otherAtom = this.identity.sign(unsignedAtom).blockingGet();
 
 		this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, this.otherAtom.getAid()).blockingAwait();
@@ -181,7 +186,9 @@ public class UnsubscribeAccount {
 		final String subscriberId = UUID.randomUUID().toString();
 		this.jsonRpcClient.observeAtomStatusNotifications(subscriberId).subscribe(atomSubmission);
 
-		UnsignedAtom unsignedAtom = this.api.buildAtom(new SendMessageAction(new byte[]{3}, this.api.getMyAddress(), this.otherAccount, false));
+		Transaction transaction = this.api.createTransaction();
+		transaction.stage(new SendMessageAction(new byte[]{3}, this.api.getMyAddress(), this.otherAccount, false));
+		UnsignedAtom unsignedAtom = transaction.buildAtom();
 		this.atom = this.identity.sign(unsignedAtom).blockingGet();
 
 		this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, this.atom.getAid()).blockingAwait();

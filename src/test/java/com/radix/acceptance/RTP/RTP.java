@@ -1,6 +1,7 @@
 package com.radix.acceptance.RTP;
 
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
+import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
@@ -127,16 +128,16 @@ public class RTP {
     	// Connects to localhost:8080
     	RadixApplicationAPI api = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, identity);
     	RRI tokenRRI = RRI.of(api.getMyAddress(), "HI");
-		UnsignedAtom unsignedAtom = api.buildAtom(
-			CreateTokenAction.create(
-				tokenRRI,
-				"Token",
-				"Token",
-				BigDecimal.ZERO,
-				BigDecimal.ONE,
-				TokenSupplyType.MUTABLE
-			)
-		);
+		Transaction tx = api.createTransaction();
+		tx.stage(CreateTokenAction.create(
+			tokenRRI,
+			"Token",
+			"Token",
+			BigDecimal.ZERO,
+			BigDecimal.ONE,
+			TokenSupplyType.MUTABLE
+		));
+		UnsignedAtom unsignedAtom = tx.buildAtom();
 		Atom atom = identity.sign(unsignedAtom).blockingGet();
 		Result submissionResult = api.submitAtom(atom);
 		submissionResult.blockUntilComplete();

@@ -1,6 +1,7 @@
 package com.radix.regression;
 
 import com.radixdlt.client.application.RadixApplicationAPI;
+import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.translate.unique.PutUniqueIdAction;
 import com.radixdlt.client.core.Bootstrap;
@@ -55,7 +56,9 @@ public class AtomStatusTest {
 	@Test
 	public void given_a_subscription_to_status_notifications__when_the_atom_is_stored__a_store_notification_should_be_sent() {
 		RadixApplicationAPI api = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, RadixIdentities.createNew());
-		Atom atom = api.getMyIdentity().sign(api.buildAtom(new PutUniqueIdAction(api.getMyAddress(), "test")))
+		Transaction transaction = api.createTransaction();
+		transaction.stage(new PutUniqueIdAction(api.getMyAddress(), "test"));
+		Atom atom = api.getMyIdentity().sign(transaction.buildAtom())
 			.blockingGet();
 		AID aid = atom.getAid();
 

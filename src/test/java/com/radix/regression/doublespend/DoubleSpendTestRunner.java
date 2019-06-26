@@ -33,7 +33,6 @@ import io.reactivex.Completable;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.disposables.CompositeDisposable;
-import io.reactivex.disposables.Disposable;
 import io.reactivex.observers.TestObserver;
 import java.util.Collections;
 import java.util.List;
@@ -113,14 +112,19 @@ public final class DoubleSpendTestRunner {
 
 		Observable<SubmitAtomAction> executeSequentially(List<List<Action>> actions) {
 			return Observable.fromIterable(actions)
-				.concatMap(transaction -> {
-					api.getRequiredShards(transaction).stream()
+				.concatMap(actionList -> {
+					Transaction transaction = api.createTransaction();
+					for (Action action : actionList) {
+						transaction.addToWorkingArea(action);
+					}
+					transaction.getWorkingAreaRequirements().stream()
 						.map(ShardedParticleStateId::address)
 						.distinct()
 						.map(api::pullOnce)
 						.forEach(Completable::blockingAwait);
+					transaction.stageWorkingArea();
+					UnsignedAtom unsignedAtom = transaction.buildAtom();
 
-					UnsignedAtom unsignedAtom = api.buildAtom(transaction);
 					return api.getMyIdentity().sign(unsignedAtom)
 						.flatMapObservable(a -> api.submitAtom(a, true).toObservable());
 				});
@@ -142,8 +146,9 @@ public final class DoubleSpendTestRunner {
 			.map(batched -> {
 				Transaction transaction = api.createTransaction();
 				for (Action action : batched.getActions()) {
-					transaction.execute(action);
+					transaction.stage(action);
 				}
+				transaction.stageWorkingArea();
 				return transaction.commit();
 			})
 			.map(Result::toCompletable)

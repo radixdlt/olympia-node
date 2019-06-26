@@ -27,16 +27,16 @@ public class SendUniqueTransactionsTest {
 		RadixApplicationAPI api = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, RadixIdentities.createNew());
 		final String uniqueId = "thisisauniquestring";
 		Transaction transaction = api.createTransaction();
-		transaction.execute(new SendMessageAction(new byte[] {0}, api.getMyAddress(), api.getMyAddress(), false));
-		transaction.execute(new PutUniqueIdAction(api.getMyAddress(), uniqueId));
+		transaction.stage(new SendMessageAction(new byte[] {0}, api.getMyAddress(), api.getMyAddress(), false));
+		transaction.stage(new PutUniqueIdAction(api.getMyAddress(), uniqueId));
 		Completable initialUniqueStatus = transaction.commit().toCompletable();
 		initialUniqueStatus.blockingAwait();
 
 		// When client attempts to use same id
 		TestObserver<Object> submissionObserver = TestObserver.create(Util.loggingObserver("Submission"));
 		Transaction transaction1 = api.createTransaction();
-		transaction1.execute(new SendMessageAction(new byte[] {1}, api.getMyAddress(), api.getMyAddress(), false));
-		transaction1.execute(new PutUniqueIdAction(api.getMyAddress(), uniqueId));
+		transaction1.stage(new SendMessageAction(new byte[] {1}, api.getMyAddress(), api.getMyAddress(), false));
+		transaction1.stage(new PutUniqueIdAction(api.getMyAddress(), uniqueId));
 		Completable conflictingUniqueStatus = transaction1.commit().toCompletable();
 		conflictingUniqueStatus.subscribe(submissionObserver);
 
@@ -58,8 +58,8 @@ public class SendUniqueTransactionsTest {
 		// When client attempts to use id
 		TestObserver<Object> submissionObserver = TestObserver.create(Util.loggingObserver("Submission"));
 		Transaction transaction = api.createTransaction();
-		transaction.execute(new SendMessageAction(new byte[] {1}, api.getMyAddress(), api.getMyAddress(), false));
-		transaction.execute(new PutUniqueIdAction(api.getMyAddress(), uniqueId));
+		transaction.stage(new SendMessageAction(new byte[] {1}, api.getMyAddress(), api.getMyAddress(), false));
+		transaction.stage(new PutUniqueIdAction(api.getMyAddress(), uniqueId));
 		Completable conflictingUniqueStatus = transaction.commit().toCompletable();
 		conflictingUniqueStatus.subscribe(submissionObserver);
 
@@ -79,8 +79,8 @@ public class SendUniqueTransactionsTest {
 		// When client attempts to use id in ANOTHER account
 		TestObserver<Object> submissionObserver = TestObserver.create(Util.loggingObserver("Submission"));
 		Transaction transaction = api1.createTransaction();
-		transaction.execute(new SendMessageAction(new byte[] {1}, api1.getMyAddress(), api1.getMyAddress(), false));
-		transaction.execute(new PutUniqueIdAction(api2.getMyAddress(), uniqueId));
+		transaction.stage(new SendMessageAction(new byte[] {1}, api1.getMyAddress(), api1.getMyAddress(), false));
+		transaction.stage(new PutUniqueIdAction(api2.getMyAddress(), uniqueId));
 		Completable conflictingUniqueStatus = transaction.commit().toCompletable();
 		conflictingUniqueStatus.subscribe(submissionObserver);
 
