@@ -42,10 +42,6 @@ public enum Bootstrap implements BootstrapConfig {
 	WINTERFELL(
 		RadixUniverseConfigs::getWinterfell,
 		Observable.just(new RadixNode("52.190.0.18", false, 8080))
-	),
-	WINTERFELL_LOCAL(
-		RadixUniverseConfigs::getWinterfell,
-		Observable.just(new RadixNode("localhost", false, 8080))
 	);
 
 	private final Supplier<RadixUniverseConfig> config;
