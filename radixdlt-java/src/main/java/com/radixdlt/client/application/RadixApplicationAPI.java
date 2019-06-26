@@ -11,9 +11,12 @@ import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.ledger.AtomStore;
-import com.radixdlt.client.core.network.RadixNetworkController;
+import com.radixdlt.client.core.network.RadixNode;
+import com.radixdlt.client.core.network.RadixNodeAction;
+import com.radixdlt.client.core.network.actions.DiscoverMoreNodesAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomCompleteAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
+import com.radixdlt.client.core.network.actions.SubmitAtomSendAction;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -806,7 +809,7 @@ public class RadixApplicationAPI {
 	public Result execute(Action action) {
 		Transaction transaction = this.createTransaction();
 		transaction.stage(action);
-		return transaction.commit();
+		return transaction.commitAndPush();
 	}
 
 	private long generateTimestamp() {
@@ -875,7 +878,7 @@ public class RadixApplicationAPI {
 		}
 
 		/**
-		 * Add an action to staging area in preparation for commit.
+		 * Add an action to staging area in preparation for commitAndPush.
 		 * Collects the necessary particles to make the action happen.
 		 *
 		 * @param action action to add to staging area.
@@ -910,10 +913,21 @@ public class RadixApplicationAPI {
 		 * Commit the transaction onto the ledger
 		 * @return the results of committing
 		 */
-		public Result commit() {
+		public Result commitAndPush() {
 			final UnsignedAtom unsignedAtom = buildAtom();
 			final Single<Atom> atom = identity.sign(unsignedAtom);
-			return createAtomSubmission(atom, false).connect();
+			return createAtomSubmission(atom, false, null).connect();
+		}
+
+		/**
+		 * Commit the transaction onto the ledger
+		 * @param originNode the originNode to push to
+		 * @return the results of committing
+		 */
+		public Result commitAndPush(RadixNode originNode) {
+			final UnsignedAtom unsignedAtom = buildAtom();
+			final Single<Atom> atom = identity.sign(unsignedAtom);
+			return createAtomSubmission(atom, false, originNode).connect();
 		}
 	}
 
@@ -934,7 +948,7 @@ public class RadixApplicationAPI {
 	 * @return the result of the submission
 	 */
 	public Result submitAtom(Atom atom, boolean completeOnStoreOnly) {
-		return createAtomSubmission(Single.just(atom), completeOnStoreOnly).connect();
+		return createAtomSubmission(Single.just(atom), completeOnStoreOnly, null).connect();
 	}
 
 	/**
@@ -944,21 +958,26 @@ public class RadixApplicationAPI {
 	 * @return the result of the submission
 	 */
 	public Result submitAtom(Atom atom) {
-		return createAtomSubmission(Single.just(atom), false).connect();
+		return createAtomSubmission(Single.just(atom), false, null).connect();
 	}
 
-	private Result createAtomSubmission(Single<Atom> atom, boolean completeOnStoreOnly) {
+	private Result createAtomSubmission(Single<Atom> atom, boolean completeOnStoreOnly, RadixNode originNode) {
 		final ConnectableObservable<SubmitAtomAction> updates = atom
 			.flatMapObservable(a -> {
-				SubmitAtomRequestAction initialAction = SubmitAtomRequestAction.newRequest(a, completeOnStoreOnly);
+				final SubmitAtomAction initialAction;
+				if (originNode == null) {
+					initialAction = SubmitAtomRequestAction.newRequest(a, completeOnStoreOnly);
+				} else {
+					initialAction = SubmitAtomSendAction.of(UUID.randomUUID().toString(), a, originNode, completeOnStoreOnly);
+				}
 				Observable<SubmitAtomAction> status =
-					getNetworkController().getActions().ofType(SubmitAtomAction.class)
+					this.universe.getNetworkController().getActions().ofType(SubmitAtomAction.class)
 						.filter(u -> u.getUuid().equals(initialAction.getUuid()))
 						.takeWhile(s -> !(s instanceof SubmitAtomCompleteAction));
 				ConnectableObservable<SubmitAtomAction> replay = status.replay();
 				replay.connect();
 
-				getNetworkController().dispatch(initialAction);
+				this.universe.getNetworkController().dispatch(initialAction);
 
 				return replay;
 			})
@@ -977,6 +996,14 @@ public class RadixApplicationAPI {
 	}
 
 	/**
+	 * Dispatches a discovery request, the result of which would
+	 * be viewable via getNetworkState()
+	 */
+	public void discoverNodes() {
+		this.universe.getNetworkController().dispatch(DiscoverMoreNodesAction.instance());
+	}
+
+	/**
 	 * Get a stream of updated network states as they occur.
 	 *
 	 * @return a hot observable of the current network state
@@ -986,12 +1013,12 @@ public class RadixApplicationAPI {
 	}
 
 	/**
-	 * Low level call to retrieve the network controller used
-	 * by the API.
+	 * Low level call to retrieve the actions occurring at the network
+	 * level.
 	 *
-	 * @return the network controller
+	 * @return a hot observable of network actions as they occur
 	 */
-	public RadixNetworkController getNetworkController() {
-		return this.universe.getNetworkController();
+	public Observable<RadixNodeAction> getNetworkActions() {
+		return this.universe.getNetworkController().getActions();
 	}
 }

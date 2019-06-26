@@ -58,7 +58,7 @@ public class DiscoverNodesEpicTest {
 
 		ReplaySubject<RadixNodeAction> actions = ReplaySubject.create();
 		RadixNetworkState networkState = mock(RadixNetworkState.class);
-		when(networkState.getNodes()).thenReturn(Collections.emptyMap());
+		when(networkState.getNodeStates()).thenReturn(Collections.emptyMap());
 		Observable<RadixNetworkState> observableNetworkState = Observable.concat(Observable.just(networkState), Observable.never());
 
 		DiscoverNodesEpic discoverNodesEpic = new DiscoverNodesEpic(seeds, universe);

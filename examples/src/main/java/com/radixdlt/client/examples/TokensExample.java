@@ -47,7 +47,7 @@ public class TokensExample {
 		));
 		// Mint
 		transaction.stage(MintTokensAction.create(tokenRRI, BigDecimal.valueOf(1000000.0)));
-		Result createTokenAndMint = transaction.commit();
+		Result createTokenAndMint = transaction.commitAndPush();
 		createTokenAndMint.toObservable().blockingSubscribe(System.out::println);
 
 		// Get token definition

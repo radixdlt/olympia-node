@@ -338,6 +338,6 @@ public class RadixApplicationAPITest {
 		TestObserver<RadixNetworkState> testObserver = TestObserver.create();
 		RadixApplicationAPI api = RadixApplicationAPI.create(config, identity);
 		api.getNetworkState().subscribe(testObserver);
-		testObserver.assertValue(state -> state.getNodes().size() == 2);
+		testObserver.assertValue(state -> state.getNodeStates().size() == 2);
 	}
 }

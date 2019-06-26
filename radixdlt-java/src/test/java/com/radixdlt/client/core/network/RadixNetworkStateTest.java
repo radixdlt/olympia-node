@@ -12,7 +12,7 @@ public class RadixNetworkStateTest {
 	@Test
 	public void when_node_map_from_network_state_is_modified__then_exception_is_thrown() {
 		RadixNetworkState state = new RadixNetworkState(new HashMap<>());
-		Map<RadixNode, RadixNodeState> nodeMap = state.getNodes();
+		Map<RadixNode, RadixNodeState> nodeMap = state.getNodeStates();
 		assertThatThrownBy(() -> nodeMap.put(mock(RadixNode.class), mock(RadixNodeState.class)))
 			.isInstanceOf(UnsupportedOperationException.class);
 	}
@@ -22,6 +22,6 @@ public class RadixNetworkStateTest {
 		Map<RadixNode, RadixNodeState> initialMap = new HashMap<>();
 		RadixNetworkState state = new RadixNetworkState(initialMap);
 		initialMap.put(mock(RadixNode.class), mock(RadixNodeState.class));
-		assertThat(state.getNodes()).isEmpty();
+		assertThat(state.getNodeStates()).isEmpty();
 	}
 }
