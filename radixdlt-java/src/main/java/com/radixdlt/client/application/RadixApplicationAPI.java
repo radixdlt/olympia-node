@@ -8,6 +8,7 @@ import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.ledger.AtomStore;
 import com.radixdlt.client.core.network.RadixNetworkController;
+import com.radixdlt.client.core.network.actions.DiscoverMoreNodesAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomCompleteAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
 import java.math.BigDecimal;
@@ -982,5 +983,13 @@ public class RadixApplicationAPI {
 	 */
 	public RadixNetworkController getNetworkController() {
 		return this.universe.getNetworkController();
+	}
+
+	/**
+	 * Dispatches a discovery request, the result of which would
+	 * be viewable via getNetworkState()
+	 */
+	public void discoverNodes() {
+		this.universe.getNetworkController().dispatch(DiscoverMoreNodesAction.instance());
 	}
 }
