@@ -6,6 +6,7 @@ import com.radixdlt.client.core.ledger.AtomEvent;
 import java.util.List;
 import java.util.UUID;
 
+import java.util.concurrent.TimeUnit;
 import org.json.JSONObject;
 import org.radix.common.ID.AID;
 import org.radix.common.ID.EUID;
@@ -90,6 +91,8 @@ public class RadixJsonRpcClient {
 	 */
 	private final Single<RadixUniverseConfig> universeConfig;
 
+	private final int defaultTimeoutSecs = 30;
+
 	public RadixJsonRpcClient(PersistentChannel channel) {
 		this.channel = channel;
 
@@ -139,11 +142,12 @@ public class RadixJsonRpcClient {
 				.filter(msg -> msg.has("id"))
 				.filter(msg -> msg.get("id").isJsonNull() || msg.get("id").getAsString().equals(uuid))
 				.firstOrError()
+				.timeout(defaultTimeoutSecs, TimeUnit.SECONDS)
 				.map(msg -> {
 					final JsonObject jsonResponse = msg.getAsJsonObject();
 					return new JsonRpcResponse(!jsonResponse.has("error"), jsonResponse);
 				})
-				.subscribe(emitter::onSuccess);
+				.subscribe(emitter::onSuccess, emitter::onError);
 
 			boolean sendSuccess = channel.sendMessage(GsonJson.getInstance().stringFromGson(requestObject));
 			if (!sendSuccess) {

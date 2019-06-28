@@ -31,6 +31,7 @@ public final class SubmitAtomEpic implements RadixNetworkEpic {
 	private static final int DELAY_CLOSE_SECS = 5;
 
 	private final WebSockets webSockets;
+	private final int timeoutSecs = 30;
 
 	public SubmitAtomEpic(WebSockets webSockets) {
 		this.webSockets = webSockets;
@@ -114,6 +115,7 @@ public final class SubmitAtomEpic implements RadixNetworkEpic {
 					).subscribe();
 			});
 		})
+			.timeout(timeoutSecs, TimeUnit.SECONDS, Observable.just(SubmitAtomCompleteAction.of(request.getUuid(), request.getAtom(), node)))
 			.takeUntil(e -> e instanceof SubmitAtomCompleteAction)
 			.doFinally(() -> Observable.timer(DELAY_CLOSE_SECS, TimeUnit.SECONDS).subscribe(t -> ws.close()));
 	}
