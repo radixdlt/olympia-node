@@ -29,7 +29,6 @@ import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
 import io.reactivex.observers.TestObserver;
-import okhttp3.Request;
 import org.json.JSONObject;
 import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.client.GsonJson;
@@ -276,8 +275,7 @@ public class AtomMetaData {
 			.map(state -> state.getNodes().keySet().iterator().next())
 			.blockingFirst();
 
-        Request localhost = new Request.Builder().url(node.toString()).build();
-        this.webSocketClient = new WebSocketClient(listener -> HttpClients.getSslAllTrustingClient().newWebSocket(localhost, listener));
+        this.webSocketClient = new WebSocketClient(listener -> HttpClients.getSslAllTrustingClient().newWebSocket(node.getWebSocketEndpoint(), listener));
         this.webSocketClient.connect();
         this.webSocketClient.getState()
                 .filter(WebSocketStatus.CONNECTED::equals)

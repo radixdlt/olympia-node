@@ -30,7 +30,6 @@ import com.radixdlt.client.core.network.websocket.WebSocketStatus;
 import com.radixdlt.client.core.pow.ProofOfWorkBuilder;
 import io.reactivex.observers.TestObserver;
 import java.util.UUID;
-import okhttp3.Request;
 import org.junit.Before;
 import org.junit.Test;
 import org.radix.utils.UInt256;
@@ -39,7 +38,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 public class MultipleTransitionsInSameGroupTest {
 	private static final BootstrapConfig BOOTSTRAP_CONFIG;
@@ -67,8 +65,9 @@ public class MultipleTransitionsInSameGroupTest {
 			.map(state -> state.getNodes().keySet().iterator().next())
 			.blockingFirst();
 
-		Request localhost = new Request.Builder().url(node.toString()).build();
-		WebSocketClient webSocketClient = new WebSocketClient(listener -> HttpClients.getSslAllTrustingClient().newWebSocket(localhost, listener));
+		WebSocketClient webSocketClient = new WebSocketClient(listener ->
+			HttpClients.getSslAllTrustingClient().newWebSocket(node.getWebSocketEndpoint(), listener)
+		);
 		webSocketClient.connect();
 		webSocketClient.getState()
 			.filter(WebSocketStatus.CONNECTED::equals)

@@ -25,7 +25,6 @@ import com.radixdlt.client.core.network.websocket.WebSocketStatus;
 import com.radixdlt.client.core.pow.ProofOfWorkBuilder;
 import io.reactivex.observers.TestObserver;
 import java.util.UUID;
-import okhttp3.Request;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -59,8 +58,9 @@ public class AtomKernelTest {
 			.map(state -> state.getNodes().keySet().iterator().next())
 			.blockingFirst();
 
-		Request localhost = new Request.Builder().url(node.toString()).build();
-		WebSocketClient webSocketClient = new WebSocketClient(listener -> HttpClients.getSslAllTrustingClient().newWebSocket(localhost, listener));
+		WebSocketClient webSocketClient = new WebSocketClient(listener ->
+			HttpClients.getSslAllTrustingClient().newWebSocket(node.getWebSocketEndpoint(), listener)
+		);
 		webSocketClient.connect();
 		webSocketClient.getState()
 			.filter(WebSocketStatus.CONNECTED::equals)

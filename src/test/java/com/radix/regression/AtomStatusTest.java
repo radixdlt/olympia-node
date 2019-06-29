@@ -5,7 +5,6 @@ import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.translate.unique.PutUniqueIdAction;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.BootstrapConfig;
-import com.radixdlt.client.core.address.RadixUniverseConfigs;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.AtomStatusNotification;
@@ -16,7 +15,6 @@ import com.radixdlt.client.core.network.websocket.WebSocketClient;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
 import io.reactivex.observers.TestObserver;
 import java.util.UUID;
-import okhttp3.Request;
 import org.junit.Before;
 import org.junit.Test;
 import org.radix.common.ID.AID;
@@ -44,8 +42,9 @@ public class AtomStatusTest {
 			.map(state -> state.getNodes().keySet().iterator().next())
 			.blockingFirst();
 
-		Request localhost = new Request.Builder().url(node.toString()).build();
-		WebSocketClient webSocketClient = new WebSocketClient(listener -> HttpClients.getSslAllTrustingClient().newWebSocket(localhost, listener));
+		WebSocketClient webSocketClient = new WebSocketClient(listener ->
+			HttpClients.getSslAllTrustingClient().newWebSocket(node.getWebSocketEndpoint(), listener)
+		);
 		webSocketClient.connect();
 		webSocketClient.getState()
 			.filter(WebSocketStatus.CONNECTED::equals)

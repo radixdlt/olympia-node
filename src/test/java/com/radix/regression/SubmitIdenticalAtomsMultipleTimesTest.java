@@ -2,8 +2,6 @@ package com.radix.regression;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
@@ -25,11 +23,8 @@ import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient;
 import com.radixdlt.client.core.network.websocket.WebSocketClient;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
 import com.radixdlt.client.core.pow.ProofOfWorkBuilder;
-import io.reactivex.functions.Predicate;
 import io.reactivex.observers.TestObserver;
 import java.util.UUID;
-import okhttp3.Request;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -37,8 +32,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -68,8 +61,9 @@ public class SubmitIdenticalAtomsMultipleTimesTest {
 			.map(state -> state.getNodes().keySet().iterator().next())
 			.blockingFirst();
 
-		Request localhost = new Request.Builder().url(node.toString()).build();
-		WebSocketClient webSocketClient = new WebSocketClient(listener -> HttpClients.getSslAllTrustingClient().newWebSocket(localhost, listener));
+		WebSocketClient webSocketClient = new WebSocketClient(listener ->
+			HttpClients.getSslAllTrustingClient().newWebSocket(node.getWebSocketEndpoint(), listener)
+		);
 		webSocketClient.connect();
 		webSocketClient.getState()
 			.filter(WebSocketStatus.CONNECTED::equals)

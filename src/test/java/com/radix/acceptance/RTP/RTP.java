@@ -74,7 +74,6 @@ public class RTP {
     @Test
     public void test_submitted_atom_two_vertex_timestamps_are_close() throws InterruptedException {
     	RadixIdentity identity = RadixIdentities.createNew();
-    	// Connects to localhost:8080
     	RadixApplicationAPI api = RadixApplicationAPI.create(BOOTSTRAP_CONFIG, identity);
 		TestObserver<SubmitAtomAction> observer = new TestObserver<>();
 		RRI tokenRRI = RRI.of(api.getMyAddress(), "TOKEN");
