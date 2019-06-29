@@ -1,6 +1,6 @@
 package com.radix.regression;
 
-import com.radixdlt.client.core.BootstrapConfig;
+import com.radix.TestEnv;
 import java.util.stream.Stream;
 
 import org.junit.Test;
@@ -12,7 +12,6 @@ import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.translate.data.DecryptedMessage;
 import com.radixdlt.client.application.translate.data.DecryptedMessage.EncryptionState;
 import com.radixdlt.client.application.translate.data.SendMessageToParticleGroupsMapper;
-import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.crypto.ECKeyPairGenerator;
 
@@ -20,23 +19,13 @@ import io.reactivex.Completable;
 import io.reactivex.observers.TestObserver;
 
 public class SendReceiveEncryptedDataTransactionTest {
-	private static final BootstrapConfig BOOTSTRAP_CONFIG;
-	static {
-		String bootstrapConfigName = System.getenv("RADIX_BOOTSTRAP_CONFIG");
-		if (bootstrapConfigName != null) {
-			BOOTSTRAP_CONFIG = Bootstrap.valueOf(bootstrapConfigName);
-		} else {
-			BOOTSTRAP_CONFIG = Bootstrap.LOCALHOST_SINGLENODE;
-		}
-	}
-
 	/**
 	 * RLAU-90
 	 */
 	@Test
 	public void given_i_own_a_key_pair_associated_with_an_address_and_listening_to_messages__when_i_send_an_endecryptable_message_to_myself__then_i_will_receive_a_message_marked_that_it_is_not_decryptable() {
 		// Given I own a key pair associated with an address and listening to messages
-		RadixApplicationAPI normalApi = RadixApplicationAPI.create(BOOTSTRAP_CONFIG, RadixIdentities.createNew());
+		RadixApplicationAPI normalApi = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), RadixIdentities.createNew());
 		TestObserver<DecryptedMessage> messageListener = TestObserver.create(Util.loggingObserver("MessageListener"));
 		normalApi.getMessages().subscribe(messageListener);
 
@@ -48,7 +37,7 @@ public class SendReceiveEncryptedDataTransactionTest {
 		);
 		RadixApplicationAPI sendMessageWithDifferentKeyApi = new RadixApplicationAPIBuilder()
 			.defaultFeeMapper()
-			.universe(RadixUniverse.create(BOOTSTRAP_CONFIG))
+			.universe(RadixUniverse.create(TestEnv.getBootstrapConfig()))
 			.identity(normalApi.getMyIdentity())
 			.addStatelessParticlesMapper(msgMapper)
 			.build();

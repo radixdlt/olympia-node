@@ -1,6 +1,6 @@
 package com.radix.regression;
 
-import com.radixdlt.client.core.BootstrapConfig;
+import com.radix.TestEnv;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
@@ -14,7 +14,6 @@ import com.radixdlt.client.application.translate.data.DecryptedMessage;
 import com.radixdlt.client.application.translate.data.DecryptedMessage.EncryptionState;
 import com.radixdlt.client.application.translate.data.SendMessageAction;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.core.Bootstrap;
 
 import io.reactivex.Completable;
 import io.reactivex.observers.TestObserver;
@@ -23,21 +22,11 @@ import io.reactivex.observers.TestObserver;
  * RLAU-162, RLAU-88, RLAU-89
  */
 public class SendReceiveDataTransactionTest {
-	private static final BootstrapConfig BOOTSTRAP_CONFIG;
-	static {
-		String bootstrapConfigName = System.getenv("RADIX_BOOTSTRAP_CONFIG");
-		if (bootstrapConfigName != null) {
-			BOOTSTRAP_CONFIG = Bootstrap.valueOf(bootstrapConfigName);
-		} else {
-			BOOTSTRAP_CONFIG = Bootstrap.LOCALHOST_SINGLENODE;
-		}
-	}
-
 	@Test
 	public void given_an_account_owner_listening_to_own_messages__when_owner_sends_a_message_from_another_account_to_itself__then_the_client_should_be_notified_of_error_and_not_receive_any_message() throws Exception {
 
 		// Given account owner listening to own messages
-		RadixApplicationAPI api = RadixApplicationAPI.create(BOOTSTRAP_CONFIG, RadixIdentities.createNew());
+		RadixApplicationAPI api = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), RadixIdentities.createNew());
 		TestObserver<DecryptedMessage> messageListener = TestObserver.create(Util.loggingObserver("MessageListener"));
 		api.getMessages().subscribe(messageListener);
 
@@ -66,8 +55,8 @@ public class SendReceiveDataTransactionTest {
 		// Given two account owners listening to own messages
 		TestObserver<DecryptedMessage> messageListener1 = new TestObserver<>(Util.loggingObserver("MessageListener1"));
 		TestObserver<DecryptedMessage> messageListener2 = new TestObserver<>(Util.loggingObserver("MessageListener2"));
-		RadixApplicationAPI api1 = RadixApplicationAPI.create(BOOTSTRAP_CONFIG, RadixIdentities.createNew());
-		RadixApplicationAPI api2 = RadixApplicationAPI.create(BOOTSTRAP_CONFIG, RadixIdentities.createNew());
+		RadixApplicationAPI api1 = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), RadixIdentities.createNew());
+		RadixApplicationAPI api2 = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), RadixIdentities.createNew());
 		api1.getMessages().subscribe(messageListener1);
 		api2.getMessages().subscribe(messageListener2);
 
@@ -96,7 +85,7 @@ public class SendReceiveDataTransactionTest {
 
 		// Given an account owner listening to own messages
 		TestObserver<DecryptedMessage> messageListener = new TestObserver<>(Util.loggingObserver("MessageListener"));
-		RadixApplicationAPI api = RadixApplicationAPI.create(BOOTSTRAP_CONFIG, RadixIdentities.createNew());
+		RadixApplicationAPI api = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), RadixIdentities.createNew());
 		api.getMessages().subscribe(messageListener);
 
 		// When owner sends message to himself
@@ -118,8 +107,8 @@ public class SendReceiveDataTransactionTest {
 
 		// Given a client listening to messages in another account
 		TestObserver<DecryptedMessage> clientListener = new TestObserver<>(Util.loggingObserver("MessageListener"));
-		RadixApplicationAPI clientApi = RadixApplicationAPI.create(BOOTSTRAP_CONFIG, RadixIdentities.createNew());
-		RadixApplicationAPI otherAccount = RadixApplicationAPI.create(BOOTSTRAP_CONFIG, RadixIdentities.createNew());
+		RadixApplicationAPI clientApi = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), RadixIdentities.createNew());
+		RadixApplicationAPI otherAccount = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), RadixIdentities.createNew());
 		clientApi.getMessages(otherAccount.getMyAddress()).subscribe(clientListener);
 
 		// When the other account sends message to itself

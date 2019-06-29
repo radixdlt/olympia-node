@@ -1,6 +1,7 @@
 package com.radix.regression;
 
 import com.google.common.collect.ImmutableMap;
+import com.radix.TestEnv;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
@@ -8,8 +9,6 @@ import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle.TokenTransition;
 import com.radixdlt.client.atommodel.tokens.TokenPermission;
 import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
-import com.radixdlt.client.core.Bootstrap;
-import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
@@ -26,19 +25,9 @@ import org.junit.Test;
 import org.radix.utils.UInt256;
 
 public class UnallocatedTokensParticleTest {
-	private static final BootstrapConfig BOOTSTRAP_CONFIG;
-	static {
-		String bootstrapConfigName = System.getenv("RADIX_BOOTSTRAP_CONFIG");
-		if (bootstrapConfigName != null) {
-			BOOTSTRAP_CONFIG = Bootstrap.valueOf(bootstrapConfigName);
-		} else {
-			BOOTSTRAP_CONFIG = Bootstrap.LOCALHOST_SINGLENODE;
-		}
-	}
-
 	@Test
 	public void given_an_account__when_the_account_executes_a_token_creation_without_unallocated_particles__then_the_atom_will_be_rejected() {
-		RadixApplicationAPI api = RadixApplicationAPI.create(BOOTSTRAP_CONFIG, RadixIdentities.createNew());
+		RadixApplicationAPI api = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), RadixIdentities.createNew());
 
 		List<ParticleGroup> groups = new ArrayList<>();
 
@@ -75,7 +64,7 @@ public class UnallocatedTokensParticleTest {
 
 	@Test
 	public void given_an_account_with_a_token__when_the_account_executes_an_atom_with_unallocated_particles_to_that_token__then_the_atom_will_be_rejected() {
-		RadixApplicationAPI api = RadixApplicationAPI.create(BOOTSTRAP_CONFIG, RadixIdentities.createNew());
+		RadixApplicationAPI api = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), RadixIdentities.createNew());
 
 		api.createToken(
 			RRI.of(api.getMyAddress(), "JOSH"),
@@ -116,7 +105,7 @@ public class UnallocatedTokensParticleTest {
 
 	@Test
 	public void given_an_account__when_the_account_executes_a_token_creation_with_2_unallocated_particles__then_the_atom_will_be_rejected() {
-		RadixApplicationAPI api = RadixApplicationAPI.create(BOOTSTRAP_CONFIG, RadixIdentities.createNew());
+		RadixApplicationAPI api = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), RadixIdentities.createNew());
 
 		List<ParticleGroup> groups = new ArrayList<>();
 

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import com.radix.TestEnv;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
 import com.radixdlt.client.application.identity.RadixIdentities;
@@ -11,11 +12,8 @@ import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.data.DecryptedMessage;
 import com.radixdlt.client.application.translate.data.SendMessageAction;
-import com.radixdlt.client.core.Bootstrap;
-import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
-import com.radixdlt.client.core.network.actions.SubmitAtomReceivedAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomSendAction;
@@ -27,22 +25,11 @@ import io.reactivex.observers.TestObserver;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 /**
  * See <a href="https://radixdlt.atlassian.net/browse/RLAU-94">RLAU-94</a>.
  */
 public class SendingADataTransaction {
-	private static final BootstrapConfig BOOTSTRAP_CONFIG;
-	static {
-		String bootstrapConfigName = System.getenv("RADIX_BOOTSTRAP_CONFIG");
-		if (bootstrapConfigName != null) {
-			BOOTSTRAP_CONFIG = Bootstrap.valueOf(bootstrapConfigName);
-		} else {
-			BOOTSTRAP_CONFIG = Bootstrap.LOCALHOST_SINGLENODE;
-		}
-	}
-
 	private static final long TIMEOUT_MS = 10_000L; // Timeout in milliseconds
 
 	private RadixApplicationAPI api;
@@ -57,11 +44,11 @@ public class SendingADataTransaction {
 		this.identity = RadixIdentities.createNew();
 		this.otherIdentity = RadixIdentities.createNew();
 		this.api = RadixApplicationAPI.defaultBuilder()
-			.bootstrap(BOOTSTRAP_CONFIG)
+			.bootstrap(TestEnv.getBootstrapConfig())
 			.identity(this.identity)
 			.build();
 		this.otherApi = RadixApplicationAPI.defaultBuilder()
-			.bootstrap(BOOTSTRAP_CONFIG)
+			.bootstrap(TestEnv.getBootstrapConfig())
 			.identity(this.otherIdentity)
 			.build();
 

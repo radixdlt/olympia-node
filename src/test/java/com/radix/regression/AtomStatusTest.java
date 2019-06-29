@@ -1,10 +1,9 @@
 package com.radix.regression;
 
+import com.radix.TestEnv;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.translate.unique.PutUniqueIdAction;
-import com.radixdlt.client.core.Bootstrap;
-import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.AtomStatusNotification;
@@ -20,22 +19,12 @@ import org.junit.Test;
 import org.radix.common.ID.AID;
 
 public class AtomStatusTest {
-	private static final BootstrapConfig BOOTSTRAP_CONFIG;
-	static {
-		String bootstrapConfigName = System.getenv("RADIX_BOOTSTRAP_CONFIG");
-		if (bootstrapConfigName != null) {
-			BOOTSTRAP_CONFIG = Bootstrap.valueOf(bootstrapConfigName);
-		} else {
-			BOOTSTRAP_CONFIG = Bootstrap.LOCALHOST_SINGLENODE;
-		}
-	}
-
 	private RadixJsonRpcClient rpcClient;
 	private RadixApplicationAPI api;
 
 	@Before
 	public void setUp() {
-		this.api = RadixApplicationAPI.create(BOOTSTRAP_CONFIG, RadixIdentities.createNew());
+		this.api = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), RadixIdentities.createNew());
 		this.api.discoverNodes();
 		RadixNode node = this.api.getNetworkState()
 			.filter(state -> !state.getNodes().isEmpty())
@@ -54,7 +43,7 @@ public class AtomStatusTest {
 
 	@Test
 	public void when_get_status_for_genesis_atoms__then_all_should_return_stored() {
-		for (Atom atom : BOOTSTRAP_CONFIG.getConfig().getGenesis()) {
+		for (Atom atom : TestEnv.getBootstrapConfig().getConfig().getGenesis()) {
 			TestObserver<AtomStatus> atomStatusTestObserver = TestObserver.create();
 			this.rpcClient.getAtomStatus(atom.getAid()).subscribe(atomStatusTestObserver);
 			atomStatusTestObserver.awaitTerminalEvent();

@@ -1,14 +1,13 @@
 package com.radix.regression;
 
 import com.google.common.collect.ImmutableSet;
+import com.radix.TestEnv;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
 import com.radixdlt.client.application.identity.LocalRadixIdentity;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.atommodel.message.MessageParticle;
 import com.radixdlt.client.atommodel.message.MetadataMap;
-import com.radixdlt.client.core.Bootstrap;
-import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.ParticleGroup;
@@ -23,23 +22,13 @@ import org.junit.Test;
 import org.radix.common.ID.EUID;
 
 public class TranslucentAtomTest {
-	private static final BootstrapConfig BOOTSTRAP_CONFIG;
-	static {
-		String bootstrapConfigName = System.getenv("RADIX_BOOTSTRAP_CONFIG");
-		if (bootstrapConfigName != null) {
-			BOOTSTRAP_CONFIG = Bootstrap.valueOf(bootstrapConfigName);
-		} else {
-			BOOTSTRAP_CONFIG = Bootstrap.LOCALHOST_SINGLENODE;
-		}
-	}
-
 	private RadixApplicationAPI api;
 	private LocalRadixIdentity identity;
 
 	@Before
 	public void setUp() {
 		this.identity = RadixIdentities.createNew();
-		this.api = RadixApplicationAPI.create(BOOTSTRAP_CONFIG, identity);
+		this.api = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), identity);
 	}
 
 	@Test

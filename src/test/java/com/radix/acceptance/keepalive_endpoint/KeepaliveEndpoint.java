@@ -1,9 +1,8 @@
 package com.radix.acceptance.keepalive_endpoint;
 
+import com.radix.TestEnv;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
-import com.radixdlt.client.core.Bootstrap;
-import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.network.HttpClients;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient;
@@ -18,16 +17,6 @@ import io.reactivex.observers.TestObserver;
 import java.util.concurrent.TimeUnit;
 
 public class KeepaliveEndpoint {
-    private static final BootstrapConfig BOOTSTRAP_CONFIG;
-    static {
-        String bootstrapConfigName = System.getenv("RADIX_BOOTSTRAP_CONFIG");
-        if (bootstrapConfigName != null) {
-            BOOTSTRAP_CONFIG = Bootstrap.valueOf(bootstrapConfigName);
-        } else {
-            BOOTSTRAP_CONFIG = Bootstrap.LOCALHOST_SINGLENODE;
-        }
-    }
-
     private WebSocketClient webSocketClient;
     private RadixJsonRpcClient jsonRpcClient;
 
@@ -72,7 +61,7 @@ public class KeepaliveEndpoint {
 
 
     private void setupWebSocket() {
-        RadixApplicationAPI api = RadixApplicationAPI.create(BOOTSTRAP_CONFIG, RadixIdentities.createNew());
+        RadixApplicationAPI api = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), RadixIdentities.createNew());
         api.discoverNodes();
         RadixNode node = api.getNetworkState()
             .filter(state -> !state.getNodes().isEmpty())

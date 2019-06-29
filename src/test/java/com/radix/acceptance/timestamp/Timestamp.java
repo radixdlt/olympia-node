@@ -3,6 +3,7 @@ package com.radix.acceptance.timestamp;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.radix.TestEnv;
 import com.radix.regression.Util;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
@@ -10,8 +11,6 @@ import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.FeeMapper;
 import com.radixdlt.client.application.translate.PowFeeMapper;
 import com.radixdlt.client.atommodel.message.MessageParticle;
-import com.radixdlt.client.core.Bootstrap;
-import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomStatus;
@@ -45,17 +44,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 public class Timestamp {
-    private static final BootstrapConfig BOOTSTRAP_CONFIG;
-    static {
-        String bootstrapConfigName = System.getenv("RADIX_BOOTSTRAP_CONFIG");
-        if (bootstrapConfigName != null) {
-            BOOTSTRAP_CONFIG = Bootstrap.valueOf(bootstrapConfigName);
-        } else {
-            BOOTSTRAP_CONFIG = Bootstrap.LOCALHOST_SINGLENODE;
-        }
-    }
-
-    private RadixUniverse universe = RadixUniverse.create(BOOTSTRAP_CONFIG);
+    private RadixUniverse universe = RadixUniverse.create(TestEnv.getBootstrapConfig());
 
     private RadixIdentity identity;
 
@@ -327,7 +316,7 @@ public class Timestamp {
 
     private void setupWebSocket() {
         this.identity = RadixIdentities.createNew();
-        RadixApplicationAPI api = RadixApplicationAPI.create(BOOTSTRAP_CONFIG, this.identity);
+        RadixApplicationAPI api = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), this.identity);
         api.discoverNodes();
         RadixNode node = api.getNetworkState()
             .filter(state -> !state.getNodes().isEmpty())

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.radix.TestEnv;
 import com.radix.regression.Util;
 import com.radix.regression.doublespend.DoubleSpendTestConditions.BatchedActions;
 import com.radixdlt.client.application.RadixApplicationAPI;
@@ -14,7 +15,6 @@ import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.ApplicationState;
 import com.radixdlt.client.application.translate.ShardedAppStateId;
-import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.client.core.atoms.Atom;
@@ -46,16 +46,6 @@ import org.radix.common.tuples.Pair;
 import static org.junit.Assume.assumeTrue;
 
 public final class DoubleSpendTestRunner {
-	private static final BootstrapConfig BOOTSTRAP_CONFIG;
-	static {
-		String bootstrapConfigName = System.getenv("RADIX_BOOTSTRAP_CONFIG");
-		if (bootstrapConfigName != null) {
-			BOOTSTRAP_CONFIG = Bootstrap.valueOf(bootstrapConfigName);
-		} else {
-			BOOTSTRAP_CONFIG = Bootstrap.LOCALHOST;
-		}
-	}
-
 	private final Function<RadixApplicationAPI, DoubleSpendTestConditions> testSupplier;
 	private final BiFunction<BootstrapConfig, RadixIdentity, RadixApplicationAPI> apiSupplier;
 
@@ -102,7 +92,7 @@ public final class DoubleSpendTestRunner {
 				new BootstrapConfig() {
 				    @Override
 				    public RadixUniverseConfig getConfig() {
-					    return BOOTSTRAP_CONFIG.getConfig();
+					    return TestEnv.getBootstrapConfig().getConfig();
 				    }
 
 				    @Override
@@ -135,7 +125,7 @@ public final class DoubleSpendTestRunner {
 
 
 	ImmutableMap<ShardedAppStateId, ApplicationState> execute() {
-		RadixApplicationAPI api = apiSupplier.apply(BOOTSTRAP_CONFIG, RadixIdentities.createNew());
+		RadixApplicationAPI api = apiSupplier.apply(TestEnv.getBootstrapConfig(), RadixIdentities.createNew());
 		DoubleSpendTestConditions doubleSpendTestConditions = testSupplier.apply(api);
 
 		List<BatchedActions> initialActions = doubleSpendTestConditions.initialActions();

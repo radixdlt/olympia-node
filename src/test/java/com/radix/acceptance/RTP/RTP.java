@@ -1,9 +1,9 @@
 package com.radix.acceptance.RTP;
 
+import com.radix.TestEnv;
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
 import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
-import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.network.HttpClients;
@@ -31,7 +31,6 @@ import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
-import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
 
@@ -42,16 +41,6 @@ import static org.junit.Assert.fail;
 import io.reactivex.observers.TestObserver;
 
 public class RTP {
-	private static final BootstrapConfig BOOTSTRAP_CONFIG;
-	static {
-		String bootstrapConfigName = System.getenv("RADIX_BOOTSTRAP_CONFIG");
-		if (bootstrapConfigName != null) {
-			BOOTSTRAP_CONFIG = Bootstrap.valueOf(bootstrapConfigName);
-		} else {
-			BOOTSTRAP_CONFIG = Bootstrap.LOCALHOST;
-		}
-	}
-
 	// FIXME: Seems to be *very* long now
 	// Fix once synchronisation speed resolved
 	private static final long SYNC_TIME_MS = 10_000;
@@ -62,7 +51,7 @@ public class RTP {
 	@BeforeClass
 	public static void setUp() {
 		RadixIdentity identity = RadixIdentities.createNew();
-		api = RadixApplicationAPI.create(BOOTSTRAP_CONFIG, identity);
+		api = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), identity);
 		api.discoverNodes();
 		nodes = api.getNetworkState()
 			.doOnNext(System.out::println)

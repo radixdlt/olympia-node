@@ -2,6 +2,7 @@ package com.radix.acceptance.atomic_transactions_with_dependence;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import com.radix.TestEnv;
 import com.radix.acceptance.SpecificProperties;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
@@ -17,8 +18,6 @@ import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
 import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.application.translate.tokens.TransferTokensToParticleGroupsMapper;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.core.Bootstrap;
-import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.ParticleGroup;
@@ -65,16 +64,6 @@ public class AtomicTransactionsWithDependence {
 	);
 	private final List<TestObserver<Object>> observers = Lists.newArrayList();
 
-	private static final BootstrapConfig BOOTSTRAP_CONFIG;
-	static {
-		String bootstrapConfigName = System.getenv("RADIX_BOOTSTRAP_CONFIG");
-		if (bootstrapConfigName != null) {
-			BOOTSTRAP_CONFIG = Bootstrap.valueOf(bootstrapConfigName);
-		} else {
-			BOOTSTRAP_CONFIG = Bootstrap.LOCALHOST_SINGLENODE;
-		}
-	}
-
 	@Given("^I have access to a suitable Radix network$")
 	public void i_have_access_to_a_suitable_Radix_network() {
 		// Reset data
@@ -85,7 +74,7 @@ public class AtomicTransactionsWithDependence {
 	private void mintAndTransferTokensWith(MintAndTransferTokensActionMapper actionMapper) {
 		RadixApplicationAPI api = new RadixApplicationAPI.RadixApplicationAPIBuilder()
 			.defaultFeeMapper()
-			.universe(RadixUniverse.create(BOOTSTRAP_CONFIG))
+			.universe(RadixUniverse.create(TestEnv.getBootstrapConfig()))
 			.addStatelessParticlesMapper(new CreateTokenToParticleGroupsMapper())
 			.addStatefulParticlesMapper(actionMapper)
 			.addStatefulParticlesMapper(new TransferTokensToParticleGroupsMapper())
@@ -113,7 +102,7 @@ public class AtomicTransactionsWithDependence {
 	public void iSubmitAParticleGroupSpendingAConsumableThatWasCreatedInAGroupWithALowerIndex() throws Exception {
 		RadixApplicationAPI api = new RadixApplicationAPI.RadixApplicationAPIBuilder()
 			.defaultFeeMapper()
-			.universe(RadixUniverse.create(BOOTSTRAP_CONFIG))
+			.universe(RadixUniverse.create(TestEnv.getBootstrapConfig()))
 			.addStatelessParticlesMapper(new CreateTokenToParticleGroupsMapper())
 			.addStatefulParticlesMapper(new TransferTokensToParticleGroupsMapper())
 			.addReducer(new TokenDefinitionsReducer())

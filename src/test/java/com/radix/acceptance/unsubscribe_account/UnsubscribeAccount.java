@@ -1,7 +1,7 @@
 package com.radix.acceptance.unsubscribe_account;
 
+import com.radix.TestEnv;
 import com.radix.regression.Util;
-import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.AtomStatusNotification;
 import com.radixdlt.client.core.ledger.AtomObservation;
@@ -16,7 +16,6 @@ import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.data.SendMessageAction;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.crypto.ECKeyPairGenerator;
 import com.radixdlt.client.core.network.HttpClients;
@@ -35,16 +34,6 @@ import io.reactivex.observers.TestObserver;
  * See <a href="https://radixdlt.atlassian.net/browse/RLAU-94">RLAU-59</a>.
  */
 public class UnsubscribeAccount {
-	private static final BootstrapConfig BOOTSTRAP_CONFIG;
-	static {
-		String bootstrapConfigName = System.getenv("RADIX_BOOTSTRAP_CONFIG");
-		if (bootstrapConfigName != null) {
-			BOOTSTRAP_CONFIG = Bootstrap.valueOf(bootstrapConfigName);
-		} else {
-			BOOTSTRAP_CONFIG = Bootstrap.LOCALHOST_SINGLENODE;
-		}
-	}
-
 	private WebSocketClient webSocketClient;
 	private RadixJsonRpcClient jsonRpcClient;
 
@@ -238,7 +227,7 @@ public class UnsubscribeAccount {
 
 	private void setupWebSocket() {
 		this.identity = RadixIdentities.createNew();
-		this.api = RadixApplicationAPI.create(BOOTSTRAP_CONFIG, this.identity);
+		this.api = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), this.identity);
 		this.api.discoverNodes();
 		RadixNode node = this.api.getNetworkState()
 			.filter(state -> !state.getNodes().isEmpty())

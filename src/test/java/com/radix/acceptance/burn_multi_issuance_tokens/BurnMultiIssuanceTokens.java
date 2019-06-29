@@ -1,14 +1,13 @@
 package com.radix.acceptance.burn_multi_issuance_tokens;
 
 import com.google.common.collect.ImmutableSet;
+import com.radix.TestEnv;
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionsState;
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
 import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
-import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
-import com.radixdlt.client.core.network.actions.SubmitAtomReceivedAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomSendAction;
@@ -31,7 +30,6 @@ import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenS
 import com.radixdlt.client.application.translate.tokens.InsufficientFundsException;
 import com.radixdlt.client.application.translate.tokens.UnknownTokenException;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.core.Bootstrap;
 
 import static com.radixdlt.client.core.atoms.AtomStatus.STORED;
 import static com.radixdlt.client.core.atoms.AtomStatus.EVICTED_FAILED_CM_VERIFICATION;
@@ -50,16 +48,6 @@ import io.reactivex.observers.TestObserver;
  * See <a href="https://radixdlt.atlassian.net/browse/RLAU-95">RLAU-95</a>.
  */
 public class BurnMultiIssuanceTokens {
-	private static final BootstrapConfig BOOTSTRAP_CONFIG;
-	static {
-		String bootstrapConfigName = System.getenv("RADIX_BOOTSTRAP_CONFIG");
-		if (bootstrapConfigName != null) {
-			BOOTSTRAP_CONFIG = Bootstrap.valueOf(bootstrapConfigName);
-		} else {
-			BOOTSTRAP_CONFIG = Bootstrap.LOCALHOST_SINGLENODE;
-		}
-	}
-
 	private static final String ADDRESS = "address";
 	private static final String OTHER_ADDRESS = "otherAddress";
 	private static final String NAME = "name";
@@ -187,10 +175,10 @@ public class BurnMultiIssuanceTokens {
 
 	private void setupApi() {
 		this.identity = RadixIdentities.createNew();
-		this.api = RadixApplicationAPI.create(BOOTSTRAP_CONFIG, this.identity);
+		this.api = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), this.identity);
 
 		this.otherIdentity = RadixIdentities.createNew();
-		this.otherApi = RadixApplicationAPI.create(BOOTSTRAP_CONFIG, this.otherIdentity);
+		this.otherApi = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), this.otherIdentity);
 
 		// Reset data
 		this.properties.clear();

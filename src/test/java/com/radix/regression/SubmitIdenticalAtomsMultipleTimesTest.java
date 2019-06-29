@@ -2,14 +2,13 @@ package com.radix.regression;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.radix.TestEnv;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.FeeMapper;
 import com.radixdlt.client.application.translate.PowFeeMapper;
 import com.radixdlt.client.atommodel.message.MessageParticle;
-import com.radixdlt.client.core.Bootstrap;
-import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomStatus;
@@ -36,17 +35,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class SubmitIdenticalAtomsMultipleTimesTest {
-	private static final BootstrapConfig BOOTSTRAP_CONFIG;
-	static {
-		String bootstrapConfigName = System.getenv("RADIX_BOOTSTRAP_CONFIG");
-		if (bootstrapConfigName != null) {
-			BOOTSTRAP_CONFIG = Bootstrap.valueOf(bootstrapConfigName);
-		} else {
-			BOOTSTRAP_CONFIG = Bootstrap.LOCALHOST_SINGLENODE;
-		}
-	}
-
-	private RadixUniverse universe = RadixUniverse.create(BOOTSTRAP_CONFIG);
+	private RadixUniverse universe = RadixUniverse.create(TestEnv.getBootstrapConfig());
 	private RadixIdentity identity;
 	private FeeMapper feeMapper = new PowFeeMapper(Atom::getHash, new ProofOfWorkBuilder());
 	private RadixJsonRpcClient jsonRpcClient;
@@ -54,7 +43,7 @@ public class SubmitIdenticalAtomsMultipleTimesTest {
 	@Before
 	public void setUp() {
 		this.identity = RadixIdentities.createNew();
-		RadixApplicationAPI api = RadixApplicationAPI.create(BOOTSTRAP_CONFIG, this.identity);
+		RadixApplicationAPI api = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), this.identity);
 		api.discoverNodes();
 		RadixNode node = api.getNetworkState()
 			.filter(state -> !state.getNodes().isEmpty())

@@ -1,8 +1,7 @@
 package com.radix.acceptance.shards;
 
+import com.radix.TestEnv;
 import com.radixdlt.client.application.RadixApplicationAPI;
-import com.radixdlt.client.core.Bootstrap;
-import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.network.HttpClients;
 import com.radixdlt.client.core.network.RadixNode;
 import java.util.List;
@@ -35,23 +34,13 @@ import static org.junit.Assume.assumeTrue;
  * </ul>
  */
 public class StaticShardingAcceptance {
-	private static final BootstrapConfig BOOTSTRAP_CONFIG;
-	static {
-		String bootstrapConfigName = System.getenv("RADIX_BOOTSTRAP_CONFIG");
-		if (bootstrapConfigName != null) {
-			BOOTSTRAP_CONFIG = Bootstrap.valueOf(bootstrapConfigName);
-		} else {
-			BOOTSTRAP_CONFIG = Bootstrap.LOCALHOST;
-		}
-	}
-
 	private static RadixApplicationAPI api;
 	private static List<RadixNode> nodes;
 
 	@BeforeClass
 	public static void setUp() {
 		RadixIdentity identity = RadixIdentities.createNew();
-		api = RadixApplicationAPI.create(BOOTSTRAP_CONFIG, identity);
+		api = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), identity);
 		api.discoverNodes();
 		nodes = api.getNetworkState()
 			.doOnNext(System.out::println)
