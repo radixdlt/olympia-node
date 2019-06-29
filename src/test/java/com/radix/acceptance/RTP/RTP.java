@@ -2,6 +2,7 @@ package com.radix.acceptance.RTP;
 
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
+import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.atoms.particles.RRI;
@@ -42,6 +43,15 @@ import io.reactivex.observers.TestObserver;
 import io.reactivex.observers.BaseTestConsumer.TestWaitStrategy;
 
 public class RTP {
+	private static final BootstrapConfig BOOTSTRAP_CONFIG;
+	static {
+		String bootstrapConfigName = System.getenv("RADIX_BOOTSTRAP_CONFIG");
+		if (bootstrapConfigName != null) {
+			BOOTSTRAP_CONFIG = Bootstrap.valueOf(bootstrapConfigName);
+		} else {
+			BOOTSTRAP_CONFIG = Bootstrap.LOCALHOST_SINGLENODE;
+		}
+	}
 
 	// FIXME: Seems to be *very* long now
 	// Fix once synchronisation speed resolved
@@ -65,7 +75,7 @@ public class RTP {
     public void test_submitted_atom_two_vertex_timestamps_are_close() throws InterruptedException {
     	RadixIdentity identity = RadixIdentities.createNew();
     	// Connects to localhost:8080
-    	RadixApplicationAPI api = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, identity);
+    	RadixApplicationAPI api = RadixApplicationAPI.create(BOOTSTRAP_CONFIG, identity);
 		TestObserver<SubmitAtomAction> observer = new TestObserver<>();
 		RRI tokenRRI = RRI.of(api.getMyAddress(), "TOKEN");
 		api.createToken(tokenRRI, "Token", "Token", BigDecimal.ZERO, BigDecimal.ONE, TokenSupplyType.MUTABLE)
@@ -124,8 +134,7 @@ public class RTP {
     @Test
     public void test_atom_has_an_rclock_in_its_tp() {
     	RadixIdentity identity = RadixIdentities.createNew();
-    	// Connects to localhost:8080
-    	RadixApplicationAPI api = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, identity);
+    	RadixApplicationAPI api = RadixApplicationAPI.create(BOOTSTRAP_CONFIG, identity);
     	RRI tokenRRI = RRI.of(api.getMyAddress(), "HI");
 		Single<UnsignedAtom> unsignedAtom = api.buildAtom(
 			CreateTokenAction.create(

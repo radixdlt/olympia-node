@@ -18,6 +18,7 @@ import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.application.translate.tokens.TransferTokensToParticleGroupsMapper;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.Bootstrap;
+import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.particles.Particle;
@@ -51,6 +52,16 @@ import static org.junit.Assert.assertEquals;
  * See <a href="https://radixdlt.atlassian.net/browse/RLAU-326">RLAU-326</a>.
  */
 public class ParticleGroups {
+	private static final BootstrapConfig BOOTSTRAP_CONFIG;
+	static {
+		String bootstrapConfigName = System.getenv("RADIX_BOOTSTRAP_CONFIG");
+		if (bootstrapConfigName != null) {
+			BOOTSTRAP_CONFIG = Bootstrap.valueOf(bootstrapConfigName);
+		} else {
+			BOOTSTRAP_CONFIG = Bootstrap.LOCALHOST_SINGLENODE;
+		}
+	}
+
 	private static final String NAME = "name";
 	private static final String SYMBOL = "symbol";
 	private static final String DESCRIPTION = "description";
@@ -131,7 +142,7 @@ public class ParticleGroups {
 	public void i_have_access_to_a_suitable_Radix_network() {
 		this.identity = RadixIdentities.createNew();
 		this.api = RadixApplicationAPI.defaultBuilder()
-			.bootstrap(Bootstrap.LOCALHOST_SINGLENODE)
+			.bootstrap(BOOTSTRAP_CONFIG)
 			.identity(this.identity)
 			.addStatelessParticlesMapper(new CreateEmptyGroupActionToParticleGroupsMapper())
 			.addStatefulParticlesMapper(new MergeStatefulActionToParticleGroupsMapper(new TransferTokensToParticleGroupsMapper()))

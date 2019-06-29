@@ -4,12 +4,14 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.FeeMapper;
 import com.radixdlt.client.application.translate.PowFeeMapper;
 import com.radixdlt.client.atommodel.message.MessageParticle;
 import com.radixdlt.client.core.Bootstrap;
+import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomStatus;
@@ -18,6 +20,7 @@ import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.network.HttpClients;
+import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient;
 import com.radixdlt.client.core.network.websocket.WebSocketClient;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
@@ -40,7 +43,17 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class SubmitIdenticalAtomsMultipleTimesTest {
-	private RadixUniverse universe = RadixUniverse.create(Bootstrap.LOCALHOST_SINGLENODE);
+	private static final BootstrapConfig BOOTSTRAP_CONFIG;
+	static {
+		String bootstrapConfigName = System.getenv("RADIX_BOOTSTRAP_CONFIG");
+		if (bootstrapConfigName != null) {
+			BOOTSTRAP_CONFIG = Bootstrap.valueOf(bootstrapConfigName);
+		} else {
+			BOOTSTRAP_CONFIG = Bootstrap.LOCALHOST_SINGLENODE;
+		}
+	}
+
+	private RadixUniverse universe = RadixUniverse.create(BOOTSTRAP_CONFIG);
 	private RadixIdentity identity;
 	private FeeMapper feeMapper = new PowFeeMapper(Atom::getHash, new ProofOfWorkBuilder());
 	private RadixJsonRpcClient jsonRpcClient;
@@ -48,7 +61,14 @@ public class SubmitIdenticalAtomsMultipleTimesTest {
 	@Before
 	public void setUp() {
 		this.identity = RadixIdentities.createNew();
-		Request localhost = new Request.Builder().url("ws://localhost:8080/rpc").build();
+		RadixApplicationAPI api = RadixApplicationAPI.create(BOOTSTRAP_CONFIG, this.identity);
+		api.discoverNodes();
+		RadixNode node = api.getNetworkState()
+			.filter(state -> !state.getNodes().isEmpty())
+			.map(state -> state.getNodes().keySet().iterator().next())
+			.blockingFirst();
+
+		Request localhost = new Request.Builder().url(node.toString()).build();
 		WebSocketClient webSocketClient = new WebSocketClient(listener -> HttpClients.getSslAllTrustingClient().newWebSocket(localhost, listener));
 		webSocketClient.connect();
 		webSocketClient.getState()
@@ -76,7 +96,7 @@ public class SubmitIdenticalAtomsMultipleTimesTest {
 			.to(universe.getAddressFrom(this.identity.getPublicKey()))
 			.build()));
 
-		TestObserver<AtomStatusNotification> observer = TestObserver.create();
+		TestObserver<AtomStatusNotification> observer = TestObserver.create(Util.loggingObserver("Atom Status"));
 		final String subscriberId = UUID.randomUUID().toString();
 		this.jsonRpcClient.observeAtomStatusNotifications(subscriberId).subscribe(observer);
 		this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, atom.getAid()).blockingAwait();

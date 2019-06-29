@@ -3,6 +3,7 @@ package com.radix.acceptance.mint_multi_issuance_tokens;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.client.application.translate.tokens.TokenOverMintException;
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
+import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
@@ -14,6 +15,7 @@ import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 
+import java.util.concurrent.TimeUnit;
 import org.radix.utils.UInt256;
 
 import com.google.common.collect.Lists;
@@ -44,6 +46,16 @@ import io.reactivex.observers.TestObserver;
  * See <a href="https://radixdlt.atlassian.net/browse/RLAU-94">RLAU-94</a>.
  */
 public class MintMultiIssuanceTokens {
+	private static final BootstrapConfig BOOTSTRAP_CONFIG;
+	static {
+		String bootstrapConfigName = System.getenv("RADIX_BOOTSTRAP_CONFIG");
+		if (bootstrapConfigName != null) {
+			BOOTSTRAP_CONFIG = Bootstrap.valueOf(bootstrapConfigName);
+		} else {
+			BOOTSTRAP_CONFIG = Bootstrap.LOCALHOST_SINGLENODE;
+		}
+	}
+
 	private static final String ADDRESS = "address";
 	private static final String NAME = "name";
 	private static final String SYMBOL = "symbol";
@@ -79,6 +91,7 @@ public class MintMultiIssuanceTokens {
 		this.properties.put(INITIAL_SUPPLY, Integer.toString(initialSupply));
 		createToken(TokenSupplyType.MUTABLE);
 		awaitAtomStatus(AtomStatus.STORED);
+		TimeUnit.SECONDS.sleep(3);
 		// Listening on state automatic for library
 	}
 
@@ -88,6 +101,7 @@ public class MintMultiIssuanceTokens {
 		this.properties.put(INITIAL_SUPPLY, BigDecimal.valueOf(initialUnscaledSupply).scaleByPowerOfTen(-18).toString());
 		createToken(CreateTokenAction.TokenSupplyType.MUTABLE);
 		awaitAtomStatus(AtomStatus.STORED);
+		TimeUnit.SECONDS.sleep(3);
 	}
 
 	@Given("^a library client who owns an account and created a token with 2\\^(\\d+) initial subunit supply and is listening to the state of the token$")
@@ -97,6 +111,7 @@ public class MintMultiIssuanceTokens {
 		this.properties.put(INITIAL_SUPPLY, BigDecimal.valueOf(2).pow(pow2).scaleByPowerOfTen(-18).toString());
 		createToken(CreateTokenAction.TokenSupplyType.MUTABLE);
 		awaitAtomStatus(AtomStatus.STORED);
+		TimeUnit.SECONDS.sleep(3);
 	}
 
 	@Given("^a library client who owns an account where token \"([^\"]*)\" does not exist$")
@@ -117,6 +132,7 @@ public class MintMultiIssuanceTokens {
 		this.properties.put(SYMBOL, symbol);
 		createToken(this.otherApi, TokenSupplyType.MUTABLE);
 		awaitAtomStatus(AtomStatus.STORED);
+		TimeUnit.SECONDS.sleep(3);
 
 		this.properties.put(ADDRESS, this.otherApi.getMyAddress().toString());
 	}
@@ -139,6 +155,7 @@ public class MintMultiIssuanceTokens {
 	@Then("^the client should be notified that \"([^\"]*)\" token has a total supply of (\\d+)$")
 	public void theClientShouldBeNotifiedThatTokenHasATotalSupplyOf(String symbol, int supply) throws Throwable {
 		awaitAtomStatus(AtomStatus.STORED);
+		TimeUnit.SECONDS.sleep(3);
 		RRI tokenClass = RRI.of(api.getMyAddress(), symbol);
 		// Ensure balance is up-to-date.
 		BigDecimal tokenBalanceDecimal = api.getBalance(api.getMyAddress(), tokenClass)
@@ -172,10 +189,9 @@ public class MintMultiIssuanceTokens {
 
 	private void setupApi() {
 		this.identity = RadixIdentities.createNew();
-		this.api = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, this.identity);
-
+		this.api = RadixApplicationAPI.create(BOOTSTRAP_CONFIG, this.identity);
 		this.otherIdentity = RadixIdentities.createNew();
-		this.otherApi = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, this.otherIdentity);
+		this.otherApi = RadixApplicationAPI.create(BOOTSTRAP_CONFIG, this.otherIdentity);
 
 		// Reset data
 		this.properties.clear();

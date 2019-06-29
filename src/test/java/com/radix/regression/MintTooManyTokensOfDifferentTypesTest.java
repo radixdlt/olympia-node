@@ -5,6 +5,7 @@ import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
 import com.radixdlt.client.core.Bootstrap;
+import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
 import io.reactivex.observers.BaseTestConsumer.TestWaitStrategy;
@@ -13,10 +14,20 @@ import java.math.BigDecimal;
 import org.junit.Test;
 
 public class MintTooManyTokensOfDifferentTypesTest {
+	private static final BootstrapConfig BOOTSTRAP_CONFIG;
+	static {
+		String bootstrapConfigName = System.getenv("RADIX_BOOTSTRAP_CONFIG");
+		if (bootstrapConfigName != null) {
+			BOOTSTRAP_CONFIG = Bootstrap.valueOf(bootstrapConfigName);
+		} else {
+			BOOTSTRAP_CONFIG = Bootstrap.LOCALHOST_SINGLENODE;
+		}
+	}
+
 	@Test
 	public void given_a_token_with_max_supply_created_in_one_account__when_another_token_with_max_supply_is_created_in_another_account__then_the_client_should_be_notified_of_success() {
-		RadixApplicationAPI api0 = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, RadixIdentities.createNew());
-		RadixApplicationAPI api1 = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, RadixIdentities.createNew());
+		RadixApplicationAPI api0 = RadixApplicationAPI.create(BOOTSTRAP_CONFIG, RadixIdentities.createNew());
+		RadixApplicationAPI api1 = RadixApplicationAPI.create(BOOTSTRAP_CONFIG, RadixIdentities.createNew());
 
 		createToken(api0)
 			.awaitCount(4, TestWaitStrategy.SLEEP_100MS, 10000)

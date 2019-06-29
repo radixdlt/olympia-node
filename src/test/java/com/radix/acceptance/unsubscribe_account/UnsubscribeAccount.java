@@ -1,9 +1,11 @@
 package com.radix.acceptance.unsubscribe_account;
 
 import com.radix.regression.Util;
+import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.AtomStatusNotification;
 import com.radixdlt.client.core.ledger.AtomObservation;
+import com.radixdlt.client.core.network.RadixNode;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -34,6 +36,16 @@ import okhttp3.Request;
  * See <a href="https://radixdlt.atlassian.net/browse/RLAU-94">RLAU-59</a>.
  */
 public class UnsubscribeAccount {
+	private static final BootstrapConfig BOOTSTRAP_CONFIG;
+	static {
+		String bootstrapConfigName = System.getenv("RADIX_BOOTSTRAP_CONFIG");
+		if (bootstrapConfigName != null) {
+			BOOTSTRAP_CONFIG = Bootstrap.valueOf(bootstrapConfigName);
+		} else {
+			BOOTSTRAP_CONFIG = Bootstrap.LOCALHOST_SINGLENODE;
+		}
+	}
+
 	private WebSocketClient webSocketClient;
 	private RadixJsonRpcClient jsonRpcClient;
 
@@ -72,6 +84,7 @@ public class UnsubscribeAccount {
 			.doOnNext(System.out::println)
 			.filter(WebSocketStatus.DISCONNECTED::equals)
 			.firstOrError()
+			.timeout(10, TimeUnit.SECONDS)
 			.blockingGet();
 		this.webSocketClient = null;
 	}
@@ -150,8 +163,9 @@ public class UnsubscribeAccount {
 			.flatMap(this.identity::sign)
 			.blockingGet();
 
-		this.jsonRpcClient.pushAtom(this.atom).blockingAwait();
+		this.jsonRpcClient.observeAtomStatusNotifications(subscriberId).subscribe(atomSubmission);
 		this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, this.atom.getAid()).blockingAwait();
+		this.jsonRpcClient.pushAtom(this.atom).blockingAwait();
 
 		atomSubmission.awaitCount(1);
 		atomSubmission.assertValue(n -> n.getAtomStatus() == AtomStatus.STORED);
@@ -225,9 +239,15 @@ public class UnsubscribeAccount {
 
 	private void setupWebSocket() {
 		this.identity = RadixIdentities.createNew();
-		this.api = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, this.identity);
+		this.api = RadixApplicationAPI.create(BOOTSTRAP_CONFIG, this.identity);
+		this.api.discoverNodes();
+		RadixNode node = this.api.getNetworkState()
+			.filter(state -> !state.getNodes().isEmpty())
+			.map(state -> state.getNodes().keySet().iterator().next())
+			.blockingFirst();
 
-		Request localhost = new Request.Builder().url("ws://localhost:8080/rpc").build();
+
+		Request localhost = new Request.Builder().url(node.toString()).build();
 		this.webSocketClient = new WebSocketClient(listener -> HttpClients.getSslAllTrustingClient().newWebSocket(localhost, listener));
 		this.webSocketClient.connect();
 		this.webSocketClient.getState()

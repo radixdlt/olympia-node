@@ -4,12 +4,15 @@ import com.google.common.collect.ImmutableList;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.radix.regression.Util;
+import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.FeeMapper;
 import com.radixdlt.client.application.translate.PowFeeMapper;
 import com.radixdlt.client.atommodel.message.MessageParticle;
 import com.radixdlt.client.core.Bootstrap;
+import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomStatus;
@@ -18,6 +21,7 @@ import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.network.HttpClients;
+import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient;
 import com.radixdlt.client.core.network.websocket.WebSocketClient;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
@@ -43,7 +47,17 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 public class ParticleGroupsMetaData {
-    private RadixUniverse universe = RadixUniverse.create(Bootstrap.LOCALHOST_SINGLENODE);
+    private static final BootstrapConfig BOOTSTRAP_CONFIG;
+    static {
+        String bootstrapConfigName = System.getenv("RADIX_BOOTSTRAP_CONFIG");
+        if (bootstrapConfigName != null) {
+            BOOTSTRAP_CONFIG = Bootstrap.valueOf(bootstrapConfigName);
+        } else {
+            BOOTSTRAP_CONFIG = Bootstrap.LOCALHOST_SINGLENODE;
+        }
+    }
+
+    private RadixUniverse universe = RadixUniverse.create(BOOTSTRAP_CONFIG);
 
     private RadixIdentity identity;
 
@@ -108,7 +122,7 @@ public class ParticleGroupsMetaData {
         // Sign and submit
         Atom signedAtom = this.identity.sign(atom).blockingGet();
 
-        this.observer = TestObserver.create();
+        this.observer = TestObserver.create(Util.loggingObserver("Atom Status Observer"));
         final String subscriberId = UUID.randomUUID().toString();
         this.jsonRpcClient.observeAtomStatusNotifications(subscriberId).subscribe(this.observer);
         this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, signedAtom.getAid()).blockingAwait();
@@ -123,7 +137,7 @@ public class ParticleGroupsMetaData {
         // Sign and submit
         Atom signedAtom = this.identity.sign(atom).blockingGet();
 
-        this.observer = TestObserver.create();
+        this.observer = TestObserver.create(Util.loggingObserver("Atom Status Observer"));
 		final String subscriberId = UUID.randomUUID().toString();
         this.jsonRpcClient.observeAtomStatusNotifications(subscriberId).subscribe(this.observer);
         this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, signedAtom.getAid()).blockingAwait();
@@ -257,8 +271,14 @@ public class ParticleGroupsMetaData {
 
     private void setupWebSocket() {
         this.identity = RadixIdentities.createNew();
+        RadixApplicationAPI api = RadixApplicationAPI.create(BOOTSTRAP_CONFIG, identity);
+        api.discoverNodes();
+        RadixNode node = api.getNetworkState()
+            .filter(state -> !state.getNodes().isEmpty())
+            .map(state -> state.getNodes().keySet().iterator().next())
+            .blockingFirst();
 
-        Request localhost = new Request.Builder().url("ws://localhost:8080/rpc").build();
+        Request localhost = new Request.Builder().url(node.toString()).build();
         this.webSocketClient = new WebSocketClient(listener -> HttpClients.getSslAllTrustingClient().newWebSocket(localhost, listener));
         this.webSocketClient.connect();
         this.webSocketClient.getState()

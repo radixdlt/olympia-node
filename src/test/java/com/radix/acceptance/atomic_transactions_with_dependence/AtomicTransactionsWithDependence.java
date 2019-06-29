@@ -18,6 +18,7 @@ import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.application.translate.tokens.TransferTokensToParticleGroupsMapper;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.Bootstrap;
+import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.ParticleGroup;
@@ -37,6 +38,8 @@ import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -62,6 +65,16 @@ public class AtomicTransactionsWithDependence {
 	);
 	private final List<TestObserver<Object>> observers = Lists.newArrayList();
 
+	private static final BootstrapConfig BOOTSTRAP_CONFIG;
+	static {
+		String bootstrapConfigName = System.getenv("RADIX_BOOTSTRAP_CONFIG");
+		if (bootstrapConfigName != null) {
+			BOOTSTRAP_CONFIG = Bootstrap.valueOf(bootstrapConfigName);
+		} else {
+			BOOTSTRAP_CONFIG = Bootstrap.LOCALHOST_SINGLENODE;
+		}
+	}
+
 	@Given("^I have access to a suitable Radix network$")
 	public void i_have_access_to_a_suitable_Radix_network() {
 		// Reset data
@@ -72,7 +85,7 @@ public class AtomicTransactionsWithDependence {
 	private void mintAndTransferTokensWith(MintAndTransferTokensActionMapper actionMapper) {
 		RadixApplicationAPI api = new RadixApplicationAPI.RadixApplicationAPIBuilder()
 			.defaultFeeMapper()
-			.universe(RadixUniverse.create(Bootstrap.LOCALHOST_SINGLENODE))
+			.universe(RadixUniverse.create(BOOTSTRAP_CONFIG))
 			.addStatelessParticlesMapper(new CreateTokenToParticleGroupsMapper())
 			.addStatefulParticlesMapper(actionMapper)
 			.addStatefulParticlesMapper(new TransferTokensToParticleGroupsMapper())
@@ -97,10 +110,10 @@ public class AtomicTransactionsWithDependence {
 	}
 
 	@When("^I submit a particle group spending a consumable that was created in a group with a lower index$")
-	public void iSubmitAParticleGroupSpendingAConsumableThatWasCreatedInAGroupWithALowerIndex() {
+	public void iSubmitAParticleGroupSpendingAConsumableThatWasCreatedInAGroupWithALowerIndex() throws Exception {
 		RadixApplicationAPI api = new RadixApplicationAPI.RadixApplicationAPIBuilder()
 			.defaultFeeMapper()
-			.universe(RadixUniverse.create(Bootstrap.LOCALHOST_SINGLENODE))
+			.universe(RadixUniverse.create(BOOTSTRAP_CONFIG))
 			.addStatelessParticlesMapper(new CreateTokenToParticleGroupsMapper())
 			.addStatefulParticlesMapper(new TransferTokensToParticleGroupsMapper())
 			.addReducer(new TokenDefinitionsReducer())
@@ -112,6 +125,7 @@ public class AtomicTransactionsWithDependence {
 		this.properties.put(SYMBOL, "TEST0");
 		createToken(CreateTokenAction.TokenSupplyType.MUTABLE, api);
 		i_can_observe_atom_being_accepted(1);
+		TimeUnit.SECONDS.sleep(3);
 		this.observers.clear();
 
 		RadixIdentity toIdentity = RadixIdentities.createNew();

@@ -2,6 +2,7 @@ package com.radix.regression;
 
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionsState;
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
+import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -27,11 +28,21 @@ import io.reactivex.observers.TestObserver;
  * RLAU-97
  */
 public class TokenClassesInAccountTest {
+	private static final BootstrapConfig BOOTSTRAP_CONFIG;
+	static {
+		String bootstrapConfigName = System.getenv("RADIX_BOOTSTRAP_CONFIG");
+		if (bootstrapConfigName != null) {
+			BOOTSTRAP_CONFIG = Bootstrap.valueOf(bootstrapConfigName);
+		} else {
+			BOOTSTRAP_CONFIG = Bootstrap.LOCALHOST_SINGLENODE;
+		}
+	}
+
 	private static RadixApplicationAPI api;
 
 	@BeforeClass
 	public static void setup() {
-		api = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, RadixIdentities.createNew());
+		api = RadixApplicationAPI.create(BOOTSTRAP_CONFIG, RadixIdentities.createNew());
 	}
 
 	private static CreateTokenAction buildCreateNewTokenAction(String symbol, BigDecimal initialSupply) {

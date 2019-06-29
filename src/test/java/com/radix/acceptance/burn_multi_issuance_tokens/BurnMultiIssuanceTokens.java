@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionsState;
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
 import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
+import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
@@ -11,10 +12,12 @@ import com.radixdlt.client.core.network.actions.SubmitAtomReceivedAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomSendAction;
+import io.reactivex.disposables.Disposable;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 
+import java.util.concurrent.TimeUnit;
 import org.radix.utils.UInt256;
 
 import com.google.common.collect.Lists;
@@ -47,6 +50,16 @@ import io.reactivex.observers.TestObserver;
  * See <a href="https://radixdlt.atlassian.net/browse/RLAU-95">RLAU-95</a>.
  */
 public class BurnMultiIssuanceTokens {
+	private static final BootstrapConfig BOOTSTRAP_CONFIG;
+	static {
+		String bootstrapConfigName = System.getenv("RADIX_BOOTSTRAP_CONFIG");
+		if (bootstrapConfigName != null) {
+			BOOTSTRAP_CONFIG = Bootstrap.valueOf(bootstrapConfigName);
+		} else {
+			BOOTSTRAP_CONFIG = Bootstrap.LOCALHOST_SINGLENODE;
+		}
+	}
+
 	private static final String ADDRESS = "address";
 	private static final String OTHER_ADDRESS = "otherAddress";
 	private static final String NAME = "name";
@@ -84,6 +97,7 @@ public class BurnMultiIssuanceTokens {
 		this.properties.put(INITIAL_SUPPLY, Integer.toString(initialSupply));
 		createToken(TokenSupplyType.MUTABLE);
 		awaitAtomStatus(STORED);
+		TimeUnit.SECONDS.sleep(3);
 		// Listening on state automatic for library
 	}
 
@@ -102,9 +116,12 @@ public class BurnMultiIssuanceTokens {
 	public void a_library_client_who_does_not_own_a_token_class_on_another_account(String symbol, int initialSupply) throws Throwable {
 		setupApi();
 
+		Disposable d = this.api.pull(this.otherApi.getMyAddress());
 		this.properties.put(SYMBOL, symbol);
 		createToken(this.otherApi, TokenSupplyType.MUTABLE);
 		awaitAtomStatus(STORED);
+		TimeUnit.SECONDS.sleep(15);
+		d.dispose();
 
 		this.properties.put(ADDRESS, this.api.getMyAddress().toString());
 		this.properties.put(OTHER_ADDRESS, this.otherApi.getMyAddress().toString());
@@ -170,10 +187,10 @@ public class BurnMultiIssuanceTokens {
 
 	private void setupApi() {
 		this.identity = RadixIdentities.createNew();
-		this.api = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, this.identity);
+		this.api = RadixApplicationAPI.create(BOOTSTRAP_CONFIG, this.identity);
 
 		this.otherIdentity = RadixIdentities.createNew();
-		this.otherApi = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, this.otherIdentity);
+		this.otherApi = RadixApplicationAPI.create(BOOTSTRAP_CONFIG, this.otherIdentity);
 
 		// Reset data
 		this.properties.clear();

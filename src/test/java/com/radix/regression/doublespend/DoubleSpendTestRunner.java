@@ -46,6 +46,16 @@ import java.util.stream.IntStream;
 import org.radix.common.tuples.Pair;
 
 public final class DoubleSpendTestRunner {
+	private static final BootstrapConfig BOOTSTRAP_CONFIG;
+	static {
+		String bootstrapConfigName = System.getenv("RADIX_BOOTSTRAP_CONFIG");
+		if (bootstrapConfigName != null) {
+			BOOTSTRAP_CONFIG = Bootstrap.valueOf(bootstrapConfigName);
+		} else {
+			BOOTSTRAP_CONFIG = Bootstrap.LOCALHOST;
+		}
+	}
+
 	private final Function<RadixApplicationAPI, DoubleSpendTestConditions> testSupplier;
 	private final BiFunction<BootstrapConfig, RadixIdentity, RadixApplicationAPI> apiSupplier;
 
@@ -96,9 +106,9 @@ public final class DoubleSpendTestRunner {
 				    }
 
 				    @Override
-				    public List<RadixNetworkEpic> getDiscoveryEpics() {
-					    return Collections.emptyList();
-				    }
+					public List<RadixNetworkEpic> getDiscoveryEpics() {
+				    	return Collections.emptyList();
+					}
 
 				    @Override
 				    public Set<RadixNode> getInitialNetwork() {
@@ -125,7 +135,7 @@ public final class DoubleSpendTestRunner {
 
 
 	ImmutableMap<ShardedAppStateId, ApplicationState> execute() {
-		RadixApplicationAPI api = apiSupplier.apply(Bootstrap.LOCALHOST, RadixIdentities.createNew());
+		RadixApplicationAPI api = apiSupplier.apply(BOOTSTRAP_CONFIG, RadixIdentities.createNew());
 		DoubleSpendTestConditions doubleSpendTestConditions = testSupplier.apply(api);
 
 		List<BatchedActions> initialActions = doubleSpendTestConditions.initialActions();
@@ -284,7 +294,16 @@ public final class DoubleSpendTestRunner {
 						return states.iterator().next();
 					} else {
 						try {
-							System.out.println(cur + " States don't match retrying 5 seconds...Time until resolved: " + (timeUntilResolved / 1000));
+							if (lastAtomState.entrySet().stream().map(Entry::getValue)
+								.allMatch(s0 -> lastAtomState.entrySet().stream().map(Entry::getValue).allMatch(s1 -> s1.equals(s0)))) {
+								System.out.println(cur + " States match but not expected retrying 5 seconds...Time until resolved: " + (timeUntilResolved / 1000));
+								if (!states.isEmpty()) {
+									System.out.println(states.iterator().next());
+								}
+							} else {
+								System.out.println(cur + " States don't match retrying 5 seconds...Time until resolved: " + (timeUntilResolved / 1000));
+							}
+
 							for (Entry<String, Set<Atom>> e : lastAtomState.entrySet()) {
 								System.out.println(e.getKey() + ": " + e.getValue().stream().map(Atom::getAid).map(Object::toString).collect(Collectors.toSet()));
 							}

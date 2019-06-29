@@ -1,6 +1,7 @@
 package com.radix.acceptance.create_single_issuance_token_class;
 
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
+import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
@@ -37,6 +38,16 @@ import io.reactivex.observers.TestObserver;
  * See <a href="https://radixdlt.atlassian.net/browse/RLAU-40">RLAU-40</a>.
  */
 public class CreateSingleIssuanceTokenClass {
+	private static final BootstrapConfig BOOTSTRAP_CONFIG;
+	static {
+		String bootstrapConfigName = System.getenv("RADIX_BOOTSTRAP_CONFIG");
+		if (bootstrapConfigName != null) {
+			BOOTSTRAP_CONFIG = Bootstrap.valueOf(bootstrapConfigName);
+		} else {
+			BOOTSTRAP_CONFIG = Bootstrap.LOCALHOST_SINGLENODE;
+		}
+	}
+
 	private static final String NAME = "name";
 	private static final String SYMBOL = "symbol";
 	private static final String DESCRIPTION = "description";
@@ -59,7 +70,7 @@ public class CreateSingleIssuanceTokenClass {
 	@Given("^I have access to a suitable Radix network$")
 	public void i_have_access_to_a_suitable_Radix_network() {
 		this.identity = RadixIdentities.createNew();
-		this.api = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, this.identity);
+		this.api = RadixApplicationAPI.create(BOOTSTRAP_CONFIG, this.identity);
 
 		// Reset data
 		this.properties.clear();

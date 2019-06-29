@@ -1,6 +1,7 @@
 package com.radix.regression;
 
 import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
+import com.radixdlt.client.core.BootstrapConfig;
 import org.junit.Test;
 
 import com.radixdlt.client.application.RadixApplicationAPI;
@@ -20,11 +21,21 @@ import io.reactivex.observers.TestObserver;
  * RLAU-372
  */
 public class SendUniqueTransactionsTest {
+	private static final BootstrapConfig BOOTSTRAP_CONFIG;
+	static {
+		String bootstrapConfigName = System.getenv("RADIX_BOOTSTRAP_CONFIG");
+		if (bootstrapConfigName != null) {
+			BOOTSTRAP_CONFIG = Bootstrap.valueOf(bootstrapConfigName);
+		} else {
+			BOOTSTRAP_CONFIG = Bootstrap.LOCALHOST_SINGLENODE;
+		}
+	}
+
 	@Test
 	public void given_an_account_owner_which_has_performed_an_action_with_a_unique_id__when_the_client_attempts_to_use_same_id__then_client_should_be_notified_that_unique_id_is_already_used() throws Exception {
 
 		// Given account owner which has performed an action with a unique id
-		RadixApplicationAPI api = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, RadixIdentities.createNew());
+		RadixApplicationAPI api = RadixApplicationAPI.create(BOOTSTRAP_CONFIG, RadixIdentities.createNew());
 		final String uniqueId = "thisisauniquestring";
 		Transaction transaction = api.createTransaction();
 		transaction.execute(new SendMessageAction(new byte[] {0}, api.getMyAddress(), api.getMyAddress(), false));
@@ -52,7 +63,7 @@ public class SendUniqueTransactionsTest {
 	public void given_an_account_owner_which_has_not_used_a_unique_id__when_the_client_attempts_to_use_id__then_client_should_be_notified_of_success() throws Exception {
 
 		// Given account owner which has NOT performed an action with a unique id
-		RadixApplicationAPI api = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, RadixIdentities.createNew());
+		RadixApplicationAPI api = RadixApplicationAPI.create(BOOTSTRAP_CONFIG, RadixIdentities.createNew());
 		final String uniqueId = "thisisauniquestring";
 
 		// When client attempts to use id
@@ -72,8 +83,8 @@ public class SendUniqueTransactionsTest {
 	public void given_an_account_owner_which_has_not_used_a_unique_id__when_the_client_attempts_to_use_id_in_another_account__then_client_should_be_notified_of_error() throws Exception {
 
 		// Given account owner which has NOT performed an action with a unique id
-		RadixApplicationAPI api1 = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, RadixIdentities.createNew());
-		RadixApplicationAPI api2 = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, RadixIdentities.createNew());
+		RadixApplicationAPI api1 = RadixApplicationAPI.create(BOOTSTRAP_CONFIG,  RadixIdentities.createNew());
+		RadixApplicationAPI api2 = RadixApplicationAPI.create(BOOTSTRAP_CONFIG, RadixIdentities.createNew());
 		final String uniqueId = "thisisauniquestring";
 
 		// When client attempts to use id in ANOTHER account

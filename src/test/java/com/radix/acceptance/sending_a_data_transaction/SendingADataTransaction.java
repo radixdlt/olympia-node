@@ -12,6 +12,7 @@ import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.data.DecryptedMessage;
 import com.radixdlt.client.application.translate.data.SendMessageAction;
 import com.radixdlt.client.core.Bootstrap;
+import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomReceivedAction;
@@ -26,11 +27,22 @@ import io.reactivex.observers.TestObserver;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * See <a href="https://radixdlt.atlassian.net/browse/RLAU-94">RLAU-94</a>.
  */
 public class SendingADataTransaction {
+	private static final BootstrapConfig BOOTSTRAP_CONFIG;
+	static {
+		String bootstrapConfigName = System.getenv("RADIX_BOOTSTRAP_CONFIG");
+		if (bootstrapConfigName != null) {
+			BOOTSTRAP_CONFIG = Bootstrap.valueOf(bootstrapConfigName);
+		} else {
+			BOOTSTRAP_CONFIG = Bootstrap.LOCALHOST_SINGLENODE;
+		}
+	}
+
 	private static final long TIMEOUT_MS = 10_000L; // Timeout in milliseconds
 
 	private RadixApplicationAPI api;
@@ -45,11 +57,11 @@ public class SendingADataTransaction {
 		this.identity = RadixIdentities.createNew();
 		this.otherIdentity = RadixIdentities.createNew();
 		this.api = RadixApplicationAPI.defaultBuilder()
-			.bootstrap(Bootstrap.LOCALHOST_SINGLENODE)
+			.bootstrap(BOOTSTRAP_CONFIG)
 			.identity(this.identity)
 			.build();
 		this.otherApi = RadixApplicationAPI.defaultBuilder()
-			.bootstrap(Bootstrap.LOCALHOST_SINGLENODE)
+			.bootstrap(BOOTSTRAP_CONFIG)
 			.identity(this.otherIdentity)
 			.build();
 
@@ -155,7 +167,7 @@ public class SendingADataTransaction {
 	public void i_can_observe_a_message_with_from_myself(String message) {
 		TestObserver<DecryptedMessage> messageTestObserver = new TestObserver<>();
 		this.api.getMessages().subscribe(messageTestObserver);
-		messageTestObserver.awaitCount(1);
+		messageTestObserver.awaitCount(1, TestWaitStrategy.SLEEP_1000MS, 10000);
 		messageTestObserver.assertSubscribed();
 		messageTestObserver.assertNoErrors();
 		messageTestObserver.assertValue(m -> new String(m.getData()).equals(message) && m.getFrom().equals(this.api.getMyAddress()));
