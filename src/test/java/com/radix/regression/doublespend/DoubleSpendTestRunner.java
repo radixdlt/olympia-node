@@ -17,7 +17,6 @@ import com.radixdlt.client.application.translate.ShardedAppStateId;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
-import com.radixdlt.client.core.address.RadixUniverseConfigs;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.ledger.AtomObservation.Type;
@@ -29,7 +28,6 @@ import com.radixdlt.client.core.network.actions.SubmitAtomAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
 import io.reactivex.Completable;
 import io.reactivex.Observable;
-import io.reactivex.Single;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.observers.TestObserver;
 import java.util.Collections;
@@ -44,6 +42,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.radix.common.tuples.Pair;
+
+import static org.junit.Assume.assumeTrue;
 
 public final class DoubleSpendTestRunner {
 	private static final BootstrapConfig BOOTSTRAP_CONFIG;
@@ -102,7 +102,7 @@ public final class DoubleSpendTestRunner {
 				new BootstrapConfig() {
 				    @Override
 				    public RadixUniverseConfig getConfig() {
-					    return RadixUniverseConfigs.getLocalnet();
+					    return BOOTSTRAP_CONFIG.getConfig();
 				    }
 
 				    @Override
@@ -159,35 +159,17 @@ public final class DoubleSpendTestRunner {
 		}
 
 		// Retrieve two nodes in the network
-		Single<List<RadixNode>> twoNodes = api.getNetworkState()
-			.filter(network -> network.getNodes().entrySet().stream()
-				.filter(e -> e.getValue().getData().isPresent() && e.getValue().getUniverseConfig().isPresent())
-				.count() >= 2)
-			.firstOrError()
-			.map(state ->
-				state.getNodes().entrySet().stream()
-					.filter(e -> e.getValue().getUniverseConfig().isPresent())
-					.map(Entry::getKey)
-					.collect(Collectors.toList())
-			);
-
-		// If two nodes don't exist in the network just use one node
-		Single<List<RadixNode>> oneNode = api.getNetworkState()
-			.debounce(3, TimeUnit.SECONDS)
-			.firstOrError()
-			.map(state -> state.getNodes().entrySet().stream()
-				.map(Entry::getKey)
-				.collect(Collectors.toList())
-			);
+		List<RadixNode> nodes = api.getNetworkState()
+			.flatMapIterable(state -> state.getNodes().keySet())
+			.distinct()
+			.take(5, TimeUnit.SECONDS)
+			.toList()
+			.blockingGet();
+		assumeTrue(nodes.size() >= 2);
 
 		AtomicInteger clientId = new AtomicInteger(1);
-
-		Observable<SingleNodeAPI> singleNodeApis = Observable.merge(twoNodes.toObservable(), oneNode.toObservable())
-			.firstOrError()
-			.flatMapObservable(l -> l.size() == 1 ? Observable.just(l.get(0), l.get(0)) : Observable.fromIterable(l))
-			.map(node -> new SingleNodeAPI(clientId.getAndIncrement(), node, api.getMyIdentity(), apiSupplier))
-			.cache();
-
+		Observable<SingleNodeAPI> singleNodeApis = Observable.just(nodes.get(0), nodes.get(1))
+			.map(node -> new SingleNodeAPI(clientId.getAndIncrement(), node, api.getMyIdentity(), apiSupplier)).cache();
 
 		// When the account executes two transfers via two different nodes at the same time
 		Observable<Pair<SingleNodeAPI, List<List<Action>>>> conflictingAtoms =
@@ -245,6 +227,7 @@ public final class DoubleSpendTestRunner {
 			})
 			.filter(a -> a instanceof FetchAtomsObservationAction || a instanceof SubmitAtomAction)
 		)
+			.timeout(30, TimeUnit.SECONDS)
 			.debounce(20, TimeUnit.SECONDS)
 			.firstOrError()
 			.subscribe(lastUpdateObserver);
