@@ -48,7 +48,7 @@ public final class RadixNode {
 
 	@Override
 	public String toString() {
-		return location;
+		return location + ":" + port;
 	}
 
 	@Override
