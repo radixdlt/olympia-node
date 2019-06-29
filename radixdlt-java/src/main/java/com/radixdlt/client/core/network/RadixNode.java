@@ -9,19 +9,23 @@ public final class RadixNode {
 	private final String location;
 	private final boolean useSSL;
 	private final int port;
-	private final Request request;
-	private final String url;
+	private final Request webSocketEndpoint;
+	private final String webSocketUrl;
 
 	public RadixNode(String location, boolean useSSL, int port) {
 		this.location = location;
 		this.useSSL = useSSL;
 		this.port = port;
-		this.url = (useSSL ? "wss://" : "ws://") + location + ":" + port + "/rpc";
-		this.request = new Request.Builder().url(url).build();
+		this.webSocketUrl = (useSSL ? "wss://" : "ws://") + location + ":" + port + "/rpc";
+		this.webSocketEndpoint = new Request.Builder().url(webSocketUrl).build();
 	}
 
-	public Request getLocation() {
-		return request;
+	/**
+	 * Get the websocket URL for this radix node
+	 * @return request object pointing to the websocket endpoint
+	 */
+	public Request getWebSocketEndpoint() {
+		return webSocketEndpoint;
 	}
 
 	public int getPort() {
@@ -34,12 +38,12 @@ public final class RadixNode {
 
 	@Override
 	public String toString() {
-		return url;
+		return location;
 	}
 
 	@Override
 	public int hashCode() {
-		return url.hashCode();
+		return webSocketUrl.hashCode();
 	}
 
 	@Override
@@ -49,6 +53,6 @@ public final class RadixNode {
 		}
 
 		RadixNode p = (RadixNode) o;
-		return p.url.equals(this.url);
+		return p.webSocketUrl.equals(this.webSocketUrl);
 	}
 }
