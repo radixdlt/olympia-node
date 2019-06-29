@@ -1,20 +1,15 @@
 package com.radix.acceptance.RTP;
 
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
+import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.atoms.particles.RRI;
-import io.reactivex.Single;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.UncheckedIOException;
+import com.radixdlt.client.core.network.HttpClients;
+import com.radixdlt.client.core.network.RadixNode;
 import java.math.BigDecimal;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
+import java.util.Iterator;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -22,11 +17,13 @@ import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
+import okhttp3.Call;
+import okhttp3.Response;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.google.common.io.CharStreams;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
@@ -40,7 +37,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import io.reactivex.observers.TestObserver;
-import io.reactivex.observers.BaseTestConsumer.TestWaitStrategy;
 
 public class RTP {
 	private static final BootstrapConfig BOOTSTRAP_CONFIG;
@@ -49,7 +45,7 @@ public class RTP {
 		if (bootstrapConfigName != null) {
 			BOOTSTRAP_CONFIG = Bootstrap.valueOf(bootstrapConfigName);
 		} else {
-			BOOTSTRAP_CONFIG = Bootstrap.LOCALHOST_SINGLENODE;
+			BOOTSTRAP_CONFIG = Bootstrap.LOCALHOST;
 		}
 	}
 
@@ -57,27 +53,34 @@ public class RTP {
 	// Fix once synchronisation speed resolved
 	private static final long SYNC_TIME_MS = 10_000;
 
-    public String getURL(String url) {
-        try {
-            URL requestUrl = new URL(url);
-            HttpURLConnection connection = (HttpURLConnection) requestUrl.openConnection();
-            connection.setRequestProperty("Accept", "application/json");
-            connection.setRequestProperty("Accept-Charset", "utf-8");
-            try (InputStream inputStream = connection.getInputStream()) {
-                return CharStreams.toString(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
-            }
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-    }
+	private static RadixApplicationAPI api;
+	private static RadixNode node0;
+	private static RadixNode node1;
+
+	@BeforeClass
+	public static void setUp() {
+		RadixIdentity identity = RadixIdentities.createNew();
+		api = RadixApplicationAPI.create(BOOTSTRAP_CONFIG, identity);
+		api.discoverNodes();
+		Iterator<RadixNode> nodes = api.getNetworkState()
+			.doOnNext(System.out::println)
+			.filter(state -> state.getNodes().size() > 1)
+			.map(state -> state.getNodes().keySet())
+			.timeout(15, TimeUnit.SECONDS)
+			.blockingFirst()
+			.iterator();
+
+		node0 = nodes.next();
+		node1 = nodes.next();
+	}
 
     @Test
-    public void test_submitted_atom_two_vertex_timestamps_are_close() throws InterruptedException {
-    	RadixIdentity identity = RadixIdentities.createNew();
-    	RadixApplicationAPI api = RadixApplicationAPI.create(BOOTSTRAP_CONFIG, identity);
+    public void test_submitted_atom_two_vertex_timestamps_are_close() throws Exception {
 		TestObserver<SubmitAtomAction> observer = new TestObserver<>();
 		RRI tokenRRI = RRI.of(api.getMyAddress(), "TOKEN");
-		api.createToken(tokenRRI, "Token", "Token", BigDecimal.ZERO, BigDecimal.ONE, TokenSupplyType.MUTABLE)
+		Transaction tx = api.createTransaction();
+		tx.execute(CreateTokenAction.create(tokenRRI, "Token", "Token", BigDecimal.ZERO, BigDecimal.ONE, TokenSupplyType.MUTABLE));
+		tx.commit(node0)
 			.toObservable()
 			.subscribe(observer);
 		observer.awaitTerminalEvent();
@@ -104,7 +107,16 @@ public class RTP {
 			TimeUnit.MILLISECONDS.sleep(100);
 
 			// Get atom from the "other" node
-			String result = getURL("http://localhost:8081/api/atoms?aid=" + atomHID);
+			Call call = HttpClients.getSslAllTrustingClient().newCall(node1.getHttpEndpoint("/api/atoms?aid=" + atomHID));
+			final String result;
+			try (Response response = call.execute()) {
+				// Authorization required, skip for now
+				if (response.code() == 401) {
+					return;
+				}
+
+				result = response.body().string();
+			}
 			JSONObject json = new JSONObject(result);
 			atomArray = json.getJSONArray("data");
 		} while (atomArray.isEmpty());
@@ -131,25 +143,25 @@ public class RTP {
     // I can see the timestamp included in the temporal proof vertices
 
     @Test
-    public void test_atom_has_an_rclock_in_its_tp() {
-    	RadixIdentity identity = RadixIdentities.createNew();
-    	RadixApplicationAPI api = RadixApplicationAPI.create(BOOTSTRAP_CONFIG, identity);
+    public void test_atom_has_an_rclock_in_its_tp() throws Exception {
     	RRI tokenRRI = RRI.of(api.getMyAddress(), "HI");
-		Single<UnsignedAtom> unsignedAtom = api.buildAtom(
-			CreateTokenAction.create(
-				tokenRRI,
-				"Token",
-				"Token",
-				BigDecimal.ZERO,
-				BigDecimal.ONE,
-				TokenSupplyType.MUTABLE
-			)
-		);
-		Atom atom = unsignedAtom.flatMap(identity::sign).blockingGet();
-		Result submissionResult = api.submitAtom(atom);
-		submissionResult.blockUntilComplete();
+		Transaction tx = api.createTransaction();
+		tx.execute(CreateTokenAction.create(tokenRRI, "Token", "Token", BigDecimal.ZERO, BigDecimal.ONE, TokenSupplyType.MUTABLE));
+		Result r = tx.commit(node0);
+		Atom atom = r.getAtom();
+		r.blockUntilComplete();
 
-        String result = getURL("http://localhost:8080/api/atoms?aid=" + atom.getAid());
+		Call call = HttpClients.getSslAllTrustingClient().newCall(node0.getHttpEndpoint("/api/atoms?aid=" + atom.getAid()));
+		final String result;
+		try (Response response = call.execute()) {
+			// Authorization required, skip for now
+			if (response.code() == 401) {
+				return;
+			}
+
+			result = response.body().string();
+		}
+
         JSONObject json = new JSONObject(result);
         assertTrue("Has data element", json.has("data"));
 
@@ -181,8 +193,18 @@ public class RTP {
     // I can see an error returned -> I get an empty list returned
 
     @Test
-    public void test_non_existent_atom_returns_an_error() {
-        String result = getURL("http://localhost:8080/api/atoms?uid=1234567890abcdef1234567890abcdef");
+    public void test_non_existent_atom_returns_an_error() throws Exception {
+		Call call = HttpClients.getSslAllTrustingClient().newCall(node0.getHttpEndpoint("/api/atoms?uid=1234567890abcdef1234567890abcdef"));
+		final String result;
+		try (Response response = call.execute()) {
+			// Authorization required, skip for now
+			if (response.code() == 401) {
+				return;
+			}
+
+			result = response.body().string();
+		}
+
         JSONObject json = new JSONObject(result);
         assertTrue("Has data element", json.has("data"));
 
@@ -196,8 +218,16 @@ public class RTP {
     // I can see the time being returned
 
     @Test
-    public void test_rtp_timestamp() {
-        String result = getURL("http://localhost:8080/api/rtp/timestamp");
+    public void test_rtp_timestamp() throws Exception {
+		Call call = HttpClients.getSslAllTrustingClient().newCall(node0.getHttpEndpoint("/api/rtp/timestamp"));
+		final String result;
+		try (Response response = call.execute()) {
+			// Authorization required, skip for now
+			if (response.code() == 401) {
+				return;
+			}
+			result = response.body().string();
+		}
         JSONObject json = new JSONObject(result);
         assertTrue("Has radix time", json.has("radix_time"));
 
@@ -211,7 +241,15 @@ public class RTP {
     // I can see the time is the same within 5ms
 
     @Test
-    public void test_rtp_timestamp_on_two_nodes() throws InterruptedException, ExecutionException {
+    public void test_rtp_timestamp_on_two_nodes() throws Exception {
+		Call call = HttpClients.getSslAllTrustingClient().newCall(node0.getHttpEndpoint("/api/rtp/timestamp"));
+		try (Response response = call.execute()) {
+			// Authorization required, skip for now
+			if (response.code() == 401) {
+				return;
+			}
+		}
+
         // Note that we try multiple times here to avoid test unreliability
         // due to scheduling and network timing vagaries.
         for (int i = 1; i <= 10; ++i) {
@@ -228,8 +266,8 @@ public class RTP {
         ExecutorService exec = Executors.newFixedThreadPool(2);
         Semaphore sem = new Semaphore(0);
 
-        Future<JSONObject> futureResult1 = triggeredQuery(exec, sem, "http://localhost:8080/api/rtp/timestamp");
-        Future<JSONObject> futureResult2 = triggeredQuery(exec, sem, "http://localhost:8081/api/rtp/timestamp");
+        Future<JSONObject> futureResult1 = triggeredQuery(exec, sem, node0, "/api/rtp/timestamp");
+        Future<JSONObject> futureResult2 = triggeredQuery(exec, sem, node1, "/api/rtp/timestamp");
 
         // Sync up and release threads
         TimeUnit.MILLISECONDS.sleep(50);
@@ -249,12 +287,17 @@ public class RTP {
         return rclock1 - rclock2;
     }
 
-    private Future<JSONObject> triggeredQuery(ExecutorService exec, Semaphore sem, String url) {
+    private Future<JSONObject> triggeredQuery(ExecutorService exec, Semaphore sem, RadixNode node, String path) {
         return exec.submit(() -> {
             if (!sem.tryAcquire(2, TimeUnit.SECONDS)) {
                 throw new IllegalStateException("Timeout waiting for semaphore");
             }
-            return new JSONObject(getURL(url));
+			Call call = HttpClients.getSslAllTrustingClient().newCall(node.getHttpEndpoint(path));
+			final String result;
+			try (Response response = call.execute()) {
+				result = response.body().string();
+			}
+            return new JSONObject(result);
         });
     }
 }
