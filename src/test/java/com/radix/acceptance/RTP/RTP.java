@@ -9,7 +9,7 @@ import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.network.HttpClients;
 import com.radixdlt.client.core.network.RadixNode;
 import java.math.BigDecimal;
-import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -23,6 +23,9 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
@@ -54,33 +57,39 @@ public class RTP {
 	private static final long SYNC_TIME_MS = 10_000;
 
 	private static RadixApplicationAPI api;
-	private static RadixNode node0;
-	private static RadixNode node1;
+	private static List<RadixNode> nodes;
 
 	@BeforeClass
 	public static void setUp() {
 		RadixIdentity identity = RadixIdentities.createNew();
 		api = RadixApplicationAPI.create(BOOTSTRAP_CONFIG, identity);
 		api.discoverNodes();
-		Iterator<RadixNode> nodes = api.getNetworkState()
+		nodes = api.getNetworkState()
 			.doOnNext(System.out::println)
-			.filter(state -> state.getNodes().size() > 1)
-			.map(state -> state.getNodes().keySet())
-			.timeout(15, TimeUnit.SECONDS)
-			.blockingFirst()
-			.iterator();
-
-		node0 = nodes.next();
-		node1 = nodes.next();
+			.flatMapIterable(state -> state.getNodes().keySet())
+			.distinct()
+			.filter(n -> {
+				Call call = HttpClients.getSslAllTrustingClient().newCall(n.getHttpEndpoint("/api/atoms?uid=1234567890abcdef1234567890abcdef"));
+				try (Response response = call.execute()) {
+					return response.isSuccessful();
+				} catch (Exception e) {
+					return false;
+				}
+			})
+			.take(5, TimeUnit.SECONDS)
+			.toList()
+			.blockingGet();
 	}
 
     @Test
     public void test_submitted_atom_two_vertex_timestamps_are_close() throws Exception {
+		assumeTrue(nodes.size() >= 2);
+
 		TestObserver<SubmitAtomAction> observer = new TestObserver<>();
 		RRI tokenRRI = RRI.of(api.getMyAddress(), "TOKEN");
 		Transaction tx = api.createTransaction();
 		tx.execute(CreateTokenAction.create(tokenRRI, "Token", "Token", BigDecimal.ZERO, BigDecimal.ONE, TokenSupplyType.MUTABLE));
-		tx.commit(node0)
+		tx.commit(nodes.get(0))
 			.toObservable()
 			.subscribe(observer);
 		observer.awaitTerminalEvent();
@@ -107,14 +116,9 @@ public class RTP {
 			TimeUnit.MILLISECONDS.sleep(100);
 
 			// Get atom from the "other" node
-			Call call = HttpClients.getSslAllTrustingClient().newCall(node1.getHttpEndpoint("/api/atoms?aid=" + atomHID));
+			Call call = HttpClients.getSslAllTrustingClient().newCall(nodes.get(1).getHttpEndpoint("/api/atoms?aid=" + atomHID));
 			final String result;
 			try (Response response = call.execute()) {
-				// Authorization required, skip for now
-				if (response.code() == 401) {
-					return;
-				}
-
 				result = response.body().string();
 			}
 			JSONObject json = new JSONObject(result);
@@ -144,21 +148,18 @@ public class RTP {
 
     @Test
     public void test_atom_has_an_rclock_in_its_tp() throws Exception {
+		assumeFalse(nodes.isEmpty());
+
     	RRI tokenRRI = RRI.of(api.getMyAddress(), "HI");
 		Transaction tx = api.createTransaction();
 		tx.execute(CreateTokenAction.create(tokenRRI, "Token", "Token", BigDecimal.ZERO, BigDecimal.ONE, TokenSupplyType.MUTABLE));
-		Result r = tx.commit(node0);
+		Result r = tx.commit(nodes.get(0));
 		Atom atom = r.getAtom();
 		r.blockUntilComplete();
 
-		Call call = HttpClients.getSslAllTrustingClient().newCall(node0.getHttpEndpoint("/api/atoms?aid=" + atom.getAid()));
+		Call call = HttpClients.getSslAllTrustingClient().newCall(nodes.get(0).getHttpEndpoint("/api/atoms?aid=" + atom.getAid()));
 		final String result;
 		try (Response response = call.execute()) {
-			// Authorization required, skip for now
-			if (response.code() == 401) {
-				return;
-			}
-
 			result = response.body().string();
 		}
 
@@ -194,14 +195,11 @@ public class RTP {
 
     @Test
     public void test_non_existent_atom_returns_an_error() throws Exception {
-		Call call = HttpClients.getSslAllTrustingClient().newCall(node0.getHttpEndpoint("/api/atoms?uid=1234567890abcdef1234567890abcdef"));
+		assumeFalse(nodes.isEmpty());
+
+		Call call = HttpClients.getSslAllTrustingClient().newCall(nodes.get(0).getHttpEndpoint("/api/atoms?uid=1234567890abcdef1234567890abcdef"));
 		final String result;
 		try (Response response = call.execute()) {
-			// Authorization required, skip for now
-			if (response.code() == 401) {
-				return;
-			}
-
 			result = response.body().string();
 		}
 
@@ -219,13 +217,11 @@ public class RTP {
 
     @Test
     public void test_rtp_timestamp() throws Exception {
-		Call call = HttpClients.getSslAllTrustingClient().newCall(node0.getHttpEndpoint("/api/rtp/timestamp"));
+		assumeFalse(nodes.isEmpty());
+
+		Call call = HttpClients.getSslAllTrustingClient().newCall(nodes.get(0).getHttpEndpoint("/api/rtp/timestamp"));
 		final String result;
 		try (Response response = call.execute()) {
-			// Authorization required, skip for now
-			if (response.code() == 401) {
-				return;
-			}
 			result = response.body().string();
 		}
         JSONObject json = new JSONObject(result);
@@ -242,13 +238,7 @@ public class RTP {
 
     @Test
     public void test_rtp_timestamp_on_two_nodes() throws Exception {
-		Call call = HttpClients.getSslAllTrustingClient().newCall(node0.getHttpEndpoint("/api/rtp/timestamp"));
-		try (Response response = call.execute()) {
-			// Authorization required, skip for now
-			if (response.code() == 401) {
-				return;
-			}
-		}
+		assumeFalse(nodes.isEmpty());
 
         // Note that we try multiple times here to avoid test unreliability
         // due to scheduling and network timing vagaries.
@@ -263,11 +253,13 @@ public class RTP {
     }
 
     private long timeDifference() throws InterruptedException, ExecutionException {
+		assumeTrue(nodes.size() >= 2);
+
         ExecutorService exec = Executors.newFixedThreadPool(2);
         Semaphore sem = new Semaphore(0);
 
-        Future<JSONObject> futureResult1 = triggeredQuery(exec, sem, node0, "/api/rtp/timestamp");
-        Future<JSONObject> futureResult2 = triggeredQuery(exec, sem, node1, "/api/rtp/timestamp");
+        Future<JSONObject> futureResult1 = triggeredQuery(exec, sem, nodes.get(0), "/api/rtp/timestamp");
+        Future<JSONObject> futureResult2 = triggeredQuery(exec, sem, nodes.get(1), "/api/rtp/timestamp");
 
         // Sync up and release threads
         TimeUnit.MILLISECONDS.sleep(50);
