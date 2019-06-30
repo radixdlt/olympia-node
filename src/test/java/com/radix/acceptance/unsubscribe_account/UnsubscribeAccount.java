@@ -1,9 +1,11 @@
 package com.radix.acceptance.unsubscribe_account;
 
+import com.radix.TestEnv;
 import com.radix.regression.Util;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.AtomStatusNotification;
 import com.radixdlt.client.core.ledger.AtomObservation;
+import com.radixdlt.client.core.network.RadixNode;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -14,7 +16,6 @@ import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.data.SendMessageAction;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.crypto.ECKeyPairGenerator;
 import com.radixdlt.client.core.network.HttpClients;
@@ -28,7 +29,6 @@ import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
 import io.reactivex.observers.TestObserver;
-import okhttp3.Request;
 
 /**
  * See <a href="https://radixdlt.atlassian.net/browse/RLAU-94">RLAU-59</a>.
@@ -72,6 +72,7 @@ public class UnsubscribeAccount {
 			.doOnNext(System.out::println)
 			.filter(WebSocketStatus.DISCONNECTED::equals)
 			.firstOrError()
+			.timeout(10, TimeUnit.SECONDS)
 			.blockingGet();
 		this.webSocketClient = null;
 	}
@@ -150,8 +151,9 @@ public class UnsubscribeAccount {
 			.flatMap(this.identity::sign)
 			.blockingGet();
 
-		this.jsonRpcClient.pushAtom(this.atom).blockingAwait();
+		this.jsonRpcClient.observeAtomStatusNotifications(subscriberId).subscribe(atomSubmission);
 		this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, this.atom.getAid()).blockingAwait();
+		this.jsonRpcClient.pushAtom(this.atom).blockingAwait();
 
 		atomSubmission.awaitCount(1);
 		atomSubmission.assertValue(n -> n.getAtomStatus() == AtomStatus.STORED);
@@ -225,10 +227,16 @@ public class UnsubscribeAccount {
 
 	private void setupWebSocket() {
 		this.identity = RadixIdentities.createNew();
-		this.api = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, this.identity);
+		this.api = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), this.identity);
+		this.api.discoverNodes();
+		RadixNode node = this.api.getNetworkState()
+			.filter(state -> !state.getNodes().isEmpty())
+			.map(state -> state.getNodes().keySet().iterator().next())
+			.blockingFirst();
 
-		Request localhost = new Request.Builder().url("ws://localhost:8080/rpc").build();
-		this.webSocketClient = new WebSocketClient(listener -> HttpClients.getSslAllTrustingClient().newWebSocket(localhost, listener));
+		this.webSocketClient = new WebSocketClient(listener ->
+			HttpClients.getSslAllTrustingClient().newWebSocket(node.getWebSocketEndpoint(), listener)
+		);
 		this.webSocketClient.connect();
 		this.webSocketClient.getState()
 			.filter(WebSocketStatus.CONNECTED::equals)

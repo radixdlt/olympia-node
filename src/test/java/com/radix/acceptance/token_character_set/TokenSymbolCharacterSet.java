@@ -2,6 +2,7 @@ package com.radix.acceptance.token_character_set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.radix.TestEnv;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import java.math.BigDecimal;
@@ -15,9 +16,7 @@ import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
-import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
-import com.radixdlt.client.core.network.actions.SubmitAtomReceivedAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomSendAction;
@@ -25,7 +24,6 @@ import com.radixdlt.client.core.network.actions.SubmitAtomSendAction;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
-import io.reactivex.observers.BaseTestConsumer.TestWaitStrategy;
 import io.reactivex.observers.TestObserver;
 
 public class TokenSymbolCharacterSet {
@@ -53,7 +51,7 @@ public class TokenSymbolCharacterSet {
 	@Given("^I have access to a suitable Radix network$")
 	public void i_have_access_to_a_suitable_Radix_network() {
 		this.identity = RadixIdentities.createNew();
-		this.api = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, this.identity);
+		this.api = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), this.identity);
 
 		// Reset data
 		this.properties.clear();

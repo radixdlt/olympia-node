@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import com.radix.TestEnv;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
 import com.radixdlt.client.application.identity.RadixIdentities;
@@ -11,10 +12,8 @@ import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.data.DecryptedMessage;
 import com.radixdlt.client.application.translate.data.SendMessageAction;
-import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
-import com.radixdlt.client.core.network.actions.SubmitAtomReceivedAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomSendAction;
@@ -45,11 +44,11 @@ public class SendingADataTransaction {
 		this.identity = RadixIdentities.createNew();
 		this.otherIdentity = RadixIdentities.createNew();
 		this.api = RadixApplicationAPI.defaultBuilder()
-			.bootstrap(Bootstrap.LOCALHOST_SINGLENODE)
+			.bootstrap(TestEnv.getBootstrapConfig())
 			.identity(this.identity)
 			.build();
 		this.otherApi = RadixApplicationAPI.defaultBuilder()
-			.bootstrap(Bootstrap.LOCALHOST_SINGLENODE)
+			.bootstrap(TestEnv.getBootstrapConfig())
 			.identity(this.otherIdentity)
 			.build();
 
@@ -155,7 +154,7 @@ public class SendingADataTransaction {
 	public void i_can_observe_a_message_with_from_myself(String message) {
 		TestObserver<DecryptedMessage> messageTestObserver = new TestObserver<>();
 		this.api.getMessages().subscribe(messageTestObserver);
-		messageTestObserver.awaitCount(1);
+		messageTestObserver.awaitCount(1, TestWaitStrategy.SLEEP_1000MS, 10000);
 		messageTestObserver.assertSubscribed();
 		messageTestObserver.assertNoErrors();
 		messageTestObserver.assertValue(m -> new String(m.getData()).equals(message) && m.getFrom().equals(this.api.getMyAddress()));

@@ -1,13 +1,13 @@
 package com.radix.regression;
 
 import com.google.common.collect.ImmutableSet;
+import com.radix.TestEnv;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
 import com.radixdlt.client.application.identity.LocalRadixIdentity;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.atommodel.message.MessageParticle;
 import com.radixdlt.client.atommodel.message.MetadataMap;
-import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.ParticleGroup;
@@ -28,7 +28,7 @@ public class TranslucentAtomTest {
 	@Before
 	public void setUp() {
 		this.identity = RadixIdentities.createNew();
-		this.api = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, identity);
+		this.api = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), identity);
 	}
 
 	@Test
@@ -68,7 +68,7 @@ public class TranslucentAtomTest {
 		TestObserver<SubmitAtomAction> testObserver = TestObserver.create(Util.loggingObserver("SubmitAtom"));
 		result.toObservable()
 			.subscribe(testObserver);
-		testObserver.awaitTerminalEvent(5, TimeUnit.SECONDS);
+		testObserver.awaitTerminalEvent(30, TimeUnit.SECONDS);
 		testObserver.assertNoErrors();
 		testObserver.assertComplete();
 		testObserver.assertValueAt(3, action -> {

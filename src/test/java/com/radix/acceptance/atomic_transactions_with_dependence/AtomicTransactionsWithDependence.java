@@ -2,6 +2,7 @@ package com.radix.acceptance.atomic_transactions_with_dependence;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import com.radix.TestEnv;
 import com.radix.acceptance.SpecificProperties;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
@@ -17,7 +18,6 @@ import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
 import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.application.translate.tokens.TransferTokensToParticleGroupsMapper;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.ParticleGroup;
@@ -37,6 +37,8 @@ import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -72,7 +74,7 @@ public class AtomicTransactionsWithDependence {
 	private void mintAndTransferTokensWith(MintAndTransferTokensActionMapper actionMapper) {
 		RadixApplicationAPI api = new RadixApplicationAPI.RadixApplicationAPIBuilder()
 			.defaultFeeMapper()
-			.universe(RadixUniverse.create(Bootstrap.LOCALHOST_SINGLENODE))
+			.universe(RadixUniverse.create(TestEnv.getBootstrapConfig()))
 			.addStatelessParticlesMapper(new CreateTokenToParticleGroupsMapper())
 			.addStatefulParticlesMapper(actionMapper)
 			.addStatefulParticlesMapper(new TransferTokensToParticleGroupsMapper())
@@ -97,10 +99,10 @@ public class AtomicTransactionsWithDependence {
 	}
 
 	@When("^I submit a particle group spending a consumable that was created in a group with a lower index$")
-	public void iSubmitAParticleGroupSpendingAConsumableThatWasCreatedInAGroupWithALowerIndex() {
+	public void iSubmitAParticleGroupSpendingAConsumableThatWasCreatedInAGroupWithALowerIndex() throws Exception {
 		RadixApplicationAPI api = new RadixApplicationAPI.RadixApplicationAPIBuilder()
 			.defaultFeeMapper()
-			.universe(RadixUniverse.create(Bootstrap.LOCALHOST_SINGLENODE))
+			.universe(RadixUniverse.create(TestEnv.getBootstrapConfig()))
 			.addStatelessParticlesMapper(new CreateTokenToParticleGroupsMapper())
 			.addStatefulParticlesMapper(new TransferTokensToParticleGroupsMapper())
 			.addReducer(new TokenDefinitionsReducer())
@@ -112,6 +114,7 @@ public class AtomicTransactionsWithDependence {
 		this.properties.put(SYMBOL, "TEST0");
 		createToken(CreateTokenAction.TokenSupplyType.MUTABLE, api);
 		i_can_observe_atom_being_accepted(1);
+		TimeUnit.SECONDS.sleep(3);
 		this.observers.clear();
 
 		RadixIdentity toIdentity = RadixIdentities.createNew();

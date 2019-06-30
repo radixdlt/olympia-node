@@ -1,25 +1,27 @@
 package com.radix.acceptance.shards;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.UncheckedIOException;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
+import com.radix.TestEnv;
+import com.radixdlt.client.application.RadixApplicationAPI;
+import com.radixdlt.client.core.network.HttpClients;
+import com.radixdlt.client.core.network.RadixNode;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import okhttp3.Call;
+import okhttp3.Response;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.radix.utils.primitives.Bytes;
 
-import com.google.common.io.CharStreams;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+
+import static org.junit.Assume.assumeTrue;
 
 /**
  * Acceptance tests for Static Sharding RLAU-1100.
@@ -32,12 +34,34 @@ import static org.junit.Assert.assertTrue;
  * </ul>
  */
 public class StaticShardingAcceptance {
+	private static RadixApplicationAPI api;
+	private static List<RadixNode> nodes;
 
-	private static final String PRIMARY_HOST = "http://localhost:8080";
-	private static final String OTHER_HOST   = "http://localhost:8081";
+	@BeforeClass
+	public static void setUp() {
+		RadixIdentity identity = RadixIdentities.createNew();
+		api = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), identity);
+		api.discoverNodes();
+		nodes = api.getNetworkState()
+			.doOnNext(System.out::println)
+			.flatMapIterable(state -> state.getNodes().keySet())
+			.distinct()
+			.filter(n -> {
+				Call call = HttpClients.getSslAllTrustingClient().newCall(n.getHttpEndpoint("/api/atoms?uid=1234567890abcdef1234567890abcdef"));
+				try (Response response = call.execute()) {
+					return response.isSuccessful();
+				} catch (Exception e) {
+					return false;
+				}
+			})
+			.take(5, TimeUnit.SECONDS)
+			.toList()
+			.blockingGet();
+	}
 
 	@Test
-	public void broadcast_of_shard_range__scenario_1() {
+	public void broadcast_of_shard_range__scenario_1() throws Exception {
+		assumeTrue(nodes.size() >= 2);
 		// Scenario 1:
 		// Given ‌that I'm running a live node,
 		// When ‌join the network / periodically,
@@ -45,12 +69,14 @@ public class StaticShardingAcceptance {
 
 		// This test indirectly does what is written above, by showing that shards
 		// *are* passed between nodes via the API.
-		checkPeersHaveShards(getNonEmptyPeersFrom(PRIMARY_HOST));
-		checkPeersHaveShards(getNonEmptyPeersFrom(OTHER_HOST));
+		checkPeersHaveShards(getNonEmptyPeersFrom(nodes.get(0)));
+		checkPeersHaveShards(getNonEmptyPeersFrom(nodes.get(1)));
 	}
 
 	@Test
-	public void receival_of_shard_range__scenario_1() throws InterruptedException {
+	public void receival_of_shard_range__scenario_1() throws Exception {
+		assumeTrue(nodes.size() >= 2);
+
 		// Scenario 1: Peers are sending valid shard ranges
 		// Given ‌that I am running a node,
 		// When ‌a peer sends me a shard range,
@@ -65,7 +91,7 @@ public class StaticShardingAcceptance {
 
 		String nid = newPeer(key, anchor, high, low, ip);
 		TimeUnit.SECONDS.sleep(2); // Allow propagation of message in node
-		JSONArray peers = getNonEmptyPeersFrom(PRIMARY_HOST);
+		JSONArray peers = getNonEmptyPeersFrom(nodes.get(0));
 		boolean found = false;
 		for (Object obj : peers) {
 			assertTrue("object is not a JSONObject", obj instanceof JSONObject);
@@ -80,7 +106,9 @@ public class StaticShardingAcceptance {
 	}
 
 	@Test
-	public void receival_of_shard_range__scenario_3() throws InterruptedException {
+	public void receival_of_shard_range__scenario_3() throws Exception {
+		assumeTrue(nodes.size() >= 2);
+
 		/*
 		 * Scenario 3: Peers are sending valid shard ranges that are correct.
 		 * Given ‌that I am running a node,
@@ -95,7 +123,11 @@ public class StaticShardingAcceptance {
 		// 3. Observe that the primary node still recognises the "other" node
 		String ip = "172.18.0.2";
 
-		String systemString = getURL("http://localhost:8081/api/system");
+		Call call = HttpClients.getSslAllTrustingClient().newCall(nodes.get(1).getHttpEndpoint("/api/system"));
+		final String systemString;
+		try (Response response = call.execute()) {
+			systemString = response.body().string();
+		}
 		JSONObject system = new JSONObject(systemString);
 		String key = Bytes.toHexString(fromBase64(system.getString("key")));
 		JSONObject shards = system.getJSONObject("shards");
@@ -106,7 +138,7 @@ public class StaticShardingAcceptance {
 
 		String nid = newPeer(key, anchor, high, low, ip);
 		TimeUnit.SECONDS.sleep(2); // Allow propagation of message in node
-		JSONArray peers = getNonEmptyPeersFrom(PRIMARY_HOST);
+		JSONArray peers = getNonEmptyPeersFrom(nodes.get(0));
 		boolean found = false;
 		for (Object obj : peers) {
 			assertTrue("object is not a JSONObject", obj instanceof JSONObject);
@@ -139,34 +171,26 @@ public class StaticShardingAcceptance {
 		}
 	}
 
-	private String newPeer(String key, long anchor, long high, long low, String ip) {
-		String query = String.format(
-			"http://localhost:8080/api/test/newpeer?key=%s&anchor=%s&high=%s&low=%s&ip=%s",
-			key, anchor, high, low, ip);
-		String result = getURL(query);
+	private String newPeer(String key, long anchor, long high, long low, String ip) throws Exception {
+		String query = String.format("/api/test/newpeer?key=%s&anchor=%s&high=%s&low=%s&ip=%s", key, anchor, high, low, ip);
+		Call call = HttpClients.getSslAllTrustingClient().newCall(nodes.get(0).getHttpEndpoint(query));
+		final String result;
+		try (Response response = call.execute()) {
+			result = response.body().string();
+		}
 		JSONObject nidResult = new JSONObject(result);
 		assertTrue("result has no NID", nidResult.has("nid"));
 		return ":uid:" + nidResult.getString("nid");
 	}
 
-	private JSONArray getNonEmptyPeersFrom(String urlPrefix) {
-		String result = getURL(urlPrefix + "/api/network/peers");
+	private JSONArray getNonEmptyPeersFrom(RadixNode node) throws Exception {
+		Call call = HttpClients.getSslAllTrustingClient().newCall(node.getHttpEndpoint("/api/network/peers"));
+		final String result;
+		try (Response response = call.execute()) {
+			result = response.body().string();
+		}
 		JSONArray json = new JSONArray(result);
 		assertFalse("Peers list is empty", json.isEmpty());
 		return json;
-	}
-
-	public String getURL(String url) {
-		try {
-			URL requestUrl = new URL(url);
-			HttpURLConnection connection = (HttpURLConnection) requestUrl.openConnection();
-			connection.setRequestProperty("Accept", "application/json");
-			connection.setRequestProperty("Accept-Charset", "utf-8");
-			try (InputStream inputStream = connection.getInputStream()) {
-				return CharStreams.toString(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
-			}
-		} catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
 	}
 }

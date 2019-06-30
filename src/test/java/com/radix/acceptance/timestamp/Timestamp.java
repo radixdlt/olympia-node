@@ -3,13 +3,14 @@ package com.radix.acceptance.timestamp;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.radix.TestEnv;
 import com.radix.regression.Util;
+import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.FeeMapper;
 import com.radixdlt.client.application.translate.PowFeeMapper;
 import com.radixdlt.client.atommodel.message.MessageParticle;
-import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomStatus;
@@ -18,6 +19,7 @@ import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.network.HttpClients;
+import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient;
 import com.radixdlt.client.core.network.websocket.WebSocketClient;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
@@ -27,7 +29,6 @@ import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
 import io.reactivex.observers.TestObserver;
-import okhttp3.Request;
 import org.json.JSONObject;
 import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.client.GsonJson;
@@ -43,7 +44,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 public class Timestamp {
-    private RadixUniverse universe = RadixUniverse.create(Bootstrap.LOCALHOST_SINGLENODE);
+    private RadixUniverse universe = RadixUniverse.create(TestEnv.getBootstrapConfig());
 
     private RadixIdentity identity;
 
@@ -315,9 +316,16 @@ public class Timestamp {
 
     private void setupWebSocket() {
         this.identity = RadixIdentities.createNew();
+        RadixApplicationAPI api = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), this.identity);
+        api.discoverNodes();
+        RadixNode node = api.getNetworkState()
+            .filter(state -> !state.getNodes().isEmpty())
+            .map(state -> state.getNodes().keySet().iterator().next())
+            .blockingFirst();
 
-        Request localhost = new Request.Builder().url("ws://localhost:8080/rpc").build();
-        this.webSocketClient = new WebSocketClient(listener -> HttpClients.getSslAllTrustingClient().newWebSocket(localhost, listener));
+        this.webSocketClient = new WebSocketClient(listener ->
+            HttpClients.getSslAllTrustingClient().newWebSocket(node.getWebSocketEndpoint(), listener)
+        );
         this.webSocketClient.connect();
         this.webSocketClient.getState()
                 .filter(WebSocketStatus.CONNECTED::equals)

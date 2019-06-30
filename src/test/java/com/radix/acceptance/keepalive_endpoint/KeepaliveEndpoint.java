@@ -1,6 +1,10 @@
 package com.radix.acceptance.keepalive_endpoint;
 
+import com.radix.TestEnv;
+import com.radixdlt.client.application.RadixApplicationAPI;
+import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.core.network.HttpClients;
+import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient;
 import com.radixdlt.client.core.network.websocket.WebSocketClient;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
@@ -9,7 +13,6 @@ import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
 import io.reactivex.observers.TestObserver;
-import okhttp3.Request;
 
 import java.util.concurrent.TimeUnit;
 
@@ -58,8 +61,16 @@ public class KeepaliveEndpoint {
 
 
     private void setupWebSocket() {
-        Request localhost = new Request.Builder().url("ws://localhost:8080/rpc").build();
-        this.webSocketClient = new WebSocketClient(listener -> HttpClients.getSslAllTrustingClient().newWebSocket(localhost, listener));
+        RadixApplicationAPI api = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), RadixIdentities.createNew());
+        api.discoverNodes();
+        RadixNode node = api.getNetworkState()
+            .filter(state -> !state.getNodes().isEmpty())
+            .map(state -> state.getNodes().keySet().iterator().next())
+            .blockingFirst();
+
+        this.webSocketClient = new WebSocketClient(listener ->
+            HttpClients.getSslAllTrustingClient().newWebSocket(node.getWebSocketEndpoint(), listener)
+        );
         this.webSocketClient.connect();
         this.webSocketClient.getState()
                 .filter(WebSocketStatus.CONNECTED::equals)

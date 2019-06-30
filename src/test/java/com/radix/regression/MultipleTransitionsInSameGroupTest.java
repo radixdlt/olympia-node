@@ -1,6 +1,8 @@
 package com.radix.regression;
 
 import com.google.common.collect.ImmutableMap;
+import com.radix.TestEnv;
+import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.FeeMapper;
@@ -12,7 +14,6 @@ import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle.TokenTransit
 import com.radixdlt.client.atommodel.tokens.TokenPermission;
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
-import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomStatus;
@@ -21,13 +22,13 @@ import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.network.HttpClients;
+import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient;
 import com.radixdlt.client.core.network.websocket.WebSocketClient;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
 import com.radixdlt.client.core.pow.ProofOfWorkBuilder;
 import io.reactivex.observers.TestObserver;
 import java.util.UUID;
-import okhttp3.Request;
 import org.junit.Before;
 import org.junit.Test;
 import org.radix.utils.UInt256;
@@ -36,10 +37,9 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 public class MultipleTransitionsInSameGroupTest {
-	private RadixUniverse universe = RadixUniverse.create(Bootstrap.LOCALHOST_SINGLENODE);
+	private RadixUniverse universe = RadixUniverse.create(TestEnv.getBootstrapConfig());
 	private RadixIdentity identity;
 	private FeeMapper feeMapper = new PowFeeMapper(Atom::getHash, new ProofOfWorkBuilder());
 	private RadixJsonRpcClient jsonRpcClient;
@@ -47,8 +47,16 @@ public class MultipleTransitionsInSameGroupTest {
 	@Before
 	public void setUp() {
 		this.identity = RadixIdentities.createNew();
-		Request localhost = new Request.Builder().url("ws://localhost:8080/rpc").build();
-		WebSocketClient webSocketClient = new WebSocketClient(listener -> HttpClients.getSslAllTrustingClient().newWebSocket(localhost, listener));
+		RadixApplicationAPI api = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), this.identity);
+		api.discoverNodes();
+		RadixNode node = api.getNetworkState()
+			.filter(state -> !state.getNodes().isEmpty())
+			.map(state -> state.getNodes().keySet().iterator().next())
+			.blockingFirst();
+
+		WebSocketClient webSocketClient = new WebSocketClient(listener ->
+			HttpClients.getSslAllTrustingClient().newWebSocket(node.getWebSocketEndpoint(), listener)
+		);
 		webSocketClient.connect();
 		webSocketClient.getState()
 			.filter(WebSocketStatus.CONNECTED::equals)

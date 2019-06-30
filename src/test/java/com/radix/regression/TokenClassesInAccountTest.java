@@ -1,5 +1,6 @@
 package com.radix.regression;
 
+import com.radix.TestEnv;
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionsState;
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
 import com.radixdlt.client.core.atoms.particles.RRI;
@@ -17,7 +18,6 @@ import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
 import com.radixdlt.client.application.translate.tokens.TokenState;
-import com.radixdlt.client.core.Bootstrap;
 
 import io.reactivex.Observable;
 import io.reactivex.functions.Predicate;
@@ -31,7 +31,7 @@ public class TokenClassesInAccountTest {
 
 	@BeforeClass
 	public static void setup() {
-		api = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, RadixIdentities.createNew());
+		api = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), RadixIdentities.createNew());
 	}
 
 	private static CreateTokenAction buildCreateNewTokenAction(String symbol, BigDecimal initialSupply) {

@@ -1,20 +1,22 @@
 package com.radix.acceptance.burn_multi_issuance_tokens;
 
 import com.google.common.collect.ImmutableSet;
+import com.radix.TestEnv;
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionsState;
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
 import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
-import com.radixdlt.client.core.network.actions.SubmitAtomReceivedAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomSendAction;
+import io.reactivex.disposables.Disposable;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 
+import java.util.concurrent.TimeUnit;
 import org.radix.utils.UInt256;
 
 import com.google.common.collect.Lists;
@@ -28,7 +30,6 @@ import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenS
 import com.radixdlt.client.application.translate.tokens.InsufficientFundsException;
 import com.radixdlt.client.application.translate.tokens.UnknownTokenException;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.core.Bootstrap;
 
 import static com.radixdlt.client.core.atoms.AtomStatus.STORED;
 import static com.radixdlt.client.core.atoms.AtomStatus.EVICTED_FAILED_CM_VERIFICATION;
@@ -84,6 +85,7 @@ public class BurnMultiIssuanceTokens {
 		this.properties.put(INITIAL_SUPPLY, Integer.toString(initialSupply));
 		createToken(TokenSupplyType.MUTABLE);
 		awaitAtomStatus(STORED);
+		TimeUnit.SECONDS.sleep(3);
 		// Listening on state automatic for library
 	}
 
@@ -102,9 +104,12 @@ public class BurnMultiIssuanceTokens {
 	public void a_library_client_who_does_not_own_a_token_class_on_another_account(String symbol, int initialSupply) throws Throwable {
 		setupApi();
 
+		Disposable d = this.api.pull(this.otherApi.getMyAddress());
 		this.properties.put(SYMBOL, symbol);
 		createToken(this.otherApi, TokenSupplyType.MUTABLE);
 		awaitAtomStatus(STORED);
+		TimeUnit.SECONDS.sleep(15);
+		d.dispose();
 
 		this.properties.put(ADDRESS, this.api.getMyAddress().toString());
 		this.properties.put(OTHER_ADDRESS, this.otherApi.getMyAddress().toString());
@@ -170,10 +175,10 @@ public class BurnMultiIssuanceTokens {
 
 	private void setupApi() {
 		this.identity = RadixIdentities.createNew();
-		this.api = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, this.identity);
+		this.api = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), this.identity);
 
 		this.otherIdentity = RadixIdentities.createNew();
-		this.otherApi = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, this.otherIdentity);
+		this.otherApi = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), this.otherIdentity);
 
 		// Reset data
 		this.properties.clear();

@@ -2,6 +2,7 @@ package com.radix.acceptance.particle_groups;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import com.radix.TestEnv;
 import com.radix.acceptance.SpecificProperties;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
@@ -17,14 +18,11 @@ import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
 import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.application.translate.tokens.TransferTokensToParticleGroupsMapper;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.crypto.ECKeyPairGenerator;
-import com.radixdlt.client.core.network.actions.SubmitAtomAction;
-import com.radixdlt.client.core.network.actions.SubmitAtomReceivedAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomSendAction;
@@ -131,7 +129,7 @@ public class ParticleGroups {
 	public void i_have_access_to_a_suitable_Radix_network() {
 		this.identity = RadixIdentities.createNew();
 		this.api = RadixApplicationAPI.defaultBuilder()
-			.bootstrap(Bootstrap.LOCALHOST_SINGLENODE)
+			.bootstrap(TestEnv.getBootstrapConfig())
 			.identity(this.identity)
 			.addStatelessParticlesMapper(new CreateEmptyGroupActionToParticleGroupsMapper())
 			.addStatefulParticlesMapper(new MergeStatefulActionToParticleGroupsMapper(new TransferTokensToParticleGroupsMapper()))
