@@ -1,11 +1,11 @@
 package com.radixdlt.client.core.network.bootstrap;
 
-import com.radixdlt.client.core.network.HttpClients;
 import com.radixdlt.client.core.network.RadixNode;
 import io.reactivex.Single;
 import java.io.IOException;
 import okhttp3.Call;
 import okhttp3.Callback;
+import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
@@ -17,10 +17,12 @@ import okhttp3.ResponseBody;
 public final class NodeFinder {
 	private final String nodeFinderUrl;
 	private final int port;
+	private final OkHttpClient client;
 
 	public NodeFinder(String url, int port) {
 		this.nodeFinderUrl = url;
 		this.port = port;
+		this.client = new OkHttpClient();
 	}
 
 	public Single<RadixNode> getSeed() {
@@ -28,7 +30,7 @@ public final class NodeFinder {
 				Request request = new Request.Builder()
 					.url(this.nodeFinderUrl)
 					.build();
-				Call call = HttpClients.getSslAllTrustingClient().newCall(request);
+				Call call = client.newCall(request);
 				emitter.setCancellable(call::cancel);
 				call.enqueue(new Callback() {
 					@Override
