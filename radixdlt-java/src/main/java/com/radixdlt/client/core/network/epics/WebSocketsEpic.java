@@ -63,7 +63,7 @@ public final class WebSocketsEpic implements RadixNetworkEpic {
 					return curClient;
 				}
 				newClient = new WebSocketClient(
-					listener -> HttpClients.getSslAllTrustingClient().newWebSocket(node.getLocation(), listener)
+					listener -> HttpClients.getSslAllTrustingClient().newWebSocket(node.getWebSocketEndpoint(), listener)
 				);
 				webSockets.put(node, newClient);
 			}
