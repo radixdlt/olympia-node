@@ -141,11 +141,11 @@ public class RadixApplicationAPITest {
 				.isInstanceOf(NullPointerException.class);
 
 		RadixApplicationAPI api = createMockedAPIWhichAlwaysSucceeds();
-		assertThatThrownBy(() -> api.getMessages(null))
+		assertThatThrownBy(() -> api.observeMessages(null))
 				.isInstanceOf(NullPointerException.class);
-		assertThatThrownBy(() -> api.getTokenTransfers(null))
+		assertThatThrownBy(() -> api.observeTokenTransfers(null))
 				.isInstanceOf(NullPointerException.class);
-		assertThatThrownBy(() -> api.getBalance(null, null))
+		assertThatThrownBy(() -> api.observeBalance(null, null))
 				.isInstanceOf(NullPointerException.class);
 	}
 
@@ -217,7 +217,7 @@ public class RadixApplicationAPITest {
 			.addAtomMapper(new AtomToDecryptedMessageMapper())
 			.build();
 		TestObserver<DecryptedMessage> observer = TestObserver.create();
-		api.getMessages(address).subscribe(observer);
+		api.observeMessages(address).subscribe(observer);
 		observer.assertValueCount(0);
 		observer.assertComplete();
 		observer.assertNoErrors();
@@ -250,7 +250,7 @@ public class RadixApplicationAPITest {
 		TestObserver<BigDecimal> observer = TestObserver.create();
 		RRI token = mock(RRI.class);
 
-		api.getBalance(address, token).subscribe(observer);
+		api.observeBalance(address, token).subscribe(observer);
 		observer.awaitCount(1);
 		observer.assertValue(amount -> amount.compareTo(BigDecimal.ZERO) == 0);
 	}

@@ -23,8 +23,7 @@ public class MessagesExample {
 		System.out.println("My public key: " + api.getMyPublicKey());
 
 		// Print out all past and future messages
-		api.getMessages()
-			.subscribe(System.out::println);
+		api.observeMessages().subscribe(System.out::println);
 
 		// Send a message to an address
 		RadixAddress toAddress = RadixAddress.from("JEbhKQzBn4qJzWJFBbaPioA2GTeaQhuUjYWkanTE6N8VvvPpvM8");
