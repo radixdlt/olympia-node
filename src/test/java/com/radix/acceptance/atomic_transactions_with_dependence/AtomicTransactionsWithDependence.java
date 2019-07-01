@@ -108,7 +108,7 @@ public class AtomicTransactionsWithDependence {
 		this.properties.put(SYMBOL, "TEST0");
 		createToken(CreateTokenAction.TokenSupplyType.MUTABLE, api);
 		i_can_observe_atom_being_accepted(1);
-		TimeUnit.SECONDS.sleep(3);
+		TimeUnit.SECONDS.sleep(5);
 		this.observers.clear();
 
 		RadixIdentity toIdentity = RadixIdentities.createNew();
@@ -126,9 +126,6 @@ public class AtomicTransactionsWithDependence {
 
 	@When("^I submit a particle group spending a consumable that was created in same group$")
 	public void iSubmitAParticleGroupSpendingAConsumableThatWasCreatedInSameGroup() {
-
-
-
 		mintAndTransferTokensWith(new MintAndTransferTokensActionMapper((mintTransition, transferTransition) -> {
 
 			ParticleGroupBuilder groupBuilder = ParticleGroup.builder();

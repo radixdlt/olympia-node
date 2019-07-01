@@ -155,19 +155,11 @@ public final class DoubleSpendTestRunner {
 			.map(Result::toCompletable)
 			.forEach(Completable::blockingAwait);
 
-		// Wait for network to sync
-		// TODO: implement faster mechanism for this
-		try {
-			TimeUnit.SECONDS.sleep(5);
-		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
-		}
-
-		// Retrieve two nodes in the network
+		// Wait for network to sync while retrieving two nodes in the network
 		List<RadixNode> nodes = api.getNetworkState()
 			.flatMapIterable(RadixNetworkState::getNodes)
 			.distinct()
-			.take(5, TimeUnit.SECONDS)
+			.take(10, TimeUnit.SECONDS)
 			.toList()
 			.blockingGet();
 		assumeTrue(nodes.size() >= 2);
