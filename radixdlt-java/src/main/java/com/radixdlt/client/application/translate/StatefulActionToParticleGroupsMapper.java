@@ -11,7 +11,7 @@ import java.util.stream.Stream;
  * to construct an atom given a context requirement which this interface describes
  * via requiredState().
  */
-public interface StatefulActionToParticleGroupsMapper {
+public interface StatefulActionToParticleGroupsMapper<T extends Action> {
 	/**
 	 * Retrieves the necessary application state to be used in creating new particles
 	 * given a high level action. The returned Observable describes the shardable and
@@ -20,7 +20,7 @@ public interface StatefulActionToParticleGroupsMapper {
 	 * @param action the action to get the required context about
 	 * @return required contexts required to create spun particles for the action
 	 */
-	Set<ShardedParticleStateId> requiredState(Action action);
+	Set<ShardedParticleStateId> requiredState(T action);
 
 	/**
 	 * Creates new particle groups to be added to an atom given a high level
@@ -30,5 +30,5 @@ public interface StatefulActionToParticleGroupsMapper {
 	 * @param store particles as requested by requiredState()
 	 * @return Particle groups created given an action
 	 */
-	List<ParticleGroup> mapToParticleGroups(Action action, Stream<Particle> store);
+	List<ParticleGroup> mapToParticleGroups(T action, Stream<Particle> store);
 }

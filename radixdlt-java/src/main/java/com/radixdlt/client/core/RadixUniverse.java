@@ -39,7 +39,7 @@ import java.util.Set;
  * with a Radix Universe.
  * <p>
  * The configuration file of a Radix Universe defines the genesis atoms of the
- * distributed getLedger and distinguishes this universe from other universes.
+ * distributed ledger and distinguishes this universe from other universes.
  * (e.g. Public net vs Test net) It is shared amongst all participants of this
  * instance of the Radix getNetwork.
  * <p>
@@ -51,12 +51,6 @@ import java.util.Set;
  * be used to cache atoms locally.
  */
 public final class RadixUniverse {
-	public interface Ledger {
-		AtomPuller getAtomPuller();
-
-		AtomStore getAtomStore();
-	}
-
 	/**
 	 * Creates a universe with peer discovery through seed nodes
 	 *
@@ -132,7 +126,9 @@ public final class RadixUniverse {
 	 */
 	private final RadixUniverseConfig config;
 
-	private final Ledger ledger;
+	private final AtomPuller puller;
+
+	private final AtomStore atomStore;
 
 	private final RRI nativeToken;
 
@@ -145,22 +141,8 @@ public final class RadixUniverse {
 			.map(p -> ((TokenDefinitionParticle) p).getRRI())
 			.findFirst()
 			.orElseThrow(() -> new IllegalStateException("No Native Token defined in universe"));
-
-		// Hooking up the default configuration
-		// TODO: cleanup
-		this.ledger = new Ledger() {
-			private final AtomPuller atomPuller = new RadixAtomPuller(networkController);
-
-			@Override
-			public AtomPuller getAtomPuller() {
-				return atomPuller;
-			}
-
-			@Override
-			public AtomStore getAtomStore() {
-				return atomStore;
-			}
-		};
+		this.atomStore = atomStore;
+		this.puller = new RadixAtomPuller(networkController);
 	}
 
 	public RadixNetworkController getNetworkController() {
@@ -175,8 +157,12 @@ public final class RadixUniverse {
 		return config.getMagic();
 	}
 
-	public Ledger getLedger() {
-		return ledger;
+	public AtomPuller getAtomPuller() {
+		return puller;
+	}
+
+	public AtomStore getAtomStore() {
+		return atomStore;
 	}
 
 	/**

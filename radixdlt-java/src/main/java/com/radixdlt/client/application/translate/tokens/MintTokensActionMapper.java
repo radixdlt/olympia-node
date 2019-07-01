@@ -22,12 +22,11 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.radix.utils.UInt256;
 
-import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.particles.Particle;
 
-public class MintTokensActionMapper implements StatefulActionToParticleGroupsMapper {
+public class MintTokensActionMapper implements StatefulActionToParticleGroupsMapper<MintTokensAction> {
 	private final FungibleParticleTransitioner<UnallocatedTokensParticle, TransferrableTokensParticle> transitioner;
 
 	public MintTokensActionMapper() {
@@ -55,12 +54,7 @@ public class MintTokensActionMapper implements StatefulActionToParticleGroupsMap
 	}
 
 	@Override
-	public Set<ShardedParticleStateId> requiredState(Action action) {
-		if (!(action instanceof MintTokensAction)) {
-			return Collections.emptySet();
-		}
-
-		MintTokensAction mintTokensAction = (MintTokensAction) action;
+	public Set<ShardedParticleStateId> requiredState(MintTokensAction mintTokensAction) {
 		RadixAddress tokenDefinitionAddress = mintTokensAction.getTokenDefinitionReference().getAddress();
 
 		return ImmutableSet.of(
@@ -70,12 +64,7 @@ public class MintTokensActionMapper implements StatefulActionToParticleGroupsMap
 	}
 
 	@Override
-	public List<ParticleGroup> mapToParticleGroups(Action action, Stream<Particle> store) {
-		if (!(action instanceof MintTokensAction)) {
-			return Collections.emptyList();
-		}
-
-		MintTokensAction mintTokensAction = (MintTokensAction) action;
+	public List<ParticleGroup> mapToParticleGroups(MintTokensAction mintTokensAction, Stream<Particle> store) {
 		RRI tokenDefinition = mintTokensAction.getTokenDefinitionReference();
 
 		if (mintTokensAction.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
