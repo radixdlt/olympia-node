@@ -429,15 +429,6 @@ public class RadixApplicationAPI {
 	}
 
 	/**
-	 * Returns a hot observable with the latest token state of the native token
-	 *
-	 * @return a hot observable of latest state of the native token
-	 */
-	public Observable<TokenState> getNativeTokenClass() {
-		return getTokenDef(getNativeTokenRef());
-	}
-
-	/**
 	 * Returns a never ending stream of actions performed at a given address with the
 	 * given Atom Store. pull() must be called to continually retrieve the latest actions.
 	 *
@@ -446,7 +437,7 @@ public class RadixApplicationAPI {
 	 * @param <T> the Action class
 	 * @return a cold observable of the actions at the given address
 	 */
-	public <T> Observable<T> getActions(Class<T> actionClass, RadixAddress address) {
+	public <T> Observable<T> observeActions(Class<T> actionClass, RadixAddress address) {
 		final AtomToExecutedActionsMapper<T> mapper = this.getActionMapper(actionClass);
 		return universe.getAtomStore()
 			.getAtomObservations(address)
@@ -464,7 +455,7 @@ public class RadixApplicationAPI {
 	 * @param <T> the ApplicationState class
 	 * @return a hot observable of a state of the given address
 	 */
-	public <T extends ApplicationState> Observable<T> getState(Class<T> stateClass, RadixAddress address) {
+	public <T extends ApplicationState> Observable<T> observeState(Class<T> stateClass, RadixAddress address) {
 		final ParticleReducer<T> reducer = this.getStateReducer(stateClass);
 		return universe.getAtomStore().onSync(address)
 				.map(a ->
@@ -480,8 +471,8 @@ public class RadixApplicationAPI {
 	 * @param address the address of the account to check
 	 * @return a cold observable of the latest state of token definitions
 	 */
-	public Observable<TokenDefinitionsState> getTokenDefs(RadixAddress address) {
-		return getState(TokenDefinitionsState.class, address);
+	public Observable<TokenDefinitionsState> observeTokenDefs(RadixAddress address) {
+		return observeState(TokenDefinitionsState.class, address);
 	}
 
 	/**
@@ -490,8 +481,8 @@ public class RadixApplicationAPI {
 	 *
 	 * @return a cold observable of the latest state of token definitions
 	 */
-	public Observable<TokenDefinitionsState> getTokenDefs() {
-		return getTokenDefs(getMyAddress());
+	public Observable<TokenDefinitionsState> observeTokenDefs() {
+		return observeTokenDefs(getMyAddress());
 	}
 
 	/**
@@ -499,11 +490,22 @@ public class RadixApplicationAPI {
 	 *
 	 * @return a cold observable of the latest state of the token
 	 */
-	public Observable<TokenState> getTokenDef(RRI tokenRRI) {
-		return this.getTokenDefs(tokenRRI.getAddress())
+	public Observable<TokenState> observeTokenDef(RRI tokenRRI) {
+		return this.observeTokenDefs(tokenRRI.getAddress())
 			.flatMapMaybe(m -> Optional.ofNullable(m.getState().get(tokenRRI)).map(Maybe::just).orElse(Maybe.empty()));
 	}
 
+	/**
+	 * Retrieve the token state of the given rri
+	 * @return the token state of the rri
+	 */
+	public TokenState getTokenDef(RRI tokenRRI) {
+		final ParticleReducer<TokenDefinitionsState> reducer = this.getStateReducer(TokenDefinitionsState.class);
+		return universe.getAtomStore().getUpParticles(getMyAddress(), null)
+			.reduce(reducer.initialState(), reducer::reduce, reducer::combine)
+			.getState()
+			.get(tokenRRI);
+	}
 
 	/**
 	 * Returns a never ending stream of messages stored at the current address.
@@ -511,8 +513,8 @@ public class RadixApplicationAPI {
 	 *
 	 * @return a cold observable of the messages at the current address
 	 */
-	public Observable<DecryptedMessage> getMessages() {
-		return getMessages(this.getMyAddress());
+	public Observable<DecryptedMessage> observeMessages() {
+		return observeMessages(this.getMyAddress());
 	}
 
 	/**
@@ -522,9 +524,9 @@ public class RadixApplicationAPI {
 	 * @param address the address to retrieve the messages from
 	 * @return a cold observable of the messages at the given address
 	 */
-	public Observable<DecryptedMessage> getMessages(RadixAddress address) {
+	public Observable<DecryptedMessage> observeMessages(RadixAddress address) {
 		Objects.requireNonNull(address);
-		return getActions(DecryptedMessage.class, address);
+		return observeActions(DecryptedMessage.class, address);
 	}
 
 	public Result sendMessage(byte[] data, boolean encrypt) {
@@ -543,8 +545,8 @@ public class RadixApplicationAPI {
 	 *
 	 * @return a cold observable of the token transfers at the current address
 	 */
-	public Observable<TokenTransfer> getTokenTransfers() {
-		return getTokenTransfers(getMyAddress());
+	public Observable<TokenTransfer> observeTokenTransfers() {
+		return observeTokenTransfers(getMyAddress());
 	}
 
 	/**
@@ -554,9 +556,9 @@ public class RadixApplicationAPI {
 	 * @param address the address to retrieve the token transfers from
 	 * @return a cold observable of the token transfers at the given address
 	 */
-	public Observable<TokenTransfer> getTokenTransfers(RadixAddress address) {
+	public Observable<TokenTransfer> observeTokenTransfers(RadixAddress address) {
 		Objects.requireNonNull(address);
-		return getActions(TokenTransfer.class, address);
+		return observeActions(TokenTransfer.class, address);
 	}
 
 	/**
@@ -576,9 +578,9 @@ public class RadixApplicationAPI {
 	 *
 	 * @return a cold observable of the latest balances at an address
 	 */
-	public Observable<Map<RRI, BigDecimal>> getBalances(RadixAddress address) {
+	public Observable<Map<RRI, BigDecimal>> observeBalances(RadixAddress address) {
 		Objects.requireNonNull(address);
-		return getState(TokenBalanceState.class, address)
+		return observeState(TokenBalanceState.class, address)
 			.map(TokenBalanceState::getBalance);
 	}
 
@@ -588,8 +590,8 @@ public class RadixApplicationAPI {
 	 *
 	 * @return a cold observable of the latest balances at the current address
 	 */
-	public Observable<BigDecimal> getBalance(RRI tokenRRI) {
-		return getBalance(getMyAddress(), tokenRRI);
+	public Observable<BigDecimal> observeBalance(RRI tokenRRI) {
+		return observeBalance(getMyAddress(), tokenRRI);
 	}
 
 	/**
@@ -598,10 +600,10 @@ public class RadixApplicationAPI {
 	 *
 	 * @return a cold observable of the latest balance of a token at a given address
 	 */
-	public Observable<BigDecimal> getBalance(RadixAddress address, RRI token) {
+	public Observable<BigDecimal> observeBalance(RadixAddress address, RRI token) {
 		Objects.requireNonNull(token);
 
-		return getBalances(address)
+		return observeBalances(address)
 			.map(balances -> Optional.ofNullable(balances.get(token)).orElse(BigDecimal.ZERO));
 	}
 

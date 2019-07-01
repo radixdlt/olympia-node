@@ -29,14 +29,19 @@ public class TokensExample {
 		System.out.println("My address: " + api.getMyAddress());
 		System.out.println("My public key: " + api.getMyPublicKey());
 
-		// Print out all past and future transactions
-		api.getTokenTransfers()
+		// Create a unique identifier for the token
+		RRI tokenRRI = RRI.of(api.getMyAddress(), "JOSH");
+
+		// Observe all past and future transactions
+		api.observeTokenTransfers()
 			.subscribe(System.out::println);
 
-		// Create and mint token atomic transaction
-		RRI tokenRRI = RRI.of(api.getMyAddress(), "JOSH");
+		// Observe current and future total balance
+		api.observeBalance(tokenRRI)
+			.subscribe(balance -> System.out.println("My Balance: " + balance));
+
+		// Create token and mint
 		Transaction transaction = api.createTransaction();
-		// Create
 		transaction.stage(CreateTokenAction.create(
 			tokenRRI,
 			"Joshy Token",
@@ -45,18 +50,12 @@ public class TokensExample {
 			TokenUnitConversions.getMinimumGranularity(),
 			TokenSupplyType.MUTABLE
 		));
-		// Mint
 		transaction.stage(MintTokensAction.create(tokenRRI, api.getMyAddress(), BigDecimal.valueOf(1000000.0)));
 		Result createTokenAndMint = transaction.commitAndPush();
 		createTokenAndMint.toObservable().blockingSubscribe(System.out::println);
 
 		// Get token definition
-		api.getTokenDef(tokenRRI)
-			.subscribe(System.out::println);
-
-		// Subscribe to current and future total balance
-		api.getBalance(tokenRRI)
-			.subscribe(balance -> System.out.println("My Balance: " + balance));
+		System.out.println(api.getTokenDef(tokenRRI));
 
 		// Mint tokens
 		Result mint = api.mintTokens(tokenRRI, BigDecimal.valueOf(10000.0));
