@@ -14,8 +14,15 @@ import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
+import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
+import com.radixdlt.client.core.network.actions.SubmitAtomSendAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.reactivex.observers.TestObserver;
+
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.junit.Before;
 import org.junit.Test;
@@ -48,10 +55,17 @@ public class TranslucentAtomTest {
 		testObserver.awaitTerminalEvent(5, TimeUnit.SECONDS);
 		testObserver.assertNoErrors();
 		testObserver.assertComplete();
-		testObserver.assertValueAt(3, action -> {
-			SubmitAtomStatusAction res = (SubmitAtomStatusAction) action;
-			return res.getStatusNotification().getAtomStatus() == AtomStatus.EVICTED_FAILED_CM_VERIFICATION;
-		});
+		testObserver.assertNoTimeout();
+		List<SubmitAtomAction> events = testObserver.values();
+		assertThat(events).extracting(o -> o.getClass().toString())
+			.startsWith(
+				SubmitAtomRequestAction.class.toString(),
+				SubmitAtomSendAction.class.toString()
+			);
+		assertThat(events).last()
+			.isInstanceOf(SubmitAtomStatusAction.class)
+			.extracting(o -> SubmitAtomStatusAction.class.cast(o).getStatusNotification().getAtomStatus())
+			.isEqualTo(AtomStatus.EVICTED_FAILED_CM_VERIFICATION);
 	}
 
 	@Test
@@ -71,9 +85,16 @@ public class TranslucentAtomTest {
 		testObserver.awaitTerminalEvent(30, TimeUnit.SECONDS);
 		testObserver.assertNoErrors();
 		testObserver.assertComplete();
-		testObserver.assertValueAt(3, action -> {
-			SubmitAtomStatusAction res = (SubmitAtomStatusAction) action;
-			return res.getStatusNotification().getAtomStatus() == AtomStatus.EVICTED_FAILED_CM_VERIFICATION;
-		});
+		testObserver.assertNoTimeout();
+		List<SubmitAtomAction> events = testObserver.values();
+		assertThat(events).extracting(o -> o.getClass().toString())
+			.startsWith(
+				SubmitAtomRequestAction.class.toString(),
+				SubmitAtomSendAction.class.toString()
+			);
+		assertThat(events).last()
+			.isInstanceOf(SubmitAtomStatusAction.class)
+			.extracting(o -> SubmitAtomStatusAction.class.cast(o).getStatusNotification().getAtomStatus())
+			.isEqualTo(AtomStatus.EVICTED_FAILED_CM_VERIFICATION);
 	}
 }

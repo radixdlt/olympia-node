@@ -10,6 +10,7 @@ import com.radixdlt.client.core.network.actions.SubmitAtomSendAction;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.radix.utils.UInt256;
 
@@ -117,9 +118,12 @@ public class CreateSingleIssuanceTokenClass {
 	}
 
 	@When("^I observe the atom being accepted$")
-	public void i_observe_the_atom_being_accepted() {
+	public void i_observe_the_atom_being_accepted() throws InterruptedException {
 		// "the atom" = most recent atom
 		i_can_observe_atom_being_accepted(observers.size());
+
+		// Wait for propagation
+		TimeUnit.SECONDS.sleep(5);
 	}
 
 	@Then("^I can observe the atom being accepted$")
