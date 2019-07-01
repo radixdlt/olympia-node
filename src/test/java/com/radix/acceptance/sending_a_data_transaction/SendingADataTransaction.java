@@ -128,17 +128,17 @@ public class SendingADataTransaction {
 
 	@When("^I submit a message with \"([^\"]*)\" to another client claiming to be another client$")
 	public void i_submit_a_message_with_to_another_client_claiming_to_be_another_client(String message) {
-		createAtomic(this.api, SendMessageAction.create(message.getBytes(), this.otherApi.getAddress(), this.otherApi.getAddress(), false));
+		createAtomic(this.api, SendMessageAction.create(this.otherApi.getAddress(), this.otherApi.getAddress(), message.getBytes(), false));
 	}
 
 	@When("^I submit a message with \"([^\"]*)\" to another client$")
 	public void i_submit_a_message_with_to_another_client(String message) {
-		createAtomic(this.api, SendMessageAction.create(message.getBytes(), this.api.getAddress(), this.otherApi.getAddress(), false));
+		createAtomic(this.api, SendMessageAction.create(this.api.getAddress(), this.otherApi.getAddress(), message.getBytes(), false));
 	}
 
 	@When("^I submit a message with \"([^\"]*)\" to myself$")
 	public void i_submit_a_message_with_to_myself(String message) {
-		createAtomic(this.api, SendMessageAction.create(message.getBytes(), this.api.getAddress(), this.api.getAddress(), false));
+		createAtomic(this.api, SendMessageAction.create(this.api.getAddress(), this.api.getAddress(), message.getBytes(), false));
 	}
 
 	@When("^I can observe a message with \"([^\"]*)\"$")

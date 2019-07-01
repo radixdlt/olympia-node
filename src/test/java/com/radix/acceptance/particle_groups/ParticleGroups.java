@@ -184,7 +184,7 @@ public class ParticleGroups {
 
 	@When("^I submit an arbitrary atom with an empty particle group$")
 	public void i_submit_an_arbitrary_atom_with_an_empty_particle_group() {
-		createAtomic(SendMessageAction.create("Hello!".getBytes(), this.api.getAddress(), this.api.getAddress(), false),
+		createAtomic(SendMessageAction.create(this.api.getAddress(), this.api.getAddress(), "Hello!".getBytes(), false),
 			new CreateEmptyGroupAction());
 	}
 

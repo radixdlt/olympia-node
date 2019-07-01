@@ -150,7 +150,7 @@ public class UnsubscribeAccount {
 		this.jsonRpcClient.observeAtomStatusNotifications(subscriberId).subscribe(atomSubmission);
 
 		Transaction transaction = this.api.createTransaction();
-		transaction.stage(SendMessageAction.create(new byte[]{1}, this.api.getAddress(), this.api.getAddress(), false));
+		transaction.stage(SendMessageAction.create(this.api.getAddress(), this.api.getAddress(), new byte[]{1}, false));
 		UnsignedAtom unsignedAtom = transaction.buildAtom();
 		this.atom = this.identity.sign(unsignedAtom).blockingGet();
 
@@ -170,7 +170,7 @@ public class UnsubscribeAccount {
 		this.jsonRpcClient.observeAtomStatusNotifications(subscriberId).subscribe(atomSubmission);
 
 		Transaction transaction = this.api.createTransaction();
-		transaction.stage(SendMessageAction.create(new byte[]{1}, this.api.getAddress(), this.api.getAddress(), false));
+		transaction.stage(SendMessageAction.create(this.api.getAddress(), this.api.getAddress(), new byte[]{1}, false));
 		UnsignedAtom unsignedAtom = transaction.buildAtom();
 		this.otherAtom = this.identity.sign(unsignedAtom).blockingGet();
 
@@ -189,7 +189,7 @@ public class UnsubscribeAccount {
 		this.jsonRpcClient.observeAtomStatusNotifications(subscriberId).subscribe(atomSubmission);
 
 		Transaction transaction = this.api.createTransaction();
-		transaction.stage(SendMessageAction.create(new byte[]{3}, this.api.getAddress(), this.otherAccount, false));
+		transaction.stage(SendMessageAction.create(this.api.getAddress(), this.otherAccount, new byte[]{3}, false));
 		UnsignedAtom unsignedAtom = transaction.buildAtom();
 		this.atom = this.identity.sign(unsignedAtom).blockingGet();
 

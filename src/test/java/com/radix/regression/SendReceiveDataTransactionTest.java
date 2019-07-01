@@ -33,7 +33,7 @@ public class SendReceiveDataTransactionTest {
 
 		// When owner sends message from another account
 		RadixAddress sourceAddress = api.getAddress(RadixIdentities.createNew().getPublicKey());
-		Action sendMessageAction = SendMessageAction.create(new byte[] {0}, sourceAddress, api.getAddress(), false);
+		Action sendMessageAction = SendMessageAction.create(sourceAddress, api.getAddress(), new byte[] {0}, false);
 		Completable sendMessageStatus = api.execute(sendMessageAction).toCompletable();
 
 		// Then client should be notified of error
@@ -66,7 +66,7 @@ public class SendReceiveDataTransactionTest {
 
 		// When one sends a message to the other
 		byte[] message = new byte[] {1, 2, 3, 4};
-		Completable sendMessageStatus = api1.sendMessage(message, false, api2.getAddress()).toCompletable();
+		Completable sendMessageStatus = api1.sendMessage(api2.getAddress(), message, false).toCompletable();
 
 		// Then both owners should receive the message
 		sendMessageStatus.blockingAwait();
