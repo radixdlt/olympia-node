@@ -73,7 +73,7 @@ public class BurnTokensActionMapper implements StatefulActionToParticleGroupsMap
 
 	@Override
 	public List<ParticleGroup> mapToParticleGroups(BurnTokensAction burnTokensAction, Stream<Particle> store) throws StageActionException {
-		final RRI tokenRef = burnTokensAction.getTokenDefinitionReference();
+		final RRI tokenRef = burnTokensAction.getRRI();
 		final BigDecimal burnAmount = burnTokensAction.getAmount();
 
 		final FungibleParticleTransition<TransferrableTokensParticle, UnallocatedTokensParticle> transition;

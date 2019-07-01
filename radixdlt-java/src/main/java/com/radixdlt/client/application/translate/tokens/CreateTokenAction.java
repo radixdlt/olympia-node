@@ -13,14 +13,14 @@ public class CreateTokenAction implements Action {
 	}
 
 	private final String name;
-	private final RRI tokenRRI;
+	private final RRI rri;
 	private final String description;
 	private final BigDecimal initialSupply;
 	private final BigDecimal granularity;
 	private final TokenSupplyType tokenSupplyType;
 
 	private CreateTokenAction(
-		RRI tokenRRI,
+		RRI rri,
 		String name,
 		String description,
 		BigDecimal initialSupply,
@@ -39,7 +39,7 @@ public class CreateTokenAction implements Action {
 		}
 
 		this.name = Objects.requireNonNull(name);
-		this.tokenRRI = Objects.requireNonNull(tokenRRI);
+		this.rri = Objects.requireNonNull(rri);
 		this.description = description;
 		this.initialSupply = initialSupply;
 		this.granularity = Objects.requireNonNull(granularity);
@@ -57,8 +57,8 @@ public class CreateTokenAction implements Action {
 		return new CreateTokenAction(tokenRRI, name, description, initialSupply, granularity, tokenSupplyType);
 	}
 
-	public RRI getTokenRRI() {
-		return tokenRRI;
+	public RRI getRRI() {
+		return rri;
 	}
 
 	public String getName() {
@@ -79,5 +79,10 @@ public class CreateTokenAction implements Action {
 
 	public TokenSupplyType getTokenSupplyType() {
 		return tokenSupplyType;
+	}
+
+	@Override
+	public String toString() {
+		return "CREATE TOKEN " + rri + " " + tokenSupplyType;
 	}
 }

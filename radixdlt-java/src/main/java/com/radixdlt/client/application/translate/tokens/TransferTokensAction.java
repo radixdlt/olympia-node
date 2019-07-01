@@ -11,16 +11,16 @@ import java.util.Map;
 public class TransferTokensAction implements Action {
 	private final RadixAddress from;
 	private final RadixAddress to;
-	private final RRI tokenDefinitionReference;
+	private final RRI rri;
 	private final Map<String, Object> metaData;
 	private final BigDecimal amount;
 	private final byte[] attachment;
 
 	private TransferTokensAction(
+		RRI rri,
 		RadixAddress from,
 		RadixAddress to,
 		BigDecimal amount,
-		RRI tokenDefinitionReference,
 		byte[] attachment,
 		Map<String, Object> metaData
 	) {
@@ -30,56 +30,56 @@ public class TransferTokensAction implements Action {
 
 		this.from = from;
 		this.to = to;
-		this.tokenDefinitionReference = tokenDefinitionReference;
+		this.rri = rri;
 		this.amount = amount;
 		this.attachment = attachment;
 		this.metaData = metaData;
 	}
 
 	public static TransferTokensAction create(
+		RRI rri,
 		RadixAddress from,
 		RadixAddress to,
-		BigDecimal amount,
-		RRI tokenDefinitionReference
+		BigDecimal amount
 	) {
-		return new TransferTokensAction(from, to, amount, tokenDefinitionReference, null, Collections.emptyMap());
+		return new TransferTokensAction(rri, from, to, amount, null, Collections.emptyMap());
 	}
 
 	public static TransferTokensAction create(
+		RRI rri,
 		RadixAddress from,
 		RadixAddress to,
 		BigDecimal amount,
-		RRI tokenDefinitionReference,
 		byte[] attachment
 	) {
-		return new TransferTokensAction(from, to, amount, tokenDefinitionReference, attachment, Collections.emptyMap());
+		return new TransferTokensAction(rri, from, to, amount, attachment, Collections.emptyMap());
 	}
 
 	public static TransferTokensAction create(
+		RRI rri,
 		RadixAddress from,
 		RadixAddress to,
 		BigDecimal amount,
-		RRI tokenDefinitionReference,
 		Long timestamp
 	) {
 		Map<String, Object> metaData = new HashMap<>();
 		metaData.put("timestamp", timestamp);
 
-		return new TransferTokensAction(from, to, amount, tokenDefinitionReference, null, metaData);
+		return new TransferTokensAction(rri, from, to, amount, null, metaData);
 	}
 
 	public static TransferTokensAction create(
+		RRI rri,
 		RadixAddress from,
 		RadixAddress to,
 		BigDecimal amount,
-		RRI tokenDefinitionReference,
 		byte[] attachment,
 		Long timestamp
 	) {
 		Map<String, Object> metaData = new HashMap<>();
 		metaData.put("timestamp", timestamp);
 
-		return new TransferTokensAction(from, to, amount, tokenDefinitionReference, attachment, metaData);
+		return new TransferTokensAction(rri, from, to, amount, attachment, metaData);
 	}
 
 	public byte[] getAttachment() {
@@ -94,8 +94,8 @@ public class TransferTokensAction implements Action {
 		return to;
 	}
 
-	public RRI getTokenDefRef() {
-		return tokenDefinitionReference;
+	public RRI getRRI() {
+		return rri;
 	}
 
 	public BigDecimal getAmount() {
@@ -108,8 +108,6 @@ public class TransferTokensAction implements Action {
 
 	@Override
 	public String toString() {
-		Long timestamp = (Long) metaData.get("timestamp");
-		return timestamp + " " + from + " -> " + to + " " + amount + " "  + tokenDefinitionReference.getName()
-			+ (attachment == null ? "" : " " + attachment);
+		return "TRANSFER TOKEN " + amount + " " + rri.getName() + " FROM " + from + " TO " + to;
 	}
 }

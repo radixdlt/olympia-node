@@ -27,7 +27,7 @@ public class CreateTokenToParticleGroupsMapperTest {
 		when(address.getUID()).thenReturn(mock(EUID.class));
 		ECPublicKey key = mock(ECPublicKey.class);
 		when(address.getPublicKey()).thenReturn(key);
-		when(tokenCreation.getTokenRRI()).thenReturn(RRI.of(address, "ISO"));
+		when(tokenCreation.getRRI()).thenReturn(RRI.of(address, "ISO"));
 		when(tokenCreation.getInitialSupply()).thenReturn(TokenUnitConversions.getMinimumGranularity());
 		when(tokenCreation.getGranularity()).thenReturn(TokenUnitConversions.getMinimumGranularity());
 		when(tokenCreation.getTokenSupplyType()).thenReturn(TokenSupplyType.MUTABLE);

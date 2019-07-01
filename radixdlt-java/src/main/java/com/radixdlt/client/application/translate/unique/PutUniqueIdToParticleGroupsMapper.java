@@ -12,7 +12,7 @@ import java.util.List;
 public class PutUniqueIdToParticleGroupsMapper implements StatelessActionToParticleGroupsMapper<PutUniqueIdAction> {
 	@Override
 	public List<ParticleGroup> mapToParticleGroups(PutUniqueIdAction uniqueIdAction) {
-		UniqueParticle uniqueParticle = new UniqueParticle(uniqueIdAction.getAddress(), uniqueIdAction.getUnique());
+		UniqueParticle uniqueParticle = new UniqueParticle(uniqueIdAction.getRRI().getAddress(), uniqueIdAction.getRRI().getName());
 		RRIParticle rriParticle = new RRIParticle(uniqueParticle.getRRI());
 		return Collections.singletonList(
 			ParticleGroup.of(

@@ -1,38 +1,28 @@
 package com.radixdlt.client.application.translate.unique;
 
 import com.radixdlt.client.application.translate.Action;
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.client.core.atoms.particles.RRI;
 import java.util.Objects;
 
 public class PutUniqueIdAction implements Action {
+	private final RRI rri;
 
-	/**
-	 * Address for uniqueness constraint
-	 */
-	private final RadixAddress address;
+	private PutUniqueIdAction(RRI rri) {
+		Objects.requireNonNull(rri);
 
-	/**
-	 * Unique identifier
-	 */
-	private final String unique;
-
-	public PutUniqueIdAction(RadixAddress address, String unique) {
-		Objects.requireNonNull(address);
-		Objects.requireNonNull(unique);
-
-		this.address = address;
-		this.unique = unique;
+		this.rri = rri;
 	}
 
-	public static PutUniqueIdAction create(RadixAddress address, String unique) {
-		return new PutUniqueIdAction(address, unique);
+	public static PutUniqueIdAction create(RRI rri) {
+		return new PutUniqueIdAction(rri);
 	}
 
-	public RadixAddress getAddress() {
-		return address;
+	public RRI getRRI() {
+		return rri;
 	}
 
-	public String getUnique() {
-		return unique;
+	@Override
+	public String toString() {
+		return "PUT UNIQUE " + rri;
 	}
 }
