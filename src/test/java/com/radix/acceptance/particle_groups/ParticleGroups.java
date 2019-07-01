@@ -198,9 +198,9 @@ public class ParticleGroups {
 
 		Transaction transaction = this.api.createTransaction();
 		for (Action action : actions) {
-			transaction.execute(action);
+			transaction.stage(action);
 		}
-		transaction.commit()
+		transaction.commitAndPush()
 			.toObservable()
 			.doOnNext(System.out::println)
 			.subscribe(observer);

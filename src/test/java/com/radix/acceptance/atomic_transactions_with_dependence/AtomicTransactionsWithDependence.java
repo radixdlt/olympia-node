@@ -115,9 +115,9 @@ public class AtomicTransactionsWithDependence {
 		RadixAddress toAddress = api.getAddressFromKey(toIdentity.getPublicKey());
 		TestObserver<Object> observer = new TestObserver<>();
 		Transaction transaction = api.createTransaction();
-		transaction.execute(MintTokensAction.create(RRI.of(api.getMyAddress(), "TEST0"), BigDecimal.valueOf(7)));
-		transaction.execute(TransferTokensAction.create(api.getMyAddress(), toAddress, BigDecimal.valueOf(7), RRI.of(api.getMyAddress(), "TEST0")));
-		transaction.commit()
+		transaction.stage(MintTokensAction.create(RRI.of(api.getMyAddress(), "TEST0"), BigDecimal.valueOf(7)));
+		transaction.stage(TransferTokensAction.create(api.getMyAddress(), toAddress, BigDecimal.valueOf(7), RRI.of(api.getMyAddress(), "TEST0")));
+		transaction.commitAndPush()
 			.toObservable()
 			.doOnNext(System.out::println)
 			.subscribe(observer);

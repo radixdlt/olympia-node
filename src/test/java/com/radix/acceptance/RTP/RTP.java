@@ -7,6 +7,7 @@ import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.network.HttpClients;
+import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixNode;
 import java.math.BigDecimal;
 import java.util.List;
@@ -55,7 +56,7 @@ public class RTP {
 		api.discoverNodes();
 		nodes = api.getNetworkState()
 			.doOnNext(System.out::println)
-			.flatMapIterable(state -> state.getNodes().keySet())
+			.flatMapIterable(RadixNetworkState::getNodes)
 			.distinct()
 			.filter(n -> {
 				Call call = HttpClients.getSslAllTrustingClient().newCall(n.getHttpEndpoint("/api/atoms?uid=1234567890abcdef1234567890abcdef"));
@@ -77,8 +78,8 @@ public class RTP {
 		TestObserver<SubmitAtomAction> observer = new TestObserver<>();
 		RRI tokenRRI = RRI.of(api.getMyAddress(), "TOKEN");
 		Transaction tx = api.createTransaction();
-		tx.execute(CreateTokenAction.create(tokenRRI, "Token", "Token", BigDecimal.ZERO, BigDecimal.ONE, TokenSupplyType.MUTABLE));
-		tx.commit(nodes.get(0))
+		tx.stage(CreateTokenAction.create(tokenRRI, "Token", "Token", BigDecimal.ZERO, BigDecimal.ONE, TokenSupplyType.MUTABLE));
+		tx.commitAndPush(nodes.get(0))
 			.toObservable()
 			.subscribe(observer);
 		observer.awaitTerminalEvent();
@@ -141,8 +142,8 @@ public class RTP {
 
     	RRI tokenRRI = RRI.of(api.getMyAddress(), "HI");
 		Transaction tx = api.createTransaction();
-		tx.execute(CreateTokenAction.create(tokenRRI, "Token", "Token", BigDecimal.ZERO, BigDecimal.ONE, TokenSupplyType.MUTABLE));
-		Result r = tx.commit(nodes.get(0));
+		tx.stage(CreateTokenAction.create(tokenRRI, "Token", "Token", BigDecimal.ZERO, BigDecimal.ONE, TokenSupplyType.MUTABLE));
+		Result r = tx.commitAndPush(nodes.get(0));
 		Atom atom = r.getAtom();
 		r.blockUntilComplete();
 

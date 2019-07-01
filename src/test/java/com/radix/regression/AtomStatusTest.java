@@ -2,6 +2,7 @@ package com.radix.regression;
 
 import com.radix.TestEnv;
 import com.radixdlt.client.application.RadixApplicationAPI;
+import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.translate.unique.PutUniqueIdAction;
 import com.radixdlt.client.core.atoms.Atom;
@@ -28,7 +29,7 @@ public class AtomStatusTest {
 		this.api.discoverNodes();
 		RadixNode node = this.api.getNetworkState()
 			.filter(state -> !state.getNodes().isEmpty())
-			.map(state -> state.getNodes().keySet().iterator().next())
+			.map(state -> state.getNodes().iterator().next())
 			.blockingFirst();
 
 		WebSocketClient webSocketClient = new WebSocketClient(listener ->
@@ -62,8 +63,9 @@ public class AtomStatusTest {
 
 	@Test
 	public void given_a_subscription_to_status_notifications__when_the_atom_is_stored__a_store_notification_should_be_sent() {
-		Atom atom = this.api.buildAtom(new PutUniqueIdAction(api.getMyAddress(), "test"))
-			.flatMap(this.api.getMyIdentity()::sign)
+		Transaction transaction = api.createTransaction();
+		transaction.stage(new PutUniqueIdAction(api.getMyAddress(), "test"));
+		Atom atom = this.api.getMyIdentity().sign(transaction.buildAtom())
 			.blockingGet();
 		AID aid = atom.getAid();
 

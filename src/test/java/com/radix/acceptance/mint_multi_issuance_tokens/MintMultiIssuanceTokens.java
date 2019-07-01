@@ -2,6 +2,7 @@ package com.radix.acceptance.mint_multi_issuance_tokens;
 
 import com.google.common.collect.ImmutableSet;
 import com.radix.TestEnv;
+import com.radixdlt.client.application.translate.StageActionException;
 import com.radixdlt.client.application.translate.tokens.TokenOverMintException;
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
 import com.radixdlt.client.core.atoms.AtomStatus;
@@ -71,6 +72,8 @@ public class MintMultiIssuanceTokens {
 	);
 	private final List<TestObserver<SubmitAtomAction>> observers = Lists.newArrayList();
 	private final List<Disposable> disposables = Lists.newArrayList();
+	private final List<StageActionException> actionExceptions = Lists.newArrayList();
+	private final List<Exception> otherExceptions = Lists.newArrayList();
 
 	@After
 	public void cleanUp() {
@@ -165,17 +168,19 @@ public class MintMultiIssuanceTokens {
 	@Then("^the client should be notified that the action failed because cannot mint with (\\d+) tokens$")
 	public void the_client_should_be_notified_that_the_action_failed_because_cannot_mint_with_tokens(int count) throws Throwable {
 		assertEquals(0, count); // Only thing we check for here
-		awaitAtomException(IllegalArgumentException.class, "Mint amount must be greater than 0.");
+		assertThat(otherExceptions.get(0)).isInstanceOf(IllegalArgumentException.class);
+		assertThat(otherExceptions.get(0).getMessage()).contains("Mint amount must be greater than 0.");
 	}
 
 	@Then("^the client should be notified that the action failed because it reached the max allowed number of tokens of 2\\^256 - 1$")
 	public void the_client_should_be_notified_that_the_action_failed_because_it_reached_the_max_allowed_number_of_tokens_of() throws Throwable {
-		awaitAtomException(TokenOverMintException.class, "would overflow maximum");
+		assertThat(actionExceptions.get(0)).isInstanceOf(TokenOverMintException.class);
+		assertThat(actionExceptions.get(0).getMessage()).contains("would overflow maximum");
 	}
 
 	@Then("^the client should be notified that the action failed because \"([^\"]*)\" does not exist$")
 	public void the_client_should_be_notified_that_the_action_failed_because_does_not_exist(String arg1) throws Throwable {
-		awaitAtomException(UnknownTokenException.class, "Unknown token");
+		assertThat(actionExceptions.get(0)).isInstanceOf(UnknownTokenException.class);
 	}
 
 	@Then("^the client should be notified that the action failed because the client does not have permission to mint those tokens$")
@@ -195,6 +200,8 @@ public class MintMultiIssuanceTokens {
 		// Reset data
 		this.properties.clear();
 		this.observers.clear();
+		this.actionExceptions.clear();
+		this.otherExceptions.clear();
 
 		this.properties.put(ADDRESS, api.getMyAddress().toString());
 	}
@@ -222,11 +229,15 @@ public class MintMultiIssuanceTokens {
 		RRI tokenClass = RRI.of(address, symbol);
 		MintTokensAction mta = MintTokensAction.create(tokenClass, amount);
 		TestObserver<SubmitAtomAction> observer = new TestObserver<>();
-		api.execute(mta)
-			.toObservable()
-			.doOnNext(System.out::println)
-			.subscribe(observer);
-		this.observers.add(observer);
+		api.pullOnce(address).blockingAwait();
+		try {
+			api.execute(mta).toObservable().doOnNext(System.out::println).subscribe(observer);
+			this.observers.add(observer);
+		} catch (StageActionException e) {
+			actionExceptions.add(e);
+		} catch (Exception e) {
+			otherExceptions.add(e);
+		}
 	}
 
 	private void awaitAtomStatus(AtomStatus... finalStates) {
@@ -277,16 +288,5 @@ public class MintMultiIssuanceTokens {
 				assertThat(action.getStatusNotification().getData().getAsJsonObject().has("message")).isTrue();
 				assertThat(action.getStatusNotification().getData().getAsJsonObject().get("message").getAsString()).contains(partMessage);
 			});
-	}
-
-	private void awaitAtomException(Class<? extends Throwable> exceptionClass, String partialExceptionMessage) {
-		awaitAtomException(this.observers.size(), exceptionClass, partialExceptionMessage);
-	}
-
-	private void awaitAtomException(int atomNumber, Class<? extends Throwable> exceptionClass, String partialExceptionMessage) {
-		this.observers.get(atomNumber - 1)
-			.awaitCount(3, TestWaitStrategy.SLEEP_100MS, TIMEOUT_MS)
-			.assertError(exceptionClass)
-			.assertError(t -> t.getMessage().contains(partialExceptionMessage));
 	}
 }

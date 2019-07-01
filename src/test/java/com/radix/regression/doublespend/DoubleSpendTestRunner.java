@@ -15,12 +15,15 @@ import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.ApplicationState;
 import com.radixdlt.client.application.translate.ShardedAppStateId;
+import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomStatus;
+import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.ledger.AtomObservation.Type;
 import com.radixdlt.client.core.network.RadixNetworkEpic;
+import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.RadixNodeAction;
 import com.radixdlt.client.core.network.actions.FetchAtomsObservationAction;
@@ -108,13 +111,24 @@ public final class DoubleSpendTestRunner {
 				identity);
 		}
 
-		Observable<SubmitAtomAction> executeSequentially(List<List<Action>> actions) {
+		Observable<SubmitAtomAction> executeSequentially(List<BatchedActions> actions) {
 			return Observable.fromIterable(actions)
-				.concatMap(transaction ->
-					api.buildAtom(transaction)
-						.flatMap(api.getMyIdentity()::sign)
-						.flatMapObservable(a -> api.submitAtom(a, true).toObservable())
-				);
+				.concatMap(batched -> {
+					Transaction transaction = api.createTransaction();
+					for (Action action : batched.getActions()) {
+						transaction.addToWorkingArea(action);
+					}
+					transaction.getWorkingAreaRequirements().stream()
+						.map(ShardedParticleStateId::address)
+						.distinct()
+						.map(api::pullOnce)
+						.forEach(Completable::blockingAwait);
+					transaction.stageWorkingArea();
+					UnsignedAtom unsignedAtom = transaction.buildAtom();
+
+					return api.getMyIdentity().sign(unsignedAtom)
+						.flatMapObservable(a -> api.submitAtom(a, true).toObservable());
+				});
 		}
 
 		@Override
@@ -133,9 +147,10 @@ public final class DoubleSpendTestRunner {
 			.map(batched -> {
 				Transaction transaction = api.createTransaction();
 				for (Action action : batched.getActions()) {
-					transaction.execute(action);
+					transaction.stage(action);
 				}
-				return transaction.commit();
+				transaction.stageWorkingArea();
+				return transaction.commitAndPush();
 			})
 			.map(Result::toCompletable)
 			.forEach(Completable::blockingAwait);
@@ -150,7 +165,7 @@ public final class DoubleSpendTestRunner {
 
 		// Retrieve two nodes in the network
 		List<RadixNode> nodes = api.getNetworkState()
-			.flatMapIterable(state -> state.getNodes().keySet())
+			.flatMapIterable(RadixNetworkState::getNodes)
 			.distinct()
 			.take(5, TimeUnit.SECONDS)
 			.toList()
@@ -162,11 +177,10 @@ public final class DoubleSpendTestRunner {
 			.map(node -> new SingleNodeAPI(clientId.getAndIncrement(), node, api.getMyIdentity(), apiSupplier)).cache();
 
 		// When the account executes two transfers via two different nodes at the same time
-		Observable<Pair<SingleNodeAPI, List<List<Action>>>> conflictingAtoms =
+		Observable<Pair<SingleNodeAPI, List<BatchedActions>>> conflictingAtoms =
 			Observable.zip(
 				singleNodeApis,
-				Observable.fromIterable(doubleSpendTestConditions.conflictingActions())
-					.map(l -> l.stream().map(BatchedActions::getActions).collect(Collectors.toList())),
+				Observable.fromIterable(doubleSpendTestConditions.conflictingActions()),
 				Pair::of
 			);
 
@@ -205,8 +219,7 @@ public final class DoubleSpendTestRunner {
 		// Wait for network to resolve conflict
 		TestObserver<RadixNodeAction> lastUpdateObserver = TestObserver.create(Util.loggingObserver("Last Update"));
 		singleNodeApis.flatMap(singleNodeApi ->
-			singleNodeApi.api.getNetworkController()
-			.getActions()
+			singleNodeApi.api.getNetworkActions()
 			.doOnNext(a -> {
 				if (a instanceof FetchAtomsObservationAction) {
 					FetchAtomsObservationAction f = (FetchAtomsObservationAction) a;

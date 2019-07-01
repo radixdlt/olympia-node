@@ -51,7 +51,7 @@ public class MultipleTransitionsInSameGroupTest {
 		api.discoverNodes();
 		RadixNode node = api.getNetworkState()
 			.filter(state -> !state.getNodes().isEmpty())
-			.map(state -> state.getNodes().keySet().iterator().next())
+			.map(state -> state.getNodes().iterator().next())
 			.blockingFirst();
 
 		WebSocketClient webSocketClient = new WebSocketClient(listener ->

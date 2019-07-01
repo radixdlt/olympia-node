@@ -3,6 +3,7 @@ package com.radix.acceptance.shards;
 import com.radix.TestEnv;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.core.network.HttpClients;
+import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixNode;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -44,7 +45,7 @@ public class StaticShardingAcceptance {
 		api.discoverNodes();
 		nodes = api.getNetworkState()
 			.doOnNext(System.out::println)
-			.flatMapIterable(state -> state.getNodes().keySet())
+			.flatMapIterable(RadixNetworkState::getNodes)
 			.distinct()
 			.filter(n -> {
 				Call call = HttpClients.getSslAllTrustingClient().newCall(n.getHttpEndpoint("/api/atoms?uid=1234567890abcdef1234567890abcdef"));

@@ -62,9 +62,9 @@ public class SendingADataTransaction {
 
 		Transaction transaction = api.createTransaction();
 		for (Action action : actions) {
-			transaction.execute(action);
+			transaction.stage(action);
 		}
-		transaction.commit()
+		transaction.commitAndPush()
 			.toObservable()
 			.doOnNext(System.out::println)
 			.subscribe(observer);
