@@ -47,10 +47,12 @@ public class SendingADataTransaction {
 			.bootstrap(TestEnv.getBootstrapConfig())
 			.identity(this.identity)
 			.build();
+		this.api.pull();
 		this.otherApi = RadixApplicationAPI.defaultBuilder()
 			.bootstrap(TestEnv.getBootstrapConfig())
 			.identity(this.otherIdentity)
 			.build();
+		this.otherApi.pull();
 
 		this.observers.clear();
 	}

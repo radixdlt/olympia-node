@@ -10,6 +10,8 @@ import com.radixdlt.client.core.network.actions.SubmitAtomAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomSendAction;
+import cucumber.api.java.After;
+import io.reactivex.disposables.Disposable;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
@@ -68,6 +70,12 @@ public class MintMultiIssuanceTokens {
 		GRANULARITY,	BigDecimal.ONE.scaleByPowerOfTen(-18).toString()
 	);
 	private final List<TestObserver<SubmitAtomAction>> observers = Lists.newArrayList();
+	private final List<Disposable> disposables = Lists.newArrayList();
+
+	@After
+	public void cleanUp() {
+		disposables.forEach(Disposable::dispose);
+	}
 
 	@Given("^a library client who owns an account and created token \"([^\"]*)\" with (\\d+) initial supply and is listening to the state of \"([^\"]*)\"$")
 	public void a_library_client_who_owns_an_account_and_created_token_with_initial_supply_and_is_listening_to_the_state_of(
@@ -178,8 +186,11 @@ public class MintMultiIssuanceTokens {
 	private void setupApi() {
 		this.identity = RadixIdentities.createNew();
 		this.api = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), this.identity);
+		this.disposables.add(this.api.pull());
+
 		this.otherIdentity = RadixIdentities.createNew();
 		this.otherApi = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), this.otherIdentity);
+		this.disposables.add(this.otherApi.pull());
 
 		// Reset data
 		this.properties.clear();

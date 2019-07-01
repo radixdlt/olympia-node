@@ -32,7 +32,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiFunction;
 
-public class MintAndTransferTokensActionMapper implements StatefulActionToParticleGroupsMapper {
+public class MintAndTransferTokensActionMapper implements StatefulActionToParticleGroupsMapper<MintAndTransferTokensAction> {
 	private final BiFunction<
 		FungibleParticleTransition<UnallocatedTokensParticle, TransferrableTokensParticle>,
 		FungibleParticleTransition<TransferrableTokensParticle, TransferrableTokensParticle>,
@@ -66,24 +66,14 @@ public class MintAndTransferTokensActionMapper implements StatefulActionToPartic
 	}
 
 	@Override
-	public Set<ShardedParticleStateId> requiredState(Action action) {
-		if (!(action instanceof MintAndTransferTokensAction)) {
-			return Collections.emptySet();
-		}
-
-		MintAndTransferTokensAction mintAndTransferTokensAction = (MintAndTransferTokensAction) action;
+	public Set<ShardedParticleStateId> requiredState(MintAndTransferTokensAction mintAndTransferTokensAction) {
 		RadixAddress tokenDefinitionAddress = mintAndTransferTokensAction.getTokenDefinitionReference().getAddress();
 
 		return Collections.singleton(ShardedParticleStateId.of(UnallocatedTokensParticle.class, tokenDefinitionAddress));
 	}
 
 	@Override
-	public List<ParticleGroup> mapToParticleGroups(Action action, Stream<Particle> store) {
-		if (!(action instanceof MintAndTransferTokensAction)) {
-			return Collections.emptyList();
-		}
-
-		MintAndTransferTokensAction mintTransferAction = (MintAndTransferTokensAction) action;
+	public List<ParticleGroup> mapToParticleGroups(MintAndTransferTokensAction mintTransferAction, Stream<Particle> store) {
 		RRI tokenDefinition = mintTransferAction.getTokenDefinitionReference();
 
 		List<UnallocatedTokensParticle> unallocatedTokensParticles = store

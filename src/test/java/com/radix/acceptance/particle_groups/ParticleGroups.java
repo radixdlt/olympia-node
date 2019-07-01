@@ -79,48 +79,40 @@ public class ParticleGroups {
 	private class CreateEmptyGroupAction implements Action {
 
 	}
-	private class CreateEmptyGroupActionToParticleGroupsMapper implements StatelessActionToParticleGroupsMapper {
+	private class CreateEmptyGroupActionToParticleGroupsMapper implements StatelessActionToParticleGroupsMapper<CreateEmptyGroupAction> {
 
 		@Override
-		public List<ParticleGroup> mapToParticleGroups(Action action) {
-			if (!(action instanceof CreateEmptyGroupAction)) {
-				return Collections.emptyList();
-			}
-
+		public List<ParticleGroup> mapToParticleGroups(CreateEmptyGroupAction action) {
 			return Collections.singletonList(new ParticleGroup(Collections.emptyList()));
 		}
 	}
 
-	private class MergeAction implements Action {
-		private final Action[] actions;
-		private MergeAction(Action... actions) {
+	private class MergeAction<T extends Action> implements Action {
+		private final T[] actions;
+		private MergeAction(T... actions) {
 			this.actions = actions;
 		}
 	}
 
-	private class MergeStatefulActionToParticleGroupsMapper implements StatefulActionToParticleGroupsMapper {
-		private final StatefulActionToParticleGroupsMapper[] mappers;
-		private MergeStatefulActionToParticleGroupsMapper(StatefulActionToParticleGroupsMapper... mappers) {
+	private class MergeStatefulActionToParticleGroupsMapper<T extends Action> implements StatefulActionToParticleGroupsMapper<MergeAction> {
+		private final StatefulActionToParticleGroupsMapper<T>[] mappers;
+		private MergeStatefulActionToParticleGroupsMapper(StatefulActionToParticleGroupsMapper<T>... mappers) {
 			this.mappers = mappers;
 		}
 
 		@Override
-		public Set<ShardedParticleStateId> requiredState(Action action) {
-			return Arrays.stream(mappers).flatMap(mapper -> mapper.requiredState(action).stream()).collect(Collectors.toSet());
+		public Set<ShardedParticleStateId> requiredState(MergeAction action) {
+			return Arrays.stream(mappers).flatMap(mapper ->
+				Arrays.stream(action.actions).flatMap(a -> mapper.requiredState((T) a).stream())
+			).collect(Collectors.toSet());
 		}
 
 		@Override
-		public List<ParticleGroup> mapToParticleGroups(Action action, Stream<Particle> store) {
-			if (!(action instanceof MergeAction)) {
-				return Collections.emptyList();
-			}
-
-			MergeAction mergeAction = (MergeAction) action;
-
+		public List<ParticleGroup> mapToParticleGroups(MergeAction mergeAction, Stream<Particle> store) {
 			List<Particle> particles = store.collect(Collectors.toList());
 
 			return Arrays.stream(mergeAction.actions)
-				.flatMap(a -> Arrays.stream(this.mappers).flatMap(mapper -> mapper.mapToParticleGroups(a, particles.stream()).stream()))
+				.flatMap(a -> Arrays.stream(this.mappers).flatMap(mapper -> mapper.mapToParticleGroups((T) a, particles.stream()).stream()))
 				.collect(Collectors.toList());
 		}
 	}
@@ -128,11 +120,12 @@ public class ParticleGroups {
 	@Given("^I have access to a suitable Radix network$")
 	public void i_have_access_to_a_suitable_Radix_network() {
 		this.identity = RadixIdentities.createNew();
+		StatefulActionToParticleGroupsMapper<TransferTokensAction> mapper = new TransferTokensToParticleGroupsMapper();
 		this.api = RadixApplicationAPI.defaultBuilder()
 			.bootstrap(TestEnv.getBootstrapConfig())
 			.identity(this.identity)
-			.addStatelessParticlesMapper(new CreateEmptyGroupActionToParticleGroupsMapper())
-			.addStatefulParticlesMapper(new MergeStatefulActionToParticleGroupsMapper(new TransferTokensToParticleGroupsMapper()))
+			.addStatelessParticlesMapper(CreateEmptyGroupAction.class, new CreateEmptyGroupActionToParticleGroupsMapper())
+			.addStatefulParticlesMapper(MergeAction.class, new MergeStatefulActionToParticleGroupsMapper(mapper))
 			.build();
 
 		// Reset data
