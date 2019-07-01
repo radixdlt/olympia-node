@@ -372,19 +372,35 @@ public class RadixApplicationAPI {
 		return store;
 	}
 
-	public ECPublicKey getMyPublicKey() {
+	/**
+	 * Retrieve the user's public key
+	 * @return the user's public key
+	 */
+	public ECPublicKey getPublicKey() {
 		return identity.getPublicKey();
 	}
 
-	public RadixIdentity getMyIdentity() {
+	/**
+	 * Retrieve the user's key identity
+	 * @return the user's identity
+	 */
+	public RadixIdentity getIdentity() {
 		return identity;
 	}
 
-	public RadixAddress getMyAddress() {
+	/**
+	 * Retrieve the user's address
+	 * @return the current user's address
+	 */
+	public RadixAddress getAddress() {
 		return universe.getAddressFrom(identity.getPublicKey());
 	}
 
-	public RadixAddress getAddressFromKey(ECPublicKey publicKey) {
+	/**
+	 * Retrieve the address for the current universe given a public key
+	 * @return an address based on the current universe and a given public key
+	 */
+	public RadixAddress getAddress(ECPublicKey publicKey) {
 		return universe.getAddressFrom(publicKey);
 	}
 
@@ -395,7 +411,7 @@ public class RadixApplicationAPI {
 	 * @return Disposable to dispose to stop pulling
 	 */
 	public Disposable pull() {
-		return pull(getMyAddress());
+		return pull(getAddress());
 	}
 
 	/**
@@ -496,7 +512,7 @@ public class RadixApplicationAPI {
 	 * @return a cold observable of the latest state of token definitions
 	 */
 	public Observable<TokenDefinitionsState> observeTokenDefs() {
-		return observeTokenDefs(getMyAddress());
+		return observeTokenDefs(getAddress());
 	}
 
 	/**
@@ -515,7 +531,7 @@ public class RadixApplicationAPI {
 	 */
 	public TokenState getTokenDef(RRI tokenRRI) {
 		final ParticleReducer<TokenDefinitionsState> reducer = this.getStateReducer(TokenDefinitionsState.class);
-		return universe.getAtomStore().getUpParticles(getMyAddress(), null)
+		return universe.getAtomStore().getUpParticles(getAddress(), null)
 			.reduce(reducer.initialState(), reducer::reduce, reducer::combine)
 			.getState()
 			.get(tokenRRI);
@@ -528,7 +544,7 @@ public class RadixApplicationAPI {
 	 * @return a cold observable of the messages at the current address
 	 */
 	public Observable<DecryptedMessage> observeMessages() {
-		return observeMessages(this.getMyAddress());
+		return observeMessages(this.getAddress());
 	}
 
 	/**
@@ -544,11 +560,11 @@ public class RadixApplicationAPI {
 	}
 
 	public Result sendMessage(byte[] data, boolean encrypt) {
-		return this.sendMessage(data, encrypt, getMyAddress());
+		return this.sendMessage(data, encrypt, getAddress());
 	}
 
 	public Result sendMessage(byte[] data, boolean encrypt, RadixAddress address) {
-		SendMessageAction sendMessageAction = SendMessageAction.create(data, getMyAddress(), address, encrypt);
+		SendMessageAction sendMessageAction = SendMessageAction.create(data, getAddress(), address, encrypt);
 
 		return execute(sendMessageAction);
 	}
@@ -560,7 +576,7 @@ public class RadixApplicationAPI {
 	 * @return a cold observable of the token transfers at the current address
 	 */
 	public Observable<TokenTransfer> observeTokenTransfers() {
-		return observeTokenTransfers(getMyAddress());
+		return observeTokenTransfers(getAddress());
 	}
 
 	/**
@@ -581,7 +597,7 @@ public class RadixApplicationAPI {
 	 */
 	public Map<RRI, BigDecimal> getBalances() {
 		final ParticleReducer<TokenBalanceState> reducer = this.getStateReducer(TokenBalanceState.class);
-		return universe.getAtomStore().getUpParticles(getMyAddress(), null)
+		return universe.getAtomStore().getUpParticles(getAddress(), null)
 			.reduce(reducer.initialState(), reducer::reduce, reducer::combine)
 			.getBalance();
 	}
@@ -605,7 +621,7 @@ public class RadixApplicationAPI {
 	 * @return a cold observable of the latest balances at the current address
 	 */
 	public Observable<BigDecimal> observeBalance(RRI tokenRRI) {
-		return observeBalance(getMyAddress(), tokenRRI);
+		return observeBalance(getAddress(), tokenRRI);
 	}
 
 	/**
@@ -725,7 +741,7 @@ public class RadixApplicationAPI {
 	 * @return result of the transaction
 	 */
 	public Result mintTokens(RRI token, BigDecimal amount) {
-		MintTokensAction mintTokensAction = MintTokensAction.create(token, getMyAddress(), amount);
+		MintTokensAction mintTokensAction = MintTokensAction.create(token, getAddress(), amount);
 		return execute(mintTokensAction);
 	}
 
@@ -737,7 +753,7 @@ public class RadixApplicationAPI {
 	 * @return result of the transaction
 	 */
 	public Result burnTokens(RRI token, BigDecimal amount) {
-		BurnTokensAction burnTokensAction = BurnTokensAction.create(token, getMyAddress(), amount);
+		BurnTokensAction burnTokensAction = BurnTokensAction.create(token, getAddress(), amount);
 		return execute(burnTokensAction);
 	}
 
@@ -749,7 +765,7 @@ public class RadixApplicationAPI {
 	 * @return result of the transaction
 	 */
 	public Result sendTokens(RRI token, RadixAddress to, BigDecimal amount) {
-		return sendTokens(token, getMyAddress(), to, amount);
+		return sendTokens(token, getAddress(), to, amount);
 	}
 
 	/**
@@ -773,7 +789,7 @@ public class RadixApplicationAPI {
 			attachment = null;
 		}
 
-		return sendTokens(token, getMyAddress(), to, amount, attachment);
+		return sendTokens(token, getAddress(), to, amount, attachment);
 	}
 
 	/**
@@ -785,7 +801,7 @@ public class RadixApplicationAPI {
 	 * @return result of the transaction
 	 */
 	public Result sendTokens(RRI token, RadixAddress to, BigDecimal amount, @Nullable byte[] attachment) {
-		return sendTokens(token, getMyAddress(), to, amount, attachment);
+		return sendTokens(token, getAddress(), to, amount, attachment);
 	}
 
 	/**
@@ -855,7 +871,7 @@ public class RadixApplicationAPI {
 		Map<String, String> metaData = new HashMap<>();
 		metaData.put(Atom.METADATA_TIMESTAMP_KEY, String.valueOf(generateTimestamp()));
 		Atom atom = new Atom(particleGroups, metaData);
-		Pair<Map<String, String>, List<ParticleGroup>> fee = this.feeMapper.map(atom, this.universe, this.getMyPublicKey());
+		Pair<Map<String, String>, List<ParticleGroup>> fee = this.feeMapper.map(atom, this.universe, this.getPublicKey());
 		allParticleGroups.addAll(fee.getSecond());
 		metaData.putAll(fee.getFirst());
 
