@@ -94,7 +94,7 @@ public class BurnMultiIssuanceTokens {
 		setupApi();
 		// No tokens exist for this account, because it is a freshly created account
 		RRI tokenClass = RRI.of(api.getMyAddress(), symbol);
-		TokenDefinitionsState tokenClassesState = api.getTokenDefs()
+		TokenDefinitionsState tokenClassesState = api.observeTokenDefs()
 			.firstOrError()
 			.blockingGet();
 		assertFalse(tokenClassesState.getState().containsKey(tokenClass));
@@ -128,7 +128,7 @@ public class BurnMultiIssuanceTokens {
 		awaitAtomStatus(STORED);
 		RRI tokenClass = RRI.of(api.getMyAddress(), symbol);
 		// Ensure balance is up-to-date.
-		BigDecimal tokenBalanceDecimal = api.getBalance(api.getMyAddress(), tokenClass)
+		BigDecimal tokenBalanceDecimal = api.observeBalance(api.getMyAddress(), tokenClass)
 			.firstOrError()
 			.blockingGet();
 		UInt256 tokenBalance = TokenUnitConversions.unitsToSubunits(tokenBalanceDecimal);
@@ -147,7 +147,7 @@ public class BurnMultiIssuanceTokens {
 		// Must be a better way than this.
 		RRI tokenClass = RRI.of(api.getMyAddress(), symbol);
 		// Ensure balance is up-to-date.
-		BigDecimal tokenBalanceDecimal = api.getBalance(api.getMyAddress(), tokenClass)
+		BigDecimal tokenBalanceDecimal = api.observeBalance(api.getMyAddress(), tokenClass)
 			.firstOrError()
 			.blockingGet();
 		UInt256 tokenBalance = TokenUnitConversions.unitsToSubunits(tokenBalanceDecimal);

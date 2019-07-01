@@ -56,7 +56,7 @@ public class UnsubscribeTest {
 		// Given I am connected to a node and listening to messages
 		RadixApplicationAPI normalApi = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, RadixIdentities.createNew());
 		TestObserver<DecryptedMessage> messageListener = TestObserver.create(Util.loggingObserver("MessageListener"));
-		normalApi.getMessages().subscribe(messageListener);
+		normalApi.observeMessages().subscribe(messageListener);
 		Disposable d = normalApi.pull();
 		Observable<RadixNetworkState> networkStatus = normalApi
 			.getNetworkState()
@@ -82,8 +82,8 @@ public class UnsubscribeTest {
 		RadixApplicationAPI normalApi = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, RadixIdentities.createNew());
 		TestObserver<DecryptedMessage> messageListener1 = TestObserver.create(Util.loggingObserver("MessageListener1"));
 		TestObserver<DecryptedMessage> messageListener2 = TestObserver.create(Util.loggingObserver("MessageListener2"));
-		normalApi.getMessages().subscribe(messageListener1);
-		normalApi.getMessages().subscribe(messageListener2);
+		normalApi.observeMessages().subscribe(messageListener1);
+		normalApi.observeMessages().subscribe(messageListener2);
 		Disposable d = normalApi.pull();
 
 		Observable<RadixNetworkState> networkStatus = normalApi

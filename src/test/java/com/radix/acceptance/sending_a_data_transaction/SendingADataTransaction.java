@@ -20,6 +20,7 @@ import com.radixdlt.client.core.network.actions.SubmitAtomSendAction;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
+import io.reactivex.observers.BaseTestConsumer.TestWaitStrategy;
 import io.reactivex.observers.TestObserver;
 
 import java.util.Arrays;
@@ -143,7 +144,7 @@ public class SendingADataTransaction {
 	@When("^I can observe a message with \"([^\"]*)\"$")
 	public void i_can_observe_a_message_with(String message) {
 		TestObserver<DecryptedMessage> messageTestObserver = new TestObserver<>();
-		this.api.getMessages().subscribe(messageTestObserver);
+		this.api.observeMessages().subscribe(messageTestObserver);
 		messageTestObserver.awaitCount(1);
 		messageTestObserver.assertSubscribed();
 		messageTestObserver.assertNoErrors();
@@ -154,8 +155,8 @@ public class SendingADataTransaction {
 	@When("^I can observe a message with \"([^\"]*)\" from myself$")
 	public void i_can_observe_a_message_with_from_myself(String message) {
 		TestObserver<DecryptedMessage> messageTestObserver = new TestObserver<>();
-		this.api.getMessages().subscribe(messageTestObserver);
-		messageTestObserver.awaitCount(1);
+		this.api.observeMessages().subscribe(messageTestObserver);
+		messageTestObserver.awaitCount(1, TestWaitStrategy.SLEEP_1000MS, 10000);
 		messageTestObserver.assertSubscribed();
 		messageTestObserver.assertNoErrors();
 		messageTestObserver.assertValue(m -> new String(m.getData()).equals(message) && m.getFrom().equals(this.api.getMyAddress()));
@@ -165,7 +166,7 @@ public class SendingADataTransaction {
 	@When("^another client can observe a message with \"([^\"]*)\"$")
 	public void another_client_can_observe_a_message_with(String message) {
 		TestObserver<DecryptedMessage> messageTestObserver = new TestObserver<>();
-		this.otherApi.getMessages().subscribe(messageTestObserver);
+		this.otherApi.observeMessages().subscribe(messageTestObserver);
 		messageTestObserver.awaitCount(1);
 		messageTestObserver.assertSubscribed();
 		messageTestObserver.assertNoErrors();

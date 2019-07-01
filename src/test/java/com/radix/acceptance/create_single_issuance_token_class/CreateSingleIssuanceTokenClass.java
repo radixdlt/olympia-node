@@ -107,7 +107,7 @@ public class CreateSingleIssuanceTokenClass {
 		RRI tokenClass = RRI.of(api.getMyAddress(), symbol);
 		RadixAddress arbitrary = api.getAddressFromKey(RadixIdentities.createNew().getPublicKey());
 		// Ensure balance is up-to-date.
-		api.getBalance(api.getMyAddress(), tokenClass)
+		api.observeBalance(api.getMyAddress(), tokenClass)
 			.firstOrError()
 			.blockingGet();
 
@@ -162,7 +162,7 @@ public class CreateSingleIssuanceTokenClass {
 	public void i_can_observe_token_balance_equal_to_scaled(String symbol, int balance) {
 		RRI tokenClass = RRI.of(api.getMyAddress(), symbol);
 		// Ensure balance is up-to-date.
-		BigDecimal tokenBalanceDecimal = api.getBalance(api.getMyAddress(), tokenClass)
+		BigDecimal tokenBalanceDecimal = api.observeBalance(api.getMyAddress(), tokenClass)
 			.firstOrError()
 			.blockingGet();
 		UInt256 tokenBalance = TokenUnitConversions.unitsToSubunits(tokenBalanceDecimal);

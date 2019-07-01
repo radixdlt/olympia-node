@@ -66,7 +66,7 @@ public class TokenClassesInAccountTest {
 		};
 
 		// When the account is subscribed for the token state
-		Supplier<Observable<TokenDefinitionsState>> subscription = () -> api.getTokenDefs(api.getMyAddress());
+		Supplier<Observable<TokenDefinitionsState>> subscription = () -> api.observeTokenDefs(api.getMyAddress());
 
 		// Then the two tokens are published
 		List<Predicate<TokenDefinitionsState>> thenChecks = Arrays.asList(

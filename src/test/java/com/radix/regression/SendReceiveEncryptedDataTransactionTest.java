@@ -29,7 +29,7 @@ public class SendReceiveEncryptedDataTransactionTest {
 		// Given I own a key pair associated with an address and listening to messages
 		RadixApplicationAPI normalApi = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, RadixIdentities.createNew());
 		TestObserver<DecryptedMessage> messageListener = TestObserver.create(Util.loggingObserver("MessageListener"));
-		normalApi.getMessages().subscribe(messageListener);
+		normalApi.observeMessages().subscribe(messageListener);
 		Disposable d = normalApi.pull();
 
 		// When I send a message to myself encrypted with a different key
