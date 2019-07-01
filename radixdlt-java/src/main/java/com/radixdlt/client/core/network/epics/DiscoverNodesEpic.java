@@ -67,7 +67,7 @@ public final class DiscoverNodesEpic implements RadixNetworkEpic {
 						data.stream()
 							.map(d -> {
 								RadixNode node = new RadixNode(d.getIp(), u.getNode().isSsl(), u.getNode().getPort());
-								return state.getNodes().containsKey(node) ? null : AddNodeAction.of(node, d);
+								return state.getNodeStates().containsKey(node) ? null : AddNodeAction.of(node, d);
 							})
 							.filter(Objects::nonNull)
 							.collect(Collectors.toSet())

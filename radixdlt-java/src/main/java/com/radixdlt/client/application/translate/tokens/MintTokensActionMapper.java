@@ -1,6 +1,7 @@
 package com.radixdlt.client.application.translate.tokens;
 
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.client.application.translate.StageActionException;
 import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle;
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
@@ -64,7 +65,7 @@ public class MintTokensActionMapper implements StatefulActionToParticleGroupsMap
 	}
 
 	@Override
-	public List<ParticleGroup> mapToParticleGroups(MintTokensAction mintTokensAction, Stream<Particle> store) {
+	public List<ParticleGroup> mapToParticleGroups(MintTokensAction mintTokensAction, Stream<Particle> store) throws StageActionException {
 		RRI tokenDefinition = mintTokensAction.getTokenDefinitionReference();
 
 		if (mintTokensAction.getAmount().compareTo(BigDecimal.ZERO) <= 0) {

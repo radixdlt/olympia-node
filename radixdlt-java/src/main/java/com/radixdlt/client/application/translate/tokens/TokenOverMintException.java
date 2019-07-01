@@ -1,10 +1,11 @@
 package com.radixdlt.client.application.translate.tokens;
 
+import com.radixdlt.client.application.translate.StageActionException;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import java.math.BigDecimal;
 import java.util.Objects;
 
-public final class TokenOverMintException extends RuntimeException {
+public final class TokenOverMintException extends StageActionException {
 	private final RRI tokenDefinitionReference;
 	private final BigDecimal maxAmount;
 	private final BigDecimal currentAmount;

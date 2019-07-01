@@ -3,12 +3,13 @@ package com.radixdlt.client.core.network;
 import com.google.common.collect.ImmutableMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Current state of nodes connected to
  */
 public final class RadixNetworkState {
-	private final Map<RadixNode, RadixNodeState> nodes;
+	private final ImmutableMap<RadixNode, RadixNodeState> nodes;
 
 	public RadixNetworkState(Map<RadixNode, RadixNodeState> nodes) {
 		Objects.requireNonNull(nodes, "nodes is required");
@@ -20,8 +21,12 @@ public final class RadixNetworkState {
 		return new RadixNetworkState(ImmutableMap.of(node, state));
 	}
 
-	public Map<RadixNode, RadixNodeState> getNodes() {
+	public Map<RadixNode, RadixNodeState> getNodeStates() {
 		return nodes;
+	}
+
+	public Set<RadixNode> getNodes() {
+		return nodes.keySet();
 	}
 
 	@Override

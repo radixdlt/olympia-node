@@ -24,6 +24,10 @@ public class PutUniqueIdAction implements Action {
 		this.unique = unique;
 	}
 
+	public static PutUniqueIdAction create(RadixAddress address, String unique) {
+		return new PutUniqueIdAction(address, unique);
+	}
+
 	public RadixAddress getAddress() {
 		return address;
 	}

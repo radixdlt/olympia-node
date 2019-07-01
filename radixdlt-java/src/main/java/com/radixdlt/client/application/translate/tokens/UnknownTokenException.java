@@ -1,12 +1,12 @@
 package com.radixdlt.client.application.translate.tokens;
 
+import com.radixdlt.client.application.translate.StageActionException;
 import com.radixdlt.client.core.atoms.particles.RRI;
 
 /**
  * Exception thrown when information on an unknown token is requested.
  */
-public class UnknownTokenException extends RuntimeException {
-	private static final long serialVersionUID = -1684509326376059175L;
+public class UnknownTokenException extends StageActionException {
 	private final RRI tokenDefinitionReference;
 
     /**

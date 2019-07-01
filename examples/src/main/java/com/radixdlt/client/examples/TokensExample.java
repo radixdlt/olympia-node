@@ -23,7 +23,7 @@ public class TokensExample {
 		// Initialize api layer
 		RadixApplicationAPI api = RadixApplicationAPI.create(Bootstrap.LOCALHOST, radixIdentity);
 
-		// Sync with network
+		// Constantly sync account with network
 		api.pull();
 
 		System.out.println("My address: " + api.getMyAddress());
@@ -37,7 +37,7 @@ public class TokensExample {
 		RRI tokenRRI = RRI.of(api.getMyAddress(), "JOSH");
 		Transaction transaction = api.createTransaction();
 		// Create
-		transaction.execute(CreateTokenAction.create(
+		transaction.stage(CreateTokenAction.create(
 			tokenRRI,
 			"Joshy Token",
 			"The Best Coin Ever",
@@ -46,8 +46,8 @@ public class TokensExample {
 			TokenSupplyType.MUTABLE
 		));
 		// Mint
-		transaction.execute(MintTokensAction.create(tokenRRI, BigDecimal.valueOf(1000000.0)));
-		Result createTokenAndMint = transaction.commit();
+		transaction.stage(MintTokensAction.create(tokenRRI, BigDecimal.valueOf(1000000.0)));
+		Result createTokenAndMint = transaction.commitAndPush();
 		createTokenAndMint.toObservable().blockingSubscribe(System.out::println);
 
 		// Get token definition

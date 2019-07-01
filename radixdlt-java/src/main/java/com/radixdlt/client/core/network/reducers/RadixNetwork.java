@@ -24,7 +24,7 @@ public final class RadixNetwork {
 		Map<RadixNode, RadixNodeState> newMap = null;
 		if (action instanceof GetNodeDataResultAction) {
 			GetNodeDataResultAction result = (GetNodeDataResultAction) action;
-			newMap = new HashMap<>(state.getNodes());
+			newMap = new HashMap<>(state.getNodeStates());
 			newMap.merge(
 				result.getNode(),
 				RadixNodeState.of(action.getNode(), WebSocketStatus.CONNECTED, result.getResult()),
@@ -35,7 +35,7 @@ public final class RadixNetwork {
 		} else if (action instanceof GetUniverseResponseAction) {
 			final GetUniverseResponseAction getUniverseResponseAction = (GetUniverseResponseAction) action;
 			final RadixNode node = action.getNode();
-			newMap = new HashMap<>(state.getNodes());
+			newMap = new HashMap<>(state.getNodeStates());
 			newMap.merge(
 				node,
 				RadixNodeState.of(node, WebSocketStatus.CONNECTED, null, getUniverseResponseAction.getResult()),
@@ -46,7 +46,7 @@ public final class RadixNetwork {
 		} else if (action instanceof AddNodeAction) {
 			final AddNodeAction addNodeAction = (AddNodeAction) action;
 			final RadixNode node = action.getNode();
-			newMap = new HashMap<>(state.getNodes());
+			newMap = new HashMap<>(state.getNodeStates());
 			newMap.merge(
 				node,
 				RadixNodeState.of(node, WebSocketStatus.DISCONNECTED, addNodeAction.getData().orElse(null)),
@@ -58,7 +58,7 @@ public final class RadixNetwork {
 		} else if (action instanceof WebSocketEvent) {
 			final WebSocketEvent wsEvent = (WebSocketEvent) action;
 			final RadixNode node = wsEvent.getNode();
-			newMap = new HashMap<>(state.getNodes());
+			newMap = new HashMap<>(state.getNodeStates());
 			newMap.merge(
 				node,
 				RadixNodeState.of(node, WebSocketStatus.valueOf(wsEvent.getType().name())),
