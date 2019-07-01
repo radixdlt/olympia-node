@@ -27,7 +27,7 @@ public class MessagesExample {
 
 		// Send a message to an address
 		RadixAddress toAddress = RadixAddress.from("JEbhKQzBn4qJzWJFBbaPioA2GTeaQhuUjYWkanTE6N8VvvPpvM8");
-		Result result = api.sendMessage("Hello".getBytes(RadixConstants.STANDARD_CHARSET), true, toAddress);
+		Result result = api.sendMessage(toAddress, "Hello".getBytes(RadixConstants.STANDARD_CHARSET), true);
 		result.blockUntilComplete();
 	}
 }
