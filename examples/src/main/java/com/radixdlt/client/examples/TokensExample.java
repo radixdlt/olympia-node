@@ -26,11 +26,11 @@ public class TokensExample {
 		// Constantly sync account with network
 		api.pull();
 
-		System.out.println("My address: " + api.getMyAddress());
-		System.out.println("My public key: " + api.getMyPublicKey());
+		System.out.println("My address: " + api.getAddress());
+		System.out.println("My public key: " + api.getPublicKey());
 
 		// Create a unique identifier for the token
-		RRI tokenRRI = RRI.of(api.getMyAddress(), "JOSH");
+		RRI tokenRRI = RRI.of(api.getAddress(), "JOSH");
 
 		// Observe all past and future transactions
 		api.observeTokenTransfers()
@@ -50,7 +50,7 @@ public class TokensExample {
 			TokenUnitConversions.getMinimumGranularity(),
 			TokenSupplyType.MUTABLE
 		));
-		transaction.stage(MintTokensAction.create(tokenRRI, api.getMyAddress(), BigDecimal.valueOf(1000000.0)));
+		transaction.stage(MintTokensAction.create(tokenRRI, api.getAddress(), BigDecimal.valueOf(1000000.0)));
 		Result createTokenAndMint = transaction.commitAndPush();
 		createTokenAndMint.toObservable().blockingSubscribe(System.out::println);
 

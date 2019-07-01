@@ -19,8 +19,8 @@ public class MessagesExample {
 		// Sync with network
 		api.pull();
 
-		System.out.println("My address: " + api.getMyAddress());
-		System.out.println("My public key: " + api.getMyPublicKey());
+		System.out.println("My address: " + api.getAddress());
+		System.out.println("My public key: " + api.getPublicKey());
 
 		// Print out all past and future messages
 		api.observeMessages().subscribe(System.out::println);

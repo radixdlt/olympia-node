@@ -155,7 +155,7 @@ public class RadixApplicationAPITest {
 		ECPublicKey key = mock(ECPublicKey.class);
 		RadixAddress address = mock(RadixAddress.class);
 		when(address.getPublicKey()).thenReturn(key);
-		when(api.getMyAddress()).thenReturn(address);
+		when(api.getAddress()).thenReturn(address);
 		when(address.getUID()).thenReturn(EUID.ONE);
 
 		Result result = api.sendMessage(new byte[0], false, address);
@@ -172,7 +172,7 @@ public class RadixApplicationAPITest {
 		RadixAddress address = mock(RadixAddress.class);
 		when(address.getPublicKey()).thenReturn(mock(ECPublicKey.class));
 		when(address.getUID()).thenReturn(EUID.ONE);
-		when(api.getMyAddress()).thenReturn(address);
+		when(api.getAddress()).thenReturn(address);
 
 		api.sendMessage(new byte[0], false, address);
 		verify(controller, times(1)).dispatch(any(SubmitAtomRequestAction.class));
@@ -186,7 +186,7 @@ public class RadixApplicationAPITest {
 		RadixApplicationAPI api = createMockedAPI(controller, atomStore);
 		RadixAddress address = mock(RadixAddress.class);
 		when(address.getPublicKey()).thenReturn(mock(ECPublicKey.class));
-		when(api.getMyAddress()).thenReturn(address);
+		when(api.getAddress()).thenReturn(address);
 		when(address.getUID()).thenReturn(EUID.ONE);
 
 		Result result = api.sendMessage(new byte[0], false, address);
