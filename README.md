@@ -35,7 +35,7 @@ repositories {
 ```
 ```
 dependencies {
-    implementation 'com.radixdlt:radixdlt-java:0.12.0'
+    implementation 'com.radixdlt:radixdlt-java:1.0.0-beta-core-1.0.0-beta'
 }
 ```
 
@@ -85,7 +85,7 @@ An address is a reference to an account and allows a user to receive tokens and/
 
 You can get your own address by:
 ```java
-RadixAddress myAddress = api.getMyAddress();
+RadixAddress myAddress = api.getAddress();
 ```
 
 Or from a base58 string:
@@ -95,25 +95,34 @@ RadixAddress anotherAddress = RadixAddress.fromString("JHB89drvftPj6zVCNjnaijURk
 
 ## Code Examples
 
-### Storing and Retrieving Data
+### Sending Messages
 Immutable data can be stored on the ledger. The data can be encrypted so that only
 selected identities can read the data.
 
-To store the encrypted string `Hello` which only the user can read:
+To send the encrypted string `Hello` which only the sender and recipient can read:
 ```java
-Result result = api.sendMessage("Hello".getBytes(StandardCharsets.UTF_8), true);
+Result result = api.sendMessage("Hello".getBytes(StandardCharsets.UTF_8), true, <to-address>);
 result.blockUntilComplete();
 ```
 
-To store the unencrypted string `Hello`:
+To send the unencrypted string `Hello`:
 ```java
-Result result = api.sendMessage("Hello".getBytes(StandardCharsets.UTF_8), false);
+Result result = api.sendMessage("Hello".getBytes(StandardCharsets.UTF_8), false, <to-address>);
 result.blockUntilComplete();
 ```
 
-To then read (and decrypt if necessary) all the readable data at an address:
+Or equivalently,
 ```java
-Observable<DecryptedMessage> readable = api.getMessages();
+SendMessageAction msgAction = SendMessageAction.create("Hello".getBytes(StandardCharset.UTF_8), api.getAddress(), <to-address>, false);
+Result result = api.execute(msgAction);
+result.blockUntilComplete();
+```
+
+### Receiving Messages
+
+To then read (and decrypt if necessary) all the readable data sent to you:
+```java
+Observable<DecryptedMessage> readable = api.observeMessages();
 readable.subscribe(data -> { ... });
 ```
 
@@ -135,10 +144,31 @@ Result result = api.createMultiIssuance(tokenRRI, "New Token", "The Best Token")
 result.blockUntilComplete();
 ```
 
+Or equivalently,
+```java
+CreateTokenAction createAction = CreateTokenAction.create(
+  tokenRRI,
+  "New Token",
+  "The Best Token",
+  BigDecimal.ZERO,
+  TokenUnitConversions.getMinimumGranularity(),
+  TokenSupplyType.MUTABLE
+); 
+Result result = api.execute(createAction);
+result.blockUntilComplete();
+```
+
 ### Minting Tokens
 To mint 1000 tokens (must be multi-issuance) in your account:
 ```java
 Result result = api.mintTokens(tokenRRI, BigDecimal.valueOf(1000.0));
+result.blockUntilComplete();
+```
+
+Or equivalently,
+```java
+MintTokensAction mintAction = MintTokensAction.create(tokenRRI, api.getAddress(), BigDecimal.valueOf(1000.0));
+Result result = api.execute(mintAction);
 result.blockUntilComplete();
 ```
 
@@ -149,25 +179,78 @@ Result result = api.burnTokens(tokenRRI, BigDecimal.valueOf(1000.0));
 result.blockUntilComplete();
 ```
 
-### Sending and Retrieving Tokens
+Or equivalently,
+```java
+BurnTokensAction burnAction = BurnTokensAction.create(tokenRRI, api.getAddress(), BigDecimal.valueOf(1000.0));
+Result result = api.execute(burnAction);
+result.blockUntilComplete();
+```
+
+### Sending Tokens
 To send an amount from my address to another address:
 ```java
 Result result = api.sendTokens(tokenRRI, BigDecimal.valueOf(10.99), <to-address>);
 result.blockUntilComplete();
 ```
 
+Or equivalently,
+```java
+TransferTokensAction sendAction = TransferTokensAction.create(
+  tokenRRI,
+  api.getAddress(),
+  <to-address>,
+  BigDecimal.valueOf(10.00),
+  null
+);
+Result result = api.execute(sendAction);
+result.blockUntilComplete();
+```
+
+### Retrieving Tokens
 To retrieve all of the token transfers which have occurred in my account:
 ```java
-Observable<TokenTransfer> transfers = api.getTokenTransfers();
+Observable<TokenTransfer> transfers = api.observeTokenTransfers();
 transfers.subscribe(tx -> { ... });
 ```
 
 To get a stream of the balance of tokens in my account:
 ```java
-Observable<BigDecimal> balance = api.getBalance(tokenRRI);
+Observable<BigDecimal> balance = api.observeBalance(tokenRRI);
 balance.subscribe(bal -> { ... });
 ```
 
+### Executing Atomic Transactions
+To execute an atomic transaction of creating a token, minting, then sending:
+```java
+CreateTokensAction createAction = CreateTokenAction.create(
+  tokenRRI,
+  "Joshy Token",
+  "The Best Coin Ever",
+  BigDecimal.ZERO,
+  TokenUnitConversions.getMinimumGranularity(),
+  TokenSupplyType.MUTABLE
+);
+MintTokensAction mintAction = MintTokensAction.create(
+  tokenRRI,
+  api.getAddress(),
+  BigDecimal.valueOf(1000000.0)
+);
+TransferTokensAction transferAction =  TransferTokensAction.create(
+  tokenRRI,
+  api.getAddress(),
+  <to-address>,
+  BigDecimal.valueOf(1000000.0),
+  null
+);
+
+Transaction tx = api.createTransaction();
+tx.stage(createAction);
+tx.stage(mintAction);
+tx.stage(transferAction);
+Result result = tx.commitAndPush();
+result.blockUntilComplete();
+
+```
 
 ## Contribute
 
