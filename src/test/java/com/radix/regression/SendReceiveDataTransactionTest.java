@@ -33,7 +33,7 @@ public class SendReceiveDataTransactionTest {
 
 		// When owner sends message from another account
 		RadixAddress sourceAddress = api.getAddressFromKey(RadixIdentities.createNew().getPublicKey());
-		Action sendMessageAction = new SendMessageAction(new byte[] {0}, sourceAddress, api.getMyAddress(), false);
+		Action sendMessageAction = SendMessageAction.create(new byte[] {0}, sourceAddress, api.getMyAddress(), false);
 		Completable sendMessageStatus = api.execute(sendMessageAction).toCompletable();
 
 		// Then client should be notified of error

@@ -214,7 +214,7 @@ public class MintMultiIssuanceTokens {
 
 	private void mintTokens(BigDecimal amount, String symbol, RadixAddress address) {
 		RRI tokenClass = RRI.of(address, symbol);
-		MintTokensAction mta = MintTokensAction.create(tokenClass, amount);
+		MintTokensAction mta = MintTokensAction.create(tokenClass, address, amount);
 		TestObserver<SubmitAtomAction> observer = new TestObserver<>();
 		api.pullOnce(address).blockingAwait();
 		try {

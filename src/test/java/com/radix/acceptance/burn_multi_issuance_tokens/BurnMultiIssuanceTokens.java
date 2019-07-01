@@ -207,8 +207,8 @@ public class BurnMultiIssuanceTokens {
 	}
 
 	private void transferTokens(BigDecimal amount, String symbol, RadixAddress address) {
-		RRI tokenClass = RRI.of(address, symbol);
-		TransferTokensAction tta = TransferTokensAction.create(address, address, amount, tokenClass);
+		RRI rri = RRI.of(address, symbol);
+		TransferTokensAction tta = TransferTokensAction.create(rri, address, address, amount);
 		TestObserver<SubmitAtomAction> observer = new TestObserver<>();
 		api.pullOnce(address).blockingAwait();
 		try {
@@ -221,7 +221,7 @@ public class BurnMultiIssuanceTokens {
 
 	private void burnTokens(BigDecimal amount, String symbol, RadixAddress tokenAddress, RadixAddress address) {
 		RRI tokenClass = RRI.of(tokenAddress, symbol);
-		BurnTokensAction mta = BurnTokensAction.create(address, tokenClass, amount);
+		BurnTokensAction mta = BurnTokensAction.create(tokenClass, address, amount);
 		TestObserver<SubmitAtomAction> observer = new TestObserver<>();
 		api.pullOnce(tokenAddress).blockingAwait();
 		try {

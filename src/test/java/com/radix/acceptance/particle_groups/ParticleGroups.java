@@ -184,7 +184,7 @@ public class ParticleGroups {
 
 	@When("^I submit an arbitrary atom with an empty particle group$")
 	public void i_submit_an_arbitrary_atom_with_an_empty_particle_group() {
-		createAtomic(new SendMessageAction("Hello!".getBytes(), this.api.getMyAddress(), this.api.getMyAddress(), false),
+		createAtomic(SendMessageAction.create("Hello!".getBytes(), this.api.getMyAddress(), this.api.getMyAddress(), false),
 			new CreateEmptyGroupAction());
 	}
 
@@ -220,10 +220,10 @@ public class ParticleGroups {
 
 	private TransferTokensAction buildTransferTokenAction(String symbol, long amount) {
 		return TransferTokensAction.create(
+			RRI.of(api.getMyAddress(), symbol),
 			api.getMyAddress(),
 			api.getAddressFromKey(ecKeyPairGenerator.generateKeyPair().getPublicKey()),
-			BigDecimal.valueOf(amount),
-			RRI.of(api.getMyAddress(), symbol)
+			BigDecimal.valueOf(amount)
 		);
 	}
 

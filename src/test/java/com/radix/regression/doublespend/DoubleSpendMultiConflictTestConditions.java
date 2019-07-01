@@ -63,7 +63,7 @@ public class DoubleSpendMultiConflictTestConditions implements DoubleSpendTestCo
 					)
 				),
 				new BatchedActions(
-					TransferTokensAction.create(apiAddress, toAddress, BigDecimal.ONE, tokenRef1),
+					TransferTokensAction.create(tokenRef1, apiAddress, toAddress, BigDecimal.ONE),
 					CreateTokenAction.create(
 						this.tokenRef2,
 						"Joshy Token 2",
@@ -86,7 +86,7 @@ public class DoubleSpendMultiConflictTestConditions implements DoubleSpendTestCo
 					)
 				),
 				new BatchedActions(
-					TransferTokensAction.create(apiAddress, toAddress, BigDecimal.ONE, tokenRef1),
+					TransferTokensAction.create(tokenRef1, apiAddress, toAddress, BigDecimal.ONE),
 					CreateTokenAction.create(
 						this.tokenRef3,
 						"Joshy Token 3",
