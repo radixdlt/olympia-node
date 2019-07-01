@@ -8,6 +8,7 @@ import com.radixdlt.client.application.translate.unique.PutUniqueIdAction;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.AtomStatusNotification;
+import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.network.HttpClients;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient;
@@ -15,6 +16,7 @@ import com.radixdlt.client.core.network.websocket.WebSocketClient;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
 import io.reactivex.observers.TestObserver;
 import java.util.UUID;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.radix.common.ID.AID;
@@ -22,6 +24,7 @@ import org.radix.common.ID.AID;
 public class AtomStatusTest {
 	private RadixJsonRpcClient rpcClient;
 	private RadixApplicationAPI api;
+	private WebSocketClient webSocketClient;
 
 	@Before
 	public void setUp() {
@@ -32,7 +35,7 @@ public class AtomStatusTest {
 			.map(state -> state.getNodes().iterator().next())
 			.blockingFirst();
 
-		WebSocketClient webSocketClient = new WebSocketClient(listener ->
+		this.webSocketClient = new WebSocketClient(listener ->
 			HttpClients.getSslAllTrustingClient().newWebSocket(node.getWebSocketEndpoint(), listener)
 		);
 		webSocketClient.connect();
@@ -40,6 +43,11 @@ public class AtomStatusTest {
 			.filter(WebSocketStatus.CONNECTED::equals)
 			.blockingFirst();
 		this.rpcClient = new RadixJsonRpcClient(webSocketClient);
+	}
+
+	@After
+	public void tearDown() {
+		this.webSocketClient.close();
 	}
 
 	@Test
@@ -64,8 +72,9 @@ public class AtomStatusTest {
 	@Test
 	public void given_a_subscription_to_status_notifications__when_the_atom_is_stored__a_store_notification_should_be_sent() {
 		Transaction transaction = api.createTransaction();
-		transaction.stage(new PutUniqueIdAction(api.getMyAddress(), "test"));
-		Atom atom = this.api.getMyIdentity().sign(transaction.buildAtom())
+		RRI unique = RRI.of(api.getMyAddress(), "test");
+		transaction.stage(new PutUniqueIdAction(unique.getAddress(), unique.getName()));
+		Atom atom = api.getMyIdentity().sign(transaction.buildAtom())
 			.blockingGet();
 		AID aid = atom.getAid();
 

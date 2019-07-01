@@ -24,6 +24,7 @@ import com.radixdlt.client.core.network.websocket.WebSocketStatus;
 import com.radixdlt.client.core.pow.ProofOfWorkBuilder;
 import io.reactivex.observers.TestObserver;
 import java.util.UUID;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -37,6 +38,7 @@ public class AtomKernelTest {
 	private RadixIdentity identity;
 	private FeeMapper feeMapper = new PowFeeMapper(Atom::getHash, new ProofOfWorkBuilder());
 	private RadixJsonRpcClient jsonRpcClient;
+	private WebSocketClient webSocketClient;
 
 	@Before
 	public void setUp() {
@@ -48,7 +50,7 @@ public class AtomKernelTest {
 			.map(state -> state.getNodes().iterator().next())
 			.blockingFirst();
 
-		WebSocketClient webSocketClient = new WebSocketClient(listener ->
+		this.webSocketClient = new WebSocketClient(listener ->
 			HttpClients.getSslAllTrustingClient().newWebSocket(node.getWebSocketEndpoint(), listener)
 		);
 		webSocketClient.connect();
@@ -57,6 +59,12 @@ public class AtomKernelTest {
 			.blockingFirst();
 		this.jsonRpcClient = new RadixJsonRpcClient(webSocketClient);
 	}
+
+	@After
+	public void tearDown() {
+		this.webSocketClient.close();
+	}
+
 
 	@Test
 	public void testAtomTooBig() {
