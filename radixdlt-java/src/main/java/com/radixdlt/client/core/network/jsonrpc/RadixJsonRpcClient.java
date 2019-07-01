@@ -6,6 +6,7 @@ import com.radixdlt.client.core.ledger.AtomEvent;
 import java.util.List;
 import java.util.UUID;
 
+import java.util.concurrent.TimeUnit;
 import org.json.JSONObject;
 import org.radix.common.ID.AID;
 import org.radix.common.ID.EUID;
@@ -350,55 +351,5 @@ public class RadixJsonRpcClient {
 				return r;
 			}
 		}).ignoreElement();
-	}
-
-	/**
-	 * Generic helper method for creating a subscription via JSON-RPC.
-	 *
-	 * @param method name of subscription method
-	 * @param rawParams parameters to subscription method
-	 * @param notificationMethod name of the JSON-RPC notification method
-	 * @return Observable of emitted subscription json elements
-	 */
-	public Observable<JsonElement> jsonRpcSubscribe(String method, JsonObject rawParams, String notificationMethod) {
-		final String subscriberId = UUID.randomUUID().toString();
-		final JsonObject params = rawParams.deepCopy();
-		params.addProperty("subscriberId", subscriberId);
-
-		Observable<JsonObject> stream = this.observeNotifications(notificationMethod, subscriberId)
-			.doOnDispose(() -> this.cancelAtomsSubscribe(subscriberId).subscribe());
-
-		Observable<JsonRpcResponse> response = this.jsonRpcCall(method, params).toObservable();
-		return Observable.combineLatest(stream, response, (s, r) -> {
-			if (!r.isSuccess()) {
-				throw new RuntimeException();
-			}
-
-			return s;
-		});
-	}
-
-	/**
-	 *  Retrieves all atoms from a node specified by a query. This includes all past
-	 *  and future atoms. The Observable returned will never complete.
-	 *
-	 * @param atomQuery query specifying which atoms to retrieve
-	 * @return observable of atoms
-	 */
-	public Observable<AtomObservation> getAtoms(AtomQuery atomQuery) {
-		final JsonObject params = new JsonObject();
-		params.add("query", atomQuery.toJson());
-
-		return this.jsonRpcSubscribe("Atoms.subscribe", params, "Atoms.subscribeUpdate")
-			.map(JsonElement::getAsJsonObject)
-			.flatMap(observedAtomsJson -> {
-				JsonArray atomEvents = observedAtomsJson.getAsJsonArray("atomEvents");
-				boolean isHead = observedAtomsJson.has("isHead") && observedAtomsJson.get("isHead").getAsBoolean();
-
-				return Observable.fromIterable(atomEvents)
-					.map(jsonAtom -> Serialize.getInstance().fromJson(jsonAtom.toString(), AtomEvent.class))
-					.map(AtomObservation::ofEvent)
-					.concatWith(Maybe.fromCallable(() -> isHead ? AtomObservation.head() : null));
-			});
 	}
 }

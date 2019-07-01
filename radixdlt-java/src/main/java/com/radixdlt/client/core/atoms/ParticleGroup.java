@@ -57,7 +57,9 @@ public class ParticleGroup extends SerializableObject {
 		this.metaData = ImmutableMap.copyOf(metaData);
 	}
 
-
+	public ImmutableList<SpunParticle> getSpunParticles() {
+		return particles;
+	}
 
 	/**
 	 * Get a stream of the spun particles in this group

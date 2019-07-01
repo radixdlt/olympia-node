@@ -7,33 +7,39 @@ import java.math.BigDecimal;
 import java.util.Objects;
 
 public class BurnTokensAction implements Action {
+	private final RRI rri;
 	private final RadixAddress address;
-	private final RRI tokenDefinitionReference;
 	private final BigDecimal amount;
 
-	private BurnTokensAction(RadixAddress address, RRI tokenDefinitionReference, BigDecimal amount) {
+	private BurnTokensAction(RRI rri, RadixAddress address, BigDecimal amount) {
+		this.rri = Objects.requireNonNull(rri);
 		this.address = Objects.requireNonNull(address);
-		this.tokenDefinitionReference = Objects.requireNonNull(tokenDefinitionReference);
 		this.amount = Objects.requireNonNull(amount);
 	}
 
 	public static BurnTokensAction create(
+		RRI rri,
 		RadixAddress address,
-		RRI tokenDefinitionReference,
 		BigDecimal amount
 	) {
-		return new BurnTokensAction(address, tokenDefinitionReference, amount);
+		return new BurnTokensAction(rri, address, amount);
 	}
 
 	public RadixAddress getAddress() {
 		return address;
 	}
 
-	public RRI getTokenDefinitionReference() {
-		return tokenDefinitionReference;
+	public RRI getRRI() {
+		return rri;
 	}
 
 	public BigDecimal getAmount() {
 		return amount;
+	}
+
+
+	@Override
+	public String toString() {
+		return "BURN TOKEN " + amount + " " + rri;
 	}
 }

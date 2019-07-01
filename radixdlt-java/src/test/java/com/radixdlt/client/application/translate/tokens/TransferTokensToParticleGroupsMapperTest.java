@@ -26,7 +26,7 @@ public class TransferTokensToParticleGroupsMapperTest {
 		TransferTokensAction transferTokensAction = mock(TransferTokensAction.class);
 		when(transferTokensAction.getAmount()).thenReturn(new BigDecimal("1.0"));
 		when(transferTokensAction.getFrom()).thenReturn(address);
-		when(transferTokensAction.getTokenDefRef()).thenReturn(token);
+		when(transferTokensAction.getRRI()).thenReturn(token);
 
 		TokenBalanceState state = mock(TokenBalanceState.class);
 		when(state.getBalance()).thenReturn(Collections.emptyMap());

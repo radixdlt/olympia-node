@@ -46,7 +46,7 @@ public class TokensExample {
 			TokenSupplyType.MUTABLE
 		));
 		// Mint
-		transaction.stage(MintTokensAction.create(tokenRRI, BigDecimal.valueOf(1000000.0)));
+		transaction.stage(MintTokensAction.create(tokenRRI, api.getMyAddress(), BigDecimal.valueOf(1000000.0)));
 		Result createTokenAndMint = transaction.commitAndPush();
 		createTokenAndMint.toObservable().blockingSubscribe(System.out::println);
 
