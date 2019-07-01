@@ -36,7 +36,7 @@ public class MultipleSubscriptionsToSameAddress {
 		RRI token = RRI.of(api0.getMyAddress(), "TEST");
 
 		TestObserver<Object> api0Balance = TestObserver.create(Util.loggingObserver("api0"));
-		api0.getBalance(token)
+		api0.observeBalance(token)
 			.subscribe(api0Balance);
 
 		System.out.println("Mint 5 TEST");
@@ -45,7 +45,7 @@ public class MultipleSubscriptionsToSameAddress {
 
 		System.out.println("Subscribe api1");
 		TestObserver<Object> api1Balance = TestObserver.create(Util.loggingObserver("api1"));
-		api1.getBalance(token)
+		api1.observeBalance(token)
 			.subscribe(api1Balance);
 
 		System.out.println("Mint 6 TEST");

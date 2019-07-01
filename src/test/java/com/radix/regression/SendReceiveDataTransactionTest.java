@@ -29,7 +29,7 @@ public class SendReceiveDataTransactionTest {
 		// Given account owner listening to own messages
 		RadixApplicationAPI api = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), RadixIdentities.createNew());
 		TestObserver<DecryptedMessage> messageListener = TestObserver.create(Util.loggingObserver("MessageListener"));
-		api.getMessages().subscribe(messageListener);
+		api.observeMessages().subscribe(messageListener);
 
 		// When owner sends message from another account
 		RadixAddress sourceAddress = api.getAddressFromKey(RadixIdentities.createNew().getPublicKey());
@@ -58,8 +58,9 @@ public class SendReceiveDataTransactionTest {
 		TestObserver<DecryptedMessage> messageListener2 = new TestObserver<>(Util.loggingObserver("MessageListener2"));
 		RadixApplicationAPI api1 = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), RadixIdentities.createNew());
 		RadixApplicationAPI api2 = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), RadixIdentities.createNew());
-		api1.getMessages().subscribe(messageListener1);
-		api2.getMessages().subscribe(messageListener2);
+		api1.observeMessages().subscribe(messageListener1);
+		api2.observeMessages().subscribe(messageListener2);
+
 		Disposable d1 = api1.pull();
 		Disposable d2 = api2.pull();
 
@@ -91,7 +92,7 @@ public class SendReceiveDataTransactionTest {
 		// Given an account owner listening to own messages
 		TestObserver<DecryptedMessage> messageListener = new TestObserver<>(Util.loggingObserver("MessageListener"));
 		RadixApplicationAPI api = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), RadixIdentities.createNew());
-		api.getMessages().subscribe(messageListener);
+		api.observeMessages().subscribe(messageListener);
 
 		// When owner sends message to himself
 		byte[] message = new byte[] {1, 2, 3, 4};
@@ -114,7 +115,7 @@ public class SendReceiveDataTransactionTest {
 		TestObserver<DecryptedMessage> clientListener = new TestObserver<>(Util.loggingObserver("MessageListener"));
 		RadixApplicationAPI clientApi = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), RadixIdentities.createNew());
 		RadixApplicationAPI otherAccount = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), RadixIdentities.createNew());
-		clientApi.getMessages(otherAccount.getMyAddress()).subscribe(clientListener);
+		clientApi.observeMessages(otherAccount.getMyAddress()).subscribe(clientListener);
 		Disposable d = clientApi.pull(otherAccount.getMyAddress());
 
 		// When the other account sends message to itself

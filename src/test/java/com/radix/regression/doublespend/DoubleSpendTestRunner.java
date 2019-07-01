@@ -202,7 +202,7 @@ public final class DoubleSpendTestRunner {
 							final TestObserver<ApplicationState> testObserver =
 								TestObserver.create(Util.loggingObserver(singleNodeApi + " " + name));
 
-							singleNodeApi.api.getState(id.stateClass(), id.address()).subscribe(testObserver);
+							singleNodeApi.api.observeState(id.stateClass(), id.address()).subscribe(testObserver);
 							return testObserver;
 						}
 					))

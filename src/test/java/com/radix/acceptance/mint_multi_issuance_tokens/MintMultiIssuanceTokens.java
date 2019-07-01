@@ -40,7 +40,6 @@ import static org.junit.Assert.assertFalse;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
-import io.reactivex.observers.BaseTestConsumer.TestWaitStrategy;
 import io.reactivex.observers.TestObserver;
 
 /**
@@ -118,7 +117,7 @@ public class MintMultiIssuanceTokens {
 		setupApi();
 		// No tokens exist for this account, because it is a freshly created account
 		RRI tokenClass = RRI.of(api.getMyAddress(), symbol);
-		TokenDefinitionsState tokenClassesState = api.getTokenDefs()
+		TokenDefinitionsState tokenClassesState = api.observeTokenDefs()
 			.firstOrError()
 			.blockingGet();
 		assertFalse(tokenClassesState.getState().containsKey(tokenClass));
@@ -157,7 +156,7 @@ public class MintMultiIssuanceTokens {
 		TimeUnit.SECONDS.sleep(3);
 		RRI tokenClass = RRI.of(api.getMyAddress(), symbol);
 		// Ensure balance is up-to-date.
-		BigDecimal tokenBalanceDecimal = api.getBalance(api.getMyAddress(), tokenClass)
+		BigDecimal tokenBalanceDecimal = api.observeBalance(api.getMyAddress(), tokenClass)
 			.firstOrError()
 			.blockingGet();
 		UInt256 tokenBalance = TokenUnitConversions.unitsToSubunits(tokenBalanceDecimal);
