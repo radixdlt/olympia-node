@@ -158,7 +158,7 @@ public class RadixApplicationAPITest {
 		when(api.getAddress()).thenReturn(address);
 		when(address.getUID()).thenReturn(EUID.ONE);
 
-		Result result = api.sendMessage(new byte[0], false, address);
+		Result result = api.sendMessage(address, new byte[0], false);
 		validateSuccessfulStoreDataResult(result);
 	}
 
@@ -174,7 +174,7 @@ public class RadixApplicationAPITest {
 		when(address.getUID()).thenReturn(EUID.ONE);
 		when(api.getAddress()).thenReturn(address);
 
-		api.sendMessage(new byte[0], false, address);
+		api.sendMessage(address, new byte[0], false);
 		verify(controller, times(1)).dispatch(any(SubmitAtomRequestAction.class));
 	}
 
@@ -189,7 +189,7 @@ public class RadixApplicationAPITest {
 		when(api.getAddress()).thenReturn(address);
 		when(address.getUID()).thenReturn(EUID.ONE);
 
-		Result result = api.sendMessage(new byte[0], false, address);
+		Result result = api.sendMessage(address, new byte[0], false);
 		Observable observable = result.toObservable();
 		observable.subscribe();
 		observable.subscribe();

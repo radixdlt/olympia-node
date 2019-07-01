@@ -545,13 +545,27 @@ public class RadixApplicationAPI {
 		return observeActions(DecryptedMessage.class, address);
 	}
 
+	/**
+	 * Sends a message to one's self
+	 *
+	 * @param data the message to send
+	 * @param encrypt if true, encrypts the message with a encrypted private key
+	 * @return result of the send message execution
+	 */
 	public Result sendMessage(byte[] data, boolean encrypt) {
-		return this.sendMessage(data, encrypt, getAddress());
+		return this.sendMessage(getAddress(), data, encrypt);
 	}
 
-	public Result sendMessage(byte[] data, boolean encrypt, RadixAddress address) {
-		SendMessageAction sendMessageAction = SendMessageAction.create(data, getAddress(), address, encrypt);
-
+	/**
+	 * Sends a message from the current address to another address
+	 *
+	 * @param toAddress the address to send the message to
+	 * @param data the message to send
+	 * @param encrypt if true, encrypts the message with an encrypted private key
+	 * @return result of the send message execution
+	 */
+	public Result sendMessage(RadixAddress toAddress, byte[] data, boolean encrypt) {
+		SendMessageAction sendMessageAction = SendMessageAction.create(getAddress(), toAddress, data, encrypt);
 		return execute(sendMessageAction);
 	}
 
