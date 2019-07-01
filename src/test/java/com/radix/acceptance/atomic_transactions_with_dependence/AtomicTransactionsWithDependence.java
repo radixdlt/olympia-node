@@ -90,9 +90,9 @@ public class AtomicTransactionsWithDependence {
 		this.observers.clear();
 
 		RadixIdentity toIdentity = RadixIdentities.createNew();
-		RadixAddress toAddress = api.getAddressFromKey(toIdentity.getPublicKey());
+		RadixAddress toAddress = api.getAddress(toIdentity.getPublicKey());
 		TestObserver<Object> observer = new TestObserver<>();
-		api.execute(new MintAndTransferTokensAction(RRI.of(api.getMyAddress(), "TEST0"), BigDecimal.valueOf(7), toAddress))
+		api.execute(new MintAndTransferTokensAction(RRI.of(api.getAddress(), "TEST0"), BigDecimal.valueOf(7), toAddress))
 			.toObservable()
 			.subscribe(observer);
 		observers.add(observer);
@@ -112,11 +112,11 @@ public class AtomicTransactionsWithDependence {
 		this.observers.clear();
 
 		RadixIdentity toIdentity = RadixIdentities.createNew();
-		RadixAddress toAddress = api.getAddressFromKey(toIdentity.getPublicKey());
+		RadixAddress toAddress = api.getAddress(toIdentity.getPublicKey());
 		TestObserver<Object> observer = new TestObserver<>();
 		Transaction transaction = api.createTransaction();
-		transaction.stage(MintTokensAction.create(RRI.of(api.getMyAddress(), "TEST0"), api.getMyAddress(), BigDecimal.valueOf(7)));
-		transaction.stage(TransferTokensAction.create(RRI.of(api.getMyAddress(), "TEST0"), api.getMyAddress(), toAddress, BigDecimal.valueOf(7)));
+		transaction.stage(MintTokensAction.create(RRI.of(api.getAddress(), "TEST0"), api.getAddress(), BigDecimal.valueOf(7)));
+		transaction.stage(TransferTokensAction.create(RRI.of(api.getAddress(), "TEST0"), api.getAddress(), toAddress, BigDecimal.valueOf(7)));
 		transaction.commitAndPush()
 			.toObservable()
 			.doOnNext(System.out::println)
@@ -179,7 +179,7 @@ public class AtomicTransactionsWithDependence {
 	private void createToken(CreateTokenAction.TokenSupplyType tokenCreateSupplyType, RadixApplicationAPI api) {
 		TestObserver<Object> observer = new TestObserver<>();
 		api.createToken(
-				RRI.of(api.getMyAddress(), this.properties.get(SYMBOL)),
+				RRI.of(api.getAddress(), this.properties.get(SYMBOL)),
 				this.properties.get(NAME),
 				this.properties.get(DESCRIPTION),
 				new BigDecimal(this.properties.get(INITIAL_SUPPLY)),

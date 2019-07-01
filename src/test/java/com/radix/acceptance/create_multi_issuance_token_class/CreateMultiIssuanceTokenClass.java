@@ -105,7 +105,7 @@ public class CreateMultiIssuanceTokenClass {
 	@When("^I submit a mint request of (\\d+) for \"([^\"]*)\"$")
 	public void i_submit_a_mint_request_of_for(int count, String symbol) {
 		TestObserver<Object> observer = new TestObserver<>();
-		api.mintTokens(RRI.of(api.getMyAddress(), symbol), new BigDecimal(count))
+		api.mintTokens(RRI.of(api.getAddress(), symbol), new BigDecimal(count))
 			.toObservable()
 			.doOnNext(System.out::println)
 			.subscribe(observer);
@@ -115,7 +115,7 @@ public class CreateMultiIssuanceTokenClass {
 	@When("^I submit a burn request of (\\d+) for \"([^\"]*)\"$")
 	public void i_submit_a_burn_request_of_for(int count, String symbol) {
 		TestObserver<Object> observer = new TestObserver<>();
-		api.burnTokens(RRI.of(api.getMyAddress(), symbol), BigDecimal.valueOf(count))
+		api.burnTokens(RRI.of(api.getAddress(), symbol), BigDecimal.valueOf(count))
 			.toObservable()
 			.doOnNext(System.out::println)
 			.subscribe(observer);
@@ -124,16 +124,16 @@ public class CreateMultiIssuanceTokenClass {
 
 	@When("^I submit a token transfer request of (\\d+) for \"([^\"]*)\" to an arbitrary account$")
 	public void i_submit_a_token_transfer_request_of_for_to_an_arbitrary_account(int count, String symbol) {
-		RRI tokenClass = RRI.of(api.getMyAddress(), symbol);
-		RadixAddress arbitrary = api.getAddressFromKey(RadixIdentities.createNew().getPublicKey());
+		RRI tokenClass = RRI.of(api.getAddress(), symbol);
+		RadixAddress arbitrary = api.getAddress(RadixIdentities.createNew().getPublicKey());
 
 		// Ensure balance is up-to-date.
-		api.observeBalance(api.getMyAddress(), tokenClass)
+		api.observeBalance(api.getAddress(), tokenClass)
 			.firstOrError()
 			.blockingGet();
 
 		TestObserver<Object> observer = new TestObserver<>();
-		api.sendTokens(tokenClass, api.getMyAddress(), arbitrary, BigDecimal.valueOf(count))
+		api.sendTokens(tokenClass, api.getAddress(), arbitrary, BigDecimal.valueOf(count))
 			.toObservable()
 			.doOnNext(System.out::println)
 			.subscribe(observer);
@@ -184,9 +184,9 @@ public class CreateMultiIssuanceTokenClass {
 
 	@Then("^I can observe token \"([^\"]*)\" balance equal to (\\d+)$")
 	public void i_can_observe_token_balance_equal_to(String symbol, int balance) {
-		RRI tokenClass = RRI.of(api.getMyAddress(), symbol);
+		RRI tokenClass = RRI.of(api.getAddress(), symbol);
 		// Ensure balance is up-to-date.
-		BigDecimal tokenBalanceDecimal = api.observeBalance(api.getMyAddress(), tokenClass)
+		BigDecimal tokenBalanceDecimal = api.observeBalance(api.getAddress(), tokenClass)
 			.firstOrError()
 			.blockingGet();
 		UInt256 tokenBalance = TokenUnitConversions.unitsToSubunits(tokenBalanceDecimal);
@@ -197,7 +197,7 @@ public class CreateMultiIssuanceTokenClass {
 	private void createToken(CreateTokenAction.TokenSupplyType tokenCreateSupplyType) {
 		TestObserver<Object> observer = new TestObserver<>();
 		api.createToken(
-				RRI.of(api.getMyAddress(), this.properties.get(SYMBOL)),
+				RRI.of(api.getAddress(), this.properties.get(SYMBOL)),
 				this.properties.get(NAME),
 				this.properties.get(DESCRIPTION),
 				BigDecimal.valueOf(Long.valueOf(this.properties.get(INITIAL_SUPPLY))),

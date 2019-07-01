@@ -76,7 +76,7 @@ public class RTP {
 		assumeTrue(nodes.size() >= 2);
 
 		TestObserver<SubmitAtomAction> observer = new TestObserver<>();
-		RRI tokenRRI = RRI.of(api.getMyAddress(), "TOKEN");
+		RRI tokenRRI = RRI.of(api.getAddress(), "TOKEN");
 		Transaction tx = api.createTransaction();
 		tx.stage(CreateTokenAction.create(tokenRRI, "Token", "Token", BigDecimal.ZERO, BigDecimal.ONE, TokenSupplyType.MUTABLE));
 		tx.commitAndPush(nodes.get(0))
@@ -140,7 +140,7 @@ public class RTP {
     public void test_atom_has_an_rclock_in_its_tp() throws Exception {
 		assumeFalse(nodes.isEmpty());
 
-    	RRI tokenRRI = RRI.of(api.getMyAddress(), "HI");
+    	RRI tokenRRI = RRI.of(api.getAddress(), "HI");
 		Transaction tx = api.createTransaction();
 		tx.stage(CreateTokenAction.create(tokenRRI, "Token", "Token", BigDecimal.ZERO, BigDecimal.ONE, TokenSupplyType.MUTABLE));
 		Result r = tx.commitAndPush(nodes.get(0));

@@ -126,7 +126,7 @@ public final class DoubleSpendTestRunner {
 					transaction.stageWorkingArea();
 					UnsignedAtom unsignedAtom = transaction.buildAtom();
 
-					return api.getMyIdentity().sign(unsignedAtom)
+					return api.getIdentity().sign(unsignedAtom)
 						.flatMapObservable(a -> api.submitAtom(a, true).toObservable());
 				});
 		}
@@ -166,7 +166,7 @@ public final class DoubleSpendTestRunner {
 
 		AtomicInteger clientId = new AtomicInteger(1);
 		Observable<SingleNodeAPI> singleNodeApis = Observable.just(nodes.get(0), nodes.get(1))
-			.map(node -> new SingleNodeAPI(clientId.getAndIncrement(), node, api.getMyIdentity(), apiSupplier)).cache();
+			.map(node -> new SingleNodeAPI(clientId.getAndIncrement(), node, api.getIdentity(), apiSupplier)).cache();
 
 		// When the account executes two transfers via two different nodes at the same time
 		Observable<Pair<SingleNodeAPI, List<BatchedActions>>> conflictingAtoms =

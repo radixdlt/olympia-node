@@ -184,7 +184,7 @@ public class ParticleGroups {
 
 	@When("^I submit an arbitrary atom with an empty particle group$")
 	public void i_submit_an_arbitrary_atom_with_an_empty_particle_group() {
-		createAtomic(SendMessageAction.create("Hello!".getBytes(), this.api.getMyAddress(), this.api.getMyAddress(), false),
+		createAtomic(SendMessageAction.create("Hello!".getBytes(), this.api.getAddress(), this.api.getAddress(), false),
 			new CreateEmptyGroupAction());
 	}
 
@@ -210,7 +210,7 @@ public class ParticleGroups {
 
 	private CreateTokenAction buildCreateTokenAction(SpecificProperties properties, CreateTokenAction.TokenSupplyType tokenSupplyType) {
 		return CreateTokenAction.create(
-			RRI.of(this.api.getMyAddress(), properties.get(SYMBOL)),
+			RRI.of(this.api.getAddress(), properties.get(SYMBOL)),
 			properties.get(NAME),
 			properties.get(DESCRIPTION),
 			BigDecimal.valueOf(Long.valueOf(properties.get(TOTAL_SUPPLY))),
@@ -220,9 +220,9 @@ public class ParticleGroups {
 
 	private TransferTokensAction buildTransferTokenAction(String symbol, long amount) {
 		return TransferTokensAction.create(
-			RRI.of(api.getMyAddress(), symbol),
-			api.getMyAddress(),
-			api.getAddressFromKey(ecKeyPairGenerator.generateKeyPair().getPublicKey()),
+			RRI.of(api.getAddress(), symbol),
+			api.getAddress(),
+			api.getAddress(ecKeyPairGenerator.generateKeyPair().getPublicKey()),
 			BigDecimal.valueOf(amount)
 		);
 	}
@@ -254,15 +254,15 @@ public class ParticleGroups {
 
 	@When("^I submit a token transfer request of (\\d+) scaled for \"([^\"]*)\" to an arbitrary account$")
 	public void i_submit_a_token_transfer_request_of_for_to_an_arbitrary_account(int count, String symbol) {
-		RRI tokenClass = RRI.of(api.getMyAddress(), symbol);
-		RadixAddress arbitrary = api.getAddressFromKey(RadixIdentities.createNew().getPublicKey());
+		RRI tokenClass = RRI.of(api.getAddress(), symbol);
+		RadixAddress arbitrary = api.getAddress(RadixIdentities.createNew().getPublicKey());
 		// Ensure balance is up-to-date.
-		api.observeBalance(api.getMyAddress(), tokenClass)
+		api.observeBalance(api.getAddress(), tokenClass)
 			.firstOrError()
 			.blockingGet();
 
 		TestObserver<Object> observer = new TestObserver<>();
-		api.sendTokens(tokenClass, api.getMyAddress(), arbitrary, BigDecimal.valueOf(count))
+		api.sendTokens(tokenClass, api.getAddress(), arbitrary, BigDecimal.valueOf(count))
 			.toObservable()
 			.doOnNext(System.out::println)
 			.subscribe(observer);
@@ -315,9 +315,9 @@ public class ParticleGroups {
 
 	@Then("^I can observe token \"([^\"]*)\" balance equal to (\\d+) scaled$")
 	public void i_can_observe_token_balance_equal_to_scaled(String symbol, int balance) {
-		RRI tokenClass = RRI.of(api.getMyAddress(), symbol);
+		RRI tokenClass = RRI.of(api.getAddress(), symbol);
 		// Ensure balance is up-to-date.
-		BigDecimal tokenBalanceDecimal = api.observeBalance(api.getMyAddress(), tokenClass)
+		BigDecimal tokenBalanceDecimal = api.observeBalance(api.getAddress(), tokenClass)
 			.firstOrError()
 			.blockingGet();
 		UInt256 tokenBalance = TokenUnitConversions.unitsToSubunits(tokenBalanceDecimal);
@@ -328,7 +328,7 @@ public class ParticleGroups {
 	private void createToken(CreateTokenAction.TokenSupplyType tokenCreateSupplyType) {
 		TestObserver<Object> observer = new TestObserver<>();
 		api.createToken(
-				RRI.of(api.getMyAddress(), this.properties1.get(SYMBOL)),
+				RRI.of(api.getAddress(), this.properties1.get(SYMBOL)),
 				this.properties1.get(NAME),
 				this.properties1.get(DESCRIPTION),
 				BigDecimal.valueOf(Long.valueOf(this.properties1.get(TOTAL_SUPPLY))),

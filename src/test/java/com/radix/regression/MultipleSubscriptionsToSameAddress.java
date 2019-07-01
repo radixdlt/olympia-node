@@ -21,7 +21,7 @@ public class MultipleSubscriptionsToSameAddress {
 		RadixApplicationAPI api1 = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), identity);
 
 		api0.createToken(
-			RRI.of(api0.getMyAddress(), "TEST"),
+			RRI.of(api0.getAddress(), "TEST"),
 			"TestToken",
 			"TestToken",
 			BigDecimal.valueOf(3),
@@ -33,7 +33,7 @@ public class MultipleSubscriptionsToSameAddress {
 		System.out.println("Create TEST with 3 supply");
 		System.out.println("Subscribe api0");
 
-		RRI token = RRI.of(api0.getMyAddress(), "TEST");
+		RRI token = RRI.of(api0.getAddress(), "TEST");
 
 		TestObserver<Object> api0Balance = TestObserver.create(Util.loggingObserver("api0"));
 		api0.observeBalance(token)

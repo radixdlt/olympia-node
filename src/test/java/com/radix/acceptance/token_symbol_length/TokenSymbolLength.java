@@ -3,7 +3,6 @@ package com.radix.acceptance.token_symbol_length;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radix.TestEnv;
-import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import java.math.BigDecimal;
@@ -17,7 +16,6 @@ import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
-import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
@@ -102,7 +100,7 @@ public class TokenSymbolLength {
 	private void createToken(CreateTokenAction.TokenSupplyType tokenCreateSupplyType) {
 		TestObserver<Object> observer = new TestObserver<>();
 		api.createToken(
-			RRI.of(api.getMyAddress(), this.properties.get(SYMBOL)),
+			RRI.of(api.getAddress(), this.properties.get(SYMBOL)),
 			this.properties.get(NAME),
 			this.properties.get(DESCRIPTION),
 			BigDecimal.valueOf(Long.valueOf(this.properties.get(INITIAL_SUPPLY))),

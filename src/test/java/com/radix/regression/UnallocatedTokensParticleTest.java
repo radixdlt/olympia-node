@@ -32,7 +32,7 @@ public class UnallocatedTokensParticleTest {
 		List<ParticleGroup> groups = new ArrayList<>();
 
 		TokenDefinitionParticle particle = new TokenDefinitionParticle(
-			api.getMyAddress(),
+			api.getAddress(),
 			"Joshy Token",
 			"JOSH",
 			"Best Token",
@@ -48,7 +48,7 @@ public class UnallocatedTokensParticleTest {
 
 		UnsignedAtom unsignedAtom = api.buildAtomWithFee(groups);
 
-		Observable<SubmitAtomAction> updates = api.getMyIdentity()
+		Observable<SubmitAtomAction> updates = api.getIdentity()
 			.sign(unsignedAtom)
 			.flatMapObservable(a -> api.submitAtom(a).toObservable());
 
@@ -67,7 +67,7 @@ public class UnallocatedTokensParticleTest {
 		RadixApplicationAPI api = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), RadixIdentities.createNew());
 
 		api.createToken(
-			RRI.of(api.getMyAddress(), "JOSH"),
+			RRI.of(api.getAddress(), "JOSH"),
 			"Joshy Token",
 			"Coolest Token",
 			BigDecimal.ONE,
@@ -81,7 +81,7 @@ public class UnallocatedTokensParticleTest {
 			UInt256.MAX_VALUE,
 			UInt256.ONE,
 			System.currentTimeMillis(),
-			RRI.of(api.getMyAddress(), "JOSH"),
+			RRI.of(api.getAddress(), "JOSH"),
 			ImmutableMap.of(TokenTransition.MINT, TokenPermission.TOKEN_CREATION_ONLY, TokenTransition.BURN, TokenPermission.TOKEN_CREATION_ONLY)
 		);
 
@@ -89,7 +89,7 @@ public class UnallocatedTokensParticleTest {
 
 		UnsignedAtom unsignedAtom = api.buildAtomWithFee(groups);
 
-		Observable<SubmitAtomAction> updates = api.getMyIdentity()
+		Observable<SubmitAtomAction> updates = api.getIdentity()
 			.sign(unsignedAtom)
 			.flatMapObservable(a -> api.submitAtom(a).toObservable());
 
@@ -113,7 +113,7 @@ public class UnallocatedTokensParticleTest {
 			UInt256.MAX_VALUE,
 			UInt256.ONE,
 			System.nanoTime(),
-			RRI.of(api.getMyAddress(), "JOSH"),
+			RRI.of(api.getAddress(), "JOSH"),
 			ImmutableMap.of(TokenTransition.MINT, TokenPermission.TOKEN_CREATION_ONLY, TokenTransition.BURN, TokenPermission.TOKEN_CREATION_ONLY)
 		);
 
@@ -121,12 +121,12 @@ public class UnallocatedTokensParticleTest {
 			UInt256.MAX_VALUE,
 			UInt256.ONE,
 			System.nanoTime(),
-			RRI.of(api.getMyAddress(), "JOSH"),
+			RRI.of(api.getAddress(), "JOSH"),
 			ImmutableMap.of(TokenTransition.MINT, TokenPermission.TOKEN_CREATION_ONLY, TokenTransition.BURN, TokenPermission.TOKEN_CREATION_ONLY)
 		);
 
 		TokenDefinitionParticle tokenDefinitionParticle = new TokenDefinitionParticle(
-			api.getMyAddress(),
+			api.getAddress(),
 			"Joshy Token",
 			"JOSH",
 			"Coolest token",
@@ -146,7 +146,7 @@ public class UnallocatedTokensParticleTest {
 
 		UnsignedAtom unsignedAtom = api.buildAtomWithFee(groups);
 
-		Observable<SubmitAtomAction> updates = api.getMyIdentity()
+		Observable<SubmitAtomAction> updates = api.getIdentity()
 			.sign(unsignedAtom)
 			.flatMapObservable(a -> api.submitAtom(a).toObservable());
 

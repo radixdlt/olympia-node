@@ -102,7 +102,7 @@ public class BurnMultiIssuanceTokens {
 	public void a_library_client_who_owns_an_account_where_token_does_not_exist(String symbol) throws Throwable {
 		setupApi();
 		// No tokens exist for this account, because it is a freshly created account
-		RRI tokenClass = RRI.of(api.getMyAddress(), symbol);
+		RRI tokenClass = RRI.of(api.getAddress(), symbol);
 		TokenDefinitionsState tokenClassesState = api.observeTokenDefs()
 			.firstOrError()
 			.blockingGet();
@@ -113,15 +113,15 @@ public class BurnMultiIssuanceTokens {
 	public void a_library_client_who_does_not_own_a_token_class_on_another_account(String symbol, int initialSupply) throws Throwable {
 		setupApi();
 
-		Disposable d = this.api.pull(this.otherApi.getMyAddress());
+		Disposable d = this.api.pull(this.otherApi.getAddress());
 		this.properties.put(SYMBOL, symbol);
 		createToken(this.otherApi, TokenSupplyType.MUTABLE);
 		awaitAtomStatus(STORED);
 		TimeUnit.SECONDS.sleep(15);
 		d.dispose();
 
-		this.properties.put(ADDRESS, this.api.getMyAddress().toString());
-		this.properties.put(OTHER_ADDRESS, this.otherApi.getMyAddress().toString());
+		this.properties.put(ADDRESS, this.api.getAddress().toString());
+		this.properties.put(OTHER_ADDRESS, this.otherApi.getAddress().toString());
 		this.properties.put(INITIAL_SUPPLY, Integer.toString(initialSupply));
 	}
 
@@ -138,9 +138,9 @@ public class BurnMultiIssuanceTokens {
 	@When("^the client waits to be notified that \"([^\"]*)\" token has a total supply of (\\d+)$")
 	public void theClientWaitsToBeNotifiedThatTokenHasATotalSupplyOf(String symbol, int supply) throws Throwable {
 		awaitAtomStatus(STORED);
-		RRI tokenClass = RRI.of(api.getMyAddress(), symbol);
+		RRI tokenClass = RRI.of(api.getAddress(), symbol);
 		// Ensure balance is up-to-date.
-		BigDecimal tokenBalanceDecimal = api.observeBalance(api.getMyAddress(), tokenClass)
+		BigDecimal tokenBalanceDecimal = api.observeBalance(api.getAddress(), tokenClass)
 			.firstOrError()
 			.blockingGet();
 		UInt256 tokenBalance = TokenUnitConversions.unitsToSubunits(tokenBalanceDecimal);
@@ -157,9 +157,9 @@ public class BurnMultiIssuanceTokens {
 	public void theClientShouldBeNotifiedThatTokenHasATotalSupplyOf(String symbol, int supply) throws Throwable {
 		awaitAtomStatus(STORED);
 		// Must be a better way than this.
-		RRI tokenClass = RRI.of(api.getMyAddress(), symbol);
+		RRI tokenClass = RRI.of(api.getAddress(), symbol);
 		// Ensure balance is up-to-date.
-		BigDecimal tokenBalanceDecimal = api.observeBalance(api.getMyAddress(), tokenClass)
+		BigDecimal tokenBalanceDecimal = api.observeBalance(api.getAddress(), tokenClass)
 			.firstOrError()
 			.blockingGet();
 		UInt256 tokenBalance = TokenUnitConversions.unitsToSubunits(tokenBalanceDecimal);
@@ -196,7 +196,7 @@ public class BurnMultiIssuanceTokens {
 		this.observers.clear();
 		this.actionExceptions.clear();
 
-		this.properties.put(ADDRESS, api.getMyAddress().toString());
+		this.properties.put(ADDRESS, api.getAddress().toString());
 	}
 
 	private void createToken(CreateTokenAction.TokenSupplyType tokenCreateSupplyType) {
@@ -206,7 +206,7 @@ public class BurnMultiIssuanceTokens {
 	private void createToken(RadixApplicationAPI api, CreateTokenAction.TokenSupplyType tokenCreateSupplyType) {
 		TestObserver<SubmitAtomAction> observer = new TestObserver<>();
 		api.createToken(
-			RRI.of(api.getMyAddress(), this.properties.get(SYMBOL)),
+			RRI.of(api.getAddress(), this.properties.get(SYMBOL)),
 				this.properties.get(NAME),
 				this.properties.get(DESCRIPTION),
 				BigDecimal.valueOf(Long.valueOf(this.properties.get(INITIAL_SUPPLY))),

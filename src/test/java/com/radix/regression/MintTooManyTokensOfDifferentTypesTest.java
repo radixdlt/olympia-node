@@ -34,7 +34,7 @@ public class MintTooManyTokensOfDifferentTypesTest {
 	private static TestObserver<SubmitAtomAction> createToken(RadixApplicationAPI api) {
 		TestObserver<SubmitAtomAction> observer = new TestObserver<>();
 		api.createToken(
-			RRI.of(api.getMyAddress(), "TEST"),
+			RRI.of(api.getAddress(), "TEST"),
 			"TestToken",
 			"TestToken",
 			BigDecimal.valueOf(2).pow(256).subtract(BigDecimal.ONE).scaleByPowerOfTen(-18),

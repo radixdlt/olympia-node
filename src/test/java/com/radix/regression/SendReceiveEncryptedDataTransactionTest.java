@@ -41,7 +41,7 @@ public class SendReceiveEncryptedDataTransactionTest {
 		RadixApplicationAPI sendMessageWithDifferentKeyApi = new RadixApplicationAPIBuilder()
 			.defaultFeeMapper()
 			.universe(RadixUniverse.create(TestEnv.getBootstrapConfig()))
-			.identity(normalApi.getMyIdentity())
+			.identity(normalApi.getIdentity())
 			.addStatelessParticlesMapper(SendMessageAction.class, msgMapper)
 			.build();
 		Result msgSendResult = sendMessageWithDifferentKeyApi.sendMessage(new byte[] {0, 1, 2, 3}, true);
@@ -52,8 +52,8 @@ public class SendReceiveEncryptedDataTransactionTest {
 		sendMessageStatus.blockingAwait();
 		messageListener.awaitCount(1)
 			.assertValue(msg -> msg.getEncryptionState().equals(EncryptionState.CANNOT_DECRYPT))
-			.assertValue(msg -> msg.getTo().equals(normalApi.getMyAddress()))
-			.assertValue(msg -> msg.getFrom().equals(normalApi.getMyAddress()))
+			.assertValue(msg -> msg.getTo().equals(normalApi.getAddress()))
+			.assertValue(msg -> msg.getFrom().equals(normalApi.getAddress()))
 			.assertValue(msg -> msg.getData().length > 0)
 			.dispose();
 		d.dispose();

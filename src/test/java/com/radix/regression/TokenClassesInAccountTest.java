@@ -36,7 +36,7 @@ public class TokenClassesInAccountTest {
 
 	private static CreateTokenAction buildCreateNewTokenAction(String symbol, BigDecimal initialSupply) {
 		return CreateTokenAction.create(
-			RRI.of(api.getMyAddress(), symbol),
+			RRI.of(api.getAddress(), symbol),
 			"Joshy Coin",
 			"Ze best coin!",
 			initialSupply,
@@ -47,7 +47,7 @@ public class TokenClassesInAccountTest {
 
 	private Predicate<TokenDefinitionsState> getPredicateCheck(String symbol, BigDecimal initialSupply) {
 		return tokens -> {
-			TokenState tokenState = tokens.getState().get(RRI.of(api.getMyAddress(), symbol));
+			TokenState tokenState = tokens.getState().get(RRI.of(api.getAddress(), symbol));
 			return tokenState.getName().equals("Joshy Coin")
 				&& tokenState.getIso().equals(symbol)
 				&& tokenState.getDescription().equals("Ze best coin!")
@@ -66,7 +66,7 @@ public class TokenClassesInAccountTest {
 		};
 
 		// When the account is subscribed for the token state
-		Supplier<Observable<TokenDefinitionsState>> subscription = () -> api.observeTokenDefs(api.getMyAddress());
+		Supplier<Observable<TokenDefinitionsState>> subscription = () -> api.observeTokenDefs(api.getAddress());
 
 		// Then the two tokens are published
 		List<Predicate<TokenDefinitionsState>> thenChecks = Arrays.asList(

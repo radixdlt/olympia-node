@@ -14,7 +14,7 @@ public class MintAndBurnTest {
 	@Test
 	public void given_an_account_owner_who_created_a_token__when_the_owner_mints_max_then_burns_max_then_mints_max__then_it_should_all_be_successful() throws Exception {
 		RadixApplicationAPI api = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), RadixIdentities.createNew());
-		RRI token = RRI.of(api.getMyAddress(), "JOSH");
+		RRI token = RRI.of(api.getAddress(), "JOSH");
 
 		Result result0 = api.createMultiIssuanceToken(token, "Joshy Token", "Best token");
 		result0.toObservable().subscribe(System.out::println);

@@ -41,8 +41,8 @@ public class TranslucentAtomTest {
 	@Test
 	public void testWrongDestination() {
 		MessageParticle messageParticle = new MessageParticle(
-			api.getMyAddress(),
-			api.getMyAddress(),
+			api.getAddress(),
+			api.getAddress(),
 			new byte[1],
 			new MetadataMap(),
 			0, ImmutableSet.of(EUID.ONE));
@@ -71,11 +71,11 @@ public class TranslucentAtomTest {
 	@Test
 	public void testExtraDestination() {
 		MessageParticle messageParticle = new MessageParticle(
-			api.getMyAddress(),
-			api.getMyAddress(),
+			api.getAddress(),
+			api.getAddress(),
 			new byte[1],
 			new MetadataMap(),
-			0, ImmutableSet.of(api.getMyAddress().getUID(), EUID.ONE));
+			0, ImmutableSet.of(api.getAddress().getUID(), EUID.ONE));
 		UnsignedAtom unsignedAtom = new UnsignedAtom(new Atom(ParticleGroup.of(SpunParticle.up(messageParticle)), System.currentTimeMillis()));
 		Atom signedAtom = this.identity.syncSign(unsignedAtom);
 		Result result = api.submitAtom(signedAtom);

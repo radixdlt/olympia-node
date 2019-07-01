@@ -32,8 +32,8 @@ public class SendReceiveDataTransactionTest {
 		api.observeMessages().subscribe(messageListener);
 
 		// When owner sends message from another account
-		RadixAddress sourceAddress = api.getAddressFromKey(RadixIdentities.createNew().getPublicKey());
-		Action sendMessageAction = SendMessageAction.create(new byte[] {0}, sourceAddress, api.getMyAddress(), false);
+		RadixAddress sourceAddress = api.getAddress(RadixIdentities.createNew().getPublicKey());
+		Action sendMessageAction = SendMessageAction.create(new byte[] {0}, sourceAddress, api.getAddress(), false);
 		Completable sendMessageStatus = api.execute(sendMessageAction).toCompletable();
 
 		// Then client should be notified of error
@@ -66,20 +66,20 @@ public class SendReceiveDataTransactionTest {
 
 		// When one sends a message to the other
 		byte[] message = new byte[] {1, 2, 3, 4};
-		Completable sendMessageStatus = api1.sendMessage(message, false, api2.getMyAddress()).toCompletable();
+		Completable sendMessageStatus = api1.sendMessage(message, false, api2.getAddress()).toCompletable();
 
 		// Then both owners should receive the message
 		sendMessageStatus.blockingAwait();
 		messageListener1.awaitCount(1)
 			.assertValueAt(0, msg -> Arrays.equals(message, msg.getData()))
-			.assertValueAt(0, msg -> msg.getFrom().equals(api1.getMyAddress()))
-			.assertValueAt(0, msg -> msg.getTo().equals(api2.getMyAddress()))
+			.assertValueAt(0, msg -> msg.getFrom().equals(api1.getAddress()))
+			.assertValueAt(0, msg -> msg.getTo().equals(api2.getAddress()))
 			.assertValueAt(0, msg -> msg.getEncryptionState().equals(EncryptionState.NOT_ENCRYPTED))
 			.dispose();
 		messageListener2.awaitCount(1)
 			.assertValueAt(0, msg -> Arrays.equals(message, msg.getData()))
-			.assertValueAt(0, msg -> msg.getFrom().equals(api1.getMyAddress()))
-			.assertValueAt(0, msg -> msg.getTo().equals(api2.getMyAddress()))
+			.assertValueAt(0, msg -> msg.getFrom().equals(api1.getAddress()))
+			.assertValueAt(0, msg -> msg.getTo().equals(api2.getAddress()))
 			.assertValueAt(0, msg -> msg.getEncryptionState().equals(EncryptionState.NOT_ENCRYPTED))
 			.dispose();
 		d1.dispose();
@@ -102,8 +102,8 @@ public class SendReceiveDataTransactionTest {
 		sendMessageStatus.blockingAwait();
 		messageListener.awaitCount(1)
 			.assertValueAt(0, msg -> Arrays.equals(message, msg.getData()))
-			.assertValueAt(0, msg -> msg.getFrom().equals(api.getMyAddress()))
-			.assertValueAt(0, msg -> msg.getTo().equals(api.getMyAddress()))
+			.assertValueAt(0, msg -> msg.getFrom().equals(api.getAddress()))
+			.assertValueAt(0, msg -> msg.getTo().equals(api.getAddress()))
 			.assertValueAt(0, msg -> msg.getEncryptionState().equals(EncryptionState.NOT_ENCRYPTED))
 			.dispose();
 	}
@@ -115,8 +115,8 @@ public class SendReceiveDataTransactionTest {
 		TestObserver<DecryptedMessage> clientListener = new TestObserver<>(Util.loggingObserver("MessageListener"));
 		RadixApplicationAPI clientApi = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), RadixIdentities.createNew());
 		RadixApplicationAPI otherAccount = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), RadixIdentities.createNew());
-		clientApi.observeMessages(otherAccount.getMyAddress()).subscribe(clientListener);
-		Disposable d = clientApi.pull(otherAccount.getMyAddress());
+		clientApi.observeMessages(otherAccount.getAddress()).subscribe(clientListener);
+		Disposable d = clientApi.pull(otherAccount.getAddress());
 
 		// When the other account sends message to itself
 		byte[] message = new byte[] {1, 2, 3, 4};
@@ -126,8 +126,8 @@ public class SendReceiveDataTransactionTest {
 		sendMessageStatus.blockingAwait();
 		clientListener.awaitCount(1)
 			.assertValueAt(0, msg -> Arrays.equals(message, msg.getData()))
-			.assertValueAt(0, msg -> msg.getFrom().equals(otherAccount.getMyAddress()))
-			.assertValueAt(0, msg -> msg.getTo().equals(otherAccount.getMyAddress()))
+			.assertValueAt(0, msg -> msg.getFrom().equals(otherAccount.getAddress()))
+			.assertValueAt(0, msg -> msg.getTo().equals(otherAccount.getAddress()))
 			.assertValueAt(0, msg -> msg.getEncryptionState().equals(EncryptionState.NOT_ENCRYPTED))
 			.dispose();
 

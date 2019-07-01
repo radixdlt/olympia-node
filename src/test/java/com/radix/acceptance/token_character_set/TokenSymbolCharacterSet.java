@@ -100,7 +100,7 @@ public class TokenSymbolCharacterSet {
 	private void createToken(CreateTokenAction.TokenSupplyType tokenCreateSupplyType) {
 		TestObserver<Object> observer = new TestObserver<>();
 		api.createToken(
-				RRI.of(api.getMyAddress(), this.properties.get(SYMBOL)),
+				RRI.of(api.getAddress(), this.properties.get(SYMBOL)),
 				this.properties.get(NAME),
 				this.properties.get(DESCRIPTION),
 				BigDecimal.valueOf(Long.valueOf(this.properties.get(INITIAL_SUPPLY))),

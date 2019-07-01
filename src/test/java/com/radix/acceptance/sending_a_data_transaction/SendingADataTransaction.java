@@ -128,17 +128,17 @@ public class SendingADataTransaction {
 
 	@When("^I submit a message with \"([^\"]*)\" to another client claiming to be another client$")
 	public void i_submit_a_message_with_to_another_client_claiming_to_be_another_client(String message) {
-		createAtomic(this.api, SendMessageAction.create(message.getBytes(), this.otherApi.getMyAddress(), this.otherApi.getMyAddress(), false));
+		createAtomic(this.api, SendMessageAction.create(message.getBytes(), this.otherApi.getAddress(), this.otherApi.getAddress(), false));
 	}
 
 	@When("^I submit a message with \"([^\"]*)\" to another client$")
 	public void i_submit_a_message_with_to_another_client(String message) {
-		createAtomic(this.api, SendMessageAction.create(message.getBytes(), this.api.getMyAddress(), this.otherApi.getMyAddress(), false));
+		createAtomic(this.api, SendMessageAction.create(message.getBytes(), this.api.getAddress(), this.otherApi.getAddress(), false));
 	}
 
 	@When("^I submit a message with \"([^\"]*)\" to myself$")
 	public void i_submit_a_message_with_to_myself(String message) {
-		createAtomic(this.api, SendMessageAction.create(message.getBytes(), this.api.getMyAddress(), this.api.getMyAddress(), false));
+		createAtomic(this.api, SendMessageAction.create(message.getBytes(), this.api.getAddress(), this.api.getAddress(), false));
 	}
 
 	@When("^I can observe a message with \"([^\"]*)\"$")
@@ -159,7 +159,7 @@ public class SendingADataTransaction {
 		messageTestObserver.awaitCount(1, TestWaitStrategy.SLEEP_1000MS, 10000);
 		messageTestObserver.assertSubscribed();
 		messageTestObserver.assertNoErrors();
-		messageTestObserver.assertValue(m -> new String(m.getData()).equals(message) && m.getFrom().equals(this.api.getMyAddress()));
+		messageTestObserver.assertValue(m -> new String(m.getData()).equals(message) && m.getFrom().equals(this.api.getAddress()));
 		messageTestObserver.dispose();
 	}
 
