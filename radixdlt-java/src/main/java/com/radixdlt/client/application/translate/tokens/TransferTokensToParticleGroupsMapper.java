@@ -94,7 +94,7 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 
 	@Override
 	public List<ParticleGroup> mapToParticleGroups(TransferTokensAction transfer, Stream<Particle> store) throws StageActionException {
-		final RRI tokenRef = transfer.getTokenDefRef();
+		final RRI tokenRef = transfer.getRRI();
 
 		List<TransferrableTokensParticle> tokenConsumables = store
 			.map(TransferrableTokensParticle.class::cast)

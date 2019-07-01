@@ -532,7 +532,7 @@ public class RadixApplicationAPI {
 	}
 
 	public Result sendMessage(byte[] data, boolean encrypt, RadixAddress address) {
-		SendMessageAction sendMessageAction = new SendMessageAction(data, getMyAddress(), address, encrypt);
+		SendMessageAction sendMessageAction = SendMessageAction.create(data, getMyAddress(), address, encrypt);
 
 		return execute(sendMessageAction);
 	}
@@ -557,6 +557,17 @@ public class RadixApplicationAPI {
 	public Observable<TokenTransfer> getTokenTransfers(RadixAddress address) {
 		Objects.requireNonNull(address);
 		return getActions(TokenTransfer.class, address);
+	}
+
+	/**
+	 * Retrieve the balances of the current address from the current atom store.
+	 * @return map of balances
+	 */
+	public Map<RRI, BigDecimal> getBalances() {
+		final ParticleReducer<TokenBalanceState> reducer = this.getStateReducer(TokenBalanceState.class);
+		return universe.getAtomStore().getUpParticles(getMyAddress(), null)
+			.reduce(reducer.initialState(), reducer::reduce, reducer::combine)
+			.getBalance();
 	}
 
 	/**
@@ -698,7 +709,7 @@ public class RadixApplicationAPI {
 	 * @return result of the transaction
 	 */
 	public Result mintTokens(RRI token, BigDecimal amount) {
-		MintTokensAction mintTokensAction = MintTokensAction.create(token, amount);
+		MintTokensAction mintTokensAction = MintTokensAction.create(token, getMyAddress(), amount);
 		return execute(mintTokensAction);
 	}
 
@@ -710,7 +721,7 @@ public class RadixApplicationAPI {
 	 * @return result of the transaction
 	 */
 	public Result burnTokens(RRI token, BigDecimal amount) {
-		BurnTokensAction burnTokensAction = BurnTokensAction.create(getMyAddress(), token, amount);
+		BurnTokensAction burnTokensAction = BurnTokensAction.create(token, getMyAddress(), amount);
 		return execute(burnTokensAction);
 	}
 
@@ -794,7 +805,7 @@ public class RadixApplicationAPI {
 		Objects.requireNonNull(token);
 
 		final TransferTokensAction transferTokensAction =
-				TransferTokensAction.create(from, to, amount, token, attachment);
+				TransferTokensAction.create(token, from, to, amount, attachment);
 
 		return this.execute(transferTokensAction);
 	}
@@ -883,7 +894,7 @@ public class RadixApplicationAPI {
 		 *
 		 * @param action action to add to staging area.
 		 */
-		public void stage(Action action) {
+		public void stage(Action action) throws StageActionException {
 			BiFunction<Action, Stream<Particle>, List<ParticleGroup>> statefulMapper = actionMappers.get(action.getClass());
 			if (statefulMapper == null) {
 				throw new IllegalArgumentException("Unknown action class: " + action.getClass() + ". Available: " + actionMappers.keySet());

@@ -28,35 +28,12 @@ import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.particles.Particle;
 
 public class MintTokensActionMapper implements StatefulActionToParticleGroupsMapper<MintTokensAction> {
-	private final FungibleParticleTransitioner<UnallocatedTokensParticle, TransferrableTokensParticle> transitioner;
-
 	public MintTokensActionMapper() {
-		this.transitioner = new FungibleParticleTransitioner<>(
-			(amt, consumable) -> new TransferrableTokensParticle(
-				amt,
-				consumable.getGranularity(),
-				consumable.getAddress(),
-				System.nanoTime(),
-				consumable.getTokDefRef(),
-				System.currentTimeMillis() / 60000L + 60000L,
-				consumable.getTokenPermissions()
-			),
-			mintedTokens -> mintedTokens,
-			(amt, consumable) -> new UnallocatedTokensParticle(
-				amt,
-				consumable.getGranularity(),
-				System.nanoTime(),
-				consumable.getTokDefRef(),
-				consumable.getTokenPermissions()
-			),
-			unallocated -> unallocated,
-			UnallocatedTokensParticle::getAmount
-		);
 	}
 
 	@Override
 	public Set<ShardedParticleStateId> requiredState(MintTokensAction mintTokensAction) {
-		RadixAddress tokenDefinitionAddress = mintTokensAction.getTokenDefinitionReference().getAddress();
+		RadixAddress tokenDefinitionAddress = mintTokensAction.getRRI().getAddress();
 
 		return ImmutableSet.of(
 			ShardedParticleStateId.of(UnallocatedTokensParticle.class, tokenDefinitionAddress),
@@ -66,7 +43,7 @@ public class MintTokensActionMapper implements StatefulActionToParticleGroupsMap
 
 	@Override
 	public List<ParticleGroup> mapToParticleGroups(MintTokensAction mintTokensAction, Stream<Particle> store) throws StageActionException {
-		RRI tokenDefinition = mintTokensAction.getTokenDefinitionReference();
+		RRI rri = mintTokensAction.getRRI();
 
 		if (mintTokensAction.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
 			throw new IllegalArgumentException("Mint amount must be greater than 0.");
@@ -75,10 +52,33 @@ public class MintTokensActionMapper implements StatefulActionToParticleGroupsMap
 		Map<Class<? extends Particle>, List<Particle>> particles = store.collect(Collectors.groupingBy(Particle::getClass));
 		final List<Particle> tokDefParticles = particles.get(TokenDefinitionParticle.class);
 		if (tokDefParticles == null
-			|| tokDefParticles.stream().noneMatch(p -> ((TokenDefinitionParticle) p).getRRI().equals(tokenDefinition))
+			|| tokDefParticles.stream().noneMatch(p -> ((TokenDefinitionParticle) p).getRRI().equals(rri))
 		) {
-			throw new UnknownTokenException(mintTokensAction.getTokenDefinitionReference());
+			throw new UnknownTokenException(mintTokensAction.getRRI());
 		}
+
+		final FungibleParticleTransitioner<UnallocatedTokensParticle, TransferrableTokensParticle> transitioner =
+			new FungibleParticleTransitioner<>(
+				(amt, consumable) -> new TransferrableTokensParticle(
+					amt,
+					consumable.getGranularity(),
+					mintTokensAction.getAddress(),
+					System.nanoTime(),
+					consumable.getTokDefRef(),
+					System.currentTimeMillis() / 60000L + 60000L,
+					consumable.getTokenPermissions()
+				),
+				mintedTokens -> mintedTokens,
+				(amt, consumable) -> new UnallocatedTokensParticle(
+					amt,
+					consumable.getGranularity(),
+					System.nanoTime(),
+					consumable.getTokDefRef(),
+					consumable.getTokenPermissions()
+				),
+				unallocated -> unallocated,
+				UnallocatedTokensParticle::getAmount
+			);
 
 		final FungibleParticleTransition<UnallocatedTokensParticle, TransferrableTokensParticle> transition;
 		try {
@@ -86,13 +86,13 @@ public class MintTokensActionMapper implements StatefulActionToParticleGroupsMap
 				particles.getOrDefault(UnallocatedTokensParticle.class, Collections.emptyList())
 					.stream()
 					.map(UnallocatedTokensParticle.class::cast)
-					.filter(p -> p.getTokDefRef().equals(tokenDefinition))
+					.filter(p -> p.getTokDefRef().equals(rri))
 					.collect(Collectors.toList()),
 				TokenUnitConversions.unitsToSubunits(mintTokensAction.getAmount())
 			);
 		} catch (NotEnoughFungiblesException e) {
 			throw new TokenOverMintException(
-				mintTokensAction.getTokenDefinitionReference(),
+				mintTokensAction.getRRI(),
 				TokenUnitConversions.subunitsToUnits(UInt256.MAX_VALUE),
 				TokenUnitConversions.subunitsToUnits(UInt256.MAX_VALUE.subtract(e.getCurrent())),
 				mintTokensAction.getAmount()

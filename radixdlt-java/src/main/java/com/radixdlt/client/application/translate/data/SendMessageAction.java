@@ -12,11 +12,15 @@ public class SendMessageAction implements Action {
 	private final byte[] data;
 	private final boolean encrypt;
 
-	public SendMessageAction(byte[] data, RadixAddress from, RadixAddress to, boolean encrypt) {
+	private SendMessageAction(byte[] data, RadixAddress from, RadixAddress to, boolean encrypt) {
 		this.from = from;
 		this.data = data;
 		this.to = to;
 		this.encrypt = encrypt;
+	}
+
+	public static SendMessageAction create(byte[] data, RadixAddress from, RadixAddress to, boolean encrypt) {
+		return new SendMessageAction(data, from, to, encrypt);
 	}
 
 	public boolean encrypt() {
@@ -33,5 +37,10 @@ public class SendMessageAction implements Action {
 
 	public RadixAddress getFrom() {
 		return from;
+	}
+
+	@Override
+	public String toString() {
+		return "SEND MESSAGE FROM " + from + " TO " + to;
 	}
 }
