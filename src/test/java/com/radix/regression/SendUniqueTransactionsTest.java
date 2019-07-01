@@ -2,6 +2,7 @@ package com.radix.regression;
 
 import com.radix.TestEnv;
 import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
+import com.radixdlt.client.core.atoms.particles.RRI;
 import org.junit.Test;
 
 import com.radixdlt.client.application.RadixApplicationAPI;
@@ -28,16 +29,17 @@ public class SendUniqueTransactionsTest {
 		RadixApplicationAPI api = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), RadixIdentities.createNew());
 		final String uniqueId = "thisisauniquestring";
 		Transaction transaction = api.createTransaction();
-		transaction.stage(new SendMessageAction(new byte[] {0}, api.getMyAddress(), api.getMyAddress(), false));
-		transaction.stage(new PutUniqueIdAction(api.getMyAddress(), uniqueId));
+		transaction.stage(SendMessageAction.create(new byte[] {0}, api.getMyAddress(), api.getMyAddress(), false));
+		RRI rriUnique = RRI.of(api.getMyAddress(), uniqueId);
+		transaction.stage(PutUniqueIdAction.create(rriUnique));
 		Completable initialUniqueStatus = transaction.commitAndPush().toCompletable();
 		initialUniqueStatus.blockingAwait();
 
 		// When client attempts to use same id
 		TestObserver<Object> submissionObserver = TestObserver.create(Util.loggingObserver("Submission"));
 		Transaction transaction1 = api.createTransaction();
-		transaction1.stage(new SendMessageAction(new byte[] {1}, api.getMyAddress(), api.getMyAddress(), false));
-		transaction1.stage(new PutUniqueIdAction(api.getMyAddress(), uniqueId));
+		transaction1.stage(SendMessageAction.create(new byte[] {1}, api.getMyAddress(), api.getMyAddress(), false));
+		transaction1.stage(PutUniqueIdAction.create(rriUnique));
 		Completable conflictingUniqueStatus = transaction1.commitAndPush().toCompletable();
 		conflictingUniqueStatus.subscribe(submissionObserver);
 
@@ -54,13 +56,13 @@ public class SendUniqueTransactionsTest {
 
 		// Given account owner which has NOT performed an action with a unique id
 		RadixApplicationAPI api = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), RadixIdentities.createNew());
-		final String uniqueId = "thisisauniquestring";
+		RRI unique = RRI.of(api.getMyAddress(), "thisisauniquestring");
 
 		// When client attempts to use id
 		TestObserver<Object> submissionObserver = TestObserver.create(Util.loggingObserver("Submission"));
 		Transaction transaction = api.createTransaction();
-		transaction.stage(new SendMessageAction(new byte[] {1}, api.getMyAddress(), api.getMyAddress(), false));
-		transaction.stage(new PutUniqueIdAction(api.getMyAddress(), uniqueId));
+		transaction.stage(SendMessageAction.create(new byte[] {1}, api.getMyAddress(), api.getMyAddress(), false));
+		transaction.stage(PutUniqueIdAction.create(unique));
 		Completable conflictingUniqueStatus = transaction.commitAndPush().toCompletable();
 		conflictingUniqueStatus.subscribe(submissionObserver);
 
@@ -75,13 +77,13 @@ public class SendUniqueTransactionsTest {
 		// Given account owner which has NOT performed an action with a unique id
 		RadixApplicationAPI api1 = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(),  RadixIdentities.createNew());
 		RadixApplicationAPI api2 = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), RadixIdentities.createNew());
-		final String uniqueId = "thisisauniquestring";
+		RRI unique = RRI.of(api2.getMyAddress(), "thisisauniquestring");
 
 		// When client attempts to use id in ANOTHER account
 		TestObserver<Object> submissionObserver = TestObserver.create(Util.loggingObserver("Submission"));
 		Transaction transaction = api1.createTransaction();
-		transaction.stage(new SendMessageAction(new byte[] {1}, api1.getMyAddress(), api1.getMyAddress(), false));
-		transaction.stage(new PutUniqueIdAction(api2.getMyAddress(), uniqueId));
+		transaction.stage(SendMessageAction.create(new byte[] {1}, api1.getMyAddress(), api1.getMyAddress(), false));
+		transaction.stage(PutUniqueIdAction.create(unique));
 		Completable conflictingUniqueStatus = transaction.commitAndPush().toCompletable();
 		conflictingUniqueStatus.subscribe(submissionObserver);
 

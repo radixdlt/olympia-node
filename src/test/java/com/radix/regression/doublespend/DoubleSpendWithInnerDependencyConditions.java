@@ -46,14 +46,14 @@ class DoubleSpendWithInnerDependencyConditions implements DoubleSpendTestConditi
 		return Arrays.asList(
 			Collections.singletonList(
 				new BatchedActions(
-					TransferTokensAction.create(apiAddress, apiAddress, BigDecimal.ONE, tokenRef),
-					TransferTokensAction.create(apiAddress, apiAddress, BigDecimal.ONE, tokenRef)
+					TransferTokensAction.create(tokenRef, apiAddress, apiAddress, BigDecimal.ONE),
+					TransferTokensAction.create(tokenRef, apiAddress, apiAddress, BigDecimal.ONE)
 				)
 			),
 			Collections.singletonList(
 				new BatchedActions(
-					TransferTokensAction.create(apiAddress, apiAddress, BigDecimal.ONE, tokenRef),
-					TransferTokensAction.create(apiAddress, apiAddress, BigDecimal.ONE, tokenRef)
+					TransferTokensAction.create(tokenRef, apiAddress, apiAddress, BigDecimal.ONE),
+					TransferTokensAction.create(tokenRef, apiAddress, apiAddress, BigDecimal.ONE)
 				)
 			)
 		);

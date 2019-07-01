@@ -47,6 +47,7 @@ public class DoubleSpendCreateAndMintTokenTestConditions implements DoubleSpendT
 				new BatchedActions(
 					MintTokensAction.create(
 						tokenRef,
+						apiAddress,
 						BigDecimal.ONE
 					)
 				)

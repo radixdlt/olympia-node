@@ -45,7 +45,7 @@ class DoubleSpendTokenTransferTestConditions implements DoubleSpendTestCondition
 
 	@Override
 	public List<List<BatchedActions>> conflictingActions() {
-		BatchedActions action = new BatchedActions(TransferTokensAction.create(apiAddress, toAddress, BigDecimal.ONE, tokenRef));
+		BatchedActions action = new BatchedActions(TransferTokensAction.create(tokenRef, apiAddress, toAddress, BigDecimal.ONE));
 		return Arrays.asList(Collections.singletonList(action), Collections.singletonList(action));
 	}
 

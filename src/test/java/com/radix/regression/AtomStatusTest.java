@@ -73,7 +73,7 @@ public class AtomStatusTest {
 	public void given_a_subscription_to_status_notifications__when_the_atom_is_stored__a_store_notification_should_be_sent() {
 		Transaction transaction = api.createTransaction();
 		RRI unique = RRI.of(api.getMyAddress(), "test");
-		transaction.stage(new PutUniqueIdAction(unique.getAddress(), unique.getName()));
+		transaction.stage(PutUniqueIdAction.create(unique));
 		Atom atom = api.getMyIdentity().sign(transaction.buildAtom())
 			.blockingGet();
 		AID aid = atom.getAid();

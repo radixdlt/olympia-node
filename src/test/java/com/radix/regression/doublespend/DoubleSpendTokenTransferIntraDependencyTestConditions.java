@@ -47,12 +47,12 @@ public class DoubleSpendTokenTransferIntraDependencyTestConditions implements Do
 	public List<List<BatchedActions>> conflictingActions() {
 		return Arrays.asList(
 			Arrays.asList(
-				new BatchedActions(TransferTokensAction.create(apiAddress, toAddress, BigDecimal.ONE, tokenRef)),
-				new BatchedActions(TransferTokensAction.create(apiAddress, toAddress, BigDecimal.ONE, tokenRef))
+				new BatchedActions(TransferTokensAction.create(tokenRef, apiAddress, toAddress, BigDecimal.ONE)),
+				new BatchedActions(TransferTokensAction.create(tokenRef, apiAddress, toAddress, BigDecimal.ONE))
 			),
 			Arrays.asList(
-				new BatchedActions(TransferTokensAction.create(apiAddress, toAddress, BigDecimal.ONE, tokenRef)),
-				new BatchedActions(TransferTokensAction.create(apiAddress, toAddress, BigDecimal.ONE, tokenRef))
+				new BatchedActions(TransferTokensAction.create(tokenRef, apiAddress, toAddress, BigDecimal.ONE)),
+				new BatchedActions(TransferTokensAction.create(tokenRef, apiAddress, toAddress, BigDecimal.ONE))
 			)
 		);
 	}
