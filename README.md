@@ -101,19 +101,19 @@ selected identities can read the data.
 
 To send the encrypted string `Hello` which only the sender and recipient can read:
 ```java
-Result result = api.sendMessage("Hello".getBytes(StandardCharsets.UTF_8), true, <to-address>);
+Result result = api.sendMessage(<to-address>, "Hello".getBytes(StandardCharsets.UTF_8), true);
 result.blockUntilComplete();
 ```
 
 To send the unencrypted string `Hello`:
 ```java
-Result result = api.sendMessage("Hello".getBytes(StandardCharsets.UTF_8), false, <to-address>);
+Result result = api.sendMessage(<to-address>, "Hello".getBytes(StandardCharsets.UTF_8), false);
 result.blockUntilComplete();
 ```
 
 Or equivalently,
 ```java
-SendMessageAction msgAction = SendMessageAction.create("Hello".getBytes(StandardCharset.UTF_8), api.getAddress(), <to-address>, false);
+SendMessageAction msgAction = SendMessageAction.create(api.getAddress(), <to-address>, "Hello".getBytes(StandardCharset.UTF_8), false);
 Result result = api.execute(msgAction);
 result.blockUntilComplete();
 ```
@@ -129,7 +129,7 @@ readable.subscribe(data -> { ... });
 ### Creating Tokens
 To create a token, an RRI or radix resource identifier must first be constructed:
 ```java
-RRI tokenRRI = RRI.of(api.getMyAddress(), "NEW");
+RRI tokenRRI = RRI.of(api.getAddress(), "NEW");
 ```
 
 To create a fixed-supply token:
