@@ -2,14 +2,17 @@ package com.radix.acceptance.burn_multi_issuance_tokens;
 
 import com.google.common.collect.ImmutableSet;
 import com.radix.TestEnv;
+import com.radix.regression.Util;
+import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
 import com.radixdlt.client.application.translate.StageActionException;
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionsState;
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
 import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.particles.RRI;
+import com.radixdlt.client.core.network.RadixNetworkState;
+import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
-import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomSendAction;
 import cucumber.api.java.After;
@@ -18,7 +21,6 @@ import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 
-import java.util.concurrent.TimeUnit;
 import org.radix.utils.UInt256;
 
 import com.google.common.collect.Lists;
@@ -62,6 +64,7 @@ public class BurnMultiIssuanceTokens {
 	private static final long TIMEOUT_MS = 10_000L; // Timeout in milliseconds
 
 	private RadixApplicationAPI api;
+	private RadixNode nodeConnection;
 	private RadixIdentity identity;
 	private RadixApplicationAPI otherApi;
 	private RadixIdentity otherIdentity;
@@ -94,7 +97,6 @@ public class BurnMultiIssuanceTokens {
 		this.properties.put(INITIAL_SUPPLY, Integer.toString(initialSupply));
 		createToken(TokenSupplyType.MUTABLE);
 		awaitAtomStatus(STORED);
-		TimeUnit.SECONDS.sleep(3);
 		// Listening on state automatic for library
 	}
 
@@ -117,7 +119,6 @@ public class BurnMultiIssuanceTokens {
 		this.properties.put(SYMBOL, symbol);
 		createToken(this.otherApi, TokenSupplyType.MUTABLE);
 		awaitAtomStatus(STORED);
-		TimeUnit.SECONDS.sleep(15);
 		d.dispose();
 
 		this.properties.put(ADDRESS, this.api.getAddress().toString());
@@ -197,6 +198,14 @@ public class BurnMultiIssuanceTokens {
 		this.actionExceptions.clear();
 
 		this.properties.put(ADDRESS, api.getAddress().toString());
+
+		this.api.discoverNodes();
+		this.nodeConnection = this.api.getNetworkState()
+			.map(RadixNetworkState::getNodes)
+			.filter(s -> !s.isEmpty())
+			.map(s -> s.iterator().next())
+			.firstOrError()
+			.blockingGet();
 	}
 
 	private void createToken(CreateTokenAction.TokenSupplyType tokenCreateSupplyType) {
@@ -205,13 +214,17 @@ public class BurnMultiIssuanceTokens {
 
 	private void createToken(RadixApplicationAPI api, CreateTokenAction.TokenSupplyType tokenCreateSupplyType) {
 		TestObserver<SubmitAtomAction> observer = new TestObserver<>();
-		api.createToken(
+		CreateTokenAction createTokenAction = CreateTokenAction.create(
 			RRI.of(api.getAddress(), this.properties.get(SYMBOL)),
-				this.properties.get(NAME),
-				this.properties.get(DESCRIPTION),
-				BigDecimal.valueOf(Long.valueOf(this.properties.get(INITIAL_SUPPLY))),
-				BigDecimal.valueOf(Long.valueOf(this.properties.get(GRANULARITY))),
-				tokenCreateSupplyType)
+			this.properties.get(NAME),
+			this.properties.get(DESCRIPTION),
+			BigDecimal.valueOf(Long.valueOf(this.properties.get(INITIAL_SUPPLY))),
+			BigDecimal.valueOf(Long.valueOf(this.properties.get(GRANULARITY))),
+			tokenCreateSupplyType
+		);
+		Transaction tx = api.createTransaction();
+		tx.stage(createTokenAction);
+		tx.commitAndPush(nodeConnection)
 			.toObservable()
 			.doOnNext(System.out::println)
 			.subscribe(observer);
@@ -221,10 +234,13 @@ public class BurnMultiIssuanceTokens {
 	private void transferTokens(BigDecimal amount, String symbol, RadixAddress address) {
 		RRI rri = RRI.of(address, symbol);
 		TransferTokensAction tta = TransferTokensAction.create(rri, address, address, amount);
-		TestObserver<SubmitAtomAction> observer = new TestObserver<>();
+		TestObserver<SubmitAtomAction> observer = new TestObserver<>(Util.loggingObserver("Transfer Tokens"));
 		api.pullOnce(address).blockingAwait();
 		try {
-			api.execute(tta).toObservable().doOnNext(System.out::println).subscribe(observer);
+			Transaction tx = api.createTransaction();
+			tx.stage(tta);
+			tx.commitAndPush(nodeConnection)
+				.toObservable().subscribe(observer);
 			this.observers.add(observer);
 		} catch (StageActionException e) {
 			this.actionExceptions.add(e);
@@ -234,10 +250,12 @@ public class BurnMultiIssuanceTokens {
 	private void burnTokens(BigDecimal amount, String symbol, RadixAddress tokenAddress, RadixAddress address) {
 		RRI tokenClass = RRI.of(tokenAddress, symbol);
 		BurnTokensAction mta = BurnTokensAction.create(tokenClass, address, amount);
-		TestObserver<SubmitAtomAction> observer = new TestObserver<>();
+		TestObserver<SubmitAtomAction> observer = new TestObserver<>(Util.loggingObserver("Burn Tokens"));
 		api.pullOnce(tokenAddress).blockingAwait();
 		try {
-			api.execute(mta).toObservable().doOnNext(System.out::println).subscribe(observer);
+			Transaction tx = api.createTransaction();
+			tx.stage(mta);
+			tx.commitAndPush(nodeConnection).toObservable().subscribe(observer);
 			this.observers.add(observer);
 			observer.awaitTerminalEvent();
 		} catch (StageActionException e) {
@@ -261,10 +279,7 @@ public class BurnMultiIssuanceTokens {
 		testObserver.assertNoTimeout();
 		List<SubmitAtomAction> events = testObserver.values();
 		assertThat(events).extracting(o -> o.getClass().toString())
-			.startsWith(
-				SubmitAtomRequestAction.class.toString(),
-				SubmitAtomSendAction.class.toString()
-			);
+			.startsWith(SubmitAtomSendAction.class.toString());
 		assertThat(events).last()
 			.isInstanceOf(SubmitAtomStatusAction.class)
 			.<AtomStatus>extracting(o -> SubmitAtomStatusAction.class.cast(o).getStatusNotification().getAtomStatus())
@@ -282,10 +297,7 @@ public class BurnMultiIssuanceTokens {
 		testObserver.assertNoTimeout();
 		List<SubmitAtomAction> events = testObserver.values();
 		assertThat(events).extracting(o -> o.getClass().toString())
-			.startsWith(
-				SubmitAtomRequestAction.class.toString(),
-				SubmitAtomSendAction.class.toString()
-			);
+			.startsWith(SubmitAtomSendAction.class.toString());
 		assertThat(events).last()
 			.isInstanceOf(SubmitAtomStatusAction.class)
 			.satisfies(s -> {
@@ -294,10 +306,6 @@ public class BurnMultiIssuanceTokens {
 				assertThat(action.getStatusNotification().getData().getAsJsonObject().has("message")).isTrue();
 				assertThat(action.getStatusNotification().getData().getAsJsonObject().get("message").getAsString()).contains(partMessage);
 			});
-	}
-
-	private void awaitAtomException(Class<? extends Throwable> exceptionClass, String partialExceptionMessage) {
-		awaitAtomException(this.observers.size(), exceptionClass, partialExceptionMessage);
 	}
 
 	private void awaitAtomException(int atomNumber, Class<? extends Throwable> exceptionClass, String partialExceptionMessage) {
