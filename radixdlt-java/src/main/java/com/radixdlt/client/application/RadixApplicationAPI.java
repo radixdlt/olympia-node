@@ -869,6 +869,20 @@ public class RadixApplicationAPI {
 		return transaction.commitAndPush();
 	}
 
+	/**
+	 * Immediately executes a user action onto the ledger. Note that this method is NOT
+	 * idempotent.
+	 *
+	 * @param action action to execute
+	 * @param originNode node to submit action to
+	 * @return results of the execution
+	 */
+	public Result execute(Action action, RadixNode originNode) {
+		Transaction transaction = this.createTransaction();
+		transaction.stage(action);
+		return transaction.commitAndPush(originNode);
+	}
+
 	private long generateTimestamp() {
 		return System.currentTimeMillis();
 	}
