@@ -51,6 +51,7 @@ public class WebSocketClient implements PersistentChannel {
 						LOGGER.debug("Websocket {} opened", System.identityHashCode(WebSocketClient.this));
 					}
 					synchronized (lock) {
+						WebSocketClient.this.webSocket = webSocket;
 						WebSocketClient.this.state.onNext(WebSocketStatus.CONNECTED);
 					}
 				}
@@ -112,7 +113,7 @@ public class WebSocketClient implements PersistentChannel {
 				case DISCONNECTED:
 				case FAILED:
 					WebSocketClient.this.state.onNext(WebSocketStatus.CONNECTING);
-					this.webSocket = this.connectWebSocket();
+					this.connectWebSocket();
 					return;
 				case CONNECTING:
 				case CONNECTED:
