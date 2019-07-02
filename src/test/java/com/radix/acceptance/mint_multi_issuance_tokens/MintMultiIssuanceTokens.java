@@ -2,13 +2,15 @@ package com.radix.acceptance.mint_multi_issuance_tokens;
 
 import com.google.common.collect.ImmutableSet;
 import com.radix.TestEnv;
+import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
 import com.radixdlt.client.application.translate.StageActionException;
 import com.radixdlt.client.application.translate.tokens.TokenOverMintException;
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.particles.RRI;
+import com.radixdlt.client.core.network.RadixNetworkState;
+import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
-import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomSendAction;
 import cucumber.api.java.After;
@@ -54,12 +56,12 @@ public class MintMultiIssuanceTokens {
 	private static final String NEW_SUPPLY = "newSupply";
 	private static final String GRANULARITY = "granularity";
 
-	private static final long TIMEOUT_MS = 10_000L; // Timeout in milliseconds
-
 	private RadixApplicationAPI api;
 	private RadixIdentity identity;
 	private RadixApplicationAPI otherApi;
 	private RadixIdentity otherIdentity;
+
+	private RadixNode nodeConnection;
 	private final SpecificProperties properties = SpecificProperties.of(
 		ADDRESS,        "unknown",
 		NAME,           "RLAU-40 Test token",
@@ -89,7 +91,6 @@ public class MintMultiIssuanceTokens {
 		this.properties.put(INITIAL_SUPPLY, Integer.toString(initialSupply));
 		createToken(TokenSupplyType.MUTABLE);
 		awaitAtomStatus(AtomStatus.STORED);
-		TimeUnit.SECONDS.sleep(3);
 		// Listening on state automatic for library
 	}
 
@@ -99,7 +100,6 @@ public class MintMultiIssuanceTokens {
 		this.properties.put(INITIAL_SUPPLY, BigDecimal.valueOf(initialUnscaledSupply).scaleByPowerOfTen(-18).toString());
 		createToken(CreateTokenAction.TokenSupplyType.MUTABLE);
 		awaitAtomStatus(AtomStatus.STORED);
-		TimeUnit.SECONDS.sleep(3);
 	}
 
 	@Given("^a library client who owns an account and created a token with 2\\^(\\d+) initial subunit supply and is listening to the state of the token$")
@@ -109,7 +109,6 @@ public class MintMultiIssuanceTokens {
 		this.properties.put(INITIAL_SUPPLY, BigDecimal.valueOf(2).pow(pow2).scaleByPowerOfTen(-18).toString());
 		createToken(CreateTokenAction.TokenSupplyType.MUTABLE);
 		awaitAtomStatus(AtomStatus.STORED);
-		TimeUnit.SECONDS.sleep(3);
 	}
 
 	@Given("^a library client who owns an account where token \"([^\"]*)\" does not exist$")
@@ -130,7 +129,7 @@ public class MintMultiIssuanceTokens {
 		this.properties.put(SYMBOL, symbol);
 		createToken(this.otherApi, TokenSupplyType.MUTABLE);
 		awaitAtomStatus(AtomStatus.STORED);
-		TimeUnit.SECONDS.sleep(3);
+		TimeUnit.SECONDS.sleep(5);
 
 		this.properties.put(ADDRESS, this.otherApi.getAddress().toString());
 	}
@@ -153,7 +152,6 @@ public class MintMultiIssuanceTokens {
 	@Then("^the client should be notified that \"([^\"]*)\" token has a total supply of (\\d+)$")
 	public void theClientShouldBeNotifiedThatTokenHasATotalSupplyOf(String symbol, int supply) throws Throwable {
 		awaitAtomStatus(AtomStatus.STORED);
-		TimeUnit.SECONDS.sleep(3);
 		RRI tokenClass = RRI.of(api.getAddress(), symbol);
 		// Ensure balance is up-to-date.
 		BigDecimal tokenBalanceDecimal = api.observeBalance(api.getAddress(), tokenClass)
@@ -203,6 +201,15 @@ public class MintMultiIssuanceTokens {
 		this.otherExceptions.clear();
 
 		this.properties.put(ADDRESS, api.getAddress().toString());
+
+
+		this.api.discoverNodes();
+		this.nodeConnection = this.api.getNetworkState()
+			.map(RadixNetworkState::getNodes)
+			.filter(s -> !s.isEmpty())
+			.map(s -> s.iterator().next())
+			.firstOrError()
+			.blockingGet();
 	}
 
 	private void createToken(CreateTokenAction.TokenSupplyType tokenCreateSupplyType) {
@@ -211,13 +218,17 @@ public class MintMultiIssuanceTokens {
 
 	private void createToken(RadixApplicationAPI api, CreateTokenAction.TokenSupplyType tokenCreateSupplyType) {
 		TestObserver<SubmitAtomAction> observer = new TestObserver<>();
-		api.createToken(
-				RRI.of(api.getAddress(), this.properties.get(SYMBOL)),
-				this.properties.get(NAME),
-				this.properties.get(DESCRIPTION),
-				new BigDecimal(this.properties.get(INITIAL_SUPPLY)),
-				new BigDecimal(this.properties.get(GRANULARITY)),
-				tokenCreateSupplyType)
+		CreateTokenAction createTokenAction = CreateTokenAction.create(
+			RRI.of(api.getAddress(), this.properties.get(SYMBOL)),
+			this.properties.get(NAME),
+			this.properties.get(DESCRIPTION),
+			new BigDecimal(this.properties.get(INITIAL_SUPPLY)),
+			new BigDecimal(this.properties.get(GRANULARITY)),
+			tokenCreateSupplyType
+		);
+		Transaction tx = api.createTransaction();
+		tx.stage(createTokenAction);
+		tx.commitAndPush(nodeConnection)
 			.toObservable()
 			.doOnNext(System.out::println)
 			.subscribe(observer);
@@ -230,7 +241,10 @@ public class MintMultiIssuanceTokens {
 		TestObserver<SubmitAtomAction> observer = new TestObserver<>();
 		api.pullOnce(address).blockingAwait();
 		try {
-			api.execute(mta).toObservable().doOnNext(System.out::println).subscribe(observer);
+			Transaction tx = api.createTransaction();
+			tx.stage(mta);
+			tx.commitAndPush(nodeConnection)
+				.toObservable().doOnNext(System.out::println).subscribe(observer);
 			this.observers.add(observer);
 		} catch (StageActionException e) {
 			actionExceptions.add(e);
@@ -254,10 +268,7 @@ public class MintMultiIssuanceTokens {
 		testObserver.assertNoTimeout();
 		List<SubmitAtomAction> events = testObserver.values();
 		assertThat(events).extracting(o -> o.getClass().toString())
-			.startsWith(
-				SubmitAtomRequestAction.class.toString(),
-				SubmitAtomSendAction.class.toString()
-			);
+			.startsWith(SubmitAtomSendAction.class.toString());
 		assertThat(events).last()
 			.isInstanceOf(SubmitAtomStatusAction.class)
 			.<AtomStatus>extracting(o -> SubmitAtomStatusAction.class.cast(o).getStatusNotification().getAtomStatus())
@@ -269,16 +280,16 @@ public class MintMultiIssuanceTokens {
 	}
 
 	private void awaitAtomValidationError(int atomNumber, String partMessage) {
+		assertThat(actionExceptions).isEmpty();
+		assertThat(otherExceptions).isEmpty();
+
 		TestObserver<SubmitAtomAction> testObserver = this.observers.get(atomNumber - 1);
 		testObserver.awaitTerminalEvent();
 		testObserver.assertNoErrors();
 		testObserver.assertNoTimeout();
 		List<SubmitAtomAction> events = testObserver.values();
 		assertThat(events).extracting(o -> o.getClass().toString())
-			.startsWith(
-				SubmitAtomRequestAction.class.toString(),
-				SubmitAtomSendAction.class.toString()
-			);
+			.startsWith(SubmitAtomSendAction.class.toString());
 		assertThat(events).last()
 			.isInstanceOf(SubmitAtomStatusAction.class)
 			.satisfies(s -> {
