@@ -1,8 +1,11 @@
 package com.radixdlt.client.core.network.websocket;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import io.reactivex.observers.TestObserver;
+import java.util.function.Consumer;
 import okhttp3.Response;
 import okhttp3.WebSocket;
 import org.junit.Test;
@@ -47,10 +50,10 @@ public class WebSocketClientTest {
 			return webSocket;
 		});
 
-		TestObserver<String> testObserver = TestObserver.create();
-		client.getMessages().subscribe(testObserver);
+		Consumer<String> listener = mock(Consumer.class);
+		client.addListener(listener);
 		client.connect();
-		testObserver.assertValue("hello");
+		verify(listener, times(1)).accept("hello");
 	}
 
 	@Test
@@ -65,10 +68,9 @@ public class WebSocketClientTest {
 			return webSocket;
 		});
 
-		TestObserver<String> testObserver = TestObserver.create();
-		client.getMessages().subscribe(testObserver);
+		Consumer<String> listener = mock(Consumer.class);
+		client.addListener(listener);
 		client.connect();
-		testObserver.assertNoErrors();
-		testObserver.assertValues("hello");
+		verify(listener, times(1)).accept("hello");
 	}
 }

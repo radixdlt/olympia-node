@@ -45,7 +45,6 @@ public class FindANodeEpicTest {
 	public void testValidClient() {
 		RadixNode node = mock(RadixNode.class);
 		WebSocketClient ws = mock(WebSocketClient.class);
-		when(ws.getMessages()).thenReturn(Observable.never());
 		when(ws.sendMessage(any())).thenReturn(true);
 
 		FindANodeRequestAction request = mock(FindANodeRequestAction.class);

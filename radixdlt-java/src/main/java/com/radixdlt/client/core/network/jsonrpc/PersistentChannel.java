@@ -1,8 +1,10 @@
 package com.radixdlt.client.core.network.jsonrpc;
 
-import io.reactivex.Observable;
+import io.reactivex.functions.Cancellable;
+import java.util.function.Consumer;
 
 public interface PersistentChannel {
 	boolean sendMessage(String s);
-	Observable<String> getMessages();
+
+	Cancellable addListener(Consumer<String> messageListener);
 }

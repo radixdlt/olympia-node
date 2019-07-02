@@ -1,7 +1,10 @@
 package com.radixdlt.client.core.network.jsonrpc;
 
+import io.reactivex.functions.Cancellable;
 import java.util.Collections;
 
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import org.junit.Test;
 import org.radix.common.ID.EUID;
 import org.radix.serialization2.DsonOutput.Output;
@@ -14,12 +17,11 @@ import com.google.gson.JsonParser;
 import com.radixdlt.client.core.atoms.Atom;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.reactivex.Observable;
 import io.reactivex.observers.TestObserver;
-import io.reactivex.subjects.ReplaySubject;
 
 public class RadixJsonRpcClientTest {
 
@@ -27,7 +29,6 @@ public class RadixJsonRpcClientTest {
 	public void getSelfTestError() {
 		PersistentChannel channel = mock(PersistentChannel.class);
 
-		when(channel.getMessages()).thenReturn(Observable.never());
 		when(channel.sendMessage(any())).thenReturn(false);
 
 		RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(channel);
@@ -44,8 +45,12 @@ public class RadixJsonRpcClientTest {
 	public void getAtomDoesNotExistTest() {
 		PersistentChannel channel = mock(PersistentChannel.class);
 
-		ReplaySubject<String> messages = ReplaySubject.create();
-		when(channel.getMessages()).thenReturn(messages);
+		AtomicReference<Consumer<String>> listener = new AtomicReference<>();
+		doAnswer(a -> {
+			Consumer<String> l = a.getArgument(0);
+			listener.set(l);
+			return mock(Cancellable.class);
+		}).when(channel).addListener(any());
 
 		JsonParser parser = new JsonParser();
 
@@ -60,7 +65,7 @@ public class RadixJsonRpcClientTest {
 			response.addProperty("id", id);
 			response.add("result", atoms);
 
-			messages.onNext(GsonJson.getInstance().stringFromGson(response));
+			listener.get().accept(GsonJson.getInstance().stringFromGson(response));
 			return true;
 		});
 		RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(channel);
@@ -77,8 +82,12 @@ public class RadixJsonRpcClientTest {
 	@Test
 	public void getAtomTest() {
 		PersistentChannel channel = mock(PersistentChannel.class);
-		ReplaySubject<String> messages = ReplaySubject.create();
-		when(channel.getMessages()).thenReturn(messages);
+		AtomicReference<Consumer<String>> listener = new AtomicReference<>();
+		doAnswer(a -> {
+			Consumer<String> l = a.getArgument(0);
+			listener.set(l);
+			return mock(Cancellable.class);
+		}).when(channel).addListener(any());
 
 		JsonParser parser = new JsonParser();
 
@@ -96,7 +105,7 @@ public class RadixJsonRpcClientTest {
 			response.addProperty("id", id);
 			response.add("result", atoms);
 
-			messages.onNext(GsonJson.getInstance().stringFromGson(response));
+			listener.get().accept(GsonJson.getInstance().stringFromGson(response));
 			return true;
 		});
 		RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(channel);

@@ -2,9 +2,12 @@ package com.radixdlt.client.core.network.websocket;
 
 import com.radixdlt.client.core.network.jsonrpc.PersistentChannel;
 import io.reactivex.Observable;
+import io.reactivex.functions.Cancellable;
 import io.reactivex.subjects.BehaviorSubject;
-import io.reactivex.subjects.PublishSubject;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import okhttp3.Response;
 import okhttp3.WebSocket;
@@ -20,8 +23,8 @@ public class WebSocketClient implements PersistentChannel {
 	private final Object lock = new Object();
 	private final BehaviorSubject<WebSocketStatus> state = BehaviorSubject.createDefault(WebSocketStatus.DISCONNECTED);
 	private final Function<WebSocketListener, WebSocket> websocketFactory;
-	private final PublishSubject<String> messages = PublishSubject.create();
 	private WebSocket webSocket;
+	private final List<Consumer<String>> messageListeners = new CopyOnWriteArrayList<>();
 
 	public WebSocketClient(Function<WebSocketListener, WebSocket> websocketFactory) {
 		this.websocketFactory = websocketFactory;
@@ -57,9 +60,7 @@ public class WebSocketClient implements PersistentChannel {
 					if (LOGGER.isDebugEnabled()) {
 						LOGGER.debug("Websocket {} message: {}", System.identityHashCode(WebSocketClient.this), message);
 					}
-					synchronized (lock) {
-						messages.onNext(message);
-					}
+					messageListeners.forEach(c -> c.accept(message));
 				}
 
 				@Override
@@ -122,8 +123,9 @@ public class WebSocketClient implements PersistentChannel {
 	}
 
 	@Override
-	public Observable<String> getMessages() {
-		return messages;
+	public Cancellable addListener(Consumer<String> messageListener) {
+		messageListeners.add(messageListener);
+		return () -> messageListeners.remove(messageListener);
 	}
 
 	public Observable<WebSocketStatus> getState() {
@@ -131,7 +133,7 @@ public class WebSocketClient implements PersistentChannel {
 	}
 
 	public boolean close() {
-		if (messages.hasObservers()) {
+		if (!messageListeners.isEmpty()) {
 			return false;
 		}
 

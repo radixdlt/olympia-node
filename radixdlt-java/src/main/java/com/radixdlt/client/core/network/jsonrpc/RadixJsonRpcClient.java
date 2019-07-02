@@ -3,6 +3,7 @@ package com.radixdlt.client.core.network.jsonrpc;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.AtomStatusNotification;
 import com.radixdlt.client.core.ledger.AtomEvent;
+import io.reactivex.functions.Cancellable;
 import java.util.List;
 import java.util.UUID;
 
@@ -30,7 +31,6 @@ import io.reactivex.Completable;
 import io.reactivex.Maybe;
 import io.reactivex.Observable;
 import io.reactivex.Single;
-import io.reactivex.disposables.Disposable;
 
 /**
  * Responsible for managing the state across one web socket connection to a Radix Node.
@@ -77,11 +77,6 @@ public class RadixJsonRpcClient {
 	private final PersistentChannel channel;
 
 	/**
-	 * Hot observable of messages received through the channel
-	 */
-	private final Observable<JsonObject> messages;
-
-	/**
 	 * Cached API version of Node
 	 */
 	private final Single<Integer> serverApiVersion;
@@ -93,14 +88,10 @@ public class RadixJsonRpcClient {
 
 	private final int defaultTimeoutSecs = 30;
 
+	private final JsonParser parser = new JsonParser();
+
 	public RadixJsonRpcClient(PersistentChannel channel) {
 		this.channel = channel;
-
-		final JsonParser parser = new JsonParser();
-		this.messages = this.channel.getMessages()
-			.map(msg -> parser.parse(msg).getAsJsonObject())
-			.publish()
-			.refCount();
 
 		Serialization serialization = Serialize.getInstance();
 		this.serverApiVersion = jsonRpcCall("Api.getVersion")
@@ -130,7 +121,7 @@ public class RadixJsonRpcClient {
 	 * @return response from rpc method
 	 */
 	public Single<JsonRpcResponse> jsonRpcCall(String method, JsonElement params) {
-		return Single.create(emitter -> {
+		return Single.<JsonRpcResponse>create(emitter -> {
 			final String uuid = UUID.randomUUID().toString();
 
 			final JsonObject requestObject = new JsonObject();
@@ -138,23 +129,27 @@ public class RadixJsonRpcClient {
 			requestObject.addProperty("method", method);
 			requestObject.add("params", params);
 
-			Disposable d = messages
-				.filter(msg -> msg.has("id"))
-				.filter(msg -> msg.get("id").isJsonNull() || msg.get("id").getAsString().equals(uuid))
-				.firstOrError()
-				.timeout(defaultTimeoutSecs, TimeUnit.SECONDS)
-				.map(msg -> {
-					final JsonObject jsonResponse = msg.getAsJsonObject();
-					return new JsonRpcResponse(!jsonResponse.has("error"), jsonResponse);
-				})
-				.subscribe(emitter::onSuccess, emitter::onError);
+			Cancellable c = channel.addListener(msg -> {
+				JsonObject json = parser.parse(msg).getAsJsonObject();
+				if (!json.has("id")) {
+					return;
+				}
+
+				if (!json.get("id").isJsonNull() && !json.get("id").getAsString().equals(uuid)) {
+					return;
+				}
+
+				final JsonRpcResponse response = new JsonRpcResponse(!json.has("error"), json);
+				emitter.onSuccess(response);
+			});
+
+			emitter.setCancellable(c);
 
 			boolean sendSuccess = channel.sendMessage(GsonJson.getInstance().stringFromGson(requestObject));
 			if (!sendSuccess) {
 				emitter.onError(new RuntimeException("Could not send message: " + method + " " + params));
-				d.dispose();
 			}
-		});
+		}).timeout(defaultTimeoutSecs, TimeUnit.SECONDS);
 	}
 
 	/**
@@ -308,11 +303,28 @@ public class RadixJsonRpcClient {
 	}
 
 	public Observable<JsonObject> observeNotifications(String notificationMethod, String subscriberId) {
-		return messages
-			.filter(msg -> msg.has("method"))
-			.filter(msg -> msg.get("method").getAsString().equals(notificationMethod))
-			.map(msg -> msg.get("params").getAsJsonObject())
-			.filter(p -> p.get("subscriberId").getAsString().equals(subscriberId));
+		return Observable.create(emitter -> {
+			Cancellable c = channel.addListener(msg -> {
+				JsonObject json = parser.parse(msg).getAsJsonObject();
+				if (!json.has("method")) {
+					return;
+				}
+
+				if (!json.get("method").getAsString().equals(notificationMethod)) {
+					return;
+				}
+
+				JsonObject params = json.get("params").getAsJsonObject();
+
+				if (!params.get("subscriberId").getAsString().equals(subscriberId)) {
+					return;
+				}
+
+				emitter.onNext(params);
+			});
+
+			emitter.setCancellable(c);
+		});
 	}
 
 	public Observable<AtomObservation> observeAtoms(String subscriberId) {
