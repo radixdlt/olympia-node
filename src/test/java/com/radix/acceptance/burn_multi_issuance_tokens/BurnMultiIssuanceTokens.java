@@ -21,6 +21,7 @@ import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 
+import java.util.concurrent.TimeUnit;
 import org.radix.utils.UInt256;
 
 import com.google.common.collect.Lists;
@@ -45,7 +46,6 @@ import static org.junit.Assert.assertFalse;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
-import io.reactivex.observers.BaseTestConsumer.TestWaitStrategy;
 import io.reactivex.observers.TestObserver;
 
 /**
@@ -119,6 +119,7 @@ public class BurnMultiIssuanceTokens {
 		this.properties.put(SYMBOL, symbol);
 		createToken(this.otherApi, TokenSupplyType.MUTABLE);
 		awaitAtomStatus(STORED);
+		TimeUnit.SECONDS.sleep(5);
 		d.dispose();
 
 		this.properties.put(ADDRESS, this.api.getAddress().toString());
@@ -291,6 +292,8 @@ public class BurnMultiIssuanceTokens {
 	}
 
 	private void awaitAtomValidationError(int atomNumber, String partMessage) {
+		assertThat(actionExceptions).isEmpty();
+
 		TestObserver<SubmitAtomAction> testObserver = this.observers.get(atomNumber - 1);
 		testObserver.awaitTerminalEvent();
 		testObserver.assertNoErrors();
@@ -306,12 +309,5 @@ public class BurnMultiIssuanceTokens {
 				assertThat(action.getStatusNotification().getData().getAsJsonObject().has("message")).isTrue();
 				assertThat(action.getStatusNotification().getData().getAsJsonObject().get("message").getAsString()).contains(partMessage);
 			});
-	}
-
-	private void awaitAtomException(int atomNumber, Class<? extends Throwable> exceptionClass, String partialExceptionMessage) {
-		this.observers.get(atomNumber - 1)
-			.awaitCount(3, TestWaitStrategy.SLEEP_100MS, TIMEOUT_MS)
-			.assertError(exceptionClass)
-			.assertError(t -> t.getMessage().toLowerCase().contains(partialExceptionMessage.toLowerCase()));
 	}
 }
