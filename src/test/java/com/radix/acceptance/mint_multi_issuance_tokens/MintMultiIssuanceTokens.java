@@ -129,7 +129,7 @@ public class MintMultiIssuanceTokens {
 		this.properties.put(SYMBOL, symbol);
 		createToken(this.otherApi, TokenSupplyType.MUTABLE);
 		awaitAtomStatus(AtomStatus.STORED);
-		TimeUnit.SECONDS.sleep(5);
+		TimeUnit.SECONDS.sleep(15);
 
 		this.properties.put(ADDRESS, this.otherApi.getAddress().toString());
 	}

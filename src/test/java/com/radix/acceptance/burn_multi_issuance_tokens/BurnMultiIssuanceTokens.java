@@ -119,7 +119,7 @@ public class BurnMultiIssuanceTokens {
 		this.properties.put(SYMBOL, symbol);
 		createToken(this.otherApi, TokenSupplyType.MUTABLE);
 		awaitAtomStatus(STORED);
-		TimeUnit.SECONDS.sleep(10);
+		TimeUnit.SECONDS.sleep(15);
 		d.dispose();
 
 		this.properties.put(ADDRESS, this.api.getAddress().toString());
