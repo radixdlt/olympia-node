@@ -1,16 +1,18 @@
 package com.radix.acceptance.create_single_issuance_token_class;
 
 import com.radix.TestEnv;
+import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
+import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.particles.RRI;
-import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
+import com.radixdlt.client.core.network.RadixNetworkState;
+import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomSendAction;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import org.radix.utils.UInt256;
 
@@ -44,6 +46,7 @@ public class CreateSingleIssuanceTokenClass {
 	private static final long TIMEOUT_MS = 10_000L; // Timeout in milliseconds
 
 	private RadixApplicationAPI api;
+	private RadixNode nodeConnection;
 	private RadixIdentity identity;
 	private final SpecificProperties properties = SpecificProperties.of(
 		NAME,           "RLAU-40 Test token",
@@ -58,6 +61,13 @@ public class CreateSingleIssuanceTokenClass {
 	public void i_have_access_to_a_suitable_Radix_network() {
 		this.identity = RadixIdentities.createNew();
 		this.api = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), this.identity);
+		this.api.discoverNodes();
+		this.nodeConnection = this.api.getNetworkState()
+			.map(RadixNetworkState::getNodes)
+			.filter(s -> !s.isEmpty())
+			.map(s -> s.iterator().next())
+			.firstOrError()
+			.blockingGet();
 
 		// Reset data
 		this.properties.clear();
@@ -110,7 +120,14 @@ public class CreateSingleIssuanceTokenClass {
 			.blockingGet();
 
 		TestObserver<Object> observer = new TestObserver<>();
-		api.sendTokens(tokenClass, api.getAddress(), arbitrary, BigDecimal.valueOf(count))
+
+		TransferTokensAction transferTokensAction = TransferTokensAction.create(
+			tokenClass, api.getAddress(), arbitrary, BigDecimal.valueOf(count)
+		);
+
+		Transaction tx = api.createTransaction();
+		tx.stage(transferTokensAction);
+		tx.commitAndPush(nodeConnection)
 			.toObservable()
 			.doOnNext(System.out::println)
 			.subscribe(observer);
@@ -121,9 +138,6 @@ public class CreateSingleIssuanceTokenClass {
 	public void i_observe_the_atom_being_accepted() throws InterruptedException {
 		// "the atom" = most recent atom
 		i_can_observe_atom_being_accepted(observers.size());
-
-		// Wait for propagation
-		TimeUnit.SECONDS.sleep(5);
 	}
 
 	@Then("^I can observe the atom being accepted$")
@@ -173,13 +187,17 @@ public class CreateSingleIssuanceTokenClass {
 
 	private void createToken(CreateTokenAction.TokenSupplyType tokenCreateSupplyType) {
 		TestObserver<Object> observer = new TestObserver<>();
-		api.createToken(
-				RRI.of(api.getAddress(), this.properties.get(SYMBOL)),
-				this.properties.get(NAME),
-				this.properties.get(DESCRIPTION),
-				BigDecimal.valueOf(Long.valueOf(this.properties.get(TOTAL_SUPPLY))),
-				BigDecimal.valueOf(Long.valueOf(this.properties.get(GRANULARITY))),
-				tokenCreateSupplyType)
+		Transaction tx = api.createTransaction();
+		CreateTokenAction createTokenAction = CreateTokenAction.create(
+			RRI.of(api.getAddress(), this.properties.get(SYMBOL)),
+			this.properties.get(NAME),
+			this.properties.get(DESCRIPTION),
+			BigDecimal.valueOf(Long.valueOf(this.properties.get(TOTAL_SUPPLY))),
+			BigDecimal.valueOf(Long.valueOf(this.properties.get(GRANULARITY))),
+			tokenCreateSupplyType
+		);
+		tx.stage(createTokenAction);
+		tx.commitAndPush(nodeConnection)
 			.toObservable()
 			.doOnNext(System.out::println)
 			.subscribe(observer);
@@ -197,10 +215,7 @@ public class CreateSingleIssuanceTokenClass {
 		testObserver.assertNoTimeout();
 		List<Object> events = testObserver.values();
 		assertThat(events).extracting(o -> o.getClass().toString())
-			.startsWith(
-				SubmitAtomRequestAction.class.toString(),
-				SubmitAtomSendAction.class.toString()
-			);
+			.startsWith(SubmitAtomSendAction.class.toString());
 		assertThat(events).last()
 			.isInstanceOf(SubmitAtomStatusAction.class)
 			.<AtomStatus>extracting(o -> SubmitAtomStatusAction.class.cast(o).getStatusNotification().getAtomStatus())
