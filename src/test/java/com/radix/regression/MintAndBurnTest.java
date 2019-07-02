@@ -4,8 +4,15 @@ import com.radix.TestEnv;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
 import com.radixdlt.client.application.identity.RadixIdentities;
+import com.radixdlt.client.application.translate.tokens.BurnTokensAction;
+import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
+import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
+import com.radixdlt.client.application.translate.tokens.MintTokensAction;
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
 import com.radixdlt.client.core.atoms.particles.RRI;
+import com.radixdlt.client.core.network.RadixNetworkState;
+import com.radixdlt.client.core.network.RadixNode;
+import java.math.BigDecimal;
 import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 import org.radix.utils.UInt256;
@@ -14,27 +21,38 @@ public class MintAndBurnTest {
 	@Test
 	public void given_an_account_owner_who_created_a_token__when_the_owner_mints_max_then_burns_max_then_mints_max__then_it_should_all_be_successful() throws Exception {
 		RadixApplicationAPI api = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), RadixIdentities.createNew());
+		api.discoverNodes();
+		RadixNode originNode = api.getNetworkState()
+			.map(RadixNetworkState::getNodes)
+			.filter(s -> !s.isEmpty())
+			.map(s -> s.iterator().next())
+			.firstOrError()
+			.blockingGet();
 		RRI token = RRI.of(api.getAddress(), "JOSH");
 
-		Result result0 = api.createMultiIssuanceToken(token, "Joshy Token", "Best token");
+		CreateTokenAction createTokenAction = CreateTokenAction.create(
+			token,
+			"Joshy Token",
+			"Best token",
+			BigDecimal.ZERO,
+			TokenUnitConversions.subunitsToUnits(UInt256.ONE),
+			TokenSupplyType.MUTABLE);
+		Result result0 = api.execute(createTokenAction, originNode);
 		result0.toObservable().subscribe(System.out::println);
 		result0.blockUntilComplete();
 
-		TimeUnit.SECONDS.sleep(3);
-
-		Result result1 = api.mintTokens(token, TokenUnitConversions.subunitsToUnits(UInt256.MAX_VALUE));
+		MintTokensAction mintTokensAction = MintTokensAction.create(token, api.getAddress(), TokenUnitConversions.subunitsToUnits(UInt256.MAX_VALUE));
+		Result result1 = api.execute(mintTokensAction, originNode);
 		result1.toObservable().subscribe(System.out::println);
 		result1.blockUntilComplete();
 
-		TimeUnit.SECONDS.sleep(3);
-
-		Result result2 = api.burnTokens(token, TokenUnitConversions.subunitsToUnits(UInt256.MAX_VALUE));
+		BurnTokensAction burnTokensAction = BurnTokensAction.create(token, api.getAddress(), TokenUnitConversions.subunitsToUnits(UInt256.MAX_VALUE));
+		Result result2 = api.execute(burnTokensAction, originNode);
 		result2.toObservable().subscribe(System.out::println);
 		result2.blockUntilComplete();
 
-		TimeUnit.SECONDS.sleep(3);
-
-		Result result3 = api.mintTokens(token, TokenUnitConversions.subunitsToUnits(UInt256.MAX_VALUE));
+		MintTokensAction mintTokensAction2 = MintTokensAction.create(token, api.getAddress(), TokenUnitConversions.subunitsToUnits(UInt256.MAX_VALUE));
+		Result result3 = api.execute(mintTokensAction2, originNode);
 		result3.toObservable().subscribe(System.out::println);
 		result3.blockUntilComplete();
 	}
