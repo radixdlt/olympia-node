@@ -25,6 +25,8 @@ import com.radixdlt.client.core.atoms.ParticleGroup.ParticleGroupBuilder;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.atoms.particles.Spin;
+import com.radixdlt.client.core.network.RadixNetworkState;
+import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomSendAction;
@@ -37,7 +39,6 @@ import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -63,9 +64,23 @@ public class AtomicTransactionsWithDependence {
 		GRANULARITY,	"1"
 	);
 	private final List<TestObserver<Object>> observers = Lists.newArrayList();
+	private RadixApplicationAPI api;
+	private RadixNode nodeConnection;
 
 	@Given("^I have access to a suitable Radix network$")
 	public void i_have_access_to_a_suitable_Radix_network() {
+		this.api = RadixApplicationAPI.defaultBuilder()
+			.universe(RadixUniverse.create(TestEnv.getBootstrapConfig()))
+			.identity(RadixIdentities.createNew())
+			.build();
+		this.api.discoverNodes();
+		this.nodeConnection = this.api.getNetworkState()
+			.map(RadixNetworkState::getNodes)
+			.filter(s -> !s.isEmpty())
+			.map(s -> s.iterator().next())
+			.firstOrError()
+			.blockingGet();
+
 		// Reset data
 		this.properties.clear();
 		this.observers.clear();
@@ -92,7 +107,9 @@ public class AtomicTransactionsWithDependence {
 		RadixIdentity toIdentity = RadixIdentities.createNew();
 		RadixAddress toAddress = api.getAddress(toIdentity.getPublicKey());
 		TestObserver<Object> observer = new TestObserver<>();
-		api.execute(new MintAndTransferTokensAction(RRI.of(api.getAddress(), "TEST0"), BigDecimal.valueOf(7), toAddress))
+		Transaction tx = api.createTransaction();
+		tx.stage(new MintAndTransferTokensAction(RRI.of(api.getAddress(), "TEST0"), BigDecimal.valueOf(7), toAddress));
+		tx.commitAndPush(nodeConnection)
 			.toObservable()
 			.subscribe(observer);
 		observers.add(observer);
@@ -100,15 +117,9 @@ public class AtomicTransactionsWithDependence {
 
 	@When("^I submit a particle group spending a consumable that was created in a group with a lower index$")
 	public void iSubmitAParticleGroupSpendingAConsumableThatWasCreatedInAGroupWithALowerIndex() throws Exception {
-		RadixApplicationAPI api = RadixApplicationAPI.defaultBuilder()
-			.universe(RadixUniverse.create(TestEnv.getBootstrapConfig()))
-			.identity(RadixIdentities.createNew())
-			.build();
-
 		this.properties.put(SYMBOL, "TEST0");
 		createToken(CreateTokenAction.TokenSupplyType.MUTABLE, api);
 		i_can_observe_atom_being_accepted(1);
-		TimeUnit.SECONDS.sleep(5);
 		this.observers.clear();
 
 		RadixIdentity toIdentity = RadixIdentities.createNew();
@@ -117,7 +128,7 @@ public class AtomicTransactionsWithDependence {
 		Transaction transaction = api.createTransaction();
 		transaction.stage(MintTokensAction.create(RRI.of(api.getAddress(), "TEST0"), api.getAddress(), BigDecimal.valueOf(7)));
 		transaction.stage(TransferTokensAction.create(RRI.of(api.getAddress(), "TEST0"), api.getAddress(), toAddress, BigDecimal.valueOf(7)));
-		transaction.commitAndPush()
+		transaction.commitAndPush(nodeConnection)
 			.toObservable()
 			.doOnNext(System.out::println)
 			.subscribe(observer);
@@ -178,13 +189,17 @@ public class AtomicTransactionsWithDependence {
 
 	private void createToken(CreateTokenAction.TokenSupplyType tokenCreateSupplyType, RadixApplicationAPI api) {
 		TestObserver<Object> observer = new TestObserver<>();
-		api.createToken(
-				RRI.of(api.getAddress(), this.properties.get(SYMBOL)),
-				this.properties.get(NAME),
-				this.properties.get(DESCRIPTION),
-				new BigDecimal(this.properties.get(INITIAL_SUPPLY)),
-				new BigDecimal(this.properties.get(GRANULARITY)),
-				tokenCreateSupplyType)
+		Transaction tx = api.createTransaction();
+		CreateTokenAction createTokenAction = CreateTokenAction.create(
+			RRI.of(api.getAddress(), this.properties.get(SYMBOL)),
+			this.properties.get(NAME),
+			this.properties.get(DESCRIPTION),
+			new BigDecimal(this.properties.get(INITIAL_SUPPLY)),
+			new BigDecimal(this.properties.get(GRANULARITY)),
+			tokenCreateSupplyType
+		);
+		tx.stage(createTokenAction);
+		tx.commitAndPush(nodeConnection)
 			.toObservable()
 			.doOnNext(System.out::println)
 			.subscribe(observer);
@@ -202,10 +217,7 @@ public class AtomicTransactionsWithDependence {
 		testObserver.assertNoTimeout();
 		List<Object> events = testObserver.values();
 		assertThat(events).extracting(o -> o.getClass().toString())
-			.startsWith(
-				SubmitAtomRequestAction.class.toString(),
-				SubmitAtomSendAction.class.toString()
-			);
+			.startsWith(SubmitAtomSendAction.class.toString());
 		assertThat(events).last()
 			.isInstanceOf(SubmitAtomStatusAction.class)
 			.<AtomStatus>extracting(o -> SubmitAtomStatusAction.class.cast(o).getStatusNotification().getAtomStatus())
