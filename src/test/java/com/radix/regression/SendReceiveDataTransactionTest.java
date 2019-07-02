@@ -29,6 +29,7 @@ public class SendReceiveDataTransactionTest {
 		// Given account owner listening to own messages
 		RadixApplicationAPI api = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), RadixIdentities.createNew());
 		TestObserver<DecryptedMessage> messageListener = TestObserver.create(Util.loggingObserver("MessageListener"));
+		Disposable d = api.pull();
 		api.observeMessages().subscribe(messageListener);
 
 		// When owner sends message from another account
@@ -48,6 +49,8 @@ public class SendReceiveDataTransactionTest {
 			.assertNoErrors()
 			.assertEmpty()
 			.dispose();
+
+		d.dispose();
 	}
 
 	@Test
@@ -92,6 +95,7 @@ public class SendReceiveDataTransactionTest {
 		// Given an account owner listening to own messages
 		TestObserver<DecryptedMessage> messageListener = new TestObserver<>(Util.loggingObserver("MessageListener"));
 		RadixApplicationAPI api = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), RadixIdentities.createNew());
+		Disposable d = api.pull();
 		api.observeMessages().subscribe(messageListener);
 
 		// When owner sends message to himself
@@ -106,6 +110,7 @@ public class SendReceiveDataTransactionTest {
 			.assertValueAt(0, msg -> msg.getTo().equals(api.getAddress()))
 			.assertValueAt(0, msg -> msg.getEncryptionState().equals(EncryptionState.NOT_ENCRYPTED))
 			.dispose();
+		d.dispose();
 	}
 
 	@Test
