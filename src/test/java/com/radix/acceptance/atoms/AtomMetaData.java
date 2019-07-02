@@ -20,6 +20,7 @@ import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.network.HttpClients;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient;
+import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.JsonRpcResponse;
 import com.radixdlt.client.core.network.websocket.WebSocketClient;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
 import com.radixdlt.client.core.pow.ProofOfWorkBuilder;
@@ -27,6 +28,8 @@ import cucumber.api.java.After;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
+import io.reactivex.Single;
+import io.reactivex.functions.Cancellable;
 import io.reactivex.observers.TestObserver;
 import org.json.JSONObject;
 import org.radix.serialization2.DsonOutput;
@@ -188,16 +191,14 @@ public class AtomMetaData {
 
 
         // Submit and listen for results
-        final JsonParser parser = new JsonParser();
-        this.webSocketClient.getMessages()
-            .map(msg -> parser.parse(msg).getAsJsonObject())
-            .firstOrError()
-            .map(msg -> {
-                final JsonObject jsonResponse = msg.getAsJsonObject();
-                return new RadixJsonRpcClient.JsonRpcResponse(!jsonResponse.has("error"), jsonResponse);
-            })
-            .subscribe(this.observer2);
-
+		final JsonParser parser = new JsonParser();
+		Single.<JsonRpcResponse>create(emitter -> {
+			Cancellable c = this.webSocketClient.addListener(msg -> {
+				JsonObject response = parser.parse(msg).getAsJsonObject();
+				emitter.onSuccess(new RadixJsonRpcClient.JsonRpcResponse(!response.has("error"), response));
+			});
+			emitter.setCancellable(c);
+		}).subscribe(this.observer2);
         assert(this.webSocketClient.sendMessage(brokenJson));
     }
 
