@@ -3,6 +3,8 @@ package com.radix.regression;
 import com.radix.TestEnv;
 import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
 import com.radixdlt.client.core.atoms.particles.RRI;
+import com.radixdlt.client.core.network.RadixNetworkState;
+import com.radixdlt.client.core.network.RadixNode;
 import org.junit.Test;
 
 import com.radixdlt.client.application.RadixApplicationAPI;
@@ -26,13 +28,23 @@ public class SendUniqueTransactionsTest {
 	public void given_an_account_owner_which_has_performed_an_action_with_a_unique_id__when_the_client_attempts_to_use_same_id__then_client_should_be_notified_that_unique_id_is_already_used() throws Exception {
 
 		// Given account owner which has performed an action with a unique id
-		RadixApplicationAPI api = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), RadixIdentities.createNew());
+		final RadixApplicationAPI api = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), RadixIdentities.createNew());
+
+		api.discoverNodes();
+		final RadixNode originNode = api.getNetworkState()
+			.map(RadixNetworkState::getNodes)
+			.filter(s -> !s.isEmpty())
+			.map(s -> s.iterator().next())
+			.firstOrError()
+			.blockingGet();
+
+
 		final String uniqueId = "thisisauniquestring";
 		Transaction transaction = api.createTransaction();
 		transaction.stage(SendMessageAction.create(api.getAddress(), api.getAddress(), new byte[] {0}, false));
 		RRI rriUnique = RRI.of(api.getAddress(), uniqueId);
 		transaction.stage(PutUniqueIdAction.create(rriUnique));
-		Completable initialUniqueStatus = transaction.commitAndPush().toCompletable();
+		Completable initialUniqueStatus = transaction.commitAndPush(originNode).toCompletable();
 		initialUniqueStatus.blockingAwait();
 
 		// When client attempts to use same id
@@ -40,7 +52,7 @@ public class SendUniqueTransactionsTest {
 		Transaction transaction1 = api.createTransaction();
 		transaction1.stage(SendMessageAction.create(api.getAddress(), api.getAddress(), new byte[] {1}, false));
 		transaction1.stage(PutUniqueIdAction.create(rriUnique));
-		Completable conflictingUniqueStatus = transaction1.commitAndPush().toCompletable();
+		Completable conflictingUniqueStatus = transaction1.commitAndPush(originNode).toCompletable();
 		conflictingUniqueStatus.subscribe(submissionObserver);
 
 		// Then client should be notified that unique id is already used
