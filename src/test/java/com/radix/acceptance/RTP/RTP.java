@@ -23,6 +23,7 @@ import okhttp3.Response;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assume.assumeFalse;
@@ -72,6 +73,7 @@ public class RTP {
 	}
 
     @Test
+	@Ignore("RTP not currently in use")
     public void test_submitted_atom_two_vertex_timestamps_are_close() throws Exception {
 		assumeTrue(nodes.size() >= 2);
 
@@ -137,6 +139,7 @@ public class RTP {
     // I can see the timestamp included in the temporal proof vertices
 
     @Test
+	@Ignore("RTP not currently in use")
     public void test_atom_has_an_rclock_in_its_tp() throws Exception {
 		assumeFalse(nodes.isEmpty());
 
@@ -184,6 +187,7 @@ public class RTP {
     // I can see an error returned -> I get an empty list returned
 
     @Test
+	@Ignore("RTP not currently in use")
     public void test_non_existent_atom_returns_an_error() throws Exception {
 		assumeFalse(nodes.isEmpty());
 
@@ -206,6 +210,7 @@ public class RTP {
     // I can see the time being returned
 
     @Test
+	@Ignore("RTP not currently in use")
     public void test_rtp_timestamp() throws Exception {
 		assumeFalse(nodes.isEmpty());
 
@@ -227,6 +232,7 @@ public class RTP {
     // I can see the time is the same within 5ms
 
     @Test
+	@Ignore("RTP not currently in use")
     public void test_rtp_timestamp_on_two_nodes() throws Exception {
 		assumeFalse(nodes.isEmpty());
 
