@@ -4,6 +4,9 @@ import com.radixdlt.client.core.network.jsonrpc.PersistentChannel;
 import io.reactivex.Observable;
 import io.reactivex.functions.Cancellable;
 import io.reactivex.subjects.BehaviorSubject;
+
+import java.net.SocketException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
@@ -20,6 +23,7 @@ import org.slf4j.LoggerFactory;
  */
 public class WebSocketClient implements PersistentChannel {
 	private static final Logger LOGGER = LoggerFactory.getLogger(WebSocketClient.class);
+	private static final int MAX_LOG_STRING_OUTPUT = 1024;
 	private final Object lock = new Object();
 	private final BehaviorSubject<WebSocketStatus> state = BehaviorSubject.createDefault(WebSocketStatus.DISCONNECTED);
 	private final Function<WebSocketListener, WebSocket> websocketFactory;
@@ -86,8 +90,12 @@ public class WebSocketClient implements PersistentChannel {
 				@Override
 				public void onFailure(WebSocket websocket, Throwable t, Response response) {
 					if (LOGGER.isDebugEnabled()) {
-						String msg = String.format("Websocket %s failed", System.identityHashCode(WebSocketClient.this));
-						LOGGER.debug(msg, t);
+						if (t instanceof SocketException && "Socket closed".equals(t.getMessage())) {
+							LOGGER.debug("Websocket {} failed (closed)", System.identityHashCode(WebSocketClient.this));
+						} else {
+							String msg = String.format("Websocket %s failed", System.identityHashCode(WebSocketClient.this));
+							LOGGER.debug(msg, t);
+						}
 					}
 					synchronized (lock) {
 						if (state.getValue().equals(WebSocketStatus.CLOSING)) {
@@ -151,7 +159,7 @@ public class WebSocketClient implements PersistentChannel {
 	@Override
 	public boolean sendMessage(String message) {
 		if (LOGGER.isDebugEnabled()) {
-			LOGGER.debug("Websocket {} send: {}", System.identityHashCode(this), message);
+			LOGGER.debug("Websocket {} send: {}", System.identityHashCode(this), safeString(message));
 		}
 		synchronized (lock) {
 			if (!this.state.getValue().equals(WebSocketStatus.CONNECTED)) {
@@ -161,5 +169,12 @@ public class WebSocketClient implements PersistentChannel {
 
 			return this.webSocket.send(message);
 		}
+	}
+
+	private String safeString(String str) {
+		if (str.length() > MAX_LOG_STRING_OUTPUT) {
+			str = str.substring(0, MAX_LOG_STRING_OUTPUT);
+		}
+		return new String(str.getBytes(StandardCharsets.US_ASCII), StandardCharsets.US_ASCII);
 	}
 }
