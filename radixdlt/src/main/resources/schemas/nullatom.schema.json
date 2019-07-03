@@ -1,0 +1,79 @@
+{
+  "$schema": "http://json-schema.org/draft-06/schema#",
+  "$id": "http://localhost:8080/schemas/nullatom",
+  "title": "Atom - Null Atom",
+  "type": "object",
+  "description": "Null Atom Definition. 'serializer' must be set to -1123323048.",
+  "properties": {
+    "particles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "destinations": {
+          "$ref": "#/definitions/destinations"
+        },
+        "junk": {
+          "type": "string"
+        },
+        "serializer": {
+          "type": "number",
+          "enum": [
+            -1123054001
+          ]
+        },
+        "owners": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "public": {
+                "type": "object"
+              },
+              "serializer": {
+                "type": "number"
+              },
+              "version": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        "version": {
+          "type": "number"
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "$ref": "http://localhost:8080/schemas/atom"
+    }
+  ],
+  "examples": [
+    {
+      "action": "STORE",
+      "destinations": [
+        {
+          "serializer": "EUID",
+          "value": "-30147345025896143762492871630"
+        }
+      ],
+      "junk": {
+        "serializer": "BASE64",
+        "value": "/5ESUQ=="
+      },
+      "serializer": -1123054001,
+      "owners": [
+        {
+          "public": {
+            "serializer": "BASE64",
+            "value": "A/Q2R0jTSeAYC+oo6vVwyNoMHia2E+8kAy/2Qub+Lm8v"
+          },
+          "serializer": 547221307,
+          "version": 100
+        }
+      ],
+      "version": 100
+    }
+  ]
+}

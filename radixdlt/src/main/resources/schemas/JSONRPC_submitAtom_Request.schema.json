@@ -1,0 +1,62 @@
+{
+  "$schema": "http://json-schema.org/draft-06/schema#",
+  "$id": "http://localhost:8080/schemas/JSONRPC_submitAtom_Request",
+  "title": "Submit Atom Request",
+  "type": "object",
+  "description": "A JSON RPC Request which can be sent either as a POST HTTP request to http://localhost:8080/rpc or as a websocket message to ws://localhost:8080/rpc. Submits a new atom to the network for processing.",
+  "properties": {
+    "id": {
+      "type": "integer"
+    },
+    "method": {
+      "type": "string",
+      "enum": [
+        "Universe.submitAtom"
+      ]
+    },
+    "params": { "$ref": "http://localhost:8080/schemas/atom" }
+  },
+  "required": [ "id", "method", "params" ],
+  "additionalProperties": false,
+  "examples": [
+    {
+      "method": "Universe.submitAtom",
+      "params": {
+        "destinations": [
+          {
+            "serializer": "EUID",
+            "value": "-30147345025896143762492871630"
+          }
+        ],
+        "serializer": -1123323048,
+        "action": "STORE",
+        "particles": [
+          {
+            "destinations": [{
+              "serializer": "EUID",
+              "value": "-30147345025896143762492871630"
+            }],
+            "junk": {
+              "serializer": "BASE64",
+              "value": "/5ESUQ=="
+            },
+            "serializer": -1123054001,
+            "owners": [
+              {
+                "public": {
+                  "serializer": "BASE64",
+                  "value": "A/Q2R0jTSeAYC+oo6vVwyNoMHia2E+8kAy/2Qub+Lm8v"
+                },
+                "serializer": 547221307,
+                "version": 100
+              }
+            ],
+            "version": 100
+          }
+        ],
+        "version": 100
+      },
+      "id": 123456
+    }
+  ]
+}

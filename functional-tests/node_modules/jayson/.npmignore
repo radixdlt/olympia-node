@@ -1,0 +1,7 @@
+node_modules
+.*
+!.gitignore
+!.travis.yml
+!.jshintrc
+sandbox
+coverage

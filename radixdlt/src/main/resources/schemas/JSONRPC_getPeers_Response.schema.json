@@ -1,0 +1,249 @@
+{
+  "$schema": "http://json-schema.org/draft-06/schema#",
+  "$id": "http://localhost:8080/schemas/JSONRPC_getPeers_Response",
+  "title": "Get Peers Response",
+  "type": "object",
+  "description": "A JSON RPC Response from a 'Get Peers Request'. Contains information about peers which are connected to the node the message was sent to.",
+  "properties": {
+    "id": {
+      "type": "integer"
+    },
+    "jsonrpc": {
+      "type": "string",
+      "enum": [ "2.0"]
+    },
+    "result": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/DATA_peer"
+      }
+    }
+  },
+  "required": [ "id", "jsonrpc", "result" ],
+  "definitions": {
+    "ENUM_networkProtocol": {
+      "type": "string",
+      "enum": [ "UDP", "TCP"]
+    },
+    "DATA_system": {
+      "type": "object",
+      "properties": {
+        "agent": {
+          "type": "object"
+        },
+        "clock": {
+          "type": "number"
+        },
+        "id": {
+          "type": "object"
+        },
+        "shards": {
+          "type": "object"
+        },
+        "period": {
+          "type": "number"
+        },
+        "port": {
+          "type": "number"
+        },
+        "commitment": {
+          "type": "object"
+        },
+        "serializer": {
+          "type": "number"
+        },
+        "version": {
+          "type": "number"
+        },
+        "key": {
+          "type": "object"
+        }
+      }
+    },
+    "DATA_timestamps": {
+      "type": "object",
+      "properties": {
+        "active": { "type": "number" },
+        "banned": { "type": "number" },
+        "connected": { "type": "number" },
+        "disconnected": { "type": "number" }
+      }
+    },
+    "DATA_peer": {
+      "type": "object",
+      "properties": {
+        "attempts": {
+          "type": "number"
+        },
+        "hash": {
+          "type": "object"
+        },
+        "host": {
+          "type": "object",
+          "properties": {
+            "ip": {
+              "type": "string"
+            },
+            "port": {
+              "type": "number"
+            }
+          }
+        },
+        "id": {
+          "type": "object"
+        },
+        "protocols": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ENUM_networkProtocol"
+          }
+        },
+        "serializer": {
+          "type": "number"
+        },
+        "statistics": {
+          "type": "object",
+          "properties": {
+            "duration": {
+              "type": "number"
+            },
+            "traffic_in": {
+              "type": "number"
+            },
+            "traffic_out": {
+              "type": "number"
+            }
+          }
+        },
+        "system": {
+          "$ref": "#/definitions/DATA_system"
+        },
+        "timestamps": {
+          "$ref": "#/definitions/DATA_timestamps"
+        },
+        "version": {
+          "type": "number"
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "id": 0,
+      "jsonrpc": "2.0",
+      "result": [
+        {
+          "system": {
+            "shards": {
+              "high": 9223372036854775807,
+              "low": -9223372036854775808
+            },
+            "agent": {
+              "protocol": 100,
+              "name": "/Radix:/2150000",
+              "version": 2150000
+            },
+            "period": 151983494,
+            "port": 30000,
+            "commitment": {
+              "serializer": "HASH",
+              "value": "0000000000000000000000000000000000000000000000000000000000000000"
+            },
+            "serializer": -1833998801,
+            "clock": 2,
+            "id": {
+              "serializer": "EUID",
+              "value": "-34565947571228481785194864838"
+            },
+            "version": 100,
+            "key": {
+              "serializer": "BASE64",
+              "value": "A+vsenilIs03W2iE8+Z/RJ1CEjGSMK/r3IYYwdraiIX6"
+            }
+          },
+          "timestamps": {
+            "connected": 1520364122994,
+            "disconnected": 0,
+            "active": 1520364129787,
+            "banned": 0
+          },
+          "host": {
+            "port": 30000,
+            "ip": "172.18.0.3"
+          },
+          "serializer": 1560569988,
+          "id": {
+            "serializer": "EUID",
+            "value": "-34565947571228481785194864838"
+          },
+          "protocols": [
+            "UDP"
+          ],
+          "version": 100,
+          "statistics": {
+            "duration": -1520364122994,
+            "traffic_in": 0,
+            "traffic_out": 0
+          },
+          "attempts": 0
+        },
+        {
+          "system": {
+            "shards": {
+              "high": 9223372036854775807,
+              "low": -9223372036854775808
+            },
+            "agent": {
+              "protocol": 100,
+              "name": "/Radix:/2150000",
+              "version": 2150000
+            },
+            "period": 151983494,
+            "port": 30000,
+            "commitment": {
+              "serializer": "HASH",
+              "value": "0000000000000000000000000000000000000000000000000000000000000000"
+            },
+            "serializer": -1833998801,
+            "clock": 2,
+            "id": {
+              "serializer": "EUID",
+              "value": "-31766129803891974826154337926"
+            },
+            "version": 100,
+            "key": {
+              "serializer": "BASE64",
+              "value": "AvwUzEBwuza21cZ51jX8Tzcti2zAbhddYExqx+v71zjk"
+            }
+          },
+          "timestamps": {
+            "connected": 1520364130744,
+            "disconnected": 0,
+            "active": 1520364130751,
+            "banned": 0
+          },
+          "host": {
+            "port": 30000,
+            "ip": "172.18.0.2"
+          },
+          "serializer": 1560569988,
+          "id": {
+            "serializer": "EUID",
+            "value": "-31766129803891974826154337926"
+          },
+          "protocols": [
+            "UDP"
+          ],
+          "version": 100,
+          "statistics": {
+            "duration": -1520364130744,
+            "traffic_in": 0,
+            "traffic_out": 0
+          },
+          "attempts": 0
+        }
+      ]
+    }
+  ],
+  "additionalProperties": false
+}

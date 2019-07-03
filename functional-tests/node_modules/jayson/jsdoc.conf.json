@@ -1,0 +1,25 @@
+{
+  "tags": {
+    "allowUnknownTags": true
+  },
+  "source": {
+    "include": [
+      "./lib/",
+      "./promise/"
+    ]
+  },
+  "opts": {
+    "destination": "./docs/",
+    "package": "./package.json",
+    "recurse": true
+  },
+  "templates": {
+    "systemName": "Jayson",
+    "copyright": "The MIT License",
+    "includeDate": false,
+    "linenums": true,
+    "theme": "simplex",
+    "inverseNav": true,
+    "outputSourceFiles": true
+  }
+}

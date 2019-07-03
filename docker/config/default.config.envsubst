@@ -1,0 +1,34 @@
+api.functions=$RADIXDLT_API_FUNCTIONS
+api.url=/api
+core.modules=assets,atoms,transactions
+network.seeds=$RADIXDLT_NETWORK_SEEDS_REMOTE
+network.discovery.urls=$RADIXDLT_NETWORK_DISCOVERY_URLS
+partition.high=9223372036854775807
+universe=$RADIXDLT_UNIVERSE
+network.connections.in=$RADIXDLT_NETWORK_CONNECTIONS_IN
+cp.port=$RADIXDLT_CP_PORT
+ntp.pool=pool.ntp.org
+universe.witnesses=$RADIXDLT_UNIVERSE_WITNESSES_REMOTE
+network.connections.out=$RADIXDLT_NETWORK_CONNECTIONS_OUT
+partition.low=-9223372036854775808
+partition.fragments=$RADIXDLT_PARTITION_FRAGMENTS
+universe.witness=$RADIXDLT_UNIVERSE_WITNESSES
+ntp=true
+debug.profiler=$RADIXDLT_DEBUG_PROFILER
+
+# RTP
+rtp.interval=4
+rtp.age_threshold=5
+rtp.decay = 0.3f
+rtp.min_group_size=3
+rtp.max_group_size=10
+rtp.max_correction=1000
+rtp.alpha_trim_factor=0.2f
+rtp.target_coupling=0.1f
+rtp.min_offset=5
+rtp.max_deviation=25
+rtp.max_start_deviation=10000
+rtp.test=true
+rtp.naughty=false
+rtp.skew=0
+rtp.clock_offset=0

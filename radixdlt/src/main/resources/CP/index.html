@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+
+	<title>Radix Explorer</title>
+
+	<!-- Latest compiled and minified CSS -->
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u"
+	 crossorigin="anonymous">
+
+	<!-- Optional theme -->
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp"
+	 crossorigin="anonymous">
+
+	<style>
+		.big-text {
+			font-size: 18px;
+		}
+
+		.panel {
+			height: 100%
+		}
+
+		.atoms-primary {
+			font-size: 64px;
+		}
+
+		.table tbody input {
+			display: block;
+			padding: 0;
+			margin: 0;
+			width: 100%;
+		}
+
+		.table tbody div.form-group {
+			margin: 0;
+		}
+
+		.table tbody tr td {
+			vertical-align: middle;
+		}
+	</style>
+
+</head>
+
+<body>
+	<nav class="navbar navbar-inverse navbar-static-top">
+		<div class="container-fluid">
+			<div class="navbar-header">
+				<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false"
+				 aria-controls="navbar">
+					<span class="sr-only">Toggle navigation</span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+				</button>
+				<a class="navbar-brand" href="https://radix.global">Radix</a>
+			</div>
+			<div id="navbar" class="navbar-collapse collapse">
+				<ul class="nav navbar-nav navbar-left">
+				</ul>
+				<ul class="nav navbar-nav navbar-right">
+					<li class="dropdown">
+						<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Tools
+							<span class="caret"></span>
+						</a>
+						<ul class="dropdown-menu">
+							<li>
+								<a href="profiler.html" onclick="window.open('profiler.html', 'profiler_window', 'width=1024, height=480, scrollbars=yes, status=no, toolbar=no, menubar=no').focus(); return false;">Profiler</a>
+							</li>
+						</ul>
+					</li>
+				</ul>
+			</div>
+		</div>
+	</nav>
+
+	<div class="container-fluid big-text">
+		<div class="row">
+			<div class="col-md-6 col-fill" id="panel-fill">
+				<div class="row">
+					<div class="col-md-12 text-center">
+						<h1 class="atoms-primary">
+							<span id="witness_atoms_stored">---</span>
+							<small> transactions</small>
+						</h1>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-md-12 text-center">
+						<h1>
+							<span id="witness_atoms_processing">---</span>
+							<small> transactions / second</small>
+						</h1>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-md-12 text-center">
+						<h1>
+							<span id="witness_latency">---</span>
+							<small> confirmation ms</small>
+						</h1>
+					</div>
+				</div>
+				<br>
+				<div class="row">
+					<div class="col-md-12 text-center">
+						<h3>Target: 250 million transactions within 7 days</h3>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-md-offset-2 col-md-8">
+						<div class="progress">
+							<div id="target_progress" class="progress-bar" role="progressbar" aria-valuenow="70" aria-valuemin="0" aria-valuemax="100"
+							 style="width:0%">
+								<span id="target_progress_percentage">0%</span>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row" id="countdown_titles">
+					<div class="col-md-offset-2 col-md-2 col-xs-3 text-center">Days</div>
+					<div class="col-md-2 col-xs-3 text-center">Hours</div>
+					<div class="col-md-2 col-xs-3 text-center">Minutes</div>
+					<div class="col-md-2 col-xs-3 text-center">Seconds</div>
+				</div>
+				<div class="row" id="countdown">
+					<h3 class="col-md-offset-2 col-md-2 col-xs-3 text-center" id="countdown_days">0</h3>
+					<h3 class="col-md-2 col-xs-3 text-center" id="countdown_hours">0</h3>
+					<h3 class="col-md-2 col-xs-3 text-center" id="countdown_minutes">0</h3>
+					<h3 class="col-md-2 col-xs-3 text-center" id="countdown_seconds">0</h3>
+				</div>
+				<br>
+				<div class="row">
+					<div class="col-md-12 text-center">
+						<small>Page automatically refreshes every 5 seconds</small>
+					</div>
+				</div>
+				<br>
+			</div>
+
+			<div class="col-md-3 col-xs-12">
+				<div class="row">
+					<div class="col-md-12 col-xs-12">
+						<div class="panel panel-default">
+							<div class="panel-heading">Atoms</div>
+							<div class="panel-body">
+								<div class="row">
+									<div class="col-md-4 col-xs-4">Witnessed:</div>
+									<div id="ledger_processed" class="col-md-4 col-xs-4 text-center">---</div>
+									<div id="ledger_processing" class="col-md-4 col-xs-4 text-center">---</div>
+								</div>
+								<div class="row">
+									<div class="col-md-4 col-xs-4">Stored:</div>
+									<div id="ledger_stored" class="col-md-4 col-xs-4 text-center">---</div>
+									<div id="ledger_storing" class="col-md-4 col-xs-4 text-center">---</div>
+								</div>
+								<div class="row">
+									<div class="col-md-4 col-xs-4">Finality:</div>
+									<div id="ledger_latency_path" class="col-md-4 col-xs-4 text-center">---</div>
+									<div id="ledger_latency_store" class="col-md-4 col-xs-4 text-center">---</div>
+								</div>
+								<div class="row">
+									<div class="col-md-4 col-xs-4">Consensus:</div>
+									<div id="ledger_faults_tears" class="col-md-4 col-xs-4 text-center">---</div>
+									<div id="ledger_faults_stitched" class="col-md-4 col-xs-4 text-center">---</div>
+								</div>
+							</div>
+						</div>
+
+						<div class="panel panel-default">
+							<div class="panel-heading">Subspace</div>
+							<div class="panel-body">
+								<div class="row">
+									<div class="col-md-4 col-xs-4">Events:</div>
+									<div id="events_processed" class="col-md-4 col-xs-4 text-center">---</div>
+									<div id="events_processing" class="col-md-4 col-xs-4 text-center">---</div>
+								</div>
+								<div class="row">
+									<div class="col-md-4 col-xs-4">Messages:</div>
+									<div id="messages_processed" class="col-md-4 col-xs-4 text-center">---</div>
+									<div id="messages_processing" class="col-md-4 col-xs-4 text-center">---</div>
+								</div>
+							</div>
+						</div>
+
+						<div class="panel panel-default">
+							<div class="panel-heading">Universe</div>
+							<div class="panel-body">
+								<div class="row">
+									<div class="col-md-4 col-xs-4">Type:</div>
+									<div id="universe_type" class="col-md-8 col-xs-8">---</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="col-md-3 col-xs-12">
+				<div class="row">
+					<div class="col-md-12 col-xs-12">
+						<div class="panel panel-default">
+							<div class="panel-heading">System</div>
+							<div class="panel-body">
+								<div class="row">
+									<div class="col-md-4 col-xs-2">NID:</div>
+									<div id="system_nid" class="col-md-4 col-xs-10">
+										<small>---</small>
+									</div>
+								</div>
+								<br>
+								<div class="row">
+									<div class="col-md-4 col-xs-4">Version:</div>
+									<div id="system_version" class="col-md-4 col-xs-8">---</div>
+								</div>
+								<div class="row">
+									<div class="col-md-4 col-xs-4">Agent:</div>
+									<div id="system_agent" class="col-md-4 col-xs-8">---</div>
+								</div>
+								<br>
+								<div class="row">
+									<div class="col-md-4 col-xs-4">Processors:</div>
+									<div id="system_processors" class="col-md-4 col-xs-8">---</div>
+								</div>
+								<div class="row">
+									<div class="col-md-4 col-xs-4">Memory:</div>
+									<div id="system_free_memory" class="col-md-4 col-xs-8">---</div>
+								</div>
+								<div class="row">
+									<div id="system_total_memory" class="col-md-offset-4 col-xs-offset-4 col-md-4 col-xs-8">---</div>
+								</div>
+								<div class="row">
+									<div id="system_max_memory" class="col-md-offset-4 col-xs-offset-4 col-md-4 col-xs-8">---</div>
+								</div>
+								<br>
+								<div class="row">
+									<div class="col-md-4 col-xs-4">Partitions:</div>
+									<div id="system_partition_low" class="col-md-4 col-xs-8 ">---</div>
+								</div>
+								<div class="row">
+									<div class="col-md-4 col-xs-4"></div>
+									<div id="system_partition_high" class="col-md-4 col-xs-8 ">---</div>
+								</div>
+								<br>
+								<div class="row">
+									<div class="col-md-4 col-xs-4">Synced:</div>
+									<div id="system_state_synced" class="col-md-8 col-xs-8">---</div>
+								</div>
+								<div class="row">
+									<div class="col-md-4 col-xs-4">Clock:</div>
+									<div id="system_state_clock" class="col-md-4 col-xs-8">---</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+	<!-- Include all compiled plugins (below), or include individual files as needed -->
+	<!-- Latest compiled and minified JavaScript -->
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa"
+	 crossorigin="anonymous"></script>
+	<script src="js/date.format.min.js"></script>
+	<script src="js/config.js"></script>
+	<script>
+		var TARGET = 250000000;
+		var DEADLINE = "November 6 2017";
+
+		var updateInterval;
+		var countdownInterval;
+
+		var systemResponse;
+		var universeResponse;
+
+		function getTimeRemaining(endtime) {
+			var t = Date.parse(endtime) - Date.parse(new Date());
+			var seconds = Math.max(0, Math.floor((t / 1000) % 60));
+			var minutes = Math.max(0, Math.floor((t / 1000 / 60) % 60));
+			var hours = Math.max(0, Math.floor((t / (1000 * 60 * 60)) % 24));
+			var days = Math.max(0, Math.floor(t / (1000 * 60 * 60 * 24)));
+
+			return {
+				'total': t,
+				'days': days,
+				'hours': hours,
+				'minutes': minutes,
+				'seconds': seconds
+			};
+		}
+
+		function updateCountdown() {
+			var t = getTimeRemaining(DEADLINE);
+
+			$('#countdown_days').text(t.days);
+			$('#countdown_hours').text(t.hours);
+			$('#countdown_minutes').text(t.minutes);
+			$('#countdown_seconds').text(t.seconds);
+
+			if (t.total <= 0)
+				clearInterval(countdownInterval);
+		}
+
+		updateInterval = setInterval(function () { update(); }, 5000);
+		countdownInterval = setInterval(function () { updateCountdown(); }, 1000);
+
+		$(document).ready(function () {
+			update();
+			updateCountdown();
+		});
+
+		function update() {
+			refreshSystem();
+			refreshUniverse();
+		}
+
+		function refreshTarget() {
+			if (systemResponse !== undefined) {
+				var storedAtoms = 0;
+
+				if (systemResponse.witness === undefined)
+					storedAtoms = systemResponse.ledger.stored;
+				else
+					storedAtoms = systemResponse.witness.stored;
+
+				var percentage = storedAtoms / 250000000;
+
+				if (percentage > 1)
+					percentage = 1;
+
+				$('#target_progress').css('width', (percentage * 100) + "%");
+				$('#target_progress_percentage').text((percentage * 100).toLocaleString('en-US', { maximumFractionDigits: 2 }) + "%");
+			}
+		}
+
+		function refreshSystem() {
+			$.ajax({
+				type: "GET",
+				url: API_URL + "/system",
+				contentType: "application/json; charset=utf-8",
+				crossDomain: true,
+				dataType: "json",
+				cache: false,
+				timeout: 10000,
+				success: function (json) {
+					systemResponse = json.data;
+
+					$('#system_nid').text(json.data.hid.value);
+					$('#system_agent').text(json.data.agent.name);
+					$('#system_version').text(json.data.agent.version + " / " + json.data.agent.protocol);
+					$('#system_partition_low').text(json.data.shards.low);
+					$('#system_partition_high').text(json.data.shards.high);
+
+					$('#messages_processed').text(json.data.messages.processed.toLocaleString());
+					$('#messages_processing').text(json.data.messages.processing.toLocaleString() + " / sec");
+					$('#events_processed').text(json.data.events.processed.toLocaleString());
+					$('#events_processing').text(json.data.events.processing.toLocaleString() + " / sec");
+
+					$('#system_processors').text(json.data.processors);
+					$('#system_free_memory').text(json.data.memory.free.toLocaleString('en-US', { maximumFractionDigits: 2 }));
+					$('#system_total_memory').text(json.data.memory.total.toLocaleString('en-US', { maximumFractionDigits: 2 }));
+					$('#system_max_memory').text(json.data.memory.max.toLocaleString('en-US', { maximumFractionDigits: 2 }));
+
+					if (json.data.witness === undefined) {
+						$('#witness_atoms_stored').text(json.data.ledger.stored.toLocaleString());
+						$('#witness_atoms_processing').text(json.data.ledger.storing.toLocaleString());
+					} else {
+						$('#witness_atoms_stored').text(json.data.witness.stored.toLocaleString());
+						$('#witness_atoms_processing').text(json.data.witness.processing.toLocaleString());
+					}
+
+					if (json.data.ledger.latency.path > 0) {
+						$('#witness_latency').text(json.data.ledger.latency.path.toLocaleString());
+					}
+
+					$('#ledger_processed').text(json.data.ledger.processed.toLocaleString());
+					$('#ledger_stored').text(json.data.ledger.stored.toLocaleString());
+					$('#ledger_processing').text(json.data.ledger.processing.toLocaleString() + " / sec");
+					$('#ledger_storing').text(json.data.ledger.storing.toLocaleString() + " / sec");
+
+					$('#ledger_latency_path').text(json.data.ledger.latency.path + " ms");
+					$('#ledger_latency_store').text(json.data.ledger.latency.persist + " ms");
+					$('#ledger_faults_tears').text(json.data.ledger.faults.tears);
+					$('#ledger_faults_stitched').text(json.data.ledger.faults.stitched);
+
+					$('#system_state_synced').text(new Date(json.data.period * 10000).format('G:i:s d M Y'));
+					$('#system_state_clock').text(json.data.clock.toLocaleString());
+
+					refreshTarget();
+				},
+
+				error: function (msg) {
+					$('#system_nid').text("---");
+					$('#system_agent').text("---");
+					$('#system_version').text("---");
+					$('#system_partition_low').text("---");
+					$('#system_partition_high').text("---");
+
+					$('#messages_processed').text("---");
+					$('#messages_processing').text("---");
+					$('#events_processed').text("---");
+					$('#events_processing').text("---");
+
+					$('#system_processors').text("---");
+					$('#system_free_memory').text("---");
+					$('#system_total_memory').text("---");
+					$('#system_max_memory').text("---");
+
+					$('#witness_atoms_stored').text("---");
+					$('#witness_atoms_processing').text("---");
+					$('#witness_latency').text("---");
+
+					$('#ledger_processed').text("---");
+					$('#ledger_stored').text("---");
+					$('#ledger_processing').text("---");
+					$('#ledger_storing').text("---");
+
+					$('#ledger_latency_path').text("---");
+					$('#ledger_latency_store').text("---");
+					$('#ledger_faults_tears').text("---");
+					$('#ledger_faults_stitched').text("---");
+
+					console.log(msg.responseText);
+				}
+			});
+		}
+
+		function refreshUniverse() {
+			$.ajax({
+				type: "GET",
+				url: API_URL + "/universe",
+				contentType: "application/json; charset=utf-8",
+				crossDomain: true,
+				dataType: "json",
+				cache: false,
+				timeout: 10000,
+				success: function (json) {
+					$('#universe_type').text(json.data.type);
+				},
+				error: function (msg) {
+					$('#universe_type').text("---");
+				}
+			});
+		}
+	</script>
+</body>
+
+</html>

@@ -1,0 +1,45 @@
+buildscript {
+    repositories {
+        jcenter()
+        maven { url "https://plugins.gradle.org/m2/" }
+    }
+    dependencies {
+        classpath 'com.netflix.nebula:gradle-ospackage-plugin:4.9.3'
+        classpath 'net.sf.proguard:proguard-gradle:6.0.3'
+        classpath 'com.moowork.gradle:gradle-node-plugin:1.2.0'
+        classpath 'com.github.jengelman.gradle.plugins:shadow:2.0.3'
+        classpath 'me.champeau.gradle:jmh-gradle-plugin:0.4.7'
+        classpath 'org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:2.6.2'
+    }
+}
+
+subprojects {
+    configurations.all {
+        resolutionStrategy {
+            // fail eagerly on version conflict (includes transitive dependencies)
+            // e.g. multiple different versions of the same dependency (group and name are equal)
+            failOnVersionConflict()
+        }
+    }
+
+    apply plugin: 'java'
+    //apply plugin: 'eclipse-wtp'
+
+    repositories {
+        jcenter()
+        mavenCentral()
+        maven { url 'https://jitpack.io' }
+    }
+
+    targetCompatibility = 1.8
+    sourceCompatibility = 1.8
+
+    task showRepos {
+        doLast {
+            println "All repos:"
+            println repositories.collect { it.url }
+        }
+    }
+
+}
+

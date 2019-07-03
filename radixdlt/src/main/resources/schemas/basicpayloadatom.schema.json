@@ -1,0 +1,31 @@
+{
+  "$schema": "http://json-schema.org/draft-06/schema#",
+  "$id": "http://localhost:8080/schemas/basicpayloadatom",
+  "title": "Atom - Basic Payload Atom",
+  "type": "object",
+  "description": "Basic Payload Atom Definition. 'serializer' must be set to -257259791.",
+  "properties": {
+    "encrypted": {
+       "$ref": "http://localhost:8080/schemas/base64"
+    }
+  },
+  "required": [ "action", "destinations", "encrypted" ],
+  "allOf": [
+    { "$ref": "http://localhost:8080/schemas/atom" }
+  ],
+  "examples": [
+    {
+      "encrypted": {
+        "serializer": "BASE64",
+        "value": "eyJzdWJqZWN0IjoiSGVsbG8iLCJkZXN0aW5hdGlvbnMiOlsiLTMwMTQ3MzQ1MDI1ODk2MTQzNzYyNDkyODcxNjMwIl0sInNlcmlhbGl6ZXIiOjUxOTk2MjUzNSwibWVzc2FnZSI6IkhlbGxvIiwidmVyc2lvbiI6MTAwLCJwYXJ0aWNpcGFudHMiOlt7ImFkZHJlc3MiOnsiYWRkcmVzcyI6IjE3dXlwdjRhTjQ3bjR4eDZEd3p6TllWdnNpdVRLb29jQlhFY2ZKeGJxZnJDbTZ4dzVmayIsInNlcmlhbGl6ZXIiOi00Mjk3MDkzNTYsImlkIjoiLTMwMTQ3MzQ1MDI1ODk2MTQzNzYyNDkyODcxNjMwIiwidmVyc2lvbiI6MTAwfSwic2VyaWFsaXplciI6LTEzNzQ1ODQwNDUsInR5cGUiOiJTRU5ERVIiLCJ2ZXJzaW9uIjoxMDB9XX0="
+      },
+      "destinations": [{
+        "serializer": "EUID",
+        "value": "-30147345025896143762492871630"
+      }],
+      "serializer": -257259791,
+      "action": "STORE",
+      "version": 100
+    }
+  ]
+}

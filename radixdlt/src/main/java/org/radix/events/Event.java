@@ -1,0 +1,134 @@
+package org.radix.events;
+
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicLong;
+import org.radix.common.Syncronicity;
+
+public abstract class Event implements Comparable<Event>, Future<Event>
+{
+	private static AtomicLong noncer = new AtomicLong(1);
+
+	public enum EventPriority
+	{
+		LOW(1),
+		DEFAULT(100),
+		MEDIUM(500),
+		HIGH(1000);
+
+		private final int p;
+
+		EventPriority(int p) { this.p = p; }
+
+		public int priority() { return p; }
+	}
+
+	private final long 	nonce;
+	private final long	timestamp;
+	private final CountDownLatch latch;
+	private boolean done;
+
+	public Event()
+	{
+		this.nonce = noncer.incrementAndGet();
+		this.timestamp = System.currentTimeMillis();
+		this.done = false;
+		this.latch = new CountDownLatch(1);
+	}
+
+	public boolean supportedSyncronicity(Syncronicity syncronicity)
+	{
+		return true;
+	}
+
+	public long getTimestamp()
+	{
+		return this.timestamp;
+	}
+
+	long getNonce()
+	{
+		return this.nonce;
+	}
+
+	@Override
+	public boolean cancel(boolean mayInterruptIfRunning)
+	{
+		// Events can not be cancelled, always return false
+		return false;
+	}
+
+	@Override
+	public Event get() throws InterruptedException, ExecutionException
+	{
+		this.latch.await();
+		return this;
+	}
+
+	@Override
+	public Event get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException
+	{
+		if (this.latch.await(timeout, unit) == true)
+			return this;
+
+		return null;
+	}
+
+	@Override
+	public boolean isCancelled()
+	{
+		// Events can not be cancelled, always return false
+		return false;
+	}
+
+	@Override
+	public boolean isDone()
+	{
+		return this.done;
+	}
+
+	void setDone()
+	{
+		this.latch.countDown();
+		this.done = true;
+	}
+
+	@Override
+	public int hashCode()
+	{
+		return (int) (31l*getClass().hashCode()*timestamp*nonce);
+	}
+
+	@Override
+	public boolean equals(Object obj)
+	{
+		if (obj == null) return false;
+		if (obj == this) return true;
+
+		if (obj instanceof Event && ((Event)obj).nonce == this.nonce)
+			return true;
+
+		return false;
+	}
+
+	@Override
+	public int compareTo(Event event)
+	{
+		if (this.timestamp < event.timestamp)
+			return -1;
+
+		if (this.timestamp > event.timestamp)
+			return 1;
+
+		return 0;
+	}
+
+	@Override
+	public String toString()
+	{
+		return getClass().getSimpleName()+" "+this.timestamp;
+	}
+}

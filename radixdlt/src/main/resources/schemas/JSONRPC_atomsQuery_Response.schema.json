@@ -1,0 +1,190 @@
+{
+  "$schema": "http://json-schema.org/draft-06/schema#",
+  "$id": "http://localhost:8080/schemas/JSONRPC_atomsQuery_Response",
+  "title": "Atoms Query Response",
+  "type": "object",
+  "description": "A JSON RPC Response from a 'Query Request'. Contains information about the atom results given a query.",
+  "properties": {
+    "id": {
+      "type": "integer"
+    },
+    "jsonrpc": {
+      "type": "string",
+      "enum": [ "2.0" ]
+    },
+    "result": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    }
+  },
+  "required": [ "id", "jsonrpc", "result" ],
+  "additionalProperties": false,
+  "examples": [
+    {
+      "id": 0,
+      "jsonrpc": "2.0",
+      "result": [
+        {
+          "hid": {
+            "serializer": "EUID",
+            "value": "25637046921011093835439864414"
+          },
+          "temporal_proof": {
+            "atom_id": {
+              "serializer": "EUID",
+              "value": "25637046921011093835439864414"
+            },
+            "vertices": [
+              {
+                "timestamps": {
+                  "default": 1520360230608
+                },
+                "commitment": {
+                  "serializer": "HASH",
+                  "value": "0000000000000000000000000000000000000000000000000000000000000000"
+                },
+                "serializer": -909337786,
+                "owners": [
+                  {
+                    "serializer": "BASE64",
+                    "value": "A1KCKORhUxC/AtgtjAGFGJJLVxVpK8F8r6onPzQSq295"
+                  }
+                ],
+                "clock": 0,
+                "version": 100,
+                "signatures": {
+                  "22525384842389212742854440947": {
+                    "r": {
+                      "serializer": "BASE64",
+                      "value": "ASv+lRSCmOE0rdDtCVmYCBzmvsiMhNv5rubmuaOh830="
+                    },
+                    "s": {
+                      "serializer": "BASE64",
+                      "value": "AIuzpilntYiX/Nbc79UXIIqdtQpxoGM2wR0bNDAo/5cE"
+                    },
+                    "serializer": -434788200,
+                    "version": 100
+                  }
+                }
+              }
+            ],
+            "serializer": 1905172290,
+            "version": 100
+          },
+          "timestamps": {
+            "default": 1519834945738
+          },
+          "destinations": [
+            {
+              "serializer": "EUID",
+              "value": "-30147345025896143762492871630"
+            }
+          ],
+          "serializer": -1123323048,
+          "action": "INSERT",
+          "particles": [
+            {
+              "destinations": [
+                {
+                  "serializer": "EUID",
+                  "value": "-30147345025896143762492871630"
+                }
+              ],
+              "junk": {
+                "serializer": "BASE64",
+                "value": "/5ESUQ=="
+              },
+              "serializer": -1123054001,
+              "owners": [
+                {
+                  "serializer": "BASE64",
+                  "value": "A455PdOZNwyRWaSWFXyYYkbj7Wv9jtgCCqUYhuOHiPLC"
+                }
+              ],
+              "version": 100
+            }
+          ],
+          "version": 100
+        },
+        {
+          "hid": {
+            "serializer": "EUID",
+            "value": "10057060124400252810123075951"
+          },
+          "temporal_proof": {
+            "atom_id": {
+              "serializer": "EUID",
+              "value": "10057060124400252810123075951"
+            },
+            "vertices": [
+              {
+                "timestamps": {
+                  "default": 1520362518860
+                },
+                "commitment": {
+                  "serializer": "HASH",
+                  "value": "0000000000000000000000000000000000000000000000000000000000000000"
+                },
+                "serializer": -909337786,
+                "owners": [
+                  {
+                    "serializer": "BASE64",
+                    "value": "A1KCKORhUxC/AtgtjAGFGJJLVxVpK8F8r6onPzQSq295"
+                  }
+                ],
+                "clock": 948,
+                "version": 100,
+                "signatures": {
+                  "22525384842389212742854440947": {
+                    "r": {
+                      "serializer": "BASE64",
+                      "value": "FEprLgPz95D7VHvYd096Ol4xU+WNAlDLw+IuZF+rH2o="
+                    },
+                    "s": {
+                      "serializer": "BASE64",
+                      "value": "AKne0gM0nhgkJ1T8vpazujbf9JAXn90K2M8QyFpeAwlx"
+                    },
+                    "serializer": -434788200,
+                    "version": 100
+                  }
+                }
+              }
+            ],
+            "serializer": 1905172290,
+            "version": 100
+          },
+          "timestamps": {
+            "default": 1520362518857
+          },
+          "destinations": [
+            {
+              "serializer": "EUID",
+              "value": "-30147345025896143762492871630"
+            }
+          ],
+          "serializer": -1123323048,
+          "action": "INSERT",
+          "particles": [
+            {
+              "destinations": [
+                {
+                  "serializer": "EUID",
+                  "value": "-30147345025896143762492871630"
+                }
+              ],
+              "junk": {
+                "serializer": "BASE64",
+                "value": "/55SUQ=="
+              },
+              "serializer": -1123054001,
+              "version": 100
+            }
+          ],
+          "version": 100
+        }
+      ]
+    }
+  ]
+}
