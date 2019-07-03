@@ -1018,6 +1018,16 @@ public class RadixApplicationAPI {
 	 * @param completeOnStoreOnly if true, result will only complete on a store event
 	 * @return the result of the submission
 	 */
+	public Result submitAtom(Atom atom, boolean completeOnStoreOnly, RadixNode originNode) {
+		return createAtomSubmission(Single.just(atom), completeOnStoreOnly, originNode).connect();
+	}
+
+	/**
+	 * Low level call to submit an atom into the network.
+	 * @param atom atom to submit
+	 * @param completeOnStoreOnly if true, result will only complete on a store event
+	 * @return the result of the submission
+	 */
 	public Result submitAtom(Atom atom, boolean completeOnStoreOnly) {
 		return createAtomSubmission(Single.just(atom), completeOnStoreOnly, null).connect();
 	}
