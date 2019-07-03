@@ -14,7 +14,7 @@ import com.radixdlt.client.atommodel.message.MessageParticle;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomStatus;
-import com.radixdlt.client.core.atoms.AtomStatusNotification;
+import com.radixdlt.client.core.atoms.AtomStatusEvent;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
@@ -22,6 +22,8 @@ import com.radixdlt.client.core.network.HttpClients;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.JsonRpcResponse;
+import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.Notification;
+import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.NotificationType;
 import com.radixdlt.client.core.network.websocket.WebSocketClient;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
 import com.radixdlt.client.core.pow.ProofOfWorkBuilder;
@@ -29,7 +31,6 @@ import cucumber.api.java.After;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
-import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.functions.Cancellable;
 import io.reactivex.observers.TestObserver;
@@ -55,7 +56,7 @@ public class Timestamp {
     private WebSocketClient webSocketClient;
     private RadixJsonRpcClient jsonRpcClient;
 
-	private TestObserver<AtomStatusNotification> observer;
+	private TestObserver<AtomStatusEvent> observer;
     private TestObserver<RadixJsonRpcClient.JsonRpcResponse> observer2;
 
     private FeeMapper feeMapper = new PowFeeMapper(Atom::getHash,
@@ -111,9 +112,16 @@ public class Timestamp {
 
         this.observer = TestObserver.create();
         final String subscriberId = UUID.randomUUID().toString();
-        this.jsonRpcClient.observeAtomStatusNotifications(subscriberId).subscribe(this.observer);
-        this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, signedAtom.getAid()).blockingAwait();
-        this.jsonRpcClient.pushAtom(signedAtom).blockingAwait();
+        this.jsonRpcClient.observeAtomStatusNotifications(subscriberId)
+            .doOnNext(n -> {
+                if (n.getType() == NotificationType.START) {
+                    this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, signedAtom.getAid()).blockingAwait();
+                    this.jsonRpcClient.pushAtom(signedAtom).blockingAwait();
+                }
+            })
+            .filter(n -> n.getType().equals(NotificationType.EVENT))
+            .map(Notification::getEvent)
+            .subscribe(this.observer);
     }
 
     @When("^I submit a valid atom with arbitrary metadata containing a valid timestamp$")
@@ -131,9 +139,16 @@ public class Timestamp {
 
 		this.observer = TestObserver.create(Util.loggingObserver("Valid Timestamp"));
 		final String subscriberId = UUID.randomUUID().toString();
-        this.jsonRpcClient.observeAtomStatusNotifications(subscriberId).subscribe(this.observer);
-        this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, signedAtom.getAid()).blockingAwait();
-        this.jsonRpcClient.pushAtom(signedAtom).blockingAwait();
+        this.jsonRpcClient.observeAtomStatusNotifications(subscriberId)
+            .doOnNext(n -> {
+                if (n.getType() == NotificationType.START) {
+                    this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, signedAtom.getAid()).blockingAwait();
+                    this.jsonRpcClient.pushAtom(signedAtom).blockingAwait();
+                }
+            })
+            .filter(n -> n.getType().equals(NotificationType.EVENT))
+            .map(Notification::getEvent)
+            .subscribe(this.observer);
     }
 
     @When("^I submit a valid atom with arbitrary metadata containing an invalid timestamp$")
@@ -151,9 +166,16 @@ public class Timestamp {
 
 		this.observer = TestObserver.create(Util.loggingObserver("Invalid Timestamp"));
         final String subscriberId = UUID.randomUUID().toString();
-        this.jsonRpcClient.observeAtomStatusNotifications(subscriberId).subscribe(this.observer);
-        this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, signedAtom.getAid()).blockingAwait();
-        this.jsonRpcClient.pushAtom(signedAtom).blockingAwait();
+        this.jsonRpcClient.observeAtomStatusNotifications(subscriberId)
+            .doOnNext(n -> {
+                if (n.getType() == NotificationType.START) {
+                    this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, signedAtom.getAid()).blockingAwait();
+                    this.jsonRpcClient.pushAtom(signedAtom).blockingAwait();
+                }
+            })
+            .filter(n -> n.getType().equals(NotificationType.EVENT))
+            .map(Notification::getEvent)
+            .subscribe(this.observer);
     }
 
     @When("^I submit a valid atom with arbitrary metadata without a valid timestamp$")
@@ -170,9 +192,16 @@ public class Timestamp {
 
         this.observer = TestObserver.create();
         final String subscriberId = UUID.randomUUID().toString();
-        this.jsonRpcClient.observeAtomStatusNotifications(subscriberId).subscribe(this.observer);
-        this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, signedAtom.getAid()).blockingAwait();
-        this.jsonRpcClient.pushAtom(signedAtom).blockingAwait();
+        this.jsonRpcClient.observeAtomStatusNotifications(subscriberId)
+            .doOnNext(n -> {
+                if (n.getType() == NotificationType.START) {
+                    this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, signedAtom.getAid()).blockingAwait();
+                    this.jsonRpcClient.pushAtom(signedAtom).blockingAwait();
+                }
+            })
+            .filter(n -> n.getType().equals(NotificationType.EVENT))
+            .map(Notification::getEvent)
+            .subscribe(this.observer);
     }
 
     @When("^I submit a valid atom with no metadata$")
@@ -185,9 +214,16 @@ public class Timestamp {
 
         this.observer = TestObserver.create();
         final String subscriberId = UUID.randomUUID().toString();
-        this.jsonRpcClient.observeAtomStatusNotifications(subscriberId).subscribe(this.observer);
-        this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, signedAtom.getAid()).blockingAwait();
-        this.jsonRpcClient.pushAtom(signedAtom).blockingAwait();
+        this.jsonRpcClient.observeAtomStatusNotifications(subscriberId)
+            .doOnNext(n -> {
+                if (n.getType() == NotificationType.START) {
+                    this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, signedAtom.getAid()).blockingAwait();
+                    this.jsonRpcClient.pushAtom(signedAtom).blockingAwait();
+                }
+            })
+            .filter(n -> n.getType().equals(NotificationType.EVENT))
+            .map(Notification::getEvent)
+            .subscribe(this.observer);
     }
 
 
@@ -205,9 +241,16 @@ public class Timestamp {
 
         this.observer = TestObserver.create();
         final String subscriberId = UUID.randomUUID().toString();
-        this.jsonRpcClient.observeAtomStatusNotifications(subscriberId).subscribe(this.observer);
-        this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, signedAtom.getAid()).blockingAwait();
-        this.jsonRpcClient.pushAtom(signedAtom).blockingAwait();
+        this.jsonRpcClient.observeAtomStatusNotifications(subscriberId)
+            .doOnNext(n -> {
+                if (n.getType() == NotificationType.START) {
+                    this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, signedAtom.getAid()).blockingAwait();
+                    this.jsonRpcClient.pushAtom(signedAtom).blockingAwait();
+                }
+            })
+            .filter(n -> n.getType().equals(NotificationType.EVENT))
+            .map(Notification::getEvent)
+            .subscribe(this.observer);
     }
 
     @When("^I submit an atom with particle groups which have invalid json in the metadata field$")

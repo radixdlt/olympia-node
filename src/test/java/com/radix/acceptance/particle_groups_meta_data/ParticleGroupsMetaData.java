@@ -15,7 +15,7 @@ import com.radixdlt.client.atommodel.message.MessageParticle;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomStatus;
-import com.radixdlt.client.core.atoms.AtomStatusNotification;
+import com.radixdlt.client.core.atoms.AtomStatusEvent;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
@@ -23,6 +23,8 @@ import com.radixdlt.client.core.network.HttpClients;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.JsonRpcResponse;
+import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.Notification;
+import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.NotificationType;
 import com.radixdlt.client.core.network.websocket.WebSocketClient;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
 import com.radixdlt.client.core.pow.ProofOfWorkBuilder;
@@ -55,7 +57,7 @@ public class ParticleGroupsMetaData {
     private WebSocketClient webSocketClient;
     private RadixJsonRpcClient jsonRpcClient;
 
-    private TestObserver<AtomStatusNotification> observer;
+    private TestObserver<AtomStatusEvent> observer;
 	private TestObserver atomPushObserver;
     private TestObserver<RadixJsonRpcClient.JsonRpcResponse> observer2;
 
@@ -115,9 +117,16 @@ public class ParticleGroupsMetaData {
 
         this.observer = TestObserver.create(Util.loggingObserver("Atom Status Observer"));
         final String subscriberId = UUID.randomUUID().toString();
-        this.jsonRpcClient.observeAtomStatusNotifications(subscriberId).subscribe(this.observer);
-        this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, signedAtom.getAid()).blockingAwait();
-        this.jsonRpcClient.pushAtom(signedAtom).blockingAwait();
+        this.jsonRpcClient.observeAtomStatusNotifications(subscriberId)
+            .doOnNext(n -> {
+                if (n.getType() == NotificationType.START) {
+                    this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, signedAtom.getAid()).blockingAwait();
+                    this.jsonRpcClient.pushAtom(signedAtom).blockingAwait();
+                }
+            })
+            .filter(n -> n.getType().equals(NotificationType.EVENT))
+            .map(Notification::getEvent)
+            .subscribe(this.observer);
     }
 
     @When("^I submit an atom with particle groups which have no metadata$")
@@ -130,9 +139,16 @@ public class ParticleGroupsMetaData {
 
         this.observer = TestObserver.create(Util.loggingObserver("Atom Status Observer"));
 		final String subscriberId = UUID.randomUUID().toString();
-        this.jsonRpcClient.observeAtomStatusNotifications(subscriberId).subscribe(this.observer);
-        this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, signedAtom.getAid()).blockingAwait();
-        this.jsonRpcClient.pushAtom(signedAtom).blockingAwait();
+        this.jsonRpcClient.observeAtomStatusNotifications(subscriberId)
+            .doOnNext(n -> {
+                if (n.getType() == NotificationType.START) {
+                    this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, signedAtom.getAid()).blockingAwait();
+                    this.jsonRpcClient.pushAtom(signedAtom).blockingAwait();
+                }
+            })
+            .filter(n -> n.getType().equals(NotificationType.EVENT))
+            .map(Notification::getEvent)
+            .subscribe(this.observer);
     }
 
 

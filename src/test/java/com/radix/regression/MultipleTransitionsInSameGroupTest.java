@@ -17,13 +17,15 @@ import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomStatus;
-import com.radixdlt.client.core.atoms.AtomStatusNotification;
+import com.radixdlt.client.core.atoms.AtomStatusEvent;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.network.HttpClients;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient;
+import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.Notification;
+import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.NotificationType;
 import com.radixdlt.client.core.network.websocket.WebSocketClient;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
 import com.radixdlt.client.core.pow.ProofOfWorkBuilder;
@@ -86,7 +88,7 @@ public class MultipleTransitionsInSameGroupTest {
 			SpunParticle.up(output)
 		);
 
-		TestObserver<AtomStatusNotification> result = submitAtom(Arrays.asList(
+		TestObserver<AtomStatusEvent> result = submitAtom(Arrays.asList(
 			definitionGroup,
 			mintGroup,
 			duplicateTransitionsGroup
@@ -120,7 +122,7 @@ public class MultipleTransitionsInSameGroupTest {
 			SpunParticle.up(output)
 		);
 
-		TestObserver<AtomStatusNotification> result = submitAtom(Arrays.asList(
+		TestObserver<AtomStatusEvent> result = submitAtom(Arrays.asList(
 			definitionGroup,
 			mintGroup,
 			duplicateTransitionsGroup
@@ -155,7 +157,7 @@ public class MultipleTransitionsInSameGroupTest {
 			SpunParticle.up(output)
 		);
 
-		TestObserver<AtomStatusNotification> result = submitAtom(Arrays.asList(
+		TestObserver<AtomStatusEvent> result = submitAtom(Arrays.asList(
 			definitionGroup,
 			mintGroup,
 			duplicateTransitionsGroup
@@ -200,7 +202,7 @@ public class MultipleTransitionsInSameGroupTest {
 			SpunParticle.up(output)
 		);
 
-		TestObserver<AtomStatusNotification> result = submitAtom(Arrays.asList(
+		TestObserver<AtomStatusEvent> result = submitAtom(Arrays.asList(
 			definitionGroup,
 			mintGroup,
 			duplicateTransitionsGroup
@@ -235,7 +237,7 @@ public class MultipleTransitionsInSameGroupTest {
 		);
 	}
 
-	private TestObserver<AtomStatusNotification> submitAtom(List<ParticleGroup> particleGroups) {
+	private TestObserver<AtomStatusEvent> submitAtom(List<ParticleGroup> particleGroups) {
 		Map<String, String> atomMetaData = new HashMap<>();
 		atomMetaData.put("timestamp", String.valueOf(System.currentTimeMillis()));
 		atomMetaData.putAll(feeMapper.map(new Atom(particleGroups, atomMetaData), universe, this.identity.getPublicKey()).getFirst());
@@ -244,12 +246,19 @@ public class MultipleTransitionsInSameGroupTest {
 		// Sign and submit
 		Atom signedAtom = this.identity.sign(unsignedAtom).blockingGet();
 
-		TestObserver<AtomStatusNotification> observer = TestObserver.create();
+		TestObserver<AtomStatusEvent> observer = TestObserver.create();
 
 		final String subscriberId = UUID.randomUUID().toString();
-		this.jsonRpcClient.observeAtomStatusNotifications(subscriberId).subscribe(observer);
-		this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, signedAtom.getAid()).blockingAwait();
-		this.jsonRpcClient.pushAtom(signedAtom).blockingAwait();
+		this.jsonRpcClient.observeAtomStatusNotifications(subscriberId)
+			.doOnNext(n -> {
+				if (n.getType() == NotificationType.START) {
+					this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, signedAtom.getAid()).blockingAwait();
+					this.jsonRpcClient.pushAtom(signedAtom).blockingAwait();
+				}
+			})
+			.filter(n -> n.getType().equals(NotificationType.EVENT))
+			.map(Notification::getEvent)
+			.subscribe(observer);
 
 		return observer;
 	}

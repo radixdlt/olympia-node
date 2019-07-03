@@ -12,13 +12,15 @@ import com.radixdlt.client.atommodel.message.MessageParticle;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomStatus;
-import com.radixdlt.client.core.atoms.AtomStatusNotification;
+import com.radixdlt.client.core.atoms.AtomStatusEvent;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.network.HttpClients;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient;
+import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.Notification;
+import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.NotificationType;
 import com.radixdlt.client.core.network.websocket.WebSocketClient;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
 import com.radixdlt.client.core.pow.ProofOfWorkBuilder;
@@ -82,7 +84,7 @@ public class AtomKernelTest {
 
 	@Test
 	public void testAtomNoFee() {
-		TestObserver<AtomStatusNotification> observer = submitAtomAndObserve(ImmutableMap.of(), false, System.currentTimeMillis() + "", SpunParticle.up(new MessageParticle.MessageParticleBuilder()
+		TestObserver<AtomStatusEvent> observer = submitAtomAndObserve(ImmutableMap.of(), false, System.currentTimeMillis() + "", SpunParticle.up(new MessageParticle.MessageParticleBuilder()
 			.payload(new byte[10])
 			.metaData("application", "message")
 			.from(universe.getAddressFrom(this.identity.getPublicKey()))
@@ -95,7 +97,7 @@ public class AtomKernelTest {
 
 	@Test
 	public void testAtomBadPowFee() {
-		TestObserver<AtomStatusNotification> observer = submitAtomAndObserve(ImmutableMap.of(
+		TestObserver<AtomStatusEvent> observer = submitAtomAndObserve(ImmutableMap.of(
 			Atom.METADATA_POW_NONCE_KEY, "1337"
 		), false, System.currentTimeMillis() + "", SpunParticle.up(new MessageParticle.MessageParticleBuilder()
 			.payload(new byte[10])
@@ -110,7 +112,7 @@ public class AtomKernelTest {
 
 	@Test
 	public void testAtomInvalidTimestamp() {
-		TestObserver<AtomStatusNotification> observer = submitAtomAndObserve(ImmutableMap.of(), false, "invalid", SpunParticle.up(new MessageParticle.MessageParticleBuilder()
+		TestObserver<AtomStatusEvent> observer = submitAtomAndObserve(ImmutableMap.of(), false, "invalid", SpunParticle.up(new MessageParticle.MessageParticleBuilder()
 			.payload(new byte[10])
 			.metaData("application", "message")
 			.from(universe.getAddressFrom(this.identity.getPublicKey()))
@@ -123,7 +125,7 @@ public class AtomKernelTest {
 
 	@Test
 	public void testAtomOldTimestamp() {
-		TestObserver<AtomStatusNotification> observer = submitAtomAndObserve(ImmutableMap.of(), false, "100", SpunParticle.up(new MessageParticle.MessageParticleBuilder()
+		TestObserver<AtomStatusEvent> observer = submitAtomAndObserve(ImmutableMap.of(), false, "100", SpunParticle.up(new MessageParticle.MessageParticleBuilder()
 			.payload(new byte[10])
 			.metaData("application", "message")
 			.from(universe.getAddressFrom(this.identity.getPublicKey()))
@@ -142,7 +144,7 @@ public class AtomKernelTest {
 		observer.dispose();
 	}
 
-	private TestObserver<AtomStatusNotification> submitAtomAndObserve(
+	private TestObserver<AtomStatusEvent> submitAtomAndObserve(
 		Map<String, String> metaData,
 		boolean addFee,
 		String timestamp,
@@ -163,12 +165,19 @@ public class AtomKernelTest {
 		// Sign and submit
 		Atom signedAtom = this.identity.sign(unsignedAtom).blockingGet();
 
-		TestObserver<AtomStatusNotification> observer = TestObserver.create(Util.loggingObserver("Submission"));
+		TestObserver<AtomStatusEvent> observer = TestObserver.create(Util.loggingObserver("Submission"));
 
 		final String subscriberId = UUID.randomUUID().toString();
-		this.jsonRpcClient.observeAtomStatusNotifications(subscriberId).subscribe(observer);
-		this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, signedAtom.getAid()).blockingAwait();
-		this.jsonRpcClient.pushAtom(signedAtom).blockingAwait();
+		this.jsonRpcClient.observeAtomStatusNotifications(subscriberId)
+			.doOnNext(n -> {
+				if (n.getType() == NotificationType.START) {
+					this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, signedAtom.getAid()).blockingAwait();
+					this.jsonRpcClient.pushAtom(signedAtom).blockingAwait();
+				}
+			})
+			.filter(n -> n.getType().equals(NotificationType.EVENT))
+			.map(Notification::getEvent)
+			.subscribe(observer);
 
 		return observer;
 	}
@@ -194,7 +203,7 @@ public class AtomKernelTest {
 		// Sign and submit
 		Atom signedAtom = this.identity.sign(unsignedAtom).blockingGet();
 
-		TestObserver<AtomStatusNotification> observer = TestObserver.create(Util.loggingObserver("Submission"));
+		TestObserver<AtomStatusEvent> observer = TestObserver.create(Util.loggingObserver("Submission"));
 		this.jsonRpcClient.pushAtom(signedAtom).subscribe(observer);
 		return observer;
 	}

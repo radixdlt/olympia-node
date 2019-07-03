@@ -7,11 +7,13 @@ import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.translate.unique.PutUniqueIdAction;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomStatus;
-import com.radixdlt.client.core.atoms.AtomStatusNotification;
+import com.radixdlt.client.core.atoms.AtomStatusEvent;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.network.HttpClients;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient;
+import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.Notification;
+import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.NotificationType;
 import com.radixdlt.client.core.network.websocket.WebSocketClient;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
 import io.reactivex.observers.TestObserver;
@@ -80,13 +82,17 @@ public class AtomStatusTest {
 
 		String subscriberId = UUID.randomUUID().toString();
 
-		TestObserver<AtomStatusNotification> testObserver = TestObserver.create(Util.loggingObserver("Atom Status"));
-		this.rpcClient.observeAtomStatusNotifications(subscriberId).subscribe(testObserver);
-		this.rpcClient.sendGetAtomStatusNotifications(subscriberId, aid).blockingAwait();
-		testObserver.assertNoValues();
-		testObserver.assertNotComplete();
-
-		this.api.submitAtom(atom).blockUntilComplete();
+		TestObserver<AtomStatusEvent> testObserver = TestObserver.create(Util.loggingObserver("Atom Status"));
+		this.rpcClient.observeAtomStatusNotifications(subscriberId)
+			.doOnNext(n -> {
+				if (n.getType() == NotificationType.START) {
+					this.rpcClient.sendGetAtomStatusNotifications(subscriberId, aid).blockingAwait();
+					this.rpcClient.pushAtom(atom).blockingAwait();
+				}
+			})
+			.filter(n -> n.getType().equals(NotificationType.EVENT))
+			.map(Notification::getEvent)
+			.subscribe(testObserver);
 
 		testObserver.awaitCount(1);
 		testObserver.assertValueAt(0, n -> n.getAtomStatus().equals(AtomStatus.STORED));
