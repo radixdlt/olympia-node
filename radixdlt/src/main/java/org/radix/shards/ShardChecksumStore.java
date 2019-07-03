@@ -6,6 +6,9 @@ import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
 import org.radix.atoms.events.AtomDeletedEvent;
 import org.radix.atoms.events.AtomEvent;
 import org.radix.atoms.events.AtomListener;
@@ -192,20 +195,23 @@ public class ShardChecksumStore extends DatabaseStore
 		long to = from + range.getSpan();
 		long checksum = 0l;
 
-		try (Cursor cursor =  this.checksumsDatabase.openCursor(null, null))
+		Cursor cursor = null;
+		try
         {
+			cursor = this.checksumsDatabase.openCursor(null, null);
+			
 			DatabaseEntry search = new DatabaseEntry(Longs.toByteArray(from));
 			DatabaseEntry data = new DatabaseEntry();
-
+			
 			OperationStatus status = cursor.getSearchKeyRange(search, data, LockMode.DEFAULT);
 
 			while (status.equals(OperationStatus.SUCCESS) == true)
 			{
 				if (Longs.fromByteArray(search.getData()) > to)
 					break;
-
+				
 				checksum += Longs.fromByteArray(data.getData());
-
+				
 				status = cursor.getNext(search, data, LockMode.DEFAULT);
 			}
 		}
@@ -215,33 +221,36 @@ public class ShardChecksumStore extends DatabaseStore
 		}
 		finally
 		{
+			if (cursor != null)
+				cursor.close();
+			
 			SystemProfiler.getInstance().incrementFrom("SHARD_CHECKSUM_STORE:GET_CHECKSUM:CHUNK:RANGE", start);
 		}
 
 		return checksum;
 	}
-
+	
 	private final Queue<Atom> 	incrementQueue = new ConcurrentLinkedQueue<Atom>();
 	private final Map<Long, Long> increments = new HashMap<Long, Long>();
-	private final Object		incrementLock = new Object();
+	private final Lock			incrementLock = new ReentrantLock();
 
 	private void incrementChecksums(Atom atom) throws DatabaseException
 	{
 		long start = SystemProfiler.getInstance().begin();
-
+		
 		Cursor cursor = null;
 		Transaction transaction = null;
 
-		this.incrementQueue.add(atom);
+		this.incrementQueue.offer(atom);
 
-		synchronized (incrementLock)
+		if (this.incrementLock.tryLock())
 		{
 			try
 	        {
 				long globalIncrement = 0;
-
+				
 				this.increments.clear();
-
+				
 				while((atom = this.incrementQueue.poll()) != null)
 				{
 					for (long shard : atom.getShards())
@@ -249,27 +258,27 @@ public class ShardChecksumStore extends DatabaseStore
 						// TODO check this is ok, does it break anything for sync etc //
 						if (LocalSystem.getInstance().getShards().intersects(shard) == false && Modules.get(Universe.class).getGenesis().contains(atom) == false)
 							continue;
-
+						
 						long increment = this.increments.getOrDefault(shard, 0l);
 						increment += atom.getHID().getLow();
+						globalIncrement += atom.getHID().getLow();
 						this.increments.put(shard, increment);
 					}
-					globalIncrement += atom.getHID().getLow();
 				}
-
+				
 				transaction = Modules.get(DatabaseEnvironment.class).getEnvironment().beginTransaction(null, null);
 				cursor = this.checksumsDatabase.openCursor(transaction, null);
-
+	
 				for (Entry<Long, Long> entry : this.increments.entrySet())
 				{
 					DatabaseEntry key = new DatabaseEntry(Longs.toByteArray(entry.getKey()));
 					DatabaseEntry data = new DatabaseEntry(Longs.toByteArray(entry.getValue()));
 					OperationStatus status = cursor.putNoOverwrite(key, data);
-
+					
 					if (status == OperationStatus.KEYEXIST)
 					{
 						status = cursor.getSearchKey(key, data, LockMode.RMW);
-
+						
 						if (status == OperationStatus.SUCCESS)
 						{
 							data.setData(Longs.toByteArray(Longs.fromByteArray(data.getData())+entry.getValue()));
@@ -281,30 +290,33 @@ public class ShardChecksumStore extends DatabaseStore
 						data.setData(Longs.toByteArray(entry.getValue()));
 						status = cursor.put(key, data);
 					}
-
+	
 					if (status != OperationStatus.SUCCESS)
 						throw new DatabaseException("Checksum increment for shard "+entry.getKey()+" failed due to "+status);
 				}
-
+				
 				cursor.close();
 				transaction.commit();
-
+				
 				this.checksum.addAndGet(globalIncrement);
 			}
 			catch (Exception ex)
 			{
 				cursor.close();
 				transaction.abort();
-
+				
 				if (ex instanceof DatabaseException)
 					throw ex;
-
+				
 				throw new DatabaseException(ex);
 			}
 			finally
 			{
 				if (cursor != null)
 					cursor.close();
+				
+				this.incrementLock.unlock();
+				
 				SystemProfiler.getInstance().incrementFrom("SHARD_CHECKSUM_STORE:INCREMENT_CHECKSUMS", start);
 			}
 		}
@@ -313,13 +325,14 @@ public class ShardChecksumStore extends DatabaseStore
 	private void decrementChecksums(Atom atom) throws DatabaseException
 	{
 		long start = SystemProfiler.getInstance().begin();
-
+		
 		Cursor cursor = null;
 		Transaction transaction = null;
 
 		try
         {
-
+			long globalDecrement = 0;
+			
 			transaction = Modules.get(DatabaseEnvironment.class).getEnvironment().beginTransaction(null, null);
 			cursor = this.checksumsDatabase.openCursor(transaction, null);
 
@@ -332,7 +345,7 @@ public class ShardChecksumStore extends DatabaseStore
 				DatabaseEntry key = new DatabaseEntry(Longs.toByteArray(shard));
 				DatabaseEntry data = new DatabaseEntry();
 				OperationStatus status = cursor.getSearchKey(key, data, LockMode.RMW);
-
+							
 				if (status == OperationStatus.SUCCESS)
 				{
 					data.setData(Longs.toByteArray(Longs.fromByteArray(data.getData())-atom.getHID().getLow()));
@@ -346,30 +359,30 @@ public class ShardChecksumStore extends DatabaseStore
 
 				if (status != OperationStatus.SUCCESS)
 					throw new DatabaseException("Checksum decrement for Atom "+atom.getHID()+" failed due to "+status);
-
+				
+				globalDecrement -= atom.getHID().getLow();
 			}
-
+			
 			cursor.close();
 			transaction.commit();
-
-			long globalDecrement = 0L - atom.getHID().getLow();
+			
 			this.checksum.addAndGet(globalDecrement);
 		}
 		catch (Exception ex)
 		{
 			cursor.close();
 			transaction.abort();
-
+			
 			if (ex instanceof DatabaseException)
 				throw ex;
-
+			
 			throw new DatabaseException(ex);
 		}
 		finally
 		{
 			if (cursor != null)
 				cursor.close();
-
+			
 			SystemProfiler.getInstance().incrementFrom("SHARD_CHECKSUM_STORE:DECREMENT_CHECKSUMS", start);
 		}
 	}
@@ -386,10 +399,10 @@ public class ShardChecksumStore extends DatabaseStore
 		{
 			if (event instanceof AtomStoredEvent)
 				ShardChecksumStore.this.incrementChecksums(event.getAtom());
-
+	
 			if (event instanceof AtomDeletedEvent)
 				ShardChecksumStore.this.decrementChecksums(event.getAtom());
-
+	
 			Modules.ifAvailable(SystemMetaData.class, a -> a.put("ledger.checksum", ShardChecksumStore.this.checksum.get()));
 		}
 	};
