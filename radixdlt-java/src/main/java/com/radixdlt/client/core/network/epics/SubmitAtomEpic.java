@@ -1,7 +1,7 @@
 package com.radixdlt.client.core.network.epics;
 
 import com.radixdlt.client.core.atoms.AtomStatus;
-import com.radixdlt.client.core.atoms.AtomStatusNotification;
+import com.radixdlt.client.core.atoms.AtomStatusEvent;
 import com.radixdlt.client.core.network.RadixNetworkEpic;
 import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixNode;
@@ -14,12 +14,12 @@ import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomSendAction;
 import com.radixdlt.client.core.network.epics.WebSocketsEpic.WebSockets;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient;
+import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.NotificationType;
 import com.radixdlt.client.core.network.jsonrpc.SubmitAtomException;
 import com.radixdlt.client.core.network.websocket.WebSocketClient;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
 import io.reactivex.Completable;
 import io.reactivex.Observable;
-import io.reactivex.disposables.Disposable;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -55,56 +55,43 @@ public final class SubmitAtomEpic implements RadixNetworkEpic {
 		final RadixJsonRpcClient jsonRpcClient = new RadixJsonRpcClient(ws);
 		final String subscriberId = UUID.randomUUID().toString();
 
-		return Observable.<RadixNodeAction>create(emitter -> {
-			Disposable d = jsonRpcClient.observeAtomStatusNotifications(subscriberId)
-				.flatMap(statusNotification -> {
+		return jsonRpcClient.observeAtomStatusNotifications(subscriberId)
+			.flatMap(notification -> {
+				if (notification.getType().equals(NotificationType.START)) {
+					return jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, request.getAtom().getAid())
+						.andThen(jsonRpcClient.pushAtom(request.getAtom()))
+						.andThen(Observable.<RadixNodeAction>just(SubmitAtomReceivedAction.of(request.getUuid(), request.getAtom(), node)))
+						.onErrorResumeNext(e -> {
+							if (e instanceof SubmitAtomException) {
+								SubmitAtomException submitAtomException = (SubmitAtomException) e;
+								return Observable.<RadixNodeAction>just(
+									SubmitAtomStatusAction.fromStatusNotification(request.getUuid(), request.getAtom(), node,
+									new AtomStatusEvent(AtomStatus.EVICTED_INVALID_ATOM, submitAtomException.getData())),
+									SubmitAtomCompleteAction.of(request.getUuid(), request.getAtom(), node)
+								);
+							} else {
+								return Observable.error(e);
+							}
+						});
+				} else {
+					AtomStatusEvent statusNotification = notification.getEvent();
+					RadixNodeAction statusEvent = SubmitAtomStatusAction.fromStatusNotification(
+						request.getUuid(),
+						request.getAtom(),
+						node,
+						statusNotification
+					);
 					if (statusNotification.getAtomStatus() == AtomStatus.STORED || !request.isCompleteOnStoreOnly()) {
 						return Observable.just(
-							SubmitAtomStatusAction.fromStatusNotification(
-								request.getUuid(),
-								request.getAtom(),
-								node,
-								statusNotification
-							),
+							statusEvent,
 							SubmitAtomCompleteAction.of(request.getUuid(), request.getAtom(), node)
 						);
 					} else {
-						return Observable.just(
-							SubmitAtomStatusAction.fromStatusNotification(
-								request.getUuid(),
-								request.getAtom(),
-								node,
-								statusNotification
-							)
-						);
+						return Observable.just(statusEvent);
 					}
-				})
-				.doOnSubscribe(disposable -> {
-					jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, request.getAtom().getAid())
-						.andThen(jsonRpcClient.pushAtom(request.getAtom()))
-						.subscribe(
-							() -> emitter.onNext(SubmitAtomReceivedAction.of(request.getUuid(), request.getAtom(), node)),
-							e -> {
-								if (e instanceof SubmitAtomException) {
-									SubmitAtomException submitAtomException = (SubmitAtomException) e;
-									emitter.onNext(
-										SubmitAtomStatusAction.fromStatusNotification(
-											request.getUuid(),
-											request.getAtom(),
-											node,
-											new AtomStatusNotification(AtomStatus.EVICTED_INVALID_ATOM, submitAtomException.getData())
-										));
-									emitter.onNext(SubmitAtomCompleteAction.of(request.getUuid(), request.getAtom(), node));
-								} else {
-									emitter.onError(e);
-								}
-							}
-						);
-				})
-				.subscribe(emitter::onNext, emitter::onError, emitter::onComplete);
-
-			emitter.setCancellable(() -> {
-				d.dispose();
+				}
+			})
+			.doOnDispose(() -> {
 				jsonRpcClient.closeAtomStatusNotifications(subscriberId)
 					.andThen(
 						Observable.timer(DELAY_CLOSE_SECS, TimeUnit.SECONDS)
@@ -113,8 +100,7 @@ public final class SubmitAtomEpic implements RadixNetworkEpic {
 								return Completable.complete();
 							})
 					).subscribe();
-			});
-		})
+			})
 			.timeout(timeoutSecs, TimeUnit.SECONDS, Observable.just(SubmitAtomCompleteAction.of(request.getUuid(), request.getAtom(), node)))
 			.takeUntil(e -> e instanceof SubmitAtomCompleteAction)
 			.doFinally(() -> Observable.timer(DELAY_CLOSE_SECS, TimeUnit.SECONDS).subscribe(t -> ws.close()));

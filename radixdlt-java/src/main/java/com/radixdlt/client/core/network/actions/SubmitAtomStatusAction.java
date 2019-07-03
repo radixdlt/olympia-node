@@ -1,7 +1,7 @@
 package com.radixdlt.client.core.network.actions;
 
 import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.atoms.AtomStatusNotification;
+import com.radixdlt.client.core.atoms.AtomStatusEvent;
 import com.radixdlt.client.core.network.RadixNode;
 import java.util.Objects;
 
@@ -12,16 +12,16 @@ public final class SubmitAtomStatusAction implements SubmitAtomAction {
 	private final String uuid;
 	private final Atom atom;
 	private final RadixNode node;
-	private final AtomStatusNotification statusNotification;
+	private final AtomStatusEvent statusNotification;
 
-	private SubmitAtomStatusAction(String uuid, Atom atom, RadixNode node, AtomStatusNotification statusNotification) {
+	private SubmitAtomStatusAction(String uuid, Atom atom, RadixNode node, AtomStatusEvent statusNotification) {
 		this.uuid = Objects.requireNonNull(uuid);
 		this.atom = Objects.requireNonNull(atom);
 		this.node = Objects.requireNonNull(node);
 		this.statusNotification = Objects.requireNonNull(statusNotification);
 	}
 
-	public static SubmitAtomStatusAction fromStatusNotification(String uuid, Atom atom, RadixNode node, AtomStatusNotification statusNotification) {
+	public static SubmitAtomStatusAction fromStatusNotification(String uuid, Atom atom, RadixNode node, AtomStatusEvent statusNotification) {
 		return new SubmitAtomStatusAction(uuid, atom, node, statusNotification);
 	}
 
@@ -30,7 +30,7 @@ public final class SubmitAtomStatusAction implements SubmitAtomAction {
 	 *
 	 * @return The end result type
 	 */
-	public AtomStatusNotification getStatusNotification() {
+	public AtomStatusEvent getStatusNotification() {
 		return this.statusNotification;
 	}
 

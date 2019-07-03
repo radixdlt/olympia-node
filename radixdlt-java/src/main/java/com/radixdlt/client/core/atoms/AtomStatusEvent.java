@@ -5,16 +5,16 @@ import com.google.gson.JsonObject;
 /**
  * An event where an atom's status has changed.
  */
-public final class AtomStatusNotification {
+public final class AtomStatusEvent {
 	private final AtomStatus atomStatus;
 	private final JsonObject data;
 
-	public AtomStatusNotification(AtomStatus atomStatus, JsonObject data) {
+	public AtomStatusEvent(AtomStatus atomStatus, JsonObject data) {
 		this.atomStatus = atomStatus;
 		this.data = data;
 	}
 
-	public AtomStatusNotification(AtomStatus atomStatus) {
+	public AtomStatusEvent(AtomStatus atomStatus) {
 		this(atomStatus, null);
 	}
 

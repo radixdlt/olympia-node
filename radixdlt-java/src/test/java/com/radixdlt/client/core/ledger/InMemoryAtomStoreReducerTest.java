@@ -10,7 +10,7 @@ import static org.mockito.Mockito.when;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomStatus;
-import com.radixdlt.client.core.atoms.AtomStatusNotification;
+import com.radixdlt.client.core.atoms.AtomStatusEvent;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.RadixNodeAction;
 import com.radixdlt.client.core.network.actions.FetchAtomsObservationAction;
@@ -44,7 +44,7 @@ public class InMemoryAtomStoreReducerTest {
 				"different-id",
 				atom,
 				node,
-				new AtomStatusNotification(AtomStatus.STORED, null)
+				new AtomStatusEvent(AtomStatus.STORED, null)
 			);
 		reducer.reduce(action);
 

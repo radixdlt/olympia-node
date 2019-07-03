@@ -1,6 +1,7 @@
 package com.radixdlt.client.core.network.epics;
 
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.client.core.ledger.AtomObservation;
 import com.radixdlt.client.core.network.RadixNetworkEpic;
 import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixNode;
@@ -13,6 +14,7 @@ import com.radixdlt.client.core.network.actions.FindANodeResultAction;
 import com.radixdlt.client.core.network.epics.WebSocketsEpic.WebSockets;
 import com.radixdlt.client.core.network.jsonrpc.AtomQuery;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient;
+import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.NotificationType;
 import com.radixdlt.client.core.network.websocket.WebSocketClient;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
 import io.reactivex.Completable;
@@ -49,21 +51,19 @@ public final class FetchAtomsEpic implements RadixNetworkEpic {
 		final WebSocketClient ws = webSockets.getOrCreate(node);
 		final String uuid = request.getUuid();
 		final RadixAddress address = request.getAddress();
+		final RadixJsonRpcClient client = new RadixJsonRpcClient(ws);
 
-		return Observable.create(emitter -> {
-			RadixJsonRpcClient client = new RadixJsonRpcClient(ws);
-
-			emitter.onNext(FetchAtomsSubscribeAction.of(uuid, address, node));
-
-			Disposable d = client.observeAtoms(uuid)
-				.map(observation -> FetchAtomsObservationAction.of(uuid, address, node, observation))
-				.subscribe(emitter::onNext);
-
-			AtomQuery atomQuery = new AtomQuery(address);
-			client.sendAtomsSubscribe(uuid, atomQuery).subscribe();
-
-			emitter.setCancellable(() -> {
-				d.dispose();
+		return client.observeAtoms(uuid)
+			.<RadixNodeAction>flatMap(n -> {
+				if (n.getType() == NotificationType.START) {
+					AtomQuery atomQuery = new AtomQuery(address);
+					return client.sendAtomsSubscribe(uuid, atomQuery).andThen(Observable.empty());
+				} else {
+					AtomObservation observation = n.getEvent();
+					return Observable.just(FetchAtomsObservationAction.of(uuid, address, node, observation));
+				}
+			})
+			.doOnDispose(() ->
 				client.cancelAtomsSubscribe(uuid)
 					.andThen(
 						Observable.timer(DELAY_CLOSE_SECS, TimeUnit.SECONDS)
@@ -71,9 +71,9 @@ public final class FetchAtomsEpic implements RadixNetworkEpic {
 								ws.close();
 								return Completable.complete();
 							})
-					).subscribe();
-			});
-		});
+					).subscribe()
+			)
+			.startWith(FetchAtomsSubscribeAction.of(uuid, address, node));
 	}
 
 	@Override

@@ -7,7 +7,7 @@ import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.client.core.address.RadixUniverseConfigs;
 import com.radixdlt.client.core.atoms.AtomStatus;
-import com.radixdlt.client.core.atoms.AtomStatusNotification;
+import com.radixdlt.client.core.atoms.AtomStatusEvent;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.network.RadixNetworkController;
 import com.radixdlt.client.core.network.RadixNetworkEpic;
@@ -102,7 +102,7 @@ public class RadixApplicationAPITest {
 			SubmitAtomReceivedAction received = mock(SubmitAtomReceivedAction.class);
 			when(received.getUuid()).thenReturn(request.getUuid());
 			SubmitAtomStatusAction stored = mock(SubmitAtomStatusAction.class);
-			when(stored.getStatusNotification()).thenReturn(new AtomStatusNotification(AtomStatus.STORED));
+			when(stored.getStatusNotification()).thenReturn(new AtomStatusEvent(AtomStatus.STORED));
 			when(stored.getUuid()).thenReturn(request.getUuid());
 			SubmitAtomCompleteAction complete = mock(SubmitAtomCompleteAction.class);
 			when(complete.getUuid()).thenReturn(request.getUuid());
@@ -277,7 +277,7 @@ public class RadixApplicationAPITest {
 			SubmitAtomStatusAction update = mock(SubmitAtomStatusAction.class);
 			when(update.getUuid()).thenReturn(request.getUuid());
 			when(update.getAtom()).thenReturn(atom);
-			when(update.getStatusNotification()).thenReturn(new AtomStatusNotification(AtomStatus.EVICTED_CONFLICT_LOSER, errorData));
+			when(update.getStatusNotification()).thenReturn(new AtomStatusEvent(AtomStatus.EVICTED_CONFLICT_LOSER, errorData));
 			SubmitAtomCompleteAction complete = mock(SubmitAtomCompleteAction.class);
 			when(complete.getUuid()).thenReturn(request.getUuid());
 			nodeActions.onNext(update);

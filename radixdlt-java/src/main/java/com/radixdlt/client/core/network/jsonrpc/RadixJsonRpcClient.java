@@ -1,13 +1,16 @@
 package com.radixdlt.client.core.network.jsonrpc;
 
 import com.radixdlt.client.core.atoms.AtomStatus;
-import com.radixdlt.client.core.atoms.AtomStatusNotification;
+import com.radixdlt.client.core.atoms.AtomStatusEvent;
 import com.radixdlt.client.core.ledger.AtomEvent;
 import io.reactivex.functions.Cancellable;
 import java.util.List;
 import java.util.UUID;
 
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import org.json.JSONObject;
 import org.radix.common.ID.AID;
 import org.radix.common.ID.EUID;
@@ -38,6 +41,32 @@ import io.reactivex.Single;
  * calls.
  */
 public class RadixJsonRpcClient {
+	public enum NotificationType {
+		START, EVENT
+	}
+
+	public static final class Notification<T> {
+		private final T event;
+		private final NotificationType type;
+
+		private Notification(NotificationType type, T event) {
+			this.type = type;
+			this.event = event;
+		}
+
+		static <T> Notification<T> ofEvent(T event) {
+			return new Notification<>(NotificationType.EVENT, event);
+		}
+
+		public NotificationType getType() {
+			return type;
+		}
+
+		public T getEvent() {
+			return event;
+		}
+	}
+
 	public static class JsonRpcResponse {
 		private final boolean isSuccess;
 		private final JsonElement jsonResponse;
@@ -260,13 +289,17 @@ public class RadixJsonRpcClient {
 	 * @param subscriberId the subscription to listen for
 	 * @return observable of status notifications
 	 */
-	public Observable<AtomStatusNotification> observeAtomStatusNotifications(String subscriberId) {
-		return this.observeNotifications("Atoms.nextStatusEvent", subscriberId)
-			.map(observedStatus -> {
-				AtomStatus atomStatus = AtomStatus.valueOf(observedStatus.get("status").getAsString());
-				JsonObject data = observedStatus.get("data").getAsJsonObject();
-				return new AtomStatusNotification(atomStatus, data);
-			});
+	public Observable<Notification<AtomStatusEvent>> observeAtomStatusNotifications(String subscriberId) {
+		return this.observeNotifications(
+			"Atoms.nextStatusEvent",
+			subscriberId,
+			json -> {
+				AtomStatus atomStatus = AtomStatus.valueOf(json.get("status").getAsString());
+				JsonObject data = json.get("data").getAsJsonObject();
+				AtomStatusEvent atomStatusEvent = new AtomStatusEvent(atomStatus, data);
+				return Stream.of(atomStatusEvent);
+			}
+		);
 	}
 
 	/**
@@ -302,7 +335,7 @@ public class RadixJsonRpcClient {
 			.flatMapMaybe(list -> list.isEmpty() ? Maybe.empty() : Maybe.just(list.get(0)));
 	}
 
-	public Observable<JsonObject> observeNotifications(String notificationMethod, String subscriberId) {
+	<T> Observable<Notification<T>> observeNotifications(String notificationMethod, String subscriberId, Function<JsonObject, Stream<T>> mapper) {
 		return Observable.create(emitter -> {
 			Cancellable c = channel.addListener(msg -> {
 				JsonObject json = parser.parse(msg).getAsJsonObject();
@@ -320,25 +353,34 @@ public class RadixJsonRpcClient {
 					return;
 				}
 
-				emitter.onNext(params);
+				mapper.apply(params).map(Notification::ofEvent).forEach(emitter::onNext);
 			});
+
+			emitter.onNext(new Notification<>(NotificationType.START, null));
 
 			emitter.setCancellable(c);
 		});
 	}
 
-	public Observable<AtomObservation> observeAtoms(String subscriberId) {
-		return this.observeNotifications("Atoms.subscribeUpdate", subscriberId)
-			.flatMap(observedAtomsJson -> {
-				LOGGER.debug("Received Atoms.subscribeUpdate: for {}: {}", subscriberId, observedAtomsJson);
-				JsonArray atomEvents = observedAtomsJson.getAsJsonArray("atomEvents");
-				boolean isHead = observedAtomsJson.has("isHead") && observedAtomsJson.get("isHead").getAsBoolean();
-
-				return Observable.fromIterable(atomEvents)
+	public Observable<Notification<AtomObservation>> observeAtoms(String subscriberId) {
+		return this.observeNotifications(
+			"Atoms.subscribeUpdate",
+			subscriberId,
+			json -> {
+				LOGGER.debug("Received Atoms.subscribeUpdate: for {}: {}", subscriberId, json);
+				JsonArray atomEvents = json.getAsJsonArray("atomEvents");
+				boolean isHead = json.has("isHead") && json.get("isHead").getAsBoolean();
+				Stream<AtomObservation> observations = StreamSupport.stream(atomEvents.spliterator(), false)
 					.map(jsonAtom -> Serialize.getInstance().fromJson(jsonAtom.toString(), AtomEvent.class))
-					.map(AtomObservation::ofEvent)
-					.concatWith(Maybe.fromCallable(() -> isHead ? AtomObservation.head() : null));
-			});
+					.map(AtomObservation::ofEvent);
+
+				if (isHead) {
+					return Stream.concat(observations, Stream.of(AtomObservation.head()));
+				} else {
+					return observations;
+				}
+			}
+		);
 	}
 
 	public Completable cancelAtomsSubscribe(String subscriberId) {
