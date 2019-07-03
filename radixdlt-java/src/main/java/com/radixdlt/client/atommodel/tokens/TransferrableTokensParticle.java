@@ -129,6 +129,10 @@ public final class TransferrableTokensParticle extends Particle implements Accou
 		return this.granularity;
 	}
 
+	public long getPlanck() {
+		return this.planck;
+	}
+
 	@Override
 	public String toString() {
 		return String.format("%s[%s:%s:%s:%s:%s:%s]",

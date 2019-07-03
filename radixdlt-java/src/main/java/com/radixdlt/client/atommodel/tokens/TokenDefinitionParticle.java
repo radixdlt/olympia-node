@@ -102,6 +102,10 @@ public class TokenDefinitionParticle extends Particle implements Identifiable, O
 		return this.granularity;
 	}
 
+	public String getIconUrl() {
+		return this.iconUrl;
+	}
+
 	@JsonProperty("permissions")
 	@DsonOutput(value = {Output.ALL})
 	private Map<String, String> getJsonPermissions() {
