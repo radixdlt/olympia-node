@@ -126,10 +126,15 @@ public class MintMultiIssuanceTokens {
 	public void a_library_client_who_does_not_own_a_token_class_on_another_account(String symbol) throws Throwable {
 		setupApi();
 
+		Disposable d = this.api.pull(this.otherApi.getAddress());
 		this.properties.put(SYMBOL, symbol);
 		createToken(this.otherApi, TokenSupplyType.MUTABLE);
 		awaitAtomStatus(AtomStatus.STORED);
-		TimeUnit.SECONDS.sleep(15);
+		this.api.observeTokenDef(RRI.of(this.otherApi.getAddress(), symbol))
+			.firstOrError()
+			.timeout(15, TimeUnit.SECONDS)
+			.blockingGet();
+		d.dispose();
 
 		this.properties.put(ADDRESS, this.otherApi.getAddress().toString());
 	}
