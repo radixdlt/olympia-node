@@ -9,7 +9,6 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import java.util.Set;
-import org.radix.containers.BasicContainer;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerId2;
 import org.radix.modules.Modules;
