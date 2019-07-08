@@ -16,14 +16,11 @@
       "type": "string",
       "enum": [ "radix.atom" ]
     },
-    "version": {
-      "type": "number"
-    },
     "hid": { "$ref": "#/definitions/uid" },
     "aid": { "$ref": "#/definitions/aid" },
     "temporalProof": { "$ref": "#/definitions/temporalProof" }
   },
-  "required": [ "particleGroups", "serializer", "version" ],
+  "required": [ "particleGroups", "serializer" ],
   "definitions": {
     "string": {
       "type": "string",
