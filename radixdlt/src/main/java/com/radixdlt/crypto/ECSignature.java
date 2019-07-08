@@ -1,9 +1,10 @@
 package com.radixdlt.crypto;
 
+import com.radixdlt.serialization.SerializerConstants;
+import com.radixdlt.serialization.SerializerDummy;
 import java.math.BigInteger;
 import java.util.Objects;
 
-import org.radix.containers.BasicContainer;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
@@ -12,13 +13,11 @@ import com.radixdlt.utils.Bytes;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 @SerializerId2("crypto.ecdsa_signature")
-public final class ECSignature extends BasicContainer
-{
-	@Override
-	public short VERSION()
-	{
-		return 100;
-	}
+public final class ECSignature {
+	// Placeholder for the serializer ID
+	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
+	@DsonOutput(Output.ALL)
+	private SerializerDummy serializer = SerializerDummy.DUMMY;
 
 	/* The two components of the signature. */
 	private BigInteger r;
