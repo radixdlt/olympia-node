@@ -31,7 +31,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -356,17 +355,6 @@ public final class Atom {
 	public final <T extends Particle> Stream<SpunParticle<T>> particles(Class<T> type) {
 		return this.spunParticles().filter(p -> type == null || type.isAssignableFrom(p.getParticle().getClass()))
 			.map(p -> (SpunParticle<T>) p);
-	}
-
-	public final Optional<Particle> getParticle(EUID hid, Spin spin) {
-		Objects.requireNonNull(hid);
-		Objects.requireNonNull(spin);
-
-		return this.spunParticles()
-			.filter(s -> s.getSpin().equals(spin))
-			.map(SpunParticle<Particle>::getParticle)
-			.filter(p -> p.getHID().equals(hid))
-			.findFirst();
 	}
 
 	/**

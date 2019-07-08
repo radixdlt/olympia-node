@@ -10,6 +10,5 @@ public class AtomTest {
 		atom.spunParticles();
 		atom.getParticleGroupCount();
 		atom.particles(Spin.UP);
-		atom.getParticle(EUID.ZERO, Spin.UP);
 	}
 }
