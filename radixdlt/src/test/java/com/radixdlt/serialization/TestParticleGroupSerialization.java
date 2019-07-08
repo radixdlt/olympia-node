@@ -32,6 +32,6 @@ public class TestParticleGroupSerialization {
 
 		byte[] atombytes = serialization.toDson(atom, Output.HASH);
 
-		assertEquals(4239, atombytes.length);
+		assertEquals(4229, atombytes.length);
 	}
 }

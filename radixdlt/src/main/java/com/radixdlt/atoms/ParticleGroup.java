@@ -40,10 +40,6 @@ public final class ParticleGroup {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final ImmutableMap<String, String> metaData;
 
-	@JsonProperty("version")
-	@DsonOutput(Output.ALL)
-	private short version = 100;
-
 	// Placeholder for the serializer ID
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(Output.ALL)
