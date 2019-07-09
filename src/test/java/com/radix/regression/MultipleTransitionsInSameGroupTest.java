@@ -1,7 +1,6 @@
 package com.radix.regression;
 
 import com.google.common.collect.ImmutableMap;
-import com.radix.TestEnv;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
@@ -14,6 +13,7 @@ import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle.TokenTransit
 import com.radixdlt.client.atommodel.tokens.TokenPermission;
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
+import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomStatus;
@@ -41,7 +41,7 @@ import java.util.List;
 import java.util.Map;
 
 public class MultipleTransitionsInSameGroupTest {
-	private RadixUniverse universe = RadixUniverse.create(TestEnv.getBootstrapConfig());
+	private RadixUniverse universe = RadixUniverse.create(RadixEnv.getBootstrapConfig());
 	private RadixIdentity identity;
 	private FeeMapper feeMapper = new PowFeeMapper(Atom::getHash, new ProofOfWorkBuilder());
 	private RadixJsonRpcClient jsonRpcClient;
@@ -49,7 +49,7 @@ public class MultipleTransitionsInSameGroupTest {
 	@Before
 	public void setUp() {
 		this.identity = RadixIdentities.createNew();
-		RadixApplicationAPI api = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), this.identity);
+		RadixApplicationAPI api = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), this.identity);
 		api.discoverNodes();
 		RadixNode node = api.getNetworkState()
 			.filter(state -> !state.getNodes().isEmpty())

@@ -1,8 +1,8 @@
 package com.radix.regression;
 
-import com.radix.TestEnv;
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionsState;
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
+import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -31,7 +31,7 @@ public class TokenClassesInAccountTest {
 
 	@BeforeClass
 	public static void setup() {
-		api = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), RadixIdentities.createNew());
+		api = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
 	}
 
 	private static CreateTokenAction buildCreateNewTokenAction(String symbol, BigDecimal initialSupply) {

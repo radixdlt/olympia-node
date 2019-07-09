@@ -1,6 +1,5 @@
 package com.radix.regression;
 
-import com.radix.TestEnv;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
 import com.radixdlt.client.application.identity.RadixIdentities;
@@ -9,18 +8,18 @@ import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
 import com.radixdlt.client.application.translate.tokens.MintTokensAction;
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
+import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixNode;
 import java.math.BigDecimal;
-import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 import org.radix.utils.UInt256;
 
 public class MintAndBurnTest {
 	@Test
 	public void given_an_account_owner_who_created_a_token__when_the_owner_mints_max_then_burns_max_then_mints_max__then_it_should_all_be_successful() throws Exception {
-		RadixApplicationAPI api = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), RadixIdentities.createNew());
+		RadixApplicationAPI api = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
 		api.discoverNodes();
 		RadixNode originNode = api.getNetworkState()
 			.map(RadixNetworkState::getNodes)

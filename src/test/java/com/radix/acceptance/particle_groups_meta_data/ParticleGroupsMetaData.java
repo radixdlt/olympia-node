@@ -4,7 +4,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.radix.TestEnv;
 import com.radix.regression.Util;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
@@ -12,6 +11,7 @@ import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.FeeMapper;
 import com.radixdlt.client.application.translate.PowFeeMapper;
 import com.radixdlt.client.atommodel.message.MessageParticle;
+import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomStatus;
@@ -50,7 +50,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 public class ParticleGroupsMetaData {
-    private RadixUniverse universe = RadixUniverse.create(TestEnv.getBootstrapConfig());
+    private RadixUniverse universe = RadixUniverse.create(RadixEnv.getBootstrapConfig());
 
     private RadixIdentity identity;
 
@@ -277,7 +277,7 @@ public class ParticleGroupsMetaData {
 
     private void setupWebSocket() {
         this.identity = RadixIdentities.createNew();
-        RadixApplicationAPI api = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), identity);
+        RadixApplicationAPI api = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), identity);
         api.discoverNodes();
         RadixNode node = api.getNetworkState()
             .filter(state -> !state.getNodes().isEmpty())

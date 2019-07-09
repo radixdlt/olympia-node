@@ -2,7 +2,6 @@ package com.radix.acceptance.particle_groups;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
-import com.radix.TestEnv;
 import com.radix.acceptance.SpecificProperties;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
@@ -18,6 +17,7 @@ import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
 import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.application.translate.tokens.TransferTokensToParticleGroupsMapper;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.particles.Particle;
@@ -122,7 +122,7 @@ public class ParticleGroups {
 		this.identity = RadixIdentities.createNew();
 		StatefulActionToParticleGroupsMapper<TransferTokensAction> mapper = new TransferTokensToParticleGroupsMapper();
 		this.api = RadixApplicationAPI.defaultBuilder()
-			.bootstrap(TestEnv.getBootstrapConfig())
+			.bootstrap(RadixEnv.getBootstrapConfig())
 			.identity(this.identity)
 			.addStatelessParticlesMapper(CreateEmptyGroupAction.class, new CreateEmptyGroupActionToParticleGroupsMapper())
 			.addStatefulParticlesMapper(MergeAction.class, new MergeStatefulActionToParticleGroupsMapper(mapper))

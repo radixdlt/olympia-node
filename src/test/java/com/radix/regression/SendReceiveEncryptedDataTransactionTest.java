@@ -1,7 +1,7 @@
 package com.radix.regression;
 
-import com.radix.TestEnv;
 import com.radixdlt.client.application.translate.data.SendMessageAction;
+import com.radixdlt.client.core.RadixEnv;
 import io.reactivex.disposables.Disposable;
 import java.util.stream.Stream;
 
@@ -27,7 +27,7 @@ public class SendReceiveEncryptedDataTransactionTest {
 	@Test
 	public void given_i_own_a_key_pair_associated_with_an_address_and_listening_to_messages__when_i_send_an_endecryptable_message_to_myself__then_i_will_receive_a_message_marked_that_it_is_not_decryptable() {
 		// Given I own a key pair associated with an address and listening to messages
-		RadixApplicationAPI normalApi = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), RadixIdentities.createNew());
+		RadixApplicationAPI normalApi = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
 		TestObserver<DecryptedMessage> messageListener = TestObserver.create(Util.loggingObserver("MessageListener"));
 		normalApi.observeMessages().subscribe(messageListener);
 		Disposable d = normalApi.pull();
@@ -40,7 +40,7 @@ public class SendReceiveEncryptedDataTransactionTest {
 		);
 		RadixApplicationAPI sendMessageWithDifferentKeyApi = new RadixApplicationAPIBuilder()
 			.defaultFeeMapper()
-			.universe(RadixUniverse.create(TestEnv.getBootstrapConfig()))
+			.universe(RadixUniverse.create(RadixEnv.getBootstrapConfig()))
 			.identity(normalApi.getIdentity())
 			.addStatelessParticlesMapper(SendMessageAction.class, msgMapper)
 			.build();

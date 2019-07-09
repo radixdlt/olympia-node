@@ -1,6 +1,6 @@
 package com.radix.regression;
 
-import com.radix.TestEnv;
+import com.radixdlt.client.core.RadixEnv;
 import io.reactivex.disposables.Disposable;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
@@ -27,7 +27,7 @@ public class SendReceiveDataTransactionTest {
 	public void given_an_account_owner_listening_to_own_messages__when_owner_sends_a_message_from_another_account_to_itself__then_the_client_should_be_notified_of_error_and_not_receive_any_message() throws Exception {
 
 		// Given account owner listening to own messages
-		RadixApplicationAPI api = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), RadixIdentities.createNew());
+		RadixApplicationAPI api = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
 		TestObserver<DecryptedMessage> messageListener = TestObserver.create(Util.loggingObserver("MessageListener"));
 		Disposable d = api.pull();
 		api.observeMessages().subscribe(messageListener);
@@ -59,8 +59,8 @@ public class SendReceiveDataTransactionTest {
 		// Given two account owners listening to own messages
 		TestObserver<DecryptedMessage> messageListener1 = new TestObserver<>(Util.loggingObserver("MessageListener1"));
 		TestObserver<DecryptedMessage> messageListener2 = new TestObserver<>(Util.loggingObserver("MessageListener2"));
-		RadixApplicationAPI api1 = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), RadixIdentities.createNew());
-		RadixApplicationAPI api2 = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), RadixIdentities.createNew());
+		RadixApplicationAPI api1 = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
+		RadixApplicationAPI api2 = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
 		api1.observeMessages().subscribe(messageListener1);
 		api2.observeMessages().subscribe(messageListener2);
 
@@ -94,7 +94,7 @@ public class SendReceiveDataTransactionTest {
 
 		// Given an account owner listening to own messages
 		TestObserver<DecryptedMessage> messageListener = new TestObserver<>(Util.loggingObserver("MessageListener"));
-		RadixApplicationAPI api = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), RadixIdentities.createNew());
+		RadixApplicationAPI api = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
 		Disposable d = api.pull();
 		api.observeMessages().subscribe(messageListener);
 
@@ -118,8 +118,8 @@ public class SendReceiveDataTransactionTest {
 
 		// Given a client listening to messages in another account
 		TestObserver<DecryptedMessage> clientListener = new TestObserver<>(Util.loggingObserver("MessageListener"));
-		RadixApplicationAPI clientApi = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), RadixIdentities.createNew());
-		RadixApplicationAPI otherAccount = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), RadixIdentities.createNew());
+		RadixApplicationAPI clientApi = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
+		RadixApplicationAPI otherAccount = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
 		clientApi.observeMessages(otherAccount.getAddress()).subscribe(clientListener);
 		Disposable d = clientApi.pull(otherAccount.getAddress());
 

@@ -1,6 +1,6 @@
 package com.radix.regression;
 
-import com.radix.TestEnv;
+import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
 import io.reactivex.disposables.Disposable;
 import java.util.concurrent.TimeUnit;
@@ -30,7 +30,7 @@ public class UnsubscribeTest {
 	@Test
 	public void given_i_am_a_library_user_with_no_connections__when_i_send_a_message_to_myself_to_completion__then_i_can_observe_all_network_connections_being_closed() {
 		// Given I am a library user
-		RadixApplicationAPI normalApi = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), RadixIdentities.createNew());
+		RadixApplicationAPI normalApi = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
 		Observable<RadixNetworkState> networkStatus = normalApi
 			.getNetworkState()
 			.debounce(3, TimeUnit.SECONDS);
@@ -55,7 +55,7 @@ public class UnsubscribeTest {
 	@Test
 	public void given_i_am_connected_to_a_node_and_subscribed_once__when_i_dispose_of_the_lone_subscriber__then_i_can_observe_all_network_connections_being_closed() throws Exception {
 		// Given I am connected to a node and listening to messages
-		RadixApplicationAPI normalApi = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), RadixIdentities.createNew());
+		RadixApplicationAPI normalApi = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
 		TestObserver<DecryptedMessage> messageListener = TestObserver.create(Util.loggingObserver("MessageListener"));
 		normalApi.observeMessages().subscribe(messageListener);
 		Disposable d = normalApi.pull();
@@ -80,7 +80,7 @@ public class UnsubscribeTest {
 	@Test
 	public void given_i_am_connected_to_a_node_and_subscribed_twice__when_i_dispose_of_one_subscriber__then_i_can_observe_a_network_connection_still_open() {
 		// Given I am connected to a node and listening to messages
-		RadixApplicationAPI normalApi = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), RadixIdentities.createNew());
+		RadixApplicationAPI normalApi = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
 		TestObserver<DecryptedMessage> messageListener1 = TestObserver.create(Util.loggingObserver("MessageListener1"));
 		TestObserver<DecryptedMessage> messageListener2 = TestObserver.create(Util.loggingObserver("MessageListener2"));
 		normalApi.observeMessages().subscribe(messageListener1);

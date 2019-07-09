@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.radix.TestEnv;
 import com.radix.regression.Util;
 import com.radix.regression.doublespend.DoubleSpendTestConditions.BatchedActions;
 import com.radixdlt.client.application.RadixApplicationAPI;
@@ -17,6 +16,7 @@ import com.radixdlt.client.application.translate.ApplicationState;
 import com.radixdlt.client.application.translate.ShardedAppStateId;
 import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.client.core.BootstrapConfig;
+import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomStatus;
@@ -95,7 +95,7 @@ public final class DoubleSpendTestRunner {
 				new BootstrapConfig() {
 				    @Override
 				    public RadixUniverseConfig getConfig() {
-					    return TestEnv.getBootstrapConfig().getConfig();
+					    return RadixEnv.getBootstrapConfig().getConfig();
 				    }
 
 				    @Override
@@ -139,7 +139,7 @@ public final class DoubleSpendTestRunner {
 
 
 	ImmutableMap<ShardedAppStateId, ApplicationState> execute() {
-		RadixApplicationAPI api = apiSupplier.apply(TestEnv.getBootstrapConfig(), RadixIdentities.createNew());
+		RadixApplicationAPI api = apiSupplier.apply(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
 		DoubleSpendTestConditions doubleSpendTestConditions = testSupplier.apply(api);
 
 		List<BatchedActions> initialActions = doubleSpendTestConditions.initialActions();

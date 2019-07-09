@@ -1,13 +1,13 @@
 package com.radix.acceptance.burn_multi_issuance_tokens;
 
 import com.google.common.collect.ImmutableSet;
-import com.radix.TestEnv;
 import com.radix.regression.Util;
 import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
 import com.radixdlt.client.application.translate.StageActionException;
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionsState;
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
 import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
+import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.network.RadixNetworkState;
@@ -190,11 +190,11 @@ public class BurnMultiIssuanceTokens {
 
 	private void setupApi() {
 		this.identity = RadixIdentities.createNew();
-		this.api = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), this.identity);
+		this.api = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), this.identity);
 		this.disposables.add(this.api.pull());
 
 		this.otherIdentity = RadixIdentities.createNew();
-		this.otherApi = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), this.otherIdentity);
+		this.otherApi = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), this.otherIdentity);
 		this.disposables.add(this.otherApi.pull());
 
 		// Reset data

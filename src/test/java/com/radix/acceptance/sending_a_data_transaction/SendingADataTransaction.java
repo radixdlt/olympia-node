@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
-import com.radix.TestEnv;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
 import com.radixdlt.client.application.identity.RadixIdentities;
@@ -12,6 +11,7 @@ import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.data.DecryptedMessage;
 import com.radixdlt.client.application.translate.data.SendMessageAction;
+import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
@@ -44,12 +44,12 @@ public class SendingADataTransaction {
 		this.identity = RadixIdentities.createNew();
 		this.otherIdentity = RadixIdentities.createNew();
 		this.api = RadixApplicationAPI.defaultBuilder()
-			.bootstrap(TestEnv.getBootstrapConfig())
+			.bootstrap(RadixEnv.getBootstrapConfig())
 			.identity(this.identity)
 			.build();
 		this.api.pull();
 		this.otherApi = RadixApplicationAPI.defaultBuilder()
-			.bootstrap(TestEnv.getBootstrapConfig())
+			.bootstrap(RadixEnv.getBootstrapConfig())
 			.identity(this.otherIdentity)
 			.build();
 		this.otherApi.pull();

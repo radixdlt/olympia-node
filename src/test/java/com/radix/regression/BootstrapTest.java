@@ -1,10 +1,10 @@
 package com.radix.regression;
 
 import com.google.common.collect.ImmutableSet;
-import com.radix.TestEnv;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.core.BootstrapConfig;
+import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.client.core.network.RadixNetworkEpic;
 import com.radixdlt.client.core.network.RadixNetworkState;
@@ -25,12 +25,12 @@ public class BootstrapTest {
 		RadixApplicationAPI api = RadixApplicationAPI.create(new BootstrapConfig() {
 			@Override
 			public RadixUniverseConfig getConfig() {
-				return TestEnv.getBootstrapConfig().getConfig();
+				return RadixEnv.getBootstrapConfig().getConfig();
 			}
 
 			@Override
 			public List<RadixNetworkEpic> getDiscoveryEpics() {
-				return Collections.singletonList(new DiscoverNodesEpic(nodeFinder.getSeed().toObservable(), TestEnv.getBootstrapConfig().getConfig()));
+				return Collections.singletonList(new DiscoverNodesEpic(nodeFinder.getSeed().toObservable(), RadixEnv.getBootstrapConfig().getConfig()));
 			}
 
 			@Override

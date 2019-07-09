@@ -2,7 +2,7 @@ package com.radix.acceptance.token_character_set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.radix.TestEnv;
+import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import java.math.BigDecimal;
@@ -51,7 +51,7 @@ public class TokenSymbolCharacterSet {
 	@Given("^I have access to a suitable Radix network$")
 	public void i_have_access_to_a_suitable_Radix_network() {
 		this.identity = RadixIdentities.createNew();
-		this.api = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), this.identity);
+		this.api = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), this.identity);
 
 		// Reset data
 		this.properties.clear();

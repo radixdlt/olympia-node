@@ -1,7 +1,7 @@
 package com.radix.acceptance.shards;
 
-import com.radix.TestEnv;
 import com.radixdlt.client.application.RadixApplicationAPI;
+import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.network.HttpClients;
 import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixNode;
@@ -41,7 +41,7 @@ public class StaticShardingAcceptance {
 	@BeforeClass
 	public static void setUp() {
 		RadixIdentity identity = RadixIdentities.createNew();
-		api = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), identity);
+		api = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), identity);
 		api.discoverNodes();
 		nodes = api.getNetworkState()
 			.doOnNext(System.out::println)
