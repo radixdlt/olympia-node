@@ -1,6 +1,7 @@
 package com.radixdlt.atoms;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.common.EUID;
 import com.radixdlt.crypto.Hash;
@@ -11,7 +12,7 @@ import com.radixdlt.serialization.SerializerDummy;
 import java.util.Set;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerId2;
-import org.radix.modules.Modules;
+import java.util.function.Supplier;
 
 /**
  * A content-identifiable, sub-state of the ledger.
@@ -26,6 +27,8 @@ public abstract class Particle {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(Output.ALL)
 	private SerializerDummy serializer = SerializerDummy.DUMMY;
+
+	private final Supplier<Hash> cachedHash = Suppliers.memoize(this::doGetHash);
 
 	public Particle() {
 		this.destinations = ImmutableSet.of();
@@ -66,12 +69,16 @@ public abstract class Particle {
 		return getHash().hashCode();
 	}
 
-	public Hash getHash() {
+	private Hash doGetHash() {
 		try {
-			return new Hash(Hash.hash256(Modules.get(Serialization.class).toDson(this, Output.HASH)));
+			return new Hash(Hash.hash256(Serialization.getDefault().toDson(this, Output.HASH)));
 		} catch (Exception e) {
 			throw new RuntimeException("Error generating hash: " + e, e);
 		}
+	}
+
+	public Hash getHash() {
+		return cachedHash.get();
 	}
 
 	@JsonProperty("hid")

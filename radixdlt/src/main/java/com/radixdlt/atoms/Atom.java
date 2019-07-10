@@ -21,8 +21,6 @@ import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
-import org.radix.containers.BasicContainer;
-import org.radix.modules.Modules;
 import org.radix.time.TemporalProof;
 
 import java.util.Collection;
@@ -76,6 +74,7 @@ public final class Atom {
 	private final ImmutableMap<String, String> metaData;
 
 	private final Supplier<AID> cachedAID = Suppliers.memoize(this::doGetAID);
+	private final Supplier<Hash> cachedHash = Suppliers.memoize(this::doGetHash);
 
 	public Atom() {
 		this.metaData = ImmutableMap.of();
@@ -384,12 +383,16 @@ public final class Atom {
 		return this.metaData;
 	}
 
-	public Hash getHash() {
+	private Hash doGetHash() {
 		try {
-			return new Hash(Hash.hash256(Modules.get(Serialization.class).toDson(this, Output.HASH)));
+			return new Hash(Hash.hash256(Serialization.getDefault().toDson(this, Output.HASH)));
 		} catch (Exception e) {
 			throw new RuntimeException("Error generating hash: " + e, e);
 		}
+	}
+
+	public Hash getHash() {
+		return cachedHash.get();
 	}
 
 	@JsonProperty("hid")

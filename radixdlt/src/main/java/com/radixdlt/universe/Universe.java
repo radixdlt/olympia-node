@@ -1,6 +1,7 @@
 package com.radixdlt.universe;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.atoms.Atom;
 import com.radixdlt.common.EUID;
@@ -21,7 +22,7 @@ import com.radixdlt.utils.Bytes;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Objects;
-import org.radix.modules.Modules;
+import java.util.function.Supplier;
 
 @SerializerId2("radix.universe")
 public class Universe {
@@ -251,6 +252,8 @@ public class Universe {
 	@DsonOutput(Output.ALL)
 	private ImmutableList<Atom> genesis;
 
+	private final Supplier<Hash> cachedHash = Suppliers.memoize(this::doGetHash);
+
 	private ECPublicKey creator;
 
 	private ECSignature signature;
@@ -438,13 +441,16 @@ public class Universe {
 		}
 	}
 
-
-	public Hash getHash() {
+	private Hash doGetHash() {
 		try {
-			return new Hash(Hash.hash256(Modules.get(Serialization.class).toDson(this, Output.HASH)));
+			return new Hash(Hash.hash256(Serialization.getDefault().toDson(this, Output.HASH)));
 		} catch (Exception e) {
 			throw new RuntimeException("Error generating hash: " + e, e);
 		}
+	}
+
+	public Hash getHash() {
+		return cachedHash.get();
 	}
 
 	@JsonProperty("hid")
