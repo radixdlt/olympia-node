@@ -25,7 +25,7 @@ public class WebSockets {
 	 */
 	public WebSocketClient getOrCreate(RadixNode node) {
 		final WebSocketClient newClient;
-		synchronized (lock)	 {
+		synchronized (lock)	{
 			final WebSocketClient curClient = webSockets.get(node);
 			if (curClient != null) {
 				return curClient;
