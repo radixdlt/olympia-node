@@ -13,6 +13,14 @@ public final class RadixNode {
 	private final String webSocketUrl;
 	private final String httpUrl;
 
+	public RadixNode(Request rootRequestLocation) {
+		this(
+			rootRequestLocation.url().host(),
+			rootRequestLocation.isHttps(),
+			rootRequestLocation.url().port()
+		);
+	}
+
 	public RadixNode(String location, boolean useSSL, int port) {
 		this.location = location;
 		this.useSSL = useSSL;
