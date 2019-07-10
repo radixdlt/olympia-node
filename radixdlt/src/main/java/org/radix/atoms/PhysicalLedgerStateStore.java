@@ -1,6 +1,5 @@
 package org.radix.atoms;
 
-import com.radixdlt.atoms.Atom;
 import java.util.Optional;
 import java.util.Set;
 import com.radixdlt.atoms.Particle;

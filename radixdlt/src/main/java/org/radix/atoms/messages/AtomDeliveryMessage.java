@@ -1,6 +1,6 @@
 package org.radix.atoms.messages;
 
-import com.radixdlt.atoms.Atom;
+import org.radix.atoms.Atom;
 import org.radix.network.messaging.Message;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;

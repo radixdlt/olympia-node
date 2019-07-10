@@ -14,7 +14,7 @@ import org.junit.BeforeClass;
 import org.radix.GenerateUniverses;
 import org.radix.Radix;
 
-import com.radixdlt.atoms.Atom;
+import org.radix.atoms.Atom;
 import com.radixdlt.common.EUID;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.crypto.CryptoException;

@@ -2,7 +2,7 @@ package com.radixdlt.atommodel.tokens;
 
 import org.junit.Test;
 import com.radixdlt.atomos.RadixAddress;
-import com.radixdlt.atoms.Atom;
+import org.radix.atoms.Atom;
 import com.radixdlt.constraintmachine.AtomMetadata;
 import com.radixdlt.constraintmachine.AtomMetadataFromAtom;
 import com.radixdlt.atomos.RRI;

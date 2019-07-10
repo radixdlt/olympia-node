@@ -4,7 +4,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import com.radixdlt.atoms.Atom;
+import org.radix.atoms.Atom;
 import org.radix.atoms.particles.conflict.ParticleConflict;
 
 public class ConflictConcurrentEvent extends ConflictEvent

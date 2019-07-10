@@ -3,7 +3,6 @@ package org.radix.atoms;
 import org.radix.exceptions.ValidationException;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.atoms.Atom;
 import com.radixdlt.common.EUID;
 
 import java.util.List;

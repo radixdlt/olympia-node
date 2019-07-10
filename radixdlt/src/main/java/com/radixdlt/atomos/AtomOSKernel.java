@@ -1,6 +1,6 @@
 package com.radixdlt.atomos;
 
-import com.radixdlt.atoms.Atom;
+import org.radix.atoms.Atom;
 import com.radixdlt.constraintmachine.CMAtom;
 import com.radixdlt.universe.Universe;
 

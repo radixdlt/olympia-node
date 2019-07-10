@@ -3,6 +3,7 @@ package com.radixdlt.atoms;
 import com.google.common.base.Suppliers;
 import java.util.Objects;
 import java.util.function.Supplier;
+import org.radix.atoms.Atom;
 
 /**
  * A pointer into an atom

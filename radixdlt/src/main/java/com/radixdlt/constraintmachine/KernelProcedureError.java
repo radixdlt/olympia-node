@@ -1,7 +1,7 @@
 package com.radixdlt.constraintmachine;
 
 import java.util.Objects;
-import com.radixdlt.atoms.Atom;
+import org.radix.atoms.Atom;
 
 /**
  * An error from a kernel constraint procedure

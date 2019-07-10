@@ -1,6 +1,5 @@
 package org.radix.atoms;
 
-import com.radixdlt.atoms.Atom;
 import com.radixdlt.utils.UInt384;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

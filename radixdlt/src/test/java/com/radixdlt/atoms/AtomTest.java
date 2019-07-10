@@ -1,7 +1,7 @@
 package com.radixdlt.atoms;
 
 import org.junit.Test;
-import com.radixdlt.common.EUID;
+import org.radix.atoms.Atom;
 
 public class AtomTest {
 	@Test

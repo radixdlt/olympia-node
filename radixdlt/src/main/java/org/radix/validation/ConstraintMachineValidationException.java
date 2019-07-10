@@ -1,7 +1,7 @@
 package org.radix.validation;
 
 import java.util.Objects;
-import com.radixdlt.atoms.Atom;
+import org.radix.atoms.Atom;
 import com.radixdlt.atoms.DataPointer;
 import org.radix.exceptions.ValidationException;
 

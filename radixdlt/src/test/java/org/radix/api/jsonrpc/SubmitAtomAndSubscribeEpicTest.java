@@ -6,7 +6,7 @@ import org.junit.Test;
 import org.mockito.InOrder;
 import org.radix.api.services.AtomsService;
 import org.radix.api.services.SingleAtomListener;
-import com.radixdlt.atoms.Atom;
+import org.radix.atoms.Atom;
 import com.radixdlt.atoms.DataPointer;
 import org.radix.validation.ConstraintMachineValidationException;
 import com.radixdlt.serialization.Serialization;

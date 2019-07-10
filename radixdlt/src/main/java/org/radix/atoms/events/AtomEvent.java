@@ -1,6 +1,6 @@
 package org.radix.atoms.events;
 
-import com.radixdlt.atoms.Atom;
+import org.radix.atoms.Atom;
 import org.radix.common.Syncronicity;
 import org.radix.events.Event;
 

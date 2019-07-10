@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import com.radixdlt.atoms.Atom;
+import org.radix.atoms.Atom;
 import com.radixdlt.atoms.IndexedSpunParticle;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.atoms.Spin;

@@ -15,7 +15,7 @@ import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.validation.ConstraintMachineValidationException;
 
-import com.radixdlt.atoms.Atom;
+import org.radix.atoms.Atom;
 import com.radixdlt.atoms.ParticleGroup;
 import com.radixdlt.atoms.SpunParticle;
 import com.radixdlt.serialization.Serialization;

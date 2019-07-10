@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.radixdlt.atoms.Atom;
+import org.radix.atoms.Atom;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.atoms.SpunParticle;
 import org.radix.collections.WireableSet;

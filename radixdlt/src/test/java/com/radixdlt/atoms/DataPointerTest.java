@@ -3,8 +3,7 @@ package com.radixdlt.atoms;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
-import com.radixdlt.atoms.Atom;
-import com.radixdlt.atoms.DataPointer;
+import org.radix.atoms.Atom;
 import org.junit.Test;
 
 public class DataPointerTest {

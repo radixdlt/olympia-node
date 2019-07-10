@@ -4,7 +4,7 @@ import com.radixdlt.serialization.Serialization;
 import java.util.Collections;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import com.radixdlt.atoms.Atom;
+import org.radix.atoms.Atom;
 import com.radixdlt.atomos.test.TestAtomOSKernel;
 import com.radixdlt.constraintmachine.CMAtom;
 import com.radixdlt.atoms.SpunParticle;

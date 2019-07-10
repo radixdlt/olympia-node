@@ -2,7 +2,7 @@ package com.radixdlt.serialization;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
-import com.radixdlt.atoms.Atom;
+import org.radix.atoms.Atom;
 import com.radixdlt.atoms.ParticleGroup;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.core.ClasspathScanningSerializationPolicy;

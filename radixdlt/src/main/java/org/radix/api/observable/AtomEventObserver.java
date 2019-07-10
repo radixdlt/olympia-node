@@ -20,7 +20,7 @@ import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.modules.Modules;
 
-import com.radixdlt.atoms.Atom;
+import org.radix.atoms.Atom;
 
 public class AtomEventObserver {
 	private static final Logger log = Logging.getLogger("api");

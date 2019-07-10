@@ -25,7 +25,7 @@ import com.google.common.collect.Maps;
 import com.google.common.primitives.Longs;
 import com.radixdlt.atommodel.message.MessageParticle;
 import com.radixdlt.atomos.RadixAddress;
-import com.radixdlt.atoms.Atom;
+import org.radix.atoms.Atom;
 import com.radixdlt.atoms.Spin;
 import com.radixdlt.constraintmachine.CMAtom;
 import com.radixdlt.crypto.ECKeyPair;

@@ -5,7 +5,7 @@ import java.util.Optional;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.atoms.Atom;
+import org.radix.atoms.Atom;
 import com.radixdlt.atoms.DataPointer;
 import com.radixdlt.atoms.IndexedSpunParticle;
 import com.radixdlt.atoms.Particle;

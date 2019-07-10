@@ -2,7 +2,7 @@ package com.radixdlt.constraintmachine;
 
 import java.util.function.Predicate;
 import com.radixdlt.atomos.RadixAddress;
-import com.radixdlt.atoms.Atom;
+import org.radix.atoms.Atom;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.atoms.ParticleGroup;
 import com.radixdlt.atoms.SpunParticle;

@@ -3,26 +3,22 @@ package com.radixdlt.atoms;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Streams;
-import com.radixdlt.serialization.Serialization;
-import com.radixdlt.serialization.SerializerConstants;
-import com.radixdlt.serialization.SerializerDummy;
-import java.util.ArrayList;
-import com.radixdlt.common.EUID;
 import com.radixdlt.common.AID;
+import com.radixdlt.common.EUID;
+import com.radixdlt.crypto.AtomAlreadySignedException;
+import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.ECSignature;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.crypto.AtomAlreadySignedException;
-import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.SerializerId2;
-import org.radix.time.TemporalProof;
-
+import com.radixdlt.serialization.Serialization;
+import com.radixdlt.serialization.SerializerConstants;
+import com.radixdlt.serialization.SerializerDummy;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -35,10 +31,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * A pre-processed atom
+ * Immutable Atom for Constraint Machine consumption (No mutable temporal proof).
  */
-@SerializerId2("radix.atom")
-public final class Atom {
+public abstract class ImmutableAtom {
 	public static final String METADATA_TIMESTAMP_KEY = "timestamp";
 	public static final String METADATA_POW_NONCE_KEY = "powNonce";
 
@@ -52,86 +47,59 @@ public final class Atom {
 	private short version = 100;
 
 	/**
-	 * The particle groups and their spin contained within this {@link Atom}.
+	 * The particle groups and their spin
 	 */
 	@JsonProperty("particleGroups")
 	@DsonOutput(Output.ALL)
-	private final List<ParticleGroup> particleGroups = new ArrayList<>();
+	protected final List<ParticleGroup> particleGroups = new ArrayList<>();
 
 	/**
 	 * Contains signers and corresponding signatures of this Atom.
 	 */
-	private final Map<EUID, ECSignature> signatures = new HashMap<>();
-
-	/**
-	 * The TemporalProof associated with this Atom. Null if not yet generated.
-	 */
-	@JsonProperty("temporalProof")
-	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
-	private TemporalProof temporalProof = null;
+	protected final Map<EUID, ECSignature> signatures = new HashMap<>();
 
 	/**
 	 * Metadata about the atom, such as which app made it
 	 */
 	@JsonProperty("metaData")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private final ImmutableMap<String, String> metaData;
+	protected final ImmutableMap<String, String> metaData;
 
 	private final Supplier<AID> cachedAID = Suppliers.memoize(this::doGetAID);
 	private final Supplier<Hash> cachedHash = Suppliers.memoize(this::doGetHash);
 
-	public Atom() {
+	protected ImmutableAtom() {
 		this.metaData = ImmutableMap.of();
 	}
 
-	public Atom(long timestamp) {
+	protected ImmutableAtom(long timestamp) {
 		this.metaData = ImmutableMap.of(METADATA_TIMESTAMP_KEY, String.valueOf(timestamp));
 	}
 
-	public Atom(long timestamp, Map<String, String> metadata) {
+	protected ImmutableAtom(long timestamp, Map<String, String> metadata) {
 		this.metaData = ImmutableMap.<String, String>builder()
 			.put(METADATA_TIMESTAMP_KEY, String.valueOf(timestamp))
 			.putAll(metadata)
 			.build();
 	}
 
-	Atom(List<ParticleGroup> particleGroups, TemporalProof temporalProof, Map<EUID, ECSignature> signatures) {
+	protected ImmutableAtom(List<ParticleGroup> particleGroups, Map<EUID, ECSignature> signatures) {
 		Objects.requireNonNull(particleGroups, "particleGroups is required");
-		Objects.requireNonNull(temporalProof, "temporalProof is required");
 		Objects.requireNonNull(signatures, "signatures is required");
 
 		this.particleGroups.addAll(particleGroups);
 		this.signatures.putAll(signatures);
-		this.temporalProof = temporalProof;
 		this.metaData = ImmutableMap.of();
 	}
 
-	Atom(List<ParticleGroup> particleGroups, TemporalProof temporalProof, Map<EUID, ECSignature> signatures, Map<String, String> metaData) {
+	protected ImmutableAtom(List<ParticleGroup> particleGroups, Map<EUID, ECSignature> signatures, Map<String, String> metaData) {
 		Objects.requireNonNull(particleGroups, "particleGroups is required");
-		Objects.requireNonNull(temporalProof, "temporalProof is required");
 		Objects.requireNonNull(signatures, "signatures is required");
 		Objects.requireNonNull(metaData, "metaData is required");
 
 		this.particleGroups.addAll(particleGroups);
 		this.signatures.putAll(signatures);
-		this.temporalProof = temporalProof;
 		this.metaData = ImmutableMap.copyOf(metaData);
-	}
-
-	/**
-	 * Get a copy of this Atom with certain metadata filtered out
-	 * @param keysToExclude The keys to exclude
-	 * @return The copied atom with the filtered metadata
-	 */
-	public Atom copyExcludingMetadata(String... keysToExclude) {
-		Objects.requireNonNull(keysToExclude, "keysToRetain is required");
-
-		ImmutableSet<String> keysToExcludeSet = ImmutableSet.copyOf(keysToExclude);
-		Map<String, String> filteredMetaData = this.metaData.entrySet().stream()
-			.filter(metaDataEntry -> !keysToExcludeSet.contains(metaDataEntry.getKey()))
-			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
-		return new Atom(this.particleGroups, this.temporalProof, this.signatures, filteredMetaData);
 	}
 
 	/**
@@ -264,23 +232,6 @@ public final class Atom {
 		}
 	}
 
-
-	// FIXME: Calling Atom.getTemporalProof() calls getHash().
-	// Unfortunately getHash() caches it's values, so all relevant (for hashing purposes)
-	// data *must* be added to the Atom before getTemporalProof() is called.
-	public final TemporalProof getTemporalProof() {
-		if (this.temporalProof == null) {
-			this.temporalProof = new TemporalProof(this.getAID());
-		}
-
-		return this.temporalProof;
-	}
-
-	public final void setTemporalProof(TemporalProof temporalProof)
-	{
-		this.temporalProof = temporalProof;
-	}
-
 	public final Set<Long> getShards() {
 		return this.particleGroups.stream()
 			.flatMap(ParticleGroup::spunParticles)
@@ -373,10 +324,10 @@ public final class Atom {
 		Objects.requireNonNull(spin);
 
 		return this.spunParticles()
-				.filter(s -> s.getSpin().equals(spin))
-				.map(SpunParticle<T>::getParticle)
-				.filter(p -> type.isAssignableFrom(p.getClass()))
-				.findFirst().orElse(null);
+			.filter(s -> s.getSpin().equals(spin))
+			.map(SpunParticle<T>::getParticle)
+			.filter(p -> type.isAssignableFrom(p.getClass()))
+			.findFirst().orElse(null);
 	}
 
 	/**
@@ -416,7 +367,7 @@ public final class Atom {
 			return true;
 		}
 
-		if (getClass().isInstance(o) && getHash().equals(((Atom) o).getHash())) {
+		if (getClass().isInstance(o) && getHash().equals(((ImmutableAtom) o).getHash())) {
 			return true;
 		}
 
@@ -434,14 +385,14 @@ public final class Atom {
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	private Map<String, ECSignature> getJsonSignatures() {
 		return this.signatures.entrySet().stream()
-				.collect(Collectors.toMap(e -> e.getKey().toString(), Map.Entry::getValue));
+			.collect(Collectors.toMap(e -> e.getKey().toString(), Map.Entry::getValue));
 	}
 
 	@JsonProperty("signatures")
 	private void setJsonSignatures(Map<String, ECSignature> sigs) {
 		if (sigs != null && !sigs.isEmpty()) {
 			this.signatures.putAll((sigs.entrySet().stream()
-					.collect(Collectors.toMap(e -> EUID.valueOf(e.getKey()), Map.Entry::getValue))));
+				.collect(Collectors.toMap(e -> EUID.valueOf(e.getKey()), Map.Entry::getValue))));
 		}
 	}
 

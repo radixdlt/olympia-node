@@ -1,6 +1,6 @@
 package org.radix.atoms.events;
 
-import com.radixdlt.atoms.Atom;
+import org.radix.atoms.Atom;
 
 public final class AtomStoreEvent extends AtomEvent
 {

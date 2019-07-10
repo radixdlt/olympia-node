@@ -2,7 +2,7 @@ package com.radixdlt.atomos;
 
 import org.junit.Test;
 
-import com.radixdlt.atoms.Atom;
+import org.radix.atoms.Atom;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.atoms.Spin;
 import com.radixdlt.constraintmachine.CMErrorCode;

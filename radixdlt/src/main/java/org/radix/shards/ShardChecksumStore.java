@@ -27,7 +27,7 @@ import org.radix.universe.system.LocalSystem;
 import org.radix.utils.SystemMetaData;
 import org.radix.utils.SystemProfiler;
 
-import com.radixdlt.atoms.Atom;
+import org.radix.atoms.Atom;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.Longs;
 import com.sleepycat.je.Cursor;

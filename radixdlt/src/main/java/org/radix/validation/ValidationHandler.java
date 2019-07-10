@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import java.util.stream.Collectors;
-import com.radixdlt.atoms.Atom;
+import org.radix.atoms.Atom;
 import org.radix.atoms.AtomDependencyNotFoundException;
 import org.radix.atoms.AtomStore;
 import com.radixdlt.atoms.DataPointer;

@@ -14,7 +14,7 @@ import org.radix.api.observable.Observable;
 import org.radix.api.observable.ObservedAtomEvents;
 import org.radix.api.services.AtomsService;
 
-import com.radixdlt.atoms.Atom;
+import org.radix.atoms.Atom;
 import com.radixdlt.serialization.Serialization;
 
 import static org.assertj.core.api.Assertions.assertThat;

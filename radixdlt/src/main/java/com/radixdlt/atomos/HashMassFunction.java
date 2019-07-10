@@ -1,7 +1,7 @@
 package com.radixdlt.atomos;
 
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
-import com.radixdlt.atoms.Atom;
+import org.radix.atoms.Atom;
 import java.util.Objects;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.UInt384;

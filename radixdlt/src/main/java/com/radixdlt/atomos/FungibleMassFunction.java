@@ -6,7 +6,7 @@ import java.util.function.Function;
 
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.tokens.Tokens;
-import com.radixdlt.atoms.Atom;
+import org.radix.atoms.Atom;
 import com.radixdlt.atoms.Spin;
 import com.radixdlt.utils.Offset;
 import com.radixdlt.universe.Universe;

@@ -3,7 +3,7 @@ package com.radixdlt.atomos;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
 import org.junit.Test;
-import com.radixdlt.atoms.Atom;
+import org.radix.atoms.Atom;
 import com.radixdlt.atomos.procedures.ParticleClassConstraintProcedure;
 import com.radixdlt.constraintmachine.AtomMetadata;
 import com.radixdlt.constraintmachine.ProcedureError;

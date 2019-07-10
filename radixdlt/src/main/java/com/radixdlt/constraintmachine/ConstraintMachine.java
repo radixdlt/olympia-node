@@ -7,7 +7,7 @@ import com.google.common.collect.Streams;
 import com.radixdlt.atomos.AtomOSKernel.AtomKernelCompute;
 import java.util.Map;
 import java.util.function.UnaryOperator;
-import com.radixdlt.atoms.Atom;
+import org.radix.atoms.Atom;
 import com.radixdlt.atoms.IndexedSpunParticle;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.store.StateStore;

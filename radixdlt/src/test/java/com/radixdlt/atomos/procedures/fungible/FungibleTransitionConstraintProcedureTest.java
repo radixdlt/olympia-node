@@ -8,7 +8,7 @@ import org.assertj.core.util.Lists;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
-import com.radixdlt.atoms.Atom;
+import org.radix.atoms.Atom;
 import com.radixdlt.atomos.FungibleComposition;
 import com.radixdlt.atomos.FungibleFormula;
 import com.radixdlt.atomos.FungibleTransition;

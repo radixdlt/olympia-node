@@ -5,7 +5,7 @@ import org.junit.BeforeClass;
 import java.util.Collections;
 import org.junit.Test;
 import org.radix.modules.Modules;
-import com.radixdlt.atoms.Atom;
+import org.radix.atoms.Atom;
 import com.radixdlt.atoms.DataPointer;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.atoms.Spin;
