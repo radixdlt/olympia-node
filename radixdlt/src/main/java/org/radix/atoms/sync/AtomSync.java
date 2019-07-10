@@ -1,6 +1,7 @@
 package org.radix.atoms.sync;
 
 import com.radixdlt.atoms.AtomStatus;
+import com.radixdlt.atoms.ImmutableAtom;
 import java.io.IOException;
 import java.net.SocketException;
 import java.net.URI;
@@ -1437,8 +1438,9 @@ public class AtomSync extends Service
 		try
 		{
 			LinkedList<AID> atomIds = new LinkedList<>();
-			for (Atom atom : Modules.get(Universe.class).getGenesis())
+			for (ImmutableAtom immutableAtom : Modules.get(Universe.class).getGenesis())
 			{
+				final Atom atom = (Atom) immutableAtom;
 				if (!Modules.get(AtomStore.class).hasAtom(atom.getAID()))
 				{
 

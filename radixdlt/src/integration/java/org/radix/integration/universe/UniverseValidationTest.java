@@ -8,6 +8,7 @@ import org.radix.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.Bytes;
+import org.radix.universe.UniverseValidator;
 
 public class UniverseValidationTest extends RadixTest {
 
@@ -15,7 +16,7 @@ public class UniverseValidationTest extends RadixTest {
     public void testLoadingUniverse() throws Exception {
         byte[] bytes = Bytes.fromBase64String(Modules.get(RuntimeProperties.class).get("universe"));
         Universe universe = Modules.get(Serialization.class).fromDson(bytes, Universe.class);
-        universe.validate();
+        UniverseValidator.validate(universe);
     }
 
     @Test(expected = UnsupportedOperationException.class)

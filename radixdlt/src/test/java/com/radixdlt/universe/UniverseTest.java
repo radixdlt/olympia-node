@@ -26,6 +26,7 @@ import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 import org.radix.modules.Modules;
 import org.radix.time.TemporalVertex;
+import org.radix.universe.UniverseValidator;
 import org.radix.validation.ValidationHandler;
 
 import static org.mockito.Mockito.mock;
@@ -75,7 +76,7 @@ public class UniverseTest {
 
         universe.sign(creator);
 
-        universe.validate();
+		UniverseValidator.validate(universe);
     }
 
     @Test
@@ -100,7 +101,7 @@ public class UniverseTest {
 		thrown.expect(IllegalStateException.class);
         thrown.expectMessage("Invalid universe signature");
 
-        universe.validate();
+		UniverseValidator.validate(universe);
     }
 
     @Test
@@ -126,7 +127,7 @@ public class UniverseTest {
         thrown.expect(IllegalStateException.class);
         thrown.expectMessage("All atoms in genesis need to have non-empty temporal proofs");
 
-        universe.validate();
+		UniverseValidator.validate(universe);
     }
 
     private Atom createGenesisAtom(int magic, long timestamp) throws CryptoException {

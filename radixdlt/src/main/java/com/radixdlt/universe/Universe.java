@@ -3,7 +3,7 @@ package com.radixdlt.universe;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
-import org.radix.atoms.Atom;
+import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.common.EUID;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.serialization.Serialization;
@@ -38,7 +38,7 @@ public class Universe {
 		private Long timestamp;
 		private Long planck;
 		private ECPublicKey creator;
-		private final ImmutableList.Builder<Atom> genesis = ImmutableList.builder();
+		private final ImmutableList.Builder<ImmutableAtom> genesis = ImmutableList.builder();
 
 		private Builder() {
 			// Nothing to do here
@@ -138,7 +138,7 @@ public class Universe {
 		 * @param genesisAtom The atom to add to the genesis atom list.
 		 * @return A reference to {@code this} to allow method chaining.
 		 */
-		public Builder addAtom(Atom genesisAtom) {
+		public Builder addAtom(ImmutableAtom genesisAtom) {
 			Objects.requireNonNull(genesisAtom);
 			this.genesis.add(genesisAtom);
 			return this;
@@ -150,7 +150,7 @@ public class Universe {
 		 * @param genesisAtoms The atoms to add to the genesis atom list.
 		 * @return A reference to {@code this} to allow method chaining.
 		 */
-		public Builder addAtoms(Iterable<Atom> genesisAtoms) {
+		public Builder addAtoms(Iterable<? extends ImmutableAtom> genesisAtoms) {
 			genesisAtoms.forEach(this::addAtom);
 			return this;
 		}
@@ -254,7 +254,7 @@ public class Universe {
 
 	@JsonProperty("genesis")
 	@DsonOutput(Output.ALL)
-	private ImmutableList<Atom> genesis;
+	private ImmutableList<ImmutableAtom> genesis;
 
 	private final Supplier<Hash> cachedHash = Suppliers.memoize(this::doGetHash);
 
@@ -297,8 +297,7 @@ public class Universe {
 	 *
 	 * @return
 	 */
-	public String getName()
-	{
+	public String getName() {
 		return name;
 	}
 
@@ -307,8 +306,7 @@ public class Universe {
 	 *
 	 * @return
 	 */
-	public String getDescription()
-	{
+	public String getDescription() {
 		return description;
 	}
 
@@ -317,8 +315,7 @@ public class Universe {
 	 *
 	 * @return
 	 */
-	public int getPort()
-	{
+	public int getPort() {
 		return port;
 	}
 
@@ -327,8 +324,7 @@ public class Universe {
 	 *
 	 * @return
 	 */
-	public long getTimestamp()
-	{
+	public long getTimestamp() {
 		return timestamp;
 	}
 
@@ -337,13 +333,11 @@ public class Universe {
 	 *
 	 * @return
 	 */
-	public long getPlanck()
-	{
+	public long getPlanck() {
 		return this.planck;
 	}
 
-	public int toPlanck(long timestamp, Offset offset)
-	{
+	public int toPlanck(long timestamp, Offset offset) {
 		int planck = computePlanck(timestamp, this.planck, offset);
 
 		if (planck < this.timestamp / this.planck)
@@ -352,8 +346,7 @@ public class Universe {
 		return planck;
 	}
 
-	public long fromPlanck(int period, Offset offset)
-	{
+	public long fromPlanck(int period, Offset offset) {
 		return (period * this.planck);
 	}
 
@@ -362,8 +355,7 @@ public class Universe {
 	 *
 	 * @return
 	 */
-	public boolean isProduction()
-	{
+	public boolean isProduction() {
 		return type.equals(UniverseType.PRODUCTION);
 	}
 
@@ -372,8 +364,7 @@ public class Universe {
 	 *
 	 * @return
 	 */
-	public boolean isTest()
-	{
+	public boolean isTest() {
 		return type.equals(UniverseType.TEST);
 	}
 
@@ -382,8 +373,7 @@ public class Universe {
 	 *
 	 * @return
 	 */
-	public boolean isDevelopment()
-	{
+	public boolean isDevelopment() {
 		return type.equals(UniverseType.DEVELOPMENT);
 	}
 
@@ -392,8 +382,7 @@ public class Universe {
 	 *
 	 * @return
 	 */
-	public List<Atom> getGenesis()
-	{
+	public List<ImmutableAtom> getGenesis() {
 		return genesis;
 	}
 
@@ -402,47 +391,24 @@ public class Universe {
 	 *
 	 * @return
 	 */
-	public ECPublicKey getCreator()
-	{
+	public ECPublicKey getCreator() {
 		return creator;
 	}
 
-	public ECSignature getSignature()
-	{
+	public ECSignature getSignature() {
 		return signature;
 	}
 
-	public void setSignature(ECSignature signature)
-	{
+	public void setSignature(ECSignature signature) {
 		this.signature = signature;
 	}
 
-	public void sign(ECKeyPair key) throws CryptoException
-	{
+	public void sign(ECKeyPair key) throws CryptoException {
 		this.signature = key.sign(getHash());
 	}
 
-	public boolean verify(ECPublicKey key)
-	{
+	public boolean verify(ECPublicKey key) {
 		return key.verify(getHash(), signature);
-	}
-
-	/**
-	 * Check whether a given universe is valid
-	 */
-	public void validate() {
-		// Check signature
-		if (!creator.verify(getHash(), signature)) {
-			throw new IllegalStateException("Invalid universe signature");
-		}
-
-		// Check if it has a temporal proof (RLAU-467)
-		boolean missingTemporalProofs = genesis.stream()
-			.anyMatch(atom -> atom.getTemporalProof().isEmpty());
-
-		if (missingTemporalProofs) {
-			throw new IllegalStateException("All atoms in genesis need to have non-empty temporal proofs");
-		}
 	}
 
 	private Hash doGetHash() {
