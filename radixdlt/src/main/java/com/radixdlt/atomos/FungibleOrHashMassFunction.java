@@ -1,6 +1,6 @@
 package com.radixdlt.atomos;
 
-import org.radix.atoms.Atom;
+import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.utils.UInt384;
 import com.radixdlt.universe.Universe;
 
@@ -13,7 +13,7 @@ public final class FungibleOrHashMassFunction {
 		this.hashMassFunction = new HashMassFunction(universe);
 	}
 
-	public UInt384 getMass(Atom atom) {
+	public UInt384 getMass(ImmutableAtom atom) {
 		UInt384 mass = fungibleMassFunction.getMass(atom);
 		return mass.isZero() ? hashMassFunction.getMass(atom) : mass;
 	}

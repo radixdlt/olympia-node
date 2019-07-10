@@ -1,25 +1,25 @@
 package com.radixdlt.constraintmachine;
 
+import com.radixdlt.atoms.ImmutableAtom;
 import java.util.Objects;
-import org.radix.atoms.Atom;
 
 /**
  * An error from a kernel constraint procedure
  */
 public final class KernelProcedureError {
-	private final Atom atom;
+	private final ImmutableAtom atom;
 	private final String errMsg;
 
-	KernelProcedureError(Atom atom, String errMsg) {
+	KernelProcedureError(ImmutableAtom atom, String errMsg) {
 		this.atom = Objects.requireNonNull(atom);
 		this.errMsg = Objects.requireNonNull(errMsg);
 	}
 
-	public static KernelProcedureError of(Atom atom, String errMsg) {
+	public static KernelProcedureError of(ImmutableAtom atom, String errMsg) {
 		return new KernelProcedureError(atom, errMsg);
 	}
 
-	public Atom getAtom() {
+	public ImmutableAtom getAtom() {
 		return atom;
 	}
 

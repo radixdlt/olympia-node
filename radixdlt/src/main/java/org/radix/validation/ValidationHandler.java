@@ -66,7 +66,7 @@ public class ValidationHandler extends Service {
 	}
 
 	public void stateCheck(CMAtom cmAtom) throws ValidationException {
-		final Atom atom = cmAtom.getAtom();
+		final Atom atom = (Atom) cmAtom.getAtom();
 		// TODO: Optimize these collectors out
 		Map<TransitionCheckResult, List<Pair<DataPointer, TransitionCheckResult>>> spinCheckResults = cmAtom.getParticles()
 			.stream()

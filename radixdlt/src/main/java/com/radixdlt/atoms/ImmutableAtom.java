@@ -102,6 +102,8 @@ public abstract class ImmutableAtom {
 		this.metaData = ImmutableMap.copyOf(metaData);
 	}
 
+	public abstract ImmutableAtom copyExcludingMetadata(String... keysToExclude);
+
 	/**
 	 * Add a particle group to this atom
 	 * @param particleGroup The particle group

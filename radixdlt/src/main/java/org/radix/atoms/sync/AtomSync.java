@@ -1651,7 +1651,7 @@ public class AtomSync extends Service
 
 	private void witnessed(CMAtom cmAtom) throws DatabaseException, ValidationException, CryptoException
 	{
-		final Atom atom = cmAtom.getAtom();
+		final Atom atom = (Atom) cmAtom.getAtom();
 		TemporalVertex existingNIDVertex = atom.getTemporalProof().getVertexByNID(LocalSystem.getInstance().getNID());
 
 		if (existingNIDVertex != null)

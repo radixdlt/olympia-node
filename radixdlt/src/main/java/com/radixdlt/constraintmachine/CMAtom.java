@@ -3,7 +3,7 @@ package com.radixdlt.constraintmachine;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import org.radix.atoms.Atom;
+import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.common.EUID;
 import java.util.Set;
@@ -12,13 +12,13 @@ import java.util.Set;
  * An atom processed by a constraint machine with write destinations
  */
 public final class CMAtom {
-	private final Atom atom;
+	private final ImmutableAtom atom;
 	private final ImmutableList<CMParticle> cmParticles;
 	private final ImmutableMap<String, Object> computed;
 	private final ImmutableSet<EUID> destinations;
 	private final ImmutableSet<Long> shards;
 
-	CMAtom(Atom atom, ImmutableList<CMParticle> cmParticles, ImmutableMap<String, Object> computed) {
+	CMAtom(ImmutableAtom atom, ImmutableList<CMParticle> cmParticles, ImmutableMap<String, Object> computed) {
 		this.atom = atom;
 		this.cmParticles = cmParticles;
 		this.computed = computed;
@@ -51,7 +51,7 @@ public final class CMAtom {
 		return shards;
 	}
 
-	public Atom getAtom() {
+	public ImmutableAtom getAtom() {
 		return atom;
 	}
 }
