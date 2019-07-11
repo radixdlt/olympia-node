@@ -2,8 +2,6 @@ package com.radixdlt.utils;
 
 import static org.junit.Assert.assertEquals;
 
-import com.radixdlt.utils.UInt256;
-import com.radixdlt.utils.UInt256s;
 import java.math.BigInteger;
 import org.junit.Test;
 

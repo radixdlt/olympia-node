@@ -1,10 +1,10 @@
 package com.radixdlt.atomos;
 
+import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.serialization.Serialization;
 import java.util.Collections;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.radix.atoms.Atom;
 import com.radixdlt.atomos.test.TestAtomOSKernel;
 import com.radixdlt.constraintmachine.CMAtom;
 import com.radixdlt.atoms.SpunParticle;
@@ -13,7 +13,6 @@ import com.radixdlt.common.EUID;
 import java.util.stream.Stream;
 import com.radixdlt.crypto.ECSignature;
 import com.radixdlt.universe.Universe;
-import org.radix.time.Time;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -30,14 +29,14 @@ public class AtomOSKernelConstraintScryptTest {
 		serialization = mock(Serialization.class);
 
 		testAtomDriver = new TestAtomOSKernel(universe);
-		AtomDriver scrypt = new AtomDriver(serialization, false, Time.MAXIMUM_DRIFT);
+		AtomDriver scrypt = new AtomDriver(serialization, false, 30);
 		scrypt.main(testAtomDriver);
 	}
 
 	@Test
 	public void when_validating_atom_with_size_below_limit__result_has_no_error() throws Exception {
 		when(serialization.toDson(any(), any())).thenReturn(new byte[AtomDriver.MAX_ATOM_SIZE]);
-		Atom atom = mock(Atom.class);
+		ImmutableAtom atom = mock(ImmutableAtom.class);
 		CMAtom cmAtom = mock(CMAtom.class);
 		when(cmAtom.getAtom()).thenReturn(atom);
 
@@ -48,7 +47,7 @@ public class AtomOSKernelConstraintScryptTest {
 	@Test
 	public void when_validating_atom_with_size_above_limit__result_has_error() throws Exception {
 		when(serialization.toDson(any(), any())).thenReturn(new byte[AtomDriver.MAX_ATOM_SIZE + 1]);
-		Atom atom = mock(Atom.class);
+		ImmutableAtom atom = mock(ImmutableAtom.class);
 		CMAtom cmAtom = mock(CMAtom.class);
 		when(cmAtom.getAtom()).thenReturn(atom);
 
@@ -59,7 +58,7 @@ public class AtomOSKernelConstraintScryptTest {
 	@Test
 	public void when_validating_atom_with_particles__result_has_no_error() throws Exception {
 		when(serialization.toDson(any(), any())).thenReturn(new byte[1]);
-		Atom atom = mock(Atom.class);
+		ImmutableAtom atom = mock(ImmutableAtom.class);
 		when(atom.spunParticles()).thenReturn(Stream.of(mock(SpunParticle.class)));
 		CMAtom cmAtom = mock(CMAtom.class);
 		when(cmAtom.getAtom()).thenReturn(atom);
@@ -72,7 +71,7 @@ public class AtomOSKernelConstraintScryptTest {
 	public void when_validating_atom_without_particles__result_has_error() throws Exception {
 		when(serialization.toDson(any(), any())).thenReturn(new byte[1]);
 
-		Atom atom = mock(Atom.class);
+		ImmutableAtom atom = mock(ImmutableAtom.class);
 		when(atom.spunParticles()).thenReturn(Stream.of());
 		CMAtom cmAtom = mock(CMAtom.class);
 		when(cmAtom.getAtom()).thenReturn(atom);
@@ -85,7 +84,7 @@ public class AtomOSKernelConstraintScryptTest {
 	public void when_validating_atom_with_signatures__result_has_no_error() throws Exception {
 		when(serialization.toDson(any(), any())).thenReturn(new byte[1]);
 
-		Atom atom = mock(Atom.class);
+		ImmutableAtom atom = mock(ImmutableAtom.class);
 		when(atom.getSignatures()).thenReturn(Collections.singletonMap(mock(EUID.class), mock(ECSignature.class)));
 		CMAtom cmAtom = mock(CMAtom.class);
 		when(cmAtom.getAtom()).thenReturn(atom);
@@ -98,7 +97,7 @@ public class AtomOSKernelConstraintScryptTest {
 	public void when_validating_atom_without_signatures__result_as_error() throws Exception {
 		when(serialization.toDson(any(), any())).thenReturn(new byte[1]);
 
-		Atom atom = mock(Atom.class);
+		ImmutableAtom atom = mock(ImmutableAtom.class);
 		when(atom.getSignatures()).thenReturn(Collections.emptyMap());
 		CMAtom cmAtom = mock(CMAtom.class);
 		when(cmAtom.getAtom()).thenReturn(atom);
@@ -111,7 +110,7 @@ public class AtomOSKernelConstraintScryptTest {
 	public void when_validating_atom_without_fee__result_has_error() throws Exception {
 		when(serialization.toDson(any(), any())).thenReturn(new byte[1]);
 
-		Atom atom = mock(Atom.class);
+		ImmutableAtom atom = mock(ImmutableAtom.class);
 		CMAtom cmAtom = mock(CMAtom.class);
 		when(cmAtom.getAtom()).thenReturn(atom);
 
@@ -123,7 +122,7 @@ public class AtomOSKernelConstraintScryptTest {
 	public void when_validating_atom_without_timestamp__result_has_error() throws Exception {
 		when(serialization.toDson(any(), any())).thenReturn(new byte[1]);
 
-		Atom atom = mock(Atom.class);
+		ImmutableAtom atom = mock(ImmutableAtom.class);
 		when(atom.getMetaData()).thenReturn(Collections.emptyMap());
 		CMAtom cmAtom = mock(CMAtom.class);
 		when(cmAtom.getAtom()).thenReturn(atom);
@@ -136,8 +135,8 @@ public class AtomOSKernelConstraintScryptTest {
 	public void when_validating_atom_with_bad_timestamp__result_has_error() throws Exception {
 		when(serialization.toDson(any(), any())).thenReturn(new byte[1]);
 
-		Atom atom = mock(Atom.class);
-		when(atom.getMetaData()).thenReturn(Collections.singletonMap(Atom.METADATA_TIMESTAMP_KEY, "badinput"));
+		ImmutableAtom atom = mock(ImmutableAtom.class);
+		when(atom.getMetaData()).thenReturn(Collections.singletonMap(ImmutableAtom.METADATA_TIMESTAMP_KEY, "badinput"));
 		CMAtom cmAtom = mock(CMAtom.class);
 		when(cmAtom.getAtom()).thenReturn(atom);
 
@@ -149,8 +148,8 @@ public class AtomOSKernelConstraintScryptTest {
 	public void when_validating_atom_with_timestamp_after_current__result_has_error() throws Exception {
 		when(serialization.toDson(any(), any())).thenReturn(new byte[1]);
 
-		Atom atom = mock(Atom.class);
-		when(atom.getMetaData()).thenReturn(Collections.singletonMap(Atom.METADATA_TIMESTAMP_KEY, "1000000"));
+		ImmutableAtom atom = mock(ImmutableAtom.class);
+		when(atom.getMetaData()).thenReturn(Collections.singletonMap(ImmutableAtom.METADATA_TIMESTAMP_KEY, "1000000"));
 		CMAtom cmAtom = mock(CMAtom.class);
 		when(cmAtom.getAtom()).thenReturn(atom);
 
@@ -163,8 +162,8 @@ public class AtomOSKernelConstraintScryptTest {
 	public void when_validating_atom_with_timestamp_before_creation__result_has_error() throws Exception {
 		when(serialization.toDson(any(), any())).thenReturn(new byte[1]);
 
-		Atom atom = mock(Atom.class);
-		when(atom.getMetaData()).thenReturn(Collections.singletonMap(Atom.METADATA_TIMESTAMP_KEY, "10"));
+		ImmutableAtom atom = mock(ImmutableAtom.class);
+		when(atom.getMetaData()).thenReturn(Collections.singletonMap(ImmutableAtom.METADATA_TIMESTAMP_KEY, "10"));
 		CMAtom cmAtom = mock(CMAtom.class);
 		when(cmAtom.getAtom()).thenReturn(atom);
 
@@ -181,8 +180,8 @@ public class AtomOSKernelConstraintScryptTest {
 	public void when_validating_atom_with_valid_timestamp__result_has_no_error() throws Exception {
 		when(serialization.toDson(any(), any())).thenReturn(new byte[1]);
 
-		Atom atom = mock(Atom.class);
-		when(atom.getMetaData()).thenReturn(Collections.singletonMap(Atom.METADATA_TIMESTAMP_KEY, "10"));
+		ImmutableAtom atom = mock(ImmutableAtom.class);
+		when(atom.getMetaData()).thenReturn(Collections.singletonMap(ImmutableAtom.METADATA_TIMESTAMP_KEY, "10"));
 		CMAtom cmAtom = mock(CMAtom.class);
 		when(cmAtom.getAtom()).thenReturn(atom);
 

@@ -7,7 +7,7 @@ import java.util.Random;
 import com.radixdlt.common.AID;
 import org.junit.Assert;
 import org.junit.Test;
-import com.radixdlt.serialization.RadixTest;
+import org.radix.serialization.RadixTest;
 
 public class CommitmentsTest extends RadixTest
 {

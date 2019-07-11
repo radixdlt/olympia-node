@@ -1,20 +1,17 @@
 package com.radixdlt.constraintmachine;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import com.radixdlt.atoms.ImmutableAtom;
+import com.radixdlt.atoms.IndexedSpunParticle;
+import com.radixdlt.atoms.SpunParticle;
 import java.util.Collections;
+import java.util.stream.Stream;
 import org.junit.Test;
-import org.radix.modules.Modules;
-import org.radix.atoms.Atom;
 import com.radixdlt.atoms.DataPointer;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.atoms.Spin;
 import com.radixdlt.store.StateStores;
 import com.radixdlt.common.EUID;
-import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.serialization.core.ClasspathScanningSerializationPolicy;
-import com.radixdlt.serialization.core.ClasspathScanningSerializerIds;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -37,8 +34,11 @@ public class ConstraintMachineTest {
 
 		IndexedParticle p = mock(IndexedParticle.class);
 		when(p.getDestinations()).thenReturn(Collections.singleton(EUID.ONE));
-		Atom atom = new Atom();
-		atom.addParticleGroupWith(p, Spin.UP);
+
+		ImmutableAtom atom = mock(ImmutableAtom.class);
+		when(atom.indexedSpunParticles()).thenReturn(Stream.of(
+			new IndexedSpunParticle(SpunParticle.up(p), DataPointer.ofParticle(0, 0))
+		));
 
 		assertThat(machine.validate(atom, true).getErrors())
 			.contains(new CMError(DataPointer.ofParticle(0, 0), CMErrorCode.INTERNAL_SPIN_CONFLICT));
@@ -54,22 +54,14 @@ public class ConstraintMachineTest {
 		IndexedParticle p = mock(IndexedParticle.class);
 		when(p.getDestinations()).thenReturn(Collections.singleton(EUID.ONE));
 
-		Atom atom = new Atom();
-		atom.addParticleGroupWith(p, Spin.UP);
+		ImmutableAtom atom = mock(ImmutableAtom.class);
+		when(atom.indexedSpunParticles()).thenReturn(Stream.of(
+			new IndexedSpunParticle(SpunParticle.up(p), DataPointer.ofParticle(0, 0))
+		));
+
 		org.assertj.core.api.AssertionsForClassTypes.assertThat(
 			machine.validate(atom, false).onSuccessElseThrow(e -> new IllegalStateException(e.toString()))
 			.getComputedOrError("test", String.class))
 			.isEqualTo("hello");
-	}
-
-	@BeforeClass
-	public static void setupSerializer() {
-		Serialization s = Serialization.getDefault();
-		Modules.put(Serialization.class, s);
-	}
-
-	@AfterClass
-	public static void cleanup() {
-		Modules.remove(Serialization.class);
 	}
 }

@@ -1,11 +1,13 @@
 package com.radixdlt.constraintmachine;
 
+import com.radixdlt.atoms.ImmutableAtom;
+import com.radixdlt.atoms.IndexedParticleGroup;
 import java.util.Optional;
 
+import java.util.stream.Stream;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
-import org.radix.atoms.Atom;
 import com.radixdlt.atoms.DataPointer;
 import com.radixdlt.atoms.IndexedSpunParticle;
 import com.radixdlt.atoms.Particle;
@@ -137,17 +139,21 @@ public class ConstraintMachineUtilsTest {
 
 	@Test
 	public void when_checking_an_empty_particle_group__error_is_returned() {
-		Atom atom = new Atom();
-		atom.addParticleGroup(ParticleGroup.of());
+		ImmutableAtom atom = mock(ImmutableAtom.class);
+		when(atom.indexedParticleGroups()).thenReturn(Stream.of(
+			new IndexedParticleGroup(ParticleGroup.of(), 0)
+		));
 		assertThat(ConstraintMachineUtils.checkParticleGroupsNotEmpty(atom))
 			.containsExactly(new CMError(DataPointer.ofParticleGroup(0), CMErrorCode.EMPTY_PARTICLE_GROUP));
 	}
 
 	@Test
 	public void when_checking_two_empty_particle_groups__two_errors_are_returned() {
-		Atom atom = new Atom();
-		atom.addParticleGroup(ParticleGroup.of());
-		atom.addParticleGroup(ParticleGroup.of());
+		ImmutableAtom atom = mock(ImmutableAtom.class);
+		when(atom.indexedParticleGroups()).thenReturn(Stream.of(
+			new IndexedParticleGroup(ParticleGroup.of(), 0),
+			new IndexedParticleGroup(ParticleGroup.of(), 1)
+		));
 		assertThat(ConstraintMachineUtils.checkParticleGroupsNotEmpty(atom))
 			.containsExactly(
 				new CMError(DataPointer.ofParticleGroup(0), CMErrorCode.EMPTY_PARTICLE_GROUP),
@@ -157,14 +163,15 @@ public class ConstraintMachineUtilsTest {
 
 	@Test
 	public void when_checking_two_duplicate_particles__two_errors_are_returned() {
-		Atom atom = new Atom();
+		ImmutableAtom atom = mock(ImmutableAtom.class);
 		Particle particle = mock(Particle.class);
-		atom.addParticleGroup(
-			ParticleGroup.of(
+		when(atom.indexedParticleGroups()).thenReturn(Stream.of(
+			new IndexedParticleGroup(ParticleGroup.of(
 				SpunParticle.up(particle),
 				SpunParticle.down(particle)
-			)
-		);
+			), 0)
+		));
+
 		assertThat(ConstraintMachineUtils.checkParticleTransitionsUniqueInGroup(atom))
 			.containsExactly(new CMError(DataPointer.ofParticleGroup(0), CMErrorCode.DUPLICATE_PARTICLES_IN_GROUP));
 	}

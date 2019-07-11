@@ -1,6 +1,5 @@
 package com.radixdlt.common;
 
-import com.radixdlt.common.EUID;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;

@@ -8,17 +8,11 @@ import static org.mockito.Mockito.when;
 import com.radixdlt.common.EUID;
 import java.util.stream.Stream;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Test;
-import org.radix.modules.Modules;
 
 import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.constraintmachine.ProcedureError;
-import com.radixdlt.serialization.Serialization;
-import com.radixdlt.serialization.core.ClasspathScanningSerializationPolicy;
-import com.radixdlt.serialization.core.ClasspathScanningSerializerIds;
 import com.radixdlt.constraintmachine.AtomMetadata;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.atoms.ParticleGroup;
@@ -113,16 +107,5 @@ public class RRIConstraintProcedureTest {
 		);
 
 		assertThat(issues).anyMatch(i -> i.getErrMsg().contains("created"));
-	}
-
-	@BeforeClass
-	public static void setupSerializer() {
-		Serialization s = Serialization.getDefault();
-		Modules.put(Serialization.class, s);
-	}
-
-	@AfterClass
-	public static void cleanup() {
-		Modules.remove(Serialization.class);
 	}
 }
