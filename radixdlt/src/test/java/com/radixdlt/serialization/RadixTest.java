@@ -70,7 +70,7 @@ public abstract class RadixTest
 		when(systemMetaData.getUID()).thenReturn(new EUID(2));
 
 		final NtpService ntpService = mock(NtpService.class);
-		Serialization serialization = Serialization.create(ClasspathScanningSerializerIds.create(), ClasspathScanningSerializationPolicy.create());
+		Serialization serialization = Serialization.getDefault();
 
 		final LocalSystem localSystem = mock(LocalSystem.class);
 		when(localSystem.getShards()).thenReturn(new ShardSpace(10000, 20000));

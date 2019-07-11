@@ -1,5 +1,7 @@
 package com.radixdlt.serialization;
 
+import com.radixdlt.serialization.core.ClasspathScanningSerializationPolicy;
+import com.radixdlt.serialization.core.ClasspathScanningSerializerIds;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.EnumSet;
@@ -28,6 +30,12 @@ import static com.radixdlt.serialization.mapper.DsonFieldFilter.filterProviderFo
  * Serialization class that handles conversion to/from DSON and JSON.
  */
 public class Serialization {
+	private static final Serialization defaultInstance = Serialization.create(ClasspathScanningSerializerIds.create(),
+		ClasspathScanningSerializationPolicy.create());
+
+	public static Serialization getDefault() {
+		return defaultInstance;
+	}
 
 	/**
 	 * Create a new instance of {@link Serialization} with the specified IDs and policy.

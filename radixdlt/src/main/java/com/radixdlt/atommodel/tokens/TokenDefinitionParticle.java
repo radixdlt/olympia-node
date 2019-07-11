@@ -38,11 +38,6 @@ public final class TokenDefinitionParticle extends Particle {
 		BURN
 	}
 
-	@Override
-	public short VERSION() {
-		return 100;
-	}
-
 	@JsonProperty("address")
 	@DsonOutput(Output.ALL)
 	private RadixAddress address;

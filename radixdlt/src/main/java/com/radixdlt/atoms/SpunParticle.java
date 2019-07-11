@@ -23,15 +23,14 @@ public final class SpunParticle<T extends Particle> {
 
 	private Spin spin;
 
-	@JsonProperty("version")
-	@DsonOutput(Output.ALL)
-	private short version = 100;
-
 	// Placeholder for the serializer ID
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(Output.ALL)
 	private SerializerDummy serializer = SerializerDummy.DUMMY;
 
+	@JsonProperty("version")
+	@DsonOutput(Output.ALL)
+	private short version = 100;
 
 	private SpunParticle() {
 		this.particle = null;

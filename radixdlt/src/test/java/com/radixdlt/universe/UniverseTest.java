@@ -41,8 +41,7 @@ public class UniverseTest {
 	@Before
 	public void setUp() {
 		mockStatic(Modules.class);
-		when(Modules.get(Serialization.class)).thenReturn(
-			Serialization.create(ClasspathScanningSerializerIds.create(), ClasspathScanningSerializationPolicy.create()));
+		when(Modules.get(Serialization.class)).thenReturn(Serialization.getDefault());
 
 		// Atom.getAID currently has an unfortunate dependency on the Constraint machine
 		// This will be revisited and cleaned up at a later point but would be too much effort for this change

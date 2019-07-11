@@ -33,7 +33,7 @@ public class TokenDefinitionSchemaTest {
 
 	@BeforeClass
 	public static void setupSerializer() {
-		serialization = Serialization.create(ClasspathScanningSerializerIds.create(), ClasspathScanningSerializationPolicy.create());
+		serialization = Serialization.getDefault();
 		Modules.replace(Serialization.class, serialization);
 	}
 

@@ -310,7 +310,7 @@ public class AtomsService {
 			}
 		} else {
 			JSONArray array = new JSONArray();
-			for (BasicContainer container : request.getDelivered()) {
+			for (Atom container : request.getDelivered()) {
 				array.put(Modules.get(Serialization.class).toJsonObject(container, Output.API));
 			}
 			result.put("data", array);

@@ -23,7 +23,7 @@
     "aid": { "$ref": "#/definitions/aid" },
     "temporalProof": { "$ref": "#/definitions/temporalProof" }
   },
-  "required": [ "particleGroups", "serializer", "version" ],
+  "required": [ "particleGroups", "serializer" ],
   "definitions": {
     "string": {
       "type": "string",
@@ -185,7 +185,7 @@
         }
       },
       "additionalProperties": false,
-      "required": [ "rri", "version", "nonce", "version" ],
+      "required": [ "rri", "nonce" ],
       "description": "A particle which represents an RRI."
     },
     "tokenDefinitionParticle": {
@@ -203,6 +203,9 @@
           "type": "string",
           "enum": [ "radix.particles.token_definition" ]
         },
+        "version": {
+          "type": "number"
+        },
         "permissions": {
           "type": "object",
           "properties": {
@@ -214,18 +217,11 @@
         },
         "description": { "$ref": "#/definitions/string" },
         "granularity": { "$ref": "#/definitions/u20" },
-        "version": {
-          "type": "number"
-        },
         "iconUrl": {
-
-        },
-        "scrypto": {
-          "type": "object"
         }
       },
       "additionalProperties": false,
-      "required": [ "serializer", "version", "name", "description", "permissions" ],
+      "required": [ "serializer", "name", "description", "permissions" ],
       "description": "A particle which represents a token class state."
     },
     "messageParticle": {
@@ -262,6 +258,9 @@
           "type": "string",
           "enum": [ "radix.particles.unallocated_tokens" ]
         },
+        "version": {
+          "type": "number"
+        },
         "tokenDefinitionReference": {
           "$ref": "#/definitions/radixResourceIdentifier"
         },
@@ -276,13 +275,10 @@
           },
           "required": [ "burn", "mint" ],
           "additionalProperties": false
-        },
-        "version": {
-          "type": "number"
         }
       },
       "additionalProperties": false,
-      "required": [ "version", "serializer", "amount", "nonce", "tokenDefinitionReference" ],
+      "required": [ "serializer", "amount", "nonce", "tokenDefinitionReference" ],
       "description": "A particle which represents an unallocated amount of tokens."
     },
     "transferrableTokensParticle": {
@@ -296,6 +292,9 @@
         "serializer": {
           "type": "string",
           "enum": [ "radix.particles.transferrable_tokens" ]
+        },
+        "version": {
+          "type": "number"
         },
         "address": {
           "$ref": "#/definitions/address"
@@ -315,13 +314,10 @@
         "granularity": { "$ref": "#/definitions/u20" },
         "nonce": { "type": "number" },
         "planck": { "type": "number" },
-        "amount": { "$ref": "#/definitions/u20" },
-        "version": {
-          "type": "number"
-        }
+        "amount": { "$ref": "#/definitions/u20" }
       },
       "additionalProperties": false,
-      "required": [ "version", "serializer", "amount", "nonce", "planck", "tokenDefinitionReference" ],
+      "required": [ "serializer", "amount", "nonce", "planck", "tokenDefinitionReference" ],
       "description": "A particle which represents an amount of a token owned by an account."
     },
     "uniqueParticle": {

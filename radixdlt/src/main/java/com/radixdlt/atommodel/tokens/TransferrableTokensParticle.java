@@ -21,11 +21,6 @@ import java.util.Objects;
  */
 @SerializerId2("radix.particles.transferrable_tokens")
 public final class TransferrableTokensParticle extends Particle {
-	@Override
-	public short VERSION() {
-		return 100;
-	}
-
 	@JsonProperty("address")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private RadixAddress address;

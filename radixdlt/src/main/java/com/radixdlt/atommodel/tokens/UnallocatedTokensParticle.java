@@ -21,11 +21,6 @@ import com.radixdlt.utils.UInt256;
  */
 @SerializerId2("radix.particles.unallocated_tokens")
 public class UnallocatedTokensParticle extends Particle {
-	@Override
-	public short VERSION() {
-		return 100;
-	}
-
 	@JsonProperty("tokenDefinitionReference")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private RRI tokenDefinitionReference;

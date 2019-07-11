@@ -6,6 +6,9 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Streams;
+import com.radixdlt.serialization.Serialization;
+import com.radixdlt.serialization.SerializerConstants;
+import com.radixdlt.serialization.SerializerDummy;
 import java.util.ArrayList;
 import com.radixdlt.common.EUID;
 import com.radixdlt.common.AID;
@@ -18,7 +21,6 @@ import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
-import org.radix.containers.BasicContainer;
 import org.radix.time.TemporalProof;
 
 import java.util.Collection;
@@ -27,7 +29,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -37,14 +38,18 @@ import java.util.stream.Stream;
  * A pre-processed atom
  */
 @SerializerId2("radix.atom")
-public final class Atom extends BasicContainer {
+public final class Atom {
 	public static final String METADATA_TIMESTAMP_KEY = "timestamp";
 	public static final String METADATA_POW_NONCE_KEY = "powNonce";
 
-	@Override
-	public short VERSION() {
-		return 100;
-	}
+	// Placeholder for the serializer ID
+	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
+	@DsonOutput(Output.ALL)
+	private SerializerDummy serializer = SerializerDummy.DUMMY;
+
+	@JsonProperty("version")
+	@DsonOutput(Output.ALL)
+	private short version = 100;
 
 	/**
 	 * The particle groups and their spin contained within this {@link Atom}.
@@ -73,6 +78,7 @@ public final class Atom extends BasicContainer {
 	private final ImmutableMap<String, String> metaData;
 
 	private final Supplier<AID> cachedAID = Suppliers.memoize(this::doGetAID);
+	private final Supplier<Hash> cachedHash = Suppliers.memoize(this::doGetHash);
 
 	public Atom() {
 		this.metaData = ImmutableMap.of();
@@ -354,17 +360,6 @@ public final class Atom extends BasicContainer {
 			.map(p -> (SpunParticle<T>) p);
 	}
 
-	public final Optional<Particle> getParticle(EUID hid, Spin spin) {
-		Objects.requireNonNull(hid);
-		Objects.requireNonNull(spin);
-
-		return this.spunParticles()
-			.filter(s -> s.getSpin().equals(spin))
-			.map(SpunParticle<Particle>::getParticle)
-			.filter(p -> p.getHID().equals(hid))
-			.findFirst();
-	}
-
 	/**
 	 * Returns the first particle found which is assign compatible to the class specified by the type argument.
 	 * Returns null if not found
@@ -392,27 +387,45 @@ public final class Atom extends BasicContainer {
 		return this.metaData;
 	}
 
+	private Hash doGetHash() {
+		try {
+			return new Hash(Hash.hash256(Serialization.getDefault().toDson(this, Output.HASH)));
+		} catch (Exception e) {
+			throw new RuntimeException("Error generating hash: " + e, e);
+		}
+	}
+
+	public Hash getHash() {
+		return cachedHash.get();
+	}
+
+	@JsonProperty("hid")
+	@DsonOutput(Output.API)
+	public final EUID getHID() {
+		return getHash().getID();
+	}
+
+
 	@Override
-	public int compareTo(Object object) {
-		if (object instanceof Atom) {
-			Atom other = (Atom) object;
-
-			if (!this.hasTimestamp()) {
-				return -1;
-			}
-
-			if (!other.hasTimestamp()) {
-				return 1;
-			}
-
-			if (this.getTimestamp() < other.getTimestamp()) {
-				return -1;
-			} else if (this.getTimestamp() > other.getTimestamp()) {
-				return 1;
-			}
+	public boolean equals(Object o) {
+		if (o == null) {
+			return false;
 		}
 
-		return super.compareTo(object);
+		if (o == this) {
+			return true;
+		}
+
+		if (getClass().isInstance(o) && getHash().equals(((Atom) o).getHash())) {
+			return true;
+		}
+
+		return false;
+	}
+
+	@Override
+	public int hashCode() {
+		return getHash().hashCode();
 	}
 
 	// Property Signatures: 1 getter, 1 setter

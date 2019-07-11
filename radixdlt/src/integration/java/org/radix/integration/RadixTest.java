@@ -65,7 +65,7 @@ public class RadixTest
 
 		Security.addProvider(new BouncyCastleProvider());
 
-		Serialization serialization = Serialization.create(ClasspathScanningSerializerIds.create(), ClasspathScanningSerializationPolicy.create());
+		Serialization serialization = Serialization.getDefault();
 
 		Modules.put(SecureRandom.class, new SecureRandom());
 

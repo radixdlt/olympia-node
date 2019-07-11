@@ -1,10 +1,15 @@
 package com.radixdlt.universe;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.atoms.Atom;
+import com.radixdlt.common.EUID;
+import com.radixdlt.crypto.Hash;
+import com.radixdlt.serialization.Serialization;
+import com.radixdlt.serialization.SerializerConstants;
+import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.utils.Offset;
-import org.radix.containers.BasicContainer;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.ECSignature;
@@ -17,10 +22,10 @@ import com.radixdlt.utils.Bytes;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 @SerializerId2("radix.universe")
-public class Universe extends BasicContainer
-{
+public class Universe {
 
 	/**
 	 * Universe builder.
@@ -208,8 +213,15 @@ public class Universe extends BasicContainer
 		return (int) (timestamp / planck) + offset.getOffset();
 	}
 
-	@Override
-	public short VERSION() { return 100; }
+
+	// Placeholder for the serializer ID
+	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
+	@DsonOutput(Output.ALL)
+	private SerializerDummy serializer = SerializerDummy.DUMMY;
+
+	@JsonProperty("version")
+	@DsonOutput(Output.ALL)
+	private short version = 100;
 
 	public enum UniverseType
 	{
@@ -243,6 +255,8 @@ public class Universe extends BasicContainer
 	@JsonProperty("genesis")
 	@DsonOutput(Output.ALL)
 	private ImmutableList<Atom> genesis;
+
+	private final Supplier<Hash> cachedHash = Suppliers.memoize(this::doGetHash);
 
 	private ECPublicKey creator;
 
@@ -431,6 +445,23 @@ public class Universe extends BasicContainer
 		}
 	}
 
+	private Hash doGetHash() {
+		try {
+			return new Hash(Hash.hash256(Serialization.getDefault().toDson(this, Output.HASH)));
+		} catch (Exception e) {
+			throw new RuntimeException("Error generating hash: " + e, e);
+		}
+	}
+
+	public Hash getHash() {
+		return cachedHash.get();
+	}
+
+	@JsonProperty("hid")
+	@DsonOutput(Output.API)
+	public final EUID getHID() {
+		return getHash().getID();
+	}
 
 	// Type - 1 getter, 1 setter
 	// Better option would be to output string enum value (as with other enums), rather than ordinal

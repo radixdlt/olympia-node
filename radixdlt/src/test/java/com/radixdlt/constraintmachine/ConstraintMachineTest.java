@@ -64,7 +64,7 @@ public class ConstraintMachineTest {
 
 	@BeforeClass
 	public static void setupSerializer() {
-		Serialization s = Serialization.create(ClasspathScanningSerializerIds.create(), ClasspathScanningSerializationPolicy.create());
+		Serialization s = Serialization.getDefault();
 		Modules.put(Serialization.class, s);
 	}
 

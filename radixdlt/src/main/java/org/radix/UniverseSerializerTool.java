@@ -36,7 +36,7 @@ public class UniverseSerializerTool
 
 		String universeFileContent = new String(Files.readAllBytes(universeFile.toPath()));
 
-		Serialization serialization = Serialization.create(ClasspathScanningSerializerIds.create(), ClasspathScanningSerializationPolicy.create());
+		Serialization serialization = Serialization.getDefault();
 		Universe universe = serialization.fromJson(universeFileContent, Universe.class);
 		String serializedUniverseBase64String = Base64.getEncoder().encodeToString(serialization.toDson(universe, Output.ALL));
 		System.out.println(serializedUniverseBase64String);

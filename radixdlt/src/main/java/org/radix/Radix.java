@@ -115,7 +115,7 @@ public class Radix extends Plugin
 	@Override
 	public void start_impl() throws ModuleException
 	{
-		Modules.put(Serialization.class, Serialization.create(ClasspathScanningSerializerIds.create(), ClasspathScanningSerializationPolicy.create()));
+		Modules.put(Serialization.class, Serialization.getDefault());
 
 		try
 		{
