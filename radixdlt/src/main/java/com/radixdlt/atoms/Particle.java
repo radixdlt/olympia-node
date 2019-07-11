@@ -28,6 +28,10 @@ public abstract class Particle {
 	@DsonOutput(Output.ALL)
 	private SerializerDummy serializer = SerializerDummy.DUMMY;
 
+	@JsonProperty("version")
+	@DsonOutput(Output.ALL)
+	private short version = 100;
+
 	private final Supplier<Hash> cachedHash = Suppliers.memoize(this::doGetHash);
 
 	public Particle() {

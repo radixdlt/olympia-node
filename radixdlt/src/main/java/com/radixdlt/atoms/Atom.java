@@ -47,6 +47,10 @@ public final class Atom {
 	@DsonOutput(Output.ALL)
 	private SerializerDummy serializer = SerializerDummy.DUMMY;
 
+	@JsonProperty("version")
+	@DsonOutput(Output.ALL)
+	private short version = 100;
+
 	/**
 	 * The particle groups and their spin contained within this {@link Atom}.
 	 */

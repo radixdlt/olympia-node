@@ -45,6 +45,9 @@ public final class ParticleGroup {
 	@DsonOutput(Output.ALL)
 	private SerializerDummy serializer = SerializerDummy.DUMMY;
 
+	@JsonProperty("version")
+	@DsonOutput(Output.ALL)
+	private short version = 100;
 
 	private ParticleGroup() {
 		this.particles = ImmutableList.of();

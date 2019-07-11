@@ -16,6 +16,9 @@
       "type": "string",
       "enum": [ "radix.atom" ]
     },
+    "version": {
+      "type": "number"
+    },
     "hid": { "$ref": "#/definitions/uid" },
     "aid": { "$ref": "#/definitions/aid" },
     "temporalProof": { "$ref": "#/definitions/temporalProof" }
@@ -176,6 +179,9 @@
         "serializer": {
           "type": "string",
           "enum": [ "radix.particles.rri" ]
+        },
+        "version": {
+          "type": "number"
         }
       },
       "additionalProperties": false,
@@ -197,6 +203,9 @@
           "type": "string",
           "enum": [ "radix.particles.token_definition" ]
         },
+        "version": {
+          "type": "number"
+        },
         "permissions": {
           "type": "object",
           "properties": {
@@ -209,10 +218,6 @@
         "description": { "$ref": "#/definitions/string" },
         "granularity": { "$ref": "#/definitions/u20" },
         "iconUrl": {
-
-        },
-        "scrypto": {
-          "type": "object"
         }
       },
       "additionalProperties": false,
@@ -253,6 +258,9 @@
           "type": "string",
           "enum": [ "radix.particles.unallocated_tokens" ]
         },
+        "version": {
+          "type": "number"
+        },
         "tokenDefinitionReference": {
           "$ref": "#/definitions/radixResourceIdentifier"
         },
@@ -284,6 +292,9 @@
         "serializer": {
           "type": "string",
           "enum": [ "radix.particles.transferrable_tokens" ]
+        },
+        "version": {
+          "type": "number"
         },
         "address": {
           "$ref": "#/definitions/address"

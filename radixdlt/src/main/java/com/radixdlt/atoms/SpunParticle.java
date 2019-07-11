@@ -28,6 +28,9 @@ public final class SpunParticle<T extends Particle> {
 	@DsonOutput(Output.ALL)
 	private SerializerDummy serializer = SerializerDummy.DUMMY;
 
+	@JsonProperty("version")
+	@DsonOutput(Output.ALL)
+	private short version = 100;
 
 	private SpunParticle() {
 		this.particle = null;
