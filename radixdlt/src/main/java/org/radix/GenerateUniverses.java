@@ -66,7 +66,7 @@ public final class GenerateUniverses
 
 	public GenerateUniverses(String[] arguments, boolean standalone) throws Exception {
 		this.standalone = standalone;
-		this.serialization = Serialization.create(ClasspathScanningSerializerIds.create(), ClasspathScanningSerializationPolicy.create());
+		this.serialization = Serialization.getDefault();
 
 		if (standalone) {
 			Security.addProvider(new BouncyCastleProvider());

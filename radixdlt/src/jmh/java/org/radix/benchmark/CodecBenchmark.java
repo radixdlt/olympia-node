@@ -50,7 +50,7 @@ public class CodecBenchmark {
 		try {
 			TestSetupUtils.installBouncyCastleProvider();
 
-			serialization = Serialization.create(ClasspathScanningSerializerIds.create(), ClasspathScanningSerializationPolicy.create());
+			serialization = Serialization.getDefault();
 
 			Modules.put(Serialization.class, serialization);
 

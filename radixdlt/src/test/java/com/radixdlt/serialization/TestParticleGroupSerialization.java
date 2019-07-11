@@ -17,7 +17,7 @@ public class TestParticleGroupSerialization {
 
 	@BeforeClass
 	public static void setupSerializer() {
-		serialization = Serialization.create(ClasspathScanningSerializerIds.create(), ClasspathScanningSerializationPolicy.create());
+		serialization = Serialization.getDefault();
 	}
 
 	@Test
