@@ -10,5 +10,41 @@ repositories {
 }
 
 dependencies {
+    compile 'org.slf4j:slf4j-api:1.7.26'
+    compile 'org.slf4j:slf4j-simple:1.7.26'
+
+    compile('org.reflections:reflections:0.9.11') {
+        exclude group: 'com.google.guava', module: 'guava'
+    }
+
+    compile 'org.bouncycastle:bcprov-jdk15on:1.52'
+    compile 'org.json:json:20180813'
+    compile 'com.fasterxml.jackson.core:jackson-core:2.9.9'
+    compile 'com.fasterxml.jackson.core:jackson-databind:2.9.9'
+    compile 'com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.9.9'
+    compile('com.fasterxml.jackson.datatype:jackson-datatype-json-org:2.9.9') {
+        // Use our JSON lib
+        exclude group: 'org.json', module: 'json'
+    }
+    compile('com.fasterxml.jackson.datatype:jackson-datatype-guava:2.9.9') {
+        // Use our Guava lib
+        exclude group: 'com.google.guava', module: 'guava'
+    }
+    compile 'com.google.guava:guava:26.0-jre'
     testCompile group: 'junit', name: 'junit', version: '4.12'
+    testCompile('org.objenesis:objenesis:2.4') { force = true } // make powermock 1.7.1 happy
+    testCompile('org.javassist:javassist:3.21.0-GA') { force = true } // make powermock 1.7.1 happy
+    testCompile 'org.powermock:powermock-module-junit4:1.7.4'
+    testCompile 'nl.jqno.equalsverifier:equalsverifier:3.1.5'
+    testCompile 'org.powermock:powermock-api-mockito2:1.7.4'
+    testCompile 'org.hamcrest:hamcrest-library:1.3'
+    testCompile 'org.assertj:assertj-core:3.11.1'
+    testCompile('com.flipkart.zjsonpatch:zjsonpatch:0.4.5') {
+        exclude group: 'com.fasterxml.jackson.core', module: 'jackson-core'
+        exclude group: 'com.fasterxml.jackson.core', module: 'jackson-databind'
+    }
+
+    // JMH
+    testCompile 'org.openjdk.jmh:jmh-core:1.21'
+    testCompile 'org.openjdk.jmh:jmh-generator-annprocess:1.21'
 }
