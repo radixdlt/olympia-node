@@ -1,10 +1,7 @@
 package org.radix.time;
 
-import java.util.HashMap;
-
 // TODO: Remove inheritance, better to have hashmap within Timestamps class
-public class Timestamps extends HashMap<String, Long>
-{
+public final class Timestamps {
 	public static final String ACTIVE = "active";
 	public static final String ATTEMPTED = "attempted";
 	public static final String BANNED = "banned";
@@ -27,13 +24,7 @@ public class Timestamps extends HashMap<String, Long>
 	public static final String UPDATED = "updated";
 
 
-	public Timestamps()
-	{
-		super(1);
-	}
-
-	public Timestamps(Timestamps other)
-	{
-		super(other);
+	private Timestamps() {
+		throw new IllegalStateException("Cannot instantiate");
 	}
 }

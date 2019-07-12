@@ -67,7 +67,6 @@ public class JacksonJsonMapper extends ObjectMapper {
 				EUID::toString
 		));
 		jsonModule.addSerializer(Hash.class, new JacksonJsonHashSerializer());
-		jsonModule.addSerializer(Timestamps.class, new JacksonTimestampsSerializer());
 		jsonModule.addSerializer(byte[].class, new JacksonJsonBytesSerializer());
 		jsonModule.addSerializer(String.class, new JacksonJsonStringSerializer());
 		jsonModule.addSerializer(SerializerDummy.class, new JacksonSerializerDummySerializer(idLookup));
@@ -103,7 +102,6 @@ public class JacksonJsonMapper extends ObjectMapper {
 			EUID::new
 		));
 		jsonModule.addDeserializer(Hash.class, new JacksonJsonHashDeserializer());
-		jsonModule.addDeserializer(Timestamps.class, new JacksonTimestampsDeserializer());
 		jsonModule.addDeserializer(byte[].class, new JacksonJsonBytesDeserializer());
 		jsonModule.addDeserializer(String.class, new JacksonJsonStringDeserializer());
 		jsonModule.addDeserializer(SerializerDummy.class, new JacksonSerializerDummyDeserializer());

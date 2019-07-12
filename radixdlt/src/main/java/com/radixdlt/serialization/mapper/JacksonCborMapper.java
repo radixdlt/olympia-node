@@ -9,7 +9,6 @@ import com.radixdlt.crypto.Hash;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerIds;
 import com.radixdlt.common.AID;
-import org.radix.time.Timestamps;
 import com.radixdlt.utils.RadixConstants;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
@@ -55,7 +54,6 @@ public class JacksonCborMapper extends ObjectMapper {
 	public static JacksonCborMapper create(SerializerIds idLookup, FilterProvider filterProvider) {
 		SimpleModule cborModule = new SimpleModule();
 
-		cborModule.addSerializer(Timestamps.class, new JacksonTimestampsSerializer());
 		cborModule.addSerializer(SerializerDummy.class, new JacksonSerializerDummySerializer(idLookup));
 		cborModule.addSerializer(EUID.class, new JacksonCborObjectBytesSerializer<>(
 			EUID.class,
@@ -98,7 +96,6 @@ public class JacksonCborMapper extends ObjectMapper {
 			AID::getBytes
 		));
 
-		cborModule.addDeserializer(Timestamps.class, new JacksonTimestampsDeserializer());
 		cborModule.addDeserializer(SerializerDummy.class, new JacksonSerializerDummyDeserializer());
 		cborModule.addDeserializer(EUID.class, new JacksonCborObjectBytesDeserializer<>(
 			EUID.class,
