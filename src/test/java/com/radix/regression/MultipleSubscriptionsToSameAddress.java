@@ -1,10 +1,10 @@
 package com.radix.regression;
 
-import com.radix.TestEnv;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
+import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import io.reactivex.observers.TestObserver;
 import java.util.concurrent.TimeUnit;
@@ -17,8 +17,8 @@ public class MultipleSubscriptionsToSameAddress {
 	public void multipleSubscriptionTest() throws Exception {
 
 		RadixIdentity identity = RadixIdentities.createNew();
-		RadixApplicationAPI api0 = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), identity);
-		RadixApplicationAPI api1 = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), identity);
+		RadixApplicationAPI api0 = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), identity);
+		RadixApplicationAPI api1 = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), identity);
 
 		api0.createToken(
 			RRI.of(api0.getAddress(), "TEST"),

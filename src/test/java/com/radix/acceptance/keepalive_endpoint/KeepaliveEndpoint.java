@@ -1,8 +1,8 @@
 package com.radix.acceptance.keepalive_endpoint;
 
-import com.radix.TestEnv;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
+import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.network.HttpClients;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient;
@@ -61,7 +61,7 @@ public class KeepaliveEndpoint {
 
 
     private void setupWebSocket() {
-        RadixApplicationAPI api = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), RadixIdentities.createNew());
+        RadixApplicationAPI api = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
         api.discoverNodes();
         RadixNode node = api.getNetworkState()
             .filter(state -> !state.getNodes().isEmpty())

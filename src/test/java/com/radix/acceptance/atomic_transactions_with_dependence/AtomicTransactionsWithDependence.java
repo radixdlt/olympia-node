@@ -2,7 +2,6 @@ package com.radix.acceptance.atomic_transactions_with_dependence;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
-import com.radix.TestEnv;
 import com.radix.acceptance.SpecificProperties;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
@@ -18,6 +17,7 @@ import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
 import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.application.translate.tokens.TransferTokensToParticleGroupsMapper;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.ParticleGroup;
@@ -69,7 +69,7 @@ public class AtomicTransactionsWithDependence {
 	@Given("^I have access to a suitable Radix network$")
 	public void i_have_access_to_a_suitable_Radix_network() {
 		this.api = RadixApplicationAPI.defaultBuilder()
-			.universe(RadixUniverse.create(TestEnv.getBootstrapConfig()))
+			.universe(RadixUniverse.create(RadixEnv.getBootstrapConfig()))
 			.identity(RadixIdentities.createNew())
 			.build();
 		this.api.discoverNodes();
@@ -88,7 +88,7 @@ public class AtomicTransactionsWithDependence {
 	private void mintAndTransferTokensWith(MintAndTransferTokensActionMapper actionMapper) {
 		RadixApplicationAPI api = new RadixApplicationAPI.RadixApplicationAPIBuilder()
 			.defaultFeeMapper()
-			.universe(RadixUniverse.create(TestEnv.getBootstrapConfig()))
+			.universe(RadixUniverse.create(RadixEnv.getBootstrapConfig()))
 			.addStatelessParticlesMapper(CreateTokenAction.class, new CreateTokenToParticleGroupsMapper())
 			.addStatefulParticlesMapper(MintAndTransferTokensAction.class, actionMapper)
 			.addStatefulParticlesMapper(TransferTokensAction.class, new TransferTokensToParticleGroupsMapper())

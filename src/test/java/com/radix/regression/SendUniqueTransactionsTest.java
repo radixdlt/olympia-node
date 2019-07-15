@@ -1,7 +1,7 @@
 package com.radix.regression;
 
-import com.radix.TestEnv;
 import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
+import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixNode;
@@ -28,7 +28,7 @@ public class SendUniqueTransactionsTest {
 	public void given_an_account_owner_which_has_performed_an_action_with_a_unique_id__when_the_client_attempts_to_use_same_id__then_client_should_be_notified_that_unique_id_is_already_used() throws Exception {
 
 		// Given account owner which has performed an action with a unique id
-		final RadixApplicationAPI api = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), RadixIdentities.createNew());
+		final RadixApplicationAPI api = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
 
 		api.discoverNodes();
 		final RadixNode originNode = api.getNetworkState()
@@ -67,7 +67,7 @@ public class SendUniqueTransactionsTest {
 	public void given_an_account_owner_which_has_not_used_a_unique_id__when_the_client_attempts_to_use_id__then_client_should_be_notified_of_success() throws Exception {
 
 		// Given account owner which has NOT performed an action with a unique id
-		RadixApplicationAPI api = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), RadixIdentities.createNew());
+		RadixApplicationAPI api = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
 		RRI unique = RRI.of(api.getAddress(), "thisisauniquestring");
 
 		// When client attempts to use id
@@ -87,8 +87,8 @@ public class SendUniqueTransactionsTest {
 	public void given_an_account_owner_which_has_not_used_a_unique_id__when_the_client_attempts_to_use_id_in_another_account__then_client_should_be_notified_of_error() throws Exception {
 
 		// Given account owner which has NOT performed an action with a unique id
-		RadixApplicationAPI api1 = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(),  RadixIdentities.createNew());
-		RadixApplicationAPI api2 = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), RadixIdentities.createNew());
+		RadixApplicationAPI api1 = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(),  RadixIdentities.createNew());
+		RadixApplicationAPI api2 = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), RadixIdentities.createNew());
 		RRI unique = RRI.of(api2.getAddress(), "thisisauniquestring");
 
 		// When client attempts to use id in ANOTHER account

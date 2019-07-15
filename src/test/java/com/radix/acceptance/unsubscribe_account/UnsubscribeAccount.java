@@ -1,8 +1,8 @@
 package com.radix.acceptance.unsubscribe_account;
 
-import com.radix.TestEnv;
 import com.radix.regression.Util;
 import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
+import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.AtomStatusEvent;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
@@ -34,7 +34,6 @@ import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
 import io.reactivex.observers.TestObserver;
-import org.radix.common.tuples.Pair;
 
 /**
  * See <a href="https://radixdlt.atlassian.net/browse/RLAU-94">RLAU-59</a>.
@@ -259,7 +258,7 @@ public class UnsubscribeAccount {
 
 	private void setupWebSocket() {
 		this.identity = RadixIdentities.createNew();
-		this.api = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), this.identity);
+		this.api = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), this.identity);
 		this.api.discoverNodes();
 		RadixNode node = this.api.getNetworkState()
 			.filter(state -> !state.getNodes().isEmpty())

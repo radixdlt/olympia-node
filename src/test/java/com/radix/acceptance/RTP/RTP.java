@@ -1,9 +1,9 @@
 package com.radix.acceptance.RTP;
 
-import com.radix.TestEnv;
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
 import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
+import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.network.HttpClients;
@@ -53,7 +53,7 @@ public class RTP {
 	@BeforeClass
 	public static void setUp() {
 		RadixIdentity identity = RadixIdentities.createNew();
-		api = RadixApplicationAPI.create(TestEnv.getBootstrapConfig(), identity);
+		api = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), identity);
 		api.discoverNodes();
 		nodes = api.getNetworkState()
 			.doOnNext(System.out::println)
