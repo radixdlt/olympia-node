@@ -2,6 +2,7 @@ package com.radixdlt.client.core.network.epics;
 
 import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixNode;
+import com.radixdlt.client.core.network.WebSockets;
 import com.radixdlt.client.core.network.actions.GetLivePeersRequestAction;
 import com.radixdlt.client.core.network.actions.GetLivePeersResultAction;
 import com.radixdlt.client.core.network.actions.GetNodeDataRequestAction;
@@ -10,7 +11,6 @@ import com.radixdlt.client.core.network.actions.GetUniverseRequestAction;
 import com.radixdlt.client.core.network.actions.GetUniverseResponseAction;
 import com.radixdlt.client.core.network.actions.JsonRpcMethodAction;
 import com.radixdlt.client.core.network.actions.JsonRpcResultAction;
-import com.radixdlt.client.core.network.epics.WebSocketsEpic.WebSockets;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient;
 import com.radixdlt.client.core.network.RadixNetworkEpic;
 import com.radixdlt.client.core.network.RadixNodeAction;

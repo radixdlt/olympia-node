@@ -16,8 +16,8 @@ import com.radixdlt.client.core.network.RadixNetworkController;
 import com.radixdlt.client.core.network.RadixNetworkController.RadixNetworkControllerBuilder;
 import com.radixdlt.client.core.network.RadixNetworkEpic;
 import com.radixdlt.client.core.network.RadixNode;
+import com.radixdlt.client.core.network.WebSockets;
 import com.radixdlt.client.core.network.epics.ConnectWebSocketEpic;
-import com.radixdlt.client.core.network.epics.DiscoverNodesEpic;
 import com.radixdlt.client.core.network.epics.FetchAtomsEpic;
 import com.radixdlt.client.core.network.epics.FindANodeEpic;
 import com.radixdlt.client.core.network.epics.RadixJsonRpcAutoCloseEpic;
@@ -29,8 +29,6 @@ import com.radixdlt.client.core.network.epics.WebSocketsEpic.WebSocketsEpicBuild
 import com.radixdlt.client.core.network.reducers.RadixNetwork;
 import com.radixdlt.client.core.network.selector.RandomSelector;
 
-import io.reactivex.Observable;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -51,18 +49,14 @@ import java.util.Set;
  * be used to cache atoms locally.
  */
 public final class RadixUniverse {
-	/**
-	 * Creates a universe with peer discovery through seed nodes
-	 *
-	 * @param seeds The seed nodes
-	 * @return the created universe
-	 */
-	public static RadixUniverse create(
-		RadixUniverseConfig config,
-		Observable<RadixNode> seeds,
-		Set<RadixNode> initialNetwork
-	) {
-		return create(config, Collections.singletonList(new DiscoverNodesEpic(seeds, config)), initialNetwork);
+
+
+	public static RadixUniverse create(BootstrapConfig bootstrapConfig) {
+		return create(
+			bootstrapConfig.getConfig(),
+			bootstrapConfig.getDiscoveryEpics(),
+			bootstrapConfig.getInitialNetwork()
+		);
 	}
 
 	/**
@@ -75,6 +69,21 @@ public final class RadixUniverse {
 		RadixUniverseConfig config,
 		List<RadixNetworkEpic> discoveryEpics,
 		Set<RadixNode> initialNetwork
+	) {
+		return create(config, discoveryEpics, initialNetwork, new WebSockets());
+	}
+
+	/**
+	 * Creates a universe with peer discovery through epics
+	 *
+	 * @param discoveryEpics epics which are responsible for peer discovery
+	 * @return the created universe
+	 */
+	public static RadixUniverse create(
+		RadixUniverseConfig config,
+		List<RadixNetworkEpic> discoveryEpics,
+		Set<RadixNode> initialNetwork,
+		WebSockets webSockets
 	) {
 		final InMemoryAtomStore inMemoryAtomStore = new InMemoryAtomStore();
 		config.getGenesis().forEach(atom ->
@@ -90,6 +99,7 @@ public final class RadixUniverse {
 			.addReducer(atomStoreReducer::reduce)
 			.addEpic(
 				new WebSocketsEpicBuilder()
+					.setWebSockets(webSockets)
 					.add(WebSocketEventsEpic::new)
 					.add(ConnectWebSocketEpic::new)
 					.add(SubmitAtomEpic::new)
@@ -106,14 +116,6 @@ public final class RadixUniverse {
 		discoveryEpics.forEach(builder::addEpic);
 
 		return new RadixUniverse(config, builder.build(), inMemoryAtomStore);
-	}
-
-	public static RadixUniverse create(BootstrapConfig bootstrapConfig) {
-		return create(
-			bootstrapConfig.getConfig(),
-			bootstrapConfig.getDiscoveryEpics(),
-			bootstrapConfig.getInitialNetwork()
-		);
 	}
 
 	/**
