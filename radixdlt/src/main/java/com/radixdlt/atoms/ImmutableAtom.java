@@ -48,6 +48,7 @@ public abstract class ImmutableAtom {
 
 	/**
 	 * The particle groups and their spin
+	 * TODO: remove protected
 	 */
 	@JsonProperty("particleGroups")
 	@DsonOutput(Output.ALL)
@@ -55,11 +56,13 @@ public abstract class ImmutableAtom {
 
 	/**
 	 * Contains signers and corresponding signatures of this Atom.
+	 * TODO: remove protected
 	 */
 	protected final Map<EUID, ECSignature> signatures = new HashMap<>();
 
 	/**
 	 * Metadata about the atom, such as which app made it
+	 * TODO: remove protected
 	 */
 	@JsonProperty("metaData")
 	@DsonOutput(DsonOutput.Output.ALL)

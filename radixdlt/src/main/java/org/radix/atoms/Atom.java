@@ -76,27 +76,4 @@ public final class Atom extends ImmutableAtom {
 
 		return new Atom(this.particleGroups, this.signatures, filteredMetaData);
 	}
-
-
-	@Override
-	public boolean equals(Object o) {
-		if (o == null) {
-			return false;
-		}
-
-		if (o == this) {
-			return true;
-		}
-
-		if (getClass().isInstance(o) && getHash().equals(((Atom) o).getHash())) {
-			return true;
-		}
-
-		return false;
-	}
-
-	@Override
-	public int hashCode() {
-		return getHash().hashCode();
-	}
 }
