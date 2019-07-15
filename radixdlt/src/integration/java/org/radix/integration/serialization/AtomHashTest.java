@@ -4,7 +4,7 @@ import com.radixdlt.universe.Universe;
 import org.junit.Test;
 import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.atomos.RRIParticle;
-import com.radixdlt.atoms.Atom;
+import org.radix.atoms.Atom;
 import com.radixdlt.atomos.RRI;
 import com.radixdlt.atoms.Spin;
 import com.radixdlt.crypto.ECKeyPair;

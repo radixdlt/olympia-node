@@ -9,7 +9,7 @@ import com.radixdlt.atommodel.tokens.TokenDefinitionParticle.TokenTransition;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.atommodel.tokens.TokenPermission;
-import com.radixdlt.atoms.Atom;
+import org.radix.atoms.Atom;
 import com.radixdlt.universe.Universe;
 import org.radix.atoms.AtomStore;
 import com.radixdlt.atomos.RRIParticle;

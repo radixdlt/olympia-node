@@ -3,8 +3,6 @@ package com.radixdlt.atoms;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
-import com.radixdlt.atoms.Atom;
-import com.radixdlt.atoms.DataPointer;
 import org.junit.Test;
 
 public class DataPointerTest {
@@ -32,6 +30,6 @@ public class DataPointerTest {
 
 	@Test
 	public void when_just_atom_data_pointer_is_validated_with_any_atom__then_no_exception_is_thrown() {
-		DataPointer.ofAtom().validateExists(mock(Atom.class));
+		DataPointer.ofAtom().validateExists(mock(ImmutableAtom.class));
 	}
 }

@@ -59,7 +59,7 @@ public final class DataPointer {
 		return new DataPointer(-1, -1);
 	}
 
-	public SpunParticle getParticleFrom(Atom atom) {
+	public SpunParticle getParticleFrom(ImmutableAtom atom) {
 		if (particleIndex < 0) {
 			throw new IllegalArgumentException("Pointer does not point to a particle");
 		}
@@ -69,7 +69,7 @@ public final class DataPointer {
 		return atom.getParticleGroup(this.particleGroupIndex).getSpunParticle(particleIndex);
 	}
 
-	public void validateExists(Atom atom) {
+	public void validateExists(ImmutableAtom atom) {
 		if (particleGroupIndex < 0) {
 			return;
 		}
@@ -95,7 +95,7 @@ public final class DataPointer {
 	 * @param atom the atom the spun particle is within
 	 * @return a pointer into the atom pointing to the spun particle given
 	 */
-	public static DataPointer ofParticleInAtom(SpunParticle spunParticle, Atom atom) {
+	public static DataPointer ofParticleInAtom(SpunParticle spunParticle, ImmutableAtom atom) {
 		ParticleGroup particleGroup = atom.particleGroups()
 			.filter(pg -> pg.contains(spunParticle))
 			.findFirst()

@@ -51,7 +51,6 @@ import org.radix.utils.SystemProfiler;
 import org.radix.validation.ValidationHandler;
 
 import com.google.common.collect.Lists;
-import com.radixdlt.atoms.Atom;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.atoms.Spin;
 import com.radixdlt.common.AID;

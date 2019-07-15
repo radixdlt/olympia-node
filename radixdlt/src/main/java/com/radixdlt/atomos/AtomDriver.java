@@ -1,10 +1,10 @@
 package com.radixdlt.atomos;
 
+import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
 import java.util.Objects;
-import com.radixdlt.atoms.Atom;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.utils.POW;
 
@@ -65,7 +65,7 @@ public final class AtomDriver implements AtomOSDriver {
 
 		kernel.onAtom()
 			.require(cmAtom -> {
-				final Atom atom = cmAtom.getAtom();
+				final ImmutableAtom atom = cmAtom.getAtom();
 				final boolean isMagic = Objects.equals(atom.getMetaData().get("magic"), "0xdeadbeef");
 
 				// Atom has signatures
@@ -80,14 +80,14 @@ public final class AtomDriver implements AtomOSDriver {
 						return Result.success();
 					}
 
-					String powNonceString = atom.getMetaData().get(Atom.METADATA_POW_NONCE_KEY);
+					String powNonceString = atom.getMetaData().get(ImmutableAtom.METADATA_POW_NONCE_KEY);
 					if (powNonceString == null) {
-						return Result.error("atom fee missing, metadata does not contain '" + Atom.METADATA_POW_NONCE_KEY + "'");
+						return Result.error("atom fee missing, metadata does not contain '" + ImmutableAtom.METADATA_POW_NONCE_KEY + "'");
 					}
 
 					try {
 						long powNonce = Long.parseLong(powNonceString);
-						Hash powFeeHash = atom.copyExcludingMetadata(Atom.METADATA_POW_NONCE_KEY).getHash();
+						Hash powFeeHash = atom.copyExcludingMetadata(ImmutableAtom.METADATA_POW_NONCE_KEY).getHash();
 						POW pow = new POW(kernel.getUniverse().getMagic(), powFeeHash, powNonce);
 
 						return checkPow(pow, powFeeHash, DEFAULT_TARGET, kernel.getUniverse().getMagic());
@@ -102,10 +102,10 @@ public final class AtomDriver implements AtomOSDriver {
 		// Atom timestamp constraints
 		kernel.onAtom()
 			.require(cmAtom -> {
-				final Atom atom = cmAtom.getAtom();
-				String timestampString = atom.getMetaData().get(Atom.METADATA_TIMESTAMP_KEY);
+				final ImmutableAtom atom = cmAtom.getAtom();
+				String timestampString = atom.getMetaData().get(ImmutableAtom.METADATA_TIMESTAMP_KEY);
 				if (timestampString == null) {
-					return Result.error("atom metadata does not contain '" + Atom.METADATA_TIMESTAMP_KEY + "'");
+					return Result.error("atom metadata does not contain '" + ImmutableAtom.METADATA_TIMESTAMP_KEY + "'");
 				}
 				try {
 					long timestamp = Long.parseLong(timestampString);

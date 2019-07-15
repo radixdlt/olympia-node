@@ -1,9 +1,7 @@
 package com.radixdlt.atomos;
 
-
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-import com.radixdlt.atomos.RadixAddress;
 import org.junit.Test;
 
 public class RadixAddressTest {

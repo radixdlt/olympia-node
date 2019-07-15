@@ -1,7 +1,7 @@
 package com.radixdlt.atomos;
 
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
-import com.radixdlt.atoms.Atom;
+import com.radixdlt.atoms.ImmutableAtom;
 import java.util.Objects;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.UInt384;
@@ -19,7 +19,7 @@ public class HashMassFunction {
 		this.universe = Objects.requireNonNull(universe);
 	}
 
-	public UInt384 getMass(Atom atom) {
+	public UInt384 getMass(ImmutableAtom atom) {
 		UInt384 mass;
 
 		// Special case for Genesis Atom

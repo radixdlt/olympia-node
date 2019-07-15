@@ -15,7 +15,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import com.radixdlt.atoms.Atom;
+import org.radix.atoms.Atom;
 import org.radix.atoms.AtomStore;
 import org.radix.atoms.events.ParticleEvent;
 import org.radix.atoms.events.ParticleListener;

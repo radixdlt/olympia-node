@@ -10,7 +10,7 @@ import com.radixdlt.atommodel.tokens.TokenDefinitionParticle.TokenTransition;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.atommodel.tokens.Tokens;
-import com.radixdlt.atoms.Atom;
+import org.radix.atoms.Atom;
 import org.radix.atoms.AtomDependencyNotFoundException;
 import org.radix.atoms.AtomDiscoveryRequest;
 import org.radix.atoms.AtomStore;

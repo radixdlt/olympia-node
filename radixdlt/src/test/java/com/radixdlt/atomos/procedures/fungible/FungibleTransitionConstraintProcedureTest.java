@@ -8,7 +8,6 @@ import org.assertj.core.util.Lists;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
-import com.radixdlt.atoms.Atom;
 import com.radixdlt.atomos.FungibleComposition;
 import com.radixdlt.atomos.FungibleFormula;
 import com.radixdlt.atomos.FungibleTransition;
@@ -250,9 +249,6 @@ public class FungibleTransitionConstraintProcedureTest {
 		groupBuilder.addParticle(mockFungibleParticle(Uranium.class, 3), Spin.UP);
 		groupBuilder.addParticle(mockFungibleParticle(Uranium.class, 1), Spin.UP);
 		groupBuilder.addParticle(mockFungibleParticle(Uranium.class, 2), Spin.UP);
-
-		Atom atom = new Atom();
-		atom.addParticleGroup(groupBuilder.build());
 
 		// TODO What should happen here? This currently fails because of greedy matching and there is no way for
 		// TODO the user to override the order of matching formulas to their preference as this is not affected

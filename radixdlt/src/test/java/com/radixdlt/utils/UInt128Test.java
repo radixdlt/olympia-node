@@ -1,6 +1,5 @@
 package com.radixdlt.utils;
 
-import com.radixdlt.utils.UInt128;
 import java.math.BigInteger;
 import java.math.RoundingMode;
 import java.util.Arrays;

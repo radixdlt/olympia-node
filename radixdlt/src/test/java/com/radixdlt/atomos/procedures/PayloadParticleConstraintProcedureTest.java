@@ -5,16 +5,10 @@ import static org.mockito.Mockito.mock;
 
 import java.util.stream.Stream;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Test;
-import org.radix.modules.Modules;
 
 import com.radixdlt.constraintmachine.ProcedureError;
-import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.serialization.core.ClasspathScanningSerializationPolicy;
-import com.radixdlt.serialization.core.ClasspathScanningSerializerIds;
 import com.radixdlt.constraintmachine.AtomMetadata;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.atoms.ParticleGroup;
@@ -50,16 +44,5 @@ public class PayloadParticleConstraintProcedureTest {
 		Stream<ProcedureError> errors = procedure.validate(ParticleGroup.of(SpunParticle.down(new CustomPayloadParticle())), mock(AtomMetadata.class));
 
 		assertThat(errors).anyMatch(e -> e.getErrMsg().contains("cannot be DOWN"));
-	}
-
-	@BeforeClass
-	public static void setupSerializer() {
-		Serialization s = Serialization.getDefault();
-		Modules.put(Serialization.class, s);
-	}
-
-	@AfterClass
-	public static void cleanup() {
-		Modules.remove(Serialization.class);
 	}
 }

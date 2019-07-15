@@ -1,8 +1,8 @@
 package com.radixdlt.constraintmachine;
 
+import com.radixdlt.atoms.ImmutableAtom;
 import java.util.function.Predicate;
 import com.radixdlt.atomos.RadixAddress;
-import com.radixdlt.atoms.Atom;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.atoms.ParticleGroup;
 import com.radixdlt.atoms.SpunParticle;
@@ -16,10 +16,10 @@ import java.util.Objects;
  * Helper for implementing {@link AtomMetadata} given an Atom of interest
  */
 public class AtomMetadataFromAtom implements AtomMetadata {
-	private final Atom atom;
+	private final ImmutableAtom atom;
 	private final Map<RadixAddress, Boolean> isSignedByCache = new HashMap<>();
 
-	public AtomMetadataFromAtom(Atom atom) {
+	public AtomMetadataFromAtom(ImmutableAtom atom) {
 		this.atom = Objects.requireNonNull(atom, "atom is required");
 	}
 

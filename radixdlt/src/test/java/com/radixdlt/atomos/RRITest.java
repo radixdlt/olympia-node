@@ -9,7 +9,6 @@ import java.util.List;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import com.radixdlt.atomos.RRI;
 
 public class RRITest {
 	@BeforeClass

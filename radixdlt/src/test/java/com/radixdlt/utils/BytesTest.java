@@ -1,6 +1,5 @@
 package com.radixdlt.utils;
 
-import com.radixdlt.utils.Bytes;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

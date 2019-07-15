@@ -3,13 +3,11 @@ package com.radixdlt.atomos;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
 import org.junit.Test;
-import com.radixdlt.atoms.Atom;
 import com.radixdlt.atomos.procedures.ParticleClassConstraintProcedure;
 import com.radixdlt.constraintmachine.AtomMetadata;
 import com.radixdlt.constraintmachine.ProcedureError;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.atoms.ParticleGroup;
-import com.radixdlt.atoms.Spin;
 import com.radixdlt.atoms.SpunParticle;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -56,8 +54,6 @@ public class ParticleClassConstraintProcedureTest {
 		);
 
 		CustomParticle p1 = mock(CustomParticle.class);
-		Atom atom = new Atom();
-		atom.addParticleGroupWith(p1, Spin.DOWN);
 
 		Stream<ProcedureError> issues = constraintProcedure.validate(ParticleGroup.of(SpunParticle.down(p1)), mock(AtomMetadata.class));
 		issues.forEach(i -> {});

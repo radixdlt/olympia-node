@@ -1,12 +1,12 @@
 package com.radixdlt.atomos;
 
+import com.radixdlt.atoms.ImmutableAtom;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.tokens.Tokens;
-import com.radixdlt.atoms.Atom;
 import com.radixdlt.atoms.Spin;
 import com.radixdlt.utils.Offset;
 import com.radixdlt.universe.Universe;
@@ -19,7 +19,7 @@ public final class FungibleMassFunction {
 		this.universe = Objects.requireNonNull(universe);
 	}
 
-	public UInt384 getMass(Atom atom) {
+	public UInt384 getMass(ImmutableAtom atom) {
 		Optional<RRI> nativeToken = this.universe.getGenesis().stream()
 			.flatMap(a -> a.particles(TransferrableTokensParticle.class, Spin.UP))
 			.map(TransferrableTokensParticle::getTokDefRef)

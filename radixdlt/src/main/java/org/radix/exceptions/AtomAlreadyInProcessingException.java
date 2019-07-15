@@ -1,6 +1,6 @@
 package org.radix.exceptions;
 
-import com.radixdlt.atoms.Atom;
+import org.radix.atoms.Atom;
 
 public class AtomAlreadyInProcessingException extends IllegalStateException {
 	private final Atom atom;

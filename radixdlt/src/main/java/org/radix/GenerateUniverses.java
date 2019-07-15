@@ -15,7 +15,7 @@ import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.atommodel.tokens.Tokens;
-import com.radixdlt.atoms.Atom;
+import org.radix.atoms.Atom;
 import com.radixdlt.atomos.RRI;
 import org.radix.validation.ConstraintMachineValidationException;
 import com.radixdlt.atoms.Spin;

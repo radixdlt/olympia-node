@@ -7,7 +7,6 @@ import java.util.stream.IntStream;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.radix.GenerateUniverses;
 
 import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle.TokenTransition;
@@ -125,7 +124,7 @@ public class TokenDefinitionConstraintScryptTest {
 	@Test
 	public void when_validating_token_class_particle_with_valid_icon__result_has_no_error() {
 		TokenDefinitionParticle token = mock(TokenDefinitionParticle.class);
-		when(token.getIconUrl()).thenReturn(GenerateUniverses.RADIX_ICON_URL);
+		when(token.getIconUrl()).thenReturn("https://assets.radixdlt.com/test.png");
 		testAtomModelOS
 			.testInitialParticle(token, mock(AtomMetadata.class))
 			.assertNoErrorWithMessageContaining("Icon:");

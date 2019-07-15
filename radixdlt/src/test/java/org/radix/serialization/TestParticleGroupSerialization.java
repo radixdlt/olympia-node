@@ -1,0 +1,39 @@
+package org.radix.serialization;
+
+import com.radixdlt.serialization.Serialization;
+import com.radixdlt.serialization.SerializationException;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.radix.atoms.Atom;
+import com.radixdlt.atoms.ParticleGroup;
+import com.radixdlt.serialization.DsonOutput.Output;
+import com.radixdlt.serialization.core.ClasspathScanningSerializationPolicy;
+import com.radixdlt.serialization.core.ClasspathScanningSerializerIds;
+
+import static org.junit.Assert.assertEquals;
+
+import joptsimple.internal.Strings;
+
+public class TestParticleGroupSerialization {
+	static Serialization serialization;
+
+	@BeforeClass
+	public static void setupSerializer() {
+		serialization = Serialization.getDefault();
+	}
+
+	@Test
+	public void testLargeStringSerialization() throws SerializationException {
+		long timestamp = 0x0001020304050607L;
+		Atom atom = new Atom(timestamp);
+
+		// "massive" must be greater length than (16000 / 4) - 4 = 3996
+		String massive = Strings.repeat('X', 4096);
+		ParticleGroup pg = ParticleGroup.builder().addMetaData("massive", massive).build();
+		atom.addParticleGroup(pg);
+
+		byte[] atombytes = serialization.toDson(atom, Output.HASH);
+
+		assertEquals(4249, atombytes.length);
+	}
+}

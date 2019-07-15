@@ -6,7 +6,7 @@ import java.util.function.LongSupplier;
 import org.junit.BeforeClass;
 
 import com.radixdlt.crypto.CryptoException;
-import com.radixdlt.serialization.SerializeMessageObject;
+import org.radix.serialization.SerializeMessageObject;
 import org.radix.shards.ShardSpace;
 
 /**

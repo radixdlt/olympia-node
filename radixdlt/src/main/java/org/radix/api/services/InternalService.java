@@ -12,7 +12,7 @@ import java.util.concurrent.Executors;
 import org.json.JSONObject;
 import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.atomos.RRIParticle;
-import com.radixdlt.atoms.Atom;
+import org.radix.atoms.Atom;
 import org.radix.atoms.AtomStore;
 import org.radix.atoms.messages.AtomSubmitMessage;
 

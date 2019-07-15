@@ -2,12 +2,12 @@ package com.radixdlt.constraintmachine;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Streams;
+import com.radixdlt.atoms.ImmutableAtom;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import com.radixdlt.atoms.Atom;
 import com.radixdlt.atoms.IndexedSpunParticle;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.atoms.Spin;
@@ -26,7 +26,7 @@ final class ConstraintMachineUtils {
 		throw new IllegalStateException("Cannot instantiate.");
 	}
 
-	static Map<Particle, ImmutableList<IndexedSpunParticle>> getTransitionsByParticle(Atom atom) {
+	static Map<Particle, ImmutableList<IndexedSpunParticle>> getTransitionsByParticle(ImmutableAtom atom) {
 		return atom.indexedSpunParticles()
 			.collect(Collectors.groupingBy(
 				indexed -> indexed.getSpunParticle().getParticle(),
@@ -126,7 +126,7 @@ final class ConstraintMachineUtils {
 	 * @param atom the atom to check
 	 * @return stream of errors for every empty particle group
 	 */
-	static Stream<CMError> checkParticleGroupsNotEmpty(Atom atom) {
+	static Stream<CMError> checkParticleGroupsNotEmpty(ImmutableAtom atom) {
 		return atom.indexedParticleGroups()
 			.filter(i -> i.getParticleGroup().isEmpty())
 			.map(i -> new CMError(i.getDataPointer(), CMErrorCode.EMPTY_PARTICLE_GROUP));
@@ -139,7 +139,7 @@ final class ConstraintMachineUtils {
 	 * @param atom the atom to check
 	 * @return stream of errors for every duplicated particle
 	 */
-	static Stream<CMError> checkParticleTransitionsUniqueInGroup(Atom atom) {
+	static Stream<CMError> checkParticleTransitionsUniqueInGroup(ImmutableAtom atom) {
 		return atom.indexedParticleGroups()
 			.flatMap(i -> {
 				final Map<Particle, List<IndexedSpunParticle>> particlesInGroup =

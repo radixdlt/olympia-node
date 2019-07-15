@@ -1,6 +1,6 @@
 package org.radix.utils;
 
-import com.radixdlt.atoms.Atom;
+import org.radix.atoms.Atom;
 import org.radix.modules.Modules;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;

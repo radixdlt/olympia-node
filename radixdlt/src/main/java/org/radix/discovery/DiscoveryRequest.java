@@ -6,7 +6,7 @@ import java.util.List;
 
 import org.radix.collections.WireableList;
 
-import com.radixdlt.atoms.Atom;
+import org.radix.atoms.Atom;
 import com.radixdlt.common.EUID;
 import com.radixdlt.common.AID;
 import org.radix.common.ID.ID;

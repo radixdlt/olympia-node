@@ -7,7 +7,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertArrayEquals;
 
-import test.radix.TestSetupUtils;
+import com.radixdlt.TestSetupUtils;
 
 public class HashTest {
 

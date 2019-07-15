@@ -2,7 +2,7 @@ package org.radix.api.jsonrpc;
 
 import com.google.common.io.CharStreams;
 import com.radixdlt.atomos.RadixAddress;
-import com.radixdlt.atoms.Atom;
+import org.radix.atoms.Atom;
 import com.radixdlt.atoms.AtomStatus;
 import com.radixdlt.common.AID;
 import com.radixdlt.serialization.DsonOutput.Output;

@@ -1,6 +1,5 @@
 package org.radix.atoms;
 
-import com.radixdlt.atoms.Atom;
 import com.radixdlt.utils.UInt384;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -52,7 +51,7 @@ public class PreparedAtom {
 
 	public PreparedAtom(CMAtom cmAtom) throws IOException {
 		this.cmAtom = cmAtom;
-		this.atom = cmAtom.getAtom();
+		this.atom = (Atom) cmAtom.getAtom();
 		this.mass = cmAtom.getComputedOrError("mass", UInt384.class);
 		this.atomID = atom.getAID();
 

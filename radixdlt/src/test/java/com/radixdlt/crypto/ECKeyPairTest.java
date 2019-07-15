@@ -6,13 +6,7 @@ import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.ECSignature;
-import com.radixdlt.crypto.Hash;
 import nl.jqno.equalsverifier.EqualsVerifier;
-
-import com.radixdlt.crypto.CryptoException;
 
 public class ECKeyPairTest {
 	@Rule
