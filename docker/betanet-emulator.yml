@@ -4,8 +4,6 @@ services:
     image: radixdlt/radixdlt-core:emulator-1.0.0-beta
     init: true
     restart: unless-stopped
-    ports:
-      - "8080:8080"
     environment:
       CORE_NETWORK_SEEDS: core
       CORE_SECURE_RANDOM_SOURCE: /dev/urandom
@@ -18,6 +16,23 @@ services:
       options:
         max-size: "10m"
         max-file: "30"
+    networks:
+      - single_node
+  nginx:
+    image: radixdlt/radixdlt-emu-nginx:1.0.0-beta
+    restart: unless-stopped
+    ports:
+      - "443:443"
+      - "8482:8482"
+    environment:
+      WIPE_ADMIN_PASSWORD: "no"
+      WIPE_METRICS_PASSWORD: "no"
+    volumes:
+      - "single_node_nginx_secrets:/etc/nginx/secrets"
+    logging:
+      options:
+        max-size: "1m"
+        max-file: "30"          
     networks:
       - single_node
   faucet:
@@ -39,8 +54,6 @@ services:
     # This is deliberate - customers that have configured the ABT service
     # are recommended to change this to "unless-stopped"
     restart: "no"
-    ports:
-      - "8082:8082"
     environment:
       RADIX_BOOTSTRAP_TRUSTED_NODE: http://core:8080
       PRIMETRUST_ACCOUNT: $PRIMETRUST_ACCOUNT
@@ -58,5 +71,6 @@ services:
 volumes:
   single_node_core_ledger:
   single_node_core_config:
+  single_node_nginx_secrets:
 networks:
   single_node:
