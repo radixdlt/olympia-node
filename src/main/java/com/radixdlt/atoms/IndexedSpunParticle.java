@@ -14,7 +14,7 @@ public final class IndexedSpunParticle {
 		this.dataPointer = Objects.requireNonNull(dataPointer);
 	}
 
-	public SpunParticle<Particle> getSpunParticle() {
+	public SpunParticle getSpunParticle() {
 		return spunParticle;
 	}
 
