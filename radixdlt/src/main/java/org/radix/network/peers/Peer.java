@@ -3,6 +3,7 @@ package org.radix.network.peers;
 import java.io.IOException;
 import java.net.SocketException;
 import java.net.URI;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.WeakHashMap;
 
@@ -50,7 +51,7 @@ public class Peer extends BasicContainer implements Chronologic, SingletonState
 	private long 			trafficOut = 0;
 	private int 			latency = 0;
 	private String 			banReason = null;
-	private Timestamps		timestamps = new Timestamps();
+	private HashMap<String, Long> timestamps = new HashMap<>();
 
 	@JsonProperty("protocols")
 	@DsonOutput(Output.ALL)
@@ -79,7 +80,7 @@ public class Peer extends BasicContainer implements Chronologic, SingletonState
 		if (peer != null) {
 			this.system = peer.system == null ? null : new RadixSystem(peer.system);
 			this.host = peer.host; // URI is immutable
-			this.timestamps = peer.timestamps == null ? null : new Timestamps(peer.timestamps);
+			this.timestamps = peer.timestamps == null ? null : new HashMap<>(peer.timestamps);
 			this.trafficIn = peer.trafficIn;
 			this.trafficOut = peer.trafficOut;
 			this.banReason = peer.banReason;

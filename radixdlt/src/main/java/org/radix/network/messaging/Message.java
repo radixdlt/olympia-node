@@ -4,6 +4,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.radix.containers.BasicContainer;
@@ -88,7 +89,7 @@ public abstract class Message extends BasicContainer implements Chronologic
 
 	@JsonProperty("timestamps")
 	@DsonOutput(value = {Output.API, Output.PERSIST})
-	private final Timestamps timestamps = new Timestamps();
+	private final HashMap<String, Long> timestamps = new HashMap<>();
 
 	// Transients //
 	private transient 	int			size = 0;

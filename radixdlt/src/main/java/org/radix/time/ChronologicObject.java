@@ -1,5 +1,6 @@
 package org.radix.time;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import org.radix.modules.Modules;
@@ -16,7 +17,7 @@ public abstract class ChronologicObject extends ValidatableObject implements Clo
 	@JsonProperty("timestamps")
 	@DsonOutput(Output.ALL)
 	@JsonInclude(Include.NON_EMPTY)
-	private Timestamps timestamps = new Timestamps();
+	private HashMap<String, Long> timestamps = new HashMap<>();
 
 	protected ChronologicObject()
 	{
