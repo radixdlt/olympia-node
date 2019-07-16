@@ -3,6 +3,7 @@ services:
   core:
     image: radixdlt/radixdlt-core:emulator-1.0.0-beta
     init: true
+    restart: unless-stopped
     ports:
       - "8080:8080"
       - "9011:9011"
