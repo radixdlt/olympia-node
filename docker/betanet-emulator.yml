@@ -34,6 +34,27 @@ services:
         max-file: "30"
     networks:
       - single_node
+  abt:
+    image: radixdlt/abt:1.0.0-beta
+    # This is deliberate - customers that have configured the ABT service
+    # are recommended to change this to "unless-stopped"
+    restart: "no"
+    ports:
+      - "8082:8082"
+    environment:
+      RADIX_BOOTSTRAP_TRUSTED_NODE: http://core:8080
+      PRIMETRUST_ACCOUNT: $PRIMETRUST_ACCOUNT
+      PRIMETRUST_USERNAME: $PRIMETRUST_USERNAME
+      PRIMETRUST_PASSWORD: $PRIMETRUST_PASSWORD
+      GMAIL_USERNAME: $GMAIL_USERNAME
+      GMAIL_PASSWORD: $GMAIL_PASSWORD
+      JAVA_OPTS: -server
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "30"
+    networks:
+      - single_node
 volumes:
   single_node_core_ledger:
   single_node_core_config:
