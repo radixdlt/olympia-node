@@ -23,7 +23,7 @@ public class ConflictAssistMessageSerializeTest extends SerializeMessageObject<C
 		try {
 			Universe universe = Modules.get(Universe.class);
 			ECPublicKey key = new ECKeyPair().getPublicKey();
-			SpunParticle<MessageParticle> p = SpunParticle.up(
+			SpunParticle p = SpunParticle.up(
 				new MessageParticle(RadixAddress.from(universe, key), RadixAddress.from(universe, key), "This is some test data".getBytes(RadixConstants.STANDARD_CHARSET))
 			);
 			return new ConflictAssistRequestMessage(p);

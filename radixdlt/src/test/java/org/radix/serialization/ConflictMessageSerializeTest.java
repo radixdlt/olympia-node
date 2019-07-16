@@ -24,7 +24,7 @@ public class ConflictMessageSerializeTest extends SerializeObject<ConflictAssist
 		try {
 			ECKeyPair key = new ECKeyPair();
 			RadixAddress ar = RadixAddress.from(Modules.get(Universe.class), key.getPublicKey());
-			SpunParticle<RRIParticle> particle = SpunParticle.up(new RRIParticle(RRI.of(ar, "hi")));
+			SpunParticle particle = SpunParticle.up(new RRIParticle(RRI.of(ar, "hi")));
 			Atom conflictor = new Atom();
 			conflictor.sign(key);
 			Atom invoker = new Atom();

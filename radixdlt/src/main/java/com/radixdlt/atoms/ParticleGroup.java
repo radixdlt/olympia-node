@@ -99,10 +99,9 @@ public final class ParticleGroup {
 	/**
 	 * Get a stream of the spun particles of a certain particle type in this group
 	 */
-	public final <T extends Particle> Stream<SpunParticle<T>> spunParticles(Class<T> particleType) {
+	public final <T extends Particle> Stream<SpunParticle> spunParticles(Class<T> particleType) {
 		return this.particles.stream()
-				.filter(p -> particleType.isAssignableFrom(p.getParticle().getClass()))
-				.map(p -> (SpunParticle<T>) p);
+				.filter(p -> particleType.isAssignableFrom(p.getParticle().getClass()));
 	}
 
 	public int getParticleCount() {
@@ -120,8 +119,9 @@ public final class ParticleGroup {
 	 */
 	public final <T extends Particle> Stream<T> particles(Class<T> particleClass, Spin spin) {
 		return this.spunParticles(particleClass)
-				.filter(p -> p.getSpin() == spin)
-				.map(SpunParticle::getParticle);
+			.filter(p -> p.getSpin() == spin)
+			.map(SpunParticle::getParticle)
+			.map(particleClass::cast);
 	}
 
 	public final <U> Stream<U> spunParticlesWithIndex(FunctionWithIndex<SpunParticle, U> f) {
@@ -197,7 +197,7 @@ public final class ParticleGroup {
 	 * Check whether this particle group contains the given spun particle
 	 * @return if this particle group contains the given spun particle
 	 */
-	public boolean contains(SpunParticle<?> spunParticle) {
+	public boolean contains(SpunParticle spunParticle) {
 		return this.indexByParticle.containsKey(spunParticle);
 	}
 
@@ -261,7 +261,7 @@ public final class ParticleGroup {
 		private ParticleGroupBuilder() {
 		}
 
-		public final ParticleGroupBuilder addParticle(SpunParticle<?> spunParticle) {
+		public final ParticleGroupBuilder addParticle(SpunParticle spunParticle) {
 			Objects.requireNonNull(spunParticle, "spunParticle is required");
 
 			this.particles.add(spunParticle);
@@ -273,7 +273,7 @@ public final class ParticleGroup {
 			Objects.requireNonNull(particle, "particle is required");
 			Objects.requireNonNull(spin, "spin is required");
 
-			SpunParticle<?> spunParticle = SpunParticle.of(particle, spin);
+			SpunParticle spunParticle = SpunParticle.of(particle, spin);
 			this.particles.add(spunParticle);
 
 			return this;

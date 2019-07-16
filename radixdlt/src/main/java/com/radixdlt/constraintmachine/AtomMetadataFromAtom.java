@@ -32,7 +32,7 @@ public class AtomMetadataFromAtom implements AtomMetadata {
 	public boolean contains(Predicate<Particle> predicate) {
 		return this.atom.particleGroups()
 			.flatMap(ParticleGroup::spunParticles)
-			.map(SpunParticle<Particle>::getParticle)
+			.map(SpunParticle::getParticle)
 			.anyMatch(predicate);
 	}
 

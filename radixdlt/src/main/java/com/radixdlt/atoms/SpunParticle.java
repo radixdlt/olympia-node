@@ -15,11 +15,11 @@ import com.radixdlt.serialization.SerializerId2;
  * particle, which represents state.
  */
 @SerializerId2("radix.spun_particle")
-public final class SpunParticle<T extends Particle> {
+public final class SpunParticle {
 
 	@JsonProperty("particle")
 	@DsonOutput(Output.ALL)
-	private final T particle;
+	private final Particle particle;
 
 	private Spin spin;
 
@@ -37,7 +37,7 @@ public final class SpunParticle<T extends Particle> {
 		this.spin = null;
 	}
 
-	private SpunParticle(T particle, Spin spin) {
+	private SpunParticle(Particle particle, Spin spin) {
 		Objects.requireNonNull(particle);
 		Objects.requireNonNull(spin);
 
@@ -45,19 +45,19 @@ public final class SpunParticle<T extends Particle> {
 		this.spin = spin;
 	}
 
-	public static <T extends Particle> SpunParticle<T> up(T particle) {
-		return new SpunParticle<>(particle, Spin.UP);
+	public static SpunParticle up(Particle particle) {
+		return new SpunParticle(particle, Spin.UP);
 	}
 
-	public static <T extends Particle> SpunParticle<T> down(T particle) {
-		return new SpunParticle<>(particle, Spin.DOWN);
+	public static SpunParticle down(Particle particle) {
+		return new SpunParticle(particle, Spin.DOWN);
 	}
 
-	public static <T extends Particle> SpunParticle<T> of (T particle, Spin spin) {
-		return new SpunParticle<>(particle, spin);
+	public static SpunParticle of(Particle particle, Spin spin) {
+		return new SpunParticle(particle, spin);
 	}
 
-	public T getParticle() {
+	public Particle getParticle() {
 		return particle;
 	}
 

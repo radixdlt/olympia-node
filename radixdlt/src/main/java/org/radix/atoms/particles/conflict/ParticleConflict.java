@@ -32,7 +32,7 @@ public final class ParticleConflict extends ValidatableObject implements ID, Sin
 
 	@JsonProperty("particle")
 	@DsonOutput(Output.ALL)
-	private SpunParticle<? extends Particle> particle;
+	private SpunParticle particle;
 
 	@JsonProperty("atoms")
 	@DsonOutput(Output.ALL)
@@ -53,7 +53,7 @@ public final class ParticleConflict extends ValidatableObject implements ID, Sin
     	this.state = new State(State.PENDING);
 	}
 
-    public ParticleConflict(SpunParticle<? extends Particle> particle, Atom conflictor, Atom invoker)
+    public ParticleConflict(SpunParticle particle, Atom conflictor, Atom invoker)
     {
     	this();
 
@@ -64,7 +64,7 @@ public final class ParticleConflict extends ValidatableObject implements ID, Sin
     	this.atoms.add(conflictor);
     }
 
-    public ParticleConflict(SpunParticle<? extends Particle> particle, Set<Atom> atoms)
+    public ParticleConflict(SpunParticle particle, Set<Atom> atoms)
     {
     	this();
 
@@ -163,7 +163,7 @@ public final class ParticleConflict extends ValidatableObject implements ID, Sin
 	    }
     }
 
-    public SpunParticle<? extends Particle> getSpunParticle() {
+    public SpunParticle getSpunParticle() {
     	return this.particle;
     }
 
