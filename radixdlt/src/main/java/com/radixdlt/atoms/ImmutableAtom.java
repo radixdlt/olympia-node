@@ -240,7 +240,7 @@ public abstract class ImmutableAtom {
 	public final Set<Long> getShards() {
 		return this.particleGroups.stream()
 			.flatMap(ParticleGroup::spunParticles)
-			.map(SpunParticle<Particle>::getParticle)
+			.map(SpunParticle::getParticle)
 			.flatMap(p -> p.getDestinations().stream())
 			.map(EUID::getShard)
 			.collect(Collectors.toSet());
@@ -308,12 +308,15 @@ public abstract class ImmutableAtom {
 	}
 
 	public final <T extends Particle> Stream<T> particles(Class<T> type, Spin spin) {
-		return this.particles(type).filter(s -> s.getSpin() == spin).map(SpunParticle::getParticle);
+		return this.particles(type)
+			.filter(s -> s.getSpin() == spin)
+			.map(SpunParticle::getParticle)
+			.map(type::cast);
 	}
 
-	public final <T extends Particle> Stream<SpunParticle<T>> particles(Class<T> type) {
-		return this.spunParticles().filter(p -> type == null || type.isAssignableFrom(p.getParticle().getClass()))
-			.map(p -> (SpunParticle<T>) p);
+	public final <T extends Particle> Stream<SpunParticle> particles(Class<T> type) {
+		return this.spunParticles()
+			.filter(p -> type == null || type.isAssignableFrom(p.getParticle().getClass()));
 	}
 
 	/**
@@ -330,8 +333,9 @@ public abstract class ImmutableAtom {
 
 		return this.spunParticles()
 			.filter(s -> s.getSpin().equals(spin))
-			.map(SpunParticle<T>::getParticle)
+			.map(SpunParticle::getParticle)
 			.filter(p -> type.isAssignableFrom(p.getClass()))
+			.map(type::cast)
 			.findFirst().orElse(null);
 	}
 

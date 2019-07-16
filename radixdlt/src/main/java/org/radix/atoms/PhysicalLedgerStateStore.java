@@ -29,7 +29,7 @@ public class PhysicalLedgerStateStore implements StateStore {
 		this.shardSpaceSupplier = shardSpaceSupplier;
 	}
 
-	public Atom getAtomContaining(SpunParticle<? extends Particle> spunParticle) {
+	public Atom getAtomContaining(SpunParticle spunParticle) {
 		try {
 			// cheap early out in case the spun particle is not even in the store
 			if (!atomStoreSupplier.get().hasAtomContaining(spunParticle.getParticle(), spunParticle.getSpin())) {
