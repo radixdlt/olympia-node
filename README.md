@@ -35,7 +35,7 @@ repositories {
 ```
 ```
 dependencies {
-    implementation 'com.radixdlt:radixdlt-java:1.0.0-beta-core-1.0.0-beta'
+    implementation 'com.radixdlt:radixdlt-java:dbfd5064e5'
 }
 ```
 
