@@ -1,25 +1,23 @@
 package com.radixdlt.client.application.translate.tokens;
 
+import com.google.gson.JsonParser;
+import com.radixdlt.client.application.identity.RadixIdentity;
+import com.radixdlt.client.application.translate.AtomToExecutedActionsMapper;
+import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
+import io.reactivex.Observable;
+import org.radix.utils.primitives.Bytes;
+
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-
 import java.util.stream.Collectors;
-
-import com.google.gson.JsonParser;
-import com.radixdlt.client.application.identity.RadixIdentity;
-import com.radixdlt.client.application.translate.AtomToExecutedActionsMapper;
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.core.atoms.Atom;
-
-import io.reactivex.Observable;
-import org.radix.utils.RadixConstants;
 
 /**
  * Maps an atom to some number of token transfer actions.
@@ -89,7 +87,7 @@ public class AtomToTokenTransfersMapper implements AtomToExecutedActionsMapper<T
 							to,
 							e.getKey(),
 							summary.get(0).getValue().abs(),
-							attachment == null ? null : attachment.getBytes(RadixConstants.STANDARD_CHARSET),
+							attachment == null ? null : Bytes.fromBase64String(attachment),
 							atom.getTimestamp()
 						);
 					});
