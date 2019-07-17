@@ -37,6 +37,10 @@ public enum Bootstrap implements BootstrapConfig {
 	BETANET(
 		new BootstrapByTrustedNode(new RadixNode("sunstone-emu.radixdlt.com", true, 443))
 	),
+	BETANET_STATIC(
+		RadixUniverseConfigs::getBetanet,
+		new RadixNode("sunstone-emu.radixdlt.com", true, 443)
+	),
 	WINTERFELL(
 		RadixUniverseConfigs::getWinterfell,
 		Observable.just(new RadixNode("52.190.0.18", false, 8080))
