@@ -165,22 +165,29 @@ public final class CMAtomOS implements AtomOSKernel, AtomOS {
 			.to(particleClass, particleToAmountMapper, fungibleEquals);
 		pendingFungibleTransition = transitionBuilder;
 
-		return new FunctionalFungibleTransitionConstraint<>(
-			transitionBuilder::initial,
-			new ParticleRequireWithStub<T>() {
-				@Override
-				public <U extends Particle> void requireWith(Class<U> sideEffectClass, ParticleClassWithSideEffectConstraintCheck<T, U> constraint) {
-					transitionBuilder.initialWith(sideEffectClass, constraint);
-				}
-			},
-			formula -> {
+		return new FungibleTransitionConstraintStub<T>() {
+			@Override
+			public <U extends Particle> FungibleTransitionConstraint<T> requireInitialWith(
+				Class<U> sideEffectClass,
+				ParticleClassWithSideEffectConstraintCheck<T, U> constraint
+			) {
+				transitionBuilder.initialWith(sideEffectClass, constraint);
+				return this::requireFrom;
+			}
+
+			@Override
+			public <U extends Particle> FungibleTransitionConstraint<T> requireFrom(
+				Class<U> cls1,
+				FungibleTransitionInputConstraint<U, T> check
+			) {
 				if (pendingFungibleTransition == null) {
 					throw new IllegalStateException("Attempt to add formula to finished fungible transition to " + particleClass);
 				}
-
+				FungibleFormula formula = FungibleFormula.from(new FungibleTransitionMember<>(cls1, check));
 				transitionBuilder.addFormula(formula);
+				return this::requireFrom;
 			}
-		);
+		};
 	}
 
 	@Override

@@ -19,32 +19,29 @@ import java.util.stream.Stream;
  */
 public final class FungibleFormula {
 	// TODO could add additional constraint on output here, similar to inputs
-	private final Map<Class<? extends Particle>, FungibleTransitionMember<? extends Particle>> inputsByParticleClass;
-	private final FungibleComposition composition;
+	private final FungibleTransitionMember<? extends Particle> inputTransition;
 
-	private FungibleFormula(Map<Class<? extends Particle>, FungibleTransitionMember<? extends Particle>> inputsByParticleClass,
-	                        FungibleComposition composition) {
-		this.inputsByParticleClass = ImmutableMap.copyOf(inputsByParticleClass);
-		this.composition = composition;
+	private FungibleFormula(FungibleTransitionMember<? extends Particle> inputTransition) {
+		this.inputTransition = inputTransition;
 	}
 
 	/**
 	 * The composition of this formula
 	 */
 	public FungibleComposition getComposition() {
-		return composition;
+		return FungibleComposition.of(inputTransition.particleClass());
 	}
 
 	/**
 	 * Get the inputs to this formula
 	 */
 	public Map<Class<? extends Particle>, FungibleTransitionMember<? extends Particle>> getInputsByParticleClass() {
-		return inputsByParticleClass;
+		return ImmutableMap.of(inputTransition.particleClass(), inputTransition);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("FixedFormula[%s]", this.composition);
+		return String.format("FixedFormula[1 to 1]");
 	}
 
 	/**
@@ -60,16 +57,14 @@ public final class FungibleFormula {
 
 		Class<? extends Particle> inputClass = input.getParticleClass();
 		while (!inputClass.equals(Particle.class)) {
-			for (Map.Entry<Class<? extends Particle>, FungibleTransitionMember<? extends Particle>> fromEntry : inputsByParticleClass.entrySet()) {
-				if (fromEntry.getKey().isAssignableFrom(inputClass)) {
-					Result checkResult = fromEntry.getValue().check(
-						input.getParticle(), output.getParticle(), metadata);
+			if (inputTransition.particleClass().isAssignableFrom(inputClass)) {
+				Result checkResult = inputTransition.check(
+					input.getParticle(), output.getParticle(), metadata);
 
-					if (checkResult.isSuccess()) {
-						approvedClasses.add(inputClass);
-					} else {
-						rejectedClasses.put(inputClass, checkResult.getErrorMessage().orElse(""));
-					}
+				if (checkResult.isSuccess()) {
+					approvedClasses.add(inputClass);
+				} else {
+					rejectedClasses.put(inputClass, checkResult.getErrorMessage().orElse(""));
 				}
 			}
 
@@ -81,38 +76,10 @@ public final class FungibleFormula {
 
 	/**
 	 * Create a {@link FungibleFormula} from a map of required types and amounts for the transition
-	 * @param composition The required amounts by "from" type
 	 * @return A fungible transition formulas
 	 */
-	public static FungibleFormula from(
-		Stream<FungibleTransitionMember<? extends Particle>> inputs, FungibleComposition composition) {
-		Objects.requireNonNull(composition, "composition is required");
-
-		Map<Class<? extends Particle>, FungibleTransitionMember<? extends Particle>> inputsByClass = new HashMap<>();
-		for (FungibleTransitionMember<? extends Particle> input : inputs.collect(Collectors.toList())) {
-			if (inputsByClass.containsKey(input.particleClass())) {
-				throw new IllegalArgumentException("Input for " + input.particleClass() + " is already defined for formula");
-			}
-
-			inputsByClass.put(input.particleClass(), input);
-		}
-
-		ImmutableMap<Class<? extends Particle>, UInt256> requiredAmountsPerUnit = composition.requiredAmountsPerUnit();
-		requiredAmountsPerUnit.forEach((particleClass, amount) -> {
-				Objects.requireNonNull(amount, "amount is required");
-				if (amount.isZero()) {
-					throw new IllegalArgumentException("Amount must be > 0, amount for " + particleClass + " is " + amount);
-				}
-			}
-		);
-
-		if (inputsByClass.keySet().stream().anyMatch(fromParticleClass -> !requiredAmountsPerUnit.containsKey(fromParticleClass))
-			|| requiredAmountsPerUnit.keySet().stream().anyMatch(requiredType -> !inputsByClass.containsKey(requiredType))) {
-			throw new IllegalArgumentException("Types used by transition formulas and declared as 'froms' do not match: "
-				+ inputsByClass.keySet() + " should equal " + requiredAmountsPerUnit.keySet());
-		}
-
-		return new FungibleFormula(inputsByClass, composition);
+	public static FungibleFormula from(FungibleTransitionMember<? extends Particle> inputTransition) {
+		return new FungibleFormula(inputTransition);
 	}
 
 	/**

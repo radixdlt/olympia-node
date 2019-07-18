@@ -152,23 +152,13 @@ public final class FungibleTransitionConstraintCheck {
 			.map(Class::getName)
 			.collect(Collectors.joining(", ")));
 		String matchesString = noneIfEmpty.apply(matchesToString(matchResults));
-		String consideredTransitionsString = noneIfEmpty.apply(fungibleTransitions.stream()
-			.map(transition -> String.format("\t Transition to %s with%n%s%s",
-				transition.getOutputParticleClass().getSimpleName(),
-				transition.hasInitial() ? "\t\t <initial constraint>" : "",
-				transition.getFormulas().stream()
-					.map(formula -> String.format("\t\t %s => 1 %s",
-						formula.getComposition().toString(), transition.getOutputParticleClass().getSimpleName()))
-					.collect(Collectors.joining(System.lineSeparator()))
-			))
-			.collect(Collectors.joining(System.lineSeparator())));
 		String rejectedString = noneIfEmpty.apply(matchRejectionsToString(matchResults));
 
 		return String.format(
-			"transitions to %s.%n Unspent Inputs%n%s%n Spent Inputs%n%s%n Unsatisfied Outputs%n%s%n"
-			+ " Satisfied Outputs%n%s%n Matched%n%s%n Considered%n%s%n Rejected%n%s",
+			"transitions to %s.%n Unspent Inputs%n%s%n Spent Inputs%n%s%n Unsatisfied Outputs%n%s%n" +
+				" Satisfied Outputs%n%s%n Matched%n%s%n Rejected%n%s",
 			transitionNamesString, unspentInputsString, spentInputsString, unsatisfiedOutputsString,
-			satisfiedOutputsString, matchesString, consideredTransitionsString, rejectedString);
+			satisfiedOutputsString, matchesString, rejectedString);
 	}
 
 	/**

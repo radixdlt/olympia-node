@@ -122,10 +122,12 @@ public class FungibleInputsTest {
 	private abstract static class H2O extends Particle {
 	}
 
+	/*
 	private static final FungibleComposition COMPOSITION_H2O = FungibleComposition.of(
 		2, Hydrogen.class,
 		1, Oxygen.class
 	);
+	*/
 
 	private static FungibleInputs inputsOther() {
 		return FungibleInputs.of(Stream.of(
@@ -138,6 +140,7 @@ public class FungibleInputsTest {
 		return FungibleInputs.of(Stream.empty());
 	}
 
+	/*
 	@Test
 	public void testMatchEmpty() {
 		FungibleInputs.CompositionMatch match = inputsEmpty().match(UInt256.ZERO, COMPOSITION_H2O);
@@ -167,11 +170,13 @@ public class FungibleInputsTest {
 		assertTrue(match.getMatchedInputs().isEmpty());
 		assertEquals(UInt256.ZERO, match.getSatisfiedAmount());
 	}
+	*/
 
 	private static <T extends Particle> Fungible mockFungible(Class<T> cls, int amount, int index) {
 		return new Fungible(mock(cls), cls, UInt256.from(amount), index);
 	}
 
+	/*
 	@Test
 	public void testMatchExact() {
 		Oxygen oxygen0 = mock(Oxygen.class);
@@ -305,6 +310,7 @@ public class FungibleInputsTest {
 		);
 	}
 
+	/*
 	// yes I know Hydrogen is stable, let's just pretend
 	private static final FungibleComposition COMPOSITION_HYDROGEN_DECAY = FungibleComposition.of(
 		2, Hydrogen.class
@@ -333,7 +339,9 @@ public class FungibleInputsTest {
 			currentAmount = nextAmount;
 		}
 	}
+	*/
 
+	/*
 	@Test
 	public void testMatchIncompleteApproved() {
 		Oxygen oxygen0 = mock(Oxygen.class);
@@ -347,4 +355,5 @@ public class FungibleInputsTest {
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("not assigned to");
 	}
+	*/
 }

@@ -101,7 +101,6 @@ final class FungibleInputs {
 	 */
 	CompositionMatch match(UInt256 outputAmount, FungibleComposition composition, Map<Fungible, List<Class<? extends Particle>>> approvedClasses) {
 		Objects.requireNonNull(outputAmount, "outputAmount is required");
-		Objects.requireNonNull(composition, "composition is required");
 		Objects.requireNonNull(approvedClasses, "composition is required");
 
 		if (outputAmount.isZero()) {

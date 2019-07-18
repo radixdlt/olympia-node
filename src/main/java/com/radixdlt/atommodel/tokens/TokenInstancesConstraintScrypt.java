@@ -41,13 +41,13 @@ public class TokenInstancesConstraintScrypt implements ConstraintScrypt {
 				Result.of(unallocated.getGranularity().equals(tokDef.getGranularity()), "Granularity should match"),
 				Result.of(unallocated.getTokenPermissions().equals(tokDef.getTokenPermissions()), "Permissions should match")
 			))
-			.orFrom(1, UnallocatedTokensParticle.class, (from, to, meta) -> Result.combine(
+			.orFrom(UnallocatedTokensParticle.class, (from, to, meta) -> Result.combine(
 				checkSigned(from.getTokDefRef().getAddress(), meta),
 				checkType(from.getTokDefRef(), to.getTokDefRef()),
 				checkGranularity(from.getGranularity(), to.getGranularity()),
 				Result.of(from.getTokenPermissions().equals(to.getTokenPermissions()), "Permissions should match")
 			))
-			.orFrom(1, TransferrableTokensParticle.class, (from, to, meta) -> Result.combine(
+			.orFrom(TransferrableTokensParticle.class, (from, to, meta) -> Result.combine(
 				Result.of(from.getAddress().equals(from.getTokDefRef().getAddress()), "Must burn to same account"),
 				to.getTokenPermission(TokenTransition.BURN).check(from.getTokDefRef(), meta),
 				checkType(from.getTokDefRef(), to.getTokDefRef()),
@@ -61,14 +61,14 @@ public class TokenInstancesConstraintScrypt implements ConstraintScrypt {
 			TransferrableTokensParticle::getAmount,
 			(t0, t1) -> t0.getAddress().equals(t1.getAddress()) && t0.getTokDefRef().equals(t1.getTokDefRef())
 		)
-			.requireFrom(1, UnallocatedTokensParticle.class, (from, to, meta) -> Result.combine(
+			.requireFrom(UnallocatedTokensParticle.class, (from, to, meta) -> Result.combine(
 				Result.of(to.getAddress().equals(to.getTokDefRef().getAddress()), "Must mint to same account"),
 				from.getTokenPermission(TokenTransition.MINT).check(from.getTokDefRef(), meta),
 				checkType(from.getTokDefRef(), to.getTokDefRef()),
 				checkGranularity(from.getGranularity(), to.getGranularity()),
 				Result.of(to.getTokenPermissions().equals(from.getTokenPermissions()), "Permissions must be the same")
 			))
-			.orFrom(1, TransferrableTokensParticle.class, (from, to, meta) -> Result.combine(
+			.orFrom(TransferrableTokensParticle.class, (from, to, meta) -> Result.combine(
 				checkSigned(from.getAddress(), meta),
 				checkType(from.getTokDefRef(), to.getTokDefRef()),
 				checkGranularity(from.getGranularity(), to.getGranularity()),

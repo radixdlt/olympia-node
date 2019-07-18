@@ -36,7 +36,8 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 public class FungibleTransitionConstraintProcedureTest {
-	private abstract static class FungibleParticle extends Particle {
+	/*
+	private static abstract class FungibleParticle extends Particle {
 		public UInt256 getAmount() {
 			throw new UnsupportedOperationException("Mock me!");
 		}
@@ -480,4 +481,5 @@ public class FungibleTransitionConstraintProcedureTest {
 			new Fungible(hydroNextGen0, UInt256.THREE, 2)
 		);
 	}
+	*/
 }

@@ -63,47 +63,7 @@ public class FungibleComposition {
 	/**
 	 * Create a {@link FungibleComposition} of a given amount of a given Particle class
 	 */
-	public static FungibleComposition of(long amount, Class<? extends Particle> particleClass) {
-		return new FungibleComposition(ImmutableMap.of(particleClass, UInt256.from(amount)));
-	}
-
-	/**
-	 * Create a {@link FungibleComposition} of a given amount of a given Particle class
-	 */
-	public static FungibleComposition of(UInt256 amount, Class<? extends Particle> particleClass) {
-		return new FungibleComposition(ImmutableMap.of(particleClass, amount));
-	}
-
-	/**
-	 * Create a {@link FungibleComposition} of a two given amounts of two given Particle class
-	 */
-	public static FungibleComposition of(long amount1, Class<? extends Particle> particleClass1,
-	                                     long amount2, Class<? extends Particle> particleClass2) {
-		return new FungibleComposition(ImmutableMap.of(particleClass1, UInt256.from(amount1), particleClass2, UInt256.from(amount2)));
-	}
-
-	/**
-	 * Create a {@link FungibleComposition} of a two given amounts of two given Particle class
-	 */
-	public static FungibleComposition of(UInt256 amount1, Class<? extends Particle> particleClass1,
-	                                     UInt256 amount2, Class<? extends Particle> particleClass2) {
-		return new FungibleComposition(ImmutableMap.of(particleClass1, amount1, particleClass2, amount2));
-	}
-
-	/**
-	 * Create a {@link FungibleComposition} of a set of amounts by their Particle classes
-	 */
-	public static FungibleComposition ofLong(Map<Class<? extends Particle>, Long> requiredAmounts) {
-		Map<Class<? extends Particle>, UInt256> requiredAmountsConverted = new HashMap<>();
-		requiredAmounts.forEach((cls, amount) -> requiredAmountsConverted.put(cls, UInt256.from(amount)));
-
-		return new FungibleComposition(ImmutableMap.copyOf(requiredAmountsConverted));
-	}
-
-	/**
-	 * Create a {@link FungibleComposition} of a set of amounts by their Particle classes
-	 */
-	public static FungibleComposition of(Map<Class<? extends Particle>, UInt256> requiredAmounts) {
-		return new FungibleComposition(ImmutableMap.copyOf(requiredAmounts));
+	public static FungibleComposition of(Class<? extends Particle> particleClass) {
+		return new FungibleComposition(ImmutableMap.of(particleClass, UInt256.ONE));
 	}
 }
