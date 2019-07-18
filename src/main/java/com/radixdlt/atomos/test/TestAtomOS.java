@@ -73,13 +73,16 @@ public class TestAtomOS implements AtomOS {
 
 	@Override
 	public <T extends Particle> FungibleTransitionConstraintStub<T> onFungible(
-		Class<T> particleClass, ParticleToAmountMapper<T> particleToAmountMapper) {
+		Class<T> particleClass,
+		ParticleToAmountMapper<T> particleToAmountMapper,
+		BiFunction<T, T, Boolean> fungibleEquals
+	) {
 		if (pendingFungibleTransition != null) {
 			fungibleTransitions.add(pendingFungibleTransition.build());
 		}
 
 		FungibleTransition.Builder<T> transitionBuilder = FungibleTransition.<T>build()
-			.to(particleClass, particleToAmountMapper);
+			.to(particleClass, particleToAmountMapper, fungibleEquals);
 		pendingFungibleTransition = transitionBuilder;
 
 		return new FunctionalFungibleTransitionConstraint<>(

@@ -33,9 +33,11 @@ import com.radixdlt.atoms.Particle;
 import com.radixdlt.atoms.Spin;
 import com.radixdlt.store.CMStores;
 import com.radixdlt.common.EUID;
+import com.radixdlt.universe.Universe;
+
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import com.radixdlt.universe.Universe;
 
 /**
  * Implementation of the AtomOS interface on top of a UTXO based Constraint Machine.
@@ -150,7 +152,8 @@ public final class CMAtomOS implements AtomOSKernel, AtomOS {
 	@Override
 	public <T extends Particle> FungibleTransitionConstraintStub<T> onFungible(
 		Class<T> particleClass,
-		ParticleToAmountMapper<T> particleToAmountMapper
+		ParticleToAmountMapper<T> particleToAmountMapper,
+		BiFunction<T, T, Boolean> fungibleEquals
 	) {
 		checkParticleRegistered(particleClass);
 
@@ -159,7 +162,7 @@ public final class CMAtomOS implements AtomOSKernel, AtomOS {
 		}
 
 		FungibleTransition.Builder<T> transitionBuilder = FungibleTransition.<T>build()
-			.to(particleClass, particleToAmountMapper);
+			.to(particleClass, particleToAmountMapper, fungibleEquals);
 		pendingFungibleTransition = transitionBuilder;
 
 		return new FunctionalFungibleTransitionConstraint<>(

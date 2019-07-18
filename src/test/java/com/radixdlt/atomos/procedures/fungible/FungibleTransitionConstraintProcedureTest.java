@@ -97,6 +97,7 @@ public class FungibleTransitionConstraintProcedureTest {
 		return FungibleTransition.from(
 			Uranium.class,
 			Uranium::getAmount,
+			(u0, u1) -> true,
 			Arrays.asList(
 				FungibleFormula.from(
 					Stream.of(
@@ -120,6 +121,7 @@ public class FungibleTransitionConstraintProcedureTest {
 		return FungibleTransition.from(
 			Uranium.class,
 			Uranium::getAmount,
+			(u0, u1) -> true,
 			Arrays.asList(
 				FungibleFormula.from(
 					Stream.of(
@@ -137,6 +139,7 @@ public class FungibleTransitionConstraintProcedureTest {
 		return FungibleTransition.from(
 			Uranium.class,
 			Uranium::getAmount,
+			(u0, u1) -> true,
 			Arrays.asList(
 				FungibleFormula.from(
 					Stream.of(
@@ -157,6 +160,7 @@ public class FungibleTransitionConstraintProcedureTest {
 		return FungibleTransition.from(
 			H2O.class,
 			H2O::getAmount,
+			(h0, h1) -> true,
 			Arrays.asList(
 				FungibleFormula.from(
 					Stream.of(
@@ -170,11 +174,11 @@ public class FungibleTransitionConstraintProcedureTest {
 	}
 
 	private FungibleTransition<Hydrogen> buildHydrogenTransition() {
-		return FungibleTransition.from(Hydrogen.class, Hydrogen::getAmount, Lists.newArrayList(), (to, meta) -> Result.error(""));
+		return FungibleTransition.from(Hydrogen.class, Hydrogen::getAmount, (h0, h1) -> true, Lists.newArrayList(), (to, meta) -> Result.error(""));
 	}
 
 	private FungibleTransition<Oxygen> buildOxygenTransition() {
-		return FungibleTransition.from(Oxygen.class, Oxygen::getAmount, Lists.newArrayList(), (to, meta) -> Result.error(""));
+		return FungibleTransition.from(Oxygen.class, Oxygen::getAmount, (o0, o1) -> true, Lists.newArrayList(), (to, meta) -> Result.error(""));
 	}
 
 	@Test

@@ -60,7 +60,11 @@ public interface AtomOS {
 	 * @param <T> type of particle class to add a constraint to
 	 * @return a callback function onto which the constraint will be defined
 	 */
-	<T extends Particle> FungibleTransitionConstraintStub<T> onFungible(Class<T> particleClass, ParticleToAmountMapper<T> particleToAmountMapper);
+	<T extends Particle> FungibleTransitionConstraintStub<T> onFungible(
+		Class<T> particleClass,
+		ParticleToAmountMapper<T> particleToAmountMapper,
+		BiFunction<T, T, Boolean> fungibleEquals
+	);
 
 	<T extends Particle> PayloadParticleClassConstraint<T> onPayload(Class<T> particleClass);
 

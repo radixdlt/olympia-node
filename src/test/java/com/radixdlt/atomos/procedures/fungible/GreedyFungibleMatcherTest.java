@@ -342,7 +342,7 @@ public class GreedyFungibleMatcherTest {
 	@Test
 	public void testMatchInitialExact() {
 		FungibleTransition<Helium> transitionHelium = FungibleTransition.from(
-			Helium.class, o -> UInt256.FIVE, Lists.newArrayList(), (to, meta) -> Result.success());
+			Helium.class, o -> UInt256.FIVE, (h0, h1) -> true, Lists.newArrayList(), (to, meta) -> Result.success());
 		Fungible outputHelium1 = new Fungible(mock(Helium.class), Helium.class, UInt256.ONE, 5);
 		Fungible outputHelium2 = new Fungible(mock(Helium.class), Helium.class, UInt256.TWO, 6);
 
@@ -361,7 +361,7 @@ public class GreedyFungibleMatcherTest {
 	@Test
 	public void testMatchInitialExactWithOther() {
 		FungibleTransition<Helium> transitionHelium = FungibleTransition.from(
-			Helium.class, o -> UInt256.FIVE, Lists.newArrayList(), (to, meta) -> Result.success());
+			Helium.class, o -> UInt256.FIVE, (o0, o1) -> true, Lists.newArrayList(), (to, meta) -> Result.success());
 		Fungible outputHelium1 = new Fungible(mock(Helium.class), Helium.class, UInt256.ONE, 5);
 		Fungible outputHelium2 = new Fungible(mock(Helium.class), Helium.class, UInt256.TWO, 6);
 		Fungible outputOxygen3 = new Fungible(mock(Oxygen.class), Oxygen.class, UInt256.NINE, 7);
