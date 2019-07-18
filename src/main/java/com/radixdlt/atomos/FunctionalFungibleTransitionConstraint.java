@@ -30,14 +30,6 @@ public final class FunctionalFungibleTransitionConstraint<T extends Particle>
 	}
 
 	@Override
-	public FungibleTransitionConstraint<T> requireInitial(AtomOS.FungibleTransitionInitialConstraint<T> check) {
-		initialHandler.accept(check);
-
-		return this;
-	}
-
-
-	@Override
 	public <U extends Particle> FungibleTransitionConstraint<T> requireInitialWith(
 		Class<U> sideEffectClass,
 		ParticleClassWithSideEffectConstraintCheck<T, U> constraint
