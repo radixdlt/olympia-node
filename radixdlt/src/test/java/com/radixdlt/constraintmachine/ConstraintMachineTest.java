@@ -9,7 +9,7 @@ import org.junit.Test;
 import com.radixdlt.atoms.DataPointer;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.atoms.Spin;
-import com.radixdlt.store.StateStores;
+import com.radixdlt.store.CMStores;
 import com.radixdlt.common.EUID;
 import com.radixdlt.serialization.SerializerId2;
 
@@ -29,7 +29,7 @@ public class ConstraintMachineTest {
 	@Test
 	public void when_validating_an_atom_with_particle_which_conflicts_with_virtual_state__an_internal_spin_conflict_is_returned() {
 		ConstraintMachine machine = new ConstraintMachine.Builder()
-			.stateTransformer(state -> StateStores.virtualizeDefault(state, p -> true, Spin.UP))
+			.stateTransformer(state -> CMStores.virtualizeDefault(state, p -> true, Spin.UP))
 			.build();
 
 		IndexedParticle p = mock(IndexedParticle.class);
@@ -47,7 +47,7 @@ public class ConstraintMachineTest {
 	@Test
 	public void when_validating_an_atom_with_an_atom_kernel_compute__the_computation_is_returned() {
 		ConstraintMachine machine = new ConstraintMachine.Builder()
-			.stateTransformer(s -> StateStores.virtualizeDefault(s, p -> true, Spin.NEUTRAL))
+			.stateTransformer(s -> CMStores.virtualizeDefault(s, p -> true, Spin.NEUTRAL))
 			.addCompute("test", a -> "hello")
 			.build();
 

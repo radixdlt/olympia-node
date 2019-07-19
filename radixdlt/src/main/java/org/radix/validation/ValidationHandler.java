@@ -22,8 +22,8 @@ import com.radixdlt.store.SpinStateTransitionValidator.TransitionCheckResult;
 import com.radixdlt.atoms.SpunParticle;
 import org.radix.atoms.particles.conflict.ParticleConflict;
 import org.radix.atoms.particles.conflict.ParticleConflictException;
-import com.radixdlt.store.StateStore;
-import org.radix.atoms.PhysicalLedgerStateStore;
+import com.radixdlt.store.CMStore;
+import org.radix.atoms.PhysicalLedgerCMStore;
 import com.radixdlt.common.Pair;
 import org.radix.exceptions.ValidationException;
 import org.radix.modules.Modules;
@@ -35,15 +35,15 @@ import org.radix.universe.system.LocalSystem;
  */
 public class ValidationHandler extends Service {
 	private final ConstraintMachine constraintMachine;
-	private final PhysicalLedgerStateStore atomStore = new PhysicalLedgerStateStore(
+	private final PhysicalLedgerCMStore atomStore = new PhysicalLedgerCMStore(
 		() -> Modules.get(AtomStore.class),
 		() -> LocalSystem.getInstance().getShards()
 	);
-	private final StateStore stateStore;
+	private final CMStore cmStore;
 
 	public ValidationHandler(ConstraintMachine constraintMachine) {
 		this.constraintMachine = constraintMachine;
-		this.stateStore = constraintMachine.virtualize(atomStore);
+		this.cmStore = constraintMachine.virtualize(atomStore);
 	}
 
 	@Override
@@ -77,8 +77,7 @@ public class ValidationHandler extends Service {
 				final DataPointer dataPointer = cmParticle.getDataPointer();
 				final TransitionCheckResult spinCheck = SpinStateTransitionValidator.checkParticleTransition(
 					particle,
-					nextSpin,
-					stateStore
+					nextSpin, cmStore
 				);
 
 				return Pair.of(dataPointer, spinCheck);

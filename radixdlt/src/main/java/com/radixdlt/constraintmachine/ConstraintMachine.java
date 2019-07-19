@@ -10,8 +10,8 @@ import java.util.Map;
 import java.util.function.UnaryOperator;
 import com.radixdlt.atoms.IndexedSpunParticle;
 import com.radixdlt.atoms.Particle;
-import com.radixdlt.store.StateStore;
-import com.radixdlt.store.StateStores;
+import com.radixdlt.store.CMStore;
+import com.radixdlt.store.CMStores;
 
 import java.util.Objects;
 import java.util.stream.Stream;
@@ -21,14 +21,14 @@ import java.util.stream.Stream;
  */
 public final class ConstraintMachine {
 	public static class Builder {
-		private UnaryOperator<StateStore> stateTransformer;
+		private UnaryOperator<CMStore> stateTransformer;
 
 		private ImmutableList.Builder<KernelConstraintProcedure> kernelConstraintProcedureBuilder = new ImmutableList.Builder<>();
 		private ImmutableMap.Builder<String, AtomKernelCompute> kernelComputeBuilder = new ImmutableMap.Builder<>();
 
 		private ImmutableList.Builder<ConstraintProcedure> constraintProcedureBuilder = new ImmutableList.Builder<>();
 
-		public Builder stateTransformer(UnaryOperator<StateStore> stateTransformer) {
+		public Builder stateTransformer(UnaryOperator<CMStore> stateTransformer) {
 			this.stateTransformer = stateTransformer;
 			return this;
 		}
@@ -62,14 +62,14 @@ public final class ConstraintMachine {
 		}
 	}
 
-	private final UnaryOperator<StateStore> stateStoreTransformer;
+	private final UnaryOperator<CMStore> stateStoreTransformer;
 	private final ImmutableList<KernelConstraintProcedure> kernelConstraintProcedures;
 	private final ImmutableMap<String, AtomKernelCompute> kernelComputes;
 	private final ImmutableList<ConstraintProcedure> applicationConstraintProcedures;
-	private final StateStore localStateStore;
+	private final CMStore localCMStore;
 
 	ConstraintMachine(
-		UnaryOperator<StateStore> transformer,
+		UnaryOperator<CMStore> transformer,
 		ImmutableList<KernelConstraintProcedure> kernelConstraintProcedures,
 		ImmutableMap<String, AtomKernelCompute> kernelComputes,
 		ImmutableList<ConstraintProcedure> applicationConstraintProcedures
@@ -77,7 +77,7 @@ public final class ConstraintMachine {
 		Objects.requireNonNull(transformer);
 
 		this.stateStoreTransformer = Objects.requireNonNull(transformer);
-		this.localStateStore = this.stateStoreTransformer.apply(StateStores.empty());
+		this.localCMStore = this.stateStoreTransformer.apply(CMStores.empty());
 		this.kernelConstraintProcedures = kernelConstraintProcedures;
 		this.kernelComputes = kernelComputes;
 		this.applicationConstraintProcedures = applicationConstraintProcedures;
@@ -96,7 +96,7 @@ public final class ConstraintMachine {
 		// "Hardware" checks
 		final Map<Particle, ImmutableList<IndexedSpunParticle>> spunParticles = ConstraintMachineUtils.getTransitionsByParticle(atom);
 		final Stream<CMError> badSpinErrs = spunParticles.entrySet().stream()
-			.flatMap(e -> ConstraintMachineUtils.checkInternalSpins(e.getValue(), localStateStore));
+			.flatMap(e -> ConstraintMachineUtils.checkInternalSpins(e.getValue(), localCMStore));
 		final Stream<CMError> hwErrs = Streams.concat(
 			ConstraintMachineUtils.checkParticleGroupsNotEmpty(atom),
 			ConstraintMachineUtils.checkParticleTransitionsUniqueInGroup(atom),
@@ -138,7 +138,7 @@ public final class ConstraintMachine {
 		return new CMResult(errors, cmAtom);
 	}
 
-	public StateStore virtualize(StateStore base) {
+	public CMStore virtualize(CMStore base) {
 		return stateStoreTransformer.apply(base);
 	}
 }

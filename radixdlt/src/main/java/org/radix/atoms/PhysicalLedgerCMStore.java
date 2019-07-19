@@ -6,7 +6,7 @@ import com.radixdlt.atoms.Particle;
 import com.radixdlt.atoms.Spin;
 import com.radixdlt.atoms.SpunParticle;
 import org.radix.database.exceptions.DatabaseException;
-import com.radixdlt.store.StateStore;
+import com.radixdlt.store.CMStore;
 import com.radixdlt.store.StateStoreException;
 import com.radixdlt.common.EUID;
 import java.util.Objects;
@@ -17,11 +17,11 @@ import org.radix.shards.ShardSpace;
 /**
  * A state store that uses an {@link AtomStore} to provide relevant shard state
  */
-public class PhysicalLedgerStateStore implements StateStore {
+public class PhysicalLedgerCMStore implements CMStore {
 	private final Supplier<AtomStore> atomStoreSupplier;
 	private final Supplier<ShardSpace> shardSpaceSupplier;
 
-	public PhysicalLedgerStateStore(Supplier<AtomStore> atomStoreSupplier, Supplier<ShardSpace> shardSpaceSupplier) {
+	public PhysicalLedgerCMStore(Supplier<AtomStore> atomStoreSupplier, Supplier<ShardSpace> shardSpaceSupplier) {
 		Objects.requireNonNull(atomStoreSupplier, "atomStoreSupplier is required");
 		Objects.requireNonNull(shardSpaceSupplier);
 

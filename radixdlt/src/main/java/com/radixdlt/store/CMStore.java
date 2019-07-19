@@ -9,7 +9,7 @@ import com.radixdlt.common.EUID;
 /**
  *  A state that gives access to the state of a certain shard space
  */
-public interface StateStore {
+public interface CMStore {
 
 	/**
 	 * Returns whether this state store supports any of the given destinations

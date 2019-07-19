@@ -1,6 +1,6 @@
 package com.radixdlt.atomos;
 
-import com.radixdlt.store.StateStore;
+import com.radixdlt.store.CMStore;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -30,7 +30,7 @@ import com.radixdlt.constraintmachine.KernelConstraintProcedure;
 import com.radixdlt.constraintmachine.KernelProcedureError;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.atoms.Spin;
-import com.radixdlt.store.StateStores;
+import com.radixdlt.store.CMStores;
 import com.radixdlt.common.EUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -231,11 +231,11 @@ public final class CMAtomOS implements AtomOSKernel, AtomOS {
 		// Add constraint for Payload state machines
 		builder.addProcedure(this.payloadProcedureBuilder.build());
 
-		UnaryOperator<StateStore> rriTransformer = base ->
-			StateStores.virtualizeDefault(base, p -> p instanceof RRIParticle && ((RRIParticle) p).getNonce() == 0, Spin.UP);
+		UnaryOperator<CMStore> rriTransformer = base ->
+			CMStores.virtualizeDefault(base, p -> p instanceof RRIParticle && ((RRIParticle) p).getNonce() == 0, Spin.UP);
 
-		UnaryOperator<StateStore> virtualizedDefault = base -> {
-			StateStore virtualizeNeutral = StateStores.virtualizeDefault(base, p -> {
+		UnaryOperator<CMStore> virtualizedDefault = base -> {
+			CMStore virtualizeNeutral = CMStores.virtualizeDefault(base, p -> {
 				Function<Particle, Stream<RadixAddress>> mapper = particleMapper.get(p.getClass());
 				if (mapper == null) {
 					return false;

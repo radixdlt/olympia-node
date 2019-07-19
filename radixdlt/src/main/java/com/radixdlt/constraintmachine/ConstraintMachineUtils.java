@@ -14,8 +14,8 @@ import com.radixdlt.atoms.Spin;
 import com.radixdlt.atoms.SpunParticle;
 import com.radixdlt.store.SpinStateTransitionValidator;
 import com.radixdlt.store.SpinStateTransitionValidator.TransitionCheckResult;
-import com.radixdlt.store.StateStore;
-import com.radixdlt.store.StateStores;
+import com.radixdlt.store.CMStore;
+import com.radixdlt.store.CMStores;
 import com.radixdlt.common.Pair;
 
 /**
@@ -38,16 +38,15 @@ final class ConstraintMachineUtils {
 		Particle particle,
 		Spin nextSpin,
 		Spin oldSpin,
-		StateStore localStateStore
+		CMStore localCMStore
 	) {
-		StateStore stateStore = oldSpin == null
-			? localStateStore
-			: StateStores.virtualizeOverwrite(localStateStore, particle::equals, oldSpin);
+		CMStore cmStore = oldSpin == null
+			? localCMStore
+			: CMStores.virtualizeOverwrite(localCMStore, particle::equals, oldSpin);
 
 		TransitionCheckResult result = SpinStateTransitionValidator.checkParticleTransition(
 			particle,
-			nextSpin,
-			stateStore
+			nextSpin, cmStore
 		);
 
 		final CMErrorCode error;
@@ -98,18 +97,17 @@ final class ConstraintMachineUtils {
 	 * Analyze the spins of a particle in an atom.
 	 *
 	 * @param spunParticles the particle in an atom to analyze
-	 * @param localStateStore the local store to analyze spins on top of, relevant because of virtualized particles
+	 * @param localCMStore the local store to analyze spins on top of, relevant because of virtualized particles
 	 * @return map containing each particle and pointers to results of each spun instance
 	 */
-	static Stream<CMError> checkInternalSpins(List<IndexedSpunParticle> spunParticles, StateStore localStateStore) {
+	static Stream<CMError> checkInternalSpins(List<IndexedSpunParticle> spunParticles, CMStore localCMStore) {
 		return mapPairs(spunParticles, (pp, pair) -> {
 			final SpunParticle prev = pair.getFirst();
 			final IndexedSpunParticle indexed = pair.getSecond();
 			final CMErrorCode error = checkNextSpin(
 				pp,
 				indexed.getSpunParticle().getSpin(),
-				prev == null ? null : prev.getSpin(),
-				localStateStore
+				prev == null ? null : prev.getSpin(), localCMStore
 			);
 			if (error != null) {
 				return Stream.of(new CMError(indexed.getDataPointer(), error));
