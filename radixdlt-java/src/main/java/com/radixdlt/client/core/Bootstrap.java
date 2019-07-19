@@ -23,9 +23,12 @@ public enum Bootstrap implements BootstrapConfig {
 		new BootstrapByTrustedNode(new RadixNode("localhost", false, 8080))
 	),
 	JENKINS(
-		RadixUniverseConfigs::getLocalnet,
-		new RadixNode("docker_core0_1", false, 8080),
-		new RadixNode("docker_core1_1", false, 8080)
+		new BootstrapByTrustedNode(
+			ImmutableSet.of(
+				new RadixNode("docker_core0_1", false, 8080),
+				new RadixNode("docker_core1_1", false, 8080)
+			)
+		)
 	),
 	ALPHANET(
 		RadixUniverseConfigs::getAlphanet,

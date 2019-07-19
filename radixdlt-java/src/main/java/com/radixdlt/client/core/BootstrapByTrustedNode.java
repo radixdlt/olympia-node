@@ -6,6 +6,7 @@ import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.client.core.network.RadixNetworkEpic;
 import com.radixdlt.client.core.network.RadixNode;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -21,17 +22,21 @@ import org.radix.serialization2.client.Serialize;
  * the node and no other nodes will be connected to.
  */
 public class BootstrapByTrustedNode implements BootstrapConfig {
-	private final RadixNode trustedNode;
+	private final ImmutableSet<RadixNode> trustedNodes;
 	private final Supplier<RadixUniverseConfig> memoizer;
 
-	public BootstrapByTrustedNode(RadixNode trustedNode) {
-		this.trustedNode = trustedNode;
+	public BootstrapByTrustedNode(Collection<RadixNode> trustedNodes) {
+		if (trustedNodes == null || trustedNodes.isEmpty()) {
+			throw new IllegalArgumentException("At least one trusted node must be specified");
+		}
+		this.trustedNodes = ImmutableSet.copyOf(trustedNodes);
+		RadixNode firstNode = this.trustedNodes.iterator().next();
 		this.memoizer = Suppliers.memoize(() -> {
 			final OkHttpClient client = new OkHttpClient();
-			final Call call = client.newCall(trustedNode.getHttpEndpoint("/api/universe"));
+			final Call call = client.newCall(firstNode.getHttpEndpoint("/api/universe"));
 			final String universeJson;
-			try (Response response = call.execute()) {
-				ResponseBody body = response.body();
+			try (Response response = call.execute();
+				ResponseBody body = response.body()) {
 				if (body == null) {
 					throw new IllegalStateException("Could not retrieve universe configuration.");
 				}
@@ -42,6 +47,10 @@ public class BootstrapByTrustedNode implements BootstrapConfig {
 
 			return Serialize.getInstance().fromJson(universeJson, RadixUniverseConfig.class);
 		});
+	}
+
+	public BootstrapByTrustedNode(RadixNode singleNode) {
+		this(ImmutableSet.of(singleNode));
 	}
 
 	@Override
@@ -56,6 +65,6 @@ public class BootstrapByTrustedNode implements BootstrapConfig {
 
 	@Override
 	public Set<RadixNode> getInitialNetwork() {
-		return ImmutableSet.of(trustedNode);
+		return this.trustedNodes;
 	}
 }
