@@ -12,8 +12,6 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import com.radixdlt.TestSetupUtils;
-
 /**
  * Test that round-trips some objects through the serializer.
  * Additional tests for the "serializer" field added.
