@@ -1,5 +1,7 @@
 package com.radixdlt.store;
 
+import com.radixdlt.atoms.ImmutableAtom;
+import com.radixdlt.atoms.SpunParticle;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -24,6 +26,11 @@ public final class CMStores {
 		@Override
 		public Optional<Spin> getSpin(Particle particle) {
 			return Optional.empty();
+		}
+
+		@Override
+		public ImmutableAtom getAtomContaining(SpunParticle spunParticle) {
+			return null;
 		}
 	};
 
@@ -65,6 +72,11 @@ public final class CMStores {
 
 				return curSpin;
 			}
+
+			@Override
+			public ImmutableAtom getAtomContaining(SpunParticle spunParticle) {
+				return base.getAtomContaining(spunParticle);
+			}
 		};
 	}
 
@@ -92,6 +104,11 @@ public final class CMStores {
 				}
 
 				return base.getSpin(particle);
+			}
+
+			@Override
+			public ImmutableAtom getAtomContaining(SpunParticle spunParticle) {
+				return base.getAtomContaining(spunParticle);
 			}
 		};
 	}

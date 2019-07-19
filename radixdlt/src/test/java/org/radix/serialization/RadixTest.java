@@ -11,6 +11,8 @@ import com.radixdlt.atommodel.unique.UniqueParticleConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.common.EUID;
+import org.radix.atoms.AtomCMStore;
+import org.radix.atoms.AtomStore;
 import org.radix.modules.Modules;
 import org.radix.properties.RuntimeProperties;
 import com.radixdlt.serialization.core.ClasspathScanningSerializationPolicy;
@@ -90,8 +92,12 @@ public abstract class RadixTest
 		os.load(new MessageParticleConstraintScrypt());
 		os.load(new TokenInstancesConstraintScrypt());
 
+		final AtomCMStore atomStore = new AtomCMStore(
+			() -> Modules.get(AtomStore.class),
+			() -> LocalSystem.getInstance().getShards()
+		);
 		ConstraintMachine constraintMachine = os.buildMachine();
-		Modules.put(ValidationHandler.class, new ValidationHandler(constraintMachine));
+		Modules.put(ValidationHandler.class, new ValidationHandler(constraintMachine, atomStore));
 	}
 
 	@AfterClass

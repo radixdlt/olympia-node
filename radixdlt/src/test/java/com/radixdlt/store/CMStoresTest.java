@@ -3,7 +3,9 @@ package com.radixdlt.store;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.mockito.Mockito.mock;
 
+import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.atoms.Particle;
+import com.radixdlt.atoms.SpunParticle;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -22,6 +24,11 @@ public class CMStoresTest {
 			@Override
 			public Optional<Spin> getSpin(Particle particle) {
 				return getSpinFunc.apply(particle);
+			}
+
+			@Override
+			public ImmutableAtom getAtomContaining(SpunParticle spunParticle) {
+				return null;
 			}
 		};
 	}

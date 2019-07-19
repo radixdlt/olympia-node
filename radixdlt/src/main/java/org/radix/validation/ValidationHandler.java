@@ -10,7 +10,6 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import org.radix.atoms.Atom;
 import org.radix.atoms.AtomDependencyNotFoundException;
-import org.radix.atoms.AtomStore;
 import com.radixdlt.atoms.DataPointer;
 import com.radixdlt.constraintmachine.CMAtom;
 import com.radixdlt.constraintmachine.ConstraintMachine;
@@ -23,27 +22,20 @@ import com.radixdlt.atoms.SpunParticle;
 import org.radix.atoms.particles.conflict.ParticleConflict;
 import org.radix.atoms.particles.conflict.ParticleConflictException;
 import com.radixdlt.store.CMStore;
-import org.radix.atoms.PhysicalLedgerCMStore;
 import com.radixdlt.common.Pair;
 import org.radix.exceptions.ValidationException;
-import org.radix.modules.Modules;
 import org.radix.modules.Service;
-import org.radix.universe.system.LocalSystem;
 
 /**
  * Legacy validation handler to remain compatible with old usages in AtomSync and Conflict handlers until Dan's changes are merged
  */
 public class ValidationHandler extends Service {
 	private final ConstraintMachine constraintMachine;
-	private final PhysicalLedgerCMStore atomStore = new PhysicalLedgerCMStore(
-		() -> Modules.get(AtomStore.class),
-		() -> LocalSystem.getInstance().getShards()
-	);
 	private final CMStore cmStore;
 
-	public ValidationHandler(ConstraintMachine constraintMachine) {
+	public ValidationHandler(ConstraintMachine constraintMachine, CMStore cmStore) {
 		this.constraintMachine = constraintMachine;
-		this.cmStore = constraintMachine.virtualize(atomStore);
+		this.cmStore = constraintMachine.virtualize(cmStore);
 	}
 
 	@Override
@@ -108,7 +100,7 @@ public class ValidationHandler extends Service {
 			//
 			// Modified StateProviderFromStore.getAtomsContaining to be singular based on the
 			// above assumption.
-			final Atom conflictAtom = atomStore.getAtomContaining(issueParticle);
+			final Atom conflictAtom = (Atom) cmStore.getAtomContaining(issueParticle);
 
 			throw new ParticleConflictException(new ParticleConflict(issueParticle, ImmutableSet.of(atom, conflictAtom)));
 		}
