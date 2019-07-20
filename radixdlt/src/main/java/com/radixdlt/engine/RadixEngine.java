@@ -7,7 +7,6 @@ import com.radixdlt.atoms.Spin;
 import com.radixdlt.atoms.SpunParticle;
 import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.CMAtom;
-import com.radixdlt.constraintmachine.CMResult;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.engine.StateCheckResult.StateCheckResultAcceptor;
 import com.radixdlt.store.CMStore;
@@ -29,7 +28,7 @@ public final class RadixEngine {
 		this.cmStore = constraintMachine.virtualize(cmStore);
 	}
 
-	public CMResult validate(ImmutableAtom atom) {
+	public ValidationResult validate(ImmutableAtom atom) {
 		return constraintMachine.validate(atom, false);
 	}
 

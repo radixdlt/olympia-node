@@ -4,13 +4,17 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.atoms.SpunParticle;
 import com.radixdlt.constraintmachine.CMError;
-import com.radixdlt.constraintmachine.CMResult;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.StateCheckResult;
 import com.radixdlt.engine.StateCheckResult.StateCheckResultAcceptor;
+import com.radixdlt.engine.ValidationResult;
+import com.radixdlt.engine.ValidationResult.ValidationResultAcceptor;
 import java.util.Collections;
 import java.util.Objects;
 
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import org.radix.atoms.Atom;
 import com.radixdlt.constraintmachine.CMAtom;
 import com.radixdlt.constraintmachine.ConstraintMachine;
@@ -40,11 +44,33 @@ public class ValidationHandler extends Service {
 
 	public CMAtom validate(Atom atom) throws ValidationException {
 		Objects.requireNonNull(atom, "atom is required");
-		final CMResult result = radixEngine.validate(atom);
-		return result.onSuccessElseThrow(e -> {
-			CMError cmError = e.iterator().next();
-			return new ConstraintMachineValidationException(atom, cmError.getErrorDescription(), cmError.getDataPointer());
+
+		final ValidationResult result = radixEngine.validate(atom);
+		final CompletableFuture<CMAtom> cmAtomCompletableFuture = new CompletableFuture<>();
+
+		result.accept(new ValidationResultAcceptor() {
+			@Override
+			public void onSuccess(CMAtom cmAtom) {
+				cmAtomCompletableFuture.complete(cmAtom);
+			}
+
+			@Override
+			public void onError(Set<CMError> errors) {
+				CMError cmError = errors.iterator().next();
+				cmAtomCompletableFuture.completeExceptionally(new ConstraintMachineValidationException(atom, cmError.getErrorDescription(), cmError.getDataPointer()));
+			}
 		});
+
+		try {
+			return cmAtomCompletableFuture.get();
+		} catch (ExecutionException e) {
+			if (e.getCause() instanceof ValidationException) {
+				throw (ValidationException) e.getCause();
+			}
+			throw new IllegalStateException();
+		} catch (InterruptedException e) {
+			throw new IllegalStateException();
+		}
 	}
 
 	public void stateCheck(CMAtom cmAtom) throws Exception {

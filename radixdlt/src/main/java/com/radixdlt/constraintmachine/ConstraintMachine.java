@@ -6,6 +6,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Streams;
 import com.radixdlt.atomos.AtomOSKernel.AtomKernelCompute;
 import com.radixdlt.atoms.ImmutableAtom;
+import com.radixdlt.engine.ValidationResult;
 import java.util.Map;
 import java.util.function.UnaryOperator;
 import com.radixdlt.atoms.IndexedSpunParticle;
@@ -92,7 +93,7 @@ public final class ConstraintMachine {
 	 * and just returns the first error
 	 * @return results of validation, including any errors, warnings, and post-validation write logic
 	 */
-	public CMResult validate(ImmutableAtom atom, boolean getAllErrors) {
+	public ValidationResult validate(ImmutableAtom atom, boolean getAllErrors) {
 		// "Hardware" checks
 		final Map<Particle, ImmutableList<IndexedSpunParticle>> spunParticles = ConstraintMachineUtils.getTransitionsByParticle(atom);
 		final Stream<CMError> badSpinErrs = spunParticles.entrySet().stream()
@@ -135,7 +136,11 @@ public final class ConstraintMachine {
 			? errorStream.collect(ImmutableSet.toImmutableSet())
 			: errorStream.findAny().map(ImmutableSet::of).orElse(ImmutableSet.of());
 
-		return new CMResult(errors, cmAtom);
+		if (errors.isEmpty()) {
+			return acceptor -> acceptor.onError(errors);
+		} else {
+			return acceptor -> acceptor.onSuccess(cmAtom);
+		}
 	}
 
 	public CMStore virtualize(CMStore base) {
