@@ -37,28 +37,27 @@ final class ConstraintMachineUtils {
 	private static CMErrorCode checkNextSpin(
 		Particle particle,
 		Spin nextSpin,
-		Spin oldSpin,
-		CMStore localCMStore
+		Spin oldSpin
 	) {
 		CMStore cmStore = oldSpin == null
-			? localCMStore
-			: CMStores.virtualizeOverwrite(localCMStore, particle::equals, oldSpin);
+			? CMStores.empty()
+			: CMStores.virtualizeOverwrite(CMStores.empty(), particle::equals, oldSpin);
 
 		TransitionCheckResult result = SpinStateTransitionValidator.checkParticleTransition(
 			particle,
-			nextSpin, cmStore
+			nextSpin,
+			cmStore
 		);
 
 		final CMErrorCode error;
 
 		switch(result) {
 			case OKAY:
-				error = null;
-				break;
+				// Follow through
 			case MISSING_STATE:
 				// Follow through
 			case MISSING_STATE_FROM_UNSUPPORTED_SHARD:
-				error = CMErrorCode.UNKNOWN_PARTICLE;
+				error = null;
 				break;
 			case CONFLICT:
 				error = CMErrorCode.INTERNAL_SPIN_CONFLICT;
@@ -97,17 +96,16 @@ final class ConstraintMachineUtils {
 	 * Analyze the spins of a particle in an atom.
 	 *
 	 * @param spunParticles the particle in an atom to analyze
-	 * @param localCMStore the local store to analyze spins on top of, relevant because of virtualized particles
 	 * @return map containing each particle and pointers to results of each spun instance
 	 */
-	static Stream<CMError> checkInternalSpins(List<IndexedSpunParticle> spunParticles, CMStore localCMStore) {
+	static Stream<CMError> checkInternalSpins(List<IndexedSpunParticle> spunParticles) {
 		return mapPairs(spunParticles, (pp, pair) -> {
 			final SpunParticle prev = pair.getFirst();
 			final IndexedSpunParticle indexed = pair.getSecond();
 			final CMErrorCode error = checkNextSpin(
 				pp,
 				indexed.getSpunParticle().getSpin(),
-				prev == null ? null : prev.getSpin(), localCMStore
+				prev == null ? null : prev.getSpin()
 			);
 			if (error != null) {
 				return Stream.of(new CMError(indexed.getDataPointer(), error));

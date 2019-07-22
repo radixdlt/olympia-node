@@ -6,7 +6,10 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Streams;
 import com.radixdlt.atomos.AtomOSKernel.AtomKernelCompute;
 import com.radixdlt.atoms.ImmutableAtom;
+import com.radixdlt.atoms.Spin;
 import com.radixdlt.engine.ValidationResult;
+import com.radixdlt.store.SpinStateTransitionValidator;
+import com.radixdlt.store.SpinStateTransitionValidator.TransitionCheckResult;
 import java.util.Map;
 import java.util.function.UnaryOperator;
 import com.radixdlt.atoms.IndexedSpunParticle;
@@ -97,23 +100,43 @@ public final class ConstraintMachine {
 		// "Hardware" checks
 		final Map<Particle, ImmutableList<IndexedSpunParticle>> spunParticles = ConstraintMachineUtils.getTransitionsByParticle(atom);
 		final Stream<CMError> badSpinErrs = spunParticles.entrySet().stream()
-			.flatMap(e -> ConstraintMachineUtils.checkInternalSpins(e.getValue(), localCMStore));
+			.flatMap(e -> ConstraintMachineUtils.checkInternalSpins(e.getValue()));
 		final Stream<CMError> hwErrs = Streams.concat(
 			ConstraintMachineUtils.checkParticleGroupsNotEmpty(atom),
 			ConstraintMachineUtils.checkParticleTransitionsUniqueInGroup(atom),
 			badSpinErrs
 		);
-
-		// "Kernel" checks
 		final ImmutableList<CMParticle> cmParticles =
 			spunParticles.entrySet().stream()
 				.map(e -> new CMParticle(e.getKey(), e.getValue()))
 				.collect(ImmutableList.toImmutableList());
+		final CMAtom cmAtom = new CMAtom(atom, cmParticles);
+
+		// "Segfaults"
+		final Stream<CMError> unknownParticleErrors = cmAtom.getParticles().stream()
+			.filter(p -> !localCMStore.getSpin(p.getParticle()).isPresent())
+			.map(p -> new CMError(p.getDataPointer(), CMErrorCode.UNKNOWN_PARTICLE));
+
+		// Virtual particle state checks
+		// TODO: Is this better suited at the state check pipeline?
+		final Stream<CMError> virtualParticleErrors = cmAtom.getParticles().stream()
+			.filter(p -> {
+				Particle particle = p.getParticle();
+				Spin nextSpin = p.getNextSpin();
+				TransitionCheckResult result = SpinStateTransitionValidator.checkParticleTransition(
+					particle,
+					nextSpin,
+					localCMStore
+				);
+
+				return result.equals(TransitionCheckResult.CONFLICT);
+			})
+			.map(p ->  new CMError(p.getDataPointer(), CMErrorCode.INTERNAL_SPIN_CONFLICT));
+
 
 		final ImmutableMap.Builder<String, Object> atomCompute = new ImmutableMap.Builder<>();
 		kernelComputes.forEach((key, c) -> atomCompute.put(key, c.compute(atom)));
 
-		final CMAtom cmAtom = new CMAtom(atom, cmParticles);
 		final Stream<CMError> kernelErrs = kernelConstraintProcedures.stream()
 			.flatMap(kernelProcedure -> kernelProcedure.validate(cmAtom))
 			.map(CMErrors::fromKernelProcedureError);
@@ -128,6 +151,8 @@ public final class ConstraintMachine {
 
 		final Stream<CMError> errorStream = Streams.concat(
 			hwErrs,
+			unknownParticleErrors,
+			virtualParticleErrors,
 			kernelErrs,
 			applicationErrs
 		);
