@@ -4,6 +4,7 @@ import com.radixdlt.atoms.DataPointer;
 import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.atoms.IndexedSpunParticle;
 import com.radixdlt.atoms.SpunParticle;
+import com.radixdlt.engine.ValidationResult.ValidationResultAcceptor;
 import java.util.stream.Stream;
 import org.junit.Test;
 
@@ -14,7 +15,11 @@ import com.radixdlt.universe.Universe;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class CMAtomOSTest {
@@ -38,7 +43,10 @@ public class CMAtomOSTest {
 		when(atom.indexedSpunParticles()).thenReturn(Stream.of(
 			new IndexedSpunParticle(SpunParticle.up(new TestParticle()), DataPointer.ofParticle(0, 0))
 		));
-		assertThat(machine.validate(atom, true).getErrors()).anyMatch(e -> e.getErrorCode() == CMErrorCode.UNKNOWN_PARTICLE);
+		ValidationResultAcceptor acceptor = mock(ValidationResultAcceptor.class);
+		machine.validate(atom, true).accept(acceptor);
+		verify(acceptor, times(1))
+			.onError(argThat(s -> s.stream().anyMatch(e -> e.getErrorCode() == CMErrorCode.UNKNOWN_PARTICLE)));
 	}
 
 	@Test

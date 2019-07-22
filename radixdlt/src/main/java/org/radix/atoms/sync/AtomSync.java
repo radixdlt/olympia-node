@@ -2,6 +2,7 @@ package org.radix.atoms.sync;
 
 import com.radixdlt.atoms.AtomStatus;
 import com.radixdlt.atoms.ImmutableAtom;
+import com.radixdlt.utils.UInt384;
 import java.io.IOException;
 import java.net.SocketException;
 import java.net.URI;
@@ -420,7 +421,7 @@ public class AtomSync extends Service
 					}
 
 					TemporalProofValidator.validate(atom.getTemporalProof());
-					CMAtom cmAtom = Modules.get(ValidationHandler.class).validate(atom);
+					Pair<CMAtom, UInt384> result = Modules.get(ValidationHandler.class).validate(atom);
 
 					if (atomsLog.hasLevel(Logging.DEBUG)) {
 						atomsLog.debug("Validated Atom "+atom.getHID()+" to SIGNATURE");
@@ -430,7 +431,7 @@ public class AtomSync extends Service
 					// All atoms will be witnessed, even invalid ones.  If flooded with invalid atoms, it may make it harder for
 					// remote nodes to determine if this node saw a particular atom vs a commitment stream that only includes
 					// committed atoms.
-					witnessed(cmAtom);
+					witnessed(result.getFirst());
 
 		            if (numShards > 512)
 		            	atomsLog.warn(atom.getHID()+" at clock "+atom.getTemporalProof().getVertexByNID(LocalSystem.getInstance().getNID()).getClock()+" is super mega large with "+numShards+" shards");
@@ -439,7 +440,7 @@ public class AtomSync extends Service
 		            else if (numShards > 8)
 		            	atomsLog.warn(atom.getHID()+" at clock "+atom.getTemporalProof().getVertexByNID(LocalSystem.getInstance().getNID()).getClock()+" is large with "+numShards+" shards");
 
-                    AtomSync.this.commitQueue.add(new PreparedAtom(cmAtom));
+                    AtomSync.this.commitQueue.add(new PreparedAtom(result.getFirst(), result.getSecond()));
 				}
 				catch (Throwable t)
 				{
@@ -1444,9 +1445,9 @@ public class AtomSync extends Service
 				if (!Modules.get(AtomStore.class).hasAtom(atom.getAID()))
 				{
 
-					CMAtom cmAtom = Modules.get(ValidationHandler.class).validate(atom);
-					witnessed(cmAtom);
-					PreparedAtom preparedAtom = new PreparedAtom(cmAtom);
+					Pair<CMAtom, UInt384> result = Modules.get(ValidationHandler.class).validate(atom);
+					witnessed(result.getFirst());
+					PreparedAtom preparedAtom = new PreparedAtom(result.getFirst(), result.getSecond());
 					Modules.get(AtomStore.class).storeAtom(preparedAtom);
 				}
 			}

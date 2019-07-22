@@ -1,7 +1,9 @@
 package org.radix.integration.stack;
 
 import com.google.common.collect.ImmutableMap;
+import com.radixdlt.common.Pair;
 import com.radixdlt.universe.Universe;
+import com.radixdlt.utils.UInt384;
 import org.assertj.core.api.Assertions;
 import org.junit.Before;
 import org.junit.Test;
@@ -69,8 +71,8 @@ public class TokenCreationValidationTest extends RadixTestWithStores {
 		);
 		atom.sign(identity);
 
-		CMAtom cmAtom = Modules.get(ValidationHandler.class).validate(atom);
-		Modules.get(ValidationHandler.class).stateCheck(cmAtom);
+		Pair<CMAtom, UInt384> result = Modules.get(ValidationHandler.class).validate(atom);
+		Modules.get(ValidationHandler.class).stateCheck(result.getFirst());
 	}
 
 	@Test
@@ -102,9 +104,9 @@ public class TokenCreationValidationTest extends RadixTestWithStores {
 		);
 		addTemporalVertex(atom); // Can't store atom without vertex from this node
 		atom.sign(identity);
-		CMAtom cmAtom = Modules.get(ValidationHandler.class).validate(atom);
-		Modules.get(ValidationHandler.class).stateCheck(cmAtom);
-		PreparedAtom preparedAtom = new PreparedAtom(cmAtom);
+		Pair<CMAtom, UInt384> result = Modules.get(ValidationHandler.class).validate(atom);
+		Modules.get(ValidationHandler.class).stateCheck(result.getFirst());
+		PreparedAtom preparedAtom = new PreparedAtom(result.getFirst(), result.getSecond());
 		Modules.get(AtomStore.class).storeAtom(preparedAtom);
 
 		Atom secondAtom = new Atom(Time.currentTimestamp());
@@ -131,8 +133,8 @@ public class TokenCreationValidationTest extends RadixTestWithStores {
 			secondUnallocateTokensParticle, Spin.UP
 		);
 		secondAtom.sign(identity);
-		CMAtom cmAtom1 = Modules.get(ValidationHandler.class).validate(secondAtom);
-		Assertions.assertThatThrownBy(() -> Modules.get(ValidationHandler.class).stateCheck(cmAtom1))
+		Pair<CMAtom, UInt384> result1 = Modules.get(ValidationHandler.class).validate(secondAtom);
+		Assertions.assertThatThrownBy(() -> Modules.get(ValidationHandler.class).stateCheck(result1.getFirst()))
 			.isInstanceOf(ParticleConflictException.class);
 	}
 }

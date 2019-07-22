@@ -1,5 +1,6 @@
 package com.radixdlt.engine;
 
+import com.google.common.collect.ImmutableMap;
 import com.radixdlt.constraintmachine.CMAtom;
 import com.radixdlt.constraintmachine.CMError;
 import java.util.Set;
@@ -9,7 +10,7 @@ import java.util.Set;
  */
 public interface ValidationResult {
 	interface ValidationResultAcceptor {
-		default void onSuccess(CMAtom cmAtom) {
+		default void onSuccess(CMAtom cmAtom, ImmutableMap<String, Object> computed) {
 		}
 		default void onError(Set<CMError> errors) {
 		}

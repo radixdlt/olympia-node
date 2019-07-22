@@ -1,14 +1,17 @@
 package org.radix.validation;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.atoms.SpunParticle;
+import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.StateCheckResult;
 import com.radixdlt.engine.StateCheckResult.StateCheckResultAcceptor;
 import com.radixdlt.engine.ValidationResult;
 import com.radixdlt.engine.ValidationResult.ValidationResultAcceptor;
+import com.radixdlt.utils.UInt384;
 import java.util.Collections;
 import java.util.Objects;
 
@@ -42,16 +45,20 @@ public class ValidationHandler extends Service {
 		return "Validation Handler";
 	}
 
-	public CMAtom validate(Atom atom) throws ValidationException {
+	public Pair<CMAtom, UInt384> validate(Atom atom) throws ValidationException {
 		Objects.requireNonNull(atom, "atom is required");
 
 		final ValidationResult result = radixEngine.validate(atom);
-		final CompletableFuture<CMAtom> cmAtomCompletableFuture = new CompletableFuture<>();
+		final CompletableFuture<Pair<CMAtom, UInt384>> cmAtomCompletableFuture = new CompletableFuture<>();
 
 		result.accept(new ValidationResultAcceptor() {
 			@Override
-			public void onSuccess(CMAtom cmAtom) {
-				cmAtomCompletableFuture.complete(cmAtom);
+			public void onSuccess(CMAtom cmAtom, ImmutableMap<String, Object> computed) {
+				Object result = computed.get("mass");
+				if (result == null) {
+					throw new NullPointerException("mass does not exist");
+				}
+				cmAtomCompletableFuture.complete(Pair.of(cmAtom, UInt384.class.cast(result)));
 			}
 
 			@Override

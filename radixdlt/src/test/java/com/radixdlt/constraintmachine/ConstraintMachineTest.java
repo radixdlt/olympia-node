@@ -3,6 +3,7 @@ package com.radixdlt.constraintmachine;
 import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.atoms.IndexedSpunParticle;
 import com.radixdlt.atoms.SpunParticle;
+import com.radixdlt.engine.ValidationResult.ValidationResultAcceptor;
 import java.util.Collections;
 import java.util.stream.Stream;
 import org.junit.Test;
@@ -14,7 +15,11 @@ import com.radixdlt.common.EUID;
 import com.radixdlt.serialization.SerializerId2;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class ConstraintMachineTest {
@@ -40,8 +45,13 @@ public class ConstraintMachineTest {
 			new IndexedSpunParticle(SpunParticle.up(p), DataPointer.ofParticle(0, 0))
 		));
 
-		assertThat(machine.validate(atom, true).getErrors())
-			.contains(new CMError(DataPointer.ofParticle(0, 0), CMErrorCode.INTERNAL_SPIN_CONFLICT));
+		ValidationResultAcceptor acceptor = mock(ValidationResultAcceptor.class);
+		machine.validate(atom, true).accept(acceptor);
+		verify(acceptor, times(1))
+			.onError(argThat(s -> s.contains(
+				new CMError(DataPointer.ofParticle(0, 0), CMErrorCode.INTERNAL_SPIN_CONFLICT))
+			));
+
 	}
 
 	@Test
@@ -59,9 +69,9 @@ public class ConstraintMachineTest {
 			new IndexedSpunParticle(SpunParticle.up(p), DataPointer.ofParticle(0, 0))
 		));
 
-		org.assertj.core.api.AssertionsForClassTypes.assertThat(
-			machine.validate(atom, false).onSuccessElseThrow(e -> new IllegalStateException(e.toString()))
-			.getComputedOrError("test", String.class))
-			.isEqualTo("hello");
+		ValidationResultAcceptor acceptor = mock(ValidationResultAcceptor.class);
+		machine.validate(atom, true).accept(acceptor);
+		verify(acceptor, times(1))
+			.onSuccess(any(), argThat(m -> m.get("test").equals("hello")));
 	}
 }

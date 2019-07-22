@@ -1,5 +1,6 @@
 package org.radix.atoms;
 
+import com.radixdlt.utils.UInt384;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -1185,8 +1186,8 @@ public class AtomStore extends DatabaseStore implements DiscoverySource<AtomDisc
 			if ((status = this.uniqueIndexables.get(transaction, key, pKey, data, LockMode.RMW)) == OperationStatus.SUCCESS)
 			{
 				long clock = new PreparedAtom(data.getData()).getClock();
-				CMAtom cmAtom = Modules.get(ValidationHandler.class).validate(atom);
-				preparedAtom = new PreparedAtom(cmAtom);
+				Pair<CMAtom, UInt384> result = Modules.get(ValidationHandler.class).validate(atom);
+				preparedAtom = new PreparedAtom(result.getFirst(), result.getSecond());
 				if (preparedAtom.getClock() != clock)
 					throw new IllegalStateException("Can not update Atom "+atom.getAID()+" due to mismatching clock");
 			}

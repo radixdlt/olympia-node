@@ -1,5 +1,7 @@
 package org.radix.atoms;
 
+import com.google.common.collect.ImmutableMap;
+import com.radixdlt.engine.ValidationResult.ValidationResultAcceptor;
 import com.radixdlt.utils.UInt384;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -17,6 +19,7 @@ import org.radix.atoms.AtomStore.IDType;
 import com.radixdlt.constraintmachine.CMAtom;
 import com.radixdlt.constraintmachine.CMParticle;
 import com.radixdlt.common.EUID;
+import org.radix.exceptions.ValidationException;
 import org.radix.modules.Modules;
 import com.radixdlt.utils.WireIO.Reader;
 import com.radixdlt.utils.WireIO.Writer;
@@ -49,10 +52,10 @@ public class PreparedAtom {
 	// TODO: Remove this and just use particle hid + spin
 	private CMAtom cmAtom;
 
-	public PreparedAtom(CMAtom cmAtom) throws IOException {
+	public PreparedAtom(CMAtom cmAtom, UInt384 mass) throws IOException {
 		this.cmAtom = cmAtom;
 		this.atom = (Atom) cmAtom.getAtom();
-		this.mass = cmAtom.getComputedOrError("mass", UInt384.class);
+		this.mass = mass;
 		this.atomID = atom.getAID();
 
 		TemporalVertex vertex = atom.getTemporalProof().getVertexByNID(LocalSystem.getInstance().getNID());
@@ -176,8 +179,11 @@ public class PreparedAtom {
 	 */
 	public CMAtom getCmAtom() {
 		if (this.cmAtom == null) {
-			this.cmAtom = Modules.get(ValidationHandler.class).getConstraintMachine().validate(getAtom(), false)
-				.onSuccessElseThrow(e -> new IllegalStateException());
+			try {
+				this.cmAtom = Modules.get(ValidationHandler.class).validate(getAtom()).getFirst();
+			} catch (ValidationException e) {
+				throw new IllegalStateException();
+			}
 		}
 
 		return this.cmAtom;

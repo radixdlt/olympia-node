@@ -113,7 +113,7 @@ public final class ConstraintMachine {
 		final ImmutableMap.Builder<String, Object> atomCompute = new ImmutableMap.Builder<>();
 		kernelComputes.forEach((key, c) -> atomCompute.put(key, c.compute(atom)));
 
-		final CMAtom cmAtom = new CMAtom(atom, cmParticles, atomCompute.build());
+		final CMAtom cmAtom = new CMAtom(atom, cmParticles);
 		final Stream<CMError> kernelErrs = kernelConstraintProcedures.stream()
 			.flatMap(kernelProcedure -> kernelProcedure.validate(cmAtom))
 			.map(CMErrors::fromKernelProcedureError);
@@ -136,10 +136,10 @@ public final class ConstraintMachine {
 			? errorStream.collect(ImmutableSet.toImmutableSet())
 			: errorStream.findAny().map(ImmutableSet::of).orElse(ImmutableSet.of());
 
-		if (errors.isEmpty()) {
+		if (!errors.isEmpty()) {
 			return acceptor -> acceptor.onError(errors);
 		} else {
-			return acceptor -> acceptor.onSuccess(cmAtom);
+			return acceptor -> acceptor.onSuccess(cmAtom, atomCompute.build());
 		}
 	}
 

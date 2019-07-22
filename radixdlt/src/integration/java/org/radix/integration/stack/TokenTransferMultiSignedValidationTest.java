@@ -1,6 +1,8 @@
 package org.radix.integration.stack;
 
 import com.google.common.collect.ImmutableMap;
+import com.radixdlt.common.Pair;
+import com.radixdlt.utils.UInt384;
 import java.io.File;
 import java.util.Arrays;
 import org.junit.Before;
@@ -91,9 +93,9 @@ public class TokenTransferMultiSignedValidationTest extends RadixTestWithStores 
 		addTemporalVertex(atom); // Can't store atom without vertex from this node
 		atom.sign(identity);
 
-		CMAtom cmAtom = Modules.get(ValidationHandler.class).validate(atom);
-		Modules.get(ValidationHandler.class).stateCheck(cmAtom);
-		PreparedAtom preparedAtom = new PreparedAtom(cmAtom);
+		Pair<CMAtom, UInt384> result = Modules.get(ValidationHandler.class).validate(atom);
+		Modules.get(ValidationHandler.class).stateCheck(result.getFirst());
+		PreparedAtom preparedAtom = new PreparedAtom(result.getFirst(), result.getSecond());
 		Modules.get(AtomStore.class).storeAtom(preparedAtom);
 
 		ECKeyPair other = new ECKeyPair();
@@ -127,9 +129,9 @@ public class TokenTransferMultiSignedValidationTest extends RadixTestWithStores 
 
 		transferAtom.sign(identity);
 		addTemporalVertex(transferAtom); // Can't store atom without vertex from this node
-		CMAtom cmAtom1 = Modules.get(ValidationHandler.class).validate(transferAtom);
-		Modules.get(ValidationHandler.class).stateCheck(cmAtom1);
-		PreparedAtom preparedAtom1 = new PreparedAtom(cmAtom1);
+		Pair<CMAtom, UInt384> result1 = Modules.get(ValidationHandler.class).validate(transferAtom);
+		Modules.get(ValidationHandler.class).stateCheck(result1.getFirst());
+		PreparedAtom preparedAtom1 = new PreparedAtom(result1.getFirst(), result1.getSecond());
 		Modules.get(AtomStore.class).storeAtom(preparedAtom1);
 
 		final Atom multiSigAtom = new Atom(Time.currentTimestamp());
@@ -141,9 +143,9 @@ public class TokenTransferMultiSignedValidationTest extends RadixTestWithStores 
 
 		multiSigAtom.sign(Arrays.asList(identity, other));
 		addTemporalVertex(multiSigAtom); // Can't store atom without vertex from this node
-		CMAtom cmAtom2 = Modules.get(ValidationHandler.class).validate(multiSigAtom);
-		Modules.get(ValidationHandler.class).stateCheck(cmAtom2);
-		PreparedAtom preparedAtom2 = new PreparedAtom(cmAtom2);
+		Pair<CMAtom, UInt384> result2 = Modules.get(ValidationHandler.class).validate(multiSigAtom);
+		Modules.get(ValidationHandler.class).stateCheck(result2.getFirst());
+		PreparedAtom preparedAtom2 = new PreparedAtom(result2.getFirst(), result2.getSecond());
 		Modules.get(AtomStore.class).storeAtom(preparedAtom2);
 	}
 }
