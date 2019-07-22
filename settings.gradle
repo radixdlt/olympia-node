@@ -1,2 +1,3 @@
 rootProject.name = 'RadixRegressionTests'
-
+include ":radixdlt-java"
+project(":radixdlt-java").projectDir = file("../radixdlt-java/radixdlt-java")
