@@ -3,12 +3,10 @@ package com.radixdlt.atomos;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.atoms.DataPointer;
 import com.radixdlt.atoms.ImmutableAtom;
-import com.radixdlt.atoms.IndexedSpunParticle;
-import com.radixdlt.atoms.SpunParticle;
+import com.radixdlt.atoms.Spin;
 import com.radixdlt.constraintmachine.CMAtom;
 import com.radixdlt.constraintmachine.CMParticle;
 import com.radixdlt.engine.ValidationResult.ValidationResultAcceptor;
-import java.util.stream.Stream;
 import org.junit.Test;
 
 import com.radixdlt.atoms.Particle;
@@ -17,9 +15,7 @@ import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.universe.Universe;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -46,12 +42,7 @@ public class CMAtomOSTest {
 		when(atom.getAtom()).thenReturn(mock(ImmutableAtom.class));
 		TestParticle testParticle = new TestParticle();
 		when(atom.getParticles()).thenReturn(ImmutableList.of(
-			new CMParticle(
-				testParticle,
-				ImmutableList.of(
-					new IndexedSpunParticle(SpunParticle.up(testParticle), DataPointer.ofParticle(0, 0))
-				)
-			)
+			new CMParticle(testParticle, DataPointer.ofParticle(0, 0), Spin.NEUTRAL, 1)
 		));
 		ValidationResultAcceptor acceptor = mock(ValidationResultAcceptor.class);
 		machine.validate(atom, true).accept(acceptor);

@@ -8,6 +8,7 @@ import com.radixdlt.constraintmachine.CMAtom;
 import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.CMErrorCode;
 import com.radixdlt.constraintmachine.CMParticle;
+import com.radixdlt.store.SpinStateMachine;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -166,9 +167,9 @@ final class RadixEngineUtils {
 
 	static CMAtom toCMAtom(ImmutableAtom atom) throws CMAtomConversionException {
 		final Map<Particle, ImmutableList<IndexedSpunParticle>> spunParticles = RadixEngineUtils.getTransitionsByParticle(atom);
+
 		final Stream<CMError> badSpinErrs = spunParticles.entrySet().stream()
 			.flatMap(e -> RadixEngineUtils.checkInternalSpins(e.getValue()));
-
 		final Stream<CMError> conversionErrs = Streams.concat(
 			RadixEngineUtils.checkParticleGroupsNotEmpty(atom),
 			RadixEngineUtils.checkParticleTransitionsUniqueInGroup(atom),
@@ -182,7 +183,11 @@ final class RadixEngineUtils {
 
 		final ImmutableList<CMParticle> cmParticles =
 			spunParticles.entrySet().stream()
-				.map(e -> new CMParticle(e.getKey(), e.getValue()))
+				.map(e -> {
+					ImmutableList<IndexedSpunParticle> sp = e.getValue();
+					Spin checkSpin = SpinStateMachine.prev(sp.get(0).getSpunParticle().getSpin());
+					return new CMParticle(e.getKey(), sp.get(0).getDataPointer(), checkSpin, sp.size());
+				})
 				.collect(ImmutableList.toImmutableList());
 		return new CMAtom(atom, cmParticles);
 	}

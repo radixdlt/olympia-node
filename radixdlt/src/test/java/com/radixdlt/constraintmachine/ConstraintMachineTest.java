@@ -2,11 +2,8 @@ package com.radixdlt.constraintmachine;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.atoms.ImmutableAtom;
-import com.radixdlt.atoms.IndexedSpunParticle;
-import com.radixdlt.atoms.SpunParticle;
 import com.radixdlt.engine.ValidationResult.ValidationResultAcceptor;
 import java.util.Collections;
-import java.util.stream.Stream;
 import org.junit.Test;
 import com.radixdlt.atoms.DataPointer;
 import com.radixdlt.atoms.Particle;
@@ -15,7 +12,6 @@ import com.radixdlt.store.CMStores;
 import com.radixdlt.common.EUID;
 import com.radixdlt.serialization.SerializerId2;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
@@ -43,12 +39,7 @@ public class ConstraintMachineTest {
 
 		CMAtom atom = mock(CMAtom.class);
 		when(atom.getParticles()).thenReturn(ImmutableList.of(
-			new CMParticle(
-				p,
-				ImmutableList.of(
-					new IndexedSpunParticle(SpunParticle.up(p), DataPointer.ofParticle(0, 0))
-				)
-			)
+			new CMParticle(p, DataPointer.ofParticle(0, 0), Spin.NEUTRAL, 1)
 		));
 		when(atom.getAtom()).thenReturn(mock(ImmutableAtom.class));
 
@@ -74,12 +65,7 @@ public class ConstraintMachineTest {
 		CMAtom atom = mock(CMAtom.class);
 		when(atom.getAtom()).thenReturn(mock(ImmutableAtom.class));
 		when(atom.getParticles()).thenReturn(ImmutableList.of(
-			new CMParticle(
-				p,
-				ImmutableList.of(
-					new IndexedSpunParticle(SpunParticle.up(p), DataPointer.ofParticle(0, 0))
-				)
-			)
+			new CMParticle(p, DataPointer.ofParticle(0, 0), Spin.NEUTRAL, 1)
 		));
 
 		ValidationResultAcceptor acceptor = mock(ValidationResultAcceptor.class);

@@ -1,24 +1,30 @@
 package com.radixdlt.constraintmachine;
 
-import com.google.common.collect.ImmutableList;
-import java.util.Objects;
+import com.radixdlt.store.SpinStateMachine;
 import java.util.stream.Stream;
 import com.radixdlt.atoms.DataPointer;
-import com.radixdlt.atoms.IndexedSpunParticle;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.atoms.Spin;
-import com.radixdlt.atoms.SpunParticle;
 
 /**
  * A particle processed by a Constraint Machine
  */
 public class CMParticle {
 	private final Particle particle;
-	private final ImmutableList<IndexedSpunParticle> spunParticles;
+	private final DataPointer firstDataPointer;
+	private final Spin checkSpin;
+	private final int numPushes;
 
-	public CMParticle(Particle particle, ImmutableList<IndexedSpunParticle> spunParticles) {
+	public CMParticle(
+		Particle particle,
+		DataPointer firstDataPointer,
+		Spin checkSpin,
+		int numPushes
+	) {
 		this.particle = particle;
-		this.spunParticles = Objects.requireNonNull(spunParticles);
+		this.firstDataPointer = firstDataPointer;
+		this.checkSpin = checkSpin;
+		this.numPushes = numPushes;
 	}
 
 	public Particle getParticle() {
@@ -26,16 +32,16 @@ public class CMParticle {
 	}
 
 	public Stream<Spin> nextSpins() {
-		return spunParticles.stream()
-			.map(IndexedSpunParticle::getSpunParticle)
-			.map(SpunParticle::getSpin);
+		return Stream.iterate(checkSpin, SpinStateMachine::next)
+			.skip(1)
+			.limit(numPushes);
 	}
 
 	public DataPointer getDataPointer() {
-		return spunParticles.get(0).getDataPointer();
+		return firstDataPointer;
 	}
 
 	public Spin getNextSpin() {
-		return spunParticles.get(0).getSpunParticle().getSpin();
+		return SpinStateMachine.next(checkSpin);
 	}
 }
