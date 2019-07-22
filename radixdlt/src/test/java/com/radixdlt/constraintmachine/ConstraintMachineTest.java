@@ -1,5 +1,6 @@
 package com.radixdlt.constraintmachine;
 
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.atoms.IndexedSpunParticle;
 import com.radixdlt.atoms.SpunParticle;
@@ -40,10 +41,16 @@ public class ConstraintMachineTest {
 		IndexedParticle p = mock(IndexedParticle.class);
 		when(p.getDestinations()).thenReturn(Collections.singleton(EUID.ONE));
 
-		ImmutableAtom atom = mock(ImmutableAtom.class);
-		when(atom.indexedSpunParticles()).thenReturn(Stream.of(
-			new IndexedSpunParticle(SpunParticle.up(p), DataPointer.ofParticle(0, 0))
+		CMAtom atom = mock(CMAtom.class);
+		when(atom.getParticles()).thenReturn(ImmutableList.of(
+			new CMParticle(
+				p,
+				ImmutableList.of(
+					new IndexedSpunParticle(SpunParticle.up(p), DataPointer.ofParticle(0, 0))
+				)
+			)
 		));
+		when(atom.getAtom()).thenReturn(mock(ImmutableAtom.class));
 
 		ValidationResultAcceptor acceptor = mock(ValidationResultAcceptor.class);
 		machine.validate(atom, true).accept(acceptor);
@@ -64,9 +71,15 @@ public class ConstraintMachineTest {
 		IndexedParticle p = mock(IndexedParticle.class);
 		when(p.getDestinations()).thenReturn(Collections.singleton(EUID.ONE));
 
-		ImmutableAtom atom = mock(ImmutableAtom.class);
-		when(atom.indexedSpunParticles()).thenReturn(Stream.of(
-			new IndexedSpunParticle(SpunParticle.up(p), DataPointer.ofParticle(0, 0))
+		CMAtom atom = mock(CMAtom.class);
+		when(atom.getAtom()).thenReturn(mock(ImmutableAtom.class));
+		when(atom.getParticles()).thenReturn(ImmutableList.of(
+			new CMParticle(
+				p,
+				ImmutableList.of(
+					new IndexedSpunParticle(SpunParticle.up(p), DataPointer.ofParticle(0, 0))
+				)
+			)
 		));
 
 		ValidationResultAcceptor acceptor = mock(ValidationResultAcceptor.class);

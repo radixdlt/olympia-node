@@ -8,6 +8,7 @@ import com.radixdlt.atoms.SpunParticle;
 import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.CMAtom;
 import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.engine.RadixEngineUtils.CMAtomConversionException;
 import com.radixdlt.engine.StateCheckResult.StateCheckResultAcceptor;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.SpinStateTransitionValidator;
@@ -29,7 +30,13 @@ public final class RadixEngine {
 	}
 
 	public ValidationResult validate(ImmutableAtom atom) {
-		return constraintMachine.validate(atom, false);
+		// TODO: remove this indirection
+		try {
+			final CMAtom cmAtom = RadixEngineUtils.toCMAtom(atom);
+			return constraintMachine.validate(cmAtom, false);
+		} catch (CMAtomConversionException e) {
+			return acceptor -> acceptor.onError(e.getErrors());
+		}
 	}
 
 	public StateCheckResult stateCheck(CMAtom cmAtom) {

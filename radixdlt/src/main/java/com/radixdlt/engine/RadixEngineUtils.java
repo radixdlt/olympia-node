@@ -1,10 +1,17 @@
-package com.radixdlt.constraintmachine;
+package com.radixdlt.engine;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Streams;
 import com.radixdlt.atoms.ImmutableAtom;
+import com.radixdlt.constraintmachine.CMAtom;
+import com.radixdlt.constraintmachine.CMError;
+import com.radixdlt.constraintmachine.CMErrorCode;
+import com.radixdlt.constraintmachine.CMParticle;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -21,8 +28,8 @@ import com.radixdlt.common.Pair;
 /**
  * Utility class for low level Constraint Machine "hardware" level validation.
  */
-final class ConstraintMachineUtils {
-	private ConstraintMachineUtils() {
+final class RadixEngineUtils {
+	private RadixEngineUtils() {
 		throw new IllegalStateException("Cannot instantiate.");
 	}
 
@@ -144,5 +151,39 @@ final class ConstraintMachineUtils {
 					.filter(e -> e.getValue().size() > 1)
 					.map(e -> new CMError(i.getDataPointer(), CMErrorCode.DUPLICATE_PARTICLES_IN_GROUP));
 			});
+	}
+
+	public static class CMAtomConversionException extends Exception {
+		private final ImmutableSet<CMError> errors;
+		CMAtomConversionException(ImmutableSet<CMError> errors) {
+			this.errors = errors;
+		}
+
+		public ImmutableSet<CMError> getErrors() {
+			return errors;
+		}
+	}
+
+	static CMAtom toCMAtom(ImmutableAtom atom) throws CMAtomConversionException {
+		final Map<Particle, ImmutableList<IndexedSpunParticle>> spunParticles = RadixEngineUtils.getTransitionsByParticle(atom);
+		final Stream<CMError> badSpinErrs = spunParticles.entrySet().stream()
+			.flatMap(e -> RadixEngineUtils.checkInternalSpins(e.getValue()));
+
+		final Stream<CMError> conversionErrs = Streams.concat(
+			RadixEngineUtils.checkParticleGroupsNotEmpty(atom),
+			RadixEngineUtils.checkParticleTransitionsUniqueInGroup(atom),
+			badSpinErrs
+		);
+
+		ImmutableSet<CMError> errors = conversionErrs.collect(ImmutableSet.toImmutableSet());
+		if (!errors.isEmpty()) {
+			throw new CMAtomConversionException(errors);
+		}
+
+		final ImmutableList<CMParticle> cmParticles =
+			spunParticles.entrySet().stream()
+				.map(e -> new CMParticle(e.getKey(), e.getValue()))
+				.collect(ImmutableList.toImmutableList());
+		return new CMAtom(atom, cmParticles);
 	}
 }

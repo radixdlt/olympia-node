@@ -12,12 +12,13 @@ import java.util.Set;
  * An atom processed by a constraint machine with write destinations
  */
 public final class CMAtom {
+	// TODO: Remove ImmutableAtom
 	private final ImmutableAtom atom;
 	private final ImmutableList<CMParticle> cmParticles;
 	private final ImmutableSet<EUID> destinations;
 	private final ImmutableSet<Long> shards;
 
-	CMAtom(ImmutableAtom atom, ImmutableList<CMParticle> cmParticles) {
+	public CMAtom(ImmutableAtom atom, ImmutableList<CMParticle> cmParticles) {
 		this.atom = atom;
 		this.cmParticles = cmParticles;
 		this.destinations = cmParticles.stream()

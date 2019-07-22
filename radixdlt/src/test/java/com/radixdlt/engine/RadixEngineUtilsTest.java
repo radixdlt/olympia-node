@@ -1,8 +1,10 @@
-package com.radixdlt.constraintmachine;
+package com.radixdlt.engine;
 
 import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.atoms.IndexedParticleGroup;
 
+import com.radixdlt.constraintmachine.CMError;
+import com.radixdlt.constraintmachine.CMErrorCode;
 import java.util.stream.Stream;
 import org.junit.Test;
 
@@ -17,13 +19,13 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.powermock.api.mockito.PowerMockito.when;
 
-public class ConstraintMachineUtilsTest {
+public class RadixEngineUtilsTest {
 	@Test
 	public void when_validating_an_up_cm_particle__no_issue_is_returned() {
 		Particle particle0 = mock(Particle.class);
 
 		assertThat(
-			ConstraintMachineUtils.checkInternalSpins(
+			RadixEngineUtils.checkInternalSpins(
 				ImmutableList.of(
 					new IndexedSpunParticle(SpunParticle.up(particle0), DataPointer.ofParticle(0, 0))
 				)
@@ -36,7 +38,7 @@ public class ConstraintMachineUtilsTest {
 		Particle particle0 = mock(Particle.class);
 
 		assertThat(
-			ConstraintMachineUtils.checkInternalSpins(
+			RadixEngineUtils.checkInternalSpins(
 				ImmutableList.of(
 					new IndexedSpunParticle(SpunParticle.up(particle0), DataPointer.ofParticle(0, 0)),
 					new IndexedSpunParticle(SpunParticle.down(particle0), DataPointer.ofParticle(1, 0))
@@ -50,7 +52,7 @@ public class ConstraintMachineUtilsTest {
 		Particle particle0 = mock(Particle.class);
 
 		assertThat(
-			ConstraintMachineUtils.checkInternalSpins(
+			RadixEngineUtils.checkInternalSpins(
 				ImmutableList.of(
 					new IndexedSpunParticle(SpunParticle.up(particle0), DataPointer.ofParticle(0, 0)),
 					new IndexedSpunParticle(SpunParticle.up(particle0), DataPointer.ofParticle(1, 0))
@@ -66,7 +68,7 @@ public class ConstraintMachineUtilsTest {
 		Particle particle0 = mock(Particle.class);
 
 		assertThat(
-			ConstraintMachineUtils.checkInternalSpins(
+			RadixEngineUtils.checkInternalSpins(
 				ImmutableList.of(
 					new IndexedSpunParticle(SpunParticle.down(particle0), DataPointer.ofParticle(0, 0)),
 					new IndexedSpunParticle(SpunParticle.down(particle0), DataPointer.ofParticle(1, 0))
@@ -82,7 +84,7 @@ public class ConstraintMachineUtilsTest {
 		Particle particle0 = mock(Particle.class);
 
 		assertThat(
-			ConstraintMachineUtils.checkInternalSpins(
+			RadixEngineUtils.checkInternalSpins(
 				ImmutableList.of(
 					new IndexedSpunParticle(SpunParticle.down(particle0), DataPointer.ofParticle(0, 0)),
 					new IndexedSpunParticle(SpunParticle.up(particle0), DataPointer.ofParticle(1, 0))
@@ -99,7 +101,7 @@ public class ConstraintMachineUtilsTest {
 		when(atom.indexedParticleGroups()).thenReturn(Stream.of(
 			new IndexedParticleGroup(ParticleGroup.of(), 0)
 		));
-		assertThat(ConstraintMachineUtils.checkParticleGroupsNotEmpty(atom))
+		assertThat(RadixEngineUtils.checkParticleGroupsNotEmpty(atom))
 			.containsExactly(new CMError(DataPointer.ofParticleGroup(0), CMErrorCode.EMPTY_PARTICLE_GROUP));
 	}
 
@@ -110,7 +112,7 @@ public class ConstraintMachineUtilsTest {
 			new IndexedParticleGroup(ParticleGroup.of(), 0),
 			new IndexedParticleGroup(ParticleGroup.of(), 1)
 		));
-		assertThat(ConstraintMachineUtils.checkParticleGroupsNotEmpty(atom))
+		assertThat(RadixEngineUtils.checkParticleGroupsNotEmpty(atom))
 			.containsExactly(
 				new CMError(DataPointer.ofParticleGroup(0), CMErrorCode.EMPTY_PARTICLE_GROUP),
 				new CMError(DataPointer.ofParticleGroup(1), CMErrorCode.EMPTY_PARTICLE_GROUP)
@@ -128,7 +130,7 @@ public class ConstraintMachineUtilsTest {
 			), 0)
 		));
 
-		assertThat(ConstraintMachineUtils.checkParticleTransitionsUniqueInGroup(atom))
+		assertThat(RadixEngineUtils.checkParticleTransitionsUniqueInGroup(atom))
 			.containsExactly(new CMError(DataPointer.ofParticleGroup(0), CMErrorCode.DUPLICATE_PARTICLES_IN_GROUP));
 	}
 }

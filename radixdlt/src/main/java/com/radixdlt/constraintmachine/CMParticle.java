@@ -16,7 +16,7 @@ public class CMParticle {
 	private final Particle particle;
 	private final ImmutableList<IndexedSpunParticle> spunParticles;
 
-	CMParticle(Particle particle, ImmutableList<IndexedSpunParticle> spunParticles) {
+	public CMParticle(Particle particle, ImmutableList<IndexedSpunParticle> spunParticles) {
 		this.particle = particle;
 		this.spunParticles = Objects.requireNonNull(spunParticles);
 	}

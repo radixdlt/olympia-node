@@ -10,9 +10,7 @@ import com.radixdlt.atoms.Spin;
 import com.radixdlt.engine.ValidationResult;
 import com.radixdlt.store.SpinStateTransitionValidator;
 import com.radixdlt.store.SpinStateTransitionValidator.TransitionCheckResult;
-import java.util.Map;
 import java.util.function.UnaryOperator;
-import com.radixdlt.atoms.IndexedSpunParticle;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.CMStores;
@@ -91,28 +89,13 @@ public final class ConstraintMachine {
 	 * Validates an atom and calculates the necessary state checks and post-validation
 	 * write logic.
 	 *
-	 * @param atom atom to validate
+	 * @param cmAtom atom to validate
 	 * @param getAllErrors if true, returns all errors, otherwise, fails fast
 	 * and just returns the first error
 	 * @return results of validation, including any errors, warnings, and post-validation write logic
 	 */
-	public ValidationResult validate(ImmutableAtom atom, boolean getAllErrors) {
-		// "Hardware" checks
-		final Map<Particle, ImmutableList<IndexedSpunParticle>> spunParticles = ConstraintMachineUtils.getTransitionsByParticle(atom);
-		final Stream<CMError> badSpinErrs = spunParticles.entrySet().stream()
-			.flatMap(e -> ConstraintMachineUtils.checkInternalSpins(e.getValue()));
-		final Stream<CMError> hwErrs = Streams.concat(
-			ConstraintMachineUtils.checkParticleGroupsNotEmpty(atom),
-			ConstraintMachineUtils.checkParticleTransitionsUniqueInGroup(atom),
-			badSpinErrs
-		);
-		final ImmutableList<CMParticle> cmParticles =
-			spunParticles.entrySet().stream()
-				.map(e -> new CMParticle(e.getKey(), e.getValue()))
-				.collect(ImmutableList.toImmutableList());
-		final CMAtom cmAtom = new CMAtom(atom, cmParticles);
-
-		// "Segfaults"
+	public ValidationResult validate(CMAtom cmAtom, boolean getAllErrors) {
+		// "Segfaults" or particles which should not exist
 		final Stream<CMError> unknownParticleErrors = cmAtom.getParticles().stream()
 			.filter(p -> !localCMStore.getSpin(p.getParticle()).isPresent())
 			.map(p -> new CMError(p.getDataPointer(), CMErrorCode.UNKNOWN_PARTICLE));
@@ -133,7 +116,7 @@ public final class ConstraintMachine {
 			})
 			.map(p ->  new CMError(p.getDataPointer(), CMErrorCode.INTERNAL_SPIN_CONFLICT));
 
-
+		final ImmutableAtom atom = cmAtom.getAtom();
 		final ImmutableMap.Builder<String, Object> atomCompute = new ImmutableMap.Builder<>();
 		kernelComputes.forEach((key, c) -> atomCompute.put(key, c.compute(atom)));
 
@@ -150,7 +133,6 @@ public final class ConstraintMachine {
 		).flatMap(i -> i);
 
 		final Stream<CMError> errorStream = Streams.concat(
-			hwErrs,
 			unknownParticleErrors,
 			virtualParticleErrors,
 			kernelErrs,

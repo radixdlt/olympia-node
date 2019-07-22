@@ -1,9 +1,12 @@
 package com.radixdlt.atomos;
 
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.atoms.DataPointer;
 import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.atoms.IndexedSpunParticle;
 import com.radixdlt.atoms.SpunParticle;
+import com.radixdlt.constraintmachine.CMAtom;
+import com.radixdlt.constraintmachine.CMParticle;
 import com.radixdlt.engine.ValidationResult.ValidationResultAcceptor;
 import java.util.stream.Stream;
 import org.junit.Test;
@@ -39,9 +42,16 @@ public class CMAtomOSTest {
 	public void when_a_particle_which_is_not_registered_via_os_is_validated__it_should_cause_errors() {
 		CMAtomOS os = new CMAtomOS(() -> mock(Universe.class), () -> 0);
 		ConstraintMachine machine = os.buildMachine();
-		ImmutableAtom atom = mock(ImmutableAtom.class);
-		when(atom.indexedSpunParticles()).thenReturn(Stream.of(
-			new IndexedSpunParticle(SpunParticle.up(new TestParticle()), DataPointer.ofParticle(0, 0))
+		CMAtom atom = mock(CMAtom.class);
+		when(atom.getAtom()).thenReturn(mock(ImmutableAtom.class));
+		TestParticle testParticle = new TestParticle();
+		when(atom.getParticles()).thenReturn(ImmutableList.of(
+			new CMParticle(
+				testParticle,
+				ImmutableList.of(
+					new IndexedSpunParticle(SpunParticle.up(testParticle), DataPointer.ofParticle(0, 0))
+				)
+			)
 		));
 		ValidationResultAcceptor acceptor = mock(ValidationResultAcceptor.class);
 		machine.validate(atom, true).accept(acceptor);
