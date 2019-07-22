@@ -1,8 +1,9 @@
 version: '3'
 services:
-  core0:
+  core:
     environment:
-      RADIXDLT_NETWORK_SEEDS_REMOTE: core0
+      RADIXDLT_NETWORK_SEEDS_REMOTE: core
+      RADIXDLT_UNIVERSE: v2djcmVhdG9yWCIBAgzfn1Z35c749BQlEGUonphiGt2BIntgL/Zq9py9rk7ha2Rlc2NyaXB0aW9ud1RoZSBSYWRpeCB0ZXN0IFVuaXZlcnNlZ2dlbmVzaXOBv2htZXRhRGF0Yb9pdGltZXN0YW1wbTE1NTEyMjU2MDAwMDD/bnBhcnRpY2xlR3JvdXBzg79pcGFydGljbGVzgb9ocGFydGljbGW/ZWJ5dGVzVwFSYWRpeC4uLiBqdXN0IGltYWdpbmUhbGRlc3RpbmF0aW9uc4FRAiLoX23FEsoqqrhxPrIKuQJkZnJvbVgnBAECDN+fVnflzvj0FCUQZSiemGIa3YEie2Av9mr2nL2uTuEDgXBNZW5vbmNlGwAAKdFQksTEanNlcmlhbGl6ZXJ3cmFkaXgucGFydGljbGVzLm1lc3NhZ2VidG9YJwQBAgzfn1Z35c749BQlEGUonphiGt2BIntgL/Zq9py9rk7hA4FwTWd2ZXJzaW9uGGT/anNlcmlhbGl6ZXJzcmFkaXguc3B1bl9wYXJ0aWNsZWRzcGluAWd2ZXJzaW9uGGT/anNlcmlhbGl6ZXJ0cmFkaXgucGFydGljbGVfZ3JvdXBndmVyc2lvbhhk/79pcGFydGljbGVzg79ocGFydGljbGW/bGRlc3RpbmF0aW9uc4FRAiLoX23FEsoqqrhxPrIKuQJlbm9uY2UAY3JyaVg5Bi85ZWNqTU5DRkRTYkxaeFZwZmJGd0ZUTFd1TDdTSDNRNDl1ekdycEszYlVjemU2Q0p0RHIvWFJEanNlcmlhbGl6ZXJzcmFkaXgucGFydGljbGVzLnJyaWd2ZXJzaW9uGGT/anNlcmlhbGl6ZXJzcmFkaXguc3B1bl9wYXJ0aWNsZWRzcGluIGd2ZXJzaW9uGGT/v2hwYXJ0aWNsZb9nYWRkcmVzc1gnBAECDN+fVnflzvj0FCUQZSiemGIa3YEie2Av9mr2nL2uTuEDgXBNa2Rlc2NyaXB0aW9uc1JhZGl4IE5hdGl2ZSBUb2tlbnNsZGVzdGluYXRpb25zgVECIuhfbcUSyiqquHE+sgq5AmtncmFudWxhcml0eVghBQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABZ2ljb25Vcmx4NGh0dHBzOi8vYXNzZXRzLnJhZGl4ZGx0LmNvbS9pY29ucy9pY29uLXhyZC0zMngzMi5wbmdkbmFtZWRSYWRza3Blcm1pc3Npb25zv2RidXJuZG5vbmVkbWludHN0b2tlbl9jcmVhdGlvbl9vbmx5/2pzZXJpYWxpemVyeCByYWRpeC5wYXJ0aWNsZXMudG9rZW5fZGVmaW5pdGlvbmZzeW1ib2xjWFJEZ3ZlcnNpb24YZP9qc2VyaWFsaXplcnNyYWRpeC5zcHVuX3BhcnRpY2xlZHNwaW4BZ3ZlcnNpb24YZP+/aHBhcnRpY2xlv2ZhbW91bnRYIQX//////////////////////////////////////////2xkZXN0aW5hdGlvbnOBUQIi6F9txRLKKqq4cT6yCrkCa2dyYW51bGFyaXR5WCEFAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFlbm9uY2UbAAAp0VCTGUtrcGVybWlzc2lvbnO/ZGJ1cm5kbm9uZWRtaW50c3Rva2VuX2NyZWF0aW9uX29ubHn/anNlcmlhbGl6ZXJ4InJhZGl4LnBhcnRpY2xlcy51bmFsbG9jYXRlZF90b2tlbnN4GHRva2VuRGVmaW5pdGlvblJlZmVyZW5jZVg5Bi85ZWNqTU5DRkRTYkxaeFZwZmJGd0ZUTFd1TDdTSDNRNDl1ekdycEszYlVjemU2Q0p0RHIvWFJEZ3ZlcnNpb24YZP9qc2VyaWFsaXplcnNyYWRpeC5zcHVuX3BhcnRpY2xlZHNwaW4BZ3ZlcnNpb24YZP9qc2VyaWFsaXplcnRyYWRpeC5wYXJ0aWNsZV9ncm91cGd2ZXJzaW9uGGT/v2lwYXJ0aWNsZXODv2hwYXJ0aWNsZb9mYW1vdW50WCEF//////////////////////////////////////////9sZGVzdGluYXRpb25zgVECIuhfbcUSyiqquHE+sgq5AmtncmFudWxhcml0eVghBQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABZW5vbmNlGwAAKdFQkxlLa3Blcm1pc3Npb25zv2RidXJuZG5vbmVkbWludHN0b2tlbl9jcmVhdGlvbl9vbmx5/2pzZXJpYWxpemVyeCJyYWRpeC5wYXJ0aWNsZXMudW5hbGxvY2F0ZWRfdG9rZW5zeBh0b2tlbkRlZmluaXRpb25SZWZlcmVuY2VYOQYvOWVjak1OQ0ZEU2JMWnhWcGZiRndGVExXdUw3U0gzUTQ5dXpHcnBLM2JVY3plNkNKdERyL1hSRGd2ZXJzaW9uGGT/anNlcmlhbGl6ZXJzcmFkaXguc3B1bl9wYXJ0aWNsZWRzcGluIGd2ZXJzaW9uGGT/v2hwYXJ0aWNsZb9mYW1vdW50WCEF///////////////////////////8xNHDYC9/wxf///9sZGVzdGluYXRpb25zgVECIuhfbcUSyiqquHE+sgq5AmtncmFudWxhcml0eVghBQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABZW5vbmNlGwAAKdFQk1fna3Blcm1pc3Npb25zv2RidXJuZG5vbmVkbWludHN0b2tlbl9jcmVhdGlvbl9vbmx5/2pzZXJpYWxpemVyeCJyYWRpeC5wYXJ0aWNsZXMudW5hbGxvY2F0ZWRfdG9rZW5zeBh0b2tlbkRlZmluaXRpb25SZWZlcmVuY2VYOQYvOWVjak1OQ0ZEU2JMWnhWcGZiRndGVExXdUw3U0gzUTQ5dXpHcnBLM2JVY3plNkNKdERyL1hSRGd2ZXJzaW9uGGT/anNlcmlhbGl6ZXJzcmFkaXguc3B1bl9wYXJ0aWNsZWRzcGluAWd2ZXJzaW9uGGT/v2hwYXJ0aWNsZb9nYWRkcmVzc1gnBAECDN+fVnflzvj0FCUQZSiemGIa3YEie2Av9mr2nL2uTuEDgXBNZmFtb3VudFghBQAAAAAAAAAAAAAAAAAAAAAAAAAAAzsuPJ/QgDzoAAAAbGRlc3RpbmF0aW9uc4FRAiLoX23FEsoqqrhxPrIKuQJrZ3JhbnVsYXJpdHlYIQUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWVub25jZRsAACnRUJNIyWtwZXJtaXNzaW9uc79kYnVybmRub25lZG1pbnRzdG9rZW5fY3JlYXRpb25fb25sef9mcGxhbmNrGgGKf0Bqc2VyaWFsaXplcngkcmFkaXgucGFydGljbGVzLnRyYW5zZmVycmFibGVfdG9rZW5zeBh0b2tlbkRlZmluaXRpb25SZWZlcmVuY2VYOQYvOWVjak1OQ0ZEU2JMWnhWcGZiRndGVExXdUw3U0gzUTQ5dXpHcnBLM2JVY3plNkNKdERyL1hSRGd2ZXJzaW9uGGT/anNlcmlhbGl6ZXJzcmFkaXguc3B1bl9wYXJ0aWNsZWRzcGluAWd2ZXJzaW9uGGT/anNlcmlhbGl6ZXJ0cmFkaXgucGFydGljbGVfZ3JvdXBndmVyc2lvbhhk/2pzZXJpYWxpemVyanJhZGl4LmF0b21qc2lnbmF0dXJlc794IDIyZTg1ZjZkYzUxMmNhMmFhYWI4NzEzZWIyMGFiOTAyv2FyWCEBum4RNOnFKq+zgjHt1MYtr+mn/y5/bhxd2nNR29fHu0lhc1ghAQFH3brv3i+/UdbQpJDKfiIq4fAp+NksSjHER5OmkOabanNlcmlhbGl6ZXJ2Y3J5cHRvLmVjZHNhX3NpZ25hdHVyZWd2ZXJzaW9uGGT//210ZW1wb3JhbFByb29mv2NhaWRYIQj531pldLy+9t+aKtgPkOebBiPtPbLjGvsi6F9txRLKKmpzZXJpYWxpemVydHRlbXBvLnRlbXBvcmFsX3Byb29mZ3ZlcnNpb24YZGh2ZXJ0aWNlc4G/ZWNsb2NrAWpjb21taXRtZW50WCEDAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABlb3duZXJYIgEDw/b5toR/c5zhCCMc0bXPrACT9VQUBFF8zzep3GbC1BpocHJldmlvdXNRAgAAAAAAAAAAAAAAAAAAAABmcmNsb2NrGwAAAWksQDgAanNlcmlhbGl6ZXJ1dGVtcG8udGVtcG9yYWxfdmVydGV4aXNpZ25hdHVyZb9hclghAertuRosK604aNrXCqvHLtX+4Lpi1z4IXLuMHkJ9r3fHYXNYIQF2yCsbEeNZDyULZ51RJ9gvFChZQBrnjbxxSHUX2Jae9WpzZXJpYWxpemVydmNyeXB0by5lY2RzYV9zaWduYXR1cmVndmVyc2lvbhhk/2p0aW1lc3RhbXBzv2dkZWZhdWx0GwAAAWksQDgA/2d2ZXJzaW9uGGT//2d2ZXJzaW9uGGT/ZW1hZ2ljGg/mAAFkbmFtZW1SYWRpeCBUZXN0bmV0ZnBsYW5jaxnqYGRwb3J0GU4ganNlcmlhbGl6ZXJucmFkaXgudW5pdmVyc2Vrc2lnbmF0dXJlLnJYIQHrj6Fi074qwVweJCv9bW/O6jtXMgAeq1ucaR6yHXAFdmtzaWduYXR1cmUuc1ghAULsLXApQPGFcbauzDGm4Crur7SRbYpLMB9ZF/NclkiAaXRpbWVzdGFtcBsAAAFpLEA4AGR0eXBlAWd2ZXJzaW9uGGT/
       JAVA_OPTS: -server -Xms2g -Xmx2g -Dcom.sun.management.jmxremote.port=9011 -Dcom.sun.management.jmxremote.rmi.port=9011 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=localhost -agentlib:jdwp=transport=dt_socket,address=50505,suspend=n,server=y
     build: .
     image: radixdlt.azurecr.io/radixdlt/radixdlt-core:develop
@@ -11,7 +12,6 @@ services:
     networks:
       - single_node
     ports:
-      - "8080:8080"
       - "9011:9011"
       - "9999:9999"
       - "50505:50505"
@@ -20,6 +20,68 @@ services:
       - "30000:30000/tcp"
       - "10000:10000/udp"
       - "20000:20000/udp"
-      - "30000:30000/udp"      
+      - "30000:30000/udp"
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "30"
+  nginx:
+    environment:
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin}
+      METRICS_PASSWORD: ${METRICS_PASSWORD:-metric}
+    image: radixdlt/radixdlt-emu-nginx:betanet2
+    labels:
+      com.radixdlt.roles: "core"
+    networks:
+      - single_node
+    restart: unless-stopped
+    ports:
+      - "443:443"
+      - "8482:8482"
+      # Docker for Mac: cannot open privileged ports by default
+      #- "8443:443"
+    volumes:
+      - "single_node_nginx_secrets:/etc/nginx/secrets"
+    logging:
+      options:
+        max-size: "1m"
+        max-file: "30"          
+  faucet:
+    environment:
+      FAUCET_TOKEN_RRI: /9ecjMNCFDSbLZxVpfbFwFTLWuL7SH3Q49uzGrpK3bUcze6CJtDr/XRD
+      RADIX_IDENTITY_UNENCRYPTED_KEY: XfodcnhdYtZj1ohBISa6EJwPK1SGrJDVXw1VobuVNLo=
+      RADIX_BOOTSTRAP_TRUSTED_NODE: http://core:8080
+      JAVA_OPTS: -server
+    image: radixdlt/faucet:betanet2
+    labels:
+      com.radixdlt.roles: "faucet"
+    networks:
+      - single_node
+    restart: on-failure
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "30"
+  abt:
+    environment:
+      RADIX_BOOTSTRAP_TRUSTED_NODE: http://core:8080
+      PRIMETRUST_ACCOUNT: $PRIMETRUST_ACCOUNT
+      PRIMETRUST_USERNAME: $PRIMETRUST_USERNAME
+      PRIMETRUST_PASSWORD: $PRIMETRUST_PASSWORD
+      GMAIL_USERNAME: $GMAIL_USERNAME
+      GMAIL_PASSWORD: $GMAIL_PASSWORD
+      JAVA_OPTS: -server
+    image: radixdlt/abt:betanet2
+    labels:
+      com.radixdlt.roles: "abt"
+    networks:
+      - single_node
+    restart: "no"
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "30"
 networks:
   single_node:
+volumes:
+  single_node_nginx_secrets:
