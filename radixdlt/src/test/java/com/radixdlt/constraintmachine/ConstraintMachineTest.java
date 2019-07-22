@@ -71,6 +71,6 @@ public class ConstraintMachineTest {
 		ValidationResultAcceptor acceptor = mock(ValidationResultAcceptor.class);
 		machine.validate(atom, true).accept(acceptor);
 		verify(acceptor, times(1))
-			.onSuccess(any(), argThat(m -> m.get("test").equals("hello")));
+			.onSuccess(argThat(m -> m.get("test").equals("hello")));
 	}
 }

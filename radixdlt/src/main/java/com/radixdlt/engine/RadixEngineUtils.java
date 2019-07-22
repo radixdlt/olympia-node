@@ -29,7 +29,7 @@ import com.radixdlt.common.Pair;
 /**
  * Utility class for low level Constraint Machine "hardware" level validation.
  */
-final class RadixEngineUtils {
+public final class RadixEngineUtils {
 	private RadixEngineUtils() {
 		throw new IllegalStateException("Cannot instantiate.");
 	}
@@ -165,7 +165,7 @@ final class RadixEngineUtils {
 		}
 	}
 
-	static CMAtom toCMAtom(ImmutableAtom atom) throws CMAtomConversionException {
+	public static CMAtom toCMAtom(ImmutableAtom atom) throws CMAtomConversionException {
 		final Map<Particle, ImmutableList<IndexedSpunParticle>> spunParticles = RadixEngineUtils.getTransitionsByParticle(atom);
 
 		final Stream<CMError> badSpinErrs = spunParticles.entrySet().stream()

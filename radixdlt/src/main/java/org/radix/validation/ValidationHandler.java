@@ -7,6 +7,8 @@ import com.radixdlt.atoms.SpunParticle;
 import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.engine.RadixEngineUtils;
+import com.radixdlt.engine.RadixEngineUtils.CMAtomConversionException;
 import com.radixdlt.engine.StateCheckResult;
 import com.radixdlt.engine.StateCheckResult.StateCheckResultAcceptor;
 import com.radixdlt.engine.ValidationResult;
@@ -47,13 +49,20 @@ public class ValidationHandler extends Service {
 
 	public Pair<CMAtom, UInt384> validate(Atom atom) throws ValidationException {
 		Objects.requireNonNull(atom, "atom is required");
+		final CMAtom cmAtom;
+		try {
+			cmAtom = RadixEngineUtils.toCMAtom(atom);
+		} catch (CMAtomConversionException e) {
+			CMError cmError = e.getErrors().iterator().next();
+			throw new ConstraintMachineValidationException(atom, cmError.getErrorDescription(), cmError.getDataPointer());
+		}
 
-		final ValidationResult result = radixEngine.validate(atom);
+		final ValidationResult result = radixEngine.validate(cmAtom);
 		final CompletableFuture<Pair<CMAtom, UInt384>> cmAtomCompletableFuture = new CompletableFuture<>();
 
 		result.accept(new ValidationResultAcceptor() {
 			@Override
-			public void onSuccess(CMAtom cmAtom, ImmutableMap<String, Object> computed) {
+			public void onSuccess(ImmutableMap<String, Object> computed) {
 				Object result = computed.get("mass");
 				if (result == null) {
 					throw new NullPointerException("mass does not exist");

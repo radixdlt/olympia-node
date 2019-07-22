@@ -146,7 +146,7 @@ public final class ConstraintMachine {
 		if (!errors.isEmpty()) {
 			return acceptor -> acceptor.onError(errors);
 		} else {
-			return acceptor -> acceptor.onSuccess(cmAtom, atomCompute.build());
+			return acceptor -> acceptor.onSuccess(atomCompute.build());
 		}
 	}
 

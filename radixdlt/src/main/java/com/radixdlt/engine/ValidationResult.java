@@ -10,7 +10,7 @@ import java.util.Set;
  */
 public interface ValidationResult {
 	interface ValidationResultAcceptor {
-		default void onSuccess(CMAtom cmAtom, ImmutableMap<String, Object> computed) {
+		default void onSuccess(ImmutableMap<String, Object> computed) {
 		}
 		default void onError(Set<CMError> errors) {
 		}
