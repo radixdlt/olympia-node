@@ -20,8 +20,15 @@ public enum Bootstrap implements BootstrapConfig {
 		new RadixNode("localhost", false, 8081)
 	),
 	LOCALHOST_SINGLENODE(
-		RadixUniverseConfigs::getLocalnet,
-		new RadixNode("localhost", false, 8080)
+		new BootstrapByTrustedNode(new RadixNode("localhost", false, 8080))
+	),
+	JENKINS(
+		new BootstrapByTrustedNode(
+			ImmutableSet.of(
+				new RadixNode("docker_core0_1", false, 8080),
+				new RadixNode("docker_core1_1", false, 8080)
+			)
+		)
 	),
 	ALPHANET(
 		RadixUniverseConfigs::getAlphanet,
@@ -36,8 +43,11 @@ public enum Bootstrap implements BootstrapConfig {
 		new NodeFinder("https://sunstone.radixdlt.com/node-finder", 443).getSeed().toObservable()
 	),
 	BETANET(
+		new BootstrapByTrustedNode(new RadixNode("sunstone-emu.radixdlt.com", true, 443))
+	),
+	BETANET_STATIC(
 		RadixUniverseConfigs::getBetanet,
-		new NodeFinder("https://betanet-staging.radixdlt.com/node-finder", 443).getSeed().toObservable()
+		new RadixNode("sunstone-emu.radixdlt.com", true, 443)
 	),
 	WINTERFELL(
 		RadixUniverseConfigs::getWinterfell,
@@ -60,6 +70,11 @@ public enum Bootstrap implements BootstrapConfig {
 		this.initialNetwork = new ImmutableSet.Builder<RadixNode>().add(node).add(nodes).build();
 	}
 
+	Bootstrap(BootstrapConfig proxy) {
+		this.config = proxy::getConfig;
+		this.discoveryEpics = proxy::getDiscoveryEpics;
+		this.initialNetwork = ImmutableSet.copyOf(proxy.getInitialNetwork());
+	}
 
 	@Override
 	public RadixUniverseConfig getConfig() {
