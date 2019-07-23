@@ -22,8 +22,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import org.radix.atoms.Atom;
 import com.radixdlt.constraintmachine.CMAtom;
-import com.radixdlt.constraintmachine.ConstraintMachine;
-import com.radixdlt.store.CMStore;
 import org.radix.atoms.AtomDependencyNotFoundException;
 import org.radix.atoms.particles.conflict.ParticleConflict;
 import org.radix.atoms.particles.conflict.ParticleConflictException;
@@ -34,12 +32,10 @@ import org.radix.modules.Service;
  * Legacy validation handler to remain compatible with old usages in AtomSync and Conflict handlers until Dan's changes are merged
  */
 public class ValidationHandler extends Service {
-	private final ConstraintMachine constraintMachine;
 	private final RadixEngine radixEngine;
 
-	public ValidationHandler(ConstraintMachine constraintMachine, CMStore cmStore) {
-		this.radixEngine = new RadixEngine(constraintMachine, cmStore);
-		this.constraintMachine = constraintMachine;
+	public ValidationHandler(RadixEngine radixEngine) {
+		this.radixEngine = radixEngine;
 	}
 
 	@Override
@@ -110,16 +106,6 @@ public class ValidationHandler extends Service {
 				);
 			}
 		});
-	}
-
-	/**
-	 * Accessor to the constraint machine.
-	 * TODO: remove this in future after refactor
-	 *
-	 * @return constraint machine being used
-	 */
-	public ConstraintMachine getConstraintMachine() {
-		return constraintMachine;
 	}
 
 	@Override

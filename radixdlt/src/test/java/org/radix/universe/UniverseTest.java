@@ -47,8 +47,6 @@ public class UniverseTest {
 		// Atom.getAID currently has an unfortunate dependency on the Constraint machine
 		// This will be revisited and cleaned up at a later point but would be too much effort for this change
 		final ValidationHandler validationHandler = mock(ValidationHandler.class);
-		final ConstraintMachine constraintMachine = mock(ConstraintMachine.class);
-		when(validationHandler.getConstraintMachine()).thenReturn(constraintMachine);
 		when(Modules.get(ValidationHandler.class)).thenReturn(validationHandler);
 	}
 
