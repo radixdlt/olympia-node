@@ -31,7 +31,12 @@ class GreedyFungibleMatcher implements FungibleMatcher {
 	}
 
 	@Override
-	public FungibleMatcherResult match(List<FungibleTransition<?>> transitions, FungibleOutputs fungibleOutputs, FungibleInputs fungibleInputs, AtomMetadata metadata) {
+	public FungibleMatcherResult match(
+		List<FungibleTransition<?>> transitions,
+		FungibleOutputs fungibleOutputs,
+		FungibleInputs fungibleInputs,
+		AtomMetadata metadata
+	) {
 		Objects.requireNonNull(transitions, "transitions is required");
 		Objects.requireNonNull(fungibleOutputs, "fungibleOutputs is required");
 		Objects.requireNonNull(fungibleInputs, "fungibleInputs is required");
@@ -45,7 +50,13 @@ class GreedyFungibleMatcher implements FungibleMatcher {
 				continue; // no need to check further if there is nothing to match
 			}
 
-			FungibleTransitionMatchResult matchResult = transitionMatcher.match(transition, fungibleInputs, outputsForTransition, metadata, formulaMatcher);
+			FungibleTransitionMatchResult matchResult = transitionMatcher.match(
+				transition,
+				fungibleInputs,
+				outputsForTransition,
+				metadata,
+				formulaMatcher
+			);
 			fungibleInputs = matchResult.getMatch().consume(fungibleInputs);
 			fungibleOutputs = FungibleOutputs.diff(fungibleOutputs, matchResult.getMatch().getSatisfiedFungibleOutputs());
 			matchResults.add(matchResult);
@@ -196,7 +207,12 @@ class GreedyFungibleMatcher implements FungibleMatcher {
 	 * @return The formulas that can be used to satisfy the required consuming amount
 	 */
 	// @PackageLocalForTest
-	static List<FungibleFormulaMatchResult> matchFormulas(List<FungibleFormula> possibleFormulas, FungibleInputs fungibleInputs, Fungible output, AtomMetadata metadata) {
+	static List<FungibleFormulaMatchResult> matchFormulas(
+		List<FungibleFormula> possibleFormulas,
+		FungibleInputs fungibleInputs,
+		Fungible output,
+		AtomMetadata metadata
+	) {
 		List<FungibleFormulaMatchResult> formulaMatchResults = new ArrayList<>();
 		UInt256 remainingConsumer = output.getAmount();
 

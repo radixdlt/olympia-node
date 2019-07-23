@@ -143,7 +143,12 @@ public final class TokenDefinitionParticle extends Particle {
 	private void setJsonPermissions(Map<String, String> permissions) {
 		if (permissions != null) {
 			this.tokenPermissions = permissions.entrySet().stream()
-				.collect(Collectors.toMap(e -> TokenTransition.valueOf(e.getKey().toUpperCase()), e -> TokenPermission.valueOf(e.getValue().toUpperCase())));
+				.collect(
+					Collectors.toMap(
+						e -> TokenTransition.valueOf(e.getKey().toUpperCase()),
+						e -> TokenPermission.valueOf(e.getValue().toUpperCase())
+					)
+				);
 		} else {
 			throw new IllegalArgumentException("Permissions cannot be null.");
 		}
@@ -153,7 +158,9 @@ public final class TokenDefinitionParticle extends Particle {
 	public String toString() {
 		String tokenPermissionsStr = (tokenPermissions == null)
 			? "null"
-			: tokenPermissions.entrySet().stream().map(e -> String.format("%s:%s", e.getKey().toString().toLowerCase(), e.getValue().toString().toLowerCase())).collect(Collectors.joining(","));
+			: tokenPermissions.entrySet().stream()
+				.map(e -> String.format("%s:%s", e.getKey().toString().toLowerCase(), e.getValue().toString().toLowerCase()))
+				.collect(Collectors.joining(","));
 		return String.format("%s[(%s:%s:%s), (am%s), (%s), %s]", getClass().getSimpleName(),
 			String.valueOf(name), String.valueOf(symbol), String.valueOf(granularity),
 			String.valueOf(description), tokenPermissionsStr, String.valueOf(address));

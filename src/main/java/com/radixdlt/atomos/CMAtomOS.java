@@ -147,7 +147,10 @@ public final class CMAtomOS implements AtomOSKernel, AtomOS {
 	}
 
 	@Override
-	public <T extends Particle> FungibleTransitionConstraintStub<T> onFungible(Class<T> particleClass, ParticleToAmountMapper<T> particleToAmountMapper) {
+	public <T extends Particle> FungibleTransitionConstraintStub<T> onFungible(
+		Class<T> particleClass,
+		ParticleToAmountMapper<T> particleToAmountMapper
+	) {
 		checkParticleRegistered(particleClass);
 
 		if (pendingFungibleTransition != null) {

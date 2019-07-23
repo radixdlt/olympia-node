@@ -472,7 +472,10 @@ public class UInt256Test {
 		testRoundTrip("123456789");
 		testRoundTrip("123456789123456789");
 		testRoundTrip("123456789123456789123456789123456789");
-		assertEquals(UInt256.from(UInt128.MAX_VALUE, UInt128.MAX_VALUE), UInt256.from(BigInteger.ONE.shiftLeft(256).subtract(BigInteger.ONE).toString()));
+		assertEquals(
+			UInt256.from(UInt128.MAX_VALUE, UInt128.MAX_VALUE),
+			UInt256.from(BigInteger.ONE.shiftLeft(256).subtract(BigInteger.ONE).toString())
+		);
 	}
 
 	@Test

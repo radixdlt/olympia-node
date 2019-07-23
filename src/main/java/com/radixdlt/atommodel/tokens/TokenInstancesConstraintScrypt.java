@@ -68,7 +68,12 @@ public class TokenInstancesConstraintScrypt implements ConstraintScrypt {
 				checkPlanck(from.getPlanck(), to.getPlanck())));
 	}
 
-	private static <T extends Particle> void requireAmountFits(AtomOS os, Class<T> cls, ParticleToAmountMapper<T> particleToAmountMapper, ParticleToAmountMapper<T> particleToGranularityMapper) {
+	private static <T extends Particle> void requireAmountFits(
+		AtomOS os,
+		Class<T> cls,
+		ParticleToAmountMapper<T> particleToAmountMapper,
+		ParticleToAmountMapper<T> particleToGranularityMapper
+	) {
 		os.on(cls)
 			.require(particle -> {
 				UInt256 amount = particleToAmountMapper.amount(particle);

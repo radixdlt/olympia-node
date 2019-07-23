@@ -15,7 +15,10 @@ class FungibleTransitionMatchInformation {
 	private final List<FungibleTransitionInitialVerdict> initialVerdictsWithRejections;
 	private final boolean hasRejections;
 
-	FungibleTransitionMatchInformation(List<FungibleFormulaMatchInformation> matchInformation, List<FungibleTransitionInitialVerdict> initialVerdicts) {
+	FungibleTransitionMatchInformation(
+		List<FungibleFormulaMatchInformation> matchInformation,
+		List<FungibleTransitionInitialVerdict> initialVerdicts
+	) {
 		Objects.requireNonNull(matchInformation, "matchInformation is required");
 		Objects.requireNonNull(initialVerdicts, "initialVerdicts is required");
 

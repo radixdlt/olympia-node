@@ -167,7 +167,12 @@ public class FungibleTransitionConstraintProcedure implements ConstraintProcedur
 		return group.spunParticles()
 			.filter(spun -> spun.getSpin() == spin)
 			.filter(spun -> relevantTypes.stream().anyMatch(type -> type.isAssignableFrom(spun.getParticle().getClass())))
-			.map(spun -> new Fungible(spun.getParticle(), spun.getParticle().getClass(), valueMapper.amount(spun.getParticle()), group.indexOfSpunParticle(spun)));
+			.map(spun -> new Fungible(
+				spun.getParticle(),
+				spun.getParticle().getClass(),
+				valueMapper.amount(spun.getParticle()),
+				group.indexOfSpunParticle(spun))
+			);
 	}
 
 }

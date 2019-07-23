@@ -422,7 +422,11 @@ public class FungibleTransitionConstraintProcedureTest {
 		when(match.getTransition()).thenReturn(transition);
 		when(match.getMachedFormulas()).thenReturn(ImmutableList.of(formulaMatch));
 		when(match.hasMatch()).thenReturn(true);
-		FungibleTransitionMatchResult matchResult = new FungibleTransitionMatchResult(transition, match, mock(FungibleTransitionMatchInformation.class));
+		FungibleTransitionMatchResult matchResult = new FungibleTransitionMatchResult(
+			transition,
+			match,
+			mock(FungibleTransitionMatchInformation.class)
+		);
 
 		Fungible consumer1 = mockFungible(H2O.class, 1, EUID.TWO, 5, shouldBeContained);
 
@@ -452,7 +456,11 @@ public class FungibleTransitionConstraintProcedureTest {
 		HydroNextGen hydroNextGen0 = mock(HydroNextGen.class);
 		Uranium uranium0 = mock(Uranium.class);
 
-		ParticleGroup group = ParticleGroup.of(Stream.of(oxygen0, hydrogen0, hydroNextGen0, uranium0).map(SpunParticle::up).collect(Collectors.toList()));
+		ParticleGroup group = ParticleGroup.of(
+			Stream.of(oxygen0, hydrogen0, hydroNextGen0, uranium0)
+				.map(SpunParticle::up)
+				.collect(Collectors.toList())
+		);
 
 		ParticleValueMapper valueMapper = mock(ParticleValueMapper.class);
 		when(valueMapper.amount(oxygen0)).thenReturn(UInt256.ONE);

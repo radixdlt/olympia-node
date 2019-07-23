@@ -124,7 +124,12 @@ public final class FungibleFormula {
 		private final List<Class<? extends Particle>> approvedClasses;
 		private final Map<Class<? extends Particle>, String> rejectedClasses;
 
-		private FungibleFormulaInputOutputVerdict(Fungible input, Fungible output, List<Class<? extends Particle>> approvedClasses, Map<Class<? extends Particle>, String> rejectedClasses) {
+		private FungibleFormulaInputOutputVerdict(
+			Fungible input,
+			Fungible output,
+			List<Class<? extends Particle>> approvedClasses,
+			Map<Class<? extends Particle>, String> rejectedClasses
+		) {
 			this.input = input;
 			this.output = output;
 			this.approvedClasses = ImmutableList.copyOf(approvedClasses);

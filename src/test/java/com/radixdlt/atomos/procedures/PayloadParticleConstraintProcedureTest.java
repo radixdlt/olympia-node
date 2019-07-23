@@ -41,7 +41,10 @@ public class PayloadParticleConstraintProcedureTest {
 			.add(CustomPayloadParticle.class)
 			.build();
 
-		Stream<ProcedureError> errors = procedure.validate(ParticleGroup.of(SpunParticle.down(new CustomPayloadParticle())), mock(AtomMetadata.class));
+		Stream<ProcedureError> errors = procedure.validate(
+			ParticleGroup.of(SpunParticle.down(new CustomPayloadParticle())),
+			mock(AtomMetadata.class)
+		);
 
 		assertThat(errors).anyMatch(e -> e.getErrMsg().contains("cannot be DOWN"));
 	}

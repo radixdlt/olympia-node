@@ -450,7 +450,9 @@ public class UInt128Test {
 		testRoundTrip("123456789123456789");
 		testRoundTrip("123456789123456789123456789123456789");
 		assertEquals(
-			UInt128.from(0x7FFF_FFFF_FFFF_FFFFL, 0xFFFF_FFFF_FFFF_FFFFL), UInt128.from(BigInteger.ONE.shiftLeft(127).subtract(BigInteger.ONE).toString()));
+			UInt128.from(0x7FFF_FFFF_FFFF_FFFFL, 0xFFFF_FFFF_FFFF_FFFFL),
+			UInt128.from(BigInteger.ONE.shiftLeft(127).subtract(BigInteger.ONE).toString())
+		);
 		assertEquals(UInt128.from(0x8000_0000_0000_0000L, 0x0000_0000_0000_0000L), UInt128.from(BigInteger.ONE.shiftLeft(127).toString()));
 	}
 

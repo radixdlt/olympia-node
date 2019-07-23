@@ -114,7 +114,15 @@ public final class FungibleTransitionConstraintCheck {
 	/**
 	 * Utility method to convert a list of transitions and inputs / outputs info to a well formatted string
 	 */
-	private static String transitionsToString(List<FungibleTransition<?>> fungibleTransitions, FungibleOutputs unsatisfiedFungibleOutputs, FungibleOutputs satisfiedFungibleOutputs, FungibleInputs unspentFungibleInputs, FungibleInputs spentFungibleInputs, List<FungibleTransitionMatchResult> matchResults, ParticleValueMapper valueMapper) {
+	private static String transitionsToString(
+		List<FungibleTransition<?>> fungibleTransitions,
+		FungibleOutputs unsatisfiedFungibleOutputs,
+		FungibleOutputs satisfiedFungibleOutputs,
+		FungibleInputs unspentFungibleInputs,
+		FungibleInputs spentFungibleInputs,
+		List<FungibleTransitionMatchResult> matchResults,
+		ParticleValueMapper valueMapper
+	) {
 		UnaryOperator<String> noneIfEmpty = s -> s.isEmpty() ? "\t<none>" : s;
 
 		String unspentInputsString = noneIfEmpty.apply(unspentFungibleInputs.fungibles()

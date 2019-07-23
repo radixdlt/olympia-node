@@ -12,7 +12,9 @@ import java.util.function.Consumer;
  *
  * @param <T> particle class to add constraints to
  */
-public final class FunctionalFungibleTransitionConstraint<T extends Particle> implements AtomOS.FungibleTransitionConstraintStub<T>, FungibleTransitionConstraint<T> {
+public final class FunctionalFungibleTransitionConstraint<T extends Particle>
+	implements AtomOS.FungibleTransitionConstraintStub<T>, FungibleTransitionConstraint<T> {
+
 	private final Consumer<FungibleFormula> formulaHandler;
 	private final Consumer<AtomOS.FungibleTransitionInitialConstraint<T>> initialHandler;
 	private final ParticleRequireWithStub<T> initialRequireWithHandler;
