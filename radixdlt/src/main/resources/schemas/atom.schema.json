@@ -30,9 +30,14 @@
       "pattern": "^:str:.+",
       "description": "A string."
     },
-    "bytes": {
+    "nonEmptyBytes": {
       "type": "string",
       "pattern": "^:byt:.+",
+      "description": "Arbitrary non-empty bytes encoded in Base64."
+    },
+    "bytes": {
+      "type": "string",
+      "pattern": "^:byt:.*",
       "description": "Arbitrary bytes encoded in Base64."
     },
     "uid": {
@@ -67,7 +72,7 @@
     },
     "key": {
       "allOf": [
-        { "$ref": "#/definitions/bytes" }
+        { "$ref": "#/definitions/nonEmptyBytes" }
       ],
       "description": "A 32 byte EC public key."
     },
@@ -84,8 +89,8 @@
           "type": "string",
           "enum": [ "crypto.ecdsa_signature" ]
         },
-        "r": { "$ref": "#/definitions/bytes" },
-        "s": { "$ref": "#/definitions/bytes" }
+        "r": { "$ref": "#/definitions/nonEmptyBytes" },
+        "s": { "$ref": "#/definitions/nonEmptyBytes" }
       },
       "description": "A signature."
     },
@@ -107,7 +112,7 @@
     "temporalProofVertex": {
       "type": "object",
       "properties": {
-        "owner": { "$ref": "#/definitions/bytes" },
+        "owner": { "$ref": "#/definitions/nonEmptyBytes" },
         "hid": { "$ref": "#/definitions/uid" },
         "previous": { "$ref": "#/definitions/uid" },
         "signature": { "$ref": "#/definitions/signature" },
@@ -146,7 +151,7 @@
         "particles": {
           "type": "array",
           "items": { "$ref": "#/definitions/spunParticle" },
-          "minItems": 1,
+          "minItems": 1
         },
         "serializer": {
           "type": "string",
