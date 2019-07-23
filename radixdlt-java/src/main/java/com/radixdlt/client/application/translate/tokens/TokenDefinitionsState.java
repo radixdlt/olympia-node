@@ -46,6 +46,7 @@ public class TokenDefinitionsState implements ApplicationState {
 				null,
 				null,
 				null,
+				null,
 				TokenUnitConversions.subunitsToUnits(UInt256.MAX_VALUE.subtract(unallocatedTokensParticle.getAmount())),
 				TokenUnitConversions.subunitsToUnits(unallocatedTokensParticle.getGranularity()),
 				null
@@ -57,6 +58,7 @@ public class TokenDefinitionsState implements ApplicationState {
 			tokenState.getName(),
 			tokenState.getIso(),
 			tokenState.getDescription(),
+			tokenState.getIconUrl(),
 			Optional.ofNullable(tokenState.getTotalSupply())
 				.orElse(TokenUnitConversions.subunitsToUnits(UInt256.MAX_VALUE))
 				.subtract(TokenUnitConversions.subunitsToUnits(unallocatedTokensParticle.getAmount())),
@@ -72,6 +74,7 @@ public class TokenDefinitionsState implements ApplicationState {
 		String name,
 		String iso,
 		String description,
+		String iconUrl,
 		BigDecimal granularity,
 		TokenSupplyType tokenSupplyType
 	) {
@@ -81,9 +84,9 @@ public class TokenDefinitionsState implements ApplicationState {
 			final TokenState curState = state.get(ref);
 			final BigDecimal totalSupply = curState.getTotalSupply();
 
-			newState.put(ref, new TokenState(name, iso, description, totalSupply, granularity, tokenSupplyType));
+			newState.put(ref, new TokenState(name, iso, description, iconUrl, totalSupply, granularity, tokenSupplyType));
 		} else {
-			newState.put(ref, new TokenState(name, iso, description, null, granularity, tokenSupplyType));
+			newState.put(ref, new TokenState(name, iso, description, iconUrl, null, granularity, tokenSupplyType));
 		}
 
 		return new TokenDefinitionsState(ImmutableMap.copyOf(newState));
