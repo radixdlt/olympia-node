@@ -15,6 +15,7 @@ public class TokenState {
 	private final String name;
 	private final String iso;
 	private final String description;
+	private final String iconUrl;
 	private final BigDecimal totalSupply;
 	private final BigDecimal granularity;
 	private final TokenSupplyType tokenSupplyType;
@@ -23,6 +24,7 @@ public class TokenState {
 		String name,
 		String iso,
 		String description,
+		String iconUrl,
 		BigDecimal totalSupply,
 		BigDecimal granularity,
 		TokenSupplyType tokenSupplyType
@@ -30,6 +32,7 @@ public class TokenState {
 		this.name = name;
 		this.iso = iso;
 		this.description = description;
+		this.iconUrl = iconUrl;
 		this.totalSupply = totalSupply;
 		this.granularity = granularity;
 		this.tokenSupplyType = tokenSupplyType;
@@ -47,6 +50,7 @@ public class TokenState {
 			state0.name != null ? state0.name : state1.name,
 			state0.iso != null ? state0.iso : state1.iso,
 			state0.description != null ? state0.description : state1.description,
+			state0.iconUrl != null ? state0.iconUrl : state1.iconUrl,
 			totalSupply,
 			state0.granularity != null ? state0.granularity : state1.granularity,
 			state0.tokenSupplyType != null ? state0.tokenSupplyType : state1.tokenSupplyType
@@ -63,6 +67,10 @@ public class TokenState {
 
 	public String getDescription() {
 		return description;
+	}
+
+	public String getIconUrl() {
+		return iconUrl;
 	}
 
 	public BigDecimal getTotalSupply() {

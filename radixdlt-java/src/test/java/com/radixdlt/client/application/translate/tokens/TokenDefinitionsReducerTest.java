@@ -27,6 +27,7 @@ public class TokenDefinitionsReducerTest {
 		when(tokenDefinitionParticle.getName()).thenReturn("Name");
 		when(tokenDefinitionParticle.getSymbol()).thenReturn("ISO");
 		when(tokenDefinitionParticle.getDescription()).thenReturn("Desc");
+		when(tokenDefinitionParticle.getIconUrl()).thenReturn("http://foo");
 		when(tokenDefinitionParticle.getGranularity()).thenReturn(UInt256.ONE);
 		when(tokenDefinitionParticle.getTokenPermissions()).thenReturn(Collections.singletonMap(TokenTransition.MINT,
 			TokenPermission.TOKEN_CREATION_ONLY));
@@ -36,7 +37,8 @@ public class TokenDefinitionsReducerTest {
 			TokenDefinitionsState.init(), tokenDefinitionParticle);
 
 		assertThat(state.getState().get(tokenRef)).isEqualTo(
-			new TokenState("Name", "ISO", "Desc", null,
+			new TokenState("Name", "ISO", "Desc", "http://foo",
+				null,
 				TokenUnitConversions.subunitsToUnits(1), TokenSupplyType.FIXED)
 		);
 	}

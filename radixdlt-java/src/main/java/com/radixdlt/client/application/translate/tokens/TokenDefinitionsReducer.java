@@ -46,6 +46,7 @@ public class TokenDefinitionsReducer implements ParticleReducer<TokenDefinitions
 				tokenDefinitionParticle.getName(),
 				tokenDefinitionParticle.getSymbol(),
 				tokenDefinitionParticle.getDescription(),
+				tokenDefinitionParticle.getIconUrl(),
 				TokenUnitConversions.subunitsToUnits(tokenDefinitionParticle.getGranularity()),
 				tokenSupplyType
 			);
