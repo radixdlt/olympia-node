@@ -379,18 +379,18 @@ public class GreedyFungibleMatcherTest {
 		);
 	}
 
-	private static abstract class Oxygen extends Particle {
+	private abstract static class Oxygen extends Particle {
 	}
 
-	private static abstract class Hydrogen extends Particle {
+	private abstract static class Hydrogen extends Particle {
 	}
 
-	private static abstract class Uranium extends Particle {
+	private abstract static class Uranium extends Particle {
 	}
 
-	private static abstract class Helium extends Particle {
+	private abstract static class Helium extends Particle {
 	}
 
-	private static abstract class H2O extends Particle {
+	private abstract static class H2O extends Particle {
 	}
 }

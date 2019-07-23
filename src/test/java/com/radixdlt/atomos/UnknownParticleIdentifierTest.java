@@ -8,10 +8,10 @@ import com.radixdlt.universe.Universe;
 import org.junit.Test;
 
 public class UnknownParticleIdentifierTest {
-	private static abstract class KnownParticle extends Particle {
+	private abstract static class KnownParticle extends Particle {
 	}
 
-	private static abstract class UnknownParticle extends Particle {
+	private abstract static class UnknownParticle extends Particle {
 	}
 
 	@Test

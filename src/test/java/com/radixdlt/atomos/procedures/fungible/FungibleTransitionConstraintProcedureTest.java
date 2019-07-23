@@ -36,25 +36,25 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 public class FungibleTransitionConstraintProcedureTest {
-	private static abstract class FungibleParticle extends Particle {
+	private abstract static class FungibleParticle extends Particle {
 		public UInt256 getAmount() {
 			throw new UnsupportedOperationException("Mock me!");
 		}
 	}
 
-	private static abstract class Oxygen extends FungibleParticle {
+	private abstract static class Oxygen extends FungibleParticle {
 	}
 
-	private static abstract class Hydrogen extends FungibleParticle {
+	private abstract static class Hydrogen extends FungibleParticle {
 	}
 
-	private static abstract class HydroNextGen extends Hydrogen {
+	private abstract static class HydroNextGen extends Hydrogen {
 	}
 
-	private static abstract class Uranium extends FungibleParticle {
+	private abstract static class Uranium extends FungibleParticle {
 	}
 
-	private static abstract class H2O extends FungibleParticle {
+	private abstract static class H2O extends FungibleParticle {
 	}
 
 	// I also know that H2O doesn't decay, but makes for a good test, so we're good

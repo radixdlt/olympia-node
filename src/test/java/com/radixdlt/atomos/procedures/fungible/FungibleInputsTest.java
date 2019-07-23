@@ -110,16 +110,16 @@ public class FungibleInputsTest {
 			fungibleInputs.fungibles().toArray(Fungible[]::new));
 	}
 
-	private static abstract class Oxygen extends Particle {
+	private abstract static class Oxygen extends Particle {
 	}
 
-	private static abstract class Hydrogen extends Particle {
+	private abstract static class Hydrogen extends Particle {
 	}
 
-	private static abstract class Uranium extends Particle {
+	private abstract static class Uranium extends Particle {
 	}
 
-	private static abstract class H2O extends Particle {
+	private abstract static class H2O extends Particle {
 	}
 
 	private static final FungibleComposition COMPOSITION_H2O = FungibleComposition.of(
