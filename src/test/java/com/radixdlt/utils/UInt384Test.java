@@ -32,7 +32,7 @@ public class UInt384Test {
 	@Test
 	public void when_constructing_int384_from_short_values__values_compare_equal() {
 		for (int i = 0; i <= Short.MAX_VALUE; ++i) {
-			short s = (short)i;
+			short s = (short) i;
 			UInt384 int384 = UInt384.from(s);
 			assertEqualToLong(s, int384);
 		}
@@ -312,7 +312,7 @@ public class UInt384Test {
 		byte[] m1 = { -1 };
 		byte[] p1 = {  1 };
 		byte[] bytesArray = new byte[UInt384.BYTES];
-		Arrays.fill(bytesArray, (byte)0);
+		Arrays.fill(bytesArray, (byte) 0);
 		bytesArray[UInt384.BYTES - 1] = 1;
 		UInt384 m1Bits128 = UInt384.from(m1);
 		UInt384 p1Bits128 = UInt384.from(p1);
@@ -330,7 +330,7 @@ public class UInt384Test {
 			.from(UInt128.from(0x1011_1213_1415_1617L, 0x1819_1A1B_1C1D_1E1FL), UInt128.from(0x2021_2223_2425_2627L, 0x2829_2A2B_2C2D_2E2FL));
 		UInt384 bitPattern = UInt384.from(bp0, bp1);
 		byte[] bytes2 = new byte[UInt384.BYTES * 3];
-		Arrays.fill(bytes2, (byte)-1);
+		Arrays.fill(bytes2, (byte) -1);
 
 		// Make sure we got the value in big-endian order
 		byte[] bytes = bitPattern.toByteArray();

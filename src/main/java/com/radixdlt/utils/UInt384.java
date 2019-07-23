@@ -68,7 +68,7 @@ public final class UInt384 implements Comparable<UInt384> {
 	 * @return {@code value} as an {@link UInt384} type.
 	 */
 	public static UInt384 from(short value) {
-		return from((long)value);
+		return from((long) value);
 	}
 
 	/**
@@ -78,7 +78,7 @@ public final class UInt384 implements Comparable<UInt384> {
 	 * @return {@code value} as an {@link UInt384} type.
 	 */
 	public static UInt384 from(int value) {
-		return from((long)value);
+		return from((long) value);
 	}
 
 	/**

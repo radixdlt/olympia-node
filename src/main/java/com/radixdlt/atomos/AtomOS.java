@@ -290,8 +290,8 @@ public interface AtomOS {
 			FungibleTransitionInputConstraint<U, T> check0, FungibleTransitionInputConstraint<U, T> check1) {
 			return orFrom(FungibleFormula.from(Stream.of(
 					new FungibleTransitionMember<>(cls1, (u,t,meta) -> Result.combine(
-						check0.apply(u, (T)t, meta),
-						check1.apply(u, (T)t, meta)
+						check0.apply(u, (T) t, meta),
+						check1.apply(u, (T) t, meta)
 					))
 				),
 				FungibleComposition.of(amount1, cls1)

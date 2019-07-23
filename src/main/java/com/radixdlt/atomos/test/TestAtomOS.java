@@ -47,7 +47,7 @@ public class TestAtomOS implements AtomOS {
 	@Override
 	public <T extends Particle> IndexedConstraint<T> onIndexed(Class<T> particleClass, ParticleToRRIMapper<T> indexer) {
 		return constraint -> {
-			indexedInitialConstraints.add(new Pair<>(particleClass, (p, m) -> constraint.apply((T)p, m)));
+			indexedInitialConstraints.add(new Pair<>(particleClass, (p, m) -> constraint.apply((T) p, m)));
 			return new InitializedIndexedConstraint<T>() {
 				@Override
 				public <U extends Particle> void requireInitialWith(

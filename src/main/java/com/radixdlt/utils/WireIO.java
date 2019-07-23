@@ -82,7 +82,7 @@ public final class WireIO
 			long len = readVarInt();
 
 			if (len > 0)
-				return new String(readBytes((int)len), StandardCharsets.UTF_8);
+				return new String(readBytes((int) len), StandardCharsets.UTF_8);
 
 			return "";
 		}

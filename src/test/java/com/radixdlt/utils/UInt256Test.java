@@ -47,7 +47,7 @@ public class UInt256Test {
 	@Test
 	public void when_constructing_int256_from_short_values__values_compare_equal() {
 		for (int i = 0; i <= Short.MAX_VALUE; ++i) {
-			short s = (short)i;
+			short s = (short) i;
 			UInt256 int256 = UInt256.from(s);
 			assertEqualToLong(s, int256);
 		}
@@ -308,7 +308,7 @@ public class UInt256Test {
 		byte[] m1 = { -1 };
 		byte[] p1 = {  1 };
 		byte[] bytesArray = new byte[UInt256.BYTES];
-		Arrays.fill(bytesArray, (byte)0);
+		Arrays.fill(bytesArray, (byte) 0);
 		bytesArray[UInt256.BYTES - 1] = 1;
 		UInt256 m1Bits128 = UInt256.from(m1);
 		UInt256 p1Bits128 = UInt256.from(p1);
@@ -325,7 +325,7 @@ public class UInt256Test {
 		UInt128 bp1 = UInt128.from(0x1011_1213_1415_1617L, 0x1819_1A1B_1C1D_1E1FL);
 		UInt256 bitPattern = UInt256.from(bp0, bp1);
 		byte[] bytes2 = new byte[UInt256.BYTES * 3];
-		Arrays.fill(bytes2, (byte)-1);
+		Arrays.fill(bytes2, (byte) -1);
 
 		// Make sure we got the value in big-endian order
 		byte[] bytes = bitPattern.toByteArray();

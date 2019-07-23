@@ -52,7 +52,7 @@ final class ConstraintMachineUtils {
 
 		final CMErrorCode error;
 
-		switch(result) {
+		switch (result) {
 			case OKAY:
 				error = null;
 				break;

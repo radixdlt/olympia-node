@@ -1,7 +1,7 @@
 package com.radixdlt.crypto;
 
 @SuppressWarnings("serial")
-public class CryptoException extends Exception 
+public class CryptoException extends Exception
 {
 	public CryptoException () { super (); }
 

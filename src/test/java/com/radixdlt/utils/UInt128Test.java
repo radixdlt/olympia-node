@@ -278,7 +278,7 @@ public class UInt128Test {
 		byte[] m1 = { -1 };
 		byte[] p1 = {  1 };
 		byte[] bytesArray = new byte[UInt128.BYTES];
-		Arrays.fill(bytesArray, (byte)0);
+		Arrays.fill(bytesArray, (byte) 0);
 		bytesArray[UInt128.BYTES - 1] = 1;
 		UInt128 m1Bits128 = UInt128.from(m1);
 		UInt128 p1Bits128 = UInt128.from(p1);
@@ -296,7 +296,7 @@ public class UInt128Test {
 	public void testToByteArray() {
 		UInt128 bitPattern = UInt128.from(0x0001_0203_0405_0607L, 0x0809_0A0B_0C0D_0E0FL);
 		byte[] bytes2 = new byte[UInt128.BYTES * 3];
-		Arrays.fill(bytes2, (byte)-1);
+		Arrays.fill(bytes2, (byte) -1);
 
 		// Make sure we got the value in big-endian order
 		byte[] bytes = bitPattern.toByteArray();
