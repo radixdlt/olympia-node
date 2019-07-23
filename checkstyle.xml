@@ -93,7 +93,13 @@
 
         <!-- Checks for Naming Conventions.                  -->
         <!-- See http://checkstyle.sf.net/config_naming.html -->
-        <module name="ConstantName"/>
+        <module name="ConstantName">
+        	<!-- Disabled, as not smart enough to work out if value is immutable -->
+        	<property name="applyToPublic" value="false"/>
+        	<property name="applyToProtected" value="false"/>
+        	<property name="applyToPackage" value="false"/>
+        	<property name="applyToPrivate" value="false"/>
+        </module>
         <module name="LocalFinalVariableName"/>
         <module name="LocalVariableName"/>
         <module name="MemberName"/>

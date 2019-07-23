@@ -314,13 +314,13 @@ public class UInt384Test {
 		byte[] bytesArray = new byte[UInt384.BYTES];
 		Arrays.fill(bytesArray, (byte)0);
 		bytesArray[UInt384.BYTES - 1] = 1;
-		UInt384 m1_128 = UInt384.from(m1);
-		UInt384 p1_128 = UInt384.from(p1);
-		UInt384 bytesArray_128 = UInt384.from(bytesArray);
+		UInt384 m1Bits128 = UInt384.from(m1);
+		UInt384 p1Bits128 = UInt384.from(p1);
+		UInt384 bytesArrayBits128 = UInt384.from(bytesArray);
 
-		assertEquals(UInt384.from(255), m1_128);   // Sign extension did not happen
-		assertEquals(UInt384.ONE, p1_128);         // Zero fill happened correctly
-		assertEquals(UInt384.ONE, bytesArray_128); // Correct size array OK
+		assertEquals(UInt384.from(255), m1Bits128);   // Sign extension did not happen
+		assertEquals(UInt384.ONE, p1Bits128);         // Zero fill happened correctly
+		assertEquals(UInt384.ONE, bytesArrayBits128); // Correct size array OK
 	}
 
 	@Test
@@ -352,13 +352,13 @@ public class UInt384Test {
 
 	@Test
 	public void when_performing_binary_shifts__the_correct_value_is_returned() {
-		final UInt256 MINUS_TWO = UInt256.ZERO.decrement().decrement();
-		final UInt128 MAX_SIGNED = UInt128.HIGH_BIT.decrement();
+		final UInt256 minusTwo = UInt256.ZERO.decrement().decrement();
+		final UInt128 maxSigned = UInt128.HIGH_BIT.decrement();
 
 		// Basic cases, left shift
 		assertEquals(UInt384.ZERO, UInt384.ZERO.shiftLeft());
 		// Zero extend on left
-		assertEquals(UInt384.from(UInt128.MAX_VALUE, MINUS_TWO), UInt384.MAX_VALUE.shiftLeft());
+		assertEquals(UInt384.from(UInt128.MAX_VALUE, minusTwo), UInt384.MAX_VALUE.shiftLeft());
 		assertEquals(UInt384.from(2), UInt384.ONE.shiftLeft());
 		// Make sure bit crosses word boundary correctly
 		assertEquals(UInt384.from(UInt128.ONE, UInt256.ZERO), UInt384.from(UInt128.ZERO, UInt256.HIGH_BIT).shiftLeft());
@@ -366,7 +366,7 @@ public class UInt384Test {
 		// Basic cases, right shift
 		assertEquals(UInt384.ZERO, UInt384.ZERO.shiftRight());
 		// Zeros inserted at right
-		assertEquals(UInt384.from(MAX_SIGNED, UInt256.MAX_VALUE), UInt384.MAX_VALUE.shiftRight());
+		assertEquals(UInt384.from(maxSigned, UInt256.MAX_VALUE), UInt384.MAX_VALUE.shiftRight());
 		assertEquals(UInt384.ZERO, UInt384.ONE.shiftRight());
 		assertEquals(UInt384.ONE, UInt384.from(2).shiftRight());
 		// Make sure bit crosses word boundary correctly

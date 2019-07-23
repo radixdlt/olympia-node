@@ -310,13 +310,13 @@ public class UInt256Test {
 		byte[] bytesArray = new byte[UInt256.BYTES];
 		Arrays.fill(bytesArray, (byte)0);
 		bytesArray[UInt256.BYTES - 1] = 1;
-		UInt256 m1_128 = UInt256.from(m1);
-		UInt256 p1_128 = UInt256.from(p1);
-		UInt256 bytesArray_128 = UInt256.from(bytesArray);
+		UInt256 m1Bits128 = UInt256.from(m1);
+		UInt256 p1Bits128 = UInt256.from(p1);
+		UInt256 bytesArrayBits128 = UInt256.from(bytesArray);
 
-		assertEquals(UInt256.from(255), m1_128);   // Sign extension did not happen
-		assertEquals(UInt256.ONE, p1_128);         // Zero fill happened correctly
-		assertEquals(UInt256.ONE, bytesArray_128); // Correct size array OK
+		assertEquals(UInt256.from(255), m1Bits128);   // Sign extension did not happen
+		assertEquals(UInt256.ONE, p1Bits128);         // Zero fill happened correctly
+		assertEquals(UInt256.ONE, bytesArrayBits128); // Correct size array OK
 	}
 
 	@Test
@@ -347,13 +347,13 @@ public class UInt256Test {
 
 	@Test
 	public void when_performing_binary_shifts__the_correct_value_is_returned() {
-		final UInt128 MINUS_TWO = UInt128.ZERO.decrement().decrement();
-		final UInt128 MAX_SIGNED = UInt128.HIGH_BIT.decrement();
+		final UInt128 minusTwo = UInt128.ZERO.decrement().decrement();
+		final UInt128 maxSigned = UInt128.HIGH_BIT.decrement();
 
 		// Basic cases, left shift
 		assertEquals(UInt256.ZERO, UInt256.ZERO.shiftLeft());
 		// Zero extend on left
-		assertEquals(UInt256.from(UInt128.MAX_VALUE, MINUS_TWO), UInt256.MAX_VALUE.shiftLeft());
+		assertEquals(UInt256.from(UInt128.MAX_VALUE, minusTwo), UInt256.MAX_VALUE.shiftLeft());
 		assertEquals(UInt256.from(2), UInt256.ONE.shiftLeft());
 		// Make sure bit crosses word boundary correctly
 		assertEquals(UInt256.from(UInt128.ONE, UInt128.ZERO), UInt256.from(UInt128.ZERO, UInt128.HIGH_BIT).shiftLeft());
@@ -361,7 +361,7 @@ public class UInt256Test {
 		// Basic cases, right shift
 		assertEquals(UInt256.ZERO, UInt256.ZERO.shiftRight());
 		// Zeros inserted at right
-		assertEquals(UInt256.from(MAX_SIGNED, UInt128.MAX_VALUE), UInt256.MAX_VALUE.shiftRight());
+		assertEquals(UInt256.from(maxSigned, UInt128.MAX_VALUE), UInt256.MAX_VALUE.shiftRight());
 		assertEquals(UInt256.ZERO, UInt256.ONE.shiftRight());
 		assertEquals(UInt256.ONE, UInt256.from(2).shiftRight());
 		// Make sure bit crosses word boundary correctly
@@ -403,7 +403,7 @@ public class UInt256Test {
 	 */
 	@Test
 	public void when_performing_integer_square_root__the_correct_value_is_returned() {
-		long max = 1 << 53; // Precision of double
+		long max = 1L << 53; // Precision of double
 		for (long n = 0; n < max; n += 997) {
 			long lsqrt = (long) Math.floor(Math.sqrt(n));
 			UInt256 nn = UInt256.from(n);

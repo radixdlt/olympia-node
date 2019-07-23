@@ -280,13 +280,13 @@ public class UInt128Test {
 		byte[] bytesArray = new byte[UInt128.BYTES];
 		Arrays.fill(bytesArray, (byte)0);
 		bytesArray[UInt128.BYTES - 1] = 1;
-		UInt128 m1_128 = UInt128.from(m1);
-		UInt128 p1_128 = UInt128.from(p1);
-		UInt128 bytesArray_128 = UInt128.from(bytesArray);
+		UInt128 m1Bits128 = UInt128.from(m1);
+		UInt128 p1Bits128 = UInt128.from(p1);
+		UInt128 bytesArrayBits128 = UInt128.from(bytesArray);
 
-		assertEquals(UInt128.from(255), m1_128);   // Zero extension happened correctly
-		assertEquals(UInt128.ONE, p1_128);         // Zero fill happened correctly
-		assertEquals(UInt128.ONE, bytesArray_128); // Correct size array OK
+		assertEquals(UInt128.from(255), m1Bits128);   // Zero extension happened correctly
+		assertEquals(UInt128.ONE, p1Bits128);         // Zero fill happened correctly
+		assertEquals(UInt128.ONE, bytesArrayBits128); // Correct size array OK
 	}
 
 	/**

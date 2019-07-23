@@ -312,16 +312,16 @@ public class FungibleInputsTest {
 
 	@Test
 	public void testMatchDecay() {
-		final UInt256 START_AMOUNT = UInt256.from(512);
-		final UInt256 TARGET_AMOUNT = UInt256.ONE;
+		final UInt256 startAmount = UInt256.from(512);
+		final UInt256 targetAmount = UInt256.ONE;
 
 		Hydrogen hydrogen0 = mock(Hydrogen.class);
 		FungibleInputs fungibleInputs = FungibleInputs.of(Stream.of(
-			new Fungible(hydrogen0, Hydrogen.class, START_AMOUNT, 0)
+			new Fungible(hydrogen0, Hydrogen.class, startAmount, 0)
 		));
 
-		UInt256 currentAmount = START_AMOUNT;
-		while (!currentAmount.equals(TARGET_AMOUNT)) {
+		UInt256 currentAmount = startAmount;
+		while (!currentAmount.equals(targetAmount)) {
 			UInt256 nextAmount = currentAmount.divide(UInt256.TWO);
 			FungibleInputs.CompositionMatch match = fungibleInputs.match(nextAmount, COMPOSITION_HYDROGEN_DECAY);
 			assertEquals(nextAmount, match.getSatisfiedAmount());
