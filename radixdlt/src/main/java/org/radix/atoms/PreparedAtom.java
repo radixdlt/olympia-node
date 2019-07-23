@@ -1,7 +1,5 @@
 package org.radix.atoms;
 
-import com.google.common.collect.ImmutableMap;
-import com.radixdlt.engine.ValidationResult.ValidationResultAcceptor;
 import com.radixdlt.utils.UInt384;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -19,7 +17,6 @@ import org.radix.atoms.AtomStore.IDType;
 import com.radixdlt.constraintmachine.CMAtom;
 import com.radixdlt.constraintmachine.CMParticle;
 import com.radixdlt.common.EUID;
-import org.radix.exceptions.ValidationException;
 import org.radix.modules.Modules;
 import com.radixdlt.utils.WireIO.Reader;
 import com.radixdlt.utils.WireIO.Writer;
@@ -28,12 +25,10 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationUtils;
 import org.radix.time.TemporalVertex;
 import org.radix.universe.system.LocalSystem;
-import org.radix.validation.ValidationHandler;
 
 /**
  * The Atom which Tempo understands (non-translucent).
  * TODO: Separate out serialization/deserialization.
- * TODO: Remove translucent atom.
  */
 public class PreparedAtom {
 	private long clock;
@@ -49,11 +44,7 @@ public class PreparedAtom {
 
 	private Atom atom;
 
-	// TODO: Remove this and just use particle hid + spin
-	private CMAtom cmAtom;
-
 	public PreparedAtom(CMAtom cmAtom, UInt384 mass) throws IOException {
-		this.cmAtom = cmAtom;
 		this.atom = (Atom) cmAtom.getAtom();
 		this.mass = mass;
 		this.atomID = atom.getAID();
@@ -171,22 +162,6 @@ public class PreparedAtom {
 			}
 		}
 		return this.atom;
-	}
-
-	/**
-	 * FIXME: Currently a horrible hack. Remove callback into constraint machine. Should store mass of the atom in DB.
-	 * @return The processed cm atom
-	 */
-	public CMAtom getCmAtom() {
-		if (this.cmAtom == null) {
-			try {
-				this.cmAtom = Modules.get(ValidationHandler.class).validate(getAtom()).getFirst();
-			} catch (ValidationException e) {
-				throw new IllegalStateException();
-			}
-		}
-
-		return this.cmAtom;
 	}
 
 	// SERLIALIZATION //

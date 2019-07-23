@@ -440,7 +440,7 @@ public class AtomSync extends Service
 		            else if (numShards > 8)
 		            	atomsLog.warn(atom.getHID()+" at clock "+atom.getTemporalProof().getVertexByNID(LocalSystem.getInstance().getNID()).getClock()+" is large with "+numShards+" shards");
 
-                    AtomSync.this.commitQueue.add(new PreparedAtom(result.getFirst(), result.getSecond()));
+                    AtomSync.this.commitQueue.add(result);
 				}
 				catch (Throwable t)
 				{
@@ -463,7 +463,7 @@ public class AtomSync extends Service
 	private Thread		commitProcessorThread = null;
 	private	final Map<AID, AtomStatus>	committing = new ConcurrentHashMap<>();
 	private	final Map<AID, Integer> commitAttempts = new ConcurrentHashMap<>();
-	private	final BlockingQueue<PreparedAtom> commitQueue = new LinkedBlockingQueue<>();
+	private	final BlockingQueue<Pair<CMAtom, UInt384>> commitQueue = new LinkedBlockingQueue<>();
 	private final AtomicInteger complexAtomsInCommitting = new AtomicInteger(0);
 	private final AtomicInteger nonComplexAtomsInCommitting = new AtomicInteger(0);
 
@@ -1363,27 +1363,29 @@ public class AtomSync extends Service
 			{
 				while (!isTerminated())
 				{
+					Pair<CMAtom, UInt384> massedAtom = null;
 					PreparedAtom preparedAtom = null;
 
 					try {
-						preparedAtom = AtomSync.this.commitQueue.poll(1, TimeUnit.SECONDS);
+						massedAtom = AtomSync.this.commitQueue.poll(1, TimeUnit.SECONDS);
 					} catch (InterruptedException e) {
 						// Just exit if we are interrupted
 						Thread.currentThread().interrupt();
 						break;
 					}
 
-					if (preparedAtom == null)
+					if (massedAtom == null)
 						continue;
 
 					try
 					{
+						preparedAtom = new PreparedAtom(massedAtom.getFirst(), massedAtom.getSecond());
 						Modules.ifAvailable(SystemMetaData.class, a -> a.increment("ledger.processed"));
 
 						if (atomsLog.hasLevel(Logging.DEBUG)) {
 							atomsLog.debug("Validating Atom "+preparedAtom.getAtomID()+" to COMPLETE");
 						}
-						Modules.get(ValidationHandler.class).stateCheck(preparedAtom.getCmAtom());
+						Modules.get(ValidationHandler.class).stateCheck(massedAtom.getFirst());
 						if (atomsLog.hasLevel(Logging.DEBUG)) {
 							atomsLog.debug("Validated Atom "+preparedAtom.getAtomID()+" to COMPLETE");
 						}
