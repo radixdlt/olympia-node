@@ -89,10 +89,10 @@ public final class Fungible {
 			return false;
 		}
 		Fungible fungible = (Fungible) o;
-		return index == fungible.index &&
-			Objects.equals(particle, fungible.particle) &&
-			Objects.equals(particleClass, fungible.particleClass) &&
-			Objects.equals(amount, fungible.amount);
+		return index == fungible.index
+			&& Objects.equals(particle, fungible.particle)
+			&& Objects.equals(particleClass, fungible.particleClass)
+			&& Objects.equals(amount, fungible.amount);
 	}
 
 	@Override

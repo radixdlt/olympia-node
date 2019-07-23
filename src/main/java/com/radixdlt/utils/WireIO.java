@@ -50,11 +50,11 @@ public final class WireIO {
 		public long readVarInt() throws IOException {
 			byte flag = inputStream.readByte();
 
-			if ( flag == 1) {
+			if (flag == 1) {
 				return readByte();
-			} else if ( flag == 2 ) {
+			} else if (flag == 2) {
 				return readShort();
-			} else if ( flag == 4 ) {
+			} else if (flag == 4) {
 				return readInt();
 			} else {
 				return readLong();
@@ -68,7 +68,7 @@ public final class WireIO {
 		public byte[] readBytes(int length) throws IOException {
 			byte[] b = new byte[length];
 
-			if ( length > 0 ) {
+			if (length > 0) {
 				inputStream.readFully(b);
 			}
 

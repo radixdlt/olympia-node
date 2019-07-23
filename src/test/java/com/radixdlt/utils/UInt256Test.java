@@ -32,12 +32,12 @@ public class UInt256Test {
 	public void when_constructing_uint256_from_byte_arrays__values_compare_equal() {
 		assertEquals(UInt256.from(0x00000000_00000001L), new UInt256(bytes(1)));
 		assertEquals(UInt256.from(0x00000000_00000102L), new UInt256(bytes(1, 2)));
-		assertEquals(UInt256.from(0x00000000_00010203L), new UInt256(bytes(1, 2, 3 )));
-		assertEquals(UInt256.from(0x00000000_01020304L), new UInt256(bytes(1, 2, 3, 4 )));
-		assertEquals(UInt256.from(0x00000001_02030405L), new UInt256(bytes(1, 2, 3, 4, 5 )));
-		assertEquals(UInt256.from(0x00000102_03040506L), new UInt256(bytes(1, 2, 3, 4, 5, 6 )));
-		assertEquals(UInt256.from(0x00010203_04050607L), new UInt256(bytes(1, 2, 3, 4, 5, 6, 7 )));
-		assertEquals(UInt256.from(0x01020304_05060708L), new UInt256(bytes(1, 2, 3, 4, 5, 6, 7, 8 )));
+		assertEquals(UInt256.from(0x00000000_00010203L), new UInt256(bytes(1, 2, 3)));
+		assertEquals(UInt256.from(0x00000000_01020304L), new UInt256(bytes(1, 2, 3, 4)));
+		assertEquals(UInt256.from(0x00000001_02030405L), new UInt256(bytes(1, 2, 3, 4, 5)));
+		assertEquals(UInt256.from(0x00000102_03040506L), new UInt256(bytes(1, 2, 3, 4, 5, 6)));
+		assertEquals(UInt256.from(0x00010203_04050607L), new UInt256(bytes(1, 2, 3, 4, 5, 6, 7)));
+		assertEquals(UInt256.from(0x01020304_05060708L), new UInt256(bytes(1, 2, 3, 4, 5, 6, 7, 8)));
 	}
 
 	private byte[] bytes(int... bs) {
@@ -211,7 +211,7 @@ public class UInt256Test {
 		assertEquals(UInt256.from(12345678L / 13L), UInt256.from(12345678L).divide(UInt256.from(13L)));
 	}
 
-	@Test(expected=IllegalArgumentException.class)
+	@Test(expected = IllegalArgumentException.class)
 	public void when_dividing_by_zero__an_exception_is_thrown() {
 		UInt256.ONE.divide(UInt256.ZERO);
 		fail();
@@ -228,7 +228,7 @@ public class UInt256Test {
 		assertEquals(UInt256.from(12345678L % 13L), UInt256.from(12345678L).remainder(UInt256.from(13L)));
 	}
 
-	@Test(expected=IllegalArgumentException.class)
+	@Test(expected = IllegalArgumentException.class)
 	public void when_computing_the_remainder_of_dividing_by_zero__an_exception_is_thrown() {
 		UInt256.ONE.remainder(UInt256.ZERO);
 		fail();

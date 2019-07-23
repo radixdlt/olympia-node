@@ -38,7 +38,7 @@ class ECKeyUtils {
 	static final ECParameterSpec spec;
 
 	static {
-	    Security.insertProviderAt(new BouncyCastleProvider(),1);
+	    Security.insertProviderAt(new BouncyCastleProvider(), 1);
 
 	    curve = CustomNamedCurves.getByName("secp256k1");
 

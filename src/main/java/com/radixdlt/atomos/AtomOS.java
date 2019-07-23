@@ -289,7 +289,7 @@ public interface AtomOS {
 		default <U extends Particle> FungibleTransitionConstraint<T> orFrom(long amount1, Class<U> cls1,
 			FungibleTransitionInputConstraint<U, T> check0, FungibleTransitionInputConstraint<U, T> check1) {
 			return orFrom(FungibleFormula.from(Stream.of(
-					new FungibleTransitionMember<>(cls1, (u,t,meta) -> Result.combine(
+					new FungibleTransitionMember<>(cls1, (u, t, meta) -> Result.combine(
 						check0.apply(u, (T) t, meta),
 						check1.apply(u, (T) t, meta)
 					))
@@ -308,7 +308,7 @@ public interface AtomOS {
 		default <U extends Particle> FungibleTransitionConstraint<T> orFrom(long amount1, Class<U> cls1,
 			FungibleTransitionInputConstraint<U, T>... checks) {
 			return orFrom(FungibleFormula.from(Stream.of(
-					new FungibleTransitionMember<>(cls1, (u,t,meta) -> Result.combine(
+					new FungibleTransitionMember<>(cls1, (u, t, meta) -> Result.combine(
 						Arrays.stream(checks).map(check -> check.apply(u, (T) t, meta))
 					))
 				),

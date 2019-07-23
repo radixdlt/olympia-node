@@ -105,6 +105,6 @@ public final class SpunParticle {
 
 		return String.format("%s[(%s):%s:%s:%s]", getClass().getSimpleName(),
 				String.valueOf(phid), String.valueOf(spin), String.valueOf(particle),
-				String.valueOf(this.particle != null ? particle.getDestinations() : "null")	);
+				String.valueOf(this.particle != null ? particle.getDestinations() : "null"));
 	}
 }

@@ -751,10 +751,10 @@ public final class UInt128 implements Comparable<UInt128> {
 		}
 		if (obj instanceof UInt128) {
 			UInt128 other = (UInt128) obj;
-			return this.high == other.high &&
-					this.midHigh == other.midHigh &&
-					this.midLow == other.midLow &&
-					this.low == other.low;
+			return this.high == other.high
+				&& this.midHigh == other.midHigh
+				&& this.midLow == other.midLow
+				&& this.low == other.low;
 		}
 		return false;
 	}

@@ -13,7 +13,7 @@ import java.util.function.Function;
  * to an string representable object.
  */
 public class JacksonJsonObjectStringDeserializer<T> extends StdDeserializer<T> {
-	private final Function<String,T> stringMapper;
+	private final Function<String, T> stringMapper;
 	private final String prefix;
 
 	JacksonJsonObjectStringDeserializer(Class<T> t, String prefix, Function<String, T> stringMapper) {

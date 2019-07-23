@@ -33,9 +33,9 @@ public final class RadixAddress {
 		byte[] digest = key.getBytes();
 		byte[] addressBytes = new byte[1 + digest.length + 4];
 		addressBytes[0] = magic;
-		System.arraycopy (digest, 0, addressBytes, 1, digest.length);
-		byte[] check = Hash.hash256 (addressBytes, 0, digest.length + 1);
-		System.arraycopy (check, 0, addressBytes, digest.length + 1, 4);
+		System.arraycopy(digest, 0, addressBytes, 1, digest.length);
+		byte[] check = Hash.hash256(addressBytes, 0, digest.length + 1);
+		System.arraycopy(check, 0, addressBytes, digest.length + 1, 4);
 
 		this.addressBytes = addressBytes;
 	}

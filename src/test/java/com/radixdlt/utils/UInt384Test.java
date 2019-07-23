@@ -188,7 +188,7 @@ public class UInt384Test {
 		assertEquals(UInt384.from(12345678L / 13L), UInt384.from(12345678L).divide(UInt384.from(13L)));
 	}
 
-	@Test(expected=IllegalArgumentException.class)
+	@Test(expected = IllegalArgumentException.class)
 	public void when_dividing_by_zero__an_exception_is_thrown() {
 		UInt384.ONE.divide(UInt384.ZERO);
 		fail();
@@ -206,7 +206,7 @@ public class UInt384Test {
 		assertEquals(UInt384.from(12345678L / 13L), UInt384.from(12345678L).divide(UInt256.from(13L)));
 	}
 
-	@Test(expected=IllegalArgumentException.class)
+	@Test(expected = IllegalArgumentException.class)
 	public void when_dividing_by_zero_int256__an_exception_is_thrown() {
 		UInt384.ONE.divide(UInt256.ZERO);
 		fail();
@@ -223,7 +223,7 @@ public class UInt384Test {
 		assertEquals(UInt384.from(12345678L % 13L), UInt384.from(12345678L).remainder(UInt384.from(13L)));
 	}
 
-	@Test(expected=IllegalArgumentException.class)
+	@Test(expected = IllegalArgumentException.class)
 	public void when_computing_the_remainder_of_dividing_by_zero__an_exception_is_thrown() {
 		UInt384.ONE.remainder(UInt384.ZERO);
 		fail();

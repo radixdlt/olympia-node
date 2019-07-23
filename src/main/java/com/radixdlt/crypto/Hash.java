@@ -120,7 +120,7 @@ public final class Hash implements Comparable<Hash> {
 	}
 
 	@Override
-	public String toString () {
+	public String toString() {
 		return Bytes.toHexString(this.data);
 	}
 

@@ -8,7 +8,7 @@ public class POW {
 	private final int magic;
 	private final Hash seed;
 	private final long nonce;
-	private final ByteBuffer buffer = ByteBuffer.allocate(32+4+Long.BYTES);
+	private final ByteBuffer buffer = ByteBuffer.allocate(32 + 4 + Long.BYTES);
 
 	public POW(int magic, Hash seed) {
 		this(magic, seed, Long.MIN_VALUE);

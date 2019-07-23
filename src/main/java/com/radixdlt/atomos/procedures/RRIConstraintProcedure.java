@@ -67,7 +67,7 @@ public final class RRIConstraintProcedure implements ConstraintProcedure {
 		return indexedParticles.keySet().stream()
 			.flatMap(particleClass ->
 				group.particlesWithIndex(particleClass, Spin.DOWN, (particle, i) ->
-					ProcedureError.of(group,"rri indexed particles currently can't be downed: " + particle, i))
+					ProcedureError.of(group, "rri indexed particles currently can't be downed: " + particle, i))
 			);
 	}
 
