@@ -35,8 +35,7 @@ public final class ECPublicKey {
 			this.publicKey = Arrays.copyOf(key, key.length);
 		} catch (CryptoException ex) {
 			throw ex;
-		}
-		catch (Exception ex) {
+		} catch (Exception ex) {
 			throw new CryptoException(ex);
 		}
 	}
@@ -72,8 +71,7 @@ public final class ECPublicKey {
 		return this.publicKey;
 	}
 
-	ECPoint getPublicPoint()
-	{
+	ECPoint getPublicPoint() {
 		return ECKeyUtils.spec.getCurve().decodePoint(this.publicKey);
 	}
 

@@ -7,7 +7,9 @@ import java.util.Base64;
  * Utility class for manipulating primitive bytes.
  */
 public class Bytes {
-	private static final char[] hexChars = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
+	private static final char[] hexChars = {
+		'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'
+	};
 
 	/**
 	 * An empty array of bytes.
@@ -80,7 +82,9 @@ public class Bytes {
 	 * @return The converted string
 	 */
 	public static String toHexString(byte b) {
-		char[] value = { toHexChar(b >> 4), toHexChar(b) };
+		char[] value = {
+			toHexChar(b >> 4), toHexChar(b)
+		};
 		return new String(value);
 	}
 

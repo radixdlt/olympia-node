@@ -222,8 +222,7 @@ public class Universe {
 	@DsonOutput(Output.ALL)
 	private short version = 100;
 
-	public enum UniverseType
-	{
+	public enum UniverseType {
 		PRODUCTION,
 		TEST,
 		DEVELOPMENT;
@@ -339,8 +338,9 @@ public class Universe {
 	public int toPlanck(long timestamp, Offset offset) {
 		int planck = computePlanck(timestamp, this.planck, offset);
 
-		if (planck < this.timestamp / this.planck)
+		if (planck < this.timestamp / this.planck) {
 			planck = (int) (this.timestamp / this.planck);
+		}
 
 		return planck;
 	}

@@ -63,8 +63,9 @@ public abstract class Particle {
 			return true;
 		}
 
-		if (getClass().isInstance(o) && getHash().equals(((Particle) o).getHash()))
+		if (getClass().isInstance(o) && getHash().equals(((Particle) o).getHash())) {
 			return true;
+		}
 
 		return super.equals(o);
 	}

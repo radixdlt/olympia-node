@@ -11,8 +11,7 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.Supplier;
 
-public final class RadixAddress
-{
+public final class RadixAddress {
 	/**
 	 * The public key this address represents
 	 */

@@ -216,8 +216,9 @@ public final class EUID implements Comparable<EUID> {
 
 	// Pad short (< BYTES length) array with appropriate lead bytes.
 	private static byte[] extend(byte[] bytes) {
-		if (bytes.length >= BYTES)
+		if (bytes.length >= BYTES) {
 			return bytes;
+		}
 		byte[] newBytes = new byte[BYTES];
 		int newPos = BYTES - bytes.length;
 		// Zero extension

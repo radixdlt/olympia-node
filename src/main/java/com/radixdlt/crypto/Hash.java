@@ -126,8 +126,9 @@ public final class Hash implements Comparable<Hash> {
 
 	@Override
 	public boolean equals(Object o) {
-		if (o == this)
+		if (o == this) {
 			return true;
+		}
 
 		if (o instanceof Hash) {
 			Hash other = (Hash) o;

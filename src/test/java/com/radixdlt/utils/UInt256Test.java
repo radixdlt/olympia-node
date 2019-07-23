@@ -30,14 +30,22 @@ public class UInt256Test {
 	 */
 	@Test
 	public void when_constructing_uint256_from_byte_arrays__values_compare_equal() {
-		assertEquals(UInt256.from(0x00000000_00000001L), new UInt256(new byte[] { 1 }));
-		assertEquals(UInt256.from(0x00000000_00000102L), new UInt256(new byte[] { 1, 2 }));
-		assertEquals(UInt256.from(0x00000000_00010203L), new UInt256(new byte[] { 1, 2, 3 }));
-		assertEquals(UInt256.from(0x00000000_01020304L), new UInt256(new byte[] { 1, 2, 3, 4 }));
-		assertEquals(UInt256.from(0x00000001_02030405L), new UInt256(new byte[] { 1, 2, 3, 4, 5 }));
-		assertEquals(UInt256.from(0x00000102_03040506L), new UInt256(new byte[] { 1, 2, 3, 4, 5, 6 }));
-		assertEquals(UInt256.from(0x00010203_04050607L), new UInt256(new byte[] { 1, 2, 3, 4, 5, 6, 7 }));
-		assertEquals(UInt256.from(0x01020304_05060708L), new UInt256(new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 }));
+		assertEquals(UInt256.from(0x00000000_00000001L), new UInt256(bytes(1)));
+		assertEquals(UInt256.from(0x00000000_00000102L), new UInt256(bytes(1, 2)));
+		assertEquals(UInt256.from(0x00000000_00010203L), new UInt256(bytes(1, 2, 3 )));
+		assertEquals(UInt256.from(0x00000000_01020304L), new UInt256(bytes(1, 2, 3, 4 )));
+		assertEquals(UInt256.from(0x00000001_02030405L), new UInt256(bytes(1, 2, 3, 4, 5 )));
+		assertEquals(UInt256.from(0x00000102_03040506L), new UInt256(bytes(1, 2, 3, 4, 5, 6 )));
+		assertEquals(UInt256.from(0x00010203_04050607L), new UInt256(bytes(1, 2, 3, 4, 5, 6, 7 )));
+		assertEquals(UInt256.from(0x01020304_05060708L), new UInt256(bytes(1, 2, 3, 4, 5, 6, 7, 8 )));
+	}
+
+	private byte[] bytes(int... bs) {
+		byte[] bytes = new byte[bs.length];
+		for (int i = 0; i < bs.length; ++i) {
+			bytes[i] = (byte) bs[i];
+		}
+		return bytes;
 	}
 
 	/**
@@ -305,8 +313,12 @@ public class UInt256Test {
 
 	@Test
 	public void when_creating_int256_from_byte_array__the_correct_value_is_created() {
-		byte[] m1 = { -1 };
-		byte[] p1 = {  1 };
+		byte[] m1 = {
+			-1
+		};
+		byte[] p1 = {
+			1
+		};
 		byte[] bytesArray = new byte[UInt256.BYTES];
 		Arrays.fill(bytesArray, (byte) 0);
 		bytesArray[UInt256.BYTES - 1] = 1;

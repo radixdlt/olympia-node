@@ -744,8 +744,9 @@ public final class UInt256 implements Comparable<UInt256> {
 	@Override
 	public boolean equals(Object obj) {
 		// Note that this needs to be consistent with compareTo
-		if (this == obj)
+		if (this == obj) {
 			return true;
+		}
 		if (obj instanceof UInt256) {
 			UInt256 other = (UInt256) obj;
 			return Objects.equals(this.high, other.high) && Objects.equals(this.low, other.low);

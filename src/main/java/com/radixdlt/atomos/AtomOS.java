@@ -77,7 +77,7 @@ public interface AtomOS {
 	 * @return a callback function onto which the constraint will be defined
 	 */
 	default <T extends Particle> ParticleClassConstraint<T> on(Class<T> particleClass) {
-		return check -> {};
+		return check -> { };
 	}
 
 	/**

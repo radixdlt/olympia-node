@@ -309,8 +309,12 @@ public class UInt384Test {
 
 	@Test
 	public void when_creating_int256_from_byte_array__the_correct_value_is_created() {
-		byte[] m1 = { -1 };
-		byte[] p1 = {  1 };
+		byte[] m1 = {
+			-1
+		};
+		byte[] p1 = {
+			1
+		};
 		byte[] bytesArray = new byte[UInt384.BYTES];
 		Arrays.fill(bytesArray, (byte) 0);
 		bytesArray[UInt384.BYTES - 1] = 1;

@@ -37,7 +37,7 @@ public class ParticleClassConstraintProcedureTest {
 		CustomParticle p = mock(CustomParticle.class);
 
 		Stream<ProcedureError> issues = constraintProcedure.validate(ParticleGroup.of(SpunParticle.up(p)), mock(AtomMetadata.class));
-		issues.forEach(i -> {});
+		issues.forEach(i -> { });
 
 		verify(constraintCheck, times(1)).apply(eq(p), any());
 	}
@@ -56,7 +56,7 @@ public class ParticleClassConstraintProcedureTest {
 		CustomParticle p1 = mock(CustomParticle.class);
 
 		Stream<ProcedureError> issues = constraintProcedure.validate(ParticleGroup.of(SpunParticle.down(p1)), mock(AtomMetadata.class));
-		issues.forEach(i -> {});
+		issues.forEach(i -> { });
 
 		verify(constraintCheck, times(0)).apply(any(), any());
 	}

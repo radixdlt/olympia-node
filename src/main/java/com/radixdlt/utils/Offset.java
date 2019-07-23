@@ -5,13 +5,11 @@ public enum Offset {
 
 	private final int offset;
 
-	Offset(int offset)
-	{
+	Offset(int offset) {
 		this.offset = offset;
 	}
 
-	public int getOffset()
-	{
+	public int getOffset() {
 		return this.offset;
 	}
 }

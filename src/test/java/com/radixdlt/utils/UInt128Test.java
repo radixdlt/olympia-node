@@ -275,8 +275,12 @@ public class UInt128Test {
 	 */
 	@Test
 	public void testCreateFromByteArray() {
-		byte[] m1 = { -1 };
-		byte[] p1 = {  1 };
+		byte[] m1 = {
+			-1
+		};
+		byte[] p1 = {
+			1
+		};
 		byte[] bytesArray = new byte[UInt128.BYTES];
 		Arrays.fill(bytesArray, (byte) 0);
 		bytesArray[UInt128.BYTES - 1] = 1;

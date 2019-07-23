@@ -1,6 +1,5 @@
 package com.radixdlt.serialization;
 
-public interface Polymorphic
-{
+public interface Polymorphic {
 
 }
