@@ -9,6 +9,11 @@ import java.util.Optional;
  * given an existing store.
  */
 public class SpinStateTransitionValidator {
+
+	private SpinStateTransitionValidator() {
+		throw new IllegalStateException("Can't construct");
+	}
+
 	/**
 	 * Spin transition issue types
 	 */

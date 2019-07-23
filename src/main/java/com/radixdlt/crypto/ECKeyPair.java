@@ -38,7 +38,7 @@ public final class ECKeyPair {
 	 * @throws IOException If reading or writing the file fails
 	 * @throws CryptoException If the key read from the file is invalid
 	 */
-	public static final ECKeyPair fromFile(File file, boolean create) throws IOException, CryptoException {
+	public static ECKeyPair fromFile(File file, boolean create) throws IOException, CryptoException {
 		if (!file.exists()) {
 			if (!create) {
 				throw new FileNotFoundException("Keyfile " + file.toString() + " not found");

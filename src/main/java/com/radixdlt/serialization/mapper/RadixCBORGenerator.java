@@ -1,5 +1,8 @@
 package com.radixdlt.serialization.mapper;
 
+// Checkstyle disabled here, as this file has been imported from Jackson
+//CHECKSTYLE:OFF:
+
 import static com.fasterxml.jackson.dataformat.cbor.CBORConstants.BYTE_ARRAY_2_ELEMENTS;
 import static com.fasterxml.jackson.dataformat.cbor.CBORConstants.BYTE_ARRAY_INDEFINITE;
 import static com.fasterxml.jackson.dataformat.cbor.CBORConstants.BYTE_BREAK;
