@@ -660,15 +660,7 @@ public class RadixApplicationAPI {
 	 * @return result of the transaction
 	 */
 	public Result createMultiIssuanceToken(RRI tokenRRI, String name) {
-		final CreateTokenAction tokenCreation = CreateTokenAction.create(
-			tokenRRI,
-			name,
-			null,
-			BigDecimal.ZERO,
-			TokenUnitConversions.getMinimumGranularity(),
-			TokenSupplyType.MUTABLE
-		);
-		return execute(tokenCreation);
+		return createMultiIssuanceToken(tokenRRI, name, null);
 	}
 
 	/**
@@ -685,10 +677,30 @@ public class RadixApplicationAPI {
 		String name,
 		String description
 	) {
+		return createMultiIssuanceToken(tokenRRI, name, description, null);
+	}
+
+	/**
+	 * Creates a multi-issuance token registered into the user's account with
+	 * zero initial supply and 10^-18 granularity
+	 *
+	 * @param tokenRRI The symbol of the token to create
+	 * @param name The name of the token to create
+	 * @param description A description of the token
+	 * @param iconUrl The URL for the token's icon
+	 * @return result of the transaction
+	 */
+	public Result createMultiIssuanceToken(
+		RRI tokenRRI,
+		String name,
+		String description,
+		String iconUrl
+	) {
 		final CreateTokenAction tokenCreation = CreateTokenAction.create(
 			tokenRRI,
 			name,
 			description,
+			iconUrl,
 			BigDecimal.ZERO,
 			TokenUnitConversions.getMinimumGranularity(),
 			TokenSupplyType.MUTABLE
@@ -712,10 +724,32 @@ public class RadixApplicationAPI {
 		String description,
 		BigDecimal supply
 	) {
+		return createFixedSupplyToken(tokenRRI, name, description, null, supply);
+	}
+
+	/**
+	 * Creates a fixed-supply token registered into the user's account with
+	 * 10^-18 granularity
+	 *
+	 * @param tokenRRI The symbol of the token to create
+	 * @param name The name of the token to create
+	 * @param description A description of the token
+	 * @param iconUrl The URL for the token's icon
+	 * @param supply The supply of the created token
+	 * @return result of the transaction
+	 */
+	public Result createFixedSupplyToken(
+		RRI tokenRRI,
+		String name,
+		String description,
+		String iconUrl,
+		BigDecimal supply
+	) {
 		final CreateTokenAction tokenCreation = CreateTokenAction.create(
 			tokenRRI,
 			name,
 			description,
+			iconUrl,
 			supply,
 			TokenUnitConversions.getMinimumGranularity(),
 			TokenSupplyType.FIXED
@@ -742,8 +776,39 @@ public class RadixApplicationAPI {
 		BigDecimal granularity,
 		TokenSupplyType tokenSupplyType
 	) {
-		CreateTokenAction tokenCreation = CreateTokenAction.create(tokenRRI,
-				name, description, initialSupply, granularity, tokenSupplyType);
+		return createToken(tokenRRI, name, description, null, initialSupply, granularity, tokenSupplyType);
+	}
+
+	/**
+	 * Creates a token registered into the user's account
+	 *
+	 * @param tokenRRI The symbol of the token to create
+	 * @param name The name of the token to create
+	 * @param description A description of the token
+	 * @param iconUrl The URL for the token's icon
+	 * @param initialSupply The initial amount of supply for this token
+	 * @param granularity The least multiple of subunits per transaction for this token
+	 * @param tokenSupplyType The type of supply for this token: Fixed or Mutable
+	 * @return result of the transaction
+	 */
+	public Result createToken(
+		RRI tokenRRI,
+		String name,
+		String description,
+		String iconUrl,
+		BigDecimal initialSupply,
+		BigDecimal granularity,
+		TokenSupplyType tokenSupplyType
+	) {
+		final CreateTokenAction tokenCreation = CreateTokenAction.create(
+			tokenRRI,
+			name,
+			description,
+			iconUrl,
+			initialSupply,
+			granularity,
+			tokenSupplyType
+		);
 		return execute(tokenCreation);
 	}
 

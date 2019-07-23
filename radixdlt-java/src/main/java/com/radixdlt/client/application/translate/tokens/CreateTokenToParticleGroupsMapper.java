@@ -49,7 +49,7 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 				TokenTransition.MINT, mintPermissions,
 				TokenTransition.BURN, burnPermissions
 			),
-			null
+			tokenCreation.getIconUrl()
 		);
 
 		UnallocatedTokensParticle unallocated = new UnallocatedTokensParticle(
