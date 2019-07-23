@@ -212,7 +212,7 @@ public final class CMAtomOS implements AtomOSKernel, AtomOS {
 	 * If all is well, this then returns an instance of a machine in which atom
 	 * validation can be done with the Quarks and Particles it's been set up with.
 	 *
-	 * @return a constraint machine which can validate atoms
+	 * @return a constraint machine which can validate atoms and the virtual layer on top of the store
 	 */
 	public ConstraintMachine buildMachine() {
 		ConstraintMachine.Builder builder = new Builder();
@@ -251,7 +251,7 @@ public final class CMAtomOS implements AtomOSKernel, AtomOS {
 			return rriTransformer.apply(virtualizeNeutral);
 		};
 
-		builder.stateTransformer(virtualizedDefault);
+		builder.virtualStore(virtualizedDefault);
 
 		return builder.build();
 	}

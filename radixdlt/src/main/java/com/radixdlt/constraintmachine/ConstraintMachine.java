@@ -23,15 +23,15 @@ import java.util.stream.Stream;
  */
 public final class ConstraintMachine {
 	public static class Builder {
-		private UnaryOperator<CMStore> stateTransformer;
+		private UnaryOperator<CMStore> virtualStore;
 
 		private ImmutableList.Builder<KernelConstraintProcedure> kernelConstraintProcedureBuilder = new ImmutableList.Builder<>();
 		private ImmutableMap.Builder<String, AtomKernelCompute> kernelComputeBuilder = new ImmutableMap.Builder<>();
 
 		private ImmutableList.Builder<ConstraintProcedure> constraintProcedureBuilder = new ImmutableList.Builder<>();
 
-		public Builder stateTransformer(UnaryOperator<CMStore> stateTransformer) {
-			this.stateTransformer = stateTransformer;
+		public Builder virtualStore(UnaryOperator<CMStore> virtualStore) {
+			this.virtualStore = virtualStore;
 			return this;
 		}
 
@@ -51,12 +51,12 @@ public final class ConstraintMachine {
 		}
 
 		public ConstraintMachine build() {
-			if (stateTransformer == null) {
-				stateTransformer = UnaryOperator.identity();
+			if (virtualStore == null) {
+				virtualStore = UnaryOperator.identity();
 			}
 
 			return new ConstraintMachine(
-				stateTransformer,
+				virtualStore,
 				kernelConstraintProcedureBuilder.build(),
 				kernelComputeBuilder.build(),
 				constraintProcedureBuilder.build()
@@ -64,22 +64,22 @@ public final class ConstraintMachine {
 		}
 	}
 
-	private final UnaryOperator<CMStore> stateStoreTransformer;
+	private final UnaryOperator<CMStore> virtualStore;
 	private final ImmutableList<KernelConstraintProcedure> kernelConstraintProcedures;
 	private final ImmutableMap<String, AtomKernelCompute> kernelComputes;
 	private final ImmutableList<ConstraintProcedure> applicationConstraintProcedures;
 	private final CMStore localCMStore;
 
 	ConstraintMachine(
-		UnaryOperator<CMStore> transformer,
+		UnaryOperator<CMStore> virtualStore,
 		ImmutableList<KernelConstraintProcedure> kernelConstraintProcedures,
 		ImmutableMap<String, AtomKernelCompute> kernelComputes,
 		ImmutableList<ConstraintProcedure> applicationConstraintProcedures
 	) {
-		Objects.requireNonNull(transformer);
+		Objects.requireNonNull(virtualStore);
 
-		this.stateStoreTransformer = Objects.requireNonNull(transformer);
-		this.localCMStore = this.stateStoreTransformer.apply(CMStores.empty());
+		this.virtualStore = Objects.requireNonNull(virtualStore);
+		this.localCMStore = this.virtualStore.apply(CMStores.empty());
 		this.kernelConstraintProcedures = kernelConstraintProcedures;
 		this.kernelComputes = kernelComputes;
 		this.applicationConstraintProcedures = applicationConstraintProcedures;
@@ -150,7 +150,7 @@ public final class ConstraintMachine {
 		}
 	}
 
-	public CMStore virtualize(CMStore base) {
-		return stateStoreTransformer.apply(base);
+	public UnaryOperator<CMStore> getVirtualStore() {
+		return this.virtualStore;
 	}
 }

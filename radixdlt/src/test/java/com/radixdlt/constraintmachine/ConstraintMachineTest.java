@@ -31,7 +31,7 @@ public class ConstraintMachineTest {
 	@Test
 	public void when_validating_an_atom_with_particle_which_conflicts_with_virtual_state__an_internal_spin_conflict_is_returned() {
 		ConstraintMachine machine = new ConstraintMachine.Builder()
-			.stateTransformer(state -> CMStores.virtualizeDefault(state, p -> true, Spin.UP))
+			.virtualStore(state -> CMStores.virtualizeDefault(state, p -> true, Spin.UP))
 			.build();
 
 		IndexedParticle p = mock(IndexedParticle.class);
@@ -55,7 +55,7 @@ public class ConstraintMachineTest {
 	@Test
 	public void when_validating_an_atom_with_an_atom_kernel_compute__the_computation_is_returned() {
 		ConstraintMachine machine = new ConstraintMachine.Builder()
-			.stateTransformer(s -> CMStores.virtualizeDefault(s, p -> true, Spin.NEUTRAL))
+			.virtualStore(s -> CMStores.virtualizeDefault(s, p -> true, Spin.NEUTRAL))
 			.addCompute("test", a -> "hello")
 			.build();
 

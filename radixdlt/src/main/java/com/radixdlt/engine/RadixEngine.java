@@ -25,7 +25,7 @@ public final class RadixEngine {
 
 	public RadixEngine(ConstraintMachine constraintMachine, CMStore cmStore) {
 		this.constraintMachine = constraintMachine;
-		this.cmStore = constraintMachine.virtualize(cmStore);
+		this.cmStore = constraintMachine.getVirtualStore().apply(cmStore);
 	}
 
 	public ValidationResult validate(CMAtom cmAtom) {
