@@ -94,7 +94,12 @@ public class UnallocatedTokensParticle extends Particle {
 	private void setJsonPermissions(Map<String, String> permissions) {
 		if (permissions != null) {
 			this.tokenPermissions = permissions.entrySet().stream()
-				.collect(Collectors.toMap(e -> TokenTransition.valueOf(e.getKey().toUpperCase()), e -> TokenPermission.valueOf(e.getValue().toUpperCase())));
+				.collect(
+					Collectors.toMap(
+						e -> TokenTransition.valueOf(e.getKey().toUpperCase()),
+						e -> TokenPermission.valueOf(e.getValue().toUpperCase())
+					)
+				);
 		} else {
 			throw new IllegalArgumentException("Permissions cannot be null.");
 		}

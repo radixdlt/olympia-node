@@ -19,7 +19,7 @@ import org.junit.Test;
 
 public class RRIConstraintProcedureTest {
 	private static class CustomParticle extends Particle {
-		RRI rri;
+		private RRI rri;
 
 		RRI getRRI() {
 			return rri;

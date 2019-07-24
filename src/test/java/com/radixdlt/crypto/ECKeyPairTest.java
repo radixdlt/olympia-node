@@ -13,9 +13,9 @@ public class ECKeyPairTest {
 
 	@Test
 	public void checkKeyIntegrity() throws CryptoException {
-		final int ITERATIONS = 5000;
+		final int iterations = 5000;
 
-		for (int i = 0; i < ITERATIONS; i++) {
+		for (int i = 0; i < iterations; i++) {
 			ECKeyPair key = new ECKeyPair();
 
 			byte[] priv = key.getPrivateKey();
@@ -30,10 +30,10 @@ public class ECKeyPairTest {
 
 	@Test
 	public void signAndVerify() throws CryptoException {
-		final int ITERATIONS = 2000;
+		final int iterations = 2000;
 		String helloWorld = "Hello World";
 
-		for (int i = 0; i < ITERATIONS; i++) {
+		for (int i = 0; i < iterations; i++) {
 			ECKeyPair key = new ECKeyPair();
 			byte[] priv = key.getPrivateKey();
 			byte[] pub = key.getPublicKey().getBytes();
@@ -48,10 +48,10 @@ public class ECKeyPairTest {
 
 	@Test
 	public void encryptAndDecrypt() throws CryptoException {
-		final int ITERATIONS = 1000;
+		final int iterations = 1000;
 		String helloWorld = "Hello World";
 
-		for (int i = 0; i < ITERATIONS; ++i) {
+		for (int i = 0; i < iterations; ++i) {
 			ECKeyPair key = new ECKeyPair();
 			byte[] priv = key.getPrivateKey();
 

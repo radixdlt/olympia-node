@@ -25,16 +25,14 @@ public final class ECSignature {
 	private BigInteger r;
 	private BigInteger s;
 
-	public ECSignature()
-	{
+	public ECSignature() {
 		this(BigInteger.ZERO, BigInteger.ZERO);
 	}
 
 	/**
      * Constructs a signature with the given components. Does NOT automatically canonicalise the signature.
      */
-    public ECSignature(BigInteger r, BigInteger s)
-    {
+	public ECSignature(BigInteger r, BigInteger s) {
     	super();
 
     	this.r = Objects.requireNonNull(r);
@@ -50,8 +48,7 @@ public final class ECSignature {
 	}
 
     @Override
-    public boolean equals(Object o)
-    {
+	public boolean equals(Object o) {
         if (this == o) {
         	return true;
         }
@@ -63,8 +60,7 @@ public final class ECSignature {
     }
 
     @Override
-    public int hashCode()
-    {
+	public int hashCode() {
         int result = r.hashCode();
         result = 31 * result + s.hashCode();
         return result;

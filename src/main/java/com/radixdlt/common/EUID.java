@@ -38,7 +38,7 @@ public final class EUID implements Comparable<EUID> {
 	}
 
 	public EUID(int value) {
-		this((long)value);
+		this((long) value);
 	}
 
 	public EUID(long value) {
@@ -183,7 +183,7 @@ public final class EUID implements Comparable<EUID> {
 		}
 
 		if (o instanceof EUID) {
-			EUID other = (EUID)o;
+			EUID other = (EUID) o;
 			return this.value.equals(other.value);
 		}
 		return false;
@@ -216,8 +216,9 @@ public final class EUID implements Comparable<EUID> {
 
 	// Pad short (< BYTES length) array with appropriate lead bytes.
 	private static byte[] extend(byte[] bytes) {
-		if (bytes.length >= BYTES)
+		if (bytes.length >= BYTES) {
 			return bytes;
+		}
 		byte[] newBytes = new byte[BYTES];
 		int newPos = BYTES - bytes.length;
 		// Zero extension

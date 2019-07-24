@@ -25,8 +25,9 @@ class JacksonJsonStringDeserializer extends StdDeserializer<String> {
 	@Override
 	public String deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
 		String value = p.getValueAsString();
-		if (!value.startsWith(JacksonCodecConstants.STR_STR_VALUE))
+		if (!value.startsWith(JacksonCodecConstants.STR_STR_VALUE)) {
 			throw new InvalidFormatException(p, "Expecting string", value, Hash.class);
+		}
 		return value.substring(JacksonCodecConstants.STR_VALUE_LEN);
 	}
 }

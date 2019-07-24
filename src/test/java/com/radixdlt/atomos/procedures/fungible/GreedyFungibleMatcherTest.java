@@ -12,6 +12,7 @@ import com.radixdlt.atomos.FungibleFormula;
 import com.radixdlt.atomos.FungibleTransition;
 import com.radixdlt.atomos.FungibleTransitionMember;
 import com.radixdlt.atomos.Result;
+import com.radixdlt.atomos.procedures.fungible.FungibleMatcher.FungibleMatcherResult;
 import com.radixdlt.atomos.procedures.fungible.GreedyFungibleMatcher.FungibleFormulasMatcher;
 import com.radixdlt.atomos.procedures.fungible.GreedyFungibleMatcher.FungibleTransitionMatcher;
 import com.radixdlt.atoms.Particle;
@@ -42,14 +43,23 @@ public class GreedyFungibleMatcherTest {
 
 	@Test
 	public void testMatchNull() {
-		assertThatThrownBy(() -> new GreedyFungibleMatcher().match(null, mock(FungibleOutputs.class), mock(FungibleInputs.class), mock(AtomMetadata.class)))
+		assertThatThrownBy(() -> gfmatch(null, mock(FungibleOutputs.class), mock(FungibleInputs.class), mock(AtomMetadata.class)))
 			.isInstanceOf(NullPointerException.class);
-		assertThatThrownBy(() -> new GreedyFungibleMatcher().match(Lists.newArrayList(), null, mock(FungibleInputs.class), mock(AtomMetadata.class)))
+		assertThatThrownBy(() -> gfmatch(Lists.newArrayList(), null, mock(FungibleInputs.class), mock(AtomMetadata.class)))
 			.isInstanceOf(NullPointerException.class);
-		assertThatThrownBy(() -> new GreedyFungibleMatcher().match(Lists.newArrayList(), mock(FungibleOutputs.class), null, mock(AtomMetadata.class)))
+		assertThatThrownBy(() -> gfmatch(Lists.newArrayList(), mock(FungibleOutputs.class), null, mock(AtomMetadata.class)))
 			.isInstanceOf(NullPointerException.class);
-		assertThatThrownBy(() -> new GreedyFungibleMatcher().match(Lists.newArrayList(), mock(FungibleOutputs.class), mock(FungibleInputs.class), null))
+		assertThatThrownBy(() -> gfmatch(Lists.newArrayList(), mock(FungibleOutputs.class), mock(FungibleInputs.class), null))
 			.isInstanceOf(NullPointerException.class);
+	}
+
+	private FungibleMatcherResult gfmatch(
+		List<FungibleTransition<?>> transitions,
+		FungibleOutputs fungibleOutputs,
+		FungibleInputs fungibleInputs,
+		AtomMetadata metadata
+	) {
+		return new GreedyFungibleMatcher().match(transitions, fungibleOutputs, fungibleInputs, metadata);
 	}
 
 	@Test
@@ -82,11 +92,26 @@ public class GreedyFungibleMatcherTest {
 			outputUranium,
 			FungibleInputs.of(Stream.of(inputUranium))
 		));
-		FungibleTransitionMatch h20TransitionMatch = new FungibleTransitionMatch(h2OTransition, Collections.singletonList(h2OMatch), FungibleOutputs.of());
-		FungibleTransitionMatchResult h20TransitionMatchResult = new FungibleTransitionMatchResult(h2OTransition, h20TransitionMatch, mock(FungibleTransitionMatchInformation.class));
-		FungibleTransitionMatch uraniumTransitionMatch = new FungibleTransitionMatch(h2OTransition, Collections.singletonList(uraniumMatch), FungibleOutputs
-			.of());
-		FungibleTransitionMatchResult uraniumTransitionMatchResult = new FungibleTransitionMatchResult(uraniumTransition, uraniumTransitionMatch, mock(FungibleTransitionMatchInformation.class));
+		FungibleTransitionMatch h20TransitionMatch = new FungibleTransitionMatch(
+			h2OTransition,
+			Collections.singletonList(h2OMatch),
+			FungibleOutputs.of()
+		);
+		FungibleTransitionMatchResult h20TransitionMatchResult = new FungibleTransitionMatchResult(
+			h2OTransition,
+			h20TransitionMatch,
+			mock(FungibleTransitionMatchInformation.class)
+		);
+		FungibleTransitionMatch uraniumTransitionMatch = new FungibleTransitionMatch(
+			h2OTransition,
+			Collections.singletonList(uraniumMatch),
+			FungibleOutputs.of()
+		);
+		FungibleTransitionMatchResult uraniumTransitionMatchResult = new FungibleTransitionMatchResult(
+			uraniumTransition,
+			uraniumTransitionMatch,
+			mock(FungibleTransitionMatchInformation.class)
+		);
 
 		GreedyFungibleMatcher matcher = new GreedyFungibleMatcher(
 			(transition, transitioninputs, transitionoutputs, transitionMetadata, formulaMatcher) -> {
@@ -354,18 +379,18 @@ public class GreedyFungibleMatcherTest {
 		);
 	}
 
-	private static abstract class Oxygen extends Particle {
+	private abstract static class Oxygen extends Particle {
 	}
 
-	private static abstract class Hydrogen extends Particle {
+	private abstract static class Hydrogen extends Particle {
 	}
 
-	private static abstract class Uranium extends Particle {
+	private abstract static class Uranium extends Particle {
 	}
 
-	private static abstract class Helium extends Particle {
+	private abstract static class Helium extends Particle {
 	}
 
-	private static abstract class H2O extends Particle {
+	private abstract static class H2O extends Particle {
 	}
 }

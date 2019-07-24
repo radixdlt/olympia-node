@@ -82,7 +82,7 @@ public final class Base58 {
         input = Arrays.copyOf(input, input.length); // since we modify it in-place
         char[] encoded = new char[input.length * 2]; // upper bound
         int outputStart = encoded.length;
-        for (int inputStart = zeros; inputStart < input.length; ) {
+        for (int inputStart = zeros; inputStart < input.length;) {
             encoded[--outputStart] = ALPHABET[divmod(input, inputStart, 256, 58)];
             if (input[inputStart] == 0) {
                 ++inputStart; // optimization - skip leading zeros
@@ -128,7 +128,7 @@ public final class Base58 {
         // Convert base-58 digits to base-256 digits.
         byte[] decoded = new byte[input.length()];
         int outputStart = decoded.length;
-        for (int inputStart = zeros; inputStart < input58.length; ) {
+        for (int inputStart = zeros; inputStart < input58.length;) {
             decoded[--outputStart] = divmod(input58, inputStart, 58, 256);
             if (input58[inputStart] == 0) {
                 ++inputStart; // optimization - skip leading zeros

@@ -132,14 +132,21 @@ public class JacksonJsonMapper extends ObjectMapper {
 		jsonModule.setDeserializerModifier(new BeanDeserializerModifier() {
 			@Override
 			@SuppressWarnings("rawtypes")
-			public JsonDeserializer<Enum> modifyEnumDeserializer(DeserializationConfig config, final JavaType type, BeanDescription beanDesc, final JsonDeserializer<?> deserializer) {
+			public JsonDeserializer<Enum> modifyEnumDeserializer(
+				DeserializationConfig config,
+				final JavaType type,
+				BeanDescription beanDesc,
+				final JsonDeserializer<?> deserializer
+			) {
 				return new JsonDeserializer<Enum>() {
 					@Override
 					@SuppressWarnings("unchecked")
 					public Enum deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException {
 						String name = jp.getValueAsString();
 						if (!name.startsWith(JacksonCodecConstants.STR_STR_VALUE)) {
-							throw new IllegalStateException(String.format("Expected value starting with %s, found: %s", JacksonCodecConstants.STR_STR_VALUE, name));
+							throw new IllegalStateException(
+								String.format("Expected value starting with %s, found: %s", JacksonCodecConstants.STR_STR_VALUE, name)
+							);
 						}
 						Class<? extends Enum> rawClass = (Class<Enum<?>>) type.getRawClass();
 						return Enum.valueOf(rawClass, jp.getValueAsString().substring(JacksonCodecConstants.STR_VALUE_LEN));

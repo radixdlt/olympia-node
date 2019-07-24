@@ -30,14 +30,22 @@ public class UInt256Test {
 	 */
 	@Test
 	public void when_constructing_uint256_from_byte_arrays__values_compare_equal() {
-		assertEquals(UInt256.from(0x00000000_00000001L), new UInt256(new byte[] { 1 }));
-		assertEquals(UInt256.from(0x00000000_00000102L), new UInt256(new byte[] { 1, 2 }));
-		assertEquals(UInt256.from(0x00000000_00010203L), new UInt256(new byte[] { 1, 2, 3 }));
-		assertEquals(UInt256.from(0x00000000_01020304L), new UInt256(new byte[] { 1, 2, 3, 4 }));
-		assertEquals(UInt256.from(0x00000001_02030405L), new UInt256(new byte[] { 1, 2, 3, 4, 5 }));
-		assertEquals(UInt256.from(0x00000102_03040506L), new UInt256(new byte[] { 1, 2, 3, 4, 5, 6 }));
-		assertEquals(UInt256.from(0x00010203_04050607L), new UInt256(new byte[] { 1, 2, 3, 4, 5, 6, 7 }));
-		assertEquals(UInt256.from(0x01020304_05060708L), new UInt256(new byte[] { 1, 2, 3, 4, 5, 6, 7, 8 }));
+		assertEquals(UInt256.from(0x00000000_00000001L), new UInt256(bytes(1)));
+		assertEquals(UInt256.from(0x00000000_00000102L), new UInt256(bytes(1, 2)));
+		assertEquals(UInt256.from(0x00000000_00010203L), new UInt256(bytes(1, 2, 3)));
+		assertEquals(UInt256.from(0x00000000_01020304L), new UInt256(bytes(1, 2, 3, 4)));
+		assertEquals(UInt256.from(0x00000001_02030405L), new UInt256(bytes(1, 2, 3, 4, 5)));
+		assertEquals(UInt256.from(0x00000102_03040506L), new UInt256(bytes(1, 2, 3, 4, 5, 6)));
+		assertEquals(UInt256.from(0x00010203_04050607L), new UInt256(bytes(1, 2, 3, 4, 5, 6, 7)));
+		assertEquals(UInt256.from(0x01020304_05060708L), new UInt256(bytes(1, 2, 3, 4, 5, 6, 7, 8)));
+	}
+
+	private byte[] bytes(int... bs) {
+		byte[] bytes = new byte[bs.length];
+		for (int i = 0; i < bs.length; ++i) {
+			bytes[i] = (byte) bs[i];
+		}
+		return bytes;
 	}
 
 	/**
@@ -47,7 +55,7 @@ public class UInt256Test {
 	@Test
 	public void when_constructing_int256_from_short_values__values_compare_equal() {
 		for (int i = 0; i <= Short.MAX_VALUE; ++i) {
-			short s = (short)i;
+			short s = (short) i;
 			UInt256 int256 = UInt256.from(s);
 			assertEqualToLong(s, int256);
 		}
@@ -203,7 +211,7 @@ public class UInt256Test {
 		assertEquals(UInt256.from(12345678L / 13L), UInt256.from(12345678L).divide(UInt256.from(13L)));
 	}
 
-	@Test(expected=IllegalArgumentException.class)
+	@Test(expected = IllegalArgumentException.class)
 	public void when_dividing_by_zero__an_exception_is_thrown() {
 		UInt256.ONE.divide(UInt256.ZERO);
 		fail();
@@ -220,7 +228,7 @@ public class UInt256Test {
 		assertEquals(UInt256.from(12345678L % 13L), UInt256.from(12345678L).remainder(UInt256.from(13L)));
 	}
 
-	@Test(expected=IllegalArgumentException.class)
+	@Test(expected = IllegalArgumentException.class)
 	public void when_computing_the_remainder_of_dividing_by_zero__an_exception_is_thrown() {
 		UInt256.ONE.remainder(UInt256.ZERO);
 		fail();
@@ -305,18 +313,22 @@ public class UInt256Test {
 
 	@Test
 	public void when_creating_int256_from_byte_array__the_correct_value_is_created() {
-		byte[] m1 = { -1 };
-		byte[] p1 = {  1 };
+		byte[] m1 = {
+			-1
+		};
+		byte[] p1 = {
+			1
+		};
 		byte[] bytesArray = new byte[UInt256.BYTES];
-		Arrays.fill(bytesArray, (byte)0);
+		Arrays.fill(bytesArray, (byte) 0);
 		bytesArray[UInt256.BYTES - 1] = 1;
-		UInt256 m1_128 = UInt256.from(m1);
-		UInt256 p1_128 = UInt256.from(p1);
-		UInt256 bytesArray_128 = UInt256.from(bytesArray);
+		UInt256 m1Bits128 = UInt256.from(m1);
+		UInt256 p1Bits128 = UInt256.from(p1);
+		UInt256 bytesArrayBits128 = UInt256.from(bytesArray);
 
-		assertEquals(UInt256.from(255), m1_128);   // Sign extension did not happen
-		assertEquals(UInt256.ONE, p1_128);         // Zero fill happened correctly
-		assertEquals(UInt256.ONE, bytesArray_128); // Correct size array OK
+		assertEquals(UInt256.from(255), m1Bits128);   // Sign extension did not happen
+		assertEquals(UInt256.ONE, p1Bits128);         // Zero fill happened correctly
+		assertEquals(UInt256.ONE, bytesArrayBits128); // Correct size array OK
 	}
 
 	@Test
@@ -325,7 +337,7 @@ public class UInt256Test {
 		UInt128 bp1 = UInt128.from(0x1011_1213_1415_1617L, 0x1819_1A1B_1C1D_1E1FL);
 		UInt256 bitPattern = UInt256.from(bp0, bp1);
 		byte[] bytes2 = new byte[UInt256.BYTES * 3];
-		Arrays.fill(bytes2, (byte)-1);
+		Arrays.fill(bytes2, (byte) -1);
 
 		// Make sure we got the value in big-endian order
 		byte[] bytes = bitPattern.toByteArray();
@@ -347,13 +359,13 @@ public class UInt256Test {
 
 	@Test
 	public void when_performing_binary_shifts__the_correct_value_is_returned() {
-		final UInt128 MINUS_TWO = UInt128.ZERO.decrement().decrement();
-		final UInt128 MAX_SIGNED = UInt128.HIGH_BIT.decrement();
+		final UInt128 minusTwo = UInt128.ZERO.decrement().decrement();
+		final UInt128 maxSigned = UInt128.HIGH_BIT.decrement();
 
 		// Basic cases, left shift
 		assertEquals(UInt256.ZERO, UInt256.ZERO.shiftLeft());
 		// Zero extend on left
-		assertEquals(UInt256.from(UInt128.MAX_VALUE, MINUS_TWO), UInt256.MAX_VALUE.shiftLeft());
+		assertEquals(UInt256.from(UInt128.MAX_VALUE, minusTwo), UInt256.MAX_VALUE.shiftLeft());
 		assertEquals(UInt256.from(2), UInt256.ONE.shiftLeft());
 		// Make sure bit crosses word boundary correctly
 		assertEquals(UInt256.from(UInt128.ONE, UInt128.ZERO), UInt256.from(UInt128.ZERO, UInt128.HIGH_BIT).shiftLeft());
@@ -361,7 +373,7 @@ public class UInt256Test {
 		// Basic cases, right shift
 		assertEquals(UInt256.ZERO, UInt256.ZERO.shiftRight());
 		// Zeros inserted at right
-		assertEquals(UInt256.from(MAX_SIGNED, UInt128.MAX_VALUE), UInt256.MAX_VALUE.shiftRight());
+		assertEquals(UInt256.from(maxSigned, UInt128.MAX_VALUE), UInt256.MAX_VALUE.shiftRight());
 		assertEquals(UInt256.ZERO, UInt256.ONE.shiftRight());
 		assertEquals(UInt256.ONE, UInt256.from(2).shiftRight());
 		// Make sure bit crosses word boundary correctly
@@ -403,7 +415,7 @@ public class UInt256Test {
 	 */
 	@Test
 	public void when_performing_integer_square_root__the_correct_value_is_returned() {
-		long max = 1 << 53; // Precision of double
+		long max = 100_000_000L; // Needs to be not more than 1L << 53, ie precision of double
 		for (long n = 0; n < max; n += 997) {
 			long lsqrt = (long) Math.floor(Math.sqrt(n));
 			UInt256 nn = UInt256.from(n);
@@ -472,7 +484,10 @@ public class UInt256Test {
 		testRoundTrip("123456789");
 		testRoundTrip("123456789123456789");
 		testRoundTrip("123456789123456789123456789123456789");
-		assertEquals(UInt256.from(UInt128.MAX_VALUE, UInt128.MAX_VALUE), UInt256.from(BigInteger.ONE.shiftLeft(256).subtract(BigInteger.ONE).toString()));
+		assertEquals(
+			UInt256.from(UInt128.MAX_VALUE, UInt128.MAX_VALUE),
+			UInt256.from(BigInteger.ONE.shiftLeft(256).subtract(BigInteger.ONE).toString())
+		);
 	}
 
 	@Test

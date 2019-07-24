@@ -144,8 +144,9 @@ public final class UInt128 implements Comparable<UInt128> {
 	 */
 	public static UInt128 from(byte[] bytes) {
 		Objects.requireNonNull(bytes);
-		if (bytes.length ==  0)
+		if (bytes.length ==  0) {
 			throw new IllegalArgumentException("bytes is 0 bytes long");
+		}
 		byte[] newBytes = extend(bytes);
 		return from(newBytes, 0);
 	}
@@ -205,8 +206,9 @@ public final class UInt128 implements Comparable<UInt128> {
 
 	// Pad short (< BYTES length) array with appropriate lead bytes.
 	private static byte[] extend(byte[] bytes) {
-		if (bytes.length >= BYTES)
+		if (bytes.length >= BYTES) {
 			return bytes;
+		}
 		byte[] newBytes = new byte[BYTES];
 		int newPos = BYTES - bytes.length;
 		// Zero extension
@@ -744,14 +746,15 @@ public final class UInt128 implements Comparable<UInt128> {
 	@Override
 	public boolean equals(Object obj) {
 		// Note that this needs to be consistent with compareTo
-		if (this == obj)
+		if (this == obj) {
 			return true;
+		}
 		if (obj instanceof UInt128) {
 			UInt128 other = (UInt128) obj;
-			return this.high == other.high &&
-					this.midHigh == other.midHigh &&
-					this.midLow == other.midLow &&
-					this.low == other.low;
+			return this.high == other.high
+				&& this.midHigh == other.midHigh
+				&& this.midLow == other.midLow
+				&& this.low == other.low;
 		}
 		return false;
 	}

@@ -74,10 +74,15 @@ public class TokenDefinitionConstraintScrypt implements ConstraintScrypt {
 		os.on(TokenDefinitionParticle.class)
 			.require(t -> {
 				if (t.getTokenPermissions() == null || t.getTokenPermissions().keySet().size() != TokenTransition.values().length) {
-					return Result.error(String.format("Permissions: must be set for all token transitions (%s)", Arrays.stream(TokenTransition.values())
-						.map(TokenTransition::name)
-						.map(String::toLowerCase)
-						.collect(Collectors.joining(", "))));
+					return Result.error(
+						String.format(
+							"Permissions: must be set for all token transitions (%s)",
+							Arrays.stream(TokenTransition.values())
+								.map(TokenTransition::name)
+								.map(String::toLowerCase)
+								.collect(Collectors.joining(", "))
+						)
+					);
 				}
 
 				return Result.success();

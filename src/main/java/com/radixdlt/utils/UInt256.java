@@ -425,10 +425,14 @@ public final class UInt256 implements Comparable<UInt256> {
 		long i1 = (partial10 & INT_MASK) + (partial01 & INT_MASK);
 		long i2 = (partial20 & INT_MASK) + (partial11 & INT_MASK) + (partial02 & INT_MASK) + (i1 >>> Integer.SIZE);
 		long i3 = (partial30 & INT_MASK) + (partial21 & INT_MASK) + (partial12 & INT_MASK) + (partial03 & INT_MASK) + (i2 >>> Integer.SIZE);
-		long i4 = (partial40 & INT_MASK) + (partial31 & INT_MASK) + (partial22 & INT_MASK) + (partial13 & INT_MASK) + (partial04 & INT_MASK) + (i3 >>> Integer.SIZE);
-		long i5 = (partial50 & INT_MASK) + (partial41 & INT_MASK) + (partial32 & INT_MASK) + (partial23 & INT_MASK) + (partial14 & INT_MASK) + (partial05 & INT_MASK) + (i4 >>> Integer.SIZE);
-		long i6 = (partial60 & INT_MASK) + (partial51 & INT_MASK) + (partial42 & INT_MASK) + (partial33 & INT_MASK) + (partial24 & INT_MASK) + (partial15 & INT_MASK) + (partial06 & INT_MASK) + (i5 >>> Integer.SIZE);
-		long i7 = (partial70 & INT_MASK) + (partial61 & INT_MASK) + (partial52 & INT_MASK) + (partial43 & INT_MASK) + (partial34 & INT_MASK) + (partial25 & INT_MASK) + (partial16 & INT_MASK) + (partial07 & INT_MASK) + (i6 >>> Integer.SIZE);
+		long i4 = (partial40 & INT_MASK) + (partial31 & INT_MASK) + (partial22 & INT_MASK) + (partial13 & INT_MASK) + (partial04 & INT_MASK)
+			+ (i3 >>> Integer.SIZE);
+		long i5 = (partial50 & INT_MASK) + (partial41 & INT_MASK) + (partial32 & INT_MASK) + (partial23 & INT_MASK) + (partial14 & INT_MASK)
+			+ (partial05 & INT_MASK) + (i4 >>> Integer.SIZE);
+		long i6 = (partial60 & INT_MASK) + (partial51 & INT_MASK) + (partial42 & INT_MASK) + (partial33 & INT_MASK) + (partial24 & INT_MASK)
+			+ (partial15 & INT_MASK) + (partial06 & INT_MASK) + (i5 >>> Integer.SIZE);
+		long i7 = (partial70 & INT_MASK) + (partial61 & INT_MASK) + (partial52 & INT_MASK) + (partial43 & INT_MASK) + (partial34 & INT_MASK)
+			+ (partial25 & INT_MASK) + (partial16 & INT_MASK) + (partial07 & INT_MASK) + (i6 >>> Integer.SIZE);
 
 		return UInt256.from(
 				UInt128.from((int) i7, (int) i6, (int) i5, (int) i4),
@@ -740,8 +744,9 @@ public final class UInt256 implements Comparable<UInt256> {
 	@Override
 	public boolean equals(Object obj) {
 		// Note that this needs to be consistent with compareTo
-		if (this == obj)
+		if (this == obj) {
 			return true;
+		}
 		if (obj instanceof UInt256) {
 			UInt256 other = (UInt256) obj;
 			return Objects.equals(this.high, other.high) && Objects.equals(this.low, other.low);

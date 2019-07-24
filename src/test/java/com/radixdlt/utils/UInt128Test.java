@@ -275,18 +275,22 @@ public class UInt128Test {
 	 */
 	@Test
 	public void testCreateFromByteArray() {
-		byte[] m1 = { -1 };
-		byte[] p1 = {  1 };
+		byte[] m1 = {
+			-1
+		};
+		byte[] p1 = {
+			1
+		};
 		byte[] bytesArray = new byte[UInt128.BYTES];
-		Arrays.fill(bytesArray, (byte)0);
+		Arrays.fill(bytesArray, (byte) 0);
 		bytesArray[UInt128.BYTES - 1] = 1;
-		UInt128 m1_128 = UInt128.from(m1);
-		UInt128 p1_128 = UInt128.from(p1);
-		UInt128 bytesArray_128 = UInt128.from(bytesArray);
+		UInt128 m1Bits128 = UInt128.from(m1);
+		UInt128 p1Bits128 = UInt128.from(p1);
+		UInt128 bytesArrayBits128 = UInt128.from(bytesArray);
 
-		assertEquals(UInt128.from(255), m1_128);   // Zero extension happened correctly
-		assertEquals(UInt128.ONE, p1_128);         // Zero fill happened correctly
-		assertEquals(UInt128.ONE, bytesArray_128); // Correct size array OK
+		assertEquals(UInt128.from(255), m1Bits128);   // Zero extension happened correctly
+		assertEquals(UInt128.ONE, p1Bits128);         // Zero fill happened correctly
+		assertEquals(UInt128.ONE, bytesArrayBits128); // Correct size array OK
 	}
 
 	/**
@@ -296,7 +300,7 @@ public class UInt128Test {
 	public void testToByteArray() {
 		UInt128 bitPattern = UInt128.from(0x0001_0203_0405_0607L, 0x0809_0A0B_0C0D_0E0FL);
 		byte[] bytes2 = new byte[UInt128.BYTES * 3];
-		Arrays.fill(bytes2, (byte)-1);
+		Arrays.fill(bytes2, (byte) -1);
 
 		// Make sure we got the value in big-endian order
 		byte[] bytes = bitPattern.toByteArray();
@@ -450,7 +454,9 @@ public class UInt128Test {
 		testRoundTrip("123456789123456789");
 		testRoundTrip("123456789123456789123456789123456789");
 		assertEquals(
-			UInt128.from(0x7FFF_FFFF_FFFF_FFFFL, 0xFFFF_FFFF_FFFF_FFFFL), UInt128.from(BigInteger.ONE.shiftLeft(127).subtract(BigInteger.ONE).toString()));
+			UInt128.from(0x7FFF_FFFF_FFFF_FFFFL, 0xFFFF_FFFF_FFFF_FFFFL),
+			UInt128.from(BigInteger.ONE.shiftLeft(127).subtract(BigInteger.ONE).toString())
+		);
 		assertEquals(UInt128.from(0x8000_0000_0000_0000L, 0x0000_0000_0000_0000L), UInt128.from(BigInteger.ONE.shiftLeft(127).toString()));
 	}
 

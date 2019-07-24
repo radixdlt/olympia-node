@@ -32,7 +32,7 @@ public class UInt384Test {
 	@Test
 	public void when_constructing_int384_from_short_values__values_compare_equal() {
 		for (int i = 0; i <= Short.MAX_VALUE; ++i) {
-			short s = (short)i;
+			short s = (short) i;
 			UInt384 int384 = UInt384.from(s);
 			assertEqualToLong(s, int384);
 		}
@@ -188,7 +188,7 @@ public class UInt384Test {
 		assertEquals(UInt384.from(12345678L / 13L), UInt384.from(12345678L).divide(UInt384.from(13L)));
 	}
 
-	@Test(expected=IllegalArgumentException.class)
+	@Test(expected = IllegalArgumentException.class)
 	public void when_dividing_by_zero__an_exception_is_thrown() {
 		UInt384.ONE.divide(UInt384.ZERO);
 		fail();
@@ -206,7 +206,7 @@ public class UInt384Test {
 		assertEquals(UInt384.from(12345678L / 13L), UInt384.from(12345678L).divide(UInt256.from(13L)));
 	}
 
-	@Test(expected=IllegalArgumentException.class)
+	@Test(expected = IllegalArgumentException.class)
 	public void when_dividing_by_zero_int256__an_exception_is_thrown() {
 		UInt384.ONE.divide(UInt256.ZERO);
 		fail();
@@ -223,7 +223,7 @@ public class UInt384Test {
 		assertEquals(UInt384.from(12345678L % 13L), UInt384.from(12345678L).remainder(UInt384.from(13L)));
 	}
 
-	@Test(expected=IllegalArgumentException.class)
+	@Test(expected = IllegalArgumentException.class)
 	public void when_computing_the_remainder_of_dividing_by_zero__an_exception_is_thrown() {
 		UInt384.ONE.remainder(UInt384.ZERO);
 		fail();
@@ -309,18 +309,22 @@ public class UInt384Test {
 
 	@Test
 	public void when_creating_int256_from_byte_array__the_correct_value_is_created() {
-		byte[] m1 = { -1 };
-		byte[] p1 = {  1 };
+		byte[] m1 = {
+			-1
+		};
+		byte[] p1 = {
+			1
+		};
 		byte[] bytesArray = new byte[UInt384.BYTES];
-		Arrays.fill(bytesArray, (byte)0);
+		Arrays.fill(bytesArray, (byte) 0);
 		bytesArray[UInt384.BYTES - 1] = 1;
-		UInt384 m1_128 = UInt384.from(m1);
-		UInt384 p1_128 = UInt384.from(p1);
-		UInt384 bytesArray_128 = UInt384.from(bytesArray);
+		UInt384 m1Bits128 = UInt384.from(m1);
+		UInt384 p1Bits128 = UInt384.from(p1);
+		UInt384 bytesArrayBits128 = UInt384.from(bytesArray);
 
-		assertEquals(UInt384.from(255), m1_128);   // Sign extension did not happen
-		assertEquals(UInt384.ONE, p1_128);         // Zero fill happened correctly
-		assertEquals(UInt384.ONE, bytesArray_128); // Correct size array OK
+		assertEquals(UInt384.from(255), m1Bits128);   // Sign extension did not happen
+		assertEquals(UInt384.ONE, p1Bits128);         // Zero fill happened correctly
+		assertEquals(UInt384.ONE, bytesArrayBits128); // Correct size array OK
 	}
 
 	@Test
@@ -330,7 +334,7 @@ public class UInt384Test {
 			.from(UInt128.from(0x1011_1213_1415_1617L, 0x1819_1A1B_1C1D_1E1FL), UInt128.from(0x2021_2223_2425_2627L, 0x2829_2A2B_2C2D_2E2FL));
 		UInt384 bitPattern = UInt384.from(bp0, bp1);
 		byte[] bytes2 = new byte[UInt384.BYTES * 3];
-		Arrays.fill(bytes2, (byte)-1);
+		Arrays.fill(bytes2, (byte) -1);
 
 		// Make sure we got the value in big-endian order
 		byte[] bytes = bitPattern.toByteArray();
@@ -352,13 +356,13 @@ public class UInt384Test {
 
 	@Test
 	public void when_performing_binary_shifts__the_correct_value_is_returned() {
-		final UInt256 MINUS_TWO = UInt256.ZERO.decrement().decrement();
-		final UInt128 MAX_SIGNED = UInt128.HIGH_BIT.decrement();
+		final UInt256 minusTwo = UInt256.ZERO.decrement().decrement();
+		final UInt128 maxSigned = UInt128.HIGH_BIT.decrement();
 
 		// Basic cases, left shift
 		assertEquals(UInt384.ZERO, UInt384.ZERO.shiftLeft());
 		// Zero extend on left
-		assertEquals(UInt384.from(UInt128.MAX_VALUE, MINUS_TWO), UInt384.MAX_VALUE.shiftLeft());
+		assertEquals(UInt384.from(UInt128.MAX_VALUE, minusTwo), UInt384.MAX_VALUE.shiftLeft());
 		assertEquals(UInt384.from(2), UInt384.ONE.shiftLeft());
 		// Make sure bit crosses word boundary correctly
 		assertEquals(UInt384.from(UInt128.ONE, UInt256.ZERO), UInt384.from(UInt128.ZERO, UInt256.HIGH_BIT).shiftLeft());
@@ -366,7 +370,7 @@ public class UInt384Test {
 		// Basic cases, right shift
 		assertEquals(UInt384.ZERO, UInt384.ZERO.shiftRight());
 		// Zeros inserted at right
-		assertEquals(UInt384.from(MAX_SIGNED, UInt256.MAX_VALUE), UInt384.MAX_VALUE.shiftRight());
+		assertEquals(UInt384.from(maxSigned, UInt256.MAX_VALUE), UInt384.MAX_VALUE.shiftRight());
 		assertEquals(UInt384.ZERO, UInt384.ONE.shiftRight());
 		assertEquals(UInt384.ONE, UInt384.from(2).shiftRight());
 		// Make sure bit crosses word boundary correctly
@@ -480,7 +484,10 @@ public class UInt384Test {
 		testRoundTrip("123456789");
 		testRoundTrip("123456789123456789");
 		testRoundTrip("123456789123456789123456789123456789");
-		assertEquals(UInt384.from(UInt128.MAX_VALUE, UInt256.MAX_VALUE), UInt384.from(BigInteger.ONE.shiftLeft(384).subtract(BigInteger.ONE).toString()));
+		assertEquals(
+			UInt384.from(UInt128.MAX_VALUE, UInt256.MAX_VALUE),
+			UInt384.from(BigInteger.ONE.shiftLeft(384).subtract(BigInteger.ONE).toString())
+		);
 	}
 
 	@Test

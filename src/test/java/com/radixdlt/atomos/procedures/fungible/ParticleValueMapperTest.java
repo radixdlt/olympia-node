@@ -13,13 +13,13 @@ import java.util.Arrays;
 import org.junit.Test;
 
 public class ParticleValueMapperTest {
-	private static abstract class Oxygen extends Particle {
+	private abstract static class Oxygen extends Particle {
 	}
 
-	private static abstract class Hydrogen extends Particle {
+	private abstract static class Hydrogen extends Particle {
 	}
 
-	private static abstract class H2O extends Particle {
+	private abstract static class H2O extends Particle {
 	}
 
 	@Test

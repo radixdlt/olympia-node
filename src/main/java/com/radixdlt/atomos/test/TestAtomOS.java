@@ -27,9 +27,11 @@ import java.util.stream.Stream;
 public class TestAtomOS implements AtomOS {
 	private final List<Pair<Class<? extends Particle>, IndexedConstraintCheck<Particle>>> indexedInitialConstraints = new ArrayList<>();
 	private final List<Pair<Class<? extends Particle>, BiFunction<Particle, AtomMetadata, Result>>> particleClassConstraints = new ArrayList<>();
-	private final List<Pair<Pair<Class<? extends Particle>, Class<? extends Particle>>, ParticleClassWithDependenceConstraintCheck<? extends Particle, ?>>> particleClassWithDependencyConstraints = new ArrayList<>();
+	private final List<Pair<Pair<Class<? extends Particle>, Class<? extends Particle>>,
+		ParticleClassWithDependenceConstraintCheck<? extends Particle, ?>>> particleClassWithDependencyConstraints = new ArrayList<>();
 	private final List<FungibleTransition<? extends Particle>> fungibleTransitions = new ArrayList<>();
-	private final List<Pair<Pair<Class<? extends Particle>, Class<? extends Particle>>, ParticleClassWithSideEffectConstraintCheck<? extends Particle, ?>>> particleClassWithSideEffectConstraints = new ArrayList<>();
+	private final List<Pair<Pair<Class<? extends Particle>, Class<? extends Particle>>,
+		ParticleClassWithSideEffectConstraintCheck<? extends Particle, ?>>> particleClassWithSideEffectConstraints = new ArrayList<>();
 	private FungibleTransition.Builder<? extends Particle> pendingFungibleTransition = null;
 
 	@Override
@@ -45,10 +47,13 @@ public class TestAtomOS implements AtomOS {
 	@Override
 	public <T extends Particle> IndexedConstraint<T> onIndexed(Class<T> particleClass, ParticleToRRIMapper<T> indexer) {
 		return constraint -> {
-			indexedInitialConstraints.add(new Pair<>(particleClass, (p, m) -> constraint.apply((T)p, m)));
+			indexedInitialConstraints.add(new Pair<>(particleClass, (p, m) -> constraint.apply((T) p, m)));
 			return new InitializedIndexedConstraint<T>() {
 				@Override
-				public <U extends Particle> void requireInitialWith(Class<U> sideEffectClass, ParticleClassWithSideEffectConstraintCheck<T, U> constraint) {
+				public <U extends Particle> void requireInitialWith(
+					Class<U> sideEffectClass,
+					ParticleClassWithSideEffectConstraintCheck<T, U> constraint
+				) {
 
 				}
 			};
@@ -143,7 +148,11 @@ public class TestAtomOS implements AtomOS {
 	 * @param <U> The dependency class
 	 * @return list of results from each checker
 	 */
-	public <T extends Particle, U extends Particle> TestResult testParticleClassWithDependency(List<T> dependents, U dependency, AtomMetadata metadata) {
+	public <T extends Particle, U extends Particle> TestResult testParticleClassWithDependency(
+		List<T> dependents,
+		U dependency,
+		AtomMetadata metadata
+	) {
 		if (dependents.isEmpty()) {
 			throw new IllegalStateException("No dependents");
 		}

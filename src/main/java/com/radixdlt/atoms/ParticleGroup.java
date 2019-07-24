@@ -91,14 +91,14 @@ public final class ParticleGroup {
 	/**
 	 * Get a stream of the spun particles in this group
 	 */
-	public final Stream<SpunParticle> spunParticles() {
+	public Stream<SpunParticle> spunParticles() {
 		return this.particles.stream();
 	}
 
 	/**
 	 * Get a stream of the spun particles of a certain particle type in this group
 	 */
-	public final <T extends Particle> Stream<SpunParticle> spunParticles(Class<T> particleType) {
+	public <T extends Particle> Stream<SpunParticle> spunParticles(Class<T> particleType) {
 		return this.particles.stream()
 				.filter(p -> particleType.isAssignableFrom(p.getParticle().getClass()));
 	}
@@ -116,14 +116,14 @@ public final class ParticleGroup {
 	 * @param spin The spin to filter by
 	 * @return The particles in this group with that spin
 	 */
-	public final <T extends Particle> Stream<T> particles(Class<T> particleClass, Spin spin) {
+	public <T extends Particle> Stream<T> particles(Class<T> particleClass, Spin spin) {
 		return this.spunParticles(particleClass)
 			.filter(p -> p.getSpin() == spin)
 			.map(SpunParticle::getParticle)
 			.map(particleClass::cast);
 	}
 
-	public final <U> Stream<U> spunParticlesWithIndex(FunctionWithIndex<SpunParticle, U> f) {
+	public <U> Stream<U> spunParticlesWithIndex(FunctionWithIndex<SpunParticle, U> f) {
 		return Streams.mapWithIndex(this.spunParticles(), (sp, i) -> Stream.of(sp)
 			.map(p -> f.apply(p, i))
 		).flatMap(l -> l);
@@ -134,7 +134,7 @@ public final class ParticleGroup {
 	 * @param spin The spin to filter by
 	 * @return The particles in this group with that spin
 	 */
-	public final <T extends Particle, U> Stream<U> particlesWithIndex(Class<T> particleClass, Spin spin, FunctionWithIndex<T, U> f) {
+	public <T extends Particle, U> Stream<U> particlesWithIndex(Class<T> particleClass, Spin spin, FunctionWithIndex<T, U> f) {
 		return Streams.mapWithIndex(this.spunParticles(), (sp, i) -> Stream.of(sp)
 			.filter(p -> p.getSpin() == spin)
 			.filter(p -> particleClass.isInstance(p.getParticle()))
@@ -148,7 +148,7 @@ public final class ParticleGroup {
 	 * @param spin The spin to filter by
 	 * @return The particles in this group with that spin
 	 */
-	public final Stream<Particle> particles(Spin spin) {
+	public Stream<Particle> particles(Spin spin) {
 		return this.spunParticles()
 				.filter(p -> p.getSpin() == spin)
 				.map(SpunParticle::getParticle);

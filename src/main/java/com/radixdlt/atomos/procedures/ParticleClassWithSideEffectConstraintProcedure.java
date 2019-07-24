@@ -29,7 +29,11 @@ public class ParticleClassWithSideEffectConstraintProcedure<T extends Particle, 
 	private final Class<U> sideEffectClass;
 	private final ParticleClassWithSideEffectConstraintCheck<T, U> constraintCheck;
 
-	public ParticleClassWithSideEffectConstraintProcedure(Class<T> particleClass, Class<U> sideEffectClass, ParticleClassWithSideEffectConstraintCheck<T, U> constraintCheck) {
+	public ParticleClassWithSideEffectConstraintProcedure(
+		Class<T> particleClass,
+		Class<U> sideEffectClass,
+		ParticleClassWithSideEffectConstraintCheck<T, U> constraintCheck
+	) {
 		this.particleClass = Objects.requireNonNull(particleClass, "particleClass is required");
 		this.sideEffectClass = Objects.requireNonNull(sideEffectClass, "sideEffectClass is required");
 		this.constraintCheck = Objects.requireNonNull(constraintCheck, "constraintCheck is required");

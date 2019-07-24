@@ -120,14 +120,15 @@ public final class Hash implements Comparable<Hash> {
 	}
 
 	@Override
-	public String toString () {
+	public String toString() {
 		return Bytes.toHexString(this.data);
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		if (o == this)
+		if (o == this) {
 			return true;
+		}
 
 		if (o instanceof Hash) {
 			Hash other = (Hash) o;

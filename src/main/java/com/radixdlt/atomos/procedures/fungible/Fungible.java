@@ -89,10 +89,10 @@ public final class Fungible {
 			return false;
 		}
 		Fungible fungible = (Fungible) o;
-		return index == fungible.index &&
-			Objects.equals(particle, fungible.particle) &&
-			Objects.equals(particleClass, fungible.particleClass) &&
-			Objects.equals(amount, fungible.amount);
+		return index == fungible.index
+			&& Objects.equals(particle, fungible.particle)
+			&& Objects.equals(particleClass, fungible.particleClass)
+			&& Objects.equals(amount, fungible.amount);
 	}
 
 	@Override
@@ -112,8 +112,11 @@ public final class Fungible {
 		Objects.requireNonNull(fungibles2, "fungibles2 is required");
 
 		BinaryOperator<UInt256> diffFunction = (a, b) -> {
-			if (a == null) { return b; }
-			else if (b == null) { return a; }
+			if (a == null) {
+				return b;
+			} else if (b == null) {
+				return a;
+			}
 
 			if (a.compareTo(b) > 0) {
 				return a.subtract(b);

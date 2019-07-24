@@ -122,7 +122,7 @@ public final class CMAtomOS implements AtomOSKernel, AtomOS {
 				public <U extends Particle> void requireInitialWith(Class<U> sideEffectClass,
 					ParticleClassWithSideEffectConstraintCheck<T, U> constraint) {
 
-					ParticleClassWithSideEffectConstraintProcedure<T,U> procedure
+					ParticleClassWithSideEffectConstraintProcedure<T, U> procedure
 						= new ParticleClassWithSideEffectConstraintProcedure<>(particleClass, sideEffectClass, constraint);
 					procedures.add(procedure);
 				}
@@ -147,7 +147,10 @@ public final class CMAtomOS implements AtomOSKernel, AtomOS {
 	}
 
 	@Override
-	public <T extends Particle> FungibleTransitionConstraintStub<T> onFungible(Class<T> particleClass, ParticleToAmountMapper<T> particleToAmountMapper) {
+	public <T extends Particle> FungibleTransitionConstraintStub<T> onFungible(
+		Class<T> particleClass,
+		ParticleToAmountMapper<T> particleToAmountMapper
+	) {
 		checkParticleRegistered(particleClass);
 
 		if (pendingFungibleTransition != null) {

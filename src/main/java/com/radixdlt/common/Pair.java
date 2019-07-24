@@ -23,7 +23,7 @@ public final class Pair<F, S> {
      * @param second The second element of the pair.
      * @return A {@link Pair} containing {@code first} and {@code second}.
      */
-    public static <A,B> Pair<A, B> of(final A first, final B second) {
+    public static <A, B> Pair<A, B> of(final A first, final B second) {
     	return new Pair<>(first, second);
     }
 
@@ -36,8 +36,7 @@ public final class Pair<F, S> {
      * @param first  The first element of the pair.
      * @param second The second element of the pair.
      */
-    public Pair(final F first, final S second)
-    {
+	public Pair(final F first, final S second) {
         this.first = first;
         this.second = second;
     }
@@ -67,8 +66,9 @@ public final class Pair<F, S> {
 
 	@Override
 	public boolean equals(Object obj) {
-		if (this == obj)
+		if (this == obj) {
 			return true;
+		}
 		if (obj instanceof Pair<?, ?>) {
 			Pair<?, ?> p = (Pair<?, ?>) obj;
 			return Objects.equals(this.first, p.first) && Objects.equals(this.second, p.second);

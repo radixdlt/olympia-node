@@ -16,10 +16,10 @@ import org.assertj.core.api.Assertions;
 import org.junit.Test;
 
 public class ParticleClassWithSideEffectConstraintProcedureTest {
-	private static abstract class MyParticle extends Particle {
+	private abstract static class MyParticle extends Particle {
 	}
 
-	private static abstract class SideEffectParticle extends Particle {
+	private abstract static class SideEffectParticle extends Particle {
 	}
 
 	@Test

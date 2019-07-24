@@ -38,7 +38,7 @@ public final class ECKeyPair {
 	 * @throws IOException If reading or writing the file fails
 	 * @throws CryptoException If the key read from the file is invalid
 	 */
-	public static final ECKeyPair fromFile(File file, boolean create) throws IOException, CryptoException {
+	public static ECKeyPair fromFile(File file, boolean create) throws IOException, CryptoException {
 		if (!file.exists()) {
 			if (!create) {
 				throw new FileNotFoundException("Keyfile " + file.toString() + " not found");
@@ -157,8 +157,7 @@ public final class ECKeyPair {
 		return this.publicKey;
 	}
 
-	public ECSignature sign(Hash hash) throws CryptoException
-	{
+	public ECSignature sign(Hash hash) throws CryptoException {
 		return sign(hash.toByteArray());
 	}
 
@@ -193,8 +192,9 @@ public final class ECKeyPair {
 			byte[] mac = reader.readBytes(32);
 
 			// 7. Compare MAC with MAC'. If not equal, decryption will fail.
-			if (!Arrays.equals(mac, ECKeyUtils.calculateMAC(keyM, iv, ephemeral, encrypted)))
+			if (!Arrays.equals(mac, ECKeyUtils.calculateMAC(keyM, iv, ephemeral, encrypted))) {
 				throw new CryptoException("MAC mismatch when decrypting");
+			}
 
 			// 8. Decrypt the cipher text with AES-256-CBC, using IV as initialization vector, key_e as decryption key
 			// and the cipher text as payload. The output is the padded input text.

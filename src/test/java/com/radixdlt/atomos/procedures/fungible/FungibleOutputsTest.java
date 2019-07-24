@@ -107,13 +107,13 @@ public class FungibleOutputsTest {
 			fungibleOutputs.fungibles().toArray(Fungible[]::new));
 	}
 
-	private static abstract class Oxygen extends Particle {
+	private abstract static class Oxygen extends Particle {
 	}
 
-	private static abstract class Hydrogen extends Particle {
+	private abstract static class Hydrogen extends Particle {
 	}
 
-	private static abstract class Other extends Particle {
+	private abstract static class Other extends Particle {
 	}
 
 	@Test

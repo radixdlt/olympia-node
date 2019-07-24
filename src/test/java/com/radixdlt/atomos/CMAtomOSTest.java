@@ -24,6 +24,11 @@ public class CMAtomOSTest {
 		}
 
 		@Override
+		public boolean equals(Object o) {
+			return o instanceof TestParticle;
+		}
+
+		@Override
 		public int hashCode() {
 			return 0;
 		}

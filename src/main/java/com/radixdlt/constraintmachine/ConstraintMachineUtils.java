@@ -52,7 +52,7 @@ final class ConstraintMachineUtils {
 
 		final CMErrorCode error;
 
-		switch(result) {
+		switch (result) {
 			case OKAY:
 				error = null;
 				break;
@@ -82,7 +82,10 @@ final class ConstraintMachineUtils {
 		return error;
 	}
 
-	private static <T> Stream<T> mapPairs(List<IndexedSpunParticle> spunParticles, BiFunction<Particle, Pair<SpunParticle, IndexedSpunParticle>, T> mapper) {
+	private static <T> Stream<T> mapPairs(
+		List<IndexedSpunParticle> spunParticles,
+		BiFunction<Particle, Pair<SpunParticle, IndexedSpunParticle>, T> mapper
+	) {
 		return Streams.mapWithIndex(spunParticles.stream(),
 			(indexed, i) -> {
 				final SpunParticle prev = i == 0 ? null : spunParticles.get((int) (i - 1)).getSpunParticle();

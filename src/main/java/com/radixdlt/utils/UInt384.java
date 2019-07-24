@@ -68,7 +68,7 @@ public final class UInt384 implements Comparable<UInt384> {
 	 * @return {@code value} as an {@link UInt384} type.
 	 */
 	public static UInt384 from(short value) {
-		return from((long)value);
+		return from((long) value);
 	}
 
 	/**
@@ -78,7 +78,7 @@ public final class UInt384 implements Comparable<UInt384> {
 	 * @return {@code value} as an {@link UInt384} type.
 	 */
 	public static UInt384 from(int value) {
-		return from((long)value);
+		return from((long) value);
 	}
 
 	/**
@@ -758,8 +758,9 @@ public final class UInt384 implements Comparable<UInt384> {
 	@Override
 	public boolean equals(Object obj) {
 		// Note that this needs to be consistent with compareTo
-		if (this == obj)
+		if (this == obj) {
 			return true;
+		}
 		if (obj instanceof UInt384) {
 			UInt384 other = (UInt384) obj;
 			return Objects.equals(this.high, other.high) && Objects.equals(this.low, other.low);

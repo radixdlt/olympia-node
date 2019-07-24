@@ -25,8 +25,9 @@ class JacksonJsonBytesDeserializer extends StdDeserializer<byte[]> {
 	@Override
 	public byte[] deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
 		String value = p.getValueAsString();
-		if (!value.startsWith(JacksonCodecConstants.BYTE_STR_VALUE))
+		if (!value.startsWith(JacksonCodecConstants.BYTE_STR_VALUE)) {
 			throw new InvalidFormatException(p, "Expecting bytes", value, byte[].class);
+		}
 		return Bytes.fromBase64String(value.substring(JacksonCodecConstants.STR_VALUE_LEN));
 	}
 }

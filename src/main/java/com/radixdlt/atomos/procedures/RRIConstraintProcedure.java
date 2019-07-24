@@ -40,7 +40,7 @@ public final class RRIConstraintProcedure implements ConstraintProcedure {
 		}
 
 		public <T extends Particle> Builder add(Class<T> particleClass, ParticleToRRIMapper<T> indexedParticle) {
-			this.indexedParticles.put(particleClass, p -> indexedParticle.index((T)p));
+			this.indexedParticles.put(particleClass, p -> indexedParticle.index((T) p));
 			return this;
 		}
 
@@ -67,7 +67,7 @@ public final class RRIConstraintProcedure implements ConstraintProcedure {
 		return indexedParticles.keySet().stream()
 			.flatMap(particleClass ->
 				group.particlesWithIndex(particleClass, Spin.DOWN, (particle, i) ->
-					ProcedureError.of(group,"rri indexed particles currently can't be downed: " + particle, i))
+					ProcedureError.of(group, "rri indexed particles currently can't be downed: " + particle, i))
 			);
 	}
 

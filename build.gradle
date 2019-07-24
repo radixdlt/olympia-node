@@ -1,12 +1,41 @@
 group 'radixdlt-engine'
 version '1.0-SNAPSHOT'
 
-apply plugin: 'java'
+buildscript {
+    repositories {
+        jcenter()
+        maven { url "https://plugins.gradle.org/m2/" }
+    }
+    dependencies {
+        classpath 'org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:2.6.2'
+        classpath 'com.adarshr:gradle-test-logger-plugin:1.6.0'
+    }
+}
+
+apply plugin: 'java-library'
+apply plugin: 'jacoco'
+apply plugin: 'checkstyle'
+apply plugin: 'org.sonarqube'
+apply plugin: 'com.adarshr.test-logger'
 
 sourceCompatibility = 1.8
 
 repositories {
     mavenCentral()
+}
+
+checkstyle {
+    toolVersion '8.10.1'
+    showViolations = true
+}
+
+checkstyleMain {
+    configFile rootProject.file('config/checkstyle/checkstyle.xml')
+}
+
+checkstyleTest {
+    // Largely the same as the main file, but extended snake case allowed
+    configFile rootProject.file('config/checkstyle/checkstyle_test.xml')
 }
 
 dependencies {
@@ -43,8 +72,4 @@ dependencies {
         exclude group: 'com.fasterxml.jackson.core', module: 'jackson-core'
         exclude group: 'com.fasterxml.jackson.core', module: 'jackson-databind'
     }
-
-    // JMH
-    testCompile 'org.openjdk.jmh:jmh-core:1.21'
-    testCompile 'org.openjdk.jmh:jmh-generator-annprocess:1.21'
 }

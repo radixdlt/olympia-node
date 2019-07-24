@@ -17,7 +17,7 @@ public final class AtomDriver implements AtomOSDriver {
 	static final int MAX_ATOM_SIZE = 1024 * 1024;
 	private final boolean skipAtomFeeCheck;
 	private final Serialization serialization;
-	private final static Hash DEFAULT_TARGET = new Hash("0000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
+	private static final Hash DEFAULT_TARGET = new Hash("0000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
 	private final int maximumDrift;
 
 	public AtomDriver(Serialization serialization, boolean skipAtomFeeCheck, int maximumDrift) {

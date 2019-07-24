@@ -76,7 +76,7 @@ public final class TestSetupUtils {
 
 	private static char toPrintable(byte b) {
 		if (b >= 0x20 && b < 0x7F) {
-			return (char)b;
+			return (char) b;
 		}
 		return '.';
 	}

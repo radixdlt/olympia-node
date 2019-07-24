@@ -1,5 +1,8 @@
 package com.radixdlt.serialization.mapper;
 
+// Checkstyle disabled here, as this file has been imported from Jackson
+//CHECKSTYLE:OFF:
+
 import com.fasterxml.jackson.core.JsonEncoding;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;

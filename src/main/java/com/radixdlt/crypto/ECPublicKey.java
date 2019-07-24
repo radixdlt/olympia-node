@@ -35,8 +35,7 @@ public final class ECPublicKey {
 			this.publicKey = Arrays.copyOf(key, key.length);
 		} catch (CryptoException ex) {
 			throw ex;
-		}
-		catch (Exception ex) {
+		} catch (Exception ex) {
 			throw new CryptoException(ex);
 		}
 	}
@@ -72,8 +71,7 @@ public final class ECPublicKey {
 		return this.publicKey;
 	}
 
-	ECPoint getPublicPoint()
-	{
+	ECPoint getPublicPoint() {
 		return ECKeyUtils.spec.getCurve().decodePoint(this.publicKey);
 	}
 
@@ -119,10 +117,12 @@ public final class ECPublicKey {
 	        byte[] keyM = Arrays.copyOfRange(h, 32, 64);
 
 	        // 7. Pad the input text to a multiple of 16 bytes, in accordance to PKCS7.
-	        // 8. Encrypt the data with AES-256-CBC, using IV as initialization vector, key_e as encryption key and the padded input text as payload. Call the output cipher text.
+	        // 8. Encrypt the data with AES-256-CBC, using IV as initialization vector, key_e as encryption key and the
+	        //    padded input text as payload. Call the output cipher text.
 	        byte[] encrypted = ECKeyUtils.crypt(true, iv, data, keyE);
 
-	        // 9. Calculate a 32 byte MAC with HMACSHA256, using key_m as salt and IV + ephemeral.pub + cipher text as data. Call the output MAC.
+	        // 9. Calculate a 32 byte MAC with HMACSHA256, using key_m as salt and IV + ephemeral.pub + cipher text as
+	        //    data. Call the output MAC.
 	        byte[] mac = ECKeyUtils.calculateMAC(keyM, iv, ephemeral.getPublicKey(), encrypted);
 
 	        // 10. Write out the encryption result IV + ephemeral.pub + encrypted + MAC

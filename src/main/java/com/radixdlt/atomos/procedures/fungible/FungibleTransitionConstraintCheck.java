@@ -114,7 +114,15 @@ public final class FungibleTransitionConstraintCheck {
 	/**
 	 * Utility method to convert a list of transitions and inputs / outputs info to a well formatted string
 	 */
-	private static String transitionsToString(List<FungibleTransition<?>> fungibleTransitions, FungibleOutputs unsatisfiedFungibleOutputs, FungibleOutputs satisfiedFungibleOutputs, FungibleInputs unspentFungibleInputs, FungibleInputs spentFungibleInputs, List<FungibleTransitionMatchResult> matchResults, ParticleValueMapper valueMapper) {
+	private static String transitionsToString(
+		List<FungibleTransition<?>> fungibleTransitions,
+		FungibleOutputs unsatisfiedFungibleOutputs,
+		FungibleOutputs satisfiedFungibleOutputs,
+		FungibleInputs unspentFungibleInputs,
+		FungibleInputs spentFungibleInputs,
+		List<FungibleTransitionMatchResult> matchResults,
+		ParticleValueMapper valueMapper
+	) {
 		UnaryOperator<String> noneIfEmpty = s -> s.isEmpty() ? "\t<none>" : s;
 
 		String unspentInputsString = noneIfEmpty.apply(unspentFungibleInputs.fungibles()
@@ -157,8 +165,8 @@ public final class FungibleTransitionConstraintCheck {
 		String rejectedString = noneIfEmpty.apply(matchRejectionsToString(matchResults));
 
 		return String.format(
-			"transitions to %s.%n Unspent Inputs%n%s%n Spent Inputs%n%s%n Unsatisfied Outputs%n%s%n" +
-				" Satisfied Outputs%n%s%n Matched%n%s%n Considered%n%s%n Rejected%n%s",
+			"transitions to %s.%n Unspent Inputs%n%s%n Spent Inputs%n%s%n Unsatisfied Outputs%n%s%n"
+			+ " Satisfied Outputs%n%s%n Matched%n%s%n Considered%n%s%n Rejected%n%s",
 			transitionNamesString, unspentInputsString, spentInputsString, unsatisfiedOutputsString,
 			satisfiedOutputsString, matchesString, consideredTransitionsString, rejectedString);
 	}
@@ -174,8 +182,8 @@ public final class FungibleTransitionConstraintCheck {
 			.filter(FungibleTransitionMatchResult::hasMatch)
 			.map(matchResult -> String.format("\t Transition to %s%n%s%s",
 				matchResult.getTransition().getOutputParticleClass().getSimpleName(),
-				matchResult.getMatch().getMatchedInitials().isEmpty() ? "" :
-					(matchResult.getMatch().getMatchedInitials().fungibles()
+				matchResult.getMatch().getMatchedInitials().isEmpty() ? ""
+					: (matchResult.getMatch().getMatchedInitials().fungibles()
 						.map(fungibleToStringFunction)
 						.map(initial -> String.format("\t\t <initial> => %s", initial))
 						.collect(Collectors.joining(System.lineSeparator())) + System.lineSeparator()),
@@ -203,8 +211,8 @@ public final class FungibleTransitionConstraintCheck {
 			.filter(matchResult -> matchResult.getInformation().hasRejections())
 			.map(matchResult -> String.format("\t In Transition to %s%n%s%s",
 				matchResult.getTransition().getOutputParticleClass().getSimpleName(),
-				matchResult.getInformation().hasInitialVerdictsWithRejections() ?
-					String.format("\t\t initials: %n%s%n", matchResult.getInformation().initialVerdictsWithRejections()
+				matchResult.getInformation().hasInitialVerdictsWithRejections()
+					? String.format("\t\t initials: %n%s%n", matchResult.getInformation().initialVerdictsWithRejections()
 						.map(verdict -> String.format("\t\t\t rejected %s: '%s'",
 							verdict.getOutput(), verdict.getRejectionMessage()))
 						.collect(Collectors.joining(System.lineSeparator())))

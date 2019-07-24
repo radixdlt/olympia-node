@@ -15,8 +15,12 @@ public class BytesTest {
 	 */
 	@Test
 	public void testArrayEquals() {
-		byte[] array1 = { 0, 1, 2, 3, 4, 5, 6, 7, 8,  9 };
-		byte[] array2 = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+		byte[] array1 = {
+			0, 1, 2, 3, 4, 5, 6, 7, 8,  9
+		};
+		byte[] array2 = {
+			1, 2, 3, 4, 5, 6, 7, 8, 9, 10
+		};
 
 		// Parts of array the same at non-matching indices
 		assertTrue(Bytes.arrayEquals(array1, 1, 5, array2, 0, 5));
@@ -31,8 +35,12 @@ public class BytesTest {
 	 */
 	@Test
 	public void testHashCode() {
-		byte[] array1 = { 0, 1, 2, 3, 4, 5, 6, 7, 8,  9 };
-		byte[] array2 = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+		byte[] array1 = {
+			0, 1, 2, 3, 4, 5, 6, 7, 8,  9
+		};
+		byte[] array2 = {
+			1, 2, 3, 4, 5, 6, 7, 8, 9, 10
+		};
 
 		for (int i = 0; i < 10; ++i) {
 			assertEquals(Bytes.hashCode(array1, 1, i), Bytes.hashCode(array2, 0, i));
@@ -95,24 +103,34 @@ public class BytesTest {
 	@Test
 	public void testFromHexString() {
 		// Single byte
-		byte[] expected1 = { (byte) 0xAA };
+		byte[] expected1 = {
+			(byte) 0xAA
+		};
 		assertArrayEquals(expected1, Bytes.fromHexString("AA"));
 		assertArrayEquals(expected1, Bytes.fromHexString("aa"));
 		assertArrayEquals(expected1, Bytes.fromHexString("aA"));
 		// two bytes
-		byte[] expected2 = { (byte) 0xAB, (byte) 0xCD };
+		byte[] expected2 = {
+			(byte) 0xAB, (byte) 0xCD
+		};
 		assertArrayEquals(expected2, Bytes.fromHexString("ABCD"));
 		assertArrayEquals(expected2, Bytes.fromHexString("abcd"));
 		// two and a half bytes
-		byte[] expected3 = { (byte) 0x0A, (byte) 0xBC, (byte) 0xDE };
+		byte[] expected3 = {
+			(byte) 0x0A, (byte) 0xBC, (byte) 0xDE
+		};
 		assertArrayEquals(expected3, Bytes.fromHexString("ABCDE"));
 		assertArrayEquals(expected3, Bytes.fromHexString("abcde"));
 		// four bytes
-		byte[] expected4 = { (byte) 0xAB, (byte) 0xCD, (byte) 0xEF };
+		byte[] expected4 = {
+			(byte) 0xAB, (byte) 0xCD, (byte) 0xEF
+		};
 		assertArrayEquals(expected4, Bytes.fromHexString("ABCDEF"));
 		assertArrayEquals(expected4, Bytes.fromHexString("abcdef"));
 		// eight bytes
-		byte[] expected8 = { 0x01, 0x23, 0x45, 0x67, (byte) 0x89, (byte) 0xAB, (byte) 0xCD, (byte) 0xEF };
+		byte[] expected8 = {
+			0x01, 0x23, 0x45, 0x67, (byte) 0x89, (byte) 0xAB, (byte) 0xCD, (byte) 0xEF
+		};
 		assertArrayEquals(expected8, Bytes.fromHexString("0123456789ABCDEF"));
 		assertArrayEquals(expected8, Bytes.fromHexString("0123456789abcdef"));
 

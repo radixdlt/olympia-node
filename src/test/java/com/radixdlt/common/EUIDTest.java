@@ -19,7 +19,7 @@ public class EUIDTest {
 	private static final byte[] NEGATIVE_ONE = new byte[32];
 	static {
 		ONE[EUID.BYTES - 1] = 1;
-		Arrays.fill(NEGATIVE_ONE, (byte)0xff);
+		Arrays.fill(NEGATIVE_ONE, (byte) 0xff);
 	}
 
 	@Test
