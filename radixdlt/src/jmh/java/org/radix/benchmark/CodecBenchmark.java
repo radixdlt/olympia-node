@@ -1,17 +1,15 @@
 package org.radix.benchmark;
 
+import com.radixdlt.TestSetupUtils;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.infra.Blackhole;
 import org.radix.logging.Logging;
 import org.radix.modules.Modules;
 import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.DummyTestObject;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
-import com.radixdlt.serialization.core.ClasspathScanningSerializationPolicy;
-import com.radixdlt.serialization.core.ClasspathScanningSerializerIds;
 
-import test.radix.TestSetupUtils;
+import org.radix.serialization.DummyTestObject;
 
 /**
  * Some JMH driven benchmarks for testing serialisation performance of
