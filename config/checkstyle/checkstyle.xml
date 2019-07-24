@@ -94,11 +94,11 @@
         <!-- Checks for Naming Conventions.                  -->
         <!-- See http://checkstyle.sf.net/config_naming.html -->
         <module name="ConstantName">
-        	<!-- Disabled, as not smart enough to work out if value is immutable -->
-        	<property name="applyToPublic" value="false"/>
-        	<property name="applyToProtected" value="false"/>
-        	<property name="applyToPackage" value="false"/>
-        	<property name="applyToPrivate" value="false"/>
+            <!-- Disabled, as not smart enough to work out if value is immutable -->
+            <property name="applyToPublic" value="false"/>
+            <property name="applyToProtected" value="false"/>
+            <property name="applyToPackage" value="false"/>
+            <property name="applyToPrivate" value="false"/>
         </module>
         <module name="LocalFinalVariableName"/>
         <module name="LocalVariableName"/>
@@ -173,8 +173,8 @@
         <module name="HideUtilityClassConstructor"/>
         <module name="InterfaceIsType"/>
         <module name="VisibilityModifier">
-        	<property name="packageAllowed" value="true"/>
-        	<property name="protectedAllowed" value="true"/>
+            <property name="packageAllowed" value="true"/>
+            <property name="protectedAllowed" value="true"/>
         </module>
 
         <!-- Miscellaneous other checks.                   -->
