@@ -58,7 +58,7 @@ public class ValidationHandler extends Service {
 
 		result.accept(new ValidationResultAcceptor() {
 			@Override
-			public void onSuccess(ImmutableMap<String, Object> computed) {
+			public void onSuccess(CMAtom cmAtom, ImmutableMap<String, Object> computed) {
 				Object result = computed.get("mass");
 				if (result == null) {
 					throw new NullPointerException("mass does not exist");
@@ -67,7 +67,7 @@ public class ValidationHandler extends Service {
 			}
 
 			@Override
-			public void onError(Set<CMError> errors) {
+			public void onError(CMAtom cmAtom, Set<CMError> errors) {
 				errorsRef.set(errors);
 			}
 		});

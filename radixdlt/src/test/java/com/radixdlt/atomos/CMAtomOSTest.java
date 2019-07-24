@@ -16,6 +16,7 @@ import com.radixdlt.universe.Universe;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -47,7 +48,7 @@ public class CMAtomOSTest {
 		ValidationResultAcceptor acceptor = mock(ValidationResultAcceptor.class);
 		machine.validate(atom, true).accept(acceptor);
 		verify(acceptor, times(1))
-			.onError(argThat(s -> s.stream().anyMatch(e -> e.getErrorCode() == CMErrorCode.UNKNOWN_PARTICLE)));
+			.onError(eq(atom), argThat(s -> s.stream().anyMatch(e -> e.getErrorCode() == CMErrorCode.UNKNOWN_PARTICLE)));
 	}
 
 	@Test

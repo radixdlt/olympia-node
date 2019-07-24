@@ -144,9 +144,9 @@ public final class ConstraintMachine {
 			: errorStream.findAny().map(ImmutableSet::of).orElse(ImmutableSet.of());
 
 		if (!errors.isEmpty()) {
-			return acceptor -> acceptor.onError(errors);
+			return acceptor -> acceptor.onError(cmAtom, errors);
 		} else {
-			return acceptor -> acceptor.onSuccess(atomCompute.build());
+			return acceptor -> acceptor.onSuccess(cmAtom, atomCompute.build());
 		}
 	}
 

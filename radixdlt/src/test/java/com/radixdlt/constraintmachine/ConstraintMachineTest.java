@@ -14,6 +14,7 @@ import com.radixdlt.serialization.SerializerId2;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -46,7 +47,7 @@ public class ConstraintMachineTest {
 		ValidationResultAcceptor acceptor = mock(ValidationResultAcceptor.class);
 		machine.validate(atom, true).accept(acceptor);
 		verify(acceptor, times(1))
-			.onError(argThat(s -> s.contains(
+			.onError(eq(atom), argThat(s -> s.contains(
 				new CMError(DataPointer.ofParticle(0, 0), CMErrorCode.INTERNAL_SPIN_CONFLICT))
 			));
 
@@ -71,6 +72,6 @@ public class ConstraintMachineTest {
 		ValidationResultAcceptor acceptor = mock(ValidationResultAcceptor.class);
 		machine.validate(atom, true).accept(acceptor);
 		verify(acceptor, times(1))
-			.onSuccess(argThat(m -> m.get("test").equals("hello")));
+			.onSuccess(eq(atom), argThat(m -> m.get("test").equals("hello")));
 	}
 }
