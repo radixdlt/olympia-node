@@ -415,7 +415,7 @@ public class UInt256Test {
 	 */
 	@Test
 	public void when_performing_integer_square_root__the_correct_value_is_returned() {
-		long max = 1L << 53; // Precision of double
+		long max = 100_000_000L; // Needs to be not more than 1L << 53, ie precision of double
 		for (long n = 0; n < max; n += 997) {
 			long lsqrt = (long) Math.floor(Math.sqrt(n));
 			UInt256 nn = UInt256.from(n);
