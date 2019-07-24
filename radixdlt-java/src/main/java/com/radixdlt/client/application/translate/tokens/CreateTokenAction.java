@@ -15,6 +15,7 @@ public class CreateTokenAction implements Action {
 	private final String name;
 	private final RRI rri;
 	private final String description;
+	private final String iconUrl;
 	private final BigDecimal initialSupply;
 	private final BigDecimal granularity;
 	private final TokenSupplyType tokenSupplyType;
@@ -23,6 +24,7 @@ public class CreateTokenAction implements Action {
 		RRI rri,
 		String name,
 		String description,
+		String iconUrl,
 		BigDecimal initialSupply,
 		BigDecimal granularity,
 		TokenSupplyType tokenSupplyType
@@ -41,9 +43,22 @@ public class CreateTokenAction implements Action {
 		this.name = Objects.requireNonNull(name);
 		this.rri = Objects.requireNonNull(rri);
 		this.description = description;
+		this.iconUrl = iconUrl;
 		this.initialSupply = initialSupply;
 		this.granularity = Objects.requireNonNull(granularity);
 		this.tokenSupplyType = Objects.requireNonNull(tokenSupplyType);
+	}
+
+	public static CreateTokenAction create(
+		RRI tokenRRI,
+		String name,
+		String description,
+		String iconUrl,
+		BigDecimal initialSupply,
+		BigDecimal granularity,
+		TokenSupplyType tokenSupplyType
+	) {
+		return new CreateTokenAction(tokenRRI, name, description, iconUrl, initialSupply, granularity, tokenSupplyType);
 	}
 
 	public static CreateTokenAction create(
@@ -54,7 +69,7 @@ public class CreateTokenAction implements Action {
 		BigDecimal granularity,
 		TokenSupplyType tokenSupplyType
 	) {
-		return new CreateTokenAction(tokenRRI, name, description, initialSupply, granularity, tokenSupplyType);
+		return create(tokenRRI, name, description, null, initialSupply, granularity, tokenSupplyType);
 	}
 
 	public RRI getRRI() {
@@ -67,6 +82,10 @@ public class CreateTokenAction implements Action {
 
 	public String getDescription() {
 		return description;
+	}
+
+	public String getIconUrl() {
+		return iconUrl;
 	}
 
 	public BigDecimal getInitialSupply() {

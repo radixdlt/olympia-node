@@ -112,10 +112,11 @@ public class TokenState {
 
 	@Override
 	public String toString() {
-		return String.format("Token(%s) name(%s) description(%s) totalSupply(%s) granularity(%s) maxSupply(%s)",
+		return String.format("Token(%s) name(%s) description(%s) url(%s) totalSupply(%s) granularity(%s) maxSupply(%s)",
 			this.iso,
 			this.name,
 			this.description,
+			this.iconUrl,
 			this.totalSupply,
 			this.granularity,
 			this.totalSupply
