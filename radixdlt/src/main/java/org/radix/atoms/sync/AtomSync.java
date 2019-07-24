@@ -1,7 +1,13 @@
 package org.radix.atoms.sync;
 
+import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atoms.AtomStatus;
 import com.radixdlt.atoms.ImmutableAtom;
+import com.radixdlt.constraintmachine.CMError;
+import com.radixdlt.engine.RadixEngineUtils;
+import com.radixdlt.engine.RadixEngineUtils.CMAtomConversionException;
+import com.radixdlt.engine.ValidationResult;
+import com.radixdlt.engine.ValidationResult.ValidationResultAcceptor;
 import com.radixdlt.utils.UInt384;
 import java.io.IOException;
 import java.net.SocketException;
@@ -14,6 +20,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.BlockingQueue;
@@ -22,6 +29,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import org.radix.atoms.Atom;
@@ -125,6 +133,7 @@ import org.radix.utils.ExceptionUtils;
 import org.radix.utils.MathUtils;
 import org.radix.utils.SystemMetaData;
 import org.radix.utils.SystemProfiler;
+import org.radix.validation.ConstraintMachineValidationException;
 import org.radix.validation.ValidationHandler;
 
 import com.google.common.collect.Iterables;
@@ -421,7 +430,41 @@ public class AtomSync extends Service
 					}
 
 					TemporalProofValidator.validate(atom.getTemporalProof());
-					Pair<CMAtom, UInt384> result = Modules.get(ValidationHandler.class).validate(atom);
+					final CMAtom cmAtom;
+					try {
+						cmAtom = RadixEngineUtils.toCMAtom(atom);
+					} catch (CMAtomConversionException e) {
+						CMError cmError = e.getErrors().iterator().next();
+						throw new ConstraintMachineValidationException(atom, cmError.getErrorDescription(), cmError.getDataPointer());
+					}
+
+					ValidationResult result = Modules.get(ValidationHandler.class).validate(cmAtom);
+					final AtomicReference<CMAtom> atomRef = new AtomicReference<>();
+					final AtomicReference<UInt384> massRef = new AtomicReference<>();
+					final AtomicReference<Set<CMError>> errorsRef = new AtomicReference<>();
+
+					result.accept(new ValidationResultAcceptor() {
+						@Override
+						public void onSuccess(CMAtom cmAtom, ImmutableMap<String, Object> computed) {
+							Object result = computed.get("mass");
+							if (result == null) {
+								throw new NullPointerException("mass does not exist");
+							}
+							atomRef.set(cmAtom);
+							massRef.set((UInt384) result);
+						}
+
+						@Override
+						public void onError(CMAtom cmAtom, Set<CMError> errors) {
+							errorsRef.set(errors);
+						}
+					});
+
+					final CMAtom validatedAtom = atomRef.get();
+					if (validatedAtom == null) {
+						CMError cmError = errorsRef.get().iterator().next();
+						throw new ConstraintMachineValidationException(atom, cmError.getErrorDescription(), cmError.getDataPointer());
+					}
 
 					if (atomsLog.hasLevel(Logging.DEBUG)) {
 						atomsLog.debug("Validated Atom "+atom.getHID()+" to SIGNATURE");
@@ -431,7 +474,7 @@ public class AtomSync extends Service
 					// All atoms will be witnessed, even invalid ones.  If flooded with invalid atoms, it may make it harder for
 					// remote nodes to determine if this node saw a particular atom vs a commitment stream that only includes
 					// committed atoms.
-					witnessed(result.getFirst());
+					witnessed(validatedAtom);
 
 		            if (numShards > 512)
 		            	atomsLog.warn(atom.getHID()+" at clock "+atom.getTemporalProof().getVertexByNID(LocalSystem.getInstance().getNID()).getClock()+" is super mega large with "+numShards+" shards");
@@ -440,7 +483,7 @@ public class AtomSync extends Service
 		            else if (numShards > 8)
 		            	atomsLog.warn(atom.getHID()+" at clock "+atom.getTemporalProof().getVertexByNID(LocalSystem.getInstance().getNID()).getClock()+" is large with "+numShards+" shards");
 
-                    AtomSync.this.commitQueue.add(result);
+                    AtomSync.this.commitQueue.add(Pair.of(validatedAtom, massRef.get()));
 				}
 				catch (Throwable t)
 				{
@@ -1446,10 +1489,43 @@ public class AtomSync extends Service
 				final Atom atom = (Atom) immutableAtom;
 				if (!Modules.get(AtomStore.class).hasAtom(atom.getAID()))
 				{
+					final CMAtom cmAtom;
+					try {
+						cmAtom = RadixEngineUtils.toCMAtom(atom);
+					} catch (CMAtomConversionException e) {
+						CMError cmError = e.getErrors().iterator().next();
+						throw new ConstraintMachineValidationException(atom, cmError.getErrorDescription(), cmError.getDataPointer());
+					}
+					ValidationResult result = Modules.get(ValidationHandler.class).validate(cmAtom);
+					final AtomicReference<CMAtom> atomRef = new AtomicReference<>();
+					final AtomicReference<UInt384> massRef = new AtomicReference<>();
+					final AtomicReference<Set<CMError>> errorsRef = new AtomicReference<>();
 
-					Pair<CMAtom, UInt384> result = Modules.get(ValidationHandler.class).validate(atom);
-					witnessed(result.getFirst());
-					PreparedAtom preparedAtom = new PreparedAtom(result.getFirst(), result.getSecond());
+					result.accept(new ValidationResultAcceptor() {
+						@Override
+						public void onSuccess(CMAtom cmAtom, ImmutableMap<String, Object> computed) {
+							Object result = computed.get("mass");
+							if (result == null) {
+								throw new NullPointerException("mass does not exist");
+							}
+							atomRef.set(cmAtom);
+							massRef.set((UInt384) result);
+						}
+
+						@Override
+						public void onError(CMAtom cmAtom, Set<CMError> errors) {
+							errorsRef.set(errors);
+						}
+					});
+
+					final CMAtom validatedAtom = atomRef.get();
+					if (validatedAtom == null) {
+						CMError cmError = errorsRef.get().iterator().next();
+						throw new ConstraintMachineValidationException(atom, cmError.getErrorDescription(), cmError.getDataPointer());
+					}
+
+					witnessed(validatedAtom);
+					PreparedAtom preparedAtom = new PreparedAtom(validatedAtom, massRef.get());
 					Modules.get(AtomStore.class).storeAtom(preparedAtom);
 				}
 			}

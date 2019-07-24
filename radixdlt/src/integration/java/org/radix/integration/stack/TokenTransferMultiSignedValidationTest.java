@@ -2,6 +2,7 @@ package org.radix.integration.stack;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.common.Pair;
+import com.radixdlt.engine.RadixEngineUtils;
 import com.radixdlt.utils.UInt384;
 import java.io.File;
 import java.util.Arrays;
@@ -93,9 +94,9 @@ public class TokenTransferMultiSignedValidationTest extends RadixTestWithStores 
 		addTemporalVertex(atom); // Can't store atom without vertex from this node
 		atom.sign(identity);
 
-		Pair<CMAtom, UInt384> result = Modules.get(ValidationHandler.class).validate(atom);
-		Modules.get(ValidationHandler.class).stateCheck(result.getFirst());
-		PreparedAtom preparedAtom = new PreparedAtom(result.getFirst(), result.getSecond());
+		CMAtom cmAtom = RadixEngineUtils.toCMAtom(atom);
+		Modules.get(ValidationHandler.class).stateCheck(cmAtom);
+		PreparedAtom preparedAtom = new PreparedAtom(cmAtom, UInt384.ONE);
 		Modules.get(AtomStore.class).storeAtom(preparedAtom);
 
 		ECKeyPair other = new ECKeyPair();
@@ -129,9 +130,9 @@ public class TokenTransferMultiSignedValidationTest extends RadixTestWithStores 
 
 		transferAtom.sign(identity);
 		addTemporalVertex(transferAtom); // Can't store atom without vertex from this node
-		Pair<CMAtom, UInt384> result1 = Modules.get(ValidationHandler.class).validate(transferAtom);
-		Modules.get(ValidationHandler.class).stateCheck(result1.getFirst());
-		PreparedAtom preparedAtom1 = new PreparedAtom(result1.getFirst(), result1.getSecond());
+		CMAtom transferCMAtom = RadixEngineUtils.toCMAtom(transferAtom);
+		Modules.get(ValidationHandler.class).stateCheck(transferCMAtom);
+		PreparedAtom preparedAtom1 = new PreparedAtom(transferCMAtom, UInt384.ONE);
 		Modules.get(AtomStore.class).storeAtom(preparedAtom1);
 
 		final Atom multiSigAtom = new Atom(Time.currentTimestamp());
@@ -143,9 +144,9 @@ public class TokenTransferMultiSignedValidationTest extends RadixTestWithStores 
 
 		multiSigAtom.sign(Arrays.asList(identity, other));
 		addTemporalVertex(multiSigAtom); // Can't store atom without vertex from this node
-		Pair<CMAtom, UInt384> result2 = Modules.get(ValidationHandler.class).validate(multiSigAtom);
-		Modules.get(ValidationHandler.class).stateCheck(result2.getFirst());
-		PreparedAtom preparedAtom2 = new PreparedAtom(result2.getFirst(), result2.getSecond());
+		CMAtom multiSigCMAtom = RadixEngineUtils.toCMAtom(multiSigAtom);
+		Modules.get(ValidationHandler.class).stateCheck(multiSigCMAtom);
+		PreparedAtom preparedAtom2 = new PreparedAtom(multiSigCMAtom, UInt384.ONE);
 		Modules.get(AtomStore.class).storeAtom(preparedAtom2);
 	}
 }

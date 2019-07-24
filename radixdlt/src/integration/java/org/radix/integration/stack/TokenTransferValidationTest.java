@@ -1,8 +1,19 @@
 package org.radix.integration.stack;
 
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.common.Pair;
+import com.radixdlt.constraintmachine.CMErrorCode;
+import com.radixdlt.engine.RadixEngineUtils;
+import com.radixdlt.engine.ValidationResult.ValidationResultAcceptor;
 import com.radixdlt.utils.UInt384;
+import java.util.Collections;
 import org.assertj.core.api.Assertions;
 import org.junit.Before;
 import org.junit.Test;
@@ -78,8 +89,8 @@ public class TokenTransferValidationTest extends RadixTestWithStores {
 		atom.addParticleGroup(group.build());
 		atom.sign(identity);
 
-		Pair<CMAtom, UInt384> result = Modules.get(ValidationHandler.class).validate(atom);
-		Modules.get(ValidationHandler.class).stateCheck(result.getFirst());
+		CMAtom cmAtom = RadixEngineUtils.toCMAtom(atom);
+		Modules.get(ValidationHandler.class).stateCheck(cmAtom);
 	}
 
 	@Test
@@ -107,9 +118,12 @@ public class TokenTransferValidationTest extends RadixTestWithStores {
 		atom.addParticleGroup(group.build());
 		atom.sign(identity);
 
-		Assertions.assertThatThrownBy(() -> Modules.get(ValidationHandler.class).validate(atom))
-			.isInstanceOf(ConstraintMachineValidationException.class)
-			.hasMessageContaining("100 unsatisfied");
+		CMAtom cmAtom = RadixEngineUtils.toCMAtom(atom);
+		ValidationResultAcceptor acceptor = mock(ValidationResultAcceptor.class);
+		Modules.get(ValidationHandler.class).validate(cmAtom)
+			.accept(acceptor);
+		verify(acceptor, times(1))
+			.onError(eq(cmAtom), argThat(e -> e.stream().anyMatch(err -> err.getErrorCode().equals(CMErrorCode.PROCEDURE_ERROR))));
 	}
 
 	@Test
@@ -132,9 +146,12 @@ public class TokenTransferValidationTest extends RadixTestWithStores {
 		atom.addParticleGroup(group.build());
 		atom.sign(identity);
 
-		Assertions.assertThatThrownBy(() -> Modules.get(ValidationHandler.class).validate(atom))
-			.isInstanceOf(ConstraintMachineValidationException.class)
-			.hasMessageContaining("100 unspent");
+		CMAtom cmAtom = RadixEngineUtils.toCMAtom(atom);
+		ValidationResultAcceptor acceptor = mock(ValidationResultAcceptor.class);
+		Modules.get(ValidationHandler.class).validate(cmAtom)
+			.accept(acceptor);
+		verify(acceptor, times(1))
+			.onError(eq(cmAtom), argThat(e -> e.stream().anyMatch(err -> err.getErrorCode().equals(CMErrorCode.PROCEDURE_ERROR))));
 	}
 
 	private static long currentPlanckTime() {
@@ -166,10 +183,9 @@ public class TokenTransferValidationTest extends RadixTestWithStores {
 		), Spin.UP);
 		atom.addParticleGroup(group.build());
 		atom.sign(identity);
+		CMAtom cmAtom = RadixEngineUtils.toCMAtom(atom);
 
-		Pair<CMAtom, UInt384> result = Modules.get(ValidationHandler.class).validate(atom);
-
-		Assertions.assertThatThrownBy(() -> Modules.get(ValidationHandler.class).stateCheck(result.getFirst()))
+		Assertions.assertThatThrownBy(() -> Modules.get(ValidationHandler.class).stateCheck(cmAtom))
 			.isInstanceOf(AtomDependencyNotFoundException.class);
 	}
 
@@ -200,9 +216,9 @@ public class TokenTransferValidationTest extends RadixTestWithStores {
 		firstAtom.addParticleGroup(firstGroup.build());
 		addTemporalVertex(firstAtom); // Can't store atom without vertex from this node
 		firstAtom.sign(identity);
-		Pair<CMAtom, UInt384> result = Modules.get(ValidationHandler.class).validate(firstAtom);
-		Modules.get(ValidationHandler.class).stateCheck(result.getFirst());
-		PreparedAtom preparedAtom = new PreparedAtom(result.getFirst(), result.getSecond());
+		CMAtom cmAtom = RadixEngineUtils.toCMAtom(firstAtom);
+		Modules.get(ValidationHandler.class).stateCheck(cmAtom);
+		PreparedAtom preparedAtom = new PreparedAtom(cmAtom, UInt384.ONE);
 		Modules.get(AtomStore.class).storeAtom(preparedAtom);
 
 		ParticleGroup.ParticleGroupBuilder secondGroup = ParticleGroup.builder();
@@ -223,8 +239,9 @@ public class TokenTransferValidationTest extends RadixTestWithStores {
 		addTemporalVertex(secondAtom); // Can't store atom without vertex from this node
 		secondAtom.sign(identity);
 
-		Pair<CMAtom, UInt384> result1 = Modules.get(ValidationHandler.class).validate(secondAtom);
-		Assertions.assertThatThrownBy(() -> Modules.get(ValidationHandler.class).stateCheck(result1.getFirst()))
+		CMAtom cmAtom2 = RadixEngineUtils.toCMAtom(secondAtom);
+
+		Assertions.assertThatThrownBy(() -> Modules.get(ValidationHandler.class).stateCheck(cmAtom2))
 			.isInstanceOf(ParticleConflictException.class);
 	}
 

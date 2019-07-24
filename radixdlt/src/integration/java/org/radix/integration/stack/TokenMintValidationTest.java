@@ -2,6 +2,7 @@ package org.radix.integration.stack;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.common.Pair;
+import com.radixdlt.engine.RadixEngineUtils;
 import com.radixdlt.utils.UInt384;
 import org.junit.Before;
 import org.junit.Test;
@@ -85,9 +86,9 @@ public class TokenMintValidationTest extends RadixTestWithStores {
 		addTemporalVertex(atom); // Can't store atom without vertex from this node
 		atom.sign(identity);
 
-		Pair<CMAtom, UInt384> result = Modules.get(ValidationHandler.class).validate(atom);
-		PreparedAtom preparedAtom = new PreparedAtom(result.getFirst(), result.getSecond());
-		Modules.get(ValidationHandler.class).stateCheck(result.getFirst());
+		CMAtom cmAtom = RadixEngineUtils.toCMAtom(atom);
+		PreparedAtom preparedAtom = new PreparedAtom(cmAtom, UInt384.ONE);
+		Modules.get(ValidationHandler.class).stateCheck(cmAtom);
 		Modules.get(AtomStore.class).storeAtom(preparedAtom);
 
 		// Mint some RADIX tokens
@@ -116,7 +117,7 @@ public class TokenMintValidationTest extends RadixTestWithStores {
 		atom.addParticleGroupWith(unallocatedTokensParticle, Spin.DOWN, mintParticle, Spin.UP, leftOver, Spin.UP);
 		atom.sign(identity);
 
-		Pair<CMAtom, UInt384> result1 = Modules.get(ValidationHandler.class).validate(atom);
-		Modules.get(ValidationHandler.class).stateCheck(result1.getFirst());
+		CMAtom cmAtom2 = RadixEngineUtils.toCMAtom(atom);
+		Modules.get(ValidationHandler.class).stateCheck(cmAtom2);
 	}
 }

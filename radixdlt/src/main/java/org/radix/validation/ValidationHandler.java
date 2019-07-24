@@ -42,43 +42,8 @@ public class ValidationHandler extends Service {
 		return "Validation Handler";
 	}
 
-	public Pair<CMAtom, UInt384> validate(Atom atom) throws ValidationException {
-		Objects.requireNonNull(atom, "atom is required");
-		final CMAtom cmAtom;
-		try {
-			cmAtom = RadixEngineUtils.toCMAtom(atom);
-		} catch (CMAtomConversionException e) {
-			CMError cmError = e.getErrors().iterator().next();
-			throw new ConstraintMachineValidationException(atom, cmError.getErrorDescription(), cmError.getDataPointer());
-		}
-
-		final ValidationResult result = radixEngine.validate(cmAtom);
-		final AtomicReference<Pair<CMAtom, UInt384>> resultRef = new AtomicReference<>();
-		final AtomicReference<Set<CMError>> errorsRef = new AtomicReference<>();
-
-		result.accept(new ValidationResultAcceptor() {
-			@Override
-			public void onSuccess(CMAtom cmAtom, ImmutableMap<String, Object> computed) {
-				Object result = computed.get("mass");
-				if (result == null) {
-					throw new NullPointerException("mass does not exist");
-				}
-				resultRef.set(Pair.of(cmAtom, (UInt384) result));
-			}
-
-			@Override
-			public void onError(CMAtom cmAtom, Set<CMError> errors) {
-				errorsRef.set(errors);
-			}
-		});
-
-		final Pair<CMAtom, UInt384> r = resultRef.get();
-		if (r != null) {
-			return r;
-		} else {
-			CMError cmError = errorsRef.get().iterator().next();
-			throw new ConstraintMachineValidationException(atom, cmError.getErrorDescription(), cmError.getDataPointer());
-		}
+	public ValidationResult validate(CMAtom cmAtom) {
+		return radixEngine.validate(cmAtom);
 	}
 
 	public void stateCheck(CMAtom cmAtom) throws ValidationException {
