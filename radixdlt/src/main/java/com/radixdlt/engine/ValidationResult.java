@@ -6,7 +6,7 @@ import com.radixdlt.constraintmachine.CMError;
 import java.util.Set;
 
 /**
- * The result from running the RadixEngine Constaint Machine check
+ * The result from running the RadixEngine Constraint Machine check
  */
 public interface ValidationResult {
 	interface ValidationResultAcceptor {

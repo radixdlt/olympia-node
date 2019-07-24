@@ -10,11 +10,11 @@ public interface StateCheckResult {
 	interface StateCheckResultAcceptor {
 		default void onSuccess() {
 		}
-		default void onConflict(SpunParticle issueParticle, ImmutableAtom conflictingAtom) throws Exception {
+		default void onConflict(SpunParticle issueParticle, ImmutableAtom conflictingAtom) {
 		}
-		default void onMissingDependency(SpunParticle issueParticle) throws Exception {
+		default void onMissingDependency(SpunParticle issueParticle) {
 		}
 	}
 
-	void accept(StateCheckResultAcceptor acceptor) throws Exception;
+	void accept(StateCheckResultAcceptor acceptor);
 }

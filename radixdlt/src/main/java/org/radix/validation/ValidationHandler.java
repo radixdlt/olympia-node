@@ -18,8 +18,7 @@ import java.util.Collections;
 import java.util.Objects;
 
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicReference;
 import org.radix.atoms.Atom;
 import com.radixdlt.constraintmachine.CMAtom;
 import org.radix.atoms.AtomDependencyNotFoundException;
@@ -54,7 +53,8 @@ public class ValidationHandler extends Service {
 		}
 
 		final ValidationResult result = radixEngine.validate(cmAtom);
-		final CompletableFuture<Pair<CMAtom, UInt384>> cmAtomCompletableFuture = new CompletableFuture<>();
+		final AtomicReference<Pair<CMAtom, UInt384>> resultRef = new AtomicReference<>();
+		final AtomicReference<Set<CMError>> errorsRef = new AtomicReference<>();
 
 		result.accept(new ValidationResultAcceptor() {
 			@Override
@@ -63,49 +63,61 @@ public class ValidationHandler extends Service {
 				if (result == null) {
 					throw new NullPointerException("mass does not exist");
 				}
-				cmAtomCompletableFuture.complete(Pair.of(cmAtom, UInt384.class.cast(result)));
+				resultRef.set(Pair.of(cmAtom, (UInt384) result));
 			}
 
 			@Override
 			public void onError(Set<CMError> errors) {
-				CMError cmError = errors.iterator().next();
-				cmAtomCompletableFuture.completeExceptionally(new ConstraintMachineValidationException(atom, cmError.getErrorDescription(), cmError.getDataPointer()));
+				errorsRef.set(errors);
 			}
 		});
 
-		try {
-			return cmAtomCompletableFuture.get();
-		} catch (ExecutionException e) {
-			if (e.getCause() instanceof ValidationException) {
-				throw (ValidationException) e.getCause();
-			}
-			throw new IllegalStateException();
-		} catch (InterruptedException e) {
-			throw new IllegalStateException();
+		final Pair<CMAtom, UInt384> r = resultRef.get();
+		if (r != null) {
+			return r;
+		} else {
+			CMError cmError = errorsRef.get().iterator().next();
+			throw new ConstraintMachineValidationException(atom, cmError.getErrorDescription(), cmError.getDataPointer());
 		}
 	}
 
-	public void stateCheck(CMAtom cmAtom) throws Exception {
+	public void stateCheck(CMAtom cmAtom) throws ValidationException {
 		StateCheckResult result = radixEngine.stateCheck(cmAtom);
+		final AtomicReference<ParticleConflictException> conflictRef = new AtomicReference<>();
+		final AtomicReference<AtomDependencyNotFoundException> notFoundRef = new AtomicReference<>();
+
 		result.accept(new StateCheckResultAcceptor() {
 			@Override
-			public void onConflict(SpunParticle issueParticle, ImmutableAtom conflictAtom) throws Exception {
-				throw new ParticleConflictException(
-					new ParticleConflict(
-						issueParticle,
-						ImmutableSet.of((Atom) cmAtom.getAtom(), (Atom) conflictAtom)
-					));
+			public void onConflict(SpunParticle issueParticle, ImmutableAtom conflictAtom) {
+				conflictRef.set(
+					new ParticleConflictException(
+						new ParticleConflict(
+							issueParticle,
+							ImmutableSet.of((Atom) cmAtom.getAtom(), (Atom) conflictAtom)
+						))
+				);
 			}
 
 			@Override
-			public void onMissingDependency(SpunParticle issueParticle) throws Exception {
-				throw new AtomDependencyNotFoundException(
-					String.format("Atom has missing dependencies in transitions: %s", issueParticle.getParticle().getHID()),
-					Collections.singleton(issueParticle.getParticle().getHID()),
-					(Atom) cmAtom.getAtom()
+			public void onMissingDependency(SpunParticle issueParticle) {
+				notFoundRef.set(
+					new AtomDependencyNotFoundException(
+						String.format("Atom has missing dependencies in transitions: %s", issueParticle.getParticle().getHID()),
+						Collections.singleton(issueParticle.getParticle().getHID()),
+						(Atom) cmAtom.getAtom()
+					)
 				);
 			}
 		});
+
+		ParticleConflictException conflict = conflictRef.get();
+		if (conflict != null) {
+			throw conflict;
+		}
+		AtomDependencyNotFoundException notFoundException = notFoundRef.get();
+		if (notFoundException != null) {
+			throw notFoundException;
+		}
 	}
 
 	@Override

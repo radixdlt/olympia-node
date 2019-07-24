@@ -78,11 +78,13 @@ public final class SpinStateMachine {
 	}
 	private static class SpinStateIndexes {
 		private static final ImmutableMap<Spin, Spin> NEXT = ImmutableMap.of(
-			NEUTRAL, UP, UP, DOWN
+			NEUTRAL, UP,
+			UP, DOWN
 		);
 
 		private static final ImmutableMap<Spin, Spin> PREV = ImmutableMap.of(
-			DOWN, UP, UP, NEUTRAL
+			DOWN, UP,
+			UP, NEUTRAL
 		);
 
 		private static final ImmutableSet<Transition> VALID_TRANSITIONS = ImmutableSet.of(
