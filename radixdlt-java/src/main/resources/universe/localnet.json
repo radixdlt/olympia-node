@@ -82,8 +82,6 @@
                 "description": ":str:Radix Native Tokens",
                 "iconUrl": ":str:https://assets.radixdlt.com/icons/icon-xrd-32x32.png",
                 "version": 100
-              },
-              "version": 100
             },
             {
               "spin": 1,

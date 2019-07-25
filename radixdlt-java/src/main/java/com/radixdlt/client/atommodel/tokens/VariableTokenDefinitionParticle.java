@@ -16,8 +16,8 @@ import com.radixdlt.client.atommodel.Identifiable;
 import com.radixdlt.client.atommodel.Ownable;
 import com.radixdlt.client.core.atoms.particles.RRI;
 
-@SerializerId2("radix.particles.token_definition")
-public class TokenDefinitionParticle extends Particle implements Identifiable, Ownable {
+@SerializerId2("radix.particles.variable_token_definition")
+public class VariableTokenDefinitionParticle extends Particle implements Identifiable, Ownable {
 	public enum TokenTransition {
 		MINT,
 		BURN
@@ -49,11 +49,11 @@ public class TokenDefinitionParticle extends Particle implements Identifiable, O
 
 	private Map<TokenTransition, TokenPermission> tokenPermissions;
 
-	private TokenDefinitionParticle() {
+	VariableTokenDefinitionParticle() {
 		// Empty constructor for serializer
 	}
 
-	public TokenDefinitionParticle(
+	public VariableTokenDefinitionParticle(
 		RadixAddress address,
 		String name,
 		String symbol,

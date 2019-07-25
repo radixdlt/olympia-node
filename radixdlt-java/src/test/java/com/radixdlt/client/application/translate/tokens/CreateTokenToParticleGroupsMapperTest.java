@@ -6,7 +6,7 @@ import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import java.util.List;
 
-import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle;
+import com.radixdlt.client.atommodel.tokens.VariableTokenDefinitionParticle;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import org.junit.Test;
 
@@ -34,7 +34,7 @@ public class CreateTokenToParticleGroupsMapperTest {
 
 		CreateTokenToParticleGroupsMapper createTokenToParticlesMapper = new CreateTokenToParticleGroupsMapper();
 		List<ParticleGroup> particleGroups = createTokenToParticlesMapper.mapToParticleGroups(tokenCreation);
-		assertThat(particleGroups).anyMatch(p -> p.spunParticles().anyMatch(s -> s.getParticle() instanceof TokenDefinitionParticle));
+		assertThat(particleGroups).anyMatch(p -> p.spunParticles().anyMatch(s -> s.getParticle() instanceof VariableTokenDefinitionParticle));
 		assertThat(particleGroups).anyMatch(p -> p.spunParticles().anyMatch(s -> s.getParticle() instanceof TransferrableTokensParticle));
 		assertThat(particleGroups).anyMatch(p -> p.spunParticles().anyMatch(s -> s.getParticle() instanceof UnallocatedTokensParticle));
 		assertThat(particleGroups).anyMatch(p -> p.spunParticles().anyMatch(s -> s.getParticle() instanceof RRIParticle));

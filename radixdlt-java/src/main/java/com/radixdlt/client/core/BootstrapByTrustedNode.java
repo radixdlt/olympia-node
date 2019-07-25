@@ -42,7 +42,7 @@ public class BootstrapByTrustedNode implements BootstrapConfig {
 				}
 				universeJson = body.string();
 			} catch (IOException e) {
-				throw new IllegalStateException("Could not retrieve universe configuration.");
+				throw new IllegalStateException("Could not retrieve universe configuration.", e);
 			}
 
 			return Serialize.getInstance().fromJson(universeJson, RadixUniverseConfig.class);

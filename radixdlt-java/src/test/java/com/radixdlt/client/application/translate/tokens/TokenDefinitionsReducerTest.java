@@ -1,7 +1,7 @@
 package com.radixdlt.client.application.translate.tokens;
 
-import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle;
-import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle.TokenTransition;
+import com.radixdlt.client.atommodel.tokens.VariableTokenDefinitionParticle;
+import com.radixdlt.client.atommodel.tokens.VariableTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.core.atoms.particles.RRI;
@@ -12,6 +12,7 @@ import org.radix.common.ID.EUID;
 import org.radix.utils.UInt256;
 
 import com.radixdlt.client.application.translate.tokens.TokenState.TokenSupplyType;
+import com.radixdlt.client.atommodel.tokens.FixedTokenDefinitionParticle;
 import com.radixdlt.client.atommodel.tokens.TokenPermission;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -21,7 +22,7 @@ import static org.mockito.Mockito.when;
 public class TokenDefinitionsReducerTest {
 	@Test
 	public void testTokenWithNoMint() {
-		TokenDefinitionParticle tokenDefinitionParticle = mock(TokenDefinitionParticle.class);
+		VariableTokenDefinitionParticle tokenDefinitionParticle = mock(VariableTokenDefinitionParticle.class);
 		RRI tokenRef = mock(RRI.class);
 		when(tokenDefinitionParticle.getRRI()).thenReturn(tokenRef);
 		when(tokenDefinitionParticle.getName()).thenReturn("Name");
@@ -30,7 +31,7 @@ public class TokenDefinitionsReducerTest {
 		when(tokenDefinitionParticle.getIconUrl()).thenReturn("http://foo");
 		when(tokenDefinitionParticle.getGranularity()).thenReturn(UInt256.ONE);
 		when(tokenDefinitionParticle.getTokenPermissions()).thenReturn(Collections.singletonMap(TokenTransition.MINT,
-			TokenPermission.TOKEN_CREATION_ONLY));
+			TokenPermission.ALL));
 
 		TokenDefinitionsReducer tokenDefinitionsReducer = new TokenDefinitionsReducer();
 		TokenDefinitionsState state = tokenDefinitionsReducer.reduce(
@@ -39,6 +40,28 @@ public class TokenDefinitionsReducerTest {
 		assertThat(state.getState().get(tokenRef)).isEqualTo(
 			new TokenState("Name", "ISO", "Desc", "http://foo",
 				null,
+				TokenUnitConversions.subunitsToUnits(1), TokenSupplyType.MUTABLE)
+		);
+	}
+
+	@Test
+	public void testFixedTokenWithNoMint() {
+		FixedTokenDefinitionParticle tokenDefinitionParticle = mock(FixedTokenDefinitionParticle.class);
+		RRI tokenRef = mock(RRI.class);
+		when(tokenDefinitionParticle.getRRI()).thenReturn(tokenRef);
+		when(tokenDefinitionParticle.getName()).thenReturn("Name");
+		when(tokenDefinitionParticle.getSymbol()).thenReturn("ISO");
+		when(tokenDefinitionParticle.getDescription()).thenReturn("Desc");
+		when(tokenDefinitionParticle.getSupply()).thenReturn(UInt256.ONE);
+		when(tokenDefinitionParticle.getGranularity()).thenReturn(UInt256.ONE);
+
+		TokenDefinitionsReducer tokenDefinitionsReducer = new TokenDefinitionsReducer();
+		TokenDefinitionsState state = tokenDefinitionsReducer.reduce(
+			TokenDefinitionsState.init(), tokenDefinitionParticle);
+
+		assertThat(state.getState().get(tokenRef)).isEqualTo(
+			new TokenState("Name", "ISO", "Desc", "http://foo",
+				TokenUnitConversions.subunitsToUnits(1),
 				TokenUnitConversions.subunitsToUnits(1), TokenSupplyType.FIXED)
 		);
 	}
@@ -46,7 +69,7 @@ public class TokenDefinitionsReducerTest {
 	@Test
 	public void testTokenWithMint() {
 		final UInt256 hundred = UInt256.TEN.pow(2);
-		TokenDefinitionParticle tokenDefinitionParticle = mock(TokenDefinitionParticle.class);
+		VariableTokenDefinitionParticle tokenDefinitionParticle = mock(VariableTokenDefinitionParticle.class);
 		RRI tokenRef = mock(RRI.class);
 		when(tokenDefinitionParticle.getRRI()).thenReturn(tokenRef);
 		when(tokenDefinitionParticle.getName()).thenReturn("Name");

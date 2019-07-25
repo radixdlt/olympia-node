@@ -5,7 +5,7 @@ import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.atommodel.Accountable;
 import com.radixdlt.client.atommodel.Ownable;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle.TokenTransition;
+import com.radixdlt.client.atommodel.tokens.VariableTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import java.util.Map;
@@ -52,6 +52,7 @@ public final class TransferrableTokensParticle extends Particle implements Accou
 	private Map<TokenTransition, TokenPermission> tokenPermissions;
 
 	protected TransferrableTokensParticle() {
+		this.tokenPermissions = ImmutableMap.of();
 	}
 
 	public TransferrableTokensParticle(
