@@ -89,11 +89,12 @@ public class TokenTransferValidationTest extends RadixTestWithStores {
 		atom.sign(identity);
 
 		CMAtom cmAtom = RadixEngineUtils.toCMAtom(atom);
-		StateCheckResultAcceptor acceptor = mock(StateCheckResultAcceptor.class);
-		Modules.get(ValidationHandler.class).getRadixEngine().stateCheck(cmAtom, ImmutableMap.of())
-			.accept(acceptor);
-		verify(acceptor, times(1))
-			.onSuccess(eq(cmAtom), any());
+		AtomEventListener listener = mock(AtomEventListener.class);
+		Modules.get(ValidationHandler.class).getRadixEngine().addAtomEventListener(listener);
+		Modules.get(ValidationHandler.class).getRadixEngine().stateCheck(cmAtom, ImmutableMap.of());
+		Modules.get(ValidationHandler.class).getRadixEngine().removeAtomEventListener(listener);
+		verify(listener, times(1))
+			.onStateSuccess(eq(cmAtom), any());
 	}
 
 	@Test
@@ -190,11 +191,14 @@ public class TokenTransferValidationTest extends RadixTestWithStores {
 		atom.sign(identity);
 		CMAtom cmAtom = RadixEngineUtils.toCMAtom(atom);
 
-		StateCheckResultAcceptor acceptor = mock(StateCheckResultAcceptor.class);
-		Modules.get(ValidationHandler.class).getRadixEngine().stateCheck(cmAtom, ImmutableMap.of())
-			.accept(acceptor);
-		verify(acceptor, times(1))
-			.onMissingDependency(eq(cmAtom), any());
+		AtomEventListener listener = mock(AtomEventListener.class);
+		Modules.get(ValidationHandler.class).getRadixEngine().addAtomEventListener(listener);
+		Modules.get(ValidationHandler.class).getRadixEngine().stateCheck(cmAtom, ImmutableMap.of());
+		Modules.get(ValidationHandler.class).getRadixEngine().removeAtomEventListener(listener);
+
+		Modules.get(ValidationHandler.class).getRadixEngine().stateCheck(cmAtom, ImmutableMap.of());
+		verify(listener, times(1))
+			.onStateMissingDependency(eq(cmAtom), any());
 	}
 
 	@Test
@@ -248,11 +252,13 @@ public class TokenTransferValidationTest extends RadixTestWithStores {
 
 		CMAtom cmAtom2 = RadixEngineUtils.toCMAtom(secondAtom);
 
-		StateCheckResultAcceptor acceptor = mock(StateCheckResultAcceptor.class);
-		Modules.get(ValidationHandler.class).getRadixEngine().stateCheck(cmAtom2, ImmutableMap.of())
-			.accept(acceptor);
-		verify(acceptor, times(1))
-			.onConflict(eq(cmAtom2), any(), any());
+		AtomEventListener listener = mock(AtomEventListener.class);
+		Modules.get(ValidationHandler.class).getRadixEngine().addAtomEventListener(listener);
+		Modules.get(ValidationHandler.class).getRadixEngine().stateCheck(cmAtom2, ImmutableMap.of());
+		Modules.get(ValidationHandler.class).getRadixEngine().removeAtomEventListener(listener);
+
+		verify(listener, times(1))
+			.onStateConflict(eq(cmAtom2), any(), any());
 	}
 
 }

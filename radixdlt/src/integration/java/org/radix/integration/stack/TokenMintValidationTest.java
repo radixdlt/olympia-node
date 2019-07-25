@@ -7,6 +7,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.google.common.collect.ImmutableMap;
+import com.radixdlt.engine.AtomEventListener;
 import com.radixdlt.engine.RadixEngineUtils;
 import com.radixdlt.engine.StateCheckResult.StateCheckResultAcceptor;
 import com.radixdlt.utils.UInt384;
@@ -123,10 +124,10 @@ public class TokenMintValidationTest extends RadixTestWithStores {
 		atom.sign(identity);
 
 		CMAtom cmAtom2 = RadixEngineUtils.toCMAtom(atom);
-		StateCheckResultAcceptor acceptor = mock(StateCheckResultAcceptor.class);
-		Modules.get(ValidationHandler.class).getRadixEngine().stateCheck(cmAtom2, ImmutableMap.of())
-			.accept(acceptor);
-		verify(acceptor, times(1))
-			.onSuccess(eq(cmAtom2), any());
+		AtomEventListener atomEventListener = mock(AtomEventListener.class);
+		Modules.get(ValidationHandler.class).getRadixEngine().addAtomEventListener(atomEventListener);
+		Modules.get(ValidationHandler.class).getRadixEngine().stateCheck(cmAtom2, ImmutableMap.of());
+		verify(atomEventListener, times(1))
+			.onStateSuccess(eq(cmAtom2), any());
 	}
 }

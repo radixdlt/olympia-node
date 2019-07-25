@@ -1407,6 +1407,53 @@ public class AtomSync extends Service
 					atomsLog.error(e);
 					Events.getInstance().broadcast(new AtomExceptionEvent(e, (Atom) cmAtom.getAtom()));
 				}
+
+				@Override
+				public void onStateSuccess(CMAtom cmAtom, ImmutableMap<String, Object> computed) {
+					try {
+						if (atomsLog.hasLevel(Logging.DEBUG)) {
+							atomsLog.debug("Validated Atom " + cmAtom.getAtom().getAID() + " to COMPLETE");
+						}
+
+						Object mass = computed.get("mass");
+						if (mass == null) {
+							throw new IllegalStateException("mass was not computed");
+						}
+
+						final PreparedAtom preparedAtom = new PreparedAtom(cmAtom, (UInt384) mass);
+						Modules.get(AtomStore.class).storeAtom(preparedAtom);
+					} catch (Exception e) {
+						AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(e, (Atom) cmAtom.getAtom());
+						Events.getInstance().broadcast(atomExceptionEvent);
+						atomsLog.error(e);
+					}
+				}
+
+				@Override
+				public void onStateConflict(CMAtom cmAtom, SpunParticle issueParticle, ImmutableAtom conflictAtom) {
+					final ParticleConflictException conflict = new ParticleConflictException(
+						new ParticleConflict(
+							issueParticle,
+							ImmutableSet.of((Atom) cmAtom.getAtom(), (Atom) conflictAtom)
+						));
+					AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(conflict, (Atom) cmAtom.getAtom());
+					Events.getInstance().broadcast(atomExceptionEvent);
+					atomsLog.error(conflict);
+				}
+
+				@Override
+				public void onStateMissingDependency(CMAtom cmAtom, SpunParticle issueParticle) {
+					final AtomDependencyNotFoundException notFoundException =
+						new AtomDependencyNotFoundException(
+							String.format("Atom has missing dependencies in transitions: %s", issueParticle.getParticle().getHID()),
+							Collections.singleton(issueParticle.getParticle().getHID()),
+							(Atom) cmAtom.getAtom()
+						);
+
+					AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(notFoundException, (Atom) cmAtom.getAtom());
+					Events.getInstance().broadcast(atomExceptionEvent);
+					atomsLog.error(notFoundException);
+				}
 			}
 		);
 
@@ -1417,8 +1464,7 @@ public class AtomSync extends Service
 			{
 				while (!isTerminated())
 				{
-					Pair<CMAtom, ImmutableMap<String, Object>> massedAtom = null;
-
+					final Pair<CMAtom, ImmutableMap<String, Object>> massedAtom;
 					try {
 						massedAtom = AtomSync.this.commitQueue.poll(1, TimeUnit.SECONDS);
 					} catch (InterruptedException e) {
@@ -1435,56 +1481,7 @@ public class AtomSync extends Service
 					if (atomsLog.hasLevel(Logging.DEBUG)) {
 						atomsLog.debug("Validating Atom " + massedAtom.getFirst().getAtom().getAID() + " to COMPLETE");
 					}
-					StateCheckResult result = Modules.get(ValidationHandler.class).getRadixEngine()
-						.stateCheck(massedAtom.getFirst(), massedAtom.getSecond());
-					result.accept(new StateCheckResultAcceptor() {
-						@Override
-						public void onSuccess(CMAtom cmAtom, ImmutableMap<String, Object> computed) {
-							try {
-								if (atomsLog.hasLevel(Logging.DEBUG)) {
-									atomsLog.debug("Validated Atom " + cmAtom.getAtom().getAID() + " to COMPLETE");
-								}
-
-								Object mass = computed.get("mass");
-								if (mass == null) {
-									throw new IllegalStateException("mass was not computed");
-								}
-
-								final PreparedAtom preparedAtom = new PreparedAtom(cmAtom, (UInt384) mass);
-								Modules.get(AtomStore.class).storeAtom(preparedAtom);
-							} catch (Exception e) {
-								AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(e, (Atom) cmAtom.getAtom());
-								Events.getInstance().broadcast(atomExceptionEvent);
-								atomsLog.error(e);
-							}
-						}
-
-						@Override
-						public void onConflict(CMAtom cmAtom, SpunParticle issueParticle, ImmutableAtom conflictAtom) {
-							final ParticleConflictException conflict = new ParticleConflictException(
-								new ParticleConflict(
-									issueParticle,
-									ImmutableSet.of((Atom) cmAtom.getAtom(), (Atom) conflictAtom)
-								));
-							AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(conflict, (Atom) cmAtom.getAtom());
-							Events.getInstance().broadcast(atomExceptionEvent);
-							atomsLog.error(conflict);
-						}
-
-						@Override
-						public void onMissingDependency(CMAtom cmAtom, SpunParticle issueParticle) {
-							final AtomDependencyNotFoundException notFoundException =
-								new AtomDependencyNotFoundException(
-									String.format("Atom has missing dependencies in transitions: %s", issueParticle.getParticle().getHID()),
-									Collections.singleton(issueParticle.getParticle().getHID()),
-									(Atom) cmAtom.getAtom()
-								);
-
-							AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(notFoundException, (Atom) cmAtom.getAtom());
-							Events.getInstance().broadcast(atomExceptionEvent);
-							atomsLog.error(notFoundException);
-						}
-					});
+					Modules.get(ValidationHandler.class).getRadixEngine().stateCheck(massedAtom.getFirst(), massedAtom.getSecond());
 				}
 			}
 		};

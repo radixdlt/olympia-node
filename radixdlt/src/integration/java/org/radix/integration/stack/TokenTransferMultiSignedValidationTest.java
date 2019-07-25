@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verify;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.common.Pair;
+import com.radixdlt.engine.AtomEventListener;
 import com.radixdlt.engine.RadixEngineUtils;
 import com.radixdlt.engine.StateCheckResult.StateCheckResultAcceptor;
 import com.radixdlt.utils.UInt384;
@@ -150,11 +151,11 @@ public class TokenTransferMultiSignedValidationTest extends RadixTestWithStores 
 		multiSigAtom.sign(Arrays.asList(identity, other));
 		addTemporalVertex(multiSigAtom); // Can't store atom without vertex from this node
 		CMAtom multiSigCMAtom = RadixEngineUtils.toCMAtom(multiSigAtom);
-		StateCheckResultAcceptor acceptor = mock(StateCheckResultAcceptor.class);
-		Modules.get(ValidationHandler.class).getRadixEngine().stateCheck(multiSigCMAtom, ImmutableMap.of())
-			.accept(acceptor);
-		verify(acceptor, times(1))
-			.onSuccess(eq(multiSigCMAtom), any());
+		AtomEventListener listener = mock(AtomEventListener.class);
+		Modules.get(ValidationHandler.class).getRadixEngine().addAtomEventListener(listener);
+		Modules.get(ValidationHandler.class).getRadixEngine().stateCheck(multiSigCMAtom, ImmutableMap.of());
+		verify(listener, times(1))
+			.onStateSuccess(eq(multiSigCMAtom), any());
 		PreparedAtom preparedAtom2 = new PreparedAtom(multiSigCMAtom, UInt384.ONE);
 		Modules.get(AtomStore.class).storeAtom(preparedAtom2);
 	}

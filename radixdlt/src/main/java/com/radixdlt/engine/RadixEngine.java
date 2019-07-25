@@ -52,7 +52,7 @@ public final class RadixEngine {
 		}
 	}
 
-	public StateCheckResult stateCheck(CMAtom cmAtom, ImmutableMap<String, Object> computed) {
+	public void stateCheck(CMAtom cmAtom, ImmutableMap<String, Object> computed) {
 		final ImmutableAtom atom = cmAtom.getAtom();
 		// TODO: Optimize these collectors out
 		Map<TransitionCheckResult, List<Pair<DataPointer, TransitionCheckResult>>> spinCheckResults = cmAtom.getParticles()
@@ -82,10 +82,6 @@ public final class RadixEngine {
 		}
 
 		if (spinCheckResults.get(TransitionCheckResult.CONFLICT) != null) {
-			// TODO !!! This is a hack! What if there are multiple conflicts in an atom?
-			// TODO !!! Current conflict handling only supports one conflicting particle.
-			// TODO !!! This should be investigated and fixed asap. See RLAU-1076.
-			// TODO !!! This also rejects multiple internal conflicts, which may not be ideal.
 			final Pair<DataPointer, TransitionCheckResult> issue = spinCheckResults.get(TransitionCheckResult.CONFLICT).get(0);
 			final SpunParticle issueParticle = issue.getFirst().getParticleFrom(atom);
 
@@ -97,16 +93,18 @@ public final class RadixEngine {
 			// above assumption.
 			final ImmutableAtom conflictAtom = cmStore.getAtomContaining(issueParticle);
 
-			return acceptor -> acceptor.onConflict(cmAtom, issueParticle, conflictAtom);
+			atomEventListeners.forEach(listener -> listener.onStateConflict(cmAtom, issueParticle, conflictAtom));
+			return;
 		}
 
 		// TODO: Add ALL missing dependencies for optimization
 		if (spinCheckResults.get(TransitionCheckResult.MISSING_DEPENDENCY) != null)  {
 			Pair<DataPointer, TransitionCheckResult> issue = spinCheckResults.get(TransitionCheckResult.MISSING_DEPENDENCY).get(0);
 			SpunParticle issueParticle = issue.getFirst().getParticleFrom(atom);
-			return acceptor -> acceptor.onMissingDependency(cmAtom, issueParticle);
+			atomEventListeners.forEach(listener -> listener.onStateMissingDependency(cmAtom, issueParticle));
+			return;
 		}
 
-		return acceptor -> acceptor.onSuccess(cmAtom, computed);
+		atomEventListeners.forEach(listener -> listener.onStateSuccess(cmAtom, computed));
 	}
 }

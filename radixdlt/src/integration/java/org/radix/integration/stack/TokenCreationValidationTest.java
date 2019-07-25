@@ -2,6 +2,7 @@ package org.radix.integration.stack;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.common.Pair;
+import com.radixdlt.engine.AtomEventListener;
 import com.radixdlt.engine.RadixEngineUtils;
 import com.radixdlt.engine.StateCheckResult.StateCheckResultAcceptor;
 import com.radixdlt.universe.Universe;
@@ -81,11 +82,11 @@ public class TokenCreationValidationTest extends RadixTestWithStores {
 		atom.sign(identity);
 
 		CMAtom cmAtom = RadixEngineUtils.toCMAtom(atom);
-		StateCheckResultAcceptor acceptor = mock(StateCheckResultAcceptor.class);
-		Modules.get(ValidationHandler.class).getRadixEngine().stateCheck(cmAtom, ImmutableMap.of())
-			.accept(acceptor);
-		verify(acceptor, times(1))
-			.onSuccess(eq(cmAtom), any());
+		AtomEventListener listener = mock(AtomEventListener.class);
+		Modules.get(ValidationHandler.class).getRadixEngine().addAtomEventListener(listener);
+		Modules.get(ValidationHandler.class).getRadixEngine().stateCheck(cmAtom, ImmutableMap.of());
+		verify(listener, times(1))
+			.onStateSuccess(eq(cmAtom), any());
 	}
 
 	@Test
@@ -146,10 +147,11 @@ public class TokenCreationValidationTest extends RadixTestWithStores {
 		);
 		secondAtom.sign(identity);
 		CMAtom secondCMAtom = RadixEngineUtils.toCMAtom(secondAtom);
-		StateCheckResultAcceptor acceptor = mock(StateCheckResultAcceptor.class);
-		Modules.get(ValidationHandler.class).getRadixEngine().stateCheck(secondCMAtom, ImmutableMap.of())
-			.accept(acceptor);
-		verify(acceptor, times(1))
-			.onConflict(eq(secondCMAtom), any(), any());
+
+		AtomEventListener listener = mock(AtomEventListener.class);
+		Modules.get(ValidationHandler.class).getRadixEngine().addAtomEventListener(listener);
+		Modules.get(ValidationHandler.class).getRadixEngine().stateCheck(secondCMAtom, ImmutableMap.of());
+		verify(listener, times(1))
+			.onStateConflict(eq(secondCMAtom), any(), any());
 	}
 }
