@@ -1,5 +1,7 @@
 package com.radixdlt.atomos;
 
+import com.radixdlt.common.Pair;
+import com.radixdlt.compute.AtomCompute;
 import com.radixdlt.store.CMStore;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -214,22 +216,23 @@ public final class CMAtomOS implements AtomOSKernel, AtomOS {
 	 *
 	 * @return a constraint machine which can validate atoms and the virtual layer on top of the store
 	 */
-	public ConstraintMachine buildMachine() {
-		ConstraintMachine.Builder builder = new Builder();
+	public Pair<ConstraintMachine, AtomCompute> buildMachine() {
+		ConstraintMachine.Builder cmBuilder = new Builder();
+		AtomCompute.Builder computeBuilder = new AtomCompute.Builder();
 
-		this.atomKernelComputes.forEach(builder::addCompute);
-		this.procedures.forEach(builder::addProcedure);
-		this.kernelProcedures.forEach(builder::addProcedure);
+		this.atomKernelComputes.forEach(computeBuilder::addCompute);
+		this.procedures.forEach(cmBuilder::addProcedure);
+		this.kernelProcedures.forEach(cmBuilder::addProcedure);
 
 		// Add a constraint for fungibles if any were added
 		if (!this.fungibleTransitions.isEmpty()) {
-			builder.addProcedure(new FungibleTransitionConstraintProcedure(this.fungibleTransitions));
+			cmBuilder.addProcedure(new FungibleTransitionConstraintProcedure(this.fungibleTransitions));
 		}
 
 		// Add constraint for RRI state machines
-		builder.addProcedure(this.rriProcedureBuilder.build());
+		cmBuilder.addProcedure(this.rriProcedureBuilder.build());
 		// Add constraint for Payload state machines
-		builder.addProcedure(this.payloadProcedureBuilder.build());
+		cmBuilder.addProcedure(this.payloadProcedureBuilder.build());
 
 		UnaryOperator<CMStore> rriTransformer = base ->
 			CMStores.virtualizeDefault(base, p -> p instanceof RRIParticle && ((RRIParticle) p).getNonce() == 0, Spin.UP);
@@ -251,8 +254,8 @@ public final class CMAtomOS implements AtomOSKernel, AtomOS {
 			return rriTransformer.apply(virtualizeNeutral);
 		};
 
-		builder.virtualStore(virtualizedDefault);
+		cmBuilder.virtualStore(virtualizedDefault);
 
-		return builder.build();
+		return Pair.of(cmBuilder.build(), computeBuilder.build());
 	}
 }

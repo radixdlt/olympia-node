@@ -6,7 +6,6 @@ import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.atoms.Spin;
 import com.radixdlt.constraintmachine.CMAtom;
 import com.radixdlt.constraintmachine.CMParticle;
-import com.radixdlt.engine.ValidationResult.ValidationResultAcceptor;
 import org.junit.Test;
 
 import com.radixdlt.atoms.Particle;
@@ -15,11 +14,8 @@ import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.universe.Universe;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class CMAtomOSTest {
@@ -38,17 +34,15 @@ public class CMAtomOSTest {
 	@Test
 	public void when_a_particle_which_is_not_registered_via_os_is_validated__it_should_cause_errors() {
 		CMAtomOS os = new CMAtomOS(() -> mock(Universe.class), () -> 0);
-		ConstraintMachine machine = os.buildMachine();
+		ConstraintMachine machine = os.buildMachine().getFirst();
 		CMAtom atom = mock(CMAtom.class);
 		when(atom.getAtom()).thenReturn(mock(ImmutableAtom.class));
 		TestParticle testParticle = new TestParticle();
 		when(atom.getParticles()).thenReturn(ImmutableList.of(
 			new CMParticle(testParticle, DataPointer.ofParticle(0, 0), Spin.NEUTRAL, 1)
 		));
-		ValidationResultAcceptor acceptor = mock(ValidationResultAcceptor.class);
-		machine.validate(atom, true).accept(acceptor);
-		verify(acceptor, times(1))
-			.onError(eq(atom), argThat(s -> s.stream().anyMatch(e -> e.getErrorCode() == CMErrorCode.UNKNOWN_PARTICLE)));
+		assertThat(machine.validate(atom, true))
+			.anyMatch(e -> e.getErrorCode() == CMErrorCode.UNKNOWN_PARTICLE);
 	}
 
 	@Test
@@ -59,4 +53,6 @@ public class CMAtomOSTest {
 			kernel.onAtom().compute("duplicate", atom -> "hello");
 		})).isInstanceOf(IllegalStateException.class);
 	}
+
+
 }

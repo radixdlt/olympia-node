@@ -1,12 +1,15 @@
 package com.radixdlt.engine;
 
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atoms.DataPointer;
 import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.atoms.Spin;
 import com.radixdlt.atoms.SpunParticle;
 import com.radixdlt.common.Pair;
+import com.radixdlt.compute.AtomCompute;
 import com.radixdlt.constraintmachine.CMAtom;
+import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.engine.StateCheckResult.StateCheckResultAcceptor;
 import com.radixdlt.store.CMStore;
@@ -21,15 +24,22 @@ import java.util.stream.Collectors;
  */
 public final class RadixEngine {
 	private final ConstraintMachine constraintMachine;
+	private final AtomCompute compute;
 	private final CMStore cmStore;
 
-	public RadixEngine(ConstraintMachine constraintMachine, CMStore cmStore) {
+	public RadixEngine(ConstraintMachine constraintMachine, AtomCompute compute, CMStore cmStore) {
 		this.constraintMachine = constraintMachine;
+		this.compute = compute;
 		this.cmStore = constraintMachine.getVirtualStore().apply(cmStore);
 	}
 
 	public ValidationResult validate(CMAtom cmAtom) {
-		return constraintMachine.validate(cmAtom, false);
+		final ImmutableSet<CMError> errors = constraintMachine.validate(cmAtom, false);
+		if (errors.isEmpty()) {
+			return acceptor -> acceptor.onSuccess(cmAtom, compute.compute(cmAtom));
+		} else {
+			return acceptor -> acceptor.onError(cmAtom, errors);
+		}
 	}
 
 	public StateCheckResult stateCheck(CMAtom cmAtom) {

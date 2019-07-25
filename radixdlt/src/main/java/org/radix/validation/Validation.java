@@ -6,6 +6,8 @@ import com.radixdlt.atommodel.tokens.TokenDefinitionConstraintScrypt;
 import com.radixdlt.atommodel.tokens.TokenInstancesConstraintScrypt;
 import com.radixdlt.atommodel.unique.UniqueParticleConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
+import com.radixdlt.common.Pair;
+import com.radixdlt.compute.AtomCompute;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.engine.RadixEngine;
 import org.radix.atoms.AtomStore;
@@ -42,8 +44,8 @@ public class Validation extends Plugin {
 		os.load(new MessageParticleConstraintScrypt());
 		os.load(new TokenInstancesConstraintScrypt());
 
-		final ConstraintMachine constraintMachine = os.buildMachine();
-		final RadixEngine radixEngine = new RadixEngine(constraintMachine, atomStore);
+		final Pair<ConstraintMachine, AtomCompute> engineParams = os.buildMachine();
+		final RadixEngine radixEngine = new RadixEngine(engineParams.getFirst(), engineParams.getSecond(), atomStore);
 
 		Modules.getInstance().start(new ValidationHandler(radixEngine));
 	}

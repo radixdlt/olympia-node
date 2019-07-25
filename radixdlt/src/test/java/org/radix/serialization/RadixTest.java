@@ -1,5 +1,7 @@
 package org.radix.serialization;
 
+import com.radixdlt.common.Pair;
+import com.radixdlt.compute.AtomCompute;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.serialization.Serialization;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -97,8 +99,8 @@ public abstract class RadixTest
 			() -> Modules.get(AtomStore.class),
 			() -> LocalSystem.getInstance().getShards()
 		);
-		final ConstraintMachine constraintMachine = os.buildMachine();
-		final RadixEngine radixEngine = new RadixEngine(constraintMachine, atomStore);
+		final Pair<ConstraintMachine, AtomCompute> engineParams = os.buildMachine();
+		final RadixEngine radixEngine = new RadixEngine(engineParams.getFirst(), engineParams.getSecond(), atomStore);
 		Modules.put(ValidationHandler.class, new ValidationHandler(radixEngine));
 	}
 
