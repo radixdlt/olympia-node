@@ -4,8 +4,8 @@ import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
-import com.radixdlt.client.atommodel.tokens.VariableTokenDefinitionParticle;
-import com.radixdlt.client.atommodel.tokens.VariableTokenDefinitionParticle.TokenTransition;
+import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
+import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.client.atommodel.tokens.TokenPermission;
 import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.core.RadixEnv;
@@ -31,7 +31,7 @@ public class UnallocatedTokensParticleTest {
 
 		List<ParticleGroup> groups = new ArrayList<>();
 
-		VariableTokenDefinitionParticle particle = new VariableTokenDefinitionParticle(
+		MutableSupplyTokenDefinitionParticle particle = new MutableSupplyTokenDefinitionParticle(
 			api.getAddress(),
 			"Joshy Token",
 			"JOSH",
@@ -125,7 +125,7 @@ public class UnallocatedTokensParticleTest {
 			ImmutableMap.of(TokenTransition.MINT, TokenPermission.ALL, TokenTransition.BURN, TokenPermission.ALL)
 		);
 
-		VariableTokenDefinitionParticle tokenDefinitionParticle = new VariableTokenDefinitionParticle(
+		MutableSupplyTokenDefinitionParticle tokenDefinitionParticle = new MutableSupplyTokenDefinitionParticle(
 			api.getAddress(),
 			"Joshy Token",
 			"JOSH",

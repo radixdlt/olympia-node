@@ -18,6 +18,7 @@ import com.radixdlt.client.atommodel.accounts.RadixAddress;
 
 import io.reactivex.Completable;
 import io.reactivex.observers.TestObserver;
+import io.reactivex.observers.BaseTestConsumer.TestWaitStrategy;
 
 /**
  * RLAU-162, RLAU-88, RLAU-89
@@ -44,7 +45,7 @@ public class SendReceiveDataTransactionTest {
 		submissionObserver.assertError(ActionExecutionException.class);
 
 		// And not receive any messages
-		messageListener.await(5, TimeUnit.SECONDS);
+		messageListener.await(30, TimeUnit.SECONDS);
 		messageListener
 			.assertNoErrors()
 			.assertEmpty()
@@ -73,13 +74,13 @@ public class SendReceiveDataTransactionTest {
 
 		// Then both owners should receive the message
 		sendMessageStatus.blockingAwait();
-		messageListener1.awaitCount(1)
+		messageListener1.awaitCount(1, TestWaitStrategy.SLEEP_10MS, 30000)
 			.assertValueAt(0, msg -> Arrays.equals(message, msg.getData()))
 			.assertValueAt(0, msg -> msg.getFrom().equals(api1.getAddress()))
 			.assertValueAt(0, msg -> msg.getTo().equals(api2.getAddress()))
 			.assertValueAt(0, msg -> msg.getEncryptionState().equals(EncryptionState.NOT_ENCRYPTED))
 			.dispose();
-		messageListener2.awaitCount(1)
+		messageListener2.awaitCount(1, TestWaitStrategy.SLEEP_10MS, 30000)
 			.assertValueAt(0, msg -> Arrays.equals(message, msg.getData()))
 			.assertValueAt(0, msg -> msg.getFrom().equals(api1.getAddress()))
 			.assertValueAt(0, msg -> msg.getTo().equals(api2.getAddress()))
@@ -104,7 +105,7 @@ public class SendReceiveDataTransactionTest {
 
 		// Then owner should receive the message
 		sendMessageStatus.blockingAwait();
-		messageListener.awaitCount(1)
+		messageListener.awaitCount(1, TestWaitStrategy.SLEEP_10MS, 30000)
 			.assertValueAt(0, msg -> Arrays.equals(message, msg.getData()))
 			.assertValueAt(0, msg -> msg.getFrom().equals(api.getAddress()))
 			.assertValueAt(0, msg -> msg.getTo().equals(api.getAddress()))
@@ -129,7 +130,7 @@ public class SendReceiveDataTransactionTest {
 
 		// Then client should receive the message
 		sendMessageStatus.blockingAwait();
-		clientListener.awaitCount(1)
+		clientListener.awaitCount(1, TestWaitStrategy.SLEEP_10MS, 30000)
 			.assertValueAt(0, msg -> Arrays.equals(message, msg.getData()))
 			.assertValueAt(0, msg -> msg.getFrom().equals(otherAccount.getAddress()))
 			.assertValueAt(0, msg -> msg.getTo().equals(otherAccount.getAddress()))

@@ -268,7 +268,7 @@ public class ParticleGroupsMetaData {
 
     @Then("^I should get a deserialization error$")
     public void iShouldGetADeserializationError() throws Throwable {
-        this.observer2.awaitTerminalEvent(5, TimeUnit.SECONDS);
+        this.observer2.awaitTerminalEvent(15, TimeUnit.SECONDS);
         this.observer2.assertNoErrors();
         this.observer2.assertComplete();
         this.observer2.assertValueAt(0, val -> !val.isSuccess());
