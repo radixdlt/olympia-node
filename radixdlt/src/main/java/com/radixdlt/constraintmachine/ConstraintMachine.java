@@ -26,8 +26,8 @@ public final class ConstraintMachine {
 		private UnaryOperator<CMStore> virtualStore;
 
 		private ImmutableList.Builder<KernelConstraintProcedure> kernelConstraintProcedureBuilder = new ImmutableList.Builder<>();
+		// TODO: Move compute out of CM
 		private ImmutableMap.Builder<String, AtomKernelCompute> kernelComputeBuilder = new ImmutableMap.Builder<>();
-
 		private ImmutableList.Builder<ConstraintProcedure> constraintProcedureBuilder = new ImmutableList.Builder<>();
 
 		public Builder virtualStore(UnaryOperator<CMStore> virtualStore) {

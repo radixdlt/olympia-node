@@ -421,79 +421,76 @@ public class AtomSync extends Service
 					continue;
 				}
 
-				long start = SystemProfiler.getInstance().begin();
+				if (atomsLog.hasLevel(Logging.DEBUG)) {
+					atomsLog.debug("Validating Atom "+atom.getHID()+" to SIGNATURE");
+				}
 
-				try
-				{
-					if (atomsLog.hasLevel(Logging.DEBUG)) {
-						atomsLog.debug("Validating Atom "+atom.getHID()+" to SIGNATURE");
-					}
-
+				try {
 					TemporalProofValidator.validate(atom.getTemporalProof());
-					final CMAtom cmAtom;
-					try {
-						cmAtom = RadixEngineUtils.toCMAtom(atom);
-					} catch (CMAtomConversionException e) {
-						CMError cmError = e.getErrors().iterator().next();
-						throw new ConstraintMachineValidationException(atom, cmError.getErrorDescription(), cmError.getDataPointer());
-					}
+				} catch (Exception e) {
+					atomsLog.error(e);
+					Events.getInstance().broadcast(new AtomExceptionEvent(e, atom));
+					continue;
+				}
 
-					ValidationResult result = Modules.get(ValidationHandler.class).validate(cmAtom);
-					final AtomicReference<CMAtom> atomRef = new AtomicReference<>();
-					final AtomicReference<UInt384> massRef = new AtomicReference<>();
-					final AtomicReference<Set<CMError>> errorsRef = new AtomicReference<>();
+				final CMAtom cmAtom;
+				try {
+					cmAtom = RadixEngineUtils.toCMAtom(atom);
+				} catch (CMAtomConversionException e) {
+					CMError cmError = e.getErrors().iterator().next();
+					ConstraintMachineValidationException ex = new ConstraintMachineValidationException(atom, cmError.getErrorDescription(), cmError.getDataPointer());
+					atomsLog.error(ex);
+					Events.getInstance().broadcast(new AtomExceptionEvent(ex, atom));
+					continue;
+				}
 
-					result.accept(new ValidationResultAcceptor() {
-						@Override
-						public void onSuccess(CMAtom cmAtom, ImmutableMap<String, Object> computed) {
-							Object result = computed.get("mass");
-							if (result == null) {
-								throw new NullPointerException("mass does not exist");
-							}
-							atomRef.set(cmAtom);
-							massRef.set((UInt384) result);
+				// TODO: Remove result from validate() and add event listener to RadixEngine
+				ValidationResult result = Modules.get(ValidationHandler.class).validate(cmAtom);
+				result.accept(new ValidationResultAcceptor() {
+					@Override
+					public void onSuccess(CMAtom cmAtom, ImmutableMap<String, Object> computed) {
+						Object result = computed.get("mass");
+						if (result == null) {
+							throw new NullPointerException("mass does not exist");
 						}
 
-						@Override
-						public void onError(CMAtom cmAtom, Set<CMError> errors) {
-							errorsRef.set(errors);
+						final Atom curAtom = (Atom) cmAtom.getAtom();
+
+						if (atomsLog.hasLevel(Logging.DEBUG)) {
+							atomsLog.debug("Validated Atom " + curAtom.getHID() + " to SIGNATURE");
 						}
-					});
 
-					final CMAtom validatedAtom = atomRef.get();
-					if (validatedAtom == null) {
-						CMError cmError = errorsRef.get().iterator().next();
-						throw new ConstraintMachineValidationException(atom, cmError.getErrorDescription(), cmError.getDataPointer());
+						// TODO is this good here?
+						// All atoms will be witnessed, even invalid ones.  If flooded with invalid atoms, it may make it harder for
+						// remote nodes to determine if this node saw a particular atom vs a commitment stream that only includes
+						// committed atoms.
+						try {
+							witnessed(cmAtom);
+						} catch (Exception e) {
+							atomsLog.error(e);
+							Events.getInstance().broadcast(new AtomExceptionEvent(e, (Atom) cmAtom.getAtom()));
+							return;
+						}
+
+						if (numShards > 512)
+							atomsLog.warn(curAtom.getHID()+" at clock "+curAtom.getTemporalProof().getVertexByNID(LocalSystem.getInstance().getNID()).getClock()+" is super mega large with "+numShards+" shards");
+						else if (numShards > 64)
+							atomsLog.warn(curAtom.getHID()+" at clock "+curAtom.getTemporalProof().getVertexByNID(LocalSystem.getInstance().getNID()).getClock()+" is super large with "+numShards+" shards");
+						else if (numShards > 8)
+							atomsLog.warn(curAtom.getHID()+" at clock "+curAtom.getTemporalProof().getVertexByNID(LocalSystem.getInstance().getNID()).getClock()+" is large with "+numShards+" shards");
+
+						// TODO: Move commitQueue into RadixEngine
+						AtomSync.this.commitQueue.add(Pair.of(cmAtom, (UInt384) result));
 					}
 
-					if (atomsLog.hasLevel(Logging.DEBUG)) {
-						atomsLog.debug("Validated Atom "+atom.getHID()+" to SIGNATURE");
+					@Override
+					public void onError(CMAtom cmAtom, Set<CMError> errors) {
+						CMError cmError = errors.iterator().next();
+						ConstraintMachineValidationException e = new ConstraintMachineValidationException(cmAtom.getAtom(), cmError.getErrorDescription(), cmError.getDataPointer());
+						atomsLog.error(e);
+						Events.getInstance().broadcast(new AtomExceptionEvent(e, (Atom) cmAtom.getAtom()));
 					}
-
-					// TODO is this good here?
-					// All atoms will be witnessed, even invalid ones.  If flooded with invalid atoms, it may make it harder for
-					// remote nodes to determine if this node saw a particular atom vs a commitment stream that only includes
-					// committed atoms.
-					witnessed(validatedAtom);
-
-		            if (numShards > 512)
-		            	atomsLog.warn(atom.getHID()+" at clock "+atom.getTemporalProof().getVertexByNID(LocalSystem.getInstance().getNID()).getClock()+" is super mega large with "+numShards+" shards");
-		            else if (numShards > 64)
-		            	atomsLog.warn(atom.getHID()+" at clock "+atom.getTemporalProof().getVertexByNID(LocalSystem.getInstance().getNID()).getClock()+" is super large with "+numShards+" shards");
-		            else if (numShards > 8)
-		            	atomsLog.warn(atom.getHID()+" at clock "+atom.getTemporalProof().getVertexByNID(LocalSystem.getInstance().getNID()).getClock()+" is large with "+numShards+" shards");
-
-                    AtomSync.this.commitQueue.add(Pair.of(validatedAtom, massRef.get()));
-				}
-				catch (Throwable t)
-				{
-					atomsLog.error(t);
-					Events.getInstance().broadcast(new AtomExceptionEvent(t, atom));
-				}
-				finally
-				{
-					SystemProfiler.getInstance().incrementFrom("ATOM_SYNC:PREPARE:"+this.shardThreshold, start);
-				}
+				});
 			}
 		}
 	}
