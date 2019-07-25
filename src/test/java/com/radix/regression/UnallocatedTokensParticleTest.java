@@ -4,8 +4,8 @@ import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
-import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle;
-import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle.TokenTransition;
+import com.radixdlt.client.atommodel.tokens.VariableTokenDefinitionParticle;
+import com.radixdlt.client.atommodel.tokens.VariableTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.client.atommodel.tokens.TokenPermission;
 import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.core.RadixEnv;
@@ -31,7 +31,7 @@ public class UnallocatedTokensParticleTest {
 
 		List<ParticleGroup> groups = new ArrayList<>();
 
-		TokenDefinitionParticle particle = new TokenDefinitionParticle(
+		VariableTokenDefinitionParticle particle = new VariableTokenDefinitionParticle(
 			api.getAddress(),
 			"Joshy Token",
 			"JOSH",
@@ -82,7 +82,7 @@ public class UnallocatedTokensParticleTest {
 			UInt256.ONE,
 			System.currentTimeMillis(),
 			RRI.of(api.getAddress(), "JOSH"),
-			ImmutableMap.of(TokenTransition.MINT, TokenPermission.TOKEN_CREATION_ONLY, TokenTransition.BURN, TokenPermission.TOKEN_CREATION_ONLY)
+			ImmutableMap.of(TokenTransition.MINT, TokenPermission.ALL, TokenTransition.BURN, TokenPermission.ALL)
 		);
 
 		groups.add(ParticleGroup.of(SpunParticle.up(unallocatedParticle)));
@@ -114,7 +114,7 @@ public class UnallocatedTokensParticleTest {
 			UInt256.ONE,
 			System.nanoTime(),
 			RRI.of(api.getAddress(), "JOSH"),
-			ImmutableMap.of(TokenTransition.MINT, TokenPermission.TOKEN_CREATION_ONLY, TokenTransition.BURN, TokenPermission.TOKEN_CREATION_ONLY)
+			ImmutableMap.of(TokenTransition.MINT, TokenPermission.ALL, TokenTransition.BURN, TokenPermission.ALL)
 		);
 
 		UnallocatedTokensParticle unallocatedParticle1 = new UnallocatedTokensParticle(
@@ -122,10 +122,10 @@ public class UnallocatedTokensParticleTest {
 			UInt256.ONE,
 			System.nanoTime(),
 			RRI.of(api.getAddress(), "JOSH"),
-			ImmutableMap.of(TokenTransition.MINT, TokenPermission.TOKEN_CREATION_ONLY, TokenTransition.BURN, TokenPermission.TOKEN_CREATION_ONLY)
+			ImmutableMap.of(TokenTransition.MINT, TokenPermission.ALL, TokenTransition.BURN, TokenPermission.ALL)
 		);
 
-		TokenDefinitionParticle tokenDefinitionParticle = new TokenDefinitionParticle(
+		VariableTokenDefinitionParticle tokenDefinitionParticle = new VariableTokenDefinitionParticle(
 			api.getAddress(),
 			"Joshy Token",
 			"JOSH",
