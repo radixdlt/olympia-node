@@ -1,5 +1,6 @@
 package com.radixdlt.engine;
 
+import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.atoms.SpunParticle;
 import com.radixdlt.constraintmachine.CMAtom;
@@ -9,7 +10,7 @@ import com.radixdlt.constraintmachine.CMAtom;
  */
 public interface StateCheckResult {
 	interface StateCheckResultAcceptor {
-		default void onSuccess(CMAtom cmAtom) {
+		default void onSuccess(CMAtom cmAtom, ImmutableMap<String, Object> computed) {
 		}
 		default void onConflict(CMAtom cmAtom, SpunParticle issueParticle, ImmutableAtom conflictingAtom) {
 		}

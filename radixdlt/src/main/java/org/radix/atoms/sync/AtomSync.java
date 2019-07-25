@@ -460,7 +460,7 @@ public class AtomSync extends Service
 	private Thread		commitProcessorThread = null;
 	private	final Map<AID, AtomStatus>	committing = new ConcurrentHashMap<>();
 	private	final Map<AID, Integer> commitAttempts = new ConcurrentHashMap<>();
-	private	final BlockingQueue<Pair<CMAtom, UInt384>> commitQueue = new LinkedBlockingQueue<>();
+	private	final BlockingQueue<Pair<CMAtom, ImmutableMap<String, Object>>> commitQueue = new LinkedBlockingQueue<>();
 	private final AtomicInteger complexAtomsInCommitting = new AtomicInteger(0);
 	private final AtomicInteger nonComplexAtomsInCommitting = new AtomicInteger(0);
 
@@ -1357,11 +1357,6 @@ public class AtomSync extends Service
 			new AtomEventListener() {
 				@Override
 				public void onCMSuccess(CMAtom cmAtom, ImmutableMap<String, Object> computed) {
-					Object result = computed.get("mass");
-					if (result == null) {
-						throw new NullPointerException("mass does not exist");
-					}
-
 					final Atom curAtom = (Atom) cmAtom.getAtom();
 
 					if (atomsLog.hasLevel(Logging.DEBUG)) {
@@ -1383,6 +1378,10 @@ public class AtomSync extends Service
 					// Store immediately if universe
 					if (Modules.get(Universe.class).getGenesis().contains(cmAtom.getAtom())) {
 						try {
+							Object result = computed.get("mass");
+							if (result == null) {
+								throw new NullPointerException("mass does not exist");
+							}
 							PreparedAtom preparedAtom = new PreparedAtom(cmAtom, (UInt384) result);
 							Modules.get(AtomStore.class).storeAtom(preparedAtom);
 						} catch (Exception e) {
@@ -1391,7 +1390,7 @@ public class AtomSync extends Service
 						}
 					} else {
 						// TODO: Move commitQueue into RadixEngine
-						AtomSync.this.commitQueue.add(Pair.of(cmAtom, (UInt384) result));
+						AtomSync.this.commitQueue.add(Pair.of(cmAtom, computed));
 					}
 				}
 
@@ -1418,7 +1417,7 @@ public class AtomSync extends Service
 			{
 				while (!isTerminated())
 				{
-					Pair<CMAtom, UInt384> massedAtom = null;
+					Pair<CMAtom, ImmutableMap<String, Object>> massedAtom = null;
 
 					try {
 						massedAtom = AtomSync.this.commitQueue.poll(1, TimeUnit.SECONDS);
@@ -1431,29 +1430,30 @@ public class AtomSync extends Service
 					if (massedAtom == null)
 						continue;
 
-					final PreparedAtom preparedAtom;
-					try {
-						preparedAtom = new PreparedAtom(massedAtom.getFirst(), massedAtom.getSecond());
-					} catch (IOException e) {
-						atomsLog.error(e);
-						continue;
-					}
 					Modules.ifAvailable(SystemMetaData.class, a -> a.increment("ledger.processed"));
 
 					if (atomsLog.hasLevel(Logging.DEBUG)) {
-						atomsLog.debug("Validating Atom "+preparedAtom.getAtomID()+" to COMPLETE");
+						atomsLog.debug("Validating Atom " + massedAtom.getFirst().getAtom().getAID() + " to COMPLETE");
 					}
-					StateCheckResult result = Modules.get(ValidationHandler.class).getRadixEngine().stateCheck(massedAtom.getFirst());
+					StateCheckResult result = Modules.get(ValidationHandler.class).getRadixEngine()
+						.stateCheck(massedAtom.getFirst(), massedAtom.getSecond());
 					result.accept(new StateCheckResultAcceptor() {
 						@Override
-						public void onSuccess(CMAtom cmAtom) {
+						public void onSuccess(CMAtom cmAtom, ImmutableMap<String, Object> computed) {
 							try {
 								if (atomsLog.hasLevel(Logging.DEBUG)) {
-									atomsLog.debug("Validated Atom "+preparedAtom.getAtomID()+" to COMPLETE");
+									atomsLog.debug("Validated Atom " + cmAtom.getAtom().getAID() + " to COMPLETE");
 								}
+
+								Object mass = computed.get("mass");
+								if (mass == null) {
+									throw new IllegalStateException("mass was not computed");
+								}
+
+								final PreparedAtom preparedAtom = new PreparedAtom(cmAtom, (UInt384) mass);
 								Modules.get(AtomStore.class).storeAtom(preparedAtom);
 							} catch (Exception e) {
-								AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(e, preparedAtom.getAtom());
+								AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(e, (Atom) cmAtom.getAtom());
 								Events.getInstance().broadcast(atomExceptionEvent);
 								atomsLog.error(e);
 							}
@@ -1466,7 +1466,7 @@ public class AtomSync extends Service
 									issueParticle,
 									ImmutableSet.of((Atom) cmAtom.getAtom(), (Atom) conflictAtom)
 								));
-							AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(conflict, preparedAtom.getAtom());
+							AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(conflict, (Atom) cmAtom.getAtom());
 							Events.getInstance().broadcast(atomExceptionEvent);
 							atomsLog.error(conflict);
 						}
@@ -1480,7 +1480,7 @@ public class AtomSync extends Service
 									(Atom) cmAtom.getAtom()
 								);
 
-							AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(notFoundException, preparedAtom.getAtom());
+							AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(notFoundException, (Atom) cmAtom.getAtom());
 							Events.getInstance().broadcast(atomExceptionEvent);
 							atomsLog.error(notFoundException);
 						}

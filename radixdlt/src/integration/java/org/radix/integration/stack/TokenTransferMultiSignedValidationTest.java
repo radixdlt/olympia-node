@@ -151,10 +151,10 @@ public class TokenTransferMultiSignedValidationTest extends RadixTestWithStores 
 		addTemporalVertex(multiSigAtom); // Can't store atom without vertex from this node
 		CMAtom multiSigCMAtom = RadixEngineUtils.toCMAtom(multiSigAtom);
 		StateCheckResultAcceptor acceptor = mock(StateCheckResultAcceptor.class);
-		Modules.get(ValidationHandler.class).getRadixEngine().stateCheck(multiSigCMAtom)
+		Modules.get(ValidationHandler.class).getRadixEngine().stateCheck(multiSigCMAtom, ImmutableMap.of())
 			.accept(acceptor);
 		verify(acceptor, times(1))
-			.onSuccess(eq(multiSigCMAtom));
+			.onSuccess(eq(multiSigCMAtom), any());
 		PreparedAtom preparedAtom2 = new PreparedAtom(multiSigCMAtom, UInt384.ONE);
 		Modules.get(AtomStore.class).storeAtom(preparedAtom2);
 	}

@@ -1,6 +1,7 @@
 package org.radix.integration.stack;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -89,10 +90,10 @@ public class TokenTransferValidationTest extends RadixTestWithStores {
 
 		CMAtom cmAtom = RadixEngineUtils.toCMAtom(atom);
 		StateCheckResultAcceptor acceptor = mock(StateCheckResultAcceptor.class);
-		Modules.get(ValidationHandler.class).getRadixEngine().stateCheck(cmAtom)
+		Modules.get(ValidationHandler.class).getRadixEngine().stateCheck(cmAtom, ImmutableMap.of())
 			.accept(acceptor);
 		verify(acceptor, times(1))
-			.onSuccess(eq(cmAtom));
+			.onSuccess(eq(cmAtom), any());
 	}
 
 	@Test
@@ -190,7 +191,7 @@ public class TokenTransferValidationTest extends RadixTestWithStores {
 		CMAtom cmAtom = RadixEngineUtils.toCMAtom(atom);
 
 		StateCheckResultAcceptor acceptor = mock(StateCheckResultAcceptor.class);
-		Modules.get(ValidationHandler.class).getRadixEngine().stateCheck(cmAtom)
+		Modules.get(ValidationHandler.class).getRadixEngine().stateCheck(cmAtom, ImmutableMap.of())
 			.accept(acceptor);
 		verify(acceptor, times(1))
 			.onMissingDependency(eq(cmAtom), any());
@@ -248,7 +249,7 @@ public class TokenTransferValidationTest extends RadixTestWithStores {
 		CMAtom cmAtom2 = RadixEngineUtils.toCMAtom(secondAtom);
 
 		StateCheckResultAcceptor acceptor = mock(StateCheckResultAcceptor.class);
-		Modules.get(ValidationHandler.class).getRadixEngine().stateCheck(cmAtom2)
+		Modules.get(ValidationHandler.class).getRadixEngine().stateCheck(cmAtom2, ImmutableMap.of())
 			.accept(acceptor);
 		verify(acceptor, times(1))
 			.onConflict(eq(cmAtom2), any(), any());

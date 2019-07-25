@@ -82,10 +82,10 @@ public class TokenCreationValidationTest extends RadixTestWithStores {
 
 		CMAtom cmAtom = RadixEngineUtils.toCMAtom(atom);
 		StateCheckResultAcceptor acceptor = mock(StateCheckResultAcceptor.class);
-		Modules.get(ValidationHandler.class).getRadixEngine().stateCheck(cmAtom)
+		Modules.get(ValidationHandler.class).getRadixEngine().stateCheck(cmAtom, ImmutableMap.of())
 			.accept(acceptor);
 		verify(acceptor, times(1))
-			.onSuccess(eq(cmAtom));
+			.onSuccess(eq(cmAtom), any());
 	}
 
 	@Test
@@ -147,7 +147,7 @@ public class TokenCreationValidationTest extends RadixTestWithStores {
 		secondAtom.sign(identity);
 		CMAtom secondCMAtom = RadixEngineUtils.toCMAtom(secondAtom);
 		StateCheckResultAcceptor acceptor = mock(StateCheckResultAcceptor.class);
-		Modules.get(ValidationHandler.class).getRadixEngine().stateCheck(secondCMAtom)
+		Modules.get(ValidationHandler.class).getRadixEngine().stateCheck(secondCMAtom, ImmutableMap.of())
 			.accept(acceptor);
 		verify(acceptor, times(1))
 			.onConflict(eq(secondCMAtom), any(), any());

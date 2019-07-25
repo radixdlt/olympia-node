@@ -1,5 +1,6 @@
 package com.radixdlt.engine;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atoms.DataPointer;
 import com.radixdlt.atoms.ImmutableAtom;
@@ -51,7 +52,7 @@ public final class RadixEngine {
 		}
 	}
 
-	public StateCheckResult stateCheck(CMAtom cmAtom) {
+	public StateCheckResult stateCheck(CMAtom cmAtom, ImmutableMap<String, Object> computed) {
 		final ImmutableAtom atom = cmAtom.getAtom();
 		// TODO: Optimize these collectors out
 		Map<TransitionCheckResult, List<Pair<DataPointer, TransitionCheckResult>>> spinCheckResults = cmAtom.getParticles()
@@ -106,6 +107,6 @@ public final class RadixEngine {
 			return acceptor -> acceptor.onMissingDependency(cmAtom, issueParticle);
 		}
 
-		return acceptor -> acceptor.onSuccess(cmAtom);
+		return acceptor -> acceptor.onSuccess(cmAtom, computed);
 	}
 }
