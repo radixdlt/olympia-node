@@ -1,7 +1,7 @@
 package com.radixdlt.client.core;
 
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.atommodel.tokens.FixedTokenDefinitionParticle;
+import com.radixdlt.client.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.ledger.AtomObservation;
@@ -139,8 +139,8 @@ public final class RadixUniverse {
 		this.networkController = networkController;
 		this.nativeToken = config.getGenesis().stream()
 			.flatMap(atom -> atom.particles(Spin.UP))
-			.filter(p -> p instanceof FixedTokenDefinitionParticle)
-			.map(p -> ((FixedTokenDefinitionParticle) p).getRRI())
+			.filter(p -> p instanceof FixedSupplyTokenDefinitionParticle)
+			.map(p -> ((FixedSupplyTokenDefinitionParticle) p).getRRI())
 			.findFirst()
 			.orElseThrow(() -> new IllegalStateException("No Native Token defined in universe"));
 		this.atomStore = atomStore;

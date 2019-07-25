@@ -1,13 +1,13 @@
 package com.radixdlt.client.application.translate.tokens;
 
-import com.radixdlt.client.atommodel.tokens.VariableTokenDefinitionParticle.TokenTransition;
+import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
 
-import com.radixdlt.client.atommodel.tokens.VariableTokenDefinitionParticle;
+import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 
 import com.radixdlt.client.application.translate.ParticleReducer;
 import com.radixdlt.client.application.translate.tokens.TokenState.TokenSupplyType;
-import com.radixdlt.client.atommodel.tokens.FixedTokenDefinitionParticle;
+import com.radixdlt.client.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.client.atommodel.tokens.TokenPermission;
 import com.radixdlt.client.core.atoms.particles.Particle;
 
@@ -28,10 +28,10 @@ public class TokenDefinitionsReducer implements ParticleReducer<TokenDefinitions
 
 	@Override
 	public TokenDefinitionsState reduce(TokenDefinitionsState state, Particle p) {
-		if (p instanceof VariableTokenDefinitionParticle) {
-			return reduceInternal(state, (VariableTokenDefinitionParticle) p);
-		} else if (p instanceof FixedTokenDefinitionParticle) {
-			return reduceInternal(state, (FixedTokenDefinitionParticle) p);
+		if (p instanceof MutableSupplyTokenDefinitionParticle) {
+			return reduceInternal(state, (MutableSupplyTokenDefinitionParticle) p);
+		} else if (p instanceof FixedSupplyTokenDefinitionParticle) {
+			return reduceInternal(state, (FixedSupplyTokenDefinitionParticle) p);
 		} else  if (p instanceof UnallocatedTokensParticle) {
 			UnallocatedTokensParticle u = (UnallocatedTokensParticle) p;
 			return state.mergeUnallocated(u);
@@ -45,7 +45,7 @@ public class TokenDefinitionsReducer implements ParticleReducer<TokenDefinitions
 		return TokenDefinitionsState.combine(state0, state1);
 	}
 
-	private TokenDefinitionsState reduceInternal(TokenDefinitionsState state, VariableTokenDefinitionParticle tokenDefinitionParticle) {
+	private TokenDefinitionsState reduceInternal(TokenDefinitionsState state, MutableSupplyTokenDefinitionParticle tokenDefinitionParticle) {
 		TokenPermission mintPermission = tokenDefinitionParticle.getTokenPermissions().get(TokenTransition.MINT);
 
 		if (!mintPermission.equals(TokenPermission.TOKEN_OWNER_ONLY) && !mintPermission.equals(TokenPermission.ALL)) {
@@ -65,7 +65,7 @@ public class TokenDefinitionsReducer implements ParticleReducer<TokenDefinitions
 		);
 	}
 
-	private TokenDefinitionsState reduceInternal(TokenDefinitionsState state, FixedTokenDefinitionParticle tokenDefinitionParticle) {
+	private TokenDefinitionsState reduceInternal(TokenDefinitionsState state, FixedSupplyTokenDefinitionParticle tokenDefinitionParticle) {
 		return state.mergeTokenClass(
 			tokenDefinitionParticle.getRRI(),
 			tokenDefinitionParticle.getName(),

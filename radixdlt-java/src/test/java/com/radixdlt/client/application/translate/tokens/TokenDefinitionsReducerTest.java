@@ -1,7 +1,7 @@
 package com.radixdlt.client.application.translate.tokens;
 
-import com.radixdlt.client.atommodel.tokens.VariableTokenDefinitionParticle;
-import com.radixdlt.client.atommodel.tokens.VariableTokenDefinitionParticle.TokenTransition;
+import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
+import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.core.atoms.particles.RRI;
@@ -12,7 +12,7 @@ import org.radix.common.ID.EUID;
 import org.radix.utils.UInt256;
 
 import com.radixdlt.client.application.translate.tokens.TokenState.TokenSupplyType;
-import com.radixdlt.client.atommodel.tokens.FixedTokenDefinitionParticle;
+import com.radixdlt.client.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.client.atommodel.tokens.TokenPermission;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -22,7 +22,7 @@ import static org.mockito.Mockito.when;
 public class TokenDefinitionsReducerTest {
 	@Test
 	public void testTokenWithNoMint() {
-		VariableTokenDefinitionParticle tokenDefinitionParticle = mock(VariableTokenDefinitionParticle.class);
+		MutableSupplyTokenDefinitionParticle tokenDefinitionParticle = mock(MutableSupplyTokenDefinitionParticle.class);
 		RRI tokenRef = mock(RRI.class);
 		when(tokenDefinitionParticle.getRRI()).thenReturn(tokenRef);
 		when(tokenDefinitionParticle.getName()).thenReturn("Name");
@@ -46,7 +46,7 @@ public class TokenDefinitionsReducerTest {
 
 	@Test
 	public void testFixedTokenWithNoMint() {
-		FixedTokenDefinitionParticle tokenDefinitionParticle = mock(FixedTokenDefinitionParticle.class);
+		FixedSupplyTokenDefinitionParticle tokenDefinitionParticle = mock(FixedSupplyTokenDefinitionParticle.class);
 		RRI tokenRef = mock(RRI.class);
 		when(tokenDefinitionParticle.getRRI()).thenReturn(tokenRef);
 		when(tokenDefinitionParticle.getName()).thenReturn("Name");
@@ -69,7 +69,7 @@ public class TokenDefinitionsReducerTest {
 	@Test
 	public void testTokenWithMint() {
 		final UInt256 hundred = UInt256.TEN.pow(2);
-		VariableTokenDefinitionParticle tokenDefinitionParticle = mock(VariableTokenDefinitionParticle.class);
+		MutableSupplyTokenDefinitionParticle tokenDefinitionParticle = mock(MutableSupplyTokenDefinitionParticle.class);
 		RRI tokenRef = mock(RRI.class);
 		when(tokenDefinitionParticle.getRRI()).thenReturn(tokenRef);
 		when(tokenDefinitionParticle.getName()).thenReturn("Name");

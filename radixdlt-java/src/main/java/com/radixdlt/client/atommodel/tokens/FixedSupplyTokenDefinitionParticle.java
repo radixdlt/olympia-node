@@ -14,8 +14,8 @@ import org.radix.serialization2.DsonOutput.Output;
 import org.radix.serialization2.SerializerId2;
 import org.radix.utils.UInt256;
 
-@SerializerId2("radix.particles.fixed_token_definition")
-public final class FixedTokenDefinitionParticle extends Particle implements Identifiable, Ownable {
+@SerializerId2("radix.particles.fixed_supply_token_definition")
+public final class FixedSupplyTokenDefinitionParticle extends Particle implements Identifiable, Ownable {
 
 	@JsonProperty("address")
 	@DsonOutput(Output.ALL)
@@ -45,12 +45,12 @@ public final class FixedTokenDefinitionParticle extends Particle implements Iden
 	@DsonOutput(Output.ALL)
 	private String iconUrl;
 
-	FixedTokenDefinitionParticle() {
+	FixedSupplyTokenDefinitionParticle() {
 		// For serializer only
 		super();
 	}
 
-	public FixedTokenDefinitionParticle(
+	public FixedSupplyTokenDefinitionParticle(
 		RadixAddress address,
 		String name,
 		String symbol,

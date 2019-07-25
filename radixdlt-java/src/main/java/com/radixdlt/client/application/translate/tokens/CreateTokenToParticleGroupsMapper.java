@@ -4,9 +4,9 @@ import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.application.translate.StatelessActionToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
 import com.radixdlt.client.atommodel.rri.RRIParticle;
-import com.radixdlt.client.atommodel.tokens.VariableTokenDefinitionParticle;
-import com.radixdlt.client.atommodel.tokens.VariableTokenDefinitionParticle.TokenTransition;
-import com.radixdlt.client.atommodel.tokens.FixedTokenDefinitionParticle;
+import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
+import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
+import com.radixdlt.client.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.client.atommodel.tokens.TokenPermission;
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
@@ -37,7 +37,7 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 	}
 
 	public List<ParticleGroup> createVariableSupplyToken(CreateTokenAction tokenCreation) {
-		VariableTokenDefinitionParticle token = new VariableTokenDefinitionParticle(
+		MutableSupplyTokenDefinitionParticle token = new MutableSupplyTokenDefinitionParticle(
 			tokenCreation.getRRI().getAddress(),
 			tokenCreation.getName(),
 			tokenCreation.getRRI().getName(),
@@ -109,7 +109,7 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 	public List<ParticleGroup> createFixedSupplyToken(CreateTokenAction tokenCreation) {
 		UInt256 amount = TokenUnitConversions.unitsToSubunits(tokenCreation.getInitialSupply());
 		UInt256 granularity = TokenUnitConversions.unitsToSubunits(tokenCreation.getGranularity());
-		FixedTokenDefinitionParticle token = new FixedTokenDefinitionParticle(
+		FixedSupplyTokenDefinitionParticle token = new FixedSupplyTokenDefinitionParticle(
 			tokenCreation.getRRI().getAddress(),
 			tokenCreation.getName(),
 			tokenCreation.getRRI().getName(),
