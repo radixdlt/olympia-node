@@ -97,16 +97,16 @@ public final class RadixEngine {
 			// above assumption.
 			final ImmutableAtom conflictAtom = cmStore.getAtomContaining(issueParticle);
 
-			return acceptor -> acceptor.onConflict(issueParticle, conflictAtom);
+			return acceptor -> acceptor.onConflict(cmAtom, issueParticle, conflictAtom);
 		}
 
 		// TODO: Add ALL missing dependencies for optimization
 		if (spinCheckResults.get(TransitionCheckResult.MISSING_DEPENDENCY) != null)  {
 			Pair<DataPointer, TransitionCheckResult> issue = spinCheckResults.get(TransitionCheckResult.MISSING_DEPENDENCY).get(0);
 			SpunParticle issueParticle = issue.getFirst().getParticleFrom(atom);
-			return acceptor -> acceptor.onMissingDependency(issueParticle);
+			return acceptor -> acceptor.onMissingDependency(cmAtom, issueParticle);
 		}
 
-		return StateCheckResultAcceptor::onSuccess;
+		return acceptor -> acceptor.onSuccess(cmAtom);
 	}
 }

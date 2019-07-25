@@ -43,7 +43,7 @@ public class ValidationHandler extends Service {
 
 		result.accept(new StateCheckResultAcceptor() {
 			@Override
-			public void onConflict(SpunParticle issueParticle, ImmutableAtom conflictAtom) {
+			public void onConflict(CMAtom cmAtom, SpunParticle issueParticle, ImmutableAtom conflictAtom) {
 				conflictRef.set(
 					new ParticleConflictException(
 						new ParticleConflict(
@@ -54,7 +54,7 @@ public class ValidationHandler extends Service {
 			}
 
 			@Override
-			public void onMissingDependency(SpunParticle issueParticle) {
+			public void onMissingDependency(CMAtom cmAtom, SpunParticle issueParticle) {
 				notFoundRef.set(
 					new AtomDependencyNotFoundException(
 						String.format("Atom has missing dependencies in transitions: %s", issueParticle.getParticle().getHID()),
