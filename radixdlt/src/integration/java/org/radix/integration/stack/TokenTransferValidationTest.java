@@ -1,5 +1,6 @@
 package org.radix.integration.stack;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -10,6 +11,7 @@ import com.google.common.collect.ImmutableMap;
 import com.radixdlt.constraintmachine.CMErrorCode;
 import com.radixdlt.engine.RadixEngineUtils;
 import com.radixdlt.engine.AtomEventListener;
+import com.radixdlt.engine.StateCheckResult.StateCheckResultAcceptor;
 import com.radixdlt.utils.UInt384;
 import org.assertj.core.api.Assertions;
 import org.junit.Before;
@@ -86,7 +88,11 @@ public class TokenTransferValidationTest extends RadixTestWithStores {
 		atom.sign(identity);
 
 		CMAtom cmAtom = RadixEngineUtils.toCMAtom(atom);
-		Modules.get(ValidationHandler.class).stateCheck(cmAtom);
+		StateCheckResultAcceptor acceptor = mock(StateCheckResultAcceptor.class);
+		Modules.get(ValidationHandler.class).getRadixEngine().stateCheck(cmAtom)
+			.accept(acceptor);
+		verify(acceptor, times(1))
+			.onSuccess(eq(cmAtom));
 	}
 
 	@Test
@@ -183,8 +189,11 @@ public class TokenTransferValidationTest extends RadixTestWithStores {
 		atom.sign(identity);
 		CMAtom cmAtom = RadixEngineUtils.toCMAtom(atom);
 
-		Assertions.assertThatThrownBy(() -> Modules.get(ValidationHandler.class).stateCheck(cmAtom))
-			.isInstanceOf(AtomDependencyNotFoundException.class);
+		StateCheckResultAcceptor acceptor = mock(StateCheckResultAcceptor.class);
+		Modules.get(ValidationHandler.class).getRadixEngine().stateCheck(cmAtom)
+			.accept(acceptor);
+		verify(acceptor, times(1))
+			.onMissingDependency(eq(cmAtom), any());
 	}
 
 	@Test
@@ -215,7 +224,6 @@ public class TokenTransferValidationTest extends RadixTestWithStores {
 		addTemporalVertex(firstAtom); // Can't store atom without vertex from this node
 		firstAtom.sign(identity);
 		CMAtom cmAtom = RadixEngineUtils.toCMAtom(firstAtom);
-		Modules.get(ValidationHandler.class).stateCheck(cmAtom);
 		PreparedAtom preparedAtom = new PreparedAtom(cmAtom, UInt384.ONE);
 		Modules.get(AtomStore.class).storeAtom(preparedAtom);
 
@@ -239,8 +247,11 @@ public class TokenTransferValidationTest extends RadixTestWithStores {
 
 		CMAtom cmAtom2 = RadixEngineUtils.toCMAtom(secondAtom);
 
-		Assertions.assertThatThrownBy(() -> Modules.get(ValidationHandler.class).stateCheck(cmAtom2))
-			.isInstanceOf(ParticleConflictException.class);
+		StateCheckResultAcceptor acceptor = mock(StateCheckResultAcceptor.class);
+		Modules.get(ValidationHandler.class).getRadixEngine().stateCheck(cmAtom2)
+			.accept(acceptor);
+		verify(acceptor, times(1))
+			.onConflict(eq(cmAtom2), any(), any());
 	}
 
 }

@@ -1,18 +1,23 @@
 package org.radix.atoms.sync;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atoms.AtomStatus;
 import com.radixdlt.atoms.ImmutableAtom;
+import com.radixdlt.atoms.SpunParticle;
 import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.engine.RadixEngineUtils;
 import com.radixdlt.engine.RadixEngineUtils.CMAtomConversionException;
 import com.radixdlt.engine.AtomEventListener;
+import com.radixdlt.engine.StateCheckResult;
+import com.radixdlt.engine.StateCheckResult.StateCheckResultAcceptor;
 import com.radixdlt.utils.UInt384;
 import java.io.IOException;
 import java.net.SocketException;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -27,6 +32,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import org.radix.atoms.Atom;
@@ -45,6 +51,7 @@ import org.radix.atoms.events.AtomUpdatedEvent;
 import org.radix.atoms.events.ParticleEvent;
 import org.radix.atoms.events.ParticleListener;
 import org.radix.atoms.messages.AtomSubmitMessage;
+import org.radix.atoms.particles.conflict.ParticleConflict;
 import org.radix.atoms.particles.conflict.ParticleConflictException;
 import org.radix.atoms.particles.conflict.events.ConflictConcurrentEvent;
 import org.radix.atoms.particles.conflict.events.ConflictDetectedEvent;
@@ -1434,7 +1441,42 @@ public class AtomSync extends Service
 						if (atomsLog.hasLevel(Logging.DEBUG)) {
 							atomsLog.debug("Validating Atom "+preparedAtom.getAtomID()+" to COMPLETE");
 						}
-						Modules.get(ValidationHandler.class).stateCheck(massedAtom.getFirst());
+						StateCheckResult result = Modules.get(ValidationHandler.class).getRadixEngine().stateCheck(massedAtom.getFirst());
+						final AtomicReference<ParticleConflictException> conflictRef = new AtomicReference<>();
+						final AtomicReference<AtomDependencyNotFoundException> notFoundRef = new AtomicReference<>();
+						result.accept(new StateCheckResultAcceptor() {
+							@Override
+							public void onConflict(CMAtom cmAtom, SpunParticle issueParticle, ImmutableAtom conflictAtom) {
+								conflictRef.set(
+									new ParticleConflictException(
+										new ParticleConflict(
+											issueParticle,
+											ImmutableSet.of((Atom) cmAtom.getAtom(), (Atom) conflictAtom)
+										))
+								);
+							}
+
+							@Override
+							public void onMissingDependency(CMAtom cmAtom, SpunParticle issueParticle) {
+								notFoundRef.set(
+									new AtomDependencyNotFoundException(
+										String.format("Atom has missing dependencies in transitions: %s", issueParticle.getParticle().getHID()),
+										Collections.singleton(issueParticle.getParticle().getHID()),
+										(Atom) cmAtom.getAtom()
+									)
+								);
+							}
+						});
+
+						ParticleConflictException conflict = conflictRef.get();
+						if (conflict != null) {
+							throw conflict;
+						}
+						AtomDependencyNotFoundException notFoundException = notFoundRef.get();
+						if (notFoundException != null) {
+							throw notFoundException;
+						}
+
 						if (atomsLog.hasLevel(Logging.DEBUG)) {
 							atomsLog.debug("Validated Atom "+preparedAtom.getAtomID()+" to COMPLETE");
 						}

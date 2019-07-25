@@ -3,6 +3,7 @@ package org.radix.integration.stack;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.common.Pair;
 import com.radixdlt.engine.RadixEngineUtils;
+import com.radixdlt.engine.StateCheckResult.StateCheckResultAcceptor;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.UInt384;
 import org.assertj.core.api.Assertions;
@@ -29,6 +30,13 @@ import com.radixdlt.utils.UInt256;
 import org.radix.validation.ValidationHandler;
 
 import java.io.File;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 public class TokenCreationValidationTest extends RadixTestWithStores {
 	private ECKeyPair identity;
@@ -73,7 +81,11 @@ public class TokenCreationValidationTest extends RadixTestWithStores {
 		atom.sign(identity);
 
 		CMAtom cmAtom = RadixEngineUtils.toCMAtom(atom);
-		Modules.get(ValidationHandler.class).stateCheck(cmAtom);
+		StateCheckResultAcceptor acceptor = mock(StateCheckResultAcceptor.class);
+		Modules.get(ValidationHandler.class).getRadixEngine().stateCheck(cmAtom)
+			.accept(acceptor);
+		verify(acceptor, times(1))
+			.onSuccess(eq(cmAtom));
 	}
 
 	@Test
@@ -106,7 +118,6 @@ public class TokenCreationValidationTest extends RadixTestWithStores {
 		addTemporalVertex(atom); // Can't store atom without vertex from this node
 		atom.sign(identity);
 		CMAtom cmAtom = RadixEngineUtils.toCMAtom(atom);
-		Modules.get(ValidationHandler.class).stateCheck(cmAtom);
 		PreparedAtom preparedAtom = new PreparedAtom(cmAtom, UInt384.ONE);
 		Modules.get(AtomStore.class).storeAtom(preparedAtom);
 
@@ -135,7 +146,10 @@ public class TokenCreationValidationTest extends RadixTestWithStores {
 		);
 		secondAtom.sign(identity);
 		CMAtom secondCMAtom = RadixEngineUtils.toCMAtom(secondAtom);
-		Assertions.assertThatThrownBy(() -> Modules.get(ValidationHandler.class).stateCheck(secondCMAtom))
-			.isInstanceOf(ParticleConflictException.class);
+		StateCheckResultAcceptor acceptor = mock(StateCheckResultAcceptor.class);
+		Modules.get(ValidationHandler.class).getRadixEngine().stateCheck(secondCMAtom)
+			.accept(acceptor);
+		verify(acceptor, times(1))
+			.onConflict(eq(secondCMAtom), any(), any());
 	}
 }

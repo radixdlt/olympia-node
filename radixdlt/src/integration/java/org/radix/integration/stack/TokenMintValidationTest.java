@@ -1,8 +1,14 @@
 package org.radix.integration.stack;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.common.Pair;
 import com.radixdlt.engine.RadixEngineUtils;
+import com.radixdlt.engine.StateCheckResult.StateCheckResultAcceptor;
 import com.radixdlt.utils.UInt384;
 import org.junit.Before;
 import org.junit.Test;
@@ -88,7 +94,6 @@ public class TokenMintValidationTest extends RadixTestWithStores {
 
 		CMAtom cmAtom = RadixEngineUtils.toCMAtom(atom);
 		PreparedAtom preparedAtom = new PreparedAtom(cmAtom, UInt384.ONE);
-		Modules.get(ValidationHandler.class).stateCheck(cmAtom);
 		Modules.get(AtomStore.class).storeAtom(preparedAtom);
 
 		// Mint some RADIX tokens
@@ -118,6 +123,10 @@ public class TokenMintValidationTest extends RadixTestWithStores {
 		atom.sign(identity);
 
 		CMAtom cmAtom2 = RadixEngineUtils.toCMAtom(atom);
-		Modules.get(ValidationHandler.class).stateCheck(cmAtom2);
+		StateCheckResultAcceptor acceptor = mock(StateCheckResultAcceptor.class);
+		Modules.get(ValidationHandler.class).getRadixEngine().stateCheck(cmAtom2)
+			.accept(acceptor);
+		verify(acceptor, times(1))
+			.onSuccess(eq(cmAtom2));
 	}
 }
