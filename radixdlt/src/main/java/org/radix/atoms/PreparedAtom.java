@@ -25,12 +25,10 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationUtils;
 import org.radix.time.TemporalVertex;
 import org.radix.universe.system.LocalSystem;
-import org.radix.validation.ValidationHandler;
 
 /**
  * The Atom which Tempo understands (non-translucent).
  * TODO: Separate out serialization/deserialization.
- * TODO: Remove translucent atom.
  */
 public class PreparedAtom {
 	private long clock;
@@ -46,13 +44,9 @@ public class PreparedAtom {
 
 	private Atom atom;
 
-	// TODO: Remove this and just use particle hid + spin
-	private CMAtom cmAtom;
-
-	public PreparedAtom(CMAtom cmAtom) throws IOException {
-		this.cmAtom = cmAtom;
+	public PreparedAtom(CMAtom cmAtom, UInt384 mass) throws IOException {
 		this.atom = (Atom) cmAtom.getAtom();
-		this.mass = cmAtom.getComputedOrError("mass", UInt384.class);
+		this.mass = mass;
 		this.atomID = atom.getAID();
 
 		TemporalVertex vertex = atom.getTemporalProof().getVertexByNID(LocalSystem.getInstance().getNID());
@@ -168,19 +162,6 @@ public class PreparedAtom {
 			}
 		}
 		return this.atom;
-	}
-
-	/**
-	 * FIXME: Currently a horrible hack. Remove callback into constraint machine. Should store mass of the atom in DB.
-	 * @return The processed cm atom
-	 */
-	public CMAtom getCmAtom() {
-		if (this.cmAtom == null) {
-			this.cmAtom = Modules.get(ValidationHandler.class).getConstraintMachine().validate(getAtom(), false)
-				.onSuccessElseThrow(e -> new IllegalStateException());
-		}
-
-		return this.cmAtom;
 	}
 
 	// SERLIALIZATION //

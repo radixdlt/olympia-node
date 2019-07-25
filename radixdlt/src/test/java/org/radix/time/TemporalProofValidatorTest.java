@@ -53,9 +53,7 @@ public class TemporalProofValidatorTest {
 		when(Modules.get(NtpService.class)).thenReturn(ntpService);
 		when(Modules.get(Serialization.class)).thenReturn(Serialization.getDefault());
 
-		ConstraintMachine constraintMachine = mock(ConstraintMachine.class);
 		ValidationHandler validationHandler = mock(ValidationHandler.class);
-		when(validationHandler.getConstraintMachine()).thenReturn(constraintMachine);
 		when(Modules.get(ValidationHandler.class)).thenReturn(validationHandler);
 	}
 

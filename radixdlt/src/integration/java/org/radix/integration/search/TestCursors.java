@@ -1,6 +1,9 @@
 package org.radix.integration.search;
 
+import com.radixdlt.common.Pair;
+import com.radixdlt.engine.RadixEngineUtils;
 import com.radixdlt.universe.Universe;
+import com.radixdlt.utils.UInt384;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -114,8 +117,8 @@ public class TestCursors extends RadixTestWithStores {
 	}
 
 	private void storeAtom(Atom atom) throws Exception {
-		CMAtom cmAtom = Modules.get(ValidationHandler.class).validate(atom);
-		Modules.get(AtomStore.class).storeAtom(new PreparedAtom(cmAtom));
+		CMAtom cmAtom = RadixEngineUtils.toCMAtom(atom);
+		Modules.get(AtomStore.class).storeAtom(new PreparedAtom(cmAtom, UInt384.ONE));
 	}
 
 	private List<Atom> createUniqueAtoms(ECKeyPair identity, int n) throws Exception {

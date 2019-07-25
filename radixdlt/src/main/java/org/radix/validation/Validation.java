@@ -7,6 +7,9 @@ import com.radixdlt.atommodel.tokens.TokenInstancesConstraintScrypt;
 import com.radixdlt.atommodel.unique.UniqueParticleConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.engine.RadixEngine;
+import org.radix.atoms.AtomStore;
+import org.radix.atoms.AtomCMStore;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.modules.Modules;
@@ -16,9 +19,14 @@ import org.radix.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
 import org.radix.time.Time;
 import com.radixdlt.universe.Universe;
+import org.radix.universe.system.LocalSystem;
 
 public class Validation extends Plugin {
 	private static final Logger log = Logging.getLogger();
+	private final AtomCMStore atomStore = new AtomCMStore(
+		() -> Modules.get(AtomStore.class),
+		() -> LocalSystem.getInstance().getShards()
+	);
 
 	@Override
 	public void start_impl() throws ModuleException {
@@ -34,9 +42,10 @@ public class Validation extends Plugin {
 		os.load(new MessageParticleConstraintScrypt());
 		os.load(new TokenInstancesConstraintScrypt());
 
-		ConstraintMachine constraintMachine = os.buildMachine();
+		final ConstraintMachine constraintMachine = os.buildMachine();
+		final RadixEngine radixEngine = new RadixEngine(constraintMachine, atomStore);
 
-		Modules.getInstance().start(new ValidationHandler(constraintMachine));
+		Modules.getInstance().start(new ValidationHandler(radixEngine));
 	}
 
 	@Override

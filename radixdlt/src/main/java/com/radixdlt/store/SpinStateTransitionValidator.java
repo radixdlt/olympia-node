@@ -33,7 +33,7 @@ public class SpinStateTransitionValidator {
 	public static TransitionCheckResult checkParticleTransition(
 		Particle particle,
 		Spin nextSpin,
-		StateStore state
+		CMStore state
 	) {
 		if (!SpinStateMachine.canTransitionTo(nextSpin)) {
 			return TransitionCheckResult.ILLEGAL_TRANSITION_TO;

@@ -1,5 +1,7 @@
 package com.radixdlt.store;
 
+import com.radixdlt.atoms.ImmutableAtom;
+import com.radixdlt.atoms.SpunParticle;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -10,12 +12,12 @@ import com.radixdlt.common.EUID;
 /**
  * Utility methods for managing and virtualizing state stores
  */
-public final class StateStores {
-	private StateStores() {
+public final class CMStores {
+	private CMStores() {
 		throw new IllegalStateException("Cannot instantiate.");
 	}
 
-	private static final StateStore EMPTY_STATE_STORE = new StateStore() {
+	private static final CMStore EMPTY_STATE_STORE = new CMStore() {
 		@Override
 		public boolean supports(Set<EUID> destinations) {
 			return true;
@@ -25,13 +27,18 @@ public final class StateStores {
 		public Optional<Spin> getSpin(Particle particle) {
 			return Optional.empty();
 		}
+
+		@Override
+		public ImmutableAtom getAtomContaining(SpunParticle spunParticle) {
+			return null;
+		}
 	};
 
 	/**
 	 * An empty state store which returns neutral spin for every particle
 	 * @return an empty state store
 	 */
-	public static StateStore empty() {
+	public static CMStore empty() {
 		return EMPTY_STATE_STORE;
 	}
 
@@ -45,8 +52,8 @@ public final class StateStores {
 	 * @param spin the default spin to virtualize with
 	 * @return the virtualized state store
 	 */
-	public static StateStore virtualizeDefault(StateStore base, Predicate<Particle> particleCheck, Spin spin) {
-		return new StateStore() {
+	public static CMStore virtualizeDefault(CMStore base, Predicate<Particle> particleCheck, Spin spin) {
+		return new CMStore() {
 			@Override
 			public boolean supports(Set<EUID> destinations) {
 				return base.supports(destinations);
@@ -65,6 +72,11 @@ public final class StateStores {
 
 				return curSpin;
 			}
+
+			@Override
+			public ImmutableAtom getAtomContaining(SpunParticle spunParticle) {
+				return base.getAtomContaining(spunParticle);
+			}
 		};
 	}
 
@@ -78,8 +90,8 @@ public final class StateStores {
 	 * @param spin the spin to always return given predicate success
 	 * @return the virtualized state store
 	 */
-	public static StateStore virtualizeOverwrite(StateStore base, Predicate<Particle> particleCheck, Spin spin) {
-		return new StateStore() {
+	public static CMStore virtualizeOverwrite(CMStore base, Predicate<Particle> particleCheck, Spin spin) {
+		return new CMStore() {
 			@Override
 			public boolean supports(Set<EUID> destinations) {
 				return base.supports(destinations);
@@ -92,6 +104,11 @@ public final class StateStores {
 				}
 
 				return base.getSpin(particle);
+			}
+
+			@Override
+			public ImmutableAtom getAtomContaining(SpunParticle spunParticle) {
+				return base.getAtomContaining(spunParticle);
 			}
 		};
 	}

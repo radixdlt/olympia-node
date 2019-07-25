@@ -1,6 +1,8 @@
 package com.radixdlt.store;
 
+import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.atoms.Particle;
+import com.radixdlt.atoms.SpunParticle;
 import java.util.Optional;
 import java.util.Set;
 import com.radixdlt.atoms.Spin;
@@ -9,7 +11,7 @@ import com.radixdlt.common.EUID;
 /**
  *  A state that gives access to the state of a certain shard space
  */
-public interface StateStore {
+public interface CMStore {
 
 	/**
 	 * Returns whether this state store supports any of the given destinations
@@ -26,4 +28,10 @@ public interface StateStore {
 	 * @return if known, the current spin of a particle, otherwise an empty optional
 	 */
 	Optional<Spin> getSpin(Particle particle);
+
+	/**
+	 * Retrieves the atom containing the given spun particle.
+	 * TODO: remove this method and combine with getSpin
+	 */
+	ImmutableAtom getAtomContaining(SpunParticle spunParticle);
 }

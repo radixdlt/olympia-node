@@ -77,6 +77,16 @@ public final class SpinStateMachine {
 
 	}
 	private static class SpinStateIndexes {
+		private static final ImmutableMap<Spin, Spin> NEXT = ImmutableMap.of(
+			NEUTRAL, UP,
+			UP, DOWN
+		);
+
+		private static final ImmutableMap<Spin, Spin> PREV = ImmutableMap.of(
+			DOWN, UP,
+			UP, NEUTRAL
+		);
+
 		private static final ImmutableSet<Transition> VALID_TRANSITIONS = ImmutableSet.of(
 			Transition.of(NEUTRAL, UP),
 			Transition.of(UP, DOWN)
@@ -94,6 +104,23 @@ public final class SpinStateMachine {
 			DOWN, EnumSet.of(NEUTRAL, UP)
 		);
 	}
+
+	public static Spin next(Spin current) {
+		final Spin nextSpin = SpinStateIndexes.NEXT.get(current);
+		if (nextSpin == null) {
+			throw new IllegalArgumentException("No spin after " + current);
+		}
+		return nextSpin;
+	}
+
+	public static Spin prev(Spin current) {
+		final Spin prevSpin = SpinStateIndexes.PREV.get(current);
+		if (prevSpin == null) {
+			throw new IllegalArgumentException("No spin before " + current);
+		}
+		return prevSpin;
+	}
+
 	/**
 	 * Checks if a spin state is after a given spin state non-inclusive in
 	 * the sequential spin state machine.

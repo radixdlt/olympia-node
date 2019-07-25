@@ -1,7 +1,10 @@
 package org.radix.integration.stack;
 
 import com.google.common.collect.ImmutableMap;
+import com.radixdlt.common.Pair;
+import com.radixdlt.engine.RadixEngineUtils;
 import com.radixdlt.universe.Universe;
+import com.radixdlt.utils.UInt384;
 import org.assertj.core.api.Assertions;
 import org.junit.Before;
 import org.junit.Test;
@@ -69,7 +72,7 @@ public class TokenCreationValidationTest extends RadixTestWithStores {
 		);
 		atom.sign(identity);
 
-		CMAtom cmAtom = Modules.get(ValidationHandler.class).validate(atom);
+		CMAtom cmAtom = RadixEngineUtils.toCMAtom(atom);
 		Modules.get(ValidationHandler.class).stateCheck(cmAtom);
 	}
 
@@ -102,9 +105,9 @@ public class TokenCreationValidationTest extends RadixTestWithStores {
 		);
 		addTemporalVertex(atom); // Can't store atom without vertex from this node
 		atom.sign(identity);
-		CMAtom cmAtom = Modules.get(ValidationHandler.class).validate(atom);
+		CMAtom cmAtom = RadixEngineUtils.toCMAtom(atom);
 		Modules.get(ValidationHandler.class).stateCheck(cmAtom);
-		PreparedAtom preparedAtom = new PreparedAtom(cmAtom);
+		PreparedAtom preparedAtom = new PreparedAtom(cmAtom, UInt384.ONE);
 		Modules.get(AtomStore.class).storeAtom(preparedAtom);
 
 		Atom secondAtom = new Atom(Time.currentTimestamp());
@@ -131,8 +134,8 @@ public class TokenCreationValidationTest extends RadixTestWithStores {
 			secondUnallocateTokensParticle, Spin.UP
 		);
 		secondAtom.sign(identity);
-		CMAtom cmAtom1 = Modules.get(ValidationHandler.class).validate(secondAtom);
-		Assertions.assertThatThrownBy(() -> Modules.get(ValidationHandler.class).stateCheck(cmAtom1))
+		CMAtom secondCMAtom = RadixEngineUtils.toCMAtom(secondAtom);
+		Assertions.assertThatThrownBy(() -> Modules.get(ValidationHandler.class).stateCheck(secondCMAtom))
 			.isInstanceOf(ParticleConflictException.class);
 	}
 }
