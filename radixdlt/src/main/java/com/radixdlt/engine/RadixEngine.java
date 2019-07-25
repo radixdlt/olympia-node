@@ -17,6 +17,7 @@ import com.radixdlt.store.SpinStateTransitionValidator;
 import com.radixdlt.store.SpinStateTransitionValidator.TransitionCheckResult;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 /**
@@ -26,6 +27,7 @@ public final class RadixEngine {
 	private final ConstraintMachine constraintMachine;
 	private final AtomCompute compute;
 	private final CMStore cmStore;
+	private final CopyOnWriteArrayList<AtomEventListener> atomEventListeners = new CopyOnWriteArrayList<>();
 
 	public RadixEngine(ConstraintMachine constraintMachine, AtomCompute compute, CMStore cmStore) {
 		this.constraintMachine = constraintMachine;
@@ -33,12 +35,20 @@ public final class RadixEngine {
 		this.cmStore = constraintMachine.getVirtualStore().apply(cmStore);
 	}
 
-	public ValidationResult validate(CMAtom cmAtom) {
+	public void addAtomEventListener(AtomEventListener acceptor) {
+		this.atomEventListeners.add(acceptor);
+	}
+
+	public void removeAtomEventListener(AtomEventListener acceptor) {
+		this.atomEventListeners.remove(acceptor);
+	}
+
+	public void validate(CMAtom cmAtom) {
 		final ImmutableSet<CMError> errors = constraintMachine.validate(cmAtom, false);
 		if (errors.isEmpty()) {
-			return acceptor -> acceptor.onSuccess(cmAtom, compute.compute(cmAtom));
+			atomEventListeners.forEach(acceptor -> acceptor.onCMSuccess(cmAtom, compute.compute(cmAtom)));
 		} else {
-			return acceptor -> acceptor.onError(cmAtom, errors);
+			atomEventListeners.forEach(acceptor -> acceptor.onCMError(cmAtom, errors));
 		}
 	}
 

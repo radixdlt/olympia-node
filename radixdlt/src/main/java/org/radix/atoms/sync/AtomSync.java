@@ -6,8 +6,7 @@ import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.engine.RadixEngineUtils;
 import com.radixdlt.engine.RadixEngineUtils.CMAtomConversionException;
-import com.radixdlt.engine.ValidationResult;
-import com.radixdlt.engine.ValidationResult.ValidationResultAcceptor;
+import com.radixdlt.engine.AtomEventListener;
 import com.radixdlt.utils.UInt384;
 import java.io.IOException;
 import java.net.SocketException;
@@ -20,7 +19,6 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.BlockingQueue;
@@ -29,7 +27,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import org.radix.atoms.Atom;
@@ -444,53 +441,7 @@ public class AtomSync extends Service
 					continue;
 				}
 
-				// TODO: Remove result from validate() and add event listener to RadixEngine
-				ValidationResult result = Modules.get(ValidationHandler.class).validate(cmAtom);
-				result.accept(new ValidationResultAcceptor() {
-					@Override
-					public void onSuccess(CMAtom cmAtom, ImmutableMap<String, Object> computed) {
-						Object result = computed.get("mass");
-						if (result == null) {
-							throw new NullPointerException("mass does not exist");
-						}
-
-						final Atom curAtom = (Atom) cmAtom.getAtom();
-
-						if (atomsLog.hasLevel(Logging.DEBUG)) {
-							atomsLog.debug("Validated Atom " + curAtom.getHID() + " to SIGNATURE");
-						}
-
-						// TODO is this good here?
-						// All atoms will be witnessed, even invalid ones.  If flooded with invalid atoms, it may make it harder for
-						// remote nodes to determine if this node saw a particular atom vs a commitment stream that only includes
-						// committed atoms.
-						try {
-							witnessed(cmAtom);
-						} catch (Exception e) {
-							atomsLog.error(e);
-							Events.getInstance().broadcast(new AtomExceptionEvent(e, (Atom) cmAtom.getAtom()));
-							return;
-						}
-
-						if (numShards > 512)
-							atomsLog.warn(curAtom.getHID()+" at clock "+curAtom.getTemporalProof().getVertexByNID(LocalSystem.getInstance().getNID()).getClock()+" is super mega large with "+numShards+" shards");
-						else if (numShards > 64)
-							atomsLog.warn(curAtom.getHID()+" at clock "+curAtom.getTemporalProof().getVertexByNID(LocalSystem.getInstance().getNID()).getClock()+" is super large with "+numShards+" shards");
-						else if (numShards > 8)
-							atomsLog.warn(curAtom.getHID()+" at clock "+curAtom.getTemporalProof().getVertexByNID(LocalSystem.getInstance().getNID()).getClock()+" is large with "+numShards+" shards");
-
-						// TODO: Move commitQueue into RadixEngine
-						AtomSync.this.commitQueue.add(Pair.of(cmAtom, (UInt384) result));
-					}
-
-					@Override
-					public void onError(CMAtom cmAtom, Set<CMError> errors) {
-						CMError cmError = errors.iterator().next();
-						ConstraintMachineValidationException e = new ConstraintMachineValidationException(cmAtom.getAtom(), cmError.getErrorDescription(), cmError.getDataPointer());
-						atomsLog.error(e);
-						Events.getInstance().broadcast(new AtomExceptionEvent(e, (Atom) cmAtom.getAtom()));
-					}
-				});
+				Modules.get(ValidationHandler.class).getRadixEngine().validate(cmAtom);
 			}
 		}
 	}
@@ -1396,6 +1347,64 @@ public class AtomSync extends Service
 			this.prepareProcessorThreads[thread].start();
 		}
 
+		Modules.get(ValidationHandler.class).getRadixEngine().addAtomEventListener(
+			new AtomEventListener() {
+				@Override
+				public void onCMSuccess(CMAtom cmAtom, ImmutableMap<String, Object> computed) {
+					Object result = computed.get("mass");
+					if (result == null) {
+						throw new NullPointerException("mass does not exist");
+					}
+
+					final Atom curAtom = (Atom) cmAtom.getAtom();
+
+					if (atomsLog.hasLevel(Logging.DEBUG)) {
+						atomsLog.debug("Validated Atom " + curAtom.getHID() + " to SIGNATURE");
+					}
+
+					// TODO is this good here?
+					// All atoms will be witnessed, even invalid ones.  If flooded with invalid atoms, it may make it harder for
+					// remote nodes to determine if this node saw a particular atom vs a commitment stream that only includes
+					// committed atoms.
+					try {
+						witnessed(cmAtom);
+					} catch (Exception e) {
+						atomsLog.error(e);
+						Events.getInstance().broadcast(new AtomExceptionEvent(e, (Atom) cmAtom.getAtom()));
+						return;
+					}
+
+					// Store immediately if universe
+					if (Modules.get(Universe.class).getGenesis().contains(cmAtom.getAtom())) {
+						try {
+							PreparedAtom preparedAtom = new PreparedAtom(cmAtom, (UInt384) result);
+							Modules.get(AtomStore.class).storeAtom(preparedAtom);
+						} catch (Exception e) {
+							log.fatal("Failed to process genesis Atom", e);
+							System.exit(-1);
+						}
+					} else {
+						// TODO: Move commitQueue into RadixEngine
+						AtomSync.this.commitQueue.add(Pair.of(cmAtom, (UInt384) result));
+					}
+				}
+
+				@Override
+				public void onCMError(CMAtom cmAtom, Set<CMError> errors) {
+					CMError cmError = errors.iterator().next();
+					ConstraintMachineValidationException e = new ConstraintMachineValidationException(cmAtom.getAtom(), cmError.getErrorDescription(), cmError.getDataPointer());
+					if (Modules.get(Universe.class).getGenesis().contains(cmAtom.getAtom())) {
+						log.fatal("Failed to process genesis Atom", e);
+						System.exit(-1);
+						return;
+					}
+
+					atomsLog.error(e);
+					Events.getInstance().broadcast(new AtomExceptionEvent(e, (Atom) cmAtom.getAtom()));
+				}
+			}
+		);
+
 		this.commitProcessor = new Executable()
 		{
 			@Override
@@ -1493,37 +1502,7 @@ public class AtomSync extends Service
 						CMError cmError = e.getErrors().iterator().next();
 						throw new ConstraintMachineValidationException(atom, cmError.getErrorDescription(), cmError.getDataPointer());
 					}
-					ValidationResult result = Modules.get(ValidationHandler.class).validate(cmAtom);
-					final AtomicReference<CMAtom> atomRef = new AtomicReference<>();
-					final AtomicReference<UInt384> massRef = new AtomicReference<>();
-					final AtomicReference<Set<CMError>> errorsRef = new AtomicReference<>();
-
-					result.accept(new ValidationResultAcceptor() {
-						@Override
-						public void onSuccess(CMAtom cmAtom, ImmutableMap<String, Object> computed) {
-							Object result = computed.get("mass");
-							if (result == null) {
-								throw new NullPointerException("mass does not exist");
-							}
-							atomRef.set(cmAtom);
-							massRef.set((UInt384) result);
-						}
-
-						@Override
-						public void onError(CMAtom cmAtom, Set<CMError> errors) {
-							errorsRef.set(errors);
-						}
-					});
-
-					final CMAtom validatedAtom = atomRef.get();
-					if (validatedAtom == null) {
-						CMError cmError = errorsRef.get().iterator().next();
-						throw new ConstraintMachineValidationException(atom, cmError.getErrorDescription(), cmError.getDataPointer());
-					}
-
-					witnessed(validatedAtom);
-					PreparedAtom preparedAtom = new PreparedAtom(validatedAtom, massRef.get());
-					Modules.get(AtomStore.class).storeAtom(preparedAtom);
+					Modules.get(ValidationHandler.class).getRadixEngine().validate(cmAtom);
 				}
 			}
 			waitForAtoms(atomIds);

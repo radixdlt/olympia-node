@@ -5,15 +5,12 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.CMErrorCode;
 import com.radixdlt.engine.RadixEngineUtils;
-import com.radixdlt.engine.ValidationResult.ValidationResultAcceptor;
+import com.radixdlt.engine.AtomEventListener;
 import com.radixdlt.utils.UInt384;
-import java.util.Collections;
 import org.assertj.core.api.Assertions;
 import org.junit.Before;
 import org.junit.Test;
@@ -35,7 +32,6 @@ import org.radix.atoms.particles.conflict.ParticleConflictException;
 import com.radixdlt.utils.Offset;
 import org.radix.time.NtpService;
 import com.radixdlt.universe.Universe;
-import org.radix.validation.ConstraintMachineValidationException;
 import com.radixdlt.crypto.ECKeyPair;
 import org.radix.discovery.DiscoveryRequest.Action;
 import org.radix.integration.RadixTestWithStores;
@@ -119,11 +115,12 @@ public class TokenTransferValidationTest extends RadixTestWithStores {
 		atom.sign(identity);
 
 		CMAtom cmAtom = RadixEngineUtils.toCMAtom(atom);
-		ValidationResultAcceptor acceptor = mock(ValidationResultAcceptor.class);
-		Modules.get(ValidationHandler.class).validate(cmAtom)
-			.accept(acceptor);
+		AtomEventListener acceptor = mock(AtomEventListener.class);
+		Modules.get(ValidationHandler.class).getRadixEngine().addAtomEventListener(acceptor);
+		Modules.get(ValidationHandler.class).getRadixEngine().validate(cmAtom);
+		Modules.get(ValidationHandler.class).getRadixEngine().removeAtomEventListener(acceptor);
 		verify(acceptor, times(1))
-			.onError(eq(cmAtom), argThat(e -> e.stream().anyMatch(err -> err.getErrorCode().equals(CMErrorCode.PROCEDURE_ERROR))));
+			.onCMError(eq(cmAtom), argThat(e -> e.stream().anyMatch(err -> err.getErrorCode().equals(CMErrorCode.PROCEDURE_ERROR))));
 	}
 
 	@Test
@@ -147,11 +144,12 @@ public class TokenTransferValidationTest extends RadixTestWithStores {
 		atom.sign(identity);
 
 		CMAtom cmAtom = RadixEngineUtils.toCMAtom(atom);
-		ValidationResultAcceptor acceptor = mock(ValidationResultAcceptor.class);
-		Modules.get(ValidationHandler.class).validate(cmAtom)
-			.accept(acceptor);
+		AtomEventListener acceptor = mock(AtomEventListener.class);
+		Modules.get(ValidationHandler.class).getRadixEngine().addAtomEventListener(acceptor);
+		Modules.get(ValidationHandler.class).getRadixEngine().validate(cmAtom);
+		Modules.get(ValidationHandler.class).getRadixEngine().removeAtomEventListener(acceptor);
 		verify(acceptor, times(1))
-			.onError(eq(cmAtom), argThat(e -> e.stream().anyMatch(err -> err.getErrorCode().equals(CMErrorCode.PROCEDURE_ERROR))));
+			.onCMError(eq(cmAtom), argThat(e -> e.stream().anyMatch(err -> err.getErrorCode().equals(CMErrorCode.PROCEDURE_ERROR))));
 	}
 
 	private static long currentPlanckTime() {

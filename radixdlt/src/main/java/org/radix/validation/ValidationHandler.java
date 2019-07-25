@@ -1,23 +1,13 @@
 package org.radix.validation;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.atoms.SpunParticle;
-import com.radixdlt.common.Pair;
-import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.engine.RadixEngineUtils;
-import com.radixdlt.engine.RadixEngineUtils.CMAtomConversionException;
 import com.radixdlt.engine.StateCheckResult;
 import com.radixdlt.engine.StateCheckResult.StateCheckResultAcceptor;
-import com.radixdlt.engine.ValidationResult;
-import com.radixdlt.engine.ValidationResult.ValidationResultAcceptor;
-import com.radixdlt.utils.UInt384;
 import java.util.Collections;
-import java.util.Objects;
 
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import org.radix.atoms.Atom;
 import com.radixdlt.constraintmachine.CMAtom;
@@ -42,8 +32,8 @@ public class ValidationHandler extends Service {
 		return "Validation Handler";
 	}
 
-	public ValidationResult validate(CMAtom cmAtom) {
-		return radixEngine.validate(cmAtom);
+	public RadixEngine getRadixEngine() {
+		return radixEngine;
 	}
 
 	public void stateCheck(CMAtom cmAtom) throws ValidationException {
