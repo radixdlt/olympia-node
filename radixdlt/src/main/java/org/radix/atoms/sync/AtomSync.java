@@ -1365,7 +1365,7 @@ public class AtomSync extends Service
 		engine.addAtomEventListener(
 			new AtomEventListener() {
 				@Override
-				public void onCMSuccess(CMAtom cmAtom, ImmutableMap<String, Object> computed) {
+				public void onCMSuccess(CMAtom cmAtom, Object computed) {
 					if (atomsLog.hasLevel(Logging.DEBUG)) {
 						atomsLog.debug("Validated Atom " + cmAtom.getAtom().getHID() + " to SIGNATURE");
 					}
@@ -1386,7 +1386,7 @@ public class AtomSync extends Service
 				}
 
 				@Override
-				public void onStateStore(CMAtom cmAtom, ImmutableMap<String, Object> computed) {
+				public void onStateStore(CMAtom cmAtom, Object computed) {
 					if (atomsLog.hasLevel(Logging.DEBUG)) {
 						atomsLog.debug("Validated Atom " + cmAtom.getAtom().getAID() + " to COMPLETE");
 					}

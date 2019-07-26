@@ -44,15 +44,4 @@ public class CMAtomOSTest {
 		assertThat(machine.validate(atom, true))
 			.anyMatch(e -> e.getErrorCode() == CMErrorCode.UNKNOWN_PARTICLE);
 	}
-
-	@Test
-	public void when_a_compute_is_registered_with_duplicate_keys_and_the_machine_is_built__an_illegal_state_exception_should_occur() {
-		CMAtomOS os = new CMAtomOS(() -> mock(Universe.class), () -> 0);
-		assertThatThrownBy(() -> os.loadKernelConstraintScrypt(kernel -> {
-			kernel.onAtom().compute("duplicate", atom -> "hello");
-			kernel.onAtom().compute("duplicate", atom -> "hello");
-		})).isInstanceOf(IllegalStateException.class);
-	}
-
-
 }

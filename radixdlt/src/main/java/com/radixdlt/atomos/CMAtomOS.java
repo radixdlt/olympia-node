@@ -45,7 +45,7 @@ public final class CMAtomOS implements AtomOSKernel, AtomOS {
 	private static final Pattern PARTICLE_NAME_PATTERN = Pattern.compile("[1-9A-Za-z]+");
 	private final List<ConstraintProcedure> procedures = new ArrayList<>();
 	private final List<KernelConstraintProcedure> kernelProcedures = new ArrayList<>();
-	private final Map<String, AtomKernelCompute> atomKernelComputes = new HashMap<>();
+	private AtomKernelCompute atomKernelCompute;
 
 	private final List<FungibleTransition<? extends Particle>> fungibleTransitions = new ArrayList<>();
 	private FungibleTransition.Builder<? extends Particle> pendingFungibleTransition = null;
@@ -189,12 +189,13 @@ public final class CMAtomOS implements AtomOSKernel, AtomOS {
 			}
 
 			@Override
-			public void compute(String key, AtomKernelCompute compute) {
-				if (CMAtomOS.this.atomKernelComputes.containsKey(key)) {
-					throw new IllegalStateException("Compute key [" + key + "] already in use.");
+			public void setCompute(AtomKernelCompute compute) {
+
+				if (CMAtomOS.this.atomKernelCompute != null) {
+					throw new IllegalStateException("Compute already set.");
 				}
 
-				CMAtomOS.this.atomKernelComputes.put(key, compute);
+				CMAtomOS.this.atomKernelCompute = compute;
 			}
 		};
 	}
@@ -218,9 +219,7 @@ public final class CMAtomOS implements AtomOSKernel, AtomOS {
 	 */
 	public Pair<ConstraintMachine, AtomCompute> buildMachine() {
 		ConstraintMachine.Builder cmBuilder = new Builder();
-		AtomCompute.Builder computeBuilder = new AtomCompute.Builder();
 
-		this.atomKernelComputes.forEach(computeBuilder::addCompute);
 		this.procedures.forEach(cmBuilder::addProcedure);
 		this.kernelProcedures.forEach(cmBuilder::addProcedure);
 
@@ -256,6 +255,8 @@ public final class CMAtomOS implements AtomOSKernel, AtomOS {
 
 		cmBuilder.virtualStore(virtualizedDefault);
 
-		return Pair.of(cmBuilder.build(), computeBuilder.build());
+		final AtomCompute compute = atomKernelCompute != null ? a -> atomKernelCompute.compute(a.getAtom()) : null;
+
+		return Pair.of(cmBuilder.build(), compute);
 	}
 }

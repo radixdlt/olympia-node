@@ -1,6 +1,5 @@
 package com.radixdlt.engine;
 
-import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.atoms.SpunParticle;
 import com.radixdlt.constraintmachine.CMAtom;
@@ -11,13 +10,13 @@ import java.util.Set;
  * Listener for atom events as they go through the Radix Engine pipeline.
  */
 public interface AtomEventListener {
-	default void onCMSuccess(CMAtom cmAtom, ImmutableMap<String, Object> computed) {
+	default void onCMSuccess(CMAtom cmAtom, Object computed) {
 	}
 
 	default void onCMError(CMAtom cmAtom, Set<CMError> errors) {
 	}
 
-	default void onStateStore(CMAtom cmAtom, ImmutableMap<String, Object> computed) {
+	default void onStateStore(CMAtom cmAtom, Object computed) {
 	}
 
 	default void onStateConflict(CMAtom cmAtom, SpunParticle issueParticle, ImmutableAtom conflictingAtom) {

@@ -33,7 +33,7 @@ public interface AtomOSKernel {
 	 */
 	interface AtomKernel {
 		void require(AtomKernelConstraintCheck constraint);
-		void compute(String key, AtomKernelCompute compute);
+		void setCompute(AtomKernelCompute compute);
 	}
 
 	/**

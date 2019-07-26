@@ -1,6 +1,5 @@
 package org.radix.atoms;
 
-import com.google.common.collect.ImmutableMap;
 import com.radixdlt.constraintmachine.CMAtom;
 import com.radixdlt.utils.UInt384;
 import java.util.Optional;
@@ -64,14 +63,13 @@ public class AtomEngineStore implements EngineStore {
 	}
 
 	@Override
-	public void storeAtom(CMAtom cmAtom, ImmutableMap<String, Object> computed) {
+	public void storeAtom(CMAtom cmAtom, Object computed) {
 		try {
-			Object mass = computed.get("mass");
-			if (mass == null) {
+			if (computed == null) {
 				throw new IllegalStateException("mass was not computed");
 			}
 
-			final PreparedAtom preparedAtom = new PreparedAtom(cmAtom, (UInt384) mass);
+			final PreparedAtom preparedAtom = new PreparedAtom(cmAtom, (UInt384) computed);
 			atomStoreSupplier.get().storeAtom(preparedAtom);
 		} catch (Exception e) {
 			AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(e, (Atom) cmAtom.getAtom());

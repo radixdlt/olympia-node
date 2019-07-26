@@ -1,6 +1,5 @@
 package com.radixdlt.engine;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atoms.DataPointer;
 import com.radixdlt.atoms.ImmutableAtom;
@@ -34,8 +33,8 @@ public final class RadixEngine {
 	private final EngineStore engineStore;
 	private final CMStore virtualizedCMStore;
 	private final CopyOnWriteArrayList<AtomEventListener> atomEventListeners = new CopyOnWriteArrayList<>();
-	private final CopyOnWriteArrayList<BiConsumer<CMAtom, ImmutableMap<String, Object>>> cmSuccessHooks = new CopyOnWriteArrayList<>();
-	private	final BlockingQueue<Pair<CMAtom, ImmutableMap<String, Object>>> commitQueue = new LinkedBlockingQueue<>();
+	private final CopyOnWriteArrayList<BiConsumer<CMAtom, Object>> cmSuccessHooks = new CopyOnWriteArrayList<>();
+	private	final BlockingQueue<Pair<CMAtom, Object>> commitQueue = new LinkedBlockingQueue<>();
 	private final Thread stateUpdateEngine;
 
 	public RadixEngine(
@@ -49,7 +48,7 @@ public final class RadixEngine {
 		this.engineStore = engineStore;
 		this.stateUpdateEngine = new Thread(() -> {
 			while (true) {
-				final Pair<CMAtom, ImmutableMap<String, Object>> massedAtom;
+				final Pair<CMAtom, Object> massedAtom;
 				try {
 					massedAtom = this.commitQueue.poll(1, TimeUnit.SECONDS);
 				} catch (InterruptedException e) {
@@ -61,7 +60,7 @@ public final class RadixEngine {
 				if (massedAtom == null)
 					continue;
 
-				stateCheck(massedAtom.getFirst(), massedAtom.getSecond());
+				stateCheckAndStore(massedAtom.getFirst(), massedAtom.getSecond());
 			}
 		});
 		this.stateUpdateEngine.setName("Radix Engine");
@@ -71,11 +70,11 @@ public final class RadixEngine {
 		stateUpdateEngine.start();
 	}
 
-	public void addCMSuccessHook(BiConsumer<CMAtom, ImmutableMap<String, Object>> hook) {
+	public void addCMSuccessHook(BiConsumer<CMAtom, Object> hook) {
 		this.cmSuccessHooks.add(hook);
 	}
 
-	public void removeCMSuccessHook(BiConsumer<CMAtom, ImmutableMap<String, Object>> hook) {
+	public void removeCMSuccessHook(BiConsumer<CMAtom, Object> hook) {
 		this.cmSuccessHooks.remove(hook);
 	}
 
@@ -91,7 +90,7 @@ public final class RadixEngine {
 	public void submit(CMAtom cmAtom) {
 		final ImmutableSet<CMError> errors = constraintMachine.validate(cmAtom, false);
 		if (errors.isEmpty()) {
-			ImmutableMap<String, Object> computed = compute.compute(cmAtom);
+			Object computed = compute.compute(cmAtom);
 			this.cmSuccessHooks.forEach(hook -> hook.accept(cmAtom, computed));
 			this.commitQueue.add(Pair.of(cmAtom, computed));
 			this.atomEventListeners.forEach(acceptor -> acceptor.onCMSuccess(cmAtom, computed));
@@ -100,7 +99,7 @@ public final class RadixEngine {
 		}
 	}
 
-	private void stateCheck(CMAtom cmAtom, ImmutableMap<String, Object> computed) {
+	private void stateCheckAndStore(CMAtom cmAtom, Object computed) {
 		final ImmutableAtom atom = cmAtom.getAtom();
 		// TODO: Optimize these collectors out
 		Map<TransitionCheckResult, List<Pair<DataPointer, TransitionCheckResult>>> spinCheckResults = cmAtom.getParticles()
