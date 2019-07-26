@@ -3,6 +3,7 @@ package org.radix.integration.stack;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -126,8 +127,8 @@ public class TokenMintValidationTest extends RadixTestWithStores {
 		CMAtom cmAtom2 = RadixEngineUtils.toCMAtom(atom);
 		AtomEventListener atomEventListener = mock(AtomEventListener.class);
 		Modules.get(ValidationHandler.class).getRadixEngine().addAtomEventListener(atomEventListener);
-		Modules.get(ValidationHandler.class).getRadixEngine().stateCheck(cmAtom2, ImmutableMap.of());
-		verify(atomEventListener, times(1))
+		Modules.get(ValidationHandler.class).getRadixEngine().submit(cmAtom2);
+		verify(atomEventListener, timeout(5000).times(1))
 			.onStateSuccess(eq(cmAtom2), any());
 	}
 }

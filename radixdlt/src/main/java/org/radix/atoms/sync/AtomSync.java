@@ -9,8 +9,6 @@ import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.engine.RadixEngineUtils;
 import com.radixdlt.engine.RadixEngineUtils.CMAtomConversionException;
 import com.radixdlt.engine.AtomEventListener;
-import com.radixdlt.engine.StateCheckResult;
-import com.radixdlt.engine.StateCheckResult.StateCheckResultAcceptor;
 import com.radixdlt.utils.UInt384;
 import java.io.IOException;
 import java.net.SocketException;
@@ -134,7 +132,6 @@ import org.radix.universe.system.events.QueueFullEvent;
 import org.radix.utils.BArray;
 import org.radix.utils.ExceptionUtils;
 import org.radix.utils.MathUtils;
-import org.radix.utils.SystemMetaData;
 import org.radix.utils.SystemProfiler;
 import org.radix.validation.ConstraintMachineValidationException;
 import org.radix.validation.ValidationHandler;
@@ -447,7 +444,7 @@ public class AtomSync extends Service
 					continue;
 				}
 
-				Modules.get(ValidationHandler.class).getRadixEngine().validate(cmAtom);
+				Modules.get(ValidationHandler.class).getRadixEngine().submit(cmAtom);
 			}
 		}
 	}
@@ -456,11 +453,8 @@ public class AtomSync extends Service
 	private	final LinkedBlockingQueue<Atom> prepareQueue = new LinkedBlockingQueue<>();
 	private	final Map<Integer, PrepareProcessor> prepareProcessors = new HashMap<>();
 
-	private Executable 	commitProcessor = null;
-	private Thread		commitProcessorThread = null;
 	private	final Map<AID, AtomStatus>	committing = new ConcurrentHashMap<>();
 	private	final Map<AID, Integer> commitAttempts = new ConcurrentHashMap<>();
-	private	final BlockingQueue<Pair<CMAtom, ImmutableMap<String, Object>>> commitQueue = new LinkedBlockingQueue<>();
 	private final AtomicInteger complexAtomsInCommitting = new AtomicInteger(0);
 	private final AtomicInteger nonComplexAtomsInCommitting = new AtomicInteger(0);
 
@@ -993,7 +987,7 @@ public class AtomSync extends Service
 
 						if ((AtomSync.this.deliveries.size()+AtomSync.this.committing.size()) >= AtomSync.COMMIT_QUEUE_LIMIT)
 						{
-							Events.getInstance().broadcast(new QueueFullEvent(AtomSync.this.commitQueue));
+							Events.getInstance().broadcast(new QueueFullEvent());
 							if (discoveryLog.hasLevel(Logging.DEBUG))
 								discoveryLog.debug("Delaying next checksum, commit queue size of "+(AtomSync.this.deliveries.size()+AtomSync.this.committing.size())+" is greater than max of "+AtomSync.COMMIT_QUEUE_LIMIT);
 							Thread.sleep(1000);
@@ -1159,7 +1153,7 @@ public class AtomSync extends Service
 
 						if ((AtomSync.this.deliveries.size()+AtomSync.this.committing.size()) >= AtomSync.COMMIT_QUEUE_LIMIT)
 						{
-							Events.getInstance().broadcast(new QueueFullEvent(AtomSync.this.commitQueue));
+							Events.getInstance().broadcast(new QueueFullEvent());
 							discoveryLog.error("Delaying next inventory, commit queue size of "+(AtomSync.this.deliveries.size()+AtomSync.this.committing.size())+" is greater than max of "+AtomSync.COMMIT_QUEUE_LIMIT);
 							Thread.sleep(1000);
 							continue;
@@ -1259,7 +1253,7 @@ public class AtomSync extends Service
 					{
 						if ((AtomSync.this.deliveries.size()+AtomSync.this.committing.size()) >= AtomSync.COMMIT_QUEUE_LIMIT)
 						{
-							Events.getInstance().broadcast(new QueueFullEvent(AtomSync.this.commitQueue));
+							Events.getInstance().broadcast(new QueueFullEvent());
 							if (discoveryLog.hasLevel(Logging.DEBUG))
 								discoveryLog.debug("Delaying next delivery, commit queue size of "+(AtomSync.this.deliveries.size()+AtomSync.this.committing.size())+" is greater than max of "+AtomSync.COMMIT_QUEUE_LIMIT);
 							Thread.sleep(1000);
@@ -1353,44 +1347,25 @@ public class AtomSync extends Service
 			this.prepareProcessorThreads[thread].start();
 		}
 
+		Modules.get(ValidationHandler.class).getRadixEngine().addCMSuccessHook(((cmAtom, computed) -> {
+			// TODO is this good here?
+			// All atoms will be witnessed, even invalid ones.  If flooded with invalid atoms, it may make it harder for
+			// remote nodes to determine if this node saw a particular atom vs a commitment stream that only includes
+			// committed atoms.
+			try {
+				witnessed(cmAtom);
+			} catch (Exception e) {
+				atomsLog.error(e);
+				Events.getInstance().broadcast(new AtomExceptionEvent(e, (Atom) cmAtom.getAtom()));
+			}
+		}));
+
 		Modules.get(ValidationHandler.class).getRadixEngine().addAtomEventListener(
 			new AtomEventListener() {
 				@Override
 				public void onCMSuccess(CMAtom cmAtom, ImmutableMap<String, Object> computed) {
-					final Atom curAtom = (Atom) cmAtom.getAtom();
-
 					if (atomsLog.hasLevel(Logging.DEBUG)) {
-						atomsLog.debug("Validated Atom " + curAtom.getHID() + " to SIGNATURE");
-					}
-
-					// TODO is this good here?
-					// All atoms will be witnessed, even invalid ones.  If flooded with invalid atoms, it may make it harder for
-					// remote nodes to determine if this node saw a particular atom vs a commitment stream that only includes
-					// committed atoms.
-					try {
-						witnessed(cmAtom);
-					} catch (Exception e) {
-						atomsLog.error(e);
-						Events.getInstance().broadcast(new AtomExceptionEvent(e, (Atom) cmAtom.getAtom()));
-						return;
-					}
-
-					// Store immediately if universe
-					if (Modules.get(Universe.class).getGenesis().contains(cmAtom.getAtom())) {
-						try {
-							Object result = computed.get("mass");
-							if (result == null) {
-								throw new NullPointerException("mass does not exist");
-							}
-							PreparedAtom preparedAtom = new PreparedAtom(cmAtom, (UInt384) result);
-							Modules.get(AtomStore.class).storeAtom(preparedAtom);
-						} catch (Exception e) {
-							log.fatal("Failed to process genesis Atom", e);
-							System.exit(-1);
-						}
-					} else {
-						// TODO: Move commitQueue into RadixEngine
-						AtomSync.this.commitQueue.add(Pair.of(cmAtom, computed));
+						atomsLog.debug("Validated Atom " + cmAtom.getAtom().getHID() + " to SIGNATURE");
 					}
 				}
 
@@ -1457,40 +1432,6 @@ public class AtomSync extends Service
 			}
 		);
 
-		this.commitProcessor = new Executable()
-		{
-			@Override
-			public void execute()
-			{
-				while (!isTerminated())
-				{
-					final Pair<CMAtom, ImmutableMap<String, Object>> massedAtom;
-					try {
-						massedAtom = AtomSync.this.commitQueue.poll(1, TimeUnit.SECONDS);
-					} catch (InterruptedException e) {
-						// Just exit if we are interrupted
-						Thread.currentThread().interrupt();
-						break;
-					}
-
-					if (massedAtom == null)
-						continue;
-
-					Modules.ifAvailable(SystemMetaData.class, a -> a.increment("ledger.processed"));
-
-					if (atomsLog.hasLevel(Logging.DEBUG)) {
-						atomsLog.debug("Validating Atom " + massedAtom.getFirst().getAtom().getAID() + " to COMPLETE");
-					}
-					Modules.get(ValidationHandler.class).getRadixEngine().stateCheck(massedAtom.getFirst(), massedAtom.getSecond());
-				}
-			}
-		};
-
-		this.commitProcessorThread = new Thread(this.commitProcessor);
-		this.commitProcessorThread.setDaemon (true);
-		this.commitProcessorThread.setName("Atom Commit Processor");
-		this.commitProcessorThread.start();
-
 		// SYNC DISCOVERY //
 		scheduleAtFixedRate(new ScheduledExecutable(10, 10, TimeUnit.SECONDS)
 		{
@@ -1537,7 +1478,7 @@ public class AtomSync extends Service
 						CMError cmError = e.getErrors().iterator().next();
 						throw new ConstraintMachineValidationException(atom, cmError.getErrorDescription(), cmError.getDataPointer());
 					}
-					Modules.get(ValidationHandler.class).getRadixEngine().validate(cmAtom);
+					Modules.get(ValidationHandler.class).getRadixEngine().submit(cmAtom);
 				}
 			}
 			waitForAtoms(atomIds);
@@ -1565,9 +1506,6 @@ public class AtomSync extends Service
 
 		this.deliveryProcessor.terminate(true);
 		this.deliveryThread = null;
-
-		this.commitProcessor.terminate(true);
-		this.commitProcessorThread = null;
 
 		this.checksumProcessor.terminate(true);
 		this.checksumThread = null;
@@ -1599,7 +1537,6 @@ public class AtomSync extends Service
 			"inventories", this.inventories.size(),
 			"inventorySyncQueue", this.inventorySyncQueue.size(),
 			"preparing", this.prepareQueue.size(),
-			"commitQueue", this.commitQueue.size(),
 			"committing", this.committing.size()
 		);
 		metadata.put("complex", this.complexAtomsInCommitting.get());
@@ -1641,14 +1578,6 @@ public class AtomSync extends Service
 		return metadata;
 	}
 
-	public Map<String, Object> getStatistics()
-	{
-		return MapHelper.mapOf(
-			"committingQueueSize", this.commitQueue.size(),
-			"maxQueueSize", AtomSync.COMMIT_QUEUE_LIMIT
-		);
-	}
-
 	private boolean addInventory(RemoteAID remoteAID)
 	{
 		return this.inventories.offer(remoteAID);
@@ -1681,7 +1610,7 @@ public class AtomSync extends Service
 		int queueSize = committingQueueSize(AtomComplexity.ALL);
 		if (queueSize >= AtomSync.COMMIT_QUEUE_LIMIT)
 		{
-			Events.getInstance().broadcast(new QueueFullEvent(this.commitQueue));
+			Events.getInstance().broadcast(new QueueFullEvent());
 			throw new IllegalStateException("Commit queue size of "+queueSize+" is greater than max of "+AtomSync.COMMIT_QUEUE_LIMIT);
 		}
 

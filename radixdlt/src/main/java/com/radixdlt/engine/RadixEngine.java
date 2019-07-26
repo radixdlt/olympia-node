@@ -17,7 +17,11 @@ import com.radixdlt.store.SpinStateTransitionValidator;
 import com.radixdlt.store.SpinStateTransitionValidator.TransitionCheckResult;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 /**
@@ -28,11 +32,44 @@ public final class RadixEngine {
 	private final AtomCompute compute;
 	private final CMStore cmStore;
 	private final CopyOnWriteArrayList<AtomEventListener> atomEventListeners = new CopyOnWriteArrayList<>();
+	private final CopyOnWriteArrayList<BiConsumer<CMAtom, ImmutableMap<String, Object>>> cmSuccessHooks = new CopyOnWriteArrayList<>();
+	private	final BlockingQueue<Pair<CMAtom, ImmutableMap<String, Object>>> commitQueue = new LinkedBlockingQueue<>();
+	private final Thread stateUpdateEngine;
 
 	public RadixEngine(ConstraintMachine constraintMachine, AtomCompute compute, CMStore cmStore) {
 		this.constraintMachine = constraintMachine;
 		this.compute = compute;
 		this.cmStore = constraintMachine.getVirtualStore().apply(cmStore);
+		this.stateUpdateEngine = new Thread(() -> {
+			while (true) {
+				final Pair<CMAtom, ImmutableMap<String, Object>> massedAtom;
+				try {
+					massedAtom = this.commitQueue.poll(1, TimeUnit.SECONDS);
+				} catch (InterruptedException e) {
+					// Just exit if we are interrupted
+					Thread.currentThread().interrupt();
+					break;
+				}
+
+				if (massedAtom == null)
+					continue;
+
+				stateCheck(massedAtom.getFirst(), massedAtom.getSecond());
+			}
+		});
+		this.stateUpdateEngine.setName("Radix Engine");
+	}
+
+	public void start() {
+		stateUpdateEngine.start();
+	}
+
+	public void addCMSuccessHook(BiConsumer<CMAtom, ImmutableMap<String, Object>> hook) {
+		this.cmSuccessHooks.add(hook);
+	}
+
+	public void removeCMSuccessHook(BiConsumer<CMAtom, ImmutableMap<String, Object>> hook) {
+		this.cmSuccessHooks.remove(hook);
 	}
 
 	public void addAtomEventListener(AtomEventListener acceptor) {
@@ -43,16 +80,19 @@ public final class RadixEngine {
 		this.atomEventListeners.remove(acceptor);
 	}
 
-	public void validate(CMAtom cmAtom) {
+	public void submit(CMAtom cmAtom) {
 		final ImmutableSet<CMError> errors = constraintMachine.validate(cmAtom, false);
 		if (errors.isEmpty()) {
-			atomEventListeners.forEach(acceptor -> acceptor.onCMSuccess(cmAtom, compute.compute(cmAtom)));
+			ImmutableMap<String, Object> computed = compute.compute(cmAtom);
+			this.cmSuccessHooks.forEach(hook -> hook.accept(cmAtom, computed));
+			this.commitQueue.add(Pair.of(cmAtom, computed));
+			this.atomEventListeners.forEach(acceptor -> acceptor.onCMSuccess(cmAtom, computed));
 		} else {
-			atomEventListeners.forEach(acceptor -> acceptor.onCMError(cmAtom, errors));
+			this.atomEventListeners.forEach(acceptor -> acceptor.onCMError(cmAtom, errors));
 		}
 	}
 
-	public void stateCheck(CMAtom cmAtom, ImmutableMap<String, Object> computed) {
+	private void stateCheck(CMAtom cmAtom, ImmutableMap<String, Object> computed) {
 		final ImmutableAtom atom = cmAtom.getAtom();
 		// TODO: Optimize these collectors out
 		Map<TransitionCheckResult, List<Pair<DataPointer, TransitionCheckResult>>> spinCheckResults = cmAtom.getParticles()

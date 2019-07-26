@@ -3,6 +3,7 @@ package org.radix.integration.stack;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -153,10 +154,8 @@ public class TokenTransferMultiSignedValidationTest extends RadixTestWithStores 
 		CMAtom multiSigCMAtom = RadixEngineUtils.toCMAtom(multiSigAtom);
 		AtomEventListener listener = mock(AtomEventListener.class);
 		Modules.get(ValidationHandler.class).getRadixEngine().addAtomEventListener(listener);
-		Modules.get(ValidationHandler.class).getRadixEngine().stateCheck(multiSigCMAtom, ImmutableMap.of());
-		verify(listener, times(1))
+		Modules.get(ValidationHandler.class).getRadixEngine().submit(multiSigCMAtom);
+		verify(listener, timeout(5000).times(1))
 			.onStateSuccess(eq(multiSigCMAtom), any());
-		PreparedAtom preparedAtom2 = new PreparedAtom(multiSigCMAtom, UInt384.ONE);
-		Modules.get(AtomStore.class).storeAtom(preparedAtom2);
 	}
 }

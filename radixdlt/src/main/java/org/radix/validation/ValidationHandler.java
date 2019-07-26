@@ -25,6 +25,7 @@ public class ValidationHandler extends Service {
 
 	@Override
 	public void start_impl() {
+		radixEngine.start();
 	}
 
 	@Override

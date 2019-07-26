@@ -7,6 +7,7 @@ import com.radixdlt.engine.RadixEngineUtils;
 import com.radixdlt.engine.StateCheckResult.StateCheckResultAcceptor;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.UInt384;
+import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.Assertions;
 import org.junit.Before;
 import org.junit.Test;
@@ -36,6 +37,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -84,8 +86,9 @@ public class TokenCreationValidationTest extends RadixTestWithStores {
 		CMAtom cmAtom = RadixEngineUtils.toCMAtom(atom);
 		AtomEventListener listener = mock(AtomEventListener.class);
 		Modules.get(ValidationHandler.class).getRadixEngine().addAtomEventListener(listener);
-		Modules.get(ValidationHandler.class).getRadixEngine().stateCheck(cmAtom, ImmutableMap.of());
-		verify(listener, times(1))
+		Modules.get(ValidationHandler.class).getRadixEngine().submit(cmAtom);
+		Modules.get(ValidationHandler.class).getRadixEngine().removeAtomEventListener(listener);
+		verify(listener, timeout(5000).times(1))
 			.onStateSuccess(eq(cmAtom), any());
 	}
 
@@ -150,8 +153,9 @@ public class TokenCreationValidationTest extends RadixTestWithStores {
 
 		AtomEventListener listener = mock(AtomEventListener.class);
 		Modules.get(ValidationHandler.class).getRadixEngine().addAtomEventListener(listener);
-		Modules.get(ValidationHandler.class).getRadixEngine().stateCheck(secondCMAtom, ImmutableMap.of());
-		verify(listener, times(1))
+		Modules.get(ValidationHandler.class).getRadixEngine().submit(secondCMAtom);
+		TimeUnit.SECONDS.sleep(1);
+		verify(listener, timeout(5000).times(1))
 			.onStateConflict(eq(secondCMAtom), any(), any());
 	}
 }

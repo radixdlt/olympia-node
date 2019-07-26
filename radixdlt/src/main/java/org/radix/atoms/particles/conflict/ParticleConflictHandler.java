@@ -474,7 +474,7 @@ public class ParticleConflictHandler extends Service
 				else
 				{
 					remove(conflict);
-					Events.getInstance().broadcast(new QueueFullEvent(this.conflictQueue));
+					Events.getInstance().broadcast(new QueueFullEvent());
 					throw new QueueFullException(conflict.getUID()+": Conflict queue has reached capacity of "+Modules.get(RuntimeProperties.class).get("ledger.conflicts.max",  8192));
 				}
 			}
