@@ -1,8 +1,10 @@
 package com.radixdlt.store;
 
+import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.atoms.SpunParticle;
+import com.radixdlt.constraintmachine.CMAtom;
 import java.util.Optional;
 import java.util.Set;
 import com.radixdlt.atoms.Spin;
@@ -34,4 +36,9 @@ public interface CMStore {
 	 * TODO: remove this method and combine with getSpin
 	 */
 	ImmutableAtom getAtomContaining(SpunParticle spunParticle);
+
+	/**
+	 * Stores the atom into this CMStore
+	 */
+	void storeAtom(CMAtom atom, ImmutableMap<String, Object> computed);
 }

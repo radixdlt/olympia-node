@@ -5,7 +5,6 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.google.common.collect.ImmutableMap;
@@ -92,9 +91,9 @@ public class TokenTransferValidationTest extends RadixTestWithStores {
 		AtomEventListener listener = mock(AtomEventListener.class);
 		Modules.get(ValidationHandler.class).getRadixEngine().addAtomEventListener(listener);
 		Modules.get(ValidationHandler.class).getRadixEngine().submit(cmAtom);
-		Modules.get(ValidationHandler.class).getRadixEngine().removeAtomEventListener(listener);
 		verify(listener, timeout(5000).times(1))
-			.onStateSuccess(eq(cmAtom), any());
+			.onStateStore(eq(cmAtom), any());
+		Modules.get(ValidationHandler.class).getRadixEngine().removeAtomEventListener(listener);
 	}
 
 	@Test
@@ -161,9 +160,9 @@ public class TokenTransferValidationTest extends RadixTestWithStores {
 		AtomEventListener acceptor = mock(AtomEventListener.class);
 		Modules.get(ValidationHandler.class).getRadixEngine().addAtomEventListener(acceptor);
 		Modules.get(ValidationHandler.class).getRadixEngine().submit(cmAtom);
-		Modules.get(ValidationHandler.class).getRadixEngine().removeAtomEventListener(acceptor);
 		verify(acceptor, timeout(5000).times(1))
 			.onCMError(eq(cmAtom), argThat(e -> e.stream().anyMatch(err -> err.getErrorCode().equals(CMErrorCode.PROCEDURE_ERROR))));
+		Modules.get(ValidationHandler.class).getRadixEngine().removeAtomEventListener(acceptor);
 	}
 
 	private static long currentPlanckTime() {
@@ -200,10 +199,9 @@ public class TokenTransferValidationTest extends RadixTestWithStores {
 		AtomEventListener listener = mock(AtomEventListener.class);
 		Modules.get(ValidationHandler.class).getRadixEngine().addAtomEventListener(listener);
 		Modules.get(ValidationHandler.class).getRadixEngine().submit(cmAtom);
-		Modules.get(ValidationHandler.class).getRadixEngine().removeAtomEventListener(listener);
-
 		verify(listener, timeout(5000).times(1))
 			.onStateMissingDependency(eq(cmAtom), any());
+		Modules.get(ValidationHandler.class).getRadixEngine().removeAtomEventListener(listener);
 	}
 
 	@Test

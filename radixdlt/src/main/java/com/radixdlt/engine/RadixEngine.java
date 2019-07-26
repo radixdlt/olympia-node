@@ -36,7 +36,11 @@ public final class RadixEngine {
 	private	final BlockingQueue<Pair<CMAtom, ImmutableMap<String, Object>>> commitQueue = new LinkedBlockingQueue<>();
 	private final Thread stateUpdateEngine;
 
-	public RadixEngine(ConstraintMachine constraintMachine, AtomCompute compute, CMStore cmStore) {
+	public RadixEngine(
+		ConstraintMachine constraintMachine,
+		AtomCompute compute,
+		CMStore cmStore
+	) {
 		this.constraintMachine = constraintMachine;
 		this.compute = compute;
 		this.cmStore = constraintMachine.getVirtualStore().apply(cmStore);
@@ -80,6 +84,7 @@ public final class RadixEngine {
 		this.atomEventListeners.remove(acceptor);
 	}
 
+	// TODO: replace with reactive-streams interface
 	public void submit(CMAtom cmAtom) {
 		final ImmutableSet<CMError> errors = constraintMachine.validate(cmAtom, false);
 		if (errors.isEmpty()) {
@@ -145,6 +150,8 @@ public final class RadixEngine {
 			return;
 		}
 
-		atomEventListeners.forEach(listener -> listener.onStateSuccess(cmAtom, computed));
+		cmStore.storeAtom(cmAtom, computed);
+
+		atomEventListeners.forEach(listener -> listener.onStateStore(cmAtom, computed));
 	}
 }

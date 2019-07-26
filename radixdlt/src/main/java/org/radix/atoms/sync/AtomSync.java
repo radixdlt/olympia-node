@@ -6,10 +6,10 @@ import com.radixdlt.atoms.AtomStatus;
 import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.atoms.SpunParticle;
 import com.radixdlt.constraintmachine.CMError;
+import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineUtils;
 import com.radixdlt.engine.RadixEngineUtils.CMAtomConversionException;
 import com.radixdlt.engine.AtomEventListener;
-import com.radixdlt.utils.UInt384;
 import java.io.IOException;
 import java.net.SocketException;
 import java.net.URI;
@@ -1347,7 +1347,9 @@ public class AtomSync extends Service
 			this.prepareProcessorThreads[thread].start();
 		}
 
-		Modules.get(ValidationHandler.class).getRadixEngine().addCMSuccessHook(((cmAtom, computed) -> {
+		RadixEngine engine = Modules.get(ValidationHandler.class).getRadixEngine();
+
+		engine.addCMSuccessHook(((cmAtom, computed) -> {
 			// TODO is this good here?
 			// All atoms will be witnessed, even invalid ones.  If flooded with invalid atoms, it may make it harder for
 			// remote nodes to determine if this node saw a particular atom vs a commitment stream that only includes
@@ -1360,7 +1362,7 @@ public class AtomSync extends Service
 			}
 		}));
 
-		Modules.get(ValidationHandler.class).getRadixEngine().addAtomEventListener(
+		engine.addAtomEventListener(
 			new AtomEventListener() {
 				@Override
 				public void onCMSuccess(CMAtom cmAtom, ImmutableMap<String, Object> computed) {
@@ -1384,23 +1386,9 @@ public class AtomSync extends Service
 				}
 
 				@Override
-				public void onStateSuccess(CMAtom cmAtom, ImmutableMap<String, Object> computed) {
-					try {
-						if (atomsLog.hasLevel(Logging.DEBUG)) {
-							atomsLog.debug("Validated Atom " + cmAtom.getAtom().getAID() + " to COMPLETE");
-						}
-
-						Object mass = computed.get("mass");
-						if (mass == null) {
-							throw new IllegalStateException("mass was not computed");
-						}
-
-						final PreparedAtom preparedAtom = new PreparedAtom(cmAtom, (UInt384) mass);
-						Modules.get(AtomStore.class).storeAtom(preparedAtom);
-					} catch (Exception e) {
-						AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(e, (Atom) cmAtom.getAtom());
-						Events.getInstance().broadcast(atomExceptionEvent);
-						atomsLog.error(e);
+				public void onStateStore(CMAtom cmAtom, ImmutableMap<String, Object> computed) {
+					if (atomsLog.hasLevel(Logging.DEBUG)) {
+						atomsLog.debug("Validated Atom " + cmAtom.getAtom().getAID() + " to COMPLETE");
 					}
 				}
 

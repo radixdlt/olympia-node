@@ -4,14 +4,11 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.common.Pair;
 import com.radixdlt.engine.AtomEventListener;
 import com.radixdlt.engine.RadixEngineUtils;
-import com.radixdlt.engine.StateCheckResult.StateCheckResultAcceptor;
 import com.radixdlt.utils.UInt384;
 import java.io.File;
 import java.util.Arrays;
@@ -156,6 +153,6 @@ public class TokenTransferMultiSignedValidationTest extends RadixTestWithStores 
 		Modules.get(ValidationHandler.class).getRadixEngine().addAtomEventListener(listener);
 		Modules.get(ValidationHandler.class).getRadixEngine().submit(multiSigCMAtom);
 		verify(listener, timeout(5000).times(1))
-			.onStateSuccess(eq(multiSigCMAtom), any());
+			.onStateStore(eq(multiSigCMAtom), any());
 	}
 }

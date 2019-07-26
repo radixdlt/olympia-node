@@ -17,7 +17,7 @@ public interface AtomEventListener {
 	default void onCMError(CMAtom cmAtom, Set<CMError> errors) {
 	}
 
-	default void onStateSuccess(CMAtom cmAtom, ImmutableMap<String, Object> computed) {
+	default void onStateStore(CMAtom cmAtom, ImmutableMap<String, Object> computed) {
 	}
 
 	default void onStateConflict(CMAtom cmAtom, SpunParticle issueParticle, ImmutableAtom conflictingAtom) {

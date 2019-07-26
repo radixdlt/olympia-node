@@ -1,10 +1,14 @@
 package org.radix.atoms;
 
+import com.google.common.collect.ImmutableMap;
+import com.radixdlt.constraintmachine.CMAtom;
+import com.radixdlt.utils.UInt384;
 import java.util.Optional;
 import java.util.Set;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.atoms.Spin;
 import com.radixdlt.atoms.SpunParticle;
+import org.radix.atoms.events.AtomExceptionEvent;
 import org.radix.database.exceptions.DatabaseException;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.StateStoreException;
@@ -12,6 +16,7 @@ import com.radixdlt.common.EUID;
 import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import org.radix.events.Events;
 import org.radix.shards.ShardSpace;
 
 /**
@@ -58,4 +63,19 @@ public class AtomCMStore implements CMStore {
 		}
 	}
 
+	@Override
+	public void storeAtom(CMAtom cmAtom, ImmutableMap<String, Object> computed) {
+		try {
+			Object mass = computed.get("mass");
+			if (mass == null) {
+				throw new IllegalStateException("mass was not computed");
+			}
+
+			final PreparedAtom preparedAtom = new PreparedAtom(cmAtom, (UInt384) mass);
+			atomStoreSupplier.get().storeAtom(preparedAtom);
+		} catch (Exception e) {
+			AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(e, (Atom) cmAtom.getAtom());
+			Events.getInstance().broadcast(atomExceptionEvent);
+		}
+	}
 }

@@ -4,13 +4,11 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.engine.AtomEventListener;
 import com.radixdlt.engine.RadixEngineUtils;
-import com.radixdlt.engine.StateCheckResult.StateCheckResultAcceptor;
 import com.radixdlt.utils.UInt384;
 import org.junit.Before;
 import org.junit.Test;
@@ -129,6 +127,6 @@ public class TokenMintValidationTest extends RadixTestWithStores {
 		Modules.get(ValidationHandler.class).getRadixEngine().addAtomEventListener(atomEventListener);
 		Modules.get(ValidationHandler.class).getRadixEngine().submit(cmAtom2);
 		verify(atomEventListener, timeout(5000).times(1))
-			.onStateSuccess(eq(cmAtom2), any());
+			.onStateStore(eq(cmAtom2), any());
 	}
 }

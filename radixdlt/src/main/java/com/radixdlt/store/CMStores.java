@@ -1,7 +1,9 @@
 package com.radixdlt.store;
 
+import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.atoms.SpunParticle;
+import com.radixdlt.constraintmachine.CMAtom;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -31,6 +33,10 @@ public final class CMStores {
 		@Override
 		public ImmutableAtom getAtomContaining(SpunParticle spunParticle) {
 			return null;
+		}
+
+		@Override
+		public void storeAtom(CMAtom atom, ImmutableMap<String, Object> computed) {
 		}
 	};
 
@@ -77,6 +83,11 @@ public final class CMStores {
 			public ImmutableAtom getAtomContaining(SpunParticle spunParticle) {
 				return base.getAtomContaining(spunParticle);
 			}
+
+			@Override
+			public void storeAtom(CMAtom atom, ImmutableMap<String, Object> computed) {
+				base.storeAtom(atom, computed);
+			}
 		};
 	}
 
@@ -109,6 +120,11 @@ public final class CMStores {
 			@Override
 			public ImmutableAtom getAtomContaining(SpunParticle spunParticle) {
 				return base.getAtomContaining(spunParticle);
+			}
+
+			@Override
+			public void storeAtom(CMAtom atom, ImmutableMap<String, Object> computed) {
+				base.storeAtom(atom, computed);
 			}
 		};
 	}
