@@ -14,81 +14,81 @@ import static org.powermock.api.mockito.PowerMockito.when;
 
 public class SpinStateMachineTransitionTest {
 
-	private static CMStore mockedStateProvider(
+	private static EngineStore mockedStateProvider(
 		Particle particle0, Spin spin0
 	) {
-		CMStore cmStore = mock(CMStore.class);
-		when(cmStore.getSpin(eq(particle0))).thenReturn(Optional.of(spin0));
-		return cmStore;
+		EngineStore engineStore = mock(EngineStore.class);
+		when(engineStore.getSpin(eq(particle0))).thenReturn(Optional.of(spin0));
+		return engineStore;
 	}
 
 	@Test
 	public void when_validating_an_up_or_down_particle_currently_unknown__unknown_state_is_returned() {
 		Particle particle = mock(Particle.class);
-		CMStore cmStore = mock(CMStore.class);
-		when(cmStore.getSpin(any())).thenReturn(Optional.empty());
-		when(cmStore.supports(any())).thenReturn(true);
+		EngineStore engineStore = mock(EngineStore.class);
+		when(engineStore.getSpin(any())).thenReturn(Optional.empty());
+		when(engineStore.supports(any())).thenReturn(true);
 
-		assertThat(SpinStateTransitionValidator.checkParticleTransition(particle, Spin.UP, cmStore))
+		assertThat(SpinStateTransitionValidator.checkParticleTransition(particle, Spin.UP, engineStore))
 			.isEqualTo(TransitionCheckResult.MISSING_STATE);
 
-		assertThat(SpinStateTransitionValidator.checkParticleTransition(particle, Spin.DOWN, cmStore))
+		assertThat(SpinStateTransitionValidator.checkParticleTransition(particle, Spin.DOWN, engineStore))
 			.isEqualTo(TransitionCheckResult.MISSING_STATE);
 	}
 
 	@Test
 	public void when_validating_a_neutral_particle_currently_anything__illegal_transition_is_returned() {
 		Particle particle = mock(Particle.class);
-		CMStore cmStore = mock(CMStore.class);
-		assertThat(SpinStateTransitionValidator.checkParticleTransition(particle, Spin.NEUTRAL, cmStore))
+		EngineStore engineStore = mock(EngineStore.class);
+		assertThat(SpinStateTransitionValidator.checkParticleTransition(particle, Spin.NEUTRAL, engineStore))
 			.isEqualTo(TransitionCheckResult.ILLEGAL_TRANSITION_TO);
 	}
 
 	@Test
 	public void when_validating_an_up_particle_currently_neutral__no_issue_is_returned() {
 		Particle particle = mock(Particle.class);
-		CMStore cmStore = mockedStateProvider(particle, Spin.NEUTRAL);
-		assertThat(SpinStateTransitionValidator.checkParticleTransition(particle, Spin.UP, cmStore))
+		EngineStore engineStore = mockedStateProvider(particle, Spin.NEUTRAL);
+		assertThat(SpinStateTransitionValidator.checkParticleTransition(particle, Spin.UP, engineStore))
 			.isEqualTo(TransitionCheckResult.OKAY);
 	}
 
 	@Test
 	public void when_validating_an_up_particle_currently_up__conflict_is_returned() {
 		Particle particle = mock(Particle.class);
-		CMStore cmStore = mockedStateProvider(particle, Spin.UP);
-		assertThat(SpinStateTransitionValidator.checkParticleTransition(particle, Spin.UP, cmStore))
+		EngineStore engineStore = mockedStateProvider(particle, Spin.UP);
+		assertThat(SpinStateTransitionValidator.checkParticleTransition(particle, Spin.UP, engineStore))
 			.isEqualTo(TransitionCheckResult.CONFLICT);
 	}
 
 	@Test
 	public void when_validating_an_up_particle_currently_down__conflict_is_returned() {
 		Particle particle = mock(Particle.class);
-		CMStore cmStore = mockedStateProvider(particle, Spin.DOWN);
-		assertThat(SpinStateTransitionValidator.checkParticleTransition(particle, Spin.UP, cmStore))
+		EngineStore engineStore = mockedStateProvider(particle, Spin.DOWN);
+		assertThat(SpinStateTransitionValidator.checkParticleTransition(particle, Spin.UP, engineStore))
 			.isEqualTo(TransitionCheckResult.CONFLICT);
 	}
 
 	@Test
 	public void when_validating_a_down_particle_currently_neutral__missing_dependency_is_returned() {
 		Particle particle = mock(Particle.class);
-		CMStore cmStore = mockedStateProvider(particle, Spin.NEUTRAL);
-		assertThat(SpinStateTransitionValidator.checkParticleTransition(particle, Spin.DOWN, cmStore))
+		EngineStore engineStore = mockedStateProvider(particle, Spin.NEUTRAL);
+		assertThat(SpinStateTransitionValidator.checkParticleTransition(particle, Spin.DOWN, engineStore))
 			.isEqualTo(TransitionCheckResult.MISSING_DEPENDENCY);
 	}
 
 	@Test
 	public void when_validating_a_down_particle_currently_up__no_issue_is_returned() {
 		Particle particle = mock(Particle.class);
-		CMStore cmStore = mockedStateProvider(particle, Spin.UP);
-		assertThat(SpinStateTransitionValidator.checkParticleTransition(particle, Spin.DOWN, cmStore))
+		EngineStore engineStore = mockedStateProvider(particle, Spin.UP);
+		assertThat(SpinStateTransitionValidator.checkParticleTransition(particle, Spin.DOWN, engineStore))
 			.isEqualTo(TransitionCheckResult.OKAY);
 	}
 
 	@Test
 	public void when_validating_a_down_particle_currently_down__conflict_is_returned() {
 		Particle particle = mock(Particle.class);
-		CMStore cmStore = mockedStateProvider(particle, Spin.DOWN);
-		assertThat(SpinStateTransitionValidator.checkParticleTransition(particle, Spin.DOWN, cmStore))
+		EngineStore engineStore = mockedStateProvider(particle, Spin.DOWN);
+		assertThat(SpinStateTransitionValidator.checkParticleTransition(particle, Spin.DOWN, engineStore))
 			.isEqualTo(TransitionCheckResult.CONFLICT);
 	}
 

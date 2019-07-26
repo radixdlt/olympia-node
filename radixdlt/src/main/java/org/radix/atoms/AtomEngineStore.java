@@ -10,7 +10,7 @@ import com.radixdlt.atoms.Spin;
 import com.radixdlt.atoms.SpunParticle;
 import org.radix.atoms.events.AtomExceptionEvent;
 import org.radix.database.exceptions.DatabaseException;
-import com.radixdlt.store.CMStore;
+import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.StateStoreException;
 import com.radixdlt.common.EUID;
 import java.util.Objects;
@@ -22,11 +22,11 @@ import org.radix.shards.ShardSpace;
 /**
  * A state store that uses an {@link AtomStore} to provide relevant shard state
  */
-public class AtomCMStore implements CMStore {
+public class AtomEngineStore implements EngineStore {
 	private final Supplier<AtomStore> atomStoreSupplier;
 	private final Supplier<ShardSpace> shardSpaceSupplier;
 
-	public AtomCMStore(Supplier<AtomStore> atomStoreSupplier, Supplier<ShardSpace> shardSpaceSupplier) {
+	public AtomEngineStore(Supplier<AtomStore> atomStoreSupplier, Supplier<ShardSpace> shardSpaceSupplier) {
 		Objects.requireNonNull(atomStoreSupplier, "atomStoreSupplier is required");
 		Objects.requireNonNull(shardSpaceSupplier);
 

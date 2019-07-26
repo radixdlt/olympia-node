@@ -11,7 +11,7 @@ import com.radixdlt.compute.AtomCompute;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.engine.RadixEngine;
 import org.radix.atoms.AtomStore;
-import org.radix.atoms.AtomCMStore;
+import org.radix.atoms.AtomEngineStore;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.modules.Modules;
@@ -25,7 +25,7 @@ import org.radix.universe.system.LocalSystem;
 
 public class Validation extends Plugin {
 	private static final Logger log = Logging.getLogger();
-	private final AtomCMStore atomStore = new AtomCMStore(
+	private final AtomEngineStore atomStore = new AtomEngineStore(
 		() -> Modules.get(AtomStore.class),
 		() -> LocalSystem.getInstance().getShards()
 	);

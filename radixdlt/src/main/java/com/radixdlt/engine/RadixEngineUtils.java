@@ -8,11 +8,10 @@ import com.radixdlt.constraintmachine.CMAtom;
 import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.CMErrorCode;
 import com.radixdlt.constraintmachine.CMParticle;
+import com.radixdlt.store.CMStore;
 import com.radixdlt.store.SpinStateMachine;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -22,7 +21,7 @@ import com.radixdlt.atoms.Spin;
 import com.radixdlt.atoms.SpunParticle;
 import com.radixdlt.store.SpinStateTransitionValidator;
 import com.radixdlt.store.SpinStateTransitionValidator.TransitionCheckResult;
-import com.radixdlt.store.CMStore;
+import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.CMStores;
 import com.radixdlt.common.Pair;
 
@@ -47,14 +46,13 @@ public final class RadixEngineUtils {
 		Spin nextSpin,
 		Spin oldSpin
 	) {
-		CMStore cmStore = oldSpin == null
+		CMStore engineStore = oldSpin == null
 			? CMStores.empty()
 			: CMStores.virtualizeOverwrite(CMStores.empty(), particle::equals, oldSpin);
 
 		TransitionCheckResult result = SpinStateTransitionValidator.checkParticleTransition(
 			particle,
-			nextSpin,
-			cmStore
+			nextSpin, engineStore
 		);
 
 		final CMErrorCode error;

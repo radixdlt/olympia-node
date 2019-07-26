@@ -13,6 +13,7 @@ import com.radixdlt.constraintmachine.CMAtom;
 import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.store.CMStore;
+import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.SpinStateTransitionValidator;
 import com.radixdlt.store.SpinStateTransitionValidator.TransitionCheckResult;
 import java.util.List;
@@ -30,7 +31,8 @@ import java.util.stream.Collectors;
 public final class RadixEngine {
 	private final ConstraintMachine constraintMachine;
 	private final AtomCompute compute;
-	private final CMStore cmStore;
+	private final EngineStore engineStore;
+	private final CMStore virtualizedCMStore;
 	private final CopyOnWriteArrayList<AtomEventListener> atomEventListeners = new CopyOnWriteArrayList<>();
 	private final CopyOnWriteArrayList<BiConsumer<CMAtom, ImmutableMap<String, Object>>> cmSuccessHooks = new CopyOnWriteArrayList<>();
 	private	final BlockingQueue<Pair<CMAtom, ImmutableMap<String, Object>>> commitQueue = new LinkedBlockingQueue<>();
@@ -39,11 +41,12 @@ public final class RadixEngine {
 	public RadixEngine(
 		ConstraintMachine constraintMachine,
 		AtomCompute compute,
-		CMStore cmStore
+		EngineStore engineStore
 	) {
 		this.constraintMachine = constraintMachine;
 		this.compute = compute;
-		this.cmStore = constraintMachine.getVirtualStore().apply(cmStore);
+		this.virtualizedCMStore = constraintMachine.getVirtualStore().apply(engineStore);
+		this.engineStore = engineStore;
 		this.stateUpdateEngine = new Thread(() -> {
 			while (true) {
 				final Pair<CMAtom, ImmutableMap<String, Object>> massedAtom;
@@ -109,7 +112,8 @@ public final class RadixEngine {
 				final DataPointer dataPointer = cmParticle.getDataPointer();
 				final TransitionCheckResult spinCheck = SpinStateTransitionValidator.checkParticleTransition(
 					particle,
-					nextSpin, cmStore
+					nextSpin,
+					virtualizedCMStore
 				);
 
 				return Pair.of(dataPointer, spinCheck);
@@ -136,7 +140,7 @@ public final class RadixEngine {
 			//
 			// Modified StateProviderFromStore.getAtomsContaining to be singular based on the
 			// above assumption.
-			final ImmutableAtom conflictAtom = cmStore.getAtomContaining(issueParticle);
+			final ImmutableAtom conflictAtom = engineStore.getAtomContaining(issueParticle);
 
 			atomEventListeners.forEach(listener -> listener.onStateConflict(cmAtom, issueParticle, conflictAtom));
 			return;
@@ -150,7 +154,7 @@ public final class RadixEngine {
 			return;
 		}
 
-		cmStore.storeAtom(cmAtom, computed);
+		engineStore.storeAtom(cmAtom, computed);
 
 		atomEventListeners.forEach(listener -> listener.onStateStore(cmAtom, computed));
 	}

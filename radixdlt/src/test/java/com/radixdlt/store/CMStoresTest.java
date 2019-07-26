@@ -3,11 +3,7 @@ package com.radixdlt.store;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.mockito.Mockito.mock;
 
-import com.google.common.collect.ImmutableMap;
-import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.atoms.Particle;
-import com.radixdlt.atoms.SpunParticle;
-import com.radixdlt.constraintmachine.CMAtom;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -27,29 +23,20 @@ public class CMStoresTest {
 			public Optional<Spin> getSpin(Particle particle) {
 				return getSpinFunc.apply(particle);
 			}
-
-			@Override
-			public ImmutableAtom getAtomContaining(SpunParticle spunParticle) {
-				return null;
-			}
-
-			@Override
-			public void storeAtom(CMAtom atom, ImmutableMap<String, Object> computed) {
-			}
 		};
 	}
 
 	@Test
 	public void when_an_empty_store_is_virtualized_default_up_and_spin_is_requested__then_it_should_return_up() {
-		CMStore CMStore = CMStores.virtualizeDefault(CMStores.empty(), p -> true, Spin.UP);
-		assertThat(CMStore.getSpin(mock(Particle.class)))
+		CMStore cmStore = CMStores.virtualizeDefault(CMStores.empty(), p -> true, Spin.UP);
+		assertThat(cmStore.getSpin(mock(Particle.class)))
 			.contains(Spin.UP);
 	}
 
 	@Test
 	public void when_an_up_store_is_virtualized_default_up_and_spin_is_requested__then_it_should_return_up() {
-		CMStore CMStore = CMStores.virtualizeDefault(createStore(true, p -> Optional.of(Spin.UP)), p -> true, Spin.UP);
-		assertThat(CMStore.getSpin(mock(Particle.class)))
+		CMStore cmStore = CMStores.virtualizeDefault(createStore(true, p -> Optional.of(Spin.UP)), p -> true, Spin.UP);
+		assertThat(cmStore.getSpin(mock(Particle.class)))
 			.contains(Spin.UP);
 	}
 
@@ -76,7 +63,7 @@ public class CMStoresTest {
 
 	@Test
 	public void when_a_store_is_virtualized_overwrite_up_and_spin_is_requested__then_it_should_return_up() {
-		CMStore cmStore = CMStores.virtualizeOverwrite(mock(CMStore.class), p -> true, Spin.UP);
+		CMStore cmStore = CMStores.virtualizeOverwrite(mock(EngineStore.class), p -> true, Spin.UP);
 		assertThat(cmStore.getSpin(mock(Particle.class)))
 			.contains(Spin.UP);
 	}

@@ -5,11 +5,11 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Streams;
 import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.atoms.Spin;
+import com.radixdlt.store.CMStore;
 import com.radixdlt.store.SpinStateTransitionValidator;
 import com.radixdlt.store.SpinStateTransitionValidator.TransitionCheckResult;
 import java.util.function.UnaryOperator;
 import com.radixdlt.atoms.Particle;
-import com.radixdlt.store.CMStore;
 import com.radixdlt.store.CMStores;
 
 import java.util.Objects;
@@ -56,7 +56,7 @@ public final class ConstraintMachine {
 	private final UnaryOperator<CMStore> virtualStore;
 	private final ImmutableList<KernelConstraintProcedure> kernelConstraintProcedures;
 	private final ImmutableList<ConstraintProcedure> applicationConstraintProcedures;
-	private final CMStore localCMStore;
+	private final CMStore localEngineStore;
 
 	ConstraintMachine(
 		UnaryOperator<CMStore> virtualStore,
@@ -66,7 +66,7 @@ public final class ConstraintMachine {
 		Objects.requireNonNull(virtualStore);
 
 		this.virtualStore = Objects.requireNonNull(virtualStore);
-		this.localCMStore = this.virtualStore.apply(CMStores.empty());
+		this.localEngineStore = this.virtualStore.apply(CMStores.empty());
 		this.kernelConstraintProcedures = kernelConstraintProcedures;
 		this.applicationConstraintProcedures = applicationConstraintProcedures;
 	}
@@ -83,7 +83,7 @@ public final class ConstraintMachine {
 	public ImmutableSet<CMError> validate(CMAtom cmAtom, boolean getAllErrors) {
 		// "Segfaults" or particles which should not exist
 		final Stream<CMError> unknownParticleErrors = cmAtom.getParticles().stream()
-			.filter(p -> !localCMStore.getSpin(p.getParticle()).isPresent())
+			.filter(p -> !localEngineStore.getSpin(p.getParticle()).isPresent())
 			.map(p -> new CMError(p.getDataPointer(), CMErrorCode.UNKNOWN_PARTICLE));
 
 		// Virtual particle state checks
@@ -94,8 +94,7 @@ public final class ConstraintMachine {
 				Spin nextSpin = p.getNextSpin();
 				TransitionCheckResult result = SpinStateTransitionValidator.checkParticleTransition(
 					particle,
-					nextSpin,
-					localCMStore
+					nextSpin, localEngineStore
 				);
 
 				return result.equals(TransitionCheckResult.CONFLICT);
