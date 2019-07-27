@@ -90,7 +90,7 @@ public class TokenTransferValidationTest extends RadixTestWithStores {
 		CMAtom cmAtom = RadixEngineUtils.toCMAtom(atom);
 		AtomEventListener listener = mock(AtomEventListener.class);
 		Modules.get(ValidationHandler.class).getRadixEngine().addAtomEventListener(listener);
-		Modules.get(ValidationHandler.class).getRadixEngine().submit(cmAtom);
+		Modules.get(ValidationHandler.class).getRadixEngine().store(cmAtom);
 		verify(listener, timeout(5000).times(1))
 			.onStateStore(eq(cmAtom), any());
 		Modules.get(ValidationHandler.class).getRadixEngine().removeAtomEventListener(listener);
@@ -127,7 +127,7 @@ public class TokenTransferValidationTest extends RadixTestWithStores {
 		CMAtom cmAtom = RadixEngineUtils.toCMAtom(atom);
 		AtomEventListener acceptor = mock(AtomEventListener.class);
 		Modules.get(ValidationHandler.class).getRadixEngine().addAtomEventListener(acceptor);
-		Modules.get(ValidationHandler.class).getRadixEngine().submit(cmAtom);
+		Modules.get(ValidationHandler.class).getRadixEngine().store(cmAtom);
 		verify(acceptor, timeout(5000).times(1))
 			.onCMError(eq(cmAtom), argThat(e -> e.stream().anyMatch(err -> err.getErrorCode().equals(CMErrorCode.PROCEDURE_ERROR))));
 		Modules.get(ValidationHandler.class).getRadixEngine().removeAtomEventListener(acceptor);
@@ -159,7 +159,7 @@ public class TokenTransferValidationTest extends RadixTestWithStores {
 		CMAtom cmAtom = RadixEngineUtils.toCMAtom(atom);
 		AtomEventListener acceptor = mock(AtomEventListener.class);
 		Modules.get(ValidationHandler.class).getRadixEngine().addAtomEventListener(acceptor);
-		Modules.get(ValidationHandler.class).getRadixEngine().submit(cmAtom);
+		Modules.get(ValidationHandler.class).getRadixEngine().store(cmAtom);
 		verify(acceptor, timeout(5000).times(1))
 			.onCMError(eq(cmAtom), argThat(e -> e.stream().anyMatch(err -> err.getErrorCode().equals(CMErrorCode.PROCEDURE_ERROR))));
 		Modules.get(ValidationHandler.class).getRadixEngine().removeAtomEventListener(acceptor);
@@ -198,7 +198,7 @@ public class TokenTransferValidationTest extends RadixTestWithStores {
 
 		AtomEventListener listener = mock(AtomEventListener.class);
 		Modules.get(ValidationHandler.class).getRadixEngine().addAtomEventListener(listener);
-		Modules.get(ValidationHandler.class).getRadixEngine().submit(cmAtom);
+		Modules.get(ValidationHandler.class).getRadixEngine().store(cmAtom);
 		verify(listener, timeout(5000).times(1))
 			.onStateMissingDependency(eq(cmAtom), any());
 		Modules.get(ValidationHandler.class).getRadixEngine().removeAtomEventListener(listener);
@@ -260,7 +260,7 @@ public class TokenTransferValidationTest extends RadixTestWithStores {
 
 		AtomEventListener listener = mock(AtomEventListener.class);
 		Modules.get(ValidationHandler.class).getRadixEngine().addAtomEventListener(listener);
-		Modules.get(ValidationHandler.class).getRadixEngine().submit(cmAtom2);
+		Modules.get(ValidationHandler.class).getRadixEngine().store(cmAtom2);
 		verify(listener, timeout(5000).times(1))
 			.onStateConflict(eq(cmAtom2), any(), any());
 		Modules.get(ValidationHandler.class).getRadixEngine().removeAtomEventListener(listener);

@@ -116,7 +116,7 @@ public final class RadixEngine {
 		this.commitQueue.add(new DeleteAtom(cmAtom));
 	}
 
-	public void submit(CMAtom cmAtom) {
+	public void store(CMAtom cmAtom) {
 		final ImmutableSet<CMError> errors = constraintMachine.validate(cmAtom, false);
 		if (errors.isEmpty()) {
 			Object computed = compute.compute(cmAtom);

@@ -125,7 +125,7 @@ public class TokenMintValidationTest extends RadixTestWithStores {
 		CMAtom cmAtom2 = RadixEngineUtils.toCMAtom(atom);
 		AtomEventListener atomEventListener = mock(AtomEventListener.class);
 		Modules.get(ValidationHandler.class).getRadixEngine().addAtomEventListener(atomEventListener);
-		Modules.get(ValidationHandler.class).getRadixEngine().submit(cmAtom2);
+		Modules.get(ValidationHandler.class).getRadixEngine().store(cmAtom2);
 		verify(atomEventListener, timeout(5000).times(1))
 			.onStateStore(eq(cmAtom2), any());
 	}

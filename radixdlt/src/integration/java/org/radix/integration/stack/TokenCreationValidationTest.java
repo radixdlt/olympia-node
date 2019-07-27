@@ -80,7 +80,7 @@ public class TokenCreationValidationTest extends RadixTestWithStores {
 		CMAtom cmAtom = RadixEngineUtils.toCMAtom(atom);
 		AtomEventListener listener = mock(AtomEventListener.class);
 		Modules.get(ValidationHandler.class).getRadixEngine().addAtomEventListener(listener);
-		Modules.get(ValidationHandler.class).getRadixEngine().submit(cmAtom);
+		Modules.get(ValidationHandler.class).getRadixEngine().store(cmAtom);
 		verify(listener, timeout(5000).times(1))
 			.onStateStore(eq(cmAtom), any());
 		Modules.get(ValidationHandler.class).getRadixEngine().removeAtomEventListener(listener);
@@ -147,7 +147,7 @@ public class TokenCreationValidationTest extends RadixTestWithStores {
 
 		AtomEventListener listener = mock(AtomEventListener.class);
 		Modules.get(ValidationHandler.class).getRadixEngine().addAtomEventListener(listener);
-		Modules.get(ValidationHandler.class).getRadixEngine().submit(secondCMAtom);
+		Modules.get(ValidationHandler.class).getRadixEngine().store(secondCMAtom);
 		TimeUnit.SECONDS.sleep(1);
 		verify(listener, timeout(5000).times(1))
 			.onStateConflict(eq(secondCMAtom), any(), any());

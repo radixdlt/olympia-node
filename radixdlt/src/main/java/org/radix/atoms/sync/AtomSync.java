@@ -443,7 +443,7 @@ public class AtomSync extends Service
 					continue;
 				}
 
-				Modules.get(ValidationHandler.class).getRadixEngine().submit(cmAtom);
+				Modules.get(ValidationHandler.class).getRadixEngine().store(cmAtom);
 			}
 		}
 	}
@@ -1465,7 +1465,7 @@ public class AtomSync extends Service
 						CMError cmError = e.getErrors().iterator().next();
 						throw new ConstraintMachineValidationException(atom, cmError.getErrorDescription(), cmError.getDataPointer());
 					}
-					Modules.get(ValidationHandler.class).getRadixEngine().submit(cmAtom);
+					Modules.get(ValidationHandler.class).getRadixEngine().store(cmAtom);
 				}
 			}
 			waitForAtoms(atomIds);

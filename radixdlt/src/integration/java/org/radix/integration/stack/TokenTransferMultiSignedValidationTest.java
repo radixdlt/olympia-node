@@ -151,7 +151,7 @@ public class TokenTransferMultiSignedValidationTest extends RadixTestWithStores 
 		CMAtom multiSigCMAtom = RadixEngineUtils.toCMAtom(multiSigAtom);
 		AtomEventListener listener = mock(AtomEventListener.class);
 		Modules.get(ValidationHandler.class).getRadixEngine().addAtomEventListener(listener);
-		Modules.get(ValidationHandler.class).getRadixEngine().submit(multiSigCMAtom);
+		Modules.get(ValidationHandler.class).getRadixEngine().store(multiSigCMAtom);
 		verify(listener, timeout(5000).times(1))
 			.onStateStore(eq(multiSigCMAtom), any());
 	}
