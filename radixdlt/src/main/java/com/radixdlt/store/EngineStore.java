@@ -17,4 +17,9 @@ public interface EngineStore extends CMStore {
 	 * Stores the atom into this CMStore
 	 */
 	void storeAtom(CMAtom atom, Object computed);
+
+	/**
+	 * Deletes an atom and all it's dependencies
+	 */
+	void deleteAtom(CMAtom atom);
 }

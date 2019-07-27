@@ -1,6 +1,5 @@
 package org.radix.atoms.sync;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atoms.AtomStatus;
 import com.radixdlt.atoms.ImmutableAtom;
@@ -1890,8 +1889,15 @@ public class AtomSync extends Service
 					{
 						AtomSync.this.committing.remove(atom.getAID());
 
-						if (!atom.getAID().equals(((ConflictResolvedEvent)event).getConflict().getResult()))
-							Modules.get(AtomStore.class).deleteAtoms(atom);
+						final CMAtom cmAtom;
+						try {
+							cmAtom = RadixEngineUtils.toCMAtom(atom);
+						} catch (CMAtomConversionException e) {
+							throw new IllegalStateException(e);
+						}
+						if (!atom.getAID().equals(((ConflictResolvedEvent)event).getConflict().getResult())) {
+							Modules.get(ValidationHandler.class).getRadixEngine().delete(cmAtom);
+						}
 					}
 
 					Atom resultAtom = ((ConflictResolvedEvent)event).getConflict().getAtom(((ConflictResolvedEvent)event).getConflict().getResult());

@@ -28,13 +28,33 @@ import java.util.stream.Collectors;
  * Top Level Class for the Radix Engine, a real-time, shardable, distributed state machine.
  */
 public final class RadixEngine {
+
+	private interface EngineAction {
+	}
+
+	private final class DeleteAtom implements EngineAction {
+		private final CMAtom cmAtom;
+		DeleteAtom(CMAtom cmAtom) {
+			this.cmAtom = cmAtom;
+		}
+	}
+
+	private final class StoreAtom implements EngineAction {
+		private final CMAtom cmAtom;
+		private final Object computed;
+		StoreAtom(CMAtom cmAtom, Object computed) {
+			this.cmAtom = cmAtom;
+			this.computed = computed;
+		}
+	}
+
 	private final ConstraintMachine constraintMachine;
 	private final AtomCompute compute;
 	private final EngineStore engineStore;
 	private final CMStore virtualizedCMStore;
 	private final CopyOnWriteArrayList<AtomEventListener> atomEventListeners = new CopyOnWriteArrayList<>();
 	private final CopyOnWriteArrayList<BiConsumer<CMAtom, Object>> cmSuccessHooks = new CopyOnWriteArrayList<>();
-	private	final BlockingQueue<Pair<CMAtom, Object>> commitQueue = new LinkedBlockingQueue<>();
+	private	final BlockingQueue<EngineAction> commitQueue = new LinkedBlockingQueue<>();
 	private final Thread stateUpdateEngine;
 
 	public RadixEngine(
@@ -48,19 +68,25 @@ public final class RadixEngine {
 		this.engineStore = engineStore;
 		this.stateUpdateEngine = new Thread(() -> {
 			while (true) {
-				final Pair<CMAtom, Object> massedAtom;
+				final EngineAction action;
 				try {
-					massedAtom = this.commitQueue.poll(1, TimeUnit.SECONDS);
+					action = this.commitQueue.poll(1, TimeUnit.SECONDS);
 				} catch (InterruptedException e) {
 					// Just exit if we are interrupted
 					Thread.currentThread().interrupt();
 					break;
 				}
 
-				if (massedAtom == null)
+				if (action == null)
 					continue;
 
-				stateCheckAndStore(massedAtom.getFirst(), massedAtom.getSecond());
+				if (action instanceof StoreAtom) {
+					StoreAtom storeAtom = (StoreAtom) action;
+					stateCheckAndStore(storeAtom.cmAtom, storeAtom.computed);
+				} else if (action instanceof DeleteAtom) {
+					DeleteAtom deleteAtom = (DeleteAtom) action;
+					engineStore.deleteAtom(deleteAtom.cmAtom);
+				}
 			}
 		});
 		this.stateUpdateEngine.setName("Radix Engine");
@@ -86,13 +112,16 @@ public final class RadixEngine {
 		this.atomEventListeners.remove(acceptor);
 	}
 
-	// TODO: replace with reactive-streams interface
+	public void delete(CMAtom cmAtom) {
+		this.commitQueue.add(new DeleteAtom(cmAtom));
+	}
+
 	public void submit(CMAtom cmAtom) {
 		final ImmutableSet<CMError> errors = constraintMachine.validate(cmAtom, false);
 		if (errors.isEmpty()) {
 			Object computed = compute.compute(cmAtom);
 			this.cmSuccessHooks.forEach(hook -> hook.accept(cmAtom, computed));
-			this.commitQueue.add(Pair.of(cmAtom, computed));
+			this.commitQueue.add(new StoreAtom(cmAtom, computed));
 			this.atomEventListeners.forEach(acceptor -> acceptor.onCMSuccess(cmAtom, computed));
 		} else {
 			this.atomEventListeners.forEach(acceptor -> acceptor.onCMError(cmAtom, errors));

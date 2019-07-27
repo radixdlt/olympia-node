@@ -1,5 +1,6 @@
 package org.radix.atoms;
 
+import com.radixdlt.common.AID;
 import com.radixdlt.constraintmachine.CMAtom;
 import com.radixdlt.utils.UInt384;
 import java.util.Optional;
@@ -74,6 +75,15 @@ public class AtomEngineStore implements EngineStore {
 		} catch (Exception e) {
 			AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(e, (Atom) cmAtom.getAtom());
 			Events.getInstance().broadcast(atomExceptionEvent);
+		}
+	}
+
+	@Override
+	public void deleteAtom(CMAtom cmAtom) {
+		try {
+			atomStoreSupplier.get().deleteAtoms((Atom) cmAtom.getAtom());
+		} catch (DatabaseException dex) {
+			throw new StateStoreException("Could not delete atom", dex);
 		}
 	}
 }
