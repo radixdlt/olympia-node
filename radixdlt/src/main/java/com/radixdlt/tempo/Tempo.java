@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -41,8 +42,8 @@ import com.radixdlt.ledger.UniqueIndexablesCreator;
 
 public final class Tempo extends Plugin implements LedgerInterface
 {
-	private UniqueIndexablesCreator uniqueIndexablesCreator;
-	private DuplicateIndexablesCreator duplicateIndexablesCreator;
+	private UniqueIndexablesCreator uniqueIndexablesCreator;		// TODO not currently used by AtomStore to maintain legacy compatibility
+	private DuplicateIndexablesCreator duplicateIndexablesCreator; 	// TODO not currently used by AtomStore to maintain legacy compatibility
 	
 	private final BlockingQueue<Atom> pollQueue = new LinkedBlockingQueue<Atom>();
 	
@@ -101,37 +102,21 @@ public final class Tempo extends Plugin implements LedgerInterface
 	}
 
 	@Override
-	public void delete(AID AID) throws IOException
+	public List<Atom> delete(AID AID) throws IOException
 	{
-		Modules.get(AtomStore.class).deleteAtoms(AID);
+		return (List)Modules.get(AtomStore.class).deleteAtoms(AID).getObject();
 	}
 
+	/**
+	 * TODO make this an AtomStore function that we can execute over a Transaction for safety
+	 */
 	@Override
-	public void replace(AID AID, Atom atom) throws IOException
+	public List<Atom> replace(AID AID, Atom atom) throws IOException
 	{
 		if (Modules.get(AtomStore.class).hasAtom(atom.getAID()))
-			return;
+			return Collections.EMPTY_LIST;
 
-		try
-		{
-			attestTo(atom);
-		}
-		catch (ValidationException | CryptoException ex)
-		{
-			throw new IOException(ex);
-		}
-
-		// TODO super hack, remove later! 
-		CMAtom CMAtom = Modules.get(ValidationHandler.class).getConstraintMachine().validate(atom, false).onSuccessElseThrow(e -> new IllegalStateException());
-		
-		Modules.get(AtomStore.class).storeAtom(new PreparedAtom(CMAtom));
-	}
-
-	@Override
-	public void store(Atom atom) throws IOException
-	{
-		if (Modules.get(AtomStore.class).hasAtom(atom.getAID()))
-			return;
+		List<Atom> deletedAtoms = (List)Modules.get(AtomStore.class).deleteAtoms(AID).getObject();
 		
 		try
 		{
@@ -146,6 +131,29 @@ public final class Tempo extends Plugin implements LedgerInterface
 		CMAtom CMAtom = Modules.get(ValidationHandler.class).getConstraintMachine().validate(atom, false).onSuccessElseThrow(e -> new IllegalStateException());
 		
 		Modules.get(AtomStore.class).storeAtom(new PreparedAtom(CMAtom));
+		
+		return deletedAtoms;
+	}
+
+	@Override
+	public boolean store(Atom atom) throws IOException
+	{
+		if (Modules.get(AtomStore.class).hasAtom(atom.getAID()))
+			return false;
+		
+		try
+		{
+			attestTo(atom);
+		}
+		catch (ValidationException | CryptoException ex)
+		{
+			throw new IOException(ex);
+		}
+
+		// TODO super hack, remove later! 
+		CMAtom CMAtom = Modules.get(ValidationHandler.class).getConstraintMachine().validate(atom, false).onSuccessElseThrow(e -> new IllegalStateException());
+		
+		return Modules.get(AtomStore.class).storeAtom(new PreparedAtom(CMAtom)).isCompleted();
 	}
 
 	@Override

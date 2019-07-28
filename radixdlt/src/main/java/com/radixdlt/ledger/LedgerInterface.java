@@ -1,6 +1,7 @@
 package com.radixdlt.ledger;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
@@ -22,9 +23,9 @@ public interface LedgerInterface
 	public Atom poll(long duration, TimeUnit unit) throws InterruptedException;
 	
 	public Atom get(AID AID) throws IOException;
-	public void delete(AID AID) throws IOException;
-	public void replace(AID AID, Atom atom) throws IOException;
-	public void store(Atom atom) throws IOException;
+	public List<Atom> delete(AID AID) throws IOException;
+	public List<Atom> replace(AID AID, Atom atom) throws IOException;
+	public boolean store(Atom atom) throws IOException;
 	
 	public LedgerCursor search(Type type, LedgerIndexable indexable, SearchMode mode) throws IOException;
 	
