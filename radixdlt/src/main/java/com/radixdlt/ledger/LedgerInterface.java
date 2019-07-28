@@ -6,6 +6,7 @@ import java.util.function.Consumer;
 
 import com.radixdlt.atoms.Atom;
 import com.radixdlt.common.AID;
+import com.radixdlt.ledger.LedgerCursor.Type;
 
 public interface LedgerInterface
 {
@@ -25,8 +26,7 @@ public interface LedgerInterface
 	public void replace(AID AID, Atom atom) throws IOException;
 	public void store(Atom atom) throws IOException;
 	
-	public LedgerCursor search(LedgerIndexable indexable, SearchMode mode) throws IOException;
-	public LedgerCursor search(LedgerIndexable indexable, long offset) throws IOException;
+	public LedgerCursor search(Type type, LedgerIndexable indexable, SearchMode mode) throws IOException;
 	
 	public void resolve(Consumer<Atom> callback, Atom ... atoms);
 }

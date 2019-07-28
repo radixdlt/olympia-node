@@ -8,10 +8,10 @@ import com.radixdlt.utils.Ints;
 
 public final class LedgerIndexable
 {
-	private final int prefix;
-	private final byte[] identifier;
+	private final byte 		prefix;		// TODO put this back to an int ... changed to byte for compatibility with legacy AtomStore IDType
+	private final byte[] 	identifier;
 	
-	public LedgerIndexable(int prefix, byte[] identifier)
+	public LedgerIndexable(byte prefix, byte[] identifier)
 	{
 		this.prefix = prefix;
 		this.identifier = Objects.requireNonNull(identifier);
@@ -21,8 +21,8 @@ public final class LedgerIndexable
 	{
 		Objects.requireNonNull(key);
 		
-		this.prefix = Ints.fromByteArray(key);
-		this.identifier = Arrays.copyOfRange(key, Integer.SIZE, key.length);
+		this.prefix = key[0];
+		this.identifier = Arrays.copyOfRange(key, 1, key.length);
 	}
 
 	public int getPrefix()
@@ -37,6 +37,6 @@ public final class LedgerIndexable
 	
 	public byte[] getKey()
 	{
-		return Arrays.concatenate(Ints.toByteArray(this.prefix), this.identifier);
+		return Arrays.concatenate(new byte[] {this.prefix}, this.identifier);
 	}
 }

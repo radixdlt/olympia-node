@@ -1,5 +1,6 @@
 package com.radixdlt.tempo;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -11,20 +12,32 @@ import java.util.function.Consumer;
 
 import org.radix.atoms.AtomStore;
 import org.radix.atoms.PreparedAtom;
-import org.radix.database.exceptions.DatabaseException;
+import org.radix.exceptions.ValidationException;
 import org.radix.modules.Module;
 import org.radix.modules.Modules;
 import org.radix.modules.Plugin;
 import org.radix.modules.exceptions.ModuleException;
+import org.radix.state.State;
+import org.radix.state.StateDomain;
+import org.radix.time.TemporalVertex;
+import org.radix.time.Time;
+import org.radix.universe.system.LocalSystem;
+import org.radix.validation.ValidationHandler;
 
 import com.radixdlt.atoms.Atom;
 import com.radixdlt.common.AID;
+import com.radixdlt.common.EUID;
+import com.radixdlt.common.Pair;
+import com.radixdlt.constraintmachine.CMAtom;
+import com.radixdlt.crypto.CryptoException;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.DuplicateIndexablesCreator;
 import com.radixdlt.ledger.LedgerCursor;
+import com.radixdlt.ledger.LedgerCursor.Type;
 import com.radixdlt.ledger.LedgerIndexable;
 import com.radixdlt.ledger.LedgerInterface;
 import com.radixdlt.ledger.UniqueIndexablesCreator;
-import com.sleepycat.je.DatabaseEntry;
 
 public final class Tempo extends Plugin implements LedgerInterface
 {
@@ -37,6 +50,7 @@ public final class Tempo extends Plugin implements LedgerInterface
 	public List<Class<? extends Module>> getComponents()
 	{
 		List<Class<? extends Module>> dependencies = new ArrayList<>();
+		dependencies.add(AtomStore.class);
 		return Collections.unmodifiableList(dependencies);
 	}
 
@@ -81,24 +95,57 @@ public final class Tempo extends Plugin implements LedgerInterface
 	}
 
 	@Override
-	public Atom get(AID AID) throws DatabaseException
+	public Atom get(AID AID) throws IOException
 	{
-		return null;
+		return Modules.get(AtomStore.class).getAtom(AID);
 	}
 
 	@Override
-	public void delete(AID AID) throws DatabaseException
+	public void delete(AID AID) throws IOException
 	{
+		Modules.get(AtomStore.class).deleteAtoms(AID);
 	}
 
 	@Override
-	public void replace(AID AID, Atom atom) throws DatabaseException
+	public void replace(AID AID, Atom atom) throws IOException
 	{
+		if (Modules.get(AtomStore.class).hasAtom(atom.getAID()))
+			return;
+
+		try
+		{
+			attestTo(atom);
+		}
+		catch (ValidationException | CryptoException ex)
+		{
+			throw new IOException(ex);
+		}
+
+		// TODO super hack, remove later! 
+		CMAtom CMAtom = Modules.get(ValidationHandler.class).getConstraintMachine().validate(atom, false).onSuccessElseThrow(e -> new IllegalStateException());
+		
+		Modules.get(AtomStore.class).storeAtom(new PreparedAtom(CMAtom));
 	}
 
 	@Override
-	public void store(Atom atom) throws DatabaseException
+	public void store(Atom atom) throws IOException
 	{
+		if (Modules.get(AtomStore.class).hasAtom(atom.getAID()))
+			return;
+		
+		try
+		{
+			attestTo(atom);
+		}
+		catch (ValidationException | CryptoException ex)
+		{
+			throw new IOException(ex);
+		}
+
+		// TODO super hack, remove later! 
+		CMAtom CMAtom = Modules.get(ValidationHandler.class).getConstraintMachine().validate(atom, false).onSuccessElseThrow(e -> new IllegalStateException());
+		
+		Modules.get(AtomStore.class).storeAtom(new PreparedAtom(CMAtom));
 	}
 
 	@Override
@@ -108,14 +155,57 @@ public final class Tempo extends Plugin implements LedgerInterface
 	}
 
 	@Override
-	public LedgerCursor search(LedgerIndexable indexable, SearchMode mode)
+	public LedgerCursor search(Type type, LedgerIndexable indexable, SearchMode mode) throws IOException
 	{
-		return null;
+		return Modules.get(AtomStore.class).search(type, indexable, mode);
 	}
-
-	@Override
-	public LedgerCursor search(LedgerIndexable indexable, long offset)
+	
+	// TODO simple temporary function for attestation within this basic Tempo stub
+	private void attestTo(Atom atom) throws IOException, ValidationException, CryptoException
 	{
-		return null;
+		TemporalVertex existingNIDVertex = atom.getTemporalProof().getVertexByNID(LocalSystem.getInstance().getNID());
+
+		if (existingNIDVertex != null)
+		{
+			if (existingNIDVertex.getClock() > LocalSystem.getInstance().getClock().get())
+				LocalSystem.getInstance().set(existingNIDVertex.getClock(), existingNIDVertex.getCommitment(), atom.getTimestamp());
+
+			return;
+		}
+
+		Pair<Long, Hash> clockAndCommitment = LocalSystem.getInstance().update(atom.getAID(), Time.currentTimestamp());
+		
+		if (atom.getTemporalProof().isEmpty() == false)
+		{
+			TemporalVertex previousVertex = null;
+			for (TemporalVertex vertex : atom.getTemporalProof().getVertices())
+			{
+				if (vertex.getNIDS().contains(LocalSystem.getInstance().getNID()))
+				{
+					previousVertex = vertex;
+					break;
+				}
+				else if (previousVertex == null)
+					previousVertex = vertex;
+			}
+
+			ECKeyPair nodeKey = LocalSystem.getInstance().getKeyPair();
+			TemporalVertex vertex = new TemporalVertex(nodeKey.getPublicKey(),
+														clockAndCommitment.getFirst(), Time.currentTimestamp(),
+														clockAndCommitment.getSecond(),
+	 					  							   	previousVertex.getHID(), Collections.EMPTY_SET);
+			atom.getTemporalProof().add(vertex, nodeKey);
+		}
+		else
+		{
+			ECKeyPair nodeKey = LocalSystem.getInstance().getKeyPair();
+			TemporalVertex vertex = new TemporalVertex(nodeKey.getPublicKey(),
+														clockAndCommitment.getFirst(), Time.currentTimestamp(),
+														clockAndCommitment.getSecond(),
+ 					  							   	   	EUID.ZERO, Collections.EMPTY_SET);
+			atom.getTemporalProof().add(vertex, nodeKey);
+		}
+
+		atom.getTemporalProof().setState(StateDomain.VALIDATION, new State(State.COMPLETE));
 	}
 }
