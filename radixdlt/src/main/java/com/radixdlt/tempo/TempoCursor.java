@@ -5,7 +5,6 @@ import java.util.Objects;
 
 import org.bouncycastle.util.Arrays;
 import org.radix.atoms.AtomStore;
-import org.radix.database.exceptions.DatabaseException;
 import org.radix.modules.Modules;
 
 import com.radixdlt.common.AID;

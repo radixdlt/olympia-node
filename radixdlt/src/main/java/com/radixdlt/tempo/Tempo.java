@@ -47,7 +47,7 @@ public final class Tempo extends Plugin implements LedgerInterface
 	private final BlockingQueue<Atom> pollQueue = new LinkedBlockingQueue<Atom>();
 	
 	@Override
-	public List<Class<? extends Module>> getComponents()
+	public List<Class<? extends Module>> getDependsOn()
 	{
 		List<Class<? extends Module>> dependencies = new ArrayList<>();
 		dependencies.add(AtomStore.class);

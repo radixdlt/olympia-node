@@ -100,9 +100,11 @@ public class RadixTest
 	@AfterClass
 	public static void endRadixTest() throws ModuleException {
 		safelyStop(Modules.get(Time.class));
+		safelyStop(Modules.get(Validation.class));
 
 		Modules.remove(Universe.class);
 		Modules.remove(Time.class);
+		Modules.remove(Validation.class);
 		Modules.remove(Serialization.class);
 		Modules.remove(CommandLine.class);
 		Modules.remove(PersistedProperties.class);
