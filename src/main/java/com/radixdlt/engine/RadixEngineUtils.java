@@ -1,28 +1,34 @@
-package com.radixdlt.constraintmachine;
+package com.radixdlt.engine;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Streams;
 import com.radixdlt.atoms.ImmutableAtom;
-import com.radixdlt.atoms.IndexedSpunParticle;
-import com.radixdlt.atoms.Particle;
-import com.radixdlt.atoms.Spin;
-import com.radixdlt.atoms.SpunParticle;
-import com.radixdlt.common.Pair;
-import com.radixdlt.store.SpinStateTransitionValidator;
-import com.radixdlt.store.SpinStateTransitionValidator.TransitionCheckResult;
-import com.radixdlt.store.StateStore;
-import com.radixdlt.store.StateStores;
+import com.radixdlt.constraintmachine.CMAtom;
+import com.radixdlt.constraintmachine.CMError;
+import com.radixdlt.constraintmachine.CMErrorCode;
+import com.radixdlt.constraintmachine.CMParticle;
+import com.radixdlt.store.CMStore;
+import com.radixdlt.store.SpinStateMachine;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import com.radixdlt.atoms.IndexedSpunParticle;
+import com.radixdlt.atoms.Particle;
+import com.radixdlt.atoms.Spin;
+import com.radixdlt.atoms.SpunParticle;
+import com.radixdlt.store.SpinStateTransitionValidator;
+import com.radixdlt.store.SpinStateTransitionValidator.TransitionCheckResult;
+import com.radixdlt.store.CMStores;
+import com.radixdlt.common.Pair;
 
 /**
  * Utility class for low level Constraint Machine "hardware" level validation.
  */
-final class ConstraintMachineUtils {
-	private ConstraintMachineUtils() {
+public final class RadixEngineUtils {
+	private RadixEngineUtils() {
 		throw new IllegalStateException("Cannot instantiate.");
 	}
 
@@ -37,29 +43,26 @@ final class ConstraintMachineUtils {
 	private static CMErrorCode checkNextSpin(
 		Particle particle,
 		Spin nextSpin,
-		Spin oldSpin,
-		StateStore localStateStore
+		Spin oldSpin
 	) {
-		StateStore stateStore = oldSpin == null
-			? localStateStore
-			: StateStores.virtualizeOverwrite(localStateStore, particle::equals, oldSpin);
+		CMStore engineStore = oldSpin == null
+			? CMStores.empty()
+			: CMStores.virtualizeOverwrite(CMStores.empty(), particle::equals, oldSpin);
 
 		TransitionCheckResult result = SpinStateTransitionValidator.checkParticleTransition(
 			particle,
-			nextSpin,
-			stateStore
+			nextSpin, engineStore
 		);
 
 		final CMErrorCode error;
 
 		switch (result) {
 			case OKAY:
-				error = null;
-				break;
+				// Follow through
 			case MISSING_STATE:
 				// Follow through
 			case MISSING_STATE_FROM_UNSUPPORTED_SHARD:
-				error = CMErrorCode.UNKNOWN_PARTICLE;
+				error = null;
 				break;
 			case CONFLICT:
 				error = CMErrorCode.INTERNAL_SPIN_CONFLICT;
@@ -101,18 +104,16 @@ final class ConstraintMachineUtils {
 	 * Analyze the spins of a particle in an atom.
 	 *
 	 * @param spunParticles the particle in an atom to analyze
-	 * @param localStateStore the local store to analyze spins on top of, relevant because of virtualized particles
 	 * @return map containing each particle and pointers to results of each spun instance
 	 */
-	static Stream<CMError> checkInternalSpins(List<IndexedSpunParticle> spunParticles, StateStore localStateStore) {
+	static Stream<CMError> checkInternalSpins(List<IndexedSpunParticle> spunParticles) {
 		return mapPairs(spunParticles, (pp, pair) -> {
 			final SpunParticle prev = pair.getFirst();
 			final IndexedSpunParticle indexed = pair.getSecond();
 			final CMErrorCode error = checkNextSpin(
 				pp,
 				indexed.getSpunParticle().getSpin(),
-				prev == null ? null : prev.getSpin(),
-				localStateStore
+				prev == null ? null : prev.getSpin()
 			);
 			if (error != null) {
 				return Stream.of(new CMError(indexed.getDataPointer(), error));
@@ -151,5 +152,43 @@ final class ConstraintMachineUtils {
 					.filter(e -> e.getValue().size() > 1)
 					.map(e -> new CMError(i.getDataPointer(), CMErrorCode.DUPLICATE_PARTICLES_IN_GROUP));
 			});
+	}
+
+	public static class CMAtomConversionException extends Exception {
+		private final ImmutableSet<CMError> errors;
+		CMAtomConversionException(ImmutableSet<CMError> errors) {
+			this.errors = errors;
+		}
+
+		public ImmutableSet<CMError> getErrors() {
+			return errors;
+		}
+	}
+
+	public static CMAtom toCMAtom(ImmutableAtom atom) throws CMAtomConversionException {
+		final Map<Particle, ImmutableList<IndexedSpunParticle>> spunParticles = RadixEngineUtils.getTransitionsByParticle(atom);
+
+		final Stream<CMError> badSpinErrs = spunParticles.entrySet().stream()
+			.flatMap(e -> RadixEngineUtils.checkInternalSpins(e.getValue()));
+		final Stream<CMError> conversionErrs = Streams.concat(
+			RadixEngineUtils.checkParticleGroupsNotEmpty(atom),
+			RadixEngineUtils.checkParticleTransitionsUniqueInGroup(atom),
+			badSpinErrs
+		);
+
+		ImmutableSet<CMError> errors = conversionErrs.collect(ImmutableSet.toImmutableSet());
+		if (!errors.isEmpty()) {
+			throw new CMAtomConversionException(errors);
+		}
+
+		final ImmutableList<CMParticle> cmParticles =
+			spunParticles.entrySet().stream()
+				.map(e -> {
+					ImmutableList<IndexedSpunParticle> sp = e.getValue();
+					Spin checkSpin = SpinStateMachine.prev(sp.get(0).getSpunParticle().getSpin());
+					return new CMParticle(e.getKey(), sp.get(0).getDataPointer(), checkSpin, sp.size());
+				})
+				.collect(ImmutableList.toImmutableList());
+		return new CMAtom(atom, cmParticles);
 	}
 }

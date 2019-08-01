@@ -1,20 +1,21 @@
 package com.radixdlt.atomos;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.atoms.DataPointer;
 import com.radixdlt.atoms.ImmutableAtom;
-import com.radixdlt.atoms.IndexedSpunParticle;
+import com.radixdlt.atoms.Spin;
+import com.radixdlt.constraintmachine.CMAtom;
+import com.radixdlt.constraintmachine.CMParticle;
+import org.junit.Test;
+
 import com.radixdlt.atoms.Particle;
-import com.radixdlt.atoms.SpunParticle;
 import com.radixdlt.constraintmachine.CMErrorCode;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.universe.Universe;
-import java.util.stream.Stream;
-import org.junit.Test;
+
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class CMAtomOSTest {
 	private static class TestParticle extends Particle {
@@ -25,7 +26,7 @@ public class CMAtomOSTest {
 
 		@Override
 		public boolean equals(Object o) {
-			return o instanceof TestParticle;
+			return this == o;
 		}
 
 		@Override
@@ -37,20 +38,14 @@ public class CMAtomOSTest {
 	@Test
 	public void when_a_particle_which_is_not_registered_via_os_is_validated__it_should_cause_errors() {
 		CMAtomOS os = new CMAtomOS(() -> mock(Universe.class), () -> 0);
-		ConstraintMachine machine = os.buildMachine();
-		ImmutableAtom atom = mock(ImmutableAtom.class);
-		when(atom.indexedSpunParticles()).thenReturn(Stream.of(
-			new IndexedSpunParticle(SpunParticle.up(new TestParticle()), DataPointer.ofParticle(0, 0))
+		ConstraintMachine machine = os.buildMachine().getFirst();
+		CMAtom atom = mock(CMAtom.class);
+		when(atom.getAtom()).thenReturn(mock(ImmutableAtom.class));
+		TestParticle testParticle = new TestParticle();
+		when(atom.getParticles()).thenReturn(ImmutableList.of(
+			new CMParticle(testParticle, DataPointer.ofParticle(0, 0), Spin.NEUTRAL, 1)
 		));
-		assertThat(machine.validate(atom, true).getErrors()).anyMatch(e -> e.getErrorCode() == CMErrorCode.UNKNOWN_PARTICLE);
-	}
-
-	@Test
-	public void when_a_compute_is_registered_with_duplicate_keys_and_the_machine_is_built__an_illegal_state_exception_should_occur() {
-		CMAtomOS os = new CMAtomOS(() -> mock(Universe.class), () -> 0);
-		assertThatThrownBy(() -> os.loadKernelConstraintScrypt(kernel -> {
-			kernel.onAtom().compute("duplicate", atom -> "hello");
-			kernel.onAtom().compute("duplicate", atom -> "hello");
-		})).isInstanceOf(IllegalStateException.class);
+		assertThat(machine.validate(atom, true))
+			.anyMatch(e -> e.getErrorCode() == CMErrorCode.UNKNOWN_PARTICLE);
 	}
 }

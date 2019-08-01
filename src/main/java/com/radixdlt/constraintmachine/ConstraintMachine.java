@@ -1,18 +1,18 @@
 package com.radixdlt.constraintmachine;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Streams;
-import com.radixdlt.atomos.AtomOSKernel.AtomKernelCompute;
 import com.radixdlt.atoms.ImmutableAtom;
-import com.radixdlt.atoms.IndexedSpunParticle;
-import com.radixdlt.atoms.Particle;
-import com.radixdlt.store.StateStore;
-import com.radixdlt.store.StateStores;
-import java.util.Map;
-import java.util.Objects;
+import com.radixdlt.atoms.Spin;
+import com.radixdlt.store.CMStore;
+import com.radixdlt.store.SpinStateTransitionValidator;
+import com.radixdlt.store.SpinStateTransitionValidator.TransitionCheckResult;
 import java.util.function.UnaryOperator;
+import com.radixdlt.atoms.Particle;
+import com.radixdlt.store.CMStores;
+
+import java.util.Objects;
 import java.util.stream.Stream;
 
 /**
@@ -20,15 +20,12 @@ import java.util.stream.Stream;
  */
 public final class ConstraintMachine {
 	public static class Builder {
-		private UnaryOperator<StateStore> stateTransformer;
-
+		private UnaryOperator<CMStore> virtualStore;
 		private ImmutableList.Builder<KernelConstraintProcedure> kernelConstraintProcedureBuilder = new ImmutableList.Builder<>();
-		private ImmutableMap.Builder<String, AtomKernelCompute> kernelComputeBuilder = new ImmutableMap.Builder<>();
-
 		private ImmutableList.Builder<ConstraintProcedure> constraintProcedureBuilder = new ImmutableList.Builder<>();
 
-		public Builder stateTransformer(UnaryOperator<StateStore> stateTransformer) {
-			this.stateTransformer = stateTransformer;
+		public Builder virtualStore(UnaryOperator<CMStore> virtualStore) {
+			this.virtualStore = virtualStore;
 			return this;
 		}
 
@@ -42,43 +39,35 @@ public final class ConstraintMachine {
 			return this;
 		}
 
-		public Builder addCompute(String key, AtomKernelCompute atomKernelCompute) {
-			kernelComputeBuilder.put(key, atomKernelCompute);
-			return this;
-		}
 
 		public ConstraintMachine build() {
-			if (stateTransformer == null) {
-				stateTransformer = UnaryOperator.identity();
+			if (virtualStore == null) {
+				virtualStore = UnaryOperator.identity();
 			}
 
 			return new ConstraintMachine(
-				stateTransformer,
+				virtualStore,
 				kernelConstraintProcedureBuilder.build(),
-				kernelComputeBuilder.build(),
 				constraintProcedureBuilder.build()
 			);
 		}
 	}
 
-	private final UnaryOperator<StateStore> stateStoreTransformer;
+	private final UnaryOperator<CMStore> virtualStore;
 	private final ImmutableList<KernelConstraintProcedure> kernelConstraintProcedures;
-	private final ImmutableMap<String, AtomKernelCompute> kernelComputes;
 	private final ImmutableList<ConstraintProcedure> applicationConstraintProcedures;
-	private final StateStore localStateStore;
+	private final CMStore localEngineStore;
 
 	ConstraintMachine(
-		UnaryOperator<StateStore> transformer,
+		UnaryOperator<CMStore> virtualStore,
 		ImmutableList<KernelConstraintProcedure> kernelConstraintProcedures,
-		ImmutableMap<String, AtomKernelCompute> kernelComputes,
 		ImmutableList<ConstraintProcedure> applicationConstraintProcedures
 	) {
-		Objects.requireNonNull(transformer);
+		Objects.requireNonNull(virtualStore);
 
-		this.stateStoreTransformer = Objects.requireNonNull(transformer);
-		this.localStateStore = this.stateStoreTransformer.apply(StateStores.empty());
+		this.virtualStore = Objects.requireNonNull(virtualStore);
+		this.localEngineStore = this.virtualStore.apply(CMStores.empty());
 		this.kernelConstraintProcedures = kernelConstraintProcedures;
-		this.kernelComputes = kernelComputes;
 		this.applicationConstraintProcedures = applicationConstraintProcedures;
 	}
 
@@ -86,37 +75,39 @@ public final class ConstraintMachine {
 	 * Validates an atom and calculates the necessary state checks and post-validation
 	 * write logic.
 	 *
-	 * @param atom atom to validate
+	 * @param cmAtom atom to validate
 	 * @param getAllErrors if true, returns all errors, otherwise, fails fast
 	 * and just returns the first error
 	 * @return results of validation, including any errors, warnings, and post-validation write logic
 	 */
-	public CMResult validate(ImmutableAtom atom, boolean getAllErrors) {
-		// "Hardware" checks
-		final Map<Particle, ImmutableList<IndexedSpunParticle>> spunParticles = ConstraintMachineUtils.getTransitionsByParticle(atom);
-		final Stream<CMError> badSpinErrs = spunParticles.entrySet().stream()
-			.flatMap(e -> ConstraintMachineUtils.checkInternalSpins(e.getValue(), localStateStore));
-		final Stream<CMError> hwErrs = Streams.concat(
-			ConstraintMachineUtils.checkParticleGroupsNotEmpty(atom),
-			ConstraintMachineUtils.checkParticleTransitionsUniqueInGroup(atom),
-			badSpinErrs
-		);
+	public ImmutableSet<CMError> validate(CMAtom cmAtom, boolean getAllErrors) {
+		// "Segfaults" or particles which should not exist
+		final Stream<CMError> unknownParticleErrors = cmAtom.getParticles().stream()
+			.filter(p -> !localEngineStore.getSpin(p.getParticle()).isPresent())
+			.map(p -> new CMError(p.getDataPointer(), CMErrorCode.UNKNOWN_PARTICLE));
+
+		// Virtual particle state checks
+		// TODO: Is this better suited at the state check pipeline?
+		final Stream<CMError> virtualParticleErrors = cmAtom.getParticles().stream()
+			.filter(p -> {
+				Particle particle = p.getParticle();
+				Spin nextSpin = p.getNextSpin();
+				TransitionCheckResult result = SpinStateTransitionValidator.checkParticleTransition(
+					particle,
+					nextSpin, localEngineStore
+				);
+
+				return result.equals(TransitionCheckResult.CONFLICT);
+			})
+			.map(p ->  new CMError(p.getDataPointer(), CMErrorCode.INTERNAL_SPIN_CONFLICT));
 
 		// "Kernel" checks
-		final ImmutableList<CMParticle> cmParticles =
-			spunParticles.entrySet().stream()
-				.map(e -> new CMParticle(e.getKey(), e.getValue()))
-				.collect(ImmutableList.toImmutableList());
-
-		final ImmutableMap.Builder<String, Object> atomCompute = new ImmutableMap.Builder<>();
-		kernelComputes.forEach((key, c) -> atomCompute.put(key, c.compute(atom)));
-
-		final CMAtom cmAtom = new CMAtom(atom, cmParticles, atomCompute.build());
 		final Stream<CMError> kernelErrs = kernelConstraintProcedures.stream()
 			.flatMap(kernelProcedure -> kernelProcedure.validate(cmAtom))
 			.map(CMErrors::fromKernelProcedureError);
 
 		// "Application" checks
+		final ImmutableAtom atom = cmAtom.getAtom();
 		final AtomMetadata metadata = new AtomMetadataFromAtom(atom);
 		final Stream<CMError> applicationErrs = Streams.mapWithIndex(atom.particleGroups(), (group, i) ->
 			applicationConstraintProcedures.stream()
@@ -125,19 +116,18 @@ public final class ConstraintMachine {
 		).flatMap(i -> i);
 
 		final Stream<CMError> errorStream = Streams.concat(
-			hwErrs,
+			unknownParticleErrors,
+			virtualParticleErrors,
 			kernelErrs,
 			applicationErrs
 		);
 
-		final ImmutableSet<CMError> errors = getAllErrors
+		return getAllErrors
 			? errorStream.collect(ImmutableSet.toImmutableSet())
 			: errorStream.findAny().map(ImmutableSet::of).orElse(ImmutableSet.of());
-
-		return new CMResult(errors, cmAtom);
 	}
 
-	public StateStore virtualize(StateStore base) {
-		return stateStoreTransformer.apply(base);
+	public UnaryOperator<CMStore> getVirtualStore() {
+		return this.virtualStore;
 	}
 }

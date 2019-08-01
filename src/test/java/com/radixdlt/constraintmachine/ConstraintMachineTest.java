@@ -1,21 +1,19 @@
 package com.radixdlt.constraintmachine;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import com.radixdlt.atoms.DataPointer;
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.atoms.ImmutableAtom;
-import com.radixdlt.atoms.IndexedSpunParticle;
+import java.util.Collections;
+import org.junit.Test;
+import com.radixdlt.atoms.DataPointer;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.atoms.Spin;
-import com.radixdlt.atoms.SpunParticle;
+import com.radixdlt.store.CMStores;
 import com.radixdlt.common.EUID;
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.store.StateStores;
-import java.util.Collections;
-import java.util.stream.Stream;
-import org.junit.Test;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 public class ConstraintMachineTest {
 	@SerializerId2("test.indexed_particle_2")
@@ -29,39 +27,20 @@ public class ConstraintMachineTest {
 	@Test
 	public void when_validating_an_atom_with_particle_which_conflicts_with_virtual_state__an_internal_spin_conflict_is_returned() {
 		ConstraintMachine machine = new ConstraintMachine.Builder()
-			.stateTransformer(state -> StateStores.virtualizeDefault(state, p -> true, Spin.UP))
+			.virtualStore(state -> CMStores.virtualizeDefault(state, p -> true, Spin.UP))
 			.build();
 
 		IndexedParticle p = mock(IndexedParticle.class);
 		when(p.getDestinations()).thenReturn(Collections.singleton(EUID.ONE));
 
-		ImmutableAtom atom = mock(ImmutableAtom.class);
-		when(atom.indexedSpunParticles()).thenReturn(Stream.of(
-			new IndexedSpunParticle(SpunParticle.up(p), DataPointer.ofParticle(0, 0))
+		CMAtom atom = mock(CMAtom.class);
+		when(atom.getParticles()).thenReturn(ImmutableList.of(
+			new CMParticle(p, DataPointer.ofParticle(0, 0), Spin.NEUTRAL, 1)
 		));
+		when(atom.getAtom()).thenReturn(mock(ImmutableAtom.class));
 
-		assertThat(machine.validate(atom, true).getErrors())
+		assertThat(machine.validate(atom, true))
 			.contains(new CMError(DataPointer.ofParticle(0, 0), CMErrorCode.INTERNAL_SPIN_CONFLICT));
 	}
 
-	@Test
-	public void when_validating_an_atom_with_an_atom_kernel_compute__the_computation_is_returned() {
-		ConstraintMachine machine = new ConstraintMachine.Builder()
-			.stateTransformer(s -> StateStores.virtualizeDefault(s, p -> true, Spin.NEUTRAL))
-			.addCompute("test", a -> "hello")
-			.build();
-
-		IndexedParticle p = mock(IndexedParticle.class);
-		when(p.getDestinations()).thenReturn(Collections.singleton(EUID.ONE));
-
-		ImmutableAtom atom = mock(ImmutableAtom.class);
-		when(atom.indexedSpunParticles()).thenReturn(Stream.of(
-			new IndexedSpunParticle(SpunParticle.up(p), DataPointer.ofParticle(0, 0))
-		));
-
-		org.assertj.core.api.AssertionsForClassTypes.assertThat(
-			machine.validate(atom, false).onSuccessElseThrow(e -> new IllegalStateException(e.toString()))
-			.getComputedOrError("test", String.class))
-			.isEqualTo("hello");
-	}
 }

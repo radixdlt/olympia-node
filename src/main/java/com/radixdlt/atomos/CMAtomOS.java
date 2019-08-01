@@ -1,28 +1,10 @@
 package com.radixdlt.atomos;
 
-import com.radixdlt.atomos.mapper.ParticleToAmountMapper;
-import com.radixdlt.atomos.mapper.ParticleToRRIMapper;
-import com.radixdlt.atomos.mapper.ParticleToShardableMapper;
-import com.radixdlt.atomos.mapper.ParticleToShardablesMapper;
-import com.radixdlt.atomos.procedures.ParticleClassConstraintProcedure;
-import com.radixdlt.atomos.procedures.ParticleClassWithSideEffectConstraintProcedure;
-import com.radixdlt.atomos.procedures.PayloadParticleConstraintProcedure;
-import com.radixdlt.atomos.procedures.RRIConstraintProcedure;
-import com.radixdlt.atomos.procedures.fungible.FungibleTransitionConstraintProcedure;
-import com.radixdlt.atoms.Particle;
-import com.radixdlt.atoms.Spin;
-import com.radixdlt.common.EUID;
-import com.radixdlt.constraintmachine.ConstraintMachine;
-import com.radixdlt.constraintmachine.ConstraintMachine.Builder;
-import com.radixdlt.constraintmachine.ConstraintProcedure;
-import com.radixdlt.constraintmachine.KernelConstraintProcedure;
-import com.radixdlt.constraintmachine.KernelProcedureError;
-import com.radixdlt.store.StateStore;
-import com.radixdlt.store.StateStores;
-import com.radixdlt.universe.Universe;
+import com.radixdlt.common.Pair;
+import com.radixdlt.compute.AtomCompute;
+import com.radixdlt.store.CMStore;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,8 +15,27 @@ import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
+import com.radixdlt.atomos.mapper.ParticleToAmountMapper;
+import com.radixdlt.atomos.mapper.ParticleToRRIMapper;
+import com.radixdlt.atomos.mapper.ParticleToShardableMapper;
+import com.radixdlt.atomos.mapper.ParticleToShardablesMapper;
+import com.radixdlt.atomos.procedures.ParticleClassConstraintProcedure;
+import com.radixdlt.atomos.procedures.ParticleClassWithSideEffectConstraintProcedure;
+import com.radixdlt.atomos.procedures.PayloadParticleConstraintProcedure;
+import com.radixdlt.atomos.procedures.RRIConstraintProcedure;
+import com.radixdlt.atomos.procedures.fungible.FungibleTransitionConstraintProcedure;
+import com.radixdlt.constraintmachine.ConstraintMachine.Builder;
+import com.radixdlt.constraintmachine.ConstraintProcedure;
+import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.constraintmachine.KernelConstraintProcedure;
+import com.radixdlt.constraintmachine.KernelProcedureError;
+import com.radixdlt.atoms.Particle;
+import com.radixdlt.atoms.Spin;
+import com.radixdlt.store.CMStores;
+import com.radixdlt.common.EUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import com.radixdlt.universe.Universe;
 
 /**
  * Implementation of the AtomOS interface on top of a UTXO based Constraint Machine.
@@ -43,7 +44,7 @@ public final class CMAtomOS implements AtomOSKernel, AtomOS {
 	private static final Pattern PARTICLE_NAME_PATTERN = Pattern.compile("[1-9A-Za-z]+");
 	private final List<ConstraintProcedure> procedures = new ArrayList<>();
 	private final List<KernelConstraintProcedure> kernelProcedures = new ArrayList<>();
-	private final Map<String, AtomKernelCompute> atomKernelComputes = new HashMap<>();
+	private AtomKernelCompute atomKernelCompute;
 
 	private final List<FungibleTransition<? extends Particle>> fungibleTransitions = new ArrayList<>();
 	private FungibleTransition.Builder<? extends Particle> pendingFungibleTransition = null;
@@ -190,12 +191,13 @@ public final class CMAtomOS implements AtomOSKernel, AtomOS {
 			}
 
 			@Override
-			public void compute(String key, AtomKernelCompute compute) {
-				if (CMAtomOS.this.atomKernelComputes.containsKey(key)) {
-					throw new IllegalStateException("Compute key [" + key + "] already in use.");
+			public void setCompute(AtomKernelCompute compute) {
+
+				if (CMAtomOS.this.atomKernelCompute != null) {
+					throw new IllegalStateException("Compute already set.");
 				}
 
-				CMAtomOS.this.atomKernelComputes.put(key, compute);
+				CMAtomOS.this.atomKernelCompute = compute;
 			}
 		};
 	}
@@ -215,30 +217,29 @@ public final class CMAtomOS implements AtomOSKernel, AtomOS {
 	 * If all is well, this then returns an instance of a machine in which atom
 	 * validation can be done with the Quarks and Particles it's been set up with.
 	 *
-	 * @return a constraint machine which can validate atoms
+	 * @return a constraint machine which can validate atoms and the virtual layer on top of the store
 	 */
-	public ConstraintMachine buildMachine() {
-		ConstraintMachine.Builder builder = new Builder();
+	public Pair<ConstraintMachine, AtomCompute> buildMachine() {
+		ConstraintMachine.Builder cmBuilder = new Builder();
 
-		this.atomKernelComputes.forEach(builder::addCompute);
-		this.procedures.forEach(builder::addProcedure);
-		this.kernelProcedures.forEach(builder::addProcedure);
+		this.procedures.forEach(cmBuilder::addProcedure);
+		this.kernelProcedures.forEach(cmBuilder::addProcedure);
 
 		// Add a constraint for fungibles if any were added
 		if (!this.fungibleTransitions.isEmpty()) {
-			builder.addProcedure(new FungibleTransitionConstraintProcedure(this.fungibleTransitions));
+			cmBuilder.addProcedure(new FungibleTransitionConstraintProcedure(this.fungibleTransitions));
 		}
 
 		// Add constraint for RRI state machines
-		builder.addProcedure(this.rriProcedureBuilder.build());
+		cmBuilder.addProcedure(this.rriProcedureBuilder.build());
 		// Add constraint for Payload state machines
-		builder.addProcedure(this.payloadProcedureBuilder.build());
+		cmBuilder.addProcedure(this.payloadProcedureBuilder.build());
 
-		UnaryOperator<StateStore> rriTransformer = base ->
-			StateStores.virtualizeDefault(base, p -> p instanceof RRIParticle && ((RRIParticle) p).getNonce() == 0, Spin.UP);
+		UnaryOperator<CMStore> rriTransformer = base ->
+			CMStores.virtualizeDefault(base, p -> p instanceof RRIParticle && ((RRIParticle) p).getNonce() == 0, Spin.UP);
 
-		UnaryOperator<StateStore> virtualizedDefault = base -> {
-			StateStore virtualizeNeutral = StateStores.virtualizeDefault(base, p -> {
+		UnaryOperator<CMStore> virtualizedDefault = base -> {
+			CMStore virtualizeNeutral = CMStores.virtualizeDefault(base, p -> {
 				Function<Particle, Stream<RadixAddress>> mapper = particleMapper.get(p.getClass());
 				if (mapper == null) {
 					return false;
@@ -254,8 +255,10 @@ public final class CMAtomOS implements AtomOSKernel, AtomOS {
 			return rriTransformer.apply(virtualizeNeutral);
 		};
 
-		builder.stateTransformer(virtualizedDefault);
+		cmBuilder.virtualStore(virtualizedDefault);
 
-		return builder.build();
+		final AtomCompute compute = atomKernelCompute != null ? a -> atomKernelCompute.compute(a.getAtom()) : null;
+
+		return Pair.of(cmBuilder.build(), compute);
 	}
 }

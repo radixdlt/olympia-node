@@ -1,18 +1,19 @@
 package com.radixdlt.store;
 
-import static com.radixdlt.atoms.Spin.DOWN;
-import static com.radixdlt.atoms.Spin.NEUTRAL;
-import static com.radixdlt.atoms.Spin.UP;
-
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.atoms.Spin;
+
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import com.radixdlt.atoms.Spin;
+
+import static com.radixdlt.atoms.Spin.NEUTRAL;
+import static com.radixdlt.atoms.Spin.UP;
+import static com.radixdlt.atoms.Spin.DOWN;
 
 /**
  * The spin state machine used for an instance of a particle.
@@ -76,6 +77,16 @@ public final class SpinStateMachine {
 
 	}
 	private static class SpinStateIndexes {
+		private static final ImmutableMap<Spin, Spin> NEXT = ImmutableMap.of(
+			NEUTRAL, UP,
+			UP, DOWN
+		);
+
+		private static final ImmutableMap<Spin, Spin> PREV = ImmutableMap.of(
+			DOWN, UP,
+			UP, NEUTRAL
+		);
+
 		private static final ImmutableSet<Transition> VALID_TRANSITIONS = ImmutableSet.of(
 			Transition.of(NEUTRAL, UP),
 			Transition.of(UP, DOWN)
@@ -93,6 +104,23 @@ public final class SpinStateMachine {
 			DOWN, EnumSet.of(NEUTRAL, UP)
 		);
 	}
+
+	public static Spin next(Spin current) {
+		final Spin nextSpin = SpinStateIndexes.NEXT.get(current);
+		if (nextSpin == null) {
+			throw new IllegalArgumentException("No spin after " + current);
+		}
+		return nextSpin;
+	}
+
+	public static Spin prev(Spin current) {
+		final Spin prevSpin = SpinStateIndexes.PREV.get(current);
+		if (prevSpin == null) {
+			throw new IllegalArgumentException("No spin before " + current);
+		}
+		return prevSpin;
+	}
+
 	/**
 	 * Checks if a spin state is after a given spin state non-inclusive in
 	 * the sequential spin state machine.

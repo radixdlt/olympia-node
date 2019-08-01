@@ -7,9 +7,9 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- *  A state that gives access to the state of a certain shard space
+ * Read only store interface for Constraint Machine validation
  */
-public interface StateStore {
+public interface CMStore {
 
 	/**
 	 * Returns whether this state store supports any of the given destinations
