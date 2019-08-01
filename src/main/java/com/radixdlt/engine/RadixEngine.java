@@ -102,16 +102,8 @@ public final class RadixEngine {
 		this.cmSuccessHooks.add(hook);
 	}
 
-	public void removeCMSuccessHook(BiConsumer<CMAtom, Object> hook) {
-		this.cmSuccessHooks.remove(hook);
-	}
-
 	public void addAtomEventListener(AtomEventListener acceptor) {
 		this.atomEventListeners.add(acceptor);
-	}
-
-	public void removeAtomEventListener(AtomEventListener acceptor) {
-		this.atomEventListeners.remove(acceptor);
 	}
 
 	public void delete(CMAtom cmAtom) {

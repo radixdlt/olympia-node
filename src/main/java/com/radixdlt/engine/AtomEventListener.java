@@ -21,6 +21,7 @@ public interface AtomEventListener {
 
 	default void onStateConflict(CMAtom cmAtom, SpunParticle issueParticle, ImmutableAtom conflictingAtom) {
 	}
+
 	default void onStateMissingDependency(CMAtom cmAtom, SpunParticle issueParticle) {
 	}
 }
