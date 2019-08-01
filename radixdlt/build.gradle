@@ -32,6 +32,7 @@ configurations {
 }
 
 dependencies {
+    compile project(":radixdlt-engine")
     compile 'commons-cli:commons-cli:1.4'
     compile 'org.bouncycastle:bcprov-jdk15on:1.52'
     compile 'org.json:json:20180813'
@@ -353,7 +354,7 @@ task proguard(type: proguard.gradle.ProGuardTask, dependsOn: jar) {
 
     // NOTE: There should be uncommented by default to enable obfuscation
     keep 'class org.radix.api.dto.** { *; }'
-    keep 'class com.radixdlt.atommodel.** { *; }'
+    keep 'class com.radixdlt.** { *; }'
     //keep 'class org.radix.api.** { *; }'
     //keep 'class org.radix.atoms.** { *; }'
     //keep 'class org.radix.assets.** { *; }'
