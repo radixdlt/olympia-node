@@ -66,19 +66,18 @@ public final class RadixEngine {
 		this.compute = compute;
 		this.virtualizedCMStore = constraintMachine.getVirtualStore().apply(engineStore);
 		this.engineStore = engineStore;
-		this.stateUpdateEngine = new Thread(() -> {
-			while (true) {
-				final EngineAction action;
-				try {
-					action = this.commitQueue.poll(1, TimeUnit.SECONDS);
-				} catch (InterruptedException e) {
-					// Just exit if we are interrupted
-					Thread.currentThread().interrupt();
-					break;
-				}
+		this.stateUpdateEngine = new Thread(this::run);
+		this.stateUpdateEngine.setDaemon(true);
+		this.stateUpdateEngine.setName("Radix Engine");
+	}
 
-				if (action == null)
+	private void run() {
+		while (true) {
+			try {
+				EngineAction action = this.commitQueue.poll(1, TimeUnit.SECONDS);
+				if (action == null) {
 					continue;
+				}
 
 				if (action instanceof StoreAtom) {
 					StoreAtom storeAtom = (StoreAtom) action;
@@ -87,9 +86,12 @@ public final class RadixEngine {
 					DeleteAtom deleteAtom = (DeleteAtom) action;
 					engineStore.deleteAtom(deleteAtom.cmAtom);
 				}
+			} catch (InterruptedException e) {
+				// Just exit if we are interrupted
+				Thread.currentThread().interrupt();
+				break;
 			}
-		});
-		this.stateUpdateEngine.setName("Radix Engine");
+		}
 	}
 
 	public void start() {
