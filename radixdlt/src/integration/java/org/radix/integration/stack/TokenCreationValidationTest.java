@@ -1,11 +1,11 @@
 package org.radix.integration.stack;
 
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.common.Pair;
+import com.radixdlt.engine.AtomEventListener;
 import com.radixdlt.engine.RadixEngineUtils;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.UInt384;
-import org.assertj.core.api.Assertions;
+import java.util.concurrent.TimeUnit;
 import org.junit.Before;
 import org.junit.Test;
 import org.radix.atoms.PreparedAtom;
@@ -19,7 +19,6 @@ import org.radix.atoms.Atom;
 import org.radix.atoms.AtomStore;
 import com.radixdlt.constraintmachine.CMAtom;
 import com.radixdlt.atoms.Spin;
-import org.radix.atoms.particles.conflict.ParticleConflictException;
 import com.radixdlt.crypto.ECKeyPair;
 import org.radix.integration.RadixTestWithStores;
 import org.radix.modules.Modules;
@@ -29,6 +28,12 @@ import com.radixdlt.utils.UInt256;
 import org.radix.validation.ValidationHandler;
 
 import java.io.File;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 
 public class TokenCreationValidationTest extends RadixTestWithStores {
 	private ECKeyPair identity;
@@ -73,7 +78,12 @@ public class TokenCreationValidationTest extends RadixTestWithStores {
 		atom.sign(identity);
 
 		CMAtom cmAtom = RadixEngineUtils.toCMAtom(atom);
-		Modules.get(ValidationHandler.class).stateCheck(cmAtom);
+		AtomEventListener listener = mock(AtomEventListener.class);
+		Modules.get(ValidationHandler.class).getRadixEngine().addAtomEventListener(listener);
+		Modules.get(ValidationHandler.class).getRadixEngine().store(cmAtom);
+		verify(listener, timeout(5000).times(1))
+			.onStateStore(eq(cmAtom), any());
+		Modules.get(ValidationHandler.class).getRadixEngine().removeAtomEventListener(listener);
 	}
 
 	@Test
@@ -106,7 +116,6 @@ public class TokenCreationValidationTest extends RadixTestWithStores {
 		addTemporalVertex(atom); // Can't store atom without vertex from this node
 		atom.sign(identity);
 		CMAtom cmAtom = RadixEngineUtils.toCMAtom(atom);
-		Modules.get(ValidationHandler.class).stateCheck(cmAtom);
 		PreparedAtom preparedAtom = new PreparedAtom(cmAtom, UInt384.ONE);
 		Modules.get(AtomStore.class).storeAtom(preparedAtom);
 
@@ -135,7 +144,13 @@ public class TokenCreationValidationTest extends RadixTestWithStores {
 		);
 		secondAtom.sign(identity);
 		CMAtom secondCMAtom = RadixEngineUtils.toCMAtom(secondAtom);
-		Assertions.assertThatThrownBy(() -> Modules.get(ValidationHandler.class).stateCheck(secondCMAtom))
-			.isInstanceOf(ParticleConflictException.class);
+
+		AtomEventListener listener = mock(AtomEventListener.class);
+		Modules.get(ValidationHandler.class).getRadixEngine().addAtomEventListener(listener);
+		Modules.get(ValidationHandler.class).getRadixEngine().store(secondCMAtom);
+		TimeUnit.SECONDS.sleep(1);
+		verify(listener, timeout(5000).times(1))
+			.onStateConflict(eq(secondCMAtom), any(), any());
+		Modules.get(ValidationHandler.class).getRadixEngine().removeAtomEventListener(listener);
 	}
 }

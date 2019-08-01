@@ -31,7 +31,7 @@ public final class TestAtomOSKernel implements AtomOSKernel {
 			}
 
 			@Override
-			public void compute(String key, AtomKernelCompute compute) {
+			public void setCompute(AtomKernelCompute compute) {
 			}
 		};
 	}

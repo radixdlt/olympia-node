@@ -321,7 +321,7 @@ public class Messaging extends Service
 			if (this.inboundQueue.offer(new MessageEvent(messagePriority(message), messageTime(), message, peer)) == false)
 			{
 				messagingLog.error(message+": Inbound queue is full "+peer);
-				Events.getInstance().broadcast(new QueueFullEvent(this.inboundQueue));
+				Events.getInstance().broadcast(new QueueFullEvent());
 				throw new QueueFullException(message+": Inbound queue is full "+peer);
 			}
 
@@ -350,7 +350,7 @@ public class Messaging extends Service
 			if (outboundQueue.offer(new MessageEvent(messagePriority(message), messageTime(), message, peer), 1, TimeUnit.SECONDS) == false)
 			{
 				messagingLog.error(message+": Outbound queue is full "+peer);
-				Events.getInstance().broadcast(new QueueFullEvent(this.outboundQueue));
+				Events.getInstance().broadcast(new QueueFullEvent());
 				throw new QueueFullException(message+": Outbound queue is full "+peer);
 			}
 

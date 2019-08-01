@@ -1,38 +1,136 @@
 package com.radixdlt.engine;
 
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atoms.DataPointer;
 import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.atoms.Spin;
 import com.radixdlt.atoms.SpunParticle;
 import com.radixdlt.common.Pair;
+import com.radixdlt.compute.AtomCompute;
 import com.radixdlt.constraintmachine.CMAtom;
+import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.ConstraintMachine;
-import com.radixdlt.engine.StateCheckResult.StateCheckResultAcceptor;
 import com.radixdlt.store.CMStore;
+import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.SpinStateTransitionValidator;
 import com.radixdlt.store.SpinStateTransitionValidator.TransitionCheckResult;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 /**
  * Top Level Class for the Radix Engine, a real-time, shardable, distributed state machine.
  */
 public final class RadixEngine {
+
+	private interface EngineAction {
+	}
+
+	private final class DeleteAtom implements EngineAction {
+		private final CMAtom cmAtom;
+		DeleteAtom(CMAtom cmAtom) {
+			this.cmAtom = cmAtom;
+		}
+	}
+
+	private final class StoreAtom implements EngineAction {
+		private final CMAtom cmAtom;
+		private final Object computed;
+		StoreAtom(CMAtom cmAtom, Object computed) {
+			this.cmAtom = cmAtom;
+			this.computed = computed;
+		}
+	}
+
 	private final ConstraintMachine constraintMachine;
-	private final CMStore cmStore;
+	private final AtomCompute compute;
+	private final EngineStore engineStore;
+	private final CMStore virtualizedCMStore;
+	private final CopyOnWriteArrayList<AtomEventListener> atomEventListeners = new CopyOnWriteArrayList<>();
+	private final CopyOnWriteArrayList<BiConsumer<CMAtom, Object>> cmSuccessHooks = new CopyOnWriteArrayList<>();
+	private	final BlockingQueue<EngineAction> commitQueue = new LinkedBlockingQueue<>();
+	private final Thread stateUpdateEngine;
 
-	public RadixEngine(ConstraintMachine constraintMachine, CMStore cmStore) {
+	public RadixEngine(
+		ConstraintMachine constraintMachine,
+		AtomCompute compute,
+		EngineStore engineStore
+	) {
 		this.constraintMachine = constraintMachine;
-		this.cmStore = constraintMachine.getVirtualStore().apply(cmStore);
+		this.compute = compute;
+		this.virtualizedCMStore = constraintMachine.getVirtualStore().apply(engineStore);
+		this.engineStore = engineStore;
+		this.stateUpdateEngine = new Thread(this::run);
+		this.stateUpdateEngine.setDaemon(true);
+		this.stateUpdateEngine.setName("Radix Engine");
 	}
 
-	public ValidationResult validate(CMAtom cmAtom) {
-		return constraintMachine.validate(cmAtom, false);
+	private void run() {
+		while (true) {
+			try {
+				final EngineAction action = this.commitQueue.take();
+				if (action instanceof StoreAtom) {
+					StoreAtom storeAtom = (StoreAtom) action;
+					stateCheckAndStore(storeAtom.cmAtom, storeAtom.computed);
+				} else if (action instanceof DeleteAtom) {
+					DeleteAtom deleteAtom = (DeleteAtom) action;
+					engineStore.deleteAtom(deleteAtom.cmAtom);
+				}
+			} catch (InterruptedException e) {
+				// Just exit if we are interrupted
+				Thread.currentThread().interrupt();
+				break;
+			}
+		}
 	}
 
-	public StateCheckResult stateCheck(CMAtom cmAtom) {
+	// TODO: temporary interface, remove in favor of reactive-streams
+	public int getCommitQueueSize() {
+		return commitQueue.size();
+	}
+
+	public void start() {
+		stateUpdateEngine.start();
+	}
+
+	public void addCMSuccessHook(BiConsumer<CMAtom, Object> hook) {
+		this.cmSuccessHooks.add(hook);
+	}
+
+	public void removeCMSuccessHook(BiConsumer<CMAtom, Object> hook) {
+		this.cmSuccessHooks.remove(hook);
+	}
+
+	public void addAtomEventListener(AtomEventListener acceptor) {
+		this.atomEventListeners.add(acceptor);
+	}
+
+	public void removeAtomEventListener(AtomEventListener acceptor) {
+		this.atomEventListeners.remove(acceptor);
+	}
+
+	public void delete(CMAtom cmAtom) {
+		this.commitQueue.add(new DeleteAtom(cmAtom));
+	}
+
+	public void store(CMAtom cmAtom) {
+		final ImmutableSet<CMError> errors = constraintMachine.validate(cmAtom, false);
+		if (errors.isEmpty()) {
+			Object computed = compute.compute(cmAtom);
+			this.cmSuccessHooks.forEach(hook -> hook.accept(cmAtom, computed));
+			this.commitQueue.add(new StoreAtom(cmAtom, computed));
+			this.atomEventListeners.forEach(acceptor -> acceptor.onCMSuccess(cmAtom, computed));
+		} else {
+			this.atomEventListeners.forEach(acceptor -> acceptor.onCMError(cmAtom, errors));
+		}
+	}
+
+	private void stateCheckAndStore(CMAtom cmAtom, Object computed) {
 		final ImmutableAtom atom = cmAtom.getAtom();
 		// TODO: Optimize these collectors out
 		Map<TransitionCheckResult, List<Pair<DataPointer, TransitionCheckResult>>> spinCheckResults = cmAtom.getParticles()
@@ -44,7 +142,8 @@ public final class RadixEngine {
 				final DataPointer dataPointer = cmParticle.getDataPointer();
 				final TransitionCheckResult spinCheck = SpinStateTransitionValidator.checkParticleTransition(
 					particle,
-					nextSpin, cmStore
+					nextSpin,
+					virtualizedCMStore
 				);
 
 				return Pair.of(dataPointer, spinCheck);
@@ -62,10 +161,6 @@ public final class RadixEngine {
 		}
 
 		if (spinCheckResults.get(TransitionCheckResult.CONFLICT) != null) {
-			// TODO !!! This is a hack! What if there are multiple conflicts in an atom?
-			// TODO !!! Current conflict handling only supports one conflicting particle.
-			// TODO !!! This should be investigated and fixed asap. See RLAU-1076.
-			// TODO !!! This also rejects multiple internal conflicts, which may not be ideal.
 			final Pair<DataPointer, TransitionCheckResult> issue = spinCheckResults.get(TransitionCheckResult.CONFLICT).get(0);
 			final SpunParticle issueParticle = issue.getFirst().getParticleFrom(atom);
 
@@ -75,18 +170,23 @@ public final class RadixEngine {
 			//
 			// Modified StateProviderFromStore.getAtomsContaining to be singular based on the
 			// above assumption.
-			final ImmutableAtom conflictAtom = cmStore.getAtomContaining(issueParticle);
+			engineStore.getAtomContaining(issueParticle, conflictAtom ->
+				atomEventListeners.forEach(listener -> listener.onStateConflict(cmAtom, issueParticle, conflictAtom))
+			);
 
-			return acceptor -> acceptor.onConflict(issueParticle, conflictAtom);
+			return;
 		}
 
 		// TODO: Add ALL missing dependencies for optimization
 		if (spinCheckResults.get(TransitionCheckResult.MISSING_DEPENDENCY) != null)  {
 			Pair<DataPointer, TransitionCheckResult> issue = spinCheckResults.get(TransitionCheckResult.MISSING_DEPENDENCY).get(0);
 			SpunParticle issueParticle = issue.getFirst().getParticleFrom(atom);
-			return acceptor -> acceptor.onMissingDependency(issueParticle);
+			atomEventListeners.forEach(listener -> listener.onStateMissingDependency(cmAtom, issueParticle));
+			return;
 		}
 
-		return StateCheckResultAcceptor::onSuccess;
+		engineStore.storeAtom(cmAtom, computed);
+
+		atomEventListeners.forEach(listener -> listener.onStateStore(cmAtom, computed));
 	}
 }

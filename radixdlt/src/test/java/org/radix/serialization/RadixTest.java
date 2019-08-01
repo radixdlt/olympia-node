@@ -1,5 +1,7 @@
 package org.radix.serialization;
 
+import com.radixdlt.common.Pair;
+import com.radixdlt.compute.AtomCompute;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.serialization.Serialization;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -12,12 +14,10 @@ import com.radixdlt.atommodel.unique.UniqueParticleConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.common.EUID;
-import org.radix.atoms.AtomCMStore;
+import org.radix.atoms.AtomEngineStore;
 import org.radix.atoms.AtomStore;
 import org.radix.modules.Modules;
 import org.radix.properties.RuntimeProperties;
-import com.radixdlt.serialization.core.ClasspathScanningSerializationPolicy;
-import com.radixdlt.serialization.core.ClasspathScanningSerializerIds;
 import org.radix.shards.ShardSpace;
 import org.radix.time.NtpService;
 import com.radixdlt.universe.Universe;
@@ -93,12 +93,12 @@ public abstract class RadixTest
 		os.load(new MessageParticleConstraintScrypt());
 		os.load(new TokenInstancesConstraintScrypt());
 
-		final AtomCMStore atomStore = new AtomCMStore(
+		final AtomEngineStore atomStore = new AtomEngineStore(
 			() -> Modules.get(AtomStore.class),
 			() -> LocalSystem.getInstance().getShards()
 		);
-		final ConstraintMachine constraintMachine = os.buildMachine();
-		final RadixEngine radixEngine = new RadixEngine(constraintMachine, atomStore);
+		final Pair<ConstraintMachine, AtomCompute> engineParams = os.buildMachine();
+		final RadixEngine radixEngine = new RadixEngine(engineParams.getFirst(), engineParams.getSecond(), atomStore);
 		Modules.put(ValidationHandler.class, new ValidationHandler(radixEngine));
 	}
 

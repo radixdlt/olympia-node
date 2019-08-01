@@ -1,5 +1,7 @@
 package com.radixdlt.atomos;
 
+import com.radixdlt.common.Pair;
+import com.radixdlt.compute.AtomCompute;
 import com.radixdlt.store.CMStore;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -43,7 +45,7 @@ public final class CMAtomOS implements AtomOSKernel, AtomOS {
 	private static final Pattern PARTICLE_NAME_PATTERN = Pattern.compile("[1-9A-Za-z]+");
 	private final List<ConstraintProcedure> procedures = new ArrayList<>();
 	private final List<KernelConstraintProcedure> kernelProcedures = new ArrayList<>();
-	private final Map<String, AtomKernelCompute> atomKernelComputes = new HashMap<>();
+	private AtomKernelCompute atomKernelCompute;
 
 	private final List<FungibleTransition<? extends Particle>> fungibleTransitions = new ArrayList<>();
 	private FungibleTransition.Builder<? extends Particle> pendingFungibleTransition = null;
@@ -187,12 +189,13 @@ public final class CMAtomOS implements AtomOSKernel, AtomOS {
 			}
 
 			@Override
-			public void compute(String key, AtomKernelCompute compute) {
-				if (CMAtomOS.this.atomKernelComputes.containsKey(key)) {
-					throw new IllegalStateException("Compute key [" + key + "] already in use.");
+			public void setCompute(AtomKernelCompute compute) {
+
+				if (CMAtomOS.this.atomKernelCompute != null) {
+					throw new IllegalStateException("Compute already set.");
 				}
 
-				CMAtomOS.this.atomKernelComputes.put(key, compute);
+				CMAtomOS.this.atomKernelCompute = compute;
 			}
 		};
 	}
@@ -214,22 +217,21 @@ public final class CMAtomOS implements AtomOSKernel, AtomOS {
 	 *
 	 * @return a constraint machine which can validate atoms and the virtual layer on top of the store
 	 */
-	public ConstraintMachine buildMachine() {
-		ConstraintMachine.Builder builder = new Builder();
+	public Pair<ConstraintMachine, AtomCompute> buildMachine() {
+		ConstraintMachine.Builder cmBuilder = new Builder();
 
-		this.atomKernelComputes.forEach(builder::addCompute);
-		this.procedures.forEach(builder::addProcedure);
-		this.kernelProcedures.forEach(builder::addProcedure);
+		this.procedures.forEach(cmBuilder::addProcedure);
+		this.kernelProcedures.forEach(cmBuilder::addProcedure);
 
 		// Add a constraint for fungibles if any were added
 		if (!this.fungibleTransitions.isEmpty()) {
-			builder.addProcedure(new FungibleTransitionConstraintProcedure(this.fungibleTransitions));
+			cmBuilder.addProcedure(new FungibleTransitionConstraintProcedure(this.fungibleTransitions));
 		}
 
 		// Add constraint for RRI state machines
-		builder.addProcedure(this.rriProcedureBuilder.build());
+		cmBuilder.addProcedure(this.rriProcedureBuilder.build());
 		// Add constraint for Payload state machines
-		builder.addProcedure(this.payloadProcedureBuilder.build());
+		cmBuilder.addProcedure(this.payloadProcedureBuilder.build());
 
 		UnaryOperator<CMStore> rriTransformer = base ->
 			CMStores.virtualizeDefault(base, p -> p instanceof RRIParticle && ((RRIParticle) p).getNonce() == 0, Spin.UP);
@@ -251,8 +253,10 @@ public final class CMAtomOS implements AtomOSKernel, AtomOS {
 			return rriTransformer.apply(virtualizeNeutral);
 		};
 
-		builder.virtualStore(virtualizedDefault);
+		cmBuilder.virtualStore(virtualizedDefault);
 
-		return builder.build();
+		final AtomCompute compute = atomKernelCompute != null ? a -> atomKernelCompute.compute(a.getAtom()) : null;
+
+		return Pair.of(cmBuilder.build(), compute);
 	}
 }

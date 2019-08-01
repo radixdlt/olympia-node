@@ -6,10 +6,12 @@ import com.radixdlt.atommodel.tokens.TokenDefinitionConstraintScrypt;
 import com.radixdlt.atommodel.tokens.TokenInstancesConstraintScrypt;
 import com.radixdlt.atommodel.unique.UniqueParticleConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
+import com.radixdlt.common.Pair;
+import com.radixdlt.compute.AtomCompute;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.engine.RadixEngine;
 import org.radix.atoms.AtomStore;
-import org.radix.atoms.AtomCMStore;
+import org.radix.atoms.AtomEngineStore;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.modules.Modules;
@@ -23,7 +25,7 @@ import org.radix.universe.system.LocalSystem;
 
 public class Validation extends Plugin {
 	private static final Logger log = Logging.getLogger();
-	private final AtomCMStore atomStore = new AtomCMStore(
+	private final AtomEngineStore atomStore = new AtomEngineStore(
 		() -> Modules.get(AtomStore.class),
 		() -> LocalSystem.getInstance().getShards()
 	);
@@ -42,8 +44,8 @@ public class Validation extends Plugin {
 		os.load(new MessageParticleConstraintScrypt());
 		os.load(new TokenInstancesConstraintScrypt());
 
-		final ConstraintMachine constraintMachine = os.buildMachine();
-		final RadixEngine radixEngine = new RadixEngine(constraintMachine, atomStore);
+		final Pair<ConstraintMachine, AtomCompute> engineParams = os.buildMachine();
+		final RadixEngine radixEngine = new RadixEngine(engineParams.getFirst(), engineParams.getSecond(), atomStore);
 
 		Modules.getInstance().start(new ValidationHandler(radixEngine));
 	}

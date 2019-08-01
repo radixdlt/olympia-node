@@ -30,7 +30,7 @@ public final class AtomDriver implements AtomOSDriver {
 	@Override
 	public void main(AtomOSKernel kernel) {
 		kernel.onAtom()
-			.compute("mass", atom -> {
+			.setCompute(atom -> {
 				//TODO: Fix module loadup sequence so that massFunction doesn't need to be recreated everytime
 				final FungibleOrHashMassFunction massFunction = new FungibleOrHashMassFunction(kernel.getUniverse());
 				return massFunction.getMass(atom);

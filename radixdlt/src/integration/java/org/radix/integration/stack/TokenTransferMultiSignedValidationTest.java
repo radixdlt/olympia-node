@@ -1,7 +1,13 @@
 package org.radix.integration.stack;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
+
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.common.Pair;
+import com.radixdlt.engine.AtomEventListener;
 import com.radixdlt.engine.RadixEngineUtils;
 import com.radixdlt.utils.UInt384;
 import java.io.File;
@@ -95,7 +101,6 @@ public class TokenTransferMultiSignedValidationTest extends RadixTestWithStores 
 		atom.sign(identity);
 
 		CMAtom cmAtom = RadixEngineUtils.toCMAtom(atom);
-		Modules.get(ValidationHandler.class).stateCheck(cmAtom);
 		PreparedAtom preparedAtom = new PreparedAtom(cmAtom, UInt384.ONE);
 		Modules.get(AtomStore.class).storeAtom(preparedAtom);
 
@@ -131,7 +136,6 @@ public class TokenTransferMultiSignedValidationTest extends RadixTestWithStores 
 		transferAtom.sign(identity);
 		addTemporalVertex(transferAtom); // Can't store atom without vertex from this node
 		CMAtom transferCMAtom = RadixEngineUtils.toCMAtom(transferAtom);
-		Modules.get(ValidationHandler.class).stateCheck(transferCMAtom);
 		PreparedAtom preparedAtom1 = new PreparedAtom(transferCMAtom, UInt384.ONE);
 		Modules.get(AtomStore.class).storeAtom(preparedAtom1);
 
@@ -145,8 +149,10 @@ public class TokenTransferMultiSignedValidationTest extends RadixTestWithStores 
 		multiSigAtom.sign(Arrays.asList(identity, other));
 		addTemporalVertex(multiSigAtom); // Can't store atom without vertex from this node
 		CMAtom multiSigCMAtom = RadixEngineUtils.toCMAtom(multiSigAtom);
-		Modules.get(ValidationHandler.class).stateCheck(multiSigCMAtom);
-		PreparedAtom preparedAtom2 = new PreparedAtom(multiSigCMAtom, UInt384.ONE);
-		Modules.get(AtomStore.class).storeAtom(preparedAtom2);
+		AtomEventListener listener = mock(AtomEventListener.class);
+		Modules.get(ValidationHandler.class).getRadixEngine().addAtomEventListener(listener);
+		Modules.get(ValidationHandler.class).getRadixEngine().store(multiSigCMAtom);
+		verify(listener, timeout(5000).times(1))
+			.onStateStore(eq(multiSigCMAtom), any());
 	}
 }

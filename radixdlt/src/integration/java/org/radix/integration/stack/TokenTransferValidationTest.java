@@ -1,20 +1,18 @@
 package org.radix.integration.stack;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.CMErrorCode;
 import com.radixdlt.engine.RadixEngineUtils;
-import com.radixdlt.engine.ValidationResult.ValidationResultAcceptor;
+import com.radixdlt.engine.AtomEventListener;
 import com.radixdlt.utils.UInt384;
-import java.util.Collections;
-import org.assertj.core.api.Assertions;
+import java.util.concurrent.TimeUnit;
 import org.junit.Before;
 import org.junit.Test;
 import org.radix.atoms.PreparedAtom;
@@ -24,18 +22,15 @@ import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.atommodel.tokens.Tokens;
 import org.radix.atoms.Atom;
-import org.radix.atoms.AtomDependencyNotFoundException;
 import org.radix.atoms.AtomDiscoveryRequest;
 import org.radix.atoms.AtomStore;
 import com.radixdlt.constraintmachine.CMAtom;
 import com.radixdlt.atoms.ParticleGroup;
 import com.radixdlt.atomos.RRI;
 import com.radixdlt.atoms.Spin;
-import org.radix.atoms.particles.conflict.ParticleConflictException;
 import com.radixdlt.utils.Offset;
 import org.radix.time.NtpService;
 import com.radixdlt.universe.Universe;
-import org.radix.validation.ConstraintMachineValidationException;
 import com.radixdlt.crypto.ECKeyPair;
 import org.radix.discovery.DiscoveryRequest.Action;
 import org.radix.integration.RadixTestWithStores;
@@ -66,7 +61,10 @@ public class TokenTransferValidationTest extends RadixTestWithStores {
 	public void testSimpleTransfer() throws Exception {
 		AtomDiscoveryRequest request = new AtomDiscoveryRequest(TransferrableTokensParticle.class, Action.DISCOVER_AND_DELIVER);
 		request.setDestination(universeAddress.getUID());
-		Modules.get(AtomStore.class).discovery(request);
+		while (request.getDelivered().isEmpty()) {
+			Modules.get(AtomStore.class).discovery(request);
+			TimeUnit.SECONDS.sleep(1);
+		}
 
 		Atom atom = new Atom(Time.currentTimestamp());
 
@@ -90,14 +88,22 @@ public class TokenTransferValidationTest extends RadixTestWithStores {
 		atom.sign(identity);
 
 		CMAtom cmAtom = RadixEngineUtils.toCMAtom(atom);
-		Modules.get(ValidationHandler.class).stateCheck(cmAtom);
+		AtomEventListener listener = mock(AtomEventListener.class);
+		Modules.get(ValidationHandler.class).getRadixEngine().addAtomEventListener(listener);
+		Modules.get(ValidationHandler.class).getRadixEngine().store(cmAtom);
+		verify(listener, timeout(5000).times(1))
+			.onStateStore(eq(cmAtom), any());
+		Modules.get(ValidationHandler.class).getRadixEngine().removeAtomEventListener(listener);
 	}
 
 	@Test
 	public void testTooMuchConsumed() throws Exception {
 		AtomDiscoveryRequest request = new AtomDiscoveryRequest(TransferrableTokensParticle.class, Action.DISCOVER_AND_DELIVER);
 		request.setDestination(universeAddress.getUID());
-		Modules.get(AtomStore.class).discovery(request);
+		while(request.getDelivered().isEmpty()) {
+			Modules.get(AtomStore.class).discovery(request);
+			TimeUnit.SECONDS.sleep(1);
+		}
 
 		Atom atom = new Atom(Time.currentTimestamp());
 
@@ -119,18 +125,22 @@ public class TokenTransferValidationTest extends RadixTestWithStores {
 		atom.sign(identity);
 
 		CMAtom cmAtom = RadixEngineUtils.toCMAtom(atom);
-		ValidationResultAcceptor acceptor = mock(ValidationResultAcceptor.class);
-		Modules.get(ValidationHandler.class).validate(cmAtom)
-			.accept(acceptor);
-		verify(acceptor, times(1))
-			.onError(eq(cmAtom), argThat(e -> e.stream().anyMatch(err -> err.getErrorCode().equals(CMErrorCode.PROCEDURE_ERROR))));
+		AtomEventListener acceptor = mock(AtomEventListener.class);
+		Modules.get(ValidationHandler.class).getRadixEngine().addAtomEventListener(acceptor);
+		Modules.get(ValidationHandler.class).getRadixEngine().store(cmAtom);
+		verify(acceptor, timeout(5000).times(1))
+			.onCMError(eq(cmAtom), argThat(e -> e.stream().anyMatch(err -> err.getErrorCode().equals(CMErrorCode.PROCEDURE_ERROR))));
+		Modules.get(ValidationHandler.class).getRadixEngine().removeAtomEventListener(acceptor);
 	}
 
 	@Test
 	public void testTooLittleConsumed() throws Exception {
 		AtomDiscoveryRequest request = new AtomDiscoveryRequest(TransferrableTokensParticle.class, Action.DISCOVER_AND_DELIVER);
 		request.setDestination(universeAddress.getUID());
-		Modules.get(AtomStore.class).discovery(request);
+		while (request.getDelivered().isEmpty()) {
+			Modules.get(AtomStore.class).discovery(request);
+			TimeUnit.SECONDS.sleep(1);
+		}
 
 		Atom atom = new Atom(Time.currentTimestamp());
 
@@ -147,11 +157,12 @@ public class TokenTransferValidationTest extends RadixTestWithStores {
 		atom.sign(identity);
 
 		CMAtom cmAtom = RadixEngineUtils.toCMAtom(atom);
-		ValidationResultAcceptor acceptor = mock(ValidationResultAcceptor.class);
-		Modules.get(ValidationHandler.class).validate(cmAtom)
-			.accept(acceptor);
-		verify(acceptor, times(1))
-			.onError(eq(cmAtom), argThat(e -> e.stream().anyMatch(err -> err.getErrorCode().equals(CMErrorCode.PROCEDURE_ERROR))));
+		AtomEventListener acceptor = mock(AtomEventListener.class);
+		Modules.get(ValidationHandler.class).getRadixEngine().addAtomEventListener(acceptor);
+		Modules.get(ValidationHandler.class).getRadixEngine().store(cmAtom);
+		verify(acceptor, timeout(5000).times(1))
+			.onCMError(eq(cmAtom), argThat(e -> e.stream().anyMatch(err -> err.getErrorCode().equals(CMErrorCode.PROCEDURE_ERROR))));
+		Modules.get(ValidationHandler.class).getRadixEngine().removeAtomEventListener(acceptor);
 	}
 
 	private static long currentPlanckTime() {
@@ -185,15 +196,22 @@ public class TokenTransferValidationTest extends RadixTestWithStores {
 		atom.sign(identity);
 		CMAtom cmAtom = RadixEngineUtils.toCMAtom(atom);
 
-		Assertions.assertThatThrownBy(() -> Modules.get(ValidationHandler.class).stateCheck(cmAtom))
-			.isInstanceOf(AtomDependencyNotFoundException.class);
+		AtomEventListener listener = mock(AtomEventListener.class);
+		Modules.get(ValidationHandler.class).getRadixEngine().addAtomEventListener(listener);
+		Modules.get(ValidationHandler.class).getRadixEngine().store(cmAtom);
+		verify(listener, timeout(5000).times(1))
+			.onStateMissingDependency(eq(cmAtom), any());
+		Modules.get(ValidationHandler.class).getRadixEngine().removeAtomEventListener(listener);
 	}
 
 	@Test
 	public void testConsumerDoubleSpend() throws Exception {
 		AtomDiscoveryRequest request = new AtomDiscoveryRequest(TransferrableTokensParticle.class, Action.DISCOVER_AND_DELIVER);
 		request.setDestination(universeAddress.getUID());
-		Modules.get(AtomStore.class).discovery(request);
+		while (request.getDelivered().isEmpty()) {
+			Modules.get(AtomStore.class).discovery(request);
+			TimeUnit.SECONDS.sleep(1);
+		}
 
 		TransferrableTokensParticle consumable = request.getDelivered().get(0).particles(TransferrableTokensParticle.class, Spin.UP).findFirst().get();
 		UInt256 amount = consumable.getAmount();
@@ -217,7 +235,6 @@ public class TokenTransferValidationTest extends RadixTestWithStores {
 		addTemporalVertex(firstAtom); // Can't store atom without vertex from this node
 		firstAtom.sign(identity);
 		CMAtom cmAtom = RadixEngineUtils.toCMAtom(firstAtom);
-		Modules.get(ValidationHandler.class).stateCheck(cmAtom);
 		PreparedAtom preparedAtom = new PreparedAtom(cmAtom, UInt384.ONE);
 		Modules.get(AtomStore.class).storeAtom(preparedAtom);
 
@@ -241,8 +258,11 @@ public class TokenTransferValidationTest extends RadixTestWithStores {
 
 		CMAtom cmAtom2 = RadixEngineUtils.toCMAtom(secondAtom);
 
-		Assertions.assertThatThrownBy(() -> Modules.get(ValidationHandler.class).stateCheck(cmAtom2))
-			.isInstanceOf(ParticleConflictException.class);
+		AtomEventListener listener = mock(AtomEventListener.class);
+		Modules.get(ValidationHandler.class).getRadixEngine().addAtomEventListener(listener);
+		Modules.get(ValidationHandler.class).getRadixEngine().store(cmAtom2);
+		verify(listener, timeout(5000).times(1))
+			.onStateConflict(eq(cmAtom2), any(), any());
+		Modules.get(ValidationHandler.class).getRadixEngine().removeAtomEventListener(listener);
 	}
-
 }
