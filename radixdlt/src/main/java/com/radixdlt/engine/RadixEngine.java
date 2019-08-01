@@ -170,9 +170,10 @@ public final class RadixEngine {
 			//
 			// Modified StateProviderFromStore.getAtomsContaining to be singular based on the
 			// above assumption.
-			final ImmutableAtom conflictAtom = engineStore.getAtomContaining(issueParticle);
+			engineStore.getAtomContaining(issueParticle, conflictAtom ->
+				atomEventListeners.forEach(listener -> listener.onStateConflict(cmAtom, issueParticle, conflictAtom))
+			);
 
-			atomEventListeners.forEach(listener -> listener.onStateConflict(cmAtom, issueParticle, conflictAtom));
 			return;
 		}
 

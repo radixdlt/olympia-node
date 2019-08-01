@@ -3,6 +3,7 @@ package com.radixdlt.store;
 import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.atoms.SpunParticle;
 import com.radixdlt.constraintmachine.CMAtom;
+import java.util.function.Consumer;
 
 /**
  *  A state that gives access to the state of a certain shard space
@@ -10,8 +11,9 @@ import com.radixdlt.constraintmachine.CMAtom;
 public interface EngineStore extends CMStore {
 	/**
 	 * Retrieves the atom containing the given spun particle.
+	 * TODO: change to reactive streams interface
 	 */
-	ImmutableAtom getAtomContaining(SpunParticle spunParticle);
+	void getAtomContaining(SpunParticle spunParticle, Consumer<ImmutableAtom> callback);
 
 	/**
 	 * Stores the atom into this CMStore

@@ -1,5 +1,6 @@
 package org.radix.atoms;
 
+import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.common.AID;
 import com.radixdlt.constraintmachine.CMAtom;
 import com.radixdlt.utils.UInt384;
@@ -8,6 +9,7 @@ import java.util.Set;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.atoms.Spin;
 import com.radixdlt.atoms.SpunParticle;
+import java.util.function.Consumer;
 import org.radix.atoms.events.AtomExceptionEvent;
 import org.radix.database.exceptions.DatabaseException;
 import com.radixdlt.store.EngineStore;
@@ -35,14 +37,15 @@ public class AtomEngineStore implements EngineStore {
 	}
 
 	@Override
-	public Atom getAtomContaining(SpunParticle spunParticle) {
+	public void getAtomContaining(SpunParticle spunParticle, Consumer<ImmutableAtom> callback) {
 		try {
 			// cheap early out in case the spun particle is not even in the store
 			if (!atomStoreSupplier.get().hasAtomContaining(spunParticle.getParticle(), spunParticle.getSpin())) {
-				return null;
+				callback.accept(null);
+				return;
 			}
 
-			return atomStoreSupplier.get().getAtomContaining(spunParticle.getParticle(), spunParticle.getSpin());
+			callback.accept(atomStoreSupplier.get().getAtomContaining(spunParticle.getParticle(), spunParticle.getSpin()));
 
 		} catch (DatabaseException dex) {
 			throw new StateStoreException("Discovery for " + spunParticle + " failed: " + dex, dex);
