@@ -1,12 +1,13 @@
 package com.radixdlt.atomos;
 
 import com.radixdlt.atoms.ImmutableAtom;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
-import com.radixdlt.utils.POW;
 import java.util.Objects;
+import com.radixdlt.crypto.Hash;
+import com.radixdlt.utils.POW;
+
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -29,7 +30,7 @@ public final class AtomDriver implements AtomOSDriver {
 	@Override
 	public void main(AtomOSKernel kernel) {
 		kernel.onAtom()
-			.compute("mass", atom -> {
+			.setCompute(atom -> {
 				//TODO: Fix module loadup sequence so that massFunction doesn't need to be recreated everytime
 				final FungibleOrHashMassFunction massFunction = new FungibleOrHashMassFunction(kernel.getUniverse());
 				return massFunction.getMass(atom);

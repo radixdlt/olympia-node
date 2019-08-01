@@ -1,8 +1,8 @@
 package com.radixdlt.constraintmachine;
 
-import com.radixdlt.atoms.DataPointer;
 import java.util.Objects;
 import javax.annotation.Nullable;
+import com.radixdlt.atoms.DataPointer;
 
 /**
  * An error with a pointer to the issue
@@ -12,11 +12,11 @@ public final class CMError {
 	private final CMErrorCode errorCode;
 	private final String errMsg;
 
-	CMError(DataPointer dataPointer, CMErrorCode errorCode) {
+	public CMError(DataPointer dataPointer, CMErrorCode errorCode) {
 		this(dataPointer, errorCode, null);
 	}
 
-	CMError(DataPointer dataPointer, CMErrorCode errorCode, String errMsg) {
+	public CMError(DataPointer dataPointer, CMErrorCode errorCode, String errMsg) {
 		this.errorCode = Objects.requireNonNull(errorCode);
 		this.dataPointer = Objects.requireNonNull(dataPointer);
 		this.errMsg = errMsg;

@@ -2,11 +2,12 @@ package com.radixdlt.atomos.test;
 
 import com.radixdlt.atomos.AtomOSKernel;
 import com.radixdlt.atomos.Result;
-import com.radixdlt.constraintmachine.CMAtom;
-import com.radixdlt.universe.Universe;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import com.radixdlt.constraintmachine.CMAtom;
+import com.radixdlt.universe.Universe;
 
 /**
  * A stubbed Kernel layer used for testing Atom Model Kernel Layer Code.
@@ -30,7 +31,7 @@ public final class TestAtomOSKernel implements AtomOSKernel {
 			}
 
 			@Override
-			public void compute(String key, AtomKernelCompute compute) {
+			public void setCompute(AtomKernelCompute compute) {
 			}
 		};
 	}

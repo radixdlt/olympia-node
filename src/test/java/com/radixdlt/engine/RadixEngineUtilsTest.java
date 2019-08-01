@@ -1,96 +1,60 @@
-package com.radixdlt.constraintmachine;
-
-import com.radixdlt.atoms.ImmutableAtom;
-import com.radixdlt.atoms.IndexedParticleGroup;
-import java.util.Optional;
-
-import java.util.stream.Stream;
-import org.junit.Test;
-
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.atoms.DataPointer;
-import com.radixdlt.atoms.IndexedSpunParticle;
-import com.radixdlt.atoms.Particle;
-import com.radixdlt.atoms.ParticleGroup;
-import com.radixdlt.atoms.Spin;
-import com.radixdlt.atoms.SpunParticle;
-import com.radixdlt.store.StateStore;
+package com.radixdlt.engine;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.powermock.api.mockito.PowerMockito.when;
 
-public class ConstraintMachineUtilsTest {
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.atoms.DataPointer;
+import com.radixdlt.atoms.ImmutableAtom;
+import com.radixdlt.atoms.IndexedParticleGroup;
+import com.radixdlt.atoms.IndexedSpunParticle;
+import com.radixdlt.atoms.Particle;
+import com.radixdlt.atoms.ParticleGroup;
+import com.radixdlt.atoms.SpunParticle;
+import com.radixdlt.constraintmachine.CMError;
+import com.radixdlt.constraintmachine.CMErrorCode;
+import java.util.stream.Stream;
+import org.junit.Test;
 
-	private static StateStore mockedStateProvider(
-		Particle particle0, Spin spin0
-	) {
-		StateStore stateStore = mock(StateStore.class);
-		when(stateStore.getSpin(eq(particle0))).thenReturn(Optional.of(spin0));
-		return stateStore;
-	}
-
-	private static StateStore mockedStateProvider(
-		Particle particle0, Spin spin0,
-		Particle particle1, Spin spin1
-	) {
-		StateStore stateStore = mock(StateStore.class);
-		doReturn(Optional.of(spin0)).when(stateStore).getSpin(eq(particle0));
-		doReturn(Optional.of(spin1)).when(stateStore).getSpin(eq(particle1));
-		return stateStore;
-	}
-
+public class RadixEngineUtilsTest {
 	@Test
-	public void when_validating_an_up_cm_particle_with_neutral_store__no_issue_is_returned() {
+	public void when_validating_an_up_cm_particle__no_issue_is_returned() {
 		Particle particle0 = mock(Particle.class);
-		StateStore stateStore = mockedStateProvider(
-			particle0, Spin.NEUTRAL
-		);
 
 		assertThat(
-			ConstraintMachineUtils.checkInternalSpins(
+			RadixEngineUtils.checkInternalSpins(
 				ImmutableList.of(
 					new IndexedSpunParticle(SpunParticle.up(particle0), DataPointer.ofParticle(0, 0))
-				),
-				stateStore
+				)
 			)
 		).isEmpty();
 	}
 
 	@Test
-	public void when_validating_an_up_to_down_cm_particle_with_neutral_store__no_issue_is_returned() {
+	public void when_validating_an_up_to_down_cm_particle__no_issue_is_returned() {
 		Particle particle0 = mock(Particle.class);
-		StateStore stateStore = mockedStateProvider(
-			particle0, Spin.NEUTRAL
-		);
 
 		assertThat(
-			ConstraintMachineUtils.checkInternalSpins(
+			RadixEngineUtils.checkInternalSpins(
 				ImmutableList.of(
 					new IndexedSpunParticle(SpunParticle.up(particle0), DataPointer.ofParticle(0, 0)),
 					new IndexedSpunParticle(SpunParticle.down(particle0), DataPointer.ofParticle(1, 0))
-				),
-				stateStore
+				)
 			)
 		).isEmpty();
 	}
 
 	@Test
-	public void when_validating_an_up_to_up_cm_particle_with_neutral_store__internal_conflict_is_returned() {
+	public void when_validating_an_up_to_up_cm_particle__internal_conflict_is_returned() {
 		Particle particle0 = mock(Particle.class);
-		StateStore stateStore = mockedStateProvider(
-			particle0, Spin.NEUTRAL
-		);
 
 		assertThat(
-			ConstraintMachineUtils.checkInternalSpins(
+			RadixEngineUtils.checkInternalSpins(
 				ImmutableList.of(
 					new IndexedSpunParticle(SpunParticle.up(particle0), DataPointer.ofParticle(0, 0)),
 					new IndexedSpunParticle(SpunParticle.up(particle0), DataPointer.ofParticle(1, 0))
-				),
-				stateStore
+				)
 			)
 		).containsExactly(
 			new CMError(DataPointer.ofParticle(1, 0), CMErrorCode.INTERNAL_SPIN_CONFLICT)
@@ -98,19 +62,15 @@ public class ConstraintMachineUtilsTest {
 	}
 
 	@Test
-	public void when_validating_a_down_to_down_cm_particle_with_up_store__conflict_is_returned() {
+	public void when_validating_a_down_to_down_cm_particle__conflict_is_returned() {
 		Particle particle0 = mock(Particle.class);
-		StateStore stateStore = mockedStateProvider(
-			particle0, Spin.UP
-		);
 
 		assertThat(
-			ConstraintMachineUtils.checkInternalSpins(
+			RadixEngineUtils.checkInternalSpins(
 				ImmutableList.of(
 					new IndexedSpunParticle(SpunParticle.down(particle0), DataPointer.ofParticle(0, 0)),
 					new IndexedSpunParticle(SpunParticle.down(particle0), DataPointer.ofParticle(1, 0))
-				),
-				stateStore
+				)
 			)
 		).containsExactly(
 			new CMError(DataPointer.ofParticle(1, 0), CMErrorCode.INTERNAL_SPIN_CONFLICT)
@@ -118,19 +78,15 @@ public class ConstraintMachineUtilsTest {
 	}
 
 	@Test
-	public void when_validating_a_down_to_up_cm_particle_with_up_store__single_conflict_is_returned() {
+	public void when_validating_a_down_to_up_cm_particle__single_conflict_is_returned() {
 		Particle particle0 = mock(Particle.class);
-		StateStore stateStore = mockedStateProvider(
-			particle0, Spin.UP
-		);
 
 		assertThat(
-			ConstraintMachineUtils.checkInternalSpins(
+			RadixEngineUtils.checkInternalSpins(
 				ImmutableList.of(
 					new IndexedSpunParticle(SpunParticle.down(particle0), DataPointer.ofParticle(0, 0)),
 					new IndexedSpunParticle(SpunParticle.up(particle0), DataPointer.ofParticle(1, 0))
-				),
-				stateStore
+				)
 			)
 		).containsExactly(
 			new CMError(DataPointer.ofParticle(1, 0), CMErrorCode.INTERNAL_SPIN_CONFLICT)
@@ -143,7 +99,7 @@ public class ConstraintMachineUtilsTest {
 		when(atom.indexedParticleGroups()).thenReturn(Stream.of(
 			new IndexedParticleGroup(ParticleGroup.of(), 0)
 		));
-		assertThat(ConstraintMachineUtils.checkParticleGroupsNotEmpty(atom))
+		assertThat(RadixEngineUtils.checkParticleGroupsNotEmpty(atom))
 			.containsExactly(new CMError(DataPointer.ofParticleGroup(0), CMErrorCode.EMPTY_PARTICLE_GROUP));
 	}
 
@@ -154,7 +110,7 @@ public class ConstraintMachineUtilsTest {
 			new IndexedParticleGroup(ParticleGroup.of(), 0),
 			new IndexedParticleGroup(ParticleGroup.of(), 1)
 		));
-		assertThat(ConstraintMachineUtils.checkParticleGroupsNotEmpty(atom))
+		assertThat(RadixEngineUtils.checkParticleGroupsNotEmpty(atom))
 			.containsExactly(
 				new CMError(DataPointer.ofParticleGroup(0), CMErrorCode.EMPTY_PARTICLE_GROUP),
 				new CMError(DataPointer.ofParticleGroup(1), CMErrorCode.EMPTY_PARTICLE_GROUP)
@@ -172,7 +128,7 @@ public class ConstraintMachineUtilsTest {
 			), 0)
 		));
 
-		assertThat(ConstraintMachineUtils.checkParticleTransitionsUniqueInGroup(atom))
+		assertThat(RadixEngineUtils.checkParticleTransitionsUniqueInGroup(atom))
 			.containsExactly(new CMError(DataPointer.ofParticleGroup(0), CMErrorCode.DUPLICATE_PARTICLES_IN_GROUP));
 	}
 }
