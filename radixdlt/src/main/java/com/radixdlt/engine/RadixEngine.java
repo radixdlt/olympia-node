@@ -20,7 +20,6 @@ import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
@@ -74,11 +73,7 @@ public final class RadixEngine {
 	private void run() {
 		while (true) {
 			try {
-				EngineAction action = this.commitQueue.poll(1, TimeUnit.SECONDS);
-				if (action == null) {
-					continue;
-				}
-
+				final EngineAction action = this.commitQueue.take();
 				if (action instanceof StoreAtom) {
 					StoreAtom storeAtom = (StoreAtom) action;
 					stateCheckAndStore(storeAtom.cmAtom, storeAtom.computed);
@@ -92,6 +87,11 @@ public final class RadixEngine {
 				break;
 			}
 		}
+	}
+
+	// TODO: temporary interface, remove in favor of reactive-streams
+	public int getCommitQueueSize() {
+		return commitQueue.size();
 	}
 
 	public void start() {

@@ -1524,6 +1524,7 @@ public class AtomSync extends Service
 			"inventories", this.inventories.size(),
 			"inventorySyncQueue", this.inventorySyncQueue.size(),
 			"preparing", this.prepareQueue.size(),
+			"commitQueue", Modules.get(ValidationHandler.class).getRadixEngine().getCommitQueueSize(),
 			"committing", this.committing.size()
 		);
 		metadata.put("complex", this.complexAtomsInCommitting.get());
