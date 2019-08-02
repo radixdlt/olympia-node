@@ -1,5 +1,9 @@
 package com.radixdlt.tempo;
 
+import com.radixdlt.constraintmachine.CMError;
+import com.radixdlt.engine.RadixEngineUtils;
+import com.radixdlt.engine.RadixEngineUtils.CMAtomConversionException;
+import com.radixdlt.utils.UInt384;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -11,6 +15,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
+import org.radix.atoms.Atom;
 import org.radix.atoms.AtomStore;
 import org.radix.atoms.PreparedAtom;
 import org.radix.exceptions.ValidationException;
@@ -23,9 +28,9 @@ import org.radix.state.StateDomain;
 import org.radix.time.TemporalVertex;
 import org.radix.time.Time;
 import org.radix.universe.system.LocalSystem;
+import org.radix.validation.ConstraintMachineValidationException;
 import org.radix.validation.ValidationHandler;
 
-import com.radixdlt.atoms.Atom;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
 import com.radixdlt.common.Pair;
@@ -128,10 +133,14 @@ public final class Tempo extends Plugin implements LedgerInterface
 		}
 
 		// TODO super hack, remove later! 
-		CMAtom CMAtom = Modules.get(ValidationHandler.class).getConstraintMachine().validate(atom, false).onSuccessElseThrow(e -> new IllegalStateException());
-		
-		Modules.get(AtomStore.class).storeAtom(new PreparedAtom(CMAtom));
-		
+		final CMAtom cmAtom;
+		try {
+			cmAtom = RadixEngineUtils.toCMAtom(atom);
+		} catch (CMAtomConversionException e) {
+			throw new IllegalStateException();
+		}
+		Modules.get(AtomStore.class).storeAtom(new PreparedAtom(cmAtom, UInt384.ONE));
+
 		return deletedAtoms;
 	}
 
@@ -150,10 +159,13 @@ public final class Tempo extends Plugin implements LedgerInterface
 			throw new IOException(ex);
 		}
 
-		// TODO super hack, remove later! 
-		CMAtom CMAtom = Modules.get(ValidationHandler.class).getConstraintMachine().validate(atom, false).onSuccessElseThrow(e -> new IllegalStateException());
-		
-		return Modules.get(AtomStore.class).storeAtom(new PreparedAtom(CMAtom)).isCompleted();
+		final CMAtom cmAtom;
+		try {
+			cmAtom = RadixEngineUtils.toCMAtom(atom);
+		} catch (CMAtomConversionException e) {
+			throw new IllegalStateException();
+		}
+		return Modules.get(AtomStore.class).storeAtom(new PreparedAtom(cmAtom, UInt384.ONE)).isCompleted();
 	}
 
 	@Override

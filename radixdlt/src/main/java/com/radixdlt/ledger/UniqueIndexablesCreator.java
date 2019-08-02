@@ -1,10 +1,8 @@
 package com.radixdlt.ledger;
 
 import java.util.Set;
+import org.radix.atoms.Atom;
 
-import com.radixdlt.atoms.Atom;
-
-public interface UniqueIndexablesCreator
-{
-	public void createUniqueIndexables(Atom atom, Set<LedgerIndexable> uniqueIndexables);
+public interface UniqueIndexablesCreator {
+	void createUniqueIndexables(Atom atom, Set<LedgerIndexable> uniqueIndexables);
 }
