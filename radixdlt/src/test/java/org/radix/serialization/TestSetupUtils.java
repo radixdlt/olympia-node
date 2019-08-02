@@ -1,9 +1,8 @@
-package com.radixdlt;
+package org.radix.serialization;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.security.Security;
-
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 /**

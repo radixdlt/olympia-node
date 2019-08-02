@@ -1,1 +1,3 @@
 include 'radixdlt'
+include ":radixdlt-engine"
+project(":radixdlt-engine").projectDir = file("../radixdlt-engine")
