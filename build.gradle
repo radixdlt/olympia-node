@@ -30,12 +30,12 @@ checkstyle {
 }
 
 checkstyleMain {
-    configFile rootProject.file('config/checkstyle/checkstyle.xml')
+    configFile project.file('config/checkstyle/checkstyle.xml')
 }
 
 checkstyleTest {
     // Largely the same as the main file, but extended snake case allowed
-    configFile rootProject.file('config/checkstyle/checkstyle_test.xml')
+    configFile project.file('config/checkstyle/checkstyle_test.xml')
 }
 
 dependencies {
