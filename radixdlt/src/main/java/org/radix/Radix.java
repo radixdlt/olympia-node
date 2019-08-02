@@ -53,9 +53,9 @@ public class Radix extends Plugin
 
 	public static final int 	PROTOCOL_VERSION 		= 100;
 
-	public static final int 	AGENT_VERSION 			= 2700000;
-	public static final int 	MAJOR_AGENT_VERSION 	= 2699999;
-	public static final int 	REFUSE_AGENT_VERSION 	= 2699999;
+	public static final int 	AGENT_VERSION 			= 2710000;
+	public static final int 	MAJOR_AGENT_VERSION 	= 2709999;
+	public static final int 	REFUSE_AGENT_VERSION 	= 2709999;
 	public static final String 	AGENT 					= "/Radix:/"+AGENT_VERSION;
 
 	/**

@@ -14,6 +14,7 @@ import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -59,8 +60,13 @@ import com.radixdlt.common.EUID;
 import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.CMAtom;
 import com.radixdlt.crypto.Hash;
+import com.radixdlt.ledger.LedgerCursor;
+import com.radixdlt.ledger.LedgerIndexable;
+import com.radixdlt.ledger.LedgerCursor.Type;
+import com.radixdlt.ledger.LedgerInterface.SearchMode;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationUtils;
+import com.radixdlt.tempo.TempoCursor;
 import com.radixdlt.utils.Longs;
 import com.sleepycat.je.Cursor;
 import com.sleepycat.je.Database;
@@ -595,7 +601,6 @@ public class AtomStore extends DatabaseStore implements DiscoverySource<AtomDisc
 		}
 	}
 
-
 	public DBAction deleteAtoms(Atom atom) throws DatabaseException
 	{
 		long start = SystemProfiler.getInstance().begin();
@@ -620,6 +625,26 @@ public class AtomStore extends DatabaseStore implements DiscoverySource<AtomDisc
 		}
 	}
 
+	public DBAction deleteAtoms(AID AID) throws DatabaseException
+	{
+		Atom atom = this.getAtom(AID);
+		
+		if (atom == null)
+			return new DBAction(DBAction.DELETE, AID, false);
+		
+		return this.deleteAtoms(atom);
+	}
+
+	public DBAction deleteAtom(AID AID) throws DatabaseException
+	{
+		Atom atom = this.getAtom(AID);
+		
+		if (atom == null)
+			return new DBAction(DBAction.DELETE, AID, false);
+		
+		return this.deleteAtom(atom);
+	}
+	
 	public DBAction deleteAtom(Atom atom) throws DatabaseException
 	{
 		long start = SystemProfiler.getInstance().begin();
@@ -1221,6 +1246,12 @@ public class AtomStore extends DatabaseStore implements DiscoverySource<AtomDisc
 			SystemProfiler.getInstance().incrementFrom("ATOM_STORE:UPDATE_ATOM", start);
 		}
 	}
+	
+	public DBAction replaceAtom(AID AID, PreparedAtom preparedAtom) throws DatabaseException
+	{
+		this.deleteAtoms(AID);
+		return this.storeAtom(preparedAtom);
+	}
 
 	// DISCOVERY SOURCE //
 	@Override
@@ -1409,4 +1440,200 @@ public class AtomStore extends DatabaseStore implements DiscoverySource<AtomDisc
  			return false;
  		}
  	}
+
+	// LEDGER CURSOR HANDLING //
+	public LedgerCursor search(Type type, LedgerIndexable indexable, SearchMode mode) throws DatabaseException
+	{
+		Objects.requireNonNull(indexable);
+		
+		SecondaryCursor databaseCursor;
+		
+		if (type.equals(Type.UNIQUE) == true)
+			databaseCursor = this.uniqueIndexables.openCursor(null, null);
+		else if (type.equals(Type.DUPLICATE) == true)
+			databaseCursor = this.duplicatedIndexables.openCursor(null, null);
+		else
+			throw new IllegalStateException("Type "+type+" not supported");
+			
+		try
+		{
+			DatabaseEntry pKey = new DatabaseEntry();
+			DatabaseEntry key = new DatabaseEntry(indexable.getKey());
+			
+			if (mode.equals(SearchMode.EXACT) == true)
+			{
+				if (databaseCursor.getSearchKey(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS)
+					return new TempoCursor(type, pKey.getData(), key.getData());
+			}
+			else if (mode.equals(SearchMode.RANGE) == true)
+			{
+				if (databaseCursor.getSearchKeyRange(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS)
+					return new TempoCursor(type, pKey.getData(), key.getData());
+			}
+			
+			return null;
+		}
+		catch(Exception ex)
+		{
+			throw new DatabaseException(ex);
+		}
+		finally
+		{
+			databaseCursor.close();
+		}
+	}
+	
+	public TempoCursor getNext(TempoCursor cursor) throws DatabaseException
+	{
+		Objects.requireNonNull(cursor);
+		
+		SecondaryCursor databaseCursor;
+		
+		if (cursor.getType().equals(Type.UNIQUE) == true)
+			databaseCursor = this.uniqueIndexables.openCursor(null, null);
+		else if (cursor.getType().equals(Type.DUPLICATE) == true)
+			databaseCursor = this.duplicatedIndexables.openCursor(null, null);
+		else
+			throw new IllegalStateException("Type "+cursor.getType()+" not supported");
+			
+		try
+		{
+			DatabaseEntry pKey = new DatabaseEntry(cursor.getPrimary());
+			DatabaseEntry key = new DatabaseEntry(cursor.getIndexable());
+			
+			if (databaseCursor.getSearchBothRange(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS)
+			{
+				if (databaseCursor.getNextDup(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS)
+					return new TempoCursor(cursor.getType(), pKey.getData(), key.getData());
+			}
+			
+			return null;
+		}
+		catch(Exception ex)
+		{
+			throw new DatabaseException(ex);
+		}
+		finally
+		{
+			databaseCursor.close();
+		}
+	}
+	
+	public TempoCursor getPrev(TempoCursor cursor) throws DatabaseException
+	{
+		Objects.requireNonNull(cursor);
+		
+		SecondaryCursor databaseCursor;
+		
+		if (cursor.getType().equals(Type.UNIQUE) == true)
+			databaseCursor = this.uniqueIndexables.openCursor(null, null);
+		else if (cursor.getType().equals(Type.DUPLICATE) == true)
+			databaseCursor = this.duplicatedIndexables.openCursor(null, null);
+		else
+			throw new IllegalStateException("Type "+cursor.getType()+" not supported");
+			
+		try
+		{
+			DatabaseEntry pKey = new DatabaseEntry(cursor.getPrimary());
+			DatabaseEntry key = new DatabaseEntry(cursor.getIndexable());
+			
+			if (databaseCursor.getSearchBothRange(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS)
+			{
+				if (databaseCursor.getPrevDup(pKey, key, null, LockMode.DEFAULT) == OperationStatus.SUCCESS)
+					return new TempoCursor(cursor.getType(), pKey.getData(), key.getData());
+			}
+			
+			return null;
+		}
+		catch(Exception ex)
+		{
+			throw new DatabaseException(ex);
+		}
+		finally
+		{
+			databaseCursor.close();
+		}
+	}
+	
+	public TempoCursor getFirst(TempoCursor cursor) throws DatabaseException
+	{
+		Objects.requireNonNull(cursor);
+		
+		SecondaryCursor databaseCursor;
+		
+		if (cursor.getType().equals(Type.UNIQUE) == true)
+			databaseCursor = this.uniqueIndexables.openCursor(null, null);
+		else if (cursor.getType().equals(Type.DUPLICATE) == true)
+			databaseCursor = this.duplicatedIndexables.openCursor(null, null);
+		else
+			throw new IllegalStateException("Type "+cursor.getType()+" not supported");
+			
+		try
+		{
+			DatabaseEntry pKey = new DatabaseEntry(cursor.getPrimary());
+			DatabaseEntry key = new DatabaseEntry(cursor.getIndexable());
+			
+			if (databaseCursor.getSearchBothRange(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS)
+			{
+				if (databaseCursor.getPrevNoDup(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS)
+				{
+					if (databaseCursor.getNext(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS)
+						return new TempoCursor(cursor.getType(), pKey.getData(), key.getData());
+				}
+				else if (databaseCursor.getFirst(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS)
+					return new TempoCursor(cursor.getType(), pKey.getData(), key.getData());
+			}
+			
+			return null;
+		}
+		catch(Exception ex)
+		{
+			throw new DatabaseException(ex);
+		}
+		finally
+		{
+			databaseCursor.close();
+		}
+	}
+
+	public TempoCursor getLast(TempoCursor cursor) throws DatabaseException
+	{
+		Objects.requireNonNull(cursor);
+		
+		SecondaryCursor databaseCursor;
+		
+		if (cursor.getType().equals(Type.UNIQUE) == true)
+			databaseCursor = this.uniqueIndexables.openCursor(null, null);
+		else if (cursor.getType().equals(Type.DUPLICATE) == true)
+			databaseCursor = this.duplicatedIndexables.openCursor(null, null);
+		else
+			throw new IllegalStateException("Type "+cursor.getType()+" not supported");
+			
+		try
+		{
+			DatabaseEntry pKey = new DatabaseEntry(cursor.getPrimary());
+			DatabaseEntry key = new DatabaseEntry(cursor.getIndexable());
+			
+			if (databaseCursor.getSearchBothRange(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS)
+			{
+				if (databaseCursor.getNextNoDup(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS)
+				{
+					if (databaseCursor.getPrev(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS)
+						return new TempoCursor(cursor.getType(), pKey.getData(), key.getData());
+				}
+				else if (databaseCursor.getLast(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS)
+					return new TempoCursor(cursor.getType(), pKey.getData(), key.getData());
+			}
+			
+			return null;
+		}
+		catch(Exception ex)
+		{
+			throw new DatabaseException(ex);
+		}
+		finally
+		{
+			databaseCursor.close();
+		}
+	}
 }
