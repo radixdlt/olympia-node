@@ -1,5 +1,7 @@
 package com.radixdlt.tempo.sync.epics;
 
+import com.radixdlt.Atom;
+import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.sync.PeerSupplier;
 import com.radixdlt.tempo.sync.SyncAction;
 import com.radixdlt.tempo.sync.SyncEpic;
@@ -7,7 +9,6 @@ import com.radixdlt.tempo.sync.actions.ReceiveAtomAction;
 import com.radixdlt.tempo.sync.actions.ReceivePushAction;
 import com.radixdlt.tempo.sync.actions.SendPushAction;
 import com.radixdlt.tempo.sync.actions.SyncAtomAction;
-import org.radix.atoms.Atom;
 import org.radix.time.TemporalVertex;
 import org.radix.universe.system.LocalSystem;
 
@@ -26,7 +27,7 @@ public class ActiveSyncEpic implements SyncEpic {
 	@Override
 	public Stream<SyncAction> epic(SyncAction action) {
 		if (action instanceof SyncAtomAction) {
-			Atom atom = ((SyncAtomAction) action).getAtom();
+			TempoAtom atom = ((SyncAtomAction) action).getAtom();
 			TemporalVertex temporalVertex = atom.getTemporalProof().getVertexByNID(localSystem.getNID());
 			if (temporalVertex != null) {
 				return temporalVertex.getEdges().stream()

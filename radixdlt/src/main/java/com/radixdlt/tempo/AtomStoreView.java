@@ -1,7 +1,6 @@
 package com.radixdlt.tempo;
 
 import com.radixdlt.common.AID;
-import org.radix.atoms.Atom;
 
 import java.util.Optional;
 
@@ -21,5 +20,5 @@ public interface AtomStoreView {
 	 * @param aid The aid
 	 * @return The atom associated with the given aid (if any)
 	 */
-	Optional<Atom> get(AID aid);
+	Optional<TempoAtom> get(AID aid);
 }

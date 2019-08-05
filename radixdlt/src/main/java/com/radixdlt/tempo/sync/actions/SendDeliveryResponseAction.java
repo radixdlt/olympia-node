@@ -1,20 +1,20 @@
 package com.radixdlt.tempo.sync.actions;
 
+import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.sync.SyncAction;
 import com.radixdlt.tempo.sync.messages.DeliveryResponseMessage;
-import org.radix.atoms.Atom;
 import org.radix.network.peers.Peer;
 
 public class SendDeliveryResponseAction implements SyncAction {
-	private final Atom atom;
+	private final TempoAtom atom;
 	private final Peer peer;
 
-	public SendDeliveryResponseAction(Atom atom, Peer peer) {
+	public SendDeliveryResponseAction(TempoAtom atom, Peer peer) {
 		this.atom = atom;
 		this.peer = peer;
 	}
 
-	public Atom getAtom() {
+	public TempoAtom getAtom() {
 		return atom;
 	}
 

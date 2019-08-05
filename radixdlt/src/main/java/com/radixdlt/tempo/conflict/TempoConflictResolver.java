@@ -1,7 +1,7 @@
 package com.radixdlt.tempo.conflict;
 
+import com.radixdlt.Atom;
 import com.radixdlt.tempo.ConflictResolver;
-import org.radix.atoms.Atom;
 
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;

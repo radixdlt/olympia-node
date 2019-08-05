@@ -1,6 +1,7 @@
 package com.radixdlt.tempo.sync.epics;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.common.AID;
 import com.radixdlt.tempo.AtomStoreView;
 import com.radixdlt.tempo.sync.SyncAction;
@@ -14,7 +15,6 @@ import com.radixdlt.tempo.sync.actions.RequestDeliveryAction;
 import com.radixdlt.tempo.sync.actions.SendDeliveryRequestAction;
 import com.radixdlt.tempo.sync.actions.SendDeliveryResponseAction;
 import com.radixdlt.tempo.sync.actions.TimeoutDeliveryRequestAction;
-import org.radix.atoms.Atom;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.network.peers.Peer;
@@ -45,7 +45,7 @@ public class DeliveryEpic implements SyncEpic {
 		if (action instanceof ReceiveDeliveryRequestAction) {
 			// collect atoms for delivery request
 			ImmutableList<AID> requestedAids = ((ReceiveDeliveryRequestAction) action).getAids();
-			List<Atom> deliveries = new ArrayList<>();
+			List<TempoAtom> deliveries = new ArrayList<>();
 			for (AID requestedAid : requestedAids) {
 				store.get(requestedAid).ifPresent(deliveries::add);
 			}

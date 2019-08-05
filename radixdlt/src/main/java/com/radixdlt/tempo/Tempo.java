@@ -1,20 +1,18 @@
 package com.radixdlt.tempo;
 
-import com.google.common.collect.ImmutableList;
+import com.radixdlt.Atom;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
 import com.radixdlt.common.Pair;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.ledger.DuplicateIndexCreator;
 import com.radixdlt.ledger.Ledger;
 import com.radixdlt.ledger.LedgerCursor;
 import com.radixdlt.ledger.LedgerCursor.Type;
 import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerSearchMode;
-import com.radixdlt.ledger.UniqueIndexCreator;
-import org.radix.atoms.Atom;
+import com.radixdlt.tempo.exceptions.TempoException;
 import org.radix.exceptions.ValidationException;
 import org.radix.modules.Module;
 import org.radix.modules.Plugin;
@@ -24,7 +22,6 @@ import org.radix.time.TemporalVertex;
 import org.radix.time.Time;
 import org.radix.universe.system.LocalSystem;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -32,26 +29,23 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Future;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
- * The Tempo implementation of a ledger
+ * The Tempo implementation of a ledger.
  */
 public final class Tempo extends Plugin implements Ledger {
 	private final AtomSynchroniser synchroniser;
 	private final AtomStore store;
 	private final ConflictResolver resolver;
 
-	private final Function<Atom, List<Atom>> dependentsMapper;
 	private final Supplier<Long> wallclockTimeSupplier;
 	private final LocalSystem localSystem;
 
-	private Tempo(AtomSynchroniser synchroniser, AtomStore store, ConflictResolver resolver, Function<Atom, List<Atom>> dependentsMapper, Supplier<Long> wallclockTimeSupplier, LocalSystem localSystem) {
+	private Tempo(AtomSynchroniser synchroniser, AtomStore store, ConflictResolver resolver, Supplier<Long> wallclockTimeSupplier, LocalSystem localSystem) {
 		this.synchroniser = Objects.requireNonNull(synchroniser, "synchroniser is required");
 		this.store = Objects.requireNonNull(store, "store is required");
 		this.resolver = Objects.requireNonNull(resolver, "resolver is required");
-		this.dependentsMapper = dependentsMapper;
 		this.wallclockTimeSupplier = wallclockTimeSupplier;
 		this.localSystem = localSystem;
 	}
@@ -61,20 +55,10 @@ public final class Tempo extends Plugin implements Ledger {
 			synchroniser,
 			store,
 			resolver,
-			atom -> ImmutableList.of(), // TODO replace with proper dependents mapper
+			// TODO replace with proper dependents mapper
 			Time::currentTimestamp,
 			LocalSystem.getInstance()
 		);
-	}
-
-	@Override
-	public void register(UniqueIndexCreator uniqueIndexCreator) {
-		this.store.register(uniqueIndexCreator);
-	}
-
-	@Override
-	public void register(DuplicateIndexCreator duplicateIndexCreator) {
-		this.store.register(duplicateIndexCreator);
 	}
 
 	@Override
@@ -83,44 +67,52 @@ public final class Tempo extends Plugin implements Ledger {
 	}
 
 	@Override
-	public Optional<Atom> get(AID aid) throws IOException {
-		return store.get(aid);
+	public Optional<Atom> get(AID aid) {
+		// cast to abstract atom
+		return store.get(aid).map(atom -> (Atom) atom);
 	}
 
 	@Override
-	public List<Atom> delete(AID aid) throws IOException {
-		return store.delete(aid);
-	}
-
-	@Override
-	public List<Atom> replace(AID aid, Atom atom) throws IOException {
-		if (store.contains(atom.getAID())) {
-			return Collections.emptyList();
-		}
-
-		try {
-			attestTo(atom);
-		} catch (ValidationException | CryptoException ex) {
-			throw new IOException(ex);
-		}
-
-		return store.replace(aid, atom);
-	}
-
-	@Override
-	public boolean store(Atom atom) throws IOException {
+	public boolean store(Atom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
+		TempoAtom tempoAtom = (TempoAtom) atom;
 		if (store.contains(atom.getAID())) {
 			return false;
 		}
 
 		try {
-			attestTo(atom);
+			attestTo(tempoAtom);
 		} catch (ValidationException | CryptoException ex) {
-			throw new IOException(ex);
+			throw new TempoException("Error while attesting to atom " + tempoAtom.getAID(), ex);
 		}
 
-		if (store.store(atom)) {
-			synchroniser.synchronise(atom);
+		if (store.store(tempoAtom, uniqueIndices, duplicateIndices)) {
+			synchroniser.synchronise(tempoAtom);
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	@Override
+	public boolean delete(AID aid) {
+		return store.delete(aid);
+	}
+
+	@Override
+	public boolean replace(Set<AID> aids, Atom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
+		TempoAtom tempoAtom = (TempoAtom) atom;
+		if (store.contains(atom.getAID())) {
+			return false;
+		}
+
+		try {
+			attestTo(tempoAtom);
+		} catch (ValidationException | CryptoException ex) {
+			throw new TempoException("Error while attesting to atom " + tempoAtom.getAID(), ex);
+		}
+
+		if (store.replace(aids, tempoAtom, uniqueIndices, duplicateIndices)) {
+			synchroniser.synchronise(tempoAtom);
 			return true;
 		} else {
 			return false;
@@ -133,12 +125,12 @@ public final class Tempo extends Plugin implements Ledger {
 	}
 
 	@Override
-	public LedgerCursor search(Type type, LedgerIndex index, LedgerSearchMode mode) throws IOException {
+	public LedgerCursor search(Type type, LedgerIndex index, LedgerSearchMode mode) {
 		return store.search(type, index, mode);
 	}
 
 	// TODO simple temporary function for attestation within this basic Tempo stub
-	private void attestTo(Atom atom) throws ValidationException, CryptoException {
+	private void attestTo(TempoAtom atom) throws CryptoException, ValidationException {
 		TemporalVertex existingNIDVertex = atom.getTemporalProof().getVertexByNID(this.localSystem.getNID());
 		if (existingNIDVertex != null) {
 			if (existingNIDVertex.getClock() > this.localSystem.getClock().get()) {

@@ -1,49 +1,70 @@
 package com.radixdlt.tempo;
 
+import com.radixdlt.Atom;
 import com.radixdlt.common.AID;
-import com.radixdlt.ledger.DuplicateIndexCreator;
 import com.radixdlt.ledger.LedgerCursor;
 import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerSearchMode;
-import com.radixdlt.ledger.UniqueIndexCreator;
-import org.radix.atoms.Atom;
 
-import java.io.IOException;
-import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * An entry-point for manipulating the state of a Tempo ledger.
  */
 public interface AtomStore {
 	/**
-	 * Registers a unique ledger index creator.
-	 *
-	 * @param uniqueIndexCreator The index creator
+	 * Checks whether the given {@link AID} is contained in this store
+	 * @param aid The {@link AID}
+	 * @return Whether the given {@link AID} is contained in this store
 	 */
-	void register(UniqueIndexCreator uniqueIndexCreator);
-
-	/**
-	 * Registers a duplicate ledger index creator.
-	 *
-	 * @param duplicateIndexCreator The index creator
-	 */
-	void register(DuplicateIndexCreator duplicateIndexCreator);
-
-	boolean contains(AID aid) throws IOException;
+	boolean contains(AID aid);
 
 	/**
 	 * Gets the atom associated with a certain {@link AID}.
+	 *
+	 * @param aid The {@link AID}
+	 * @return The atom associated with the given {@link AID}
 	 */
-	Optional<Atom> get(AID aid) throws IOException;
+	Optional<TempoAtom> get(AID aid);
 
-	List<Atom> delete(AID aid) throws IOException;
+	/**
+	 * Deletes the atom associated with a certain {@link AID}.
+	 *
+	 * @param aid The {@link AID}
+	 * @return Whether the {@link AID} was deleted
+	 */
+	boolean delete(AID aid);
 
-	List<Atom> replace(AID aid, Atom atom) throws IOException;
+	/**
+	 * Stores an {@link com.radixdlt.Atom} with certain indices.
+	 *
+	 * @param atom The atom
+	 * @param uniqueIndices The unique indices
+	 * @param duplicateIndices The duplicate indices
+	 * @return Whether the {@link com.radixdlt.Atom} was stored
+	 */
+	boolean store(TempoAtom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices);
 
-	boolean store(Atom atom) throws IOException;
+	/**
+	 * Replaces a set of atoms with another atom in an atomic operation
+	 * @param aids The aids to delete
+	 * @param atom The new atom
+	 * @param uniqueIndices The unique indices of that atom
+	 * @param duplicateIndices The duplicate indices of that atom
+	 * @return Whether all {@link AID}s were successfully deleted
+	 */
+	boolean replace(Set<AID> aids, TempoAtom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices);
 
-	LedgerCursor search(LedgerCursor.Type type, LedgerIndex index, LedgerSearchMode mode) throws IOException;
+	/**
+	 * Searches for a certain index.
+	 *
+	 * @param type The type of index
+	 * @param index The index
+	 * @param mode The mode
+	 * @return The resulting ledger cursor
+	 */
+	LedgerCursor search(LedgerCursor.Type type, LedgerIndex index, LedgerSearchMode mode);
 
 	/**
 	 * Get a read-only view of this atom store

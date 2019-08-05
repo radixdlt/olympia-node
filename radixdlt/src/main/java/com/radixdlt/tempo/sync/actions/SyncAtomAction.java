@@ -1,16 +1,16 @@
 package com.radixdlt.tempo.sync.actions;
 
+import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.sync.SyncAction;
-import org.radix.atoms.Atom;
 
 public class SyncAtomAction implements SyncAction {
-	private final Atom atom;
+	private final TempoAtom atom;
 
-	public SyncAtomAction(Atom atom) {
+	public SyncAtomAction(TempoAtom atom) {
 		this.atom = atom;
 	}
 
-	public Atom getAtom() {
+	public TempoAtom getAtom() {
 		return atom;
 	}
 }

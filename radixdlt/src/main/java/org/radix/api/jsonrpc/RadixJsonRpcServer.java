@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Stateless Json Rpc 2.0 Server
@@ -136,9 +137,9 @@ public final class RadixJsonRpcServer {
 						}
 
 						String aidString = params.getString("aid");
-						Atom foundAtom = atomStore.getAtom(AID.from(aidString));
-						if (foundAtom != null) {
-							result = foundAtom;
+						Optional<Atom> foundAtom = atomStore.getAtom(AID.from(aidString));
+						if (foundAtom.isPresent()) {
+							result = foundAtom.get();
 						} else {
 							return JsonRpcUtil.errorResponse(id, -32000, "Atom not found", new JSONObject());
 						}

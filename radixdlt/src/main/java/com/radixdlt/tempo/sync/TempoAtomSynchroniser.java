@@ -3,6 +3,7 @@ package com.radixdlt.tempo.sync;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.common.EUID;
 import com.radixdlt.tempo.AtomSynchroniser;
+import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.sync.actions.ReceiveAtomAction;
 import com.radixdlt.tempo.sync.actions.ReceiveDeliveryRequestAction;
 import com.radixdlt.tempo.sync.actions.ReceiveDeliveryResponseAction;
@@ -16,7 +17,6 @@ import com.radixdlt.tempo.sync.epics.MessagingEpic;
 import com.radixdlt.tempo.sync.messages.DeliveryRequestMessage;
 import com.radixdlt.tempo.sync.messages.DeliveryResponseMessage;
 import com.radixdlt.tempo.sync.messages.PushMessage;
-import org.radix.atoms.Atom;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.network.messaging.Messaging;
@@ -39,7 +39,7 @@ public class TempoAtomSynchroniser implements AtomSynchroniser {
 	private final EdgeSelector edgeSelector;
 	private final PeerSupplier peerSupplier;
 
-	private final BlockingQueue<Atom> inboundAtoms;
+	private final BlockingQueue<TempoAtom> inboundAtoms;
 	private final BlockingQueue<SyncAction> syncActions;
 	private final List<SyncEpic> syncEpics;
 	private final ScheduledExecutorService executor;
@@ -125,7 +125,7 @@ public class TempoAtomSynchroniser implements AtomSynchroniser {
 	}
 
 	@Override
-	public Atom receive() throws InterruptedException {
+	public TempoAtom receive() throws InterruptedException {
 		return this.inboundAtoms.take();
 	}
 
@@ -136,12 +136,12 @@ public class TempoAtomSynchroniser implements AtomSynchroniser {
 	}
 
 	@Override
-	public List<EUID> selectEdges(Atom atom) {
+	public List<EUID> selectEdges(TempoAtom atom) {
 		return edgeSelector.selectEdges(peerSupplier.getNids(), atom);
 	}
 
 	@Override
-	public void synchronise(Atom atom) {
+	public void synchronise(TempoAtom atom) {
 		this.dispatch(new SyncAtomAction(atom));
 	}
 }

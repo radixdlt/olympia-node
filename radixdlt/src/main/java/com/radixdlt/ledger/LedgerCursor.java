@@ -13,11 +13,11 @@ public interface LedgerCursor {
 
 	AID get();
 
-	LedgerCursor getNext() throws IOException;
+	LedgerCursor next() throws IOException;
 
-	LedgerCursor getPrev() throws IOException;
+	LedgerCursor previous() throws IOException;
 
-	LedgerCursor getFirst() throws IOException;
+	LedgerCursor first() throws IOException;
 
-	LedgerCursor getLast() throws IOException;
+	LedgerCursor last() throws IOException;
 }

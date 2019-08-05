@@ -1,6 +1,6 @@
 package com.radixdlt.tempo;
 
-import org.radix.atoms.Atom;
+import com.radixdlt.Atom;
 
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -12,6 +12,7 @@ import java.util.concurrent.Future;
 public interface ConflictResolver {
 	/**
 	 * Resolves a conflict between a non-empty set of atoms, returns the winning atom.
+	 *
 	 * @param conflictingAtoms The non-empty set of conflicting atoms
 	 * @return a {@link Future} yielding the winning atom
 	 */

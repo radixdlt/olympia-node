@@ -1,7 +1,7 @@
 package com.radixdlt.tempo.sync;
 
+import com.radixdlt.Atom;
 import com.radixdlt.common.EUID;
-import org.radix.atoms.Atom;
 
 import java.util.Collection;
 import java.util.List;

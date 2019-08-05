@@ -1243,10 +1243,13 @@ public class AtomStore extends DatabaseStore implements DiscoverySource<AtomDisc
 			SystemProfiler.getInstance().incrementFrom("ATOM_STORE:UPDATE_ATOM", start);
 		}
 	}
-	
-	public DBAction replaceAtom(AID AID, PreparedAtom preparedAtom) throws DatabaseException
+
+	// FIXME Make atomic
+	public DBAction replaceAtom(Set<AID> aids, PreparedAtom preparedAtom) throws DatabaseException
 	{
-		this.deleteAtoms(AID);
+		for (AID aid : aids) {
+			this.deleteAtom(aid);
+		}
 		return this.storeAtom(preparedAtom);
 	}
 

@@ -46,25 +46,25 @@ public class TempoCursor implements LedgerCursor
 	}
 
 	@Override
-	public LedgerCursor getNext() throws IOException
+	public LedgerCursor next() throws IOException
 	{
 		return Modules.get(AtomStore.class).getNext(this);
 	}
 
 	@Override
-	public LedgerCursor getPrev() throws IOException
+	public LedgerCursor previous() throws IOException
 	{
 		return Modules.get(AtomStore.class).getPrev(this);
 	}
 
 	@Override
-	public LedgerCursor getFirst() throws IOException
+	public LedgerCursor first() throws IOException
 	{
 		return Modules.get(AtomStore.class).getFirst(this);
 	}
 
 	@Override
-	public LedgerCursor getLast() throws IOException
+	public LedgerCursor last() throws IOException
 	{
 		return Modules.get(AtomStore.class).getLast(this);
 	}
