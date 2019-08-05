@@ -5,14 +5,11 @@ import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atomos.procedures.fungible.Fungible;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.constraintmachine.AtomMetadata;
-import com.radixdlt.utils.UInt256;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Formula defining a fungible transition *from* a set of types *to* a target type with a certain composition
@@ -25,23 +22,8 @@ public final class FungibleFormula {
 		this.inputTransition = inputTransition;
 	}
 
-	/**
-	 * The composition of this formula
-	 */
-	public FungibleComposition getComposition() {
-		return FungibleComposition.of(inputTransition.particleClass());
-	}
-
-	/**
-	 * Get the inputs to this formula
-	 */
-	public Map<Class<? extends Particle>, FungibleTransitionMember<? extends Particle>> getInputsByParticleClass() {
-		return ImmutableMap.of(inputTransition.particleClass(), inputTransition);
-	}
-
-	@Override
-	public String toString() {
-		return String.format("FixedFormula[1 to 1]");
+	public FungibleTransitionMember<? extends Particle> getInputTransition() {
+		return inputTransition;
 	}
 
 	/**
@@ -55,20 +37,15 @@ public final class FungibleFormula {
 		List<Class<? extends Particle>> approvedClasses = new ArrayList<>();
 		Map<Class<? extends Particle>, String> rejectedClasses = new HashMap<>();
 
-		Class<? extends Particle> inputClass = input.getParticleClass();
-		while (!inputClass.equals(Particle.class)) {
-			if (inputTransition.particleClass().isAssignableFrom(inputClass)) {
-				Result checkResult = inputTransition.check(
-					input.getParticle(), output.getParticle(), metadata);
+		final Class<? extends Particle> inputClass = input.getParticleClass();
+		if (inputTransition.particleClass().isAssignableFrom(inputClass)) {
+			Result checkResult = inputTransition.check(input.getParticle(), output.getParticle(), metadata);
 
-				if (checkResult.isSuccess()) {
-					approvedClasses.add(inputClass);
-				} else {
-					rejectedClasses.put(inputClass, checkResult.getErrorMessage().orElse(""));
-				}
+			if (checkResult.isSuccess()) {
+				approvedClasses.add(inputClass);
+			} else {
+				rejectedClasses.put(inputClass, checkResult.getErrorMessage().orElse(""));
 			}
-
-			inputClass = (Class<? extends Particle>) inputClass.getSuperclass();
 		}
 
 		return new FungibleFormulaInputOutputVerdict(input, output, approvedClasses, rejectedClasses);

@@ -45,7 +45,7 @@ public class FungibleTransitionConstraintProcedure implements ConstraintProcedur
 
 		this.valueMapper = ParticleValueMapper.from(fungibleTransitions);
 		this.inputTypes = ImmutableSet.copyOf(fungibleTransitions.stream()
-			.flatMap(ft -> ft.getAllInputs().keySet().stream())
+			.flatMap(ft -> ft.getAllInputs().stream())
 			.collect(Collectors.toSet()));
 		this.outputTypes = ImmutableSet.copyOf(fungibleTransitions.stream()
 			.map(FungibleTransition::getOutputParticleClass)

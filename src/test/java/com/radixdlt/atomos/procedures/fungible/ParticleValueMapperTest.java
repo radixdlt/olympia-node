@@ -6,6 +6,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atomos.FungibleTransition;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.utils.UInt256;
@@ -49,7 +50,7 @@ public class ParticleValueMapperTest {
 		FungibleTransition transition = mock(FungibleTransition.class);
 		when(transition.getOutputParticleClass()).thenReturn(H2O.class);
 		when(transition.getOutputParticleToAmountMapper()).thenReturn(x -> UInt256.TEN);
-		when(transition.getAllInputs()).thenReturn(ImmutableMap.of());
+		when(transition.getAllInputs()).thenReturn(ImmutableSet.of());
 
 		ParticleValueMapper valueMapper = ParticleValueMapper.from(Arrays.asList(transition));
 		assertThatThrownBy(() -> valueMapper.amount(mock(Oxygen.class)));

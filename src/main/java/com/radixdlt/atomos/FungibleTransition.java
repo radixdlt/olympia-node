@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
@@ -24,7 +25,7 @@ public final class FungibleTransition<T extends Particle> {
 	private final ParticleToAmountMapper<T> outputParticleToAmountMapper;
 	private final BiFunction<T, T, Boolean> fungibleEquals;
 
-	private final Map<Class<? extends Particle>, List<FungibleTransitionMember<? extends Particle>>> allInputs;
+	private final Set<Class<? extends Particle>> allInputs;
 	private final List<FungibleFormula> formulas;
 	private final AtomOS.FungibleTransitionInitialConstraint<T> initialConstraint;
 	private final Pair<Class<? extends Particle>, ParticleClassWithSideEffectConstraintCheck<T, ?>> initialWithConstraint;
@@ -42,8 +43,9 @@ public final class FungibleTransition<T extends Particle> {
 		this.fungibleEquals = fungibleEquals;
 		this.formulas = formulas;
 		this.allInputs = formulas.stream()
-			.flatMap(formula -> formula.getInputsByParticleClass().values().stream())
-			.collect(Collectors.groupingBy(FungibleTransitionMember::particleClass));
+			.map(FungibleFormula::getInputTransition)
+			.map(FungibleTransitionMember::particleClass)
+			.collect(Collectors.toSet());
 		this.initialConstraint = initialConstraint;
 		this.initialWithConstraint = initialWithConstraint;
 	}
@@ -60,7 +62,7 @@ public final class FungibleTransition<T extends Particle> {
 		return (p0, p1) -> fungibleEquals.apply((T)p0, (T)p1);
 	}
 
-	public Map<Class<? extends Particle>, List<FungibleTransitionMember<? extends Particle>>> getAllInputs() {
+	public Set<Class<? extends Particle>> getAllInputs() {
 		return this.allInputs;
 	}
 
