@@ -7,6 +7,7 @@ import com.radixdlt.atomos.procedures.fungible.Fungible;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.constraintmachine.AtomMetadata;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,11 +31,6 @@ public final class FungibleFormula {
 		return this.particleClass;
 	}
 
-
-	public Result check(Particle fromParticle, Particle toParticle, AtomMetadata metadata) {
-		return ((FungibleTransitionInputConstraint) this.constraint).apply(fromParticle, toParticle, metadata);
-	}
-
 	/**
 	 * Get the set of from classes a certain input particle can satisfy for the given output
 	 */
@@ -43,21 +39,21 @@ public final class FungibleFormula {
 		Objects.requireNonNull(output, "output is required");
 		Objects.requireNonNull(metadata, "metadata is required");
 
-		List<Class<? extends Particle>> approvedClasses = new ArrayList<>();
-		Map<Class<? extends Particle>, String> rejectedClasses = new HashMap<>();
-
 		final Class<? extends Particle> inputClass = input.getParticleClass();
-		if (this.particleClass().isAssignableFrom(inputClass)) {
-			Result checkResult = this.check(input.getParticle(), output.getParticle(), metadata);
+		if (this.particleClass.isAssignableFrom(inputClass)) {
+			Result checkResult = ((FungibleTransitionInputConstraint) this.constraint)
+				.apply(input.getParticle(), output.getParticle(), metadata);
 
 			if (checkResult.isSuccess()) {
-				approvedClasses.add(inputClass);
+				return new FungibleFormulaInputOutputVerdict(input, output, Collections.singletonList(inputClass), Collections.emptyMap());
 			} else {
-				rejectedClasses.put(inputClass, checkResult.getErrorMessage().orElse(""));
+				return new FungibleFormulaInputOutputVerdict(input, output, Collections.emptyList(),
+					Collections.singletonMap(inputClass, checkResult.getErrorMessage().orElse(""))
+				);
 			}
+		} else {
+			return new FungibleFormulaInputOutputVerdict(input, output, Collections.emptyList(), Collections.emptyMap());
 		}
-
-		return new FungibleFormulaInputOutputVerdict(input, output, approvedClasses, rejectedClasses);
 	}
 
 	/**
