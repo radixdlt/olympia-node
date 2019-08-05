@@ -17,6 +17,7 @@ import com.radixdlt.constraintmachine.ProcedureError;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -33,8 +34,12 @@ public class FungibleTransitionConstraintProcedure implements ConstraintProcedur
 	private final ParticleValueMapper valueMapper;
 	private final ImmutableList<FungibleTransition<?>> initialRequireWithChecks;
 
-	public FungibleTransitionConstraintProcedure(List<FungibleTransition<? extends Particle>> fungibleTransitions) {
-		Objects.requireNonNull(fungibleTransitions, "fungibleTransitions is required");
+	public FungibleTransitionConstraintProcedure(Map<Class<? extends Particle>, FungibleTransition<? extends Particle>> transitions) {
+		Objects.requireNonNull(transitions);
+
+		List<FungibleTransition<? extends Particle>> fungibleTransitions = transitions.entrySet().stream()
+			.map(Entry::getValue)
+			.collect(Collectors.toList());
 
 		this.check = new FungibleTransitionConstraintCheck(fungibleTransitions);
 
@@ -129,6 +134,7 @@ public class FungibleTransitionConstraintProcedure implements ConstraintProcedur
 		Stream<Fungible> outputs = getFungibles(group, Spin.UP, this.outputTypes, valueMapper);
 
 		FungibleValidationResult result = check.validate(inputs, outputs, metadata);
+
 		Stream<ProcedureError> mapperIssues = result.getResult().errorStream().map(ProcedureError::of);
 
 		List<Particle> initParticles = result.getMatchResults().stream()

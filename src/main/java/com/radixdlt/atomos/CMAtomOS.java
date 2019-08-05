@@ -237,7 +237,13 @@ public final class CMAtomOS implements AtomOSKernel, AtomOS {
 
 		// Add a constraint for fungibles if any were added
 		if (!this.fungibleTransitions.isEmpty()) {
-			cmBuilder.addProcedure(new FungibleTransitionConstraintProcedure(this.fungibleTransitions));
+			Map<Class<? extends Particle>, FungibleTransition<? extends Particle>> transitions =
+				this.fungibleTransitions.stream()
+				.collect(Collectors.toMap(
+					FungibleTransition::getOutputParticleClass,
+					v -> v
+				));
+			cmBuilder.addProcedure(new FungibleTransitionConstraintProcedure(transitions));
 		}
 
 		// Add constraint for RRI state machines

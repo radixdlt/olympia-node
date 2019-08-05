@@ -24,7 +24,6 @@ public final class FungibleTransition<T extends Particle> {
 	private final Class<T> outputParticleClass;
 	private final ParticleToAmountMapper<T> outputParticleToAmountMapper;
 	private final BiFunction<T, T, Boolean> fungibleEquals;
-
 	private final Set<Class<? extends Particle>> allInputs;
 	private final List<FungibleFormula> formulas;
 	private final AtomOS.FungibleTransitionInitialConstraint<T> initialConstraint;
@@ -184,7 +183,11 @@ public final class FungibleTransition<T extends Particle> {
 		private Builder() {
 		}
 
-		public Builder<T> to(Class<T> outputParticleClass, ParticleToAmountMapper<T> outputParticleToAmountMapper, BiFunction<T, T, Boolean> fungibleEquals) {
+		public Builder<T> to(
+			Class<T> outputParticleClass,
+			ParticleToAmountMapper<T> outputParticleToAmountMapper,
+			BiFunction<T, T, Boolean> fungibleEquals
+		) {
 			this.outputParticleClass = outputParticleClass;
 			this.outputParticleToAmountMapper = outputParticleToAmountMapper;
 			this.fungibleEquals = fungibleEquals;

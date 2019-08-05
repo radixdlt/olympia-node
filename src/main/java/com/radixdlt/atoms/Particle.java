@@ -51,9 +51,6 @@ public abstract class Particle {
 	}
 
 	@Override
-	public abstract String toString();
-
-	@Override
 	public boolean equals(Object o) {
 		if (o == null) {
 			return false;
