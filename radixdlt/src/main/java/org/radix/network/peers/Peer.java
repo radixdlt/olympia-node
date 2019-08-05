@@ -197,7 +197,6 @@ public class Peer extends BasicContainer implements Chronologic, SingletonState
 	public void setSystem(RadixSystem system)
 	{
 		this.system = system;
-		setURI(Network.getURI(getURI().getHost(), system.getPort()));
 	}
 
 	// EXECUTABLES AND TASKS //

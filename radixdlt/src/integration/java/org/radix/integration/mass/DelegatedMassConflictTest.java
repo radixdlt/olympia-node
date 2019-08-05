@@ -87,7 +87,7 @@ public class DelegatedMassConflictTest extends RadixTest
 		// Set up nodes //
 		for (int s = 0 ; s < NUM_NODES ; s++)
 		{
-			LocalSystem system = new LocalSystem(new ECKeyPair(), Radix.AGENT, Radix.AGENT_VERSION, Radix.PROTOCOL_VERSION, ShardSpace.SHARD_CHUNK_RANGE, 1234);
+			LocalSystem system = new LocalSystem(new ECKeyPair(), Radix.AGENT, Radix.AGENT_VERSION, Radix.PROTOCOL_VERSION, ShardSpace.SHARD_CHUNK_RANGE);
 			this.nodes.add(system);
 			long mass = (long) Math.sqrt(Math.abs(Modules.get(SecureRandom.class).nextInt(65536)));
 			this.mass.put(system.getNID(), mass);

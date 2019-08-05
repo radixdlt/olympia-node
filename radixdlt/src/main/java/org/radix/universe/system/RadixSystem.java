@@ -34,10 +34,6 @@ public class RadixSystem extends BasicContainer
 	@DsonOutput(Output.ALL)
 	private int				planck;
 
-	@JsonProperty("port")
-	@DsonOutput(Output.ALL)
-	private int 			port;
-
 	@JsonProperty("commitment")
 	@DsonOutput(Output.ALL)
 	private Hash			commitment;
@@ -67,7 +63,6 @@ public class RadixSystem extends BasicContainer
 		this.planck = 0;
 		this.protocolVersion = 0;
 		this.shards = new ShardSpace(0l, new ShardRange(0, 0));
-		this.port = 0;
 		this.timestamp = 0;
 		this.key = null;
 	}
@@ -83,12 +78,11 @@ public class RadixSystem extends BasicContainer
 		this.planck = system.getPlanck();
 		this.protocolVersion = system.getProtocolVersion();
 		this.shards = new ShardSpace(system.getKey().getUID().getShard(), system.getShards().getRange());
-		this.port = system.getPort();
 		this.key = system.getKey();
 		this.timestamp = system.getTimestamp();
 	}
 
-	public RadixSystem(ECPublicKey key, String agent, int agentVersion, int protocolVersion, ShardSpace shards, int port)
+	public RadixSystem(ECPublicKey key, String agent, int agentVersion, int protocolVersion, ShardSpace shards)
 	{
 		this();
 
@@ -97,7 +91,6 @@ public class RadixSystem extends BasicContainer
 		this.agentVersion = agentVersion;
 		this.protocolVersion = protocolVersion;
 		this.shards = shards;
-		this.port = port;
 	}
 
 	public String getAgent()
@@ -133,16 +126,6 @@ public class RadixSystem extends BasicContainer
 	public void setTimestamp(long timestamp)
 	{
 		this.timestamp = timestamp;
-	}
-
-	public int getPort()
-	{
-		return port;
-	}
-
-	void setPort(int port)
-	{
-		this.port = port;
 	}
 
 	public boolean isSynced(RadixSystem system)

@@ -79,8 +79,7 @@ public final class LocalSystem extends RadixSystem
 
 			if (LocalSystem.instance == null)
 				LocalSystem.instance = new LocalSystem(nodeKey, Radix.AGENT, Radix.AGENT_VERSION, Radix.PROTOCOL_VERSION,
-						   Modules.get(RuntimeProperties.class).get("shards.range", ShardSpace.SHARD_CHUNK_RANGE),
-						   Modules.get(RuntimeProperties.class).get("network.port", Modules.get(Universe.class).getPort()));
+						   Modules.get(RuntimeProperties.class).get("shards.range", ShardSpace.SHARD_CHUNK_RANGE));
 
 			if (Modules.isAvailable(SystemMetaData.class) == true)
 			{
@@ -131,9 +130,9 @@ public final class LocalSystem extends RadixSystem
 		this.accumulator = new CommitmentAccumulator(Hash.BITS);
 	}*/
 
-	public LocalSystem(ECKeyPair key, String agent, int agentVersion, int protocolVersion, long shards, int port)
+	public LocalSystem(ECKeyPair key, String agent, int agentVersion, int protocolVersion, long shards)
 	{
-		super(key.getPublicKey(), agent, agentVersion, protocolVersion, new ShardSpace(key.getUID().getShard(), shards), port);
+		super(key.getPublicKey(), agent, agentVersion, protocolVersion, new ShardSpace(key.getUID().getShard(), shards));
 		this.keyPair = key;
 		this.accumulator = new CommitmentAccumulator(Hash.BITS);
 	}

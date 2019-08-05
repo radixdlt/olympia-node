@@ -88,7 +88,7 @@ public final class TestService {
 			ShardSpace shards = Modules.get(Serialization.class).fromJson(json, ShardSpace.class);
 
 			RadixSystem system = new RadixSystem(
-				keyValue.getPublicKey(), Radix.AGENT, Radix.AGENT_VERSION, Radix.PROTOCOL_VERSION, shards, portValue);
+				keyValue.getPublicKey(), Radix.AGENT, Radix.AGENT_VERSION, Radix.PROTOCOL_VERSION, shards);
 			Peer peer = new Peer(Network.getURI(ipaddr, portValue));
 			peer.setSystem(system);
 			PeersMessage peersMessage = new PeersMessage();
