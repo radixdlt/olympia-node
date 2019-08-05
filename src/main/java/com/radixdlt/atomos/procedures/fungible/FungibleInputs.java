@@ -3,15 +3,12 @@ package com.radixdlt.atomos.procedures.fungible;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-import com.radixdlt.atomos.FungibleComposition;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.common.Pair;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt256s;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -77,29 +74,13 @@ final class FungibleInputs {
 	}
 
 	/**
-	 * Match these FungibleInputs against a consumer amount of a certain composition
-	 *
-	 * @param consumerAmount  The consumer amount
-	 * @param composition     The composition
-	 * @return A {@link CompositionMatch} with the amount that could be satisfied and the required consumables
-	 */
-	CompositionMatch match(UInt256 consumerAmount, FungibleComposition composition) {
-		Map<Fungible, List<Class<? extends Particle>>> approvedClasses = new HashMap<>();
-		for (Fungible fungible : fungiblesInOrder) {
-			approvedClasses.put(fungible, Collections.singletonList(fungible.getParticleClass()));
-		}
-		return match(consumerAmount, composition, approvedClasses);
-	}
-
-	/**
 	 * Greedily match these FungibleInputs against a consumer amount of a certain composition
 	 *
 	 * @param outputAmount  The consumer amount
-	 * @param composition     The composition
 	 * @param approvedClasses The approved classes for every fungible
 	 * @return A {@link CompositionMatch} with the amount that could be satisfied and the required consumables
 	 */
-	CompositionMatch match(UInt256 outputAmount, FungibleComposition composition, Map<Fungible, List<Class<? extends Particle>>> approvedClasses) {
+	CompositionMatch match(UInt256 outputAmount, Class<? extends Particle> fromParticle, Map<Fungible, List<Class<? extends Particle>>> approvedClasses) {
 		Objects.requireNonNull(outputAmount, "outputAmount is required");
 		Objects.requireNonNull(approvedClasses, "composition is required");
 
@@ -113,15 +94,15 @@ final class FungibleInputs {
 			}
 		}
 
-		ImmutableMap<Class<? extends Particle>, UInt256> wantedAmounts = composition.requiredAmounts(outputAmount);
-		ImmutableMap<Class<? extends Particle>, UInt256> requiredAmountsPerUnit = composition.requiredAmountsPerUnit();
+		ImmutableMap<Class<? extends Particle>, UInt256> wantedAmounts = ImmutableMap.of(fromParticle, outputAmount);
+		ImmutableMap<Class<? extends Particle>, UInt256> requiredAmountsPerUnit = ImmutableMap.of(fromParticle, UInt256.ONE);
 		Optional<UInt256> availableOutputAmount = getAvailableOutputAmount(approvedClasses, wantedAmounts, requiredAmountsPerUnit);
 
 		return availableOutputAmount
 			.filter(satisfiedAmount -> !satisfiedAmount.isZero())
 			.map(satisfiedAmount -> UInt256s.min(satisfiedAmount, outputAmount))
 			.map(satisfiedAmount -> new CompositionMatch(FungibleInputs.of(
-				this.drain(composition.requiredAmounts(satisfiedAmount), approvedClasses).getFirst()),
+				this.drain(ImmutableMap.of(fromParticle, satisfiedAmount), approvedClasses).getFirst()),
 				satisfiedAmount))
 			.orElse(CompositionMatch.EMPTY);
 	}

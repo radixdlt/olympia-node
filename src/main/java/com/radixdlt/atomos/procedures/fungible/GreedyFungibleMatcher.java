@@ -1,7 +1,6 @@
 package com.radixdlt.atomos.procedures.fungible;
 
 import com.google.common.collect.Lists;
-import com.radixdlt.atomos.FungibleComposition;
 import com.radixdlt.atomos.FungibleFormula;
 import com.radixdlt.atomos.FungibleTransition;
 import com.radixdlt.atomos.FungibleTransition.FungibleTransitionInitialVerdict;
@@ -228,7 +227,7 @@ class GreedyFungibleMatcher implements FungibleMatcher {
 			Map<Fungible, List<Class<? extends Particle>>> approvedClasses = inputVerdicts.entrySet().stream()
 				.collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().getApprovedClasses()));
 			FungibleInputs.CompositionMatch compositionMatch =
-				fungibleInputs.match(output.getAmount(), FungibleComposition.of(formula.particleClass()), approvedClasses);
+				fungibleInputs.match(output.getAmount(), formula.particleClass(), approvedClasses);
 
 			FungibleFormulaMatch formulaMatch;
 			if (!compositionMatch.getSatisfiedAmount().isZero()) {

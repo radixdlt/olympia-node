@@ -1,15 +1,12 @@
 package com.radixdlt.atomos.procedures.fungible;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.radixdlt.atomos.FungibleComposition;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.utils.UInt256;
 import java.util.Map;
