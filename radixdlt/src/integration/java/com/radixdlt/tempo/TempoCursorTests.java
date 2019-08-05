@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import com.radixdlt.tempo.store.TempoAtomStore;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -29,12 +30,18 @@ import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerSearchMode;
 import com.radixdlt.universe.Universe;
 
+import static org.mockito.Mockito.mock;
+
 public class TempoCursorTests extends RadixTestWithStores
 {
 	@Before
 	public void beforeEachTest() throws ModuleException
 	{
-		Modules.getInstance().start(new Tempo(synchroniser, store, resolver));
+		Modules.getInstance().start(Tempo.from(
+			mock(AtomSynchroniser.class),
+			new TempoAtomStore(() -> Modules.get(AtomStore.class)),
+			mock(ConflictResolver.class)
+		));
 	}
 
 	@After

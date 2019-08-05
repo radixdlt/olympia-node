@@ -4,11 +4,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import com.radixdlt.tempo.store.TempoAtomStore;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.radix.atoms.Atom;
+import org.radix.atoms.AtomStore;
 import org.radix.integration.RadixTestWithStores;
 import org.radix.modules.Modules;
 import org.radix.modules.exceptions.ModuleException;
@@ -24,13 +26,18 @@ import com.radixdlt.common.AID;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.universe.Universe;
 
+import static org.mockito.Mockito.mock;
+
 public class TempoAtomTests extends RadixTestWithStores
 {
 	@Before
 	public void beforeEachTest() throws ModuleException
 	{
-		Modules.getInstance().start(new Tempo(synchroniser, store, resolver));
-	}
+		Modules.getInstance().start(Tempo.from(
+			mock(AtomSynchroniser.class),
+			new TempoAtomStore(() -> Modules.get(AtomStore.class)),
+			mock(ConflictResolver.class)
+		));	}
 
 	@After
 	public void afterEachTest() throws ModuleException
