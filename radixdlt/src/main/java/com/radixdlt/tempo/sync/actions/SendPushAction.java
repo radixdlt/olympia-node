@@ -5,11 +5,11 @@ import com.radixdlt.tempo.sync.messages.PushMessage;
 import org.radix.atoms.Atom;
 import org.radix.network.peers.Peer;
 
-public class PushAction implements SyncAction {
+public class SendPushAction implements SyncAction {
 	private final Atom atom;
 	private final Peer peer;
 
-	public PushAction(Atom atom, Peer peer) {
+	public SendPushAction(Atom atom, Peer peer) {
 		this.atom = atom;
 		this.peer = peer;
 	}
@@ -26,7 +26,7 @@ public class PushAction implements SyncAction {
 		return new PushMessage(atom);
 	}
 
-	public static PushAction from(PushMessage message, Peer peer) {
-		return new PushAction(message.getAtom(), peer);
+	public static SendPushAction from(PushMessage message, Peer peer) {
+		return new SendPushAction(message.getAtom(), peer);
 	}
 }

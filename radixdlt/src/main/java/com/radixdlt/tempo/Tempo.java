@@ -1,5 +1,6 @@
 package com.radixdlt.tempo;
 
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
 import com.radixdlt.common.Pair;
@@ -28,22 +29,29 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Future;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
+/**
+ * The Tempo implementation of a ledger
+ */
 public final class Tempo extends Plugin implements Ledger {
 	private final AtomSynchroniser synchroniser;
 	private final AtomStore store;
 	private final ConflictResolver resolver;
 
+	private final Function<Atom, List<Atom>> dependentsMapper;
 	private final Supplier<Long> wallclockTimeSupplier;
 	private final LocalSystem localSystem;
 
-	private Tempo(AtomSynchroniser synchroniser, AtomStore store, ConflictResolver resolver, Supplier<Long> wallclockTimeSupplier, LocalSystem localSystem) {
+	private Tempo(AtomSynchroniser synchroniser, AtomStore store, ConflictResolver resolver, Function<Atom, List<Atom>> dependentsMapper, Supplier<Long> wallclockTimeSupplier, LocalSystem localSystem) {
 		this.synchroniser = Objects.requireNonNull(synchroniser, "synchroniser is required");
 		this.store = Objects.requireNonNull(store, "store is required");
 		this.resolver = Objects.requireNonNull(resolver, "resolver is required");
+		this.dependentsMapper = dependentsMapper;
 		this.wallclockTimeSupplier = wallclockTimeSupplier;
 		this.localSystem = localSystem;
 	}
@@ -53,6 +61,7 @@ public final class Tempo extends Plugin implements Ledger {
 			synchroniser,
 			store,
 			resolver,
+			atom -> ImmutableList.of(), // TODO replace with proper dependents mapper
 			Time::currentTimestamp,
 			LocalSystem.getInstance()
 		);
@@ -74,7 +83,7 @@ public final class Tempo extends Plugin implements Ledger {
 	}
 
 	@Override
-	public Atom get(AID aid) throws IOException {
+	public Optional<Atom> get(AID aid) throws IOException {
 		return store.get(aid);
 	}
 
@@ -180,6 +189,7 @@ public final class Tempo extends Plugin implements Ledger {
 
 	@Override
 	public void stop_impl() {
+		// nothing to do
 	}
 
 	@Override

@@ -6,11 +6,11 @@ import com.radixdlt.tempo.sync.SyncAction;
 import com.radixdlt.tempo.sync.messages.DeliveryRequestMessage;
 import org.radix.network.peers.Peer;
 
-public class DeliveryRequestAction implements SyncAction {
+public class SendDeliveryRequestAction implements SyncAction {
 	private final ImmutableList<AID> aids;
 	private final Peer peer;
 
-	public DeliveryRequestAction(ImmutableList<AID> aids, Peer peer) {
+	public SendDeliveryRequestAction(ImmutableList<AID> aids, Peer peer) {
 		this.aids = aids;
 		this.peer = peer;
 	}
@@ -27,7 +27,7 @@ public class DeliveryRequestAction implements SyncAction {
 		return new DeliveryRequestMessage(aids);
 	}
 
-	public static DeliveryRequestAction from(DeliveryRequestMessage message, Peer peer) {
-		return new DeliveryRequestAction(ImmutableList.copyOf(message.getAids()), peer);
+	public static SendDeliveryRequestAction from(DeliveryRequestMessage message, Peer peer) {
+		return new SendDeliveryRequestAction(ImmutableList.copyOf(message.getAids()), peer);
 	}
 }

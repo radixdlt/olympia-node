@@ -1,16 +1,16 @@
 package com.radixdlt.tempo.sync.actions;
 
+import com.radixdlt.ledger.LedgerCursor;
 import com.radixdlt.tempo.sync.SyncAction;
-import org.radix.discovery.DiscoveryCursor;
 import org.radix.network.peers.Peer;
 import org.radix.shards.ShardSpace;
 
-public class IterativeRequestAction implements SyncAction {
+public class SendIterativeRequestAction implements SyncAction {
 	private final ShardSpace shards;
-	private final DiscoveryCursor cursor;
+	private final LedgerCursor cursor;
 	private final Peer peer;
 
-	public IterativeRequestAction(ShardSpace shards, DiscoveryCursor cursor, Peer peer) {
+	public SendIterativeRequestAction(ShardSpace shards, LedgerCursor cursor, Peer peer) {
 		this.shards = shards;
 		this.cursor = cursor;
 		this.peer = peer;
@@ -20,7 +20,7 @@ public class IterativeRequestAction implements SyncAction {
 		return shards;
 	}
 
-	public DiscoveryCursor getCursor() {
+	public LedgerCursor getCursor() {
 		return cursor;
 	}
 

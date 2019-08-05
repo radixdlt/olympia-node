@@ -9,20 +9,32 @@ import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerSearchMode;
 import com.radixdlt.ledger.UniqueIndexCreator;
 import com.radixdlt.tempo.AtomStore;
+import com.radixdlt.tempo.AtomStoreView;
 import com.radixdlt.utils.UInt384;
 import org.radix.atoms.Atom;
 import org.radix.atoms.PreparedAtom;
+import org.radix.logging.Logger;
+import org.radix.logging.Logging;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 public class TempoAtomStore implements AtomStore {
+	private final Logger logger = Logging.getLogger("Store");
 	private final Supplier<org.radix.atoms.AtomStore> atomStoreSupplier;
+	private final AtomStoreView view;
 
 	public TempoAtomStore(Supplier<org.radix.atoms.AtomStore> atomStoreSupplier) {
 		this.atomStoreSupplier = Objects.requireNonNull(atomStoreSupplier, "atomStoreSupplier is required");
+		this.view = new AtomStoreViewAdapter();
+	}
+
+	@Override
+	public AtomStoreView asReadOnlyView() {
+		return view;
 	}
 
 	@Override
@@ -41,7 +53,7 @@ public class TempoAtomStore implements AtomStore {
 	}
 
 	@Override
-	public Atom get(AID aid) throws IOException {
+	public Optional<Atom> get(AID aid) throws IOException {
 		return atomStoreSupplier.get().getAtom(aid);
 	}
 
@@ -53,7 +65,7 @@ public class TempoAtomStore implements AtomStore {
 	// TODO make this an AtomStore function that we can execute over a Transaction for safety
 	@Override
 	public List<Atom> replace(AID aid, Atom atom) throws IOException {
-		List<Atom> deletedAtoms = (List<Atom>) atomStoreSupplier.get().deleteAtoms(aid).getObject();
+		List<Atom> deletedAtoms = (List<Atom>) atomStoreSupplier.get().deleteAtom(aid).getObject();
 		// TODO super hack, remove later!
 		final CMAtom cmAtom;
 		try {
@@ -80,5 +92,25 @@ public class TempoAtomStore implements AtomStore {
 	@Override
 	public LedgerCursor search(LedgerCursor.Type type, LedgerIndex index, LedgerSearchMode mode) throws IOException {
 		return atomStoreSupplier.get().search(type, index, mode);
+	}
+
+	private class AtomStoreViewAdapter implements AtomStoreView {
+		@Override
+		public boolean contains(AID aid) {
+			try {
+				return TempoAtomStore.this.contains(aid);
+			} catch (IOException e) {
+				throw new IllegalStateException("Error while querying contains(" + aid + ")", e);
+			}
+		}
+
+		@Override
+		public Optional<Atom> get(AID aid) {
+			try {
+				return TempoAtomStore.this.get(aid);
+			} catch (IOException e) {
+				throw new IllegalStateException("Error while querying get(" + aid + ")", e);
+			}
+		}
 	}
 }

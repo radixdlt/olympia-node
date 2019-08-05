@@ -4,7 +4,6 @@ import com.radixdlt.common.EUID;
 import org.radix.atoms.Atom;
 
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 /**
  * A mechanism for synchronising atoms.

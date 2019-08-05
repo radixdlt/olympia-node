@@ -6,6 +6,7 @@ import org.radix.atoms.Atom;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Future;
 
@@ -36,7 +37,7 @@ public interface Ledger {
 	/**
 	 * Gets the atom associated with a certain {@link AID}.
 	 */
-	Atom get(AID aid) throws IOException;
+	Optional<Atom> get(AID aid) throws IOException;
 
 	List<Atom> delete(AID aid) throws IOException;
 

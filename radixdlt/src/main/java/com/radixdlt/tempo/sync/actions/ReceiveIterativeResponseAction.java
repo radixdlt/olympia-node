@@ -5,12 +5,12 @@ import com.radixdlt.common.AID;
 import com.radixdlt.ledger.LedgerCursor;
 import org.radix.network.peers.Peer;
 
-public class IterativeResponseAction {
+public class ReceiveIterativeResponseAction {
 	private final ImmutableList<AID> aids;
 	private final LedgerCursor cursor;
 	private final Peer peer;
 
-	public IterativeResponseAction(ImmutableList<AID> aids, LedgerCursor cursor, Peer peer) {
+	public ReceiveIterativeResponseAction(ImmutableList<AID> aids, LedgerCursor cursor, Peer peer) {
 		this.aids = aids;
 		this.cursor = cursor;
 		this.peer = peer;

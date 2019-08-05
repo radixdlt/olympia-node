@@ -1,6 +1,9 @@
-package com.radixdlt.tempo.sync;
+package com.radixdlt.tempo.sync.epics;
 
 import com.google.common.collect.ImmutableMap;
+import com.radixdlt.tempo.sync.SyncAction;
+import com.radixdlt.tempo.sync.SyncEpic;
+import com.radixdlt.tempo.sync.TempoAtomSynchroniser.ImmediateDispatcher;
 import org.radix.network.messaging.Message;
 import org.radix.network.messaging.Messaging;
 import org.radix.network.peers.Peer;
@@ -10,7 +13,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiFunction;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -60,6 +62,9 @@ public class MessagingEpic implements SyncEpic {
 		private final Map<Class<? extends SyncAction>, Function<SyncAction, Message>> outboundMessageMappers = new HashMap<>();
 		private final Map<Class<? extends SyncAction>, Function<SyncAction, Peer>> outboundPeerMappers = new HashMap<>();
 
+		private Builder() {
+		}
+
 		public Builder messager(Messaging messager) {
 			this.messager = messager;
 			return this;
@@ -78,13 +83,13 @@ public class MessagingEpic implements SyncEpic {
 			return this;
 		}
 
-		public MessagingEpic build(Consumer<SyncAction> dispatcher) {
+		public MessagingEpic build(ImmediateDispatcher dispatcher) {
 			Objects.requireNonNull(messager, "messager is required");
 
 			for (String command : inboundMappers.keySet()) {
 				this.messager.register(command, (message, peer) -> {
 					BiFunction<Message, Peer, SyncAction> messageActionMapper = inboundMappers.get(command);
-					dispatcher.accept(messageActionMapper.apply(message, peer));
+					dispatcher.dispatch(messageActionMapper.apply(message, peer));
 				});
 			}
 

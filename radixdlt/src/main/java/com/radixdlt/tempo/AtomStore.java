@@ -10,6 +10,7 @@ import org.radix.atoms.Atom;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * An entry-point for manipulating the state of a Tempo ledger.
@@ -34,7 +35,7 @@ public interface AtomStore {
 	/**
 	 * Gets the atom associated with a certain {@link AID}.
 	 */
-	Atom get(AID aid) throws IOException;
+	Optional<Atom> get(AID aid) throws IOException;
 
 	List<Atom> delete(AID aid) throws IOException;
 
@@ -43,4 +44,10 @@ public interface AtomStore {
 	boolean store(Atom atom) throws IOException;
 
 	LedgerCursor search(LedgerCursor.Type type, LedgerIndex index, LedgerSearchMode mode) throws IOException;
+
+	/**
+	 * Get a read-only view of this atom store
+	 * @return a view of this atom store
+	 */
+	AtomStoreView asReadOnlyView();
 }

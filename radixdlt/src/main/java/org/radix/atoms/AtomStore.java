@@ -624,22 +624,22 @@ public class AtomStore extends DatabaseStore implements DiscoverySource<AtomDisc
 
 	public DBAction deleteAtoms(AID AID) throws DatabaseException
 	{
-		Atom atom = this.getAtom(AID);
+		Optional<Atom> atom = this.getAtom(AID);
 		
-		if (atom == null)
+		if (!atom.isPresent())
 			return new DBAction(DBAction.DELETE, AID, false);
 		
-		return this.deleteAtoms(atom);
+		return this.deleteAtoms(atom.get());
 	}
 
 	public DBAction deleteAtom(AID AID) throws DatabaseException
 	{
-		Atom atom = this.getAtom(AID);
+		Optional<Atom> atom = this.getAtom(AID);
 		
-		if (atom == null)
+		if (!atom.isPresent())
 			return new DBAction(DBAction.DELETE, AID, false);
 		
-		return this.deleteAtom(atom);
+		return this.deleteAtom(atom.get());
 	}
 	
 	public DBAction deleteAtom(Atom atom) throws DatabaseException
@@ -777,7 +777,7 @@ public class AtomStore extends DatabaseStore implements DiscoverySource<AtomDisc
 		return false;
 	}
 
-	public Atom getAtom(AID id) throws DatabaseException
+	public Optional<Atom> getAtom(AID id) throws DatabaseException
 	{
 		long start = SystemProfiler.getInstance().begin();
 
@@ -789,8 +789,7 @@ public class AtomStore extends DatabaseStore implements DiscoverySource<AtomDisc
 			if (this.uniqueIndexables.get(null, key, data, LockMode.DEFAULT) == OperationStatus.SUCCESS)
 			{
 				PreparedAtom preparedAtom = new PreparedAtom(data.getData());
-				Atom atom = preparedAtom.getAtom();
-				return atom;
+				return Optional.of(preparedAtom.getAtom());
 			}
 		}
 		catch (Exception ex)
@@ -802,7 +801,7 @@ public class AtomStore extends DatabaseStore implements DiscoverySource<AtomDisc
 			SystemProfiler.getInstance().incrementFrom("ATOM_STORE:GET_ATOM", start);
 		}
 
-		return null;
+		return Optional.empty();
 	}
 
 	public List<Atom> getAtoms(Collection<AID> ids) throws DatabaseException
@@ -815,10 +814,11 @@ public class AtomStore extends DatabaseStore implements DiscoverySource<AtomDisc
         {
 			for (AID id : ids)
 			{
-				Atom atom = getAtom(id);
+				Optional<Atom> atom = getAtom(id);
 
-				if (atom != null)
-					atoms.add(atom);
+				if (atom.isPresent()) {
+					atoms.add(atom.get());
+				}
 			}
 		}
 		finally
