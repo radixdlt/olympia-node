@@ -43,8 +43,7 @@ public final class FungibleTransition<T extends Particle> {
 		this.fungibleEquals = fungibleEquals;
 		this.formulas = formulas;
 		this.allInputs = formulas.stream()
-			.map(FungibleFormula::getInputTransition)
-			.map(FungibleTransitionMember::particleClass)
+			.map(FungibleFormula::particleClass)
 			.collect(Collectors.toSet());
 		this.initialConstraint = initialConstraint;
 		this.initialWithConstraint = initialWithConstraint;

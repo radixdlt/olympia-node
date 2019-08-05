@@ -1,10 +1,8 @@
 package com.radixdlt.atomos.test;
 
 import com.radixdlt.atomos.AtomOS;
-import com.radixdlt.atomos.FungibleComposition;
 import com.radixdlt.atomos.FungibleFormula;
 import com.radixdlt.atomos.FungibleTransition;
-import com.radixdlt.atomos.FungibleTransitionMember;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.mapper.ParticleToAmountMapper;
 import com.radixdlt.atomos.mapper.ParticleToRRIMapper;
@@ -104,7 +102,7 @@ public class TestAtomOS implements AtomOS {
 			) {
 				if (pendingFungibleTransition == null) {
 					throw new IllegalStateException("Attempt to add formula to finished fungible transition to " + particleClass);
-				} FungibleFormula formula = FungibleFormula.from(new FungibleTransitionMember<>(cls1, check));
+				} FungibleFormula formula = new FungibleFormula(cls1, check);
 				transitionBuilder.addFormula(formula);
 				return this::requireFrom;
 			}

@@ -228,7 +228,7 @@ class GreedyFungibleMatcher implements FungibleMatcher {
 			Map<Fungible, List<Class<? extends Particle>>> approvedClasses = inputVerdicts.entrySet().stream()
 				.collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().getApprovedClasses()));
 			FungibleInputs.CompositionMatch compositionMatch =
-				fungibleInputs.match(output.getAmount(), FungibleComposition.of(formula.getInputTransition().particleClass()), approvedClasses);
+				fungibleInputs.match(output.getAmount(), FungibleComposition.of(formula.particleClass()), approvedClasses);
 
 			FungibleFormulaMatch formulaMatch;
 			if (!compositionMatch.getSatisfiedAmount().isZero()) {

@@ -11,7 +11,6 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atomos.FungibleComposition;
 import com.radixdlt.atomos.FungibleFormula;
 import com.radixdlt.atomos.FungibleTransition;
-import com.radixdlt.atomos.FungibleTransitionMember;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.mapper.ParticleToAmountMapper;
 import com.radixdlt.atoms.Particle;

@@ -2,6 +2,7 @@ package com.radixdlt.atomos;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.radixdlt.atomos.AtomOS.FungibleTransitionInputConstraint;
 import com.radixdlt.atomos.procedures.fungible.Fungible;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.constraintmachine.AtomMetadata;
@@ -16,14 +17,22 @@ import java.util.Objects;
  */
 public final class FungibleFormula {
 	// TODO could add additional constraint on output here, similar to inputs
-	private final FungibleTransitionMember<? extends Particle> inputTransition;
+	private final Class<? extends Particle> particleClass;
+	private final FungibleTransitionInputConstraint<? extends Particle, ? extends Particle> constraint;
 
-	private FungibleFormula(FungibleTransitionMember<? extends Particle> inputTransition) {
-		this.inputTransition = inputTransition;
+	public FungibleFormula(Class<? extends Particle> particleClass,
+		FungibleTransitionInputConstraint<? extends Particle, ? extends Particle> constraint) {
+		this.particleClass = Objects.requireNonNull(particleClass, "particleClass is required");
+		this.constraint = Objects.requireNonNull(constraint, "constraint is required");
 	}
 
-	public FungibleTransitionMember<? extends Particle> getInputTransition() {
-		return inputTransition;
+	public Class<? extends Particle> particleClass() {
+		return this.particleClass;
+	}
+
+
+	public Result check(Particle fromParticle, Particle toParticle, AtomMetadata metadata) {
+		return ((FungibleTransitionInputConstraint) this.constraint).apply(fromParticle, toParticle, metadata);
 	}
 
 	/**
@@ -38,8 +47,8 @@ public final class FungibleFormula {
 		Map<Class<? extends Particle>, String> rejectedClasses = new HashMap<>();
 
 		final Class<? extends Particle> inputClass = input.getParticleClass();
-		if (inputTransition.particleClass().isAssignableFrom(inputClass)) {
-			Result checkResult = inputTransition.check(input.getParticle(), output.getParticle(), metadata);
+		if (this.particleClass().isAssignableFrom(inputClass)) {
+			Result checkResult = this.check(input.getParticle(), output.getParticle(), metadata);
 
 			if (checkResult.isSuccess()) {
 				approvedClasses.add(inputClass);
@@ -49,14 +58,6 @@ public final class FungibleFormula {
 		}
 
 		return new FungibleFormulaInputOutputVerdict(input, output, approvedClasses, rejectedClasses);
-	}
-
-	/**
-	 * Create a {@link FungibleFormula} from a map of required types and amounts for the transition
-	 * @return A fungible transition formulas
-	 */
-	public static FungibleFormula from(FungibleTransitionMember<? extends Particle> inputTransition) {
-		return new FungibleFormula(inputTransition);
 	}
 
 	/**
