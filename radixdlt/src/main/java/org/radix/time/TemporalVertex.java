@@ -50,16 +50,16 @@ public class TemporalVertex extends ChronologicObject
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	private ECSignature		signature;
 
-	@JsonProperty("nids")
+	@JsonProperty("nids") // TODO rename "nids" to "edges"
 	@DsonOutput(Output.ALL)
-	private final WireableSet<EUID> NIDS = new WireableSet<>();
+	private final WireableSet<EUID> edges = new WireableSet<>();
 
 	public TemporalVertex()
 	{
 		super();
 	}
 
-	public TemporalVertex(ECPublicKey owner, long clock, long rclock, Hash commitment, EUID previous, EUID ... NIDS)
+	public TemporalVertex(ECPublicKey owner, long clock, long rclock, Hash commitment, EUID previous, EUID ... edges)
 	{
 		this();
 
@@ -69,12 +69,12 @@ public class TemporalVertex extends ChronologicObject
 		this.rclock = rclock;
 		this.commitment = commitment;
 
-		if (NIDS != null && NIDS.length > 0)
-			for (EUID NID : NIDS)
-				this.NIDS.add(NID);
+		if (edges != null && edges.length > 0) {
+			Collections.addAll(this.edges, edges);
+		}
 	}
 
-	public TemporalVertex(ECPublicKey owner, long clock, long rclock, Hash commitment, EUID previous, Collection<EUID> NIDS)
+	public TemporalVertex(ECPublicKey owner, long clock, long rclock, Hash commitment, EUID previous, Collection<EUID> edges)
 	{
 		this();
 
@@ -84,8 +84,9 @@ public class TemporalVertex extends ChronologicObject
 		this.rclock = rclock;
 		this.commitment = commitment;
 
-		if (NIDS != null)
-			this.NIDS.addAll(NIDS);
+		if (edges != null) {
+			this.edges.addAll(edges);
+		}
 	}
 
 	@Override
@@ -120,15 +121,15 @@ public class TemporalVertex extends ChronologicObject
 		return this.owner;
 	}
 
-	public Set<EUID> getNIDS()
+	public Set<EUID> getEdges()
 	{
-		return Collections.unmodifiableSet(this.NIDS);
+		return Collections.unmodifiableSet(this.edges);
 	}
 
 	@Override
 	public String toString()
 	{
-		return this.getHID()+":"+this.clock+":"+this.commitment+":"+this.previous+":"+this.owner.getUID()+" -> "+this.NIDS.toString();
+		return this.getHID()+":"+this.clock+":"+this.commitment+":"+this.previous+":"+this.owner.getUID()+" -> "+this.edges.toString();
 	}
 
 	public ECSignature getSignature()

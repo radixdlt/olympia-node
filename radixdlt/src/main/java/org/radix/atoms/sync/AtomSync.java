@@ -908,10 +908,10 @@ public class AtomSync extends Service
 						if (temporalVertex == null)
 							throw new IllegalStateException("TemporalVertex for "+LocalSystem.getInstance().getNID()+" not found!");
 
-						if (temporalVertex.getNIDS().isEmpty())
+						if (temporalVertex.getEdges().isEmpty())
 							continue;
 
-						List<Peer> broadcastPeers = Modules.get(PeerHandler.class).getPeers(PeerDomain.NETWORK, temporalVertex.getNIDS(), null, null);
+						List<Peer> broadcastPeers = Modules.get(PeerHandler.class).getPeers(PeerDomain.NETWORK, temporalVertex.getEdges(), null, null);
 						if (atomsLog.hasLevel(Logging.DEBUG))
 							atomsLog.debug("Broadcasting Atom "+atom.getHID()+" to "+broadcastPeers.size()+" broadcast peers "+broadcastPeers);
 
@@ -1710,7 +1710,7 @@ public class AtomSync extends Service
 
 				for (TemporalVertex vertex : atom.getTemporalProof().getVertices())
 				{
-					if (previousNIDs.contains(vertex.getOwner().getUID()) && vertex.getNIDS().contains(LocalSystem.getInstance().getNID()))
+					if (previousNIDs.contains(vertex.getOwner().getUID()) && vertex.getEdges().contains(LocalSystem.getInstance().getNID()))
 					{
 						previousVertex = vertex;
 						break;

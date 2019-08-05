@@ -6,18 +6,18 @@ import org.bouncycastle.util.Arrays;
 
 import com.radixdlt.utils.Ints;
 
-public final class LedgerIndexable
+public final class LedgerIndex
 {
 	private final byte 		prefix;		// TODO put this back to an int ... changed to byte for compatibility with legacy AtomStore IDType
 	private final byte[] 	identifier;
 	
-	public LedgerIndexable(byte prefix, byte[] identifier)
+	public LedgerIndex(byte prefix, byte[] identifier)
 	{
 		this.prefix = prefix;
 		this.identifier = Objects.requireNonNull(identifier);
 	}
 
-	public LedgerIndexable(byte[] key)
+	public LedgerIndex(byte[] key)
 	{
 		Objects.requireNonNull(key);
 		

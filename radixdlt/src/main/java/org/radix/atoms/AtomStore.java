@@ -1,6 +1,5 @@
 package org.radix.atoms;
 
-import com.radixdlt.utils.UInt384;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -21,6 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import com.radixdlt.ledger.LedgerSearchMode;
 import org.bouncycastle.util.Arrays;
 import org.radix.atoms.events.AtomDeletedEvent;
 import org.radix.atoms.events.AtomStoredEvent;
@@ -50,7 +50,6 @@ import org.radix.time.Timestamps;
 import org.radix.universe.system.CommitmentCollector;
 import org.radix.universe.system.LocalSystem;
 import org.radix.utils.SystemProfiler;
-import org.radix.validation.ValidationHandler;
 
 import com.google.common.collect.Lists;
 import com.radixdlt.atoms.Particle;
@@ -58,12 +57,10 @@ import com.radixdlt.atoms.Spin;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
 import com.radixdlt.common.Pair;
-import com.radixdlt.constraintmachine.CMAtom;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.LedgerCursor;
-import com.radixdlt.ledger.LedgerIndexable;
+import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerCursor.Type;
-import com.radixdlt.ledger.LedgerInterface.SearchMode;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationUtils;
 import com.radixdlt.tempo.TempoCursor;
@@ -1442,7 +1439,7 @@ public class AtomStore extends DatabaseStore implements DiscoverySource<AtomDisc
  	}
 
 	// LEDGER CURSOR HANDLING //
-	public LedgerCursor search(Type type, LedgerIndexable indexable, SearchMode mode) throws DatabaseException
+	public LedgerCursor search(Type type, LedgerIndex indexable, LedgerSearchMode mode) throws DatabaseException
 	{
 		Objects.requireNonNull(indexable);
 		
@@ -1460,12 +1457,12 @@ public class AtomStore extends DatabaseStore implements DiscoverySource<AtomDisc
 			DatabaseEntry pKey = new DatabaseEntry();
 			DatabaseEntry key = new DatabaseEntry(indexable.getKey());
 			
-			if (mode.equals(SearchMode.EXACT) == true)
+			if (mode == LedgerSearchMode.EXACT)
 			{
 				if (databaseCursor.getSearchKey(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS)
 					return new TempoCursor(type, pKey.getData(), key.getData());
 			}
-			else if (mode.equals(SearchMode.RANGE) == true)
+			else if (mode == LedgerSearchMode.RANGE)
 			{
 				if (databaseCursor.getSearchKeyRange(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS)
 					return new TempoCursor(type, pKey.getData(), key.getData());

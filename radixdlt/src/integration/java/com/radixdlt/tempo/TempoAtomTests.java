@@ -29,7 +29,7 @@ public class TempoAtomTests extends RadixTestWithStores
 	@Before
 	public void beforeEachTest() throws ModuleException
 	{
-		Modules.getInstance().start(new Tempo());
+		Modules.getInstance().start(new Tempo(synchroniser, store, resolver));
 	}
 
 	@After

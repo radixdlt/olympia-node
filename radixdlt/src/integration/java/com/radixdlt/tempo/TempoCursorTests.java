@@ -1,6 +1,5 @@
 package com.radixdlt.tempo;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -14,9 +13,7 @@ import org.radix.atoms.AtomStore;
 import org.radix.integration.RadixTestWithStores;
 import org.radix.modules.Modules;
 import org.radix.modules.exceptions.ModuleException;
-import org.radix.time.TemporalVertex;
 import org.radix.time.Time;
-import org.radix.universe.system.LocalSystem;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -28,8 +25,8 @@ import com.radixdlt.common.AID;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.ledger.LedgerCursor;
 import com.radixdlt.ledger.LedgerCursor.Type;
-import com.radixdlt.ledger.LedgerIndexable;
-import com.radixdlt.ledger.LedgerInterface.SearchMode;
+import com.radixdlt.ledger.LedgerIndex;
+import com.radixdlt.ledger.LedgerSearchMode;
 import com.radixdlt.universe.Universe;
 
 public class TempoCursorTests extends RadixTestWithStores
@@ -37,7 +34,7 @@ public class TempoCursorTests extends RadixTestWithStores
 	@Before
 	public void beforeEachTest() throws ModuleException
 	{
-		Modules.getInstance().start(new Tempo());
+		Modules.getInstance().start(new Tempo(synchroniser, store, resolver));
 	}
 
 	@After
@@ -56,7 +53,7 @@ public class TempoCursorTests extends RadixTestWithStores
 		List<Atom> atoms = createAtoms(identity, 1);
 		Modules.get(Tempo.class).store(atoms.get(0));
 		
-		LedgerCursor cursor = Modules.get(Tempo.class).search(Type.UNIQUE, new LedgerIndexable((byte) AtomStore.IDType.ATOM.ordinal(), atoms.get(0).getAID().getBytes()), SearchMode.EXACT);
+		LedgerCursor cursor = Modules.get(Tempo.class).search(Type.UNIQUE, new LedgerIndex((byte) AtomStore.IDType.ATOM.ordinal(), atoms.get(0).getAID().getBytes()), LedgerSearchMode.EXACT);
 		
 		Assert.assertNotNull(cursor);
 		Assert.assertEquals(atoms.get(0).getAID(), cursor.get());
@@ -70,7 +67,7 @@ public class TempoCursorTests extends RadixTestWithStores
 		List<Atom> atoms = createAtoms(identity, 2);
 		Modules.get(Tempo.class).store(atoms.get(0));
 		
-		LedgerCursor cursor = Modules.get(Tempo.class).search(Type.UNIQUE, new LedgerIndexable((byte) AtomStore.IDType.ATOM.ordinal(), atoms.get(1).getAID().getBytes()), SearchMode.EXACT);
+		LedgerCursor cursor = Modules.get(Tempo.class).search(Type.UNIQUE, new LedgerIndex((byte) AtomStore.IDType.ATOM.ordinal(), atoms.get(1).getAID().getBytes()), LedgerSearchMode.EXACT);
 		Assert.assertNull(cursor);
 	}
 
@@ -83,7 +80,7 @@ public class TempoCursorTests extends RadixTestWithStores
 		for (Atom atom : atoms)
 			Modules.get(Tempo.class).store(atom);
 		
-		LedgerCursor cursor = Modules.get(Tempo.class).search(Type.DUPLICATE, new LedgerIndexable((byte) AtomStore.IDType.DESTINATION.ordinal(), identity.getUID().toByteArray()), SearchMode.EXACT);
+		LedgerCursor cursor = Modules.get(Tempo.class).search(Type.DUPLICATE, new LedgerIndex((byte) AtomStore.IDType.DESTINATION.ordinal(), identity.getUID().toByteArray()), LedgerSearchMode.EXACT);
 		Assert.assertNotNull(cursor);
 		Assert.assertEquals(atoms.get(0).getAID(), cursor.get());
 		
@@ -104,7 +101,7 @@ public class TempoCursorTests extends RadixTestWithStores
 		for (Atom atom : atoms)
 			Modules.get(Tempo.class).store(atom);
 		
-		LedgerCursor cursor = Modules.get(Tempo.class).search(Type.DUPLICATE, new LedgerIndexable((byte) AtomStore.IDType.DESTINATION.ordinal(), identity.getUID().toByteArray()), SearchMode.EXACT);
+		LedgerCursor cursor = Modules.get(Tempo.class).search(Type.DUPLICATE, new LedgerIndex((byte) AtomStore.IDType.DESTINATION.ordinal(), identity.getUID().toByteArray()), LedgerSearchMode.EXACT);
 		Assert.assertNotNull(cursor);
 		Assert.assertEquals(atoms.get(0).getAID(), cursor.get());
 		
@@ -125,7 +122,7 @@ public class TempoCursorTests extends RadixTestWithStores
 		for (Atom atom : atoms)
 			Modules.get(Tempo.class).store(atom);
 		
-		LedgerCursor cursor = Modules.get(Tempo.class).search(Type.DUPLICATE, new LedgerIndexable((byte) AtomStore.IDType.DESTINATION.ordinal(), identity.getUID().toByteArray()), SearchMode.EXACT);
+		LedgerCursor cursor = Modules.get(Tempo.class).search(Type.DUPLICATE, new LedgerIndex((byte) AtomStore.IDType.DESTINATION.ordinal(), identity.getUID().toByteArray()), LedgerSearchMode.EXACT);
 		Assert.assertNotNull(cursor);
 		Assert.assertEquals(atoms.get(0).getAID(), cursor.get());
 		

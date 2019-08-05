@@ -86,7 +86,7 @@ public final class TemporalProof extends ValidatableObject
 
 			if (!vertex.getPrevious().equals(EUID.ZERO))
 			{
-				if (vertex.getNIDS().size() > TemporalProof.BRANCH_VERTEX_NIDS)
+				if (vertex.getEdges().size() > TemporalProof.BRANCH_VERTEX_NIDS)
 					throw new ValidationException("The vertex "+vertex+" specifies more than "+TemporalProof.BRANCH_VERTEX_NIDS+" branch vertex NIDs");
 
 				if (!this.vertices.containsKey(vertex.getPrevious()))
@@ -94,7 +94,7 @@ public final class TemporalProof extends ValidatableObject
 			}
 			else
 			{
-				if (vertex.getNIDS().size() > TemporalProof.ROOT_VERTEX_NIDS)
+				if (vertex.getEdges().size() > TemporalProof.ROOT_VERTEX_NIDS)
 					throw new ValidationException("The vertex "+vertex+" specifies more than "+TemporalProof.ROOT_VERTEX_NIDS+" branch vertex NIDs");
 			}
 
@@ -147,7 +147,7 @@ public final class TemporalProof extends ValidatableObject
 		{
 			if (vertex.getPrevious().equals(EUID.ZERO) || NIDS.contains(vertex.getOwner().getUID()))
 			{
-				NIDS.addAll(vertex.getNIDS());
+				NIDS.addAll(vertex.getEdges());
 				vertices.add(vertex);
 			}
 		}
@@ -247,7 +247,7 @@ public final class TemporalProof extends ValidatableObject
 				}
 				else
 				{
-					if (previousVertex.getNIDS().contains(vertex.getOwner().getUID()))
+					if (previousVertex.getEdges().contains(vertex.getOwner().getUID()))
 					{
 						vertices.add(vertex);
 						previousVertex = vertex;
