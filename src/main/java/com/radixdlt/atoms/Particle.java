@@ -64,7 +64,7 @@ public abstract class Particle {
 			return true;
 		}
 
-		return super.equals(o);
+		return false;
 	}
 
 	@Override

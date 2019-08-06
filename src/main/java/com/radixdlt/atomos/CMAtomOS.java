@@ -239,10 +239,10 @@ public final class CMAtomOS implements AtomOSKernel, AtomOS {
 		if (!this.fungibleTransitions.isEmpty()) {
 			Map<Class<? extends Particle>, FungibleTransition<? extends Particle>> transitions =
 				this.fungibleTransitions.stream()
-				.collect(Collectors.toMap(
-					FungibleTransition::getOutputParticleClass,
-					v -> v
-				));
+					.collect(Collectors.toMap(
+						FungibleTransition::getOutputParticleClass,
+						v -> v
+					));
 			cmBuilder.addProcedure(new FungibleTransitionConstraintProcedure(transitions));
 		}
 
