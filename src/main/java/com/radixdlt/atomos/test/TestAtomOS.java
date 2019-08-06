@@ -102,7 +102,9 @@ public class TestAtomOS implements AtomOS {
 			) {
 				if (pendingFungibleTransition == null) {
 					throw new IllegalStateException("Attempt to add formula to finished fungible transition to " + particleClass);
-				} FungibleFormula formula = new FungibleFormula(cls1, check);
+				}
+
+				FungibleFormula formula = new FungibleFormula(cls1, check);
 				transitionBuilder.addFormula(formula);
 				return this::requireFrom;
 			}

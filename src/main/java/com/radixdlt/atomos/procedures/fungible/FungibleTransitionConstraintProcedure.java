@@ -35,6 +35,7 @@ public class FungibleTransitionConstraintProcedure implements ConstraintProcedur
 	private final ImmutableList<FungibleTransition<?>> initialRequireWithChecks;
 
 	public FungibleTransitionConstraintProcedure(Map<Class<? extends Particle>, FungibleTransition<? extends Particle>> transitions) {
+
 		Objects.requireNonNull(transitions);
 
 		List<FungibleTransition<? extends Particle>> fungibleTransitions = transitions.entrySet().stream()

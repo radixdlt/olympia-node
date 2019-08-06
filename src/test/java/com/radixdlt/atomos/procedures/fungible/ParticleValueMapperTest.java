@@ -5,7 +5,6 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atomos.FungibleTransition;
 import com.radixdlt.atoms.Particle;

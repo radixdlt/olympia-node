@@ -80,7 +80,11 @@ final class FungibleInputs {
 	 * @param approvedClasses The approved classes for every fungible
 	 * @return A {@link CompositionMatch} with the amount that could be satisfied and the required consumables
 	 */
-	CompositionMatch match(UInt256 outputAmount, Class<? extends Particle> fromParticle, Map<Fungible, List<Class<? extends Particle>>> approvedClasses) {
+	CompositionMatch match(
+		UInt256 outputAmount,
+		Class<? extends Particle> fromParticle,
+		Map<Fungible, List<Class<? extends Particle>>> approvedClasses
+	) {
 		Objects.requireNonNull(outputAmount, "outputAmount is required");
 		Objects.requireNonNull(approvedClasses, "composition is required");
 

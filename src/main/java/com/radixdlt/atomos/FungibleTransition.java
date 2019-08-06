@@ -8,7 +8,6 @@ import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.AtomMetadata;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -57,7 +56,7 @@ public final class FungibleTransition<T extends Particle> {
 	}
 
 	public BiFunction<Particle, Particle, Boolean> getFungibleEquals() {
-		return (p0, p1) -> fungibleEquals.apply((T)p0, (T)p1);
+		return (p0, p1) -> fungibleEquals.apply((T) p0, (T) p1);
 	}
 
 	public Set<Class<? extends Particle>> getAllInputs() {
@@ -222,7 +221,14 @@ public final class FungibleTransition<T extends Particle> {
 				throw new IllegalStateException("Unfinished transition, no formulas added and no initial constraint defined.");
 			}
 
-			return FungibleTransition.from(outputParticleClass, outputParticleToAmountMapper, fungibleEquals, formulas, initialConstraint, initialWithConstraint);
+			return FungibleTransition.from(
+				outputParticleClass,
+				outputParticleToAmountMapper,
+				fungibleEquals,
+				formulas,
+				initialConstraint,
+				initialWithConstraint
+			);
 		}
 	}
 }

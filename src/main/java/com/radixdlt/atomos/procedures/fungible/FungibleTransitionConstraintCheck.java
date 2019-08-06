@@ -155,8 +155,8 @@ public final class FungibleTransitionConstraintCheck {
 		String rejectedString = noneIfEmpty.apply(matchRejectionsToString(matchResults));
 
 		return String.format(
-			"transitions to %s.%n Unspent Inputs%n%s%n Spent Inputs%n%s%n Unsatisfied Outputs%n%s%n" +
-				" Satisfied Outputs%n%s%n Matched%n%s%n Rejected%n%s",
+			"transitions to %s.%n Unspent Inputs%n%s%n Spent Inputs%n%s%n Unsatisfied Outputs%n%s%n"
+				+ " Satisfied Outputs%n%s%n Matched%n%s%n Rejected%n%s",
 			transitionNamesString, unspentInputsString, spentInputsString, unsatisfiedOutputsString,
 			satisfiedOutputsString, matchesString, rejectedString);
 	}

@@ -19,6 +19,14 @@ import org.junit.Test;
 
 public class FungibleTransitionConstraintProcedureTest {
 	private static class Fungible extends Particle {
+		private final UInt256 amount;
+		Fungible(UInt256 amount) {
+			this.amount = amount;
+		}
+
+		public UInt256 getAmount() {
+			return amount;
+		}
 	}
 
 	@Test
