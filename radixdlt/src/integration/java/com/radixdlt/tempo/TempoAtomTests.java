@@ -40,7 +40,8 @@ public class TempoAtomTests extends RadixTestWithStores
 			mock(AtomSynchroniser.class),
 			new TempoAtomStore(() -> Modules.get(AtomStore.class)),
 			mock(ConflictResolver.class)
-		));	}
+		));
+	}
 
 	@After
 	public void afterEachTest() throws ModuleException

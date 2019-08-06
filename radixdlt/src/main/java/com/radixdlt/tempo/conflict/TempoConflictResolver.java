@@ -8,7 +8,7 @@ import java.util.concurrent.CompletableFuture;
 
 public class TempoConflictResolver implements ConflictResolver {
 	@Override
-	public CompletableFuture<Atom> resolve(Set<Atom> conflictingAtoms) {
+	public CompletableFuture<Atom> resolve(Atom atom, Set<Atom> conflictingAtoms) {
 		throw new UnsupportedOperationException();
 	}
 }

@@ -5,10 +5,17 @@ import java.lang.reflect.Modifier;
 import java.security.SecureRandom;
 import java.security.Security;
 
+import com.radixdlt.LocalConflictResolver;
+import com.radixdlt.tempo.Tempo;
+import com.radixdlt.tempo.store.TempoAtomStore;
+import com.radixdlt.tempo.sync.PeerSupplierAdapter;
+import com.radixdlt.tempo.sync.SimpleEdgeSelector;
+import com.radixdlt.tempo.sync.TempoAtomSynchroniser;
 import org.apache.commons.cli.CommandLine;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.json.JSONObject;
 import org.radix.api.API;
+import org.radix.atoms.AtomStore;
 import org.radix.atoms.Atoms;
 import org.radix.database.DatabaseEnvironment;
 import org.radix.events.EventProfiler;
@@ -29,8 +36,6 @@ import org.radix.properties.PersistedProperties;
 import org.radix.properties.RuntimeProperties;
 import org.radix.routing.Routing;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.serialization.core.ClasspathScanningSerializationPolicy;
-import com.radixdlt.serialization.core.ClasspathScanningSerializerIds;
 import org.radix.shards.Shards;
 import org.radix.time.Time;
 import org.radix.time.RTP.RTPService;
@@ -260,6 +265,21 @@ public class Radix extends Plugin
 		catch (Exception ex)
 		{
 			throw new ModuleStartException("Failure setting up Routing", ex, this);
+		}
+
+		if (Modules.get(RuntimeProperties.class).has("tempo2")) {
+			TempoAtomStore tempoAtomStore = new TempoAtomStore(() -> Modules.get(AtomStore.class));
+			Modules.getInstance().start(Tempo.from(
+				new TempoAtomSynchroniser(
+					tempoAtomStore.asReadOnlyView(),
+					LocalSystem.getInstance(),
+					Messaging.getInstance(),
+					new SimpleEdgeSelector(),
+					new PeerSupplierAdapter(() -> Modules.get(PeerHandler.class))
+				),
+				tempoAtomStore,
+				new LocalConflictResolver(LocalSystem.getInstance().getNID())
+			));
 		}
 
 		/*

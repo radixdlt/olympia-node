@@ -24,14 +24,14 @@ import org.radix.time.TemporalVertex;
 import org.radix.time.Time;
 import org.radix.universe.system.LocalSystem;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * The Tempo implementation of a ledger.
@@ -121,8 +121,11 @@ public final class Tempo extends Plugin implements Ledger {
 	}
 
 	@Override
-	public Future<Atom> resolve(Set<Atom> conflictingAtoms) {
-		return resolver.resolve(conflictingAtoms);
+	public CompletableFuture<Atom> resolve(Atom atom, Set<Atom> conflictingAtoms) {
+		return resolver.resolve((TempoAtom) atom, conflictingAtoms.stream()
+			.map(TempoAtom.class::cast)
+			.collect(Collectors.toSet()))
+		.thenApply(Atom.class::cast);
 	}
 
 	@Override
