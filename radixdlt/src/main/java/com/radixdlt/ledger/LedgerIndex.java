@@ -11,6 +11,11 @@ public final class LedgerIndex
 	private final byte 		prefix;		// TODO put this back to an int ... changed to byte for compatibility with legacy AtomStore IDType
 	private final byte[] 	identifier;
 	
+	public static byte[] from(byte prefix, byte[] identifier)
+	{
+		return Arrays.concatenate(new byte[] {prefix}, identifier);
+	}
+	
 	public LedgerIndex(byte prefix, byte[] identifier)
 	{
 		this.prefix = prefix;
@@ -37,6 +42,6 @@ public final class LedgerIndex
 	
 	public byte[] getKey()
 	{
-		return Arrays.concatenate(new byte[] {this.prefix}, this.identifier);
+		return from(this.prefix, this.identifier);
 	}
 }

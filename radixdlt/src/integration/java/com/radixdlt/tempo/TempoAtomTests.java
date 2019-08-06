@@ -14,9 +14,13 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.radix.atoms.AtomStore;
+import org.radix.atoms.sync.AtomSync;
+import org.radix.database.DatabaseEnvironment;
 import org.radix.integration.RadixTestWithStores;
 import org.radix.modules.Modules;
 import org.radix.modules.exceptions.ModuleException;
+import org.radix.routing.RoutingHandler;
+import org.radix.routing.RoutingStore;
 import org.radix.time.Time;
 
 import com.google.common.collect.Lists;
@@ -36,9 +40,12 @@ public class TempoAtomTests extends RadixTestWithStores
 	@Before
 	public void beforeEachTest() throws ModuleException
 	{
+		Modules.getInstance().start(clean(new TempoAtomStore()));
+
 		Modules.getInstance().start(Tempo.from(
 			mock(AtomSynchroniser.class),
-			new TempoAtomStore(() -> Modules.get(AtomStore.class)),
+//			new WrappedLegacyTempoAtomStore(() -> Modules.get(AtomStore.class)),
+			Modules.get(TempoAtomStore.class),
 			mock(ConflictResolver.class)
 		));
 	}
@@ -47,7 +54,9 @@ public class TempoAtomTests extends RadixTestWithStores
 	public void afterEachTest() throws ModuleException
 	{
 		safelyStop(Modules.get(Tempo.class));
+		safelyStop(Modules.get(TempoAtomStore.class));
 
+		Modules.remove(TempoAtomStore.class);
 		Modules.remove(Tempo.class);
 	}
 
