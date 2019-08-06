@@ -215,7 +215,8 @@ public interface AtomOS {
 		 */
 		<U extends Particle> FungibleTransitionConstraint<T> requireFrom(
 			Class<U> cls1,
-			FungibleTransitionInputConstraint<U, T> check
+			FungibleTransitionInputConstraint<U, T> check,
+			BiPredicate<U, T> transition
 		);
 	}
 
@@ -235,7 +236,8 @@ public interface AtomOS {
 		 */
 		<U extends Particle> FungibleTransitionConstraint<T> orFrom(
 			Class<U> cls1,
-			FungibleTransitionInputConstraint<U, T> check
+			FungibleTransitionInputConstraint<U, T> check,
+			BiPredicate<U, T> transition
 		);
 	}
 

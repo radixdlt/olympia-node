@@ -279,7 +279,7 @@ public class TokenInstancesConstraintScryptTest {
 		when(metadata.isSignedBy(any())).thenReturn(true);
 
 		testAtomOS.testFungible(mock.unallocated, mock.transferred, metadata)
-			.assertErrorWithMessageContaining("token types");
+			.assertError();
 	}
 
 	@Test
@@ -292,7 +292,7 @@ public class TokenInstancesConstraintScryptTest {
 		when(metadata.isSignedBy(any())).thenReturn(true);
 
 		testAtomOS.testFungible(mock.transferred, mock.unallocated, metadata)
-			.assertErrorWithMessageContaining("token types");
+			.assertError();
 	}
 
 	@Test
@@ -304,7 +304,7 @@ public class TokenInstancesConstraintScryptTest {
 		when(metadata.isSignedBy(any())).thenReturn(true);
 
 		testAtomOS.testFungible(mock.unallocated, mock.transferred, metadata)
-			.assertErrorWithMessageContaining("granularities");
+			.assertError();
 	}
 
 	@Test
@@ -316,7 +316,7 @@ public class TokenInstancesConstraintScryptTest {
 		when(metadata.isSignedBy(any())).thenReturn(true);
 
 		testAtomOS.testFungible(mock.transferred, mock.unallocated, metadata)
-			.assertErrorWithMessageContaining("granularities");
+			.assertError();
 	}
 
 	@Test
@@ -329,8 +329,6 @@ public class TokenInstancesConstraintScryptTest {
 		when(metadata.isSignedBy(any())).thenReturn(false);
 
 		TestResult result = testAtomOS.testFungible(mock.transferred, mock.unallocated, metadata);
-		result.assertErrorWithMessageContaining("granularities");
-		result.assertErrorWithMessageContaining("signed");
-		result.assertErrorWithMessageContaining("token types");
+		result.assertError();
 	}
 }

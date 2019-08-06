@@ -35,7 +35,8 @@ public class FungibleTransitionConstraintProcedureTest {
 			Fungible.class,
 			FungibleTransition.<Fungible>build()
 				.to(Fungible.class, f -> UInt256.ONE, (f0, f1) -> f0 == f1)
-				.addFormula(new FungibleFormula(Fungible.class, (a, b, c) -> Result.success()))
+				.addFormula(
+					new FungibleFormula(Fungible.class, (a, b, c) -> Result.success(), (a, b) -> true))
 				.build()
 		);
 
@@ -57,7 +58,7 @@ public class FungibleTransitionConstraintProcedureTest {
 			Fungible.class,
 			FungibleTransition.<Fungible>build()
 				.to(Fungible.class, f -> UInt256.ONE, (f0, f1) -> f0 == f1)
-				.addFormula(new FungibleFormula(Fungible.class, (a, b, c) -> Result.success()))
+				.addFormula(new FungibleFormula(Fungible.class, (a, b, c) -> Result.success(), (a, b) -> true))
 				.build()
 		);
 
@@ -80,7 +81,7 @@ public class FungibleTransitionConstraintProcedureTest {
 			Fungible.class,
 			FungibleTransition.<Fungible>build()
 				.to(Fungible.class, f -> UInt256.ONE, (f0, f1) -> f0 == f1)
-				.addFormula(new FungibleFormula(Fungible.class, (a, b, c) -> Result.success()))
+				.addFormula(new FungibleFormula(Fungible.class, (a, b, c) -> Result.success(), (a, b) -> true))
 				.build()
 		);
 
@@ -103,7 +104,7 @@ public class FungibleTransitionConstraintProcedureTest {
 			Fungible.class,
 			FungibleTransition.<Fungible>build()
 				.to(Fungible.class, f -> UInt256.ONE, (f0, f1) -> f0 == f1)
-				.addFormula(new FungibleFormula(Fungible.class, (a, b, c) -> Result.success()))
+				.addFormula(new FungibleFormula(Fungible.class, (a, b, c) -> Result.success(), (a, b) -> true))
 				.build()
 		);
 

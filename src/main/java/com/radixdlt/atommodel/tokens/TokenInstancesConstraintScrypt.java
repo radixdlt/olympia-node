@@ -24,7 +24,11 @@ public class TokenInstancesConstraintScrypt implements ConstraintScrypt {
 		os.on(UnallocatedTokensParticle.class)
 			.require(u -> Result.of(!u.getAmount().isZero(), "Amount cannot be zero"));
 
-		os.registerParticle(TransferrableTokensParticle.class, "transferredtokens", TransferrableTokensParticle::getAddress);
+		os.registerParticle(
+			TransferrableTokensParticle.class,
+			"transferredtokens",
+			TransferrableTokensParticle::getAddress
+		);
 
 		os.on(TransferrableTokensParticle.class)
 			.require(u -> Result.of(!u.getAmount().isZero(), "Amount cannot be zero"));
@@ -41,39 +45,50 @@ public class TokenInstancesConstraintScrypt implements ConstraintScrypt {
 				Result.of(unallocated.getGranularity().equals(tokDef.getGranularity()), "Granularity should match"),
 				Result.of(unallocated.getTokenPermissions().equals(tokDef.getTokenPermissions()), "Permissions should match")
 			))
-			.orFrom(UnallocatedTokensParticle.class, (from, to, meta) -> Result.combine(
-				checkSigned(from.getTokDefRef().getAddress(), meta),
-				checkType(from.getTokDefRef(), to.getTokDefRef()),
-				checkGranularity(from.getGranularity(), to.getGranularity()),
-				Result.of(from.getTokenPermissions().equals(to.getTokenPermissions()), "Permissions should match")
-			))
-			.orFrom(TransferrableTokensParticle.class, (from, to, meta) -> Result.combine(
-				Result.of(from.getAddress().equals(from.getTokDefRef().getAddress()), "Must burn to same account"),
-				to.getTokenPermission(TokenTransition.BURN).check(from.getTokDefRef(), meta),
-				checkType(from.getTokDefRef(), to.getTokDefRef()),
-				checkSigned(from.getTokDefRef().getAddress(), meta),
-				checkGranularity(from.getGranularity(), to.getGranularity()),
-				Result.of(from.getTokenPermissions().equals(to.getTokenPermissions()), "Permissions should match")
-			));
+			.orFrom(
+				UnallocatedTokensParticle.class,
+				(from, to, meta) -> checkSigned(from.getTokDefRef().getAddress(), meta),
+				(from, to) ->
+					Objects.equals(from.getTokDefRef(), to.getTokDefRef())
+					&& Objects.equals(from.getGranularity(), to.getGranularity())
+					&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions())
+			)
+			.orFrom(
+				TransferrableTokensParticle.class,
+				(from, to, meta) -> to.getTokenPermission(TokenTransition.BURN).check(from.getTokDefRef(), meta),
+				(from, to) ->
+					Objects.equals(from.getTokDefRef(), to.getTokDefRef())
+					&& Objects.equals(from.getGranularity(), to.getGranularity())
+					&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions())
+			);
 
 		os.onFungible(
 			TransferrableTokensParticle.class,
 			TransferrableTokensParticle::getAmount,
-			(t0, t1) -> t0.getAddress().equals(t1.getAddress()) && t0.getTokDefRef().equals(t1.getTokDefRef())
+			(t0, t1) ->
+				Objects.equals(t0.getAddress(), t1.getAddress())
+				&& Objects.equals(t0.getTokDefRef(), t1.getTokDefRef())
+				&& Objects.equals(t0.getGranularity(), t1.getGranularity())
+				&& Objects.equals(t0.getTokenPermissions(), t1.getTokenPermissions())
 		)
-			.requireFrom(UnallocatedTokensParticle.class, (from, to, meta) -> Result.combine(
-				Result.of(to.getAddress().equals(to.getTokDefRef().getAddress()), "Must mint to same account"),
-				from.getTokenPermission(TokenTransition.MINT).check(from.getTokDefRef(), meta),
-				checkType(from.getTokDefRef(), to.getTokDefRef()),
-				checkGranularity(from.getGranularity(), to.getGranularity()),
-				Result.of(to.getTokenPermissions().equals(from.getTokenPermissions()), "Permissions must be the same")
-			))
-			.orFrom(TransferrableTokensParticle.class, (from, to, meta) -> Result.combine(
-				checkSigned(from.getAddress(), meta),
-				checkType(from.getTokDefRef(), to.getTokDefRef()),
-				checkGranularity(from.getGranularity(), to.getGranularity()),
-				Result.of(to.getTokenPermissions().equals(from.getTokenPermissions()), "Permissions must be the same"),
-				checkPlanck(from.getPlanck(), to.getPlanck())));
+			.requireFrom(
+				UnallocatedTokensParticle.class,
+				(from, to, meta) ->
+					from.getTokenPermission(TokenTransition.MINT).check(from.getTokDefRef(), meta),
+				(from, to) ->
+					Objects.equals(to.getAddress(), to.getTokDefRef().getAddress())
+					&& Objects.equals(from.getTokDefRef(), to.getTokDefRef())
+					&& Objects.equals(from.getGranularity(), to.getGranularity())
+					&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions())
+			)
+			.orFrom(
+				TransferrableTokensParticle.class,
+				(from, to, meta) -> checkSigned(from.getAddress(), meta),
+				(from, to) ->
+					Objects.equals(from.getTokDefRef(), to.getTokDefRef())
+					&& Objects.equals(from.getGranularity(), to.getGranularity())
+					&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions())
+			);
 	}
 
 	private static <T extends Particle> void requireAmountFits(
@@ -103,36 +118,9 @@ public class TokenInstancesConstraintScrypt implements ConstraintScrypt {
 			});
 	}
 
-	// TODO Eventually, plancks should be checked by a lower level construct (e.g. kernel scrypts).
-	// TODO However, currently there is no primitive transition type that the kernel could program
-	// TODO additional constraints against, and it cannot restrict transitions it doesn't know about.
-	private static Result checkPlanck(long fromPlanckTime, long toPlanckTime) {
-		if (toPlanckTime < fromPlanckTime) {
-			return Result.error("output planck time must be >= input planck time: " + toPlanckTime + " < " + fromPlanckTime);
-		}
-
-		return Result.success();
-	}
-
 	private static Result checkSigned(RadixAddress fromAddress, AtomMetadata metadata) {
 		if (!metadata.isSignedBy(fromAddress)) {
 			return Result.error("must be signed by source address: " + fromAddress);
-		}
-
-		return Result.success();
-	}
-
-	private static Result checkType(RRI fromType, RRI toType) {
-		if (!Objects.equals(fromType, toType)) {
-			return Result.error("token types must be equal: " + fromType + " != " + toType);
-		}
-
-		return Result.success();
-	}
-
-	private static Result checkGranularity(UInt256 fromGranularity, UInt256 toGranularity) {
-		if (!Objects.equals(fromGranularity, toGranularity)) {
-			return Result.error("granularities must be equal: " + fromGranularity + " != " + toGranularity);
 		}
 
 		return Result.success();

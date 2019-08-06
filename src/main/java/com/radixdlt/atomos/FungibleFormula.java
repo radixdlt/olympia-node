@@ -10,19 +10,24 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.BiPredicate;
 
 /**
  * Formula defining a fungible transition *from* a set of types *to* a target type with a certain composition
  */
 public final class FungibleFormula {
-	// TODO could add additional constraint on output here, similar to inputs
 	private final Class<? extends Particle> particleClass;
 	private final FungibleTransitionInputConstraint<? extends Particle, ? extends Particle> constraint;
+	private final BiPredicate<Particle, Particle> transition;
 
-	public FungibleFormula(Class<? extends Particle> particleClass,
-		FungibleTransitionInputConstraint<? extends Particle, ? extends Particle> constraint) {
+	public FungibleFormula(
+		Class<? extends Particle> particleClass,
+		FungibleTransitionInputConstraint<? extends Particle, ? extends Particle> constraint,
+		BiPredicate<? extends Particle, ? extends Particle> transition
+	) {
 		this.particleClass = Objects.requireNonNull(particleClass, "particleClass is required");
 		this.constraint = Objects.requireNonNull(constraint, "constraint is required");
+		this.transition = Objects.requireNonNull((BiPredicate<Particle, Particle>) transition);
 	}
 
 	public Class<? extends Particle> particleClass() {
@@ -42,7 +47,9 @@ public final class FungibleFormula {
 			Result checkResult = ((FungibleTransitionInputConstraint) this.constraint)
 				.apply(input.getParticle(), output.getParticle(), metadata);
 
-			if (checkResult.isSuccess()) {
+			boolean transitionCheck = transition.test(input.getParticle(), output.getParticle());
+
+			if (checkResult.isSuccess() && transitionCheck) {
 				return new FungibleFormulaInputOutputVerdict(input, output, Collections.singletonList(inputClass), Collections.emptyMap());
 			} else {
 				return new FungibleFormulaInputOutputVerdict(input, output, Collections.emptyList(),

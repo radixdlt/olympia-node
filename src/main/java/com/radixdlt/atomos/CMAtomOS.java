@@ -179,12 +179,13 @@ public final class CMAtomOS implements AtomOSKernel, AtomOS {
 			@Override
 			public <U extends Particle> FungibleTransitionConstraint<T> requireFrom(
 				Class<U> cls1,
-				FungibleTransitionInputConstraint<U, T> check
+				FungibleTransitionInputConstraint<U, T> check,
+				BiPredicate<U, T> transition
 			) {
 				if (pendingFungibleTransition == null) {
 					throw new IllegalStateException("Attempt to add formula to finished fungible transition to " + particleClass);
 				}
-				FungibleFormula formula = new FungibleFormula(cls1, check);
+				FungibleFormula formula = new FungibleFormula(cls1, check, transition);
 				transitionBuilder.addFormula(formula);
 				return this::requireFrom;
 			}
