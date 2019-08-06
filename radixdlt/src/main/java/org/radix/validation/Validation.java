@@ -1,9 +1,8 @@
 package org.radix.validation;
 
+import com.radixdlt.atommodel.tokens.TokensConstraintScrypt;
 import com.radixdlt.atomos.AtomDriver;
 import com.radixdlt.atommodel.message.MessageParticleConstraintScrypt;
-import com.radixdlt.atommodel.tokens.TokenDefinitionConstraintScrypt;
-import com.radixdlt.atommodel.tokens.TokenInstancesConstraintScrypt;
 import com.radixdlt.atommodel.unique.UniqueParticleConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.common.Pair;
@@ -39,10 +38,9 @@ public class Validation extends Plugin {
 		final boolean skipAtomFeeCheck = Modules.isAvailable(RuntimeProperties.class)
 			&& Modules.get(RuntimeProperties.class).get("debug.nopow", false);
 		os.loadKernelConstraintScrypt(new AtomDriver(Modules.get(Serialization.class), skipAtomFeeCheck, Time.MAXIMUM_DRIFT));
-		os.load(new TokenDefinitionConstraintScrypt());
+		os.load(new TokensConstraintScrypt());
 		os.load(new UniqueParticleConstraintScrypt());
 		os.load(new MessageParticleConstraintScrypt());
-		os.load(new TokenInstancesConstraintScrypt());
 
 		final Pair<ConstraintMachine, AtomCompute> engineParams = os.buildMachine();
 		final RadixEngine radixEngine = new RadixEngine(engineParams.getFirst(), engineParams.getSecond(), atomStore);
