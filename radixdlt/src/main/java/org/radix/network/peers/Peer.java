@@ -25,7 +25,6 @@ import org.radix.network.peers.events.PeerDisconnectedEvent;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
-import org.radix.state.SingletonState;
 import org.radix.state.State;
 import org.radix.time.Chronologic;
 import org.radix.time.NtpService;
@@ -36,7 +35,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
 
 @SerializerId2("network.peer")
-public class Peer extends BasicContainer implements Chronologic, SingletonState
+public class Peer extends BasicContainer implements Chronologic
 {
 	private static final Logger networkLog = Logging.getLogger ("network");
 
@@ -46,9 +45,6 @@ public class Peer extends BasicContainer implements Chronologic, SingletonState
 	public short VERSION() { return 100;}
 
 	private URI				host = null;
-	private long 			trafficIn = 0;
-	private long 			trafficOut = 0;
-	private int 			latency = 0;
 	private String 			banReason = null;
 	private HashMap<String, Long> timestamps = new HashMap<>();
 
@@ -82,8 +78,6 @@ public class Peer extends BasicContainer implements Chronologic, SingletonState
 			this.system = peer.system == null ? null : new RadixSystem(peer.system);
 			this.host = peer.host; // URI is immutable
 			this.timestamps = peer.timestamps == null ? null : new HashMap<>(peer.timestamps);
-			this.trafficIn = peer.trafficIn;
-			this.trafficOut = peer.trafficOut;
 			this.banReason = peer.banReason;
 			this.protocols = peer.protocols == null ? null : new WireableSet<>(peer.protocols);
 		}
@@ -155,36 +149,6 @@ public class Peer extends BasicContainer implements Chronologic, SingletonState
 		this.banReason = banReason;
 	}
 
-	public int getLatency()
-	{
-		return latency;
-	}
-
-	public void setLatency(int latency)
-	{
-		this.latency = latency;
-	}
-
-	public long getTrafficIn()
-	{
-		return trafficIn;
-	}
-
-	public void setTrafficIn(long trafficIn)
-	{
-		this.trafficIn = trafficIn;
-	}
-
-	public long getTrafficOut()
-	{
-		return trafficOut;
-	}
-
-	public void setTrafficOut(long trafficOut)
-	{
-		this.trafficOut = trafficOut;
-	}
-
 	public RadixSystem getSystem()
 	{
 		return system;
@@ -235,11 +199,6 @@ public class Peer extends BasicContainer implements Chronologic, SingletonState
 
 	public synchronized void disconnect(String reason)
 	{
-		disconnect (reason, null);
-	}
-
-	public synchronized void disconnect(String reason, Throwable throwable)
-	{
 		if (getState().in(State.DISCONNECTING) || getState().in(State.DISCONNECTED))
 			return;
 
@@ -255,17 +214,11 @@ public class Peer extends BasicContainer implements Chronologic, SingletonState
 
 			if (reason != null)
 			{
-				if (throwable != null)
-					networkLog.error(toString()+" - Disconnected - "+reason, throwable);
-				else
-					networkLog.error(toString()+" - Disconnected - "+reason);
+				networkLog.error(toString()+" - Disconnected - "+reason);
 			}
 			else
 			{
-				if (throwable != null)
-					networkLog.error(toString()+" - Disconnected - ", throwable);
-				else
-					networkLog.info(toString()+" - Disconnected");
+				networkLog.info(toString()+" - Disconnected");
 			}
 		}
 		catch ( Exception e )
@@ -315,14 +268,12 @@ public class Peer extends BasicContainer implements Chronologic, SingletonState
 	}
 
 	// STATE //
-	@Override
 	public State getState()
 	{
 		return state;
 	}
 
-	@Override
-	public void setState(State state)
+	private void setState(State state)
 	{
 		this.state.checkAllowed(state);
 		this.state = state;
@@ -352,7 +303,6 @@ public class Peer extends BasicContainer implements Chronologic, SingletonState
 	@DsonOutput(Output.PERSIST)
 	private Map<String, Long> getJsonTimestamps() {
 		return ImmutableMap.<String, Long>builder()
-				.put("attempted", getTimestamp(Timestamps.ATTEMPTED))
 				.put("connected", getTimestamp(Timestamps.CONNECTED))
 				.put("disconnected", getTimestamp(Timestamps.DISCONNECTED))
 				.put("probed", getTimestamp(Timestamps.PROBED))
@@ -363,7 +313,6 @@ public class Peer extends BasicContainer implements Chronologic, SingletonState
 
 	@JsonProperty("timestamps")
 	private void setJsonTimestamps(Map<String, Long> props) {
-		setTimestamp(Timestamps.ATTEMPTED, props.get("attempted").longValue());
 		setTimestamp(Timestamps.CONNECTED, props.get("connected").longValue());
 		setTimestamp(Timestamps.DISCONNECTED, props.get("disconnected").longValue());
 		setTimestamp(Timestamps.PROBED, props.get("probed").longValue());
@@ -376,17 +325,7 @@ public class Peer extends BasicContainer implements Chronologic, SingletonState
 	@JsonProperty("statistics")
 	@DsonOutput(Output.PERSIST)
 	private Map<String, Long> getJsonStatistics() {
-		return ImmutableMap.of(
-				"duration", getTimestamp(Timestamps.DISCONNECTED) - getTimestamp(Timestamps.CONNECTED),
-				"traffic_in", this.trafficIn,
-				"traffic_out", this.trafficOut);
-	}
-
-	@JsonProperty("statistics")
-	private void setJsonStatistics(Map<String, Long> props) {
-		// Duration ignored on purpose!
-		this.trafficIn = props.get("traffic_in").longValue();
-		this.trafficOut = props.get("traffic_out").longValue();
+		return ImmutableMap.of("duration", getTimestamp(Timestamps.DISCONNECTED) - getTimestamp(Timestamps.CONNECTED));
 	}
 
 	// Property "ban_reason" - 1 getter, 1 setter
