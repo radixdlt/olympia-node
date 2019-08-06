@@ -99,7 +99,7 @@ public class TestAtomOS implements AtomOS {
 			@Override
 			public <U extends Particle> FungibleTransitionConstraint<T> requireFrom(
 				Class<U> cls1,
-				FungibleTransitionInputConstraint<U, T> check,
+				WitnessValidator<U> check,
 				BiPredicate<U, T> transition
 			) {
 				if (pendingFungibleTransition == null) {

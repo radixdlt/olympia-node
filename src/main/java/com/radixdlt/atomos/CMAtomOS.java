@@ -36,7 +36,6 @@ import com.radixdlt.store.CMStores;
 import com.radixdlt.common.EUID;
 import com.radixdlt.universe.Universe;
 
-import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -179,7 +178,7 @@ public final class CMAtomOS implements AtomOSKernel, AtomOS {
 			@Override
 			public <U extends Particle> FungibleTransitionConstraint<T> requireFrom(
 				Class<U> cls1,
-				FungibleTransitionInputConstraint<U, T> check,
+				WitnessValidator<U> check,
 				BiPredicate<U, T> transition
 			) {
 				if (pendingFungibleTransition == null) {

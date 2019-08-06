@@ -62,6 +62,8 @@ public class TokenInstancesConstraintScryptTest {
 		when(unallocated.getGranularity()).thenReturn(UInt256.ONE);
 
 		TransferrableTokensParticle transferred = mock(TransferrableTokensParticle.class);
+		when(transferred.getTokenPermission(TokenTransition.MINT)).thenReturn(TokenPermission.ALL);
+		when(transferred.getTokenPermission(TokenTransition.BURN)).thenReturn(TokenPermission.ALL);
 		when(transferred.getTokenPermissions()).thenReturn(permissions);
 		when(transferred.getAmount()).thenReturn(UInt256.ONE);
 		when(transferred.getTokDefRef()).thenReturn(rri);
@@ -137,7 +139,7 @@ public class TokenInstancesConstraintScryptTest {
 	@Test
 	public void when_validating_burned_with_satisfied_all_permission__result_has_no_error() {
 		MockTransition mock = mockTransition();
-		when(mock.unallocated.getTokenPermission(TokenTransition.BURN)).thenReturn(TokenPermission.ALL);
+		when(mock.transferred.getTokenPermission(TokenTransition.BURN)).thenReturn(TokenPermission.ALL);
 		AtomMetadata metadata = mock(AtomMetadata.class);
 		when(metadata.isSignedBy(any())).thenReturn(true);
 
@@ -148,7 +150,7 @@ public class TokenInstancesConstraintScryptTest {
 	@Test
 	public void when_validating_burned_with_satisfied_none_permission__result_has_error() {
 		MockTransition mock = mockTransition();
-		when(mock.unallocated.getTokenPermission(TokenTransition.BURN)).thenReturn(TokenPermission.NONE);
+		when(mock.transferred.getTokenPermission(TokenTransition.BURN)).thenReturn(TokenPermission.NONE);
 		AtomMetadata metadata = mock(AtomMetadata.class);
 
 		testAtomOS.testFungible(mock.transferred, mock.unallocated, metadata)
@@ -158,7 +160,7 @@ public class TokenInstancesConstraintScryptTest {
 	@Test
 	public void when_validating_burned_with_satisfied_token_creation_permission__result_has_no_error() {
 		MockTransition mock = mockTransition();
-		when(mock.unallocated.getTokenPermission(TokenTransition.BURN)).thenReturn(TokenPermission.TOKEN_CREATION_ONLY);
+		when(mock.transferred.getTokenPermission(TokenTransition.BURN)).thenReturn(TokenPermission.TOKEN_CREATION_ONLY);
 		AtomMetadata metadata = mock(AtomMetadata.class);
 		when(metadata.contains(any())).thenReturn(true);
 		when(metadata.isSignedBy(any())).thenReturn(true);
@@ -170,7 +172,7 @@ public class TokenInstancesConstraintScryptTest {
 	@Test
 	public void when_validating_burned_with_unsatisfied_token_creation_permission__result_has_error() {
 		MockTransition mock = mockTransition();
-		when(mock.unallocated.getTokenPermission(TokenTransition.BURN)).thenReturn(TokenPermission.TOKEN_CREATION_ONLY);
+		when(mock.transferred.getTokenPermission(TokenTransition.BURN)).thenReturn(TokenPermission.TOKEN_CREATION_ONLY);
 		AtomMetadata metadata = mock(AtomMetadata.class);
 		when(metadata.contains(any())).thenReturn(false);
 
@@ -181,7 +183,7 @@ public class TokenInstancesConstraintScryptTest {
 	@Test
 	public void when_validating_burned_with_satisfied_token_owner_permission__result_has_no_error() {
 		MockTransition mock = mockTransition();
-		when(mock.unallocated.getTokenPermission(TokenTransition.BURN)).thenReturn(TokenPermission.TOKEN_OWNER_ONLY);
+		when(mock.transferred.getTokenPermission(TokenTransition.BURN)).thenReturn(TokenPermission.TOKEN_OWNER_ONLY);
 		AtomMetadata metadata = mock(AtomMetadata.class);
 		when(metadata.isSignedBy(mock.transferred.getAddress())).thenReturn(true);
 
@@ -192,7 +194,7 @@ public class TokenInstancesConstraintScryptTest {
 	@Test
 	public void when_validating_burned_with_unsatisfied_token_owner_permission__result_has_error() {
 		MockTransition mock = mockTransition();
-		when(mock.unallocated.getTokenPermission(TokenTransition.BURN)).thenReturn(TokenPermission.TOKEN_OWNER_ONLY);
+		when(mock.transferred.getTokenPermission(TokenTransition.BURN)).thenReturn(TokenPermission.TOKEN_OWNER_ONLY);
 		AtomMetadata metadata = mock(AtomMetadata.class);
 		when(metadata.isSignedBy(mock.transferred.getAddress())).thenReturn(false);
 
@@ -253,13 +255,13 @@ public class TokenInstancesConstraintScryptTest {
 		when(output.getGranularity()).thenReturn(granularity);
 		when(output.getTokDefRef()).thenReturn(type);
 		when(output.getTokenPermissions()).thenReturn(permissions);
-		when(output.getTokenPermission(any())).thenReturn(TokenPermission.TOKEN_OWNER_ONLY);
 
 		TransferrableTokensParticle input = mock(TransferrableTokensParticle.class);
 		when(input.getAmount()).thenReturn(UInt256.TWO);
 		when(input.getGranularity()).thenReturn(granularity);
 		when(input.getTokDefRef()).thenReturn(type);
 		when(input.getAddress()).thenReturn(address);
+		when(input.getTokenPermission(any())).thenReturn(TokenPermission.TOKEN_OWNER_ONLY);
 		when(input.getTokenPermissions()).thenReturn(permissions);
 
 		AtomMetadata metadata = mock(AtomMetadata.class);
@@ -286,7 +288,7 @@ public class TokenInstancesConstraintScryptTest {
 	public void when_validating_signed_burn_with_equal_amounts_equal_granularities_different_type_result_has_error() {
 		MockTransition mock = mockTransition();
 		RRI type = mock(RRI.class);
-		when(mock.unallocated.getTokDefRef()).thenReturn(type);
+		when(mock.transferred.getTokDefRef()).thenReturn(type);
 
 		AtomMetadata metadata = mock(AtomMetadata.class);
 		when(metadata.isSignedBy(any())).thenReturn(true);
@@ -322,8 +324,8 @@ public class TokenInstancesConstraintScryptTest {
 	@Test
 	public void when_validating_unsigned_transfer_to_burn_with_equal_amounts_different_granularities_different_type_result_has_error() {
 		MockTransition mock = mockTransition();
-		when(mock.unallocated.getGranularity()).thenReturn(UInt256.TWO);
-		when(mock.unallocated.getTokDefRef()).thenReturn(mock(RRI.class));
+		when(mock.transferred.getGranularity()).thenReturn(UInt256.TWO);
+		when(mock.transferred.getTokDefRef()).thenReturn(mock(RRI.class));
 
 		AtomMetadata metadata = mock(AtomMetadata.class);
 		when(metadata.isSignedBy(any())).thenReturn(false);

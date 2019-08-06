@@ -159,21 +159,14 @@ public interface AtomOS {
 		Result check(T particle, U sideEffect, AtomMetadata meta);
 	}
 
-	/**
-	 * Actual function which returns result of a single from particle of the fungible transition
-	 * @param <T>
-	 */
 	@FunctionalInterface
-	interface FungibleTransitionInputConstraint<T extends Particle, U extends Particle> {
+	interface WitnessValidator<T extends Particle> {
 		/**
-		 * Check whether a certain transition *from* the given Particle *to* a given Particle is valid
-		 * Note: Amounts should not be considered at this place, since they are taken into account elsewhere.
 		 * @param fromParticle The particle we transition from
-		 * @param toParticle The particle we transition to
 		 * @param metadata The metadata of the containing Atom
 		 * @return A {@link Result} of the check
 		 */
-		Result apply(T fromParticle, U toParticle, AtomMetadata metadata);
+		Result apply(T fromParticle, AtomMetadata metadata);
 	}
 
 	/**
@@ -215,8 +208,8 @@ public interface AtomOS {
 		 */
 		<U extends Particle> FungibleTransitionConstraint<T> requireFrom(
 			Class<U> cls1,
-			FungibleTransitionInputConstraint<U, T> check,
-			BiPredicate<U, T> transition
+			WitnessValidator<U> witnessValidator,
+			BiPredicate<U, T> fungibleValidator
 		);
 	}
 
@@ -236,8 +229,8 @@ public interface AtomOS {
 		 */
 		<U extends Particle> FungibleTransitionConstraint<T> orFrom(
 			Class<U> cls1,
-			FungibleTransitionInputConstraint<U, T> check,
-			BiPredicate<U, T> transition
+			WitnessValidator<U> witnessValidator,
+			BiPredicate<U, T> fungibleValidator
 		);
 	}
 

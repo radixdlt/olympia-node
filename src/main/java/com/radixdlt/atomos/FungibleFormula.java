@@ -2,7 +2,7 @@ package com.radixdlt.atomos;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.atomos.AtomOS.FungibleTransitionInputConstraint;
+import com.radixdlt.atomos.AtomOS.WitnessValidator;
 import com.radixdlt.atomos.procedures.fungible.Fungible;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.constraintmachine.AtomMetadata;
@@ -17,12 +17,12 @@ import java.util.function.BiPredicate;
  */
 public final class FungibleFormula {
 	private final Class<? extends Particle> particleClass;
-	private final FungibleTransitionInputConstraint<? extends Particle, ? extends Particle> constraint;
+	private final WitnessValidator<? extends Particle> constraint;
 	private final BiPredicate<Particle, Particle> transition;
 
 	public FungibleFormula(
 		Class<? extends Particle> particleClass,
-		FungibleTransitionInputConstraint<? extends Particle, ? extends Particle> constraint,
+		WitnessValidator<? extends Particle> constraint,
 		BiPredicate<? extends Particle, ? extends Particle> transition
 	) {
 		this.particleClass = Objects.requireNonNull(particleClass, "particleClass is required");
@@ -44,9 +44,7 @@ public final class FungibleFormula {
 
 		final Class<? extends Particle> inputClass = input.getParticleClass();
 		if (this.particleClass.isAssignableFrom(inputClass)) {
-			Result checkResult = ((FungibleTransitionInputConstraint) this.constraint)
-				.apply(input.getParticle(), output.getParticle(), metadata);
-
+			Result checkResult = ((WitnessValidator) this.constraint).apply(input.getParticle(), metadata);
 			boolean transitionCheck = transition.test(input.getParticle(), output.getParticle());
 
 			if (checkResult.isSuccess() && transitionCheck) {

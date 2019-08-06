@@ -3,7 +3,6 @@ package com.radixdlt.atommodel.tokens;
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle.TokenTransition;
 import com.radixdlt.atomos.AtomOS;
 import com.radixdlt.atomos.ConstraintScrypt;
-import com.radixdlt.atomos.RRI;
 import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.mapper.ParticleToAmountMapper;
@@ -47,7 +46,7 @@ public class TokenInstancesConstraintScrypt implements ConstraintScrypt {
 			))
 			.orFrom(
 				UnallocatedTokensParticle.class,
-				(from, to, meta) -> checkSigned(from.getTokDefRef().getAddress(), meta),
+				(from, meta) -> checkSigned(from.getTokDefRef().getAddress(), meta),
 				(from, to) ->
 					Objects.equals(from.getTokDefRef(), to.getTokDefRef())
 					&& Objects.equals(from.getGranularity(), to.getGranularity())
@@ -55,7 +54,7 @@ public class TokenInstancesConstraintScrypt implements ConstraintScrypt {
 			)
 			.orFrom(
 				TransferrableTokensParticle.class,
-				(from, to, meta) -> to.getTokenPermission(TokenTransition.BURN).check(from.getTokDefRef(), meta),
+				(from, meta) -> from.getTokenPermission(TokenTransition.BURN).check(from.getTokDefRef(), meta),
 				(from, to) ->
 					Objects.equals(from.getTokDefRef(), to.getTokDefRef())
 					&& Objects.equals(from.getGranularity(), to.getGranularity())
@@ -73,17 +72,15 @@ public class TokenInstancesConstraintScrypt implements ConstraintScrypt {
 		)
 			.requireFrom(
 				UnallocatedTokensParticle.class,
-				(from, to, meta) ->
-					from.getTokenPermission(TokenTransition.MINT).check(from.getTokDefRef(), meta),
+				(from, meta) -> from.getTokenPermission(TokenTransition.MINT).check(from.getTokDefRef(), meta),
 				(from, to) ->
-					Objects.equals(to.getAddress(), to.getTokDefRef().getAddress())
-					&& Objects.equals(from.getTokDefRef(), to.getTokDefRef())
+					Objects.equals(from.getTokDefRef(), to.getTokDefRef())
 					&& Objects.equals(from.getGranularity(), to.getGranularity())
 					&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions())
 			)
 			.orFrom(
 				TransferrableTokensParticle.class,
-				(from, to, meta) -> checkSigned(from.getAddress(), meta),
+				(from, meta) -> checkSigned(from.getAddress(), meta),
 				(from, to) ->
 					Objects.equals(from.getTokDefRef(), to.getTokDefRef())
 					&& Objects.equals(from.getGranularity(), to.getGranularity())
