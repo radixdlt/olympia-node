@@ -85,6 +85,7 @@ public final class RadixUniverse {
 		Set<RadixNode> initialNetwork,
 		WebSockets webSockets
 	) {
+		System.out.println(config);
 		final InMemoryAtomStore inMemoryAtomStore = new InMemoryAtomStore();
 		config.getGenesis().forEach(atom ->
 			atom.addresses()

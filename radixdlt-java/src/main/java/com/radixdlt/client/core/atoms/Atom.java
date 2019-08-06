@@ -9,6 +9,8 @@ import com.radixdlt.client.core.crypto.ECSignature;
 import org.radix.common.ID.AID;
 import org.radix.common.ID.EUID;
 import org.radix.serialization2.DsonOutput;
+import org.radix.serialization2.SerializerConstants;
+import org.radix.serialization2.SerializerDummy;
 import org.radix.serialization2.SerializerId2;
 import org.radix.serialization2.client.SerializableObject;
 import org.radix.serialization2.client.Serialize;
@@ -30,9 +32,19 @@ import java.util.stream.Stream;
  * in a blockchain) and defines the actions that can be issued onto the ledger.
  */
 @SerializerId2("radix.atom")
-public final class Atom extends SerializableObject {
+public final class Atom {
 	public static final String METADATA_TIMESTAMP_KEY = "timestamp";
 	public static final String METADATA_POW_NONCE_KEY = "powNonce";
+
+	@JsonProperty("version")
+	@DsonOutput(DsonOutput.Output.ALL)
+	private short version = 100;
+
+	// Placeholder for the serializer ID
+	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
+	// TODO serializer id for atoms is temporarily excluded from hash for compatibility with abstract atom
+	@DsonOutput(value = {DsonOutput.Output.API, DsonOutput.Output.WIRE, DsonOutput.Output.PERSIST})
+	private SerializerDummy serializer = SerializerDummy.DUMMY;
 
 	@JsonProperty("particleGroups")
 	@DsonOutput(DsonOutput.Output.ALL)
