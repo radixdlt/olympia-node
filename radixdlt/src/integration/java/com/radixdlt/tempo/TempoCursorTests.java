@@ -88,7 +88,7 @@ public class TempoCursorTests extends RadixTestWithStores
 
 		List<Atom> atoms = createAtoms(identity, 2);
 		for (Atom atom : atoms)
-			Assert.assertTrue(Modules.get(Tempo.class).store(atoms.get(0), ImmutableSet.of(), ImmutableSet.of()));
+			Assert.assertTrue(Modules.get(Tempo.class).store(atom, ImmutableSet.of(), ImmutableSet.of()));
 		
 		LedgerCursor cursor = Modules.get(Tempo.class).search(Type.DUPLICATE, new LedgerIndex((byte) AtomStore.IDType.DESTINATION.ordinal(), identity.getUID().toByteArray()), LedgerSearchMode.EXACT);
 		Assert.assertNotNull(cursor);
@@ -109,7 +109,7 @@ public class TempoCursorTests extends RadixTestWithStores
 
 		List<Atom> atoms = createAtoms(identity, 2);
 		for (Atom atom : atoms)
-			Assert.assertTrue(Modules.get(Tempo.class).store(atoms.get(0), ImmutableSet.of(), ImmutableSet.of()));
+			Assert.assertTrue(Modules.get(Tempo.class).store(atom, ImmutableSet.of(), ImmutableSet.of()));
 		
 		LedgerCursor cursor = Modules.get(Tempo.class).search(Type.DUPLICATE, new LedgerIndex((byte) AtomStore.IDType.DESTINATION.ordinal(), identity.getUID().toByteArray()), LedgerSearchMode.EXACT);
 		Assert.assertNotNull(cursor);
@@ -130,7 +130,7 @@ public class TempoCursorTests extends RadixTestWithStores
 
 		List<Atom> atoms = createAtoms(identity, 2);
 		for (Atom atom : atoms)
-			Assert.assertTrue(Modules.get(Tempo.class).store(atoms.get(0), ImmutableSet.of(), ImmutableSet.of()));
+			Assert.assertTrue(Modules.get(Tempo.class).store(atom, ImmutableSet.of(), ImmutableSet.of()));
 		
 		LedgerCursor cursor = Modules.get(Tempo.class).search(Type.DUPLICATE, new LedgerIndex((byte) AtomStore.IDType.DESTINATION.ordinal(), identity.getUID().toByteArray()), LedgerSearchMode.EXACT);
 		Assert.assertNotNull(cursor);

@@ -7,6 +7,8 @@ import com.radixdlt.engine.RadixEngineUtils;
 import com.radixdlt.ledger.LedgerCursor;
 import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerSearchMode;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.Serialization;
 import com.radixdlt.tempo.AtomStore;
 import com.radixdlt.tempo.AtomStoreView;
 import com.radixdlt.tempo.TempoAtom;
@@ -17,6 +19,8 @@ import org.radix.atoms.PreparedAtom;
 import org.radix.database.exceptions.DatabaseException;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
+import org.radix.modules.Modules;
+import org.radix.utils.TestUtils;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -69,22 +73,9 @@ public class TempoAtomStore implements AtomStore {
 	@Override
 	public boolean store(TempoAtom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
 		// TODO remove awful conversion
-		ImmutableAtom content = (ImmutableAtom) atom.getContent();
-		Atom legacyAtom = new Atom(
-			content.particleGroups().collect(Collectors.toList()),
-			content.getSignatures(),
-			content.getMetaData()
-		);
-		legacyAtom.setTemporalProof(atom.getTemporalProof());
-		final CMAtom cmAtom;
-		try {
-			cmAtom = RadixEngineUtils.toCMAtom(legacyAtom);
-		} catch (RadixEngineUtils.CMAtomConversionException e) {
-			throw new IllegalStateException();
-		}
+		final CMAtom cmAtom = convertToCMAtom(atom);
 
 		try {
-
 			return atomStoreSupplier.get().storeAtom(new PreparedAtom(cmAtom, UInt384.ONE)).isCompleted();
 		} catch (IOException e) {
 			throw new TempoException("Error while storing atom " + atom.getAID(), e);
@@ -103,19 +94,7 @@ public class TempoAtomStore implements AtomStore {
 	@Override
 	public boolean replace(Set<AID> aids, TempoAtom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
 		// TODO remove awful conversion
-		ImmutableAtom content = (ImmutableAtom) atom.getContent();
-		Atom legacyAtom = new Atom(
-			content.particleGroups().collect(Collectors.toList()),
-			content.getSignatures(),
-			content.getMetaData()
-		);
-		legacyAtom.setTemporalProof(atom.getTemporalProof());
-		final CMAtom cmAtom;
-		try {
-			cmAtom = RadixEngineUtils.toCMAtom(legacyAtom);
-		} catch (RadixEngineUtils.CMAtomConversionException e) {
-			throw new IllegalStateException();
-		}
+		final CMAtom cmAtom = convertToCMAtom(atom);
 
 		try {
 			return atomStoreSupplier.get().replaceAtom(aids, new PreparedAtom(cmAtom, UInt384.ONE)).isCompleted();
@@ -131,6 +110,23 @@ public class TempoAtomStore implements AtomStore {
 		} catch (DatabaseException e) {
 			throw new TempoException("Error while searching for " + index, e);
 		}
+	}
+
+	private CMAtom convertToCMAtom(TempoAtom atom) {
+		ImmutableAtom content = (ImmutableAtom) atom.getContent();
+		Atom legacyAtom = new Atom(
+			content.particleGroups().collect(Collectors.toList()),
+			content.getSignatures(),
+			content.getMetaData()
+		);
+		legacyAtom.setTemporalProof(atom.getTemporalProof());
+		final CMAtom cmAtom;
+		try {
+			cmAtom = RadixEngineUtils.toCMAtom(legacyAtom);
+		} catch (RadixEngineUtils.CMAtomConversionException e) {
+			throw new IllegalStateException();
+		}
+		return cmAtom;
 	}
 
 	private class AtomStoreViewAdapter implements AtomStoreView {

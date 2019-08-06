@@ -57,7 +57,8 @@ public class TempoAtomTests extends RadixTestWithStores
 		
 		List<Atom> atoms = createAtoms(identity, 1);
 		Assert.assertTrue(Modules.get(Tempo.class).store(atoms.get(0), ImmutableSet.of(), ImmutableSet.of()));
-		Assert.assertEquals(atoms.get(0), Modules.get(Tempo.class).get(atoms.get(0).getAID()));
+		Atom actual = Modules.get(Tempo.class).get(atoms.get(0).getAID()).get();
+		Assert.assertEquals(atoms.get(0), actual);
 		
 		// TODO should check LocalSystem clocks once implemented
 	}
@@ -69,7 +70,7 @@ public class TempoAtomTests extends RadixTestWithStores
 		
 		List<Atom> atoms = createAtoms(identity, 1);
 		Assert.assertTrue(Modules.get(Tempo.class).store(atoms.get(0), ImmutableSet.of(), ImmutableSet.of()));
-		Assert.assertTrue(Modules.get(Tempo.class).store(atoms.get(0), ImmutableSet.of(), ImmutableSet.of()));
+		Assert.assertFalse(Modules.get(Tempo.class).store(atoms.get(0), ImmutableSet.of(), ImmutableSet.of()));
 	}
 
 	@Test
@@ -79,12 +80,12 @@ public class TempoAtomTests extends RadixTestWithStores
 
 		List<Atom> atoms = createAtoms(identity, 1);
 		Assert.assertTrue(Modules.get(Tempo.class).store(atoms.get(0), ImmutableSet.of(), ImmutableSet.of()));
-		Assert.assertEquals(atoms.get(0), Modules.get(Tempo.class).get(atoms.get(0).getAID()));
+		Assert.assertEquals(atoms.get(0), Modules.get(Tempo.class).get(atoms.get(0).getAID()).get());
 
 		boolean deleted = Modules.get(Tempo.class).delete(atoms.get(0).getAID());
 		Assert.assertTrue(deleted);
 
-		Assert.assertNull(Modules.get(Tempo.class).get(atoms.get(0).getAID()));
+		Assert.assertFalse("Deleted atom is no longer present", Modules.get(Tempo.class).get(atoms.get(0).getAID()).isPresent());
 
 		// TODO should check LocalSystem clocks once implemented
 	}
@@ -96,13 +97,13 @@ public class TempoAtomTests extends RadixTestWithStores
 
 		List<Atom> atoms = createAtoms(identity, 2);
 		Assert.assertTrue(Modules.get(Tempo.class).store(atoms.get(0), ImmutableSet.of(), ImmutableSet.of()));
-		Assert.assertEquals(atoms.get(0), Modules.get(Tempo.class).get(atoms.get(0).getAID()));
+		Assert.assertEquals(atoms.get(0), Modules.get(Tempo.class).get(atoms.get(0).getAID()).get());
 
 		boolean deleted = Modules.get(Tempo.class).replace(ImmutableSet.of(atoms.get(0).getAID()), atoms.get(1), ImmutableSet.of(), ImmutableSet.of());
 		Assert.assertTrue(deleted);
 
-		Assert.assertNotNull(Modules.get(Tempo.class).get(atoms.get(1).getAID()));
-		Assert.assertNull(Modules.get(Tempo.class).get(atoms.get(0).getAID()));
+		Assert.assertTrue("New atom is present", Modules.get(Tempo.class).get(atoms.get(1).getAID()).isPresent());
+		Assert.assertFalse("Replaced atom is no longer present", Modules.get(Tempo.class).get(atoms.get(0).getAID()).isPresent());
 		
 		// TODO should check LocalSystem clocks once implemented
 	}

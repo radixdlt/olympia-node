@@ -15,11 +15,11 @@ public class TestUtils {
 	/**
 	 * Dump the JSON representation of the binary generated for hashing
 	 *
-	 * @param atom The atom
+	 * @param object The object
 	 */
-	public static void dumpJsonForHash(Atom atom) {
+	public static void dumpJsonForHash(Object object) {
 		try {
-			System.out.println(Modules.get(Serialization.class).toJson(atom, DsonOutput.Output.HASH));
+			System.out.println(Modules.get(Serialization.class).toJson(object, DsonOutput.Output.HASH));
 		} catch (SerializationException e) {
 			e.printStackTrace(System.err);
 		}
@@ -28,12 +28,12 @@ public class TestUtils {
 	/**
 	 * Dump the DSON representation of the binary generated for hashing
 	 *
-	 * @param atom The atom
+	 * @param object The object
 	 */
-	public static void dumpDsonForHash(Atom atom) {
+	public static void dumpDsonForHash(Object object) {
 
 		try {
-			hexdump(Modules.get(Serialization.class).toDson(atom, DsonOutput.Output.HASH));
+			hexdump(Modules.get(Serialization.class).toDson(object, DsonOutput.Output.HASH));
 		} catch (SerializationException e) {
 			e.printStackTrace(System.err);
 		}

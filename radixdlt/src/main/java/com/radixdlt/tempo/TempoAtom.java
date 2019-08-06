@@ -82,4 +82,21 @@ public class TempoAtom implements Atom {
 
 		return this.temporalProof;
 	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		TempoAtom tempoAtom = (TempoAtom) o;
+		return aid.equals(tempoAtom.aid);
+	}
+
+	@Override
+	public int hashCode() {
+		return aid.hashCode();
+	}
 }
