@@ -32,4 +32,10 @@ public interface AtomSynchroniser {
 	 * @param atom The atom to synchronise
 	 */
 	void synchronise(TempoAtom atom);
+
+	/**
+	 * Get a legacy view of this synchroniser
+	 * TODO remove this once AtomSync is removed
+	 */
+	AtomSyncView getLegacyAdapter();
 }

@@ -1,6 +1,5 @@
 package com.radixdlt.tempo.sync.epics;
 
-import com.radixdlt.Atom;
 import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.sync.PeerSupplier;
 import com.radixdlt.tempo.sync.SyncAction;

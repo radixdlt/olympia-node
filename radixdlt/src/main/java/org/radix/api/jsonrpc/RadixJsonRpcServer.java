@@ -2,6 +2,7 @@ package org.radix.api.jsonrpc;
 
 import com.google.common.io.CharStreams;
 import com.radixdlt.atomos.RadixAddress;
+import com.radixdlt.tempo.AtomSyncView;
 import org.radix.atoms.Atom;
 import com.radixdlt.atoms.AtomStatus;
 import com.radixdlt.common.AID;
@@ -57,18 +58,18 @@ public final class RadixJsonRpcServer {
 	 */
     private final AtomStore atomStore;
 
-	private final AtomSync atomSync;
+	private final AtomSyncView atomSync;
 
 	/**
 	 * Serialization mechanism
 	 */
 	private final Serialization serialization;
 
-	public RadixJsonRpcServer(Serialization serialization, AtomStore atomStore, AtomSync atomSync, AtomsService atomsService, Schema atomSchema) {
+	public RadixJsonRpcServer(Serialization serialization, AtomStore atomStore, AtomSyncView atomSync, AtomsService atomsService, Schema atomSchema) {
 		this(serialization, atomStore, atomSync, atomsService, atomSchema, DEFAULT_MAX_REQUEST_SIZE);
 	}
 
-	public RadixJsonRpcServer(Serialization serialization, AtomStore atomStore, AtomSync atomSync, AtomsService atomsService, Schema atomSchema, long maxRequestSizeBytes) {
+	public RadixJsonRpcServer(Serialization serialization, AtomStore atomStore, AtomSyncView atomSync, AtomsService atomsService, Schema atomSchema, long maxRequestSizeBytes) {
 		this.serialization = Objects.requireNonNull(serialization);
 		this.atomStore = Objects.requireNonNull(atomStore);
 		this.atomSync = Objects.requireNonNull(atomSync);

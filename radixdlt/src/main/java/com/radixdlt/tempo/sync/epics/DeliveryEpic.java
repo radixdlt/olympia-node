@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
@@ -35,7 +36,7 @@ public class DeliveryEpic implements SyncEpic {
 	private final ScheduledDispatcher scheduledDispatcher;
 	private final Set<AID> ongoingDeliveries = Collections.synchronizedSet(new HashSet<>());
 
-	public DeliveryEpic(AtomStoreView store, ScheduledDispatcher scheduledDispatcher) {
+	private DeliveryEpic(AtomStoreView store, ScheduledDispatcher scheduledDispatcher) {
 		this.store = store;
 		this.scheduledDispatcher = scheduledDispatcher;
 	}
@@ -93,5 +94,34 @@ public class DeliveryEpic implements SyncEpic {
 		}
 
 		return Stream.empty();
+	}
+
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	public static class Builder {
+		private AtomStoreView view;
+		private ScheduledDispatcher scheduledDispatcher;
+
+		private Builder() {
+		}
+
+		public Builder view(AtomStoreView view) {
+			this.view = view;
+			return this;
+		}
+
+		public Builder dispatcher(ScheduledDispatcher dispatcher) {
+			this.scheduledDispatcher = dispatcher;
+			return this;
+		}
+
+		public DeliveryEpic build() {
+			Objects.requireNonNull(this.view, "view is required");
+			Objects.requireNonNull(this.scheduledDispatcher, "dispatcher is required");
+
+			return new DeliveryEpic(this.view, this.scheduledDispatcher);
+		}
 	}
 }

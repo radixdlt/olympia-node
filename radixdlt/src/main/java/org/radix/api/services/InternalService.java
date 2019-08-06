@@ -1,5 +1,6 @@
 package org.radix.api.services;
 
+import com.radixdlt.tempo.AtomSyncView;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.Bytes;
 
@@ -133,7 +134,7 @@ public class InternalService {
 								atom.sign(this.owner);
 
 								if (LocalSystem.getInstance().getShards().intersects(atom.getShards()) == true) {
-									Modules.get(AtomSync.class).store(atom);
+									Modules.get(AtomSyncView.class).receive(atom);
 								} else {
 									for (Peer peer : Modules.get(PeerHandler.class).getPeers(PeerDomain.NETWORK, null, new PeerHandler.PeerDistanceComparator(LocalSystem.getInstance().getNID()))) {
 										if (!peer.getSystem().getNID().equals(LocalSystem.getInstance().getNID()) && peer.getSystem().getShards().intersects(atom.getShards())) {
@@ -342,7 +343,7 @@ public class InternalService {
 
 		try
 		{
-			Map<String, Object> atomSyncMetaData = Modules.get(AtomSync.class).getMetaData();
+			Map<String, Object> atomSyncMetaData = Modules.get(AtomSyncView.class).getMetaData();
 			Map<String, Object> particleConflictHandlerMetaData = Modules.get(ParticleConflictHandler.class).getMetaData();
 
 			result.put("atom_sync", Modules.get(Serialization.class).toJsonObject(atomSyncMetaData, Output.ALL));

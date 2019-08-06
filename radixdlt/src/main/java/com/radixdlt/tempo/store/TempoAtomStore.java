@@ -1,16 +1,14 @@
 package com.radixdlt.tempo.store;
 
-import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.common.AID;
 import com.radixdlt.constraintmachine.CMAtom;
 import com.radixdlt.engine.RadixEngineUtils;
 import com.radixdlt.ledger.LedgerCursor;
 import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerSearchMode;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.Serialization;
 import com.radixdlt.tempo.AtomStore;
 import com.radixdlt.tempo.AtomStoreView;
+import com.radixdlt.tempo.LegacyUtils;
 import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.exceptions.TempoException;
 import com.radixdlt.utils.UInt384;
@@ -19,15 +17,12 @@ import org.radix.atoms.PreparedAtom;
 import org.radix.database.exceptions.DatabaseException;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.modules.Modules;
-import org.radix.utils.TestUtils;
 
 import java.io.IOException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 public class TempoAtomStore implements AtomStore {
 	private final Logger logger = Logging.getLogger("Store");
@@ -58,13 +53,7 @@ public class TempoAtomStore implements AtomStore {
 		try {
 			// TODO awful conversion from legacy 'Atom'
 			return atomStoreSupplier.get().getAtom(aid)
-				.map(legacyAtom -> new TempoAtom(
-					(ImmutableAtom) legacyAtom,
-					legacyAtom.getAID(),
-					legacyAtom.getTimestamp(),
-					legacyAtom.getShards(),
-					legacyAtom.getTemporalProof()
-				));
+				.map(LegacyUtils::fromLegacyAtom);
 		} catch (DatabaseException e) {
 			throw new TempoException("Error while querying getAtom(" + aid + ")", e);
 		}
@@ -113,13 +102,7 @@ public class TempoAtomStore implements AtomStore {
 	}
 
 	private CMAtom convertToCMAtom(TempoAtom atom) {
-		ImmutableAtom content = (ImmutableAtom) atom.getContent();
-		Atom legacyAtom = new Atom(
-			content.particleGroups().collect(Collectors.toList()),
-			content.getSignatures(),
-			content.getMetaData()
-		);
-		legacyAtom.setTemporalProof(atom.getTemporalProof());
+		Atom legacyAtom = LegacyUtils.toLegacyAtom(atom);
 		final CMAtom cmAtom;
 		try {
 			cmAtom = RadixEngineUtils.toCMAtom(legacyAtom);

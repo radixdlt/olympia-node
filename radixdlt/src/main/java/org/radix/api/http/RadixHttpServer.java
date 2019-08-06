@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.radixdlt.tempo.AtomSyncView;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.radix.api.AtomSchemas;
@@ -59,12 +60,12 @@ public final class RadixHttpServer {
 
     private final ConcurrentHashMap<RadixJsonRpcPeer, WebSocketChannel> peers = new ConcurrentHashMap<>();
 
-	private final AtomsService atomsService = new AtomsService(Modules.get(AtomSync.class));
+	private final AtomsService atomsService = new AtomsService(Modules.get(AtomSyncView.class));
 
     private final RadixJsonRpcServer jsonRpcServer = new RadixJsonRpcServer(
 		Modules.get(Serialization.class),
 		Modules.get(AtomStore.class),
-		Modules.get(AtomSync.class),
+		Modules.get(AtomSyncView.class),
 		atomsService,
         AtomSchemas.get()
     );

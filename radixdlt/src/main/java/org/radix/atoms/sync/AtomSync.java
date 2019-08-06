@@ -31,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import com.radixdlt.tempo.AtomSyncView;
 import org.radix.atoms.Atom;
 import org.radix.atoms.AtomDependencyNotFoundException;
 import org.radix.atoms.AtomDiscoveryRequest;
@@ -490,6 +491,29 @@ public class AtomSync extends Service
 	@Override
 	public void start_impl() throws ModuleException
 	{
+		// TODO remove atomsync so we no longer need this
+		Modules.put(AtomSyncView.class, new AtomSyncView() {
+			@Override
+			public void receive(Atom atom) {
+				AtomSync.this.store(atom);
+			}
+
+			@Override
+			public AtomStatus getAtomStatus(AID aid) {
+				return AtomSync.this.committing.get(aid);
+			}
+
+			@Override
+			public long getQueueSize() {
+				return AtomSync.this.committingQueueSize(AtomComplexity.ALL);
+			}
+
+			@Override
+			public Map<String, Object> getMetaData() {
+				return AtomSync.this.getMetaData();
+			}
+		});
+
 		register("atom.broadcast", new MessageProcessor<AtomBroadcastMessage>()
 		{
 			@Override

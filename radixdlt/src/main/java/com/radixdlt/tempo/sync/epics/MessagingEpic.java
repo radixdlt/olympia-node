@@ -76,7 +76,7 @@ public class MessagingEpic implements SyncEpic {
 			return this;
 		}
 
-		public <T extends SyncAction> Builder addOutound(Class<T> cls, Function<T, Message> messageMapper, Function<T, Peer> peerMapper) {
+		public <T extends SyncAction> Builder addOutbound(Class<T> cls, Function<T, Message> messageMapper, Function<T, Peer> peerMapper) {
 			this.outboundMessageMappers.put(cls, action -> messageMapper.apply(cls.cast(action)));
 			this.outboundPeerMappers.put(cls, action -> peerMapper.apply(cls.cast(action)));
 

@@ -1,5 +1,6 @@
 package com.radixdlt.tempo;
 
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.Atom;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
@@ -15,6 +16,7 @@ import com.radixdlt.ledger.LedgerSearchMode;
 import com.radixdlt.tempo.exceptions.TempoException;
 import org.radix.exceptions.ValidationException;
 import org.radix.modules.Module;
+import org.radix.modules.Modules;
 import org.radix.modules.Plugin;
 import org.radix.state.State;
 import org.radix.state.StateDomain;
@@ -168,18 +170,20 @@ public final class Tempo extends Plugin implements Ledger {
 
 	@Override
 	public List<Class<? extends Module>> getDependsOn() {
-		List<Class<? extends Module>> dependencies = new ArrayList<>();
-		dependencies.add(org.radix.atoms.AtomStore.class);
-		return Collections.unmodifiableList(dependencies);
+		return ImmutableList.of(
+			org.radix.atoms.AtomStore.class
+		);
 	}
 
 	@Override
 	public void start_impl() {
 		this.synchroniser.clear();
+		Modules.put(AtomSyncView.class, this.synchroniser.getLegacyAdapter());
 	}
 
 	@Override
 	public void stop_impl() {
+		Modules.remove(AtomSyncView.class);
 		// nothing to do
 	}
 
