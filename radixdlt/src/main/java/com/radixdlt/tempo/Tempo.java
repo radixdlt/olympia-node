@@ -55,7 +55,6 @@ public final class Tempo extends Plugin implements Ledger {
 			synchroniser,
 			store,
 			resolver,
-			// TODO replace with proper dependents mapper
 			Time::currentTimestamp,
 			LocalSystem.getInstance()
 		);
@@ -142,7 +141,7 @@ public final class Tempo extends Plugin implements Ledger {
 
 		long wallclockTime = wallclockTimeSupplier.get();
 		Pair<Long, Hash> clockAndCommitment = this.localSystem.update(atom.getAID(), wallclockTime);
-		Set<EUID> edges = Collections.emptySet();
+		List<EUID> edges = synchroniser.selectEdges(atom);
 		TemporalVertex previousVertex = null;
 		if (!atom.getTemporalProof().isEmpty()) {
 			for (TemporalVertex vertex : atom.getTemporalProof().getVertices()) {

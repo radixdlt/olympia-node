@@ -50,7 +50,7 @@ public class TemporalVertex extends ChronologicObject
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	private ECSignature		signature;
 
-	@JsonProperty("nids") // TODO rename "nids" to "edges"
+	@JsonProperty("edges")
 	@DsonOutput(Output.ALL)
 	private final WireableSet<EUID> edges = new WireableSet<>();
 
