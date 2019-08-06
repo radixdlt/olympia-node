@@ -8,6 +8,7 @@ import com.radixdlt.atoms.Particle;
 import com.radixdlt.constraintmachine.AtomMetadata;
 import java.util.List;
 import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 
 /**
@@ -61,7 +62,7 @@ public interface AtomOS {
 	<T extends Particle> FungibleTransitionConstraintStub<T> onFungible(
 		Class<T> particleClass,
 		ParticleToAmountMapper<T> particleToAmountMapper,
-		BiFunction<T, T, Boolean> fungibleEquals
+		BiPredicate<T, T> fungibleEquals
 	);
 
 	<T extends Particle> PayloadParticleClassConstraint<T> onPayload(Class<T> particleClass);

@@ -17,6 +17,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -75,7 +76,7 @@ public class TestAtomOS implements AtomOS {
 	public <T extends Particle> FungibleTransitionConstraintStub<T> onFungible(
 		Class<T> particleClass,
 		ParticleToAmountMapper<T> particleToAmountMapper,
-		BiFunction<T, T, Boolean> fungibleEquals
+		BiPredicate<T, T> fungibleEquals
 	) {
 		if (pendingFungibleTransition != null) {
 			fungibleTransitions.add(pendingFungibleTransition.build());

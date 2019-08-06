@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
@@ -153,7 +154,7 @@ public final class CMAtomOS implements AtomOSKernel, AtomOS {
 	public <T extends Particle> FungibleTransitionConstraintStub<T> onFungible(
 		Class<T> particleClass,
 		ParticleToAmountMapper<T> particleToAmountMapper,
-		BiFunction<T, T, Boolean> fungibleEquals
+		BiPredicate<T, T> fungibleEquals
 	) {
 		checkParticleRegistered(particleClass);
 
