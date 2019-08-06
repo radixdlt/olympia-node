@@ -5,10 +5,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.Inet6Address;
 import java.net.InetAddress;
-import java.net.SocketException;
 import java.net.URI;
-import java.util.concurrent.Semaphore;
-
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.network.Protocol;
@@ -25,7 +22,6 @@ public class UDPPeer extends Peer implements Polymorphic
 	private static final Logger messagingLog = Logging.getLogger("messaging");
 
 	private DatagramSocket		socket = null;
-	private Semaphore			handshake = new Semaphore(1);
 	private PublicInetAddress	localAddress;
 
 	// Used by serializer
@@ -34,8 +30,7 @@ public class UDPPeer extends Peer implements Polymorphic
 		super();
 	}
 
-	public UDPPeer(DatagramSocket socket, URI host, Peer peer, PublicInetAddress localAddress) throws IOException
-	{
+	public UDPPeer(DatagramSocket socket, URI host, Peer peer, PublicInetAddress localAddress) {
 		super(host, peer);
 
 		this.socket = socket;
@@ -96,35 +91,13 @@ public class UDPPeer extends Peer implements Polymorphic
 		messagingLog.debug(message.toString()+" bytes "+datagramBytes.length);
 	}
 
-	@Override
-	public boolean isHandshaked()
-	{
-		return handshake.availablePermits() == 0;
-	}
-
-	@Override
-	public void handshake()
-	{
-		if (!handshake.tryAcquire())
-			throw new IllegalStateException("Handshake already performed!");
-
-		// Handshake achieved
-		if (handshake.availablePermits() == 0)
-			onConnected();
-	}
-
-	@Override
-	public void connect() throws SocketException
-	{
+	private void connect() {
 		onConnecting();
-
-		if (!isHandshaked())
-			handshake();
+		onConnected();
 	}
 
 	@Override
-	void onConnected()
-	{
+	void onConnected() {
 		super.onConnected();
 
 		addProtocol(Protocol.UDP);

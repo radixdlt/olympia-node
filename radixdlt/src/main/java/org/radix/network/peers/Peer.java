@@ -1,7 +1,6 @@
 package org.radix.network.peers;
 
 import java.io.IOException;
-import java.net.SocketException;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
@@ -52,6 +51,8 @@ public class Peer extends BasicContainer implements Chronologic, SingletonState
 	private int 			latency = 0;
 	private String 			banReason = null;
 	private HashMap<String, Long> timestamps = new HashMap<>();
+
+	private final Object LOCK = new Object();
 
 	@JsonProperty("protocols")
 	@DsonOutput(Output.ALL)
@@ -144,11 +145,6 @@ public class Peer extends BasicContainer implements Chronologic, SingletonState
 		return host;
 	}
 
-	private void setURI(URI host)
-	{
-		this.host = host;
-	}
-
 	public String getBanReason()
 	{
 		return banReason;
@@ -199,46 +195,20 @@ public class Peer extends BasicContainer implements Chronologic, SingletonState
 		this.system = system;
 	}
 
-	// EXECUTABLES AND TASKS //
-/*	public void schedule(ScheduledExecutable executable)
-	{
-		Executor.getInstance().schedule(executable);
-
-		synchronized(this.executables)
-		{
-			this.executables.put(executable.getID(), executable);
+	void onConnecting() {
+		synchronized (LOCK) {
+			setState(new State(State.CONNECTING));
+			setTimestamp(Timestamps.ACTIVE, 0l);
+			Events.getInstance().broadcast(new PeerConnectingEvent(this));
 		}
-	}*/
-
-	// CONNECTIVITY //
-	public void connect() throws IOException, SocketException
-	{
-		throw new UnsupportedOperationException("connect not supported on Peer object");
 	}
 
-	synchronized void onConnecting()
-	{
-		setState(new State(State.CONNECTING));
-		setTimestamp(Timestamps.ACTIVE, 0l);
-		Events.getInstance().broadcast(new PeerConnectingEvent(this));
-	}
-
-	synchronized void onConnected()
-	{
-		setState(new State(State.CONNECTED));
-		setTimestamp(Timestamps.CONNECTED, Modules.get(NtpService.class).getUTCTimeMS());
-
-		Events.getInstance().broadcast(new PeerConnectedEvent(this));
-	}
-
-	public boolean isHandshaked()
-	{
-		throw new UnsupportedOperationException("isHandshaked not supported on Peer object");
-	}
-
-	public void handshake() throws IOException
-	{
-		throw new UnsupportedOperationException("handshake not supported on Peer object");
+	void onConnected() {
+		synchronized (LOCK) {
+			setState(new State(State.CONNECTED));
+			setTimestamp(Timestamps.CONNECTED, Modules.get(NtpService.class).getUTCTimeMS());
+			Events.getInstance().broadcast(new PeerConnectedEvent(this));
+		}
 	}
 
 	public void ban(String reason)
