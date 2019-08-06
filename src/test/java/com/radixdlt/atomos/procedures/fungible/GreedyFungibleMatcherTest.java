@@ -3,14 +3,11 @@ package com.radixdlt.atomos.procedures.fungible;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.powermock.api.mockito.PowerMockito.when;
 
-import com.radixdlt.atomos.FungibleComposition;
 import com.radixdlt.atomos.FungibleFormula;
 import com.radixdlt.atomos.FungibleTransition;
-import com.radixdlt.atomos.FungibleTransitionMember;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.procedures.fungible.FungibleMatcher.FungibleMatcherResult;
 import com.radixdlt.atomos.procedures.fungible.GreedyFungibleMatcher.FungibleFormulasMatcher;
@@ -21,16 +18,17 @@ import com.radixdlt.utils.UInt256;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.assertj.core.util.Lists;
 import org.junit.Test;
 
 public class GreedyFungibleMatcherTest {
+	/*
 	private static final FungibleComposition COMPOSITION_H2O = FungibleComposition.of(
 		2, Hydrogen.class,
 		1, Oxygen.class
 	);
+	*/
 
 	@Test
 	public void testCreate() {
@@ -220,6 +218,7 @@ public class GreedyFungibleMatcherTest {
 		);
 	}
 
+	/*
 	@Test
 	public void testMatchFormulasNoInputs() {
 		List<FungibleFormula> possibleFormulas = Arrays.asList(
@@ -239,7 +238,9 @@ public class GreedyFungibleMatcherTest {
 			.collect(Collectors.toList());
 		assertTrue(matches.isEmpty());
 	}
+	*/
 
+	/*
 	@Test
 	public void testMatchFormulasNoApplicableMatch() {
 		List<FungibleFormula> possibleFormulas = Arrays.asList(
@@ -262,7 +263,9 @@ public class GreedyFungibleMatcherTest {
 			.collect(Collectors.toList());
 		assertTrue(matches.isEmpty());
 	}
+	*/
 
+	/*
 	@Test
 	public void testMatchFormulasPartialMatch() {
 		Oxygen applicableOxygen = mock(Oxygen.class);
@@ -300,7 +303,9 @@ public class GreedyFungibleMatcherTest {
 		assertEquals(output.withAmount(UInt256.ONE), match.getSatisfiedOutputs().fungibles().findFirst().get());
 		assertThat(match.getMatchedInputs().fungibles()).containsExactly(oxygenFungible, hydrogenFungible);
 	}
+	*/
 
+	/*
 	@Test
 	public void testMatchFormulasExactMatch() {
 		Oxygen applicableOxygen = mock(Oxygen.class);
@@ -329,6 +334,7 @@ public class GreedyFungibleMatcherTest {
 		assertEquals(output.withAmount(UInt256.ONE), match.getSatisfiedOutputs().fungibles().findFirst().get());
 		assertThat(match.getMatchedInputs().fungibles()).containsExactly(oxygenFungible, hydrogenFungible);
 	}
+	*/
 
 	@Test
 	public void testMatchInitialNoInitial() {
@@ -342,7 +348,7 @@ public class GreedyFungibleMatcherTest {
 	@Test
 	public void testMatchInitialExact() {
 		FungibleTransition<Helium> transitionHelium = FungibleTransition.from(
-			Helium.class, o -> UInt256.FIVE, Lists.newArrayList(), (to, meta) -> Result.success());
+			Helium.class, o -> UInt256.FIVE, (h0, h1) -> true, Lists.newArrayList(), (to, meta) -> Result.success());
 		Fungible outputHelium1 = new Fungible(mock(Helium.class), Helium.class, UInt256.ONE, 5);
 		Fungible outputHelium2 = new Fungible(mock(Helium.class), Helium.class, UInt256.TWO, 6);
 
@@ -361,7 +367,7 @@ public class GreedyFungibleMatcherTest {
 	@Test
 	public void testMatchInitialExactWithOther() {
 		FungibleTransition<Helium> transitionHelium = FungibleTransition.from(
-			Helium.class, o -> UInt256.FIVE, Lists.newArrayList(), (to, meta) -> Result.success());
+			Helium.class, o -> UInt256.FIVE, (o0, o1) -> true, Lists.newArrayList(), (to, meta) -> Result.success());
 		Fungible outputHelium1 = new Fungible(mock(Helium.class), Helium.class, UInt256.ONE, 5);
 		Fungible outputHelium2 = new Fungible(mock(Helium.class), Helium.class, UInt256.TWO, 6);
 		Fungible outputOxygen3 = new Fungible(mock(Oxygen.class), Oxygen.class, UInt256.NINE, 7);

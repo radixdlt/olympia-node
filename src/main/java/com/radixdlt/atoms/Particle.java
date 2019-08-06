@@ -51,9 +51,6 @@ public abstract class Particle {
 	}
 
 	@Override
-	public abstract String toString();
-
-	@Override
 	public boolean equals(Object o) {
 		if (o == null) {
 			return false;
@@ -67,7 +64,7 @@ public abstract class Particle {
 			return true;
 		}
 
-		return super.equals(o);
+		return false;
 	}
 
 	@Override

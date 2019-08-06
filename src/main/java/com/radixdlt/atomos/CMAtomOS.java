@@ -33,9 +33,11 @@ import com.radixdlt.atoms.Particle;
 import com.radixdlt.atoms.Spin;
 import com.radixdlt.store.CMStores;
 import com.radixdlt.common.EUID;
+import com.radixdlt.universe.Universe;
+
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import com.radixdlt.universe.Universe;
 
 /**
  * Implementation of the AtomOS interface on top of a UTXO based Constraint Machine.
@@ -150,7 +152,8 @@ public final class CMAtomOS implements AtomOSKernel, AtomOS {
 	@Override
 	public <T extends Particle> FungibleTransitionConstraintStub<T> onFungible(
 		Class<T> particleClass,
-		ParticleToAmountMapper<T> particleToAmountMapper
+		ParticleToAmountMapper<T> particleToAmountMapper,
+		BiFunction<T, T, Boolean> fungibleEquals
 	) {
 		checkParticleRegistered(particleClass);
 
@@ -159,25 +162,32 @@ public final class CMAtomOS implements AtomOSKernel, AtomOS {
 		}
 
 		FungibleTransition.Builder<T> transitionBuilder = FungibleTransition.<T>build()
-			.to(particleClass, particleToAmountMapper);
+			.to(particleClass, particleToAmountMapper, fungibleEquals);
 		pendingFungibleTransition = transitionBuilder;
 
-		return new FunctionalFungibleTransitionConstraint<>(
-			transitionBuilder::initial,
-			new ParticleRequireWithStub<T>() {
-				@Override
-				public <U extends Particle> void requireWith(Class<U> sideEffectClass, ParticleClassWithSideEffectConstraintCheck<T, U> constraint) {
-					transitionBuilder.initialWith(sideEffectClass, constraint);
-				}
-			},
-			formula -> {
+		return new FungibleTransitionConstraintStub<T>() {
+			@Override
+			public <U extends Particle> FungibleTransitionConstraint<T> requireInitialWith(
+				Class<U> sideEffectClass,
+				ParticleClassWithSideEffectConstraintCheck<T, U> constraint
+			) {
+				transitionBuilder.initialWith(sideEffectClass, constraint);
+				return this::requireFrom;
+			}
+
+			@Override
+			public <U extends Particle> FungibleTransitionConstraint<T> requireFrom(
+				Class<U> cls1,
+				FungibleTransitionInputConstraint<U, T> check
+			) {
 				if (pendingFungibleTransition == null) {
 					throw new IllegalStateException("Attempt to add formula to finished fungible transition to " + particleClass);
 				}
-
+				FungibleFormula formula = new FungibleFormula(cls1, check);
 				transitionBuilder.addFormula(formula);
+				return this::requireFrom;
 			}
-		);
+		};
 	}
 
 	@Override
@@ -227,7 +237,13 @@ public final class CMAtomOS implements AtomOSKernel, AtomOS {
 
 		// Add a constraint for fungibles if any were added
 		if (!this.fungibleTransitions.isEmpty()) {
-			cmBuilder.addProcedure(new FungibleTransitionConstraintProcedure(this.fungibleTransitions));
+			Map<Class<? extends Particle>, FungibleTransition<? extends Particle>> transitions =
+				this.fungibleTransitions.stream()
+					.collect(Collectors.toMap(
+						FungibleTransition::getOutputParticleClass,
+						v -> v
+					));
+			cmBuilder.addProcedure(new FungibleTransitionConstraintProcedure(transitions));
 		}
 
 		// Add constraint for RRI state machines

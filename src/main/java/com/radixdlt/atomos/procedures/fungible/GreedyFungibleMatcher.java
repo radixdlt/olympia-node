@@ -104,7 +104,7 @@ class GreedyFungibleMatcher implements FungibleMatcher {
 	/**
 	 * Drain a transition with given fungibles
 	 * Note: The matching of formulas against the fungibleOutputs and consuming is done greedily, not optimally.
-	 * As the order of {@link Particle}s within the {@link ParticleGroup} is preserved,
+	 * As the order of {@link Particle}s within the ParticleGroup is preserved,
 	 * clients may order their fungibleOutputs and consuming in whichever way they need.
 	 *
 	 * @param transition The fungible transition
@@ -227,7 +227,7 @@ class GreedyFungibleMatcher implements FungibleMatcher {
 			Map<Fungible, List<Class<? extends Particle>>> approvedClasses = inputVerdicts.entrySet().stream()
 				.collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().getApprovedClasses()));
 			FungibleInputs.CompositionMatch compositionMatch =
-				fungibleInputs.match(output.getAmount(), formula.getComposition(), approvedClasses);
+				fungibleInputs.match(output.getAmount(), formula.particleClass(), approvedClasses);
 
 			FungibleFormulaMatch formulaMatch;
 			if (!compositionMatch.getSatisfiedAmount().isZero()) {

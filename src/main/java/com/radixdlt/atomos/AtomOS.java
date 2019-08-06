@@ -6,11 +6,9 @@ import com.radixdlt.atomos.mapper.ParticleToShardableMapper;
 import com.radixdlt.atomos.mapper.ParticleToShardablesMapper;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.constraintmachine.AtomMetadata;
-import java.util.Arrays;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
 /**
  * Exposes the interface which application particle constraints can be built on top of.
@@ -60,7 +58,11 @@ public interface AtomOS {
 	 * @param <T> type of particle class to add a constraint to
 	 * @return a callback function onto which the constraint will be defined
 	 */
-	<T extends Particle> FungibleTransitionConstraintStub<T> onFungible(Class<T> particleClass, ParticleToAmountMapper<T> particleToAmountMapper);
+	<T extends Particle> FungibleTransitionConstraintStub<T> onFungible(
+		Class<T> particleClass,
+		ParticleToAmountMapper<T> particleToAmountMapper,
+		BiFunction<T, T, Boolean> fungibleEquals
+	);
 
 	<T extends Particle> PayloadParticleClassConstraint<T> onPayload(Class<T> particleClass);
 
@@ -196,12 +198,6 @@ public interface AtomOS {
 	 */
 	interface FungibleTransitionConstraintStub<T extends Particle> {
 		/**
-		 * Define an 'initial' state transition.
-		 * @return self, the callback to define further constraints
-		 */
-		FungibleTransitionConstraint<T> requireInitial(FungibleTransitionInitialConstraint<T> check);
-
-		/**
 		 * Define an 'initial' state transition dependent on another particle state.
 		 * FIXME: this is very obviously a bad interface due to it not working on the fungible level
 		 * FIXME: but good enough for now without a big refactor of the fungible system
@@ -211,42 +207,15 @@ public interface AtomOS {
 			 ParticleClassWithSideEffectConstraintCheck<T, U> constraint);
 
 		/**
-		 * Define a formula of this transition.
-		 *
-		 * @return self, the callback to define further constraints
-		 */
-		FungibleTransitionConstraint<T> requireFrom(FungibleFormula formula);
-
-		/**
 		 * Utility method to define a formula of this transition with a single input.
 		 * Note: For more complicated formulas, use requireFrom(FungibleFormula) directly.
 		 *
 		 * @return self, the callback to define further constraints
 		 */
-		default <U extends Particle> FungibleTransitionConstraint<T> requireFrom(long amount1, Class<U> cls1,
-			FungibleTransitionInputConstraint<U, T> check) {
-			return requireFrom(FungibleFormula.from(Stream.of(
-					new FungibleTransitionMember<>(cls1, check)
-				),
-				FungibleComposition.of(amount1, cls1)
-			));
-		}
-
-		/**
-		 * Utility method to define a formula of this transition with two inputs.
-		 * Note: For more complicated formulas, use requireFrom(FungibleFormula) directly.
-		 *
-		 * @return self, the callback to define further constraints
-		 */
-		default <U extends Particle> FungibleTransitionConstraint<T> requireFrom(long amount1, Class<U> cls1,
-			FungibleTransitionInputConstraint<U, T> check1, long amount2, Class<U> cls2, FungibleTransitionInputConstraint<U, T> check2) {
-			return requireFrom(FungibleFormula.from(Stream.of(
-					new FungibleTransitionMember<>(cls1, check1),
-					new FungibleTransitionMember<>(cls2, check2)
-				),
-				FungibleComposition.of(amount1, cls1, amount2, cls2)
-			));
-		}
+		<U extends Particle> FungibleTransitionConstraint<T> requireFrom(
+			Class<U> cls1,
+			FungibleTransitionInputConstraint<U, T> check
+		);
 	}
 
 	/**
@@ -258,79 +227,15 @@ public interface AtomOS {
 	 */
 	interface FungibleTransitionConstraint<T extends Particle> {
 		/**
-		 * Define a formula of this transition.
-		 *
-		 * @return self, the callback to define further constraints
-		 */
-		FungibleTransitionConstraint<T> orFrom(FungibleFormula formula);
-
-		/**
 		 * Utility method to define a formula of this transition with a single input.
 		 * Note: For more complicated formulas, use requireFrom(FungibleFormula) directly.
 		 *
 		 * @return self, the callback to define further constraints
 		 */
-		default <U extends Particle> FungibleTransitionConstraint<T> orFrom(long amount1, Class<U> cls1,
-			FungibleTransitionInputConstraint<U, T> check) {
-			return orFrom(FungibleFormula.from(Stream.of(
-					new FungibleTransitionMember<>(cls1, check)
-				),
-				FungibleComposition.of(amount1, cls1)
-			));
-		}
-
-
-		/**
-		 * Utility method to define a formula of this transition with a single input.
-		 * Note: For more complicated formulas, use requireFrom(FungibleFormula) directly.
-		 *
-		 * @return self, the callback to define further constraints
-		 */
-		default <U extends Particle> FungibleTransitionConstraint<T> orFrom(long amount1, Class<U> cls1,
-			FungibleTransitionInputConstraint<U, T> check0, FungibleTransitionInputConstraint<U, T> check1) {
-			return orFrom(FungibleFormula.from(Stream.of(
-					new FungibleTransitionMember<>(cls1, (u, t, meta) -> Result.combine(
-						check0.apply(u, (T) t, meta),
-						check1.apply(u, (T) t, meta)
-					))
-				),
-				FungibleComposition.of(amount1, cls1)
-			));
-		}
-
-
-		/**
-		 * Utility method to define a formula of this transition with a single input.
-		 * Note: For more complicated formulas, use requireFrom(FungibleFormula) directly.
-		 *
-		 * @return self, the callback to define further constraints
-		 */
-		default <U extends Particle> FungibleTransitionConstraint<T> orFrom(long amount1, Class<U> cls1,
-			FungibleTransitionInputConstraint<U, T>... checks) {
-			return orFrom(FungibleFormula.from(Stream.of(
-					new FungibleTransitionMember<>(cls1, (u, t, meta) -> Result.combine(
-						Arrays.stream(checks).map(check -> check.apply(u, (T) t, meta))
-					))
-				),
-				FungibleComposition.of(amount1, cls1)
-			));
-		}
-
-		/**
-		 * Utility method to define a formula of this transition with two inputs.
-		 * Note: For more complicated formulas, use requireFrom(FungibleFormula) directly.
-		 *
-		 * @return self, the callback to define further constraints
-		 */
-		default <U extends Particle> FungibleTransitionConstraint<T> orFrom(long amount1, Class<U> cls1,
-			FungibleTransitionInputConstraint<U, T> check1, long amount2, Class<U> cls2, FungibleTransitionInputConstraint<U, T> check2) {
-			return orFrom(FungibleFormula.from(Stream.of(
-					new FungibleTransitionMember<>(cls1, check1),
-					new FungibleTransitionMember<>(cls2, check2)
-				),
-				FungibleComposition.of(amount1, cls1, amount2, cls2)
-			));
-		}
+		<U extends Particle> FungibleTransitionConstraint<T> orFrom(
+			Class<U> cls1,
+			FungibleTransitionInputConstraint<U, T> check
+		);
 	}
 
 }
