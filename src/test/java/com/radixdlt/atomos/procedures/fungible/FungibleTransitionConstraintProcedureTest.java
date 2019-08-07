@@ -28,6 +28,10 @@ public class FungibleTransitionConstraintProcedureTest {
 		}
 	}
 
+	private static class Fungible2 extends Particle {
+	}
+
+
 	@Test
 	public void when_validating_a_simple_fungible_transfer__then_validation_should_succeed() {
 		Map<Class<? extends Particle>, FungibleTransition<? extends Particle>> transitions = ImmutableMap.of(
@@ -113,6 +117,52 @@ public class FungibleTransitionConstraintProcedureTest {
 				SpunParticle.down(mock(Fungible.class)),
 				SpunParticle.up(mock(Fungible.class)),
 				SpunParticle.up(mock(Fungible.class))
+			),
+			mock(AtomMetadata.class)
+		);
+
+		assertThat(errs).isEmpty();
+	}
+
+	@Test
+	public void when_validating_an_initial_with_fungible_with_missing_initial__then_validation_should_fail() {
+		Map<Class<? extends Particle>, FungibleTransition<? extends Particle>> transitions = ImmutableMap.of(
+			Fungible.class,
+			FungibleTransition.<Fungible>build()
+				.to(Fungible.class, f -> UInt256.ONE)
+				.initialWith(Fungible2.class, (a, b, c) -> Result.success())
+				.from(Fungible.class, (a, b) -> Result.success(), (a, b) -> true)
+				.build()
+		);
+
+		FungibleTransitionConstraintProcedure procedure = new FungibleTransitionConstraintProcedure(transitions);
+		Stream<ProcedureError> errs = procedure.validate(
+			ParticleGroup.of(
+				SpunParticle.up(mock(Fungible.class))
+			),
+			mock(AtomMetadata.class)
+		);
+
+		assertThat(errs).isNotEmpty();
+	}
+
+
+	@Test
+	public void when_validating_an_initial_with_fungible_with_initial__then_validation_should_succeed() {
+		Map<Class<? extends Particle>, FungibleTransition<? extends Particle>> transitions = ImmutableMap.of(
+			Fungible.class,
+			FungibleTransition.<Fungible>build()
+				.to(Fungible.class, f -> UInt256.ONE)
+				.initialWith(Fungible2.class, (a, b, c) -> Result.success())
+				.from(Fungible.class, (a, b) -> Result.success(), (a, b) -> true)
+				.build()
+		);
+
+		FungibleTransitionConstraintProcedure procedure = new FungibleTransitionConstraintProcedure(transitions);
+		Stream<ProcedureError> errs = procedure.validate(
+			ParticleGroup.of(
+				SpunParticle.up(mock(Fungible.class)),
+				SpunParticle.up(mock(Fungible2.class))
 			),
 			mock(AtomMetadata.class)
 		);
