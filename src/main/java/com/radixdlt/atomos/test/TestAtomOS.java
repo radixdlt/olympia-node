@@ -97,16 +97,15 @@ public class TestAtomOS implements AtomOS {
 
 			@Override
 			public <U extends Particle> FungibleTransitionConstraint<T> requireFrom(
-				Class<U> cls1,
-				WitnessValidator<U> check,
+				Class<U> particleClass,
+				WitnessValidator<U> witnessValidator,
 				BiPredicate<U, T> transition
 			) {
 				if (pendingFungibleTransition == null) {
 					throw new IllegalStateException("Attempt to add formula to finished fungible transition to " + particleClass);
 				}
 
-				FungibleFormula formula = new FungibleFormula(cls1, check, transition);
-				transitionBuilder.addFormula(formula);
+				transitionBuilder.addFormula(particleClass, witnessValidator, transition);
 				return this::requireFrom;
 			}
 		};

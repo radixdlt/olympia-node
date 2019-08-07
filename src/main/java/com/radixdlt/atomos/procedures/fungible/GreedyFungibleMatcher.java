@@ -128,8 +128,11 @@ class GreedyFungibleMatcher implements FungibleMatcher {
 		List<FungibleFormulaMatch> matchedFormulas = new ArrayList<>();
 		List<FungibleFormulaMatchInformation> matchInformation = new ArrayList<>();
 
+
+		Map<Class<? extends Particle>, FungibleFormula> fromParticleFormulas = transition.getParticleClassToFormulaMap();
+
 		for (Fungible output : fungibleOutputs.fungibles().collect(Collectors.toList())) {
-			List<FungibleFormulaMatchResult> outputMatchResults = formulaMatcher.match(transition.getFormulas(), fungibleInputs, output, metadata);
+			List<FungibleFormulaMatchResult> outputMatchResults = formulaMatcher.match(fromParticleFormulas, fungibleInputs, output, metadata);
 			for (FungibleFormulaMatchResult outputMatchResult : outputMatchResults) {
 				if (outputMatchResult.hasMatch()) {
 					matchedFormulas.add(outputMatchResult.getMatch());
@@ -201,7 +204,10 @@ class GreedyFungibleMatcher implements FungibleMatcher {
 	 */
 	// @PackageLocalForTest
 	interface FungibleFormulasMatcher {
-		List<FungibleFormulaMatchResult> match(List<FungibleFormula> possibleFormulas, FungibleInputs fungibleInputs, Fungible output,
+		List<FungibleFormulaMatchResult> match(
+			Map<Class<? extends Particle>, FungibleFormula> fromParticleFormulas,
+			FungibleInputs fungibleInputs,
+			Fungible output,
 			AtomMetadata metadata);
 	}
 
@@ -246,7 +252,6 @@ class GreedyFungibleMatcher implements FungibleMatcher {
 	/**
 	 * Get the applicable formulas from possible formulas given a output amount and a set of fungibleInputs
 	 *
-	 * @param possibleFormulas The possible formulas
 	 * @param fungibleInputs      The remaining fungibles to be used
 	 * @param output         The output to match
 	 * @param metadata         The atom metadata
@@ -254,7 +259,7 @@ class GreedyFungibleMatcher implements FungibleMatcher {
 	 */
 	// @PackageLocalForTest
 	static List<FungibleFormulaMatchResult> matchFormulas(
-		List<FungibleFormula> possibleFormulas,
+		Map<Class<? extends Particle>, FungibleFormula> fromParticleFormulas,
 		FungibleInputs fungibleInputs,
 		Fungible output,
 		AtomMetadata metadata
@@ -262,8 +267,6 @@ class GreedyFungibleMatcher implements FungibleMatcher {
 		List<FungibleFormulaMatchResult> formulaMatchResults = new ArrayList<>();
 		UInt256 remainingConsumer = output.getAmount();
 
-		Map<Class<? extends Particle>, FungibleFormula> fromParticleFormulas = possibleFormulas.stream()
-			.collect(Collectors.toMap(f -> f.particleClass(), f -> f));
 
 		for (Entry<Class<? extends Particle>, FungibleFormula> e : fromParticleFormulas.entrySet()) {
 			if (fungibleInputs.isEmpty() || remainingConsumer.isZero()) {
@@ -271,13 +274,14 @@ class GreedyFungibleMatcher implements FungibleMatcher {
 			}
 
 			FungibleFormula formula = e.getValue();
+			Class<? extends Particle> fromParticleClass = e.getKey();
 
 			Map<Fungible, FungibleFormulaInputOutputVerdict> inputVerdicts = fungibleInputs.fungibles()
 				.collect(Collectors.toMap(input -> input, input -> {
 
 					final Class<? extends Particle> inputClass = input.getParticleClass();
 
-					if (formula.particleClass().isAssignableFrom(inputClass)) {
+					if (fromParticleClass.isAssignableFrom(inputClass)) {
 						Result checkResult = ((WitnessValidator) formula.getWitnessValidator()).apply(input.getParticle(), metadata);
 						boolean transitionCheck = formula.getTransition().test(input.getParticle(), output.getParticle());
 
@@ -294,7 +298,7 @@ class GreedyFungibleMatcher implements FungibleMatcher {
 				.collect(Collectors.toMap(Map.Entry::getKey, entry -> Optional.ofNullable(entry.getValue().approvedClass)));
 
 			FungibleInputs.CompositionMatch compositionMatch =
-				fungibleInputs.match(output.getAmount(), formula.particleClass(), approvedClasses);
+				fungibleInputs.match(output.getAmount(), fromParticleClass, approvedClasses);
 
 			FungibleFormulaMatch formulaMatch;
 			if (!compositionMatch.getSatisfiedAmount().isZero()) {

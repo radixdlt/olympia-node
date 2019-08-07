@@ -6,6 +6,7 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.powermock.api.mockito.PowerMockito.when;
 
+import com.google.common.collect.Maps;
 import com.radixdlt.atomos.FungibleFormula;
 import com.radixdlt.atomos.FungibleTransition;
 import com.radixdlt.atomos.Result;
@@ -348,7 +349,7 @@ public class GreedyFungibleMatcherTest {
 	@Test
 	public void testMatchInitialExact() {
 		FungibleTransition<Helium> transitionHelium = FungibleTransition.from(
-			Helium.class, o -> UInt256.FIVE, Lists.newArrayList(), (to, meta) -> Result.success());
+			Helium.class, o -> UInt256.FIVE, Maps.newHashMap(), (to, meta) -> Result.success());
 		Fungible outputHelium1 = new Fungible(mock(Helium.class), Helium.class, UInt256.ONE, 5);
 		Fungible outputHelium2 = new Fungible(mock(Helium.class), Helium.class, UInt256.TWO, 6);
 
@@ -367,7 +368,7 @@ public class GreedyFungibleMatcherTest {
 	@Test
 	public void testMatchInitialExactWithOther() {
 		FungibleTransition<Helium> transitionHelium = FungibleTransition.from(
-			Helium.class, o -> UInt256.FIVE, Lists.newArrayList(), (to, meta) -> Result.success());
+			Helium.class, o -> UInt256.FIVE, Maps.newHashMap(), (to, meta) -> Result.success());
 		Fungible outputHelium1 = new Fungible(mock(Helium.class), Helium.class, UInt256.ONE, 5);
 		Fungible outputHelium2 = new Fungible(mock(Helium.class), Helium.class, UInt256.TWO, 6);
 		Fungible outputOxygen3 = new Fungible(mock(Oxygen.class), Oxygen.class, UInt256.NINE, 7);

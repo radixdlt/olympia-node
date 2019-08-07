@@ -1,6 +1,9 @@
 package com.radixdlt.atomos;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMap.Builder;
 import com.radixdlt.atomos.AtomOS.ParticleClassWithSideEffectConstraintCheck;
+import com.radixdlt.atomos.AtomOS.WitnessValidator;
 import com.radixdlt.atomos.mapper.ParticleToAmountMapper;
 import com.radixdlt.atomos.procedures.fungible.Fungible;
 import com.radixdlt.atoms.Particle;
@@ -8,6 +11,7 @@ import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.AtomMetadata;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -23,24 +27,20 @@ import java.util.stream.Collectors;
 public final class FungibleTransition<T extends Particle> {
 	private final Class<T> outputParticleClass;
 	private final ParticleToAmountMapper<T> outputParticleToAmountMapper;
-	private final Set<Class<? extends Particle>> allInputs;
-	private final List<FungibleFormula> formulas;
 	private final AtomOS.FungibleTransitionInitialConstraint<T> initialConstraint;
 	private final Pair<Class<? extends Particle>, ParticleClassWithSideEffectConstraintCheck<T, ?>> initialWithConstraint;
+	private final Map<Class<? extends Particle>, FungibleFormula> particleTypeToFormulasMap;
 
 	private FungibleTransition(
 		Class<T> outputParticleClass,
 		ParticleToAmountMapper<T> outputParticleToAmountMapper,
-		List<FungibleFormula> formulas,
+		Map<Class<? extends Particle>, FungibleFormula> particleTypeToFormulasMap,
 		AtomOS.FungibleTransitionInitialConstraint<T> initialConstraint,
 		Pair<Class<? extends Particle>, ParticleClassWithSideEffectConstraintCheck<T, ?>> initialWithConstraint
 	) {
 		this.outputParticleClass = outputParticleClass;
 		this.outputParticleToAmountMapper = outputParticleToAmountMapper;
-		this.formulas = formulas;
-		this.allInputs = formulas.stream()
-			.map(FungibleFormula::particleClass)
-			.collect(Collectors.toSet());
+		this.particleTypeToFormulasMap = particleTypeToFormulasMap;
 		this.initialConstraint = initialConstraint;
 		this.initialWithConstraint = initialWithConstraint;
 	}
@@ -54,7 +54,7 @@ public final class FungibleTransition<T extends Particle> {
 	}
 
 	public Set<Class<? extends Particle>> getAllInputs() {
-		return this.allInputs;
+		return this.particleTypeToFormulasMap.keySet();
 	}
 
 	// Don't check initialWithConstraint here as it requires a lot more info and state of atom
@@ -72,8 +72,8 @@ public final class FungibleTransition<T extends Particle> {
 		return new FungibleTransitionInitialVerdict(to, this.initialConstraint.apply((T) to.getParticle(), metadata));
 	}
 
-	public List<FungibleFormula> getFormulas() {
-		return this.formulas;
+	public Map<Class<? extends Particle>, FungibleFormula> getParticleClassToFormulaMap() {
+		return this.particleTypeToFormulasMap;
 	}
 
 	public Pair<Class<? extends Particle>, ParticleClassWithSideEffectConstraintCheck<T, ?>> getInitialWithConstraint() {
@@ -87,46 +87,47 @@ public final class FungibleTransition<T extends Particle> {
 	public static <T extends Particle> FungibleTransition<T> from(
 		Class<T> outputClass,
 		ParticleToAmountMapper<T> outputToAmountMapper,
-		List<FungibleFormula> formulas) {
-		return from(outputClass, outputToAmountMapper, formulas, null, null);
+		Map<Class<? extends Particle>, FungibleFormula> particleTypeToFormulasMap
+	) {
+		return from(outputClass, outputToAmountMapper, particleTypeToFormulasMap, null, null);
 	}
 
 	public static <T extends Particle> FungibleTransition<T> from(
 		Class<T> outputClass,
 		ParticleToAmountMapper<T> outputToAmountMapper,
-		List<FungibleFormula> formulas,
+		Map<Class<? extends Particle>, FungibleFormula> particleTypeToFormulasMap,
 		AtomOS.FungibleTransitionInitialConstraint<T> initialConstraint
 	) {
 
 		Objects.requireNonNull(outputClass, "outputClass is required");
 		Objects.requireNonNull(outputToAmountMapper, "outputToAmountMapper is required");
-		Objects.requireNonNull(formulas, "formulas is required");
+		Objects.requireNonNull(particleTypeToFormulasMap);
 
-		if (formulas.isEmpty() && initialConstraint == null) {
+		if (particleTypeToFormulasMap.isEmpty() && initialConstraint == null) {
 			throw new IllegalArgumentException("One of formulas or initial constraint must be defined");
 		}
 
-		return new FungibleTransition<>(outputClass, outputToAmountMapper, formulas, initialConstraint, null);
+		return new FungibleTransition<>(outputClass, outputToAmountMapper, particleTypeToFormulasMap, initialConstraint, null);
 	}
 
 
 	public static <T extends Particle> FungibleTransition<T> from(
 		Class<T> outputClass,
 		ParticleToAmountMapper<T> outputToAmountMapper,
-		List<FungibleFormula> formulas,
+		Map<Class<? extends Particle>, FungibleFormula> particleTypeToFormulasMap,
 		AtomOS.FungibleTransitionInitialConstraint<T> initialConstraint,
 		Pair<Class<? extends Particle>, ParticleClassWithSideEffectConstraintCheck<T, ?>> initialWithConstraint
 	) {
 
 		Objects.requireNonNull(outputClass, "outputClass is required");
 		Objects.requireNonNull(outputToAmountMapper, "outputToAmountMapper is required");
-		Objects.requireNonNull(formulas, "formulas is required");
+		Objects.requireNonNull(particleTypeToFormulasMap);
 
-		if (formulas.isEmpty() && initialConstraint == null) {
+		if (particleTypeToFormulasMap.isEmpty() && initialConstraint == null) {
 			throw new IllegalArgumentException("One of formulas or initial constraint must be defined");
 		}
 
-		return new FungibleTransition<>(outputClass, outputToAmountMapper, formulas, initialConstraint, initialWithConstraint);
+		return new FungibleTransition<>(outputClass, outputToAmountMapper, particleTypeToFormulasMap, initialConstraint, initialWithConstraint);
 	}
 
 	public static <T extends Particle> Builder<T> build() {
@@ -165,7 +166,7 @@ public final class FungibleTransition<T extends Particle> {
 	public static class Builder<T extends Particle> {
 		private Class<T> outputParticleClass;
 		private ParticleToAmountMapper<T> outputParticleToAmountMapper;
-		private final List<FungibleFormula> formulas = new ArrayList<>();
+		private final ImmutableMap.Builder<Class<? extends Particle>, FungibleFormula> particleTypeToFormulasMapBuilder = new ImmutableMap.Builder<>();
 		private AtomOS.FungibleTransitionInitialConstraint<T> initialConstraint;
 		private Pair<Class<? extends Particle>, ParticleClassWithSideEffectConstraintCheck<T, ?>> initialWithConstraint;
 
@@ -193,9 +194,12 @@ public final class FungibleTransition<T extends Particle> {
 			return this;
 		}
 
-		public Builder<T> addFormula(FungibleFormula formula) {
-			Objects.requireNonNull(formula, "formula is required");
-			this.formulas.add(formula);
+		public <U extends Particle> Builder<T> addFormula(
+			Class<U> fromParticleClass,
+			WitnessValidator<U> witnessValidator,
+			BiPredicate<U, T> transition
+		) {
+			particleTypeToFormulasMapBuilder.put(fromParticleClass, new FungibleFormula(witnessValidator, transition));
 
 			return this;
 		}
@@ -204,14 +208,16 @@ public final class FungibleTransition<T extends Particle> {
 			Objects.requireNonNull(outputParticleClass, "Unfinished transition, output class must be defined.");
 			Objects.requireNonNull(outputParticleToAmountMapper, "Unfinished transition, output amount mapper must be defined.");
 
-			if (formulas.isEmpty() && initialConstraint == null && initialWithConstraint == null) {
+			Map<Class<? extends Particle>, FungibleFormula> particleTypeToFormulasMap = particleTypeToFormulasMapBuilder.build();
+
+			if (particleTypeToFormulasMap.isEmpty() && initialConstraint == null && initialWithConstraint == null) {
 				throw new IllegalStateException("Unfinished transition, no formulas added and no initial constraint defined.");
 			}
 
 			return FungibleTransition.from(
 				outputParticleClass,
 				outputParticleToAmountMapper,
-				formulas,
+				particleTypeToFormulasMap,
 				initialConstraint,
 				initialWithConstraint
 			);
