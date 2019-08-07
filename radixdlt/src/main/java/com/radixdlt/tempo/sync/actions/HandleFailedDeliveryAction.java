@@ -5,11 +5,11 @@ import com.radixdlt.common.AID;
 import com.radixdlt.tempo.sync.SyncAction;
 import org.radix.network.peers.Peer;
 
-public class FailedDeliveryAction implements SyncAction {
+public class HandleFailedDeliveryAction implements SyncAction {
 	private final ImmutableList<AID> aids;
 	private final Peer peer;
 
-	public FailedDeliveryAction(ImmutableList<AID> aids, Peer peer) {
+	public HandleFailedDeliveryAction(ImmutableList<AID> aids, Peer peer) {
 		this.aids = aids;
 		this.peer = peer;
 	}

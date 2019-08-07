@@ -6,8 +6,7 @@ import com.radixdlt.common.AID;
 import com.radixdlt.tempo.AtomStoreView;
 import com.radixdlt.tempo.sync.SyncAction;
 import com.radixdlt.tempo.sync.SyncEpic;
-import com.radixdlt.tempo.sync.TempoAtomSynchroniser.ScheduledDispatcher;
-import com.radixdlt.tempo.sync.actions.FailedDeliveryAction;
+import com.radixdlt.tempo.sync.actions.HandleFailedDeliveryAction;
 import com.radixdlt.tempo.sync.actions.ReceiveAtomAction;
 import com.radixdlt.tempo.sync.actions.ReceiveDeliveryRequestAction;
 import com.radixdlt.tempo.sync.actions.ReceiveDeliveryResponseAction;
@@ -33,12 +32,10 @@ public class DeliveryEpic implements SyncEpic {
 
 	private final Logger logger = Logging.getLogger("Sync Delivery");
 	private final AtomStoreView store;
-	private final ScheduledDispatcher scheduledDispatcher;
 	private final Set<AID> ongoingDeliveries = Collections.synchronizedSet(new HashSet<>());
 
-	private DeliveryEpic(AtomStoreView store, ScheduledDispatcher scheduledDispatcher) {
+	private DeliveryEpic(AtomStoreView store) {
 		this.store = store;
-		this.scheduledDispatcher = scheduledDispatcher;
 	}
 
 	@Override
@@ -76,8 +73,7 @@ public class DeliveryEpic implements SyncEpic {
 
 				// schedule timeout after which deliveries will be checked
 				TimeoutDeliveryRequestAction timeoutAction = new TimeoutDeliveryRequestAction(sendAction.getAids(), sendAction.getPeer());
-				scheduledDispatcher.schedule(timeoutAction, DELIVERY_REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-				return Stream.of(sendAction);
+				return Stream.of(sendAction, timeoutAction.schedule(DELIVERY_REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS));
 			}
 		} else if (action instanceof TimeoutDeliveryRequestAction) {
 			// once the timeout has elapsed, check if the deliveries were received
@@ -89,7 +85,7 @@ public class DeliveryEpic implements SyncEpic {
 			// if the deliveries weren't received, raise a failed delivery action for the requestor
 			if (!missingAids.isEmpty()) {
 				// TODO where to handle recovery / re-requesting?
-				return Stream.of(new FailedDeliveryAction(missingAids, timeout.getPeer()));
+				return Stream.of(new HandleFailedDeliveryAction(missingAids, timeout.getPeer()));
 			}
 		}
 
@@ -101,27 +97,20 @@ public class DeliveryEpic implements SyncEpic {
 	}
 
 	public static class Builder {
-		private AtomStoreView view;
-		private ScheduledDispatcher scheduledDispatcher;
+		private AtomStoreView storeView;
 
 		private Builder() {
 		}
 
-		public Builder view(AtomStoreView view) {
-			this.view = view;
-			return this;
-		}
-
-		public Builder dispatcher(ScheduledDispatcher dispatcher) {
-			this.scheduledDispatcher = dispatcher;
+		public Builder storeView(AtomStoreView view) {
+			this.storeView = view;
 			return this;
 		}
 
 		public DeliveryEpic build() {
-			Objects.requireNonNull(this.view, "view is required");
-			Objects.requireNonNull(this.scheduledDispatcher, "dispatcher is required");
+			Objects.requireNonNull(this.storeView, "storeView is required");
 
-			return new DeliveryEpic(this.view, this.scheduledDispatcher);
+			return new DeliveryEpic(this.storeView);
 		}
 	}
 }

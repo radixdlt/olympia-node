@@ -267,16 +267,17 @@ public class Radix extends Plugin
 			throw new ModuleStartException("Failure setting up Routing", ex, this);
 		}
 
-		if (Modules.get(RuntimeProperties.class).has("tempo2")) {
+		if (Modules.get(RuntimeProperties.class).get("tempo2", false)) {
 			TempoAtomStore tempoAtomStore = new TempoAtomStore(() -> Modules.get(AtomStore.class));
 			Modules.getInstance().start(Tempo.from(
-				new TempoAtomSynchroniser(
+				TempoAtomSynchroniser.defaultBuilder(
 					tempoAtomStore.asReadOnlyView(),
 					LocalSystem.getInstance(),
 					Messaging.getInstance(),
-					new SimpleEdgeSelector(),
 					new PeerSupplierAdapter(() -> Modules.get(PeerHandler.class))
-				),
+				)
+				.edgeSelector(new SimpleEdgeSelector())
+				.build(),
 				tempoAtomStore,
 				new LocalConflictResolver(LocalSystem.getInstance().getNID())
 			));

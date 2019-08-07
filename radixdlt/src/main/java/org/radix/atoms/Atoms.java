@@ -26,7 +26,7 @@ public class Atoms extends Plugin
 		dependencies.add(AtomSyncStore.class);
 		dependencies.add(ParticleConflictStore.class);
 		dependencies.add(Shards.class);
-		if (!Modules.get(RuntimeProperties.class).has("tempo2.sync")) {
+		if (!Modules.get(RuntimeProperties.class).get("tempo2.sync", false)) {
 			dependencies.add(AtomSync.class);
 		}
 		dependencies.add(ParticleConflictHandler.class);
