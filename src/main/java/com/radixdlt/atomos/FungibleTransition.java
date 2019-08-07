@@ -1,23 +1,16 @@
 package com.radixdlt.atomos;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableMap.Builder;
 import com.radixdlt.atomos.AtomOS.ParticleClassWithSideEffectConstraintCheck;
 import com.radixdlt.atomos.AtomOS.WitnessValidator;
 import com.radixdlt.atomos.mapper.ParticleToAmountMapper;
-import com.radixdlt.atomos.procedures.fungible.Fungible;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.common.Pair;
-import com.radixdlt.constraintmachine.AtomMetadata;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
-import java.util.stream.Collectors;
 
 /**
  * A fungible transition *from* one or multiple Particles types *to* a single Particle type
@@ -52,16 +45,6 @@ public final class FungibleTransition<T extends Particle> {
 
 	public Set<Class<? extends Particle>> getAllInputs() {
 		return this.particleTypeToFormulasMap.keySet();
-	}
-
-	// Don't check initialWithConstraint here as it requires a lot more info and state of atom
-	// FIXME: cleanup/refactor this mess!
-	public FungibleTransitionInitialVerdict checkInitial(Fungible to, AtomMetadata metadata) {
-		if (!this.hasInitial()) {
-			throw new IllegalStateException("Transition does not have initial to check.");
-		}
-
-		return new FungibleTransitionInitialVerdict(to, Result.success());
 	}
 
 	public Map<Class<? extends Particle>, FungibleFormula> getParticleClassToFormulaMap() {
@@ -120,16 +103,10 @@ public final class FungibleTransition<T extends Particle> {
 	 * The verdict of trying a fungible as an initial to this transition
 	 */
 	public static class FungibleTransitionInitialVerdict {
-		private final Fungible output;
 		private final Result result;
 
-		private FungibleTransitionInitialVerdict(Fungible output, Result result) {
-			this.output = Objects.requireNonNull(output);
+		private FungibleTransitionInitialVerdict(Result result) {
 			this.result = Objects.requireNonNull(result);
-		}
-
-		public Fungible getOutput() {
-			return this.output;
 		}
 
 		public boolean isApproval() {
