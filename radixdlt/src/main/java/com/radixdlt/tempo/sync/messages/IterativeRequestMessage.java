@@ -6,13 +6,13 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.tempo.sync.IterativeCursor;
 import org.radix.network.messaging.Message;
-import org.radix.shards.ShardRange;
+import org.radix.shards.ShardSpace;
 
 @SerializerId2("tempo.sync.iterative.request")
 public class IterativeRequestMessage extends Message {
 	@JsonProperty("shards")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private ShardRange shards;
+	private ShardSpace shardSpace;
 
 	@JsonProperty("cursor")
 	@DsonOutput(DsonOutput.Output.ALL)
@@ -22,13 +22,13 @@ public class IterativeRequestMessage extends Message {
 		// Serializer only
 	}
 
-	public IterativeRequestMessage(ShardRange shards, IterativeCursor cursor) {
-		this.shards = shards;
+	public IterativeRequestMessage(ShardSpace shardSpace, IterativeCursor cursor) {
+		this.shardSpace = shardSpace;
 		this.cursor = cursor;
 	}
 
-	public ShardRange getShards() {
-		return shards;
+	public ShardSpace getShardSpace() {
+		return shardSpace;
 	}
 
 	public IterativeCursor getCursor() {

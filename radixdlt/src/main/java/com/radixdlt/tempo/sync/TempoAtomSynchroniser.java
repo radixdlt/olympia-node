@@ -26,7 +26,9 @@ import com.radixdlt.tempo.sync.actions.SendPushAction;
 import com.radixdlt.tempo.sync.actions.SyncAtomAction;
 import com.radixdlt.tempo.sync.epics.ActiveSyncEpic;
 import com.radixdlt.tempo.sync.epics.DeliveryEpic;
+import com.radixdlt.tempo.sync.epics.IterativeSyncEpic;
 import com.radixdlt.tempo.sync.epics.MessagingEpic;
+import com.radixdlt.tempo.sync.epics.PassivePeersEpic;
 import com.radixdlt.tempo.sync.messages.DeliveryRequestMessage;
 import com.radixdlt.tempo.sync.messages.DeliveryResponseMessage;
 import com.radixdlt.tempo.sync.messages.IterativeRequestMessage;
@@ -100,10 +102,6 @@ public class TempoAtomSynchroniser implements AtomSynchroniser {
 		while (true) {
 			try {
 				SyncAction action = syncActions.take();
-				if (logger.hasLevel(Logging.DEBUG)) {
-					logger.debug("Queuing " + action.toString());
-				}
-
 				this.executor.execute(() -> this.execute(action));
 			} catch (InterruptedException e) {
 				// exit if interrupted
@@ -115,11 +113,19 @@ public class TempoAtomSynchroniser implements AtomSynchroniser {
 
 	private void execute(SyncAction action) {
 		if (logger.hasLevel(Logging.DEBUG)) {
-			logger.debug("Executing " + action.toString());
+			logger.debug("Executing " + action.getClass().getSimpleName());
 		}
 
 		List<SyncAction> nextActions = syncEpics.stream()
-			.flatMap(epic -> epic.epic(action))
+			.flatMap(epic -> {
+				try {
+					return epic.epic(action);
+				} catch (Exception e) {
+					logger.error(String.format("Error while executing %s in %s: '%s'",
+						action.getClass().getSimpleName(), epic.getClass().getSimpleName()), e);
+					return Stream.empty();
+				}
+			})
 			.collect(Collectors.toList());
 		nextActions.forEach(this::dispatch);
 	}
@@ -139,9 +145,6 @@ public class TempoAtomSynchroniser implements AtomSynchroniser {
 	}
 
 	private void dispatch(SyncAction action) {
-		if (logger.hasLevel(Logging.DEBUG)) {
-			logger.debug("Dispatching " + action.toString());
-		}
 		if (!this.syncActions.add(action)) {
 			// TODO handle full action queue better
 			throw new IllegalStateException("Action queue full");
@@ -237,20 +240,32 @@ public class TempoAtomSynchroniser implements AtomSynchroniser {
 				DeliveryEpic.builder()
 				.storeView(storeView)
 				.build())
+			.addEpic(
+				PassivePeersEpic.builder()
+				.peerSupplier(peerSupplier)
+				.build()
+			)
+			.addEpic(
+				IterativeSyncEpic.builder()
+				.shardSpaceSupplier(localSystem::getShards)
+				.storeView(storeView)
+				.build()
+			)
 			.addEpicBuilder(synchroniser ->
 				MessagingEpic.builder()
 				.messager(messager)
-				.addInbound("atom.sync2.delivery.request", DeliveryRequestMessage.class, ReceiveDeliveryRequestAction::from)
+				.addInbound("tempo.sync.delivery.request", DeliveryRequestMessage.class, ReceiveDeliveryRequestAction::from)
 				.addOutbound(SendDeliveryRequestAction.class, SendDeliveryRequestAction::toMessage, SendDeliveryRequestAction::getPeer)
-				.addInbound("atom.sync2.delivery.response", DeliveryResponseMessage.class, ReceiveDeliveryResponseAction::from)
+				.addInbound("tempo.sync.delivery.response", DeliveryResponseMessage.class, ReceiveDeliveryResponseAction::from)
 				.addOutbound(SendDeliveryResponseAction.class, SendDeliveryResponseAction::toMessage, SendDeliveryResponseAction::getPeer)
-				.addInbound("atom.sync2.iterative.request", IterativeRequestMessage.class, ReceiveIterativeRequestAction::from)
+				.addInbound("tempo.sync.iterative.request", IterativeRequestMessage.class, ReceiveIterativeRequestAction::from)
 				.addOutbound(SendIterativeRequestAction.class, SendIterativeRequestAction::toMessage, SendIterativeRequestAction::getPeer)
-				.addInbound("atom.sync2.iterative.response", IterativeResponseMessage.class, ReceiveIterativeResponseAction::from)
+				.addInbound("tempo.sync.iterative.response", IterativeResponseMessage.class, ReceiveIterativeResponseAction::from)
 				.addOutbound(SendIterativeResponseAction.class, SendIterativeResponseAction::toMessage, SendIterativeResponseAction::getPeer)
-				.addInbound("atom.sync2.push", PushMessage.class, ReceivePushAction::from)
+				.addInbound("tempo.sync.push", PushMessage.class, ReceivePushAction::from)
 				.addOutbound(SendPushAction.class, SendPushAction::toMessage, SendPushAction::getPeer)
-				.build(synchroniser::dispatch));
+				.build(synchroniser::dispatch)
+			);
 	}
 
 	public static class Builder {

@@ -4,9 +4,15 @@ import com.google.common.collect.ImmutableMap;
 import com.radixdlt.tempo.sync.SyncAction;
 import com.radixdlt.tempo.sync.SyncEpic;
 import com.radixdlt.tempo.sync.TempoAtomSynchroniser.ImmediateDispatcher;
+import org.radix.logging.Logger;
+import org.radix.logging.Logging;
+import org.radix.network.Network;
+import org.radix.network.Protocol;
 import org.radix.network.messaging.Message;
 import org.radix.network.messaging.Messaging;
 import org.radix.network.peers.Peer;
+import org.radix.network.peers.UDPPeer;
+import org.radix.state.State;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -17,6 +23,8 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 public class MessagingEpic implements SyncEpic {
+	private static final Logger logger = Logging.getLogger("Sync");
+
 	private final Messaging messager;
 	private final ImmutableMap<String, BiFunction<Message, Peer, SyncAction>> inboundMappers;
 	private final ImmutableMap<Class<? extends SyncAction>, Function<SyncAction, Message>> outboundMessageMappers;
@@ -37,6 +45,10 @@ public class MessagingEpic implements SyncEpic {
 		if (outboundMessageMappers.containsKey(action.getClass())) {
 			Message message = outboundMessageMappers.get(action.getClass()).apply(action);
 			Peer peer = outboundPeerMappers.get(action.getClass()).apply(action);
+			if (logger.hasLevel(Logging.DEBUG)) {
+				logger.debug(String.format("Forwarding outbound %s for '%s' as '%s'",
+					action.getClass().getSimpleName(), peer, message.getCommand()));
+			}
 
 			sendMessage(message, peer);
 		}
@@ -46,7 +58,8 @@ public class MessagingEpic implements SyncEpic {
 
 	private void sendMessage(Message message, Peer peer) {
 		try {
-			messager.send(message, peer);
+			UDPPeer udpPeer = Network.getInstance().get(peer.getURI(), Protocol.UDP, State.CONNECTED);
+			messager.send(message, udpPeer);
 		} catch (IOException e) {
 			// TODO error handling
 		}
@@ -89,7 +102,13 @@ public class MessagingEpic implements SyncEpic {
 			for (String command : inboundMappers.keySet()) {
 				this.messager.register(command, (message, peer) -> {
 					BiFunction<Message, Peer, SyncAction> messageActionMapper = inboundMappers.get(command);
-					dispatcher.dispatch(messageActionMapper.apply(message, peer));
+					SyncAction action = messageActionMapper.apply(message, peer);
+					if (logger.hasLevel(Logging.DEBUG)) {
+						logger.debug(String.format("Forwarding inbound '%s' from '%s' to %s",
+							command, peer, action));
+					}
+
+					dispatcher.dispatch(action);
 				});
 			}
 

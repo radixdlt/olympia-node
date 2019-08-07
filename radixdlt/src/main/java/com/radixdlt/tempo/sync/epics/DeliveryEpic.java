@@ -30,7 +30,7 @@ import java.util.stream.Stream;
 public class DeliveryEpic implements SyncEpic {
 	private static final int DELIVERY_REQUEST_TIMEOUT_SECONDS = 5;
 
-	private final Logger logger = Logging.getLogger("Sync Delivery");
+	private final Logger logger = Logging.getLogger("Sync");
 	private final AtomStoreView store;
 	private final Set<AID> ongoingDeliveries = Collections.synchronizedSet(new HashSet<>());
 

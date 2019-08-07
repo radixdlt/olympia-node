@@ -43,4 +43,6 @@ public final class IterativeCursor {
 	public IterativeCursor getNext() {
 		return next;
 	}
+
+
 }

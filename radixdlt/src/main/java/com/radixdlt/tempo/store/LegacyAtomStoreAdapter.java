@@ -20,7 +20,7 @@ import org.radix.atoms.PreparedAtom;
 import org.radix.database.exceptions.DatabaseException;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.shards.ShardRange;
+import org.radix.shards.ShardSpace;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -128,7 +128,7 @@ public class LegacyAtomStoreAdapter implements AtomStore {
 		}
 
 		@Override
-		public Pair<ImmutableList<AID>, IterativeCursor> getNext(IterativeCursor cursor, int limit, ShardRange shardRange) {
+		public Pair<ImmutableList<AID>, IterativeCursor> getNext(IterativeCursor cursor, int limit, ShardSpace shardSpace) {
 			throw new UnsupportedOperationException("Not implemented");
 		}
 	}

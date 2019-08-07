@@ -158,7 +158,9 @@ public class Radix extends Plugin
 		 */
 		try
 		{
-			Modules.getInstance().start(new RTPService());
+			if (!Modules.get(RuntimeProperties.class).has("rtp.disable")) {
+				Modules.getInstance().start(new RTPService());
+			}
 		}
 		catch (Exception ex)
 		{

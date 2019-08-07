@@ -430,7 +430,7 @@ public class TempoAtomStore extends DatabaseStore implements AtomStore {
 	}
 
 	// FIXME awful performance
-	public Pair<ImmutableList<AID>, IterativeCursor> getNext(IterativeCursor syncCursor, int limit, ShardRange shardRange) {
+	public Pair<ImmutableList<AID>, IterativeCursor> getNext(IterativeCursor syncCursor, int limit, ShardSpace shardSpace) {
 		List<AID> aids = Lists.newArrayList();
 		long start = SystemProfiler.getInstance().begin();
 		long position = syncCursor.getLogicalClockPosition();
@@ -443,7 +443,7 @@ public class TempoAtomStore extends DatabaseStore implements AtomStore {
 
 			while (status == OperationStatus.SUCCESS) {
 				TempoAtom atom = Serialization.getDefault().fromDson(value.getData(), TempoAtom.class);
-				if (shardRange.intersects(atom.getShards())) {
+				if (shardSpace.intersects(atom.getShards())) {
 					position = Longs.fromByteArray(search.getData());
 					aids.add(atom.getAID());
 
@@ -465,7 +465,7 @@ public class TempoAtomStore extends DatabaseStore implements AtomStore {
 			nextCursor = (new IterativeCursor(position, null));
 		}
 
-		return Pair.of(ImmutableList.copyOf(aids), nextCursor);
+		return Pair.of(ImmutableList.copyOf(aids), new IterativeCursor(syncCursor.getLogicalClockPosition(), nextCursor));
 	}
 
 	public LedgerCursor search(Type type, LedgerIndex index, LedgerSearchMode mode) {
@@ -729,8 +729,8 @@ public class TempoAtomStore extends DatabaseStore implements AtomStore {
 		}
 
 		@Override
-		public Pair<ImmutableList<AID>, IterativeCursor> getNext(IterativeCursor cursor, int limit, ShardRange shardRange) {
-			return TempoAtomStore.this.getNext(cursor, limit, shardRange);
+		public Pair<ImmutableList<AID>, IterativeCursor> getNext(IterativeCursor cursor, int limit, ShardSpace shardSpace) {
+			return TempoAtomStore.this.getNext(cursor, limit, shardSpace);
 		}
 	}
 }

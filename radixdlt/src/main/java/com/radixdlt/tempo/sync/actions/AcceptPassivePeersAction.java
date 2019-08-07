@@ -4,10 +4,10 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.tempo.sync.SyncAction;
 import org.radix.network.peers.Peer;
 
-public class UpdatePassivePeersAction implements SyncAction {
+public class AcceptPassivePeersAction implements SyncAction {
 	private final ImmutableSet<Peer> passivePeers;
 
-	public UpdatePassivePeersAction(ImmutableSet<Peer> passivePeers) {
+	public AcceptPassivePeersAction(ImmutableSet<Peer> passivePeers) {
 		this.passivePeers = passivePeers;
 	}
 

@@ -4,22 +4,21 @@ import com.radixdlt.tempo.sync.IterativeCursor;
 import com.radixdlt.tempo.sync.SyncAction;
 import com.radixdlt.tempo.sync.messages.IterativeRequestMessage;
 import org.radix.network.peers.Peer;
-import org.radix.shards.ShardRange;
 import org.radix.shards.ShardSpace;
 
 public class ReceiveIterativeRequestAction implements SyncAction {
-	private final ShardRange shards;
+	private final ShardSpace shardSpace;
 	private final IterativeCursor cursor;
 	private final Peer peer;
 
-	public ReceiveIterativeRequestAction(ShardRange shards, IterativeCursor cursor, Peer peer) {
-		this.shards = shards;
+	public ReceiveIterativeRequestAction(ShardSpace shardSpace, IterativeCursor cursor, Peer peer) {
+		this.shardSpace = shardSpace;
 		this.cursor = cursor;
 		this.peer = peer;
 	}
 
-	public ShardRange getShards() {
-		return shards;
+	public ShardSpace getShardSpace() {
+		return shardSpace;
 	}
 
 	public IterativeCursor getCursor() {
@@ -31,6 +30,6 @@ public class ReceiveIterativeRequestAction implements SyncAction {
 	}
 
 	public static ReceiveIterativeRequestAction from(IterativeRequestMessage message, Peer peer) {
-		return new ReceiveIterativeRequestAction(message.getShards(), message.getCursor(), peer);
+		return new ReceiveIterativeRequestAction(message.getShardSpace(), message.getCursor(), peer);
 	}
 }
