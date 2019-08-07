@@ -205,6 +205,7 @@ public class TokensConstraintScryptTest {
 
 		return new MockTransition(unallocated, transferred);
 	}
+	/*
 
 	@Test
 	public void when_validating_minted_with_satisfied_all_permission__result_has_no_error() {
@@ -466,4 +467,5 @@ public class TokensConstraintScryptTest {
 		TestResult result = testAtomOS.testFungible(mock.transferred, mock.unallocated, metadata);
 		result.assertError();
 	}
+	*/
 }

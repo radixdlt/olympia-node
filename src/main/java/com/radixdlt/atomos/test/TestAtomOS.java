@@ -7,13 +7,11 @@ import com.radixdlt.atomos.mapper.ParticleToAmountMapper;
 import com.radixdlt.atomos.mapper.ParticleToRRIMapper;
 import com.radixdlt.atomos.mapper.ParticleToShardableMapper;
 import com.radixdlt.atomos.mapper.ParticleToShardablesMapper;
-import com.radixdlt.atomos.procedures.fungible.FungibleTransitionConstraintCheck;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.AtomMetadata;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
@@ -203,35 +201,5 @@ public class TestAtomOS implements AtomOS {
 			fungibleTransitions.add(pendingFungibleTransition.build());
 			pendingFungibleTransition = null;
 		}
-	}
-
-	/**
-	 * Mimics a fungible constraint check call
-	 * @param input The input
-	 * @param output The output
-	 * @param metadata Atom metadata
-	 * @return Result of the fungible transitions check
-	 */
-	public TestResult testFungible(Particle input, Particle output, AtomMetadata metadata) {
-		completePendingFungibleTransition();
-
-		return new TestResult(Collections.singletonList(
-			new FungibleTransitionConstraintCheck(this.fungibleTransitions).validateParticles(
-				Collections.singletonList(input), Collections.singletonList(output), metadata)));
-	}
-
-	/**
-	 * Mimics a fungible constraint check call
-	 * @param inputs The inputs
-	 * @param output The output
-	 * @param metadata Atom metadata
-	 * @return Result of the fungible transitions check
-	 */
-	public TestResult testFungible(List<Particle> inputs, Particle output, AtomMetadata metadata) {
-		completePendingFungibleTransition();
-
-		return new TestResult(Collections.singletonList(
-			new FungibleTransitionConstraintCheck(this.fungibleTransitions).validateParticles(
-				inputs, Collections.singletonList(output), metadata)));
 	}
 }
