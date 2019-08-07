@@ -346,46 +346,6 @@ public class GreedyFungibleMatcherTest {
 			GreedyFungibleMatcher.matchInitial(transition, mock(FungibleOutputs.class), mock(AtomMetadata.class)));
 	}
 
-	@Test
-	public void testMatchInitialExact() {
-		FungibleTransition<Helium> transitionHelium = FungibleTransition.from(
-			Helium.class, o -> UInt256.FIVE, Maps.newHashMap(), (to, meta) -> Result.success());
-		Fungible outputHelium1 = new Fungible(mock(Helium.class), Helium.class, UInt256.ONE, 5);
-		Fungible outputHelium2 = new Fungible(mock(Helium.class), Helium.class, UInt256.TWO, 6);
-
-		GreedyFungibleMatcher.FungibleTransitionInitialMatchResult match =
-			GreedyFungibleMatcher.matchInitial(transitionHelium, FungibleOutputs.of(Stream.of(
-				outputHelium1,
-				outputHelium2
-			)), mock(AtomMetadata.class));
-
-		assertThat(match.getMatchedInitials().fungibles()).containsExactly(
-			outputHelium1,
-			outputHelium2
-		);
-	}
-
-	@Test
-	public void testMatchInitialExactWithOther() {
-		FungibleTransition<Helium> transitionHelium = FungibleTransition.from(
-			Helium.class, o -> UInt256.FIVE, Maps.newHashMap(), (to, meta) -> Result.success());
-		Fungible outputHelium1 = new Fungible(mock(Helium.class), Helium.class, UInt256.ONE, 5);
-		Fungible outputHelium2 = new Fungible(mock(Helium.class), Helium.class, UInt256.TWO, 6);
-		Fungible outputOxygen3 = new Fungible(mock(Oxygen.class), Oxygen.class, UInt256.NINE, 7);
-
-		GreedyFungibleMatcher.FungibleTransitionInitialMatchResult match =
-			GreedyFungibleMatcher.matchInitial(transitionHelium, FungibleOutputs.of(Stream.of(
-				outputHelium1,
-				outputHelium2,
-				outputOxygen3
-			)), mock(AtomMetadata.class));
-
-		assertThat(match.getMatchedInitials().fungibles()).containsExactly(
-			outputHelium1,
-			outputHelium2
-		);
-	}
-
 	private abstract static class Oxygen extends Particle {
 	}
 

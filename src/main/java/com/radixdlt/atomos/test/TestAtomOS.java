@@ -1,7 +1,6 @@
 package com.radixdlt.atomos.test;
 
 import com.radixdlt.atomos.AtomOS;
-import com.radixdlt.atomos.FungibleFormula;
 import com.radixdlt.atomos.FungibleTransition;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.mapper.ParticleToAmountMapper;
@@ -105,7 +104,7 @@ public class TestAtomOS implements AtomOS {
 					throw new IllegalStateException("Attempt to add formula to finished fungible transition to " + particleClass);
 				}
 
-				transitionBuilder.addFormula(particleClass, witnessValidator, transition);
+				transitionBuilder.from(particleClass, witnessValidator, transition);
 				return this::requireFrom;
 			}
 		};

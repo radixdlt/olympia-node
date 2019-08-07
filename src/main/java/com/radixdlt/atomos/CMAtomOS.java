@@ -183,7 +183,7 @@ public final class CMAtomOS implements AtomOSKernel, AtomOS {
 				if (pendingFungibleTransition == null) {
 					throw new IllegalStateException("Attempt to add formula to finished fungible transition to " + particleClass);
 				}
-				transitionBuilder.addFormula(fromParticleClass, witnessValidator, transition);
+				transitionBuilder.from(fromParticleClass, witnessValidator, transition);
 				return this::requireFrom;
 			}
 		};

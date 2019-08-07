@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.atomos.FungibleFormula;
 import com.radixdlt.atomos.FungibleTransition;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atoms.Particle;
@@ -35,7 +34,7 @@ public class FungibleTransitionConstraintProcedureTest {
 			Fungible.class,
 			FungibleTransition.<Fungible>build()
 				.to(Fungible.class, f -> UInt256.ONE)
-				.addFormula(Fungible.class, (a, b) -> Result.success(), (a, b) -> true)
+				.from(Fungible.class, (a, b) -> Result.success(), (a, b) -> true)
 				.build()
 		);
 
@@ -57,7 +56,7 @@ public class FungibleTransitionConstraintProcedureTest {
 			Fungible.class,
 			FungibleTransition.<Fungible>build()
 				.to(Fungible.class, f -> UInt256.ONE)
-				.addFormula(Fungible.class, (a, b) -> Result.success(), (a, b) -> true)
+				.from(Fungible.class, (a, b) -> Result.success(), (a, b) -> true)
 				.build()
 		);
 
@@ -80,7 +79,7 @@ public class FungibleTransitionConstraintProcedureTest {
 			Fungible.class,
 			FungibleTransition.<Fungible>build()
 				.to(Fungible.class, f -> UInt256.ONE)
-				.addFormula(Fungible.class, (a, b) -> Result.success(), (a, b) -> true)
+				.from(Fungible.class, (a, b) -> Result.success(), (a, b) -> true)
 				.build()
 		);
 
@@ -103,7 +102,7 @@ public class FungibleTransitionConstraintProcedureTest {
 			Fungible.class,
 			FungibleTransition.<Fungible>build()
 				.to(Fungible.class, f -> UInt256.ONE)
-				.addFormula(Fungible.class, (a, b) -> Result.success(), (a, b) -> true)
+				.from(Fungible.class, (a, b) -> Result.success(), (a, b) -> true)
 				.build()
 		);
 
