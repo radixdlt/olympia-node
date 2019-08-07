@@ -1,4 +1,4 @@
-package com.radixdlt;
+package com.radixdlt.tempo.conflict;
 
 import com.radixdlt.common.EUID;
 import com.radixdlt.common.Pair;

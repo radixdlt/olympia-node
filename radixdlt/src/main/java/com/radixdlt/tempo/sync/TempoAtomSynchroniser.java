@@ -80,7 +80,7 @@ public class TempoAtomSynchroniser implements AtomSynchroniser {
 		this.edgeSelector = edgeSelector;
 		this.peerSupplier = peerSupplier;
 
-		this.executor = Executors.newScheduledThreadPool(4, r -> new Thread(null, null, "Sync"));
+		this.executor = Executors.newScheduledThreadPool(4, runnable -> new Thread(null, runnable, "Sync"));
 		this.inboundAtoms = new LinkedBlockingQueue<>(this.inboundQueueCapacity);
 		this.syncActions = new LinkedBlockingQueue<>(this.syncActionsQueueCapacity);
 		this.syncEpics = ImmutableList.<SyncEpic>builder()
@@ -101,10 +101,10 @@ public class TempoAtomSynchroniser implements AtomSynchroniser {
 			try {
 				SyncAction action = syncActions.take();
 				if (logger.hasLevel(Logging.DEBUG)) {
-					logger.debug(action.toString());
+					logger.debug("Queuing " + action.toString());
 				}
 
-				this.executor.submit(() -> execute(action));
+				this.executor.execute(() -> this.execute(action));
 			} catch (InterruptedException e) {
 				// exit if interrupted
 				Thread.currentThread().interrupt();
@@ -114,6 +114,10 @@ public class TempoAtomSynchroniser implements AtomSynchroniser {
 	}
 
 	private void execute(SyncAction action) {
+		if (logger.hasLevel(Logging.DEBUG)) {
+			logger.debug("Executing " + action.toString());
+		}
+
 		List<SyncAction> nextActions = syncEpics.stream()
 			.flatMap(epic -> epic.epic(action))
 			.collect(Collectors.toList());
@@ -125,15 +129,20 @@ public class TempoAtomSynchroniser implements AtomSynchroniser {
 	}
 
 	private void schedule(SyncAction action, long delay, TimeUnit unit) {
+		// TODO consider cancellation when shutdown/reset
 		this.executor.schedule(() -> dispatch(action), delay, unit);
 	}
 
 	private void repeatSchedule(SyncAction action, long initialDelay, long recurrentDelay, TimeUnit unit) {
+		// TODO consider cancellation when shutdown/reset
 		this.executor.scheduleAtFixedRate(() -> dispatch(action), initialDelay, recurrentDelay, unit);
 	}
 
-	private void dispatch(SyncAction syncAction) {
-		if (!this.syncActions.add(syncAction)) {
+	private void dispatch(SyncAction action) {
+		if (logger.hasLevel(Logging.DEBUG)) {
+			logger.debug("Dispatching " + action.toString());
+		}
+		if (!this.syncActions.add(action)) {
 			// TODO handle full action queue better
 			throw new IllegalStateException("Action queue full");
 		}

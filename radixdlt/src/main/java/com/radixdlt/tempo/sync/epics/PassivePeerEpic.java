@@ -42,6 +42,8 @@ public class PassivePeerEpic implements SyncEpic {
 			ImmutableSet<Peer> passivePeers = peerSupplier.getPeers().stream()
 				.limit(desiredPeerCount)
 				.collect(ImmutableSet.toImmutableSet());
+			logger.debug("Passive peers changed to " + passivePeers);
+
 			return Stream.of(new UpdatePassivePeersAction(passivePeers));
 		}
 

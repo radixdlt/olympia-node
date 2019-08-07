@@ -1,6 +1,8 @@
 package com.radixdlt.tempo.store;
 
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.common.AID;
+import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.CMAtom;
 import com.radixdlt.engine.RadixEngineUtils;
 import com.radixdlt.ledger.LedgerCursor;
@@ -11,12 +13,14 @@ import com.radixdlt.tempo.AtomStoreView;
 import com.radixdlt.tempo.LegacyUtils;
 import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.exceptions.TempoException;
+import com.radixdlt.tempo.sync.IterativeCursor;
 import com.radixdlt.utils.UInt384;
 import org.radix.atoms.Atom;
 import org.radix.atoms.PreparedAtom;
 import org.radix.database.exceptions.DatabaseException;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
+import org.radix.shards.ShardRange;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -24,12 +28,12 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 
-public class WrappedLegacyTempoAtomStore implements AtomStore {
+public class LegacyAtomStoreAdapter implements AtomStore {
 	private final Logger logger = Logging.getLogger("Store");
 	private final Supplier<org.radix.atoms.AtomStore> atomStoreSupplier;
 	private final AtomStoreView view;
 
-	public WrappedLegacyTempoAtomStore(Supplier<org.radix.atoms.AtomStore> atomStoreSupplier) {
+	public LegacyAtomStoreAdapter(Supplier<org.radix.atoms.AtomStore> atomStoreSupplier) {
 		this.atomStoreSupplier = Objects.requireNonNull(atomStoreSupplier, "atomStoreSupplier is required");
 		this.view = new AtomStoreViewAdapter();
 	}
@@ -115,12 +119,17 @@ public class WrappedLegacyTempoAtomStore implements AtomStore {
 	private class AtomStoreViewAdapter implements AtomStoreView {
 		@Override
 		public boolean contains(AID aid) {
-			return WrappedLegacyTempoAtomStore.this.contains(aid);
+			return LegacyAtomStoreAdapter.this.contains(aid);
 		}
 
 		@Override
 		public Optional<TempoAtom> get(AID aid) {
-			return WrappedLegacyTempoAtomStore.this.get(aid);
+			return LegacyAtomStoreAdapter.this.get(aid);
+		}
+
+		@Override
+		public Pair<ImmutableList<AID>, IterativeCursor> getNext(IterativeCursor cursor, int limit, ShardRange shardRange) {
+			throw new UnsupportedOperationException("Not implemented");
 		}
 	}
 }

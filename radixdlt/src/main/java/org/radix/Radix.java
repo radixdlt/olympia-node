@@ -5,7 +5,7 @@ import java.lang.reflect.Modifier;
 import java.security.SecureRandom;
 import java.security.Security;
 
-import com.radixdlt.LocalConflictResolver;
+import com.radixdlt.tempo.conflict.LocalConflictResolver;
 import com.radixdlt.tempo.Tempo;
 import com.radixdlt.tempo.store.TempoAtomStore;
 import com.radixdlt.tempo.sync.PeerSupplierAdapter;
@@ -15,7 +15,6 @@ import org.apache.commons.cli.CommandLine;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.json.JSONObject;
 import org.radix.api.API;
-import org.radix.atoms.AtomStore;
 import org.radix.atoms.Atoms;
 import org.radix.database.DatabaseEnvironment;
 import org.radix.events.EventProfiler;
@@ -268,7 +267,7 @@ public class Radix extends Plugin
 		}
 
 		if (Modules.get(RuntimeProperties.class).get("tempo2", false)) {
-			TempoAtomStore tempoAtomStore = new TempoAtomStore(() -> Modules.get(AtomStore.class));
+			TempoAtomStore tempoAtomStore = new TempoAtomStore(() -> Modules.get(DatabaseEnvironment.class));
 			Modules.getInstance().start(Tempo.from(
 				TempoAtomSynchroniser.defaultBuilder(
 					tempoAtomStore.asReadOnlyView(),

@@ -4,17 +4,12 @@ package com.radixdlt.tempo.sync.messages;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.common.AID;
-import com.radixdlt.ledger.LedgerCursor;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerId2;
-import org.radix.discovery.DiscoveryCursor;
+import com.radixdlt.tempo.sync.IterativeCursor;
 import org.radix.network.messaging.Message;
-import org.radix.shards.ShardSpace;
 
-import java.util.List;
-import java.util.Set;
-
-@SerializerId2("atom.sync2.iterative.response")
+@SerializerId2("tempo.sync.iterative.response")
 public class IterativeResponseMessage extends Message {
 	@JsonProperty("aids")
 	@DsonOutput(DsonOutput.Output.ALL)
@@ -22,13 +17,13 @@ public class IterativeResponseMessage extends Message {
 
 	@JsonProperty("cursor")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private LedgerCursor cursor;
+	private IterativeCursor cursor;
 
 	IterativeResponseMessage() {
 		// Serializer only
 	}
 
-	public IterativeResponseMessage(ImmutableList<AID> aids, LedgerCursor cursor) {
+	public IterativeResponseMessage(ImmutableList<AID> aids, IterativeCursor cursor) {
 		this.aids = aids;
 		this.cursor = cursor;
 	}
@@ -37,12 +32,12 @@ public class IterativeResponseMessage extends Message {
 		return aids;
 	}
 
-	public LedgerCursor getCursor() {
+	public IterativeCursor getCursor() {
 		return cursor;
 	}
 
 	@Override
 	public String getCommand() {
-		return "atom.sync2.iterative.request";
+		return "tempo.sync.iterative.response";
 	}
 }

@@ -7,7 +7,7 @@ import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.tempo.TempoAtom;
 import org.radix.network.messaging.Message;
 
-@SerializerId2("atom.sync2.push")
+@SerializerId2("tempo.sync.push")
 public class PushMessage extends Message {
 	@JsonProperty("atom")
 	@DsonOutput(Output.ALL)
@@ -27,6 +27,6 @@ public class PushMessage extends Message {
 
 	@Override
 	public String getCommand() {
-		return "atom.sync2.push";
+		return "tempo.sync.push";
 	}
 }

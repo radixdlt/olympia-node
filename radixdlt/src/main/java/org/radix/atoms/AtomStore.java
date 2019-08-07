@@ -1499,7 +1499,7 @@ public class AtomStore extends DatabaseStore implements DiscoverySource<AtomDisc
 		try
 		{
 			DatabaseEntry pKey = new DatabaseEntry(cursor.getPrimary());
-			DatabaseEntry key = new DatabaseEntry(cursor.getIndexable());
+			DatabaseEntry key = new DatabaseEntry(cursor.getIndex());
 			
 			if (databaseCursor.getSearchBothRange(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS)
 			{
@@ -1535,7 +1535,7 @@ public class AtomStore extends DatabaseStore implements DiscoverySource<AtomDisc
 		try
 		{
 			DatabaseEntry pKey = new DatabaseEntry(cursor.getPrimary());
-			DatabaseEntry key = new DatabaseEntry(cursor.getIndexable());
+			DatabaseEntry key = new DatabaseEntry(cursor.getIndex());
 			
 			if (databaseCursor.getSearchBothRange(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS)
 			{
@@ -1571,7 +1571,7 @@ public class AtomStore extends DatabaseStore implements DiscoverySource<AtomDisc
 		try
 		{
 			DatabaseEntry pKey = new DatabaseEntry(cursor.getPrimary());
-			DatabaseEntry key = new DatabaseEntry(cursor.getIndexable());
+			DatabaseEntry key = new DatabaseEntry(cursor.getIndex());
 			
 			if (databaseCursor.getSearchBothRange(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS)
 			{
@@ -1612,7 +1612,7 @@ public class AtomStore extends DatabaseStore implements DiscoverySource<AtomDisc
 		try
 		{
 			DatabaseEntry pKey = new DatabaseEntry(cursor.getPrimary());
-			DatabaseEntry key = new DatabaseEntry(cursor.getIndexable());
+			DatabaseEntry key = new DatabaseEntry(cursor.getIndex());
 			
 			if (databaseCursor.getSearchBothRange(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS)
 			{

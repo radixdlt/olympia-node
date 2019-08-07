@@ -14,13 +14,13 @@ public class TempoCursor implements LedgerCursor
 {
 	private Type type;
 	private byte[] primary;
-	private byte[] indexable;
+	private byte[] index;
 	
-	public TempoCursor(Type type, byte[] primary, byte[] indexable)
+	public TempoCursor(Type type, byte[] primary, byte[] index)
 	{
 		this.type = type;
 		this.primary = Arrays.clone(Objects.requireNonNull(primary));
-		this.indexable = Arrays.clone(Objects.requireNonNull(indexable));
+		this.index = Arrays.clone(Objects.requireNonNull(index));
 	}
 
 	@Override
@@ -34,9 +34,9 @@ public class TempoCursor implements LedgerCursor
 		return this.primary;
 	}
 
-	public byte[] getIndexable()
+	public byte[] getIndex()
 	{
-		return this.indexable;
+		return this.index;
 	}
 
 	@Override

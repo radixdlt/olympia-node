@@ -10,7 +10,7 @@ import org.radix.network.messaging.Message;
 
 import java.util.Collection;
 
-@SerializerId2("atom.sync2.delivery.request")
+@SerializerId2("tempo.sync.delivery.request")
 public class DeliveryRequestMessage extends Message {
 	@JsonProperty("aids")
 	@DsonOutput(Output.ALL)
@@ -27,7 +27,7 @@ public class DeliveryRequestMessage extends Message {
 
 	@Override
 	public String getCommand() {
-		return "atom.sync2.delivery.request";
+		return "tempo.sync.delivery.request";
 	}
 
 	public Collection<AID> getAids() {
