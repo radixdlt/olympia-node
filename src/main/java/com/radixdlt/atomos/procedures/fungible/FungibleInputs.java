@@ -45,7 +45,10 @@ final class FungibleInputs {
 	}
 
 	private Pair<Stream<Fungible>, Map<Class<? extends Particle>, UInt256>> drain(
-		ImmutableMap<Class<? extends Particle>, UInt256> requiredAmounts, Map<Fungible, List<Class<? extends Particle>>> approvedClasses) {
+		ImmutableMap<Class<? extends Particle>, UInt256> requiredAmounts,
+		Map<Fungible, Optional<Class<? extends Particle>>> approvedClasses
+	) {
+
 		List<Fungible> drainedInputs = new ArrayList<>();
 		Map<Class<? extends Particle>, UInt256> remainingAmounts = Maps.newHashMap(requiredAmounts);
 		Map<Class<? extends Particle>, UInt256> satisfiedAmounts = Maps.newHashMap();
@@ -57,7 +60,7 @@ final class FungibleInputs {
 
 			for (Map.Entry<Class<? extends Particle>, UInt256> remaining : remainingAmounts.entrySet()) {
 				if (!remaining.getValue().isZero()
-					 && approvedClasses.get(input).contains(remaining.getKey())) {
+					 && approvedClasses.get(input).map(c -> c == remaining.getKey()).orElse(false)) {
 					UInt256 claimed = UInt256s.min(input.getAmount(), remaining.getValue());
 
 					drainedInputs.add(input.withAmount(claimed));
@@ -83,7 +86,7 @@ final class FungibleInputs {
 	CompositionMatch match(
 		UInt256 outputAmount,
 		Class<? extends Particle> fromParticle,
-		Map<Fungible, List<Class<? extends Particle>>> approvedClasses
+		Map<Fungible, Optional<Class<? extends Particle>>> approvedClasses
 	) {
 		Objects.requireNonNull(outputAmount, "outputAmount is required");
 		Objects.requireNonNull(approvedClasses, "composition is required");
@@ -100,6 +103,7 @@ final class FungibleInputs {
 
 		ImmutableMap<Class<? extends Particle>, UInt256> wantedAmounts = ImmutableMap.of(fromParticle, outputAmount);
 		ImmutableMap<Class<? extends Particle>, UInt256> requiredAmountsPerUnit = ImmutableMap.of(fromParticle, UInt256.ONE);
+
 		Optional<UInt256> availableOutputAmount = getAvailableOutputAmount(approvedClasses, wantedAmounts, requiredAmountsPerUnit);
 
 		return availableOutputAmount
@@ -111,7 +115,7 @@ final class FungibleInputs {
 			.orElse(CompositionMatch.EMPTY);
 	}
 
-	private Optional<UInt256> getAvailableOutputAmount(Map<Fungible, List<Class<? extends Particle>>> approvedClasses,
+	private Optional<UInt256> getAvailableOutputAmount(Map<Fungible, Optional<Class<? extends Particle>>> approvedClasses,
 	                                                   ImmutableMap<Class<? extends Particle>, UInt256> requiredAmounts,
 	                                                   ImmutableMap<Class<? extends Particle>, UInt256> requiredAmountsPerUnit) {
 		return drain(requiredAmounts, approvedClasses).getSecond().entrySet().stream()

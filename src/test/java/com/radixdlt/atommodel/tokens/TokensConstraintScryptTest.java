@@ -222,7 +222,7 @@ public class TokensConstraintScryptTest {
 		AtomMetadata metadata = mock(AtomMetadata.class);
 
 		testAtomOS.testFungible(mock.unallocated, mock.transferred, metadata)
-			.assertErrorWithMessageContaining("no-one");
+			.assertError();
 	}
 
 	@Test
@@ -244,7 +244,7 @@ public class TokensConstraintScryptTest {
 		when(metadata.contains(any())).thenReturn(false);
 
 		testAtomOS.testFungible(mock.unallocated, mock.transferred, metadata)
-			.assertErrorWithMessageContaining("token creation");
+			.assertError();
 	}
 
 	@Test
@@ -266,7 +266,7 @@ public class TokensConstraintScryptTest {
 		when(metadata.isSignedBy(mock.transferred.getAddress())).thenReturn(false);
 
 		testAtomOS.testFungible(mock.unallocated, mock.transferred, metadata)
-			.assertErrorWithMessageContaining("token owner");
+			.assertError();
 	}
 
 	@Test
@@ -287,7 +287,7 @@ public class TokensConstraintScryptTest {
 		AtomMetadata metadata = mock(AtomMetadata.class);
 
 		testAtomOS.testFungible(mock.transferred, mock.unallocated, metadata)
-			.assertErrorWithMessageContaining("no-one");
+			.assertError();
 	}
 
 	@Test
@@ -310,7 +310,7 @@ public class TokensConstraintScryptTest {
 		when(metadata.contains(any())).thenReturn(false);
 
 		testAtomOS.testFungible(mock.transferred, mock.unallocated, metadata)
-			.assertErrorWithMessageContaining("token creation");
+			.assertError();
 	}
 
 	@Test
@@ -332,7 +332,7 @@ public class TokensConstraintScryptTest {
 		when(metadata.isSignedBy(mock.transferred.getAddress())).thenReturn(false);
 
 		testAtomOS.testFungible(mock.transferred, mock.unallocated, metadata)
-			.assertErrorWithMessageContaining("token owner");
+			.assertError();
 	}
 
 	@Test
@@ -401,7 +401,7 @@ public class TokensConstraintScryptTest {
 		when(metadata.isSignedBy(any())).thenReturn(false);
 
 		testAtomOS.testFungible(input, output, metadata)
-			.assertErrorWithMessageContaining("signed");
+			.assertError();
 	}
 
 	@Test

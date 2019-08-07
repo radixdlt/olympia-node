@@ -8,16 +8,10 @@ import java.util.Objects;
  */
 // @PackageLocalForTest
 final class FungibleFormulaMatch {
-	private final FungibleFormula formula;
 	private final InputsOutputsMatch match;
 
-	FungibleFormulaMatch(FungibleFormula formula, InputsOutputsMatch match) {
-		this.formula = Objects.requireNonNull(formula, "formula is required");
+	FungibleFormulaMatch(InputsOutputsMatch match) {
 		this.match = Objects.requireNonNull(match, "match is required");
-	}
-
-	FungibleFormula getFormula() {
-		return formula;
 	}
 
 	FungibleOutputs getSatisfiedOutputs() {
@@ -39,7 +33,7 @@ final class FungibleFormulaMatch {
 	/**
 	 * Materialize an empty fungible formula match of the given formula
 	 */
-	static FungibleFormulaMatch empty(FungibleFormula formula) {
-		return new FungibleFormulaMatch(formula, InputsOutputsMatch.EMPTY);
+	static FungibleFormulaMatch empty() {
+		return new FungibleFormulaMatch(InputsOutputsMatch.EMPTY);
 	}
 }

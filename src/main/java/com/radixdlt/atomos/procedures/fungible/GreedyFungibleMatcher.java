@@ -9,13 +9,16 @@ import com.radixdlt.atomos.FungibleTransition;
 import com.radixdlt.atomos.FungibleTransition.FungibleTransitionInitialVerdict;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atoms.Particle;
+import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.AtomMetadata;
 import com.radixdlt.utils.UInt256;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -208,27 +211,27 @@ class GreedyFungibleMatcher implements FungibleMatcher {
 	public static class FungibleFormulaInputOutputVerdict {
 		private final Fungible input;
 		private final Fungible output;
-		private final List<Class<? extends Particle>> approvedClasses;
-		private final Map<Class<? extends Particle>, String> rejectedClasses;
+		private final Class<? extends Particle> approvedClass;
+		private final Class<? extends Particle> rejectedClass;
 
 		private FungibleFormulaInputOutputVerdict(
 			Fungible input,
 			Fungible output,
-			List<Class<? extends Particle>> approvedClasses,
-			Map<Class<? extends Particle>, String> rejectedClasses
+			Class<? extends Particle> approvedClass,
+			Class<? extends Particle> rejectedClass
 		) {
 			this.input = input;
 			this.output = output;
-			this.approvedClasses = ImmutableList.copyOf(approvedClasses);
-			this.rejectedClasses = ImmutableMap.copyOf(rejectedClasses);
+			this.approvedClass = approvedClass;
+			this.rejectedClass = rejectedClass;
 		}
 
-		public List<Class<? extends Particle>> getApprovedClasses() {
-			return approvedClasses;
+		public Class<? extends Particle> getApprovedClass() {
+			return approvedClass;
 		}
 
-		public Map<Class<? extends Particle>, String> getRejectedClasses() {
-			return rejectedClasses;
+		public Class<? extends Particle> getRejectedClass() {
+			return rejectedClass;
 		}
 
 		public Fungible getOutput() {
@@ -259,32 +262,37 @@ class GreedyFungibleMatcher implements FungibleMatcher {
 		List<FungibleFormulaMatchResult> formulaMatchResults = new ArrayList<>();
 		UInt256 remainingConsumer = output.getAmount();
 
-		for (FungibleFormula formula : possibleFormulas) {
+		Map<Class<? extends Particle>, FungibleFormula> fromParticleFormulas = possibleFormulas.stream()
+			.collect(Collectors.toMap(f -> f.particleClass(), f -> f));
+
+		for (Entry<Class<? extends Particle>, FungibleFormula> e : fromParticleFormulas.entrySet()) {
 			if (fungibleInputs.isEmpty() || remainingConsumer.isZero()) {
 				break; // no need to look for more applicable formulas if nothing is left to be matched
 			}
+
+			FungibleFormula formula = e.getValue();
 
 			Map<Fungible, FungibleFormulaInputOutputVerdict> inputVerdicts = fungibleInputs.fungibles()
 				.collect(Collectors.toMap(input -> input, input -> {
 
 					final Class<? extends Particle> inputClass = input.getParticleClass();
+
 					if (formula.particleClass().isAssignableFrom(inputClass)) {
 						Result checkResult = ((WitnessValidator) formula.getWitnessValidator()).apply(input.getParticle(), metadata);
 						boolean transitionCheck = formula.getTransition().test(input.getParticle(), output.getParticle());
 
 						if (checkResult.isSuccess() && transitionCheck) {
-							return new FungibleFormulaInputOutputVerdict(input, output, Collections.singletonList(inputClass), Collections.emptyMap());
+							return new FungibleFormulaInputOutputVerdict(input, output, inputClass, null);
 						} else {
-							return new FungibleFormulaInputOutputVerdict(input, output, Collections.emptyList(),
-								Collections.singletonMap(inputClass, checkResult.getErrorMessage().orElse(""))
-							);
+							return new FungibleFormulaInputOutputVerdict(input, output, null, inputClass);
 						}
 					} else {
-						return new FungibleFormulaInputOutputVerdict(input, output, Collections.emptyList(), Collections.emptyMap());
+						return new FungibleFormulaInputOutputVerdict(input, output, null, null);
 					}
 				}));
-			Map<Fungible, List<Class<? extends Particle>>> approvedClasses = inputVerdicts.entrySet().stream()
-				.collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().getApprovedClasses()));
+			Map<Fungible, Optional<Class<? extends Particle>>> approvedClasses = inputVerdicts.entrySet().stream()
+				.collect(Collectors.toMap(Map.Entry::getKey, entry -> Optional.ofNullable(entry.getValue().approvedClass)));
+
 			FungibleInputs.CompositionMatch compositionMatch =
 				fungibleInputs.match(output.getAmount(), formula.particleClass(), approvedClasses);
 
@@ -292,12 +300,12 @@ class GreedyFungibleMatcher implements FungibleMatcher {
 			if (!compositionMatch.getSatisfiedAmount().isZero()) {
 				remainingConsumer = remainingConsumer.subtract(compositionMatch.getSatisfiedAmount());
 				fungibleInputs = compositionMatch.consume(fungibleInputs);
-				formulaMatch = new FungibleFormulaMatch(formula, compositionMatch.withConsumer(output));
+				formulaMatch = new FungibleFormulaMatch(compositionMatch.withConsumer(output));
 			} else {
-				formulaMatch = FungibleFormulaMatch.empty(formula);
+				formulaMatch = FungibleFormulaMatch.empty();
 			}
 
-			FungibleFormulaMatchInformation matchInformation = new FungibleFormulaMatchInformation(formula, inputVerdicts);
+			FungibleFormulaMatchInformation matchInformation = new FungibleFormulaMatchInformation(inputVerdicts);
 			formulaMatchResults.add(new FungibleFormulaMatchResult(formulaMatch, matchInformation));
 		}
 

@@ -82,11 +82,11 @@ public class GreedyFungibleMatcherTest {
 			inputOxygen // deliberately out of order to verify indexed sorting
 		));
 		AtomMetadata metadata = mock(AtomMetadata.class);
-		FungibleFormulaMatch h2OMatch = new FungibleFormulaMatch(mock(FungibleFormula.class), new InputsOutputsMatch(
+		FungibleFormulaMatch h2OMatch = new FungibleFormulaMatch(new InputsOutputsMatch(
 			outputH2O,
 			FungibleInputs.of(Stream.of(inputHydrogen, inputOxygen))
 		));
-		FungibleFormulaMatch uraniumMatch = new FungibleFormulaMatch(mock(FungibleFormula.class), new InputsOutputsMatch(
+		FungibleFormulaMatch uraniumMatch = new FungibleFormulaMatch(new InputsOutputsMatch(
 			outputUranium,
 			FungibleInputs.of(Stream.of(inputUranium))
 		));
@@ -167,12 +167,12 @@ public class GreedyFungibleMatcherTest {
 			inputH2O
 		));
 		AtomMetadata metadata = mock(AtomMetadata.class);
-		FungibleFormulaMatch h2OMatch = new FungibleFormulaMatch(mock(FungibleFormula.class), new InputsOutputsMatch(
+		FungibleFormulaMatch h2OMatch = new FungibleFormulaMatch(new InputsOutputsMatch(
 			outputH2OComposed,
 			FungibleInputs.of(Stream.of(inputHydrogen, inputOxygen))
 		));
 		FungibleFormulaMatchResult h2OMatchResult = new FungibleFormulaMatchResult(h2OMatch, mock(FungibleFormulaMatchInformation.class));
-		FungibleFormulaMatch h2ODecayMatch = new FungibleFormulaMatch(mock(FungibleFormula.class), new InputsOutputsMatch(
+		FungibleFormulaMatch h2ODecayMatch = new FungibleFormulaMatch(new InputsOutputsMatch(
 			outputH2ODecayed,
 			FungibleInputs.of(Stream.of(inputH2O))
 		));

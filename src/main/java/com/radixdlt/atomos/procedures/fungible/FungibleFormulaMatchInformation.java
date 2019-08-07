@@ -1,6 +1,5 @@
 package com.radixdlt.atomos.procedures.fungible;
 
-import com.radixdlt.atomos.FungibleFormula;
 import com.radixdlt.atomos.procedures.fungible.GreedyFungibleMatcher.FungibleFormulaInputOutputVerdict;
 import java.util.List;
 import java.util.Map;
@@ -11,18 +10,12 @@ import java.util.stream.Stream;
  * Information about a fungible formula match or mismatch for better error information
  */
 class FungibleFormulaMatchInformation {
-	private final FungibleFormula formula;
 	private final List<FungibleFormulaInputOutputVerdict> verdictsWithRejections;
 
-	FungibleFormulaMatchInformation(FungibleFormula formula, Map<Fungible, FungibleFormulaInputOutputVerdict> inputOutputVerdicts) {
-		this.formula = formula;
+	FungibleFormulaMatchInformation(Map<Fungible, FungibleFormulaInputOutputVerdict> inputOutputVerdicts) {
 		this.verdictsWithRejections = inputOutputVerdicts.values().stream()
-			.filter(verdict -> !verdict.getRejectedClasses().isEmpty())
+			.filter(verdict -> verdict.getRejectedClass() != null)
 			.collect(Collectors.toList());
-	}
-
-	FungibleFormula getFormula() {
-		return formula;
 	}
 
 	Stream<FungibleFormulaInputOutputVerdict> verdictsWithRejections() {

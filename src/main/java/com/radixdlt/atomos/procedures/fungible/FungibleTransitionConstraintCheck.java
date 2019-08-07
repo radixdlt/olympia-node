@@ -178,14 +178,14 @@ public final class FungibleTransitionConstraintCheck {
 						.map(initial -> String.format("\t\t <initial> => %s", initial))
 						.collect(Collectors.joining(System.lineSeparator())) + System.lineSeparator()),
 				matchResult.getFormulaMatches().stream().map(formulaMatch ->
-					String.format("\t\t -> %s => %s%n\t\t\t with %s",
+					String.format("\t\t -> %s => %s%n\t\t\t",
 						formulaMatch.getMatchedInputs().fungibles()
 							.map(fungibleToStringFunction)
 							.collect(Collectors.joining(" + ")),
 						formulaMatch.getSatisfiedOutputs().fungibles()
 							.map(fungibleToStringFunction)
-							.collect(Collectors.joining(" + ")),
-						formulaMatch.getFormula()))
+							.collect(Collectors.joining(" + "))
+						))
 					.collect(Collectors.joining(System.lineSeparator()))))
 			.collect(Collectors.joining(System.lineSeparator()));
 	}
@@ -210,17 +210,13 @@ public final class FungibleTransitionConstraintCheck {
 				matchResult.getInformation().getMatchInformation().stream()
 					.filter(FungibleFormulaMatchInformation::hasRejections)
 					.map(matchInformation ->
-						String.format("\t\t In %s%n%s",
-							matchInformation.getFormula(),
+						String.format("\t\t In %n%s",
 							matchInformation.verdictsWithRejections()
 								.map(verdict ->
-									String.format("\t\t\t %s => %s: %n%s",
+									String.format("\t\t\t %s => %s: %n",
 										fungibleToStringFunction.apply(verdict.getInput()),
-										fungibleToStringFunction.apply(verdict.getOutput()),
-										verdict.getRejectedClasses().entrySet().stream()
-											.map(reject -> String.format("\t\t\t\t rejected by %s: '%s'",
-												reject.getKey().getSimpleName(), reject.getValue()))
-											.collect(Collectors.joining(System.lineSeparator()))))
+										fungibleToStringFunction.apply(verdict.getOutput())
+									))
 								.collect(Collectors.joining(System.lineSeparator()))
 						))
 					.collect(Collectors.joining(System.lineSeparator()))))
