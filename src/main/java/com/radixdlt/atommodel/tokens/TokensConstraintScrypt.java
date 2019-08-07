@@ -114,8 +114,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 
 		os.onFungible(
 			UnallocatedTokensParticle.class,
-			UnallocatedTokensParticle::getAmount,
-			(u0, u1) -> u0.getTokDefRef().equals(u1.getTokDefRef())
+			UnallocatedTokensParticle::getAmount
 		)
 			.requireInitialWith(TokenDefinitionParticle.class, (unallocated, tokDef, meta) -> Result.combine(
 				Result.of(unallocated.getTokDefRef().equals(tokDef.getRRI()), "TokenDefRef should be the same"),
@@ -141,12 +140,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 
 		os.onFungible(
 			TransferrableTokensParticle.class,
-			TransferrableTokensParticle::getAmount,
-			(t0, t1) ->
-				Objects.equals(t0.getAddress(), t1.getAddress())
-				&& Objects.equals(t0.getTokDefRef(), t1.getTokDefRef())
-				&& Objects.equals(t0.getGranularity(), t1.getGranularity())
-				&& Objects.equals(t0.getTokenPermissions(), t1.getTokenPermissions())
+			TransferrableTokensParticle::getAmount
 		)
 			.requireFrom(
 				UnallocatedTokensParticle.class,

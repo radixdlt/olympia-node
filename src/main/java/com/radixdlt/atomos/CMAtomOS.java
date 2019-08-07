@@ -152,8 +152,7 @@ public final class CMAtomOS implements AtomOSKernel, AtomOS {
 	@Override
 	public <T extends Particle> FungibleTransitionConstraintStub<T> onFungible(
 		Class<T> particleClass,
-		ParticleToAmountMapper<T> particleToAmountMapper,
-		BiPredicate<T, T> fungibleEquals
+		ParticleToAmountMapper<T> particleToAmountMapper
 	) {
 		checkParticleRegistered(particleClass);
 
@@ -162,7 +161,7 @@ public final class CMAtomOS implements AtomOSKernel, AtomOS {
 		}
 
 		FungibleTransition.Builder<T> transitionBuilder = FungibleTransition.<T>build()
-			.to(particleClass, particleToAmountMapper, fungibleEquals);
+			.to(particleClass, particleToAmountMapper);
 		pendingFungibleTransition = transitionBuilder;
 
 		return new FungibleTransitionConstraintStub<T>() {

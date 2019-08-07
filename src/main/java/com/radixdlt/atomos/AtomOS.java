@@ -61,8 +61,7 @@ public interface AtomOS {
 	 */
 	<T extends Particle> FungibleTransitionConstraintStub<T> onFungible(
 		Class<T> particleClass,
-		ParticleToAmountMapper<T> particleToAmountMapper,
-		BiPredicate<T, T> fungibleEquals
+		ParticleToAmountMapper<T> particleToAmountMapper
 	);
 
 	<T extends Particle> PayloadParticleClassConstraint<T> onPayload(Class<T> particleClass);
