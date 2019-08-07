@@ -4,16 +4,19 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.radixdlt.atomos.AtomOS.ParticleClassWithSideEffectConstraintCheck;
+import com.radixdlt.atomos.FungibleFormula;
 import com.radixdlt.atomos.FungibleTransition;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.procedures.fungible.FungibleTransitionConstraintCheck.FungibleValidationResult;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.atoms.ParticleGroup;
 import com.radixdlt.atoms.Spin;
+import com.radixdlt.atoms.SpunParticle;
 import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.AtomMetadata;
 import com.radixdlt.constraintmachine.ConstraintProcedure;
 import com.radixdlt.constraintmachine.ProcedureError;
+import com.radixdlt.utils.UInt256;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,6 +24,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.Stack;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -33,6 +37,7 @@ public class FungibleTransitionConstraintProcedure implements ConstraintProcedur
 	private final FungibleTransitionConstraintCheck check;
 	private final ParticleValueMapper valueMapper;
 	private final ImmutableList<FungibleTransition<?>> initialRequireWithChecks;
+	private final Map<Class<? extends Particle>, FungibleTransition<? extends Particle>> transitions;
 
 	public FungibleTransitionConstraintProcedure(Map<Class<? extends Particle>, FungibleTransition<? extends Particle>> transitions) {
 
@@ -43,6 +48,7 @@ public class FungibleTransitionConstraintProcedure implements ConstraintProcedur
 			.collect(Collectors.toList());
 
 		this.check = new FungibleTransitionConstraintCheck(fungibleTransitions);
+		this.transitions = transitions;
 
 		this.initialRequireWithChecks =
 			fungibleTransitions.stream()
@@ -131,21 +137,55 @@ public class FungibleTransitionConstraintProcedure implements ConstraintProcedur
 
 	@Override
 	public Stream<ProcedureError> validate(ParticleGroup group, AtomMetadata metadata) {
-		Stream<Fungible> inputs = getFungibles(group, Spin.DOWN, this.inputTypes, valueMapper);
-		Stream<Fungible> outputs = getFungibles(group, Spin.UP, this.outputTypes, valueMapper);
+		final Stack<Pair<Particle, UInt256>> inputs = new Stack<>();
+		final Stack<Pair<Particle, UInt256>> outputs = new Stack<>();
 
-		FungibleValidationResult result = check.validate(inputs, outputs, metadata);
+		for (int i = 0; i < group.getParticleCount(); i++) {
+			SpunParticle sp = group.getSpunParticle(i);
+			Particle p = sp.getParticle();
+			if (sp.getSpin() == Spin.DOWN && this.inputTypes.contains(p.getClass())) {
+				inputs.push(Pair.of(p, valueMapper.amount(p)));
+			} else if (sp.getSpin() == Spin.UP && this.outputTypes.contains(p.getClass())) {
+				UInt256 currentOutput = valueMapper.amount(p);
 
-		Stream<ProcedureError> mapperIssues = result.getResult().errorStream().map(ProcedureError::of);
+				while (!currentOutput.isZero()) {
+					if (inputs.empty()) {
+						break;
+					}
+					Pair<Particle, UInt256> top = inputs.peek();
+					Particle fromParticle = top.getFirst();
+					FungibleFormula formula = transitions.get(p.getClass()).getParticleClassToFormulaMap().get(fromParticle.getClass());
+					if (!formula.getTransition().test(fromParticle, p)) {
+						break;
+					}
+					if (formula.getWitnessValidator().apply(fromParticle, metadata).isError()) {
+						break;
+					}
 
-		List<Particle> initParticles = result.getMatchResults().stream()
-			.flatMap(m -> m.getMatch().getMatchedInitials().fungibles())
-			.map(Fungible::getParticle)
-			.distinct()
-			.collect(Collectors.toList());
-		Stream<ProcedureError> initIssues = checkRequireWith(group, initParticles, metadata);
+					inputs.pop();
+					UInt256 inputAmount = top.getSecond();
+					UInt256 min = UInt256.min(inputAmount, currentOutput);
+					UInt256 newInputAmount = inputAmount.subtract(min);
+					if (!newInputAmount.isZero()) {
+						inputs.push(Pair.of(fromParticle, newInputAmount));
+					}
 
-		return Stream.concat(mapperIssues, initIssues);
+					currentOutput = currentOutput.subtract(min);
+				}
+
+				if (!currentOutput.isZero()) {
+					outputs.push(Pair.of(p, currentOutput));
+				}
+			}
+		}
+
+		if (!inputs.empty()) {
+			return Stream.of(ProcedureError.of("Input stack not empty"));
+		} else if (!outputs.empty()) {
+			return checkRequireWith(group, outputs.stream().map(Pair::getFirst).collect(Collectors.toList()), metadata);
+		} else {
+			return Stream.empty();
+		}
 	}
 
 	// @PackageLocalForTest

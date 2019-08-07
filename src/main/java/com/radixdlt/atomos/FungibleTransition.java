@@ -199,7 +199,7 @@ public final class FungibleTransition<T extends Particle> {
 			WitnessValidator<U> witnessValidator,
 			BiPredicate<U, T> transition
 		) {
-			particleTypeToFormulasMapBuilder.put(fromParticleClass, new FungibleFormula(witnessValidator, transition));
+			particleTypeToFormulasMapBuilder.put(fromParticleClass, new FungibleFormula((WitnessValidator<Particle>)witnessValidator, transition));
 
 			return this;
 		}

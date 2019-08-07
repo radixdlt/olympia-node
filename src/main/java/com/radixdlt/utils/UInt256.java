@@ -615,6 +615,21 @@ public final class UInt256 implements Comparable<UInt256> {
 		return UInt256.from(this.high.invert(), this.low.invert());
 	}
 
+	/**
+	 * Returns the max between two values
+	 */
+	public static UInt256 max(UInt256 a, UInt256 b) {
+		return a.compareTo(b) > 0 ? a : b;
+	}
+
+	/**
+	 * Returns the min between two values
+	 */
+	public static UInt256 min(UInt256 a, UInt256 b) {
+		return a.compareTo(b) < 0 ? a : b;
+	}
+
+
 	@Override
 	public int compareTo(UInt256 n) {
 		int cmp = this.high.compareTo(n.high);
