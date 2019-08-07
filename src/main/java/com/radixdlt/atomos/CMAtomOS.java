@@ -24,7 +24,7 @@ import com.radixdlt.atomos.procedures.ParticleClassConstraintProcedure;
 import com.radixdlt.atomos.procedures.ParticleClassWithSideEffectConstraintProcedure;
 import com.radixdlt.atomos.procedures.PayloadParticleConstraintProcedure;
 import com.radixdlt.atomos.procedures.RRIConstraintProcedure;
-import com.radixdlt.atomos.procedures.fungible.FungibleTransitionConstraintProcedure;
+import com.radixdlt.atomos.procedures.FungibleTransitionConstraintProcedure;
 import com.radixdlt.constraintmachine.ConstraintMachine.Builder;
 import com.radixdlt.constraintmachine.ConstraintProcedure;
 import com.radixdlt.constraintmachine.ConstraintMachine;

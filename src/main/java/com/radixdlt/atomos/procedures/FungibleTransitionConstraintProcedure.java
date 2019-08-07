@@ -1,4 +1,4 @@
-package com.radixdlt.atomos.procedures.fungible;
+package com.radixdlt.atomos.procedures;
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atomos.AtomOS.ParticleClassWithSideEffectConstraintCheck;
@@ -133,9 +133,8 @@ public class FungibleTransitionConstraintProcedure implements ConstraintProcedur
 					return Stream.of(ProcedureError.of("Output stack not empty"));
 				}
 			}
-			return Stream.empty();
-		} else {
-			return Stream.empty();
 		}
+
+		return Stream.empty();
 	}
 }

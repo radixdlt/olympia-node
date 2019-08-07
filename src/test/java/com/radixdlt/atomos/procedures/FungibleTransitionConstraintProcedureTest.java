@@ -1,4 +1,4 @@
-package com.radixdlt.atomos.procedures.fungible;
+package com.radixdlt.atomos.procedures;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -6,6 +6,7 @@ import static org.mockito.Mockito.mock;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atomos.FungibleTransition;
 import com.radixdlt.atomos.Result;
+import com.radixdlt.atomos.procedures.FungibleTransitionConstraintProcedure;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.atoms.ParticleGroup;
 import com.radixdlt.atoms.SpunParticle;
