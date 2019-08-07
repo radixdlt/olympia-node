@@ -1,6 +1,7 @@
 package com.radixdlt.atomos.procedures.fungible;
 
 import com.radixdlt.atomos.FungibleFormula;
+import com.radixdlt.atomos.procedures.fungible.GreedyFungibleMatcher.FungibleFormulaInputOutputVerdict;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -11,9 +12,9 @@ import java.util.stream.Stream;
  */
 class FungibleFormulaMatchInformation {
 	private final FungibleFormula formula;
-	private final List<FungibleFormula.FungibleFormulaInputOutputVerdict> verdictsWithRejections;
+	private final List<FungibleFormulaInputOutputVerdict> verdictsWithRejections;
 
-	FungibleFormulaMatchInformation(FungibleFormula formula, Map<Fungible, FungibleFormula.FungibleFormulaInputOutputVerdict> inputOutputVerdicts) {
+	FungibleFormulaMatchInformation(FungibleFormula formula, Map<Fungible, FungibleFormulaInputOutputVerdict> inputOutputVerdicts) {
 		this.formula = formula;
 		this.verdictsWithRejections = inputOutputVerdicts.values().stream()
 			.filter(verdict -> !verdict.getRejectedClasses().isEmpty())
@@ -24,7 +25,7 @@ class FungibleFormulaMatchInformation {
 		return formula;
 	}
 
-	Stream<FungibleFormula.FungibleFormulaInputOutputVerdict> verdictsWithRejections() {
+	Stream<FungibleFormulaInputOutputVerdict> verdictsWithRejections() {
 		return verdictsWithRejections.stream();
 	}
 
