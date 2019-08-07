@@ -13,9 +13,15 @@ import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.sync.actions.ReceiveAtomAction;
 import com.radixdlt.tempo.sync.actions.ReceiveDeliveryRequestAction;
 import com.radixdlt.tempo.sync.actions.ReceiveDeliveryResponseAction;
+import com.radixdlt.tempo.sync.actions.ReceiveIterativeRequestAction;
+import com.radixdlt.tempo.sync.actions.ReceiveIterativeResponseAction;
 import com.radixdlt.tempo.sync.actions.ReceivePushAction;
+import com.radixdlt.tempo.sync.actions.RepeatScheduleAction;
+import com.radixdlt.tempo.sync.actions.ScheduleAction;
 import com.radixdlt.tempo.sync.actions.SendDeliveryRequestAction;
 import com.radixdlt.tempo.sync.actions.SendDeliveryResponseAction;
+import com.radixdlt.tempo.sync.actions.SendIterativeRequestAction;
+import com.radixdlt.tempo.sync.actions.SendIterativeResponseAction;
 import com.radixdlt.tempo.sync.actions.SendPushAction;
 import com.radixdlt.tempo.sync.actions.SyncAtomAction;
 import com.radixdlt.tempo.sync.epics.ActiveSyncEpic;
@@ -23,6 +29,8 @@ import com.radixdlt.tempo.sync.epics.DeliveryEpic;
 import com.radixdlt.tempo.sync.epics.MessagingEpic;
 import com.radixdlt.tempo.sync.messages.DeliveryRequestMessage;
 import com.radixdlt.tempo.sync.messages.DeliveryResponseMessage;
+import com.radixdlt.tempo.sync.messages.IterativeRequestMessage;
+import com.radixdlt.tempo.sync.messages.IterativeResponseMessage;
 import com.radixdlt.tempo.sync.messages.PushMessage;
 import org.radix.atoms.Atom;
 import org.radix.logging.Logger;
@@ -45,8 +53,8 @@ import java.util.stream.Stream;
 
 public class TempoAtomSynchroniser implements AtomSynchroniser {
 	private static final int FULL_INBOUND_QUEUE_RESCHEDULE_TIME_SECONDS = 1;
-	private static final int INBOUND_QUEUE_CAPACITY = 1 << 14;
-	private static final int SYNC_ACTIONS_QUEUE_CAPACITY = 1 << 16;
+	private final int inboundQueueCapacity;
+	private final int syncActionsQueueCapacity;
 
 	private final Logger logger = Logging.getLogger("Sync");
 
@@ -59,24 +67,33 @@ public class TempoAtomSynchroniser implements AtomSynchroniser {
 	private final List<SyncEpic> syncEpics;
 	private final ScheduledExecutorService executor;
 
-	private TempoAtomSynchroniser(AtomStoreView storeView,
+	private TempoAtomSynchroniser(int inboundQueueCapacity,
+	                              int syncActionsQueueCapacity,
+	                              AtomStoreView storeView,
 	                              EdgeSelector edgeSelector,
 	                              PeerSupplier peerSupplier,
 	                              List<SyncEpic> syncEpics,
 	                              List<Function<TempoAtomSynchroniser, SyncEpic>> syncEpicBuilders) {
+		this.inboundQueueCapacity = inboundQueueCapacity;
+		this.syncActionsQueueCapacity = syncActionsQueueCapacity;
 		this.storeView = storeView;
 		this.edgeSelector = edgeSelector;
 		this.peerSupplier = peerSupplier;
 
 		this.executor = Executors.newScheduledThreadPool(4, r -> new Thread(null, null, "Sync"));
-		this.inboundAtoms = new LinkedBlockingQueue<>(INBOUND_QUEUE_CAPACITY);
-		this.syncActions = new LinkedBlockingQueue<>(SYNC_ACTIONS_QUEUE_CAPACITY);
+		this.inboundAtoms = new LinkedBlockingQueue<>(this.inboundQueueCapacity);
+		this.syncActions = new LinkedBlockingQueue<>(this.syncActionsQueueCapacity);
 		this.syncEpics = ImmutableList.<SyncEpic>builder()
 			.addAll(syncEpics)
 			.addAll(syncEpicBuilders.stream()
 				.map(epicBuilder -> epicBuilder.apply(this))
 				.collect(Collectors.toList()))
+			.add(this::internalEpic)
 			.build();
+
+		this.syncEpics.stream()
+			.flatMap(SyncEpic::initialActions)
+			.forEach(this::dispatch);
 	}
 
 	private void run() {
@@ -108,7 +125,11 @@ public class TempoAtomSynchroniser implements AtomSynchroniser {
 	}
 
 	private void schedule(SyncAction action, long delay, TimeUnit unit) {
-		this.executor.schedule(() -> execute(action), delay, unit);
+		this.executor.schedule(() -> dispatch(action), delay, unit);
+	}
+
+	private void repeatSchedule(SyncAction action, long initialDelay, long recurrentDelay, TimeUnit unit) {
+		this.executor.scheduleAtFixedRate(() -> dispatch(action), initialDelay, recurrentDelay, unit);
 	}
 
 	private void dispatch(SyncAction syncAction) {
@@ -118,7 +139,7 @@ public class TempoAtomSynchroniser implements AtomSynchroniser {
 		}
 	}
 
-	private Stream<SyncAction> receive(SyncAction action) {
+	private Stream<SyncAction> internalEpic(SyncAction action) {
 		if (action instanceof ReceiveAtomAction) {
 			// try to add to inbound queue
 			TempoAtom atom = ((ReceiveAtomAction) action).getAtom();
@@ -126,6 +147,12 @@ public class TempoAtomSynchroniser implements AtomSynchroniser {
 				// reschedule
 				schedule(action, FULL_INBOUND_QUEUE_RESCHEDULE_TIME_SECONDS, TimeUnit.SECONDS);
 			}
+		} else if (action instanceof ScheduleAction) {
+			ScheduleAction schedule = (ScheduleAction) action;
+			schedule(schedule.getAction(), schedule.getDelay(), schedule.getUnit());
+		} else if (action instanceof RepeatScheduleAction) {
+			RepeatScheduleAction schedule = (RepeatScheduleAction) action;
+			repeatSchedule(schedule.getAction(), schedule.getInitialDelay(), schedule.getRecurrentDelay(), schedule.getUnit());
 		}
 
 		return Stream.empty();
@@ -174,7 +201,11 @@ public class TempoAtomSynchroniser implements AtomSynchroniser {
 			@Override
 			public Map<String, Object> getMetaData() {
 				return ImmutableMap.of(
-					"inboundQueue", getQueueSize()
+					"inboundQueue", getQueueSize(),
+					"inboundQueueCapacity", TempoAtomSynchroniser.this.inboundQueueCapacity,
+
+					"actionQueue", TempoAtomSynchroniser.this.syncActions.size(),
+					"actionQueueCapacity", TempoAtomSynchroniser.this.syncActionsQueueCapacity
 				);
 			}
 		};
@@ -200,17 +231,22 @@ public class TempoAtomSynchroniser implements AtomSynchroniser {
 			.addEpicBuilder(synchroniser ->
 				MessagingEpic.builder()
 				.messager(messager)
-				.addInbound("atom.sync.delivery.request", DeliveryRequestMessage.class, ReceiveDeliveryRequestAction::from)
-				.addInbound("atom.sync.delivery.response", DeliveryResponseMessage.class, ReceiveDeliveryResponseAction::from)
-				.addInbound("atom.sync.push", PushMessage.class, ReceivePushAction::from)
+				.addInbound("atom.sync2.delivery.request", DeliveryRequestMessage.class, ReceiveDeliveryRequestAction::from)
 				.addOutbound(SendDeliveryRequestAction.class, SendDeliveryRequestAction::toMessage, SendDeliveryRequestAction::getPeer)
+				.addInbound("atom.sync2.delivery.response", DeliveryResponseMessage.class, ReceiveDeliveryResponseAction::from)
 				.addOutbound(SendDeliveryResponseAction.class, SendDeliveryResponseAction::toMessage, SendDeliveryResponseAction::getPeer)
+				.addInbound("atom.sync2.iterative.request", IterativeRequestMessage.class, ReceiveIterativeRequestAction::from)
+				.addOutbound(SendIterativeRequestAction.class, SendIterativeRequestAction::toMessage, SendIterativeRequestAction::getPeer)
+				.addInbound("atom.sync2.iterative.response", IterativeResponseMessage.class, ReceiveIterativeResponseAction::from)
+				.addOutbound(SendIterativeResponseAction.class, SendIterativeResponseAction::toMessage, SendIterativeResponseAction::getPeer)
+				.addInbound("atom.sync2.push", PushMessage.class, ReceivePushAction::from)
 				.addOutbound(SendPushAction.class, SendPushAction::toMessage, SendPushAction::getPeer)
-				.build(synchroniser::dispatch))
-			.addEpicBuilder(synchroniser -> synchroniser::receive);
+				.build(synchroniser::dispatch));
 	}
 
 	public static class Builder {
+		private int inboundQueueCapacity = 1 << 14;
+		private int syncActionsQueueCapacity = 1 << 16;
 		private AtomStoreView storeView;
 		private PeerSupplier peerSupplier;
 		private EdgeSelector edgeSelector;
@@ -218,6 +254,16 @@ public class TempoAtomSynchroniser implements AtomSynchroniser {
 		private final List<Function<TempoAtomSynchroniser, SyncEpic>> syncEpicBuilders = new ArrayList<>();
 
 		private Builder() {
+		}
+
+		public Builder inboundQueueCapacity(int capacity) {
+			this.inboundQueueCapacity = capacity;
+			return this;
+		}
+
+		public Builder syncActionQueueCapacity(int capacity) {
+			this.syncActionsQueueCapacity = capacity;
+			return this;
 		}
 
 		public Builder addEpic(SyncEpic epic) {
@@ -252,6 +298,8 @@ public class TempoAtomSynchroniser implements AtomSynchroniser {
 			Objects.requireNonNull(edgeSelector, "edgeSelector is required");
 
 			TempoAtomSynchroniser tempoAtomSynchroniser = new TempoAtomSynchroniser(
+				inboundQueueCapacity,
+				syncActionsQueueCapacity,
 				storeView,
 				edgeSelector,
 				peerSupplier,

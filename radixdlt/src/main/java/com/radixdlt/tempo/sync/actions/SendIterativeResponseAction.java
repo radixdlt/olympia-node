@@ -1,11 +1,15 @@
 package com.radixdlt.tempo.sync.actions;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.common.AID;
 import com.radixdlt.ledger.LedgerCursor;
+import com.radixdlt.tempo.sync.SyncAction;
+import com.radixdlt.tempo.sync.messages.IterativeResponseMessage;
+import org.radix.network.messaging.Message;
 import org.radix.network.peers.Peer;
 
-public class SendIterativeResponseAction {
+public class SendIterativeResponseAction implements SyncAction {
 	private final ImmutableList<AID> aids;
 	private final LedgerCursor cursor;
 	private final Peer peer;
@@ -26,5 +30,9 @@ public class SendIterativeResponseAction {
 
 	public Peer getPeer() {
 		return peer;
+	}
+
+	public Message toMessage() {
+		return new IterativeResponseMessage(aids, cursor);
 	}
 }
