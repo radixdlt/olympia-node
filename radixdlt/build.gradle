@@ -31,6 +31,10 @@ configurations {
     integrationTestRuntime.extendsFrom testRuntime
 }
 
+jar {
+   dependsOn ':radixdlt-engine:jar'
+}
+
 dependencies {
     compile project(":radixdlt-engine")
     compile 'commons-cli:commons-cli:1.4'
