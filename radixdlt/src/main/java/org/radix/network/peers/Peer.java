@@ -324,7 +324,7 @@ public class Peer extends BasicContainer implements Chronologic
 	// Could potentially just add a new serializable POJO with these values included
 	@JsonProperty("statistics")
 	@DsonOutput(Output.PERSIST)
-	private Map<String, Long> getJsonStatistics() {
+	private ImmutableMap<String, Long> getJsonStatistics() {
 		return ImmutableMap.of("duration", getTimestamp(Timestamps.DISCONNECTED) - getTimestamp(Timestamps.CONNECTED));
 	}
 
