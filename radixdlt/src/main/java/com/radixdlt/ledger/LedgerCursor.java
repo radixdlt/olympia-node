@@ -4,13 +4,24 @@ import com.radixdlt.common.AID;
 
 import java.io.IOException;
 
+/**
+ * A ledger cursor, bound to a specific ledger instance.
+ */
 public interface LedgerCursor {
 	enum Type {
 		UNIQUE, DUPLICATE
 	}
 
+	/**
+	 * Gets the type of cursor
+	 * @return The type of cursor
+	 */
 	Type getType();
 
+	/**
+	 * Gets the current AID at this cursor
+ 	 * @return The current AID
+	 */
 	AID get();
 
 	LedgerCursor next() throws IOException;

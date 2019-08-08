@@ -56,7 +56,7 @@ import java.util.function.Supplier;
 public class TempoAtomStore implements AtomStore {
 	private static final Logger logger = Logging.getLogger("Store");
 
-	private final Supplier<DatabaseEnvironment> databaseEnvironmentSupplier;
+	private final Supplier<DatabaseEnvironment> dbEnv;
 	private final AtomStoreViewAdapter view;
 	private final Map<Long, TempoAtomIndices> atomIndices = new ConcurrentHashMap<>();
 
@@ -64,8 +64,8 @@ public class TempoAtomStore implements AtomStore {
 	private SecondaryDatabase uniqueIndices;
 	private SecondaryDatabase duplicatedIndices;
 
-	public TempoAtomStore(Supplier<DatabaseEnvironment> databaseEnvironmentSupplier) {
-		this.databaseEnvironmentSupplier = databaseEnvironmentSupplier;
+	public TempoAtomStore(Supplier<DatabaseEnvironment> dbEnv) {
+		this.dbEnv = dbEnv;
 		this.view = new AtomStoreViewAdapter(this);
 	}
 
@@ -89,7 +89,7 @@ public class TempoAtomStore implements AtomStore {
 		duplicateIndicesConfig.setMultiKeyCreator(new AtomMultipleSecondaryKeyCreator());
 
 		try {
-			Environment dbEnv = databaseEnvironmentSupplier.get().getEnvironment();
+			Environment dbEnv = this.dbEnv.get().getEnvironment();
 			this.atomsDatabase = dbEnv.openDatabase(null, "tempo2.atoms", primaryConfig);
 			this.uniqueIndices = dbEnv.openSecondaryDatabase(null, "tempo2.unique_indices", this.atomsDatabase, uniqueIndicesConfig);
 			this.duplicatedIndices = dbEnv.openSecondaryDatabase(null, "tempo2.duplicated_indices", this.atomsDatabase, duplicateIndicesConfig);
@@ -105,15 +105,14 @@ public class TempoAtomStore implements AtomStore {
 	@Override
 	public void reset() {
 		Transaction transaction = null;
-
 		try {
-			Modules.get(DatabaseEnvironment.class).lock();
+			dbEnv.get().lock();
 
-			Environment dbEnv = databaseEnvironmentSupplier.get().getEnvironment();
-			transaction = dbEnv.beginTransaction(null, new TransactionConfig().setReadUncommitted(true));
-			dbEnv.truncateDatabase(transaction, "tempo2.atoms", false);
-			dbEnv.truncateDatabase(transaction, "tempo2.unique_indices", false);
-			dbEnv.truncateDatabase(transaction, "tempo2.duplicated_indices", false);
+			Environment env = this.dbEnv.get().getEnvironment();
+			transaction = env.beginTransaction(null, new TransactionConfig().setReadUncommitted(true));
+			env.truncateDatabase(transaction, "tempo2.atoms", false);
+			env.truncateDatabase(transaction, "tempo2.unique_indices", false);
+			env.truncateDatabase(transaction, "tempo2.duplicated_indices", false);
 
 			transaction.commit();
 		} catch (DatabaseNotFoundException e) {
@@ -129,7 +128,7 @@ public class TempoAtomStore implements AtomStore {
 
 			throw new TempoException("Error while resetting databases", e);
 		} finally {
-			Modules.get(DatabaseEnvironment.class).unlock();
+			dbEnv.get().unlock();
 		}
 	}
 
@@ -224,7 +223,7 @@ public class TempoAtomStore implements AtomStore {
 				return Optional.of(Serialization.getDefault().fromDson(value.getData(), TempoAtom.class));
 			}
 		} catch (Exception e) {
-			fail("Get of TempoAtom with AID " + aid + " failed", e);
+			fail("Get of atom '" + aid + "' failed", e);
 		} finally {
 			SystemProfiler.getInstance().incrementFrom("ATOM_STORE:GET:AID", start);
 		}
@@ -238,7 +237,7 @@ public class TempoAtomStore implements AtomStore {
 
 		DatabaseEntry pKey = new DatabaseEntry();
 		DatabaseEntry key = new DatabaseEntry(LedgerIndex.from(ATOM_INDEX_PREFIX, aid.getBytes()));
-		Transaction transaction = Modules.get(DatabaseEnvironment.class).getEnvironment().beginTransaction(null, null);
+		Transaction transaction = dbEnv.get().getEnvironment().beginTransaction(null, null);
 
 		try {
 			if (this.uniqueIndices.get(transaction, key, pKey, null, LockMode.RMW) == OperationStatus.SUCCESS) {
@@ -250,7 +249,7 @@ public class TempoAtomStore implements AtomStore {
 
 		} catch (Exception e) {
 			transaction.abort();
-			fail("Delete of TempoAtom with AID " + aid + " failed", e);
+			fail("Delete of atom '" + aid + "' failed", e);
 		} finally {
 			SystemProfiler.getInstance().incrementFrom("ATOM_STORE:DELETE_ATOM", start);
 		}
@@ -270,7 +269,7 @@ public class TempoAtomStore implements AtomStore {
 
 		DatabaseEntry pKey = null;
 		DatabaseEntry data = null;
-		Transaction transaction = Modules.get(DatabaseEnvironment.class).getEnvironment().beginTransaction(null, null);
+		Transaction transaction = dbEnv.get().getEnvironment().beginTransaction(null, null);
 
 		try {
 			OperationStatus status;
@@ -288,11 +287,8 @@ public class TempoAtomStore implements AtomStore {
 			return true;
 		} catch (Exception e) {
 			transaction.abort();
-
-			fail("Store of TempoAtom " + atom + " failed", e);
-
+			fail("Store of atom '" + atom.getAID() + " failed", e);
 			// FIXME need to handle UniqueConstraintException
-
 			return false;
 		} finally {
 			if (data != null && data.getData() != null && data.getData().length > 0) {
@@ -403,12 +399,6 @@ public class TempoAtomStore implements AtomStore {
 		}
 	}
 
-	public boolean update(TempoAtom atom) {
-		// FIXME I think we'll need this if we want to update the TemporalProof stored with an Atom after a conflict resolution
-
-		return false;
-	}
-
 	// FIXME awful performance
 	@Override
 	public Pair<ImmutableList<AID>, IterativeCursor> getNext(IterativeCursor iterativeCursor, int limit, ShardSpace shardSpace) {
@@ -449,6 +439,7 @@ public class TempoAtomStore implements AtomStore {
 		return Pair.of(ImmutableList.copyOf(aids), new IterativeCursor(iterativeCursor.getLogicalClockPosition(), nextCursor));
 	}
 
+	@Override
 	public LedgerCursor search(Type type, LedgerIndex index, LedgerSearchMode mode) {
 		Objects.requireNonNull(type, "type is required");
 		Objects.requireNonNull(index, "index is required");
@@ -484,19 +475,9 @@ public class TempoAtomStore implements AtomStore {
 		}
 	}
 
-	public TempoCursor getNext(TempoCursor cursor) throws DatabaseException {
-		Objects.requireNonNull(cursor);
 
-		SecondaryCursor databaseCursor;
-
-		if (cursor.getType().equals(Type.UNIQUE)) {
-			databaseCursor = this.uniqueIndices.openCursor(null, null);
-		} else if (cursor.getType().equals(Type.DUPLICATE)) {
-			databaseCursor = this.duplicatedIndices.openCursor(null, null);
-		} else {
-			throw new IllegalStateException("Type " + cursor.getType() + " not supported");
-		}
-
+	TempoCursor getNext(TempoCursor cursor) throws DatabaseException {
+		SecondaryCursor databaseCursor = toSecondaryCursor(cursor);
 		try {
 			DatabaseEntry pKey = new DatabaseEntry(cursor.getPrimary());
 			DatabaseEntry key = new DatabaseEntry(cursor.getIndex());
@@ -515,19 +496,8 @@ public class TempoAtomStore implements AtomStore {
 		}
 	}
 
-	public TempoCursor getPrev(TempoCursor cursor) throws DatabaseException {
-		Objects.requireNonNull(cursor);
-
-		SecondaryCursor databaseCursor;
-
-		if (cursor.getType().equals(Type.UNIQUE)) {
-			databaseCursor = this.uniqueIndices.openCursor(null, null);
-		} else if (cursor.getType().equals(Type.DUPLICATE)) {
-			databaseCursor = this.duplicatedIndices.openCursor(null, null);
-		} else {
-			throw new IllegalStateException("Type " + cursor.getType() + " not supported");
-		}
-
+	TempoCursor getPrev(TempoCursor cursor) throws DatabaseException {
+		SecondaryCursor databaseCursor = toSecondaryCursor(cursor);
 		try {
 			DatabaseEntry pKey = new DatabaseEntry(cursor.getPrimary());
 			DatabaseEntry key = new DatabaseEntry(cursor.getIndex());
@@ -546,19 +516,8 @@ public class TempoAtomStore implements AtomStore {
 		}
 	}
 
-	public TempoCursor getFirst(TempoCursor cursor) throws DatabaseException {
-		Objects.requireNonNull(cursor);
-
-		SecondaryCursor databaseCursor;
-
-		if (cursor.getType().equals(Type.UNIQUE)) {
-			databaseCursor = this.uniqueIndices.openCursor(null, null);
-		} else if (cursor.getType().equals(Type.DUPLICATE)) {
-			databaseCursor = this.duplicatedIndices.openCursor(null, null);
-		} else {
-			throw new IllegalStateException("Type " + cursor.getType() + " not supported");
-		}
-
+	TempoCursor getFirst(TempoCursor cursor) throws DatabaseException {
+		SecondaryCursor databaseCursor = toSecondaryCursor(cursor);
 		try {
 			DatabaseEntry pKey = new DatabaseEntry(cursor.getPrimary());
 			DatabaseEntry key = new DatabaseEntry(cursor.getIndex());
@@ -581,19 +540,8 @@ public class TempoAtomStore implements AtomStore {
 		}
 	}
 
-	public TempoCursor getLast(TempoCursor cursor) throws DatabaseException {
-		Objects.requireNonNull(cursor);
-
-		SecondaryCursor databaseCursor;
-
-		if (cursor.getType().equals(Type.UNIQUE)) {
-			databaseCursor = this.uniqueIndices.openCursor(null, null);
-		} else if (cursor.getType().equals(Type.DUPLICATE)) {
-			databaseCursor = this.duplicatedIndices.openCursor(null, null);
-		} else {
-			throw new IllegalStateException("Type " + cursor.getType() + " not supported");
-		}
-
+	TempoCursor getLast(TempoCursor cursor) throws DatabaseException {
+		SecondaryCursor databaseCursor = toSecondaryCursor(cursor);
 		try {
 			DatabaseEntry pKey = new DatabaseEntry(cursor.getPrimary());
 			DatabaseEntry key = new DatabaseEntry(cursor.getIndex());
@@ -616,7 +564,20 @@ public class TempoAtomStore implements AtomStore {
 		}
 	}
 
-	public static class AtomStorePackedPrimaryKeyComparator implements Comparator<byte[]> {
+	private SecondaryCursor toSecondaryCursor(TempoCursor cursor) {
+		Objects.requireNonNull(cursor, "cursor is required");
+		SecondaryCursor databaseCursor;
+		if (cursor.getType().equals(Type.UNIQUE)) {
+			databaseCursor = this.uniqueIndices.openCursor(null, null);
+		} else if (cursor.getType().equals(Type.DUPLICATE)) {
+			databaseCursor = this.duplicatedIndices.openCursor(null, null);
+		} else {
+			throw new IllegalStateException("Cursor type " + cursor.getType() + " not supported");
+		}
+		return databaseCursor;
+	}
+
+	private static class AtomStorePackedPrimaryKeyComparator implements Comparator<byte[]> {
 		@Override
 		public int compare(byte[] primary1, byte[] primary2) {
 			for (int b = 0; b < Long.BYTES; b++) {
@@ -631,15 +592,15 @@ public class TempoAtomStore implements AtomStore {
 		}
 	}
 
-	public static final byte ATOM_INDEX_PREFIX = 0;
-	public static final byte SHARD_INDEX_PREFIX = 1;
+	private static final byte ATOM_INDEX_PREFIX = 0;
+	private static final byte SHARD_INDEX_PREFIX = 1;
 	public static final byte DESTINATION_INDEX_PREFIX = 2;
 
 	private final class TempoAtomIndices {
 		private final Set<LedgerIndex> uniqueIndices;
 		private final Set<LedgerIndex> duplicateIndices;
 
-		TempoAtomIndices(TempoAtom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
+		private TempoAtomIndices(TempoAtom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
 			for (LedgerIndex uniqueIndex : uniqueIndices) {
 				if (uniqueIndex.getPrefix() == ATOM_INDEX_PREFIX ||
 					uniqueIndex.getPrefix() == SHARD_INDEX_PREFIX ||
