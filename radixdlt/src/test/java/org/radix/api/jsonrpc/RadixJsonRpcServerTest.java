@@ -11,9 +11,7 @@ import org.everit.json.schema.Schema;
 import org.json.JSONObject;
 import org.junit.Test;
 import org.radix.api.services.AtomsService;
-import org.radix.atoms.AtomStore;
 import com.radixdlt.serialization.Serialization;
-import org.radix.atoms.sync.AtomSync;
 
 public class RadixJsonRpcServerTest {
 	@Test

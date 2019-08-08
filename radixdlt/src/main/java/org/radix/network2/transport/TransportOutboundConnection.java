@@ -36,6 +36,4 @@ public interface TransportOutboundConnection extends Closeable {
 	 */
 	CompletableFuture<SendResult> trySend(byte[] data, TimeUnit timeout);
 
-	CompletableFuture<SendResult> send(Iterable<byte[]> bytes);
-
 }

@@ -2,9 +2,8 @@ package org.radix.network2.addressbook;
 
 import java.util.stream.Stream;
 
-import org.radix.network2.transport.ConnectionData;
-import org.radix.network2.transport.Transport;
-import org.radix.network2.transport.TransportException;
+import org.radix.network2.transport.TransportInfo;
+import org.radix.network2.transport.TransportMetadata;
 
 import com.radixdlt.common.EUID;
 
@@ -38,16 +37,16 @@ public interface Peer {
 	 *
 	 * @return a {@link Stream} of the transports supported by the {@link Peer}
 	 */
-	Stream<Transport> supportedTransports();
+	Stream<TransportInfo> supportedTransports();
 
 	/**
 	 * Return the connection data required to connect to this peer using the
 	 * specified transport.
 	 *
-	 * @param transport The transport for which the {@link ConnectionData} is required
-	 * @return The {@link ConnectionData}
+	 * @param transportName The transport for which the {@link TransportMetadata} is required
+	 * @return The {@link TransportMetadata}
 	 * @throws TransportException if the transport is not supported, or another error occurs
 	 */
-	ConnectionData connectionData(Transport transport) throws TransportException;
+	TransportMetadata connectionData(String transportName);
 
 }

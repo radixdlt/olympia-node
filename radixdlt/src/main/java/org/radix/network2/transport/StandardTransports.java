@@ -1,5 +1,8 @@
 package org.radix.network2.transport;
 
+import org.radix.network2.transport.udp.UDPTransportControlImpl;
+import org.radix.network2.transport.udp.UDPTransportImpl;
+
 /**
  * Repository for mandatory transports.
  */
@@ -9,7 +12,8 @@ public final class StandardTransports {
 		throw new IllegalStateException("Can't construct");
 	}
 
-	public static final Transport TCP = null;
-	public static final Transport UDP = null;
+	public static Transport getUDPTransport(TransportMetadata metadata) {
+		return new UDPTransportImpl(metadata, new UDPTransportControlImpl());
+	}
 
 }

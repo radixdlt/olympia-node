@@ -1,6 +1,7 @@
 package org.radix.universe.system;
 
 import java.util.Map;
+import java.util.stream.Stream;
 
 import com.radixdlt.common.EUID;
 import org.radix.containers.BasicContainer;
@@ -8,6 +9,8 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.crypto.CryptoException;
 import org.radix.modules.Modules;
+import org.radix.network2.transport.TransportInfo;
+
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializationException;
@@ -18,6 +21,7 @@ import org.radix.time.LogicalClock;
 import com.radixdlt.universe.Universe;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableList;
 
 import static com.radixdlt.serialization.MapHelper.mapOf;
 
@@ -50,6 +54,10 @@ public class RadixSystem extends BasicContainer
 	@DsonOutput(Output.ALL)
 	private long			timestamp;
 
+	@JsonProperty("transports")
+	@DsonOutput(Output.ALL)
+	private ImmutableList<TransportInfo> transports;
+
 	private ECPublicKey		key;
 
 	public RadixSystem()
@@ -64,6 +72,7 @@ public class RadixSystem extends BasicContainer
 		this.protocolVersion = 0;
 		this.shards = new ShardSpace(0l, new ShardRange(0, 0));
 		this.timestamp = 0;
+		this.transports = ImmutableList.of();
 		this.key = null;
 	}
 
@@ -78,11 +87,12 @@ public class RadixSystem extends BasicContainer
 		this.planck = system.getPlanck();
 		this.protocolVersion = system.getProtocolVersion();
 		this.shards = new ShardSpace(system.getKey().getUID().getShard(), system.getShards().getRange());
-		this.key = system.getKey();
 		this.timestamp = system.getTimestamp();
+		this.transports = system.transports;
+		this.key = system.getKey();
 	}
 
-	public RadixSystem(ECPublicKey key, String agent, int agentVersion, int protocolVersion, ShardSpace shards)
+	public RadixSystem(ECPublicKey key, String agent, int agentVersion, int protocolVersion, ShardSpace shards, ImmutableList<TransportInfo> transports)
 	{
 		this();
 
@@ -91,6 +101,7 @@ public class RadixSystem extends BasicContainer
 		this.agentVersion = agentVersion;
 		this.protocolVersion = protocolVersion;
 		this.shards = shards;
+		this.transports = transports;
 	}
 
 	public String getAgent()
@@ -200,6 +211,10 @@ public class RadixSystem extends BasicContainer
 	void setCommitment(Hash commitment)
 	{
 		this.commitment = commitment;
+	}
+
+	public Stream<TransportInfo> supportedTransports() {
+		return transports.stream();
 	}
 
 	public ECPublicKey getKey()

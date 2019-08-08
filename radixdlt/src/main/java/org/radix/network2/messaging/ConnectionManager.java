@@ -7,6 +7,4 @@ public interface ConnectionManager {
 
 	Transport findTransport(Peer peer, byte[] bytes);
 
-	Transport findTransport(Peer peer, Iterable<byte[]> bytes);
-
 }

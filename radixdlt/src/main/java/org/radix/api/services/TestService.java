@@ -15,12 +15,15 @@ import org.radix.network.messages.PeersMessage;
 import org.radix.network.messaging.Messaging;
 import org.radix.network.messaging.Message.Direction;
 import org.radix.network.peers.Peer;
+import org.radix.network2.transport.StaticTransportMetadata;
+import org.radix.network2.transport.TransportInfo;
+import org.radix.network2.transport.udp.UDPConstants;
 import org.radix.shards.ShardSpace;
 import org.radix.time.NtpService;
 import org.radix.time.Timestamps;
 import org.radix.universe.system.RadixSystem;
 import com.radixdlt.utils.Bytes;
-
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.serialization.Serialization;
@@ -88,7 +91,18 @@ public final class TestService {
 			ShardSpace shards = Modules.get(Serialization.class).fromJson(json, ShardSpace.class);
 
 			RadixSystem system = new RadixSystem(
-				keyValue.getPublicKey(), Radix.AGENT, Radix.AGENT_VERSION, Radix.PROTOCOL_VERSION, shards);
+				keyValue.getPublicKey(),
+				Radix.AGENT, Radix.AGENT_VERSION, Radix.PROTOCOL_VERSION,
+				shards,
+				ImmutableList.of(
+					TransportInfo.of(UDPConstants.UDP_NAME,
+						StaticTransportMetadata.of(
+							UDPConstants.METADATA_UDP_HOST, ipaddr,
+							UDPConstants.METADATA_UDP_PORT, port
+						)
+					)
+				)
+			);
 			Peer peer = new Peer(Network.getURI(ipaddr, portValue));
 			peer.setSystem(system);
 			PeersMessage peersMessage = new PeersMessage();

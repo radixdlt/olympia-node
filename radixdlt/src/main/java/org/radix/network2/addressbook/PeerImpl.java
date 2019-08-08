@@ -3,9 +3,9 @@ package org.radix.network2.addressbook;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-import org.radix.network2.transport.ConnectionData;
-import org.radix.network2.transport.Transport;
 import org.radix.network2.transport.TransportException;
+import org.radix.network2.transport.TransportInfo;
+import org.radix.network2.transport.TransportMetadata;
 import org.radix.universe.system.RadixSystem;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -47,19 +47,22 @@ public class PeerImpl implements Peer {
 
 	@Override
 	public boolean supportsTransport(String transportName) {
-		// TODO Auto-generated method stub
-		return false;
+		return supportedTransports()
+			.map(TransportInfo::name)
+			.filter(transportName::equals)
+			.findAny().isPresent();
 	}
 
 	@Override
-	public Stream<Transport> supportedTransports() {
-		// TODO Auto-generated method stub
-		return null;
+	public TransportMetadata connectionData(String transportName) {
+		return supportedTransports()
+			.filter(t -> t.name().equals(transportName))
+			.map(TransportInfo::metadata)
+			.findAny().orElseThrow(() -> new TransportException("Transport " + transportName + " not supported"));
 	}
 
 	@Override
-	public ConnectionData connectionData(Transport transport) throws TransportException {
-		// TODO Auto-generated method stub
-		return null;
+	public Stream<TransportInfo> supportedTransports() {
+		return system.supportedTransports();
 	}
 }

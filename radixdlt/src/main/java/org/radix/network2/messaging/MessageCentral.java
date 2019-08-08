@@ -1,9 +1,8 @@
 package org.radix.network2.messaging;
 
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-import org.radix.containers.BasicContainer;
+import org.radix.network.messaging.Message;
 import org.radix.network2.addressbook.Peer;
 import org.radix.network2.transport.SendResult;
 import org.radix.network2.transport.TransportException;
@@ -20,45 +19,7 @@ public interface MessageCentral {
 	 * @param message The message to send
 	 * @return A {@link CompletableFuture} indicating the result of the send
 	 */
-	CompletableFuture<SendResult> send(Peer peer, BasicContainer message) throws TransportException;
-
-	/**
-	 * Send a group of messages to a peer.
-	 * If required, the messaging system will establish a connection to the peer, or
-	 * re-use an existing connection.  This method will block until the message can be
-	 * submitted to the underlying transport.
-	 *
-	 * @param peer The peer to send the message to
-	 * @param message The message to send
-	 * @return A {@link CompletableFuture} indicating the result of the send
-	 */
-	CompletableFuture<SendResult> send(Peer peer, Iterable<? extends BasicContainer> message);
-
-	/**
-	 * Send a message to a group of peers.  This may be more efficient than sending
-	 * individual messages to each peer.
-	 * If required, the messaging system will establish a connection to each peer, or
-	 * re-use an existing connection.  This method will block until the message can be
-	 * submitted to the underlying transports.
-	 *
-	 * @param peer The peer to send the message to
-	 * @param message The message to send
-	 * @return A {@link CompletableFuture} indicating the result of the send
-	 */
-	List<CompletableFuture<SendResult>> send(Iterable<? extends Peer> peers, BasicContainer message);
-
-	/**
-	 * Send a group of messages to a group of peers.  This may be more efficient than
-	 * sending individual messages to each peer.
-	 * If required, the messaging system will establish a connection to each peer, or
-	 * re-use an existing connection.  This method will block until the message can be
-	 * submitted to the underlying transports.
-	 *
-	 * @param peer The peer to send the message to
-	 * @param message The message to send
-	 * @return A {@link CompletableFuture} indicating the result of the send
-	 */
-	List<CompletableFuture<SendResult>> send(Iterable<? extends Peer> peers, Iterable<? extends BasicContainer> message);
+	CompletableFuture<SendResult> send(Peer peer, Message message) throws TransportException;
 
 	/**
 	 * Register a callback to be called when messages of a particular type are recieved.
@@ -73,7 +34,7 @@ public interface MessageCentral {
 	 * @param listener The listener to notify
 	 * @return {@code true} if the listener was added, {@code false} if the listener is already registered
 	 */
-	<T extends BasicContainer> boolean addListener(Class<T> messageType, MessageListener<T> listener);
+	<T extends Message> boolean addListener(Class<T> messageType, MessageListener<T> listener);
 
 	/**
 	 * Remove a callback from those to be called when messages of a particular type are recieved.
@@ -82,6 +43,6 @@ public interface MessageCentral {
 	 * @param listener The listener to remove
 	 * @return {@code true} if the listener was remove, {@code false} if the listener was not registered
 	 */
-	<T extends BasicContainer> boolean removeListener(Class<T> messageType, MessageListener<T> listener);
+	<T extends Message> boolean removeListener(Class<T> messageType, MessageListener<T> listener);
 
 }

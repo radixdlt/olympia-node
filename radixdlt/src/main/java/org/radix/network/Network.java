@@ -101,7 +101,7 @@ public class Network extends Service
     private final Set<Peer>		peers = new HashSet<Peer>();
 	private final Whitelist 	whitelist = new Whitelist(Modules.get(RuntimeProperties.class).get("network.whitelist", ""));
     private final ReentrantLock connecting = new ReentrantLock();
-	private PublicInetAddress   localAddress = new PublicInetAddress();
+	private PublicInetAddress   localAddress = PublicInetAddress.getInstance();
 
 	private DatagramSocket			UDPServerSocket = null;
     private DatagramSocket 			UDPClientSocket = null;

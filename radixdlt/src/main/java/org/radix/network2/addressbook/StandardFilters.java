@@ -1,6 +1,6 @@
 package org.radix.network2.addressbook;
 
-import org.radix.network2.transport.StandardTransports;
+import org.radix.network2.transport.udp.UDPConstants;
 
 public final class StandardFilters {
 
@@ -20,12 +20,8 @@ public final class StandardFilters {
 		return p -> false;
 	}
 
-	public PeerPredicate tcpPeerFilter() {
-		return standardFilter().and(p -> p.supportsTransport(StandardTransports.TCP.getName()));
-	}
-
 	public PeerPredicate udpPeerFilter() {
-		return standardFilter().and(p -> p.supportsTransport(StandardTransports.UDP.getName()));
+		return standardFilter().and(p -> p.supportsTransport(UDPConstants.UDP_NAME));
 	}
 
 }

@@ -5,121 +5,163 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.Random;
+import java.util.function.LongSupplier;
 
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.modules.Modules;
+
+import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.common.annotations.VisibleForTesting;
 import com.radixdlt.universe.Universe;
+import com.radixdlt.utils.Longs;
 
-public class PublicInetAddress {
-    private static Random prng;
-    private static InetAddress	localAddress;
+public final class PublicInetAddress {
+	@VisibleForTesting
+	static final int SECRET_LIFETIME_MS = 60_000;
+	private static final Logger log = Logging.getLogger("network");
 
-    static
-    {
-        try {
-        	localAddress = InetAddress.getLocalHost();
-        } catch (UnknownHostException e) {
-        	localAddress = InetAddress.getLoopbackAddress();
-        }
-    }
+	static boolean isPublicUnicastInetAddress(InetAddress address) {
+		return ! (address.isSiteLocalAddress() || address.isLinkLocalAddress() ||
+				  address.isLoopbackAddress() || address.isMulticastAddress());
+	}
 
-    private InetAddress confirmedAddress;
-    private InetAddress unconfirmedAddress;
-    private byte[] secret;
-    private long secretEndOfLife;
+	private static PublicInetAddress instance = null;
+	private static final Object INSTANCE_LOCK = new Object();
 
-    private static final Logger log = Logging.getLogger ("network");
+	public static PublicInetAddress getInstance() {
+		synchronized(INSTANCE_LOCK) {
+			if (instance == null) {
+				configure(null, Modules.get(Universe.class).getPort());
+			}
+			return instance;
+		}
+	}
 
-    public InetAddress get() {
-        InetAddress address = confirmedAddress;
-        if (address == null)
-        	address = localAddress;
-        return address;
-    }
+	public static void configure(String localAddress, int localPort) {
+		synchronized(INSTANCE_LOCK) {
+			instance = new PublicInetAddress(localAddress, localPort, System::currentTimeMillis);
+		}
+	}
 
-    private static byte[] getNextSecret() {
-        if (prng == null) {
-            prng = new Random(System.currentTimeMillis());
-        }
-        ByteBuffer buf = ByteBuffer.allocate(Long.BYTES);
-        buf.putLong(prng.nextLong());
-        return buf.array();
-    }
+	private final Object lock = new Object();
+	private final Random prng = new Random(System.nanoTime());
 
-    private static void sendSecret(InetAddress address, byte[] secret) throws IOException {
-        int port = Modules.get(Universe.class).getPort();
-        DatagramPacket packet = new DatagramPacket(secret, secret.length, address, port);
-        DatagramSocket socket = new DatagramSocket(null);
-        socket.send(packet);
-        socket.close();
-    }
+	private final LongSupplier timeSource;
+	private final InetAddress localAddress;
+	private final int localPort;
 
-    static boolean isPublicUnicastInetAddress(InetAddress address) {
-        return ! (address.isSiteLocalAddress() || address.isLinkLocalAddress() ||
-                  address.isLoopbackAddress() || address.isMulticastAddress());
-    }
+	private InetAddress confirmedAddress;
+	private InetAddress unconfirmedAddress;
+	private long secret;
+	private long secretEndOfLife = Long.MIN_VALUE; // Very much expired
 
-    /**
-     * Sends a challenge to the given address if necessary.
-     *
-     * The caller will receive a special UDP, which should be passed to the endValidation() methods.
-     *
-     * @param address untrusted address to validate
-     * @see #endValidation(DatagramPacket)
-     */
-    void startValidation(InetAddress address) throws IOException {
-        byte[] data;
+	@VisibleForTesting
+	PublicInetAddress(String localAddress, int localPort, LongSupplier timeSource) {
+		this.timeSource = timeSource;
+		this.localPort = localPort;
+		this.localAddress = getLocalAddress(localAddress);
+	}
 
-        // update state in a thread-safe manner
-        synchronized (this) {
-            if (address == null || address.equals(confirmedAddress)) {
-                confirmedAddress = address;
-                return;
-            }
-            if (secretEndOfLife > System.currentTimeMillis()) {
-                return;
-            }
+	public InetAddress get() {
+		synchronized (lock) {
+			return confirmedAddress == null ? localAddress : confirmedAddress;
+		}
+	}
 
-            unconfirmedAddress = address;
-            data = secret = getNextSecret();
+	/**
+	 * Sends a challenge to the given address if necessary.
+	 * <p>
+	 * The caller will receive a special UDP, which should be passed to the endValidation() methods.
+	 *
+	 * @param address untrusted address to validate
+	 * @see #endValidation(DatagramPacket)
+	 */
+	void startValidation(InetAddress address) throws IOException {
+		long data;
 
-            // secret is valid for a minute - plenty of time to validate the address
-            // in the mean time we do not trigger of new validation - it could act as an attack vector.
-            secretEndOfLife = System.currentTimeMillis() + 60000;
-        }
+		// update state in a thread-safe manner
+		synchronized (lock) {
+			if (address == null) {
+				// Reset
+				confirmedAddress = null;
+				return;
+			}
+			// If we are already matched, or our secret has not yet expired, just exit
+			long now = timeSource.getAsLong();
+			if (address.equals(confirmedAddress) || secretEndOfLife > now) {
+				return;
+			}
 
-        log.info("validating untrusted public address: " + address);
-        sendSecret(address, data);
-    }
+			unconfirmedAddress = address;
+			data = secret = prng.nextLong();
 
-    /**
-     * The caller needs to filter all packets with this method to catch validation UDP frames.
-     *
-     * @param packet packet previously sent by start validation.
-     * @return true when packet was part of the validation process(and can be ignored by the caller) false otherwise.
-     */
-    boolean endValidation(DatagramPacket packet) {
-        // quick return - in case this is the wrong packet
-        if (packet == null || packet.getLength() > Long.BYTES) {
-            return false;
-        }
+			// secret is valid for a minute - plenty of time to validate the address
+			// in the mean time we do not trigger of new validation - it could act as an attack vector.
+			secretEndOfLife = now + SECRET_LIFETIME_MS;
+		}
 
-        byte[] data = packet.getData();
-        if (!Arrays.equals(data, secret)) {
-            return false;
-        }
-        log.info("public address is confirmed valid: " + unconfirmedAddress);
+		log.info("validating untrusted public address: " + address);
+		sendSecret(address, data);
+	}
 
-        // update state in a thread-safe manner
-        synchronized (this) {
-            confirmedAddress = unconfirmedAddress;
-        }
+	/**
+	 * The caller needs to filter all packets with this method to catch validation UDP frames.
+	 *
+	 * @param packet packet previously sent by start validation.
+	 * @return true when packet was part of the validation process(and can be ignored by the caller) false otherwise.
+	 */
+	boolean endValidation(DatagramPacket packet) {
+		// Make sure secret doesn't change mid-check
+		long secret = this.secret;
 
-        // tell the caller that this packet should be ignored.
-        return true;
-    }
+		// quick return - in case this is not our packet, or we have not yet been set up
+		if (packet == null || packet.getLength() != Long.BYTES) {
+			return false;
+		}
+
+		if (Longs.fromByteArray(packet.getData()) != secret) {
+			return false;
+		}
+
+		log.info("public address is confirmed valid: " + unconfirmedAddress);
+
+		// update state in a thread-safe manner
+		synchronized (lock) {
+			confirmedAddress = unconfirmedAddress;
+		}
+
+		// tell the caller that this packet should be ignored.
+		return true;
+	}
+
+	@Override
+	@JsonValue
+	public String toString() {
+		return get().toString();
+	}
+
+	private void sendSecret(InetAddress address, long secret) throws IOException {
+		byte[] bytes = Longs.toByteArray(secret);
+		DatagramPacket packet = new DatagramPacket(bytes, bytes.length, address, localPort);
+		try (DatagramSocket socket = new DatagramSocket(null)) {
+			socket.send(packet);
+		}
+	}
+
+	private InetAddress getLocalAddress(String localAddress) {
+		try {
+			if (localAddress != null) {
+				return InetAddress.getByName(localAddress);
+			}
+		} catch (UnknownHostException e) {
+			// Ignore and fall through
+		}
+		try {
+			return InetAddress.getLocalHost();
+		} catch (UnknownHostException e) {
+			return InetAddress.getLoopbackAddress();
+		}
+	}
 }
