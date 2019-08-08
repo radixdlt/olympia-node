@@ -1,6 +1,7 @@
 package com.radixdlt.atomos;
 
 import com.google.common.collect.ImmutableMap;
+import com.radixdlt.atomos.AtomOSKernel.AtomKernelCompute;
 import com.radixdlt.common.Pair;
 import com.radixdlt.compute.AtomCompute;
 import com.radixdlt.store.CMStore;
@@ -46,7 +47,7 @@ import java.util.stream.Stream;
 /**
  * Implementation of the AtomOS interface on top of a UTXO based Constraint Machine.
  */
-public final class CMAtomOS implements AtomOSKernel {
+public final class CMAtomOS {
 	private final List<ConstraintProcedure> procedures = new ArrayList<>();
 	private final List<KernelConstraintProcedure> kernelProcedures = new ArrayList<>();
 	private AtomKernelCompute atomKernelCompute;
@@ -187,40 +188,39 @@ public final class CMAtomOS implements AtomOSKernel {
 	}
 
 	public void loadKernelConstraintScrypt(AtomOSDriver driverScrypt) {
-		driverScrypt.main(this);
-	}
-
-
-	@Override
-	public AtomKernel onAtom() {
-		return new AtomKernel() {
+		driverScrypt.main(new AtomOSKernel() {
 			@Override
-			public void require(AtomKernelConstraintCheck constraint) {
-				CMAtomOS.this.kernelProcedures.add(
-					(cmAtom) -> constraint.check(cmAtom).errorStream().map(errMsg -> KernelProcedureError.of(cmAtom.getAtom(), errMsg))
-				);
+			public AtomKernel onAtom() {
+				return new AtomKernel() {
+					@Override
+					public void require(AtomKernelConstraintCheck constraint) {
+						CMAtomOS.this.kernelProcedures.add(
+							(cmAtom) -> constraint.check(cmAtom).errorStream().map(errMsg -> KernelProcedureError.of(cmAtom.getAtom(), errMsg))
+						);
+					}
+
+					@Override
+					public void setCompute(AtomKernelCompute compute) {
+
+						if (CMAtomOS.this.atomKernelCompute != null) {
+							throw new IllegalStateException("Compute already set.");
+						}
+
+						CMAtomOS.this.atomKernelCompute = compute;
+					}
+				};
 			}
 
 			@Override
-			public void setCompute(AtomKernelCompute compute) {
-
-				if (CMAtomOS.this.atomKernelCompute != null) {
-					throw new IllegalStateException("Compute already set.");
-				}
-
-				CMAtomOS.this.atomKernelCompute = compute;
+			public long getCurrentTimestamp() {
+				return timestampSupplier.getAsLong();
 			}
-		};
-	}
 
-	@Override
-	public Universe getUniverse() {
-		return universeSupplier.get();
-	}
-
-	@Override
-	public long getCurrentTimestamp() {
-		return timestampSupplier.getAsLong();
+			@Override
+			public Universe getUniverse() {
+				return universeSupplier.get();
+			}
+		});
 	}
 
 	/**
