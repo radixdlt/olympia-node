@@ -169,22 +169,6 @@ public interface AtomOS {
 	}
 
 	/**
-	 * Actual function which returns result of a single from particle of the fungible transition
-	 * @param <T>
-	 */
-	@FunctionalInterface
-	interface FungibleTransitionInitialConstraint<T extends Particle> {
-		/**
-		 * Check whether a certain transition from nothing *to* a given Particle is valid
-		 * Note: Amounts should not be considered at this place, since they are taken into account elsewhere.
-		 * @param toParticle The particle we transition to
-		 * @param metadata The metadata of the containing Atom
-		 * @return A {@link Result} of the check
-		 */
-		Result apply(T toParticle, AtomMetadata metadata);
-	}
-
-	/**
 	 * Callback stub for defining the kind of a fungible transition, either initial or with input.
 	 * Returns a {@link FungibleTransitionConstraint} callback where further formulas can be defined.
 	 * @param <T>
@@ -199,37 +183,23 @@ public interface AtomOS {
 		 <U extends Particle> FungibleTransitionConstraint<T> requireInitialWith(Class<U> sideEffectClass,
 			 ParticleClassWithSideEffectConstraintCheck<T, U> constraint);
 
-		/**
-		 * Utility method to define a formula of this transition with a single input.
-		 * Note: For more complicated formulas, use requireFrom(FungibleFormula) directly.
-		 *
-		 * @return self, the callback to define further constraints
-		 */
-		<U extends Particle> FungibleTransitionConstraint<T> requireFrom(
-			Class<U> cls1,
-			WitnessValidator<U> witnessValidator,
-			BiPredicate<U, T> fungibleValidator
+		<U extends Particle> FungibleTransitionConstraint<T> transitionTo(
+			Class<U> outputClass,
+			BiPredicate<T, U> fungibleValidator,
+			WitnessValidator<T> witnessValidator
 		);
 	}
 
 	/**
 	 * Callback for an implementation of a fungible transition constraint.
-	 * A fungible transition is a transition from one set of fungibles to another given a certain *formula*.
-	 * A fungible transition consists of multiple formulas, each defining its own constraints and compositions.
 	 *
 	 * @param <T> the type of Particle
 	 */
 	interface FungibleTransitionConstraint<T extends Particle> {
-		/**
-		 * Utility method to define a formula of this transition with a single input.
-		 * Note: For more complicated formulas, use requireFrom(FungibleFormula) directly.
-		 *
-		 * @return self, the callback to define further constraints
-		 */
-		<U extends Particle> FungibleTransitionConstraint<T> orFrom(
-			Class<U> cls1,
-			WitnessValidator<U> witnessValidator,
-			BiPredicate<U, T> fungibleValidator
+		<U extends Particle> FungibleTransitionConstraint<T> transitionTo(
+			Class<U> outputClass,
+			BiPredicate<T, U> fungibleValidator,
+			WitnessValidator<T> witnessValidator
 		);
 	}
 

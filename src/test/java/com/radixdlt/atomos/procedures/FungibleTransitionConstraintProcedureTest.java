@@ -38,8 +38,8 @@ public class FungibleTransitionConstraintProcedureTest {
 		Map<Class<? extends Particle>, FungibleTransition<? extends Particle>> transitions = ImmutableMap.of(
 			Fungible.class,
 			FungibleTransition.<Fungible>build()
-				.to(Fungible.class, f -> UInt256.ONE)
-				.from(Fungible.class, (a, b) -> Result.success(), (a, b) -> true)
+				.from(Fungible.class, f -> UInt256.ONE)
+				.to(Fungible.class, (a, b) -> Result.success(), (a, b) -> true)
 				.build()
 		);
 
@@ -60,8 +60,8 @@ public class FungibleTransitionConstraintProcedureTest {
 		Map<Class<? extends Particle>, FungibleTransition<? extends Particle>> transitions = ImmutableMap.of(
 			Fungible.class,
 			FungibleTransition.<Fungible>build()
-				.to(Fungible.class, f -> UInt256.ONE)
-				.from(Fungible.class, (a, b) -> Result.success(), (a, b) -> true)
+				.from(Fungible.class, f -> UInt256.ONE)
+				.to(Fungible.class, (a, b) -> Result.success(), (a, b) -> true)
 				.build()
 		);
 
@@ -83,8 +83,8 @@ public class FungibleTransitionConstraintProcedureTest {
 		Map<Class<? extends Particle>, FungibleTransition<? extends Particle>> transitions = ImmutableMap.of(
 			Fungible.class,
 			FungibleTransition.<Fungible>build()
-				.to(Fungible.class, f -> UInt256.ONE)
-				.from(Fungible.class, (a, b) -> Result.success(), (a, b) -> true)
+				.from(Fungible.class, f -> UInt256.ONE)
+				.to(Fungible.class, (a, b) -> Result.success(), (a, b) -> true)
 				.build()
 		);
 
@@ -106,8 +106,8 @@ public class FungibleTransitionConstraintProcedureTest {
 		Map<Class<? extends Particle>, FungibleTransition<? extends Particle>> transitions = ImmutableMap.of(
 			Fungible.class,
 			FungibleTransition.<Fungible>build()
-				.to(Fungible.class, f -> UInt256.ONE)
-				.from(Fungible.class, (a, b) -> Result.success(), (a, b) -> true)
+				.from(Fungible.class, f -> UInt256.ONE)
+				.to(Fungible.class, (a, b) -> Result.success(), (a, b) -> true)
 				.build()
 		);
 
@@ -126,13 +126,40 @@ public class FungibleTransitionConstraintProcedureTest {
 	}
 
 	@Test
+	public void when_validating_a_reversed_one_way_transfer__then_validation_should_fail() {
+		Map<Class<? extends Particle>, FungibleTransition<? extends Particle>> transitions = ImmutableMap.of(
+			Fungible.class,
+			FungibleTransition.<Fungible>build()
+				.from(Fungible.class, f -> UInt256.ONE)
+				.to(Fungible2.class, (a, b) -> Result.success(), (a, b) -> true)
+				.build(),
+			Fungible2.class,
+			FungibleTransition.<Fungible2>build()
+				.from(Fungible2.class, f -> UInt256.ONE)
+				.to(Fungible2.class, (a, b) -> Result.success(), (a, b) -> true)
+				.build()
+		);
+
+		FungibleTransitionConstraintProcedure procedure = new FungibleTransitionConstraintProcedure(transitions);
+		Stream<ProcedureError> errs = procedure.validate(
+			ParticleGroup.of(
+				SpunParticle.down(mock(Fungible2.class)),
+				SpunParticle.up(mock(Fungible.class))
+			),
+			mock(AtomMetadata.class)
+		);
+
+		assertThat(errs).isNotEmpty();
+	}
+
+	@Test
 	public void when_validating_an_initial_with_fungible_with_missing_initial__then_validation_should_fail() {
 		Map<Class<? extends Particle>, FungibleTransition<? extends Particle>> transitions = ImmutableMap.of(
 			Fungible.class,
 			FungibleTransition.<Fungible>build()
-				.to(Fungible.class, f -> UInt256.ONE)
+				.from(Fungible.class, f -> UInt256.ONE)
 				.initialWith(Fungible2.class, (a, b, c) -> Result.success())
-				.from(Fungible.class, (a, b) -> Result.success(), (a, b) -> true)
+				.to(Fungible.class, (a, b) -> Result.success(), (a, b) -> true)
 				.build()
 		);
 
@@ -153,9 +180,9 @@ public class FungibleTransitionConstraintProcedureTest {
 		Map<Class<? extends Particle>, FungibleTransition<? extends Particle>> transitions = ImmutableMap.of(
 			Fungible.class,
 			FungibleTransition.<Fungible>build()
-				.to(Fungible.class, f -> UInt256.ONE)
+				.from(Fungible.class, f -> UInt256.ONE)
 				.initialWith(Fungible2.class, (a, b, c) -> Result.success())
-				.from(Fungible.class, (a, b) -> Result.success(), (a, b) -> true)
+				.to(Fungible.class, (a, b) -> Result.success(), (a, b) -> true)
 				.build()
 		);
 

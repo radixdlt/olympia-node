@@ -131,7 +131,7 @@ public final class FungibleTransition<T extends Particle> {
 		private Builder() {
 		}
 
-		public Builder<T> to(
+		public Builder<T> from(
 			Class<T> outputParticleClass,
 			ParticleToAmountMapper<T> outputParticleToAmountMapper
 		) {
@@ -146,12 +146,12 @@ public final class FungibleTransition<T extends Particle> {
 			return this;
 		}
 
-		public <U extends Particle> Builder<T> from(
-			Class<U> fromParticleClass,
-			WitnessValidator<U> witnessValidator,
-			BiPredicate<U, T> transition
+		public <U extends Particle> Builder<T> to(
+			Class<U> toParticleClass,
+			WitnessValidator<T> witnessValidator,
+			BiPredicate<T, U> transition
 		) {
-			particleTypeToFormulasMapBuilder.put(fromParticleClass, new FungibleFormula((WitnessValidator<Particle>)witnessValidator, transition));
+			particleTypeToFormulasMapBuilder.put(toParticleClass, new FungibleFormula((WitnessValidator<Particle>)witnessValidator, transition));
 
 			return this;
 		}

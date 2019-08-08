@@ -80,7 +80,10 @@ public class FungibleTransitionConstraintProcedure implements ConstraintProcedur
 					}
 					Pair<Particle, UInt256> top = inputs.peek();
 					Particle fromParticle = top.getFirst();
-					FungibleFormula formula = transitions.get(p.getClass()).getParticleClassToFormulaMap().get(fromParticle.getClass());
+					FungibleFormula formula = transitions.get(fromParticle.getClass()).getParticleClassToFormulaMap().get(p.getClass());
+					if (formula == null) {
+						break;
+					}
 					if (!formula.getTransition().test(fromParticle, p)) {
 						break;
 					}

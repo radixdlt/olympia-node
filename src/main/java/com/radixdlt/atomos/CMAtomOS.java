@@ -161,7 +161,7 @@ public final class CMAtomOS implements AtomOSKernel, AtomOS {
 		}
 
 		FungibleTransition.Builder<T> transitionBuilder = FungibleTransition.<T>build()
-			.to(particleClass, particleToAmountMapper);
+			.from(particleClass, particleToAmountMapper);
 		pendingFungibleTransition = transitionBuilder;
 
 		return new FungibleTransitionConstraintStub<T>() {
@@ -171,20 +171,20 @@ public final class CMAtomOS implements AtomOSKernel, AtomOS {
 				ParticleClassWithSideEffectConstraintCheck<T, U> constraint
 			) {
 				transitionBuilder.initialWith(sideEffectClass, constraint);
-				return this::requireFrom;
+				return this::transitionTo;
 			}
 
 			@Override
-			public <U extends Particle> FungibleTransitionConstraint<T> requireFrom(
+			public <U extends Particle> FungibleTransitionConstraint<T> transitionTo(
 				Class<U> fromParticleClass,
-				WitnessValidator<U> witnessValidator,
-				BiPredicate<U, T> transition
+				BiPredicate<T, U> transition,
+				WitnessValidator<T> witnessValidator
 			) {
 				if (pendingFungibleTransition == null) {
 					throw new IllegalStateException("Attempt to add formula to finished fungible transition to " + particleClass);
 				}
-				transitionBuilder.from(fromParticleClass, witnessValidator, transition);
-				return this::requireFrom;
+				transitionBuilder.to(fromParticleClass, witnessValidator, transition);
+				return this::transitionTo;
 			}
 		};
 	}

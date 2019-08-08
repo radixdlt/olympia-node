@@ -32,13 +32,6 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 	public void main(AtomOS os) {
 		os.registerParticle(TokenDefinitionParticle.class, "tokens", TokenDefinitionParticle::getOwner);
 
-		// Require Token Definition to be created with unallocated tokens of max supply
-		os.onIndexed(TokenDefinitionParticle.class, TokenDefinitionParticle::getRRI)
-			.requireInitial((tok, meta) -> Result.of(meta.isSignedBy(tok.getOwner()), "Owner has to sign: " + tok.getOwner()))
-			.requireInitialWith(UnallocatedTokensParticle.class, (tokDef, unallocated, meta) ->
-				Result.of(unallocated.getTokDefRef().equals(tokDef.getRRI()), "Unallocated particles RRI must match Token RRI")
-			);
-
 		// Symbol constraints
 		os.on(TokenDefinitionParticle.class)
 			.require(t -> {
@@ -98,6 +91,13 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			UnallocatedTokensParticle::getAddresses
 		);
 
+		// Require Token Definition to be created with unallocated tokens of max supply
+		os.onIndexed(TokenDefinitionParticle.class, TokenDefinitionParticle::getRRI)
+			.requireInitial((tok, meta) -> Result.of(meta.isSignedBy(tok.getOwner()), "Owner has to sign: " + tok.getOwner()))
+			.requireInitialWith(UnallocatedTokensParticle.class, (tokDef, unallocated, meta) ->
+				Result.of(unallocated.getTokDefRef().equals(tokDef.getRRI()), "Unallocated particles RRI must match Token RRI")
+			);
+
 		os.on(UnallocatedTokensParticle.class)
 			.require(u -> Result.of(!u.getAmount().isZero(), "Amount cannot be zero"));
 
@@ -121,42 +121,42 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 				Result.of(unallocated.getGranularity().equals(tokDef.getGranularity()), "Granularity should match"),
 				Result.of(unallocated.getTokenPermissions().equals(tokDef.getTokenPermissions()), "Permissions should match")
 			))
-			.orFrom(
+			.transitionTo(
 				UnallocatedTokensParticle.class,
-				(from, meta) -> checkSigned(from.getTokDefRef().getAddress(), meta),
 				(from, to) ->
 					Objects.equals(from.getTokDefRef(), to.getTokDefRef())
 					&& Objects.equals(from.getGranularity(), to.getGranularity())
-					&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions())
+					&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions()),
+				(from, meta) -> checkSigned(from.getTokDefRef().getAddress(), meta)
 			)
-			.orFrom(
+			.transitionTo(
 				TransferrableTokensParticle.class,
-				(from, meta) -> from.getTokenPermission(TokenTransition.BURN).check(from.getTokDefRef(), meta),
 				(from, to) ->
 					Objects.equals(from.getTokDefRef(), to.getTokDefRef())
 					&& Objects.equals(from.getGranularity(), to.getGranularity())
-					&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions())
+					&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions()),
+				(from, meta) -> from.getTokenPermission(TokenTransition.MINT).check(from.getTokDefRef(), meta)
 			);
 
 		os.onFungible(
 			TransferrableTokensParticle.class,
 			TransferrableTokensParticle::getAmount
 		)
-			.requireFrom(
+			.transitionTo(
 				UnallocatedTokensParticle.class,
-				(from, meta) -> from.getTokenPermission(TokenTransition.MINT).check(from.getTokDefRef(), meta),
 				(from, to) ->
 					Objects.equals(from.getTokDefRef(), to.getTokDefRef())
 					&& Objects.equals(from.getGranularity(), to.getGranularity())
-					&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions())
+					&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions()),
+				(from, meta) -> from.getTokenPermission(TokenTransition.BURN).check(from.getTokDefRef(), meta)
 			)
-			.orFrom(
+			.transitionTo(
 				TransferrableTokensParticle.class,
-				(from, meta) -> checkSigned(from.getAddress(), meta),
 				(from, to) ->
 					Objects.equals(from.getTokDefRef(), to.getTokDefRef())
 					&& Objects.equals(from.getGranularity(), to.getGranularity())
-					&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions())
+					&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions()),
+				(from, meta) -> checkSigned(from.getAddress(), meta)
 			);
 	}
 
