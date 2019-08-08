@@ -8,7 +8,6 @@ import com.radixdlt.store.CMStore;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,14 +19,13 @@ import java.util.function.Function;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
-import java.util.regex.Pattern;
 import com.radixdlt.atomos.mapper.ParticleToAmountMapper;
 import com.radixdlt.atomos.mapper.ParticleToRRIMapper;
 import com.radixdlt.atomos.mapper.ParticleToShardableMapper;
 import com.radixdlt.atomos.mapper.ParticleToShardablesMapper;
 import com.radixdlt.atomos.procedures.ParticleClassConstraintProcedure;
 import com.radixdlt.atomos.procedures.ParticleClassWithSideEffectConstraintProcedure;
-import com.radixdlt.atomos.procedures.PayloadParticleConstraintProcedure;
+import com.radixdlt.atomos.procedures.TransitionlessConstraintProcedure;
 import com.radixdlt.atomos.procedures.RRIConstraintProcedure;
 import com.radixdlt.atomos.procedures.FungibleTransitionConstraintProcedure;
 import com.radixdlt.constraintmachine.ConstraintMachine.Builder;
@@ -56,7 +54,7 @@ public final class CMAtomOS {
 	private final Map<Class<? extends Particle>, Function<Particle, Stream<RadixAddress>>> particleMapper = new LinkedHashMap<>();
 
 	private final RRIConstraintProcedure.Builder rriProcedureBuilder = new RRIConstraintProcedure.Builder();
-	private final PayloadParticleConstraintProcedure.Builder payloadProcedureBuilder = new PayloadParticleConstraintProcedure.Builder();
+	private final TransitionlessConstraintProcedure.Builder payloadProcedureBuilder = new TransitionlessConstraintProcedure.Builder();
 	private final Supplier<Universe> universeSupplier;
 	private final LongSupplier timestampSupplier;
 
@@ -96,7 +94,7 @@ public final class CMAtomOS {
 				}
 
 				return constraint -> {
-					ParticleClassConstraintProcedure<T> procedure = new ParticleClassConstraintProcedure<>(particleClass, (p, m) -> constraint.apply(p));
+					ParticleClassConstraintProcedure<T> procedure = new ParticleClassConstraintProcedure<>(particleClass, constraint::apply);
 					procedures.add(procedure);
 				};
 			}
@@ -170,16 +168,13 @@ public final class CMAtomOS {
 			}
 
 			@Override
-			public <T extends Particle> PayloadParticleClassConstraint<T> onPayload(Class<T> particleClass) {
+			public <T extends Particle> TransitionlessParticleClassConstraint<T> onTransitionless(Class<T> particleClass) {
 				if (!scryptParticleClasses.containsKey(particleClass)) {
 					throw new IllegalStateException(particleClass + " must be registered in calling scrypt.");
 				}
 
-				payloadProcedureBuilder.add(particleClass);
-
-				return constraintCheck -> {
-					ParticleClassConstraintProcedure<T> procedure = new ParticleClassConstraintProcedure<>(particleClass, constraintCheck);
-					procedures.add(procedure);
+				return witnessValidator -> {
+					payloadProcedureBuilder.add(particleClass, witnessValidator);
 				};
 			}
 		});

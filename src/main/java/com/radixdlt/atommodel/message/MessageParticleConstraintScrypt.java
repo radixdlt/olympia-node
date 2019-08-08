@@ -9,13 +9,19 @@ public class MessageParticleConstraintScrypt implements ConstraintScrypt {
 	public void main(AtomOS os) {
 		os.registerParticle(MessageParticle.class, MessageParticle::getAddresses);
 
-		os.onPayload(MessageParticle.class)
+		os.on(MessageParticle.class)
+			.require(p -> {
+				if (p.getBytes() == null) {
+					return Result.error("message data is null");
+				}
+
+				return Result.success();
+			});
+
+		os.onTransitionless(MessageParticle.class)
 			.require((msg, meta) -> {
 				if (!meta.isSignedBy(msg.getFrom())) {
 					return Result.error("message must be signed by sender: " + msg.getFrom());
-				}
-				if (msg.getBytes() == null) {
-					return Result.error("message data is null");
 				}
 
 				return Result.success();

@@ -10,6 +10,7 @@ import com.radixdlt.constraintmachine.ConstraintProcedure;
 import com.radixdlt.constraintmachine.ProcedureError;
 import java.util.Objects;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 /**
@@ -19,9 +20,9 @@ import java.util.stream.Stream;
  */
 public final class ParticleClassConstraintProcedure<T extends Particle> implements ConstraintProcedure {
 	private final Class<T> particleClass;
-	private final BiFunction<T, AtomMetadata, Result> constraintCheck;
+	private final Function<T, Result> constraintCheck;
 
-	public ParticleClassConstraintProcedure(Class<T> particleClass, BiFunction<T, AtomMetadata, Result> constraintCheck) {
+	public ParticleClassConstraintProcedure(Class<T> particleClass, Function<T, Result> constraintCheck) {
 		this.particleClass = Objects.requireNonNull(particleClass);
 		this.constraintCheck = Objects.requireNonNull(constraintCheck);
 	}
@@ -30,7 +31,7 @@ public final class ParticleClassConstraintProcedure<T extends Particle> implemen
 	public Stream<ProcedureError> validate(ParticleGroup group, AtomMetadata metadata) {
 		return Streams.mapWithIndex(
 			group.particles(particleClass, Spin.UP),
-			(particle, i) -> constraintCheck.apply(particle, metadata)
+			(particle, i) -> constraintCheck.apply(particle)
 				.errorStream()
 				.map(err -> ProcedureError.of(group, err, i))
 			).flatMap(l -> l);

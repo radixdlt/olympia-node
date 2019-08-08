@@ -59,7 +59,7 @@ public class TestAtomOS implements AtomOS {
 	}
 
 	@Override
-	public <T extends Particle> PayloadParticleClassConstraint<T> onPayload(Class<T> particleClass) {
+	public <T extends Particle> TransitionlessParticleClassConstraint<T> onTransitionless(Class<T> particleClass) {
 		return constraint -> particleClassConstraints.add(new Pair<>(particleClass, (p, m) -> constraint.apply((T) p, m)));
 	}
 

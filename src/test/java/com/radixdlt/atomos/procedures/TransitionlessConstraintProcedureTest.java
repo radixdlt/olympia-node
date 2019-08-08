@@ -1,8 +1,12 @@
 package com.radixdlt.atomos.procedures;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import com.radixdlt.atomos.AtomOS.WitnessValidator;
+import com.radixdlt.atomos.Result;
 import java.util.stream.Stream;
 
 import org.junit.Test;
@@ -14,7 +18,7 @@ import com.radixdlt.atoms.Particle;
 import com.radixdlt.atoms.ParticleGroup;
 import com.radixdlt.atoms.SpunParticle;
 
-public class PayloadParticleConstraintProcedureTest {
+public class TransitionlessConstraintProcedureTest {
 
 	@SerializerId2("custom.payload.particle")
 	private static class CustomPayloadParticle extends Particle {
@@ -25,9 +29,11 @@ public class PayloadParticleConstraintProcedureTest {
 	}
 
 	@Test
-	public void when_a_payload_constraint_procedure_validates_an_up_particle__then_an_error_should_be_returned() {
-		PayloadParticleConstraintProcedure procedure = new PayloadParticleConstraintProcedure.Builder()
-			.add(CustomPayloadParticle.class)
+	public void when_a_payload_constraint_procedure_validates_an_up_particle__then_an_error_should_not_be_returned() {
+		WitnessValidator<CustomPayloadParticle> witnessValidator = mock(WitnessValidator.class);
+		when(witnessValidator.apply(any(), any())).thenReturn(Result.success());
+		TransitionlessConstraintProcedure procedure = new TransitionlessConstraintProcedure.Builder()
+			.add(CustomPayloadParticle.class, witnessValidator)
 			.build();
 
 		Stream<ProcedureError> errors = procedure.validate(ParticleGroup.of(SpunParticle.up(new CustomPayloadParticle())), mock(AtomMetadata.class));
@@ -37,8 +43,11 @@ public class PayloadParticleConstraintProcedureTest {
 
 	@Test
 	public void when_a_payload_constraint_procedure_validates_a_downed_particle__then_an_error_should_be_returned() {
-		PayloadParticleConstraintProcedure procedure = new PayloadParticleConstraintProcedure.Builder()
-			.add(CustomPayloadParticle.class)
+		WitnessValidator<CustomPayloadParticle> witnessValidator = mock(WitnessValidator.class);
+		when(witnessValidator.apply(any(), any())).thenReturn(Result.success());
+
+		TransitionlessConstraintProcedure procedure = new TransitionlessConstraintProcedure.Builder()
+			.add(CustomPayloadParticle.class, witnessValidator)
 			.build();
 
 		Stream<ProcedureError> errors = procedure.validate(

@@ -14,7 +14,9 @@ import com.radixdlt.atoms.SpunParticle;
 import com.radixdlt.constraintmachine.AtomMetadata;
 import com.radixdlt.constraintmachine.ProcedureError;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.stream.Stream;
+import nl.jqno.equalsverifier.Func;
 import org.junit.Test;
 
 public class ParticleClassConstraintProcedureTest {
@@ -26,8 +28,8 @@ public class ParticleClassConstraintProcedureTest {
 
 	@Test
 	public void when_receive_atom_with_one_particle_with_class_that_is_checked__check_does_occur_once() {
-		BiFunction<CustomParticle, AtomMetadata, Result> constraintCheck = mock(BiFunction.class);
-		when(constraintCheck.apply(any(), any())).thenReturn(Result.success());
+		Function<CustomParticle, Result> constraintCheck = mock(Function.class);
+		when(constraintCheck.apply(any())).thenReturn(Result.success());
 
 		ParticleClassConstraintProcedure<CustomParticle> constraintProcedure = new ParticleClassConstraintProcedure<>(
 			CustomParticle.class,
@@ -39,14 +41,14 @@ public class ParticleClassConstraintProcedureTest {
 		Stream<ProcedureError> issues = constraintProcedure.validate(ParticleGroup.of(SpunParticle.up(p)), mock(AtomMetadata.class));
 		issues.forEach(i -> { });
 
-		verify(constraintCheck, times(1)).apply(eq(p), any());
+		verify(constraintCheck, times(1)).apply(eq(p));
 	}
 
 
 	@Test
 	public void when_receive_atom_with_one_down_particle_with_class_that_is_checked__check_does_not_occur() {
-		BiFunction<CustomParticle, AtomMetadata, Result> constraintCheck = mock(BiFunction.class);
-		when(constraintCheck.apply(any(), any())).thenReturn(Result.success());
+		Function<CustomParticle, Result> constraintCheck = mock(Function.class);
+		when(constraintCheck.apply(any())).thenReturn(Result.success());
 
 		ParticleClassConstraintProcedure<CustomParticle> constraintProcedure = new ParticleClassConstraintProcedure<>(
 			CustomParticle.class,
@@ -58,6 +60,6 @@ public class ParticleClassConstraintProcedureTest {
 		Stream<ProcedureError> issues = constraintProcedure.validate(ParticleGroup.of(SpunParticle.down(p1)), mock(AtomMetadata.class));
 		issues.forEach(i -> { });
 
-		verify(constraintCheck, times(0)).apply(any(), any());
+		verify(constraintCheck, times(0)).apply(any());
 	}
 }

@@ -62,7 +62,7 @@ public interface AtomOS {
 		ParticleToAmountMapper<T> particleToAmountMapper
 	);
 
-	<T extends Particle> PayloadParticleClassConstraint<T> onPayload(Class<T> particleClass);
+	<T extends Particle> TransitionlessParticleClassConstraint<T> onTransitionless(Class<T> particleClass);
 
 	/**
 	 * System call endpoint which allows an atom model application to program constraints
@@ -118,12 +118,12 @@ public interface AtomOS {
 		}
 	}
 
-	interface PayloadParticleClassConstraint<T extends Particle> {
+	interface TransitionlessParticleClassConstraint<T extends Particle> {
 		/**
 		 * Adds a constraint check for this particle class
-		 * @param constraint the constraint check
+		 * @param witnessValidator the constraint check
 		 */
-		void require(BiFunction<T, AtomMetadata, Result> constraint);
+		void require(WitnessValidator<T> witnessValidator);
 	}
 
 
