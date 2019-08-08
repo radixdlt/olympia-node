@@ -36,7 +36,6 @@ import org.radix.database.DatabaseEnvironment;
 import org.radix.database.exceptions.DatabaseException;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.modules.Modules;
 import org.radix.shards.ShardRange;
 import org.radix.shards.ShardSpace;
 import org.radix.time.TemporalVertex;
@@ -65,7 +64,7 @@ public class TempoAtomStore implements AtomStore {
 	private SecondaryDatabase duplicatedIndices;
 
 	public TempoAtomStore(Supplier<DatabaseEnvironment> dbEnv) {
-		this.dbEnv = dbEnv;
+		this.dbEnv = Objects.requireNonNull(dbEnv, "dbEnv is required");
 		this.view = new AtomStoreViewAdapter(this);
 	}
 
@@ -404,7 +403,7 @@ public class TempoAtomStore implements AtomStore {
 	public Pair<ImmutableList<AID>, IterativeCursor> getNext(IterativeCursor iterativeCursor, int limit, ShardSpace shardSpace) {
 		List<AID> aids = Lists.newArrayList();
 		long start = SystemProfiler.getInstance().begin();
-		long position = iterativeCursor.getLogicalClockPosition();
+		long position = iterativeCursor.getLCPosition();
 
 		try (Cursor cursor = this.atomsDatabase.openCursor(null, null)) {
 			// TODO remove position + 1 to someplace else
@@ -432,11 +431,11 @@ public class TempoAtomStore implements AtomStore {
 		}
 
 		IterativeCursor nextCursor = null;
-		if (position != iterativeCursor.getLogicalClockPosition()) {
+		if (position != iterativeCursor.getLCPosition()) {
 			nextCursor = new IterativeCursor(position, null);
 		}
 
-		return Pair.of(ImmutableList.copyOf(aids), new IterativeCursor(iterativeCursor.getLogicalClockPosition(), nextCursor));
+		return Pair.of(ImmutableList.copyOf(aids), new IterativeCursor(iterativeCursor.getLCPosition(), nextCursor));
 	}
 
 	@Override
@@ -577,7 +576,7 @@ public class TempoAtomStore implements AtomStore {
 		return databaseCursor;
 	}
 
-	private static class AtomStorePackedPrimaryKeyComparator implements Comparator<byte[]> {
+	public static class AtomStorePackedPrimaryKeyComparator implements Comparator<byte[]> {
 		@Override
 		public int compare(byte[] primary1, byte[] primary2) {
 			for (int b = 0; b < Long.BYTES; b++) {

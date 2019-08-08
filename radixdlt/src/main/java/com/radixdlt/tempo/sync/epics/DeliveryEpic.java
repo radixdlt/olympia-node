@@ -71,7 +71,7 @@ public class DeliveryEpic implements SyncEpic {
 				SendDeliveryRequestAction sendAction = new SendDeliveryRequestAction(missingAids, request.getPeer());
 				ongoingDeliveries.addAll(missingAids);
 
-				logger.info("Requesting delivery of " + missingAids + " from " + request.getPeer());
+				logger.info("Requesting delivery of " + missingAids.size() + " aids from " + request.getPeer());
 				// schedule timeout after which deliveries will be checked
 				TimeoutDeliveryRequestAction timeoutAction = new TimeoutDeliveryRequestAction(sendAction.getAids(), sendAction.getPeer());
 				return Stream.of(sendAction, timeoutAction.schedule(DELIVERY_REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS));

@@ -16,7 +16,6 @@ import com.radixdlt.ledger.LedgerSearchMode;
 import com.radixdlt.tempo.conflict.LocalConflictResolver;
 import com.radixdlt.tempo.exceptions.TempoException;
 import com.radixdlt.tempo.store.TempoAtomStore;
-import com.radixdlt.tempo.sync.PeerSupplierAdapter;
 import com.radixdlt.tempo.sync.SimpleEdgeSelector;
 import com.radixdlt.tempo.sync.TempoAtomSynchroniser;
 import org.radix.database.DatabaseEnvironment;
@@ -26,8 +25,6 @@ import org.radix.logging.Logging;
 import org.radix.modules.Module;
 import org.radix.modules.Modules;
 import org.radix.modules.Plugin;
-import org.radix.network.messaging.Messaging;
-import org.radix.network.peers.PeerHandler;
 import org.radix.state.State;
 import org.radix.state.StateDomain;
 import org.radix.time.TemporalVertex;
@@ -242,12 +239,7 @@ public final class Tempo extends Plugin implements Ledger {
 		LocalSystem localSystem = LocalSystem.getInstance();
 		return builder()
 			.synchroniser(
-				TempoAtomSynchroniser.defaultBuilder(
-					tempoAtomStore.asReadOnlyView(),
-					localSystem,
-					Messaging.getInstance(),
-					new PeerSupplierAdapter(() -> Modules.get(PeerHandler.class))
-				)
+				TempoAtomSynchroniser.defaultBuilder(tempoAtomStore.asReadOnlyView())
 				.edgeSelector(new SimpleEdgeSelector())
 				.build()
 			)

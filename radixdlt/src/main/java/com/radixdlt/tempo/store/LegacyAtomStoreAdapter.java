@@ -117,14 +117,14 @@ public class LegacyAtomStoreAdapter implements AtomStore {
 		try {
 			AtomDiscoveryRequest atomDiscoveryRequest = new AtomDiscoveryRequest(DiscoveryRequest.Action.DISCOVER);
 			atomDiscoveryRequest.setLimit((short) 64);
-			atomDiscoveryRequest.setCursor(new DiscoveryCursor(iterativeCursor.getLogicalClockPosition()));
+			atomDiscoveryRequest.setCursor(new DiscoveryCursor(iterativeCursor.getLCPosition()));
 			atomDiscoveryRequest.setShards(shardSpace);
 			atomSyncStoreSupplier.get().discovery(atomDiscoveryRequest);
 
 			ImmutableList<AID> inventory = ImmutableList.copyOf(atomDiscoveryRequest.getInventory());
 			DiscoveryCursor discoveryCursor = atomDiscoveryRequest.getCursor();
 			IterativeCursor nextCursor = discoveryCursor.hasNext() ? new IterativeCursor(discoveryCursor.getNext().getPosition(), null) : null;
-			IterativeCursor updatedCursor = new IterativeCursor(iterativeCursor.getLogicalClockPosition(), nextCursor);
+			IterativeCursor updatedCursor = new IterativeCursor(iterativeCursor.getLCPosition(), nextCursor);
 			return Pair.of(inventory, updatedCursor);
 		} catch (DiscoveryException e) {
 			throw new TempoException("Error while advancing cursor", e);

@@ -32,7 +32,7 @@ public final class IterativeCursor {
 		this.next = next;
 	}
 
-	public long getLogicalClockPosition() {
+	public long getLCPosition() {
 		return logicalClockPosition;
 	}
 

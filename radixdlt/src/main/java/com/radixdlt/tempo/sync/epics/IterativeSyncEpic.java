@@ -11,6 +11,7 @@ import com.radixdlt.tempo.sync.SyncAction;
 import com.radixdlt.tempo.sync.SyncEpic;
 import com.radixdlt.tempo.sync.actions.AcceptPassivePeersAction;
 import com.radixdlt.tempo.sync.actions.InitiateIterativeSyncAction;
+import com.radixdlt.tempo.sync.actions.ReceiveAtomAction;
 import com.radixdlt.tempo.sync.actions.ReceiveIterativeRequestAction;
 import com.radixdlt.tempo.sync.actions.ReceiveIterativeResponseAction;
 import com.radixdlt.tempo.sync.actions.RequestDeliveryAction;
@@ -18,6 +19,7 @@ import com.radixdlt.tempo.sync.actions.RequestIterativeSyncAction;
 import com.radixdlt.tempo.sync.actions.SendIterativeRequestAction;
 import com.radixdlt.tempo.sync.actions.SendIterativeResponseAction;
 import com.radixdlt.tempo.sync.actions.TimeoutIterativeRequestAction;
+import com.radixdlt.tempo.sync.store.IterativeCursorStore;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.network.peers.Peer;
@@ -26,10 +28,10 @@ import org.radix.shards.ShardSpace;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -43,19 +45,18 @@ public class IterativeSyncEpic implements SyncEpic {
 	private final AtomStoreView storeView;
 	private final Supplier<ShardSpace> shardSpaceSupplier;
 
-	// TODO lastCursor should be persisted
-	private final Map<EUID, IterativeCursor> lastCursor;
+	private final IterativeCursorStore latestCursors;
 	private final Map<EUID, Set<Long>> pendingRequests;
 	private final Map<EUID, IterativeSyncState> syncState;
 	private final Map<EUID, Integer> backoffCounter;
 
 	private ImmutableSet<EUID> passivePeerNids;
 
-	private IterativeSyncEpic(AtomStoreView storeView, Supplier<ShardSpace> shardSpaceSupplier) {
+	private IterativeSyncEpic(AtomStoreView storeView, Supplier<ShardSpace> shardSpaceSupplier, IterativeCursorStore cursorStore) {
 		this.storeView = storeView;
 		this.shardSpaceSupplier = shardSpaceSupplier;
+		this.latestCursors = cursorStore;
 
-		this.lastCursor = new ConcurrentHashMap<>();
 		this.pendingRequests = new ConcurrentHashMap<>();
 		this.syncState = new ConcurrentHashMap<>();
 		this.backoffCounter = new ConcurrentHashMap<>();
@@ -78,8 +79,8 @@ public class IterativeSyncEpic implements SyncEpic {
 			Peer peer = ((InitiateIterativeSyncAction) action).getPeer();
 			EUID peerNid = peer.getSystem().getNID();
 
-			IterativeCursor lastCursor = this.lastCursor.getOrDefault(peerNid, IterativeCursor.INITIAL);
-			long lastLCPosition = lastCursor.getLogicalClockPosition();
+			IterativeCursor lastCursor = this.latestCursors.get(peerNid).orElse(IterativeCursor.INITIAL);
+			long lastLCPosition = lastCursor.getLCPosition();
 
 			// reset cursor if cursor is ahead of current peer logical clock
 			if (lastLCPosition > peer.getSystem().getClock().get()) {
@@ -92,7 +93,7 @@ public class IterativeSyncEpic implements SyncEpic {
 			RequestIterativeSyncAction request = (RequestIterativeSyncAction) action;
 			Peer peer = request.getPeer();
 			EUID peerNid = peer.getSystem().getNID();
-			long requestedLCPosition = request.getCursor().getLogicalClockPosition();
+			long requestedLCPosition = request.getCursor().getLCPosition();
 
 			// add requested lc position to pending cursors for that peer
 			pendingRequests.compute(peerNid, (n, p) -> {
@@ -115,7 +116,7 @@ public class IterativeSyncEpic implements SyncEpic {
 			// once the timeout has elapsed, check if we got a response
 			TimeoutIterativeRequestAction timeout = (TimeoutIterativeRequestAction) action;
 			EUID peerNid = timeout.getPeer().getSystem().getNID();
-			long requestedLCPosition = timeout.getRequestedCursor().getLogicalClockPosition();
+			long requestedLCPosition = timeout.getRequestedCursor().getLCPosition();
 
 			// if no response, decide what to do after timeout
 			if (pendingRequests.get(peerNid).contains(requestedLCPosition)) {
@@ -138,7 +139,7 @@ public class IterativeSyncEpic implements SyncEpic {
 			// retrieve and send back aids starting from the requested cursor up to the limit
 			Pair<ImmutableList<AID>, IterativeCursor> aidsAndNext = storeView.getNext(request.getCursor(), RESPONSE_AID_LIMIT, request.getShardSpace());
 			logger.info(String.format("Responding to iterative request from %s for %d with %d aids",
-				request.getPeer(), request.getCursor().getLogicalClockPosition(), aidsAndNext.getFirst().size()));
+				request.getPeer(), request.getCursor().getLCPosition(), aidsAndNext.getFirst().size()));
 			return Stream.of(new SendIterativeResponseAction(aidsAndNext.getFirst(), aidsAndNext.getSecond(), request.getPeer()));
 		} else if (action instanceof ReceiveIterativeResponseAction) {
 			ReceiveIterativeResponseAction response = (ReceiveIterativeResponseAction) action;
@@ -147,26 +148,32 @@ public class IterativeSyncEpic implements SyncEpic {
 			IterativeCursor peerCursor = response.getCursor();
 
 			logger.info(String.format("Received iterative response from %s with %s aids", peer, response.getAids().size()));
-			// update last known cursor
-			lastCursor.put(peerNid, peerCursor);
 			// remove requested position from pending cursors
-			long requestedLCPosition = peerCursor.getLogicalClockPosition();
+			long requestedLCPosition = peerCursor.getLCPosition();
 			pendingRequests.computeIfPresent(peerNid, (n, p) -> {
 				p.remove(requestedLCPosition);
 				return p;
 			});
 
+			// update last known cursor if higher than current
+			IterativeCursor nextCursor = peerCursor.hasNext() ? peerCursor.getNext() : peerCursor;
+			long latestCursor = latestCursors.get(peerNid).map(IterativeCursor::getLCPosition).orElse(-1L);
+			if (nextCursor.getLCPosition() > latestCursor) {
+				latestCursors.put(peerNid, nextCursor);
+			}
+			boolean isLatest = nextCursor.getLCPosition() >= latestCursor;
+
 			Stream<SyncAction> continuedActions = Stream.empty();
-			// if the peer is still selected as a passive peer, continue synchronisation
+			// if the peer is still selected as a passive peer, continue
 			if (passivePeerNids.contains(peerNid)) {
 				// if there is more to synchronise, request more immediately
-				if (peerCursor.hasNext()) {
+				if (isLatest && peerCursor.hasNext()) {
 					syncState.put(peerNid, IterativeSyncState.SYNCHRONISING);
 					backoffCounter.put(peerNid, 0);
 					continuedActions = Stream.of(new RequestIterativeSyncAction(peer, peerCursor.getNext()));
 					if (logger.hasLevel(Logging.DEBUG)) {
 						logger.debug(String.format("Continuing iterative sync with %s at %d",
-							peer, peerCursor.getNext().getLogicalClockPosition()));
+							peer, peerCursor.getNext().getLCPosition()));
 					}
 				} else { // if synchronised, back off exponentially
 					syncState.put(peerNid, IterativeSyncState.SYNCHRONISED);
@@ -185,6 +192,12 @@ public class IterativeSyncEpic implements SyncEpic {
 				deliveryActions = Stream.of(new RequestDeliveryAction(response.getAids(), response.getPeer()));
 			}
 			return Stream.concat(continuedActions, deliveryActions);
+		} else if (action instanceof ReceiveAtomAction) {
+			// TODO also update last cursor if atom was received through other means
+//			TemporalProof temporalProof = ((ReceiveAtomAction) action).getAtom().getTemporalProof();
+//			for (TemporalVertex vertex : temporalProof.getVertices()) {
+//
+//			}
 		}
 
 		return Stream.empty();
@@ -202,6 +215,7 @@ public class IterativeSyncEpic implements SyncEpic {
 	public static class Builder {
 		private Supplier<ShardSpace> shardSpaceSupplier;
 		private AtomStoreView storeView;
+		private IterativeCursorStore cursorStore;
 
 		private Builder() {
 		}
@@ -216,11 +230,17 @@ public class IterativeSyncEpic implements SyncEpic {
 			return this;
 		}
 
+		public Builder cursorStore(IterativeCursorStore cursorStore) {
+			this.cursorStore = cursorStore;
+			return this;
+		}
+
 		public IterativeSyncEpic build() {
 			Objects.requireNonNull(storeView, "storeView is required");
 			Objects.requireNonNull(shardSpaceSupplier, "shardSpaceSupplier is required");
+			Objects.requireNonNull(cursorStore, "cursorStore is required");
 
-			return new IterativeSyncEpic(storeView, shardSpaceSupplier);
+			return new IterativeSyncEpic(storeView, shardSpaceSupplier, cursorStore);
 		}
 	}
 }
