@@ -29,16 +29,8 @@ public final class FungibleDefinition<T extends Particle> {
 		this.initialWithConstraint = initialWithConstraint;
 	}
 
-	public Class<T> getInputParticleClass() {
-		return this.inputParticleClass;
-	}
-
 	public UInt256 mapToAmount(Particle t) {
 		return inputParticleToAmountMapper.amount((T) t);
-	}
-
-	public ParticleToAmountMapper<T> getInputParticleToAmountMapper() {
-		return inputParticleToAmountMapper;
 	}
 
 	public Map<Class<? extends Particle>, FungibleFormula> getParticleClassToFormulaMap() {
@@ -49,7 +41,7 @@ public final class FungibleDefinition<T extends Particle> {
 		return this.initialWithConstraint;
 	}
 
-	public static <T extends Particle> FungibleDefinition<T> from(
+	public static <T extends Particle> FungibleDefinition<T> of(
 		Class<T> outputClass,
 		ParticleToAmountMapper<T> outputToAmountMapper,
 		Map<Class<? extends Particle>, FungibleFormula> particleTypeToFormulasMap
@@ -67,7 +59,7 @@ public final class FungibleDefinition<T extends Particle> {
 	}
 
 
-	public static <T extends Particle> FungibleDefinition<T> from(
+	public static <T extends Particle> FungibleDefinition<T> of(
 		Class<T> outputClass,
 		ParticleToAmountMapper<T> outputToAmountMapper,
 		Map<Class<? extends Particle>, FungibleFormula> particleTypeToFormulasMap,
@@ -129,7 +121,7 @@ public final class FungibleDefinition<T extends Particle> {
 				throw new IllegalStateException("Unfinished transition, no formulas added and no initial constraint defined.");
 			}
 
-			return FungibleDefinition.from(
+			return FungibleDefinition.of(
 				inputParticleClass,
 				inputParticleToAmountMapper,
 				particleTypeToFormulasMap,

@@ -1,7 +1,6 @@
 package com.radixdlt.atomos.procedures;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atomos.AtomOS.ParticleClassWithSideEffectConstraintCheck;
 import com.radixdlt.atomos.FungibleFormula;
 import com.radixdlt.atomos.FungibleDefinition;
@@ -27,22 +26,12 @@ import java.util.stream.Stream;
  * Low-level implementation of fungible transition constraints.
  */
 public class FungibleTransitionConstraintProcedure implements ConstraintProcedure {
-	private final ImmutableSet<Class<? extends Particle>> inputTypes;
-	private final ImmutableSet<Class<? extends Particle>> outputTypes;
 	private final Map<Class<? extends Particle>, FungibleDefinition<? extends Particle>> fungibles;
 
 	public FungibleTransitionConstraintProcedure(ImmutableMap<Class<? extends Particle>, FungibleDefinition<? extends Particle>> fungibles) {
 		Objects.requireNonNull(fungibles);
 
-		List<FungibleDefinition<? extends Particle>> fungibleDefinitions = fungibles.entrySet().stream()
-			.map(Entry::getValue)
-			.collect(Collectors.toList());
-
 		this.fungibles = fungibles;
-		this.inputTypes = fungibles.keySet();
-		this.outputTypes = ImmutableSet.copyOf(fungibleDefinitions.stream()
-			.flatMap(t -> t.getParticleClassToFormulaMap().keySet().stream())
-			.collect(Collectors.toSet()));
 
 		for (Entry<Class<? extends Particle>, FungibleDefinition<? extends Particle>> e : fungibles.entrySet()) {
 			if (!fungibles.keySet().containsAll(e.getValue().getParticleClassToFormulaMap().keySet())) {
@@ -59,7 +48,7 @@ public class FungibleTransitionConstraintProcedure implements ConstraintProcedur
 		for (int i = group.getParticleCount() - 1; i >= 0; i--) {
 			SpunParticle sp = group.getSpunParticle(i);
 			Particle p = sp.getParticle();
-			if (sp.getSpin() == Spin.DOWN && this.inputTypes.contains(p.getClass())) {
+			if (sp.getSpin() == Spin.DOWN && this.fungibles.containsKey(p.getClass())) {
 				UInt256 currentInput = fungibles.get(p.getClass()).mapToAmount(p);
 
 				while (!currentInput.isZero()) {
@@ -93,7 +82,7 @@ public class FungibleTransitionConstraintProcedure implements ConstraintProcedur
 				if (!currentInput.isZero()) {
 					inputs.push(Pair.of(p, currentInput));
 				}
-			} else if (sp.getSpin() == Spin.UP && this.outputTypes.contains(p.getClass())) {
+			} else if (sp.getSpin() == Spin.UP && this.fungibles.containsKey(p.getClass())) {
 				outputs.push(Pair.of(p, fungibles.get(p.getClass()).mapToAmount(p)));
 			}
 		}
