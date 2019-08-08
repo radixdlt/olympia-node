@@ -78,7 +78,7 @@ public class TestAtomOS implements AtomOS {
 			fungibleTransitions.add(pendingFungibleTransition.build());
 		}
 
-		FungibleTransition.Builder<T> transitionBuilder = FungibleTransition.<T>build()
+		FungibleTransition.Builder<T> transitionBuilder = new FungibleTransition.Builder<T>()
 			.from(particleClass, particleToAmountMapper);
 		pendingFungibleTransition = transitionBuilder;
 

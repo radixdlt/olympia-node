@@ -85,17 +85,13 @@ public final class FungibleTransition<T extends Particle> {
 		return new FungibleTransition<>(outputClass, outputToAmountMapper, particleTypeToFormulasMap, initialWithConstraint);
 	}
 
-	public static <T extends Particle> Builder<T> build() {
-		return new Builder<>();
-	}
-
 	public static class Builder<T extends Particle> {
 		private Class<T> inputParticleClass;
 		private ParticleToAmountMapper<T> inputParticleToAmountMapper;
 		private final ImmutableMap.Builder<Class<? extends Particle>, FungibleFormula> particleTypeToFormulasMapBuilder = new ImmutableMap.Builder<>();
 		private Pair<Class<? extends Particle>, ParticleClassWithSideEffectConstraintCheck<T, ?>> initialWithConstraint;
 
-		private Builder() {
+		public Builder() {
 		}
 
 		public Builder<T> from(

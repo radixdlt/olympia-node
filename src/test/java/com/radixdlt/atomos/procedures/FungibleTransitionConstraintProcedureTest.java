@@ -37,7 +37,7 @@ public class FungibleTransitionConstraintProcedureTest {
 	public void when_validating_a_simple_fungible_transfer__then_validation_should_succeed() {
 		ImmutableMap<Class<? extends Particle>, FungibleTransition<? extends Particle>> transitions = ImmutableMap.of(
 			Fungible.class,
-			FungibleTransition.<Fungible>build()
+			new FungibleTransition.Builder<Fungible>()
 				.from(Fungible.class, f -> UInt256.ONE)
 				.to(Fungible.class, (a, b) -> Result.success(), (a, b) -> true)
 				.build()
@@ -59,7 +59,7 @@ public class FungibleTransitionConstraintProcedureTest {
 	public void when_validating_a_two_to_one_transfer__then_validation_should_fail() {
 		ImmutableMap<Class<? extends Particle>, FungibleTransition<? extends Particle>> transitions = ImmutableMap.of(
 			Fungible.class,
-			FungibleTransition.<Fungible>build()
+			new FungibleTransition.Builder<Fungible>()
 				.from(Fungible.class, f -> UInt256.ONE)
 				.to(Fungible.class, (a, b) -> Result.success(), (a, b) -> true)
 				.build()
@@ -82,7 +82,7 @@ public class FungibleTransitionConstraintProcedureTest {
 	public void when_validating_a_one_to_two_transfer__then_validation_should_fail() {
 		ImmutableMap<Class<? extends Particle>, FungibleTransition<? extends Particle>> transitions = ImmutableMap.of(
 			Fungible.class,
-			FungibleTransition.<Fungible>build()
+			new FungibleTransition.Builder<Fungible>()
 				.from(Fungible.class, f -> UInt256.ONE)
 				.to(Fungible.class, (a, b) -> Result.success(), (a, b) -> true)
 				.build()
@@ -105,7 +105,7 @@ public class FungibleTransitionConstraintProcedureTest {
 	public void when_validating_a_two_to_two_transfer__then_validation_should_succeed() {
 		ImmutableMap<Class<? extends Particle>, FungibleTransition<? extends Particle>> transitions = ImmutableMap.of(
 			Fungible.class,
-			FungibleTransition.<Fungible>build()
+			new FungibleTransition.Builder<Fungible>()
 				.from(Fungible.class, f -> UInt256.ONE)
 				.to(Fungible.class, (a, b) -> Result.success(), (a, b) -> true)
 				.build()
@@ -129,12 +129,12 @@ public class FungibleTransitionConstraintProcedureTest {
 	public void when_validating_a_reversed_one_way_transfer__then_validation_should_fail() {
 		ImmutableMap<Class<? extends Particle>, FungibleTransition<? extends Particle>> transitions = ImmutableMap.of(
 			Fungible.class,
-			FungibleTransition.<Fungible>build()
+			new FungibleTransition.Builder<Fungible>()
 				.from(Fungible.class, f -> UInt256.ONE)
 				.to(Fungible2.class, (a, b) -> Result.success(), (a, b) -> true)
 				.build(),
 			Fungible2.class,
-			FungibleTransition.<Fungible2>build()
+			new FungibleTransition.Builder<Fungible2>()
 				.from(Fungible2.class, f -> UInt256.ONE)
 				.to(Fungible2.class, (a, b) -> Result.success(), (a, b) -> true)
 				.build()
@@ -156,7 +156,7 @@ public class FungibleTransitionConstraintProcedureTest {
 	public void when_validating_an_initial_with_fungible_with_missing_initial__then_validation_should_fail() {
 		ImmutableMap<Class<? extends Particle>, FungibleTransition<? extends Particle>> transitions = ImmutableMap.of(
 			Fungible.class,
-			FungibleTransition.<Fungible>build()
+			new FungibleTransition.Builder<Fungible>()
 				.from(Fungible.class, f -> UInt256.ONE)
 				.initialWith(Fungible2.class, (a, b, c) -> Result.success())
 				.to(Fungible.class, (a, b) -> Result.success(), (a, b) -> true)
@@ -179,7 +179,7 @@ public class FungibleTransitionConstraintProcedureTest {
 	public void when_validating_an_initial_with_fungible_with_initial__then_validation_should_succeed() {
 		ImmutableMap<Class<? extends Particle>, FungibleTransition<? extends Particle>> transitions = ImmutableMap.of(
 			Fungible.class,
-			FungibleTransition.<Fungible>build()
+			new FungibleTransition.Builder<Fungible>()
 				.from(Fungible.class, f -> UInt256.ONE)
 				.initialWith(Fungible2.class, (a, b, c) -> Result.success())
 				.to(Fungible.class, (a, b) -> Result.success(), (a, b) -> true)
