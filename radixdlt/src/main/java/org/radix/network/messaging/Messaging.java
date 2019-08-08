@@ -43,7 +43,7 @@ import org.radix.utils.SystemProfiler;
 public class Messaging extends Service
 {
 	private static final Logger log = Logging.getLogger();
-	private static final Logger messagingLog = Logging.getLogger("messaging");
+	private static final Logger messagingLog = Logging.getLogger("Messaging");
 
 	private static final Map<Class<?>, Integer> messagePriorities = ImmutableMap.of(PeerPingMessage.class, 0);
 

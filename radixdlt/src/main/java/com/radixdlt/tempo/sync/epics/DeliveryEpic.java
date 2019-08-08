@@ -71,6 +71,7 @@ public class DeliveryEpic implements SyncEpic {
 				SendDeliveryRequestAction sendAction = new SendDeliveryRequestAction(missingAids, request.getPeer());
 				ongoingDeliveries.addAll(missingAids);
 
+				logger.info("Requesting delivery of " + missingAids + " from " + request.getPeer());
 				// schedule timeout after which deliveries will be checked
 				TimeoutDeliveryRequestAction timeoutAction = new TimeoutDeliveryRequestAction(sendAction.getAids(), sendAction.getPeer());
 				return Stream.of(sendAction, timeoutAction.schedule(DELIVERY_REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS));
@@ -79,11 +80,12 @@ public class DeliveryEpic implements SyncEpic {
 			// once the timeout has elapsed, check if the deliveries were received
 			TimeoutDeliveryRequestAction timeout = (TimeoutDeliveryRequestAction) action;
 			ImmutableList<AID> missingAids = timeout.getAids().stream()
-				.filter(aid -> !store.contains(aid))
+				.filter(ongoingDeliveries::contains)
 				.collect(ImmutableList.toImmutableList());
 
 			// if the deliveries weren't received, raise a failed delivery action for the requestor
 			if (!missingAids.isEmpty()) {
+				ongoingDeliveries.removeAll(missingAids);
 				// TODO where to handle recovery / re-requesting?
 				return Stream.of(new HandleFailedDeliveryAction(missingAids, timeout.getPeer()));
 			}

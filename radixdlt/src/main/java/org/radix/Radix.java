@@ -5,12 +5,8 @@ import java.lang.reflect.Modifier;
 import java.security.SecureRandom;
 import java.security.Security;
 
-import com.radixdlt.tempo.conflict.LocalConflictResolver;
+import com.radixdlt.ledger.MockApplication;
 import com.radixdlt.tempo.Tempo;
-import com.radixdlt.tempo.store.TempoAtomStore;
-import com.radixdlt.tempo.sync.PeerSupplierAdapter;
-import com.radixdlt.tempo.sync.SimpleEdgeSelector;
-import com.radixdlt.tempo.sync.TempoAtomSynchroniser;
 import org.apache.commons.cli.CommandLine;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.json.JSONObject;
@@ -269,7 +265,14 @@ public class Radix extends Plugin
 		}
 
 		if (Modules.get(RuntimeProperties.class).get("tempo2", false)) {
-			Modules.getInstance().start(Tempo.defaultBuilder().build());
+			Tempo tempo = Tempo.defaultBuilder().build();
+			Modules.getInstance().start(tempo);
+
+			int numMockApplications = Modules.get(RuntimeProperties.class).get("tempo2.mockApplications", 1);
+			MockApplication mockApplication = new MockApplication(tempo);
+			for (int i = 0; i < numMockApplications; i++) {
+				mockApplication.startInstance();
+			}
 		}
 
 		/*

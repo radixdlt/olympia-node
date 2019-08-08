@@ -13,7 +13,7 @@ import org.radix.network.messaging.Message;
 public class IterativeResponseMessage extends Message {
 	@JsonProperty("aids")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private ImmutableList<AID> aids;
+	private ImmutableList<AID> aids = ImmutableList.of();
 
 	@JsonProperty("cursor")
 	@DsonOutput(DsonOutput.Output.ALL)
@@ -21,6 +21,7 @@ public class IterativeResponseMessage extends Message {
 
 	IterativeResponseMessage() {
 		// Serializer only
+		this.aids = ImmutableList.of();
 	}
 
 	public IterativeResponseMessage(ImmutableList<AID> aids, IterativeCursor cursor) {

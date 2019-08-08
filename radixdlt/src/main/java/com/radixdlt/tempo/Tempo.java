@@ -21,6 +21,8 @@ import com.radixdlt.tempo.sync.SimpleEdgeSelector;
 import com.radixdlt.tempo.sync.TempoAtomSynchroniser;
 import org.radix.database.DatabaseEnvironment;
 import org.radix.exceptions.ValidationException;
+import org.radix.logging.Logger;
+import org.radix.logging.Logging;
 import org.radix.modules.Module;
 import org.radix.modules.Modules;
 import org.radix.modules.Plugin;
@@ -44,6 +46,8 @@ import java.util.stream.Collectors;
  * The Tempo implementation of a ledger.
  */
 public final class Tempo extends Plugin implements Ledger {
+	private static final Logger logger = Logging.getLogger("Tempo");
+
 	private final AtomSynchroniser synchroniser;
 	private final AtomStore store;
 	private final ConflictResolver resolver;
@@ -57,6 +61,16 @@ public final class Tempo extends Plugin implements Ledger {
 		this.resolver = resolver;
 		this.wallclockTimeSupplier = wallclockTimeSupplier;
 		this.localSystem = localSystem;
+	}
+
+	private void fail(String message) {
+		logger.error(message);
+		throw new TempoException(message);
+	}
+
+	private void fail(String message, Exception cause) {
+		logger.error(message, cause);
+		throw new TempoException(message, cause);
 	}
 
 	@Override
@@ -80,7 +94,7 @@ public final class Tempo extends Plugin implements Ledger {
 		try {
 			attestTo(tempoAtom);
 		} catch (ValidationException | CryptoException ex) {
-			throw new TempoException("Error while attesting to atom " + tempoAtom.getAID(), ex);
+			fail("Error while attesting to atom " + tempoAtom.getAID(), ex);
 		}
 
 		if (store.store(tempoAtom, uniqueIndices, duplicateIndices)) {
@@ -106,7 +120,7 @@ public final class Tempo extends Plugin implements Ledger {
 		try {
 			attestTo(tempoAtom);
 		} catch (ValidationException | CryptoException ex) {
-			throw new TempoException("Error while attesting to atom " + tempoAtom.getAID(), ex);
+			fail("Error while attesting to atom " + tempoAtom.getAID(), ex);
 		}
 
 		if (store.replace(aids, tempoAtom, uniqueIndices, duplicateIndices)) {
@@ -119,9 +133,11 @@ public final class Tempo extends Plugin implements Ledger {
 
 	@Override
 	public CompletableFuture<Atom> resolve(Atom atom, Set<Atom> conflictingAtoms) {
+		logger.info("Resolving conflict between " + atom + " and " + conflictingAtoms);
+
 		return resolver.resolve((TempoAtom) atom, conflictingAtoms.stream()
-			.map(TempoAtom.class::cast)
-			.collect(Collectors.toSet()))
+				.map(TempoAtom.class::cast)
+				.collect(Collectors.toSet()))
 			.thenApply(Atom.class::cast);
 	}
 
@@ -130,12 +146,14 @@ public final class Tempo extends Plugin implements Ledger {
 		return store.search(type, index, mode);
 	}
 
-	// TODO simple temporary function for attestation within this basic Tempo stub
 	private void attestTo(TempoAtom atom) throws CryptoException, ValidationException {
 		TemporalVertex existingNIDVertex = atom.getTemporalProof().getVertexByNID(this.localSystem.getNID());
 		if (existingNIDVertex != null) {
 			if (existingNIDVertex.getClock() > this.localSystem.getClock().get()) {
 				this.localSystem.set(existingNIDVertex.getClock(), existingNIDVertex.getCommitment(), atom.getTimestamp());
+			}
+			if (logger.hasLevel(Logging.DEBUG)) {
+				logger.debug("");
 			}
 
 			return;
@@ -163,7 +181,11 @@ public final class Tempo extends Plugin implements Ledger {
 			clockAndCommitment.getSecond(),
 			previousVertex != null ? previousVertex.getHID() : EUID.ZERO,
 			edges);
+		if (logger.hasLevel(Logging.DEBUG)) {
+			logger.debug("Attesting to '" + atom.getAID() + "' at " + clockAndCommitment.getFirst());
+		}
 		atom.getTemporalProof().add(vertex, nodeKey);
+		// TODO is this still required?
 		atom.getTemporalProof().setState(StateDomain.VALIDATION, new State(State.COMPLETE));
 	}
 

@@ -264,6 +264,7 @@ public class TempoAtomStore implements AtomStore {
 
 		TemporalVertex localTemporalVertex = atom.getTemporalProof().getVertexByNID(LocalSystem.getInstance().getNID());
 		if (localTemporalVertex == null) {
+			logger.warn("Refusing to store atom '" + atom.getAID() + "' without local temporal vertex");
 			return false;
 		}
 

@@ -38,7 +38,7 @@ public class IterativeSyncEpic implements SyncEpic {
 	private static final int ITERATIVE_REQUEST_TIMEOUT_SECONDS = 5;
 
 	private static final Logger logger = Logging.getLogger("Sync");
-	private static final int MAX_BACKOFF = 5; // results in 2^5 -> 32 seconds
+	private static final int MAX_BACKOFF = 4; // results in 2^4 -> 16 seconds
 	private static final int RESPONSE_AID_LIMIT = 64;
 
 	private final AtomStoreView storeView;
@@ -117,22 +117,25 @@ public class IterativeSyncEpic implements SyncEpic {
 			EUID peerNid = timeout.getPeer().getSystem().getNID();
 			long requestedLCPosition = timeout.getRequestedCursor().getLogicalClockPosition();
 
-			if (logger.hasLevel(Logging.DEBUG)) {
-				logger.debug(String.format("Iterative request to %s at %s has timed out", timeout.getPeer(), requestedLCPosition));
-			}
-
-			// if no response and we still want to talk to that peer, resend iterative request
-			if (pendingCursors.get(peerNid).contains(requestedLCPosition) && passivePeerNids.contains(peerNid)) {
-				return Stream.of(new RequestIterativeSyncAction(timeout.getPeer(), timeout.getRequestedCursor()));
+			// if no response, decide what to do after timeout
+			if (pendingCursors.get(peerNid).contains(requestedLCPosition)) {
+				// if we're still talking to that peer, just rerequest
+				if (passivePeerNids.contains(peerNid)) {
+					if (logger.hasLevel(Logging.DEBUG)) {
+						logger.debug(String.format("Iterative request to %s at %s has timed out without response, resending", timeout.getPeer(), requestedLCPosition));
+					}
+					return Stream.of(new RequestIterativeSyncAction(timeout.getPeer(), timeout.getRequestedCursor()));
+				} else { // otherwise do nothing
+					if (logger.hasLevel(Logging.DEBUG)) {
+						logger.debug(String.format("Iterative request to %s at %s has timed out without response", timeout.getPeer(), requestedLCPosition));
+					}
+					return Stream.empty();
+				}
 			}
 		} else if (action instanceof ReceiveIterativeRequestAction) {
 			ReceiveIterativeRequestAction request = (ReceiveIterativeRequestAction) action;
-			logger.info(String.format("Processing iterative request from %s for %d",
-				request.getPeer(), request.getCursor().getLogicalClockPosition()));
 
 			// retrieve and send back aids starting from the requested cursor up to the limit
-			logger.info("storeView=" + storeView);
-			logger.info("storeView.getClass=" + storeView.getClass());
 			Pair<ImmutableList<AID>, IterativeCursor> aidsAndNext = storeView.getNext(request.getCursor(), RESPONSE_AID_LIMIT, request.getShardSpace());
 			logger.info(String.format("Responding to iterative request from %s for %d with %d aids",
 				request.getPeer(), request.getCursor().getLogicalClockPosition(), aidsAndNext.getFirst().size()));
@@ -143,6 +146,7 @@ public class IterativeSyncEpic implements SyncEpic {
 			EUID peerNid = peer.getSystem().getNID();
 			IterativeCursor peerCursor = response.getCursor();
 
+			logger.info(String.format("Received iterative response from %s with %s aids", peer, response.getAids().size()));
 			// update last known cursor
 			lastCursor.put(peerNid, peerCursor);
 			// remove requested position from pending cursors
@@ -161,24 +165,26 @@ public class IterativeSyncEpic implements SyncEpic {
 					backoffCounter.put(peerNid, 0);
 					continuedActions = Stream.of(new RequestIterativeSyncAction(peer, peerCursor.getNext()));
 					if (logger.hasLevel(Logging.DEBUG)) {
-						logger.debug(String.format("Received iterative response from %s, continuing iterative sync at %d",
+						logger.debug(String.format("Continuing iterative sync with %s at %d",
 							peer, peerCursor.getNext().getLogicalClockPosition()));
 					}
 				} else { // if synchronised, back off exponentially
 					syncState.put(peerNid, IterativeSyncState.SYNCHRONISED);
-					int backoff = backoffCounter.compute(peerNid, (n, c) -> c == null ? 1 : Math.max(MAX_BACKOFF, c + 1));
+					int backoff = backoffCounter.compute(peerNid, (n, c) -> c == null ? 0 : Math.min(MAX_BACKOFF, c + 1));
 					int timeout = 1 << backoff;
 					continuedActions = Stream.of(new InitiateIterativeSyncAction(peer).schedule(timeout, TimeUnit.SECONDS));
 					if (logger.hasLevel(Logging.DEBUG)) {
-						logger.debug(String.format("Received iterative response from %s, backing off for " + timeout + " seconds as all synced up", peer));
+						logger.debug(String.format("Backing off from iterative sync with %s for %d seconds as all synced up", peer, timeout));
 					}
 				}
 			}
 
-			return Stream.concat(
-				continuedActions,
-				Stream.of(new RequestDeliveryAction(response.getAids(), response.getPeer()))
-			);
+			Stream<SyncAction> deliveryActions = Stream.empty();
+			// if any aids were returned, request delivery
+			if (!response.getAids().isEmpty()) {
+				deliveryActions = Stream.of(new RequestDeliveryAction(response.getAids(), response.getPeer()));
+			}
+			return Stream.concat(continuedActions, deliveryActions);
 		}
 
 		return Stream.empty();

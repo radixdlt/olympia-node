@@ -37,7 +37,9 @@ import com.radixdlt.tempo.sync.messages.PushMessage;
 import org.radix.atoms.Atom;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
+import org.radix.modules.Modules;
 import org.radix.network.messaging.Messaging;
+import org.radix.properties.RuntimeProperties;
 import org.radix.universe.system.LocalSystem;
 
 import java.util.ArrayList;
@@ -55,6 +57,8 @@ import java.util.stream.Stream;
 
 public class TempoAtomSynchroniser implements AtomSynchroniser {
 	private static final int FULL_INBOUND_QUEUE_RESCHEDULE_TIME_SECONDS = 1;
+	private static final int SYNC_EXECUTOR_POOL_THREAD_COUNT = 4;
+
 	private final int inboundQueueCapacity;
 	private final int syncActionsQueueCapacity;
 
@@ -82,7 +86,7 @@ public class TempoAtomSynchroniser implements AtomSynchroniser {
 		this.edgeSelector = edgeSelector;
 		this.peerSupplier = peerSupplier;
 
-		this.executor = Executors.newScheduledThreadPool(4, runnable -> new Thread(null, runnable, "Sync"));
+		this.executor = Executors.newScheduledThreadPool(SYNC_EXECUTOR_POOL_THREAD_COUNT, runnable -> new Thread(null, runnable, "Sync"));
 		this.inboundAtoms = new LinkedBlockingQueue<>(this.inboundQueueCapacity);
 		this.syncActions = new LinkedBlockingQueue<>(this.syncActionsQueueCapacity);
 		this.syncEpics = ImmutableList.<SyncEpic>builder()
@@ -233,38 +237,40 @@ public class TempoAtomSynchroniser implements AtomSynchroniser {
 			.peerSupplier(peerSupplier)
 			.addEpic(
 				ActiveSyncEpic.builder()
-				.localSystem(localSystem)
-				.peerSupplier(peerSupplier)
-				.build())
+					.localSystem(localSystem)
+					.peerSupplier(peerSupplier)
+					// TODO better properties handling for configuring tempo behaviour
+					.enabler(() -> Modules.get(RuntimeProperties.class).get("tempo2.sync.active", true))
+					.build())
 			.addEpic(
 				DeliveryEpic.builder()
-				.storeView(storeView)
-				.build())
+					.storeView(storeView)
+					.build())
 			.addEpic(
 				PassivePeersEpic.builder()
-				.peerSupplier(peerSupplier)
-				.build()
+					.peerSupplier(peerSupplier)
+					.build()
 			)
 			.addEpic(
 				IterativeSyncEpic.builder()
-				.shardSpaceSupplier(localSystem::getShards)
-				.storeView(storeView)
-				.build()
+					.shardSpaceSupplier(localSystem::getShards)
+					.storeView(storeView)
+					.build()
 			)
 			.addEpicBuilder(synchroniser ->
 				MessagingEpic.builder()
-				.messager(messager)
-				.addInbound("tempo.sync.delivery.request", DeliveryRequestMessage.class, ReceiveDeliveryRequestAction::from)
-				.addOutbound(SendDeliveryRequestAction.class, SendDeliveryRequestAction::toMessage, SendDeliveryRequestAction::getPeer)
-				.addInbound("tempo.sync.delivery.response", DeliveryResponseMessage.class, ReceiveDeliveryResponseAction::from)
-				.addOutbound(SendDeliveryResponseAction.class, SendDeliveryResponseAction::toMessage, SendDeliveryResponseAction::getPeer)
-				.addInbound("tempo.sync.iterative.request", IterativeRequestMessage.class, ReceiveIterativeRequestAction::from)
-				.addOutbound(SendIterativeRequestAction.class, SendIterativeRequestAction::toMessage, SendIterativeRequestAction::getPeer)
-				.addInbound("tempo.sync.iterative.response", IterativeResponseMessage.class, ReceiveIterativeResponseAction::from)
-				.addOutbound(SendIterativeResponseAction.class, SendIterativeResponseAction::toMessage, SendIterativeResponseAction::getPeer)
-				.addInbound("tempo.sync.push", PushMessage.class, ReceivePushAction::from)
-				.addOutbound(SendPushAction.class, SendPushAction::toMessage, SendPushAction::getPeer)
-				.build(synchroniser::dispatch)
+					.messager(messager)
+					.addInbound("tempo.sync.delivery.request", DeliveryRequestMessage.class, ReceiveDeliveryRequestAction::from)
+					.addOutbound(SendDeliveryRequestAction.class, SendDeliveryRequestAction::toMessage, SendDeliveryRequestAction::getPeer)
+					.addInbound("tempo.sync.delivery.response", DeliveryResponseMessage.class, ReceiveDeliveryResponseAction::from)
+					.addOutbound(SendDeliveryResponseAction.class, SendDeliveryResponseAction::toMessage, SendDeliveryResponseAction::getPeer)
+					.addInbound("tempo.sync.iterative.request", IterativeRequestMessage.class, ReceiveIterativeRequestAction::from)
+					.addOutbound(SendIterativeRequestAction.class, SendIterativeRequestAction::toMessage, SendIterativeRequestAction::getPeer)
+					.addInbound("tempo.sync.iterative.response", IterativeResponseMessage.class, ReceiveIterativeResponseAction::from)
+					.addOutbound(SendIterativeResponseAction.class, SendIterativeResponseAction::toMessage, SendIterativeResponseAction::getPeer)
+					.addInbound("tempo.sync.push", PushMessage.class, ReceivePushAction::from)
+					.addOutbound(SendPushAction.class, SendPushAction::toMessage, SendPushAction::getPeer)
+					.build(synchroniser::dispatch)
 			);
 	}
 
