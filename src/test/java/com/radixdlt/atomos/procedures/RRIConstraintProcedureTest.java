@@ -1,6 +1,7 @@
 package com.radixdlt.atomos.procedures;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -80,9 +81,29 @@ public class RRIConstraintProcedureTest {
 			metadata
 		);
 
-		assertThat(issues).anyMatch(i -> i.getErrMsg().contains("unconsumed inputs"));
+		assertThat(issues).isNotEmpty();
 	}
 
+	@Test
+	public void when_an_indexed_particle_is_consumed__then_an_issue_should_be_raised() {
+		RRIConstraintProcedure procedure = new RRIConstraintProcedure.Builder()
+			.add(CustomParticle.class, CustomParticle::getRRI)
+			.build();
+
+		AtomMetadata metadata = mock(AtomMetadata.class);
+		when(metadata.isSignedBy(any())).thenReturn(true);
+
+		CustomParticle customParticle = mock(CustomParticle.class);
+
+		Stream<ProcedureError> issues = procedure.validate(
+			ParticleGroup.of(
+				SpunParticle.down(customParticle)
+			),
+			metadata
+		);
+
+		assertThat(issues).isNotEmpty();
+	}
 
 	@Test
 	public void when_an_rri_is_created__then_an_issue_should_be_raised() {
@@ -104,6 +125,6 @@ public class RRIConstraintProcedureTest {
 			metadata
 		);
 
-		assertThat(issues).anyMatch(i -> i.getErrMsg().contains("created"));
+		assertThat(issues).isNotEmpty();
 	}
 }

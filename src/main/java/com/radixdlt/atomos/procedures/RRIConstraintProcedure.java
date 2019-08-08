@@ -1,23 +1,19 @@
 package com.radixdlt.atomos.procedures;
 
-import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Multiset;
-import com.google.common.collect.Streams;
-import com.radixdlt.atomos.RRI;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.atomos.mapper.ParticleToRRIMapper;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.atoms.ParticleGroup;
 import com.radixdlt.atoms.Spin;
+import com.radixdlt.atoms.SpunParticle;
+import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.AtomMetadata;
 import com.radixdlt.constraintmachine.ConstraintProcedure;
 import com.radixdlt.constraintmachine.ProcedureError;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.Stack;
 import java.util.stream.Stream;
 
 /**
@@ -49,67 +45,58 @@ public final class RRIConstraintProcedure implements ConstraintProcedure {
 		}
 	}
 
-	private Stream<ProcedureError> checkSignedByAddress(ParticleGroup group, AtomMetadata metadata) {
-		return group.particlesWithIndex(RRIParticle.class, Spin.DOWN, (rriParticle, i) ->
-			!metadata.isSignedBy(rriParticle.getRri().getAddress())
-				? Stream.of(ProcedureError.of(group, "rri must be signed by address to use", i))
-				: Stream.<ProcedureError>empty()
-		).flatMap(l -> l);
-	}
-
-	private Stream<ProcedureError> checkUpRRIs(ParticleGroup group) {
-		return group.particlesWithIndex(RRIParticle.class, Spin.UP, (rriParticle, i) ->
-			ProcedureError.of(group, "rris cannot currently be created via atom ", i)
-		);
-	}
-
-	private Stream<ProcedureError> checkDownedParticles(ParticleGroup group) {
-		return indexedParticles.keySet().stream()
-			.flatMap(particleClass ->
-				group.particlesWithIndex(particleClass, Spin.DOWN, (particle, i) ->
-					ProcedureError.of(group, "rri indexed particles currently can't be downed: " + particle, i))
-			);
-	}
-
-	private static String toBadMatchString(Iterable<RRI> unspentInputs, Iterable<RRI> unspentOutputs) {
-		return "unconsumed inputs: " + unspentInputs + " unspent outputs: " + unspentOutputs;
-	}
-
-	private Stream<ProcedureError> checkMatch(ParticleGroup group) {
-		List<RRI> rrisConsumed = group.particles(Spin.UP)
-			.filter(p -> indexedParticles.containsKey(p.getClass()))
-			.map(p -> indexedParticles.get(p.getClass()).index(p))
-			.collect(Collectors.toList());
-
-		Multiset<RRI> rrisAvailable = HashMultiset.create();
-		group.particles(Spin.DOWN)
-			.filter(RRIParticle.class::isInstance)
-			.map(RRIParticle.class::cast)
-			.map(RRIParticle::getRri)
-			.forEach(rrisAvailable::add);
-
-		final List<RRI> unspentOutputs = new ArrayList<>();
-
-		for (RRI rri : rrisConsumed) {
-			if (!rrisAvailable.remove(rri)) {
-				unspentOutputs.add(rri);
-			}
+	private boolean check(RRIParticle input, AtomMetadata metadata, Stack<Pair<Particle, Void>> outputs) {
+		if (outputs.empty()) {
+			return false;
 		}
 
-		if (!unspentOutputs.isEmpty() || !rrisAvailable.isEmpty()) {
-			return Stream.of(ProcedureError.of(toBadMatchString(rrisAvailable, unspentOutputs)));
+		Pair<Particle, Void> top = outputs.peek();
+		Particle toParticle = top.getFirst();
+		ParticleToRRIMapper<Particle> mapper = indexedParticles.get(toParticle.getClass());
+		if (mapper == null) {
+			return false;
 		}
 
-		return Stream.empty();
+		if (!mapper.index(toParticle).equals(input.getRri())) {
+			return false;
+		}
+
+		if (!metadata.isSignedBy(input.getRri().getAddress())) {
+			return false;
+		}
+
+		return true;
 	}
 
 	@Override
 	public Stream<ProcedureError> validate(ParticleGroup group, AtomMetadata metadata) {
-		return Streams.concat(
-			checkSignedByAddress(group, metadata),
-			checkUpRRIs(group),
-			checkDownedParticles(group),
-			checkMatch(group)
-		);
+		final Stack<Pair<Particle, Void>> inputs = new Stack<>();
+		final Stack<Pair<Particle, Void>> outputs = new Stack<>();
+
+		for (int i = group.getParticleCount() - 1; i >= 0; i--) {
+			SpunParticle sp = group.getSpunParticle(i);
+			Particle p = sp.getParticle();
+			if (sp.getSpin() == Spin.DOWN) {
+				if (p instanceof RRIParticle) {
+					if (this.check((RRIParticle) p, metadata, outputs)) {
+						outputs.pop();
+					} else {
+						inputs.push(Pair.of(p, null));
+					}
+				} else if (this.indexedParticles.containsKey(p.getClass())) {
+					inputs.push(Pair.of(p, null));
+				}
+			} else if (sp.getSpin() == Spin.UP && (this.indexedParticles.containsKey(p.getClass())) || p instanceof RRIParticle) {
+				outputs.push(Pair.of(p, null));
+			}
+		}
+
+		if (!inputs.empty()) {
+			return Stream.of(ProcedureError.of("Input stack not empty"));
+		} else if (!outputs.empty()) {
+			return Stream.of(ProcedureError.of("Output stack not empty"));
+		}
+
+		return Stream.empty();
 	}
 }
