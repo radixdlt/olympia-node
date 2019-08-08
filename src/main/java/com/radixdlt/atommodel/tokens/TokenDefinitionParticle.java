@@ -92,10 +92,10 @@ public final class TokenDefinitionParticle extends Particle {
 	}
 
 	public RRI getRRI() {
-		return RRI.of(getOwner(), getSymbol());
+		return RRI.of(getAddress(), getSymbol());
 	}
 
-	public RadixAddress getOwner() {
+	public RadixAddress getAddress() {
 		return this.address;
 	}
 

@@ -30,7 +30,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 
 	@Override
 	public void main(AtomOS os) {
-		os.registerParticle(TokenDefinitionParticle.class, TokenDefinitionParticle::getOwner);
+		os.registerParticle(TokenDefinitionParticle.class, TokenDefinitionParticle::getAddress);
 
 		// Symbol constraints
 		os.on(TokenDefinitionParticle.class)
@@ -91,8 +91,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 		);
 
 		// Require Token Definition to be created with unallocated tokens of max supply
-		os.onIndexed(TokenDefinitionParticle.class, TokenDefinitionParticle::getRRI)
-			.requireInitial((tok, meta) -> Result.of(meta.isSignedBy(tok.getOwner()), "Owner has to sign: " + tok.getOwner()))
+		os.newResource(TokenDefinitionParticle.class, TokenDefinitionParticle::getRRI)
 			.requireInitialWith(UnallocatedTokensParticle.class, (tokDef, unallocated, meta) ->
 				Result.of(unallocated.getTokDefRef().equals(tokDef.getRRI()), "Unallocated particles RRI must match Token RRI")
 			);

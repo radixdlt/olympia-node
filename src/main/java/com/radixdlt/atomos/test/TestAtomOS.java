@@ -12,7 +12,9 @@ import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.AtomMetadata;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
@@ -23,7 +25,7 @@ import java.util.stream.Stream;
  * Note that this class is not thread-safe.
  */
 public class TestAtomOS implements AtomOS {
-	private final List<Pair<Class<? extends Particle>, IndexedConstraintCheck<Particle>>> indexedInitialConstraints = new ArrayList<>();
+	private final Map<Class<? extends Particle>, ParticleToRRIMapper<Particle>> resources = new HashMap<>();
 	private final List<Pair<Class<? extends Particle>, BiFunction<Particle, AtomMetadata, Result>>> particleClassConstraints = new ArrayList<>();
 	private final List<Pair<Pair<Class<? extends Particle>, Class<? extends Particle>>,
 		ParticleClassWithDependenceConstraintCheck<? extends Particle, ?>>> particleClassWithDependencyConstraints = new ArrayList<>();
@@ -43,18 +45,16 @@ public class TestAtomOS implements AtomOS {
 	}
 
 	@Override
-	public <T extends Particle> IndexedConstraint<T> onIndexed(Class<T> particleClass, ParticleToRRIMapper<T> indexer) {
-		return constraint -> {
-			indexedInitialConstraints.add(new Pair<>(particleClass, (p, m) -> constraint.apply((T) p, m)));
-			return new InitializedIndexedConstraint<T>() {
-				@Override
-				public <U extends Particle> void requireInitialWith(
-					Class<U> sideEffectClass,
-					ParticleClassWithSideEffectConstraintCheck<T, U> constraint
-				) {
+	public <T extends Particle> ResourceConstraint<T> newResource(Class<T> particleClass, ParticleToRRIMapper<T> indexer) {
+		resources.put(particleClass, p -> indexer.index((T) p));
+		return new ResourceConstraint<T>() {
+			@Override
+			public <U extends Particle> void requireInitialWith(
+				Class<U> sideEffectClass,
+				ParticleClassWithSideEffectConstraintCheck<T, U> constraint
+			) {
 
-				}
-			};
+			}
 		};
 	}
 
@@ -117,17 +117,16 @@ public class TestAtomOS implements AtomOS {
 	 * @return list of results of each checker
 	 */
 	public <T extends Particle> TestResult testInitialParticle(T t, AtomMetadata metadata) {
-		Stream<Result> indexedCheckResults = indexedInitialConstraints.stream()
-			.filter(p -> p.getFirst().isAssignableFrom(t.getClass()))
-			.map(Pair::getSecond)
-			.map(constraint -> constraint.apply(t, metadata));
+		Stream<Result> resourceSigned =
+			!resources.containsKey(t.getClass()) || metadata.isSignedBy(resources.get(t.getClass()).index(t).getAddress())
+				? Stream.empty() : Stream.of(Result.error("Not signed"));
 
 		Stream<Result> classConstraintResults = particleClassConstraints.stream()
 			.filter(p -> p.getFirst().isAssignableFrom(t.getClass()))
 			.map(Pair::getSecond)
 			.map(constraint -> constraint.apply(t, metadata));
 
-		final List<Result> results = Stream.concat(indexedCheckResults, classConstraintResults).collect(Collectors.toList());
+		final List<Result> results = Stream.concat(resourceSigned, classConstraintResults).collect(Collectors.toList());
 
 		return new TestResult(results);
 	}

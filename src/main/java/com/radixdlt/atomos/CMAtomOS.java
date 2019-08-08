@@ -100,24 +100,22 @@ public final class CMAtomOS {
 			}
 
 			@Override
-			public <T extends Particle> IndexedConstraint<T> onIndexed(Class<T> particleClass, ParticleToRRIMapper<T> rriMapper) {
+			public <T extends Particle> ResourceConstraint<T> newResource(Class<T> particleClass, ParticleToRRIMapper<T> rriMapper) {
 				if (!scryptParticleClasses.containsKey(particleClass)) {
 					throw new IllegalStateException(particleClass + " must be registered in calling scrypt.");
 				}
 
-				return invariant -> {
-					rriProcedureBuilder.add(particleClass, rriMapper);
+				rriProcedureBuilder.add(particleClass, rriMapper);
 
-					return new InitializedIndexedConstraint<T>() {
-						@Override
-						public <U extends Particle> void requireInitialWith(Class<U> sideEffectClass,
-							ParticleClassWithSideEffectConstraintCheck<T, U> constraint) {
+				return new ResourceConstraint<T>() {
+					@Override
+					public <U extends Particle> void requireInitialWith(Class<U> sideEffectClass,
+						ParticleClassWithSideEffectConstraintCheck<T, U> constraint) {
 
-							ParticleClassWithSideEffectConstraintProcedure<T, U> procedure
-								= new ParticleClassWithSideEffectConstraintProcedure<>(particleClass, sideEffectClass, constraint);
-							procedures.add(procedure);
-						}
-					};
+						ParticleClassWithSideEffectConstraintProcedure<T, U> procedure
+							= new ParticleClassWithSideEffectConstraintProcedure<>(particleClass, sideEffectClass, constraint);
+						procedures.add(procedure);
+					}
 				};
 			}
 

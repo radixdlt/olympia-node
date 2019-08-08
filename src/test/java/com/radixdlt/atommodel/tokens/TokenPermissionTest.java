@@ -34,7 +34,7 @@ public class TokenPermissionTest {
 	public void when_validating_an_ok_atom_with_token_owner_only_mint_token__exception_is_not_thrown() {
 		TokenDefinitionParticle tokenDefinitionParticle = mock(TokenDefinitionParticle.class);
 		RadixAddress address = mock(RadixAddress.class);
-		when(tokenDefinitionParticle.getOwner()).thenReturn(address);
+		when(tokenDefinitionParticle.getAddress()).thenReturn(address);
 		RRI rri = mock(RRI.class);
 		when(tokenDefinitionParticle.getRRI()).thenReturn(rri);
 
@@ -48,7 +48,7 @@ public class TokenPermissionTest {
 	public void when_validating_an_atom_not_signed_by_token_owner_of_token_owner_only_mint_token__exception_is_thrown() {
 		TokenDefinitionParticle tokenDefinitionParticle = mock(TokenDefinitionParticle.class);
 		RadixAddress address = mock(RadixAddress.class);
-		when(tokenDefinitionParticle.getOwner()).thenReturn(address);
+		when(tokenDefinitionParticle.getAddress()).thenReturn(address);
 		RRI rri = mock(RRI.class);
 		when(tokenDefinitionParticle.getRRI()).thenReturn(rri);
 		AtomMetadata atomMetadata = mock(AtomMetadata.class);

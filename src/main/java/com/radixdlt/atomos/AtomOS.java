@@ -7,7 +7,6 @@ import com.radixdlt.atomos.mapper.ParticleToShardablesMapper;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.constraintmachine.AtomMetadata;
 import java.util.List;
-import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 
@@ -43,7 +42,7 @@ public interface AtomOS {
 	 * @param <T> particle class to add a constraint to
 	 * @return a callback function onto which the constraint will be defined
 	 */
-	<T extends Particle> IndexedConstraint<T> onIndexed(Class<T> particleClass, ParticleToRRIMapper<T> indexer);
+	<T extends Particle> ResourceConstraint<T> newResource(Class<T> particleClass, ParticleToRRIMapper<T> indexer);
 
 	/**
 	 * System call endpoint which allows an atom model application to program constraints
@@ -80,13 +79,7 @@ public interface AtomOS {
 		return check -> { };
 	}
 
-	/**
-	 * Actual function which returns result of an indexed constraint given a state
-	 */
-	interface IndexedConstraintCheck<T extends Particle> extends BiFunction<T, AtomMetadata, Result> {
-	}
-
-	interface InitializedIndexedConstraint<T extends Particle> {
+	interface ResourceConstraint<T extends Particle> {
 		/**
 		 * Adds a constraint check for a side effect that is required for this particle
 		 * @param sideEffectClass The particle class of the required side effect
@@ -94,28 +87,6 @@ public interface AtomOS {
 		 * @param <U> The type of the required side effect
 		 */
 		<U extends Particle> void requireInitialWith(Class<U> sideEffectClass, ParticleClassWithSideEffectConstraintCheck<T, U> constraint);
-	}
-
-	/**
-	 * Callback for an implementation of a constraint based on an indexed particle group.
-	 * This interface should not need to be implemented by application layer.
-	 *
-	 * @param <T> the type of particle
-	 */
-	interface IndexedConstraint<T extends Particle> {
-		InitializedIndexedConstraint<T> requireInitial(IndexedConstraintCheck<T> constraint);
-	}
-
-	/**
-	 * Callback for defining an implementation of a constraint based on a particle class and a dependency.
-	 * Helper for defining particle class constraints that can have dependencies.
-	 */
-	interface ParticleRequireWithStub<T extends Particle> {
-		/**
-		 * Defines a requirement for this particle.
-		 */
-		default <U extends Particle> void requireWith(Class<U> sideEffectClass, ParticleClassWithSideEffectConstraintCheck<T, U> constraint) {
-		}
 	}
 
 	interface TransitionlessParticleClassConstraint<T extends Particle> {
@@ -144,11 +115,6 @@ public interface AtomOS {
 	@FunctionalInterface
 	interface ParticleClassWithDependenceConstraintCheck<T extends Particle, U extends Particle> {
 		Result check(List<T> nextState, U dependency, AtomMetadata meta);
-	}
-
-	@FunctionalInterface
-	interface ParticleClassWithDependencyConstraint<T extends Particle, U extends Particle> {
-		void require(ParticleClassWithDependenceConstraintCheck<T, U> constraint);
 	}
 
 	@FunctionalInterface
