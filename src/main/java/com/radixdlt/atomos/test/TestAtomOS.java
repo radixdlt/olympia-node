@@ -59,6 +59,16 @@ public class TestAtomOS implements AtomOS {
 	}
 
 	@Override
+	public <T extends Particle, U extends Particle> void newResource(
+		Class<T> particleClass0,
+		ParticleToRRIMapper<T> rriMapper0,
+		Class<U> particleClass1,
+		ParticleToRRIMapper<U> rriMapper1,
+		BiPredicate<T, U> combinedResource
+	) {
+	}
+
+	@Override
 	public <T extends Particle> TransitionlessParticleClassConstraint<T> onTransitionless(Class<T> particleClass) {
 		return constraint -> particleClassConstraints.add(new Pair<>(particleClass, (p, m) -> constraint.apply((T) p, m)));
 	}

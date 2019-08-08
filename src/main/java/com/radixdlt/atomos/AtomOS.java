@@ -7,6 +7,7 @@ import com.radixdlt.atomos.mapper.ParticleToShardablesMapper;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.constraintmachine.AtomMetadata;
 import java.util.List;
+import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 
@@ -43,6 +44,14 @@ public interface AtomOS {
 	 * @return a callback function onto which the constraint will be defined
 	 */
 	<T extends Particle> ResourceConstraint<T> newResource(Class<T> particleClass, ParticleToRRIMapper<T> indexer);
+
+	<T extends Particle, U extends Particle> void newResource(
+		Class<T> particleClass0,
+		ParticleToRRIMapper<T> indexer0,
+		Class<U> particleClass1,
+		ParticleToRRIMapper<U> indexer1,
+		BiPredicate<T, U> combinedResource
+	);
 
 	/**
 	 * System call endpoint which allows an atom model application to program constraints

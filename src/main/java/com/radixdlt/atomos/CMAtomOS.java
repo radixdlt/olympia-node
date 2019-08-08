@@ -100,7 +100,10 @@ public final class CMAtomOS {
 			}
 
 			@Override
-			public <T extends Particle> ResourceConstraint<T> newResource(Class<T> particleClass, ParticleToRRIMapper<T> rriMapper) {
+			public <T extends Particle> ResourceConstraint<T> newResource(
+				Class<T> particleClass,
+				ParticleToRRIMapper<T> rriMapper
+			) {
 				if (!scryptParticleClasses.containsKey(particleClass)) {
 					throw new IllegalStateException(particleClass + " must be registered in calling scrypt.");
 				}
@@ -117,6 +120,24 @@ public final class CMAtomOS {
 						procedures.add(procedure);
 					}
 				};
+			}
+
+			@Override
+			public <T extends Particle, U extends Particle> void newResource(
+				Class<T> particleClass0,
+				ParticleToRRIMapper<T> rriMapper0,
+				Class<U> particleClass1,
+				ParticleToRRIMapper<U> rriMapper1,
+				BiPredicate<T, U> combinedResource
+			) {
+				if (!scryptParticleClasses.containsKey(particleClass0)) {
+					throw new IllegalStateException(particleClass0 + " must be registered in calling scrypt.");
+				}
+				if (!scryptParticleClasses.containsKey(particleClass1)) {
+					throw new IllegalStateException(particleClass1 + " must be registered in calling scrypt.");
+				}
+
+				rriProcedureBuilder.add(particleClass0, rriMapper0, particleClass1, rriMapper1, combinedResource);
 			}
 
 			@Override

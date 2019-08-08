@@ -14,6 +14,7 @@ import com.radixdlt.constraintmachine.ProcedureError;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Stack;
+import java.util.function.BiPredicate;
 import java.util.stream.Stream;
 
 /**
@@ -22,26 +23,64 @@ import java.util.stream.Stream;
  * given new atoms
  */
 public final class RRIConstraintProcedure implements ConstraintProcedure {
-	private final Map<Class<? extends Particle>, ParticleToRRIMapper<Particle>> indexedParticles;
+	private static class SecondaryResource<T extends Particle> {
+		private final Class<T> particleClass;
+		private final ParticleToRRIMapper<Particle> rriMapper;
+		private final BiPredicate<Particle, T> combinedResource;
 
-	RRIConstraintProcedure(Map<Class<? extends Particle>, ParticleToRRIMapper<Particle>> indexedParticles) {
+		SecondaryResource(Class<T> particleClass, ParticleToRRIMapper<Particle> rriMapper, BiPredicate<Particle, T> combinedResource) {
+			this.particleClass = particleClass;
+			this.rriMapper = rriMapper;
+			this.combinedResource = combinedResource;
+		}
+	}
+
+	private final Map<Class<? extends Particle>, ParticleToRRIMapper<Particle>> indexedParticles;
+	private final Map<Class<? extends Particle>, SecondaryResource<? extends Particle>> secondary;
+
+	RRIConstraintProcedure(
+		Map<Class<? extends Particle>, ParticleToRRIMapper<Particle>> indexedParticles,
+		Map<Class<? extends Particle>, SecondaryResource<? extends Particle>> secondary
+	) {
 		this.indexedParticles = ImmutableMap.copyOf(indexedParticles);
+		this.secondary = secondary;
 	}
 
 	public static final class Builder {
 		private final Map<Class<? extends Particle>, ParticleToRRIMapper<Particle>> indexedParticles;
+		private final Map<Class<? extends Particle>, SecondaryResource<? extends Particle>> secondary;
 
 		public Builder() {
-			indexedParticles = new HashMap<>();
+			this.indexedParticles = new HashMap<>();
+			this.secondary = new HashMap<>();
 		}
 
 		public <T extends Particle> Builder add(Class<T> particleClass, ParticleToRRIMapper<T> indexedParticle) {
+			if (this.indexedParticles.containsKey(particleClass)) {
+				throw new IllegalStateException(particleClass + " already registered as a resource.");
+			}
+
 			this.indexedParticles.put(particleClass, p -> indexedParticle.index((T) p));
 			return this;
 		}
 
+		public <T extends Particle, U extends Particle> Builder add(
+			Class<T> particleClass0, ParticleToRRIMapper<T> indexedParticle0,
+			Class<U> particleClass1, ParticleToRRIMapper<U> indexedParticle1,
+			BiPredicate<T, U> combinedResource
+		) {
+			if (this.indexedParticles.containsKey(particleClass0)) {
+				throw new IllegalStateException(particleClass0 + " already registered as a resource.");
+			}
+
+			this.indexedParticles.put(particleClass0, p -> indexedParticle0.index((T) p));
+			this.secondary.put(particleClass0, new SecondaryResource<>(
+				particleClass1, p -> indexedParticle1.index((U) p), (p, t) -> combinedResource.test((T) p, t)));
+			return this;
+		}
+
 		public RRIConstraintProcedure build() {
-			return new RRIConstraintProcedure(indexedParticles);
+			return new RRIConstraintProcedure(indexedParticles, secondary);
 		}
 	}
 
@@ -65,6 +104,31 @@ public final class RRIConstraintProcedure implements ConstraintProcedure {
 			return false;
 		}
 
+		outputs.pop();
+
+		SecondaryResource secondaryResource = secondary.get(toParticle.getClass());
+		if (secondaryResource != null) {
+			if (outputs.empty()) {
+				return false;
+			}
+
+			Pair<Particle, Void> top2 = outputs.peek();
+			Particle toParticle2 = top2.getFirst();
+			if (!toParticle2.getClass().equals(secondaryResource.particleClass)) {
+				return false;
+			}
+
+			if (!secondaryResource.rriMapper.index(toParticle2).equals(input.getRri())) {
+				return false;
+			}
+
+			if (!secondaryResource.combinedResource.test(toParticle, toParticle2)) {
+				return false;
+			}
+
+			outputs.pop();
+		}
+
 		return true;
 	}
 
@@ -78,9 +142,7 @@ public final class RRIConstraintProcedure implements ConstraintProcedure {
 			Particle p = sp.getParticle();
 			if (sp.getSpin() == Spin.DOWN) {
 				if (p instanceof RRIParticle) {
-					if (this.check((RRIParticle) p, metadata, outputs)) {
-						outputs.pop();
-					} else {
+					if (!this.check((RRIParticle) p, metadata, outputs)) {
 						inputs.push(Pair.of(p, null));
 					}
 				} else if (this.indexedParticles.containsKey(p.getClass())) {
