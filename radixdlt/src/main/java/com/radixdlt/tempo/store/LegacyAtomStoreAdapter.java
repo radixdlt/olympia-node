@@ -16,8 +16,13 @@ import com.radixdlt.tempo.exceptions.TempoException;
 import com.radixdlt.tempo.sync.IterativeCursor;
 import com.radixdlt.utils.UInt384;
 import org.radix.atoms.Atom;
+import org.radix.atoms.AtomDiscoveryRequest;
 import org.radix.atoms.PreparedAtom;
+import org.radix.atoms.sync.AtomSyncStore;
 import org.radix.database.exceptions.DatabaseException;
+import org.radix.discovery.DiscoveryCursor;
+import org.radix.discovery.DiscoveryException;
+import org.radix.discovery.DiscoveryRequest;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.shards.ShardSpace;
@@ -31,11 +36,13 @@ import java.util.function.Supplier;
 public class LegacyAtomStoreAdapter implements AtomStore {
 	private final Logger logger = Logging.getLogger("Store");
 	private final Supplier<org.radix.atoms.AtomStore> atomStoreSupplier;
+	private final Supplier<AtomSyncStore> atomSyncStoreSupplier;
 	private final AtomStoreView view;
 
-	public LegacyAtomStoreAdapter(Supplier<org.radix.atoms.AtomStore> atomStoreSupplier) {
+	public LegacyAtomStoreAdapter(Supplier<org.radix.atoms.AtomStore> atomStoreSupplier, Supplier<AtomSyncStore> atomSyncStoreSupplier) {
 		this.atomStoreSupplier = Objects.requireNonNull(atomStoreSupplier, "atomStoreSupplier is required");
-		this.view = new AtomStoreViewAdapter();
+		this.atomSyncStoreSupplier = Objects.requireNonNull(atomSyncStoreSupplier, "atomSyncStoreSupplier is required");
+		this.view = new AtomStoreViewAdapter(LegacyAtomStoreAdapter.this);
 	}
 
 	@Override
@@ -106,6 +113,25 @@ public class LegacyAtomStoreAdapter implements AtomStore {
 	}
 
 	@Override
+	public Pair<ImmutableList<AID>, IterativeCursor> getNext(IterativeCursor iterativeCursor, int limit, ShardSpace shardSpace) {
+		try {
+			AtomDiscoveryRequest atomDiscoveryRequest = new AtomDiscoveryRequest(DiscoveryRequest.Action.DISCOVER);
+			atomDiscoveryRequest.setLimit((short) 64);
+			atomDiscoveryRequest.setCursor(new DiscoveryCursor(iterativeCursor.getLogicalClockPosition()));
+			atomDiscoveryRequest.setShards(shardSpace);
+			atomSyncStoreSupplier.get().discovery(atomDiscoveryRequest);
+
+			ImmutableList<AID> inventory = ImmutableList.copyOf(atomDiscoveryRequest.getInventory());
+			DiscoveryCursor discoveryCursor = atomDiscoveryRequest.getCursor();
+			IterativeCursor nextCursor = discoveryCursor.hasNext() ? new IterativeCursor(discoveryCursor.getNext().getPosition(), null) : null;
+			IterativeCursor updatedCursor = new IterativeCursor(iterativeCursor.getLogicalClockPosition(), nextCursor);
+			return Pair.of(inventory, updatedCursor);
+		} catch (DiscoveryException e) {
+			throw new TempoException("Error while advancing cursor", e);
+		}
+	}
+
+	@Override
 	public void open() {
 		// not implemented here as is already done in legacy AtomStore directly
 	}
@@ -132,14 +158,25 @@ public class LegacyAtomStoreAdapter implements AtomStore {
 	}
 
 	private class AtomStoreViewAdapter implements AtomStoreView {
+		private final LegacyAtomStoreAdapter legacyAtomStoreAdapter;
+
+		private AtomStoreViewAdapter(LegacyAtomStoreAdapter legacyAtomStoreAdapter) {
+			this.legacyAtomStoreAdapter = legacyAtomStoreAdapter;
+		}
+
 		@Override
 		public boolean contains(AID aid) {
-			return LegacyAtomStoreAdapter.this.contains(aid);
+			return legacyAtomStoreAdapter.contains(aid);
 		}
 
 		@Override
 		public Optional<TempoAtom> get(AID aid) {
-			return LegacyAtomStoreAdapter.this.get(aid);
+			return legacyAtomStoreAdapter.get(aid);
+		}
+
+		@Override
+		public LedgerCursor search(LedgerCursor.Type type, LedgerIndex index, LedgerSearchMode mode) {
+			return legacyAtomStoreAdapter.search(type, index, mode);
 		}
 
 		@Override

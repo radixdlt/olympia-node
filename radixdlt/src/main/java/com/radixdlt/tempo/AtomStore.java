@@ -1,9 +1,13 @@
 package com.radixdlt.tempo;
 
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.common.AID;
+import com.radixdlt.common.Pair;
 import com.radixdlt.ledger.LedgerCursor;
 import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerSearchMode;
+import com.radixdlt.tempo.sync.IterativeCursor;
+import org.radix.shards.ShardSpace;
 
 import java.util.Optional;
 import java.util.Set;
@@ -64,6 +68,8 @@ public interface AtomStore {
 	 * @return The resulting ledger cursor
 	 */
 	LedgerCursor search(LedgerCursor.Type type, LedgerIndex index, LedgerSearchMode mode);
+
+	Pair<ImmutableList<AID>, IterativeCursor> getNext(IterativeCursor iterativeCursor, int limit, ShardSpace shardSpace);
 
 	/**
 	 * Resets this store and removes all contents.

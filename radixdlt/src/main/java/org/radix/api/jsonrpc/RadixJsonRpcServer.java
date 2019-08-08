@@ -2,13 +2,21 @@ package org.radix.api.jsonrpc;
 
 import com.google.common.io.CharStreams;
 import com.radixdlt.atomos.RadixAddress;
+import com.radixdlt.ledger.LedgerCursor;
+import com.radixdlt.ledger.LedgerIndex;
+import com.radixdlt.ledger.LedgerSearchMode;
+import com.radixdlt.tempo.AtomStoreView;
 import com.radixdlt.tempo.AtomSyncView;
+import com.radixdlt.tempo.LegacyUtils;
+import com.radixdlt.tempo.store.TempoAtomStore;
 import org.radix.atoms.Atom;
 import com.radixdlt.atoms.AtomStatus;
 import com.radixdlt.common.AID;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import io.undertow.server.HttpServerExchange;
+
+import java.util.ArrayList;
 import java.util.Objects;
 import org.everit.json.schema.Schema;
 import org.everit.json.schema.ValidationException;
@@ -18,12 +26,12 @@ import org.radix.api.AtomQuery;
 import org.radix.api.services.AtomsService;
 import org.radix.atoms.AtomDiscoveryRequest;
 import org.radix.atoms.AtomStore;
-import org.radix.atoms.sync.AtomSync;
 import org.radix.modules.Modules;
 import org.radix.network.peers.PeerHandler;
 import org.radix.network.peers.PeerHandler.PeerDomain;
 import org.radix.network.peers.filters.PeerFilter;
 import com.radixdlt.universe.Universe;
+import org.radix.properties.RuntimeProperties;
 import org.radix.universe.system.LocalSystem;
 
 import java.io.IOException;
@@ -56,23 +64,23 @@ public final class RadixJsonRpcServer {
 	/**
 	 * Store to query atoms from
 	 */
-    private final AtomStore atomStore;
+    private final AtomStoreView storeView;
 
-	private final AtomSyncView atomSync;
+	private final AtomSyncView syncView;
 
 	/**
 	 * Serialization mechanism
 	 */
 	private final Serialization serialization;
 
-	public RadixJsonRpcServer(Serialization serialization, AtomStore atomStore, AtomSyncView atomSync, AtomsService atomsService, Schema atomSchema) {
-		this(serialization, atomStore, atomSync, atomsService, atomSchema, DEFAULT_MAX_REQUEST_SIZE);
+	public RadixJsonRpcServer(Serialization serialization, AtomStoreView storeView, AtomSyncView syncView, AtomsService atomsService, Schema atomSchema) {
+		this(serialization, storeView, syncView, atomsService, atomSchema, DEFAULT_MAX_REQUEST_SIZE);
 	}
 
-	public RadixJsonRpcServer(Serialization serialization, AtomStore atomStore, AtomSyncView atomSync, AtomsService atomsService, Schema atomSchema, long maxRequestSizeBytes) {
+	public RadixJsonRpcServer(Serialization serialization, AtomStoreView storeView, AtomSyncView syncView, AtomsService atomsService, Schema atomSchema, long maxRequestSizeBytes) {
 		this.serialization = Objects.requireNonNull(serialization);
-		this.atomStore = Objects.requireNonNull(atomStore);
-		this.atomSync = Objects.requireNonNull(atomSync);
+		this.storeView = Objects.requireNonNull(storeView);
+		this.syncView = Objects.requireNonNull(syncView);
 		this.atomsService = Objects.requireNonNull(atomsService);
 		this.atomSchema = Objects.requireNonNull(atomSchema);
 		this.maxRequestSizeBytes = Objects.requireNonNull(maxRequestSizeBytes);
@@ -138,7 +146,9 @@ public final class RadixJsonRpcServer {
 						}
 
 						String aidString = params.getString("aid");
-						Optional<Atom> foundAtom = atomStore.getAtom(AID.from(aidString));
+						// TODO remove legacy conversion
+						Optional<Atom> foundAtom = storeView.get(AID.from(aidString))
+							.map(LegacyUtils::toLegacyAtom);
 						if (foundAtom.isPresent()) {
 							result = foundAtom.get();
 						} else {
@@ -159,9 +169,21 @@ public final class RadixJsonRpcServer {
 						final String addressString = params.getString("address");
 						final RadixAddress address = RadixAddress.from(addressString);
 
-						final AtomDiscoveryRequest request = new AtomQuery(address).toAtomDiscovery();
-						atomStore.discovery(request);
-						result = request.getDelivered();
+						// TODO FIXME super ugly hack because indices are handled differently
+						LedgerIndex index;
+						if (Modules.get(RuntimeProperties.class).get("tempo2", false)) {
+							index = new LedgerIndex(TempoAtomStore.DESTINATION_INDEX_PREFIX, address.getUID().toByteArray());
+						} else {
+							index = new LedgerIndex(AtomStore.IDType.toByteArray(AtomStore.IDType.DESTINATION, address.getUID()));
+						}
+
+						List<AID> collectedAids = new ArrayList<>();
+						LedgerCursor cursor = storeView.search(LedgerCursor.Type.DUPLICATE, index, LedgerSearchMode.EXACT);
+						while (cursor != null) {
+							collectedAids.add(cursor.get());
+							cursor = cursor.next();
+						}
+						result = collectedAids;
 					}
 
 					break;
@@ -208,9 +230,9 @@ public final class RadixJsonRpcServer {
 					} else {
 						String aidString = ((JSONObject) paramsObject).getString("aid");
 						final AID aid = AID.from(aidString);
-						AtomStatus atomStatus = atomSync.getAtomStatus(aid);
+						AtomStatus atomStatus = syncView.getAtomStatus(aid);
 						if (atomStatus == null) {
-							if (atomStore.hasAtom(aid)) {
+							if (storeView.contains(aid)) {
 								atomStatus = AtomStatus.STORED;
 							} else {
 								atomStatus = AtomStatus.DOES_NOT_EXIST;

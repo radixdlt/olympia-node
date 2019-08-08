@@ -409,6 +409,7 @@ public class TempoAtomStore implements AtomStore {
 	}
 
 	// FIXME awful performance
+	@Override
 	public Pair<ImmutableList<AID>, IterativeCursor> getNext(IterativeCursor iterativeCursor, int limit, ShardSpace shardSpace) {
 		List<AID> aids = Lists.newArrayList();
 		long start = SystemProfiler.getInstance().begin();
@@ -629,9 +630,9 @@ public class TempoAtomStore implements AtomStore {
 		}
 	}
 
-	private static final byte ATOM_INDEX_PREFIX = 0;
-	private static final byte SHARD_INDEX_PREFIX = 1;
-	private static final byte DESTINATION_INDEX_PREFIX = 2;
+	public static final byte ATOM_INDEX_PREFIX = 0;
+	public static final byte SHARD_INDEX_PREFIX = 1;
+	public static final byte DESTINATION_INDEX_PREFIX = 2;
 
 	private final class TempoAtomIndices {
 		private final Set<LedgerIndex> uniqueIndices;
@@ -710,6 +711,11 @@ public class TempoAtomStore implements AtomStore {
 		@Override
 		public Optional<TempoAtom> get(AID aid) {
 			return store.get(aid);
+		}
+
+		@Override
+		public LedgerCursor search(Type type, LedgerIndex index, LedgerSearchMode mode) {
+			return store.search(type, index, mode);
 		}
 
 		@Override

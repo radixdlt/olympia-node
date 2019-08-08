@@ -22,14 +22,14 @@ public class Atoms extends Plugin
 	public List<Class<? extends Module>> getComponents()
 	{
 		List<Class<? extends Module>> dependencies = new ArrayList<>();
-		dependencies.add(AtomSyncStore.class);
 		dependencies.add(ParticleConflictStore.class);
+		dependencies.add(ParticleConflictHandler.class);
 		dependencies.add(Shards.class);
 		if (!Modules.get(RuntimeProperties.class).get("tempo2", false)) {
+			dependencies.add(AtomSyncStore.class);
 			dependencies.add(AtomStore.class);
 			dependencies.add(AtomSync.class);
 		}
-		dependencies.add(ParticleConflictHandler.class);
 		dependencies.add(LocalAtomsProfiler.class);
 		dependencies.add(GlobalAtomsProfiler.class);
 

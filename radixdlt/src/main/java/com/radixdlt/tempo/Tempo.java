@@ -179,11 +179,13 @@ public final class Tempo extends Plugin implements Ledger {
 	public void start_impl() {
 		this.store.open();
 		this.synchroniser.clear();
+		Modules.put(AtomStoreView.class, this.store.asReadOnlyView());
 		Modules.put(AtomSyncView.class, this.synchroniser.getLegacyAdapter());
 	}
 
 	@Override
 	public void stop_impl() {
+		Modules.remove(AtomStoreView.class);
 		Modules.remove(AtomSyncView.class);
 		this.store.close();
 		// nothing to do

@@ -68,7 +68,7 @@ public class PassivePeersEpic implements SyncEpic {
 	}
 
 	public static class Builder {
-		private int reselectionDelaySeconds = 5;
+		private int reselectionDelaySeconds = 10;
 		private int reselectionIntervalSeconds = 10;
 		private int desiredPeerCount = 16;
 		private PeerSupplier peerSupplier;

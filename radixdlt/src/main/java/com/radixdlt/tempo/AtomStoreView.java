@@ -3,6 +3,9 @@ package com.radixdlt.tempo;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.Pair;
+import com.radixdlt.ledger.LedgerCursor;
+import com.radixdlt.ledger.LedgerIndex;
+import com.radixdlt.ledger.LedgerSearchMode;
 import com.radixdlt.tempo.sync.IterativeCursor;
 import org.radix.shards.ShardSpace;
 
@@ -25,6 +28,16 @@ public interface AtomStoreView {
 	 * @return The atom associated with the given aid (if any)
 	 */
 	Optional<TempoAtom> get(AID aid);
+
+	/**
+	 * Searches for a certain index.
+	 *
+	 * @param type The type of index
+	 * @param index The index
+	 * @param mode The mode
+	 * @return The resulting ledger cursor
+	 */
+	LedgerCursor search(LedgerCursor.Type type, LedgerIndex index, LedgerSearchMode mode);
 
 	/**
 	 * Advance the cursor to discover up to certain number of aids within a shard range

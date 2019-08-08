@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.radixdlt.tempo.AtomStoreView;
 import com.radixdlt.tempo.AtomSyncView;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -64,12 +65,11 @@ public final class RadixHttpServer {
 
     private final RadixJsonRpcServer jsonRpcServer = new RadixJsonRpcServer(
 		Modules.get(Serialization.class),
-		Modules.get(AtomStore.class),
+		Modules.get(AtomStoreView.class),
 		Modules.get(AtomSyncView.class),
 		atomsService,
         AtomSchemas.get()
     );
-
 
     private Undertow server;
 
