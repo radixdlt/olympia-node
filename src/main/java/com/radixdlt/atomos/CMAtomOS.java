@@ -23,7 +23,6 @@ import com.radixdlt.atomos.mapper.ParticleToAmountMapper;
 import com.radixdlt.atomos.mapper.ParticleToRRIMapper;
 import com.radixdlt.atomos.mapper.ParticleToShardableMapper;
 import com.radixdlt.atomos.mapper.ParticleToShardablesMapper;
-import com.radixdlt.atomos.procedures.ParticleClassConstraintProcedure;
 import com.radixdlt.atomos.procedures.ParticleClassWithSideEffectConstraintProcedure;
 import com.radixdlt.atomos.procedures.TransitionlessConstraintProcedure;
 import com.radixdlt.atomos.procedures.RRIConstraintProcedure;
@@ -52,6 +51,7 @@ public final class CMAtomOS {
 
 	private final Map<Class<? extends Particle>, FungibleDefinition.Builder<? extends Particle>> fungibles = new HashMap<>();
 	private final Map<Class<? extends Particle>, Function<Particle, Stream<RadixAddress>>> particleMapper = new LinkedHashMap<>();
+	private final Map<Class<? extends Particle>, Function<Particle, Result>> particleStaticValidation = new HashMap<>();
 
 	private final RRIConstraintProcedure.Builder rriProcedureBuilder = new RRIConstraintProcedure.Builder();
 	private final TransitionlessConstraintProcedure.Builder payloadProcedureBuilder = new TransitionlessConstraintProcedure.Builder();
@@ -94,8 +94,8 @@ public final class CMAtomOS {
 				}
 
 				return constraint -> {
-					ParticleClassConstraintProcedure<T> procedure = new ParticleClassConstraintProcedure<>(particleClass, constraint::apply);
-					procedures.add(procedure);
+					particleStaticValidation.merge(particleClass, p -> constraint.apply((T) p),
+						(old, next) -> p -> Result.combine(old.apply(p), next.apply(p)));
 				};
 			}
 
@@ -255,6 +255,13 @@ public final class CMAtomOS {
 				Function<Particle, Stream<RadixAddress>> mapper = particleMapper.get(p.getClass());
 				if (mapper == null) {
 					return false;
+				}
+
+				Function<Particle, Result> staticValidation = particleStaticValidation.get(p.getClass());
+				if (staticValidation != null) {
+					if (staticValidation.apply(p).isError()) {
+						return false;
+					}
 				}
 
 				final Set<EUID> destinations = mapper.apply(p).map(RadixAddress::getUID).collect(Collectors.toSet());
