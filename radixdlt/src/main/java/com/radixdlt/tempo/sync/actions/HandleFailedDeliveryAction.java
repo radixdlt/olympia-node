@@ -5,13 +5,15 @@ import com.radixdlt.common.AID;
 import com.radixdlt.tempo.sync.SyncAction;
 import org.radix.network.peers.Peer;
 
+import java.util.Objects;
+
 public class HandleFailedDeliveryAction implements SyncAction {
 	private final ImmutableList<AID> aids;
 	private final Peer peer;
 
 	public HandleFailedDeliveryAction(ImmutableList<AID> aids, Peer peer) {
-		this.aids = aids;
-		this.peer = peer;
+		this.aids = Objects.requireNonNull(aids, "aids is required");
+		this.peer = Objects.requireNonNull(peer, "peer is required");
 	}
 
 	public ImmutableList<AID> getAids() {

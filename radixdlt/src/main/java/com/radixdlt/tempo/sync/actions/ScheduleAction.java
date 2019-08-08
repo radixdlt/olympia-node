@@ -2,6 +2,7 @@ package com.radixdlt.tempo.sync.actions;
 
 import com.radixdlt.tempo.sync.SyncAction;
 
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -13,9 +14,9 @@ public class ScheduleAction implements SyncAction {
 	private final TimeUnit unit;
 
 	public ScheduleAction(SyncAction action, long delay, TimeUnit unit) {
-		this.action = action;
+		this.action = Objects.requireNonNull(action, "action is required");
 		this.delay = delay;
-		this.unit = unit;
+		this.unit = Objects.requireNonNull(unit, "unit is required");
 	}
 
 	public SyncAction getAction() {

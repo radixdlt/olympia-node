@@ -2,6 +2,7 @@ package com.radixdlt.tempo.sync.actions;
 
 import com.radixdlt.tempo.sync.SyncAction;
 
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -14,10 +15,10 @@ public class RepeatScheduleAction implements SyncAction {
 	private final TimeUnit unit;
 
 	public RepeatScheduleAction(SyncAction action, long initialDelay, long recurrentDelay, TimeUnit unit) {
-		this.action = action;
+		this.action = Objects.requireNonNull(action, "action is required");
 		this.initialDelay = initialDelay;
 		this.recurrentDelay = recurrentDelay;
-		this.unit = unit;
+		this.unit = Objects.requireNonNull(unit, "unit is required");
 	}
 
 	public SyncAction getAction() {

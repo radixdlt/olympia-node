@@ -1,6 +1,7 @@
 package com.radixdlt.tempo.sync.epics;
 
 import com.google.common.collect.ImmutableMap;
+import com.radixdlt.tempo.exceptions.TempoException;
 import com.radixdlt.tempo.sync.SyncAction;
 import com.radixdlt.tempo.sync.SyncEpic;
 import com.radixdlt.tempo.sync.TempoAtomSynchroniser.ImmediateDispatcher;
@@ -62,6 +63,7 @@ public class MessagingEpic implements SyncEpic {
 			messager.send(message, udpPeer);
 		} catch (IOException e) {
 			// TODO error handling
+			throw new TempoException(String.format("Error while sending message '%s' to %s", message.getCommand(), peer), e);
 		}
 	}
 
@@ -101,14 +103,18 @@ public class MessagingEpic implements SyncEpic {
 
 			for (String command : inboundMappers.keySet()) {
 				this.messager.register(command, (message, peer) -> {
-					BiFunction<Message, Peer, SyncAction> messageActionMapper = inboundMappers.get(command);
-					SyncAction action = messageActionMapper.apply(message, peer);
-					if (logger.hasLevel(Logging.DEBUG)) {
-						logger.debug(String.format("Forwarding inbound '%s' from '%s' to %s",
-							command, peer, action.getClass().getSimpleName()));
-					}
+					try {
+						BiFunction<Message, Peer, SyncAction> messageActionMapper = inboundMappers.get(command);
+						SyncAction action = messageActionMapper.apply(message, peer);
+						if (logger.hasLevel(Logging.DEBUG)) {
+							logger.debug(String.format("Forwarding inbound '%s' from '%s' to %s",
+								command, peer, action.getClass().getSimpleName()));
+						}
 
-					dispatcher.dispatch(action);
+						dispatcher.dispatch(action);
+					} catch (Exception e) {
+						logger.error("Error while forwarding inbound '" + message.getCommand() + "' from " + peer, e);
+					}
 				});
 			}
 

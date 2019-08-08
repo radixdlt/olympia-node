@@ -5,13 +5,15 @@ import com.radixdlt.tempo.sync.SyncAction;
 import com.radixdlt.tempo.sync.messages.DeliveryResponseMessage;
 import org.radix.network.peers.Peer;
 
+import java.util.Objects;
+
 public class SendDeliveryResponseAction implements SyncAction {
 	private final TempoAtom atom;
 	private final Peer peer;
 
 	public SendDeliveryResponseAction(TempoAtom atom, Peer peer) {
-		this.atom = atom;
-		this.peer = peer;
+		this.atom = Objects.requireNonNull(atom, "atom is required");
+		this.peer = Objects.requireNonNull(peer, "peer is required");
 	}
 
 	public TempoAtom getAtom() {

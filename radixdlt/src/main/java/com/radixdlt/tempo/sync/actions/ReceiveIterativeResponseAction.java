@@ -7,15 +7,17 @@ import com.radixdlt.tempo.sync.SyncAction;
 import com.radixdlt.tempo.sync.messages.IterativeResponseMessage;
 import org.radix.network.peers.Peer;
 
+import java.util.Objects;
+
 public class ReceiveIterativeResponseAction implements SyncAction {
 	private final ImmutableList<AID> aids;
 	private final IterativeCursor cursor;
 	private final Peer peer;
 
 	public ReceiveIterativeResponseAction(ImmutableList<AID> aids, IterativeCursor cursor, Peer peer) {
-		this.aids = aids;
-		this.cursor = cursor;
-		this.peer = peer;
+		this.aids = Objects.requireNonNull(aids, "aids is required");
+		this.cursor = Objects.requireNonNull(cursor, "cursor is required");
+		this.peer = Objects.requireNonNull(peer, "peer is required");
 	}
 
 	public ImmutableList<AID> getAids() {

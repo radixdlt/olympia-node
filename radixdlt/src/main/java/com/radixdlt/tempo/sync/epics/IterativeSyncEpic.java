@@ -170,7 +170,7 @@ public class IterativeSyncEpic implements SyncEpic {
 					int timeout = 1 << backoff;
 					continuedActions = Stream.of(new InitiateIterativeSyncAction(peer).schedule(timeout, TimeUnit.SECONDS));
 					if (logger.hasLevel(Logging.DEBUG)) {
-						logger.debug(String.format("Received iterative response from %s, backing off as all synced up", peer));
+						logger.debug(String.format("Received iterative response from %s, backing off for " + timeout + " seconds as all synced up", peer));
 					}
 				}
 			}

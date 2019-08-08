@@ -5,8 +5,9 @@ import com.radixdlt.tempo.sync.SyncAction;
 import com.radixdlt.tempo.sync.messages.IterativeRequestMessage;
 import org.radix.network.messaging.Message;
 import org.radix.network.peers.Peer;
-import org.radix.shards.ShardRange;
 import org.radix.shards.ShardSpace;
+
+import java.util.Objects;
 
 public class SendIterativeRequestAction implements SyncAction {
 	private final ShardSpace shardSpace;
@@ -14,9 +15,9 @@ public class SendIterativeRequestAction implements SyncAction {
 	private final Peer peer;
 
 	public SendIterativeRequestAction(ShardSpace shardSpace, IterativeCursor cursor, Peer peer) {
-		this.shardSpace = shardSpace;
-		this.cursor = cursor;
-		this.peer = peer;
+		this.shardSpace = Objects.requireNonNull(shardSpace, "shardSpace is required");
+		this.cursor = Objects.requireNonNull(cursor, "cursor is required");
+		this.peer = Objects.requireNonNull(peer, "peer is required");
 	}
 
 	public ShardSpace getShardSpace() {
