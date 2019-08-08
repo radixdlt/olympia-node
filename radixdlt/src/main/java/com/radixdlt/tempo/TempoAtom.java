@@ -25,23 +25,27 @@ public class TempoAtom implements Atom {
 	 */
 	@JsonProperty("content")
 	@DsonOutput(value = {DsonOutput.Output.ALL})
-	private final Object content;
+	private Object content;
 
 	@JsonProperty("aid")
 	@DsonOutput(value = {DsonOutput.Output.ALL})
-	private final AID aid;
+	private AID aid;
 
 	@JsonProperty("timestamp")
 	@DsonOutput(value = {DsonOutput.Output.ALL})
-	private final long timestamp;
+	private long timestamp;
 
 	@JsonProperty("shards")
 	@DsonOutput(value = {DsonOutput.Output.ALL})
-	private final ImmutableSet<Long> shards;
+	private ImmutableSet<Long> shards;
 
 	@JsonProperty("temporalProof")
 	@DsonOutput(value = {DsonOutput.Output.API, DsonOutput.Output.WIRE, DsonOutput.Output.PERSIST})
 	private TemporalProof temporalProof;
+
+	private TempoAtom() {
+		// For serializer
+	}
 
 	public TempoAtom(Object content, AID aid, long timestamp, Set<Long> shards) {
 		this(content, aid, timestamp, shards, null);

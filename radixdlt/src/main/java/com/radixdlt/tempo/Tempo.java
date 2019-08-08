@@ -13,11 +13,19 @@ import com.radixdlt.ledger.LedgerCursor;
 import com.radixdlt.ledger.LedgerCursor.Type;
 import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerSearchMode;
+import com.radixdlt.tempo.conflict.LocalConflictResolver;
 import com.radixdlt.tempo.exceptions.TempoException;
+import com.radixdlt.tempo.store.TempoAtomStore;
+import com.radixdlt.tempo.sync.PeerSupplierAdapter;
+import com.radixdlt.tempo.sync.SimpleEdgeSelector;
+import com.radixdlt.tempo.sync.TempoAtomSynchroniser;
+import org.radix.database.DatabaseEnvironment;
 import org.radix.exceptions.ValidationException;
 import org.radix.modules.Module;
 import org.radix.modules.Modules;
 import org.radix.modules.Plugin;
+import org.radix.network.messaging.Messaging;
+import org.radix.network.peers.PeerHandler;
 import org.radix.state.State;
 import org.radix.state.StateDomain;
 import org.radix.time.TemporalVertex;
@@ -29,7 +37,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Future;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -45,21 +52,11 @@ public final class Tempo extends Plugin implements Ledger {
 	private final LocalSystem localSystem;
 
 	private Tempo(AtomSynchroniser synchroniser, AtomStore store, ConflictResolver resolver, Supplier<Long> wallclockTimeSupplier, LocalSystem localSystem) {
-		this.synchroniser = Objects.requireNonNull(synchroniser, "synchroniser is required");
-		this.store = Objects.requireNonNull(store, "store is required");
-		this.resolver = Objects.requireNonNull(resolver, "resolver is required");
+		this.synchroniser = synchroniser;
+		this.store = store;
+		this.resolver = resolver;
 		this.wallclockTimeSupplier = wallclockTimeSupplier;
 		this.localSystem = localSystem;
-	}
-
-	public static Tempo from(AtomSynchroniser synchroniser, AtomStore store, ConflictResolver resolver) {
-		return new Tempo(
-			synchroniser,
-			store,
-			resolver,
-			Time::currentTimestamp,
-			LocalSystem.getInstance()
-		);
 	}
 
 	@Override
@@ -125,7 +122,7 @@ public final class Tempo extends Plugin implements Ledger {
 		return resolver.resolve((TempoAtom) atom, conflictingAtoms.stream()
 			.map(TempoAtom.class::cast)
 			.collect(Collectors.toSet()))
-		.thenApply(Atom.class::cast);
+			.thenApply(Atom.class::cast);
 	}
 
 	@Override
@@ -174,12 +171,13 @@ public final class Tempo extends Plugin implements Ledger {
 	@Override
 	public List<Class<? extends Module>> getDependsOn() {
 		return ImmutableList.of(
-			org.radix.atoms.AtomStore.class
+			DatabaseEnvironment.class
 		);
 	}
 
 	@Override
 	public void start_impl() {
+		this.store.open();
 		this.synchroniser.clear();
 		Modules.put(AtomSyncView.class, this.synchroniser.getLegacyAdapter());
 	}
@@ -187,11 +185,101 @@ public final class Tempo extends Plugin implements Ledger {
 	@Override
 	public void stop_impl() {
 		Modules.remove(AtomSyncView.class);
+		this.store.close();
 		// nothing to do
+	}
+
+	@Override
+	public void reset_impl() {
+		this.store.reset();
 	}
 
 	@Override
 	public String getName() {
 		return "Tempo";
+	}
+
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	public static Builder defaultBuilderWithoutSynchroniser() {
+		TempoAtomStore tempoAtomStore = new TempoAtomStore(() -> Modules.get(DatabaseEnvironment.class));
+		LocalSystem localSystem = LocalSystem.getInstance();
+		return builder()
+			.store(tempoAtomStore)
+			.resolver(new LocalConflictResolver(localSystem.getNID()))
+			.localSystem(localSystem)
+			.wallclockTime(Time::currentTimestamp);
+	}
+
+	public static Builder defaultBuilder() {
+		TempoAtomStore tempoAtomStore = new TempoAtomStore(() -> Modules.get(DatabaseEnvironment.class));
+		LocalSystem localSystem = LocalSystem.getInstance();
+		return builder()
+			.synchroniser(
+				TempoAtomSynchroniser.defaultBuilder(
+					tempoAtomStore.asReadOnlyView(),
+					localSystem,
+					Messaging.getInstance(),
+					new PeerSupplierAdapter(() -> Modules.get(PeerHandler.class))
+				)
+				.edgeSelector(new SimpleEdgeSelector())
+				.build()
+			)
+			.store(tempoAtomStore)
+			.resolver(new LocalConflictResolver(localSystem.getNID()))
+			.localSystem(localSystem)
+			.wallclockTime(Time::currentTimestamp);
+	}
+
+	public static class Builder {
+		private AtomSynchroniser synchroniser;
+		private AtomStore store;
+		private ConflictResolver resolver;
+
+		private Supplier<Long> wallclockTimeSupplier;
+		private LocalSystem localSystem;
+
+		public Builder synchroniser(AtomSynchroniser synchroniser) {
+			this.synchroniser = synchroniser;
+			return this;
+		}
+
+		public Builder store(AtomStore store) {
+			this.store = store;
+			return this;
+		}
+
+		public Builder resolver(ConflictResolver resolver) {
+			this.resolver = resolver;
+			return this;
+		}
+
+		public Builder wallclockTime(Supplier<Long> wallclockTimeSupplier) {
+			this.wallclockTimeSupplier = wallclockTimeSupplier;
+			return this;
+		}
+
+		public Builder localSystem(LocalSystem localSystem) {
+			this.localSystem = localSystem;
+			return this;
+		}
+
+		public Tempo build() {
+			Objects.requireNonNull(synchroniser, "synchroniser is required");
+			Objects.requireNonNull(store, "store is required");
+			Objects.requireNonNull(resolver, "resolver is required");
+			Objects.requireNonNull(wallclockTimeSupplier, "wallclockTimeSupplier is required");
+			Objects.requireNonNull(localSystem, "localSystem is required");
+
+			return new Tempo(
+				synchroniser,
+				store,
+				resolver,
+				wallclockTimeSupplier,
+				localSystem
+			);
+		}
 	}
 }

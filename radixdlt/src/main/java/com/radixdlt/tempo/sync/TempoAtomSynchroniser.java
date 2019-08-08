@@ -122,7 +122,7 @@ public class TempoAtomSynchroniser implements AtomSynchroniser {
 					return epic.epic(action);
 				} catch (Exception e) {
 					logger.error(String.format("Error while executing %s in %s: '%s'",
-						action.getClass().getSimpleName(), epic.getClass().getSimpleName()), e);
+						action.getClass().getSimpleName(), epic.getClass().getSimpleName(), e.toString()), e);
 					return Stream.empty();
 				}
 			})

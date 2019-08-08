@@ -1,6 +1,5 @@
 package com.radixdlt.tempo;
 
-import com.radixdlt.Atom;
 import com.radixdlt.common.AID;
 import com.radixdlt.ledger.LedgerCursor;
 import com.radixdlt.ledger.LedgerIndex;
@@ -67,7 +66,23 @@ public interface AtomStore {
 	LedgerCursor search(LedgerCursor.Type type, LedgerIndex index, LedgerSearchMode mode);
 
 	/**
-	 * Get a read-only view of this atom store
+	 * Resets this store and removes all contents.
+	 */
+	void reset();
+
+	/**
+	 * Opens this store and underlying resources.
+	 */
+	void open();
+
+	/**
+	 * Closes this store and underlying resources.
+	 */
+	void close();
+
+	/**
+	 * Gets a read-only view of this atom store.
+	 *
 	 * @return a view of this atom store
 	 */
 	AtomStoreView asReadOnlyView();

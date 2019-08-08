@@ -14,7 +14,6 @@ import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.tempo.AtomStore;
 import com.radixdlt.tempo.AtomStoreView;
 import com.radixdlt.tempo.TempoAtom;
-import com.radixdlt.tempo.TempoCursor;
 import com.radixdlt.tempo.exceptions.TempoException;
 import com.radixdlt.tempo.sync.IterativeCursor;
 import com.radixdlt.utils.Longs;
@@ -34,14 +33,10 @@ import com.sleepycat.je.Transaction;
 import com.sleepycat.je.TransactionConfig;
 import org.bouncycastle.util.Arrays;
 import org.radix.database.DatabaseEnvironment;
-import org.radix.database.DatabaseStore;
 import org.radix.database.exceptions.DatabaseException;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.modules.Modules;
-import org.radix.modules.exceptions.ModuleException;
-import org.radix.modules.exceptions.ModuleResetException;
-import org.radix.modules.exceptions.ModuleStartException;
 import org.radix.shards.ShardRange;
 import org.radix.shards.ShardSpace;
 import org.radix.time.TemporalVertex;
@@ -58,12 +53,12 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
-public class TempoAtomStore extends DatabaseStore implements AtomStore {
+public class TempoAtomStore implements AtomStore {
 	private static final Logger logger = Logging.getLogger("Store");
 
 	private final Supplier<DatabaseEnvironment> databaseEnvironmentSupplier;
 	private final AtomStoreViewAdapter view;
-	private final Map<Long, TempoAtomIndices> processing = new ConcurrentHashMap<>();
+	private final Map<Long, TempoAtomIndices> atomIndices = new ConcurrentHashMap<>();
 
 	private Database atomsDatabase;
 	private SecondaryDatabase uniqueIndices;
@@ -71,11 +66,11 @@ public class TempoAtomStore extends DatabaseStore implements AtomStore {
 
 	public TempoAtomStore(Supplier<DatabaseEnvironment> databaseEnvironmentSupplier) {
 		this.databaseEnvironmentSupplier = databaseEnvironmentSupplier;
-		this.view = new AtomStoreViewAdapter();
+		this.view = new AtomStoreViewAdapter(this);
 	}
 
 	@Override
-	public void start_impl() throws ModuleException {
+	public void open() {
 		DatabaseConfig primaryConfig = new DatabaseConfig();
 		primaryConfig.setAllowCreate(true);
 		primaryConfig.setTransactional(true);
@@ -98,15 +93,17 @@ public class TempoAtomStore extends DatabaseStore implements AtomStore {
 			this.atomsDatabase = dbEnv.openDatabase(null, "tempo2.atoms", primaryConfig);
 			this.uniqueIndices = dbEnv.openSecondaryDatabase(null, "tempo2.unique_indices", this.atomsDatabase, uniqueIndicesConfig);
 			this.duplicatedIndices = dbEnv.openSecondaryDatabase(null, "tempo2.duplicated_indices", this.atomsDatabase, duplicateIndicesConfig);
-		} catch (Exception ex) {
-			throw new ModuleStartException(ex, this);
+		} catch (Exception e) {
+			throw new TempoException("Error while opening database", e);
 		}
 
-		super.start_impl();
+		if (System.getProperty("db.check_integrity", "1").equals("1")) {
+			integrity();
+		}
 	}
 
 	@Override
-	public void reset_impl() throws ModuleException {
+	public void reset() {
 		Transaction transaction = null;
 
 		try {
@@ -124,24 +121,20 @@ public class TempoAtomStore extends DatabaseStore implements AtomStore {
 				transaction.abort();
 			}
 
-			log.warn(e.getMessage());
+			logger.warn("Error while resetting database, database not found", e);
 		} catch (Exception e) {
 			if (transaction != null) {
 				transaction.abort();
 			}
 
-			throw new ModuleResetException(e, this);
+			throw new TempoException("Error while resetting databases", e);
 		} finally {
 			Modules.get(DatabaseEnvironment.class).unlock();
 		}
-
-		super.reset_impl();
 	}
 
 	@Override
-	public void stop_impl() throws ModuleException {
-		super.stop_impl();
-
+	public void close() {
 		if (this.uniqueIndices != null) {
 			this.uniqueIndices.close();
 		}
@@ -153,23 +146,9 @@ public class TempoAtomStore extends DatabaseStore implements AtomStore {
 		}
 	}
 
-	@Override
-	public void build() { /* Not used */ }
-
-	@Override
-	public void maintenence() { /* Not used */ }
-
-	@Override
-	public void integrity() {
-		// TODO implement at a later date.  Also require mechanism for LocalSystem to recover local state from ledger
-	}
-
-	@Override
-	public void flush() { /* Not used */ }
-
-	@Override
-	public String getName() {
-		return "Tempo Atom Store";
+	private void integrity() {
+		// TODO implement
+		// TODO require mechanism for LocalSystem to recover local state from ledger
 	}
 
 	@Override
@@ -207,7 +186,7 @@ public class TempoAtomStore extends DatabaseStore implements AtomStore {
 		long start = SystemProfiler.getInstance().begin();
 
 		try {
-			DatabaseEntry key = new DatabaseEntry(LedgerIndex.from(Byte.MAX_VALUE, aid.getBytes()));
+			DatabaseEntry key = new DatabaseEntry(LedgerIndex.from(ATOM_INDEX_PREFIX, aid.getBytes()));
 			return OperationStatus.SUCCESS == this.uniqueIndices.get(null, key, null, LockMode.DEFAULT);
 		} finally {
 			SystemProfiler.getInstance().incrementFrom("ATOM_STORE:CONTAINS:CLOCK", start);
@@ -238,7 +217,7 @@ public class TempoAtomStore extends DatabaseStore implements AtomStore {
 		long start = SystemProfiler.getInstance().begin();
 
 		try {
-			DatabaseEntry key = new DatabaseEntry(LedgerIndex.from(Byte.MAX_VALUE, aid.getBytes()));
+			DatabaseEntry key = new DatabaseEntry(LedgerIndex.from(ATOM_INDEX_PREFIX, aid.getBytes()));
 			DatabaseEntry value = new DatabaseEntry();
 
 			if (this.uniqueIndices.get(null, key, value, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
@@ -258,7 +237,7 @@ public class TempoAtomStore extends DatabaseStore implements AtomStore {
 		long start = SystemProfiler.getInstance().begin();
 
 		DatabaseEntry pKey = new DatabaseEntry();
-		DatabaseEntry key = new DatabaseEntry(LedgerIndex.from(Byte.MAX_VALUE, aid.getBytes()));
+		DatabaseEntry key = new DatabaseEntry(LedgerIndex.from(ATOM_INDEX_PREFIX, aid.getBytes()));
 		Transaction transaction = Modules.get(DatabaseEnvironment.class).getEnvironment().beginTransaction(null, null);
 
 		try {
@@ -297,7 +276,7 @@ public class TempoAtomStore extends DatabaseStore implements AtomStore {
 			pKey = new DatabaseEntry(Arrays.concatenate(Longs.toByteArray(localTemporalVertex.getClock()), atom.getAID().getBytes()));
 			data = new DatabaseEntry(Serialization.getDefault().toDson(atom, Output.PERSIST));
 
-			this.processing.put(localTemporalVertex.getClock(), new TempoAtomIndices(atom, uniqueIndices, duplicateIndices));
+			this.atomIndices.put(localTemporalVertex.getClock(), new TempoAtomIndices(atom, uniqueIndices, duplicateIndices));
 
 			status = this.atomsDatabase.putNoOverwrite(transaction, pKey, data);
 			if (!status.equals(OperationStatus.SUCCESS)) {
@@ -316,7 +295,7 @@ public class TempoAtomStore extends DatabaseStore implements AtomStore {
 			return false;
 		} finally {
 			if (data != null && data.getData() != null && data.getData().length > 0) {
-				this.processing.remove(localTemporalVertex.getClock());
+				this.atomIndices.remove(localTemporalVertex.getClock());
 			}
 
 			SystemProfiler.getInstance().incrementFrom("ATOM_STORE:STORE", start);
@@ -430,10 +409,10 @@ public class TempoAtomStore extends DatabaseStore implements AtomStore {
 	}
 
 	// FIXME awful performance
-	public Pair<ImmutableList<AID>, IterativeCursor> getNext(IterativeCursor syncCursor, int limit, ShardSpace shardSpace) {
+	public Pair<ImmutableList<AID>, IterativeCursor> getNext(IterativeCursor iterativeCursor, int limit, ShardSpace shardSpace) {
 		List<AID> aids = Lists.newArrayList();
 		long start = SystemProfiler.getInstance().begin();
-		long position = syncCursor.getLogicalClockPosition();
+		long position = iterativeCursor.getLogicalClockPosition();
 
 		try (Cursor cursor = this.atomsDatabase.openCursor(null, null)) {
 			// TODO remove position + 1 to someplace else
@@ -461,11 +440,11 @@ public class TempoAtomStore extends DatabaseStore implements AtomStore {
 		}
 
 		IterativeCursor nextCursor = null;
-		if (position != syncCursor.getLogicalClockPosition()) {
-			nextCursor = (new IterativeCursor(position, null));
+		if (position != iterativeCursor.getLogicalClockPosition()) {
+			nextCursor = new IterativeCursor(position, null);
 		}
 
-		return Pair.of(ImmutableList.copyOf(aids), new IterativeCursor(syncCursor.getLogicalClockPosition(), nextCursor));
+		return Pair.of(ImmutableList.copyOf(aids), new IterativeCursor(iterativeCursor.getLogicalClockPosition(), nextCursor));
 	}
 
 	public LedgerCursor search(Type type, LedgerIndex index, LedgerSearchMode mode) {
@@ -489,11 +468,11 @@ public class TempoAtomStore extends DatabaseStore implements AtomStore {
 
 			if (mode == LedgerSearchMode.EXACT) {
 				if (databaseCursor.getSearchKey(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
-					return new TempoCursor(type, pKey.getData(), key.getData());
+					return new TempoCursor(this, type, pKey.getData(), key.getData());
 				}
 			} else if (mode == LedgerSearchMode.RANGE) {
 				if (databaseCursor.getSearchKeyRange(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
-					return new TempoCursor(type, pKey.getData(), key.getData());
+					return new TempoCursor(this, type, pKey.getData(), key.getData());
 				}
 			}
 
@@ -522,7 +501,7 @@ public class TempoAtomStore extends DatabaseStore implements AtomStore {
 
 			if (databaseCursor.getSearchBothRange(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
 				if (databaseCursor.getNextDup(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
-					return new TempoCursor(cursor.getType(), pKey.getData(), key.getData());
+					return new TempoCursor(this, cursor.getType(), pKey.getData(), key.getData());
 				}
 			}
 
@@ -553,7 +532,7 @@ public class TempoAtomStore extends DatabaseStore implements AtomStore {
 
 			if (databaseCursor.getSearchBothRange(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
 				if (databaseCursor.getPrevDup(pKey, key, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
-					return new TempoCursor(cursor.getType(), pKey.getData(), key.getData());
+					return new TempoCursor(this, cursor.getType(), pKey.getData(), key.getData());
 				}
 			}
 
@@ -585,10 +564,10 @@ public class TempoAtomStore extends DatabaseStore implements AtomStore {
 			if (databaseCursor.getSearchBothRange(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
 				if (databaseCursor.getPrevNoDup(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
 					if (databaseCursor.getNext(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
-						return new TempoCursor(cursor.getType(), pKey.getData(), key.getData());
+						return new TempoCursor(this, cursor.getType(), pKey.getData(), key.getData());
 					}
 				} else if (databaseCursor.getFirst(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
-					return new TempoCursor(cursor.getType(), pKey.getData(), key.getData());
+					return new TempoCursor(this, cursor.getType(), pKey.getData(), key.getData());
 				}
 			}
 
@@ -620,10 +599,10 @@ public class TempoAtomStore extends DatabaseStore implements AtomStore {
 			if (databaseCursor.getSearchBothRange(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
 				if (databaseCursor.getNextNoDup(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
 					if (databaseCursor.getPrev(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
-						return new TempoCursor(cursor.getType(), pKey.getData(), key.getData());
+						return new TempoCursor(this, cursor.getType(), pKey.getData(), key.getData());
 					}
 				} else if (databaseCursor.getLast(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
-					return new TempoCursor(cursor.getType(), pKey.getData(), key.getData());
+					return new TempoCursor(this, cursor.getType(), pKey.getData(), key.getData());
 				}
 			}
 
@@ -697,10 +676,9 @@ public class TempoAtomStore extends DatabaseStore implements AtomStore {
 		@Override
 		public void createSecondaryKeys(SecondaryDatabase database, DatabaseEntry key, DatabaseEntry value, Set<DatabaseEntry> secondaries) {
 			// key should be primary key where first 8 bytes is the long clock
-			TempoAtomIndices tempoAtomIndices = TempoAtomStore.this.processing.get(Longs.fromByteArray(key.getData()));
-
+			TempoAtomIndices tempoAtomIndices = TempoAtomStore.this.atomIndices.get(Longs.fromByteArray(key.getData()));
 			if (tempoAtomIndices == null) {
-				throw new IllegalStateException("Indices for Atom @ " + Longs.fromByteArray(key.getData()) + " not in processing map");
+				throw new IllegalStateException("Indices for Atom@" + Longs.fromByteArray(key.getData()) + " not available");
 			}
 
 			if (database == TempoAtomStore.this.uniqueIndices) {
@@ -717,20 +695,26 @@ public class TempoAtomStore extends DatabaseStore implements AtomStore {
 		}
 	}
 
-	private class AtomStoreViewAdapter implements AtomStoreView {
+	private static class AtomStoreViewAdapter implements AtomStoreView {
+		private final TempoAtomStore store;
+
+		private AtomStoreViewAdapter(TempoAtomStore store) {
+			this.store = Objects.requireNonNull(store, "store is required");
+		}
+
 		@Override
 		public boolean contains(AID aid) {
-			return TempoAtomStore.this.contains(aid);
+			return store.contains(aid);
 		}
 
 		@Override
 		public Optional<TempoAtom> get(AID aid) {
-			return TempoAtomStore.this.get(aid);
+			return store.get(aid);
 		}
 
 		@Override
 		public Pair<ImmutableList<AID>, IterativeCursor> getNext(IterativeCursor cursor, int limit, ShardSpace shardSpace) {
-			return TempoAtomStore.this.getNext(cursor, limit, shardSpace);
+			return store.getNext(cursor, limit, shardSpace);
 		}
 	}
 }

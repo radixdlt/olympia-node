@@ -105,6 +105,21 @@ public class LegacyAtomStoreAdapter implements AtomStore {
 		}
 	}
 
+	@Override
+	public void open() {
+		// not implemented here as is already done in legacy AtomStore directly
+	}
+
+	@Override
+	public void close() {
+		// not implemented here as is already done in legacy AtomStore directly
+	}
+
+	@Override
+	public void reset() {
+		// not implemented here as is already done in legacy AtomStore directly
+	}
+
 	private CMAtom convertToCMAtom(TempoAtom atom) {
 		Atom legacyAtom = LegacyUtils.toLegacyAtom(atom);
 		final CMAtom cmAtom;

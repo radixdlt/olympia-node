@@ -13,6 +13,7 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.radix.database.DatabaseEnvironment;
 import org.radix.integration.RadixTestWithStores;
 import org.radix.modules.Modules;
 import org.radix.modules.exceptions.ModuleException;
@@ -27,42 +28,21 @@ import com.radixdlt.atoms.Spin;
 import com.radixdlt.common.AID;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.universe.Universe;
+import org.radix.universe.system.LocalSystem;
 
 import static org.mockito.Mockito.mock;
 
 public class TempoAtomTests extends RadixTestWithStores
 {
-	@Before
-	public void beforeEachTest() throws ModuleException
-	{
-		Modules.getInstance().start(clean(new TempoAtomStore(databaseEnvironmentSupplier)));
-
-		Modules.getInstance().start(Tempo.from(
-			mock(AtomSynchroniser.class),
-//			new LegacyAtomStoreAdapter(() -> Modules.get(AtomStore.class)),
-			Modules.get(TempoAtomStore.class),
-			mock(ConflictResolver.class)
-		));
-	}
-
-	@After
-	public void afterEachTest() throws ModuleException
-	{
-		safelyStop(Modules.get(Tempo.class));
-		safelyStop(Modules.get(TempoAtomStore.class));
-
-		Modules.remove(TempoAtomStore.class);
-		Modules.remove(Tempo.class);
-	}
-
 	@Test
 	public void store_atom() throws Exception
 	{
 		ECKeyPair identity = new ECKeyPair();
 		
 		List<Atom> atoms = createAtoms(identity, 1);
-		Assert.assertTrue(Modules.get(Tempo.class).store(atoms.get(0), ImmutableSet.of(), ImmutableSet.of()));
-		Atom actual = Modules.get(Tempo.class).get(atoms.get(0).getAID()).get();
+		Tempo tempo = Modules.get(Tempo.class);
+		Assert.assertTrue(tempo.store(atoms.get(0), ImmutableSet.of(), ImmutableSet.of()));
+		Atom actual = tempo.get(atoms.get(0).getAID()).get();
 		Assert.assertEquals(atoms.get(0), actual);
 		
 		// TODO should check LocalSystem clocks once implemented

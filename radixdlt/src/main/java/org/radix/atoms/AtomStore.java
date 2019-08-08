@@ -63,7 +63,7 @@ import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerCursor.Type;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationUtils;
-import com.radixdlt.tempo.TempoCursor;
+import com.radixdlt.tempo.store.LegacyCursor;
 import com.radixdlt.utils.Longs;
 import com.sleepycat.je.Cursor;
 import com.sleepycat.je.Database;
@@ -1463,12 +1463,12 @@ public class AtomStore extends DatabaseStore implements DiscoverySource<AtomDisc
 			if (mode == LedgerSearchMode.EXACT)
 			{
 				if (databaseCursor.getSearchKey(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS)
-					return new TempoCursor(type, pKey.getData(), key.getData());
+					return new LegacyCursor(type, pKey.getData(), key.getData());
 			}
 			else if (mode == LedgerSearchMode.RANGE)
 			{
 				if (databaseCursor.getSearchKeyRange(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS)
-					return new TempoCursor(type, pKey.getData(), key.getData());
+					return new LegacyCursor(type, pKey.getData(), key.getData());
 			}
 			
 			return null;
@@ -1483,7 +1483,7 @@ public class AtomStore extends DatabaseStore implements DiscoverySource<AtomDisc
 		}
 	}
 	
-	public TempoCursor getNext(TempoCursor cursor) throws DatabaseException
+	public LegacyCursor getNext(LegacyCursor cursor) throws DatabaseException
 	{
 		Objects.requireNonNull(cursor);
 		
@@ -1504,7 +1504,7 @@ public class AtomStore extends DatabaseStore implements DiscoverySource<AtomDisc
 			if (databaseCursor.getSearchBothRange(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS)
 			{
 				if (databaseCursor.getNextDup(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS)
-					return new TempoCursor(cursor.getType(), pKey.getData(), key.getData());
+					return new LegacyCursor(cursor.getType(), pKey.getData(), key.getData());
 			}
 			
 			return null;
@@ -1519,7 +1519,7 @@ public class AtomStore extends DatabaseStore implements DiscoverySource<AtomDisc
 		}
 	}
 	
-	public TempoCursor getPrev(TempoCursor cursor) throws DatabaseException
+	public LegacyCursor getPrev(LegacyCursor cursor) throws DatabaseException
 	{
 		Objects.requireNonNull(cursor);
 		
@@ -1540,7 +1540,7 @@ public class AtomStore extends DatabaseStore implements DiscoverySource<AtomDisc
 			if (databaseCursor.getSearchBothRange(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS)
 			{
 				if (databaseCursor.getPrevDup(pKey, key, null, LockMode.DEFAULT) == OperationStatus.SUCCESS)
-					return new TempoCursor(cursor.getType(), pKey.getData(), key.getData());
+					return new LegacyCursor(cursor.getType(), pKey.getData(), key.getData());
 			}
 			
 			return null;
@@ -1555,7 +1555,7 @@ public class AtomStore extends DatabaseStore implements DiscoverySource<AtomDisc
 		}
 	}
 	
-	public TempoCursor getFirst(TempoCursor cursor) throws DatabaseException
+	public LegacyCursor getFirst(LegacyCursor cursor) throws DatabaseException
 	{
 		Objects.requireNonNull(cursor);
 		
@@ -1578,10 +1578,10 @@ public class AtomStore extends DatabaseStore implements DiscoverySource<AtomDisc
 				if (databaseCursor.getPrevNoDup(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS)
 				{
 					if (databaseCursor.getNext(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS)
-						return new TempoCursor(cursor.getType(), pKey.getData(), key.getData());
+						return new LegacyCursor(cursor.getType(), pKey.getData(), key.getData());
 				}
 				else if (databaseCursor.getFirst(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS)
-					return new TempoCursor(cursor.getType(), pKey.getData(), key.getData());
+					return new LegacyCursor(cursor.getType(), pKey.getData(), key.getData());
 			}
 			
 			return null;
@@ -1596,7 +1596,7 @@ public class AtomStore extends DatabaseStore implements DiscoverySource<AtomDisc
 		}
 	}
 
-	public TempoCursor getLast(TempoCursor cursor) throws DatabaseException
+	public LegacyCursor getLast(LegacyCursor cursor) throws DatabaseException
 	{
 		Objects.requireNonNull(cursor);
 		
@@ -1619,10 +1619,10 @@ public class AtomStore extends DatabaseStore implements DiscoverySource<AtomDisc
 				if (databaseCursor.getNextNoDup(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS)
 				{
 					if (databaseCursor.getPrev(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS)
-						return new TempoCursor(cursor.getType(), pKey.getData(), key.getData());
+						return new LegacyCursor(cursor.getType(), pKey.getData(), key.getData());
 				}
 				else if (databaseCursor.getLast(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS)
-					return new TempoCursor(cursor.getType(), pKey.getData(), key.getData());
+					return new LegacyCursor(cursor.getType(), pKey.getData(), key.getData());
 			}
 			
 			return null;

@@ -118,7 +118,7 @@ public class IterativeSyncEpic implements SyncEpic {
 			long requestedLCPosition = timeout.getRequestedCursor().getLogicalClockPosition();
 
 			if (logger.hasLevel(Logging.DEBUG)) {
-				logger.debug(String.format("Iterative request to %s at %s has timed out", timeout.getPeer(), timeout.getRequestedCursor()));
+				logger.debug(String.format("Iterative request to %s at %s has timed out", timeout.getPeer(), requestedLCPosition));
 			}
 
 			// if no response and we still want to talk to that peer, resend iterative request
@@ -131,6 +131,8 @@ public class IterativeSyncEpic implements SyncEpic {
 				request.getPeer(), request.getCursor().getLogicalClockPosition()));
 
 			// retrieve and send back aids starting from the requested cursor up to the limit
+			logger.info("storeView=" + storeView);
+			logger.info("storeView.getClass=" + storeView.getClass());
 			Pair<ImmutableList<AID>, IterativeCursor> aidsAndNext = storeView.getNext(request.getCursor(), RESPONSE_AID_LIMIT, request.getShardSpace());
 			logger.info(String.format("Responding to iterative request from %s for %d with %d aids",
 				request.getPeer(), request.getCursor().getLogicalClockPosition(), aidsAndNext.getFirst().size()));

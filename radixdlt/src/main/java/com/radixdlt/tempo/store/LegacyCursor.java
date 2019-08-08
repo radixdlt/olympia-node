@@ -1,4 +1,4 @@
-package com.radixdlt.tempo;
+package com.radixdlt.tempo.store;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -10,13 +10,13 @@ import org.radix.modules.Modules;
 import com.radixdlt.common.AID;
 import com.radixdlt.ledger.LedgerCursor;
 
-public class TempoCursor implements LedgerCursor
+public class LegacyCursor implements LedgerCursor
 {
 	private Type type;
 	private byte[] primary;
 	private byte[] index;
 	
-	public TempoCursor(Type type, byte[] primary, byte[] index)
+	public LegacyCursor(Type type, byte[] primary, byte[] index)
 	{
 		this.type = type;
 		this.primary = Arrays.clone(Objects.requireNonNull(primary));

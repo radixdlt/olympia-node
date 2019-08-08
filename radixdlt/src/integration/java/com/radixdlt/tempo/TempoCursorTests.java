@@ -14,6 +14,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.radix.atoms.AtomStore;
+import org.radix.database.DatabaseEnvironment;
 import org.radix.integration.RadixTestWithStores;
 import org.radix.modules.Modules;
 import org.radix.modules.exceptions.ModuleException;
@@ -32,31 +33,14 @@ import com.radixdlt.ledger.LedgerCursor.Type;
 import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerSearchMode;
 import com.radixdlt.universe.Universe;
+import org.radix.universe.system.LocalSystem;
 
 import static org.mockito.Mockito.mock;
 
 public class TempoCursorTests extends RadixTestWithStores
 {
-	@Before
-	public void beforeEachTest() throws ModuleException
-	{
-		Modules.getInstance().start(Tempo.from(
-			mock(AtomSynchroniser.class),
-			new TempoAtomStore(() -> Modules.get(AtomStore.class)),
-			mock(ConflictResolver.class)
-		));
-	}
-
-	@After
-	public void afterEachTest() throws ModuleException
-	{
-		safelyStop(Modules.get(Tempo.class));
-
-		Modules.remove(Tempo.class);
-	}
-
 	@Test
-	public void store_single_atom__search_by_unique_AID_and_get() throws Exception
+	public void store_single_atom__search_by_unique_aid_and_get() throws Exception
 	{
 		ECKeyPair identity = new ECKeyPair();
 		
@@ -70,7 +54,7 @@ public class TempoCursorTests extends RadixTestWithStores
 	}
 	
 	@Test
-	public void create_two_atoms__store_single_atom__search_by_non_existing_unique_AID__fail() throws Exception
+	public void create_two_atoms__store_single_atom__search_by_non_existing_unique_aid__fail() throws Exception
 	{
 		ECKeyPair identity = new ECKeyPair();
 

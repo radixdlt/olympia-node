@@ -269,19 +269,7 @@ public class Radix extends Plugin
 		}
 
 		if (Modules.get(RuntimeProperties.class).get("tempo2", false)) {
-			TempoAtomStore tempoAtomStore = new TempoAtomStore(() -> Modules.get(DatabaseEnvironment.class));
-			Modules.getInstance().start(Tempo.from(
-				TempoAtomSynchroniser.defaultBuilder(
-					tempoAtomStore.asReadOnlyView(),
-					LocalSystem.getInstance(),
-					Messaging.getInstance(),
-					new PeerSupplierAdapter(() -> Modules.get(PeerHandler.class))
-				)
-				.edgeSelector(new SimpleEdgeSelector())
-				.build(),
-				tempoAtomStore,
-				new LocalConflictResolver(LocalSystem.getInstance().getNID())
-			));
+			Modules.getInstance().start(Tempo.defaultBuilder().build());
 		}
 
 		/*

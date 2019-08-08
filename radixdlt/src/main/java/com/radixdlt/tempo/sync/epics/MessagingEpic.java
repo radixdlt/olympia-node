@@ -105,7 +105,7 @@ public class MessagingEpic implements SyncEpic {
 					SyncAction action = messageActionMapper.apply(message, peer);
 					if (logger.hasLevel(Logging.DEBUG)) {
 						logger.debug(String.format("Forwarding inbound '%s' from '%s' to %s",
-							command, peer, action));
+							command, peer, action.getClass().getSimpleName()));
 					}
 
 					dispatcher.dispatch(action);
