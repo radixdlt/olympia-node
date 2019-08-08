@@ -139,7 +139,7 @@ public final class PublicInetAddress {
 	@Override
 	@JsonValue
 	public String toString() {
-		return get().toString();
+		return get().getHostAddress();
 	}
 
 	private void sendSecret(InetAddress address, long secret) throws IOException {
