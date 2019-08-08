@@ -1,7 +1,7 @@
 package com.radixdlt.tempo.sync;
 
-import com.radixdlt.Atom;
 import com.radixdlt.common.EUID;
+import com.radixdlt.tempo.TempoAtom;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -12,7 +12,7 @@ import java.util.List;
  */
 public class SimpleEdgeSelector implements EdgeSelector {
 	@Override
-	public List<EUID> selectEdges(Collection<EUID> nodes, Atom atom) {
+	public List<EUID> selectEdges(Collection<EUID> nodes, TempoAtom atom) {
 		return new ArrayList<>(nodes);
 	}
 }

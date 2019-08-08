@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.powermock.api.mockito.PowerMockito.when;
 
+import com.radixdlt.tempo.AtomStoreView;
 import com.radixdlt.tempo.AtomSyncView;
 import org.everit.json.schema.Schema;
 import org.json.JSONObject;
@@ -21,7 +22,7 @@ public class RadixJsonRpcServerTest {
 
 		RadixJsonRpcServer server = new RadixJsonRpcServer(
 			mock(Serialization.class),
-			mock(AtomStore.class),
+			mock(AtomStoreView.class),
 			mock(AtomSyncView.class),
 			mock(AtomsService.class),
 			mock(Schema.class)
@@ -49,7 +50,7 @@ public class RadixJsonRpcServerTest {
 
 		RadixJsonRpcServer server = new RadixJsonRpcServer(
 				serializer,
-				mock(AtomStore.class),
+				mock(AtomStoreView.class),
 				mock(AtomSyncView.class),
 				mock(AtomsService.class),
 				mock(Schema.class)
@@ -68,7 +69,7 @@ public class RadixJsonRpcServerTest {
 	public void when_send_oversized_json_rpc_request_with__return_json_error_response() {
 		RadixJsonRpcServer server = new RadixJsonRpcServer(
 			mock(Serialization.class),
-			mock(AtomStore.class),
+			mock(AtomStoreView.class),
 			mock(AtomSyncView.class),
 			mock(AtomsService.class),
 			mock(Schema.class),

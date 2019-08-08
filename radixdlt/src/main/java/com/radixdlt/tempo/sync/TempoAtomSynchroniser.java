@@ -91,6 +91,7 @@ public class TempoAtomSynchroniser implements AtomSynchroniser {
 		this.syncActions = new LinkedBlockingQueue<>(this.syncActionsQueueCapacity);
 		this.syncEpics = ImmutableList.<SyncEpic>builder()
 			.addAll(syncEpics)
+			// TODO get rid of syncEpicBuilders
 			.addAll(syncEpicBuilders.stream()
 				.map(epicBuilder -> epicBuilder.apply(this))
 				.collect(Collectors.toList()))

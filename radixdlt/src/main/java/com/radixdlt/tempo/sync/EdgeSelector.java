@@ -1,7 +1,7 @@
 package com.radixdlt.tempo.sync;
 
-import com.radixdlt.Atom;
 import com.radixdlt.common.EUID;
+import com.radixdlt.tempo.TempoAtom;
 
 import java.util.Collection;
 import java.util.List;
@@ -13,5 +13,5 @@ public interface EdgeSelector {
 	 * @param atom The atom
 	 * @return The subset of next edges
 	 */
-	List<EUID> selectEdges(Collection<EUID> nodes, Atom atom);
+	List<EUID> selectEdges(Collection<EUID> nodes, TempoAtom atom);
 }

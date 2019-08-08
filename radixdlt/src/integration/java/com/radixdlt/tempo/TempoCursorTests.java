@@ -1,30 +1,14 @@
 package com.radixdlt.tempo;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.Atom;
-import com.radixdlt.atoms.ImmutableAtom;
-import com.radixdlt.tempo.store.TempoAtomStore;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.radix.atoms.AtomStore;
-import org.radix.database.DatabaseEnvironment;
-import org.radix.integration.RadixTestWithStores;
-import org.radix.modules.Modules;
-import org.radix.modules.exceptions.ModuleException;
-import org.radix.time.Time;
-
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.primitives.Longs;
+import com.radixdlt.Atom;
 import com.radixdlt.atommodel.message.MessageParticle;
 import com.radixdlt.atomos.RadixAddress;
+import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.atoms.Spin;
 import com.radixdlt.common.AID;
 import com.radixdlt.crypto.ECKeyPair;
@@ -33,29 +17,33 @@ import com.radixdlt.ledger.LedgerCursor.Type;
 import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerSearchMode;
 import com.radixdlt.universe.Universe;
-import org.radix.universe.system.LocalSystem;
+import org.junit.Assert;
+import org.junit.Test;
+import org.radix.atoms.AtomStore;
+import org.radix.integration.RadixTestWithStores;
+import org.radix.modules.Modules;
+import org.radix.time.Time;
 
-import static org.mockito.Mockito.mock;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 
-public class TempoCursorTests extends RadixTestWithStores
-{
+public class TempoCursorTests extends RadixTestWithStores {
 	@Test
-	public void store_single_atom__search_by_unique_aid_and_get() throws Exception
-	{
+	public void store_single_atom__search_by_unique_aid_and_get() throws Exception {
 		ECKeyPair identity = new ECKeyPair();
-		
+
 		List<Atom> atoms = createAtoms(identity, 1);
 		Assert.assertTrue(Modules.get(Tempo.class).store(atoms.get(0), ImmutableSet.of(), ImmutableSet.of()));
-		
+
 		LedgerCursor cursor = Modules.get(Tempo.class).search(Type.UNIQUE, new LedgerIndex((byte) AtomStore.IDType.ATOM.ordinal(), atoms.get(0).getAID().getBytes()), LedgerSearchMode.EXACT);
-		
+
 		Assert.assertNotNull(cursor);
 		Assert.assertEquals(atoms.get(0).getAID(), cursor.get());
 	}
-	
+
 	@Test
-	public void create_two_atoms__store_single_atom__search_by_non_existing_unique_aid__fail() throws Exception
-	{
+	public void create_two_atoms__store_single_atom__search_by_non_existing_unique_aid__fail() throws Exception {
 		ECKeyPair identity = new ECKeyPair();
 
 		List<Atom> atoms = createAtoms(identity, 2);
@@ -66,60 +54,63 @@ public class TempoCursorTests extends RadixTestWithStores
 	}
 
 	@Test
-	public void create_and_store_two_atoms__search_by_destination__do_get_and_next() throws Exception
-	{
+	public void create_and_store_two_atoms__search_by_index__do_get_and_next() throws Exception {
 		ECKeyPair identity = new ECKeyPair();
 
+		LedgerIndex index = new LedgerIndex((byte) AtomStore.IDType.DESTINATION.ordinal(), identity.getUID().toByteArray());
 		List<Atom> atoms = createAtoms(identity, 2);
-		for (Atom atom : atoms)
-			Assert.assertTrue(Modules.get(Tempo.class).store(atom, ImmutableSet.of(), ImmutableSet.of()));
-		
-		LedgerCursor cursor = Modules.get(Tempo.class).search(Type.DUPLICATE, new LedgerIndex((byte) AtomStore.IDType.DESTINATION.ordinal(), identity.getUID().toByteArray()), LedgerSearchMode.EXACT);
+		for (Atom atom : atoms) {
+			Assert.assertTrue(Modules.get(Tempo.class).store(atom, ImmutableSet.of(), ImmutableSet.of(index)));
+		}
+
+		LedgerCursor cursor = Modules.get(Tempo.class).search(Type.DUPLICATE, index, LedgerSearchMode.EXACT);
 		Assert.assertNotNull(cursor);
 		Assert.assertEquals(atoms.get(0).getAID(), cursor.get());
-		
+
 		cursor = cursor.next();
 		Assert.assertNotNull(cursor);
 		Assert.assertEquals(atoms.get(1).getAID(), cursor.get());
-		
+
 		cursor = cursor.next();
 		Assert.assertNull(cursor);
 	}
 
 	@Test
-	public void create_and_store_two_atoms__search_by_destination__get_last() throws Exception
-	{
+	public void create_and_store_two_atoms__search_by_index__get_last() throws Exception {
 		ECKeyPair identity = new ECKeyPair();
 
+		LedgerIndex index = new LedgerIndex((byte) AtomStore.IDType.DESTINATION.ordinal(), identity.getUID().toByteArray());
 		List<Atom> atoms = createAtoms(identity, 2);
-		for (Atom atom : atoms)
-			Assert.assertTrue(Modules.get(Tempo.class).store(atom, ImmutableSet.of(), ImmutableSet.of()));
-		
-		LedgerCursor cursor = Modules.get(Tempo.class).search(Type.DUPLICATE, new LedgerIndex((byte) AtomStore.IDType.DESTINATION.ordinal(), identity.getUID().toByteArray()), LedgerSearchMode.EXACT);
+		for (Atom atom : atoms) {
+			Assert.assertTrue(Modules.get(Tempo.class).store(atom, ImmutableSet.of(), ImmutableSet.of(index)));
+		}
+
+		LedgerCursor cursor = Modules.get(Tempo.class).search(Type.DUPLICATE, index, LedgerSearchMode.EXACT);
 		Assert.assertNotNull(cursor);
 		Assert.assertEquals(atoms.get(0).getAID(), cursor.get());
-		
+
 		cursor = cursor.last();
 		Assert.assertNotNull(cursor);
 		Assert.assertEquals(atoms.get(1).getAID(), cursor.get());
-		
+
 		cursor = cursor.next();
 		Assert.assertNull(cursor);
 	}
 
 	@Test
-	public void create_and_store_two_atoms__search_by_destination__get_next__get_first() throws Exception
-	{
+	public void create_and_store_two_atoms__search_by_index__get_next__get_first() throws Exception {
 		ECKeyPair identity = new ECKeyPair();
 
+		LedgerIndex index = new LedgerIndex((byte) AtomStore.IDType.DESTINATION.ordinal(), identity.getUID().toByteArray());
 		List<Atom> atoms = createAtoms(identity, 2);
-		for (Atom atom : atoms)
-			Assert.assertTrue(Modules.get(Tempo.class).store(atom, ImmutableSet.of(), ImmutableSet.of()));
-		
-		LedgerCursor cursor = Modules.get(Tempo.class).search(Type.DUPLICATE, new LedgerIndex((byte) AtomStore.IDType.DESTINATION.ordinal(), identity.getUID().toByteArray()), LedgerSearchMode.EXACT);
+		for (Atom atom : atoms) {
+			Assert.assertTrue(Modules.get(Tempo.class).store(atom, ImmutableSet.of(), ImmutableSet.of(index)));
+		}
+
+		LedgerCursor cursor = Modules.get(Tempo.class).search(Type.DUPLICATE, index, LedgerSearchMode.EXACT);
 		Assert.assertNotNull(cursor);
 		Assert.assertEquals(atoms.get(0).getAID(), cursor.get());
-		
+
 		cursor = cursor.next();
 		Assert.assertNotNull(cursor);
 		Assert.assertEquals(atoms.get(1).getAID(), cursor.get());
@@ -127,7 +118,7 @@ public class TempoCursorTests extends RadixTestWithStores
 		cursor = cursor.first();
 		Assert.assertNotNull(cursor);
 		Assert.assertEquals(atoms.get(0).getAID(), cursor.get());
-		
+
 		cursor = cursor.previous();
 		Assert.assertNull(cursor);
 	}
