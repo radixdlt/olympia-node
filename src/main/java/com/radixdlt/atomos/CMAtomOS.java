@@ -7,6 +7,7 @@ import com.radixdlt.store.CMStore;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,8 +46,7 @@ import java.util.stream.Stream;
 /**
  * Implementation of the AtomOS interface on top of a UTXO based Constraint Machine.
  */
-public final class CMAtomOS implements AtomOSKernel, AtomOS {
-	private static final Pattern PARTICLE_NAME_PATTERN = Pattern.compile("[1-9A-Za-z]+");
+public final class CMAtomOS implements AtomOSKernel {
 	private final List<ConstraintProcedure> procedures = new ArrayList<>();
 	private final List<KernelConstraintProcedure> kernelProcedures = new ArrayList<>();
 	private AtomKernelCompute atomKernelCompute;
@@ -67,121 +67,129 @@ public final class CMAtomOS implements AtomOSKernel, AtomOS {
 		this.timestampSupplier = Objects.requireNonNull(timestampSupplier);
 
 		// RRI particle is a low level particle managed by the OS used for the management of all other resources
-		this.registerParticle(RRIParticle.class, "rri", (RRIParticle rri) -> rri.getRri().getAddress());
+		this.particleMapper.put(RRIParticle.class, rri -> Stream.of(((RRIParticle) rri).getRri().getAddress()));
 	}
 
 	public void load(ConstraintScrypt constraintScrypt) {
-		constraintScrypt.main(this);
+		final Map<Class<? extends Particle>, Function<Particle, Stream<RadixAddress>>> scryptParticleClasses = new HashMap<>();
+
+		constraintScrypt.main(new AtomOS() {
+			@Override
+			public <T extends Particle> void registerParticle(Class<T> particleClass, ParticleToShardablesMapper<T> mapper) {
+				if (scryptParticleClasses.containsKey(particleClass) || particleMapper.containsKey(particleClass)) {
+					throw new IllegalStateException("Particle " + particleClass + " is already registered");
+				}
+
+				scryptParticleClasses.put(particleClass, p -> mapper.getDestinations((T) p).stream());
+			}
+
+			@Override
+			public <T extends Particle> void registerParticle(Class<T> particleClass, ParticleToShardableMapper<T> mapper) {
+				registerParticle(particleClass, (T particle) -> Collections.singleton(mapper.getDestination(particle)));
+			}
+
+			@Override
+			public <T extends Particle> ParticleClassConstraint<T> on(Class<T> particleClass) {
+				if (!scryptParticleClasses.containsKey(particleClass)) {
+					throw new IllegalStateException(particleClass + " must be registered in calling scrypt.");
+				}
+
+				return constraint -> {
+					ParticleClassConstraintProcedure<T> procedure = new ParticleClassConstraintProcedure<>(particleClass, (p, m) -> constraint.apply(p));
+					procedures.add(procedure);
+				};
+			}
+
+			@Override
+			public <T extends Particle> IndexedConstraint<T> onIndexed(Class<T> particleClass, ParticleToRRIMapper<T> rriMapper) {
+				if (!scryptParticleClasses.containsKey(particleClass)) {
+					throw new IllegalStateException(particleClass + " must be registered in calling scrypt.");
+				}
+
+				return invariant -> {
+					rriProcedureBuilder.add(particleClass, rriMapper);
+
+					return new InitializedIndexedConstraint<T>() {
+						@Override
+						public <U extends Particle> void requireInitialWith(Class<U> sideEffectClass,
+							ParticleClassWithSideEffectConstraintCheck<T, U> constraint) {
+
+							ParticleClassWithSideEffectConstraintProcedure<T, U> procedure
+								= new ParticleClassWithSideEffectConstraintProcedure<>(particleClass, sideEffectClass, constraint);
+							procedures.add(procedure);
+						}
+					};
+				};
+			}
+
+			@Override
+			public <T extends Particle> FungibleTransitionConstraintStub<T> onFungible(
+				Class<T> particleClass,
+				ParticleToAmountMapper<T> particleToAmountMapper
+			) {
+				if (!scryptParticleClasses.containsKey(particleClass)) {
+					throw new IllegalStateException(particleClass + " must be registered in calling scrypt.");
+				}
+
+				if (fungibles.containsKey(particleClass)) {
+					throw new IllegalStateException(particleClass + " already registered as fungible.");
+				}
+
+				FungibleDefinition.Builder<T> fungibleBuilder = new FungibleDefinition.Builder<T>()
+					.of(particleClass, particleToAmountMapper);
+				fungibles.put(particleClass, fungibleBuilder);
+
+				return new FungibleTransitionConstraintStub<T>() {
+					@Override
+					public <U extends Particle> FungibleTransitionConstraint<T> requireInitialWith(
+						Class<U> sideEffectClass,
+						ParticleClassWithSideEffectConstraintCheck<T, U> constraint
+					) {
+						if (!scryptParticleClasses.containsKey(sideEffectClass)) {
+							throw new IllegalStateException(sideEffectClass + " must be registered in calling scrypt.");
+						}
+
+						fungibleBuilder.initialWith(sideEffectClass, constraint);
+						return this::transitionTo;
+					}
+
+					@Override
+					public <U extends Particle> FungibleTransitionConstraint<T> transitionTo(
+						Class<U> toParticleClass,
+						BiPredicate<T, U> transition,
+						WitnessValidator<T> witnessValidator
+					) {
+						if (!scryptParticleClasses.containsKey(toParticleClass)) {
+							throw new IllegalStateException(toParticleClass + " must be registered in calling scrypt.");
+						}
+						fungibleBuilder.to(toParticleClass, witnessValidator, transition);
+						return this::transitionTo;
+					}
+				};
+			}
+
+			@Override
+			public <T extends Particle> PayloadParticleClassConstraint<T> onPayload(Class<T> particleClass) {
+				if (!scryptParticleClasses.containsKey(particleClass)) {
+					throw new IllegalStateException(particleClass + " must be registered in calling scrypt.");
+				}
+
+				payloadProcedureBuilder.add(particleClass);
+
+				return constraintCheck -> {
+					ParticleClassConstraintProcedure<T> procedure = new ParticleClassConstraintProcedure<>(particleClass, constraintCheck);
+					procedures.add(procedure);
+				};
+			}
+		});
+
+		particleMapper.putAll(scryptParticleClasses);
 	}
 
 	public void loadKernelConstraintScrypt(AtomOSDriver driverScrypt) {
 		driverScrypt.main(this);
 	}
 
-
-	@Override
-	public <T extends Particle> void registerParticle(Class<T> particleClass, String name, ParticleToShardablesMapper<T> mapper) {
-		if (particleMapper.containsKey(particleClass)) {
-			throw new IllegalStateException("Particle " + particleClass + " is already registered");
-		}
-
-		if (!PARTICLE_NAME_PATTERN.matcher(name).matches()) {
-			throw new IllegalArgumentException("Particle identifier " + name + " must follow regex "
-				+ PARTICLE_NAME_PATTERN.toString());
-		}
-
-		particleMapper.put(particleClass, p -> mapper.getDestinations((T) p).stream());
-	}
-
-	@Override
-	public <T extends Particle> void registerParticle(Class<T> particleClass, String name, ParticleToShardableMapper<T> mapper) {
-		registerParticle(particleClass, name, (T particle) -> Collections.singleton(mapper.getDestination(particle)));
-	}
-
-	@Override
-	public <T extends Particle> PayloadParticleClassConstraint<T> onPayload(Class<T> particleClass) {
-		checkParticleRegistered(particleClass);
-
-		payloadProcedureBuilder.add(particleClass);
-
-		return constraintCheck -> {
-			ParticleClassConstraintProcedure<T> procedure = new ParticleClassConstraintProcedure<>(particleClass, constraintCheck);
-			procedures.add(procedure);
-		};
-	}
-
-	@Override
-	public <T extends Particle> IndexedConstraint<T> onIndexed(Class<T> particleClass, ParticleToRRIMapper<T> rriMapper) {
-		checkParticleRegistered(particleClass);
-
-		return invariant -> {
-			rriProcedureBuilder.add(particleClass, rriMapper);
-
-			return new InitializedIndexedConstraint<T>() {
-				@Override
-				public <U extends Particle> void requireInitialWith(Class<U> sideEffectClass,
-					ParticleClassWithSideEffectConstraintCheck<T, U> constraint) {
-
-					ParticleClassWithSideEffectConstraintProcedure<T, U> procedure
-						= new ParticleClassWithSideEffectConstraintProcedure<>(particleClass, sideEffectClass, constraint);
-					procedures.add(procedure);
-				}
-			};
-		};
-	}
-
-	private <T extends Particle> void checkParticleRegistered(Class<T> particleClass) {
-		if (!particleMapper.containsKey(particleClass)) {
-			throw new IllegalStateException(particleClass + " is not registered.");
-		}
-	}
-
-	@Override
-	public <T extends Particle> ParticleClassConstraint<T> on(Class<T> particleClass) {
-		checkParticleRegistered(particleClass);
-
-		return constraint -> {
-			ParticleClassConstraintProcedure<T> procedure = new ParticleClassConstraintProcedure<>(particleClass, (p, m) -> constraint.apply(p));
-			procedures.add(procedure);
-		};
-	}
-
-	@Override
-	public <T extends Particle> FungibleTransitionConstraintStub<T> onFungible(
-		Class<T> particleClass,
-		ParticleToAmountMapper<T> particleToAmountMapper
-	) {
-		checkParticleRegistered(particleClass);
-
-		if (fungibles.containsKey(particleClass)) {
-			throw new IllegalStateException(particleClass + " already registered as fungible.");
-		}
-
-		FungibleDefinition.Builder<T> fungibleBuilder = new FungibleDefinition.Builder<T>()
-			.of(particleClass, particleToAmountMapper);
-		fungibles.put(particleClass, fungibleBuilder);
-
-		return new FungibleTransitionConstraintStub<T>() {
-			@Override
-			public <U extends Particle> FungibleTransitionConstraint<T> requireInitialWith(
-				Class<U> sideEffectClass,
-				ParticleClassWithSideEffectConstraintCheck<T, U> constraint
-			) {
-				fungibleBuilder.initialWith(sideEffectClass, constraint);
-				return this::transitionTo;
-			}
-
-			@Override
-			public <U extends Particle> FungibleTransitionConstraint<T> transitionTo(
-				Class<U> fromParticleClass,
-				BiPredicate<T, U> transition,
-				WitnessValidator<T> witnessValidator
-			) {
-				fungibleBuilder.to(fromParticleClass, witnessValidator, transition);
-				return this::transitionTo;
-			}
-		};
-	}
 
 	@Override
 	public AtomKernel onAtom() {

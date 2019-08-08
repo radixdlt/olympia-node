@@ -7,7 +7,7 @@ import com.radixdlt.atomos.Result;
 public class MessageParticleConstraintScrypt implements ConstraintScrypt {
 	@Override
 	public void main(AtomOS os) {
-		os.registerParticle(MessageParticle.class, "message", MessageParticle::getAddresses);
+		os.registerParticle(MessageParticle.class, MessageParticle::getAddresses);
 
 		os.onPayload(MessageParticle.class)
 			.require((msg, meta) -> {

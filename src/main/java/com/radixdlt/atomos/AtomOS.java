@@ -19,19 +19,17 @@ public interface AtomOS {
 	 * Registers a Particle with a given identifier.
 	 * This is required for all other system calls using the particle.
 	 * @param particleClass The particle class
-	 * @param name The name identifiying the particle
 	 * @param mapper Mapping to the destinations a particle will be stored in
 	 */
-	<T extends Particle> void registerParticle(Class<T> particleClass, String name, ParticleToShardablesMapper<T> mapper);
+	<T extends Particle> void registerParticle(Class<T> particleClass, ParticleToShardablesMapper<T> mapper);
 
 	/**
 	 * Registers a Particle with a given identifier.
 	 * This is required for all other system calls using the particle.
 	 * @param particleClass The particle class
-	 * @param name The name identifiying the particle
 	 * @param mapper Mapping to a destination the particle will be stored in
 	 */
-	<T extends Particle> void registerParticle(Class<T> particleClass, String name, ParticleToShardableMapper<T> mapper);
+	<T extends Particle> void registerParticle(Class<T> particleClass, ParticleToShardableMapper<T> mapper);
 
 	/**
 	 * System call endpoint which allows an atom model application to program constraints

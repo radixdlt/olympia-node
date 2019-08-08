@@ -30,7 +30,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 
 	@Override
 	public void main(AtomOS os) {
-		os.registerParticle(TokenDefinitionParticle.class, "tokens", TokenDefinitionParticle::getOwner);
+		os.registerParticle(TokenDefinitionParticle.class, TokenDefinitionParticle::getOwner);
 
 		// Symbol constraints
 		os.on(TokenDefinitionParticle.class)
@@ -87,7 +87,6 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 
 		os.registerParticle(
 			UnallocatedTokensParticle.class,
-			"unallocatedtokens",
 			UnallocatedTokensParticle::getAddresses
 		);
 
@@ -103,7 +102,6 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 
 		os.registerParticle(
 			TransferrableTokensParticle.class,
-			"transferredtokens",
 			TransferrableTokensParticle::getAddress
 		);
 

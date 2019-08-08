@@ -33,12 +33,12 @@ public class TestAtomOS implements AtomOS {
 	private FungibleDefinition.Builder<? extends Particle> pendingFungibleTransition = null;
 
 	@Override
-	public <T extends Particle> void registerParticle(Class<T> particleClass, String name, ParticleToShardablesMapper<T> mapper) {
+	public <T extends Particle> void registerParticle(Class<T> particleClass, ParticleToShardablesMapper<T> mapper) {
 		// Not implemented for the test AtomOS for the time being as it is not used to test any functionality.
 	}
 
 	@Override
-	public <T extends Particle> void registerParticle(Class<T> particleClass, String name, ParticleToShardableMapper<T> mapper) {
+	public <T extends Particle> void registerParticle(Class<T> particleClass, ParticleToShardableMapper<T> mapper) {
 		// Not implemented for the test AtomOS for the time being as it is not used to test any functionality.
 	}
 

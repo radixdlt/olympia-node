@@ -7,7 +7,7 @@ import com.radixdlt.atomos.Result;
 public class UniqueParticleConstraintScrypt implements ConstraintScrypt {
 	@Override
 	public void main(AtomOS os) {
-		os.registerParticle(UniqueParticle.class, "unique", UniqueParticle::getAddress);
+		os.registerParticle(UniqueParticle.class, UniqueParticle::getAddress);
 
 		os.onIndexed(UniqueParticle.class, UniqueParticle::getRRI)
 			.requireInitial((unique, meta) ->
