@@ -184,6 +184,7 @@ public class TempoAtomSynchroniser implements AtomSynchroniser {
 	public void clear() {
 		// TODO review whether this is correct
 		this.inboundAtoms.clear();
+		this.syncActions.clear();
 	}
 
 	@Override
@@ -233,16 +234,9 @@ public class TempoAtomSynchroniser implements AtomSynchroniser {
 	}
 
 	public static Builder defaultBuilder(AtomStoreView storeView, LocalSystem localSystem, Messaging messager, PeerSupplier peerSupplier) {
-		return new Builder()
+		Builder builder = new Builder()
 			.storeView(storeView)
 			.peerSupplier(peerSupplier)
-			.addEpic(
-				ActiveSyncEpic.builder()
-					.localSystem(localSystem)
-					.peerSupplier(peerSupplier)
-					// TODO better properties handling for configuring tempo behaviour
-					.enabler(() -> Modules.get(RuntimeProperties.class).get("tempo2.sync.active", true))
-					.build())
 			.addEpic(
 				DeliveryEpic.builder()
 					.storeView(storeView)
@@ -250,12 +244,6 @@ public class TempoAtomSynchroniser implements AtomSynchroniser {
 			.addEpic(
 				PassivePeersEpic.builder()
 					.peerSupplier(peerSupplier)
-					.build()
-			)
-			.addEpic(
-				IterativeSyncEpic.builder()
-					.shardSpaceSupplier(localSystem::getShards)
-					.storeView(storeView)
 					.build()
 			)
 			.addEpicBuilder(synchroniser ->
@@ -273,6 +261,20 @@ public class TempoAtomSynchroniser implements AtomSynchroniser {
 					.addOutbound(SendPushAction.class, SendPushAction::toMessage, SendPushAction::getPeer)
 					.build(synchroniser::dispatch)
 			);
+		if (Modules.get(RuntimeProperties.class).get("tempo2.sync.active", true)) {
+			builder.addEpic(ActiveSyncEpic.builder()
+					.localSystem(localSystem)
+					.peerSupplier(peerSupplier)
+					.build());
+		}
+		if (Modules.get(RuntimeProperties.class).get("tempo2.sync.iterative", true)) {
+			builder.addEpic(IterativeSyncEpic.builder()
+					.shardSpaceSupplier(localSystem::getShards)
+					.storeView(storeView)
+					.build());
+		}
+
+		return builder;
 	}
 
 	public static class Builder {

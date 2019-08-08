@@ -6,6 +6,9 @@ import com.radixdlt.tempo.TempoAtom;
 import java.util.Collection;
 import java.util.List;
 
+/**
+ * An edge selector for active synchronisation
+ */
 public interface EdgeSelector {
 	/**
 	 * Select the next edges for an atom from a collection of possible nodes

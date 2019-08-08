@@ -24,14 +24,13 @@ import org.radix.network.peers.Peer;
 import org.radix.shards.ShardSpace;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class IterativeSyncEpic implements SyncEpic {
@@ -46,7 +45,7 @@ public class IterativeSyncEpic implements SyncEpic {
 
 	// TODO lastCursor should be persisted
 	private final Map<EUID, IterativeCursor> lastCursor;
-	private final Map<EUID, Set<Long>> pendingCursors;
+	private final Map<EUID, Set<Long>> pendingRequests;
 	private final Map<EUID, IterativeSyncState> syncState;
 	private final Map<EUID, Integer> backoffCounter;
 
@@ -55,8 +54,9 @@ public class IterativeSyncEpic implements SyncEpic {
 	private IterativeSyncEpic(AtomStoreView storeView, Supplier<ShardSpace> shardSpaceSupplier) {
 		this.storeView = storeView;
 		this.shardSpaceSupplier = shardSpaceSupplier;
+
 		this.lastCursor = new ConcurrentHashMap<>();
-		this.pendingCursors = new ConcurrentHashMap<>();
+		this.pendingRequests = new ConcurrentHashMap<>();
 		this.syncState = new ConcurrentHashMap<>();
 		this.backoffCounter = new ConcurrentHashMap<>();
 		this.passivePeerNids = ImmutableSet.of();
@@ -95,7 +95,7 @@ public class IterativeSyncEpic implements SyncEpic {
 			long requestedLCPosition = request.getCursor().getLogicalClockPosition();
 
 			// add requested lc position to pending cursors for that peer
-			pendingCursors.compute(peerNid, (n, p) -> {
+			pendingRequests.compute(peerNid, (n, p) -> {
 				if (p == null) {
 					p = new HashSet<>();
 				}
@@ -118,7 +118,7 @@ public class IterativeSyncEpic implements SyncEpic {
 			long requestedLCPosition = timeout.getRequestedCursor().getLogicalClockPosition();
 
 			// if no response, decide what to do after timeout
-			if (pendingCursors.get(peerNid).contains(requestedLCPosition)) {
+			if (pendingRequests.get(peerNid).contains(requestedLCPosition)) {
 				// if we're still talking to that peer, just rerequest
 				if (passivePeerNids.contains(peerNid)) {
 					if (logger.hasLevel(Logging.DEBUG)) {
@@ -151,7 +151,7 @@ public class IterativeSyncEpic implements SyncEpic {
 			lastCursor.put(peerNid, peerCursor);
 			// remove requested position from pending cursors
 			long requestedLCPosition = peerCursor.getLogicalClockPosition();
-			pendingCursors.computeIfPresent(peerNid, (n, p) -> {
+			pendingRequests.computeIfPresent(peerNid, (n, p) -> {
 				p.remove(requestedLCPosition);
 				return p;
 			});
