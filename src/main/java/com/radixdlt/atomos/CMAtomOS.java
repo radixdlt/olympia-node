@@ -6,9 +6,11 @@ import com.radixdlt.compute.AtomCompute;
 import com.radixdlt.store.CMStore;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiPredicate;
@@ -49,8 +51,7 @@ public final class CMAtomOS implements AtomOSKernel, AtomOS {
 	private final List<KernelConstraintProcedure> kernelProcedures = new ArrayList<>();
 	private AtomKernelCompute atomKernelCompute;
 
-	private final List<FungibleTransition<? extends Particle>> fungibleTransitions = new ArrayList<>();
-	private FungibleTransition.Builder<? extends Particle> pendingFungibleTransition = null;
+	private final Map<Class<? extends Particle>, FungibleTransition.Builder<? extends Particle>> fungibles = new HashMap<>();
 	private final Map<Class<? extends Particle>, Function<Particle, Stream<RadixAddress>>> particleMapper = new LinkedHashMap<>();
 
 	private final RRIConstraintProcedure.Builder rriProcedureBuilder = new RRIConstraintProcedure.Builder();
@@ -71,11 +72,6 @@ public final class CMAtomOS implements AtomOSKernel, AtomOS {
 
 	public void load(ConstraintScrypt constraintScrypt) {
 		constraintScrypt.main(this);
-
-		if (this.pendingFungibleTransition != null) {
-			this.fungibleTransitions.add(this.pendingFungibleTransition.build());
-			this.pendingFungibleTransition = null;
-		}
 	}
 
 	public void loadKernelConstraintScrypt(AtomOSDriver driverScrypt) {
@@ -157,13 +153,13 @@ public final class CMAtomOS implements AtomOSKernel, AtomOS {
 	) {
 		checkParticleRegistered(particleClass);
 
-		if (pendingFungibleTransition != null) {
-			fungibleTransitions.add(pendingFungibleTransition.build());
+		if (fungibles.containsKey(particleClass)) {
+			throw new IllegalStateException(particleClass + " already registered as fungible.");
 		}
 
-		FungibleTransition.Builder<T> transitionBuilder = new FungibleTransition.Builder<T>()
+		FungibleTransition.Builder<T> fungibleBuilder = new FungibleTransition.Builder<T>()
 			.from(particleClass, particleToAmountMapper);
-		pendingFungibleTransition = transitionBuilder;
+		fungibles.put(particleClass, fungibleBuilder);
 
 		return new FungibleTransitionConstraintStub<T>() {
 			@Override
@@ -171,7 +167,7 @@ public final class CMAtomOS implements AtomOSKernel, AtomOS {
 				Class<U> sideEffectClass,
 				ParticleClassWithSideEffectConstraintCheck<T, U> constraint
 			) {
-				transitionBuilder.initialWith(sideEffectClass, constraint);
+				fungibleBuilder.initialWith(sideEffectClass, constraint);
 				return this::transitionTo;
 			}
 
@@ -181,10 +177,7 @@ public final class CMAtomOS implements AtomOSKernel, AtomOS {
 				BiPredicate<T, U> transition,
 				WitnessValidator<T> witnessValidator
 			) {
-				if (pendingFungibleTransition == null) {
-					throw new IllegalStateException("Attempt to add formula to finished fungible transition to " + particleClass);
-				}
-				transitionBuilder.to(fromParticleClass, witnessValidator, transition);
+				fungibleBuilder.to(fromParticleClass, witnessValidator, transition);
 				return this::transitionTo;
 			}
 		};
@@ -236,12 +229,12 @@ public final class CMAtomOS implements AtomOSKernel, AtomOS {
 		this.kernelProcedures.forEach(cmBuilder::addProcedure);
 
 		// Add a constraint for fungibles if any were added
-		if (!this.fungibleTransitions.isEmpty()) {
+		if (!this.fungibles.isEmpty()) {
 			ImmutableMap<Class<? extends Particle>, FungibleTransition<? extends Particle>> transitions =
-				this.fungibleTransitions.stream()
+				this.fungibles.entrySet().stream()
 					.collect(ImmutableMap.toImmutableMap(
-						FungibleTransition::getInputParticleClass,
-						v -> v
+						Entry::getKey,
+						e -> e.getValue().build()
 					));
 			cmBuilder.addProcedure(new FungibleTransitionConstraintProcedure(transitions));
 		}
