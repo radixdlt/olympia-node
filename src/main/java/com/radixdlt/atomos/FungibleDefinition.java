@@ -6,22 +6,18 @@ import com.radixdlt.atomos.AtomOS.WitnessValidator;
 import com.radixdlt.atomos.mapper.ParticleToAmountMapper;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.common.Pair;
+import com.radixdlt.utils.UInt256;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiPredicate;
 
-/**
- * A fungible transition *from* one or multiple Particles types *to* a single Particle type
- *
- * @param <T> The target "to" type
- */
-public final class FungibleTransition<T extends Particle> {
+public final class FungibleDefinition<T extends Particle> {
 	private final Class<T> inputParticleClass;
 	private final ParticleToAmountMapper<T> inputParticleToAmountMapper;
 	private final Pair<Class<? extends Particle>, ParticleClassWithSideEffectConstraintCheck<T, ?>> initialWithConstraint;
 	private final Map<Class<? extends Particle>, FungibleFormula> particleTypeToFormulasMap;
 
-	private FungibleTransition(
+	private FungibleDefinition(
 		Class<T> inputParticleClass,
 		ParticleToAmountMapper<T> inputParticleToAmountMapper,
 		Map<Class<? extends Particle>, FungibleFormula> particleTypeToFormulasMap,
@@ -37,6 +33,10 @@ public final class FungibleTransition<T extends Particle> {
 		return this.inputParticleClass;
 	}
 
+	public UInt256 mapToAmount(Particle t) {
+		return inputParticleToAmountMapper.amount((T) t);
+	}
+
 	public ParticleToAmountMapper<T> getInputParticleToAmountMapper() {
 		return inputParticleToAmountMapper;
 	}
@@ -49,7 +49,7 @@ public final class FungibleTransition<T extends Particle> {
 		return this.initialWithConstraint;
 	}
 
-	public static <T extends Particle> FungibleTransition<T> from(
+	public static <T extends Particle> FungibleDefinition<T> from(
 		Class<T> outputClass,
 		ParticleToAmountMapper<T> outputToAmountMapper,
 		Map<Class<? extends Particle>, FungibleFormula> particleTypeToFormulasMap
@@ -63,11 +63,11 @@ public final class FungibleTransition<T extends Particle> {
 			throw new IllegalArgumentException("One of formulas or initial constraint must be defined");
 		}
 
-		return new FungibleTransition<>(outputClass, outputToAmountMapper, particleTypeToFormulasMap, null);
+		return new FungibleDefinition<>(outputClass, outputToAmountMapper, particleTypeToFormulasMap, null);
 	}
 
 
-	public static <T extends Particle> FungibleTransition<T> from(
+	public static <T extends Particle> FungibleDefinition<T> from(
 		Class<T> outputClass,
 		ParticleToAmountMapper<T> outputToAmountMapper,
 		Map<Class<? extends Particle>, FungibleFormula> particleTypeToFormulasMap,
@@ -82,7 +82,7 @@ public final class FungibleTransition<T extends Particle> {
 			throw new IllegalArgumentException("One of formulas or initial constraint must be defined");
 		}
 
-		return new FungibleTransition<>(outputClass, outputToAmountMapper, particleTypeToFormulasMap, initialWithConstraint);
+		return new FungibleDefinition<>(outputClass, outputToAmountMapper, particleTypeToFormulasMap, initialWithConstraint);
 	}
 
 	public static class Builder<T extends Particle> {
@@ -94,7 +94,7 @@ public final class FungibleTransition<T extends Particle> {
 		public Builder() {
 		}
 
-		public Builder<T> from(
+		public Builder<T> of(
 			Class<T> inputParticleClass,
 			ParticleToAmountMapper<T> inputParticleToAmountMapper
 		) {
@@ -119,7 +119,7 @@ public final class FungibleTransition<T extends Particle> {
 			return this;
 		}
 
-		public FungibleTransition<T> build() {
+		public FungibleDefinition<T> build() {
 			Objects.requireNonNull(inputParticleClass, "Unfinished transition, output class must be defined.");
 			Objects.requireNonNull(inputParticleToAmountMapper, "Unfinished transition, output amount mapper must be defined.");
 
@@ -129,7 +129,7 @@ public final class FungibleTransition<T extends Particle> {
 				throw new IllegalStateException("Unfinished transition, no formulas added and no initial constraint defined.");
 			}
 
-			return FungibleTransition.from(
+			return FungibleDefinition.from(
 				inputParticleClass,
 				inputParticleToAmountMapper,
 				particleTypeToFormulasMap,

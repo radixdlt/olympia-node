@@ -1,7 +1,7 @@
 package com.radixdlt.atomos.procedures;
 
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.atomos.FungibleTransition;
+import com.radixdlt.atomos.FungibleDefinition;
 import com.radixdlt.atomos.mapper.ParticleToAmountMapper;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.utils.UInt256;
@@ -48,14 +48,14 @@ public class ParticleValueMapper {
 	}
 
 	/**
-	 *  Materialize a ParticleValueMapper from given {@link FungibleTransition}s
+	 *  Materialize a ParticleValueMapper of given {@link FungibleDefinition}s
 	 */
-	public static ParticleValueMapper from(List<FungibleTransition<? extends Particle>> fungibleTransitions) {
-		Objects.requireNonNull(fungibleTransitions, "fungibleTransitions is required");
+	public static ParticleValueMapper from(List<FungibleDefinition<? extends Particle>> fungibleDefinitions) {
+		Objects.requireNonNull(fungibleDefinitions, "fungibleTransitions is required");
 
 		final Map<Class<?>, ParticleToAmountMapper<? extends Particle>> amountMappers = new HashMap<>();
-		for (FungibleTransition<? extends Particle> fungibleTransition : fungibleTransitions) {
-			amountMappers.put(fungibleTransition.getInputParticleClass(), fungibleTransition.getInputParticleToAmountMapper());
+		for (FungibleDefinition<? extends Particle> fungibleDefinition : fungibleDefinitions) {
+			amountMappers.put(fungibleDefinition.getInputParticleClass(), fungibleDefinition.getInputParticleToAmountMapper());
 		}
 
 		return new ParticleValueMapper(amountMappers);

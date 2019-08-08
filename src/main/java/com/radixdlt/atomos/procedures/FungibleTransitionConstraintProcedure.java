@@ -4,7 +4,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atomos.AtomOS.ParticleClassWithSideEffectConstraintCheck;
 import com.radixdlt.atomos.FungibleFormula;
-import com.radixdlt.atomos.FungibleTransition;
+import com.radixdlt.atomos.FungibleDefinition;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.atoms.ParticleGroup;
 import com.radixdlt.atoms.Spin;
@@ -29,22 +29,26 @@ import java.util.stream.Stream;
 public class FungibleTransitionConstraintProcedure implements ConstraintProcedure {
 	private final ImmutableSet<Class<? extends Particle>> inputTypes;
 	private final ImmutableSet<Class<? extends Particle>> outputTypes;
-	private final ParticleValueMapper valueMapper;
-	private final Map<Class<? extends Particle>, FungibleTransition<? extends Particle>> transitions;
+	private final Map<Class<? extends Particle>, FungibleDefinition<? extends Particle>> fungibles;
 
-	public FungibleTransitionConstraintProcedure(ImmutableMap<Class<? extends Particle>, FungibleTransition<? extends Particle>> transitions) {
-		Objects.requireNonNull(transitions);
+	public FungibleTransitionConstraintProcedure(ImmutableMap<Class<? extends Particle>, FungibleDefinition<? extends Particle>> fungibles) {
+		Objects.requireNonNull(fungibles);
 
-		List<FungibleTransition<? extends Particle>> fungibleTransitions = transitions.entrySet().stream()
+		List<FungibleDefinition<? extends Particle>> fungibleDefinitions = fungibles.entrySet().stream()
 			.map(Entry::getValue)
 			.collect(Collectors.toList());
 
-		this.transitions = transitions;
-		this.valueMapper = ParticleValueMapper.from(fungibleTransitions);
-		this.inputTypes = transitions.keySet();
-		this.outputTypes = ImmutableSet.copyOf(fungibleTransitions.stream()
+		this.fungibles = fungibles;
+		this.inputTypes = fungibles.keySet();
+		this.outputTypes = ImmutableSet.copyOf(fungibleDefinitions.stream()
 			.flatMap(t -> t.getParticleClassToFormulaMap().keySet().stream())
 			.collect(Collectors.toSet()));
+
+		for (Entry<Class<? extends Particle>, FungibleDefinition<? extends Particle>> e : fungibles.entrySet()) {
+			if (!fungibles.keySet().containsAll(e.getValue().getParticleClassToFormulaMap().keySet())) {
+				throw new IllegalArgumentException("Outputs not all accounted for");
+			}
+		}
 	}
 
 	@Override
@@ -56,7 +60,7 @@ public class FungibleTransitionConstraintProcedure implements ConstraintProcedur
 			SpunParticle sp = group.getSpunParticle(i);
 			Particle p = sp.getParticle();
 			if (sp.getSpin() == Spin.DOWN && this.inputTypes.contains(p.getClass())) {
-				UInt256 currentInput = valueMapper.amount(p);
+				UInt256 currentInput = fungibles.get(p.getClass()).mapToAmount(p);
 
 				while (!currentInput.isZero()) {
 					if (outputs.empty()) {
@@ -64,7 +68,7 @@ public class FungibleTransitionConstraintProcedure implements ConstraintProcedur
 					}
 					Pair<Particle, UInt256> top = outputs.peek();
 					Particle toParticle = top.getFirst();
-					FungibleFormula formula = transitions.get(p.getClass()).getParticleClassToFormulaMap().get(toParticle.getClass());
+					FungibleFormula formula = fungibles.get(p.getClass()).getParticleClassToFormulaMap().get(toParticle.getClass());
 					if (formula == null) {
 						break;
 					}
@@ -90,7 +94,7 @@ public class FungibleTransitionConstraintProcedure implements ConstraintProcedur
 					inputs.push(Pair.of(p, currentInput));
 				}
 			} else if (sp.getSpin() == Spin.UP && this.outputTypes.contains(p.getClass())) {
-				outputs.push(Pair.of(p, valueMapper.amount(p)));
+				outputs.push(Pair.of(p, fungibles.get(p.getClass()).mapToAmount(p)));
 			}
 		}
 
@@ -101,7 +105,7 @@ public class FungibleTransitionConstraintProcedure implements ConstraintProcedur
 			final Set<Particle> otherOutput = group.particles(Spin.UP).collect(Collectors.toSet());
 			for (Particle p : outputParticles) {
 				Particle remove = null;
-				FungibleTransition<? extends Particle> transition = transitions.get(p.getClass());
+				FungibleDefinition<? extends Particle> transition = fungibles.get(p.getClass());
 				if (transition != null && transition.getInitialWithConstraint() != null) {
 					Class<? extends Particle> initialWithClass = transition.getInitialWithConstraint().getFirst();
 					for (Particle other : otherOutput) {

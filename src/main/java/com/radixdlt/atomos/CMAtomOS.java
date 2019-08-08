@@ -51,7 +51,7 @@ public final class CMAtomOS implements AtomOSKernel, AtomOS {
 	private final List<KernelConstraintProcedure> kernelProcedures = new ArrayList<>();
 	private AtomKernelCompute atomKernelCompute;
 
-	private final Map<Class<? extends Particle>, FungibleTransition.Builder<? extends Particle>> fungibles = new HashMap<>();
+	private final Map<Class<? extends Particle>, FungibleDefinition.Builder<? extends Particle>> fungibles = new HashMap<>();
 	private final Map<Class<? extends Particle>, Function<Particle, Stream<RadixAddress>>> particleMapper = new LinkedHashMap<>();
 
 	private final RRIConstraintProcedure.Builder rriProcedureBuilder = new RRIConstraintProcedure.Builder();
@@ -157,8 +157,8 @@ public final class CMAtomOS implements AtomOSKernel, AtomOS {
 			throw new IllegalStateException(particleClass + " already registered as fungible.");
 		}
 
-		FungibleTransition.Builder<T> fungibleBuilder = new FungibleTransition.Builder<T>()
-			.from(particleClass, particleToAmountMapper);
+		FungibleDefinition.Builder<T> fungibleBuilder = new FungibleDefinition.Builder<T>()
+			.of(particleClass, particleToAmountMapper);
 		fungibles.put(particleClass, fungibleBuilder);
 
 		return new FungibleTransitionConstraintStub<T>() {
@@ -230,7 +230,7 @@ public final class CMAtomOS implements AtomOSKernel, AtomOS {
 
 		// Add a constraint for fungibles if any were added
 		if (!this.fungibles.isEmpty()) {
-			ImmutableMap<Class<? extends Particle>, FungibleTransition<? extends Particle>> transitions =
+			ImmutableMap<Class<? extends Particle>, FungibleDefinition<? extends Particle>> transitions =
 				this.fungibles.entrySet().stream()
 					.collect(ImmutableMap.toImmutableMap(
 						Entry::getKey,

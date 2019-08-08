@@ -1,7 +1,7 @@
 package com.radixdlt.atomos.test;
 
 import com.radixdlt.atomos.AtomOS;
-import com.radixdlt.atomos.FungibleTransition;
+import com.radixdlt.atomos.FungibleDefinition;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.mapper.ParticleToAmountMapper;
 import com.radixdlt.atomos.mapper.ParticleToRRIMapper;
@@ -27,10 +27,10 @@ public class TestAtomOS implements AtomOS {
 	private final List<Pair<Class<? extends Particle>, BiFunction<Particle, AtomMetadata, Result>>> particleClassConstraints = new ArrayList<>();
 	private final List<Pair<Pair<Class<? extends Particle>, Class<? extends Particle>>,
 		ParticleClassWithDependenceConstraintCheck<? extends Particle, ?>>> particleClassWithDependencyConstraints = new ArrayList<>();
-	private final List<FungibleTransition<? extends Particle>> fungibleTransitions = new ArrayList<>();
+	private final List<FungibleDefinition<? extends Particle>> fungibleDefinitions = new ArrayList<>();
 	private final List<Pair<Pair<Class<? extends Particle>, Class<? extends Particle>>,
 		ParticleClassWithSideEffectConstraintCheck<? extends Particle, ?>>> particleClassWithSideEffectConstraints = new ArrayList<>();
-	private FungibleTransition.Builder<? extends Particle> pendingFungibleTransition = null;
+	private FungibleDefinition.Builder<? extends Particle> pendingFungibleTransition = null;
 
 	@Override
 	public <T extends Particle> void registerParticle(Class<T> particleClass, String name, ParticleToShardablesMapper<T> mapper) {
@@ -75,11 +75,11 @@ public class TestAtomOS implements AtomOS {
 		ParticleToAmountMapper<T> particleToAmountMapper
 	) {
 		if (pendingFungibleTransition != null) {
-			fungibleTransitions.add(pendingFungibleTransition.build());
+			fungibleDefinitions.add(pendingFungibleTransition.build());
 		}
 
-		FungibleTransition.Builder<T> transitionBuilder = new FungibleTransition.Builder<T>()
-			.from(particleClass, particleToAmountMapper);
+		FungibleDefinition.Builder<T> transitionBuilder = new FungibleDefinition.Builder<T>()
+			.of(particleClass, particleToAmountMapper);
 		pendingFungibleTransition = transitionBuilder;
 
 		return new FungibleTransitionConstraintStub<T>() {
@@ -114,7 +114,7 @@ public class TestAtomOS implements AtomOS {
 	 * @param <T> class of particle
 	 * @param t particle to be sent to the check call
 	 * @param metadata
-	 * @return list of results from each checker
+	 * @return list of results of each checker
 	 */
 	public <T extends Particle> TestResult testInitialParticle(T t, AtomMetadata metadata) {
 		Stream<Result> indexedCheckResults = indexedInitialConstraints.stream()
@@ -140,7 +140,7 @@ public class TestAtomOS implements AtomOS {
 	 * @param metadata The metadata
 	 * @param <T> The dependent class
 	 * @param <U> The dependency class
-	 * @return list of results from each checker
+	 * @return list of results of each checker
 	 */
 	public <T extends Particle, U extends Particle> TestResult testParticleClassWithDependency(T dependent, U dependency, AtomMetadata metadata) {
 		return testParticleClassWithDependency(Arrays.asList(dependent), dependency, metadata);
@@ -154,7 +154,7 @@ public class TestAtomOS implements AtomOS {
 	 * @param metadata The metadata
 	 * @param <T> The dependent class
 	 * @param <U> The dependency class
-	 * @return list of results from each checker
+	 * @return list of results of each checker
 	 */
 	public <T extends Particle, U extends Particle> TestResult testParticleClassWithDependency(
 		List<T> dependents,
@@ -183,7 +183,7 @@ public class TestAtomOS implements AtomOS {
 	 * @param metadata The metadata
 	 * @param <T> The particle type
 	 * @param <U> The side effect type
-	 * @return list of results from each checkers
+	 * @return list of results of each checkers
 	 */
 	public <T extends Particle, U extends Particle> TestResult testParticleClassWithSideEffect(T particle, U sideEffect, AtomMetadata metadata) {
 		final List<Result> results = particleClassWithSideEffectConstraints.stream()
@@ -198,7 +198,7 @@ public class TestAtomOS implements AtomOS {
 
 	private void completePendingFungibleTransition() {
 		if (pendingFungibleTransition != null) {
-			fungibleTransitions.add(pendingFungibleTransition.build());
+			fungibleDefinitions.add(pendingFungibleTransition.build());
 			pendingFungibleTransition = null;
 		}
 	}
