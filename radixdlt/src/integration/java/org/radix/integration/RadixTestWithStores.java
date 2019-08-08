@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.tempo.Tempo;
 import com.radixdlt.tempo.TempoController;
 import com.radixdlt.tempo.PeerSupplier;
+import com.radixdlt.tempo.AtomSyncView;
 import com.radixdlt.tempo.EdgeSelector;
 import org.junit.After;
 import org.junit.Before;
@@ -63,6 +64,7 @@ public class RadixTestWithStores extends RadixTest
 			safelyStop(Modules.get(AtomSync.class));
 			Modules.remove(AtomSync.class);
 			Modules.remove(AtomStore.class);
+			Modules.remove(AtomSyncView.class);
 		}
 		Modules.remove(DatabaseEnvironment.class);
 	}
