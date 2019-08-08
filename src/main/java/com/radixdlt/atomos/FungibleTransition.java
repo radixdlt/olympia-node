@@ -8,8 +8,6 @@ import com.radixdlt.atoms.Particle;
 import com.radixdlt.common.Pair;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
 import java.util.function.BiPredicate;
 
 /**
@@ -18,33 +16,29 @@ import java.util.function.BiPredicate;
  * @param <T> The target "to" type
  */
 public final class FungibleTransition<T extends Particle> {
-	private final Class<T> outputParticleClass;
-	private final ParticleToAmountMapper<T> outputParticleToAmountMapper;
+	private final Class<T> inputParticleClass;
+	private final ParticleToAmountMapper<T> inputParticleToAmountMapper;
 	private final Pair<Class<? extends Particle>, ParticleClassWithSideEffectConstraintCheck<T, ?>> initialWithConstraint;
 	private final Map<Class<? extends Particle>, FungibleFormula> particleTypeToFormulasMap;
 
 	private FungibleTransition(
-		Class<T> outputParticleClass,
-		ParticleToAmountMapper<T> outputParticleToAmountMapper,
+		Class<T> inputParticleClass,
+		ParticleToAmountMapper<T> inputParticleToAmountMapper,
 		Map<Class<? extends Particle>, FungibleFormula> particleTypeToFormulasMap,
 		Pair<Class<? extends Particle>, ParticleClassWithSideEffectConstraintCheck<T, ?>> initialWithConstraint
 	) {
-		this.outputParticleClass = outputParticleClass;
-		this.outputParticleToAmountMapper = outputParticleToAmountMapper;
+		this.inputParticleClass = inputParticleClass;
+		this.inputParticleToAmountMapper = inputParticleToAmountMapper;
 		this.particleTypeToFormulasMap = particleTypeToFormulasMap;
 		this.initialWithConstraint = initialWithConstraint;
 	}
 
-	public Class<T> getOutputParticleClass() {
-		return this.outputParticleClass;
+	public Class<T> getInputParticleClass() {
+		return this.inputParticleClass;
 	}
 
-	public ParticleToAmountMapper<T> getOutputParticleToAmountMapper() {
-		return outputParticleToAmountMapper;
-	}
-
-	public Set<Class<? extends Particle>> getAllInputs() {
-		return this.particleTypeToFormulasMap.keySet();
+	public ParticleToAmountMapper<T> getInputParticleToAmountMapper() {
+		return inputParticleToAmountMapper;
 	}
 
 	public Map<Class<? extends Particle>, FungibleFormula> getParticleClassToFormulaMap() {
@@ -53,10 +47,6 @@ public final class FungibleTransition<T extends Particle> {
 
 	public Pair<Class<? extends Particle>, ParticleClassWithSideEffectConstraintCheck<T, ?>> getInitialWithConstraint() {
 		return this.initialWithConstraint;
-	}
-
-	public boolean hasInitial() {
-		return this.initialWithConstraint != null;
 	}
 
 	public static <T extends Particle> FungibleTransition<T> from(
@@ -99,32 +89,9 @@ public final class FungibleTransition<T extends Particle> {
 		return new Builder<>();
 	}
 
-	/**
-	 * The verdict of trying a fungible as an initial to this transition
-	 */
-	public static class FungibleTransitionInitialVerdict {
-		private final Result result;
-
-		private FungibleTransitionInitialVerdict(Result result) {
-			this.result = Objects.requireNonNull(result);
-		}
-
-		public boolean isApproval() {
-			return this.result.isSuccess();
-		}
-
-		public boolean isRejection() {
-			return this.result.isError();
-		}
-
-		public Optional<String> getRejectionMessage() {
-			return this.result.getErrorMessage();
-		}
-	}
-
 	public static class Builder<T extends Particle> {
-		private Class<T> outputParticleClass;
-		private ParticleToAmountMapper<T> outputParticleToAmountMapper;
+		private Class<T> inputParticleClass;
+		private ParticleToAmountMapper<T> inputParticleToAmountMapper;
 		private final ImmutableMap.Builder<Class<? extends Particle>, FungibleFormula> particleTypeToFormulasMapBuilder = new ImmutableMap.Builder<>();
 		private Pair<Class<? extends Particle>, ParticleClassWithSideEffectConstraintCheck<T, ?>> initialWithConstraint;
 
@@ -132,11 +99,11 @@ public final class FungibleTransition<T extends Particle> {
 		}
 
 		public Builder<T> from(
-			Class<T> outputParticleClass,
-			ParticleToAmountMapper<T> outputParticleToAmountMapper
+			Class<T> inputParticleClass,
+			ParticleToAmountMapper<T> inputParticleToAmountMapper
 		) {
-			this.outputParticleClass = outputParticleClass;
-			this.outputParticleToAmountMapper = outputParticleToAmountMapper;
+			this.inputParticleClass = inputParticleClass;
+			this.inputParticleToAmountMapper = inputParticleToAmountMapper;
 
 			return this;
 		}
@@ -157,8 +124,8 @@ public final class FungibleTransition<T extends Particle> {
 		}
 
 		public FungibleTransition<T> build() {
-			Objects.requireNonNull(outputParticleClass, "Unfinished transition, output class must be defined.");
-			Objects.requireNonNull(outputParticleToAmountMapper, "Unfinished transition, output amount mapper must be defined.");
+			Objects.requireNonNull(inputParticleClass, "Unfinished transition, output class must be defined.");
+			Objects.requireNonNull(inputParticleToAmountMapper, "Unfinished transition, output amount mapper must be defined.");
 
 			Map<Class<? extends Particle>, FungibleFormula> particleTypeToFormulasMap = particleTypeToFormulasMapBuilder.build();
 
@@ -167,8 +134,8 @@ public final class FungibleTransition<T extends Particle> {
 			}
 
 			return FungibleTransition.from(
-				outputParticleClass,
-				outputParticleToAmountMapper,
+				inputParticleClass,
+				inputParticleToAmountMapper,
 				particleTypeToFormulasMap,
 				initialWithConstraint
 			);

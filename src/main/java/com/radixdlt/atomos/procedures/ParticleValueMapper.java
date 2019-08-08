@@ -55,7 +55,7 @@ public class ParticleValueMapper {
 
 		final Map<Class<?>, ParticleToAmountMapper<? extends Particle>> amountMappers = new HashMap<>();
 		for (FungibleTransition<? extends Particle> fungibleTransition : fungibleTransitions) {
-			amountMappers.put(fungibleTransition.getOutputParticleClass(), fungibleTransition.getOutputParticleToAmountMapper());
+			amountMappers.put(fungibleTransition.getInputParticleClass(), fungibleTransition.getInputParticleToAmountMapper());
 		}
 
 		return new ParticleValueMapper(amountMappers);

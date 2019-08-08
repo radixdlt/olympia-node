@@ -1,5 +1,6 @@
 package com.radixdlt.atomos.procedures;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atomos.AtomOS.ParticleClassWithSideEffectConstraintCheck;
 import com.radixdlt.atomos.FungibleFormula;
@@ -31,7 +32,7 @@ public class FungibleTransitionConstraintProcedure implements ConstraintProcedur
 	private final ParticleValueMapper valueMapper;
 	private final Map<Class<? extends Particle>, FungibleTransition<? extends Particle>> transitions;
 
-	public FungibleTransitionConstraintProcedure(Map<Class<? extends Particle>, FungibleTransition<? extends Particle>> transitions) {
+	public FungibleTransitionConstraintProcedure(ImmutableMap<Class<? extends Particle>, FungibleTransition<? extends Particle>> transitions) {
 		Objects.requireNonNull(transitions);
 
 		List<FungibleTransition<? extends Particle>> fungibleTransitions = transitions.entrySet().stream()
@@ -39,26 +40,11 @@ public class FungibleTransitionConstraintProcedure implements ConstraintProcedur
 			.collect(Collectors.toList());
 
 		this.transitions = transitions;
-
 		this.valueMapper = ParticleValueMapper.from(fungibleTransitions);
-		this.inputTypes = ImmutableSet.copyOf(fungibleTransitions.stream()
-			.flatMap(ft -> ft.getAllInputs().stream())
-			.collect(Collectors.toSet()));
+		this.inputTypes = transitions.keySet();
 		this.outputTypes = ImmutableSet.copyOf(fungibleTransitions.stream()
-			.map(FungibleTransition::getOutputParticleClass)
+			.flatMap(t -> t.getParticleClassToFormulaMap().keySet().stream())
 			.collect(Collectors.toSet()));
-
-		checkAllTypesKnown(inputTypes, outputTypes);
-	}
-
-	private static void checkAllTypesKnown(ImmutableSet<Class<? extends Particle>> inputTypes, ImmutableSet<Class<? extends Particle>> outputTypes) {
-		List<Class<? extends Particle>> foreignTypes = inputTypes.stream()
-			.filter(inputType -> !outputTypes.contains(inputType))
-			.collect(Collectors.toList());
-
-		if (!foreignTypes.isEmpty()) {
-			throw new IllegalArgumentException("Foreign input types " + inputTypes + ", must be defined as fungibles");
-		}
 	}
 
 	@Override
@@ -66,45 +52,45 @@ public class FungibleTransitionConstraintProcedure implements ConstraintProcedur
 		final Stack<Pair<Particle, UInt256>> inputs = new Stack<>();
 		final Stack<Pair<Particle, UInt256>> outputs = new Stack<>();
 
-		for (int i = 0; i < group.getParticleCount(); i++) {
+		for (int i = group.getParticleCount() - 1; i >= 0; i--) {
 			SpunParticle sp = group.getSpunParticle(i);
 			Particle p = sp.getParticle();
 			if (sp.getSpin() == Spin.DOWN && this.inputTypes.contains(p.getClass())) {
-				inputs.push(Pair.of(p, valueMapper.amount(p)));
-			} else if (sp.getSpin() == Spin.UP && this.outputTypes.contains(p.getClass())) {
-				UInt256 currentOutput = valueMapper.amount(p);
+				UInt256 currentInput = valueMapper.amount(p);
 
-				while (!currentOutput.isZero()) {
-					if (inputs.empty()) {
+				while (!currentInput.isZero()) {
+					if (outputs.empty()) {
 						break;
 					}
-					Pair<Particle, UInt256> top = inputs.peek();
-					Particle fromParticle = top.getFirst();
-					FungibleFormula formula = transitions.get(fromParticle.getClass()).getParticleClassToFormulaMap().get(p.getClass());
+					Pair<Particle, UInt256> top = outputs.peek();
+					Particle toParticle = top.getFirst();
+					FungibleFormula formula = transitions.get(p.getClass()).getParticleClassToFormulaMap().get(toParticle.getClass());
 					if (formula == null) {
 						break;
 					}
-					if (!formula.getTransition().test(fromParticle, p)) {
+					if (!formula.getTransition().test(p, toParticle)) {
 						break;
 					}
-					if (formula.getWitnessValidator().apply(fromParticle, metadata).isError()) {
+					if (formula.getWitnessValidator().apply(p, metadata).isError()) {
 						break;
 					}
 
-					inputs.pop();
-					UInt256 inputAmount = top.getSecond();
-					UInt256 min = UInt256.min(inputAmount, currentOutput);
-					UInt256 newInputAmount = inputAmount.subtract(min);
-					if (!newInputAmount.isZero()) {
-						inputs.push(Pair.of(fromParticle, newInputAmount));
+					outputs.pop();
+					UInt256 outputAmount = top.getSecond();
+					UInt256 min = UInt256.min(currentInput, outputAmount);
+					UInt256 newOutputAmount = outputAmount.subtract(min);
+					if (!newOutputAmount.isZero()) {
+						outputs.push(Pair.of(toParticle, newOutputAmount));
 					}
 
-					currentOutput = currentOutput.subtract(min);
+					currentInput = currentInput.subtract(min);
 				}
 
-				if (!currentOutput.isZero()) {
-					outputs.push(Pair.of(p, currentOutput));
+				if (!currentInput.isZero()) {
+					inputs.push(Pair.of(p, currentInput));
 				}
+			} else if (sp.getSpin() == Spin.UP && this.outputTypes.contains(p.getClass())) {
+				outputs.push(Pair.of(p, valueMapper.amount(p)));
 			}
 		}
 

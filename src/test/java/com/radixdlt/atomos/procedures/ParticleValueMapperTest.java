@@ -7,7 +7,6 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atomos.FungibleTransition;
-import com.radixdlt.atomos.procedures.ParticleValueMapper;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.utils.UInt256;
 import java.util.Arrays;
@@ -28,12 +27,12 @@ public class ParticleValueMapperTest {
 		assertThatThrownBy(() -> ParticleValueMapper.from(null));
 
 		FungibleTransition h2oTransition = mock(FungibleTransition.class);
-		when(h2oTransition.getOutputParticleClass()).thenReturn(H2O.class);
-		when(h2oTransition.getOutputParticleToAmountMapper()).thenReturn(x -> UInt256.TEN);
+		when(h2oTransition.getInputParticleClass()).thenReturn(H2O.class);
+		when(h2oTransition.getInputParticleToAmountMapper()).thenReturn(x -> UInt256.TEN);
 
 		FungibleTransition oxygenTransition = mock(FungibleTransition.class);
-		when(oxygenTransition.getOutputParticleClass()).thenReturn(Oxygen.class);
-		when(oxygenTransition.getOutputParticleToAmountMapper()).thenReturn(x -> UInt256.SEVEN);
+		when(oxygenTransition.getInputParticleClass()).thenReturn(Oxygen.class);
+		when(oxygenTransition.getInputParticleToAmountMapper()).thenReturn(x -> UInt256.SEVEN);
 
 		ParticleValueMapper valueMapper = ParticleValueMapper.from(Arrays.asList(
 			h2oTransition,
@@ -48,9 +47,8 @@ public class ParticleValueMapperTest {
 		assertThatThrownBy(() -> ParticleValueMapper.from(null));
 
 		FungibleTransition transition = mock(FungibleTransition.class);
-		when(transition.getOutputParticleClass()).thenReturn(H2O.class);
-		when(transition.getOutputParticleToAmountMapper()).thenReturn(x -> UInt256.TEN);
-		when(transition.getAllInputs()).thenReturn(ImmutableSet.of());
+		when(transition.getInputParticleClass()).thenReturn(H2O.class);
+		when(transition.getInputParticleToAmountMapper()).thenReturn(x -> UInt256.TEN);
 
 		ParticleValueMapper valueMapper = ParticleValueMapper.from(Arrays.asList(transition));
 		assertThatThrownBy(() -> valueMapper.amount(mock(Oxygen.class)));

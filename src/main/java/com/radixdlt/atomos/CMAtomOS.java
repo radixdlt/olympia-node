@@ -1,5 +1,6 @@
 package com.radixdlt.atomos;
 
+import com.google.common.collect.ImmutableMap;
 import com.radixdlt.common.Pair;
 import com.radixdlt.compute.AtomCompute;
 import com.radixdlt.store.CMStore;
@@ -236,10 +237,10 @@ public final class CMAtomOS implements AtomOSKernel, AtomOS {
 
 		// Add a constraint for fungibles if any were added
 		if (!this.fungibleTransitions.isEmpty()) {
-			Map<Class<? extends Particle>, FungibleTransition<? extends Particle>> transitions =
+			ImmutableMap<Class<? extends Particle>, FungibleTransition<? extends Particle>> transitions =
 				this.fungibleTransitions.stream()
-					.collect(Collectors.toMap(
-						FungibleTransition::getOutputParticleClass,
+					.collect(ImmutableMap.toImmutableMap(
+						FungibleTransition::getInputParticleClass,
 						v -> v
 					));
 			cmBuilder.addProcedure(new FungibleTransitionConstraintProcedure(transitions));
