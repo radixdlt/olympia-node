@@ -80,12 +80,6 @@ public class IterativeSyncEpic implements SyncEpic {
 			EUID peerNid = peer.getSystem().getNID();
 
 			IterativeCursor lastCursor = this.latestCursors.get(peerNid).orElse(IterativeCursor.INITIAL);
-			long lastLCPosition = lastCursor.getLCPosition();
-			// reset cursor if cursor is ahead of current peer logical clock
-			if (lastLCPosition > peer.getSystem().getClock().get()) {
-				lastCursor = IterativeCursor.INITIAL;
-			}
-
 			logger.info("Initiating iterative sync with " + peer);
 			return Stream.of(new RequestIterativeSyncAction(peer, lastCursor));
 		} else if (action instanceof RequestIterativeSyncAction) {
@@ -107,7 +101,6 @@ public class IterativeSyncEpic implements SyncEpic {
 			// send iterative request for aids starting with last cursor
 			ShardSpace shardRange = shardSpaceSupplier.get();
 			SendIterativeRequestAction sendRequest = new SendIterativeRequestAction(shardRange, request.getCursor(), peer);
-
 			// schedule timeout after which response will be checked
 			TimeoutIterativeRequestAction timeout = new TimeoutIterativeRequestAction(peer, request.getCursor());
 			return Stream.of(sendRequest, timeout.schedule(ITERATIVE_REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS));
@@ -136,10 +129,13 @@ public class IterativeSyncEpic implements SyncEpic {
 			ReceiveIterativeRequestAction request = (ReceiveIterativeRequestAction) action;
 
 			// retrieve and send back aids starting from the requested cursor up to the limit
-			Pair<ImmutableList<AID>, IterativeCursor> aidsAndNext = storeView.getNext(request.getCursor(), RESPONSE_AID_LIMIT, request.getShardSpace());
-			logger.info(String.format("Responding to iterative request from %s for %d with %d aids",
-				request.getPeer(), request.getCursor().getLCPosition(), aidsAndNext.getFirst().size()));
-			return Stream.of(new SendIterativeResponseAction(aidsAndNext.getFirst(), aidsAndNext.getSecond(), request.getPeer()));
+			Pair<ImmutableList<AID>, IterativeCursor> aidsAndCursor = storeView.getNext(request.getCursor(), RESPONSE_AID_LIMIT, request.getShardSpace());
+			IterativeCursor cursor = aidsAndCursor.getSecond();
+			ImmutableList<AID> aids = aidsAndCursor.getFirst();
+			logger.info(String.format("Responding to iterative request from %s for %d with %d aids (next=%s)",
+				request.getPeer(), request.getCursor().getLCPosition(), aids.size(),
+				cursor.hasNext() ? cursor.getNext().getLCPosition() : "<none>"));
+			return Stream.of(new SendIterativeResponseAction(aids, cursor, request.getPeer()));
 		} else if (action instanceof ReceiveIterativeResponseAction) {
 			ReceiveIterativeResponseAction response = (ReceiveIterativeResponseAction) action;
 			Peer peer = response.getPeer();
@@ -191,12 +187,6 @@ public class IterativeSyncEpic implements SyncEpic {
 				deliveryActions = Stream.of(new RequestDeliveryAction(response.getAids(), response.getPeer()));
 			}
 			return Stream.concat(continuedActions, deliveryActions);
-		} else if (action instanceof ReceiveAtomAction) {
-			// TODO also update last cursor if atom was received through other means
-//			TemporalProof temporalProof = ((ReceiveAtomAction) action).getAtom().getTemporalProof();
-//			for (TemporalVertex vertex : temporalProof.getVertices()) {
-//
-//			}
 		}
 
 		return Stream.empty();

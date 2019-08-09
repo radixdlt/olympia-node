@@ -410,13 +410,12 @@ public class TempoAtomStore implements AtomStore {
 			DatabaseEntry search = new DatabaseEntry(Longs.toByteArray(position + 1));
 			DatabaseEntry value = new DatabaseEntry();
 			OperationStatus status = cursor.getSearchKeyRange(search, value, LockMode.DEFAULT);
-
 			while (status == OperationStatus.SUCCESS) {
 				TempoAtom atom = Serialization.getDefault().fromDson(value.getData(), TempoAtom.class);
+				position = Longs.fromByteArray(search.getData());
 				if (shardSpace.intersects(atom.getShards())) {
-					position = Longs.fromByteArray(search.getData());
 					aids.add(atom.getAID());
-
+					// abort as we've exceeded the limit
 					if (aids.size() >= limit) {
 						break;
 					}
