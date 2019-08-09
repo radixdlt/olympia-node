@@ -45,17 +45,8 @@ public class TestAtomOS implements AtomOS {
 	}
 
 	@Override
-	public <T extends Particle> ResourceConstraint<T> newResource(Class<T> particleClass, ParticleToRRIMapper<T> indexer) {
+	public <T extends Particle> void newResource(Class<T> particleClass, ParticleToRRIMapper<T> indexer) {
 		resources.put(particleClass, p -> indexer.index((T) p));
-		return new ResourceConstraint<T>() {
-			@Override
-			public <U extends Particle> void requireInitialWith(
-				Class<U> sideEffectClass,
-				ParticleClassWithSideEffectConstraintCheck<T, U> constraint
-			) {
-
-			}
-		};
 	}
 
 	@Override

@@ -23,7 +23,6 @@ import com.radixdlt.atomos.mapper.ParticleToAmountMapper;
 import com.radixdlt.atomos.mapper.ParticleToRRIMapper;
 import com.radixdlt.atomos.mapper.ParticleToShardableMapper;
 import com.radixdlt.atomos.mapper.ParticleToShardablesMapper;
-import com.radixdlt.atomos.procedures.ParticleClassWithSideEffectConstraintProcedure;
 import com.radixdlt.atomos.procedures.TransitionlessConstraintProcedure;
 import com.radixdlt.atomos.procedures.RRIConstraintProcedure;
 import com.radixdlt.atomos.procedures.FungibleTransitionConstraintProcedure;
@@ -100,7 +99,7 @@ public final class CMAtomOS {
 			}
 
 			@Override
-			public <T extends Particle> ResourceConstraint<T> newResource(
+			public <T extends Particle> void newResource(
 				Class<T> particleClass,
 				ParticleToRRIMapper<T> rriMapper
 			) {
@@ -109,17 +108,6 @@ public final class CMAtomOS {
 				}
 
 				rriProcedureBuilder.add(particleClass, rriMapper);
-
-				return new ResourceConstraint<T>() {
-					@Override
-					public <U extends Particle> void requireInitialWith(Class<U> sideEffectClass,
-						ParticleClassWithSideEffectConstraintCheck<T, U> constraint) {
-
-						ParticleClassWithSideEffectConstraintProcedure<T, U> procedure
-							= new ParticleClassWithSideEffectConstraintProcedure<>(particleClass, sideEffectClass, constraint);
-						procedures.add(procedure);
-					}
-				};
 			}
 
 			@Override

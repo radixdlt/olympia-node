@@ -43,7 +43,10 @@ public interface AtomOS {
 	 * @param <T> particle class to add a constraint to
 	 * @return a callback function onto which the constraint will be defined
 	 */
-	<T extends Particle> ResourceConstraint<T> newResource(Class<T> particleClass, ParticleToRRIMapper<T> indexer);
+	<T extends Particle> void newResource(
+		Class<T> particleClass,
+		ParticleToRRIMapper<T> indexer
+	);
 
 	<T extends Particle, U extends Particle> void newResource(
 		Class<T> particleClass0,
@@ -88,16 +91,6 @@ public interface AtomOS {
 		return check -> { };
 	}
 
-	interface ResourceConstraint<T extends Particle> {
-		/**
-		 * Adds a constraint check for a side effect that is required for this particle
-		 * @param sideEffectClass The particle class of the required side effect
-		 * @param constraint The constraint check for the required side effect
-		 * @param <U> The type of the required side effect
-		 */
-		<U extends Particle> void requireInitialWith(Class<U> sideEffectClass, ParticleClassWithSideEffectConstraintCheck<T, U> constraint);
-	}
-
 	interface TransitionlessParticleClassConstraint<T extends Particle> {
 		/**
 		 * Adds a constraint check for this particle class
@@ -105,7 +98,6 @@ public interface AtomOS {
 		 */
 		void require(WitnessValidator<T> witnessValidator);
 	}
-
 
 	/**
 	 * Callback for an implementation of a constraint based on a particle class.
