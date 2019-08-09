@@ -1,4 +1,4 @@
-package com.radixdlt.atomos.procedures.fungible;
+package com.radixdlt.atomos.procedures;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atomos.FungibleTransition;

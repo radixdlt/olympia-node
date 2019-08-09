@@ -1,4 +1,4 @@
-package com.radixdlt.atomos.procedures.fungible;
+package com.radixdlt.atomos.procedures;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.Assert.assertEquals;
@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atomos.FungibleTransition;
+import com.radixdlt.atomos.procedures.ParticleValueMapper;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.utils.UInt256;
 import java.util.Arrays;

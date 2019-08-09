@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
@@ -23,7 +24,7 @@ import com.radixdlt.atomos.procedures.ParticleClassConstraintProcedure;
 import com.radixdlt.atomos.procedures.ParticleClassWithSideEffectConstraintProcedure;
 import com.radixdlt.atomos.procedures.PayloadParticleConstraintProcedure;
 import com.radixdlt.atomos.procedures.RRIConstraintProcedure;
-import com.radixdlt.atomos.procedures.fungible.FungibleTransitionConstraintProcedure;
+import com.radixdlt.atomos.procedures.FungibleTransitionConstraintProcedure;
 import com.radixdlt.constraintmachine.ConstraintMachine.Builder;
 import com.radixdlt.constraintmachine.ConstraintProcedure;
 import com.radixdlt.constraintmachine.ConstraintMachine;
@@ -35,7 +36,6 @@ import com.radixdlt.store.CMStores;
 import com.radixdlt.common.EUID;
 import com.radixdlt.universe.Universe;
 
-import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -152,8 +152,7 @@ public final class CMAtomOS implements AtomOSKernel, AtomOS {
 	@Override
 	public <T extends Particle> FungibleTransitionConstraintStub<T> onFungible(
 		Class<T> particleClass,
-		ParticleToAmountMapper<T> particleToAmountMapper,
-		BiFunction<T, T, Boolean> fungibleEquals
+		ParticleToAmountMapper<T> particleToAmountMapper
 	) {
 		checkParticleRegistered(particleClass);
 
@@ -162,7 +161,7 @@ public final class CMAtomOS implements AtomOSKernel, AtomOS {
 		}
 
 		FungibleTransition.Builder<T> transitionBuilder = FungibleTransition.<T>build()
-			.to(particleClass, particleToAmountMapper, fungibleEquals);
+			.to(particleClass, particleToAmountMapper);
 		pendingFungibleTransition = transitionBuilder;
 
 		return new FungibleTransitionConstraintStub<T>() {
@@ -177,14 +176,14 @@ public final class CMAtomOS implements AtomOSKernel, AtomOS {
 
 			@Override
 			public <U extends Particle> FungibleTransitionConstraint<T> requireFrom(
-				Class<U> cls1,
-				FungibleTransitionInputConstraint<U, T> check
+				Class<U> fromParticleClass,
+				WitnessValidator<U> witnessValidator,
+				BiPredicate<U, T> transition
 			) {
 				if (pendingFungibleTransition == null) {
 					throw new IllegalStateException("Attempt to add formula to finished fungible transition to " + particleClass);
 				}
-				FungibleFormula formula = new FungibleFormula(cls1, check);
-				transitionBuilder.addFormula(formula);
+				transitionBuilder.from(fromParticleClass, witnessValidator, transition);
 				return this::requireFrom;
 			}
 		};

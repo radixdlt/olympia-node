@@ -86,6 +86,10 @@ public final class TransferrableTokensParticle extends Particle {
 		return tokenPermissions;
 	}
 
+	public TokenPermission getTokenPermission(TokenTransition transition) {
+		return tokenPermissions.get(transition);
+	}
+
 	@JsonProperty("permissions")
 	@DsonOutput(Output.ALL)
 	private Map<String, String> getJsonPermissions() {

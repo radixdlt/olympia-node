@@ -1,22 +1,20 @@
 package com.radixdlt.atomos.test;
 
 import com.radixdlt.atomos.AtomOS;
-import com.radixdlt.atomos.FungibleFormula;
 import com.radixdlt.atomos.FungibleTransition;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.mapper.ParticleToAmountMapper;
 import com.radixdlt.atomos.mapper.ParticleToRRIMapper;
 import com.radixdlt.atomos.mapper.ParticleToShardableMapper;
 import com.radixdlt.atomos.mapper.ParticleToShardablesMapper;
-import com.radixdlt.atomos.procedures.fungible.FungibleTransitionConstraintCheck;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.AtomMetadata;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -74,15 +72,14 @@ public class TestAtomOS implements AtomOS {
 	@Override
 	public <T extends Particle> FungibleTransitionConstraintStub<T> onFungible(
 		Class<T> particleClass,
-		ParticleToAmountMapper<T> particleToAmountMapper,
-		BiFunction<T, T, Boolean> fungibleEquals
+		ParticleToAmountMapper<T> particleToAmountMapper
 	) {
 		if (pendingFungibleTransition != null) {
 			fungibleTransitions.add(pendingFungibleTransition.build());
 		}
 
 		FungibleTransition.Builder<T> transitionBuilder = FungibleTransition.<T>build()
-			.to(particleClass, particleToAmountMapper, fungibleEquals);
+			.to(particleClass, particleToAmountMapper);
 		pendingFungibleTransition = transitionBuilder;
 
 		return new FungibleTransitionConstraintStub<T>() {
@@ -97,15 +94,15 @@ public class TestAtomOS implements AtomOS {
 
 			@Override
 			public <U extends Particle> FungibleTransitionConstraint<T> requireFrom(
-				Class<U> cls1,
-				FungibleTransitionInputConstraint<U, T> check
+				Class<U> particleClass,
+				WitnessValidator<U> witnessValidator,
+				BiPredicate<U, T> transition
 			) {
 				if (pendingFungibleTransition == null) {
 					throw new IllegalStateException("Attempt to add formula to finished fungible transition to " + particleClass);
 				}
 
-				FungibleFormula formula = new FungibleFormula(cls1, check);
-				transitionBuilder.addFormula(formula);
+				transitionBuilder.from(particleClass, witnessValidator, transition);
 				return this::requireFrom;
 			}
 		};
@@ -204,35 +201,5 @@ public class TestAtomOS implements AtomOS {
 			fungibleTransitions.add(pendingFungibleTransition.build());
 			pendingFungibleTransition = null;
 		}
-	}
-
-	/**
-	 * Mimics a fungible constraint check call
-	 * @param input The input
-	 * @param output The output
-	 * @param metadata Atom metadata
-	 * @return Result of the fungible transitions check
-	 */
-	public TestResult testFungible(Particle input, Particle output, AtomMetadata metadata) {
-		completePendingFungibleTransition();
-
-		return new TestResult(Collections.singletonList(
-			new FungibleTransitionConstraintCheck(this.fungibleTransitions).validateParticles(
-				Collections.singletonList(input), Collections.singletonList(output), metadata)));
-	}
-
-	/**
-	 * Mimics a fungible constraint check call
-	 * @param inputs The inputs
-	 * @param output The output
-	 * @param metadata Atom metadata
-	 * @return Result of the fungible transitions check
-	 */
-	public TestResult testFungible(List<Particle> inputs, Particle output, AtomMetadata metadata) {
-		completePendingFungibleTransition();
-
-		return new TestResult(Collections.singletonList(
-			new FungibleTransitionConstraintCheck(this.fungibleTransitions).validateParticles(
-				inputs, Collections.singletonList(output), metadata)));
 	}
 }
