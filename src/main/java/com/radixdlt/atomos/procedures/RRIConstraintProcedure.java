@@ -37,15 +37,15 @@ public final class RRIConstraintProcedure implements ConstraintProcedure {
 		}
 	}
 
-	private final Map<Class<? extends Particle>, ParticleToRRIMapper<Particle>> indexedParticles;
+	private final Map<Class<? extends Particle>, ParticleToRRIMapper<Particle>> primaryParticles;
 	private final Set<Class<? extends Particle>> secondaryParticles;
 	private final Map<Class<? extends Particle>, SecondaryResource<? extends Particle>> secondary;
 
 	RRIConstraintProcedure(
-		Map<Class<? extends Particle>, ParticleToRRIMapper<Particle>> indexedParticles,
+		Map<Class<? extends Particle>, ParticleToRRIMapper<Particle>> primaryParticles,
 		Map<Class<? extends Particle>, SecondaryResource<? extends Particle>> secondary
 	) {
-		this.indexedParticles = ImmutableMap.copyOf(indexedParticles);
+		this.primaryParticles = ImmutableMap.copyOf(primaryParticles);
 		this.secondary = secondary;
 		this.secondaryParticles = secondary.entrySet().stream().map(e -> e.getValue().particleClass).collect(Collectors.toSet());
 	}
@@ -88,23 +88,28 @@ public final class RRIConstraintProcedure implements ConstraintProcedure {
 		}
 	}
 
-	private boolean check(RRIParticle input, AtomMetadata metadata, Stack<Pair<Particle, Void>> outputs) {
+	private boolean otherInputParticleExecutor(Particle input, AtomMetadata metadata, Stack<Pair<Particle, Void>> outputs) {
+		return false;
+	}
+
+	private boolean rriInputParticleExecutor(Particle input, AtomMetadata metadata, Stack<Pair<Particle, Void>> outputs) {
+		RRIParticle rriParticle = (RRIParticle) input;
 		if (outputs.empty()) {
 			return false;
 		}
 
 		Pair<Particle, Void> top = outputs.peek();
 		Particle toParticle = top.getFirst();
-		ParticleToRRIMapper<Particle> mapper = indexedParticles.get(toParticle.getClass());
+		ParticleToRRIMapper<Particle> mapper = primaryParticles.get(toParticle.getClass());
 		if (mapper == null) {
 			return false;
 		}
 
-		if (!mapper.index(toParticle).equals(input.getRri())) {
+		if (!mapper.index(toParticle).equals(rriParticle.getRri())) {
 			return false;
 		}
 
-		if (!metadata.isSignedBy(input.getRri().getAddress())) {
+		if (!metadata.isSignedBy(rriParticle.getRri().getAddress())) {
 			return false;
 		}
 
@@ -122,7 +127,7 @@ public final class RRIConstraintProcedure implements ConstraintProcedure {
 				return false;
 			}
 
-			if (!secondaryResource.rriMapper.index(toParticle2).equals(input.getRri())) {
+			if (!secondaryResource.rriMapper.index(toParticle2).equals(rriParticle.getRri())) {
 				return false;
 			}
 
@@ -146,15 +151,18 @@ public final class RRIConstraintProcedure implements ConstraintProcedure {
 			Particle p = sp.getParticle();
 			if (sp.getSpin() == Spin.DOWN) {
 				if (p instanceof RRIParticle) {
-					if (!this.check((RRIParticle) p, metadata, outputs)) {
+					if (!this.rriInputParticleExecutor(p, metadata, outputs)) {
 						inputs.push(Pair.of(p, null));
 					}
-				} else if (this.indexedParticles.containsKey(p.getClass())) {
-					inputs.push(Pair.of(p, null));
+				} else if (this.primaryParticles.containsKey(p.getClass())) {
+					if (!this.otherInputParticleExecutor(p, metadata, outputs)) {
+						inputs.push(Pair.of(p, null));
+					}
 				}
-			} else if (sp.getSpin() == Spin.UP
-				&& (this.indexedParticles.containsKey(p.getClass())) || this.secondaryParticles.contains(p.getClass()) || p instanceof RRIParticle) {
-				outputs.push(Pair.of(p, null));
+			} else {
+				if (this.primaryParticles.containsKey(p.getClass()) || this.secondaryParticles.contains(p.getClass()) || p instanceof RRIParticle) {
+					outputs.push(Pair.of(p, null));
+				}
 			}
 		}
 

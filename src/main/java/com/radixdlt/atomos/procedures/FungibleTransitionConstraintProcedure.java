@@ -40,6 +40,40 @@ public class FungibleTransitionConstraintProcedure implements ConstraintProcedur
 		}
 	}
 
+	private UInt256 fungibleInputParticleExecutor(Particle input, AtomMetadata metadata, Stack<Pair<Particle, UInt256>> outputs) {
+		UInt256 currentInput = fungibles.get(input.getClass()).mapToAmount(input);
+
+		while (!currentInput.isZero()) {
+			if (outputs.empty()) {
+				break;
+			}
+			Pair<Particle, UInt256> top = outputs.peek();
+			Particle toParticle = top.getFirst();
+			FungibleFormula formula = fungibles.get(input.getClass()).getParticleClassToFormulaMap().get(toParticle.getClass());
+			if (formula == null) {
+				break;
+			}
+			if (!formula.getTransition().test(input, toParticle)) {
+				break;
+			}
+			if (formula.getWitnessValidator().apply(input, metadata).isError()) {
+				break;
+			}
+
+			outputs.pop();
+			UInt256 outputAmount = top.getSecond();
+			UInt256 min = UInt256.min(currentInput, outputAmount);
+			UInt256 newOutputAmount = outputAmount.subtract(min);
+			if (!newOutputAmount.isZero()) {
+				outputs.push(Pair.of(toParticle, newOutputAmount));
+			}
+
+			currentInput = currentInput.subtract(min);
+		}
+
+		return currentInput;
+	}
+
 	@Override
 	public Stream<ProcedureError> validate(ParticleGroup group, AtomMetadata metadata) {
 		final Stack<Pair<Particle, UInt256>> inputs = new Stack<>();
@@ -49,38 +83,9 @@ public class FungibleTransitionConstraintProcedure implements ConstraintProcedur
 			SpunParticle sp = group.getSpunParticle(i);
 			Particle p = sp.getParticle();
 			if (sp.getSpin() == Spin.DOWN && this.fungibles.containsKey(p.getClass())) {
-				UInt256 currentInput = fungibles.get(p.getClass()).mapToAmount(p);
-
-				while (!currentInput.isZero()) {
-					if (outputs.empty()) {
-						break;
-					}
-					Pair<Particle, UInt256> top = outputs.peek();
-					Particle toParticle = top.getFirst();
-					FungibleFormula formula = fungibles.get(p.getClass()).getParticleClassToFormulaMap().get(toParticle.getClass());
-					if (formula == null) {
-						break;
-					}
-					if (!formula.getTransition().test(p, toParticle)) {
-						break;
-					}
-					if (formula.getWitnessValidator().apply(p, metadata).isError()) {
-						break;
-					}
-
-					outputs.pop();
-					UInt256 outputAmount = top.getSecond();
-					UInt256 min = UInt256.min(currentInput, outputAmount);
-					UInt256 newOutputAmount = outputAmount.subtract(min);
-					if (!newOutputAmount.isZero()) {
-						outputs.push(Pair.of(toParticle, newOutputAmount));
-					}
-
-					currentInput = currentInput.subtract(min);
-				}
-
-				if (!currentInput.isZero()) {
-					inputs.push(Pair.of(p, currentInput));
+				UInt256 leftOver = fungibleInputParticleExecutor(p, metadata, outputs);
+				if (!leftOver.isZero()) {
+					inputs.push(Pair.of(p, leftOver));
 				}
 			} else if (sp.getSpin() == Spin.UP && this.fungibles.containsKey(p.getClass())) {
 				outputs.push(Pair.of(p, fungibles.get(p.getClass()).mapToAmount(p)));

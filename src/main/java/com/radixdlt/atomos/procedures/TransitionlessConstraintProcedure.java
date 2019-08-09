@@ -2,12 +2,16 @@ package com.radixdlt.atomos.procedures;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atomos.AtomOS.WitnessValidator;
+import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.atoms.ParticleGroup;
 import com.radixdlt.atoms.Spin;
+import com.radixdlt.atoms.SpunParticle;
+import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.AtomMetadata;
 import com.radixdlt.constraintmachine.ConstraintProcedure;
 import com.radixdlt.constraintmachine.ProcedureError;
+import java.util.Stack;
 import java.util.stream.Stream;
 
 /**
@@ -33,23 +37,37 @@ public final class TransitionlessConstraintProcedure implements ConstraintProced
 		this.transitionlessParticles = transitionlessParticles;
 	}
 
+	private boolean transitionlessInputParticleExecutor(Particle input, AtomMetadata metadata, Stack<Pair<Particle, Void>> outputs) {
+		return false;
+	}
+
 	@Override
 	public Stream<ProcedureError> validate(ParticleGroup group, AtomMetadata metadata) {
-		return group.spunParticlesWithIndex((s, i) -> {
-			final Class<? extends Particle> particleClass = s.getParticle().getClass();
-			final boolean isPayload = transitionlessParticles.containsKey(particleClass);
+		final Stack<Pair<Particle, Void>> inputs = new Stack<>();
+		final Stack<Pair<Particle, Void>> outputs = new Stack<>();
 
-			if (isPayload) {
-				if (s.getSpin() == Spin.DOWN) {
-					return Stream.of(ProcedureError.of(group, "Payload Particle " + particleClass + " cannot be DOWN", i));
-				} else {
-					if (transitionlessParticles.get(particleClass).apply(s.getParticle(), metadata).isError()) {
-						return Stream.of(ProcedureError.of("witness validation failed"));
+		for (int i = group.getParticleCount() - 1; i >= 0; i--) {
+			SpunParticle sp = group.getSpunParticle(i);
+			Particle p = sp.getParticle();
+			if (sp.getSpin() == Spin.DOWN) {
+				if (transitionlessParticles.containsKey(p.getClass())) {
+					if (!this.transitionlessInputParticleExecutor(p, metadata, outputs)) {
+						inputs.push(Pair.of(p, null));
+					}
+				}
+			} else {
+				if (transitionlessParticles.containsKey(p.getClass())) {
+					if (transitionlessParticles.get(p.getClass()).apply(p, metadata).isError()) {
+						outputs.push(Pair.of(p, null));
 					}
 				}
 			}
+		}
 
-			return Stream.<ProcedureError>empty();
-		}).flatMap(l -> l);
+		if (!inputs.empty() || !outputs.empty()) {
+			return Stream.of(ProcedureError.of("Transitionless Failure Input stack: " + inputs.toString() + " Output stack: " + outputs.toString()));
+		}
+
+		return Stream.empty();
 	}
 }

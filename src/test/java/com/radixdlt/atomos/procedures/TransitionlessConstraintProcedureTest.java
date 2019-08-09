@@ -55,6 +55,6 @@ public class TransitionlessConstraintProcedureTest {
 			mock(AtomMetadata.class)
 		);
 
-		assertThat(errors).anyMatch(e -> e.getErrMsg().contains("cannot be DOWN"));
+		assertThat(errors).isNotEmpty();
 	}
 }
