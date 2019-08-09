@@ -7,6 +7,7 @@ import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.AtomMetadata;
 import com.radixdlt.constraintmachine.ParticleProcedure;
 import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.UInt256s;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -62,7 +63,7 @@ public class FungibleParticlesProcedureBuilder {
 					outputs.pop();
 					Object outputMeta = top.getSecond();
 					UInt256 outputAmount = outputMeta == null ? fungibles.get(toParticle.getClass()).mapToAmount(toParticle) : (UInt256) outputMeta;
-					UInt256 min = UInt256.min(currentInput, outputAmount);
+					UInt256 min = UInt256s.min(currentInput, outputAmount);
 					UInt256 newOutputAmount = outputAmount.subtract(min);
 					if (!newOutputAmount.isZero()) {
 						outputs.push(Pair.of(toParticle, newOutputAmount));
