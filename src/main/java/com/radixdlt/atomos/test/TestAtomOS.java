@@ -11,7 +11,6 @@ import com.radixdlt.atoms.Particle;
 import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.AtomMetadata;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -76,8 +75,7 @@ public class TestAtomOS implements AtomOS {
 			fungibleDefinitions.add(pendingFungibleTransition.build());
 		}
 
-		FungibleDefinition.Builder<T> transitionBuilder = new FungibleDefinition.Builder<T>()
-			.of(particleClass, particleToAmountMapper);
+		FungibleDefinition.Builder<T> transitionBuilder = new FungibleDefinition.Builder<T>().amountMapper(particleToAmountMapper);
 		pendingFungibleTransition = transitionBuilder;
 
 		return new FungibleTransitionConstraint<T>() {

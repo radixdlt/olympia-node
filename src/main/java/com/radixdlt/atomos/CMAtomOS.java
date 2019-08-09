@@ -135,8 +135,7 @@ public final class CMAtomOS {
 					throw new IllegalStateException(particleClass + " already registered as fungible.");
 				}
 
-				FungibleDefinition.Builder<T> fungibleBuilder = new FungibleDefinition.Builder<T>()
-					.of(particleClass, particleToAmountMapper);
+				FungibleDefinition.Builder<T> fungibleBuilder = new FungibleDefinition.Builder<T>().amountMapper(particleToAmountMapper);
 				fungibles.put(particleClass, fungibleBuilder);
 
 				return new FungibleTransitionConstraint<T>() {

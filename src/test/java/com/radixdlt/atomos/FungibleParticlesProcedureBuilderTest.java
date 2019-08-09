@@ -40,7 +40,7 @@ public class FungibleParticlesProcedureBuilderTest {
 		ParticleProcedure procedure = new FungibleParticlesProcedureBuilder()
 			.add(Fungible.class,
 				new FungibleDefinition.Builder<Fungible>()
-					.of(Fungible.class, Fungible::getAmount)
+					.amountMapper(Fungible::getAmount)
 					.to(Fungible.class, (a, b) -> Result.success(), (a, b) -> true)
 					.build()
 			)
@@ -58,7 +58,7 @@ public class FungibleParticlesProcedureBuilderTest {
 		ParticleProcedure procedure = new FungibleParticlesProcedureBuilder()
 			.add(Fungible.class,
 				new FungibleDefinition.Builder<Fungible>()
-					.of(Fungible.class, Fungible::getAmount)
+					.amountMapper(Fungible::getAmount)
 					.to(Fungible.class, (a, b) -> Result.success(), (a, b) -> true)
 					.build()
 			)
@@ -76,7 +76,7 @@ public class FungibleParticlesProcedureBuilderTest {
 		ParticleProcedure procedure = new FungibleParticlesProcedureBuilder()
 			.add(Fungible.class,
 				new FungibleDefinition.Builder<Fungible>()
-					.of(Fungible.class, Fungible::getAmount)
+					.amountMapper(Fungible::getAmount)
 					.to(Fungible.class, (a, b) -> Result.success(), (a, b) -> true)
 					.build()
 			)
@@ -97,7 +97,7 @@ public class FungibleParticlesProcedureBuilderTest {
 		ParticleProcedure procedure = new FungibleParticlesProcedureBuilder()
 			.add(Fungible.class,
 				new FungibleDefinition.Builder<Fungible>()
-					.of(Fungible.class, Fungible::getAmount)
+					.amountMapper(Fungible::getAmount)
 					.to(Fungible.class, (a, b) -> Result.success(), (a, b) -> true)
 					.build()
 			)
@@ -118,13 +118,13 @@ public class FungibleParticlesProcedureBuilderTest {
 		ParticleProcedure procedure = new FungibleParticlesProcedureBuilder()
 			.add(Fungible.class,
 				new FungibleDefinition.Builder<Fungible>()
-					.of(Fungible.class, Fungible::getAmount)
+					.amountMapper(Fungible::getAmount)
 					.to(Fungible2.class, (a, b) -> Result.success(), (a, b) -> true)
 					.build()
 			)
 			.add(Fungible2.class,
 				new FungibleDefinition.Builder<Fungible2>()
-					.of(Fungible2.class, Fungible2::getAmount)
+					.amountMapper(Fungible2::getAmount)
 					.to(Fungible2.class, (a, b) -> Result.success(), (a, b) -> true)
 					.build()
 			)

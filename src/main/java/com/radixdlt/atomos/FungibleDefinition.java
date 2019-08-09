@@ -10,16 +10,13 @@ import java.util.Objects;
 import java.util.function.BiPredicate;
 
 public final class FungibleDefinition<T extends Particle> {
-	private final Class<T> inputParticleClass;
 	private final ParticleToAmountMapper<T> inputParticleToAmountMapper;
 	private final Map<Class<? extends Particle>, FungibleFormula> particleTypeToFormulasMap;
 
 	private FungibleDefinition(
-		Class<T> inputParticleClass,
 		ParticleToAmountMapper<T> inputParticleToAmountMapper,
 		Map<Class<? extends Particle>, FungibleFormula> particleTypeToFormulasMap
 	) {
-		this.inputParticleClass = inputParticleClass;
 		this.inputParticleToAmountMapper = inputParticleToAmountMapper;
 		this.particleTypeToFormulasMap = particleTypeToFormulasMap;
 	}
@@ -33,12 +30,10 @@ public final class FungibleDefinition<T extends Particle> {
 	}
 
 	public static <T extends Particle> FungibleDefinition<T> of(
-		Class<T> outputClass,
 		ParticleToAmountMapper<T> outputToAmountMapper,
 		Map<Class<? extends Particle>, FungibleFormula> particleTypeToFormulasMap
 	) {
 
-		Objects.requireNonNull(outputClass, "outputClass is required");
 		Objects.requireNonNull(outputToAmountMapper, "outputToAmountMapper is required");
 		Objects.requireNonNull(particleTypeToFormulasMap);
 
@@ -46,24 +41,18 @@ public final class FungibleDefinition<T extends Particle> {
 			throw new IllegalArgumentException("One of formulas or initial constraint must be defined");
 		}
 
-		return new FungibleDefinition<>(outputClass, outputToAmountMapper, particleTypeToFormulasMap);
+		return new FungibleDefinition<>(outputToAmountMapper, particleTypeToFormulasMap);
 	}
 
 	public static class Builder<T extends Particle> {
-		private Class<T> inputParticleClass;
 		private ParticleToAmountMapper<T> inputParticleToAmountMapper;
 		private final ImmutableMap.Builder<Class<? extends Particle>, FungibleFormula> particleTypeToFormulasMapBuilder = new ImmutableMap.Builder<>();
 
 		public Builder() {
 		}
 
-		public Builder<T> of(
-			Class<T> inputParticleClass,
-			ParticleToAmountMapper<T> inputParticleToAmountMapper
-		) {
-			this.inputParticleClass = inputParticleClass;
+		public Builder<T> amountMapper(ParticleToAmountMapper<T> inputParticleToAmountMapper) {
 			this.inputParticleToAmountMapper = inputParticleToAmountMapper;
-
 			return this;
 		}
 
@@ -73,12 +62,10 @@ public final class FungibleDefinition<T extends Particle> {
 			BiPredicate<T, U> transition
 		) {
 			particleTypeToFormulasMapBuilder.put(toParticleClass, new FungibleFormula((WitnessValidator<Particle>)witnessValidator, transition));
-
 			return this;
 		}
 
 		public FungibleDefinition<T> build() {
-			Objects.requireNonNull(inputParticleClass, "Unfinished transition, output class must be defined.");
 			Objects.requireNonNull(inputParticleToAmountMapper, "Unfinished transition, output amount mapper must be defined.");
 
 			Map<Class<? extends Particle>, FungibleFormula> particleTypeToFormulasMap = particleTypeToFormulasMapBuilder.build();
@@ -88,7 +75,6 @@ public final class FungibleDefinition<T extends Particle> {
 			}
 
 			return FungibleDefinition.of(
-				inputParticleClass,
 				inputParticleToAmountMapper,
 				particleTypeToFormulasMap
 			);
