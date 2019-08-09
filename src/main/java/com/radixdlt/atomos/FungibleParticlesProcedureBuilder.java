@@ -1,30 +1,34 @@
-package com.radixdlt.atomos.procedures;
+package com.radixdlt.atomos;
 
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.atomos.FungibleFormula;
-import com.radixdlt.atomos.FungibleDefinition;
+import com.google.common.collect.ImmutableMap.Builder;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.AtomMetadata;
-import com.radixdlt.constraintmachine.ConstraintProcedure;
+import com.radixdlt.constraintmachine.ParticleProcedure;
 import com.radixdlt.utils.UInt256;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Stack;
 
 /**
  * Low-level implementation of fungible transition constraints.
  */
-public class FungibleTransitionConstraintProcedure implements ConstraintProcedure {
-	private final Map<Class<? extends Particle>, FungibleDefinition<? extends Particle>> fungibles;
-	private final Map<Class<? extends Particle>, ParticleProcedure> procedures = new HashMap<>();
+public class FungibleParticlesProcedureBuilder {
 
-	public FungibleTransitionConstraintProcedure(ImmutableMap<Class<? extends Particle>, FungibleDefinition<? extends Particle>> fungibles) {
-		Objects.requireNonNull(fungibles);
+	private final ImmutableMap.Builder<Class<? extends Particle>, FungibleDefinition<? extends Particle>> fungibleDefinitionBuilder = new Builder<>();
 
-		this.fungibles = fungibles;
+	public FungibleParticlesProcedureBuilder() {
+	}
+
+	public <T extends Particle> FungibleParticlesProcedureBuilder add(Class<T> particleClass, FungibleDefinition<? extends Particle> definition) {
+		fungibleDefinitionBuilder.put(particleClass, definition);
+		return this;
+	}
+
+	public Map<Class<? extends Particle>, ParticleProcedure> build() {
+		final Map<Class<? extends Particle>, FungibleDefinition<? extends Particle>> fungibles = fungibleDefinitionBuilder.build();
 
 		for (Entry<Class<? extends Particle>, FungibleDefinition<? extends Particle>> e : fungibles.entrySet()) {
 			if (!fungibles.keySet().containsAll(e.getValue().getParticleClassToFormulaMap().keySet())) {
@@ -32,7 +36,8 @@ public class FungibleTransitionConstraintProcedure implements ConstraintProcedur
 			}
 		}
 
-		this.fungibles.forEach((p, d) -> procedures.put(p, new ParticleProcedure() {
+		final Map<Class<? extends Particle>, ParticleProcedure> procedures = new HashMap<>();
+		fungibles.forEach((p, d) -> procedures.put(p, new ParticleProcedure() {
 			@Override
 			public boolean inputExecute(Particle input, AtomMetadata metadata, Stack<Pair<Particle, Object>> outputs) {
 				UInt256 currentInput = fungibles.get(input.getClass()).mapToAmount(input);
@@ -74,10 +79,6 @@ public class FungibleTransitionConstraintProcedure implements ConstraintProcedur
 				return false;
 			}
 		}));
-	}
-
-	@Override
-	public Map<Class<? extends Particle>, ParticleProcedure> getProcedures() {
 		return procedures;
 	}
 }

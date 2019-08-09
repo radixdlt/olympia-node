@@ -1,10 +1,10 @@
-package com.radixdlt.atomos.procedures;
+package com.radixdlt.atomos;
 
-import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.atomos.mapper.ParticleToRRIMapper;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.AtomMetadata;
+import com.radixdlt.constraintmachine.ParticleProcedure;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Stack;

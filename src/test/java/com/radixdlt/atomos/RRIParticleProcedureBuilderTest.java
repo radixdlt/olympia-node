@@ -1,4 +1,4 @@
-package com.radixdlt.atomos.procedures;
+package com.radixdlt.atomos;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -7,11 +7,13 @@ import static org.mockito.Mockito.when;
 
 import com.radixdlt.atomos.RRI;
 import com.radixdlt.atomos.RRIParticle;
+import com.radixdlt.atomos.RRIParticleProcedureBuilder;
 import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.common.EUID;
 import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.AtomMetadata;
+import com.radixdlt.constraintmachine.ParticleProcedure;
 import java.util.Stack;
 import org.junit.Test;
 

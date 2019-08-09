@@ -1,4 +1,4 @@
-package com.radixdlt.atomos.procedures;
+package com.radixdlt.atomos;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -7,6 +7,8 @@ import static org.mockito.Mockito.when;
 
 import com.radixdlt.atomos.AtomOS.WitnessValidator;
 import com.radixdlt.atomos.Result;
+import com.radixdlt.atomos.TransitionlessParticlesProcedureBuilder;
+import com.radixdlt.constraintmachine.ParticleProcedure;
 import java.util.Stack;
 
 import org.junit.Test;

@@ -1,10 +1,11 @@
-package com.radixdlt.atomos.procedures;
+package com.radixdlt.atomos;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atomos.AtomOS.WitnessValidator;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.AtomMetadata;
+import com.radixdlt.constraintmachine.ParticleProcedure;
 import java.util.Stack;
 
 /**

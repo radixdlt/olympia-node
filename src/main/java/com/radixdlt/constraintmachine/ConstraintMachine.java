@@ -4,7 +4,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Streams;
-import com.radixdlt.atomos.procedures.ParticleProcedure;
 import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.atoms.ParticleGroup;
 import com.radixdlt.atoms.Spin;

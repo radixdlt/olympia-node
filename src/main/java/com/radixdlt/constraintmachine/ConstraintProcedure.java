@@ -1,11 +1,7 @@
 package com.radixdlt.constraintmachine;
 
-import com.radixdlt.atomos.procedures.ParticleProcedure;
 import com.radixdlt.atoms.Particle;
-import com.radixdlt.atoms.ParticleGroup;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Stream;
 
 /**
  * Temporary helper class in transforming constraint to validator.

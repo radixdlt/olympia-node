@@ -1,6 +1,5 @@
 package com.radixdlt.atomos;
 
-import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atomos.AtomOSKernel.AtomKernelCompute;
 import com.radixdlt.common.Pair;
 import com.radixdlt.compute.AtomCompute;
@@ -11,7 +10,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiPredicate;
@@ -23,9 +21,6 @@ import com.radixdlt.atomos.mapper.ParticleToAmountMapper;
 import com.radixdlt.atomos.mapper.ParticleToRRIMapper;
 import com.radixdlt.atomos.mapper.ParticleToShardableMapper;
 import com.radixdlt.atomos.mapper.ParticleToShardablesMapper;
-import com.radixdlt.atomos.procedures.TransitionlessParticlesProcedureBuilder;
-import com.radixdlt.atomos.procedures.RRIParticleProcedureBuilder;
-import com.radixdlt.atomos.procedures.FungibleTransitionConstraintProcedure;
 import com.radixdlt.constraintmachine.ConstraintMachine.Builder;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.KernelConstraintProcedure;
@@ -223,14 +218,9 @@ public final class CMAtomOS {
 
 		// Add a constraint for fungibles if any were added
 		if (!this.fungibles.isEmpty()) {
-			ImmutableMap<Class<? extends Particle>, FungibleDefinition<? extends Particle>> transitions =
-				this.fungibles.entrySet().stream()
-					.collect(ImmutableMap.toImmutableMap(
-						Entry::getKey,
-						e -> e.getValue().build()
-					));
-			new FungibleTransitionConstraintProcedure(transitions).getProcedures()
-				.forEach(cmBuilder::addProcedure);
+			FungibleParticlesProcedureBuilder fungibleBuilder = new FungibleParticlesProcedureBuilder();
+			this.fungibles.forEach((c, b) -> fungibleBuilder.add(c, b.build()));
+			fungibleBuilder.build().forEach(cmBuilder::addProcedure);
 		}
 
 		// Add constraint for RRI state machines
