@@ -1,8 +1,10 @@
 package com.radixdlt.atomos;
 
+import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atomos.AtomOSKernel.AtomKernelCompute;
 import com.radixdlt.common.Pair;
 import com.radixdlt.compute.AtomCompute;
+import com.radixdlt.constraintmachine.ParticleProcedure;
 import com.radixdlt.store.CMStore;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -215,18 +217,22 @@ public final class CMAtomOS {
 
 		this.kernelProcedures.forEach(cmBuilder::addProcedure);
 
+		ImmutableMap.Builder<Class<? extends Particle>, ParticleProcedure> particleProceduresBuilder = new ImmutableMap.Builder<>();
 		// Add a constraint for fungibles if any were added
 		if (!this.fungibles.isEmpty()) {
 			FungibleParticlesProcedureBuilder fungibleBuilder = new FungibleParticlesProcedureBuilder();
 			this.fungibles.forEach((c, b) -> fungibleBuilder.add(c, b.build()));
-			fungibleBuilder.build().forEach(cmBuilder::addProcedure);
+			fungibleBuilder.build().forEach(particleProceduresBuilder::put);
 		}
 
 		// Add constraint for RRI state machines
-		cmBuilder.addProcedure(RRIParticle.class, this.rriProcedureBuilder.build());
+		particleProceduresBuilder.put(RRIParticle.class, this.rriProcedureBuilder.build());
 
 		// Add constraint for Transitionless state machines
-		this.payloadProcedureBuilder.build().forEach(cmBuilder::addProcedure);
+		this.payloadProcedureBuilder.build().forEach(particleProceduresBuilder::put);
+
+		final ImmutableMap<Class<? extends Particle>, ParticleProcedure> particleProcedures = particleProceduresBuilder.build();
+		cmBuilder.setParticleProcedures(p -> particleProcedures.get(p.getClass()));
 
 		UnaryOperator<CMStore> rriTransformer = base ->
 			CMStores.virtualizeDefault(base, p -> p instanceof RRIParticle && ((RRIParticle) p).getNonce() == 0, Spin.UP);
