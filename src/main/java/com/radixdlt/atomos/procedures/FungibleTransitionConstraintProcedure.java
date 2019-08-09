@@ -1,7 +1,6 @@
 package com.radixdlt.atomos.procedures;
 
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.atomos.AtomOS.ParticleClassWithSideEffectConstraintCheck;
 import com.radixdlt.atomos.FungibleFormula;
 import com.radixdlt.atomos.FungibleDefinition;
 import com.radixdlt.atoms.Particle;
@@ -14,13 +13,10 @@ import com.radixdlt.constraintmachine.ConstraintProcedure;
 import com.radixdlt.constraintmachine.ProcedureError;
 import com.radixdlt.utils.UInt256;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.Set;
 import java.util.Stack;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -113,31 +109,7 @@ public class FungibleTransitionConstraintProcedure implements ConstraintProcedur
 		}
 
 		if (!outputs.empty()) {
-			final List<Particle> outputParticles = outputs.stream().map(Pair::getFirst).collect(Collectors.toList());
-			final Set<Particle> otherOutput = group.particles(Spin.UP).collect(Collectors.toSet());
-			for (Particle p : outputParticles) {
-				Particle remove = null;
-				FungibleDefinition<? extends Particle> transition = fungibles.get(p.getClass());
-				if (transition != null && transition.getInitialWithConstraint() != null) {
-					Class<? extends Particle> initialWithClass = transition.getInitialWithConstraint().getFirst();
-					for (Particle other : otherOutput) {
-						if (other.getClass() == initialWithClass) {
-							ParticleClassWithSideEffectConstraintCheck<Particle, Particle> check = (ParticleClassWithSideEffectConstraintCheck<Particle, Particle>) transition
-								.getInitialWithConstraint().getSecond();
-							if (check.check(p, other, metadata).isSuccess()) {
-								remove = other;
-								break;
-							}
-						}
-					}
-				}
-
-				if (remove != null) {
-					otherOutput.remove(remove);
-				} else {
-					return Stream.of(ProcedureError.of("Fungible failure Output stack: " + outputs.toString()));
-				}
-			}
+			return Stream.of(ProcedureError.of("Fungible failure Output stack: " + outputs.toString()));
 		}
 
 		return Stream.empty();

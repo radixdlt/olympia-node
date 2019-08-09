@@ -27,11 +27,7 @@ import java.util.stream.Stream;
 public class TestAtomOS implements AtomOS {
 	private final Map<Class<? extends Particle>, ParticleToRRIMapper<Particle>> resources = new HashMap<>();
 	private final List<Pair<Class<? extends Particle>, BiFunction<Particle, AtomMetadata, Result>>> particleClassConstraints = new ArrayList<>();
-	private final List<Pair<Pair<Class<? extends Particle>, Class<? extends Particle>>,
-		ParticleClassWithDependenceConstraintCheck<? extends Particle, ?>>> particleClassWithDependencyConstraints = new ArrayList<>();
 	private final List<FungibleDefinition<? extends Particle>> fungibleDefinitions = new ArrayList<>();
-	private final List<Pair<Pair<Class<? extends Particle>, Class<? extends Particle>>,
-		ParticleClassWithSideEffectConstraintCheck<? extends Particle, ?>>> particleClassWithSideEffectConstraints = new ArrayList<>();
 	private FungibleDefinition.Builder<? extends Particle> pendingFungibleTransition = null;
 
 	@Override
@@ -72,7 +68,7 @@ public class TestAtomOS implements AtomOS {
 	}
 
 	@Override
-	public <T extends Particle> FungibleTransitionConstraintStub<T> onFungible(
+	public <T extends Particle> FungibleTransitionConstraint<T> onFungible(
 		Class<T> particleClass,
 		ParticleToAmountMapper<T> particleToAmountMapper
 	) {
@@ -84,16 +80,7 @@ public class TestAtomOS implements AtomOS {
 			.of(particleClass, particleToAmountMapper);
 		pendingFungibleTransition = transitionBuilder;
 
-		return new FungibleTransitionConstraintStub<T>() {
-			@Override
-			public <U extends Particle> FungibleTransitionConstraint<T> requireInitialWith(
-				Class<U> sideEffectClass,
-				ParticleClassWithSideEffectConstraintCheck<T, U> constraint
-			) {
-				transitionBuilder.initialWith(sideEffectClass, constraint);
-				return this::transitionTo;
-			}
-
+		return new FungibleTransitionConstraint<T>() {
 			@Override
 			public <U extends Particle> FungibleTransitionConstraint<T> transitionTo(
 				Class<U> particleClass,
@@ -131,76 +118,5 @@ public class TestAtomOS implements AtomOS {
 		final List<Result> results = Stream.concat(resourceSigned, classConstraintResults).collect(Collectors.toList());
 
 		return new TestResult(results);
-	}
-
-	/**
-	 * Mimics a constraint check call to a particle class with dependency constraint
-	 *
-	 * @param dependent The dependent
-	 * @param dependency The dependency
-	 * @param metadata The metadata
-	 * @param <T> The dependent class
-	 * @param <U> The dependency class
-	 * @return list of results of each checker
-	 */
-	public <T extends Particle, U extends Particle> TestResult testParticleClassWithDependency(T dependent, U dependency, AtomMetadata metadata) {
-		return testParticleClassWithDependency(Arrays.asList(dependent), dependency, metadata);
-	}
-
-	/**
-	 * Mimics a constraint check call to a particle class with dependency constraint
-	 *
-	 * @param dependents The dependents
-	 * @param dependency The dependency
-	 * @param metadata The metadata
-	 * @param <T> The dependent class
-	 * @param <U> The dependency class
-	 * @return list of results of each checker
-	 */
-	public <T extends Particle, U extends Particle> TestResult testParticleClassWithDependency(
-		List<T> dependents,
-		U dependency,
-		AtomMetadata metadata
-	) {
-		if (dependents.isEmpty()) {
-			throw new IllegalStateException("No dependents");
-		}
-
-		final List<Result> results = particleClassWithDependencyConstraints.stream()
-			.filter(p -> p.getFirst().getFirst().isAssignableFrom(dependents.get(0).getClass()))
-			.filter(p -> p.getFirst().getSecond().isAssignableFrom(dependency.getClass()))
-			.map(Pair::getSecond)
-			.map(constraint -> ((ParticleClassWithDependenceConstraintCheck<T, U>) constraint).check(dependents, dependency, metadata))
-			.collect(Collectors.toList());
-
-		return new TestResult(results);
-	}
-
-	/**
-	 * Mimics a constraint check call to a particle class with side effect
-	 *
-	 * @param particle The particle
-	 * @param sideEffect The side effect
-	 * @param metadata The metadata
-	 * @param <T> The particle type
-	 * @param <U> The side effect type
-	 * @return list of results of each checkers
-	 */
-	public <T extends Particle, U extends Particle> TestResult testParticleClassWithSideEffect(T particle, U sideEffect, AtomMetadata metadata) {
-		final List<Result> results = particleClassWithSideEffectConstraints.stream()
-			.filter(p -> p.getFirst().getFirst().isAssignableFrom(particle.getClass()))
-			.filter(p -> p.getFirst().getSecond().isAssignableFrom(sideEffect.getClass()))
-			.map(Pair::getSecond)
-			.map(constraint -> ((ParticleClassWithSideEffectConstraintCheck<T, U>) constraint).check(particle, sideEffect, metadata))
-			.collect(Collectors.toList());
-
-		return new TestResult(results);
-	}
-
-	private void completePendingFungibleTransition() {
-		if (pendingFungibleTransition != null) {
-			fungibleDefinitions.add(pendingFungibleTransition.build());
-			pendingFungibleTransition = null;
-		}
 	}
 }

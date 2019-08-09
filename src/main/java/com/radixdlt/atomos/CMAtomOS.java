@@ -128,7 +128,7 @@ public final class CMAtomOS {
 			}
 
 			@Override
-			public <T extends Particle> FungibleTransitionConstraintStub<T> onFungible(
+			public <T extends Particle> FungibleTransitionConstraint<T> onFungible(
 				Class<T> particleClass,
 				ParticleToAmountMapper<T> particleToAmountMapper
 			) {
@@ -144,20 +144,7 @@ public final class CMAtomOS {
 					.of(particleClass, particleToAmountMapper);
 				fungibles.put(particleClass, fungibleBuilder);
 
-				return new FungibleTransitionConstraintStub<T>() {
-					@Override
-					public <U extends Particle> FungibleTransitionConstraint<T> requireInitialWith(
-						Class<U> sideEffectClass,
-						ParticleClassWithSideEffectConstraintCheck<T, U> constraint
-					) {
-						if (!scryptParticleClasses.containsKey(sideEffectClass)) {
-							throw new IllegalStateException(sideEffectClass + " must be registered in calling scrypt.");
-						}
-
-						fungibleBuilder.initialWith(sideEffectClass, constraint);
-						return this::transitionTo;
-					}
-
+				return new FungibleTransitionConstraint<T>() {
 					@Override
 					public <U extends Particle> FungibleTransitionConstraint<T> transitionTo(
 						Class<U> toParticleClass,

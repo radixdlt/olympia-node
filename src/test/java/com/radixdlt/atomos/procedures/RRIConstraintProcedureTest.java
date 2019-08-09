@@ -1,7 +1,6 @@
 package com.radixdlt.atomos.procedures;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -10,12 +9,10 @@ import com.radixdlt.atomos.RRI;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.atoms.Particle;
-import com.radixdlt.atoms.ParticleGroup;
-import com.radixdlt.atoms.SpunParticle;
 import com.radixdlt.common.EUID;
+import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.AtomMetadata;
-import com.radixdlt.constraintmachine.ProcedureError;
-import java.util.stream.Stream;
+import java.util.Stack;
 import org.junit.Test;
 
 public class RRIConstraintProcedureTest {
@@ -33,7 +30,7 @@ public class RRIConstraintProcedureTest {
 	}
 
 	@Test
-	public void when_an_rri_is_consumed_with_a_corresponding_particle__then_an_issue_should_not_be_raised() {
+	public void when_an_rri_is_consumed_with_a_corresponding_particle__then_an_input_should_succeed_and_stack_is_empty() {
 		RRIConstraintProcedure procedure = new RRIConstraintProcedure.Builder()
 			.add(CustomParticle.class, CustomParticle::getRRI)
 			.build();
@@ -49,19 +46,17 @@ public class RRIConstraintProcedureTest {
 		CustomParticle customParticle = mock(CustomParticle.class);
 		when(customParticle.getRRI()).thenReturn(rri);
 
-		Stream<ProcedureError> issues = procedure.validate(
-			ParticleGroup.of(
-				SpunParticle.down(new RRIParticle(rri)),
-				SpunParticle.up(customParticle)
-			),
-			metadata
-		);
+		Stack<Pair<Particle, Object>> stack = new Stack<>();
+		stack.push(Pair.of(customParticle, null));
+		boolean succeed = procedure.getProcedures().get(RRIParticle.class)
+			.inputExecute(new RRIParticle(rri), metadata, stack);
 
-		assertThat(issues).isEmpty();
+		assertThat(succeed).isTrue();
+		assertThat(stack).isEmpty();
 	}
 
 	@Test
-	public void when_an_rri_is_consumed_without_a_corresponding_particle__then_an_issue_should_be_raised() {
+	public void when_an_rri_is_consumed_without_a_corresponding_particle__then_input_should_fail() {
 		RRIConstraintProcedure procedure = new RRIConstraintProcedure.Builder()
 			.build();
 
@@ -73,58 +68,11 @@ public class RRIConstraintProcedureTest {
 		AtomMetadata metadata = mock(AtomMetadata.class);
 		when(metadata.isSignedBy(eq(address))).thenReturn(true);
 
-		Stream<ProcedureError> issues = procedure.validate(
-			ParticleGroup.of(
-				SpunParticle.down(new RRIParticle(rri)),
-				SpunParticle.up(mock(CustomParticle.class))
-			),
-			metadata
-		);
+		Stack<Pair<Particle, Object>> stack = new Stack<>();
+		stack.push(Pair.of(mock(CustomParticle.class), null));
+		boolean succeed = procedure.getProcedures().get(RRIParticle.class)
+			.inputExecute(new RRIParticle(rri), metadata, stack);
 
-		assertThat(issues).isNotEmpty();
-	}
-
-	@Test
-	public void when_an_indexed_particle_is_consumed__then_an_issue_should_be_raised() {
-		RRIConstraintProcedure procedure = new RRIConstraintProcedure.Builder()
-			.add(CustomParticle.class, CustomParticle::getRRI)
-			.build();
-
-		AtomMetadata metadata = mock(AtomMetadata.class);
-		when(metadata.isSignedBy(any())).thenReturn(true);
-
-		CustomParticle customParticle = mock(CustomParticle.class);
-
-		Stream<ProcedureError> issues = procedure.validate(
-			ParticleGroup.of(
-				SpunParticle.down(customParticle)
-			),
-			metadata
-		);
-
-		assertThat(issues).isNotEmpty();
-	}
-
-	@Test
-	public void when_an_rri_is_created__then_an_issue_should_be_raised() {
-		RRIConstraintProcedure procedure = new RRIConstraintProcedure.Builder()
-			.build();
-
-		RadixAddress address = mock(RadixAddress.class);
-		when(address.getUID()).thenReturn(EUID.ONE);
-		RRI rri = mock(RRI.class);
-		when(rri.getAddress()).thenReturn(address);
-
-		AtomMetadata metadata = mock(AtomMetadata.class);
-		when(metadata.isSignedBy(eq(address))).thenReturn(true);
-
-		Stream<ProcedureError> issues = procedure.validate(
-			ParticleGroup.of(
-				SpunParticle.up(new RRIParticle(rri))
-			),
-			metadata
-		);
-
-		assertThat(issues).isNotEmpty();
+		assertThat(succeed).isFalse();
 	}
 }

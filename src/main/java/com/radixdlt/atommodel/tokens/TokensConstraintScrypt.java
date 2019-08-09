@@ -118,11 +118,6 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			UnallocatedTokensParticle.class,
 			UnallocatedTokensParticle::getAmount
 		)
-			.requireInitialWith(TokenDefinitionParticle.class, (unallocated, tokDef, meta) -> Result.combine(
-				Result.of(unallocated.getTokDefRef().equals(tokDef.getRRI()), "TokenDefRef should be the same"),
-				Result.of(unallocated.getGranularity().equals(tokDef.getGranularity()), "Granularity should be the same"),
-				Result.of(unallocated.getTokenPermissions().equals(tokDef.getTokenPermissions()), "Permissions should be the same")
-			))
 			.transitionTo(
 				UnallocatedTokensParticle.class,
 				(from, to) ->

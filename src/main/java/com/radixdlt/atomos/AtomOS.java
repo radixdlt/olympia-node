@@ -31,6 +31,23 @@ public interface AtomOS {
 	 */
 	<T extends Particle> void registerParticle(Class<T> particleClass, ParticleToShardableMapper<T> mapper);
 
+
+	/**
+	 * System call endpoint which allows an atom model application to program constraints
+	 * against an instance of a particle with a given particle class (i.e. a stateless check
+	 * just the particle itself).
+	 *
+	 * This endpoint returns a callback on which the application must define the constraint.
+	 * This function MUST be a pure function (i.e. no states)
+	 *
+	 * @param <T> particle class to add a constraint to
+	 * @param particleClass particle class to add a constraint to
+	 * @return a callback function onto which the constraint will be defined
+	 */
+	default <T extends Particle> ParticleClassConstraint<T> on(Class<T> particleClass) {
+		return check -> { };
+	}
+
 	/**
 	 * System call endpoint which allows an atom model application to program constraints
 	 * against a particle class and an getDestinations over that class.
@@ -68,28 +85,12 @@ public interface AtomOS {
 	 * @param <T> type of particle class to add a constraint to
 	 * @return a callback function onto which the constraint will be defined
 	 */
-	<T extends Particle> FungibleTransitionConstraintStub<T> onFungible(
+	<T extends Particle> FungibleTransitionConstraint<T> onFungible(
 		Class<T> particleClass,
 		ParticleToAmountMapper<T> particleToAmountMapper
 	);
 
 	<T extends Particle> TransitionlessParticleClassConstraint<T> onTransitionless(Class<T> particleClass);
-
-	/**
-	 * System call endpoint which allows an atom model application to program constraints
-	 * against an instance of a particle with a given particle class (i.e. a stateless check
-	 * just the particle itself).
-	 *
-	 * This endpoint returns a callback on which the application must define the constraint.
-	 * This function MUST be a pure function (i.e. no states)
-	 *
-	 * @param <T> particle class to add a constraint to
-	 * @param particleClass particle class to add a constraint to
-	 * @return a callback function onto which the constraint will be defined
-	 */
-	default <T extends Particle> ParticleClassConstraint<T> on(Class<T> particleClass) {
-		return check -> { };
-	}
 
 	interface TransitionlessParticleClassConstraint<T extends Particle> {
 		/**
@@ -114,16 +115,6 @@ public interface AtomOS {
 	}
 
 	@FunctionalInterface
-	interface ParticleClassWithDependenceConstraintCheck<T extends Particle, U extends Particle> {
-		Result check(List<T> nextState, U dependency, AtomMetadata meta);
-	}
-
-	@FunctionalInterface
-	interface ParticleClassWithSideEffectConstraintCheck<T extends Particle, U extends Particle> {
-		Result check(T particle, U sideEffect, AtomMetadata meta);
-	}
-
-	@FunctionalInterface
 	interface WitnessValidator<T extends Particle> {
 		/**
 		 * @param fromParticle The particle we transition from
@@ -131,28 +122,6 @@ public interface AtomOS {
 		 * @return A {@link Result} of the check
 		 */
 		Result validate(T fromParticle, AtomMetadata metadata);
-	}
-
-	/**
-	 * Callback stub for defining the kind of a fungible transition, either initial or with input.
-	 * Returns a {@link FungibleTransitionConstraint} callback where further formulas can be defined.
-	 * @param <T>
-	 */
-	interface FungibleTransitionConstraintStub<T extends Particle> {
-		/**
-		 * Define an 'initial' state transition dependent on another particle state.
-		 * FIXME: this is very obviously a bad interface due to it not working on the fungible level
-		 * FIXME: but good enough for now without a big refactor of the fungible system
-		 * @return self, the callback to define further constraints
-		 */
-		 <U extends Particle> FungibleTransitionConstraint<T> requireInitialWith(Class<U> sideEffectClass,
-			 ParticleClassWithSideEffectConstraintCheck<T, U> constraint);
-
-		<U extends Particle> FungibleTransitionConstraint<T> transitionTo(
-			Class<U> outputClass,
-			BiPredicate<T, U> fungibleValidator,
-			WitnessValidator<T> witnessValidator
-		);
 	}
 
 	/**
@@ -167,5 +136,4 @@ public interface AtomOS {
 			WitnessValidator<T> witnessValidator
 		);
 	}
-
 }
