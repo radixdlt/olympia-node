@@ -9,6 +9,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiPredicate;
 
+/**
+ * Defines how a particle maps for fungibility
+ *
+ * @param <T> particle type
+ */
 public final class FungibleDefinition<T extends Particle> {
 	private final ParticleToAmountMapper<T> inputParticleToAmountMapper;
 	private final Map<Class<? extends Particle>, FungibleFormula> particleTypeToFormulasMap;
