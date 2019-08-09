@@ -4,20 +4,15 @@ import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atomos.FungibleFormula;
 import com.radixdlt.atomos.FungibleDefinition;
 import com.radixdlt.atoms.Particle;
-import com.radixdlt.atoms.ParticleGroup;
-import com.radixdlt.atoms.Spin;
-import com.radixdlt.atoms.SpunParticle;
 import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.AtomMetadata;
 import com.radixdlt.constraintmachine.ConstraintProcedure;
-import com.radixdlt.constraintmachine.ProcedureError;
 import com.radixdlt.utils.UInt256;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Stack;
-import java.util.stream.Stream;
 
 /**
  * Low-level implementation of fungible transition constraints.
@@ -84,34 +79,5 @@ public class FungibleTransitionConstraintProcedure implements ConstraintProcedur
 	@Override
 	public Map<Class<? extends Particle>, ParticleProcedure> getProcedures() {
 		return procedures;
-	}
-
-	@Override
-	public Stream<ProcedureError> validate(ParticleGroup group, AtomMetadata metadata) {
-		final Stack<Pair<Particle, Object>> outputs = new Stack<>();
-
-		for (int i = group.getParticleCount() - 1; i >= 0; i--) {
-			SpunParticle sp = group.getSpunParticle(i);
-			Particle p = sp.getParticle();
-			ParticleProcedure particleProcedure = this.procedures.get(p.getClass());
-			if (particleProcedure == null) {
-				continue;
-			}
-			if (sp.getSpin() == Spin.DOWN) {
-				if (!particleProcedure.inputExecute(p, metadata, outputs)) {
-					return Stream.of(ProcedureError.of("Fungible Failure Input " + p + " failed. Output stack: " + outputs));
-				}
-			} else {
-				if (!particleProcedure.outputExecute(p, metadata)) {
-					outputs.push(Pair.of(p, null));
-				}
-			}
-		}
-
-		if (!outputs.empty()) {
-			return Stream.of(ProcedureError.of("Fungible failure Output stack: " + outputs.toString()));
-		}
-
-		return Stream.empty();
 	}
 }

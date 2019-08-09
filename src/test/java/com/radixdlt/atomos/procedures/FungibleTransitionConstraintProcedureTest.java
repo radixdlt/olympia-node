@@ -7,14 +7,10 @@ import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atomos.FungibleDefinition;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atoms.Particle;
-import com.radixdlt.atoms.ParticleGroup;
-import com.radixdlt.atoms.SpunParticle;
 import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.AtomMetadata;
-import com.radixdlt.constraintmachine.ProcedureError;
 import com.radixdlt.utils.UInt256;
 import java.util.Stack;
-import java.util.stream.Stream;
 import org.junit.Test;
 
 public class FungibleTransitionConstraintProcedureTest {
@@ -38,21 +34,18 @@ public class FungibleTransitionConstraintProcedureTest {
 		ImmutableMap<Class<? extends Particle>, FungibleDefinition<? extends Particle>> transitions = ImmutableMap.of(
 			Fungible.class,
 			new FungibleDefinition.Builder<Fungible>()
-				.of(Fungible.class, f -> UInt256.ONE)
+				.of(Fungible.class, Fungible::getAmount)
 				.to(Fungible.class, (a, b) -> Result.success(), (a, b) -> true)
 				.build()
 		);
 
 		FungibleTransitionConstraintProcedure procedure = new FungibleTransitionConstraintProcedure(transitions);
-		Stream<ProcedureError> errs = procedure.validate(
-			ParticleGroup.of(
-				SpunParticle.down(mock(Fungible.class)),
-				SpunParticle.up(mock(Fungible.class))
-			),
-			mock(AtomMetadata.class)
-		);
+		Stack<Pair<Particle, Object>> stack = new Stack<>();
+		stack.push(Pair.of(new Fungible(UInt256.ONE), null));
+		boolean succeed = procedure.getProcedures().get(Fungible.class)
+			.inputExecute(new Fungible(UInt256.ONE), mock(AtomMetadata.class), stack);
 
-		assertThat(errs).isEmpty();
+		assertThat(succeed).isTrue();
 	}
 
 	@Test
@@ -60,22 +53,18 @@ public class FungibleTransitionConstraintProcedureTest {
 		ImmutableMap<Class<? extends Particle>, FungibleDefinition<? extends Particle>> transitions = ImmutableMap.of(
 			Fungible.class,
 			new FungibleDefinition.Builder<Fungible>()
-				.of(Fungible.class, f -> UInt256.ONE)
+				.of(Fungible.class, Fungible::getAmount)
 				.to(Fungible.class, (a, b) -> Result.success(), (a, b) -> true)
 				.build()
 		);
 
 		FungibleTransitionConstraintProcedure procedure = new FungibleTransitionConstraintProcedure(transitions);
-		Stream<ProcedureError> errs = procedure.validate(
-			ParticleGroup.of(
-				SpunParticle.down(mock(Fungible.class)),
-				SpunParticle.down(mock(Fungible.class)),
-				SpunParticle.up(mock(Fungible.class))
-			),
-			mock(AtomMetadata.class)
-		);
+		Stack<Pair<Particle, Object>> stack = new Stack<>();
+		stack.push(Pair.of(new Fungible(UInt256.ONE), null));
+		boolean succeed = procedure.getProcedures().get(Fungible.class)
+			.inputExecute(new Fungible(UInt256.TWO), mock(AtomMetadata.class), stack);
 
-		assertThat(errs).isNotEmpty();
+		assertThat(succeed).isFalse();
 	}
 
 	@Test

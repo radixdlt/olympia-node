@@ -24,10 +24,9 @@ import com.radixdlt.atomos.mapper.ParticleToRRIMapper;
 import com.radixdlt.atomos.mapper.ParticleToShardableMapper;
 import com.radixdlt.atomos.mapper.ParticleToShardablesMapper;
 import com.radixdlt.atomos.procedures.TransitionlessConstraintProcedure;
-import com.radixdlt.atomos.procedures.RRIConstraintProcedure;
+import com.radixdlt.atomos.procedures.RRIParticleProcedureBuilder;
 import com.radixdlt.atomos.procedures.FungibleTransitionConstraintProcedure;
 import com.radixdlt.constraintmachine.ConstraintMachine.Builder;
-import com.radixdlt.constraintmachine.ConstraintProcedure;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.KernelConstraintProcedure;
 import com.radixdlt.constraintmachine.KernelProcedureError;
@@ -47,12 +46,13 @@ public final class CMAtomOS {
 	private final List<KernelConstraintProcedure> kernelProcedures = new ArrayList<>();
 	private AtomKernelCompute atomKernelCompute;
 
-	private final Map<Class<? extends Particle>, FungibleDefinition.Builder<? extends Particle>> fungibles = new HashMap<>();
 	private final Map<Class<? extends Particle>, Function<Particle, Stream<RadixAddress>>> particleMapper = new LinkedHashMap<>();
 	private final Map<Class<? extends Particle>, Function<Particle, Result>> particleStaticValidation = new HashMap<>();
 
-	private final RRIConstraintProcedure.Builder rriProcedureBuilder = new RRIConstraintProcedure.Builder();
+	private final Map<Class<? extends Particle>, FungibleDefinition.Builder<? extends Particle>> fungibles = new HashMap<>();
+	private final RRIParticleProcedureBuilder rriProcedureBuilder = new RRIParticleProcedureBuilder();
 	private final TransitionlessConstraintProcedure.Builder payloadProcedureBuilder = new TransitionlessConstraintProcedure.Builder();
+
 	private final Supplier<Universe> universeSupplier;
 	private final LongSupplier timestampSupplier;
 
@@ -236,8 +236,7 @@ public final class CMAtomOS {
 		}
 
 		// Add constraint for RRI state machines
-		this.rriProcedureBuilder.build().getProcedures()
-			.forEach(cmBuilder::addProcedure);
+		cmBuilder.addProcedure(RRIParticle.class, this.rriProcedureBuilder.build());
 
 		// Add constraint for Transitionless state machines
 		this.payloadProcedureBuilder.build().getProcedures()

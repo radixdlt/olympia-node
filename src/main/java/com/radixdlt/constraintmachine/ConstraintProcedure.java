@@ -15,5 +15,4 @@ import java.util.stream.Stream;
  */
 public interface ConstraintProcedure {
 	Map<Class<? extends Particle>, ParticleProcedure> getProcedures();
-	Stream<ProcedureError> validate(ParticleGroup particleGroup, AtomMetadata metadata);
 }

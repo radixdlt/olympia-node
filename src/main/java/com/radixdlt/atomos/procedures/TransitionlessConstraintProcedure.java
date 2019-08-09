@@ -3,17 +3,12 @@ package com.radixdlt.atomos.procedures;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atomos.AtomOS.WitnessValidator;
 import com.radixdlt.atoms.Particle;
-import com.radixdlt.atoms.ParticleGroup;
-import com.radixdlt.atoms.Spin;
-import com.radixdlt.atoms.SpunParticle;
 import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.AtomMetadata;
 import com.radixdlt.constraintmachine.ConstraintProcedure;
-import com.radixdlt.constraintmachine.ProcedureError;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Stack;
-import java.util.stream.Stream;
 
 /**
  * Procedure which checks that payload particles can never go into DOWN state
@@ -53,34 +48,5 @@ public final class TransitionlessConstraintProcedure implements ConstraintProced
 	@Override
 	public Map<Class<? extends Particle>, ParticleProcedure> getProcedures() {
 		return procedures;
-	}
-
-	@Override
-	public Stream<ProcedureError> validate(ParticleGroup group, AtomMetadata metadata) {
-		final Stack<Pair<Particle, Object>> outputs = new Stack<>();
-
-		for (int i = group.getParticleCount() - 1; i >= 0; i--) {
-			SpunParticle sp = group.getSpunParticle(i);
-			Particle p = sp.getParticle();
-			ParticleProcedure particleProcedure = this.procedures.get(p.getClass());
-			if (particleProcedure == null) {
-				continue;
-			}
-			if (sp.getSpin() == Spin.DOWN) {
-				if (!particleProcedure.inputExecute(p, metadata, outputs)) {
-					return Stream.of(ProcedureError.of("Transitionless Failure Input " + p + " failed. Output stack: " + outputs));
-				}
-			} else {
-				if (!particleProcedure.outputExecute(p, metadata)) {
-					outputs.push(Pair.of(p, null));
-				}
-			}
-		}
-
-		if (!outputs.empty()) {
-			return Stream.of(ProcedureError.of("Transitionless Failure Output stack: " + outputs.toString()));
-		}
-
-		return Stream.empty();
 	}
 }

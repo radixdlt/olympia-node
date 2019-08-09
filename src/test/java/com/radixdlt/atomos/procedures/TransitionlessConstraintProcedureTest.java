@@ -7,16 +7,13 @@ import static org.mockito.Mockito.when;
 
 import com.radixdlt.atomos.AtomOS.WitnessValidator;
 import com.radixdlt.atomos.Result;
-import java.util.stream.Stream;
+import java.util.Stack;
 
 import org.junit.Test;
 
-import com.radixdlt.constraintmachine.ProcedureError;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.constraintmachine.AtomMetadata;
 import com.radixdlt.atoms.Particle;
-import com.radixdlt.atoms.ParticleGroup;
-import com.radixdlt.atoms.SpunParticle;
 
 public class TransitionlessConstraintProcedureTest {
 
@@ -29,16 +26,16 @@ public class TransitionlessConstraintProcedureTest {
 	}
 
 	@Test
-	public void when_a_payload_constraint_procedure_validates_an_up_particle__then_an_error_should_not_be_returned() {
+	public void when_a_payload_constraint_procedure_validates_an_up_particle__then_output_should_succeed() {
 		WitnessValidator<CustomPayloadParticle> witnessValidator = mock(WitnessValidator.class);
 		when(witnessValidator.validate(any(), any())).thenReturn(Result.success());
 		TransitionlessConstraintProcedure procedure = new TransitionlessConstraintProcedure.Builder()
 			.add(CustomPayloadParticle.class, witnessValidator)
 			.build();
 
-		Stream<ProcedureError> errors = procedure.validate(ParticleGroup.of(SpunParticle.up(new CustomPayloadParticle())), mock(AtomMetadata.class));
-
-		assertThat(errors).isEmpty();
+		boolean success = procedure.getProcedures().get(CustomPayloadParticle.class)
+			.outputExecute(new CustomPayloadParticle(), mock(AtomMetadata.class));
+		assertThat(success).isTrue();
 	}
 
 	@Test
@@ -50,11 +47,8 @@ public class TransitionlessConstraintProcedureTest {
 			.add(CustomPayloadParticle.class, witnessValidator)
 			.build();
 
-		Stream<ProcedureError> errors = procedure.validate(
-			ParticleGroup.of(SpunParticle.down(new CustomPayloadParticle())),
-			mock(AtomMetadata.class)
-		);
-
-		assertThat(errors).isNotEmpty();
+		boolean success = procedure.getProcedures().get(CustomPayloadParticle.class)
+			.inputExecute(new CustomPayloadParticle(), mock(AtomMetadata.class), new Stack<>());
+		assertThat(success).isFalse();
 	}
 }
