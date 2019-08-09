@@ -121,8 +121,8 @@ public class TempoAtomSynchroniser implements AtomSynchroniser {
 	}
 
 	private void execute(SyncAction action) {
-		if (logger.hasLevel(Logging.DEBUG)) {
-			logger.debug("Executing " + action.getClass().getSimpleName());
+		if (logger.hasLevel(Logging.TRACE)) {
+			logger.trace("Executing " + action.getClass().getSimpleName());
 		}
 
 		List<SyncAction> nextActions = syncEpics.stream()

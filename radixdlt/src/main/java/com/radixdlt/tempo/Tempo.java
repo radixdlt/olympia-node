@@ -36,7 +36,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Supplier;
+import java.util.function.LongSupplier;
 import java.util.stream.Collectors;
 
 /**
@@ -49,10 +49,10 @@ public final class Tempo extends Plugin implements Ledger {
 	private final AtomStore store;
 	private final ConflictResolver resolver;
 
-	private final Supplier<Long> wallclockTimeSupplier;
+	private final LongSupplier wallclockTimeSupplier;
 	private final LocalSystem localSystem;
 
-	private Tempo(AtomSynchroniser synchroniser, AtomStore store, ConflictResolver resolver, Supplier<Long> wallclockTimeSupplier, LocalSystem localSystem) {
+	private Tempo(AtomSynchroniser synchroniser, AtomStore store, ConflictResolver resolver, LongSupplier wallclockTimeSupplier, LocalSystem localSystem) {
 		this.synchroniser = synchroniser;
 		this.store = store;
 		this.resolver = resolver;
@@ -156,7 +156,7 @@ public final class Tempo extends Plugin implements Ledger {
 			return;
 		}
 
-		long wallclockTime = wallclockTimeSupplier.get();
+		long wallclockTime = wallclockTimeSupplier.getAsLong();
 		Pair<Long, Hash> clockAndCommitment = this.localSystem.update(atom.getAID(), wallclockTime);
 		List<EUID> edges = synchroniser.selectEdges(atom);
 		TemporalVertex previousVertex = null;
@@ -254,7 +254,7 @@ public final class Tempo extends Plugin implements Ledger {
 		private AtomStore store;
 		private ConflictResolver resolver;
 
-		private Supplier<Long> wallclockTimeSupplier;
+		private LongSupplier wallclockTimeSupplier;
 		private LocalSystem localSystem;
 
 		public Builder synchroniser(AtomSynchroniser synchroniser) {
@@ -272,7 +272,7 @@ public final class Tempo extends Plugin implements Ledger {
 			return this;
 		}
 
-		public Builder wallclockTime(Supplier<Long> wallclockTimeSupplier) {
+		public Builder wallclockTime(LongSupplier wallclockTimeSupplier) {
 			this.wallclockTimeSupplier = wallclockTimeSupplier;
 			return this;
 		}

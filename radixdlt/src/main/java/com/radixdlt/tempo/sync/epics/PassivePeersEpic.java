@@ -49,12 +49,12 @@ public class PassivePeersEpic implements SyncEpic {
 				.map(peer -> peer.getSystem().getNID())
 				.collect(ImmutableSet.toImmutableSet());
 			if (currentPassivePeerNids == null || !Sets.difference(currentPassivePeerNids, newPassivePeerNids).isEmpty()) {
-				logger.info("Selected passive peers: " + newPassivePeers);
+				logger.info("Selected " + newPassivePeers.size() + " passive peers: " + newPassivePeers);
 				currentPassivePeerNids = newPassivePeerNids;
 				return Stream.of(new AcceptPassivePeersAction(newPassivePeers));
 			} else {
-				if (logger.hasLevel(Logging.DEBUG)) {
-					logger.debug("Reselected passive peers are unchanged");
+				if (logger.hasLevel(Logging.TRACE)) {
+					logger.trace("Reselected passive peers are unchanged");
 				}
 				return Stream.empty();
 			}

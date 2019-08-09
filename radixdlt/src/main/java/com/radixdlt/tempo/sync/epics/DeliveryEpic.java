@@ -1,9 +1,9 @@
 package com.radixdlt.tempo.sync.epics;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.common.AID;
 import com.radixdlt.tempo.AtomStoreView;
+import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.sync.SyncAction;
 import com.radixdlt.tempo.sync.SyncEpic;
 import com.radixdlt.tempo.sync.actions.HandleFailedDeliveryAction;
@@ -20,22 +20,26 @@ import org.radix.network.peers.Peer;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 public class DeliveryEpic implements SyncEpic {
 	private static final int DELIVERY_REQUEST_TIMEOUT_SECONDS = 5;
+	private static final int DEFER_DELIVERY_REQUEST_TIMEOUT_SECONDS = 5;
 
-	private final Logger logger = Logging.getLogger("Sync");
+	private static final Logger logger = Logging.getLogger("Sync");
+
 	private final AtomStoreView store;
-	private final Set<AID> ongoingDeliveries = Collections.synchronizedSet(new HashSet<>());
+	private final Set<AID> ongoingDeliveries;
 
 	private DeliveryEpic(AtomStoreView store) {
 		this.store = store;
+
+		this.ongoingDeliveries = Collections.newSetFromMap(new ConcurrentHashMap<>());
 	}
 
 	@Override
@@ -66,15 +70,40 @@ public class DeliveryEpic implements SyncEpic {
 				.filter(aid -> !store.contains(aid))
 				.collect(ImmutableList.toImmutableList());
 
-			// if a subset of deliveries is still missing, request a delivery
+			// if a subset of deliveries is missing, figure out which ones to request and defer
 			if (!missingAids.isEmpty()) {
-				SendDeliveryRequestAction sendAction = new SendDeliveryRequestAction(missingAids, request.getPeer());
-				ongoingDeliveries.addAll(missingAids);
+				// TODO potential concurrency problems here?
+				ImmutableList<AID> ongoingAids = missingAids.stream()
+					.filter(ongoingDeliveries::contains)
+					.collect(ImmutableList.toImmutableList());
+				ImmutableList<AID> unrequestedAids = missingAids.stream()
+					.filter(aid -> !ongoingDeliveries.contains(aid))
+					.collect(ImmutableList.toImmutableList());
 
-				logger.info("Requesting delivery of " + missingAids.size() + " aids from " + request.getPeer());
-				// schedule timeout after which deliveries will be checked
-				TimeoutDeliveryRequestAction timeoutAction = new TimeoutDeliveryRequestAction(sendAction.getAids(), sendAction.getPeer());
-				return Stream.of(sendAction, timeoutAction.schedule(DELIVERY_REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS));
+				// defer already ongoing deliveries until later (in case the ongoing ones fail)
+				Stream<SyncAction> deferred;
+				if (!ongoingAids.isEmpty()){
+					deferred = Stream.of(new RequestDeliveryAction(ongoingAids, request.getPeer())
+						.schedule(DEFER_DELIVERY_REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS));
+				} else {
+					deferred = Stream.empty();
+				}
+
+				// request delivery of all aids that are not currently being delivered
+				Stream<SyncAction> requested;
+				if (!unrequestedAids.isEmpty()) {
+					SendDeliveryRequestAction sendAction = new SendDeliveryRequestAction(unrequestedAids, request.getPeer());
+					ongoingDeliveries.addAll(unrequestedAids);
+
+					logger.info("Requesting delivery of " + unrequestedAids.size() + " aids from " + request.getPeer());
+					// schedule timeout after which deliveries will be checked
+					TimeoutDeliveryRequestAction timeoutAction = new TimeoutDeliveryRequestAction(sendAction.getAids(), sendAction.getPeer());
+					requested = Stream.of(sendAction, timeoutAction.schedule(DELIVERY_REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS));
+				} else {
+					requested = Stream.empty();
+				}
+
+				return Stream.concat(deferred, requested);
 			}
 		} else if (action instanceof TimeoutDeliveryRequestAction) {
 			// once the timeout has elapsed, check if the deliveries were received
@@ -85,8 +114,10 @@ public class DeliveryEpic implements SyncEpic {
 
 			// if the deliveries weren't received, raise a failed delivery action for the requestor
 			if (!missingAids.isEmpty()) {
+				// TODO consider re-requesting from the same peer once (add TTL counter to timeout action)
 				ongoingDeliveries.removeAll(missingAids);
-				// TODO where to handle recovery / re-requesting?
+				logger.warn("Delivery of " + missingAids.size() + " aids from " + timeout.getPeer() + " has timed out");
+				// TODO handle / log this somewhere?
 				return Stream.of(new HandleFailedDeliveryAction(missingAids, timeout.getPeer()));
 			}
 		}

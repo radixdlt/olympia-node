@@ -81,7 +81,6 @@ public class IterativeSyncEpic implements SyncEpic {
 
 			IterativeCursor lastCursor = this.latestCursors.get(peerNid).orElse(IterativeCursor.INITIAL);
 			long lastLCPosition = lastCursor.getLCPosition();
-
 			// reset cursor if cursor is ahead of current peer logical clock
 			if (lastLCPosition > peer.getSystem().getClock().get()) {
 				lastCursor = IterativeCursor.INITIAL;

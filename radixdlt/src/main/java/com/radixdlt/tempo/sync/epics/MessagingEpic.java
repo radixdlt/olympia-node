@@ -46,8 +46,8 @@ public class MessagingEpic implements SyncEpic {
 		if (outboundMessageMappers.containsKey(action.getClass())) {
 			Message message = outboundMessageMappers.get(action.getClass()).apply(action);
 			Peer peer = outboundPeerMappers.get(action.getClass()).apply(action);
-			if (logger.hasLevel(Logging.DEBUG)) {
-				logger.debug(String.format("Forwarding outbound %s for '%s' as '%s'",
+			if (logger.hasLevel(Logging.TRACE)) {
+				logger.trace(String.format("Forwarding outbound %s for '%s' as '%s'",
 					action.getClass().getSimpleName(), peer, message.getCommand()));
 			}
 
@@ -106,8 +106,8 @@ public class MessagingEpic implements SyncEpic {
 					try {
 						BiFunction<Message, Peer, SyncAction> messageActionMapper = inboundMappers.get(command);
 						SyncAction action = messageActionMapper.apply(message, peer);
-						if (logger.hasLevel(Logging.DEBUG)) {
-							logger.debug(String.format("Forwarding inbound '%s' from '%s' to %s",
+						if (logger.hasLevel(Logging.TRACE)) {
+							logger.trace(String.format("Forwarding inbound '%s' from '%s' to %s",
 								command, peer, action.getClass().getSimpleName()));
 						}
 
