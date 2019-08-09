@@ -23,7 +23,7 @@ import com.radixdlt.atomos.mapper.ParticleToAmountMapper;
 import com.radixdlt.atomos.mapper.ParticleToRRIMapper;
 import com.radixdlt.atomos.mapper.ParticleToShardableMapper;
 import com.radixdlt.atomos.mapper.ParticleToShardablesMapper;
-import com.radixdlt.atomos.procedures.TransitionlessConstraintProcedure;
+import com.radixdlt.atomos.procedures.TransitionlessParticlesProcedureBuilder;
 import com.radixdlt.atomos.procedures.RRIParticleProcedureBuilder;
 import com.radixdlt.atomos.procedures.FungibleTransitionConstraintProcedure;
 import com.radixdlt.constraintmachine.ConstraintMachine.Builder;
@@ -51,7 +51,7 @@ public final class CMAtomOS {
 
 	private final Map<Class<? extends Particle>, FungibleDefinition.Builder<? extends Particle>> fungibles = new HashMap<>();
 	private final RRIParticleProcedureBuilder rriProcedureBuilder = new RRIParticleProcedureBuilder();
-	private final TransitionlessConstraintProcedure.Builder payloadProcedureBuilder = new TransitionlessConstraintProcedure.Builder();
+	private final TransitionlessParticlesProcedureBuilder payloadProcedureBuilder = new TransitionlessParticlesProcedureBuilder();
 
 	private final Supplier<Universe> universeSupplier;
 	private final LongSupplier timestampSupplier;
@@ -166,9 +166,7 @@ public final class CMAtomOS {
 					throw new IllegalStateException(particleClass + " must be registered in calling scrypt.");
 				}
 
-				return witnessValidator -> {
-					payloadProcedureBuilder.add(particleClass, witnessValidator);
-				};
+				return witnessValidator -> payloadProcedureBuilder.add(particleClass, witnessValidator);
 			}
 		});
 
@@ -239,8 +237,7 @@ public final class CMAtomOS {
 		cmBuilder.addProcedure(RRIParticle.class, this.rriProcedureBuilder.build());
 
 		// Add constraint for Transitionless state machines
-		this.payloadProcedureBuilder.build().getProcedures()
-			.forEach(cmBuilder::addProcedure);
+		this.payloadProcedureBuilder.build().forEach(cmBuilder::addProcedure);
 
 		UnaryOperator<CMStore> rriTransformer = base ->
 			CMStores.virtualizeDefault(base, p -> p instanceof RRIParticle && ((RRIParticle) p).getNonce() == 0, Spin.UP);

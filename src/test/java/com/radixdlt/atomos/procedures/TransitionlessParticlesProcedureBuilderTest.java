@@ -15,7 +15,7 @@ import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.constraintmachine.AtomMetadata;
 import com.radixdlt.atoms.Particle;
 
-public class TransitionlessConstraintProcedureTest {
+public class TransitionlessParticlesProcedureBuilderTest {
 
 	@SerializerId2("custom.payload.particle")
 	private static class CustomPayloadParticle extends Particle {
@@ -29,12 +29,12 @@ public class TransitionlessConstraintProcedureTest {
 	public void when_a_payload_constraint_procedure_validates_an_up_particle__then_output_should_succeed() {
 		WitnessValidator<CustomPayloadParticle> witnessValidator = mock(WitnessValidator.class);
 		when(witnessValidator.validate(any(), any())).thenReturn(Result.success());
-		TransitionlessConstraintProcedure procedure = new TransitionlessConstraintProcedure.Builder()
+		ParticleProcedure procedure = new TransitionlessParticlesProcedureBuilder()
 			.add(CustomPayloadParticle.class, witnessValidator)
-			.build();
+			.build()
+			.get(CustomPayloadParticle.class);
 
-		boolean success = procedure.getProcedures().get(CustomPayloadParticle.class)
-			.outputExecute(new CustomPayloadParticle(), mock(AtomMetadata.class));
+		boolean success = procedure.outputExecute(new CustomPayloadParticle(), mock(AtomMetadata.class));
 		assertThat(success).isTrue();
 	}
 
@@ -43,12 +43,12 @@ public class TransitionlessConstraintProcedureTest {
 		WitnessValidator<CustomPayloadParticle> witnessValidator = mock(WitnessValidator.class);
 		when(witnessValidator.validate(any(), any())).thenReturn(Result.success());
 
-		TransitionlessConstraintProcedure procedure = new TransitionlessConstraintProcedure.Builder()
+		ParticleProcedure procedure = new TransitionlessParticlesProcedureBuilder()
 			.add(CustomPayloadParticle.class, witnessValidator)
-			.build();
+			.build()
+			.get(CustomPayloadParticle.class);
 
-		boolean success = procedure.getProcedures().get(CustomPayloadParticle.class)
-			.inputExecute(new CustomPayloadParticle(), mock(AtomMetadata.class), new Stack<>());
+		boolean success = procedure.inputExecute(new CustomPayloadParticle(), mock(AtomMetadata.class), new Stack<>());
 		assertThat(success).isFalse();
 	}
 }
