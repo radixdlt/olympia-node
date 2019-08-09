@@ -7,7 +7,7 @@ import static com.radixdlt.atommodel.tokens.TokenDefinitionParticle.VALID_SYMBOL
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle.TokenTransition;
-import com.radixdlt.atomos.AtomOS;
+import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.atomos.Result;
@@ -29,7 +29,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 	);
 
 	@Override
-	public void main(AtomOS os) {
+	public void main(SysCalls os) {
 		os.registerParticle(TokenDefinitionParticle.class, TokenDefinitionParticle::getAddress);
 
 		// Symbol constraints
@@ -91,7 +91,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 		);
 
 		// Require Token Definition to be created with unallocated tokens of max supply
-		os.newResource(
+		os.newResourceType(
 			TokenDefinitionParticle.class,
 			TokenDefinitionParticle::getRRI,
 			UnallocatedTokensParticle.class,
@@ -158,7 +158,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 	}
 
 	private static <T extends Particle> void requireAmountFits(
-		AtomOS os,
+		SysCalls os,
 		Class<T> cls,
 		ParticleToAmountMapper<T> particleToAmountMapper,
 		ParticleToAmountMapper<T> particleToGranularityMapper

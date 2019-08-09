@@ -5,9 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.radixdlt.atomos.AtomOS.WitnessValidator;
-import com.radixdlt.atomos.Result;
-import com.radixdlt.atomos.TransitionlessParticlesProcedureBuilder;
+import com.radixdlt.atomos.SysCalls.WitnessValidator;
 import com.radixdlt.constraintmachine.ParticleProcedure;
 import java.util.Stack;
 

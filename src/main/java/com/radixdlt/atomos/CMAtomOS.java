@@ -67,7 +67,7 @@ public final class CMAtomOS {
 	public void load(ConstraintScrypt constraintScrypt) {
 		final Map<Class<? extends Particle>, Function<Particle, Stream<RadixAddress>>> scryptParticleClasses = new HashMap<>();
 
-		constraintScrypt.main(new AtomOS() {
+		constraintScrypt.main(new SysCalls() {
 			@Override
 			public <T extends Particle> void registerParticle(Class<T> particleClass, ParticleToShardablesMapper<T> mapper) {
 				if (scryptParticleClasses.containsKey(particleClass) || particleMapper.containsKey(particleClass)) {
@@ -95,7 +95,7 @@ public final class CMAtomOS {
 			}
 
 			@Override
-			public <T extends Particle> void newResource(
+			public <T extends Particle> void newResourceType(
 				Class<T> particleClass,
 				ParticleToRRIMapper<T> rriMapper
 			) {
@@ -107,7 +107,7 @@ public final class CMAtomOS {
 			}
 
 			@Override
-			public <T extends Particle, U extends Particle> void newResource(
+			public <T extends Particle, U extends Particle> void newResourceType(
 				Class<T> particleClass0,
 				ParticleToRRIMapper<T> rriMapper0,
 				Class<U> particleClass1,

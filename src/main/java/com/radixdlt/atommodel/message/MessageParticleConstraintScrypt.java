@@ -1,12 +1,12 @@
 package com.radixdlt.atommodel.message;
 
-import com.radixdlt.atomos.AtomOS;
+import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Result;
 
 public class MessageParticleConstraintScrypt implements ConstraintScrypt {
 	@Override
-	public void main(AtomOS os) {
+	public void main(SysCalls os) {
 		os.registerParticle(MessageParticle.class, MessageParticle::getAddresses);
 
 		os.on(MessageParticle.class)

@@ -84,7 +84,7 @@ public final class ConstraintMachine {
 			ParticleProcedure particleProcedure = this.particleProcedures.apply(p);
 			if (sp.getSpin() == Spin.DOWN) {
 				if (particleProcedure == null || !particleProcedure.inputExecute(p, metadata, outputs)) {
-					return Stream.of(ProcedureError.of("Failure Input " + p + " failed. Output stack: " + outputs));
+					return Stream.of(ProcedureError.of("Input particle " + p + " failed. Output stack: " + outputs));
 				}
 			} else {
 				if (particleProcedure == null || !particleProcedure.outputExecute(p, metadata)) {
@@ -94,7 +94,7 @@ public final class ConstraintMachine {
 		}
 
 		if (!outputs.empty()) {
-			return Stream.of(ProcedureError.of("Failure Output stack: " + outputs.toString()));
+			return Stream.of(ProcedureError.of("Output particle stack not empty: " + outputs));
 		}
 
 		return Stream.empty();

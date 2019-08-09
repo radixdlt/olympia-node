@@ -12,7 +12,7 @@ import java.util.function.Function;
 /**
  * Exposes the interface which application particle constraints can be built on top of.
  */
-public interface AtomOS {
+public interface SysCalls {
 	/**
 	 * Registers a Particle with a given identifier.
 	 * This is required for all other system calls using the particle.
@@ -47,29 +47,30 @@ public interface AtomOS {
 	}
 
 	/**
-	 * System call endpoint which allows an atom model application to program constraints
-	 * against a particle class and an getDestinations over that class.
-	 *
-	 * This endpoint returns a callback on which the application must define the constraint.
-	 * This function MUST be a pure function (i.e. no states)
-	 *
-	 * @param particleClass particle class to add a constraint to
-	 * @param indexer getDestinations function
-	 * @param <T> particle class to add a constraint to
-	 * @return a callback function onto which the constraint will be defined
+	 * Creates a new resource type based on a particle. The resource type can be allocated by consuming
+	 * an RRI which then becomes the resource's global identifier.
 	 */
-	<T extends Particle> void newResource(
+	<T extends Particle> void newResourceType(
 		Class<T> particleClass,
 		ParticleToRRIMapper<T> indexer
 	);
 
-	<T extends Particle, U extends Particle> void newResource(
+	/**
+	 * Creates a new resource type based on two particles. The resource type can be allocated by consuming
+	 * an RRI which then becomes the resource's global identifier.
+	 */
+	<T extends Particle, U extends Particle> void newResourceType(
 		Class<T> particleClass0,
 		ParticleToRRIMapper<T> indexer0,
 		Class<U> particleClass1,
 		ParticleToRRIMapper<U> indexer1,
 		BiPredicate<T, U> combinedResource
 	);
+
+	/**
+	 * Creates a new transitionless particle type.
+	 */
+	<T extends Particle> TransitionlessParticleClassConstraint<T> onTransitionless(Class<T> particleClass);
 
 	/**
 	 * System call endpoint which allows an atom model application to program constraints
@@ -87,8 +88,6 @@ public interface AtomOS {
 		Class<T> particleClass,
 		ParticleToAmountMapper<T> particleToAmountMapper
 	);
-
-	<T extends Particle> TransitionlessParticleClassConstraint<T> onTransitionless(Class<T> particleClass);
 
 	interface TransitionlessParticleClassConstraint<T extends Particle> {
 		/**

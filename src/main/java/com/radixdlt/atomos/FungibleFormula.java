@@ -1,6 +1,6 @@
 package com.radixdlt.atomos;
 
-import com.radixdlt.atomos.AtomOS.WitnessValidator;
+import com.radixdlt.atomos.SysCalls.WitnessValidator;
 import com.radixdlt.atoms.Particle;
 import java.util.Objects;
 import java.util.function.BiPredicate;
