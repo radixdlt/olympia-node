@@ -37,18 +37,13 @@ public final class RRIConstraintProcedure implements ConstraintProcedure {
 		}
 	}
 
-	private final Map<Class<? extends Particle>, ParticleToRRIMapper<Particle>> primaryParticles;
 	private final Set<Class<? extends Particle>> secondaryParticles;
-	private final Map<Class<? extends Particle>, SecondaryResource<? extends Particle>> secondary;
-
 	private final Map<Class<? extends Particle>, ParticleProcedure> procedures = new HashMap<>();
 
 	RRIConstraintProcedure(
 		Map<Class<? extends Particle>, ParticleToRRIMapper<Particle>> primaryParticles,
 		Map<Class<? extends Particle>, SecondaryResource<? extends Particle>> secondary
 	) {
-		this.primaryParticles = ImmutableMap.copyOf(primaryParticles);
-		this.secondary = secondary;
 		this.secondaryParticles = secondary.entrySet().stream().map(e -> e.getValue().particleClass).collect(Collectors.toSet());
 
 		this.procedures.put(RRIParticle.class, new ParticleProcedure() {
@@ -107,28 +102,6 @@ public final class RRIConstraintProcedure implements ConstraintProcedure {
 				return false;
 			}
 		});
-		primaryParticles.forEach((p, m) -> this.procedures.put(p, new ParticleProcedure() {
-			@Override
-			public boolean inputExecute(Particle input, AtomMetadata metadata, Stack<Pair<Particle, Object>> outputs) {
-				return false;
-			}
-
-			@Override
-			public boolean outputExecute(Particle output, AtomMetadata metadata) {
-				return false;
-			}
-		}));
-		secondaryParticles.forEach(p -> this.procedures.put(p, new ParticleProcedure() {
-			@Override
-			public boolean inputExecute(Particle input, AtomMetadata metadata, Stack<Pair<Particle, Object>> outputs) {
-				return true;
-			}
-
-			@Override
-			public boolean outputExecute(Particle output, AtomMetadata metadata) {
-				return false;
-			}
-		}));
 	}
 
 	public static final class Builder {
@@ -167,6 +140,12 @@ public final class RRIConstraintProcedure implements ConstraintProcedure {
 		public RRIConstraintProcedure build() {
 			return new RRIConstraintProcedure(indexedParticles, secondary);
 		}
+	}
+
+
+	@Override
+	public Map<Class<? extends Particle>, ParticleProcedure> getProcedures() {
+		return procedures;
 	}
 
 	@Override

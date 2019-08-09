@@ -51,6 +51,11 @@ public final class TransitionlessConstraintProcedure implements ConstraintProced
 	}
 
 	@Override
+	public Map<Class<? extends Particle>, ParticleProcedure> getProcedures() {
+		return procedures;
+	}
+
+	@Override
 	public Stream<ProcedureError> validate(ParticleGroup group, AtomMetadata metadata) {
 		final Stack<Pair<Particle, Object>> outputs = new Stack<>();
 

@@ -1,13 +1,19 @@
 package com.radixdlt.constraintmachine;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Streams;
+import com.radixdlt.atomos.procedures.ParticleProcedure;
 import com.radixdlt.atoms.ImmutableAtom;
+import com.radixdlt.atoms.ParticleGroup;
 import com.radixdlt.atoms.Spin;
+import com.radixdlt.atoms.SpunParticle;
+import com.radixdlt.common.Pair;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.SpinStateTransitionValidator;
 import com.radixdlt.store.SpinStateTransitionValidator.TransitionCheckResult;
+import java.util.Stack;
 import java.util.function.UnaryOperator;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.store.CMStores;
@@ -22,7 +28,7 @@ public final class ConstraintMachine {
 	public static class Builder {
 		private UnaryOperator<CMStore> virtualStore;
 		private ImmutableList.Builder<KernelConstraintProcedure> kernelConstraintProcedureBuilder = new ImmutableList.Builder<>();
-		private ImmutableList.Builder<ConstraintProcedure> constraintProcedureBuilder = new ImmutableList.Builder<>();
+		private ImmutableMap.Builder<Class<? extends Particle>, ParticleProcedure> particleProcedures = new ImmutableMap.Builder<>();
 
 		public Builder virtualStore(UnaryOperator<CMStore> virtualStore) {
 			this.virtualStore = virtualStore;
@@ -34,11 +40,10 @@ public final class ConstraintMachine {
 			return this;
 		}
 
-		public Builder addProcedure(ConstraintProcedure constraintProcedure) {
-			constraintProcedureBuilder.add(constraintProcedure);
+		public Builder addProcedure(Class<? extends Particle> particleClass, ParticleProcedure particleProcedure) {
+			particleProcedures.put(particleClass, particleProcedure);
 			return this;
 		}
-
 
 		public ConstraintMachine build() {
 			if (virtualStore == null) {
@@ -48,27 +53,52 @@ public final class ConstraintMachine {
 			return new ConstraintMachine(
 				virtualStore,
 				kernelConstraintProcedureBuilder.build(),
-				constraintProcedureBuilder.build()
+				particleProcedures.build()
 			);
 		}
 	}
 
 	private final UnaryOperator<CMStore> virtualStore;
 	private final ImmutableList<KernelConstraintProcedure> kernelConstraintProcedures;
-	private final ImmutableList<ConstraintProcedure> applicationConstraintProcedures;
+	private final ImmutableMap<Class<? extends Particle>, ParticleProcedure> particleProcedures;
 	private final CMStore localEngineStore;
 
 	ConstraintMachine(
 		UnaryOperator<CMStore> virtualStore,
 		ImmutableList<KernelConstraintProcedure> kernelConstraintProcedures,
-		ImmutableList<ConstraintProcedure> applicationConstraintProcedures
+		ImmutableMap<Class<? extends Particle>, ParticleProcedure> particleProcedures
 	) {
 		Objects.requireNonNull(virtualStore);
 
 		this.virtualStore = Objects.requireNonNull(virtualStore);
 		this.localEngineStore = this.virtualStore.apply(CMStores.empty());
 		this.kernelConstraintProcedures = kernelConstraintProcedures;
-		this.applicationConstraintProcedures = applicationConstraintProcedures;
+		this.particleProcedures = particleProcedures;
+	}
+
+	private Stream<ProcedureError> validate(ParticleGroup group, AtomMetadata metadata) {
+		final Stack<Pair<Particle, Object>> outputs = new Stack<>();
+
+		for (int i = group.getParticleCount() - 1; i >= 0; i--) {
+			SpunParticle sp = group.getSpunParticle(i);
+			Particle p = sp.getParticle();
+			ParticleProcedure particleProcedure = this.particleProcedures.get(p.getClass());
+			if (sp.getSpin() == Spin.DOWN) {
+				if (particleProcedure == null || !particleProcedure.inputExecute(p, metadata, outputs)) {
+					return Stream.of(ProcedureError.of("Failure Input " + p + " failed. Output stack: " + outputs));
+				}
+			} else {
+				if (particleProcedure == null || !particleProcedure.outputExecute(p, metadata)) {
+					outputs.push(Pair.of(p, null));
+				}
+			}
+		}
+
+		if (!outputs.empty()) {
+			return Stream.of(ProcedureError.of("Failure Output stack: " + outputs.toString()));
+		}
+
+		return Stream.empty();
 	}
 
 	/**
@@ -110,9 +140,7 @@ public final class ConstraintMachine {
 		final ImmutableAtom atom = cmAtom.getAtom();
 		final AtomMetadata metadata = new AtomMetadataFromAtom(atom);
 		final Stream<CMError> applicationErrs = Streams.mapWithIndex(atom.particleGroups(), (group, i) ->
-			applicationConstraintProcedures.stream()
-				.flatMap(procedure -> procedure.validate(group, metadata))
-				.map(issue -> CMErrors.fromProcedureError(issue, (int) i))
+			this.validate(group, metadata).map(issue -> CMErrors.fromProcedureError(issue, (int) i))
 		).flatMap(i -> i);
 
 		final Stream<CMError> errorStream = Streams.concat(

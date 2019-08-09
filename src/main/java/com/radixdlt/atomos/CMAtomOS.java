@@ -44,7 +44,6 @@ import java.util.stream.Stream;
  * Implementation of the AtomOS interface on top of a UTXO based Constraint Machine.
  */
 public final class CMAtomOS {
-	private final List<ConstraintProcedure> procedures = new ArrayList<>();
 	private final List<KernelConstraintProcedure> kernelProcedures = new ArrayList<>();
 	private AtomKernelCompute atomKernelCompute;
 
@@ -235,7 +234,6 @@ public final class CMAtomOS {
 	public Pair<ConstraintMachine, AtomCompute> buildMachine() {
 		ConstraintMachine.Builder cmBuilder = new Builder();
 
-		this.procedures.forEach(cmBuilder::addProcedure);
 		this.kernelProcedures.forEach(cmBuilder::addProcedure);
 
 		// Add a constraint for fungibles if any were added
@@ -246,13 +244,17 @@ public final class CMAtomOS {
 						Entry::getKey,
 						e -> e.getValue().build()
 					));
-			cmBuilder.addProcedure(new FungibleTransitionConstraintProcedure(transitions));
+			new FungibleTransitionConstraintProcedure(transitions).getProcedures()
+				.forEach(cmBuilder::addProcedure);
 		}
 
 		// Add constraint for RRI state machines
-		cmBuilder.addProcedure(this.rriProcedureBuilder.build());
-		// Add constraint for Payload state machines
-		cmBuilder.addProcedure(this.payloadProcedureBuilder.build());
+		this.rriProcedureBuilder.build().getProcedures()
+			.forEach(cmBuilder::addProcedure);
+
+		// Add constraint for Transitionless state machines
+		this.payloadProcedureBuilder.build().getProcedures()
+			.forEach(cmBuilder::addProcedure);
 
 		UnaryOperator<CMStore> rriTransformer = base ->
 			CMStores.virtualizeDefault(base, p -> p instanceof RRIParticle && ((RRIParticle) p).getNonce() == 0, Spin.UP);
