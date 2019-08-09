@@ -65,6 +65,6 @@ public final class TransportInfo {
 
 	@Override
 	public String toString() {
-		return String.format("%s[name=%s, metadata=%s]", getClass().getSimpleName(), name, metadata);
+		return String.format("%s[%s:%s]", getClass().getSimpleName(), name, metadata);
 	}
 }

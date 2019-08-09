@@ -27,4 +27,12 @@ public class SendResult {
 	public IOException getException() {
 		return this.exception;
 	}
+
+	@Override
+	public String toString() {
+		if (this.exception == null) {
+			return String.format("%s[Complete]", getClass().getSimpleName());
+		}
+		return String.format("%s[%s]", getClass().getSimpleName(), exception.getClass().getName());
+	}
 }

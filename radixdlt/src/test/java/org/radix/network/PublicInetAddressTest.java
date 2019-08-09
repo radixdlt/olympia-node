@@ -1,37 +1,52 @@
 package org.radix.network;
 
+import java.io.IOException;
 import java.net.DatagramPacket;
+import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.SocketAddress;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 import org.powermock.reflect.Whitebox;
 import org.radix.network.PublicInetAddress;
 
 import com.radixdlt.utils.Longs;
 
-import static org.powermock.api.mockito.PowerMockito.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({PublicInetAddress.class})
 public class PublicInetAddressTest {
+
     private PublicInetAddress dut;
     private AtomicLong clock;
+
+    static class FakeDatagramSocket extends DatagramSocket {
+    	FakeDatagramSocket(SocketAddress address) throws SocketException {
+    		super((SocketAddress) null); // ensure created unbound
+    	}
+
+    	@Override
+		public void send(DatagramPacket p) throws IOException {
+    		// Do nothing
+    	}
+
+    	@Override
+		public void close() {
+    		// Do nothing
+    	}
+    }
 
     @Before
     public void setUp() {
     	clock = new AtomicLong(0);
-        dut = new PublicInetAddress(null, 30000, clock::get);
+        dut = new PublicInetAddress("10.10.10.10", 30000, clock::get, FakeDatagramSocket::new);
     }
 
     @Test
@@ -41,11 +56,12 @@ public class PublicInetAddressTest {
 
     @Test
     public void testIsPublicUnicastInetAddress() throws UnknownHostException {
-        assertFalse(PublicInetAddress.isPublicUnicastInetAddress(InetAddress.getByName("127.0.0.1")));
-        assertFalse(PublicInetAddress.isPublicUnicastInetAddress(InetAddress.getByName("172.31.0.1")));
-        assertFalse(PublicInetAddress.isPublicUnicastInetAddress(InetAddress.getByName("192.168.10.10")));
-        assertFalse(PublicInetAddress.isPublicUnicastInetAddress(InetAddress.getByName("10.10.10.10")));
-        assertFalse(PublicInetAddress.isPublicUnicastInetAddress(InetAddress.getByName("224.0.0.101")));
+    	assertFalse(PublicInetAddress.isPublicUnicastInetAddress(InetAddress.getByName("172.31.0.1")));  // Site-local
+    	assertFalse(PublicInetAddress.isPublicUnicastInetAddress(InetAddress.getByName("192.168.1.1"))); // Site-local
+    	assertFalse(PublicInetAddress.isPublicUnicastInetAddress(InetAddress.getByName("10.10.10.10"))); // Site-local
+    	assertFalse(PublicInetAddress.isPublicUnicastInetAddress(InetAddress.getByName("169.254.0.0"))); // Link-local
+        assertFalse(PublicInetAddress.isPublicUnicastInetAddress(InetAddress.getByName("127.0.0.1")));   // Localhost
+        assertFalse(PublicInetAddress.isPublicUnicastInetAddress(InetAddress.getByName("224.0.0.101"))); // Multicast
         assertFalse(PublicInetAddress.isPublicUnicastInetAddress(InetAddress.getByName("::1")));
         assertTrue(PublicInetAddress.isPublicUnicastInetAddress(InetAddress.getByName("1.1.1.1")));
         assertTrue(PublicInetAddress.isPublicUnicastInetAddress(InetAddress.getByName("192.169.1.1")));
@@ -54,9 +70,6 @@ public class PublicInetAddressTest {
 
     @Test
     public void testStartValidation() throws Exception {
-    	spy(PublicInetAddress.class);
-    	doNothing().when(PublicInetAddress.class, method(PublicInetAddress.class, "sendSecret"));
-
     	// Reset
         dut.startValidation(null);
 
@@ -98,11 +111,12 @@ public class PublicInetAddressTest {
         // make sure unconfirmedAddress changed
         assertEquals(InetAddress.getByName("172.31.0.1"), Whitebox.getField(PublicInetAddress.class, "unconfirmedAddress").get(dut));
 
-
+        // get should return local address (10.10.10.10 from constructor)
+        assertEquals(InetAddress.getByName("10.10.10.10"), dut.get());
     }
 
     @Test
-    public void testEndValidation() throws IllegalAccessException, UnknownHostException {
+    public void testEndValidation() throws IllegalAccessException, IOException {
         long secret = -1L;
         Whitebox.getField(PublicInetAddress.class, "secret").set(dut, secret);
         Whitebox.getField(PublicInetAddress.class, "unconfirmedAddress").set(dut, InetAddress.getByName("1.1.1.1"));
@@ -110,10 +124,24 @@ public class PublicInetAddressTest {
         // Check initial conditions
         assertNotEquals(InetAddress.getByName("1.1.1.1"), Whitebox.getField(PublicInetAddress.class, "confirmedAddress").get(dut));
 
-        assertFalse(dut.endValidation(null));
-        assertFalse(dut.endValidation(new DatagramPacket(new byte[] {1, 2, 3}, 3)));
-        assertTrue(dut.endValidation(new DatagramPacket(Longs.toByteArray(secret), Long.BYTES)));
+        assertFalse(dut.endValidation(null, 0, 0));
+        assertFalse(dut.endValidation(new byte[] {1, 2, 3}, 0, 3));
+        assertFalse(dut.endValidation(Longs.toByteArray(0L), 0, Long.BYTES));
+        assertTrue(dut.endValidation(Longs.toByteArray(secret), 0, Long.BYTES));
         // make sure that confirmedAddress got updated
         assertEquals(InetAddress.getByName("1.1.1.1"), Whitebox.getField(PublicInetAddress.class, "confirmedAddress").get(dut));
+
+        // get should return confirmed address
+        assertEquals(InetAddress.getByName("1.1.1.1"), dut.get());
+        assertEquals("1.1.1.1", dut.toString());
+
+        // no new secret now if we start again with the same address
+        long oldSecret = Whitebox.getField(PublicInetAddress.class, "secret").getLong(dut);
+        dut.startValidation(InetAddress.getByName("1.1.1.1"));
+        assertEquals(oldSecret, Whitebox.getField(PublicInetAddress.class, "secret").getLong(dut));
+
+        // ... but should get a new secret if we start again with a new host
+        dut.startValidation(InetAddress.getByName("2.2.2.2"));
+        assertNotEquals(oldSecret, Whitebox.getField(PublicInetAddress.class, "secret").getLong(dut));
     }
 }

@@ -33,6 +33,7 @@ import org.radix.network.peers.PeerStore;
 import org.radix.properties.RuntimeProperties;
 import org.radix.state.State;
 import org.radix.time.NtpService;
+import org.radix.time.Time;
 import org.radix.time.Timestamps;
 import org.radix.universe.system.LocalSystem;
 import org.radix.universe.system.SystemMessage;
@@ -94,7 +95,7 @@ public class Messaging extends Service
 						inboundMessage.getPeer().getState().in(State.DISCONNECTED) == true)
 						continue;
 
-					if (Modules.get(NtpService.class).getUTCTimeMS() - inboundMessage.getMessage().getTimestamp() > (Modules.get(RuntimeProperties.class).get("messaging.time_to_live", 30)*1000l))
+					if (Time.currentTimestamp() - inboundMessage.getMessage().getTimestamp() > (Modules.get(RuntimeProperties.class).get("messaging.time_to_live", 30)*1000l))
 					{
 						Modules.ifAvailable(SystemMetaData.class, a -> a.increment("messages.inbound.discarded"));
 						continue;
@@ -316,7 +317,7 @@ public class Messaging extends Service
 				peer.setSystem(((SystemMessage)message).getSystem());
 			}
 
-			peer.setTimestamp(Timestamps.ACTIVE, Modules.get(NtpService.class).getUTCTimeMS());
+			peer.setTimestamp(Timestamps.ACTIVE, Time.currentTimestamp());
 
 			if (this.inboundQueue.offer(new MessageEvent(messagePriority(message), messageTime(), message, peer)) == false)
 			{

@@ -41,7 +41,7 @@ public final class DynamicTransportMetadata implements TransportMetadata {
 
 	@Override
 	public int hashCode() {
-		return metadata.hashCode();
+		return Objects.hashCode(metadata);
 	}
 
 	@Override
@@ -64,6 +64,6 @@ public final class DynamicTransportMetadata implements TransportMetadata {
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s]", getClass().getSimpleName(), metadata);
+		return String.format("%s[%s]", getClass().getSimpleName(), jsonValue());
 	}
 }

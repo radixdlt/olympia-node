@@ -17,7 +17,7 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import org.radix.time.Chronologic;
-import org.radix.time.NtpService;
+import org.radix.time.Time;
 import org.radix.time.Timestamps;
 import com.radixdlt.universe.Universe;
 import org.radix.utils.SystemProfiler;
@@ -47,7 +47,7 @@ public abstract class Message extends BasicContainer implements Chronologic
 	private static final AtomicLong instances = new AtomicLong();
 	public static final int MAX_MESSAGE_SIZE = (4096*1024);
 
-	public static Message parse(InputStream inputStream) throws IOException, BanException, Exception
+	public static Message parse(InputStream inputStream) throws IOException, BanException
 	{
 		WireIO.Reader reader = new WireIO.Reader(inputStream);
 
@@ -66,7 +66,7 @@ public abstract class Message extends BasicContainer implements Chronologic
 			}
 
 			message.setDirection(Direction.INBOUND);
-			message.setTimestamp(Timestamps.RECEIVED, Modules.get(NtpService.class).getUTCTimeMS());
+			message.setTimestamp(Timestamps.RECEIVED, Time.currentTimestamp());
 			message.setTimestamp(Timestamps.LATENCY, java.lang.System.nanoTime());
 			messaginglog.debug(message.toString()+" bytes "+length);
 
@@ -97,7 +97,7 @@ public abstract class Message extends BasicContainer implements Chronologic
 
 	protected Message()
 	{
-		setTimestamp(Timestamps.DEFAULT, Modules.get(NtpService.class).getUTCTimeMS());
+		setTimestamp(Timestamps.DEFAULT, Time.currentTimestamp());
 	}
 
 	@JsonProperty("command")

@@ -11,6 +11,10 @@ public final class StaticTransportMetadata implements TransportMetadata {
 	@JsonValue
 	private final ImmutableMap<String, String> metadata;
 
+	public static StaticTransportMetadata empty() {
+		return new StaticTransportMetadata(ImmutableMap.of());
+	}
+
 	public static StaticTransportMetadata from(Map<String, String> metadata) {
 		return new StaticTransportMetadata(ImmutableMap.copyOf(metadata));
 	}
@@ -39,7 +43,7 @@ public final class StaticTransportMetadata implements TransportMetadata {
 
 	@Override
 	public int hashCode() {
-		return metadata.hashCode();
+		return Objects.hashCode(metadata);
 	}
 
 	@Override

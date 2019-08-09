@@ -28,6 +28,7 @@ import com.radixdlt.serialization.SerializerId2;
 import org.radix.state.State;
 import org.radix.time.Chronologic;
 import org.radix.time.NtpService;
+import org.radix.time.Time;
 import org.radix.time.Timestamps;
 import org.radix.universe.system.RadixSystem;
 
@@ -170,7 +171,7 @@ public class Peer extends BasicContainer implements Chronologic
 	void onConnected() {
 		synchronized (LOCK) {
 			setState(new State(State.CONNECTED));
-			setTimestamp(Timestamps.CONNECTED, Modules.get(NtpService.class).getUTCTimeMS());
+			setTimestamp(Timestamps.CONNECTED, Time.currentTimestamp());
 			Events.getInstance().broadcast(new PeerConnectedEvent(this));
 		}
 	}

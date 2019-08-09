@@ -7,8 +7,6 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
-
 import org.radix.network.PublicInetAddress;
 import org.radix.network2.addressbook.Peer;
 import org.radix.network2.transport.SendResult;
@@ -64,16 +62,6 @@ class UDPTransportOutboundConnection implements TransportOutboundConnection {
 				return SendResult.failure(exception);
 			}
 		});
-	}
-
-	@Override
-	public CompletableFuture<SendResult> trySend(byte[] data) {
-		return send(data);
-	}
-
-	@Override
-	public CompletableFuture<SendResult> trySend(byte[] data, TimeUnit timeout) {
-		return send(data);
 	}
 
 	private byte getAddressFormat(InetAddress src, InetAddress dst) {

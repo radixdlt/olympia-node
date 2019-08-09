@@ -7,7 +7,6 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Random;
 import java.util.function.LongSupplier;
-
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.modules.Modules;
@@ -22,7 +21,7 @@ public final class PublicInetAddress {
 	static final int SECRET_LIFETIME_MS = 60_000;
 	private static final Logger log = Logging.getLogger("network");
 
-	static boolean isPublicUnicastInetAddress(InetAddress address) {
+	public static boolean isPublicUnicastInetAddress(InetAddress address) {
 		return ! (address.isSiteLocalAddress() || address.isLinkLocalAddress() ||
 				  address.isLoopbackAddress() || address.isMulticastAddress());
 	}
@@ -41,16 +40,17 @@ public final class PublicInetAddress {
 
 	public static void configure(String localAddress, int localPort) {
 		synchronized(INSTANCE_LOCK) {
-			instance = new PublicInetAddress(localAddress, localPort, System::currentTimeMillis);
+			instance = new PublicInetAddress(localAddress, localPort, System::currentTimeMillis, DatagramSocket::new);
 		}
 	}
 
 	private final Object lock = new Object();
 	private final Random prng = new Random(System.nanoTime());
 
-	private final LongSupplier timeSource;
 	private final InetAddress localAddress;
 	private final int localPort;
+	private final LongSupplier timeSource;
+	private final DatagramSocketFactory socketFactory;
 
 	private InetAddress confirmedAddress;
 	private InetAddress unconfirmedAddress;
@@ -58,10 +58,11 @@ public final class PublicInetAddress {
 	private long secretEndOfLife = Long.MIN_VALUE; // Very much expired
 
 	@VisibleForTesting
-	PublicInetAddress(String localAddress, int localPort, LongSupplier timeSource) {
-		this.timeSource = timeSource;
-		this.localPort = localPort;
+	PublicInetAddress(String localAddress, int localPort, LongSupplier timeSource, DatagramSocketFactory socketFactory) {
 		this.localAddress = getLocalAddress(localAddress);
+		this.localPort = localPort;
+		this.timeSource = timeSource;
+		this.socketFactory = socketFactory;
 	}
 
 	public InetAddress get() {
@@ -78,7 +79,7 @@ public final class PublicInetAddress {
 	 * @param address untrusted address to validate
 	 * @see #endValidation(DatagramPacket)
 	 */
-	void startValidation(InetAddress address) throws IOException {
+	public void startValidation(InetAddress address) throws IOException {
 		long data;
 
 		// update state in a thread-safe manner
@@ -102,7 +103,7 @@ public final class PublicInetAddress {
 			secretEndOfLife = now + SECRET_LIFETIME_MS;
 		}
 
-		log.info("validating untrusted public address: " + address);
+		log.info("validating untrusted public address: " + address.getHostAddress());
 		sendSecret(address, data);
 	}
 
@@ -112,20 +113,20 @@ public final class PublicInetAddress {
 	 * @param packet packet previously sent by start validation.
 	 * @return true when packet was part of the validation process(and can be ignored by the caller) false otherwise.
 	 */
-	boolean endValidation(DatagramPacket packet) {
+	public boolean endValidation(byte[] data, int offset, int len) {
 		// Make sure secret doesn't change mid-check
 		long secret = this.secret;
 
 		// quick return - in case this is not our packet, or we have not yet been set up
-		if (packet == null || packet.getLength() != Long.BYTES) {
+		if (data == null || len != Long.BYTES) {
 			return false;
 		}
 
-		if (Longs.fromByteArray(packet.getData()) != secret) {
+		if (Longs.fromByteArray(data, offset) != secret) {
 			return false;
 		}
 
-		log.info("public address is confirmed valid: " + unconfirmedAddress);
+		log.info("public address is confirmed valid: " + unconfirmedAddress.getHostAddress());
 
 		// update state in a thread-safe manner
 		synchronized (lock) {
@@ -145,7 +146,7 @@ public final class PublicInetAddress {
 	private void sendSecret(InetAddress address, long secret) throws IOException {
 		byte[] bytes = Longs.toByteArray(secret);
 		DatagramPacket packet = new DatagramPacket(bytes, bytes.length, address, localPort);
-		try (DatagramSocket socket = new DatagramSocket(null)) {
+		try (DatagramSocket socket = socketFactory.create(null)) {
 			socket.send(packet);
 		}
 	}

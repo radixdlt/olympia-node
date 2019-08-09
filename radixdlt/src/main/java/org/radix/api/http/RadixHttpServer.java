@@ -119,6 +119,8 @@ public final class RadixHttpServer {
 
         Integer port = Modules.get(RuntimeProperties.class).get("cp.port", DEFAULT_PORT);
         Filter corsFilter = new Filter(handler);
+        // Disable INFO logging for CORS filter, as it's a bit distracting
+        java.util.logging.Logger.getLogger(corsFilter.getClass().getName()).setLevel(java.util.logging.Level.WARNING);
         corsFilter.setPolicyClass(AllowAll.class.getName());
         corsFilter.setUrlPattern("^.*$");
         server = Undertow.builder()

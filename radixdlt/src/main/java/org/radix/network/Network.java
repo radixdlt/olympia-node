@@ -179,7 +179,7 @@ public class Network extends Service
 						continue;
 
 					// part of the local address validation process
-					if (localAddress.endValidation(datagramPacket))
+					if (localAddress.endValidation(datagramPacket.getData(), datagramPacket.getOffset(), datagramPacket.getLength()))
 						continue;
 
 		    		long start = SystemProfiler.getInstance().begin();
