@@ -13,8 +13,10 @@ import com.radixdlt.constraintmachine.ConstraintProcedure;
 import com.radixdlt.constraintmachine.ProcedureError;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.Stack;
 import java.util.function.BiPredicate;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -36,6 +38,7 @@ public final class RRIConstraintProcedure implements ConstraintProcedure {
 	}
 
 	private final Map<Class<? extends Particle>, ParticleToRRIMapper<Particle>> indexedParticles;
+	private final Set<Class<? extends Particle>> secondaryParticles;
 	private final Map<Class<? extends Particle>, SecondaryResource<? extends Particle>> secondary;
 
 	RRIConstraintProcedure(
@@ -44,6 +47,7 @@ public final class RRIConstraintProcedure implements ConstraintProcedure {
 	) {
 		this.indexedParticles = ImmutableMap.copyOf(indexedParticles);
 		this.secondary = secondary;
+		this.secondaryParticles = secondary.entrySet().stream().map(e -> e.getValue().particleClass).collect(Collectors.toSet());
 	}
 
 	public static final class Builder {
@@ -148,15 +152,22 @@ public final class RRIConstraintProcedure implements ConstraintProcedure {
 				} else if (this.indexedParticles.containsKey(p.getClass())) {
 					inputs.push(Pair.of(p, null));
 				}
-			} else if (sp.getSpin() == Spin.UP && (this.indexedParticles.containsKey(p.getClass())) || p instanceof RRIParticle) {
+			} else if (sp.getSpin() == Spin.UP
+				&& (this.indexedParticles.containsKey(p.getClass())) || this.secondaryParticles.contains(p.getClass()) || p instanceof RRIParticle) {
 				outputs.push(Pair.of(p, null));
 			}
 		}
 
 		if (!inputs.empty()) {
-			return Stream.of(ProcedureError.of("Input stack not empty"));
-		} else if (!outputs.empty()) {
-			return Stream.of(ProcedureError.of("Output stack not empty"));
+			return Stream.of(ProcedureError.of("RRI Failure Input stack: " + inputs.toString() + " Output stack: " + outputs.toString()));
+		}
+
+		if (!outputs.empty()) {
+			// Hack for now, it is possible to have outputs from the fungible system
+			// TODO: Clean this up!
+			if (!outputs.stream().allMatch(p -> secondaryParticles.contains(p.getFirst().getClass()))) {
+				return Stream.of(ProcedureError.of("RRI Failure Input stack: " + inputs.toString() + " Output stack: " + outputs.toString()));
+			}
 		}
 
 		return Stream.empty();

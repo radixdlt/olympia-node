@@ -112,7 +112,7 @@ public class FungibleTransitionConstraintProcedure implements ConstraintProcedur
 				if (remove != null) {
 					otherOutput.remove(remove);
 				} else {
-					return Stream.of(ProcedureError.of("Output stack not empty"));
+					return Stream.of(ProcedureError.of("Fungible failure Input stack: " + inputs.toString() + " Output stack: " + outputs.toString()));
 				}
 			}
 		}

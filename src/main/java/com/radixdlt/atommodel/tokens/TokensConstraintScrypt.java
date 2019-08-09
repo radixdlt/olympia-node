@@ -93,11 +93,13 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 		// Require Token Definition to be created with unallocated tokens of max supply
 		os.newResource(
 			TokenDefinitionParticle.class,
-			TokenDefinitionParticle::getRRI
-		)
-			.requireInitialWith(UnallocatedTokensParticle.class, (tokDef, unallocated, meta) ->
-				Result.of(unallocated.getTokDefRef().equals(tokDef.getRRI()), "Unallocated particles RRI must match Token RRI")
-			);
+			TokenDefinitionParticle::getRRI,
+			UnallocatedTokensParticle.class,
+			UnallocatedTokensParticle::getTokDefRef,
+			(tokDef, unallocated) ->
+				Objects.equals(unallocated.getGranularity(), tokDef.getGranularity())
+				&& Objects.equals(unallocated.getTokenPermissions(), tokDef.getTokenPermissions())
+		);
 
 		os.on(UnallocatedTokensParticle.class)
 			.require(u -> Result.of(!u.getAmount().isZero(), "Amount cannot be zero"));
@@ -118,8 +120,8 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 		)
 			.requireInitialWith(TokenDefinitionParticle.class, (unallocated, tokDef, meta) -> Result.combine(
 				Result.of(unallocated.getTokDefRef().equals(tokDef.getRRI()), "TokenDefRef should be the same"),
-				Result.of(unallocated.getGranularity().equals(tokDef.getGranularity()), "Granularity should match"),
-				Result.of(unallocated.getTokenPermissions().equals(tokDef.getTokenPermissions()), "Permissions should match")
+				Result.of(unallocated.getGranularity().equals(tokDef.getGranularity()), "Granularity should be the same"),
+				Result.of(unallocated.getTokenPermissions().equals(tokDef.getTokenPermissions()), "Permissions should be the same")
 			))
 			.transitionTo(
 				UnallocatedTokensParticle.class,

@@ -66,6 +66,7 @@ public class TestAtomOS implements AtomOS {
 		ParticleToRRIMapper<U> rriMapper1,
 		BiPredicate<T, U> combinedResource
 	) {
+		resources.put(particleClass0, p -> rriMapper0.index((T) p));
 	}
 
 	@Override
