@@ -1,29 +1,44 @@
 package com.radixdlt.ledger.exceptions;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.Atom;
+import com.radixdlt.common.AID;
 import com.radixdlt.ledger.LedgerIndex;
 
 import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+/**
+ * An exception thrown when a unique key constraint is violated
+ */
 public class LedgerKeyConstraintException extends LedgerException {
-	private final ImmutableSet<LedgerIndex> offendingIndices;
+	private final Atom atom;
+	private final ImmutableMap<LedgerIndex, Atom> conflictingAtoms;
 
-	public LedgerKeyConstraintException(ImmutableSet<LedgerIndex> offendingIndices) {
-		super(getMessage(offendingIndices));
-		this.offendingIndices = offendingIndices;
+	public LedgerKeyConstraintException(Atom atom, ImmutableMap<LedgerIndex, Atom> conflictingAtoms) {
+		super(getMessage(atom, conflictingAtoms));
+		this.atom = Objects.requireNonNull(atom, "atom is required");
+		this.conflictingAtoms = conflictingAtoms;
 	}
 
-	public LedgerKeyConstraintException(ImmutableSet<LedgerIndex> offendingIndices, Throwable cause) {
-		super(getMessage(offendingIndices), cause);
-		this.offendingIndices = offendingIndices;
+	private static String getMessage(Atom atom, ImmutableMap<LedgerIndex, Atom> conflictingAtoms) {
+		Objects.requireNonNull(conflictingAtoms, "conflictingAtoms is required");
+		return String.format("Atom '%s' violated key constraints: %s", atom.getAID(), conflictingAtoms);
 	}
 
-	private static String getMessage(ImmutableSet<LedgerIndex> offendingIndices) {
-		Objects.requireNonNull(offendingIndices, "offendingIndices is required");
-		return String.format("Indices violated key constraints: %s", offendingIndices);
+	public ImmutableMap<LedgerIndex, Atom> getConflictingAtoms() {
+		return conflictingAtoms;
 	}
 
-	public ImmutableSet<LedgerIndex> getOffendingIndices() {
-		return offendingIndices;
+	public Atom getAtom() {
+		return atom;
+	}
+
+	public ImmutableSet<AID> getAllAids() {
+		return Stream.concat(Stream.of(atom), conflictingAtoms.values().stream())
+			.map(Atom::getAID)
+			.collect(ImmutableSet.toImmutableSet());
 	}
 }

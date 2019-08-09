@@ -1,8 +1,10 @@
 package com.radixdlt.tempo.store;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import com.radixdlt.Atom;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.Pair;
 import com.radixdlt.ledger.LedgerCursor;
@@ -10,7 +12,6 @@ import com.radixdlt.ledger.LedgerCursor.Type;
 import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerSearchMode;
 import com.radixdlt.ledger.exceptions.LedgerKeyConstraintException;
-import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
@@ -233,12 +234,13 @@ public class TempoAtomStore implements AtomStore {
 
 	@Override
 	public Optional<TempoAtom> get(AID aid) {
+		Transaction transaction = null;
 		long start = profiler.begin();
 		try {
 			DatabaseEntry key = new DatabaseEntry(LedgerIndex.from(ATOM_INDEX_PREFIX, aid.getBytes()));
 			DatabaseEntry value = new DatabaseEntry();
 
-			if (this.uniqueIndices.get(null, key, value, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
+			if (this.uniqueIndices.get(transaction, key, value, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
 				return Optional.of(serialization.fromDson(value.getData(), TempoAtom.class));
 			}
 		} catch (Exception e) {
@@ -346,11 +348,37 @@ public class TempoAtomStore implements AtomStore {
 			}
 		} catch (UniqueConstraintException e) {
 			logger.error("Unique indices violated key constraint", e);
-			throw new LedgerKeyConstraintException(ImmutableSet.copyOf(uniqueIndices), e);
+
+			ImmutableMap<LedgerIndex, Atom> conflictingAtoms = doGetConflictingAtoms(uniqueIndices, transaction);
+			throw new LedgerKeyConstraintException(atom, conflictingAtoms);
 		} finally {
 			this.currentIndices.remove(localTemporalVertex.getClock());
 		}
 		return true;
+	}
+
+	private ImmutableMap<LedgerIndex, Atom> doGetConflictingAtoms(Set<LedgerIndex> uniqueIndices, Transaction transaction) {
+		ImmutableMap.Builder<LedgerIndex, Atom> conflictingAtoms = ImmutableMap.builder();
+		try {
+			DatabaseEntry key = new DatabaseEntry();
+			DatabaseEntry pKey = new DatabaseEntry();
+			DatabaseEntry value = new DatabaseEntry();
+			for (LedgerIndex uniqueIndex : uniqueIndices) {
+				key.setData(uniqueIndex.asKey());
+				if (this.uniqueIndices.get(transaction, key, pKey, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
+					OperationStatus status = this.atoms.get(transaction, pKey, value, LockMode.DEFAULT);
+					if (status != OperationStatus.SUCCESS) {
+						fail("Getting conflicting atom for index " + uniqueIndex + " failed with status " + status);
+					}
+					Atom conflictingAtom = serialization.fromDson(value.getData(), Atom.class);
+					conflictingAtoms.put(uniqueIndex, conflictingAtom);
+				}
+			}
+		} catch (Exception e) {
+			fail("Failed getting conflicting atom for unique indices " + uniqueIndices);
+		}
+
+		return conflictingAtoms.build();
 	}
 
 	private boolean doDelete(AID aid, Transaction transaction) throws SerializationException {
@@ -524,7 +552,7 @@ public class TempoAtomStore implements AtomStore {
 
 		try {
 			DatabaseEntry pKey = new DatabaseEntry();
-			DatabaseEntry key = new DatabaseEntry(index.getKey());
+			DatabaseEntry key = new DatabaseEntry(index.asKey());
 
 			if (mode == LedgerSearchMode.EXACT) {
 				if (databaseCursor.getSearchKey(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
@@ -655,7 +683,7 @@ public class TempoAtomStore implements AtomStore {
 		public void createSecondaryKeys(SecondaryDatabase database, DatabaseEntry key, DatabaseEntry value, Set<DatabaseEntry> secondaries) {
 			// key should be primary key where first 8 bytes is the long clock
 			Set<LedgerIndex> indices = indexer.apply(key);
-			indices.forEach(index -> secondaries.add(new DatabaseEntry(index.getKey())));
+			indices.forEach(index -> secondaries.add(new DatabaseEntry(index.asKey())));
 		}
 
 		private static AtomSecondaryCreator from(Map<Long, TempoAtomIndices> atomIndices, Function<TempoAtomIndices, Set<LedgerIndex>> indexer) {

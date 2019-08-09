@@ -4,8 +4,11 @@ import com.radixdlt.common.EUID;
 import com.radixdlt.common.Pair;
 import com.radixdlt.tempo.ConflictResolver;
 import com.radixdlt.tempo.TempoAtom;
+import org.radix.time.TemporalProof;
 
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;

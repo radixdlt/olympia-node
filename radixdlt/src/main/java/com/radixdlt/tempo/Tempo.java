@@ -33,6 +33,7 @@ import org.radix.time.Time;
 import org.radix.universe.system.LocalSystem;
 import org.radix.utils.SystemProfiler;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -85,7 +86,7 @@ public final class Tempo extends Plugin implements Ledger {
 
 	@Override
 	public boolean store(Atom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
-		TempoAtom tempoAtom = (TempoAtom) atom;
+		TempoAtom tempoAtom = convertToTempoAtom(atom);
 		if (store.contains(atom.getAID())) {
 			return false;
 		}
@@ -111,7 +112,7 @@ public final class Tempo extends Plugin implements Ledger {
 
 	@Override
 	public boolean replace(Set<AID> aids, Atom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
-		TempoAtom tempoAtom = (TempoAtom) atom;
+		TempoAtom tempoAtom = convertToTempoAtom(atom);
 		if (store.contains(atom.getAID())) {
 			return false;
 		}
@@ -131,7 +132,7 @@ public final class Tempo extends Plugin implements Ledger {
 	}
 
 	@Override
-	public CompletableFuture<Atom> resolve(Atom atom, Set<Atom> conflictingAtoms) {
+	public CompletableFuture<Atom> resolve(Atom atom, Collection<Atom> conflictingAtoms) {
 		logger.info("Resolving conflict between " + atom + " and " + conflictingAtoms);
 
 		return resolver.resolve((TempoAtom) atom, conflictingAtoms.stream()
@@ -188,7 +189,6 @@ public final class Tempo extends Plugin implements Ledger {
 		atom.getTemporalProof().setState(StateDomain.VALIDATION, new State(State.COMPLETE));
 	}
 
-
 	@Override
 	public List<Class<? extends Module>> getDependsOn() {
 		return ImmutableList.of(
@@ -221,6 +221,22 @@ public final class Tempo extends Plugin implements Ledger {
 	public String getName() {
 		return "Tempo";
 	}
+
+	private static TempoAtom convertToTempoAtom(Atom atom) {
+		if (atom instanceof TempoAtom) {
+			return (TempoAtom) atom;
+		} else {
+			if (logger.hasLevel(Logging.DEBUG)) {
+				logger.debug("Converting foreign atom '" + atom.getAID() + "' to Tempo atom");
+			}
+			return new TempoAtom(
+				atom.getContent(),
+				atom.getAID(),
+				atom.getTimestamp(),
+				atom.getShards()
+			);
+		}
+ 	}
 
 	public static Builder builder() {
 		return new Builder();

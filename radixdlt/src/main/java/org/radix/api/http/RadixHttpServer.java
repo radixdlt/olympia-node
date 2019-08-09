@@ -8,6 +8,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.radixdlt.mock.MockAccessor;
+import com.radixdlt.mock.MockApplication;
 import com.radixdlt.tempo.AtomStoreView;
 import com.radixdlt.tempo.AtomSyncView;
 import org.json.JSONArray;
@@ -22,8 +24,6 @@ import org.radix.api.services.InternalService;
 import org.radix.api.services.NetworkService;
 import org.radix.api.services.TestService;
 import org.radix.api.services.UniverseService;
-import org.radix.atoms.AtomStore;
-import org.radix.atoms.sync.AtomSync;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.modules.Modules;
@@ -133,6 +133,17 @@ public final class RadixHttpServer {
     }
 
     private void addDevelopmentOnlyRoutesTo(RoutingHandler handler) {
+    	addGetRoute("/api/internal/mock/spam", exchange -> {
+			if (Modules.isAvailable(MockAccessor.class)) {
+				String atomCountStr = getParameter(exchange, "atoms").orElse("1");
+				int atomCount = Integer.parseUnsignedInt(atomCountStr);
+				respond("Spamming " + atomCount + " random atom(s)", exchange);
+				Modules.get(MockAccessor.class).spam(atomCount);
+			} else {
+				respond("Mock application is unavailable", exchange);
+			}
+	    }, handler);
+
         addGetRoute("/api/internal/spamathon", exchange -> {
             String iterations = getParameter(exchange, "iterations").orElse(null);
             String batching = getParameter(exchange, "batching").orElse(null);

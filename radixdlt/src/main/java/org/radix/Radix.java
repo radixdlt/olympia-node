@@ -5,7 +5,8 @@ import java.lang.reflect.Modifier;
 import java.security.SecureRandom;
 import java.security.Security;
 
-import com.radixdlt.ledger.MockApplication;
+import com.radixdlt.mock.MockAccessor;
+import com.radixdlt.mock.MockApplication;
 import com.radixdlt.tempo.Tempo;
 import org.apache.commons.cli.CommandLine;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -268,11 +269,9 @@ public class Radix extends Plugin
 			Tempo tempo = Tempo.defaultBuilder().build();
 			Modules.getInstance().start(tempo);
 
-			int numMockApplications = Modules.get(RuntimeProperties.class).get("tempo2.mockApplications", 1);
 			MockApplication mockApplication = new MockApplication(tempo);
-			for (int i = 0; i < numMockApplications; i++) {
-				mockApplication.startInstance();
-			}
+			mockApplication.startInstance();
+			Modules.put(MockAccessor.class, mockApplication.getAccessor());
 		}
 
 		/*

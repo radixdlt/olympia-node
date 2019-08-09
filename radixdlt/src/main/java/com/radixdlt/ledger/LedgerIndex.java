@@ -25,10 +25,6 @@ public final class LedgerIndex {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private byte[] identifier;
 
-	public static byte[] from(byte prefix, byte[] identifier) {
-		return Arrays.concatenate(new byte[]{prefix}, identifier);
-	}
-
 	private LedgerIndex() {
 		// For serializer
 	}
@@ -53,7 +49,30 @@ public final class LedgerIndex {
 		return this.identifier;
 	}
 
-	public byte[] getKey() {
+	public byte[] asKey() {
 		return from(this.prefix, this.identifier);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		LedgerIndex that = (LedgerIndex) o;
+		return prefix == that.prefix && java.util.Arrays.equals(identifier, that.identifier);
+	}
+
+	@Override
+	public int hashCode() {
+		int result = Objects.hash(prefix);
+		result = 31 * result + Arrays.hashCode(identifier);
+		return result;
+	}
+
+	public static byte[] from(byte prefix, byte[] identifier) {
+		return Arrays.concatenate(new byte[]{prefix}, identifier);
 	}
 }

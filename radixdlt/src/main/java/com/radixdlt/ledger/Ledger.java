@@ -6,6 +6,7 @@ import com.radixdlt.ledger.LedgerCursor.Type;
 import com.radixdlt.ledger.exceptions.LedgerException;
 import com.radixdlt.ledger.exceptions.LedgerKeyConstraintException;
 
+import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -83,14 +84,13 @@ public interface Ledger {
 	LedgerCursor search(Type type, LedgerIndex index, LedgerSearchMode mode);
 
 	/**
-	 * Resolves a conflict between a non-empty set of atoms, returns the winning atom.
+	 * Resolves a conflict between an atom and non-empty set of conflicting atoms.
 	 *
-	 *
-	 * @param atom
+	 * @param atom The atom
 	 * @param conflictingAtoms The non-empty set of conflicting atoms
 	 * @return a {@link Future} yielding the winning atom
 	 *
 	 * @throws LedgerException in case of internal errors
 	 */
-	CompletableFuture<Atom> resolve(Atom atom, Set<Atom> conflictingAtoms);
+	CompletableFuture<Atom> resolve(Atom atom, Collection<Atom> conflictingAtoms);
 }

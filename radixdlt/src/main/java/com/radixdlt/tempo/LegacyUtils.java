@@ -5,7 +5,7 @@ import org.radix.atoms.Atom;
 
 import java.util.stream.Collectors;
 
-public class LegacyUtils {
+public final class LegacyUtils {
 	private LegacyUtils() {
 		throw new IllegalStateException("Can't construct");
 	}

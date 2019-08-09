@@ -1469,7 +1469,7 @@ public class AtomStore extends DatabaseStore implements DiscoverySource<AtomDisc
 		try
 		{
 			DatabaseEntry pKey = new DatabaseEntry();
-			DatabaseEntry key = new DatabaseEntry(indexable.getKey());
+			DatabaseEntry key = new DatabaseEntry(indexable.asKey());
 			
 			if (mode == LedgerSearchMode.EXACT)
 			{
