@@ -10,6 +10,8 @@ import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.AtomMetadata;
 import com.radixdlt.constraintmachine.ConstraintProcedure;
 import com.radixdlt.constraintmachine.ProcedureError;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Stack;
 import java.util.stream.Stream;
 
@@ -18,6 +20,7 @@ import java.util.stream.Stream;
  */
 public final class TransitionlessConstraintProcedure implements ConstraintProcedure {
 	private final ImmutableMap<Class<? extends Particle>, WitnessValidator<Particle>> transitionlessParticles;
+	private final Map<Class<? extends Particle>, InputParticleProcedure> procedures = new HashMap<>();
 
 	public static final class Builder {
 		private final ImmutableMap.Builder<Class<? extends Particle>, WitnessValidator<Particle>> setBuilder = new ImmutableMap.Builder<>();
@@ -34,24 +37,21 @@ public final class TransitionlessConstraintProcedure implements ConstraintProced
 
 	TransitionlessConstraintProcedure(ImmutableMap<Class<? extends Particle>, WitnessValidator<Particle>> transitionlessParticles) {
 		this.transitionlessParticles = transitionlessParticles;
-	}
-
-	private boolean transitionlessInputParticleExecutor(Particle input, AtomMetadata metadata, Stack<Pair<Particle, Void>> outputs) {
-		return false;
+		this.transitionlessParticles.forEach((p, m) -> this.procedures.put(p, (a, b, c) -> false));
 	}
 
 	@Override
 	public Stream<ProcedureError> validate(ParticleGroup group, AtomMetadata metadata) {
-		final Stack<Pair<Particle, Void>> inputs = new Stack<>();
-		final Stack<Pair<Particle, Void>> outputs = new Stack<>();
+		final Stack<Pair<Particle, Object>> outputs = new Stack<>();
 
 		for (int i = group.getParticleCount() - 1; i >= 0; i--) {
 			SpunParticle sp = group.getSpunParticle(i);
 			Particle p = sp.getParticle();
 			if (sp.getSpin() == Spin.DOWN) {
-				if (transitionlessParticles.containsKey(p.getClass())) {
-					if (!this.transitionlessInputParticleExecutor(p, metadata, outputs)) {
-						inputs.push(Pair.of(p, null));
+				InputParticleProcedure inputParticleProcedure = this.procedures.get(p.getClass());
+				if (inputParticleProcedure != null) {
+					if (!inputParticleProcedure.execute(p, metadata, outputs)) {
+						return Stream.of(ProcedureError.of("Input " + p + " failed. Output stack: " + outputs));
 					}
 				}
 			} else {
@@ -63,8 +63,8 @@ public final class TransitionlessConstraintProcedure implements ConstraintProced
 			}
 		}
 
-		if (!inputs.empty() || !outputs.empty()) {
-			return Stream.of(ProcedureError.of("Transitionless Failure Input stack: " + inputs.toString() + " Output stack: " + outputs.toString()));
+		if (!outputs.empty()) {
+			return Stream.of(ProcedureError.of("Transitionless Failure Output stack: " + outputs.toString()));
 		}
 
 		return Stream.empty();
