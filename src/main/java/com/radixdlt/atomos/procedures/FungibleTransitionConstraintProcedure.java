@@ -13,6 +13,7 @@ import com.radixdlt.constraintmachine.AtomMetadata;
 import com.radixdlt.constraintmachine.ConstraintProcedure;
 import com.radixdlt.constraintmachine.ProcedureError;
 import com.radixdlt.utils.UInt256;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -27,6 +28,7 @@ import java.util.stream.Stream;
  */
 public class FungibleTransitionConstraintProcedure implements ConstraintProcedure {
 	private final Map<Class<? extends Particle>, FungibleDefinition<? extends Particle>> fungibles;
+	private final Map<Class<? extends Particle>, InputParticleProcedure> procedures = new HashMap<>();
 
 	public FungibleTransitionConstraintProcedure(ImmutableMap<Class<? extends Particle>, FungibleDefinition<? extends Particle>> fungibles) {
 		Objects.requireNonNull(fungibles);
@@ -38,16 +40,18 @@ public class FungibleTransitionConstraintProcedure implements ConstraintProcedur
 				throw new IllegalArgumentException("Outputs not all accounted for");
 			}
 		}
+
+		this.fungibles.forEach((p, d) -> procedures.put(p, this::fungibleInputParticleExecutor));
 	}
 
-	private UInt256 fungibleInputParticleExecutor(Particle input, AtomMetadata metadata, Stack<Pair<Particle, UInt256>> outputs) {
+	private boolean fungibleInputParticleExecutor(Particle input, AtomMetadata metadata, Stack<Pair<Particle, Object>> outputs) {
 		UInt256 currentInput = fungibles.get(input.getClass()).mapToAmount(input);
 
 		while (!currentInput.isZero()) {
 			if (outputs.empty()) {
 				break;
 			}
-			Pair<Particle, UInt256> top = outputs.peek();
+			Pair<Particle, Object> top = outputs.peek();
 			Particle toParticle = top.getFirst();
 			FungibleFormula formula = fungibles.get(input.getClass()).getParticleClassToFormulaMap().get(toParticle.getClass());
 			if (formula == null) {
@@ -61,7 +65,7 @@ public class FungibleTransitionConstraintProcedure implements ConstraintProcedur
 			}
 
 			outputs.pop();
-			UInt256 outputAmount = top.getSecond();
+			UInt256 outputAmount = (UInt256) top.getSecond();
 			UInt256 min = UInt256.min(currentInput, outputAmount);
 			UInt256 newOutputAmount = outputAmount.subtract(min);
 			if (!newOutputAmount.isZero()) {
@@ -71,30 +75,29 @@ public class FungibleTransitionConstraintProcedure implements ConstraintProcedur
 			currentInput = currentInput.subtract(min);
 		}
 
-		return currentInput;
+		return currentInput.isZero();
 	}
 
 	@Override
 	public Stream<ProcedureError> validate(ParticleGroup group, AtomMetadata metadata) {
-		final Stack<Pair<Particle, UInt256>> inputs = new Stack<>();
-		final Stack<Pair<Particle, UInt256>> outputs = new Stack<>();
+		final Stack<Pair<Particle, Object>> outputs = new Stack<>();
 
 		for (int i = group.getParticleCount() - 1; i >= 0; i--) {
 			SpunParticle sp = group.getSpunParticle(i);
 			Particle p = sp.getParticle();
-			if (sp.getSpin() == Spin.DOWN && this.fungibles.containsKey(p.getClass())) {
-				UInt256 leftOver = fungibleInputParticleExecutor(p, metadata, outputs);
-				if (!leftOver.isZero()) {
-					inputs.push(Pair.of(p, leftOver));
+			if (sp.getSpin() == Spin.DOWN) {
+				InputParticleProcedure inputParticleProcedure = this.procedures.get(p.getClass());
+				if (inputParticleProcedure != null) {
+					if (!inputParticleProcedure.execute(p, metadata, outputs)) {
+						return Stream.of(ProcedureError.of("Input " + p + " failed. Output stack: " + outputs));
+					}
 				}
 			} else if (sp.getSpin() == Spin.UP && this.fungibles.containsKey(p.getClass())) {
 				outputs.push(Pair.of(p, fungibles.get(p.getClass()).mapToAmount(p)));
 			}
 		}
 
-		if (!inputs.empty()) {
-			return Stream.of(ProcedureError.of("Input stack not empty"));
-		} else if (!outputs.empty()) {
+		if (!outputs.empty()) {
 			final List<Particle> outputParticles = outputs.stream().map(Pair::getFirst).collect(Collectors.toList());
 			final Set<Particle> otherOutput = group.particles(Spin.UP).collect(Collectors.toSet());
 			for (Particle p : outputParticles) {
@@ -117,7 +120,7 @@ public class FungibleTransitionConstraintProcedure implements ConstraintProcedur
 				if (remove != null) {
 					otherOutput.remove(remove);
 				} else {
-					return Stream.of(ProcedureError.of("Fungible failure Input stack: " + inputs.toString() + " Output stack: " + outputs.toString()));
+					return Stream.of(ProcedureError.of("Fungible failure Output stack: " + outputs.toString()));
 				}
 			}
 		}
