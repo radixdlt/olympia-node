@@ -20,7 +20,7 @@ import java.util.stream.Stream;
  */
 public final class TransitionlessConstraintProcedure implements ConstraintProcedure {
 	private final ImmutableMap<Class<? extends Particle>, WitnessValidator<Particle>> transitionlessParticles;
-	private final Map<Class<? extends Particle>, InputParticleProcedure> procedures = new HashMap<>();
+	private final Map<Class<? extends Particle>, ParticleProcedure> procedures = new HashMap<>();
 
 	public static final class Builder {
 		private final ImmutableMap.Builder<Class<? extends Particle>, WitnessValidator<Particle>> setBuilder = new ImmutableMap.Builder<>();
@@ -37,7 +37,17 @@ public final class TransitionlessConstraintProcedure implements ConstraintProced
 
 	TransitionlessConstraintProcedure(ImmutableMap<Class<? extends Particle>, WitnessValidator<Particle>> transitionlessParticles) {
 		this.transitionlessParticles = transitionlessParticles;
-		this.transitionlessParticles.forEach((p, m) -> this.procedures.put(p, (a, b, c) -> false));
+		this.transitionlessParticles.forEach((p, m) -> this.procedures.put(p, new ParticleProcedure() {
+			@Override
+			public boolean inputExecute(Particle input, AtomMetadata metadata, Stack<Pair<Particle, Object>> outputs) {
+				return false;
+			}
+
+			@Override
+			public boolean outputExecute(Particle output, AtomMetadata metadata) {
+				return transitionlessParticles.get(output.getClass()).validate(output, metadata).isSuccess();
+			}
+		}));
 	}
 
 	@Override
@@ -47,18 +57,17 @@ public final class TransitionlessConstraintProcedure implements ConstraintProced
 		for (int i = group.getParticleCount() - 1; i >= 0; i--) {
 			SpunParticle sp = group.getSpunParticle(i);
 			Particle p = sp.getParticle();
+			ParticleProcedure particleProcedure = this.procedures.get(p.getClass());
+			if (particleProcedure == null) {
+				continue;
+			}
 			if (sp.getSpin() == Spin.DOWN) {
-				InputParticleProcedure inputParticleProcedure = this.procedures.get(p.getClass());
-				if (inputParticleProcedure != null) {
-					if (!inputParticleProcedure.execute(p, metadata, outputs)) {
-						return Stream.of(ProcedureError.of("Input " + p + " failed. Output stack: " + outputs));
-					}
+				if (!particleProcedure.inputExecute(p, metadata, outputs)) {
+					return Stream.of(ProcedureError.of("Transitionless Failure Input " + p + " failed. Output stack: " + outputs));
 				}
 			} else {
-				if (transitionlessParticles.containsKey(p.getClass())) {
-					if (transitionlessParticles.get(p.getClass()).validate(p, metadata).isError()) {
-						outputs.push(Pair.of(p, null));
-					}
+				if (!particleProcedure.outputExecute(p, metadata)) {
+					outputs.push(Pair.of(p, null));
 				}
 			}
 		}

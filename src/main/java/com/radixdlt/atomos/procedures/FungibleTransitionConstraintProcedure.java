@@ -28,7 +28,7 @@ import java.util.stream.Stream;
  */
 public class FungibleTransitionConstraintProcedure implements ConstraintProcedure {
 	private final Map<Class<? extends Particle>, FungibleDefinition<? extends Particle>> fungibles;
-	private final Map<Class<? extends Particle>, InputParticleProcedure> procedures = new HashMap<>();
+	private final Map<Class<? extends Particle>, ParticleProcedure> procedures = new HashMap<>();
 
 	public FungibleTransitionConstraintProcedure(ImmutableMap<Class<? extends Particle>, FungibleDefinition<? extends Particle>> fungibles) {
 		Objects.requireNonNull(fungibles);
@@ -41,41 +41,48 @@ public class FungibleTransitionConstraintProcedure implements ConstraintProcedur
 			}
 		}
 
-		this.fungibles.forEach((p, d) -> procedures.put(p, this::fungibleInputParticleExecutor));
-	}
+		this.fungibles.forEach((p, d) -> procedures.put(p, new ParticleProcedure() {
+			@Override
+			public boolean inputExecute(Particle input, AtomMetadata metadata, Stack<Pair<Particle, Object>> outputs) {
+				UInt256 currentInput = fungibles.get(input.getClass()).mapToAmount(input);
 
-	private boolean fungibleInputParticleExecutor(Particle input, AtomMetadata metadata, Stack<Pair<Particle, Object>> outputs) {
-		UInt256 currentInput = fungibles.get(input.getClass()).mapToAmount(input);
+				while (!currentInput.isZero()) {
+					if (outputs.empty()) {
+						break;
+					}
+					Pair<Particle, Object> top = outputs.peek();
+					Particle toParticle = top.getFirst();
+					FungibleFormula formula = fungibles.get(input.getClass()).getParticleClassToFormulaMap().get(toParticle.getClass());
+					if (formula == null) {
+						break;
+					}
+					if (!formula.getTransition().test(input, toParticle)) {
+						break;
+					}
+					if (formula.getWitnessValidator().validate(input, metadata).isError()) {
+						break;
+					}
 
-		while (!currentInput.isZero()) {
-			if (outputs.empty()) {
-				break;
-			}
-			Pair<Particle, Object> top = outputs.peek();
-			Particle toParticle = top.getFirst();
-			FungibleFormula formula = fungibles.get(input.getClass()).getParticleClassToFormulaMap().get(toParticle.getClass());
-			if (formula == null) {
-				break;
-			}
-			if (!formula.getTransition().test(input, toParticle)) {
-				break;
-			}
-			if (formula.getWitnessValidator().validate(input, metadata).isError()) {
-				break;
+					outputs.pop();
+					Object outputMeta = top.getSecond();
+					UInt256 outputAmount = outputMeta == null ? fungibles.get(toParticle.getClass()).mapToAmount(toParticle) : (UInt256) outputMeta;
+					UInt256 min = UInt256.min(currentInput, outputAmount);
+					UInt256 newOutputAmount = outputAmount.subtract(min);
+					if (!newOutputAmount.isZero()) {
+						outputs.push(Pair.of(toParticle, newOutputAmount));
+					}
+
+					currentInput = currentInput.subtract(min);
+				}
+
+				return currentInput.isZero();
 			}
 
-			outputs.pop();
-			UInt256 outputAmount = (UInt256) top.getSecond();
-			UInt256 min = UInt256.min(currentInput, outputAmount);
-			UInt256 newOutputAmount = outputAmount.subtract(min);
-			if (!newOutputAmount.isZero()) {
-				outputs.push(Pair.of(toParticle, newOutputAmount));
+			@Override
+			public boolean outputExecute(Particle output, AtomMetadata metadata) {
+				return false;
 			}
-
-			currentInput = currentInput.subtract(min);
-		}
-
-		return currentInput.isZero();
+		}));
 	}
 
 	@Override
@@ -85,15 +92,18 @@ public class FungibleTransitionConstraintProcedure implements ConstraintProcedur
 		for (int i = group.getParticleCount() - 1; i >= 0; i--) {
 			SpunParticle sp = group.getSpunParticle(i);
 			Particle p = sp.getParticle();
+			ParticleProcedure particleProcedure = this.procedures.get(p.getClass());
+			if (particleProcedure == null) {
+				continue;
+			}
 			if (sp.getSpin() == Spin.DOWN) {
-				InputParticleProcedure inputParticleProcedure = this.procedures.get(p.getClass());
-				if (inputParticleProcedure != null) {
-					if (!inputParticleProcedure.execute(p, metadata, outputs)) {
-						return Stream.of(ProcedureError.of("Input " + p + " failed. Output stack: " + outputs));
-					}
+				if (!particleProcedure.inputExecute(p, metadata, outputs)) {
+					return Stream.of(ProcedureError.of("Fungible Failure Input " + p + " failed. Output stack: " + outputs));
 				}
-			} else if (sp.getSpin() == Spin.UP && this.fungibles.containsKey(p.getClass())) {
-				outputs.push(Pair.of(p, fungibles.get(p.getClass()).mapToAmount(p)));
+			} else {
+				if (!particleProcedure.outputExecute(p, metadata)) {
+					outputs.push(Pair.of(p, null));
+				}
 			}
 		}
 
