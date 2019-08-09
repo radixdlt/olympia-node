@@ -2,7 +2,6 @@ package com.radixdlt.atomos.procedures;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atomos.AtomOS.WitnessValidator;
-import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.atoms.ParticleGroup;
 import com.radixdlt.atoms.Spin;
@@ -24,7 +23,7 @@ public final class TransitionlessConstraintProcedure implements ConstraintProced
 		private final ImmutableMap.Builder<Class<? extends Particle>, WitnessValidator<Particle>> setBuilder = new ImmutableMap.Builder<>();
 
 		public <T extends Particle> Builder add(Class<T> particleClass, WitnessValidator<T> witnessValidator) {
-			setBuilder.put(particleClass, (e, m) -> witnessValidator.apply((T) e, m));
+			setBuilder.put(particleClass, (e, m) -> witnessValidator.validate((T) e, m));
 			return this;
 		}
 
@@ -57,7 +56,7 @@ public final class TransitionlessConstraintProcedure implements ConstraintProced
 				}
 			} else {
 				if (transitionlessParticles.containsKey(p.getClass())) {
-					if (transitionlessParticles.get(p.getClass()).apply(p, metadata).isError()) {
+					if (transitionlessParticles.get(p.getClass()).validate(p, metadata).isError()) {
 						outputs.push(Pair.of(p, null));
 					}
 				}

@@ -41,6 +41,8 @@ public final class RRIConstraintProcedure implements ConstraintProcedure {
 	private final Set<Class<? extends Particle>> secondaryParticles;
 	private final Map<Class<? extends Particle>, SecondaryResource<? extends Particle>> secondary;
 
+	private final Map<Class<? extends Particle>, InputParticleProcedure> procedures = new HashMap<>();
+
 	RRIConstraintProcedure(
 		Map<Class<? extends Particle>, ParticleToRRIMapper<Particle>> primaryParticles,
 		Map<Class<? extends Particle>, SecondaryResource<? extends Particle>> secondary
@@ -48,6 +50,9 @@ public final class RRIConstraintProcedure implements ConstraintProcedure {
 		this.primaryParticles = ImmutableMap.copyOf(primaryParticles);
 		this.secondary = secondary;
 		this.secondaryParticles = secondary.entrySet().stream().map(e -> e.getValue().particleClass).collect(Collectors.toSet());
+
+		this.procedures.put(RRIParticle.class, this::rriInputParticleExecutor);
+		primaryParticles.forEach((p, m) -> this.procedures.put(p, (a, b, c) -> false));
 	}
 
 	public static final class Builder {
@@ -88,17 +93,13 @@ public final class RRIConstraintProcedure implements ConstraintProcedure {
 		}
 	}
 
-	private boolean otherInputParticleExecutor(Particle input, AtomMetadata metadata, Stack<Pair<Particle, Void>> outputs) {
-		return false;
-	}
-
-	private boolean rriInputParticleExecutor(Particle input, AtomMetadata metadata, Stack<Pair<Particle, Void>> outputs) {
+	private boolean rriInputParticleExecutor(Particle input, AtomMetadata metadata, Stack<Pair<Particle, Object>> outputs) {
 		RRIParticle rriParticle = (RRIParticle) input;
 		if (outputs.empty()) {
 			return false;
 		}
 
-		Pair<Particle, Void> top = outputs.peek();
+		Pair<Particle, Object> top = outputs.peek();
 		Particle toParticle = top.getFirst();
 		ParticleToRRIMapper<Particle> mapper = primaryParticles.get(toParticle.getClass());
 		if (mapper == null) {
@@ -121,7 +122,7 @@ public final class RRIConstraintProcedure implements ConstraintProcedure {
 				return false;
 			}
 
-			Pair<Particle, Void> top2 = outputs.peek();
+			Pair<Particle, Object> top2 = outputs.peek();
 			Particle toParticle2 = top2.getFirst();
 			if (!toParticle2.getClass().equals(secondaryResource.particleClass)) {
 				return false;
@@ -143,20 +144,16 @@ public final class RRIConstraintProcedure implements ConstraintProcedure {
 
 	@Override
 	public Stream<ProcedureError> validate(ParticleGroup group, AtomMetadata metadata) {
-		final Stack<Pair<Particle, Void>> inputs = new Stack<>();
-		final Stack<Pair<Particle, Void>> outputs = new Stack<>();
+		final Stack<Pair<Particle, Object>> outputs = new Stack<>();
 
 		for (int i = group.getParticleCount() - 1; i >= 0; i--) {
 			SpunParticle sp = group.getSpunParticle(i);
 			Particle p = sp.getParticle();
 			if (sp.getSpin() == Spin.DOWN) {
-				if (p instanceof RRIParticle) {
-					if (!this.rriInputParticleExecutor(p, metadata, outputs)) {
-						inputs.push(Pair.of(p, null));
-					}
-				} else if (this.primaryParticles.containsKey(p.getClass())) {
-					if (!this.otherInputParticleExecutor(p, metadata, outputs)) {
-						inputs.push(Pair.of(p, null));
+				InputParticleProcedure inputParticleProcedure = this.procedures.get(p.getClass());
+				if (inputParticleProcedure != null) {
+					if (!inputParticleProcedure.execute(p, metadata, outputs)) {
+						return Stream.of(ProcedureError.of("Input " + p + " failed. Output stack: " + outputs));
 					}
 				}
 			} else {
@@ -166,15 +163,11 @@ public final class RRIConstraintProcedure implements ConstraintProcedure {
 			}
 		}
 
-		if (!inputs.empty()) {
-			return Stream.of(ProcedureError.of("RRI Failure Input stack: " + inputs.toString() + " Output stack: " + outputs.toString()));
-		}
-
 		if (!outputs.empty()) {
 			// Hack for now, it is possible to have outputs from the fungible system
 			// TODO: Clean this up!
 			if (!outputs.stream().allMatch(p -> secondaryParticles.contains(p.getFirst().getClass()))) {
-				return Stream.of(ProcedureError.of("RRI Failure Input stack: " + inputs.toString() + " Output stack: " + outputs.toString()));
+				return Stream.of(ProcedureError.of("RRI Failure Output stack: " + outputs.toString()));
 			}
 		}
 

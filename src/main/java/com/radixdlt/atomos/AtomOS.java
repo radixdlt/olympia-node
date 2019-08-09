@@ -130,7 +130,7 @@ public interface AtomOS {
 		 * @param metadata The metadata of the containing Atom
 		 * @return A {@link Result} of the check
 		 */
-		Result apply(T fromParticle, AtomMetadata metadata);
+		Result validate(T fromParticle, AtomMetadata metadata);
 	}
 
 	/**

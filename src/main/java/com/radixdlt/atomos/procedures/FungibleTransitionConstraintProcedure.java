@@ -56,7 +56,7 @@ public class FungibleTransitionConstraintProcedure implements ConstraintProcedur
 			if (!formula.getTransition().test(input, toParticle)) {
 				break;
 			}
-			if (formula.getWitnessValidator().apply(input, metadata).isError()) {
+			if (formula.getWitnessValidator().validate(input, metadata).isError()) {
 				break;
 			}
 

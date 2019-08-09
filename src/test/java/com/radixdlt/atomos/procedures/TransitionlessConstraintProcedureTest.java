@@ -31,7 +31,7 @@ public class TransitionlessConstraintProcedureTest {
 	@Test
 	public void when_a_payload_constraint_procedure_validates_an_up_particle__then_an_error_should_not_be_returned() {
 		WitnessValidator<CustomPayloadParticle> witnessValidator = mock(WitnessValidator.class);
-		when(witnessValidator.apply(any(), any())).thenReturn(Result.success());
+		when(witnessValidator.validate(any(), any())).thenReturn(Result.success());
 		TransitionlessConstraintProcedure procedure = new TransitionlessConstraintProcedure.Builder()
 			.add(CustomPayloadParticle.class, witnessValidator)
 			.build();
@@ -44,7 +44,7 @@ public class TransitionlessConstraintProcedureTest {
 	@Test
 	public void when_a_payload_constraint_procedure_validates_a_downed_particle__then_an_error_should_be_returned() {
 		WitnessValidator<CustomPayloadParticle> witnessValidator = mock(WitnessValidator.class);
-		when(witnessValidator.apply(any(), any())).thenReturn(Result.success());
+		when(witnessValidator.validate(any(), any())).thenReturn(Result.success());
 
 		TransitionlessConstraintProcedure procedure = new TransitionlessConstraintProcedure.Builder()
 			.add(CustomPayloadParticle.class, witnessValidator)
