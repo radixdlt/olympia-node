@@ -13,6 +13,7 @@ import com.radixdlt.ledger.LedgerCursor;
 import com.radixdlt.ledger.LedgerCursor.Type;
 import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerSearchMode;
+import com.radixdlt.serialization.Serialization;
 import com.radixdlt.tempo.conflict.LocalConflictResolver;
 import com.radixdlt.tempo.exceptions.TempoException;
 import com.radixdlt.tempo.store.TempoAtomStore;
@@ -30,6 +31,7 @@ import org.radix.state.StateDomain;
 import org.radix.time.TemporalVertex;
 import org.radix.time.Time;
 import org.radix.universe.system.LocalSystem;
+import org.radix.utils.SystemProfiler;
 
 import java.util.List;
 import java.util.Objects;
@@ -225,8 +227,10 @@ public final class Tempo extends Plugin implements Ledger {
 	}
 
 	public static Builder defaultBuilderWithoutSynchroniser() {
-		TempoAtomStore tempoAtomStore = new TempoAtomStore(() -> Modules.get(DatabaseEnvironment.class));
 		LocalSystem localSystem = LocalSystem.getInstance();
+		Serialization serialization = Serialization.getDefault();
+		SystemProfiler profiler = SystemProfiler.getInstance();
+		TempoAtomStore tempoAtomStore = new TempoAtomStore(serialization, profiler, localSystem, () -> Modules.get(DatabaseEnvironment.class));
 		return builder()
 			.store(tempoAtomStore)
 			.resolver(new LocalConflictResolver(localSystem.getNID()))
@@ -235,8 +239,10 @@ public final class Tempo extends Plugin implements Ledger {
 	}
 
 	public static Builder defaultBuilder() {
-		TempoAtomStore tempoAtomStore = new TempoAtomStore(() -> Modules.get(DatabaseEnvironment.class));
 		LocalSystem localSystem = LocalSystem.getInstance();
+		Serialization serialization = Serialization.getDefault();
+		SystemProfiler profiler = SystemProfiler.getInstance();
+		TempoAtomStore tempoAtomStore = new TempoAtomStore(serialization, profiler, localSystem, () -> Modules.get(DatabaseEnvironment.class));
 		return builder()
 			.synchroniser(
 				TempoAtomSynchroniser.defaultBuilder(tempoAtomStore.asReadOnlyView())

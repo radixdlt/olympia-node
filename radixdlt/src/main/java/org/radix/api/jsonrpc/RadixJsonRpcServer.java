@@ -172,7 +172,8 @@ public final class RadixJsonRpcServer {
 						// TODO FIXME super ugly hack because indices are handled differently
 						LedgerIndex index;
 						if (Modules.get(RuntimeProperties.class).get("tempo2", false)) {
-							index = new LedgerIndex(TempoAtomStore.DESTINATION_INDEX_PREFIX, address.getUID().toByteArray());
+							throw new UnsupportedOperationException("Not yet implemented");
+//							index = new LedgerIndex(TempoAtomStore.DESTINATION_INDEX_PREFIX, address.getUID().toByteArray());
 						} else {
 							index = new LedgerIndex(AtomStore.IDType.toByteArray(AtomStore.IDType.DESTINATION, address.getUID()));
 						}

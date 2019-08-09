@@ -1,9 +1,11 @@
 package com.radixdlt.tempo.exceptions;
 
+import com.radixdlt.ledger.exceptions.LedgerException;
+
 /**
  * A Tempo exception
  */
-public class TempoException extends RuntimeException {
+public class TempoException extends LedgerException {
 	public TempoException(String message) {
 		super(message);
 	}
@@ -14,9 +16,5 @@ public class TempoException extends RuntimeException {
 
 	public TempoException(Throwable cause) {
 		super(cause);
-	}
-
-	public TempoException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
-		super(message, cause, enableSuppression, writableStackTrace);
 	}
 }

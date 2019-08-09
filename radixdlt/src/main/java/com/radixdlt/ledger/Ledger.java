@@ -3,6 +3,8 @@ package com.radixdlt.ledger;
 import com.radixdlt.Atom;
 import com.radixdlt.common.AID;
 import com.radixdlt.ledger.LedgerCursor.Type;
+import com.radixdlt.ledger.exceptions.LedgerException;
+import com.radixdlt.ledger.exceptions.LedgerKeyConstraintException;
 
 import java.util.Optional;
 import java.util.Set;
@@ -17,6 +19,8 @@ public interface Ledger {
 	 * Receives a new atom, blocking until an atom becomes available.
 	 *
 	 * @return The received atom
+	 *
+	 * @throws LedgerException in case of internal errors
 	 */
 	Atom receive() throws InterruptedException;
 
@@ -25,6 +29,8 @@ public interface Ledger {
 	 *
 	 * @param aid The {@link AID}
 	 * @return The atom associated with the given {@link AID}
+	 *
+	 * @throws LedgerException in case of internal errors
 	 */
 	Optional<Atom> get(AID aid);
 
@@ -35,6 +41,9 @@ public interface Ledger {
 	 * @param uniqueIndices The unique indices
 	 * @param duplicateIndices The duplicate indices
 	 * @return Whether the {@link Atom} was stored
+	 *
+	 * @throws LedgerKeyConstraintException if unique key constraints were violated
+	 * @throws LedgerException in case of internal errors
 	 */
 	boolean store(Atom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices);
 
@@ -43,6 +52,8 @@ public interface Ledger {
 	 *
 	 * @param aid The {@link AID}
 	 * @return Whether the {@link AID} was deleted
+	 *
+	 * @throws LedgerException in case of internal errors
 	 */
 	boolean delete(AID aid);
 
@@ -53,6 +64,9 @@ public interface Ledger {
 	 * @param uniqueIndices The unique indices of that atom
 	 * @param duplicateIndices The duplicate indices of that atom
 	 * @return Whether all {@link AID}s were successfully deleted
+	 *
+	 * @throws LedgerKeyConstraintException if unique key constraints were violated
+	 * @throws LedgerException in case of internal errors
 	 */
 	boolean replace(Set<AID> aids, Atom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices);
 
@@ -63,6 +77,8 @@ public interface Ledger {
 	 * @param index The index
 	 * @param mode The mode
 	 * @return The resulting ledger cursor
+	 *
+	 * @throws LedgerException in case of internal errors
 	 */
 	LedgerCursor search(Type type, LedgerIndex index, LedgerSearchMode mode);
 
@@ -73,6 +89,8 @@ public interface Ledger {
 	 * @param atom
 	 * @param conflictingAtoms The non-empty set of conflicting atoms
 	 * @return a {@link Future} yielding the winning atom
+	 *
+	 * @throws LedgerException in case of internal errors
 	 */
 	CompletableFuture<Atom> resolve(Atom atom, Set<Atom> conflictingAtoms);
 }

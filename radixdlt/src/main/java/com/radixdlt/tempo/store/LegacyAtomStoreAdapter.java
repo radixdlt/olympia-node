@@ -147,41 +147,11 @@ public class LegacyAtomStoreAdapter implements AtomStore {
 	}
 
 	private CMAtom convertToCMAtom(TempoAtom atom) {
-		Atom legacyAtom = LegacyUtils.toLegacyAtom(atom);
-		final CMAtom cmAtom;
 		try {
-			cmAtom = RadixEngineUtils.toCMAtom(legacyAtom);
+			Atom legacyAtom = LegacyUtils.toLegacyAtom(atom);
+			return RadixEngineUtils.toCMAtom(legacyAtom);
 		} catch (RadixEngineUtils.CMAtomConversionException e) {
-			throw new IllegalStateException();
-		}
-		return cmAtom;
-	}
-
-	private class AtomStoreViewAdapter implements AtomStoreView {
-		private final LegacyAtomStoreAdapter legacyAtomStoreAdapter;
-
-		private AtomStoreViewAdapter(LegacyAtomStoreAdapter legacyAtomStoreAdapter) {
-			this.legacyAtomStoreAdapter = legacyAtomStoreAdapter;
-		}
-
-		@Override
-		public boolean contains(AID aid) {
-			return legacyAtomStoreAdapter.contains(aid);
-		}
-
-		@Override
-		public Optional<TempoAtom> get(AID aid) {
-			return legacyAtomStoreAdapter.get(aid);
-		}
-
-		@Override
-		public LedgerCursor search(LedgerCursor.Type type, LedgerIndex index, LedgerSearchMode mode) {
-			return legacyAtomStoreAdapter.search(type, index, mode);
-		}
-
-		@Override
-		public Pair<ImmutableList<AID>, IterativeCursor> getNext(IterativeCursor cursor, int limit, ShardSpace shardSpace) {
-			throw new UnsupportedOperationException("Not implemented");
+			throw new TempoException("Error while converting atom", e);
 		}
 	}
 }
