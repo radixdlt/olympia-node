@@ -77,7 +77,12 @@ public final class ConstraintMachine {
 		this.particleProcedures = particleProcedures;
 	}
 
-	private boolean inputExecute(ParticleProcedure particleProcedure, Particle input, AtomMetadata metadata, Stack<Pair<Particle, Object>> outputs) {
+	private boolean inputExecute(
+		ParticleProcedure particleProcedure,
+		Particle input,
+		AtomMetadata metadata,
+		Stack<Pair<Particle, AtomicReference<Object>>> outputs
+	) {
 		AtomicReference<Object> inputData = new AtomicReference<>();
 
 		ProcedureResult action;
@@ -86,15 +91,19 @@ public final class ConstraintMachine {
 				action = ProcedureResult.ERROR;
 				break;
 			}
-			Pair<Particle, Object> top = outputs.pop();
-			Particle output = top.getFirst();
-			AtomicReference<Object> outputData = new AtomicReference<>(top.getSecond());
-			action = particleProcedure.execute(input, inputData, output, outputData, metadata);
+			Pair<Particle, AtomicReference<Object>> top = outputs.peek();
+			action = particleProcedure.execute(
+				input,
+				inputData,
+				top.getFirst(),
+				top.getSecond(),
+				metadata
+			);
 
 			switch (action) {
-				case POP_INPUT:
-				case ERROR:
-					outputs.push(Pair.of(output, outputData.get()));
+				case POP_OUTPUT:
+				case POP_INPUT_OUTPUT:
+					outputs.pop();
 			}
 		} while (action.equals(ProcedureResult.POP_OUTPUT));
 
@@ -102,7 +111,7 @@ public final class ConstraintMachine {
 	}
 
 	private Stream<ProcedureError> validate(ParticleGroup group, AtomMetadata metadata) {
-		final Stack<Pair<Particle, Object>> outputs = new Stack<>();
+		final Stack<Pair<Particle, AtomicReference<Object>>> outputs = new Stack<>();
 
 		for (int i = group.getParticleCount() - 1; i >= 0; i--) {
 			SpunParticle sp = group.getSpunParticle(i);
@@ -114,7 +123,7 @@ public final class ConstraintMachine {
 				}
 			} else {
 				if (particleProcedure == null || !particleProcedure.outputExecute(p, metadata)) {
-					outputs.push(Pair.of(p, null));
+					outputs.push(Pair.of(p, new AtomicReference<>()));
 				}
 			}
 		}
