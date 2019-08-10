@@ -63,8 +63,8 @@ public final class FungibleDefinition<T extends Particle> {
 
 		public <U extends Particle> Builder<T> to(
 			Class<U> toParticleClass,
-			WitnessValidator<T> witnessValidator,
-			BiPredicate<T, U> transition
+			BiPredicate<T, U> transition,
+			WitnessValidator<T> witnessValidator
 		) {
 			particleTypeToFormulasMapBuilder.put(toParticleClass, new FungibleFormula((WitnessValidator<Particle>)witnessValidator, transition));
 			return this;

@@ -1,11 +1,15 @@
 package com.radixdlt.atomos;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atoms.DataPointer;
 import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.atoms.Spin;
+import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.CMAtom;
 import com.radixdlt.constraintmachine.CMParticle;
+import com.radixdlt.constraintmachine.ConstraintProcedure;
 import com.radixdlt.utils.UInt256;
 import org.junit.Test;
 
@@ -91,17 +95,18 @@ public class CMAtomOSTest {
 	}
 
 	@Test
-	public void when_adding_fungible_constraints_on_particle_registered_in_another_scrypt__exception_is_thrown() {
+	public void when_adding_procedure_on_particle_registered_in_another_scrypt__exception_is_thrown() {
 		CMAtomOS os = new CMAtomOS(() -> mock(Universe.class), () -> 0);
+		ConstraintProcedure procedure = mock(ConstraintProcedure.class);
+		when(procedure.supports()).thenReturn(ImmutableSet.of(Pair.of(TestParticle0.class, TestParticle0.class)));
 		os.load(syscalls -> {
 			syscalls.registerParticle(TestParticle0.class, (TestParticle0 p) -> mock(RadixAddress.class));
-			syscalls.onFungible(TestParticle0.class, k -> UInt256.ONE);
+			syscalls.registerProcedure(procedure);
 		});
 		assertThatThrownBy(() ->
 			os.load(syscalls -> {
 				syscalls.registerParticle(TestParticle1.class, (TestParticle1 p) -> mock(RadixAddress.class));
-				syscalls.onFungible(TestParticle1.class, k -> UInt256.ONE)
-					.transitionTo(TestParticle0.class, (a, b) -> true, (a, m) -> Result.success());
+				syscalls.registerProcedure(procedure);
 			})
 		).isInstanceOf(IllegalStateException.class);
 	}

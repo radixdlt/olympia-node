@@ -10,6 +10,7 @@ import com.radixdlt.atomos.mapper.ParticleToShardablesMapper;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.AtomMetadata;
+import com.radixdlt.constraintmachine.ConstraintProcedure;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -67,32 +68,8 @@ public class TestAtomOS implements SysCalls {
 	}
 
 	@Override
-	public <T extends Particle> FungibleTransitionConstraint<T> onFungible(
-		Class<T> particleClass,
-		ParticleToAmountMapper<T> particleToAmountMapper
-	) {
-		if (pendingFungibleTransition != null) {
-			fungibleDefinitions.add(pendingFungibleTransition.build());
-		}
+	public void registerProcedure(ConstraintProcedure procedure) {
 
-		FungibleDefinition.Builder<T> transitionBuilder = new FungibleDefinition.Builder<T>().amountMapper(particleToAmountMapper);
-		pendingFungibleTransition = transitionBuilder;
-
-		return new FungibleTransitionConstraint<T>() {
-			@Override
-			public <U extends Particle> FungibleTransitionConstraint<T> transitionTo(
-				Class<U> particleClass,
-				BiPredicate<T, U> transition,
-				WitnessValidator<T> witnessValidator
-			) {
-				if (pendingFungibleTransition == null) {
-					throw new IllegalStateException("Attempt to add formula to finished fungible transition to " + particleClass);
-				}
-
-				transitionBuilder.to(particleClass, witnessValidator, transition);
-				return this::transitionTo;
-			}
-		};
 	}
 
 	/**

@@ -20,7 +20,6 @@ import java.util.function.Function;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
-import com.radixdlt.atomos.mapper.ParticleToAmountMapper;
 import com.radixdlt.atomos.mapper.ParticleToRRIMapper;
 import com.radixdlt.atomos.mapper.ParticleToShardableMapper;
 import com.radixdlt.atomos.mapper.ParticleToShardablesMapper;
@@ -47,9 +46,9 @@ public final class CMAtomOS {
 	private final Map<Class<? extends Particle>, Function<Particle, Stream<RadixAddress>>> particleMapper = new LinkedHashMap<>();
 	private final Map<Class<? extends Particle>, Function<Particle, Result>> particleStaticValidation = new HashMap<>();
 
-	private final Map<Class<? extends Particle>, FungibleDefinition.Builder<? extends Particle>> fungibles = new HashMap<>();
 	private final RRIParticleProcedureBuilder rriProcedureBuilder = new RRIParticleProcedureBuilder();
 	private final Set<NonRRIResourceCreation<? extends Particle>> nonRRIResourceCreations = new HashSet<>();
+	private final ImmutableMap.Builder<Pair<Class<? extends Particle>, Class<? extends Particle>>, ConstraintProcedure> proceduresBuilder = new ImmutableMap.Builder<>();
 
 	private final Supplier<Universe> universeSupplier;
 	private final LongSupplier timestampSupplier;
@@ -126,35 +125,15 @@ public final class CMAtomOS {
 			}
 
 			@Override
-			public <T extends Particle> FungibleTransitionConstraint<T> onFungible(
-				Class<T> particleClass,
-				ParticleToAmountMapper<T> particleToAmountMapper
-			) {
-				if (!scryptParticleClasses.containsKey(particleClass)) {
-					throw new IllegalStateException(particleClass + " must be registered in calling scrypt.");
+			public void registerProcedure(ConstraintProcedure procedure) {
+				if (!procedure.supports().stream()
+					.flatMap(p -> Stream.of(p.getFirst(), p.getSecond()))
+					.filter(Objects::nonNull)
+					.allMatch(scryptParticleClasses::containsKey)
+				) {
+					throw new IllegalStateException(procedure.supports() + " must be all registered in calling scrypt.");
 				}
-
-				if (fungibles.containsKey(particleClass)) {
-					throw new IllegalStateException(particleClass + " already registered as fungible.");
-				}
-
-				FungibleDefinition.Builder<T> fungibleBuilder = new FungibleDefinition.Builder<T>().amountMapper(particleToAmountMapper);
-				fungibles.put(particleClass, fungibleBuilder);
-
-				return new FungibleTransitionConstraint<T>() {
-					@Override
-					public <U extends Particle> FungibleTransitionConstraint<T> transitionTo(
-						Class<U> toParticleClass,
-						BiPredicate<T, U> transition,
-						WitnessValidator<T> witnessValidator
-					) {
-						if (!scryptParticleClasses.containsKey(toParticleClass)) {
-							throw new IllegalStateException(toParticleClass + " must be registered in calling scrypt.");
-						}
-						fungibleBuilder.to(toParticleClass, witnessValidator, transition);
-						return this::transitionTo;
-					}
-				};
+				procedure.supports().forEach(p -> proceduresBuilder.put(p, procedure));
 			}
 
 			@Override
@@ -221,16 +200,6 @@ public final class CMAtomOS {
 
 		this.kernelProcedures.forEach(cmBuilder::addProcedure);
 
-		ImmutableMap.Builder<Pair<Class<? extends Particle>, Class<? extends Particle>>, ConstraintProcedure> proceduresBuilder
-			= new ImmutableMap.Builder<>();
-
-		// Add a constraint for fungibles if any were added
-		if (!this.fungibles.isEmpty()) {
-			FungibleParticlesProcedureBuilder fungibleBuilder = new FungibleParticlesProcedureBuilder();
-			this.fungibles.forEach((c, b) -> fungibleBuilder.add(c, b.build()));
-			ConstraintProcedure fungibleProcedure = fungibleBuilder.build();
-			fungibleProcedure.supports().forEach(p -> proceduresBuilder.put(p, fungibleProcedure));
-		}
 		// Add constraint for RRI state machines
 		ConstraintProcedure rriProcedure = this.rriProcedureBuilder.build();
 		rriProcedure.supports().forEach(p -> proceduresBuilder.put(p, rriProcedure));

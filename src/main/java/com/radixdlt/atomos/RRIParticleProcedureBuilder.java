@@ -120,9 +120,6 @@ public final class RRIParticleProcedureBuilder {
 					}
 				} else {
 					ParticleToRRIMapper<Particle> mapper = indexedParticles.get(outputParticle.getClass());
-					if (mapper == null) {
-						return ProcedureResult.ERROR;
-					}
 
 					if (!mapper.index(outputParticle).equals(rriParticle.getRri())) {
 						return ProcedureResult.ERROR;

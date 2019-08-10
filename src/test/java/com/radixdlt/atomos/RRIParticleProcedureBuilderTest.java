@@ -66,13 +66,6 @@ public class RRIParticleProcedureBuilderTest {
 		AtomMetadata metadata = mock(AtomMetadata.class);
 		when(metadata.isSignedBy(eq(address))).thenReturn(true);
 
-		ProcedureResult result = procedure.execute(
-			new RRIParticle(rri),
-			new AtomicReference<>(),
-			mock(CustomParticle.class),
-			new AtomicReference<>()
-		);
-
-		assertThat(result).isEqualTo(ProcedureResult.ERROR);
+		assertThat(procedure.supports()).isEmpty();
 	}
 }

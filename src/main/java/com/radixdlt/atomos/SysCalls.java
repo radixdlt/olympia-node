@@ -6,6 +6,7 @@ import com.radixdlt.atomos.mapper.ParticleToShardableMapper;
 import com.radixdlt.atomos.mapper.ParticleToShardablesMapper;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.constraintmachine.AtomMetadata;
+import com.radixdlt.constraintmachine.ConstraintProcedure;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 
@@ -75,22 +76,8 @@ public interface SysCalls {
 		WitnessValidator<T> witnessValidator
 	);
 
-	/**
-	 * System call endpoint which allows an atom model application to program constraints
-	 * against a fungible particle class and its transitions.
-	 *
-	 * This endpoint returns a callback on which the application must define the constraint.
-	 * This function MUST be a pure function (i.e. no states).
-	 *
-	 * @param particleClass particle class to add constraint to
-	 * @param particleToAmountMapper mapper from instance of particle class to its fungible amount
-	 * @param <T> type of particle class to add a constraint to
-	 * @return a callback function onto which the constraint will be defined
-	 */
-	<T extends Particle> FungibleTransitionConstraint<T> onFungible(
-		Class<T> particleClass,
-		ParticleToAmountMapper<T> particleToAmountMapper
-	);
+	void registerProcedure(ConstraintProcedure procedure);
+
 
 	/**
 	 * Callback for an implementation of a constraint based on a particle class.

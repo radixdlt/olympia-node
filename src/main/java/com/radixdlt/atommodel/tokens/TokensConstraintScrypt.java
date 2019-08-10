@@ -5,13 +5,17 @@ import static com.radixdlt.atommodel.tokens.TokenDefinitionParticle.MAX_SYMBOL_L
 import static com.radixdlt.atommodel.tokens.TokenDefinitionParticle.MIN_SYMBOL_LENGTH;
 import static com.radixdlt.atommodel.tokens.TokenDefinitionParticle.VALID_SYMBOL_CHARS;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMap.Builder;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle.TokenTransition;
+import com.radixdlt.atomos.FungibleDefinition;
 import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.mapper.ParticleToAmountMapper;
+import com.radixdlt.atommodel.procedures.FungibleTransitions;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.constraintmachine.AtomMetadata;
 import com.radixdlt.utils.UInt256;
@@ -114,47 +118,48 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 
 		requireAmountFits(os, TransferrableTokensParticle.class, TransferrableTokensParticle::getAmount, TransferrableTokensParticle::getGranularity);
 
-		os.onFungible(
-			UnallocatedTokensParticle.class,
-			UnallocatedTokensParticle::getAmount
-		)
-			.transitionTo(
-				UnallocatedTokensParticle.class,
-				(from, to) ->
-					Objects.equals(from.getTokDefRef(), to.getTokDefRef())
-					&& Objects.equals(from.getGranularity(), to.getGranularity())
-					&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions()),
-				(from, meta) -> checkSigned(from.getTokDefRef().getAddress(), meta)
-			)
-			.transitionTo(
-				TransferrableTokensParticle.class,
-				(from, to) ->
-					Objects.equals(from.getTokDefRef(), to.getTokDefRef())
-					&& Objects.equals(from.getGranularity(), to.getGranularity())
-					&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions()),
-				(from, meta) -> from.getTokenPermission(TokenTransition.MINT).check(from.getTokDefRef(), meta)
-			);
+		final ImmutableMap.Builder<Class<? extends Particle>, FungibleDefinition<? extends Particle>> fungibleDefinitionBuilder = new Builder<>();
 
-		os.onFungible(
+		FungibleDefinition.Builder<UnallocatedTokensParticle> fungibleBuilder = new FungibleDefinition.Builder<UnallocatedTokensParticle>()
+			.amountMapper(UnallocatedTokensParticle::getAmount);
+		fungibleBuilder.to(
+			UnallocatedTokensParticle.class,
+			(from, to) ->
+				Objects.equals(from.getTokDefRef(), to.getTokDefRef())
+					&& Objects.equals(from.getGranularity(), to.getGranularity())
+					&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions()),
+			(from, meta) -> checkSigned(from.getTokDefRef().getAddress(), meta)
+		);
+		fungibleBuilder.to(
 			TransferrableTokensParticle.class,
-			TransferrableTokensParticle::getAmount
-		)
-			.transitionTo(
-				UnallocatedTokensParticle.class,
-				(from, to) ->
-					Objects.equals(from.getTokDefRef(), to.getTokDefRef())
+			(from, to) ->
+				Objects.equals(from.getTokDefRef(), to.getTokDefRef())
 					&& Objects.equals(from.getGranularity(), to.getGranularity())
 					&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions()),
-				(from, meta) -> from.getTokenPermission(TokenTransition.BURN).check(from.getTokDefRef(), meta)
-			)
-			.transitionTo(
-				TransferrableTokensParticle.class,
-				(from, to) ->
-					Objects.equals(from.getTokDefRef(), to.getTokDefRef())
+			(from, meta) -> from.getTokenPermission(TokenTransition.MINT).check(from.getTokDefRef(), meta)
+		);
+		fungibleDefinitionBuilder.put(UnallocatedTokensParticle.class, fungibleBuilder.build());
+
+		FungibleDefinition.Builder<TransferrableTokensParticle> transferrableTokensParticleBuilder = new FungibleDefinition.Builder<TransferrableTokensParticle>()
+			.amountMapper(TransferrableTokensParticle::getAmount);
+		transferrableTokensParticleBuilder.to(
+			UnallocatedTokensParticle.class,
+			(from, to) ->
+				Objects.equals(from.getTokDefRef(), to.getTokDefRef())
 					&& Objects.equals(from.getGranularity(), to.getGranularity())
 					&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions()),
-				(from, meta) -> checkSigned(from.getAddress(), meta)
-			);
+			(from, meta) -> from.getTokenPermission(TokenTransition.BURN).check(from.getTokDefRef(), meta)
+		);
+		transferrableTokensParticleBuilder.to(
+			TransferrableTokensParticle.class,
+			(from, to) ->
+				Objects.equals(from.getTokDefRef(), to.getTokDefRef())
+					&& Objects.equals(from.getGranularity(), to.getGranularity())
+					&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions()),
+			(from, meta) -> checkSigned(from.getAddress(), meta)
+		);
+		fungibleDefinitionBuilder.put(TransferrableTokensParticle.class, transferrableTokensParticleBuilder.build());
+		os.registerProcedure(new FungibleTransitions(fungibleDefinitionBuilder.build()));
 	}
 
 	private static <T extends Particle> void requireAmountFits(
