@@ -50,7 +50,7 @@ public interface SysCalls {
 	 * Creates a new resource type based on a particle. The resource type can be allocated by consuming
 	 * an RRI which then becomes the resource's global identifier.
 	 */
-	<T extends Particle> void newResourceType(
+	<T extends Particle> void newRRIResourceType(
 		Class<T> particleClass,
 		ParticleToRRIMapper<T> indexer
 	);
@@ -59,7 +59,7 @@ public interface SysCalls {
 	 * Creates a new resource type based on two particles. The resource type can be allocated by consuming
 	 * an RRI which then becomes the resource's global identifier.
 	 */
-	<T extends Particle, U extends Particle> void newResourceType(
+	<T extends Particle, U extends Particle> void newRRIResourceType(
 		Class<T> particleClass0,
 		ParticleToRRIMapper<T> indexer0,
 		Class<U> particleClass1,
@@ -68,9 +68,12 @@ public interface SysCalls {
 	);
 
 	/**
-	 * Creates a new transitionless particle type.
+	 * Creates a new non-RRI resource type.
 	 */
-	<T extends Particle> TransitionlessParticleClassConstraint<T> onTransitionless(Class<T> particleClass);
+	<T extends Particle> void newResourceType(
+		Class<T> particleClass,
+		WitnessValidator<T> witnessValidator
+	);
 
 	/**
 	 * System call endpoint which allows an atom model application to program constraints
@@ -88,14 +91,6 @@ public interface SysCalls {
 		Class<T> particleClass,
 		ParticleToAmountMapper<T> particleToAmountMapper
 	);
-
-	interface TransitionlessParticleClassConstraint<T extends Particle> {
-		/**
-		 * Adds a constraint check for this particle class
-		 * @param witnessValidator the constraint check
-		 */
-		void require(WitnessValidator<T> witnessValidator);
-	}
 
 	/**
 	 * Callback for an implementation of a constraint based on a particle class.

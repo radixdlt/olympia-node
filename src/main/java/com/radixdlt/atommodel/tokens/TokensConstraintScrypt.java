@@ -91,7 +91,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 		);
 
 		// Require Token Definition to be created with unallocated tokens of max supply
-		os.newResourceType(
+		os.newRRIResourceType(
 			TokenDefinitionParticle.class,
 			TokenDefinitionParticle::getRRI,
 			UnallocatedTokensParticle.class,

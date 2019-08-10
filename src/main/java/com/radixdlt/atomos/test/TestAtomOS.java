@@ -40,12 +40,12 @@ public class TestAtomOS implements SysCalls {
 	}
 
 	@Override
-	public <T extends Particle> void newResourceType(Class<T> particleClass, ParticleToRRIMapper<T> indexer) {
+	public <T extends Particle> void newRRIResourceType(Class<T> particleClass, ParticleToRRIMapper<T> indexer) {
 		resources.put(particleClass, p -> indexer.index((T) p));
 	}
 
 	@Override
-	public <T extends Particle, U extends Particle> void newResourceType(
+	public <T extends Particle, U extends Particle> void newRRIResourceType(
 		Class<T> particleClass0,
 		ParticleToRRIMapper<T> rriMapper0,
 		Class<U> particleClass1,
@@ -56,8 +56,8 @@ public class TestAtomOS implements SysCalls {
 	}
 
 	@Override
-	public <T extends Particle> TransitionlessParticleClassConstraint<T> onTransitionless(Class<T> particleClass) {
-		return constraint -> particleClassConstraints.add(new Pair<>(particleClass, (p, m) -> constraint.validate((T) p, m)));
+	public <T extends Particle> void newResourceType(Class<T> particleClass, WitnessValidator<T> witnessValidator) {
+		particleClassConstraints.add(new Pair<>(particleClass, (p, m) -> witnessValidator.validate((T) p, m)));
 	}
 
 

@@ -95,7 +95,7 @@ public final class CMAtomOS {
 			}
 
 			@Override
-			public <T extends Particle> void newResourceType(
+			public <T extends Particle> void newRRIResourceType(
 				Class<T> particleClass,
 				ParticleToRRIMapper<T> rriMapper
 			) {
@@ -107,7 +107,7 @@ public final class CMAtomOS {
 			}
 
 			@Override
-			public <T extends Particle, U extends Particle> void newResourceType(
+			public <T extends Particle, U extends Particle> void newRRIResourceType(
 				Class<T> particleClass0,
 				ParticleToRRIMapper<T> rriMapper0,
 				Class<U> particleClass1,
@@ -157,12 +157,15 @@ public final class CMAtomOS {
 			}
 
 			@Override
-			public <T extends Particle> TransitionlessParticleClassConstraint<T> onTransitionless(Class<T> particleClass) {
+			public <T extends Particle> void newResourceType(
+				Class<T> particleClass,
+				WitnessValidator<T> witnessValidator
+			) {
 				if (!scryptParticleClasses.containsKey(particleClass)) {
 					throw new IllegalStateException(particleClass + " must be registered in calling scrypt.");
 				}
 
-				return witnessValidator -> payloadProcedureBuilder.add(particleClass, witnessValidator);
+				payloadProcedureBuilder.add(particleClass, witnessValidator);
 			}
 		});
 

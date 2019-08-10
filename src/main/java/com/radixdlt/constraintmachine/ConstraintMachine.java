@@ -87,7 +87,7 @@ public final class ConstraintMachine {
 			AtomicReference<Object> particleData = new AtomicReference<>();
 
 			if (currentParticleRegister.get() != null && currentParticleRegister.get().getFirst().getSpin() == sp.getSpin()) {
-				return Stream.of(ProcedureError.of("Next particle " + sp + " failed. Current register: " + currentParticleRegister.get()));
+				return Stream.of(ProcedureError.of("Spin Clash: Next particle: " + sp + " Current register: " + currentParticleRegister.get()));
 			}
 
 			ParticleProcedure particleProcedure = this.particleProcedures.apply(p);
