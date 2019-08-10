@@ -13,7 +13,7 @@ public interface Atom {
 	 *
 	 * @return The immutable content
 	 */
-	Object getContent();
+	AtomContent getContent();
 
 	/**
 	 * Gets the immutable set of shards of this atom.

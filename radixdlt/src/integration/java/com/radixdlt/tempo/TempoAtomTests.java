@@ -8,6 +8,8 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.Atom;
 import com.radixdlt.atoms.ImmutableAtom;
+import com.radixdlt.ledger.LedgerIndex;
+import com.radixdlt.mock.MockAtomContent;
 import com.radixdlt.tempo.store.TempoAtomStore;
 import org.junit.After;
 import org.junit.Assert;
@@ -109,15 +111,18 @@ public class TempoAtomTests extends RadixTestWithStores
 
 	private TempoAtom createAtom(ECKeyPair identity, Random r) throws Exception {
 		Universe universe = Modules.get(Universe.class);
-		RadixAddress toAddress = RadixAddress.from(universe, new ECKeyPair().getPublicKey());
-		RadixAddress fromAddress = RadixAddress.from(universe, identity.getPublicKey());
-		MessageParticle mp = new MessageParticle(fromAddress, toAddress, Longs.toByteArray(r.nextLong()));
-
-		ImmutableAtom content = new ImmutableAtom(Time.currentTimestamp(), ImmutableMap.of());
-		content.addParticleGroupWith(mp, Spin.UP);
-		content.sign(identity);
-
-		TempoAtom atom = new TempoAtom(content, content.getAID(), content.getTimestamp(), content.getShards());
+		byte[] pKey = new byte[32];
+		r.nextBytes(pKey);
+		MockAtomContent content = new MockAtomContent(
+			new LedgerIndex((byte) 7, pKey),
+			identity.getPublicKey().getBytes()
+		);
+		TempoAtom atom = new TempoAtom(
+			content,
+			AID.from(pKey),
+			System.currentTimeMillis(),
+			ImmutableSet.of(Longs.fromByteArray(pKey))
+		);
 		return atom;
 	}
 }

@@ -3,6 +3,7 @@ package com.radixdlt.tempo;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.Atom;
+import com.radixdlt.AtomContent;
 import com.radixdlt.common.AID;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
@@ -25,7 +26,7 @@ public class TempoAtom implements Atom {
 	 */
 	@JsonProperty("content")
 	@DsonOutput(value = {DsonOutput.Output.ALL})
-	private Object content;
+	private AtomContent content;
 
 	@JsonProperty("aid")
 	@DsonOutput(value = {DsonOutput.Output.ALL})
@@ -47,11 +48,11 @@ public class TempoAtom implements Atom {
 		// For serializer
 	}
 
-	public TempoAtom(Object content, AID aid, long timestamp, Set<Long> shards) {
+	public TempoAtom(AtomContent content, AID aid, long timestamp, Set<Long> shards) {
 		this(content, aid, timestamp, shards, null);
 	}
 
-	public TempoAtom(Object content, AID aid, long timestamp, Set<Long> shards, TemporalProof temporalProof) {
+	public TempoAtom(AtomContent content, AID aid, long timestamp, Set<Long> shards, TemporalProof temporalProof) {
 		this.content = Objects.requireNonNull(content, "content is required");
 		this.aid = Objects.requireNonNull(aid, "aid is required");
 		this.timestamp = timestamp;
@@ -60,7 +61,7 @@ public class TempoAtom implements Atom {
 	}
 
 	@Override
-	public Object getContent() {
+	public AtomContent getContent() {
 		return this.content;
 	}
 

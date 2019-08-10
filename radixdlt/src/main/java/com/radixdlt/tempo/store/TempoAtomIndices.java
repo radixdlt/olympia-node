@@ -34,13 +34,19 @@ public final class TempoAtomIndices {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private ImmutableSet<LedgerIndex> duplicateIndices;
 
+	// TODO reconsider logicalClock here, is a hack to avoid extra lookup of entire atom when deleting
+	@JsonProperty("logicalClock")
+	@DsonOutput(DsonOutput.Output.ALL)
+	private long logicalClock;
+
 	private TempoAtomIndices() {
 		// For serializer
 	}
 
-	private TempoAtomIndices(ImmutableSet<LedgerIndex> uniqueIndices, ImmutableSet<LedgerIndex> duplicateIndices) {
+	private TempoAtomIndices(ImmutableSet<LedgerIndex> uniqueIndices, ImmutableSet<LedgerIndex> duplicateIndices, long logicalClock) {
 		this.uniqueIndices = uniqueIndices;
 		this.duplicateIndices = duplicateIndices;
+		this.logicalClock = logicalClock;
 	}
 
 	Set<LedgerIndex> getUniqueIndices() {
@@ -51,7 +57,7 @@ public final class TempoAtomIndices {
 		return this.duplicateIndices;
 	}
 
-	static TempoAtomIndices from(TempoAtom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
+	static TempoAtomIndices from(TempoAtom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices, long logicalClock) {
 		List<LedgerIndex> offendingIndices = Stream.concat(uniqueIndices.stream(), duplicateIndices.stream())
 			.filter(index -> index.getPrefix() == ATOM_INDEX_PREFIX || index.getPrefix() == SHARD_INDEX_PREFIX)
 			.collect(Collectors.toList());
@@ -74,6 +80,10 @@ public final class TempoAtomIndices {
 			allDuplicateIndices.add(new LedgerIndex(SHARD_INDEX_PREFIX, Longs.toByteArray(shard)));
 		}
 
-		return new TempoAtomIndices(allUniqueIndices.build(), allDuplicateIndices.build());
+		return new TempoAtomIndices(allUniqueIndices.build(), allDuplicateIndices.build(), logicalClock);
+	}
+
+	long getLogicalClock() {
+		return logicalClock;
 	}
 }

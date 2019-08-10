@@ -16,7 +16,9 @@ import com.radixdlt.ledger.LedgerCursor;
 import com.radixdlt.ledger.LedgerCursor.Type;
 import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerSearchMode;
+import com.radixdlt.mock.MockAtomContent;
 import com.radixdlt.universe.Universe;
+import com.radixdlt.utils.Ints;
 import org.junit.Assert;
 import org.junit.Test;
 import org.radix.atoms.AtomStore;
@@ -139,15 +141,18 @@ public class TempoCursorTests extends RadixTestWithStores {
 
 	private TempoAtom createAtom(ECKeyPair identity, Random r) throws Exception {
 		Universe universe = Modules.get(Universe.class);
-		RadixAddress toAddress = RadixAddress.from(universe, new ECKeyPair().getPublicKey());
-		RadixAddress fromAddress = RadixAddress.from(universe, identity.getPublicKey());
-		MessageParticle mp = new MessageParticle(fromAddress, toAddress, Longs.toByteArray(r.nextLong()));
-
-		ImmutableAtom content = new ImmutableAtom(Time.currentTimestamp(), ImmutableMap.of());
-		content.addParticleGroupWith(mp, Spin.UP);
-		content.sign(identity);
-
-		TempoAtom atom = new TempoAtom(content, content.getAID(), content.getTimestamp(), content.getShards());
+		byte[] pKey = new byte[32];
+		r.nextBytes(pKey);
+		MockAtomContent content = new MockAtomContent(
+			new LedgerIndex((byte) 7, pKey),
+			identity.getPublicKey().getBytes()
+		);
+		TempoAtom atom = new TempoAtom(
+			content,
+			AID.from(pKey),
+			System.currentTimeMillis(),
+			ImmutableSet.of(Longs.fromByteArray(pKey))
+		);
 		return atom;
 	}
 }

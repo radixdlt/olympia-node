@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.Atom;
+import com.radixdlt.AtomContent;
 import com.radixdlt.common.AID;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.LedgerIndex;
@@ -57,7 +58,7 @@ final class MockAtom implements Atom {
 	}
 
 	@Override
-	public Object getContent() {
+	public AtomContent getContent() {
 		return this.content;
 	}
 

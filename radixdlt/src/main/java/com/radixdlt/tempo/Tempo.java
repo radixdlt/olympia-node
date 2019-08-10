@@ -87,7 +87,7 @@ public final class Tempo extends Plugin implements Ledger {
 	@Override
 	public boolean store(Atom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
 		TempoAtom tempoAtom = convertToTempoAtom(atom);
-		if (store.contains(atom.getAID())) {
+		if (store.contains(tempoAtom.getAID())) {
 			return false;
 		}
 
@@ -113,9 +113,6 @@ public final class Tempo extends Plugin implements Ledger {
 	@Override
 	public boolean replace(Set<AID> aids, Atom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
 		TempoAtom tempoAtom = convertToTempoAtom(atom);
-		if (store.contains(atom.getAID())) {
-			return false;
-		}
 
 		try {
 			attestTo(tempoAtom);
@@ -153,7 +150,7 @@ public final class Tempo extends Plugin implements Ledger {
 				this.localSystem.set(existingNIDVertex.getClock(), existingNIDVertex.getCommitment(), atom.getTimestamp());
 			}
 			if (logger.hasLevel(Logging.DEBUG)) {
-				logger.debug("");
+				logger.debug("Refusing to attest to atom '" + atom.getAID() + "', already attested to it");
 			}
 
 			return;

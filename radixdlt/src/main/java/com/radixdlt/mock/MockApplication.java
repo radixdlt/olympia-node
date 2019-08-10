@@ -17,6 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 /**
  * A simple mock application for testing ledgers.
@@ -115,11 +116,13 @@ public final class MockApplication {
 			ImmutableSet<AID> allConflictingAids = e.getAllAids();
 			// resolve conflict by calling ledger
 			logger.info(String.format("Detected conflict between atom '%s' and '%s', calling ledger to resolve", atom.getAID(), conflictingAtoms.values()));
-			ledger.resolve(atom, conflictingAtoms.values())
+			ledger.resolve(e.getAtom(), conflictingAtoms.values())
 				.thenAccept(winner -> {
 					logger.info(String.format("Ledger resolved conflict between '%s' to '%s', adding to queue", allConflictingAids, winner.getAID()));
 					// add conflict 'remnants' to the queue to be replaced atomically with the winner
-					conflictRemnants.put(winner.getAID(), allConflictingAids);
+					conflictRemnants.put(winner.getAID(), allConflictingAids.stream()
+						.filter(aid -> ledger.get(aid).isPresent())
+						.collect(ImmutableSet.toImmutableSet()));
 					queue(winner);
 				});
 		}

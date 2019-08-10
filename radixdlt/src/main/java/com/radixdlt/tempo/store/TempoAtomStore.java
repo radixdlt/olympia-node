@@ -75,12 +75,12 @@ public class TempoAtomStore implements AtomStore {
 	private final LocalSystem localSystem;
 	private final Supplier<DatabaseEnvironment> dbEnv;
 	private final AtomStoreViewAdapter view;
-	private final Map<Long, TempoAtomIndices> currentIndices = new ConcurrentHashMap<>();
+	private final Map<AID, TempoAtomIndices> currentIndices = new ConcurrentHashMap<>();
 
-	private Database atoms;
-	private SecondaryDatabase uniqueIndices;
-	private SecondaryDatabase duplicatedIndices;
-	private Database atomIndices;
+	private Database atoms; // TempoAtoms by primary keys (logical clock + AID bytes, no prefixes)
+	private SecondaryDatabase uniqueIndices; // TempoAtoms by secondary unique indices (with prefixes)
+	private SecondaryDatabase duplicatedIndices; // TempoAtoms by secondary duplicate indices (with prefixes)
+	private Database atomIndices; // TempoAtomIndices by AID bytes (without prefixes)
 
 	public TempoAtomStore(Serialization serialization, SystemProfiler profiler, LocalSystem localSystem, Supplier<DatabaseEnvironment> dbEnv) {
 		this.serialization = Objects.requireNonNull(serialization, "serialization is required");
@@ -319,7 +319,7 @@ public class TempoAtomStore implements AtomStore {
 			throw e;
 		} catch (Exception e) {
 			transaction.abort();
-			fail("Store of atom '" + atom.getAID() + "' failed", e);
+			fail("Replace of '" + aids + "' with atom '" + atom.getAID() + "' failed", e);
 		} finally {
 			profiler.incrementFrom("ATOM_STORE:REPLACE", start);
 		}
@@ -331,19 +331,23 @@ public class TempoAtomStore implements AtomStore {
 		if (localTemporalVertex == null) {
 			fail("Cannot store atom '" + atom.getAID() + "' without local temporal vertex");
 		}
+		long logicalClock = localTemporalVertex.getClock();
 		try {
-			TempoAtomIndices indices = TempoAtomIndices.from(atom, uniqueIndices, duplicateIndices);
-			DatabaseEntry pKey = new DatabaseEntry(Arrays.concatenate(Longs.toByteArray(localTemporalVertex.getClock()), atom.getAID().getBytes()));
+			byte[] aidBytes = atom.getAID().getBytes();
+			TempoAtomIndices indices = TempoAtomIndices.from(atom, uniqueIndices, duplicateIndices, logicalClock);
+			DatabaseEntry pKey = new DatabaseEntry(Arrays.concatenate(Longs.toByteArray(logicalClock), aidBytes));
 			DatabaseEntry pData = new DatabaseEntry(serialization.toDson(atom, Output.PERSIST));
-			DatabaseEntry indicesData = new DatabaseEntry(serialization.toDson(indices, Output.PERSIST));
 
 			// put indices in temporary map for key creator to pick up
-			this.currentIndices.put(localTemporalVertex.getClock(), indices);
+			this.currentIndices.put(atom.getAID(), indices);
 			OperationStatus status = this.atoms.putNoOverwrite(transaction, pKey, pData);
 			if (status != OperationStatus.SUCCESS) {
 				return false;
 			}
-			status = this.atomIndices.putNoOverwrite(transaction, pKey, indicesData);
+
+			DatabaseEntry indicesData = new DatabaseEntry(serialization.toDson(indices, Output.PERSIST));
+			DatabaseEntry key = new DatabaseEntry(aidBytes);
+			status = this.atomIndices.putNoOverwrite(transaction, key, indicesData);
 			if (status != OperationStatus.SUCCESS) {
 				fail("Internal error, atom indices write failed with status " + status);
 			}
@@ -354,7 +358,7 @@ public class TempoAtomStore implements AtomStore {
 			ImmutableMap<LedgerIndex, Atom> conflictingAtoms = doGetConflictingAtoms(uniqueIndices, null);
 			throw new LedgerKeyConstraintException(atom, conflictingAtoms);
 		} finally {
-			this.currentIndices.remove(localTemporalVertex.getClock());
+			this.currentIndices.remove(atom.getAID());
 		}
 		return true;
 	}
@@ -383,26 +387,22 @@ public class TempoAtomStore implements AtomStore {
 	}
 
 	private boolean doDelete(AID aid, Transaction transaction) throws SerializationException {
-		DatabaseEntry pKey = new DatabaseEntry();
-		DatabaseEntry key = new DatabaseEntry(LedgerIndex.from(ATOM_INDEX_PREFIX, aid.getBytes()));
-		DatabaseEntry indicesData = new DatabaseEntry();
+		DatabaseEntry key = new DatabaseEntry(aid.getBytes());
+		DatabaseEntry value = new DatabaseEntry();
 
-		OperationStatus status = this.uniqueIndices.get(transaction, key, pKey, null, LockMode.RMW);
-		if (status != OperationStatus.SUCCESS) {
-			fail("Failed to get primary key for aid " + aid);
-		}
-		status = atomIndices.get(transaction, pKey, indicesData, LockMode.DEFAULT);
+		OperationStatus status = atomIndices.get(transaction, key, value, LockMode.DEFAULT);
 		if (status != OperationStatus.SUCCESS) {
 			fail("Getting indices of atom '" + aid + "' failed with status " + status);
 		}
+		atomIndices.delete(transaction, key);
 
-		TempoAtomIndices indices = serialization.fromDson(indicesData.getData(), TempoAtomIndices.class);
-		long logicalClock = Longs.fromByteArray(pKey.getData());
+		TempoAtomIndices indices = serialization.fromDson(value.getData(), TempoAtomIndices.class);
+		DatabaseEntry pKey = new DatabaseEntry(Arrays.concatenate(Longs.toByteArray(indices.getLogicalClock()), aid.getBytes()));
 		try {
-			currentIndices.put(logicalClock, indices);
+			currentIndices.put(aid, indices);
 			return atoms.delete(transaction, pKey) == OperationStatus.SUCCESS;
 		} finally {
-			currentIndices.remove(logicalClock);
+			currentIndices.remove(aid);
 		}
 	}
 
@@ -687,12 +687,12 @@ public class TempoAtomStore implements AtomStore {
 			indices.forEach(index -> secondaries.add(new DatabaseEntry(index.asKey())));
 		}
 
-		private static AtomSecondaryCreator from(Map<Long, TempoAtomIndices> atomIndices, Function<TempoAtomIndices, Set<LedgerIndex>> indexer) {
+		private static AtomSecondaryCreator from(Map<AID, TempoAtomIndices> atomIndices, Function<TempoAtomIndices, Set<LedgerIndex>> indexer) {
 			return new AtomSecondaryCreator(
 				key -> {
-					TempoAtomIndices tempoAtomIndices = atomIndices.get(Longs.fromByteArray(key.getData()));
+					TempoAtomIndices tempoAtomIndices = atomIndices.get(AID.from(key.getData(), Long.BYTES));
 					if (tempoAtomIndices == null) {
-						throw new IllegalStateException("Indices for Atom@" + Longs.fromByteArray(key.getData()) + " not available");
+						throw new IllegalStateException("Indices for atom '" + Longs.fromByteArray(key.getData()) + "' not available");
 					}
 					return indexer.apply(tempoAtomIndices);
 				}
