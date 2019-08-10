@@ -124,7 +124,8 @@ public final class ConstraintMachine {
 					return Stream.of(ProcedureError.of("Next particle " + nextParticle + " failed. Current register: " + particleRegister.get()));
 			}
 
-			if (!constraintProcedure.validateWitness(result, inputParticle, outputParticle, metadata)) {
+			final boolean witnessResult = constraintProcedure.validateWitness(result, inputParticle, outputParticle, metadata);
+			if (!witnessResult) {
 				return Stream.of(ProcedureError.of("Witness failed"));
 			}
 		}

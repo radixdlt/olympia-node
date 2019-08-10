@@ -1,38 +1,46 @@
 package com.radixdlt.atommodel.procedures;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.AtomMetadata;
 import com.radixdlt.constraintmachine.ConstraintProcedure;
+import com.radixdlt.constraintmachine.WitnessValidator;
 import com.radixdlt.utils.UInt256;
-import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiPredicate;
 
 /**
  * Low-level implementation of fungible transition constraints.
  */
-public class FungibleTransitions implements ConstraintProcedure {
+public class FungibleTransition<T extends Particle, U extends Particle> implements ConstraintProcedure {
+	private final Class<T> inputParticleClass;
+	private final ParticleToAmountMapper<T> inputAmountMapper;
+	private final Class<U> outputParticleClass;
+	private final ParticleToAmountMapper<U> outputAmountMapper;
+	private final BiPredicate<T, U> transition;
+	private final WitnessValidator<T> witnessValidator;
 
-	private final ImmutableMap<Class<? extends Particle>, FungibleDefinition<? extends Particle>> fungibles;
 
-	public FungibleTransitions(ImmutableMap<Class<? extends Particle>, FungibleDefinition<? extends Particle>> fungibles) {
-		this.fungibles = fungibles;
-
-		for (Entry<Class<? extends Particle>, FungibleDefinition<? extends Particle>> e : fungibles.entrySet()) {
-			if (!fungibles.keySet().containsAll(e.getValue().getParticleClassToFormulaMap().keySet())) {
-				throw new IllegalArgumentException("Outputs not all accounted for");
-			}
-		}
+	public FungibleTransition(
+		Class<T> inputParticleClass,
+		ParticleToAmountMapper<T> inputAmountMapper,
+		Class<U> outputParticleClass,
+		ParticleToAmountMapper<U> outputAmountMapper,
+		BiPredicate<T, U> transition,
+		WitnessValidator<T> witnessValidator
+	) {
+		this.inputParticleClass = inputParticleClass;
+		this.inputAmountMapper = inputAmountMapper;
+		this.outputParticleClass = outputParticleClass;
+		this.outputAmountMapper = outputAmountMapper;
+		this.transition = transition;
+		this.witnessValidator = witnessValidator;
 	}
 
 	@Override
 	public ImmutableSet<Pair<Class<? extends Particle>, Class<? extends Particle>>> supports() {
-		return fungibles.entrySet().stream()
-			.flatMap(in -> in.getValue().getParticleClassToFormulaMap().keySet().stream()
-				.map(out -> Pair.<Class<? extends Particle>, Class<? extends Particle>>of(in.getKey(), out)))
-			.collect(ImmutableSet.toImmutableSet());
+		return ImmutableSet.of(Pair.of(inputParticleClass, outputParticleClass));
 	}
 
 	@Override
@@ -47,12 +55,7 @@ public class FungibleTransitions implements ConstraintProcedure {
 				return true;
 			case POP_INPUT:
 			case POP_INPUT_OUTPUT:
-				return fungibles.get(inputParticle.getClass())
-					.getParticleClassToFormulaMap()
-					.get(outputParticle.getClass())
-					.getWitnessValidator()
-					.validate(inputParticle, metadata)
-					.isSuccess();
+				return witnessValidator.validate((T) inputParticle, metadata).isSuccess();
 			default:
 				throw new IllegalStateException();
 		}
@@ -65,16 +68,15 @@ public class FungibleTransitions implements ConstraintProcedure {
 		Particle outputParticle,
 		AtomicReference<Object> outputData
 	) {
-		FungibleFormula formula = fungibles.get(inputParticle.getClass()).getParticleClassToFormulaMap().get(outputParticle.getClass());
-		if (!formula.getTransition().test(inputParticle, outputParticle)) {
+		if (!transition.test((T) inputParticle, (U) outputParticle)) {
 			return ProcedureResult.ERROR;
 		}
 
 		UInt256 inputAmount = inputData.get() == null
-			? fungibles.get(inputParticle.getClass()).mapToAmount(inputParticle)
+			? inputAmountMapper.amount((T) inputParticle)
 			: (UInt256) inputData.get();
 		UInt256 outputAmount = outputData.get() == null
-			? fungibles.get(outputParticle.getClass()).mapToAmount(outputParticle)
+			? outputAmountMapper.amount((U) outputParticle)
 			: (UInt256) outputData.get();
 
 		int compare = inputAmount.compareTo(outputAmount);
