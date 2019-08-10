@@ -8,6 +8,7 @@ import com.radixdlt.constraintmachine.ParticleProcedure;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Stack;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiPredicate;
 
 /**
@@ -60,62 +61,94 @@ public final class RRIParticleProcedureBuilder {
 		return this;
 	}
 
+	private enum ProcedureResult {
+		POP_INPUT,
+		POP_OUTPUT,
+		POP_INPUT_OUTPUT,
+		ERROR
+	}
+
 	public ParticleProcedure build() {
 		return new ParticleProcedure() {
+
+			private ProcedureResult execute(
+				Particle inputParticle,
+				AtomicReference<Object> inputData,
+				Particle outputParticle,
+				AtomicReference<Object> outputData,
+				AtomMetadata metadata
+			) {
+				RRIParticle rriParticle = (RRIParticle) inputParticle;
+
+				if (inputData.get() != null) {
+					Pair<SecondaryResource, Particle> data = (Pair<SecondaryResource, Particle>) inputData.get();
+					SecondaryResource secondaryResource = data.getFirst();
+					if (!secondaryResource.particleClass.equals(outputParticle.getClass())) {
+						return ProcedureResult.ERROR;
+					}
+
+					if (!secondaryResource.rriMapper.index(outputParticle).equals(rriParticle.getRri())) {
+						return ProcedureResult.ERROR;
+					}
+
+					if (!secondaryResource.combinedResource.test(data.getSecond(), outputParticle)) {
+						return ProcedureResult.ERROR;
+					}
+				} else {
+					ParticleToRRIMapper<Particle> mapper = indexedParticles.get(outputParticle.getClass());
+					if (mapper == null) {
+						return ProcedureResult.ERROR;
+					}
+
+
+					if (!mapper.index(outputParticle).equals(rriParticle.getRri())) {
+						return ProcedureResult.ERROR;
+					}
+
+					if (!metadata.isSignedBy(rriParticle.getRri().getAddress())) {
+						return ProcedureResult.ERROR;
+					}
+
+					SecondaryResource secondaryResource = secondary.get(outputParticle.getClass());
+					if (secondaryResource != null) {
+						inputData.set(Pair.of(secondaryResource, outputParticle));
+						return ProcedureResult.POP_OUTPUT;
+					}
+				}
+
+				return ProcedureResult.POP_INPUT_OUTPUT;
+			}
+
 			@Override
 			public boolean inputExecute(Particle input, AtomMetadata metadata, Stack<Pair<Particle, Object>> outputs) {
-				RRIParticle rriParticle = (RRIParticle) input;
-				if (outputs.empty()) {
-					return false;
-				}
+				AtomicReference<Object> inputData = new AtomicReference<>();
+				AtomicReference<Object> outputData = new AtomicReference<>();
 
-				Pair<Particle, Object> top = outputs.peek();
-				Particle toParticle = top.getFirst();
-				ParticleToRRIMapper<Particle> mapper = indexedParticles.get(toParticle.getClass());
-				if (mapper == null) {
-					return false;
-				}
-
-				if (!mapper.index(toParticle).equals(rriParticle.getRri())) {
-					return false;
-				}
-
-				if (!metadata.isSignedBy(rriParticle.getRri().getAddress())) {
-					return false;
-				}
-
-				outputs.pop();
-
-				SecondaryResource secondaryResource = secondary.get(toParticle.getClass());
-				if (secondaryResource != null) {
+				ProcedureResult action;
+				do {
 					if (outputs.empty()) {
-						return false;
+						action = ProcedureResult.ERROR;
+						break;
 					}
+					Pair<Particle, Object> top = outputs.peek();
+					Particle output = top.getFirst();
 
-					Pair<Particle, Object> top2 = outputs.peek();
-					Particle toParticle2 = top2.getFirst();
-					if (!toParticle2.getClass().equals(secondaryResource.particleClass)) {
-						return false;
+					action = execute(input, inputData, output, outputData, metadata);
+
+					switch (action) {
+						case POP_OUTPUT:
+						case POP_INPUT_OUTPUT:
+							outputs.pop();
 					}
+				} while (action.equals(ProcedureResult.POP_OUTPUT));
 
-					if (!secondaryResource.rriMapper.index(toParticle2).equals(rriParticle.getRri())) {
-						return false;
-					}
-
-					if (!secondaryResource.combinedResource.test(toParticle, toParticle2)) {
-						return false;
-					}
-
-					outputs.pop();
-				}
-
-				return true;
+				return action != ProcedureResult.ERROR;
 			}
 
 			@Override
 			public boolean outputExecute(Particle output, AtomMetadata metadata) {
-																			   return false;
-																							}
+				return false;
+			}
 		};
 	}
 }
