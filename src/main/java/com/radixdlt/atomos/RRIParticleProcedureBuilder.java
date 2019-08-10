@@ -2,12 +2,10 @@ package com.radixdlt.atomos;
 
 import com.radixdlt.atomos.mapper.ParticleToRRIMapper;
 import com.radixdlt.atoms.Particle;
-import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.AtomMetadata;
 import com.radixdlt.constraintmachine.ParticleProcedure;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Stack;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiPredicate;
 
@@ -74,8 +72,8 @@ public final class RRIParticleProcedureBuilder {
 				RRIParticle rriParticle = (RRIParticle) inputParticle;
 
 				if (inputData.get() != null) {
-					Pair<SecondaryResource, Particle> data = (Pair<SecondaryResource, Particle>) inputData.get();
-					SecondaryResource secondaryResource = data.getFirst();
+					Particle oldParticle = (Particle) inputData.get();
+					SecondaryResource secondaryResource = secondary.get(oldParticle.getClass());
 					if (!secondaryResource.particleClass.equals(outputParticle.getClass())) {
 						return ProcedureResult.ERROR;
 					}
@@ -84,7 +82,7 @@ public final class RRIParticleProcedureBuilder {
 						return ProcedureResult.ERROR;
 					}
 
-					if (!secondaryResource.combinedResource.test(data.getSecond(), outputParticle)) {
+					if (!secondaryResource.combinedResource.test(oldParticle, outputParticle)) {
 						return ProcedureResult.ERROR;
 					}
 				} else {
@@ -101,9 +99,9 @@ public final class RRIParticleProcedureBuilder {
 						return ProcedureResult.ERROR;
 					}
 
-					SecondaryResource secondaryResource = secondary.get(outputParticle.getClass());
+					SecondaryResource secondaryResource = secondary.get(outputParticle);
 					if (secondaryResource != null) {
-						inputData.set(Pair.of(secondaryResource, outputParticle));
+						inputData.set(outputParticle);
 						return ProcedureResult.POP_OUTPUT;
 					}
 				}
