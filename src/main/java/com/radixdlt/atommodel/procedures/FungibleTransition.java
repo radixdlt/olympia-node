@@ -9,24 +9,25 @@ import com.radixdlt.constraintmachine.WitnessValidator;
 import com.radixdlt.utils.UInt256;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiPredicate;
+import java.util.function.Function;
 
 /**
  * Low-level implementation of fungible transition constraints.
  */
 public class FungibleTransition<T extends Particle, U extends Particle> implements ConstraintProcedure {
 	private final Class<T> inputParticleClass;
-	private final ParticleToAmountMapper<T> inputAmountMapper;
+	private final Function<T, UInt256> inputAmountMapper;
 	private final Class<U> outputParticleClass;
-	private final ParticleToAmountMapper<U> outputAmountMapper;
+	private final Function<U, UInt256> outputAmountMapper;
 	private final BiPredicate<T, U> transition;
 	private final WitnessValidator<T> witnessValidator;
 
 
 	public FungibleTransition(
 		Class<T> inputParticleClass,
-		ParticleToAmountMapper<T> inputAmountMapper,
+		Function<T, UInt256> inputAmountMapper,
 		Class<U> outputParticleClass,
-		ParticleToAmountMapper<U> outputAmountMapper,
+		Function<U, UInt256> outputAmountMapper,
 		BiPredicate<T, U> transition,
 		WitnessValidator<T> witnessValidator
 	) {
@@ -73,10 +74,10 @@ public class FungibleTransition<T extends Particle, U extends Particle> implemen
 		}
 
 		UInt256 inputAmount = inputData.get() == null
-			? inputAmountMapper.amount((T) inputParticle)
+			? inputAmountMapper.apply((T) inputParticle)
 			: (UInt256) inputData.get();
 		UInt256 outputAmount = outputData.get() == null
-			? outputAmountMapper.amount((U) outputParticle)
+			? outputAmountMapper.apply((U) outputParticle)
 			: (UInt256) outputData.get();
 
 		int compare = inputAmount.compareTo(outputAmount);

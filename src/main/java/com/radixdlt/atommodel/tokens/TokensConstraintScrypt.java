@@ -11,13 +11,13 @@ import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.atomos.Result;
-import com.radixdlt.atommodel.procedures.ParticleToAmountMapper;
 import com.radixdlt.atommodel.procedures.FungibleTransition;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.constraintmachine.AtomMetadata;
 import com.radixdlt.utils.UInt256;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -156,19 +156,19 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 	private static <T extends Particle> void requireAmountFits(
 		SysCalls os,
 		Class<T> cls,
-		ParticleToAmountMapper<T> particleToAmountMapper,
-		ParticleToAmountMapper<T> particleToGranularityMapper
+		Function<T, UInt256> particleToAmountMapper,
+		Function<T, UInt256> particleToGranularityMapper
 	) {
 		os.on(cls)
 			.require(particle -> {
-				UInt256 amount = particleToAmountMapper.amount(particle);
+				UInt256 amount = particleToAmountMapper.apply(particle);
 				if (amount == null) {
 					return Result.error("amount must not be null");
 				}
 				if (amount.isZero()) {
 					return Result.error("amount must not be zero");
 				}
-				UInt256 granularity = particleToGranularityMapper.amount(particle);
+				UInt256 granularity = particleToGranularityMapper.apply(particle);
 				if (granularity == null) {
 					return Result.error("granularity must not be null");
 				}
