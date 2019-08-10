@@ -1,10 +1,12 @@
-package com.radixdlt.atomos;
+package com.radixdlt.atommodel.procedures;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.radixdlt.atommodel.procedures.NonRRIResourceCreation;
+import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.SysCalls.WitnessValidator;
 import com.radixdlt.constraintmachine.ConstraintProcedure;
 import com.radixdlt.constraintmachine.ConstraintProcedure.ProcedureResult;

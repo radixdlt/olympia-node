@@ -1,4 +1,4 @@
-package com.radixdlt.atomos;
+package com.radixdlt.atommodel.procedures;
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atomos.SysCalls.WitnessValidator;

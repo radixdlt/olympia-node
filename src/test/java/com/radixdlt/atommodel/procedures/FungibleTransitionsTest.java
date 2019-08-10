@@ -1,10 +1,12 @@
-package com.radixdlt.atomos;
+package com.radixdlt.atommodel.procedures;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atommodel.procedures.FungibleTransitions;
+import com.radixdlt.atomos.FungibleDefinition.Builder;
+import com.radixdlt.atomos.Result;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.ConstraintProcedure;
@@ -13,7 +15,7 @@ import com.radixdlt.utils.UInt256;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Test;
 
-public class FungibleParticlesProcedureBuilderTest {
+public class FungibleTransitionsTest {
 	private static class Fungible extends Particle {
 		private final UInt256 amount;
 		Fungible(UInt256 amount) {
@@ -51,7 +53,7 @@ public class FungibleParticlesProcedureBuilderTest {
 		ConstraintProcedure procedure = new FungibleTransitions(
 			ImmutableMap.of(
 				Fungible.class,
-				new FungibleDefinition.Builder<Fungible>()
+				new Builder<Fungible>()
 					.amountMapper(Fungible::getAmount)
 					.to(Fungible.class, (a, b) -> true, (a, b) -> Result.success())
 					.build()
@@ -72,7 +74,7 @@ public class FungibleParticlesProcedureBuilderTest {
 		ConstraintProcedure procedure = new FungibleTransitions(
 			ImmutableMap.of(
 				Fungible.class,
-				new FungibleDefinition.Builder<Fungible>()
+				new Builder<Fungible>()
 					.amountMapper(Fungible::getAmount)
 					.to(Fungible.class, (a, b) -> true, (a, b) -> Result.success())
 					.build()
@@ -96,7 +98,7 @@ public class FungibleParticlesProcedureBuilderTest {
 		ConstraintProcedure procedure = new FungibleTransitions(
 			ImmutableMap.of(
 				Fungible.class,
-				new FungibleDefinition.Builder<Fungible>()
+				new Builder<Fungible>()
 					.amountMapper(Fungible::getAmount)
 					.to(Fungible.class, (a, b) -> true, (a, b) -> Result.success())
 					.build()
@@ -120,7 +122,7 @@ public class FungibleParticlesProcedureBuilderTest {
 		ConstraintProcedure procedure = new FungibleTransitions(
 			ImmutableMap.of(
 				Fungible.class,
-				new FungibleDefinition.Builder<Fungible>()
+				new Builder<Fungible>()
 					.amountMapper(Fungible::getAmount)
 					.to(Fungible.class, (a, b) -> true, (a, b) -> Result.success())
 					.build()
@@ -143,7 +145,7 @@ public class FungibleParticlesProcedureBuilderTest {
 		ConstraintProcedure procedure = new FungibleTransitions(
 			ImmutableMap.of(
 				Fungible.class,
-				new FungibleDefinition.Builder<Fungible>()
+				new Builder<Fungible>()
 					.amountMapper(Fungible::getAmount)
 					.to(Fungible.class, (a, b) -> true, (a, b) -> Result.success())
 					.build()
@@ -165,12 +167,12 @@ public class FungibleParticlesProcedureBuilderTest {
 		ConstraintProcedure procedure = new FungibleTransitions(
 			ImmutableMap.of(
 				Fungible.class,
-				new FungibleDefinition.Builder<Fungible>()
+				new Builder<Fungible>()
 					.amountMapper(Fungible::getAmount)
 					.to(Fungible2.class, (a, b) -> true, (a, b) -> Result.success())
 					.build(),
 				Fungible2.class,
-				new FungibleDefinition.Builder<Fungible2>()
+				new Builder<Fungible2>()
 					.amountMapper(Fungible2::getAmount)
 					.to(Fungible2.class, (a, b) -> true, (a, b) -> Result.success())
 					.build()

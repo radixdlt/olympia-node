@@ -68,14 +68,6 @@ public interface SysCalls {
 		BiPredicate<T, U> combinedResource
 	);
 
-	/**
-	 * Creates a new non-RRI resource type.
-	 */
-	<T extends Particle> void newResourceType(
-		Class<T> particleClass,
-		WitnessValidator<T> witnessValidator
-	);
-
 	void registerProcedure(ConstraintProcedure procedure);
 
 
@@ -101,18 +93,5 @@ public interface SysCalls {
 		 * @return A {@link Result} of the check
 		 */
 		Result validate(T fromParticle, AtomMetadata metadata);
-	}
-
-	/**
-	 * Callback for an implementation of a fungible transition constraint.
-	 *
-	 * @param <T> the type of Particle
-	 */
-	interface FungibleTransitionConstraint<T extends Particle> {
-		<U extends Particle> FungibleTransitionConstraint<T> transitionTo(
-			Class<U> outputClass,
-			BiPredicate<T, U> fungibleValidator,
-			WitnessValidator<T> witnessValidator
-		);
 	}
 }

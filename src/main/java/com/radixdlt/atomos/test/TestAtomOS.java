@@ -57,12 +57,6 @@ public class TestAtomOS implements SysCalls {
 	}
 
 	@Override
-	public <T extends Particle> void newResourceType(Class<T> particleClass, WitnessValidator<T> witnessValidator) {
-		particleClassConstraints.add(new Pair<>(particleClass, (p, m) -> witnessValidator.validate((T) p, m)));
-	}
-
-
-	@Override
 	public <T extends Particle> ParticleClassConstraint<T> on(Class<T> particleClass) {
 		return constraint -> particleClassConstraints.add(new Pair<>(particleClass, (p, m) -> constraint.apply((T) p)));
 	}

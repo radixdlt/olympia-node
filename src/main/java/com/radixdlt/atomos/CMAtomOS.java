@@ -9,7 +9,6 @@ import com.radixdlt.store.CMStore;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -47,7 +46,6 @@ public final class CMAtomOS {
 	private final Map<Class<? extends Particle>, Function<Particle, Result>> particleStaticValidation = new HashMap<>();
 
 	private final RRIParticleProcedureBuilder rriProcedureBuilder = new RRIParticleProcedureBuilder();
-	private final Set<NonRRIResourceCreation<? extends Particle>> nonRRIResourceCreations = new HashSet<>();
 	private final ImmutableMap.Builder<Pair<Class<? extends Particle>, Class<? extends Particle>>, ConstraintProcedure> proceduresBuilder = new ImmutableMap.Builder<>();
 
 	private final Supplier<Universe> universeSupplier;
@@ -135,18 +133,6 @@ public final class CMAtomOS {
 				}
 				procedure.supports().forEach(p -> proceduresBuilder.put(p, procedure));
 			}
-
-			@Override
-			public <T extends Particle> void newResourceType(
-				Class<T> particleClass,
-				WitnessValidator<T> witnessValidator
-			) {
-				if (!scryptParticleClasses.containsKey(particleClass)) {
-					throw new IllegalStateException(particleClass + " must be registered in calling scrypt.");
-				}
-
-				nonRRIResourceCreations.add(new NonRRIResourceCreation<>(particleClass, witnessValidator));
-			}
 		});
 
 		particleMapper.putAll(scryptParticleClasses);
@@ -203,9 +189,6 @@ public final class CMAtomOS {
 		// Add constraint for RRI state machines
 		ConstraintProcedure rriProcedure = this.rriProcedureBuilder.build();
 		rriProcedure.supports().forEach(p -> proceduresBuilder.put(p, rriProcedure));
-
-		// Add constraint for Transitionless state machines
-		this.nonRRIResourceCreations.forEach(p -> p.supports().forEach(c -> proceduresBuilder.put(c, p)));
 
 		ImmutableMap<Pair<Class<? extends Particle>, Class<? extends Particle>>, ConstraintProcedure> procedures = proceduresBuilder.build();
 		cmBuilder.setParticleProcedures((input, output) -> procedures.get(
