@@ -56,6 +56,6 @@ public class TransitionlessParticlesProcedureBuilderTest {
 			mock(Particle.class),
 			new AtomicReference<>()
 		);
-		assertThat(result).isEqualTo(ProcedureResult.ERROR);
+		assertThat(result).isEqualTo(ProcedureResult.POP_OUTPUT);
 	}
 }

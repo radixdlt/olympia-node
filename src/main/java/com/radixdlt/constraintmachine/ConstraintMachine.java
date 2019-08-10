@@ -77,63 +77,79 @@ public final class ConstraintMachine {
 		this.particleProcedures = particleProcedures;
 	}
 
-	private boolean inputExecute(
-		ParticleProcedure particleProcedure,
-		Particle input,
-		AtomMetadata metadata,
-		Stack<Pair<Particle, AtomicReference<Object>>> outputs
-	) {
-		AtomicReference<Object> inputData = new AtomicReference<>();
-
-		ProcedureResult action;
-		do {
-			if (outputs.empty()) {
-				return false;
-			}
-			Pair<Particle, AtomicReference<Object>> top = outputs.peek();
-			action = particleProcedure.execute(
-				input,
-				inputData,
-				top.getFirst(),
-				top.getSecond()
-			);
-
-			if (action != ProcedureResult.ERROR) {
-				if (!particleProcedure.validateWitness(action, input, top.getFirst(), metadata)) {
-					return false;
-				}
-			}
-
-			switch (action) {
-				case POP_OUTPUT:
-				case POP_INPUT_OUTPUT:
-					outputs.pop();
-			}
-		} while (action.equals(ProcedureResult.POP_OUTPUT));
-
-		return action != ProcedureResult.ERROR;
-	}
-
 	private Stream<ProcedureError> validate(ParticleGroup group, AtomMetadata metadata) {
-		final Stack<Pair<Particle, AtomicReference<Object>>> outputs = new Stack<>();
+		//final Stack<Pair<Particle, AtomicReference<Object>>> outputs = new Stack<>();
+		AtomicReference<Pair<SpunParticle, AtomicReference<Object>>> currentParticleRegister = new AtomicReference<>();
 
-		for (int i = group.getParticleCount() - 1; i >= 0; i--) {
+		for (int i = 0; i < group.getParticleCount(); i++) {
 			SpunParticle sp = group.getSpunParticle(i);
 			Particle p = sp.getParticle();
+			AtomicReference<Object> particleData = new AtomicReference<>();
+
+			if (currentParticleRegister.get() != null && currentParticleRegister.get().getFirst().getSpin() == sp.getSpin()) {
+				return Stream.of(ProcedureError.of("Next particle " + sp + " failed. Current register: " + currentParticleRegister.get()));
+			}
+
 			ParticleProcedure particleProcedure = this.particleProcedures.apply(p);
 			if (sp.getSpin() == Spin.DOWN) {
-				if (particleProcedure == null || !this.inputExecute(particleProcedure, p, metadata, outputs)) {
-					return Stream.of(ProcedureError.of("Input particle " + p + " failed. Output stack: " + outputs));
+				if (currentParticleRegister.get() == null) {
+					currentParticleRegister.set(Pair.of(sp, particleData));
+					continue;
 				}
+
+				Particle outputParticle = currentParticleRegister.get().getFirst().getParticle();
+
+				ProcedureResult result = particleProcedure.execute(p, particleData, outputParticle, currentParticleRegister.get().getSecond());
+				switch (result) {
+					case POP_INPUT:
+						break;
+					case POP_OUTPUT:
+						currentParticleRegister.set(Pair.of(sp, particleData));
+						break;
+					case POP_INPUT_OUTPUT:
+						currentParticleRegister.set(null);
+						break;
+					case ERROR:
+						return Stream.of(ProcedureError.of("Next particle " + p + " failed. Current register: " + currentParticleRegister.get()));
+				}
+
+
+				if (!particleProcedure.validateWitness(result, p, outputParticle, metadata)) {
+					return Stream.of(ProcedureError.of("Witness failed"));
+				}
+
 			} else {
-				if (particleProcedure == null || !particleProcedure.outputExecute(p, metadata)) {
-					outputs.push(Pair.of(p, new AtomicReference<>()));
+				Particle inputParticle = currentParticleRegister.get() == null ? null : currentParticleRegister.get().getFirst().getParticle();
+				AtomicReference<Object> inputData = currentParticleRegister.get() == null ? null : currentParticleRegister.get().getSecond();
+
+				if (inputParticle != null) {
+					particleProcedure = this.particleProcedures.apply(inputParticle);
+				} else if (particleProcedure == null) {
+					return Stream.of(ProcedureError.of("No procedure for " + sp));
+				}
+
+				ProcedureResult result = particleProcedure.execute(inputParticle, inputData, p, particleData);
+				switch (result) {
+					case POP_INPUT:
+						currentParticleRegister.set(Pair.of(sp, particleData));
+						break;
+					case POP_OUTPUT:
+						break;
+					case POP_INPUT_OUTPUT:
+						currentParticleRegister.set(null);
+						break;
+					case ERROR:
+						return Stream.of(ProcedureError.of("Next particle " + p + " failed. Current register: " + currentParticleRegister.get()));
+				}
+
+				if (!particleProcedure.validateWitness(result, inputParticle, p, metadata)) {
+					return Stream.of(ProcedureError.of("Witness failed"));
 				}
 			}
 		}
 
-		if (!outputs.empty()) {
-			return Stream.of(ProcedureError.of("Output particle stack not empty: " + outputs));
+		if (currentParticleRegister.get() != null) {
+			return Stream.of(ProcedureError.of("Particle register not empty: " + currentParticleRegister));
 		}
 
 		return Stream.empty();

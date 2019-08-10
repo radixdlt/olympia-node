@@ -24,7 +24,7 @@ public final class TransitionlessParticlesProcedureBuilder {
 				Particle outputParticle,
 				AtomMetadata metadata
 			) {
-				throw new IllegalStateException();
+				return witnessValidator.validate((T) outputParticle, metadata).isSuccess();
 			}
 
 			@Override
@@ -34,7 +34,7 @@ public final class TransitionlessParticlesProcedureBuilder {
 				Particle outputParticle,
 				AtomicReference<Object> outputData
 			) {
-				return ProcedureResult.ERROR;
+				return ProcedureResult.POP_OUTPUT;
 			}
 
 			@Override

@@ -46,13 +46,21 @@ public class FungibleParticlesProcedureBuilder {
 				Particle outputParticle,
 				AtomMetadata metadata
 			) {
-				RRIParticle rriParticle = (RRIParticle) inputParticle;
 				switch (result) {
 					case POP_OUTPUT:
 						return true;
 					case POP_INPUT:
 					case POP_INPUT_OUTPUT:
-						return metadata.isSignedBy(rriParticle.getRri().getAddress());
+						if (inputParticle == null) {
+							return true;
+						}
+
+						return fungibles.get(inputParticle.getClass())
+							.getParticleClassToFormulaMap()
+							.get(outputParticle.getClass())
+							.getWitnessValidator()
+							.validate(inputParticle, metadata)
+							.isSuccess();
 					default:
 						throw new IllegalStateException();
 				}
@@ -65,6 +73,14 @@ public class FungibleParticlesProcedureBuilder {
 				Particle outputParticle,
 				AtomicReference<Object> outputData
 			) {
+				if (inputParticle == null) {
+					return ProcedureResult.POP_INPUT;
+				}
+
+				if (outputParticle == null) {
+					return ProcedureResult.POP_OUTPUT;
+				}
+
 				if (!fungibles.containsKey(outputParticle.getClass())) {
 					return ProcedureResult.ERROR;
 				}

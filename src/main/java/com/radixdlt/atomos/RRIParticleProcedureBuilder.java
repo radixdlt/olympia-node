@@ -113,7 +113,7 @@ public final class RRIParticleProcedureBuilder {
 						return ProcedureResult.ERROR;
 					}
 
-					SecondaryResource secondaryResource = secondary.get(outputParticle);
+					SecondaryResource secondaryResource = secondary.get(outputParticle.getClass());
 					if (secondaryResource != null) {
 						inputData.set(outputParticle);
 						return ProcedureResult.POP_OUTPUT;
