@@ -2,8 +2,6 @@ package com.radixdlt.atommodel.procedures;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.atomos.FungibleDefinition;
-import com.radixdlt.atomos.FungibleFormula;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.AtomMetadata;

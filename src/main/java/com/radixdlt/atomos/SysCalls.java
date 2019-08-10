@@ -1,11 +1,9 @@
 package com.radixdlt.atomos;
 
-import com.radixdlt.atomos.mapper.ParticleToAmountMapper;
 import com.radixdlt.atomos.mapper.ParticleToRRIMapper;
 import com.radixdlt.atomos.mapper.ParticleToShardableMapper;
 import com.radixdlt.atomos.mapper.ParticleToShardablesMapper;
 import com.radixdlt.atoms.Particle;
-import com.radixdlt.constraintmachine.AtomMetadata;
 import com.radixdlt.constraintmachine.ConstraintProcedure;
 import java.util.function.BiPredicate;
 import java.util.function.Function;

@@ -1,4 +1,4 @@
-package com.radixdlt.atomos;
+package com.radixdlt.atommodel.procedures;
 
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.constraintmachine.WitnessValidator;

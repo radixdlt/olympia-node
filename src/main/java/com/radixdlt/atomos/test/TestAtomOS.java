@@ -1,9 +1,8 @@
 package com.radixdlt.atomos.test;
 
 import com.radixdlt.atomos.SysCalls;
-import com.radixdlt.atomos.FungibleDefinition;
+import com.radixdlt.atommodel.procedures.FungibleDefinition;
 import com.radixdlt.atomos.Result;
-import com.radixdlt.atomos.mapper.ParticleToAmountMapper;
 import com.radixdlt.atomos.mapper.ParticleToRRIMapper;
 import com.radixdlt.atomos.mapper.ParticleToShardableMapper;
 import com.radixdlt.atomos.mapper.ParticleToShardablesMapper;

@@ -4,8 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.atommodel.procedures.FungibleTransitions;
-import com.radixdlt.atomos.FungibleDefinition.Builder;
+import com.radixdlt.atommodel.procedures.FungibleDefinition.Builder;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.common.Pair;

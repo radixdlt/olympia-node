@@ -1,7 +1,6 @@
-package com.radixdlt.atomos;
+package com.radixdlt.atommodel.procedures;
 
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.atomos.mapper.ParticleToAmountMapper;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.constraintmachine.WitnessValidator;
 import com.radixdlt.utils.UInt256;
