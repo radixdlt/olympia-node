@@ -4,7 +4,7 @@ import com.radixdlt.atomos.mapper.ParticleToRRIMapper;
 import com.radixdlt.atomos.mapper.ParticleToShardableMapper;
 import com.radixdlt.atomos.mapper.ParticleToShardablesMapper;
 import com.radixdlt.atoms.Particle;
-import com.radixdlt.constraintmachine.ConstraintProcedure;
+import com.radixdlt.constraintmachine.TransitionProcedure;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 
@@ -46,30 +46,6 @@ public interface SysCalls {
 	}
 
 	/**
-	 * Creates a new resource type based on a particle. The resource type can be allocated by consuming
-	 * an RRI which then becomes the resource's global identifier.
-	 */
-	<T extends Particle> void newRRIResourceType(
-		Class<T> particleClass,
-		ParticleToRRIMapper<T> indexer
-	);
-
-	/**
-	 * Creates a new resource type based on two particles. The resource type can be allocated by consuming
-	 * an RRI which then becomes the resource's global identifier.
-	 */
-	<T extends Particle, U extends Particle> void newRRIResourceType(
-		Class<T> particleClass0,
-		ParticleToRRIMapper<T> indexer0,
-		Class<U> particleClass1,
-		ParticleToRRIMapper<U> indexer1,
-		BiPredicate<T, U> combinedResource
-	);
-
-	void registerProcedure(ConstraintProcedure procedure);
-
-
-	/**
 	 * Callback for an implementation of a constraint based on a particle class.
 	 * This interface should not need to be implemented by application layer.
 	 *
@@ -82,5 +58,26 @@ public interface SysCalls {
 		 */
 		void require(Function<T, Result> constraint);
 	}
+	/**
+	 * Creates a new resource type based on a particle. The resource type can be allocated by consuming
+	 * an RRI which then becomes the resource's global identifier.
+	 */
+	<T extends Particle> void newRRIResource(
+		Class<T> particleClass,
+		ParticleToRRIMapper<T> indexer
+	);
 
+	/**
+	 * Creates a new resource type based on two particles. The resource type can be allocated by consuming
+	 * an RRI which then becomes the resource's global identifier.
+	 */
+	<T extends Particle, U extends Particle> void newRRIResource(
+		Class<T> particleClass0,
+		ParticleToRRIMapper<T> indexer0,
+		Class<U> particleClass1,
+		ParticleToRRIMapper<U> indexer1,
+		BiPredicate<T, U> combinedResource
+	);
+
+	void newTransition(TransitionProcedure procedure);
 }

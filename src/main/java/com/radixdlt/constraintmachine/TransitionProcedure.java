@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * Application level "Bytecode" to be run per particle in the Constraint machine
  * TODO: split transition checks and witness validator
  */
-public interface ConstraintProcedure {
+public interface TransitionProcedure {
 	enum ProcedureResult {
 		POP_INPUT,
 		POP_OUTPUT,

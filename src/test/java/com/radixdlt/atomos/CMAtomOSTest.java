@@ -1,7 +1,6 @@
 package com.radixdlt.atomos;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atoms.DataPointer;
 import com.radixdlt.atoms.ImmutableAtom;
@@ -9,8 +8,7 @@ import com.radixdlt.atoms.Spin;
 import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.CMAtom;
 import com.radixdlt.constraintmachine.CMParticle;
-import com.radixdlt.constraintmachine.ConstraintProcedure;
-import com.radixdlt.utils.UInt256;
+import com.radixdlt.constraintmachine.TransitionProcedure;
 import org.junit.Test;
 
 import com.radixdlt.atoms.Particle;
@@ -97,16 +95,16 @@ public class CMAtomOSTest {
 	@Test
 	public void when_adding_procedure_on_particle_registered_in_another_scrypt__exception_is_thrown() {
 		CMAtomOS os = new CMAtomOS(() -> mock(Universe.class), () -> 0);
-		ConstraintProcedure procedure = mock(ConstraintProcedure.class);
+		TransitionProcedure procedure = mock(TransitionProcedure.class);
 		when(procedure.supports()).thenReturn(ImmutableSet.of(Pair.of(TestParticle0.class, TestParticle0.class)));
 		os.load(syscalls -> {
 			syscalls.registerParticle(TestParticle0.class, (TestParticle0 p) -> mock(RadixAddress.class));
-			syscalls.registerProcedure(procedure);
+			syscalls.newTransition(procedure);
 		});
 		assertThatThrownBy(() ->
 			os.load(syscalls -> {
 				syscalls.registerParticle(TestParticle1.class, (TestParticle1 p) -> mock(RadixAddress.class));
-				syscalls.registerProcedure(procedure);
+				syscalls.newTransition(procedure);
 			})
 		).isInstanceOf(IllegalStateException.class);
 	}

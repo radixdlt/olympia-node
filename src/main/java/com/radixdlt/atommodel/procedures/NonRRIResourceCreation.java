@@ -5,13 +5,13 @@ import com.radixdlt.constraintmachine.WitnessValidator;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.AtomMetadata;
-import com.radixdlt.constraintmachine.ConstraintProcedure;
+import com.radixdlt.constraintmachine.TransitionProcedure;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Procedure which checks that payload particles
  */
-public final class NonRRIResourceCreation<T extends Particle> implements ConstraintProcedure {
+public final class NonRRIResourceCreation<T extends Particle> implements TransitionProcedure {
 	private final Class<T> particleClass;
 	private final WitnessValidator witnessValidator;
 

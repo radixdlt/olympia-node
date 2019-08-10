@@ -92,7 +92,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 		);
 
 		// Require Token Definition to be created with unallocated tokens of max supply
-		os.newRRIResourceType(
+		os.newRRIResource(
 			TokenDefinitionParticle.class,
 			TokenDefinitionParticle::getRRI,
 			UnallocatedTokensParticle.class,
@@ -115,7 +115,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 
 		requireAmountFits(os, TransferrableTokensParticle.class, TransferrableTokensParticle::getAmount, TransferrableTokensParticle::getGranularity);
 
-		os.registerProcedure(new FungibleTransition<>(
+		os.newTransition(new FungibleTransition<>(
 			UnallocatedTokensParticle.class, UnallocatedTokensParticle::getAmount,
 			UnallocatedTokensParticle.class, UnallocatedTokensParticle::getAmount,
 			(from, to) ->
@@ -124,7 +124,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 					&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions()),
 			(from, meta) -> checkSigned(from.getTokDefRef().getAddress(), meta)
 		));
-		os.registerProcedure(new FungibleTransition<>(
+		os.newTransition(new FungibleTransition<>(
 			UnallocatedTokensParticle.class, UnallocatedTokensParticle::getAmount,
 			TransferrableTokensParticle.class, TransferrableTokensParticle::getAmount,
 			(from, to) ->
@@ -133,7 +133,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 					&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions()),
 			(from, meta) -> from.getTokenPermission(TokenTransition.MINT).check(from.getTokDefRef(), meta)
 		));
-		os.registerProcedure(new FungibleTransition<>(
+		os.newTransition(new FungibleTransition<>(
 			TransferrableTokensParticle.class, TransferrableTokensParticle::getAmount,
 			TransferrableTokensParticle.class, TransferrableTokensParticle::getAmount,
 			(from, to) ->
@@ -142,7 +142,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 					&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions()),
 			(from, meta) -> checkSigned(from.getAddress(), meta)
 		));
-		os.registerProcedure(new FungibleTransition<>(
+		os.newTransition(new FungibleTransition<>(
 			TransferrableTokensParticle.class, TransferrableTokensParticle::getAmount,
 			UnallocatedTokensParticle.class, UnallocatedTokensParticle::getAmount,
 			(from, to) ->

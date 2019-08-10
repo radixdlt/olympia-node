@@ -8,7 +8,7 @@ import com.radixdlt.atoms.ParticleGroup;
 import com.radixdlt.atoms.Spin;
 import com.radixdlt.atoms.SpunParticle;
 import com.radixdlt.common.Pair;
-import com.radixdlt.constraintmachine.ConstraintProcedure.ProcedureResult;
+import com.radixdlt.constraintmachine.TransitionProcedure.ProcedureResult;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.SpinStateTransitionValidator;
 import com.radixdlt.store.SpinStateTransitionValidator.TransitionCheckResult;
@@ -28,7 +28,7 @@ public final class ConstraintMachine {
 	public static class Builder {
 		private UnaryOperator<CMStore> virtualStore;
 		private ImmutableList.Builder<KernelConstraintProcedure> kernelConstraintProcedureBuilder = new ImmutableList.Builder<>();
-		private BiFunction<Particle, Particle, ConstraintProcedure> particleProcedures;
+		private BiFunction<Particle, Particle, TransitionProcedure> particleProcedures;
 
 		public Builder virtualStore(UnaryOperator<CMStore> virtualStore) {
 			this.virtualStore = virtualStore;
@@ -40,7 +40,7 @@ public final class ConstraintMachine {
 			return this;
 		}
 
-		public Builder setParticleProcedures(BiFunction<Particle, Particle, ConstraintProcedure> particleProcedures) {
+		public Builder setParticleProcedures(BiFunction<Particle, Particle, TransitionProcedure> particleProcedures) {
 			this.particleProcedures = particleProcedures;
 			return this;
 		}
@@ -60,13 +60,13 @@ public final class ConstraintMachine {
 
 	private final UnaryOperator<CMStore> virtualStore;
 	private final ImmutableList<KernelConstraintProcedure> kernelConstraintProcedures;
-	private final BiFunction<Particle, Particle, ConstraintProcedure> particleProcedures;
+	private final BiFunction<Particle, Particle, TransitionProcedure> particleProcedures;
 	private final CMStore localEngineStore;
 
 	ConstraintMachine(
 		UnaryOperator<CMStore> virtualStore,
 		ImmutableList<KernelConstraintProcedure> kernelConstraintProcedures,
-		BiFunction<Particle, Particle, ConstraintProcedure> particleProcedures
+		BiFunction<Particle, Particle, TransitionProcedure> particleProcedures
 	) {
 		Objects.requireNonNull(virtualStore);
 
@@ -96,8 +96,8 @@ public final class ConstraintMachine {
 			final Particle outputParticle = nextSpun.getSpin() == Spin.DOWN ? curParticle : nextParticle;
 			final AtomicReference<Object> outputData = nextSpun.getSpin() == Spin.DOWN ? curData : nextData;
 
-			final ConstraintProcedure constraintProcedure = this.particleProcedures.apply(inputParticle, outputParticle);
-			if (constraintProcedure == null) {
+			final TransitionProcedure transitionProcedure = this.particleProcedures.apply(inputParticle, outputParticle);
+			if (transitionProcedure == null) {
 				if (inputParticle == null || outputParticle == null) {
 					particleRegister.set(Pair.of(nextSpun, nextData));
 					continue;
@@ -106,7 +106,7 @@ public final class ConstraintMachine {
 				return Stream.of(ProcedureError.of("No procedure for Input: " + inputParticle + " Output: " + outputParticle));
 			}
 
-			final ProcedureResult result = constraintProcedure.execute(inputParticle, inputData, outputParticle, outputData);
+			final ProcedureResult result = transitionProcedure.execute(inputParticle, inputData, outputParticle, outputData);
 			switch (result) {
 				case POP_INPUT:
 					if (nextSpun.getSpin() == Spin.UP) {
@@ -124,7 +124,7 @@ public final class ConstraintMachine {
 					return Stream.of(ProcedureError.of("Next particle " + nextParticle + " failed. Current register: " + particleRegister.get()));
 			}
 
-			final boolean witnessResult = constraintProcedure.validateWitness(result, inputParticle, outputParticle, metadata);
+			final boolean witnessResult = transitionProcedure.validateWitness(result, inputParticle, outputParticle, metadata);
 			if (!witnessResult) {
 				return Stream.of(ProcedureError.of("Witness failed"));
 			}

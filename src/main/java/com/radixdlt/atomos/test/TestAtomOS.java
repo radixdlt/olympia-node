@@ -8,7 +8,7 @@ import com.radixdlt.atomos.mapper.ParticleToShardablesMapper;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.AtomMetadata;
-import com.radixdlt.constraintmachine.ConstraintProcedure;
+import com.radixdlt.constraintmachine.TransitionProcedure;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -37,12 +37,12 @@ public class TestAtomOS implements SysCalls {
 	}
 
 	@Override
-	public <T extends Particle> void newRRIResourceType(Class<T> particleClass, ParticleToRRIMapper<T> indexer) {
+	public <T extends Particle> void newRRIResource(Class<T> particleClass, ParticleToRRIMapper<T> indexer) {
 		resources.put(particleClass, p -> indexer.index((T) p));
 	}
 
 	@Override
-	public <T extends Particle, U extends Particle> void newRRIResourceType(
+	public <T extends Particle, U extends Particle> void newRRIResource(
 		Class<T> particleClass0,
 		ParticleToRRIMapper<T> rriMapper0,
 		Class<U> particleClass1,
@@ -58,7 +58,7 @@ public class TestAtomOS implements SysCalls {
 	}
 
 	@Override
-	public void registerProcedure(ConstraintProcedure procedure) {
+	public void newTransition(TransitionProcedure procedure) {
 
 	}
 

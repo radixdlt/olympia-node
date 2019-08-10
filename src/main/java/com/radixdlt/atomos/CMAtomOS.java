@@ -4,7 +4,7 @@ import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atomos.AtomOSKernel.AtomKernelCompute;
 import com.radixdlt.common.Pair;
 import com.radixdlt.compute.AtomCompute;
-import com.radixdlt.constraintmachine.ConstraintProcedure;
+import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.store.CMStore;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -46,7 +46,7 @@ public final class CMAtomOS {
 	private final Map<Class<? extends Particle>, Function<Particle, Result>> particleStaticValidation = new HashMap<>();
 
 	private final RRIParticleProcedureBuilder rriProcedureBuilder = new RRIParticleProcedureBuilder();
-	private final ImmutableMap.Builder<Pair<Class<? extends Particle>, Class<? extends Particle>>, ConstraintProcedure> proceduresBuilder = new ImmutableMap.Builder<>();
+	private final ImmutableMap.Builder<Pair<Class<? extends Particle>, Class<? extends Particle>>, TransitionProcedure> proceduresBuilder = new ImmutableMap.Builder<>();
 
 	private final Supplier<Universe> universeSupplier;
 	private final LongSupplier timestampSupplier;
@@ -93,7 +93,7 @@ public final class CMAtomOS {
 			}
 
 			@Override
-			public <T extends Particle> void newRRIResourceType(
+			public <T extends Particle> void newRRIResource(
 				Class<T> particleClass,
 				ParticleToRRIMapper<T> rriMapper
 			) {
@@ -105,7 +105,7 @@ public final class CMAtomOS {
 			}
 
 			@Override
-			public <T extends Particle, U extends Particle> void newRRIResourceType(
+			public <T extends Particle, U extends Particle> void newRRIResource(
 				Class<T> particleClass0,
 				ParticleToRRIMapper<T> rriMapper0,
 				Class<U> particleClass1,
@@ -123,7 +123,7 @@ public final class CMAtomOS {
 			}
 
 			@Override
-			public void registerProcedure(ConstraintProcedure procedure) {
+			public void newTransition(TransitionProcedure procedure) {
 				if (!procedure.supports().stream()
 					.flatMap(p -> Stream.of(p.getFirst(), p.getSecond()))
 					.filter(Objects::nonNull)
@@ -187,10 +187,10 @@ public final class CMAtomOS {
 		this.kernelProcedures.forEach(cmBuilder::addProcedure);
 
 		// Add constraint for RRI state machines
-		ConstraintProcedure rriProcedure = this.rriProcedureBuilder.build();
+		TransitionProcedure rriProcedure = this.rriProcedureBuilder.build();
 		rriProcedure.supports().forEach(p -> proceduresBuilder.put(p, rriProcedure));
 
-		ImmutableMap<Pair<Class<? extends Particle>, Class<? extends Particle>>, ConstraintProcedure> procedures = proceduresBuilder.build();
+		ImmutableMap<Pair<Class<? extends Particle>, Class<? extends Particle>>, TransitionProcedure> procedures = proceduresBuilder.build();
 		cmBuilder.setParticleProcedures((input, output) -> procedures.get(
 			Pair.<Class<? extends Particle>, Class<? extends Particle>>of(
 				input == null ? null : input.getClass(),

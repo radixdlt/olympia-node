@@ -8,8 +8,8 @@ import static org.mockito.Mockito.when;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.common.EUID;
 import com.radixdlt.constraintmachine.AtomMetadata;
-import com.radixdlt.constraintmachine.ConstraintProcedure;
-import com.radixdlt.constraintmachine.ConstraintProcedure.ProcedureResult;
+import com.radixdlt.constraintmachine.TransitionProcedure;
+import com.radixdlt.constraintmachine.TransitionProcedure.ProcedureResult;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Test;
 
@@ -29,7 +29,7 @@ public class RRIParticleProcedureBuilderTest {
 
 	@Test
 	public void when_an_rri_is_consumed_with_a_corresponding_particle__then_an_input_should_succeed_and_stack_is_empty() {
-		ConstraintProcedure procedure = new RRIParticleProcedureBuilder()
+		TransitionProcedure procedure = new RRIParticleProcedureBuilder()
 			.add(CustomParticle.class, CustomParticle::getRRI)
 			.build();
 
@@ -56,7 +56,7 @@ public class RRIParticleProcedureBuilderTest {
 
 	@Test
 	public void when_an_rri_is_consumed_without_a_corresponding_particle__then_input_should_fail() {
-		ConstraintProcedure procedure = new RRIParticleProcedureBuilder().build();
+		TransitionProcedure procedure = new RRIParticleProcedureBuilder().build();
 
 		RadixAddress address = mock(RadixAddress.class);
 		when(address.getUID()).thenReturn(EUID.ONE);

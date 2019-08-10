@@ -17,7 +17,7 @@ public class MessageParticleConstraintScrypt implements ConstraintScrypt {
 
 				return Result.success();
 			});
-		os.registerProcedure(new NonRRIResourceCreation<>(
+		os.newTransition(new NonRRIResourceCreation<>(
 			MessageParticle.class,
 			(msg, meta) -> {
 				if (!meta.isSignedBy(msg.getFrom())) {

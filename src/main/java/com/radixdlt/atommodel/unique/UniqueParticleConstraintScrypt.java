@@ -7,6 +7,6 @@ public class UniqueParticleConstraintScrypt implements ConstraintScrypt {
 	@Override
 	public void main(SysCalls os) {
 		os.registerParticle(UniqueParticle.class, UniqueParticle::getAddress);
-		os.newRRIResourceType(UniqueParticle.class, UniqueParticle::getRRI);
+		os.newRRIResource(UniqueParticle.class, UniqueParticle::getRRI);
 	}
 }

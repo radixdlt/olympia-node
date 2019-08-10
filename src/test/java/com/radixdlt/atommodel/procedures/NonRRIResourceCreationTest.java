@@ -7,8 +7,8 @@ import static org.mockito.Mockito.when;
 
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.WitnessValidator;
-import com.radixdlt.constraintmachine.ConstraintProcedure;
-import com.radixdlt.constraintmachine.ConstraintProcedure.ProcedureResult;
+import com.radixdlt.constraintmachine.TransitionProcedure;
+import com.radixdlt.constraintmachine.TransitionProcedure.ProcedureResult;
 
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Test;
@@ -30,7 +30,7 @@ public class NonRRIResourceCreationTest {
 	public void when_a_payload_constraint_procedure_validates_an_up_particle__then_output_should_succeed() {
 		WitnessValidator<CustomPayloadParticle> witnessValidator = mock(WitnessValidator.class);
 		when(witnessValidator.validate(any(), any())).thenReturn(Result.success());
-		ConstraintProcedure procedure = new NonRRIResourceCreation<>(CustomPayloadParticle.class, witnessValidator);
+		TransitionProcedure procedure = new NonRRIResourceCreation<>(CustomPayloadParticle.class, witnessValidator);
 
 		ProcedureResult result = procedure.execute(null, null, mock(CustomPayloadParticle.class), new AtomicReference<>());
 
@@ -42,7 +42,7 @@ public class NonRRIResourceCreationTest {
 		WitnessValidator<CustomPayloadParticle> witnessValidator = mock(WitnessValidator.class);
 		when(witnessValidator.validate(any(), any())).thenReturn(Result.success());
 
-		ConstraintProcedure procedure = new NonRRIResourceCreation<>(CustomPayloadParticle.class, witnessValidator);
+		TransitionProcedure procedure = new NonRRIResourceCreation<>(CustomPayloadParticle.class, witnessValidator);
 		ProcedureResult result = procedure.execute(
 			new CustomPayloadParticle(),
 			new AtomicReference<>(),

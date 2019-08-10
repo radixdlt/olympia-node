@@ -5,7 +5,7 @@ import com.radixdlt.atomos.mapper.ParticleToRRIMapper;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.AtomMetadata;
-import com.radixdlt.constraintmachine.ConstraintProcedure;
+import com.radixdlt.constraintmachine.TransitionProcedure;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
@@ -62,8 +62,8 @@ public final class RRIParticleProcedureBuilder {
 		return this;
 	}
 
-	public ConstraintProcedure build() {
-		return new ConstraintProcedure() {
+	public TransitionProcedure build() {
+		return new TransitionProcedure() {
 
 			@Override
 			public ImmutableSet<Pair<Class<? extends Particle>, Class<? extends Particle>>> supports() {

@@ -4,7 +4,7 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.AtomMetadata;
-import com.radixdlt.constraintmachine.ConstraintProcedure;
+import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.WitnessValidator;
 import com.radixdlt.utils.UInt256;
 import java.util.concurrent.atomic.AtomicReference;
@@ -14,7 +14,7 @@ import java.util.function.Function;
 /**
  * Low-level implementation of fungible transition constraints.
  */
-public class FungibleTransition<T extends Particle, U extends Particle> implements ConstraintProcedure {
+public class FungibleTransition<T extends Particle, U extends Particle> implements TransitionProcedure {
 	private final Class<T> inputParticleClass;
 	private final Function<T, UInt256> inputAmountMapper;
 	private final Class<U> outputParticleClass;
