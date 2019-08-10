@@ -18,8 +18,13 @@ public class FungibleParticlesProcedureBuilderTest {
 			this.amount = amount;
 		}
 
-		public UInt256 getAmount() {
+		UInt256 getAmount() {
 			return amount;
+		}
+
+		@Override
+		public String toString() {
+			return "Fungible " + amount;
 		}
 	}
 
@@ -29,8 +34,12 @@ public class FungibleParticlesProcedureBuilderTest {
 			this.amount = amount;
 		}
 
-		public UInt256 getAmount() {
+		UInt256 getAmount() {
 			return amount;
+		}
+
+		public String toString() {
+			return "Fungible2 " + amount;
 		}
 	}
 
@@ -108,6 +117,26 @@ public class FungibleParticlesProcedureBuilderTest {
 		stack.push(Pair.of(new Fungible(UInt256.ONE), null));
 
 		boolean succeed = procedure.inputExecute(new Fungible(UInt256.TWO), mock(AtomMetadata.class), stack);
+
+		assertThat(succeed).isTrue();
+		assertThat(stack).isEmpty();
+	}
+
+	@Test
+	public void when_validating_a_one_to_two_one_transfer__then_input_should_succeed_and_zero_left_on_stack() {
+		ParticleProcedure procedure = new FungibleParticlesProcedureBuilder()
+			.add(Fungible.class,
+				new FungibleDefinition.Builder<Fungible>()
+					.amountMapper(Fungible::getAmount)
+					.to(Fungible.class, (a, b) -> Result.success(), (a, b) -> true)
+					.build()
+			)
+			.build()
+			.get(Fungible.class);
+		Stack<Pair<Particle, Object>> stack = new Stack<>();
+		stack.push(Pair.of(new Fungible(UInt256.TWO), UInt256.ONE));
+
+		boolean succeed = procedure.inputExecute(new Fungible(UInt256.ONE), mock(AtomMetadata.class), stack);
 
 		assertThat(succeed).isTrue();
 		assertThat(stack).isEmpty();

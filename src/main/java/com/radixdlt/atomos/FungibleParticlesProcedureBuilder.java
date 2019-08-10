@@ -53,6 +53,10 @@ public class FungibleParticlesProcedureBuilder {
 				AtomicReference<Object> outputData,
 				AtomMetadata metadata
 			) {
+				if (!fungibles.containsKey(outputParticle.getClass())) {
+					return ProcedureResult.ERROR;
+				}
+
 				FungibleFormula formula = fungibles.get(inputParticle.getClass()).getParticleClassToFormulaMap().get(outputParticle.getClass());
 				if (formula == null) {
 					return ProcedureResult.ERROR;
@@ -88,7 +92,6 @@ public class FungibleParticlesProcedureBuilder {
 			@Override
 			public boolean inputExecute(Particle input, AtomMetadata metadata, Stack<Pair<Particle, Object>> outputs) {
 				AtomicReference<Object> inputData = new AtomicReference<>();
-				AtomicReference<Object> outputData = new AtomicReference<>();
 
 				ProcedureResult action;
 				do {
@@ -96,19 +99,15 @@ public class FungibleParticlesProcedureBuilder {
 						action = ProcedureResult.ERROR;
 						break;
 					}
-					Pair<Particle, Object> top = outputs.peek();
+					Pair<Particle, Object> top = outputs.pop();
 					Particle output = top.getFirst();
-
-					if (!fungibles.containsKey(output.getClass())) {
-						action = ProcedureResult.ERROR;
-					} else {
-						action = execute(input, inputData, output, outputData, metadata);
-					}
+					AtomicReference<Object> outputData = new AtomicReference<>(top.getSecond());
+					action = execute(input, inputData, output, outputData, metadata);
 
 					switch (action) {
-						case POP_OUTPUT:
-						case POP_INPUT_OUTPUT:
-							outputs.pop();
+						case POP_INPUT:
+						case ERROR:
+							outputs.push(Pair.of(output, outputData.get()));
 					}
 				} while (action.equals(ProcedureResult.POP_OUTPUT));
 
