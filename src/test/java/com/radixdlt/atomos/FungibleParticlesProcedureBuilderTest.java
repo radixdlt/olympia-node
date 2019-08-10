@@ -7,8 +7,10 @@ import com.radixdlt.atoms.Particle;
 import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.AtomMetadata;
 import com.radixdlt.constraintmachine.ParticleProcedure;
+import com.radixdlt.constraintmachine.ParticleProcedure.ProcedureResult;
 import com.radixdlt.utils.UInt256;
 import java.util.Stack;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Test;
 
 public class FungibleParticlesProcedureBuilderTest {
@@ -55,15 +57,19 @@ public class FungibleParticlesProcedureBuilderTest {
 			)
 			.build()
 			.get(Fungible.class);
-		Stack<Pair<Particle, Object>> stack = new Stack<>();
-		stack.push(Pair.of(new Fungible(UInt256.ONE), null));
-		boolean succeed = procedure.inputExecute(new Fungible(UInt256.ONE), mock(AtomMetadata.class), stack);
+		ProcedureResult result = procedure.execute(
+			new Fungible(UInt256.ONE),
+			new AtomicReference<>(),
+			new Fungible(UInt256.ONE),
+			new AtomicReference<>(),
+			mock(AtomMetadata.class)
+		);
 
-		assertThat(succeed).isTrue();
+		assertThat(result).isEqualTo(ProcedureResult.POP_INPUT_OUTPUT);
 	}
 
 	@Test
-	public void when_validating_a_two_to_one_transfer__then_validation_should_fail() {
+	public void when_validating_a_two_to_one_transfer__then_execution_should_pop_output_and_one_left_on_input() {
 		ParticleProcedure procedure = new FungibleParticlesProcedureBuilder()
 			.add(Fungible.class,
 				new FungibleDefinition.Builder<Fungible>()
@@ -73,11 +79,18 @@ public class FungibleParticlesProcedureBuilderTest {
 			)
 			.build()
 			.get(Fungible.class);
-		Stack<Pair<Particle, Object>> stack = new Stack<>();
-		stack.push(Pair.of(new Fungible(UInt256.ONE), null));
-		boolean succeed = procedure.inputExecute(new Fungible(UInt256.TWO), mock(AtomMetadata.class), stack);
 
-		assertThat(succeed).isFalse();
+		AtomicReference<Object> inputData = new AtomicReference<>();
+		ProcedureResult result = procedure.execute(
+			new Fungible(UInt256.TWO),
+			inputData,
+			new Fungible(UInt256.ONE),
+			new AtomicReference<>(),
+			mock(AtomMetadata.class)
+		);
+
+		assertThat(inputData).hasValue(UInt256.ONE);
+		assertThat(result).isEqualTo(ProcedureResult.POP_OUTPUT);
 	}
 
 	@Test
@@ -92,13 +105,17 @@ public class FungibleParticlesProcedureBuilderTest {
 			.build()
 			.get(Fungible.class);
 
-		Stack<Pair<Particle, Object>> stack = new Stack<>();
-		stack.push(Pair.of(new Fungible(UInt256.ONE), null));
-		stack.push(Pair.of(new Fungible(UInt256.ONE), null));
-		boolean succeed = procedure.inputExecute(new Fungible(UInt256.ONE), mock(AtomMetadata.class), stack);
+		AtomicReference<Object> outputData = new AtomicReference<>();
+		ProcedureResult result = procedure.execute(
+			new Fungible(UInt256.ONE),
+			new AtomicReference<>(),
+			new Fungible(UInt256.TWO),
+			outputData,
+			mock(AtomMetadata.class)
+		);
 
-		assertThat(succeed).isTrue();
-		assertThat(stack).hasSize(1);
+		assertThat(result).isEqualTo(ProcedureResult.POP_INPUT);
+		assertThat(outputData).hasValue(UInt256.ONE);
 	}
 
 	@Test
@@ -112,14 +129,17 @@ public class FungibleParticlesProcedureBuilderTest {
 			)
 			.build()
 			.get(Fungible.class);
-		Stack<Pair<Particle, Object>> stack = new Stack<>();
-		stack.push(Pair.of(new Fungible(UInt256.ONE), null));
-		stack.push(Pair.of(new Fungible(UInt256.ONE), null));
 
-		boolean succeed = procedure.inputExecute(new Fungible(UInt256.TWO), mock(AtomMetadata.class), stack);
+		AtomicReference<Object> outputData = new AtomicReference<>();
+		ProcedureResult result = procedure.execute(
+			new Fungible(UInt256.TWO),
+			new AtomicReference<>(),
+			new Fungible(UInt256.TWO),
+			outputData,
+			mock(AtomMetadata.class)
+		);
 
-		assertThat(succeed).isTrue();
-		assertThat(stack).isEmpty();
+		assertThat(result).isEqualTo(ProcedureResult.POP_INPUT_OUTPUT);
 	}
 
 	@Test
@@ -133,13 +153,16 @@ public class FungibleParticlesProcedureBuilderTest {
 			)
 			.build()
 			.get(Fungible.class);
-		Stack<Pair<Particle, Object>> stack = new Stack<>();
-		stack.push(Pair.of(new Fungible(UInt256.TWO), UInt256.ONE));
 
-		boolean succeed = procedure.inputExecute(new Fungible(UInt256.ONE), mock(AtomMetadata.class), stack);
+		ProcedureResult result = procedure.execute(
+			new Fungible(UInt256.ONE),
+			new AtomicReference<>(),
+			new Fungible(UInt256.TWO),
+			new AtomicReference<>(UInt256.ONE),
+			mock(AtomMetadata.class)
+		);
 
-		assertThat(succeed).isTrue();
-		assertThat(stack).isEmpty();
+		assertThat(result).isEqualTo(ProcedureResult.POP_INPUT_OUTPUT);
 	}
 
 	@Test
@@ -160,11 +183,14 @@ public class FungibleParticlesProcedureBuilderTest {
 			.build()
 			.get(Fungible2.class);
 
-		Stack<Pair<Particle, Object>> stack = new Stack<>();
-		stack.push(Pair.of(new Fungible(UInt256.ONE), null));
+		ProcedureResult result = procedure.execute(
+			new Fungible2(UInt256.ONE),
+			new AtomicReference<>(),
+			new Fungible(UInt256.ONE),
+			new AtomicReference<>(),
+			mock(AtomMetadata.class)
+		);
 
-		boolean succeed = procedure.inputExecute(new Fungible2(UInt256.ONE), mock(AtomMetadata.class), stack);
-
-		assertThat(succeed).isFalse();
+		assertThat(result).isEqualTo(ProcedureResult.ERROR);
 	}
 }

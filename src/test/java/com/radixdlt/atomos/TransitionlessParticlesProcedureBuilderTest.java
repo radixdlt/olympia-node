@@ -7,8 +7,10 @@ import static org.mockito.Mockito.when;
 
 import com.radixdlt.atomos.SysCalls.WitnessValidator;
 import com.radixdlt.constraintmachine.ParticleProcedure;
+import com.radixdlt.constraintmachine.ParticleProcedure.ProcedureResult;
 import java.util.Stack;
 
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Test;
 
 import com.radixdlt.serialization.SerializerId2;
@@ -48,7 +50,13 @@ public class TransitionlessParticlesProcedureBuilderTest {
 			.build()
 			.get(CustomPayloadParticle.class);
 
-		boolean success = procedure.inputExecute(new CustomPayloadParticle(), mock(AtomMetadata.class), new Stack<>());
-		assertThat(success).isFalse();
+		ProcedureResult result = procedure.execute(
+			new CustomPayloadParticle(),
+			new AtomicReference<>(),
+			mock(Particle.class),
+			new AtomicReference<>(),
+			mock(AtomMetadata.class)
+		);
+		assertThat(result).isEqualTo(ProcedureResult.ERROR);
 	}
 }

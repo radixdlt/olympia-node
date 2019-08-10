@@ -8,10 +8,12 @@ import com.radixdlt.atoms.ParticleGroup;
 import com.radixdlt.atoms.Spin;
 import com.radixdlt.atoms.SpunParticle;
 import com.radixdlt.common.Pair;
+import com.radixdlt.constraintmachine.ParticleProcedure.ProcedureResult;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.SpinStateTransitionValidator;
 import com.radixdlt.store.SpinStateTransitionValidator.TransitionCheckResult;
 import java.util.Stack;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import com.radixdlt.atoms.Particle;
@@ -75,6 +77,30 @@ public final class ConstraintMachine {
 		this.particleProcedures = particleProcedures;
 	}
 
+	private boolean inputExecute(ParticleProcedure particleProcedure, Particle input, AtomMetadata metadata, Stack<Pair<Particle, Object>> outputs) {
+		AtomicReference<Object> inputData = new AtomicReference<>();
+
+		ProcedureResult action;
+		do {
+			if (outputs.empty()) {
+				action = ProcedureResult.ERROR;
+				break;
+			}
+			Pair<Particle, Object> top = outputs.pop();
+			Particle output = top.getFirst();
+			AtomicReference<Object> outputData = new AtomicReference<>(top.getSecond());
+			action = particleProcedure.execute(input, inputData, output, outputData, metadata);
+
+			switch (action) {
+				case POP_INPUT:
+				case ERROR:
+					outputs.push(Pair.of(output, outputData.get()));
+			}
+		} while (action.equals(ProcedureResult.POP_OUTPUT));
+
+		return action != ProcedureResult.ERROR;
+	}
+
 	private Stream<ProcedureError> validate(ParticleGroup group, AtomMetadata metadata) {
 		final Stack<Pair<Particle, Object>> outputs = new Stack<>();
 
@@ -83,7 +109,7 @@ public final class ConstraintMachine {
 			Particle p = sp.getParticle();
 			ParticleProcedure particleProcedure = this.particleProcedures.apply(p);
 			if (sp.getSpin() == Spin.DOWN) {
-				if (particleProcedure == null || !particleProcedure.inputExecute(p, metadata, outputs)) {
+				if (particleProcedure == null || !this.inputExecute(particleProcedure, p, metadata, outputs)) {
 					return Stream.of(ProcedureError.of("Input particle " + p + " failed. Output stack: " + outputs));
 				}
 			} else {

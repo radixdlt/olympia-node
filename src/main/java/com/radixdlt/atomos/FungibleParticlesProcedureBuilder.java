@@ -28,13 +28,6 @@ public class FungibleParticlesProcedureBuilder {
 		return this;
 	}
 
-	private enum ProcedureResult {
-		POP_INPUT,
-		POP_OUTPUT,
-		POP_INPUT_OUTPUT,
-		ERROR
-	}
-
 	public Map<Class<? extends Particle>, ParticleProcedure> build() {
 		final Map<Class<? extends Particle>, FungibleDefinition<? extends Particle>> fungibles = fungibleDefinitionBuilder.build();
 
@@ -46,7 +39,8 @@ public class FungibleParticlesProcedureBuilder {
 
 		final Map<Class<? extends Particle>, ParticleProcedure> procedures = new HashMap<>();
 		fungibles.forEach((p, d) -> procedures.put(p, new ParticleProcedure() {
-			private ProcedureResult execute(
+			@Override
+			public ProcedureResult execute(
 				Particle inputParticle,
 				AtomicReference<Object> inputData,
 				Particle outputParticle,
@@ -87,31 +81,6 @@ public class FungibleParticlesProcedureBuilder {
 					outputData.set(outputAmount.subtract(inputAmount));
 					return ProcedureResult.POP_INPUT;
 				}
-			}
-
-			@Override
-			public boolean inputExecute(Particle input, AtomMetadata metadata, Stack<Pair<Particle, Object>> outputs) {
-				AtomicReference<Object> inputData = new AtomicReference<>();
-
-				ProcedureResult action;
-				do {
-					if (outputs.empty()) {
-						action = ProcedureResult.ERROR;
-						break;
-					}
-					Pair<Particle, Object> top = outputs.pop();
-					Particle output = top.getFirst();
-					AtomicReference<Object> outputData = new AtomicReference<>(top.getSecond());
-					action = execute(input, inputData, output, outputData, metadata);
-
-					switch (action) {
-						case POP_INPUT:
-						case ERROR:
-							outputs.push(Pair.of(output, outputData.get()));
-					}
-				} while (action.equals(ProcedureResult.POP_OUTPUT));
-
-				return action != ProcedureResult.ERROR;
 			}
 
 			@Override

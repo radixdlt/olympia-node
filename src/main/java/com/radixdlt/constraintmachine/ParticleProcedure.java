@@ -4,19 +4,27 @@ import com.radixdlt.atoms.Particle;
 import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.AtomMetadata;
 import java.util.Stack;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Application level "Bytecode" to be run per particle in the Constraint machine
  * TODO: split transition checks and witness validator
  */
 public interface ParticleProcedure {
+	enum ProcedureResult {
+		POP_INPUT,
+		POP_OUTPUT,
+		POP_INPUT_OUTPUT,
+		ERROR
+	}
 
-	/**
-	 * Given a runtime of a stack of outputs, decides how an input particle will affect the
-	 * runtime environment.
-	 * @returns true, if the input has been used up, false, otherwise
-	 */
-	boolean inputExecute(Particle input, AtomMetadata metadata, Stack<Pair<Particle, Object>> outputs);
+	ProcedureResult execute(
+		Particle inputParticle,
+		AtomicReference<Object> inputData,
+		Particle outputParticle,
+		AtomicReference<Object> outputData,
+		AtomMetadata metadata
+	);
 
 	/**
 	 * @return true, if the output is accounted for, false, otherwise

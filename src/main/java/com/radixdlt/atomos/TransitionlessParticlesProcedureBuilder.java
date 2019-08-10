@@ -7,6 +7,7 @@ import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.AtomMetadata;
 import com.radixdlt.constraintmachine.ParticleProcedure;
 import java.util.Stack;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Procedure which checks that payload particles can never go into DOWN state
@@ -17,9 +18,15 @@ public final class TransitionlessParticlesProcedureBuilder {
 	public <T extends Particle> TransitionlessParticlesProcedureBuilder add(Class<T> particleClass, WitnessValidator<T> witnessValidator) {
 		procedureBuilder.put(particleClass, new ParticleProcedure() {
 			@Override
-			public boolean inputExecute(Particle input, AtomMetadata metadata, Stack<Pair<Particle, Object>> outputs) {
-																													return false;
-																																 }
+			public ProcedureResult execute(
+				Particle inputParticle,
+				AtomicReference<Object> inputData,
+				Particle outputParticle,
+				AtomicReference<Object> outputData,
+				AtomMetadata metadata
+			) {
+				return ProcedureResult.ERROR;
+			}
 
 			@Override
 			public boolean outputExecute(Particle output, AtomMetadata metadata) {

@@ -14,7 +14,9 @@ import com.radixdlt.common.EUID;
 import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.AtomMetadata;
 import com.radixdlt.constraintmachine.ParticleProcedure;
+import com.radixdlt.constraintmachine.ParticleProcedure.ProcedureResult;
 import java.util.Stack;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Test;
 
 public class RRIParticleProcedureBuilderTest {
@@ -48,12 +50,15 @@ public class RRIParticleProcedureBuilderTest {
 		CustomParticle customParticle = mock(CustomParticle.class);
 		when(customParticle.getRRI()).thenReturn(rri);
 
-		Stack<Pair<Particle, Object>> stack = new Stack<>();
-		stack.push(Pair.of(customParticle, null));
-		boolean succeed = procedure.inputExecute(new RRIParticle(rri), metadata, stack);
+		ProcedureResult result = procedure.execute(
+			new RRIParticle(rri),
+			new AtomicReference<>(),
+			customParticle,
+			new AtomicReference<>(),
+			metadata
+		);
 
-		assertThat(succeed).isTrue();
-		assertThat(stack).isEmpty();
+		assertThat(result).isEqualTo(ProcedureResult.POP_INPUT_OUTPUT);
 	}
 
 	@Test
@@ -70,8 +75,14 @@ public class RRIParticleProcedureBuilderTest {
 
 		Stack<Pair<Particle, Object>> stack = new Stack<>();
 		stack.push(Pair.of(mock(CustomParticle.class), null));
-		boolean succeed = procedure.inputExecute(new RRIParticle(rri), metadata, stack);
+		ProcedureResult result = procedure.execute(
+			new RRIParticle(rri),
+			new AtomicReference<>(),
+			mock(CustomParticle.class),
+			new AtomicReference<>(),
+			metadata
+		);
 
-		assertThat(succeed).isFalse();
+		assertThat(result).isEqualTo(ProcedureResult.ERROR);
 	}
 }
