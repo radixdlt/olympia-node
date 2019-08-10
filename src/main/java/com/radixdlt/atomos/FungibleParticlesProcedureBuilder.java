@@ -7,11 +7,11 @@ import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.AtomMetadata;
 import com.radixdlt.constraintmachine.ParticleProcedure;
 import com.radixdlt.utils.UInt256;
-import com.radixdlt.utils.UInt256s;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Stack;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Low-level implementation of fungible transition constraints.
@@ -28,6 +28,13 @@ public class FungibleParticlesProcedureBuilder {
 		return this;
 	}
 
+	private enum ProcedureResult {
+		POP_INPUT,
+		POP_OUTPUT,
+		POP_INPUT_OUTPUT,
+		ERROR
+	}
+
 	public Map<Class<? extends Particle>, ParticleProcedure> build() {
 		final Map<Class<? extends Particle>, FungibleDefinition<? extends Particle>> fungibles = fungibleDefinitionBuilder.build();
 
@@ -39,40 +46,73 @@ public class FungibleParticlesProcedureBuilder {
 
 		final Map<Class<? extends Particle>, ParticleProcedure> procedures = new HashMap<>();
 		fungibles.forEach((p, d) -> procedures.put(p, new ParticleProcedure() {
+			private ProcedureResult execute(
+				Particle inputParticle,
+				AtomicReference<Object> inputData,
+				Particle outputParticle,
+				AtomicReference<Object> outputData,
+				AtomMetadata metadata
+			) {
+				FungibleFormula formula = fungibles.get(inputParticle.getClass()).getParticleClassToFormulaMap().get(outputParticle.getClass());
+				if (formula == null) {
+					return ProcedureResult.ERROR;
+				}
+
+				if (!formula.getTransition().test(inputParticle, outputParticle)) {
+					return ProcedureResult.ERROR;
+				}
+
+				if (formula.getWitnessValidator().validate(inputParticle, metadata).isError()) {
+					return ProcedureResult.ERROR;
+				}
+
+				UInt256 inputAmount = inputData.get() == null
+					? fungibles.get(inputParticle.getClass()).mapToAmount(inputParticle)
+					: (UInt256) inputData.get();
+				UInt256 outputAmount = outputData.get() == null
+					? fungibles.get(outputParticle.getClass()).mapToAmount(outputParticle)
+					: (UInt256) outputData.get();
+
+				int compare = inputAmount.compareTo(outputAmount);
+				if (compare == 0) {
+					return ProcedureResult.POP_INPUT_OUTPUT;
+				} else if (compare > 0) {
+					inputData.set(inputAmount.subtract(outputAmount));
+					return ProcedureResult.POP_OUTPUT;
+				} else {
+					outputData.set(outputAmount.subtract(inputAmount));
+					return ProcedureResult.POP_INPUT;
+				}
+			}
+
 			@Override
 			public boolean inputExecute(Particle input, AtomMetadata metadata, Stack<Pair<Particle, Object>> outputs) {
-				UInt256 currentInput = fungibles.get(input.getClass()).mapToAmount(input);
+				AtomicReference<Object> inputData = new AtomicReference<>();
+				AtomicReference<Object> outputData = new AtomicReference<>();
 
-				while (!currentInput.isZero()) {
+				ProcedureResult action;
+				do {
 					if (outputs.empty()) {
+						action = ProcedureResult.ERROR;
 						break;
 					}
 					Pair<Particle, Object> top = outputs.peek();
-					Particle toParticle = top.getFirst();
-					FungibleFormula formula = fungibles.get(input.getClass()).getParticleClassToFormulaMap().get(toParticle.getClass());
-					if (formula == null) {
-						break;
-					}
-					if (!formula.getTransition().test(input, toParticle)) {
-						break;
-					}
-					if (formula.getWitnessValidator().validate(input, metadata).isError()) {
-						break;
+					Particle output = top.getFirst();
+
+					if (!fungibles.containsKey(output.getClass())) {
+						action = ProcedureResult.ERROR;
+					} else {
+						action = execute(input, inputData, output, outputData, metadata);
 					}
 
-					outputs.pop();
-					Object outputMeta = top.getSecond();
-					UInt256 outputAmount = outputMeta == null ? fungibles.get(toParticle.getClass()).mapToAmount(toParticle) : (UInt256) outputMeta;
-					UInt256 min = UInt256s.min(currentInput, outputAmount);
-					UInt256 newOutputAmount = outputAmount.subtract(min);
-					if (!newOutputAmount.isZero()) {
-						outputs.push(Pair.of(toParticle, newOutputAmount));
+					switch (action) {
+						case POP_OUTPUT:
+						case POP_INPUT_OUTPUT:
+							outputs.pop();
 					}
+				} while (action.equals(ProcedureResult.POP_OUTPUT));
 
-					currentInput = currentInput.subtract(min);
-				}
-
-				return currentInput.isZero();
+				return action != ProcedureResult.ERROR;
 			}
 
 			@Override
