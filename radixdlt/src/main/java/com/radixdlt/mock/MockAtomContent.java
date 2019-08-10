@@ -11,7 +11,9 @@ import com.radixdlt.serialization.SerializerId2;
 import java.util.Objects;
 
 @SerializerId2("mock.atom.content")
-final class MockAtomContent {
+public final class MockAtomContent {
+	public static final byte GENERIC_KEY_PREFIX = 7;
+
 	// Placeholder for the serializer ID
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(DsonOutput.Output.ALL)

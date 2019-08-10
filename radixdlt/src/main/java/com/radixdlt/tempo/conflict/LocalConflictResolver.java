@@ -4,6 +4,7 @@ import com.radixdlt.common.EUID;
 import com.radixdlt.common.Pair;
 import com.radixdlt.tempo.ConflictResolver;
 import com.radixdlt.tempo.TempoAtom;
+import com.radixdlt.tempo.exceptions.TempoException;
 import org.radix.time.TemporalProof;
 
 import java.util.Comparator;
@@ -26,12 +27,13 @@ public class LocalConflictResolver implements ConflictResolver {
 
 	@Override
 	public CompletableFuture<TempoAtom> resolve(TempoAtom atom, Set<TempoAtom> conflictingAtoms) {
-		// FIXME might break if there is no vertex by self
 		Optional<TempoAtom> conflictWinner = Stream.concat(Stream.of(atom), conflictingAtoms.stream())
+			.filter(a -> a.getTemporalProof().hasVertexByNID(self))
 			.map(a -> Pair.of(a.getTemporalProof().getVertexByNID(self).getClock(), a))
 			.min(Comparator.comparingLong(Pair::getFirst))
 			.map(Pair::getSecond);
-		// must be at least one so it's fine
-		return CompletableFuture.completedFuture(conflictWinner.get());
+		// must be at least one so should be fine
+		return CompletableFuture.completedFuture(conflictWinner.orElseThrow(() ->
+			new TempoException("Error while resolving conflict, no atom has vertex by self")));
 	}
 }

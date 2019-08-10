@@ -6,6 +6,7 @@ import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import org.bouncycastle.util.Arrays;
+import org.bouncycastle.util.encoders.Hex;
 
 import java.util.Objects;
 
@@ -70,6 +71,18 @@ public final class LedgerIndex {
 		int result = Objects.hash(prefix);
 		result = 31 * result + Arrays.hashCode(identifier);
 		return result;
+	}
+
+	public String toHexString() {
+		return Hex.toHexString(asKey());
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s[%s]",
+			this.getClass().getSimpleName(),
+			Hex.toHexString(asKey())
+		);
 	}
 
 	public static byte[] from(byte prefix, byte[] identifier) {

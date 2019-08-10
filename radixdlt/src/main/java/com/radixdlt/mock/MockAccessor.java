@@ -2,6 +2,7 @@ package com.radixdlt.mock;
 
 import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.utils.Ints;
+import com.radixdlt.utils.Longs;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 
@@ -20,8 +21,8 @@ public final class MockAccessor {
 		this.mockApplication = mockApplication;
 	}
 
-	public void spam(int atomCount) {
-		logger.info("Spamming " + atomCount + " random atoms");
+	public void spawn(int atomCount) {
+		logger.info("Spamming " + atomCount + " random mock atoms");
 		for (int i = 0; i < atomCount; i++) {
 			// generate random key / value
 			byte[] keyBytes = new byte[9];
@@ -31,6 +32,19 @@ public final class MockAccessor {
 
 			LedgerIndex key = new LedgerIndex(keyBytes);
 			MockAtom atom = new MockAtom(new MockAtomContent(key, valueBytes));
+			mockApplication.queue(atom);
+		}
+	}
+
+	public void spawnWithKey(long key, int atomCount) {
+		logger.info("Spamming " + atomCount + " mock atoms with key " + key);
+		for (int i = 0; i < atomCount; i++) {
+			// generate random key / value
+			byte[] valueBytes = Ints.toByteArray(i);
+			rng.nextBytes(valueBytes);
+
+			LedgerIndex keyIndex = new LedgerIndex(MockAtomContent.GENERIC_KEY_PREFIX, Longs.toByteArray(key));
+			MockAtom atom = new MockAtom(new MockAtomContent(keyIndex, valueBytes));
 			mockApplication.queue(atom);
 		}
 	}

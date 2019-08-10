@@ -37,6 +37,7 @@ import com.sleepycat.je.Transaction;
 import com.sleepycat.je.TransactionConfig;
 import com.sleepycat.je.UniqueConstraintException;
 import org.bouncycastle.util.Arrays;
+import org.bouncycastle.util.encoders.Hex;
 import org.radix.database.DatabaseEnvironment;
 import org.radix.database.exceptions.DatabaseException;
 import org.radix.logging.Logger;
@@ -57,6 +58,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static com.radixdlt.tempo.store.TempoAtomIndices.ATOM_INDEX_PREFIX;
 import static com.radixdlt.tempo.store.TempoAtomIndices.SHARD_INDEX_PREFIX;
@@ -234,13 +236,12 @@ public class TempoAtomStore implements AtomStore {
 
 	@Override
 	public Optional<TempoAtom> get(AID aid) {
-		Transaction transaction = null;
 		long start = profiler.begin();
 		try {
 			DatabaseEntry key = new DatabaseEntry(LedgerIndex.from(ATOM_INDEX_PREFIX, aid.getBytes()));
 			DatabaseEntry value = new DatabaseEntry();
 
-			if (this.uniqueIndices.get(transaction, key, value, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
+			if (this.uniqueIndices.get(null, key, value, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
 				return Optional.of(serialization.fromDson(value.getData(), TempoAtom.class));
 			}
 		} catch (Exception e) {
@@ -264,7 +265,7 @@ public class TempoAtomStore implements AtomStore {
 				transaction.abort();
 			}
 		} catch (LedgerKeyConstraintException e) {
-			transaction.abort();
+			// transaction already aborted internally in doStore
 			throw e;
 		} catch (Exception e) {
 			transaction.abort();
@@ -314,7 +315,7 @@ public class TempoAtomStore implements AtomStore {
 				transaction.abort();
 			}
 		} catch (LedgerKeyConstraintException e) {
-			transaction.abort();
+			// transaction already aborted internally in doStore
 			throw e;
 		} catch (Exception e) {
 			transaction.abort();
@@ -347,9 +348,10 @@ public class TempoAtomStore implements AtomStore {
 				fail("Internal error, atom indices write failed with status " + status);
 			}
 		} catch (UniqueConstraintException e) {
-			logger.error("Unique indices violated key constraint", e);
+			logger.error("Unique indices of atom '" + atom.getAID() + "' violated key constraint, aborting transaction");
+			transaction.abort();
 
-			ImmutableMap<LedgerIndex, Atom> conflictingAtoms = doGetConflictingAtoms(uniqueIndices, transaction);
+			ImmutableMap<LedgerIndex, Atom> conflictingAtoms = doGetConflictingAtoms(uniqueIndices, null);
 			throw new LedgerKeyConstraintException(atom, conflictingAtoms);
 		} finally {
 			this.currentIndices.remove(localTemporalVertex.getClock());
@@ -361,21 +363,20 @@ public class TempoAtomStore implements AtomStore {
 		ImmutableMap.Builder<LedgerIndex, Atom> conflictingAtoms = ImmutableMap.builder();
 		try {
 			DatabaseEntry key = new DatabaseEntry();
-			DatabaseEntry pKey = new DatabaseEntry();
 			DatabaseEntry value = new DatabaseEntry();
 			for (LedgerIndex uniqueIndex : uniqueIndices) {
 				key.setData(uniqueIndex.asKey());
-				if (this.uniqueIndices.get(transaction, key, pKey, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
-					OperationStatus status = this.atoms.get(transaction, pKey, value, LockMode.DEFAULT);
-					if (status != OperationStatus.SUCCESS) {
-						fail("Getting conflicting atom for index " + uniqueIndex + " failed with status " + status);
-					}
-					Atom conflictingAtom = serialization.fromDson(value.getData(), Atom.class);
+				if (this.uniqueIndices.get(transaction, key, value, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
+					Atom conflictingAtom = serialization.fromDson(value.getData(), TempoAtom.class);
 					conflictingAtoms.put(uniqueIndex, conflictingAtom);
 				}
 			}
 		} catch (Exception e) {
-			fail("Failed getting conflicting atom for unique indices " + uniqueIndices);
+			fail(String.format("Failed getting conflicting atom for unique indices %s: '%s'",
+				uniqueIndices.stream()
+					.map(LedgerIndex::toHexString)
+					.collect(Collectors.joining(", ")),
+				e.toString()), e);
 		}
 
 		return conflictingAtoms.build();

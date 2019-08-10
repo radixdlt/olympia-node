@@ -9,7 +9,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.radixdlt.mock.MockAccessor;
-import com.radixdlt.mock.MockApplication;
 import com.radixdlt.tempo.AtomStoreView;
 import com.radixdlt.tempo.AtomSyncView;
 import org.json.JSONArray;
@@ -133,15 +132,28 @@ public final class RadixHttpServer {
     }
 
     private void addDevelopmentOnlyRoutesTo(RoutingHandler handler) {
-    	addGetRoute("/api/internal/mock/spam", exchange -> {
+    	addGetRoute("/api/internal/mock/spawn", exchange -> {
 			if (Modules.isAvailable(MockAccessor.class)) {
 				String atomCountStr = getParameter(exchange, "atoms").orElse("1");
 				int atomCount = Integer.parseUnsignedInt(atomCountStr);
-				respond("Spamming " + atomCount + " random atom(s)", exchange);
-				Modules.get(MockAccessor.class).spam(atomCount);
+				respond("Spamming " + atomCount + " random mock atom(s)", exchange);
+				Modules.get(MockAccessor.class).spawn(atomCount);
 			} else {
 				respond("Mock application is unavailable", exchange);
 			}
+	    }, handler);
+
+	    addGetRoute("/api/internal/mock/spawnkey", exchange -> {
+		    if (Modules.isAvailable(MockAccessor.class)) {
+			    String atomCountStr = getParameter(exchange, "atoms").orElse("1");
+			    String keyStr = getParameter(exchange, "atoms").orElse("0");
+			    int atomCount = Integer.parseUnsignedInt(atomCountStr);
+			    int key = Integer.parseUnsignedInt(keyStr);
+			    respond("Spamming " + atomCount + " random mock atom(s) with key " + key, exchange);
+			    Modules.get(MockAccessor.class).spawnWithKey(key, atomCount);
+		    } else {
+			    respond("Mock application is unavailable", exchange);
+		    }
 	    }, handler);
 
         addGetRoute("/api/internal/spamathon", exchange -> {

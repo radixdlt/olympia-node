@@ -133,12 +133,12 @@ public final class Tempo extends Plugin implements Ledger {
 
 	@Override
 	public CompletableFuture<Atom> resolve(Atom atom, Collection<Atom> conflictingAtoms) {
-		logger.info("Resolving conflict between " + atom + " and " + conflictingAtoms);
+		logger.info("Resolving conflict between " + atom.getAID() + " and " + conflictingAtoms);
 
-		return resolver.resolve((TempoAtom) atom, conflictingAtoms.stream()
-				.map(TempoAtom.class::cast)
+		return resolver.resolve(convertToTempoAtom(atom), conflictingAtoms.stream()
+				.map(Tempo::convertToTempoAtom)
 				.collect(Collectors.toSet()))
-			.thenApply(Atom.class::cast);
+			.thenApply(Tempo::convertToTempoAtom);
 	}
 
 	@Override
