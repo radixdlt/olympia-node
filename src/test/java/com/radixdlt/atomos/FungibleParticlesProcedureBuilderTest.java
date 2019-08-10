@@ -5,11 +5,9 @@ import static org.mockito.Mockito.mock;
 
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.common.Pair;
-import com.radixdlt.constraintmachine.AtomMetadata;
-import com.radixdlt.constraintmachine.ParticleProcedure;
-import com.radixdlt.constraintmachine.ParticleProcedure.ProcedureResult;
+import com.radixdlt.constraintmachine.ConstraintProcedure;
+import com.radixdlt.constraintmachine.ConstraintProcedure.ProcedureResult;
 import com.radixdlt.utils.UInt256;
-import java.util.Stack;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Test;
 
@@ -48,15 +46,14 @@ public class FungibleParticlesProcedureBuilderTest {
 
 	@Test
 	public void when_validating_a_simple_fungible_transfer__then_validation_should_succeed() {
-		ParticleProcedure procedure = new FungibleParticlesProcedureBuilder()
+		ConstraintProcedure procedure = new FungibleParticlesProcedureBuilder()
 			.add(Fungible.class,
 				new FungibleDefinition.Builder<Fungible>()
 					.amountMapper(Fungible::getAmount)
 					.to(Fungible.class, (a, b) -> Result.success(), (a, b) -> true)
 					.build()
 			)
-			.build()
-			.get(Fungible.class);
+			.build();
 		ProcedureResult result = procedure.execute(
 			new Fungible(UInt256.ONE),
 			new AtomicReference<>(),
@@ -69,15 +66,14 @@ public class FungibleParticlesProcedureBuilderTest {
 
 	@Test
 	public void when_validating_a_two_to_one_transfer__then_execution_should_pop_output_and_one_left_on_input() {
-		ParticleProcedure procedure = new FungibleParticlesProcedureBuilder()
+		ConstraintProcedure procedure = new FungibleParticlesProcedureBuilder()
 			.add(Fungible.class,
 				new FungibleDefinition.Builder<Fungible>()
 					.amountMapper(Fungible::getAmount)
 					.to(Fungible.class, (a, b) -> Result.success(), (a, b) -> true)
 					.build()
 			)
-			.build()
-			.get(Fungible.class);
+			.build();
 
 		AtomicReference<Object> inputData = new AtomicReference<>();
 		ProcedureResult result = procedure.execute(
@@ -93,15 +89,14 @@ public class FungibleParticlesProcedureBuilderTest {
 
 	@Test
 	public void when_validating_a_one_to_two_transfer__then_input_should_succeed_and_one_left_on_stack() {
-		ParticleProcedure procedure = new FungibleParticlesProcedureBuilder()
+		ConstraintProcedure procedure = new FungibleParticlesProcedureBuilder()
 			.add(Fungible.class,
 				new FungibleDefinition.Builder<Fungible>()
 					.amountMapper(Fungible::getAmount)
 					.to(Fungible.class, (a, b) -> Result.success(), (a, b) -> true)
 					.build()
 			)
-			.build()
-			.get(Fungible.class);
+			.build();
 
 		AtomicReference<Object> outputData = new AtomicReference<>();
 		ProcedureResult result = procedure.execute(
@@ -117,15 +112,14 @@ public class FungibleParticlesProcedureBuilderTest {
 
 	@Test
 	public void when_validating_a_two_to_two_transfer__then_input_should_succeed_and_zero_left_on_stack() {
-		ParticleProcedure procedure = new FungibleParticlesProcedureBuilder()
+		ConstraintProcedure procedure = new FungibleParticlesProcedureBuilder()
 			.add(Fungible.class,
 				new FungibleDefinition.Builder<Fungible>()
 					.amountMapper(Fungible::getAmount)
 					.to(Fungible.class, (a, b) -> Result.success(), (a, b) -> true)
 					.build()
 			)
-			.build()
-			.get(Fungible.class);
+			.build();
 
 		AtomicReference<Object> outputData = new AtomicReference<>();
 		ProcedureResult result = procedure.execute(
@@ -140,15 +134,14 @@ public class FungibleParticlesProcedureBuilderTest {
 
 	@Test
 	public void when_validating_a_one_to_two_one_transfer__then_input_should_succeed_and_zero_left_on_stack() {
-		ParticleProcedure procedure = new FungibleParticlesProcedureBuilder()
+		ConstraintProcedure procedure = new FungibleParticlesProcedureBuilder()
 			.add(Fungible.class,
 				new FungibleDefinition.Builder<Fungible>()
 					.amountMapper(Fungible::getAmount)
 					.to(Fungible.class, (a, b) -> Result.success(), (a, b) -> true)
 					.build()
 			)
-			.build()
-			.get(Fungible.class);
+			.build();
 
 		ProcedureResult result = procedure.execute(
 			new Fungible(UInt256.ONE),
@@ -162,7 +155,7 @@ public class FungibleParticlesProcedureBuilderTest {
 
 	@Test
 	public void when_validating_a_reversed_one_way_transfer__then_input_should_fail() {
-		ParticleProcedure procedure = new FungibleParticlesProcedureBuilder()
+		ConstraintProcedure procedure = new FungibleParticlesProcedureBuilder()
 			.add(Fungible.class,
 				new FungibleDefinition.Builder<Fungible>()
 					.amountMapper(Fungible::getAmount)
@@ -175,8 +168,9 @@ public class FungibleParticlesProcedureBuilderTest {
 					.to(Fungible2.class, (a, b) -> Result.success(), (a, b) -> true)
 					.build()
 			)
-			.build()
-			.get(Fungible2.class);
+			.build();
+
+		assertThat(procedure.supports()).doesNotContain(Pair.of(Fungible2.class, Fungible.class));
 
 		ProcedureResult result = procedure.execute(
 			new Fungible2(UInt256.ONE),

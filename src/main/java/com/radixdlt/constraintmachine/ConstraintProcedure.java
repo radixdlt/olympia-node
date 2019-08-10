@@ -1,5 +1,6 @@
 package com.radixdlt.constraintmachine;
 
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.AtomMetadata;
@@ -10,7 +11,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * Application level "Bytecode" to be run per particle in the Constraint machine
  * TODO: split transition checks and witness validator
  */
-public interface ParticleProcedure {
+public interface ConstraintProcedure {
 	enum ProcedureResult {
 		POP_INPUT,
 		POP_OUTPUT,
@@ -18,6 +19,7 @@ public interface ParticleProcedure {
 		ERROR
 	}
 
+	ImmutableSet<Pair<Class<? extends Particle>, Class<? extends Particle>>> supports();
 
 	ProcedureResult execute(
 		Particle inputParticle,
@@ -32,10 +34,4 @@ public interface ParticleProcedure {
 		Particle outputParticle,
 		AtomMetadata metadata
 	);
-
-
-	/**
-	 * @return true, if the output is accounted for, false, otherwise
-	 */
-	boolean outputExecute(Particle output, AtomMetadata metadata);
 }

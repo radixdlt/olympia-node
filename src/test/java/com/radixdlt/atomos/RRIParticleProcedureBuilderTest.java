@@ -5,17 +5,11 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.radixdlt.atomos.RRI;
-import com.radixdlt.atomos.RRIParticle;
-import com.radixdlt.atomos.RRIParticleProcedureBuilder;
-import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.common.EUID;
-import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.AtomMetadata;
-import com.radixdlt.constraintmachine.ParticleProcedure;
-import com.radixdlt.constraintmachine.ParticleProcedure.ProcedureResult;
-import java.util.Stack;
+import com.radixdlt.constraintmachine.ConstraintProcedure;
+import com.radixdlt.constraintmachine.ConstraintProcedure.ProcedureResult;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Test;
 
@@ -35,7 +29,7 @@ public class RRIParticleProcedureBuilderTest {
 
 	@Test
 	public void when_an_rri_is_consumed_with_a_corresponding_particle__then_an_input_should_succeed_and_stack_is_empty() {
-		ParticleProcedure procedure = new RRIParticleProcedureBuilder()
+		ConstraintProcedure procedure = new RRIParticleProcedureBuilder()
 			.add(CustomParticle.class, CustomParticle::getRRI)
 			.build();
 
@@ -62,7 +56,7 @@ public class RRIParticleProcedureBuilderTest {
 
 	@Test
 	public void when_an_rri_is_consumed_without_a_corresponding_particle__then_input_should_fail() {
-		ParticleProcedure procedure = new RRIParticleProcedureBuilder().build();
+		ConstraintProcedure procedure = new RRIParticleProcedureBuilder().build();
 
 		RadixAddress address = mock(RadixAddress.class);
 		when(address.getUID()).thenReturn(EUID.ONE);

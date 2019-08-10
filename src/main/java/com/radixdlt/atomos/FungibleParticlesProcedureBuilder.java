@@ -2,15 +2,15 @@ package com.radixdlt.atomos;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.AtomMetadata;
-import com.radixdlt.constraintmachine.ParticleProcedure;
+import com.radixdlt.constraintmachine.ConstraintProcedure;
 import com.radixdlt.utils.UInt256;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Stack;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -28,7 +28,7 @@ public class FungibleParticlesProcedureBuilder {
 		return this;
 	}
 
-	public Map<Class<? extends Particle>, ParticleProcedure> build() {
+	public ConstraintProcedure build() {
 		final Map<Class<? extends Particle>, FungibleDefinition<? extends Particle>> fungibles = fungibleDefinitionBuilder.build();
 
 		for (Entry<Class<? extends Particle>, FungibleDefinition<? extends Particle>> e : fungibles.entrySet()) {
@@ -37,8 +37,16 @@ public class FungibleParticlesProcedureBuilder {
 			}
 		}
 
-		final Map<Class<? extends Particle>, ParticleProcedure> procedures = new HashMap<>();
-		fungibles.forEach((p, d) -> procedures.put(p, new ParticleProcedure() {
+		return new ConstraintProcedure() {
+
+			@Override
+			public ImmutableSet<Pair<Class<? extends Particle>, Class<? extends Particle>>> supports() {
+				return fungibles.entrySet().stream()
+					.flatMap(in -> in.getValue().getParticleClassToFormulaMap().keySet().stream()
+						.map(out -> Pair.<Class<? extends Particle>, Class<? extends Particle>>of(in.getKey(), out)))
+					.collect(ImmutableSet.toImmutableSet());
+			}
+
 			@Override
 			public boolean validateWitness(
 				ProcedureResult result,
@@ -112,12 +120,6 @@ public class FungibleParticlesProcedureBuilder {
 					return ProcedureResult.POP_INPUT;
 				}
 			}
-
-			@Override
-			public boolean outputExecute(Particle output, AtomMetadata metadata) {
-				return false;
-			}
-		}));
-		return procedures;
+		};
 	}
 }

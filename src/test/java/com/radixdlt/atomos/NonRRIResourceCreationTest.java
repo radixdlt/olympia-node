@@ -6,18 +6,16 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.radixdlt.atomos.SysCalls.WitnessValidator;
-import com.radixdlt.constraintmachine.ParticleProcedure;
-import com.radixdlt.constraintmachine.ParticleProcedure.ProcedureResult;
-import java.util.Stack;
+import com.radixdlt.constraintmachine.ConstraintProcedure;
+import com.radixdlt.constraintmachine.ConstraintProcedure.ProcedureResult;
 
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Test;
 
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.constraintmachine.AtomMetadata;
 import com.radixdlt.atoms.Particle;
 
-public class TransitionlessParticlesProcedureBuilderTest {
+public class NonRRIResourceCreationTest {
 
 	@SerializerId2("custom.payload.particle")
 	private static class CustomPayloadParticle extends Particle {
@@ -31,13 +29,11 @@ public class TransitionlessParticlesProcedureBuilderTest {
 	public void when_a_payload_constraint_procedure_validates_an_up_particle__then_output_should_succeed() {
 		WitnessValidator<CustomPayloadParticle> witnessValidator = mock(WitnessValidator.class);
 		when(witnessValidator.validate(any(), any())).thenReturn(Result.success());
-		ParticleProcedure procedure = new TransitionlessParticlesProcedureBuilder()
-			.add(CustomPayloadParticle.class, witnessValidator)
-			.build()
-			.get(CustomPayloadParticle.class);
+		ConstraintProcedure procedure = new NonRRIResourceCreation<>(CustomPayloadParticle.class, witnessValidator);
 
-		boolean success = procedure.outputExecute(new CustomPayloadParticle(), mock(AtomMetadata.class));
-		assertThat(success).isTrue();
+		ProcedureResult result = procedure.execute(null, null, mock(CustomPayloadParticle.class), new AtomicReference<>());
+
+		assertThat(result).isEqualTo(ProcedureResult.POP_OUTPUT);
 	}
 
 	@Test
@@ -45,11 +41,7 @@ public class TransitionlessParticlesProcedureBuilderTest {
 		WitnessValidator<CustomPayloadParticle> witnessValidator = mock(WitnessValidator.class);
 		when(witnessValidator.validate(any(), any())).thenReturn(Result.success());
 
-		ParticleProcedure procedure = new TransitionlessParticlesProcedureBuilder()
-			.add(CustomPayloadParticle.class, witnessValidator)
-			.build()
-			.get(CustomPayloadParticle.class);
-
+		ConstraintProcedure procedure = new NonRRIResourceCreation<>(CustomPayloadParticle.class, witnessValidator);
 		ProcedureResult result = procedure.execute(
 			new CustomPayloadParticle(),
 			new AtomicReference<>(),

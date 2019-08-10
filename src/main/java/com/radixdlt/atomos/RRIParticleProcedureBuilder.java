@@ -1,13 +1,16 @@
 package com.radixdlt.atomos;
 
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atomos.mapper.ParticleToRRIMapper;
 import com.radixdlt.atoms.Particle;
+import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.AtomMetadata;
-import com.radixdlt.constraintmachine.ParticleProcedure;
+import com.radixdlt.constraintmachine.ConstraintProcedure;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiPredicate;
+import java.util.stream.Stream;
 
 /**
  * Low level code for Indexed Constraints which manages new atoms,
@@ -59,8 +62,20 @@ public final class RRIParticleProcedureBuilder {
 		return this;
 	}
 
-	public ParticleProcedure build() {
-		return new ParticleProcedure() {
+	public ConstraintProcedure build() {
+		return new ConstraintProcedure() {
+
+			@Override
+			public ImmutableSet<Pair<Class<? extends Particle>, Class<? extends Particle>>> supports() {
+				return Stream.concat(
+					indexedParticles.keySet().stream(),
+					secondary.entrySet().stream().map(e -> e.getValue().particleClass)
+				)
+					.distinct()
+					.map(c -> Pair.<Class<? extends Particle>, Class<? extends Particle>>of(RRIParticle.class, c))
+					.collect(ImmutableSet.toImmutableSet());
+			}
+
 			@Override
 			public boolean validateWitness(
 				ProcedureResult result,
@@ -121,11 +136,6 @@ public final class RRIParticleProcedureBuilder {
 				}
 
 				return ProcedureResult.POP_INPUT_OUTPUT;
-			}
-
-			@Override
-			public boolean outputExecute(Particle output, AtomMetadata metadata) {
-				return false;
 			}
 		};
 	}
