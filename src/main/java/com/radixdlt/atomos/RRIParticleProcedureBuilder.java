@@ -62,12 +62,30 @@ public final class RRIParticleProcedureBuilder {
 	public ParticleProcedure build() {
 		return new ParticleProcedure() {
 			@Override
+			public boolean validateWitness(
+				ProcedureResult result,
+				Particle inputParticle,
+				Particle outputParticle,
+				AtomMetadata metadata
+			) {
+				RRIParticle rriParticle = (RRIParticle) inputParticle;
+				switch (result) {
+					case POP_OUTPUT:
+						return true;
+					case POP_INPUT_OUTPUT:
+						return metadata.isSignedBy(rriParticle.getRri().getAddress());
+					case POP_INPUT:
+					default:
+						throw new IllegalStateException();
+				}
+			}
+
+			@Override
 			public ProcedureResult execute(
 				Particle inputParticle,
 				AtomicReference<Object> inputData,
 				Particle outputParticle,
-				AtomicReference<Object> outputData,
-				AtomMetadata metadata
+				AtomicReference<Object> outputData
 			) {
 				RRIParticle rriParticle = (RRIParticle) inputParticle;
 
@@ -92,10 +110,6 @@ public final class RRIParticleProcedureBuilder {
 					}
 
 					if (!mapper.index(outputParticle).equals(rriParticle.getRri())) {
-						return ProcedureResult.ERROR;
-					}
-
-					if (!metadata.isSignedBy(rriParticle.getRri().getAddress())) {
 						return ProcedureResult.ERROR;
 					}
 

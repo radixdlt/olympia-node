@@ -54,8 +54,7 @@ public class TransitionlessParticlesProcedureBuilderTest {
 			new CustomPayloadParticle(),
 			new AtomicReference<>(),
 			mock(Particle.class),
-			new AtomicReference<>(),
-			mock(AtomMetadata.class)
+			new AtomicReference<>()
 		);
 		assertThat(result).isEqualTo(ProcedureResult.ERROR);
 	}

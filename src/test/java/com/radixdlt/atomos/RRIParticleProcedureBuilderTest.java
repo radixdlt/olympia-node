@@ -54,8 +54,7 @@ public class RRIParticleProcedureBuilderTest {
 			new RRIParticle(rri),
 			new AtomicReference<>(),
 			customParticle,
-			new AtomicReference<>(),
-			metadata
+			new AtomicReference<>()
 		);
 
 		assertThat(result).isEqualTo(ProcedureResult.POP_INPUT_OUTPUT);
@@ -73,14 +72,11 @@ public class RRIParticleProcedureBuilderTest {
 		AtomMetadata metadata = mock(AtomMetadata.class);
 		when(metadata.isSignedBy(eq(address))).thenReturn(true);
 
-		Stack<Pair<Particle, Object>> stack = new Stack<>();
-		stack.push(Pair.of(mock(CustomParticle.class), null));
 		ProcedureResult result = procedure.execute(
 			new RRIParticle(rri),
 			new AtomicReference<>(),
 			mock(CustomParticle.class),
-			new AtomicReference<>(),
-			metadata
+			new AtomicReference<>()
 		);
 
 		assertThat(result).isEqualTo(ProcedureResult.ERROR);

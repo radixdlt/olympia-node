@@ -61,8 +61,7 @@ public class FungibleParticlesProcedureBuilderTest {
 			new Fungible(UInt256.ONE),
 			new AtomicReference<>(),
 			new Fungible(UInt256.ONE),
-			new AtomicReference<>(),
-			mock(AtomMetadata.class)
+			new AtomicReference<>()
 		);
 
 		assertThat(result).isEqualTo(ProcedureResult.POP_INPUT_OUTPUT);
@@ -85,8 +84,7 @@ public class FungibleParticlesProcedureBuilderTest {
 			new Fungible(UInt256.TWO),
 			inputData,
 			new Fungible(UInt256.ONE),
-			new AtomicReference<>(),
-			mock(AtomMetadata.class)
+			new AtomicReference<>()
 		);
 
 		assertThat(inputData).hasValue(UInt256.ONE);
@@ -110,8 +108,7 @@ public class FungibleParticlesProcedureBuilderTest {
 			new Fungible(UInt256.ONE),
 			new AtomicReference<>(),
 			new Fungible(UInt256.TWO),
-			outputData,
-			mock(AtomMetadata.class)
+			outputData
 		);
 
 		assertThat(result).isEqualTo(ProcedureResult.POP_INPUT);
@@ -135,8 +132,7 @@ public class FungibleParticlesProcedureBuilderTest {
 			new Fungible(UInt256.TWO),
 			new AtomicReference<>(),
 			new Fungible(UInt256.TWO),
-			outputData,
-			mock(AtomMetadata.class)
+			outputData
 		);
 
 		assertThat(result).isEqualTo(ProcedureResult.POP_INPUT_OUTPUT);
@@ -158,8 +154,7 @@ public class FungibleParticlesProcedureBuilderTest {
 			new Fungible(UInt256.ONE),
 			new AtomicReference<>(),
 			new Fungible(UInt256.TWO),
-			new AtomicReference<>(UInt256.ONE),
-			mock(AtomMetadata.class)
+			new AtomicReference<>(UInt256.ONE)
 		);
 
 		assertThat(result).isEqualTo(ProcedureResult.POP_INPUT_OUTPUT);
@@ -187,8 +182,7 @@ public class FungibleParticlesProcedureBuilderTest {
 			new Fungible2(UInt256.ONE),
 			new AtomicReference<>(),
 			new Fungible(UInt256.ONE),
-			new AtomicReference<>(),
-			mock(AtomMetadata.class)
+			new AtomicReference<>()
 		);
 
 		assertThat(result).isEqualTo(ProcedureResult.ERROR);

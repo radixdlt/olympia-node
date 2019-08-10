@@ -40,12 +40,30 @@ public class FungibleParticlesProcedureBuilder {
 		final Map<Class<? extends Particle>, ParticleProcedure> procedures = new HashMap<>();
 		fungibles.forEach((p, d) -> procedures.put(p, new ParticleProcedure() {
 			@Override
+			public boolean validateWitness(
+				ProcedureResult result,
+				Particle inputParticle,
+				Particle outputParticle,
+				AtomMetadata metadata
+			) {
+				RRIParticle rriParticle = (RRIParticle) inputParticle;
+				switch (result) {
+					case POP_OUTPUT:
+						return true;
+					case POP_INPUT:
+					case POP_INPUT_OUTPUT:
+						return metadata.isSignedBy(rriParticle.getRri().getAddress());
+					default:
+						throw new IllegalStateException();
+				}
+			}
+
+			@Override
 			public ProcedureResult execute(
 				Particle inputParticle,
 				AtomicReference<Object> inputData,
 				Particle outputParticle,
-				AtomicReference<Object> outputData,
-				AtomMetadata metadata
+				AtomicReference<Object> outputData
 			) {
 				if (!fungibles.containsKey(outputParticle.getClass())) {
 					return ProcedureResult.ERROR;
@@ -57,10 +75,6 @@ public class FungibleParticlesProcedureBuilder {
 				}
 
 				if (!formula.getTransition().test(inputParticle, outputParticle)) {
-					return ProcedureResult.ERROR;
-				}
-
-				if (formula.getWitnessValidator().validate(inputParticle, metadata).isError()) {
 					return ProcedureResult.ERROR;
 				}
 

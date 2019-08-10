@@ -88,17 +88,21 @@ public final class ConstraintMachine {
 		ProcedureResult action;
 		do {
 			if (outputs.empty()) {
-				action = ProcedureResult.ERROR;
-				break;
+				return false;
 			}
 			Pair<Particle, AtomicReference<Object>> top = outputs.peek();
 			action = particleProcedure.execute(
 				input,
 				inputData,
 				top.getFirst(),
-				top.getSecond(),
-				metadata
+				top.getSecond()
 			);
+
+			if (action != ProcedureResult.ERROR) {
+				if (!particleProcedure.validateWitness(action, input, top.getFirst(), metadata)) {
+					return false;
+				}
+			}
 
 			switch (action) {
 				case POP_OUTPUT:

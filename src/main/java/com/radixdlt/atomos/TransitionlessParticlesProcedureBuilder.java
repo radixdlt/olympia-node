@@ -18,12 +18,21 @@ public final class TransitionlessParticlesProcedureBuilder {
 	public <T extends Particle> TransitionlessParticlesProcedureBuilder add(Class<T> particleClass, WitnessValidator<T> witnessValidator) {
 		procedureBuilder.put(particleClass, new ParticleProcedure() {
 			@Override
+			public boolean validateWitness(
+				ProcedureResult result,
+				Particle inputParticle,
+				Particle outputParticle,
+				AtomMetadata metadata
+			) {
+				throw new IllegalStateException();
+			}
+
+			@Override
 			public ProcedureResult execute(
 				Particle inputParticle,
 				AtomicReference<Object> inputData,
 				Particle outputParticle,
-				AtomicReference<Object> outputData,
-				AtomMetadata metadata
+				AtomicReference<Object> outputData
 			) {
 				return ProcedureResult.ERROR;
 			}

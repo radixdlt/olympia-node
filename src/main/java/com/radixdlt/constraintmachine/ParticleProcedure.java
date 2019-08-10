@@ -18,13 +18,21 @@ public interface ParticleProcedure {
 		ERROR
 	}
 
+
 	ProcedureResult execute(
 		Particle inputParticle,
 		AtomicReference<Object> inputData,
 		Particle outputParticle,
-		AtomicReference<Object> outputData,
+		AtomicReference<Object> outputData
+	);
+
+	boolean validateWitness(
+		ProcedureResult result,
+		Particle inputParticle,
+		Particle outputParticle,
 		AtomMetadata metadata
 	);
+
 
 	/**
 	 * @return true, if the output is accounted for, false, otherwise
