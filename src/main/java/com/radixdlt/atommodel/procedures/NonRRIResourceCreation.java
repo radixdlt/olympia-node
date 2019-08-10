@@ -1,7 +1,7 @@
 package com.radixdlt.atommodel.procedures;
 
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.atomos.SysCalls.WitnessValidator;
+import com.radixdlt.constraintmachine.WitnessValidator;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.AtomMetadata;

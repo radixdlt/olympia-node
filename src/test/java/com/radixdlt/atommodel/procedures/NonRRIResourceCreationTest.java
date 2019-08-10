@@ -5,9 +5,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.radixdlt.atommodel.procedures.NonRRIResourceCreation;
 import com.radixdlt.atomos.Result;
-import com.radixdlt.atomos.SysCalls.WitnessValidator;
+import com.radixdlt.constraintmachine.WitnessValidator;
 import com.radixdlt.constraintmachine.ConstraintProcedure;
 import com.radixdlt.constraintmachine.ConstraintProcedure.ProcedureResult;
 
