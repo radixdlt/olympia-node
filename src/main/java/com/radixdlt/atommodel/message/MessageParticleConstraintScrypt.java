@@ -8,15 +8,18 @@ import com.radixdlt.atomos.Result;
 public class MessageParticleConstraintScrypt implements ConstraintScrypt {
 	@Override
 	public void main(SysCalls os) {
-		os.registerParticle(MessageParticle.class, MessageParticle::getAddresses);
-		os.on(MessageParticle.class)
-			.require(p -> {
-				if (p.getBytes() == null) {
+		os.registerParticleMultipleAddress(
+			MessageParticle.class,
+			MessageParticle::getAddresses,
+			m -> {
+				if (m.getBytes() == null) {
 					return Result.error("message data is null");
 				}
 
 				return Result.success();
-			});
+			}
+		);
+
 		os.newTransition(new NonRRIResourceCreation<>(
 			MessageParticle.class,
 			(msg, meta) -> {

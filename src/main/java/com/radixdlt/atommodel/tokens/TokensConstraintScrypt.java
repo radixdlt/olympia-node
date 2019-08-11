@@ -12,12 +12,9 @@ import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atommodel.procedures.FungibleTransition;
-import com.radixdlt.atoms.Particle;
 import com.radixdlt.constraintmachine.AtomMetadata;
-import com.radixdlt.utils.UInt256;
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 

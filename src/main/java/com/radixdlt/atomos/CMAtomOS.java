@@ -19,7 +19,6 @@ import java.util.function.Function;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
-import com.radixdlt.atomos.mapper.ParticleToShardablesMapper;
 import com.radixdlt.constraintmachine.ConstraintMachine.Builder;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.KernelConstraintProcedure;
@@ -64,15 +63,18 @@ public final class CMAtomOS {
 
 		constraintScrypt.main(new SysCalls() {
 			@Override
-			public <T extends Particle> void registerParticle(
+			public <T extends Particle> void registerParticleMultipleAddress(
 				Class<T> particleClass,
-				ParticleToShardablesMapper<T> mapper
+				Function<T, Set<RadixAddress>> mapper,
+				Function<T, Result> staticCheck
 			) {
 				if (scryptParticleClasses.containsKey(particleClass) || particleMapper.containsKey(particleClass)) {
 					throw new IllegalStateException("Particle " + particleClass + " is already registered");
 				}
 
-				scryptParticleClasses.put(particleClass, p -> mapper.getDestinations((T) p).stream());
+				scryptParticleClasses.put(particleClass, p -> mapper.apply((T) p).stream());
+				particleStaticValidation.merge(particleClass, p -> staticCheck.apply((T) p),
+					(old, next) -> p -> Result.combine(old.apply(p), next.apply(p)));
 			}
 
 			@Override
@@ -81,21 +83,11 @@ public final class CMAtomOS {
 				Function<T, RadixAddress> mapper,
 				Function<T, Result> staticCheck
 			) {
-				registerParticle(particleClass, (T particle) -> Collections.singleton(mapper.apply(particle)));
-				particleStaticValidation.merge(particleClass, p -> staticCheck.apply((T) p),
-					(old, next) -> p -> Result.combine(old.apply(p), next.apply(p)));
-			}
-
-			@Override
-			public <T extends Particle> ParticleClassConstraint<T> on(Class<T> particleClass) {
-				if (!scryptParticleClasses.containsKey(particleClass)) {
-					throw new IllegalStateException(particleClass + " must be registered in calling scrypt.");
-				}
-
-				return constraint -> {
-					particleStaticValidation.merge(particleClass, p -> constraint.apply((T) p),
-						(old, next) -> p -> Result.combine(old.apply(p), next.apply(p)));
-				};
+				registerParticleMultipleAddress(
+					particleClass,
+					(T particle) -> Collections.singleton(mapper.apply(particle)),
+					staticCheck
+				);
 			}
 
 			@Override

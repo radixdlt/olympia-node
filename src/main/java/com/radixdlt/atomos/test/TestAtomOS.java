@@ -4,7 +4,6 @@ import com.radixdlt.atomos.RRI;
 import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.atomos.Result;
-import com.radixdlt.atomos.mapper.ParticleToShardablesMapper;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.AtomMetadata;
@@ -13,6 +12,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
@@ -28,7 +28,11 @@ public class TestAtomOS implements SysCalls {
 	private final List<Pair<Class<? extends Particle>, BiFunction<Particle, AtomMetadata, Result>>> particleClassConstraints = new ArrayList<>();
 
 	@Override
-	public <T extends Particle> void registerParticle(Class<T> particleClass, ParticleToShardablesMapper<T> mapper) {
+	public <T extends Particle> void registerParticleMultipleAddress(
+		Class<T> particleClass,
+		Function<T, Set<RadixAddress>> mapper,
+		Function<T, Result> staticCheck
+	) {
 		// Not implemented for the test AtomOS for the time being as it is not used to test any functionality.
 	}
 
@@ -55,11 +59,6 @@ public class TestAtomOS implements SysCalls {
 		BiPredicate<T, U> combinedResource
 	) {
 		resources.put(particleClass0, p -> rriMapper0.apply((T) p));
-	}
-
-	@Override
-	public <T extends Particle> ParticleClassConstraint<T> on(Class<T> particleClass) {
-		return constraint -> particleClassConstraints.add(new Pair<>(particleClass, (p, m) -> constraint.apply((T) p)));
 	}
 
 	@Override
