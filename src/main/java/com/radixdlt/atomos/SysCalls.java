@@ -7,7 +7,7 @@ import java.util.function.BiPredicate;
 import java.util.function.Function;
 
 /**
- * Exposes the interface which application particle constraints can be built on top of.
+ * Exposes the interface which application particle constraints/transitions can be programmed against.
  */
 public interface SysCalls {
 
@@ -35,30 +35,30 @@ public interface SysCalls {
 		Function<T, Result> staticCheck
 	);
 
+	<T extends Particle, U extends Particle> void createTransition(
+		Class<T> inputClass,
+		Class<U> outputClass,
+		TransitionProcedure<T, U> procedure
+	);
+
 	/**
 	 * Creates a new resource type based on a particle. The resource type can be allocated by consuming
 	 * an RRI which then becomes the resource's global identifier.
 	 */
-	<T extends Particle> void newRRIResource(
-		Class<T> particleClass,
-		Function<T, RRI> indexer
+	<T extends Particle> void createTransitionFromRRI(
+		Class<T> outputClass,
+		Function<T, RRI> rriMapper
 	);
 
 	/**
 	 * Creates a new resource type based on two particles. The resource type can be allocated by consuming
 	 * an RRI which then becomes the resource's global identifier.
 	 */
-	<T extends Particle, U extends Particle> void newRRIResourceCombined(
-		Class<T> particleClass0,
+	<T extends Particle, U extends Particle> void createTransitionFromRRICombined(
+		Class<T> outputClass0,
 		Function<T, RRI> rriMapper0,
-		Class<U> particleClass1,
+		Class<U> outputClass1,
 		Function<U, RRI> rriMapper1,
 		BiPredicate<T, U> combinedCheck
-	);
-
-	<T extends Particle, U extends Particle> void newTransition(
-		Class<T> inputClass,
-		Class<U> outputClass,
-		TransitionProcedure<T, U> procedure
 	);
 }

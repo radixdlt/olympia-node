@@ -16,13 +16,13 @@ public class FungibleTransition<T extends Particle, U extends Particle> implemen
 	private final Function<T, UInt256> inputAmountMapper;
 	private final Function<U, UInt256> outputAmountMapper;
 	private final BiPredicate<T, U> transition;
-	private final WitnessValidator<T> witnessValidator;
+	private final WitnessValidator<T, U> witnessValidator;
 
 	public FungibleTransition(
 		Function<T, UInt256> inputAmountMapper,
 		Function<U, UInt256> outputAmountMapper,
 		BiPredicate<T, U> transition,
-		WitnessValidator<T> witnessValidator
+		WitnessValidator<T, U> witnessValidator
 	) {
 		this.inputAmountMapper = inputAmountMapper;
 		this.outputAmountMapper = outputAmountMapper;
@@ -67,14 +67,6 @@ public class FungibleTransition<T extends Particle, U extends Particle> implemen
 		U outputParticle,
 		AtomMetadata metadata
 	) {
-		switch (result) {
-			case POP_OUTPUT:
-				return true;
-			case POP_INPUT:
-			case POP_INPUT_OUTPUT:
-				return witnessValidator.validate(inputParticle, metadata).isSuccess();
-			default:
-				throw new IllegalStateException();
-		}
+		return witnessValidator.validate(result, inputParticle, outputParticle, metadata);
 	}
 }

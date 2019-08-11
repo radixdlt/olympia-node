@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.WitnessValidator;
 import com.radixdlt.constraintmachine.TransitionProcedure;
@@ -28,8 +29,8 @@ public class NonRRIResourceCreationTest {
 
 	@Test
 	public void when_a_payload_constraint_procedure_validates_an_up_particle__then_output_should_succeed() {
-		WitnessValidator<CustomPayloadParticle> witnessValidator = mock(WitnessValidator.class);
-		when(witnessValidator.validate(any(), any())).thenReturn(Result.success());
+		WitnessValidator<Particle, CustomPayloadParticle> witnessValidator = mock(WitnessValidator.class);
+		when(witnessValidator.validate(any(), any(), any(), any())).thenReturn(true);
 		TransitionProcedure<Particle, CustomPayloadParticle> procedure = new NonRRIResourceCreation<>(witnessValidator);
 
 		ProcedureResult result = procedure.execute(null, null, mock(CustomPayloadParticle.class), new AtomicReference<>());

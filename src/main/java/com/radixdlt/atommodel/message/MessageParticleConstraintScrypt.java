@@ -20,18 +20,10 @@ public class MessageParticleConstraintScrypt implements ConstraintScrypt {
 			}
 		);
 
-		os.newTransition(
+		os.createTransition(
 			null,
 			MessageParticle.class,
-			new NonRRIResourceCreation<>(
-				(msg, meta) -> {
-					if (!meta.isSignedBy(msg.getFrom())) {
-						return Result.error("message must be signed by sender: " + msg.getFrom());
-					}
-
-					return Result.success();
-				}
-			)
+			new NonRRIResourceCreation<>((res, in, out, meta) -> meta.isSignedBy(out.getFrom()))
 		);
 	}
 }

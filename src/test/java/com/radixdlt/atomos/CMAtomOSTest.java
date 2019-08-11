@@ -1,11 +1,9 @@
 package com.radixdlt.atomos;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atoms.DataPointer;
 import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.atoms.Spin;
-import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.CMAtom;
 import com.radixdlt.constraintmachine.CMParticle;
 import com.radixdlt.constraintmachine.TransitionProcedure;
@@ -65,14 +63,14 @@ public class CMAtomOSTest {
 		TransitionProcedure<TestParticle0, TestParticle0> procedure = mock(TransitionProcedure.class);
 		os.load(syscalls -> {
 			syscalls.registerParticle(TestParticle0.class, (TestParticle0 p) -> mock(RadixAddress.class), t -> Result.success());
-			syscalls.newTransition(
+			syscalls.createTransition(
 				TestParticle0.class, TestParticle0.class, procedure);
 		});
 		TransitionProcedure<TestParticle1, TestParticle0> procedure0 = mock(TransitionProcedure.class);
 		assertThatThrownBy(() ->
 			os.load(syscalls -> {
 				syscalls.registerParticle(TestParticle1.class, (TestParticle1 p) -> mock(RadixAddress.class), t -> Result.success());
-				syscalls.newTransition(
+				syscalls.createTransition(
 					TestParticle1.class, TestParticle0.class, procedure0);
 			})
 		).isInstanceOf(IllegalStateException.class);

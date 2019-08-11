@@ -10,9 +10,9 @@ import java.util.concurrent.atomic.AtomicReference;
  * Procedure which checks that payload particles
  */
 public final class NonRRIResourceCreation<T extends Particle> implements TransitionProcedure<Particle, T> {
-	private final WitnessValidator<T> witnessValidator;
+	private final WitnessValidator<Particle, T> witnessValidator;
 
-	public NonRRIResourceCreation(WitnessValidator<T> witnessValidator) {
+	public NonRRIResourceCreation(WitnessValidator<Particle, T> witnessValidator) {
 		this.witnessValidator = witnessValidator;
 	}
 
@@ -33,7 +33,7 @@ public final class NonRRIResourceCreation<T extends Particle> implements Transit
 		T outputParticle,
 		AtomMetadata metadata
 	) {
-		return witnessValidator.validate(outputParticle, metadata).isSuccess();
+		return witnessValidator.validate(result, inputParticle, outputParticle, metadata);
 	}
 
 }

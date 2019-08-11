@@ -12,9 +12,13 @@ import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atommodel.procedures.FungibleTransition;
+import com.radixdlt.atomos.WitnessValidator;
+import com.radixdlt.atoms.Particle;
 import com.radixdlt.constraintmachine.AtomMetadata;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -90,7 +94,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 		);
 
 		// Require Token Definition to be created with unallocated tokens of max supply
-		os.newRRIResourceCombined(
+		os.createTransitionFromRRICombined(
 			TokenDefinitionParticle.class,
 			TokenDefinitionParticle::getRRI,
 			UnallocatedTokensParticle.class,
@@ -122,7 +126,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 		);
 
 
-		os.newTransition(
+		os.createTransition(
 			UnallocatedTokensParticle.class, UnallocatedTokensParticle.class,
 			new FungibleTransition<>(
 				UnallocatedTokensParticle::getAmount, UnallocatedTokensParticle::getAmount,
@@ -130,9 +134,10 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 					Objects.equals(from.getTokDefRef(), to.getTokDefRef())
 						&& Objects.equals(from.getGranularity(), to.getGranularity())
 						&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions()),
-				(from, meta) -> checkSigned(from.getTokDefRef().getAddress(), meta)
-		));
-		os.newTransition(
+				checkInput((in, meta) -> meta.isSignedBy(in.getTokDefRef().getAddress()))
+			)
+		);
+		os.createTransition(
 			UnallocatedTokensParticle.class, TransferrableTokensParticle.class,
 			new FungibleTransition<>(
 				UnallocatedTokensParticle::getAmount, TransferrableTokensParticle::getAmount,
@@ -140,10 +145,10 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 					Objects.equals(from.getTokDefRef(), to.getTokDefRef())
 						&& Objects.equals(from.getGranularity(), to.getGranularity())
 						&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions()),
-				(from, meta) -> from.getTokenPermission(TokenTransition.MINT).check(from.getTokDefRef(), meta)
+				checkInput((u, meta) -> u.getTokenPermission(TokenTransition.MINT).check(u.getTokDefRef(), meta).isSuccess())
 			)
 		);
-		os.newTransition(
+		os.createTransition(
 			TransferrableTokensParticle.class, TransferrableTokensParticle.class,
 			new FungibleTransition<>(
 				TransferrableTokensParticle::getAmount, TransferrableTokensParticle::getAmount,
@@ -151,10 +156,10 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 					Objects.equals(from.getTokDefRef(), to.getTokDefRef())
 						&& Objects.equals(from.getGranularity(), to.getGranularity())
 						&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions()),
-				(from, meta) -> checkSigned(from.getAddress(), meta)
+				checkInput((in, meta) -> meta.isSignedBy(in.getAddress()))
 			)
 		);
-		os.newTransition(
+		os.createTransition(
 			TransferrableTokensParticle.class, UnallocatedTokensParticle.class,
 			new FungibleTransition<>(
 				TransferrableTokensParticle::getAmount, UnallocatedTokensParticle::getAmount,
@@ -162,16 +167,22 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 					Objects.equals(from.getTokDefRef(), to.getTokDefRef())
 						&& Objects.equals(from.getGranularity(), to.getGranularity())
 						&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions()),
-				(from, meta) -> from.getTokenPermission(TokenTransition.BURN).check(from.getTokDefRef(), meta)
+				checkInput((in, meta) -> in.getTokenPermission(TokenTransition.BURN).check(in.getTokDefRef(), meta).isSuccess())
 			)
 		);
 	}
 
-	private static Result checkSigned(RadixAddress fromAddress, AtomMetadata metadata) {
-		if (!metadata.isSignedBy(fromAddress)) {
-			return Result.error("must be signed by source address: " + fromAddress);
-		}
-
-		return Result.success();
+	private static <T extends Particle, U extends Particle> WitnessValidator<T, U> checkInput(BiFunction<T, AtomMetadata, Boolean> check) {
+		return (res, in, out, meta) -> {
+			switch (res) {
+				case POP_OUTPUT:
+					return true;
+				case POP_INPUT:
+				case POP_INPUT_OUTPUT:
+					return check.apply(in, meta);
+				default:
+					throw new IllegalStateException();
+			}
+		};
 	}
 }
