@@ -95,13 +95,14 @@ public final class CMAtomOS {
 			@Override
 			public <T extends Particle> void newRRIResource(
 				Class<T> particleClass,
-				ParticleToRRIMapper<T> rriMapper
+				Function<T, RRI> rriMapper
 			) {
 				if (!scryptParticleClasses.containsKey(particleClass)) {
 					throw new IllegalStateException(particleClass + " must be registered in calling scrypt.");
 				}
 
-				rriProcedureBuilder.add(particleClass, rriMapper);
+				TransitionProcedure procedure = new RRIResourceCreation<>(particleClass, rriMapper);
+				procedure.supports().forEach(p -> proceduresBuilder.put(p, procedure));
 			}
 
 			@Override

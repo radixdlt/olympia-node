@@ -64,7 +64,7 @@ public interface SysCalls {
 	 */
 	<T extends Particle> void newRRIResource(
 		Class<T> particleClass,
-		ParticleToRRIMapper<T> indexer
+		Function<T, RRI> indexer
 	);
 
 	/**

@@ -1,5 +1,6 @@
 package com.radixdlt.atomos.test;
 
+import com.radixdlt.atomos.RRI;
 import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.mapper.ParticleToRRIMapper;
@@ -15,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -37,8 +39,8 @@ public class TestAtomOS implements SysCalls {
 	}
 
 	@Override
-	public <T extends Particle> void newRRIResource(Class<T> particleClass, ParticleToRRIMapper<T> indexer) {
-		resources.put(particleClass, p -> indexer.index((T) p));
+	public <T extends Particle> void newRRIResource(Class<T> particleClass, Function<T, RRI> indexer) {
+		resources.put(particleClass, p -> indexer.apply((T) p));
 	}
 
 	@Override
