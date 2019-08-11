@@ -1,7 +1,8 @@
-package com.radixdlt.constraintmachine;
+package com.radixdlt.atomos;
 
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atoms.Particle;
+import com.radixdlt.constraintmachine.AtomMetadata;
 
 @FunctionalInterface
 public interface WitnessValidator<T extends Particle> {

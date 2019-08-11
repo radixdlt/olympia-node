@@ -99,8 +99,8 @@ public final class CMAtomOS {
 					throw new IllegalStateException(particleClass + " must be registered in calling scrypt.");
 				}
 
-				TransitionProcedure procedure = new RRIResourceCreation<>(particleClass, rriMapper);
-				proceduresBuilder.put(procedure.supports(), procedure);
+				TransitionProcedure<RRIParticle, T> procedure = new RRIResourceCreation<>(particleClass, rriMapper);
+				proceduresBuilder.put(Pair.of(RRIParticle.class, particleClass), procedure);
 			}
 
 			@Override
@@ -118,30 +118,27 @@ public final class CMAtomOS {
 					throw new IllegalStateException(particleClass1 + " must be registered in calling scrypt.");
 				}
 
-				TransitionProcedure procedure0 = new RRIResourceCombinedPrimaryCreation<>(
+				TransitionProcedure<RRIParticle, T> procedure0 = new RRIResourceCombinedPrimaryCreation<>(rriMapper0);
+				proceduresBuilder.put(Pair.of(RRIParticle.class, particleClass0), procedure0);
+				TransitionProcedure<RRIParticle, U> procedure1 = new RRIResourceCombinedDependentCreation<>(
 					particleClass0,
-					rriMapper0
-				);
-				proceduresBuilder.put(procedure0.supports(), procedure0);
-				TransitionProcedure procedure1 = new RRIResourceCombinedDependentCreation<>(
-					particleClass0,
-					rriMapper0,
-					particleClass1,
 					rriMapper1,
 					combinedCheck
 				);
-				proceduresBuilder.put(procedure1.supports(), procedure1);
+				proceduresBuilder.put(Pair.of(RRIParticle.class, particleClass1), procedure1);
 			}
 
 			@Override
-			public void newTransition(TransitionProcedure procedure) {
-				if (!Stream.of(procedure.supports().getFirst(), procedure.supports().getSecond())
-					.filter(Objects::nonNull)
-					.allMatch(scryptParticleClasses::containsKey)
-				) {
-					throw new IllegalStateException(procedure.supports() + " must be all registered in calling scrypt.");
+			public <T extends Particle, U extends Particle> void newTransition(
+				Class<T> inputClass,
+				Class<U> outputClass,
+				TransitionProcedure<T, U> procedure
+			) {
+				if ((inputClass != null && !scryptParticleClasses.containsKey(inputClass))
+					|| (outputClass != null && !scryptParticleClasses.containsKey(outputClass))) {
+					throw new IllegalStateException(inputClass + " " + outputClass + " must be all registered in calling scrypt.");
 				}
-				proceduresBuilder.put(procedure.supports(), procedure);
+				proceduresBuilder.put(Pair.of(inputClass, outputClass), procedure);
 			}
 		});
 

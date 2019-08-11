@@ -1,43 +1,26 @@
 package com.radixdlt.atomos;
 
 import com.radixdlt.atoms.Particle;
-import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.AtomMetadata;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
-public class RRIResourceCombinedPrimaryCreation<T extends Particle, U extends Particle> implements TransitionProcedure {
-	private final Class<T> particleClass0;
+public class RRIResourceCombinedPrimaryCreation<T extends Particle, U extends Particle> implements TransitionProcedure<RRIParticle, T> {
 	private final Function<T, RRI> rriMapper0;
 
-	public RRIResourceCombinedPrimaryCreation(
-		Class<T> particleClass0,
-		Function<T, RRI> rriMapper0
-	) {
-		this.particleClass0 = particleClass0;
+	public RRIResourceCombinedPrimaryCreation(Function<T, RRI> rriMapper0) {
 		this.rriMapper0 = rriMapper0;
 	}
 
 	@Override
-	public Pair<Class<? extends Particle>, Class<? extends Particle>> supports() {
-		return Pair.of(RRIParticle.class, particleClass0);
-	}
-
-	@Override
 	public ProcedureResult execute(
-		Particle inputParticle,
+		RRIParticle inputParticle,
 		AtomicReference<Object> inputData,
-		Particle outputParticle,
+		T outputParticle,
 		AtomicReference<Object> outputData
 	) {
-		RRIParticle rriParticle = (RRIParticle) inputParticle;
-
-		if (!outputParticle.getClass().equals(particleClass0)) {
-			return ProcedureResult.ERROR;
-		}
-
-		if (!rriMapper0.apply((T) outputParticle).equals(rriParticle.getRri())) {
+		if (!rriMapper0.apply(outputParticle).equals(inputParticle.getRri())) {
 			return ProcedureResult.ERROR;
 		}
 
@@ -48,8 +31,8 @@ public class RRIResourceCombinedPrimaryCreation<T extends Particle, U extends Pa
 	@Override
 	public boolean validateWitness(
 		ProcedureResult result,
-		Particle inputParticle,
-		Particle outputParticle,
+		RRIParticle inputParticle,
+		T outputParticle,
 		AtomMetadata metadata
 	) {
 		switch (result) {

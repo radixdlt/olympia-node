@@ -122,42 +122,49 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 		);
 
 
-		os.newTransition(new FungibleTransition<>(
-			UnallocatedTokensParticle.class, UnallocatedTokensParticle::getAmount,
-			UnallocatedTokensParticle.class, UnallocatedTokensParticle::getAmount,
-			(from, to) ->
-				Objects.equals(from.getTokDefRef(), to.getTokDefRef())
-					&& Objects.equals(from.getGranularity(), to.getGranularity())
-					&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions()),
-			(from, meta) -> checkSigned(from.getTokDefRef().getAddress(), meta)
+		os.newTransition(
+			UnallocatedTokensParticle.class, UnallocatedTokensParticle.class,
+			new FungibleTransition<>(
+				UnallocatedTokensParticle::getAmount, UnallocatedTokensParticle::getAmount,
+				(from, to) ->
+					Objects.equals(from.getTokDefRef(), to.getTokDefRef())
+						&& Objects.equals(from.getGranularity(), to.getGranularity())
+						&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions()),
+				(from, meta) -> checkSigned(from.getTokDefRef().getAddress(), meta)
 		));
-		os.newTransition(new FungibleTransition<>(
-			UnallocatedTokensParticle.class, UnallocatedTokensParticle::getAmount,
-			TransferrableTokensParticle.class, TransferrableTokensParticle::getAmount,
-			(from, to) ->
-				Objects.equals(from.getTokDefRef(), to.getTokDefRef())
-					&& Objects.equals(from.getGranularity(), to.getGranularity())
-					&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions()),
-			(from, meta) -> from.getTokenPermission(TokenTransition.MINT).check(from.getTokDefRef(), meta)
-		));
-		os.newTransition(new FungibleTransition<>(
-			TransferrableTokensParticle.class, TransferrableTokensParticle::getAmount,
-			TransferrableTokensParticle.class, TransferrableTokensParticle::getAmount,
-			(from, to) ->
-				Objects.equals(from.getTokDefRef(), to.getTokDefRef())
-					&& Objects.equals(from.getGranularity(), to.getGranularity())
-					&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions()),
-			(from, meta) -> checkSigned(from.getAddress(), meta)
-		));
-		os.newTransition(new FungibleTransition<>(
-			TransferrableTokensParticle.class, TransferrableTokensParticle::getAmount,
-			UnallocatedTokensParticle.class, UnallocatedTokensParticle::getAmount,
-			(from, to) ->
-				Objects.equals(from.getTokDefRef(), to.getTokDefRef())
-					&& Objects.equals(from.getGranularity(), to.getGranularity())
-					&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions()),
-			(from, meta) -> from.getTokenPermission(TokenTransition.BURN).check(from.getTokDefRef(), meta)
-		));
+		os.newTransition(
+			UnallocatedTokensParticle.class, TransferrableTokensParticle.class,
+			new FungibleTransition<>(
+				UnallocatedTokensParticle::getAmount, TransferrableTokensParticle::getAmount,
+				(from, to) ->
+					Objects.equals(from.getTokDefRef(), to.getTokDefRef())
+						&& Objects.equals(from.getGranularity(), to.getGranularity())
+						&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions()),
+				(from, meta) -> from.getTokenPermission(TokenTransition.MINT).check(from.getTokDefRef(), meta)
+			)
+		);
+		os.newTransition(
+			TransferrableTokensParticle.class, TransferrableTokensParticle.class,
+			new FungibleTransition<>(
+				TransferrableTokensParticle::getAmount, TransferrableTokensParticle::getAmount,
+				(from, to) ->
+					Objects.equals(from.getTokDefRef(), to.getTokDefRef())
+						&& Objects.equals(from.getGranularity(), to.getGranularity())
+						&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions()),
+				(from, meta) -> checkSigned(from.getAddress(), meta)
+			)
+		);
+		os.newTransition(
+			TransferrableTokensParticle.class, UnallocatedTokensParticle.class,
+			new FungibleTransition<>(
+				TransferrableTokensParticle::getAmount, UnallocatedTokensParticle::getAmount,
+				(from, to) ->
+					Objects.equals(from.getTokDefRef(), to.getTokDefRef())
+						&& Objects.equals(from.getGranularity(), to.getGranularity())
+						&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions()),
+				(from, meta) -> from.getTokenPermission(TokenTransition.BURN).check(from.getTokDefRef(), meta)
+			)
+		);
 	}
 
 	private static Result checkSigned(RadixAddress fromAddress, AtomMetadata metadata) {

@@ -1,13 +1,12 @@
 package com.radixdlt.atomos;
 
 import com.radixdlt.atoms.Particle;
-import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.AtomMetadata;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
-public class RRIResourceCreation<T extends Particle> implements TransitionProcedure {
+public class RRIResourceCreation<T extends Particle> implements TransitionProcedure<RRIParticle, T> {
 	private final Class<T> particleClass;
 	private final Function<T, RRI> rriMapper;
 
@@ -17,21 +16,13 @@ public class RRIResourceCreation<T extends Particle> implements TransitionProced
 	}
 
 	@Override
-	public Pair<Class<? extends Particle>, Class<? extends Particle>> supports() {
-		return Pair.of(RRIParticle.class, particleClass);
-	}
-
-
-	@Override
 	public ProcedureResult execute(
-		Particle inputParticle,
+		RRIParticle inputParticle,
 		AtomicReference<Object> inputData,
-		Particle outputParticle,
+		T outputParticle,
 		AtomicReference<Object> outputData
 	) {
-		RRIParticle rriParticle = (RRIParticle) inputParticle;
-
-		if (!rriMapper.apply((T) outputParticle).equals(rriParticle.getRri())) {
+		if (!rriMapper.apply(outputParticle).equals(inputParticle.getRri())) {
 			return ProcedureResult.ERROR;
 		}
 
@@ -41,16 +32,15 @@ public class RRIResourceCreation<T extends Particle> implements TransitionProced
 	@Override
 	public boolean validateWitness(
 		ProcedureResult result,
-		Particle inputParticle,
-		Particle outputParticle,
+		RRIParticle inputParticle,
+		T outputParticle,
 		AtomMetadata metadata
 	) {
-		RRIParticle rriParticle = (RRIParticle) inputParticle;
 		switch (result) {
 			case POP_OUTPUT:
 				return true;
 			case POP_INPUT_OUTPUT:
-				return metadata.isSignedBy(rriParticle.getRri().getAddress());
+				return metadata.isSignedBy(inputParticle.getRri().getAddress());
 			case POP_INPUT:
 			default:
 				throw new IllegalStateException();

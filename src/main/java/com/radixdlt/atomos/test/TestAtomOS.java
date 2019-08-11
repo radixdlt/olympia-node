@@ -62,8 +62,11 @@ public class TestAtomOS implements SysCalls {
 	}
 
 	@Override
-	public void newTransition(TransitionProcedure procedure) {
-
+	public <T extends Particle, U extends Particle> void newTransition(
+		Class<T> inputClass,
+		Class<U> outputClass,
+		TransitionProcedure<T, U> procedure
+	) {
 	}
 
 	/**

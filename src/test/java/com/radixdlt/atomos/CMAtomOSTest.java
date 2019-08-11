@@ -62,16 +62,18 @@ public class CMAtomOSTest {
 	@Test
 	public void when_adding_procedure_on_particle_registered_in_another_scrypt__exception_is_thrown() {
 		CMAtomOS os = new CMAtomOS(() -> mock(Universe.class), () -> 0);
-		TransitionProcedure procedure = mock(TransitionProcedure.class);
-		when(procedure.supports()).thenReturn(Pair.of(TestParticle0.class, TestParticle0.class));
+		TransitionProcedure<TestParticle0, TestParticle0> procedure = mock(TransitionProcedure.class);
 		os.load(syscalls -> {
 			syscalls.registerParticle(TestParticle0.class, (TestParticle0 p) -> mock(RadixAddress.class), t -> Result.success());
-			syscalls.newTransition(procedure);
+			syscalls.newTransition(
+				TestParticle0.class, TestParticle0.class, procedure);
 		});
+		TransitionProcedure<TestParticle1, TestParticle0> procedure0 = mock(TransitionProcedure.class);
 		assertThatThrownBy(() ->
 			os.load(syscalls -> {
 				syscalls.registerParticle(TestParticle1.class, (TestParticle1 p) -> mock(RadixAddress.class), t -> Result.success());
-				syscalls.newTransition(procedure);
+				syscalls.newTransition(
+					TestParticle1.class, TestParticle0.class, procedure0);
 			})
 		).isInstanceOf(IllegalStateException.class);
 	}

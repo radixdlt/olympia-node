@@ -56,5 +56,9 @@ public interface SysCalls {
 		BiPredicate<T, U> combinedCheck
 	);
 
-	void newTransition(TransitionProcedure procedure);
+	<T extends Particle, U extends Particle> void newTransition(
+		Class<T> inputClass,
+		Class<U> outputClass,
+		TransitionProcedure<T, U> procedure
+	);
 }
