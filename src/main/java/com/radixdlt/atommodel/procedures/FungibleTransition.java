@@ -22,7 +22,6 @@ public class FungibleTransition<T extends Particle, U extends Particle> implemen
 	private final BiPredicate<T, U> transition;
 	private final WitnessValidator<T> witnessValidator;
 
-
 	public FungibleTransition(
 		Class<T> inputParticleClass,
 		Function<T, UInt256> inputAmountMapper,
@@ -42,24 +41,6 @@ public class FungibleTransition<T extends Particle, U extends Particle> implemen
 	@Override
 	public ImmutableSet<Pair<Class<? extends Particle>, Class<? extends Particle>>> supports() {
 		return ImmutableSet.of(Pair.of(inputParticleClass, outputParticleClass));
-	}
-
-	@Override
-	public boolean validateWitness(
-		ProcedureResult result,
-		Particle inputParticle,
-		Particle outputParticle,
-		AtomMetadata metadata
-	) {
-		switch (result) {
-			case POP_OUTPUT:
-				return true;
-			case POP_INPUT:
-			case POP_INPUT_OUTPUT:
-				return witnessValidator.validate((T) inputParticle, metadata).isSuccess();
-			default:
-				throw new IllegalStateException();
-		}
 	}
 
 	@Override
@@ -89,6 +70,24 @@ public class FungibleTransition<T extends Particle, U extends Particle> implemen
 		} else {
 			outputData.set(outputAmount.subtract(inputAmount));
 			return ProcedureResult.POP_INPUT;
+		}
+	}
+
+	@Override
+	public boolean validateWitness(
+		ProcedureResult result,
+		Particle inputParticle,
+		Particle outputParticle,
+		AtomMetadata metadata
+	) {
+		switch (result) {
+			case POP_OUTPUT:
+				return true;
+			case POP_INPUT:
+			case POP_INPUT_OUTPUT:
+				return witnessValidator.validate((T) inputParticle, metadata).isSuccess();
+			default:
+				throw new IllegalStateException();
 		}
 	}
 }

@@ -1,6 +1,5 @@
 package com.radixdlt.atomos;
 
-import com.radixdlt.atomos.mapper.ParticleToRRIMapper;
 import com.radixdlt.atomos.mapper.ParticleToShardableMapper;
 import com.radixdlt.atomos.mapper.ParticleToShardablesMapper;
 import com.radixdlt.atoms.Particle;
@@ -71,12 +70,12 @@ public interface SysCalls {
 	 * Creates a new resource type based on two particles. The resource type can be allocated by consuming
 	 * an RRI which then becomes the resource's global identifier.
 	 */
-	<T extends Particle, U extends Particle> void newRRIResource(
+	<T extends Particle, U extends Particle> void newRRIResourceCombined(
 		Class<T> particleClass0,
-		ParticleToRRIMapper<T> indexer0,
+		Function<T, RRI> rriMapper0,
 		Class<U> particleClass1,
-		ParticleToRRIMapper<U> indexer1,
-		BiPredicate<T, U> combinedResource
+		Function<U, RRI> rriMapper1,
+		BiPredicate<T, U> combinedCheck
 	);
 
 	void newTransition(TransitionProcedure procedure);

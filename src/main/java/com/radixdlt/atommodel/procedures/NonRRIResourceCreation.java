@@ -26,6 +26,16 @@ public final class NonRRIResourceCreation<T extends Particle> implements Transit
 	}
 
 	@Override
+	public ProcedureResult execute(
+		Particle inputParticle,
+		AtomicReference<Object> inputData,
+		Particle outputParticle,
+		AtomicReference<Object> outputData
+	) {
+		return ProcedureResult.POP_OUTPUT;
+	}
+
+	@Override
 	public boolean validateWitness(
 		ProcedureResult result,
 		Particle inputParticle,
@@ -35,13 +45,4 @@ public final class NonRRIResourceCreation<T extends Particle> implements Transit
 		return witnessValidator.validate((T) outputParticle, metadata).isSuccess();
 	}
 
-	@Override
-	public ProcedureResult execute(
-		Particle inputParticle,
-		AtomicReference<Object> inputData,
-		Particle outputParticle,
-		AtomicReference<Object> outputData
-	) {
-		return ProcedureResult.POP_OUTPUT;
-	}
 }

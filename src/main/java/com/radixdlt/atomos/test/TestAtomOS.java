@@ -3,7 +3,6 @@ package com.radixdlt.atomos.test;
 import com.radixdlt.atomos.RRI;
 import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.atomos.Result;
-import com.radixdlt.atomos.mapper.ParticleToRRIMapper;
 import com.radixdlt.atomos.mapper.ParticleToShardableMapper;
 import com.radixdlt.atomos.mapper.ParticleToShardablesMapper;
 import com.radixdlt.atoms.Particle;
@@ -25,7 +24,7 @@ import java.util.stream.Stream;
  * Note that this class is not thread-safe.
  */
 public class TestAtomOS implements SysCalls {
-	private final Map<Class<? extends Particle>, ParticleToRRIMapper<Particle>> resources = new HashMap<>();
+	private final Map<Class<? extends Particle>, Function<Particle, RRI>> resources = new HashMap<>();
 	private final List<Pair<Class<? extends Particle>, BiFunction<Particle, AtomMetadata, Result>>> particleClassConstraints = new ArrayList<>();
 
 	@Override
@@ -44,14 +43,14 @@ public class TestAtomOS implements SysCalls {
 	}
 
 	@Override
-	public <T extends Particle, U extends Particle> void newRRIResource(
+	public <T extends Particle, U extends Particle> void newRRIResourceCombined(
 		Class<T> particleClass0,
-		ParticleToRRIMapper<T> rriMapper0,
+		Function<T, RRI> rriMapper0,
 		Class<U> particleClass1,
-		ParticleToRRIMapper<U> rriMapper1,
+		Function<U, RRI> rriMapper1,
 		BiPredicate<T, U> combinedResource
 	) {
-		resources.put(particleClass0, p -> rriMapper0.index((T) p));
+		resources.put(particleClass0, p -> rriMapper0.apply((T) p));
 	}
 
 	@Override
@@ -74,7 +73,7 @@ public class TestAtomOS implements SysCalls {
 	 */
 	public <T extends Particle> TestResult testInitialParticle(T t, AtomMetadata metadata) {
 		Stream<Result> resourceSigned =
-			!resources.containsKey(t.getClass()) || metadata.isSignedBy(resources.get(t.getClass()).index(t).getAddress())
+			!resources.containsKey(t.getClass()) || metadata.isSignedBy(resources.get(t.getClass()).apply(t).getAddress())
 				? Stream.empty() : Stream.of(Result.error("Not signed"));
 
 		Stream<Result> classConstraintResults = particleClassConstraints.stream()

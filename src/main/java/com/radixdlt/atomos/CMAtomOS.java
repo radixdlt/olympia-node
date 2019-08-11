@@ -19,7 +19,6 @@ import java.util.function.Function;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
-import com.radixdlt.atomos.mapper.ParticleToRRIMapper;
 import com.radixdlt.atomos.mapper.ParticleToShardableMapper;
 import com.radixdlt.atomos.mapper.ParticleToShardablesMapper;
 import com.radixdlt.constraintmachine.ConstraintMachine.Builder;
@@ -45,7 +44,6 @@ public final class CMAtomOS {
 	private final Map<Class<? extends Particle>, Function<Particle, Stream<RadixAddress>>> particleMapper = new LinkedHashMap<>();
 	private final Map<Class<? extends Particle>, Function<Particle, Result>> particleStaticValidation = new HashMap<>();
 
-	private final RRIParticleProcedureBuilder rriProcedureBuilder = new RRIParticleProcedureBuilder();
 	private final ImmutableMap.Builder<Pair<Class<? extends Particle>, Class<? extends Particle>>, TransitionProcedure> proceduresBuilder = new ImmutableMap.Builder<>();
 
 	private final Supplier<Universe> universeSupplier;
@@ -106,12 +104,12 @@ public final class CMAtomOS {
 			}
 
 			@Override
-			public <T extends Particle, U extends Particle> void newRRIResource(
+			public <T extends Particle, U extends Particle> void newRRIResourceCombined(
 				Class<T> particleClass0,
-				ParticleToRRIMapper<T> rriMapper0,
+				Function<T, RRI> rriMapper0,
 				Class<U> particleClass1,
-				ParticleToRRIMapper<U> rriMapper1,
-				BiPredicate<T, U> combinedResource
+				Function<U, RRI> rriMapper1,
+				BiPredicate<T, U> combinedCheck
 			) {
 				if (!scryptParticleClasses.containsKey(particleClass0)) {
 					throw new IllegalStateException(particleClass0 + " must be registered in calling scrypt.");
@@ -120,7 +118,14 @@ public final class CMAtomOS {
 					throw new IllegalStateException(particleClass1 + " must be registered in calling scrypt.");
 				}
 
-				rriProcedureBuilder.add(particleClass0, rriMapper0, particleClass1, rriMapper1, combinedResource);
+				TransitionProcedure procedure = new RRIResourceCombinedCreation<>(
+					particleClass0,
+					rriMapper0,
+					particleClass1,
+					rriMapper1,
+					combinedCheck
+				);
+				procedure.supports().forEach(p -> proceduresBuilder.put(p, procedure));
 			}
 
 			@Override
@@ -186,10 +191,6 @@ public final class CMAtomOS {
 		ConstraintMachine.Builder cmBuilder = new Builder();
 
 		this.kernelProcedures.forEach(cmBuilder::addProcedure);
-
-		// Add constraint for RRI state machines
-		TransitionProcedure rriProcedure = this.rriProcedureBuilder.build();
-		rriProcedure.supports().forEach(p -> proceduresBuilder.put(p, rriProcedure));
 
 		ImmutableMap<Pair<Class<? extends Particle>, Class<? extends Particle>>, TransitionProcedure> procedures = proceduresBuilder.build();
 		cmBuilder.setParticleProcedures((input, output) -> procedures.get(

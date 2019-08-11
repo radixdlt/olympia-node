@@ -13,7 +13,7 @@ import com.radixdlt.constraintmachine.TransitionProcedure.ProcedureResult;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Test;
 
-public class RRIParticleProcedureBuilderTest {
+public class RRIResourceCreationTest {
 	private static class CustomParticle extends Particle {
 		private RRI rri;
 
@@ -29,9 +29,7 @@ public class RRIParticleProcedureBuilderTest {
 
 	@Test
 	public void when_an_rri_is_consumed_with_a_corresponding_particle__then_an_input_should_succeed_and_stack_is_empty() {
-		TransitionProcedure procedure = new RRIParticleProcedureBuilder()
-			.add(CustomParticle.class, CustomParticle::getRRI)
-			.build();
+		TransitionProcedure procedure = new RRIResourceCreation<>(CustomParticle.class, CustomParticle::getRRI);
 
 		RadixAddress address = mock(RadixAddress.class);
 		when(address.getUID()).thenReturn(EUID.ONE);
@@ -52,20 +50,5 @@ public class RRIParticleProcedureBuilderTest {
 		);
 
 		assertThat(result).isEqualTo(ProcedureResult.POP_INPUT_OUTPUT);
-	}
-
-	@Test
-	public void when_an_rri_is_consumed_without_a_corresponding_particle__then_input_should_fail() {
-		TransitionProcedure procedure = new RRIParticleProcedureBuilder().build();
-
-		RadixAddress address = mock(RadixAddress.class);
-		when(address.getUID()).thenReturn(EUID.ONE);
-		RRI rri = mock(RRI.class);
-		when(rri.getAddress()).thenReturn(address);
-
-		AtomMetadata metadata = mock(AtomMetadata.class);
-		when(metadata.isSignedBy(eq(address))).thenReturn(true);
-
-		assertThat(procedure.supports()).isEmpty();
 	}
 }
