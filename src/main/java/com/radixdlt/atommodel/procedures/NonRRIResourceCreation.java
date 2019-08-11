@@ -21,8 +21,8 @@ public final class NonRRIResourceCreation<T extends Particle> implements Transit
 	}
 
 	@Override
-	public ImmutableSet<Pair<Class<? extends Particle>, Class<? extends Particle>>> supports() {
-		return ImmutableSet.of(Pair.of(null, particleClass));
+	public Pair<Class<? extends Particle>, Class<? extends Particle>> supports() {
+		return Pair.of(null, particleClass);
 	}
 
 	@Override

@@ -7,20 +7,22 @@ import com.radixdlt.constraintmachine.TransitionProcedure;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
-public class RRIResourceCreation<T extends Particle> implements TransitionProcedure {
-	private final Class<T> particleClass;
-	private final Function<T, RRI> rriMapper;
+public class RRIResourceCombinedPrimaryCreation<T extends Particle, U extends Particle> implements TransitionProcedure {
+	private final Class<T> particleClass0;
+	private final Function<T, RRI> rriMapper0;
 
-	public RRIResourceCreation(Class<T> particleClass, Function<T, RRI> rriMapper) {
-		this.particleClass = particleClass;
-		this.rriMapper = rriMapper;
+	public RRIResourceCombinedPrimaryCreation(
+		Class<T> particleClass0,
+		Function<T, RRI> rriMapper0
+	) {
+		this.particleClass0 = particleClass0;
+		this.rriMapper0 = rriMapper0;
 	}
 
 	@Override
 	public Pair<Class<? extends Particle>, Class<? extends Particle>> supports() {
-		return Pair.of(RRIParticle.class, particleClass);
+		return Pair.of(RRIParticle.class, particleClass0);
 	}
-
 
 	@Override
 	public ProcedureResult execute(
@@ -31,11 +33,16 @@ public class RRIResourceCreation<T extends Particle> implements TransitionProced
 	) {
 		RRIParticle rriParticle = (RRIParticle) inputParticle;
 
-		if (!rriMapper.apply((T) outputParticle).equals(rriParticle.getRri())) {
+		if (!outputParticle.getClass().equals(particleClass0)) {
 			return ProcedureResult.ERROR;
 		}
 
-		return ProcedureResult.POP_INPUT_OUTPUT;
+		if (!rriMapper0.apply((T) outputParticle).equals(rriParticle.getRri())) {
+			return ProcedureResult.ERROR;
+		}
+
+		inputData.set(outputParticle);
+		return ProcedureResult.POP_OUTPUT;
 	}
 
 	@Override
@@ -45,12 +52,10 @@ public class RRIResourceCreation<T extends Particle> implements TransitionProced
 		Particle outputParticle,
 		AtomMetadata metadata
 	) {
-		RRIParticle rriParticle = (RRIParticle) inputParticle;
 		switch (result) {
 			case POP_OUTPUT:
 				return true;
 			case POP_INPUT_OUTPUT:
-				return metadata.isSignedBy(rriParticle.getRri().getAddress());
 			case POP_INPUT:
 			default:
 				throw new IllegalStateException();

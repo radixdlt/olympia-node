@@ -1,10 +1,7 @@
 package com.radixdlt.constraintmachine;
 
-import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.common.Pair;
-import com.radixdlt.constraintmachine.AtomMetadata;
-import java.util.Stack;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -19,7 +16,7 @@ public interface TransitionProcedure {
 		ERROR
 	}
 
-	ImmutableSet<Pair<Class<? extends Particle>, Class<? extends Particle>>> supports();
+	Pair<Class<? extends Particle>, Class<? extends Particle>> supports();
 
 	ProcedureResult execute(
 		Particle inputParticle,

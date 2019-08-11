@@ -100,7 +100,7 @@ public final class CMAtomOS {
 				}
 
 				TransitionProcedure procedure = new RRIResourceCreation<>(particleClass, rriMapper);
-				procedure.supports().forEach(p -> proceduresBuilder.put(p, procedure));
+				proceduresBuilder.put(procedure.supports(), procedure);
 			}
 
 			@Override
@@ -118,26 +118,30 @@ public final class CMAtomOS {
 					throw new IllegalStateException(particleClass1 + " must be registered in calling scrypt.");
 				}
 
-				TransitionProcedure procedure = new RRIResourceCombinedCreation<>(
+				TransitionProcedure procedure0 = new RRIResourceCombinedPrimaryCreation<>(
+					particleClass0,
+					rriMapper0
+				);
+				proceduresBuilder.put(procedure0.supports(), procedure0);
+				TransitionProcedure procedure1 = new RRIResourceCombinedDependentCreation<>(
 					particleClass0,
 					rriMapper0,
 					particleClass1,
 					rriMapper1,
 					combinedCheck
 				);
-				procedure.supports().forEach(p -> proceduresBuilder.put(p, procedure));
+				proceduresBuilder.put(procedure1.supports(), procedure1);
 			}
 
 			@Override
 			public void newTransition(TransitionProcedure procedure) {
-				if (!procedure.supports().stream()
-					.flatMap(p -> Stream.of(p.getFirst(), p.getSecond()))
+				if (!Stream.of(procedure.supports().getFirst(), procedure.supports().getSecond())
 					.filter(Objects::nonNull)
 					.allMatch(scryptParticleClasses::containsKey)
 				) {
 					throw new IllegalStateException(procedure.supports() + " must be all registered in calling scrypt.");
 				}
-				procedure.supports().forEach(p -> proceduresBuilder.put(p, procedure));
+				proceduresBuilder.put(procedure.supports(), procedure);
 			}
 		});
 

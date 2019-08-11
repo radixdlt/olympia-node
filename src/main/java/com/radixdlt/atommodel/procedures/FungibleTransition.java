@@ -39,8 +39,8 @@ public class FungibleTransition<T extends Particle, U extends Particle> implemen
 	}
 
 	@Override
-	public ImmutableSet<Pair<Class<? extends Particle>, Class<? extends Particle>>> supports() {
-		return ImmutableSet.of(Pair.of(inputParticleClass, outputParticleClass));
+	public Pair<Class<? extends Particle>, Class<? extends Particle>> supports() {
+		return Pair.of(inputParticleClass, outputParticleClass);
 	}
 
 	@Override

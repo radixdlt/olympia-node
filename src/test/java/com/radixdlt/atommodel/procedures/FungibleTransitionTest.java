@@ -146,6 +146,6 @@ public class FungibleTransitionTest {
 			(a, b) -> true, (a, b) -> Result.success()
 		);
 
-		assertThat(procedure.supports()).doesNotContain(Pair.of(Fungible2.class, Fungible.class));
+		assertThat(procedure.supports()).isNotEqualTo(Pair.of(Fungible2.class, Fungible.class));
 	}
 }
