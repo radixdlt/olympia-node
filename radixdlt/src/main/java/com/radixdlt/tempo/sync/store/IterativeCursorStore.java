@@ -3,6 +3,7 @@ package com.radixdlt.tempo.sync.store;
 import com.radixdlt.common.EUID;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.tempo.Store;
 import com.radixdlt.tempo.exceptions.TempoException;
 import com.radixdlt.tempo.sync.IterativeCursor;
 import com.sleepycat.je.Database;
@@ -22,7 +23,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-public final class IterativeCursorStore {
+public final class IterativeCursorStore implements Store {
 	private static final Logger logger = Logging.getLogger("Sync.Store");
 
 	private final Supplier<DatabaseEnvironment> dbEnv;
@@ -44,6 +45,7 @@ public final class IterativeCursorStore {
 		throw new TempoException(message, cause);
 	}
 
+	@Override
 	public void open() {
 		DatabaseConfig primaryConfig = new DatabaseConfig();
 		primaryConfig.setAllowCreate(true);
@@ -61,6 +63,7 @@ public final class IterativeCursorStore {
 		}
 	}
 
+	@Override
 	public void reset() {
 		Transaction transaction = null;
 		try {
@@ -87,6 +90,7 @@ public final class IterativeCursorStore {
 		}
 	}
 
+	@Override
 	public void close() {
 		if (this.cursors != null) {
 			this.cursors.close();

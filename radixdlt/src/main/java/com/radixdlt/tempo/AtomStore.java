@@ -15,7 +15,7 @@ import java.util.Set;
 /**
  * An entry-point for manipulating the state of a Tempo ledger.
  */
-public interface AtomStore {
+public interface AtomStore extends Store {
 	/**
 	 * Checks whether the given {@link AID} is contained in this store
 	 * @param aid The {@link AID}
@@ -70,21 +70,6 @@ public interface AtomStore {
 	LedgerCursor search(LedgerCursor.Type type, LedgerIndex index, LedgerSearchMode mode);
 
 	Pair<ImmutableList<AID>, IterativeCursor> getNext(IterativeCursor iterativeCursor, int limit, ShardSpace shardSpace);
-
-	/**
-	 * Resets this store and removes all contents.
-	 */
-	void reset();
-
-	/**
-	 * Opens this store and underlying resources.
-	 */
-	void open();
-
-	/**
-	 * Closes this store and underlying resources.
-	 */
-	void close();
 
 	/**
 	 * Gets a read-only view of this atom store.
