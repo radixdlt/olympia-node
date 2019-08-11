@@ -9,13 +9,15 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
+import com.radixdlt.tempo.exceptions.TempoException;
+import org.radix.exceptions.ValidationException;
 import org.radix.time.TemporalProof;
 
 import java.util.Objects;
 import java.util.Set;
 
 @SerializerId2("tempo.atom")
-public class TempoAtom implements Atom {
+public final class TempoAtom implements Atom {
 	// Placeholder for the serializer ID
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(DsonOutput.Output.ALL)
@@ -86,6 +88,23 @@ public class TempoAtom implements Atom {
 		}
 
 		return this.temporalProof;
+	}
+
+	public TempoAtom aggregate(TemporalProof temporalProof) {
+		TemporalProof aggregated = new TemporalProof(this.aid, getTemporalProof().getVertices());
+		try {
+			// TODO make TP.merge operate on two immutable tps
+			aggregated.merge(temporalProof);
+			return new TempoAtom(
+				this.content,
+				this.aid,
+				this.timestamp,
+				this.shards,
+				aggregated
+			);
+		} catch (ValidationException e) {
+			throw new TempoException("Error while aggregating temporal proof", e);
+		}
 	}
 
 	@Override

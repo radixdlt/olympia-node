@@ -2,7 +2,6 @@ package com.radixdlt.tempo.store;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.radixdlt.Atom;
 import com.radixdlt.common.AID;
@@ -18,6 +17,7 @@ import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.tempo.AtomStore;
 import com.radixdlt.tempo.AtomStoreView;
 import com.radixdlt.tempo.TempoAtom;
+import com.radixdlt.tempo.TemporalProofStore;
 import com.radixdlt.tempo.exceptions.TempoException;
 import com.radixdlt.tempo.sync.IterativeCursor;
 import com.radixdlt.utils.Longs;
@@ -37,13 +37,13 @@ import com.sleepycat.je.Transaction;
 import com.sleepycat.je.TransactionConfig;
 import com.sleepycat.je.UniqueConstraintException;
 import org.bouncycastle.util.Arrays;
-import org.bouncycastle.util.encoders.Hex;
 import org.radix.database.DatabaseEnvironment;
 import org.radix.database.exceptions.DatabaseException;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.shards.ShardRange;
 import org.radix.shards.ShardSpace;
+import org.radix.time.TemporalProof;
 import org.radix.time.TemporalVertex;
 import org.radix.universe.system.LocalSystem;
 import org.radix.utils.SystemProfiler;
@@ -75,12 +75,13 @@ public class TempoAtomStore implements AtomStore {
 	private final LocalSystem localSystem;
 	private final Supplier<DatabaseEnvironment> dbEnv;
 	private final AtomStoreViewAdapter view;
+
 	private final Map<AID, TempoAtomIndices> currentIndices = new ConcurrentHashMap<>();
 
 	private Database atoms; // TempoAtoms by primary keys (logical clock + AID bytes, no prefixes)
 	private SecondaryDatabase uniqueIndices; // TempoAtoms by secondary unique indices (with prefixes)
 	private SecondaryDatabase duplicatedIndices; // TempoAtoms by secondary duplicate indices (with prefixes)
-	private Database atomIndices; // TempoAtomIndices by AID bytes (without prefixes)
+	private Database atomIndices; // TempoAtomIndices by same primary keys
 
 	public TempoAtomStore(Serialization serialization, SystemProfiler profiler, LocalSystem localSystem, Supplier<DatabaseEnvironment> dbEnv) {
 		this.serialization = Objects.requireNonNull(serialization, "serialization is required");
@@ -319,7 +320,7 @@ public class TempoAtomStore implements AtomStore {
 			throw e;
 		} catch (Exception e) {
 			transaction.abort();
-			fail("Replace of '" + aids + "' with atom '" + atom.getAID() + "' failed", e);
+			fail("Replace of atoms '" + aids + "' with atom '" + atom.getAID() + "' failed", e);
 		} finally {
 			profiler.incrementFrom("ATOM_STORE:REPLACE", start);
 		}
@@ -346,8 +347,7 @@ public class TempoAtomStore implements AtomStore {
 			}
 
 			DatabaseEntry indicesData = new DatabaseEntry(serialization.toDson(indices, Output.PERSIST));
-			DatabaseEntry key = new DatabaseEntry(aidBytes);
-			status = this.atomIndices.putNoOverwrite(transaction, key, indicesData);
+			status = this.atomIndices.putNoOverwrite(transaction, pKey, indicesData);
 			if (status != OperationStatus.SUCCESS) {
 				fail("Internal error, atom indices write failed with status " + status);
 			}
@@ -387,17 +387,25 @@ public class TempoAtomStore implements AtomStore {
 	}
 
 	private boolean doDelete(AID aid, Transaction transaction) throws SerializationException {
-		DatabaseEntry key = new DatabaseEntry(aid.getBytes());
+		DatabaseEntry key = new DatabaseEntry(LedgerIndex.from(ATOM_INDEX_PREFIX, aid.getBytes()));
+		DatabaseEntry pKey = new DatabaseEntry();
 		DatabaseEntry value = new DatabaseEntry();
 
-		OperationStatus status = atomIndices.get(transaction, key, value, LockMode.DEFAULT);
+		OperationStatus status = uniqueIndices.get(transaction, key, pKey, value, LockMode.RMW);
+		if (status != OperationStatus.SUCCESS) {
+			fail("Getting primary key of atom '" + aid + "' failed with status " + status);
+		}
+
+		status = atomIndices.get(transaction, pKey, value, LockMode.DEFAULT);
 		if (status != OperationStatus.SUCCESS) {
 			fail("Getting indices of atom '" + aid + "' failed with status " + status);
 		}
-		atomIndices.delete(transaction, key);
-
+		status = atomIndices.delete(transaction, pKey);
+		if (status != OperationStatus.SUCCESS) {
+			fail("Deleting indices of atom '" + aid + "' failed with status " + status);
+		}
+		
 		TempoAtomIndices indices = serialization.fromDson(value.getData(), TempoAtomIndices.class);
-		DatabaseEntry pKey = new DatabaseEntry(Arrays.concatenate(Longs.toByteArray(indices.getLogicalClock()), aid.getBytes()));
 		try {
 			currentIndices.put(aid, indices);
 			return atoms.delete(transaction, pKey) == OperationStatus.SUCCESS;
