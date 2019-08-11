@@ -19,7 +19,6 @@ import java.util.function.Function;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
-import com.radixdlt.atomos.mapper.ParticleToShardableMapper;
 import com.radixdlt.atomos.mapper.ParticleToShardablesMapper;
 import com.radixdlt.constraintmachine.ConstraintMachine.Builder;
 import com.radixdlt.constraintmachine.ConstraintMachine;
@@ -65,7 +64,10 @@ public final class CMAtomOS {
 
 		constraintScrypt.main(new SysCalls() {
 			@Override
-			public <T extends Particle> void registerParticle(Class<T> particleClass, ParticleToShardablesMapper<T> mapper) {
+			public <T extends Particle> void registerParticle(
+				Class<T> particleClass,
+				ParticleToShardablesMapper<T> mapper
+			) {
 				if (scryptParticleClasses.containsKey(particleClass) || particleMapper.containsKey(particleClass)) {
 					throw new IllegalStateException("Particle " + particleClass + " is already registered");
 				}
@@ -74,8 +76,14 @@ public final class CMAtomOS {
 			}
 
 			@Override
-			public <T extends Particle> void registerParticle(Class<T> particleClass, ParticleToShardableMapper<T> mapper) {
-				registerParticle(particleClass, (T particle) -> Collections.singleton(mapper.getDestination(particle)));
+			public <T extends Particle> void registerParticle(
+				Class<T> particleClass,
+				Function<T, RadixAddress> mapper,
+				Function<T, Result> staticCheck
+			) {
+				registerParticle(particleClass, (T particle) -> Collections.singleton(mapper.apply(particle)));
+				particleStaticValidation.merge(particleClass, p -> staticCheck.apply((T) p),
+					(old, next) -> p -> Result.combine(old.apply(p), next.apply(p)));
 			}
 
 			@Override

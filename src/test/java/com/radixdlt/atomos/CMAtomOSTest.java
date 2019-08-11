@@ -64,7 +64,7 @@ public class CMAtomOSTest {
 		CMAtomOS os = new CMAtomOS(() -> mock(Universe.class), () -> 0);
 		assertThatThrownBy(() ->
 			os.load(syscalls -> {
-				syscalls.registerParticle(TestParticle0.class, (TestParticle0 p) -> mock(RadixAddress.class));
+				syscalls.registerParticle(TestParticle0.class, (TestParticle0 p) -> mock(RadixAddress.class), t -> Result.success());
 				syscalls.on(TestParticle1.class);
 			})
 		).isInstanceOf(IllegalStateException.class);
@@ -74,7 +74,7 @@ public class CMAtomOSTest {
 	public void when_running_constraint_scrypt_with_known_particle_identifier__exception_is_not_thrown() {
 		CMAtomOS os = new CMAtomOS(() -> mock(Universe.class), () -> 0);
 		os.load(syscalls -> {
-			syscalls.registerParticle(TestParticle0.class, (TestParticle0 p) -> mock(RadixAddress.class));
+			syscalls.registerParticle(TestParticle0.class, (TestParticle0 p) -> mock(RadixAddress.class), t -> Result.success());
 			syscalls.on(TestParticle0.class);
 		});
 	}
@@ -83,7 +83,7 @@ public class CMAtomOSTest {
 	public void when_adding_constraints_on_particle_registered_in_another_scrypt__exception_is_thrown() {
 		CMAtomOS os = new CMAtomOS(() -> mock(Universe.class), () -> 0);
 		os.load(syscalls -> {
-			syscalls.registerParticle(TestParticle0.class, (TestParticle0 p) -> mock(RadixAddress.class));
+			syscalls.registerParticle(TestParticle0.class, (TestParticle0 p) -> mock(RadixAddress.class), t -> Result.success());
 		});
 		assertThatThrownBy(() ->
 			os.load(syscalls -> {
@@ -98,12 +98,12 @@ public class CMAtomOSTest {
 		TransitionProcedure procedure = mock(TransitionProcedure.class);
 		when(procedure.supports()).thenReturn(ImmutableSet.of(Pair.of(TestParticle0.class, TestParticle0.class)));
 		os.load(syscalls -> {
-			syscalls.registerParticle(TestParticle0.class, (TestParticle0 p) -> mock(RadixAddress.class));
+			syscalls.registerParticle(TestParticle0.class, (TestParticle0 p) -> mock(RadixAddress.class), t -> Result.success());
 			syscalls.newTransition(procedure);
 		});
 		assertThatThrownBy(() ->
 			os.load(syscalls -> {
-				syscalls.registerParticle(TestParticle1.class, (TestParticle1 p) -> mock(RadixAddress.class));
+				syscalls.registerParticle(TestParticle1.class, (TestParticle1 p) -> mock(RadixAddress.class), t -> Result.success());
 				syscalls.newTransition(procedure);
 			})
 		).isInstanceOf(IllegalStateException.class);

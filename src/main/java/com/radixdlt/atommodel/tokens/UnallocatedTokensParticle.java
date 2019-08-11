@@ -58,8 +58,8 @@ public class UnallocatedTokensParticle extends Particle {
 		this.tokenPermissions = ImmutableMap.copyOf(tokenPermissions);
 	}
 
-	public Set<RadixAddress> getAddresses() {
-		return Collections.singleton(this.tokenDefinitionReference.getAddress());
+	public RadixAddress getAddress() {
+		return this.tokenDefinitionReference.getAddress();
 	}
 
 	public RRI getTokDefRef() {

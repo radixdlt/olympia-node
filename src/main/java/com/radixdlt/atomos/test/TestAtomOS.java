@@ -1,9 +1,9 @@
 package com.radixdlt.atomos.test;
 
 import com.radixdlt.atomos.RRI;
+import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.atomos.Result;
-import com.radixdlt.atomos.mapper.ParticleToShardableMapper;
 import com.radixdlt.atomos.mapper.ParticleToShardablesMapper;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.common.Pair;
@@ -33,8 +33,12 @@ public class TestAtomOS implements SysCalls {
 	}
 
 	@Override
-	public <T extends Particle> void registerParticle(Class<T> particleClass, ParticleToShardableMapper<T> mapper) {
-		// Not implemented for the test AtomOS for the time being as it is not used to test any functionality.
+	public <T extends Particle> void registerParticle(
+		Class<T> particleClass,
+		Function<T, RadixAddress> mapper,
+		Function<T, Result> staticCheck
+	) {
+		particleClassConstraints.add(new Pair<>(particleClass, (p, m) -> staticCheck.apply((T) p)));
 	}
 
 	@Override

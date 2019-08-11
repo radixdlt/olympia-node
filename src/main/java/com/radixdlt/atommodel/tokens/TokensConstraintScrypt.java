@@ -31,11 +31,10 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 
 	@Override
 	public void main(SysCalls os) {
-		os.registerParticle(TokenDefinitionParticle.class, TokenDefinitionParticle::getAddress);
-
-		// Symbol constraints
-		os.on(TokenDefinitionParticle.class)
-			.require(t -> {
+		os.registerParticle(
+			TokenDefinitionParticle.class,
+			TokenDefinitionParticle::getAddress,
+			t -> {
 				final Result symbolResult;
 				final String symbol = t.getSymbol();
 				if (symbol == null) {
@@ -84,11 +83,13 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 				}
 
 				return Result.combine(symbolResult, descriptionResult, permissionsResult, iconResult);
-			});
+			}
+		);
 
 		os.registerParticle(
 			UnallocatedTokensParticle.class,
-			UnallocatedTokensParticle::getAddresses
+			UnallocatedTokensParticle::getAddress,
+			u -> Result.of(!u.getAmount().isZero(), "Amount cannot be zero")
 		);
 
 		// Require Token Definition to be created with unallocated tokens of max supply
@@ -102,18 +103,27 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 				&& Objects.equals(unallocated.getTokenPermissions(), tokDef.getTokenPermissions())
 		);
 
-		os.on(UnallocatedTokensParticle.class)
-			.require(u -> Result.of(!u.getAmount().isZero(), "Amount cannot be zero"));
-
 		os.registerParticle(
 			TransferrableTokensParticle.class,
-			TransferrableTokensParticle::getAddress
+			TransferrableTokensParticle::getAddress,
+			t -> {
+				if (t.getAmount() == null) {
+					return Result.error("amount must not be null");
+				}
+				if (t.getAmount().isZero()) {
+					return Result.error("amount must not be zero");
+				}
+				if (t.getGranularity() == null) {
+					return Result.error("granularity must not be null");
+				}
+				if (t.getGranularity().isZero() || !t.getAmount().remainder(t.getGranularity()).isZero()) {
+					return Result.error("amount " + t.getAmount() + " does not fit granularity " + t.getGranularity());
+				}
+
+				return Result.success();
+			}
 		);
 
-		os.on(TransferrableTokensParticle.class)
-			.require(u -> Result.of(!u.getAmount().isZero(), "Amount cannot be zero"));
-
-		requireAmountFits(os, TransferrableTokensParticle.class, TransferrableTokensParticle::getAmount, TransferrableTokensParticle::getGranularity);
 
 		os.newTransition(new FungibleTransition<>(
 			UnallocatedTokensParticle.class, UnallocatedTokensParticle::getAmount,
@@ -151,33 +161,6 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 					&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions()),
 			(from, meta) -> from.getTokenPermission(TokenTransition.BURN).check(from.getTokDefRef(), meta)
 		));
-	}
-
-	private static <T extends Particle> void requireAmountFits(
-		SysCalls os,
-		Class<T> cls,
-		Function<T, UInt256> particleToAmountMapper,
-		Function<T, UInt256> particleToGranularityMapper
-	) {
-		os.on(cls)
-			.require(particle -> {
-				UInt256 amount = particleToAmountMapper.apply(particle);
-				if (amount == null) {
-					return Result.error("amount must not be null");
-				}
-				if (amount.isZero()) {
-					return Result.error("amount must not be zero");
-				}
-				UInt256 granularity = particleToGranularityMapper.apply(particle);
-				if (granularity == null) {
-					return Result.error("granularity must not be null");
-				}
-				if (granularity.isZero() || !amount.remainder(granularity).isZero()) {
-					return Result.error("amount " + amount + " does not fit granularity " + granularity);
-				}
-
-				return Result.success();
-			});
 	}
 
 	private static Result checkSigned(RadixAddress fromAddress, AtomMetadata metadata) {

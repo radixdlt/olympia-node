@@ -1,6 +1,5 @@
 package com.radixdlt.atomos;
 
-import com.radixdlt.atomos.mapper.ParticleToShardableMapper;
 import com.radixdlt.atomos.mapper.ParticleToShardablesMapper;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.constraintmachine.TransitionProcedure;
@@ -17,7 +16,10 @@ public interface SysCalls {
 	 * @param particleClass The particle class
 	 * @param mapper Mapping to the destinations a particle will be stored in
 	 */
-	<T extends Particle> void registerParticle(Class<T> particleClass, ParticleToShardablesMapper<T> mapper);
+	<T extends Particle> void registerParticle(
+		Class<T> particleClass,
+		ParticleToShardablesMapper<T> mapper
+	);
 
 	/**
 	 * Registers a Particle with a given identifier.
@@ -25,8 +27,13 @@ public interface SysCalls {
 	 * @param particleClass The particle class
 	 * @param mapper Mapping to a destination the particle will be stored in
 	 */
-	<T extends Particle> void registerParticle(Class<T> particleClass, ParticleToShardableMapper<T> mapper);
+	<T extends Particle> void registerParticle(
+		Class<T> particleClass,
+		Function<T, RadixAddress> mapper,
+		Function<T, Result> staticCheck
+	);
 
+	// TODO: move constraints into registerParticle
 
 	/**
 	 * System call endpoint which allows an atom model application to program constraints
@@ -57,6 +64,7 @@ public interface SysCalls {
 		 */
 		void require(Function<T, Result> constraint);
 	}
+
 	/**
 	 * Creates a new resource type based on a particle. The resource type can be allocated by consuming
 	 * an RRI which then becomes the resource's global identifier.
