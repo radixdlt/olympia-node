@@ -37,10 +37,10 @@ public class FungibleTransition<T extends Particle, U extends Particle> implemen
 		}
 
 		UInt256 inputAmount = inputData.get() == null
-			? inputAmountMapper.apply((T) inputParticle)
+			? inputAmountMapper.apply(inputParticle)
 			: (UInt256) inputData.get();
 		UInt256 outputAmount = outputData.get() == null
-			? outputAmountMapper.apply((U) outputParticle)
+			? outputAmountMapper.apply(outputParticle)
 			: (UInt256) outputData.get();
 
 		int compare = inputAmount.compareTo(outputAmount);

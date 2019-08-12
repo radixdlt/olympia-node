@@ -6,12 +6,15 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 
-public class RRIResourceCombinedDependentCreation<T extends Particle, U extends Particle> implements TransitionProcedure<RRIParticle, U> {
+/**
+ * Transition definition from RRI to the second of two combined particles
+ */
+public final class RRIResourceCombinedDependentCreation<T extends Particle, U extends Particle> implements TransitionProcedure<RRIParticle, U> {
 	private final Class<T> particleClass0;
 	private final Function<U, RRI> rriMapper1;
 	private final BiPredicate<T, U> combinedCheck;
 
-	public RRIResourceCombinedDependentCreation(
+	RRIResourceCombinedDependentCreation(
 		Class<T> particleClass0,
 		Function<U, RRI> rriMapper1,
 		BiPredicate<T, U> combinedCheck

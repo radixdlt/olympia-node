@@ -12,6 +12,9 @@ import java.util.Set;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 
+/**
+ * SysCall environment for CMAtomOS Constraint Scrypts.
+ */
 final class ConstraintScryptEnv implements SysCalls {
 	private final Map<Class<? extends Particle>, ParticleDefinition<Particle>> particleDefinitions;
 	private final Map<Class<? extends Particle>, ParticleDefinition<Particle>> scryptParticleDefinitions;

@@ -9,7 +9,6 @@ import com.radixdlt.constraintmachine.WitnessValidator;
 import com.radixdlt.store.CMStore;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -45,8 +44,7 @@ public final class CMAtomOS {
 	private AtomKernelCompute atomKernelCompute;
 	private final Supplier<Universe> universeSupplier;
 	private final LongSupplier timestampSupplier;
-
-	private final Map<Class<? extends Particle>, ParticleDefinition<Particle>> particleDefinitions = new LinkedHashMap<>();
+	private final Map<Class<? extends Particle>, ParticleDefinition<Particle>> particleDefinitions = new HashMap<>();
 	private final ImmutableMap.Builder<Pair<Class<? extends Particle>, Class<? extends Particle>>, TransitionProcedure<Particle, Particle>>
 		proceduresBuilder = new ImmutableMap.Builder<>();
 	private final ImmutableMap.Builder<Pair<Class<? extends Particle>, Class<? extends Particle>>, WitnessValidator<Particle, Particle>>
@@ -61,14 +59,6 @@ public final class CMAtomOS {
 
 		// RRI particle is a low level particle managed by the OS used for the management of all other resources
 		this.particleDefinitions.put(RRIParticle.class, RRI_PARTICLE_DEF);
-	}
-
-	private static <T extends Particle, U extends Particle> TransitionProcedure<Particle, Particle> toGeneric(TransitionProcedure<T, U> procedure) {
-		return (in, inData, out, outData) -> procedure.execute((T) in, inData, (U) out, outData);
-	}
-
-	private static <T extends Particle, U extends Particle> WitnessValidator<Particle, Particle> toGeneric(WitnessValidator<T, U> validator) {
-		return (res, in, out, meta) -> validator.validate(res, (T) in, (U) out, meta);
 	}
 
 	public void load(ConstraintScrypt constraintScrypt) {

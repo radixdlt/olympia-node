@@ -5,10 +5,13 @@ import com.radixdlt.constraintmachine.TransitionProcedure;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
-public class RRIResourceCombinedPrimaryCreation<T extends Particle, U extends Particle> implements TransitionProcedure<RRIParticle, T> {
+/**
+ * Transition definition from RRI to the first of two combined particles
+ */
+public final class RRIResourceCombinedPrimaryCreation<T extends Particle, U extends Particle> implements TransitionProcedure<RRIParticle, T> {
 	private final Function<T, RRI> rriMapper0;
 
-	public RRIResourceCombinedPrimaryCreation(Function<T, RRI> rriMapper0) {
+	RRIResourceCombinedPrimaryCreation(Function<T, RRI> rriMapper0) {
 		this.rriMapper0 = rriMapper0;
 	}
 
