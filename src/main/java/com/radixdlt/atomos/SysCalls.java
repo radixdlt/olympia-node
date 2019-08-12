@@ -81,11 +81,14 @@ public interface SysCalls {
 
 	/**
 	 * Creates a new resource globally identifiable by an RRI.
+	 * @param outputClass particle to be creating from RRI must be a particle registered as rri capable
 	 */
 	<T extends Particle> void createTransitionFromRRI(Class<T> outputClass);
 
 	/**
 	 * Creates a new resource globally identifiable by an RRI.
+	 * @param outputClass0 primary particle to be created from RRI, must be a particle registered as rri capable
+	 * @param outputClass1 secondary particle to be created from RRI, must be a particle registered as rri capable
 	 */
 	<T extends Particle, U extends Particle> void createTransitionFromRRICombined(
 		Class<T> outputClass0,

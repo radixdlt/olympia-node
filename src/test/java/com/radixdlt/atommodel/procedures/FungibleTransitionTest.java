@@ -2,7 +2,6 @@ package com.radixdlt.atommodel.procedures;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.radixdlt.atomos.Result;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.TransitionProcedure.ProcedureResult;
