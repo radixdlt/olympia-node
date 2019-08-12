@@ -105,7 +105,7 @@ public final class CMAtomOS {
 			}
 
 			@Override
-			public <T extends Particle> void createTransitionFromRRI(
+			public <T extends Particle> void createRRIType(
 				Class<T> particleClass,
 				Function<T, RRI> rriMapper
 			) {
@@ -123,7 +123,7 @@ public final class CMAtomOS {
 			}
 
 			@Override
-			public <T extends Particle, U extends Particle> void createTransitionFromRRICombined(
+			public <T extends Particle, U extends Particle> void createCombinedRRIType(
 				Class<T> particleClass0,
 				Function<T, RRI> rriMapper0,
 				Class<U> particleClass1,

@@ -47,12 +47,12 @@ public class TestAtomOS implements SysCalls {
 	}
 
 	@Override
-	public <T extends Particle> void createTransitionFromRRI(Class<T> particleClass, Function<T, RRI> indexer) {
+	public <T extends Particle> void createRRIType(Class<T> particleClass, Function<T, RRI> indexer) {
 		resources.put(particleClass, p -> indexer.apply((T) p));
 	}
 
 	@Override
-	public <T extends Particle, U extends Particle> void createTransitionFromRRICombined(
+	public <T extends Particle, U extends Particle> void createCombinedRRIType(
 		Class<T> particleClass0,
 		Function<T, RRI> rriMapper0,
 		Class<U> particleClass1,

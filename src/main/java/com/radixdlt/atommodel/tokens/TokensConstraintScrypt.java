@@ -92,7 +92,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 		);
 
 		// Require Token Definition to be created with unallocated tokens of max supply
-		os.createTransitionFromRRICombined(
+		os.createCombinedRRIType(
 			TokenDefinitionParticle.class,
 			TokenDefinitionParticle::getRRI,
 			UnallocatedTokensParticle.class,
@@ -123,7 +123,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			}
 		);
 
-
+		// Define mint, transfer, burn transitions
 		os.createTransition(
 			UnallocatedTokensParticle.class, UnallocatedTokensParticle.class,
 			new FungibleTransition<>(

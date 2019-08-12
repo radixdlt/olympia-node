@@ -36,6 +36,17 @@ public interface SysCalls {
 		Function<T, Result> staticCheck
 	);
 
+	/**
+	 * Defines a valid transition in the constraint machine as well as the
+	 * requirements for executing that transition.
+	 *
+	 * @param inputClass class of the input particle
+	 * @param outputClass class of the output particle
+	 * @param procedure procedure which gets executed on the constraint machine
+	 * @param witnessValidator validation which defines who can execute this transition
+	 * @param <T> input particle type
+	 * @param <U> output particle type
+	 */
 	<T extends Particle, U extends Particle> void createTransition(
 		Class<T> inputClass,
 		Class<U> outputClass,
@@ -44,19 +55,17 @@ public interface SysCalls {
 	);
 
 	/**
-	 * Creates a new resource type based on a particle. The resource type can be allocated by consuming
-	 * an RRI which then becomes the resource's global identifier.
+	 * Creates a new resource globally identifiable by an RRI.
 	 */
-	<T extends Particle> void createTransitionFromRRI(
+	<T extends Particle> void createRRIType(
 		Class<T> outputClass,
 		Function<T, RRI> rriMapper
 	);
 
 	/**
-	 * Creates a new resource type based on two particles. The resource type can be allocated by consuming
-	 * an RRI which then becomes the resource's global identifier.
+	 * Creates a new resource globally identifiable by an RRI.
 	 */
-	<T extends Particle, U extends Particle> void createTransitionFromRRICombined(
+	<T extends Particle, U extends Particle> void createCombinedRRIType(
 		Class<T> outputClass0,
 		Function<T, RRI> rriMapper0,
 		Class<U> outputClass1,
