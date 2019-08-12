@@ -27,7 +27,9 @@ public final class MockAccessor {
 			// generate random key / value
 			byte[] keyBytes = new byte[9];
 			byte[] valueBytes = Ints.toByteArray(i);
-			rng.nextBytes(keyBytes);
+			do {
+				rng.nextBytes(keyBytes);
+			} while (keyBytes[0] < 5); // don't use magical prefixes
 			rng.nextBytes(valueBytes);
 
 			LedgerIndex key = new LedgerIndex(keyBytes);
