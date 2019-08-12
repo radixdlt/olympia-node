@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.radixdlt.common.EUID;
 import com.radixdlt.tempo.TempoEpic;
+import com.radixdlt.tempo.TempoStateBundle;
 import com.radixdlt.tempo.peers.PeerSupplier;
 import com.radixdlt.tempo.TempoAction;
 import com.radixdlt.tempo.actions.AcceptPassivePeersAction;
@@ -39,7 +40,7 @@ public class PassivePeersEpic implements TempoEpic {
 	}
 
 	@Override
-	public Stream<TempoAction> epic(TempoAction action) {
+	public Stream<TempoAction> epic(TempoStateBundle bundle, TempoAction action) {
 		if (action instanceof ReselectPassivePeersAction) {
 			// TODO smarter peer selection function, consider sharding, rebalancing etc
 			ImmutableSet<Peer> newPassivePeers = peerSupplier.getPeers().stream()

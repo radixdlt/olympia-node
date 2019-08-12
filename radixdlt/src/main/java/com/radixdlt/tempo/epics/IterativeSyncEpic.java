@@ -6,6 +6,7 @@ import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
 import com.radixdlt.common.Pair;
 import com.radixdlt.tempo.AtomStoreView;
+import com.radixdlt.tempo.TempoStateBundle;
 import com.radixdlt.tempo.sync.IterativeCursor;
 import com.radixdlt.tempo.TempoAction;
 import com.radixdlt.tempo.TempoEpic;
@@ -62,7 +63,7 @@ public class IterativeSyncEpic implements TempoEpic {
 	}
 
 	@Override
-	public Stream<TempoAction> epic(TempoAction action) {
+	public Stream<TempoAction> epic(TempoStateBundle bundle, TempoAction action) {
 		if (action instanceof AcceptPassivePeersAction) {
 			ImmutableSet<Peer> passivePeers = ((AcceptPassivePeersAction) action).getPassivePeers();
 			this.passivePeerNids = passivePeers.stream()

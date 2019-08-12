@@ -21,6 +21,7 @@ import com.radixdlt.tempo.epics.DeliveryEpic;
 import com.radixdlt.tempo.epics.IterativeSyncEpic;
 import com.radixdlt.tempo.epics.MessagingEpic;
 import com.radixdlt.tempo.epics.PassivePeersEpic;
+import com.radixdlt.tempo.exceptions.TempoException;
 import com.radixdlt.tempo.messages.DeliveryRequestMessage;
 import com.radixdlt.tempo.messages.DeliveryResponseMessage;
 import com.radixdlt.tempo.messages.IterativeRequestMessage;
@@ -40,8 +41,11 @@ import org.radix.universe.system.LocalSystem;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
@@ -56,39 +60,82 @@ public final class TempoController {
 	private static final Logger logger = Logging.getLogger("Tempo");
 
 	private static final int FULL_INBOUND_QUEUE_RESCHEDULE_TIME_SECONDS = 1;
-	private static final int TEMPO_EXECUTOR_POOL_COUNT = 4;
+	private static final int TEMPO_EXECUTOR_POOL_COUNT = 1;
 
 	private final BlockingQueue<TempoAtom> inboundAtoms;
 	private final BlockingQueue<TempoAction> actions;
-	private final List<TempoEpic> tempoEpics;
+	private final List<TempoReducer> reducers;
+	private final List<TempoEpic> epics;
 	private final ScheduledExecutorService executor;
+	private final int inboundQueueCapacity;
+	private final int actionsQueueCapacity;
 
 	private TempoController(int inboundQueueCapacity,
 	                        int actionsQueueCapacity,
-	                        List<TempoEpic> tempoEpics,
-	                        List<Function<ImmediateDispatcher, TempoEpic>> tempoEpicBuilders) {
-		this.executor = Executors.newScheduledThreadPool(TEMPO_EXECUTOR_POOL_COUNT, runnable -> new Thread(null, runnable, "Tempo"));
+	                        List<TempoReducer> reducers, List<TempoEpic> epics,
+	                        List<Function<ImmediateDispatcher, TempoEpic>> epicBuilders) {
+		this.inboundQueueCapacity = inboundQueueCapacity;
+		this.actionsQueueCapacity = actionsQueueCapacity;
+
 		this.inboundAtoms = new LinkedBlockingQueue<>(inboundQueueCapacity);
 		this.actions = new LinkedBlockingQueue<>(actionsQueueCapacity);
-		this.tempoEpics = ImmutableList.<TempoEpic>builder()
-			.addAll(tempoEpics)
-			// TODO get rid of tempoEpicBuilders
-			.addAll(tempoEpicBuilders.stream()
+
+		this.executor = Executors.newScheduledThreadPool(TEMPO_EXECUTOR_POOL_COUNT, runnable -> new Thread(null, runnable, "Tempo"));
+		this.reducers = reducers;
+		this.epics = ImmutableList.<TempoEpic>builder()
+			.addAll(epics)
+			// TODO get rid of epicBuilders
+			.addAll(epicBuilders.stream()
 				.map(epicBuilder -> epicBuilder.apply(this::dispatch))
 				.collect(Collectors.toList()))
 			.add(this::internalEpic)
 			.build();
-
-		this.tempoEpics.stream()
+		this.epics.stream()
 			.flatMap(TempoEpic::initialActions)
 			.forEach(this::dispatch);
+
+		Thread tempoDaemon = new Thread(this::run);
+		tempoDaemon.setName("Tempo Daemon");
+		tempoDaemon.setDaemon(true);
+		tempoDaemon.start();
 	}
 
+	// TODO this is a spartanic approach to reactive streams, should be replaced down the line
 	private void run() {
+		TempoStateBundleStore stateStore = new TempoStateBundleStore();
+		reducers.forEach(reducer -> stateStore.put(reducer.stateClass(), reducer.initialState()));
+
 		while (true) {
 			try {
 				TempoAction action = actions.take();
-				this.executor.execute(() -> this.execute(action));
+				if (logger.hasLevel(Logging.TRACE)) {
+					logger.trace("Executing " + action.getClass().getSimpleName());
+				}
+
+				for (TempoReducer reducer : reducers) {
+					try {
+						TempoState currentState = stateStore.get(reducer.stateClass());
+						TempoState nextState = reducer.reduce(currentState, action);
+						stateStore.put(reducer.stateClass(), nextState);
+					} catch (Exception e) {
+						logger.error(String.format("Error while executing %s in reducer %s: '%s'",
+							action.getClass().getSimpleName(), reducer.getClass().getSimpleName(), e.toString()), e);
+					}
+				}
+
+				List<TempoAction> nextActions = epics.stream()
+					.flatMap(epic -> {
+						try {
+							TempoStateBundle bundle = stateStore.bundleFor(epic.requiredState());
+							return epic.epic(bundle, action);
+						} catch (Exception e) {
+							logger.error(String.format("Error while executing %s in epic %s: '%s'",
+								action.getClass().getSimpleName(), epic.getClass().getSimpleName(), e.toString()), e);
+							return Stream.empty();
+						}
+					})
+					.collect(Collectors.toList());
+				nextActions.forEach(this::dispatch);
 			} catch (InterruptedException e) {
 				// exit if interrupted
 				Thread.currentThread().interrupt();
@@ -97,29 +144,10 @@ public final class TempoController {
 		}
 	}
 
-	private void execute(TempoAction action) {
-		if (logger.hasLevel(Logging.TRACE)) {
-			logger.trace("Executing " + action.getClass().getSimpleName());
-		}
-
-		List<TempoAction> nextActions = tempoEpics.stream()
-			.flatMap(epic -> {
-				try {
-					return epic.epic(action);
-				} catch (Exception e) {
-					logger.error(String.format("Error while executing %s in %s: '%s'",
-						action.getClass().getSimpleName(), epic.getClass().getSimpleName(), e.toString()), e);
-					return Stream.empty();
-				}
-			})
-			.collect(Collectors.toList());
-		nextActions.forEach(this::dispatch);
-	}
-
 	public interface ImmediateDispatcher {
-
 		void dispatch(TempoAction action);
 	}
+
 	private void delay(TempoAction action, long delay, TimeUnit unit) {
 		// TODO consider cancellation when shutdown/reset
 		this.executor.schedule(() -> dispatch(action), delay, unit);
@@ -137,7 +165,7 @@ public final class TempoController {
 		}
 	}
 
-	private Stream<TempoAction> internalEpic(TempoAction action) {
+	private Stream<TempoAction> internalEpic(TempoStateBundle state, TempoAction action) {
 		if (action instanceof ReceiveAtomAction) {
 			// try to add to inbound queue
 			TempoAtom atom = ((ReceiveAtomAction) action).getAtom();
@@ -187,6 +215,41 @@ public final class TempoController {
 		this.actions.clear();
 	}
 
+	private static class TempoStateBundleStore {
+		private final Map<Class<? extends TempoState>, TempoState> states;
+
+		private TempoStateBundleStore() {
+			this.states = new HashMap<>();
+		}
+
+		private void put(Class<? extends TempoState> stateClass, TempoState state) {
+			this.states.put(stateClass, state);
+		}
+
+		private <T extends TempoState> T get(Class<T> stateClass) {
+			return (T) states.get(stateClass);
+		}
+
+		TempoStateBundle bundleFor(Set<Class<? extends TempoState>> requiredStates) {
+			Map<Class<? extends TempoState>, TempoState> bundledStates = new HashMap<>();
+			for (Class<? extends TempoState> requiredState : requiredStates) {
+				TempoState state = states.get(requiredState);
+				if (state == null) {
+					throw new TempoException("Required state '" + requiredState.getSimpleName() + "' is not available");
+				} else {
+					bundledStates.put(requiredState, state);
+				}
+			}
+
+			return new TempoStateBundle() {
+				@Override
+				public <T extends TempoState> T get(Class<T> state) {
+					return (T) bundledStates.get(state);
+				}
+			};
+		}
+	}
+
 	public static Builder defaultBuilder(AtomStoreView storeView) {
 		LocalSystem localSystem = LocalSystem.getInstance();
 		Messaging messager = Messaging.getInstance();
@@ -210,7 +273,7 @@ public final class TempoController {
 				.addOutbound(SendIterativeResponseAction.class, SendIterativeResponseAction::toMessage, SendIterativeResponseAction::getPeer)
 				.addInbound("tempo.sync.push", PushMessage.class, ReceivePushAction::from)
 				.addOutbound(SendPushAction.class, SendPushAction::toMessage, SendPushAction::getPeer)
-				.build(controller::dispatch));
+				.build(controller));
 		if (Modules.get(RuntimeProperties.class).get("tempo2.sync.active", true)) {
 			builder.addEpic(ActiveSyncEpic.builder()
 				.localSystem(localSystem)
@@ -241,6 +304,7 @@ public final class TempoController {
 		private int inboundQueueCapacity = 1 << 14;
 		private int syncActionsQueueCapacity = 1 << 16;
 		private final List<TempoEpic> epics = new ArrayList<>();
+		private final List<TempoReducer> reducers = new ArrayList<>();
 		private final List<Function<ImmediateDispatcher, TempoEpic>> epicBuilders = new ArrayList<>();
 
 		private Builder() {
@@ -251,7 +315,7 @@ public final class TempoController {
 			return this;
 		}
 
-		public Builder syncActionQueueCapacity(int capacity) {
+		public Builder actionQueueCapacity(int capacity) {
 			this.syncActionsQueueCapacity = capacity;
 			return this;
 		}
@@ -263,7 +327,14 @@ public final class TempoController {
 		}
 
 		public Builder addEpicBuilder(Function<ImmediateDispatcher, TempoEpic> epicBuilder) {
+			Objects.requireNonNull(epicBuilder, "epicBuilder is required");
 			this.epicBuilders.add(epicBuilder);
+			return this;
+		}
+
+		public Builder addReducer(TempoReducer reducer) {
+			Objects.requireNonNull(reducer, "epic is required");
+			this.reducers.add(reducer);
 			return this;
 		}
 
@@ -271,6 +342,7 @@ public final class TempoController {
 			return new TempoController(
 				inboundQueueCapacity,
 				syncActionsQueueCapacity,
+				reducers,
 				epics,
 				epicBuilders
 			);

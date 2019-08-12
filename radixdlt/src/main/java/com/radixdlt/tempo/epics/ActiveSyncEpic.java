@@ -1,6 +1,7 @@
 package com.radixdlt.tempo.epics;
 
 import com.radixdlt.tempo.TempoAtom;
+import com.radixdlt.tempo.TempoStateBundle;
 import com.radixdlt.tempo.peers.PeerSupplier;
 import com.radixdlt.tempo.TempoAction;
 import com.radixdlt.tempo.TempoEpic;
@@ -27,7 +28,7 @@ public class ActiveSyncEpic implements TempoEpic {
 	}
 
 	@Override
-	public Stream<TempoAction> epic(TempoAction action) {
+	public Stream<TempoAction> epic(TempoStateBundle bundle, TempoAction action) {
 		if (action instanceof AcceptAtomAction) {
 			TempoAtom atom = ((AcceptAtomAction) action).getAtom();
 			TemporalVertex temporalVertex = atom.getTemporalProof().getVertexByNID(localSystem.getNID());

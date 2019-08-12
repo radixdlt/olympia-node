@@ -6,6 +6,7 @@ import com.radixdlt.tempo.AtomStoreView;
 import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.TempoAction;
 import com.radixdlt.tempo.TempoEpic;
+import com.radixdlt.tempo.TempoStateBundle;
 import com.radixdlt.tempo.actions.HandleFailedDeliveryAction;
 import com.radixdlt.tempo.actions.ReceiveAtomAction;
 import com.radixdlt.tempo.actions.ReceiveDeliveryRequestAction;
@@ -43,7 +44,7 @@ public class DeliveryEpic implements TempoEpic {
 	}
 
 	@Override
-	public Stream<TempoAction> epic(TempoAction action) {
+	public Stream<TempoAction> epic(TempoStateBundle bundle, TempoAction action) {
 		if (action instanceof ReceiveDeliveryRequestAction) {
 			// collect atoms for delivery request
 			ImmutableList<AID> requestedAids = ((ReceiveDeliveryRequestAction) action).getAids();

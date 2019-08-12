@@ -1,10 +1,12 @@
 package com.radixdlt.tempo.epics;
 
 import com.google.common.collect.ImmutableMap;
+import com.radixdlt.tempo.TempoController;
+import com.radixdlt.tempo.TempoController.ImmediateDispatcher;
+import com.radixdlt.tempo.TempoStateBundle;
 import com.radixdlt.tempo.exceptions.TempoException;
 import com.radixdlt.tempo.TempoAction;
 import com.radixdlt.tempo.TempoEpic;
-import com.radixdlt.tempo.sync.TempoAtomSynchroniser.ImmediateDispatcher;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.network.Network;
@@ -42,7 +44,7 @@ public class MessagingEpic implements TempoEpic {
 	}
 
 	@Override
-	public Stream<TempoAction> epic(TempoAction action) {
+	public Stream<TempoAction> epic(TempoStateBundle bundle, TempoAction action) {
 		if (outboundMessageMappers.containsKey(action.getClass())) {
 			Message message = outboundMessageMappers.get(action.getClass()).apply(action);
 			Peer peer = outboundPeerMappers.get(action.getClass()).apply(action);
