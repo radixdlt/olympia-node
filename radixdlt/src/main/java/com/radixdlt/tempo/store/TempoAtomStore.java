@@ -3,6 +3,7 @@ package com.radixdlt.tempo.store;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import com.google.common.primitives.UnsignedBytes;
 import com.radixdlt.Atom;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.Pair;
@@ -20,6 +21,7 @@ import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.TemporalProofStore;
 import com.radixdlt.tempo.exceptions.TempoException;
 import com.radixdlt.tempo.sync.IterativeCursor;
+import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.Longs;
 import com.sleepycat.je.Cursor;
 import com.sleepycat.je.Database;
@@ -670,10 +672,9 @@ public class TempoAtomStore implements AtomStore {
 		@Override
 		public int compare(byte[] primary1, byte[] primary2) {
 			for (int b = 0; b < Long.BYTES; b++) {
-				if (primary1[b] < primary2[b]) {
-					return -1;
-				} else if (primary1[b] > primary2[b]) {
-					return 1;
+				int compare = UnsignedBytes.compare(primary1[b], primary2[b]);
+				if (compare != 0) {
+					return compare;
 				}
 			}
 

@@ -40,7 +40,7 @@ public class IterativeSyncEpic implements SyncEpic {
 
 	private static final Logger logger = Logging.getLogger("Sync");
 	private static final int MAX_BACKOFF = 4; // results in 2^4 -> 16 seconds
-	private static final int RESPONSE_AID_LIMIT = 64;
+	private static final int RESPONSE_AID_LIMIT = 128;
 
 	private final AtomStoreView storeView;
 	private final Supplier<ShardSpace> shardSpaceSupplier;
