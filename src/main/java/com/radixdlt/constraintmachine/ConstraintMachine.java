@@ -119,7 +119,7 @@ public final class ConstraintMachine {
 			}
 
 			final ProcedureResult result = transitionProcedure.execute(inputParticle, inputData, outputParticle, outputData);
-			switch (result) {
+			switch (result.getCmAction()) {
 				case POP_INPUT:
 					if (nextSpun.getSpin() == Spin.UP) {
 						particleRegister.set(Pair.of(nextSpun, nextData));
@@ -137,7 +137,7 @@ public final class ConstraintMachine {
 			}
 
 			final WitnessValidator<Particle, Particle> witnessValidator = this.witnessValidators.apply(inputParticle, outputParticle);
-			final boolean witnessResult = witnessValidator.validate(result, inputParticle, outputParticle, metadata);
+			final boolean witnessResult = witnessValidator.validate(result.getCmAction(), inputParticle, outputParticle, metadata);
 			if (!witnessResult) {
 				return Stream.of(ProcedureError.of("Witness failed"));
 			}

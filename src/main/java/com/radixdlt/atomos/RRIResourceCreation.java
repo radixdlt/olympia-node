@@ -23,9 +23,9 @@ public final class RRIResourceCreation<T extends Particle> implements Transition
 		AtomicReference<Object> outputData
 	) {
 		if (!rriMapper.apply(outputParticle).equals(inputParticle.getRri())) {
-			return ProcedureResult.ERROR;
+			return new ProcedureResult(CMAction.ERROR);
 		}
 
-		return ProcedureResult.POP_INPUT_OUTPUT;
+		return new ProcedureResult(CMAction.POP_INPUT_OUTPUT);
 	}
 }

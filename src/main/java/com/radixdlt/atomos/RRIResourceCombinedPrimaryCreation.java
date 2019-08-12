@@ -23,10 +23,10 @@ public final class RRIResourceCombinedPrimaryCreation<T extends Particle, U exte
 		AtomicReference<Object> outputData
 	) {
 		if (!rriMapper0.apply(outputParticle).equals(inputParticle.getRri())) {
-			return ProcedureResult.ERROR;
+			return new ProcedureResult(CMAction.ERROR);
 		}
 
 		inputData.set(outputParticle);
-		return ProcedureResult.POP_OUTPUT;
+		return new ProcedureResult(CMAction.POP_OUTPUT);
 	}
 }

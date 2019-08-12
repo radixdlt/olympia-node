@@ -9,6 +9,7 @@ import com.radixdlt.atoms.Particle;
 import com.radixdlt.common.EUID;
 import com.radixdlt.constraintmachine.AtomMetadata;
 import com.radixdlt.constraintmachine.TransitionProcedure;
+import com.radixdlt.constraintmachine.TransitionProcedure.CMAction;
 import com.radixdlt.constraintmachine.TransitionProcedure.ProcedureResult;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Test;
@@ -49,6 +50,6 @@ public class RRIResourceCreationTest {
 			new AtomicReference<>()
 		);
 
-		assertThat(result).isEqualTo(ProcedureResult.POP_INPUT_OUTPUT);
+		assertThat(result.getCmAction()).isEqualTo(CMAction.POP_INPUT_OUTPUT);
 	}
 }

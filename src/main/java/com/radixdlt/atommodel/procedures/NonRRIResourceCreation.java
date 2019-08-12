@@ -18,6 +18,6 @@ public final class NonRRIResourceCreation<T extends Particle> implements Transit
 		T outputParticle,
 		AtomicReference<Object> outputData
 	) {
-		return ProcedureResult.POP_OUTPUT;
+		return new ProcedureResult(CMAction.POP_OUTPUT);
 	}
 }

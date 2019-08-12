@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.constraintmachine.TransitionProcedure;
+import com.radixdlt.constraintmachine.TransitionProcedure.CMAction;
 import com.radixdlt.constraintmachine.TransitionProcedure.ProcedureResult;
 import com.radixdlt.utils.UInt256;
 import java.util.concurrent.atomic.AtomicReference;
@@ -39,7 +40,7 @@ public class FungibleTransitionTest {
 			new AtomicReference<>()
 		);
 
-		assertThat(result).isEqualTo(ProcedureResult.POP_INPUT_OUTPUT);
+		assertThat(result.getCmAction()).isEqualTo(CMAction.POP_INPUT_OUTPUT);
 	}
 
 	@Test
@@ -58,7 +59,7 @@ public class FungibleTransitionTest {
 		);
 
 		assertThat(inputData).hasValue(UInt256.ONE);
-		assertThat(result).isEqualTo(ProcedureResult.POP_OUTPUT);
+		assertThat(result.getCmAction()).isEqualTo(CMAction.POP_OUTPUT);
 	}
 
 	@Test
@@ -76,7 +77,7 @@ public class FungibleTransitionTest {
 			outputData
 		);
 
-		assertThat(result).isEqualTo(ProcedureResult.POP_INPUT);
+		assertThat(result.getCmAction()).isEqualTo(CMAction.POP_INPUT);
 		assertThat(outputData).hasValue(UInt256.ONE);
 	}
 
@@ -95,7 +96,7 @@ public class FungibleTransitionTest {
 			outputData
 		);
 
-		assertThat(result).isEqualTo(ProcedureResult.POP_INPUT_OUTPUT);
+		assertThat(result.getCmAction()).isEqualTo(CMAction.POP_INPUT_OUTPUT);
 	}
 
 	@Test
@@ -112,6 +113,6 @@ public class FungibleTransitionTest {
 			new AtomicReference<>(UInt256.ONE)
 		);
 
-		assertThat(result).isEqualTo(ProcedureResult.POP_INPUT_OUTPUT);
+		assertThat(result.getCmAction()).isEqualTo(CMAction.POP_INPUT_OUTPUT);
 	}
 }

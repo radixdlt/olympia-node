@@ -32,16 +32,16 @@ public final class RRIResourceCombinedDependentCreation<T extends Particle, U ex
 		AtomicReference<Object> outputData
 	) {
 		if (inputData.get() == null || !inputData.get().getClass().equals(particleClass0)) {
-			return ProcedureResult.ERROR;
+			return new ProcedureResult(CMAction.ERROR);
 		}
 
 		if (!rriMapper1.apply(outputParticle).equals(inputParticle.getRri())) {
-			return ProcedureResult.ERROR;
+			return new ProcedureResult(CMAction.ERROR);
 		}
 
 		if (!combinedCheck.test((T) inputData.get(), outputParticle)) {
-			return ProcedureResult.ERROR;
+			return new ProcedureResult(CMAction.ERROR);
 		}
-		return ProcedureResult.POP_INPUT_OUTPUT;
+		return new ProcedureResult(CMAction.POP_INPUT_OUTPUT);
 	}
 }

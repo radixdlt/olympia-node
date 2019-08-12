@@ -33,7 +33,7 @@ public class FungibleTransition<T extends Particle, U extends Particle> implemen
 		AtomicReference<Object> outputData
 	) {
 		if (!transition.test(inputParticle, outputParticle)) {
-			return ProcedureResult.ERROR;
+			return new ProcedureResult(CMAction.ERROR);
 		}
 
 		UInt256 inputAmount = inputData.get() == null
@@ -45,13 +45,13 @@ public class FungibleTransition<T extends Particle, U extends Particle> implemen
 
 		int compare = inputAmount.compareTo(outputAmount);
 		if (compare == 0) {
-			return ProcedureResult.POP_INPUT_OUTPUT;
+			return new ProcedureResult(CMAction.POP_INPUT_OUTPUT);
 		} else if (compare > 0) {
 			inputData.set(inputAmount.subtract(outputAmount));
-			return ProcedureResult.POP_OUTPUT;
+			return new ProcedureResult(CMAction.POP_OUTPUT);
 		} else {
 			outputData.set(outputAmount.subtract(inputAmount));
-			return ProcedureResult.POP_INPUT;
+			return new ProcedureResult(CMAction.POP_INPUT);
 		}
 	}
 }

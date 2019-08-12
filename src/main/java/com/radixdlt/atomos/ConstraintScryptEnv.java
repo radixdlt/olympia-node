@@ -3,6 +3,7 @@ package com.radixdlt.atomos;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.TransitionProcedure;
+import com.radixdlt.constraintmachine.TransitionProcedure.CMAction;
 import com.radixdlt.constraintmachine.TransitionProcedure.ProcedureResult;
 import com.radixdlt.constraintmachine.WitnessValidator;
 import java.util.Collections;
@@ -109,7 +110,7 @@ final class ConstraintScryptEnv implements SysCalls {
 			RRIParticle.class,
 			particleClass,
 			procedure,
-			(res, in, out, meta) -> res == ProcedureResult.POP_INPUT_OUTPUT && meta.isSignedBy(in.getRri().getAddress())
+			(res, in, out, meta) -> res == CMAction.POP_INPUT_OUTPUT && meta.isSignedBy(in.getRri().getAddress())
 		);
 	}
 
@@ -139,7 +140,7 @@ final class ConstraintScryptEnv implements SysCalls {
 			RRIParticle.class,
 			particleClass0,
 			procedure0,
-			(res, in, out, meta) -> res == ProcedureResult.POP_OUTPUT
+			(res, in, out, meta) -> res == CMAction.POP_OUTPUT
 		);
 
 		final TransitionProcedure<RRIParticle, U> procedure1 = new RRIResourceCombinedDependentCreation<>(
@@ -151,7 +152,7 @@ final class ConstraintScryptEnv implements SysCalls {
 			RRIParticle.class,
 			particleClass1,
 			procedure1,
-			(res, in, out, meta) -> res == ProcedureResult.POP_INPUT_OUTPUT && meta.isSignedBy(in.getRri().getAddress())
+			(res, in, out, meta) -> res == CMAction.POP_INPUT_OUTPUT && meta.isSignedBy(in.getRri().getAddress())
 		);
 	}
 
@@ -195,7 +196,7 @@ final class ConstraintScryptEnv implements SysCalls {
 				final RRI inputRRI = scryptParticleDefinitions.get(inputClass).getRriMapper().apply(in);
 				final RRI outputRRI = scryptParticleDefinitions.get(outputClass).getRriMapper().apply(out);
 				if (!inputRRI.equals(outputRRI)) {
-					return ProcedureResult.ERROR;
+					return new ProcedureResult(CMAction.ERROR);
 				}
 
 				return procedure.execute((T) in, inData, (U) out, outData);
