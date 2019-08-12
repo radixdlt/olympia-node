@@ -16,7 +16,7 @@ public class TempoCursor implements LedgerCursor {
 	private final byte[] index;
 	private final TempoAtomStore store;
 
-	public TempoCursor(TempoAtomStore store, Type type, byte[] primary, byte[] index) {
+	TempoCursor(TempoAtomStore store, Type type, byte[] primary, byte[] index) {
 		this.type = type;
 		this.primary = Arrays.clone(Objects.requireNonNull(primary));
 		this.index = Arrays.clone(Objects.requireNonNull(index));

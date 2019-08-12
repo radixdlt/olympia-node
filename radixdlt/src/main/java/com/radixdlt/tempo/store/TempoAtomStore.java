@@ -1,7 +1,9 @@
 package com.radixdlt.tempo.store;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.UnsignedBytes;
 import com.radixdlt.Atom;
@@ -12,16 +14,18 @@ import com.radixdlt.ledger.LedgerCursor.Type;
 import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerSearchMode;
 import com.radixdlt.ledger.exceptions.LedgerKeyConstraintException;
+import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
+import com.radixdlt.serialization.SerializerConstants;
+import com.radixdlt.serialization.SerializerDummy;
+import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.tempo.AtomStore;
 import com.radixdlt.tempo.AtomStoreView;
 import com.radixdlt.tempo.TempoAtom;
-import com.radixdlt.tempo.TemporalProofStore;
 import com.radixdlt.tempo.exceptions.TempoException;
 import com.radixdlt.tempo.sync.IterativeCursor;
-import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.Longs;
 import com.sleepycat.je.Cursor;
 import com.sleepycat.je.Database;
@@ -45,13 +49,12 @@ import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.shards.ShardRange;
 import org.radix.shards.ShardSpace;
-import org.radix.time.TemporalProof;
 import org.radix.time.TemporalVertex;
 import org.radix.universe.system.LocalSystem;
 import org.radix.utils.SystemProfiler;
 
+import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -257,7 +260,7 @@ public class TempoAtomStore implements AtomStore {
 	}
 
 	@Override
-	public synchronized boolean store(TempoAtom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
+	public boolean store(TempoAtom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
 		long start = profiler.begin();
 		Transaction transaction = dbEnv.get().getEnvironment().beginTransaction(null, null);
 		try {
@@ -416,9 +419,68 @@ public class TempoAtomStore implements AtomStore {
 		}
 	}
 
-	// TODO we'll need some way to collect the AID -> shard information from the AtomStore
-	// leaving in place for now, stubbed, will review later when implementing ShardChecksumSync
-	public Set<AID> getByShardChunkAndRange(int chunk, ShardRange range) throws DatabaseException {
+	// FIXME bad performance due to shardpsace check for every atom
+	// FIXME bad performance due to complete atom deserialization
+	@Override
+	public Pair<ImmutableList<AID>, IterativeCursor> getNext(IterativeCursor iterativeCursor, int limit, ShardSpace shardSpace) {
+		long start = profiler.begin();
+		try (Cursor cursor = this.atoms.openCursor(null, null)) {
+			List<AID> aids = Lists.newArrayList();
+			long position = iterativeCursor.getLCPosition();
+			DatabaseEntry search = new DatabaseEntry(Longs.toByteArray(position + 1));
+			DatabaseEntry value = new DatabaseEntry();
+			OperationStatus status = cursor.getSearchKeyRange(search, value, LockMode.DEFAULT);
+
+			while (status == OperationStatus.SUCCESS) {
+				TempoAtom atom = serialization.fromDson(value.getData(), TempoAtom.class);
+				position = Longs.fromByteArray(search.getData());
+				if (shardSpace.intersects(atom.getShards())) {
+					aids.add(atom.getAID());
+					// abort when we've exceeded the limit
+					if (aids.size() >= limit) {
+						break;
+					}
+				}
+				status = cursor.getNext(search, value, LockMode.DEFAULT);
+			}
+
+			IterativeCursor nextCursor = null;
+			if (position != iterativeCursor.getLCPosition()) {
+				nextCursor = new IterativeCursor(position, null);
+			}
+			return Pair.of(ImmutableList.copyOf(aids), new IterativeCursor(iterativeCursor.getLCPosition(), nextCursor));
+		} catch (SerializationException e) {
+			throw new TempoException("Error while querying from database", e);
+		} finally {
+			profiler.incrementFrom("ATOM_STORE:DISCOVER:SYNC", start);
+		}
+
+	}
+
+	@Override
+	public LedgerCursor search(Type type, LedgerIndex index, LedgerSearchMode mode) {
+		Objects.requireNonNull(type, "type is required");
+		Objects.requireNonNull(index, "index is required");
+		Objects.requireNonNull(mode, "mode is required");
+		try (SecondaryCursor databaseCursor = toSecondaryCursor(type)) {
+			DatabaseEntry pKey = new DatabaseEntry();
+			DatabaseEntry key = new DatabaseEntry(index.asKey());
+			if (mode == LedgerSearchMode.EXACT) {
+				if (databaseCursor.getSearchKey(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
+					return new TempoCursor(this, type, pKey.getData(), key.getData());
+				}
+			} else if (mode == LedgerSearchMode.RANGE) {
+				if (databaseCursor.getSearchKeyRange(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
+					return new TempoCursor(this, type, pKey.getData(), key.getData());
+				}
+			}
+
+			return null;
+		}
+	}
+
+	// not used yet
+	private List<AID> getByShardChunkAndRange(int chunk, ShardRange range) throws DatabaseException {
 		long start = profiler.begin();
 
 		try {
@@ -433,157 +495,66 @@ public class TempoAtomStore implements AtomStore {
 		}
 	}
 
-	private Set<AID> getByShardRange(long from, long to) throws DatabaseException {
+	// not used yet
+	private List<AID> getByShardRange(long from, long to) throws DatabaseException {
 		long start = profiler.begin();
-
-		SecondaryCursor cursor = null;
-		Set<AID> atomIds = new HashSet<>();
-
-		try {
-			cursor = this.duplicatedIndices.openCursor(null, null);
-
+		try (SecondaryCursor cursor = this.duplicatedIndices.openCursor(null, null)) {
+			List<AID> aids = new ArrayList<>();
 			DatabaseEntry key = new DatabaseEntry(LedgerIndex.from(SHARD_INDEX_PREFIX, Longs.toByteArray(from)));
+			DatabaseEntry pKey = new DatabaseEntry();
 			DatabaseEntry value = new DatabaseEntry();
 
-			// FIXME this is slow as shit, speed it up, maybe pack clock+HID for primary and use that
-			OperationStatus status = cursor.getSearchKeyRange(key, value, LockMode.DEFAULT);
+			OperationStatus status = cursor.getSearchKeyRange(key, value, pKey, LockMode.DEFAULT);
 			while (status == OperationStatus.SUCCESS) {
 				long shard = Longs.fromByteArray(key.getData(), 1);
 				if (shard < from || shard > to) {
 					break;
 				}
 
-				TempoAtom atom = serialization.fromDson(value.getData(), TempoAtom.class);
-				atomIds.add(atom.getAID());
+				AID aid = AID.from(pKey.getData(), Long.BYTES);
+				aids.add(aid);
 
-				status = cursor.getNextDup(key, value, LockMode.DEFAULT);
+				status = cursor.getNextDup(key, value, pKey, LockMode.DEFAULT);
 				if (status == OperationStatus.NOTFOUND) {
-					status = cursor.getNext(key, value, LockMode.DEFAULT);
+					status = cursor.getNext(key, value, pKey, LockMode.DEFAULT);
 				}
 			}
 
-			return atomIds;
+			return aids;
 		} catch (Exception ex) {
 			throw new DatabaseException(ex);
 		} finally {
-			if (cursor != null) {
-				cursor.close();
-			}
-
 			profiler.incrementFrom("ATOM_STORE:GET_BY_SHARD_RANGE", start);
 		}
 	}
 
-	public Set<AID> getByShard(long shard) throws DatabaseException {
+	// not used yet
+	private List<AID> getByShard(long shard) throws DatabaseException {
 		long start = profiler.begin();
-
-		SecondaryCursor cursor = null;
-		Set<AID> atomIds = new HashSet<>();
-
-		try {
-			cursor = this.duplicatedIndices.openCursor(null, null);
+		try (SecondaryCursor cursor = this.duplicatedIndices.openCursor(null, null)) {
+			List<AID> aids = new ArrayList<>();
 
 			DatabaseEntry key = new DatabaseEntry(LedgerIndex.from(SHARD_INDEX_PREFIX, Longs.toByteArray(shard)));
+			DatabaseEntry pKey = new DatabaseEntry();
 			DatabaseEntry value = new DatabaseEntry();
 
-			// FIXME this is slow as shit, speed it up, maybe pack clock+HID for primary and use that
-			OperationStatus status = cursor.getSearchKey(key, value, LockMode.DEFAULT);
+			OperationStatus status = cursor.getSearchKeyRange(key, value, pKey, LockMode.DEFAULT);
 			while (status == OperationStatus.SUCCESS) {
-				TempoAtom atom = serialization.fromDson(value.getData(), TempoAtom.class);
-				atomIds.add(atom.getAID());
-				status = cursor.getNextDup(key, value, LockMode.DEFAULT);
+				AID aid = AID.from(pKey.getData(), Long.BYTES);
+				aids.add(aid);
+				status = cursor.getNextDup(key, value, pKey, LockMode.DEFAULT);
 			}
 
-			return atomIds;
+			return aids;
 		} catch (Exception ex) {
 			throw new DatabaseException(ex);
 		} finally {
-			if (cursor != null) {
-				cursor.close();
-			}
-
 			profiler.incrementFrom("ATOM_STORE:GET_BY_SHARD", start);
 		}
 	}
 
-	// FIXME awful performance
-	@Override
-	public Pair<ImmutableList<AID>, IterativeCursor> getNext(IterativeCursor iterativeCursor, int limit, ShardSpace shardSpace) {
-		List<AID> aids = Lists.newArrayList();
-		long start = profiler.begin();
-		long position = iterativeCursor.getLCPosition();
-
-		try (Cursor cursor = this.atoms.openCursor(null, null)) {
-			// TODO remove position + 1 to someplace else
-			DatabaseEntry search = new DatabaseEntry(Longs.toByteArray(position + 1));
-			DatabaseEntry value = new DatabaseEntry();
-			OperationStatus status = cursor.getSearchKeyRange(search, value, LockMode.DEFAULT);
-			while (status == OperationStatus.SUCCESS) {
-				TempoAtom atom = serialization.fromDson(value.getData(), TempoAtom.class);
-				position = Longs.fromByteArray(search.getData());
-				if (shardSpace.intersects(atom.getShards())) {
-					aids.add(atom.getAID());
-					// abort as we've exceeded the limit
-					if (aids.size() >= limit) {
-						break;
-					}
-				}
-
-				status = cursor.getNext(search, value, LockMode.DEFAULT);
-			}
-		} catch (SerializationException e) {
-			throw new TempoException("Error while querying from database", e);
-		} finally {
-			profiler.incrementFrom("ATOM_STORE:DISCOVER:SYNC", start);
-		}
-
-		IterativeCursor nextCursor = null;
-		if (position != iterativeCursor.getLCPosition()) {
-			nextCursor = new IterativeCursor(position, null);
-		}
-
-		return Pair.of(ImmutableList.copyOf(aids), new IterativeCursor(iterativeCursor.getLCPosition(), nextCursor));
-	}
-
-	@Override
-	public LedgerCursor search(Type type, LedgerIndex index, LedgerSearchMode mode) {
-		Objects.requireNonNull(type, "type is required");
-		Objects.requireNonNull(index, "index is required");
-		Objects.requireNonNull(mode, "mode is required");
-
-		SecondaryCursor databaseCursor;
-
-		if (type == Type.UNIQUE) {
-			databaseCursor = this.uniqueIndices.openCursor(null, null);
-		} else if (type == Type.DUPLICATE) {
-			databaseCursor = this.duplicatedIndices.openCursor(null, null);
-		} else {
-			throw new IllegalStateException("Type " + type + " not supported");
-		}
-
-		try {
-			DatabaseEntry pKey = new DatabaseEntry();
-			DatabaseEntry key = new DatabaseEntry(index.asKey());
-
-			if (mode == LedgerSearchMode.EXACT) {
-				if (databaseCursor.getSearchKey(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
-					return new TempoCursor(this, type, pKey.getData(), key.getData());
-				}
-			} else if (mode == LedgerSearchMode.RANGE) {
-				if (databaseCursor.getSearchKeyRange(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
-					return new TempoCursor(this, type, pKey.getData(), key.getData());
-				}
-			}
-
-			return null;
-		} finally {
-			databaseCursor.close();
-		}
-	}
-
-
 	TempoCursor getNext(TempoCursor cursor) throws DatabaseException {
-		try (SecondaryCursor databaseCursor = toSecondaryCursor(cursor)) {
+		try (SecondaryCursor databaseCursor = toSecondaryCursor(cursor.getType())) {
 			DatabaseEntry pKey = new DatabaseEntry(cursor.getPrimary());
 			DatabaseEntry key = new DatabaseEntry(cursor.getIndex());
 			if (databaseCursor.getSearchBothRange(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
@@ -599,7 +570,7 @@ public class TempoAtomStore implements AtomStore {
 	}
 
 	TempoCursor getPrev(TempoCursor cursor) throws DatabaseException {
-		try (SecondaryCursor databaseCursor = toSecondaryCursor(cursor)) {
+		try (SecondaryCursor databaseCursor = toSecondaryCursor(cursor.getType())) {
 			DatabaseEntry pKey = new DatabaseEntry(cursor.getPrimary());
 			DatabaseEntry key = new DatabaseEntry(cursor.getIndex());
 			if (databaseCursor.getSearchBothRange(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
@@ -615,7 +586,7 @@ public class TempoAtomStore implements AtomStore {
 	}
 
 	TempoCursor getFirst(TempoCursor cursor) throws DatabaseException {
-		try (SecondaryCursor databaseCursor = toSecondaryCursor(cursor)) {
+		try (SecondaryCursor databaseCursor = toSecondaryCursor(cursor.getType())) {
 			DatabaseEntry pKey = new DatabaseEntry(cursor.getPrimary());
 			DatabaseEntry key = new DatabaseEntry(cursor.getIndex());
 			if (databaseCursor.getSearchBothRange(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
@@ -635,7 +606,7 @@ public class TempoAtomStore implements AtomStore {
 	}
 
 	TempoCursor getLast(TempoCursor cursor) throws DatabaseException {
-		try (SecondaryCursor databaseCursor = toSecondaryCursor(cursor)) {
+		try (SecondaryCursor databaseCursor = toSecondaryCursor(cursor.getType())) {
 			DatabaseEntry pKey = new DatabaseEntry(cursor.getPrimary());
 			DatabaseEntry key = new DatabaseEntry(cursor.getIndex());
 
@@ -655,15 +626,15 @@ public class TempoAtomStore implements AtomStore {
 		}
 	}
 
-	private SecondaryCursor toSecondaryCursor(TempoCursor cursor) {
-		Objects.requireNonNull(cursor, "cursor is required");
+	private SecondaryCursor toSecondaryCursor(Type type) {
+		Objects.requireNonNull(type, "cursor is required");
 		SecondaryCursor databaseCursor;
-		if (cursor.getType().equals(Type.UNIQUE)) {
+		if (type.equals(Type.UNIQUE)) {
 			databaseCursor = this.uniqueIndices.openCursor(null, null);
-		} else if (cursor.getType().equals(Type.DUPLICATE)) {
+		} else if (type.equals(Type.DUPLICATE)) {
 			databaseCursor = this.duplicatedIndices.openCursor(null, null);
 		} else {
-			throw new IllegalStateException("Cursor type " + cursor.getType() + " not supported");
+			throw new IllegalStateException("Cursor type " + type + " not supported");
 		}
 		return databaseCursor;
 	}
@@ -677,7 +648,6 @@ public class TempoAtomStore implements AtomStore {
 					return compare;
 				}
 			}
-
 			return 0;
 		}
 	}

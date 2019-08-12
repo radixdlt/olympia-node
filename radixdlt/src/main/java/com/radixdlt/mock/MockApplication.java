@@ -102,7 +102,7 @@ public final class MockApplication {
 		try {
 			ImmutableSet<AID> previousRemnants = conflictRemnants.remove(atom.getAID());
 			// if there are no remnants from previous conflict, just store the atom
-			if (previousRemnants == null) {
+			if (previousRemnants == null || conflictRemnants.isEmpty()) {
 				if (ledger.store(atom, uniqueIndices, duplicateIndices)) {
 					logger.info(String.format("Stored atom '%s'", atom.getAID()));
 				}

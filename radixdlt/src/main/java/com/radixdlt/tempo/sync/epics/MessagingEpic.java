@@ -59,6 +59,7 @@ public class MessagingEpic implements SyncEpic {
 
 	private void sendMessage(Message message, Peer peer) {
 		try {
+			// TODO put proper messaging here so we don't need networking
 			UDPPeer udpPeer = Network.getInstance().get(peer.getURI(), Protocol.UDP, State.CONNECTED);
 			messager.send(message, udpPeer);
 		} catch (IOException e) {
