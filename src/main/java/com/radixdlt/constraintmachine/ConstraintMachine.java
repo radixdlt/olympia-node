@@ -28,7 +28,8 @@ public final class ConstraintMachine {
 	public static class Builder {
 		private UnaryOperator<CMStore> virtualStore;
 		private ImmutableList.Builder<KernelConstraintProcedure> kernelConstraintProcedureBuilder = new ImmutableList.Builder<>();
-		private BiFunction<Particle, Particle, TransitionProcedure> particleProcedures;
+		private BiFunction<Particle, Particle, TransitionProcedure<Particle, Particle>> particleProcedures;
+		private BiFunction<Particle, Particle, WitnessValidator<Particle, Particle>> witnessValidators;
 
 		public Builder virtualStore(UnaryOperator<CMStore> virtualStore) {
 			this.virtualStore = virtualStore;
@@ -40,10 +41,16 @@ public final class ConstraintMachine {
 			return this;
 		}
 
-		public Builder setParticleProcedures(BiFunction<Particle, Particle, TransitionProcedure> particleProcedures) {
+		public Builder setParticleProcedures(BiFunction<Particle, Particle, TransitionProcedure<Particle, Particle>> particleProcedures) {
 			this.particleProcedures = particleProcedures;
 			return this;
 		}
+
+		public Builder setWitnessValidators(BiFunction<Particle, Particle, WitnessValidator<Particle, Particle>> witnessValidators) {
+			this.witnessValidators = witnessValidators;
+			return this;
+		}
+
 
 		public ConstraintMachine build() {
 			if (virtualStore == null) {
@@ -53,20 +60,23 @@ public final class ConstraintMachine {
 			return new ConstraintMachine(
 				virtualStore,
 				kernelConstraintProcedureBuilder.build(),
-				particleProcedures
+				particleProcedures,
+				witnessValidators
 			);
 		}
 	}
 
 	private final UnaryOperator<CMStore> virtualStore;
 	private final ImmutableList<KernelConstraintProcedure> kernelConstraintProcedures;
-	private final BiFunction<Particle, Particle, TransitionProcedure> particleProcedures;
+	private final BiFunction<Particle, Particle, TransitionProcedure<Particle, Particle>> particleProcedures;
+	private final BiFunction<Particle, Particle, WitnessValidator<Particle, Particle>> witnessValidators;
 	private final CMStore localEngineStore;
 
 	ConstraintMachine(
 		UnaryOperator<CMStore> virtualStore,
 		ImmutableList<KernelConstraintProcedure> kernelConstraintProcedures,
-		BiFunction<Particle, Particle, TransitionProcedure> particleProcedures
+		BiFunction<Particle, Particle, TransitionProcedure<Particle, Particle>> particleProcedures,
+		BiFunction<Particle, Particle, WitnessValidator<Particle, Particle>> witnessValidators
 	) {
 		Objects.requireNonNull(virtualStore);
 
@@ -74,6 +84,7 @@ public final class ConstraintMachine {
 		this.localEngineStore = this.virtualStore.apply(CMStores.empty());
 		this.kernelConstraintProcedures = kernelConstraintProcedures;
 		this.particleProcedures = particleProcedures;
+		this.witnessValidators = witnessValidators;
 	}
 
 	private Stream<ProcedureError> validate(ParticleGroup group, AtomMetadata metadata) {
@@ -96,7 +107,8 @@ public final class ConstraintMachine {
 			final Particle outputParticle = nextSpun.getSpin() == Spin.DOWN ? curParticle : nextParticle;
 			final AtomicReference<Object> outputData = nextSpun.getSpin() == Spin.DOWN ? curData : nextData;
 
-			final TransitionProcedure transitionProcedure = this.particleProcedures.apply(inputParticle, outputParticle);
+			final TransitionProcedure<Particle, Particle> transitionProcedure = this.particleProcedures.apply(inputParticle, outputParticle);
+
 			if (transitionProcedure == null) {
 				if (inputParticle == null || outputParticle == null) {
 					particleRegister.set(Pair.of(nextSpun, nextData));
@@ -124,7 +136,8 @@ public final class ConstraintMachine {
 					return Stream.of(ProcedureError.of("Next particle " + nextParticle + " failed. Current register: " + particleRegister.get()));
 			}
 
-			final boolean witnessResult = transitionProcedure.validateWitness(result, inputParticle, outputParticle, metadata);
+			final WitnessValidator<Particle, Particle> witnessValidator = this.witnessValidators.apply(inputParticle, outputParticle);
+			final boolean witnessResult = witnessValidator.validate(result, inputParticle, outputParticle, metadata);
 			if (!witnessResult) {
 				return Stream.of(ProcedureError.of("Witness failed"));
 			}

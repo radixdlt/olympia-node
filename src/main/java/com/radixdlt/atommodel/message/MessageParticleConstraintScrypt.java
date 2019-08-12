@@ -23,7 +23,8 @@ public class MessageParticleConstraintScrypt implements ConstraintScrypt {
 		os.createTransition(
 			null,
 			MessageParticle.class,
-			new NonRRIResourceCreation<>((res, in, out, meta) -> meta.isSignedBy(out.getFrom()))
+			new NonRRIResourceCreation<>(),
+			(res, in, out, meta) -> meta.isSignedBy(out.getFrom())
 		);
 	}
 }

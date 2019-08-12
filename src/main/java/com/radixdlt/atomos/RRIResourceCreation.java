@@ -7,11 +7,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 public class RRIResourceCreation<T extends Particle> implements TransitionProcedure<RRIParticle, T> {
-	private final Class<T> particleClass;
 	private final Function<T, RRI> rriMapper;
 
-	public RRIResourceCreation(Class<T> particleClass, Function<T, RRI> rriMapper) {
-		this.particleClass = particleClass;
+	public RRIResourceCreation(Function<T, RRI> rriMapper) {
 		this.rriMapper = rriMapper;
 	}
 
@@ -27,23 +25,5 @@ public class RRIResourceCreation<T extends Particle> implements TransitionProced
 		}
 
 		return ProcedureResult.POP_INPUT_OUTPUT;
-	}
-
-	@Override
-	public boolean validateWitness(
-		ProcedureResult result,
-		RRIParticle inputParticle,
-		T outputParticle,
-		AtomMetadata metadata
-	) {
-		switch (result) {
-			case POP_OUTPUT:
-				return true;
-			case POP_INPUT_OUTPUT:
-				return metadata.isSignedBy(inputParticle.getRri().getAddress());
-			case POP_INPUT:
-			default:
-				throw new IllegalStateException();
-		}
 	}
 }

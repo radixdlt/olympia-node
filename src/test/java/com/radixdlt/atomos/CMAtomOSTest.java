@@ -64,14 +64,22 @@ public class CMAtomOSTest {
 		os.load(syscalls -> {
 			syscalls.registerParticle(TestParticle0.class, (TestParticle0 p) -> mock(RadixAddress.class), t -> Result.success());
 			syscalls.createTransition(
-				TestParticle0.class, TestParticle0.class, procedure);
+				TestParticle0.class,
+				TestParticle0.class,
+				procedure,
+				(res, in, out, meta) -> true
+			);
 		});
 		TransitionProcedure<TestParticle1, TestParticle0> procedure0 = mock(TransitionProcedure.class);
 		assertThatThrownBy(() ->
 			os.load(syscalls -> {
 				syscalls.registerParticle(TestParticle1.class, (TestParticle1 p) -> mock(RadixAddress.class), t -> Result.success());
 				syscalls.createTransition(
-					TestParticle1.class, TestParticle0.class, procedure0);
+					TestParticle1.class,
+					TestParticle0.class,
+					procedure0,
+					(res, in, out, meta) -> true
+				);
 			})
 		).isInstanceOf(IllegalStateException.class);
 	}

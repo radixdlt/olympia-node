@@ -5,6 +5,8 @@ import com.radixdlt.atomos.AtomOSKernel.AtomKernelCompute;
 import com.radixdlt.common.Pair;
 import com.radixdlt.compute.AtomCompute;
 import com.radixdlt.constraintmachine.TransitionProcedure;
+import com.radixdlt.constraintmachine.TransitionProcedure.ProcedureResult;
+import com.radixdlt.constraintmachine.WitnessValidator;
 import com.radixdlt.store.CMStore;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -42,7 +44,11 @@ public final class CMAtomOS {
 	private final Map<Class<? extends Particle>, Function<Particle, Stream<RadixAddress>>> particleMapper = new LinkedHashMap<>();
 	private final Map<Class<? extends Particle>, Function<Particle, Result>> particleStaticValidation = new HashMap<>();
 
-	private final ImmutableMap.Builder<Pair<Class<? extends Particle>, Class<? extends Particle>>, TransitionProcedure> proceduresBuilder = new ImmutableMap.Builder<>();
+	private final ImmutableMap.Builder<Pair<Class<? extends Particle>, Class<? extends Particle>>, TransitionProcedure<Particle, Particle>> proceduresBuilder
+		= new ImmutableMap.Builder<>();
+
+	private final ImmutableMap.Builder<Pair<Class<? extends Particle>, Class<? extends Particle>>, WitnessValidator<Particle, Particle>> witnessesBuilder
+		= new ImmutableMap.Builder<>();
 
 	private final Supplier<Universe> universeSupplier;
 	private final LongSupplier timestampSupplier;
@@ -56,6 +62,14 @@ public final class CMAtomOS {
 
 		// RRI particle is a low level particle managed by the OS used for the management of all other resources
 		this.particleMapper.put(RRIParticle.class, rri -> Stream.of(((RRIParticle) rri).getRri().getAddress()));
+	}
+
+	private static <T extends Particle, U extends Particle> TransitionProcedure<Particle, Particle> toGeneric(TransitionProcedure<T, U> procedure) {
+		return (in, inData, out, outData) -> procedure.execute((T) in, inData, (U) out, outData);
+	}
+
+	private static <T extends Particle, U extends Particle> WitnessValidator<Particle, Particle> toGeneric(WitnessValidator<T, U> validator) {
+		return (res, in, out, meta) -> validator.validate(res, (T) in, (U) out, meta);
 	}
 
 	public void load(ConstraintScrypt constraintScrypt) {
@@ -99,8 +113,13 @@ public final class CMAtomOS {
 					throw new IllegalStateException(particleClass + " must be registered in calling scrypt.");
 				}
 
-				TransitionProcedure<RRIParticle, T> procedure = new RRIResourceCreation<>(particleClass, rriMapper);
-				proceduresBuilder.put(Pair.of(RRIParticle.class, particleClass), procedure);
+				final TransitionProcedure<RRIParticle, T> procedure = new RRIResourceCreation<>(rriMapper);
+				createTransitionInternal(
+					RRIParticle.class,
+					particleClass,
+					procedure,
+					(res, in, out, meta) -> res == ProcedureResult.POP_INPUT_OUTPUT && meta.isSignedBy(in.getRri().getAddress())
+				);
 			}
 
 			@Override
@@ -118,27 +137,49 @@ public final class CMAtomOS {
 					throw new IllegalStateException(particleClass1 + " must be registered in calling scrypt.");
 				}
 
-				TransitionProcedure<RRIParticle, T> procedure0 = new RRIResourceCombinedPrimaryCreation<>(rriMapper0);
-				proceduresBuilder.put(Pair.of(RRIParticle.class, particleClass0), procedure0);
-				TransitionProcedure<RRIParticle, U> procedure1 = new RRIResourceCombinedDependentCreation<>(
+				final TransitionProcedure<RRIParticle, T> procedure0 = new RRIResourceCombinedPrimaryCreation<>(rriMapper0);
+				createTransitionInternal(
+					RRIParticle.class,
+					particleClass0,
+					procedure0,
+					(res, in, out, meta) -> res == ProcedureResult.POP_OUTPUT
+				);
+
+				final TransitionProcedure<RRIParticle, U> procedure1 = new RRIResourceCombinedDependentCreation<>(
 					particleClass0,
 					rriMapper1,
 					combinedCheck
 				);
-				proceduresBuilder.put(Pair.of(RRIParticle.class, particleClass1), procedure1);
+				createTransitionInternal(
+					RRIParticle.class,
+					particleClass1,
+					procedure1,
+					(res, in, out, meta) -> res == ProcedureResult.POP_INPUT_OUTPUT && meta.isSignedBy(in.getRri().getAddress())
+				);
 			}
 
 			@Override
 			public <T extends Particle, U extends Particle> void createTransition(
 				Class<T> inputClass,
 				Class<U> outputClass,
-				TransitionProcedure<T, U> procedure
+				TransitionProcedure<T, U> procedure,
+				WitnessValidator<T, U> witnessValidator
 			) {
 				if ((inputClass != null && !scryptParticleClasses.containsKey(inputClass))
 					|| (outputClass != null && !scryptParticleClasses.containsKey(outputClass))) {
 					throw new IllegalStateException(inputClass + " " + outputClass + " must be all registered in calling scrypt.");
 				}
-				proceduresBuilder.put(Pair.of(inputClass, outputClass), procedure);
+				createTransitionInternal(inputClass, outputClass, procedure, witnessValidator);
+			}
+
+			private <T extends Particle, U extends Particle> void createTransitionInternal(
+				Class<T> inputClass,
+				Class<U> outputClass,
+				TransitionProcedure<T, U> procedure,
+				WitnessValidator<T, U> witnessValidator
+			) {
+				proceduresBuilder.put(Pair.of(inputClass, outputClass), toGeneric(procedure));
+				witnessesBuilder.put(Pair.of(inputClass, outputClass), toGeneric(witnessValidator));
 			}
 		});
 
@@ -193,12 +234,18 @@ public final class CMAtomOS {
 
 		this.kernelProcedures.forEach(cmBuilder::addProcedure);
 
-		ImmutableMap<Pair<Class<? extends Particle>, Class<? extends Particle>>, TransitionProcedure> procedures = proceduresBuilder.build();
+		ImmutableMap<Pair<Class<? extends Particle>, Class<? extends Particle>>, TransitionProcedure<Particle, Particle>> procedures = proceduresBuilder.build();
 		cmBuilder.setParticleProcedures((input, output) -> procedures.get(
 			Pair.<Class<? extends Particle>, Class<? extends Particle>>of(
 				input == null ? null : input.getClass(),
-				output == null ? null : output.getClass()))
-		);
+				output == null ? null : output.getClass())
+		));
+		ImmutableMap<Pair<Class<? extends Particle>, Class<? extends Particle>>, WitnessValidator<Particle, Particle>> witnessValidators = witnessesBuilder.build();
+		cmBuilder.setWitnessValidators((in, out) -> witnessValidators.get(
+			Pair.<Class<? extends Particle>, Class<? extends Particle>>of(
+				in == null ? null : in.getClass(),
+				out == null ? null : out.getClass())
+		));
 
 		UnaryOperator<CMStore> rriTransformer = base ->
 			CMStores.virtualizeDefault(base, p -> p instanceof RRIParticle && ((RRIParticle) p).getNonce() == 0, Spin.UP);

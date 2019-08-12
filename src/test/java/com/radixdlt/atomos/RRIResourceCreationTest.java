@@ -29,7 +29,7 @@ public class RRIResourceCreationTest {
 
 	@Test
 	public void when_an_rri_is_consumed_with_a_corresponding_particle__then_an_input_should_succeed_and_stack_is_empty() {
-		TransitionProcedure procedure = new RRIResourceCreation<>(CustomParticle.class, CustomParticle::getRRI);
+		TransitionProcedure procedure = new RRIResourceCreation<>(CustomParticle::getRRI);
 
 		RadixAddress address = mock(RadixAddress.class);
 		when(address.getUID()).thenReturn(EUID.ONE);

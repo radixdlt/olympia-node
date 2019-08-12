@@ -2,6 +2,7 @@ package com.radixdlt.atomos;
 
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.constraintmachine.TransitionProcedure;
+import com.radixdlt.constraintmachine.WitnessValidator;
 import java.util.Set;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
@@ -38,7 +39,8 @@ public interface SysCalls {
 	<T extends Particle, U extends Particle> void createTransition(
 		Class<T> inputClass,
 		Class<U> outputClass,
-		TransitionProcedure<T, U> procedure
+		TransitionProcedure<T, U> procedure,
+		WitnessValidator<T, U> witnessValidator
 	);
 
 	/**

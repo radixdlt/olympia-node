@@ -1,8 +1,6 @@
 package com.radixdlt.atommodel.procedures;
 
-import com.radixdlt.atomos.WitnessValidator;
 import com.radixdlt.atoms.Particle;
-import com.radixdlt.constraintmachine.AtomMetadata;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -10,10 +8,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * Procedure which checks that payload particles
  */
 public final class NonRRIResourceCreation<T extends Particle> implements TransitionProcedure<Particle, T> {
-	private final WitnessValidator<Particle, T> witnessValidator;
-
-	public NonRRIResourceCreation(WitnessValidator<Particle, T> witnessValidator) {
-		this.witnessValidator = witnessValidator;
+	public NonRRIResourceCreation() {
 	}
 
 	@Override
@@ -25,15 +20,4 @@ public final class NonRRIResourceCreation<T extends Particle> implements Transit
 	) {
 		return ProcedureResult.POP_OUTPUT;
 	}
-
-	@Override
-	public boolean validateWitness(
-		ProcedureResult result,
-		Particle inputParticle,
-		T outputParticle,
-		AtomMetadata metadata
-	) {
-		return witnessValidator.validate(result, inputParticle, outputParticle, metadata);
-	}
-
 }

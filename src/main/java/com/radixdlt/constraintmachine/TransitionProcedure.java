@@ -5,7 +5,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Application level "Bytecode" to be run per particle in the Constraint machine
- * TODO: split transition checks and witness validator
  */
 public interface TransitionProcedure<T extends Particle, U extends Particle> {
 	enum ProcedureResult {
@@ -20,12 +19,5 @@ public interface TransitionProcedure<T extends Particle, U extends Particle> {
 		AtomicReference<Object> inputData,
 		U outputParticle,
 		AtomicReference<Object> outputData
-	);
-
-	boolean validateWitness(
-		ProcedureResult result,
-		T inputParticle,
-		U outputParticle,
-		AtomMetadata metadata
 	);
 }

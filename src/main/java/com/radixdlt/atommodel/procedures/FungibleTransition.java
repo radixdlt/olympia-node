@@ -1,9 +1,7 @@
 package com.radixdlt.atommodel.procedures;
 
 import com.radixdlt.atoms.Particle;
-import com.radixdlt.constraintmachine.AtomMetadata;
 import com.radixdlt.constraintmachine.TransitionProcedure;
-import com.radixdlt.atomos.WitnessValidator;
 import com.radixdlt.utils.UInt256;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiPredicate;
@@ -16,18 +14,15 @@ public class FungibleTransition<T extends Particle, U extends Particle> implemen
 	private final Function<T, UInt256> inputAmountMapper;
 	private final Function<U, UInt256> outputAmountMapper;
 	private final BiPredicate<T, U> transition;
-	private final WitnessValidator<T, U> witnessValidator;
 
 	public FungibleTransition(
 		Function<T, UInt256> inputAmountMapper,
 		Function<U, UInt256> outputAmountMapper,
-		BiPredicate<T, U> transition,
-		WitnessValidator<T, U> witnessValidator
+		BiPredicate<T, U> transition
 	) {
 		this.inputAmountMapper = inputAmountMapper;
 		this.outputAmountMapper = outputAmountMapper;
 		this.transition = transition;
-		this.witnessValidator = witnessValidator;
 	}
 
 	@Override
@@ -58,15 +53,5 @@ public class FungibleTransition<T extends Particle, U extends Particle> implemen
 			outputData.set(outputAmount.subtract(inputAmount));
 			return ProcedureResult.POP_INPUT;
 		}
-	}
-
-	@Override
-	public boolean validateWitness(
-		ProcedureResult result,
-		T inputParticle,
-		U outputParticle,
-		AtomMetadata metadata
-	) {
-		return witnessValidator.validate(result, inputParticle, outputParticle, metadata);
 	}
 }

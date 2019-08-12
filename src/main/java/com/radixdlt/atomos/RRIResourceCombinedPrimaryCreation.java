@@ -1,7 +1,6 @@
 package com.radixdlt.atomos;
 
 import com.radixdlt.atoms.Particle;
-import com.radixdlt.constraintmachine.AtomMetadata;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -26,22 +25,5 @@ public class RRIResourceCombinedPrimaryCreation<T extends Particle, U extends Pa
 
 		inputData.set(outputParticle);
 		return ProcedureResult.POP_OUTPUT;
-	}
-
-	@Override
-	public boolean validateWitness(
-		ProcedureResult result,
-		RRIParticle inputParticle,
-		T outputParticle,
-		AtomMetadata metadata
-	) {
-		switch (result) {
-			case POP_OUTPUT:
-				return true;
-			case POP_INPUT_OUTPUT:
-			case POP_INPUT:
-			default:
-				throw new IllegalStateException();
-		}
 	}
 }

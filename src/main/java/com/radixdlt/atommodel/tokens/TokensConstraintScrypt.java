@@ -9,16 +9,14 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle.TokenTransition;
 import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.atomos.ConstraintScrypt;
-import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atommodel.procedures.FungibleTransition;
-import com.radixdlt.atomos.WitnessValidator;
+import com.radixdlt.constraintmachine.WitnessValidator;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.constraintmachine.AtomMetadata;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -133,9 +131,9 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 				(from, to) ->
 					Objects.equals(from.getTokDefRef(), to.getTokDefRef())
 						&& Objects.equals(from.getGranularity(), to.getGranularity())
-						&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions()),
-				checkInput((in, meta) -> meta.isSignedBy(in.getTokDefRef().getAddress()))
-			)
+						&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions())
+			),
+			checkInput((in, meta) -> meta.isSignedBy(in.getTokDefRef().getAddress()))
 		);
 		os.createTransition(
 			UnallocatedTokensParticle.class, TransferrableTokensParticle.class,
@@ -144,9 +142,9 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 				(from, to) ->
 					Objects.equals(from.getTokDefRef(), to.getTokDefRef())
 						&& Objects.equals(from.getGranularity(), to.getGranularity())
-						&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions()),
-				checkInput((u, meta) -> u.getTokenPermission(TokenTransition.MINT).check(u.getTokDefRef(), meta).isSuccess())
-			)
+						&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions())
+			),
+			checkInput((u, meta) -> u.getTokenPermission(TokenTransition.MINT).check(u.getTokDefRef(), meta).isSuccess())
 		);
 		os.createTransition(
 			TransferrableTokensParticle.class, TransferrableTokensParticle.class,
@@ -155,9 +153,9 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 				(from, to) ->
 					Objects.equals(from.getTokDefRef(), to.getTokDefRef())
 						&& Objects.equals(from.getGranularity(), to.getGranularity())
-						&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions()),
-				checkInput((in, meta) -> meta.isSignedBy(in.getAddress()))
-			)
+						&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions())
+			),
+			checkInput((in, meta) -> meta.isSignedBy(in.getAddress()))
 		);
 		os.createTransition(
 			TransferrableTokensParticle.class, UnallocatedTokensParticle.class,
@@ -166,9 +164,9 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 				(from, to) ->
 					Objects.equals(from.getTokDefRef(), to.getTokDefRef())
 						&& Objects.equals(from.getGranularity(), to.getGranularity())
-						&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions()),
-				checkInput((in, meta) -> in.getTokenPermission(TokenTransition.BURN).check(in.getTokDefRef(), meta).isSuccess())
-			)
+						&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions())
+			),
+			checkInput((in, meta) -> in.getTokenPermission(TokenTransition.BURN).check(in.getTokDefRef(), meta).isSuccess())
 		);
 	}
 
