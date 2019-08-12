@@ -32,6 +32,16 @@ public class TestAtomOS implements SysCalls {
 	public <T extends Particle> void registerParticleMultipleAddress(
 		Class<T> particleClass,
 		Function<T, Set<RadixAddress>> mapper,
+		Function<T, Result> staticCheck,
+		Function<T, RRI> rriMapper
+	) {
+		resources.put(particleClass, p -> rriMapper.apply((T) p));
+	}
+
+	@Override
+	public <T extends Particle> void registerParticleMultipleAddress(
+		Class<T> particleClass,
+		Function<T, Set<RadixAddress>> mapper,
 		Function<T, Result> staticCheck
 	) {
 		// Not implemented for the test AtomOS for the time being as it is not used to test any functionality.
@@ -47,19 +57,25 @@ public class TestAtomOS implements SysCalls {
 	}
 
 	@Override
-	public <T extends Particle> void createRRIType(Class<T> particleClass, Function<T, RRI> indexer) {
-		resources.put(particleClass, p -> indexer.apply((T) p));
+	public <T extends Particle> void registerParticle(
+		Class<T> particleClass,
+		Function<T, RadixAddress> mapper,
+		Function<T, Result> staticCheck,
+		Function<T, RRI> rriMapper
+	) {
+		particleClassConstraints.add(new Pair<>(particleClass, (p, m) -> staticCheck.apply((T) p)));
 	}
 
 	@Override
-	public <T extends Particle, U extends Particle> void createCombinedRRIType(
+	public <T extends Particle> void createTransitionFromRRI(Class<T> particleClass) {
+	}
+
+	@Override
+	public <T extends Particle, U extends Particle> void createTransitionFromRRICombined(
 		Class<T> particleClass0,
-		Function<T, RRI> rriMapper0,
 		Class<U> particleClass1,
-		Function<U, RRI> rriMapper1,
 		BiPredicate<T, U> combinedResource
 	) {
-		resources.put(particleClass0, p -> rriMapper0.apply((T) p));
 	}
 
 	@Override

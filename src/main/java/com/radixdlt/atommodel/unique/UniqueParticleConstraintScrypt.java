@@ -10,8 +10,9 @@ public class UniqueParticleConstraintScrypt implements ConstraintScrypt {
 		os.registerParticle(
 			UniqueParticle.class,
 			UniqueParticle::getAddress,
-			u -> Result.success()
+			u -> Result.success(),
+			UniqueParticle::getRRI
 		);
-		os.createRRIType(UniqueParticle.class, UniqueParticle::getRRI);
+		os.createTransitionFromRRI(UniqueParticle.class);
 	}
 }

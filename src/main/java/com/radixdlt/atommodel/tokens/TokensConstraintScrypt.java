@@ -82,21 +82,21 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 				}
 
 				return Result.combine(symbolResult, descriptionResult, permissionsResult, iconResult);
-			}
+			},
+			TokenDefinitionParticle::getRRI
 		);
 
 		os.registerParticle(
 			UnallocatedTokensParticle.class,
 			UnallocatedTokensParticle::getAddress,
-			u -> Result.of(!u.getAmount().isZero(), "Amount cannot be zero")
+			u -> Result.of(!u.getAmount().isZero(), "Amount cannot be zero"),
+			UnallocatedTokensParticle::getTokDefRef
 		);
 
 		// Require Token Definition to be created with unallocated tokens of max supply
-		os.createCombinedRRIType(
+		os.createTransitionFromRRICombined(
 			TokenDefinitionParticle.class,
-			TokenDefinitionParticle::getRRI,
 			UnallocatedTokensParticle.class,
-			UnallocatedTokensParticle::getTokDefRef,
 			(tokDef, unallocated) ->
 				Objects.equals(unallocated.getGranularity(), tokDef.getGranularity())
 				&& Objects.equals(unallocated.getTokenPermissions(), tokDef.getTokenPermissions())
@@ -129,9 +129,8 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			new FungibleTransition<>(
 				UnallocatedTokensParticle::getAmount, UnallocatedTokensParticle::getAmount,
 				(from, to) ->
-					Objects.equals(from.getTokDefRef(), to.getTokDefRef())
-						&& Objects.equals(from.getGranularity(), to.getGranularity())
-						&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions())
+					Objects.equals(from.getGranularity(), to.getGranularity())
+					&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions())
 			),
 			checkInput((in, meta) -> meta.isSignedBy(in.getTokDefRef().getAddress()))
 		);
@@ -140,9 +139,8 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			new FungibleTransition<>(
 				UnallocatedTokensParticle::getAmount, TransferrableTokensParticle::getAmount,
 				(from, to) ->
-					Objects.equals(from.getTokDefRef(), to.getTokDefRef())
-						&& Objects.equals(from.getGranularity(), to.getGranularity())
-						&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions())
+					Objects.equals(from.getGranularity(), to.getGranularity())
+					&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions())
 			),
 			checkInput((u, meta) -> u.getTokenPermission(TokenTransition.MINT).check(u.getTokDefRef(), meta).isSuccess())
 		);
@@ -151,9 +149,8 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			new FungibleTransition<>(
 				TransferrableTokensParticle::getAmount, TransferrableTokensParticle::getAmount,
 				(from, to) ->
-					Objects.equals(from.getTokDefRef(), to.getTokDefRef())
-						&& Objects.equals(from.getGranularity(), to.getGranularity())
-						&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions())
+					Objects.equals(from.getGranularity(), to.getGranularity())
+					&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions())
 			),
 			checkInput((in, meta) -> meta.isSignedBy(in.getAddress()))
 		);
@@ -162,9 +159,8 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			new FungibleTransition<>(
 				TransferrableTokensParticle::getAmount, UnallocatedTokensParticle::getAmount,
 				(from, to) ->
-					Objects.equals(from.getTokDefRef(), to.getTokDefRef())
-						&& Objects.equals(from.getGranularity(), to.getGranularity())
-						&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions())
+					Objects.equals(from.getGranularity(), to.getGranularity())
+					&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions())
 			),
 			checkInput((in, meta) -> in.getTokenPermission(TokenTransition.BURN).check(in.getTokDefRef(), meta).isSuccess())
 		);

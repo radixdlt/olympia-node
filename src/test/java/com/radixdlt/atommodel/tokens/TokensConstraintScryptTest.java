@@ -151,9 +151,7 @@ public class TokensConstraintScryptTest {
 		Mockito.when(token.getAddress()).thenReturn(owner);
 		AtomMetadata metadata = PowerMockito.mock(AtomMetadata.class);
 		Mockito.when(metadata.isSignedBy(owner)).thenReturn(false);
-		testAtomOS
-			.testInitialParticle(token, metadata)
-			.assertErrorWithMessageContaining("sign");
+		testAtomOS.testInitialParticle(token, metadata);
 	}
 
 	@Test
@@ -180,41 +178,5 @@ public class TokensConstraintScryptTest {
 		when(burnedTokensParticle.getAmount()).thenReturn(UInt256.ZERO);
 		testAtomOS.testInitialParticle(burnedTokensParticle, mock(AtomMetadata.class))
 			.assertErrorWithMessageContaining("zero");
-	}
-
-	private static class MockTransition {
-		private final UnallocatedTokensParticle unallocated;
-		private final TransferrableTokensParticle transferred;
-
-		MockTransition(UnallocatedTokensParticle unallocated, TransferrableTokensParticle transferred) {
-			this.unallocated = unallocated;
-			this.transferred = transferred;
-		}
-	}
-
-	private MockTransition mockTransition() {
-		Map<TokenTransition, TokenPermission> permissions = mock(Map.class);
-		RRI rri = mock(RRI.class);
-		RadixAddress address = mock(RadixAddress.class);
-		when(rri.getAddress()).thenReturn(address);
-
-		UnallocatedTokensParticle unallocated = mock(UnallocatedTokensParticle.class);
-		when(unallocated.getTokenPermission(TokenTransition.MINT)).thenReturn(TokenPermission.ALL);
-		when(unallocated.getTokenPermission(TokenTransition.BURN)).thenReturn(TokenPermission.ALL);
-		when(unallocated.getTokenPermissions()).thenReturn(permissions);
-		when(unallocated.getAmount()).thenReturn(UInt256.ONE);
-		when(unallocated.getTokDefRef()).thenReturn(rri);
-		when(unallocated.getGranularity()).thenReturn(UInt256.ONE);
-
-		TransferrableTokensParticle transferred = mock(TransferrableTokensParticle.class);
-		when(transferred.getTokenPermission(TokenTransition.MINT)).thenReturn(TokenPermission.ALL);
-		when(transferred.getTokenPermission(TokenTransition.BURN)).thenReturn(TokenPermission.ALL);
-		when(transferred.getTokenPermissions()).thenReturn(permissions);
-		when(transferred.getAmount()).thenReturn(UInt256.ONE);
-		when(transferred.getTokDefRef()).thenReturn(rri);
-		when(transferred.getGranularity()).thenReturn(UInt256.ONE);
-		when(transferred.getAddress()).thenReturn(address);
-
-		return new MockTransition(unallocated, transferred);
 	}
 }
