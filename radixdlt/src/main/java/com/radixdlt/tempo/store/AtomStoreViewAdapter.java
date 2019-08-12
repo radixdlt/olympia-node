@@ -15,10 +15,10 @@ import org.radix.shards.ShardSpace;
 import java.util.Objects;
 import java.util.Optional;
 
-class AtomStoreViewAdapter implements AtomStoreView {
+public class AtomStoreViewAdapter implements AtomStoreView {
 	private final AtomStore store;
 
-	AtomStoreViewAdapter(AtomStore store) {
+	public AtomStoreViewAdapter(AtomStore store) {
 		this.store = Objects.requireNonNull(store, "store is required");
 	}
 

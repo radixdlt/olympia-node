@@ -40,21 +40,21 @@ public class TempoAtomTests extends RadixTestWithStores
 	public void store_atom() throws Exception
 	{
 		ECKeyPair identity = new ECKeyPair();
-		
+
 		List<Atom> atoms = createAtoms(identity, 1);
 		Tempo tempo = Modules.get(Tempo.class);
 		Assert.assertTrue(tempo.store(atoms.get(0), ImmutableSet.of(), ImmutableSet.of()));
 		Atom actual = tempo.get(atoms.get(0).getAID()).get();
 		Assert.assertEquals(atoms.get(0), actual);
-		
+
 		// TODO should check LocalSystem clocks once implemented
 	}
-	
+
 	@Test
 	public void store_duplicate_atom() throws Exception
 	{
 		ECKeyPair identity = new ECKeyPair();
-		
+
 		List<Atom> atoms = createAtoms(identity, 1);
 		Assert.assertTrue(Modules.get(Tempo.class).store(atoms.get(0), ImmutableSet.of(), ImmutableSet.of()));
 		Assert.assertFalse(Modules.get(Tempo.class).store(atoms.get(0), ImmutableSet.of(), ImmutableSet.of()));
@@ -91,7 +91,7 @@ public class TempoAtomTests extends RadixTestWithStores
 
 		Assert.assertTrue("New atom is present", Modules.get(Tempo.class).get(atoms.get(1).getAID()).isPresent());
 		Assert.assertFalse("Replaced atom is no longer present", Modules.get(Tempo.class).get(atoms.get(0).getAID()).isPresent());
-		
+
 		// TODO should check LocalSystem clocks once implemented
 	}
 

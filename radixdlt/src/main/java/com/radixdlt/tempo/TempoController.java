@@ -1,18 +1,8 @@
-package com.radixdlt.tempo.sync;
+package com.radixdlt.tempo;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.radixdlt.atoms.AtomStatus;
-import com.radixdlt.common.AID;
-import com.radixdlt.common.EUID;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.tempo.AtomStoreView;
-import com.radixdlt.tempo.AtomSyncView;
-import com.radixdlt.tempo.AtomSynchroniser;
-import com.radixdlt.tempo.LegacyUtils;
-import com.radixdlt.tempo.TempoAction;
-import com.radixdlt.tempo.TempoEpic;
-import com.radixdlt.tempo.TempoAtom;
+import com.radixdlt.tempo.actions.AcceptAtomAction;
 import com.radixdlt.tempo.actions.ReceiveAtomAction;
 import com.radixdlt.tempo.actions.ReceiveDeliveryRequestAction;
 import com.radixdlt.tempo.actions.ReceiveDeliveryResponseAction;
@@ -26,7 +16,6 @@ import com.radixdlt.tempo.actions.SendDeliveryResponseAction;
 import com.radixdlt.tempo.actions.SendIterativeRequestAction;
 import com.radixdlt.tempo.actions.SendIterativeResponseAction;
 import com.radixdlt.tempo.actions.SendPushAction;
-import com.radixdlt.tempo.actions.AcceptAtomAction;
 import com.radixdlt.tempo.epics.ActiveSyncEpic;
 import com.radixdlt.tempo.epics.DeliveryEpic;
 import com.radixdlt.tempo.epics.IterativeSyncEpic;
@@ -40,7 +29,6 @@ import com.radixdlt.tempo.messages.PushMessage;
 import com.radixdlt.tempo.peers.PeerSupplier;
 import com.radixdlt.tempo.peers.PeerSupplierAdapter;
 import com.radixdlt.tempo.store.IterativeCursorStore;
-import org.radix.atoms.Atom;
 import org.radix.database.DatabaseEnvironment;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
@@ -51,10 +39,11 @@ import org.radix.properties.RuntimeProperties;
 import org.radix.universe.system.LocalSystem;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
@@ -63,45 +52,29 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class TempoAtomSynchroniser implements AtomSynchroniser {
+public final class TempoController {
+	private static final Logger logger = Logging.getLogger("Tempo");
+
 	private static final int FULL_INBOUND_QUEUE_RESCHEDULE_TIME_SECONDS = 1;
 	private static final int TEMPO_EXECUTOR_POOL_COUNT = 4;
 
-	private final int inboundQueueCapacity;
-	private final int syncActionsQueueCapacity;
-
-	private final Logger logger = Logging.getLogger("Sync");
-
-	private final AtomStoreView storeView;
-	private final EdgeSelector edgeSelector;
-	private final PeerSupplier peerSupplier;
-
 	private final BlockingQueue<TempoAtom> inboundAtoms;
-	private final BlockingQueue<TempoAction> tempoActions;
+	private final BlockingQueue<TempoAction> actions;
 	private final List<TempoEpic> tempoEpics;
 	private final ScheduledExecutorService executor;
 
-	private TempoAtomSynchroniser(int inboundQueueCapacity,
-	                              int tempoActionsQueueCapacity,
-	                              AtomStoreView storeView,
-	                              EdgeSelector edgeSelector,
-	                              PeerSupplier peerSupplier,
-	                              List<TempoEpic> tempoEpics,
-	                              List<Function<TempoAtomSynchroniser, TempoEpic>> tempoEpicBuilders) {
-		this.inboundQueueCapacity = inboundQueueCapacity;
-		this.syncActionsQueueCapacity = tempoActionsQueueCapacity;
-		this.storeView = storeView;
-		this.edgeSelector = edgeSelector;
-		this.peerSupplier = peerSupplier;
-
-		this.executor = Executors.newScheduledThreadPool(TEMPO_EXECUTOR_POOL_COUNT, runnable -> new Thread(null, runnable, "Sync"));
-		this.inboundAtoms = new LinkedBlockingQueue<>(this.inboundQueueCapacity);
-		this.tempoActions = new LinkedBlockingQueue<>(this.syncActionsQueueCapacity);
+	private TempoController(int inboundQueueCapacity,
+	                        int actionsQueueCapacity,
+	                        List<TempoEpic> tempoEpics,
+	                        List<Function<ImmediateDispatcher, TempoEpic>> tempoEpicBuilders) {
+		this.executor = Executors.newScheduledThreadPool(TEMPO_EXECUTOR_POOL_COUNT, runnable -> new Thread(null, runnable, "Tempo"));
+		this.inboundAtoms = new LinkedBlockingQueue<>(inboundQueueCapacity);
+		this.actions = new LinkedBlockingQueue<>(actionsQueueCapacity);
 		this.tempoEpics = ImmutableList.<TempoEpic>builder()
 			.addAll(tempoEpics)
 			// TODO get rid of tempoEpicBuilders
 			.addAll(tempoEpicBuilders.stream()
-				.map(epicBuilder -> epicBuilder.apply(this))
+				.map(epicBuilder -> epicBuilder.apply(this::dispatch))
 				.collect(Collectors.toList()))
 			.add(this::internalEpic)
 			.build();
@@ -114,7 +87,7 @@ public class TempoAtomSynchroniser implements AtomSynchroniser {
 	private void run() {
 		while (true) {
 			try {
-				TempoAction action = tempoActions.take();
+				TempoAction action = actions.take();
 				this.executor.execute(() -> this.execute(action));
 			} catch (InterruptedException e) {
 				// exit if interrupted
@@ -144,9 +117,9 @@ public class TempoAtomSynchroniser implements AtomSynchroniser {
 	}
 
 	public interface ImmediateDispatcher {
+
 		void dispatch(TempoAction action);
 	}
-
 	private void delay(TempoAction action, long delay, TimeUnit unit) {
 		// TODO consider cancellation when shutdown/reset
 		this.executor.schedule(() -> dispatch(action), delay, unit);
@@ -158,7 +131,7 @@ public class TempoAtomSynchroniser implements AtomSynchroniser {
 	}
 
 	private void dispatch(TempoAction action) {
-		if (!this.tempoActions.add(action)) {
+		if (!this.actions.add(action)) {
 			// TODO handle full action queue better
 			throw new IllegalStateException("Action queue full");
 		}
@@ -183,78 +156,49 @@ public class TempoAtomSynchroniser implements AtomSynchroniser {
 		return Stream.empty();
 	}
 
-	@Override
+	public CompletableFuture<TempoAtom> resolve(TempoAtom atom, Collection<TempoAtom> conflictingAtoms) {
+		// TODO hook up local conflict resolver epic
+		throw new UnsupportedOperationException("Not yet implemented");
+	}
+
+	public void accept(TempoAtom atom) {
+		this.dispatch(new AcceptAtomAction(atom));
+	}
+
+	public void queue(TempoAtom atom) {
+		this.dispatch(new ReceiveAtomAction(atom));
+	}
+
 	public TempoAtom receive() throws InterruptedException {
 		return this.inboundAtoms.take();
 	}
 
-	@Override
-	public void clear() {
-		// TODO review whether this is correct
+	int getInboundQueueSize() {
+		return this.inboundAtoms.size();
+	}
+
+	int getActionQueueSize() {
+		return this.actions.size();
+	}
+
+	// TODO figure out nicer way than reset
+	void reset() {
 		this.inboundAtoms.clear();
-		this.tempoActions.clear();
-	}
-
-	@Override
-	public List<EUID> selectEdges(TempoAtom atom) {
-		return edgeSelector.selectEdges(peerSupplier.getNids(), atom);
-	}
-
-	@Override
-	public void synchronise(TempoAtom atom) {
-		this.dispatch(new AcceptAtomAction(atom));
-	}
-
-	@Override
-	public AtomSyncView getLegacyAdapter() {
-		return new AtomSyncView() {
-			@Override
-			public void receive(Atom atom) {
-				TempoAtom tempoAtom = LegacyUtils.fromLegacyAtom(atom);
-				TempoAtomSynchroniser.this.dispatch(new ReceiveAtomAction(tempoAtom));
-			}
-
-			@Override
-			public AtomStatus getAtomStatus(AID aid) {
-				return TempoAtomSynchroniser.this.storeView.contains(aid) ? AtomStatus.STORED : AtomStatus.DOES_NOT_EXIST;
-			}
-
-			@Override
-			public long getQueueSize() {
-				return TempoAtomSynchroniser.this.inboundAtoms.size();
-			}
-
-			@Override
-			public Map<String, Object> getMetaData() {
-				return ImmutableMap.of(
-					"inboundQueue", getQueueSize(),
-					"inboundQueueCapacity", TempoAtomSynchroniser.this.inboundQueueCapacity,
-
-					"actionQueue", TempoAtomSynchroniser.this.tempoActions.size(),
-					"actionQueueCapacity", TempoAtomSynchroniser.this.syncActionsQueueCapacity
-				);
-			}
-		};
-	}
-
-	public static Builder builder() {
-		return new Builder();
+		this.actions.clear();
 	}
 
 	public static Builder defaultBuilder(AtomStoreView storeView) {
 		LocalSystem localSystem = LocalSystem.getInstance();
 		Messaging messager = Messaging.getInstance();
 		PeerSupplier peerSupplier = new PeerSupplierAdapter(() -> Modules.get(PeerHandler.class));
-		Builder builder = new Builder()
-			.storeView(storeView)
-			.peerSupplier(peerSupplier)
+		Builder builder = builder()
 			.addEpic(DeliveryEpic.builder()
 				.storeView(storeView)
 				.build())
 			.addEpic(PassivePeersEpic.builder()
 				.peerSupplier(peerSupplier)
 				.build())
-			.addEpicBuilder(synchroniser -> MessagingEpic.builder()
+			.addEpicBuilder(controller -> MessagingEpic.builder()
 				.messager(messager)
 				.addInbound("tempo.sync.delivery.request", DeliveryRequestMessage.class, ReceiveDeliveryRequestAction::from)
 				.addOutbound(SendDeliveryRequestAction.class, SendDeliveryRequestAction::toMessage, SendDeliveryRequestAction::getPeer)
@@ -266,7 +210,7 @@ public class TempoAtomSynchroniser implements AtomSynchroniser {
 				.addOutbound(SendIterativeResponseAction.class, SendIterativeResponseAction::toMessage, SendIterativeResponseAction::getPeer)
 				.addInbound("tempo.sync.push", PushMessage.class, ReceivePushAction::from)
 				.addOutbound(SendPushAction.class, SendPushAction::toMessage, SendPushAction::getPeer)
-				.build(synchroniser::dispatch));
+				.build(controller::dispatch));
 		if (Modules.get(RuntimeProperties.class).get("tempo2.sync.active", true)) {
 			builder.addEpic(ActiveSyncEpic.builder()
 				.localSystem(localSystem)
@@ -289,14 +233,15 @@ public class TempoAtomSynchroniser implements AtomSynchroniser {
 		return builder;
 	}
 
+	public static Builder builder() {
+		return new Builder();
+	}
+
 	public static class Builder {
 		private int inboundQueueCapacity = 1 << 14;
 		private int syncActionsQueueCapacity = 1 << 16;
-		private AtomStoreView storeView;
-		private PeerSupplier peerSupplier;
-		private EdgeSelector edgeSelector;
-		private final List<TempoEpic> tempoEpics = new ArrayList<>();
-		private final List<Function<TempoAtomSynchroniser, TempoEpic>> syncEpicBuilders = new ArrayList<>();
+		private final List<TempoEpic> epics = new ArrayList<>();
+		private final List<Function<ImmediateDispatcher, TempoEpic>> epicBuilders = new ArrayList<>();
 
 		private Builder() {
 		}
@@ -313,51 +258,22 @@ public class TempoAtomSynchroniser implements AtomSynchroniser {
 
 		public Builder addEpic(TempoEpic epic) {
 			Objects.requireNonNull(epic, "epic is required");
-			this.tempoEpics.add(epic);
+			this.epics.add(epic);
 			return this;
 		}
 
-		public Builder addEpicBuilder(Function<TempoAtomSynchroniser, TempoEpic> epicBuilder) {
-			this.syncEpicBuilders.add(epicBuilder);
+		public Builder addEpicBuilder(Function<ImmediateDispatcher, TempoEpic> epicBuilder) {
+			this.epicBuilders.add(epicBuilder);
 			return this;
 		}
 
-		public Builder storeView(AtomStoreView storeView) {
-			this.storeView = storeView;
-			return this;
-		}
-
-		public Builder peerSupplier(PeerSupplier peerSupplier) {
-			this.peerSupplier = peerSupplier;
-			return this;
-		}
-
-		public Builder edgeSelector(EdgeSelector edgeSelector) {
-			this.edgeSelector = edgeSelector;
-			return this;
-		}
-
-		public TempoAtomSynchroniser build() {
-			Objects.requireNonNull(storeView, "storeView is required");
-			Objects.requireNonNull(peerSupplier, "peerSupplier is required");
-			Objects.requireNonNull(edgeSelector, "edgeSelector is required");
-
-			TempoAtomSynchroniser tempoAtomSynchroniser = new TempoAtomSynchroniser(
+		public TempoController build() {
+			return new TempoController(
 				inboundQueueCapacity,
 				syncActionsQueueCapacity,
-				storeView,
-				edgeSelector,
-				peerSupplier,
-				tempoEpics,
-				syncEpicBuilders
+				epics,
+				epicBuilders
 			);
-
-			Thread syncDaemon = new Thread(tempoAtomSynchroniser::run);
-			syncDaemon.setName("Sync Daemon");
-			syncDaemon.setDaemon(true);
-			syncDaemon.start();
-
-			return tempoAtomSynchroniser;
 		}
 	}
 }

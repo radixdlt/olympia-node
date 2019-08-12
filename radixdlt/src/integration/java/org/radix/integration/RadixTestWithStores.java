@@ -1,8 +1,10 @@
 package org.radix.integration;
 
-import com.radixdlt.tempo.AtomSyncView;
-import com.radixdlt.tempo.AtomSynchroniser;
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.tempo.Tempo;
+import com.radixdlt.tempo.TempoController;
+import com.radixdlt.tempo.peers.PeerSupplier;
+import com.radixdlt.tempo.sync.EdgeSelector;
 import org.junit.After;
 import org.junit.Before;
 import org.radix.atoms.AtomStore;
@@ -15,10 +17,8 @@ import org.radix.modules.exceptions.ModuleException;
 import org.radix.properties.RuntimeProperties;
 import org.radix.routing.RoutingHandler;
 import org.radix.routing.RoutingStore;
-import org.radix.universe.system.LocalSystem;
 
-import com.radixdlt.crypto.Hash;
-
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -31,10 +31,16 @@ public class RadixTestWithStores extends RadixTest
 		Modules.getInstance().start(clean(new RoutingStore()));
 		Modules.getInstance().start(new RoutingHandler());
 		if (Modules.get(RuntimeProperties.class).get("tempo2", false)) {
-			AtomSynchroniser mockSynchroniser = mock(AtomSynchroniser.class);
-			when(mockSynchroniser.getLegacyAdapter()).thenReturn(mock(AtomSyncView.class));
-			Tempo tempo = Tempo.defaultBuilderWithoutSynchroniser()
-				.synchroniser(mockSynchroniser).build();
+			TempoController mockController = mock(TempoController.class);
+			PeerSupplier peerSupplier = mock(PeerSupplier.class);
+			when(peerSupplier.getNids()).thenReturn(ImmutableList.of());
+			EdgeSelector edgeSelector = mock(EdgeSelector.class);
+			when(edgeSelector.selectEdges(any(), any())).thenReturn(ImmutableList.of());
+			Tempo tempo = Tempo.defaultBuilderStoreOnly()
+				.controller(mockController)
+				.peerSupplier(peerSupplier)
+				.edgeSelector(edgeSelector)
+				.build();
 			Modules.getInstance().start(tempo);
 		} else {
 			Modules.getInstance().start(clean(new AtomStore()));
