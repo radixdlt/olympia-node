@@ -41,12 +41,9 @@ public final class CMAtomOS {
 	private final List<KernelConstraintProcedure> kernelProcedures = new ArrayList<>();
 	private AtomKernelCompute atomKernelCompute;
 
-	private final Map<Class<? extends Particle>, Function<Particle, Stream<RadixAddress>>> particleMapper = new LinkedHashMap<>();
-	private final Map<Class<? extends Particle>, Function<Particle, Result>> particleStaticValidation = new HashMap<>();
-
+	private final Map<Class<? extends Particle>, ParticleDefinition<Particle>> particleDefinitions = new LinkedHashMap<>();
 	private final ImmutableMap.Builder<Pair<Class<? extends Particle>, Class<? extends Particle>>, TransitionProcedure<Particle, Particle>> proceduresBuilder
 		= new ImmutableMap.Builder<>();
-
 	private final ImmutableMap.Builder<Pair<Class<? extends Particle>, Class<? extends Particle>>, WitnessValidator<Particle, Particle>> witnessesBuilder
 		= new ImmutableMap.Builder<>();
 
@@ -61,7 +58,10 @@ public final class CMAtomOS {
 		this.timestampSupplier = Objects.requireNonNull(timestampSupplier);
 
 		// RRI particle is a low level particle managed by the OS used for the management of all other resources
-		this.particleMapper.put(RRIParticle.class, rri -> Stream.of(((RRIParticle) rri).getRri().getAddress()));
+		this.particleDefinitions.put(RRIParticle.class, new ParticleDefinition<>(
+			rri -> Stream.of(((RRIParticle) rri).getRri().getAddress()),
+			rri -> Result.success()
+		));
 	}
 
 	private static <T extends Particle, U extends Particle> TransitionProcedure<Particle, Particle> toGeneric(TransitionProcedure<T, U> procedure) {
@@ -72,25 +72,20 @@ public final class CMAtomOS {
 		return (res, in, out, meta) -> validator.validate(res, (T) in, (U) out, meta);
 	}
 
+	private static class ParticleDefinition<T extends Particle> {
+		private final Function<T, Stream<RadixAddress>> addressMapper;
+		private final Function<T, Result> staticValidation;
+
+		ParticleDefinition(Function<T, Stream<RadixAddress>> addressMapper, Function<T, Result> staticValidation) {
+			this.staticValidation = staticValidation;
+			this.addressMapper = addressMapper;
+		}
+	}
+
 	public void load(ConstraintScrypt constraintScrypt) {
-		final Map<Class<? extends Particle>, Function<Particle, Stream<RadixAddress>>> scryptParticleClasses = new HashMap<>();
+		final Map<Class<? extends Particle>, ParticleDefinition<Particle>> scryptParticleDefinitions = new HashMap<>();
 
 		constraintScrypt.main(new SysCalls() {
-			@Override
-			public <T extends Particle> void registerParticleMultipleAddress(
-				Class<T> particleClass,
-				Function<T, Set<RadixAddress>> mapper,
-				Function<T, Result> staticCheck
-			) {
-				if (scryptParticleClasses.containsKey(particleClass) || particleMapper.containsKey(particleClass)) {
-					throw new IllegalStateException("Particle " + particleClass + " is already registered");
-				}
-
-				scryptParticleClasses.put(particleClass, p -> mapper.apply((T) p).stream());
-				particleStaticValidation.merge(particleClass, p -> staticCheck.apply((T) p),
-					(old, next) -> p -> Result.combine(old.apply(p), next.apply(p)));
-			}
-
 			@Override
 			public <T extends Particle> void registerParticle(
 				Class<T> particleClass,
@@ -105,11 +100,27 @@ public final class CMAtomOS {
 			}
 
 			@Override
+			public <T extends Particle> void registerParticleMultipleAddress(
+				Class<T> particleClass,
+				Function<T, Set<RadixAddress>> mapper,
+				Function<T, Result> staticCheck
+			) {
+				if (particleDefinitions.containsKey(particleClass)) {
+					throw new IllegalStateException("Particle " + particleClass + " is already registered");
+				}
+
+				scryptParticleDefinitions.put(particleClass, new ParticleDefinition<>(
+					p -> mapper.apply((T) p).stream(),
+					p -> staticCheck.apply((T) p)
+				));
+			}
+
+			@Override
 			public <T extends Particle> void createRRIType(
 				Class<T> particleClass,
 				Function<T, RRI> rriMapper
 			) {
-				if (!scryptParticleClasses.containsKey(particleClass)) {
+				if (!scryptParticleDefinitions.containsKey(particleClass)) {
 					throw new IllegalStateException(particleClass + " must be registered in calling scrypt.");
 				}
 
@@ -130,10 +141,10 @@ public final class CMAtomOS {
 				Function<U, RRI> rriMapper1,
 				BiPredicate<T, U> combinedCheck
 			) {
-				if (!scryptParticleClasses.containsKey(particleClass0)) {
+				if (!scryptParticleDefinitions.containsKey(particleClass0)) {
 					throw new IllegalStateException(particleClass0 + " must be registered in calling scrypt.");
 				}
-				if (!scryptParticleClasses.containsKey(particleClass1)) {
+				if (!scryptParticleDefinitions.containsKey(particleClass1)) {
 					throw new IllegalStateException(particleClass1 + " must be registered in calling scrypt.");
 				}
 
@@ -165,8 +176,8 @@ public final class CMAtomOS {
 				TransitionProcedure<T, U> procedure,
 				WitnessValidator<T, U> witnessValidator
 			) {
-				if ((inputClass != null && !scryptParticleClasses.containsKey(inputClass))
-					|| (outputClass != null && !scryptParticleClasses.containsKey(outputClass))) {
+				if ((inputClass != null && !scryptParticleDefinitions.containsKey(inputClass))
+					|| (outputClass != null && !scryptParticleDefinitions.containsKey(outputClass))) {
 					throw new IllegalStateException(inputClass + " " + outputClass + " must be all registered in calling scrypt.");
 				}
 				createTransitionInternal(inputClass, outputClass, procedure, witnessValidator);
@@ -183,7 +194,7 @@ public final class CMAtomOS {
 			}
 		});
 
-		particleMapper.putAll(scryptParticleClasses);
+		particleDefinitions.putAll(scryptParticleDefinitions);
 	}
 
 	public void loadKernelConstraintScrypt(AtomOSDriver driverScrypt) {
@@ -252,18 +263,17 @@ public final class CMAtomOS {
 
 		UnaryOperator<CMStore> virtualizedDefault = base -> {
 			CMStore virtualizeNeutral = CMStores.virtualizeDefault(base, p -> {
-				Function<Particle, Stream<RadixAddress>> mapper = particleMapper.get(p.getClass());
-				if (mapper == null) {
+				final ParticleDefinition<Particle> particleDefinition = particleDefinitions.get(p.getClass());
+				if (particleDefinition == null) {
 					return false;
 				}
 
-				Function<Particle, Result> staticValidation = particleStaticValidation.get(p.getClass());
-				if (staticValidation != null) {
-					if (staticValidation.apply(p).isError()) {
-						return false;
-					}
+				final Function<Particle, Result> staticValidation = particleDefinition.staticValidation;
+				if (staticValidation.apply(p).isError()) {
+					return false;
 				}
 
+				final Function<Particle, Stream<RadixAddress>> mapper = particleDefinition.addressMapper;
 				final Set<EUID> destinations = mapper.apply(p).map(RadixAddress::getUID).collect(Collectors.toSet());
 
 				return !(destinations.isEmpty())
