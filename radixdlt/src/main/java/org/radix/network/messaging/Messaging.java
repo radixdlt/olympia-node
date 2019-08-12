@@ -358,8 +358,6 @@ public class Messaging extends Service
 			Modules.ifAvailable(SystemMetaData.class, a -> a.increment("messages.outbound.sent"));
 		} catch (InterruptedException ex) {
 			messagingLog.error(message + ": Sending to " + peer + " failed", ex);
-			// Not going to handle it here.
-			Thread.currentThread().interrupt();
 			throw new IOException("While sending message", ex);
 		} catch (IOException | CryptoException ex) {
 			messagingLog.error(message + ": Sending to " + peer + " failed", ex);

@@ -1,16 +1,18 @@
 package org.radix.network2.transport;
 
+import java.io.Closeable;
+
 /**
  * Transport interface for various transport implementations.
  */
-public interface Transport {
+public interface Transport extends Closeable {
 
 	/**
 	 * Returns the name of this transport.
 	 *
 	 * @return the name of this transport.
 	 */
-	String getName();
+	String name();
 
 	/**
 	 * Returns the control interface for this transport.

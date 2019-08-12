@@ -25,8 +25,10 @@ import org.radix.network2.transport.TransportInfo;
 import org.radix.network2.transport.TransportListener;
 import org.radix.network2.transport.TransportOutboundConnection;
 import org.radix.properties.RuntimeProperties;
+import org.xerial.snappy.Snappy;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.universe.Universe;
 
@@ -69,6 +71,7 @@ public class MessageCentralImplTest {
 		}
 	}
 
+	private Serialization serialization;
 	private DummyTransportOutboundConnection toc;
 	private DummyTransportListener dtl;
 	private ConnectionManager connectionManager;
@@ -76,7 +79,7 @@ public class MessageCentralImplTest {
 
 	@Before
 	public void testSetup() throws ModuleException {
-		Serialization serialization = Serialization.getDefault();
+		this.serialization = Serialization.getDefault();
 
 		// Curse you singletons
 		Universe universe = mock(Universe.class);
@@ -86,6 +89,8 @@ public class MessageCentralImplTest {
 		when(runtimeProperties.get(eq("messaging.inbound.queue_max"), any())).thenReturn(8192);
 		when(runtimeProperties.get(eq("messaging.outbound.queue_max"), any())).thenReturn(16384);
 		when(runtimeProperties.get(eq("messaging.time_to_live"), any())).thenReturn(30);
+    	when(runtimeProperties.get(eq("network.udp.buffer"), any())).thenReturn(1 << 18);
+
 		PeerStore peerStore = mock(PeerStore.class);
 		Modules.put(Universe.class, universe);
 		Modules.put(RuntimeProperties.class, runtimeProperties);
@@ -99,9 +104,13 @@ public class MessageCentralImplTest {
 
 		this.toc = new DummyTransportOutboundConnection();
 
+		// Warning suppression OK here -> mocked interfaces don't have contained resources
+		@SuppressWarnings("resource")
 		TransportControl transportControl = mock(TransportControl.class);
-		when(transportControl.open(any())).thenReturn(CompletableFuture.completedFuture(this.toc));
+		when(transportControl.open()).thenReturn(CompletableFuture.completedFuture(this.toc));
 
+		// Warning suppression OK here -> mocked interfaces don't have contained resources
+		@SuppressWarnings("resource")
 		Transport transport = mock(Transport.class);
 		when(transport.control()).thenReturn(transportControl);
 
@@ -157,7 +166,7 @@ public class MessageCentralImplTest {
 	@Test
 	public void testInbound() throws IOException, InterruptedException {
 		Message msg = new TestMessage();
-		byte[] data = msg.toByteArray();
+		byte[] data = Snappy.compress(serialization.toDson(msg, Output.WIRE));
 
 		AtomicReference<Message> receivedMessage = new AtomicReference<>();
 		Semaphore receivedFlag = new Semaphore(0);

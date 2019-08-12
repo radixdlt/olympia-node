@@ -14,7 +14,7 @@ import com.radixdlt.common.EUID;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 
-public class PeerImpl implements Peer {
+public final class PeerImpl implements Peer {
 
 	@JsonProperty("system")
 	@DsonOutput(Output.ALL)
@@ -50,7 +50,8 @@ public class PeerImpl implements Peer {
 		return supportedTransports()
 			.map(TransportInfo::name)
 			.filter(transportName::equals)
-			.findAny().isPresent();
+			.findAny()
+			.isPresent();
 	}
 
 	@Override
@@ -58,7 +59,8 @@ public class PeerImpl implements Peer {
 		return supportedTransports()
 			.filter(t -> t.name().equals(transportName))
 			.map(TransportInfo::metadata)
-			.findAny().orElseThrow(() -> new TransportException("Transport " + transportName + " not supported"));
+			.findAny()
+			.orElseThrow(() -> new TransportException("Transport " + transportName + " not supported"));
 	}
 
 	@Override

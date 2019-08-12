@@ -1,8 +1,8 @@
 package org.radix.network2.messaging;
 
-import java.io.ByteArrayInputStream;
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.util.List;
 import java.util.Objects;
@@ -14,16 +14,17 @@ import org.radix.logging.Logging;
 import org.radix.modules.Modules;
 import org.radix.network.Network;
 import org.radix.network.Protocol;
-import org.radix.network.exceptions.BanException;
 import org.radix.network.messaging.Message;
 import org.radix.network.messaging.Messaging;
 import org.radix.network.peers.UDPPeer;
 import org.radix.network2.addressbook.Peer;
 import org.radix.network2.transport.SendResult;
+import org.radix.network2.transport.Transport;
 import org.radix.network2.transport.TransportInfo;
 import org.radix.network2.transport.TransportListener;
 import org.radix.network2.transport.TransportOutboundConnection;
 import org.radix.properties.RuntimeProperties;
+import org.xerial.snappy.Snappy;
 
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.universe.Universe;
@@ -33,7 +34,7 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
 
 
-class MessageCentralImpl implements MessageCentral, Closeable {
+public final class MessageCentralImpl implements MessageCentral, Closeable {
 	private static final Logger log = Logging.getLogger("message");
 
 	private static final int INBOUND_PACKET_QUEUE_LENGTH = Modules.get(RuntimeProperties.class).get("messaging.inbound.queue_max", 8192);
@@ -55,7 +56,7 @@ class MessageCentralImpl implements MessageCentral, Closeable {
 	private final Thread processingThread;
 
 
-	MessageCentralImpl(
+	public MessageCentralImpl(
 		Serialization serialization,
 		ConnectionManager connectionManager,
 		Iterable<TransportListener> listeners
@@ -121,16 +122,11 @@ class MessageCentralImpl implements MessageCentral, Closeable {
 		throw new IllegalStateException();
 	}
 
-	private byte[] serialize(Object out) {
-		try {
-			return serialization.toDson(out, Output.WIRE);
-		} catch (SerializationException e) {
-			throw new UncheckedSerializationException("While serializing message", e);
-		}
-	}
-
+	@SuppressWarnings("resource")
+	// Resource warning suppression OK here -> caller is responsible
 	private CompletableFuture<TransportOutboundConnection> findTransportAndOpenConnection(Peer peer, byte[] bytes) {
-		return connectionManager.findTransport(peer, bytes).control().open(peer);
+		Transport transport = connectionManager.findTransport(peer, bytes);
+		return transport.control().open();
 	}
 
 	private void inboundMessage(InboundMessage message) {
@@ -151,18 +147,37 @@ class MessageCentralImpl implements MessageCentral, Closeable {
 					String peerAddress = source.metadata().get("host");
 					URI uri = URI.create(Network.URI_PREFIX + peerAddress + ":" + Modules.get(Universe.class).getPort());
 					UDPPeer peer = Network.getInstance().connect(uri, Protocol.UDP);
-					Message message = Message.parse(new ByteArrayInputStream(data, 0, data.length));
+					Message message = deserialize(data);
 					Messaging.getInstance().received(message, peer);
 				} catch (IOException ex) {
 					log.error(String.format("While processing inbound message from %s %s", source.name(), source.metadata()), ex);
-				} catch (BanException ex) {
-					// FIXME: Not quite sure what to do with this just yet
-					log.error(String.format("Peer at %s %s should be banned", source.name(), source.metadata()), ex);
 				}
 			}
 		} catch (InterruptedException e) {
 			// Just exit
 			Thread.currentThread().interrupt();
+		}
+	}
+
+	private byte[] serialize(Message out) {
+		try {
+			byte[] uncompressed = serialization.toDson(out, Output.WIRE);
+			return Snappy.compress(uncompressed);
+		} catch (SerializationException e) {
+			throw new UncheckedSerializationException("While serializing message", e);
+		} catch (IOException e) {
+			throw new UncheckedIOException("While serializing message", e);
+		}
+	}
+
+	private Message deserialize(byte[] in) {
+		try {
+			byte[] uncompressed = Snappy.uncompress(in);
+			return serialization.fromDson(uncompressed, Message.class);
+		} catch (SerializationException e) {
+			throw new UncheckedSerializationException("While deserializing message", e);
+		} catch (IOException e) {
+			throw new UncheckedIOException("While deserializing message", e);
 		}
 	}
 }

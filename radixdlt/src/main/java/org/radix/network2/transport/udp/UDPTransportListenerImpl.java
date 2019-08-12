@@ -2,15 +2,11 @@ package org.radix.network2.transport.udp;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
-import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.SocketException;
 import java.util.Objects;
 
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.modules.Modules;
 import org.radix.network.PublicInetAddress;
 import org.radix.network2.messaging.InboundMessage;
 import org.radix.network2.messaging.InboundMessageConsumer;
@@ -18,36 +14,19 @@ import org.radix.network2.transport.StaticTransportMetadata;
 import org.radix.network2.transport.TransportInfo;
 import org.radix.network2.transport.TransportListener;
 import org.radix.network2.transport.TransportMetadata;
-import org.radix.properties.RuntimeProperties;
-import com.radixdlt.universe.Universe;
+import org.radix.utils.IOUtils;
 
 // FIXME: dependency on PublicInetAddress singleton for NAT handling
-// FIXME: dependency on Modules.get(Universe.class) for universe port
-public class UDPTransportListener implements TransportListener {
+public final class UDPTransportListenerImpl implements TransportListener {
 	private static final Logger log = Logging.getLogger("transport.udp");
 
-	private final DatagramSocket serverSocket;
+	private final UDPSocket serverSocket;
 	private final Thread listeningThread;
 
 	private InboundMessageConsumer messageSink;
 
-	public UDPTransportListener(TransportMetadata metadata) throws SocketException {
-		String providedHost = metadata.get(UDPConstants.METADATA_UDP_HOST);
-		if (providedHost == null) {
-			providedHost = "0.0.0.0"; // I'm all ears
-		}
-		String portString = metadata.get(UDPConstants.METADATA_UDP_PORT);
-		int port = portString == null ? Modules.get(Universe.class).getPort() : Integer.parseInt(portString);
-		InetSocketAddress listenSocketAddress = new InetSocketAddress(providedHost, port);
-
-		// FIXME: Should really have a factory for sockets, rather than creating here
-		this.serverSocket = new DatagramSocket(listenSocketAddress);
-    	this.serverSocket.setReceiveBufferSize(Modules.get(RuntimeProperties.class).get("network.udp.buffer", 1 << 18));
-    	this.serverSocket.setSendBufferSize(Modules.get(RuntimeProperties.class).get("network.udp.buffer", 1 << 18));
-    	if (log.hasLevel(Logging.DEBUG)) {
-    		log.debug(String.format("UDP server socket %s Receive/Send buffer size: %s/%s",
-    			this.serverSocket.getLocalSocketAddress(), this.serverSocket.getReceiveBufferSize(), this.serverSocket.getSendBufferSize()));
-    	}
+	public UDPTransportListenerImpl(TransportMetadata metadata, UDPSocketFactory factory) throws IOException {
+		this.serverSocket = factory.createServerSocket(metadata);
 
 		// Start listening thread
 		this.listeningThread = new Thread(this::inboundMessageReceiver, getClass().getSimpleName() + " UDP listening");
@@ -62,6 +41,7 @@ public class UDPTransportListener implements TransportListener {
 
 	@Override
 	public void close() throws IOException {
+		IOUtils.closeSafely(serverSocket, log);
 		this.listeningThread.interrupt();
 		try {
 			this.listeningThread.join();

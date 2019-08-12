@@ -6,6 +6,7 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.Set;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -73,6 +74,8 @@ public class BootstrapDiscoveryTest {
         doReturn(0).when(config).get("network.discovery.allow_tls_bypass", 0);
         doReturn(8).when(config).get("network.connections.in", 8);
         doReturn(8).when(config).get("network.connections.out", 8);
+        doReturn(8192).when(config).get("messaging.inbound.queue_max", 8192);
+        doReturn(1 << 18).when(config).get("network.udp.buffer", 1 << 18);
         doReturn(universe).when(Modules.class, "get", Universe.class);
 
         when(config.get(eq("network.discovery.connection.retries"), any())).thenReturn(1);
@@ -87,6 +90,12 @@ public class BootstrapDiscoveryTest {
         when(universe.getPort()).thenReturn(30000);
 
         when(url.openConnection()).thenReturn(conn);
+    }
+
+    @After
+    public void tearDown() {
+        // Make sure throwing interrupted exception doesn't affect other tests
+        Thread.interrupted();
     }
 
 	@Test
