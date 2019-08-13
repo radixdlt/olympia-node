@@ -1,10 +1,14 @@
 package com.radixdlt.atomos;
 
+import com.google.common.collect.ImmutableMap;
+import com.radixdlt.atomos.AtomOSKernel.AtomKernelCompute;
 import com.radixdlt.common.Pair;
 import com.radixdlt.compute.AtomCompute;
+import com.radixdlt.constraintmachine.ParticleProcedure;
 import com.radixdlt.store.CMStore;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,18 +19,11 @@ import java.util.function.Function;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
-import java.util.regex.Pattern;
 import com.radixdlt.atomos.mapper.ParticleToAmountMapper;
 import com.radixdlt.atomos.mapper.ParticleToRRIMapper;
 import com.radixdlt.atomos.mapper.ParticleToShardableMapper;
 import com.radixdlt.atomos.mapper.ParticleToShardablesMapper;
-import com.radixdlt.atomos.procedures.ParticleClassConstraintProcedure;
-import com.radixdlt.atomos.procedures.ParticleClassWithSideEffectConstraintProcedure;
-import com.radixdlt.atomos.procedures.PayloadParticleConstraintProcedure;
-import com.radixdlt.atomos.procedures.RRIConstraintProcedure;
-import com.radixdlt.atomos.procedures.FungibleTransitionConstraintProcedure;
 import com.radixdlt.constraintmachine.ConstraintMachine.Builder;
-import com.radixdlt.constraintmachine.ConstraintProcedure;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.KernelConstraintProcedure;
 import com.radixdlt.constraintmachine.KernelProcedureError;
@@ -42,18 +39,17 @@ import java.util.stream.Stream;
 /**
  * Implementation of the AtomOS interface on top of a UTXO based Constraint Machine.
  */
-public final class CMAtomOS implements AtomOSKernel, AtomOS {
-	private static final Pattern PARTICLE_NAME_PATTERN = Pattern.compile("[1-9A-Za-z]+");
-	private final List<ConstraintProcedure> procedures = new ArrayList<>();
+public final class CMAtomOS {
 	private final List<KernelConstraintProcedure> kernelProcedures = new ArrayList<>();
 	private AtomKernelCompute atomKernelCompute;
 
-	private final List<FungibleTransition<? extends Particle>> fungibleTransitions = new ArrayList<>();
-	private FungibleTransition.Builder<? extends Particle> pendingFungibleTransition = null;
 	private final Map<Class<? extends Particle>, Function<Particle, Stream<RadixAddress>>> particleMapper = new LinkedHashMap<>();
+	private final Map<Class<? extends Particle>, Function<Particle, Result>> particleStaticValidation = new HashMap<>();
 
-	private final RRIConstraintProcedure.Builder rriProcedureBuilder = new RRIConstraintProcedure.Builder();
-	private final PayloadParticleConstraintProcedure.Builder payloadProcedureBuilder = new PayloadParticleConstraintProcedure.Builder();
+	private final Map<Class<? extends Particle>, FungibleDefinition.Builder<? extends Particle>> fungibles = new HashMap<>();
+	private final RRIParticleProcedureBuilder rriProcedureBuilder = new RRIParticleProcedureBuilder();
+	private final TransitionlessParticlesProcedureBuilder payloadProcedureBuilder = new TransitionlessParticlesProcedureBuilder();
+
 	private final Supplier<Universe> universeSupplier;
 	private final LongSupplier timestampSupplier;
 
@@ -65,160 +61,148 @@ public final class CMAtomOS implements AtomOSKernel, AtomOS {
 		this.timestampSupplier = Objects.requireNonNull(timestampSupplier);
 
 		// RRI particle is a low level particle managed by the OS used for the management of all other resources
-		this.registerParticle(RRIParticle.class, "rri", (RRIParticle rri) -> rri.getRri().getAddress());
+		this.particleMapper.put(RRIParticle.class, rri -> Stream.of(((RRIParticle) rri).getRri().getAddress()));
 	}
 
 	public void load(ConstraintScrypt constraintScrypt) {
-		constraintScrypt.main(this);
+		final Map<Class<? extends Particle>, Function<Particle, Stream<RadixAddress>>> scryptParticleClasses = new HashMap<>();
 
-		if (this.pendingFungibleTransition != null) {
-			this.fungibleTransitions.add(this.pendingFungibleTransition.build());
-			this.pendingFungibleTransition = null;
-		}
+		constraintScrypt.main(new SysCalls() {
+			@Override
+			public <T extends Particle> void registerParticle(Class<T> particleClass, ParticleToShardablesMapper<T> mapper) {
+				if (scryptParticleClasses.containsKey(particleClass) || particleMapper.containsKey(particleClass)) {
+					throw new IllegalStateException("Particle " + particleClass + " is already registered");
+				}
+
+				scryptParticleClasses.put(particleClass, p -> mapper.getDestinations((T) p).stream());
+			}
+
+			@Override
+			public <T extends Particle> void registerParticle(Class<T> particleClass, ParticleToShardableMapper<T> mapper) {
+				registerParticle(particleClass, (T particle) -> Collections.singleton(mapper.getDestination(particle)));
+			}
+
+			@Override
+			public <T extends Particle> ParticleClassConstraint<T> on(Class<T> particleClass) {
+				if (!scryptParticleClasses.containsKey(particleClass)) {
+					throw new IllegalStateException(particleClass + " must be registered in calling scrypt.");
+				}
+
+				return constraint -> {
+					particleStaticValidation.merge(particleClass, p -> constraint.apply((T) p),
+						(old, next) -> p -> Result.combine(old.apply(p), next.apply(p)));
+				};
+			}
+
+			@Override
+			public <T extends Particle> void newResourceType(
+				Class<T> particleClass,
+				ParticleToRRIMapper<T> rriMapper
+			) {
+				if (!scryptParticleClasses.containsKey(particleClass)) {
+					throw new IllegalStateException(particleClass + " must be registered in calling scrypt.");
+				}
+
+				rriProcedureBuilder.add(particleClass, rriMapper);
+			}
+
+			@Override
+			public <T extends Particle, U extends Particle> void newResourceType(
+				Class<T> particleClass0,
+				ParticleToRRIMapper<T> rriMapper0,
+				Class<U> particleClass1,
+				ParticleToRRIMapper<U> rriMapper1,
+				BiPredicate<T, U> combinedResource
+			) {
+				if (!scryptParticleClasses.containsKey(particleClass0)) {
+					throw new IllegalStateException(particleClass0 + " must be registered in calling scrypt.");
+				}
+				if (!scryptParticleClasses.containsKey(particleClass1)) {
+					throw new IllegalStateException(particleClass1 + " must be registered in calling scrypt.");
+				}
+
+				rriProcedureBuilder.add(particleClass0, rriMapper0, particleClass1, rriMapper1, combinedResource);
+			}
+
+			@Override
+			public <T extends Particle> FungibleTransitionConstraint<T> onFungible(
+				Class<T> particleClass,
+				ParticleToAmountMapper<T> particleToAmountMapper
+			) {
+				if (!scryptParticleClasses.containsKey(particleClass)) {
+					throw new IllegalStateException(particleClass + " must be registered in calling scrypt.");
+				}
+
+				if (fungibles.containsKey(particleClass)) {
+					throw new IllegalStateException(particleClass + " already registered as fungible.");
+				}
+
+				FungibleDefinition.Builder<T> fungibleBuilder = new FungibleDefinition.Builder<T>().amountMapper(particleToAmountMapper);
+				fungibles.put(particleClass, fungibleBuilder);
+
+				return new FungibleTransitionConstraint<T>() {
+					@Override
+					public <U extends Particle> FungibleTransitionConstraint<T> transitionTo(
+						Class<U> toParticleClass,
+						BiPredicate<T, U> transition,
+						WitnessValidator<T> witnessValidator
+					) {
+						if (!scryptParticleClasses.containsKey(toParticleClass)) {
+							throw new IllegalStateException(toParticleClass + " must be registered in calling scrypt.");
+						}
+						fungibleBuilder.to(toParticleClass, witnessValidator, transition);
+						return this::transitionTo;
+					}
+				};
+			}
+
+			@Override
+			public <T extends Particle> TransitionlessParticleClassConstraint<T> onTransitionless(Class<T> particleClass) {
+				if (!scryptParticleClasses.containsKey(particleClass)) {
+					throw new IllegalStateException(particleClass + " must be registered in calling scrypt.");
+				}
+
+				return witnessValidator -> payloadProcedureBuilder.add(particleClass, witnessValidator);
+			}
+		});
+
+		particleMapper.putAll(scryptParticleClasses);
 	}
 
 	public void loadKernelConstraintScrypt(AtomOSDriver driverScrypt) {
-		driverScrypt.main(this);
-	}
-
-
-	@Override
-	public <T extends Particle> void registerParticle(Class<T> particleClass, String name, ParticleToShardablesMapper<T> mapper) {
-		if (particleMapper.containsKey(particleClass)) {
-			throw new IllegalStateException("Particle " + particleClass + " is already registered");
-		}
-
-		if (!PARTICLE_NAME_PATTERN.matcher(name).matches()) {
-			throw new IllegalArgumentException("Particle identifier " + name + " must follow regex "
-				+ PARTICLE_NAME_PATTERN.toString());
-		}
-
-		particleMapper.put(particleClass, p -> mapper.getDestinations((T) p).stream());
-	}
-
-	@Override
-	public <T extends Particle> void registerParticle(Class<T> particleClass, String name, ParticleToShardableMapper<T> mapper) {
-		registerParticle(particleClass, name, (T particle) -> Collections.singleton(mapper.getDestination(particle)));
-	}
-
-	@Override
-	public <T extends Particle> PayloadParticleClassConstraint<T> onPayload(Class<T> particleClass) {
-		checkParticleRegistered(particleClass);
-
-		payloadProcedureBuilder.add(particleClass);
-
-		return constraintCheck -> {
-			ParticleClassConstraintProcedure<T> procedure = new ParticleClassConstraintProcedure<>(particleClass, constraintCheck);
-			procedures.add(procedure);
-		};
-	}
-
-	@Override
-	public <T extends Particle> IndexedConstraint<T> onIndexed(Class<T> particleClass, ParticleToRRIMapper<T> rriMapper) {
-		checkParticleRegistered(particleClass);
-
-		return invariant -> {
-			rriProcedureBuilder.add(particleClass, rriMapper);
-
-			return new InitializedIndexedConstraint<T>() {
-				@Override
-				public <U extends Particle> void requireInitialWith(Class<U> sideEffectClass,
-					ParticleClassWithSideEffectConstraintCheck<T, U> constraint) {
-
-					ParticleClassWithSideEffectConstraintProcedure<T, U> procedure
-						= new ParticleClassWithSideEffectConstraintProcedure<>(particleClass, sideEffectClass, constraint);
-					procedures.add(procedure);
-				}
-			};
-		};
-	}
-
-	private <T extends Particle> void checkParticleRegistered(Class<T> particleClass) {
-		if (!particleMapper.containsKey(particleClass)) {
-			throw new IllegalStateException(particleClass + " is not registered.");
-		}
-	}
-
-	@Override
-	public <T extends Particle> ParticleClassConstraint<T> on(Class<T> particleClass) {
-		checkParticleRegistered(particleClass);
-
-		return constraint -> {
-			ParticleClassConstraintProcedure<T> procedure = new ParticleClassConstraintProcedure<>(particleClass, (p, m) -> constraint.apply(p));
-			procedures.add(procedure);
-		};
-	}
-
-	@Override
-	public <T extends Particle> FungibleTransitionConstraintStub<T> onFungible(
-		Class<T> particleClass,
-		ParticleToAmountMapper<T> particleToAmountMapper
-	) {
-		checkParticleRegistered(particleClass);
-
-		if (pendingFungibleTransition != null) {
-			fungibleTransitions.add(pendingFungibleTransition.build());
-		}
-
-		FungibleTransition.Builder<T> transitionBuilder = FungibleTransition.<T>build()
-			.to(particleClass, particleToAmountMapper);
-		pendingFungibleTransition = transitionBuilder;
-
-		return new FungibleTransitionConstraintStub<T>() {
+		driverScrypt.main(new AtomOSKernel() {
 			@Override
-			public <U extends Particle> FungibleTransitionConstraint<T> requireInitialWith(
-				Class<U> sideEffectClass,
-				ParticleClassWithSideEffectConstraintCheck<T, U> constraint
-			) {
-				transitionBuilder.initialWith(sideEffectClass, constraint);
-				return this::requireFrom;
+			public AtomKernel onAtom() {
+				return new AtomKernel() {
+					@Override
+					public void require(AtomKernelConstraintCheck constraint) {
+						CMAtomOS.this.kernelProcedures.add(
+							(cmAtom) -> constraint.check(cmAtom).errorStream().map(errMsg -> KernelProcedureError.of(cmAtom.getAtom(), errMsg))
+						);
+					}
+
+					@Override
+					public void setCompute(AtomKernelCompute compute) {
+
+						if (CMAtomOS.this.atomKernelCompute != null) {
+							throw new IllegalStateException("Compute already set.");
+						}
+
+						CMAtomOS.this.atomKernelCompute = compute;
+					}
+				};
 			}
 
 			@Override
-			public <U extends Particle> FungibleTransitionConstraint<T> requireFrom(
-				Class<U> fromParticleClass,
-				WitnessValidator<U> witnessValidator,
-				BiPredicate<U, T> transition
-			) {
-				if (pendingFungibleTransition == null) {
-					throw new IllegalStateException("Attempt to add formula to finished fungible transition to " + particleClass);
-				}
-				transitionBuilder.from(fromParticleClass, witnessValidator, transition);
-				return this::requireFrom;
-			}
-		};
-	}
-
-	@Override
-	public AtomKernel onAtom() {
-		return new AtomKernel() {
-			@Override
-			public void require(AtomKernelConstraintCheck constraint) {
-				CMAtomOS.this.kernelProcedures.add(
-					(cmAtom) -> constraint.check(cmAtom).errorStream().map(errMsg -> KernelProcedureError.of(cmAtom.getAtom(), errMsg))
-				);
+			public long getCurrentTimestamp() {
+				return timestampSupplier.getAsLong();
 			}
 
 			@Override
-			public void setCompute(AtomKernelCompute compute) {
-
-				if (CMAtomOS.this.atomKernelCompute != null) {
-					throw new IllegalStateException("Compute already set.");
-				}
-
-				CMAtomOS.this.atomKernelCompute = compute;
+			public Universe getUniverse() {
+				return universeSupplier.get();
 			}
-		};
-	}
-
-	@Override
-	public Universe getUniverse() {
-		return universeSupplier.get();
-	}
-
-	@Override
-	public long getCurrentTimestamp() {
-		return timestampSupplier.getAsLong();
+		});
 	}
 
 	/**
@@ -231,24 +215,24 @@ public final class CMAtomOS implements AtomOSKernel, AtomOS {
 	public Pair<ConstraintMachine, AtomCompute> buildMachine() {
 		ConstraintMachine.Builder cmBuilder = new Builder();
 
-		this.procedures.forEach(cmBuilder::addProcedure);
 		this.kernelProcedures.forEach(cmBuilder::addProcedure);
 
+		ImmutableMap.Builder<Class<? extends Particle>, ParticleProcedure> particleProceduresBuilder = new ImmutableMap.Builder<>();
 		// Add a constraint for fungibles if any were added
-		if (!this.fungibleTransitions.isEmpty()) {
-			Map<Class<? extends Particle>, FungibleTransition<? extends Particle>> transitions =
-				this.fungibleTransitions.stream()
-					.collect(Collectors.toMap(
-						FungibleTransition::getOutputParticleClass,
-						v -> v
-					));
-			cmBuilder.addProcedure(new FungibleTransitionConstraintProcedure(transitions));
+		if (!this.fungibles.isEmpty()) {
+			FungibleParticlesProcedureBuilder fungibleBuilder = new FungibleParticlesProcedureBuilder();
+			this.fungibles.forEach((c, b) -> fungibleBuilder.add(c, b.build()));
+			fungibleBuilder.build().forEach(particleProceduresBuilder::put);
 		}
 
 		// Add constraint for RRI state machines
-		cmBuilder.addProcedure(this.rriProcedureBuilder.build());
-		// Add constraint for Payload state machines
-		cmBuilder.addProcedure(this.payloadProcedureBuilder.build());
+		particleProceduresBuilder.put(RRIParticle.class, this.rriProcedureBuilder.build());
+
+		// Add constraint for Transitionless state machines
+		this.payloadProcedureBuilder.build().forEach(particleProceduresBuilder::put);
+
+		final ImmutableMap<Class<? extends Particle>, ParticleProcedure> particleProcedures = particleProceduresBuilder.build();
+		cmBuilder.setParticleProcedures(p -> particleProcedures.get(p.getClass()));
 
 		UnaryOperator<CMStore> rriTransformer = base ->
 			CMStores.virtualizeDefault(base, p -> p instanceof RRIParticle && ((RRIParticle) p).getNonce() == 0, Spin.UP);
@@ -258,6 +242,13 @@ public final class CMAtomOS implements AtomOSKernel, AtomOS {
 				Function<Particle, Stream<RadixAddress>> mapper = particleMapper.get(p.getClass());
 				if (mapper == null) {
 					return false;
+				}
+
+				Function<Particle, Result> staticValidation = particleStaticValidation.get(p.getClass());
+				if (staticValidation != null) {
+					if (staticValidation.apply(p).isError()) {
+						return false;
+					}
 				}
 
 				final Set<EUID> destinations = mapper.apply(p).map(RadixAddress::getUID).collect(Collectors.toSet());

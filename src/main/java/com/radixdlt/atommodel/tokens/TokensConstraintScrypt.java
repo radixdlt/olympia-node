@@ -7,7 +7,7 @@ import static com.radixdlt.atommodel.tokens.TokenDefinitionParticle.VALID_SYMBOL
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle.TokenTransition;
-import com.radixdlt.atomos.AtomOS;
+import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.atomos.Result;
@@ -29,15 +29,8 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 	);
 
 	@Override
-	public void main(AtomOS os) {
-		os.registerParticle(TokenDefinitionParticle.class, "tokens", TokenDefinitionParticle::getOwner);
-
-		// Require Token Definition to be created with unallocated tokens of max supply
-		os.onIndexed(TokenDefinitionParticle.class, TokenDefinitionParticle::getRRI)
-			.requireInitial((tok, meta) -> Result.of(meta.isSignedBy(tok.getOwner()), "Owner has to sign: " + tok.getOwner()))
-			.requireInitialWith(UnallocatedTokensParticle.class, (tokDef, unallocated, meta) ->
-				Result.of(unallocated.getTokDefRef().equals(tokDef.getRRI()), "Unallocated particles RRI must match Token RRI")
-			);
+	public void main(SysCalls os) {
+		os.registerParticle(TokenDefinitionParticle.class, TokenDefinitionParticle::getAddress);
 
 		// Symbol constraints
 		os.on(TokenDefinitionParticle.class)
@@ -94,8 +87,18 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 
 		os.registerParticle(
 			UnallocatedTokensParticle.class,
-			"unallocatedtokens",
 			UnallocatedTokensParticle::getAddresses
+		);
+
+		// Require Token Definition to be created with unallocated tokens of max supply
+		os.newResourceType(
+			TokenDefinitionParticle.class,
+			TokenDefinitionParticle::getRRI,
+			UnallocatedTokensParticle.class,
+			UnallocatedTokensParticle::getTokDefRef,
+			(tokDef, unallocated) ->
+				Objects.equals(unallocated.getGranularity(), tokDef.getGranularity())
+				&& Objects.equals(unallocated.getTokenPermissions(), tokDef.getTokenPermissions())
 		);
 
 		os.on(UnallocatedTokensParticle.class)
@@ -103,7 +106,6 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 
 		os.registerParticle(
 			TransferrableTokensParticle.class,
-			"transferredtokens",
 			TransferrableTokensParticle::getAddress
 		);
 
@@ -116,52 +118,47 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			UnallocatedTokensParticle.class,
 			UnallocatedTokensParticle::getAmount
 		)
-			.requireInitialWith(TokenDefinitionParticle.class, (unallocated, tokDef, meta) -> Result.combine(
-				Result.of(unallocated.getTokDefRef().equals(tokDef.getRRI()), "TokenDefRef should be the same"),
-				Result.of(unallocated.getGranularity().equals(tokDef.getGranularity()), "Granularity should match"),
-				Result.of(unallocated.getTokenPermissions().equals(tokDef.getTokenPermissions()), "Permissions should match")
-			))
-			.orFrom(
+			.transitionTo(
 				UnallocatedTokensParticle.class,
-				(from, meta) -> checkSigned(from.getTokDefRef().getAddress(), meta),
 				(from, to) ->
 					Objects.equals(from.getTokDefRef(), to.getTokDefRef())
 					&& Objects.equals(from.getGranularity(), to.getGranularity())
-					&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions())
+					&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions()),
+				(from, meta) -> checkSigned(from.getTokDefRef().getAddress(), meta)
 			)
-			.orFrom(
+			.transitionTo(
 				TransferrableTokensParticle.class,
-				(from, meta) -> from.getTokenPermission(TokenTransition.BURN).check(from.getTokDefRef(), meta),
 				(from, to) ->
 					Objects.equals(from.getTokDefRef(), to.getTokDefRef())
 					&& Objects.equals(from.getGranularity(), to.getGranularity())
-					&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions())
+					&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions()),
+				(from, meta) -> from.getTokenPermission(TokenTransition.MINT).check(from.getTokDefRef(), meta)
 			);
 
 		os.onFungible(
 			TransferrableTokensParticle.class,
 			TransferrableTokensParticle::getAmount
 		)
-			.requireFrom(
+			.transitionTo(
 				UnallocatedTokensParticle.class,
-				(from, meta) -> from.getTokenPermission(TokenTransition.MINT).check(from.getTokDefRef(), meta),
 				(from, to) ->
 					Objects.equals(from.getTokDefRef(), to.getTokDefRef())
 					&& Objects.equals(from.getGranularity(), to.getGranularity())
-					&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions())
+					&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions()),
+				(from, meta) -> from.getTokenPermission(TokenTransition.BURN).check(from.getTokDefRef(), meta)
 			)
-			.orFrom(
+			.transitionTo(
 				TransferrableTokensParticle.class,
-				(from, meta) -> checkSigned(from.getAddress(), meta),
 				(from, to) ->
 					Objects.equals(from.getTokDefRef(), to.getTokDefRef())
 					&& Objects.equals(from.getGranularity(), to.getGranularity())
-					&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions())
+					&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions()),
+				(from, meta) -> checkSigned(from.getAddress(), meta)
 			);
 	}
 
 	private static <T extends Particle> void requireAmountFits(
-		AtomOS os,
+		SysCalls os,
 		Class<T> cls,
 		ParticleToAmountMapper<T> particleToAmountMapper,
 		ParticleToAmountMapper<T> particleToGranularityMapper

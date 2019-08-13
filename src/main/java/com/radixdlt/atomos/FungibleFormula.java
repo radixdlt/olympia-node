@@ -1,12 +1,12 @@
 package com.radixdlt.atomos;
 
-import com.radixdlt.atomos.AtomOS.WitnessValidator;
+import com.radixdlt.atomos.SysCalls.WitnessValidator;
 import com.radixdlt.atoms.Particle;
 import java.util.Objects;
 import java.util.function.BiPredicate;
 
 /**
- * Formula defining a fungible transition *from* a set of types *to* a target type with a certain composition
+ * Formula defining a fungible transition
  */
 public final class FungibleFormula {
 	private final WitnessValidator<Particle> witnessValidator;
@@ -16,7 +16,7 @@ public final class FungibleFormula {
 		WitnessValidator<Particle> witnessValidator,
 		BiPredicate<? extends Particle, ? extends Particle> transition
 	) {
-		this.witnessValidator = Objects.requireNonNull(witnessValidator, "constraint is required");
+		this.witnessValidator = Objects.requireNonNull(witnessValidator);
 		this.transition = Objects.requireNonNull((BiPredicate<Particle, Particle>) transition);
 	}
 

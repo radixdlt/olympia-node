@@ -1,7 +1,7 @@
 package com.radixdlt.constraintmachine;
 
-import com.radixdlt.atoms.ParticleGroup;
-import java.util.stream.Stream;
+import com.radixdlt.atoms.Particle;
+import java.util.Map;
 
 /**
  * Temporary helper class in transforming constraint to validator.
@@ -10,5 +10,5 @@ import java.util.stream.Stream;
  * TODO: remove at some point after refactor of constraint machine
  */
 public interface ConstraintProcedure {
-	Stream<ProcedureError> validate(ParticleGroup particleGroup, AtomMetadata metadata);
+	Map<Class<? extends Particle>, ParticleProcedure> getProcedures();
 }
