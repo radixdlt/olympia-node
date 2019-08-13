@@ -1,4 +1,4 @@
-package com.radixdlt.tempo.actions;
+package com.radixdlt.tempo.actions.messaging;
 
 import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.TempoAction;

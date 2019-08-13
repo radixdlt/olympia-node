@@ -1,7 +1,7 @@
 package com.radixdlt.tempo;
 
-import com.radixdlt.tempo.actions.RepeatScheduleAction;
-import com.radixdlt.tempo.actions.ScheduleAction;
+import com.radixdlt.tempo.actions.control.RepeatScheduleAction;
+import com.radixdlt.tempo.actions.control.ScheduleAction;
 
 import java.util.concurrent.TimeUnit;
 

@@ -7,8 +7,8 @@ import com.radixdlt.tempo.TempoReducer;
 import com.radixdlt.tempo.TempoState;
 import com.radixdlt.tempo.TempoStateBundle;
 import com.radixdlt.tempo.actions.HandleFailedDeliveryAction;
-import com.radixdlt.tempo.actions.ReceiveDeliveryResponseAction;
-import com.radixdlt.tempo.actions.SendDeliveryRequestAction;
+import com.radixdlt.tempo.actions.messaging.ReceiveDeliveryResponseAction;
+import com.radixdlt.tempo.actions.messaging.SendDeliveryRequestAction;
 import com.radixdlt.tempo.state.DeliveryState;
 
 import java.util.Collections;

@@ -187,6 +187,7 @@ public final class Tempo extends Plugin implements Ledger {
 	@Override
 	public void reset_impl() {
 		this.store.reset();
+		this.controller.reset();
 	}
 
 	@Override

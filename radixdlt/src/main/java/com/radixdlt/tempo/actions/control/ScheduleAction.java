@@ -1,4 +1,4 @@
-package com.radixdlt.tempo.actions;
+package com.radixdlt.tempo.actions.control;
 
 import com.radixdlt.tempo.TempoAction;
 

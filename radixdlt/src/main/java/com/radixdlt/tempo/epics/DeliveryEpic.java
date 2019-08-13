@@ -11,11 +11,11 @@ import com.radixdlt.tempo.TempoState;
 import com.radixdlt.tempo.TempoStateBundle;
 import com.radixdlt.tempo.actions.HandleFailedDeliveryAction;
 import com.radixdlt.tempo.actions.ReceiveAtomAction;
-import com.radixdlt.tempo.actions.ReceiveDeliveryRequestAction;
-import com.radixdlt.tempo.actions.ReceiveDeliveryResponseAction;
+import com.radixdlt.tempo.actions.messaging.ReceiveDeliveryRequestAction;
+import com.radixdlt.tempo.actions.messaging.ReceiveDeliveryResponseAction;
 import com.radixdlt.tempo.actions.RequestDeliveryAction;
-import com.radixdlt.tempo.actions.SendDeliveryRequestAction;
-import com.radixdlt.tempo.actions.SendDeliveryResponseAction;
+import com.radixdlt.tempo.actions.messaging.SendDeliveryRequestAction;
+import com.radixdlt.tempo.actions.messaging.SendDeliveryResponseAction;
 import com.radixdlt.tempo.actions.TimeoutDeliveryRequestAction;
 import com.radixdlt.tempo.state.DeliveryState;
 import org.radix.logging.Logger;
@@ -23,11 +23,9 @@ import org.radix.logging.Logging;
 import org.radix.network.peers.Peer;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 

@@ -1,4 +1,4 @@
-package com.radixdlt.tempo.actions;
+package com.radixdlt.tempo.actions.messaging;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.common.AID;

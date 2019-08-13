@@ -11,18 +11,19 @@ import com.radixdlt.tempo.TempoStateBundle;
 import com.radixdlt.tempo.actions.AbandonIterativeSyncAction;
 import com.radixdlt.tempo.actions.OnCursorSynchronisedAction;
 import com.radixdlt.tempo.actions.ReselectPassivePeersAction;
+import com.radixdlt.tempo.actions.ResetAction;
 import com.radixdlt.tempo.state.IterativeSyncState;
 import com.radixdlt.tempo.state.PassivePeersState;
 import com.radixdlt.tempo.sync.IterativeCursor;
 import com.radixdlt.tempo.TempoAction;
 import com.radixdlt.tempo.TempoEpic;
 import com.radixdlt.tempo.actions.InitiateIterativeSyncAction;
-import com.radixdlt.tempo.actions.ReceiveIterativeRequestAction;
-import com.radixdlt.tempo.actions.ReceiveIterativeResponseAction;
+import com.radixdlt.tempo.actions.messaging.ReceiveIterativeRequestAction;
+import com.radixdlt.tempo.actions.messaging.ReceiveIterativeResponseAction;
 import com.radixdlt.tempo.actions.RequestDeliveryAction;
 import com.radixdlt.tempo.actions.RequestIterativeSyncAction;
-import com.radixdlt.tempo.actions.SendIterativeRequestAction;
-import com.radixdlt.tempo.actions.SendIterativeResponseAction;
+import com.radixdlt.tempo.actions.messaging.SendIterativeRequestAction;
+import com.radixdlt.tempo.actions.messaging.SendIterativeResponseAction;
 import com.radixdlt.tempo.actions.TimeoutIterativeRequestAction;
 import com.radixdlt.tempo.store.IterativeCursorStore;
 import org.radix.logging.Logger;
@@ -179,6 +180,8 @@ public class IterativeSyncEpic implements TempoEpic {
 				deliveryActions = Stream.of(new RequestDeliveryAction(response.getAids(), response.getPeer()));
 			}
 			return Stream.concat(continuedActions, deliveryActions);
+		} else if (action instanceof ResetAction) {
+			latestCursorStore.reset();
 		}
 
 		return Stream.empty();

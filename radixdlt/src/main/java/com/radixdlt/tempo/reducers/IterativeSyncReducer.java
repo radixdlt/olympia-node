@@ -8,7 +8,7 @@ import com.radixdlt.tempo.TempoState;
 import com.radixdlt.tempo.TempoStateBundle;
 import com.radixdlt.tempo.actions.AbandonIterativeSyncAction;
 import com.radixdlt.tempo.actions.OnCursorSynchronisedAction;
-import com.radixdlt.tempo.actions.ReceiveIterativeResponseAction;
+import com.radixdlt.tempo.actions.messaging.ReceiveIterativeResponseAction;
 import com.radixdlt.tempo.actions.RequestIterativeSyncAction;
 import com.radixdlt.tempo.state.IterativeSyncState;
 import com.radixdlt.tempo.state.IterativeSyncState.IterativeCursorStage;

@@ -4,20 +4,21 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.tempo.actions.AcceptAtomAction;
 import com.radixdlt.tempo.actions.ReceiveAtomAction;
-import com.radixdlt.tempo.actions.ReceiveDeliveryRequestAction;
-import com.radixdlt.tempo.actions.ReceiveDeliveryResponseAction;
-import com.radixdlt.tempo.actions.ReceiveIterativeRequestAction;
-import com.radixdlt.tempo.actions.ReceiveIterativeResponseAction;
-import com.radixdlt.tempo.actions.ReceivePushAction;
+import com.radixdlt.tempo.actions.ResetAction;
+import com.radixdlt.tempo.actions.messaging.ReceiveDeliveryRequestAction;
+import com.radixdlt.tempo.actions.messaging.ReceiveDeliveryResponseAction;
+import com.radixdlt.tempo.actions.messaging.ReceiveIterativeRequestAction;
+import com.radixdlt.tempo.actions.messaging.ReceiveIterativeResponseAction;
+import com.radixdlt.tempo.actions.messaging.ReceivePushAction;
 import com.radixdlt.tempo.actions.RefreshLivePeersAction;
-import com.radixdlt.tempo.actions.RepeatScheduleAction;
+import com.radixdlt.tempo.actions.control.RepeatScheduleAction;
 import com.radixdlt.tempo.actions.ReselectPassivePeersAction;
-import com.radixdlt.tempo.actions.ScheduleAction;
-import com.radixdlt.tempo.actions.SendDeliveryRequestAction;
-import com.radixdlt.tempo.actions.SendDeliveryResponseAction;
-import com.radixdlt.tempo.actions.SendIterativeRequestAction;
-import com.radixdlt.tempo.actions.SendIterativeResponseAction;
-import com.radixdlt.tempo.actions.SendPushAction;
+import com.radixdlt.tempo.actions.control.ScheduleAction;
+import com.radixdlt.tempo.actions.messaging.SendDeliveryRequestAction;
+import com.radixdlt.tempo.actions.messaging.SendDeliveryResponseAction;
+import com.radixdlt.tempo.actions.messaging.SendIterativeRequestAction;
+import com.radixdlt.tempo.actions.messaging.SendIterativeResponseAction;
+import com.radixdlt.tempo.actions.messaging.SendPushAction;
 import com.radixdlt.tempo.epics.ActiveSyncEpic;
 import com.radixdlt.tempo.epics.DeliveryEpic;
 import com.radixdlt.tempo.epics.IterativeSyncEpic;
@@ -71,6 +72,7 @@ public final class TempoController {
 	private final List<TempoReducer> reducers;
 	private final List<TempoEpic> epics;
 	private final ScheduledExecutorService executor;
+	private final TempoStateBundleStore stateStore;
 
 	private TempoController(int inboundQueueCapacity,
 	                        int actionsQueueCapacity,
@@ -101,11 +103,11 @@ public final class TempoController {
 		tempoDaemon.setName("Tempo Core");
 		tempoDaemon.setDaemon(true);
 		tempoDaemon.start();
+		stateStore = new TempoStateBundleStore();
 	}
 
 	// TODO this is a spartanic approach to reactive streams, should be replaced down the line
 	private void run() {
-		TempoStateBundleStore stateStore = new TempoStateBundleStore();
 		// put initial state in store
 		reducers.forEach(reducer -> stateStore.put(reducer.stateClass(), reducer.initialState()));
 
@@ -228,6 +230,11 @@ public final class TempoController {
 	void reset() {
 		this.inboundAtoms.clear();
 		this.actions.clear();
+		ResetAction reset = new ResetAction();
+		this.epics.forEach(epic -> {
+			TempoStateBundle bundle = stateStore.bundleFor(epic.requiredState());
+			executeEpic(reset, epic, bundle);
+		});
 	}
 
 	private static class TempoStateBundleStore {
