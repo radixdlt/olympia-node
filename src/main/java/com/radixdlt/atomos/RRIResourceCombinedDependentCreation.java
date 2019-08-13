@@ -2,7 +2,6 @@ package com.radixdlt.atomos;
 
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.constraintmachine.TransitionProcedure;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 
@@ -28,20 +27,23 @@ public final class RRIResourceCombinedDependentCreation<T extends Particle, U ex
 	public ProcedureResult execute(
 		RRIParticle inputParticle,
 		U outputParticle,
-		AtomicReference<Object> data,
 		ProcedureResult prevResult
 	) {
-		if (!prevResult.getCmAction().equals(CMAction.POP_OUTPUT) || !data.get().getClass().equals(particleClass0)) {
-			return new ProcedureResult(CMAction.ERROR);
+		if (prevResult == null) {
+			return new ProcedureResult(CMAction.ERROR, null);
+		}
+
+		if (!prevResult.getCmAction().equals(CMAction.POP_OUTPUT) || !prevResult.getOutput().getClass().equals(particleClass0)) {
+			return new ProcedureResult(CMAction.ERROR, null);
 		}
 
 		if (!rriMapper1.apply(outputParticle).equals(inputParticle.getRri())) {
-			return new ProcedureResult(CMAction.ERROR);
+			return new ProcedureResult(CMAction.ERROR, null);
 		}
 
-		if (!combinedCheck.test((T) data.get(), outputParticle)) {
-			return new ProcedureResult(CMAction.ERROR);
+		if (!combinedCheck.test((T) prevResult.getOutput(), outputParticle)) {
+			return new ProcedureResult(CMAction.ERROR, null);
 		}
-		return new ProcedureResult(CMAction.POP_INPUT_OUTPUT);
+		return new ProcedureResult(CMAction.POP_INPUT_OUTPUT, null);
 	}
 }

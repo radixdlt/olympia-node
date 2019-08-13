@@ -11,7 +11,6 @@ import com.radixdlt.constraintmachine.AtomMetadata;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.TransitionProcedure.CMAction;
 import com.radixdlt.constraintmachine.TransitionProcedure.ProcedureResult;
-import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Test;
 
 public class RRIResourceCreationTest {
@@ -46,10 +45,10 @@ public class RRIResourceCreationTest {
 		ProcedureResult result = procedure.execute(
 			new RRIParticle(rri),
 			customParticle,
-			new AtomicReference<>(),
 			null
 		);
 
 		assertThat(result.getCmAction()).isEqualTo(CMAction.POP_INPUT_OUTPUT);
+		assertThat(result.getOutput()).isNull();
 	}
 }

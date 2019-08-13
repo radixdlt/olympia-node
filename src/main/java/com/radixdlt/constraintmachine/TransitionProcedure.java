@@ -1,7 +1,6 @@
 package com.radixdlt.constraintmachine;
 
 import com.radixdlt.atoms.Particle;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Application level "Bytecode" to be run per particle in the Constraint machine
@@ -16,19 +15,25 @@ public interface TransitionProcedure<T extends Particle, U extends Particle> {
 
 	class ProcedureResult {
 		private final CMAction cmAction;
-		public ProcedureResult(CMAction cmAction) {
+		private final Object output;
+
+		public ProcedureResult(CMAction cmAction, Object output) {
 			this.cmAction = cmAction;
+			this.output = output;
 		}
 
 		public CMAction getCmAction() {
 			return cmAction;
+		}
+
+		public Object getOutput() {
+			return output;
 		}
 	}
 
 	ProcedureResult execute(
 		T inputParticle,
 		U outputParticle,
-		AtomicReference<Object> data,
 		ProcedureResult prevResult
 	);
 }

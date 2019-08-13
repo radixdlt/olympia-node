@@ -2,7 +2,6 @@ package com.radixdlt.atomos;
 
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.constraintmachine.TransitionProcedure;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 /**
@@ -19,13 +18,12 @@ public final class RRIResourceCreation<T extends Particle> implements Transition
 	public ProcedureResult execute(
 		RRIParticle inputParticle,
 		T outputParticle,
-		AtomicReference<Object> data,
 		ProcedureResult prevResult
 	) {
 		if (!rriMapper.apply(outputParticle).equals(inputParticle.getRri())) {
-			return new ProcedureResult(CMAction.ERROR);
+			return new ProcedureResult(CMAction.ERROR, null);
 		}
 
-		return new ProcedureResult(CMAction.POP_INPUT_OUTPUT);
+		return new ProcedureResult(CMAction.POP_INPUT_OUTPUT, null);
 	}
 }

@@ -7,7 +7,6 @@ import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.TransitionProcedure.CMAction;
 import com.radixdlt.constraintmachine.TransitionProcedure.ProcedureResult;
 import com.radixdlt.utils.UInt256;
-import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Test;
 
 public class FungibleTransitionTest {
@@ -36,7 +35,6 @@ public class FungibleTransitionTest {
 		ProcedureResult result = procedure.execute(
 			new Fungible(UInt256.ONE),
 			new Fungible(UInt256.ONE),
-			new AtomicReference<>(),
 			null
 		);
 
@@ -50,15 +48,13 @@ public class FungibleTransitionTest {
 			(a, b) -> true
 		);
 
-		AtomicReference<Object> data = new AtomicReference<>();
 		ProcedureResult result = procedure.execute(
 			new Fungible(UInt256.TWO),
 			new Fungible(UInt256.ONE),
-			data,
 			null
 		);
 
-		assertThat(data).hasValue(UInt256.ONE);
+		assertThat(result.getOutput()).isEqualTo(UInt256.ONE);
 		assertThat(result.getCmAction()).isEqualTo(CMAction.POP_OUTPUT);
 	}
 
@@ -69,16 +65,14 @@ public class FungibleTransitionTest {
 			(a, b) -> true
 		);
 
-		AtomicReference<Object> data = new AtomicReference<>();
 		ProcedureResult result = procedure.execute(
 			new Fungible(UInt256.ONE),
 			new Fungible(UInt256.TWO),
-			data,
 			null
 		);
 
 		assertThat(result.getCmAction()).isEqualTo(CMAction.POP_INPUT);
-		assertThat(data).hasValue(UInt256.ONE);
+		assertThat(result.getOutput()).isEqualTo(UInt256.ONE);
 	}
 
 	@Test
@@ -88,15 +82,14 @@ public class FungibleTransitionTest {
 			(a, b) -> true
 		);
 
-		AtomicReference<Object> data = new AtomicReference<>();
 		ProcedureResult result = procedure.execute(
 			new Fungible(UInt256.TWO),
 			new Fungible(UInt256.TWO),
-			data,
 			null
 		);
 
 		assertThat(result.getCmAction()).isEqualTo(CMAction.POP_INPUT_OUTPUT);
+		assertThat(result.getOutput()).isNull();
 	}
 
 	@Test
@@ -109,10 +102,10 @@ public class FungibleTransitionTest {
 		ProcedureResult result = procedure.execute(
 			new Fungible(UInt256.ONE),
 			new Fungible(UInt256.TWO),
-			new AtomicReference<>(UInt256.ONE),
-			new ProcedureResult(CMAction.POP_INPUT)
+			new ProcedureResult(CMAction.POP_INPUT, UInt256.ONE)
 		);
 
 		assertThat(result.getCmAction()).isEqualTo(CMAction.POP_INPUT_OUTPUT);
+		assertThat(result.getOutput()).isNull();
 	}
 }
