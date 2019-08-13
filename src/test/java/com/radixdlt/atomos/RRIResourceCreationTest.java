@@ -30,7 +30,7 @@ public class RRIResourceCreationTest {
 
 	@Test
 	public void when_an_rri_is_consumed_with_a_corresponding_particle__then_an_input_should_succeed_and_stack_is_empty() {
-		TransitionProcedure procedure = new RRIResourceCreation<>(CustomParticle::getRRI);
+		TransitionProcedure<RRIParticle, CustomParticle> procedure = new RRIResourceCreation<>(CustomParticle::getRRI);
 
 		RadixAddress address = mock(RadixAddress.class);
 		when(address.getUID()).thenReturn(EUID.ONE);
@@ -45,9 +45,9 @@ public class RRIResourceCreationTest {
 
 		ProcedureResult result = procedure.execute(
 			new RRIParticle(rri),
-			new AtomicReference<>(),
 			customParticle,
-			new AtomicReference<>()
+			new AtomicReference<>(),
+			null
 		);
 
 		assertThat(result.getCmAction()).isEqualTo(CMAction.POP_INPUT_OUTPUT);

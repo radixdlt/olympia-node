@@ -27,11 +27,11 @@ public final class RRIResourceCombinedDependentCreation<T extends Particle, U ex
 	@Override
 	public ProcedureResult execute(
 		RRIParticle inputParticle,
-		AtomicReference<Object> inputData,
 		U outputParticle,
-		AtomicReference<Object> outputData
+		AtomicReference<Object> data,
+		ProcedureResult prevResult
 	) {
-		if (inputData.get() == null || !inputData.get().getClass().equals(particleClass0)) {
+		if (!prevResult.getCmAction().equals(CMAction.POP_OUTPUT) || !data.get().getClass().equals(particleClass0)) {
 			return new ProcedureResult(CMAction.ERROR);
 		}
 
@@ -39,7 +39,7 @@ public final class RRIResourceCombinedDependentCreation<T extends Particle, U ex
 			return new ProcedureResult(CMAction.ERROR);
 		}
 
-		if (!combinedCheck.test((T) inputData.get(), outputParticle)) {
+		if (!combinedCheck.test((T) data.get(), outputParticle)) {
 			return new ProcedureResult(CMAction.ERROR);
 		}
 		return new ProcedureResult(CMAction.POP_INPUT_OUTPUT);

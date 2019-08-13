@@ -27,8 +27,8 @@ public interface TransitionProcedure<T extends Particle, U extends Particle> {
 
 	ProcedureResult execute(
 		T inputParticle,
-		AtomicReference<Object> inputData,
 		U outputParticle,
-		AtomicReference<Object> outputData
+		AtomicReference<Object> data,
+		ProcedureResult prevResult
 	);
 }

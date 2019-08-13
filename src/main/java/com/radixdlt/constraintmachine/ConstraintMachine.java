@@ -88,52 +88,50 @@ public final class ConstraintMachine {
 	}
 
 	private Stream<ProcedureError> validate(ParticleGroup group, AtomMetadata metadata) {
-		final AtomicReference<Pair<SpunParticle, AtomicReference<Object>>> particleRegister = new AtomicReference<>();
+		ProcedureResult lastResult = null;
+		SpunParticle spunParticleRegister = null;
+		final AtomicReference<Object> dataRegister = new AtomicReference<>();
 
 		for (int i = 0; i < group.getParticleCount(); i++) {
 			final SpunParticle nextSpun = group.getSpunParticle(i);
 			final Particle nextParticle = nextSpun.getParticle();
-			final AtomicReference<Object> nextData = new AtomicReference<>();
-			final SpunParticle curSpun = particleRegister.get() == null ? null : particleRegister.get().getFirst();
-			final Particle curParticle = curSpun == null ? null : curSpun.getParticle();
-			final AtomicReference<Object> curData = particleRegister.get() == null ? null : particleRegister.get().getSecond();
+			final Particle curParticle = spunParticleRegister == null ? null : spunParticleRegister.getParticle();
 
-			if (curSpun != null && curSpun.getSpin() == nextSpun.getSpin()) {
-				return Stream.of(ProcedureError.of("Spin Clash: Next particle: " + nextSpun + " Current register: " + particleRegister.get()));
+			if (spunParticleRegister != null && spunParticleRegister.getSpin() == nextSpun.getSpin()) {
+				return Stream.of(ProcedureError.of("Spin Clash: Next particle: " + nextSpun + " Current register: " + spunParticleRegister + " " + dataRegister));
 			}
 
 			final Particle inputParticle = nextSpun.getSpin() == Spin.DOWN ? nextParticle : curParticle;
-			final AtomicReference<Object> inputData = nextSpun.getSpin() == Spin.DOWN ? nextData : curData;
 			final Particle outputParticle = nextSpun.getSpin() == Spin.DOWN ? curParticle : nextParticle;
-			final AtomicReference<Object> outputData = nextSpun.getSpin() == Spin.DOWN ? curData : nextData;
 
 			final TransitionProcedure<Particle, Particle> transitionProcedure = this.particleProcedures.apply(inputParticle, outputParticle);
 
 			if (transitionProcedure == null) {
 				if (inputParticle == null || outputParticle == null) {
-					particleRegister.set(Pair.of(nextSpun, nextData));
+					spunParticleRegister = nextSpun;
 					continue;
 				}
 
 				return Stream.of(ProcedureError.of("No procedure for Input: " + inputParticle + " Output: " + outputParticle));
 			}
 
-			final ProcedureResult result = transitionProcedure.execute(inputParticle, inputData, outputParticle, outputData);
+			final ProcedureResult result = transitionProcedure.execute(inputParticle, outputParticle, dataRegister, lastResult);
 			switch (result.getCmAction()) {
 				case POP_INPUT:
 					if (nextSpun.getSpin() == Spin.UP) {
-						particleRegister.set(Pair.of(nextSpun, nextData));
+						spunParticleRegister = nextSpun;
 					}
 				case POP_OUTPUT:
 					if (nextSpun.getSpin() == Spin.DOWN) {
-						particleRegister.set(Pair.of(nextSpun, nextData));
+						spunParticleRegister = nextSpun;
 					}
 					break;
 				case POP_INPUT_OUTPUT:
-					particleRegister.set(null);
+					spunParticleRegister = null;
+					dataRegister.set(null);
 					break;
 				case ERROR:
-					return Stream.of(ProcedureError.of("Next particle " + nextParticle + " failed. Current register: " + particleRegister.get()));
+					return Stream.of(ProcedureError.of("Next particle " + nextParticle + " failed. Current register: " + spunParticleRegister + " " + dataRegister));
 			}
 
 			final WitnessValidator<Particle, Particle> witnessValidator = this.witnessValidators.apply(inputParticle, outputParticle);
@@ -141,10 +139,12 @@ public final class ConstraintMachine {
 			if (!witnessResult) {
 				return Stream.of(ProcedureError.of("Witness failed"));
 			}
+
+			lastResult = result;
 		}
 
-		if (particleRegister.get() != null) {
-			return Stream.of(ProcedureError.of("Particle register not empty: " + particleRegister));
+		if (spunParticleRegister != null) {
+			return Stream.of(ProcedureError.of("Particle register not empty: " + spunParticleRegister));
 		}
 
 		return Stream.empty();

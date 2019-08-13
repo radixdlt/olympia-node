@@ -14,9 +14,9 @@ public final class NonRRIResourceCreation<T extends Particle> implements Transit
 	@Override
 	public ProcedureResult execute(
 		Particle inputParticle,
-		AtomicReference<Object> inputData,
 		T outputParticle,
-		AtomicReference<Object> outputData
+		AtomicReference<Object> data,
+		ProcedureResult prevResult
 	) {
 		return new ProcedureResult(CMAction.POP_OUTPUT);
 	}

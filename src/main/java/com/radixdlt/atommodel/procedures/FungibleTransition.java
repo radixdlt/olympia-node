@@ -28,29 +28,27 @@ public class FungibleTransition<T extends Particle, U extends Particle> implemen
 	@Override
 	public ProcedureResult execute(
 		T inputParticle,
-		AtomicReference<Object> inputData,
 		U outputParticle,
-		AtomicReference<Object> outputData
+		AtomicReference<Object> data,
+		ProcedureResult prevResult
 	) {
 		if (!transition.test(inputParticle, outputParticle)) {
 			return new ProcedureResult(CMAction.ERROR);
 		}
 
-		UInt256 inputAmount = inputData.get() == null
-			? inputAmountMapper.apply(inputParticle)
-			: (UInt256) inputData.get();
-		UInt256 outputAmount = outputData.get() == null
-			? outputAmountMapper.apply(outputParticle)
-			: (UInt256) outputData.get();
+		UInt256 inputAmount = prevResult != null && prevResult.getCmAction() == CMAction.POP_OUTPUT
+			? (UInt256) data.get() : inputAmountMapper.apply(inputParticle);
+		UInt256 outputAmount = prevResult != null && prevResult.getCmAction() == CMAction.POP_INPUT
+			? (UInt256) data.get() : outputAmountMapper.apply(outputParticle);
 
 		int compare = inputAmount.compareTo(outputAmount);
 		if (compare == 0) {
 			return new ProcedureResult(CMAction.POP_INPUT_OUTPUT);
 		} else if (compare > 0) {
-			inputData.set(inputAmount.subtract(outputAmount));
+			data.set(inputAmount.subtract(outputAmount));
 			return new ProcedureResult(CMAction.POP_OUTPUT);
 		} else {
-			outputData.set(outputAmount.subtract(inputAmount));
+			data.set(outputAmount.subtract(inputAmount));
 			return new ProcedureResult(CMAction.POP_INPUT);
 		}
 	}

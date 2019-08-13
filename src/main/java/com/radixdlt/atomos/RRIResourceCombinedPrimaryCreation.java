@@ -18,15 +18,15 @@ public final class RRIResourceCombinedPrimaryCreation<T extends Particle, U exte
 	@Override
 	public ProcedureResult execute(
 		RRIParticle inputParticle,
-		AtomicReference<Object> inputData,
 		T outputParticle,
-		AtomicReference<Object> outputData
+		AtomicReference<Object> data,
+		ProcedureResult prevResult
 	) {
 		if (!rriMapper0.apply(outputParticle).equals(inputParticle.getRri())) {
 			return new ProcedureResult(CMAction.ERROR);
 		}
 
-		inputData.set(outputParticle);
+		data.set(outputParticle);
 		return new ProcedureResult(CMAction.POP_OUTPUT);
 	}
 }

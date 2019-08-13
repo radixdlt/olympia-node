@@ -167,7 +167,7 @@ final class ConstraintScryptEnv implements SysCalls {
 	}
 
 	private static <T extends Particle, U extends Particle> TransitionProcedure<Particle, Particle> toGeneric(TransitionProcedure<T, U> procedure) {
-		return (in, inData, out, outData) -> procedure.execute((T) in, inData, (U) out, outData);
+		return (in, out, data, lastRes) -> procedure.execute((T) in, (U) out, data, lastRes);
 	}
 
 	private static <T extends Particle, U extends Particle> WitnessValidator<Particle, Particle> toGeneric(WitnessValidator<T, U> validator) {
@@ -192,14 +192,14 @@ final class ConstraintScryptEnv implements SysCalls {
 		// RRIs must be the same across RRI particle transitions
 		if (inputClass != null && scryptParticleDefinitions.get(inputClass).getRriMapper() != null
 			&& outputClass != null && scryptParticleDefinitions.get(outputClass).getRriMapper() != null) {
-			transformedProcedure = (in, inData, out, outData) -> {
+			transformedProcedure = (in, out, data, lastRes) -> {
 				final RRI inputRRI = scryptParticleDefinitions.get(inputClass).getRriMapper().apply(in);
 				final RRI outputRRI = scryptParticleDefinitions.get(outputClass).getRriMapper().apply(out);
 				if (!inputRRI.equals(outputRRI)) {
 					return new ProcedureResult(CMAction.ERROR);
 				}
 
-				return procedure.execute((T) in, inData, (U) out, outData);
+				return procedure.execute((T) in, (U) out, data, lastRes);
 			};
 		} else {
 			transformedProcedure = toGeneric(procedure);

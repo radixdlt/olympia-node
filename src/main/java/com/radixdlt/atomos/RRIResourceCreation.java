@@ -18,9 +18,9 @@ public final class RRIResourceCreation<T extends Particle> implements Transition
 	@Override
 	public ProcedureResult execute(
 		RRIParticle inputParticle,
-		AtomicReference<Object> inputData,
 		T outputParticle,
-		AtomicReference<Object> outputData
+		AtomicReference<Object> data,
+		ProcedureResult prevResult
 	) {
 		if (!rriMapper.apply(outputParticle).equals(inputParticle.getRri())) {
 			return new ProcedureResult(CMAction.ERROR);
