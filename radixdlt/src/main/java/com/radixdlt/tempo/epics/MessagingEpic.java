@@ -1,10 +1,11 @@
 package com.radixdlt.tempo.epics;
 
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.tempo.TempoController;
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.tempo.TempoController.ImmediateDispatcher;
+import com.radixdlt.tempo.TempoState;
 import com.radixdlt.tempo.TempoStateBundle;
-import com.radixdlt.tempo.exceptions.TempoException;
+import com.radixdlt.tempo.TempoException;
 import com.radixdlt.tempo.TempoAction;
 import com.radixdlt.tempo.TempoEpic;
 import org.radix.logging.Logger;
@@ -21,10 +22,12 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+// TODO should really be some sort of middleware since deals with side-effects
 public class MessagingEpic implements TempoEpic {
 	private static final Logger logger = Logging.getLogger("Sync");
 
@@ -41,6 +44,11 @@ public class MessagingEpic implements TempoEpic {
 		this.inboundMappers = inboundMappers;
 		this.outboundMessageMappers = messageMappers;
 		this.outboundPeerMappers = outboundPeerMappers;
+	}
+
+	@Override
+	public Set<Class<? extends TempoState>> requiredState() {
+		return ImmutableSet.of();
 	}
 
 	@Override

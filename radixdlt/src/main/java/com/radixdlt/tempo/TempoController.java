@@ -9,7 +9,9 @@ import com.radixdlt.tempo.actions.ReceiveDeliveryResponseAction;
 import com.radixdlt.tempo.actions.ReceiveIterativeRequestAction;
 import com.radixdlt.tempo.actions.ReceiveIterativeResponseAction;
 import com.radixdlt.tempo.actions.ReceivePushAction;
+import com.radixdlt.tempo.actions.RefreshLivePeersAction;
 import com.radixdlt.tempo.actions.RepeatScheduleAction;
+import com.radixdlt.tempo.actions.ReselectPassivePeersAction;
 import com.radixdlt.tempo.actions.ScheduleAction;
 import com.radixdlt.tempo.actions.SendDeliveryRequestAction;
 import com.radixdlt.tempo.actions.SendDeliveryResponseAction;
@@ -20,8 +22,6 @@ import com.radixdlt.tempo.epics.ActiveSyncEpic;
 import com.radixdlt.tempo.epics.DeliveryEpic;
 import com.radixdlt.tempo.epics.IterativeSyncEpic;
 import com.radixdlt.tempo.epics.MessagingEpic;
-import com.radixdlt.tempo.epics.PassivePeersEpic;
-import com.radixdlt.tempo.exceptions.TempoException;
 import com.radixdlt.tempo.messages.DeliveryRequestMessage;
 import com.radixdlt.tempo.messages.DeliveryResponseMessage;
 import com.radixdlt.tempo.messages.IterativeRequestMessage;
@@ -29,6 +29,8 @@ import com.radixdlt.tempo.messages.IterativeResponseMessage;
 import com.radixdlt.tempo.messages.PushMessage;
 import com.radixdlt.tempo.peers.PeerSupplier;
 import com.radixdlt.tempo.peers.PeerSupplierAdapter;
+import com.radixdlt.tempo.reducers.LivePeersReducer;
+import com.radixdlt.tempo.reducers.PassivePeersReducer;
 import com.radixdlt.tempo.store.IterativeCursorStore;
 import org.radix.database.DatabaseEnvironment;
 import org.radix.logging.Logger;
@@ -67,16 +69,13 @@ public final class TempoController {
 	private final List<TempoReducer> reducers;
 	private final List<TempoEpic> epics;
 	private final ScheduledExecutorService executor;
-	private final int inboundQueueCapacity;
-	private final int actionsQueueCapacity;
 
 	private TempoController(int inboundQueueCapacity,
 	                        int actionsQueueCapacity,
-	                        List<TempoReducer> reducers, List<TempoEpic> epics,
-	                        List<Function<ImmediateDispatcher, TempoEpic>> epicBuilders) {
-		this.inboundQueueCapacity = inboundQueueCapacity;
-		this.actionsQueueCapacity = actionsQueueCapacity;
-
+	                        List<TempoReducer> reducers,
+	                        List<TempoEpic> epics,
+	                        List<Function<ImmediateDispatcher, TempoEpic>> epicBuilders,
+	                        List<TempoAction> initialActions) {
 		this.inboundAtoms = new LinkedBlockingQueue<>(inboundQueueCapacity);
 		this.actions = new LinkedBlockingQueue<>(actionsQueueCapacity);
 
@@ -84,14 +83,16 @@ public final class TempoController {
 		this.reducers = reducers;
 		this.epics = ImmutableList.<TempoEpic>builder()
 			.addAll(epics)
-			// TODO get rid of epicBuilders
+			// TODO get rid of epicBuilders, change messanger to middleware
 			.addAll(epicBuilders.stream()
 				.map(epicBuilder -> epicBuilder.apply(this::dispatch))
 				.collect(Collectors.toList()))
 			.add(this::internalEpic)
 			.build();
-		this.epics.stream()
-			.flatMap(TempoEpic::initialActions)
+
+		// dispatch initial actions
+		Stream.concat(initialActions.stream(), this.epics.stream()
+			.flatMap(TempoEpic::initialActions))
 			.forEach(this::dispatch);
 
 		Thread tempoDaemon = new Thread(this::run);
@@ -114,8 +115,9 @@ public final class TempoController {
 
 				for (TempoReducer reducer : reducers) {
 					try {
+						TempoStateBundle bundle = stateStore.bundleFor(reducer.requiredState());
 						TempoState currentState = stateStore.get(reducer.stateClass());
-						TempoState nextState = reducer.reduce(currentState, action);
+						TempoState nextState = reducer.reduce(currentState, bundle, action);
 						stateStore.put(reducer.stateClass(), nextState);
 					} catch (Exception e) {
 						logger.error(String.format("Error while executing %s in reducer %s: '%s'",
@@ -243,8 +245,12 @@ public final class TempoController {
 
 			return new TempoStateBundle() {
 				@Override
-				public <T extends TempoState> T get(Class<T> state) {
-					return (T) bundledStates.get(state);
+				public <T extends TempoState> T get(Class<T> stateClass) {
+					T state = (T) bundledStates.get(stateClass);
+					if (state == null) {
+						throw new TempoException("Requested state '" + stateClass.getSimpleName() + "' was not required");
+					}
+					return state;
 				}
 			};
 		}
@@ -258,9 +264,6 @@ public final class TempoController {
 			.addEpic(DeliveryEpic.builder()
 				.storeView(storeView)
 				.build())
-			.addEpic(PassivePeersEpic.builder()
-				.peerSupplier(peerSupplier)
-				.build())
 			.addEpicBuilder(controller -> MessagingEpic.builder()
 				.messager(messager)
 				.addInbound("tempo.sync.delivery.request", DeliveryRequestMessage.class, ReceiveDeliveryRequestAction::from)
@@ -273,11 +276,14 @@ public final class TempoController {
 				.addOutbound(SendIterativeResponseAction.class, SendIterativeResponseAction::toMessage, SendIterativeResponseAction::getPeer)
 				.addInbound("tempo.sync.push", PushMessage.class, ReceivePushAction::from)
 				.addOutbound(SendPushAction.class, SendPushAction::toMessage, SendPushAction::getPeer)
-				.build(controller));
+				.build(controller))
+			.addReducer(new LivePeersReducer(peerSupplier))
+			.addReducer(new PassivePeersReducer(16))
+			.addInitialAction(new RefreshLivePeersAction().repeat(10, 5, TimeUnit.SECONDS))
+			.addInitialAction(new ReselectPassivePeersAction().repeat(10, 20, TimeUnit.SECONDS));
 		if (Modules.get(RuntimeProperties.class).get("tempo2.sync.active", true)) {
 			builder.addEpic(ActiveSyncEpic.builder()
 				.localSystem(localSystem)
-				.peerSupplier(peerSupplier)
 				.build());
 		}
 		if (Modules.get(RuntimeProperties.class).get("tempo2.sync.iterative", true)) {
@@ -306,6 +312,7 @@ public final class TempoController {
 		private final List<TempoEpic> epics = new ArrayList<>();
 		private final List<TempoReducer> reducers = new ArrayList<>();
 		private final List<Function<ImmediateDispatcher, TempoEpic>> epicBuilders = new ArrayList<>();
+		private final List<TempoAction> initialActions = new ArrayList<>();
 
 		private Builder() {
 		}
@@ -333,8 +340,14 @@ public final class TempoController {
 		}
 
 		public Builder addReducer(TempoReducer reducer) {
-			Objects.requireNonNull(reducer, "epic is required");
+			Objects.requireNonNull(reducer, "reducer is required");
 			this.reducers.add(reducer);
+			return this;
+		}
+
+		public Builder addInitialAction(TempoAction initialAction) {
+			Objects.requireNonNull(initialAction, "initialAction is required");
+			this.initialActions.add(initialAction);
 			return this;
 		}
 
@@ -344,7 +357,8 @@ public final class TempoController {
 				syncActionsQueueCapacity,
 				reducers,
 				epics,
-				epicBuilders
+				epicBuilders,
+				initialActions
 			);
 		}
 	}

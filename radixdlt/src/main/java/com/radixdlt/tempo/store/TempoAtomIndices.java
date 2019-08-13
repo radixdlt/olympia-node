@@ -8,7 +8,7 @@ import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.tempo.TempoAtom;
-import com.radixdlt.tempo.exceptions.TempoException;
+import com.radixdlt.tempo.TempoException;
 import com.radixdlt.utils.Longs;
 
 import java.util.List;

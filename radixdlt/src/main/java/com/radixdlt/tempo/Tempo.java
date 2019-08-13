@@ -12,7 +12,6 @@ import com.radixdlt.ledger.LedgerCursor.Type;
 import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerSearchMode;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.tempo.exceptions.TempoException;
 import com.radixdlt.tempo.peers.PeerSupplier;
 import com.radixdlt.tempo.peers.PeerSupplierAdapter;
 import com.radixdlt.tempo.store.AtomStoreViewAdapter;

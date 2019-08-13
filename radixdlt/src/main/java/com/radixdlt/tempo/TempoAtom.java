@@ -9,7 +9,6 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.tempo.exceptions.TempoException;
 import org.radix.exceptions.ValidationException;
 import org.radix.time.TemporalProof;
 

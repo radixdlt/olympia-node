@@ -6,7 +6,6 @@ import com.radixdlt.common.Pair;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.tempo.exceptions.TempoException;
 import org.radix.exceptions.ValidationException;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;

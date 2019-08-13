@@ -1,4 +1,4 @@
-package com.radixdlt.tempo.exceptions;
+package com.radixdlt.tempo;
 
 import com.radixdlt.ledger.exceptions.LedgerException;
 

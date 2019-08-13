@@ -1,9 +1,7 @@
 package com.radixdlt.tempo.store;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.UnsignedBytes;
 import com.radixdlt.Atom;
@@ -14,17 +12,13 @@ import com.radixdlt.ledger.LedgerCursor.Type;
 import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerSearchMode;
 import com.radixdlt.ledger.exceptions.LedgerKeyConstraintException;
-import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
-import com.radixdlt.serialization.SerializerConstants;
-import com.radixdlt.serialization.SerializerDummy;
-import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.tempo.AtomStore;
 import com.radixdlt.tempo.AtomStoreView;
 import com.radixdlt.tempo.TempoAtom;
-import com.radixdlt.tempo.exceptions.TempoException;
+import com.radixdlt.tempo.TempoException;
 import com.radixdlt.tempo.sync.IterativeCursor;
 import com.radixdlt.utils.Longs;
 import com.sleepycat.je.Cursor;

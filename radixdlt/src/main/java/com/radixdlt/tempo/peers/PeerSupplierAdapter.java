@@ -1,7 +1,7 @@
 package com.radixdlt.tempo.peers;
 
 import com.radixdlt.common.EUID;
-import com.radixdlt.tempo.exceptions.TempoException;
+import com.radixdlt.tempo.TempoException;
 import org.radix.database.exceptions.DatabaseException;
 import org.radix.network.peers.Peer;
 import org.radix.network.peers.PeerHandler;

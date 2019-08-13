@@ -1,11 +1,13 @@
 package com.radixdlt.tempo.epics;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.common.AID;
 import com.radixdlt.tempo.AtomStoreView;
 import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.TempoAction;
 import com.radixdlt.tempo.TempoEpic;
+import com.radixdlt.tempo.TempoState;
 import com.radixdlt.tempo.TempoStateBundle;
 import com.radixdlt.tempo.actions.HandleFailedDeliveryAction;
 import com.radixdlt.tempo.actions.ReceiveAtomAction;
@@ -41,6 +43,11 @@ public class DeliveryEpic implements TempoEpic {
 		this.store = store;
 
 		this.ongoingDeliveries = Collections.newSetFromMap(new ConcurrentHashMap<>());
+	}
+
+	@Override
+	public Set<Class<? extends TempoState>> requiredState() {
+		return ImmutableSet.of();
 	}
 
 	@Override
