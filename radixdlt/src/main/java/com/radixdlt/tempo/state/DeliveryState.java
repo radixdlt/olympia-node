@@ -21,7 +21,14 @@ public final class DeliveryState implements TempoState {
 		return ongoingDeliveries.contains(aid);
 	}
 
-	public static DeliveryState initial() {
+	@Override
+	public String toString() {
+		return "DeliveryState{" +
+			"ongoingDeliveries=" + ongoingDeliveries +
+			'}';
+	}
+
+	public static DeliveryState empty() {
 		return new DeliveryState(ImmutableSet.of());
 	}
 }

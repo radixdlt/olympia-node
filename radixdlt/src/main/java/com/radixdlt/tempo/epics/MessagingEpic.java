@@ -27,7 +27,6 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-// TODO should really be some sort of middleware since deals with side-effects
 public class MessagingEpic implements TempoEpic {
 	private static final Logger logger = Logging.getLogger("Sync");
 

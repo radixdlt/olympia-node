@@ -33,7 +33,7 @@ public class LivePeersReducer implements TempoReducer<LivePeersState> {
 
 	@Override
 	public LivePeersState initialState() {
-		return LivePeersState.initial();
+		return LivePeersState.empty();
 	}
 
 	@Override

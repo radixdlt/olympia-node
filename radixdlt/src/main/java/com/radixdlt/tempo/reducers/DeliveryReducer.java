@@ -28,7 +28,7 @@ public class DeliveryReducer implements TempoReducer<DeliveryState> {
 
 	@Override
 	public DeliveryState initialState() {
-		return DeliveryState.initial();
+		return DeliveryState.empty();
 	}
 
 	@Override

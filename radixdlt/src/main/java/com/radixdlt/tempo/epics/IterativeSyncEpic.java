@@ -8,7 +8,10 @@ import com.radixdlt.common.Pair;
 import com.radixdlt.tempo.AtomStoreView;
 import com.radixdlt.tempo.TempoState;
 import com.radixdlt.tempo.TempoStateBundle;
+import com.radixdlt.tempo.actions.AbandonIterativeSyncAction;
+import com.radixdlt.tempo.actions.OnCursorSynchronisedAction;
 import com.radixdlt.tempo.actions.ReselectPassivePeersAction;
+import com.radixdlt.tempo.state.IterativeSyncState;
 import com.radixdlt.tempo.state.PassivePeersState;
 import com.radixdlt.tempo.sync.IterativeCursor;
 import com.radixdlt.tempo.TempoAction;
@@ -27,13 +30,12 @@ import org.radix.logging.Logging;
 import org.radix.network.peers.Peer;
 import org.radix.shards.ShardSpace;
 
-import java.util.HashSet;
-import java.util.Map;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class IterativeSyncEpic implements TempoEpic {
@@ -46,58 +48,54 @@ public class IterativeSyncEpic implements TempoEpic {
 	private final AtomStoreView storeView;
 	private final Supplier<ShardSpace> shardSpaceSupplier;
 
-	private final IterativeCursorStore latestCursors;
-	private final Map<EUID, Set<Long>> pendingRequests;
-	private final Map<EUID, IterativeSyncStage> syncState;
-	private final Map<EUID, Integer> backoffCounter;
+	private final IterativeCursorStore latestCursorStore;
 
 	private IterativeSyncEpic(AtomStoreView storeView, Supplier<ShardSpace> shardSpaceSupplier, IterativeCursorStore cursorStore) {
 		this.storeView = storeView;
 		this.shardSpaceSupplier = shardSpaceSupplier;
-		this.latestCursors = cursorStore;
-
-		this.pendingRequests = new ConcurrentHashMap<>();
-		this.syncState = new ConcurrentHashMap<>();
-		this.backoffCounter = new ConcurrentHashMap<>();
+		this.latestCursorStore = cursorStore;
 	}
 
 	@Override
 	public Set<Class<? extends TempoState>> requiredState() {
-		return ImmutableSet.of(PassivePeersState.class);
+		return ImmutableSet.of(
+			PassivePeersState.class,
+			IterativeSyncState.class
+		);
 	}
 
 	@Override
 	public Stream<TempoAction> epic(TempoStateBundle bundle, TempoAction action) {
-		if (action instanceof ReselectPassivePeersAction) {
-			// TODO not very clean way of triggering this, could react to stage-changes?
-			PassivePeersState passivePeers = bundle.get(PassivePeersState.class);
+		PassivePeersState passivePeersState = bundle.get(PassivePeersState.class);
+		IterativeSyncState syncState = bundle.get(IterativeSyncState.class);
 
+		if (action instanceof ReselectPassivePeersAction) {
+			// TODO is this an okay way of triggering this? could react to stage-changes instead..?
 			// request iterative synchronisation with all new passive peers
-			return passivePeers.getSelectedPeers().values().stream()
-				.filter(peer -> syncState.putIfAbsent(peer.getSystem().getNID(), IterativeSyncStage.SYNCHRONISING) != IterativeSyncStage.SYNCHRONISING)
-				.map(InitiateIterativeSyncAction::new);
+			List<Peer> initiated = passivePeersState.peers()
+				.filter(peer -> !syncState.contains(peer.getSystem().getNID()))
+				.collect(Collectors.toList());
+			// abandon iterative sync of no longer relevant passive peers
+			List<EUID> abandoned = syncState.peers()
+				.filter(nid -> !passivePeersState.contains(nid))
+				.collect(Collectors.toList());
+			if (!initiated.isEmpty() || !abandoned.isEmpty()) {
+				logger.info("Discovered " + initiated.size() + " new passive peers to initiate sync with, abandoning " + abandoned.size() + " old passive peers");
+			}
+			return Stream.concat(
+				initiated.stream().map(InitiateIterativeSyncAction::new),
+				abandoned.stream().map(AbandonIterativeSyncAction::new)
+			);
 		} else if (action instanceof InitiateIterativeSyncAction) {
 			Peer peer = ((InitiateIterativeSyncAction) action).getPeer();
 			EUID peerNid = peer.getSystem().getNID();
-
-			IterativeCursor lastCursor = this.latestCursors.get(peerNid).orElse(IterativeCursor.INITIAL);
+			IterativeCursor lastCursor = this.latestCursorStore.get(peerNid).orElse(IterativeCursor.INITIAL);
 			logger.info("Initiating iterative sync with " + peer);
-			return Stream.of(new RequestIterativeSyncAction(peer, lastCursor));
+			return Stream.of(new RequestIterativeSyncAction(peer, lastCursor, false));
 		} else if (action instanceof RequestIterativeSyncAction) {
 			RequestIterativeSyncAction request = (RequestIterativeSyncAction) action;
 			Peer peer = request.getPeer();
-			EUID peerNid = peer.getSystem().getNID();
 			long requestedLCPosition = request.getCursor().getLCPosition();
-
-			// add requested lc position to pending cursors for that peer
-			pendingRequests.compute(peerNid, (n, p) -> {
-				if (p == null) {
-					p = new HashSet<>();
-				}
-				p.add(requestedLCPosition);
-				return p;
-			});
-
 			logger.info("Requesting iterative sync from " + peer + " starting at " + requestedLCPosition);
 			// send iterative request for aids starting with last cursor
 			ShardSpace shardRange = shardSpaceSupplier.get();
@@ -111,20 +109,19 @@ public class IterativeSyncEpic implements TempoEpic {
 			EUID peerNid = timeout.getPeer().getSystem().getNID();
 			long requestedLCPosition = timeout.getRequestedCursor().getLCPosition();
 
-			PassivePeersState passivePeers = bundle.get(PassivePeersState.class);
 			// if no response, decide what to do after timeout
-			if (pendingRequests.get(peerNid).contains(requestedLCPosition)) {
+			if (syncState.isPending(peerNid, requestedLCPosition)) {
 				// if we're still talking to that peer, just rerequest
-				if (passivePeers.contains(peerNid)) {
+				if (passivePeersState.contains(peerNid)) {
 					if (logger.hasLevel(Logging.DEBUG)) {
 						logger.debug(String.format("Iterative request to %s at %s has timed out without response, resending", timeout.getPeer(), requestedLCPosition));
 					}
-					return Stream.of(new RequestIterativeSyncAction(timeout.getPeer(), timeout.getRequestedCursor()));
-				} else { // otherwise do nothing
+					return Stream.of(new RequestIterativeSyncAction(timeout.getPeer(), timeout.getRequestedCursor(), false));
+				} else { // otherwise report failed sync
 					if (logger.hasLevel(Logging.DEBUG)) {
-						logger.debug(String.format("Iterative request to %s at %s has timed out without response", timeout.getPeer(), requestedLCPosition));
+						logger.debug(String.format("Iterative request to %s at %s has timed out without response, abandoning", timeout.getPeer(), requestedLCPosition));
 					}
-					return Stream.empty();
+					return Stream.of(new AbandonIterativeSyncAction(peerNid));
 				}
 			}
 		} else if (action instanceof ReceiveIterativeRequestAction) {
@@ -145,39 +142,31 @@ public class IterativeSyncEpic implements TempoEpic {
 			IterativeCursor peerCursor = response.getCursor();
 
 			logger.info(String.format("Received iterative response from %s with %s aids", peer, response.getAids().size()));
-			// remove requested position from pending cursors
-			long requestedLCPosition = peerCursor.getLCPosition();
-			pendingRequests.computeIfPresent(peerNid, (n, p) -> {
-				p.remove(requestedLCPosition);
-				return p;
-			});
 
 			// update last known cursor if higher than current
 			IterativeCursor nextCursor = peerCursor.hasNext() ? peerCursor.getNext() : peerCursor;
-			long latestCursor = latestCursors.get(peerNid).map(IterativeCursor::getLCPosition).orElse(-1L);
+			long latestCursor = latestCursorStore.get(peerNid).map(IterativeCursor::getLCPosition).orElse(-1L);
 			if (nextCursor.getLCPosition() > latestCursor) {
-				latestCursors.put(peerNid, nextCursor);
+				latestCursorStore.put(peerNid, nextCursor);
 			}
 			boolean isLatest = nextCursor.getLCPosition() >= latestCursor;
 
-			PassivePeersState passivePeers = bundle.get(PassivePeersState.class);
 			Stream<TempoAction> continuedActions = Stream.empty();
 			// if the peer is still selected as a passive peer, continue
-			if (passivePeers.contains(peerNid)) {
+			if (passivePeersState.contains(peerNid)) {
 				// if there is more to synchronise, request more immediately
 				if (isLatest && peerCursor.hasNext()) {
-					syncState.put(peerNid, IterativeSyncStage.SYNCHRONISING);
-					backoffCounter.put(peerNid, 0);
-					continuedActions = Stream.of(new RequestIterativeSyncAction(peer, peerCursor.getNext()));
+					continuedActions = Stream.of(new RequestIterativeSyncAction(peer, peerCursor.getNext(), true));
 					if (logger.hasLevel(Logging.DEBUG)) {
 						logger.debug(String.format("Continuing iterative sync with %s at %d",
 							peer, peerCursor.getNext().getLCPosition()));
 					}
 				} else { // if synchronised, back off exponentially
-					syncState.put(peerNid, IterativeSyncStage.SYNCHRONISED);
-					int backoff = backoffCounter.compute(peerNid, (n, c) -> c == null ? 0 : Math.min(MAX_BACKOFF, c + 1));
-					int timeout = 1 << backoff;
-					continuedActions = Stream.of(new InitiateIterativeSyncAction(peer).delay(timeout, TimeUnit.SECONDS));
+					int timeout = 1 << syncState.getBackoff(peerNid);
+					continuedActions = Stream.of(
+						new OnCursorSynchronisedAction(peerNid),
+						new InitiateIterativeSyncAction(peer).delay(timeout, TimeUnit.SECONDS)
+					);
 					if (logger.hasLevel(Logging.DEBUG)) {
 						logger.debug(String.format("Backing off from iterative sync with %s for %d seconds as all synced up", peer, timeout));
 					}
@@ -193,11 +182,6 @@ public class IterativeSyncEpic implements TempoEpic {
 		}
 
 		return Stream.empty();
-	}
-
-	public enum IterativeSyncStage {
-		SYNCHRONISING,
-		SYNCHRONISED
 	}
 
 	public static Builder builder() {

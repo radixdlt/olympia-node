@@ -30,6 +30,7 @@ import com.radixdlt.tempo.messages.PushMessage;
 import com.radixdlt.tempo.peers.PeerSupplier;
 import com.radixdlt.tempo.peers.PeerSupplierAdapter;
 import com.radixdlt.tempo.reducers.DeliveryReducer;
+import com.radixdlt.tempo.reducers.IterativeSyncReducer;
 import com.radixdlt.tempo.reducers.LivePeersReducer;
 import com.radixdlt.tempo.reducers.PassivePeersReducer;
 import com.radixdlt.tempo.store.IterativeCursorStore;
@@ -63,7 +64,7 @@ public final class TempoController {
 	private static final Logger logger = Logging.getLogger("Tempo");
 
 	private static final int FULL_INBOUND_QUEUE_RESCHEDULE_TIME_SECONDS = 1;
-	private static final int TEMPO_EXECUTOR_POOL_COUNT = 1;
+	private static final int TEMPO_EXECUTOR_POOL_COUNT = 4;
 
 	private final BlockingQueue<TempoAtom> inboundAtoms;
 	private final BlockingQueue<TempoAction> actions;
@@ -80,11 +81,11 @@ public final class TempoController {
 		this.inboundAtoms = new LinkedBlockingQueue<>(inboundQueueCapacity);
 		this.actions = new LinkedBlockingQueue<>(actionsQueueCapacity);
 
-		this.executor = Executors.newScheduledThreadPool(TEMPO_EXECUTOR_POOL_COUNT, runnable -> new Thread(null, runnable, "Tempo"));
+		this.executor = Executors.newScheduledThreadPool(TEMPO_EXECUTOR_POOL_COUNT, runnable -> new Thread(null, runnable, "Tempo Executor"));
 		this.reducers = reducers;
 		this.epics = ImmutableList.<TempoEpic>builder()
 			.addAll(epics)
-			// TODO get rid of epicBuilders, change messanger to middleware
+			// TODO get rid of epicBuilders
 			.addAll(epicBuilders.stream()
 				.map(epicBuilder -> epicBuilder.apply(this::dispatch))
 				.collect(Collectors.toList()))
@@ -97,7 +98,7 @@ public final class TempoController {
 			.forEach(this::dispatch);
 
 		Thread tempoDaemon = new Thread(this::run);
-		tempoDaemon.setName("Tempo Daemon");
+		tempoDaemon.setName("Tempo Core");
 		tempoDaemon.setDaemon(true);
 		tempoDaemon.start();
 	}
@@ -105,45 +106,56 @@ public final class TempoController {
 	// TODO this is a spartanic approach to reactive streams, should be replaced down the line
 	private void run() {
 		TempoStateBundleStore stateStore = new TempoStateBundleStore();
+		// put initial state in store
 		reducers.forEach(reducer -> stateStore.put(reducer.stateClass(), reducer.initialState()));
 
 		while (true) {
 			try {
 				TempoAction action = actions.take();
-				if (logger.hasLevel(Logging.TRACE)) {
-					logger.trace("Executing " + action.getClass().getSimpleName());
+				if (logger.hasLevel(Logging.DEBUG)) {
+					logger.debug("Executing " + action.getClass().getSimpleName());
 				}
 
-				for (TempoReducer reducer : reducers) {
-					try {
-						TempoStateBundle bundle = stateStore.bundleFor(reducer.requiredState());
-						TempoState currentState = stateStore.get(reducer.stateClass());
-						TempoState nextState = reducer.reduce(currentState, bundle, action);
-						stateStore.put(reducer.stateClass(), nextState);
-					} catch (Exception e) {
-						logger.error(String.format("Error while executing %s in reducer %s: '%s'",
-							action.getClass().getSimpleName(), reducer.getClass().getSimpleName(), e.toString()), e);
-					}
-				}
+				// run reducers synchronously to update state
+				reducers.forEach(reducer -> {
+					TempoState nextState = executeReducer(reducer, action, stateStore);
+					stateStore.put(reducer.stateClass(), nextState);
+				});
 
-				List<TempoAction> nextActions = epics.stream()
-					.flatMap(epic -> {
-						try {
-							TempoStateBundle bundle = stateStore.bundleFor(epic.requiredState());
-							return epic.epic(bundle, action);
-						} catch (Exception e) {
-							logger.error(String.format("Error while executing %s in epic %s: '%s'",
-								action.getClass().getSimpleName(), epic.getClass().getSimpleName(), e.toString()), e);
-							return Stream.empty();
-						}
+				// run epics in parallel for performance
+				epics.stream()
+					.<Runnable>map(epic -> {
+						TempoStateBundle bundle = stateStore.bundleFor(epic.requiredState());
+						return () -> executeEpic(action, epic, bundle);
 					})
-					.collect(Collectors.toList());
-				nextActions.forEach(this::dispatch);
+					.forEach(executor::execute);
+
 			} catch (InterruptedException e) {
 				// exit if interrupted
 				Thread.currentThread().interrupt();
 				break;
 			}
+		}
+	}
+
+	private TempoState executeReducer(TempoReducer reducer, TempoAction action, TempoStateBundleStore stateStore) {
+		TempoState prevState = stateStore.get(reducer.stateClass());
+		try {
+			TempoStateBundle bundle = stateStore.bundleFor(reducer.requiredState());
+			return reducer.reduce(prevState, bundle, action);
+		} catch (Exception e) {
+			logger.error(String.format("Error while executing %s in reducer %s: '%s'",
+				action.getClass().getSimpleName(), reducer.getClass().getSimpleName(), e.toString()), e);
+			return prevState;
+		}
+	}
+
+	private void executeEpic(TempoAction action, TempoEpic epic, TempoStateBundle bundle) {
+		try {
+			epic.epic(bundle, action).forEach(this::dispatch);
+		} catch (Exception e) {
+			logger.error(String.format("Error while executing %s in epic %s: '%s'",
+				action.getClass().getSimpleName(), epic.getClass().getSimpleName(), e.toString()), e);
 		}
 	}
 
@@ -281,6 +293,7 @@ public final class TempoController {
 			.addReducer(new LivePeersReducer(peerSupplier))
 			.addReducer(new PassivePeersReducer(16))
 			.addReducer(new DeliveryReducer())
+			.addReducer(new IterativeSyncReducer())
 			.addInitialAction(new RefreshLivePeersAction().repeat(10, 5, TimeUnit.SECONDS))
 			.addInitialAction(new ReselectPassivePeersAction().repeat(10, 20, TimeUnit.SECONDS));
 		if (Modules.get(RuntimeProperties.class).get("tempo2.sync.active", true)) {

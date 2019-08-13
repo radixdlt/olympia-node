@@ -39,7 +39,7 @@ public class PassivePeersReducer implements TempoReducer<PassivePeersState> {
 
 	@Override
 	public PassivePeersState initialState() {
-		return PassivePeersState.initial();
+		return PassivePeersState.empty();
 	}
 
 	@Override

@@ -33,7 +33,15 @@ public final class LivePeersState implements TempoState {
 		return nids;
 	}
 
-	public static LivePeersState initial() {
+	@Override
+	public String toString() {
+		return "LivePeersState{" +
+			"livePeers=" + livePeers +
+			", nids=" + nids +
+			'}';
+	}
+
+	public static LivePeersState empty() {
 		return new LivePeersState(ImmutableMap.of());
 	}
 }
