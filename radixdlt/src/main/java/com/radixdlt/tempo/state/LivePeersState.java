@@ -32,4 +32,8 @@ public final class LivePeersState implements TempoState {
 	public ImmutableSet<EUID> getNids() {
 		return nids;
 	}
+
+	public static LivePeersState initial() {
+		return new LivePeersState(ImmutableMap.of());
+	}
 }

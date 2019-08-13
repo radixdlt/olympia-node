@@ -1,6 +1,7 @@
 package com.radixdlt.tempo.epics;
 
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.common.EUID;
 import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.TempoState;
 import com.radixdlt.tempo.TempoStateBundle;
@@ -23,10 +24,10 @@ import java.util.stream.Stream;
 
 public class ActiveSyncEpic implements TempoEpic {
 	private static final Logger logger = Logging.getLogger("Sync");
-	private final LocalSystem localSystem;
+	private final EUID self;
 
-	private ActiveSyncEpic(LocalSystem localSystem) {
-		this.localSystem = localSystem;
+	public ActiveSyncEpic(EUID self) {
+		this.self = self;
 	}
 
 	@Override
@@ -39,7 +40,7 @@ public class ActiveSyncEpic implements TempoEpic {
 		if (action instanceof AcceptAtomAction) {
 			LivePeersState livePeersState = bundle.get(LivePeersState.class);
 			TempoAtom atom = ((AcceptAtomAction) action).getAtom();
-			TemporalVertex temporalVertex = atom.getTemporalProof().getVertexByNID(localSystem.getNID());
+			TemporalVertex temporalVertex = atom.getTemporalProof().getVertexByNID(self);
 			if (temporalVertex != null) {
 				return temporalVertex.getEdges().stream()
 					.map(livePeersState::getPeer)
@@ -52,25 +53,5 @@ public class ActiveSyncEpic implements TempoEpic {
 		}
 
 		return Stream.empty();
-	}
-
-	public static Builder builder() {
-		return new Builder();
-	}
-
-	public static class Builder {
-		private LocalSystem localSystem;
-
-		private Builder() {
-		}
-
-		public Builder localSystem(LocalSystem localSystem) {
-			this.localSystem = localSystem;
-			return this;
-		}
-
-		public ActiveSyncEpic build() {
-			return new ActiveSyncEpic(localSystem);
-		}
 	}
 }

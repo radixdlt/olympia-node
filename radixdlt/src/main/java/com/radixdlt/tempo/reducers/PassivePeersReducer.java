@@ -39,7 +39,7 @@ public class PassivePeersReducer implements TempoReducer<PassivePeersState> {
 
 	@Override
 	public PassivePeersState initialState() {
-		return new PassivePeersState(ImmutableMap.of());
+		return PassivePeersState.initial();
 	}
 
 	@Override

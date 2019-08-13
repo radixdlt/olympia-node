@@ -17,6 +17,7 @@ import com.radixdlt.tempo.actions.RequestDeliveryAction;
 import com.radixdlt.tempo.actions.SendDeliveryRequestAction;
 import com.radixdlt.tempo.actions.SendDeliveryResponseAction;
 import com.radixdlt.tempo.actions.TimeoutDeliveryRequestAction;
+import com.radixdlt.tempo.state.DeliveryState;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.network.peers.Peer;
@@ -37,21 +38,19 @@ public class DeliveryEpic implements TempoEpic {
 	private static final Logger logger = Logging.getLogger("Sync");
 
 	private final AtomStoreView store;
-	private final Set<AID> ongoingDeliveries;
 
 	private DeliveryEpic(AtomStoreView store) {
 		this.store = store;
-
-		this.ongoingDeliveries = Collections.newSetFromMap(new ConcurrentHashMap<>());
 	}
 
 	@Override
 	public Set<Class<? extends TempoState>> requiredState() {
-		return ImmutableSet.of();
+		return ImmutableSet.of(DeliveryState.class);
 	}
 
 	@Override
 	public Stream<TempoAction> epic(TempoStateBundle bundle, TempoAction action) {
+		DeliveryState deliveryState = bundle.get(DeliveryState.class);
 		if (action instanceof ReceiveDeliveryRequestAction) {
 			// collect atoms for delivery request
 			ImmutableList<AID> requestedAids = ((ReceiveDeliveryRequestAction) action).getAids();
@@ -66,9 +65,6 @@ public class DeliveryEpic implements TempoEpic {
 				.map(atom -> new SendDeliveryResponseAction(atom, peer));
 		} else if (action instanceof ReceiveDeliveryResponseAction) {
 			ReceiveDeliveryResponseAction response = (ReceiveDeliveryResponseAction) action;
-			// remove atom from ongoing deliveries
-			ongoingDeliveries.remove(response.getAtom().getAID());
-
 			// forward received atom from delivery response
 			return Stream.of(new ReceiveAtomAction(response.getAtom()));
 		} else if (action instanceof RequestDeliveryAction) {
@@ -82,10 +78,10 @@ public class DeliveryEpic implements TempoEpic {
 			if (!missingAids.isEmpty()) {
 				// TODO potential concurrency problems here?
 				ImmutableList<AID> ongoingAids = missingAids.stream()
-					.filter(ongoingDeliveries::contains)
+					.filter(deliveryState::contains)
 					.collect(ImmutableList.toImmutableList());
 				ImmutableList<AID> unrequestedAids = missingAids.stream()
-					.filter(aid -> !ongoingDeliveries.contains(aid))
+					.filter(aid -> !deliveryState.contains(aid))
 					.collect(ImmutableList.toImmutableList());
 
 				// defer already ongoing deliveries until later (in case the ongoing ones fail)
@@ -101,7 +97,6 @@ public class DeliveryEpic implements TempoEpic {
 				Stream<TempoAction> requested;
 				if (!unrequestedAids.isEmpty()) {
 					SendDeliveryRequestAction sendAction = new SendDeliveryRequestAction(unrequestedAids, request.getPeer());
-					ongoingDeliveries.addAll(unrequestedAids);
 
 					logger.info("Requesting delivery of " + unrequestedAids.size() + " aids from " + request.getPeer());
 					// schedule timeout after which deliveries will be checked
@@ -117,13 +112,12 @@ public class DeliveryEpic implements TempoEpic {
 			// once the timeout has elapsed, check if the deliveries were received
 			TimeoutDeliveryRequestAction timeout = (TimeoutDeliveryRequestAction) action;
 			ImmutableList<AID> missingAids = timeout.getAids().stream()
-				.filter(ongoingDeliveries::contains)
+				.filter(deliveryState::contains)
 				.collect(ImmutableList.toImmutableList());
 
 			// if the deliveries weren't received, raise a failed delivery action for the requestor
 			if (!missingAids.isEmpty()) {
 				// TODO consider re-requesting from the same peer once (add TTL counter to timeout action)
-				ongoingDeliveries.removeAll(missingAids);
 				logger.warn("Delivery of " + missingAids.size() + " aids from " + timeout.getPeer() + " has timed out");
 				// TODO handle / log this somewhere?
 				return Stream.of(new HandleFailedDeliveryAction(missingAids, timeout.getPeer()));

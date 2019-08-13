@@ -29,6 +29,7 @@ import com.radixdlt.tempo.messages.IterativeResponseMessage;
 import com.radixdlt.tempo.messages.PushMessage;
 import com.radixdlt.tempo.peers.PeerSupplier;
 import com.radixdlt.tempo.peers.PeerSupplierAdapter;
+import com.radixdlt.tempo.reducers.DeliveryReducer;
 import com.radixdlt.tempo.reducers.LivePeersReducer;
 import com.radixdlt.tempo.reducers.PassivePeersReducer;
 import com.radixdlt.tempo.store.IterativeCursorStore;
@@ -279,12 +280,11 @@ public final class TempoController {
 				.build(controller))
 			.addReducer(new LivePeersReducer(peerSupplier))
 			.addReducer(new PassivePeersReducer(16))
+			.addReducer(new DeliveryReducer())
 			.addInitialAction(new RefreshLivePeersAction().repeat(10, 5, TimeUnit.SECONDS))
 			.addInitialAction(new ReselectPassivePeersAction().repeat(10, 20, TimeUnit.SECONDS));
 		if (Modules.get(RuntimeProperties.class).get("tempo2.sync.active", true)) {
-			builder.addEpic(ActiveSyncEpic.builder()
-				.localSystem(localSystem)
-				.build());
+			builder.addEpic(new ActiveSyncEpic(localSystem.getNID()));
 		}
 		if (Modules.get(RuntimeProperties.class).get("tempo2.sync.iterative", true)) {
 			IterativeCursorStore cursorStore = new IterativeCursorStore(
