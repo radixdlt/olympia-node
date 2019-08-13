@@ -118,7 +118,7 @@ public final class MockApplication {
 			logger.info(String.format("Detected conflict between atom '%s' and '%s', calling ledger to resolve", atom.getAID(), conflictingAtoms.values()));
 			ledger.resolve(e.getAtom(), conflictingAtoms.values())
 				.thenAccept(winner -> {
-					logger.info(String.format("Ledger resolved conflict between '%s' to '%s', adding to queue", allConflictingAids, winner.getAID()));
+					logger.info(String.format("Ledger resolved conflict between '%s' to '%s'", allConflictingAids, winner.getAID()));
 					// add conflict 'remnants' to the queue to be replaced atomically with the winner
 					conflictRemnants.put(winner.getAID(), allConflictingAids.stream()
 						.filter(aid -> ledger.get(aid).isPresent())

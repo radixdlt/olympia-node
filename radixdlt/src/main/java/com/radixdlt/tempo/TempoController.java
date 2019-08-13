@@ -1,8 +1,11 @@
 package com.radixdlt.tempo;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.common.AID;
+import com.radixdlt.common.EUID;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.tempo.actions.AcceptAtomAction;
+import com.radixdlt.tempo.actions.ResolveConflictAction;
 import com.radixdlt.tempo.actions.ReceiveAtomAction;
 import com.radixdlt.tempo.actions.ResetAction;
 import com.radixdlt.tempo.actions.messaging.ReceiveDeliveryRequestAction;
@@ -22,6 +25,7 @@ import com.radixdlt.tempo.actions.messaging.SendPushAction;
 import com.radixdlt.tempo.epics.ActiveSyncEpic;
 import com.radixdlt.tempo.epics.DeliveryEpic;
 import com.radixdlt.tempo.epics.IterativeSyncEpic;
+import com.radixdlt.tempo.epics.LocalConflictResolverEpic;
 import com.radixdlt.tempo.epics.MessagingEpic;
 import com.radixdlt.tempo.messages.DeliveryRequestMessage;
 import com.radixdlt.tempo.messages.DeliveryResponseMessage;
@@ -45,6 +49,7 @@ import org.radix.properties.RuntimeProperties;
 import org.radix.universe.system.LocalSystem;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -53,6 +58,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
@@ -82,8 +88,9 @@ public final class TempoController {
 	                        List<TempoAction> initialActions) {
 		this.inboundAtoms = new LinkedBlockingQueue<>(inboundQueueCapacity);
 		this.actions = new LinkedBlockingQueue<>(actionsQueueCapacity);
-
+		this.stateStore = new TempoStateBundleStore();
 		this.executor = Executors.newScheduledThreadPool(TEMPO_EXECUTOR_POOL_COUNT, runnable -> new Thread(null, runnable, "Tempo Executor"));
+
 		this.reducers = reducers;
 		this.epics = ImmutableList.<TempoEpic>builder()
 			.addAll(epics)
@@ -103,7 +110,6 @@ public final class TempoController {
 		tempoDaemon.setName("Tempo Core");
 		tempoDaemon.setDaemon(true);
 		tempoDaemon.start();
-		stateStore = new TempoStateBundleStore();
 	}
 
 	// TODO this is a spartanic approach to reactive streams, should be replaced down the line
@@ -114,8 +120,8 @@ public final class TempoController {
 		while (true) {
 			try {
 				TempoAction action = actions.take();
-				if (logger.hasLevel(Logging.DEBUG)) {
-					logger.debug("Executing " + action.getClass().getSimpleName());
+				if (logger.hasLevel(Logging.TRACE)) {
+					logger.trace("Executing " + action.getClass().getSimpleName());
 				}
 
 				// run reducers synchronously to update state
@@ -202,8 +208,11 @@ public final class TempoController {
 	}
 
 	public CompletableFuture<TempoAtom> resolve(TempoAtom atom, Collection<TempoAtom> conflictingAtoms) {
-		// TODO hook up local conflict resolver epic
-		throw new UnsupportedOperationException("Not yet implemented");
+		CompletableFuture<TempoAtom> winnerFuture = new CompletableFuture<>();
+		ResolveConflictAction resolve = new ResolveConflictAction(atom, conflictingAtoms, winnerFuture);
+		this.dispatch(resolve);
+
+		return winnerFuture;
 	}
 
 	public void accept(TempoAtom atom) {
@@ -300,13 +309,19 @@ public final class TempoController {
 			.addReducer(new LivePeersReducer(peerSupplier))
 			.addReducer(new PassivePeersReducer(16))
 			.addReducer(new DeliveryReducer())
-			.addReducer(new IterativeSyncReducer())
 			.addInitialAction(new RefreshLivePeersAction().repeat(10, 5, TimeUnit.SECONDS))
 			.addInitialAction(new ReselectPassivePeersAction().repeat(10, 20, TimeUnit.SECONDS));
-		if (Modules.get(RuntimeProperties.class).get("tempo2.sync.active", true)) {
+
+		// TODO improve config parsing
+		RuntimeProperties properties = Modules.get(RuntimeProperties.class);
+		String[] syncFeatures = properties.get("tempo2.sync", "active,iterative").split(",");
+		String resolver = properties.get("tempo2.resolver", "local");
+		logger.info(String.format("Creating Tempo controller with sync='%s' and resolver=%s",
+			Arrays.toString(syncFeatures), resolver));
+		if (Arrays.stream(syncFeatures).anyMatch("active"::equalsIgnoreCase)) {
 			builder.addEpic(new ActiveSyncEpic(localSystem.getNID()));
 		}
-		if (Modules.get(RuntimeProperties.class).get("tempo2.sync.iterative", true)) {
+		if (Arrays.stream(syncFeatures).anyMatch("iterative"::equalsIgnoreCase)) {
 			IterativeCursorStore cursorStore = new IterativeCursorStore(
 				() -> Modules.get(DatabaseEnvironment.class),
 				() -> Modules.get(Serialization.class)
@@ -317,6 +332,10 @@ public final class TempoController {
 				.storeView(storeView)
 				.cursorStore(cursorStore)
 				.build());
+			builder.addReducer(new IterativeSyncReducer());
+		}
+		if (resolver.equalsIgnoreCase("local")) {
+			builder.addEpic(new LocalConflictResolverEpic(localSystem.getNID()));
 		}
 
 		return builder;
