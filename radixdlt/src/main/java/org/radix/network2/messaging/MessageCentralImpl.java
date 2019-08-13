@@ -31,9 +31,10 @@ import com.radixdlt.universe.Universe;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.RateLimiter;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.serialization.SerializationException;
 
-
+// FIXME: Dependency on Modules.get(RuntimeProperties.class) for queue length
+// FIXME: Dependency on Network.getInstance() for peer handling
+// FIXME: Dependency on Messaging.getInstance() for message processing
 public final class MessageCentralImpl implements MessageCentral, Closeable {
 	private static final Logger log = Logging.getLogger("message");
 
@@ -163,8 +164,6 @@ public final class MessageCentralImpl implements MessageCentral, Closeable {
 		try {
 			byte[] uncompressed = serialization.toDson(out, Output.WIRE);
 			return Snappy.compress(uncompressed);
-		} catch (SerializationException e) {
-			throw new UncheckedSerializationException("While serializing message", e);
 		} catch (IOException e) {
 			throw new UncheckedIOException("While serializing message", e);
 		}
@@ -174,8 +173,6 @@ public final class MessageCentralImpl implements MessageCentral, Closeable {
 		try {
 			byte[] uncompressed = Snappy.uncompress(in);
 			return serialization.fromDson(uncompressed, Message.class);
-		} catch (SerializationException e) {
-			throw new UncheckedSerializationException("While deserializing message", e);
 		} catch (IOException e) {
 			throw new UncheckedIOException("While deserializing message", e);
 		}

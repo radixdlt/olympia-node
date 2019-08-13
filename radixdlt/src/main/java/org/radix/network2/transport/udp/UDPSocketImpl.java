@@ -4,11 +4,14 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 
-public class UDPSocketImpl implements UDPSocket {
+/**
+ * Implementation of {@link UDPSocket} that wraps a {@link DatagramSocket}.
+ */
+class UDPSocketImpl implements UDPSocket {
 
 	private final DatagramSocket datagramSocket;
 
-	public UDPSocketImpl(DatagramSocket serverSocket) {
+	UDPSocketImpl(DatagramSocket serverSocket) {
 		this.datagramSocket = serverSocket;
 	}
 

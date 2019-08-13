@@ -56,9 +56,9 @@ public interface IOFunction<T, R> {
      * function and then applies this function
      * @throws NullPointerException if before is null
      *
-     * @see #andThen(Function)
+     * @see #andThenFunction(Function)
      */
-    default <V> IOFunction<V, R> compose(Function<? super V, ? extends T> before) {
+    default <V> IOFunction<V, R> composeFunction(Function<? super V, ? extends T> before) {
         Objects.requireNonNull(before);
         return (V v) -> apply(before.apply(v));
     }
@@ -96,9 +96,9 @@ public interface IOFunction<T, R> {
      * applies the {@code after} function
      * @throws NullPointerException if after is null
      *
-     * @see #compose(Function)
+     * @see #composeFunction(Function)
      */
-    default <V> IOFunction<T, V> andThen(Function<? super R, ? extends V> after) {
+    default <V> IOFunction<T, V> andThenFunction(Function<? super R, ? extends V> after) {
         Objects.requireNonNull(after);
         return (T t) -> after.apply(apply(t));
     }

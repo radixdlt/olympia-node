@@ -2,7 +2,6 @@ package org.radix.network2.transport;
 
 import java.util.HashMap;
 import java.util.Map;
-import org.junit.Before;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableMap;
@@ -13,10 +12,6 @@ import static org.hamcrest.CoreMatchers.*;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class StaticTransportMetadataTest {
-
-	@Before
-	public void setUp() throws Exception {
-	}
 
 	@Test
 	public void equalsContract() {

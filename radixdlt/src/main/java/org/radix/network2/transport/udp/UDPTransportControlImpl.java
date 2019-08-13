@@ -6,11 +6,16 @@ import java.util.concurrent.CompletableFuture;
 import org.radix.network2.transport.TransportControl;
 import org.radix.network2.transport.TransportOutboundConnection;
 
-public class UDPTransportControlImpl implements TransportControl {
+/**
+ * A {@link TransportControl} interface for UDP transport.
+ * Note that UDP is connectionless, and therefore does not require
+ * anything to be done on a per-connection basis.
+ */
+class UDPTransportControlImpl implements TransportControl {
 
 	private final UDPTransportOutboundConnection outbound;
 
-	public UDPTransportControlImpl(UDPTransportOutboundConnection outbound) {
+	UDPTransportControlImpl(UDPTransportOutboundConnection outbound) {
 		this.outbound = outbound;
 	}
 

@@ -4,11 +4,14 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 
-public final class UDPChannelImpl implements UDPChannel {
+/**
+ * Implementation of {@link UDPChannel} that wraps a {@link DatagramChannel}.
+ */
+final class UDPChannelImpl implements UDPChannel {
 
 	private final DatagramChannel channel;
 
-	public UDPChannelImpl(DatagramChannel channel) {
+	UDPChannelImpl(DatagramChannel channel) {
 		this.channel = channel;
 	}
 
