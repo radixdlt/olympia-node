@@ -14,6 +14,7 @@ import com.radixdlt.atommodel.procedures.FungibleTransition;
 import com.radixdlt.constraintmachine.WitnessValidator;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.constraintmachine.AtomMetadata;
+import com.radixdlt.utils.UInt256;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.BiFunction;
@@ -100,6 +101,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			(tokDef, unallocated) ->
 				Objects.equals(unallocated.getGranularity(), tokDef.getGranularity())
 				&& Objects.equals(unallocated.getTokenPermissions(), tokDef.getTokenPermissions())
+				&& unallocated.getAmount().equals(UInt256.MAX_VALUE)
 		);
 
 		os.registerParticle(
