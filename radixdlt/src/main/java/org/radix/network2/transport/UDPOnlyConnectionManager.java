@@ -2,8 +2,9 @@ package org.radix.network2.transport;
 
 import java.io.IOException;
 import java.util.HashMap;
+
+import org.radix.network.peers.Peer;
 import org.radix.network2.IOFunction;
-import org.radix.network2.addressbook.Peer;
 import org.radix.network2.messaging.ConnectionManager;
 import org.radix.network2.transport.udp.UDPConstants;
 import org.radix.utils.IOUtils;
@@ -50,4 +51,8 @@ public class UDPOnlyConnectionManager implements ConnectionManager {
 		return this.transportFactory.create(metadata);
 	}
 
+	@Override
+	public String toString() {
+		return String.format("%s[connections=%s]", getClass().getSimpleName(), connections.size());
+	}
 }

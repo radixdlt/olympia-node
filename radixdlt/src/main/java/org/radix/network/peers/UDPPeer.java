@@ -6,8 +6,7 @@ import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.network.Protocol;
 import org.radix.network.messaging.Message;
-import org.radix.network2.messaging.MessageCentral;
-
+import org.radix.network.messaging.Messaging;
 import com.radixdlt.serialization.Polymorphic;
 import com.radixdlt.serialization.SerializerId2;
 import com.google.common.annotations.VisibleForTesting;
@@ -17,29 +16,23 @@ public class UDPPeer extends Peer implements Polymorphic
 {
 	private static final Logger networkLog = Logging.getLogger("network");
 
-	private final MessageCentral messageCentral;
-
 	// Used by serializer
 	UDPPeer()
 	{
 		super();
-		this.messageCentral = null;
 	}
 
-	public UDPPeer(MessageCentral messageCentral, URI host, Peer peer) {
+	public UDPPeer(URI host, Peer peer) {
 		super(host, peer);
-
-		this.messageCentral = messageCentral;
 
 		connect();
 
-		networkLog.debug("Connectioned opened on "+toString());
+		networkLog.debug("Connection opened on "+toString());
 	}
 
 	@VisibleForTesting
-	public UDPPeer(URI host, Void doNotUseThisConstructor) {
+	public UDPPeer(Void doNotUseThisConstructor, URI host) {
 		super(host);
-		this.messageCentral = null;
 	}
 
 	@Override
@@ -51,8 +44,7 @@ public class UDPPeer extends Peer implements Polymorphic
 	@Override
 	public void send(Message message) throws IOException
 	{
-		// No result checking, we're just going to assume it happened
-		messageCentral.send(new UDPPeerWrapper(this), message);
+		Messaging.getInstance().send(message, this);
 	}
 
 	private void connect() {
@@ -63,7 +55,6 @@ public class UDPPeer extends Peer implements Polymorphic
 	@Override
 	void onConnected() {
 		super.onConnected();
-
 		addProtocol(Protocol.UDP);
 	}
 }

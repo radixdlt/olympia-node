@@ -4,12 +4,8 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.WeakHashMap;
-
 import org.radix.collections.WireableSet;
 import com.radixdlt.common.EUID;
-import org.radix.common.executors.Executable;
-import org.radix.common.executors.ScheduledExecutable;
 import org.radix.containers.BasicContainer;
 import org.radix.events.Events;
 import org.radix.logging.Logger;
@@ -22,6 +18,11 @@ import org.radix.network.peers.events.PeerBannedEvent;
 import org.radix.network.peers.events.PeerConnectedEvent;
 import org.radix.network.peers.events.PeerConnectingEvent;
 import org.radix.network.peers.events.PeerDisconnectedEvent;
+import org.radix.network2.transport.StaticTransportMetadata;
+import org.radix.network2.transport.TransportException;
+import org.radix.network2.transport.TransportMetadata;
+import org.radix.network2.transport.udp.UDPConstants;
+
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
@@ -59,8 +60,6 @@ public class Peer extends BasicContainer implements Chronologic
 	@DsonOutput(Output.ALL)
 	private RadixSystem system = new RadixSystem();
 	private transient State	state = new State(State.NONE);
-
-	private transient Map<Long, ScheduledExecutable> executables = new WeakHashMap<Long, ScheduledExecutable>();	// TODO change to a weak list?
 
 	public Peer()
 	{
@@ -206,13 +205,6 @@ public class Peer extends BasicContainer implements Chronologic
 		try
 		{
 			setState(new State(State.DISCONNECTING));
-
-			synchronized(this.executables)
-			{
-				for (Executable executable : this.executables.values())
-					executable.terminate(true);
-			}
-
 			if (reason != null)
 			{
 				networkLog.error(toString()+" - Disconnected - "+reason);
@@ -239,14 +231,21 @@ public class Peer extends BasicContainer implements Chronologic
 		Events.getInstance().broadcast(new PeerDisconnectedEvent(this));
 	}
 
-	public void send(byte[] message) throws IOException
+	public void send(Message message) throws IOException
 	{
 		throw new UnsupportedOperationException("Send not supported on Peer object");
 	}
 
-	public void send(Message message) throws IOException
-	{
-		throw new UnsupportedOperationException("Send not supported on Peer object");
+	// FIXME temporary until address book is sorted
+	public TransportMetadata connectionData(String transport) {
+		if (!UDPConstants.UDP_NAME.equals(transport) ) {
+			throw new TransportException(String.format("Peer %s has no transport %s", getURI(), transport));
+		}
+		URI uri = getURI();
+		return StaticTransportMetadata.of(
+			UDPConstants.METADATA_UDP_HOST, uri.getHost(),
+			UDPConstants.METADATA_UDP_PORT, String.valueOf(uri.getPort())
+		);
 	}
 
 	// CHRONOLOGIC //

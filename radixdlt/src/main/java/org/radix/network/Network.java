@@ -1,7 +1,6 @@
 package org.radix.network;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.SocketException;
 import java.net.URI;
 import java.util.ArrayList;
@@ -18,10 +17,7 @@ import java.util.stream.Collectors;
 
 import org.radix.common.Syncronicity;
 
-import com.google.common.collect.ImmutableList;
 import com.radixdlt.common.EUID;
-import com.radixdlt.serialization.Serialization;
-
 import org.radix.common.executors.ScheduledExecutable;
 import org.radix.events.Event.EventPriority;
 import org.radix.events.Events;
@@ -41,15 +37,6 @@ import org.radix.network.peers.UDPPeer;
 import org.radix.network.peers.events.PeerConnectingEvent;
 import org.radix.network.peers.events.PeerDisconnectedEvent;
 import org.radix.network.peers.events.PeerEvent;
-import org.radix.network2.messaging.MessageCentral;
-import org.radix.network2.messaging.MessageCentralImpl;
-import org.radix.network2.transport.StaticTransportMetadata;
-import org.radix.network2.transport.TransportMetadata;
-import org.radix.network2.transport.UDPOnlyConnectionManager;
-import org.radix.network2.transport.udp.UDPSocketFactoryImpl;
-import org.radix.network2.transport.udp.UDPSocketFactory;
-import org.radix.network2.transport.udp.UDPTransportFactoryImpl;
-import org.radix.network2.transport.udp.UDPTransportListenerImpl;
 import org.radix.properties.RuntimeProperties;
 import org.radix.state.State;
 import org.radix.state.State.StateDefinition;
@@ -103,24 +90,9 @@ public class Network extends Service
 	private final Whitelist 	whitelist = new Whitelist(Modules.get(RuntimeProperties.class).get("network.whitelist", ""));
     private final ReentrantLock connecting = new ReentrantLock();
 
-	// FIXME: Remove when network2 complete
-	// In fact this whole class should go, so that should be easy :)
-	private final MessageCentral messageCentral;
-
     private Network()
     {
     	super();
-    	TransportMetadata metadata = StaticTransportMetadata.empty();
-    	UDPSocketFactory socketFactory = new UDPSocketFactoryImpl();
-    	try {
-    		this.messageCentral = new MessageCentralImpl(
-    			Serialization.getDefault(),
-    			new UDPOnlyConnectionManager(new UDPTransportFactoryImpl(socketFactory)),
-    			ImmutableList.of(new UDPTransportListenerImpl(metadata, socketFactory))
-    		);
-    	} catch (IOException e) {
-    		throw new UncheckedIOException("While creating MessageCentral", e);
-    	}
     }
 
 	@Override
@@ -222,7 +194,7 @@ public class Network extends Service
 		    	if (protocol.toString().equalsIgnoreCase(Protocol.UDP.toString()) == true)
 		    	{
 					peer = Modules.get(PeerStore.class).getPeer(Network.getURI(uri.getHost(), uri.getPort()));
-					peer = new UDPPeer(messageCentral, uri, peer);
+					peer = new UDPPeer(uri, peer);
 					Modules.ifAvailable(SystemMetaData.class, a -> a.increment("udp_connects"));
 		    	}
 			}

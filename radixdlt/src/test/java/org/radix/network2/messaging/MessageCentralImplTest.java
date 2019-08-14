@@ -1,6 +1,7 @@
 package org.radix.network2.messaging;
 
 import java.io.IOException;
+import java.security.SecureRandom;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Semaphore;
@@ -10,12 +11,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.powermock.reflect.Whitebox;
 import org.radix.modules.Modules;
 import org.radix.modules.exceptions.ModuleException;
 import org.radix.network.messages.TestMessage;
 import org.radix.network.messaging.Message;
-import org.radix.network.messaging.Messaging;
+import org.radix.network.peers.Peer;
 import org.radix.network.peers.PeerStore;
 import org.radix.network2.transport.SendResult;
 import org.radix.network2.transport.StaticTransportMetadata;
@@ -25,6 +25,8 @@ import org.radix.network2.transport.TransportInfo;
 import org.radix.network2.transport.TransportListener;
 import org.radix.network2.transport.TransportOutboundConnection;
 import org.radix.properties.RuntimeProperties;
+import org.radix.shards.ShardSpace;
+import org.radix.state.State;
 import org.xerial.snappy.Snappy;
 
 import com.google.common.collect.ImmutableList;
@@ -58,6 +60,7 @@ public class MessageCentralImplTest {
 
 	static class DummyTransportOutboundConnection implements TransportOutboundConnection {
 		private boolean sent = false;
+		private final Semaphore sentSemaphore = new Semaphore(0);
 
 		@Override
 		public void close() throws IOException {
@@ -67,6 +70,7 @@ public class MessageCentralImplTest {
 		@Override
 		public CompletableFuture<SendResult> send(byte[] data) {
 			sent = true;
+			sentSemaphore.release();
 			return CompletableFuture.completedFuture(SendResult.complete());
 		}
 	}
@@ -90,18 +94,18 @@ public class MessageCentralImplTest {
 		when(runtimeProperties.get(eq("messaging.outbound.queue_max"), any())).thenReturn(16384);
 		when(runtimeProperties.get(eq("messaging.time_to_live"), any())).thenReturn(30);
     	when(runtimeProperties.get(eq("network.udp.buffer"), any())).thenReturn(1 << 18);
+    	// Following required by Network -> LocalSystem dependency
+    	when(runtimeProperties.get(eq("node.key.path"), any())).thenReturn("node.key");
+    	when(runtimeProperties.get(eq("shards.range"), any())).thenReturn(ShardSpace.SHARD_CHUNK_RANGE);
 
 		PeerStore peerStore = mock(PeerStore.class);
 		Modules.put(Universe.class, universe);
 		Modules.put(RuntimeProperties.class, runtimeProperties);
 		Modules.put(PeerStore.class, peerStore);
 		Modules.put(Serialization.class, serialization);
-
-		// This is especially horrible
-		Messaging.getInstance().start_impl();
+		Modules.put(SecureRandom.class, new SecureRandom());
 
 		// Other scaffolding
-
 		this.toc = new DummyTransportOutboundConnection();
 
 		// Warning suppression OK here -> mocked interfaces don't have contained resources
@@ -125,22 +129,20 @@ public class MessageCentralImplTest {
 	}
 
 	@After
-	public void cleanup() throws ModuleException {
-		this.mci.close();
-
-		// This is especially horrible
-		Messaging.getInstance().stop_impl();
-
+	public void cleanup() {
 		Modules.remove(Universe.class);
 		Modules.remove(RuntimeProperties.class);
 		Modules.remove(PeerStore.class);
 		Modules.remove(Serialization.class);
+		Modules.remove(SecureRandom.class);
+
+		this.mci.close();
 	}
 
 	@Test
 	public void testConstructNoListeners() {
 		try (MessageCentralImpl mci2 = new MessageCentralImpl(Serialization.getDefault(), connectionManager, ImmutableList.of())) {
-			assertNull(Whitebox.getInternalState(mci2, "processingThread"));
+			assertFalse(mci2.hasInboundThread());
 		}
 	}
 
@@ -157,9 +159,12 @@ public class MessageCentralImplTest {
 	}
 
 	@Test
-	public void testSend() {
+	public void testSend() throws InterruptedException {
 		Message msg = new TestMessage();
-		mci.send(null, msg);
+		Peer peer = mock(Peer.class);
+		doReturn(new State(State.CONNECTED)).when(peer).getState();
+		mci.send(peer, msg);
+		assertTrue(toc.sentSemaphore.tryAcquire(10, TimeUnit.SECONDS));
 		assertTrue(toc.sent);
 	}
 
@@ -171,7 +176,7 @@ public class MessageCentralImplTest {
 		AtomicReference<Message> receivedMessage = new AtomicReference<>();
 		Semaphore receivedFlag = new Semaphore(0);
 
-		Messaging.getInstance().register(msg.getCommand(), (messsage, peer) -> {
+		mci.addListener(msg.getClass(), (peer, messsage) -> {
 			receivedMessage.set(messsage);
 			receivedFlag.release();
 		});
@@ -185,16 +190,28 @@ public class MessageCentralImplTest {
 		assertNotNull(receivedMessage.get());
 	}
 
-	// FIXME: Not yet implemented
-	@Test(expected=IllegalStateException.class)
-	public void testAddListener() {
-		mci.addListener(null, null);
+	@Test(expected = IllegalArgumentException.class)
+	public void testAddNullListener() {
+		mci.addListener(TestMessage.class, null);
 	}
 
-	// FIXME: Not yet implemented
-	@Test(expected=IllegalStateException.class)
-	public void testRemoveListener() {
-		mci.removeListener(null, null);
+	@Test(expected = IllegalArgumentException.class)
+	public void testAddListenerTwice() {
+		MessageListener<TestMessage> listener = (source, message) -> {};
+		mci.addListener(TestMessage.class, listener);
+		mci.addListener(TestMessage.class, listener);
 	}
 
+	@Test(expected = IllegalArgumentException.class)
+	public void testRemoveNullListener() {
+		mci.removeListener(TestMessage.class, null);
+	}
+
+	public void testAddRemoveListener() {
+		MessageListener<TestMessage> listener = (source, message) -> {};
+		mci.addListener(TestMessage.class, listener);
+		assertEquals(1, mci.listenersSize());
+		mci.addListener(TestMessage.class, listener);
+		assertEquals(0, mci.listenersSize());
+	}
 }

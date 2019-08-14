@@ -1,5 +1,7 @@
 package org.radix;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.security.SecureRandom;
@@ -7,6 +9,7 @@ import java.security.Security;
 
 import com.radixdlt.mock.MockAccessor;
 import com.radixdlt.mock.MockApplication;
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.tempo.Tempo;
 import org.apache.commons.cli.CommandLine;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -28,6 +31,15 @@ import org.radix.network.Network;
 import org.radix.network.messaging.Messaging;
 import org.radix.network.peers.PeerHandler;
 import org.radix.network.peers.PeerStore;
+import org.radix.network2.messaging.MessageCentral;
+import org.radix.network2.messaging.MessageCentralImpl;
+import org.radix.network2.transport.StaticTransportMetadata;
+import org.radix.network2.transport.TransportMetadata;
+import org.radix.network2.transport.UDPOnlyConnectionManager;
+import org.radix.network2.transport.udp.UDPSocketFactory;
+import org.radix.network2.transport.udp.UDPSocketFactoryImpl;
+import org.radix.network2.transport.udp.UDPTransportFactoryImpl;
+import org.radix.network2.transport.udp.UDPTransportListenerImpl;
 import org.radix.properties.PersistedProperties;
 import org.radix.properties.RuntimeProperties;
 import org.radix.routing.Routing;
@@ -139,6 +151,20 @@ public class Radix extends Plugin
 		}
 
 		/*
+		 * UNIVERSE
+		 */
+		try
+		{
+			byte[] bytes = Bytes.fromBase64String(Modules.get(RuntimeProperties.class).get("universe"));
+			Universe universe = Modules.get(Serialization.class).fromDson(bytes, Universe.class);
+			Modules.put(Universe.class, universe);
+		}
+		catch (Exception ex)
+		{
+			throw new ModuleStartException("Failure setting up Universe", ex, this);
+		}
+
+		/*
 		 * TIME
 		 */
 		try
@@ -148,20 +174,6 @@ public class Radix extends Plugin
 		catch (Exception ex)
 		{
 			throw new ModuleStartException("Failure setting up Time", ex, this);
-		}
-
-		/*
-		 * RTP
-		 */
-		try
-		{
-			if (!Modules.get(RuntimeProperties.class).has("rtp.disable")) {
-				Modules.getInstance().start(new RTPService());
-			}
-		}
-		catch (Exception ex)
-		{
-			throw new ModuleStartException("Failure setting up RTP", ex, this);
 		}
 
 		/*
@@ -187,20 +199,6 @@ public class Radix extends Plugin
 		catch (Exception ex)
 		{
 			throw new ModuleStartException("Failure setting up DB", ex, this);
-		}
-
-		/*
-		 * UNIVERSE
-		 */
-		try
-		{
-			byte[] bytes = Bytes.fromBase64String(Modules.get(RuntimeProperties.class).get("universe"));
-			Universe universe = Modules.get(Serialization.class).fromDson(bytes, Universe.class);
-			Modules.put(Universe.class, universe);
-		}
-		catch (Exception ex)
-		{
-			throw new ModuleStartException("Failure setting up Universe", ex, this);
 		}
 
 		/*
@@ -243,14 +241,27 @@ public class Radix extends Plugin
 		/*
 		 * MESSAGES
 		 */
+		try {
+			MessageCentral messageCentral = createMessageCentral();
+			Modules.put(MessageCentral.class, messageCentral);
+			Modules.getInstance().start(Messaging.configure(messageCentral));
+//			Modules.getInstance().start(new MessageProfiler());
+		} catch (Exception ex) {
+			throw new ModuleStartException("Failure setting up Messages", ex, this);
+		}
+
+		/*
+		 * RTP
+		 */
 		try
 		{
-			Modules.getInstance().start(Messaging.getInstance());
-//			Modules.getInstance().start(new MessageProfiler());
+			if (!Modules.get(RuntimeProperties.class).has("rtp.disable")) {
+				Modules.getInstance().start(new RTPService());
+			}
 		}
 		catch (Exception ex)
 		{
-			throw new ModuleStartException("Failure setting up Messages", ex, this);
+			throw new ModuleStartException("Failure setting up RTP", ex, this);
 		}
 
 		/*
@@ -348,4 +359,19 @@ public class Radix extends Plugin
 
 	@Override
 	public void stop_impl() throws ModuleException { }
+
+	private MessageCentral createMessageCentral() {
+		// FIXME: This all needs to change
+		TransportMetadata metadata = StaticTransportMetadata.empty();
+		UDPSocketFactory socketFactory = new UDPSocketFactoryImpl();
+		try {
+			return new MessageCentralImpl(
+					Serialization.getDefault(),
+					new UDPOnlyConnectionManager(new UDPTransportFactoryImpl(socketFactory)),
+					ImmutableList.of(new UDPTransportListenerImpl(metadata, socketFactory))
+					);
+		} catch (IOException e) {
+			throw new UncheckedIOException("While creating MessageCentral", e);
+		}
+	}
 }

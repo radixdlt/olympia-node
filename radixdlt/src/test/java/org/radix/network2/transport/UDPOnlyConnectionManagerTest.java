@@ -5,7 +5,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.radix.network2.addressbook.Peer;
+import org.radix.network.peers.Peer;
 import org.radix.network2.transport.Transport;
 import org.radix.network2.transport.TransportFactory;
 import org.radix.network2.transport.TransportMetadata;
