@@ -185,7 +185,7 @@ public class BurnMultiIssuanceTokens {
 
 	@Then("^the client should be notified that the action failed because the client does not have permission to burn those tokens$")
 	public void the_client_should_be_notified_that_the_action_failed_because_the_client_does_not_have_permission_to_burn_those_tokens() throws Throwable {
-		awaitAtomValidationError("signed");
+		awaitAtomValidationError();
 	}
 
 	private void setupApi() {
@@ -291,11 +291,11 @@ public class BurnMultiIssuanceTokens {
 			.isIn(finalStatesSet);
 	}
 
-	private void awaitAtomValidationError(String partMessage) {
-		awaitAtomValidationError(this.observers.size(), partMessage);
+	private void awaitAtomValidationError() {
+		awaitAtomValidationError(this.observers.size());
 	}
 
-	private void awaitAtomValidationError(int atomNumber, String partMessage) {
+	private void awaitAtomValidationError(int atomNumber) {
 		assertThat(actionExceptions).isEmpty();
 
 		TestObserver<SubmitAtomAction> testObserver = this.observers.get(atomNumber - 1);
@@ -311,7 +311,6 @@ public class BurnMultiIssuanceTokens {
 				SubmitAtomStatusAction action = SubmitAtomStatusAction.class.cast(s);
 				assertThat(action.getStatusNotification().getAtomStatus()).isEqualTo(EVICTED_FAILED_CM_VERIFICATION);
 				assertThat(action.getStatusNotification().getData().getAsJsonObject().has("message")).isTrue();
-				assertThat(action.getStatusNotification().getData().getAsJsonObject().get("message").getAsString()).contains(partMessage);
 			});
 	}
 }
