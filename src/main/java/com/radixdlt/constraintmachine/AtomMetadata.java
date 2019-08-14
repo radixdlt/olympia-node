@@ -1,8 +1,6 @@
 package com.radixdlt.constraintmachine;
 
 import com.radixdlt.atomos.RadixAddress;
-import com.radixdlt.atoms.Particle;
-import java.util.function.Predicate;
 
 /**
  * Metadata of a relevant Atom
@@ -15,11 +13,4 @@ public interface AtomMetadata {
 	 * @return whether the given address has signed the Atom of interest
 	 */
 	boolean isSignedBy(RadixAddress address);
-
-	/**
-	 * Check whether the atom contains the given particle predicate
-	 * @param predicate particle particle predicate to check for
-	 * @return whether the given particles is contained in the Atom
-	 */
-	boolean contains(Predicate<Particle> predicate);
 }

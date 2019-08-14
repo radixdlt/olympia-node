@@ -103,8 +103,8 @@ public class TokensConstraintScryptTest {
 		MutableSupplyTokenDefinitionParticle token = PowerMockito.mock(MutableSupplyTokenDefinitionParticle.class);
 		when(token.getRRI()).thenReturn(RRI.of(mock(RadixAddress.class), "token"));
 		Map<TokenTransition, TokenPermission> permissions = ImmutableMap.of(
-			TokenTransition.MINT, TokenPermission.TOKEN_CREATION_ONLY,
-			TokenTransition.BURN, TokenPermission.TOKEN_CREATION_ONLY
+			TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY,
+			TokenTransition.BURN, TokenPermission.TOKEN_OWNER_ONLY
 		);
 
 		Mockito.when(token.getTokenPermissions()).thenReturn(permissions);
