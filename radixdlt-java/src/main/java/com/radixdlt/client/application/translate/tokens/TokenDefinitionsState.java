@@ -75,6 +75,7 @@ public class TokenDefinitionsState implements ApplicationState {
 		String iso,
 		String description,
 		String iconUrl,
+		BigDecimal supply,
 		BigDecimal granularity,
 		TokenSupplyType tokenSupplyType
 	) {
@@ -86,7 +87,7 @@ public class TokenDefinitionsState implements ApplicationState {
 
 			newState.put(ref, new TokenState(name, iso, description, iconUrl, totalSupply, granularity, tokenSupplyType));
 		} else {
-			newState.put(ref, new TokenState(name, iso, description, iconUrl, null, granularity, tokenSupplyType));
+			newState.put(ref, new TokenState(name, iso, description, iconUrl, supply, granularity, tokenSupplyType));
 		}
 
 		return new TokenDefinitionsState(ImmutableMap.copyOf(newState));

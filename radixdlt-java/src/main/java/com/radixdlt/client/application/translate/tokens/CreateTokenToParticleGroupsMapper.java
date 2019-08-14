@@ -4,8 +4,9 @@ import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.application.translate.StatelessActionToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
 import com.radixdlt.client.atommodel.rri.RRIParticle;
-import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle;
-import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle.TokenTransition;
+import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
+import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
+import com.radixdlt.client.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.client.atommodel.tokens.TokenPermission;
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
@@ -26,28 +27,25 @@ import org.radix.utils.UInt256;
 public class CreateTokenToParticleGroupsMapper implements StatelessActionToParticleGroupsMapper<CreateTokenAction> {
 	@Override
 	public List<ParticleGroup> mapToParticleGroups(CreateTokenAction tokenCreation) {
-		final TokenPermission mintPermissions;
-		final TokenPermission burnPermissions;
-
 		if (tokenCreation.getTokenSupplyType().equals(TokenSupplyType.FIXED)) {
-			mintPermissions = TokenPermission.TOKEN_CREATION_ONLY;
-			burnPermissions = TokenPermission.NONE;
+			return createFixedSupplyToken(tokenCreation);
 		} else if (tokenCreation.getTokenSupplyType().equals(TokenSupplyType.MUTABLE)) {
-			mintPermissions = TokenPermission.TOKEN_OWNER_ONLY;
-			burnPermissions = TokenPermission.TOKEN_OWNER_ONLY;
+			return createVariableSupplyToken(tokenCreation);
 		} else {
 			throw new IllegalStateException("Unknown supply type: " + tokenCreation.getTokenSupplyType());
 		}
+	}
 
-		TokenDefinitionParticle token = new TokenDefinitionParticle(
+	public List<ParticleGroup> createVariableSupplyToken(CreateTokenAction tokenCreation) {
+		MutableSupplyTokenDefinitionParticle token = new MutableSupplyTokenDefinitionParticle(
 			tokenCreation.getRRI().getAddress(),
 			tokenCreation.getName(),
 			tokenCreation.getRRI().getName(),
 			tokenCreation.getDescription(),
 			TokenUnitConversions.unitsToSubunits(tokenCreation.getGranularity()),
 			ImmutableMap.of(
-				TokenTransition.MINT, mintPermissions,
-				TokenTransition.BURN, burnPermissions
+				TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY,
+				TokenTransition.BURN, TokenPermission.TOKEN_OWNER_ONLY
 			),
 			tokenCreation.getIconUrl()
 		);
@@ -105,6 +103,41 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 		return Arrays.asList(
 			tokenCreationGroup,
 			mintGroupBuilder.build()
+		);
+	}
+
+	public List<ParticleGroup> createFixedSupplyToken(CreateTokenAction tokenCreation) {
+		UInt256 amount = TokenUnitConversions.unitsToSubunits(tokenCreation.getInitialSupply());
+		UInt256 granularity = TokenUnitConversions.unitsToSubunits(tokenCreation.getGranularity());
+		FixedSupplyTokenDefinitionParticle token = new FixedSupplyTokenDefinitionParticle(
+			tokenCreation.getRRI().getAddress(),
+			tokenCreation.getName(),
+			tokenCreation.getRRI().getName(),
+			tokenCreation.getDescription(),
+			amount,
+			granularity,
+			tokenCreation.getIconUrl()
+		);
+
+		TransferrableTokensParticle tokens = new TransferrableTokensParticle(
+			amount,
+			granularity,
+			token.getRRI().getAddress(),
+			System.currentTimeMillis(),
+			token.getRRI(),
+			System.currentTimeMillis() / 60000L + 60000L,
+			ImmutableMap.of()
+		);
+
+		RRIParticle rriParticle = new RRIParticle(token.getRRI());
+		ParticleGroup tokenCreationGroup = ParticleGroup.of(
+			SpunParticle.down(rriParticle),
+			SpunParticle.up(token),
+			SpunParticle.up(tokens)
+		);
+
+		return Arrays.asList(
+			tokenCreationGroup
 		);
 	}
 }

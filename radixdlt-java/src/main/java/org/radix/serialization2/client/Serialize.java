@@ -7,6 +7,7 @@ import com.radixdlt.client.core.network.jsonrpc.ShardSpace;
 import java.util.Arrays;
 import java.util.Collection;
 
+import com.radixdlt.client.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
 import org.radix.serialization2.Serialization;
 import org.radix.serialization2.SerializationPolicy;
@@ -15,7 +16,7 @@ import org.radix.serialization2.SerializerIds;
 import com.radixdlt.client.application.translate.unique.UniqueId;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.atommodel.message.MessageParticle;
-import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle;
+import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.client.atommodel.unique.UniqueParticle;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.client.core.atoms.Atom;
@@ -53,7 +54,8 @@ public final class Serialize {
 				RRIParticle.class,
 				SpunParticle.class,
 				MessageParticle.class,
-				TokenDefinitionParticle.class,
+				MutableSupplyTokenDefinitionParticle.class,
+				FixedSupplyTokenDefinitionParticle.class,
 				UnallocatedTokensParticle.class,
 				TransferrableTokensParticle.class,
 				UniqueParticle.class,

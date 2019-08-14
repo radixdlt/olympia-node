@@ -3,7 +3,7 @@ package com.radixdlt.client.application.translate.tokens;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.client.application.translate.StageActionException;
 import com.radixdlt.client.application.translate.ShardedParticleStateId;
-import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle;
+import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.core.atoms.ParticleGroup.ParticleGroupBuilder;
@@ -37,7 +37,7 @@ public class MintTokensActionMapper implements StatefulActionToParticleGroupsMap
 
 		return ImmutableSet.of(
 			ShardedParticleStateId.of(UnallocatedTokensParticle.class, tokenDefinitionAddress),
-			ShardedParticleStateId.of(TokenDefinitionParticle.class, tokenDefinitionAddress)
+			ShardedParticleStateId.of(MutableSupplyTokenDefinitionParticle.class, tokenDefinitionAddress)
 		);
 	}
 
@@ -50,9 +50,9 @@ public class MintTokensActionMapper implements StatefulActionToParticleGroupsMap
 		}
 
 		Map<Class<? extends Particle>, List<Particle>> particles = store.collect(Collectors.groupingBy(Particle::getClass));
-		final List<Particle> tokDefParticles = particles.get(TokenDefinitionParticle.class);
+		final List<Particle> tokDefParticles = particles.get(MutableSupplyTokenDefinitionParticle.class);
 		if (tokDefParticles == null
-			|| tokDefParticles.stream().noneMatch(p -> ((TokenDefinitionParticle) p).getRRI().equals(rri))
+			|| tokDefParticles.stream().noneMatch(p -> ((MutableSupplyTokenDefinitionParticle) p).getRRI().equals(rri))
 		) {
 			throw new UnknownTokenException(mintTokensAction.getRRI());
 		}

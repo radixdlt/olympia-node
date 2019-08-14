@@ -314,7 +314,7 @@ public class RadixApplicationAPITest {
 	@Test
 	public void when_an_api_is_created_with_set_nodes_and_get_network_state_is_called__the_nodes_should_be_returned() {
 		RadixIdentity identity = mock(RadixIdentity.class);
-		RadixUniverseConfig universeConfig = RadixUniverseConfigs.getBetanet();
+		RadixUniverseConfig universeConfig = RadixUniverseConfigs.getLocalnet();
 		BootstrapConfig config = new BootstrapConfig() {
 			@Override
 			public RadixUniverseConfig getConfig() {
