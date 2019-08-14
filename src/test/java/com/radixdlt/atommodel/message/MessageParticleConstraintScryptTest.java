@@ -29,16 +29,4 @@ public class MessageParticleConstraintScryptTest {
 		testAtomModelOS.testInitialParticle(message, metadata)
 			.assertNoErrorWithMessageContaining("signed");
 	}
-
-	@Test
-	public void when_validating_message_with_unsigned_from__result_has_error() {
-		MessageParticle message = mock(MessageParticle.class);
-		RadixAddress from = mock(RadixAddress.class);
-		when(message.getFrom()).thenReturn(from);
-		AtomMetadata metadata = mock(AtomMetadata.class);
-		when(metadata.isSignedBy(from)).thenReturn(false);
-
-		testAtomModelOS.testInitialParticle(message, metadata)
-			.assertErrorWithMessageContaining("signed");
-	}
 }

@@ -9,14 +9,15 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atommodel.tokens.TokenDefinitionParticle.TokenTransition;
 import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.atomos.ConstraintScrypt;
-import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.atomos.Result;
-import com.radixdlt.atomos.mapper.ParticleToAmountMapper;
+import com.radixdlt.atommodel.procedures.FungibleTransition;
+import com.radixdlt.constraintmachine.WitnessValidator;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.constraintmachine.AtomMetadata;
 import com.radixdlt.utils.UInt256;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.function.BiFunction;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -30,11 +31,10 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 
 	@Override
 	public void main(SysCalls os) {
-		os.registerParticle(TokenDefinitionParticle.class, TokenDefinitionParticle::getAddress);
-
-		// Symbol constraints
-		os.on(TokenDefinitionParticle.class)
-			.require(t -> {
+		os.registerParticle(
+			TokenDefinitionParticle.class,
+			TokenDefinitionParticle::getAddress,
+			t -> {
 				final Result symbolResult;
 				final String symbol = t.getSymbol();
 				if (symbol == null) {
@@ -83,112 +83,102 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 				}
 
 				return Result.combine(symbolResult, descriptionResult, permissionsResult, iconResult);
-			});
+			},
+			TokenDefinitionParticle::getRRI
+		);
 
 		os.registerParticle(
 			UnallocatedTokensParticle.class,
-			UnallocatedTokensParticle::getAddresses
+			UnallocatedTokensParticle::getAddress,
+			u -> Result.of(!u.getAmount().isZero(), "Amount cannot be zero"),
+			UnallocatedTokensParticle::getTokDefRef
 		);
 
 		// Require Token Definition to be created with unallocated tokens of max supply
-		os.newResourceType(
+		os.createTransitionFromRRICombined(
 			TokenDefinitionParticle.class,
-			TokenDefinitionParticle::getRRI,
 			UnallocatedTokensParticle.class,
-			UnallocatedTokensParticle::getTokDefRef,
 			(tokDef, unallocated) ->
 				Objects.equals(unallocated.getGranularity(), tokDef.getGranularity())
 				&& Objects.equals(unallocated.getTokenPermissions(), tokDef.getTokenPermissions())
+				&& unallocated.getAmount().equals(UInt256.MAX_VALUE)
 		);
-
-		os.on(UnallocatedTokensParticle.class)
-			.require(u -> Result.of(!u.getAmount().isZero(), "Amount cannot be zero"));
 
 		os.registerParticle(
 			TransferrableTokensParticle.class,
-			TransferrableTokensParticle::getAddress
-		);
-
-		os.on(TransferrableTokensParticle.class)
-			.require(u -> Result.of(!u.getAmount().isZero(), "Amount cannot be zero"));
-
-		requireAmountFits(os, TransferrableTokensParticle.class, TransferrableTokensParticle::getAmount, TransferrableTokensParticle::getGranularity);
-
-		os.onFungible(
-			UnallocatedTokensParticle.class,
-			UnallocatedTokensParticle::getAmount
-		)
-			.transitionTo(
-				UnallocatedTokensParticle.class,
-				(from, to) ->
-					Objects.equals(from.getTokDefRef(), to.getTokDefRef())
-					&& Objects.equals(from.getGranularity(), to.getGranularity())
-					&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions()),
-				(from, meta) -> checkSigned(from.getTokDefRef().getAddress(), meta)
-			)
-			.transitionTo(
-				TransferrableTokensParticle.class,
-				(from, to) ->
-					Objects.equals(from.getTokDefRef(), to.getTokDefRef())
-					&& Objects.equals(from.getGranularity(), to.getGranularity())
-					&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions()),
-				(from, meta) -> from.getTokenPermission(TokenTransition.MINT).check(from.getTokDefRef(), meta)
-			);
-
-		os.onFungible(
-			TransferrableTokensParticle.class,
-			TransferrableTokensParticle::getAmount
-		)
-			.transitionTo(
-				UnallocatedTokensParticle.class,
-				(from, to) ->
-					Objects.equals(from.getTokDefRef(), to.getTokDefRef())
-					&& Objects.equals(from.getGranularity(), to.getGranularity())
-					&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions()),
-				(from, meta) -> from.getTokenPermission(TokenTransition.BURN).check(from.getTokDefRef(), meta)
-			)
-			.transitionTo(
-				TransferrableTokensParticle.class,
-				(from, to) ->
-					Objects.equals(from.getTokDefRef(), to.getTokDefRef())
-					&& Objects.equals(from.getGranularity(), to.getGranularity())
-					&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions()),
-				(from, meta) -> checkSigned(from.getAddress(), meta)
-			);
-	}
-
-	private static <T extends Particle> void requireAmountFits(
-		SysCalls os,
-		Class<T> cls,
-		ParticleToAmountMapper<T> particleToAmountMapper,
-		ParticleToAmountMapper<T> particleToGranularityMapper
-	) {
-		os.on(cls)
-			.require(particle -> {
-				UInt256 amount = particleToAmountMapper.amount(particle);
-				if (amount == null) {
+			TransferrableTokensParticle::getAddress,
+			tokenParticle -> {
+				if (tokenParticle.getAmount() == null) {
 					return Result.error("amount must not be null");
 				}
-				if (amount.isZero()) {
+				if (tokenParticle.getAmount().isZero()) {
 					return Result.error("amount must not be zero");
 				}
-				UInt256 granularity = particleToGranularityMapper.amount(particle);
-				if (granularity == null) {
+				if (tokenParticle.getGranularity() == null) {
 					return Result.error("granularity must not be null");
 				}
-				if (granularity.isZero() || !amount.remainder(granularity).isZero()) {
-					return Result.error("amount " + amount + " does not fit granularity " + granularity);
+				if (tokenParticle.getGranularity().isZero() || !tokenParticle.getAmount().remainder(tokenParticle.getGranularity()).isZero()) {
+					return Result.error("amount " + tokenParticle.getAmount() + " does not fit granularity " + tokenParticle.getGranularity());
 				}
 
 				return Result.success();
-			});
+			}
+		);
+
+		// Define mint, transfer, burn transitions
+		os.createTransition(
+			UnallocatedTokensParticle.class, UnallocatedTokensParticle.class,
+			new FungibleTransition<>(
+				UnallocatedTokensParticle::getAmount, UnallocatedTokensParticle::getAmount,
+				(from, to) ->
+					Objects.equals(from.getGranularity(), to.getGranularity())
+					&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions())
+			),
+			checkInput((in, meta) -> meta.isSignedBy(in.getTokDefRef().getAddress()))
+		);
+		os.createTransition(
+			UnallocatedTokensParticle.class, TransferrableTokensParticle.class,
+			new FungibleTransition<>(
+				UnallocatedTokensParticle::getAmount, TransferrableTokensParticle::getAmount,
+				(from, to) ->
+					Objects.equals(from.getGranularity(), to.getGranularity())
+					&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions())
+			),
+			checkInput((u, meta) -> u.getTokenPermission(TokenTransition.MINT).check(u.getTokDefRef(), meta).isSuccess())
+		);
+		os.createTransition(
+			TransferrableTokensParticle.class, TransferrableTokensParticle.class,
+			new FungibleTransition<>(
+				TransferrableTokensParticle::getAmount, TransferrableTokensParticle::getAmount,
+				(from, to) ->
+					Objects.equals(from.getGranularity(), to.getGranularity())
+					&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions())
+			),
+			checkInput((in, meta) -> meta.isSignedBy(in.getAddress()))
+		);
+		os.createTransition(
+			TransferrableTokensParticle.class, UnallocatedTokensParticle.class,
+			new FungibleTransition<>(
+				TransferrableTokensParticle::getAmount, UnallocatedTokensParticle::getAmount,
+				(from, to) ->
+					Objects.equals(from.getGranularity(), to.getGranularity())
+					&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions())
+			),
+			checkInput((in, meta) -> in.getTokenPermission(TokenTransition.BURN).check(in.getTokDefRef(), meta).isSuccess())
+		);
 	}
 
-	private static Result checkSigned(RadixAddress fromAddress, AtomMetadata metadata) {
-		if (!metadata.isSignedBy(fromAddress)) {
-			return Result.error("must be signed by source address: " + fromAddress);
-		}
-
-		return Result.success();
+	private static <T extends Particle, U extends Particle> WitnessValidator<T, U> checkInput(BiFunction<T, AtomMetadata, Boolean> check) {
+		return (res, in, out, meta) -> {
+			switch (res) {
+				case POP_OUTPUT:
+					return true;
+				case POP_INPUT:
+				case POP_INPUT_OUTPUT:
+					return check.apply(in, meta);
+				default:
+					throw new IllegalStateException("Unsupported CMAction: " + res);
+			}
+		};
 	}
 }

@@ -6,7 +6,7 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerId2;
 
 @SerializerId2("radix.particles.rri")
-public class RRIParticle extends Particle {
+public final class RRIParticle extends Particle {
 	@JsonProperty("rri")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private RRI rri;

@@ -1,21 +1,22 @@
 package com.radixdlt.atomos.test;
 
+import com.radixdlt.atomos.RRI;
+import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.atomos.SysCalls;
-import com.radixdlt.atomos.FungibleDefinition;
 import com.radixdlt.atomos.Result;
-import com.radixdlt.atomos.mapper.ParticleToAmountMapper;
-import com.radixdlt.atomos.mapper.ParticleToRRIMapper;
-import com.radixdlt.atomos.mapper.ParticleToShardableMapper;
-import com.radixdlt.atomos.mapper.ParticleToShardablesMapper;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.AtomMetadata;
+import com.radixdlt.constraintmachine.TransitionProcedure;
+import com.radixdlt.constraintmachine.WitnessValidator;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -24,75 +25,66 @@ import java.util.stream.Stream;
  * Note that this class is not thread-safe.
  */
 public class TestAtomOS implements SysCalls {
-	private final Map<Class<? extends Particle>, ParticleToRRIMapper<Particle>> resources = new HashMap<>();
+	private final Map<Class<? extends Particle>, Function<Particle, RRI>> resources = new HashMap<>();
 	private final List<Pair<Class<? extends Particle>, BiFunction<Particle, AtomMetadata, Result>>> particleClassConstraints = new ArrayList<>();
-	private final List<FungibleDefinition<? extends Particle>> fungibleDefinitions = new ArrayList<>();
-	private FungibleDefinition.Builder<? extends Particle> pendingFungibleTransition = null;
 
 	@Override
-	public <T extends Particle> void registerParticle(Class<T> particleClass, ParticleToShardablesMapper<T> mapper) {
+	public <T extends Particle> void registerParticleMultipleAddresses(
+		Class<T> particleClass,
+		Function<T, Set<RadixAddress>> mapper,
+		Function<T, Result> staticCheck,
+		Function<T, RRI> rriMapper
+	) {
+		resources.put(particleClass, p -> rriMapper.apply((T) p));
+	}
+
+	@Override
+	public <T extends Particle> void registerParticleMultipleAddresses(
+		Class<T> particleClass,
+		Function<T, Set<RadixAddress>> mapper,
+		Function<T, Result> staticCheck
+	) {
 		// Not implemented for the test AtomOS for the time being as it is not used to test any functionality.
 	}
 
 	@Override
-	public <T extends Particle> void registerParticle(Class<T> particleClass, ParticleToShardableMapper<T> mapper) {
-		// Not implemented for the test AtomOS for the time being as it is not used to test any functionality.
+	public <T extends Particle> void registerParticle(
+		Class<T> particleClass,
+		Function<T, RadixAddress> mapper,
+		Function<T, Result> staticCheck
+	) {
+		particleClassConstraints.add(new Pair<>(particleClass, (p, m) -> staticCheck.apply((T) p)));
 	}
 
 	@Override
-	public <T extends Particle> void newResourceType(Class<T> particleClass, ParticleToRRIMapper<T> indexer) {
-		resources.put(particleClass, p -> indexer.index((T) p));
+	public <T extends Particle> void registerParticle(
+		Class<T> particleClass,
+		Function<T, RadixAddress> mapper,
+		Function<T, Result> staticCheck,
+		Function<T, RRI> rriMapper
+	) {
+		particleClassConstraints.add(new Pair<>(particleClass, (p, m) -> staticCheck.apply((T) p)));
 	}
 
 	@Override
-	public <T extends Particle, U extends Particle> void newResourceType(
+	public <T extends Particle> void createTransitionFromRRI(Class<T> particleClass) {
+	}
+
+	@Override
+	public <T extends Particle, U extends Particle> void createTransitionFromRRICombined(
 		Class<T> particleClass0,
-		ParticleToRRIMapper<T> rriMapper0,
 		Class<U> particleClass1,
-		ParticleToRRIMapper<U> rriMapper1,
 		BiPredicate<T, U> combinedResource
 	) {
-		resources.put(particleClass0, p -> rriMapper0.index((T) p));
 	}
 
 	@Override
-	public <T extends Particle> TransitionlessParticleClassConstraint<T> onTransitionless(Class<T> particleClass) {
-		return constraint -> particleClassConstraints.add(new Pair<>(particleClass, (p, m) -> constraint.validate((T) p, m)));
-	}
-
-
-	@Override
-	public <T extends Particle> ParticleClassConstraint<T> on(Class<T> particleClass) {
-		return constraint -> particleClassConstraints.add(new Pair<>(particleClass, (p, m) -> constraint.apply((T) p)));
-	}
-
-	@Override
-	public <T extends Particle> FungibleTransitionConstraint<T> onFungible(
-		Class<T> particleClass,
-		ParticleToAmountMapper<T> particleToAmountMapper
+	public <T extends Particle, U extends Particle> void createTransition(
+		Class<T> inputClass,
+		Class<U> outputClass,
+		TransitionProcedure<T, U> procedure,
+		WitnessValidator<T, U> witnessValidator
 	) {
-		if (pendingFungibleTransition != null) {
-			fungibleDefinitions.add(pendingFungibleTransition.build());
-		}
-
-		FungibleDefinition.Builder<T> transitionBuilder = new FungibleDefinition.Builder<T>().amountMapper(particleToAmountMapper);
-		pendingFungibleTransition = transitionBuilder;
-
-		return new FungibleTransitionConstraint<T>() {
-			@Override
-			public <U extends Particle> FungibleTransitionConstraint<T> transitionTo(
-				Class<U> particleClass,
-				BiPredicate<T, U> transition,
-				WitnessValidator<T> witnessValidator
-			) {
-				if (pendingFungibleTransition == null) {
-					throw new IllegalStateException("Attempt to add formula to finished fungible transition to " + particleClass);
-				}
-
-				transitionBuilder.to(particleClass, witnessValidator, transition);
-				return this::transitionTo;
-			}
-		};
 	}
 
 	/**
@@ -105,7 +97,7 @@ public class TestAtomOS implements SysCalls {
 	 */
 	public <T extends Particle> TestResult testInitialParticle(T t, AtomMetadata metadata) {
 		Stream<Result> resourceSigned =
-			!resources.containsKey(t.getClass()) || metadata.isSignedBy(resources.get(t.getClass()).index(t).getAddress())
+			!resources.containsKey(t.getClass()) || metadata.isSignedBy(resources.get(t.getClass()).apply(t).getAddress())
 				? Stream.empty() : Stream.of(Result.error("Not signed"));
 
 		Stream<Result> classConstraintResults = particleClassConstraints.stream()

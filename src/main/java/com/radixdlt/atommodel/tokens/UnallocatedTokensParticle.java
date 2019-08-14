@@ -10,10 +10,8 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.utils.UInt256;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -58,8 +56,8 @@ public class UnallocatedTokensParticle extends Particle {
 		this.tokenPermissions = ImmutableMap.copyOf(tokenPermissions);
 	}
 
-	public Set<RadixAddress> getAddresses() {
-		return Collections.singleton(this.tokenDefinitionReference.getAddress());
+	public RadixAddress getAddress() {
+		return this.tokenDefinitionReference.getAddress();
 	}
 
 	public RRI getTokDefRef() {

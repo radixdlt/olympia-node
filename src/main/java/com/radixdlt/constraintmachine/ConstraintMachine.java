@@ -7,12 +7,11 @@ import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.atoms.ParticleGroup;
 import com.radixdlt.atoms.Spin;
 import com.radixdlt.atoms.SpunParticle;
-import com.radixdlt.common.Pair;
+import com.radixdlt.constraintmachine.TransitionProcedure.ProcedureResult;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.SpinStateTransitionValidator;
 import com.radixdlt.store.SpinStateTransitionValidator.TransitionCheckResult;
-import java.util.Stack;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 import java.util.function.UnaryOperator;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.store.CMStores;
@@ -27,7 +26,8 @@ public final class ConstraintMachine {
 	public static class Builder {
 		private UnaryOperator<CMStore> virtualStore;
 		private ImmutableList.Builder<KernelConstraintProcedure> kernelConstraintProcedureBuilder = new ImmutableList.Builder<>();
-		private Function<Particle, ParticleProcedure> particleProcedures;
+		private BiFunction<Particle, Particle, TransitionProcedure<Particle, Particle>> particleProcedures;
+		private BiFunction<Particle, Particle, WitnessValidator<Particle, Particle>> witnessValidators;
 
 		public Builder virtualStore(UnaryOperator<CMStore> virtualStore) {
 			this.virtualStore = virtualStore;
@@ -39,10 +39,16 @@ public final class ConstraintMachine {
 			return this;
 		}
 
-		public Builder setParticleProcedures(Function<Particle, ParticleProcedure> particleProcedures) {
+		public Builder setParticleProcedures(BiFunction<Particle, Particle, TransitionProcedure<Particle, Particle>> particleProcedures) {
 			this.particleProcedures = particleProcedures;
 			return this;
 		}
+
+		public Builder setWitnessValidators(BiFunction<Particle, Particle, WitnessValidator<Particle, Particle>> witnessValidators) {
+			this.witnessValidators = witnessValidators;
+			return this;
+		}
+
 
 		public ConstraintMachine build() {
 			if (virtualStore == null) {
@@ -52,20 +58,23 @@ public final class ConstraintMachine {
 			return new ConstraintMachine(
 				virtualStore,
 				kernelConstraintProcedureBuilder.build(),
-				particleProcedures
+				particleProcedures,
+				witnessValidators
 			);
 		}
 	}
 
 	private final UnaryOperator<CMStore> virtualStore;
 	private final ImmutableList<KernelConstraintProcedure> kernelConstraintProcedures;
-	private final Function<Particle, ParticleProcedure> particleProcedures;
+	private final BiFunction<Particle, Particle, TransitionProcedure<Particle, Particle>> particleProcedures;
+	private final BiFunction<Particle, Particle, WitnessValidator<Particle, Particle>> witnessValidators;
 	private final CMStore localEngineStore;
 
 	ConstraintMachine(
 		UnaryOperator<CMStore> virtualStore,
 		ImmutableList<KernelConstraintProcedure> kernelConstraintProcedures,
-		Function<Particle, ParticleProcedure> particleProcedures
+		BiFunction<Particle, Particle, TransitionProcedure<Particle, Particle>> particleProcedures,
+		BiFunction<Particle, Particle, WitnessValidator<Particle, Particle>> witnessValidators
 	) {
 		Objects.requireNonNull(virtualStore);
 
@@ -73,28 +82,74 @@ public final class ConstraintMachine {
 		this.localEngineStore = this.virtualStore.apply(CMStores.empty());
 		this.kernelConstraintProcedures = kernelConstraintProcedures;
 		this.particleProcedures = particleProcedures;
+		this.witnessValidators = witnessValidators;
 	}
 
-	private Stream<ProcedureError> validate(ParticleGroup group, AtomMetadata metadata) {
-		final Stack<Pair<Particle, Object>> outputs = new Stack<>();
+	Stream<ProcedureError> validate(ParticleGroup group, AtomMetadata metadata) {
+		ProcedureResult lastResult = null;
+		SpunParticle spunParticleRegister = null;
 
-		for (int i = group.getParticleCount() - 1; i >= 0; i--) {
-			SpunParticle sp = group.getSpunParticle(i);
-			Particle p = sp.getParticle();
-			ParticleProcedure particleProcedure = this.particleProcedures.apply(p);
-			if (sp.getSpin() == Spin.DOWN) {
-				if (particleProcedure == null || !particleProcedure.inputExecute(p, metadata, outputs)) {
-					return Stream.of(ProcedureError.of("Input particle " + p + " failed. Output stack: " + outputs));
-				}
-			} else {
-				if (particleProcedure == null || !particleProcedure.outputExecute(p, metadata)) {
-					outputs.push(Pair.of(p, null));
-				}
+		for (int i = 0; i < group.getParticleCount(); i++) {
+			final SpunParticle nextSpun = group.getSpunParticle(i);
+			final Particle nextParticle = nextSpun.getParticle();
+			final Particle curParticle = spunParticleRegister == null ? null : spunParticleRegister.getParticle();
+
+			if (spunParticleRegister != null && spunParticleRegister.getSpin() == nextSpun.getSpin()) {
+				return Stream.of(ProcedureError.of("Spin Clash: Next particle: " + nextSpun
+					+ " Current register: " + spunParticleRegister + " " + lastResult));
 			}
+
+			final Particle inputParticle = nextSpun.getSpin() == Spin.DOWN ? nextParticle : curParticle;
+			final Particle outputParticle = nextSpun.getSpin() == Spin.DOWN ? curParticle : nextParticle;
+
+			final TransitionProcedure<Particle, Particle> transitionProcedure = this.particleProcedures.apply(inputParticle, outputParticle);
+
+			if (transitionProcedure == null) {
+				if (inputParticle == null || outputParticle == null) {
+					spunParticleRegister = nextSpun;
+					continue;
+				}
+
+				return Stream.of(ProcedureError.of("No procedure for Input: " + inputParticle + " Output: " + outputParticle));
+			}
+
+			final ProcedureResult result = transitionProcedure.execute(inputParticle, outputParticle, lastResult);
+			switch (result.getCmAction()) {
+				case POP_INPUT:
+					if (nextSpun.getSpin() == Spin.UP) {
+						spunParticleRegister = nextSpun;
+					}
+					break;
+				case POP_OUTPUT:
+					if (nextSpun.getSpin() == Spin.DOWN) {
+						spunParticleRegister = nextSpun;
+					}
+					break;
+				case POP_INPUT_OUTPUT:
+					spunParticleRegister = null;
+					if (result.getRemainder() != null) {
+						throw new IllegalStateException("POP_INPUT_OUTPUT must output null");
+					}
+					break;
+				case ERROR:
+					return Stream.of(ProcedureError.of("Procedure failed: " + transitionProcedure
+						+ " Next particle " + nextParticle + " failed. Current register: " + spunParticleRegister + " " + lastResult));
+			}
+
+			final WitnessValidator<Particle, Particle> witnessValidator = this.witnessValidators.apply(inputParticle, outputParticle);
+			if (witnessValidator == null) {
+				throw new IllegalStateException("No witness validator for: " + inputParticle + " -> " + outputParticle);
+			}
+			final boolean witnessResult = witnessValidator.validate(result.getCmAction(), inputParticle, outputParticle, metadata);
+			if (!witnessResult) {
+				return Stream.of(ProcedureError.of("Witness failed"));
+			}
+
+			lastResult = result;
 		}
 
-		if (!outputs.empty()) {
-			return Stream.of(ProcedureError.of("Output particle stack not empty: " + outputs));
+		if (spunParticleRegister != null) {
+			return Stream.of(ProcedureError.of("Particle register not empty: " + spunParticleRegister));
 		}
 
 		return Stream.empty();

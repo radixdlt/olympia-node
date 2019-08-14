@@ -6,7 +6,7 @@ import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.atoms.Spin;
 import com.radixdlt.constraintmachine.CMAtom;
 import com.radixdlt.constraintmachine.CMParticle;
-import com.radixdlt.utils.UInt256;
+import com.radixdlt.constraintmachine.TransitionProcedure;
 import org.junit.Test;
 
 import com.radixdlt.atoms.Particle;
@@ -58,50 +58,28 @@ public class CMAtomOSTest {
 	}
 
 	@Test
-	public void when_running_constraint_scrypt_with_unknown_particle_identifier__exception_is_thrown() {
+	public void when_adding_procedure_on_particle_registered_in_another_scrypt__exception_is_thrown() {
 		CMAtomOS os = new CMAtomOS(() -> mock(Universe.class), () -> 0);
+		TransitionProcedure<TestParticle0, TestParticle0> procedure = mock(TransitionProcedure.class);
+		os.load(syscalls -> {
+			syscalls.registerParticle(TestParticle0.class, (TestParticle0 p) -> mock(RadixAddress.class), t -> Result.success());
+			syscalls.createTransition(
+				TestParticle0.class,
+				TestParticle0.class,
+				procedure,
+				(res, in, out, meta) -> true
+			);
+		});
+		TransitionProcedure<TestParticle1, TestParticle0> procedure0 = mock(TransitionProcedure.class);
 		assertThatThrownBy(() ->
 			os.load(syscalls -> {
-				syscalls.registerParticle(TestParticle0.class, (TestParticle0 p) -> mock(RadixAddress.class));
-				syscalls.on(TestParticle1.class);
-			})
-		).isInstanceOf(IllegalStateException.class);
-	}
-
-	@Test
-	public void when_running_constraint_scrypt_with_known_particle_identifier__exception_is_not_thrown() {
-		CMAtomOS os = new CMAtomOS(() -> mock(Universe.class), () -> 0);
-		os.load(syscalls -> {
-			syscalls.registerParticle(TestParticle0.class, (TestParticle0 p) -> mock(RadixAddress.class));
-			syscalls.on(TestParticle0.class);
-		});
-	}
-
-	@Test
-	public void when_adding_constraints_on_particle_registered_in_another_scrypt__exception_is_thrown() {
-		CMAtomOS os = new CMAtomOS(() -> mock(Universe.class), () -> 0);
-		os.load(syscalls -> {
-			syscalls.registerParticle(TestParticle0.class, (TestParticle0 p) -> mock(RadixAddress.class));
-		});
-		assertThatThrownBy(() ->
-			os.load(syscalls -> {
-				syscalls.on(TestParticle0.class).require(k -> Result.success());
-			})
-		).isInstanceOf(IllegalStateException.class);
-	}
-
-	@Test
-	public void when_adding_fungible_constraints_on_particle_registered_in_another_scrypt__exception_is_thrown() {
-		CMAtomOS os = new CMAtomOS(() -> mock(Universe.class), () -> 0);
-		os.load(syscalls -> {
-			syscalls.registerParticle(TestParticle0.class, (TestParticle0 p) -> mock(RadixAddress.class));
-			syscalls.onFungible(TestParticle0.class, k -> UInt256.ONE);
-		});
-		assertThatThrownBy(() ->
-			os.load(syscalls -> {
-				syscalls.registerParticle(TestParticle1.class, (TestParticle1 p) -> mock(RadixAddress.class));
-				syscalls.onFungible(TestParticle1.class, k -> UInt256.ONE)
-					.transitionTo(TestParticle0.class, (a, b) -> true, (a, m) -> Result.success());
+				syscalls.registerParticle(TestParticle1.class, (TestParticle1 p) -> mock(RadixAddress.class), t -> Result.success());
+				syscalls.createTransition(
+					TestParticle1.class,
+					TestParticle0.class,
+					procedure0,
+					(res, in, out, meta) -> true
+				);
 			})
 		).isInstanceOf(IllegalStateException.class);
 	}
