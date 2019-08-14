@@ -4,21 +4,21 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
 import com.radixdlt.tempo.TempoAction;
-import com.radixdlt.tempo.TempoAtom;
+import org.radix.network.peers.Peer;
 
-public class RequestCollectSamplesAction implements TempoAction {
-	private final TempoAtom atom;
+public class RequestSamplingAction implements TempoAction {
+	private final ImmutableSet<Peer> samplePeers;
 	private final ImmutableSet<AID> allAids;
 	private final EUID tag;
 
-	public RequestCollectSamplesAction(TempoAtom atom, ImmutableSet<AID> allAids, EUID tag) {
-		this.atom = atom;
+	public RequestSamplingAction(ImmutableSet<Peer> samplePeers, ImmutableSet<AID> allAids, EUID tag) {
+		this.samplePeers = samplePeers;
 		this.allAids = allAids;
 		this.tag = tag;
 	}
 
-	public TempoAtom getAtom() {
-		return atom;
+	public ImmutableSet<Peer> getSamplePeers() {
+		return samplePeers;
 	}
 
 	public ImmutableSet<AID> getAllAids() {

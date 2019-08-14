@@ -29,6 +29,8 @@ import com.radixdlt.tempo.epics.AtomDeliveryEpic;
 import com.radixdlt.tempo.epics.IterativeSyncEpic;
 import com.radixdlt.tempo.epics.LocalResolverEpic;
 import com.radixdlt.tempo.epics.MessagingEpic;
+import com.radixdlt.tempo.epics.NetworkResolverEpic;
+import com.radixdlt.tempo.epics.SampleCollectorEpic;
 import com.radixdlt.tempo.messages.DeliveryRequestMessage;
 import com.radixdlt.tempo.messages.DeliveryResponseMessage;
 import com.radixdlt.tempo.messages.IterativeRequestMessage;
@@ -41,6 +43,7 @@ import com.radixdlt.tempo.reducers.IterativeSyncReducer;
 import com.radixdlt.tempo.reducers.LivePeersReducer;
 import com.radixdlt.tempo.reducers.PassivePeersReducer;
 import com.radixdlt.tempo.store.IterativeCursorStore;
+import com.radixdlt.tempo.store.SampleStore;
 import org.radix.database.DatabaseEnvironment;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
@@ -341,6 +344,16 @@ public final class TempoController {
 		}
 		if (resolver.equalsIgnoreCase("local")) {
 			builder.addEpic(new LocalResolverEpic(localSystem.getNID()));
+		} else if (resolver.equalsIgnoreCase("momentum")) {
+			SampleSelector sampleSelector = null;
+			ConflictDecider conflictDecider = null;
+			SampleStore store = new SampleStore(
+				() -> Modules.get(DatabaseEnvironment.class),
+				() -> Modules.get(Serialization.class)
+			);
+			store.open();
+			builder.addEpic(new NetworkResolverEpic(sampleSelector, conflictDecider));
+			builder.addEpic(new SampleCollectorEpic(localSystem.getNID(), store));
 		}
 
 		return builder;

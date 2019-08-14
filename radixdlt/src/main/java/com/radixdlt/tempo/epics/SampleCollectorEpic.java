@@ -3,51 +3,52 @@ package com.radixdlt.tempo.epics;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
-import com.radixdlt.tempo.SampleSelector;
+import com.radixdlt.common.Pair;
 import com.radixdlt.tempo.TempoAction;
 import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.TempoEpic;
 import com.radixdlt.tempo.TempoState;
 import com.radixdlt.tempo.TempoStateBundle;
 import com.radixdlt.tempo.actions.AcceptAtomAction;
+import com.radixdlt.tempo.actions.ReceiveSamplingResultAction;
 import com.radixdlt.tempo.actions.OnSampleDeliveryFailedAction;
-import com.radixdlt.tempo.actions.RequestCollectSamplesAction;
-import com.radixdlt.tempo.actions.TimeoutSampleRequestAction;
+import com.radixdlt.tempo.actions.RequestSamplingAction;
+import com.radixdlt.tempo.actions.TimeoutSampleRequestsAction;
 import com.radixdlt.tempo.actions.messaging.ReceiveSampleRequestAction;
 import com.radixdlt.tempo.actions.messaging.ReceiveSampleResponseAction;
 import com.radixdlt.tempo.actions.messaging.SendSampleRequestAction;
 import com.radixdlt.tempo.actions.messaging.SendSampleResponseAction;
-import com.radixdlt.tempo.state.LivePeersState;
 import com.radixdlt.tempo.state.SampleCollectorState;
 import com.radixdlt.tempo.store.SampleStore;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
+import org.radix.network.peers.Peer;
 import org.radix.time.TemporalProof;
 import org.radix.time.TemporalVertex;
 
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
 public class SampleCollectorEpic implements TempoEpic {
+	private static final int SAMPLE_REQUEST_TIMEOUT_SECONDS = 5;
+
 	private static final Logger logger = Logging.getLogger("Sampling");
 
 	private final EUID self;
 	private final SampleStore sampleStore;
-	private final SampleSelector sampleSelector;
 
-	public SampleCollectorEpic(EUID self, SampleStore sampleStore, SampleSelector sampleSelector) {
+	public SampleCollectorEpic(EUID self, SampleStore sampleStore) {
 		this.self = self;
 		this.sampleStore = Objects.requireNonNull(sampleStore, "sampleStore is required");
-		this.sampleSelector = Objects.requireNonNull(sampleSelector, "sampleSelector is required");
 	}
 
 	@Override
 	public Set<Class<? extends TempoState>> requiredState() {
 		return ImmutableSet.of(
-			LivePeersState.class
+			SampleCollectorState.class,
+			SampleCollectorState.class
 		);
 	}
 
@@ -56,6 +57,8 @@ public class SampleCollectorEpic implements TempoEpic {
 		if (action instanceof AcceptAtomAction) {
 			TempoAtom atom = ((AcceptAtomAction) action).getAtom();
 			TemporalProof temporalProof = atom.getTemporalProof();
+
+			// store newly received local temporal proof branches
 			TemporalVertex ownVertex = temporalProof.getVertexByNID(self);
 			if (ownVertex == null) {
 				logger.warn("Accepted atom '" + atom.getAID() + " has no vertex by self");
@@ -63,50 +66,69 @@ public class SampleCollectorEpic implements TempoEpic {
 				TemporalProof localBranch = temporalProof.getBranch(ownVertex, true);
 				sampleStore.addLocal(localBranch);
 			}
-		} else if (action instanceof RequestCollectSamplesAction) {
-			LivePeersState livePeers = bundle.get(LivePeersState.class);
-			RequestCollectSamplesAction request = (RequestCollectSamplesAction) action;
+			return Stream.empty();
+		} else if (action instanceof RequestSamplingAction) {
+			RequestSamplingAction request = (RequestSamplingAction) action;
 			ImmutableSet<AID> allAids = request.getAllAids();
-			List<EUID> sampleNids = sampleSelector.selectSamples(livePeers.getNids(), request.getAtom());
-			logger.info("Requesting sampling of " + allAids + " from " + sampleNids);
-			return sampleNids.stream()
-				.map(livePeers::getPeer)
-				.filter(Optional::isPresent)
-				.map(Optional::get)
-				.flatMap(peer -> Stream.of(
-					new SendSampleRequestAction(allAids, peer),
-					new TimeoutSampleRequestAction(allAids, peer)
-				));
+			ImmutableSet<Peer> samplePeers = request.getSamplePeers();
+			logger.info("Requesting sampling of '" + allAids + "' from '" + samplePeers + "'");
+
+			// request samples of all aids from all selected sample peers
+			Stream<TempoAction> requests = samplePeers.stream()
+				.map(peer -> new SendSampleRequestAction(allAids, peer));
+			Stream<TempoAction> timeout = Stream.of(new TimeoutSampleRequestsAction(allAids, samplePeers, request.getTag()));
+			return Stream.concat(requests, timeout);
 		} else if (action instanceof ReceiveSampleRequestAction) {
 			ReceiveSampleRequestAction request = (ReceiveSampleRequestAction) action;
-			ImmutableSet.Builder<AID> missingAids = ImmutableSet.builder();
+			ImmutableSet.Builder<AID> unavailableAids = ImmutableSet.builder();
 			ImmutableSet.Builder<TemporalProof> samples = ImmutableSet.builder();
+
+			// get local samples for all requested aids
 			for (AID aid : request.getAids()) {
-				Optional<TemporalProof> sample = sampleStore.getLocal(aid);
-				if (sample.isPresent()) {
-					samples.add(sample.get());
+				Optional<TemporalProof> localSample = sampleStore.getLocal(aid);
+				if (localSample.isPresent()) {
+					samples.add(localSample.get());
 				} else {
-					missingAids.add(aid);
+					unavailableAids.add(aid);
 				}
 			}
-			return Stream.of(new SendSampleResponseAction(samples.build(), missingAids.build(), request.getPeer()));
+			if (logger.hasLevel(Logging.DEBUG)) {
+				logger.debug("Responding to sample request from " + request.getPeer() + " for " + request.getAids());
+			}
+			return Stream.of(new SendSampleResponseAction(samples.build(), unavailableAids.build(), request.getPeer()));
 		} else if (action instanceof ReceiveSampleResponseAction) {
 			ReceiveSampleResponseAction response = (ReceiveSampleResponseAction) action;
-			SampleCollectorState sampleCollectorState = bundle.get(SampleCollectorState.class);
+			SampleCollectorState collectorState = bundle.get(SampleCollectorState.class);
 
+			// add collected samples to store
+			response.getTemporalProofs().forEach(sampleStore::addCollected);
+			// collect and return the resulting samples
+			return collectorState.completedRequests().map(this::toResult);
+		} else if (action instanceof TimeoutSampleRequestsAction) {
+			TimeoutSampleRequestsAction timeout = (TimeoutSampleRequestsAction) action;
+			SampleCollectorState collectorState = bundle.get(SampleCollectorState.class);
 
-		} else if (action instanceof TimeoutSampleRequestAction) {
-			TimeoutSampleRequestAction timeout = (TimeoutSampleRequestAction) action;
-			EUID peerNid = timeout.getPeer().getSystem().getNID();
-			SampleCollectorState sampleCollectorState = bundle.get(SampleCollectorState.class);
-			ImmutableSet<AID> missingSamples = timeout.getAids().stream()
-				.filter(aid -> sampleCollectorState.isPendingDelivery(aid, peerNid))
-				.collect(ImmutableSet.toImmutableSet());
-			if (!missingSamples.isEmpty()) {
-				return Stream.of(new OnSampleDeliveryFailedAction(missingSamples, timeout.getPeer()));
-			}
+			// after timeout, detect any missing samples
+			Stream<OnSampleDeliveryFailedAction> failures = timeout.getPeers().stream()
+				.map(peer -> new OnSampleDeliveryFailedAction(timeout.getAids().stream()
+					.filter(aid -> collectorState.isPendingDelivery(timeout.getTag(), peer.getSystem().getNID(), aid))
+					.collect(ImmutableSet.toImmutableSet()), peer))
+				.filter(failure -> !failure.getAids().isEmpty());
+			// collect and return the resulting samples
+			Stream<TempoAction> completions = collectorState.completedRequests().map(this::toResult);
+			return Stream.concat(failures, completions);
 		}
 
 		return Stream.empty();
+	}
+
+	private TempoAction toResult(SampleCollectorState.SamplingRequest request) {
+		// collect the samples for any completed request
+		ImmutableSet<TemporalProof> samples = request.getRequestedAids().stream()
+			.map(sampleStore::getCollected)
+			.filter(Optional::isPresent)
+			.map(Optional::get)
+			.collect(ImmutableSet.toImmutableSet());
+		return new ReceiveSamplingResultAction(samples, request.getTag());
 	}
 }

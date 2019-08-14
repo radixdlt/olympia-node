@@ -14,27 +14,27 @@ public class SampleResponseMessage extends Message {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final ImmutableSet<TemporalProof> temporalProofs;
 
-	@JsonProperty("missingAids")
+	@JsonProperty("unavailableAids")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private final ImmutableSet<AID> missingAids;
+	private final ImmutableSet<AID> unavailableAids;
 
 	private SampleResponseMessage() {
 		// For serializer
 		this.temporalProofs = ImmutableSet.of();
-		this.missingAids = ImmutableSet.of();
+		this.unavailableAids = ImmutableSet.of();
 	}
 
-	public SampleResponseMessage(ImmutableSet<TemporalProof> temporalProofs, ImmutableSet<AID> missingAids) {
+	public SampleResponseMessage(ImmutableSet<TemporalProof> temporalProofs, ImmutableSet<AID> unavailableAids) {
 		this.temporalProofs = temporalProofs;
-		this.missingAids = missingAids;
+		this.unavailableAids = unavailableAids;
 	}
 
 	public ImmutableSet<TemporalProof> getTemporalProofs() {
 		return temporalProofs;
 	}
 
-	public ImmutableSet<AID> getMissingAids() {
-		return missingAids;
+	public ImmutableSet<AID> getUnavailableAids() {
+		return unavailableAids;
 	}
 
 	@Override

@@ -1,53 +1,112 @@
 package com.radixdlt.tempo.state;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
+import com.radixdlt.tempo.TempoException;
 import com.radixdlt.tempo.TempoState;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 public class SampleCollectorState implements TempoState {
-	private final Map<AID, Set<EUID>> pendingCollectionsByAid;
-	private final Map<EUID, Set<AID>> pendingCollectionsByTag;
-	private final Map<AID, Set<EUID>> pendingDeliveries;
+	private final Map<EUID, SamplingRequest> requests;
 
-	public SampleCollectorState(Map<AID, Set<EUID>> pendingCollectionsByAid,
-	                            Map<EUID, Set<AID>> pendingCollectionsByTag,
-	                            Map<AID, Set<EUID>> pendingDeliveries) {
-		this.pendingCollectionsByAid = pendingCollectionsByAid;
-		this.pendingCollectionsByTag = pendingCollectionsByTag;
-		this.pendingDeliveries = pendingDeliveries;
+	public SampleCollectorState(Map<EUID, SamplingRequest> requests) {
+		this.requests = requests;
 	}
 
-	public Map<AID, Set<EUID>> getPendingDeliveries() {
-		return pendingDeliveries;
+	public boolean isPendingDelivery(EUID tag, EUID nid, AID aid) {
+		SamplingRequest request = requests.get(tag);
+		return request != null && request.isPendingDelivery(nid, aid);
 	}
 
-	public Map<EUID, Set<AID>> getPendingCollectionsByTag() {
-		return pendingCollectionsByTag;
-	}
-
-	public Set<EUID> getPendingTags(AID aid) {
-		return pendingCollectionsByAid.get(aid);
-	}
-
-	public Set<AID> getPendingAids(EUID tag) {
-		return pendingCollectionsByTag.get(tag);
-	}
-
-	public boolean isPendingCollection(EUID tag) {
-		Set<AID> pending = pendingCollectionsByTag.get(tag);
-		return pending != null && !pending.isEmpty();
-	}
-
-	public boolean isPendingDelivery(AID aid, EUID nid) {
-		Set<EUID> pending = pendingDeliveries.get(aid);
-		return pending != null && pending.contains(nid);
+	public Stream<SamplingRequest> completedRequests() {
+		return requests.values().stream()
+			.filter(SamplingRequest::isComplete);
 	}
 
 	public static SampleCollectorState empty() {
-		return new SampleCollectorState(ImmutableMap.of(), ImmutableMap.of(), ImmutableMap.of());
+		return new SampleCollectorState(ImmutableMap.of());
+	}
+
+	public SampleCollectorState withPending(SamplingRequest request) {
+		Map<EUID, SamplingRequest> nextRequests = new HashMap<>(requests);
+		if (requests.containsKey(request.getTag())) {
+			throw new TempoException("Already sampling for tag '" + request.getTag() + "'");
+		}
+		nextRequests.put(request.getTag(), request);
+		return new SampleCollectorState(Collections.unmodifiableMap(nextRequests));
+	}
+
+	public SampleCollectorState complete(Set<AID> completedAids, EUID peerNid) {
+		Map<EUID, SamplingRequest> nextRequests = new HashMap<>();
+		requests.forEach((tag, request) -> nextRequests.put(tag, request.complete(completedAids, peerNid)));
+		return new SampleCollectorState(nextRequests);
+	}
+
+	public SampleCollectorState complete(EUID tag) {
+		Map<EUID, SamplingRequest> nextRequests = new HashMap<>(requests);
+		nextRequests.remove(tag);
+		return new SampleCollectorState(nextRequests);
+	}
+
+	public static final class SamplingRequest {
+		private final EUID tag;
+		private final Set<AID> requestedAids;
+		private final Set<EUID> nids;
+		private final Map<EUID, Set<AID>> pending;
+
+		private SamplingRequest(EUID tag, Set<AID> requestedAids, Set<EUID> nids, Map<EUID, Set<AID>> pending) {
+			this.tag = tag;
+			this.requestedAids = requestedAids;
+			this.nids = nids;
+			this.pending = pending;
+		}
+
+		boolean isComplete() {
+			return pending.values().stream().allMatch(Set::isEmpty);
+		}
+
+		boolean isPendingDelivery(EUID nid, AID aid) {
+			Set<AID> pendingForNid = this.pending.get(nid);
+			return pendingForNid != null && pendingForNid.contains(aid);
+		}
+
+		SamplingRequest complete(Set<AID> aids, EUID nid) {
+			if (!pending.containsKey(nid) || requestedAids.stream().noneMatch(aids::contains)) {
+				return this;
+			}
+			Set<AID> nextPendingForNid = new HashSet<>(pending.get(nid));
+			nextPendingForNid.removeAll(aids);
+			Map<EUID, Set<AID>> nextPending = new HashMap<>(pending);
+			nextPending.put(nid, nextPendingForNid);
+			return new SamplingRequest(
+				tag,
+				requestedAids,
+				nids,
+				nextPending
+			);
+		}
+
+		public Set<AID> getRequestedAids() {
+			return requestedAids;
+		}
+
+		public EUID getTag() {
+			return tag;
+		}
+
+		public static SamplingRequest from(EUID tag, Set<AID> requestedAids, Set<EUID> nids) {
+			Map<EUID, Set<AID>> pending = new HashMap<>();
+			nids.forEach(nid -> pending.put(nid, requestedAids));
+			return new SamplingRequest(tag, requestedAids, nids, pending);
+		}
 	}
 }

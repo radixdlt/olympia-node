@@ -1,7 +1,7 @@
 package com.radixdlt.tempo.store;
 
 import com.radixdlt.common.AID;
-import com.radixdlt.common.EUID;
+import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.tempo.Store;
 import com.radixdlt.tempo.TempoException;
@@ -103,17 +103,12 @@ public class SampleStore implements Store {
 		}
 	}
 
-	/**
-	 * Gets the aggregated temporal proofs associated with a certain {@link AID}.
-	 * @param aid The {@link AID}.
-	 * @return The temporal proof associated with the given {@link AID} (if any)
-	 */
-	public Optional<TemporalProof> getCollected(AID aid) {
+	private Optional<TemporalProof> getTemporalProof(AID aid, Database database) {
 		try {
 			DatabaseEntry key = new DatabaseEntry(aid.getBytes());
 			DatabaseEntry value = new DatabaseEntry();
 
-			OperationStatus status = this.collectedSamples.get(null, key, value, LockMode.DEFAULT);
+			OperationStatus status = database.get(null, key, value, LockMode.DEFAULT);
 			if (status == OperationStatus.NOTFOUND) {
 				return Optional.empty();
 			} else if (status != OperationStatus.SUCCESS) {
@@ -123,10 +118,51 @@ public class SampleStore implements Store {
 				return Optional.of(samples);
 			}
 		} catch (Exception e) {
-			fail("Error while getting collected samples for '" + aid + "'", e);
+			fail("Error while getting samples for '" + aid + "'", e);
 		}
 
 		return Optional.empty();
+	}
+
+	private void add(TemporalProof temporalProof, Database database) {
+		Transaction transaction = dbEnv.get().getEnvironment().beginTransaction(null, null);
+		AID aid = temporalProof.getAID();
+		try {
+			DatabaseEntry key = new DatabaseEntry(aid.getBytes());
+			DatabaseEntry value = new DatabaseEntry();
+
+			TemporalProof aggregatedProof = null;
+			OperationStatus status = database.get(null, key, value, LockMode.DEFAULT);
+			if (status == OperationStatus.NOTFOUND) {
+				aggregatedProof = temporalProof;
+			} else if (status != OperationStatus.SUCCESS) {
+				fail("Database returned status " + status + " for get operation");
+			} else {
+				TemporalProof existing = serialization.get().fromDson(value.getData(), TemporalProof.class);
+				temporalProof.merge(existing);
+				aggregatedProof = temporalProof;
+			}
+
+			value.setData(serialization.get().toDson(aggregatedProof, DsonOutput.Output.PERSIST));
+			status = database.put(transaction, key, value);
+			if (status != OperationStatus.SUCCESS) {
+				fail("Database returned status " + status + " for put operation");
+			}
+
+			transaction.commit();
+		} catch (Exception e) {
+			transaction.abort();
+			fail("Error while adding samples for '" + aid + "'", e);
+		}
+	}
+
+	/**
+	 * Gets the aggregated temporal proofs associated with a certain {@link AID}.
+	 * @param aid The {@link AID}.
+	 * @return The temporal proof associated with the given {@link AID} (if any)
+	 */
+	public Optional<TemporalProof> getCollected(AID aid) {
+		return getTemporalProof(aid, this.collectedSamples);
 	}
 
 	/**
@@ -135,24 +171,7 @@ public class SampleStore implements Store {
 	 * @return The temporal proof associated with the given {@link AID} (if any)
 	 */
 	public Optional<TemporalProof> getLocal(AID aid) {
-		try {
-			DatabaseEntry key = new DatabaseEntry(aid.getBytes());
-			DatabaseEntry value = new DatabaseEntry();
-
-			OperationStatus status = this.localSamples.get(null, key, value, LockMode.DEFAULT);
-			if (status == OperationStatus.NOTFOUND) {
-				return Optional.empty();
-			} else if (status != OperationStatus.SUCCESS) {
-				fail("Database returned status " + status + " for get operation");
-			} else {
-				TemporalProof samples = serialization.get().fromDson(value.getData(), TemporalProof.class);
-				return Optional.of(samples);
-			}
-		} catch (Exception e) {
-			fail("Error while getting local samples for '" + aid + "'", e);
-		}
-
-		return Optional.empty();
+		return getTemporalProof(aid, this.localSamples);
 	}
 
 	/**
@@ -162,6 +181,16 @@ public class SampleStore implements Store {
 	 * @param temporalProof The temporal proof
 	 */
 	public void addLocal(TemporalProof temporalProof) {
-		// TODO implement
+		add(temporalProof, this.localSamples);
+	}
+
+	/**
+	 * Appends a temporal proof to this store.
+	 * If a temporal proof with the same {@link AID} is already stored, the proofs will be merged.
+	 *
+	 * @param temporalProof The temporal proof
+	 */
+	public void addCollected(TemporalProof temporalProof) {
+		add(temporalProof, this.collectedSamples);
 	}
 }

@@ -9,12 +9,12 @@ import org.radix.time.TemporalProof;
 
 public class ReceiveSampleResponseAction implements TempoAction {
 	private final ImmutableSet<TemporalProof> temporalProofs;
-	private final ImmutableSet<AID> missingAids;
+	private final ImmutableSet<AID> unavailableAids;
 	private final Peer peer;
 
-	public ReceiveSampleResponseAction(ImmutableSet<TemporalProof> temporalProofs, ImmutableSet<AID> missingAids, Peer peer) {
+	public ReceiveSampleResponseAction(ImmutableSet<TemporalProof> temporalProofs, ImmutableSet<AID> unavailableAids, Peer peer) {
 		this.temporalProofs = temporalProofs;
-		this.missingAids = missingAids;
+		this.unavailableAids = unavailableAids;
 		this.peer = peer;
 	}
 
@@ -22,8 +22,8 @@ public class ReceiveSampleResponseAction implements TempoAction {
 		return temporalProofs;
 	}
 
-	public ImmutableSet<AID> getMissingAids() {
-		return missingAids;
+	public ImmutableSet<AID> getUnavailableAids() {
+		return unavailableAids;
 	}
 
 	public Peer getPeer() {
@@ -31,6 +31,6 @@ public class ReceiveSampleResponseAction implements TempoAction {
 	}
 
 	public static ReceiveSampleResponseAction from(SampleResponseMessage message, Peer peer) {
-		return new ReceiveSampleResponseAction(message.getTemporalProofs(), message.getMissingAids(), peer);
+		return new ReceiveSampleResponseAction(message.getTemporalProofs(), message.getUnavailableAids(), peer);
 	}
 }

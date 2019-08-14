@@ -3,32 +3,38 @@ package com.radixdlt.tempo.epics;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
+import com.radixdlt.tempo.ConflictDecider;
+import com.radixdlt.tempo.SampleSelector;
 import com.radixdlt.tempo.TempoAction;
 import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.TempoEpic;
 import com.radixdlt.tempo.TempoState;
 import com.radixdlt.tempo.TempoStateBundle;
 import com.radixdlt.tempo.actions.OnConflictResolvedAction;
-import com.radixdlt.tempo.actions.ReceiveSamplesAction;
-import com.radixdlt.tempo.actions.RequestCollectSamplesAction;
+import com.radixdlt.tempo.actions.ReceiveSamplingResultAction;
+import com.radixdlt.tempo.actions.RequestSamplingAction;
 import com.radixdlt.tempo.actions.ResolveConflictAction;
 import com.radixdlt.tempo.state.ConflictsState;
 import com.radixdlt.tempo.state.LivePeersState;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
+import org.radix.network.peers.Peer;
 import org.radix.time.TemporalProof;
 
 import java.util.Collection;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
 public class NetworkResolverEpic implements TempoEpic {
-	private final ConflictDecider decider;
-
 	private static final Logger logger = Logging.getLogger("Conflict");
 
-	public NetworkResolverEpic(ConflictDecider decider) {
+	private final SampleSelector sampleSelector;
+	private final ConflictDecider decider;
+
+	public NetworkResolverEpic(SampleSelector sampleSelector, ConflictDecider decider) {
+		this.sampleSelector = sampleSelector;
 		this.decider = decider;
 	}
 
@@ -46,12 +52,18 @@ public class NetworkResolverEpic implements TempoEpic {
 			ResolveConflictAction conflict = (ResolveConflictAction) action;
 			ImmutableSet<AID> allAids = conflict.allAids().collect(ImmutableSet.toImmutableSet());
 			EUID conflictId = getConflictId(allAids);
-
-			// whenever a conflict is raised, request new samples
-			return Stream.of(new RequestCollectSamplesAction(conflict.getAtom(), allAids, conflictId));
-		} else if (action instanceof ReceiveSamplesAction) {
-			Collection<TemporalProof> samples = ((ReceiveSamplesAction) action).getSamples();
-			EUID tag = ((ReceiveSamplesAction) action).getTag();
+			LivePeersState livePeers = bundle.get(LivePeersState.class);
+			// when a conflict is raised, select some peers to sample
+			ImmutableSet<Peer> samplePeers = sampleSelector.selectSamples(livePeers.getNids(), conflict.getAtom()).stream()
+				.map(livePeers::getPeer)
+				.filter(Optional::isPresent)
+				.map(Optional::get)
+				.collect(ImmutableSet.toImmutableSet());
+			// sample the selected peers
+			return Stream.of(new RequestSamplingAction(samplePeers, allAids, conflictId));
+		} else if (action instanceof ReceiveSamplingResultAction) {
+			Collection<TemporalProof> samples = ((ReceiveSamplingResultAction) action).getSamples();
+			EUID tag = ((ReceiveSamplingResultAction) action).getTag();
 			ConflictsState conflictsState = bundle.get(ConflictsState.class);
 
 			// decide on winner using all collected samples
@@ -75,9 +87,6 @@ public class NetworkResolverEpic implements TempoEpic {
 			.reduce(0L, Long::sum));
 	}
 
-	interface ConflictDecider {
-		TemporalProof decide(Collection<TemporalProof> temporalProofs);
-	}
 }
 
 

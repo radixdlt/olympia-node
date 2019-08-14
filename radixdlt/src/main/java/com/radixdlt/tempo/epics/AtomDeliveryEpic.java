@@ -95,7 +95,6 @@ public class AtomDeliveryEpic implements TempoEpic {
 				Stream<TempoAction> requested;
 				if (!unrequestedAids.isEmpty()) {
 					SendDeliveryRequestAction sendAction = new SendDeliveryRequestAction(unrequestedAids, request.getPeer());
-
 					logger.info("Requesting delivery of " + unrequestedAids.size() + " aids from " + request.getPeer());
 					// schedule timeout after which deliveries will be checked
 					TimeoutDeliveryRequestAction timeoutAction = new TimeoutDeliveryRequestAction(sendAction.getAids(), sendAction.getPeer());

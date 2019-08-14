@@ -6,11 +6,11 @@ import org.radix.time.TemporalProof;
 
 import java.util.Collection;
 
-public class ReceiveSamplesAction implements TempoAction {
+public class ReceiveSamplingResultAction implements TempoAction {
 	private final Collection<TemporalProof> samples;
 	private final EUID tag;
 
-	public ReceiveSamplesAction(Collection<TemporalProof> samples, EUID tag) {
+	public ReceiveSamplingResultAction(Collection<TemporalProof> samples, EUID tag) {
 		this.samples = samples;
 		this.tag = tag;
 	}
