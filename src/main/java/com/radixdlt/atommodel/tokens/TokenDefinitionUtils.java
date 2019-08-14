@@ -1,18 +1,31 @@
 package com.radixdlt.atommodel.tokens;
 
-import static com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.MAX_DESCRIPTION_LENGTH;
-import static com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.MAX_SYMBOL_LENGTH;
-import static com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.MIN_SYMBOL_LENGTH;
-import static com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.VALID_SYMBOL_CHARS;
-
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.atomos.Result;
+import com.radixdlt.utils.UInt256;
 import java.util.Arrays;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public final class TokenDefinitionUtils {
+	/**
+	 * Power of 10 number of subunits to be used by every token.
+	 * Follows EIP-777 model.
+	 */
+	public static final int SUB_UNITS_POW_10 = 18;
+
+	/**
+	 * Implicit number of subunits to be used by every token. Follows EIP-777 model.
+	 */
+	public static final UInt256 SUB_UNITS = UInt256.TEN.pow(SUB_UNITS_POW_10);
+
+	public static final int MIN_SYMBOL_LENGTH = 1;
+	public static final int MAX_SYMBOL_LENGTH = 14;
+	public static final String VALID_SYMBOL_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+	public static final int MAX_DESCRIPTION_LENGTH = 200;
+	public static final int MAX_ICON_DIMENSION = 32;
+
 	private TokenDefinitionUtils() {
 		throw new IllegalStateException("Cannot instantiate.");
 	}
@@ -24,30 +37,54 @@ public final class TokenDefinitionUtils {
 		"^((((https?|ftps?|gopher|telnet|nntp)://)|(mailto:|news:))(%[0-9A-Fa-f]{2}|[-()_.!~*';/?:@&=+$,A-Za-z0-9])+)([).!';/?:,][[:blank:]])?$"
 	);
 
-	public static Result staticCheck(MutableSupplyTokenDefinitionParticle tokenDefParticle) {
-		final Result symbolResult;
-		final String symbol = tokenDefParticle.getSymbol();
+	private static Result validateIconUrl(String iconUrl) {
+		if (iconUrl != null && !OWASP_URL_REGEX.matcher(iconUrl).matches()) {
+			return Result.error("Icon: not a valid URL: " + iconUrl);
+		}
+		return Result.success();
+	}
+
+	static Result validateSymbol(String symbol) {
 		if (symbol == null) {
-			symbolResult = Result.error("Symbol: no symbol provided.");
-		} else if (symbol.length() < MIN_SYMBOL_LENGTH || symbol.length() > MAX_SYMBOL_LENGTH) {
-			symbolResult = Result.error("Symbol: invalid length, must be between " + MIN_SYMBOL_LENGTH + " and "
-				+ MAX_SYMBOL_LENGTH + " but is " + symbol.length());
-		} else if (!symbol.chars().allMatch(VALID_CODEPOINTS::contains)) {
-			symbolResult = Result.error("Symbol: can only use characters '" + VALID_SYMBOL_CHARS + "'.");
-		} else {
-			symbolResult = Result.success();
+			return Result.error("Symbol: no symbol provided.");
 		}
 
-		final Result descriptionResult;
-		String description = tokenDefParticle.getDescription();
-		if (description == null || description.isEmpty()) {
-			descriptionResult = Result.error("Description: no or empty provided.");
-		} else if (description.length() > MAX_DESCRIPTION_LENGTH) {
-			descriptionResult = Result.error("Description: invalid length, description must be shorter than or equal to "
-				+ MAX_DESCRIPTION_LENGTH + " but is " + description.length());
-		} else {
-			descriptionResult = Result.success();
+		if (symbol.length() < MIN_SYMBOL_LENGTH || symbol.length() > MAX_SYMBOL_LENGTH) {
+			return Result.error("Symbol: invalid length, must be between " + MIN_SYMBOL_LENGTH + " and "
+				+ MAX_SYMBOL_LENGTH + " but is " + symbol.length());
 		}
+
+		if (!symbol.chars().allMatch(VALID_CODEPOINTS::contains)) {
+			return Result.error("Symbol: can only use characters '" + VALID_SYMBOL_CHARS + "'.");
+		}
+
+		return Result.success();
+	}
+
+	static Result validateDescription(String description) {
+		if (description == null || description.isEmpty()) {
+			return Result.error("Description: no or empty provided.");
+		}
+
+		if (description.length() > MAX_DESCRIPTION_LENGTH) {
+			return Result.error("Description: invalid length, description must be shorter than or equal to "
+				+ MAX_DESCRIPTION_LENGTH + " but is " + description.length());
+		}
+
+		return Result.success();
+	}
+
+	public static Result staticCheck(FixedSupplyTokenDefinitionParticle tokenDefParticle) {
+		final Result symbolResult = validateSymbol(tokenDefParticle.getSymbol());
+		final Result descriptionResult = validateDescription(tokenDefParticle.getDescription());
+		final Result iconResult = validateIconUrl(tokenDefParticle.getIconUrl());
+
+		return Result.combine(symbolResult, descriptionResult, iconResult);
+	}
+
+	public static Result staticCheck(MutableSupplyTokenDefinitionParticle tokenDefParticle) {
+		final Result symbolResult = validateSymbol(tokenDefParticle.getSymbol());
+		final Result descriptionResult = validateDescription(tokenDefParticle.getDescription());
 
 		final Result permissionsResult;
 		if (tokenDefParticle.getTokenPermissions() == null || tokenDefParticle.getTokenPermissions().keySet().size() != TokenTransition.values().length) {
@@ -64,13 +101,7 @@ public final class TokenDefinitionUtils {
 			permissionsResult = Result.success();
 		}
 
-		final Result iconResult;
-		String iconUrl = tokenDefParticle.getIconUrl();
-		if (iconUrl != null && !OWASP_URL_REGEX.matcher(iconUrl).matches()) {
-			iconResult = Result.error("Icon: not a valid URL: " + iconUrl);
-		} else {
-			iconResult = Result.success();
-		}
+		final Result iconResult = validateIconUrl(tokenDefParticle.getIconUrl());
 
 		return Result.combine(symbolResult, descriptionResult, permissionsResult, iconResult);
 	}

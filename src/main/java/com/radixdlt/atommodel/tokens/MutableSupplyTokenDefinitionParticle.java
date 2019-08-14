@@ -15,23 +15,6 @@ import java.util.stream.Collectors;
 
 @SerializerId2("radix.particles.token_definition")
 public final class MutableSupplyTokenDefinitionParticle extends Particle {
-	/**
-	 * Power of 10 number of subunits to be used by every token.
-	 * Follows EIP-777 model.
-	 */
-	public static final int SUB_UNITS_POW_10 = 18;
-
-	/**
-	 * Implicit number of subunits to be used by every token. Follows EIP-777 model.
-	 */
-	public static final UInt256 SUB_UNITS = UInt256.TEN.pow(SUB_UNITS_POW_10);
-
-	public static final int MIN_SYMBOL_LENGTH = 1;
-	public static final int MAX_SYMBOL_LENGTH = 14;
-	public static final String VALID_SYMBOL_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-	public static final int MAX_DESCRIPTION_LENGTH = 200;
-	public static final int MAX_ICON_DIMENSION = 32;
-
 	public enum TokenTransition {
 		MINT,
 		BURN

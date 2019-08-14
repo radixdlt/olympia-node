@@ -1,6 +1,6 @@
 package com.radixdlt.atomos;
 
-import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.UInt384;
@@ -11,7 +11,7 @@ public class HashMassFunction {
 	// that assumptions made here are still valild.
 	// See https://radixdlt.atlassian.net/browse/RLAU-1013
 	private static final UInt384 GENESIS_MASS = UInt384.from(8192);
-	private static final UInt384 MULTIPLIER = UInt384.from(MutableSupplyTokenDefinitionParticle.SUB_UNITS);
+	private static final UInt384 MULTIPLIER = UInt384.from(TokenDefinitionUtils.SUB_UNITS);
 
 	private final Universe universe;
 

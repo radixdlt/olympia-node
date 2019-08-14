@@ -82,7 +82,7 @@ public class TokensConstraintScryptTest {
 		MutableSupplyTokenDefinitionParticle token = PowerMockito.mock(MutableSupplyTokenDefinitionParticle.class);
 		when(token.getRRI()).thenReturn(RRI.of(mock(RadixAddress.class), "token"));
 		Mockito.when(token.getDescription()).thenReturn(
-			IntStream.range(0, MutableSupplyTokenDefinitionParticle.MAX_DESCRIPTION_LENGTH + 1).mapToObj(i -> "c").collect(Collectors.joining()));
+			IntStream.range(0, TokenDefinitionUtils.MAX_DESCRIPTION_LENGTH + 1).mapToObj(i -> "c").collect(Collectors.joining()));
 		testAtomOS
 			.testInitialParticle(token, PowerMockito.mock(AtomMetadata.class))
 			.assertErrorWithMessageContaining("Description: invalid length");

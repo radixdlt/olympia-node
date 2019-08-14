@@ -25,6 +25,13 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 		);
 
 		os.registerParticle(
+			FixedSupplyTokenDefinitionParticle.class,
+			FixedSupplyTokenDefinitionParticle::getOwner,
+			TokenDefinitionUtils::staticCheck,
+			FixedSupplyTokenDefinitionParticle::getRRI
+		);
+
+		os.registerParticle(
 			UnallocatedTokensParticle.class,
 			UnallocatedTokensParticle::getAddress,
 			u -> Result.of(!u.getAmount().isZero(), "Amount cannot be zero"),
@@ -39,6 +46,14 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 				Objects.equals(unallocated.getGranularity(), tokDef.getGranularity())
 				&& Objects.equals(unallocated.getTokenPermissions(), tokDef.getTokenPermissions())
 				&& unallocated.getAmount().equals(UInt256.MAX_VALUE)
+		);
+
+		os.createTransitionFromRRICombined(
+			FixedSupplyTokenDefinitionParticle.class,
+			TransferrableTokensParticle.class,
+			(tokDef, transferrable) ->
+				Objects.equals(tokDef.getSupply(), transferrable.getAmount())
+				&& transferrable.getTokenPermissions().isEmpty()
 		);
 
 		os.registerParticle(
