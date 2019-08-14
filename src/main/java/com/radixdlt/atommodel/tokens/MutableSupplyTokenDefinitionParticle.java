@@ -13,41 +13,20 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-@SerializerId2("radix.particles.token_definition")
-public final class TokenDefinitionParticle extends Particle {
-	/**
-	 * Power of 10 number of subunits to be used by every token.
-	 * Follows EIP-777 model.
-	 */
-	public static final int SUB_UNITS_POW_10 = 18;
-
-	/**
-	 * Implicit number of subunits to be used by every token. Follows EIP-777 model.
-	 */
-	public static final UInt256 SUB_UNITS = UInt256.TEN.pow(SUB_UNITS_POW_10);
-
-	public static final int MIN_SYMBOL_LENGTH = 1;
-	public static final int MAX_SYMBOL_LENGTH = 14;
-	public static final String VALID_SYMBOL_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-	public static final int MAX_DESCRIPTION_LENGTH = 200;
-	public static final int MAX_ICON_DIMENSION = 32;
-
+@SerializerId2("radix.particles.mutable_supply_token_definition")
+public final class MutableSupplyTokenDefinitionParticle extends Particle {
 	public enum TokenTransition {
 		MINT,
 		BURN
 	}
 
-	@JsonProperty("address")
+	@JsonProperty("rri")
 	@DsonOutput(Output.ALL)
-	private RadixAddress address;
+	private RRI rri;
 
 	@JsonProperty("name")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private String	name;
-
-	@JsonProperty("symbol")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private String symbol;
+	private String name;
 
 	@JsonProperty("description")
 	@DsonOutput(DsonOutput.Output.ALL)
@@ -63,11 +42,11 @@ public final class TokenDefinitionParticle extends Particle {
 
 	private Map<TokenTransition, TokenPermission> tokenPermissions;
 
-	private TokenDefinitionParticle() {
+	private MutableSupplyTokenDefinitionParticle() {
 		super();
 	}
 
-	public TokenDefinitionParticle(
+	public MutableSupplyTokenDefinitionParticle(
 		RadixAddress address,
 		String symbol,
 		String name,
@@ -78,9 +57,8 @@ public final class TokenDefinitionParticle extends Particle {
 	) {
 		super(address.getUID());
 
-		this.address = address;
+		this.rri = RRI.of(address, symbol);
 		this.name = name;
-		this.symbol = symbol;
 		this.description = description;
 		this.granularity = Objects.requireNonNull(granularity);
 		this.iconUrl = iconUrl;
@@ -96,7 +74,7 @@ public final class TokenDefinitionParticle extends Particle {
 	}
 
 	public RadixAddress getAddress() {
-		return this.address;
+		return this.rri.getAddress();
 	}
 
 	public Map<TokenTransition, TokenPermission> getTokenPermissions() {
@@ -113,7 +91,7 @@ public final class TokenDefinitionParticle extends Particle {
 	}
 
 	public String getSymbol() {
-		return this.symbol;
+		return this.rri.getName();
 	}
 
 	public String getName() {
@@ -161,8 +139,8 @@ public final class TokenDefinitionParticle extends Particle {
 			: tokenPermissions.entrySet().stream()
 				.map(e -> String.format("%s:%s", e.getKey().toString().toLowerCase(), e.getValue().toString().toLowerCase()))
 				.collect(Collectors.joining(","));
-		return String.format("%s[(%s:%s:%s), (am%s), (%s), %s]", getClass().getSimpleName(),
-			String.valueOf(name), String.valueOf(symbol), String.valueOf(granularity),
-			String.valueOf(description), tokenPermissionsStr, String.valueOf(address));
+		return String.format("%s[(%s:%s:%s), (am%s), (%s)]", getClass().getSimpleName(),
+			String.valueOf(name), String.valueOf(rri), String.valueOf(granularity),
+			String.valueOf(description), tokenPermissionsStr);
 	}
 }

@@ -11,22 +11,6 @@ import java.util.Objects;
 
 public enum TokenPermission {
 	/**
-	 * Can only be done in same Atom as token creation
-	 * TODO Needs to be updated when token definitions are updatable to refer to token *creation* specifically.
-	 */
-	TOKEN_CREATION_ONLY((tokDefRef, meta) -> of(
-		meta.contains(p -> {
-			if (!(p instanceof TokenDefinitionParticle)) {
-				return false;
-			}
-
-			TokenDefinitionParticle tok = (TokenDefinitionParticle) p;
-			return tokDefRef.equals(tok.getRRI());
-		}),
-		() -> "must be in same atom as the token creation: " + tokDefRef
-	)),
-
-	/**
 	 * Only the token owner can do this
 	 */
 	TOKEN_OWNER_ONLY((tokDefRef, meta) -> of(

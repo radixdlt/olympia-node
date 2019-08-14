@@ -2,7 +2,7 @@ package com.radixdlt.atommodel.tokens;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.atommodel.tokens.TokenDefinitionParticle.TokenTransition;
+import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.atomos.RRI;
 import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.atoms.Particle;
@@ -49,6 +49,7 @@ public final class TransferrableTokensParticle extends Particle {
 
 	public TransferrableTokensParticle() {
 		super();
+		this.tokenPermissions = ImmutableMap.of();
 	}
 
 	public TransferrableTokensParticle(
