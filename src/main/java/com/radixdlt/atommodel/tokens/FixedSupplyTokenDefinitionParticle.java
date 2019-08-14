@@ -11,7 +11,7 @@ import com.radixdlt.utils.UInt256;
 
 import java.util.Objects;
 
-@SerializerId2("radix.particles.fixed_token_definition")
+@SerializerId2("radix.particles.fixed_supply_token_definition")
 public final class FixedSupplyTokenDefinitionParticle extends Particle {
 	@JsonProperty("address")
 	@DsonOutput(Output.ALL)

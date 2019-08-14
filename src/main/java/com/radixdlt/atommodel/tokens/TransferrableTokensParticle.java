@@ -49,6 +49,7 @@ public final class TransferrableTokensParticle extends Particle {
 
 	public TransferrableTokensParticle() {
 		super();
+		this.tokenPermissions = ImmutableMap.of();
 	}
 
 	public TransferrableTokensParticle(

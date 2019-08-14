@@ -38,24 +38,6 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			UnallocatedTokensParticle::getTokDefRef
 		);
 
-		// Require Token Definition to be created with unallocated tokens of max supply
-		os.createTransitionFromRRICombined(
-			MutableSupplyTokenDefinitionParticle.class,
-			UnallocatedTokensParticle.class,
-			(tokDef, unallocated) ->
-				Objects.equals(unallocated.getGranularity(), tokDef.getGranularity())
-				&& Objects.equals(unallocated.getTokenPermissions(), tokDef.getTokenPermissions())
-				&& unallocated.getAmount().equals(UInt256.MAX_VALUE)
-		);
-
-		os.createTransitionFromRRICombined(
-			FixedSupplyTokenDefinitionParticle.class,
-			TransferrableTokensParticle.class,
-			(tokDef, transferrable) ->
-				Objects.equals(tokDef.getSupply(), transferrable.getAmount())
-				&& transferrable.getTokenPermissions().isEmpty()
-		);
-
 		os.registerParticle(
 			TransferrableTokensParticle.class,
 			TransferrableTokensParticle::getAddress,
@@ -74,8 +56,28 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 				}
 
 				return Result.success();
-			}
+			},
+			TransferrableTokensParticle::getTokDefRef
 		);
+
+		// Require Token Definition to be created with unallocated tokens of max supply
+		os.createTransitionFromRRICombined(
+			MutableSupplyTokenDefinitionParticle.class,
+			UnallocatedTokensParticle.class,
+			(tokDef, unallocated) ->
+				Objects.equals(unallocated.getGranularity(), tokDef.getGranularity())
+				&& Objects.equals(unallocated.getTokenPermissions(), tokDef.getTokenPermissions())
+				&& unallocated.getAmount().equals(UInt256.MAX_VALUE)
+		);
+
+		os.createTransitionFromRRICombined(
+			FixedSupplyTokenDefinitionParticle.class,
+			TransferrableTokensParticle.class,
+			(tokDef, transferrable) ->
+				Objects.equals(tokDef.getSupply(), transferrable.getAmount())
+				&& transferrable.getTokenPermissions().isEmpty()
+		);
+
 
 		// Define mint, transfer, burn transitions
 		os.createTransition(

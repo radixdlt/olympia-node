@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-@SerializerId2("radix.particles.token_definition")
+@SerializerId2("radix.particles.mutable_supply_token_definition")
 public final class MutableSupplyTokenDefinitionParticle extends Particle {
 	public enum TokenTransition {
 		MINT,
