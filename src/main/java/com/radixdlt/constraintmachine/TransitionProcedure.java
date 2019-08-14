@@ -16,19 +16,19 @@ public interface TransitionProcedure<T extends Particle, U extends Particle> {
 
 	final class ProcedureResult {
 		private final CMAction cmAction;
-		private final Object remainder;
+		private final Object used;
 
-		private ProcedureResult(CMAction cmAction, Object remainder) {
+		private ProcedureResult(CMAction cmAction, Object used) {
 			this.cmAction = cmAction;
-			this.remainder = remainder;
+			this.used = used;
 		}
 
-		public static ProcedureResult popInput(Object outputRemainder) {
-			return new ProcedureResult(CMAction.POP_INPUT, outputRemainder);
+		public static ProcedureResult popInput(Object outputUsed) {
+			return new ProcedureResult(CMAction.POP_INPUT, outputUsed);
 		}
 
-		public static ProcedureResult popOutput(Object inputRemainder) {
-			return new ProcedureResult(CMAction.POP_OUTPUT, inputRemainder);
+		public static ProcedureResult popOutput(Object inputUsed) {
+			return new ProcedureResult(CMAction.POP_OUTPUT, inputUsed);
 		}
 
 		public static ProcedureResult popInputOutput() {
@@ -43,16 +43,16 @@ public interface TransitionProcedure<T extends Particle, U extends Particle> {
 			return cmAction;
 		}
 
-		public <T> Optional<T> getInputRemainder(Class<T> remainderClass) {
-			return this.cmAction == CMAction.POP_OUTPUT ? Optional.ofNullable(remainderClass.cast(this.remainder)) : Optional.empty();
+		public <T> Optional<T> getInputUsed(Class<T> remainderClass) {
+			return this.cmAction == CMAction.POP_OUTPUT ? Optional.ofNullable(remainderClass.cast(this.used)) : Optional.empty();
 		}
 
-		public <T> Optional<T> getOutputRemainder(Class<T> remainderClass) {
-			return this.cmAction == CMAction.POP_INPUT ? Optional.ofNullable(remainderClass.cast(this.remainder)) : Optional.empty();
+		public <T> Optional<T> getOutputUsed(Class<T> remainderClass) {
+			return this.cmAction == CMAction.POP_INPUT ? Optional.ofNullable(remainderClass.cast(this.used)) : Optional.empty();
 		}
 
-		public Object getRemainder() {
-			return remainder;
+		public Object getUsed() {
+			return used;
 		}
 	}
 

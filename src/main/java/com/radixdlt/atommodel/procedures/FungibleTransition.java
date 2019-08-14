@@ -40,22 +40,26 @@ public final class FungibleTransition<T extends Particle, U extends Particle> im
 			return ProcedureResult.error();
 		}
 
-		UInt256 inputAmount = Optional.ofNullable(prevResult)
-			.flatMap(p -> p.getInputRemainder(UInt256.class))
-			.orElseGet(() -> inputAmountMapper.apply(inputParticle));
+		UInt256 inputAmount = inputAmountMapper.apply(inputParticle).subtract(
+			Optional.ofNullable(prevResult)
+				.flatMap(p -> p.getInputUsed(UInt256.class))
+				.orElse(UInt256.ZERO)
+		);
 
-		UInt256 outputAmount = Optional.ofNullable(prevResult)
-			.flatMap(p -> p.getOutputRemainder(UInt256.class))
-			.orElseGet(() -> outputAmountMapper.apply(outputParticle));
+		UInt256 outputAmount = outputAmountMapper.apply(outputParticle).subtract(
+			Optional.ofNullable(prevResult)
+				.flatMap(p -> p.getOutputUsed(UInt256.class))
+				.orElse(UInt256.ZERO)
+		);
 
 
 		int compare = inputAmount.compareTo(outputAmount);
 		if (compare == 0) {
 			return ProcedureResult.popInputOutput();
 		} else if (compare > 0) {
-			return ProcedureResult.popOutput(inputAmount.subtract(outputAmount));
+			return ProcedureResult.popOutput(outputAmount);
 		} else {
-			return ProcedureResult.popInput(outputAmount.subtract(inputAmount));
+			return ProcedureResult.popInput(inputAmount);
 		}
 	}
 }

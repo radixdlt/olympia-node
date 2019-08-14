@@ -127,7 +127,7 @@ public final class ConstraintMachine {
 					break;
 				case POP_INPUT_OUTPUT:
 					spunParticleRegister = null;
-					if (result.getRemainder() != null) {
+					if (result.getUsed() != null) {
 						throw new IllegalStateException("POP_INPUT_OUTPUT must output null");
 					}
 					break;

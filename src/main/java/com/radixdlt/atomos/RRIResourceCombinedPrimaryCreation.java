@@ -24,7 +24,7 @@ public final class RRIResourceCombinedPrimaryCreation<T extends Particle> implem
 			return ProcedureResult.error();
 		}
 
-		if (prevResult != null && prevResult.getRemainder() != null) {
+		if (prevResult != null && prevResult.getUsed() != null) {
 			return ProcedureResult.error();
 		}
 

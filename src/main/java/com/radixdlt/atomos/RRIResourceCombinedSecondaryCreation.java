@@ -34,7 +34,7 @@ public final class RRIResourceCombinedSecondaryCreation<T extends Particle, U ex
 			return ProcedureResult.error();
 		}
 
-		Optional<T> input = prevResult.getInputRemainder(Object.class)
+		Optional<T> input = prevResult.getInputUsed(Object.class)
 			.filter(o -> o.getClass().equals(particleClass0))
 			.map(particleClass0::cast);
 		if (!input.isPresent()) {

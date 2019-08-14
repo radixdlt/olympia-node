@@ -49,6 +49,6 @@ public class RRIResourceCreationTest {
 		);
 
 		assertThat(result.getCmAction()).isEqualTo(CMAction.POP_INPUT_OUTPUT);
-		assertThat(result.getRemainder()).isNull();
+		assertThat(result.getUsed()).isNull();
 	}
 }
