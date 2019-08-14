@@ -4,7 +4,7 @@ import static org.mockito.Mockito.mock;
 import static org.powermock.api.mockito.PowerMockito.when;
 
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.atommodel.tokens.TokenDefinitionParticle.TokenTransition;
+import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.atomos.RRI;
 import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.atomos.test.TestAtomOS;
@@ -30,7 +30,7 @@ public class TokensConstraintScryptTest {
 
 	@Test
 	public void when_validating_token_class_particle_without_symbol__result_has_error() {
-		TokenDefinitionParticle token = PowerMockito.mock(TokenDefinitionParticle.class);
+		MutableSupplyTokenDefinitionParticle token = PowerMockito.mock(MutableSupplyTokenDefinitionParticle.class);
 		when(token.getRRI()).thenReturn(RRI.of(mock(RadixAddress.class), "token"));
 
 		testAtomOS
@@ -40,7 +40,7 @@ public class TokensConstraintScryptTest {
 
 	@Test
 	public void when_validating_token_class_particle_with_too_long_symbol__result_has_error() {
-		TokenDefinitionParticle token = PowerMockito.mock(TokenDefinitionParticle.class);
+		MutableSupplyTokenDefinitionParticle token = PowerMockito.mock(MutableSupplyTokenDefinitionParticle.class);
 		when(token.getRRI()).thenReturn(RRI.of(mock(RadixAddress.class), "token"));
 		Mockito.when(token.getSymbol()).thenReturn("TEEEEEEEEEEEEEEEEEEEEEEEEEEST");
 		testAtomOS
@@ -50,7 +50,7 @@ public class TokensConstraintScryptTest {
 
 	@Test
 	public void when_validating_token_class_particle_with_too_short_symbol__result_has_error() {
-		TokenDefinitionParticle token = PowerMockito.mock(TokenDefinitionParticle.class);
+		MutableSupplyTokenDefinitionParticle token = PowerMockito.mock(MutableSupplyTokenDefinitionParticle.class);
 		when(token.getRRI()).thenReturn(RRI.of(mock(RadixAddress.class), "token"));
 		Mockito.when(token.getSymbol()).thenReturn("");
 		testAtomOS
@@ -60,7 +60,7 @@ public class TokensConstraintScryptTest {
 
 	@Test
 	public void when_validating_token_class_particle_with_valid_symbol__result_has_no_symbol_errors() {
-		TokenDefinitionParticle token = PowerMockito.mock(TokenDefinitionParticle.class);
+		MutableSupplyTokenDefinitionParticle token = PowerMockito.mock(MutableSupplyTokenDefinitionParticle.class);
 		when(token.getRRI()).thenReturn(RRI.of(mock(RadixAddress.class), "token"));
 		Mockito.when(token.getSymbol()).thenReturn("TEST");
 		testAtomOS
@@ -70,7 +70,7 @@ public class TokensConstraintScryptTest {
 
 	@Test
 	public void when_validating_token_class_particle_without_description__result_has_error() {
-		TokenDefinitionParticle token = PowerMockito.mock(TokenDefinitionParticle.class);
+		MutableSupplyTokenDefinitionParticle token = PowerMockito.mock(MutableSupplyTokenDefinitionParticle.class);
 		when(token.getRRI()).thenReturn(RRI.of(mock(RadixAddress.class), "token"));
 		testAtomOS
 			.testInitialParticle(token, PowerMockito.mock(AtomMetadata.class))
@@ -79,10 +79,10 @@ public class TokensConstraintScryptTest {
 
 	@Test
 	public void when_validating_token_class_particle_with_too_long_description__result_has_error() {
-		TokenDefinitionParticle token = PowerMockito.mock(TokenDefinitionParticle.class);
+		MutableSupplyTokenDefinitionParticle token = PowerMockito.mock(MutableSupplyTokenDefinitionParticle.class);
 		when(token.getRRI()).thenReturn(RRI.of(mock(RadixAddress.class), "token"));
 		Mockito.when(token.getDescription()).thenReturn(
-			IntStream.range(0, TokenDefinitionParticle.MAX_DESCRIPTION_LENGTH + 1).mapToObj(i -> "c").collect(Collectors.joining()));
+			IntStream.range(0, MutableSupplyTokenDefinitionParticle.MAX_DESCRIPTION_LENGTH + 1).mapToObj(i -> "c").collect(Collectors.joining()));
 		testAtomOS
 			.testInitialParticle(token, PowerMockito.mock(AtomMetadata.class))
 			.assertErrorWithMessageContaining("Description: invalid length");
@@ -90,7 +90,7 @@ public class TokensConstraintScryptTest {
 
 	@Test
 	public void when_validating_token_class_particle_with_valid_description__result_has_no_description_errors() {
-		TokenDefinitionParticle token = PowerMockito.mock(TokenDefinitionParticle.class);
+		MutableSupplyTokenDefinitionParticle token = PowerMockito.mock(MutableSupplyTokenDefinitionParticle.class);
 		when(token.getRRI()).thenReturn(RRI.of(mock(RadixAddress.class), "token"));
 		Mockito.when(token.getDescription()).thenReturn("Valid test description.");
 		testAtomOS
@@ -100,7 +100,7 @@ public class TokensConstraintScryptTest {
 
 	@Test
 	public void when_validating_token_class_particle_with_all_permissions_set__result_has_no_permission_errors() {
-		TokenDefinitionParticle token = PowerMockito.mock(TokenDefinitionParticle.class);
+		MutableSupplyTokenDefinitionParticle token = PowerMockito.mock(MutableSupplyTokenDefinitionParticle.class);
 		when(token.getRRI()).thenReturn(RRI.of(mock(RadixAddress.class), "token"));
 		Map<TokenTransition, TokenPermission> permissions = ImmutableMap.of(
 			TokenTransition.MINT, TokenPermission.TOKEN_CREATION_ONLY,
@@ -115,7 +115,7 @@ public class TokensConstraintScryptTest {
 
 	@Test
 	public void when_validating_token_class_particle_without_permissions_set__result_has_error() {
-		TokenDefinitionParticle token = PowerMockito.mock(TokenDefinitionParticle.class);
+		MutableSupplyTokenDefinitionParticle token = PowerMockito.mock(MutableSupplyTokenDefinitionParticle.class);
 		when(token.getRRI()).thenReturn(RRI.of(mock(RadixAddress.class), "token"));
 		Mockito.when(token.getTokenPermissions()).thenReturn(new HashMap<>());
 		testAtomOS
@@ -125,7 +125,7 @@ public class TokensConstraintScryptTest {
 
 	@Test
 	public void when_validating_token_class_particle_with_invalid_icon_url__result_has_error() {
-		TokenDefinitionParticle token = PowerMockito.mock(TokenDefinitionParticle.class);
+		MutableSupplyTokenDefinitionParticle token = PowerMockito.mock(MutableSupplyTokenDefinitionParticle.class);
 		when(token.getRRI()).thenReturn(RRI.of(mock(RadixAddress.class), "token"));
 		Mockito.when(token.getIconUrl()).thenReturn("this is not a url");
 		testAtomOS
@@ -135,7 +135,7 @@ public class TokensConstraintScryptTest {
 
 	@Test
 	public void when_validating_token_class_particle_with_valid_icon__result_has_no_error() {
-		TokenDefinitionParticle token = PowerMockito.mock(TokenDefinitionParticle.class);
+		MutableSupplyTokenDefinitionParticle token = PowerMockito.mock(MutableSupplyTokenDefinitionParticle.class);
 		when(token.getRRI()).thenReturn(RRI.of(mock(RadixAddress.class), "token"));
 		Mockito.when(token.getIconUrl()).thenReturn("https://assets.radixdlt.com/test.png");
 		testAtomOS
@@ -145,7 +145,7 @@ public class TokensConstraintScryptTest {
 
 	@Test
 	public void when_validating_token_class_particle_without_owner_signature__result_has_no_error() {
-		TokenDefinitionParticle token = PowerMockito.mock(TokenDefinitionParticle.class);
+		MutableSupplyTokenDefinitionParticle token = PowerMockito.mock(MutableSupplyTokenDefinitionParticle.class);
 		when(token.getRRI()).thenReturn(RRI.of(mock(RadixAddress.class), "token"));
 		RadixAddress owner = PowerMockito.mock(RadixAddress.class);
 		Mockito.when(token.getAddress()).thenReturn(owner);
@@ -156,7 +156,7 @@ public class TokensConstraintScryptTest {
 
 	@Test
 	public void when_validating_token_class_particle_with_owner_signature__result_has_no_error() {
-		TokenDefinitionParticle token = PowerMockito.mock(TokenDefinitionParticle.class);
+		MutableSupplyTokenDefinitionParticle token = PowerMockito.mock(MutableSupplyTokenDefinitionParticle.class);
 		RadixAddress owner = PowerMockito.mock(RadixAddress.class);
 		when(token.getRRI()).thenReturn(RRI.of(owner, "token"));
 		Mockito.when(token.getAddress()).thenReturn(owner);

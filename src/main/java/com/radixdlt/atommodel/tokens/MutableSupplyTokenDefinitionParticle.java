@@ -14,7 +14,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 @SerializerId2("radix.particles.token_definition")
-public final class TokenDefinitionParticle extends Particle {
+public final class MutableSupplyTokenDefinitionParticle extends Particle {
 	/**
 	 * Power of 10 number of subunits to be used by every token.
 	 * Follows EIP-777 model.
@@ -63,11 +63,11 @@ public final class TokenDefinitionParticle extends Particle {
 
 	private Map<TokenTransition, TokenPermission> tokenPermissions;
 
-	private TokenDefinitionParticle() {
+	private MutableSupplyTokenDefinitionParticle() {
 		super();
 	}
 
-	public TokenDefinitionParticle(
+	public MutableSupplyTokenDefinitionParticle(
 		RadixAddress address,
 		String symbol,
 		String name,

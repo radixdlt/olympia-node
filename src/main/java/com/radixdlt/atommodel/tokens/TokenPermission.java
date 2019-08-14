@@ -16,11 +16,11 @@ public enum TokenPermission {
 	 */
 	TOKEN_CREATION_ONLY((tokDefRef, meta) -> of(
 		meta.contains(p -> {
-			if (!(p instanceof TokenDefinitionParticle)) {
+			if (!(p instanceof MutableSupplyTokenDefinitionParticle)) {
 				return false;
 			}
 
-			TokenDefinitionParticle tok = (TokenDefinitionParticle) p;
+			MutableSupplyTokenDefinitionParticle tok = (MutableSupplyTokenDefinitionParticle) p;
 			return tokDefRef.equals(tok.getRRI());
 		}),
 		() -> "must be in same atom as the token creation: " + tokDefRef

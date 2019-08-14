@@ -18,7 +18,7 @@ public class TokenPermissionTest {
 	public void when_validating_an_ok_atom_with_same_atom_only_mint_token__exception_is_not_thrown() {
 		TransferrableTokensParticle particle = mock(TransferrableTokensParticle.class);
 		RRI rri = mock(RRI.class);
-		TokenDefinitionParticle tokenDefinitionParticle = mock(TokenDefinitionParticle.class);
+		MutableSupplyTokenDefinitionParticle tokenDefinitionParticle = mock(MutableSupplyTokenDefinitionParticle.class);
 		when(tokenDefinitionParticle.getRRI()).thenReturn(rri);
 
 		ImmutableAtom atom = mock(ImmutableAtom.class);
@@ -32,7 +32,7 @@ public class TokenPermissionTest {
 
 	@Test
 	public void when_validating_an_ok_atom_with_token_owner_only_mint_token__exception_is_not_thrown() {
-		TokenDefinitionParticle tokenDefinitionParticle = mock(TokenDefinitionParticle.class);
+		MutableSupplyTokenDefinitionParticle tokenDefinitionParticle = mock(MutableSupplyTokenDefinitionParticle.class);
 		RadixAddress address = mock(RadixAddress.class);
 		when(tokenDefinitionParticle.getAddress()).thenReturn(address);
 		RRI rri = mock(RRI.class);
@@ -46,7 +46,7 @@ public class TokenPermissionTest {
 
 	@Test
 	public void when_validating_an_atom_not_signed_by_token_owner_of_token_owner_only_mint_token__exception_is_thrown() {
-		TokenDefinitionParticle tokenDefinitionParticle = mock(TokenDefinitionParticle.class);
+		MutableSupplyTokenDefinitionParticle tokenDefinitionParticle = mock(MutableSupplyTokenDefinitionParticle.class);
 		RadixAddress address = mock(RadixAddress.class);
 		when(tokenDefinitionParticle.getAddress()).thenReturn(address);
 		RRI rri = mock(RRI.class);
