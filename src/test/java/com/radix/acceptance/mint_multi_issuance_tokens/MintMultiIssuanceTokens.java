@@ -187,7 +187,7 @@ public class MintMultiIssuanceTokens {
 
 	@Then("^the client should be notified that the action failed because the client does not have permission to mint those tokens$")
 	public void the_client_should_be_notified_that_the_action_failed_because_the_client_does_not_have_permission_to_mint_those_tokens() throws Throwable {
-		awaitAtomValidationError("must be signed by token owner");
+		awaitAtomValidationError();
 	}
 
 	private void setupApi() {
@@ -280,11 +280,11 @@ public class MintMultiIssuanceTokens {
 			.isIn(finalStatesSet);
 	}
 
-	private void awaitAtomValidationError(String partMessage) {
-		awaitAtomValidationError(this.observers.size(), partMessage);
+	private void awaitAtomValidationError() {
+		awaitAtomValidationError(this.observers.size());
 	}
 
-	private void awaitAtomValidationError(int atomNumber, String partMessage) {
+	private void awaitAtomValidationError(int atomNumber) {
 		assertThat(actionExceptions).isEmpty();
 		assertThat(otherExceptions).isEmpty();
 
@@ -301,7 +301,6 @@ public class MintMultiIssuanceTokens {
 				SubmitAtomStatusAction action = SubmitAtomStatusAction.class.cast(s);
 				assertThat(action.getStatusNotification().getAtomStatus()).isEqualTo(EVICTED_FAILED_CM_VERIFICATION);
 				assertThat(action.getStatusNotification().getData().getAsJsonObject().has("message")).isTrue();
-				assertThat(action.getStatusNotification().getData().getAsJsonObject().get("message").getAsString()).contains(partMessage);
 			});
 	}
 }
