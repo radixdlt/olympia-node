@@ -17,10 +17,10 @@ import java.util.stream.Stream;
 /**
  * Local conflict resolver which
  */
-public class LocalConflictResolverEpic implements TempoEpic {
+public class LocalResolverEpic implements TempoEpic {
 	private final EUID self;
 
-	public LocalConflictResolverEpic(EUID self) {
+	public LocalResolverEpic(EUID self) {
 		this.self = self;
 	}
 
@@ -36,7 +36,7 @@ public class LocalConflictResolverEpic implements TempoEpic {
 				.orElseThrow(() -> new TempoException("Error while resolving conflict, no atom has vertex by self"));
 			// TODO get rid of ugly hack to get conflict winner back to Ledger interface
 			resolve.getWinnerFuture().complete(winner);
-			return Stream.of(new OnConflictResolvedAction(winner, resolve.allAtoms().collect(Collectors.toSet())));
+			return Stream.of(new OnConflictResolvedAction(winner, resolve.allAids().collect(Collectors.toSet())));
 		}
 
 		return Stream.empty();

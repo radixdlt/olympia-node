@@ -2,7 +2,7 @@ package com.radixdlt.tempo.actions.messaging;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.common.AID;
-import com.radixdlt.tempo.sync.IterativeCursor;
+import com.radixdlt.tempo.IterativeCursor;
 import com.radixdlt.tempo.TempoAction;
 import com.radixdlt.tempo.messages.IterativeResponseMessage;
 import org.radix.network.messaging.Message;

@@ -7,11 +7,11 @@ import org.radix.network.peers.Peer;
 
 import java.util.Objects;
 
-public class TimeoutDeliveryRequestAction implements TempoAction {
+public class OnAtomDeliveryFailedAction implements TempoAction {
 	private final ImmutableList<AID> aids;
 	private final Peer peer;
 
-	public TimeoutDeliveryRequestAction(ImmutableList<AID> aids, Peer peer) {
+	public OnAtomDeliveryFailedAction(ImmutableList<AID> aids, Peer peer) {
 		this.aids = Objects.requireNonNull(aids, "aids is required");
 		this.peer = Objects.requireNonNull(peer, "peer is required");
 	}

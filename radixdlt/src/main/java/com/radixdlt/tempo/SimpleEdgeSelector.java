@@ -1,13 +1,10 @@
-package com.radixdlt.tempo.sync;
+package com.radixdlt.tempo;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.common.EUID;
-import com.radixdlt.tempo.TempoAtom;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Simple edge selector that selects everything that hasn't been selected yet

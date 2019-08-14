@@ -9,7 +9,7 @@ import com.radixdlt.tempo.TempoAction;
 import com.radixdlt.tempo.TempoEpic;
 import com.radixdlt.tempo.TempoState;
 import com.radixdlt.tempo.TempoStateBundle;
-import com.radixdlt.tempo.actions.HandleFailedDeliveryAction;
+import com.radixdlt.tempo.actions.OnAtomDeliveryFailedAction;
 import com.radixdlt.tempo.actions.ReceiveAtomAction;
 import com.radixdlt.tempo.actions.messaging.ReceiveDeliveryRequestAction;
 import com.radixdlt.tempo.actions.messaging.ReceiveDeliveryResponseAction;
@@ -17,7 +17,7 @@ import com.radixdlt.tempo.actions.RequestDeliveryAction;
 import com.radixdlt.tempo.actions.messaging.SendDeliveryRequestAction;
 import com.radixdlt.tempo.actions.messaging.SendDeliveryResponseAction;
 import com.radixdlt.tempo.actions.TimeoutDeliveryRequestAction;
-import com.radixdlt.tempo.state.DeliveryState;
+import com.radixdlt.tempo.state.AtomDeliveryState;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.network.peers.Peer;
@@ -29,7 +29,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
-public class DeliveryEpic implements TempoEpic {
+public class AtomDeliveryEpic implements TempoEpic {
 	private static final int DELIVERY_REQUEST_TIMEOUT_SECONDS = 5;
 	private static final int DEFER_DELIVERY_REQUEST_TIMEOUT_SECONDS = 5;
 
@@ -37,18 +37,18 @@ public class DeliveryEpic implements TempoEpic {
 
 	private final AtomStoreView store;
 
-	private DeliveryEpic(AtomStoreView store) {
+	private AtomDeliveryEpic(AtomStoreView store) {
 		this.store = store;
 	}
 
 	@Override
 	public Set<Class<? extends TempoState>> requiredState() {
-		return ImmutableSet.of(DeliveryState.class);
+		return ImmutableSet.of(AtomDeliveryState.class);
 	}
 
 	@Override
 	public Stream<TempoAction> epic(TempoStateBundle bundle, TempoAction action) {
-		DeliveryState deliveryState = bundle.get(DeliveryState.class);
+		AtomDeliveryState deliveryState = bundle.get(AtomDeliveryState.class);
 		if (action instanceof ReceiveDeliveryRequestAction) {
 			// collect atoms for delivery request
 			ImmutableList<AID> requestedAids = ((ReceiveDeliveryRequestAction) action).getAids();
@@ -76,10 +76,10 @@ public class DeliveryEpic implements TempoEpic {
 			if (!missingAids.isEmpty()) {
 				// TODO potential concurrency problems here?
 				ImmutableList<AID> ongoingAids = missingAids.stream()
-					.filter(deliveryState::contains)
+					.filter(deliveryState::isPendingDelivery)
 					.collect(ImmutableList.toImmutableList());
 				ImmutableList<AID> unrequestedAids = missingAids.stream()
-					.filter(aid -> !deliveryState.contains(aid))
+					.filter(aid -> !deliveryState.isPendingDelivery(aid))
 					.collect(ImmutableList.toImmutableList());
 
 				// defer already ongoing deliveries until later (in case the ongoing ones fail)
@@ -110,7 +110,7 @@ public class DeliveryEpic implements TempoEpic {
 			// once the timeout has elapsed, check if the deliveries were received
 			TimeoutDeliveryRequestAction timeout = (TimeoutDeliveryRequestAction) action;
 			ImmutableList<AID> missingAids = timeout.getAids().stream()
-				.filter(deliveryState::contains)
+				.filter(deliveryState::isPendingDelivery)
 				.collect(ImmutableList.toImmutableList());
 
 			// if the deliveries weren't received, raise a failed delivery action for the requestor
@@ -118,7 +118,7 @@ public class DeliveryEpic implements TempoEpic {
 				// TODO consider re-requesting from the same peer once (add TTL counter to timeout action)
 				logger.warn("Delivery of " + missingAids.size() + " aids from " + timeout.getPeer() + " has timed out");
 				// TODO handle / log this somewhere?
-				return Stream.of(new HandleFailedDeliveryAction(missingAids, timeout.getPeer()));
+				return Stream.of(new OnAtomDeliveryFailedAction(missingAids, timeout.getPeer()));
 			}
 		}
 
@@ -140,10 +140,10 @@ public class DeliveryEpic implements TempoEpic {
 			return this;
 		}
 
-		public DeliveryEpic build() {
+		public AtomDeliveryEpic build() {
 			Objects.requireNonNull(this.storeView, "storeView is required");
 
-			return new DeliveryEpic(this.storeView);
+			return new AtomDeliveryEpic(this.storeView);
 		}
 	}
 }

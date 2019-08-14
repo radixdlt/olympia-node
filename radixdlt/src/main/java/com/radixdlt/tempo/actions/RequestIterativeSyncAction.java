@@ -1,6 +1,6 @@
 package com.radixdlt.tempo.actions;
 
-import com.radixdlt.tempo.sync.IterativeCursor;
+import com.radixdlt.tempo.IterativeCursor;
 import com.radixdlt.tempo.TempoAction;
 import org.radix.network.peers.Peer;
 

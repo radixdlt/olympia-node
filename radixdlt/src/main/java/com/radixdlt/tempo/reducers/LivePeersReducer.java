@@ -7,7 +7,7 @@ import com.radixdlt.tempo.TempoReducer;
 import com.radixdlt.tempo.TempoState;
 import com.radixdlt.tempo.TempoStateBundle;
 import com.radixdlt.tempo.actions.RefreshLivePeersAction;
-import com.radixdlt.tempo.peers.PeerSupplier;
+import com.radixdlt.tempo.PeerSupplier;
 import com.radixdlt.tempo.state.LivePeersState;
 
 import java.util.Set;

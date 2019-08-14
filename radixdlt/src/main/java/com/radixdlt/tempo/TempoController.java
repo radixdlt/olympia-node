@@ -1,8 +1,6 @@
 package com.radixdlt.tempo;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.common.AID;
-import com.radixdlt.common.EUID;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.tempo.actions.AcceptAtomAction;
 import com.radixdlt.tempo.actions.ResolveConflictAction;
@@ -17,24 +15,28 @@ import com.radixdlt.tempo.actions.RefreshLivePeersAction;
 import com.radixdlt.tempo.actions.control.RepeatScheduleAction;
 import com.radixdlt.tempo.actions.ReselectPassivePeersAction;
 import com.radixdlt.tempo.actions.control.ScheduleAction;
+import com.radixdlt.tempo.actions.messaging.ReceiveSampleRequestAction;
+import com.radixdlt.tempo.actions.messaging.ReceiveSampleResponseAction;
 import com.radixdlt.tempo.actions.messaging.SendDeliveryRequestAction;
 import com.radixdlt.tempo.actions.messaging.SendDeliveryResponseAction;
 import com.radixdlt.tempo.actions.messaging.SendIterativeRequestAction;
 import com.radixdlt.tempo.actions.messaging.SendIterativeResponseAction;
 import com.radixdlt.tempo.actions.messaging.SendPushAction;
+import com.radixdlt.tempo.actions.messaging.SendSampleRequestAction;
+import com.radixdlt.tempo.actions.messaging.SendSampleResponseAction;
 import com.radixdlt.tempo.epics.ActiveSyncEpic;
-import com.radixdlt.tempo.epics.DeliveryEpic;
+import com.radixdlt.tempo.epics.AtomDeliveryEpic;
 import com.radixdlt.tempo.epics.IterativeSyncEpic;
-import com.radixdlt.tempo.epics.LocalConflictResolverEpic;
+import com.radixdlt.tempo.epics.LocalResolverEpic;
 import com.radixdlt.tempo.epics.MessagingEpic;
 import com.radixdlt.tempo.messages.DeliveryRequestMessage;
 import com.radixdlt.tempo.messages.DeliveryResponseMessage;
 import com.radixdlt.tempo.messages.IterativeRequestMessage;
 import com.radixdlt.tempo.messages.IterativeResponseMessage;
 import com.radixdlt.tempo.messages.PushMessage;
-import com.radixdlt.tempo.peers.PeerSupplier;
-import com.radixdlt.tempo.peers.PeerSupplierAdapter;
-import com.radixdlt.tempo.reducers.DeliveryReducer;
+import com.radixdlt.tempo.messages.SampleRequestMessage;
+import com.radixdlt.tempo.messages.SampleResponseMessage;
+import com.radixdlt.tempo.reducers.AtomDeliveryReducer;
 import com.radixdlt.tempo.reducers.IterativeSyncReducer;
 import com.radixdlt.tempo.reducers.LivePeersReducer;
 import com.radixdlt.tempo.reducers.PassivePeersReducer;
@@ -58,7 +60,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
@@ -290,7 +291,7 @@ public final class TempoController {
 		Messaging messager = Messaging.getInstance();
 		PeerSupplier peerSupplier = new PeerSupplierAdapter(() -> Modules.get(PeerHandler.class));
 		Builder builder = builder()
-			.addEpic(DeliveryEpic.builder()
+			.addEpic(AtomDeliveryEpic.builder()
 				.storeView(storeView)
 				.build())
 			.addEpicBuilder(controller -> MessagingEpic.builder()
@@ -305,10 +306,14 @@ public final class TempoController {
 				.addOutbound(SendIterativeResponseAction.class, SendIterativeResponseAction::toMessage, SendIterativeResponseAction::getPeer)
 				.addInbound("tempo.sync.push", PushMessage.class, ReceivePushAction::from)
 				.addOutbound(SendPushAction.class, SendPushAction::toMessage, SendPushAction::getPeer)
+				.addInbound("tempo.sample.request", SampleRequestMessage.class, ReceiveSampleRequestAction::from)
+				.addOutbound(SendSampleRequestAction.class, SendSampleRequestAction::toMessage, SendSampleRequestAction::getPeer)
+				.addInbound("tempo.sample.response", SampleResponseMessage.class, ReceiveSampleResponseAction::from)
+				.addOutbound(SendSampleResponseAction.class, SendSampleResponseAction::toMessage, SendSampleResponseAction::getPeer)
 				.build(controller))
 			.addReducer(new LivePeersReducer(peerSupplier))
 			.addReducer(new PassivePeersReducer(16))
-			.addReducer(new DeliveryReducer())
+			.addReducer(new AtomDeliveryReducer())
 			.addInitialAction(new RefreshLivePeersAction().repeat(10, 5, TimeUnit.SECONDS))
 			.addInitialAction(new ReselectPassivePeersAction().repeat(10, 20, TimeUnit.SECONDS));
 
@@ -335,7 +340,7 @@ public final class TempoController {
 			builder.addReducer(new IterativeSyncReducer());
 		}
 		if (resolver.equalsIgnoreCase("local")) {
-			builder.addEpic(new LocalConflictResolverEpic(localSystem.getNID()));
+			builder.addEpic(new LocalResolverEpic(localSystem.getNID()));
 		}
 
 		return builder;

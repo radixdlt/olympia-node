@@ -1,4 +1,4 @@
-package com.radixdlt.tempo.sync;
+package com.radixdlt.tempo;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.serialization.DsonOutput;

@@ -10,11 +10,18 @@ import java.util.Optional;
  */
 public interface TemporalProofStore extends Store {
 	/**
-	 * Gets the temporal proof associated with a certain {@link AID}.
+	 * Gets the aggregated temporal proofs associated with a certain {@link AID}.
 	 * @param aid The {@link AID}.
 	 * @return The temporal proof associated with the given {@link AID} (if any)
 	 */
-	Optional<TemporalProof> get(AID aid);
+	Optional<TemporalProof> getCollected(AID aid);
+
+	/**
+	 * Gets the temporal proof branch of this node of a certain {@link AID}.
+	 * @param aid The {@link AID}.
+	 * @return The temporal proof associated with the given {@link AID} (if any)
+	 */
+	Optional<TemporalProof> getOwn(AID aid);
 
 	/**
 	 * Appends a temporal proof to this store.
@@ -22,5 +29,5 @@ public interface TemporalProofStore extends Store {
 	 *
 	 * @param temporalProof The temporal proof
 	 */
-	void append(TemporalProof temporalProof);
+	void add(TemporalProof temporalProof);
 }

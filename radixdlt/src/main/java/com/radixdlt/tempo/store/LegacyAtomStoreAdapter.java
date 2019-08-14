@@ -13,7 +13,7 @@ import com.radixdlt.tempo.AtomStoreView;
 import com.radixdlt.tempo.LegacyUtils;
 import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.TempoException;
-import com.radixdlt.tempo.sync.IterativeCursor;
+import com.radixdlt.tempo.IterativeCursor;
 import com.radixdlt.utils.UInt384;
 import org.radix.atoms.Atom;
 import org.radix.atoms.AtomDiscoveryRequest;

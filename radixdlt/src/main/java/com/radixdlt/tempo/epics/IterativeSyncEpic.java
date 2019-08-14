@@ -14,7 +14,7 @@ import com.radixdlt.tempo.actions.ReselectPassivePeersAction;
 import com.radixdlt.tempo.actions.ResetAction;
 import com.radixdlt.tempo.state.IterativeSyncState;
 import com.radixdlt.tempo.state.PassivePeersState;
-import com.radixdlt.tempo.sync.IterativeCursor;
+import com.radixdlt.tempo.IterativeCursor;
 import com.radixdlt.tempo.TempoAction;
 import com.radixdlt.tempo.TempoEpic;
 import com.radixdlt.tempo.actions.InitiateIterativeSyncAction;

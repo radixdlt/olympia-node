@@ -4,7 +4,7 @@ package com.radixdlt.tempo.messages;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.tempo.sync.IterativeCursor;
+import com.radixdlt.tempo.IterativeCursor;
 import org.radix.network.messaging.Message;
 import org.radix.shards.ShardSpace;
 

@@ -1,4 +1,4 @@
-package com.radixdlt.tempo.peers;
+package com.radixdlt.tempo;
 
 import com.radixdlt.common.EUID;
 import org.radix.network.peers.Peer;

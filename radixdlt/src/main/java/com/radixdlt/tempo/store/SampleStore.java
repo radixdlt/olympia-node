@@ -1,11 +1,10 @@
 package com.radixdlt.tempo.store;
 
+import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
-import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.tempo.Store;
 import com.radixdlt.tempo.TempoException;
-import com.radixdlt.tempo.IterativeCursor;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
@@ -18,19 +17,23 @@ import com.sleepycat.je.TransactionConfig;
 import org.radix.database.DatabaseEnvironment;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
+import org.radix.time.TemporalProof;
 
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-public final class IterativeCursorStore implements Store {
-	private static final Logger logger = Logging.getLogger("Sync.Store");
+public class SampleStore implements Store {
+	private static final Logger logger = Logging.getLogger("Sampling.Store");
+	private static final String COLLECTED_SAMPLES_DB_NAME = "tempo2.samples.collected";
+	private static final String LOCAL_SAMPLES_DB_NAME = "tempo2.samples.local";
 
 	private final Supplier<DatabaseEnvironment> dbEnv;
 	private final Supplier<Serialization> serialization;
-	private Database cursors;
+	private Database collectedSamples;
+	private Database localSamples;
 
-	public IterativeCursorStore(Supplier<DatabaseEnvironment> dbEnv, Supplier<Serialization> serialization) {
+	public SampleStore(Supplier<DatabaseEnvironment> dbEnv, Supplier<Serialization> serialization) {
 		this.dbEnv = Objects.requireNonNull(dbEnv, "dbEnv is required");
 		this.serialization = Objects.requireNonNull(serialization, "serialization is required");
 	}
@@ -53,7 +56,8 @@ public final class IterativeCursorStore implements Store {
 
 		try {
 			Environment dbEnv = this.dbEnv.get().getEnvironment();
-			this.cursors = dbEnv.openDatabase(null, "tempo2.sync.iterative.cursors", primaryConfig);
+			this.collectedSamples = dbEnv.openDatabase(null, COLLECTED_SAMPLES_DB_NAME, primaryConfig);
+			this.localSamples = dbEnv.openDatabase(null, LOCAL_SAMPLES_DB_NAME, primaryConfig);
 		} catch (Exception e) {
 			throw new TempoException("Error while opening database", e);
 		}
@@ -71,7 +75,8 @@ public final class IterativeCursorStore implements Store {
 
 			Environment env = this.dbEnv.get().getEnvironment();
 			transaction = env.beginTransaction(null, new TransactionConfig().setReadUncommitted(true));
-			env.truncateDatabase(transaction, "tempo2.sync.iterative.cursors", false);
+			env.truncateDatabase(transaction, COLLECTED_SAMPLES_DB_NAME, false);
+			env.truncateDatabase(transaction, LOCAL_SAMPLES_DB_NAME, false);
 			transaction.commit();
 		} catch (DatabaseNotFoundException e) {
 			if (transaction != null) {
@@ -90,48 +95,73 @@ public final class IterativeCursorStore implements Store {
 
 	@Override
 	public void close() {
-		if (this.cursors != null) {
-			this.cursors.close();
+		if (this.collectedSamples != null) {
+			this.collectedSamples.close();
+		}
+		if (this.localSamples != null) {
+			this.localSamples.close();
 		}
 	}
 
-	public void put(EUID nid, IterativeCursor cursor) {
-		Transaction transaction = dbEnv.get().getEnvironment().beginTransaction(null, null);
+	/**
+	 * Gets the aggregated temporal proofs associated with a certain {@link AID}.
+	 * @param aid The {@link AID}.
+	 * @return The temporal proof associated with the given {@link AID} (if any)
+	 */
+	public Optional<TemporalProof> getCollected(AID aid) {
 		try {
-			DatabaseEntry key = new DatabaseEntry(nid.toByteArray());
-			byte[] valueBytes = serialization.get().toDson(cursor, DsonOutput.Output.PERSIST);
-			DatabaseEntry value = new DatabaseEntry(valueBytes);
-
-			OperationStatus status = this.cursors.put(transaction, key, value);
-			if (status != OperationStatus.SUCCESS) {
-				fail("Database returned status " + status + " for put operation");
-			}
-
-			transaction.commit();
-		} catch (Exception e) {
-			transaction.abort();
-			fail("Error while storing cursor for '" + nid + "'", e);
-		}
-	}
-
-	public Optional<IterativeCursor> get(EUID nid) {
-		try {
-			DatabaseEntry key = new DatabaseEntry(nid.toByteArray());
+			DatabaseEntry key = new DatabaseEntry(aid.getBytes());
 			DatabaseEntry value = new DatabaseEntry();
 
-			OperationStatus status = this.cursors.get(null, key, value, LockMode.DEFAULT);
+			OperationStatus status = this.collectedSamples.get(null, key, value, LockMode.DEFAULT);
 			if (status == OperationStatus.NOTFOUND) {
 				return Optional.empty();
 			} else if (status != OperationStatus.SUCCESS) {
 				fail("Database returned status " + status + " for get operation");
 			} else {
-				IterativeCursor cursor = serialization.get().fromDson(value.getData(), IterativeCursor.class);
-				return Optional.of(cursor);
+				TemporalProof samples = serialization.get().fromDson(value.getData(), TemporalProof.class);
+				return Optional.of(samples);
 			}
 		} catch (Exception e) {
-			fail("Error while getting cursor for '" + nid + "'", e);
+			fail("Error while getting collected samples for '" + aid + "'", e);
 		}
 
 		return Optional.empty();
+	}
+
+	/**
+	 * Gets the local temporal proof branch of this node of a certain {@link AID}.
+	 * @param aid The {@link AID}.
+	 * @return The temporal proof associated with the given {@link AID} (if any)
+	 */
+	public Optional<TemporalProof> getLocal(AID aid) {
+		try {
+			DatabaseEntry key = new DatabaseEntry(aid.getBytes());
+			DatabaseEntry value = new DatabaseEntry();
+
+			OperationStatus status = this.localSamples.get(null, key, value, LockMode.DEFAULT);
+			if (status == OperationStatus.NOTFOUND) {
+				return Optional.empty();
+			} else if (status != OperationStatus.SUCCESS) {
+				fail("Database returned status " + status + " for get operation");
+			} else {
+				TemporalProof samples = serialization.get().fromDson(value.getData(), TemporalProof.class);
+				return Optional.of(samples);
+			}
+		} catch (Exception e) {
+			fail("Error while getting local samples for '" + aid + "'", e);
+		}
+
+		return Optional.empty();
+	}
+
+	/**
+	 * Appends a temporal proof to this store.
+	 * If a temporal proof with the same {@link AID} is already stored, the proofs will be merged.
+	 *
+	 * @param temporalProof The temporal proof
+	 */
+	public void addLocal(TemporalProof temporalProof) {
+		// TODO implement
 	}
 }

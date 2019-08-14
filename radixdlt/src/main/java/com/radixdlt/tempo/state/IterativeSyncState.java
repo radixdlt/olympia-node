@@ -3,7 +3,6 @@ package com.radixdlt.tempo.state;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.common.EUID;
 import com.radixdlt.tempo.TempoState;
-import org.radix.logging.Logging;
 
 import java.util.Collections;
 import java.util.HashMap;
