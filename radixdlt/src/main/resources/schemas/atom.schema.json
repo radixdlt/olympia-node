@@ -163,7 +163,8 @@
     "particle": {
       "oneOf": [
         { "$ref": "#/definitions/rriParticle" },
-        { "$ref": "#/definitions/tokenDefinitionParticle" },
+        { "$ref": "#/definitions/mutableSupplyTokenDefinitionParticle" },
+        { "$ref": "#/definitions/fixedSupplyTokenDefinitionParticle" },
         { "$ref": "#/definitions/messageParticle" },
         { "$ref": "#/definitions/unallocatedTokensParticle" },
         { "$ref": "#/definitions/transferrableTokensParticle" },
@@ -193,7 +194,7 @@
       "required": [ "rri", "nonce" ],
       "description": "A particle which represents an RRI."
     },
-    "tokenDefinitionParticle": {
+    "mutableSupplyTokenDefinitionParticle": {
       "type": "object",
       "properties": {
         "destinations": {
@@ -201,12 +202,11 @@
           "items": { "$ref": "#/definitions/uid" },
           "minItems": 1
         },
-        "address": { "$ref": "#/definitions/address" },
+        "rri": { "$ref": "#/definitions/radixResourceIdentifier" },
         "name": { "$ref": "#/definitions/string" },
-        "symbol": { "$ref": "#/definitions/string" },
         "serializer": {
           "type": "string",
-          "enum": [ "radix.particles.token_definition" ]
+          "enum": [ "radix.particles.mutable_supply_token_definition" ]
         },
         "version": {
           "type": "number"
@@ -226,7 +226,34 @@
         }
       },
       "additionalProperties": false,
-      "required": [ "serializer", "name", "description", "permissions" ],
+      "required": [ "serializer", "rri", "name", "description", "permissions" ],
+      "description": "A particle which represents a token class state."
+    },
+    "fixedSupplyTokenDefinitionParticle": {
+      "type": "object",
+      "properties": {
+        "destinations": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/uid" },
+          "minItems": 1
+        },
+        "rri": { "$ref": "#/definitions/radixResourceIdentifier" },
+        "name": { "$ref": "#/definitions/string" },
+        "serializer": {
+          "type": "string",
+          "enum": [ "radix.particles.fixed_supply_token_definition" ]
+        },
+        "version": {
+          "type": "number"
+        },
+        "supply": { "$ref": "#/definitions/u20" },
+        "description": { "$ref": "#/definitions/string" },
+        "granularity": { "$ref": "#/definitions/u20" },
+        "iconUrl": {
+        }
+      },
+      "additionalProperties": false,
+      "required": [ "serializer", "rri", "name", "description", "supply" ],
       "description": "A particle which represents a token class state."
     },
     "messageParticle": {

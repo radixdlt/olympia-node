@@ -1,6 +1,7 @@
 package org.radix.api;
 
-import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.atommodel.tokens.TokenPermission;
 import java.util.Map;
 
@@ -14,7 +15,6 @@ import org.radix.api.AtomSchemas;
 import org.radix.modules.Modules;
 
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.atommodel.tokens.TokenDefinitionParticle.TokenTransition;
 import com.radixdlt.atomos.RadixAddress;
 import org.radix.atoms.Atom;
 import com.radixdlt.atoms.Spin;
@@ -52,7 +52,7 @@ public class TokenDefinitionSchemaTest {
 			TokenTransition.MINT, TokenPermission.TOKEN_CREATION_ONLY,
 			TokenTransition.BURN, TokenPermission.TOKEN_CREATION_ONLY
 		);
-		TokenDefinitionParticle tokenDefinition = new TokenDefinitionParticle(addr, "TEST", "Test token", "Test token", UInt256.ONE, "http://example.com", tp);
+		MutableSupplyTokenDefinitionParticle tokenDefinition = new MutableSupplyTokenDefinitionParticle(addr, "TEST", "Test token", "Test token", UInt256.ONE, "http://example.com", tp);
 		Atom atom = new Atom();
 		atom.addParticleGroupWith(tokenDefinition, Spin.UP);
 

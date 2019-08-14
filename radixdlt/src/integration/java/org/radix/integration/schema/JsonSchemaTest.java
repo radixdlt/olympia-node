@@ -1,6 +1,9 @@
 package org.radix.integration.schema;
 
 import com.google.common.collect.ImmutableMap;
+import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
+import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.universe.Universe;
 import org.everit.json.schema.Schema;
 import org.everit.json.schema.ValidationException;
@@ -10,8 +13,6 @@ import org.json.JSONTokener;
 import org.junit.Test;
 import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.atommodel.message.MessageParticle;
-import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
-import com.radixdlt.atommodel.tokens.TokenDefinitionParticle.TokenTransition;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.atommodel.tokens.Tokens;
@@ -56,7 +57,7 @@ public class JsonSchemaTest extends RadixTest {
 	public void testTokenDefinition() throws Exception {
 		ECKeyPair ecKeyPair = new ECKeyPair();
 
-		TokenDefinitionParticle testToken = new TokenDefinitionParticle(
+		MutableSupplyTokenDefinitionParticle testToken = new MutableSupplyTokenDefinitionParticle(
 			RadixAddress.from(Modules.get(Universe.class), ecKeyPair.getPublicKey()),
 			"TEST",
 			"Test RADS",
@@ -86,7 +87,7 @@ public class JsonSchemaTest extends RadixTest {
 		transactionAtom.addParticleGroupWith(new MessageParticle(address, address, "Radix....Just Imagine".getBytes(RadixConstants.STANDARD_CHARSET)), Spin.UP);
 
 		TransferrableTokensParticle mintParticle = new TransferrableTokensParticle(address,
-			UInt256.TEN.pow(TokenDefinitionParticle.SUB_UNITS_POW_10 + BILLION_POW_10),
+			UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 + BILLION_POW_10),
 			UInt256.ONE,
 			RRI.of(address, Tokens.getNativeTokenShortCode()),
 			1L,

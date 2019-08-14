@@ -2,6 +2,9 @@ package org.radix;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
+import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import org.apache.commons.cli.CommandLine;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.json.JSONObject;
@@ -9,8 +12,6 @@ import com.radixdlt.atoms.DataPointer;
 import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.atommodel.message.MessageParticle;
 import com.radixdlt.atomos.RRIParticle;
-import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
-import com.radixdlt.atommodel.tokens.TokenDefinitionParticle.TokenTransition;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.atommodel.tokens.TokenPermission;
@@ -32,8 +33,6 @@ import org.radix.properties.PersistedProperties;
 import org.radix.properties.RuntimeProperties;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.serialization.core.ClasspathScanningSerializationPolicy;
-import com.radixdlt.serialization.core.ClasspathScanningSerializerIds;
 import org.radix.time.TemporalVertex;
 import org.radix.time.Timestamps;
 import com.radixdlt.universe.Universe;
@@ -158,40 +157,17 @@ public final class GenerateUniverses
 
 	private List<Atom> createGenesisAtoms(byte magic, long timestamp, long planck) throws Exception {
 		RadixAddress universeAddress = new RadixAddress(magic, universeKey.getPublicKey());
-		ImmutableMap<TokenTransition, TokenPermission> tokenPermissions =
-			ImmutableMap.of(
-				TokenTransition.MINT, TokenPermission.TOKEN_CREATION_ONLY,
-				TokenTransition.BURN, TokenPermission.NONE
-			);
-		TokenDefinitionParticle xrdDefinition = createTokenDefinition(magic, "XRD", "Rads", "Radix Native Tokens", tokenPermissions);
+		UInt256 genesisAmount = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 + 9); // 10^9 = 1,000,000,000 pieces of eight, please
+		FixedSupplyTokenDefinitionParticle xrdDefinition = createTokenDefinition(magic, "XRD", "Rads", "Radix Native Tokens", genesisAmount);
 		MessageParticle helloUniverseMessage = createHelloMessage(universeAddress);
 		RRIParticle rriParticle = new RRIParticle(xrdDefinition.getRRI());
-
-		UInt256 genesisAmount = UInt256.TEN.pow(TokenDefinitionParticle.SUB_UNITS_POW_10 + 9); // 10^9 = 1,000,000,000 pieces of eight, please
-
-		UnallocatedTokensParticle unallocatedTokensParticle = createGenesisXRDUnallocated(
-			UInt256.MAX_VALUE,
-			universeAddress,
-			tokenPermissions
-		);
-
-		TransferrableTokensParticle mintXrdTokens = createGenesisXRDMint(genesisAmount, timestamp, planck, universeAddress);
-		UnallocatedTokensParticle unallocatedLeftoverTokensParticle = createGenesisXRDUnallocated(
-			UInt256.MAX_VALUE.subtract(genesisAmount),
-			universeAddress,
-			tokenPermissions
-		);
+		TransferrableTokensParticle mintXrdTokens = createGenesisXRDMint(universeAddress, "XRD", genesisAmount, timestamp, planck);
 
 		Atom genesisAtom = new Atom(timestamp);
 		genesisAtom.addParticleGroupWith(helloUniverseMessage, Spin.UP);
 		genesisAtom.addParticleGroupWith(
 			rriParticle, Spin.DOWN,
 			xrdDefinition, Spin.UP,
-			unallocatedTokensParticle, Spin.UP
-		);
-		genesisAtom.addParticleGroupWith(
-			unallocatedTokensParticle, Spin.DOWN,
-			unallocatedLeftoverTokensParticle, Spin.UP,
 			mintXrdTokens, Spin.UP
 		);
 		genesisAtom.sign(universeKey);
@@ -223,14 +199,20 @@ public final class GenerateUniverses
 		return new MessageParticle(address, address, "Radix... just imagine!".getBytes(RadixConstants.STANDARD_CHARSET));
 	}
 
-	private static TransferrableTokensParticle createGenesisXRDMint(UInt256 amount, long timestamp, long planck, RadixAddress address) {
+	private static TransferrableTokensParticle createGenesisXRDMint(
+		RadixAddress address,
+		String symbol,
+		UInt256 amount,
+		long timestamp,
+		long planck
+	) {
 		return new TransferrableTokensParticle(
 			address,
 			amount,
 			UInt256.ONE,
 			RRI.of(address, Tokens.getNativeTokenShortCode()),
 			Universe.computePlanck(timestamp, planck, Offset.NONE),
-			ImmutableMap.of(TokenTransition.MINT, TokenPermission.TOKEN_CREATION_ONLY, TokenTransition.BURN, TokenPermission.NONE)
+			ImmutableMap.of()
 		);
 	}
 
@@ -250,21 +232,21 @@ public final class GenerateUniverses
 	/*
 	 * Create a token definition as a genesis token with the radix icon and granularity of 1
 	 */
-	private TokenDefinitionParticle createTokenDefinition(
+	private FixedSupplyTokenDefinitionParticle createTokenDefinition(
 		byte magic,
 		String symbol,
 		String name,
 		String description,
-		ImmutableMap<TokenTransition, TokenPermission> tokenPermissions
+		UInt256 supply
 	) {
-		return new TokenDefinitionParticle(
+		return new FixedSupplyTokenDefinitionParticle(
 			new RadixAddress(magic, universeKey.getPublicKey()),
 			symbol,
 			name,
 			description,
+			supply,
 			UInt256.ONE,
-			RADIX_ICON_URL,
-			tokenPermissions
+			RADIX_ICON_URL
 		);
 	}
 

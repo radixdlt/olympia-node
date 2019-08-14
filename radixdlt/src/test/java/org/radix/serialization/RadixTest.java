@@ -1,5 +1,6 @@
 package org.radix.serialization;
 
+import com.radixdlt.atommodel.tokens.TokensConstraintScrypt;
 import com.radixdlt.common.Pair;
 import com.radixdlt.compute.AtomCompute;
 import com.radixdlt.engine.RadixEngine;
@@ -8,8 +9,6 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import com.radixdlt.atommodel.message.MessageParticleConstraintScrypt;
-import com.radixdlt.atommodel.tokens.TokenDefinitionConstraintScrypt;
-import com.radixdlt.atommodel.tokens.TokenInstancesConstraintScrypt;
 import com.radixdlt.atommodel.unique.UniqueParticleConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.constraintmachine.ConstraintMachine;
@@ -88,10 +87,9 @@ public abstract class RadixTest
 		Modules.put(LocalSystem.class, localSystem);
 
 		CMAtomOS os = new CMAtomOS(() -> universe, ntpService::getUTCTimeMS);
-		os.load(new TokenDefinitionConstraintScrypt());
+		os.load(new TokensConstraintScrypt());
 		os.load(new UniqueParticleConstraintScrypt());
 		os.load(new MessageParticleConstraintScrypt());
-		os.load(new TokenInstancesConstraintScrypt());
 
 		final AtomEngineStore atomStore = new AtomEngineStore(
 			() -> Modules.get(AtomStore.class),
