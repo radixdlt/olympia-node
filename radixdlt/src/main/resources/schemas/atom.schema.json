@@ -202,9 +202,8 @@
           "items": { "$ref": "#/definitions/uid" },
           "minItems": 1
         },
-        "address": { "$ref": "#/definitions/address" },
+        "rri": { "$ref": "#/definitions/radixResourceIdentifier" },
         "name": { "$ref": "#/definitions/string" },
-        "symbol": { "$ref": "#/definitions/string" },
         "serializer": {
           "type": "string",
           "enum": [ "radix.particles.mutable_supply_token_definition" ]
@@ -227,7 +226,7 @@
         }
       },
       "additionalProperties": false,
-      "required": [ "serializer", "name", "description", "permissions" ],
+      "required": [ "serializer", "rri", "name", "description", "permissions" ],
       "description": "A particle which represents a token class state."
     },
     "fixedSupplyTokenDefinitionParticle": {
@@ -238,9 +237,8 @@
           "items": { "$ref": "#/definitions/uid" },
           "minItems": 1
         },
-        "address": { "$ref": "#/definitions/address" },
+        "rri": { "$ref": "#/definitions/radixResourceIdentifier" },
         "name": { "$ref": "#/definitions/string" },
-        "symbol": { "$ref": "#/definitions/string" },
         "serializer": {
           "type": "string",
           "enum": [ "radix.particles.fixed_supply_token_definition" ]
@@ -255,7 +253,7 @@
         }
       },
       "additionalProperties": false,
-      "required": [ "serializer", "name", "description", "supply" ],
+      "required": [ "serializer", "rri", "name", "description", "supply" ],
       "description": "A particle which represents a token class state."
     },
     "messageParticle": {
