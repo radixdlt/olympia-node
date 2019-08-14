@@ -116,7 +116,7 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 			tokenCreation.getDescription(),
 			amount,
 			granularity,
-			null
+			tokenCreation.getIconUrl()
 		);
 
 		TransferrableTokensParticle tokens = new TransferrableTokensParticle(
