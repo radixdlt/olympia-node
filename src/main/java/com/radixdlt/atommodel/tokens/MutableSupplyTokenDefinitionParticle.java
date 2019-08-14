@@ -20,17 +20,13 @@ public final class MutableSupplyTokenDefinitionParticle extends Particle {
 		BURN
 	}
 
-	@JsonProperty("address")
+	@JsonProperty("rri")
 	@DsonOutput(Output.ALL)
-	private RadixAddress address;
+	private RRI rri;
 
 	@JsonProperty("name")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private String	name;
-
-	@JsonProperty("symbol")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private String symbol;
+	private String name;
 
 	@JsonProperty("description")
 	@DsonOutput(DsonOutput.Output.ALL)
@@ -61,9 +57,8 @@ public final class MutableSupplyTokenDefinitionParticle extends Particle {
 	) {
 		super(address.getUID());
 
-		this.address = address;
+		this.rri = RRI.of(address, symbol);
 		this.name = name;
-		this.symbol = symbol;
 		this.description = description;
 		this.granularity = Objects.requireNonNull(granularity);
 		this.iconUrl = iconUrl;
@@ -79,7 +74,7 @@ public final class MutableSupplyTokenDefinitionParticle extends Particle {
 	}
 
 	public RadixAddress getAddress() {
-		return this.address;
+		return this.rri.getAddress();
 	}
 
 	public Map<TokenTransition, TokenPermission> getTokenPermissions() {
@@ -96,7 +91,7 @@ public final class MutableSupplyTokenDefinitionParticle extends Particle {
 	}
 
 	public String getSymbol() {
-		return this.symbol;
+		return this.rri.getName();
 	}
 
 	public String getName() {
@@ -144,8 +139,8 @@ public final class MutableSupplyTokenDefinitionParticle extends Particle {
 			: tokenPermissions.entrySet().stream()
 				.map(e -> String.format("%s:%s", e.getKey().toString().toLowerCase(), e.getValue().toString().toLowerCase()))
 				.collect(Collectors.joining(","));
-		return String.format("%s[(%s:%s:%s), (am%s), (%s), %s]", getClass().getSimpleName(),
-			String.valueOf(name), String.valueOf(symbol), String.valueOf(granularity),
-			String.valueOf(description), tokenPermissionsStr, String.valueOf(address));
+		return String.format("%s[(%s:%s:%s), (am%s), (%s)]", getClass().getSimpleName(),
+			String.valueOf(name), String.valueOf(rri), String.valueOf(granularity),
+			String.valueOf(description), tokenPermissionsStr);
 	}
 }

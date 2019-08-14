@@ -13,17 +13,13 @@ import java.util.Objects;
 
 @SerializerId2("radix.particles.fixed_supply_token_definition")
 public final class FixedSupplyTokenDefinitionParticle extends Particle {
-	@JsonProperty("address")
+	@JsonProperty("rri")
 	@DsonOutput(Output.ALL)
-	private RadixAddress address;
+	private RRI rri;
 
 	@JsonProperty("name")
 	@DsonOutput(Output.ALL)
 	private String	name;
-
-	@JsonProperty("symbol")
-	@DsonOutput(Output.ALL)
-	private String symbol;
 
 	@JsonProperty("description")
 	@DsonOutput(Output.ALL)
@@ -57,8 +53,7 @@ public final class FixedSupplyTokenDefinitionParticle extends Particle {
 	) {
 		super(address.getUID());
 
-		this.address = address;
-		this.symbol = symbol;
+		this.rri = RRI.of(address, symbol);
 		this.name = name;
 		this.description = description;
 		this.supply = Objects.requireNonNull(supply);
@@ -71,11 +66,11 @@ public final class FixedSupplyTokenDefinitionParticle extends Particle {
 	}
 
 	public RadixAddress getOwner() {
-		return this.address;
+		return this.rri.getAddress();
 	}
 
 	public String getSymbol() {
-		return this.symbol;
+		return this.rri.getName();
 	}
 
 	public String getName() {
@@ -100,9 +95,9 @@ public final class FixedSupplyTokenDefinitionParticle extends Particle {
 
 	@Override
 	public String toString() {
-		return String.format("%s[(%s:%s:%s:%s), (%s), %s]", getClass().getSimpleName(),
-			String.valueOf(name), String.valueOf(symbol),
+		return String.format("%s[(%s:%s:%s:%s), (%s)]", getClass().getSimpleName(),
+			String.valueOf(this.rri), String.valueOf(name),
 			String.valueOf(supply), String.valueOf(granularity),
-			String.valueOf(description), String.valueOf(address));
+			String.valueOf(description));
 	}
 }
