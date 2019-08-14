@@ -1,11 +1,13 @@
 package org.radix.api.services;
 
+import static com.radixdlt.atommodel.tokens.TokenDefinitionUtils.SUB_UNITS;
+
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.radixdlt.atommodel.message.MessageParticle;
-import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
-import com.radixdlt.atommodel.tokens.TokenDefinitionParticle.TokenTransition;
+import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.atommodel.tokens.TokenPermission;
@@ -44,8 +46,6 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
-import static com.radixdlt.atommodel.tokens.TokenDefinitionParticle.SUB_UNITS;
 
 final class Loader {
 	private static final Logger log = Logging.getLogger("loader");
@@ -90,7 +90,7 @@ final class Loader {
 
 			log.info("Preparing with window size " + windowSize + "...");
 			Atom defineTokenAtom = new Atom(Time.currentTimestamp());
-			TokenDefinitionParticle tokenDefinition = createTokenDefinition(myRadixAddress);
+			MutableSupplyTokenDefinitionParticle tokenDefinition = createTokenDefinition(myRadixAddress);
 			UnallocatedTokensParticle rootUnallocatedTokens = createUnallocatedTokens(tokenDefinition, atomCount);
 			RRIParticle rriParticle = new RRIParticle(tokenDefinition.getRRI());
 			defineTokenAtom.addParticleGroupWith(
@@ -325,7 +325,7 @@ final class Loader {
 		return UInt256.from(units).multiply(SUB_UNITS);
 	}
 
-	private UnallocatedTokensParticle createUnallocatedTokens(TokenDefinitionParticle tokenDefinition, int amount) {
+	private UnallocatedTokensParticle createUnallocatedTokens(MutableSupplyTokenDefinitionParticle tokenDefinition, int amount) {
 		return new UnallocatedTokensParticle(
 			unitsToSubunits(amount),
 			UInt256.ONE,
@@ -334,7 +334,7 @@ final class Loader {
 		);
 	}
 
-	private TransferrableTokensParticle createTransferrableTokens(RadixAddress myRadixAddress, TokenDefinitionParticle tokenDefinition, int amount) {
+	private TransferrableTokensParticle createTransferrableTokens(RadixAddress myRadixAddress, MutableSupplyTokenDefinitionParticle tokenDefinition, int amount) {
 		return new TransferrableTokensParticle(
 			myRadixAddress,
 			unitsToSubunits(amount),
@@ -345,8 +345,8 @@ final class Loader {
 		);
 	}
 
-	private TokenDefinitionParticle createTokenDefinition(RadixAddress myRadixAddress) {
-		return new TokenDefinitionParticle(
+	private MutableSupplyTokenDefinitionParticle createTokenDefinition(RadixAddress myRadixAddress) {
+		return new MutableSupplyTokenDefinitionParticle(
 			myRadixAddress,
 			"FLO",
 			"Cookie Token!",

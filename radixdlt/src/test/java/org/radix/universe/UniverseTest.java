@@ -1,21 +1,19 @@
 package org.radix.universe;
 
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.atommodel.tokens.TokenDefinitionParticle;
-import com.radixdlt.atommodel.tokens.TokenDefinitionParticle.TokenTransition;
+import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
+import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.universe.Universe;
 import org.radix.atoms.Atom;
 import com.radixdlt.atoms.Spin;
 import com.radixdlt.common.EUID;
-import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.serialization.core.ClasspathScanningSerializationPolicy;
-import com.radixdlt.serialization.core.ClasspathScanningSerializerIds;
 import com.radixdlt.utils.UInt256;
 import org.junit.Before;
 import org.junit.Rule;
@@ -130,7 +128,7 @@ public class UniverseTest {
     }
 
     private Atom createGenesisAtom(int magic, long timestamp) throws CryptoException {
-        TokenDefinitionParticle pow = new TokenDefinitionParticle(
+        MutableSupplyTokenDefinitionParticle pow = new MutableSupplyTokenDefinitionParticle(
 			new RadixAddress((byte) (magic & 0xFF), new ECKeyPair().getPublicKey()),
 			"XRD", "Proof of Launch", "Radix Tokens",
 			UInt256.ONE,
