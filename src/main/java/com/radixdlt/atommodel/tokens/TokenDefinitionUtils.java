@@ -88,7 +88,7 @@ public final class TokenDefinitionUtils {
 
 		final Result permissionsResult;
 		if (tokenDefParticle.getTokenPermissions() == null
-			|| tokenDefParticle.getTokenPermissions().keySet().size() != TokenTransition.values().length) {
+			|| tokenDefParticle.getTokenPermissions().size() != TokenTransition.values().length) {
 			permissionsResult = Result.error(
 				String.format(
 					"Permissions: must be set for all token transitions (%s)",
