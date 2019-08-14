@@ -23,17 +23,13 @@ public class MutableSupplyTokenDefinitionParticle extends Particle implements Id
 		BURN
 	}
 
-	@JsonProperty("address")
+	@JsonProperty("rri")
 	@DsonOutput(Output.ALL)
-	private RadixAddress address;
+	private RRI rri;
 
 	@JsonProperty("name")
 	@DsonOutput(Output.ALL)
 	private String name;
-
-	@JsonProperty("symbol")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private String symbol;
 
 	@JsonProperty("description")
 	@DsonOutput(Output.ALL)
@@ -62,10 +58,20 @@ public class MutableSupplyTokenDefinitionParticle extends Particle implements Id
 		Map<TokenTransition, TokenPermission> tokenPermissions,
 		String iconUrl
 	) {
-		super(address.getUID());
-		this.address = address;
+		this(RRI.of(address, symbol), name, description, granularity, tokenPermissions, iconUrl);
+	}
+
+	public MutableSupplyTokenDefinitionParticle(
+		RRI rri,
+		String name,
+		String description,
+		UInt256 granularity,
+		Map<TokenTransition, TokenPermission> tokenPermissions,
+		String iconUrl
+	) {
+		super(rri.getAddress().getUID());
+		this.rri = rri;
 		this.name = name;
-		this.symbol = symbol;
 		this.description = description;
 		this.granularity = granularity;
 		this.tokenPermissions = ImmutableMap.copyOf(tokenPermissions);
@@ -74,7 +80,7 @@ public class MutableSupplyTokenDefinitionParticle extends Particle implements Id
 
 	@Override
 	public RRI getRRI() {
-		return RRI.of(address, this.symbol);
+		return this.rri;
 	}
 
 	public Map<TokenTransition, TokenPermission> getTokenPermissions() {
@@ -83,7 +89,7 @@ public class MutableSupplyTokenDefinitionParticle extends Particle implements Id
 
 	@Override
 	public RadixAddress getAddress() {
-		return this.address;
+		return this.rri.getAddress();
 	}
 
 	public String getName() {
@@ -91,7 +97,7 @@ public class MutableSupplyTokenDefinitionParticle extends Particle implements Id
 	}
 
 	public String getSymbol() {
-		return symbol;
+		return this.rri.getName();
 	}
 
 	public String getDescription() {
@@ -123,5 +129,16 @@ public class MutableSupplyTokenDefinitionParticle extends Particle implements Id
 		} else {
 			throw new IllegalArgumentException("Permissions cannot be null.");
 		}
+	}
+
+	@Override
+	public String toString() {
+		String tokenPermissionsStr = (tokenPermissions == null)
+			? "null"
+			: tokenPermissions.entrySet().stream().map(e -> String.format("%s:%s", e.getKey().toString().toLowerCase(),
+				e.getValue().toString().toLowerCase())).collect(Collectors.joining(","));
+		return String.format("%s[%s (%s:%s), (%s:%s)]", getClass().getSimpleName(),
+			String.valueOf(this.rri), name, description,
+			String.valueOf(granularity), tokenPermissionsStr);
 	}
 }

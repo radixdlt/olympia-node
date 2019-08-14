@@ -17,17 +17,13 @@ import org.radix.utils.UInt256;
 @SerializerId2("radix.particles.fixed_supply_token_definition")
 public final class FixedSupplyTokenDefinitionParticle extends Particle implements Identifiable, Ownable {
 
-	@JsonProperty("address")
+	@JsonProperty("rri")
 	@DsonOutput(Output.ALL)
-	private RadixAddress address;
+	private RRI rri;
 
 	@JsonProperty("name")
 	@DsonOutput(Output.ALL)
 	private String	name;
-
-	@JsonProperty("symbol")
-	@DsonOutput(Output.ALL)
-	private String symbol;
 
 	@JsonProperty("description")
 	@DsonOutput(Output.ALL)
@@ -59,11 +55,21 @@ public final class FixedSupplyTokenDefinitionParticle extends Particle implement
 		UInt256 granularity,
 		String iconUrl
 	) {
-		super(address.getUID());
+		this(RRI.of(address,  symbol), name, description, supply, granularity, iconUrl);
+	}
 
-		this.address = address;
+	public FixedSupplyTokenDefinitionParticle(
+		RRI rri,
+		String name,
+		String description,
+		UInt256 supply,
+		UInt256 granularity,
+		String iconUrl
+	) {
+		super(rri.getAddress().getUID());
+
+		this.rri = rri;
 		this.name = name;
-		this.symbol = symbol;
 		this.description = description;
 		this.supply = Objects.requireNonNull(supply);
 		this.granularity = Objects.requireNonNull(granularity);
@@ -72,16 +78,16 @@ public final class FixedSupplyTokenDefinitionParticle extends Particle implement
 
 	@Override
 	public RRI getRRI() {
-		return RRI.of(this.address, this.symbol);
+		return this.rri;
 	}
 
 	@Override
 	public RadixAddress getAddress() {
-		return this.address;
+		return this.rri.getAddress();
 	}
 
 	public String getSymbol() {
-		return this.symbol;
+		return this.rri.getName();
 	}
 
 	public String getName() {
@@ -106,9 +112,8 @@ public final class FixedSupplyTokenDefinitionParticle extends Particle implement
 
 	@Override
 	public String toString() {
-		return String.format("%s[(%s:%s:%s:%s), (%s), %s]", getClass().getSimpleName(),
-			String.valueOf(name), String.valueOf(symbol),
-			String.valueOf(supply), String.valueOf(granularity),
-			String.valueOf(description), String.valueOf(address));
+		return String.format("%s[%s (%s:%s), (%s/%s)]", getClass().getSimpleName(),
+			String.valueOf(this.rri), name, description,
+			String.valueOf(supply), String.valueOf(granularity));
 	}
 }
