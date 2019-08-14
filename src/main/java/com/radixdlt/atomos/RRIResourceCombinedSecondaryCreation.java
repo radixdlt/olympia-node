@@ -2,6 +2,7 @@ package com.radixdlt.atomos;
 
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.constraintmachine.TransitionProcedure;
+import java.util.Optional;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 
@@ -30,20 +31,24 @@ public final class RRIResourceCombinedSecondaryCreation<T extends Particle, U ex
 		ProcedureResult prevResult
 	) {
 		if (prevResult == null) {
-			return new ProcedureResult(CMAction.ERROR, null);
+			return ProcedureResult.error();
 		}
 
-		if (!prevResult.getCmAction().equals(CMAction.POP_OUTPUT) || !prevResult.getOutput().getClass().equals(particleClass0)) {
-			return new ProcedureResult(CMAction.ERROR, null);
+		Optional<T> input = prevResult.getInputRemainder(Object.class)
+			.filter(o -> o.getClass().equals(particleClass0))
+			.map(particleClass0::cast);
+		if (!input.isPresent()) {
+			return ProcedureResult.error();
+		}
+
+		if (!combinedCheck.test(input.get(), outputParticle)) {
+			return ProcedureResult.error();
 		}
 
 		if (!rriMapper1.apply(outputParticle).equals(inputParticle.getRri())) {
-			return new ProcedureResult(CMAction.ERROR, null);
+			return ProcedureResult.error();
 		}
 
-		if (!combinedCheck.test((T) prevResult.getOutput(), outputParticle)) {
-			return new ProcedureResult(CMAction.ERROR, null);
-		}
-		return new ProcedureResult(CMAction.POP_INPUT_OUTPUT, null);
+		return ProcedureResult.popInputOutput();
 	}
 }

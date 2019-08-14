@@ -19,7 +19,7 @@ public class RRIResourceCombinedPrimaryCreationTest {
 		RRIParticle rriParticle = mock(RRIParticle.class);
 		when(rriParticle.getRri()).thenReturn(rri);
 		RRIResourceCombinedPrimaryCreation<Resource> primaryCreation = new RRIResourceCombinedPrimaryCreation<>(r -> rri);
-		ProcedureResult result = primaryCreation.execute(rriParticle, mock(Resource.class), new ProcedureResult(CMAction.POP_OUTPUT, rriParticle));
+		ProcedureResult result = primaryCreation.execute(rriParticle, mock(Resource.class), ProcedureResult.popOutput(rriParticle));
 		assertThat(result.getCmAction()).isEqualTo(CMAction.ERROR);
 	}
 }

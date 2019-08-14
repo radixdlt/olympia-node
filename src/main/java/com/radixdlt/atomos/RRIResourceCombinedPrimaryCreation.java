@@ -21,13 +21,13 @@ public final class RRIResourceCombinedPrimaryCreation<T extends Particle> implem
 		ProcedureResult prevResult
 	) {
 		if (!rriMapper0.apply(outputParticle).equals(inputParticle.getRri())) {
-			return new ProcedureResult(CMAction.ERROR, null);
+			return ProcedureResult.error();
 		}
 
-		if (prevResult != null && prevResult.getOutput() != null) {
-			return new ProcedureResult(CMAction.ERROR, null);
+		if (prevResult != null && prevResult.getRemainder() != null) {
+			return ProcedureResult.error();
 		}
 
-		return new ProcedureResult(CMAction.POP_OUTPUT, outputParticle);
+		return ProcedureResult.popOutput(outputParticle);
 	}
 }

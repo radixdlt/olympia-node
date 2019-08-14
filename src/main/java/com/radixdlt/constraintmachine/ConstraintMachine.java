@@ -127,13 +127,13 @@ public final class ConstraintMachine {
 					break;
 				case POP_INPUT_OUTPUT:
 					spunParticleRegister = null;
-					if (result.getOutput() != null) {
+					if (result.getRemainder() != null) {
 						throw new IllegalStateException("POP_INPUT_OUTPUT must output null");
 					}
 					break;
 				case ERROR:
-					return Stream.of(ProcedureError.of("Next particle " + nextParticle + " failed. Current register: "
-						+ spunParticleRegister + " " + lastResult));
+					return Stream.of(ProcedureError.of("Procedure failed: " + transitionProcedure
+						+ " Next particle " + nextParticle + " failed. Current register: " + spunParticleRegister + " " + lastResult));
 			}
 
 			final WitnessValidator<Particle, Particle> witnessValidator = this.witnessValidators.apply(inputParticle, outputParticle);

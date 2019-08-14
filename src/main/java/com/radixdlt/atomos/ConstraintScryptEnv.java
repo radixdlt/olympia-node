@@ -196,7 +196,7 @@ final class ConstraintScryptEnv implements SysCalls {
 				final RRI inputRRI = scryptParticleDefinitions.get(inputClass).getRriMapper().apply(in);
 				final RRI outputRRI = scryptParticleDefinitions.get(outputClass).getRriMapper().apply(out);
 				if (!inputRRI.equals(outputRRI)) {
-					return new ProcedureResult(CMAction.ERROR, null);
+					return ProcedureResult.error();
 				}
 
 				return procedure.execute((T) in, (U) out, lastRes);

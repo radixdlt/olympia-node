@@ -21,9 +21,9 @@ public final class RRIResourceCreation<T extends Particle> implements Transition
 		ProcedureResult prevResult
 	) {
 		if (!rriMapper.apply(outputParticle).equals(inputParticle.getRri())) {
-			return new ProcedureResult(CMAction.ERROR, null);
+			return ProcedureResult.error();
 		}
 
-		return new ProcedureResult(CMAction.POP_INPUT_OUTPUT, null);
+		return ProcedureResult.popInputOutput();
 	}
 }

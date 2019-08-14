@@ -13,6 +13,6 @@ public final class NonRRIResourceCreation<T extends Particle> implements Transit
 		T outputParticle,
 		ProcedureResult prevResult
 	) {
-		return new ProcedureResult(CMAction.POP_OUTPUT, null);
+		return ProcedureResult.popOutput(null);
 	}
 }

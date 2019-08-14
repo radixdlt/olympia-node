@@ -4,7 +4,6 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.atoms.ParticleGroup;
 import com.radixdlt.atoms.SpunParticle;
-import com.radixdlt.constraintmachine.TransitionProcedure.CMAction;
 import com.radixdlt.constraintmachine.TransitionProcedure.ProcedureResult;
 import java.util.Collections;
 import java.util.stream.Stream;
@@ -53,8 +52,8 @@ public class ConstraintMachineTest {
 	public void when_validating_a_2_input_1_output_particle_group_which_pops_1_input_first__validation_should_succeed() {
 		TransitionProcedure<Particle, Particle> procedure = mock(TransitionProcedure.class);
 		when(procedure.execute(any(), any(), any()))
-			.thenReturn(new ProcedureResult(CMAction.POP_INPUT, new Object()))
-			.thenReturn(new ProcedureResult(CMAction.POP_INPUT_OUTPUT, null));
+			.thenReturn(ProcedureResult.popInput(new Object()))
+			.thenReturn(ProcedureResult.popInputOutput());
 
 		ConstraintMachine machine = new ConstraintMachine.Builder()
 			.setParticleProcedures((p0, p1) -> procedure)

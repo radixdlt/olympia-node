@@ -54,7 +54,7 @@ public class FungibleTransitionTest {
 			null
 		);
 
-		assertThat(result.getOutput()).isEqualTo(UInt256.ONE);
+		assertThat(result.getRemainder()).isEqualTo(UInt256.ONE);
 		assertThat(result.getCmAction()).isEqualTo(CMAction.POP_OUTPUT);
 	}
 
@@ -72,7 +72,7 @@ public class FungibleTransitionTest {
 		);
 
 		assertThat(result.getCmAction()).isEqualTo(CMAction.POP_INPUT);
-		assertThat(result.getOutput()).isEqualTo(UInt256.ONE);
+		assertThat(result.getRemainder()).isEqualTo(UInt256.ONE);
 	}
 
 	@Test
@@ -89,7 +89,7 @@ public class FungibleTransitionTest {
 		);
 
 		assertThat(result.getCmAction()).isEqualTo(CMAction.POP_INPUT_OUTPUT);
-		assertThat(result.getOutput()).isNull();
+		assertThat(result.getRemainder()).isNull();
 	}
 
 	@Test
@@ -102,10 +102,10 @@ public class FungibleTransitionTest {
 		ProcedureResult result = procedure.execute(
 			new Fungible(UInt256.ONE),
 			new Fungible(UInt256.TWO),
-			new ProcedureResult(CMAction.POP_INPUT, UInt256.ONE)
+			ProcedureResult.popInput(UInt256.ONE)
 		);
 
 		assertThat(result.getCmAction()).isEqualTo(CMAction.POP_INPUT_OUTPUT);
-		assertThat(result.getOutput()).isNull();
+		assertThat(result.getRemainder()).isNull();
 	}
 }

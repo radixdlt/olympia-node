@@ -4,6 +4,7 @@ import com.radixdlt.atoms.Particle;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.utils.UInt256;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 
@@ -36,21 +37,25 @@ public final class FungibleTransition<T extends Particle, U extends Particle> im
 		ProcedureResult prevResult
 	) {
 		if (!transition.test(inputParticle, outputParticle)) {
-			return new ProcedureResult(CMAction.ERROR, null);
+			return ProcedureResult.error();
 		}
 
-		UInt256 inputAmount = prevResult != null && prevResult.getCmAction() == CMAction.POP_OUTPUT
-			? (UInt256) prevResult.getOutput() : inputAmountMapper.apply(inputParticle);
-		UInt256 outputAmount = prevResult != null && prevResult.getCmAction() == CMAction.POP_INPUT
-			? (UInt256) prevResult.getOutput() : outputAmountMapper.apply(outputParticle);
+		UInt256 inputAmount = Optional.ofNullable(prevResult)
+			.flatMap(p -> p.getInputRemainder(UInt256.class))
+			.orElseGet(() -> inputAmountMapper.apply(inputParticle));
+
+		UInt256 outputAmount = Optional.ofNullable(prevResult)
+			.flatMap(p -> p.getOutputRemainder(UInt256.class))
+			.orElseGet(() -> outputAmountMapper.apply(outputParticle));
+
 
 		int compare = inputAmount.compareTo(outputAmount);
 		if (compare == 0) {
-			return new ProcedureResult(CMAction.POP_INPUT_OUTPUT, null);
+			return ProcedureResult.popInputOutput();
 		} else if (compare > 0) {
-			return new ProcedureResult(CMAction.POP_OUTPUT, inputAmount.subtract(outputAmount));
+			return ProcedureResult.popOutput(inputAmount.subtract(outputAmount));
 		} else {
-			return new ProcedureResult(CMAction.POP_INPUT, outputAmount.subtract(inputAmount));
+			return ProcedureResult.popInput(outputAmount.subtract(inputAmount));
 		}
 	}
 }
