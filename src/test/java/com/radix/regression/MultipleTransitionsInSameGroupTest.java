@@ -8,8 +8,8 @@ import com.radixdlt.client.application.translate.FeeMapper;
 import com.radixdlt.client.application.translate.PowFeeMapper;
 import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.atommodel.rri.RRIParticle;
-import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle;
-import com.radixdlt.client.atommodel.tokens.TokenDefinitionParticle.TokenTransition;
+import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
+import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.client.atommodel.tokens.TokenPermission;
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
@@ -69,7 +69,7 @@ public class MultipleTransitionsInSameGroupTest {
 	@Test
 	public void when_submitting_an_atom_with_one_down_of_same_consumable_within_a_group__then_atom_is_accepted() {
 		RadixAddress myAddress = this.universe.getAddressFrom(this.identity.getPublicKey());
-		TokenDefinitionParticle tokenDefinition = createTokenDefinition(myAddress);
+		MutableSupplyTokenDefinitionParticle tokenDefinition = createTokenDefinition(myAddress);
 		UnallocatedTokensParticle unallocatedTokens = createUnallocatedTokens(tokenDefinition);
 		TransferrableTokensParticle mintedTokens = createTransferrableTokens(myAddress, tokenDefinition, unallocatedTokens.getAmount());
 		ParticleGroup definitionGroup = ParticleGroup.of(
@@ -102,7 +102,7 @@ public class MultipleTransitionsInSameGroupTest {
 	@Test
 	public void when_submitting_an_atom_with_two_downs_of_same_consumable_within_a_group__then_atom_is_rejected() {
 		RadixAddress myAddress = this.universe.getAddressFrom(this.identity.getPublicKey());
-		TokenDefinitionParticle tokenDefinition = createTokenDefinition(myAddress);
+		MutableSupplyTokenDefinitionParticle tokenDefinition = createTokenDefinition(myAddress);
 		UnallocatedTokensParticle unallocatedTokens = createUnallocatedTokens(tokenDefinition);
 		TransferrableTokensParticle mintedTokens = createTransferrableTokens(myAddress, tokenDefinition, unallocatedTokens.getAmount());
 		ParticleGroup definitionGroup = ParticleGroup.of(
@@ -136,7 +136,7 @@ public class MultipleTransitionsInSameGroupTest {
 	@Test
 	public void when_submitting_an_atom_with_three_downs_of_same_consumable_within_a_group__then_atom_is_rejected() {
 		RadixAddress myAddress = this.universe.getAddressFrom(this.identity.getPublicKey());
-		TokenDefinitionParticle tokenDefinition = createTokenDefinition(myAddress);
+		MutableSupplyTokenDefinitionParticle tokenDefinition = createTokenDefinition(myAddress);
 		UnallocatedTokensParticle unallocatedTokens = createUnallocatedTokens(tokenDefinition);
 		TransferrableTokensParticle mintedTokens = createTransferrableTokens(myAddress, tokenDefinition, unallocatedTokens.getAmount());
 		ParticleGroup definitionGroup = ParticleGroup.of(
@@ -168,7 +168,7 @@ public class MultipleTransitionsInSameGroupTest {
 		result.dispose();
 	}
 
-	private TransferrableTokensParticle createTransferrableTokens(RadixAddress myAddress, TokenDefinitionParticle tokenDefinition, UInt256 amount) {
+	private TransferrableTokensParticle createTransferrableTokens(RadixAddress myAddress, MutableSupplyTokenDefinitionParticle tokenDefinition, UInt256 amount) {
 		return new TransferrableTokensParticle(
 			amount,
 			UInt256.ONE,
@@ -182,7 +182,7 @@ public class MultipleTransitionsInSameGroupTest {
 
 	public void when_submitting_an_atom_with_two_ups_of_same_consumable_within_a_group__then_atom_is_rejected() {
 		RadixAddress myAddress = this.universe.getAddressFrom(this.identity.getPublicKey());
-		TokenDefinitionParticle tokenDefinition = createTokenDefinition(myAddress);
+		MutableSupplyTokenDefinitionParticle tokenDefinition = createTokenDefinition(myAddress);
 		UnallocatedTokensParticle unallocatedTokens = createUnallocatedTokens(tokenDefinition);
 		TransferrableTokensParticle mintedTokens = createTransferrableTokens(myAddress, tokenDefinition, unallocatedTokens.getAmount());
 		ParticleGroup definitionGroup = ParticleGroup.of(
@@ -212,7 +212,7 @@ public class MultipleTransitionsInSameGroupTest {
 		result.dispose();
 	}
 
-	private UnallocatedTokensParticle createUnallocatedTokens(TokenDefinitionParticle tokenDefinition) {
+	private UnallocatedTokensParticle createUnallocatedTokens(MutableSupplyTokenDefinitionParticle tokenDefinition) {
 		return new UnallocatedTokensParticle(
 			UInt256.MAX_VALUE,
 			UInt256.ONE,
@@ -222,8 +222,8 @@ public class MultipleTransitionsInSameGroupTest {
 		);
 	}
 
-	private TokenDefinitionParticle createTokenDefinition(RadixAddress myAddress) {
-		return new TokenDefinitionParticle(
+	private MutableSupplyTokenDefinitionParticle createTokenDefinition(RadixAddress myAddress) {
+		return new MutableSupplyTokenDefinitionParticle(
 			myAddress,
 			"Cookie Token",
 			"FLO",
