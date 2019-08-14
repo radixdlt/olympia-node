@@ -5,7 +5,7 @@ import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.utils.UInt256;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.BiPredicate;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
@@ -14,12 +14,12 @@ import java.util.function.Function;
 public final class FungibleTransition<T extends Particle, U extends Particle> implements TransitionProcedure<T, U> {
 	private final Function<T, UInt256> inputAmountMapper;
 	private final Function<U, UInt256> outputAmountMapper;
-	private final BiPredicate<T, U> transition;
+	private final BiFunction<T, U, Optional<String>> transition;
 
 	public FungibleTransition(
 		Function<T, UInt256> inputAmountMapper,
 		Function<U, UInt256> outputAmountMapper,
-		BiPredicate<T, U> transition
+		BiFunction<T, U, Optional<String>> transition
 	) {
 		Objects.requireNonNull(inputAmountMapper);
 		Objects.requireNonNull(outputAmountMapper);
@@ -36,8 +36,9 @@ public final class FungibleTransition<T extends Particle, U extends Particle> im
 		U outputParticle,
 		ProcedureResult prevResult
 	) {
-		if (!transition.test(inputParticle, outputParticle)) {
-			return ProcedureResult.error();
+		final Optional<String> transitionErrorMessage = transition.apply(inputParticle, outputParticle);
+		if (transitionErrorMessage.isPresent()) {
+			return ProcedureResult.error(transitionErrorMessage.get());
 		}
 
 		UInt256 inputAmount = inputAmountMapper.apply(inputParticle).subtract(

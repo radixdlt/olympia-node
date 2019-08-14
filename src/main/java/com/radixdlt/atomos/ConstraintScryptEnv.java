@@ -9,8 +9,9 @@ import com.radixdlt.constraintmachine.WitnessValidator;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
-import java.util.function.BiPredicate;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
@@ -105,12 +106,12 @@ final class ConstraintScryptEnv implements SysCalls {
 			throw new IllegalStateException(particleClass + " must be registered with an RRI mapper.");
 		}
 
-		final TransitionProcedure<RRIParticle, T> procedure = new RRIResourceCreation<>(particleDefinition.getRriMapper()::apply);
 		createTransitionInternal(
 			RRIParticle.class,
 			particleClass,
-			procedure,
+			(in, out, prev) -> ProcedureResult.popInputOutput(),
 			(res, in, out, meta) -> res == CMAction.POP_INPUT_OUTPUT && meta.isSignedBy(in.getRri().getAddress())
+				? Optional.empty() : Optional.of("Not signed by " + in.getRri().getAddress())
 		);
 	}
 
@@ -118,7 +119,7 @@ final class ConstraintScryptEnv implements SysCalls {
 	public <T extends Particle, U extends Particle> void createTransitionFromRRICombined(
 		Class<T> particleClass0,
 		Class<U> particleClass1,
-		BiPredicate<T, U> combinedCheck
+		BiFunction<T, U, Optional<String>> combinedCheck
 	) {
 		final ParticleDefinition<Particle> particleDefinition0 = scryptParticleDefinitions.get(particleClass0);
 		if (particleDefinition0 == null) {
@@ -135,24 +136,39 @@ final class ConstraintScryptEnv implements SysCalls {
 			throw new IllegalStateException(particleClass1 + " must be registered with an RRI mapper.");
 		}
 
-		final TransitionProcedure<RRIParticle, T> procedure0 = new RRIResourceCombinedPrimaryCreation<>(particleDefinition0.getRriMapper()::apply);
+		final TransitionProcedure<RRIParticle, T> procedure0 = new RRIResourceCombinedPrimaryCreation<>();
 		createTransitionInternal(
 			RRIParticle.class,
 			particleClass0,
 			procedure0,
-			(res, in, out, meta) -> res == CMAction.POP_OUTPUT
+			(res, in, out, meta) -> {
+				if (res != CMAction.POP_OUTPUT) {
+					throw new IllegalStateException("Only expecting POP_OUTPUT but was " + res);
+				}
+
+				return Optional.empty();
+			}
 		);
 
 		final TransitionProcedure<RRIParticle, U> procedure1 = new RRIResourceCombinedSecondaryCreation<>(
 			particleClass0,
-			particleDefinition1.getRriMapper()::apply,
 			combinedCheck
 		);
 		createTransitionInternal(
 			RRIParticle.class,
 			particleClass1,
 			procedure1,
-			(res, in, out, meta) -> res == CMAction.POP_INPUT_OUTPUT && meta.isSignedBy(in.getRri().getAddress())
+			(res, in, out, meta) -> {
+				if (res != CMAction.POP_INPUT_OUTPUT) {
+					throw new IllegalStateException("Only expecting POP_INPUT_OUTPUT but was " + res);
+				}
+
+				if (!meta.isSignedBy(in.getRri().getAddress())) {
+					return Optional.of("Not signed by " + in.getRri().getAddress());
+				}
+
+				return Optional.empty();
+			}
 		);
 	}
 
@@ -196,7 +212,7 @@ final class ConstraintScryptEnv implements SysCalls {
 				final RRI inputRRI = scryptParticleDefinitions.get(inputClass).getRriMapper().apply(in);
 				final RRI outputRRI = scryptParticleDefinitions.get(outputClass).getRriMapper().apply(out);
 				if (!inputRRI.equals(outputRRI)) {
-					return ProcedureResult.error();
+					return ProcedureResult.error("Input/Output RRIs not equal");
 				}
 
 				return procedure.execute((T) in, (U) out, lastRes);

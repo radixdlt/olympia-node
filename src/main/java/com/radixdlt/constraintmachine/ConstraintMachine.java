@@ -3,6 +3,7 @@ package com.radixdlt.constraintmachine;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Streams;
+import com.radixdlt.atoms.DataPointer;
 import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.atoms.ParticleGroup;
 import com.radixdlt.atoms.Spin;
@@ -11,6 +12,7 @@ import com.radixdlt.constraintmachine.TransitionProcedure.ProcedureResult;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.SpinStateTransitionValidator;
 import com.radixdlt.store.SpinStateTransitionValidator.TransitionCheckResult;
+import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.UnaryOperator;
 import com.radixdlt.atoms.Particle;
@@ -85,18 +87,24 @@ public final class ConstraintMachine {
 		this.witnessValidators = witnessValidators;
 	}
 
-	Stream<ProcedureError> validate(ParticleGroup group, AtomMetadata metadata) {
+	Optional<CMError> validate(ParticleGroup group, long groupIndex, AtomMetadata metadata) {
 		ProcedureResult lastResult = null;
 		SpunParticle spunParticleRegister = null;
 
 		for (int i = 0; i < group.getParticleCount(); i++) {
+			final DataPointer dp = DataPointer.ofParticle((int) groupIndex, i);
 			final SpunParticle nextSpun = group.getSpunParticle(i);
 			final Particle nextParticle = nextSpun.getParticle();
 			final Particle curParticle = spunParticleRegister == null ? null : spunParticleRegister.getParticle();
 
 			if (spunParticleRegister != null && spunParticleRegister.getSpin() == nextSpun.getSpin()) {
-				return Stream.of(ProcedureError.of("Spin Clash: Next particle: " + nextSpun
-					+ " Current register: " + spunParticleRegister + " " + lastResult));
+				return Optional.of(
+					new CMError(
+						dp,
+						CMErrorCode.PARTICLE_REGISTER_SPIN_CLASH,
+						"Current state: " + spunParticleRegister + " " + lastResult
+					)
+				);
 			}
 
 			final Particle inputParticle = nextSpun.getSpin() == Spin.DOWN ? nextParticle : curParticle;
@@ -110,7 +118,13 @@ public final class ConstraintMachine {
 					continue;
 				}
 
-				return Stream.of(ProcedureError.of("No procedure for Input: " + inputParticle + " Output: " + outputParticle));
+				return Optional.of(
+					new CMError(
+						dp,
+						CMErrorCode.MISSING_TRANSITION_PROCEDURE,
+						"Current state: " + spunParticleRegister + " " + lastResult
+					)
+				);
 			}
 
 			final ProcedureResult result = transitionProcedure.execute(inputParticle, outputParticle, lastResult);
@@ -132,27 +146,45 @@ public final class ConstraintMachine {
 					}
 					break;
 				case ERROR:
-					return Stream.of(ProcedureError.of("Procedure failed: " + transitionProcedure
-						+ " Next particle " + nextParticle + " failed. Current register: " + spunParticleRegister + " " + lastResult));
+					return Optional.of(
+						new CMError(
+							dp,
+							CMErrorCode.TRANSITION_ERROR,
+							result.getErrorMessage()
+								+ "Current state: " + spunParticleRegister + " " + lastResult
+						)
+					);
 			}
 
 			final WitnessValidator<Particle, Particle> witnessValidator = this.witnessValidators.apply(inputParticle, outputParticle);
 			if (witnessValidator == null) {
 				throw new IllegalStateException("No witness validator for: " + inputParticle + " -> " + outputParticle);
 			}
-			final boolean witnessResult = witnessValidator.validate(result.getCmAction(), inputParticle, outputParticle, metadata);
-			if (!witnessResult) {
-				return Stream.of(ProcedureError.of("Witness failed"));
+			final Optional<String> witnessErrorMessage = witnessValidator.validate(result.getCmAction(), inputParticle, outputParticle, metadata);
+			if (witnessErrorMessage.isPresent()) {
+				return Optional.of(
+					new CMError(
+						dp,
+						CMErrorCode.WITNESS_ERROR,
+						witnessErrorMessage.get()
+					)
+				);
 			}
 
 			lastResult = result;
 		}
 
 		if (spunParticleRegister != null) {
-			return Stream.of(ProcedureError.of("Particle register not empty: " + spunParticleRegister));
+			return Optional.of(
+				new CMError(
+					DataPointer.ofParticleGroup((int) groupIndex),
+					CMErrorCode.UNEQUAL_INPUT_OUTPUT,
+					"Current state: " + spunParticleRegister + " " + lastResult
+				)
+			);
 		}
 
-		return Stream.empty();
+		return Optional.empty();
 	}
 
 	/**
@@ -194,8 +226,7 @@ public final class ConstraintMachine {
 		final ImmutableAtom atom = cmAtom.getAtom();
 		final AtomMetadata metadata = new AtomMetadataFromAtom(atom);
 		final Stream<CMError> applicationErrs = Streams.mapWithIndex(atom.particleGroups(), (group, i) ->
-			this.validate(group, metadata).map(issue -> CMErrors.fromProcedureError(issue, (int) i))
-		).flatMap(i -> i);
+			this.validate(group, i, metadata)).flatMap(i -> i.map(Stream::of).orElse(Stream.empty()));
 
 		final Stream<CMError> errorStream = Streams.concat(
 			unknownParticleErrors,

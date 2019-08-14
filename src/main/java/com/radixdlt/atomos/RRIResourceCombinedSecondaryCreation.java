@@ -3,24 +3,20 @@ package com.radixdlt.atomos;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import java.util.Optional;
-import java.util.function.BiPredicate;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 
 /**
  * Transition definition from RRI to the second of two combined particles
  */
 public final class RRIResourceCombinedSecondaryCreation<T extends Particle, U extends Particle> implements TransitionProcedure<RRIParticle, U> {
 	private final Class<T> particleClass0;
-	private final Function<U, RRI> rriMapper1;
-	private final BiPredicate<T, U> combinedCheck;
+	private final BiFunction<T, U, Optional<String>> combinedCheck;
 
 	RRIResourceCombinedSecondaryCreation(
 		Class<T> particleClass0,
-		Function<U, RRI> rriMapper1,
-		BiPredicate<T, U> combinedCheck
+		BiFunction<T, U, Optional<String>> combinedCheck
 	) {
 		this.particleClass0 = particleClass0;
-		this.rriMapper1 = rriMapper1;
 		this.combinedCheck = combinedCheck;
 	}
 
@@ -31,22 +27,19 @@ public final class RRIResourceCombinedSecondaryCreation<T extends Particle, U ex
 		ProcedureResult prevResult
 	) {
 		if (prevResult == null) {
-			return ProcedureResult.error();
+			return ProcedureResult.error("Expecting a previous result.");
 		}
 
 		Optional<T> input = prevResult.getInputUsed(Object.class)
 			.filter(o -> o.getClass().equals(particleClass0))
 			.map(particleClass0::cast);
 		if (!input.isPresent()) {
-			return ProcedureResult.error();
+			return ProcedureResult.error("Expecting a previous input used class of " + particleClass0);
 		}
 
-		if (!combinedCheck.test(input.get(), outputParticle)) {
-			return ProcedureResult.error();
-		}
-
-		if (!rriMapper1.apply(outputParticle).equals(inputParticle.getRri())) {
-			return ProcedureResult.error();
+		Optional<String> combinedCheckError = combinedCheck.apply(input.get(), outputParticle);
+		if (combinedCheckError.isPresent()) {
+			return ProcedureResult.error(combinedCheckError.get());
 		}
 
 		return ProcedureResult.popInputOutput();

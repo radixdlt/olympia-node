@@ -6,7 +6,7 @@ import com.radixdlt.atoms.ParticleGroup;
 import com.radixdlt.atoms.SpunParticle;
 import com.radixdlt.constraintmachine.TransitionProcedure.ProcedureResult;
 import java.util.Collections;
-import java.util.stream.Stream;
+import java.util.Optional;
 import org.junit.Test;
 import com.radixdlt.atoms.DataPointer;
 import com.radixdlt.atoms.Particle;
@@ -57,15 +57,16 @@ public class ConstraintMachineTest {
 
 		ConstraintMachine machine = new ConstraintMachine.Builder()
 			.setParticleProcedures((p0, p1) -> procedure)
-			.setWitnessValidators((p0, p1) -> (res, v0, v1, meta) -> true)
+			.setWitnessValidators((p0, p1) -> (res, v0, v1, meta) -> Optional.empty())
 			.build();
 
-		Stream<ProcedureError> errors = machine.validate(
+		Optional<CMError> errors = machine.validate(
 			ParticleGroup.of(
 				SpunParticle.down(mock(Particle.class)),
 				SpunParticle.down(mock(Particle.class)),
 				SpunParticle.up(mock(Particle.class))
 			),
+			0,
 			mock(AtomMetadata.class)
 		);
 
