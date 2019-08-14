@@ -46,7 +46,7 @@ final class ConstraintScryptEnv implements SysCalls {
 		Function<T, RadixAddress> mapper,
 		Function<T, Result> staticCheck
 	) {
-		registerParticleMultipleAddress(
+		registerParticleMultipleAddresses(
 			particleClass,
 			(T particle) -> Collections.singleton(mapper.apply(particle)),
 			staticCheck
@@ -60,7 +60,7 @@ final class ConstraintScryptEnv implements SysCalls {
 		Function<T, Result> staticCheck,
 		Function<T, RRI> rriMapper
 	) {
-		registerParticleMultipleAddress(
+		registerParticleMultipleAddresses(
 			particleClass,
 			(T particle) -> Collections.singleton(mapper.apply(particle)),
 			staticCheck,
@@ -69,16 +69,16 @@ final class ConstraintScryptEnv implements SysCalls {
 	}
 
 	@Override
-	public <T extends Particle> void registerParticleMultipleAddress(
+	public <T extends Particle> void registerParticleMultipleAddresses(
 		Class<T> particleClass,
 		Function<T, Set<RadixAddress>> mapper,
 		Function<T, Result> staticCheck
 	) {
-		registerParticleMultipleAddress(particleClass, mapper, staticCheck, null);
+		registerParticleMultipleAddresses(particleClass, mapper, staticCheck, null);
 	}
 
 	@Override
-	public <T extends Particle> void registerParticleMultipleAddress(
+	public <T extends Particle> void registerParticleMultipleAddresses(
 		Class<T> particleClass,
 		Function<T, Set<RadixAddress>> mapper,
 		Function<T, Result> staticCheck,
@@ -143,7 +143,7 @@ final class ConstraintScryptEnv implements SysCalls {
 			(res, in, out, meta) -> res == CMAction.POP_OUTPUT
 		);
 
-		final TransitionProcedure<RRIParticle, U> procedure1 = new RRIResourceCombinedDependentCreation<>(
+		final TransitionProcedure<RRIParticle, U> procedure1 = new RRIResourceCombinedSecondaryCreation<>(
 			particleClass0,
 			particleDefinition1.getRriMapper()::apply,
 			combinedCheck

@@ -105,18 +105,18 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 		os.registerParticle(
 			TransferrableTokensParticle.class,
 			TransferrableTokensParticle::getAddress,
-			t -> {
-				if (t.getAmount() == null) {
+			tokenParticle -> {
+				if (tokenParticle.getAmount() == null) {
 					return Result.error("amount must not be null");
 				}
-				if (t.getAmount().isZero()) {
+				if (tokenParticle.getAmount().isZero()) {
 					return Result.error("amount must not be zero");
 				}
-				if (t.getGranularity() == null) {
+				if (tokenParticle.getGranularity() == null) {
 					return Result.error("granularity must not be null");
 				}
-				if (t.getGranularity().isZero() || !t.getAmount().remainder(t.getGranularity()).isZero()) {
-					return Result.error("amount " + t.getAmount() + " does not fit granularity " + t.getGranularity());
+				if (tokenParticle.getGranularity().isZero() || !tokenParticle.getAmount().remainder(tokenParticle.getGranularity()).isZero()) {
+					return Result.error("amount " + tokenParticle.getAmount() + " does not fit granularity " + tokenParticle.getGranularity());
 				}
 
 				return Result.success();
@@ -175,7 +175,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 				case POP_INPUT_OUTPUT:
 					return check.apply(in, meta);
 				default:
-					throw new IllegalStateException();
+					throw new IllegalStateException("Unsupported CMAction: " + res);
 			}
 		};
 	}

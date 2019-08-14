@@ -3,13 +3,14 @@ package com.radixdlt.atommodel.procedures;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.utils.UInt256;
+import java.util.Objects;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 
 /**
  * Low-level implementation of fungible transition constraints.
  */
-public class FungibleTransition<T extends Particle, U extends Particle> implements TransitionProcedure<T, U> {
+public final class FungibleTransition<T extends Particle, U extends Particle> implements TransitionProcedure<T, U> {
 	private final Function<T, UInt256> inputAmountMapper;
 	private final Function<U, UInt256> outputAmountMapper;
 	private final BiPredicate<T, U> transition;
@@ -19,6 +20,10 @@ public class FungibleTransition<T extends Particle, U extends Particle> implemen
 		Function<U, UInt256> outputAmountMapper,
 		BiPredicate<T, U> transition
 	) {
+		Objects.requireNonNull(inputAmountMapper);
+		Objects.requireNonNull(outputAmountMapper);
+		Objects.requireNonNull(transition);
+
 		this.inputAmountMapper = inputAmountMapper;
 		this.outputAmountMapper = outputAmountMapper;
 		this.transition = transition;

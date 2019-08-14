@@ -2,7 +2,12 @@ package com.radixdlt.constraintmachine;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.atoms.ImmutableAtom;
+import com.radixdlt.atoms.ParticleGroup;
+import com.radixdlt.atoms.SpunParticle;
+import com.radixdlt.constraintmachine.TransitionProcedure.CMAction;
+import com.radixdlt.constraintmachine.TransitionProcedure.ProcedureResult;
 import java.util.Collections;
+import java.util.stream.Stream;
 import org.junit.Test;
 import com.radixdlt.atoms.DataPointer;
 import com.radixdlt.atoms.Particle;
@@ -11,6 +16,7 @@ import com.radixdlt.store.CMStores;
 import com.radixdlt.common.EUID;
 import com.radixdlt.serialization.SerializerId2;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
@@ -43,4 +49,27 @@ public class ConstraintMachineTest {
 			.contains(new CMError(DataPointer.ofParticle(0, 0), CMErrorCode.INTERNAL_SPIN_CONFLICT));
 	}
 
+	@Test
+	public void when_validating_a_2_input_1_output_particle_group_which_pops_1_input_first__validation_should_succeed() {
+		TransitionProcedure<Particle, Particle> procedure = mock(TransitionProcedure.class);
+		when(procedure.execute(any(), any(), any()))
+			.thenReturn(new ProcedureResult(CMAction.POP_INPUT, new Object()))
+			.thenReturn(new ProcedureResult(CMAction.POP_INPUT_OUTPUT, null));
+
+		ConstraintMachine machine = new ConstraintMachine.Builder()
+			.setParticleProcedures((p0, p1) -> procedure)
+			.setWitnessValidators((p0, p1) -> (res, v0, v1, meta) -> true)
+			.build();
+
+		Stream<ProcedureError> errors = machine.validate(
+			ParticleGroup.of(
+				SpunParticle.down(mock(Particle.class)),
+				SpunParticle.down(mock(Particle.class)),
+				SpunParticle.up(mock(Particle.class))
+			),
+			mock(AtomMetadata.class)
+		);
+
+		assertThat(errors).isEmpty();
+	}
 }

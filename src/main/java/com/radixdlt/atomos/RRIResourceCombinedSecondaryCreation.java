@@ -8,12 +8,12 @@ import java.util.function.Function;
 /**
  * Transition definition from RRI to the second of two combined particles
  */
-public final class RRIResourceCombinedDependentCreation<T extends Particle, U extends Particle> implements TransitionProcedure<RRIParticle, U> {
+public final class RRIResourceCombinedSecondaryCreation<T extends Particle, U extends Particle> implements TransitionProcedure<RRIParticle, U> {
 	private final Class<T> particleClass0;
 	private final Function<U, RRI> rriMapper1;
 	private final BiPredicate<T, U> combinedCheck;
 
-	RRIResourceCombinedDependentCreation(
+	RRIResourceCombinedSecondaryCreation(
 		Class<T> particleClass0,
 		Function<U, RRI> rriMapper1,
 		BiPredicate<T, U> combinedCheck

@@ -29,7 +29,7 @@ public class TestAtomOS implements SysCalls {
 	private final List<Pair<Class<? extends Particle>, BiFunction<Particle, AtomMetadata, Result>>> particleClassConstraints = new ArrayList<>();
 
 	@Override
-	public <T extends Particle> void registerParticleMultipleAddress(
+	public <T extends Particle> void registerParticleMultipleAddresses(
 		Class<T> particleClass,
 		Function<T, Set<RadixAddress>> mapper,
 		Function<T, Result> staticCheck,
@@ -39,7 +39,7 @@ public class TestAtomOS implements SysCalls {
 	}
 
 	@Override
-	public <T extends Particle> void registerParticleMultipleAddress(
+	public <T extends Particle> void registerParticleMultipleAddresses(
 		Class<T> particleClass,
 		Function<T, Set<RadixAddress>> mapper,
 		Function<T, Result> staticCheck

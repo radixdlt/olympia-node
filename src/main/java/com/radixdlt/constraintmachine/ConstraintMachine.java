@@ -85,7 +85,7 @@ public final class ConstraintMachine {
 		this.witnessValidators = witnessValidators;
 	}
 
-	private Stream<ProcedureError> validate(ParticleGroup group, AtomMetadata metadata) {
+	Stream<ProcedureError> validate(ParticleGroup group, AtomMetadata metadata) {
 		ProcedureResult lastResult = null;
 		SpunParticle spunParticleRegister = null;
 
@@ -119,6 +119,7 @@ public final class ConstraintMachine {
 					if (nextSpun.getSpin() == Spin.UP) {
 						spunParticleRegister = nextSpun;
 					}
+					break;
 				case POP_OUTPUT:
 					if (nextSpun.getSpin() == Spin.DOWN) {
 						spunParticleRegister = nextSpun;
@@ -136,6 +137,9 @@ public final class ConstraintMachine {
 			}
 
 			final WitnessValidator<Particle, Particle> witnessValidator = this.witnessValidators.apply(inputParticle, outputParticle);
+			if (witnessValidator == null) {
+				throw new IllegalStateException("No witness validator for: " + inputParticle + " -> " + outputParticle);
+			}
 			final boolean witnessResult = witnessValidator.validate(result.getCmAction(), inputParticle, outputParticle, metadata);
 			if (!witnessResult) {
 				return Stream.of(ProcedureError.of("Witness failed"));

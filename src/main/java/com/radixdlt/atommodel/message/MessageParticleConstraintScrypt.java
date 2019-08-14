@@ -8,7 +8,7 @@ import com.radixdlt.atomos.Result;
 public class MessageParticleConstraintScrypt implements ConstraintScrypt {
 	@Override
 	public void main(SysCalls os) {
-		os.registerParticleMultipleAddress(
+		os.registerParticleMultipleAddresses(
 			MessageParticle.class,
 			MessageParticle::getAddresses,
 			m -> {

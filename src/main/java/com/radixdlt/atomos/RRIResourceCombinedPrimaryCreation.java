@@ -24,6 +24,10 @@ public final class RRIResourceCombinedPrimaryCreation<T extends Particle> implem
 			return new ProcedureResult(CMAction.ERROR, null);
 		}
 
+		if (prevResult != null && prevResult.getOutput() != null) {
+			return new ProcedureResult(CMAction.ERROR, null);
+		}
+
 		return new ProcedureResult(CMAction.POP_OUTPUT, outputParticle);
 	}
 }

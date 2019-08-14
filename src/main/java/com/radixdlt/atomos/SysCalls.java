@@ -42,7 +42,7 @@ public interface SysCalls {
 	 * @param particleClass The particle class
 	 * @param mapper Mapping to the destinations a particle will be stored in
 	 */
-	<T extends Particle> void registerParticleMultipleAddress(
+	<T extends Particle> void registerParticleMultipleAddresses(
 		Class<T> particleClass,
 		Function<T, Set<RadixAddress>> mapper,
 		Function<T, Result> staticCheck
@@ -54,7 +54,7 @@ public interface SysCalls {
 	 * @param particleClass The particle class
 	 * @param mapper Mapping to the destinations a particle will be stored in
 	 */
-	<T extends Particle> void registerParticleMultipleAddress(
+	<T extends Particle> void registerParticleMultipleAddresses(
 		Class<T> particleClass,
 		Function<T, Set<RadixAddress>> mapper,
 		Function<T, Result> staticCheck,
