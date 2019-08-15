@@ -115,7 +115,7 @@ public final class MockApplication {
 			ImmutableMap<LedgerIndex, Atom> conflictingAtoms = e.getConflictingAtoms();
 			ImmutableSet<AID> allConflictingAids = e.getAllAids();
 			// resolve conflict by calling ledger
-			logger.info(String.format("Detected conflict between atom '%s' and '%s', calling ledger to resolve", atom.getAID(), conflictingAtoms.values()));
+			logger.info(String.format("Detected conflict between current atom '%s' and '%s', calling ledger to resolve", atom.getAID(), conflictingAtoms.values()));
 			ledger.resolve(e.getAtom(), conflictingAtoms.values())
 				.thenAccept(winner -> {
 					logger.info(String.format("Ledger resolved conflict between '%s' to '%s'", allConflictingAids, winner.getAID()));

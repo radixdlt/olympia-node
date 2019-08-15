@@ -8,6 +8,7 @@ import com.radixdlt.tempo.SampleSelector;
 import com.radixdlt.tempo.TempoAction;
 import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.TempoEpic;
+import com.radixdlt.tempo.TempoException;
 import com.radixdlt.tempo.TempoState;
 import com.radixdlt.tempo.TempoStateBundle;
 import com.radixdlt.tempo.actions.OnConflictResolvedAction;
@@ -51,7 +52,6 @@ public class NetworkResolverEpic implements TempoEpic {
 		if (action instanceof ResolveConflictAction) {
 			ResolveConflictAction conflict = (ResolveConflictAction) action;
 			ImmutableSet<AID> allAids = conflict.allAids().collect(ImmutableSet.toImmutableSet());
-			EUID conflictId = getConflictId(allAids);
 			LivePeersState livePeers = bundle.get(LivePeersState.class);
 			// when a conflict is raised, select some peers to sample
 			ImmutableSet<Peer> samplePeers = sampleSelector.selectSamples(livePeers.getNids(), conflict.getAtom()).stream()
@@ -59,32 +59,32 @@ public class NetworkResolverEpic implements TempoEpic {
 				.filter(Optional::isPresent)
 				.map(Optional::get)
 				.collect(ImmutableSet.toImmutableSet());
+			logger.info("Resolving conflict between '" + allAids + ", initiating sampling");
 			// sample the selected peers
-			return Stream.of(new RequestSamplingAction(samplePeers, allAids, conflictId));
+			return Stream.of(new RequestSamplingAction(samplePeers, allAids, conflict.getTag()));
 		} else if (action instanceof ReceiveSamplingResultAction) {
-			Collection<TemporalProof> samples = ((ReceiveSamplingResultAction) action).getSamples();
-			EUID tag = ((ReceiveSamplingResultAction) action).getTag();
+			ReceiveSamplingResultAction result = (ReceiveSamplingResultAction) action;
+			Collection<TemporalProof> allSamples = result.getAllSamples();
+			EUID tag = result.getTag();
 			ConflictsState conflictsState = bundle.get(ConflictsState.class);
-
-			// decide on winner using all collected samples
-			TemporalProof winningTP = decider.decide(samples);
-			TempoAtom winningAtom = conflictsState.getAtom(tag, winningTP.getAID());
 			Set<AID> allConflictingAids = conflictsState.getAids(tag);
 
-			// TODO ugly hack to report back winner to future
-			CompletableFuture<TempoAtom> future = conflictsState.getWinnerFutures().get(tag);
-			future.complete(winningAtom);
+			TempoAtom winningAtom;
+			if (allSamples.isEmpty()) {
+				logger.warn("No samples available for any of '" + allConflictingAids +  "', sticking to current preference");
+				winningAtom = conflictsState.getCurrentAtom(tag);
+			} else {
+				// decide on winner using samples
+				TemporalProof winningTP = decider.decide(allSamples);
+				winningAtom = conflictsState.getAtom(tag, winningTP.getAID());
+			}
 
-			return Stream.of(new OnConflictResolvedAction(winningAtom, allConflictingAids));
+			// TODO remove ugly hack to report back winner to future
+			conflictsState.complete(tag, winningAtom);
+			return Stream.of(new OnConflictResolvedAction(winningAtom, allConflictingAids, tag));
 		}
 
 		return Stream.empty();
-	}
-
-	private static EUID getConflictId(Set<AID> allConflictingAids) {
-		return new EUID(allConflictingAids.stream()
-			.map(AID::getLow)
-			.reduce(0L, Long::sum));
 	}
 
 }

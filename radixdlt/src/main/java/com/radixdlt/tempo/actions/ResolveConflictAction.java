@@ -2,6 +2,7 @@ package com.radixdlt.tempo.actions;
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.common.AID;
+import com.radixdlt.common.EUID;
 import com.radixdlt.tempo.TempoAction;
 import com.radixdlt.tempo.TempoAtom;
 
@@ -39,5 +40,11 @@ public class ResolveConflictAction implements TempoAction {
 
 	public CompletableFuture<TempoAtom> getWinnerFuture() {
 		return winnerFuture;
+	}
+
+	public  EUID getTag() {
+		return new EUID(allAids()
+			.map(AID::getLow)
+			.reduce(0L, Long::sum));
 	}
 }

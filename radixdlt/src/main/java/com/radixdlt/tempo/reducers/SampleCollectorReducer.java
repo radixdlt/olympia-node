@@ -28,11 +28,6 @@ public class SampleCollectorReducer implements TempoReducer<SampleCollectorState
 	}
 
 	@Override
-	public Set<Class<? extends TempoState>> requiredState() {
-		return ImmutableSet.of();
-	}
-
-	@Override
 	public SampleCollectorState initialState() {
 		return SampleCollectorState.empty();
 	}

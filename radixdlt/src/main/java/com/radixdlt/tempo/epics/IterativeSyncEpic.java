@@ -30,6 +30,7 @@ import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.network.peers.Peer;
 import org.radix.shards.ShardSpace;
+import org.slf4j.event.Level;
 
 import java.util.List;
 import java.util.Objects;
@@ -97,7 +98,9 @@ public class IterativeSyncEpic implements TempoEpic {
 			RequestIterativeSyncAction request = (RequestIterativeSyncAction) action;
 			Peer peer = request.getPeer();
 			long requestedLCPosition = request.getCursor().getLCPosition();
-			logger.info("Requesting iterative sync from " + peer + " starting at " + requestedLCPosition);
+			if (logger.hasLevel(Logging.DEBUG)) {
+				logger.debug("Requesting iterative sync from " + peer + " starting at " + requestedLCPosition);
+			}
 			// send iterative request for aids starting with last cursor
 			ShardSpace shardRange = shardSpaceSupplier.get();
 			SendIterativeRequestAction sendRequest = new SendIterativeRequestAction(shardRange, request.getCursor(), peer);
@@ -112,7 +115,7 @@ public class IterativeSyncEpic implements TempoEpic {
 
 			// if no response, decide what to do after timeout
 			if (syncState.isPending(peerNid, requestedLCPosition)) {
-				// if we're still talking to that peer, just rerequest
+				// if we're still talking to that peer, just re-request
 				if (passivePeersState.contains(peerNid)) {
 					if (logger.hasLevel(Logging.DEBUG)) {
 						logger.debug(String.format("Iterative request to %s at %s has timed out without response, resending", timeout.getPeer(), requestedLCPosition));
@@ -132,17 +135,20 @@ public class IterativeSyncEpic implements TempoEpic {
 			Pair<ImmutableList<AID>, IterativeCursor> aidsAndCursor = storeView.getNext(request.getCursor(), RESPONSE_AID_LIMIT, request.getShardSpace());
 			IterativeCursor cursor = aidsAndCursor.getSecond();
 			ImmutableList<AID> aids = aidsAndCursor.getFirst();
-			logger.info(String.format("Responding to iterative request from %s for %d with %d aids (next=%s)",
-				request.getPeer(), request.getCursor().getLCPosition(), aids.size(),
-				cursor.hasNext() ? cursor.getNext().getLCPosition() : "<none>"));
+			if (logger.hasLevel(Logging.DEBUG)) {
+				logger.debug(String.format("Responding to iterative request from %s for %d with %d aids (next=%s)",
+					request.getPeer(), request.getCursor().getLCPosition(), aids.size(),
+					cursor.hasNext() ? cursor.getNext().getLCPosition() : "<none>"));
+			}
 			return Stream.of(new SendIterativeResponseAction(aids, cursor, request.getPeer()));
 		} else if (action instanceof ReceiveIterativeResponseAction) {
 			ReceiveIterativeResponseAction response = (ReceiveIterativeResponseAction) action;
 			Peer peer = response.getPeer();
 			EUID peerNid = peer.getSystem().getNID();
 			IterativeCursor peerCursor = response.getCursor();
-
-			logger.info(String.format("Received iterative response from %s with %s aids", peer, response.getAids().size()));
+			if (logger.hasLevel(Logging.DEBUG)) {
+				logger.debug(String.format("Received iterative response from %s with %s aids", peer, response.getAids().size()));
+			}
 
 			// update last known cursor if higher than current
 			IterativeCursor nextCursor = peerCursor.hasNext() ? peerCursor.getNext() : peerCursor;

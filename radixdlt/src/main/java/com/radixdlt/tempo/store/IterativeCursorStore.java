@@ -27,10 +27,10 @@ public final class IterativeCursorStore implements Store {
 	private static final Logger logger = Logging.getLogger("Sync.Store");
 
 	private final Supplier<DatabaseEnvironment> dbEnv;
-	private final Supplier<Serialization> serialization;
+	private final Serialization serialization;
 	private Database cursors;
 
-	public IterativeCursorStore(Supplier<DatabaseEnvironment> dbEnv, Supplier<Serialization> serialization) {
+	public IterativeCursorStore(Supplier<DatabaseEnvironment> dbEnv, Serialization serialization) {
 		this.dbEnv = Objects.requireNonNull(dbEnv, "dbEnv is required");
 		this.serialization = Objects.requireNonNull(serialization, "serialization is required");
 	}
@@ -99,7 +99,7 @@ public final class IterativeCursorStore implements Store {
 		Transaction transaction = dbEnv.get().getEnvironment().beginTransaction(null, null);
 		try {
 			DatabaseEntry key = new DatabaseEntry(nid.toByteArray());
-			byte[] valueBytes = serialization.get().toDson(cursor, DsonOutput.Output.PERSIST);
+			byte[] valueBytes = serialization.toDson(cursor, DsonOutput.Output.PERSIST);
 			DatabaseEntry value = new DatabaseEntry(valueBytes);
 
 			OperationStatus status = this.cursors.put(transaction, key, value);
@@ -125,7 +125,7 @@ public final class IterativeCursorStore implements Store {
 			} else if (status != OperationStatus.SUCCESS) {
 				fail("Database returned status " + status + " for get operation");
 			} else {
-				IterativeCursor cursor = serialization.get().fromDson(value.getData(), IterativeCursor.class);
+				IterativeCursor cursor = serialization.fromDson(value.getData(), IterativeCursor.class);
 				return Optional.of(cursor);
 			}
 		} catch (Exception e) {

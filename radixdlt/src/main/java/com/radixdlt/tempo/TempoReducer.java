@@ -1,5 +1,7 @@
 package com.radixdlt.tempo;
 
+import com.google.common.collect.ImmutableSet;
+
 import java.util.Set;
 
 /**
@@ -14,9 +16,12 @@ public interface TempoReducer<T extends TempoState> {
 
 	/**
 	 * Gets the additionally required state classes.
+	 * TODO remove requiredState in reducers, shouldn't require any other state
 	 * @return The additionally required state
 	 */
-	Set<Class<? extends TempoState>> requiredState();
+	default Set<Class<? extends TempoState>> requiredState() {
+		return ImmutableSet.of();
+	}
 
 	/**
 	 * Gets the initial state.

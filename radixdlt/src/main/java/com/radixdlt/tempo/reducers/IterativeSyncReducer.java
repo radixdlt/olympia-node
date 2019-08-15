@@ -22,11 +22,6 @@ public class IterativeSyncReducer implements TempoReducer<IterativeSyncState> {
 	}
 
 	@Override
-	public Set<Class<? extends TempoState>> requiredState() {
-		return ImmutableSet.of();
-	}
-
-	@Override
 	public IterativeSyncState initialState() {
 		return IterativeSyncState.empty();
 	}

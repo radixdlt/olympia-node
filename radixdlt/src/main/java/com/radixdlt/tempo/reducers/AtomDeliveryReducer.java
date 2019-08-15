@@ -24,11 +24,6 @@ public class AtomDeliveryReducer implements TempoReducer<AtomDeliveryState> {
 	}
 
 	@Override
-	public Set<Class<? extends TempoState>> requiredState() {
-		return ImmutableSet.of();
-	}
-
-	@Override
 	public AtomDeliveryState initialState() {
 		return AtomDeliveryState.empty();
 	}

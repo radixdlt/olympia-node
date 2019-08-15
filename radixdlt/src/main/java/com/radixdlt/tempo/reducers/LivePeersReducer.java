@@ -27,11 +27,6 @@ public class LivePeersReducer implements TempoReducer<LivePeersState> {
 	}
 
 	@Override
-	public Set<Class<? extends TempoState>> requiredState() {
-		return ImmutableSet.of();
-	}
-
-	@Override
 	public LivePeersState initialState() {
 		return LivePeersState.empty();
 	}

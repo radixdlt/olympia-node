@@ -41,7 +41,9 @@ import com.radixdlt.tempo.messages.SampleResponseMessage;
 import com.radixdlt.tempo.reducers.AtomDeliveryReducer;
 import com.radixdlt.tempo.reducers.IterativeSyncReducer;
 import com.radixdlt.tempo.reducers.LivePeersReducer;
+import com.radixdlt.tempo.reducers.NetworkResolverReducer;
 import com.radixdlt.tempo.reducers.PassivePeersReducer;
+import com.radixdlt.tempo.reducers.SampleCollectorReducer;
 import com.radixdlt.tempo.store.IterativeCursorStore;
 import com.radixdlt.tempo.store.SampleStore;
 import org.radix.database.DatabaseEnvironment;
@@ -68,6 +70,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -138,7 +141,7 @@ public final class TempoController {
 				epics.stream()
 					.<Runnable>map(epic -> {
 						TempoStateBundle bundle = stateStore.bundleFor(epic.requiredState());
-						return () -> executeEpic(action, epic, bundle);
+						return () -> executeEpic(action, epic, bundle).forEach(this::dispatch);
 					})
 					.forEach(executor::execute);
 
@@ -156,18 +159,19 @@ public final class TempoController {
 			TempoStateBundle bundle = stateStore.bundleFor(reducer.requiredState());
 			return reducer.reduce(prevState, bundle, action);
 		} catch (Exception e) {
-			logger.error(String.format("Error while executing %s in reducer %s: '%s'",
+			logger.error(String.format("Error while executing %s in %s: '%s'",
 				action.getClass().getSimpleName(), reducer.getClass().getSimpleName(), e.toString()), e);
 			return prevState;
 		}
 	}
 
-	private void executeEpic(TempoAction action, TempoEpic epic, TempoStateBundle bundle) {
+	private Stream<TempoAction> executeEpic(TempoAction action, TempoEpic epic, TempoStateBundle bundle) {
 		try {
-			epic.epic(bundle, action).forEach(this::dispatch);
+			return epic.epic(bundle, action);
 		} catch (Exception e) {
-			logger.error(String.format("Error while executing %s in epic %s: '%s'",
+			logger.error(String.format("Error while executing %s in %s: '%s'",
 				action.getClass().getSimpleName(), epic.getClass().getSimpleName(), e.toString()), e);
+			return Stream.empty();
 		}
 	}
 
@@ -239,7 +243,7 @@ public final class TempoController {
 		return this.actions.size();
 	}
 
-	// TODO figure out nicer way than reset
+	// TODO figure out nicer way to reset
 	void reset() {
 		this.inboundAtoms.clear();
 		this.actions.clear();
@@ -251,6 +255,13 @@ public final class TempoController {
 	}
 
 	private static class TempoStateBundleStore {
+		private static final TempoStateBundle EMPTY_BUNDLE = new TempoStateBundle() {
+			@Override
+			public <T extends TempoState> T get(Class<T> stateClass) {
+				throw new TempoException("Requested state '" + stateClass.getSimpleName() + "' was not required");
+			}
+		};
+
 		private final Map<Class<? extends TempoState>, TempoState> states;
 
 		private TempoStateBundleStore() {
@@ -266,22 +277,20 @@ public final class TempoController {
 		}
 
 		TempoStateBundle bundleFor(Set<Class<? extends TempoState>> requiredStates) {
-			Map<Class<? extends TempoState>, TempoState> bundledStates = new HashMap<>();
-			for (Class<? extends TempoState> requiredState : requiredStates) {
-				TempoState state = states.get(requiredState);
-				if (state == null) {
-					throw new TempoException("Required state '" + requiredState.getSimpleName() + "' is not available");
-				} else {
-					bundledStates.put(requiredState, state);
-				}
+			if (requiredStates.isEmpty()) {
+				return EMPTY_BUNDLE;
 			}
 
+			Map<Class<? extends TempoState>, TempoState> statesCopy = new HashMap<>(states);
 			return new TempoStateBundle() {
 				@Override
 				public <T extends TempoState> T get(Class<T> stateClass) {
-					T state = (T) bundledStates.get(stateClass);
-					if (state == null) {
+					if (!requiredStates.contains(stateClass)) {
 						throw new TempoException("Requested state '" + stateClass.getSimpleName() + "' was not required");
+					}
+					T state = (T) statesCopy.get(stateClass);
+					if (state == null) {
+						throw new TempoException("Required state '" + stateClass.getSimpleName() + "' is not available");
 					}
 					return state;
 				}
@@ -291,14 +300,15 @@ public final class TempoController {
 
 	public static Builder defaultBuilder(AtomStoreView storeView) {
 		LocalSystem localSystem = LocalSystem.getInstance();
-		Messaging messager = Messaging.getInstance();
 		PeerSupplier peerSupplier = new PeerSupplierAdapter(() -> Modules.get(PeerHandler.class));
+		Supplier<DatabaseEnvironment> dbEnv = () -> Modules.get(DatabaseEnvironment.class);
+		Serialization serialization = Serialization.getDefault();
 		Builder builder = builder()
 			.addEpic(AtomDeliveryEpic.builder()
 				.storeView(storeView)
 				.build())
 			.addEpicBuilder(controller -> MessagingEpic.builder()
-				.messager(messager)
+				.messager(Messaging.getInstance())
 				.addInbound("tempo.sync.delivery.request", DeliveryRequestMessage.class, ReceiveDeliveryRequestAction::from)
 				.addOutbound(SendDeliveryRequestAction.class, SendDeliveryRequestAction::toMessage, SendDeliveryRequestAction::getPeer)
 				.addInbound("tempo.sync.delivery.response", DeliveryResponseMessage.class, ReceiveDeliveryResponseAction::from)
@@ -330,10 +340,7 @@ public final class TempoController {
 			builder.addEpic(new ActiveSyncEpic(localSystem.getNID()));
 		}
 		if (Arrays.stream(syncFeatures).anyMatch("iterative"::equalsIgnoreCase)) {
-			IterativeCursorStore cursorStore = new IterativeCursorStore(
-				() -> Modules.get(DatabaseEnvironment.class),
-				() -> Modules.get(Serialization.class)
-			);
+			IterativeCursorStore cursorStore = new IterativeCursorStore(dbEnv, serialization);
 			cursorStore.open();
 			builder.addEpic(IterativeSyncEpic.builder()
 				.shardSpaceSupplier(localSystem::getShards)
@@ -345,15 +352,16 @@ public final class TempoController {
 		if (resolver.equalsIgnoreCase("local")) {
 			builder.addEpic(new LocalResolverEpic(localSystem.getNID()));
 		} else if (resolver.equalsIgnoreCase("momentum")) {
-			SampleSelector sampleSelector = null;
-			ConflictDecider conflictDecider = null;
-			SampleStore store = new SampleStore(
-				() -> Modules.get(DatabaseEnvironment.class),
-				() -> Modules.get(Serialization.class)
-			);
+			SampleSelector sampleSelector = new SimpleSampleSelector(localSystem.getNID());
+			ConflictDecider conflictDecider = samples -> samples.stream().findAny().orElseThrow(() -> new TempoException("No samples given"));
+			SampleStore store = new SampleStore(dbEnv, serialization);
 			store.open();
 			builder.addEpic(new NetworkResolverEpic(sampleSelector, conflictDecider));
 			builder.addEpic(new SampleCollectorEpic(localSystem.getNID(), store));
+			builder.addReducer(new NetworkResolverReducer());
+			builder.addReducer(new SampleCollectorReducer());
+		} else {
+			throw new TempoException("No conflict resolver selected: '" + resolver + "'");
 		}
 
 		return builder;

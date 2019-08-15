@@ -29,11 +29,11 @@ public class SampleStore implements Store {
 	private static final String LOCAL_SAMPLES_DB_NAME = "tempo2.samples.local";
 
 	private final Supplier<DatabaseEnvironment> dbEnv;
-	private final Supplier<Serialization> serialization;
+	private final Serialization serialization;
 	private Database collectedSamples;
 	private Database localSamples;
 
-	public SampleStore(Supplier<DatabaseEnvironment> dbEnv, Supplier<Serialization> serialization) {
+	public SampleStore(Supplier<DatabaseEnvironment> dbEnv, Serialization serialization) {
 		this.dbEnv = Objects.requireNonNull(dbEnv, "dbEnv is required");
 		this.serialization = Objects.requireNonNull(serialization, "serialization is required");
 	}
@@ -114,7 +114,7 @@ public class SampleStore implements Store {
 			} else if (status != OperationStatus.SUCCESS) {
 				fail("Database returned status " + status + " for get operation");
 			} else {
-				TemporalProof samples = serialization.get().fromDson(value.getData(), TemporalProof.class);
+				TemporalProof samples = serialization.fromDson(value.getData(), TemporalProof.class);
 				return Optional.of(samples);
 			}
 		} catch (Exception e) {
@@ -138,12 +138,12 @@ public class SampleStore implements Store {
 			} else if (status != OperationStatus.SUCCESS) {
 				fail("Database returned status " + status + " for get operation");
 			} else {
-				TemporalProof existing = serialization.get().fromDson(value.getData(), TemporalProof.class);
+				TemporalProof existing = serialization.fromDson(value.getData(), TemporalProof.class);
 				temporalProof.merge(existing);
 				aggregatedProof = temporalProof;
 			}
 
-			value.setData(serialization.get().toDson(aggregatedProof, DsonOutput.Output.PERSIST));
+			value.setData(serialization.toDson(aggregatedProof, DsonOutput.Output.PERSIST));
 			status = database.put(transaction, key, value);
 			if (status != OperationStatus.SUCCESS) {
 				fail("Database returned status " + status + " for put operation");

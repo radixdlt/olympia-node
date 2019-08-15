@@ -1,5 +1,6 @@
 package com.radixdlt.tempo.epics;
 
+import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
 import com.radixdlt.common.Pair;
 import com.radixdlt.tempo.TempoAction;
@@ -11,6 +12,7 @@ import com.radixdlt.tempo.actions.OnConflictResolvedAction;
 import com.radixdlt.tempo.actions.ResolveConflictAction;
 
 import java.util.Comparator;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -36,7 +38,8 @@ public class LocalResolverEpic implements TempoEpic {
 				.orElseThrow(() -> new TempoException("Error while resolving conflict, no atom has vertex by self"));
 			// TODO get rid of ugly hack to get conflict winner back to Ledger interface
 			resolve.getWinnerFuture().complete(winner);
-			return Stream.of(new OnConflictResolvedAction(winner, resolve.allAids().collect(Collectors.toSet())));
+			Set<AID> allAids = resolve.allAids().collect(Collectors.toSet());
+			return Stream.of(new OnConflictResolvedAction(winner, allAids, resolve.getTag()));
 		}
 
 		return Stream.empty();
