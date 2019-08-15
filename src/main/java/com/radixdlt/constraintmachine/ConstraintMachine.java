@@ -1,7 +1,6 @@
 package com.radixdlt.constraintmachine;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Streams;
 import com.radixdlt.atoms.DataPointer;
 import com.radixdlt.atoms.ImmutableAtom;
@@ -247,19 +246,23 @@ public final class ConstraintMachine {
 	 * write logic.
 	 *
 	 * @param cmAtom atom to validate
-	 * @param getAllErrors if true, returns all errors, otherwise, fails fast
 	 * and just returns the first error
 	 * @return results of validation, including any errors, warnings, and post-validation write logic
 	 */
-	public ImmutableSet<CMError> validate(CMAtom cmAtom, boolean getAllErrors) {
+	public Optional<CMError> validate(CMAtom cmAtom) {
 		// "Segfaults" or particles which should not exist
-		final Stream<CMError> unknownParticleErrors = cmAtom.getParticles().stream()
+		final Optional<CMError> unknownParticleError = cmAtom.getParticles().stream()
 			.filter(p -> !localEngineStore.getSpin(p.getParticle()).isPresent())
-			.map(p -> new CMError(p.getDataPointer(), CMErrorCode.UNKNOWN_PARTICLE));
+			.map(p -> new CMError(p.getDataPointer(), CMErrorCode.UNKNOWN_PARTICLE))
+			.findFirst();
+
+		if (unknownParticleError.isPresent()) {
+			return unknownParticleError;
+		}
 
 		// Virtual particle state checks
 		// TODO: Is this better suited at the state check pipeline?
-		final Stream<CMError> virtualParticleErrors = cmAtom.getParticles().stream()
+		final Optional<CMError> virtualParticleError = cmAtom.getParticles().stream()
 			.filter(p -> {
 				Particle particle = p.getParticle();
 				Spin nextSpin = p.getNextSpin();
@@ -270,29 +273,34 @@ public final class ConstraintMachine {
 
 				return result.equals(TransitionCheckResult.CONFLICT);
 			})
-			.map(p ->  new CMError(p.getDataPointer(), CMErrorCode.INTERNAL_SPIN_CONFLICT));
+			.map(p ->  new CMError(p.getDataPointer(), CMErrorCode.INTERNAL_SPIN_CONFLICT))
+			.findFirst();
+
+		if (virtualParticleError.isPresent()) {
+			return virtualParticleError;
+		}
 
 		// "Kernel" checks
-		final Stream<CMError> kernelErrs = kernelConstraintProcedures.stream()
+		final Optional<CMError> kernelErr = kernelConstraintProcedures.stream()
 			.flatMap(kernelProcedure -> kernelProcedure.validate(cmAtom))
-			.map(CMErrors::fromKernelProcedureError);
+			.map(CMErrors::fromKernelProcedureError)
+			.findFirst();
+
+		if (kernelErr.isPresent()) {
+			return kernelErr;
+		}
 
 		// "Application" checks
 		final ImmutableAtom atom = cmAtom.getAtom();
 		final AtomMetadata metadata = new AtomMetadataFromAtom(atom);
-		final Stream<CMError> applicationErrs = Streams.mapWithIndex(atom.particleGroups(), (group, i) ->
-			this.validateParticleGroup(group, i, metadata)).flatMap(i -> i.map(Stream::of).orElse(Stream.empty()));
+		final Optional<CMError> applicationErr = Streams.mapWithIndex(atom.particleGroups(), (group, i) ->
+			this.validateParticleGroup(group, i, metadata)).flatMap(i -> i.map(Stream::of).orElse(Stream.empty())).findFirst();
 
-		final Stream<CMError> errorStream = Streams.concat(
-			unknownParticleErrors,
-			virtualParticleErrors,
-			kernelErrs,
-			applicationErrs
-		);
+		if (applicationErr.isPresent()) {
+			return applicationErr;
+		}
 
-		return getAllErrors
-			? errorStream.collect(ImmutableSet.toImmutableSet())
-			: errorStream.findAny().map(ImmutableSet::of).orElse(ImmutableSet.of());
+		return Optional.empty();
 	}
 
 	public UnaryOperator<CMStore> getVirtualStore() {

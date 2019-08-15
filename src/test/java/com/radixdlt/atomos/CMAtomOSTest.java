@@ -54,8 +54,9 @@ public class CMAtomOSTest {
 		when(atom.getParticles()).thenReturn(ImmutableList.of(
 			new CMParticle(testParticle, DataPointer.ofParticle(0, 0), Spin.NEUTRAL, 1)
 		));
-		assertThat(machine.validate(atom, true))
-			.anyMatch(e -> e.getErrorCode() == CMErrorCode.UNKNOWN_PARTICLE);
+		assertThat(machine.validate(atom))
+			.isPresent()
+			.matches(e -> e.get().getErrorCode() == CMErrorCode.UNKNOWN_PARTICLE);
 	}
 
 	@Test

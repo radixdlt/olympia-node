@@ -44,7 +44,7 @@ public class ConstraintMachineTest {
 		));
 		when(atom.getAtom()).thenReturn(mock(ImmutableAtom.class));
 
-		assertThat(machine.validate(atom, true))
+		assertThat(machine.validate(atom))
 			.contains(new CMError(DataPointer.ofParticle(0, 0), CMErrorCode.INTERNAL_SPIN_CONFLICT));
 	}
 
