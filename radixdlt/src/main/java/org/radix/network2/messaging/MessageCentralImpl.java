@@ -19,7 +19,6 @@ import org.radix.network.messaging.Message;
 import org.radix.network.peers.Peer;
 import org.radix.network.peers.UDPPeer;
 import org.radix.network2.transport.TransportListener;
-import org.radix.properties.RuntimeProperties;
 import org.radix.universe.system.events.QueueFullEvent;
 import org.radix.utils.SystemMetaData;
 import org.xerial.snappy.Snappy;
@@ -30,22 +29,17 @@ import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.RateLimiter;
 import com.radixdlt.serialization.Serialization;
 
-//FIXME: Dependency on Modules.get(RuntimeProperties.class) for queue length
 //FIXME: Dependency on Modules.get(SystemMetadata.class) for updating metadata
-// FIXME: Dependency on Events.getInstance() for queue full messages
 // FIXME: Dependency on Network.getInstance() for peer handling
-// FIXME: Dependency on Messaging.getInstance() for message processing
 public final class MessageCentralImpl implements MessageCentral, Closeable {
 	private static final Logger log = Logging.getLogger("message");
-
-	private static final int INBOUND_PACKET_QUEUE_LENGTH = Modules.get(RuntimeProperties.class).get("messaging.inbound.queue_max", 8192);
-	private static final int OUTBOUND_PACKET_QUEUE_LENGTH = Modules.get(RuntimeProperties.class).get("messaging.outbound.queue_max", 16384);
 
 	private static final MessageListenerList EMPTY_MESSAGE_LISTENER_LIST = new MessageListenerList();
 
 	// Dependencies
 	private final Serialization serialization;
 	private final ConnectionManager connectionManager;
+	private final Events events;
 
 	// Local data
 
@@ -66,22 +60,27 @@ public final class MessageCentralImpl implements MessageCentral, Closeable {
 	private final RateLimiter outboundLogRateLimiter = RateLimiter.create(1.0);
 
 	// Inbound message handling
-	private final PriorityBlockingQueue<MessageEvent> inboundQueue = new PriorityBlockingQueue<>(INBOUND_PACKET_QUEUE_LENGTH);
+	private final PriorityBlockingQueue<MessageEvent> inboundQueue;
 	private final Thread inboundProcessingThread;
 
 	// Outbound message handling
-	private final PriorityBlockingQueue<MessageEvent> outboundQueue = new PriorityBlockingQueue<>(OUTBOUND_PACKET_QUEUE_LENGTH);
+	private final PriorityBlockingQueue<MessageEvent> outboundQueue;
 	private final Thread outboundProcessingThread;
 
 
 	public MessageCentralImpl(
+		MessageCentralConfiguration config,
 		Serialization serialization,
 		ConnectionManager connectionManager,
+		Events events,
 		Iterable<TransportListener> listeners
 	) {
+		this.inboundQueue = new PriorityBlockingQueue<>(config.getMessagingInboundQueueMax(8192));
+		this.outboundQueue = new PriorityBlockingQueue<>(config.getMessagingOutboundQueueMax(16384));
 		this.serialization = Objects.requireNonNull(serialization);
-		this.messageDispatcher = new MessageDispatcher(serialization); // FIXME: Probably should be injected dependency
+		this.messageDispatcher = new MessageDispatcher(config, serialization, events); // FIXME: Probably should be injected dependency
 		this.connectionManager = Objects.requireNonNull(connectionManager);
+		this.events = Objects.requireNonNull(events);
 
 		this.transportListeners = Lists.newArrayList(Objects.requireNonNull(listeners));
 
@@ -126,7 +125,7 @@ public final class MessageCentralImpl implements MessageCentral, Closeable {
 			if (outboundLogRateLimiter.tryAcquire()) {
 				log.error(String.format("Outbound message to %s dropped", peer.getURI()));
 			}
-			Events.getInstance().broadcast(new QueueFullEvent());
+			events.broadcast(new QueueFullEvent());
 		}
 	}
 
@@ -137,7 +136,7 @@ public final class MessageCentralImpl implements MessageCentral, Closeable {
 			if (inboundLogRateLimiter.tryAcquire()) {
 				log.error(String.format("Injected message from %s dropped", peer.getURI()));
 			}
-			Events.getInstance().broadcast(new QueueFullEvent());
+			events.broadcast(new QueueFullEvent());
 		}
 	}
 
@@ -180,7 +179,7 @@ public final class MessageCentralImpl implements MessageCentral, Closeable {
 				if (inboundLogRateLimiter.tryAcquire()) {
 					log.error(String.format("Inbound %s message from %s dropped", inboundMessage.source().name(), inboundMessage.source().metadata()));
 				}
-				Events.getInstance().broadcast(new QueueFullEvent());
+				events.broadcast(new QueueFullEvent());
 			}
 		} catch (IOException e) {
 			throw new UncheckedIOException("While processing inbound message from " + inboundMessage.source(), e);

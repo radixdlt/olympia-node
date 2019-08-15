@@ -11,8 +11,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.radix.events.Events;
 import org.radix.modules.Modules;
-import org.radix.modules.exceptions.ModuleException;
 import org.radix.network.messages.TestMessage;
 import org.radix.network.messaging.Message;
 import org.radix.network.peers.Peer;
@@ -82,7 +82,7 @@ public class MessageCentralImplTest {
 	private MessageCentralImpl mci;
 
 	@Before
-	public void testSetup() throws ModuleException {
+	public void testSetup() {
 		this.serialization = Serialization.getDefault();
 
 		// Curse you singletons
@@ -125,7 +125,8 @@ public class MessageCentralImplTest {
 
 		List<TransportListener> listeners = ImmutableList.of(this.dtl);
 
-		this.mci = new MessageCentralImpl(serialization, connectionManager, listeners);
+		Events events = mock(Events.class);
+		this.mci = new MessageCentralImpl(staticConfig(), serialization, connectionManager, events, listeners);
 	}
 
 	@After
@@ -141,7 +142,8 @@ public class MessageCentralImplTest {
 
 	@Test
 	public void testConstructNoListeners() {
-		try (MessageCentralImpl mci2 = new MessageCentralImpl(Serialization.getDefault(), connectionManager, ImmutableList.of())) {
+		Events events = mock(Events.class);
+		try (MessageCentralImpl mci2 = new MessageCentralImpl(staticConfig(), serialization, connectionManager, events, ImmutableList.of())) {
 			assertFalse(mci2.hasInboundThread());
 		}
 	}
@@ -164,7 +166,7 @@ public class MessageCentralImplTest {
 		Peer peer = mock(Peer.class);
 		doReturn(new State(State.CONNECTED)).when(peer).getState();
 		mci.send(peer, msg);
-		assertTrue(toc.sentSemaphore.tryAcquire(10, TimeUnit.SECONDS));
+		assertTrue(toc.sentSemaphore.tryAcquire(1000, TimeUnit.SECONDS));
 		assertTrue(toc.sent);
 	}
 
@@ -186,7 +188,7 @@ public class MessageCentralImplTest {
 		InboundMessage message = InboundMessage.of(source, data);
 		dtl.inboundMessage(message);
 
-		assertTrue(receivedFlag.tryAcquire(500, TimeUnit.MILLISECONDS));
+		assertTrue(receivedFlag.tryAcquire(10, TimeUnit.SECONDS));
 		assertNotNull(receivedMessage.get());
 	}
 
@@ -213,5 +215,23 @@ public class MessageCentralImplTest {
 		assertEquals(1, mci.listenersSize());
 		mci.addListener(TestMessage.class, listener);
 		assertEquals(0, mci.listenersSize());
+	}
+
+	private MessageCentralConfiguration staticConfig() {
+		// More robust than mocking when adding new config
+		return new MessageCentralConfiguration() {
+			@Override
+			public int getMessagingInboundQueueMax(int defaultValue) {
+				return 10;
+			}
+			@Override
+			public int getMessagingOutboundQueueMax(int defaultValue) {
+				return 10;
+			}
+			@Override
+			public int getMessagingTimeToLive(int defaultValue) {
+				return 10;
+			}
+		};
 	}
 }

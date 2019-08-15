@@ -32,6 +32,7 @@ import org.radix.network.messaging.Messaging;
 import org.radix.network.peers.PeerHandler;
 import org.radix.network.peers.PeerStore;
 import org.radix.network2.messaging.MessageCentral;
+import org.radix.network2.messaging.MessageCentralConfiguration;
 import org.radix.network2.messaging.MessageCentralImpl;
 import org.radix.network2.transport.StaticTransportMetadata;
 import org.radix.network2.transport.TransportMetadata;
@@ -242,7 +243,7 @@ public class Radix extends Plugin
 		 * MESSAGES
 		 */
 		try {
-			MessageCentral messageCentral = createMessageCentral();
+			MessageCentral messageCentral = createMessageCentral(Modules.get(RuntimeProperties.class));
 			Modules.put(MessageCentral.class, messageCentral);
 			Modules.getInstance().start(Messaging.configure(messageCentral));
 //			Modules.getInstance().start(new MessageProfiler());
@@ -360,16 +361,18 @@ public class Radix extends Plugin
 	@Override
 	public void stop_impl() throws ModuleException { }
 
-	private MessageCentral createMessageCentral() {
+	private MessageCentral createMessageCentral(RuntimeProperties properties) {
 		// FIXME: This all needs to change
 		TransportMetadata metadata = StaticTransportMetadata.empty();
 		UDPSocketFactory socketFactory = new UDPSocketFactoryImpl();
 		try {
 			return new MessageCentralImpl(
-					Serialization.getDefault(),
-					new UDPOnlyConnectionManager(new UDPTransportFactoryImpl(socketFactory)),
-					ImmutableList.of(new UDPTransportListenerImpl(metadata, socketFactory))
-					);
+				MessageCentralConfiguration.fromRuntimeProperties(properties),
+				Serialization.getDefault(),
+				new UDPOnlyConnectionManager(new UDPTransportFactoryImpl(socketFactory)),
+				Events.getInstance(),
+				ImmutableList.of(new UDPTransportListenerImpl(metadata, socketFactory))
+			);
 		} catch (IOException e) {
 			throw new UncheckedIOException("While creating MessageCentral", e);
 		}

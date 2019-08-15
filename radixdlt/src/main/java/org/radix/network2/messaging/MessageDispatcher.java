@@ -3,6 +3,7 @@ package org.radix.network2.messaging;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.concurrent.CompletableFuture;
 import org.radix.Radix;
 
@@ -23,7 +24,6 @@ import org.radix.network.peers.Peer;
 import org.radix.network.peers.PeerStore;
 import org.radix.network2.transport.Transport;
 import org.radix.network2.transport.TransportOutboundConnection;
-import org.radix.properties.RuntimeProperties;
 import org.radix.state.State;
 import org.radix.time.Time;
 import org.radix.time.Timestamps;
@@ -34,23 +34,23 @@ import org.radix.utils.SystemMetaData;
 import org.radix.utils.SystemProfiler;
 import org.xerial.snappy.Snappy;
 
-//FIXME: Dependency on Modules.get(RuntimeProperties.class) for processing parameters
-//FIXME: Dependency on Modules.get(SystemMetaData.class) for system metadata
-//FIXME: Dependency on Modules.get(MessageProfiler.class) for profiling
-//FIXME: Dependency on Modules.get(Interfaces.class) for keeping track of network interfaces
+//FIXME: Optional dependency on Modules.get(SystemMetaData.class) for system metadata
+//FIXME: Optional dependency on Modules.get(MessageProfiler.class) for profiling
+//FIXME: Optional dependency on Modules.get(Interfaces.class) for keeping track of network interfaces
 //FIXME: Dependency on Modules.get(PeerStore.class) for keeping track of peers
-// FIXME: Dependency on Events.getInstance() for event processing
 // FIXME: Dependency on static Time.currentTimestamp() for millisecond time
+// FIXME: Dependency on LocalSystem.getInstance() for signing key
 class MessageDispatcher {
 	private static final Logger log = Logging.getLogger("messaging");
 
-	private static final long INBOUND_MESSAGE_TTL_MS = Modules.get(RuntimeProperties.class).get("messaging.time_to_live", 30) * 1000L;
-	private static final long OUTBOUND_MESSAGE_TTL_MS = Modules.get(RuntimeProperties.class).get("messaging.time_to_live", 30) * 1000L;
-
+	private final long messageTtlMs;
 	private final Serialization serialization;
+	private final Events events;
 
-	MessageDispatcher(Serialization serialization) {
+	MessageDispatcher(MessageCentralConfiguration config, Serialization serialization, Events events) {
+		this.messageTtlMs = config.getMessagingTimeToLive(30) * 1000L;
 		this.serialization = serialization;
+		this.events = events;
 	}
 
 	void send(ConnectionManager connectionManager, final MessageEvent outboundMessage) {
@@ -59,7 +59,7 @@ class MessageDispatcher {
 		final Peer peer = outboundMessage.peer();
 		final State peerState = peer.getState();
 
-		if (Time.currentTimestamp() - message.getTimestamp() > OUTBOUND_MESSAGE_TTL_MS) {
+		if (Time.currentTimestamp() - message.getTimestamp() > messageTtlMs) {
 			log.warn(message.getClass().getName() + ": TTL to " + peer.getURI() + " has expired");
 			Modules.ifAvailable(SystemMetaData.class, a -> a.increment("messages.outbound.aborted"));
 			return;
@@ -85,7 +85,7 @@ class MessageDispatcher {
 			byte[] bytes = serialize(message);
 			findTransportAndOpenConnection(connectionManager, peer, bytes).thenCompose(conn -> conn.send(bytes));
 			Modules.ifAvailable(SystemMetaData.class, a -> a.increment("messages.outbound.processed"));
-			Events.getInstance().broadcast(outboundMessage);
+			events.broadcast(outboundMessage);
 			Modules.ifAvailable(SystemMetaData.class, a -> a.increment("messages.outbound.sent"));
 		} catch (Exception ex) {
 			log.error(message.getClass().getName() + ": Sending to " + peer.getURI() + " failed", ex);
@@ -108,7 +108,7 @@ class MessageDispatcher {
 			return;
 		}
 
-		if (Time.currentTimestamp() - message.getTimestamp() > INBOUND_MESSAGE_TTL_MS) {
+		if (Time.currentTimestamp() - message.getTimestamp() > messageTtlMs) {
 			Modules.ifAvailable(SystemMetaData.class, a -> a.increment("messages.inbound.discarded"));
 			return;
 		}
@@ -136,7 +136,7 @@ class MessageDispatcher {
 
 				if (system.getNID().equals(LocalSystem.getInstance().getNID())) {
 					peer.ban("Message from self");
-					Modules.get(Interfaces.class).addInterfaceAddress(InetAddress.getByName(peer.getURI().getHost())); // TODO what about DNS lookups?
+					Modules.ifAvailable(Interfaces.class, i -> addInterfaceAddress(i, peer)); // TODO what about DNS lookups?
 					return;
 				}
 
@@ -161,10 +161,18 @@ class MessageDispatcher {
 			Modules.ifAvailable(MessageProfiler.class, mp -> mp.process(message, peer));
 			listeners.messageReceived(peer, message);
 			Modules.ifAvailable(SystemMetaData.class, a -> a.increment("messages.inbound.processed"));
-			Events.getInstance().broadcast(inboundMessage);
+			events.broadcast(inboundMessage);
 		} finally {
 			SystemProfiler.getInstance().incrementFrom("MESSAGING:IN:" + message.getCommand(), start);
 			SystemProfiler.getInstance().incrementFrom("MESSAGING:IN", start);
+		}
+	}
+
+	private void addInterfaceAddress(Interfaces interfaces, Peer peer) {
+		try {
+			interfaces.addInterfaceAddress(InetAddress.getByName(peer.getURI().getHost()));
+		} catch (UnknownHostException e) {
+			log.warn("Host name lookup failed", e);
 		}
 	}
 
