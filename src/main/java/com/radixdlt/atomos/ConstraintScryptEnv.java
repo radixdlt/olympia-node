@@ -137,21 +137,26 @@ final class ConstraintScryptEnv implements SysCalls {
 			throw new IllegalStateException(particleClass1 + " must be registered with an RRI mapper.");
 		}
 
-		final TransitionProcedure<RRIParticle, T> procedure0 = new RRIResourceCombinedPrimaryCreation<>();
+		final TransitionProcedure<RRIParticle, T> procedure0 = new RRIResourceCombinedCreation<>(
+			particleClass1,
+			(t, u) -> combinedCheck.apply(u, t)
+		);
 		createTransitionInternal(
 			RRIParticle.class,
 			particleClass0,
 			procedure0,
 			(res, in, out, meta) -> {
-				if (res != CMAction.POP_OUTPUT) {
-					throw new IllegalStateException("Only expecting POP_OUTPUT but was " + res);
+				if (res == CMAction.POP_INPUT_OUTPUT) {
+					if (!meta.isSignedBy(in.getRri().getAddress())) {
+						return WitnessValidatorResult.error("Not signed by " + in.getRri().getAddress());
+					}
 				}
 
 				return WitnessValidatorResult.success();
 			}
 		);
 
-		final TransitionProcedure<RRIParticle, U> procedure1 = new RRIResourceCombinedSecondaryCreation<>(
+		final TransitionProcedure<RRIParticle, U> procedure1 = new RRIResourceCombinedCreation<>(
 			particleClass0,
 			combinedCheck
 		);
@@ -160,12 +165,10 @@ final class ConstraintScryptEnv implements SysCalls {
 			particleClass1,
 			procedure1,
 			(res, in, out, meta) -> {
-				if (res != CMAction.POP_INPUT_OUTPUT) {
-					throw new IllegalStateException("Only expecting POP_INPUT_OUTPUT but was " + res);
-				}
-
-				if (!meta.isSignedBy(in.getRri().getAddress())) {
-					return WitnessValidatorResult.error("Not signed by " + in.getRri().getAddress());
+				if (res == CMAction.POP_INPUT_OUTPUT) {
+					if (!meta.isSignedBy(in.getRri().getAddress())) {
+						return WitnessValidatorResult.error("Not signed by " + in.getRri().getAddress());
+					}
 				}
 
 				return WitnessValidatorResult.success();

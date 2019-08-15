@@ -8,11 +8,11 @@ import java.util.function.BiFunction;
 /**
  * Transition definition from RRI to the second of two combined particles
  */
-public final class RRIResourceCombinedSecondaryCreation<T extends Particle, U extends Particle> implements TransitionProcedure<RRIParticle, U> {
+public final class RRIResourceCombinedCreation<T extends Particle, U extends Particle> implements TransitionProcedure<RRIParticle, U> {
 	private final Class<T> particleClass0;
 	private final BiFunction<T, U, Optional<String>> combinedCheck;
 
-	RRIResourceCombinedSecondaryCreation(
+	RRIResourceCombinedCreation(
 		Class<T> particleClass0,
 		BiFunction<T, U, Optional<String>> combinedCheck
 	) {
@@ -28,7 +28,7 @@ public final class RRIResourceCombinedSecondaryCreation<T extends Particle, U ex
 		Object outputUsed
 	) {
 		if (inputUsed == null) {
-			return ProcedureResult.error("Expecting a previous result.");
+			return ProcedureResult.popOutput(outputParticle);
 		}
 
 		if (!(inputUsed.getClass().equals(particleClass0))) {
