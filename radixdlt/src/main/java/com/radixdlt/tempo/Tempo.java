@@ -14,6 +14,7 @@ import com.radixdlt.ledger.LedgerSearchMode;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.tempo.store.AtomStoreViewAdapter;
 import com.radixdlt.tempo.store.TempoAtomStore;
+import org.json.JSONObject;
 import org.radix.database.DatabaseEnvironment;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
@@ -125,8 +126,8 @@ public final class Tempo extends Plugin implements Ledger {
 			.collect(Collectors.toList())));
 
 		return controller.resolve(convertToTempoAtom(atom), conflictingAtoms.stream()
-				.map(Tempo::convertToTempoAtom)
-				.collect(Collectors.toSet()))
+			.map(Tempo::convertToTempoAtom)
+			.collect(Collectors.toSet()))
 			.thenApply(Tempo::convertToTempoAtom);
 	}
 
@@ -192,6 +193,14 @@ public final class Tempo extends Plugin implements Ledger {
 		return "Tempo";
 	}
 
+	public JSONObject getJsonRepresentation(String stateClassName) {
+		return controller.getJsonRepresentation(stateClassName);
+	}
+
+	public JSONObject getJsonRepresentation() {
+		return controller.getJsonRepresentation();
+	}
+
 	private static TempoAtom convertToTempoAtom(Atom atom) {
 		if (atom instanceof TempoAtom) {
 			return (TempoAtom) atom;
@@ -206,7 +215,7 @@ public final class Tempo extends Plugin implements Ledger {
 				atom.getShards()
 			);
 		}
- 	}
+	}
 
 	public static Builder builder() {
 		return new Builder();

@@ -73,7 +73,8 @@ public class MomentumResolverEpic implements TempoEpic {
 				.filter(Optional::isPresent)
 				.map(Optional::get)
 				.collect(ImmutableSet.toImmutableSet());
-			logger.info("Resolving conflict between '" + allAids + ", initiating sampling");
+			logger.info(String.format("Resolving conflict with tag '%s' between '%s', initiating sampling",
+				conflict.getTag(), allAids));
 			// sample the selected peers
 			return Stream.of(new RequestSamplingAction(samplePeers, allAids, conflict.getTag()));
 		} else if (action instanceof ReceiveSamplingResultAction) {
@@ -95,7 +96,8 @@ public class MomentumResolverEpic implements TempoEpic {
 					.max(Comparator.comparingLong(Map.Entry::getValue))
 					.map(Map.Entry::getKey)
 					.orElseThrow(() -> new TempoException("Internal error while measuring momenta"));
-				logger.info("Resolving conflict between '" + allConflictingAids + "' to " + winner + ", measured momenta to be " + momenta);
+				logger.info(String.format("Resolved conflict with tag '%s' between '%s' to %s, measured momenta to be %s",
+					result.getTag(), allConflictingAids, winner, momenta));
 
 				winningAtom = conflicts.getAtom(tag, winner);
 			}

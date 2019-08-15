@@ -1,22 +1,24 @@
 package com.radixdlt.tempo;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.radixdlt.common.EUID;
+import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.tempo.actions.AcceptAtomAction;
 import com.radixdlt.tempo.actions.OnConflictResolvedAction;
 import com.radixdlt.tempo.actions.RaiseConflictAction;
 import com.radixdlt.tempo.actions.ReceiveAtomAction;
+import com.radixdlt.tempo.actions.RefreshLivePeersAction;
+import com.radixdlt.tempo.actions.ReselectPassivePeersAction;
 import com.radixdlt.tempo.actions.ResetAction;
+import com.radixdlt.tempo.actions.control.RepeatScheduleAction;
+import com.radixdlt.tempo.actions.control.ScheduleAction;
 import com.radixdlt.tempo.actions.messaging.ReceiveDeliveryRequestAction;
 import com.radixdlt.tempo.actions.messaging.ReceiveDeliveryResponseAction;
 import com.radixdlt.tempo.actions.messaging.ReceiveIterativeRequestAction;
 import com.radixdlt.tempo.actions.messaging.ReceiveIterativeResponseAction;
 import com.radixdlt.tempo.actions.messaging.ReceivePushAction;
-import com.radixdlt.tempo.actions.RefreshLivePeersAction;
-import com.radixdlt.tempo.actions.control.RepeatScheduleAction;
-import com.radixdlt.tempo.actions.ReselectPassivePeersAction;
-import com.radixdlt.tempo.actions.control.ScheduleAction;
 import com.radixdlt.tempo.actions.messaging.ReceiveSampleRequestAction;
 import com.radixdlt.tempo.actions.messaging.ReceiveSampleResponseAction;
 import com.radixdlt.tempo.actions.messaging.SendDeliveryRequestAction;
@@ -41,13 +43,21 @@ import com.radixdlt.tempo.messages.PushMessage;
 import com.radixdlt.tempo.messages.SampleRequestMessage;
 import com.radixdlt.tempo.messages.SampleResponseMessage;
 import com.radixdlt.tempo.reducers.AtomDeliveryReducer;
+import com.radixdlt.tempo.reducers.ConflictsStateReducer;
 import com.radixdlt.tempo.reducers.IterativeSyncReducer;
 import com.radixdlt.tempo.reducers.LivePeersReducer;
-import com.radixdlt.tempo.reducers.ConflictsStateReducer;
 import com.radixdlt.tempo.reducers.PassivePeersReducer;
 import com.radixdlt.tempo.reducers.SampleCollectorReducer;
+import com.radixdlt.tempo.state.AtomDeliveryState;
+import com.radixdlt.tempo.state.ConflictsState;
+import com.radixdlt.tempo.state.IterativeSyncState;
+import com.radixdlt.tempo.state.LivePeersState;
+import com.radixdlt.tempo.state.PassivePeersState;
+import com.radixdlt.tempo.state.SampleCollectorState;
 import com.radixdlt.tempo.store.IterativeCursorStore;
 import com.radixdlt.tempo.store.SampleStore;
+import org.json.JSONObject;
+import org.json.JSONString;
 import org.radix.database.DatabaseEnvironment;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
@@ -269,6 +279,43 @@ public final class TempoController {
 			TempoStateBundle bundle = stateStore.bundleFor(epic.requiredState());
 			executeEpic(reset, epic, bundle);
 		});
+	}
+
+	// TODO temporary hack for debugging, revisit or remove later
+	private static final Map<String, Class<? extends TempoState>> exposedStateClassMap = ImmutableMap.<String, Class<? extends TempoState>>builder()
+		.put("atomDelivery", AtomDeliveryState.class)
+		.put("conflicts", ConflictsState.class)
+		.put("iterativeSync", IterativeSyncState.class)
+		.put("livePeers", LivePeersState.class)
+		.put("passivePeers", PassivePeersState.class)
+		.put("sampleCollector", SampleCollectorState.class)
+		.build();
+
+	public JSONObject getJsonRepresentation(String stateClassName) {
+		Class<? extends TempoState> stateClass = exposedStateClassMap.get(stateClassName);
+		TempoState state = stateStore.get(stateClass);
+		if (state == null) {
+			JSONObject error = new JSONObject();
+			error.put("error", "<unavailable>");
+			return error;
+		}
+
+		Serialization serialization = Serialization.getDefault();
+		return serialization.toJsonObject(state.getDebugRepresentation(), DsonOutput.Output.ALL);
+	}
+
+	public JSONObject getJsonRepresentation() {
+		ImmutableMap.Builder<String, Object> states = ImmutableMap.builder();
+		exposedStateClassMap.forEach((name, cls) -> {
+			TempoState state = stateStore.get(cls);
+			if (state != null) {
+				states.put(name, state.getDebugRepresentation());
+			} else {
+				states.put(name, "<unavailable>");
+			}
+		});
+		Serialization serialization = Serialization.getDefault();
+		return serialization.toJsonObject(states.build(), DsonOutput.Output.ALL);
 	}
 
 	private static class TempoStateBundleStore {

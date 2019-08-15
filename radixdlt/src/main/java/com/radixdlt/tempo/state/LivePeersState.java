@@ -7,6 +7,7 @@ import com.radixdlt.tempo.TempoState;
 import org.radix.network.peers.Peer;
 
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public final class LivePeersState implements TempoState {
 	private final ImmutableMap<EUID, Peer> livePeers;
@@ -39,6 +40,14 @@ public final class LivePeersState implements TempoState {
 			"livePeers=" + livePeers +
 			", nids=" + nids +
 			'}';
+	}
+
+	@Override
+	public Object getDebugRepresentation() {
+		return ImmutableMap.of(
+			"livePeers", livePeers.values().stream()
+				.collect(Collectors.toMap(peer -> peer.getSystem().getNID(), peer -> peer.toString()))
+		);
 	}
 
 	public static LivePeersState empty() {

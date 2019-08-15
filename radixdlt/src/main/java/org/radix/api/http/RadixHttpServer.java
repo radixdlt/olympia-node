@@ -11,6 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import com.radixdlt.mock.MockAccessor;
 import com.radixdlt.tempo.AtomStoreView;
 import com.radixdlt.tempo.AtomSyncView;
+import com.radixdlt.tempo.Tempo;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.radix.api.AtomSchemas;
@@ -132,6 +133,19 @@ public final class RadixHttpServer {
     }
 
     private void addDevelopmentOnlyRoutesTo(RoutingHandler handler) {
+    	addGetRoute("/api/internal/tempo/states", exchange -> {
+    		if (Modules.isAvailable(Tempo.class)) {
+			    String stateClassString = getParameter(exchange, "cls").orElse(null);
+			    if (stateClassString != null) {
+				    respond(Modules.get(Tempo.class).getJsonRepresentation(stateClassString), exchange);
+			    } else {
+				    respond(Modules.get(Tempo.class).getJsonRepresentation(), exchange);
+			    }
+		    } else {
+    			respond("Tempo 2.0 is unavailable", exchange);
+		    }
+	    }, handler);
+
     	addGetRoute("/api/internal/mock/spawn", exchange -> {
 			if (Modules.isAvailable(MockAccessor.class)) {
 				String atomCountStr = getParameter(exchange, "atoms").orElse("1");

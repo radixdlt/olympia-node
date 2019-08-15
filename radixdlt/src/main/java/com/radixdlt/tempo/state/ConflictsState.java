@@ -14,7 +14,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class ConflictsState implements TempoState {
+public final class ConflictsState implements TempoState {
 	private final Map<EUID, Conflict> conflicts;
 
 	public ConflictsState(Map<EUID, Conflict> conflicts) {
@@ -57,6 +57,18 @@ public class ConflictsState implements TempoState {
 		Map<EUID, Conflict> newConflicts = new HashMap<>(conflicts);
 		newConflicts.remove(tag);
 		return new ConflictsState(newConflicts);
+	}
+
+	@Override
+	public Object getDebugRepresentation() {
+		return ImmutableMap.of(
+			"conflicts", conflicts.values().stream()
+				.map(conflict -> ImmutableMap.of(
+					"tag", conflict.tag,
+					"currentAtom", conflict.currentAtom.getAID(),
+					"conflictingAtoms", conflict.conflictingAtoms.keySet()
+				))
+		);
 	}
 
 	public static ConflictsState empty() {

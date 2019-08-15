@@ -65,6 +65,19 @@ public class SampleCollectorState implements TempoState {
 		return new SampleCollectorState(nextRequests);
 	}
 
+	@Override
+	public Object getDebugRepresentation() {
+		return ImmutableMap.of(
+			"requests", requests.values().stream()
+				.map(request -> ImmutableMap.of(
+					"tag", request.tag,
+					"requestedAids", request.requestedAids,
+					"nids", request.nids,
+					"pending", request.pending
+				))
+		);
+	}
+
 	public static final class SamplingRequest {
 		private final EUID tag;
 		private final Set<AID> requestedAids;

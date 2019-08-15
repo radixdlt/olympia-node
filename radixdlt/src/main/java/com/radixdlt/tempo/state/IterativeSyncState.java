@@ -110,19 +110,19 @@ public class IterativeSyncState implements TempoState {
 		);
 	}
 
-	public static IterativeSyncState empty() {
-		return new IterativeSyncState(
-			ImmutableMap.of(),
-			ImmutableMap.of(),
-			ImmutableMap.of()
+	@Override
+	public Object getDebugRepresentation() {
+		return ImmutableMap.of(
+			"pendingRequests", pendingRequests,
+			"currentStage", currentStage,
+			"backoffCounter", backoffCounter
 		);
 	}
 
 	public enum IterativeCursorStage {
 		SYNCHRONISING,
-		SYNCHRONISED
+		SYNCHRONISED;
 	}
-
 	public int getBackoff(EUID nid) {
 		Integer backoff = backoffCounter.get(nid);
 		if (backoff == null) {
@@ -134,5 +134,13 @@ public class IterativeSyncState implements TempoState {
 
 	public Stream<EUID> peers() {
 		return this.currentStage.keySet().stream();
+	}
+
+	public static IterativeSyncState empty() {
+		return new IterativeSyncState(
+			ImmutableMap.of(),
+			ImmutableMap.of(),
+			ImmutableMap.of()
+		);
 	}
 }

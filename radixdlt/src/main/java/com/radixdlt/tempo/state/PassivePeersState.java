@@ -33,6 +33,13 @@ public final class PassivePeersState implements TempoState {
 			'}';
 	}
 
+	@Override
+	public Object getDebugRepresentation() {
+		return ImmutableMap.of(
+			"selectedPeers", selectedPeers.keySet()
+		);
+	}
+
 	public static PassivePeersState empty() {
 		return new PassivePeersState(ImmutableMap.of());
 	}

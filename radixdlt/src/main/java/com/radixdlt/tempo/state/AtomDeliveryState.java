@@ -32,4 +32,11 @@ public final class AtomDeliveryState implements TempoState {
 	public static AtomDeliveryState empty() {
 		return new AtomDeliveryState(ImmutableMap.of());
 	}
+
+	@Override
+	public Object getDebugRepresentation() {
+		return ImmutableMap.of(
+			"pendingDeliveries", pendingDeliveries
+		);
+	}
 }
