@@ -168,20 +168,20 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 		);
 	}
 
-	private static <T, U, V> BiFunction<T, U, Optional<String>> checkEquals(
+	private static <T, U, V> BiFunction<T, U, Result> checkEquals(
 		Function<T, V> firstMapper0, Function<U, V> firstMapper1, String firstErrorMessage,
 		Function<T, V> secondMapper0, Function<U, V> secondMapper1, String secondErrorMessage
 	) {
 		return (t, u) -> {
 			if (!Objects.equals(firstMapper0.apply(t), firstMapper1.apply(u))) {
-				return Optional.of(firstErrorMessage);
+				return Result.error(firstErrorMessage);
 			}
 
 			if (!Objects.equals(secondMapper0.apply(t), secondMapper1.apply(u))) {
-				return Optional.of(secondErrorMessage);
+				return Result.error(secondErrorMessage);
 			}
 
-			return Optional.empty();
+			return Result.success();
 		};
 	}
 

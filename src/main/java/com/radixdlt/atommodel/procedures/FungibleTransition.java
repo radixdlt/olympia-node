@@ -1,10 +1,10 @@
 package com.radixdlt.atommodel.procedures;
 
+import com.radixdlt.atomos.Result;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.utils.UInt256;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -14,12 +14,12 @@ import java.util.function.Function;
 public final class FungibleTransition<T extends Particle, U extends Particle> implements TransitionProcedure<T, U> {
 	private final Function<T, UInt256> inputAmountMapper;
 	private final Function<U, UInt256> outputAmountMapper;
-	private final BiFunction<T, U, Optional<String>> transition;
+	private final BiFunction<T, U, Result> transition;
 
 	public FungibleTransition(
 		Function<T, UInt256> inputAmountMapper,
 		Function<U, UInt256> outputAmountMapper,
-		BiFunction<T, U, Optional<String>> transition
+		BiFunction<T, U, Result> transition
 	) {
 		Objects.requireNonNull(inputAmountMapper);
 		Objects.requireNonNull(outputAmountMapper);
@@ -37,9 +37,9 @@ public final class FungibleTransition<T extends Particle, U extends Particle> im
 		U outputParticle,
 		Object outputUsed
 	) {
-		final Optional<String> transitionErrorMessage = transition.apply(inputParticle, outputParticle);
-		if (transitionErrorMessage.isPresent()) {
-			return ProcedureResult.error(transitionErrorMessage.get());
+		final Result transitionResult = transition.apply(inputParticle, outputParticle);
+		if (transitionResult.isError()) {
+			return ProcedureResult.error(transitionResult.getErrorMessage());
 		}
 
 		UInt256 inputAmount = inputAmountMapper.apply(inputParticle).subtract(

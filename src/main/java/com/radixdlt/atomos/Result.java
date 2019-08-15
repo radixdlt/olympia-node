@@ -1,6 +1,5 @@
 package com.radixdlt.atomos;
 
-import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -91,7 +90,7 @@ public final class Result {
 	 * Get the error message of this Result, exists if there is an error
 	 * @return if error, contains the error message, empty otherwise
 	 */
-	public Optional<String> getErrorMessage() {
-		return Optional.ofNullable(this.errorMsg);
+	public String getErrorMessage() {
+		return this.errorMsg;
 	}
 }
