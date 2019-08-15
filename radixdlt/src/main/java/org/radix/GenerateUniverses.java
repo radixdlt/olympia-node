@@ -32,8 +32,6 @@ import org.radix.properties.PersistedProperties;
 import org.radix.properties.RuntimeProperties;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.serialization.core.ClasspathScanningSerializationPolicy;
-import com.radixdlt.serialization.core.ClasspathScanningSerializerIds;
 import org.radix.time.TemporalVertex;
 import org.radix.time.Timestamps;
 import com.radixdlt.universe.Universe;
