@@ -60,7 +60,7 @@ public class ConstraintMachineTest {
 			.setWitnessValidators((p0, p1) -> (res, v0, v1, meta) -> Optional.empty())
 			.build();
 
-		Optional<CMError> errors = machine.validate(
+		Optional<CMError> errors = machine.validateParticleGroup(
 			ParticleGroup.of(
 				SpunParticle.down(mock(Particle.class)),
 				SpunParticle.down(mock(Particle.class)),

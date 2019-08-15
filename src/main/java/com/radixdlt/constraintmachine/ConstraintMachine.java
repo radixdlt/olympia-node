@@ -126,99 +126,107 @@ public final class ConstraintMachine {
 		}
 	}
 
-	Optional<CMError> validate(ParticleGroup group, long groupIndex, AtomMetadata metadata) {
+	Optional<CMError> validateParticle(SpunParticle nextSpun, DataPointer dp, AtomMetadata metadata, CMValidationState validationState) {
+		final Particle nextParticle = nextSpun.getParticle();
+		final Particle curParticle = validationState.getCurParticle();
+
+		if (validationState.spinClashes(nextSpun.getSpin())) {
+			return Optional.of(
+				new CMError(
+					dp,
+					CMErrorCode.PARTICLE_REGISTER_SPIN_CLASH,
+					validationState
+				)
+			);
+		}
+
+		final Particle inputParticle = nextSpun.getSpin() == Spin.DOWN ? nextParticle : curParticle;
+		final Particle outputParticle = nextSpun.getSpin() == Spin.DOWN ? curParticle : nextParticle;
+		final TransitionProcedure<Particle, Particle> transitionProcedure = this.particleProcedures.apply(inputParticle, outputParticle);
+
+		if (transitionProcedure == null) {
+			if (inputParticle == null || outputParticle == null) {
+				validationState.popAndReplace(nextSpun, null);
+				return Optional.empty();
+			}
+
+			return Optional.of(
+				new CMError(
+					dp,
+					CMErrorCode.MISSING_TRANSITION_PROCEDURE,
+					validationState
+				)
+			);
+		}
+
+		final ProcedureResult result = transitionProcedure.execute(
+			inputParticle,
+			validationState.getInputUsed(),
+			outputParticle,
+			validationState.getOutputUsed()
+		);
+		switch (result.getCmAction()) {
+			case POP_INPUT:
+				if (nextSpun.getSpin() == Spin.UP) {
+					validationState.popAndReplace(nextSpun, result.getUsed());
+				} else {
+					validationState.updateUsed(result.getUsed());
+				}
+				break;
+			case POP_OUTPUT:
+				if (nextSpun.getSpin() == Spin.DOWN) {
+					validationState.popAndReplace(nextSpun, result.getUsed());
+				} else {
+					validationState.updateUsed(result.getUsed());
+				}
+				break;
+			case POP_INPUT_OUTPUT:
+				if (result.getUsed() != null) {
+					throw new IllegalStateException("POP_INPUT_OUTPUT must output null");
+				}
+				validationState.pop();
+				break;
+			case ERROR:
+				return Optional.of(
+					new CMError(
+						dp,
+						CMErrorCode.TRANSITION_ERROR,
+						validationState,
+						result.getErrorMessage()
+					)
+				);
+		}
+
+		final WitnessValidator<Particle, Particle> witnessValidator = this.witnessValidators.apply(inputParticle, outputParticle);
+		if (witnessValidator == null) {
+			throw new IllegalStateException("No witness validator for: " + inputParticle + " -> " + outputParticle);
+		}
+		final Optional<String> witnessErrorMessage = witnessValidator.validate(result.getCmAction(), inputParticle, outputParticle, metadata);
+		if (witnessErrorMessage.isPresent()) {
+			return Optional.of(
+				new CMError(
+					dp,
+					CMErrorCode.WITNESS_ERROR,
+					validationState,
+					witnessErrorMessage.get()
+				)
+			);
+		}
+
+		return Optional.empty();
+	}
+
+	Optional<CMError> validateParticleGroup(ParticleGroup group, long groupIndex, AtomMetadata metadata) {
 		final CMValidationState validationState = new CMValidationState();
 
 		for (int i = 0; i < group.getParticleCount(); i++) {
 			final DataPointer dp = DataPointer.ofParticle((int) groupIndex, i);
 			final SpunParticle nextSpun = group.getSpunParticle(i);
-			final Particle nextParticle = nextSpun.getParticle();
-			final Particle curParticle = validationState.getCurParticle();
 
-			if (validationState.spinClashes(nextSpun.getSpin())) {
-				return Optional.of(
-					new CMError(
-						dp,
-						CMErrorCode.PARTICLE_REGISTER_SPIN_CLASH,
-						validationState
-					)
-				);
+			Optional<CMError> error = validateParticle(nextSpun, dp, metadata, validationState);
+			if (error.isPresent()) {
+				return error;
 			}
-
-			final Particle inputParticle = nextSpun.getSpin() == Spin.DOWN ? nextParticle : curParticle;
-			final Particle outputParticle = nextSpun.getSpin() == Spin.DOWN ? curParticle : nextParticle;
-
-			final TransitionProcedure<Particle, Particle> transitionProcedure = this.particleProcedures.apply(inputParticle, outputParticle);
-
-			if (transitionProcedure == null) {
-				if (inputParticle == null || outputParticle == null) {
-					validationState.popAndReplace(nextSpun, null);
-					continue;
-				}
-
-				return Optional.of(
-					new CMError(
-						dp,
-						CMErrorCode.MISSING_TRANSITION_PROCEDURE,
-						validationState
-					)
-				);
-			}
-
-			final ProcedureResult result = transitionProcedure.execute(
-				inputParticle,
-				validationState.getInputUsed(),
-				outputParticle,
-				validationState.getOutputUsed()
-			);
-			switch (result.getCmAction()) {
-				case POP_INPUT:
-					if (nextSpun.getSpin() == Spin.UP) {
-						validationState.popAndReplace(nextSpun, result.getUsed());
-					} else {
-						validationState.updateUsed(result.getUsed());
-					}
-					break;
-				case POP_OUTPUT:
-					if (nextSpun.getSpin() == Spin.DOWN) {
-						validationState.popAndReplace(nextSpun, result.getUsed());
-					} else {
-						validationState.updateUsed(result.getUsed());
-					}
-					break;
-				case POP_INPUT_OUTPUT:
-					if (result.getUsed() != null) {
-						throw new IllegalStateException("POP_INPUT_OUTPUT must output null");
-					}
-					validationState.pop();
-					break;
-				case ERROR:
-					return Optional.of(
-						new CMError(
-							dp,
-							CMErrorCode.TRANSITION_ERROR,
-							validationState,
-							result.getErrorMessage()
-						)
-					);
-			}
-
-			final WitnessValidator<Particle, Particle> witnessValidator = this.witnessValidators.apply(inputParticle, outputParticle);
-			if (witnessValidator == null) {
-				throw new IllegalStateException("No witness validator for: " + inputParticle + " -> " + outputParticle);
-			}
-			final Optional<String> witnessErrorMessage = witnessValidator.validate(result.getCmAction(), inputParticle, outputParticle, metadata);
-			if (witnessErrorMessage.isPresent()) {
-				return Optional.of(
-					new CMError(
-						dp,
-						CMErrorCode.WITNESS_ERROR,
-						validationState,
-						witnessErrorMessage.get()
-					)
-				);
-			}
-
 		}
 
 		if (!validationState.isEmpty()) {
@@ -273,7 +281,7 @@ public final class ConstraintMachine {
 		final ImmutableAtom atom = cmAtom.getAtom();
 		final AtomMetadata metadata = new AtomMetadataFromAtom(atom);
 		final Stream<CMError> applicationErrs = Streams.mapWithIndex(atom.particleGroups(), (group, i) ->
-			this.validate(group, i, metadata)).flatMap(i -> i.map(Stream::of).orElse(Stream.empty()));
+			this.validateParticleGroup(group, i, metadata)).flatMap(i -> i.map(Stream::of).orElse(Stream.empty()));
 
 		final Stream<CMError> errorStream = Streams.concat(
 			unknownParticleErrors,
