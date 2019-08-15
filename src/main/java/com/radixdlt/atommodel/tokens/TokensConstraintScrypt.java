@@ -8,6 +8,7 @@ import com.radixdlt.atommodel.procedures.FungibleTransition;
 import com.radixdlt.constraintmachine.WitnessValidator;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.constraintmachine.AtomMetadata;
+import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
 import com.radixdlt.utils.UInt256;
 import java.util.Objects;
 import java.util.Optional;
@@ -188,10 +189,10 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 		return (res, in, out, meta) -> {
 			switch (res) {
 				case POP_OUTPUT:
-					return Optional.empty();
+					return WitnessValidatorResult.success();
 				case POP_INPUT:
 				case POP_INPUT_OUTPUT:
-					return check.apply(in, meta) ? Optional.empty() : Optional.of("Permission not allowed.");
+					return check.apply(in, meta) ? WitnessValidatorResult.success() : WitnessValidatorResult.error("Permission not allowed.");
 				default:
 					throw new IllegalStateException("Unsupported CMAction: " + res);
 			}

@@ -5,6 +5,7 @@ import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.atoms.ParticleGroup;
 import com.radixdlt.atoms.SpunParticle;
 import com.radixdlt.constraintmachine.TransitionProcedure.ProcedureResult;
+import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
 import java.util.Collections;
 import java.util.Optional;
 import org.junit.Test;
@@ -57,7 +58,7 @@ public class ConstraintMachineTest {
 
 		ConstraintMachine machine = new ConstraintMachine.Builder()
 			.setParticleProcedures((p0, p1) -> procedure)
-			.setWitnessValidators((p0, p1) -> (res, v0, v1, meta) -> Optional.empty())
+			.setWitnessValidators((p0, p1) -> (res, v0, v1, meta) -> WitnessValidatorResult.success())
 			.build();
 
 		Optional<CMError> errors = machine.validateParticleGroup(

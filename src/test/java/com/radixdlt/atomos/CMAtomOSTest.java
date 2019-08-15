@@ -7,7 +7,7 @@ import com.radixdlt.atoms.Spin;
 import com.radixdlt.constraintmachine.CMAtom;
 import com.radixdlt.constraintmachine.CMParticle;
 import com.radixdlt.constraintmachine.TransitionProcedure;
-import java.util.Optional;
+import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
 import org.junit.Test;
 
 import com.radixdlt.atoms.Particle;
@@ -69,7 +69,7 @@ public class CMAtomOSTest {
 				TestParticle0.class,
 				TestParticle0.class,
 				procedure,
-				(res, in, out, meta) -> Optional.empty()
+				(res, in, out, meta) -> WitnessValidatorResult.success()
 			);
 		});
 		TransitionProcedure<TestParticle1, TestParticle0> procedure0 = mock(TransitionProcedure.class);
@@ -80,7 +80,7 @@ public class CMAtomOSTest {
 					TestParticle1.class,
 					TestParticle0.class,
 					procedure0,
-					(res, in, out, meta) -> Optional.empty()
+					(res, in, out, meta) -> WitnessValidatorResult.success()
 				);
 			})
 		).isInstanceOf(IllegalStateException.class);

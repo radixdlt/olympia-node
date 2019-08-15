@@ -6,6 +6,7 @@ import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.TransitionProcedure.CMAction;
 import com.radixdlt.constraintmachine.TransitionProcedure.ProcedureResult;
 import com.radixdlt.constraintmachine.WitnessValidator;
+import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -111,7 +112,7 @@ final class ConstraintScryptEnv implements SysCalls {
 			particleClass,
 			(in, inUsed, out, outUsed) -> ProcedureResult.popInputOutput(),
 			(res, in, out, meta) -> res == CMAction.POP_INPUT_OUTPUT && meta.isSignedBy(in.getRri().getAddress())
-				? Optional.empty() : Optional.of("Not signed by " + in.getRri().getAddress())
+				? WitnessValidatorResult.success() : WitnessValidatorResult.error("Not signed by " + in.getRri().getAddress())
 		);
 	}
 
@@ -146,7 +147,7 @@ final class ConstraintScryptEnv implements SysCalls {
 					throw new IllegalStateException("Only expecting POP_OUTPUT but was " + res);
 				}
 
-				return Optional.empty();
+				return WitnessValidatorResult.success();
 			}
 		);
 
@@ -164,10 +165,10 @@ final class ConstraintScryptEnv implements SysCalls {
 				}
 
 				if (!meta.isSignedBy(in.getRri().getAddress())) {
-					return Optional.of("Not signed by " + in.getRri().getAddress());
+					return WitnessValidatorResult.error("Not signed by " + in.getRri().getAddress());
 				}
 
-				return Optional.empty();
+				return WitnessValidatorResult.success();
 			}
 		);
 	}

@@ -4,7 +4,7 @@ import com.radixdlt.atommodel.procedures.NonRRIResourceCreation;
 import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Result;
-import java.util.Optional;
+import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
 
 public class MessageParticleConstraintScrypt implements ConstraintScrypt {
 	@Override
@@ -26,7 +26,7 @@ public class MessageParticleConstraintScrypt implements ConstraintScrypt {
 			MessageParticle.class,
 			new NonRRIResourceCreation<>(),
 			(res, in, out, meta) -> meta.isSignedBy(out.getFrom())
-				? Optional.empty() : Optional.of("Input " + in + " not signed.")
+				? WitnessValidatorResult.success() : WitnessValidatorResult.error("Input " + in + " not signed.")
 		);
 	}
 }

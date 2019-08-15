@@ -8,6 +8,7 @@ import com.radixdlt.atoms.ParticleGroup;
 import com.radixdlt.atoms.Spin;
 import com.radixdlt.atoms.SpunParticle;
 import com.radixdlt.constraintmachine.TransitionProcedure.ProcedureResult;
+import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.SpinStateTransitionValidator;
 import com.radixdlt.store.SpinStateTransitionValidator.TransitionCheckResult;
@@ -200,14 +201,19 @@ public final class ConstraintMachine {
 		if (witnessValidator == null) {
 			throw new IllegalStateException("No witness validator for: " + inputParticle + " -> " + outputParticle);
 		}
-		final Optional<String> witnessErrorMessage = witnessValidator.validate(result.getCmAction(), inputParticle, outputParticle, metadata);
-		if (witnessErrorMessage.isPresent()) {
+		final WitnessValidatorResult witnessValidatorResult = witnessValidator.validate(
+			result.getCmAction(),
+			inputParticle,
+			outputParticle,
+			metadata
+		);
+		if (witnessValidatorResult.isError()) {
 			return Optional.of(
 				new CMError(
 					dp,
 					CMErrorCode.WITNESS_ERROR,
 					validationState,
-					witnessErrorMessage.get()
+					witnessValidatorResult.getErrorMessage()
 				)
 			);
 		}
