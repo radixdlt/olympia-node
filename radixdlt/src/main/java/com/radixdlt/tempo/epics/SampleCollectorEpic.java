@@ -12,6 +12,7 @@ import com.radixdlt.tempo.actions.AcceptAtomAction;
 import com.radixdlt.tempo.actions.OnSampleDeliveryFailedAction;
 import com.radixdlt.tempo.actions.ReceiveSamplingResultAction;
 import com.radixdlt.tempo.actions.RequestSamplingAction;
+import com.radixdlt.tempo.actions.ResetAction;
 import com.radixdlt.tempo.actions.TimeoutSampleRequestsAction;
 import com.radixdlt.tempo.actions.messaging.ReceiveSampleRequestAction;
 import com.radixdlt.tempo.actions.messaging.ReceiveSampleResponseAction;
@@ -64,8 +65,11 @@ public class SampleCollectorEpic implements TempoEpic {
 			if (ownVertex == null) {
 				logger.warn("Accepted atom '" + atom.getAID() + " has no vertex by self");
 			} else {
-				TemporalProof localBranch = temporalProof.getBranch(ownVertex, true);
-				sampleStore.addLocal(localBranch);
+				TemporalProof localSample = temporalProof.getBranch(ownVertex, true);
+				sampleStore.addLocal(localSample);
+				if (logger.hasLevel(Logging.DEBUG)) {
+					logger.debug("Stored local sample for '" + atom.getAID() + "'");
+				}
 			}
 			return Stream.empty();
 		} else if (action instanceof RequestSamplingAction) {
@@ -107,7 +111,6 @@ public class SampleCollectorEpic implements TempoEpic {
 		} else if (action instanceof ReceiveSampleResponseAction) {
 			ReceiveSampleResponseAction response = (ReceiveSampleResponseAction) action;
 			SampleCollectorState collectorState = bundle.get(SampleCollectorState.class);
-
 			if (logger.hasLevel(Logging.DEBUG)) {
 				logger.debug(String.format("Received sample response with %s from %s (%d unavailable: %s)",
 					response.getTemporalProofs().stream()
@@ -115,8 +118,13 @@ public class SampleCollectorEpic implements TempoEpic {
 						.collect(Collectors.toList()),
 					response.getPeer(), response.getUnavailableAids().size(), response.getUnavailableAids()));
 			}
+
 			// add collected samples to store
-			response.getTemporalProofs().forEach(sampleStore::addCollected);
+			EUID peerNid = response.getPeer().getSystem().getNID();
+			response.getTemporalProofs().stream()
+				// only add samples that were actually requested
+				.filter(tp -> collectorState.isRequested(peerNid, tp.getAID()))
+				.forEach(sampleStore::addCollected);
 			// collect and return the resulting samples
 			return collectorState.completedRequests().map(this::toResult);
 		} else if (action instanceof TimeoutSampleRequestsAction) {
@@ -132,6 +140,8 @@ public class SampleCollectorEpic implements TempoEpic {
 			// collect and return the resulting samples
 			Stream<TempoAction> completions = collectorState.completedRequests().map(this::toResult);
 			return Stream.concat(failures, completions);
+		} else if (action instanceof ResetAction) {
+			sampleStore.reset();
 		}
 
 		return Stream.empty();
