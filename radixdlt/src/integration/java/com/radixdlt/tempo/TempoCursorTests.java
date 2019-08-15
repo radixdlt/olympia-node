@@ -15,9 +15,9 @@ import com.radixdlt.ledger.LedgerCursor.Type;
 import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerSearchMode;
 
-import java.util.List;
-
 import static org.junit.Assume.assumeTrue;
+
+import java.util.List;
 
 public class TempoCursorTests extends RadixTestWithStores {
 
