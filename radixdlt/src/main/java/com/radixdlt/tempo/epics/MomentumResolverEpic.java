@@ -32,7 +32,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 public class MomentumResolverEpic implements TempoEpic {
-	private static final Logger logger = Logging.getLogger("Conflict");
+	private static final Logger logger = Logging.getLogger("Conflicts");
 
 	private final SampleSelector sampleSelector;
 
@@ -80,13 +80,13 @@ public class MomentumResolverEpic implements TempoEpic {
 			ReceiveSamplingResultAction result = (ReceiveSamplingResultAction) action;
 			Collection<TemporalProof> allSamples = result.getAllSamples();
 			EUID tag = result.getTag();
-			ConflictsState conflictsState = bundle.get(ConflictsState.class);
-			Set<AID> allConflictingAids = conflictsState.getAids(tag);
+			ConflictsState conflicts = bundle.get(ConflictsState.class);
+			Set<AID> allConflictingAids = conflicts.getAids(tag);
 
 			TempoAtom winningAtom;
 			if (allSamples.isEmpty()) {
 				logger.warn("No samples available for any of '" + allConflictingAids +  "', resolving to current preference");
-				winningAtom = conflictsState.getCurrentAtom(tag);
+				winningAtom = conflicts.getCurrentAtom(tag);
 			} else {
 				// decide on winner using samples
 				Map<AID, List<EUID>> preferences = MomentumUtils.extractPreferences(allSamples);
@@ -97,7 +97,7 @@ public class MomentumResolverEpic implements TempoEpic {
 					.orElseThrow(() -> new TempoException("Internal error while measuring momenta"));
 				logger.info("Resolving conflict between '" + allConflictingAids + "' to " + winner + ", measured momenta to be " + momenta);
 
-				winningAtom = conflictsState.getAtom(tag, winner);
+				winningAtom = conflicts.getAtom(tag, winner);
 			}
 
 			return Stream.of(new OnConflictResolvedAction(winningAtom, allConflictingAids, tag));

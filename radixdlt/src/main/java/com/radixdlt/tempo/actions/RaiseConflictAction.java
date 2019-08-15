@@ -5,6 +5,7 @@ import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
 import com.radixdlt.tempo.TempoAction;
 import com.radixdlt.tempo.TempoAtom;
+import com.radixdlt.utils.UInt128;
 
 import java.util.Collection;
 import java.util.Set;
@@ -37,7 +38,8 @@ public class RaiseConflictAction implements TempoAction {
 
 	public EUID getTag() {
 		return new EUID(allAids()
-			.map(AID::getLow)
-			.reduce(0L, Long::sum));
+			.map(AID::getBytes)
+			.map(UInt128::from)
+			.reduce(UInt128.ZERO, UInt128::add));
 	}
 }

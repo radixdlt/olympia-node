@@ -50,14 +50,14 @@ public class SampleCollectorReducer implements TempoReducer<SampleCollectorState
 			Set<AID> completedAids = Stream.concat(response.getUnavailableAids().stream(),
 				response.getTemporalProofs().stream().map(TemporalProof::getAID))
 				.collect(Collectors.toSet());
-			return prevState.complete(completedAids, peerNid);
+			return prevState.complete(response.getTag(), completedAids, peerNid);
 		} else if (action instanceof OnSampleDeliveryFailedAction) {
 			OnSampleDeliveryFailedAction fail = (OnSampleDeliveryFailedAction) action;
 			Set<AID> failedAids = fail.getAids();
 			EUID peerNid = fail.getPeer().getSystem().getNID();
 
 			// remove failed aids from pending
-			return prevState.complete(failedAids, peerNid);
+			return prevState.complete(fail.getTag(), failedAids, peerNid);
 		} else if (action instanceof ReceiveSamplingResultAction) {
 			EUID tag = ((ReceiveSamplingResultAction) action).getTag();
 

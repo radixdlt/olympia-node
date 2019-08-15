@@ -22,9 +22,9 @@ public class SampleCollectorState implements TempoState {
 		this.requests = requests;
 	}
 
-	public boolean isRequested(EUID nid, AID aid) {
-		return requests.values().stream()
-			.anyMatch(request -> request.requestedAids.contains(aid) && request.nids.contains(nid));
+	public boolean isRequested(EUID tag, EUID nid, AID aid) {
+		SamplingRequest request = requests.get(tag);
+		return request != null && request.requestedAids.contains(aid) && request.nids.contains(nid);
 	}
 
 	public boolean isPendingDelivery(EUID tag, EUID nid, AID aid) {
@@ -50,9 +50,12 @@ public class SampleCollectorState implements TempoState {
 		return new SampleCollectorState(Collections.unmodifiableMap(nextRequests));
 	}
 
-	public SampleCollectorState complete(Set<AID> completedAids, EUID peerNid) {
-		Map<EUID, SamplingRequest> nextRequests = new HashMap<>();
-		requests.forEach((tag, request) -> nextRequests.put(tag, request.complete(completedAids, peerNid)));
+	public SampleCollectorState complete(EUID tag, Set<AID> completedAids, EUID peerNid) {
+		Map<EUID, SamplingRequest> nextRequests = new HashMap<>(requests);
+		SamplingRequest request = requests.get(tag);
+		if (request != null) {
+			nextRequests.put(tag, request.complete(completedAids, peerNid));
+		}
 		return new SampleCollectorState(nextRequests);
 	}
 

@@ -3,6 +3,7 @@ package com.radixdlt.tempo.messages;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.common.AID;
+import com.radixdlt.common.EUID;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerId2;
 import org.radix.network.messaging.Message;
@@ -18,15 +19,21 @@ public class SampleResponseMessage extends Message {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final ImmutableSet<AID> unavailableAids;
 
+	@JsonProperty("tag")
+	@DsonOutput(DsonOutput.Output.ALL)
+	private final EUID tag;
+
 	private SampleResponseMessage() {
 		// For serializer
 		this.temporalProofs = ImmutableSet.of();
 		this.unavailableAids = ImmutableSet.of();
+		this.tag = null;
 	}
 
-	public SampleResponseMessage(ImmutableSet<TemporalProof> temporalProofs, ImmutableSet<AID> unavailableAids) {
+	public SampleResponseMessage(ImmutableSet<TemporalProof> temporalProofs, ImmutableSet<AID> unavailableAids, EUID tag) {
 		this.temporalProofs = temporalProofs;
 		this.unavailableAids = unavailableAids;
+		this.tag = tag;
 	}
 
 	public ImmutableSet<TemporalProof> getTemporalProofs() {
@@ -35,6 +42,10 @@ public class SampleResponseMessage extends Message {
 
 	public ImmutableSet<AID> getUnavailableAids() {
 		return unavailableAids;
+	}
+
+	public EUID getTag() {
+		return tag;
 	}
 
 	@Override

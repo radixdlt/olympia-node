@@ -76,14 +76,15 @@ public class SampleCollectorEpic implements TempoEpic {
 
 			// early out with only local samples in case no sample peers were given
 			if (samplePeers.isEmpty()) {
-				logger.warn("No sample peers given for requesting, returning previous samples (local and collected)");
+				logger.warn("No sample peers given for requesting for tag '" + request.getTag() + "', returning previous samples (local and collected)");
 				return Stream.of(toResult(request.getAllAids(), request.getTag()));
 			}
 
-			logger.info("Requesting sampling of '" + allAids + "' from '" + samplePeers + "'");
+			logger.info(String.format("Requesting sampling for tag '%s' of '%s' from '%s'",
+				request.getTag(), allAids, samplePeers));
 			// request samples of all aids from all selected sample peers
 			Stream<TempoAction> requests = samplePeers.stream()
-				.map(peer -> new SendSampleRequestAction(allAids, peer));
+				.map(peer -> new SendSampleRequestAction(allAids, peer, request.getTag()));
 			Stream<TempoAction> timeout = Stream.of(new TimeoutSampleRequestsAction(allAids, samplePeers, request.getTag())
 				.delay(SAMPLE_REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS));
 			return Stream.concat(requests, timeout);
@@ -102,14 +103,16 @@ public class SampleCollectorEpic implements TempoEpic {
 				}
 			}
 			if (logger.hasLevel(Logging.DEBUG)) {
-				logger.debug("Responding to sample request from " + request.getPeer() + " for " + request.getAids());
+				logger.debug(String.format("Responding to sample request for tag '%s' from '%s' for '%s'",
+					request.getTag(), request.getPeer(), request.getAids()));
 			}
-			return Stream.of(new SendSampleResponseAction(samples.build(), unavailableAids.build(), request.getPeer()));
+			return Stream.of(new SendSampleResponseAction(samples.build(), unavailableAids.build(), request.getTag(), request.getPeer()));
 		} else if (action instanceof ReceiveSampleResponseAction) {
 			ReceiveSampleResponseAction response = (ReceiveSampleResponseAction) action;
 			SampleCollectorState collectorState = bundle.get(SampleCollectorState.class);
 			if (logger.hasLevel(Logging.DEBUG)) {
-				logger.debug(String.format("Received sample response with %s from %s (%d unavailable: %s)",
+				logger.debug(String.format("Received sample response for tag %s with %s from %s (%d unavailable: %s)",
+					response.getTag(),
 					response.getTemporalProofs().stream()
 						.map(TemporalProof::getAID)
 						.collect(Collectors.toList()),
@@ -120,7 +123,7 @@ public class SampleCollectorEpic implements TempoEpic {
 			EUID peerNid = response.getPeer().getSystem().getNID();
 			response.getTemporalProofs().stream()
 				// only add samples that were actually requested
-				.filter(tp -> collectorState.isRequested(peerNid, tp.getAID()))
+				.filter(tp -> collectorState.isRequested(response.getTag(), peerNid, tp.getAID()))
 				.forEach(sampleStore::addCollected);
 			// collect and return the resulting samples
 			return collectorState.completedRequests().map(this::toResult);
@@ -132,7 +135,7 @@ public class SampleCollectorEpic implements TempoEpic {
 			Stream<OnSampleDeliveryFailedAction> failures = timeout.getPeers().stream()
 				.map(peer -> new OnSampleDeliveryFailedAction(timeout.getAids().stream()
 					.filter(aid -> collectorState.isPendingDelivery(timeout.getTag(), peer.getSystem().getNID(), aid))
-					.collect(ImmutableSet.toImmutableSet()), peer))
+					.collect(ImmutableSet.toImmutableSet()), timeout.getTag(), peer))
 				.filter(failure -> !failure.getAids().isEmpty());
 			// collect and return the resulting samples
 			Stream<TempoAction> completions = collectorState.completedRequests().map(this::toResult);
