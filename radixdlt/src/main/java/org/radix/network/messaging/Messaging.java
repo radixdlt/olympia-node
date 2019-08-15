@@ -52,6 +52,9 @@ public class Messaging extends Service
 
 	private Messaging(MessageCentral messageCentral) {
 		this.messageCentral = Objects.requireNonNull(messageCentral);
+
+		// FIXME: Note this is temporary.  It provides a bridge from old, name based
+		// callbacks (via Message#getCommand) to new Class based callbacks.
 		ConfigurationBuilder config = new ConfigurationBuilder()
 			.setUrls(ClasspathHelper.forJavaClassPath())
 			.filterInputsBy(new FilterBuilder().includePackage("org.radix", "com.radixdlt"));

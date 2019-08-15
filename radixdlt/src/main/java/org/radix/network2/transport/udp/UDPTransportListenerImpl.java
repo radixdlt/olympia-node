@@ -54,24 +54,24 @@ public final class UDPTransportListenerImpl implements TransportListener {
 
 	private void inboundMessageReceiver() {
 		final byte[] buf = new byte[65536];
-	    final DatagramPacket dp = new DatagramPacket(buf, buf.length);
+		final DatagramPacket dp = new DatagramPacket(buf, buf.length);
 
-	    while (!serverSocket.isClosed()) {
-	    	try {
-	    		// Reset pointers
-	    		dp.setData(buf);
-	    		serverSocket.receive(dp);
-	    	} catch (IOException e) {
-	    		// Ignore and continue
-	    		continue;
-	    	}
+		while (!serverSocket.isClosed()) {
+			try {
+				// Reset pointers
+				dp.setData(buf);
+				serverSocket.receive(dp);
+			} catch (IOException e) {
+				// Ignore and continue
+				continue;
+			}
 
-	    	try {
-	    		final byte[] data = dp.getData();
-	    		final int offset = dp.getOffset();
-	    		final int length = dp.getLength();
+			try {
+				final byte[] data = dp.getData();
+				final int offset = dp.getOffset();
+				final int length = dp.getLength();
 
-	    		// part of the NAT address validation process
+				// part of the NAT address validation process
 				if (!PublicInetAddress.getInstance().endValidation(data, offset, length)) {
 					// Clone data and put in queue
 					InetAddress peerAddress = dp.getAddress();
@@ -111,9 +111,9 @@ public final class UDPTransportListenerImpl implements TransportListener {
 					);
 					messageSink.accept(InboundMessage.of(source, newData));
 				}
-	    	} catch (IOException e) {
-	    		log.error("While processing inbound message", e);
-	    	}
-	    }
+			} catch (IOException e) {
+				log.error("While processing inbound message", e);
+			}
+		}
 	}
 }
