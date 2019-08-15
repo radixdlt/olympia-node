@@ -36,6 +36,12 @@ public class LedgerKeyConstraintException extends LedgerException {
 		return atom;
 	}
 
+	public ImmutableSet<AID> getConflictingAids() {
+		return conflictingAtoms.values().stream()
+			.map(Atom::getAID)
+			.collect(ImmutableSet.toImmutableSet());
+	}
+
 	public ImmutableSet<AID> getAllAids() {
 		return Stream.concat(Stream.of(atom), conflictingAtoms.values().stream())
 			.map(Atom::getAID)

@@ -29,17 +29,15 @@ public class LocalResolverEpic implements TempoEpic {
 	@Override
 	public Stream<TempoAction> epic(TempoStateBundle bundle, TempoAction action) {
 		if (action instanceof ResolveConflictAction) {
-			ResolveConflictAction resolve = (ResolveConflictAction) action;
-			TempoAtom winner = resolve.allAtoms()
+			ResolveConflictAction conflict = (ResolveConflictAction) action;
+			TempoAtom winner = conflict.allAtoms()
 				.filter(a -> a.getTemporalProof().hasVertexByNID(self))
 				.map(a -> Pair.of(a.getTemporalProof().getVertexByNID(self).getClock(), a))
 				.min(Comparator.comparingLong(Pair::getFirst))
 				.map(Pair::getSecond)
 				.orElseThrow(() -> new TempoException("Error while resolving conflict, no atom has vertex by self"));
-			// TODO get rid of ugly hack to get conflict winner back to Ledger interface
-			resolve.getWinnerFuture().complete(winner);
-			Set<AID> allAids = resolve.allAids().collect(Collectors.toSet());
-			return Stream.of(new OnConflictResolvedAction(winner, allAids, resolve.getTag()));
+			Set<AID> allAids = conflict.allAids().collect(Collectors.toSet());
+			return Stream.of(new OnConflictResolvedAction(winner, allAids, conflict.getTag()));
 		}
 
 		return Stream.empty();

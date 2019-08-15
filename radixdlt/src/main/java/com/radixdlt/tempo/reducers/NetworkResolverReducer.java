@@ -25,7 +25,7 @@ public final class NetworkResolverReducer implements TempoReducer<ConflictsState
 		if (action instanceof ResolveConflictAction) {
 			ResolveConflictAction conflict = (ResolveConflictAction) action;
 			ImmutableSet<TempoAtom> allConflictingAtoms = conflict.allAtoms().collect(ImmutableSet.toImmutableSet());
-			return prevState.with(conflict.getTag(), conflict.getAtom(), allConflictingAtoms, conflict.getWinnerFuture());
+			return prevState.with(conflict.getTag(), conflict.getAtom(), allConflictingAtoms);
 		} else if (action instanceof OnConflictResolvedAction) {
 			return prevState.without(((OnConflictResolvedAction) action).getTag());
 		}

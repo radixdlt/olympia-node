@@ -14,12 +14,10 @@ import java.util.stream.Stream;
 public class ResolveConflictAction implements TempoAction {
 	private final TempoAtom atom;
 	private final Set<TempoAtom> conflictingAtoms;
-	private final CompletableFuture<TempoAtom> winnerFuture;
 
-	public ResolveConflictAction(TempoAtom atom, Collection<TempoAtom> conflictingAtoms, CompletableFuture<TempoAtom> winnerFuture) {
+	public ResolveConflictAction(TempoAtom atom, Collection<TempoAtom> conflictingAtoms) {
 		this.atom = atom;
 		this.conflictingAtoms = ImmutableSet.copyOf(conflictingAtoms);
-		this.winnerFuture = winnerFuture;
 	}
 
 	public TempoAtom getAtom() {
@@ -36,10 +34,6 @@ public class ResolveConflictAction implements TempoAction {
 
 	public Stream<AID> allAids() {
 		return allAtoms().map(TempoAtom::getAID);
-	}
-
-	public CompletableFuture<TempoAtom> getWinnerFuture() {
-		return winnerFuture;
 	}
 
 	public  EUID getTag() {

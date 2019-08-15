@@ -22,6 +22,11 @@ public class SampleCollectorState implements TempoState {
 		this.requests = requests;
 	}
 
+	public boolean isRequested(EUID nid, AID aid) {
+		return requests.values().stream()
+			.anyMatch(request -> request.requestedAids.contains(aid) && request.nids.contains(nid));
+	}
+
 	public boolean isPendingDelivery(EUID tag, EUID nid, AID aid) {
 		SamplingRequest request = requests.get(tag);
 		return request != null && request.isPendingDelivery(nid, aid);

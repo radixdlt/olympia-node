@@ -1,8 +1,10 @@
 package com.radixdlt.tempo;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.common.EUID;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.tempo.actions.AcceptAtomAction;
+import com.radixdlt.tempo.actions.OnConflictResolvedAction;
 import com.radixdlt.tempo.actions.ResolveConflictAction;
 import com.radixdlt.tempo.actions.ReceiveAtomAction;
 import com.radixdlt.tempo.actions.ResetAction;
@@ -53,6 +55,7 @@ import org.radix.modules.Modules;
 import org.radix.network.messaging.Messaging;
 import org.radix.network.peers.PeerHandler;
 import org.radix.properties.RuntimeProperties;
+import org.radix.time.TemporalProof;
 import org.radix.universe.system.LocalSystem;
 
 import java.util.ArrayList;
@@ -65,6 +68,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
@@ -85,6 +90,8 @@ public final class TempoController {
 	private final List<TempoReducer> reducers;
 	private final List<TempoEpic> epics;
 	private final ScheduledExecutorService executor;
+
+	private final ConcurrentMap<EUID, CompletableFuture<TempoAtom>> pendingConflictFutures;
 	private final TempoStateBundleStore stateStore;
 
 	private TempoController(int inboundQueueCapacity,
@@ -95,8 +102,9 @@ public final class TempoController {
 	                        List<TempoAction> initialActions) {
 		this.inboundAtoms = new LinkedBlockingQueue<>(inboundQueueCapacity);
 		this.actions = new LinkedBlockingQueue<>(actionsQueueCapacity);
-		this.stateStore = new TempoStateBundleStore();
 		this.executor = Executors.newScheduledThreadPool(TEMPO_EXECUTOR_POOL_COUNT, runnable -> new Thread(null, runnable, "Tempo Executor"));
+		this.stateStore = new TempoStateBundleStore();
+		this.pendingConflictFutures = new ConcurrentHashMap<>();
 
 		this.reducers = reducers;
 		this.epics = ImmutableList.<TempoEpic>builder()
@@ -204,6 +212,15 @@ public final class TempoController {
 				// reschedule
 				delay(action, FULL_INBOUND_QUEUE_RESCHEDULE_TIME_SECONDS, TimeUnit.SECONDS);
 			}
+		} else if (action instanceof OnConflictResolvedAction) {
+			OnConflictResolvedAction resolution = (OnConflictResolvedAction) action;
+			EUID tag = resolution.getTag();
+			CompletableFuture<TempoAtom> future = pendingConflictFutures.remove(tag);
+			if (future == null) {
+				logger.warn("There is no pending future for conflict with tag '" + tag + "'");
+			} else {
+				future.complete(resolution.getWinner());
+			}
 		} else if (action instanceof ScheduleAction) {
 			ScheduleAction schedule = (ScheduleAction) action;
 			delay(schedule.getAction(), schedule.getDelay(), schedule.getUnit());
@@ -217,7 +234,8 @@ public final class TempoController {
 
 	public CompletableFuture<TempoAtom> resolve(TempoAtom atom, Collection<TempoAtom> conflictingAtoms) {
 		CompletableFuture<TempoAtom> winnerFuture = new CompletableFuture<>();
-		ResolveConflictAction resolve = new ResolveConflictAction(atom, conflictingAtoms, winnerFuture);
+		ResolveConflictAction resolve = new ResolveConflictAction(atom, conflictingAtoms);
+		pendingConflictFutures.put(resolve.getTag(), winnerFuture);
 		this.dispatch(resolve);
 
 		return winnerFuture;
@@ -353,7 +371,7 @@ public final class TempoController {
 			builder.addEpic(new LocalResolverEpic(localSystem.getNID()));
 		} else if (resolver.equalsIgnoreCase("momentum")) {
 			SampleSelector sampleSelector = new SimpleSampleSelector(localSystem.getNID());
-			ConflictDecider conflictDecider = samples -> samples.stream().findAny().orElseThrow(() -> new TempoException("No samples given"));
+			ConflictDecider conflictDecider = samples -> samples.stream().map(TemporalProof::getAID).findAny().orElseThrow(() -> new TempoException("No samples given"));
 			SampleStore store = new SampleStore(dbEnv, serialization);
 			store.open();
 			builder.addEpic(new NetworkResolverEpic(sampleSelector, conflictDecider));

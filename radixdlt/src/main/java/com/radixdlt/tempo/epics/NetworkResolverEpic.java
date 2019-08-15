@@ -8,7 +8,6 @@ import com.radixdlt.tempo.SampleSelector;
 import com.radixdlt.tempo.TempoAction;
 import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.TempoEpic;
-import com.radixdlt.tempo.TempoException;
 import com.radixdlt.tempo.TempoState;
 import com.radixdlt.tempo.TempoStateBundle;
 import com.radixdlt.tempo.actions.OnConflictResolvedAction;
@@ -25,7 +24,6 @@ import org.radix.time.TemporalProof;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
 public class NetworkResolverEpic implements TempoEpic {
@@ -71,16 +69,14 @@ public class NetworkResolverEpic implements TempoEpic {
 
 			TempoAtom winningAtom;
 			if (allSamples.isEmpty()) {
-				logger.warn("No samples available for any of '" + allConflictingAids +  "', sticking to current preference");
+				logger.warn("No samples available for any of '" + allConflictingAids +  "', resolving to current preference");
 				winningAtom = conflictsState.getCurrentAtom(tag);
 			} else {
 				// decide on winner using samples
-				TemporalProof winningTP = decider.decide(allSamples);
-				winningAtom = conflictsState.getAtom(tag, winningTP.getAID());
+				AID winningAid = decider.decide(allSamples);
+				winningAtom = conflictsState.getAtom(tag, winningAid);
 			}
 
-			// TODO remove ugly hack to report back winner to future
-			conflictsState.complete(tag, winningAtom);
 			return Stream.of(new OnConflictResolvedAction(winningAtom, allConflictingAids, tag));
 		}
 
