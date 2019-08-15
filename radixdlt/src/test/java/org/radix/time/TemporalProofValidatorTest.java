@@ -5,11 +5,6 @@ import org.assertj.core.api.Assertions;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.powermock.core.classloader.annotations.PowerMockIgnore;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
-import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.common.EUID;
 import com.radixdlt.common.AID;
 import com.radixdlt.crypto.ECKeyPair;
@@ -20,8 +15,6 @@ import org.radix.exceptions.ValidationException;
 import org.radix.modules.Modules;
 import org.radix.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.serialization.core.ClasspathScanningSerializationPolicy;
-import com.radixdlt.serialization.core.ClasspathScanningSerializerIds;
 import com.radixdlt.universe.Universe;
 import org.radix.validation.ValidationHandler;
 
@@ -30,13 +23,10 @@ import java.util.Collections;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.powermock.api.mockito.PowerMockito.mock;
-import static org.powermock.api.mockito.PowerMockito.mockStatic;
 import static org.powermock.api.mockito.PowerMockito.when;
 
-@RunWith(PowerMockRunner.class)
-@PowerMockIgnore({"java.security.*", "javax.security.*", "org.bouncycastle.*"})
-@PrepareForTest({Modules.class, Hash.class})
 public class TemporalProofValidatorTest {
+
 	@Before
 	public void setUp() {
 		Universe universe = mock(Universe.class);
@@ -47,19 +37,22 @@ public class TemporalProofValidatorTest {
 
 		NtpService ntpService = mock(NtpService.class);
 
-		mockStatic(Modules.class);
-		when(Modules.get(Universe.class)).thenReturn(universe);
-		when(Modules.get(RuntimeProperties.class)).thenReturn(runtimeProperties);
-		when(Modules.get(NtpService.class)).thenReturn(ntpService);
-		when(Modules.get(Serialization.class)).thenReturn(Serialization.getDefault());
+		Modules.put(Universe.class, universe);
+		Modules.put(RuntimeProperties.class, runtimeProperties);
+		Modules.put(NtpService.class, ntpService);
+		Modules.put(Serialization.class, Serialization.getDefault());
 
 		ValidationHandler validationHandler = mock(ValidationHandler.class);
-		when(Modules.get(ValidationHandler.class)).thenReturn(validationHandler);
+		Modules.put(ValidationHandler.class, validationHandler);
 	}
 
 	@After
 	public void cleanup() {
+		Modules.remove(Universe.class);
+		Modules.remove(RuntimeProperties.class);
+		Modules.remove(NtpService.class);
 		Modules.remove(Serialization.class);
+		Modules.remove(ValidationHandler.class);
 	}
 
 	@Test
