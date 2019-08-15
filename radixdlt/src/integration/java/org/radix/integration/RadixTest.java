@@ -28,8 +28,6 @@ import org.radix.modules.exceptions.ModuleException;
 import org.radix.properties.PersistedProperties;
 import org.radix.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.serialization.core.ClasspathScanningSerializationPolicy;
-import com.radixdlt.serialization.core.ClasspathScanningSerializerIds;
 import org.radix.time.TemporalProof;
 import org.radix.time.TemporalVertex;
 import org.radix.time.Time;
@@ -37,6 +35,7 @@ import com.radixdlt.universe.Universe;
 import org.radix.universe.system.LocalSystem;
 import org.radix.utils.IOUtils;
 import org.radix.validation.Validation;
+import org.radix.validation.ValidationHandler;
 
 public class RadixTest
 {
@@ -105,6 +104,7 @@ public class RadixTest
 		Modules.remove(Universe.class);
 		Modules.remove(Time.class);
 		Modules.remove(Validation.class);
+		Modules.remove(ValidationHandler.class);
 		Modules.remove(Serialization.class);
 		Modules.remove(CommandLine.class);
 		Modules.remove(PersistedProperties.class);

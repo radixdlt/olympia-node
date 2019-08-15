@@ -1,15 +1,10 @@
 package com.radixdlt.tempo;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.primitives.Longs;
 import com.radixdlt.Atom;
-import com.radixdlt.atommodel.message.MessageParticle;
-import com.radixdlt.atomos.RadixAddress;
-import com.radixdlt.atoms.ImmutableAtom;
-import com.radixdlt.atoms.Spin;
 import com.radixdlt.common.AID;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.ledger.LedgerCursor;
@@ -18,19 +13,25 @@ import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerSearchMode;
 import com.radixdlt.mock.MockAtomContent;
 import com.radixdlt.universe.Universe;
-import com.radixdlt.utils.Ints;
+import static org.junit.Assume.assumeTrue;
+
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.radix.atoms.AtomStore;
 import org.radix.integration.RadixTestWithStores;
 import org.radix.modules.Modules;
-import org.radix.time.Time;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
 public class TempoCursorTests extends RadixTestWithStores {
+
+	@BeforeClass
+	public static void checkTempoAvailable() {
+		assumeTrue("Tempo 2.0 must be available", Modules.isAvailable(Tempo.class));
+	}
+
 	@Test
 	public void store_single_atom__search_by_unique_aid_and_get() throws Exception {
 		ECKeyPair identity = new ECKeyPair();

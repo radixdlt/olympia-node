@@ -4,38 +4,30 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.Atom;
-import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.mock.MockAtomContent;
-import com.radixdlt.tempo.store.TempoAtomStore;
-import org.junit.After;
 import org.junit.Assert;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
-import org.radix.database.DatabaseEnvironment;
 import org.radix.integration.RadixTestWithStores;
 import org.radix.modules.Modules;
-import org.radix.modules.exceptions.ModuleException;
-import org.radix.time.Time;
-
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.primitives.Longs;
-import com.radixdlt.atommodel.message.MessageParticle;
-import com.radixdlt.atomos.RadixAddress;
-import com.radixdlt.atoms.Spin;
 import com.radixdlt.common.AID;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.universe.Universe;
-import org.radix.universe.system.LocalSystem;
-
-import static org.mockito.Mockito.mock;
+import static org.junit.Assume.assumeTrue;
 
 public class TempoAtomTests extends RadixTestWithStores
 {
+	@BeforeClass
+	public static void checkTempoAvailable() {
+		assumeTrue("Tempo 2.0 must be available", Modules.isAvailable(Tempo.class));
+	}
+
 	@Test
 	public void store_atom() throws Exception
 	{
