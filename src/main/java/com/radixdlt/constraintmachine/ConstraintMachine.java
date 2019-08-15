@@ -12,7 +12,6 @@ import com.radixdlt.constraintmachine.TransitionProcedure.ProcedureResult;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.SpinStateTransitionValidator;
 import com.radixdlt.store.SpinStateTransitionValidator.TransitionCheckResult;
-import com.radixdlt.utils.UInt256;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.UnaryOperator;
@@ -88,22 +87,60 @@ public final class ConstraintMachine {
 		this.witnessValidators = witnessValidators;
 	}
 
+	final class CMValidationState {
+		private SpunParticle spunParticleRemaining = null;
+		private Object particleRemainingUsed = null;
+
+		Particle getCurParticle() {
+			return spunParticleRemaining == null ? null : spunParticleRemaining.getParticle();
+		}
+
+		boolean spinClashes(Spin spin) {
+			return spunParticleRemaining != null && spunParticleRemaining.getSpin() == spin;
+		}
+
+		Object getInputUsed() {
+			return spunParticleRemaining != null && spunParticleRemaining.getSpin() == Spin.DOWN ? particleRemainingUsed : null;
+		}
+
+		Object getOutputUsed() {
+			return spunParticleRemaining != null && spunParticleRemaining.getSpin() == Spin.UP ? particleRemainingUsed : null;
+		}
+
+		void pop() {
+			this.spunParticleRemaining = null;
+			this.particleRemainingUsed = null;
+		}
+
+		void popAndReplace(SpunParticle spunParticle, Object particleRemainingUsed) {
+			this.spunParticleRemaining = spunParticle;
+			this.particleRemainingUsed = particleRemainingUsed;
+		}
+
+		void updateUsed(Object particleRemainingUsed) {
+			this.particleRemainingUsed = particleRemainingUsed;
+		}
+
+		boolean isEmpty() {
+			return this.spunParticleRemaining == null;
+		}
+	}
+
 	Optional<CMError> validate(ParticleGroup group, long groupIndex, AtomMetadata metadata) {
-		ProcedureResult lastResult = null;
-		SpunParticle spunParticleRemaining = null;
+		final CMValidationState validationState = new CMValidationState();
 
 		for (int i = 0; i < group.getParticleCount(); i++) {
 			final DataPointer dp = DataPointer.ofParticle((int) groupIndex, i);
 			final SpunParticle nextSpun = group.getSpunParticle(i);
 			final Particle nextParticle = nextSpun.getParticle();
-			final Particle curParticle = spunParticleRemaining == null ? null : spunParticleRemaining.getParticle();
+			final Particle curParticle = validationState.getCurParticle();
 
-			if (spunParticleRemaining != null && spunParticleRemaining.getSpin() == nextSpun.getSpin()) {
+			if (validationState.spinClashes(nextSpun.getSpin())) {
 				return Optional.of(
 					new CMError(
 						dp,
 						CMErrorCode.PARTICLE_REGISTER_SPIN_CLASH,
-						"Current state: " + spunParticleRemaining + " " + lastResult
+						validationState
 					)
 				);
 			}
@@ -115,7 +152,7 @@ public final class ConstraintMachine {
 
 			if (transitionProcedure == null) {
 				if (inputParticle == null || outputParticle == null) {
-					spunParticleRemaining = nextSpun;
+					validationState.popAndReplace(nextSpun, null);
 					continue;
 				}
 
@@ -123,39 +160,45 @@ public final class ConstraintMachine {
 					new CMError(
 						dp,
 						CMErrorCode.MISSING_TRANSITION_PROCEDURE,
-						"Current state: " + spunParticleRemaining + " " + lastResult
+						validationState
 					)
 				);
 			}
 
-			final Object inputUsed = lastResult != null ? lastResult.getInputUsed() : null;
-			final Object outputUsed = lastResult != null ? lastResult.getOutputUsed() : null;
-
-			final ProcedureResult result = transitionProcedure.execute(inputParticle, inputUsed, outputParticle, outputUsed);
+			final ProcedureResult result = transitionProcedure.execute(
+				inputParticle,
+				validationState.getInputUsed(),
+				outputParticle,
+				validationState.getOutputUsed()
+			);
 			switch (result.getCmAction()) {
 				case POP_INPUT:
 					if (nextSpun.getSpin() == Spin.UP) {
-						spunParticleRemaining = nextSpun;
+						validationState.popAndReplace(nextSpun, result.getUsed());
+					} else {
+						validationState.updateUsed(result.getUsed());
 					}
 					break;
 				case POP_OUTPUT:
 					if (nextSpun.getSpin() == Spin.DOWN) {
-						spunParticleRemaining = nextSpun;
+						validationState.popAndReplace(nextSpun, result.getUsed());
+					} else {
+						validationState.updateUsed(result.getUsed());
 					}
 					break;
 				case POP_INPUT_OUTPUT:
-					spunParticleRemaining = null;
 					if (result.getUsed() != null) {
 						throw new IllegalStateException("POP_INPUT_OUTPUT must output null");
 					}
+					validationState.pop();
 					break;
 				case ERROR:
 					return Optional.of(
 						new CMError(
 							dp,
 							CMErrorCode.TRANSITION_ERROR,
+							validationState,
 							result.getErrorMessage()
-								+ "Current state: " + spunParticleRemaining + " " + lastResult
 						)
 					);
 			}
@@ -170,20 +213,20 @@ public final class ConstraintMachine {
 					new CMError(
 						dp,
 						CMErrorCode.WITNESS_ERROR,
+						validationState,
 						witnessErrorMessage.get()
 					)
 				);
 			}
 
-			lastResult = result;
 		}
 
-		if (spunParticleRemaining != null) {
+		if (!validationState.isEmpty()) {
 			return Optional.of(
 				new CMError(
 					DataPointer.ofParticleGroup((int) groupIndex),
 					CMErrorCode.UNEQUAL_INPUT_OUTPUT,
-					"Current state: " + spunParticleRemaining + " " + lastResult
+					validationState
 				)
 			);
 		}

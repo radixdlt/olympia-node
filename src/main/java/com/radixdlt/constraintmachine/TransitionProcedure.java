@@ -1,7 +1,6 @@
 package com.radixdlt.constraintmachine;
 
 import com.radixdlt.atoms.Particle;
-import java.util.Optional;
 
 /**
  * Application level "Bytecode" to be run per particle in the Constraint machine
@@ -47,14 +46,6 @@ public interface TransitionProcedure<T extends Particle, U extends Particle> {
 
 		public CMAction getCmAction() {
 			return cmAction;
-		}
-
-		public Object getInputUsed() {
-			return this.cmAction == CMAction.POP_OUTPUT ? this.used : null;
-		}
-
-		public Object getOutputUsed() {
-			return this.cmAction == CMAction.POP_INPUT ? this.used : null;
 		}
 
 		public Object getUsed() {

@@ -11,6 +11,6 @@ public final class CMErrors {
 	}
 
 	public static CMError fromKernelProcedureError(KernelProcedureError error) {
-		return new CMError(DataPointer.ofAtom(), CMErrorCode.KERNEL_ERROR, error.getErrMsg());
+		return new CMError(DataPointer.ofAtom(), CMErrorCode.KERNEL_ERROR, null, error.getErrMsg());
 	}
 }
