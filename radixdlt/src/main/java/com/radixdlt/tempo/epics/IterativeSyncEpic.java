@@ -30,7 +30,6 @@ import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.network.peers.Peer;
 import org.radix.shards.ShardSpace;
-import org.slf4j.event.Level;
 
 import java.util.List;
 import java.util.Objects;
