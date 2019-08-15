@@ -33,8 +33,9 @@ public final class FungibleTransition<T extends Particle, U extends Particle> im
 	@Override
 	public ProcedureResult execute(
 		T inputParticle,
+		Object inputUsed,
 		U outputParticle,
-		ProcedureResult prevResult
+		Object outputUsed
 	) {
 		final Optional<String> transitionErrorMessage = transition.apply(inputParticle, outputParticle);
 		if (transitionErrorMessage.isPresent()) {
@@ -42,17 +43,12 @@ public final class FungibleTransition<T extends Particle, U extends Particle> im
 		}
 
 		UInt256 inputAmount = inputAmountMapper.apply(inputParticle).subtract(
-			Optional.ofNullable(prevResult)
-				.flatMap(p -> p.getInputUsed(UInt256.class))
-				.orElse(UInt256.ZERO)
+			inputUsed != null ? (UInt256) inputUsed : UInt256.ZERO
 		);
 
 		UInt256 outputAmount = outputAmountMapper.apply(outputParticle).subtract(
-			Optional.ofNullable(prevResult)
-				.flatMap(p -> p.getOutputUsed(UInt256.class))
-				.orElse(UInt256.ZERO)
+			outputUsed != null ? (UInt256) outputUsed : UInt256.ZERO
 		);
-
 
 		int compare = inputAmount.compareTo(outputAmount);
 		if (compare == 0) {

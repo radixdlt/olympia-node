@@ -10,10 +10,11 @@ public final class RRIResourceCombinedPrimaryCreation<T extends Particle> implem
 	@Override
 	public ProcedureResult execute(
 		RRIParticle inputParticle,
+		Object inputUsed,
 		T outputParticle,
-		ProcedureResult prevResult
+		Object outputUsed
 	) {
-		if (prevResult != null && prevResult.getUsed() != null) {
+		if (inputUsed != null || outputUsed != null) {
 			return ProcedureResult.error("Expecting non previously used");
 		}
 

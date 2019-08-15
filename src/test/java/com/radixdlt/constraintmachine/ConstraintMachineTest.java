@@ -51,7 +51,7 @@ public class ConstraintMachineTest {
 	@Test
 	public void when_validating_a_2_input_1_output_particle_group_which_pops_1_input_first__validation_should_succeed() {
 		TransitionProcedure<Particle, Particle> procedure = mock(TransitionProcedure.class);
-		when(procedure.execute(any(), any(), any()))
+		when(procedure.execute(any(), any(), any(), any()))
 			.thenReturn(ProcedureResult.popInput(new Object()))
 			.thenReturn(ProcedureResult.popInputOutput());
 

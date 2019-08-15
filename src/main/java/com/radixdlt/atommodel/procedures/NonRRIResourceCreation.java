@@ -10,8 +10,9 @@ public final class NonRRIResourceCreation<T extends Particle> implements Transit
 	@Override
 	public ProcedureResult execute(
 		Particle inputParticle,
+		Object inputUsed,
 		T outputParticle,
-		ProcedureResult prevResult
+		Object outputUsed
 	) {
 		return ProcedureResult.popOutput(null);
 	}

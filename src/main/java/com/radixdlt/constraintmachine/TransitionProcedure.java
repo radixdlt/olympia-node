@@ -49,12 +49,12 @@ public interface TransitionProcedure<T extends Particle, U extends Particle> {
 			return cmAction;
 		}
 
-		public <T> Optional<T> getInputUsed(Class<T> remainderClass) {
-			return this.cmAction == CMAction.POP_OUTPUT ? Optional.ofNullable(remainderClass.cast(this.used)) : Optional.empty();
+		public Object getInputUsed() {
+			return this.cmAction == CMAction.POP_OUTPUT ? this.used : null;
 		}
 
-		public <T> Optional<T> getOutputUsed(Class<T> remainderClass) {
-			return this.cmAction == CMAction.POP_INPUT ? Optional.ofNullable(remainderClass.cast(this.used)) : Optional.empty();
+		public Object getOutputUsed() {
+			return this.cmAction == CMAction.POP_INPUT ? this.used : null;
 		}
 
 		public Object getUsed() {
@@ -63,8 +63,7 @@ public interface TransitionProcedure<T extends Particle, U extends Particle> {
 	}
 
 	ProcedureResult execute(
-		T inputParticle,
-		U outputParticle,
-		ProcedureResult prevResult
+		T inputParticle, Object inputUsed,
+		U outputParticle, Object outputUsed
 	);
 }

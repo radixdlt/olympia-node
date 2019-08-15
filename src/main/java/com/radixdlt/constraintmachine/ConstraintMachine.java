@@ -12,6 +12,7 @@ import com.radixdlt.constraintmachine.TransitionProcedure.ProcedureResult;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.SpinStateTransitionValidator;
 import com.radixdlt.store.SpinStateTransitionValidator.TransitionCheckResult;
+import com.radixdlt.utils.UInt256;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.UnaryOperator;
@@ -127,7 +128,10 @@ public final class ConstraintMachine {
 				);
 			}
 
-			final ProcedureResult result = transitionProcedure.execute(inputParticle, outputParticle, lastResult);
+			final Object inputUsed = lastResult != null ? lastResult.getInputUsed() : null;
+			final Object outputUsed = lastResult != null ? lastResult.getOutputUsed() : null;
+
+			final ProcedureResult result = transitionProcedure.execute(inputParticle, inputUsed, outputParticle, outputUsed);
 			switch (result.getCmAction()) {
 				case POP_INPUT:
 					if (nextSpun.getSpin() == Spin.UP) {

@@ -109,7 +109,7 @@ final class ConstraintScryptEnv implements SysCalls {
 		createTransitionInternal(
 			RRIParticle.class,
 			particleClass,
-			(in, out, prev) -> ProcedureResult.popInputOutput(),
+			(in, inUsed, out, outUsed) -> ProcedureResult.popInputOutput(),
 			(res, in, out, meta) -> res == CMAction.POP_INPUT_OUTPUT && meta.isSignedBy(in.getRri().getAddress())
 				? Optional.empty() : Optional.of("Not signed by " + in.getRri().getAddress())
 		);
@@ -183,7 +183,7 @@ final class ConstraintScryptEnv implements SysCalls {
 	}
 
 	private static <T extends Particle, U extends Particle> TransitionProcedure<Particle, Particle> toGeneric(TransitionProcedure<T, U> procedure) {
-		return (in, out, lastRes) -> procedure.execute((T) in, (U) out, lastRes);
+		return (in, inUsed, out, outUsed) -> procedure.execute((T) in, inUsed, (U) out, outUsed);
 	}
 
 	private static <T extends Particle, U extends Particle> WitnessValidator<Particle, Particle> toGeneric(WitnessValidator<T, U> validator) {
@@ -208,14 +208,14 @@ final class ConstraintScryptEnv implements SysCalls {
 		// RRIs must be the same across RRI particle transitions
 		if (inputClass != null && scryptParticleDefinitions.get(inputClass).getRriMapper() != null
 			&& outputClass != null && scryptParticleDefinitions.get(outputClass).getRriMapper() != null) {
-			transformedProcedure = (in, out, lastRes) -> {
+			transformedProcedure = (in, inUsed, out, outUsed) -> {
 				final RRI inputRRI = scryptParticleDefinitions.get(inputClass).getRriMapper().apply(in);
 				final RRI outputRRI = scryptParticleDefinitions.get(outputClass).getRriMapper().apply(out);
 				if (!inputRRI.equals(outputRRI)) {
 					return ProcedureResult.error("Input/Output RRIs not equal");
 				}
 
-				return procedure.execute((T) in, (U) out, lastRes);
+				return procedure.execute((T) in, inUsed, (U) out, outUsed);
 			};
 		} else {
 			transformedProcedure = toGeneric(procedure);

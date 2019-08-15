@@ -23,21 +23,19 @@ public final class RRIResourceCombinedSecondaryCreation<T extends Particle, U ex
 	@Override
 	public ProcedureResult execute(
 		RRIParticle inputParticle,
+		Object inputUsed,
 		U outputParticle,
-		ProcedureResult prevResult
+		Object outputUsed
 	) {
-		if (prevResult == null) {
+		if (inputUsed == null) {
 			return ProcedureResult.error("Expecting a previous result.");
 		}
 
-		Optional<T> input = prevResult.getInputUsed(Object.class)
-			.filter(o -> o.getClass().equals(particleClass0))
-			.map(particleClass0::cast);
-		if (!input.isPresent()) {
+		if (!(inputUsed.getClass().equals(particleClass0))) {
 			return ProcedureResult.error("Expecting a previous input used class of " + particleClass0);
 		}
 
-		Optional<String> combinedCheckError = combinedCheck.apply(input.get(), outputParticle);
+		Optional<String> combinedCheckError = combinedCheck.apply(particleClass0.cast(inputUsed), outputParticle);
 		if (combinedCheckError.isPresent()) {
 			return ProcedureResult.error(combinedCheckError.get());
 		}
