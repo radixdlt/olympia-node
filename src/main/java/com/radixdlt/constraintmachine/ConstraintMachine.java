@@ -89,20 +89,20 @@ public final class ConstraintMachine {
 
 	Optional<CMError> validate(ParticleGroup group, long groupIndex, AtomMetadata metadata) {
 		ProcedureResult lastResult = null;
-		SpunParticle spunParticleRegister = null;
+		SpunParticle spunParticleRemaining = null;
 
 		for (int i = 0; i < group.getParticleCount(); i++) {
 			final DataPointer dp = DataPointer.ofParticle((int) groupIndex, i);
 			final SpunParticle nextSpun = group.getSpunParticle(i);
 			final Particle nextParticle = nextSpun.getParticle();
-			final Particle curParticle = spunParticleRegister == null ? null : spunParticleRegister.getParticle();
+			final Particle curParticle = spunParticleRemaining == null ? null : spunParticleRemaining.getParticle();
 
-			if (spunParticleRegister != null && spunParticleRegister.getSpin() == nextSpun.getSpin()) {
+			if (spunParticleRemaining != null && spunParticleRemaining.getSpin() == nextSpun.getSpin()) {
 				return Optional.of(
 					new CMError(
 						dp,
 						CMErrorCode.PARTICLE_REGISTER_SPIN_CLASH,
-						"Current state: " + spunParticleRegister + " " + lastResult
+						"Current state: " + spunParticleRemaining + " " + lastResult
 					)
 				);
 			}
@@ -114,7 +114,7 @@ public final class ConstraintMachine {
 
 			if (transitionProcedure == null) {
 				if (inputParticle == null || outputParticle == null) {
-					spunParticleRegister = nextSpun;
+					spunParticleRemaining = nextSpun;
 					continue;
 				}
 
@@ -122,7 +122,7 @@ public final class ConstraintMachine {
 					new CMError(
 						dp,
 						CMErrorCode.MISSING_TRANSITION_PROCEDURE,
-						"Current state: " + spunParticleRegister + " " + lastResult
+						"Current state: " + spunParticleRemaining + " " + lastResult
 					)
 				);
 			}
@@ -131,16 +131,16 @@ public final class ConstraintMachine {
 			switch (result.getCmAction()) {
 				case POP_INPUT:
 					if (nextSpun.getSpin() == Spin.UP) {
-						spunParticleRegister = nextSpun;
+						spunParticleRemaining = nextSpun;
 					}
 					break;
 				case POP_OUTPUT:
 					if (nextSpun.getSpin() == Spin.DOWN) {
-						spunParticleRegister = nextSpun;
+						spunParticleRemaining = nextSpun;
 					}
 					break;
 				case POP_INPUT_OUTPUT:
-					spunParticleRegister = null;
+					spunParticleRemaining = null;
 					if (result.getUsed() != null) {
 						throw new IllegalStateException("POP_INPUT_OUTPUT must output null");
 					}
@@ -151,7 +151,7 @@ public final class ConstraintMachine {
 							dp,
 							CMErrorCode.TRANSITION_ERROR,
 							result.getErrorMessage()
-								+ "Current state: " + spunParticleRegister + " " + lastResult
+								+ "Current state: " + spunParticleRemaining + " " + lastResult
 						)
 					);
 			}
@@ -174,12 +174,12 @@ public final class ConstraintMachine {
 			lastResult = result;
 		}
 
-		if (spunParticleRegister != null) {
+		if (spunParticleRemaining != null) {
 			return Optional.of(
 				new CMError(
 					DataPointer.ofParticleGroup((int) groupIndex),
 					CMErrorCode.UNEQUAL_INPUT_OUTPUT,
-					"Current state: " + spunParticleRegister + " " + lastResult
+					"Current state: " + spunParticleRemaining + " " + lastResult
 				)
 			);
 		}
