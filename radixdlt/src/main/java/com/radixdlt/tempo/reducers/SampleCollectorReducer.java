@@ -5,18 +5,15 @@ import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
 import com.radixdlt.tempo.TempoAction;
 import com.radixdlt.tempo.TempoReducer;
-import com.radixdlt.tempo.TempoState;
 import com.radixdlt.tempo.TempoStateBundle;
 import com.radixdlt.tempo.actions.OnSampleDeliveryFailedAction;
-import com.radixdlt.tempo.actions.ReceiveSamplingResultAction;
+import com.radixdlt.tempo.actions.OnSamplingCompleteAction;
 import com.radixdlt.tempo.actions.RequestSamplingAction;
 import com.radixdlt.tempo.actions.messaging.ReceiveSampleResponseAction;
-import com.radixdlt.tempo.actions.messaging.SendSampleRequestAction;
 import com.radixdlt.tempo.state.SampleCollectorState;
 import com.radixdlt.tempo.state.SampleCollectorState.SamplingRequest;
 import org.radix.time.TemporalProof;
 
-import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -58,11 +55,11 @@ public class SampleCollectorReducer implements TempoReducer<SampleCollectorState
 
 			// remove failed aids from pending
 			return prevState.complete(fail.getTag(), failedAids, peerNid);
-		} else if (action instanceof ReceiveSamplingResultAction) {
-			EUID tag = ((ReceiveSamplingResultAction) action).getTag();
+		} else if (action instanceof OnSamplingCompleteAction) {
+			EUID tag = ((OnSamplingCompleteAction) action).getTag();
 
 			// complete request when the result has been returned
-			return prevState.complete(tag);
+			return prevState.without(tag);
 		}
 
 		return prevState;

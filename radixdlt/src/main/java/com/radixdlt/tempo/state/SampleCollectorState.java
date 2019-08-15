@@ -59,7 +59,7 @@ public class SampleCollectorState implements TempoState {
 		return new SampleCollectorState(nextRequests);
 	}
 
-	public SampleCollectorState complete(EUID tag) {
+	public SampleCollectorState without(EUID tag) {
 		Map<EUID, SamplingRequest> nextRequests = new HashMap<>(requests);
 		nextRequests.remove(tag);
 		return new SampleCollectorState(nextRequests);

@@ -154,13 +154,16 @@ public final class TempoController {
 					stateStore.put(reducer.stateClass(), nextState);
 				});
 
-				// run epics in parallel for performance
+				// TODO figure out a way to run epics async for performance
+				// currently causes issues since state is based to derive which actions to take
+				// so multiple executions may cause the same event to be triggered multiple times erronously
+				// run epics synchronously
 				epics.stream()
 					.<Runnable>map(epic -> {
 						TempoStateBundle bundle = stateStore.bundleFor(epic.requiredState());
 						return () -> executeEpic(action, epic, bundle).forEach(this::dispatch);
 					})
-					.forEach(executor::execute);
+					.forEach(Runnable::run);
 
 			} catch (InterruptedException e) {
 				// exit if interrupted

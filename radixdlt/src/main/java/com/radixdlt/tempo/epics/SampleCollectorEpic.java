@@ -10,7 +10,7 @@ import com.radixdlt.tempo.TempoState;
 import com.radixdlt.tempo.TempoStateBundle;
 import com.radixdlt.tempo.actions.AcceptAtomAction;
 import com.radixdlt.tempo.actions.OnSampleDeliveryFailedAction;
-import com.radixdlt.tempo.actions.ReceiveSamplingResultAction;
+import com.radixdlt.tempo.actions.OnSamplingCompleteAction;
 import com.radixdlt.tempo.actions.RequestSamplingAction;
 import com.radixdlt.tempo.actions.ResetAction;
 import com.radixdlt.tempo.actions.TimeoutSampleRequestsAction;
@@ -163,6 +163,6 @@ public class SampleCollectorEpic implements TempoEpic {
 			.filter(Optional::isPresent)
 			.map(Optional::get)
 			.collect(ImmutableSet.toImmutableSet());
-		return new ReceiveSamplingResultAction(collectedSamples, localSamples, tag);
+		return new OnSamplingCompleteAction(collectedSamples, localSamples, tag);
 	}
 }

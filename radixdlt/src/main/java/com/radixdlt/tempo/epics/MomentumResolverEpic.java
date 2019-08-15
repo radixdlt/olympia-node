@@ -13,7 +13,7 @@ import com.radixdlt.tempo.TempoState;
 import com.radixdlt.tempo.TempoStateBundle;
 import com.radixdlt.tempo.actions.OnConflictResolvedAction;
 import com.radixdlt.tempo.actions.RaiseConflictAction;
-import com.radixdlt.tempo.actions.ReceiveSamplingResultAction;
+import com.radixdlt.tempo.actions.OnSamplingCompleteAction;
 import com.radixdlt.tempo.actions.RequestSamplingAction;
 import com.radixdlt.tempo.actions.ResolveConflictAction;
 import com.radixdlt.tempo.state.ConflictsState;
@@ -77,8 +77,8 @@ public class MomentumResolverEpic implements TempoEpic {
 				conflict.getTag(), allAids));
 			// sample the selected peers
 			return Stream.of(new RequestSamplingAction(samplePeers, allAids, conflict.getTag()));
-		} else if (action instanceof ReceiveSamplingResultAction) {
-			ReceiveSamplingResultAction result = (ReceiveSamplingResultAction) action;
+		} else if (action instanceof OnSamplingCompleteAction) {
+			OnSamplingCompleteAction result = (OnSamplingCompleteAction) action;
 			Collection<TemporalProof> allSamples = result.getAllSamples();
 			EUID tag = result.getTag();
 			ConflictsState conflicts = bundle.get(ConflictsState.class);

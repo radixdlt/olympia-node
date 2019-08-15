@@ -8,12 +8,12 @@ import org.radix.time.TemporalProof;
 import java.util.Collection;
 import java.util.stream.Stream;
 
-public class ReceiveSamplingResultAction implements TempoAction {
+public class OnSamplingCompleteAction implements TempoAction {
 	private final Collection<TemporalProof> collectedSamples;
 	private final Collection<TemporalProof> localSamples;
 	private final EUID tag;
 
-	public ReceiveSamplingResultAction(Collection<TemporalProof> collectedSamples, ImmutableSet<TemporalProof> localSamples, EUID tag) {
+	public OnSamplingCompleteAction(Collection<TemporalProof> collectedSamples, ImmutableSet<TemporalProof> localSamples, EUID tag) {
 		this.collectedSamples = collectedSamples;
 		this.localSamples = localSamples;
 		this.tag = tag;
