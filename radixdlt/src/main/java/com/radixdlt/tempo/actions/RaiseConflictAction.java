@@ -10,15 +10,13 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Stream;
 
-public class ResolveConflictAction implements TempoAction {
+public class RaiseConflictAction implements TempoAction {
 	private final TempoAtom atom;
 	private final Set<TempoAtom> conflictingAtoms;
-	private final EUID tag;
 
-	public ResolveConflictAction(TempoAtom atom, Collection<TempoAtom> conflictingAtoms, EUID tag) {
+	public RaiseConflictAction(TempoAtom atom, Collection<TempoAtom> conflictingAtoms) {
 		this.atom = atom;
 		this.conflictingAtoms = ImmutableSet.copyOf(conflictingAtoms);
-		this.tag = tag;
 	}
 
 	public TempoAtom getAtom() {
@@ -38,6 +36,8 @@ public class ResolveConflictAction implements TempoAction {
 	}
 
 	public EUID getTag() {
-		return tag;
+		return new EUID(allAids()
+			.map(AID::getLow)
+			.reduce(0L, Long::sum));
 	}
 }

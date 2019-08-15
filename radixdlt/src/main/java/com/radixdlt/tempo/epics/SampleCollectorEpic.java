@@ -67,9 +67,6 @@ public class SampleCollectorEpic implements TempoEpic {
 			} else {
 				TemporalProof localSample = temporalProof.getBranch(ownVertex, true);
 				sampleStore.addLocal(localSample);
-				if (logger.hasLevel(Logging.DEBUG)) {
-					logger.debug("Stored local sample for '" + atom.getAID() + "'");
-				}
 			}
 			return Stream.empty();
 		} else if (action instanceof RequestSamplingAction) {

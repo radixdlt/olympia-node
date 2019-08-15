@@ -3,7 +3,6 @@ package com.radixdlt.tempo.store;
 import com.radixdlt.common.AID;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.tempo.Store;
 import com.radixdlt.tempo.TempoException;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;

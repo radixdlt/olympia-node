@@ -6,6 +6,7 @@ import com.radixdlt.Atom;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
 import com.radixdlt.tempo.TempoAtom;
+import com.radixdlt.tempo.TempoException;
 import com.radixdlt.tempo.TempoState;
 
 import java.util.HashMap;
@@ -20,16 +21,28 @@ public class ConflictsState implements TempoState {
 		this.conflicts = conflicts;
 	}
 
+	public boolean isPending(EUID tag) {
+		return conflicts.containsKey(tag);
+	}
+
 	public TempoAtom getAtom(EUID tag, AID aid) {
 		return conflicts.get(tag).getAtom(aid);
 	}
 
 	public Set<AID> getAids(EUID tag) {
-		return conflicts.get(tag).getAids();
+		Conflict conflict = conflicts.get(tag);
+		if (conflict == null) {
+			throw new TempoException("Conflict with tag '" + tag + "' does not exist");
+		}
+		return conflict.getAids();
 	}
 
 	public TempoAtom getCurrentAtom(EUID tag) {
-		return conflicts.get(tag).getCurrentAtom();
+		Conflict conflict = conflicts.get(tag);
+		if (conflict == null) {
+			throw new TempoException("Conflict with tag '" + tag + "' does not exist");
+		}
+		return conflict.getCurrentAtom();
 	}
 
 	public ConflictsState with(EUID tag, TempoAtom currentAtom, ImmutableSet<TempoAtom> allConflictingAtoms) {

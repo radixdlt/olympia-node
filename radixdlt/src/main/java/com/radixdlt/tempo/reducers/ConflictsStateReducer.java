@@ -9,7 +9,7 @@ import com.radixdlt.tempo.actions.OnConflictResolvedAction;
 import com.radixdlt.tempo.actions.ResolveConflictAction;
 import com.radixdlt.tempo.state.ConflictsState;
 
-public final class NetworkResolverReducer implements TempoReducer<ConflictsState> {
+public final class ConflictsStateReducer implements TempoReducer<ConflictsState> {
 	@Override
 	public Class<ConflictsState> stateClass() {
 		return ConflictsState.class;

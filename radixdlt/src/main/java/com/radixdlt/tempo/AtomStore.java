@@ -6,6 +6,7 @@ import com.radixdlt.common.Pair;
 import com.radixdlt.ledger.LedgerCursor;
 import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerSearchMode;
+import com.radixdlt.tempo.store.Store;
 import org.radix.shards.ShardSpace;
 
 import java.util.Optional;

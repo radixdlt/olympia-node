@@ -5,7 +5,7 @@ import com.radixdlt.common.EUID;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.tempo.actions.AcceptAtomAction;
 import com.radixdlt.tempo.actions.OnConflictResolvedAction;
-import com.radixdlt.tempo.actions.ResolveConflictAction;
+import com.radixdlt.tempo.actions.RaiseConflictAction;
 import com.radixdlt.tempo.actions.ReceiveAtomAction;
 import com.radixdlt.tempo.actions.ResetAction;
 import com.radixdlt.tempo.actions.messaging.ReceiveDeliveryRequestAction;
@@ -31,7 +31,7 @@ import com.radixdlt.tempo.epics.AtomDeliveryEpic;
 import com.radixdlt.tempo.epics.IterativeSyncEpic;
 import com.radixdlt.tempo.epics.LocalResolverEpic;
 import com.radixdlt.tempo.epics.MessagingEpic;
-import com.radixdlt.tempo.epics.NetworkResolverEpic;
+import com.radixdlt.tempo.epics.MomentumResolverEpic;
 import com.radixdlt.tempo.epics.SampleCollectorEpic;
 import com.radixdlt.tempo.messages.DeliveryRequestMessage;
 import com.radixdlt.tempo.messages.DeliveryResponseMessage;
@@ -43,7 +43,7 @@ import com.radixdlt.tempo.messages.SampleResponseMessage;
 import com.radixdlt.tempo.reducers.AtomDeliveryReducer;
 import com.radixdlt.tempo.reducers.IterativeSyncReducer;
 import com.radixdlt.tempo.reducers.LivePeersReducer;
-import com.radixdlt.tempo.reducers.NetworkResolverReducer;
+import com.radixdlt.tempo.reducers.ConflictsStateReducer;
 import com.radixdlt.tempo.reducers.PassivePeersReducer;
 import com.radixdlt.tempo.reducers.SampleCollectorReducer;
 import com.radixdlt.tempo.store.IterativeCursorStore;
@@ -55,7 +55,6 @@ import org.radix.modules.Modules;
 import org.radix.network.messaging.Messaging;
 import org.radix.network.peers.PeerHandler;
 import org.radix.properties.RuntimeProperties;
-import org.radix.time.TemporalProof;
 import org.radix.universe.system.LocalSystem;
 
 import java.util.ArrayList;
@@ -234,9 +233,9 @@ public final class TempoController {
 
 	public CompletableFuture<TempoAtom> resolve(TempoAtom atom, Collection<TempoAtom> conflictingAtoms) {
 		CompletableFuture<TempoAtom> winnerFuture = new CompletableFuture<>();
-		ResolveConflictAction resolve = new ResolveConflictAction(atom, conflictingAtoms);
-		pendingConflictFutures.put(resolve.getTag(), winnerFuture);
-		this.dispatch(resolve);
+		RaiseConflictAction conflict = new RaiseConflictAction(atom, conflictingAtoms);
+		pendingConflictFutures.put(conflict.getTag(), winnerFuture);
+		this.dispatch(conflict);
 
 		return winnerFuture;
 	}
@@ -371,12 +370,11 @@ public final class TempoController {
 			builder.addEpic(new LocalResolverEpic(localSystem.getNID()));
 		} else if (resolver.equalsIgnoreCase("momentum")) {
 			SampleSelector sampleSelector = new SimpleSampleSelector(localSystem.getNID());
-			ConflictDecider conflictDecider = samples -> samples.stream().map(TemporalProof::getAID).findAny().orElseThrow(() -> new TempoException("No samples given"));
 			SampleStore store = new SampleStore(dbEnv, serialization);
 			store.open();
-			builder.addEpic(new NetworkResolverEpic(sampleSelector, conflictDecider));
+			builder.addEpic(new MomentumResolverEpic(sampleSelector));
 			builder.addEpic(new SampleCollectorEpic(localSystem.getNID(), store));
-			builder.addReducer(new NetworkResolverReducer());
+			builder.addReducer(new ConflictsStateReducer());
 			builder.addReducer(new SampleCollectorReducer());
 		} else {
 			throw new TempoException("No conflict resolver selected: '" + resolver + "'");

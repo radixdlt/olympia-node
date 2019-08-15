@@ -1,4 +1,4 @@
-package com.radixdlt.tempo;
+package com.radixdlt.tempo.store;
 
 import java.io.Closeable;
 
