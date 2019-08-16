@@ -8,9 +8,11 @@ import com.radixdlt.atommodel.procedures.FungibleTransition;
 import com.radixdlt.constraintmachine.WitnessValidator;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.constraintmachine.AtomMetadata;
+import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
 import com.radixdlt.utils.UInt256;
 import java.util.Objects;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 
 public class TokensConstraintScrypt implements ConstraintScrypt {
 
@@ -64,18 +66,41 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 		os.createTransitionFromRRICombined(
 			MutableSupplyTokenDefinitionParticle.class,
 			UnallocatedTokensParticle.class,
-			(tokDef, unallocated) ->
-				Objects.equals(unallocated.getGranularity(), tokDef.getGranularity())
-				&& Objects.equals(unallocated.getTokenPermissions(), tokDef.getTokenPermissions())
-				&& unallocated.getAmount().equals(UInt256.MAX_VALUE)
+			(tokDef, unallocated) -> {
+				if (!Objects.equals(unallocated.getGranularity(), tokDef.getGranularity())) {
+					return Result.error("Granularities not equal.");
+				}
+
+				if (!Objects.equals(unallocated.getTokenPermissions(), tokDef.getTokenPermissions())) {
+					return Result.error("Permissions not equal.");
+				}
+
+				if (!unallocated.getAmount().equals(UInt256.MAX_VALUE)) {
+					return Result.error("Unallocated amount must be UInt256.MAX_VALUE but was " + unallocated.getAmount());
+				}
+
+				return Result.success();
+			}
 		);
 
 		os.createTransitionFromRRICombined(
 			FixedSupplyTokenDefinitionParticle.class,
 			TransferrableTokensParticle.class,
-			(tokDef, transferrable) ->
-				Objects.equals(tokDef.getSupply(), transferrable.getAmount())
-				&& transferrable.getTokenPermissions().isEmpty()
+			(tokDef, transferrable) -> {
+				if (!Objects.equals(tokDef.getGranularity(), transferrable.getGranularity())) {
+					return Result.error("Granularities not equal.");
+				}
+
+				if (!Objects.equals(tokDef.getSupply(), transferrable.getAmount())) {
+					return Result.error("Supply and amount are not equal.");
+				}
+
+				if (!transferrable.getTokenPermissions().isEmpty()) {
+					return Result.error("Transferrable tokens of a fixed supply token must be empty.");
+				}
+
+				return Result.success();
+			}
 		);
 
 
@@ -84,9 +109,14 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			UnallocatedTokensParticle.class, UnallocatedTokensParticle.class,
 			new FungibleTransition<>(
 				UnallocatedTokensParticle::getAmount, UnallocatedTokensParticle::getAmount,
-				(from, to) ->
-					Objects.equals(from.getGranularity(), to.getGranularity())
-					&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions())
+				checkEquals(
+					UnallocatedTokensParticle::getGranularity,
+					UnallocatedTokensParticle::getGranularity,
+					"Granulaties not equal.",
+					UnallocatedTokensParticle::getTokenPermissions,
+					UnallocatedTokensParticle::getTokenPermissions,
+					"Permissions not equal."
+				)
 			),
 			checkInput((in, meta) -> meta.isSignedBy(in.getTokDefRef().getAddress()))
 		);
@@ -94,9 +124,14 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			UnallocatedTokensParticle.class, TransferrableTokensParticle.class,
 			new FungibleTransition<>(
 				UnallocatedTokensParticle::getAmount, TransferrableTokensParticle::getAmount,
-				(from, to) ->
-					Objects.equals(from.getGranularity(), to.getGranularity())
-					&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions())
+				checkEquals(
+					UnallocatedTokensParticle::getGranularity,
+					TransferrableTokensParticle::getGranularity,
+					"Granulaties not equal.",
+					UnallocatedTokensParticle::getTokenPermissions,
+					TransferrableTokensParticle::getTokenPermissions,
+					"Permissions not equal."
+				)
 			),
 			checkInput((u, meta) -> u.getTokenPermission(TokenTransition.MINT).check(u.getTokDefRef(), meta).isSuccess())
 		);
@@ -104,9 +139,14 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			TransferrableTokensParticle.class, TransferrableTokensParticle.class,
 			new FungibleTransition<>(
 				TransferrableTokensParticle::getAmount, TransferrableTokensParticle::getAmount,
-				(from, to) ->
-					Objects.equals(from.getGranularity(), to.getGranularity())
-					&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions())
+				checkEquals(
+					TransferrableTokensParticle::getGranularity,
+					TransferrableTokensParticle::getGranularity,
+					"Granulaties not equal.",
+					TransferrableTokensParticle::getTokenPermissions,
+					TransferrableTokensParticle::getTokenPermissions,
+					"Permissions not equal."
+				)
 			),
 			checkInput((in, meta) -> meta.isSignedBy(in.getAddress()))
 		);
@@ -114,22 +154,44 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			TransferrableTokensParticle.class, UnallocatedTokensParticle.class,
 			new FungibleTransition<>(
 				TransferrableTokensParticle::getAmount, UnallocatedTokensParticle::getAmount,
-				(from, to) ->
-					Objects.equals(from.getGranularity(), to.getGranularity())
-					&& Objects.equals(from.getTokenPermissions(), to.getTokenPermissions())
+				checkEquals(
+					TransferrableTokensParticle::getGranularity,
+					UnallocatedTokensParticle::getGranularity,
+					"Granulaties not equal.",
+					TransferrableTokensParticle::getTokenPermissions,
+					UnallocatedTokensParticle::getTokenPermissions,
+					"Permissions not equal."
+				)
 			),
 			checkInput((in, meta) -> in.getTokenPermission(TokenTransition.BURN).check(in.getTokDefRef(), meta).isSuccess())
 		);
+	}
+
+	private static <T, U, V> BiFunction<T, U, Result> checkEquals(
+		Function<T, V> firstMapper0, Function<U, V> firstMapper1, String firstErrorMessage,
+		Function<T, V> secondMapper0, Function<U, V> secondMapper1, String secondErrorMessage
+	) {
+		return (t, u) -> {
+			if (!Objects.equals(firstMapper0.apply(t), firstMapper1.apply(u))) {
+				return Result.error(firstErrorMessage);
+			}
+
+			if (!Objects.equals(secondMapper0.apply(t), secondMapper1.apply(u))) {
+				return Result.error(secondErrorMessage);
+			}
+
+			return Result.success();
+		};
 	}
 
 	private static <T extends Particle, U extends Particle> WitnessValidator<T, U> checkInput(BiFunction<T, AtomMetadata, Boolean> check) {
 		return (res, in, out, meta) -> {
 			switch (res) {
 				case POP_OUTPUT:
-					return true;
+					return WitnessValidatorResult.success();
 				case POP_INPUT:
 				case POP_INPUT_OUTPUT:
-					return check.apply(in, meta);
+					return check.apply(in, meta) ? WitnessValidatorResult.success() : WitnessValidatorResult.error("Permission not allowed.");
 				default:
 					throw new IllegalStateException("Unsupported CMAction: " + res);
 			}

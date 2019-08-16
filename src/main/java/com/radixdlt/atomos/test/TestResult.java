@@ -33,7 +33,7 @@ public final class TestResult {
 	}
 
 	public void assertErrorWithMessageContaining(String errMessage) {
-		if (results.stream().noneMatch(r -> r.mapOnError(msg -> msg.contains(errMessage)).orElse(false))) {
+		if (results.stream().noneMatch(r -> r.getErrorMessage() != null && r.getErrorMessage().contains(errMessage))) {
 			throw new AssertionError(String.format("No error message found with: '%s': '%s'", errMessage, results.stream()
 				.flatMap(Result::errorStream)
 				.collect(Collectors.joining(", "))));

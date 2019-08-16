@@ -1,16 +1,18 @@
 package com.radixdlt.atomos;
 
+import com.radixdlt.atommodel.procedures.CombinedTransition;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.TransitionProcedure.CMAction;
 import com.radixdlt.constraintmachine.TransitionProcedure.ProcedureResult;
 import com.radixdlt.constraintmachine.WitnessValidator;
+import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BiPredicate;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
@@ -105,12 +107,12 @@ final class ConstraintScryptEnv implements SysCalls {
 			throw new IllegalStateException(particleClass + " must be registered with an RRI mapper.");
 		}
 
-		final TransitionProcedure<RRIParticle, T> procedure = new RRIResourceCreation<>(particleDefinition.getRriMapper()::apply);
 		createTransitionInternal(
 			RRIParticle.class,
 			particleClass,
-			procedure,
+			(in, inUsed, out, outUsed) -> ProcedureResult.popInputOutput(),
 			(res, in, out, meta) -> res == CMAction.POP_INPUT_OUTPUT && meta.isSignedBy(in.getRri().getAddress())
+				? WitnessValidatorResult.success() : WitnessValidatorResult.error("Not signed by " + in.getRri().getAddress())
 		);
 	}
 
@@ -118,7 +120,7 @@ final class ConstraintScryptEnv implements SysCalls {
 	public <T extends Particle, U extends Particle> void createTransitionFromRRICombined(
 		Class<T> particleClass0,
 		Class<U> particleClass1,
-		BiPredicate<T, U> combinedCheck
+		BiFunction<T, U, Result> combinedCheck
 	) {
 		final ParticleDefinition<Particle> particleDefinition0 = scryptParticleDefinitions.get(particleClass0);
 		if (particleDefinition0 == null) {
@@ -135,24 +137,42 @@ final class ConstraintScryptEnv implements SysCalls {
 			throw new IllegalStateException(particleClass1 + " must be registered with an RRI mapper.");
 		}
 
-		final TransitionProcedure<RRIParticle, T> procedure0 = new RRIResourceCombinedPrimaryCreation<>(particleDefinition0.getRriMapper()::apply);
+		final TransitionProcedure<RRIParticle, T> procedure0 = new CombinedTransition<>(
+			particleClass1,
+			combinedCheck
+		);
 		createTransitionInternal(
 			RRIParticle.class,
 			particleClass0,
 			procedure0,
-			(res, in, out, meta) -> res == CMAction.POP_OUTPUT
+			(res, in, out, meta) -> {
+				if (res == CMAction.POP_INPUT_OUTPUT) {
+					if (!meta.isSignedBy(in.getRri().getAddress())) {
+						return WitnessValidatorResult.error("Not signed by " + in.getRri().getAddress());
+					}
+				}
+
+				return WitnessValidatorResult.success();
+			}
 		);
 
-		final TransitionProcedure<RRIParticle, U> procedure1 = new RRIResourceCombinedSecondaryCreation<>(
+		final TransitionProcedure<RRIParticle, U> procedure1 = new CombinedTransition<>(
 			particleClass0,
-			particleDefinition1.getRriMapper()::apply,
-			combinedCheck
+			(u, v) -> combinedCheck.apply(v, u)
 		);
 		createTransitionInternal(
 			RRIParticle.class,
 			particleClass1,
 			procedure1,
-			(res, in, out, meta) -> res == CMAction.POP_INPUT_OUTPUT && meta.isSignedBy(in.getRri().getAddress())
+			(res, in, out, meta) -> {
+				if (res == CMAction.POP_INPUT_OUTPUT) {
+					if (!meta.isSignedBy(in.getRri().getAddress())) {
+						return WitnessValidatorResult.error("Not signed by " + in.getRri().getAddress());
+					}
+				}
+
+				return WitnessValidatorResult.success();
+			}
 		);
 	}
 
@@ -167,7 +187,7 @@ final class ConstraintScryptEnv implements SysCalls {
 	}
 
 	private static <T extends Particle, U extends Particle> TransitionProcedure<Particle, Particle> toGeneric(TransitionProcedure<T, U> procedure) {
-		return (in, out, lastRes) -> procedure.execute((T) in, (U) out, lastRes);
+		return (in, inUsed, out, outUsed) -> procedure.execute((T) in, inUsed, (U) out, outUsed);
 	}
 
 	private static <T extends Particle, U extends Particle> WitnessValidator<Particle, Particle> toGeneric(WitnessValidator<T, U> validator) {
@@ -192,14 +212,14 @@ final class ConstraintScryptEnv implements SysCalls {
 		// RRIs must be the same across RRI particle transitions
 		if (inputClass != null && scryptParticleDefinitions.get(inputClass).getRriMapper() != null
 			&& outputClass != null && scryptParticleDefinitions.get(outputClass).getRriMapper() != null) {
-			transformedProcedure = (in, out, lastRes) -> {
+			transformedProcedure = (in, inUsed, out, outUsed) -> {
 				final RRI inputRRI = scryptParticleDefinitions.get(inputClass).getRriMapper().apply(in);
 				final RRI outputRRI = scryptParticleDefinitions.get(outputClass).getRriMapper().apply(out);
 				if (!inputRRI.equals(outputRRI)) {
-					return ProcedureResult.error();
+					return ProcedureResult.error("Input/Output RRIs not equal");
 				}
 
-				return procedure.execute((T) in, (U) out, lastRes);
+				return procedure.execute((T) in, inUsed, (U) out, outUsed);
 			};
 		} else {
 			transformedProcedure = toGeneric(procedure);

@@ -1,11 +1,11 @@
 package com.radixdlt.atommodel.procedures;
 
+import com.radixdlt.atomos.Result;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.utils.UInt256;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.function.BiPredicate;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
@@ -14,12 +14,12 @@ import java.util.function.Function;
 public final class FungibleTransition<T extends Particle, U extends Particle> implements TransitionProcedure<T, U> {
 	private final Function<T, UInt256> inputAmountMapper;
 	private final Function<U, UInt256> outputAmountMapper;
-	private final BiPredicate<T, U> transition;
+	private final BiFunction<T, U, Result> transition;
 
 	public FungibleTransition(
 		Function<T, UInt256> inputAmountMapper,
 		Function<U, UInt256> outputAmountMapper,
-		BiPredicate<T, U> transition
+		BiFunction<T, U, Result> transition
 	) {
 		Objects.requireNonNull(inputAmountMapper);
 		Objects.requireNonNull(outputAmountMapper);
@@ -33,29 +33,30 @@ public final class FungibleTransition<T extends Particle, U extends Particle> im
 	@Override
 	public ProcedureResult execute(
 		T inputParticle,
+		Object inputUsed,
 		U outputParticle,
-		ProcedureResult prevResult
+		Object outputUsed
 	) {
-		if (!transition.test(inputParticle, outputParticle)) {
-			return ProcedureResult.error();
+		final Result transitionResult = transition.apply(inputParticle, outputParticle);
+		if (transitionResult.isError()) {
+			return ProcedureResult.error(transitionResult.getErrorMessage());
 		}
 
-		UInt256 inputAmount = Optional.ofNullable(prevResult)
-			.flatMap(p -> p.getInputRemainder(UInt256.class))
-			.orElseGet(() -> inputAmountMapper.apply(inputParticle));
+		UInt256 inputAmount = inputAmountMapper.apply(inputParticle).subtract(
+			inputUsed != null ? (UInt256) inputUsed : UInt256.ZERO
+		);
 
-		UInt256 outputAmount = Optional.ofNullable(prevResult)
-			.flatMap(p -> p.getOutputRemainder(UInt256.class))
-			.orElseGet(() -> outputAmountMapper.apply(outputParticle));
-
+		UInt256 outputAmount = outputAmountMapper.apply(outputParticle).subtract(
+			outputUsed != null ? (UInt256) outputUsed : UInt256.ZERO
+		);
 
 		int compare = inputAmount.compareTo(outputAmount);
 		if (compare == 0) {
 			return ProcedureResult.popInputOutput();
 		} else if (compare > 0) {
-			return ProcedureResult.popOutput(inputAmount.subtract(outputAmount));
+			return ProcedureResult.popOutput(outputAmount);
 		} else {
-			return ProcedureResult.popInput(outputAmount.subtract(inputAmount));
+			return ProcedureResult.popInput(inputAmount);
 		}
 	}
 }

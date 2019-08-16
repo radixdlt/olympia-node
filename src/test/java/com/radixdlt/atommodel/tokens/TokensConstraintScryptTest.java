@@ -74,13 +74,14 @@ public class TokensConstraintScryptTest {
 		when(token.getRRI()).thenReturn(RRI.of(mock(RadixAddress.class), "token"));
 		testAtomOS
 			.testInitialParticle(token, PowerMockito.mock(AtomMetadata.class))
-			.assertErrorWithMessageContaining("Description: no or empty provided");
+			.assertError();
 	}
 
 	@Test
 	public void when_validating_token_class_particle_with_too_long_description__result_has_error() {
 		MutableSupplyTokenDefinitionParticle token = PowerMockito.mock(MutableSupplyTokenDefinitionParticle.class);
 		when(token.getRRI()).thenReturn(RRI.of(mock(RadixAddress.class), "token"));
+		when(token.getSymbol()).thenReturn("TOK");
 		Mockito.when(token.getDescription()).thenReturn(
 			IntStream.range(0, TokenDefinitionUtils.MAX_DESCRIPTION_LENGTH + 1).mapToObj(i -> "c").collect(Collectors.joining()));
 		testAtomOS
@@ -118,6 +119,8 @@ public class TokensConstraintScryptTest {
 		MutableSupplyTokenDefinitionParticle token = PowerMockito.mock(MutableSupplyTokenDefinitionParticle.class);
 		when(token.getRRI()).thenReturn(RRI.of(mock(RadixAddress.class), "token"));
 		Mockito.when(token.getTokenPermissions()).thenReturn(new HashMap<>());
+		when(token.getSymbol()).thenReturn("TOK");
+		when(token.getDescription()).thenReturn("Hello");
 		testAtomOS
 			.testInitialParticle(token, PowerMockito.mock(AtomMetadata.class))
 			.assertErrorWithMessageContaining("Permissions: must be set");
@@ -126,7 +129,13 @@ public class TokensConstraintScryptTest {
 	@Test
 	public void when_validating_token_class_particle_with_invalid_icon_url__result_has_error() {
 		MutableSupplyTokenDefinitionParticle token = PowerMockito.mock(MutableSupplyTokenDefinitionParticle.class);
+		when(token.getSymbol()).thenReturn("TOK");
 		when(token.getRRI()).thenReturn(RRI.of(mock(RadixAddress.class), "token"));
+		when(token.getDescription()).thenReturn("Hello");
+		when(token.getTokenPermissions()).thenReturn(ImmutableMap.of(
+			TokenTransition.MINT, TokenPermission.ALL,
+			TokenTransition.BURN, TokenPermission.ALL
+		));
 		Mockito.when(token.getIconUrl()).thenReturn("this is not a url");
 		testAtomOS
 			.testInitialParticle(token, PowerMockito.mock(AtomMetadata.class))

@@ -1,5 +1,6 @@
 package com.radixdlt.constraintmachine;
 
+import com.radixdlt.constraintmachine.ConstraintMachine.CMValidationState;
 import java.util.Objects;
 import javax.annotation.Nullable;
 import com.radixdlt.atoms.DataPointer;
@@ -11,15 +12,30 @@ public final class CMError {
 	private final DataPointer dataPointer;
 	private final CMErrorCode errorCode;
 	private final String errMsg;
+	private final CMValidationState cmValidationState;
 
 	public CMError(DataPointer dataPointer, CMErrorCode errorCode) {
-		this(dataPointer, errorCode, null);
+		this(dataPointer, errorCode, null, null);
 	}
 
-	public CMError(DataPointer dataPointer, CMErrorCode errorCode, String errMsg) {
+	public CMError(
+		DataPointer dataPointer,
+		CMErrorCode errorCode,
+		CMValidationState cmValidationState
+	) {
+		this(dataPointer, errorCode, cmValidationState, null);
+	}
+
+	public CMError(
+		DataPointer dataPointer,
+		CMErrorCode errorCode,
+		CMValidationState cmValidationState,
+		String errMsg
+	) {
 		this.errorCode = Objects.requireNonNull(errorCode);
 		this.dataPointer = Objects.requireNonNull(dataPointer);
 		this.errMsg = errMsg;
+		this.cmValidationState = cmValidationState;
 	}
 
 	@Nullable
@@ -41,7 +57,7 @@ public final class CMError {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(errMsg, dataPointer, errorCode);
+		return Objects.hash(errMsg, dataPointer, errorCode, cmValidationState);
 	}
 
 	@Override
@@ -53,7 +69,8 @@ public final class CMError {
 		CMError e = (CMError) o;
 		return Objects.equals(e.errMsg, this.errMsg)
 			&& Objects.equals(e.dataPointer, this.dataPointer)
-			&& Objects.equals(e.errorCode, this.errorCode);
+			&& Objects.equals(e.errorCode, this.errorCode)
+			&& Objects.equals(e.cmValidationState, this.cmValidationState);
 	}
 
 	@Override

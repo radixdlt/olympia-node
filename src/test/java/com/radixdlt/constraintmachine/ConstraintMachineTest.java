@@ -5,8 +5,9 @@ import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.atoms.ParticleGroup;
 import com.radixdlt.atoms.SpunParticle;
 import com.radixdlt.constraintmachine.TransitionProcedure.ProcedureResult;
+import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
 import java.util.Collections;
-import java.util.stream.Stream;
+import java.util.Optional;
 import org.junit.Test;
 import com.radixdlt.atoms.DataPointer;
 import com.radixdlt.atoms.Particle;
@@ -44,28 +45,29 @@ public class ConstraintMachineTest {
 		));
 		when(atom.getAtom()).thenReturn(mock(ImmutableAtom.class));
 
-		assertThat(machine.validate(atom, true))
+		assertThat(machine.validate(atom))
 			.contains(new CMError(DataPointer.ofParticle(0, 0), CMErrorCode.INTERNAL_SPIN_CONFLICT));
 	}
 
 	@Test
 	public void when_validating_a_2_input_1_output_particle_group_which_pops_1_input_first__validation_should_succeed() {
 		TransitionProcedure<Particle, Particle> procedure = mock(TransitionProcedure.class);
-		when(procedure.execute(any(), any(), any()))
+		when(procedure.execute(any(), any(), any(), any()))
 			.thenReturn(ProcedureResult.popInput(new Object()))
 			.thenReturn(ProcedureResult.popInputOutput());
 
 		ConstraintMachine machine = new ConstraintMachine.Builder()
 			.setParticleProcedures((p0, p1) -> procedure)
-			.setWitnessValidators((p0, p1) -> (res, v0, v1, meta) -> true)
+			.setWitnessValidators((p0, p1) -> (res, v0, v1, meta) -> WitnessValidatorResult.success())
 			.build();
 
-		Stream<ProcedureError> errors = machine.validate(
+		Optional<CMError> errors = machine.validateParticleGroup(
 			ParticleGroup.of(
 				SpunParticle.down(mock(Particle.class)),
 				SpunParticle.down(mock(Particle.class)),
 				SpunParticle.up(mock(Particle.class))
 			),
+			0,
 			mock(AtomMetadata.class)
 		);
 

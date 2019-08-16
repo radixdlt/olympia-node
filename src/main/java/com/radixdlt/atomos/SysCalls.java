@@ -4,7 +4,7 @@ import com.radixdlt.atoms.Particle;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.WitnessValidator;
 import java.util.Set;
-import java.util.function.BiPredicate;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
@@ -93,6 +93,6 @@ public interface SysCalls {
 	<T extends Particle, U extends Particle> void createTransitionFromRRICombined(
 		Class<T> outputClass0,
 		Class<U> outputClass1,
-		BiPredicate<T, U> combinedCheck
+		BiFunction<T, U, Result> combinedCheck
 	);
 }

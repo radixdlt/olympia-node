@@ -1,9 +1,10 @@
 package com.radixdlt.atommodel.message;
 
-import com.radixdlt.atommodel.procedures.NonRRIResourceCreation;
 import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Result;
+import com.radixdlt.constraintmachine.TransitionProcedure.ProcedureResult;
+import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
 
 public class MessageParticleConstraintScrypt implements ConstraintScrypt {
 	@Override
@@ -23,8 +24,10 @@ public class MessageParticleConstraintScrypt implements ConstraintScrypt {
 		os.createTransition(
 			null,
 			MessageParticle.class,
-			new NonRRIResourceCreation<>(),
+			(in, usedIn, out, usedOut) -> ProcedureResult.popOutput(null),
 			(res, in, out, meta) -> meta.isSignedBy(out.getFrom())
+				? WitnessValidatorResult.success()
+				: WitnessValidatorResult.error("Message particle " + out + " not signed.")
 		);
 	}
 }

@@ -76,20 +76,37 @@ public final class TokenDefinitionUtils {
 
 	public static Result staticCheck(FixedSupplyTokenDefinitionParticle tokenDefParticle) {
 		final Result symbolResult = validateSymbol(tokenDefParticle.getSymbol());
-		final Result descriptionResult = validateDescription(tokenDefParticle.getDescription());
-		final Result iconResult = validateIconUrl(tokenDefParticle.getIconUrl());
+		if (symbolResult.isError()) {
+			return symbolResult;
+		}
 
-		return Result.combine(symbolResult, descriptionResult, iconResult);
+		final Result descriptionResult = validateDescription(tokenDefParticle.getDescription());
+		if (descriptionResult.isError()) {
+			return descriptionResult;
+		}
+
+		final Result iconResult = validateIconUrl(tokenDefParticle.getIconUrl());
+		if (iconResult.isError()) {
+			return iconResult;
+		}
+
+		return Result.success();
 	}
 
 	public static Result staticCheck(MutableSupplyTokenDefinitionParticle tokenDefParticle) {
 		final Result symbolResult = validateSymbol(tokenDefParticle.getSymbol());
-		final Result descriptionResult = validateDescription(tokenDefParticle.getDescription());
+		if (symbolResult.isError()) {
+			return symbolResult;
+		}
 
-		final Result permissionsResult;
+		final Result descriptionResult = validateDescription(tokenDefParticle.getDescription());
+		if (descriptionResult.isError()) {
+			return descriptionResult;
+		}
+
 		if (tokenDefParticle.getTokenPermissions() == null
 			|| tokenDefParticle.getTokenPermissions().size() != TokenTransition.values().length) {
-			permissionsResult = Result.error(
+			return Result.error(
 				String.format(
 					"Permissions: must be set for all token transitions (%s)",
 					Arrays.stream(TokenTransition.values())
@@ -98,12 +115,13 @@ public final class TokenDefinitionUtils {
 						.collect(Collectors.joining(", "))
 				)
 			);
-		} else {
-			permissionsResult = Result.success();
 		}
 
 		final Result iconResult = validateIconUrl(tokenDefParticle.getIconUrl());
+		if (iconResult.isError()) {
+			return iconResult;
+		}
 
-		return Result.combine(symbolResult, descriptionResult, permissionsResult, iconResult);
+		return Result.success();
 	}
 }

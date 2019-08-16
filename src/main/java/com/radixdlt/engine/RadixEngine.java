@@ -17,6 +17,7 @@ import com.radixdlt.store.SpinStateTransitionValidator;
 import com.radixdlt.store.SpinStateTransitionValidator.TransitionCheckResult;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -111,14 +112,14 @@ public final class RadixEngine {
 	}
 
 	public void store(CMAtom cmAtom) {
-		final ImmutableSet<CMError> errors = constraintMachine.validate(cmAtom, false);
-		if (errors.isEmpty()) {
+		final Optional<CMError> error = constraintMachine.validate(cmAtom);
+		if (!error.isPresent()) {
 			Object computed = compute.compute(cmAtom);
 			this.cmSuccessHooks.forEach(hook -> hook.accept(cmAtom, computed));
 			this.commitQueue.add(new StoreAtom(cmAtom, computed));
 			this.atomEventListeners.forEach(acceptor -> acceptor.onCMSuccess(cmAtom, computed));
 		} else {
-			this.atomEventListeners.forEach(acceptor -> acceptor.onCMError(cmAtom, errors));
+			this.atomEventListeners.forEach(acceptor -> acceptor.onCMError(cmAtom, ImmutableSet.of(error.get())));
 		}
 	}
 
