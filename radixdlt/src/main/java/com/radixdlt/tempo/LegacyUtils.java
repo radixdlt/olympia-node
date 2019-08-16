@@ -20,6 +20,9 @@ public final class LegacyUtils {
 		@DsonOutput(DsonOutput.Output.ALL)
 		private ImmutableAtom content;
 
+		private LegacyAtomContentWrapper() {
+		}
+
 		private LegacyAtomContentWrapper(ImmutableAtom content) {
 			this.content = content;
 		}
