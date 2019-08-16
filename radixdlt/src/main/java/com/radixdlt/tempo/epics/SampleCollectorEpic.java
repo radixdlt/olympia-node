@@ -126,7 +126,7 @@ public class SampleCollectorEpic implements TempoEpic {
 				.filter(tp -> collectorState.isRequested(response.getTag(), peerNid, tp.getAID()))
 				.forEach(sampleStore::addCollected);
 			// collect and return the resulting samples
-			return collectorState.completedRequests().map(this::toResult);
+			return collectorState.completedRequests(response.getTag()).map(this::toResult);
 		} else if (action instanceof TimeoutSampleRequestsAction) {
 			TimeoutSampleRequestsAction timeout = (TimeoutSampleRequestsAction) action;
 			SampleCollectorState collectorState = bundle.get(SampleCollectorState.class);
@@ -138,7 +138,7 @@ public class SampleCollectorEpic implements TempoEpic {
 					.collect(ImmutableSet.toImmutableSet()), timeout.getTag(), peer))
 				.filter(failure -> !failure.getAids().isEmpty());
 			// collect and return the resulting samples
-			Stream<TempoAction> completions = collectorState.completedRequests().map(this::toResult);
+			Stream<TempoAction> completions = collectorState.completedRequests(timeout.getTag()).map(this::toResult);
 			return Stream.concat(failures, completions);
 		} else if (action instanceof ResetAction) {
 			sampleStore.reset();

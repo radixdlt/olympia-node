@@ -93,6 +93,7 @@ public final class TempoController {
 
 	private static final int FULL_INBOUND_QUEUE_RESCHEDULE_TIME_SECONDS = 1;
 	private static final int TEMPO_EXECUTOR_POOL_COUNT = 4;
+	private static final boolean RUN_EPICS_ASYNCHRONOUSLY = true;
 
 	private final BlockingQueue<TempoAtom> inboundAtoms;
 	private final BlockingQueue<TempoAction> actions;
@@ -154,16 +155,16 @@ public final class TempoController {
 					stateStore.put(reducer.stateClass(), nextState);
 				});
 
-				// TODO figure out a way to run epics async for performance
-				// currently causes issues since state is based to derive which actions to take
-				// so multiple executions may cause the same event to be triggered multiple times erronously
-				// run epics synchronously
-				epics.stream()
-					.<Runnable>map(epic -> {
+				Stream<Runnable> epicExecutions = epics.stream()
+					.map(epic -> {
 						TempoStateBundle bundle = stateStore.bundleFor(epic.requiredState());
 						return () -> executeEpic(action, epic, bundle).forEach(this::dispatch);
-					})
-					.forEach(Runnable::run);
+					});
+				if (RUN_EPICS_ASYNCHRONOUSLY) {
+					epicExecutions.forEach(executor::execute);
+				} else {
+					epicExecutions.forEach(Runnable::run);
+				}
 
 			} catch (InterruptedException e) {
 				// exit if interrupted

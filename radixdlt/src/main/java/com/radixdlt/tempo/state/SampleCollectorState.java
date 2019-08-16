@@ -32,9 +32,13 @@ public class SampleCollectorState implements TempoState {
 		return request != null && request.isPendingDelivery(nid, aid);
 	}
 
-	public Stream<SamplingRequest> completedRequests() {
-		return requests.values().stream()
-			.filter(SamplingRequest::isComplete);
+	public Stream<SamplingRequest> completedRequests(EUID tag) {
+		SamplingRequest request = requests.get(tag);
+		if (request == null || !request.isComplete()) {
+			return Stream.of();
+		} else {
+			return Stream.of(request);
+		}
 	}
 
 	public static SampleCollectorState empty() {
