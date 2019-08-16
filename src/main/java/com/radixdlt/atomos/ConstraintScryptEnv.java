@@ -1,5 +1,6 @@
 package com.radixdlt.atomos;
 
+import com.radixdlt.atommodel.procedures.CombinedTransition;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.TransitionProcedure;
@@ -136,9 +137,9 @@ final class ConstraintScryptEnv implements SysCalls {
 			throw new IllegalStateException(particleClass1 + " must be registered with an RRI mapper.");
 		}
 
-		final TransitionProcedure<RRIParticle, T> procedure0 = new RRIResourceCombinedCreation<>(
+		final TransitionProcedure<RRIParticle, T> procedure0 = new CombinedTransition<>(
 			particleClass1,
-			(t, u) -> combinedCheck.apply(u, t)
+			combinedCheck
 		);
 		createTransitionInternal(
 			RRIParticle.class,
@@ -155,9 +156,9 @@ final class ConstraintScryptEnv implements SysCalls {
 			}
 		);
 
-		final TransitionProcedure<RRIParticle, U> procedure1 = new RRIResourceCombinedCreation<>(
+		final TransitionProcedure<RRIParticle, U> procedure1 = new CombinedTransition<>(
 			particleClass0,
-			combinedCheck
+			(u, v) -> combinedCheck.apply(v, u)
 		);
 		createTransitionInternal(
 			RRIParticle.class,
