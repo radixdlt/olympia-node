@@ -10,7 +10,6 @@ import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -120,7 +119,7 @@ final class ConstraintScryptEnv implements SysCalls {
 	public <T extends Particle, U extends Particle> void createTransitionFromRRICombined(
 		Class<T> particleClass0,
 		Class<U> particleClass1,
-		BiFunction<T, U, Optional<String>> combinedCheck
+		BiFunction<T, U, Result> combinedCheck
 	) {
 		final ParticleDefinition<Particle> particleDefinition0 = scryptParticleDefinitions.get(particleClass0);
 		if (particleDefinition0 == null) {

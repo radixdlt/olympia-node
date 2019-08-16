@@ -13,7 +13,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -74,7 +73,7 @@ public class TestAtomOS implements SysCalls {
 	public <T extends Particle, U extends Particle> void createTransitionFromRRICombined(
 		Class<T> particleClass0,
 		Class<U> particleClass1,
-		BiFunction<T, U, Optional<String>> combinedCheck
+		BiFunction<T, U, Result> combinedCheck
 	) {
 	}
 

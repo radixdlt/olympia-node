@@ -11,7 +11,6 @@ import com.radixdlt.constraintmachine.AtomMetadata;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
 import com.radixdlt.utils.UInt256;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -69,18 +68,18 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			UnallocatedTokensParticle.class,
 			(tokDef, unallocated) -> {
 				if (!Objects.equals(unallocated.getGranularity(), tokDef.getGranularity())) {
-					return Optional.of("Granularities not equal.");
+					return Result.error("Granularities not equal.");
 				}
 
 				if (!Objects.equals(unallocated.getTokenPermissions(), tokDef.getTokenPermissions())) {
-					return Optional.of("Permissions not equal.");
+					return Result.error("Permissions not equal.");
 				}
 
 				if (!unallocated.getAmount().equals(UInt256.MAX_VALUE)) {
-					return Optional.of("Unallocated amount must be UInt256.MAX_VALUE but was " + unallocated.getAmount());
+					return Result.error("Unallocated amount must be UInt256.MAX_VALUE but was " + unallocated.getAmount());
 				}
 
-				return Optional.empty();
+				return Result.success();
 			}
 		);
 
@@ -89,18 +88,18 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			TransferrableTokensParticle.class,
 			(tokDef, transferrable) -> {
 				if (!Objects.equals(tokDef.getGranularity(), transferrable.getGranularity())) {
-					return Optional.of("Granularities not equal.");
+					return Result.error("Granularities not equal.");
 				}
 
 				if (!Objects.equals(tokDef.getSupply(), transferrable.getAmount())) {
-					return Optional.of("Supply and amount are not equal.");
+					return Result.error("Supply and amount are not equal.");
 				}
 
 				if (!transferrable.getTokenPermissions().isEmpty()) {
-					return Optional.of("Transferrable tokens of a fixed supply token must be empty.");
+					return Result.error("Transferrable tokens of a fixed supply token must be empty.");
 				}
 
-				return Optional.empty();
+				return Result.success();
 			}
 		);
 

@@ -2,7 +2,6 @@ package com.radixdlt.atomos;
 
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.constraintmachine.TransitionProcedure;
-import java.util.Optional;
 import java.util.function.BiFunction;
 
 /**
@@ -10,11 +9,11 @@ import java.util.function.BiFunction;
  */
 public final class RRIResourceCombinedCreation<T extends Particle, U extends Particle> implements TransitionProcedure<RRIParticle, U> {
 	private final Class<T> particleClass0;
-	private final BiFunction<T, U, Optional<String>> combinedCheck;
+	private final BiFunction<T, U, Result> combinedCheck;
 
 	RRIResourceCombinedCreation(
 		Class<T> particleClass0,
-		BiFunction<T, U, Optional<String>> combinedCheck
+		BiFunction<T, U, Result> combinedCheck
 	) {
 		this.particleClass0 = particleClass0;
 		this.combinedCheck = combinedCheck;
@@ -35,9 +34,9 @@ public final class RRIResourceCombinedCreation<T extends Particle, U extends Par
 			return ProcedureResult.error("Expecting a previous input used class of " + particleClass0);
 		}
 
-		Optional<String> combinedCheckError = combinedCheck.apply(particleClass0.cast(inputUsed), outputParticle);
-		if (combinedCheckError.isPresent()) {
-			return ProcedureResult.error(combinedCheckError.get());
+		Result combinedCheckResult = combinedCheck.apply(particleClass0.cast(inputUsed), outputParticle);
+		if (combinedCheckResult.isError()) {
+			return ProcedureResult.error(combinedCheckResult.getErrorMessage());
 		}
 
 		return ProcedureResult.popInputOutput();
