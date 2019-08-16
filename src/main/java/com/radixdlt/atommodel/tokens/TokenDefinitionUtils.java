@@ -8,6 +8,9 @@ import java.util.Arrays;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+/**
+ * Utility values and methods for tokens.
+ */
 public final class TokenDefinitionUtils {
 	/**
 	 * Power of 10 number of subunits to be used by every token.
@@ -36,6 +39,15 @@ public final class TokenDefinitionUtils {
 	private static final Pattern OWASP_URL_REGEX = Pattern.compile(
 		"^((((https?|ftps?|gopher|telnet|nntp)://)|(mailto:|news:))(%[0-9A-Fa-f]{2}|[-()_.!~*';/?:@&=+$,A-Za-z0-9])+)([).!';/?:,][[:blank:]])?$"
 	);
+
+	/**
+	 * Returns the short code of the native asset of the network this node is a part of.
+	 *
+	 * @return The short code of the native asset.
+	 */
+	public static String getNativeTokenShortCode() {
+		return "XRD";
+	}
 
 	private static Result validateIconUrl(String iconUrl) {
 		if (iconUrl != null && !OWASP_URL_REGEX.matcher(iconUrl).matches()) {

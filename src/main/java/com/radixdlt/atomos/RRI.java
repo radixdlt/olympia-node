@@ -4,9 +4,7 @@ import java.util.Objects;
 import java.util.regex.Pattern;
 
 /**
- * A Radix resource identifier is a human readable getDestinations into the Ledger which points to a unique UP particle.
- *
- * TODO: Map this to a unique string e.g. address/getDestinations/:type/:name OR shardableType/:shardable/getDestinations/:type/:name
+ * A Radix resource identifier is a human readable unique identifier into the Ledger which points to a resource.
  */
 public final class RRI {
 	private static final String NAME_REGEX = "[-0-9A-Za-z]+";

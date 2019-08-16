@@ -1,6 +1,6 @@
 package com.radixdlt.atomos;
 
-import com.radixdlt.atommodel.tokens.Tokens;
+import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.atoms.Spin;
@@ -22,7 +22,7 @@ public final class FungibleMassFunction {
 		Optional<RRI> nativeToken = this.universe.getGenesis().stream()
 			.flatMap(a -> a.particles(TransferrableTokensParticle.class, Spin.UP))
 			.map(TransferrableTokensParticle::getTokDefRef)
-			.filter(p -> p.getName().equals(Tokens.getNativeTokenShortCode()))
+			.filter(p -> p.getName().equals(TokenDefinitionUtils.getNativeTokenShortCode()))
 			.findFirst();
 
 		if (!nativeToken.isPresent()) {

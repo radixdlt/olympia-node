@@ -13,10 +13,10 @@ import java.util.Set;
 import java.util.TreeMap;
 
 /**
- * A simple particle for data messages
+ * A simple particle for messages which get stored in one to two addresses.
  */
 @SerializerId2("radix.particles.message")
-public class MessageParticle extends Particle {
+public final class MessageParticle extends Particle {
 	@JsonProperty("from")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private RadixAddress from;
@@ -74,6 +74,10 @@ public class MessageParticle extends Particle {
 
 	public RadixAddress getFrom() {
 		return from;
+	}
+
+	public RadixAddress getTo() {
+		return to;
 	}
 
 	public byte[] getBytes() {

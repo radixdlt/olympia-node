@@ -9,7 +9,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
- * Low-level implementation of fungible transition constraints.
+ * Transition Procedure for one to one fungible types
  */
 public final class FungibleTransition<T extends Particle, U extends Particle> implements TransitionProcedure<T, U> {
 	private final Function<T, UInt256> inputAmountMapper;

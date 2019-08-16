@@ -6,7 +6,7 @@ import com.radixdlt.constraintmachine.TransitionProcedure;
 import java.util.function.BiFunction;
 
 /**
- * Transition definition from one particle to two particles
+ * Transition procedure for a transition from one particle type to two particle types.
  */
 public final class CombinedTransition<T extends Particle, U extends Particle, V extends Particle>
 	implements TransitionProcedure<T, U> {

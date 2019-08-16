@@ -110,7 +110,13 @@ final class ConstraintScryptEnv implements SysCalls {
 		createTransitionInternal(
 			RRIParticle.class,
 			particleClass,
-			(in, inUsed, out, outUsed) -> ProcedureResult.popInputOutput(),
+			(in, inUsed, out, outUsed) -> {
+				if (inUsed != null || outUsed != null) {
+					return ProcedureResult.error("Expecting RRI and output particle to be fully unused.");
+				}
+
+				return ProcedureResult.popInputOutput();
+			},
 			(res, in, out, meta) -> res == CMAction.POP_INPUT_OUTPUT && meta.isSignedBy(in.getRri().getAddress())
 				? WitnessValidatorResult.success() : WitnessValidatorResult.error("Not signed by " + in.getRri().getAddress())
 		);

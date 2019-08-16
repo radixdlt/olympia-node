@@ -11,6 +11,9 @@ import com.radixdlt.utils.UInt256;
 
 import java.util.Objects;
 
+/**
+ * Particle representing a fixed supply token definition
+ */
 @SerializerId2("radix.particles.fixed_supply_token_definition")
 public final class FixedSupplyTokenDefinitionParticle extends Particle {
 	@JsonProperty("rri")

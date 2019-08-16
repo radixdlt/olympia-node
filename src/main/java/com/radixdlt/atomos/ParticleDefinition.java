@@ -4,6 +4,10 @@ import com.radixdlt.atoms.Particle;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+/**
+ * Defines how to retrieve important properties from a given particle type.
+ * @param <T> the particle class
+ */
 class ParticleDefinition<T extends Particle> {
 	private final Function<T, Stream<RadixAddress>> addressMapper;
 	private final Function<T, Result> staticValidation;
