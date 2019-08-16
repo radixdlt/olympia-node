@@ -3,7 +3,6 @@ package org.radix;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
-import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import org.apache.commons.cli.CommandLine;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -13,9 +12,6 @@ import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.atommodel.message.MessageParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
-import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
-import com.radixdlt.atommodel.tokens.TokenPermission;
-import com.radixdlt.atommodel.tokens.Tokens;
 import org.radix.atoms.Atom;
 import com.radixdlt.atomos.RRI;
 import org.radix.validation.ConstraintMachineValidationException;
@@ -210,22 +206,9 @@ public final class GenerateUniverses
 			address,
 			amount,
 			UInt256.ONE,
-			RRI.of(address, Tokens.getNativeTokenShortCode()),
+			RRI.of(address, TokenDefinitionUtils.getNativeTokenShortCode()),
 			Universe.computePlanck(timestamp, planck, Offset.NONE),
 			ImmutableMap.of()
-		);
-	}
-
-	private static UnallocatedTokensParticle createGenesisXRDUnallocated(
-		UInt256 amount,
-		RadixAddress address,
-		ImmutableMap<TokenTransition, TokenPermission> tokenPermissions
-	) {
-		return new UnallocatedTokensParticle(
-			amount,
-			UInt256.ONE,
-			RRI.of(address, Tokens.getNativeTokenShortCode()),
-			tokenPermissions
 		);
 	}
 
