@@ -29,7 +29,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
-public class AtomDeliveryEpic implements TempoEpic {
+public final class AtomDeliveryEpic implements TempoEpic {
 	private static final int DELIVERY_REQUEST_TIMEOUT_SECONDS = 5;
 	private static final int DEFER_DELIVERY_REQUEST_TIMEOUT_SECONDS = 5;
 

@@ -96,9 +96,8 @@ public class MomentumResolverEpic implements TempoEpic {
 					.max(Comparator.comparingLong(Map.Entry::getValue))
 					.map(Map.Entry::getKey)
 					.orElseThrow(() -> new TempoException("Internal error while measuring momenta"));
-				logger.info(String.format("Resolved conflict with tag '%s' between '%s' to %s, measured momenta to be %s",
-					result.getTag(), allConflictingAids, winner, momenta));
-
+				logger.info(String.format("Resolved conflict with tag '%s' to %s, measured momenta to be %s for %s",
+					result.getTag(), winner, momenta, allConflictingAids));
 				winningAtom = conflicts.getAtom(tag, winner);
 			}
 

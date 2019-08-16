@@ -39,7 +39,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class IterativeSyncEpic implements TempoEpic {
+public final class IterativeSyncEpic implements TempoEpic {
 	private static final int ITERATIVE_REQUEST_TIMEOUT_SECONDS = 5;
 
 	private static final Logger logger = Logging.getLogger("Sync");

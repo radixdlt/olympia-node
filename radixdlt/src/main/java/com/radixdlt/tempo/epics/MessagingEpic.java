@@ -27,7 +27,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-public class MessagingEpic implements TempoEpic {
+public final class MessagingEpic implements TempoEpic {
 	private static final Logger logger = Logging.getLogger("Sync");
 
 	private final Messaging messager;

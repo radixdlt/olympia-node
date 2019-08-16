@@ -20,7 +20,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
-public class ActiveSyncEpic implements TempoEpic {
+public final class ActiveSyncEpic implements TempoEpic {
 	private static final Logger logger = Logging.getLogger("Sync");
 	private final EUID self;
 

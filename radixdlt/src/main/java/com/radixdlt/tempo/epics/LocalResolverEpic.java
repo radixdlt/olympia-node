@@ -20,7 +20,7 @@ import java.util.stream.Stream;
 /**
  * Local conflict resolver which
  */
-public class LocalResolverEpic implements TempoEpic {
+public final class LocalResolverEpic implements TempoEpic {
 	private final EUID self;
 
 	public LocalResolverEpic(EUID self) {
