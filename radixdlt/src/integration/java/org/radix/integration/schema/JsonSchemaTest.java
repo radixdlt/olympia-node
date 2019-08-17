@@ -15,7 +15,6 @@ import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.atommodel.message.MessageParticle;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.tokens.TokenPermission;
-import com.radixdlt.atommodel.tokens.Tokens;
 import org.radix.atoms.Atom;
 import com.radixdlt.atomos.RRI;
 import com.radixdlt.atoms.Spin;
@@ -65,7 +64,7 @@ public class JsonSchemaTest extends RadixTest {
 			UInt256.ONE,
 			null,
 			ImmutableMap.of(
-				TokenTransition.MINT, TokenPermission.TOKEN_CREATION_ONLY,
+				TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY,
 				TokenTransition.BURN, TokenPermission.NONE
 			)
 		);
@@ -89,10 +88,10 @@ public class JsonSchemaTest extends RadixTest {
 		TransferrableTokensParticle mintParticle = new TransferrableTokensParticle(address,
 			UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 + BILLION_POW_10),
 			UInt256.ONE,
-			RRI.of(address, Tokens.getNativeTokenShortCode()),
+			RRI.of(address, TokenDefinitionUtils.getNativeTokenShortCode()),
 			1L,
 			ImmutableMap.of(
-				TokenTransition.MINT, TokenPermission.TOKEN_CREATION_ONLY,
+				TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY,
 				TokenTransition.BURN, TokenPermission.NONE
 			)
 		);

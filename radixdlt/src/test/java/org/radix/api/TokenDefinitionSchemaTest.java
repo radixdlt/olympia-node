@@ -11,7 +11,6 @@ import org.json.JSONObject;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.radix.api.AtomSchemas;
 import org.radix.modules.Modules;
 
 import com.google.common.collect.ImmutableMap;
@@ -22,8 +21,6 @@ import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.core.ClasspathScanningSerializationPolicy;
-import com.radixdlt.serialization.core.ClasspathScanningSerializerIds;
 import com.radixdlt.utils.UInt256;
 
 import static org.junit.Assert.assertTrue;
@@ -49,8 +46,8 @@ public class TokenDefinitionSchemaTest {
 		ECKeyPair kp = new ECKeyPair();
 		RadixAddress addr = new RadixAddress((byte) 12, kp.getPublicKey());
 		Map<TokenTransition, TokenPermission> tp = ImmutableMap.of(
-			TokenTransition.MINT, TokenPermission.TOKEN_CREATION_ONLY,
-			TokenTransition.BURN, TokenPermission.TOKEN_CREATION_ONLY
+			TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY,
+			TokenTransition.BURN, TokenPermission.TOKEN_OWNER_ONLY
 		);
 		MutableSupplyTokenDefinitionParticle tokenDefinition = new MutableSupplyTokenDefinitionParticle(addr, "TEST", "Test token", "Test token", UInt256.ONE, "http://example.com", tp);
 		Atom atom = new Atom();

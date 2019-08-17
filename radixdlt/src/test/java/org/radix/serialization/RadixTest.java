@@ -86,7 +86,7 @@ public abstract class RadixTest
 		Modules.put(NtpService.class, ntpService);
 		Modules.put(LocalSystem.class, localSystem);
 
-		CMAtomOS os = new CMAtomOS(() -> universe, ntpService::getUTCTimeMS);
+		CMAtomOS os = new CMAtomOS();
 		os.load(new TokensConstraintScrypt());
 		os.load(new UniqueParticleConstraintScrypt());
 		os.load(new MessageParticleConstraintScrypt());
