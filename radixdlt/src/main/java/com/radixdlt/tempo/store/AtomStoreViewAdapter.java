@@ -9,7 +9,7 @@ import com.radixdlt.ledger.LedgerSearchMode;
 import com.radixdlt.tempo.AtomStore;
 import com.radixdlt.tempo.AtomStoreView;
 import com.radixdlt.tempo.TempoAtom;
-import com.radixdlt.tempo.IterativeCursor;
+import com.radixdlt.tempo.LogicalClockCursor;
 import org.radix.shards.ShardSpace;
 
 import java.util.Objects;
@@ -38,7 +38,7 @@ public class AtomStoreViewAdapter implements AtomStoreView {
 	}
 
 	@Override
-	public Pair<ImmutableList<AID>, IterativeCursor> getNext(IterativeCursor cursor, int limit, ShardSpace shardSpace) {
+	public Pair<ImmutableList<AID>, LogicalClockCursor> getNext(LogicalClockCursor cursor, int limit, ShardSpace shardSpace) {
 		return store.getNext(cursor, limit, shardSpace);
 	}
 }

@@ -13,7 +13,7 @@ import com.radixdlt.tempo.AtomStoreView;
 import com.radixdlt.tempo.LegacyUtils;
 import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.TempoException;
-import com.radixdlt.tempo.IterativeCursor;
+import com.radixdlt.tempo.LogicalClockCursor;
 import com.radixdlt.utils.UInt384;
 import org.radix.atoms.Atom;
 import org.radix.atoms.AtomDiscoveryRequest;
@@ -113,18 +113,18 @@ public class LegacyAtomStoreAdapter implements AtomStore {
 	}
 
 	@Override
-	public Pair<ImmutableList<AID>, IterativeCursor> getNext(IterativeCursor iterativeCursor, int limit, ShardSpace shardSpace) {
+	public Pair<ImmutableList<AID>, LogicalClockCursor> getNext(LogicalClockCursor logicalClockCursor, int limit, ShardSpace shardSpace) {
 		try {
 			AtomDiscoveryRequest atomDiscoveryRequest = new AtomDiscoveryRequest(DiscoveryRequest.Action.DISCOVER);
 			atomDiscoveryRequest.setLimit((short) 64);
-			atomDiscoveryRequest.setCursor(new DiscoveryCursor(iterativeCursor.getLCPosition()));
+			atomDiscoveryRequest.setCursor(new DiscoveryCursor(logicalClockCursor.getLcPosition()));
 			atomDiscoveryRequest.setShards(shardSpace);
 			atomSyncStoreSupplier.get().discovery(atomDiscoveryRequest);
 
 			ImmutableList<AID> inventory = ImmutableList.copyOf(atomDiscoveryRequest.getInventory());
 			DiscoveryCursor discoveryCursor = atomDiscoveryRequest.getCursor();
-			IterativeCursor nextCursor = discoveryCursor.hasNext() ? new IterativeCursor(discoveryCursor.getNext().getPosition(), null) : null;
-			IterativeCursor updatedCursor = new IterativeCursor(iterativeCursor.getLCPosition(), nextCursor);
+			LogicalClockCursor nextCursor = discoveryCursor.hasNext() ? new LogicalClockCursor(discoveryCursor.getNext().getPosition(), null) : null;
+			LogicalClockCursor updatedCursor = new LogicalClockCursor(logicalClockCursor.getLcPosition(), nextCursor);
 			return Pair.of(inventory, updatedCursor);
 		} catch (DiscoveryException e) {
 			throw new TempoException("Error while advancing cursor", e);

@@ -19,7 +19,7 @@ import com.radixdlt.tempo.AtomStore;
 import com.radixdlt.tempo.AtomStoreView;
 import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.TempoException;
-import com.radixdlt.tempo.IterativeCursor;
+import com.radixdlt.tempo.LogicalClockCursor;
 import com.radixdlt.utils.Longs;
 import com.sleepycat.je.Cursor;
 import com.sleepycat.je.Database;
@@ -213,6 +213,37 @@ public class TempoAtomStore implements AtomStore {
 			return OperationStatus.SUCCESS == this.uniqueIndices.get(null, key, null, LockMode.DEFAULT);
 		} finally {
 			profiler.incrementFrom("ATOM_STORE:CONTAINS:CLOCK", start);
+		}
+	}
+
+	public boolean contains(byte[] partialAid) {
+		long start = profiler.begin();
+		try {
+			DatabaseEntry key = new DatabaseEntry(LedgerIndex.from(ATOM_INDEX_PREFIX, partialAid));
+			return OperationStatus.SUCCESS == this.uniqueIndices.get(null, key, null, LockMode.DEFAULT);
+		} finally {
+			profiler.incrementFrom("ATOM_STORE:CONTAINS:CLOCK", start);
+		}
+	}
+
+	public List<AID> get(byte[] partialAid) {
+		long start = profiler.begin();
+		try {
+			DatabaseEntry key = new DatabaseEntry(LedgerIndex.from(ATOM_INDEX_PREFIX, partialAid));
+			DatabaseEntry pKey = new DatabaseEntry();
+			SecondaryCursor databaseCursor = toSecondaryCursor(Type.UNIQUE);
+			if (databaseCursor.getSearchBothRange(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
+				ImmutableList.Builder<AID> matchingAids = ImmutableList.builder();
+				while (databaseCursor.getNextDup(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
+					AID matchingAid = AID.from(pKey.getData());
+					matchingAids.add(matchingAid);
+				}
+				return matchingAids.build();
+			} else {
+				return ImmutableList.of();
+			}
+		} finally {
+			profiler.incrementFrom("ATOM_STORE:GET:AID", start);
 		}
 	}
 
@@ -416,11 +447,11 @@ public class TempoAtomStore implements AtomStore {
 	// FIXME bad performance due to shardpsace check for every atom
 	// FIXME bad performance due to complete atom deserialization
 	@Override
-	public Pair<ImmutableList<AID>, IterativeCursor> getNext(IterativeCursor iterativeCursor, int limit, ShardSpace shardSpace) {
+	public Pair<ImmutableList<AID>, LogicalClockCursor> getNext(LogicalClockCursor logicalClockCursor, int limit, ShardSpace shardSpace) {
 		long start = profiler.begin();
 		try (Cursor cursor = this.atoms.openCursor(null, null)) {
 			List<AID> aids = Lists.newArrayList();
-			long position = iterativeCursor.getLCPosition();
+			long position = logicalClockCursor.getLcPosition();
 			DatabaseEntry search = new DatabaseEntry(Longs.toByteArray(position + 1));
 			DatabaseEntry value = new DatabaseEntry();
 			OperationStatus status = cursor.getSearchKeyRange(search, value, LockMode.DEFAULT);
@@ -438,11 +469,11 @@ public class TempoAtomStore implements AtomStore {
 				status = cursor.getNext(search, value, LockMode.DEFAULT);
 			}
 
-			IterativeCursor nextCursor = null;
-			if (position != iterativeCursor.getLCPosition()) {
-				nextCursor = new IterativeCursor(position, null);
+			LogicalClockCursor nextCursor = null;
+			if (position != logicalClockCursor.getLcPosition()) {
+				nextCursor = new LogicalClockCursor(position, null);
 			}
-			return Pair.of(ImmutableList.copyOf(aids), new IterativeCursor(iterativeCursor.getLCPosition(), nextCursor));
+			return Pair.of(ImmutableList.copyOf(aids), new LogicalClockCursor(logicalClockCursor.getLcPosition(), nextCursor));
 		} catch (SerializationException e) {
 			throw new TempoException("Error while querying from database", e);
 		} finally {

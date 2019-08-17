@@ -16,48 +16,48 @@ import com.radixdlt.tempo.actions.control.RepeatScheduleAction;
 import com.radixdlt.tempo.actions.control.ScheduleAction;
 import com.radixdlt.tempo.actions.messaging.ReceiveDeliveryRequestAction;
 import com.radixdlt.tempo.actions.messaging.ReceiveDeliveryResponseAction;
-import com.radixdlt.tempo.actions.messaging.ReceiveIterativeRequestAction;
-import com.radixdlt.tempo.actions.messaging.ReceiveIterativeResponseAction;
+import com.radixdlt.tempo.actions.messaging.ReceiveIterativeDiscoveryRequestAction;
+import com.radixdlt.tempo.actions.messaging.ReceiveIterativeDiscoveryResponseAction;
 import com.radixdlt.tempo.actions.messaging.ReceivePushAction;
 import com.radixdlt.tempo.actions.messaging.ReceiveSampleRequestAction;
 import com.radixdlt.tempo.actions.messaging.ReceiveSampleResponseAction;
 import com.radixdlt.tempo.actions.messaging.SendDeliveryRequestAction;
 import com.radixdlt.tempo.actions.messaging.SendDeliveryResponseAction;
-import com.radixdlt.tempo.actions.messaging.SendIterativeRequestAction;
-import com.radixdlt.tempo.actions.messaging.SendIterativeResponseAction;
+import com.radixdlt.tempo.actions.messaging.SendIterativeDiscoveryRequestAction;
+import com.radixdlt.tempo.actions.messaging.SendIterativeDiscoveryResponseAction;
 import com.radixdlt.tempo.actions.messaging.SendPushAction;
 import com.radixdlt.tempo.actions.messaging.SendSampleRequestAction;
 import com.radixdlt.tempo.actions.messaging.SendSampleResponseAction;
 import com.radixdlt.tempo.epics.ActiveSyncEpic;
 import com.radixdlt.tempo.epics.AtomDeliveryEpic;
-import com.radixdlt.tempo.epics.IterativeSyncEpic;
+import com.radixdlt.tempo.epics.IterativeDiscoveryEpic;
 import com.radixdlt.tempo.epics.LocalResolverEpic;
 import com.radixdlt.tempo.epics.MessagingEpic;
 import com.radixdlt.tempo.epics.MomentumResolverEpic;
 import com.radixdlt.tempo.epics.SampleCollectorEpic;
 import com.radixdlt.tempo.messages.DeliveryRequestMessage;
 import com.radixdlt.tempo.messages.DeliveryResponseMessage;
-import com.radixdlt.tempo.messages.IterativeRequestMessage;
-import com.radixdlt.tempo.messages.IterativeResponseMessage;
+import com.radixdlt.tempo.messages.IterativeDiscoveryRequestMessage;
+import com.radixdlt.tempo.messages.IterativeDiscoveryResponseMessage;
 import com.radixdlt.tempo.messages.PushMessage;
 import com.radixdlt.tempo.messages.SampleRequestMessage;
 import com.radixdlt.tempo.messages.SampleResponseMessage;
 import com.radixdlt.tempo.reducers.AtomDeliveryReducer;
 import com.radixdlt.tempo.reducers.ConflictsStateReducer;
-import com.radixdlt.tempo.reducers.IterativeSyncReducer;
+import com.radixdlt.tempo.reducers.IterativeDiscoveryReducer;
 import com.radixdlt.tempo.reducers.LivePeersReducer;
 import com.radixdlt.tempo.reducers.PassivePeersReducer;
 import com.radixdlt.tempo.reducers.SampleCollectorReducer;
 import com.radixdlt.tempo.state.AtomDeliveryState;
 import com.radixdlt.tempo.state.ConflictsState;
-import com.radixdlt.tempo.state.IterativeSyncState;
+import com.radixdlt.tempo.state.IterativeDiscoveryState;
 import com.radixdlt.tempo.state.LivePeersState;
 import com.radixdlt.tempo.state.PassivePeersState;
 import com.radixdlt.tempo.state.SampleCollectorState;
-import com.radixdlt.tempo.store.IterativeCursorStore;
+import com.radixdlt.tempo.store.CommitmentStore;
+import com.radixdlt.tempo.store.LogicalClockCursorStore;
 import com.radixdlt.tempo.store.SampleStore;
 import org.json.JSONObject;
-import org.json.JSONString;
 import org.radix.database.DatabaseEnvironment;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
@@ -289,7 +289,7 @@ public final class TempoController {
 	private static final Map<String, Class<? extends TempoState>> exposedStateClassMap = ImmutableMap.<String, Class<? extends TempoState>>builder()
 		.put("atomDelivery", AtomDeliveryState.class)
 		.put("conflicts", ConflictsState.class)
-		.put("iterativeSync", IterativeSyncState.class)
+		.put("iterativeDiscovery", IterativeDiscoveryState.class)
 		.put("livePeers", LivePeersState.class)
 		.put("passivePeers", PassivePeersState.class)
 		.put("sampleCollector", SampleCollectorState.class)
@@ -381,10 +381,10 @@ public final class TempoController {
 				.addOutbound(SendDeliveryRequestAction.class, SendDeliveryRequestAction::toMessage, SendDeliveryRequestAction::getPeer)
 				.addInbound("tempo.sync.delivery.response", DeliveryResponseMessage.class, ReceiveDeliveryResponseAction::from)
 				.addOutbound(SendDeliveryResponseAction.class, SendDeliveryResponseAction::toMessage, SendDeliveryResponseAction::getPeer)
-				.addInbound("tempo.sync.iterative.request", IterativeRequestMessage.class, ReceiveIterativeRequestAction::from)
-				.addOutbound(SendIterativeRequestAction.class, SendIterativeRequestAction::toMessage, SendIterativeRequestAction::getPeer)
-				.addInbound("tempo.sync.iterative.response", IterativeResponseMessage.class, ReceiveIterativeResponseAction::from)
-				.addOutbound(SendIterativeResponseAction.class, SendIterativeResponseAction::toMessage, SendIterativeResponseAction::getPeer)
+				.addInbound("tempo.sync.iterative.request", IterativeDiscoveryRequestMessage.class, ReceiveIterativeDiscoveryRequestAction::from)
+				.addOutbound(SendIterativeDiscoveryRequestAction.class, SendIterativeDiscoveryRequestAction::toMessage, SendIterativeDiscoveryRequestAction::getPeer)
+				.addInbound("tempo.sync.iterative.response", IterativeDiscoveryResponseMessage.class, ReceiveIterativeDiscoveryResponseAction::from)
+				.addOutbound(SendIterativeDiscoveryResponseAction.class, SendIterativeDiscoveryResponseAction::toMessage, SendIterativeDiscoveryResponseAction::getPeer)
 				.addInbound("tempo.sync.push", PushMessage.class, ReceivePushAction::from)
 				.addOutbound(SendPushAction.class, SendPushAction::toMessage, SendPushAction::getPeer)
 				.addInbound("tempo.sample.request", SampleRequestMessage.class, ReceiveSampleRequestAction::from)
@@ -402,20 +402,24 @@ public final class TempoController {
 		RuntimeProperties properties = Modules.get(RuntimeProperties.class);
 		String[] syncFeatures = properties.get("tempo2.sync", "active,iterative").split(",");
 		String resolver = properties.get("tempo2.resolver", "local");
-		logger.info(String.format("Creating Tempo controller with sync='%s' and resolver=%s",
+		logger.info(String.format("Creating Tempo controller with sync='%s' and resolver='%s'",
 			Arrays.toString(syncFeatures), resolver));
 		if (Arrays.stream(syncFeatures).anyMatch("active"::equalsIgnoreCase)) {
 			builder.addEpic(new ActiveSyncEpic(localSystem.getNID()));
 		}
 		if (Arrays.stream(syncFeatures).anyMatch("iterative"::equalsIgnoreCase)) {
-			IterativeCursorStore cursorStore = new IterativeCursorStore(dbEnv, serialization);
+			LogicalClockCursorStore cursorStore = new LogicalClockCursorStore(dbEnv);
 			cursorStore.open();
-			builder.addEpic(IterativeSyncEpic.builder()
+			CommitmentStore commitmentStore = new CommitmentStore(dbEnv);
+			commitmentStore.open();
+			builder.addEpic(IterativeDiscoveryEpic.builder()
+				.self(localSystem.getNID())
 				.shardSpaceSupplier(localSystem::getShards)
 				.storeView(storeView)
 				.cursorStore(cursorStore)
+				.commitmentStore(commitmentStore)
 				.build());
-			builder.addReducer(new IterativeSyncReducer());
+			builder.addReducer(new IterativeDiscoveryReducer());
 		}
 		if (resolver.equalsIgnoreCase("local")) {
 			builder.addEpic(new LocalResolverEpic(localSystem.getNID()));

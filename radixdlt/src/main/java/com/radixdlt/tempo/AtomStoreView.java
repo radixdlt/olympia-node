@@ -45,5 +45,5 @@ public interface AtomStoreView {
 	 * @param shardSpace The shard range to consider
 	 * @return The relevant aids and the advanced cursor
 	 */
-	Pair<ImmutableList<AID>, IterativeCursor> getNext(IterativeCursor cursor, int limit, ShardSpace shardSpace);
+	Pair<ImmutableList<AID>, LogicalClockCursor> getNext(LogicalClockCursor cursor, int limit, ShardSpace shardSpace);
 }

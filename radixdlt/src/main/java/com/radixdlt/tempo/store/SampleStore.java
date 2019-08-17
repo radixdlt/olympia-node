@@ -29,6 +29,7 @@ public class SampleStore implements Store {
 
 	private final Supplier<DatabaseEnvironment> dbEnv;
 	private final Serialization serialization;
+	// TODO use prefix instead of two different databases (use type + aid as primary)
 	private Database collectedSamples;
 	private Database localSamples;
 

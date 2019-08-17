@@ -3,10 +3,10 @@ package com.radixdlt.tempo.actions;
 import com.radixdlt.common.EUID;
 import com.radixdlt.tempo.TempoAction;
 
-public class AbandonIterativeSyncAction implements TempoAction {
+public class OnDiscoveryCursorSynchronisedAction implements TempoAction {
 	private final EUID peerNid;
 
-	public AbandonIterativeSyncAction(EUID peerNid) {
+	public OnDiscoveryCursorSynchronisedAction(EUID peerNid) {
 		this.peerNid = peerNid;
 	}
 

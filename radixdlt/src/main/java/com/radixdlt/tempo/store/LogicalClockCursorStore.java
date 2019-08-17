@@ -2,9 +2,9 @@ package com.radixdlt.tempo.store;
 
 import com.radixdlt.common.EUID;
 import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.Serialization;
 import com.radixdlt.tempo.TempoException;
-import com.radixdlt.tempo.IterativeCursor;
+import com.radixdlt.tempo.LogicalClockCursor;
+import com.radixdlt.utils.Longs;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
@@ -22,16 +22,15 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-public final class IterativeCursorStore implements Store {
-	private static final Logger logger = Logging.getLogger("Sync.Store");
+public final class LogicalClockCursorStore implements Store {
+	private static final String ITERATIVE_CURSORS_DB_NAME = "tempo2.sync.iterative.cursors";
+	private static final Logger logger = Logging.getLogger("CursorStore");
 
 	private final Supplier<DatabaseEnvironment> dbEnv;
-	private final Serialization serialization;
 	private Database cursors;
 
-	public IterativeCursorStore(Supplier<DatabaseEnvironment> dbEnv, Serialization serialization) {
+	public LogicalClockCursorStore(Supplier<DatabaseEnvironment> dbEnv) {
 		this.dbEnv = Objects.requireNonNull(dbEnv, "dbEnv is required");
-		this.serialization = Objects.requireNonNull(serialization, "serialization is required");
 	}
 
 	private void fail(String message) {
@@ -52,7 +51,7 @@ public final class IterativeCursorStore implements Store {
 
 		try {
 			Environment dbEnv = this.dbEnv.get().getEnvironment();
-			this.cursors = dbEnv.openDatabase(null, "tempo2.sync.iterative.cursors", primaryConfig);
+			this.cursors = dbEnv.openDatabase(null, ITERATIVE_CURSORS_DB_NAME, primaryConfig);
 		} catch (Exception e) {
 			throw new TempoException("Error while opening database", e);
 		}
@@ -70,7 +69,7 @@ public final class IterativeCursorStore implements Store {
 
 			Environment env = this.dbEnv.get().getEnvironment();
 			transaction = env.beginTransaction(null, new TransactionConfig().setReadUncommitted(true));
-			env.truncateDatabase(transaction, "tempo2.sync.iterative.cursors", false);
+			env.truncateDatabase(transaction, ITERATIVE_CURSORS_DB_NAME, false);
 			transaction.commit();
 		} catch (DatabaseNotFoundException e) {
 			if (transaction != null) {
@@ -94,12 +93,11 @@ public final class IterativeCursorStore implements Store {
 		}
 	}
 
-	public void put(EUID nid, IterativeCursor cursor) {
+	public void put(EUID nid, CursorType cursorType, long cursor) {
 		Transaction transaction = dbEnv.get().getEnvironment().beginTransaction(null, null);
 		try {
-			DatabaseEntry key = new DatabaseEntry(nid.toByteArray());
-			byte[] valueBytes = serialization.toDson(cursor, DsonOutput.Output.PERSIST);
-			DatabaseEntry value = new DatabaseEntry(valueBytes);
+			DatabaseEntry key = new DatabaseEntry(toPKey(nid, cursorType));
+			DatabaseEntry value = new DatabaseEntry(Longs.toByteArray(cursor));
 
 			OperationStatus status = this.cursors.put(transaction, key, value);
 			if (status != OperationStatus.SUCCESS) {
@@ -113,9 +111,9 @@ public final class IterativeCursorStore implements Store {
 		}
 	}
 
-	public Optional<IterativeCursor> get(EUID nid) {
+	public Optional<Long> get(EUID nid, CursorType cursorType) {
 		try {
-			DatabaseEntry key = new DatabaseEntry(nid.toByteArray());
+			DatabaseEntry key = new DatabaseEntry(toPKey(nid, cursorType));
 			DatabaseEntry value = new DatabaseEntry();
 
 			OperationStatus status = this.cursors.get(null, key, value, LockMode.DEFAULT);
@@ -124,7 +122,7 @@ public final class IterativeCursorStore implements Store {
 			} else if (status != OperationStatus.SUCCESS) {
 				fail("Database returned status " + status + " for get operation");
 			} else {
-				IterativeCursor cursor = serialization.fromDson(value.getData(), IterativeCursor.class);
+				long cursor = Longs.fromByteArray(value.getData());
 				return Optional.of(cursor);
 			}
 		} catch (Exception e) {
@@ -132,5 +130,23 @@ public final class IterativeCursorStore implements Store {
 		}
 
 		return Optional.empty();
+	}
+
+	private byte[] toPKey(EUID nid, CursorType type) {
+		byte[] pKey = new byte[EUID.BYTES + 1];
+		System.arraycopy(nid.toByteArray(), 0, pKey, 1, EUID.BYTES);
+		pKey[0] = type.prefix;
+		return pKey;
+	}
+
+	public enum CursorType {
+		DISCOVERY((byte) 0),
+		LAG((byte) 1);
+
+		private final byte prefix;
+
+		CursorType(byte prefix) {
+			this.prefix = prefix;
+		}
 	}
 }

@@ -1,6 +1,6 @@
 package com.radixdlt.tempo.actions;
 
-import com.radixdlt.tempo.IterativeCursor;
+import com.radixdlt.tempo.LogicalClockCursor;
 import com.radixdlt.tempo.TempoAction;
 import org.radix.network.peers.Peer;
 
@@ -8,10 +8,10 @@ import java.util.Objects;
 
 public class RequestIterativeSyncAction implements TempoAction {
 	private final Peer peer;
-	private final IterativeCursor cursor;
+	private final LogicalClockCursor cursor;
 	private final boolean isNext;
 
-	public RequestIterativeSyncAction(Peer peer, IterativeCursor cursor, boolean isNext) {
+	public RequestIterativeSyncAction(Peer peer, LogicalClockCursor cursor, boolean isNext) {
 		this.peer = Objects.requireNonNull(peer, "peer is required");
 		this.cursor = Objects.requireNonNull(cursor, "cursor is required");
 		this.isNext = isNext;
@@ -21,7 +21,7 @@ public class RequestIterativeSyncAction implements TempoAction {
 		return peer;
 	}
 
-	public IterativeCursor getCursor() {
+	public LogicalClockCursor getCursor() {
 		return cursor;
 	}
 

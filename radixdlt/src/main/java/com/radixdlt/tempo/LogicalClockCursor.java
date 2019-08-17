@@ -7,8 +7,8 @@ import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 
 @SerializerId2("tempo.sync.iterative.cursor")
-public final class IterativeCursor {
-	public static final IterativeCursor INITIAL = new IterativeCursor(0, null);
+public final class LogicalClockCursor {
+	public static final LogicalClockCursor INITIAL = new LogicalClockCursor(0, null);
 
 	// Placeholder for the serializer ID
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
@@ -21,18 +21,22 @@ public final class IterativeCursor {
 
 	@JsonProperty("next")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private IterativeCursor next;
+	private LogicalClockCursor next;
 
-	private IterativeCursor() {
+	private LogicalClockCursor() {
 		// For serializer
 	}
 
-	public IterativeCursor(long logicalClockPosition, IterativeCursor next) {
+	public LogicalClockCursor(long logicalClockPosition, LogicalClockCursor next) {
 		this.logicalClockPosition = logicalClockPosition;
 		this.next = next;
 	}
 
-	public long getLCPosition() {
+	public LogicalClockCursor(long logicalClockPosition) {
+		this(logicalClockPosition, null);
+	}
+
+	public long getLcPosition() {
 		return logicalClockPosition;
 	}
 
@@ -40,7 +44,7 @@ public final class IterativeCursor {
 		return next != null;
 	}
 
-	public IterativeCursor getNext() {
+	public LogicalClockCursor getNext() {
 		return next;
 	}
 

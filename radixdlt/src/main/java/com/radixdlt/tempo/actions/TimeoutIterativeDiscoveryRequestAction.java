@@ -1,16 +1,16 @@
 package com.radixdlt.tempo.actions;
 
-import com.radixdlt.tempo.IterativeCursor;
+import com.radixdlt.tempo.LogicalClockCursor;
 import com.radixdlt.tempo.TempoAction;
 import org.radix.network.peers.Peer;
 
 import java.util.Objects;
 
-public class TimeoutIterativeRequestAction implements TempoAction {
+public class TimeoutIterativeDiscoveryRequestAction implements TempoAction {
 	private final Peer peer;
-	private final IterativeCursor requestedCursor;
+	private final LogicalClockCursor requestedCursor;
 
-	public TimeoutIterativeRequestAction(Peer peer, IterativeCursor requestedCursor) {
+	public TimeoutIterativeDiscoveryRequestAction(Peer peer, LogicalClockCursor requestedCursor) {
 		this.peer = Objects.requireNonNull(peer, "peer is required");
 		this.requestedCursor = Objects.requireNonNull(requestedCursor, "requestedCursor is required");
 	}
@@ -19,7 +19,7 @@ public class TimeoutIterativeRequestAction implements TempoAction {
 		return peer;
 	}
 
-	public IterativeCursor getRequestedCursor() {
+	public LogicalClockCursor getRequestedCursor() {
 		return requestedCursor;
 	}
 }

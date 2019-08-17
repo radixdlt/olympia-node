@@ -69,7 +69,7 @@ public interface AtomStore extends Store {
 	 */
 	LedgerCursor search(LedgerCursor.Type type, LedgerIndex index, LedgerSearchMode mode);
 
-	Pair<ImmutableList<AID>, IterativeCursor> getNext(IterativeCursor iterativeCursor, int limit, ShardSpace shardSpace);
+	Pair<ImmutableList<AID>, LogicalClockCursor> getNext(LogicalClockCursor logicalClockCursor, int limit, ShardSpace shardSpace);
 
 	/**
 	 * Gets a read-only view of this atom store.
