@@ -11,11 +11,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.function.LongSupplier;
-import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import com.radixdlt.constraintmachine.ConstraintMachine.Builder;
 import com.radixdlt.constraintmachine.ConstraintMachine;
@@ -25,7 +22,6 @@ import com.radixdlt.atoms.Particle;
 import com.radixdlt.atoms.Spin;
 import com.radixdlt.store.CMStores;
 import com.radixdlt.common.EUID;
-import com.radixdlt.universe.Universe;
 
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -42,21 +38,13 @@ public final class CMAtomOS {
 
 	private final List<KernelConstraintProcedure> kernelProcedures = new ArrayList<>();
 	private AtomKernelCompute atomKernelCompute;
-	private final Supplier<Universe> universeSupplier;
-	private final LongSupplier timestampSupplier;
 	private final Map<Class<? extends Particle>, ParticleDefinition<Particle>> particleDefinitions = new HashMap<>();
 	private final ImmutableMap.Builder<Pair<Class<? extends Particle>, Class<? extends Particle>>, TransitionProcedure<Particle, Particle>>
 		proceduresBuilder = new ImmutableMap.Builder<>();
 	private final ImmutableMap.Builder<Pair<Class<? extends Particle>, Class<? extends Particle>>, WitnessValidator<Particle, Particle>>
 		witnessesBuilder = new ImmutableMap.Builder<>();
 
-	public CMAtomOS(
-		Supplier<Universe> universeSupplier,
-		LongSupplier timestampSupplier
-	) {
-		this.universeSupplier = Objects.requireNonNull(universeSupplier);
-		this.timestampSupplier = Objects.requireNonNull(timestampSupplier);
-
+	public CMAtomOS() {
 		// RRI particle is a low level particle managed by the OS used for the management of all other resources
 		this.particleDefinitions.put(RRIParticle.class, RRI_PARTICLE_DEF);
 	}
@@ -93,16 +81,6 @@ public final class CMAtomOS {
 						CMAtomOS.this.atomKernelCompute = compute;
 					}
 				};
-			}
-
-			@Override
-			public long getCurrentTimestamp() {
-				return timestampSupplier.getAsLong();
-			}
-
-			@Override
-			public Universe getUniverse() {
-				return universeSupplier.get();
 			}
 		});
 	}

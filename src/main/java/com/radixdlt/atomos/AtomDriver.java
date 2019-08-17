@@ -4,11 +4,14 @@ import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
+import com.radixdlt.universe.Universe;
 import java.util.Objects;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.utils.POW;
 
 import java.util.concurrent.TimeUnit;
+import java.util.function.LongSupplier;
+import java.util.function.Supplier;
 
 /**
  * An implementation of an AtomOS Kernel level "driver" which adds constraints
@@ -18,10 +21,20 @@ public final class AtomDriver implements AtomOSDriver {
 	static final int MAX_ATOM_SIZE = 1024 * 1024;
 	private final boolean skipAtomFeeCheck;
 	private final Serialization serialization;
+	private final Supplier<Universe> universeSupplier;
+	private final LongSupplier timestampSupplier;
 	private static final Hash DEFAULT_TARGET = new Hash("0000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
 	private final int maximumDrift;
 
-	public AtomDriver(Serialization serialization, boolean skipAtomFeeCheck, int maximumDrift) {
+	public AtomDriver(
+		Supplier<Universe> universeSupplier,
+		LongSupplier timestampSupplier,
+		Serialization serialization,
+		boolean skipAtomFeeCheck,
+		int maximumDrift
+	) {
+		this.universeSupplier = universeSupplier;
+		this.timestampSupplier = timestampSupplier;
 		this.serialization = serialization;
 		this.skipAtomFeeCheck = skipAtomFeeCheck;
 		this.maximumDrift = maximumDrift;
@@ -32,7 +45,7 @@ public final class AtomDriver implements AtomOSDriver {
 		kernel.onAtom()
 			.setCompute(atom -> {
 				//TODO: Fix module loadup sequence so that massFunction doesn't need to be recreated everytime
-				final FungibleOrHashMassFunction massFunction = new FungibleOrHashMassFunction(kernel.getUniverse());
+				final FungibleOrHashMassFunction massFunction = new FungibleOrHashMassFunction(universeSupplier.get());
 				return massFunction.getMass(atom);
 			});
 
@@ -75,7 +88,7 @@ public final class AtomDriver implements AtomOSDriver {
 
 				// Atom has fee
 				if (!skipAtomFeeCheck) {
-					if (kernel.getUniverse().getGenesis().contains(atom) || isMagic) {
+					if (universeSupplier.get().getGenesis().contains(atom) || isMagic) {
 						// genesis and magic atoms don't need a fee
 						return Result.success();
 					}
@@ -88,9 +101,9 @@ public final class AtomDriver implements AtomOSDriver {
 					try {
 						long powNonce = Long.parseLong(powNonceString);
 						Hash powFeeHash = atom.copyExcludingMetadata(ImmutableAtom.METADATA_POW_NONCE_KEY).getHash();
-						POW pow = new POW(kernel.getUniverse().getMagic(), powFeeHash, powNonce);
+						POW pow = new POW(universeSupplier.get().getMagic(), powFeeHash, powNonce);
 
-						return checkPow(pow, powFeeHash, DEFAULT_TARGET, kernel.getUniverse().getMagic());
+						return checkPow(pow, powFeeHash, DEFAULT_TARGET, universeSupplier.get().getMagic());
 					} catch (NumberFormatException e) {
 						return Result.error("atom fee invalid, metadata contains invalid powNonce: " + powNonceString);
 					}
@@ -110,11 +123,11 @@ public final class AtomDriver implements AtomOSDriver {
 				try {
 					long timestamp = Long.parseLong(timestampString);
 
-					if (timestamp > kernel.getCurrentTimestamp()
+					if (timestamp > timestampSupplier.getAsLong()
 						+ TimeUnit.MILLISECONDS.convert(maximumDrift, TimeUnit.SECONDS)) {
 						return Result.error("atom metadata timestamp is after allowed drift time");
 					}
-					if (timestamp < kernel.getUniverse().getTimestamp()) {
+					if (timestamp < universeSupplier.get().getTimestamp()) {
 						return Result.error("atom metadata timestamp is before universe creation");
 					}
 				} catch (NumberFormatException e) {

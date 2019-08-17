@@ -16,7 +16,6 @@ import com.radixdlt.universe.Universe;
 public final class TestAtomOSKernel implements AtomOSKernel {
 	private final List<AtomKernelConstraintCheck> atomChecks = new ArrayList<>();
 	private Universe universe;
-	private long currentTimestamp;
 
 	public TestAtomOSKernel(Universe universe) {
 		this.universe = universe;
@@ -51,19 +50,5 @@ public final class TestAtomOSKernel implements AtomOSKernel {
 
 	public void setUniverse(Universe universe) {
 		this.universe = universe;
-	}
-
-	@Override
-	public Universe getUniverse() {
-		return universe;
-	}
-
-	public void setCurrentTimestamp(long currentTimestamp) {
-		this.currentTimestamp = currentTimestamp;
-	}
-
-	@Override
-	public long getCurrentTimestamp() {
-		return currentTimestamp;
 	}
 }
