@@ -36,10 +36,7 @@ public class IterativeDiscoveryState implements TempoState {
 
 	public boolean isPending(EUID nid, long requestedLCPosition) {
 		IterativeDiscoveryPeerState state = states.get(nid);
-		if (state == null) {
-			throw new TempoException("State for '" + nid + "' does not exist");
-		}
-		return state.isPending(requestedLCPosition);
+		return state != null && state.isPending(requestedLCPosition);
 	}
 
 	public IterativeDiscoveryState with(EUID nid, CommitmentBatch initialCommitments) {

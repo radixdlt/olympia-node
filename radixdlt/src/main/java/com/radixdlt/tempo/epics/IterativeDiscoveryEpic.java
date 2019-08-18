@@ -206,6 +206,7 @@ public final class IterativeDiscoveryEpic implements TempoEpic {
 			return continuedActions;
 		} else if (action instanceof ResetAction) {
 			latestCursorStore.reset();
+			commitmentStore.reset();
 		}
 
 		return Stream.empty();
