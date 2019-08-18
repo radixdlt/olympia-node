@@ -4,6 +4,9 @@ import org.radix.network.messaging.Message;
 import org.radix.network.peers.Peer;
 import org.radix.network2.transport.TransportException;
 
+/**
+ * Central processing facility for inbound and outbound messages.
+ */
 public interface MessageCentral {
 
 	/**

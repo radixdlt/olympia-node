@@ -2,6 +2,9 @@ package org.radix.network2.messaging;
 
 import org.radix.properties.RuntimeProperties;
 
+/**
+ * Static configuration data for {@link MessageCentral}.
+ */
 public interface MessageCentralConfiguration {
 
 	/**

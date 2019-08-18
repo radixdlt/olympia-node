@@ -34,6 +34,11 @@ import org.radix.utils.SystemMetaData;
 import org.radix.utils.SystemProfiler;
 import org.xerial.snappy.Snappy;
 
+/*
+ * This could be moved into MessageCentralImpl at some stage, but has been
+ * separated out so that we can check if all the functionality here is
+ * required, and remove the stuff we don't want to keep.
+ */
 //FIXME: Optional dependency on Modules.get(SystemMetaData.class) for system metadata
 //FIXME: Optional dependency on Modules.get(MessageProfiler.class) for profiling
 //FIXME: Optional dependency on Modules.get(Interfaces.class) for keeping track of network interfaces
@@ -53,7 +58,7 @@ class MessageDispatcher {
 		this.events = events;
 	}
 
-	void send(ConnectionManager connectionManager, final MessageEvent outboundMessage) {
+	void send(TransportManager transportManager, final MessageEvent outboundMessage) {
 		long start = SystemProfiler.getInstance().begin();
 		final Message message = outboundMessage.message();
 		final Peer peer = outboundMessage.peer();
@@ -83,7 +88,7 @@ class MessageDispatcher {
 			}
 
 			byte[] bytes = serialize(message);
-			findTransportAndOpenConnection(connectionManager, peer, bytes).thenCompose(conn -> conn.send(bytes));
+			findTransportAndOpenConnection(transportManager, peer, bytes).thenCompose(conn -> conn.send(bytes));
 			Modules.ifAvailable(SystemMetaData.class, a -> a.increment("messages.outbound.processed"));
 			events.broadcast(outboundMessage);
 			Modules.ifAvailable(SystemMetaData.class, a -> a.increment("messages.outbound.sent"));
@@ -178,9 +183,9 @@ class MessageDispatcher {
 
 	@SuppressWarnings("resource")
 	// Resource warning suppression OK here -> caller is responsible
-	private CompletableFuture<TransportOutboundConnection> findTransportAndOpenConnection(ConnectionManager connectionManager, Peer peer, byte[] bytes) {
-		Transport transport = connectionManager.findTransport(peer, bytes);
-		return transport.control().open();
+	private CompletableFuture<TransportOutboundConnection> findTransportAndOpenConnection(TransportManager transportManager, Peer peer, byte[] bytes) {
+		Transport transport = transportManager.findTransport(peer, bytes);
+		return transport.control().open(peer.connectionData(transport.name()));
 	}
 
 	private byte[] serialize(Message out) {

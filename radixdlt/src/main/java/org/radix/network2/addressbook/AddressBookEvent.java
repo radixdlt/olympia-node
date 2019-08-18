@@ -4,6 +4,6 @@ import java.util.List;
 
 public interface AddressBookEvent {
 
-	List<Peer> getPeers();
+	List<Peer> peers();
 
 }

@@ -10,6 +10,14 @@ import org.radix.network.peers.Peer;
 
 import com.google.common.collect.ImmutableMap;
 
+/**
+ * Inbound and outbound message wrapper with priority, time and destination.
+ * <p>
+ * Note that priority is calculated from a fixed table of priorities for
+ * specific message types, and cannot be specified by the user.
+ * <p>
+ * Time is number of nanoseconds since some arbitrary baseline.
+ */
 public final class MessageEvent extends Event {
 
 	private static final int DEFAULT_PRIORITY = 0;
@@ -33,18 +41,40 @@ public final class MessageEvent extends Event {
 		this.message = message;
 	}
 
+	/**
+	 * Returns the messages priority.
+	 *
+	 * @return the messages priority.
+	 */
 	public int priority() {
 		return priority;
 	}
 
+	/**
+	 * Returns the time this event was created as a number of nanoseconds
+	 * since some arbitrary baseline.
+	 *
+	 * @return the time this event was created
+	 */
 	public long nanoTimeDiff() {
 		return nanoTimeDiff;
 	}
 
+	/**
+	 * Returns the source (for inbound) or destination (for outbound)
+	 * of the message.
+	 *
+	 * @return the source or destination of the message.
+	 */
 	public Peer peer() {
 		return peer;
 	}
 
+	/**
+	 * Returns the message.
+	 *
+	 * @return the message.
+	 */
 	public Message message() {
 		return message;
 	}

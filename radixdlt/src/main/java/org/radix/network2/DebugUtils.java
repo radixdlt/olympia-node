@@ -1,5 +1,11 @@
 package org.radix.network2;
 
+/**
+ * FIXME: This is temporary until things are more stable.
+ * <p>
+ * There is a similar method in the RadixText class, but this
+ * is unavailable at runtime, as it's in the test classes.
+ */
 public class DebugUtils {
 	private DebugUtils() {
 	}

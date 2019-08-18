@@ -13,7 +13,7 @@ public class PeersAddedEvent implements AddressBookEvent {
 	}
 
 	@Override
-	public List<Peer> getPeers() {
+	public List<Peer> peers() {
 		return this.peers;
 	}
 

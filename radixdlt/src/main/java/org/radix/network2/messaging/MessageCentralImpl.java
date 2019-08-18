@@ -17,8 +17,9 @@ import org.radix.network.Network;
 import org.radix.network.Protocol;
 import org.radix.network.messaging.Message;
 import org.radix.network.peers.Peer;
+import org.radix.network.peers.PeerStore;
 import org.radix.network.peers.UDPPeer;
-import org.radix.network2.transport.TransportListener;
+import org.radix.network2.transport.Transport;
 import org.radix.universe.system.events.QueueFullEvent;
 import org.radix.utils.SystemMetaData;
 import org.xerial.snappy.Snappy;
@@ -27,18 +28,19 @@ import com.radixdlt.universe.Universe;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.RateLimiter;
+import com.google.inject.Inject;
 import com.radixdlt.serialization.Serialization;
 
 //FIXME: Dependency on Modules.get(SystemMetadata.class) for updating metadata
 // FIXME: Dependency on Network.getInstance() for peer handling
-public final class MessageCentralImpl implements MessageCentral, Closeable {
+final class MessageCentralImpl implements MessageCentral, Closeable {
 	private static final Logger log = Logging.getLogger("message");
 
 	private static final MessageListenerList EMPTY_MESSAGE_LISTENER_LIST = new MessageListenerList();
 
 	// Dependencies
 	private final Serialization serialization;
-	private final ConnectionManager connectionManager;
+	private final TransportManager connectionManager;
 	private final Events events;
 
 	// Local data
@@ -53,7 +55,7 @@ public final class MessageCentralImpl implements MessageCentral, Closeable {
 	private final long timeBase = System.nanoTime();
 
 	// Listeners we are managing
-	private final List<TransportListener> transportListeners;
+	private final List<Transport> transports;
 
 	// Limit rate at which dropped packet logs are produced
 	private final RateLimiter inboundLogRateLimiter = RateLimiter.create(1.0);
@@ -68,32 +70,26 @@ public final class MessageCentralImpl implements MessageCentral, Closeable {
 	private final Thread outboundProcessingThread;
 
 
+	@Inject
 	public MessageCentralImpl(
 		MessageCentralConfiguration config,
 		Serialization serialization,
-		ConnectionManager connectionManager,
-		Events events,
-		Iterable<TransportListener> listeners
+		TransportManager transportManager,
+		Events events
 	) {
 		this.inboundQueue = new PriorityBlockingQueue<>(config.getMessagingInboundQueueMax(8192));
 		this.outboundQueue = new PriorityBlockingQueue<>(config.getMessagingOutboundQueueMax(16384));
 		this.serialization = Objects.requireNonNull(serialization);
 		this.messageDispatcher = new MessageDispatcher(config, serialization, events); // FIXME: Probably should be injected dependency
-		this.connectionManager = Objects.requireNonNull(connectionManager);
+		this.connectionManager = Objects.requireNonNull(transportManager);
 		this.events = Objects.requireNonNull(events);
 
-		this.transportListeners = Lists.newArrayList(Objects.requireNonNull(listeners));
+		this.transports = Lists.newArrayList(transportManager.transports());
 
-		if (this.transportListeners.isEmpty()) {
-			// This will work, but it will be a quiet life indeed.
-			this.inboundProcessingThread = null;
-			log.warn("No transport listeners supplied");
-		} else {
-			// Start inbound processing thread
-			this.inboundProcessingThread = new Thread(this::inboundMessageProcessor, getClass().getSimpleName() + " inbound message processing");
-			this.inboundProcessingThread.setDaemon(true);
-			this.inboundProcessingThread.start();
-		}
+		// Start inbound processing thread
+		this.inboundProcessingThread = new Thread(this::inboundMessageProcessor, getClass().getSimpleName() + " inbound message processing");
+		this.inboundProcessingThread.setDaemon(true);
+		this.inboundProcessingThread.start();
 
 		// Start outbound processing thread
 		this.outboundProcessingThread = new Thread(this::outboundMessageProcessor, getClass().getSimpleName() + " outbound message processing");
@@ -101,13 +97,13 @@ public final class MessageCentralImpl implements MessageCentral, Closeable {
 		this.outboundProcessingThread.start();
 
 		// Start our listeners
-		this.transportListeners.forEach(tl -> tl.start(this::inboundMessage));
+		this.transports.forEach(tl -> tl.start(this::inboundMessage));
 	}
 
 	@Override
 	public void close() {
-		this.transportListeners.forEach(tl -> closeWithLog(tl));
-		this.transportListeners.clear();
+		this.transports.forEach(tl -> closeWithLog(tl));
+		this.transports.clear();
 
 		if (inboundProcessingThread != null) {
 			inboundProcessingThread.interrupt();
@@ -169,20 +165,22 @@ public final class MessageCentralImpl implements MessageCentral, Closeable {
 
 	private void inboundMessage(InboundMessage inboundMessage) {
 		// FIXME: This needs replacing - at the moment just hooking up to existing infra
-		String peerAddress = inboundMessage.source().metadata().get("host");
-		URI uri = URI.create(Network.URI_PREFIX + peerAddress + ":" + Modules.get(Universe.class).getPort());
-		try {
-			UDPPeer peer = Network.getInstance().connect(uri, Protocol.UDP);
-			Message message = deserialize(inboundMessage.message());
-			MessageEvent event = new MessageEvent(peer, message, System.nanoTime() - timeBase);
-			if (!inboundQueue.offer(event)) {
-				if (inboundLogRateLimiter.tryAcquire()) {
-					log.error(String.format("Inbound %s message from %s dropped", inboundMessage.source().name(), inboundMessage.source().metadata()));
+		if (Modules.isAvailable(PeerStore.class)) {
+			String peerAddress = inboundMessage.source().metadata().get("host");
+			URI uri = URI.create(Network.URI_PREFIX + peerAddress + ":" + Modules.get(Universe.class).getPort());
+			try {
+				UDPPeer peer = Network.getInstance().connect(uri, Protocol.UDP);
+				Message message = deserialize(inboundMessage.message());
+				MessageEvent event = new MessageEvent(peer, message, System.nanoTime() - timeBase);
+				if (!inboundQueue.offer(event)) {
+					if (inboundLogRateLimiter.tryAcquire()) {
+						log.error(String.format("Inbound %s message from %s dropped", inboundMessage.source().name(), inboundMessage.source().metadata()));
+					}
+					events.broadcast(new QueueFullEvent());
 				}
-				events.broadcast(new QueueFullEvent());
+			} catch (IOException e) {
+				throw new UncheckedIOException("While processing inbound message from " + inboundMessage.source(), e);
 			}
-		} catch (IOException e) {
-			throw new UncheckedIOException("While processing inbound message from " + inboundMessage.source(), e);
 		}
 	}
 
@@ -230,11 +228,11 @@ public final class MessageCentralImpl implements MessageCentral, Closeable {
 		}
 	}
 
-	private void closeWithLog(TransportListener tl) {
+	private void closeWithLog(Transport t) {
 		try {
-			tl.close();
+			t.close();
 		} catch (IOException e) {
-			log.error("Error closing transport listener " + tl, e);
+			log.error("Error closing transport " + t, e);
 		}
 	}
 }

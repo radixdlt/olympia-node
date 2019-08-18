@@ -1,7 +1,5 @@
 package org.radix;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.security.SecureRandom;
@@ -9,7 +7,6 @@ import java.security.Security;
 
 import com.radixdlt.mock.MockAccessor;
 import com.radixdlt.mock.MockApplication;
-import com.google.common.collect.ImmutableList;
 import com.radixdlt.tempo.Tempo;
 import org.apache.commons.cli.CommandLine;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -32,15 +29,7 @@ import org.radix.network.messaging.Messaging;
 import org.radix.network.peers.PeerHandler;
 import org.radix.network.peers.PeerStore;
 import org.radix.network2.messaging.MessageCentral;
-import org.radix.network2.messaging.MessageCentralConfiguration;
-import org.radix.network2.messaging.MessageCentralImpl;
-import org.radix.network2.transport.StaticTransportMetadata;
-import org.radix.network2.transport.TransportMetadata;
-import org.radix.network2.transport.UDPOnlyConnectionManager;
-import org.radix.network2.transport.udp.UDPSocketFactory;
-import org.radix.network2.transport.udp.UDPSocketFactoryImpl;
-import org.radix.network2.transport.udp.UDPTransportFactoryImpl;
-import org.radix.network2.transport.udp.UDPTransportListenerImpl;
+import org.radix.network2.messaging.MessageCentralFactory;
 import org.radix.properties.PersistedProperties;
 import org.radix.properties.RuntimeProperties;
 import org.radix.routing.Routing;
@@ -362,19 +351,6 @@ public class Radix extends Plugin
 	public void stop_impl() throws ModuleException { }
 
 	private MessageCentral createMessageCentral(RuntimeProperties properties) {
-		// FIXME: This all needs to change
-		TransportMetadata metadata = StaticTransportMetadata.empty();
-		UDPSocketFactory socketFactory = new UDPSocketFactoryImpl();
-		try {
-			return new MessageCentralImpl(
-				MessageCentralConfiguration.fromRuntimeProperties(properties),
-				Serialization.getDefault(),
-				new UDPOnlyConnectionManager(new UDPTransportFactoryImpl(socketFactory)),
-				Events.getInstance(),
-				ImmutableList.of(new UDPTransportListenerImpl(metadata, socketFactory))
-			);
-		} catch (IOException e) {
-			throw new UncheckedIOException("While creating MessageCentral", e);
-		}
+		return new MessageCentralFactory().getDefault(properties);
 	}
 }

@@ -11,8 +11,9 @@ public interface TransportControl extends Closeable {
 	/**
 	 * Open an outbound connection to a peer.
 	 *
+	 * @param endpointMetadata the metadata for the endpoint we are connecting to
 	 * @return A {@link CompletableFuture} returning an outbound transport connection once the connection is open
 	 */
-	CompletableFuture<TransportOutboundConnection> open();
+	CompletableFuture<TransportOutboundConnection> open(TransportMetadata endpointMetadata);
 
 }

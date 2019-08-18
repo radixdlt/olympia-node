@@ -22,7 +22,7 @@ import org.radix.network2.transport.StaticTransportMetadata;
 import org.radix.network2.transport.Transport;
 import org.radix.network2.transport.TransportControl;
 import org.radix.network2.transport.TransportInfo;
-import org.radix.network2.transport.TransportListener;
+import org.radix.network2.transport.TransportMetadata;
 import org.radix.network2.transport.TransportOutboundConnection;
 import org.radix.properties.RuntimeProperties;
 import org.radix.shards.ShardSpace;
@@ -38,25 +38,6 @@ import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 public class MessageCentralImplTest {
-
-	static class DummyTransportListener implements TransportListener {
-		private InboundMessageConsumer messageSink = null;
-		private boolean isClosed = false;
-
-		@Override
-		public void start(InboundMessageConsumer messageSink) {
-			this.messageSink = messageSink;
-		}
-
-		@Override
-		public void close() throws IOException {
-			this.isClosed = true;
-		}
-
-		void inboundMessage(InboundMessage msg) {
-			messageSink.accept(msg);
-		}
-	}
 
 	static class DummyTransportOutboundConnection implements TransportOutboundConnection {
 		private boolean sent = false;
@@ -75,10 +56,60 @@ public class MessageCentralImplTest {
 		}
 	}
 
+	static class DummyTransport implements Transport {
+		private InboundMessageConsumer messageSink = null;
+		private boolean isClosed = false;
+
+		private final TransportOutboundConnection out;
+
+		DummyTransport(TransportOutboundConnection out) {
+			this.out = out;
+		}
+
+		@Override
+		public void start(InboundMessageConsumer messageSink) {
+			this.messageSink = messageSink;
+		}
+
+		@Override
+		public void close() throws IOException {
+			this.isClosed = true;
+		}
+
+		void inboundMessage(InboundMessage msg) {
+			messageSink.accept(msg);
+		}
+
+		@Override
+		public String name() {
+			return "DUMMY";
+		}
+
+		@Override
+		public TransportControl control() {
+			return new TransportControl() {
+				@Override
+				public CompletableFuture<TransportOutboundConnection> open(TransportMetadata ignored) {
+					return CompletableFuture.completedFuture(out);
+				}
+
+				@Override
+				public void close() throws IOException {
+					// Nothing to do
+				}
+			};
+		}
+
+		@Override
+		public TransportMetadata localMetadata() {
+			return StaticTransportMetadata.empty();
+		}
+	}
+
 	private Serialization serialization;
 	private DummyTransportOutboundConnection toc;
-	private DummyTransportListener dtl;
-	private ConnectionManager connectionManager;
+	private DummyTransport dt;
+	private TransportManager transportManager;
 	private MessageCentralImpl mci;
 
 	@Before
@@ -107,26 +138,28 @@ public class MessageCentralImplTest {
 
 		// Other scaffolding
 		this.toc = new DummyTransportOutboundConnection();
+		this.dt = new DummyTransport(this.toc);
 
-		// Warning suppression OK here -> mocked interfaces don't have contained resources
-		@SuppressWarnings("resource")
-		TransportControl transportControl = mock(TransportControl.class);
-		when(transportControl.open()).thenReturn(CompletableFuture.completedFuture(this.toc));
+		this.transportManager = new TransportManager() {
 
-		// Warning suppression OK here -> mocked interfaces don't have contained resources
-		@SuppressWarnings("resource")
-		Transport transport = mock(Transport.class);
-		when(transport.control()).thenReturn(transportControl);
+			@Override
+			public void close() throws IOException {
+				// Nothing
+			}
 
-		this.connectionManager = mock(ConnectionManager.class);
-		when(connectionManager.findTransport(any(), any())).thenReturn(transport);
+			@Override
+			public List<Transport> transports() {
+				return ImmutableList.of(MessageCentralImplTest.this.dt);
+			}
 
-		this.dtl = new DummyTransportListener();
-
-		List<TransportListener> listeners = ImmutableList.of(this.dtl);
+			@Override
+			public Transport findTransport(Peer peer, byte[] bytes) {
+				return MessageCentralImplTest.this.dt;
+			}
+		};
 
 		Events events = mock(Events.class);
-		this.mci = new MessageCentralImpl(staticConfig(), serialization, connectionManager, events, listeners);
+		this.mci = new MessageCentralImpl(staticConfig(), serialization, transportManager, events);
 	}
 
 	@After
@@ -141,23 +174,15 @@ public class MessageCentralImplTest {
 	}
 
 	@Test
-	public void testConstructNoListeners() {
-		Events events = mock(Events.class);
-		try (MessageCentralImpl mci2 = new MessageCentralImpl(staticConfig(), serialization, connectionManager, events, ImmutableList.of())) {
-			assertFalse(mci2.hasInboundThread());
-		}
-	}
-
-	@Test
 	public void testConstruct() {
 		// Make sure start called on our transport
-		assertNotNull(dtl.messageSink);
+		assertNotNull(dt.messageSink);
 	}
 
 	@Test
 	public void testClose() {
 		mci.close();
-		assertTrue(dtl.isClosed);
+		assertTrue(dt.isClosed);
 	}
 
 	@Test
@@ -166,7 +191,7 @@ public class MessageCentralImplTest {
 		Peer peer = mock(Peer.class);
 		doReturn(new State(State.CONNECTED)).when(peer).getState();
 		mci.send(peer, msg);
-		assertTrue(toc.sentSemaphore.tryAcquire(1000, TimeUnit.SECONDS));
+		assertTrue(toc.sentSemaphore.tryAcquire(10, TimeUnit.SECONDS));
 		assertTrue(toc.sent);
 	}
 
@@ -186,7 +211,7 @@ public class MessageCentralImplTest {
 		TransportInfo source = TransportInfo.of("DUMMY", StaticTransportMetadata.empty());
 
 		InboundMessage message = InboundMessage.of(source, data);
-		dtl.inboundMessage(message);
+		dt.inboundMessage(message);
 
 		assertTrue(receivedFlag.tryAcquire(10, TimeUnit.SECONDS));
 		assertNotNull(receivedMessage.get());

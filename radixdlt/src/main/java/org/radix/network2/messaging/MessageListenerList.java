@@ -21,7 +21,8 @@ import com.google.common.annotations.VisibleForTesting;
  * <p>
  * In particular, this call ensures that callbacks will not be currently executing
  * in another thread, nor will they be scheduled to run on threads in the future
- * once the {@link #removeMessageListener(MessageListener)} or {@link #removeAllMessageListeners()}.
+ * once the {@link #removeMessageListener(MessageListener)} or {@link #removeAllMessageListeners()}
+ * methods have returned.
  */
 final class MessageListenerList {
 	private static final Logger log = Logging.getLogger("messaging");
@@ -79,7 +80,7 @@ final class MessageListenerList {
 	/**
 	 * Removes the given {@link MessageListener}.
 	 *
-	 * @param listener     the {@link MessageListener} to remove
+	 * @param listener the {@link MessageListener} to remove
 	 */
 	void removeMessageListener(final MessageListener<?> listener) {
 		if (listener == null) {

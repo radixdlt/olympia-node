@@ -13,6 +13,8 @@ import org.radix.network.messaging.Message;
  * non-trivial thing is the helper method
  * {@link #waitCallbackComplete(MessageListener)} to wait for the current
  * callback to complete.
+ * <p>
+ * Oh, also.  Umm.  This is externally locked.  Sorry.
  */
 class MessageListenerQueue {
 	private final LinkedList<MessageListener<Message>> theQueue = new LinkedList<>();
