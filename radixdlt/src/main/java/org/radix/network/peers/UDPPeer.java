@@ -60,7 +60,14 @@ public class UDPPeer extends Peer implements Polymorphic
 	@Override
 	public void send(Message message) throws IOException
 	{
-		byte[] messageBytes = message.toByteArray();
+		byte[] messageBytes;
+		try {
+			messageBytes = message.toByteArray();
+		} catch (Exception e) {
+			messagingLog.error(String.format("Serialization of message '%s' for '%s failed: %s",
+				message.getCommand(), this, e), e);
+			throw e;
+		}
 
 		// NAT: encode source and dest address to work behind NAT and userland proxies (Docker for Windows/Mac)
 		byte[] rawSourceAddress = localAddress.get().getAddress();
