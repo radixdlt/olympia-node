@@ -1,4 +1,4 @@
-import static org.junit.Assert.*;
+package com.radixdlt.tempo.messages;
 
 public class IterativeDiscoveryResponseMessageSerializeTest {
 
