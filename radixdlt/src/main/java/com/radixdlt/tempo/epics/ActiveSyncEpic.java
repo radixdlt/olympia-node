@@ -1,10 +1,11 @@
 package com.radixdlt.tempo.epics;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Streams;
 import com.radixdlt.common.EUID;
 import com.radixdlt.tempo.TempoAtom;
+import com.radixdlt.tempo.TempoFlow;
 import com.radixdlt.tempo.reactive.TempoState;
-import com.radixdlt.tempo.TempoStateBundle;
 import com.radixdlt.tempo.reactive.TempoAction;
 import com.radixdlt.tempo.reactive.TempoEpic;
 import com.radixdlt.tempo.actions.ReceiveAtomAction;
@@ -34,22 +35,28 @@ public final class ActiveSyncEpic implements TempoEpic {
 	}
 
 	@Override
-	public Stream<TempoAction> epic(TempoStateBundle bundle, TempoAction action) {
-		if (action instanceof AcceptAtomAction) {
-			LivePeersState livePeersState = bundle.get(LivePeersState.class);
-			TempoAtom atom = ((AcceptAtomAction) action).getAtom();
-			TemporalVertex temporalVertex = atom.getTemporalProof().getVertexByNID(self);
-			if (temporalVertex != null) {
-				return temporalVertex.getEdges().stream()
-					.map(livePeersState::getPeer)
-					.filter(Optional::isPresent)
-					.map(Optional::get)
-					.map(peer -> new SendPushAction(atom, peer));
-			}
-		} else if (action instanceof ReceivePushAction) {
-			return Stream.of(new ReceiveAtomAction(((ReceivePushAction) action).getAtom()));
-		}
+	public Stream<TempoAction> epic(TempoFlow flow) {
+		Stream<SendPushAction> sendPushes = flow.ofStateful(AcceptAtomAction.class, LivePeersState.class)
+			.flatMap(requestWithState -> {
+				LivePeersState livePeersState = requestWithState.getBundle().get(LivePeersState.class);
+				TempoAtom atom = requestWithState.getAction().getAtom();
+				TemporalVertex temporalVertex = atom.getTemporalProof().getVertexByNID(self);
+				if (temporalVertex != null) {
+					return temporalVertex.getEdges().stream()
+						.map(livePeersState::getPeer)
+						.filter(Optional::isPresent)
+						.map(Optional::get)
+						.map(peer -> new SendPushAction(atom, peer));
+				} else {
+					return Stream.empty();
+				}
+			});
+		Stream<ReceiveAtomAction> receivePushes = flow.of(ReceivePushAction.class)
+			.map(push -> new ReceiveAtomAction(push.getAtom()));
 
-		return Stream.empty();
+		return Streams.concat(
+			sendPushes,
+			receivePushes
+		);
 	}
 }

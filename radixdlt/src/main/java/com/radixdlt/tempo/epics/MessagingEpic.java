@@ -3,6 +3,7 @@ package com.radixdlt.tempo.epics;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.tempo.TempoController.ImmediateDispatcher;
+import com.radixdlt.tempo.TempoFlow;
 import com.radixdlt.tempo.reactive.TempoState;
 import com.radixdlt.tempo.TempoStateBundle;
 import com.radixdlt.tempo.TempoException;
@@ -50,18 +51,14 @@ public final class MessagingEpic implements TempoEpic {
 		return ImmutableSet.of();
 	}
 
-	@Override
-	public Stream<TempoAction> epic(TempoStateBundle bundle, TempoAction action) {
-		if (outboundMessageMappers.containsKey(action.getClass())) {
-			Message message = outboundMessageMappers.get(action.getClass()).apply(action);
-			Peer peer = outboundPeerMappers.get(action.getClass()).apply(action);
-			if (logger.hasLevel(Logging.TRACE)) {
-				logger.trace(String.format("Forwarding outbound %s for '%s' as '%s'",
-					action.getClass().getSimpleName(), peer, message.getCommand()));
-			}
-
-			sendMessage(message, peer);
-		}
+	public Stream<TempoAction> epic(TempoFlow flow) {
+		outboundMessageMappers.entrySet().stream()
+			.flatMap(entry -> flow.of(entry.getKey()))
+				.forEach(send -> {
+					Message message = outboundMessageMappers.get(send.getClass()).apply(send);
+					Peer peer = outboundPeerMappers.get(send.getClass()).apply(send);
+					sendMessage(message, peer);
+				});
 
 		return Stream.empty();
 	}

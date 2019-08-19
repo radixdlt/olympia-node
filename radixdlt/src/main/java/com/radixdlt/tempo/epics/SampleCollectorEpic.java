@@ -1,8 +1,10 @@
 package com.radixdlt.tempo.epics;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Streams;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
+import com.radixdlt.tempo.TempoFlow;
 import com.radixdlt.tempo.reactive.TempoAction;
 import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.reactive.TempoEpic;
@@ -54,97 +56,116 @@ public class SampleCollectorEpic implements TempoEpic {
 		);
 	}
 
-	@Override
-	public Stream<TempoAction> epic(TempoStateBundle bundle, TempoAction action) {
-		if (action instanceof AcceptAtomAction) {
-			TempoAtom atom = ((AcceptAtomAction) action).getAtom();
-			TemporalProof temporalProof = atom.getTemporalProof();
-
-			// store newly received local temporal proof branches
-			TemporalVertex ownVertex = temporalProof.getVertexByNID(self);
-			if (ownVertex == null) {
-				logger.warn("Accepted atom '" + atom.getAID() + " has no vertex by self");
-			} else {
-				TemporalProof localSample = temporalProof.getBranch(ownVertex, true);
-				sampleStore.addLocal(localSample);
-			}
-			return Stream.empty();
-		} else if (action instanceof RequestSamplingAction) {
-			RequestSamplingAction request = (RequestSamplingAction) action;
-			ImmutableSet<AID> allAids = request.getAllAids();
-			ImmutableSet<Peer> samplePeers = request.getSamplePeers();
-
-			// early out with only local samples in case no sample peers were given
-			if (samplePeers.isEmpty()) {
-				logger.warn("No sample peers given for requesting for tag '" + request.getTag() + "', returning previous samples (local and collected)");
-				return Stream.of(toResult(request.getAllAids(), request.getTag()));
-			}
-
-			logger.info(String.format("Requesting sampling for tag '%s' of '%s' from '%s'",
-				request.getTag(), allAids, samplePeers));
-			// request samples of all aids from all selected sample peers
-			Stream<TempoAction> requests = samplePeers.stream()
-				.map(peer -> new SendSampleRequestAction(allAids, peer, request.getTag()));
-			Stream<TempoAction> timeout = Stream.of(new TimeoutSampleRequestsAction(allAids, samplePeers, request.getTag())
-				.delay(SAMPLE_REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS));
-			return Stream.concat(requests, timeout);
-		} else if (action instanceof ReceiveSampleRequestAction) {
-			ReceiveSampleRequestAction request = (ReceiveSampleRequestAction) action;
-			ImmutableSet.Builder<AID> unavailableAids = ImmutableSet.builder();
-			ImmutableSet.Builder<TemporalProof> samples = ImmutableSet.builder();
-
-			// get local samples for all requested aids
-			for (AID aid : request.getAids()) {
-				Optional<TemporalProof> localSample = sampleStore.getLocal(aid);
-				if (localSample.isPresent()) {
-					samples.add(localSample.get());
+	public Stream<TempoAction> epic(TempoFlow flow) {
+		flow.of(AcceptAtomAction.class)
+			.map(AcceptAtomAction::getAtom)
+			.map(TempoAtom::getTemporalProof)
+			.forEach(temporalProof -> {
+				TemporalVertex ownVertex = temporalProof.getVertexByNID(self);
+				if (ownVertex == null) {
+					logger.warn("Accepted atom '" + temporalProof.getAID() + " has no vertex by self");
 				} else {
-					unavailableAids.add(aid);
+					TemporalProof localSample = temporalProof.getBranch(ownVertex, true);
+					sampleStore.addLocal(localSample);
 				}
-			}
-			if (logger.hasLevel(Logging.DEBUG)) {
-				logger.debug(String.format("Responding to sample request for tag '%s' from '%s' for '%s'",
-					request.getTag(), request.getPeer(), request.getAids()));
-			}
-			return Stream.of(new SendSampleResponseAction(samples.build(), unavailableAids.build(), request.getTag(), request.getPeer()));
-		} else if (action instanceof ReceiveSampleResponseAction) {
-			ReceiveSampleResponseAction response = (ReceiveSampleResponseAction) action;
-			SampleCollectorState collectorState = bundle.get(SampleCollectorState.class);
-			if (logger.hasLevel(Logging.DEBUG)) {
-				logger.debug(String.format("Received sample response for tag %s with %s from %s (%d unavailable: %s)",
-					response.getTag(),
-					response.getTemporalProofs().stream()
-						.map(TemporalProof::getAID)
-						.collect(Collectors.toList()),
-					response.getPeer(), response.getUnavailableAids().size(), response.getUnavailableAids()));
-			}
+			});
 
-			// add collected samples to store
-			EUID peerNid = response.getPeer().getSystem().getNID();
-			response.getTemporalProofs().stream()
-				// only add samples that were actually requested
-				.filter(tp -> collectorState.isRequested(response.getTag(), peerNid, tp.getAID()))
-				.forEach(sampleStore::addCollected);
-			// collect and return the resulting samples
-			return collectorState.completedRequests(response.getTag()).map(this::toResult);
-		} else if (action instanceof TimeoutSampleRequestsAction) {
-			TimeoutSampleRequestsAction timeout = (TimeoutSampleRequestsAction) action;
-			SampleCollectorState collectorState = bundle.get(SampleCollectorState.class);
+		Stream<TempoAction> returnEmptyRequests = flow.of(RequestSamplingAction.class)
+			.filter(request -> request.getSamplePeers().isEmpty())
+			.map(request -> {
+				logger.warn("No sample peers given for requesting for tag '" + request.getTag() + "', returning previous samples (local and collected)");
+				return toResult(request.getAllAids(), request.getTag());
+			});
 
-			// after timeout, detect any missing samples
-			Stream<OnSampleDeliveryFailedAction> failures = timeout.getPeers().stream()
-				.map(peer -> new OnSampleDeliveryFailedAction(timeout.getAids().stream()
-					.filter(aid -> collectorState.isPendingDelivery(timeout.getTag(), peer.getSystem().getNID(), aid))
-					.collect(ImmutableSet.toImmutableSet()), timeout.getTag(), peer))
-				.filter(failure -> !failure.getAids().isEmpty());
-			// collect and return the resulting samples
-			Stream<TempoAction> completions = collectorState.completedRequests(timeout.getTag()).map(this::toResult);
-			return Stream.concat(failures, completions);
-		} else if (action instanceof ResetAction) {
-			sampleStore.reset();
-		}
+		// TODO flowify
+		Stream<TempoAction> requestSamples = flow.of(RequestSamplingAction.class)
+			.filter(request -> !request.getSamplePeers().isEmpty())
+			.flatMap(request -> {
+				ImmutableSet<AID> allAids = request.getAllAids();
+				ImmutableSet<Peer> samplePeers = request.getSamplePeers();
+				logger.info(String.format("Requesting sampling for tag '%s' of '%s' from '%s'",
+					request.getTag(), allAids, samplePeers));
+				// request samples of all aids from all selected sample peers
+				Stream<TempoAction> requests = samplePeers.stream()
+					.map(peer -> new SendSampleRequestAction(allAids, peer, request.getTag()));
+				Stream<TempoAction> timeout = Stream.of(new TimeoutSampleRequestsAction(allAids, samplePeers, request.getTag())
+					.delay(SAMPLE_REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS));
+				return Stream.concat(requests, timeout);
+			});
 
-		return Stream.empty();
+		// TODO flowify
+		Stream<SendSampleResponseAction> sendResponses = flow.of(ReceiveSampleRequestAction.class)
+			.map(request -> {
+				ImmutableSet.Builder<AID> unavailableAids = ImmutableSet.builder();
+				ImmutableSet.Builder<TemporalProof> samples = ImmutableSet.builder();
+
+				// get local samples for all requested aids
+				for (AID aid : request.getAids()) {
+					Optional<TemporalProof> localSample = sampleStore.getLocal(aid);
+					if (localSample.isPresent()) {
+						samples.add(localSample.get());
+					} else {
+						unavailableAids.add(aid);
+					}
+				}
+				if (logger.hasLevel(Logging.DEBUG)) {
+					logger.debug(String.format("Responding to sample request for tag '%s' from '%s' for '%s'",
+						request.getTag(), request.getPeer(), request.getAids()));
+				}
+				return new SendSampleResponseAction(samples.build(), unavailableAids.build(), request.getTag(), request.getPeer());
+			});
+
+		// TODO flowify
+		Stream<TempoAction> receiveResponses = flow.ofStateful(ReceiveSampleResponseAction.class, SampleCollectorState.class)
+			.flatMap(responseWithState -> {
+				ReceiveSampleResponseAction response = responseWithState.getAction();
+				SampleCollectorState collectorState = responseWithState.getBundle().get(SampleCollectorState.class);
+				if (logger.hasLevel(Logging.DEBUG)) {
+					logger.debug(String.format("Received sample response for tag %s with %s from %s (%d unavailable: %s)",
+						response.getTag(),
+						response.getTemporalProofs().stream()
+							.map(TemporalProof::getAID)
+							.collect(Collectors.toList()),
+						response.getPeer(), response.getUnavailableAids().size(), response.getUnavailableAids()));
+				}
+
+				// add collected samples to store
+				EUID peerNid = response.getPeer().getSystem().getNID();
+				response.getTemporalProofs().stream()
+					// only add samples that were actually requested
+					.filter(tp -> collectorState.isRequested(response.getTag(), peerNid, tp.getAID()))
+					.forEach(sampleStore::addCollected);
+				// collect and return the resulting samples
+				return collectorState.completedRequests(response.getTag()).map(this::toResult);
+			});
+
+		// TODO flowify
+		Stream<TempoAction> timeoutRequests = flow.ofStateful(TimeoutSampleRequestsAction.class, SampleCollectorState.class)
+			.flatMap(timeoutWithState -> {
+				TimeoutSampleRequestsAction timeout = timeoutWithState.getAction();
+				SampleCollectorState collectorState = timeoutWithState.getBundle().get(SampleCollectorState.class);
+
+				// after timeout, detect any missing samples
+				Stream<OnSampleDeliveryFailedAction> failures = timeout.getPeers().stream()
+					.map(peer -> new OnSampleDeliveryFailedAction(timeout.getAids().stream()
+						.filter(aid -> collectorState.isPendingDelivery(timeout.getTag(), peer.getSystem().getNID(), aid))
+						.collect(ImmutableSet.toImmutableSet()), timeout.getTag(), peer))
+					.filter(failure -> !failure.getAids().isEmpty());
+				// collect and return the resulting samples
+				Stream<TempoAction> completions = collectorState.completedRequests(timeout.getTag()).map(this::toResult);
+				return Stream.concat(failures, completions);
+			});
+
+		flow.of(ResetAction.class)
+			.forEach(reset -> sampleStore.reset());
+
+		return Streams.concat(
+			returnEmptyRequests,
+			requestSamples,
+			sendResponses,
+			receiveResponses,
+			timeoutRequests
+		);
 	}
 
 	private TempoAction toResult(SampleCollectorState.SamplingRequest request) {

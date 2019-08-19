@@ -27,19 +27,17 @@ public final class LocalResolverEpic implements TempoEpic {
 	}
 
 	@Override
-	public Stream<TempoAction> epic(TempoStateBundle bundle, TempoAction action) {
-		if (action instanceof RaiseConflictAction) {
-			RaiseConflictAction conflict = (RaiseConflictAction) action;
-			TempoAtom winner = conflict.allAtoms()
-				.filter(a -> a.getTemporalProof().hasVertexByNID(self))
-				.map(a -> Pair.of(a.getTemporalProof().getVertexByNID(self).getClock(), a))
-				.min(Comparator.comparingLong(Pair::getFirst))
-				.map(Pair::getSecond)
-				.orElseThrow(() -> new TempoException("Error while resolving conflict, no atom has vertex by self"));
-			Set<AID> allAids = conflict.allAids().collect(Collectors.toSet());
-			return Stream.of(new OnConflictResolvedAction(winner, allAids, conflict.getTag()));
-		}
-
-		return Stream.empty();
+	public Stream<TempoAction> epic(TempoFlow flow) {
+		return flow.of(RaiseConflictAction.class)
+			.map(conflict -> {
+				TempoAtom winner = conflict.allAtoms()
+					.filter(a -> a.getTemporalProof().hasVertexByNID(self))
+					.map(a -> Pair.of(a.getTemporalProof().getVertexByNID(self).getClock(), a))
+					.min(Comparator.comparingLong(Pair::getFirst))
+					.map(Pair::getSecond)
+					.orElseThrow(() -> new TempoException("Error while resolving conflict, no atom has vertex by self"));
+				Set<AID> allAids = conflict.allAids().collect(Collectors.toSet());
+				return new OnConflictResolvedAction(winner, allAids, conflict.getTag());
+			});
 	}
 }

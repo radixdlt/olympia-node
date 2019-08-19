@@ -62,24 +62,39 @@ public final class TempoFlow {
 		}
 	}
 
-	public <T extends TempoAction> Stream<T> withStateless(Class<T> otherClass) {
-		Objects.requireNonNull(otherClass, "otherClass is required");
+	/**
+	 * Creates a stateless flow of a certain tempo action type
+	 * @param actionClass The action class of interest
+	 * @param <T> The type of the action class
+	 * @return A stream on which the flow is to be built
+	 */
+	public final <T extends TempoAction> Stream<T> of(Class<T> actionClass) {
+		Objects.requireNonNull(actionClass, "actionClass is required");
 
 		StatelessTempoFlowGenerator<T> generator = new StatelessTempoFlowGenerator<>(downstreamBufferCapacity);
-		statelessGeneratorsByClass.computeIfAbsent(otherClass, x -> new ArrayList<>()).add(generator);
+		statelessGeneratorsByClass.computeIfAbsent(actionClass, x -> new ArrayList<>()).add(generator);
 
 		return Stream.generate(generator);
 	}
 
-	public <T extends TempoAction> Stream<TempoActionWithState<T>> withStateful(Class<T> otherClass, Class<? extends TempoState> requiredState, Class<? extends TempoState>... requiredStates) {
-		Objects.requireNonNull(otherClass, "otherClass is required");
-		Objects.requireNonNull(requiredState, "otherClass is required");
-		Objects.requireNonNull(requiredStates, "otherClass is required");
+	/**
+	 * Creates a stateful flow of a certain tempo action type with some required states
+	 * @param actionClass The action class of interest
+	 * @param requiredState The required state
+	 * @param requiredStates An arbitrary array of further required states
+	 * @param <T> The type of the action class
+	 * @return A stream on which the flow is to be built
+	 */
+	@SafeVarargs
+	public final <T extends TempoAction> Stream<TempoActionWithState<T>> ofStateful(Class<T> actionClass, Class<? extends TempoState> requiredState, Class<? extends TempoState>... requiredStates) {
+		Objects.requireNonNull(actionClass, "actionClass is required");
+		Objects.requireNonNull(requiredState, "requiredState is required");
+		Objects.requireNonNull(requiredStates, "requiredStates is required");
 
 		ImmutableSet.Builder<Class<? extends TempoState>> allRequiredStates = ImmutableSet.builder();
 		allRequiredStates.addAll(Arrays.asList(requiredStates));
 		StatefulTempoFlowGenerator<T> generator = new StatefulTempoFlowGenerator<>(allRequiredStates.build(), downstreamBufferCapacity);
-		statefulGeneratorsByClass.computeIfAbsent(otherClass, x -> new ArrayList<>()).add(generator);
+		statefulGeneratorsByClass.computeIfAbsent(actionClass, x -> new ArrayList<>()).add(generator);
 
 		return Stream.generate(generator);
 	}

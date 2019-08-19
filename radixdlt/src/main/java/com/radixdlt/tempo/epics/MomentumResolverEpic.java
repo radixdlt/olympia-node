@@ -1,12 +1,15 @@
 package com.radixdlt.tempo.epics;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Streams;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
 import com.radixdlt.tempo.MomentumUtils;
 import com.radixdlt.tempo.SampleSelector;
+import com.radixdlt.tempo.TempoFlow;
 import com.radixdlt.tempo.reactive.TempoAction;
 import com.radixdlt.tempo.TempoAtom;
+import com.radixdlt.tempo.reactive.TempoActionWithState;
 import com.radixdlt.tempo.reactive.TempoEpic;
 import com.radixdlt.tempo.TempoException;
 import com.radixdlt.tempo.reactive.TempoState;
@@ -49,64 +52,68 @@ public class MomentumResolverEpic implements TempoEpic {
 	}
 
 	@Override
-	public Stream<TempoAction> epic(TempoStateBundle bundle, TempoAction action) {
-		if (action instanceof RaiseConflictAction) {
-			RaiseConflictAction conflict = (RaiseConflictAction) action;
-			ConflictsState conflicts = bundle.get(ConflictsState.class);
+	public Stream<TempoAction> epic(TempoFlow flow) {
+		Stream<TempoAction> raiseConflicts = flow.ofStateful(RaiseConflictAction.class, ConflictsState.class)
+			.filter(conflict
+				-> !conflict.getBundle().get(ConflictsState.class).isPending(conflict.getAction().getTag()))
+			.map(TempoActionWithState::getAction)
+			.map(conflict -> new ResolveConflictAction(conflict.getAtom(), conflict.getConflictingAtoms(), conflict.getTag()));
 
-			// if the conflict is already raised and not yet resolved, early out
-			if (conflicts.isPending(conflict.getTag())) {
-				logger.warn("Conflict with tag '" + conflict.getTag() + "' is already pending");
-				return Stream.empty();
-			} else {
-				// if the conflict is not currently pending, resolve it
-				return Stream.of(new ResolveConflictAction(conflict.getAtom(), conflict.getConflictingAtoms(), conflict.getTag()));
-			}
-		} else if (action instanceof ResolveConflictAction) {
-			ResolveConflictAction conflict = (ResolveConflictAction) action;
-			ImmutableSet<AID> allAids = conflict.allAids().collect(ImmutableSet.toImmutableSet());
-			LivePeersState livePeers = bundle.get(LivePeersState.class);
+		// TODO flowify
+		Stream<TempoAction> resolveConflicts = flow.ofStateful(ResolveConflictAction.class, LivePeersState.class)
+			.map(conflictWithState -> {
+				ResolveConflictAction conflict = conflictWithState.getAction();
+				LivePeersState livePeers = conflictWithState.getBundle().get(LivePeersState.class);
 
-			// to resolve a conflict, select some peers to sample
-			ImmutableSet<Peer> samplePeers = sampleSelector.selectSamples(livePeers.getNids(), conflict.getAtom()).stream()
-				.map(livePeers::getPeer)
-				.filter(Optional::isPresent)
-				.map(Optional::get)
-				.collect(ImmutableSet.toImmutableSet());
-			logger.info(String.format("Resolving conflict with tag '%s' between '%s', initiating sampling",
-				conflict.getTag(), allAids));
-			// sample the selected peers
-			return Stream.of(new RequestSamplingAction(samplePeers, allAids, conflict.getTag()));
-		} else if (action instanceof OnSamplingCompleteAction) {
-			OnSamplingCompleteAction result = (OnSamplingCompleteAction) action;
-			Collection<TemporalProof> allSamples = result.getAllSamples();
-			EUID tag = result.getTag();
-			ConflictsState conflicts = bundle.get(ConflictsState.class);
-			Set<AID> allConflictingAids = conflicts.getAids(tag);
+				// to resolve a conflict, select some peers to sample
+				ImmutableSet<Peer> samplePeers = sampleSelector.selectSamples(livePeers.getNids(), conflict.getAtom()).stream()
+					.map(livePeers::getPeer)
+					.filter(Optional::isPresent)
+					.map(Optional::get)
+					.collect(ImmutableSet.toImmutableSet());
 
-			TempoAtom winningAtom;
-			if (allSamples.isEmpty()) {
-				logger.warn("No samples available for any of '" + allConflictingAids +  "', resolving to current preference");
-				winningAtom = conflicts.getCurrentAtom(tag);
-			} else {
-				// decide on winner using samples
-				Map<AID, List<EUID>> preferences = MomentumUtils.extractPreferences(allSamples);
-				Map<AID, Long> momenta = MomentumUtils.measure(preferences, nid -> 1L);
-				AID winner = momenta.entrySet().stream()
-					.max(Comparator.comparingLong(Map.Entry::getValue))
-					.map(Map.Entry::getKey)
-					.orElseThrow(() -> new TempoException("Internal error while measuring momenta"));
-				logger.info(String.format("Resolved conflict with tag '%s' to %s, measured momenta to be %s for %s",
-					result.getTag(), winner, momenta, allConflictingAids));
-				winningAtom = conflicts.getAtom(tag, winner);
-			}
+				ImmutableSet<AID> allAids = conflict.allAids().collect(ImmutableSet.toImmutableSet());
+				logger.info(String.format("Resolving conflict with tag '%s' between '%s', initiating sampling",
+					conflict.getTag(), allAids));
+				// sample the selected peers
+				return new RequestSamplingAction(samplePeers, allAids, conflict.getTag());
+			});
 
-			return Stream.of(new OnConflictResolvedAction(winningAtom, allConflictingAids, tag));
-		}
+		// TODO flowify
+		Stream<TempoAction> completeConflicts = flow.ofStateful(OnSamplingCompleteAction.class, ConflictsState.class)
+			.map(requestWithState -> {
+				OnSamplingCompleteAction result = requestWithState.getAction();
+				Collection<TemporalProof> allSamples = result.getAllSamples();
+				EUID tag = result.getTag();
+				ConflictsState conflicts = requestWithState.getBundle().get(ConflictsState.class);
+				Set<AID> allConflictingAids = conflicts.getAids(tag);
 
-		return Stream.empty();
+				TempoAtom winningAtom;
+				if (allSamples.isEmpty()) {
+					logger.warn("No samples available for any of '" + allConflictingAids + "', resolving to current preference");
+					winningAtom = conflicts.getCurrentAtom(tag);
+				} else {
+					// decide on winner using samples
+					Map<AID, List<EUID>> preferences = MomentumUtils.extractPreferences(allSamples);
+					Map<AID, Long> momenta = MomentumUtils.measure(preferences, nid -> 1L);
+					AID winner = momenta.entrySet().stream()
+						.max(Comparator.comparingLong(Map.Entry::getValue))
+						.map(Map.Entry::getKey)
+						.orElseThrow(() -> new TempoException("Internal error while measuring momenta"));
+					logger.info(String.format("Resolved conflict with tag '%s' to %s, measured momenta to be %s for %s",
+						result.getTag(), winner, momenta, allConflictingAids));
+					winningAtom = conflicts.getAtom(tag, winner);
+				}
+
+				return new OnConflictResolvedAction(winningAtom, allConflictingAids, tag);
+			});
+
+		return Streams.concat(
+			raiseConflicts,
+			resolveConflicts,
+			completeConflicts
+		);
 	}
-
 }
 
 

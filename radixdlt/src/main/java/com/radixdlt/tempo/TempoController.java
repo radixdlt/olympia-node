@@ -137,11 +137,10 @@ public final class TempoController {
 			.addAll(epicBuilders.stream()
 				.map(epicBuilder -> epicBuilder.apply(this::dispatch))
 				.collect(Collectors.toList()))
-			.add(this::internalEpic)
 			.build();
 
 		// connect flow and epics
-//		epics.forEach(epic -> epic.epic(flow));
+		epics.forEach(epic -> epic.epic(flow));
 
 		// dispatch initial actions
 		Stream.concat(initialActions.stream(), this.epics.stream()
@@ -178,6 +177,7 @@ public final class TempoController {
 					stateStore.put(reducer.stateClass(), nextState);
 				});
 
+				internalEpic(action);
 				flow.accept(action, stateStore);
 			} catch (InterruptedException e) {
 				// exit if interrupted
@@ -196,16 +196,6 @@ public final class TempoController {
 			logger.error(String.format("Error while executing %s in %s: '%s'",
 				action.getClass().getSimpleName(), reducer.getClass().getSimpleName(), e.toString()), e);
 			return prevState;
-		}
-	}
-
-	private Stream<TempoAction> executeEpic(TempoAction action, TempoEpic epic, TempoStateBundle bundle) {
-		try {
-			return epic.epic(bundle, action);
-		} catch (Exception e) {
-			logger.error(String.format("Error while executing %s in %s: '%s'",
-				action.getClass().getSimpleName(), epic.getClass().getSimpleName(), e.toString()), e);
-			return Stream.empty();
 		}
 	}
 
@@ -239,7 +229,7 @@ public final class TempoController {
 		}
 	}
 
-	private Stream<TempoAction> internalEpic(TempoStateBundle state, TempoAction action) {
+	private void internalEpic(TempoAction action) {
 		if (action instanceof ReceiveAtomAction) {
 			// try to add to inbound queue
 			TempoAtom atom = ((ReceiveAtomAction) action).getAtom();
@@ -263,8 +253,6 @@ public final class TempoController {
 			RepeatScheduleAction schedule = (RepeatScheduleAction) action;
 			repeatSchedule(schedule.getAction(), schedule.getInitialDelay(), schedule.getRecurrentDelay(), schedule.getUnit(), schedule::checkShouldTerminate);
 		}
-
-		return Stream.empty();
 	}
 
 	public CompletableFuture<TempoAtom> resolve(TempoAtom atom, Collection<TempoAtom> conflictingAtoms) {
@@ -301,10 +289,7 @@ public final class TempoController {
 		this.inboundAtoms.clear();
 		this.actions.clear();
 		ResetAction reset = new ResetAction();
-		this.epics.forEach(epic -> {
-			TempoStateBundle bundle = stateStore.bundleFor(epic.requiredState());
-			executeEpic(reset, epic, bundle);
-		});
+		this.flow.accept(reset, stateStore);
 	}
 
 	// TODO temporary hack for debugging, revisit or remove later
