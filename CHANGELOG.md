@@ -5,7 +5,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
  
 ## [Unreleased](#)
 
-## [1.0.0-beta.1] - 2019-08-19
+## [1.0.0-beta.1](https://github.com/radixdlt/radixdlt-java/releases/tag/1.0.0-beta.1) - 2019-08-19
 ### Added
 - This CHANGELOG file
 - Support for Token Icon URLs
