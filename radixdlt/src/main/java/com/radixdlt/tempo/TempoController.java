@@ -104,12 +104,14 @@ public final class TempoController {
 
 	private static final int FULL_INBOUND_QUEUE_RESCHEDULE_TIME_SECONDS = 1;
 	private static final int TEMPO_EXECUTOR_POOL_COUNT = 4;
+	private static final int TEMPO_GENERATOR_BUFFER_CAPACITY = 1024;
 	private static final boolean RUN_EPICS_ASYNCHRONOUSLY = true;
 
 	private final BlockingQueue<TempoAtom> inboundAtoms;
 	private final BlockingQueue<TempoAction> actions;
 	private final List<TempoReducer> reducers;
 	private final List<TempoEpic> epics;
+	private final TempoFlow flow;
 	private final ScheduledExecutorService executor;
 
 	private final ConcurrentMap<EUID, CompletableFuture<TempoAtom>> pendingConflictFutures;
@@ -123,11 +125,12 @@ public final class TempoController {
 	                        List<TempoAction> initialActions) {
 		this.inboundAtoms = new LinkedBlockingQueue<>(inboundQueueCapacity);
 		this.actions = new LinkedBlockingQueue<>(actionsQueueCapacity);
-		this.executor = Executors.newScheduledThreadPool(TEMPO_EXECUTOR_POOL_COUNT, runnable -> new Thread(null, runnable, "Tempo Executor"));
+		this.executor = Executors.newScheduledThreadPool(TEMPO_EXECUTOR_POOL_COUNT, this::createTempoExecutorThread);
 		this.stateStore = new TempoStateBundleGenerator();
 		this.pendingConflictFutures = new ConcurrentHashMap<>();
 
 		this.reducers = reducers;
+		this.flow = new TempoFlow(TEMPO_GENERATOR_BUFFER_CAPACITY);
 		this.epics = ImmutableList.<TempoEpic>builder()
 			.addAll(epics)
 			// TODO get rid of epicBuilders
@@ -136,6 +139,9 @@ public final class TempoController {
 				.collect(Collectors.toList()))
 			.add(this::internalEpic)
 			.build();
+
+		// connect flow and epics
+//		epics.forEach(epic -> epic.epic(flow));
 
 		// dispatch initial actions
 		Stream.concat(initialActions.stream(), this.epics.stream()
@@ -146,6 +152,12 @@ public final class TempoController {
 		tempoDaemon.setName("Tempo Core");
 		tempoDaemon.setDaemon(true);
 		tempoDaemon.start();
+	}
+
+	private Thread createTempoExecutorThread(Runnable runnable) {
+		Thread thread = new Thread(null, runnable, "Tempo Executor");
+		thread.setDaemon(true);
+		return thread;
 	}
 
 	// TODO this is a spartanic approach to reactive streams, should be replaced down the line
@@ -166,17 +178,7 @@ public final class TempoController {
 					stateStore.put(reducer.stateClass(), nextState);
 				});
 
-				Stream<Runnable> epicExecutions = epics.stream()
-					.map(epic -> {
-						TempoStateBundle bundle = stateStore.bundleFor(epic.requiredState());
-						return () -> executeEpic(action, epic, bundle).forEach(this::dispatch);
-					});
-				if (RUN_EPICS_ASYNCHRONOUSLY) {
-					epicExecutions.forEach(executor::execute);
-				} else {
-					epicExecutions.forEach(Runnable::run);
-				}
-
+				flow.accept(action, stateStore);
 			} catch (InterruptedException e) {
 				// exit if interrupted
 				Thread.currentThread().interrupt();

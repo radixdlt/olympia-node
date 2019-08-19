@@ -1,4 +1,4 @@
-package com.radixdlt.tempo;
+package com.radixdlt.tempo.reactive;
 
 /**
  * A marker interface for a flavour of state in Tempo

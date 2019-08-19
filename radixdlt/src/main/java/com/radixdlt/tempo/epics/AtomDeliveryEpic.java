@@ -46,6 +46,24 @@ public final class AtomDeliveryEpic implements TempoEpic {
 		return ImmutableSet.of(AtomDeliveryState.class);
 	}
 
+//	@Override
+//	public Stream<TempoAction> epic(TempoFlow flow) {
+//		Stream<SendDeliveryResponseAction> sendResponses =
+//			flow
+//			.withStateless(ReceiveDeliveryRequestAction.class)
+//			.flatMap(request -> request.getAids().stream()
+//				.map(store::get)
+//				.filter(Optional::isPresent)
+//				.map(Optional::get)
+//				.map(atom -> new SendDeliveryResponseAction(atom, request.getPeer()))
+//			);
+//		Stream<TempoAction> receiveResponses = flow
+//			.withStateless(ReceiveDeliveryResponseAction.class)
+//			.map(response -> new ReceiveAtomAction(response.getAtom()));
+//
+//		return Stream.concat(sendResponses, receiveResponses);
+//	}
+
 	@Override
 	public Stream<TempoAction> epic(TempoStateBundle bundle, TempoAction action) {
 		AtomDeliveryState deliveryState = bundle.get(AtomDeliveryState.class);

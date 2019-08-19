@@ -1,11 +1,10 @@
-package com.radixdlt.tempo;
+package com.radixdlt.tempo.reactive;
 
 import com.radixdlt.tempo.actions.control.RepeatScheduleAction;
 import com.radixdlt.tempo.actions.control.ScheduleAction;
 
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
-import java.util.stream.Stream;
 
 /**
  * Marker interface for Tempo actions

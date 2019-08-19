@@ -1,6 +1,7 @@
-package com.radixdlt.tempo;
+package com.radixdlt.tempo.reactive;
 
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.tempo.TempoStateBundle;
 
 import java.util.Set;
 
