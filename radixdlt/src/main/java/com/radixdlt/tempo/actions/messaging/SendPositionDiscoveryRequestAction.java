@@ -1,7 +1,7 @@
 package com.radixdlt.tempo.actions.messaging;
 
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.tempo.TempoAction;
+import com.radixdlt.tempo.reactive.TempoAction;
 import com.radixdlt.tempo.messages.PositionDiscoveryRequestMessage;
 import org.radix.network.messaging.Message;
 import org.radix.network.peers.Peer;

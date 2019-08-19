@@ -7,7 +7,7 @@ import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
 import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.TempoException;
-import com.radixdlt.tempo.TempoState;
+import com.radixdlt.tempo.reactive.TempoState;
 
 import java.util.HashMap;
 import java.util.Map;

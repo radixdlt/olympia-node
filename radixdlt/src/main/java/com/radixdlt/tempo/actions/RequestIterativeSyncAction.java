@@ -1,7 +1,7 @@
 package com.radixdlt.tempo.actions;
 
 import com.radixdlt.tempo.LogicalClockCursor;
-import com.radixdlt.tempo.TempoAction;
+import com.radixdlt.tempo.reactive.TempoAction;
 import org.radix.network.peers.Peer;
 
 import java.util.Objects;

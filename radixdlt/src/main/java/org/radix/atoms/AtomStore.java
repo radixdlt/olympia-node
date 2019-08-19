@@ -64,7 +64,7 @@ import com.radixdlt.utils.Pair;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.LedgerCursor;
 import com.radixdlt.ledger.LedgerIndex;
-import com.radixdlt.ledger.LedgerCursor.Type;
+import com.radixdlt.ledger.LedgerCursor.LedgerIndexType;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationUtils;
 import com.radixdlt.tempo.store.LegacyCursor;
@@ -1488,15 +1488,15 @@ public class AtomStore extends DatabaseStore implements DiscoverySource<AtomDisc
  	}
 
 	// LEDGER CURSOR HANDLING //
-	public LedgerCursor search(Type type, LedgerIndex indexable, LedgerSearchMode mode) throws DatabaseException
+	public LedgerCursor search(LedgerIndexType type, LedgerIndex indexable, LedgerSearchMode mode) throws DatabaseException
 	{
 		Objects.requireNonNull(indexable);
 		
 		SecondaryCursor databaseCursor;
 		
-		if (type.equals(Type.UNIQUE) == true)
+		if (type.equals(LedgerIndexType.UNIQUE) == true)
 			databaseCursor = this.uniqueIndexables.openCursor(null, null);
-		else if (type.equals(Type.DUPLICATE) == true)
+		else if (type.equals(LedgerCursor.LedgerIndexType.DUPLICATE) == true)
 			databaseCursor = this.duplicatedIndexables.openCursor(null, null);
 		else
 			throw new IllegalStateException("Type "+type+" not supported");
@@ -1535,9 +1535,9 @@ public class AtomStore extends DatabaseStore implements DiscoverySource<AtomDisc
 		
 		SecondaryCursor databaseCursor;
 		
-		if (cursor.getType().equals(Type.UNIQUE) == true)
+		if (cursor.getType().equals(LedgerIndexType.UNIQUE) == true)
 			databaseCursor = this.uniqueIndexables.openCursor(null, null);
-		else if (cursor.getType().equals(Type.DUPLICATE) == true)
+		else if (cursor.getType().equals(LedgerCursor.LedgerIndexType.DUPLICATE) == true)
 			databaseCursor = this.duplicatedIndexables.openCursor(null, null);
 		else
 			throw new IllegalStateException("Type "+cursor.getType()+" not supported");
@@ -1571,9 +1571,9 @@ public class AtomStore extends DatabaseStore implements DiscoverySource<AtomDisc
 		
 		SecondaryCursor databaseCursor;
 		
-		if (cursor.getType().equals(Type.UNIQUE) == true)
+		if (cursor.getType().equals(LedgerCursor.LedgerIndexType.UNIQUE) == true)
 			databaseCursor = this.uniqueIndexables.openCursor(null, null);
-		else if (cursor.getType().equals(Type.DUPLICATE) == true)
+		else if (cursor.getType().equals(LedgerCursor.LedgerIndexType.DUPLICATE) == true)
 			databaseCursor = this.duplicatedIndexables.openCursor(null, null);
 		else
 			throw new IllegalStateException("Type "+cursor.getType()+" not supported");
@@ -1607,9 +1607,9 @@ public class AtomStore extends DatabaseStore implements DiscoverySource<AtomDisc
 		
 		SecondaryCursor databaseCursor;
 		
-		if (cursor.getType().equals(Type.UNIQUE) == true)
+		if (cursor.getType().equals(LedgerIndexType.UNIQUE) == true)
 			databaseCursor = this.uniqueIndexables.openCursor(null, null);
-		else if (cursor.getType().equals(Type.DUPLICATE) == true)
+		else if (cursor.getType().equals(LedgerCursor.LedgerIndexType.DUPLICATE) == true)
 			databaseCursor = this.duplicatedIndexables.openCursor(null, null);
 		else
 			throw new IllegalStateException("Type "+cursor.getType()+" not supported");
@@ -1648,9 +1648,9 @@ public class AtomStore extends DatabaseStore implements DiscoverySource<AtomDisc
 		
 		SecondaryCursor databaseCursor;
 		
-		if (cursor.getType().equals(Type.UNIQUE) == true)
+		if (cursor.getType().equals(LedgerIndexType.UNIQUE) == true)
 			databaseCursor = this.uniqueIndexables.openCursor(null, null);
-		else if (cursor.getType().equals(Type.DUPLICATE) == true)
+		else if (cursor.getType().equals(LedgerCursor.LedgerIndexType.DUPLICATE) == true)
 			databaseCursor = this.duplicatedIndexables.openCursor(null, null);
 		else
 			throw new IllegalStateException("Type "+cursor.getType()+" not supported");

@@ -8,7 +8,7 @@ import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
 import com.radixdlt.ledger.Ledger;
 import com.radixdlt.ledger.LedgerCursor;
-import com.radixdlt.ledger.LedgerCursor.Type;
+import com.radixdlt.ledger.LedgerCursor.LedgerIndexType;
 import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerSearchMode;
 import com.radixdlt.serialization.Serialization;
@@ -131,7 +131,7 @@ public final class Tempo extends Plugin implements Ledger {
 	}
 
 	@Override
-	public LedgerCursor search(Type type, LedgerIndex index, LedgerSearchMode mode) {
+	public LedgerCursor search(LedgerIndexType type, LedgerIndex index, LedgerSearchMode mode) {
 		return store.search(type, index, mode);
 	}
 

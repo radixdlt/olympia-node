@@ -5,7 +5,7 @@ import com.radixdlt.common.EUID;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.tempo.TempoAction;
 import com.radixdlt.tempo.TempoAtom;
-import com.radixdlt.tempo.TempoEpic;
+import com.radixdlt.tempo.reactive.TempoEpic;
 import com.radixdlt.tempo.TempoException;
 import com.radixdlt.tempo.TempoStateBundle;
 import com.radixdlt.tempo.actions.OnConflictResolvedAction;

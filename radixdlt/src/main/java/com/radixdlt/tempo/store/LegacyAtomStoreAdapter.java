@@ -9,7 +9,6 @@ import com.radixdlt.ledger.LedgerCursor;
 import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerSearchMode;
 import com.radixdlt.tempo.AtomStore;
-import com.radixdlt.tempo.AtomStoreView;
 import com.radixdlt.tempo.LegacyUtils;
 import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.TempoException;
@@ -126,7 +125,7 @@ public class LegacyAtomStoreAdapter implements AtomStore {
 	}
 
 	@Override
-	public LedgerCursor search(LedgerCursor.Type type, LedgerIndex index, LedgerSearchMode mode) {
+	public LedgerCursor search(LedgerCursor.LedgerIndexType type, LedgerIndex index, LedgerSearchMode mode) {
 		try {
 			return atomStoreSupplier.get().search(type, index, mode);
 		} catch (DatabaseException e) {

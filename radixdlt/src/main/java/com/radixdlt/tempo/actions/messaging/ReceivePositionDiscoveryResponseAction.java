@@ -2,8 +2,7 @@ package com.radixdlt.tempo.actions.messaging;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.common.AID;
-import com.radixdlt.tempo.TempoAction;
-import com.radixdlt.tempo.messages.PositionDiscoveryRequestMessage;
+import com.radixdlt.tempo.reactive.TempoAction;
 import com.radixdlt.tempo.messages.PositionDiscoveryResponseMessage;
 import org.radix.network.peers.Peer;
 

@@ -3,7 +3,7 @@ package com.radixdlt.tempo.state;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.common.EUID;
-import com.radixdlt.tempo.TempoState;
+import com.radixdlt.tempo.reactive.TempoState;
 import org.radix.network.peers.Peer;
 
 import java.util.Optional;

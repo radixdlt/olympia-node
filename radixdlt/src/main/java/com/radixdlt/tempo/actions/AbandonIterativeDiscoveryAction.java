@@ -1,7 +1,7 @@
 package com.radixdlt.tempo.actions;
 
 import com.radixdlt.common.EUID;
-import com.radixdlt.tempo.TempoAction;
+import com.radixdlt.tempo.reactive.TempoAction;
 
 public class AbandonIterativeDiscoveryAction implements TempoAction {
 	private final EUID peerNid;

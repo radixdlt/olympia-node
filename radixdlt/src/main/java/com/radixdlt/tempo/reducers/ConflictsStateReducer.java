@@ -1,9 +1,9 @@
 package com.radixdlt.tempo.reducers;
 
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.tempo.TempoAction;
+import com.radixdlt.tempo.reactive.TempoAction;
 import com.radixdlt.tempo.TempoAtom;
-import com.radixdlt.tempo.TempoReducer;
+import com.radixdlt.tempo.reactive.TempoReducer;
 import com.radixdlt.tempo.TempoStateBundle;
 import com.radixdlt.tempo.actions.OnConflictResolvedAction;
 import com.radixdlt.tempo.actions.ResolveConflictAction;

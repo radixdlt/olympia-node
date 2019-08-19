@@ -11,12 +11,12 @@ import java.util.Objects;
  * A Tempo implementation of a {@link LedgerCursor}
  */
 public class TempoCursor implements LedgerCursor {
-	private final Type type;
+	private final LedgerIndexType type;
 	private final byte[] primary;
 	private final byte[] index;
 	private final TempoAtomStore store;
 
-	TempoCursor(TempoAtomStore store, Type type, byte[] primary, byte[] index) {
+	TempoCursor(TempoAtomStore store, LedgerIndexType type, byte[] primary, byte[] index) {
 		this.type = type;
 		this.primary = Arrays.clone(Objects.requireNonNull(primary));
 		this.index = Arrays.clone(Objects.requireNonNull(index));
@@ -24,7 +24,7 @@ public class TempoCursor implements LedgerCursor {
 	}
 
 	@Override
-	public Type getType() {
+	public LedgerIndexType getType() {
 		return this.type;
 	}
 

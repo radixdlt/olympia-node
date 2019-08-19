@@ -1,6 +1,6 @@
 package com.radixdlt.tempo.actions.control;
 
-import com.radixdlt.tempo.TempoAction;
+import com.radixdlt.tempo.reactive.TempoAction;
 
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;

@@ -1,7 +1,7 @@
 package com.radixdlt.tempo.actions;
 
 import com.radixdlt.tempo.TempoAtom;
-import com.radixdlt.tempo.TempoAction;
+import com.radixdlt.tempo.reactive.TempoAction;
 
 import java.util.Objects;
 

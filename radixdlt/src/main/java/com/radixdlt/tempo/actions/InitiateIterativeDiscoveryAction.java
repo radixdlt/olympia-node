@@ -1,6 +1,6 @@
 package com.radixdlt.tempo.actions;
 
-import com.radixdlt.tempo.TempoAction;
+import com.radixdlt.tempo.reactive.TempoAction;
 import com.radixdlt.tempo.store.CommitmentBatch;
 import org.radix.network.peers.Peer;
 

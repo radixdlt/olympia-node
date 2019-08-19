@@ -1,8 +1,8 @@
 package com.radixdlt.tempo.reducers;
 
 import com.radixdlt.common.EUID;
-import com.radixdlt.tempo.TempoAction;
-import com.radixdlt.tempo.TempoReducer;
+import com.radixdlt.tempo.reactive.TempoAction;
+import com.radixdlt.tempo.reactive.TempoReducer;
 import com.radixdlt.tempo.TempoStateBundle;
 import com.radixdlt.tempo.actions.messaging.ReceivePositionDiscoveryRequestAction;
 import com.radixdlt.tempo.actions.messaging.SendPositionDiscoveryRequestAction;

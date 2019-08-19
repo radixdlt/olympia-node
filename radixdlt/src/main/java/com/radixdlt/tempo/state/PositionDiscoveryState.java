@@ -3,7 +3,7 @@ package com.radixdlt.tempo.state;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.common.EUID;
 import com.radixdlt.tempo.TempoException;
-import com.radixdlt.tempo.TempoState;
+import com.radixdlt.tempo.reactive.TempoState;
 
 import java.util.Collections;
 import java.util.HashMap;

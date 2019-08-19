@@ -167,7 +167,7 @@ public class TempoAtomStoreTests extends RadixTestWithStores {
         storeAtoms();
         // LedgerIndex for shard 200
         LedgerIndex ledgerIndex = new LedgerIndex((byte) 200, Ints.toByteArray(200));
-        validateShard200(() -> (TempoCursor) tempoAtomStore.search(LedgerCursor.Type.DUPLICATE, ledgerIndex, LedgerSearchMode.EXACT));
+        validateShard200(() -> (TempoCursor) tempoAtomStore.search(LedgerCursor.LedgerIndexType.DUPLICATE, ledgerIndex, LedgerSearchMode.EXACT));
     }
 
     @Test
@@ -175,7 +175,7 @@ public class TempoAtomStoreTests extends RadixTestWithStores {
         storeAtoms();
         LedgerIndex ledgerIndex = new LedgerIndex((byte) 200, Ints.toByteArray(150));
         // LedgerIndex pointing to not existing shard 150. But because ofLedgerSearchMode.RANGE Cursor will point it to next available shard - shard 200
-        validateShard200(() -> (TempoCursor) tempoAtomStore.search(LedgerCursor.Type.DUPLICATE, ledgerIndex, LedgerSearchMode.RANGE));
+        validateShard200(() -> (TempoCursor) tempoAtomStore.search(LedgerCursor.LedgerIndexType.DUPLICATE, ledgerIndex, LedgerSearchMode.RANGE));
     }
 
     @Test
@@ -185,7 +185,7 @@ public class TempoAtomStoreTests extends RadixTestWithStores {
             // LedgerIndex for Atom 3
             LedgerIndex ledgerIndex = new LedgerIndex(TempoAtomIndices.ATOM_INDEX_PREFIX, tempoAtoms.get(3).getAID().getBytes());
 
-            TempoCursor tempoCursor = (TempoCursor) tempoAtomStore.search(LedgerCursor.Type.UNIQUE, ledgerIndex, LedgerSearchMode.EXACT);
+            TempoCursor tempoCursor = (TempoCursor) tempoAtomStore.search(LedgerCursor.LedgerIndexType.UNIQUE, ledgerIndex, LedgerSearchMode.EXACT);
             //Cursor pointing to unique single result.
             //getFirst and getLast pointing to the same value
             //getNext and getPrev are not available

@@ -3,7 +3,7 @@ package com.radixdlt.tempo.actions;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
-import com.radixdlt.tempo.TempoAction;
+import com.radixdlt.tempo.reactive.TempoAction;
 import org.radix.network.peers.Peer;
 
 public class RequestSamplingAction implements TempoAction {

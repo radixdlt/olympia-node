@@ -1,7 +1,7 @@
 package com.radixdlt.tempo.actions.messaging;
 
 import com.radixdlt.tempo.LogicalClockCursor;
-import com.radixdlt.tempo.TempoAction;
+import com.radixdlt.tempo.reactive.TempoAction;
 import com.radixdlt.tempo.messages.CursorDiscoveryRequestMessage;
 import org.radix.network.messaging.Message;
 import org.radix.network.peers.Peer;

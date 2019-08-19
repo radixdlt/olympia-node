@@ -1,5 +1,7 @@
 package com.radixdlt.tempo;
 
+import com.radixdlt.tempo.reactive.TempoState;
+
 /**
  * A handcrafted bundle of immutable {@link TempoState}s
  */

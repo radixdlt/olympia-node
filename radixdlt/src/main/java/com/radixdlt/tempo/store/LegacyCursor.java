@@ -10,18 +10,18 @@ import java.io.IOException;
 import java.util.Objects;
 
 public class LegacyCursor implements LedgerCursor {
-	private Type type;
+	private LedgerIndexType type;
 	private byte[] primary;
 	private byte[] index;
 
-	public LegacyCursor(Type type, byte[] primary, byte[] index) {
+	public LegacyCursor(LedgerIndexType type, byte[] primary, byte[] index) {
 		this.type = type;
 		this.primary = Arrays.clone(Objects.requireNonNull(primary));
 		this.index = Arrays.clone(Objects.requireNonNull(index));
 	}
 
 	@Override
-	public Type getType() {
+	public LedgerIndexType getType() {
 		return this.type;
 	}
 

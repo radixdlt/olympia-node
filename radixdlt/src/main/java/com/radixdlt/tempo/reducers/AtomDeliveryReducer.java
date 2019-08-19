@@ -1,11 +1,9 @@
 package com.radixdlt.tempo.reducers;
 
-import com.google.common.collect.ImmutableSet;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
-import com.radixdlt.tempo.TempoAction;
-import com.radixdlt.tempo.TempoReducer;
-import com.radixdlt.tempo.TempoState;
+import com.radixdlt.tempo.reactive.TempoAction;
+import com.radixdlt.tempo.reactive.TempoReducer;
 import com.radixdlt.tempo.TempoStateBundle;
 import com.radixdlt.tempo.actions.OnAtomDeliveryFailedAction;
 import com.radixdlt.tempo.actions.messaging.ReceiveDeliveryResponseAction;
@@ -15,7 +13,6 @@ import com.radixdlt.tempo.state.AtomDeliveryState;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 public class AtomDeliveryReducer implements TempoReducer<AtomDeliveryState> {
 	@Override

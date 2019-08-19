@@ -58,7 +58,7 @@ public interface AtomStoreView {
 	 * @param mode The mode
 	 * @return The resulting ledger cursor
 	 */
-	LedgerCursor search(LedgerCursor.Type type, LedgerIndex index, LedgerSearchMode mode);
+	LedgerCursor search(LedgerCursor.LedgerIndexType type, LedgerIndex index, LedgerSearchMode mode);
 
 	/**
 	 * Advance the cursor to discover up to certain number of aids within a shard range

@@ -8,7 +8,7 @@ import com.radixdlt.Atom;
 import com.radixdlt.common.AID;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.ledger.LedgerCursor;
-import com.radixdlt.ledger.LedgerCursor.Type;
+import com.radixdlt.ledger.LedgerCursor.LedgerIndexType;
 import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerSearchMode;
 import com.radixdlt.ledger.exceptions.LedgerKeyConstraintException;
@@ -16,7 +16,6 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.tempo.AtomStore;
-import com.radixdlt.tempo.AtomStoreView;
 import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.TempoException;
 import com.radixdlt.tempo.LogicalClockCursor;
@@ -222,7 +221,7 @@ public class TempoAtomStore implements AtomStore {
 	@Override
 	public List<AID> get(byte[] partialAid) {
 		long start = profiler.begin();
-		try (SecondaryCursor databaseCursor = toSecondaryCursor(Type.UNIQUE)) {
+		try (SecondaryCursor databaseCursor = toSecondaryCursor(LedgerCursor.LedgerIndexType.UNIQUE)) {
 			DatabaseEntry key = new DatabaseEntry(LedgerIndex.from(ATOM_INDEX_PREFIX, partialAid));
 			DatabaseEntry pKey = new DatabaseEntry();
 			if (databaseCursor.getSearchBothRange(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
@@ -472,7 +471,7 @@ public class TempoAtomStore implements AtomStore {
 	}
 
 	@Override
-	public LedgerCursor search(Type type, LedgerIndex index, LedgerSearchMode mode) {
+	public LedgerCursor search(LedgerIndexType type, LedgerIndex index, LedgerSearchMode mode) {
 		Objects.requireNonNull(type, "type is required");
 		Objects.requireNonNull(index, "index is required");
 		Objects.requireNonNull(mode, "mode is required");
@@ -640,12 +639,12 @@ public class TempoAtomStore implements AtomStore {
 		}
 	}
 
-	private SecondaryCursor toSecondaryCursor(Type type) {
+	private SecondaryCursor toSecondaryCursor(LedgerIndexType type) {
 		Objects.requireNonNull(type, "cursor is required");
 		SecondaryCursor databaseCursor;
-		if (type.equals(Type.UNIQUE)) {
+		if (type.equals(LedgerCursor.LedgerIndexType.UNIQUE)) {
 			databaseCursor = this.uniqueIndices.openCursor(null, null);
-		} else if (type.equals(Type.DUPLICATE)) {
+		} else if (type.equals(LedgerCursor.LedgerIndexType.DUPLICATE)) {
 			databaseCursor = this.duplicatedIndices.openCursor(null, null);
 		} else {
 			throw new IllegalStateException("Cursor type " + type + " not supported");

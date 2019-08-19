@@ -1,5 +1,7 @@
 package com.radixdlt.tempo;
 
+import com.radixdlt.tempo.reactive.TempoState;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;

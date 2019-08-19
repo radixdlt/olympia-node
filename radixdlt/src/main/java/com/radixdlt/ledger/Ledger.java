@@ -2,7 +2,6 @@ package com.radixdlt.ledger;
 
 import com.radixdlt.Atom;
 import com.radixdlt.common.AID;
-import com.radixdlt.ledger.LedgerCursor.Type;
 import com.radixdlt.ledger.exceptions.LedgerException;
 import com.radixdlt.ledger.exceptions.LedgerKeyConstraintException;
 
@@ -81,7 +80,7 @@ public interface Ledger {
 	 *
 	 * @throws LedgerException in case of internal errors
 	 */
-	LedgerCursor search(Type type, LedgerIndex index, LedgerSearchMode mode);
+	LedgerCursor search(LedgerCursor.LedgerIndexType type, LedgerIndex index, LedgerSearchMode mode);
 
 	/**
 	 * Resolves a conflict between an atom and non-empty set of conflicting atoms.
