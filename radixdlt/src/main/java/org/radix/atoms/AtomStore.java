@@ -1,6 +1,5 @@
 package org.radix.atoms;
 
-import com.radixdlt.utils.UInt384;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -21,10 +20,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import com.radixdlt.ledger.LedgerSearchMode;
+import com.radixdlt.tempo.AtomStoreView;
+import com.radixdlt.tempo.store.LegacyAtomStoreAdapter;
 import org.bouncycastle.util.Arrays;
 import org.radix.atoms.events.AtomDeletedEvent;
 import org.radix.atoms.events.AtomStoredEvent;
 import org.radix.atoms.events.AtomUpdatedEvent;
+import org.radix.atoms.sync.AtomSyncStore;
 import org.radix.common.executors.ScheduledExecutable;
 import org.radix.database.DBAction;
 import org.radix.database.DatabaseEnvironment;
@@ -50,7 +53,6 @@ import org.radix.time.Timestamps;
 import org.radix.universe.system.CommitmentCollector;
 import org.radix.universe.system.LocalSystem;
 import org.radix.utils.SystemProfiler;
-import org.radix.validation.ValidationHandler;
 
 import com.google.common.collect.Lists;
 import com.radixdlt.atoms.Particle;
@@ -58,15 +60,13 @@ import com.radixdlt.atoms.Spin;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
 import com.radixdlt.common.Pair;
-import com.radixdlt.constraintmachine.CMAtom;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.LedgerCursor;
-import com.radixdlt.ledger.LedgerIndexable;
+import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerCursor.Type;
-import com.radixdlt.ledger.LedgerInterface.SearchMode;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationUtils;
-import com.radixdlt.tempo.TempoCursor;
+import com.radixdlt.tempo.store.LegacyCursor;
 import com.radixdlt.utils.Longs;
 import com.sleepycat.je.Cursor;
 import com.sleepycat.je.Database;
@@ -284,6 +284,12 @@ public class AtomStore extends DatabaseStore implements DiscoverySource<AtomDisc
 			}
 		});
 
+		// FIXME remove hack to expose legacy store view
+		Modules.put(AtomStoreView.class, new LegacyAtomStoreAdapter(
+			() -> this,
+			() -> Modules.get(AtomSyncStore.class)
+		).asReadOnlyView());
+
 		super.start_impl();
 	}
 
@@ -342,6 +348,8 @@ public class AtomStore extends DatabaseStore implements DiscoverySource<AtomDisc
 	public void stop_impl() throws ModuleException
 	{
 		super.stop_impl();
+
+		Modules.remove(AtomStoreView.class);
 
 		if (this.uniqueIndexables != null) this.uniqueIndexables.close();
 		if (this.duplicatedIndexables != null) this.duplicatedIndexables.close();
@@ -627,22 +635,22 @@ public class AtomStore extends DatabaseStore implements DiscoverySource<AtomDisc
 
 	public DBAction deleteAtoms(AID AID) throws DatabaseException
 	{
-		Atom atom = this.getAtom(AID);
+		Optional<Atom> atom = this.getAtom(AID);
 		
-		if (atom == null)
+		if (!atom.isPresent())
 			return new DBAction(DBAction.DELETE, AID, false);
 		
-		return this.deleteAtoms(atom);
+		return this.deleteAtoms(atom.get());
 	}
 
 	public DBAction deleteAtom(AID AID) throws DatabaseException
 	{
-		Atom atom = this.getAtom(AID);
+		Optional<Atom> atom = this.getAtom(AID);
 		
-		if (atom == null)
+		if (!atom.isPresent())
 			return new DBAction(DBAction.DELETE, AID, false);
 		
-		return this.deleteAtom(atom);
+		return this.deleteAtom(atom.get());
 	}
 	
 	public DBAction deleteAtom(Atom atom) throws DatabaseException
@@ -780,7 +788,7 @@ public class AtomStore extends DatabaseStore implements DiscoverySource<AtomDisc
 		return false;
 	}
 
-	public Atom getAtom(AID id) throws DatabaseException
+	public Optional<Atom> getAtom(AID id) throws DatabaseException
 	{
 		long start = SystemProfiler.getInstance().begin();
 
@@ -792,8 +800,7 @@ public class AtomStore extends DatabaseStore implements DiscoverySource<AtomDisc
 			if (this.uniqueIndexables.get(null, key, data, LockMode.DEFAULT) == OperationStatus.SUCCESS)
 			{
 				PreparedAtom preparedAtom = new PreparedAtom(data.getData());
-				Atom atom = preparedAtom.getAtom();
-				return atom;
+				return Optional.of(preparedAtom.getAtom());
 			}
 		}
 		catch (Exception ex)
@@ -805,7 +812,7 @@ public class AtomStore extends DatabaseStore implements DiscoverySource<AtomDisc
 			SystemProfiler.getInstance().incrementFrom("ATOM_STORE:GET_ATOM", start);
 		}
 
-		return null;
+		return Optional.empty();
 	}
 
 	public List<Atom> getAtoms(Collection<AID> ids) throws DatabaseException
@@ -818,10 +825,11 @@ public class AtomStore extends DatabaseStore implements DiscoverySource<AtomDisc
         {
 			for (AID id : ids)
 			{
-				Atom atom = getAtom(id);
+				Optional<Atom> atom = getAtom(id);
 
-				if (atom != null)
-					atoms.add(atom);
+				if (atom.isPresent()) {
+					atoms.add(atom.get());
+				}
 			}
 		}
 		finally
@@ -1246,10 +1254,13 @@ public class AtomStore extends DatabaseStore implements DiscoverySource<AtomDisc
 			SystemProfiler.getInstance().incrementFrom("ATOM_STORE:UPDATE_ATOM", start);
 		}
 	}
-	
-	public DBAction replaceAtom(AID AID, PreparedAtom preparedAtom) throws DatabaseException
+
+	// FIXME Make atomic
+	public DBAction replaceAtom(Set<AID> aids, PreparedAtom preparedAtom) throws DatabaseException
 	{
-		this.deleteAtoms(AID);
+		for (AID aid : aids) {
+			this.deleteAtom(aid);
+		}
 		return this.storeAtom(preparedAtom);
 	}
 
@@ -1442,7 +1453,7 @@ public class AtomStore extends DatabaseStore implements DiscoverySource<AtomDisc
  	}
 
 	// LEDGER CURSOR HANDLING //
-	public LedgerCursor search(Type type, LedgerIndexable indexable, SearchMode mode) throws DatabaseException
+	public LedgerCursor search(Type type, LedgerIndex indexable, LedgerSearchMode mode) throws DatabaseException
 	{
 		Objects.requireNonNull(indexable);
 		
@@ -1458,17 +1469,17 @@ public class AtomStore extends DatabaseStore implements DiscoverySource<AtomDisc
 		try
 		{
 			DatabaseEntry pKey = new DatabaseEntry();
-			DatabaseEntry key = new DatabaseEntry(indexable.getKey());
+			DatabaseEntry key = new DatabaseEntry(indexable.asKey());
 			
-			if (mode.equals(SearchMode.EXACT) == true)
+			if (mode == LedgerSearchMode.EXACT)
 			{
 				if (databaseCursor.getSearchKey(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS)
-					return new TempoCursor(type, pKey.getData(), key.getData());
+					return new LegacyCursor(type, pKey.getData(), key.getData());
 			}
-			else if (mode.equals(SearchMode.RANGE) == true)
+			else if (mode == LedgerSearchMode.RANGE)
 			{
 				if (databaseCursor.getSearchKeyRange(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS)
-					return new TempoCursor(type, pKey.getData(), key.getData());
+					return new LegacyCursor(type, pKey.getData(), key.getData());
 			}
 			
 			return null;
@@ -1483,7 +1494,7 @@ public class AtomStore extends DatabaseStore implements DiscoverySource<AtomDisc
 		}
 	}
 	
-	public TempoCursor getNext(TempoCursor cursor) throws DatabaseException
+	public LegacyCursor getNext(LegacyCursor cursor) throws DatabaseException
 	{
 		Objects.requireNonNull(cursor);
 		
@@ -1499,12 +1510,12 @@ public class AtomStore extends DatabaseStore implements DiscoverySource<AtomDisc
 		try
 		{
 			DatabaseEntry pKey = new DatabaseEntry(cursor.getPrimary());
-			DatabaseEntry key = new DatabaseEntry(cursor.getIndexable());
+			DatabaseEntry key = new DatabaseEntry(cursor.getIndex());
 			
 			if (databaseCursor.getSearchBothRange(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS)
 			{
 				if (databaseCursor.getNextDup(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS)
-					return new TempoCursor(cursor.getType(), pKey.getData(), key.getData());
+					return new LegacyCursor(cursor.getType(), pKey.getData(), key.getData());
 			}
 			
 			return null;
@@ -1519,7 +1530,7 @@ public class AtomStore extends DatabaseStore implements DiscoverySource<AtomDisc
 		}
 	}
 	
-	public TempoCursor getPrev(TempoCursor cursor) throws DatabaseException
+	public LegacyCursor getPrev(LegacyCursor cursor) throws DatabaseException
 	{
 		Objects.requireNonNull(cursor);
 		
@@ -1535,12 +1546,12 @@ public class AtomStore extends DatabaseStore implements DiscoverySource<AtomDisc
 		try
 		{
 			DatabaseEntry pKey = new DatabaseEntry(cursor.getPrimary());
-			DatabaseEntry key = new DatabaseEntry(cursor.getIndexable());
+			DatabaseEntry key = new DatabaseEntry(cursor.getIndex());
 			
 			if (databaseCursor.getSearchBothRange(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS)
 			{
 				if (databaseCursor.getPrevDup(pKey, key, null, LockMode.DEFAULT) == OperationStatus.SUCCESS)
-					return new TempoCursor(cursor.getType(), pKey.getData(), key.getData());
+					return new LegacyCursor(cursor.getType(), pKey.getData(), key.getData());
 			}
 			
 			return null;
@@ -1555,7 +1566,7 @@ public class AtomStore extends DatabaseStore implements DiscoverySource<AtomDisc
 		}
 	}
 	
-	public TempoCursor getFirst(TempoCursor cursor) throws DatabaseException
+	public LegacyCursor getFirst(LegacyCursor cursor) throws DatabaseException
 	{
 		Objects.requireNonNull(cursor);
 		
@@ -1571,17 +1582,17 @@ public class AtomStore extends DatabaseStore implements DiscoverySource<AtomDisc
 		try
 		{
 			DatabaseEntry pKey = new DatabaseEntry(cursor.getPrimary());
-			DatabaseEntry key = new DatabaseEntry(cursor.getIndexable());
+			DatabaseEntry key = new DatabaseEntry(cursor.getIndex());
 			
 			if (databaseCursor.getSearchBothRange(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS)
 			{
 				if (databaseCursor.getPrevNoDup(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS)
 				{
 					if (databaseCursor.getNext(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS)
-						return new TempoCursor(cursor.getType(), pKey.getData(), key.getData());
+						return new LegacyCursor(cursor.getType(), pKey.getData(), key.getData());
 				}
 				else if (databaseCursor.getFirst(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS)
-					return new TempoCursor(cursor.getType(), pKey.getData(), key.getData());
+					return new LegacyCursor(cursor.getType(), pKey.getData(), key.getData());
 			}
 			
 			return null;
@@ -1596,7 +1607,7 @@ public class AtomStore extends DatabaseStore implements DiscoverySource<AtomDisc
 		}
 	}
 
-	public TempoCursor getLast(TempoCursor cursor) throws DatabaseException
+	public LegacyCursor getLast(LegacyCursor cursor) throws DatabaseException
 	{
 		Objects.requireNonNull(cursor);
 		
@@ -1612,17 +1623,17 @@ public class AtomStore extends DatabaseStore implements DiscoverySource<AtomDisc
 		try
 		{
 			DatabaseEntry pKey = new DatabaseEntry(cursor.getPrimary());
-			DatabaseEntry key = new DatabaseEntry(cursor.getIndexable());
+			DatabaseEntry key = new DatabaseEntry(cursor.getIndex());
 			
 			if (databaseCursor.getSearchBothRange(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS)
 			{
 				if (databaseCursor.getNextNoDup(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS)
 				{
 					if (databaseCursor.getPrev(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS)
-						return new TempoCursor(cursor.getType(), pKey.getData(), key.getData());
+						return new LegacyCursor(cursor.getType(), pKey.getData(), key.getData());
 				}
 				else if (databaseCursor.getLast(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS)
-					return new TempoCursor(cursor.getType(), pKey.getData(), key.getData());
+					return new LegacyCursor(cursor.getType(), pKey.getData(), key.getData());
 			}
 			
 			return null;

@@ -15,6 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import com.radixdlt.tempo.AtomSyncView;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -75,9 +76,9 @@ public class AtomsService {
 
 	private final Object lock = new Object();
 	private final EvictingQueue<String> eventRingBuffer = EvictingQueue.create(64);
-	private final AtomSync atomSync;
+	private final AtomSyncView atomSync;
 
-	public AtomsService(AtomSync atomSync) {
+	public AtomsService(AtomSyncView atomSync) {
 		this.atomSync = Objects.requireNonNull(atomSync);
 
 		Events.getInstance().register(AtomEvent.class, (event) -> {
@@ -183,7 +184,7 @@ public class AtomsService {
 		}
 
 		try {
-			atomSync.store(atom);
+			atomSync.receive(atom);
 		} catch (AtomAlreadyInProcessingException e) {
 			return AtomStatus.PENDING_CM_VERIFICATION;
 		} catch (AtomAlreadyStoredException e) {

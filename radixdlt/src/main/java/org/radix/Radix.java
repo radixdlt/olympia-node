@@ -5,6 +5,9 @@ import java.lang.reflect.Modifier;
 import java.security.SecureRandom;
 import java.security.Security;
 
+import com.radixdlt.mock.MockAccessor;
+import com.radixdlt.mock.MockApplication;
+import com.radixdlt.tempo.Tempo;
 import org.apache.commons.cli.CommandLine;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.json.JSONObject;
@@ -25,12 +28,12 @@ import org.radix.network.Network;
 import org.radix.network.messaging.Messaging;
 import org.radix.network.peers.PeerHandler;
 import org.radix.network.peers.PeerStore;
+import org.radix.network2.messaging.MessageCentral;
+import org.radix.network2.messaging.MessageCentralFactory;
 import org.radix.properties.PersistedProperties;
 import org.radix.properties.RuntimeProperties;
 import org.radix.routing.Routing;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.serialization.core.ClasspathScanningSerializationPolicy;
-import com.radixdlt.serialization.core.ClasspathScanningSerializerIds;
 import org.radix.shards.Shards;
 import org.radix.time.Time;
 import org.radix.time.RTP.RTPService;
@@ -138,6 +141,20 @@ public class Radix extends Plugin
 		}
 
 		/*
+		 * UNIVERSE
+		 */
+		try
+		{
+			byte[] bytes = Bytes.fromBase64String(Modules.get(RuntimeProperties.class).get("universe"));
+			Universe universe = Modules.get(Serialization.class).fromDson(bytes, Universe.class);
+			Modules.put(Universe.class, universe);
+		}
+		catch (Exception ex)
+		{
+			throw new ModuleStartException("Failure setting up Universe", ex, this);
+		}
+
+		/*
 		 * TIME
 		 */
 		try
@@ -147,18 +164,6 @@ public class Radix extends Plugin
 		catch (Exception ex)
 		{
 			throw new ModuleStartException("Failure setting up Time", ex, this);
-		}
-
-		/*
-		 * RTP
-		 */
-		try
-		{
-			Modules.getInstance().start(new RTPService());
-		}
-		catch (Exception ex)
-		{
-			throw new ModuleStartException("Failure setting up RTP", ex, this);
 		}
 
 		/*
@@ -184,20 +189,6 @@ public class Radix extends Plugin
 		catch (Exception ex)
 		{
 			throw new ModuleStartException("Failure setting up DB", ex, this);
-		}
-
-		/*
-		 * UNIVERSE
-		 */
-		try
-		{
-			byte[] bytes = Bytes.fromBase64String(Modules.get(RuntimeProperties.class).get("universe"));
-			Universe universe = Modules.get(Serialization.class).fromDson(bytes, Universe.class);
-			Modules.put(Universe.class, universe);
-		}
-		catch (Exception ex)
-		{
-			throw new ModuleStartException("Failure setting up Universe", ex, this);
 		}
 
 		/*
@@ -240,14 +231,27 @@ public class Radix extends Plugin
 		/*
 		 * MESSAGES
 		 */
+		try {
+			MessageCentral messageCentral = createMessageCentral(Modules.get(RuntimeProperties.class));
+			Modules.put(MessageCentral.class, messageCentral);
+			Modules.getInstance().start(Messaging.configure(messageCentral));
+//			Modules.getInstance().start(new MessageProfiler());
+		} catch (Exception ex) {
+			throw new ModuleStartException("Failure setting up Messages", ex, this);
+		}
+
+		/*
+		 * RTP
+		 */
 		try
 		{
-			Modules.getInstance().start(Messaging.getInstance());
-//			Modules.getInstance().start(new MessageProfiler());
+			if (!Modules.get(RuntimeProperties.class).has("rtp.disable")) {
+				Modules.getInstance().start(new RTPService());
+			}
 		}
 		catch (Exception ex)
 		{
-			throw new ModuleStartException("Failure setting up Messages", ex, this);
+			throw new ModuleStartException("Failure setting up RTP", ex, this);
 		}
 
 		/*
@@ -260,6 +264,15 @@ public class Radix extends Plugin
 		catch (Exception ex)
 		{
 			throw new ModuleStartException("Failure setting up Routing", ex, this);
+		}
+
+		if (Modules.get(RuntimeProperties.class).get("tempo2", false)) {
+			Tempo tempo = Tempo.defaultBuilder().build();
+			Modules.getInstance().start(tempo);
+
+			MockApplication mockApplication = new MockApplication(tempo);
+			mockApplication.startInstance();
+			Modules.put(MockAccessor.class, mockApplication.getAccessor());
 		}
 
 		/*
@@ -336,4 +349,8 @@ public class Radix extends Plugin
 
 	@Override
 	public void stop_impl() throws ModuleException { }
+
+	private MessageCentral createMessageCentral(RuntimeProperties properties) {
+		return new MessageCentralFactory().getDefault(properties);
+	}
 }

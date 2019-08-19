@@ -15,37 +15,35 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.UInt256;
+
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
-import org.powermock.core.classloader.annotations.PowerMockIgnore;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 import org.radix.modules.Modules;
 import org.radix.time.TemporalVertex;
 import org.radix.universe.UniverseValidator;
 import org.radix.validation.ValidationHandler;
 
 import static org.mockito.Mockito.mock;
-import static org.powermock.api.mockito.PowerMockito.mockStatic;
-import static org.powermock.api.mockito.PowerMockito.when;
 
-@RunWith(PowerMockRunner.class)
-@PowerMockIgnore({"java.security.*", "javax.security.*", "org.bouncycastle.*"})
-@PrepareForTest({Modules.class})
 public class UniverseTest {
 
 	@Before
 	public void setUp() {
-		mockStatic(Modules.class);
-		when(Modules.get(Serialization.class)).thenReturn(Serialization.getDefault());
+		Modules.put(Serialization.class, Serialization.getDefault());
 
 		// Atom.getAID currently has an unfortunate dependency on the Constraint machine
 		// This will be revisited and cleaned up at a later point but would be too much effort for this change
 		final ValidationHandler validationHandler = mock(ValidationHandler.class);
-		when(Modules.get(ValidationHandler.class)).thenReturn(validationHandler);
+		Modules.put(ValidationHandler.class, validationHandler);
+	}
+
+	@After
+	public void tearDown() {
+		Modules.remove(Serialization.class);
+		Modules.remove(ValidationHandler.class);
 	}
 
     @Rule

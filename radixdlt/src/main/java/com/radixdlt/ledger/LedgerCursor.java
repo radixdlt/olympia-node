@@ -1,20 +1,34 @@
 package com.radixdlt.ledger;
 
-import java.io.IOException;
-
 import com.radixdlt.common.AID;
 
-public interface LedgerCursor
-{
-	public static enum Type 
-	{
+import java.io.IOException;
+
+/**
+ * A ledger cursor, bound to a specific ledger instance.
+ */
+public interface LedgerCursor {
+	enum Type {
 		UNIQUE, DUPLICATE
 	}
 
-	public Type getType();
-	public AID get();
-	public LedgerCursor getNext() throws IOException;
-	public LedgerCursor getPrev() throws IOException;
-	public LedgerCursor getFirst() throws IOException;
-	public LedgerCursor getLast() throws IOException;
+	/**
+	 * Gets the type of cursor
+	 * @return The type of cursor
+	 */
+	Type getType();
+
+	/**
+	 * Gets the current AID at this cursor
+ 	 * @return The current AID
+	 */
+	AID get();
+
+	LedgerCursor next() throws IOException;
+
+	LedgerCursor previous() throws IOException;
+
+	LedgerCursor first() throws IOException;
+
+	LedgerCursor last() throws IOException;
 }

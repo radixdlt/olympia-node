@@ -41,6 +41,13 @@ dependencies {
     compile 'org.bouncycastle:bcprov-jdk15on:1.52'
     compile 'org.json:json:20180813'
     compile 'org.xerial.snappy:snappy-java:1.1.7.3'
+    compile 'io.netty:netty-all:4.1.39.Final'
+    compile('com.google.inject:guice:4.2.2') {
+        exclude group: 'com.google.guava', module: 'guava'
+    }
+    compile('com.google.inject.extensions:guice-grapher:4.2.2') {
+        exclude group: 'com.google.guava', module: 'guava'
+    }
 
     compile('com.github.everit-org.json-schema:org.everit.json.schema:1.9.1') {
         exclude group: 'org.json', module: 'json'

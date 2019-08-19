@@ -31,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import com.radixdlt.tempo.AtomSyncView;
 import org.radix.atoms.Atom;
 import org.radix.atoms.AtomDependencyNotFoundException;
 import org.radix.atoms.AtomDiscoveryRequest;
@@ -490,6 +491,29 @@ public class AtomSync extends Service
 	@Override
 	public void start_impl() throws ModuleException
 	{
+		// TODO remove atomsync so we no longer need this
+		Modules.put(AtomSyncView.class, new AtomSyncView() {
+			@Override
+			public void receive(Atom atom) {
+				AtomSync.this.store(atom);
+			}
+
+			@Override
+			public AtomStatus getAtomStatus(AID aid) {
+				return AtomSync.this.committing.get(aid);
+			}
+
+			@Override
+			public long getQueueSize() {
+				return AtomSync.this.committingQueueSize(AtomComplexity.ALL);
+			}
+
+			@Override
+			public Map<String, Object> getMetaData() {
+				return AtomSync.this.getMetaData();
+			}
+		});
+
 		register("atom.broadcast", new MessageProcessor<AtomBroadcastMessage>()
 		{
 			@Override
@@ -908,10 +932,10 @@ public class AtomSync extends Service
 						if (temporalVertex == null)
 							throw new IllegalStateException("TemporalVertex for "+LocalSystem.getInstance().getNID()+" not found!");
 
-						if (temporalVertex.getNIDS().isEmpty())
+						if (temporalVertex.getEdges().isEmpty())
 							continue;
 
-						List<Peer> broadcastPeers = Modules.get(PeerHandler.class).getPeers(PeerDomain.NETWORK, temporalVertex.getNIDS(), null, null);
+						List<Peer> broadcastPeers = Modules.get(PeerHandler.class).getPeers(PeerDomain.NETWORK, temporalVertex.getEdges(), null, null);
 						if (atomsLog.hasLevel(Logging.DEBUG))
 							atomsLog.debug("Broadcasting Atom "+atom.getHID()+" to "+broadcastPeers.size()+" broadcast peers "+broadcastPeers);
 
@@ -1710,7 +1734,7 @@ public class AtomSync extends Service
 
 				for (TemporalVertex vertex : atom.getTemporalProof().getVertices())
 				{
-					if (previousNIDs.contains(vertex.getOwner().getUID()) && vertex.getNIDS().contains(LocalSystem.getInstance().getNID()))
+					if (previousNIDs.contains(vertex.getOwner().getUID()) && vertex.getEdges().contains(LocalSystem.getInstance().getNID()))
 					{
 						previousVertex = vertex;
 						break;

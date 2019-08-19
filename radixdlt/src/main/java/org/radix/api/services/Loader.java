@@ -11,6 +11,7 @@ import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenT
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.atommodel.tokens.TokenPermission;
+import com.radixdlt.tempo.AtomSyncView;
 import org.radix.atoms.Atom;
 import com.radixdlt.universe.Universe;
 import org.radix.atoms.AtomStore;
@@ -144,7 +145,7 @@ final class Loader {
 			Set<AID> mintAtomHids = new HashSet<>();
 			for (Atom mintAtom : mintAtoms) {
 				mintAtom.sign(sourceKey);
-				Modules.get(AtomSync.class).store(mintAtom);
+				Modules.get(AtomSyncView.class).receive(mintAtom);
 				mintAtomHids.add(mintAtom.getAID());
 			}
 			new HashWaiter(mintAtomHids).awaitUninterruptibly();
@@ -177,7 +178,7 @@ final class Loader {
 
 	private void storeAndAwait(Atom prepareAtom, ECKeyPair sourceKey) throws CryptoException, DatabaseException {
 		prepareAtom.sign(sourceKey);
-		Modules.get(AtomSync.class).store(prepareAtom);
+		Modules.get(AtomSyncView.class).receive(prepareAtom);
 		new HashWaiter(ImmutableSet.of(prepareAtom.getAID())).awaitUninterruptibly();
 	}
 
@@ -229,7 +230,7 @@ final class Loader {
 				if (LocalSystem.getInstance().getShards().intersects(atom.getShards())) {
 					for (boolean wasStored = false; !wasStored;) {
 						try {
-							Modules.get(AtomSync.class).store(atom);
+							Modules.get(AtomSyncView.class).receive(atom);
 							lastStored = atom;
 							stored += 1;
 							wasStored = true;
@@ -237,7 +238,7 @@ final class Loader {
 							if (e.getMessage().startsWith("Commit queue size")) {
 								log.info("Commit queue too deep, backing off (" + e.getMessage() + ")");
 								// Backoff and retry
-                                while (Modules.get(AtomSync.class).committingQueueSize(AtomComplexity.ALL) > 20000) {
+                                while (Modules.get(AtomSyncView.class).getQueueSize() > 20000) {
 									TimeUnit.MILLISECONDS.sleep(500);
 								}
 								log.info("Commit queue part drained");

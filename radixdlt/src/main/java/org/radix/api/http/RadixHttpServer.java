@@ -8,6 +8,10 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.radixdlt.mock.MockAccessor;
+import com.radixdlt.tempo.AtomStoreView;
+import com.radixdlt.tempo.AtomSyncView;
+import com.radixdlt.tempo.Tempo;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.radix.api.AtomSchemas;
@@ -20,8 +24,6 @@ import org.radix.api.services.InternalService;
 import org.radix.api.services.NetworkService;
 import org.radix.api.services.TestService;
 import org.radix.api.services.UniverseService;
-import org.radix.atoms.AtomStore;
-import org.radix.atoms.sync.AtomSync;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.modules.Modules;
@@ -59,16 +61,15 @@ public final class RadixHttpServer {
 
     private final ConcurrentHashMap<RadixJsonRpcPeer, WebSocketChannel> peers = new ConcurrentHashMap<>();
 
-	private final AtomsService atomsService = new AtomsService(Modules.get(AtomSync.class));
+	private final AtomsService atomsService = new AtomsService(Modules.get(AtomSyncView.class));
 
     private final RadixJsonRpcServer jsonRpcServer = new RadixJsonRpcServer(
 		Modules.get(Serialization.class),
-		Modules.get(AtomStore.class),
-		Modules.get(AtomSync.class),
+		Modules.get(AtomStoreView.class),
+		Modules.get(AtomSyncView.class),
 		atomsService,
         AtomSchemas.get()
     );
-
 
     private Undertow server;
 
@@ -118,6 +119,8 @@ public final class RadixHttpServer {
 
         Integer port = Modules.get(RuntimeProperties.class).get("cp.port", DEFAULT_PORT);
         Filter corsFilter = new Filter(handler);
+        // Disable INFO logging for CORS filter, as it's a bit distracting
+        java.util.logging.Logger.getLogger(corsFilter.getClass().getName()).setLevel(java.util.logging.Level.WARNING);
         corsFilter.setPolicyClass(AllowAll.class.getName());
         corsFilter.setUrlPattern("^.*$");
         server = Undertow.builder()
@@ -132,6 +135,43 @@ public final class RadixHttpServer {
     }
 
     private void addDevelopmentOnlyRoutesTo(RoutingHandler handler) {
+    	addGetRoute("/api/internal/tempo/states", exchange -> {
+    		if (Modules.isAvailable(Tempo.class)) {
+			    String stateClassString = getParameter(exchange, "cls").orElse(null);
+			    if (stateClassString != null) {
+				    respond(Modules.get(Tempo.class).getJsonRepresentation(stateClassString), exchange);
+			    } else {
+				    respond(Modules.get(Tempo.class).getJsonRepresentation(), exchange);
+			    }
+		    } else {
+    			respond("Tempo 2.0 is unavailable", exchange);
+		    }
+	    }, handler);
+
+    	addGetRoute("/api/internal/mock/spawn", exchange -> {
+			if (Modules.isAvailable(MockAccessor.class)) {
+				String atomCountStr = getParameter(exchange, "atoms").orElse("1");
+				int atomCount = Integer.parseUnsignedInt(atomCountStr);
+				respond("Spamming " + atomCount + " random mock atom(s)", exchange);
+				Modules.get(MockAccessor.class).spawn(atomCount);
+			} else {
+				respond("Mock application is unavailable", exchange);
+			}
+	    }, handler);
+
+	    addGetRoute("/api/internal/mock/spawnkey", exchange -> {
+		    if (Modules.isAvailable(MockAccessor.class)) {
+			    String atomCountStr = getParameter(exchange, "atoms").orElse("1");
+			    String keyStr = getParameter(exchange, "atoms").orElse("0");
+			    int atomCount = Integer.parseUnsignedInt(atomCountStr);
+			    int key = Integer.parseUnsignedInt(keyStr);
+			    respond("Spamming " + atomCount + " random mock atom(s) with key " + key, exchange);
+			    Modules.get(MockAccessor.class).spawnWithKey(key, atomCount);
+		    } else {
+			    respond("Mock application is unavailable", exchange);
+		    }
+	    }, handler);
+
         addGetRoute("/api/internal/spamathon", exchange -> {
             String iterations = getParameter(exchange, "iterations").orElse(null);
             String batching = getParameter(exchange, "batching").orElse(null);

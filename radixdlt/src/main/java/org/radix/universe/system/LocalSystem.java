@@ -19,6 +19,10 @@ import com.radixdlt.crypto.CryptoException;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.modules.Modules;
+import org.radix.network2.transport.DynamicTransportMetadata;
+import org.radix.network2.transport.TransportInfo;
+import org.radix.network2.transport.udp.PublicInetAddress;
+import org.radix.network2.transport.udp.UDPConstants;
 import org.radix.properties.RuntimeProperties;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -30,7 +34,7 @@ import org.radix.utils.SystemMetaData;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.annotations.VisibleForTesting;
-
+import com.google.common.collect.ImmutableList;
 import static com.radixdlt.serialization.MapHelper.mapOf;
 
 @SerializerId2("api.local_system")
@@ -77,10 +81,13 @@ public final class LocalSystem extends RadixSystem
 				}
 			}
 
-			if (LocalSystem.instance == null)
-				LocalSystem.instance = new LocalSystem(nodeKey, Radix.AGENT, Radix.AGENT_VERSION, Radix.PROTOCOL_VERSION,
-						   Modules.get(RuntimeProperties.class).get("shards.range", ShardSpace.SHARD_CHUNK_RANGE),
-						   Modules.get(RuntimeProperties.class).get("network.port", Modules.get(Universe.class).getPort()));
+			if (LocalSystem.instance == null) {
+				LocalSystem.instance = new LocalSystem(
+					nodeKey,
+					Radix.AGENT, Radix.AGENT_VERSION, Radix.PROTOCOL_VERSION,
+					Modules.get(RuntimeProperties.class).get("shards.range", ShardSpace.SHARD_CHUNK_RANGE)
+				);
+			}
 
 			if (Modules.isAvailable(SystemMetaData.class) == true)
 			{
@@ -131,9 +138,9 @@ public final class LocalSystem extends RadixSystem
 		this.accumulator = new CommitmentAccumulator(Hash.BITS);
 	}*/
 
-	public LocalSystem(ECKeyPair key, String agent, int agentVersion, int protocolVersion, long shards, int port)
+	public LocalSystem(ECKeyPair key, String agent, int agentVersion, int protocolVersion, long shards)
 	{
-		super(key.getPublicKey(), agent, agentVersion, protocolVersion, new ShardSpace(key.getUID().getShard(), shards), port);
+		super(key.getPublicKey(), agent, agentVersion, protocolVersion, new ShardSpace(key.getUID().getShard(), shards), defaultTransports());
 		this.keyPair = key;
 		this.accumulator = new CommitmentAccumulator(Hash.BITS);
 	}
@@ -302,5 +309,19 @@ public final class LocalSystem extends RadixSystem
 	@DsonOutput(Output.API)
 	int getJsonProcessors() {
 		return Runtime.getRuntime().availableProcessors();
+	}
+
+	// FIXME: *Really* need a better way of configuring this other than hardcoding here
+	// Should also have the option of overriding "port", rather than always using universe port
+	private static ImmutableList<TransportInfo> defaultTransports() {
+		return ImmutableList.of(
+			TransportInfo.of(
+				UDPConstants.UDP_NAME,
+				DynamicTransportMetadata.of(
+					UDPConstants.METADATA_UDP_HOST, PublicInetAddress.getInstance()::toString,
+					UDPConstants.METADATA_UDP_PORT, () -> Integer.toString(Modules.get(Universe.class).getPort())
+				)
+			)
+		);
 	}
 }

@@ -179,8 +179,6 @@ public abstract class Module implements ID, ReadWriteLockable, SingletonState
 
 	/**
 	 * Returns a list of invoked modules required to ensure correct operation
-	 *
-	 * @return
 	 */
 	public List<Class<? extends Module>> getComponents()
 	{
@@ -189,9 +187,6 @@ public abstract class Module implements ID, ReadWriteLockable, SingletonState
 
 	/**
 	 * Registers a message listener to this module.
-	 *
-	 * @param command
-	 * @param listener
 	 */
 	public void register(String command, MessageProcessor<? extends Message> listener)
 	{
@@ -202,8 +197,6 @@ public abstract class Module implements ID, ReadWriteLockable, SingletonState
 
 	/**
 	 * Unregisters a message listener registered to this module.
-	 *
-	 * @param type
 	 */
 	public void unregister(String command)
 	{

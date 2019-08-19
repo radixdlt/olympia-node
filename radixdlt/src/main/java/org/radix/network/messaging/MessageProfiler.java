@@ -13,7 +13,7 @@ import org.radix.modules.exceptions.ModuleException;
 import org.radix.network.peers.Peer;
 import org.radix.utils.SystemMetaData;
 
-public class MessageProfiler extends Service implements MessageProcessor<Message>
+public class MessageProfiler extends Service
 {
 	private Map<EUID, Long>	messages = new ConcurrentHashMap<>();
 
@@ -60,7 +60,6 @@ public class MessageProfiler extends Service implements MessageProcessor<Message
 	public void stop_impl() throws ModuleException
 	{ }
 
-	@Override
 	public void process(Message m, Peer peer)
 	{
 		Modules.ifAvailable(SystemMetaData.class, a -> a.increment("messages.processed"));

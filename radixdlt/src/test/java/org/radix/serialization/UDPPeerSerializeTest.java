@@ -12,6 +12,6 @@ public class UDPPeerSerializeTest extends SerializeMessageObject<UDPPeer> {
 	}
 
 	private static UDPPeer get() {
-		return new UDPPeer(Network.getURI("127.0.0.1", 30000), null);
+		return new UDPPeer(null, Network.getURI("127.0.0.1", 30000));
 	}
 }

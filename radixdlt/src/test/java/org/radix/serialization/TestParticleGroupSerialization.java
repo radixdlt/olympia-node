@@ -32,8 +32,8 @@ public class TestParticleGroupSerialization {
 		ParticleGroup pg = ParticleGroup.builder().addMetaData("massive", massive).build();
 		atom.addParticleGroup(pg);
 
-		byte[] atombytes = serialization.toDson(atom, Output.HASH);
+		byte[] massiveBytes = serialization.toDson(massive, Output.HASH);
 
-		assertEquals(4249, atombytes.length);
+		assertEquals(4099, massiveBytes.length);
 	}
 }

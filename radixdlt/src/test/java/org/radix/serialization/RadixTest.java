@@ -41,7 +41,6 @@ public abstract class RadixTest
 	{
 		Field isRestricted = Class.forName("javax.crypto.JceSecurity").getDeclaredField("isRestricted");
 
-		System.out.print("Encryption restrictions are set, need to override...");
 
 		if ( Modifier.isFinal(isRestricted.getModifiers()) )
 		{
@@ -52,9 +51,12 @@ public abstract class RadixTest
 
 		try {
 			isRestricted.setAccessible(true);
-			isRestricted.setBoolean(null, false);
+			if (isRestricted.get(null).equals(Boolean.TRUE)) {
+				System.out.print("Encryption restrictions are set, need to override...");
+				isRestricted.setBoolean(null, false);
+				System.out.println("...override success!");
+			}
 			isRestricted.setAccessible(false);
-			System.out.println("...override success!");
 		} catch (IllegalAccessException e) {
 			System.out.println("...failed.  Best of luck.");
 		}

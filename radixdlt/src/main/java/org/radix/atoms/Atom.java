@@ -41,7 +41,8 @@ public final class Atom extends ImmutableAtom {
 		super(timestamp, metadata);
 	}
 
-	Atom(List<ParticleGroup> particleGroups, Map<EUID, ECSignature> signatures, Map<String, String> metaData) {
+	// FIXME temporarily public for easy conversion, will remove later
+	public Atom(List<ParticleGroup> particleGroups, Map<EUID, ECSignature> signatures, Map<String, String> metaData) {
 		super(particleGroups, signatures, metaData);
 	}
 

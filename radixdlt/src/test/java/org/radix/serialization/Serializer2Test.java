@@ -41,10 +41,8 @@ public class Serializer2Test extends RadixTest {
 		DummyTestObject jacksonJsonObj = serialization.fromJson(jacksonJson, DummyTestObject.class);
 		DummyTestObject jacksonCborObj = serialization.fromDson(jacksonDson, DummyTestObject.class);
 
-		System.out.format("Jackson DSON: %s%n", jacksonDson.length);
-		System.out.format("Jackson JSON: %s%n", jacksonJson.length());
-		System.out.println("Round trip Jackson JSON: " + testObject.equals(jacksonJsonObj));
-		System.out.println("Round trip Jackson DSON: " + testObject.equals(jacksonCborObj));
+		assertTrue(testObject.equals(jacksonJsonObj));
+		assertTrue(testObject.equals(jacksonCborObj));
 	}
 
 	@Test

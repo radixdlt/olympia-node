@@ -25,7 +25,6 @@ import org.radix.network.peers.Peer;
 import org.radix.network.peers.PeerStore;
 import org.radix.network.peers.filters.PeerFilter;
 import org.radix.properties.RuntimeProperties;
-import com.radixdlt.universe.Universe;
 
 public class BootstrapDiscovery implements Discovery
 {
@@ -98,9 +97,6 @@ public class BootstrapDiscovery implements Discovery
 		int cooldown = cfg.get("network.discovery.connection.cooldown", 1) * 10000;
 		int connectionTimeout = cfg.get("network.discovery.connection.timeout", 60000);
 		int readTimeout = cfg.get("network.discovery.read.timeout", 60000);
-
-		// Wallets (and other apps) that rely on the API can obviously check port the API port (8443).
-		int checkPort = Modules.get(Universe.class).getPort();
 
 		long attempt = 0;
 		byte[] buf = new byte[MAX_DNS_NAME_OCTETS];
@@ -210,19 +206,19 @@ public class BootstrapDiscovery implements Discovery
 			host = host.trim();
 			if (host.isEmpty())
 				continue;
-			try
-			{
-				if (!Network.getInstance().isWhitelisted(Network.getURI(host)))
-					continue;
+				try
+				{
+					if (!Network.getInstance().isWhitelisted(Network.getURI(host)))
+						continue;
 
 				this.hosts.add(Network.getURI(host.trim()));
-			}
-			catch (Exception ex)
-			{
-				log.error("Could not add bootstrap "+host.trim(), ex);
+				}
+				catch (Exception ex)
+				{
+					log.error("Could not add bootstrap "+host.trim(), ex);
+				}
 			}
 		}
-	}
 
 	@Override
 	public Collection<URI> discover(PeerFilter filter)

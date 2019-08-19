@@ -1,12 +1,12 @@
 package org.radix.network.discovery;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.Set;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -74,6 +74,8 @@ public class BootstrapDiscoveryTest {
         doReturn(0).when(config).get("network.discovery.allow_tls_bypass", 0);
         doReturn(8).when(config).get("network.connections.in", 8);
         doReturn(8).when(config).get("network.connections.out", 8);
+        doReturn(8192).when(config).get("messaging.inbound.queue_max", 8192);
+        doReturn(1 << 18).when(config).get("network.udp.buffer", 1 << 18);
         doReturn(universe).when(Modules.class, "get", Universe.class);
 
         when(config.get(eq("network.discovery.connection.retries"), any())).thenReturn(1);
@@ -88,6 +90,12 @@ public class BootstrapDiscoveryTest {
         when(universe.getPort()).thenReturn(30000);
 
         when(url.openConnection()).thenReturn(conn);
+    }
+
+    @After
+    public void tearDown() {
+        // Make sure throwing interrupted exception doesn't affect other tests
+        Thread.interrupted();
     }
 
 	@Test
@@ -140,6 +148,9 @@ public class BootstrapDiscoveryTest {
         doReturn("1.1.1.1").when(config).get("network.seeds", "");
         doReturn(Integer.valueOf(8)).when(config).get("network.connections.in", Integer.valueOf(8));
         doReturn(Integer.valueOf(8)).when(config).get("network.connections.out", Integer.valueOf(8));
+        doReturn(8000).when(config).get(eq("messaging.inbound.queue_max"), any());
+        doReturn(8000).when(config).get(eq("messaging.outbound.queue_max"), any());
+        doReturn(30).when(config).get(eq("messaging.time_to_live"), any());
         BootstrapDiscovery testSubject = Whitebox.invokeConstructor(BootstrapDiscovery.class);
         Set<?> hosts = Whitebox.getInternalState(testSubject, "hosts");
         assertEquals(1, hosts.size());
@@ -157,7 +168,7 @@ public class BootstrapDiscoveryTest {
 	public void testConstructor() throws Exception
 	{
         doReturn("https://example.com").when(config).get("network.discovery.urls", "");
-        doReturn("1.1.1.1.").when(BootstrapDiscovery.class, "getNextNode", any());
+        doReturn("1.1.1.1").when(BootstrapDiscovery.class, "getNextNode", any());
         doReturn("2.2.2.2").when(config).get("network.seeds", "");
         BootstrapDiscovery testSubject = Whitebox.invokeConstructor(BootstrapDiscovery.class);
         Set<?> hosts = Whitebox.getInternalState(testSubject, "hosts");

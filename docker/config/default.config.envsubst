@@ -1,3 +1,12 @@
+# tempo 2
+tempo2=false
+#tempo2.sync=active,iterative
+tempo2.sync=iterative
+tempo2.resolver=momentum
+
+rtp.disable
+ntp=false
+
 api.functions=$RADIXDLT_API_FUNCTIONS
 api.url=/api
 core.modules=assets,atoms,transactions
@@ -13,7 +22,6 @@ network.connections.out=$RADIXDLT_NETWORK_CONNECTIONS_OUT
 partition.low=-9223372036854775808
 partition.fragments=$RADIXDLT_PARTITION_FRAGMENTS
 universe.witness=$RADIXDLT_UNIVERSE_WITNESSES
-ntp=true
 debug.profiler=$RADIXDLT_DEBUG_PROFILER
 
 # RTP
