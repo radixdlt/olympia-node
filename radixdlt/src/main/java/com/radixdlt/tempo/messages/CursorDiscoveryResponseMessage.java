@@ -8,8 +8,8 @@ import com.radixdlt.tempo.LogicalClockCursor;
 import com.radixdlt.tempo.store.CommitmentBatch;
 import org.radix.network.messaging.Message;
 
-@SerializerId2("tempo.sync.iterative.response")
-public class IterativeDiscoveryResponseMessage extends Message {
+@SerializerId2("tempo.sync.discovery.cursor.response")
+public class CursorDiscoveryResponseMessage extends Message {
 	@JsonProperty("commitmentBatch")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private CommitmentBatch commitmentBatch;
@@ -18,11 +18,11 @@ public class IterativeDiscoveryResponseMessage extends Message {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private LogicalClockCursor cursor;
 
-	IterativeDiscoveryResponseMessage() {
+	CursorDiscoveryResponseMessage() {
 		// Serializer only
 	}
 
-	public IterativeDiscoveryResponseMessage(CommitmentBatch commitmentBatch, LogicalClockCursor cursor) {
+	public CursorDiscoveryResponseMessage(CommitmentBatch commitmentBatch, LogicalClockCursor cursor) {
 		this.commitmentBatch = commitmentBatch;
 		this.cursor = cursor;
 	}
@@ -37,6 +37,6 @@ public class IterativeDiscoveryResponseMessage extends Message {
 
 	@Override
 	public String getCommand() {
-		return "tempo.sync.iterative.response";
+		return "tempo.sync.discovery.cursor.response";
 	}
 }

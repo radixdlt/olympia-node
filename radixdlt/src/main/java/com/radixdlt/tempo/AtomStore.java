@@ -1,36 +1,15 @@
 package com.radixdlt.tempo;
 
-import com.google.common.collect.ImmutableList;
 import com.radixdlt.common.AID;
-import com.radixdlt.utils.Pair;
-import com.radixdlt.ledger.LedgerCursor;
 import com.radixdlt.ledger.LedgerIndex;
-import com.radixdlt.ledger.LedgerSearchMode;
 import com.radixdlt.tempo.store.Store;
-import org.radix.shards.ShardSpace;
 
-import java.util.Optional;
 import java.util.Set;
 
 /**
  * An entry-point for manipulating the state of a Tempo ledger.
  */
-public interface AtomStore extends Store {
-	/**
-	 * Checks whether the given {@link AID} is contained in this store
-	 * @param aid The {@link AID}
-	 * @return Whether the given {@link AID} is contained in this store
-	 */
-	boolean contains(AID aid);
-
-	/**
-	 * Gets the atom associated with a certain {@link AID}.
-	 *
-	 * @param aid The {@link AID}
-	 * @return The atom associated with the given {@link AID}
-	 */
-	Optional<TempoAtom> get(AID aid);
-
+public interface AtomStore extends AtomStoreView, Store {
 	/**
 	 * Deletes the atom associated with a certain {@link AID}.
 	 *
@@ -58,23 +37,4 @@ public interface AtomStore extends Store {
 	 * @return Whether all {@link AID}s were successfully deleted
 	 */
 	boolean replace(Set<AID> aids, TempoAtom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices);
-
-	/**
-	 * Searches for a certain index.
-	 *
-	 * @param type The type of index
-	 * @param index The index
-	 * @param mode The mode
-	 * @return The resulting ledger cursor
-	 */
-	LedgerCursor search(LedgerCursor.Type type, LedgerIndex index, LedgerSearchMode mode);
-
-	Pair<ImmutableList<AID>, LogicalClockCursor> getNext(LogicalClockCursor logicalClockCursor, int limit, ShardSpace shardSpace);
-
-	/**
-	 * Gets a read-only view of this atom store.
-	 *
-	 * @return a view of this atom store
-	 */
-	AtomStoreView asReadOnlyView();
 }

@@ -13,17 +13,17 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
-public class IterativeDiscoveryState implements TempoState {
+public class CursorDiscoveryState implements TempoState {
 	private static final int MAX_BACKOFF = 4; // results in 2^4 -> 16 seconds
 
-	private final Map<EUID, IterativeDiscoveryPeerState> states;
+	private final Map<EUID, CursorDiscoveryPeerState> states;
 
-	public IterativeDiscoveryState(Map<EUID, IterativeDiscoveryPeerState> states) {
+	public CursorDiscoveryState(Map<EUID, CursorDiscoveryPeerState> states) {
 		this.states = states;
 	}
 
 	public IterativeCursorStage getStage(EUID nid) {
-		IterativeDiscoveryPeerState state = states.get(nid);
+		CursorDiscoveryPeerState state = states.get(nid);
 		if (state == null) {
 			throw new TempoException("State for '" + nid + "' does not exist");
 		}
@@ -35,64 +35,71 @@ public class IterativeDiscoveryState implements TempoState {
 	}
 
 	public boolean isPending(EUID nid, long requestedLCPosition) {
-		IterativeDiscoveryPeerState state = states.get(nid);
+		CursorDiscoveryPeerState state = states.get(nid);
 		return state != null && state.isPending(requestedLCPosition);
 	}
 
-	public IterativeDiscoveryState with(EUID nid, CommitmentBatch initialCommitments) {
-		Map<EUID, IterativeDiscoveryPeerState> nextStates = new HashMap<>(states);
+	public CommitmentBatch getRecentCommitments(EUID nid) {
+		CursorDiscoveryPeerState state = states.get(nid);
+		if (state == null) {
+			throw new TempoException("State for '" + nid + "' does not exist");
+		}
+		return state.recentCommitments;
+	}
+
+	public CursorDiscoveryState with(EUID nid, CommitmentBatch initialCommitments) {
+		Map<EUID, CursorDiscoveryPeerState> nextStates = new HashMap<>(states);
 		if (nextStates.containsKey(nid)) {
 			throw new TempoException("State for '" + nid + "' already exists");
 		}
-		nextStates.put(nid, new IterativeDiscoveryPeerState(
-			nid,
+		nextStates.put(nid, new CursorDiscoveryPeerState(
 			ImmutableSet.of(),
-			IterativeCursorStage.SYNCHRONISING,
+			IterativeCursorStage.BEHIND,
 			0,
 			initialCommitments
 		));
-		return new IterativeDiscoveryState(nextStates);
+		return new CursorDiscoveryState(nextStates);
 	}
 
-	public IterativeDiscoveryState withRequest(EUID nid, long requestedLCPosition) {
-		Map<EUID, IterativeDiscoveryPeerState> nextStates = new HashMap<>(states);
-		IterativeDiscoveryPeerState prevState = states.get(nid);
+	public CursorDiscoveryState withRequest(EUID nid, long requestedLCPosition) {
+		Map<EUID, CursorDiscoveryPeerState> nextStates = new HashMap<>(states);
+		CursorDiscoveryPeerState prevState = states.get(nid);
 		if (prevState == null) {
 			throw new TempoException("State for '" + nid + "' does not exist");
 		}
 		nextStates.put(nid, prevState.with(requestedLCPosition));
-		return new IterativeDiscoveryState(nextStates);
+		return new CursorDiscoveryState(nextStates);
 	}
 
-	public IterativeDiscoveryState withoutRequest(EUID nid, long requestedLCPosition) {
-		Map<EUID, IterativeDiscoveryPeerState> nextStates = new HashMap<>(states);
-		IterativeDiscoveryPeerState prevState = states.get(nid);
+	public CursorDiscoveryState completeRequest(EUID nid, long requestedLCPosition, CommitmentBatch commitmentBatch) {
+		Map<EUID, CursorDiscoveryPeerState> nextStates = new HashMap<>(states);
+		CursorDiscoveryPeerState prevState = states.get(nid);
 		if (prevState == null) {
 			throw new TempoException("State for '" + nid + "' does not exist");
 		}
-		nextStates.put(nid, prevState.without(requestedLCPosition));
-		return new IterativeDiscoveryState(nextStates);
+		nextStates.put(nid, prevState.complete(requestedLCPosition, commitmentBatch));
+		return new CursorDiscoveryState(nextStates);
 	}
 
-	public IterativeDiscoveryState withStage(EUID nid, IterativeCursorStage stage) {
-		Map<EUID, IterativeDiscoveryPeerState> nextStates = new HashMap<>(states);
-		IterativeDiscoveryPeerState prevState = states.get(nid);
+	public CursorDiscoveryState withStage(EUID nid, IterativeCursorStage stage) {
+		Map<EUID, CursorDiscoveryPeerState> nextStates = new HashMap<>(states);
+		CursorDiscoveryPeerState prevState = states.get(nid);
 		if (prevState == null) {
 			throw new TempoException("State for '" + nid + "' does not exist");
 		}
 		nextStates.put(nid, prevState.with(stage));
-		return new IterativeDiscoveryState(nextStates);
+		return new CursorDiscoveryState(nextStates);
 	}
 
-	public IterativeDiscoveryState without(EUID nid) {
-		Map<EUID, IterativeDiscoveryPeerState> nextStates = new HashMap<>(this.states);
+	public CursorDiscoveryState without(EUID nid) {
+		Map<EUID, CursorDiscoveryPeerState> nextStates = new HashMap<>(this.states);
 		nextStates.remove(nid);
-		return new IterativeDiscoveryState(nextStates);
+		return new CursorDiscoveryState(nextStates);
 	}
 
 	@Override
 	public String toString() {
-		return "IterativeDiscoveryState{" +
+		return "CursorDiscoveryState{" +
 			"states=" + states + '}';
 	}
 
@@ -104,12 +111,12 @@ public class IterativeDiscoveryState implements TempoState {
 	}
 
 	public enum IterativeCursorStage {
-		SYNCHRONISING,
-		SYNCHRONISED;
+		BEHIND,
+		SYNCHRONISED
 	}
 
 	public int getBackoff(EUID nid) {
-		IterativeDiscoveryPeerState state = states.get(nid);
+		CursorDiscoveryPeerState state = states.get(nid);
 		if (state == null) {
 			throw new TempoException("State for '" + nid + "' does not exist");
 		}
@@ -120,30 +127,27 @@ public class IterativeDiscoveryState implements TempoState {
 		return this.states.keySet().stream();
 	}
 
-	public static IterativeDiscoveryState empty() {
-		return new IterativeDiscoveryState(
+	public static CursorDiscoveryState empty() {
+		return new CursorDiscoveryState(
 			ImmutableMap.of()
 		);
 	}
 
-	private static class IterativeDiscoveryPeerState {
-		private final EUID nid;
+	private static class CursorDiscoveryPeerState {
 		private final Set<Long> pendingDiscoveryRequests;
 		private final IterativeCursorStage discoveryStage;
 		private final int backoffCounter;
 		private final CommitmentBatch recentCommitments;
 
-		private IterativeDiscoveryPeerState(EUID nid, Set<Long> pendingDiscoveryRequests, IterativeCursorStage discoveryStage, int backoffCounter, CommitmentBatch recentCommitments) {
-			this.nid = nid;
+		private CursorDiscoveryPeerState(Set<Long> pendingDiscoveryRequests, IterativeCursorStage discoveryStage, int backoffCounter, CommitmentBatch recentCommitments) {
 			this.pendingDiscoveryRequests = pendingDiscoveryRequests;
 			this.discoveryStage = discoveryStage;
 			this.backoffCounter = backoffCounter;
 			this.recentCommitments = recentCommitments;
 		}
 
-		private IterativeDiscoveryPeerState with(CommitmentBatch commitments) {
-			return new IterativeDiscoveryPeerState(
-				nid,
+		private CursorDiscoveryPeerState with(CommitmentBatch commitments) {
+			return new CursorDiscoveryPeerState(
 				pendingDiscoveryRequests,
 				discoveryStage,
 				backoffCounter,
@@ -151,45 +155,45 @@ public class IterativeDiscoveryState implements TempoState {
 			);
 		}
 
-		private IterativeDiscoveryPeerState with(long request) {
+		private CursorDiscoveryPeerState with(long request) {
 			Set<Long> nextPendingRequests = new HashSet<>(pendingDiscoveryRequests);
 			nextPendingRequests.add(request);
-			return new IterativeDiscoveryPeerState(
-				nid,
+			return new CursorDiscoveryPeerState(
 				nextPendingRequests,
 				discoveryStage,
 				backoffCounter,
-				recentCommitments);
+				recentCommitments
+			);
 		}
 
-		private IterativeDiscoveryPeerState without(long request) {
+		private CursorDiscoveryPeerState complete(long request, CommitmentBatch commitmentBatch) {
 			Set<Long> nextPendingRequests = new HashSet<>(pendingDiscoveryRequests);
 			nextPendingRequests.remove(request);
-			return new IterativeDiscoveryPeerState(
-				nid,
+			return new CursorDiscoveryPeerState(
 				nextPendingRequests,
 				discoveryStage,
 				backoffCounter,
-				recentCommitments);
+				recentCommitments.pushLast(commitmentBatch)
+			);
 		}
 
 		private boolean isPending(long requestedLCPosition) {
 			return pendingDiscoveryRequests.contains(requestedLCPosition);
 		}
 
-		private IterativeDiscoveryPeerState with(IterativeCursorStage nextStage) {
+		private CursorDiscoveryPeerState with(IterativeCursorStage nextStage) {
 			int nextBackoffCounter;
 			if (nextStage == IterativeCursorStage.SYNCHRONISED) {
 				nextBackoffCounter = Math.min(MAX_BACKOFF, backoffCounter + 1);
 			} else {
 				nextBackoffCounter = 0;
 			}
-			return new IterativeDiscoveryPeerState(
-				nid,
+			return new CursorDiscoveryPeerState(
 				pendingDiscoveryRequests,
 				nextStage,
 				nextBackoffCounter,
-				recentCommitments);
+				recentCommitments
+			);
 		}
 	}
 }

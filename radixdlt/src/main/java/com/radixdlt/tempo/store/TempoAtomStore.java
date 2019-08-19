@@ -73,7 +73,6 @@ public class TempoAtomStore implements AtomStore {
 	private final SystemProfiler profiler;
 	private final LocalSystem localSystem;
 	private final Supplier<DatabaseEnvironment> dbEnv;
-	private final AtomStoreViewAdapter view;
 
 	private final Map<AID, TempoAtomIndices> currentIndices = new ConcurrentHashMap<>();
 
@@ -87,8 +86,6 @@ public class TempoAtomStore implements AtomStore {
 		this.profiler = Objects.requireNonNull(profiler, "profiler is required");
 		this.localSystem = Objects.requireNonNull(localSystem, "localSystem is required");
 		this.dbEnv = Objects.requireNonNull(dbEnv, "dbEnv is required");
-
-		this.view = new AtomStoreViewAdapter(this);
 	}
 
 	@Override
@@ -176,11 +173,6 @@ public class TempoAtomStore implements AtomStore {
 		}
 	}
 
-	@Override
-	public AtomStoreView asReadOnlyView() {
-		return this.view;
-	}
-
 	private void fail(String message) {
 		logger.error(message);
 		throw new TempoException(message);
@@ -216,6 +208,7 @@ public class TempoAtomStore implements AtomStore {
 		}
 	}
 
+	@Override
 	public boolean contains(byte[] partialAid) {
 		long start = profiler.begin();
 		try {
@@ -226,12 +219,12 @@ public class TempoAtomStore implements AtomStore {
 		}
 	}
 
+	@Override
 	public List<AID> get(byte[] partialAid) {
 		long start = profiler.begin();
-		try {
+		try (SecondaryCursor databaseCursor = toSecondaryCursor(Type.UNIQUE)) {
 			DatabaseEntry key = new DatabaseEntry(LedgerIndex.from(ATOM_INDEX_PREFIX, partialAid));
 			DatabaseEntry pKey = new DatabaseEntry();
-			SecondaryCursor databaseCursor = toSecondaryCursor(Type.UNIQUE);
 			if (databaseCursor.getSearchBothRange(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
 				ImmutableList.Builder<AID> matchingAids = ImmutableList.builder();
 				while (databaseCursor.getNextDup(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
@@ -247,17 +240,13 @@ public class TempoAtomStore implements AtomStore {
 		}
 	}
 
-	public Optional<TempoAtom> get(long clock) {
+	public Optional<AID> get(long clock) {
 		long start = profiler.begin();
 		try {
 			DatabaseEntry key = new DatabaseEntry(Longs.toByteArray(clock));
-			DatabaseEntry value = new DatabaseEntry();
-
-			if (this.atoms.get(null, key, value, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
-				return Optional.of(serialization.fromDson(value.getData(), TempoAtom.class));
+			if (this.atoms.get(null, key, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
+				return Optional.of(AID.from(key.getData()));
 			}
-		} catch (SerializationException e) {
-			fail("Get of TempoAtom with clock " + clock + " failed", e);
 		} finally {
 			profiler.incrementFrom("ATOM_STORE:GET:CLOCK", start);
 		}

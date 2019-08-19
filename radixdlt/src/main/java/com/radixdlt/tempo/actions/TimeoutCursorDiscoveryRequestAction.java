@@ -6,20 +6,20 @@ import org.radix.network.peers.Peer;
 
 import java.util.Objects;
 
-public class TimeoutIterativeDiscoveryRequestAction implements TempoAction {
-	private final Peer peer;
+public class TimeoutCursorDiscoveryRequestAction implements TempoAction {
 	private final LogicalClockCursor requestedCursor;
+	private final Peer peer;
 
-	public TimeoutIterativeDiscoveryRequestAction(Peer peer, LogicalClockCursor requestedCursor) {
+	public TimeoutCursorDiscoveryRequestAction(LogicalClockCursor requestedCursor, Peer peer) {
 		this.peer = Objects.requireNonNull(peer, "peer is required");
 		this.requestedCursor = Objects.requireNonNull(requestedCursor, "requestedCursor is required");
 	}
 
-	public Peer getPeer() {
-		return peer;
-	}
-
 	public LogicalClockCursor getRequestedCursor() {
 		return requestedCursor;
+	}
+
+	public Peer getPeer() {
+		return peer;
 	}
 }

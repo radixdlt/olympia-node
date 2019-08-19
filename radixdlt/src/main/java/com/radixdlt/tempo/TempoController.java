@@ -16,15 +16,19 @@ import com.radixdlt.tempo.actions.control.RepeatScheduleAction;
 import com.radixdlt.tempo.actions.control.ScheduleAction;
 import com.radixdlt.tempo.actions.messaging.ReceiveDeliveryRequestAction;
 import com.radixdlt.tempo.actions.messaging.ReceiveDeliveryResponseAction;
-import com.radixdlt.tempo.actions.messaging.ReceiveIterativeDiscoveryRequestAction;
-import com.radixdlt.tempo.actions.messaging.ReceiveIterativeDiscoveryResponseAction;
+import com.radixdlt.tempo.actions.messaging.ReceiveCursorDiscoveryRequestAction;
+import com.radixdlt.tempo.actions.messaging.ReceiveCursorDiscoveryResponseAction;
+import com.radixdlt.tempo.actions.messaging.ReceivePositionDiscoveryRequestAction;
+import com.radixdlt.tempo.actions.messaging.ReceivePositionDiscoveryResponseAction;
 import com.radixdlt.tempo.actions.messaging.ReceivePushAction;
 import com.radixdlt.tempo.actions.messaging.ReceiveSampleRequestAction;
 import com.radixdlt.tempo.actions.messaging.ReceiveSampleResponseAction;
 import com.radixdlt.tempo.actions.messaging.SendDeliveryRequestAction;
 import com.radixdlt.tempo.actions.messaging.SendDeliveryResponseAction;
-import com.radixdlt.tempo.actions.messaging.SendIterativeDiscoveryRequestAction;
-import com.radixdlt.tempo.actions.messaging.SendIterativeDiscoveryResponseAction;
+import com.radixdlt.tempo.actions.messaging.SendCursorDiscoveryRequestAction;
+import com.radixdlt.tempo.actions.messaging.SendCursorDiscoveryResponseAction;
+import com.radixdlt.tempo.actions.messaging.SendPositionDiscoveryRequestAction;
+import com.radixdlt.tempo.actions.messaging.SendPositionDiscoveryResponseAction;
 import com.radixdlt.tempo.actions.messaging.SendPushAction;
 import com.radixdlt.tempo.actions.messaging.SendSampleRequestAction;
 import com.radixdlt.tempo.actions.messaging.SendSampleResponseAction;
@@ -37,20 +41,23 @@ import com.radixdlt.tempo.epics.MomentumResolverEpic;
 import com.radixdlt.tempo.epics.SampleCollectorEpic;
 import com.radixdlt.tempo.messages.DeliveryRequestMessage;
 import com.radixdlt.tempo.messages.DeliveryResponseMessage;
-import com.radixdlt.tempo.messages.IterativeDiscoveryRequestMessage;
-import com.radixdlt.tempo.messages.IterativeDiscoveryResponseMessage;
+import com.radixdlt.tempo.messages.CursorDiscoveryRequestMessage;
+import com.radixdlt.tempo.messages.CursorDiscoveryResponseMessage;
+import com.radixdlt.tempo.messages.PositionDiscoveryRequestMessage;
+import com.radixdlt.tempo.messages.PositionDiscoveryResponseMessage;
 import com.radixdlt.tempo.messages.PushMessage;
 import com.radixdlt.tempo.messages.SampleRequestMessage;
 import com.radixdlt.tempo.messages.SampleResponseMessage;
 import com.radixdlt.tempo.reducers.AtomDeliveryReducer;
 import com.radixdlt.tempo.reducers.ConflictsStateReducer;
-import com.radixdlt.tempo.reducers.IterativeDiscoveryReducer;
+import com.radixdlt.tempo.reducers.CursorDiscoveryReducer;
 import com.radixdlt.tempo.reducers.LivePeersReducer;
 import com.radixdlt.tempo.reducers.PassivePeersReducer;
+import com.radixdlt.tempo.reducers.PositionDiscoveryReducer;
 import com.radixdlt.tempo.reducers.SampleCollectorReducer;
 import com.radixdlt.tempo.state.AtomDeliveryState;
 import com.radixdlt.tempo.state.ConflictsState;
-import com.radixdlt.tempo.state.IterativeDiscoveryState;
+import com.radixdlt.tempo.state.CursorDiscoveryState;
 import com.radixdlt.tempo.state.LivePeersState;
 import com.radixdlt.tempo.state.PassivePeersState;
 import com.radixdlt.tempo.state.SampleCollectorState;
@@ -70,11 +77,9 @@ import org.radix.universe.system.LocalSystem;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -82,7 +87,9 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -102,7 +109,7 @@ public final class TempoController {
 	private final ScheduledExecutorService executor;
 
 	private final ConcurrentMap<EUID, CompletableFuture<TempoAtom>> pendingConflictFutures;
-	private final TempoStateBundleStore stateStore;
+	private final TempoStateBundleGenerator stateStore;
 
 	private TempoController(int inboundQueueCapacity,
 	                        int actionsQueueCapacity,
@@ -113,7 +120,7 @@ public final class TempoController {
 		this.inboundAtoms = new LinkedBlockingQueue<>(inboundQueueCapacity);
 		this.actions = new LinkedBlockingQueue<>(actionsQueueCapacity);
 		this.executor = Executors.newScheduledThreadPool(TEMPO_EXECUTOR_POOL_COUNT, runnable -> new Thread(null, runnable, "Tempo Executor"));
-		this.stateStore = new TempoStateBundleStore();
+		this.stateStore = new TempoStateBundleGenerator();
 		this.pendingConflictFutures = new ConcurrentHashMap<>();
 
 		this.reducers = reducers;
@@ -174,7 +181,7 @@ public final class TempoController {
 		}
 	}
 
-	private TempoState executeReducer(TempoReducer reducer, TempoAction action, TempoStateBundleStore stateStore) {
+	private TempoState executeReducer(TempoReducer reducer, TempoAction action, TempoStateBundleGenerator stateStore) {
 		TempoState prevState = stateStore.get(reducer.stateClass());
 		try {
 			TempoStateBundle bundle = stateStore.bundleFor(reducer.requiredState());
@@ -205,9 +212,18 @@ public final class TempoController {
 		this.executor.schedule(() -> dispatch(action), delay, unit);
 	}
 
-	private void repeatSchedule(TempoAction action, long initialDelay, long recurrentDelay, TimeUnit unit) {
+	private void repeatSchedule(TempoAction action, long initialDelay, long recurrentDelay, TimeUnit unit, BooleanSupplier terminationCondition) {
 		// TODO consider cancellation when shutdown/reset
-		this.executor.scheduleAtFixedRate(() -> dispatch(action), initialDelay, recurrentDelay, unit);
+		// TODO there must be a nicer way to do cancellation
+		ScheduledFuture[] futureHolder = new ScheduledFuture[1];
+		ScheduledFuture<?> future = this.executor.scheduleAtFixedRate(() -> {
+			if (terminationCondition.getAsBoolean()) {
+				futureHolder[0].cancel(false);
+			} else {
+				dispatch(action);
+			}
+		}, initialDelay, recurrentDelay, unit);
+		futureHolder[0] = future;
 	}
 
 	private void dispatch(TempoAction action) {
@@ -239,7 +255,7 @@ public final class TempoController {
 			delay(schedule.getAction(), schedule.getDelay(), schedule.getUnit());
 		} else if (action instanceof RepeatScheduleAction) {
 			RepeatScheduleAction schedule = (RepeatScheduleAction) action;
-			repeatSchedule(schedule.getAction(), schedule.getInitialDelay(), schedule.getRecurrentDelay(), schedule.getUnit());
+			repeatSchedule(schedule.getAction(), schedule.getInitialDelay(), schedule.getRecurrentDelay(), schedule.getUnit(), schedule::checkShouldTerminate);
 		}
 
 		return Stream.empty();
@@ -289,7 +305,7 @@ public final class TempoController {
 	private static final Map<String, Class<? extends TempoState>> exposedStateClassMap = ImmutableMap.<String, Class<? extends TempoState>>builder()
 		.put("atomDelivery", AtomDeliveryState.class)
 		.put("conflicts", ConflictsState.class)
-		.put("iterativeDiscovery", IterativeDiscoveryState.class)
+		.put("iterativeDiscovery", CursorDiscoveryState.class)
 		.put("livePeers", LivePeersState.class)
 		.put("passivePeers", PassivePeersState.class)
 		.put("sampleCollector", SampleCollectorState.class)
@@ -322,50 +338,6 @@ public final class TempoController {
 		return serialization.toJsonObject(states.build(), DsonOutput.Output.ALL);
 	}
 
-	private static class TempoStateBundleStore {
-		private static final TempoStateBundle EMPTY_BUNDLE = new TempoStateBundle() {
-			@Override
-			public <T extends TempoState> T get(Class<T> stateClass) {
-				throw new TempoException("Requested state '" + stateClass.getSimpleName() + "' was not required");
-			}
-		};
-
-		private final Map<Class<? extends TempoState>, TempoState> states;
-
-		private TempoStateBundleStore() {
-			this.states = new HashMap<>();
-		}
-
-		private void put(Class<? extends TempoState> stateClass, TempoState state) {
-			this.states.put(stateClass, state);
-		}
-
-		private <T extends TempoState> T get(Class<T> stateClass) {
-			return (T) states.get(stateClass);
-		}
-
-		TempoStateBundle bundleFor(Set<Class<? extends TempoState>> requiredStates) {
-			if (requiredStates.isEmpty()) {
-				return EMPTY_BUNDLE;
-			}
-
-			Map<Class<? extends TempoState>, TempoState> statesCopy = new HashMap<>(states);
-			return new TempoStateBundle() {
-				@Override
-				public <T extends TempoState> T get(Class<T> stateClass) {
-					if (!requiredStates.contains(stateClass)) {
-						throw new TempoException("Requested state '" + stateClass.getSimpleName() + "' was not required");
-					}
-					T state = (T) statesCopy.get(stateClass);
-					if (state == null) {
-						throw new TempoException("Required state '" + stateClass.getSimpleName() + "' is not available");
-					}
-					return state;
-				}
-			};
-		}
-	}
-
 	public static Builder defaultBuilder(AtomStoreView storeView) {
 		LocalSystem localSystem = LocalSystem.getInstance();
 		PeerSupplier peerSupplier = new PeerSupplierAdapter(() -> Modules.get(PeerHandler.class));
@@ -381,10 +353,14 @@ public final class TempoController {
 				.addOutbound(SendDeliveryRequestAction.class, SendDeliveryRequestAction::toMessage, SendDeliveryRequestAction::getPeer)
 				.addInbound("tempo.sync.delivery.response", DeliveryResponseMessage.class, ReceiveDeliveryResponseAction::from)
 				.addOutbound(SendDeliveryResponseAction.class, SendDeliveryResponseAction::toMessage, SendDeliveryResponseAction::getPeer)
-				.addInbound("tempo.sync.iterative.request", IterativeDiscoveryRequestMessage.class, ReceiveIterativeDiscoveryRequestAction::from)
-				.addOutbound(SendIterativeDiscoveryRequestAction.class, SendIterativeDiscoveryRequestAction::toMessage, SendIterativeDiscoveryRequestAction::getPeer)
-				.addInbound("tempo.sync.iterative.response", IterativeDiscoveryResponseMessage.class, ReceiveIterativeDiscoveryResponseAction::from)
-				.addOutbound(SendIterativeDiscoveryResponseAction.class, SendIterativeDiscoveryResponseAction::toMessage, SendIterativeDiscoveryResponseAction::getPeer)
+				.addInbound("tempo.sync.discovery.cursor.request", CursorDiscoveryRequestMessage.class, ReceiveCursorDiscoveryRequestAction::from)
+				.addOutbound(SendCursorDiscoveryRequestAction.class, SendCursorDiscoveryRequestAction::toMessage, SendCursorDiscoveryRequestAction::getPeer)
+				.addInbound("tempo.sync.discovery.cursor.response", CursorDiscoveryResponseMessage.class, ReceiveCursorDiscoveryResponseAction::from)
+				.addOutbound(SendCursorDiscoveryResponseAction.class, SendCursorDiscoveryResponseAction::toMessage, SendCursorDiscoveryResponseAction::getPeer)
+				.addInbound("tempo.sync.discovery.position.request", PositionDiscoveryRequestMessage.class, ReceivePositionDiscoveryRequestAction::from)
+				.addOutbound(SendPositionDiscoveryRequestAction.class, SendPositionDiscoveryRequestAction::toMessage, SendPositionDiscoveryRequestAction::getPeer)
+				.addInbound("tempo.sync.discovery.position.response", PositionDiscoveryResponseMessage.class, ReceivePositionDiscoveryResponseAction::from)
+				.addOutbound(SendPositionDiscoveryResponseAction.class, SendPositionDiscoveryResponseAction::toMessage, SendPositionDiscoveryResponseAction::getPeer)
 				.addInbound("tempo.sync.push", PushMessage.class, ReceivePushAction::from)
 				.addOutbound(SendPushAction.class, SendPushAction::toMessage, SendPushAction::getPeer)
 				.addInbound("tempo.sample.request", SampleRequestMessage.class, ReceiveSampleRequestAction::from)
@@ -419,7 +395,8 @@ public final class TempoController {
 				.cursorStore(cursorStore)
 				.commitmentStore(commitmentStore)
 				.build());
-			builder.addReducer(new IterativeDiscoveryReducer());
+			builder.addReducer(new CursorDiscoveryReducer());
+			builder.addReducer(new PositionDiscoveryReducer());
 		}
 		if (resolver.equalsIgnoreCase("local")) {
 			builder.addEpic(new LocalResolverEpic(localSystem.getNID()));

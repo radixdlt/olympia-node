@@ -1,8 +1,11 @@
 package com.radixdlt.tempo.epics;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
-import com.radixdlt.utils.Pair;
+import com.radixdlt.common.Pair;
+import com.radixdlt.crypto.Hash;
 import com.radixdlt.tempo.AtomStoreView;
 import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.TempoException;
@@ -11,20 +14,26 @@ import com.radixdlt.tempo.TempoStateBundle;
 import com.radixdlt.tempo.actions.AbandonIterativeDiscoveryAction;
 import com.radixdlt.tempo.actions.AcceptAtomAction;
 import com.radixdlt.tempo.actions.OnDiscoveryCursorSynchronisedAction;
+import com.radixdlt.tempo.actions.RequestDeliveryAction;
 import com.radixdlt.tempo.actions.ReselectPassivePeersAction;
 import com.radixdlt.tempo.actions.ResetAction;
-import com.radixdlt.tempo.state.IterativeDiscoveryState;
+import com.radixdlt.tempo.actions.messaging.ReceivePositionDiscoveryRequestAction;
+import com.radixdlt.tempo.actions.messaging.ReceivePositionDiscoveryResponseAction;
+import com.radixdlt.tempo.actions.messaging.SendPositionDiscoveryRequestAction;
+import com.radixdlt.tempo.actions.messaging.SendPositionDiscoveryResponseAction;
+import com.radixdlt.tempo.state.CursorDiscoveryState;
 import com.radixdlt.tempo.state.PassivePeersState;
 import com.radixdlt.tempo.LogicalClockCursor;
 import com.radixdlt.tempo.TempoAction;
 import com.radixdlt.tempo.TempoEpic;
 import com.radixdlt.tempo.actions.InitiateIterativeDiscoveryAction;
-import com.radixdlt.tempo.actions.messaging.ReceiveIterativeDiscoveryRequestAction;
-import com.radixdlt.tempo.actions.messaging.ReceiveIterativeDiscoveryResponseAction;
+import com.radixdlt.tempo.actions.messaging.ReceiveCursorDiscoveryRequestAction;
+import com.radixdlt.tempo.actions.messaging.ReceiveCursorDiscoveryResponseAction;
 import com.radixdlt.tempo.actions.RequestIterativeSyncAction;
-import com.radixdlt.tempo.actions.messaging.SendIterativeDiscoveryRequestAction;
-import com.radixdlt.tempo.actions.messaging.SendIterativeDiscoveryResponseAction;
-import com.radixdlt.tempo.actions.TimeoutIterativeDiscoveryRequestAction;
+import com.radixdlt.tempo.actions.messaging.SendCursorDiscoveryRequestAction;
+import com.radixdlt.tempo.actions.messaging.SendCursorDiscoveryResponseAction;
+import com.radixdlt.tempo.actions.TimeoutCursorDiscoveryRequestAction;
+import com.radixdlt.tempo.state.PositionDiscoveryState;
 import com.radixdlt.tempo.store.CommitmentBatch;
 import com.radixdlt.tempo.store.CommitmentStore;
 import com.radixdlt.tempo.store.LogicalClockCursorStore;
@@ -35,22 +44,33 @@ import org.radix.network.peers.Peer;
 import org.radix.shards.ShardSpace;
 import org.radix.time.TemporalVertex;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public final class IterativeDiscoveryEpic implements TempoEpic {
-	private static final int ITERATIVE_REQUEST_TIMEOUT_SECONDS = 5;
+	// timeout for cursor requests
+	private static final int CURSOR_TIMEOUT_SECONDS = 5;
+	// timeout for position requests
+	private static final int POSITION_TIMEOUT_SECONDS = 5;
+	// how many aids to send per response
+	private static final int RESPONSE_AID_LIMIT = 512;
+	// maximum backoff when synchronised (exponential, e.g. 2^4 = 16 seconds)
+	private static final int MAX_BACKOFF = 4;
+	// how many commitments to send per response (32 bytes for commitment + 8 bytes for position)
+	private static final int RESPONSE_COMMITMENTS_LIMIT = 512;
+	// buffer sized to contain all bits of an AID, equal to commitment length
+	private static final int COMMITMENT_BUFFER_SIZE = 256;
+	// 1000 tps for 10 years gives a 1.71e-7 collision probability for 64 bits, so should be okay
+	private static final int COMMITMENT_CERTAINTY_THRESHOLD = 64; // must be multiple of 8
 
 	private static final Logger logger = Logging.getLogger("Sync");
-	private static final int MAX_BACKOFF = 4; // results in 2^4 -> 16 seconds
-	private static final int RESPONSE_AID_LIMIT = 256;
-	private static final int RESPONSE_COMMITMENTS_LIMIT = 512;
-	private static final int COMMITMENT_BUFFER_SIZE = 256;
 
 	private final EUID self;
 	private final AtomStoreView storeView;
@@ -71,14 +91,16 @@ public final class IterativeDiscoveryEpic implements TempoEpic {
 	public Set<Class<? extends TempoState>> requiredState() {
 		return ImmutableSet.of(
 			PassivePeersState.class,
-			IterativeDiscoveryState.class
+			CursorDiscoveryState.class,
+			PositionDiscoveryState.class
 		);
 	}
 
 	@Override
 	public Stream<TempoAction> epic(TempoStateBundle bundle, TempoAction action) {
 		PassivePeersState passivePeers = bundle.get(PassivePeersState.class);
-		IterativeDiscoveryState syncState = bundle.get(IterativeDiscoveryState.class);
+		CursorDiscoveryState cursorDiscovery = bundle.get(CursorDiscoveryState.class);
+		PositionDiscoveryState positionDiscovery = bundle.get(PositionDiscoveryState.class);
 
 		if (action instanceof AcceptAtomAction) {
 			TempoAtom atom = ((AcceptAtomAction) action).getAtom();
@@ -92,11 +114,11 @@ public final class IterativeDiscoveryEpic implements TempoEpic {
 			// TODO is this an okay way of triggering this? could react to stage-changes instead..?
 			// initiate iterative discovery with all new passive peers
 			List<Pair<Peer, CommitmentBatch>> initiated = passivePeers.peers()
-				.filter(peer -> !syncState.contains(peer.getSystem().getNID()))
+				.filter(peer -> !cursorDiscovery.contains(peer.getSystem().getNID()))
 				.map(peer -> Pair.of(peer, commitmentStore.getLast(peer.getSystem().getNID(), COMMITMENT_BUFFER_SIZE).ensureCapacity(COMMITMENT_BUFFER_SIZE)))
 				.collect(Collectors.toList());
 			// abandon iterative discovery of no longer relevant passive peers
-			List<EUID> abandoned = syncState.peers()
+			List<EUID> abandoned = cursorDiscovery.peers()
 				.filter(nid -> !passivePeers.contains(nid))
 				.collect(Collectors.toList());
 			if (!initiated.isEmpty() || !abandoned.isEmpty()) {
@@ -124,18 +146,18 @@ public final class IterativeDiscoveryEpic implements TempoEpic {
 			}
 			// send iterative request for aids starting with last cursor
 			ShardSpace shardRange = shardSpaceSupplier.get();
-			SendIterativeDiscoveryRequestAction sendRequest = new SendIterativeDiscoveryRequestAction(shardRange, request.getCursor(), peer);
+			SendCursorDiscoveryRequestAction sendRequest = new SendCursorDiscoveryRequestAction(shardRange, request.getCursor(), peer);
 			// schedule timeout after which response will be checked
-			TimeoutIterativeDiscoveryRequestAction timeout = new TimeoutIterativeDiscoveryRequestAction(peer, request.getCursor());
-			return Stream.of(sendRequest, timeout.delay(ITERATIVE_REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS));
-		} else if (action instanceof TimeoutIterativeDiscoveryRequestAction) {
+			TimeoutCursorDiscoveryRequestAction timeout = new TimeoutCursorDiscoveryRequestAction(request.getCursor(), peer);
+			return Stream.of(sendRequest, timeout.delay(CURSOR_TIMEOUT_SECONDS, TimeUnit.SECONDS));
+		} else if (action instanceof TimeoutCursorDiscoveryRequestAction) {
 			// once the timeout has elapsed, check if we got a response
-			TimeoutIterativeDiscoveryRequestAction timeout = (TimeoutIterativeDiscoveryRequestAction) action;
+			TimeoutCursorDiscoveryRequestAction timeout = (TimeoutCursorDiscoveryRequestAction) action;
 			EUID peerNid = timeout.getPeer().getSystem().getNID();
 			long requestedLCPosition = timeout.getRequestedCursor().getLcPosition();
 
 			// if no response, decide what to do after timeout
-			if (syncState.isPending(peerNid, requestedLCPosition)) {
+			if (cursorDiscovery.isPending(peerNid, requestedLCPosition)) {
 				// if we're still talking to that peer, just re-request
 				if (passivePeers.contains(peerNid)) {
 					if (logger.hasLevel(Logging.DEBUG)) {
@@ -149,8 +171,8 @@ public final class IterativeDiscoveryEpic implements TempoEpic {
 					return Stream.of(new AbandonIterativeDiscoveryAction(peerNid));
 				}
 			}
-		} else if (action instanceof ReceiveIterativeDiscoveryRequestAction) {
-			ReceiveIterativeDiscoveryRequestAction request = (ReceiveIterativeDiscoveryRequestAction) action;
+		} else if (action instanceof ReceiveCursorDiscoveryRequestAction) {
+			ReceiveCursorDiscoveryRequestAction request = (ReceiveCursorDiscoveryRequestAction) action;
 			long lcPosition = request.getCursor().getLcPosition();
 
 			// retrieve and send back commitments starting from the requested cursor up to the limit
@@ -166,9 +188,9 @@ public final class IterativeDiscoveryEpic implements TempoEpic {
 				logger.debug(String.format("Responding to iterative discovery request from %s for %d with %d commitments (next=%s)",
 					request.getPeer(), lcPosition, commitments.size(), responseCursor.hasNext() ? nextLcPosition : "<none>"));
 			}
-			return Stream.of(new SendIterativeDiscoveryResponseAction(commitments, responseCursor, request.getPeer()));
-		} else if (action instanceof ReceiveIterativeDiscoveryResponseAction) {
-			ReceiveIterativeDiscoveryResponseAction response = (ReceiveIterativeDiscoveryResponseAction) action;
+			return Stream.of(new SendCursorDiscoveryResponseAction(commitments, responseCursor, request.getPeer()));
+		} else if (action instanceof ReceiveCursorDiscoveryResponseAction) {
+			ReceiveCursorDiscoveryResponseAction response = (ReceiveCursorDiscoveryResponseAction) action;
 			Peer peer = response.getPeer();
 			EUID peerNid = peer.getSystem().getNID();
 			LogicalClockCursor peerCursor = response.getCursor();
@@ -179,6 +201,17 @@ public final class IterativeDiscoveryEpic implements TempoEpic {
 			// store new commitments
 			commitmentStore.put(peerNid, response.getCommitments());
 
+			// send requests to discover unknown positions
+			// TODO should probably be extracted to somewhere else
+			CommitmentBatch recentCommitments = bundle.get(CursorDiscoveryState.class).getRecentCommitments(peerNid);
+			ImmutableSet<Long> unknownPositions = getUnknownPositions(recentCommitments, positionDiscovery.getPending(peerNid), storeView::contains);
+			Stream<TempoAction> positionDiscoveryActions = Stream.empty();
+			if (!unknownPositions.isEmpty()) {
+				positionDiscoveryActions = Stream.of(new SendPositionDiscoveryRequestAction(unknownPositions, peer)
+					.repeatUntil(POSITION_TIMEOUT_SECONDS, () -> !positionDiscovery.isPending(peerNid, unknownPositions))
+				);
+			}
+
 			// update last known cursor
 			boolean isLatest = updateCursor(peerNid, peerCursor);
 			Stream<TempoAction> continuedActions = Stream.empty();
@@ -188,11 +221,10 @@ public final class IterativeDiscoveryEpic implements TempoEpic {
 				if (isLatest && peerCursor.hasNext()) {
 					continuedActions = Stream.of(new RequestIterativeSyncAction(peer, peerCursor.getNext(), true));
 					if (logger.hasLevel(Logging.DEBUG)) {
-						logger.debug(String.format("Continuing iterative discovery with %s at %d",
-							peer, peerCursor.getNext().getLcPosition()));
+						logger.debug(String.format("Continuing iterative discovery with %s at %d", peer, peerCursor.getNext().getLcPosition()));
 					}
 				} else { // if synchronised, back off exponentially
-					int timeout = 1 << syncState.getBackoff(peerNid);
+					int timeout = 1 << cursorDiscovery.getBackoff(peerNid);
 					continuedActions = Stream.of(
 						new OnDiscoveryCursorSynchronisedAction(peerNid),
 						new InitiateIterativeDiscoveryAction(peer).delay(timeout, TimeUnit.SECONDS)
@@ -203,13 +235,61 @@ public final class IterativeDiscoveryEpic implements TempoEpic {
 				}
 			}
 
-			return continuedActions;
+			return Stream.concat(positionDiscoveryActions, continuedActions);
+		} else if (action instanceof ReceivePositionDiscoveryRequestAction) {
+			ReceivePositionDiscoveryRequestAction request = (ReceivePositionDiscoveryRequestAction) action;
+			ImmutableMap.Builder<Long, AID> aids = ImmutableMap.builder();
+			for (Long position : request.getPositions()) {
+				AID aid = storeView.get(position).orElseThrow(()
+					-> new TempoException("Peer " + request.getPeer() + " requested non-existent position " + position));
+				aids.put(position, aid);
+			}
+			return Stream.of(new SendPositionDiscoveryResponseAction(aids.build(), request.getPeer()));
+		} else if (action instanceof ReceivePositionDiscoveryResponseAction) {
+			ReceivePositionDiscoveryResponseAction response = (ReceivePositionDiscoveryResponseAction) action;
+			return Stream.of(new RequestDeliveryAction(response.getAids().values(), response.getPeer()));
 		} else if (action instanceof ResetAction) {
 			latestCursorStore.reset();
 			commitmentStore.reset();
 		}
 
 		return Stream.empty();
+	}
+
+	// TODO should probably be extracted to elsewhere
+	private ImmutableSet<Long> getUnknownPositions(CommitmentBatch batch, Set<Long> excludedPositions, Predicate<byte[]> isPartialAidKnown) {
+		int batchSize = batch.size();
+		if (batchSize < COMMITMENT_CERTAINTY_THRESHOLD) {
+			return ImmutableSet.of();
+		} else {
+			ImmutableSet.Builder<Long> unknownPositions = ImmutableSet.builder();
+			Hash[] commitments = batch.getCommitments();
+			long[] positions = batch.getPositions();
+			byte[] partialAidBuffer = new byte[COMMITMENT_CERTAINTY_THRESHOLD / Byte.SIZE];
+			for (int i = COMMITMENT_CERTAINTY_THRESHOLD - 1; i < batchSize; i++) {
+				// if excluded, just skip
+				if (excludedPositions.contains(positions[i])) {
+					continue;
+				}
+
+				// clear buffer because we only set bits (not clear them)
+				Arrays.fill(partialAidBuffer, (byte) 0);
+				// fill buffer with bits from previous commitments
+				// TODO use all (in 8 increments) instead of just past COMMITMENT_CERTAINTY_THRESHOLD
+				// TODO need to replace COMMITMENT_CERTAINTY_THRESHOLD - 1 with i and adjust partialAidBuffer
+				for (int b = COMMITMENT_CERTAINTY_THRESHOLD - 1; b >= 0; b--) {
+					int elementIndex = b >>> 3;
+					int bitIndex = b & 7;
+					byte[] commitment = commitments[i - b].toByteArray();
+					partialAidBuffer[elementIndex] |= (commitment[elementIndex] & 0xff) & (1 << bitIndex);
+				}
+
+				if (!isPartialAidKnown.test(partialAidBuffer)) {
+					unknownPositions.add(positions[i]);
+				}
+			}
+			return unknownPositions.build();
+		}
 	}
 
 	private boolean updateCursor(EUID peerNid, LogicalClockCursor peerCursor) {

@@ -20,6 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.ledger.LedgerSearchMode;
 import com.radixdlt.tempo.AtomStoreView;
 import com.radixdlt.tempo.store.LegacyAtomStoreAdapter;
@@ -84,6 +85,8 @@ import com.sleepycat.je.SecondaryMultiKeyCreator;
 import com.sleepycat.je.Transaction;
 import com.sleepycat.je.TransactionConfig;
 import com.sleepycat.je.UniqueConstraintException;
+
+import static com.radixdlt.tempo.store.TempoAtomIndices.ATOM_INDEX_PREFIX;
 
 public class AtomStore extends DatabaseStore implements DiscoverySource<AtomDiscoveryRequest>
 {
@@ -288,7 +291,7 @@ public class AtomStore extends DatabaseStore implements DiscoverySource<AtomDisc
 		Modules.put(AtomStoreView.class, new LegacyAtomStoreAdapter(
 			() -> this,
 			() -> Modules.get(AtomSyncStore.class)
-		).asReadOnlyView());
+		));
 
 		super.start_impl();
 	}
@@ -972,6 +975,38 @@ public class AtomStore extends DatabaseStore implements DiscoverySource<AtomDisc
 		finally
 		{
 			SystemProfiler.getInstance().incrementFrom("ATOM_STORE:HAS_ATOM_CONTAINING", start);
+		}
+	}
+
+	public boolean contains(byte[] partialAid) {
+		long start = SystemProfiler.getInstance().begin();
+		try {
+			DatabaseEntry key = new DatabaseEntry(LedgerIndex.from(ATOM_INDEX_PREFIX, partialAid));
+			return OperationStatus.SUCCESS == this.uniqueIndexables.get(null, key, null, LockMode.DEFAULT);
+		} finally {
+			SystemProfiler.getInstance().incrementFrom("ATOM_STORE:CONTAINS:AID", start);
+		}
+	}
+
+	public List<AID> get(byte[] partialAid) {
+		long start = SystemProfiler.getInstance().begin();
+		try (SecondaryCursor databaseCursor = uniqueIndexables.openCursor(null, null)) {
+			try {
+				DatabaseEntry key = new DatabaseEntry(LedgerIndex.from(ATOM_INDEX_PREFIX, partialAid));
+				DatabaseEntry pKey = new DatabaseEntry();
+				if (databaseCursor.getSearchBothRange(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
+					ImmutableList.Builder<AID> matchingAids = ImmutableList.builder();
+					while (databaseCursor.getNextDup(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
+						AID matchingAid = AID.from(pKey.getData());
+						matchingAids.add(matchingAid);
+					}
+					return matchingAids.build();
+				} else {
+					return ImmutableList.of();
+				}
+			} finally {
+				SystemProfiler.getInstance().incrementFrom("ATOM_STORE:GET:AID", start);
+			}
 		}
 	}
 

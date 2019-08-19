@@ -142,7 +142,7 @@ public class CommitmentStore implements Store {
 		List<Hash> commitments = new ArrayList<>();
 		List<Long> positions = new ArrayList<>();
 		try (Cursor cursor = this.commitments.openCursor(null, null)) {
-			DatabaseEntry pKey = new DatabaseEntry(toPKey(nid, logicalClock));
+			DatabaseEntry pKey = new DatabaseEntry(toPKey(nid, logicalClock + 1));
 			DatabaseEntry value = new DatabaseEntry();
 
 			OperationStatus status = cursor.getSearchKeyRange(pKey, value, LockMode.DEFAULT);

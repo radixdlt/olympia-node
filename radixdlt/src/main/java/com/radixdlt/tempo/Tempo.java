@@ -12,7 +12,6 @@ import com.radixdlt.ledger.LedgerCursor.Type;
 import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerSearchMode;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.tempo.store.AtomStoreViewAdapter;
 import com.radixdlt.tempo.store.TempoAtomStore;
 import org.json.JSONObject;
 import org.radix.database.DatabaseEnvironment;
@@ -146,7 +145,7 @@ public final class Tempo extends Plugin implements Ledger {
 	@Override
 	public void start_impl() {
 		this.store.open();
-		Modules.put(AtomStoreView.class, this.store.asReadOnlyView());
+		Modules.put(AtomStoreView.class, this.store);
 		Modules.put(AtomSyncView.class, new AtomSyncView() {
 			@Override
 			public void receive(org.radix.atoms.Atom atom) {
@@ -241,14 +240,13 @@ public final class Tempo extends Plugin implements Ledger {
 			SystemProfiler.getInstance(),
 			localSystem,
 			() -> Modules.get(DatabaseEnvironment.class));
-		AtomStoreView storeView = new AtomStoreViewAdapter(store);
 		TempoAttestor attestor = new TempoAttestor(localSystem, Time::currentTimestamp);
 		return builder()
 			.attestor(attestor::attestTo)
 			.peerSupplier(new PeerSupplierAdapter(() -> Modules.get(PeerHandler.class)))
 			.edgeSelector(new SimpleEdgeSelector())
 			.store(store)
-			.controller(TempoController.defaultBuilder(storeView).build());
+			.controller(TempoController.defaultBuilder(store).build());
 	}
 
 	public static class Builder {

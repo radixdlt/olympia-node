@@ -28,6 +28,8 @@ import org.radix.logging.Logging;
 import org.radix.shards.ShardSpace;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -37,17 +39,10 @@ public class LegacyAtomStoreAdapter implements AtomStore {
 	private final Logger logger = Logging.getLogger("Store");
 	private final Supplier<org.radix.atoms.AtomStore> atomStoreSupplier;
 	private final Supplier<AtomSyncStore> atomSyncStoreSupplier;
-	private final AtomStoreView view;
 
 	public LegacyAtomStoreAdapter(Supplier<org.radix.atoms.AtomStore> atomStoreSupplier, Supplier<AtomSyncStore> atomSyncStoreSupplier) {
 		this.atomStoreSupplier = Objects.requireNonNull(atomStoreSupplier, "atomStoreSupplier is required");
 		this.atomSyncStoreSupplier = Objects.requireNonNull(atomSyncStoreSupplier, "atomSyncStoreSupplier is required");
-		this.view = new AtomStoreViewAdapter(LegacyAtomStoreAdapter.this);
-	}
-
-	@Override
-	public AtomStoreView asReadOnlyView() {
-		return view;
 	}
 
 	@Override
@@ -60,6 +55,15 @@ public class LegacyAtomStoreAdapter implements AtomStore {
 	}
 
 	@Override
+	public boolean contains(byte[] partialAid) {
+		try {
+			return atomStoreSupplier.get().contains(partialAid);
+		} catch (Exception e) {
+			throw new TempoException("Error while querying contains(" + Arrays.toString(partialAid) + ")", e);
+		}
+	}
+
+	@Override
 	public Optional<TempoAtom> get(AID aid) {
 		try {
 			// TODO awful conversion from legacy 'Atom'
@@ -67,6 +71,24 @@ public class LegacyAtomStoreAdapter implements AtomStore {
 				.map(LegacyUtils::fromLegacyAtom);
 		} catch (DatabaseException e) {
 			throw new TempoException("Error while querying getAtom(" + aid + ")", e);
+		}
+	}
+
+	@Override
+	public Optional<AID> get(long clock) {
+		try {
+			return Optional.ofNullable(atomStoreSupplier.get().getAtom(clock).getAtomID());
+		} catch (DatabaseException e) {
+			throw new TempoException("Error while querying getAtom(" + clock + ")", e);
+		}
+	}
+
+	@Override
+	public List<AID> get(byte[] partialAid) {
+		try {
+			return atomStoreSupplier.get().get(partialAid);
+		} catch (Exception e) {
+			throw new TempoException("Error while querying get(" + Arrays.toString(partialAid) + ")", e);
 		}
 	}
 
