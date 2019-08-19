@@ -2,7 +2,6 @@ package com.radixdlt.atomos;
 
 import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.constraintmachine.CMAtom;
-import com.radixdlt.universe.Universe;
 
 /**
  * Exposes the interface which low-level atom output constraints can be built on top of.
@@ -46,16 +45,4 @@ public interface AtomOSKernel {
 	 * @return a callback function onto which the constraint will be defined
 	 */
 	AtomKernel onAtom();
-
-	/**
-	 * Get the current timestamp within the Universe
-	 * @return the current timestamp in milliseconds
-	 */
-	long getCurrentTimestamp();
-
-	/**
-	 * Gets the universe of the AtomOS
-	 * @return the universe of the AtomOS
-	 */
-	Universe getUniverse();
 }

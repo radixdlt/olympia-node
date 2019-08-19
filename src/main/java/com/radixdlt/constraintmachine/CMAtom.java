@@ -9,9 +9,9 @@ import java.util.Set;
 
 /**
  * An atom processed by a constraint machine with write destinations
+ * TODO: Refactor and Remove ImmutableAtom. Currently too deeply embedded to be able to cleanly remove it.
  */
 public final class CMAtom {
-	// TODO: Remove ImmutableAtom
 	private final ImmutableAtom atom;
 	private final ImmutableList<CMParticle> cmParticles;
 	private final ImmutableSet<EUID> destinations;

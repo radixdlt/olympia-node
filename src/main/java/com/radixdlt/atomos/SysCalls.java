@@ -8,7 +8,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
- * Exposes the interface which application particle constraints/transitions can be programmed against.
+ * The interface in which a constraint scrypt can be programmed against.
  */
 public interface SysCalls {
 	/**

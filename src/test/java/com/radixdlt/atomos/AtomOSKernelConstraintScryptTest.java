@@ -28,7 +28,7 @@ public class AtomOSKernelConstraintScryptTest {
 		serialization = mock(Serialization.class);
 
 		testAtomDriver = new TestAtomOSKernel(universe);
-		AtomDriver scrypt = new AtomDriver(serialization, false, 30);
+		AtomDriver scrypt = new AtomDriver(() -> universe, () -> 0, serialization, false, 30);
 		scrypt.main(testAtomDriver);
 	}
 
@@ -141,55 +141,5 @@ public class AtomOSKernelConstraintScryptTest {
 
 		testAtomDriver.testAtom(cmAtom)
 			.assertErrorWithMessageContaining("invalid timestamp");
-	}
-
-	@Test
-	public void when_validating_atom_with_timestamp_after_current__result_has_error() throws Exception {
-		when(serialization.toDson(any(), any())).thenReturn(new byte[1]);
-
-		ImmutableAtom atom = mock(ImmutableAtom.class);
-		when(atom.getMetaData()).thenReturn(Collections.singletonMap(ImmutableAtom.METADATA_TIMESTAMP_KEY, "1000000"));
-		CMAtom cmAtom = mock(CMAtom.class);
-		when(cmAtom.getAtom()).thenReturn(atom);
-
-		testAtomDriver.setCurrentTimestamp(9L);
-		testAtomDriver.testAtom(cmAtom)
-			.assertErrorWithMessageContaining("after allowed drift");
-	}
-
-	@Test
-	public void when_validating_atom_with_timestamp_before_creation__result_has_error() throws Exception {
-		when(serialization.toDson(any(), any())).thenReturn(new byte[1]);
-
-		ImmutableAtom atom = mock(ImmutableAtom.class);
-		when(atom.getMetaData()).thenReturn(Collections.singletonMap(ImmutableAtom.METADATA_TIMESTAMP_KEY, "10"));
-		CMAtom cmAtom = mock(CMAtom.class);
-		when(cmAtom.getAtom()).thenReturn(atom);
-
-		Universe universe = mock(Universe.class);
-		when(universe.getTimestamp()).thenReturn(11L);
-
-		testAtomDriver.setUniverse(universe);
-		testAtomDriver.setCurrentTimestamp(10L);
-		testAtomDriver.testAtom(cmAtom)
-			.assertErrorWithMessageContaining("before universe");
-	}
-
-	@Test
-	public void when_validating_atom_with_valid_timestamp__result_has_no_error() throws Exception {
-		when(serialization.toDson(any(), any())).thenReturn(new byte[1]);
-
-		ImmutableAtom atom = mock(ImmutableAtom.class);
-		when(atom.getMetaData()).thenReturn(Collections.singletonMap(ImmutableAtom.METADATA_TIMESTAMP_KEY, "10"));
-		CMAtom cmAtom = mock(CMAtom.class);
-		when(cmAtom.getAtom()).thenReturn(atom);
-
-		Universe universe = mock(Universe.class);
-		when(universe.getTimestamp()).thenReturn(10L);
-
-		testAtomDriver.setUniverse(universe);
-		testAtomDriver.setCurrentTimestamp(10L);
-		testAtomDriver.testAtom(cmAtom)
-			.assertNoErrorWithMessageContaining("timestamp");
 	}
 }

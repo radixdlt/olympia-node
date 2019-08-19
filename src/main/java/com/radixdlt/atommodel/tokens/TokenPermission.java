@@ -9,6 +9,9 @@ import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.AtomMetadata;
 import java.util.Objects;
 
+/**
+ * Witness validation based on an RRI
+ */
 public enum TokenPermission {
 	/**
 	 * Only the token owner can do this

@@ -126,6 +126,15 @@ public final class ConstraintMachine {
 		}
 	}
 
+	/**
+	 * Executes a transition procedure given the next spun particle and a current validation state.
+	 *
+	 * @param nextSpun the next spun particle
+	 * @param dp pointer of the next spun particle
+	 * @param metadata metadata associated with the atom
+	 * @param validationState local state of validation
+	 * @return the first error found, otherwise an empty optional
+	 */
 	Optional<CMError> validateParticle(SpunParticle nextSpun, DataPointer dp, AtomMetadata metadata, CMValidationState validationState) {
 		final Particle nextParticle = nextSpun.getParticle();
 		final Particle curParticle = validationState.getCurParticle();
@@ -221,6 +230,15 @@ public final class ConstraintMachine {
 		return Optional.empty();
 	}
 
+	/**
+	 * Executes transition procedures and witness validators in a particle group and validates
+	 * that the particle group is well formed.
+	 *
+	 * @param group the particle group
+	 * @param groupIndex the index of the particle group
+	 * @param metadata atom meta data
+	 * @return the first error found, otherwise an empty optional
+	 */
 	Optional<CMError> validateParticleGroup(ParticleGroup group, long groupIndex, AtomMetadata metadata) {
 		final CMValidationState validationState = new CMValidationState();
 
@@ -252,8 +270,7 @@ public final class ConstraintMachine {
 	 * write logic.
 	 *
 	 * @param cmAtom atom to validate
-	 * and just returns the first error
-	 * @return results of validation, including any errors, warnings, and post-validation write logic
+	 * @return the first error found, otherwise an empty optional
 	 */
 	public Optional<CMError> validate(CMAtom cmAtom) {
 		// "Segfaults" or particles which should not exist
@@ -309,6 +326,9 @@ public final class ConstraintMachine {
 		return Optional.empty();
 	}
 
+	/**
+	 * Retrieves the virtual layer used by this Constraint Machine
+	 */
 	public UnaryOperator<CMStore> getVirtualStore() {
 		return this.virtualStore;
 	}

@@ -11,6 +11,9 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.Supplier;
 
+/**
+ * base58 address based on a public key
+ */
 public final class RadixAddress {
 	/**
 	 * The public key this address represents

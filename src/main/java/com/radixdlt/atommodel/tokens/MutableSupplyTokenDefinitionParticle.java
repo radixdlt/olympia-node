@@ -13,6 +13,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+/**
+ * Particle representing a mutable supply token definition
+ */
 @SerializerId2("radix.particles.mutable_supply_token_definition")
 public final class MutableSupplyTokenDefinitionParticle extends Particle {
 	public enum TokenTransition {

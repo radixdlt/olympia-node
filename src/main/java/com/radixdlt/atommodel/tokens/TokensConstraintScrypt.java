@@ -14,8 +14,10 @@ import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+/**
+ * Scrypt which defines how tokens are managed.
+ */
 public class TokensConstraintScrypt implements ConstraintScrypt {
-
 
 	@Override
 	public void main(SysCalls os) {

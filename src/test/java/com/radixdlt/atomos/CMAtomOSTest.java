@@ -13,7 +13,6 @@ import org.junit.Test;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.constraintmachine.CMErrorCode;
 import com.radixdlt.constraintmachine.ConstraintMachine;
-import com.radixdlt.universe.Universe;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
@@ -46,7 +45,7 @@ public class CMAtomOSTest {
 
 	@Test
 	public void when_a_particle_which_is_not_registered_via_os_is_validated__it_should_cause_errors() {
-		CMAtomOS os = new CMAtomOS(() -> mock(Universe.class), () -> 0);
+		CMAtomOS os = new CMAtomOS();
 		ConstraintMachine machine = os.buildMachine().getFirst();
 		CMAtom atom = mock(CMAtom.class);
 		when(atom.getAtom()).thenReturn(mock(ImmutableAtom.class));
@@ -61,7 +60,7 @@ public class CMAtomOSTest {
 
 	@Test
 	public void when_adding_procedure_on_particle_registered_in_another_scrypt__exception_is_thrown() {
-		CMAtomOS os = new CMAtomOS(() -> mock(Universe.class), () -> 0);
+		CMAtomOS os = new CMAtomOS();
 		TransitionProcedure<TestParticle0, TestParticle0> procedure = mock(TransitionProcedure.class);
 		os.load(syscalls -> {
 			syscalls.registerParticle(TestParticle0.class, (TestParticle0 p) -> mock(RadixAddress.class), t -> Result.success());
