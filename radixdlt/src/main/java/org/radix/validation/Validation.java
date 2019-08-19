@@ -31,13 +31,17 @@ public class Validation extends Plugin {
 
 	@Override
 	public void start_impl() throws ModuleException {
-		final CMAtomOS os = new CMAtomOS(
-			() -> Modules.get(Universe.class),
-			Time::currentTimestamp
-		);
+		final CMAtomOS os = new CMAtomOS();
 		final boolean skipAtomFeeCheck = Modules.isAvailable(RuntimeProperties.class)
 			&& Modules.get(RuntimeProperties.class).get("debug.nopow", false);
-		os.loadKernelConstraintScrypt(new AtomDriver(Modules.get(Serialization.class), skipAtomFeeCheck, Time.MAXIMUM_DRIFT));
+		final AtomDriver atomDriver = new AtomDriver(
+			() -> Modules.get(Universe.class),
+			Time::currentTimestamp,
+			Modules.get(Serialization.class),
+			skipAtomFeeCheck,
+			Time.MAXIMUM_DRIFT
+		);
+		os.loadKernelConstraintScrypt(atomDriver);
 		os.load(new TokensConstraintScrypt());
 		os.load(new UniqueParticleConstraintScrypt());
 		os.load(new MessageParticleConstraintScrypt());
