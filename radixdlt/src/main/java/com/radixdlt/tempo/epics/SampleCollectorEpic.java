@@ -1,15 +1,14 @@
 package com.radixdlt.tempo.epics;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Streams;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
-import com.radixdlt.tempo.TempoFlow;
+import com.radixdlt.tempo.reactive.TempoFlowSource;
+import com.radixdlt.tempo.reactive.TempoFlow;
 import com.radixdlt.tempo.reactive.TempoAction;
 import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.reactive.TempoEpic;
 import com.radixdlt.tempo.reactive.TempoState;
-import com.radixdlt.tempo.TempoStateBundle;
 import com.radixdlt.tempo.actions.AcceptAtomAction;
 import com.radixdlt.tempo.actions.OnSampleDeliveryFailedAction;
 import com.radixdlt.tempo.actions.OnSamplingCompleteAction;
@@ -56,7 +55,7 @@ public class SampleCollectorEpic implements TempoEpic {
 		);
 	}
 
-	public Stream<TempoAction> epic(TempoFlow flow) {
+	public Stream<TempoFlow<TempoAction>> epic(TempoFlowSource flow) {
 		flow.of(AcceptAtomAction.class)
 			.map(AcceptAtomAction::getAtom)
 			.map(TempoAtom::getTemporalProof)
@@ -70,7 +69,7 @@ public class SampleCollectorEpic implements TempoEpic {
 				}
 			});
 
-		Stream<TempoAction> returnEmptyRequests = flow.of(RequestSamplingAction.class)
+		TempoFlow<TempoAction> returnEmptyRequests = flow.of(RequestSamplingAction.class)
 			.filter(request -> request.getSamplePeers().isEmpty())
 			.map(request -> {
 				logger.warn("No sample peers given for requesting for tag '" + request.getTag() + "', returning previous samples (local and collected)");
@@ -78,7 +77,7 @@ public class SampleCollectorEpic implements TempoEpic {
 			});
 
 		// TODO flowify
-		Stream<TempoAction> requestSamples = flow.of(RequestSamplingAction.class)
+		TempoFlow<TempoAction> requestSamples = flow.of(RequestSamplingAction.class)
 			.filter(request -> !request.getSamplePeers().isEmpty())
 			.flatMap(request -> {
 				ImmutableSet<AID> allAids = request.getAllAids();
@@ -94,7 +93,7 @@ public class SampleCollectorEpic implements TempoEpic {
 			});
 
 		// TODO flowify
-		Stream<SendSampleResponseAction> sendResponses = flow.of(ReceiveSampleRequestAction.class)
+		TempoFlow<TempoAction> sendResponses = flow.of(ReceiveSampleRequestAction.class)
 			.map(request -> {
 				ImmutableSet.Builder<AID> unavailableAids = ImmutableSet.builder();
 				ImmutableSet.Builder<TemporalProof> samples = ImmutableSet.builder();
@@ -116,10 +115,9 @@ public class SampleCollectorEpic implements TempoEpic {
 			});
 
 		// TODO flowify
-		Stream<TempoAction> receiveResponses = flow.ofStateful(ReceiveSampleResponseAction.class, SampleCollectorState.class)
-			.flatMap(responseWithState -> {
-				ReceiveSampleResponseAction response = responseWithState.getAction();
-				SampleCollectorState collectorState = responseWithState.getBundle().get(SampleCollectorState.class);
+		TempoFlow<TempoAction> receiveResponses = flow.of(ReceiveSampleResponseAction.class)
+			.flatMap((response, state) -> {
+				SampleCollectorState collectorState = state.get(SampleCollectorState.class);
 				if (logger.hasLevel(Logging.DEBUG)) {
 					logger.debug(String.format("Received sample response for tag %s with %s from %s (%d unavailable: %s)",
 						response.getTag(),
@@ -137,14 +135,12 @@ public class SampleCollectorEpic implements TempoEpic {
 					.forEach(sampleStore::addCollected);
 				// collect and return the resulting samples
 				return collectorState.completedRequests(response.getTag()).map(this::toResult);
-			});
+			}, SampleCollectorState.class);
 
 		// TODO flowify
-		Stream<TempoAction> timeoutRequests = flow.ofStateful(TimeoutSampleRequestsAction.class, SampleCollectorState.class)
-			.flatMap(timeoutWithState -> {
-				TimeoutSampleRequestsAction timeout = timeoutWithState.getAction();
-				SampleCollectorState collectorState = timeoutWithState.getBundle().get(SampleCollectorState.class);
-
+		TempoFlow<TempoAction> timeoutRequests = flow.of(TimeoutSampleRequestsAction.class)
+			.flatMap((timeout, state) -> {
+				SampleCollectorState collectorState = state.get(SampleCollectorState.class);
 				// after timeout, detect any missing samples
 				Stream<OnSampleDeliveryFailedAction> failures = timeout.getPeers().stream()
 					.map(peer -> new OnSampleDeliveryFailedAction(timeout.getAids().stream()
@@ -154,12 +150,12 @@ public class SampleCollectorEpic implements TempoEpic {
 				// collect and return the resulting samples
 				Stream<TempoAction> completions = collectorState.completedRequests(timeout.getTag()).map(this::toResult);
 				return Stream.concat(failures, completions);
-			});
+			}, SampleCollectorState.class);
 
 		flow.of(ResetAction.class)
 			.forEach(reset -> sampleStore.reset());
 
-		return Streams.concat(
+		return Stream.of(
 			returnEmptyRequests,
 			requestSamples,
 			sendResponses,

@@ -1,8 +1,6 @@
 package com.radixdlt.tempo.reactive;
 
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.tempo.TempoFlow;
-import com.radixdlt.tempo.TempoStateBundle;
 
 import java.util.Set;
 import java.util.stream.Stream;
@@ -20,10 +18,10 @@ public interface TempoEpic {
 
 	/**
 	 * Execute this epic on the given flow
-	 * @param flow A {@link TempoFlow} providing the states and actions
+	 * @param flow A {@link TempoFlowSource} providing the states and actions
 	 * @return An infinite, cold stream of actions corresponding to the input flow
 	 */
-	Stream<TempoAction> epic(TempoFlow flow);
+	Stream<TempoFlow<TempoAction>> epic(TempoFlowSource flow);
 
 	/**
 	 * Get the initial actions to be executed once upon starting

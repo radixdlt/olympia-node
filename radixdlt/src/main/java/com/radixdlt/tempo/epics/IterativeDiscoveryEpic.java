@@ -2,16 +2,15 @@ package com.radixdlt.tempo.epics;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Streams;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
 import com.radixdlt.common.Pair;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.tempo.AtomStoreView;
 import com.radixdlt.tempo.LogicalClockCursor;
-import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.TempoException;
-import com.radixdlt.tempo.TempoFlow;
+import com.radixdlt.tempo.reactive.TempoFlowSource;
+import com.radixdlt.tempo.reactive.TempoFlow;
 import com.radixdlt.tempo.actions.AbandonIterativeDiscoveryAction;
 import com.radixdlt.tempo.actions.AcceptAtomAction;
 import com.radixdlt.tempo.actions.InitiateIterativeDiscoveryAction;
@@ -98,7 +97,7 @@ public final class IterativeDiscoveryEpic implements TempoEpic {
 	}
 
 	@Override
-	public Stream<TempoAction> epic(TempoFlow flow) {
+	public Stream<TempoFlow<TempoAction>> epic(TempoFlowSource flow) {
 		flow.of(AcceptAtomAction.class)
 			.map(AcceptAtomAction::getAtom)
 			.forEach(atom -> {
@@ -112,10 +111,10 @@ public final class IterativeDiscoveryEpic implements TempoEpic {
 			);
 
 		// TODO flowify
-		Stream<TempoAction> reselectPeers = flow.ofStateful(ReselectPassivePeersAction.class, CursorDiscoveryState.class, PassivePeersState.class)
-			.flatMap(requestWithState -> {
-				CursorDiscoveryState cursorDiscovery = requestWithState.getBundle().get(CursorDiscoveryState.class);
-				PassivePeersState passivePeers = requestWithState.getBundle().get(PassivePeersState.class);
+		TempoFlow<TempoAction> reselectPeers = flow.of(ReselectPassivePeersAction.class)
+			.flatMap((request, state) -> {
+				CursorDiscoveryState cursorDiscovery = state.get(CursorDiscoveryState.class);
+				PassivePeersState passivePeers = state.get(PassivePeersState.class);
 				// TODO is this an okay way of triggering this? could react to stage-changes instead..?
 				// initiate iterative discovery with all new passive peers
 				List<Pair<Peer, CommitmentBatch>> initiated = passivePeers.peers()
@@ -135,9 +134,9 @@ public final class IterativeDiscoveryEpic implements TempoEpic {
 					initiated.stream().map(pair -> new InitiateIterativeDiscoveryAction(pair.getFirst(), pair.getSecond())),
 					abandoned.stream().map(AbandonIterativeDiscoveryAction::new)
 				);
-			});
+			}, CursorDiscoveryState.class, PassivePeersState.class);
 
-		Stream<RequestIterativeSyncAction> initiateDiscovery = flow.of(InitiateIterativeDiscoveryAction.class)
+		TempoFlow<TempoAction> initiateDiscovery = flow.of(InitiateIterativeDiscoveryAction.class)
 			.map(initiate -> {
 				Peer peer = initiate.getPeer();
 				EUID peerNid = peer.getSystem().getNID();
@@ -148,7 +147,7 @@ public final class IterativeDiscoveryEpic implements TempoEpic {
 
 		// TODO flowify
 		// TODO change iterative "sync" to proper name
-		Stream<TempoAction> requestIterativeSync = flow.of(RequestIterativeSyncAction.class)
+		TempoFlow<TempoAction> requestIterativeSync = flow.of(RequestIterativeSyncAction.class)
 			.flatMap(request -> {
 				Peer peer = request.getPeer();
 				long requestedLCPosition = request.getCursor().getLcPosition();
@@ -165,13 +164,12 @@ public final class IterativeDiscoveryEpic implements TempoEpic {
 			});
 
 		// TODO flowify!
-		Stream<TempoAction> timeoutCursorRequests = flow.ofStateful(TimeoutCursorDiscoveryRequestAction.class, PassivePeersState.class, CursorDiscoveryState.class)
-			.flatMap(timeoutWithState -> {
-				CursorDiscoveryState cursorDiscovery = timeoutWithState.getBundle().get(CursorDiscoveryState.class);
-				PassivePeersState passivePeers = timeoutWithState.getBundle().get(PassivePeersState.class);
+		TempoFlow<TempoAction> timeoutCursorRequests = flow.of(TimeoutCursorDiscoveryRequestAction.class)
+			.flatMap((timeout, state) -> {
+				CursorDiscoveryState cursorDiscovery = state.get(CursorDiscoveryState.class);
+				PassivePeersState passivePeers = state.get(PassivePeersState.class);
 
 				// once the timeout has elapsed, check if we got a response
-				TimeoutCursorDiscoveryRequestAction timeout = timeoutWithState.getAction();
 				EUID peerNid = timeout.getPeer().getSystem().getNID();
 				long requestedLCPosition = timeout.getRequestedCursor().getLcPosition();
 
@@ -191,10 +189,10 @@ public final class IterativeDiscoveryEpic implements TempoEpic {
 					}
 				}
 				return Stream.empty();
-			});
+			}, CursorDiscoveryState.class, PassivePeersState.class);
 
 		// TODO flowify
-		Stream<SendCursorDiscoveryResponseAction> receiveCursorRequests = flow.of(ReceiveCursorDiscoveryRequestAction.class)
+		TempoFlow<TempoAction> receiveCursorRequests = flow.of(ReceiveCursorDiscoveryRequestAction.class)
 			.map(request -> {
 				long lcPosition = request.getCursor().getLcPosition();
 				// retrieve and send back commitments starting from the requested cursor up to the limit
@@ -213,13 +211,18 @@ public final class IterativeDiscoveryEpic implements TempoEpic {
 				return new SendCursorDiscoveryResponseAction(commitments, responseCursor, request.getPeer());
 			});
 
+		flow.of(ReceiveCursorDiscoveryResponseAction.class)
+			.forEach(response -> {
+				EUID peerNid = response.getPeer().getSystem().getNID();
+				commitmentStore.put(peerNid, response.getCommitments());
+			});
+
 		// TODO flowify, breakup!
-		Stream<TempoAction> receiveCursorResponses = flow.ofStateful(ReceiveCursorDiscoveryResponseAction.class, PositionDiscoveryState.class, CursorDiscoveryState.class, PassivePeersState.class)
-			.flatMap(responseWithState -> {
-				CursorDiscoveryState cursorDiscovery = responseWithState.getBundle().get(CursorDiscoveryState.class);
-				PositionDiscoveryState positionDiscovery = responseWithState.getBundle().get(PositionDiscoveryState.class);
-				PassivePeersState passivePeers = responseWithState.getBundle().get(PassivePeersState.class);
-				ReceiveCursorDiscoveryResponseAction response = responseWithState.getAction();
+		TempoFlow<TempoAction> receiveCursorResponses = flow.of(ReceiveCursorDiscoveryResponseAction.class)
+			.flatMap((response, state) -> {
+				CursorDiscoveryState cursorDiscovery = state.get(CursorDiscoveryState.class);
+				PositionDiscoveryState positionDiscovery = state.get(PositionDiscoveryState.class);
+				PassivePeersState passivePeers = state.get(PassivePeersState.class);
 				Peer peer = response.getPeer();
 				EUID peerNid = peer.getSystem().getNID();
 				LogicalClockCursor peerCursor = response.getCursor();
@@ -265,9 +268,9 @@ public final class IterativeDiscoveryEpic implements TempoEpic {
 				}
 
 				return Stream.concat(positionDiscoveryActions, continuedActions);
-			});
+			}, CursorDiscoveryState.class, PositionDiscoveryState.class, PassivePeersState.class);
 
-		Stream<SendPositionDiscoveryResponseAction> receivePositionRequests = flow.of(ReceivePositionDiscoveryRequestAction.class)
+		TempoFlow<TempoAction> receivePositionRequests = flow.of(ReceivePositionDiscoveryRequestAction.class)
 			.map(request -> {
 				ImmutableMap.Builder<Long, AID> aids = ImmutableMap.builder();
 				for (Long position : request.getPositions()) {
@@ -278,7 +281,7 @@ public final class IterativeDiscoveryEpic implements TempoEpic {
 				return new SendPositionDiscoveryResponseAction(aids.build(), request.getPeer());
 			});
 
-		Stream<RequestDeliveryAction> receivePositionResponses = flow.of(ReceivePositionDiscoveryResponseAction.class)
+		TempoFlow<TempoAction> receivePositionResponses = flow.of(ReceivePositionDiscoveryResponseAction.class)
 			.map(response -> new RequestDeliveryAction(response.getAids().values(), response.getPeer()));
 
 		flow.of(ResetAction.class)
@@ -287,7 +290,7 @@ public final class IterativeDiscoveryEpic implements TempoEpic {
 				commitmentStore.reset();
 			});
 
-		return Streams.concat(
+		return Stream.of(
 			reselectPeers,
 			initiateDiscovery,
 			requestIterativeSync,

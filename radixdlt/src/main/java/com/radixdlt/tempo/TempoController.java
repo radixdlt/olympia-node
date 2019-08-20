@@ -48,6 +48,8 @@ import com.radixdlt.tempo.messages.PositionDiscoveryResponseMessage;
 import com.radixdlt.tempo.messages.PushMessage;
 import com.radixdlt.tempo.messages.SampleRequestMessage;
 import com.radixdlt.tempo.messages.SampleResponseMessage;
+import com.radixdlt.tempo.reactive.TempoFlowSource;
+import com.radixdlt.tempo.reactive.TempoFlowSource.TempoFlowInjector;
 import com.radixdlt.tempo.reducers.AtomDeliveryReducer;
 import com.radixdlt.tempo.reducers.ConflictsStateReducer;
 import com.radixdlt.tempo.reducers.CursorDiscoveryReducer;
@@ -104,14 +106,12 @@ public final class TempoController {
 
 	private static final int FULL_INBOUND_QUEUE_RESCHEDULE_TIME_SECONDS = 1;
 	private static final int TEMPO_EXECUTOR_POOL_COUNT = 4;
-	private static final int TEMPO_GENERATOR_BUFFER_CAPACITY = 1024;
 	private static final boolean RUN_EPICS_ASYNCHRONOUSLY = true;
 
 	private final BlockingQueue<TempoAtom> inboundAtoms;
 	private final BlockingQueue<TempoAction> actions;
 	private final List<TempoReducer> reducers;
-	private final List<TempoEpic> epics;
-	private final TempoFlow flow;
+	private final TempoFlowInjector flowInjector;
 	private final ScheduledExecutorService executor;
 
 	private final ConcurrentMap<EUID, CompletableFuture<TempoAtom>> pendingConflictFutures;
@@ -130,20 +130,22 @@ public final class TempoController {
 		this.pendingConflictFutures = new ConcurrentHashMap<>();
 
 		this.reducers = reducers;
-		this.flow = new TempoFlow(TEMPO_GENERATOR_BUFFER_CAPACITY);
-		this.epics = ImmutableList.<TempoEpic>builder()
+		TempoFlowSource flowSource = new TempoFlowSource();
+		List<TempoEpic> allEpics = ImmutableList.<TempoEpic>builder()
 			.addAll(epics)
 			// TODO get rid of epicBuilders
 			.addAll(epicBuilders.stream()
 				.map(epicBuilder -> epicBuilder.apply(this::dispatch))
 				.collect(Collectors.toList()))
 			.build();
-
 		// connect flow and epics
-		epics.forEach(epic -> epic.epic(flow));
+		allEpics.stream()
+			.flatMap(epic -> epic.epic(flowSource))
+			.forEach(flow -> flow.forEach(this::dispatch));
+		this.flowInjector = flowSource.toInjector();
 
 		// dispatch initial actions
-		Stream.concat(initialActions.stream(), this.epics.stream()
+		Stream.concat(initialActions.stream(), allEpics.stream()
 			.flatMap(TempoEpic::initialActions))
 			.forEach(this::dispatch);
 
@@ -178,7 +180,7 @@ public final class TempoController {
 				});
 
 				internalEpic(action);
-				flow.accept(action, stateStore);
+				flowInjector.accept(action, stateStore::bundleFor);
 			} catch (InterruptedException e) {
 				// exit if interrupted
 				Thread.currentThread().interrupt();
@@ -289,7 +291,7 @@ public final class TempoController {
 		this.inboundAtoms.clear();
 		this.actions.clear();
 		ResetAction reset = new ResetAction();
-		this.flow.accept(reset, stateStore);
+		this.flowInjector.accept(reset, stateStore::bundleFor);
 	}
 
 	// TODO temporary hack for debugging, revisit or remove later

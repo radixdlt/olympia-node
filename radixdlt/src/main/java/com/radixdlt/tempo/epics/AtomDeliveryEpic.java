@@ -2,10 +2,10 @@ package com.radixdlt.tempo.epics;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Streams;
 import com.radixdlt.common.AID;
 import com.radixdlt.tempo.AtomStoreView;
-import com.radixdlt.tempo.TempoFlow;
+import com.radixdlt.tempo.reactive.TempoFlowSource;
+import com.radixdlt.tempo.reactive.TempoFlow;
 import com.radixdlt.tempo.reactive.TempoAction;
 import com.radixdlt.tempo.reactive.TempoEpic;
 import com.radixdlt.tempo.reactive.TempoState;
@@ -45,8 +45,8 @@ public final class AtomDeliveryEpic implements TempoEpic {
 	}
 
 	@Override
-	public Stream<TempoAction> epic(TempoFlow flow) {
-		Stream<SendDeliveryResponseAction> sendResponses =
+	public Stream<TempoFlow<TempoAction>> epic(TempoFlowSource flow) {
+		TempoFlow<TempoAction> sendResponses =
 			flow.of(ReceiveDeliveryRequestAction.class)
 			.flatMap(request -> request.getAids().stream()
 				.map(store::get)
@@ -54,15 +54,14 @@ public final class AtomDeliveryEpic implements TempoEpic {
 				.map(Optional::get)
 				.map(atom -> new SendDeliveryResponseAction(atom, request.getPeer()))
 			);
-		Stream<TempoAction> receiveResponses = flow.of(ReceiveDeliveryResponseAction.class)
+		TempoFlow<TempoAction> receiveResponses = flow.of(ReceiveDeliveryResponseAction.class)
 			.map(response -> new ReceiveAtomAction(response.getAtom()));
 
 		// TODO cleanup
-		Stream<TempoAction> handleRequests = flow.ofStateful(RequestDeliveryAction.class, AtomDeliveryState.class)
-			.flatMap(requestWithState -> {
+		TempoFlow<TempoAction> handleRequests = flow.of(RequestDeliveryAction.class)
+			.flatMap((request, state) -> {
 				// check if any requested deliveries have not arrived in the meantime
-				RequestDeliveryAction request = requestWithState.getAction();
-				AtomDeliveryState deliveryState = requestWithState.getBundle().get(AtomDeliveryState.class);
+				AtomDeliveryState deliveryState = state.get(AtomDeliveryState.class);
 				ImmutableList<AID> missingAids = request.getAids().stream()
 					.filter(aid -> !store.contains(aid))
 					.collect(ImmutableList.toImmutableList());
@@ -101,13 +100,12 @@ public final class AtomDeliveryEpic implements TempoEpic {
 					return Stream.concat(deferred, requested);
 				}
 				return Stream.empty();
-			});
+			}, AtomDeliveryState.class);
 
-		Stream<TempoAction> handleTimeouts = flow.ofStateful(TimeoutDeliveryRequestAction.class, AtomDeliveryState.class)
-			.flatMap(requestWithState -> {
+		TempoFlow<TempoAction> handleTimeouts = flow.of(TimeoutDeliveryRequestAction.class)
+			.flatMap((timeout, state) -> {
 				// once the timeout has elapsed, check if the deliveries were received
-				TimeoutDeliveryRequestAction timeout = requestWithState.getAction();
-				AtomDeliveryState deliveryState = requestWithState.getBundle().get(AtomDeliveryState.class);
+				AtomDeliveryState deliveryState = state.get(AtomDeliveryState.class);
 				ImmutableList<AID> missingAids = timeout.getAids().stream()
 					.filter(deliveryState::isPendingDelivery)
 					.collect(ImmutableList.toImmutableList());
@@ -119,9 +117,9 @@ public final class AtomDeliveryEpic implements TempoEpic {
 					return Stream.of(new OnAtomDeliveryFailedAction(missingAids, timeout.getPeer()));
 				}
 				return Stream.empty();
-			});
+			}, AtomDeliveryState.class);
 
-		return Streams.concat(
+		return Stream.of(
 			sendResponses,
 			receiveResponses,
 			handleRequests,

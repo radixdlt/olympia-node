@@ -1,10 +1,10 @@
 package com.radixdlt.tempo.epics;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Streams;
 import com.radixdlt.common.EUID;
 import com.radixdlt.tempo.TempoAtom;
-import com.radixdlt.tempo.TempoFlow;
+import com.radixdlt.tempo.reactive.TempoFlowSource;
+import com.radixdlt.tempo.reactive.TempoFlow;
 import com.radixdlt.tempo.reactive.TempoState;
 import com.radixdlt.tempo.reactive.TempoAction;
 import com.radixdlt.tempo.reactive.TempoEpic;
@@ -35,26 +35,25 @@ public final class ActiveSyncEpic implements TempoEpic {
 	}
 
 	@Override
-	public Stream<TempoAction> epic(TempoFlow flow) {
-		Stream<SendPushAction> sendPushes = flow.ofStateful(AcceptAtomAction.class, LivePeersState.class)
-			.flatMap(requestWithState -> {
-				LivePeersState livePeersState = requestWithState.getBundle().get(LivePeersState.class);
-				TempoAtom atom = requestWithState.getAction().getAtom();
+	public Stream<TempoFlow<TempoAction>> epic(TempoFlowSource flow) {
+		TempoFlow<TempoAction> sendPushes = flow.of(AcceptAtomAction.class)
+			.flatMap((request, state) -> {
+				TempoAtom atom = request.getAtom();
 				TemporalVertex temporalVertex = atom.getTemporalProof().getVertexByNID(self);
 				if (temporalVertex != null) {
 					return temporalVertex.getEdges().stream()
-						.map(livePeersState::getPeer)
+						.map(state.get(LivePeersState.class)::getPeer)
 						.filter(Optional::isPresent)
 						.map(Optional::get)
 						.map(peer -> new SendPushAction(atom, peer));
 				} else {
 					return Stream.empty();
 				}
-			});
-		Stream<ReceiveAtomAction> receivePushes = flow.of(ReceivePushAction.class)
+			}, LivePeersState.class);
+		TempoFlow<TempoAction> receivePushes = flow.of(ReceivePushAction.class)
 			.map(push -> new ReceiveAtomAction(push.getAtom()));
 
-		return Streams.concat(
+		return Stream.of(
 			sendPushes,
 			receivePushes
 		);

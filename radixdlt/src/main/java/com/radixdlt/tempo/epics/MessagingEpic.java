@@ -3,9 +3,9 @@ package com.radixdlt.tempo.epics;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.tempo.TempoController.ImmediateDispatcher;
-import com.radixdlt.tempo.TempoFlow;
+import com.radixdlt.tempo.reactive.TempoFlow;
+import com.radixdlt.tempo.reactive.TempoFlowSource;
 import com.radixdlt.tempo.reactive.TempoState;
-import com.radixdlt.tempo.TempoStateBundle;
 import com.radixdlt.tempo.TempoException;
 import com.radixdlt.tempo.reactive.TempoAction;
 import com.radixdlt.tempo.reactive.TempoEpic;
@@ -51,14 +51,13 @@ public final class MessagingEpic implements TempoEpic {
 		return ImmutableSet.of();
 	}
 
-	public Stream<TempoAction> epic(TempoFlow flow) {
-		outboundMessageMappers.entrySet().stream()
-			.flatMap(entry -> flow.of(entry.getKey()))
-				.forEach(send -> {
-					Message message = outboundMessageMappers.get(send.getClass()).apply(send);
-					Peer peer = outboundPeerMappers.get(send.getClass()).apply(send);
-					sendMessage(message, peer);
-				});
+	public Stream<TempoFlow<TempoAction>> epic(TempoFlowSource flow) {
+		outboundMessageMappers.forEach((actionCls, messageMapper) -> flow.of(actionCls)
+			.forEach(send -> {
+				Message message = messageMapper.apply(send);
+				Peer peer = outboundPeerMappers.get(send.getClass()).apply(send);
+				sendMessage(message, peer);
+			}));
 
 		return Stream.empty();
 	}

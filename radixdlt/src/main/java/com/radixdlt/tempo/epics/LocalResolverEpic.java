@@ -7,7 +7,6 @@ import com.radixdlt.tempo.TempoAction;
 import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.reactive.TempoEpic;
 import com.radixdlt.tempo.TempoException;
-import com.radixdlt.tempo.TempoStateBundle;
 import com.radixdlt.tempo.actions.OnConflictResolvedAction;
 import com.radixdlt.tempo.actions.RaiseConflictAction;
 
@@ -27,8 +26,8 @@ public final class LocalResolverEpic implements TempoEpic {
 	}
 
 	@Override
-	public Stream<TempoAction> epic(TempoFlow flow) {
-		return flow.of(RaiseConflictAction.class)
+	public Stream<TempoFlow<TempoAction>> epic(TempoFlowSource flow) {
+		TempoFlow<TempoAction> resolveConflicts = flow.of(RaiseConflictAction.class)
 			.map(conflict -> {
 				TempoAtom winner = conflict.allAtoms()
 					.filter(a -> a.getTemporalProof().hasVertexByNID(self))
@@ -39,5 +38,6 @@ public final class LocalResolverEpic implements TempoEpic {
 				Set<AID> allAids = conflict.allAids().collect(Collectors.toSet());
 				return new OnConflictResolvedAction(winner, allAids, conflict.getTag());
 			});
+		return Stream.of(resolveConflicts);
 	}
 }
