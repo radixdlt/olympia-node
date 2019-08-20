@@ -26,7 +26,7 @@ public class MessageParticleConstraintScryptTest {
 		AtomMetadata metadata = mock(AtomMetadata.class);
 		when(metadata.isSignedBy(from)).thenReturn(true);
 
-		testAtomModelOS.testInitialParticle(message, metadata)
+		testAtomModelOS.testParticle(message, metadata)
 			.assertNoErrorWithMessageContaining("signed");
 	}
 }

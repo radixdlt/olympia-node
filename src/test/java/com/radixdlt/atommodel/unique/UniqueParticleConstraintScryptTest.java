@@ -28,7 +28,7 @@ public class UniqueParticleConstraintScryptTest {
 		AtomMetadata metadata = mock(AtomMetadata.class);
 		when(metadata.isSignedBy(from)).thenReturn(true);
 
-		testAtomModelOS.testInitialParticle(unique, metadata)
+		testAtomModelOS.testParticle(unique, metadata)
 			.assertNoErrorWithMessageContaining("sign");
 	}
 
@@ -41,6 +41,6 @@ public class UniqueParticleConstraintScryptTest {
 		AtomMetadata metadata = mock(AtomMetadata.class);
 		when(metadata.isSignedBy(from)).thenReturn(false);
 
-		testAtomModelOS.testInitialParticle(unique, metadata);
+		testAtomModelOS.testParticle(unique, metadata);
 	}
 }

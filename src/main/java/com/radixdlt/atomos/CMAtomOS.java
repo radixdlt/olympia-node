@@ -88,7 +88,7 @@ public final class CMAtomOS {
 	/**
 	 * Checks that the machine is set up correctly where invariants aren't broken.
 	 * If all is well, this then returns an instance of a machine in which atom
-	 * validation can be done with the Quarks and Particles it's been set up with.
+	 * validation can be done with the Particles and Transitions it's been set up with.
 	 *
 	 * @return a constraint machine which can validate atoms and the virtual layer on top of the store
 	 */
@@ -143,5 +143,18 @@ public final class CMAtomOS {
 		final AtomCompute compute = atomKernelCompute != null ? a -> atomKernelCompute.compute(a.getAtom()) : null;
 
 		return Pair.of(cmBuilder.build(), compute);
+	}
+
+	/**
+	 * Executes static particle validation given the current particle definitions.
+	 * Does not modify state in anyway
+	 *
+	 * @param particle the particle to test
+	 * @return result of the validation
+	 */
+	public Result testParticle(Particle particle) {
+		return particleDefinitions.get(particle.getClass())
+			.getStaticValidation()
+			.apply(particle);
 	}
 }

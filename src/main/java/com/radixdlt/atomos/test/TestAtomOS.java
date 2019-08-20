@@ -94,7 +94,7 @@ public class TestAtomOS implements SysCalls {
 	 * @param metadata
 	 * @return list of results of each checker
 	 */
-	public <T extends Particle> TestResult testInitialParticle(T t, AtomMetadata metadata) {
+	public <T extends Particle> TestResult testParticle(T t, AtomMetadata metadata) {
 		Stream<Result> resourceSigned =
 			!resources.containsKey(t.getClass()) || metadata.isSignedBy(resources.get(t.getClass()).apply(t).getAddress())
 				? Stream.empty() : Stream.of(Result.error("Not signed"));

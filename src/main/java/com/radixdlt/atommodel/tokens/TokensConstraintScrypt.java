@@ -23,14 +23,14 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 	public void main(SysCalls os) {
 		os.registerParticle(
 			MutableSupplyTokenDefinitionParticle.class,
-			MutableSupplyTokenDefinitionParticle::getAddress,
+			p -> p.getRRI().getAddress(),
 			TokenDefinitionUtils::staticCheck,
 			MutableSupplyTokenDefinitionParticle::getRRI
 		);
 
 		os.registerParticle(
 			FixedSupplyTokenDefinitionParticle.class,
-			FixedSupplyTokenDefinitionParticle::getOwner,
+			p -> p.getRRI().getAddress(),
 			TokenDefinitionUtils::staticCheck,
 			FixedSupplyTokenDefinitionParticle::getRRI
 		);
