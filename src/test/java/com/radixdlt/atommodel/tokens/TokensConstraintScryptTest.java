@@ -29,10 +29,24 @@ public class TokensConstraintScryptTest {
 	}
 
 	@Test
+	public void when_validating_mutable_token_def_particle_with_no_rri__result_has_error() {
+		MutableSupplyTokenDefinitionParticle token = mock(MutableSupplyTokenDefinitionParticle.class);
+		assertThat(cmAtomOS.testParticle(token).getErrorMessage())
+			.contains("rri cannot be null");
+	}
+
+	@Test
+	public void when_validating_fixed_token_def_particle_with_no_rri__result_has_error() {
+		FixedSupplyTokenDefinitionParticle token = mock(FixedSupplyTokenDefinitionParticle.class);
+		assertThat(cmAtomOS.testParticle(token).getErrorMessage())
+			.contains("rri cannot be null");
+	}
+
+
+	@Test
 	public void when_validating_token_class_particle_with_too_long_symbol__result_has_error() {
 		MutableSupplyTokenDefinitionParticle token = PowerMockito.mock(MutableSupplyTokenDefinitionParticle.class);
 		when(token.getRRI()).thenReturn(RRI.of(mock(RadixAddress.class), "TEEEEEEEEEEEEEEEEEEEEEEEEEEST"));
-
 		assertThat(cmAtomOS.testParticle(token).getErrorMessage())
 			.contains("Symbol: invalid length");
 	}
@@ -49,7 +63,6 @@ public class TokensConstraintScryptTest {
 	public void when_validating_token_class_particle_without_description__result_has_error() {
 		MutableSupplyTokenDefinitionParticle token = PowerMockito.mock(MutableSupplyTokenDefinitionParticle.class);
 		when(token.getRRI()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
-
 		assertThat(cmAtomOS.testParticle(token).isError())
 			.isTrue();
 	}
@@ -60,7 +73,6 @@ public class TokensConstraintScryptTest {
 		when(token.getRRI()).thenReturn(RRI.of(mock(RadixAddress.class), "TEST"));
 		Mockito.when(token.getDescription()).thenReturn(
 			IntStream.range(0, TokenDefinitionUtils.MAX_DESCRIPTION_LENGTH + 1).mapToObj(i -> "c").collect(Collectors.joining()));
-
 		assertThat(cmAtomOS.testParticle(token).getErrorMessage())
 			.contains("Description: invalid length");
 	}
@@ -104,15 +116,78 @@ public class TokensConstraintScryptTest {
 	}
 
 	@Test
+	public void when_validating_token_instance_with_null_amount__result_has_error() {
+		TransferrableTokensParticle transferrableTokensParticle = mock(TransferrableTokensParticle.class);
+		when(transferrableTokensParticle.getTokDefRef()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
+		when(transferrableTokensParticle.getAmount()).thenReturn(null);
+		assertThat(cmAtomOS.testParticle(transferrableTokensParticle).getErrorMessage())
+			.contains("null");
+	}
+
+	@Test
+	public void when_validating_unallocated_token_with_null_amount__result_has_error() {
+		UnallocatedTokensParticle unallocated = mock(UnallocatedTokensParticle.class);
+		when(unallocated.getTokDefRef()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
+		when(unallocated.getAmount()).thenReturn(null);
+		assertThat(cmAtomOS.testParticle(unallocated).getErrorMessage())
+			.contains("null");
+	}
+
+	@Test
 	public void when_validating_token_instance_with_zero_amount__result_has_error() {
 		TransferrableTokensParticle transferrableTokensParticle = mock(TransferrableTokensParticle.class);
+		when(transferrableTokensParticle.getTokDefRef()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
 		when(transferrableTokensParticle.getAmount()).thenReturn(UInt256.ZERO);
 		assertThat(cmAtomOS.testParticle(transferrableTokensParticle).getErrorMessage())
 			.contains("zero");
+	}
 
+	@Test
+	public void when_validating_unallocated_token_with_zero_amount__result_has_error() {
 		UnallocatedTokensParticle burnedTokensParticle = mock(UnallocatedTokensParticle.class);
+		when(burnedTokensParticle.getTokDefRef()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
 		when(burnedTokensParticle.getAmount()).thenReturn(UInt256.ZERO);
 		assertThat(cmAtomOS.testParticle(burnedTokensParticle).getErrorMessage())
 			.contains("zero");
+	}
+
+	@Test
+	public void when_validating_token_instance_with_null_granularity__result_has_error() {
+		TransferrableTokensParticle transferrableTokensParticle = mock(TransferrableTokensParticle.class);
+		when(transferrableTokensParticle.getTokDefRef()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
+		when(transferrableTokensParticle.getAmount()).thenReturn(UInt256.ONE);
+		when(transferrableTokensParticle.getGranularity()).thenReturn(null);
+		assertThat(cmAtomOS.testParticle(transferrableTokensParticle).getErrorMessage())
+			.contains("granularity");
+	}
+
+	@Test
+	public void when_validating_unallocated_token_with_null_granularity__result_has_error() {
+		UnallocatedTokensParticle unallocated = mock(UnallocatedTokensParticle.class);
+		when(unallocated.getTokDefRef()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
+		when(unallocated.getAmount()).thenReturn(UInt256.ONE);
+		when(unallocated.getGranularity()).thenReturn(null);
+		assertThat(cmAtomOS.testParticle(unallocated).getErrorMessage())
+			.contains("granularity");
+	}
+
+	@Test
+	public void when_validating_unallocated_token_with_zero_granularity__result_has_error() {
+		UnallocatedTokensParticle unallocated = mock(UnallocatedTokensParticle.class);
+		when(unallocated.getTokDefRef()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
+		when(unallocated.getAmount()).thenReturn(UInt256.ONE);
+		when(unallocated.getGranularity()).thenReturn(UInt256.ZERO);
+		assertThat(cmAtomOS.testParticle(unallocated).getErrorMessage())
+			.contains("granularity");
+	}
+
+	@Test
+	public void when_validating_token_instance_with_amount_not_divisible_by_granularity__result_has_error() {
+		TransferrableTokensParticle transferrableTokensParticle = mock(TransferrableTokensParticle.class);
+		when(transferrableTokensParticle.getTokDefRef()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
+		when(transferrableTokensParticle.getAmount()).thenReturn(UInt256.THREE);
+		when(transferrableTokensParticle.getGranularity()).thenReturn(UInt256.TWO);
+		assertThat(cmAtomOS.testParticle(transferrableTokensParticle).getErrorMessage())
+			.contains("granularity");
 	}
 }

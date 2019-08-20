@@ -38,7 +38,22 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 		os.registerParticle(
 			UnallocatedTokensParticle.class,
 			UnallocatedTokensParticle::getAddress,
-			u -> Result.of(!u.getAmount().isZero(), "Amount cannot be zero"),
+			u -> {
+				if (u.getAmount() == null) {
+					return Result.error("amount must not be null");
+				}
+				if (u.getAmount().isZero()) {
+					return Result.error("Amount cannot be zero");
+				}
+				if (u.getGranularity() == null) {
+					return Result.error("granularity must not be null");
+				}
+				if (u.getGranularity().isZero()) {
+					return Result.error("granularity must not be zero");
+				}
+
+				return Result.success();
+			},
 			UnallocatedTokensParticle::getTokDefRef
 		);
 

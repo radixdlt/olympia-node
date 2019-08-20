@@ -92,7 +92,15 @@ final class ConstraintScryptEnv implements SysCalls {
 
 		scryptParticleDefinitions.put(particleClass, new ParticleDefinition<>(
 			p -> mapper.apply((T) p).stream(),
-			p -> staticCheck.apply((T) p),
+			p -> {
+				if (rriMapper != null) {
+					if (rriMapper.apply((T) p) == null) {
+						return Result.error("rri cannot be null");
+					}
+				}
+
+				return staticCheck.apply((T) p);
+			},
 			rriMapper == null ? null : p -> rriMapper.apply((T) p)
 		));
 	}
