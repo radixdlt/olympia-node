@@ -4,8 +4,6 @@ import org.bouncycastle.util.Arrays;
 import org.junit.Assert;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
-
 public class LongsTest {
 	@Test
 	public void testLongsToBytes() {
