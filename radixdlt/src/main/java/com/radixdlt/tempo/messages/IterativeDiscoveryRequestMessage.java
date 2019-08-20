@@ -5,30 +5,30 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.tempo.LogicalClockCursor;
-import com.radixdlt.tempo.store.CommitmentBatch;
 import org.radix.network.messaging.Message;
+import org.radix.shards.ShardSpace;
 
-@SerializerId2("tempo.sync.discovery.cursor.response")
-public class CursorDiscoveryResponseMessage extends Message {
-	@JsonProperty("commitmentBatch")
+@SerializerId2("tempo.sync.discovery.iterative.request")
+public class IterativeDiscoveryRequestMessage extends Message {
+	@JsonProperty("shards")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private CommitmentBatch commitmentBatch;
+	private ShardSpace shardSpace;
 
 	@JsonProperty("cursor")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private LogicalClockCursor cursor;
 
-	CursorDiscoveryResponseMessage() {
+	IterativeDiscoveryRequestMessage() {
 		// Serializer only
 	}
 
-	public CursorDiscoveryResponseMessage(CommitmentBatch commitmentBatch, LogicalClockCursor cursor) {
-		this.commitmentBatch = commitmentBatch;
+	public IterativeDiscoveryRequestMessage(ShardSpace shardSpace, LogicalClockCursor cursor) {
+		this.shardSpace = shardSpace;
 		this.cursor = cursor;
 	}
 
-	public CommitmentBatch getCommitmentBatch() {
-		return commitmentBatch;
+	public ShardSpace getShardSpace() {
+		return shardSpace;
 	}
 
 	public LogicalClockCursor getCursor() {
@@ -37,6 +37,6 @@ public class CursorDiscoveryResponseMessage extends Message {
 
 	@Override
 	public String getCommand() {
-		return "tempo.sync.discovery.cursor.response";
+		return "tempo.sync.discovery.iterative.request";
 	}
 }

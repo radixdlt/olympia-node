@@ -2,26 +2,26 @@ package com.radixdlt.tempo.actions.messaging;
 
 import com.radixdlt.tempo.LogicalClockCursor;
 import com.radixdlt.tempo.reactive.TempoAction;
-import com.radixdlt.tempo.messages.CursorDiscoveryRequestMessage;
+import com.radixdlt.tempo.messages.IterativeDiscoveryResponseMessage;
+import com.radixdlt.tempo.store.CommitmentBatch;
 import org.radix.network.messaging.Message;
 import org.radix.network.peers.Peer;
-import org.radix.shards.ShardSpace;
 
 import java.util.Objects;
 
-public class SendCursorDiscoveryRequestAction implements TempoAction {
-	private final ShardSpace shardSpace;
+public class SendIterativeDiscoveryResponseAction implements TempoAction {
+	private final CommitmentBatch commitments;
 	private final LogicalClockCursor cursor;
 	private final Peer peer;
 
-	public SendCursorDiscoveryRequestAction(ShardSpace shardSpace, LogicalClockCursor cursor, Peer peer) {
-		this.shardSpace = Objects.requireNonNull(shardSpace, "shardSpace is required");
+	public SendIterativeDiscoveryResponseAction(CommitmentBatch commitments, LogicalClockCursor cursor, Peer peer) {
+		this.commitments = Objects.requireNonNull(commitments, "commitments is required");
 		this.cursor = Objects.requireNonNull(cursor, "cursor is required");
 		this.peer = Objects.requireNonNull(peer, "peer is required");
 	}
 
-	public ShardSpace getShardSpace() {
-		return shardSpace;
+	public CommitmentBatch getCommitments() {
+		return commitments;
 	}
 
 	public LogicalClockCursor getCursor() {
@@ -33,6 +33,6 @@ public class SendCursorDiscoveryRequestAction implements TempoAction {
 	}
 
 	public Message toMessage() {
-		return new CursorDiscoveryRequestMessage(shardSpace, cursor);
+		return new IterativeDiscoveryResponseMessage(commitments, cursor);
 	}
 }

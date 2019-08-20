@@ -10,6 +10,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
+// TODO document me!
 public interface TempoFlow<T> {
 	<R> TempoFlow<R> map(Function<? super T, ? extends R> mapper);
 

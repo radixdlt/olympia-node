@@ -16,19 +16,15 @@ import com.radixdlt.tempo.actions.control.RepeatScheduleAction;
 import com.radixdlt.tempo.actions.control.ScheduleAction;
 import com.radixdlt.tempo.actions.messaging.ReceiveDeliveryRequestAction;
 import com.radixdlt.tempo.actions.messaging.ReceiveDeliveryResponseAction;
-import com.radixdlt.tempo.actions.messaging.ReceiveCursorDiscoveryRequestAction;
-import com.radixdlt.tempo.actions.messaging.ReceiveCursorDiscoveryResponseAction;
-import com.radixdlt.tempo.actions.messaging.ReceivePositionDiscoveryRequestAction;
-import com.radixdlt.tempo.actions.messaging.ReceivePositionDiscoveryResponseAction;
+import com.radixdlt.tempo.actions.messaging.ReceiveIterativeDiscoveryRequestAction;
+import com.radixdlt.tempo.actions.messaging.ReceiveIterativeDiscoveryResponseAction;
 import com.radixdlt.tempo.actions.messaging.ReceivePushAction;
 import com.radixdlt.tempo.actions.messaging.ReceiveSampleRequestAction;
 import com.radixdlt.tempo.actions.messaging.ReceiveSampleResponseAction;
 import com.radixdlt.tempo.actions.messaging.SendDeliveryRequestAction;
 import com.radixdlt.tempo.actions.messaging.SendDeliveryResponseAction;
-import com.radixdlt.tempo.actions.messaging.SendCursorDiscoveryRequestAction;
-import com.radixdlt.tempo.actions.messaging.SendCursorDiscoveryResponseAction;
-import com.radixdlt.tempo.actions.messaging.SendPositionDiscoveryRequestAction;
-import com.radixdlt.tempo.actions.messaging.SendPositionDiscoveryResponseAction;
+import com.radixdlt.tempo.actions.messaging.SendIterativeDiscoveryRequestAction;
+import com.radixdlt.tempo.actions.messaging.SendIterativeDiscoveryResponseAction;
 import com.radixdlt.tempo.actions.messaging.SendPushAction;
 import com.radixdlt.tempo.actions.messaging.SendSampleRequestAction;
 import com.radixdlt.tempo.actions.messaging.SendSampleResponseAction;
@@ -41,8 +37,8 @@ import com.radixdlt.tempo.epics.MomentumResolverEpic;
 import com.radixdlt.tempo.epics.SampleCollectorEpic;
 import com.radixdlt.tempo.messages.DeliveryRequestMessage;
 import com.radixdlt.tempo.messages.DeliveryResponseMessage;
-import com.radixdlt.tempo.messages.CursorDiscoveryRequestMessage;
-import com.radixdlt.tempo.messages.CursorDiscoveryResponseMessage;
+import com.radixdlt.tempo.messages.IterativeDiscoveryRequestMessage;
+import com.radixdlt.tempo.messages.IterativeDiscoveryResponseMessage;
 import com.radixdlt.tempo.messages.PositionDiscoveryRequestMessage;
 import com.radixdlt.tempo.messages.PositionDiscoveryResponseMessage;
 import com.radixdlt.tempo.messages.PushMessage;
@@ -354,14 +350,10 @@ public final class TempoController {
 				.addOutbound(SendDeliveryRequestAction.class, SendDeliveryRequestAction::toMessage, SendDeliveryRequestAction::getPeer)
 				.addInbound("tempo.sync.delivery.response", DeliveryResponseMessage.class, ReceiveDeliveryResponseAction::from)
 				.addOutbound(SendDeliveryResponseAction.class, SendDeliveryResponseAction::toMessage, SendDeliveryResponseAction::getPeer)
-				.addInbound("tempo.sync.discovery.cursor.request", CursorDiscoveryRequestMessage.class, ReceiveCursorDiscoveryRequestAction::from)
-				.addOutbound(SendCursorDiscoveryRequestAction.class, SendCursorDiscoveryRequestAction::toMessage, SendCursorDiscoveryRequestAction::getPeer)
-				.addInbound("tempo.sync.discovery.cursor.response", CursorDiscoveryResponseMessage.class, ReceiveCursorDiscoveryResponseAction::from)
-				.addOutbound(SendCursorDiscoveryResponseAction.class, SendCursorDiscoveryResponseAction::toMessage, SendCursorDiscoveryResponseAction::getPeer)
-				.addInbound("tempo.sync.discovery.position.request", PositionDiscoveryRequestMessage.class, ReceivePositionDiscoveryRequestAction::from)
-				.addOutbound(SendPositionDiscoveryRequestAction.class, SendPositionDiscoveryRequestAction::toMessage, SendPositionDiscoveryRequestAction::getPeer)
-				.addInbound("tempo.sync.discovery.position.response", PositionDiscoveryResponseMessage.class, ReceivePositionDiscoveryResponseAction::from)
-				.addOutbound(SendPositionDiscoveryResponseAction.class, SendPositionDiscoveryResponseAction::toMessage, SendPositionDiscoveryResponseAction::getPeer)
+				.addInbound("tempo.sync.discovery.iterative.request", IterativeDiscoveryRequestMessage.class, ReceiveIterativeDiscoveryRequestAction::from)
+				.addOutbound(SendIterativeDiscoveryRequestAction.class, SendIterativeDiscoveryRequestAction::toMessage, SendIterativeDiscoveryRequestAction::getPeer)
+				.addInbound("tempo.sync.discovery.iterative.response", IterativeDiscoveryResponseMessage.class, ReceiveIterativeDiscoveryResponseAction::from)
+				.addOutbound(SendIterativeDiscoveryResponseAction.class, SendIterativeDiscoveryResponseAction::toMessage, SendIterativeDiscoveryResponseAction::getPeer)
 				.addInbound("tempo.sync.push", PushMessage.class, ReceivePushAction::from)
 				.addOutbound(SendPushAction.class, SendPushAction::toMessage, SendPushAction::getPeer)
 				.addInbound("tempo.sample.request", SampleRequestMessage.class, ReceiveSampleRequestAction::from)

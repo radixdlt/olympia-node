@@ -3,7 +3,6 @@ package com.radixdlt.tempo.epics;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
-import com.radixdlt.common.Pair;
 import com.radixdlt.tempo.AtomStoreView;
 import com.radixdlt.tempo.LogicalClockCursor;
 import com.radixdlt.tempo.TempoException;
@@ -18,13 +17,10 @@ import com.radixdlt.tempo.actions.RequestIterativeSyncAction;
 import com.radixdlt.tempo.actions.ReselectPassivePeersAction;
 import com.radixdlt.tempo.actions.ResetAction;
 import com.radixdlt.tempo.actions.TimeoutCursorDiscoveryRequestAction;
-import com.radixdlt.tempo.actions.messaging.ReceiveCursorDiscoveryRequestAction;
-import com.radixdlt.tempo.actions.messaging.ReceiveCursorDiscoveryResponseAction;
-import com.radixdlt.tempo.actions.messaging.ReceivePositionDiscoveryRequestAction;
-import com.radixdlt.tempo.actions.messaging.ReceivePositionDiscoveryResponseAction;
-import com.radixdlt.tempo.actions.messaging.SendCursorDiscoveryRequestAction;
-import com.radixdlt.tempo.actions.messaging.SendCursorDiscoveryResponseAction;
-import com.radixdlt.tempo.actions.messaging.SendPositionDiscoveryResponseAction;
+import com.radixdlt.tempo.actions.messaging.ReceiveIterativeDiscoveryRequestAction;
+import com.radixdlt.tempo.actions.messaging.ReceiveIterativeDiscoveryResponseAction;
+import com.radixdlt.tempo.actions.messaging.SendIterativeDiscoveryRequestAction;
+import com.radixdlt.tempo.actions.messaging.SendIterativeDiscoveryResponseAction;
 import com.radixdlt.tempo.reactive.TempoAction;
 import com.radixdlt.tempo.reactive.TempoEpic;
 import com.radixdlt.tempo.state.IterativeDiscoveryState;
@@ -139,7 +135,7 @@ public final class IterativeDiscoveryEpic implements TempoEpic {
 				}
 				// send iterative request for aids starting with last cursor
 				ShardSpace shardRange = shardSpaceSupplier.get();
-				SendCursorDiscoveryRequestAction sendRequest = new SendCursorDiscoveryRequestAction(shardRange, request.getCursor(), peer);
+				SendIterativeDiscoveryRequestAction sendRequest = new SendIterativeDiscoveryRequestAction(shardRange, request.getCursor(), peer);
 				// schedule timeout after which response will be checked
 				TimeoutCursorDiscoveryRequestAction timeout = new TimeoutCursorDiscoveryRequestAction(request.getCursor(), peer);
 				return Stream.of(sendRequest, timeout.delay(CURSOR_TIMEOUT_SECONDS, TimeUnit.SECONDS));
@@ -174,7 +170,7 @@ public final class IterativeDiscoveryEpic implements TempoEpic {
 			}, IterativeDiscoveryState.class, PassivePeersState.class);
 
 		// TODO flowify
-		TempoFlow<TempoAction> receiveCursorRequests = flow.of(ReceiveCursorDiscoveryRequestAction.class)
+		TempoFlow<TempoAction> receiveCursorRequests = flow.of(ReceiveIterativeDiscoveryRequestAction.class)
 			.map(request -> {
 				long lcPosition = request.getCursor().getLcPosition();
 				// retrieve and send back commitments starting from the requested cursor up to the limit
@@ -190,17 +186,17 @@ public final class IterativeDiscoveryEpic implements TempoEpic {
 					logger.debug(String.format("Responding to iterative discovery request from %s for %d with %d commitments (next=%s)",
 						request.getPeer(), lcPosition, commitments.size(), responseCursor.hasNext() ? nextLcPosition : "<none>"));
 				}
-				return new SendCursorDiscoveryResponseAction(commitments, responseCursor, request.getPeer());
+				return new SendIterativeDiscoveryResponseAction(commitments, responseCursor, request.getPeer());
 			});
 
-		flow.of(ReceiveCursorDiscoveryResponseAction.class)
+		flow.of(ReceiveIterativeDiscoveryResponseAction.class)
 			.forEach(response -> {
 				EUID peerNid = response.getPeer().getSystem().getNID();
 				commitmentStore.put(peerNid, response.getCommitments());
 			});
 
 		// TODO flowify, breakup!
-		TempoFlow<TempoAction> receiveCursorResponses = flow.of(ReceiveCursorDiscoveryResponseAction.class)
+		TempoFlow<TempoAction> receiveCursorResponses = flow.of(ReceiveIterativeDiscoveryResponseAction.class)
 			.flatMap((response, state) -> {
 				IterativeDiscoveryState cursorDiscovery = state.get(IterativeDiscoveryState.class);
 				PassivePeersState passivePeers = state.get(PassivePeersState.class);
