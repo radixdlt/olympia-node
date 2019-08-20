@@ -101,7 +101,11 @@ public final class TempoFlowSource {
 			return requiredState;
 		}
 
-		void requireState(Class<? extends TempoState> requiredState, Class<? extends TempoState>... requiredStates) {
+		@Override
+		@SafeVarargs
+		final void requireState(Class<? extends TempoState> requiredState, Class<? extends TempoState>... requiredStates) {
+			Objects.requireNonNull(requiredState, "requiredState is required");
+			Objects.requireNonNull(requiredStates, "requiredStates is required");
 			this.requiredState.add(requiredState);
 			this.requiredState.addAll(Arrays.asList(requiredStates));
 		}
@@ -190,9 +194,7 @@ public final class TempoFlowSource {
 		                                  Class<? extends TempoState> requiredState,
 		                                  Class<? extends TempoState>... requiredStates) {
 			Objects.requireNonNull(mapper, "mapper is required");
-			Objects.requireNonNull(requiredState, "mapper is required");
-			Objects.requireNonNull(requiredStates, "mapper is required");
-			head.requireState(requiredState, requiredStates);
+			requireState(requiredState, requiredStates);
 
 			return new TempoFlowOp<T_OUT, R>(this) {
 				@Override
@@ -208,9 +210,7 @@ public final class TempoFlowSource {
 		                                      Class<? extends TempoState> requiredState,
 		                                      Class<? extends TempoState>... requiredStates) {
 			Objects.requireNonNull(mapper, "mapper is required");
-			Objects.requireNonNull(requiredState, "mapper is required");
-			Objects.requireNonNull(requiredStates, "mapper is required");
-			head.requireState(requiredState, requiredStates);
+			requireState(requiredState, requiredStates);
 
 			return new TempoFlowOp<T_OUT, R>(this) {
 				@Override
@@ -227,9 +227,7 @@ public final class TempoFlowSource {
 		                               Class<? extends TempoState> requiredState,
 		                               Class<? extends TempoState>... requiredStates) {
 			Objects.requireNonNull(filter, "filter is required");
-			Objects.requireNonNull(requiredState, "mapper is required");
-			Objects.requireNonNull(requiredStates, "mapper is required");
-			head.requireState(requiredState, requiredStates);
+			requireState(requiredState, requiredStates);
 
 			return new TempoFlowOp<T_OUT, T_OUT>(this) {
 				@Override
@@ -247,9 +245,7 @@ public final class TempoFlowSource {
 		                    Class<? extends TempoState> requiredState,
 		                    Class<? extends TempoState>... requiredStates) {
 			Objects.requireNonNull(consumer, "consumer is required");
-			Objects.requireNonNull(requiredState, "mapper is required");
-			Objects.requireNonNull(requiredStates, "mapper is required");
-			head.requireState(requiredState, requiredStates);
+			requireState(requiredState, requiredStates);
 
 			new Sink<T_OUT>(this.head){
 				@Override
@@ -257,6 +253,13 @@ public final class TempoFlowSource {
 					consumer.accept(value, bundle);
 				}
 			};
+		}
+
+		void requireState(Class<? extends TempoState> requiredState, Class<? extends TempoState>[] requiredStates) {
+			if (head == null) {
+				throw new TempoException("Tempo flow is detached from head");
+			}
+			head.requireState(requiredState, requiredStates);
 		}
 	}
 }
