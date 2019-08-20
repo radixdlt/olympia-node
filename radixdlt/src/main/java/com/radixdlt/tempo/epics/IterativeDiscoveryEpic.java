@@ -216,8 +216,9 @@ public final class IterativeDiscoveryEpic implements TempoEpic {
 				Peer peer = response.getPeer();
 				EUID peerNid = peer.getSystem().getNID();
 				LogicalClockCursor peerCursor = response.getCursor();
+				int responseSize = response.getCommitments().size();
 				if (logger.hasLevel(Logging.DEBUG)) {
-					logger.debug(String.format("Received iterative discovery response from %s with %s commitments", peer, response.getCommitments().size()));
+					logger.debug(String.format("Received iterative discovery response from %s with %s commitments", peer, responseSize));
 				}
 
 				// store new commitments
@@ -226,7 +227,7 @@ public final class IterativeDiscoveryEpic implements TempoEpic {
 				// send requests to discover unknown positions
 				// TODO should probably be extracted to somewhere else
 				CommitmentBatch recentCommitments = cursorDiscovery.getRecentCommitments(peerNid);
-				ImmutableSet<Long> unknownPositions = getUnknownPositions(recentCommitments, positionDiscovery.getPending(peerNid), storeView::contains);
+				ImmutableSet<Long> unknownPositions = getUnknownPositions(recentCommitments, positionDiscovery.getPending(peerNid), responseSize, storeView::contains);
 				Stream<TempoAction> positionDiscoveryActions = Stream.empty();
 				if (!unknownPositions.isEmpty()) {
 					positionDiscoveryActions = Stream.of(new SendPositionDiscoveryRequestAction(unknownPositions, peer)
@@ -293,7 +294,7 @@ public final class IterativeDiscoveryEpic implements TempoEpic {
 	}
 
 	// TODO should probably be extracted to elsewhere
-	private ImmutableSet<Long> getUnknownPositions(CommitmentBatch batch, Set<Long> excludedPositions, Predicate<byte[]> isPartialAidKnown) {
+	private ImmutableSet<Long> getUnknownPositions(CommitmentBatch batch, Set<Long> excludedPositions, int responseSize, Predicate<byte[]> isPartialAidKnown) {
 		int batchSize = batch.size();
 		if (batchSize < COMMITMENT_CERTAINTY_THRESHOLD) {
 			return ImmutableSet.of();

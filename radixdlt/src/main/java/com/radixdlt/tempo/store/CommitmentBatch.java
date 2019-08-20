@@ -47,35 +47,6 @@ public final class CommitmentBatch {
 		}
 	}
 
-	public CommitmentBatch pushLast(CommitmentBatch other) {
-		int otherSize = other.size();
-		int myCapacity = this.capacity();
-		if (otherSize > myCapacity) {
-			throw new IllegalArgumentException("Other commitment batch is larger than this batch");
-		}
-		CommitmentBatch newBatch = new CommitmentBatch(myCapacity);
-		int remaining = myCapacity - otherSize;
-		if (remaining > 0) {
-			System.arraycopy(this.commitments, myCapacity - remaining, newBatch.commitments, 0, remaining);
-			System.arraycopy(this.positions, myCapacity - remaining, newBatch.positions, 0, remaining);
-		}
-		System.arraycopy(other.commitments, 0, newBatch.commitments, remaining, myCapacity);
-		System.arraycopy(other.positions, 0, newBatch.positions, remaining, myCapacity);
-
-		return newBatch;
-	}
-
-	public CommitmentBatch ensureCapacity(int desiredCapacity) {
-		if (desiredCapacity < capacity()) {
-			return this;
-		}
-
-		CommitmentBatch newBatch = new CommitmentBatch(desiredCapacity);
-		System.arraycopy(this.commitments, 0, newBatch.commitments, 0, computedSize);
-		System.arraycopy(this.positions, 0, newBatch.positions, 0, computedSize);
-		return newBatch;
-	}
-
 	public long getFirstPosition() {
 		return isEmpty() ? -1 : positions[0];
 	}
