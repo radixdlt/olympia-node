@@ -6,7 +6,6 @@ import com.radixdlt.crypto.Hash;
 import com.radixdlt.tempo.LogicalClockCursor;
 import com.radixdlt.tempo.reactive.TempoAction;
 import com.radixdlt.tempo.messages.IterativeDiscoveryResponseMessage;
-import com.radixdlt.tempo.store.CommitmentBatch;
 import org.radix.network.peers.Peer;
 
 import java.util.Objects;

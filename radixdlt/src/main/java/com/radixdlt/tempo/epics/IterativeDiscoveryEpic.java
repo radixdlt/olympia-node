@@ -26,7 +26,6 @@ import com.radixdlt.tempo.reactive.TempoAction;
 import com.radixdlt.tempo.reactive.TempoEpic;
 import com.radixdlt.tempo.state.IterativeDiscoveryState;
 import com.radixdlt.tempo.state.PassivePeersState;
-import com.radixdlt.tempo.store.CommitmentBatch;
 import com.radixdlt.tempo.store.CommitmentStore;
 import com.radixdlt.tempo.store.LogicalClockCursorStore;
 import com.radixdlt.tempo.store.LogicalClockCursorStore.CursorType;

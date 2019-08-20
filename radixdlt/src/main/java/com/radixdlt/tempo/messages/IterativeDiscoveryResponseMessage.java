@@ -8,7 +8,6 @@ import com.radixdlt.crypto.Hash;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.tempo.LogicalClockCursor;
-import com.radixdlt.tempo.store.CommitmentBatch;
 import org.radix.network.messaging.Message;
 
 @SerializerId2("tempo.sync.discovery.iterative.response")

@@ -5,7 +5,6 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.common.EUID;
 import com.radixdlt.tempo.TempoException;
 import com.radixdlt.tempo.reactive.TempoState;
-import com.radixdlt.tempo.store.CommitmentBatch;
 
 import java.util.HashMap;
 import java.util.HashSet;
