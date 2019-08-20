@@ -7,10 +7,13 @@ import com.radixdlt.tempo.TempoStateBundle;
 import com.radixdlt.tempo.actions.RefreshLivePeersAction;
 import com.radixdlt.tempo.PeerSupplier;
 import com.radixdlt.tempo.state.LivePeersState;
+import org.radix.logging.Logger;
+import org.radix.logging.Logging;
 
 // FIXME awful hack to get the old peer supplier interface mapped to a TempoState
 //       should really be all reactive driven
 public class LivePeersReducer implements TempoReducer<LivePeersState> {
+	private static final Logger logger = Logging.getLogger("Tempo");
 	private final PeerSupplier peerSupplier;
 
 	public LivePeersReducer(PeerSupplier peerSupplier) {
@@ -30,8 +33,12 @@ public class LivePeersReducer implements TempoReducer<LivePeersState> {
 	@Override
 	public LivePeersState reduce(LivePeersState prevState, TempoStateBundle bundle, TempoAction action) {
 		if (action instanceof RefreshLivePeersAction) {
-			return new LivePeersState(peerSupplier.getPeers().stream()
+			LivePeersState livePeersState = new LivePeersState(peerSupplier.getPeers().stream()
 				.collect(ImmutableMap.toImmutableMap(p -> p.getSystem().getNID(), p -> p)));
+			if (logger.hasLevel(Logging.DEBUG)) {
+				logger.debug("Detected " + livePeersState.getLivePeers().size() + " live peers");
+			}
+			return livePeersState;
 		}
 
 		return prevState;

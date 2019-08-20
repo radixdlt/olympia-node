@@ -3,6 +3,8 @@ package com.radixdlt.tempo.reactive;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.tempo.TempoException;
 import com.radixdlt.tempo.TempoStateBundle;
+import org.radix.logging.Logger;
+import org.radix.logging.Logging;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -31,28 +33,35 @@ public final class TempoFlowSource {
 	}
 
 	public static final class TempoFlowInjector {
+		private static final Logger logger = Logging.getLogger("Tempo");
+
 		private final ImmutableMap<Class<? extends TempoAction>, List<Head<?>>> headsByClass;
 
 		private TempoFlowInjector(ImmutableMap<Class<? extends TempoAction>, List<Head<?>>> headsByClass) {
 			this.headsByClass = headsByClass;
 		}
 
-		public void accept(TempoAction action, Function<Set<Class<? extends TempoState>>, TempoStateBundle> stateGenerator) {
+		public void inject(TempoAction action, Function<Set<Class<? extends TempoState>>, TempoStateBundle> stateGenerator) {
 			Objects.requireNonNull(action, "action is required");
 			Class<? extends TempoAction> actionClass = action.getClass();
 
 			// run flows starting at head
 			List<Head<?>> heads = this.headsByClass.get(actionClass);
 			if (heads != null) {
-				TempoAction castAction = actionClass.cast(action);
+				if (logger.hasLevel(Logging.TRACE)) {
+					logger.trace("Injecting action '" + actionClass.getSimpleName() + "' into " + heads.size() + " heads");
+				}
 				for (Head head : heads) {
 					TempoStateBundle bundle = stateGenerator.apply(head.getRequiredState());
-					head.accept(castAction, bundle);
+					head.accept(action, bundle);
 				}
+			} else if (logger.hasLevel(Logging.TRACE)) {
+				logger.trace("No heads available to inject action '" + actionClass.getSimpleName() + "' into");
 			}
 		}
 	}
 
+	// TODO could check all links for integrity here
 	public TempoFlowInjector toInjector() {
 		return new TempoFlowInjector(ImmutableMap.copyOf(headsByClass));
 	}
@@ -75,7 +84,20 @@ public final class TempoFlowSource {
 	private abstract static class Sink<T> {
 		final Head<?> head;
 
-		protected Sink(Head<?> head) {
+		Sink(TempoFlowOp<?, T> upstream) {
+			Objects.requireNonNull(upstream, "upstream is required");
+
+			// link upstream
+			if (upstream.linked) {
+				throw new TempoException("Upstream already linked to '" + upstream.downstream + "'");
+			}
+			upstream.downstream = this;
+			upstream.linked = true;
+
+			this.head = upstream.head;
+		}
+
+		Sink(Head<T> head) {
 			this.head = head;
 		}
 
@@ -91,9 +113,6 @@ public final class TempoFlowSource {
 
 		@Override
 		void doAccept(T value, TempoStateBundle bundle) {
-			if (downstream == null) {
-				throw new TempoException("Unlinked head");
-			}
 			downstream.accept(value, bundle);
 		}
 
@@ -120,19 +139,14 @@ public final class TempoFlowSource {
 		}
 
 		TempoFlowOp(TempoFlowOp<?, T_IN> upstream) {
-			super(upstream.head);
-
-			if (upstream.linked) {
-				throw new TempoException("Upstream already linked");
-			}
-			upstream.downstream = this;
-			upstream.linked = true;
+			super(upstream);
 		}
 
 		final void accept(T_IN value, TempoStateBundle bundle) {
-			if (downstream != null) {
-				doAccept(value, bundle);
+			if (downstream == null) {
+				throw new TempoException("Unlinked flow op");
 			}
+			doAccept(value, bundle);
 		}
 
 		abstract void doAccept(T_IN value, TempoStateBundle bundle);
@@ -180,7 +194,7 @@ public final class TempoFlowSource {
 		public void forEach(Consumer<T_OUT> consumer) {
 			Objects.requireNonNull(consumer, "consumer is required");
 
-			new Sink<T_OUT>(this.head){
+			new Sink<T_OUT>(this){
 				@Override
 				void accept(T_OUT value, TempoStateBundle bundle) {
 					consumer.accept(value);
@@ -247,7 +261,7 @@ public final class TempoFlowSource {
 			Objects.requireNonNull(consumer, "consumer is required");
 			requireState(requiredState, requiredStates);
 
-			new Sink<T_OUT>(this.head){
+			new Sink<T_OUT>(this){
 				@Override
 				void accept(T_OUT value, TempoStateBundle bundle) {
 					consumer.accept(value, bundle);

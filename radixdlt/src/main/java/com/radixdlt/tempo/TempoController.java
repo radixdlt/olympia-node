@@ -181,12 +181,20 @@ public final class TempoController {
 
 				internalEpic(action);
 				// TODO run in multiple threads
-				flowInjector.accept(action, stateStore::bundleFor);
+				executeEpics(action, stateStore);
 			} catch (InterruptedException e) {
 				// exit if interrupted
 				Thread.currentThread().interrupt();
 				break;
 			}
+		}
+	}
+
+	private void executeEpics(TempoAction action, TempoStateBundleGenerator stateStore) {
+		try {
+			flowInjector.inject(action, stateStore::bundleFor);
+		} catch (Exception e) {
+			logger.error(String.format("Error while executing '%s': '%s'", action.getClass().getSimpleName(), e.toString()));
 		}
 	}
 
@@ -292,7 +300,7 @@ public final class TempoController {
 		this.inboundAtoms.clear();
 		this.actions.clear();
 		ResetAction reset = new ResetAction();
-		this.flowInjector.accept(reset, stateStore::bundleFor);
+		this.flowInjector.inject(reset, stateStore::bundleFor);
 	}
 
 	// TODO temporary hack for debugging, revisit or remove later
