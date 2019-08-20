@@ -9,9 +9,9 @@ public interface TempoEpic {
 	/**
 	 * Execute this epic on the given flow
 	 * @param flow A {@link TempoFlowSource} providing the states and actions
-	 * @return An infinite, cold stream of actions corresponding to the input flow
+	 * @return An infinite, hot stream of actions corresponding to the input flow
 	 */
-	Stream<TempoFlow<TempoAction>> epic(TempoFlowSource flow);
+	TempoFlow<TempoAction> epic(TempoFlowSource flow);
 
 	/**
 	 * Get the initial actions to be executed once upon starting

@@ -37,7 +37,7 @@ public final class AtomDeliveryEpic implements TempoEpic {
 	}
 
 	@Override
-	public Stream<TempoFlow<TempoAction>> epic(TempoFlowSource flow) {
+	public TempoFlow<TempoAction> epic(TempoFlowSource flow) {
 		TempoFlow<TempoAction> sendResponses =
 			flow.of(ReceiveDeliveryRequestAction.class)
 			.flatMap(request -> request.getAids().stream()
@@ -51,7 +51,7 @@ public final class AtomDeliveryEpic implements TempoEpic {
 
 		// TODO cleanup
 		TempoFlow<TempoAction> handleRequests = flow.of(RequestDeliveryAction.class)
-			.flatMap((request, state) -> {
+			.flatMapStateful((request, state) -> {
 				// check if any requested deliveries have not arrived in the meantime
 				AtomDeliveryState deliveryState = state.get(AtomDeliveryState.class);
 				ImmutableList<AID> missingAids = request.getAids().stream()
@@ -95,7 +95,7 @@ public final class AtomDeliveryEpic implements TempoEpic {
 			}, AtomDeliveryState.class);
 
 		TempoFlow<TempoAction> handleTimeouts = flow.of(TimeoutDeliveryRequestAction.class)
-			.flatMap((timeout, state) -> {
+			.flatMapStateful((timeout, state) -> {
 				// once the timeout has elapsed, check if the deliveries were received
 				AtomDeliveryState deliveryState = state.get(AtomDeliveryState.class);
 				ImmutableList<AID> missingAids = timeout.getAids().stream()
@@ -111,7 +111,7 @@ public final class AtomDeliveryEpic implements TempoEpic {
 				return Stream.empty();
 			}, AtomDeliveryState.class);
 
-		return Stream.of(
+		return TempoFlow.merge(
 			sendResponses,
 			receiveResponses,
 			handleRequests,

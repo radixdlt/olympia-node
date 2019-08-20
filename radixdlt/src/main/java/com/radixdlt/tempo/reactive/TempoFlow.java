@@ -20,19 +20,28 @@ public interface TempoFlow<T> {
 
 	void forEach(Consumer<T> consumer);
 
-	<R> TempoFlow<R> map(BiFunction<? super T, TempoStateBundle, ? extends R> mapper,
+	<R> TempoFlow<R> mapStateful(BiFunction<? super T, TempoStateBundle, ? extends R> mapper,
+	                             Class<? extends TempoState> requiredState,
+	                             Class<? extends TempoState>... requiredStates);
+
+	<R> TempoFlow<R> flatMapStateful(BiFunction<? super T, TempoStateBundle, Stream<? extends R>> mapper,
+	                                 Class<? extends TempoState> requiredState,
+	                                 Class<? extends TempoState>... requiredStates);
+
+	TempoFlow<T> filterStateful(BiPredicate<? super T, TempoStateBundle> filter,
+	                            Class<? extends TempoState> requiredState,
+	                            Class<? extends TempoState>... requiredStates);
+
+	void forEachStateful(BiConsumer<T, TempoStateBundle> consumer,
 	                     Class<? extends TempoState> requiredState,
 	                     Class<? extends TempoState>... requiredStates);
 
-	<R> TempoFlow<R> flatMap(BiFunction<? super T, TempoStateBundle, Stream<? extends R>> mapper,
-	                         Class<? extends TempoState> requiredState,
-	                         Class<? extends TempoState>... requiredStates);
+	static <T> TempoFlow<T> empty() {
+		return TempoFlowSource.TempoFlowOp.empty();
+	}
 
-	TempoFlow<T> filter(BiPredicate<? super T, TempoStateBundle> filter,
-	                    Class<? extends TempoState> requiredState,
-	                    Class<? extends TempoState>... requiredStates);
-
-	void forEach(BiConsumer<T, TempoStateBundle> consumer,
-	             Class<? extends TempoState> requiredState,
-	             Class<? extends TempoState>... requiredStates);
+	@SafeVarargs
+	static <T> TempoFlow<T> merge(TempoFlow<? extends T>... flows) {
+		return TempoFlowSource.TempoFlowOp.merge(flows);
+	}
 }

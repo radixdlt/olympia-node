@@ -86,15 +86,17 @@ public final class TempoFlowSource {
 
 		Sink(TempoFlowOp<?, T> upstream) {
 			Objects.requireNonNull(upstream, "upstream is required");
+			linkUpstream(upstream);
+			this.head = upstream.head;
+		}
 
+		void linkUpstream(TempoFlowOp<?, T> upstream) {
 			// link upstream
 			if (upstream.linked) {
 				throw new TempoException("Upstream already linked to '" + upstream.downstream + "'");
 			}
 			upstream.downstream = this;
 			upstream.linked = true;
-
-			this.head = upstream.head;
 		}
 
 		Sink(Head<T> head) {
@@ -130,7 +132,7 @@ public final class TempoFlowSource {
 		}
 	}
 
-	private abstract static class TempoFlowOp<T_IN, T_OUT> extends Sink<T_IN> implements TempoFlow<T_OUT> {
+	public abstract static class TempoFlowOp<T_IN, T_OUT> extends Sink<T_IN> implements TempoFlow<T_OUT> {
 		Sink<T_OUT> downstream;
 		private boolean linked;
 
@@ -204,9 +206,9 @@ public final class TempoFlowSource {
 
 		@Override
 		@SafeVarargs
-		public final <R> TempoFlow<R> map(BiFunction<? super T_OUT, TempoStateBundle, ? extends R> mapper,
-		                                  Class<? extends TempoState> requiredState,
-		                                  Class<? extends TempoState>... requiredStates) {
+		public final <R> TempoFlow<R> mapStateful(BiFunction<? super T_OUT, TempoStateBundle, ? extends R> mapper,
+		                                          Class<? extends TempoState> requiredState,
+		                                          Class<? extends TempoState>... requiredStates) {
 			Objects.requireNonNull(mapper, "mapper is required");
 			requireState(requiredState, requiredStates);
 
@@ -220,9 +222,9 @@ public final class TempoFlowSource {
 
 		@Override
 		@SafeVarargs
-		public final <R> TempoFlow<R> flatMap(BiFunction<? super T_OUT, TempoStateBundle, Stream<? extends R>> mapper,
-		                                      Class<? extends TempoState> requiredState,
-		                                      Class<? extends TempoState>... requiredStates) {
+		public final <R> TempoFlow<R> flatMapStateful(BiFunction<? super T_OUT, TempoStateBundle, Stream<? extends R>> mapper,
+		                                              Class<? extends TempoState> requiredState,
+		                                              Class<? extends TempoState>... requiredStates) {
 			Objects.requireNonNull(mapper, "mapper is required");
 			requireState(requiredState, requiredStates);
 
@@ -237,9 +239,9 @@ public final class TempoFlowSource {
 
 		@Override
 		@SafeVarargs
-		public final TempoFlow<T_OUT> filter(BiPredicate<? super T_OUT, TempoStateBundle> filter,
-		                               Class<? extends TempoState> requiredState,
-		                               Class<? extends TempoState>... requiredStates) {
+		public final TempoFlow<T_OUT> filterStateful(BiPredicate<? super T_OUT, TempoStateBundle> filter,
+		                                             Class<? extends TempoState> requiredState,
+		                                             Class<? extends TempoState>... requiredStates) {
 			Objects.requireNonNull(filter, "filter is required");
 			requireState(requiredState, requiredStates);
 
@@ -255,9 +257,9 @@ public final class TempoFlowSource {
 
 		@Override
 		@SafeVarargs
-		public final void forEach(BiConsumer<T_OUT, TempoStateBundle> consumer,
-		                    Class<? extends TempoState> requiredState,
-		                    Class<? extends TempoState>... requiredStates) {
+		public final void forEachStateful(BiConsumer<T_OUT, TempoStateBundle> consumer,
+		                                  Class<? extends TempoState> requiredState,
+		                                  Class<? extends TempoState>... requiredStates) {
 			Objects.requireNonNull(consumer, "consumer is required");
 			requireState(requiredState, requiredStates);
 
@@ -274,6 +276,26 @@ public final class TempoFlowSource {
 				throw new TempoException("Tempo flow is detached from head");
 			}
 			head.requireState(requiredState, requiredStates);
+		}
+
+		static <T> TempoFlow<T> empty() {
+			return new Head<>();
+		}
+
+		@SafeVarargs
+		static <T> TempoFlow<T> merge(TempoFlow<? extends T>... flows) {
+			Objects.requireNonNull(flows, "flows is required");
+
+			Head<T> newMergedHead = new Head<>();
+			for (TempoFlow<? extends T> flow : flows) {
+				flow.forEach(value -> newMergedHead.accept(value, new TempoStateBundle() {
+					@Override
+					public <T extends TempoState> T get(Class<T> stateClass) {
+						throw new TempoException("Requested state '" + stateClass.getSimpleName() + "' is not available due to detached head");
+					}
+				}));
+			}
+			return newMergedHead;
 		}
 	}
 }

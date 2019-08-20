@@ -27,9 +27,9 @@ public final class ActiveSyncEpic implements TempoEpic {
 	}
 
 	@Override
-	public Stream<TempoFlow<TempoAction>> epic(TempoFlowSource flow) {
+	public TempoFlow<TempoAction> epic(TempoFlowSource flow) {
 		TempoFlow<TempoAction> sendPushes = flow.of(AcceptAtomAction.class)
-			.flatMap((request, state) -> {
+			.flatMapStateful((request, state) -> {
 				TempoAtom atom = request.getAtom();
 				TemporalVertex temporalVertex = atom.getTemporalProof().getVertexByNID(self);
 				if (temporalVertex != null) {
@@ -45,7 +45,7 @@ public final class ActiveSyncEpic implements TempoEpic {
 		TempoFlow<TempoAction> receivePushes = flow.of(ReceivePushAction.class)
 			.map(push -> new ReceiveAtomAction(push.getAtom()));
 
-		return Stream.of(
+		return TempoFlow.merge(
 			sendPushes,
 			receivePushes
 		);

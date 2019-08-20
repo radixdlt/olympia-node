@@ -135,7 +135,7 @@ public final class TempoController {
 			.build();
 		// connect flow and epics
 		allEpics.stream()
-			.flatMap(epic -> epic.epic(flowSource))
+			.map(epic -> epic.epic(flowSource))
 			.forEach(flow -> flow.forEach(this::dispatch));
 		this.flowInjector = flowSource.toInjector();
 
@@ -164,8 +164,8 @@ public final class TempoController {
 		while (true) {
 			try {
 				TempoAction action = actions.take();
-				if (logger.hasLevel(Logging.DEBUG)) {
-					logger.debug("Executing " + action.getClass().getSimpleName());
+				if (logger.hasLevel(Logging.TRACE)) {
+					logger.trace("Executing " + action.getClass().getSimpleName());
 				}
 
 				// run reducers synchronously to update state

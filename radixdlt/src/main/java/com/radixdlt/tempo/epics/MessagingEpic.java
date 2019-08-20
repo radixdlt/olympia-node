@@ -2,11 +2,11 @@ package com.radixdlt.tempo.epics;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.tempo.TempoController.ImmediateDispatcher;
-import com.radixdlt.tempo.reactive.TempoFlow;
-import com.radixdlt.tempo.reactive.TempoFlowSource;
 import com.radixdlt.tempo.TempoException;
 import com.radixdlt.tempo.reactive.TempoAction;
 import com.radixdlt.tempo.reactive.TempoEpic;
+import com.radixdlt.tempo.reactive.TempoFlow;
+import com.radixdlt.tempo.reactive.TempoFlowSource;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.network.Network;
@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
 public final class MessagingEpic implements TempoEpic {
 	private static final Logger logger = Logging.getLogger("Sync");
@@ -43,7 +42,7 @@ public final class MessagingEpic implements TempoEpic {
 		this.outboundPeerMappers = outboundPeerMappers;
 	}
 
-	public Stream<TempoFlow<TempoAction>> epic(TempoFlowSource flow) {
+	public TempoFlow<TempoAction> epic(TempoFlowSource flow) {
 		outboundMessageMappers.forEach((actionCls, messageMapper) -> flow.of(actionCls)
 			.forEach(send -> {
 				Message message = messageMapper.apply(send);
@@ -51,7 +50,7 @@ public final class MessagingEpic implements TempoEpic {
 				sendMessage(message, peer);
 			}));
 
-		return Stream.empty();
+		return TempoFlow.empty();
 	}
 
 	private void sendMessage(Message message, Peer peer) {

@@ -47,12 +47,10 @@ public final class IterativeDiscoveryEpic implements TempoEpic {
 	private static final int CURSOR_TIMEOUT_SECONDS = 5;
 	// timeout for position requests
 	private static final int POSITION_TIMEOUT_SECONDS = 5;
-	// how many aids to send per response
-	private static final int RESPONSE_AID_LIMIT = 512;
 	// maximum backoff when synchronised (exponential, e.g. 2^4 = 16 seconds)
 	private static final int MAX_BACKOFF = 4;
 	// how many commitments to send per response (32 bytes for commitment + 8 bytes for position)
-	private static final int RESPONSE_LIMIT = 512;
+	private static final int RESPONSE_LIMIT = 10;
 
 	private static final Logger logger = Logging.getLogger("Sync");
 
@@ -72,7 +70,7 @@ public final class IterativeDiscoveryEpic implements TempoEpic {
 	}
 
 	@Override
-	public Stream<TempoFlow<TempoAction>> epic(TempoFlowSource flow) {
+	public TempoFlow<TempoAction> epic(TempoFlowSource flow) {
 		flow.of(AcceptAtomAction.class)
 			.map(AcceptAtomAction::getAtom)
 			.forEach(atom -> {
@@ -87,7 +85,7 @@ public final class IterativeDiscoveryEpic implements TempoEpic {
 
 		// TODO flowify
 		TempoFlow<TempoAction> reselectPeers = flow.of(ReselectPassivePeersAction.class)
-			.flatMap((request, state) -> {
+			.flatMapStateful((request, state) -> {
 				IterativeDiscoveryState cursorDiscovery = state.get(IterativeDiscoveryState.class);
 				PassivePeersState passivePeers = state.get(PassivePeersState.class);
 				// TODO is this an okay way of triggering this? could react to stage-changes instead..?
@@ -139,7 +137,7 @@ public final class IterativeDiscoveryEpic implements TempoEpic {
 
 		// TODO flowify!
 		TempoFlow<TempoAction> timeoutCursorRequests = flow.of(TimeoutCursorDiscoveryRequestAction.class)
-			.flatMap((timeout, state) -> {
+			.flatMapStateful((timeout, state) -> {
 				IterativeDiscoveryState cursorDiscovery = state.get(IterativeDiscoveryState.class);
 				PassivePeersState passivePeers = state.get(PassivePeersState.class);
 
@@ -183,7 +181,7 @@ public final class IterativeDiscoveryEpic implements TempoEpic {
 				}
 				LogicalClockCursor responseCursor = new LogicalClockCursor(lcPosition, nextCursor);
 				if (logger.hasLevel(Logging.DEBUG)) {
-					logger.debug(String.format("Responding to iterative discovery request from %s for %d with %d commitments (next=%s)",
+					logger.debug(String.format("Responding to iterative discovery request from %s for %d with %d items (next=%s)",
 						request.getPeer(), lcPosition, commitments.size(), responseCursor.hasNext() ? nextLcPosition : "<none>"));
 				}
 				return new SendIterativeDiscoveryResponseAction(commitments, aids, responseCursor, request.getPeer());
@@ -199,7 +197,7 @@ public final class IterativeDiscoveryEpic implements TempoEpic {
 
 		// TODO flowify, breakup!
 		TempoFlow<TempoAction> receiveCursorResponses = flow.of(ReceiveIterativeDiscoveryResponseAction.class)
-			.flatMap((response, state) -> {
+			.flatMapStateful((response, state) -> {
 				IterativeDiscoveryState cursorDiscovery = state.get(IterativeDiscoveryState.class);
 				PassivePeersState passivePeers = state.get(PassivePeersState.class);
 				Peer peer = response.getPeer();
@@ -207,7 +205,7 @@ public final class IterativeDiscoveryEpic implements TempoEpic {
 				LogicalClockCursor peerCursor = response.getCursor();
 				int responseSize = response.getCommitments().size();
 				if (logger.hasLevel(Logging.DEBUG)) {
-					logger.debug(String.format("Received iterative discovery response from %s with %s commitments", peer, responseSize));
+					logger.debug(String.format("Received iterative discovery response from %s with %s items", peer, responseSize));
 				}
 
 				// update last known cursor
@@ -246,7 +244,7 @@ public final class IterativeDiscoveryEpic implements TempoEpic {
 				commitmentStore.reset();
 			});
 
-		return Stream.of(
+		return TempoFlow.merge(
 			reselectPeers,
 			initiateDiscovery,
 			requestIterativeSync,

@@ -46,7 +46,7 @@ public class SampleCollectorEpic implements TempoEpic {
 		this.sampleStore = Objects.requireNonNull(sampleStore, "sampleStore is required");
 	}
 
-	public Stream<TempoFlow<TempoAction>> epic(TempoFlowSource flow) {
+	public TempoFlow<TempoAction> epic(TempoFlowSource flow) {
 		flow.of(AcceptAtomAction.class)
 			.map(AcceptAtomAction::getAtom)
 			.map(TempoAtom::getTemporalProof)
@@ -107,7 +107,7 @@ public class SampleCollectorEpic implements TempoEpic {
 
 		// TODO flowify
 		TempoFlow<TempoAction> receiveResponses = flow.of(ReceiveSampleResponseAction.class)
-			.flatMap((response, state) -> {
+			.flatMapStateful((response, state) -> {
 				SampleCollectorState collectorState = state.get(SampleCollectorState.class);
 				if (logger.hasLevel(Logging.DEBUG)) {
 					logger.debug(String.format("Received sample response for tag %s with %s from %s (%d unavailable: %s)",
@@ -130,7 +130,7 @@ public class SampleCollectorEpic implements TempoEpic {
 
 		// TODO flowify
 		TempoFlow<TempoAction> timeoutRequests = flow.of(TimeoutSampleRequestsAction.class)
-			.flatMap((timeout, state) -> {
+			.flatMapStateful((timeout, state) -> {
 				SampleCollectorState collectorState = state.get(SampleCollectorState.class);
 				// after timeout, detect any missing samples
 				Stream<OnSampleDeliveryFailedAction> failures = timeout.getPeers().stream()
@@ -146,7 +146,7 @@ public class SampleCollectorEpic implements TempoEpic {
 		flow.of(ResetAction.class)
 			.forEach(reset -> sampleStore.reset());
 
-		return Stream.of(
+		return TempoFlow.merge(
 			returnEmptyRequests,
 			requestSamples,
 			sendResponses,

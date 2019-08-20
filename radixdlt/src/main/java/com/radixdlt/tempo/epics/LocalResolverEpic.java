@@ -5,15 +5,17 @@ import com.radixdlt.common.EUID;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.tempo.TempoAction;
 import com.radixdlt.tempo.TempoAtom;
-import com.radixdlt.tempo.reactive.TempoEpic;
 import com.radixdlt.tempo.TempoException;
 import com.radixdlt.tempo.actions.OnConflictResolvedAction;
 import com.radixdlt.tempo.actions.RaiseConflictAction;
+import com.radixdlt.tempo.reactive.TempoAction;
+import com.radixdlt.tempo.reactive.TempoEpic;
+import com.radixdlt.tempo.reactive.TempoFlow;
+import com.radixdlt.tempo.reactive.TempoFlowSource;
 
 import java.util.Comparator;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Local conflict resolver which
@@ -26,7 +28,7 @@ public final class LocalResolverEpic implements TempoEpic {
 	}
 
 	@Override
-	public Stream<TempoFlow<TempoAction>> epic(TempoFlowSource flow) {
+	public TempoFlow<TempoAction> epic(TempoFlowSource flow) {
 		TempoFlow<TempoAction> resolveConflicts = flow.of(RaiseConflictAction.class)
 			.map(conflict -> {
 				TempoAtom winner = conflict.allAtoms()
@@ -38,6 +40,6 @@ public final class LocalResolverEpic implements TempoEpic {
 				Set<AID> allAids = conflict.allAids().collect(Collectors.toSet());
 				return new OnConflictResolvedAction(winner, allAids, conflict.getTag());
 			});
-		return Stream.of(resolveConflicts);
+		return resolveConflicts;
 	}
 }

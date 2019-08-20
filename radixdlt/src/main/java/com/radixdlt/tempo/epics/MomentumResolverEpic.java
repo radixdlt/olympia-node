@@ -5,17 +5,17 @@ import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
 import com.radixdlt.tempo.MomentumUtils;
 import com.radixdlt.tempo.SampleSelector;
-import com.radixdlt.tempo.reactive.TempoFlowSource;
-import com.radixdlt.tempo.reactive.TempoFlow;
-import com.radixdlt.tempo.reactive.TempoAction;
 import com.radixdlt.tempo.TempoAtom;
-import com.radixdlt.tempo.reactive.TempoEpic;
 import com.radixdlt.tempo.TempoException;
 import com.radixdlt.tempo.actions.OnConflictResolvedAction;
-import com.radixdlt.tempo.actions.RaiseConflictAction;
 import com.radixdlt.tempo.actions.OnSamplingCompleteAction;
+import com.radixdlt.tempo.actions.RaiseConflictAction;
 import com.radixdlt.tempo.actions.RequestSamplingAction;
 import com.radixdlt.tempo.actions.ResolveConflictAction;
+import com.radixdlt.tempo.reactive.TempoAction;
+import com.radixdlt.tempo.reactive.TempoEpic;
+import com.radixdlt.tempo.reactive.TempoFlow;
+import com.radixdlt.tempo.reactive.TempoFlowSource;
 import com.radixdlt.tempo.state.ConflictsState;
 import com.radixdlt.tempo.state.LivePeersState;
 import org.radix.logging.Logger;
@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Stream;
 
 public class MomentumResolverEpic implements TempoEpic {
 	private static final Logger logger = Logging.getLogger("Conflicts");
@@ -41,14 +40,14 @@ public class MomentumResolverEpic implements TempoEpic {
 	}
 
 	@Override
-	public Stream<TempoFlow<TempoAction>> epic(TempoFlowSource flow) {
+	public TempoFlow<TempoAction> epic(TempoFlowSource flow) {
 		TempoFlow<TempoAction> raiseConflicts = flow.of(RaiseConflictAction.class)
-			.filter((conflict, state) -> !state.get(ConflictsState.class).isPending(conflict.getTag()), ConflictsState.class)
+			.filterStateful((conflict, state) -> !state.get(ConflictsState.class).isPending(conflict.getTag()), ConflictsState.class)
 			.map(conflict -> new ResolveConflictAction(conflict.getAtom(), conflict.getConflictingAtoms(), conflict.getTag()));
 
 		// TODO flowify
 		TempoFlow<TempoAction> resolveConflicts = flow.of(ResolveConflictAction.class)
-			.map((conflict, state) -> {
+			.mapStateful((conflict, state) -> {
 				LivePeersState livePeers = state.get(LivePeersState.class);
 
 				// to resolve a conflict, select some peers to sample
@@ -67,7 +66,7 @@ public class MomentumResolverEpic implements TempoEpic {
 
 		// TODO flowify
 		TempoFlow<TempoAction> completeConflicts = flow.of(OnSamplingCompleteAction.class)
-			.map((result, state) -> {
+			.mapStateful((result, state) -> {
 				Collection<TemporalProof> allSamples = result.getAllSamples();
 				EUID tag = result.getTag();
 				ConflictsState conflicts = state.get(ConflictsState.class);
@@ -93,7 +92,7 @@ public class MomentumResolverEpic implements TempoEpic {
 				return new OnConflictResolvedAction(winningAtom, allConflictingAids, tag);
 			}, ConflictsState.class);
 
-		return Stream.of(
+		return TempoFlow.merge(
 			raiseConflicts,
 			resolveConflicts,
 			completeConflicts
