@@ -1,11 +1,9 @@
 package com.radixdlt.tempo.epics;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.radixdlt.tempo.TempoController.ImmediateDispatcher;
 import com.radixdlt.tempo.reactive.TempoFlow;
 import com.radixdlt.tempo.reactive.TempoFlowSource;
-import com.radixdlt.tempo.reactive.TempoState;
 import com.radixdlt.tempo.TempoException;
 import com.radixdlt.tempo.reactive.TempoAction;
 import com.radixdlt.tempo.reactive.TempoEpic;
@@ -23,7 +21,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -44,11 +41,6 @@ public final class MessagingEpic implements TempoEpic {
 		this.inboundMappers = inboundMappers;
 		this.outboundMessageMappers = messageMappers;
 		this.outboundPeerMappers = outboundPeerMappers;
-	}
-
-	@Override
-	public Set<Class<? extends TempoState>> requiredState() {
-		return ImmutableSet.of();
 	}
 
 	public Stream<TempoFlow<TempoAction>> epic(TempoFlowSource flow) {

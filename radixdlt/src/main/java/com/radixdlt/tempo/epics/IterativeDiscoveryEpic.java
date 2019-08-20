@@ -30,7 +30,6 @@ import com.radixdlt.tempo.actions.messaging.SendPositionDiscoveryRequestAction;
 import com.radixdlt.tempo.actions.messaging.SendPositionDiscoveryResponseAction;
 import com.radixdlt.tempo.reactive.TempoAction;
 import com.radixdlt.tempo.reactive.TempoEpic;
-import com.radixdlt.tempo.reactive.TempoState;
 import com.radixdlt.tempo.state.CursorDiscoveryState;
 import com.radixdlt.tempo.state.PassivePeersState;
 import com.radixdlt.tempo.state.PositionDiscoveryState;
@@ -85,15 +84,6 @@ public final class IterativeDiscoveryEpic implements TempoEpic {
 		this.shardSpaceSupplier = shardSpaceSupplier;
 		this.latestCursorStore = cursorStore;
 		this.commitmentStore = commitmentStore;
-	}
-
-	@Override
-	public Set<Class<? extends TempoState>> requiredState() {
-		return ImmutableSet.of(
-			PassivePeersState.class,
-			CursorDiscoveryState.class,
-			PositionDiscoveryState.class
-		);
 	}
 
 	@Override

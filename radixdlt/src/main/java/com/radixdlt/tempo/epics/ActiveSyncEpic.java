@@ -1,11 +1,9 @@
 package com.radixdlt.tempo.epics;
 
-import com.google.common.collect.ImmutableSet;
 import com.radixdlt.common.EUID;
 import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.reactive.TempoFlowSource;
 import com.radixdlt.tempo.reactive.TempoFlow;
-import com.radixdlt.tempo.reactive.TempoState;
 import com.radixdlt.tempo.reactive.TempoAction;
 import com.radixdlt.tempo.reactive.TempoEpic;
 import com.radixdlt.tempo.actions.ReceiveAtomAction;
@@ -18,7 +16,6 @@ import org.radix.logging.Logging;
 import org.radix.time.TemporalVertex;
 
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Stream;
 
 public final class ActiveSyncEpic implements TempoEpic {
@@ -27,11 +24,6 @@ public final class ActiveSyncEpic implements TempoEpic {
 
 	public ActiveSyncEpic(EUID self) {
 		this.self = self;
-	}
-
-	@Override
-	public Set<Class<? extends TempoState>> requiredState() {
-		return ImmutableSet.of(LivePeersState.class);
 	}
 
 	@Override

@@ -11,7 +11,6 @@ import com.radixdlt.tempo.reactive.TempoAction;
 import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.reactive.TempoEpic;
 import com.radixdlt.tempo.TempoException;
-import com.radixdlt.tempo.reactive.TempoState;
 import com.radixdlt.tempo.actions.OnConflictResolvedAction;
 import com.radixdlt.tempo.actions.RaiseConflictAction;
 import com.radixdlt.tempo.actions.OnSamplingCompleteAction;
@@ -39,14 +38,6 @@ public class MomentumResolverEpic implements TempoEpic {
 
 	public MomentumResolverEpic(SampleSelector sampleSelector) {
 		this.sampleSelector = sampleSelector;
-	}
-
-	@Override
-	public Set<Class<? extends TempoState>> requiredState() {
-		return ImmutableSet.of(
-			LivePeersState.class,
-			ConflictsState.class
-		);
 	}
 
 	@Override

@@ -8,7 +8,6 @@ import com.radixdlt.tempo.reactive.TempoFlow;
 import com.radixdlt.tempo.reactive.TempoAction;
 import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.reactive.TempoEpic;
-import com.radixdlt.tempo.reactive.TempoState;
 import com.radixdlt.tempo.actions.AcceptAtomAction;
 import com.radixdlt.tempo.actions.OnSampleDeliveryFailedAction;
 import com.radixdlt.tempo.actions.OnSamplingCompleteAction;
@@ -45,14 +44,6 @@ public class SampleCollectorEpic implements TempoEpic {
 	public SampleCollectorEpic(EUID self, SampleStore sampleStore) {
 		this.self = self;
 		this.sampleStore = Objects.requireNonNull(sampleStore, "sampleStore is required");
-	}
-
-	@Override
-	public Set<Class<? extends TempoState>> requiredState() {
-		return ImmutableSet.of(
-			SampleCollectorState.class,
-			SampleCollectorState.class
-		);
 	}
 
 	public Stream<TempoFlow<TempoAction>> epic(TempoFlowSource flow) {

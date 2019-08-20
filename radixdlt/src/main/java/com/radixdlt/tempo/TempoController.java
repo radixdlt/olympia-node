@@ -169,8 +169,8 @@ public final class TempoController {
 		while (true) {
 			try {
 				TempoAction action = actions.take();
-				if (logger.hasLevel(Logging.TRACE)) {
-					logger.trace("Executing " + action.getClass().getSimpleName());
+				if (logger.hasLevel(Logging.DEBUG)) {
+					logger.debug("Executing " + action.getClass().getSimpleName());
 				}
 
 				// run reducers synchronously to update state
@@ -180,6 +180,7 @@ public final class TempoController {
 				});
 
 				internalEpic(action);
+				// TODO run in multiple threads
 				flowInjector.accept(action, stateStore::bundleFor);
 			} catch (InterruptedException e) {
 				// exit if interrupted

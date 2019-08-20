@@ -1,14 +1,12 @@
 package com.radixdlt.tempo.epics;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.radixdlt.common.AID;
 import com.radixdlt.tempo.AtomStoreView;
 import com.radixdlt.tempo.reactive.TempoFlowSource;
 import com.radixdlt.tempo.reactive.TempoFlow;
 import com.radixdlt.tempo.reactive.TempoAction;
 import com.radixdlt.tempo.reactive.TempoEpic;
-import com.radixdlt.tempo.reactive.TempoState;
 import com.radixdlt.tempo.actions.OnAtomDeliveryFailedAction;
 import com.radixdlt.tempo.actions.ReceiveAtomAction;
 import com.radixdlt.tempo.actions.messaging.ReceiveDeliveryRequestAction;
@@ -23,7 +21,6 @@ import org.radix.logging.Logging;
 
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
@@ -37,11 +34,6 @@ public final class AtomDeliveryEpic implements TempoEpic {
 
 	private AtomDeliveryEpic(AtomStoreView store) {
 		this.store = store;
-	}
-
-	@Override
-	public Set<Class<? extends TempoState>> requiredState() {
-		return ImmutableSet.of(AtomDeliveryState.class);
 	}
 
 	@Override
