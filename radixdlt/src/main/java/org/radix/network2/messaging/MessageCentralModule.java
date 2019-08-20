@@ -4,7 +4,6 @@ import java.util.Objects;
 
 import org.radix.events.Events;
 import org.radix.network2.transport.FirstMatchTransportManager;
-import org.radix.network2.transport.udp.UDPTransportModule;
 import org.radix.properties.RuntimeProperties;
 
 import com.google.inject.AbstractModule;
@@ -32,7 +31,5 @@ final class MessageCentralModule extends AbstractModule {
 		bind(Serialization.class).toProvider(Serialization::getDefault);
 		bind(TransportManager.class).to(FirstMatchTransportManager.class);
 		bind(Events.class).toProvider(Events::getInstance);
-
-		install(new UDPTransportModule(this.properties));
 	}
 }

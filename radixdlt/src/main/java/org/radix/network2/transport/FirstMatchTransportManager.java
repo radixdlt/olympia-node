@@ -7,6 +7,8 @@ import java.util.Collection;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.network.peers.Peer;
@@ -60,7 +62,8 @@ public class FirstMatchTransportManager implements TransportManager {
 
 	@Override
 	public String toString() {
-		return String.format("%s[%x]", getClass().getSimpleName(), System.identityHashCode(this) & 0xFFFF_FFFF_FFFF_FFFFL);
+		String transportNames = transports.keySet().stream().collect(Collectors.joining(","));
+		return String.format("%s[%s]", getClass().getSimpleName(), transportNames);
 	}
 
 	private Transport defaultTransport() {

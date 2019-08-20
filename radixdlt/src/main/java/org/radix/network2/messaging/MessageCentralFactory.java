@@ -1,5 +1,6 @@
 package org.radix.network2.messaging;
 
+import org.radix.network2.transport.udp.UDPTransportModule;
 import org.radix.properties.RuntimeProperties;
 
 import com.google.inject.Guice;
@@ -20,7 +21,10 @@ public class MessageCentralFactory {
 	 * @return The newly constructed {@link MessageCentral}
 	 */
 	public MessageCentral getDefault(RuntimeProperties properties) {
-		Injector injector = Guice.createInjector(new MessageCentralModule(properties));
+		Injector injector = Guice.createInjector(
+			new MessageCentralModule(properties),
+			new UDPTransportModule(properties)
+		);
 		return injector.getInstance(MessageCentral.class);
 	}
 

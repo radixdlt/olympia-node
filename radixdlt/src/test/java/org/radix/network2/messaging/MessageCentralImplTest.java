@@ -234,11 +234,45 @@ public class MessageCentralImplTest {
 		mci.removeListener(TestMessage.class, null);
 	}
 
+	@Test
 	public void testAddRemoveListener() {
-		MessageListener<TestMessage> listener = (source, message) -> {};
-		mci.addListener(TestMessage.class, listener);
+		MessageListener<TestMessage> listener1 = (source, message) -> {};
+		MessageListener<TestMessage> listener2 = (source, message) -> {};
+
+		mci.addListener(TestMessage.class, listener1);
 		assertEquals(1, mci.listenersSize());
-		mci.addListener(TestMessage.class, listener);
+
+		mci.addListener(TestMessage.class, listener2);
+		assertEquals(2, mci.listenersSize());
+
+		mci.removeListener(TestMessage.class, listener1);
+		assertEquals(1, mci.listenersSize());
+
+		mci.removeListener(TestMessage.class, listener1);
+		assertEquals(1, mci.listenersSize());
+
+		mci.removeListener(TestMessage.class, listener2);
+		assertEquals(0, mci.listenersSize());
+	}
+
+	@Test
+	public void testRemoveUnspecifiedListener() {
+		MessageListener<TestMessage> listener1 = (source, message) -> {};
+		MessageListener<TestMessage> listener2 = (source, message) -> {};
+
+		mci.addListener(TestMessage.class, listener1);
+		assertEquals(1, mci.listenersSize());
+
+		mci.addListener(TestMessage.class, listener2);
+		assertEquals(2, mci.listenersSize());
+
+		mci.removeListener(listener1);
+		assertEquals(1, mci.listenersSize());
+
+		mci.removeListener(listener1);
+		assertEquals(1, mci.listenersSize());
+
+		mci.removeListener(listener2);
 		assertEquals(0, mci.listenersSize());
 	}
 
@@ -246,16 +280,24 @@ public class MessageCentralImplTest {
 		// More robust than mocking when adding new config
 		return new MessageCentralConfiguration() {
 			@Override
-			public int getMessagingInboundQueueMax(int defaultValue) {
+			public int messagingInboundQueueMax(int defaultValue) {
 				return 10;
 			}
 			@Override
-			public int getMessagingOutboundQueueMax(int defaultValue) {
+			public int messagingOutboundQueueMax(int defaultValue) {
 				return 10;
 			}
 			@Override
-			public int getMessagingTimeToLive(int defaultValue) {
+			public int messagingTimeToLive(int defaultValue) {
 				return 10;
+			}
+			@Override
+			public int messagingInboundQueueThreads(int defaultValue) {
+				return 1;
+			}
+			@Override
+			public int messagingOutboundQueueThreads(int defaultValue) {
+				return 1;
 			}
 		};
 	}

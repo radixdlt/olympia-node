@@ -11,7 +11,6 @@ import com.radixdlt.common.EUID;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.DsonOutput.Output;
 
-import org.radix.events.Events;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.modules.Modules;
@@ -22,6 +21,7 @@ import org.radix.network.messaging.MessageProfiler;
 import org.radix.network.messaging.SignedMessage;
 import org.radix.network.peers.Peer;
 import org.radix.network.peers.PeerStore;
+import org.radix.network2.transport.SendResult;
 import org.radix.network2.transport.Transport;
 import org.radix.network2.transport.TransportOutboundConnection;
 import org.radix.state.State;
@@ -50,12 +50,10 @@ class MessageDispatcher {
 
 	private final long messageTtlMs;
 	private final Serialization serialization;
-	private final Events events;
 
-	MessageDispatcher(MessageCentralConfiguration config, Serialization serialization, Events events) {
-		this.messageTtlMs = config.getMessagingTimeToLive(30) * 1000L;
+	MessageDispatcher(MessageCentralConfiguration config, Serialization serialization) {
+		this.messageTtlMs = config.messagingTimeToLive(30) * 1000L;
 		this.serialization = serialization;
-		this.events = events;
 	}
 
 	void send(TransportManager transportManager, final MessageEvent outboundMessage) {
@@ -88,10 +86,9 @@ class MessageDispatcher {
 			}
 
 			byte[] bytes = serialize(message);
-			findTransportAndOpenConnection(transportManager, peer, bytes).thenCompose(conn -> conn.send(bytes));
-			Modules.ifAvailable(SystemMetaData.class, a -> a.increment("messages.outbound.processed"));
-			events.broadcast(outboundMessage);
-			Modules.ifAvailable(SystemMetaData.class, a -> a.increment("messages.outbound.sent"));
+			findTransportAndOpenConnection(transportManager, peer, bytes)
+				.thenCompose(conn -> conn.send(bytes))
+				.thenApply(this::updateStatistics);
 		} catch (Exception ex) {
 			log.error(message.getClass().getName() + ": Sending to " + peer.getURI() + " failed", ex);
 		} finally {
@@ -166,11 +163,18 @@ class MessageDispatcher {
 			Modules.ifAvailable(MessageProfiler.class, mp -> mp.process(message, peer));
 			listeners.messageReceived(peer, message);
 			Modules.ifAvailable(SystemMetaData.class, a -> a.increment("messages.inbound.processed"));
-			events.broadcast(inboundMessage);
 		} finally {
 			SystemProfiler.getInstance().incrementFrom("MESSAGING:IN:" + message.getCommand(), start);
 			SystemProfiler.getInstance().incrementFrom("MESSAGING:IN", start);
 		}
+	}
+
+	private SendResult updateStatistics(SendResult result) {
+		Modules.ifAvailable(SystemMetaData.class, a -> a.increment("messages.outbound.processed"));
+		if (result.isComplete()) {
+			Modules.ifAvailable(SystemMetaData.class, a -> a.increment("messages.outbound.sent"));
+		}
+		return result;
 	}
 
 	private void addInterfaceAddress(Interfaces interfaces, Peer peer) {
