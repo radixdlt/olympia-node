@@ -12,7 +12,6 @@ import org.radix.serialization2.DsonOutput;
 import org.radix.serialization2.SerializerConstants;
 import org.radix.serialization2.SerializerDummy;
 import org.radix.serialization2.SerializerId2;
-import org.radix.serialization2.client.SerializableObject;
 import org.radix.serialization2.client.Serialize;
 
 import java.util.ArrayList;
