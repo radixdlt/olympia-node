@@ -17,7 +17,7 @@ public class RepeatScheduleAction implements TempoAction {
 	private final BooleanSupplier terminationCondition;
 
 	public RepeatScheduleAction(TempoAction action, long initialDelay, long recurrentDelay, TimeUnit unit) {
-		this(action, initialDelay, recurrentDelay, unit, () -> true);
+		this(action, initialDelay, recurrentDelay, unit, () -> false); // never terminate by default
 	}
 
 	public RepeatScheduleAction(TempoAction action, long initialDelay, long recurrentDelay, TimeUnit unit, BooleanSupplier terminationCondition) {
