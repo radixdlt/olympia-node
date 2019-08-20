@@ -135,14 +135,6 @@ public class IterativeDiscoveryState implements TempoState {
 			this.backoffCounter = backoffCounter;
 		}
 
-		private IterativeDiscoveryPeerState with(CommitmentBatch commitments) {
-			return new IterativeDiscoveryPeerState(
-				pendingDiscoveryRequests,
-				discoveryStage,
-				backoffCounter
-			);
-		}
-
 		private IterativeDiscoveryPeerState with(long request) {
 			Set<Long> nextPendingRequests = new HashSet<>(pendingDiscoveryRequests);
 			nextPendingRequests.add(request);

@@ -163,9 +163,8 @@ public class CommitmentStore implements Store {
 		return commitments.build();
 	}
 
-	public CommitmentBatch getLast(EUID nid, int limit) {
+	public ImmutableList<Hash> getLast(EUID nid, int limit) {
 		LinkedList<Hash> commitments = new LinkedList<>();
-		LinkedList<Long> positions = new LinkedList<>();
 		try (Cursor cursor = this.commitments.openCursor(null, null)) {
 			DatabaseEntry pKey = new DatabaseEntry(nid.toByteArray());
 			DatabaseEntry value = new DatabaseEntry();
@@ -186,10 +185,8 @@ public class CommitmentStore implements Store {
 					break;
 				}
 
-				long position = getPositionFromPKey(pKey.getData());
 				Hash commitment = new Hash(value.getData());
 				commitments.addFirst(commitment);
-				positions.addFirst(position);
 
 				status = cursor.getNextDup(pKey, value, LockMode.DEFAULT);
 			}
@@ -197,10 +194,7 @@ public class CommitmentStore implements Store {
 			fail("Error while getting last commitments for '" + nid + "'", e);
 		}
 
-		return new CommitmentBatch(
-			commitments.toArray(new Hash[0]),
-			com.google.common.primitives.Longs.toArray(positions)
-		);
+		return ImmutableList.copyOf(commitments);
 	}
 
 	public void delete(EUID nid) {
