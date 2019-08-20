@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atomos.AtomOSKernel.AtomKernelCompute;
 import com.radixdlt.common.Pair;
 import com.radixdlt.compute.AtomCompute;
+import com.radixdlt.constraintmachine.CMAtom;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.WitnessValidator;
 import com.radixdlt.store.CMStore;
@@ -11,6 +12,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
@@ -156,5 +158,16 @@ public final class CMAtomOS {
 		return particleDefinitions.get(particle.getClass())
 			.getStaticValidation()
 			.apply(particle);
+	}
+
+	public Optional<KernelProcedureError> testAtom(CMAtom cmAtom) {
+		for (KernelConstraintProcedure procedure : kernelProcedures) {
+			Optional<KernelProcedureError> error = procedure.validate(cmAtom).findFirst();
+			if (error.isPresent()) {
+				return error;
+			}
+		}
+
+		return Optional.empty();
 	}
 }
