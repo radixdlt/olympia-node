@@ -52,10 +52,9 @@ import com.radixdlt.tempo.reactive.TempoFlowSource;
 import com.radixdlt.tempo.reactive.TempoFlowSource.TempoFlowInjector;
 import com.radixdlt.tempo.reducers.AtomDeliveryReducer;
 import com.radixdlt.tempo.reducers.ConflictsStateReducer;
-import com.radixdlt.tempo.reducers.CursorDiscoveryReducer;
+import com.radixdlt.tempo.reducers.IterativeDiscoveryReducer;
 import com.radixdlt.tempo.reducers.LivePeersReducer;
 import com.radixdlt.tempo.reducers.PassivePeersReducer;
-import com.radixdlt.tempo.reducers.PositionDiscoveryReducer;
 import com.radixdlt.tempo.reducers.SampleCollectorReducer;
 import com.radixdlt.tempo.reactive.TempoAction;
 import com.radixdlt.tempo.reactive.TempoEpic;
@@ -63,7 +62,7 @@ import com.radixdlt.tempo.reactive.TempoReducer;
 import com.radixdlt.tempo.reactive.TempoState;
 import com.radixdlt.tempo.state.AtomDeliveryState;
 import com.radixdlt.tempo.state.ConflictsState;
-import com.radixdlt.tempo.state.CursorDiscoveryState;
+import com.radixdlt.tempo.state.IterativeDiscoveryState;
 import com.radixdlt.tempo.state.LivePeersState;
 import com.radixdlt.tempo.state.PassivePeersState;
 import com.radixdlt.tempo.state.SampleCollectorState;
@@ -307,7 +306,7 @@ public final class TempoController {
 	private static final Map<String, Class<? extends TempoState>> exposedStateClassMap = ImmutableMap.<String, Class<? extends TempoState>>builder()
 		.put("atomDelivery", AtomDeliveryState.class)
 		.put("conflicts", ConflictsState.class)
-		.put("iterativeDiscovery", CursorDiscoveryState.class)
+		.put("iterativeDiscovery", IterativeDiscoveryState.class)
 		.put("livePeers", LivePeersState.class)
 		.put("passivePeers", PassivePeersState.class)
 		.put("sampleCollector", SampleCollectorState.class)
@@ -397,8 +396,7 @@ public final class TempoController {
 				.cursorStore(cursorStore)
 				.commitmentStore(commitmentStore)
 				.build());
-			builder.addReducer(new CursorDiscoveryReducer());
-			builder.addReducer(new PositionDiscoveryReducer());
+			builder.addReducer(new IterativeDiscoveryReducer());
 		}
 		if (resolver.equalsIgnoreCase("local")) {
 			builder.addEpic(new LocalResolverEpic(localSystem.getNID()));

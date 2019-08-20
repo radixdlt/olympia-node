@@ -9,42 +9,36 @@ import com.radixdlt.tempo.actions.InitiateIterativeDiscoveryAction;
 import com.radixdlt.tempo.actions.OnDiscoveryCursorSynchronisedAction;
 import com.radixdlt.tempo.actions.RequestIterativeSyncAction;
 import com.radixdlt.tempo.actions.messaging.ReceiveCursorDiscoveryResponseAction;
-import com.radixdlt.tempo.state.CursorDiscoveryState;
-import com.radixdlt.tempo.state.CursorDiscoveryState.IterativeCursorStage;
-import com.radixdlt.tempo.store.CommitmentBatch;
+import com.radixdlt.tempo.state.IterativeDiscoveryState;
+import com.radixdlt.tempo.state.IterativeDiscoveryState.IterativeDiscoveryStage;
 
-import java.util.Optional;
-
-public class CursorDiscoveryReducer implements TempoReducer<CursorDiscoveryState> {
+public class IterativeDiscoveryReducer implements TempoReducer<IterativeDiscoveryState> {
 	@Override
-	public Class<CursorDiscoveryState> stateClass() {
-		return CursorDiscoveryState.class;
+	public Class<IterativeDiscoveryState> stateClass() {
+		return IterativeDiscoveryState.class;
 	}
 
 	@Override
-	public CursorDiscoveryState initialState() {
-		return CursorDiscoveryState.empty();
+	public IterativeDiscoveryState initialState() {
+		return IterativeDiscoveryState.empty();
 	}
 
 	@Override
-	public CursorDiscoveryState reduce(CursorDiscoveryState prevState, TempoStateBundle bundle, TempoAction action) {
+	public IterativeDiscoveryState reduce(IterativeDiscoveryState prevState, TempoStateBundle bundle, TempoAction action) {
 		if (action instanceof InitiateIterativeDiscoveryAction) {
 			InitiateIterativeDiscoveryAction initialDiscovery = (InitiateIterativeDiscoveryAction) action;
-			Optional<CommitmentBatch> initialCommitments = initialDiscovery.getInitialCommitments();
-			if (initialCommitments.isPresent()) {
-				EUID peerNid = initialDiscovery.getPeer().getSystem().getNID();
-				return prevState.with(peerNid, initialCommitments.get());
-			}
+			EUID peerNid = initialDiscovery.getPeer().getSystem().getNID();
+			return prevState.with(peerNid);
 		} else if (action instanceof OnDiscoveryCursorSynchronisedAction) {
-			return prevState.withStage(((OnDiscoveryCursorSynchronisedAction) action).getPeerNid(), IterativeCursorStage.SYNCHRONISED);
+			return prevState.withStage(((OnDiscoveryCursorSynchronisedAction) action).getPeerNid(), IterativeDiscoveryStage.SYNCHRONISED);
 		} else if (action instanceof RequestIterativeSyncAction) {
 			RequestIterativeSyncAction request = (RequestIterativeSyncAction) action;
 			EUID peerNid = request.getPeer().getSystem().getNID();
 			long requestedLCPosition = request.getCursor().getLcPosition();
-			CursorDiscoveryState nextState = prevState.withRequest(peerNid, requestedLCPosition);
+			IterativeDiscoveryState nextState = prevState.withRequest(peerNid, requestedLCPosition);
 			// if this is the next request after a response, we are actively synchronising
 			if (request.isNext()) {
-				nextState = nextState.withStage(peerNid, IterativeCursorStage.BEHIND);
+				nextState = nextState.withStage(peerNid, IterativeDiscoveryStage.BEHIND);
 			}
 			return nextState;
 		} else if (action instanceof ReceiveCursorDiscoveryResponseAction) {
