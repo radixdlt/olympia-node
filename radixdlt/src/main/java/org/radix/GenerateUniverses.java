@@ -223,8 +223,7 @@ public final class GenerateUniverses
 		UInt256 supply
 	) {
 		return new FixedSupplyTokenDefinitionParticle(
-			new RadixAddress(magic, universeKey.getPublicKey()),
-			symbol,
+			RRI.of(new RadixAddress(magic, universeKey.getPublicKey()), symbol),
 			name,
 			description,
 			supply,
