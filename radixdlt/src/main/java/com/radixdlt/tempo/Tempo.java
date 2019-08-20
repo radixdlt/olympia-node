@@ -58,16 +58,6 @@ public final class Tempo extends Plugin implements Ledger {
 		this.attestor = attestor;
 	}
 
-	private void fail(String message) {
-		logger.error(message);
-		throw new TempoException(message);
-	}
-
-	private void fail(String message, Exception cause) {
-		logger.error(message, cause);
-		throw new TempoException(message, cause);
-	}
-
 	@Override
 	public Atom receive() throws InterruptedException {
 		return this.controller.receive();
