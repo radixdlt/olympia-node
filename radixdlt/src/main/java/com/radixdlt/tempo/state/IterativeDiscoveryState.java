@@ -62,13 +62,13 @@ public class IterativeDiscoveryState implements TempoState {
 		return new IterativeDiscoveryState(nextStates);
 	}
 
-	public IterativeDiscoveryState completeRequest(EUID nid, long requestedLCPosition, CommitmentBatch commitmentBatch) {
+	public IterativeDiscoveryState completeRequest(EUID nid, long requestedLCPosition) {
 		Map<EUID, IterativeDiscoveryPeerState> nextStates = new HashMap<>(states);
 		IterativeDiscoveryPeerState prevState = states.get(nid);
 		if (prevState == null) {
 			throw new TempoException("State for '" + nid + "' does not exist");
 		}
-		nextStates.put(nid, prevState.complete(requestedLCPosition, commitmentBatch));
+		nextStates.put(nid, prevState.complete(requestedLCPosition));
 		return new IterativeDiscoveryState(nextStates);
 	}
 
@@ -153,7 +153,7 @@ public class IterativeDiscoveryState implements TempoState {
 			);
 		}
 
-		private IterativeDiscoveryPeerState complete(long request, CommitmentBatch commitmentBatch) {
+		private IterativeDiscoveryPeerState complete(long request) {
 			Set<Long> nextPendingRequests = new HashSet<>(pendingDiscoveryRequests);
 			nextPendingRequests.remove(request);
 			return new IterativeDiscoveryPeerState(

@@ -1,8 +1,9 @@
 package com.radixdlt.tempo.epics;
 
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
+import com.radixdlt.crypto.Hash;
 import com.radixdlt.tempo.AtomStoreView;
 import com.radixdlt.tempo.LogicalClockCursor;
 import com.radixdlt.tempo.TempoException;
@@ -52,11 +53,7 @@ public final class IterativeDiscoveryEpic implements TempoEpic {
 	// maximum backoff when synchronised (exponential, e.g. 2^4 = 16 seconds)
 	private static final int MAX_BACKOFF = 4;
 	// how many commitments to send per response (32 bytes for commitment + 8 bytes for position)
-	private static final int RESPONSE_COMMITMENTS_LIMIT = 512;
-	// buffer sized to contain all bits of an AID, equal to commitment length
-	private static final int COMMITMENT_BUFFER_SIZE = 256;
-	// 1000 tps for 10 years gives a 1.71e-7 collision probability for 64 bits, so should be okay
-	private static final int COMMITMENT_CERTAINTY_THRESHOLD = 64; // must be multiple of 8
+	private static final int RESPONSE_LIMIT = 512;
 
 	private static final Logger logger = Logging.getLogger("Sync");
 
@@ -170,12 +167,16 @@ public final class IterativeDiscoveryEpic implements TempoEpic {
 			}, IterativeDiscoveryState.class, PassivePeersState.class);
 
 		// TODO flowify
+		// retrieve and send back commitments starting from the requested cursor up to the limit
 		TempoFlow<TempoAction> receiveCursorRequests = flow.of(ReceiveIterativeDiscoveryRequestAction.class)
 			.map(request -> {
 				long lcPosition = request.getCursor().getLcPosition();
-				// retrieve and send back commitments starting from the requested cursor up to the limit
-				CommitmentBatch commitments = commitmentStore.getNext(self, lcPosition, RESPONSE_COMMITMENTS_LIMIT);
-				long nextLcPosition = commitments.getLastPosition();
+				// TODO Commitments may be larger than aids as aid may have been deleted but commitments remain.
+				// TODO This does not cause any immediate issues but should be addressed in the long run.
+				ImmutableList<Hash> commitments = commitmentStore.getNext(self, lcPosition, RESPONSE_LIMIT);
+				long nextLcPosition = lcPosition + commitments.size();
+				ImmutableList<AID> aids = storeView.getNext(lcPosition, RESPONSE_LIMIT);
+
 				LogicalClockCursor nextCursor = null;
 				// only set next cursor if the cursor was actually advanced
 				if (nextLcPosition > lcPosition) {
@@ -186,13 +187,15 @@ public final class IterativeDiscoveryEpic implements TempoEpic {
 					logger.debug(String.format("Responding to iterative discovery request from %s for %d with %d commitments (next=%s)",
 						request.getPeer(), lcPosition, commitments.size(), responseCursor.hasNext() ? nextLcPosition : "<none>"));
 				}
-				return new SendIterativeDiscoveryResponseAction(commitments, responseCursor, request.getPeer());
+				return new SendIterativeDiscoveryResponseAction(commitments, aids, responseCursor, request.getPeer());
 			});
 
+		// store received commitments
 		flow.of(ReceiveIterativeDiscoveryResponseAction.class)
 			.forEach(response -> {
 				EUID peerNid = response.getPeer().getSystem().getNID();
-				commitmentStore.put(peerNid, response.getCommitments());
+				LogicalClockCursor peerCursor = response.getCursor();
+				commitmentStore.put(peerNid, response.getCommitments(), peerCursor.getLcPosition());
 			});
 
 		// TODO flowify, breakup!
@@ -207,9 +210,6 @@ public final class IterativeDiscoveryEpic implements TempoEpic {
 				if (logger.hasLevel(Logging.DEBUG)) {
 					logger.debug(String.format("Received iterative discovery response from %s with %s commitments", peer, responseSize));
 				}
-
-				// store new commitments
-				commitmentStore.put(peerNid, response.getCommitments());
 
 				// update last known cursor
 				boolean isLatest = updateCursor(peerNid, peerCursor);
@@ -235,24 +235,11 @@ public final class IterativeDiscoveryEpic implements TempoEpic {
 				}
 
 				Stream<TempoAction> discoveryActions = Stream.empty();
-				// TODO !!! REQUEST DISCOVERY
-
+				if (!response.getAids().isEmpty()) {
+					discoveryActions = Stream.of(new RequestDeliveryAction(response.getAids(), peer));
+				}
 				return Stream.concat(discoveryActions, continuedActions);
 			}, IterativeDiscoveryState.class, PassivePeersState.class);
-
-		TempoFlow<TempoAction> receivePositionRequests = flow.of(ReceivePositionDiscoveryRequestAction.class)
-			.map(request -> {
-				ImmutableMap.Builder<Long, AID> aids = ImmutableMap.builder();
-				for (Long position : request.getPositions()) {
-					AID aid = storeView.get(position).orElseThrow(()
-						-> new TempoException("Peer " + request.getPeer() + " requested non-existent position " + position));
-					aids.put(position, aid);
-				}
-				return new SendPositionDiscoveryResponseAction(aids.build(), request.getPeer());
-			});
-
-		TempoFlow<TempoAction> receivePositionResponses = flow.of(ReceivePositionDiscoveryResponseAction.class)
-			.map(response -> new RequestDeliveryAction(response.getAids().values(), response.getPeer()));
 
 		flow.of(ResetAction.class)
 			.forEach(reset -> {
@@ -266,9 +253,7 @@ public final class IterativeDiscoveryEpic implements TempoEpic {
 			requestIterativeSync,
 			timeoutCursorRequests,
 			receiveCursorRequests,
-			receiveCursorResponses,
-			receivePositionRequests,
-			receivePositionResponses
+			receiveCursorResponses
 		);
 	}
 

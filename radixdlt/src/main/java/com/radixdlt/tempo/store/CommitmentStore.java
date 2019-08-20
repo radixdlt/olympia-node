@@ -1,5 +1,6 @@
 package com.radixdlt.tempo.store;
 
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.common.EUID;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.tempo.TempoException;
@@ -114,17 +115,14 @@ public class CommitmentStore implements Store {
 		}
 	}
 
-	public void put(EUID nid, CommitmentBatch batch) {
+	public void put(EUID nid, ImmutableList<Hash> commitments, long startPosition) {
 		Transaction transaction = dbEnv.get().getEnvironment().beginTransaction(null, null);
 		try {
-			Hash[] commitments = batch.getCommitments();
-			long[] lcPositions = batch.getPositions();
-
 			DatabaseEntry pKey = new DatabaseEntry();
 			DatabaseEntry value = new DatabaseEntry();
-			for (int i = 0; i < commitments.length; i++) {
-				pKey.setData(toPKey(nid, lcPositions[i]));
-				value.setData(commitments[i].toByteArray());
+			for (int i = 0; i < commitments.size(); i++) {
+				pKey.setData(toPKey(nid, startPosition + i));
+				value.setData(commitments.get(i).toByteArray());
 				OperationStatus status = this.commitments.put(transaction, pKey, value);
 				if (status != OperationStatus.SUCCESS) {
 					fail("Database returned status " + status + " for put operation");
@@ -138,15 +136,15 @@ public class CommitmentStore implements Store {
 		}
 	}
 
-	public CommitmentBatch getNext(EUID nid, long logicalClock, int limit) {
-		List<Hash> commitments = new ArrayList<>();
-		List<Long> positions = new ArrayList<>();
+	public ImmutableList<Hash> getNext(EUID nid, long logicalClock, int limit) {
+		ImmutableList.Builder<Hash> commitments = ImmutableList.builder();
 		try (Cursor cursor = this.commitments.openCursor(null, null)) {
 			DatabaseEntry pKey = new DatabaseEntry(toPKey(nid, logicalClock + 1));
 			DatabaseEntry value = new DatabaseEntry();
 
 			OperationStatus status = cursor.getSearchKeyRange(pKey, value, LockMode.DEFAULT);
-			while (status == OperationStatus.SUCCESS && commitments.size() < limit) {
+			int size = 0;
+			while (status == OperationStatus.SUCCESS && size < limit) {
 				status = cursor.getNext(pKey, value, LockMode.DEFAULT);
 				EUID valueNid = getNidFromPKey(pKey.getData());
 				// early out if the nid no longer matches (overran into other node's commitments)
@@ -155,17 +153,14 @@ public class CommitmentStore implements Store {
 				}
 
 				Hash commitment = new Hash(value.getData());
-				long position = getPositionFromPKey(pKey.getData());
 				commitments.add(commitment);
-				positions.add(position);
+				size++;
 			}
 		} catch (Exception e) {
 			fail("Error while getting next commitments for '" + nid + "'", e);
 		}
 
-		Hash[] commitmentsArray = commitments.toArray(new Hash[0]);
-		long[] positionsArray = com.google.common.primitives.Longs.toArray(positions);
-		return new CommitmentBatch(commitmentsArray, positionsArray);
+		return commitments.build();
 	}
 
 	public CommitmentBatch getLast(EUID nid, int limit) {

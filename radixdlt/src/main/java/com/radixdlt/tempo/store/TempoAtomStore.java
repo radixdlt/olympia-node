@@ -2,7 +2,6 @@ package com.radixdlt.tempo.store;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
 import com.google.common.primitives.UnsignedBytes;
 import com.radixdlt.Atom;
 import com.radixdlt.common.AID;
@@ -18,7 +17,6 @@ import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.tempo.AtomStore;
 import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.TempoException;
-import com.radixdlt.tempo.LogicalClockCursor;
 import com.radixdlt.utils.Longs;
 import com.sleepycat.je.Cursor;
 import com.sleepycat.je.Database;
@@ -435,39 +433,32 @@ public class TempoAtomStore implements AtomStore {
 	// FIXME bad performance due to shardpsace check for every atom
 	// FIXME bad performance due to complete atom deserialization
 	@Override
-	public Pair<ImmutableList<AID>, LogicalClockCursor> getNext(LogicalClockCursor logicalClockCursor, int limit, ShardSpace shardSpace) {
+	public ImmutableList<AID> getNext(long logicalClock, int limit) {
 		long start = profiler.begin();
 		try (Cursor cursor = this.atoms.openCursor(null, null)) {
-			List<AID> aids = Lists.newArrayList();
-			long position = logicalClockCursor.getLcPosition();
-			DatabaseEntry search = new DatabaseEntry(Longs.toByteArray(position + 1));
+			ImmutableList.Builder<AID> aids = ImmutableList.builder();
+			DatabaseEntry search = new DatabaseEntry(Longs.toByteArray(logicalClock + 1));
 			DatabaseEntry value = new DatabaseEntry();
 			OperationStatus status = cursor.getSearchKeyRange(search, value, LockMode.DEFAULT);
 
+			int size = 0;
 			while (status == OperationStatus.SUCCESS) {
 				TempoAtom atom = serialization.fromDson(value.getData(), TempoAtom.class);
-				position = Longs.fromByteArray(search.getData());
-				if (shardSpace.intersects(atom.getShards())) {
-					aids.add(atom.getAID());
-					// abort when we've exceeded the limit
-					if (aids.size() >= limit) {
-						break;
-					}
+				aids.add(atom.getAID());
+				// abort when we've exceeded the limit
+				if (size >= limit) {
+					break;
 				}
 				status = cursor.getNext(search, value, LockMode.DEFAULT);
+				size++;
 			}
 
-			LogicalClockCursor nextCursor = null;
-			if (position != logicalClockCursor.getLcPosition()) {
-				nextCursor = new LogicalClockCursor(position, null);
-			}
-			return Pair.of(ImmutableList.copyOf(aids), new LogicalClockCursor(logicalClockCursor.getLcPosition(), nextCursor));
+			return aids.build();
 		} catch (SerializationException e) {
 			throw new TempoException("Error while querying from database", e);
 		} finally {
 			profiler.incrementFrom("ATOM_STORE:DISCOVER:SYNC", start);
 		}
-
 	}
 
 	@Override

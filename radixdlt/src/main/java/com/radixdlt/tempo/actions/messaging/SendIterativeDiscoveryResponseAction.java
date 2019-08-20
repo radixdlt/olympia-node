@@ -1,27 +1,35 @@
 package com.radixdlt.tempo.actions.messaging;
 
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.common.AID;
+import com.radixdlt.crypto.Hash;
 import com.radixdlt.tempo.LogicalClockCursor;
 import com.radixdlt.tempo.reactive.TempoAction;
 import com.radixdlt.tempo.messages.IterativeDiscoveryResponseMessage;
-import com.radixdlt.tempo.store.CommitmentBatch;
 import org.radix.network.messaging.Message;
 import org.radix.network.peers.Peer;
 
 import java.util.Objects;
 
 public class SendIterativeDiscoveryResponseAction implements TempoAction {
-	private final CommitmentBatch commitments;
+	private final ImmutableList<Hash> commitments;
+	private final ImmutableList<AID> aids;
 	private final LogicalClockCursor cursor;
 	private final Peer peer;
 
-	public SendIterativeDiscoveryResponseAction(CommitmentBatch commitments, LogicalClockCursor cursor, Peer peer) {
+	public SendIterativeDiscoveryResponseAction(ImmutableList<Hash> commitments, ImmutableList<AID> aids, LogicalClockCursor cursor, Peer peer) {
 		this.commitments = Objects.requireNonNull(commitments, "commitments is required");
+		this.aids = Objects.requireNonNull(aids, "aids is required");
 		this.cursor = Objects.requireNonNull(cursor, "cursor is required");
 		this.peer = Objects.requireNonNull(peer, "peer is required");
 	}
 
-	public CommitmentBatch getCommitments() {
+	public ImmutableList<Hash> getCommitments() {
 		return commitments;
+	}
+
+	public ImmutableList<AID> getAids() {
+		return aids;
 	}
 
 	public LogicalClockCursor getCursor() {
@@ -33,6 +41,6 @@ public class SendIterativeDiscoveryResponseAction implements TempoAction {
 	}
 
 	public Message toMessage() {
-		return new IterativeDiscoveryResponseMessage(commitments, cursor);
+		return new IterativeDiscoveryResponseMessage(commitments, aids, cursor);
 	}
 }

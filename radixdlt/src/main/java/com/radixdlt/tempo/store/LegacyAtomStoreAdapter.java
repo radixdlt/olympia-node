@@ -3,6 +3,7 @@ package com.radixdlt.tempo.store;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.middleware.SimpleRadixEngineAtom;
 import com.radixdlt.common.AID;
+import com.radixdlt.atomos.RadixEngineUtils;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.middleware.RadixEngineUtils;
 import com.radixdlt.ledger.LedgerCursor;
@@ -12,7 +13,6 @@ import com.radixdlt.tempo.AtomStore;
 import com.radixdlt.tempo.LegacyUtils;
 import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.TempoException;
-import com.radixdlt.tempo.LogicalClockCursor;
 import com.radixdlt.utils.UInt384;
 import org.radix.atoms.Atom;
 import org.radix.atoms.AtomDiscoveryRequest;
@@ -24,7 +24,7 @@ import org.radix.discovery.DiscoveryException;
 import org.radix.discovery.DiscoveryRequest;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.shards.ShardSpace;
+import org.radix.universe.system.LocalSystem;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -134,19 +134,16 @@ public class LegacyAtomStoreAdapter implements AtomStore {
 	}
 
 	@Override
-	public Pair<ImmutableList<AID>, LogicalClockCursor> getNext(LogicalClockCursor logicalClockCursor, int limit, ShardSpace shardSpace) {
+	public ImmutableList<AID> getNext(long logicalClockCursor, int limit) {
 		try {
 			AtomDiscoveryRequest atomDiscoveryRequest = new AtomDiscoveryRequest(DiscoveryRequest.Action.DISCOVER);
 			atomDiscoveryRequest.setLimit((short) 64);
-			atomDiscoveryRequest.setCursor(new DiscoveryCursor(logicalClockCursor.getLcPosition()));
-			atomDiscoveryRequest.setShards(shardSpace);
+			atomDiscoveryRequest.setCursor(new DiscoveryCursor(logicalClockCursor));
+			atomDiscoveryRequest.setShards(LocalSystem.getInstance().getShards());
 			atomSyncStoreSupplier.get().discovery(atomDiscoveryRequest);
 
 			ImmutableList<AID> inventory = ImmutableList.copyOf(atomDiscoveryRequest.getInventory());
-			DiscoveryCursor discoveryCursor = atomDiscoveryRequest.getCursor();
-			LogicalClockCursor nextCursor = discoveryCursor.hasNext() ? new LogicalClockCursor(discoveryCursor.getNext().getPosition(), null) : null;
-			LogicalClockCursor updatedCursor = new LogicalClockCursor(logicalClockCursor.getLcPosition(), nextCursor);
-			return Pair.of(inventory, updatedCursor);
+			return inventory;
 		} catch (DiscoveryException e) {
 			throw new TempoException("Error while advancing cursor", e);
 		}

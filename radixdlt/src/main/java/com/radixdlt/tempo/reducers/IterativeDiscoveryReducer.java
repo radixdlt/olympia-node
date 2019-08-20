@@ -45,7 +45,7 @@ public class IterativeDiscoveryReducer implements TempoReducer<IterativeDiscover
 			ReceiveIterativeDiscoveryResponseAction response = (ReceiveIterativeDiscoveryResponseAction) action;
 			EUID peerNid = response.getPeer().getSystem().getNID();
 			long requestedLCPosition = response.getCursor().getLcPosition();
-			return prevState.completeRequest(peerNid, requestedLCPosition, response.getCommitments());
+			return prevState.completeRequest(peerNid, requestedLCPosition);
 		} else if (action instanceof AbandonIterativeDiscoveryAction) {
 			return prevState.without(((AbandonIterativeDiscoveryAction) action).getPeerNid());
 		}

@@ -6,7 +6,6 @@ import com.radixdlt.utils.Pair;
 import com.radixdlt.ledger.LedgerCursor;
 import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerSearchMode;
-import org.radix.shards.ShardSpace;
 
 import java.util.List;
 import java.util.Optional;
@@ -62,10 +61,9 @@ public interface AtomStoreView {
 
 	/**
 	 * Advance the cursor to discover up to certain number of aids within a shard range
-	 * @param cursor The current cursor
+	 * @param logicalClock The current cursor
 	 * @param limit The maximum number of aids
-	 * @param shardSpace The shard range to consider
 	 * @return The relevant aids and the advanced cursor
 	 */
-	Pair<ImmutableList<AID>, LogicalClockCursor> getNext(LogicalClockCursor cursor, int limit, ShardSpace shardSpace);
+	ImmutableList<AID> getNext(long logicalClock, int limit);
 }
