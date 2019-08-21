@@ -21,7 +21,6 @@ import org.radix.database.DatabaseEnvironment;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
@@ -103,8 +102,6 @@ public class CommitmentStore implements Store {
 		try {
 			DatabaseEntry pKey = new DatabaseEntry(toPKey(nid, logicalClock));
 			DatabaseEntry value = new DatabaseEntry(commitment.toByteArray());
-			logger.debug("Storing commitment from '" + nid + "' at " + Hex.toHexString(pKey.getData()));
-
 			OperationStatus status = this.commitments.putNoOverwrite(transaction, pKey, value);
 			if (status != OperationStatus.SUCCESS) {
 				fail("Database returned status " + status + " for put operation");
@@ -124,7 +121,6 @@ public class CommitmentStore implements Store {
 			DatabaseEntry value = new DatabaseEntry();
 			for (int i = 0; i < commitments.size(); i++) {
 				pKey.setData(toPKey(nid, startPosition + i));
-				logger.debug("Storing commitment from '" + nid + "' at " + Hex.toHexString(pKey.getData()));
 				value.setData(commitments.get(i).toByteArray());
 				OperationStatus status = this.commitments.putNoOverwrite(transaction, pKey, value);
 				if (status != OperationStatus.SUCCESS) {
