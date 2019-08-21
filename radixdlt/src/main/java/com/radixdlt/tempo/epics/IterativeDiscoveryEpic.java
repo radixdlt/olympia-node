@@ -100,7 +100,7 @@ public final class IterativeDiscoveryEpic implements TempoEpic {
 			.map(request -> new SendIterativeDiscoveryRequestAction(request.getCursor(), request.getPeer()))
 			.doOnNext(send -> {
 				if (logger.hasLevel(Logging.DEBUG)) {
-					logger.debug(String.format("Requesting iterative discovery from '%s' starting at '%d'", send.getPeer(), send.getCursor()));
+					logger.debug(String.format("Requesting iterative discovery from '%s' starting at '%s'", send.getPeer(), send.getCursor()));
 				}
 			})
 			.flatMap(send -> Stream.of(send,
