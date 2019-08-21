@@ -383,7 +383,6 @@ public final class TempoController {
 			commitmentStore.open();
 			builder.addEpic(IterativeDiscoveryEpic.builder()
 				.self(localSystem.getNID())
-				.shardSpaceSupplier(localSystem::getShards)
 				.storeView(storeView)
 				.cursorStore(cursorStore)
 				.commitmentStore(commitmentStore)

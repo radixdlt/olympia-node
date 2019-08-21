@@ -7,7 +7,7 @@ import com.radixdlt.tempo.TempoStateBundle;
 import com.radixdlt.tempo.actions.AbandonIterativeDiscoveryAction;
 import com.radixdlt.tempo.actions.InitiateIterativeDiscoveryAction;
 import com.radixdlt.tempo.actions.OnDiscoveryCursorSynchronisedAction;
-import com.radixdlt.tempo.actions.RequestIterativeSyncAction;
+import com.radixdlt.tempo.actions.RequestIterativeDiscoveryAction;
 import com.radixdlt.tempo.actions.messaging.ReceiveIterativeDiscoveryResponseAction;
 import com.radixdlt.tempo.state.IterativeDiscoveryState;
 import com.radixdlt.tempo.state.IterativeDiscoveryState.IterativeDiscoveryStage;
@@ -31,8 +31,8 @@ public class IterativeDiscoveryReducer implements TempoReducer<IterativeDiscover
 			return prevState.with(peerNid);
 		} else if (action instanceof OnDiscoveryCursorSynchronisedAction) {
 			return prevState.withStage(((OnDiscoveryCursorSynchronisedAction) action).getPeerNid(), IterativeDiscoveryStage.SYNCHRONISED);
-		} else if (action instanceof RequestIterativeSyncAction) {
-			RequestIterativeSyncAction request = (RequestIterativeSyncAction) action;
+		} else if (action instanceof RequestIterativeDiscoveryAction) {
+			RequestIterativeDiscoveryAction request = (RequestIterativeDiscoveryAction) action;
 			EUID peerNid = request.getPeer().getSystem().getNID();
 			long requestedLCPosition = request.getCursor().getLcPosition();
 			IterativeDiscoveryState nextState = prevState.withRequest(peerNid, requestedLCPosition);

@@ -10,10 +10,6 @@ import org.radix.shards.ShardSpace;
 
 @SerializerId2("tempo.sync.discovery.iterative.request")
 public class IterativeDiscoveryRequestMessage extends Message {
-	@JsonProperty("shards")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private ShardSpace shardSpace;
-
 	@JsonProperty("cursor")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private LogicalClockCursor cursor;
@@ -22,13 +18,8 @@ public class IterativeDiscoveryRequestMessage extends Message {
 		// Serializer only
 	}
 
-	public IterativeDiscoveryRequestMessage(ShardSpace shardSpace, LogicalClockCursor cursor) {
-		this.shardSpace = shardSpace;
+	public IterativeDiscoveryRequestMessage(LogicalClockCursor cursor) {
 		this.cursor = cursor;
-	}
-
-	public ShardSpace getShardSpace() {
-		return shardSpace;
 	}
 
 	public LogicalClockCursor getCursor() {

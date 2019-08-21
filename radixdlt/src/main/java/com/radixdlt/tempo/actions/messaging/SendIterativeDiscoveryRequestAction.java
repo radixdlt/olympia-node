@@ -10,18 +10,12 @@ import org.radix.shards.ShardSpace;
 import java.util.Objects;
 
 public class SendIterativeDiscoveryRequestAction implements TempoAction {
-	private final ShardSpace shardSpace;
 	private final LogicalClockCursor cursor;
 	private final Peer peer;
 
-	public SendIterativeDiscoveryRequestAction(ShardSpace shardSpace, LogicalClockCursor cursor, Peer peer) {
-		this.shardSpace = Objects.requireNonNull(shardSpace, "shardSpace is required");
+	public SendIterativeDiscoveryRequestAction(LogicalClockCursor cursor, Peer peer) {
 		this.cursor = Objects.requireNonNull(cursor, "cursor is required");
 		this.peer = Objects.requireNonNull(peer, "peer is required");
-	}
-
-	public ShardSpace getShardSpace() {
-		return shardSpace;
 	}
 
 	public LogicalClockCursor getCursor() {
@@ -33,6 +27,6 @@ public class SendIterativeDiscoveryRequestAction implements TempoAction {
 	}
 
 	public Message toMessage() {
-		return new IterativeDiscoveryRequestMessage(shardSpace, cursor);
+		return new IterativeDiscoveryRequestMessage(cursor);
 	}
 }

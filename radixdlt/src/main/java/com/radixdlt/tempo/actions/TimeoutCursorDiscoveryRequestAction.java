@@ -1,5 +1,6 @@
 package com.radixdlt.tempo.actions;
 
+import com.radixdlt.common.EUID;
 import com.radixdlt.tempo.LogicalClockCursor;
 import com.radixdlt.tempo.reactive.TempoAction;
 import org.radix.network.peers.Peer;
@@ -21,5 +22,9 @@ public class TimeoutCursorDiscoveryRequestAction implements TempoAction {
 
 	public Peer getPeer() {
 		return peer;
+	}
+
+	public EUID getPeerNid() {
+		return peer.getSystem().getNID();
 	}
 }

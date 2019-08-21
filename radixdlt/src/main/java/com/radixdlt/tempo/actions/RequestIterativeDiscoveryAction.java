@@ -6,12 +6,12 @@ import org.radix.network.peers.Peer;
 
 import java.util.Objects;
 
-public class RequestIterativeSyncAction implements TempoAction {
+public class RequestIterativeDiscoveryAction implements TempoAction {
 	private final Peer peer;
 	private final LogicalClockCursor cursor;
 	private final boolean isNext;
 
-	public RequestIterativeSyncAction(Peer peer, LogicalClockCursor cursor, boolean isNext) {
+	public RequestIterativeDiscoveryAction(Peer peer, LogicalClockCursor cursor, boolean isNext) {
 		this.peer = Objects.requireNonNull(peer, "peer is required");
 		this.cursor = Objects.requireNonNull(cursor, "cursor is required");
 		this.isNext = isNext;

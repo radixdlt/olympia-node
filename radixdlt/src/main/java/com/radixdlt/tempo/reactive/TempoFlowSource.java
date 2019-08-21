@@ -193,6 +193,19 @@ public final class TempoFlowSource {
 		}
 
 		@Override
+		public TempoFlow<T_OUT> doOnNext(Consumer<? super T_OUT> consumer) {
+			Objects.requireNonNull(consumer, "consumer is required");
+
+			return new TempoFlowOp<T_OUT, T_OUT>(this) {
+				@Override
+				void doAccept(T_OUT value, TempoStateBundle bundle) {
+					consumer.accept(value);
+					downstream.accept(value, bundle);
+				}
+			};
+		}
+
+		@Override
 		public void forEach(Consumer<T_OUT> consumer) {
 			Objects.requireNonNull(consumer, "consumer is required");
 

@@ -1,9 +1,7 @@
 package com.radixdlt.tempo.store;
 
 import com.radixdlt.common.EUID;
-import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.tempo.TempoException;
-import com.radixdlt.tempo.LogicalClockCursor;
 import com.radixdlt.utils.Longs;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
@@ -93,10 +91,10 @@ public final class LogicalClockCursorStore implements Store {
 		}
 	}
 
-	public void put(EUID nid, CursorType cursorType, long cursor) {
+	public void put(EUID nid, long cursor) {
 		Transaction transaction = dbEnv.get().getEnvironment().beginTransaction(null, null);
 		try {
-			DatabaseEntry key = new DatabaseEntry(toPKey(nid, cursorType));
+			DatabaseEntry key = new DatabaseEntry(toPKey(nid));
 			DatabaseEntry value = new DatabaseEntry(Longs.toByteArray(cursor));
 
 			OperationStatus status = this.cursors.put(transaction, key, value);
@@ -111,9 +109,9 @@ public final class LogicalClockCursorStore implements Store {
 		}
 	}
 
-	public Optional<Long> get(EUID nid, CursorType cursorType) {
+	public Optional<Long> get(EUID nid) {
 		try {
-			DatabaseEntry key = new DatabaseEntry(toPKey(nid, cursorType));
+			DatabaseEntry key = new DatabaseEntry(toPKey(nid));
 			DatabaseEntry value = new DatabaseEntry();
 
 			OperationStatus status = this.cursors.get(null, key, value, LockMode.DEFAULT);
@@ -132,11 +130,8 @@ public final class LogicalClockCursorStore implements Store {
 		return Optional.empty();
 	}
 
-	private byte[] toPKey(EUID nid, CursorType type) {
-		byte[] pKey = new byte[EUID.BYTES + 1];
-		System.arraycopy(nid.toByteArray(), 0, pKey, 1, EUID.BYTES);
-		pKey[0] = type.prefix;
-		return pKey;
+	private byte[] toPKey(EUID nid) {
+		return nid.toByteArray();
 	}
 
 	public enum CursorType {
