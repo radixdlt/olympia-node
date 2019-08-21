@@ -17,7 +17,6 @@ import org.radix.modules.Modules;
 import org.radix.modules.Plugin;
 import org.radix.modules.exceptions.ModuleException;
 import org.radix.properties.RuntimeProperties;
-import com.radixdlt.serialization.Serialization;
 import org.radix.time.Time;
 import com.radixdlt.universe.Universe;
 import org.radix.universe.system.LocalSystem;
@@ -37,7 +36,6 @@ public class Validation extends Plugin {
 		final AtomDriver atomDriver = new AtomDriver(
 			() -> Modules.get(Universe.class),
 			Time::currentTimestamp,
-			Modules.get(Serialization.class),
 			skipAtomFeeCheck,
 			Time.MAXIMUM_DRIFT
 		);
