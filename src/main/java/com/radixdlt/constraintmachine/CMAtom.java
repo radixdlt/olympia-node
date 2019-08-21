@@ -8,6 +8,7 @@ import com.radixdlt.atoms.Particle;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
 import com.radixdlt.crypto.ECSignature;
+import com.radixdlt.crypto.Hash;
 import java.util.Set;
 
 /**
@@ -16,11 +17,13 @@ import java.util.Set;
  */
 public final class CMAtom {
 	public static final String METADATA_TIMESTAMP_KEY = "timestamp";
+	public static final String METADATA_POW_NONCE_KEY = "powNonce";
 
 	// TODO: Remove
 	private final ImmutableAtom atom;
 
 
+	private final Hash powFeeHash;
 	private final AID aid;
 	private final ImmutableList<CMParticle> cmParticles;
 	private final ImmutableMap<EUID, ECSignature> signatures;
@@ -34,6 +37,7 @@ public final class CMAtom {
 	) {
 		this.atom = atom;
 
+		this.powFeeHash = atom.copyExcludingMetadata(ImmutableAtom.METADATA_POW_NONCE_KEY).getHash();
 		this.aid = atom.getAID();
 		this.cmParticles = cmParticles;
 		this.signatures = ImmutableMap.copyOf(atom.getSignatures());
@@ -44,6 +48,10 @@ public final class CMAtom {
 			.flatMap(Set::stream)
 			.collect(ImmutableSet.toImmutableSet());
 		this.shards = this.destinations.stream().map(EUID::getShard).collect(ImmutableSet.toImmutableSet());
+	}
+
+	public Hash getPowFeeHash() {
+		return powFeeHash;
 	}
 
 	/**

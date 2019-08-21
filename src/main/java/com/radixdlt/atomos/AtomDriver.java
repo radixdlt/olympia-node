@@ -1,6 +1,7 @@
 package com.radixdlt.atomos;
 
 import com.radixdlt.atoms.ImmutableAtom;
+import com.radixdlt.constraintmachine.CMAtom;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
@@ -78,8 +79,7 @@ public final class AtomDriver implements AtomOSDriver {
 
 		kernel.onAtom()
 			.require(cmAtom -> {
-				final ImmutableAtom atom = cmAtom.getAtom();
-				final boolean isMagic = Objects.equals(atom.getMetaData().get("magic"), "0xdeadbeef");
+				final boolean isMagic = Objects.equals(cmAtom.getMetaData().get("magic"), "0xdeadbeef");
 
 				// Atom has signatures
 				if (cmAtom.getSignatures().isEmpty() && !isMagic) {
@@ -88,19 +88,19 @@ public final class AtomDriver implements AtomOSDriver {
 
 				// Atom has fee
 				if (!skipAtomFeeCheck) {
-					if (universeSupplier.get().getGenesis().contains(atom) || isMagic) {
+					if (universeSupplier.get().getGenesis().stream().map(ImmutableAtom::getAID).anyMatch(cmAtom.getAID()::equals) || isMagic) {
 						// genesis and magic atoms don't need a fee
 						return Result.success();
 					}
 
-					String powNonceString = atom.getMetaData().get(ImmutableAtom.METADATA_POW_NONCE_KEY);
+					String powNonceString = cmAtom.getMetaData().get(CMAtom.METADATA_POW_NONCE_KEY);
 					if (powNonceString == null) {
 						return Result.error("atom fee missing, metadata does not contain '" + ImmutableAtom.METADATA_POW_NONCE_KEY + "'");
 					}
 
 					try {
-						long powNonce = Long.parseLong(powNonceString);
-						Hash powFeeHash = atom.copyExcludingMetadata(ImmutableAtom.METADATA_POW_NONCE_KEY).getHash();
+						final long powNonce = Long.parseLong(powNonceString);
+						final Hash powFeeHash = cmAtom.getPowFeeHash();
 						POW pow = new POW(universeSupplier.get().getMagic(), powFeeHash, powNonce);
 
 						return checkPow(pow, powFeeHash, DEFAULT_TARGET, universeSupplier.get().getMagic());
