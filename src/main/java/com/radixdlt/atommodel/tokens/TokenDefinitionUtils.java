@@ -87,7 +87,7 @@ public final class TokenDefinitionUtils {
 	}
 
 	public static Result staticCheck(FixedSupplyTokenDefinitionParticle tokenDefParticle) {
-		final Result symbolResult = validateSymbol(tokenDefParticle.getSymbol());
+		final Result symbolResult = validateSymbol(tokenDefParticle.getRRI().getName());
 		if (symbolResult.isError()) {
 			return symbolResult;
 		}
@@ -106,7 +106,7 @@ public final class TokenDefinitionUtils {
 	}
 
 	public static Result staticCheck(MutableSupplyTokenDefinitionParticle tokenDefParticle) {
-		final Result symbolResult = validateSymbol(tokenDefParticle.getSymbol());
+		final Result symbolResult = validateSymbol(tokenDefParticle.getRRI().getName());
 		if (symbolResult.isError()) {
 			return symbolResult;
 		}

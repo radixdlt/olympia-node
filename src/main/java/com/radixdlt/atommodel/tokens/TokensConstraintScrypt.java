@@ -23,14 +23,14 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 	public void main(SysCalls os) {
 		os.registerParticle(
 			MutableSupplyTokenDefinitionParticle.class,
-			MutableSupplyTokenDefinitionParticle::getAddress,
+			particle -> particle.getRRI().getAddress(),
 			TokenDefinitionUtils::staticCheck,
 			MutableSupplyTokenDefinitionParticle::getRRI
 		);
 
 		os.registerParticle(
 			FixedSupplyTokenDefinitionParticle.class,
-			FixedSupplyTokenDefinitionParticle::getOwner,
+			particle -> particle.getRRI().getAddress(),
 			TokenDefinitionUtils::staticCheck,
 			FixedSupplyTokenDefinitionParticle::getRRI
 		);
@@ -38,7 +38,22 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 		os.registerParticle(
 			UnallocatedTokensParticle.class,
 			UnallocatedTokensParticle::getAddress,
-			u -> Result.of(!u.getAmount().isZero(), "Amount cannot be zero"),
+			particle -> {
+				if (particle.getAmount() == null) {
+					return Result.error("amount must not be null");
+				}
+				if (particle.getAmount().isZero()) {
+					return Result.error("amount cannot be zero");
+				}
+				if (particle.getGranularity() == null) {
+					return Result.error("granularity must not be null");
+				}
+				if (particle.getGranularity().isZero()) {
+					return Result.error("granularity must not be zero");
+				}
+
+				return Result.success();
+			},
 			UnallocatedTokensParticle::getTokDefRef
 		);
 
