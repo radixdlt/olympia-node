@@ -3,11 +3,15 @@ package com.radixdlt.engine;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Streams;
+import com.radixdlt.atoms.DataPointer;
 import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.constraintmachine.CMAtom;
 import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.CMErrorCode;
 import com.radixdlt.constraintmachine.CMParticle;
+import com.radixdlt.serialization.DsonOutput.Output;
+import com.radixdlt.serialization.Serialization;
+import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.SpinStateMachine;
 import java.util.List;
@@ -28,6 +32,8 @@ import com.radixdlt.common.Pair;
  * Utility class for low level Constraint Machine "hardware" level validation.
  */
 public final class RadixEngineUtils {
+	private static final int MAX_ATOM_SIZE = 1024 * 1024;
+
 	private RadixEngineUtils() {
 		throw new IllegalStateException("Cannot instantiate.");
 	}
@@ -166,8 +172,20 @@ public final class RadixEngineUtils {
 	}
 
 	public static CMAtom toCMAtom(ImmutableAtom atom) throws CMAtomConversionException {
-		final Map<Particle, ImmutableList<IndexedSpunParticle>> spunParticles = RadixEngineUtils.getTransitionsByParticle(atom);
+		// TODO: Move to more appropriate place
+		final int computedSize;
+		try {
+			computedSize = Serialization.getDefault().toDson(atom, Output.PERSIST).length;
+		} catch (SerializationException e) {
+			throw new IllegalStateException("Could not compute size", e);
+		}
+		if (computedSize > MAX_ATOM_SIZE) {
+			throw new CMAtomConversionException(ImmutableSet.of(
+				new CMError(DataPointer.ofAtom(), CMErrorCode.KERNEL_ERROR, null, "Atom too big")
+			));
+		}
 
+		final Map<Particle, ImmutableList<IndexedSpunParticle>> spunParticles = RadixEngineUtils.getTransitionsByParticle(atom);
 		final Stream<CMError> badSpinErrs = spunParticles.entrySet().stream()
 			.flatMap(e -> RadixEngineUtils.checkInternalSpins(e.getValue()));
 		final Stream<CMError> conversionErrs = Streams.concat(

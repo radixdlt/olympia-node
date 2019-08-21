@@ -2,7 +2,6 @@ package com.radixdlt.constraintmachine;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.constraintmachine.ConstraintMachine.CMValidationState;
 import com.radixdlt.constraintmachine.TransitionProcedure.ProcedureResult;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
@@ -44,7 +43,6 @@ public class ConstraintMachineTest {
 		when(atom.getParticles()).thenReturn(ImmutableList.of(
 			new CMParticle(p, DataPointer.ofParticle(0, 0), Spin.NEUTRAL, 1)
 		));
-		when(atom.getAtom()).thenReturn(mock(ImmutableAtom.class));
 
 		assertThat(machine.validate(atom))
 			.contains(new CMError(DataPointer.ofParticle(0, 0), CMErrorCode.INTERNAL_SPIN_CONFLICT));

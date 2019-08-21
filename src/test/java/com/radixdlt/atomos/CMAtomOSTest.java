@@ -2,7 +2,6 @@ package com.radixdlt.atomos;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.atoms.DataPointer;
-import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.atoms.Spin;
 import com.radixdlt.constraintmachine.CMAtom;
 import com.radixdlt.constraintmachine.CMParticle;
@@ -48,7 +47,6 @@ public class CMAtomOSTest {
 		CMAtomOS os = new CMAtomOS();
 		ConstraintMachine machine = os.buildMachine().getFirst();
 		CMAtom atom = mock(CMAtom.class);
-		when(atom.getAtom()).thenReturn(mock(ImmutableAtom.class));
 		TestParticle testParticle = new TestParticle();
 		when(atom.getParticles()).thenReturn(ImmutableList.of(
 			new CMParticle(testParticle, DataPointer.ofParticle(0, 0), Spin.NEUTRAL, 1)

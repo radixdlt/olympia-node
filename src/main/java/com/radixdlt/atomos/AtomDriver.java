@@ -2,9 +2,6 @@ package com.radixdlt.atomos;
 
 import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.constraintmachine.CMAtom;
-import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.Serialization;
-import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.universe.Universe;
 import java.util.Objects;
 import com.radixdlt.crypto.Hash;
@@ -19,9 +16,7 @@ import java.util.function.Supplier;
  * to low level atom properties such as size, fees, signatures, etc.
  */
 public final class AtomDriver implements AtomOSDriver {
-	static final int MAX_ATOM_SIZE = 1024 * 1024;
 	private final boolean skipAtomFeeCheck;
-	private final Serialization serialization;
 	private final Supplier<Universe> universeSupplier;
 	private final LongSupplier timestampSupplier;
 	private static final Hash DEFAULT_TARGET = new Hash("0000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
@@ -30,13 +25,11 @@ public final class AtomDriver implements AtomOSDriver {
 	public AtomDriver(
 		Supplier<Universe> universeSupplier,
 		LongSupplier timestampSupplier,
-		Serialization serialization,
 		boolean skipAtomFeeCheck,
 		int maximumDrift
 	) {
 		this.universeSupplier = universeSupplier;
 		this.timestampSupplier = timestampSupplier;
-		this.serialization = serialization;
 		this.skipAtomFeeCheck = skipAtomFeeCheck;
 		this.maximumDrift = maximumDrift;
 	}
@@ -48,23 +41,6 @@ public final class AtomDriver implements AtomOSDriver {
 				//TODO: Fix module loadup sequence so that massFunction doesn't need to be recreated everytime
 				final FungibleOrHashMassFunction massFunction = new FungibleOrHashMassFunction(universeSupplier.get());
 				return massFunction.getMass(atom);
-			});
-
-		// Atom size is below limit
-		kernel.onAtom()
-			.require(cmAtom -> {
-				// TODO: remove reserialization of atom
-				final int computedSize;
-				try {
-					computedSize = serialization.toDson(cmAtom.getAtom(), Output.PERSIST).length;
-				} catch (SerializationException e) {
-					throw new IllegalStateException("Could not compute size", e);
-				}
-				if (computedSize > MAX_ATOM_SIZE) {
-					return Result.error("atom size is too large: " + computedSize + " > " + MAX_ATOM_SIZE);
-				}
-
-				return Result.success();
 			});
 
 		// Atom has particles
