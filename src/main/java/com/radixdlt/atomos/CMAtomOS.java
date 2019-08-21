@@ -142,7 +142,7 @@ public final class CMAtomOS {
 
 		cmBuilder.virtualStore(virtualizedDefault);
 
-		final AtomCompute compute = atomKernelCompute != null ? a -> atomKernelCompute.compute(a.getAtom()) : null;
+		final AtomCompute compute = atomKernelCompute != null ? a -> atomKernelCompute.compute(a) : null;
 
 		return Pair.of(cmBuilder.build(), compute);
 	}
