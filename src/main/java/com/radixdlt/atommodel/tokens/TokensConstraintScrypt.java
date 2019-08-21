@@ -38,44 +38,14 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 		os.registerParticle(
 			UnallocatedTokensParticle.class,
 			UnallocatedTokensParticle::getAddress,
-			particle -> {
-				if (particle.getAmount() == null) {
-					return Result.error("amount must not be null");
-				}
-				if (particle.getAmount().isZero()) {
-					return Result.error("amount cannot be zero");
-				}
-				if (particle.getGranularity() == null) {
-					return Result.error("granularity must not be null");
-				}
-				if (particle.getGranularity().isZero()) {
-					return Result.error("granularity must not be zero");
-				}
-
-				return Result.success();
-			},
+			TokenDefinitionUtils::staticCheck,
 			UnallocatedTokensParticle::getTokDefRef
 		);
 
 		os.registerParticle(
 			TransferrableTokensParticle.class,
 			TransferrableTokensParticle::getAddress,
-			tokenParticle -> {
-				if (tokenParticle.getAmount() == null) {
-					return Result.error("amount must not be null");
-				}
-				if (tokenParticle.getAmount().isZero()) {
-					return Result.error("amount must not be zero");
-				}
-				if (tokenParticle.getGranularity() == null) {
-					return Result.error("granularity must not be null");
-				}
-				if (tokenParticle.getGranularity().isZero() || !tokenParticle.getAmount().remainder(tokenParticle.getGranularity()).isZero()) {
-					return Result.error("amount " + tokenParticle.getAmount() + " does not fit granularity " + tokenParticle.getGranularity());
-				}
-
-				return Result.success();
-			},
+			TokenDefinitionUtils::staticCheck,
 			TransferrableTokensParticle::getTokDefRef
 		);
 
