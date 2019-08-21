@@ -86,8 +86,43 @@ public final class TokenDefinitionUtils {
 		return Result.success();
 	}
 
+	public static Result staticCheck(TransferrableTokensParticle tokensParticle) {
+		if (tokensParticle.getAmount() == null) {
+			return Result.error("amount must not be null");
+		}
+		if (tokensParticle.getAmount().isZero()) {
+			return Result.error("amount must not be zero");
+		}
+		if (tokensParticle.getGranularity() == null) {
+			return Result.error("granularity must not be null");
+		}
+		if (tokensParticle.getGranularity().isZero() || !tokensParticle.getAmount().remainder(tokensParticle.getGranularity()).isZero()) {
+			return Result.error("amount " + tokensParticle.getAmount() + " does not fit granularity " + tokensParticle.getGranularity());
+		}
+
+		return Result.success();
+	}
+
+	public static Result staticCheck(UnallocatedTokensParticle particle) {
+		if (particle.getAmount() == null) {
+			return Result.error("amount must not be null");
+		}
+		if (particle.getAmount().isZero()) {
+			return Result.error("amount cannot be zero");
+		}
+		if (particle.getGranularity() == null) {
+			return Result.error("granularity must not be null");
+		}
+		if (particle.getGranularity().isZero()) {
+			return Result.error("granularity must not be zero");
+		}
+
+		return Result.success();
+	}
+
+
 	public static Result staticCheck(FixedSupplyTokenDefinitionParticle tokenDefParticle) {
-		final Result symbolResult = validateSymbol(tokenDefParticle.getSymbol());
+		final Result symbolResult = validateSymbol(tokenDefParticle.getRRI().getName());
 		if (symbolResult.isError()) {
 			return symbolResult;
 		}
@@ -106,7 +141,7 @@ public final class TokenDefinitionUtils {
 	}
 
 	public static Result staticCheck(MutableSupplyTokenDefinitionParticle tokenDefParticle) {
-		final Result symbolResult = validateSymbol(tokenDefParticle.getSymbol());
+		final Result symbolResult = validateSymbol(tokenDefParticle.getRRI().getName());
 		if (symbolResult.isError()) {
 			return symbolResult;
 		}

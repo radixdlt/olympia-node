@@ -17,6 +17,7 @@ final class JacksonCodecConstants {
 	static final byte RRI_VALUE   = 0x06;
 	static final byte U30_VALUE   = 0x07; // 0x30 byte = 384 bit unsigned int
 	static final byte AID_VALUE   = 0x08;
+	static final byte LONGS_VALUE = 0x09;
 
 	// Type tag prefixes used in strings for JSON mappings
 	static final int STR_VALUE_LEN     = 5;
@@ -29,4 +30,5 @@ final class JacksonCodecConstants {
 	static final String RRI_STR_VALUE  = ":rri:";
 	static final String U30_STR_VALUE  = ":u30:"; // 0x30 byte = 384 bit unsigned int
 	static final String AID_STR_VALUE  = ":aid:";
+	static final String LONGS_STR_VALUE  = ":lng:";
 }

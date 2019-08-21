@@ -3,6 +3,7 @@ package com.radixdlt.atoms;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Streams;
 import com.radixdlt.common.AID;
@@ -18,6 +19,8 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
+import com.radixdlt.serialization.SerializerId2;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -33,13 +36,15 @@ import java.util.stream.Stream;
 /**
  * Immutable Atom for Constraint Machine consumption (No mutable temporal proof).
  */
-public abstract class ImmutableAtom {
+@SerializerId2("radix.content")
+public class ImmutableAtom {
 	public static final String METADATA_TIMESTAMP_KEY = "timestamp";
 	public static final String METADATA_POW_NONCE_KEY = "powNonce";
 
 	// Placeholder for the serializer ID
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
-	@DsonOutput(Output.ALL)
+	// TODO serializer id for atoms is temporarily excluded from hash for compatibility with abstract atom
+	@DsonOutput(value = {DsonOutput.Output.API, DsonOutput.Output.WIRE, DsonOutput.Output.PERSIST})
 	private SerializerDummy serializer = SerializerDummy.DUMMY;
 
 	@JsonProperty("version")
@@ -76,7 +81,7 @@ public abstract class ImmutableAtom {
 		this.metaData = ImmutableMap.of(METADATA_TIMESTAMP_KEY, String.valueOf(timestamp));
 	}
 
-	protected ImmutableAtom(long timestamp, Map<String, String> metadata) {
+	public ImmutableAtom(long timestamp, Map<String, String> metadata) {
 		this.metaData = ImmutableMap.<String, String>builder()
 			.put(METADATA_TIMESTAMP_KEY, String.valueOf(timestamp))
 			.putAll(metadata)
@@ -102,7 +107,17 @@ public abstract class ImmutableAtom {
 		this.metaData = ImmutableMap.copyOf(metaData);
 	}
 
-	public abstract ImmutableAtom copyExcludingMetadata(String... keysToExclude);
+	// copied from legacy Atom.java, temporary hack that will be fixed when ImmutableAtom becomes ImmutableContent
+	public ImmutableAtom copyExcludingMetadata(String... keysToExclude) {
+		Objects.requireNonNull(keysToExclude, "keysToRetain is required");
+
+		ImmutableSet<String> keysToExcludeSet = ImmutableSet.copyOf(keysToExclude);
+		Map<String, String> filteredMetaData = this.metaData.entrySet().stream()
+			.filter(metaDataEntry -> !keysToExcludeSet.contains(metaDataEntry.getKey()))
+			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+		return new ImmutableAtom(this.particleGroups, this.signatures, filteredMetaData);
+	}
 
 	/**
 	 * Add a particle group to this atom

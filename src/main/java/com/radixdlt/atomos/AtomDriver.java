@@ -69,7 +69,7 @@ public final class AtomDriver implements AtomOSDriver {
 		// Atom has particles
 		kernel.onAtom()
 			.require(cmAtom -> {
-				if (cmAtom.getAtom().spunParticles().count() <= 0) {
+				if (cmAtom.getParticles().isEmpty()) {
 					return Result.error("atom has no particles");
 				}
 
@@ -82,7 +82,7 @@ public final class AtomDriver implements AtomOSDriver {
 				final boolean isMagic = Objects.equals(atom.getMetaData().get("magic"), "0xdeadbeef");
 
 				// Atom has signatures
-				if (atom.getSignatures().isEmpty() && !isMagic) {
+				if (cmAtom.getSignatures().isEmpty() && !isMagic) {
 					return Result.error("atom has no signatures");
 				}
 
@@ -115,8 +115,7 @@ public final class AtomDriver implements AtomOSDriver {
 		// Atom timestamp constraints
 		kernel.onAtom()
 			.require(cmAtom -> {
-				final ImmutableAtom atom = cmAtom.getAtom();
-				String timestampString = atom.getMetaData().get(ImmutableAtom.METADATA_TIMESTAMP_KEY);
+				String timestampString = cmAtom.getMetaData().get(ImmutableAtom.METADATA_TIMESTAMP_KEY);
 				if (timestampString == null) {
 					return Result.error("atom metadata does not contain '" + ImmutableAtom.METADATA_TIMESTAMP_KEY + "'");
 				}

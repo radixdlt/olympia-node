@@ -1,7 +1,6 @@
 package com.radixdlt.atommodel.tokens;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.atomos.RRI;
 import com.radixdlt.serialization.DsonOutput;
@@ -46,17 +45,16 @@ public final class FixedSupplyTokenDefinitionParticle extends Particle {
 	}
 
 	public FixedSupplyTokenDefinitionParticle(
-		RadixAddress address,
-		String symbol,
+		RRI rri,
 		String name,
 		String description,
 		UInt256 supply,
 		UInt256 granularity,
 		String iconUrl
 	) {
-		super(address.getUID());
+		super(rri.getAddress().getUID());
 
-		this.rri = RRI.of(address, symbol);
+		this.rri = rri;
 		this.name = name;
 		this.description = description;
 		this.supply = Objects.requireNonNull(supply);
@@ -65,15 +63,7 @@ public final class FixedSupplyTokenDefinitionParticle extends Particle {
 	}
 
 	public RRI getRRI() {
-		return RRI.of(getOwner(), getSymbol());
-	}
-
-	public RadixAddress getOwner() {
-		return this.rri.getAddress();
-	}
-
-	public String getSymbol() {
-		return this.rri.getName();
+		return this.rri;
 	}
 
 	public String getName() {

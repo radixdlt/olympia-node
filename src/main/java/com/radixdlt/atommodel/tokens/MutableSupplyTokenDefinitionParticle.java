@@ -73,11 +73,7 @@ public final class MutableSupplyTokenDefinitionParticle extends Particle {
 	}
 
 	public RRI getRRI() {
-		return RRI.of(getAddress(), getSymbol());
-	}
-
-	public RadixAddress getAddress() {
-		return this.rri.getAddress();
+		return this.rri;
 	}
 
 	public Map<TokenTransition, TokenPermission> getTokenPermissions() {
@@ -91,10 +87,6 @@ public final class MutableSupplyTokenDefinitionParticle extends Particle {
 		}
 
 		throw new IllegalArgumentException("No token permission set for " + transition + " in " + tokenPermissions);
-	}
-
-	public String getSymbol() {
-		return this.rri.getName();
 	}
 
 	public String getName() {

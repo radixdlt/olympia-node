@@ -34,11 +34,11 @@ public final class Longs {
 	 */
 	public static byte[] copyTo(long value, byte[] bytes, int offset) {
 		Objects.requireNonNull(bytes, "bytes is null for 'long' conversion");
-	    for (int i = offset + Long.BYTES - 1; i >= offset; i--) {
-	    	bytes[i] = (byte) (value & 0xFFL);
-	    	value >>>= 8;
-	    }
-	    return bytes;
+		for (int i = offset + Long.BYTES - 1; i >= offset; i--) {
+			bytes[i] = (byte) (value & 0xFFL);
+			value >>>= 8;
+		}
+		return bytes;
 	}
 
 	/**
@@ -58,7 +58,7 @@ public final class Longs {
 	 * {@code bytes[offset + Long.BYTES - 1]} will be read from
 	 * array {@code bytes}.
 	 *
-	 * @param bytes The byte array to decode to a long
+	 * @param bytes  The byte array to decode to a long
 	 * @param offset The offset within the array to start decoding
 	 * @return The decoded long value
 	 */
@@ -87,6 +87,36 @@ public final class Longs {
 	 */
 	public static long fromBytes(byte b0, byte b1, byte b2, byte b3, byte b4, byte b5, byte b6, byte b7) {
 		return (b0 & 0xFFL) << 56 | (b1 & 0xFFL) << 48 | (b2 & 0xFFL) << 40 | (b3 & 0xFFL) << 32
-			| (b4 & 0xFFL) << 24 | (b5 & 0xFFL) << 16 | (b6 & 0xFFL) <<  8 | (b7 & 0xFFL);
+			| (b4 & 0xFFL) << 24 | (b5 & 0xFFL) << 16 | (b6 & 0xFFL) << 8 | (b7 & 0xFFL);
+	}
+
+	// TODO simple hack for efficiently converting long array to byte array, revisit
+
+	/**
+	 * Convert the given long array to an equivalent array of bytes
+	 * @param longArray The long array
+	 * @return An equivalent array of bytes of length longArray.length * Long.BYTES
+	 */
+	public static byte[] toBytes(long[] longArray) {
+		// TODO optimise
+		byte[] byteArray = new byte[longArray.length * Long.BYTES];
+		for (int i = 0; i < longArray.length; i++) {
+			copyTo(longArray[i], byteArray, i * Long.BYTES);
+		}
+		return byteArray;
+	}
+
+	/**
+	 * Convert the given byte array to an equivalent array of longs
+	 * @param byteArray The byte array
+	 * @return An equivalent array of longs of length byteArray.length / Long.BYTES
+	 */
+	public static long[] fromBytes(byte[] byteArray) {
+		// TODO optimise
+		long[] longArray = new long[byteArray.length / Long.BYTES];
+		for (int i = 0; i < longArray.length; i++) {
+			longArray[i] = fromByteArray(byteArray, i * Long.BYTES);
+		}
+		return longArray;
 	}
 }

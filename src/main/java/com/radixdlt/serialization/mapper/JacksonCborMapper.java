@@ -18,6 +18,7 @@ import com.radixdlt.common.EUID;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerIds;
+import com.radixdlt.utils.Longs;
 import com.radixdlt.utils.RadixConstants;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
@@ -93,6 +94,11 @@ public class JacksonCborMapper extends ObjectMapper {
 			JacksonCodecConstants.AID_VALUE,
 			AID::getBytes
 		));
+		cborModule.addSerializer(long[].class, new JacksonCborObjectBytesSerializer<>(
+			long[].class,
+			JacksonCodecConstants.LONGS_VALUE,
+			Longs::toBytes
+		));
 
 		cborModule.addDeserializer(SerializerDummy.class, new JacksonSerializerDummyDeserializer());
 		cborModule.addDeserializer(EUID.class, new JacksonCborObjectBytesDeserializer<>(
@@ -134,6 +140,11 @@ public class JacksonCborMapper extends ObjectMapper {
 			AID.class,
 			JacksonCodecConstants.AID_VALUE,
 			AID::from
+		));
+		cborModule.addDeserializer(long[].class, new JacksonCborObjectBytesDeserializer<>(
+			long[].class,
+			JacksonCodecConstants.LONGS_VALUE,
+			Longs::fromBytes
 		));
 
 		JacksonCborMapper mapper = new JacksonCborMapper();

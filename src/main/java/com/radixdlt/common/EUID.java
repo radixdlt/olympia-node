@@ -113,6 +113,15 @@ public final class EUID implements Comparable<EUID> {
 	}
 
 	/**
+	 *  Retrieve the underlying value of this {@link EUID}
+	 *
+	 * @return The underlying {@link UInt128} value of this {@link EUID}
+	 */
+	public UInt128 getValue() {
+		return value;
+	}
+
+	/**
 	 * Calculate the routing difference between this {@link EUID} and the
 	 * specified {@link EUID}.
 	 * <p>
