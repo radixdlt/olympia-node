@@ -87,7 +87,12 @@ public final class TempoFlowSource {
 		Sink(TempoFlowOp<?, T> upstream) {
 			Objects.requireNonNull(upstream, "upstream is required");
 			linkUpstream(upstream);
-			this.head = upstream.head;
+			// if upstream is head, use that, otherwise use its head
+			if (upstream instanceof Head) {
+				this.head = (Head<?>) upstream;
+			} else {
+				this.head = upstream.head;
+			}
 		}
 
 		void linkUpstream(TempoFlowOp<?, T> upstream) {

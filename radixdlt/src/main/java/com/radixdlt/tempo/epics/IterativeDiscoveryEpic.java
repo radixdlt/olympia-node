@@ -253,7 +253,6 @@ public final class IterativeDiscoveryEpic implements TempoEpic {
 
 	public static class Builder {
 		private EUID self;
-		private Supplier<ShardSpace> shardSpaceSupplier;
 		private AtomStoreView storeView;
 		private LogicalClockCursorStore cursorStore;
 		private CommitmentStore commitmentStore;
