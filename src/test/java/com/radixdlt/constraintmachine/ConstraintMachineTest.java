@@ -2,7 +2,6 @@ package com.radixdlt.constraintmachine;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.atoms.ImmutableAtom;
-import com.radixdlt.atoms.ParticleGroup;
 import com.radixdlt.atoms.SpunParticle;
 import com.radixdlt.constraintmachine.TransitionProcedure.ProcedureResult;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
@@ -62,7 +61,7 @@ public class ConstraintMachineTest {
 			.build();
 
 		Optional<CMError> errors = machine.validateParticleGroup(
-			ParticleGroup.of(
+			ImmutableList.of(
 				SpunParticle.down(mock(Particle.class)),
 				SpunParticle.down(mock(Particle.class)),
 				SpunParticle.up(mock(Particle.class))

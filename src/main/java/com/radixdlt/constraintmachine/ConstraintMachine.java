@@ -1,9 +1,7 @@
 package com.radixdlt.constraintmachine;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Streams;
 import com.radixdlt.atoms.DataPointer;
-import com.radixdlt.atoms.ParticleGroup;
 import com.radixdlt.atoms.Spin;
 import com.radixdlt.atoms.SpunParticle;
 import com.radixdlt.constraintmachine.TransitionProcedure.ProcedureResult;
@@ -11,6 +9,7 @@ import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.SpinStateTransitionValidator;
 import com.radixdlt.store.SpinStateTransitionValidator.TransitionCheckResult;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.UnaryOperator;
@@ -18,7 +17,6 @@ import com.radixdlt.atoms.Particle;
 import com.radixdlt.store.CMStores;
 
 import java.util.Objects;
-import java.util.stream.Stream;
 
 /**
  * An implementation of a UTXO based constraint machine which uses Radix's atom structure.
@@ -238,12 +236,12 @@ public final class ConstraintMachine {
 	 * @param metadata atom meta data
 	 * @return the first error found, otherwise an empty optional
 	 */
-	Optional<CMError> validateParticleGroup(ParticleGroup group, long groupIndex, AtomMetadata metadata) {
+	Optional<CMError> validateParticleGroup(List<SpunParticle> group, long groupIndex, AtomMetadata metadata) {
 		final CMValidationState validationState = new CMValidationState();
 
-		for (int i = 0; i < group.getParticleCount(); i++) {
+		for (int i = 0; i < group.size(); i++) {
 			final DataPointer dp = DataPointer.ofParticle((int) groupIndex, i);
-			final SpunParticle nextSpun = group.getSpunParticle(i);
+			final SpunParticle nextSpun = group.get(i);
 
 			Optional<CMError> error = validateParticle(nextSpun, dp, metadata, validationState);
 			if (error.isPresent()) {
@@ -314,11 +312,11 @@ public final class ConstraintMachine {
 
 		// "Application" checks
 		final AtomMetadata metadata = new AtomMetadataFromAtom(cmAtom);
-		final Optional<CMError> applicationErr = Streams.mapWithIndex(cmAtom.getAtom().particleGroups(), (group, i) ->
-			this.validateParticleGroup(group, i, metadata)).flatMap(i -> i.map(Stream::of).orElse(Stream.empty())).findFirst();
-
-		if (applicationErr.isPresent()) {
-			return applicationErr;
+		for (int i = 0; i < cmAtom.getAtom().getParticleGroupCount(); i++) {
+			final Optional<CMError> error = this.validateParticleGroup(cmAtom.getAtom().getParticleGroup(i).getParticles(), i, metadata);
+			if (error.isPresent()) {
+				return error;
+			}
 		}
 
 		return Optional.empty();
