@@ -312,8 +312,8 @@ public final class ConstraintMachine {
 
 		// "Application" checks
 		final AtomMetadata metadata = new AtomMetadataFromAtom(cmAtom);
-		for (int i = 0; i < cmAtom.getAtom().getParticleGroupCount(); i++) {
-			final Optional<CMError> error = this.validateParticleGroup(cmAtom.getAtom().getParticleGroup(i).getParticles(), i, metadata);
+		for (int i = 0; i < cmAtom.getParticlePushes().size(); i++) {
+			final Optional<CMError> error = this.validateParticleGroup(cmAtom.getParticlePushes().get(i), i, metadata);
 			if (error.isPresent()) {
 				return error;
 			}
