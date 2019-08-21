@@ -1,11 +1,13 @@
 package com.radixdlt.constraintmachine;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atoms.ImmutableAtom;
-import com.radixdlt.atoms.SpunParticle;
+import com.radixdlt.constraintmachine.ConstraintMachine.CMValidationState;
 import com.radixdlt.constraintmachine.TransitionProcedure.ProcedureResult;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Optional;
 import org.junit.Test;
 import com.radixdlt.atoms.DataPointer;
@@ -60,12 +62,17 @@ public class ConstraintMachineTest {
 			.setWitnessValidators((p0, p1) -> (res, v0, v1, meta) -> WitnessValidatorResult.success())
 			.build();
 
+		Particle particle0 = mock(Particle.class);
+		Particle particle1 = mock(Particle.class);
+		Particle particle2 = mock(Particle.class);
+
 		Optional<CMError> errors = machine.validateParticleGroup(
-			ImmutableList.of(
-				SpunParticle.down(mock(Particle.class)),
-				SpunParticle.down(mock(Particle.class)),
-				SpunParticle.up(mock(Particle.class))
-			),
+			new CMValidationState(new HashMap<>(ImmutableMap.of(
+				particle0, Spin.UP,
+				particle1, Spin.UP,
+				particle2, Spin.NEUTRAL
+			))),
+			ImmutableList.of(particle0, particle1, particle2),
 			0,
 			mock(AtomMetadata.class)
 		);

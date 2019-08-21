@@ -11,7 +11,6 @@ import com.radixdlt.common.EUID;
 import com.radixdlt.crypto.ECSignature;
 import com.radixdlt.crypto.Hash;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * An atom processed by a constraint machine with write destinations
@@ -29,7 +28,7 @@ public final class CMAtom {
 	private final Hash atomHash;
 	private final AID aid;
 	private final ImmutableList<CMParticle> cmParticles;
-	private final ImmutableList<ImmutableList<SpunParticle>> particlePushes;
+	private final ImmutableList<ImmutableList<Particle>> particlePushes;
 	private final ImmutableMap<EUID, ECSignature> signatures;
 	private final ImmutableMap<String, String> metaData;
 	private final ImmutableSet<EUID> destinations;
@@ -46,7 +45,7 @@ public final class CMAtom {
 		this.aid = atom.getAID();
 		this.cmParticles = cmParticles;
 		this.particlePushes = atom.particleGroups()
-			.map(pg -> pg.spunParticles().collect(ImmutableList.toImmutableList()))
+			.map(pg -> pg.spunParticles().map(SpunParticle::getParticle).collect(ImmutableList.toImmutableList()))
 			.collect(ImmutableList.toImmutableList());
 		this.signatures = ImmutableMap.copyOf(atom.getSignatures());
 		this.metaData = ImmutableMap.copyOf(atom.getMetaData());
@@ -58,7 +57,7 @@ public final class CMAtom {
 		this.shards = this.destinations.stream().map(EUID::getShard).collect(ImmutableSet.toImmutableSet());
 	}
 
-	public ImmutableList<ImmutableList<SpunParticle>> getParticlePushes() {
+	public ImmutableList<ImmutableList<Particle>> getParticlePushes() {
 		return particlePushes;
 	}
 
