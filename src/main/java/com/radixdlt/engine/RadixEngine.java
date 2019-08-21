@@ -1,8 +1,6 @@
 package com.radixdlt.engine;
 
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.atoms.DataPointer;
-import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.atoms.Spin;
 import com.radixdlt.atoms.SpunParticle;
@@ -124,22 +122,20 @@ public final class RadixEngine {
 	}
 
 	private void stateCheckAndStore(CMAtom cmAtom, Object computed) {
-		final ImmutableAtom atom = cmAtom.getAtom();
 		// TODO: Optimize these collectors out
-		Map<TransitionCheckResult, List<Pair<DataPointer, TransitionCheckResult>>> spinCheckResults = cmAtom.getParticles()
+		Map<TransitionCheckResult, List<Pair<SpunParticle, TransitionCheckResult>>> spinCheckResults = cmAtom.getParticles()
 			.stream()
 			.map(cmParticle -> {
 				// First spun is the only one we need to check
 				final Spin nextSpin = cmParticle.getNextSpin();
 				final Particle particle = cmParticle.getParticle();
-				final DataPointer dataPointer = cmParticle.getDataPointer();
 				final TransitionCheckResult spinCheck = SpinStateTransitionValidator.checkParticleTransition(
 					particle,
 					nextSpin,
 					virtualizedCMStore
 				);
 
-				return Pair.of(dataPointer, spinCheck);
+				return Pair.of(SpunParticle.of(particle, nextSpin), spinCheck);
 			})
 			.collect(Collectors.groupingBy(Pair::getSecond));
 
@@ -154,8 +150,8 @@ public final class RadixEngine {
 		}
 
 		if (spinCheckResults.get(TransitionCheckResult.CONFLICT) != null) {
-			final Pair<DataPointer, TransitionCheckResult> issue = spinCheckResults.get(TransitionCheckResult.CONFLICT).get(0);
-			final SpunParticle issueParticle = issue.getFirst().getParticleFrom(atom);
+			final Pair<SpunParticle, TransitionCheckResult> issue = spinCheckResults.get(TransitionCheckResult.CONFLICT).get(0);
+			final SpunParticle issueParticle = issue.getFirst();
 
 			// TODO: Refactor so that two DB fetches aren't required to get conflicting atoms
 			// TODO Because we're checking SpunParticles I understand there can only be one of
@@ -172,8 +168,8 @@ public final class RadixEngine {
 
 		// TODO: Add ALL missing dependencies for optimization
 		if (spinCheckResults.get(TransitionCheckResult.MISSING_DEPENDENCY) != null)  {
-			Pair<DataPointer, TransitionCheckResult> issue = spinCheckResults.get(TransitionCheckResult.MISSING_DEPENDENCY).get(0);
-			SpunParticle issueParticle = issue.getFirst().getParticleFrom(atom);
+			Pair<SpunParticle, TransitionCheckResult> issue = spinCheckResults.get(TransitionCheckResult.MISSING_DEPENDENCY).get(0);
+			SpunParticle issueParticle = issue.getFirst();
 			atomEventListeners.forEach(listener -> listener.onStateMissingDependency(cmAtom, issueParticle));
 			return;
 		}
