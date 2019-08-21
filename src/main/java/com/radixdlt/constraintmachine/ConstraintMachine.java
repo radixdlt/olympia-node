@@ -3,7 +3,6 @@ package com.radixdlt.constraintmachine;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Streams;
 import com.radixdlt.atoms.DataPointer;
-import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.atoms.ParticleGroup;
 import com.radixdlt.atoms.Spin;
 import com.radixdlt.atoms.SpunParticle;
@@ -314,9 +313,8 @@ public final class ConstraintMachine {
 		}
 
 		// "Application" checks
-		final ImmutableAtom atom = cmAtom.getAtom();
-		final AtomMetadata metadata = new AtomMetadataFromAtom(atom);
-		final Optional<CMError> applicationErr = Streams.mapWithIndex(atom.particleGroups(), (group, i) ->
+		final AtomMetadata metadata = new AtomMetadataFromAtom(cmAtom);
+		final Optional<CMError> applicationErr = Streams.mapWithIndex(cmAtom.getAtom().particleGroups(), (group, i) ->
 			this.validateParticleGroup(group, i, metadata)).flatMap(i -> i.map(Stream::of).orElse(Stream.empty())).findFirst();
 
 		if (applicationErr.isPresent()) {

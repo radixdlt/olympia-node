@@ -24,6 +24,7 @@ public final class CMAtom {
 
 
 	private final Hash powFeeHash;
+	private final Hash atomHash;
 	private final AID aid;
 	private final ImmutableList<CMParticle> cmParticles;
 	private final ImmutableMap<EUID, ECSignature> signatures;
@@ -37,6 +38,7 @@ public final class CMAtom {
 	) {
 		this.atom = atom;
 
+		this.atomHash = atom.getHash();
 		this.powFeeHash = atom.copyExcludingMetadata(ImmutableAtom.METADATA_POW_NONCE_KEY).getHash();
 		this.aid = atom.getAID();
 		this.cmParticles = cmParticles;
@@ -48,6 +50,10 @@ public final class CMAtom {
 			.flatMap(Set::stream)
 			.collect(ImmutableSet.toImmutableSet());
 		this.shards = this.destinations.stream().map(EUID::getShard).collect(ImmutableSet.toImmutableSet());
+	}
+
+	public Hash getAtomHash() {
+		return atomHash;
 	}
 
 	public Hash getPowFeeHash() {
