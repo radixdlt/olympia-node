@@ -69,7 +69,7 @@ public final class CMAtomOS {
 					@Override
 					public void require(AtomKernelConstraintCheck constraint) {
 						CMAtomOS.this.kernelProcedures.add(
-							(cmAtom) -> constraint.check(cmAtom).errorStream().map(errMsg -> KernelProcedureError.of(cmAtom.getAtom(), errMsg))
+							(cmAtom) -> constraint.check(cmAtom).errorStream().map(errMsg -> KernelProcedureError.of(cmAtom, errMsg))
 						);
 					}
 
