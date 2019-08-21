@@ -41,3 +41,9 @@ Feature: Create Single Issuance Token Class
     When I submit a fixed-supply token-creation request with symbol "RLAU" and totalSupply 1000 scaled
     Then I can observe the atom being accepted
     And I can observe token "RLAU" balance equal to 1000 scaled
+
+  Scenario: 7: Granularity off
+    Given I have access to a suitable Radix network
+    When I submit a fixed-supply token-creation request with granularity 3 scaled
+    Then I can observe the atom being rejected with a validation error
+
