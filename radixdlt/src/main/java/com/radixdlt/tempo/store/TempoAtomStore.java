@@ -442,13 +442,9 @@ public class TempoAtomStore implements AtomStore {
 			OperationStatus status = cursor.getSearchKeyRange(search, value, LockMode.DEFAULT);
 
 			int size = 0;
-			while (status == OperationStatus.SUCCESS) {
+			while (status == OperationStatus.SUCCESS && size < limit) {
 				TempoAtom atom = serialization.fromDson(value.getData(), TempoAtom.class);
 				aids.add(atom.getAID());
-				// abort when we've exceeded the limit
-				if (size >= limit) {
-					break;
-				}
 				status = cursor.getNext(search, value, LockMode.DEFAULT);
 				size++;
 			}

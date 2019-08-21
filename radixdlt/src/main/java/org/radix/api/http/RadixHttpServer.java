@@ -8,10 +8,15 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.common.AID;
+import com.radixdlt.crypto.Hash;
 import com.radixdlt.mock.MockAccessor;
+import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.tempo.AtomStoreView;
 import com.radixdlt.tempo.AtomSyncView;
 import com.radixdlt.tempo.Tempo;
+import com.radixdlt.tempo.store.CommitmentStore;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.radix.api.AtomSchemas;
@@ -135,6 +140,33 @@ public final class RadixHttpServer {
     }
 
     private void addDevelopmentOnlyRoutesTo(RoutingHandler handler) {
+    	addGetRoute("/api/internal/tempo/store/next", exchange -> {
+		    String positionStr = getParameter(exchange, "position").orElse("0");
+		    String limitStr = getParameter(exchange, "limit").orElse("10");
+			long position = Long.parseLong(positionStr);
+			int limit = Integer.parseInt(limitStr);
+
+		    ImmutableList<AID> aids = Modules.get(AtomStoreView.class).getNext(position, limit);
+		    String aidsJson = Serialization.getDefault().toJson(aids, DsonOutput.Output.ALL);
+		    respond(aidsJson, exchange);
+	    }, handler);
+
+	    addGetRoute("/api/internal/tempo/commitments/next", exchange -> {
+	    	if (!Modules.isAvailable(CommitmentStore.class)) {
+	    		respond("Commitment store is unavailable", exchange);
+	    		return;
+		    }
+
+		    String positionStr = getParameter(exchange, "position").orElse("0");
+		    String limitStr = getParameter(exchange, "limit").orElse("10");
+		    long position = Long.parseLong(positionStr);
+		    int limit = Integer.parseInt(limitStr);
+
+		    ImmutableList<Hash> commitments = Modules.get(CommitmentStore.class).getNext(LocalSystem.getInstance().getNID(), position, limit);
+		    String commitmentsJson = Serialization.getDefault().toJson(commitments, DsonOutput.Output.ALL);
+		    respond(commitmentsJson, exchange);
+	    }, handler);
+
     	addGetRoute("/api/internal/tempo/states", exchange -> {
     		if (Modules.isAvailable(Tempo.class)) {
 			    String stateClassString = getParameter(exchange, "cls").orElse(null);

@@ -16,6 +16,7 @@ import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.Transaction;
 import com.sleepycat.je.TransactionConfig;
 import org.bouncycastle.util.Arrays;
+import org.bouncycastle.util.encoders.Hex;
 import org.radix.database.DatabaseEnvironment;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
@@ -102,8 +103,9 @@ public class CommitmentStore implements Store {
 		try {
 			DatabaseEntry pKey = new DatabaseEntry(toPKey(nid, logicalClock));
 			DatabaseEntry value = new DatabaseEntry(commitment.toByteArray());
+			logger.debug("Storing commitment from '" + nid + "' at " + Hex.toHexString(pKey.getData()));
 
-			OperationStatus status = this.commitments.put(transaction, pKey, value);
+			OperationStatus status = this.commitments.putNoOverwrite(transaction, pKey, value);
 			if (status != OperationStatus.SUCCESS) {
 				fail("Database returned status " + status + " for put operation");
 			}
@@ -115,15 +117,16 @@ public class CommitmentStore implements Store {
 		}
 	}
 
-	public void put(EUID nid, ImmutableList<Hash> commitments, long startPosition) {
+	public void put(EUID nid, List<Hash> commitments, long startPosition) {
 		Transaction transaction = dbEnv.get().getEnvironment().beginTransaction(null, null);
 		try {
 			DatabaseEntry pKey = new DatabaseEntry();
 			DatabaseEntry value = new DatabaseEntry();
 			for (int i = 0; i < commitments.size(); i++) {
 				pKey.setData(toPKey(nid, startPosition + i));
+				logger.debug("Storing commitment from '" + nid + "' at " + Hex.toHexString(pKey.getData()));
 				value.setData(commitments.get(i).toByteArray());
-				OperationStatus status = this.commitments.put(transaction, pKey, value);
+				OperationStatus status = this.commitments.putNoOverwrite(transaction, pKey, value);
 				if (status != OperationStatus.SUCCESS) {
 					fail("Database returned status " + status + " for put operation");
 				}
@@ -141,11 +144,11 @@ public class CommitmentStore implements Store {
 		try (Cursor cursor = this.commitments.openCursor(null, null)) {
 			DatabaseEntry pKey = new DatabaseEntry(toPKey(nid, logicalClock + 1));
 			DatabaseEntry value = new DatabaseEntry();
+			logger.debug("Getting next commitments for " + nid + " from " + Hex.toHexString(pKey.getData()));
 
 			OperationStatus status = cursor.getSearchKeyRange(pKey, value, LockMode.DEFAULT);
 			int size = 0;
 			while (status == OperationStatus.SUCCESS && size < limit) {
-				status = cursor.getNext(pKey, value, LockMode.DEFAULT);
 				EUID valueNid = getNidFromPKey(pKey.getData());
 				// early out if the nid no longer matches (overran into other node's commitments)
 				if (!valueNid.equals(nid)) {
@@ -155,6 +158,7 @@ public class CommitmentStore implements Store {
 				Hash commitment = new Hash(value.getData());
 				commitments.add(commitment);
 				size++;
+				status = cursor.getNext(pKey, value, LockMode.DEFAULT);
 			}
 		} catch (Exception e) {
 			fail("Error while getting next commitments for '" + nid + "'", e);

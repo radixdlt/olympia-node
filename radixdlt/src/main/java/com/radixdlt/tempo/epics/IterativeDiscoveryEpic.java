@@ -31,6 +31,7 @@ import com.radixdlt.tempo.store.LogicalClockCursorStore;
 import com.radixdlt.tempo.store.LogicalClockCursorStore.CursorType;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
+import org.radix.modules.Modules;
 import org.radix.network.peers.Peer;
 import org.radix.shards.ShardSpace;
 import org.radix.time.TemporalVertex;
@@ -67,6 +68,9 @@ public final class IterativeDiscoveryEpic implements TempoEpic {
 		this.shardSpaceSupplier = shardSpaceSupplier;
 		this.latestCursorStore = cursorStore;
 		this.commitmentStore = commitmentStore;
+
+		// TODO remove, temporary hack to expose commitment store for debugging
+		Modules.put(CommitmentStore.class, commitmentStore);
 	}
 
 	@Override
@@ -171,9 +175,9 @@ public final class IterativeDiscoveryEpic implements TempoEpic {
 				// TODO Commitments may be larger than aids as aid may have been deleted but commitments remain.
 				// TODO This does not cause any immediate issues but should be addressed in the long run.
 				ImmutableList<Hash> commitments = commitmentStore.getNext(self, lcPosition, RESPONSE_LIMIT);
-				long nextLcPosition = lcPosition + commitments.size();
 				ImmutableList<AID> aids = storeView.getNext(lcPosition, RESPONSE_LIMIT);
 
+				long nextLcPosition = lcPosition + commitments.size();
 				LogicalClockCursor nextCursor = null;
 				// only set next cursor if the cursor was actually advanced
 				if (nextLcPosition > lcPosition) {
@@ -181,8 +185,8 @@ public final class IterativeDiscoveryEpic implements TempoEpic {
 				}
 				LogicalClockCursor responseCursor = new LogicalClockCursor(lcPosition, nextCursor);
 				if (logger.hasLevel(Logging.DEBUG)) {
-					logger.debug(String.format("Responding to iterative discovery request from %s for %d with %d items (next=%s)",
-						request.getPeer(), lcPosition, commitments.size(), responseCursor.hasNext() ? nextLcPosition : "<none>"));
+					logger.debug(String.format("Responding to iterative discovery request from %s for %d with %d items (next=%s, %d aids, %d commitments)",
+						request.getPeer(), lcPosition, commitments.size(), responseCursor.hasNext() ? nextLcPosition : "<none>", aids.size(), commitments.size()));
 				}
 				return new SendIterativeDiscoveryResponseAction(commitments, aids, responseCursor, request.getPeer());
 			});
