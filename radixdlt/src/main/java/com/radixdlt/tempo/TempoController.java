@@ -39,8 +39,6 @@ import com.radixdlt.tempo.messages.DeliveryRequestMessage;
 import com.radixdlt.tempo.messages.DeliveryResponseMessage;
 import com.radixdlt.tempo.messages.IterativeDiscoveryRequestMessage;
 import com.radixdlt.tempo.messages.IterativeDiscoveryResponseMessage;
-import com.radixdlt.tempo.messages.PositionDiscoveryRequestMessage;
-import com.radixdlt.tempo.messages.PositionDiscoveryResponseMessage;
 import com.radixdlt.tempo.messages.PushMessage;
 import com.radixdlt.tempo.messages.SampleRequestMessage;
 import com.radixdlt.tempo.messages.SampleResponseMessage;
@@ -70,8 +68,8 @@ import org.radix.database.DatabaseEnvironment;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.modules.Modules;
-import org.radix.network.messaging.Messaging;
 import org.radix.network.peers.PeerHandler;
+import org.radix.network2.messaging.MessageCentral;
 import org.radix.properties.RuntimeProperties;
 import org.radix.universe.system.LocalSystem;
 
@@ -340,25 +338,26 @@ public final class TempoController {
 		PeerSupplier peerSupplier = new PeerSupplierAdapter(() -> Modules.get(PeerHandler.class));
 		Supplier<DatabaseEnvironment> dbEnv = () -> Modules.get(DatabaseEnvironment.class);
 		Serialization serialization = Serialization.getDefault();
+		MessageCentral messageCentral = Modules.get(MessageCentral.class);
 		Builder builder = builder()
 			.addEpic(AtomDeliveryEpic.builder()
 				.storeView(storeView)
 				.build())
 			.addEpicBuilder(controller -> MessagingEpic.builder()
-				.messager(Messaging.getInstance())
-				.addInbound("tempo.sync.delivery.request", DeliveryRequestMessage.class, ReceiveDeliveryRequestAction::from)
+				.messager(messageCentral)
+				.addInbound(DeliveryRequestMessage.class, ReceiveDeliveryRequestAction::from)
 				.addOutbound(SendDeliveryRequestAction.class, SendDeliveryRequestAction::toMessage, SendDeliveryRequestAction::getPeer)
-				.addInbound("tempo.sync.delivery.response", DeliveryResponseMessage.class, ReceiveDeliveryResponseAction::from)
+				.addInbound(DeliveryResponseMessage.class, ReceiveDeliveryResponseAction::from)
 				.addOutbound(SendDeliveryResponseAction.class, SendDeliveryResponseAction::toMessage, SendDeliveryResponseAction::getPeer)
-				.addInbound("tempo.sync.discovery.iterative.request", IterativeDiscoveryRequestMessage.class, ReceiveIterativeDiscoveryRequestAction::from)
+				.addInbound(IterativeDiscoveryRequestMessage.class, ReceiveIterativeDiscoveryRequestAction::from)
 				.addOutbound(SendIterativeDiscoveryRequestAction.class, SendIterativeDiscoveryRequestAction::toMessage, SendIterativeDiscoveryRequestAction::getPeer)
-				.addInbound("tempo.sync.discovery.iterative.response", IterativeDiscoveryResponseMessage.class, ReceiveIterativeDiscoveryResponseAction::from)
+				.addInbound(IterativeDiscoveryResponseMessage.class, ReceiveIterativeDiscoveryResponseAction::from)
 				.addOutbound(SendIterativeDiscoveryResponseAction.class, SendIterativeDiscoveryResponseAction::toMessage, SendIterativeDiscoveryResponseAction::getPeer)
-				.addInbound("tempo.sync.push", PushMessage.class, ReceivePushAction::from)
+				.addInbound(PushMessage.class, ReceivePushAction::from)
 				.addOutbound(SendPushAction.class, SendPushAction::toMessage, SendPushAction::getPeer)
-				.addInbound("tempo.sample.request", SampleRequestMessage.class, ReceiveSampleRequestAction::from)
+				.addInbound(SampleRequestMessage.class, ReceiveSampleRequestAction::from)
 				.addOutbound(SendSampleRequestAction.class, SendSampleRequestAction::toMessage, SendSampleRequestAction::getPeer)
-				.addInbound("tempo.sample.response", SampleResponseMessage.class, ReceiveSampleResponseAction::from)
+				.addInbound(SampleResponseMessage.class, ReceiveSampleResponseAction::from)
 				.addOutbound(SendSampleResponseAction.class, SendSampleResponseAction::toMessage, SendSampleResponseAction::getPeer)
 				.build(controller))
 			.addReducer(new LivePeersReducer(peerSupplier))

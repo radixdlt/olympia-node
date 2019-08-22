@@ -2,22 +2,16 @@ package com.radixdlt.tempo.epics;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.tempo.TempoController.ImmediateDispatcher;
-import com.radixdlt.tempo.TempoException;
 import com.radixdlt.tempo.reactive.TempoAction;
 import com.radixdlt.tempo.reactive.TempoEpic;
 import com.radixdlt.tempo.reactive.TempoFlow;
 import com.radixdlt.tempo.reactive.TempoFlowSource;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.network.Network;
-import org.radix.network.Protocol;
 import org.radix.network.messaging.Message;
-import org.radix.network.messaging.Messaging;
 import org.radix.network.peers.Peer;
-import org.radix.network.peers.UDPPeer;
-import org.radix.state.State;
+import org.radix.network2.messaging.MessageCentral;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -27,13 +21,13 @@ import java.util.function.Function;
 public final class MessagingEpic implements TempoEpic {
 	private static final Logger logger = Logging.getLogger("Sync");
 
-	private final Messaging messager;
-	private final ImmutableMap<String, BiFunction<Message, Peer, TempoAction>> inboundMappers;
+	private final MessageCentral messager;
+	private final ImmutableMap<Class<? extends Message>, BiFunction<Message, Peer, TempoAction>> inboundMappers;
 	private final ImmutableMap<Class<? extends TempoAction>, Function<TempoAction, Message>> outboundMessageMappers;
 	private final ImmutableMap<Class<? extends TempoAction>, Function<TempoAction, Peer>> outboundPeerMappers;
 
-	private MessagingEpic(Messaging messager,
-	                      ImmutableMap<String, BiFunction<Message, Peer, TempoAction>> inboundMappers,
+	private MessagingEpic(MessageCentral messager,
+	                      ImmutableMap<Class<? extends Message>, BiFunction<Message, Peer, TempoAction>> inboundMappers,
 	                      ImmutableMap<Class<? extends TempoAction>, Function<TempoAction, Message>> messageMappers,
 	                      ImmutableMap<Class<? extends TempoAction>, Function<TempoAction, Peer>> outboundPeerMappers) {
 		this.messager = messager;
@@ -54,14 +48,7 @@ public final class MessagingEpic implements TempoEpic {
 	}
 
 	private void sendMessage(Message message, Peer peer) {
-		try {
-			// TODO put proper messaging here so we don't need networking
-			UDPPeer udpPeer = Network.getInstance().get(peer.getURI(), Protocol.UDP, State.CONNECTED);
-			messager.send(message, udpPeer);
-		} catch (IOException e) {
-			// TODO error handling
-			throw new TempoException(String.format("Error while sending message '%s' to %s", message.getCommand(), peer), e);
-		}
+		messager.send(peer, message);
 	}
 
 	public static Builder builder() {
@@ -69,21 +56,21 @@ public final class MessagingEpic implements TempoEpic {
 	}
 
 	public static class Builder {
-		private Messaging messager;
-		private final Map<String, BiFunction<Message, Peer, TempoAction>> inboundMappers = new HashMap<>();
+		private MessageCentral messager;
+		private final Map<Class<? extends Message>, BiFunction<Message, Peer, TempoAction>> inboundMappers = new HashMap<>();
 		private final Map<Class<? extends TempoAction>, Function<TempoAction, Message>> outboundMessageMappers = new HashMap<>();
 		private final Map<Class<? extends TempoAction>, Function<TempoAction, Peer>> outboundPeerMappers = new HashMap<>();
 
 		private Builder() {
 		}
 
-		public Builder messager(Messaging messager) {
+		public Builder messager(MessageCentral messager) {
 			this.messager = messager;
 			return this;
 		}
 
-		public <T extends Message> Builder addInbound(String command, Class<T> cls, BiFunction<T, Peer, TempoAction> mapper) {
-			this.inboundMappers.put(command, (m, p) -> mapper.apply(cls.cast(m), p));
+		public <T extends Message> Builder addInbound(Class<T> messageClass, BiFunction<T, Peer, TempoAction> mapper) {
+			this.inboundMappers.put(messageClass, (message, peer) -> mapper.apply(messageClass.cast(message), peer));
 
 			return this;
 		}
@@ -98,8 +85,8 @@ public final class MessagingEpic implements TempoEpic {
 		public MessagingEpic build(ImmediateDispatcher dispatcher) {
 			Objects.requireNonNull(messager, "messager is required");
 
-			for (String command : inboundMappers.keySet()) {
-				this.messager.register(command, (message, peer) -> {
+			for (Class<? extends Message> command : inboundMappers.keySet()) {
+				this.messager.addListener(command, (peer, message) -> {
 					try {
 						BiFunction<Message, Peer, TempoAction> messageActionMapper = inboundMappers.get(command);
 						TempoAction action = messageActionMapper.apply(message, peer);
