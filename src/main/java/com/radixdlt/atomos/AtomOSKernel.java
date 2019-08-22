@@ -1,6 +1,5 @@
 package com.radixdlt.atomos;
 
-import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.constraintmachine.CMAtom;
 
 /**
@@ -24,7 +23,7 @@ public interface AtomOSKernel {
 	 * Computes a value for a given atom
 	 */
 	interface AtomKernelCompute {
-		Object compute(ImmutableAtom atom);
+		Object compute(CMAtom atom);
 	}
 
 	/**

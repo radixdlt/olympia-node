@@ -1,17 +1,17 @@
 package com.radixdlt.constraintmachine;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Streams;
 import com.radixdlt.atoms.DataPointer;
-import com.radixdlt.atoms.ImmutableAtom;
-import com.radixdlt.atoms.ParticleGroup;
 import com.radixdlt.atoms.Spin;
 import com.radixdlt.atoms.SpunParticle;
 import com.radixdlt.constraintmachine.TransitionProcedure.ProcedureResult;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
 import com.radixdlt.store.CMStore;
+import com.radixdlt.store.SpinStateMachine;
 import com.radixdlt.store.SpinStateTransitionValidator;
 import com.radixdlt.store.SpinStateTransitionValidator.TransitionCheckResult;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.UnaryOperator;
@@ -19,7 +19,7 @@ import com.radixdlt.atoms.Particle;
 import com.radixdlt.store.CMStores;
 
 import java.util.Objects;
-import java.util.stream.Stream;
+import java.util.stream.Collectors;
 
 /**
  * An implementation of a UTXO based constraint machine which uses Radix's atom structure.
@@ -87,9 +87,21 @@ public final class ConstraintMachine {
 		this.witnessValidators = witnessValidators;
 	}
 
-	final class CMValidationState {
+	static final class CMValidationState {
 		private SpunParticle spunParticleRemaining = null;
 		private Object particleRemainingUsed = null;
+		private final Map<Particle, Spin> currentSpins;
+
+		CMValidationState(Map<Particle, Spin> initialSpins) {
+			this.currentSpins = initialSpins;
+		}
+
+		Spin push(Particle p) {
+			final Spin curSpin = currentSpins.get(p);
+			final Spin nextSpin = SpinStateMachine.next(curSpin);
+			currentSpins.put(p, nextSpin);
+			return nextSpin;
+		}
 
 		Particle getCurParticle() {
 			return spunParticleRemaining == null ? null : spunParticleRemaining.getParticle();
@@ -239,12 +251,13 @@ public final class ConstraintMachine {
 	 * @param metadata atom meta data
 	 * @return the first error found, otherwise an empty optional
 	 */
-	Optional<CMError> validateParticleGroup(ParticleGroup group, long groupIndex, AtomMetadata metadata) {
-		final CMValidationState validationState = new CMValidationState();
+	Optional<CMError> validateParticleGroup(CMValidationState validationState, List<Particle> group, long groupIndex, AtomMetadata metadata) {
 
-		for (int i = 0; i < group.getParticleCount(); i++) {
+		for (int i = 0; i < group.size(); i++) {
 			final DataPointer dp = DataPointer.ofParticle((int) groupIndex, i);
-			final SpunParticle nextSpun = group.getSpunParticle(i);
+			final Particle nextParticle = group.get(i);
+			final Spin nextSpin = validationState.push(nextParticle);
+			final SpunParticle nextSpun = SpunParticle.of(nextParticle, nextSpin);
 
 			Optional<CMError> error = validateParticle(nextSpun, dp, metadata, validationState);
 			if (error.isPresent()) {
@@ -314,13 +327,17 @@ public final class ConstraintMachine {
 		}
 
 		// "Application" checks
-		final ImmutableAtom atom = cmAtom.getAtom();
-		final AtomMetadata metadata = new AtomMetadataFromAtom(atom);
-		final Optional<CMError> applicationErr = Streams.mapWithIndex(atom.particleGroups(), (group, i) ->
-			this.validateParticleGroup(group, i, metadata)).flatMap(i -> i.map(Stream::of).orElse(Stream.empty())).findFirst();
-
-		if (applicationErr.isPresent()) {
-			return applicationErr;
+		final AtomMetadata metadata = new AtomMetadataFromAtom(cmAtom);
+		final Map<Particle, Spin> initialSpins = cmAtom.getParticles().stream().collect(Collectors.toMap(
+			CMParticle::getParticle,
+			CMParticle::getCheckSpin
+		));
+		final CMValidationState validationState = new CMValidationState(initialSpins);
+		for (int i = 0; i < cmAtom.getParticlePushes().size(); i++) {
+			final Optional<CMError> error = this.validateParticleGroup(validationState, cmAtom.getParticlePushes().get(i), i, metadata);
+			if (error.isPresent()) {
+				return error;
+			}
 		}
 
 		return Optional.empty();

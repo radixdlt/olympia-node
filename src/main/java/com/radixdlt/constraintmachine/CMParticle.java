@@ -37,8 +37,13 @@ public class CMParticle {
 			.limit(numPushes);
 	}
 
+
 	public DataPointer getDataPointer() {
 		return firstDataPointer;
+	}
+
+	public Spin getCheckSpin() {
+		return checkSpin;
 	}
 
 	public Spin getNextSpin() {

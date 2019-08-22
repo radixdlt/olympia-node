@@ -88,6 +88,10 @@ public final class ParticleGroup {
 		return ImmutableMap.copyOf(indexByParticle);
 	}
 
+	public ImmutableList<SpunParticle> getParticles() {
+		return particles;
+	}
+
 	/**
 	 * Get a stream of the spun particles in this group
 	 */

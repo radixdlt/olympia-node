@@ -1,12 +1,12 @@
 package com.radixdlt.constraintmachine;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.atoms.ImmutableAtom;
-import com.radixdlt.atoms.ParticleGroup;
-import com.radixdlt.atoms.SpunParticle;
+import com.google.common.collect.ImmutableMap;
+import com.radixdlt.constraintmachine.ConstraintMachine.CMValidationState;
 import com.radixdlt.constraintmachine.TransitionProcedure.ProcedureResult;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Optional;
 import org.junit.Test;
 import com.radixdlt.atoms.DataPointer;
@@ -43,7 +43,6 @@ public class ConstraintMachineTest {
 		when(atom.getParticles()).thenReturn(ImmutableList.of(
 			new CMParticle(p, DataPointer.ofParticle(0, 0), Spin.NEUTRAL, 1)
 		));
-		when(atom.getAtom()).thenReturn(mock(ImmutableAtom.class));
 
 		assertThat(machine.validate(atom))
 			.contains(new CMError(DataPointer.ofParticle(0, 0), CMErrorCode.INTERNAL_SPIN_CONFLICT));
@@ -61,12 +60,17 @@ public class ConstraintMachineTest {
 			.setWitnessValidators((p0, p1) -> (res, v0, v1, meta) -> WitnessValidatorResult.success())
 			.build();
 
+		Particle particle0 = mock(Particle.class);
+		Particle particle1 = mock(Particle.class);
+		Particle particle2 = mock(Particle.class);
+
 		Optional<CMError> errors = machine.validateParticleGroup(
-			ParticleGroup.of(
-				SpunParticle.down(mock(Particle.class)),
-				SpunParticle.down(mock(Particle.class)),
-				SpunParticle.up(mock(Particle.class))
-			),
+			new CMValidationState(new HashMap<>(ImmutableMap.of(
+				particle0, Spin.UP,
+				particle1, Spin.UP,
+				particle2, Spin.NEUTRAL
+			))),
+			ImmutableList.of(particle0, particle1, particle2),
 			0,
 			mock(AtomMetadata.class)
 		);
