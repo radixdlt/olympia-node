@@ -56,22 +56,24 @@ class MessageDispatcher {
 		this.serialization = serialization;
 	}
 
-	void send(TransportManager transportManager, final MessageEvent outboundMessage) {
+	SendResult send(TransportManager transportManager, final MessageEvent outboundMessage) {
 		long start = SystemProfiler.getInstance().begin();
 		final Message message = outboundMessage.message();
 		final Peer peer = outboundMessage.peer();
 		final State peerState = peer.getState();
 
 		if (Time.currentTimestamp() - message.getTimestamp() > messageTtlMs) {
-			log.warn(message.getClass().getName() + ": TTL to " + peer.getURI() + " has expired");
+			String msg = String.format("%s: TTL to %s has expired", message.getClass().getName(), peer.getURI());
+			log.warn(msg);
 			Modules.ifAvailable(SystemMetaData.class, a -> a.increment("messages.outbound.aborted"));
-			return;
+			return SendResult.failure(new IOException(msg));
 		}
 
 		if (peerState.in(State.DISCONNECTED) || peerState.in(State.DISCONNECTING)) {
-			log.warn(message.getClass().getName() + ": peer " + peer.getURI() + " is " + peerState);
+			String msg = String.format("%s: peer %s is %s", message.getClass().getName(), peer.getURI(), peerState);
+			log.warn(msg);
 			Modules.ifAvailable(SystemMetaData.class, a -> a.increment("messages.outbound.aborted"));
-			return;
+			return SendResult.failure(new IOException(msg));
 		}
 
 		Modules.ifAvailable(MessageProfiler.class, mp -> mp.process(message, peer));
@@ -86,11 +88,14 @@ class MessageDispatcher {
 			}
 
 			byte[] bytes = serialize(message);
-			findTransportAndOpenConnection(transportManager, peer, bytes)
+			return findTransportAndOpenConnection(transportManager, peer, bytes)
 				.thenCompose(conn -> conn.send(bytes))
-				.thenApply(this::updateStatistics);
+				.thenApply(this::updateStatistics)
+				.get();
 		} catch (Exception ex) {
-			log.error(message.getClass().getName() + ": Sending to " + peer.getURI() + " failed", ex);
+			String msg = String.format("%s: Sending to  %s failed", message.getClass().getName(), peer.getURI());
+			log.error(msg, ex);
+			return SendResult.failure(new IOException(msg, ex));
 		} finally {
 			SystemProfiler.getInstance().incrementFrom("MESSAGING:SEND:"+message.getCommand(), start);
 		}

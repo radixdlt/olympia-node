@@ -11,7 +11,6 @@ import org.radix.network2.transport.TransportMetadata;
 import org.radix.network2.transport.TransportOutboundConnection;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
 
@@ -36,7 +35,7 @@ final class UDPTransportOutboundConnection implements TransportOutboundConnectio
 
 	@Override
 	public CompletableFuture<SendResult> send(byte[] data) {
-		CompletableFuture<SendResult> cfsr = new CompletableFuture<>();
+		final CompletableFuture<SendResult> cfsr = new CompletableFuture<>();
 		// NAT: encode source and dest address to work behind NAT and userland proxies (Docker for Windows/Mac)
 		InetAddress sourceAddress = PublicInetAddress.getInstance().get();
 		byte[] rawSourceAddress = sourceAddress.getAddress();
@@ -49,7 +48,7 @@ final class UDPTransportOutboundConnection implements TransportOutboundConnectio
 		if (totalSize > UDPConstants.MAX_PACKET_LENGTH) {
 			cfsr.complete(SendResult.failure(new IOException("Datagram packet to " + remoteAddr + " of size " + totalSize + " is too large")));
 		} else {
-			ByteBuf buffer = Unpooled.buffer(totalSize)
+			ByteBuf buffer = this.channel.alloc().directBuffer(totalSize)
 				.writeByte(getAddressFormat(rawSourceAddress.length, rawDestAddress.length))
 				.writeBytes(rawSourceAddress)
 				.writeBytes(rawDestAddress)
@@ -57,17 +56,15 @@ final class UDPTransportOutboundConnection implements TransportOutboundConnectio
 
 			DatagramPacket msg = new DatagramPacket(buffer, remoteAddr);
 			this.channel.writeAndFlush(msg).addListener(f -> {
-				try {
-					f.syncUninterruptibly();
+				Throwable cause = f.cause();
+				if (cause == null) {
 					cfsr.complete(SendResult.complete());
-				} catch (Exception e) {
-					if (e instanceof IOException) {
-						cfsr.complete(SendResult.failure((IOException) e));
-					} else if (e instanceof UncheckedIOException) {
-						cfsr.complete(SendResult.failure(((UncheckedIOException) e).getCause()));
-					} else {
-						cfsr.complete(SendResult.failure(new IOException(e)));
-					}
+				} else if (cause instanceof IOException) {
+					cfsr.complete(SendResult.failure((IOException) cause));
+				} else if (cause instanceof UncheckedIOException) {
+					cfsr.complete(SendResult.failure(((UncheckedIOException) cause).getCause()));
+				} else {
+					cfsr.complete(SendResult.failure(new IOException(cause)));
 				}
 			});
 		}

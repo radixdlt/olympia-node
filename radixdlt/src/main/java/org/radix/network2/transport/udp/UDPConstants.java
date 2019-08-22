@@ -27,5 +27,5 @@ public class UDPConstants {
 	 * Maximum packet size that we will attempt to send.
 	 * Note that we have given ourselves some headroom here.
 	 */
-	static final int MAX_PACKET_LENGTH = 64_000;
+	static final int MAX_PACKET_LENGTH = 65_409;
 }

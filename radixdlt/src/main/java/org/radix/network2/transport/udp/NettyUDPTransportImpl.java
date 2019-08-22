@@ -4,11 +4,13 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.modules.Modules;
 import org.radix.network2.messaging.InboundMessageConsumer;
+import org.radix.network2.transport.StaticTransportMetadata;
 import org.radix.network2.transport.Transport;
 import org.radix.network2.transport.TransportControl;
 import org.radix.network2.transport.TransportMetadata;
@@ -20,6 +22,9 @@ import com.radixdlt.universe.Universe;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOption;
+import io.netty.channel.FixedRecvByteBufAllocator;
+import io.netty.channel.MultithreadEventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.nio.NioDatagramChannel;
@@ -27,11 +32,16 @@ import io.netty.channel.socket.nio.NioDatagramChannel;
 final class NettyUDPTransportImpl implements Transport {
 	private static final Logger log = Logging.getLogger("transport.udp");
 
+	static final int MAX_DATAGRAM_SIZE = 65536;
+	static final int RCV_BUF_SIZE = MAX_DATAGRAM_SIZE * 4;
+	static final int SND_BUF_SIZE = MAX_DATAGRAM_SIZE * 4;
+
 	private final TransportMetadata localMetadata;
 	private final UDPTransportControlFactory controlFactory;
 	private final UDPTransportOutboundConnectionFactory connectionFactory;
 
 	private final int inboundProcessingThreads;
+	private final AtomicInteger threadCounter = new AtomicInteger(0);
 	private final InetSocketAddress bindAddress;
 	private final PublicInetAddress natHandler;
 	private final Object channelLock = new Object();
@@ -39,6 +49,7 @@ final class NettyUDPTransportImpl implements Transport {
 	private DatagramChannel channel;
 	private TransportOutboundConnection outbound;
 	private TransportControl control;
+
 
 	@Inject
 	NettyUDPTransportImpl(
@@ -50,20 +61,23 @@ final class NettyUDPTransportImpl implements Transport {
 	) {
 		String providedHost = localMetadata.get(UDPConstants.METADATA_UDP_HOST);
 		if (providedHost == null) {
-			providedHost = config.getNetworkAddress("0.0.0.0");
+			providedHost = config.networkAddress("0.0.0.0");
 		}
 		String portString = localMetadata.get(UDPConstants.METADATA_UDP_PORT);
 		final int port;
 		if (portString == null) {
-			port = config.getNetworkPort(Modules.get(Universe.class).getPort());
+			port = config.networkPort(Modules.get(Universe.class).getPort());
 		} else {
 			port = Integer.parseInt(portString);
 		}
 
-		this.localMetadata = localMetadata;
+		this.localMetadata = StaticTransportMetadata.of(
+			UDPConstants.METADATA_UDP_HOST, providedHost,
+			UDPConstants.METADATA_UDP_PORT, String.valueOf(port)
+		);
 		this.controlFactory = controlFactory;
 		this.connectionFactory = connectionFactory;
-		this.inboundProcessingThreads = config.getInboundProcessingThreads(1);
+		this.inboundProcessingThreads = config.processingThreads(1);
 		this.bindAddress = new InetSocketAddress(providedHost, port);
 		this.natHandler = natHandler;
 	}
@@ -85,7 +99,8 @@ final class NettyUDPTransportImpl implements Transport {
 
 	@Override
 	public void start(InboundMessageConsumer messageSink) {
-	    NioEventLoopGroup group = new NioEventLoopGroup(inboundProcessingThreads);
+		log.info(String.format("UDP transport %s, threads: %s", localAddress(), inboundProcessingThreads));
+		MultithreadEventLoopGroup group = new NioEventLoopGroup(inboundProcessingThreads, this::createThread);
 
 	    Bootstrap b = new Bootstrap();
 	    b.group(group)
@@ -93,6 +108,10 @@ final class NettyUDPTransportImpl implements Transport {
 	        .handler(new ChannelInitializer<NioDatagramChannel>() {
 	            @Override
 	            public void initChannel(NioDatagramChannel ch) throws Exception {
+	            	ch.config()
+	            		.setReceiveBufferSize(RCV_BUF_SIZE)
+	            		.setSendBufferSize(SND_BUF_SIZE)
+	            		.setOption(ChannelOption.RCVBUF_ALLOCATOR, new FixedRecvByteBufAllocator(MAX_DATAGRAM_SIZE));
 	                ch.pipeline()
 	                	.addLast("onboard", new NettyMessageHandler(ch, natHandler, messageSink));
 	            }
@@ -107,7 +126,7 @@ final class NettyUDPTransportImpl implements Transport {
 	    	// Abort!
 	    	Thread.currentThread().interrupt();
 	    } catch (IOException e) {
-	    	throw new UncheckedIOException("While closing channel", e);
+	    	throw new UncheckedIOException("Error while opening channel", e);
 		}
 	}
 
@@ -127,7 +146,19 @@ final class NettyUDPTransportImpl implements Transport {
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s|%s]", getClass().getSimpleName(), bindAddress, inboundProcessingThreads);
+		return String.format("%s[%s|%s]", getClass().getSimpleName(), localAddress(), inboundProcessingThreads);
+	}
+
+	private String localAddress() {
+		return String.format("%s:%s", bindAddress.getAddress().getHostAddress(), bindAddress.getPort());
+	}
+
+	private Thread createThread(Runnable r) {
+		String threadName = String.format("UDP handler %s - %s", localAddress(), threadCounter.incrementAndGet());
+		if (log.hasLevel(Logging.DEBUG)) {
+			log.debug("New thread: " + threadName);
+		}
+		return new Thread(r, threadName);
 	}
 
 	private void closeSafely(Closeable c) {
@@ -135,7 +166,7 @@ final class NettyUDPTransportImpl implements Transport {
 			try {
 				c.close();
 			} catch (IOException | UncheckedIOException e) {
-				log.warn("While closing " + c, e);
+				log.warn("Error while closing " + c, e);
 			}
 		}
 	}
