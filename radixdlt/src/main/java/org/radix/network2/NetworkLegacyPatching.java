@@ -50,8 +50,11 @@ public final class NetworkLegacyPatching {
 	 * Note that if the peer is already banned according to our address book, the
 	 * specified peer instance will have it's banned timestamp updated to match the
 	 * known peer's banned time.
+<<<<<<< HEAD
 	 * <p>
 	 * Eventually this will be replaced with something that uses AddressBook.
+=======
+>>>>>>> Improved dependency management and added integration test for UDP transport
 	 *
 	 * @param peer the peer we are inquiring about
 	 * @param peerNid the corresponding node ID of the peer
