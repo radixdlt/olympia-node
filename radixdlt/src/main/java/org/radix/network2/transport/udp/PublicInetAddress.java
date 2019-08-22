@@ -7,10 +7,10 @@ import java.util.Random;
 import java.util.function.LongSupplier;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.modules.Modules;
+import org.radix.network2.NetworkLegacyPatching;
+
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.common.annotations.VisibleForTesting;
-import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.Longs;
 
 import io.netty.buffer.ByteBuf;
@@ -38,7 +38,7 @@ public final class PublicInetAddress {
 	public static PublicInetAddress getInstance() {
 		synchronized(INSTANCE_LOCK) {
 			if (instance == null) {
-				configure(null, Modules.get(Universe.class).getPort());
+				configure(null, NetworkLegacyPatching.defaultPort());
 			}
 			return instance;
 		}

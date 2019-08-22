@@ -20,12 +20,12 @@ import org.radix.network.messaging.Message.Direction;
 import org.radix.network.messaging.MessageProfiler;
 import org.radix.network.messaging.SignedMessage;
 import org.radix.network.peers.Peer;
-import org.radix.network.peers.PeerStore;
+import org.radix.network2.NetworkLegacyPatching;
+import org.radix.network2.TimeSupplier;
 import org.radix.network2.transport.SendResult;
 import org.radix.network2.transport.Transport;
 import org.radix.network2.transport.TransportOutboundConnection;
 import org.radix.state.State;
-import org.radix.time.Time;
 import org.radix.time.Timestamps;
 import org.radix.universe.system.LocalSystem;
 import org.radix.universe.system.RadixSystem;
@@ -42,18 +42,18 @@ import org.xerial.snappy.Snappy;
 //FIXME: Optional dependency on Modules.get(SystemMetaData.class) for system metadata
 //FIXME: Optional dependency on Modules.get(MessageProfiler.class) for profiling
 //FIXME: Optional dependency on Modules.get(Interfaces.class) for keeping track of network interfaces
-//FIXME: Dependency on Modules.get(PeerStore.class) for keeping track of peers
-// FIXME: Dependency on static Time.currentTimestamp() for millisecond time
 // FIXME: Dependency on LocalSystem.getInstance() for signing key
 class MessageDispatcher {
 	private static final Logger log = Logging.getLogger("messaging");
 
 	private final long messageTtlMs;
 	private final Serialization serialization;
+	private final TimeSupplier timeSource;
 
-	MessageDispatcher(MessageCentralConfiguration config, Serialization serialization) {
+	MessageDispatcher(MessageCentralConfiguration config, Serialization serialization, TimeSupplier timeSource) {
 		this.messageTtlMs = config.messagingTimeToLive(30) * 1000L;
 		this.serialization = serialization;
+		this.timeSource = timeSource;
 	}
 
 	SendResult send(TransportManager transportManager, final MessageEvent outboundMessage) {
@@ -62,7 +62,7 @@ class MessageDispatcher {
 		final Peer peer = outboundMessage.peer();
 		final State peerState = peer.getState();
 
-		if (Time.currentTimestamp() - message.getTimestamp() > messageTtlMs) {
+		if (timeSource.currentTime() - message.getTimestamp() > messageTtlMs) {
 			String msg = String.format("%s: TTL to %s has expired", message.getClass().getName(), peer.getURI());
 			log.warn(msg);
 			Modules.ifAvailable(SystemMetaData.class, a -> a.increment("messages.outbound.aborted"));
@@ -105,7 +105,8 @@ class MessageDispatcher {
 		final Peer peer = inboundMessage.peer();
 		final Message message = inboundMessage.message();
 
-		peer.setTimestamp(Timestamps.ACTIVE, Time.currentTimestamp());
+		long currentTime = timeSource.currentTime();
+		peer.setTimestamp(Timestamps.ACTIVE, currentTime);
 		Modules.ifAvailable(SystemMetaData.class, a -> a.increment("messages.inbound.received"));
 
 		State peerState = peer.getState();
@@ -115,7 +116,7 @@ class MessageDispatcher {
 			return;
 		}
 
-		if (Time.currentTimestamp() - message.getTimestamp() > messageTtlMs) {
+		if (currentTime - message.getTimestamp() > messageTtlMs) {
 			Modules.ifAvailable(SystemMetaData.class, a -> a.increment("messages.inbound.discarded"));
 			return;
 		}
@@ -147,15 +148,8 @@ class MessageDispatcher {
 					return;
 				}
 
-				if (!peerState.in(State.CONNECTED)) {
-					Peer knownPeer = Modules.get(PeerStore.class).getPeer(system.getNID());
-
-					if (knownPeer != null && knownPeer.getTimestamp(Timestamps.BANNED) > Time.currentTimestamp()) {
-						peer.setTimestamp(Timestamps.BANNED, knownPeer.getTimestamp(Timestamps.BANNED));
-						peer.setBanReason(knownPeer.getBanReason());
-						peer.ban(String.format("Banned peer %s at %s", system.getNID(), peer.toString()));
-						return;
-					}
+				if (!peerState.in(State.CONNECTED) && NetworkLegacyPatching.checkPeerBanned(peer, system.getNID(), timeSource)) {
+					return;
 				}
 			}
 		} catch (Exception ex) {

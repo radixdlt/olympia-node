@@ -3,7 +3,6 @@ package org.radix.network2.messaging;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.net.URI;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -13,26 +12,22 @@ import org.radix.events.Events;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.modules.Modules;
-import org.radix.network.Network;
-import org.radix.network.Protocol;
 import org.radix.network.messaging.Message;
 import org.radix.network.peers.Peer;
-import org.radix.network.peers.PeerStore;
-import org.radix.network.peers.UDPPeer;
+import org.radix.network2.NetworkLegacyPatching;
+import org.radix.network2.TimeSupplier;
 import org.radix.network2.transport.Transport;
 import org.radix.universe.system.events.QueueFullEvent;
 import org.radix.utils.SystemMetaData;
 import org.xerial.snappy.Snappy;
 
-import com.radixdlt.universe.Universe;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.Inject;
 import com.radixdlt.serialization.Serialization;
 
-//FIXME: Dependency on Modules.get(SystemMetadata.class) for updating metadata
-// FIXME: Dependency on Network.getInstance() for peer handling
+//FIXME: Optional dependency on Modules.get(SystemMetadata.class) for updating metadata
 final class MessageCentralImpl implements MessageCentral, Closeable {
 	private static final Logger log = Logging.getLogger("message");
 
@@ -75,14 +70,18 @@ final class MessageCentralImpl implements MessageCentral, Closeable {
 		MessageCentralConfiguration config,
 		Serialization serialization,
 		TransportManager transportManager,
-		Events events
+		Events events,
+		TimeSupplier timeSource
 	) {
 		this.inboundQueue = new PriorityBlockingQueue<>(config.messagingInboundQueueMax(8192));
 		this.outboundQueue = new PriorityBlockingQueue<>(config.messagingOutboundQueueMax(16384));
+
 		this.serialization = Objects.requireNonNull(serialization);
-		this.messageDispatcher = new MessageDispatcher(config, serialization);
 		this.connectionManager = Objects.requireNonNull(transportManager);
 		this.events = Objects.requireNonNull(events);
+
+		Objects.requireNonNull(timeSource);
+		this.messageDispatcher = new MessageDispatcher(config, serialization, timeSource);
 
 		this.transports = Lists.newArrayList(transportManager.transports());
 
@@ -154,16 +153,14 @@ final class MessageCentralImpl implements MessageCentral, Closeable {
 
 	private void inboundMessage(InboundMessage inboundMessage) {
 		// FIXME: This needs replacing - at the moment just hooking up to existing infra
-		if (Modules.isAvailable(PeerStore.class)) {
-			String peerAddress = inboundMessage.source().metadata().get("host");
-			URI uri = URI.create(Network.URI_PREFIX + peerAddress + ":" + Modules.get(Universe.class).getPort());
-			try {
-				UDPPeer peer = Network.getInstance().connect(uri, Protocol.UDP);
+		try {
+			Peer peer = NetworkLegacyPatching.findPeer(inboundMessage.source());
+			if (peer != null) {
 				Message message = deserialize(inboundMessage.message());
 				inject(peer, message);
-			} catch (IOException e) {
-				throw new UncheckedIOException("While processing inbound message from " + inboundMessage.source(), e);
 			}
+		} catch (IOException e) {
+			throw new UncheckedIOException("While processing inbound message from " + inboundMessage.source(), e);
 		}
 	}
 

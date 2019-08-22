@@ -3,8 +3,10 @@ package org.radix.network2.messaging;
 import java.util.Objects;
 
 import org.radix.events.Events;
+import org.radix.network2.TimeSupplier;
 import org.radix.network2.transport.FirstMatchTransportManager;
 import org.radix.properties.RuntimeProperties;
+import org.radix.time.Time;
 
 import com.google.inject.AbstractModule;
 import com.radixdlt.serialization.Serialization;
@@ -16,13 +18,15 @@ import com.radixdlt.serialization.Serialization;
 final class MessageCentralModule extends AbstractModule {
 
 	private final MessageCentralConfiguration config;
+	private final TimeSupplier timeSource;
 
 	MessageCentralModule(RuntimeProperties properties) {
-		this(MessageCentralConfiguration.fromRuntimeProperties(properties));
+		this(MessageCentralConfiguration.fromRuntimeProperties(properties), Time::currentTimestamp);
 	}
 
-	MessageCentralModule(MessageCentralConfiguration config) {
+	MessageCentralModule(MessageCentralConfiguration config, TimeSupplier timeSource) {
 		this.config = Objects.requireNonNull(config);
+		this.timeSource = Objects.requireNonNull(timeSource);
 	}
 
 	@Override
@@ -35,5 +39,6 @@ final class MessageCentralModule extends AbstractModule {
 		bind(Serialization.class).toProvider(Serialization::getDefault);
 		bind(TransportManager.class).to(FirstMatchTransportManager.class);
 		bind(Events.class).toProvider(Events::getInstance);
+		bind(TimeSupplier.class).toInstance(this.timeSource);
 	}
 }

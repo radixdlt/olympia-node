@@ -8,7 +8,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.modules.Modules;
 import org.radix.network2.messaging.InboundMessageConsumer;
 import org.radix.network2.transport.StaticTransportMetadata;
 import org.radix.network2.transport.Transport;
@@ -18,8 +17,6 @@ import org.radix.network2.transport.TransportOutboundConnection;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
-import com.radixdlt.universe.Universe;
-
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
@@ -31,6 +28,10 @@ import io.netty.channel.socket.nio.NioDatagramChannel;
 
 final class NettyUDPTransportImpl implements Transport {
 	private static final Logger log = Logging.getLogger("transport.udp");
+
+	// Default values if none specified in either localMetadata or config
+	private static final String DEFAULT_HOST = "0.0.0.0";
+	private static final int    DEFAULT_PORT = 30000;
 
 	static final int MAX_DATAGRAM_SIZE = 65536;
 	static final int RCV_BUF_SIZE = MAX_DATAGRAM_SIZE * 4;
@@ -61,12 +62,12 @@ final class NettyUDPTransportImpl implements Transport {
 	) {
 		String providedHost = localMetadata.get(UDPConstants.METADATA_UDP_HOST);
 		if (providedHost == null) {
-			providedHost = config.networkAddress("0.0.0.0");
+			providedHost = config.networkAddress(DEFAULT_HOST);
 		}
 		String portString = localMetadata.get(UDPConstants.METADATA_UDP_PORT);
 		final int port;
 		if (portString == null) {
-			port = config.networkPort(Modules.get(Universe.class).getPort());
+			port = config.networkPort(DEFAULT_PORT);
 		} else {
 			port = Integer.parseInt(portString);
 		}

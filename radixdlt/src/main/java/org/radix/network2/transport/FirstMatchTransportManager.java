@@ -19,7 +19,6 @@ import org.radix.universe.system.RadixSystem;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 
-// FIXME: Remove this when network2 complete
 // Needs replacing with a transport manager that does a better job of
 // selecting a match.
 public class FirstMatchTransportManager implements TransportManager {
