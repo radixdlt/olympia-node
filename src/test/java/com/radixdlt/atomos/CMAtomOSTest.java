@@ -45,13 +45,13 @@ public class CMAtomOSTest {
 	@Test
 	public void when_a_particle_which_is_not_registered_via_os_is_validated__it_should_cause_errors() {
 		CMAtomOS os = new CMAtomOS();
-		ConstraintMachine machine = os.buildMachine().getFirst();
-		CMInstruction atom = mock(CMInstruction.class);
+		ConstraintMachine machine = os.buildMachine();
+		CMInstruction instruction = mock(CMInstruction.class);
 		TestParticle testParticle = new TestParticle();
-		when(atom.getParticles()).thenReturn(ImmutableList.of(
+		when(instruction.getParticles()).thenReturn(ImmutableList.of(
 			new CMParticle(testParticle, DataPointer.ofParticle(0, 0), Spin.NEUTRAL, 1)
 		));
-		assertThat(machine.validate(() -> atom))
+		assertThat(machine.validate(instruction))
 			.isPresent()
 			.matches(e -> e.get().getErrorCode() == CMErrorCode.UNKNOWN_PARTICLE);
 	}

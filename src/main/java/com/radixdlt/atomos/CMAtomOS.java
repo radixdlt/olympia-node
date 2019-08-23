@@ -87,6 +87,17 @@ public final class CMAtomOS {
 		});
 	}
 
+
+	public Function<CMAtom, Optional<KernelProcedureError>> buildAtomCheck() {
+		return atom -> kernelProcedures.stream()
+			.flatMap(p -> p.validate(atom))
+			.findFirst();
+	}
+
+	public AtomCompute buildCompute() {
+		return atomKernelCompute != null ? a -> atomKernelCompute.compute(a) : null;
+	}
+
 	/**
 	 * Checks that the machine is set up correctly where invariants aren't broken.
 	 * If all is well, this then returns an instance of a machine in which atom
@@ -94,10 +105,8 @@ public final class CMAtomOS {
 	 *
 	 * @return a constraint machine which can validate atoms and the virtual layer on top of the store
 	 */
-	public Pair<ConstraintMachine, AtomCompute> buildMachine() {
+	public ConstraintMachine buildMachine() {
 		ConstraintMachine.Builder cmBuilder = new Builder();
-
-		this.kernelProcedures.forEach(cmBuilder::addProcedure);
 
 		final ImmutableMap<Pair<Class<? extends Particle>, Class<? extends Particle>>, TransitionProcedure<Particle, Particle>>
 			procedures = proceduresBuilder.build();
@@ -142,9 +151,7 @@ public final class CMAtomOS {
 
 		cmBuilder.virtualStore(virtualizedDefault);
 
-		final AtomCompute compute = atomKernelCompute != null ? a -> atomKernelCompute.compute(a) : null;
-
-		return Pair.of(cmBuilder.build(), compute);
+		return cmBuilder.build();
 	}
 
 	/**

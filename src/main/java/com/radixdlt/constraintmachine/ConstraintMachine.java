@@ -1,12 +1,10 @@
 package com.radixdlt.constraintmachine;
 
-import com.google.common.collect.ImmutableList;
 import com.radixdlt.atoms.DataPointer;
 import com.radixdlt.atoms.Spin;
 import com.radixdlt.atoms.SpunParticle;
 import com.radixdlt.constraintmachine.TransitionProcedure.ProcedureResult;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
-import com.radixdlt.engine.CMAtom;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.SpinStateMachine;
 import com.radixdlt.store.SpinStateTransitionValidator;
@@ -28,17 +26,11 @@ import java.util.stream.Collectors;
 public final class ConstraintMachine {
 	public static class Builder {
 		private UnaryOperator<CMStore> virtualStore;
-		private ImmutableList.Builder<KernelConstraintProcedure> kernelConstraintProcedureBuilder = new ImmutableList.Builder<>();
 		private BiFunction<Particle, Particle, TransitionProcedure<Particle, Particle>> particleProcedures;
 		private BiFunction<Particle, Particle, WitnessValidator<Particle, Particle>> witnessValidators;
 
 		public Builder virtualStore(UnaryOperator<CMStore> virtualStore) {
 			this.virtualStore = virtualStore;
-			return this;
-		}
-
-		public Builder addProcedure(KernelConstraintProcedure kernelConstraintProcedure) {
-			kernelConstraintProcedureBuilder.add(kernelConstraintProcedure);
 			return this;
 		}
 
@@ -60,7 +52,6 @@ public final class ConstraintMachine {
 
 			return new ConstraintMachine(
 				virtualStore,
-				kernelConstraintProcedureBuilder.build(),
 				particleProcedures,
 				witnessValidators
 			);
@@ -68,14 +59,12 @@ public final class ConstraintMachine {
 	}
 
 	private final UnaryOperator<CMStore> virtualStore;
-	private final ImmutableList<KernelConstraintProcedure> kernelConstraintProcedures;
 	private final BiFunction<Particle, Particle, TransitionProcedure<Particle, Particle>> particleProcedures;
 	private final BiFunction<Particle, Particle, WitnessValidator<Particle, Particle>> witnessValidators;
 	private final CMStore localEngineStore;
 
 	ConstraintMachine(
 		UnaryOperator<CMStore> virtualStore,
-		ImmutableList<KernelConstraintProcedure> kernelConstraintProcedures,
 		BiFunction<Particle, Particle, TransitionProcedure<Particle, Particle>> particleProcedures,
 		BiFunction<Particle, Particle, WitnessValidator<Particle, Particle>> witnessValidators
 	) {
@@ -83,7 +72,6 @@ public final class ConstraintMachine {
 
 		this.virtualStore = Objects.requireNonNull(virtualStore);
 		this.localEngineStore = this.virtualStore.apply(CMStores.empty());
-		this.kernelConstraintProcedures = kernelConstraintProcedures;
 		this.particleProcedures = particleProcedures;
 		this.witnessValidators = witnessValidators;
 	}
@@ -283,12 +271,12 @@ public final class ConstraintMachine {
 	 * Validates an atom and calculates the necessary state checks and post-validation
 	 * write logic.
 	 *
-	 * @param cmAtom atom to validate
+	 * @param cmInstruction instruction to validate
 	 * @return the first error found, otherwise an empty optional
 	 */
-	public Optional<CMError> validate(CMAtom cmAtom) {
+	public Optional<CMError> validate(CMInstruction cmInstruction) {
 		// "Segfaults" or particles which should not exist
-		final Optional<CMError> unknownParticleError = cmAtom.getCMInstruction().getParticles().stream()
+		final Optional<CMError> unknownParticleError = cmInstruction.getParticles().stream()
 			.filter(p -> !localEngineStore.getSpin(p.getParticle()).isPresent())
 			.map(p -> new CMError(p.getDataPointer(), CMErrorCode.UNKNOWN_PARTICLE))
 			.findFirst();
@@ -299,7 +287,7 @@ public final class ConstraintMachine {
 
 		// Virtual particle state checks
 		// TODO: Is this better suited at the state check pipeline?
-		final Optional<CMError> virtualParticleError = cmAtom.getCMInstruction().getParticles().stream()
+		final Optional<CMError> virtualParticleError = cmInstruction.getParticles().stream()
 			.filter(p -> {
 				Particle particle = p.getParticle();
 				Spin nextSpin = p.getNextSpin();
@@ -317,28 +305,17 @@ public final class ConstraintMachine {
 			return virtualParticleError;
 		}
 
-		// "Kernel" checks
-		// TODO: move out of CM
-		final Optional<CMError> kernelErr = kernelConstraintProcedures.stream()
-			.flatMap(kernelProcedure -> kernelProcedure.validate(cmAtom))
-			.map(CMErrors::fromKernelProcedureError)
-			.findFirst();
-
-		if (kernelErr.isPresent()) {
-			return kernelErr;
-		}
-
-		// "Application" checks
-		final AtomMetadata metadata = new AtomMetadataFromAtom(cmAtom);
-		final Map<Particle, Spin> initialSpins = cmAtom.getCMInstruction().getParticles().stream().collect(Collectors.toMap(
+		// Transition checks
+		final AtomMetadata metadata = new AtomMetadataFromAtom(cmInstruction);
+		final Map<Particle, Spin> initialSpins = cmInstruction.getParticles().stream().collect(Collectors.toMap(
 			CMParticle::getParticle,
 			CMParticle::getCheckSpin
 		));
 		final CMValidationState validationState = new CMValidationState(initialSpins);
-		for (int i = 0; i < cmAtom.getCMInstruction().getParticlePushes().size(); i++) {
+		for (int i = 0; i < cmInstruction.getParticlePushes().size(); i++) {
 			final Optional<CMError> error = this.validateParticleGroup(
 				validationState,
-				cmAtom.getCMInstruction().getParticlePushes().get(i),
+				cmInstruction.getParticlePushes().get(i),
 				i,
 				metadata
 			);

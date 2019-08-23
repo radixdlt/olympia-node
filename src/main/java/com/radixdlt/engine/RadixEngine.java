@@ -6,9 +6,11 @@ import com.radixdlt.atoms.Spin;
 import com.radixdlt.atoms.SpunParticle;
 import com.radixdlt.common.Pair;
 import com.radixdlt.compute.AtomCompute;
+import com.radixdlt.constraintmachine.CMErrors;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.constraintmachine.KernelProcedureError;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.SpinStateTransitionValidator;
@@ -21,6 +23,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -51,6 +54,7 @@ public final class RadixEngine {
 	}
 
 	private final ConstraintMachine constraintMachine;
+	private final Function<CMAtom, Optional<KernelProcedureError>> atomCheck;
 	private final AtomCompute compute;
 	private final EngineStore engineStore;
 	private final CMStore virtualizedCMStore;
@@ -61,10 +65,12 @@ public final class RadixEngine {
 
 	public RadixEngine(
 		ConstraintMachine constraintMachine,
+		Function<CMAtom, Optional<KernelProcedureError>> atomCheck,
 		AtomCompute compute,
 		EngineStore engineStore
 	) {
 		this.constraintMachine = constraintMachine;
+		this.atomCheck = atomCheck;
 		this.compute = compute;
 		this.virtualizedCMStore = constraintMachine.getVirtualStore().apply(engineStore);
 		this.engineStore = engineStore;
@@ -118,7 +124,15 @@ public final class RadixEngine {
 		Objects.requireNonNull(cmAtom);
 		Objects.requireNonNull(atomEventListener);
 
-		final Optional<CMError> error = constraintMachine.validate(cmAtom);
+		final Optional<KernelProcedureError> kernelError = atomCheck.apply(cmAtom);
+		if (kernelError.isPresent()) {
+			CMError cmError = CMErrors.fromKernelProcedureError(kernelError.get());
+			atomEventListener.onCMError(cmAtom, ImmutableSet.of(cmError));
+			this.atomEventListeners.forEach(acceptor -> acceptor.onCMError(cmAtom, ImmutableSet.of(cmError)));
+			return;
+		}
+
+		final Optional<CMError> error = constraintMachine.validate(cmAtom.getCMInstruction());
 		if (!error.isPresent()) {
 			Object computed = compute.compute(cmAtom);
 			this.cmSuccessHooks.forEach(hook -> hook.accept(cmAtom, computed));
