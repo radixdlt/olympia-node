@@ -1,8 +1,7 @@
 package org.radix.serialization;
 
 import com.radixdlt.atommodel.tokens.TokensConstraintScrypt;
-import com.radixdlt.compute.AtomCompute;
-import com.radixdlt.constraintmachine.KernelProcedureError;
+import com.radixdlt.atomos.KernelProcedureError;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.atomos.SimpleRadixEngineAtom;
 import com.radixdlt.serialization.Serialization;
@@ -102,11 +101,9 @@ public abstract class RadixTest
 		);
 		final Function<SimpleRadixEngineAtom, Optional<KernelProcedureError>> atomCheck = os.buildAtomCheck();
 		final ConstraintMachine constraintMachine = os.buildMachine();
-		final AtomCompute<SimpleRadixEngineAtom> atomCompute = os.buildCompute();
 		final RadixEngine<SimpleRadixEngineAtom> radixEngine = new RadixEngine<>(
 			constraintMachine,
 			atomCheck,
-			atomCompute,
 			atomStore
 		);
 

@@ -66,13 +66,9 @@ public class AtomEngineStore implements EngineStore<SimpleRadixEngineAtom> {
 	}
 
 	@Override
-	public void storeAtom(SimpleRadixEngineAtom cmAtom, Object computed) {
+	public void storeAtom(SimpleRadixEngineAtom cmAtom) {
 		try {
-			if (computed == null) {
-				throw new IllegalStateException("mass was not computed");
-			}
-
-			final PreparedAtom preparedAtom = new PreparedAtom(cmAtom, (UInt384) computed);
+			final PreparedAtom preparedAtom = new PreparedAtom(cmAtom, UInt384.TEN);
 			atomStoreSupplier.get().storeAtom(preparedAtom);
 		} catch (Exception e) {
 			AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(e, (Atom) cmAtom.getAtom());

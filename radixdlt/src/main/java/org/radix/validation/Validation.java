@@ -6,7 +6,6 @@ import com.radixdlt.atommodel.message.MessageParticleConstraintScrypt;
 import com.radixdlt.atommodel.unique.UniqueParticleConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.KernelProcedureError;
-import com.radixdlt.compute.AtomCompute;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.atomos.SimpleRadixEngineAtom;
@@ -49,11 +48,9 @@ public class Validation extends Plugin {
 
 		final ConstraintMachine constraintMachine = os.buildMachine();
 		final Function<SimpleRadixEngineAtom, Optional<KernelProcedureError>> atomCheck = os.buildAtomCheck();
-		final AtomCompute<SimpleRadixEngineAtom> atomCompute = os.buildCompute();
 		final RadixEngine<SimpleRadixEngineAtom> radixEngine = new RadixEngine<>(
 			constraintMachine,
 			atomCheck,
-			atomCompute,
 			atomStore
 		);
 

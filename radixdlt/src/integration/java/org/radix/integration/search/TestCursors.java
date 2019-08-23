@@ -1,5 +1,6 @@
 package org.radix.integration.search;
 
+import com.radixdlt.atomos.SimpleRadixEngineAtom;
 import com.radixdlt.engine.RadixEngineAtom;
 import com.radixdlt.atomos.RadixEngineUtils;
 import com.radixdlt.universe.Universe;
@@ -115,7 +116,7 @@ public class TestCursors extends RadixTestWithStores {
 	}
 
 	private void storeAtom(Atom atom) throws Exception {
-		RadixEngineAtom radixEngineAtom = RadixEngineUtils.toCMAtom(atom);
+		SimpleRadixEngineAtom radixEngineAtom = RadixEngineUtils.toCMAtom(atom);
 		Modules.get(AtomStore.class).storeAtom(new PreparedAtom(radixEngineAtom, UInt384.ONE));
 	}
 

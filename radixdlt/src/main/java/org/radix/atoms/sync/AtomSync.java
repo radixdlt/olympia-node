@@ -447,7 +447,7 @@ public class AtomSync extends Service
 
 				Modules.get(ValidationHandler.class).getRadixEngine().store(cmAtom, new AtomEventListener<SimpleRadixEngineAtom>() {
 					@Override
-					public void onCMSuccess(SimpleRadixEngineAtom cmAtom, Object computed) {
+					public void onCMSuccess(SimpleRadixEngineAtom cmAtom) {
 						if (atomsLog.hasLevel(Logging.DEBUG)) {
 							atomsLog.debug("Validated Atom " + cmAtom.getAtom().getAID() + " to SIGNATURE");
 						}
@@ -462,7 +462,7 @@ public class AtomSync extends Service
 					}
 
 					@Override
-					public void onStateStore(SimpleRadixEngineAtom cmAtom, Object computed) {
+					public void onStateStore(SimpleRadixEngineAtom cmAtom) {
 						if (atomsLog.hasLevel(Logging.DEBUG)) {
 							atomsLog.debug("Validated Atom " + cmAtom.getAtom().getAID() + " to COMPLETE");
 						}
@@ -1421,7 +1421,7 @@ public class AtomSync extends Service
 
 		RadixEngine<SimpleRadixEngineAtom> engine = Modules.get(ValidationHandler.class).getRadixEngine();
 
-		engine.addCMSuccessHook(((cmAtom, computed) -> {
+		engine.addCMSuccessHook(((cmAtom) -> {
 			// TODO is this good here?
 			// All atoms will be witnessed, even invalid ones.  If flooded with invalid atoms, it may make it harder for
 			// remote nodes to determine if this node saw a particular atom vs a commitment stream that only includes
@@ -1430,7 +1430,7 @@ public class AtomSync extends Service
 				witnessed(cmAtom);
 			} catch (Exception e) {
 				atomsLog.error(e);
-				Events.getInstance().broadcast(new AtomExceptionEvent(e, (Atom) ((SimpleRadixEngineAtom) cmAtom).getAtom()));
+				Events.getInstance().broadcast(new AtomExceptionEvent(e, (Atom) cmAtom.getAtom()));
 			}
 		}));
 
@@ -1483,7 +1483,7 @@ public class AtomSync extends Service
 					Modules.get(ValidationHandler.class).getRadixEngine().store(cmAtom,
 						new AtomEventListener<SimpleRadixEngineAtom>() {
 							@Override
-							public void onCMSuccess(SimpleRadixEngineAtom cmAtom, Object computed) {
+							public void onCMSuccess(SimpleRadixEngineAtom cmAtom) {
 								if (atomsLog.hasLevel(Logging.DEBUG)) {
 									atomsLog.debug("Validated Atom " + atom.getAID() + " to SIGNATURE");
 								}
@@ -1498,7 +1498,7 @@ public class AtomSync extends Service
 							}
 
 							@Override
-							public void onStateStore(SimpleRadixEngineAtom cmAtom, Object computed) {
+							public void onStateStore(SimpleRadixEngineAtom cmAtom) {
 								if (atomsLog.hasLevel(Logging.DEBUG)) {
 									atomsLog.debug("Validated Atom " + atom.getAID() + " to COMPLETE");
 								}
