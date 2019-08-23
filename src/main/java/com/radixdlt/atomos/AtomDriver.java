@@ -51,8 +51,8 @@ public final class AtomDriver implements AtomOSDriver<SimpleRadixEngineAtom> {
 
 				// Atom has fee
 				if (!skipAtomFeeCheck) {
-					if (universeSupplier.get().getGenesis().stream()
-						.map(ImmutableAtom::getAID).anyMatch(cmAtom.getAtom().getAID()::equals) || isMagic) {
+					if (universeSupplier.get().getGenesis().stream().map(ImmutableAtom::getAID).anyMatch(cmAtom.getAtom().getAID()::equals)
+						|| isMagic) {
 						// genesis and magic atoms don't need a fee
 						return Result.success();
 					}

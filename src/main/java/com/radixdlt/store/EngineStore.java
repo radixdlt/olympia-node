@@ -1,6 +1,5 @@
 package com.radixdlt.store;
 
-import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.atoms.SpunParticle;
 import com.radixdlt.engine.RadixEngineAtom;
 import java.util.function.Consumer;
@@ -13,7 +12,7 @@ public interface EngineStore<T extends RadixEngineAtom> extends CMStore {
 	 * Retrieves the atom containing the given spun particle.
 	 * TODO: change to reactive streams interface
 	 */
-	void getAtomContaining(SpunParticle spunParticle, Consumer<ImmutableAtom> callback);
+	void getAtomContaining(SpunParticle spunParticle, Consumer<T> callback);
 
 	/**
 	 * Stores the atom into this CMStore
