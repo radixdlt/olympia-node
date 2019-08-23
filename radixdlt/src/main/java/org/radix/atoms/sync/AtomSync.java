@@ -449,7 +449,7 @@ public class AtomSync extends Service
 					@Override
 					public void onCMSuccess(CMAtom cmAtom, Object computed) {
 						if (atomsLog.hasLevel(Logging.DEBUG)) {
-							atomsLog.debug("Validated Atom " + cmAtom.getCMInstruction().getAID() + " to SIGNATURE");
+							atomsLog.debug("Validated Atom " + ((SimpleCMAtom) cmAtom).getAtom().getAID() + " to SIGNATURE");
 						}
 					}
 
@@ -464,7 +464,7 @@ public class AtomSync extends Service
 					@Override
 					public void onStateStore(CMAtom cmAtom, Object computed) {
 						if (atomsLog.hasLevel(Logging.DEBUG)) {
-							atomsLog.debug("Validated Atom " + cmAtom.getCMInstruction().getAID() + " to COMPLETE");
+							atomsLog.debug("Validated Atom " + ((SimpleCMAtom) cmAtom).getAtom().getAID() + " to COMPLETE");
 						}
 					}
 
@@ -1485,7 +1485,7 @@ public class AtomSync extends Service
 							@Override
 							public void onCMSuccess(CMAtom cmAtom, Object computed) {
 								if (atomsLog.hasLevel(Logging.DEBUG)) {
-									atomsLog.debug("Validated Atom " + cmAtom.getCMInstruction().getAID() + " to SIGNATURE");
+									atomsLog.debug("Validated Atom " + atom.getAID() + " to SIGNATURE");
 								}
 							}
 
@@ -1500,7 +1500,7 @@ public class AtomSync extends Service
 							@Override
 							public void onStateStore(CMAtom cmAtom, Object computed) {
 								if (atomsLog.hasLevel(Logging.DEBUG)) {
-									atomsLog.debug("Validated Atom " + cmAtom.getCMInstruction().getAID() + " to COMPLETE");
+									atomsLog.debug("Validated Atom " + atom.getAID() + " to COMPLETE");
 								}
 							}
 
