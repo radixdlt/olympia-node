@@ -11,8 +11,6 @@ import com.radixdlt.crypto.ECSignature;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.SpinStateMachine;
-import com.radixdlt.store.SpinStateTransitionValidator;
-import com.radixdlt.store.SpinStateTransitionValidator.TransitionCheckResult;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -296,37 +294,26 @@ public final class ConstraintMachine {
 	 * @return the first error found, otherwise an empty optional
 	 */
 	public Optional<CMError> validate(CMInstruction cmInstruction) {
-		// "Segfaults" or particles which should not exist
-		final Optional<CMError> unknownParticleError = cmInstruction.getParticles().stream()
-			.filter(p -> !localEngineStore.getSpin(p.getParticle()).isPresent())
-			.map(p -> new CMError(p.getDataPointer(), CMErrorCode.UNKNOWN_PARTICLE))
-			.findFirst();
+		// Particle checks
+		for (CMParticle cmParticle : cmInstruction.getParticles()) {
+			Optional<Spin> initSpin = localEngineStore.getSpin(cmParticle.getParticle());
 
-		if (unknownParticleError.isPresent()) {
-			return unknownParticleError;
+			// "Segfaults" or particles which should not exist
+			if (!initSpin.isPresent()) {
+				return Optional.of(new CMError(cmParticle.getDataPointer(), CMErrorCode.UNKNOWN_PARTICLE));
+			}
+
+			Spin nextSpin = cmParticle.getNextSpin();
+			Spin curSpin = initSpin.get();
+
+			// Virtual particle state checks
+			// TODO: Is this better suited at the state check pipeline?
+			if (!SpinStateMachine.isAfter(nextSpin, curSpin)) {
+				return Optional.of(new CMError(cmParticle.getDataPointer(), CMErrorCode.INTERNAL_SPIN_CONFLICT));
+			}
 		}
 
-		// Virtual particle state checks
-		// TODO: Is this better suited at the state check pipeline?
-		final Optional<CMError> virtualParticleError = cmInstruction.getParticles().stream()
-			.filter(p -> {
-				Particle particle = p.getParticle();
-				Spin nextSpin = p.getNextSpin();
-				TransitionCheckResult result = SpinStateTransitionValidator.checkParticleTransition(
-					particle,
-					nextSpin, localEngineStore
-				);
-
-				return result.equals(TransitionCheckResult.CONFLICT);
-			})
-			.map(p ->  new CMError(p.getDataPointer(), CMErrorCode.INTERNAL_SPIN_CONFLICT))
-			.findFirst();
-
-		if (virtualParticleError.isPresent()) {
-			return virtualParticleError;
-		}
-
-		// Transition checks
+		// Push checks
 		final Map<Particle, Spin> initialSpins = cmInstruction.getParticles().stream().collect(Collectors.toMap(
 			CMParticle::getParticle,
 			CMParticle::getCheckSpin
