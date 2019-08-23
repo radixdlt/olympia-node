@@ -1,6 +1,8 @@
 package org.radix.atoms.sync;
 
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.atomos.AtomCheckHook;
+import com.radixdlt.atomos.Result;
 import com.radixdlt.atoms.AtomStatus;
 import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.atoms.SpunParticle;
@@ -23,6 +25,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.BlockingQueue;
@@ -1421,16 +1424,30 @@ public class AtomSync extends Service
 
 		RadixEngine<SimpleRadixEngineAtom> engine = Modules.get(ValidationHandler.class).getRadixEngine();
 
-		engine.addCMSuccessHook(((cmAtom) -> {
+		final boolean skipAtomFeeCheck = Modules.isAvailable(RuntimeProperties.class)
+			&& Modules.get(RuntimeProperties.class).get("debug.nopow", false);
+
+		engine.addCMSuccessHook(
+			new AtomCheckHook(
+				() -> Modules.get(Universe.class),
+				Time::currentTimestamp,
+				skipAtomFeeCheck,
+				Time.MAXIMUM_DRIFT
+			)
+		);
+
+		engine.addCMSuccessHook((cmAtom -> {
 			// TODO is this good here?
 			// All atoms will be witnessed, even invalid ones.  If flooded with invalid atoms, it may make it harder for
 			// remote nodes to determine if this node saw a particular atom vs a commitment stream that only includes
 			// committed atoms.
 			try {
 				witnessed(cmAtom);
+				return Result.success();
 			} catch (Exception e) {
 				atomsLog.error(e);
 				Events.getInstance().broadcast(new AtomExceptionEvent(e, (Atom) cmAtom.getAtom()));
+				return Result.error(e.getMessage());
 			}
 		}));
 

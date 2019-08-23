@@ -1,12 +1,9 @@
 package org.radix.serialization;
 
 import com.radixdlt.atommodel.tokens.TokensConstraintScrypt;
-import com.radixdlt.atomos.KernelProcedureError;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.atomos.SimpleRadixEngineAtom;
 import com.radixdlt.serialization.Serialization;
-import java.util.Optional;
-import java.util.function.Function;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -99,11 +96,9 @@ public abstract class RadixTest
 			() -> Modules.get(AtomStore.class),
 			() -> LocalSystem.getInstance().getShards()
 		);
-		final Function<SimpleRadixEngineAtom, Optional<KernelProcedureError>> atomCheck = os.buildAtomCheck();
 		final ConstraintMachine constraintMachine = os.buildMachine();
 		final RadixEngine<SimpleRadixEngineAtom> radixEngine = new RadixEngine<>(
 			constraintMachine,
-			atomCheck,
 			atomStore
 		);
 
