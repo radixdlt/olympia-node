@@ -1,6 +1,7 @@
 package org.radix.integration.search;
 
 import com.radixdlt.common.Pair;
+import com.radixdlt.engine.CMAtom;
 import com.radixdlt.engine.RadixEngineUtils;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.UInt384;
@@ -21,7 +22,6 @@ import org.radix.modules.Modules;
 import org.radix.time.TemporalVertex;
 import org.radix.time.Time;
 import org.radix.universe.system.LocalSystem;
-import org.radix.validation.ValidationHandler;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -30,7 +30,6 @@ import com.radixdlt.atommodel.message.MessageParticle;
 import com.radixdlt.atomos.RadixAddress;
 import org.radix.atoms.Atom;
 import com.radixdlt.atoms.Spin;
-import com.radixdlt.constraintmachine.CMAtom;
 import com.radixdlt.crypto.ECKeyPair;
 
 import static org.junit.Assert.assertEquals;

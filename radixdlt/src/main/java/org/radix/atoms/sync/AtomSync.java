@@ -5,10 +5,12 @@ import com.radixdlt.atoms.AtomStatus;
 import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.atoms.SpunParticle;
 import com.radixdlt.constraintmachine.CMError;
+import com.radixdlt.engine.CMAtom;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineUtils;
 import com.radixdlt.engine.RadixEngineUtils.CMAtomConversionException;
 import com.radixdlt.engine.AtomEventListener;
+import com.radixdlt.engine.SimpleCMAtom;
 import java.io.IOException;
 import java.net.SocketException;
 import java.net.URI;
@@ -37,7 +39,6 @@ import org.radix.atoms.AtomDependencyNotFoundException;
 import org.radix.atoms.AtomDiscoveryRequest;
 import org.radix.atoms.AtomStore;
 import org.radix.atoms.PreparedAtom;
-import com.radixdlt.constraintmachine.CMAtom;
 import org.radix.atoms.events.AtomDeletedEvent;
 import org.radix.atoms.events.AtomEvent;
 import org.radix.atoms.events.AtomExceptionEvent;
@@ -433,7 +434,7 @@ public class AtomSync extends Service
 					continue;
 				}
 
-				final CMAtom cmAtom;
+				final SimpleCMAtom cmAtom;
 				try {
 					cmAtom = RadixEngineUtils.toCMAtom(atom);
 				} catch (CMAtomConversionException e) {
@@ -448,22 +449,22 @@ public class AtomSync extends Service
 					@Override
 					public void onCMSuccess(CMAtom cmAtom, Object computed) {
 						if (atomsLog.hasLevel(Logging.DEBUG)) {
-							atomsLog.debug("Validated Atom " + cmAtom.getAtom().getHID() + " to SIGNATURE");
+							atomsLog.debug("Validated Atom " + cmAtom.getCMInstruction().getAID() + " to SIGNATURE");
 						}
 					}
 
 					@Override
 					public void onCMError(CMAtom cmAtom, Set<CMError> errors) {
 						CMError cmError = errors.iterator().next();
-						ConstraintMachineValidationException e = new ConstraintMachineValidationException(cmAtom.getAtom(), cmError.getErrorDescription(), cmError.getDataPointer());
+						ConstraintMachineValidationException e = new ConstraintMachineValidationException(((SimpleCMAtom) cmAtom).getAtom(), cmError.getErrorDescription(), cmError.getDataPointer());
 						atomsLog.error(e);
-						Events.getInstance().broadcast(new AtomExceptionEvent(e, (Atom) cmAtom.getAtom()));
+						Events.getInstance().broadcast(new AtomExceptionEvent(e, (Atom) ((SimpleCMAtom) cmAtom).getAtom()));
 					}
 
 					@Override
 					public void onStateStore(CMAtom cmAtom, Object computed) {
 						if (atomsLog.hasLevel(Logging.DEBUG)) {
-							atomsLog.debug("Validated Atom " + cmAtom.getAtom().getAID() + " to COMPLETE");
+							atomsLog.debug("Validated Atom " + cmAtom.getCMInstruction().getAID() + " to COMPLETE");
 						}
 					}
 
@@ -472,9 +473,9 @@ public class AtomSync extends Service
 						final ParticleConflictException conflict = new ParticleConflictException(
 							new ParticleConflict(
 								issueParticle,
-								ImmutableSet.of((Atom) cmAtom.getAtom(), (Atom) conflictAtom)
+								ImmutableSet.of((Atom) ((SimpleCMAtom) cmAtom).getAtom(), (Atom) conflictAtom)
 							));
-						AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(conflict, (Atom) cmAtom.getAtom());
+						AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(conflict, (Atom) ((SimpleCMAtom) cmAtom).getAtom());
 						Events.getInstance().broadcast(atomExceptionEvent);
 						atomsLog.error(conflict);
 					}
@@ -485,10 +486,10 @@ public class AtomSync extends Service
 							new AtomDependencyNotFoundException(
 								String.format("Atom has missing dependencies in transitions: %s", issueParticle.getParticle().getHID()),
 								Collections.singleton(issueParticle.getParticle().getHID()),
-								(Atom) cmAtom.getAtom()
+								(Atom) ((SimpleCMAtom) cmAtom).getAtom()
 							);
 
-						AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(notFoundException, (Atom) cmAtom.getAtom());
+						AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(notFoundException, (Atom) ((SimpleCMAtom) cmAtom).getAtom());
 						Events.getInstance().broadcast(atomExceptionEvent);
 						atomsLog.error(notFoundException);
 					}
@@ -1429,7 +1430,7 @@ public class AtomSync extends Service
 				witnessed(cmAtom);
 			} catch (Exception e) {
 				atomsLog.error(e);
-				Events.getInstance().broadcast(new AtomExceptionEvent(e, (Atom) cmAtom.getAtom()));
+				Events.getInstance().broadcast(new AtomExceptionEvent(e, (Atom) ((SimpleCMAtom) cmAtom).getAtom()));
 			}
 		}));
 
@@ -1484,14 +1485,14 @@ public class AtomSync extends Service
 							@Override
 							public void onCMSuccess(CMAtom cmAtom, Object computed) {
 								if (atomsLog.hasLevel(Logging.DEBUG)) {
-									atomsLog.debug("Validated Atom " + cmAtom.getAtom().getHID() + " to SIGNATURE");
+									atomsLog.debug("Validated Atom " + cmAtom.getCMInstruction().getAID() + " to SIGNATURE");
 								}
 							}
 
 							@Override
 							public void onCMError(CMAtom cmAtom, Set<CMError> errors) {
 								CMError cmError = errors.iterator().next();
-								ConstraintMachineValidationException e = new ConstraintMachineValidationException(cmAtom.getAtom(), cmError.getErrorDescription(), cmError.getDataPointer());
+								ConstraintMachineValidationException e = new ConstraintMachineValidationException(((SimpleCMAtom) cmAtom).getAtom(), cmError.getErrorDescription(), cmError.getDataPointer());
 								log.fatal("Failed to process genesis Atom", e);
 								System.exit(-1);
 							}
@@ -1499,7 +1500,7 @@ public class AtomSync extends Service
 							@Override
 							public void onStateStore(CMAtom cmAtom, Object computed) {
 								if (atomsLog.hasLevel(Logging.DEBUG)) {
-									atomsLog.debug("Validated Atom " + cmAtom.getAtom().getAID() + " to COMPLETE");
+									atomsLog.debug("Validated Atom " + cmAtom.getCMInstruction().getAID() + " to COMPLETE");
 								}
 							}
 
@@ -1707,7 +1708,7 @@ public class AtomSync extends Service
 
 	private void witnessed(CMAtom cmAtom) throws DatabaseException, ValidationException, CryptoException
 	{
-		final Atom atom = (Atom) cmAtom.getAtom();
+		final Atom atom = (Atom) ((SimpleCMAtom) cmAtom).getAtom();
 		TemporalVertex existingNIDVertex = atom.getTemporalProof().getVertexByNID(LocalSystem.getInstance().getNID());
 
 		if (existingNIDVertex != null)
@@ -1735,7 +1736,7 @@ public class AtomSync extends Service
 				// Filter out the live peers with shards we need that are within sync bounds
 				filteredNIDs.addAll(Modules.get(PeerHandler.class).getPeers(PeerDomain.NETWORK, PeerFilter.getInstance()).stream().
 													 filter(peer -> peer.getSystem().isSynced(LocalSystem.getInstance()) == true). 					// Gossip to nodes that are in sync TODO isAhead is better?
-													 filter(peer -> peer.getSystem().getShards().intersects(cmAtom.getShards()) == true). 			// Gossip to nodes that serve the atom shards
+													 filter(peer -> peer.getSystem().getShards().intersects(atom.getShards()) == true). 			// Gossip to nodes that serve the atom shards
 													 filter(peer -> peer.getSystem().getNID().equals(LocalSystem.getInstance().getNID()) == false).	// Don't gossip to the local node
 													 map(peer -> peer.getSystem().getNID()).
 													 collect(Collectors.toSet()));

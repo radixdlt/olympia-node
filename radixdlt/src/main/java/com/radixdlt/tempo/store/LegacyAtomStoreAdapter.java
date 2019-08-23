@@ -3,7 +3,7 @@ package com.radixdlt.tempo.store;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.Pair;
-import com.radixdlt.constraintmachine.CMAtom;
+import com.radixdlt.engine.CMAtom;
 import com.radixdlt.engine.RadixEngineUtils;
 import com.radixdlt.ledger.LedgerCursor;
 import com.radixdlt.ledger.LedgerIndex;
