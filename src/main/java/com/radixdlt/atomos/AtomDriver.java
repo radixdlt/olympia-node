@@ -2,6 +2,7 @@ package com.radixdlt.atomos;
 
 import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.constraintmachine.CMInstruction;
+import com.radixdlt.engine.SimpleCMAtom;
 import com.radixdlt.universe.Universe;
 import java.util.Objects;
 import com.radixdlt.crypto.Hash;
@@ -77,7 +78,7 @@ public final class AtomDriver implements AtomOSDriver {
 
 					try {
 						final long powNonce = Long.parseLong(powNonceString);
-						final Hash powFeeHash = cmAtom.getCMInstruction().getPowFeeHash();
+						final Hash powFeeHash = ((SimpleCMAtom) cmAtom).getPowFeeHash();
 						POW pow = new POW(universeSupplier.get().getMagic(), powFeeHash, powNonce);
 
 						return checkPow(pow, powFeeHash, DEFAULT_TARGET, universeSupplier.get().getMagic());

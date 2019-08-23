@@ -329,7 +329,7 @@ public final class ConstraintMachine {
 		}
 
 		// "Application" checks
-		final AtomMetadata metadata = new AtomMetadataFromAtom(cmAtom.getCMInstruction());
+		final AtomMetadata metadata = new AtomMetadataFromAtom(cmAtom);
 		final Map<Particle, Spin> initialSpins = cmAtom.getCMInstruction().getParticles().stream().collect(Collectors.toMap(
 			CMParticle::getParticle,
 			CMParticle::getCheckSpin

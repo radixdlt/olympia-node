@@ -14,17 +14,11 @@ import java.util.Set;
 
 /**
  * An atom processed by a constraint machine with write destinations
- * TODO: Refactor and Remove ImmutableAtom. Currently too deeply embedded to be able to cleanly remove it.
  */
 public final class CMInstruction {
 	public static final String METADATA_TIMESTAMP_KEY = "timestamp";
 	public static final String METADATA_POW_NONCE_KEY = "powNonce";
 
-	// TODO: Remove
-	private final ImmutableAtom atom;
-
-
-	private final Hash powFeeHash;
 	private final Hash atomHash;
 	private final AID aid;
 	private final ImmutableList<CMParticle> cmParticles;
@@ -38,10 +32,7 @@ public final class CMInstruction {
 		ImmutableAtom atom,
 		ImmutableList<CMParticle> cmParticles
 	) {
-		this.atom = atom;
-
 		this.atomHash = atom.getHash();
-		this.powFeeHash = atom.copyExcludingMetadata(ImmutableAtom.METADATA_POW_NONCE_KEY).getHash();
 		this.aid = atom.getAID();
 		this.cmParticles = cmParticles;
 		this.particlePushes = atom.particleGroups()
@@ -63,10 +54,6 @@ public final class CMInstruction {
 
 	public Hash getAtomHash() {
 		return atomHash;
-	}
-
-	public Hash getPowFeeHash() {
-		return powFeeHash;
 	}
 
 	/**
@@ -105,9 +92,5 @@ public final class CMInstruction {
 
 	public ImmutableSet<Long> getShards() {
 		return shards;
-	}
-
-	public ImmutableAtom getAtom() {
-		return atom;
 	}
 }

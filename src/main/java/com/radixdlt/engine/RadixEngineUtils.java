@@ -209,6 +209,6 @@ public final class RadixEngineUtils {
 				.collect(ImmutableList.toImmutableList());
 
 		final CMInstruction cmInstruction =  new CMInstruction(atom, cmParticles);
-		return new SimpleCMAtom(cmInstruction);
+		return new SimpleCMAtom(atom, cmInstruction);
 	}
 }
