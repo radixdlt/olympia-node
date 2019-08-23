@@ -1,7 +1,7 @@
 package com.radixdlt.atomos;
 
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
-import com.radixdlt.constraintmachine.CMInstruction;
+import com.radixdlt.engine.SimpleCMAtom;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.UInt384;
 import java.util.Objects;
@@ -19,18 +19,18 @@ public class HashMassFunction {
 		this.universe = Objects.requireNonNull(universe);
 	}
 
-	public UInt384 getMass(CMInstruction atom) {
+	public UInt384 getMass(SimpleCMAtom atom) {
 		UInt384 mass;
 
 		// Special case for Genesis Atom
 		// TODO: Remove this special case for genesis
-		if (this.universe.getGenesis().contains(atom)) {
+		if (this.universe.getGenesis().contains(atom.getAtom())) {
 			mass = GENESIS_MASS;
 		} else {
 			// Range for exponent is between -INF..-0.69314
 			// Note we take the absolute value after converting to double to avoid
 			// the case where Math.abs(Long.MIN_VALUE) < 0
-			double exponent = Math.log(Math.abs(atom.getAID().getLow() / (double) Long.MAX_VALUE));
+			double exponent = Math.log(Math.abs(atom.getAtom().getAID().getLow() / (double) Long.MAX_VALUE));
 			long lmass = (long) (8192 * Math.pow(10.0, exponent)) + 1;
 			mass = UInt384.from(lmass);
 		}

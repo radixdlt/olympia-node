@@ -3,7 +3,7 @@ package com.radixdlt.atomos;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atoms.Spin;
-import com.radixdlt.constraintmachine.CMInstruction;
+import com.radixdlt.engine.SimpleCMAtom;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.Offset;
 import com.radixdlt.utils.UInt384;
@@ -18,7 +18,7 @@ public final class FungibleMassFunction {
 		this.universe = Objects.requireNonNull(universe);
 	}
 
-	public UInt384 getMass(CMInstruction atom) {
+	public UInt384 getMass(SimpleCMAtom atom) {
 		Optional<RRI> nativeToken = this.universe.getGenesis().stream()
 			.flatMap(a -> a.particles(TransferrableTokensParticle.class, Spin.UP))
 			.map(TransferrableTokensParticle::getTokDefRef)
@@ -38,12 +38,12 @@ public final class FungibleMassFunction {
 			massFunc = p -> planckMass(1, p);
 		} else {
 			// Note that the atom planck *should* be after the fungible planck.
-			long atomPlanck = this.universe.toPlanck(atom.getTimestamp(), Offset.NONE);
+			long atomPlanck = this.universe.toPlanck(atom.getAtom().getTimestamp(), Offset.NONE);
 			massFunc = p -> planckMass(atomPlanck - p.getPlanck(), p);
 		}
 
 		// TODO: How to support different, non-native Token mass
-		return atom.getParticles().stream()
+		return atom.getCMInstruction().getParticles().stream()
 			.filter(p -> p.getParticle() instanceof TransferrableTokensParticle && p.nextSpins().anyMatch(Spin.DOWN::equals))
 			.map(p -> (TransferrableTokensParticle) p.getParticle())
 			.filter(p -> p.getTokDefRef().equals(nativeToken.get()))

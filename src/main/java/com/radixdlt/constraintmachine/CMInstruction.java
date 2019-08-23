@@ -6,7 +6,6 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.atoms.SpunParticle;
-import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
 import com.radixdlt.crypto.ECSignature;
 import com.radixdlt.crypto.Hash;
@@ -16,15 +15,10 @@ import java.util.Set;
  * An atom processed by a constraint machine with write destinations
  */
 public final class CMInstruction {
-	public static final String METADATA_TIMESTAMP_KEY = "timestamp";
-	public static final String METADATA_POW_NONCE_KEY = "powNonce";
-
 	private final Hash atomHash;
-	private final AID aid;
 	private final ImmutableList<CMParticle> cmParticles;
 	private final ImmutableList<ImmutableList<Particle>> particlePushes;
 	private final ImmutableMap<EUID, ECSignature> signatures;
-	private final ImmutableMap<String, String> metaData;
 	private final ImmutableSet<EUID> destinations;
 	private final ImmutableSet<Long> shards;
 
@@ -33,13 +27,11 @@ public final class CMInstruction {
 		ImmutableList<CMParticle> cmParticles
 	) {
 		this.atomHash = atom.getHash();
-		this.aid = atom.getAID();
 		this.cmParticles = cmParticles;
 		this.particlePushes = atom.particleGroups()
 			.map(pg -> pg.spunParticles().map(SpunParticle::getParticle).collect(ImmutableList.toImmutableList()))
 			.collect(ImmutableList.toImmutableList());
 		this.signatures = ImmutableMap.copyOf(atom.getSignatures());
-		this.metaData = ImmutableMap.copyOf(atom.getMetaData());
 		this.destinations = cmParticles.stream()
 			.map(CMParticle::getParticle)
 			.map(Particle::getDestinations)
@@ -54,28 +46,6 @@ public final class CMInstruction {
 
 	public Hash getAtomHash() {
 		return atomHash;
-	}
-
-	/**
-	 * Convenience method to retrieve timestamp
-	 *
-	 * @return The timestamp in milliseconds since epoch
-	 */
-	public long getTimestamp() {
-		// TODO Not happy with this error handling as it moves some validation work into the atom data. See RLAU-951
-		try {
-			return Long.parseLong(this.metaData.get(METADATA_TIMESTAMP_KEY));
-		} catch (NumberFormatException e) {
-			return Long.MIN_VALUE;
-		}
-	}
-
-	public AID getAID() {
-		return aid;
-	}
-
-	public ImmutableMap<String, String> getMetaData() {
-		return metaData;
 	}
 
 	public ImmutableSet<EUID> getDestinations() {
