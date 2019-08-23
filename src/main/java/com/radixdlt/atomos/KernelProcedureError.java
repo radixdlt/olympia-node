@@ -1,4 +1,4 @@
-package com.radixdlt.constraintmachine;
+package com.radixdlt.atomos;
 
 import com.radixdlt.engine.RadixEngineAtom;
 import java.util.Objects;

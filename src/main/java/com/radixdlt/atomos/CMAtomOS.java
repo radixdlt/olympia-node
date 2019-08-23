@@ -17,8 +17,6 @@ import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import com.radixdlt.constraintmachine.ConstraintMachine.Builder;
 import com.radixdlt.constraintmachine.ConstraintMachine;
-import com.radixdlt.constraintmachine.KernelConstraintProcedure;
-import com.radixdlt.constraintmachine.KernelProcedureError;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.atoms.Spin;
 import com.radixdlt.store.CMStores;

@@ -10,7 +10,7 @@ import com.radixdlt.constraintmachine.CMErrors;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.ConstraintMachine;
-import com.radixdlt.constraintmachine.KernelProcedureError;
+import com.radixdlt.atomos.KernelProcedureError;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.SpinStateTransitionValidator;

@@ -1,5 +1,6 @@
 package com.radixdlt.constraintmachine;
 
+import com.radixdlt.atomos.KernelProcedureError;
 import com.radixdlt.atoms.DataPointer;
 
 /**
