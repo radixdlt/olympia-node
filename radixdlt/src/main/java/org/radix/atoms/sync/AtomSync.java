@@ -444,7 +444,55 @@ public class AtomSync extends Service
 					continue;
 				}
 
-				Modules.get(ValidationHandler.class).getRadixEngine().store(cmAtom);
+				Modules.get(ValidationHandler.class).getRadixEngine().store(cmAtom, new AtomEventListener() {
+					@Override
+					public void onCMSuccess(CMAtom cmAtom, Object computed) {
+						if (atomsLog.hasLevel(Logging.DEBUG)) {
+							atomsLog.debug("Validated Atom " + cmAtom.getAtom().getHID() + " to SIGNATURE");
+						}
+					}
+
+					@Override
+					public void onCMError(CMAtom cmAtom, Set<CMError> errors) {
+						CMError cmError = errors.iterator().next();
+						ConstraintMachineValidationException e = new ConstraintMachineValidationException(cmAtom.getAtom(), cmError.getErrorDescription(), cmError.getDataPointer());
+						atomsLog.error(e);
+						Events.getInstance().broadcast(new AtomExceptionEvent(e, (Atom) cmAtom.getAtom()));
+					}
+
+					@Override
+					public void onStateStore(CMAtom cmAtom, Object computed) {
+						if (atomsLog.hasLevel(Logging.DEBUG)) {
+							atomsLog.debug("Validated Atom " + cmAtom.getAtom().getAID() + " to COMPLETE");
+						}
+					}
+
+					@Override
+					public void onStateConflict(CMAtom cmAtom, SpunParticle issueParticle, ImmutableAtom conflictAtom) {
+						final ParticleConflictException conflict = new ParticleConflictException(
+							new ParticleConflict(
+								issueParticle,
+								ImmutableSet.of((Atom) cmAtom.getAtom(), (Atom) conflictAtom)
+							));
+						AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(conflict, (Atom) cmAtom.getAtom());
+						Events.getInstance().broadcast(atomExceptionEvent);
+						atomsLog.error(conflict);
+					}
+
+					@Override
+					public void onStateMissingDependency(CMAtom cmAtom, SpunParticle issueParticle) {
+						final AtomDependencyNotFoundException notFoundException =
+							new AtomDependencyNotFoundException(
+								String.format("Atom has missing dependencies in transitions: %s", issueParticle.getParticle().getHID()),
+								Collections.singleton(issueParticle.getParticle().getHID()),
+								(Atom) cmAtom.getAtom()
+							);
+
+						AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(notFoundException, (Atom) cmAtom.getAtom());
+						Events.getInstance().broadcast(atomExceptionEvent);
+						atomsLog.error(notFoundException);
+					}
+				});
 			}
 		}
 	}
@@ -1385,64 +1433,6 @@ public class AtomSync extends Service
 			}
 		}));
 
-		engine.addAtomEventListener(
-			new AtomEventListener() {
-				@Override
-				public void onCMSuccess(CMAtom cmAtom, Object computed) {
-					if (atomsLog.hasLevel(Logging.DEBUG)) {
-						atomsLog.debug("Validated Atom " + cmAtom.getAtom().getHID() + " to SIGNATURE");
-					}
-				}
-
-				@Override
-				public void onCMError(CMAtom cmAtom, Set<CMError> errors) {
-					CMError cmError = errors.iterator().next();
-					ConstraintMachineValidationException e = new ConstraintMachineValidationException(cmAtom.getAtom(), cmError.getErrorDescription(), cmError.getDataPointer());
-					if (Modules.get(Universe.class).getGenesis().contains(cmAtom.getAtom())) {
-						log.fatal("Failed to process genesis Atom", e);
-						System.exit(-1);
-						return;
-					}
-
-					atomsLog.error(e);
-					Events.getInstance().broadcast(new AtomExceptionEvent(e, (Atom) cmAtom.getAtom()));
-				}
-
-				@Override
-				public void onStateStore(CMAtom cmAtom, Object computed) {
-					if (atomsLog.hasLevel(Logging.DEBUG)) {
-						atomsLog.debug("Validated Atom " + cmAtom.getAtom().getAID() + " to COMPLETE");
-					}
-				}
-
-				@Override
-				public void onStateConflict(CMAtom cmAtom, SpunParticle issueParticle, ImmutableAtom conflictAtom) {
-					final ParticleConflictException conflict = new ParticleConflictException(
-						new ParticleConflict(
-							issueParticle,
-							ImmutableSet.of((Atom) cmAtom.getAtom(), (Atom) conflictAtom)
-						));
-					AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(conflict, (Atom) cmAtom.getAtom());
-					Events.getInstance().broadcast(atomExceptionEvent);
-					atomsLog.error(conflict);
-				}
-
-				@Override
-				public void onStateMissingDependency(CMAtom cmAtom, SpunParticle issueParticle) {
-					final AtomDependencyNotFoundException notFoundException =
-						new AtomDependencyNotFoundException(
-							String.format("Atom has missing dependencies in transitions: %s", issueParticle.getParticle().getHID()),
-							Collections.singleton(issueParticle.getParticle().getHID()),
-							(Atom) cmAtom.getAtom()
-						);
-
-					AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(notFoundException, (Atom) cmAtom.getAtom());
-					Events.getInstance().broadcast(atomExceptionEvent);
-					atomsLog.error(notFoundException);
-				}
-			}
-		);
-
 		// SYNC DISCOVERY //
 		scheduleAtFixedRate(new ScheduledExecutable(10, 10, TimeUnit.SECONDS)
 		{
@@ -1489,7 +1479,42 @@ public class AtomSync extends Service
 						CMError cmError = e.getErrors().iterator().next();
 						throw new ConstraintMachineValidationException(atom, cmError.getErrorDescription(), cmError.getDataPointer());
 					}
-					Modules.get(ValidationHandler.class).getRadixEngine().store(cmAtom);
+					Modules.get(ValidationHandler.class).getRadixEngine().store(cmAtom,
+						new AtomEventListener() {
+							@Override
+							public void onCMSuccess(CMAtom cmAtom, Object computed) {
+								if (atomsLog.hasLevel(Logging.DEBUG)) {
+									atomsLog.debug("Validated Atom " + cmAtom.getAtom().getHID() + " to SIGNATURE");
+								}
+							}
+
+							@Override
+							public void onCMError(CMAtom cmAtom, Set<CMError> errors) {
+								CMError cmError = errors.iterator().next();
+								ConstraintMachineValidationException e = new ConstraintMachineValidationException(cmAtom.getAtom(), cmError.getErrorDescription(), cmError.getDataPointer());
+								log.fatal("Failed to process genesis Atom", e);
+								System.exit(-1);
+							}
+
+							@Override
+							public void onStateStore(CMAtom cmAtom, Object computed) {
+								if (atomsLog.hasLevel(Logging.DEBUG)) {
+									atomsLog.debug("Validated Atom " + cmAtom.getAtom().getAID() + " to COMPLETE");
+								}
+							}
+
+							@Override
+							public void onStateConflict(CMAtom cmAtom, SpunParticle issueParticle, ImmutableAtom conflictAtom) {
+								log.fatal("Failed to process genesis Atom");
+								System.exit(-1);
+							}
+
+							@Override
+							public void onStateMissingDependency(CMAtom cmAtom, SpunParticle issueParticle) {
+								log.fatal("Failed to process genesis Atom");
+								System.exit(-1);
+							}
+						});
 				}
 			}
 			waitForAtoms(atomIds);
