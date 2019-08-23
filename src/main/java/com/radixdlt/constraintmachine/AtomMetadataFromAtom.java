@@ -28,8 +28,8 @@ public class AtomMetadataFromAtom implements AtomMetadata {
 			return false;
 		}
 
-		final Hash hash = cmInstruction.getAtomHash();
+		final Hash witness = cmInstruction.getWitness();
 		final ECSignature signature = cmInstruction.getSignatures().get(address.getKey().getUID());
-		return signature != null && address.getKey().verify(hash, signature);
+		return signature != null && address.getKey().verify(witness, signature);
 	}
 }

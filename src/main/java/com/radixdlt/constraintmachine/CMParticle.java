@@ -7,7 +7,7 @@ import com.radixdlt.atoms.Particle;
 import com.radixdlt.atoms.Spin;
 
 /**
- * A particle processed by a Constraint Machine
+ * A particle to be processed by a Constraint Machine
  */
 public class CMParticle {
 	private final Particle particle;

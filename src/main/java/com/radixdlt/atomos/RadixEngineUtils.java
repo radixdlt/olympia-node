@@ -214,9 +214,9 @@ public final class RadixEngineUtils {
 				.collect(ImmutableList.toImmutableList());
 
 		final CMInstruction cmInstruction = new CMInstruction(
-			atom.getHash(),
 			cmParticles,
 			particlePushes,
+			atom.getHash(),
 			ImmutableMap.copyOf(atom.getSignatures())
 		);
 		return new SimpleRadixEngineAtom(atom, cmInstruction);
