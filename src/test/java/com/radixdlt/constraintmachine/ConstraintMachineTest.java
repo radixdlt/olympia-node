@@ -64,12 +64,12 @@ public class ConstraintMachineTest {
 		Particle particle1 = mock(Particle.class);
 		Particle particle2 = mock(Particle.class);
 
-		Optional<CMError> errors = machine.validateParticleGroup(
-			new CMValidationState(new HashMap<>(ImmutableMap.of(
-				particle0, Spin.UP,
-				particle1, Spin.UP,
-				particle2, Spin.NEUTRAL
-			)), null, null),
+		CMValidationState validationState = new CMValidationState(null, null);
+		validationState.checkSpin(particle0, Spin.UP);
+		validationState.checkSpin(particle1, Spin.UP);
+		validationState.checkSpin(particle2, Spin.UP);
+
+		Optional<CMError> errors = machine.validateParticleGroup(validationState,
 			ImmutableList.of(particle0, particle1, particle2),
 			0
 		);

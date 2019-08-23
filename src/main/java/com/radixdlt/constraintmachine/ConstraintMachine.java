@@ -87,10 +87,19 @@ public final class ConstraintMachine {
 		private final Map<EUID, ECSignature> signatures;
 		private final Map<ECPublicKey, Boolean> isSignedByCache = new HashMap<>();
 
-		CMValidationState(Map<Particle, Spin> initialSpins, Hash witness, Map<EUID, ECSignature> signatures) {
-			this.currentSpins = initialSpins;
+		CMValidationState(Hash witness, Map<EUID, ECSignature> signatures) {
+			this.currentSpins = new HashMap<>();
 			this.witness = witness;
 			this.signatures = signatures;
+		}
+
+		public boolean checkSpin(Particle particle, Spin spin) {
+			if (currentSpins.containsKey(particle)) {
+				return false;
+			}
+
+			this.currentSpins.put(particle, spin);
+			return true;
 		}
 
 		public boolean isSignedBy(ECPublicKey publicKey) {
@@ -294,36 +303,36 @@ public final class ConstraintMachine {
 	 * @return the first error found, otherwise an empty optional
 	 */
 	public Optional<CMError> validate(CMInstruction cmInstruction) {
+		final CMValidationState validationState = new CMValidationState(
+			cmInstruction.getWitness(),
+			cmInstruction.getSignatures()
+		);
+
 		// Particle checks
 		for (CMParticle cmParticle : cmInstruction.getParticles()) {
-			Optional<Spin> initSpin = localEngineStore.getSpin(cmParticle.getParticle());
+			final Optional<Spin> initSpin = localEngineStore.getSpin(cmParticle.getParticle());
 
 			// "Segfaults" or particles which should not exist
 			if (!initSpin.isPresent()) {
 				return Optional.of(new CMError(cmParticle.getDataPointer(), CMErrorCode.UNKNOWN_PARTICLE));
 			}
 
-			Spin checkSpin = cmParticle.getCheckSpin();
-			Spin curSpin = initSpin.get();
+			final Spin checkSpin = cmParticle.getCheckSpin();
+			final Spin curSpin = initSpin.get();
 
 			// Virtual particle state checks
 			// TODO: Is this better suited at the state check pipeline?
 			if (SpinStateMachine.isBefore(checkSpin, curSpin)) {
 				return Optional.of(new CMError(cmParticle.getDataPointer(), CMErrorCode.INTERNAL_SPIN_CONFLICT));
 			}
+
+			boolean updated = validationState.checkSpin(cmParticle.getParticle(), checkSpin);
+			if (!updated) {
+				return Optional.of(new CMError(cmParticle.getDataPointer(), CMErrorCode.INTERNAL_SPIN_CONFLICT));
+			}
 		}
 
-		// Push checks
-		final Map<Particle, Spin> initialSpins = cmInstruction.getParticles().stream().collect(Collectors.toMap(
-			CMParticle::getParticle,
-			CMParticle::getCheckSpin
-		));
-		final CMValidationState validationState = new CMValidationState(
-			initialSpins,
-			cmInstruction.getWitness(),
-			cmInstruction.getSignatures()
-		);
-
+		// Push transition checks
 		for (int i = 0; i < cmInstruction.getParticlePushes().size(); i++) {
 			final Optional<CMError> error = this.validateParticleGroup(
 				validationState,
