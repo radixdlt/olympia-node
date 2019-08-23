@@ -21,7 +21,7 @@ import com.google.inject.grapher.graphviz.GraphvizModule;
  * Factory for creating a {@link MessageCentral}.
  */
 public class MessageCentralFactory {
-
+	private static Injector injector;
 	/**
 	 * Create a {@link MessageCentral} based on a default configuration.
 	 * Note that the default configuration is unspecified right now, but
@@ -36,10 +36,12 @@ public class MessageCentralFactory {
 	}
 
 	private Injector createInjector(RuntimeProperties properties) {
-	    Injector injector = Guice.createInjector(
-			new MessageCentralModule(properties),
-			new UDPTransportModule(properties)
-		);
+		if (injector == null) {
+			injector = Guice.createInjector(
+					new MessageCentralModule(properties),
+					new UDPTransportModule(properties)
+			);
+		}
 		return injector;
 	}
 

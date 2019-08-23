@@ -29,7 +29,6 @@ import org.radix.modules.exceptions.ModuleException;
 import org.radix.modules.exceptions.ModuleStartException;
 import org.radix.modules.exceptions.ModuleStopException;
 import org.radix.network.discovery.Whitelist;
-import org.radix.network.messaging.Messaging;
 import org.radix.network.peers.Peer;
 import org.radix.network.peers.PeerListener;
 import org.radix.network.peers.PeerStore;
@@ -37,6 +36,7 @@ import org.radix.network.peers.UDPPeer;
 import org.radix.network.peers.events.PeerConnectingEvent;
 import org.radix.network.peers.events.PeerDisconnectedEvent;
 import org.radix.network.peers.events.PeerEvent;
+import org.radix.network2.messaging.MessageCentral;
 import org.radix.properties.RuntimeProperties;
 import org.radix.state.State;
 import org.radix.state.State.StateDefinition;
@@ -134,16 +134,8 @@ public class Network extends Service
 					{
 						for (Peer peer : peers)
 						{
-							if(peer.getState().in(State.CONNECTED))
-							{
-								try
-								{
-									Messaging.getInstance().send(new SystemMessage(), peer);
-								}
-								catch (IOException ioex)
-								{
-									log.error("Could not send System heartbeat to "+peer, ioex);
-								}
+							if(peer.getState().in(State.CONNECTED)) {
+								Modules.get(MessageCentral.class).send(peer, new SystemMessage());
 							}
 						}
 	    			}

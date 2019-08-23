@@ -25,7 +25,6 @@ import org.radix.modules.exceptions.ModuleException;
 import org.radix.modules.exceptions.ModuleStartException;
 import org.radix.network.Interfaces;
 import org.radix.network.Network;
-import org.radix.network.messaging.Messaging;
 import org.radix.network.peers.PeerHandler;
 import org.radix.network.peers.PeerStore;
 import org.radix.network2.messaging.MessageCentral;
@@ -234,7 +233,6 @@ public class Radix extends Plugin
 		try {
 			MessageCentral messageCentral = createMessageCentral(Modules.get(RuntimeProperties.class));
 			Modules.put(MessageCentral.class, messageCentral);
-			Modules.getInstance().start(Messaging.configure(messageCentral));
 //			Modules.getInstance().start(new MessageProfiler());
 		} catch (Exception ex) {
 			throw new ModuleStartException("Failure setting up Messages", ex, this);

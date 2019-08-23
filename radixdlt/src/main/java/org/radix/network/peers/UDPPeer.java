@@ -1,15 +1,16 @@
 package org.radix.network.peers;
 
-import java.io.IOException;
-import java.net.URI;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
-import org.radix.network.Protocol;
-import org.radix.network.messaging.Message;
-import org.radix.network.messaging.Messaging;
+import com.google.common.annotations.VisibleForTesting;
 import com.radixdlt.serialization.Polymorphic;
 import com.radixdlt.serialization.SerializerId2;
-import com.google.common.annotations.VisibleForTesting;
+import org.radix.logging.Logger;
+import org.radix.logging.Logging;
+import org.radix.modules.Modules;
+import org.radix.network.Protocol;
+import org.radix.network.messaging.Message;
+import org.radix.network2.messaging.MessageCentral;
+
+import java.net.URI;
 
 @SerializerId2("network.peer")
 public class UDPPeer extends Peer implements Polymorphic
@@ -42,9 +43,8 @@ public class UDPPeer extends Peer implements Polymorphic
 	}
 
 	@Override
-	public void send(Message message) throws IOException
-	{
-		Messaging.getInstance().send(message, this);
+	public void send(Message message) {
+		Modules.get(MessageCentral.class).send(this, message);
 	}
 
 	private void connect() {

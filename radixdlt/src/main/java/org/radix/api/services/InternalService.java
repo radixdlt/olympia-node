@@ -30,10 +30,10 @@ import org.radix.logging.Logging;
 import org.radix.modules.Modules;
 import org.radix.network.Network;
 import org.radix.network.Protocol;
-import org.radix.network.messaging.Messaging;
 import org.radix.network.peers.Peer;
 import org.radix.network.peers.PeerHandler;
 import org.radix.network.peers.PeerHandler.PeerDomain;
+import org.radix.network2.messaging.MessageCentral;
 import org.radix.properties.RuntimeProperties;
 import org.radix.shards.ShardChecksumStore;
 
@@ -141,7 +141,7 @@ public class InternalService {
 //												continue;
 
 											peer = Network.getInstance().connect(peer.getURI(), Protocol.UDP);
-											Messaging.getInstance().send(new AtomSubmitMessage(atom), peer);
+											Modules.get(MessageCentral.class).send(peer, new AtomSubmitMessage(atom));
 											break;
 										}
 									}

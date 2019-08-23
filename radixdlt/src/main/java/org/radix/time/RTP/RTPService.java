@@ -1,6 +1,5 @@
 package org.radix.time.RTP;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -22,7 +21,6 @@ import org.radix.modules.Modules;
 import org.radix.modules.Service;
 import org.radix.network.Network;
 import org.radix.network.Protocol;
-import org.radix.network.messaging.MessageProcessor;
 import org.radix.network.peers.Peer;
 import org.radix.network.peers.PeerStore;
 import org.radix.network.peers.UDPPeer;
@@ -432,42 +430,29 @@ public final class RTPService extends Service
         store.clear();
 
         //Messages
-        register("rtp.message", new MessageProcessor<RTPMessage>()
-        {
-            @Override
-            public void process(RTPMessage rtpMessage, Peer peer)
-            {
-                if (rtpMessage.getMessageType() == 0)
-                {
-                    rtp.info("got a request message from " + peer.getURI());
-                    RTPMessage response = new RTPMessage(
-                    		1,
-                    		rtpMessage.getSeq(),
-                    		LogicalClock.getInstance().get(),
-                    		radix_time(),
-                    		LogicalClock.getInstance().get(),
-                    		radix_time());
+        register(RTPMessage.class, (peer, rtpMessage) -> {
+            if (rtpMessage.getMessageType() == 0) {
+                rtp.info("got a request message from " + peer.getURI());
+                RTPMessage response = new RTPMessage(
+                        1,
+                        rtpMessage.getSeq(),
+                        LogicalClock.getInstance().get(),
+                        radix_time(),
+                        LogicalClock.getInstance().get(),
+                        radix_time());
 
-
-                    UDPPeer udp = Network.getInstance().get(peer.getURI(), Protocol.UDP, State.CONNECTED);
-                    if (udp == null) {
-                    	rtp.info("no connected peer to request from");
-                    } else {
-
-                    	try {
-                    		udp.send(response);
-                    	} catch (IOException ex) {
-                    		rtp.error("unable to send RTP response", ex);
-                    		badRounds += 1;
-                    	}
-                    }
+                UDPPeer udp = Network.getInstance().get(peer.getURI(), Protocol.UDP, State.CONNECTED);
+                if (udp == null) {
+                    rtp.info("no connected peer to request from");
                 } else {
-					if (!completed.get()) {
-						rtp.info("got a response message from " + peer.getURI());
-						store.setResponse(rtpMessage, radix_time());
-					} else {
-						rtp.info("got a response after timeout");
-					}
+                    udp.send(response);
+                }
+            } else {
+                if (!completed.get()) {
+                    rtp.info("got a response message from " + peer.getURI());
+                    store.setResponse(rtpMessage, radix_time());
+                } else {
+                    rtp.info("got a response after timeout");
                 }
             }
         });

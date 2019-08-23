@@ -8,7 +8,6 @@ import com.radixdlt.tempo.AtomSyncView;
 import com.radixdlt.tempo.EdgeSelector;
 import org.junit.After;
 import org.junit.Before;
-import org.powermock.reflect.Whitebox;
 import org.radix.atoms.AtomStore;
 import org.radix.atoms.sync.AtomSync;
 import org.radix.database.DatabaseEnvironment;
@@ -16,8 +15,8 @@ import org.radix.database.DatabaseStore;
 import org.radix.modules.Module;
 import org.radix.modules.Modules;
 import org.radix.modules.exceptions.ModuleException;
-import org.radix.network.messaging.Messaging;
 import org.radix.network2.messaging.MessageCentral;
+import org.radix.network2.messaging.MessageCentralFactory;
 import org.radix.properties.RuntimeProperties;
 import org.radix.routing.RoutingHandler;
 import org.radix.routing.RoutingStore;
@@ -29,16 +28,15 @@ import static org.mockito.Mockito.when;
 public class RadixTestWithStores extends RadixTest
 {
 	@Before
-	public void beforeEachRadixTest() throws ModuleException
-	{
-		// FIXME: I'm sorry about this.  It will be fixed when Messaging is removed
-		// Currently AtomSync registers a bunch of callbacks with Messaging
-		Whitebox.setInternalState(Messaging.class, "instance", (MessageCentral) null);
-		Messaging.configure(mock(MessageCentral.class));
-
+	public void beforeEachRadixTest() throws ModuleException {
 		Modules.getInstance().start(new DatabaseEnvironment());
 		Modules.getInstance().start(clean(new RoutingStore()));
 		Modules.getInstance().start(new RoutingHandler());
+
+		RuntimeProperties properties = Modules.get(RuntimeProperties.class);
+		MessageCentral messageCentral = new MessageCentralFactory().getDefault(properties);
+		Modules.put(MessageCentral.class, messageCentral);
+
 		if (Modules.get(RuntimeProperties.class).get("tempo2", false)) {
 			TempoController controller = TempoController.builder().build();
 			PeerSupplier peerSupplier = mock(PeerSupplier.class);
@@ -75,7 +73,7 @@ public class RadixTestWithStores extends RadixTest
 			Modules.remove(AtomSyncView.class);
 		}
 		Modules.remove(DatabaseEnvironment.class);
-		Whitebox.setInternalState(Messaging.class, "instance", (MessageCentral) null);
+		Modules.remove(MessageCentral.class);
 	}
 
 	private static DatabaseStore clean(DatabaseStore m) throws ModuleException {

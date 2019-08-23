@@ -1,6 +1,5 @@
 package org.radix.network.peers;
 
-import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -30,13 +29,12 @@ import org.radix.network.messages.GetPeersMessage;
 import org.radix.network.messages.PeerPingMessage;
 import org.radix.network.messages.PeerPongMessage;
 import org.radix.network.messages.PeersMessage;
-import org.radix.network.messaging.MessageProcessor;
-import org.radix.network.messaging.Messaging;
 import org.radix.network.peers.events.PeerAvailableEvent;
 import org.radix.network.peers.events.PeerDisconnectedEvent;
 import org.radix.network.peers.events.PeerEvent;
 import org.radix.network.peers.filters.PeerBroadcastFilter;
 import org.radix.network.peers.filters.PeerFilter;
+import org.radix.network2.messaging.MessageCentral;
 import org.radix.properties.RuntimeProperties;
 import org.radix.state.State;
 import org.radix.time.NtpService;
@@ -130,122 +128,82 @@ public class PeerHandler extends Service
 	}
 
 	@Override
-	public void start_impl() throws ModuleException
-	{
-		register("peers", new MessageProcessor<PeersMessage> ()
+	public void start_impl() throws ModuleException {
+		register(PeersMessage.class, (peer, peersMessage) ->
 		{
-			@Override
-			public void process (PeersMessage peersMessage, Peer peer)
-			{
-				for ( Peer p : peersMessage.getPeers())
-				{
-					if (p.getSystem() == null)
-						continue;
+			for (Peer p : peersMessage.getPeers()) {
+				if (p.getSystem() == null)
+					continue;
 
-					if (p.getSystem().getNID().equals(LocalSystem.getInstance().getNID()) == true)
-						continue;
+				if (p.getSystem().getNID().equals(LocalSystem.getInstance().getNID()) == true)
+					continue;
 
-					try
-					{
-						if (Modules.get(PeerStore.class).hasPeer(p.getSystem().getNID()) == false)
-							Modules.get(PeerStore.class).storePeer(p);
-					}
-					catch ( DatabaseException dbex )
-					{
-						networklog.error("Failed to store '"+p+"'", dbex);
-					}
+				try {
+					if (Modules.get(PeerStore.class).hasPeer(p.getSystem().getNID()) == false)
+						Modules.get(PeerStore.class).storePeer(p);
+				} catch (DatabaseException dbex) {
+					networklog.error("Failed to store '" + p + "'", dbex);
 				}
 			}
 		});
 
-		register("peers.get", new MessageProcessor<GetPeersMessage> ()
-		{
-			@Override
-			public void process (GetPeersMessage getPeersMessage, Peer peer)
-			{
-				try
-				{
-					// Deliver known Peers in its entirety, filtered on whitelist and activity
-					// Chunk the sending of Peers so that UDP can handle it
-					PeersMessage peersMessage = new PeersMessage();
-					List<Peer> peers = Modules.get(PeerStore.class).getPeers(new PeerBroadcastFilter());
+		register(GetPeersMessage.class, (peer, getPeersMessage) -> {
+			try {
+				// Deliver known Peers in its entirety, filtered on whitelist and activity
+				// Chunk the sending of Peers so that UDP can handle it
+				PeersMessage peersMessage = new PeersMessage();
+				List<Peer> peers = Modules.get(PeerStore.class).getPeers(new PeerBroadcastFilter());
 
-					for (Peer p : peers)
-					{
-						if (p.getSystem().getNID().equals(peer.getSystem().getNID()))
-							continue;
+				for (Peer p : peers) {
+					if (p.getSystem().getNID().equals(peer.getSystem().getNID()))
+						continue;
 
-						peersMessage.getPeers().add(p);
+					peersMessage.getPeers().add(p);
 
-						if (peersMessage.getPeers().size() == 64)
-						{
-							Modules.get(Messaging.class).send(peersMessage, peer);
-							peersMessage = new PeersMessage();
-						}
+					if (peersMessage.getPeers().size() == 64) {
+						Modules.get(MessageCentral.class).send(peer, peersMessage);
+						peersMessage = new PeersMessage();
 					}
+				}
 
-					if (!peersMessage.getPeers().isEmpty())
-						Modules.get(Messaging.class).send(peersMessage, peer);
+				if (!peersMessage.getPeers().isEmpty()){
+					Modules.get(MessageCentral.class).send(peer, peersMessage);
 				}
-				catch (Exception ex)
-				{
-					networklog.error("peers.get "+peer, ex);
-				}
+			} catch (Exception ex) {
+				networklog.error("peers.get " + peer, ex);
 			}
 		});
 
-        register("peer.ping", new MessageProcessor<PeerPingMessage> ()
-		{
-			@Override
-			public void process (PeerPingMessage message, Peer peer)
-			{
-				try
-				{
-					networklog.debug("peer.ping from "+peer+" with nonce '"+message.getNonce()+"'");
-					synchronized(PeerHandler.this.network)
-					{
+		register(PeerPingMessage.class, (peer, message) -> {
+			try {
+				networklog.debug("peer.ping from " + peer + " with nonce '" + message.getNonce() + "'");
+				synchronized (PeerHandler.this.network) {
+					PeerHandler.this.network.put(peer.getSystem().getNID(), new Peer(peer.getURI(), peer));
+				}
+				Modules.get(MessageCentral.class).send(peer, new PeerPongMessage(message.getNonce()));
+				Events.getInstance().broadcast(new PeerAvailableEvent(peer));
+			} catch (Exception ex) {
+				networklog.error("peer.ping " + peer, ex);
+			}
+		});
+
+		register(PeerPongMessage.class, (peer, message) -> {
+			try {
+				synchronized (PeerHandler.this.probes) {
+					synchronized (PeerHandler.this.network) {
 						PeerHandler.this.network.put(peer.getSystem().getNID(), new Peer(peer.getURI(), peer));
 					}
 
-					Messaging.getInstance().send(new PeerPongMessage(message.getNonce()), peer);
-					Events.getInstance().broadcast(new PeerAvailableEvent(peer));
+					if (PeerHandler.this.probes.containsKey(peer) &&
+							PeerHandler.this.probes.get(peer).longValue() == message.getNonce()) {
+						PeerHandler.this.probes.remove(peer);
+						networklog.debug("Got peer.pong from " + peer + " with nonce '" + message.getNonce() + "'");
+						Events.getInstance().broadcast(new PeerAvailableEvent(peer));
+					} else
+						networklog.debug("Got peer.pong without matching probe from " + peer + " with nonce '" + message.getNonce() + "'");
 				}
-				catch (Exception ex)
-				{
-					networklog.error("peer.ping "+peer, ex);
-				}
-			}
-		});
-
-        register("peer.pong", new MessageProcessor<PeerPongMessage> ()
-		{
-			@Override
-			public void process (PeerPongMessage message, Peer peer)
-			{
-				try
-				{
-					synchronized(PeerHandler.this.probes)
-					{
-						synchronized(PeerHandler.this.network)
-						{
-							PeerHandler.this.network.put(peer.getSystem().getNID(), new Peer(peer.getURI(), peer));
-						}
-
-						if (PeerHandler.this.probes.containsKey(peer) &&
-							PeerHandler.this.probes.get(peer).longValue() == message.getNonce())
-						{
-							PeerHandler.this.probes.remove(peer);
-							networklog.debug("Got peer.pong from "+peer+" with nonce '"+message.getNonce()+"'");
-							Events.getInstance().broadcast(new PeerAvailableEvent(peer));
-						}
-						else
-							networklog.debug("Got peer.pong without matching probe from "+peer+" with nonce '"+message.getNonce()+"'");
-					}
-				}
-				catch (Exception ex)
-				{
-					networklog.error("peer.pong "+peer, ex);
-				}
+			} catch (Exception ex) {
+				networklog.error("peer.pong " + peer, ex);
 			}
 		});
 
@@ -272,17 +230,9 @@ public class PeerHandler extends Service
 					// Request peers information from connected nodes
 					List<Peer> peers = Network.getInstance().get(Protocol.UDP, State.CONNECTED);
 
-					if (peers.isEmpty() == false)
-					{
+					if (peers.isEmpty() == false) {
 						Collections.shuffle(peers);
-						try
-						{
-							Modules.get(Messaging.class).send(new GetPeersMessage(), peers.get(0));
-						}
-						catch (IOException ioex)
-						{
-							networklog.debug("Failed to request peer information from "+peers.get(0), ioex);
-						}
+						Modules.get(MessageCentral.class).send(peers.get(0), new GetPeersMessage());
 					}
 				}
 				catch (Throwable t)
@@ -373,17 +323,10 @@ public class PeerHandler extends Service
 		{
 			UDPPeer bootstrapPeer = Network.getInstance().get(host, Protocol.UDP, State.CONNECTED);
 
-			if (bootstrapPeer == null)
+			if (bootstrapPeer == null){
 				continue;
-
-			try
-			{
-				Messaging.getInstance().send(new GetPeersMessage(), bootstrapPeer);
 			}
-			catch (IOException ioex)
-			{
-				networklog.error("Could not ask "+bootstrapPeer+" for known peers", ioex);
-			}
+			Modules.get(MessageCentral.class).send(bootstrapPeer, new GetPeersMessage());
 		}
 	}
 
@@ -423,7 +366,7 @@ public class PeerHandler extends Service
 					networklog.debug("Probing "+peer+" with nonce '"+ping.getNonce()+"'");
 					Executor.getInstance().schedule(new ProbeTimeout(peer, ping.getNonce(), PROBE_TIMEOUT_SECONDS, TimeUnit.SECONDS));
 
-					Messaging.getInstance().send(ping, peer);
+					Modules.get(MessageCentral.class).send(peer, ping);
 					peer.setTimestamp(Timestamps.PROBED, Modules.get(NtpService.class).getUTCTimeMS());
 					return true;
 				}
