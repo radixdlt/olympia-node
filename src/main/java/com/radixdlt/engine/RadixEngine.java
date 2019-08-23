@@ -15,6 +15,7 @@ import com.radixdlt.store.SpinStateTransitionValidator;
 import com.radixdlt.store.SpinStateTransitionValidator.TransitionCheckResult;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -40,9 +41,12 @@ public final class RadixEngine {
 	private final class StoreAtom implements EngineAction {
 		private final CMAtom cmAtom;
 		private final Object computed;
-		StoreAtom(CMAtom cmAtom, Object computed) {
+		private final AtomEventListener listener;
+
+		StoreAtom(CMAtom cmAtom, Object computed, AtomEventListener listener) {
 			this.cmAtom = cmAtom;
 			this.computed = computed;
+			this.listener = listener;
 		}
 	}
 
@@ -75,7 +79,7 @@ public final class RadixEngine {
 				final EngineAction action = this.commitQueue.take();
 				if (action instanceof StoreAtom) {
 					StoreAtom storeAtom = (StoreAtom) action;
-					stateCheckAndStore(storeAtom.cmAtom, storeAtom.computed);
+					stateCheckAndStore(storeAtom);
 				} else if (action instanceof DeleteAtom) {
 					DeleteAtom deleteAtom = (DeleteAtom) action;
 					engineStore.deleteAtom(deleteAtom.cmAtom);
@@ -109,19 +113,29 @@ public final class RadixEngine {
 		this.commitQueue.add(new DeleteAtom(cmAtom));
 	}
 
-	public void store(CMAtom cmAtom) {
+	// TODO use reactive interface
+	public void store(CMAtom cmAtom, AtomEventListener atomEventListener) {
+		Objects.requireNonNull(cmAtom);
+		Objects.requireNonNull(atomEventListener);
+
 		final Optional<CMError> error = constraintMachine.validate(cmAtom);
 		if (!error.isPresent()) {
 			Object computed = compute.compute(cmAtom);
 			this.cmSuccessHooks.forEach(hook -> hook.accept(cmAtom, computed));
-			this.commitQueue.add(new StoreAtom(cmAtom, computed));
+			this.commitQueue.add(new StoreAtom(cmAtom, computed, atomEventListener));
+
+			atomEventListener.onCMSuccess(cmAtom, computed);
 			this.atomEventListeners.forEach(acceptor -> acceptor.onCMSuccess(cmAtom, computed));
 		} else {
+			atomEventListener.onCMError(cmAtom, ImmutableSet.of(error.get()));
 			this.atomEventListeners.forEach(acceptor -> acceptor.onCMError(cmAtom, ImmutableSet.of(error.get())));
 		}
 	}
 
-	private void stateCheckAndStore(CMAtom cmAtom, Object computed) {
+	private void stateCheckAndStore(StoreAtom storeAtom) {
+		final CMAtom cmAtom = storeAtom.cmAtom;
+		final Object computed = storeAtom.computed;
+
 		// TODO: Optimize these collectors out
 		Map<TransitionCheckResult, List<Pair<SpunParticle, TransitionCheckResult>>> spinCheckResults = cmAtom.getParticles()
 			.stream()
@@ -159,9 +173,10 @@ public final class RadixEngine {
 			//
 			// Modified StateProviderFromStore.getAtomsContaining to be singular based on the
 			// above assumption.
-			engineStore.getAtomContaining(issueParticle, conflictAtom ->
-				atomEventListeners.forEach(listener -> listener.onStateConflict(cmAtom, issueParticle, conflictAtom))
-			);
+			engineStore.getAtomContaining(issueParticle, conflictAtom -> {
+				storeAtom.listener.onStateConflict(cmAtom, issueParticle, conflictAtom);
+				atomEventListeners.forEach(listener -> listener.onStateConflict(cmAtom, issueParticle, conflictAtom));
+			});
 
 			return;
 		}
@@ -170,12 +185,15 @@ public final class RadixEngine {
 		if (spinCheckResults.get(TransitionCheckResult.MISSING_DEPENDENCY) != null)  {
 			Pair<SpunParticle, TransitionCheckResult> issue = spinCheckResults.get(TransitionCheckResult.MISSING_DEPENDENCY).get(0);
 			SpunParticle issueParticle = issue.getFirst();
+
+			storeAtom.listener.onStateMissingDependency(cmAtom, issueParticle);
 			atomEventListeners.forEach(listener -> listener.onStateMissingDependency(cmAtom, issueParticle));
 			return;
 		}
 
 		engineStore.storeAtom(cmAtom, computed);
 
+		storeAtom.listener.onStateStore(cmAtom, computed);
 		atomEventListeners.forEach(listener -> listener.onStateStore(cmAtom, computed));
 	}
 }
