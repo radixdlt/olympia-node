@@ -47,8 +47,11 @@ public class AtomEngineStore implements EngineStore<SimpleRadixEngineAtom> {
 			}
 
 			Atom atom = atomStoreSupplier.get().getAtomContaining(spunParticle.getParticle(), spunParticle.getSpin());
-			callback.accept(RadixEngineUtils.toCMAtom(atom));
-
+			if (atom == null) {
+				callback.accept(null);
+			} else {
+				callback.accept(RadixEngineUtils.toCMAtom(atom));
+			}
 		} catch (DatabaseException | CMAtomConversionException e) {
 			throw new StateStoreException("Discovery for " + spunParticle + " failed: " + e, e);
 		}

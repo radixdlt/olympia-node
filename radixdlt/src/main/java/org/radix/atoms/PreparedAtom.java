@@ -1,7 +1,10 @@
 package org.radix.atoms;
 
+import com.radixdlt.atoms.Particle;
+import com.radixdlt.atoms.Spin;
 import com.radixdlt.engine.RadixEngineAtom;
 import com.radixdlt.atomos.SimpleRadixEngineAtom;
+import com.radixdlt.store.SpinStateMachine;
 import com.radixdlt.utils.UInt384;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -9,6 +12,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -61,11 +65,19 @@ public class PreparedAtom {
 		this.atomBytes = Modules.get(Serialization.class).toDson(atom, DsonOutput.Output.PERSIST);
 
 		this.uniqueIndexables = new HashMap<>();
-		for (CMParticle cmParticle : radixEngineAtom.getCMInstruction().getParticles()) {
-			EUID particleId = cmParticle.getParticle().getHID();
-			cmParticle.nextSpins().forEach(s -> {
+
+
+		Map<Particle, Spin> curSpins = radixEngineAtom.getCMInstruction().getParticles().stream()
+			.collect(Collectors.toMap(CMParticle::getParticle, CMParticle::getCheckSpin));
+		radixEngineAtom.getCMInstruction().getParticlePushes().stream()
+			.flatMap(List::stream)
+			.forEach(particle -> {
+				Spin curSpin = curSpins.get(particle);
+				Spin nextSpin = SpinStateMachine.next(curSpin);
+				curSpins.put(particle, nextSpin);
+
 				final IDType idType;
-				switch (s) {
+				switch (nextSpin) {
 					case UP:
 						idType = IDType.PARTICLE_UP;
 						break;
@@ -73,13 +85,13 @@ public class PreparedAtom {
 						idType = IDType.PARTICLE_DOWN;
 						break;
 					default:
-						throw new IllegalStateException("Unknown SPIN state for particle " + s);
+						throw new IllegalStateException("Unknown SPIN state for particle " + nextSpin);
 				}
 
-				final byte[] indexableBytes = IDType.toByteArray(idType, particleId);
-				this.uniqueIndexables.put(particleId.getLow() + s.intValue(), indexableBytes);
+				final byte[] indexableBytes = IDType.toByteArray(idType, particle.getHID());
+				this.uniqueIndexables.put(particle.getHID().getLow() + nextSpin.intValue(), indexableBytes);
 			});
-		}
+
 		this.uniqueIndexables.put(atom.getAID().getLow(), IDType.toByteArray(IDType.ATOM, atom.getAID()));
 
 		this.shards = new HashSet<>();
