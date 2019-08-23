@@ -469,11 +469,11 @@ public class AtomSync extends Service
 					}
 
 					@Override
-					public void onStateConflict(SimpleRadixEngineAtom cmAtom, SpunParticle issueParticle, ImmutableAtom conflictAtom) {
+					public void onStateConflict(SimpleRadixEngineAtom cmAtom, SpunParticle issueParticle, SimpleRadixEngineAtom conflictAtom) {
 						final ParticleConflictException conflict = new ParticleConflictException(
 							new ParticleConflict(
 								issueParticle,
-								ImmutableSet.of((Atom) cmAtom.getAtom(), (Atom) conflictAtom)
+								ImmutableSet.of((Atom) cmAtom.getAtom(), (Atom) conflictAtom.getAtom())
 							));
 						AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(conflict, (Atom) cmAtom.getAtom());
 						Events.getInstance().broadcast(atomExceptionEvent);
@@ -1465,14 +1465,12 @@ public class AtomSync extends Service
 			}
 		});
 
-		try
-		{
+		try {
 			LinkedList<AID> atomIds = new LinkedList<>();
-			for (ImmutableAtom immutableAtom : Modules.get(Universe.class).getGenesis())
-			{
+			for (ImmutableAtom immutableAtom : Modules.get(Universe.class).getGenesis()) {
+
 				final Atom atom = (Atom) immutableAtom;
-				if (!Modules.get(AtomStore.class).hasAtom(atom.getAID()))
-				{
+				if (!Modules.get(AtomStore.class).hasAtom(atom.getAID())) {
 					final SimpleRadixEngineAtom cmAtom;
 					try {
 						cmAtom = RadixEngineUtils.toCMAtom(atom);
@@ -1480,15 +1478,9 @@ public class AtomSync extends Service
 						CMError cmError = e.getErrors().iterator().next();
 						throw new ConstraintMachineValidationException(atom, cmError.getErrorDescription(), cmError.getDataPointer());
 					}
+
 					Modules.get(ValidationHandler.class).getRadixEngine().store(cmAtom,
 						new AtomEventListener<SimpleRadixEngineAtom>() {
-							@Override
-							public void onCMSuccess(SimpleRadixEngineAtom cmAtom) {
-								if (atomsLog.hasLevel(Logging.DEBUG)) {
-									atomsLog.debug("Validated Atom " + atom.getAID() + " to SIGNATURE");
-								}
-							}
-
 							@Override
 							public void onCMError(SimpleRadixEngineAtom cmAtom, Set<CMError> errors) {
 								CMError cmError = errors.iterator().next();
@@ -1498,14 +1490,7 @@ public class AtomSync extends Service
 							}
 
 							@Override
-							public void onStateStore(SimpleRadixEngineAtom cmAtom) {
-								if (atomsLog.hasLevel(Logging.DEBUG)) {
-									atomsLog.debug("Validated Atom " + atom.getAID() + " to COMPLETE");
-								}
-							}
-
-							@Override
-							public void onStateConflict(SimpleRadixEngineAtom cmAtom, SpunParticle issueParticle, ImmutableAtom conflictAtom) {
+							public void onStateConflict(SimpleRadixEngineAtom cmAtom, SpunParticle issueParticle, SimpleRadixEngineAtom conflictAtom) {
 								log.fatal("Failed to process genesis Atom");
 								System.exit(-1);
 							}

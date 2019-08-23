@@ -1,5 +1,7 @@
 package org.radix.atoms;
 
+import com.radixdlt.atomos.RadixEngineUtils;
+import com.radixdlt.atomos.RadixEngineUtils.CMAtomConversionException;
 import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.atomos.SimpleRadixEngineAtom;
 import com.radixdlt.utils.UInt384;
@@ -36,7 +38,7 @@ public class AtomEngineStore implements EngineStore<SimpleRadixEngineAtom> {
 	}
 
 	@Override
-	public void getAtomContaining(SpunParticle spunParticle, Consumer<ImmutableAtom> callback) {
+	public void getAtomContaining(SpunParticle spunParticle, Consumer<SimpleRadixEngineAtom> callback) {
 		try {
 			// cheap early out in case the spun particle is not even in the store
 			if (!atomStoreSupplier.get().hasAtomContaining(spunParticle.getParticle(), spunParticle.getSpin())) {
@@ -44,10 +46,11 @@ public class AtomEngineStore implements EngineStore<SimpleRadixEngineAtom> {
 				return;
 			}
 
-			callback.accept(atomStoreSupplier.get().getAtomContaining(spunParticle.getParticle(), spunParticle.getSpin()));
+			Atom atom = atomStoreSupplier.get().getAtomContaining(spunParticle.getParticle(), spunParticle.getSpin());
+			callback.accept(RadixEngineUtils.toCMAtom(atom));
 
-		} catch (DatabaseException dex) {
-			throw new StateStoreException("Discovery for " + spunParticle + " failed: " + dex, dex);
+		} catch (DatabaseException | CMAtomConversionException e) {
+			throw new StateStoreException("Discovery for " + spunParticle + " failed: " + e, e);
 		}
 	}
 
