@@ -125,7 +125,7 @@ final class ConstraintScryptEnv implements SysCalls {
 
 				return ProcedureResult.popInputOutput();
 			},
-			(res, in, out, meta) -> res == CMAction.POP_INPUT_OUTPUT && meta.isSignedBy(in.getRri().getAddress())
+			(res, in, out, meta) -> res == CMAction.POP_INPUT_OUTPUT && meta.isSignedBy(in.getRri().getAddress().getKey())
 				? WitnessValidatorResult.success() : WitnessValidatorResult.error("Not signed by " + in.getRri().getAddress())
 		);
 	}
@@ -161,7 +161,7 @@ final class ConstraintScryptEnv implements SysCalls {
 			procedure0,
 			(res, in, out, meta) -> {
 				if (res == CMAction.POP_INPUT_OUTPUT) {
-					if (!meta.isSignedBy(in.getRri().getAddress())) {
+					if (!meta.isSignedBy(in.getRri().getAddress().getKey())) {
 						return WitnessValidatorResult.error("Not signed by " + in.getRri().getAddress());
 					}
 				}
@@ -180,7 +180,7 @@ final class ConstraintScryptEnv implements SysCalls {
 			procedure1,
 			(res, in, out, meta) -> {
 				if (res == CMAction.POP_INPUT_OUTPUT) {
-					if (!meta.isSignedBy(in.getRri().getAddress())) {
+					if (!meta.isSignedBy(in.getRri().getAddress().getKey())) {
 						return WitnessValidatorResult.error("Not signed by " + in.getRri().getAddress());
 					}
 				}

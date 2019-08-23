@@ -3,12 +3,17 @@ package com.radixdlt.constraintmachine;
 import com.radixdlt.atoms.DataPointer;
 import com.radixdlt.atoms.Spin;
 import com.radixdlt.atoms.SpunParticle;
+import com.radixdlt.common.EUID;
 import com.radixdlt.constraintmachine.TransitionProcedure.ProcedureResult;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECSignature;
+import com.radixdlt.crypto.Hash;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.SpinStateMachine;
 import com.radixdlt.store.SpinStateTransitionValidator;
 import com.radixdlt.store.SpinStateTransitionValidator.TransitionCheckResult;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -80,9 +85,27 @@ public final class ConstraintMachine {
 		private SpunParticle spunParticleRemaining = null;
 		private Object particleRemainingUsed = null;
 		private final Map<Particle, Spin> currentSpins;
+		private final Hash witness;
+		private final Map<EUID, ECSignature> signatures;
+		private final Map<ECPublicKey, Boolean> isSignedByCache = new HashMap<>();
 
-		CMValidationState(Map<Particle, Spin> initialSpins) {
+		CMValidationState(Map<Particle, Spin> initialSpins, Hash witness, Map<EUID, ECSignature> signatures) {
 			this.currentSpins = initialSpins;
+			this.witness = witness;
+			this.signatures = signatures;
+		}
+
+		public boolean isSignedBy(ECPublicKey publicKey) {
+			return this.isSignedByCache.computeIfAbsent(publicKey, this::verifySignedWith);
+		}
+
+		private boolean verifySignedWith(ECPublicKey publicKey) {
+			if (signatures == null || signatures.isEmpty() || witness == null) {
+				return false;
+			}
+
+			final ECSignature signature = signatures.get(publicKey.getUID());
+			return signature != null && publicKey.verify(witness, signature);
 		}
 
 		Spin push(Particle p) {
@@ -132,11 +155,10 @@ public final class ConstraintMachine {
 	 *
 	 * @param nextSpun the next spun particle
 	 * @param dp pointer of the next spun particle
-	 * @param metadata metadata associated with the atom
 	 * @param validationState local state of validation
 	 * @return the first error found, otherwise an empty optional
 	 */
-	Optional<CMError> validateParticle(SpunParticle nextSpun, DataPointer dp, AtomMetadata metadata, CMValidationState validationState) {
+	Optional<CMError> validateParticle(CMValidationState validationState, SpunParticle nextSpun, DataPointer dp) {
 		final Particle nextParticle = nextSpun.getParticle();
 		final Particle curParticle = validationState.getCurParticle();
 
@@ -215,7 +237,7 @@ public final class ConstraintMachine {
 			result.getCmAction(),
 			inputParticle,
 			outputParticle,
-			metadata
+			validationState::isSignedBy
 		);
 		if (witnessValidatorResult.isError()) {
 			return Optional.of(
@@ -237,10 +259,9 @@ public final class ConstraintMachine {
 	 *
 	 * @param group the particle group
 	 * @param groupIndex the index of the particle group
-	 * @param metadata atom meta data
 	 * @return the first error found, otherwise an empty optional
 	 */
-	Optional<CMError> validateParticleGroup(CMValidationState validationState, List<Particle> group, long groupIndex, AtomMetadata metadata) {
+	Optional<CMError> validateParticleGroup(CMValidationState validationState, List<Particle> group, long groupIndex) {
 
 		for (int i = 0; i < group.size(); i++) {
 			final DataPointer dp = DataPointer.ofParticle((int) groupIndex, i);
@@ -248,7 +269,7 @@ public final class ConstraintMachine {
 			final Spin nextSpin = validationState.push(nextParticle);
 			final SpunParticle nextSpun = SpunParticle.of(nextParticle, nextSpin);
 
-			Optional<CMError> error = validateParticle(nextSpun, dp, metadata, validationState);
+			Optional<CMError> error = validateParticle(validationState, nextSpun, dp);
 			if (error.isPresent()) {
 				return error;
 			}
@@ -306,18 +327,21 @@ public final class ConstraintMachine {
 		}
 
 		// Transition checks
-		final AtomMetadata metadata = new AtomMetadataFromAtom(cmInstruction);
 		final Map<Particle, Spin> initialSpins = cmInstruction.getParticles().stream().collect(Collectors.toMap(
 			CMParticle::getParticle,
 			CMParticle::getCheckSpin
 		));
-		final CMValidationState validationState = new CMValidationState(initialSpins);
+		final CMValidationState validationState = new CMValidationState(
+			initialSpins,
+			cmInstruction.getWitness(),
+			cmInstruction.getSignatures()
+		);
+
 		for (int i = 0; i < cmInstruction.getParticlePushes().size(); i++) {
 			final Optional<CMError> error = this.validateParticleGroup(
 				validationState,
 				cmInstruction.getParticlePushes().get(i),
-				i,
-				metadata
+				i
 			);
 			if (error.isPresent()) {
 				return error;

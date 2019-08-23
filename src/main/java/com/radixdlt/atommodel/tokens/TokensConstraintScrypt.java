@@ -7,7 +7,7 @@ import com.radixdlt.atomos.Result;
 import com.radixdlt.atommodel.procedures.FungibleTransition;
 import com.radixdlt.constraintmachine.WitnessValidator;
 import com.radixdlt.atoms.Particle;
-import com.radixdlt.constraintmachine.AtomMetadata;
+import com.radixdlt.constraintmachine.WitnessData;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
 import com.radixdlt.utils.UInt256;
 import java.util.Objects;
@@ -105,7 +105,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 					"Permissions not equal."
 				)
 			),
-			checkInput((in, meta) -> meta.isSignedBy(in.getTokDefRef().getAddress()))
+			checkInput((in, meta) -> meta.isSignedBy(in.getTokDefRef().getAddress().getKey()))
 		);
 		os.createTransition(
 			UnallocatedTokensParticle.class, TransferrableTokensParticle.class,
@@ -135,7 +135,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 					"Permissions not equal."
 				)
 			),
-			checkInput((in, meta) -> meta.isSignedBy(in.getAddress()))
+			checkInput((in, meta) -> meta.isSignedBy(in.getAddress().getKey()))
 		);
 		os.createTransition(
 			TransferrableTokensParticle.class, UnallocatedTokensParticle.class,
@@ -171,7 +171,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 		};
 	}
 
-	private static <T extends Particle, U extends Particle> WitnessValidator<T, U> checkInput(BiFunction<T, AtomMetadata, Boolean> check) {
+	private static <T extends Particle, U extends Particle> WitnessValidator<T, U> checkInput(BiFunction<T, WitnessData, Boolean> check) {
 		return (res, in, out, meta) -> {
 			switch (res) {
 				case POP_OUTPUT:

@@ -41,6 +41,6 @@ public interface WitnessValidator<T extends Particle, U extends Particle> {
 		CMAction result,
 		T inputParticle,
 		U outputParticle,
-		AtomMetadata metadata
+		WitnessData witnessData
 	);
 }

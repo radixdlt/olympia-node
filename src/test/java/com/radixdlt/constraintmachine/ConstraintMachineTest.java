@@ -69,10 +69,9 @@ public class ConstraintMachineTest {
 				particle0, Spin.UP,
 				particle1, Spin.UP,
 				particle2, Spin.NEUTRAL
-			))),
+			)), null, null),
 			ImmutableList.of(particle0, particle1, particle2),
-			0,
-			mock(AtomMetadata.class)
+			0
 		);
 
 		assertThat(errors).isEmpty();
