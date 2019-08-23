@@ -29,19 +29,19 @@ import java.util.stream.Collectors;
 /**
  * Top Level Class for the Radix Engine, a real-time, shardable, distributed state machine.
  */
-public final class RadixEngine<T extends CMAtom> {
+public final class RadixEngine<T extends RadixEngineAtom> {
 
-	private interface EngineAction<U extends CMAtom> {
+	private interface EngineAction<U extends RadixEngineAtom> {
 	}
 
-	private final class DeleteAtom<U extends CMAtom> implements EngineAction<U> {
+	private final class DeleteAtom<U extends RadixEngineAtom> implements EngineAction<U> {
 		private final U cmAtom;
 		DeleteAtom(U cmAtom) {
 			this.cmAtom = cmAtom;
 		}
 	}
 
-	private final class StoreAtom<U extends CMAtom> implements EngineAction<U> {
+	private final class StoreAtom<U extends RadixEngineAtom> implements EngineAction<U> {
 		private final U cmAtom;
 		private final Object computed;
 		private final AtomEventListener<U> listener;

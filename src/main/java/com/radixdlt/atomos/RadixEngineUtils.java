@@ -1,4 +1,4 @@
-package com.radixdlt.engine;
+package com.radixdlt.atomos;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -172,7 +172,7 @@ public final class RadixEngineUtils {
 		}
 	}
 
-	public static SimpleCMAtom toCMAtom(ImmutableAtom atom) throws CMAtomConversionException {
+	public static SimpleRadixEngineAtom toCMAtom(ImmutableAtom atom) throws CMAtomConversionException {
 		// TODO: Move to more appropriate place
 		final int computedSize;
 		try {
@@ -219,6 +219,6 @@ public final class RadixEngineUtils {
 			particlePushes,
 			ImmutableMap.copyOf(atom.getSignatures())
 		);
-		return new SimpleCMAtom(atom, cmInstruction);
+		return new SimpleRadixEngineAtom(atom, cmInstruction);
 	}
 }

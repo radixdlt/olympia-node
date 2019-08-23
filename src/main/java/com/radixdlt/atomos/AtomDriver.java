@@ -1,7 +1,6 @@
 package com.radixdlt.atomos;
 
 import com.radixdlt.atoms.ImmutableAtom;
-import com.radixdlt.engine.SimpleCMAtom;
 import com.radixdlt.universe.Universe;
 import java.util.Objects;
 import com.radixdlt.crypto.Hash;
@@ -40,7 +39,7 @@ public final class AtomDriver implements AtomOSDriver {
 			.setCompute(atom -> {
 				//TODO: Fix module loadup sequence so that massFunction doesn't need to be recreated everytime
 				final FungibleOrHashMassFunction massFunction = new FungibleOrHashMassFunction(universeSupplier.get());
-				return massFunction.getMass((SimpleCMAtom) atom);
+				return massFunction.getMass((SimpleRadixEngineAtom) atom);
 			});
 
 		// Atom has particles
@@ -55,7 +54,7 @@ public final class AtomDriver implements AtomOSDriver {
 
 		kernel.onAtom()
 			.require(cmAtom -> {
-				SimpleCMAtom simpleCMAtom = (SimpleCMAtom) cmAtom;
+				SimpleRadixEngineAtom simpleCMAtom = (SimpleRadixEngineAtom) cmAtom;
 				final boolean isMagic = Objects.equals(simpleCMAtom.getAtom().getMetaData().get("magic"), "0xdeadbeef");
 
 				// Atom has signatures
@@ -94,7 +93,7 @@ public final class AtomDriver implements AtomOSDriver {
 		// Atom timestamp constraints
 		kernel.onAtom()
 			.require(cmAtom -> {
-				String timestampString = ((SimpleCMAtom) cmAtom).getAtom().getMetaData().get(ImmutableAtom.METADATA_TIMESTAMP_KEY);
+				String timestampString = ((SimpleRadixEngineAtom) cmAtom).getAtom().getMetaData().get(ImmutableAtom.METADATA_TIMESTAMP_KEY);
 				if (timestampString == null) {
 					return Result.error("atom metadata does not contain '" + ImmutableAtom.METADATA_TIMESTAMP_KEY + "'");
 				}

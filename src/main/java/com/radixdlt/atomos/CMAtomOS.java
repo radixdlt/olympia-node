@@ -6,7 +6,6 @@ import com.radixdlt.common.Pair;
 import com.radixdlt.compute.AtomCompute;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.WitnessValidator;
-import com.radixdlt.engine.SimpleCMAtom;
 import com.radixdlt.store.CMStore;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -88,13 +87,13 @@ public final class CMAtomOS {
 	}
 
 
-	public Function<SimpleCMAtom, Optional<KernelProcedureError>> buildAtomCheck() {
+	public Function<SimpleRadixEngineAtom, Optional<KernelProcedureError>> buildAtomCheck() {
 		return atom -> kernelProcedures.stream()
 			.flatMap(p -> p.validate(atom))
 			.findFirst();
 	}
 
-	public AtomCompute<SimpleCMAtom> buildCompute() {
+	public AtomCompute<SimpleRadixEngineAtom> buildCompute() {
 		return atomKernelCompute != null ? a -> atomKernelCompute.compute(a) : null;
 	}
 
@@ -167,7 +166,7 @@ public final class CMAtomOS {
 			.apply(particle);
 	}
 
-	public Optional<KernelProcedureError> testAtom(SimpleCMAtom cmAtom) {
+	public Optional<KernelProcedureError> testAtom(SimpleRadixEngineAtom cmAtom) {
 		for (KernelConstraintProcedure procedure : kernelProcedures) {
 			Optional<KernelProcedureError> error = procedure.validate(cmAtom).findFirst();
 			if (error.isPresent()) {

@@ -3,7 +3,6 @@ package com.radixdlt.atomos;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atoms.Spin;
-import com.radixdlt.engine.SimpleCMAtom;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.Offset;
 import com.radixdlt.utils.UInt384;
@@ -18,7 +17,7 @@ public final class FungibleMassFunction {
 		this.universe = Objects.requireNonNull(universe);
 	}
 
-	public UInt384 getMass(SimpleCMAtom atom) {
+	public UInt384 getMass(SimpleRadixEngineAtom atom) {
 		Optional<RRI> nativeToken = this.universe.getGenesis().stream()
 			.flatMap(a -> a.particles(TransferrableTokensParticle.class, Spin.UP))
 			.map(TransferrableTokensParticle::getTokDefRef)

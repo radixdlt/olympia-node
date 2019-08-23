@@ -8,7 +8,7 @@ import java.util.Set;
 /**
  * Listener for atom events as they go through the Radix Engine pipeline.
  */
-public interface AtomEventListener<T extends CMAtom> {
+public interface AtomEventListener<T extends RadixEngineAtom> {
 	default void onCMSuccess(T cmAtom, Object computed) {
 	}
 

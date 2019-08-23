@@ -1,13 +1,14 @@
-package com.radixdlt.engine;
+package com.radixdlt.atomos;
 
 import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.constraintmachine.CMInstruction;
+import com.radixdlt.engine.RadixEngineAtom;
 
-public class SimpleCMAtom implements CMAtom {
+public final class SimpleRadixEngineAtom implements RadixEngineAtom {
 	private final CMInstruction	cmInstruction;
 	private final ImmutableAtom atom;
 
-	public SimpleCMAtom(ImmutableAtom atom, CMInstruction cmInstruction) {
+	public SimpleRadixEngineAtom(ImmutableAtom atom, CMInstruction cmInstruction) {
 		this.atom = atom;
 		this.cmInstruction = cmInstruction;
 	}

@@ -1,6 +1,6 @@
 package com.radixdlt.constraintmachine;
 
-import com.radixdlt.engine.CMAtom;
+import com.radixdlt.engine.RadixEngineAtom;
 import java.util.stream.Stream;
 
 /**
@@ -8,5 +8,5 @@ import java.util.stream.Stream;
  * the result of particle spin processing
  */
 public interface KernelConstraintProcedure {
-	Stream<KernelProcedureError> validate(CMAtom cmAtom);
+	Stream<KernelProcedureError> validate(RadixEngineAtom radixEngineAtom);
 }

@@ -1,6 +1,6 @@
 package com.radixdlt.atomos;
 
-import com.radixdlt.engine.CMAtom;
+import com.radixdlt.engine.RadixEngineAtom;
 
 /**
  * Exposes the interface which low-level atom output constraints can be built on top of.
@@ -13,17 +13,17 @@ public interface AtomOSKernel {
 
 		/**
 		 * Returns whether cmAtom passes this verification check.
-		 * @param cmAtom atom to validate
+		 * @param radixEngineAtom atom to validate
 		 * @return success or failure of verification
 		 */
-		Result check(CMAtom cmAtom);
+		Result check(RadixEngineAtom radixEngineAtom);
 	}
 
 	/**
 	 * Computes a value for a given atom
 	 */
 	interface AtomKernelCompute {
-		Object compute(CMAtom atom);
+		Object compute(RadixEngineAtom atom);
 	}
 
 	/**

@@ -11,7 +11,6 @@ import com.radixdlt.common.EUID;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.constraintmachine.CMParticle;
 import com.radixdlt.crypto.ECSignature;
-import com.radixdlt.engine.SimpleCMAtom;
 import com.radixdlt.universe.Universe;
 import java.util.Collections;
 import org.junit.BeforeClass;
@@ -42,7 +41,7 @@ public class AtomOSKernelConstraintScryptTest {
 		when(cmInstruction.getSignatures()).thenReturn(ImmutableMap.of(mock(EUID.class), mock(ECSignature.class)));
 		ImmutableAtom immutableAtom = mock(ImmutableAtom.class);
 		when(immutableAtom.getMetaData()).thenReturn(ImmutableMap.of("timestamp", "0"));
-		SimpleCMAtom cmAtom = new SimpleCMAtom(immutableAtom, cmInstruction);
+		SimpleRadixEngineAtom cmAtom = new SimpleRadixEngineAtom(immutableAtom, cmInstruction);
 
 		assertThat(cmAtomOS.testAtom(cmAtom)).isNotPresent();
 	}
@@ -54,7 +53,7 @@ public class AtomOSKernelConstraintScryptTest {
 		when(cmInstruction.getSignatures()).thenReturn(ImmutableMap.of(mock(EUID.class), mock(ECSignature.class)));
 		ImmutableAtom immutableAtom = mock(ImmutableAtom.class);
 		when(immutableAtom.getMetaData()).thenReturn(ImmutableMap.of("timestamp", "0"));
-		SimpleCMAtom cmAtom = new SimpleCMAtom(immutableAtom, cmInstruction);
+		SimpleRadixEngineAtom cmAtom = new SimpleRadixEngineAtom(immutableAtom, cmInstruction);
 
 		assertThat(cmAtomOS.testAtom(cmAtom))
 			.isPresent()
@@ -69,7 +68,7 @@ public class AtomOSKernelConstraintScryptTest {
 		when(cmInstruction.getSignatures()).thenReturn(ImmutableMap.of());
 		ImmutableAtom immutableAtom = mock(ImmutableAtom.class);
 		when(immutableAtom.getMetaData()).thenReturn(ImmutableMap.of());
-		SimpleCMAtom cmAtom = new SimpleCMAtom(immutableAtom, cmInstruction);
+		SimpleRadixEngineAtom cmAtom = new SimpleRadixEngineAtom(immutableAtom, cmInstruction);
 
 		assertThat(cmAtomOS.testAtom(cmAtom))
 			.isPresent()
@@ -84,7 +83,7 @@ public class AtomOSKernelConstraintScryptTest {
 		when(cmInstruction.getSignatures()).thenReturn(ImmutableMap.of(mock(EUID.class), mock(ECSignature.class)));
 		ImmutableAtom immutableAtom = mock(ImmutableAtom.class);
 		when(immutableAtom.getMetaData()).thenReturn(ImmutableMap.of());
-		SimpleCMAtom cmAtom = new SimpleCMAtom(immutableAtom, cmInstruction);
+		SimpleRadixEngineAtom cmAtom = new SimpleRadixEngineAtom(immutableAtom, cmInstruction);
 
 		assertThat(cmAtomOS.testAtom(cmAtom))
 			.isPresent()
@@ -99,7 +98,7 @@ public class AtomOSKernelConstraintScryptTest {
 		when(cmInstruction.getSignatures()).thenReturn(ImmutableMap.of(mock(EUID.class), mock(ECSignature.class)));
 		ImmutableAtom immutableAtom = mock(ImmutableAtom.class);
 		when(immutableAtom.getMetaData()).thenReturn(ImmutableMap.of("timestamp", "badinput"));
-		SimpleCMAtom cmAtom = new SimpleCMAtom(immutableAtom, cmInstruction);
+		SimpleRadixEngineAtom cmAtom = new SimpleRadixEngineAtom(immutableAtom, cmInstruction);
 
 		assertThat(cmAtomOS.testAtom(cmAtom))
 			.isPresent()
