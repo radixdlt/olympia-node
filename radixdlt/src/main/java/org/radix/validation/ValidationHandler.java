@@ -2,15 +2,16 @@ package org.radix.validation;
 
 import com.radixdlt.engine.RadixEngine;
 
+import com.radixdlt.engine.SimpleCMAtom;
 import org.radix.modules.Service;
 
 /**
  * Legacy validation handler to remain compatible with old usages in AtomSync and Conflict handlers until Dan's changes are merged
  */
 public class ValidationHandler extends Service {
-	private final RadixEngine radixEngine;
+	private final RadixEngine<SimpleCMAtom> radixEngine;
 
-	public ValidationHandler(RadixEngine radixEngine) {
+	public ValidationHandler(RadixEngine<SimpleCMAtom> radixEngine) {
 		this.radixEngine = radixEngine;
 	}
 
@@ -19,7 +20,7 @@ public class ValidationHandler extends Service {
 		return "Validation Handler";
 	}
 
-	public RadixEngine getRadixEngine() {
+	public RadixEngine<SimpleCMAtom> getRadixEngine() {
 		return radixEngine;
 	}
 
