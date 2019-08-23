@@ -2,7 +2,6 @@ package com.radixdlt.engine;
 
 import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.atoms.SpunParticle;
-import com.radixdlt.constraintmachine.CMAtom;
 import com.radixdlt.constraintmachine.CMError;
 import java.util.Set;
 

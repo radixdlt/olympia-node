@@ -1,6 +1,6 @@
 package com.radixdlt.compute;
 
-import com.radixdlt.constraintmachine.CMAtom;
+import com.radixdlt.engine.CMAtom;
 
 /**
  * Computation (rather than validation) done per atom.

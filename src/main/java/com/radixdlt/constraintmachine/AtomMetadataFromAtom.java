@@ -11,10 +11,10 @@ import java.util.Objects;
  * Helper for implementing {@link AtomMetadata} given an Atom of interest
  */
 public class AtomMetadataFromAtom implements AtomMetadata {
-	private final CMAtom atom;
+	private final CMInstruction atom;
 	private final Map<RadixAddress, Boolean> isSignedByCache = new HashMap<>();
 
-	public AtomMetadataFromAtom(CMAtom atom) {
+	public AtomMetadataFromAtom(CMInstruction atom) {
 		this.atom = Objects.requireNonNull(atom, "atom is required");
 	}
 

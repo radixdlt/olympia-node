@@ -1,5 +1,6 @@
 package com.radixdlt.constraintmachine;
 
+import com.radixdlt.engine.CMAtom;
 import java.util.Objects;
 
 /**

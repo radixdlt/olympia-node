@@ -39,12 +39,12 @@ public class ConstraintMachineTest {
 		IndexedParticle p = mock(IndexedParticle.class);
 		when(p.getDestinations()).thenReturn(Collections.singleton(EUID.ONE));
 
-		CMAtom atom = mock(CMAtom.class);
+		CMInstruction atom = mock(CMInstruction.class);
 		when(atom.getParticles()).thenReturn(ImmutableList.of(
 			new CMParticle(p, DataPointer.ofParticle(0, 0), Spin.NEUTRAL, 1)
 		));
 
-		assertThat(machine.validate(atom))
+		assertThat(machine.validate(() -> atom))
 			.contains(new CMError(DataPointer.ofParticle(0, 0), CMErrorCode.INTERNAL_SPIN_CONFLICT));
 	}
 

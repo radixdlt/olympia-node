@@ -5,7 +5,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Streams;
 import com.radixdlt.atoms.DataPointer;
 import com.radixdlt.atoms.ImmutableAtom;
-import com.radixdlt.constraintmachine.CMAtom;
+import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.CMErrorCode;
 import com.radixdlt.constraintmachine.CMParticle;
@@ -171,7 +171,7 @@ public final class RadixEngineUtils {
 		}
 	}
 
-	public static CMAtom toCMAtom(ImmutableAtom atom) throws CMAtomConversionException {
+	public static SimpleCMAtom toCMAtom(ImmutableAtom atom) throws CMAtomConversionException {
 		// TODO: Move to more appropriate place
 		final int computedSize;
 		try {
@@ -207,6 +207,8 @@ public final class RadixEngineUtils {
 					return new CMParticle(e.getKey(), sp.get(0).getDataPointer(), checkSpin, sp.size());
 				})
 				.collect(ImmutableList.toImmutableList());
-		return new CMAtom(atom, cmParticles);
+
+		final CMInstruction cmInstruction =  new CMInstruction(atom, cmParticles);
+		return new SimpleCMAtom(cmInstruction);
 	}
 }

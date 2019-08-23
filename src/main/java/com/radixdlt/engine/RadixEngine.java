@@ -6,7 +6,7 @@ import com.radixdlt.atoms.Spin;
 import com.radixdlt.atoms.SpunParticle;
 import com.radixdlt.common.Pair;
 import com.radixdlt.compute.AtomCompute;
-import com.radixdlt.constraintmachine.CMAtom;
+import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.store.CMStore;
@@ -134,10 +134,11 @@ public final class RadixEngine {
 
 	private void stateCheckAndStore(StoreAtom storeAtom) {
 		final CMAtom cmAtom = storeAtom.cmAtom;
+		final CMInstruction cmInstruction = cmAtom.getCMInstruction();
 		final Object computed = storeAtom.computed;
 
 		// TODO: Optimize these collectors out
-		Map<TransitionCheckResult, List<Pair<SpunParticle, TransitionCheckResult>>> spinCheckResults = cmAtom.getParticles()
+		Map<TransitionCheckResult, List<Pair<SpunParticle, TransitionCheckResult>>> spinCheckResults = cmInstruction.getParticles()
 			.stream()
 			.map(cmParticle -> {
 				// First spun is the only one we need to check

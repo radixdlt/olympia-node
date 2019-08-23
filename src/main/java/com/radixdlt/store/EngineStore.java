@@ -2,7 +2,7 @@ package com.radixdlt.store;
 
 import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.atoms.SpunParticle;
-import com.radixdlt.constraintmachine.CMAtom;
+import com.radixdlt.engine.CMAtom;
 import java.util.function.Consumer;
 
 /**

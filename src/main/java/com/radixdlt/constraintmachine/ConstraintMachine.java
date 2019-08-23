@@ -6,6 +6,7 @@ import com.radixdlt.atoms.Spin;
 import com.radixdlt.atoms.SpunParticle;
 import com.radixdlt.constraintmachine.TransitionProcedure.ProcedureResult;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
+import com.radixdlt.engine.CMAtom;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.SpinStateMachine;
 import com.radixdlt.store.SpinStateTransitionValidator;
@@ -287,7 +288,7 @@ public final class ConstraintMachine {
 	 */
 	public Optional<CMError> validate(CMAtom cmAtom) {
 		// "Segfaults" or particles which should not exist
-		final Optional<CMError> unknownParticleError = cmAtom.getParticles().stream()
+		final Optional<CMError> unknownParticleError = cmAtom.getCMInstruction().getParticles().stream()
 			.filter(p -> !localEngineStore.getSpin(p.getParticle()).isPresent())
 			.map(p -> new CMError(p.getDataPointer(), CMErrorCode.UNKNOWN_PARTICLE))
 			.findFirst();
@@ -298,7 +299,7 @@ public final class ConstraintMachine {
 
 		// Virtual particle state checks
 		// TODO: Is this better suited at the state check pipeline?
-		final Optional<CMError> virtualParticleError = cmAtom.getParticles().stream()
+		final Optional<CMError> virtualParticleError = cmAtom.getCMInstruction().getParticles().stream()
 			.filter(p -> {
 				Particle particle = p.getParticle();
 				Spin nextSpin = p.getNextSpin();
@@ -317,6 +318,7 @@ public final class ConstraintMachine {
 		}
 
 		// "Kernel" checks
+		// TODO: move out of CM
 		final Optional<CMError> kernelErr = kernelConstraintProcedures.stream()
 			.flatMap(kernelProcedure -> kernelProcedure.validate(cmAtom))
 			.map(CMErrors::fromKernelProcedureError)
@@ -327,14 +329,19 @@ public final class ConstraintMachine {
 		}
 
 		// "Application" checks
-		final AtomMetadata metadata = new AtomMetadataFromAtom(cmAtom);
-		final Map<Particle, Spin> initialSpins = cmAtom.getParticles().stream().collect(Collectors.toMap(
+		final AtomMetadata metadata = new AtomMetadataFromAtom(cmAtom.getCMInstruction());
+		final Map<Particle, Spin> initialSpins = cmAtom.getCMInstruction().getParticles().stream().collect(Collectors.toMap(
 			CMParticle::getParticle,
 			CMParticle::getCheckSpin
 		));
 		final CMValidationState validationState = new CMValidationState(initialSpins);
-		for (int i = 0; i < cmAtom.getParticlePushes().size(); i++) {
-			final Optional<CMError> error = this.validateParticleGroup(validationState, cmAtom.getParticlePushes().get(i), i, metadata);
+		for (int i = 0; i < cmAtom.getCMInstruction().getParticlePushes().size(); i++) {
+			final Optional<CMError> error = this.validateParticleGroup(
+				validationState,
+				cmAtom.getCMInstruction().getParticlePushes().get(i),
+				i,
+				metadata
+			);
 			if (error.isPresent()) {
 				return error;
 			}

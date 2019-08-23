@@ -16,7 +16,7 @@ import java.util.Set;
  * An atom processed by a constraint machine with write destinations
  * TODO: Refactor and Remove ImmutableAtom. Currently too deeply embedded to be able to cleanly remove it.
  */
-public final class CMAtom {
+public final class CMInstruction {
 	public static final String METADATA_TIMESTAMP_KEY = "timestamp";
 	public static final String METADATA_POW_NONCE_KEY = "powNonce";
 
@@ -34,7 +34,7 @@ public final class CMAtom {
 	private final ImmutableSet<EUID> destinations;
 	private final ImmutableSet<Long> shards;
 
-	public CMAtom(
+	public CMInstruction(
 		ImmutableAtom atom,
 		ImmutableList<CMParticle> cmParticles
 	) {

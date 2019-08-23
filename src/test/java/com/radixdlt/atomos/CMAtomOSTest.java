@@ -3,7 +3,7 @@ package com.radixdlt.atomos;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.atoms.DataPointer;
 import com.radixdlt.atoms.Spin;
-import com.radixdlt.constraintmachine.CMAtom;
+import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.constraintmachine.CMParticle;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
@@ -46,12 +46,12 @@ public class CMAtomOSTest {
 	public void when_a_particle_which_is_not_registered_via_os_is_validated__it_should_cause_errors() {
 		CMAtomOS os = new CMAtomOS();
 		ConstraintMachine machine = os.buildMachine().getFirst();
-		CMAtom atom = mock(CMAtom.class);
+		CMInstruction atom = mock(CMInstruction.class);
 		TestParticle testParticle = new TestParticle();
 		when(atom.getParticles()).thenReturn(ImmutableList.of(
 			new CMParticle(testParticle, DataPointer.ofParticle(0, 0), Spin.NEUTRAL, 1)
 		));
-		assertThat(machine.validate(atom))
+		assertThat(machine.validate(() -> atom))
 			.isPresent()
 			.matches(e -> e.get().getErrorCode() == CMErrorCode.UNKNOWN_PARTICLE);
 	}

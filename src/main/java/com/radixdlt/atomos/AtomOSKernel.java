@@ -1,6 +1,6 @@
 package com.radixdlt.atomos;
 
-import com.radixdlt.constraintmachine.CMAtom;
+import com.radixdlt.engine.CMAtom;
 
 /**
  * Exposes the interface which low-level atom output constraints can be built on top of.
