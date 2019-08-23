@@ -3,9 +3,7 @@ package com.radixdlt.constraintmachine;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.atoms.Particle;
-import com.radixdlt.atoms.SpunParticle;
 import com.radixdlt.common.EUID;
 import com.radixdlt.crypto.ECSignature;
 import com.radixdlt.crypto.Hash;
@@ -23,15 +21,15 @@ public final class CMInstruction {
 	private final ImmutableSet<Long> shards;
 
 	public CMInstruction(
-		ImmutableAtom atom,
-		ImmutableList<CMParticle> cmParticles
+		Hash atomHash,
+		ImmutableList<CMParticle> cmParticles,
+		ImmutableList<ImmutableList<Particle>> particlePushes,
+		ImmutableMap<EUID, ECSignature> signatures
 	) {
-		this.atomHash = atom.getHash();
+		this.atomHash = atomHash;
 		this.cmParticles = cmParticles;
-		this.particlePushes = atom.particleGroups()
-			.map(pg -> pg.spunParticles().map(SpunParticle::getParticle).collect(ImmutableList.toImmutableList()))
-			.collect(ImmutableList.toImmutableList());
-		this.signatures = ImmutableMap.copyOf(atom.getSignatures());
+		this.particlePushes = particlePushes;
+		this.signatures = signatures;
 		this.destinations = cmParticles.stream()
 			.map(CMParticle::getParticle)
 			.map(Particle::getDestinations)
