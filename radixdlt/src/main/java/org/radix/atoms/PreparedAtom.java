@@ -1,7 +1,7 @@
 package org.radix.atoms;
 
-import com.radixdlt.engine.CMAtom;
-import com.radixdlt.engine.SimpleCMAtom;
+import com.radixdlt.engine.RadixEngineAtom;
+import com.radixdlt.atomos.SimpleRadixEngineAtom;
 import com.radixdlt.utils.UInt384;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -45,8 +45,8 @@ public class PreparedAtom {
 
 	private Atom atom;
 
-	public PreparedAtom(CMAtom cmAtom, UInt384 mass) throws IOException {
-		this.atom = (Atom) ((SimpleCMAtom) cmAtom).getAtom();
+	public PreparedAtom(SimpleRadixEngineAtom radixEngineAtom, UInt384 mass) throws IOException {
+		this.atom = (Atom) radixEngineAtom.getAtom();
 		this.mass = mass;
 		this.atomID = atom.getAID();
 
@@ -61,7 +61,7 @@ public class PreparedAtom {
 		this.atomBytes = Modules.get(Serialization.class).toDson(atom, DsonOutput.Output.PERSIST);
 
 		this.uniqueIndexables = new HashMap<>();
-		for (CMParticle cmParticle : cmAtom.getCMInstruction().getParticles()) {
+		for (CMParticle cmParticle : radixEngineAtom.getCMInstruction().getParticles()) {
 			EUID particleId = cmParticle.getParticle().getHID();
 			cmParticle.nextSpins().forEach(s -> {
 				final IDType idType;
@@ -85,13 +85,13 @@ public class PreparedAtom {
 		this.shards = new HashSet<>();
 		this.duplicateIndexables = new HashMap<>();
 
-		for (EUID euid : cmAtom.getCMInstruction().getDestinations()) {
+		for (EUID euid : radixEngineAtom.getCMInstruction().getDestinations()) {
 			this.duplicateIndexables.put(euid.getLow(), IDType.toByteArray(IDType.DESTINATION, euid));
 			this.duplicateIndexables.put(euid.getShard(), IDType.toByteArray(IDType.SHARD, euid.getShard()));
 			this.shards.add(euid.getShard());
 		}
 
-		cmAtom.getCMInstruction().getParticles().forEach(cmParticle -> {
+		radixEngineAtom.getCMInstruction().getParticles().forEach(cmParticle -> {
 			// TODO: Remove
 			// This does not handle nested particle classes.
 			// If that ever becomes a problem, this is the place to fix it.

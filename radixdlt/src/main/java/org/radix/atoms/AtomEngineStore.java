@@ -1,7 +1,7 @@
 package org.radix.atoms;
 
 import com.radixdlt.atoms.ImmutableAtom;
-import com.radixdlt.engine.SimpleCMAtom;
+import com.radixdlt.atomos.SimpleRadixEngineAtom;
 import com.radixdlt.utils.UInt384;
 import java.util.Optional;
 import java.util.Set;
@@ -23,7 +23,7 @@ import org.radix.shards.ShardSpace;
 /**
  * A state store that uses an {@link AtomStore} to provide relevant shard state
  */
-public class AtomEngineStore implements EngineStore<SimpleCMAtom> {
+public class AtomEngineStore implements EngineStore<SimpleRadixEngineAtom> {
 	private final Supplier<AtomStore> atomStoreSupplier;
 	private final Supplier<ShardSpace> shardSpaceSupplier;
 
@@ -66,7 +66,7 @@ public class AtomEngineStore implements EngineStore<SimpleCMAtom> {
 	}
 
 	@Override
-	public void storeAtom(SimpleCMAtom cmAtom, Object computed) {
+	public void storeAtom(SimpleRadixEngineAtom cmAtom, Object computed) {
 		try {
 			if (computed == null) {
 				throw new IllegalStateException("mass was not computed");
@@ -81,7 +81,7 @@ public class AtomEngineStore implements EngineStore<SimpleCMAtom> {
 	}
 
 	@Override
-	public void deleteAtom(SimpleCMAtom cmAtom) {
+	public void deleteAtom(SimpleRadixEngineAtom cmAtom) {
 		try {
 			atomStoreSupplier.get().deleteAtoms((Atom) cmAtom.getAtom());
 		} catch (DatabaseException dex) {
