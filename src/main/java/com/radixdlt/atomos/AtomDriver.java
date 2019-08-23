@@ -35,13 +35,6 @@ public final class AtomDriver implements AtomOSDriver<SimpleRadixEngineAtom> {
 
 	@Override
 	public void main(AtomOSKernel<SimpleRadixEngineAtom> kernel) {
-		kernel.onAtom()
-			.setCompute(atom -> {
-				//TODO: Fix module loadup sequence so that massFunction doesn't need to be recreated everytime
-				final FungibleOrHashMassFunction massFunction = new FungibleOrHashMassFunction(universeSupplier.get());
-				return massFunction.getMass(atom);
-			});
-
 		// Atom has particles
 		kernel.onAtom()
 			.require(cmAtom -> {
@@ -55,11 +48,6 @@ public final class AtomDriver implements AtomOSDriver<SimpleRadixEngineAtom> {
 		kernel.onAtom()
 			.require(cmAtom -> {
 				final boolean isMagic = Objects.equals(cmAtom.getAtom().getMetaData().get("magic"), "0xdeadbeef");
-
-				// Atom has signatures
-				if (cmAtom.getCMInstruction().getSignatures().isEmpty() && !isMagic) {
-					return Result.error("atom has no signatures");
-				}
 
 				// Atom has fee
 				if (!skipAtomFeeCheck) {

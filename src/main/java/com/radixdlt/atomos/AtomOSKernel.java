@@ -20,18 +20,10 @@ public interface AtomOSKernel<T extends RadixEngineAtom> {
 	}
 
 	/**
-	 * Computes a value for a given atom
-	 */
-	interface AtomKernelCompute<T extends RadixEngineAtom> {
-		Object compute(T atom);
-	}
-
-	/**
 	 * Callback interface for creating verification requirements and computation.
 	 */
 	interface AtomKernel<T extends RadixEngineAtom> {
 		void require(AtomKernelConstraintCheck<T> constraint);
-		void setCompute(AtomKernelCompute<T> compute);
 	}
 
 	/**

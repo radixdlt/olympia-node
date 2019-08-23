@@ -5,7 +5,6 @@ import com.radixdlt.atoms.Particle;
 import com.radixdlt.atoms.Spin;
 import com.radixdlt.atoms.SpunParticle;
 import com.radixdlt.common.Pair;
-import com.radixdlt.compute.AtomCompute;
 import com.radixdlt.constraintmachine.CMErrors;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.constraintmachine.CMError;
@@ -22,7 +21,7 @@ import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -43,12 +42,10 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 
 	private final class StoreAtom<U extends RadixEngineAtom> implements EngineAction<U> {
 		private final U cmAtom;
-		private final Object computed;
 		private final AtomEventListener<U> listener;
 
-		StoreAtom(U cmAtom, Object computed, AtomEventListener<U> listener) {
+		StoreAtom(U cmAtom, AtomEventListener<U> listener) {
 			this.cmAtom = cmAtom;
-			this.computed = computed;
 			this.listener = listener;
 		}
 	}
@@ -57,22 +54,19 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 	private final CMStore virtualizedCMStore;
 
 	private final Function<T, Optional<KernelProcedureError>> atomCheck;
-	private final AtomCompute<T> compute;
 	private final EngineStore<T> engineStore;
 	private final CopyOnWriteArrayList<AtomEventListener<T>> atomEventListeners = new CopyOnWriteArrayList<>();
-	private final CopyOnWriteArrayList<BiConsumer<T, Object>> cmSuccessHooks = new CopyOnWriteArrayList<>();
+	private final CopyOnWriteArrayList<Consumer<T>> cmSuccessHooks = new CopyOnWriteArrayList<>();
 	private	final BlockingQueue<EngineAction<T>> commitQueue = new LinkedBlockingQueue<>();
 	private final Thread stateUpdateEngine;
 
 	public RadixEngine(
 		ConstraintMachine constraintMachine,
 		Function<T, Optional<KernelProcedureError>> atomCheck,
-		AtomCompute<T> compute,
 		EngineStore<T> engineStore
 	) {
 		this.constraintMachine = constraintMachine;
 		this.atomCheck = atomCheck;
-		this.compute = compute;
 		this.virtualizedCMStore = constraintMachine.getVirtualStore().apply(engineStore);
 		this.engineStore = engineStore;
 		this.stateUpdateEngine = new Thread(this::run);
@@ -108,7 +102,7 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 		stateUpdateEngine.start();
 	}
 
-	public void addCMSuccessHook(BiConsumer<T, Object> hook) {
+	public void addCMSuccessHook(Consumer<T> hook) {
 		this.cmSuccessHooks.add(hook);
 	}
 
@@ -135,12 +129,11 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 
 		final Optional<CMError> error = constraintMachine.validate(cmAtom.getCMInstruction());
 		if (!error.isPresent()) {
-			Object computed = compute.compute(cmAtom);
-			this.cmSuccessHooks.forEach(hook -> hook.accept(cmAtom, computed));
-			this.commitQueue.add(new StoreAtom<>(cmAtom, computed, atomEventListener));
+			this.cmSuccessHooks.forEach(hook -> hook.accept(cmAtom));
+			this.commitQueue.add(new StoreAtom<>(cmAtom, atomEventListener));
 
-			atomEventListener.onCMSuccess(cmAtom, computed);
-			this.atomEventListeners.forEach(acceptor -> acceptor.onCMSuccess(cmAtom, computed));
+			atomEventListener.onCMSuccess(cmAtom);
+			this.atomEventListeners.forEach(acceptor -> acceptor.onCMSuccess(cmAtom));
 		} else {
 			atomEventListener.onCMError(cmAtom, ImmutableSet.of(error.get()));
 			this.atomEventListeners.forEach(acceptor -> acceptor.onCMError(cmAtom, ImmutableSet.of(error.get())));
@@ -150,7 +143,6 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 	private void stateCheckAndStore(StoreAtom<T> storeAtom) {
 		final T cmAtom = storeAtom.cmAtom;
 		final CMInstruction cmInstruction = cmAtom.getCMInstruction();
-		final Object computed = storeAtom.computed;
 
 		// TODO: Optimize these collectors out
 		Map<TransitionCheckResult, List<Pair<SpunParticle, TransitionCheckResult>>> spinCheckResults = cmInstruction.getParticles()
@@ -207,9 +199,9 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 			return;
 		}
 
-		engineStore.storeAtom(cmAtom, computed);
+		engineStore.storeAtom(cmAtom);
 
-		storeAtom.listener.onStateStore(cmAtom, computed);
-		atomEventListeners.forEach(listener -> listener.onStateStore(cmAtom, computed));
+		storeAtom.listener.onStateStore(cmAtom);
+		atomEventListeners.forEach(listener -> listener.onStateStore(cmAtom));
 	}
 }

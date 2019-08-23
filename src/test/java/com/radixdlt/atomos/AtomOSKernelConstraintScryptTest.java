@@ -62,21 +62,6 @@ public class AtomOSKernelConstraintScryptTest {
 	}
 
 	@Test
-	public void when_validating_atom_without_signatures__result_has_error() throws Exception {
-		CMInstruction cmInstruction = mock(CMInstruction.class);
-		when(cmInstruction.getParticles()).thenReturn(ImmutableList.of(mock(CMParticle.class)));
-		when(cmInstruction.getSignatures()).thenReturn(ImmutableMap.of());
-		ImmutableAtom immutableAtom = mock(ImmutableAtom.class);
-		when(immutableAtom.getMetaData()).thenReturn(ImmutableMap.of());
-		SimpleRadixEngineAtom cmAtom = new SimpleRadixEngineAtom(immutableAtom, cmInstruction);
-
-		assertThat(cmAtomOS.testAtom(cmAtom))
-			.isPresent()
-			.get()
-			.matches(p -> p.getErrMsg().contains("signatures"));
-	}
-
-	@Test
 	public void when_validating_atom_without_metadata__result_has_error() throws Exception {
 		CMInstruction cmInstruction = mock(CMInstruction.class);
 		when(cmInstruction.getParticles()).thenReturn(ImmutableList.of(mock(CMParticle.class)));

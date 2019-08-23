@@ -18,7 +18,7 @@ public interface EngineStore<T extends RadixEngineAtom> extends CMStore {
 	/**
 	 * Stores the atom into this CMStore
 	 */
-	void storeAtom(T atom, Object computed);
+	void storeAtom(T atom);
 
 	/**
 	 * Deletes an atom and all it's dependencies

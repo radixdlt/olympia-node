@@ -1,9 +1,7 @@
 package com.radixdlt.atomos;
 
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.atomos.AtomOSKernel.AtomKernelCompute;
 import com.radixdlt.common.Pair;
-import com.radixdlt.compute.AtomCompute;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.WitnessValidator;
 import com.radixdlt.store.CMStore;
@@ -36,7 +34,6 @@ public final class CMAtomOS {
 	);
 
 	private final List<KernelConstraintProcedure> kernelProcedures = new ArrayList<>();
-	private AtomKernelCompute atomKernelCompute;
 	private final Map<Class<? extends Particle>, ParticleDefinition<Particle>> particleDefinitions = new HashMap<>();
 	private final ImmutableMap.Builder<Pair<Class<? extends Particle>, Class<? extends Particle>>, TransitionProcedure<Particle, Particle>>
 		proceduresBuilder = new ImmutableMap.Builder<>();
@@ -69,16 +66,6 @@ public final class CMAtomOS {
 							(cmAtom) -> constraint.check(cmAtom).errorStream().map(errMsg -> KernelProcedureError.of(cmAtom, errMsg))
 						);
 					}
-
-					@Override
-					public void setCompute(AtomKernelCompute compute) {
-
-						if (CMAtomOS.this.atomKernelCompute != null) {
-							throw new IllegalStateException("Compute already set.");
-						}
-
-						CMAtomOS.this.atomKernelCompute = compute;
-					}
 				};
 			}
 		});
@@ -89,10 +76,6 @@ public final class CMAtomOS {
 		return atom -> kernelProcedures.stream()
 			.flatMap(p -> p.validate(atom))
 			.findFirst();
-	}
-
-	public AtomCompute<SimpleRadixEngineAtom> buildCompute() {
-		return atomKernelCompute != null ? a -> atomKernelCompute.compute(a) : null;
 	}
 
 	/**

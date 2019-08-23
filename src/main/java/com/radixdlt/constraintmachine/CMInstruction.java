@@ -10,7 +10,7 @@ import com.radixdlt.crypto.Hash;
 import java.util.Set;
 
 /**
- * An atom processed by a constraint machine with write destinations
+ * An instruction to be validated by a Constraint Machine
  */
 public final class CMInstruction {
 	private final ImmutableSet<EUID> destinations;
