@@ -49,7 +49,7 @@ public class CMAtomOSTest {
 		CMInstruction instruction = mock(CMInstruction.class);
 		TestParticle testParticle = new TestParticle();
 		when(instruction.getParticles()).thenReturn(ImmutableList.of(
-			new CMParticle(testParticle, DataPointer.ofParticle(0, 0), Spin.NEUTRAL, 1)
+			new CMParticle(testParticle, DataPointer.ofParticle(0, 0), Spin.NEUTRAL)
 		));
 		assertThat(machine.validate(instruction))
 			.isPresent()

@@ -41,7 +41,7 @@ public class ConstraintMachineTest {
 
 		CMInstruction instruction = mock(CMInstruction.class);
 		when(instruction.getParticles()).thenReturn(ImmutableList.of(
-			new CMParticle(p, DataPointer.ofParticle(0, 0), Spin.NEUTRAL, 1)
+			new CMParticle(p, DataPointer.ofParticle(0, 0), Spin.NEUTRAL)
 		));
 
 		assertThat(machine.validate(instruction))

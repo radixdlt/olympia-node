@@ -205,7 +205,7 @@ public final class RadixEngineUtils {
 				.map(e -> {
 					ImmutableList<IndexedSpunParticle> sp = e.getValue();
 					Spin checkSpin = SpinStateMachine.prev(sp.get(0).getSpunParticle().getSpin());
-					return new CMParticle(e.getKey(), sp.get(0).getDataPointer(), checkSpin, sp.size());
+					return new CMParticle(e.getKey(), sp.get(0).getDataPointer(), checkSpin);
 				})
 				.collect(ImmutableList.toImmutableList());
 		final ImmutableList<ImmutableList<Particle>> particlePushes =

@@ -13,6 +13,7 @@ import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
+import com.radixdlt.store.SpinStateMachine;
 import com.radixdlt.store.SpinStateTransitionValidator;
 import com.radixdlt.store.SpinStateTransitionValidator.TransitionCheckResult;
 import java.util.List;
@@ -147,7 +148,7 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 			.stream()
 			.map(cmParticle -> {
 				// First spun is the only one we need to check
-				final Spin nextSpin = cmParticle.getNextSpin();
+				final Spin nextSpin = SpinStateMachine.next(cmParticle.getCheckSpin());
 				final Particle particle = cmParticle.getParticle();
 				final TransitionCheckResult spinCheck = SpinStateTransitionValidator.checkParticleTransition(
 					particle,

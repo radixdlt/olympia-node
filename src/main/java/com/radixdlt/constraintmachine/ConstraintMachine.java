@@ -303,12 +303,12 @@ public final class ConstraintMachine {
 				return Optional.of(new CMError(cmParticle.getDataPointer(), CMErrorCode.UNKNOWN_PARTICLE));
 			}
 
-			Spin nextSpin = cmParticle.getNextSpin();
+			Spin checkSpin = cmParticle.getCheckSpin();
 			Spin curSpin = initSpin.get();
 
 			// Virtual particle state checks
 			// TODO: Is this better suited at the state check pipeline?
-			if (!SpinStateMachine.isAfter(nextSpin, curSpin)) {
+			if (SpinStateMachine.isBefore(checkSpin, curSpin)) {
 				return Optional.of(new CMError(cmParticle.getDataPointer(), CMErrorCode.INTERNAL_SPIN_CONFLICT));
 			}
 		}
