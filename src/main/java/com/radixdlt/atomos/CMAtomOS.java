@@ -5,11 +5,8 @@ import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.WitnessValidator;
 import com.radixdlt.store.CMStore;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
@@ -33,7 +30,6 @@ public final class CMAtomOS {
 		rri -> ((RRIParticle) rri).getRri()
 	);
 
-	private final List<KernelConstraintProcedure> kernelProcedures = new ArrayList<>();
 	private final Map<Class<? extends Particle>, ParticleDefinition<Particle>> particleDefinitions = new HashMap<>();
 	private final ImmutableMap.Builder<Pair<Class<? extends Particle>, Class<? extends Particle>>, TransitionProcedure<Particle, Particle>>
 		proceduresBuilder = new ImmutableMap.Builder<>();
@@ -53,29 +49,6 @@ public final class CMAtomOS {
 		this.particleDefinitions.putAll(scryptParticleDefinitions);
 		this.proceduresBuilder.putAll(constraintScryptEnv.getScryptTransitionProcedures());
 		this.witnessesBuilder.putAll(constraintScryptEnv.getScryptWitnessValidators());
-	}
-
-	public void loadKernelConstraintScrypt(AtomOSDriver driverScrypt) {
-		driverScrypt.main(new AtomOSKernel() {
-			@Override
-			public AtomKernel onAtom() {
-				return new AtomKernel() {
-					@Override
-					public void require(AtomKernelConstraintCheck constraint) {
-						CMAtomOS.this.kernelProcedures.add(
-							(cmAtom) -> constraint.check(cmAtom).errorStream().map(errMsg -> KernelProcedureError.of(cmAtom, errMsg))
-						);
-					}
-				};
-			}
-		});
-	}
-
-
-	public Function<SimpleRadixEngineAtom, Optional<KernelProcedureError>> buildAtomCheck() {
-		return atom -> kernelProcedures.stream()
-			.flatMap(p -> p.validate(atom))
-			.findFirst();
 	}
 
 	/**
@@ -145,16 +118,5 @@ public final class CMAtomOS {
 		return particleDefinitions.get(particle.getClass())
 			.getStaticValidation()
 			.apply(particle);
-	}
-
-	public Optional<KernelProcedureError> testAtom(SimpleRadixEngineAtom cmAtom) {
-		for (KernelConstraintProcedure procedure : kernelProcedures) {
-			Optional<KernelProcedureError> error = procedure.validate(cmAtom).findFirst();
-			if (error.isPresent()) {
-				return error;
-			}
-		}
-
-		return Optional.empty();
 	}
 }

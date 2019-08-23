@@ -13,29 +13,20 @@ import com.radixdlt.constraintmachine.CMParticle;
 import com.radixdlt.crypto.ECSignature;
 import com.radixdlt.universe.Universe;
 import java.util.Collections;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class AtomOSKernelConstraintScryptTest {
-	private static CMAtomOS cmAtomOS;
-
-	@BeforeClass
-	public static void initializeConstraintScrypt() {
+public class AtomCheckHookTest {
+	@Test
+	public void when_validating_atom_with_particles__result_has_no_error() {
 		Universe universe = mock(Universe.class);
 		when(universe.getGenesis()).thenReturn(Collections.emptyList());
-
-		cmAtomOS = new CMAtomOS();
-		AtomDriver scrypt = new AtomDriver(
+		AtomCheckHook atomCheckHook = new AtomCheckHook(
 			() -> universe,
 			() -> 0,
 			true,
 			30
 		);
-		cmAtomOS.loadKernelConstraintScrypt(scrypt);
-	}
 
-	@Test
-	public void when_validating_atom_with_particles__result_has_no_error() throws Exception {
 		CMInstruction cmInstruction = mock(CMInstruction.class);
 		when(cmInstruction.getParticles()).thenReturn(ImmutableList.of(mock(CMParticle.class)));
 		when(cmInstruction.getSignatures()).thenReturn(ImmutableMap.of(mock(EUID.class), mock(ECSignature.class)));
@@ -43,11 +34,20 @@ public class AtomOSKernelConstraintScryptTest {
 		when(immutableAtom.getMetaData()).thenReturn(ImmutableMap.of("timestamp", "0"));
 		SimpleRadixEngineAtom cmAtom = new SimpleRadixEngineAtom(immutableAtom, cmInstruction);
 
-		assertThat(cmAtomOS.testAtom(cmAtom)).isNotPresent();
+		assertThat(atomCheckHook.hook(cmAtom).isSuccess()).isTrue();
 	}
 
 	@Test
-	public void when_validating_atom_without_particles__result_has_error() throws Exception {
+	public void when_validating_atom_without_particles__result_has_error() {
+		Universe universe = mock(Universe.class);
+		when(universe.getGenesis()).thenReturn(Collections.emptyList());
+		AtomCheckHook atomCheckHook = new AtomCheckHook(
+			() -> universe,
+			() -> 0,
+			true,
+			30
+		);
+
 		CMInstruction cmInstruction = mock(CMInstruction.class);
 		when(cmInstruction.getParticles()).thenReturn(ImmutableList.of());
 		when(cmInstruction.getSignatures()).thenReturn(ImmutableMap.of(mock(EUID.class), mock(ECSignature.class)));
@@ -55,14 +55,21 @@ public class AtomOSKernelConstraintScryptTest {
 		when(immutableAtom.getMetaData()).thenReturn(ImmutableMap.of("timestamp", "0"));
 		SimpleRadixEngineAtom cmAtom = new SimpleRadixEngineAtom(immutableAtom, cmInstruction);
 
-		assertThat(cmAtomOS.testAtom(cmAtom))
-			.isPresent()
-			.get()
-			.matches(p -> p.getErrMsg().contains("particles"));
+		assertThat(atomCheckHook.hook(cmAtom).getErrorMessage())
+			.contains("particles");
 	}
 
 	@Test
 	public void when_validating_atom_without_metadata__result_has_error() throws Exception {
+		Universe universe = mock(Universe.class);
+		when(universe.getGenesis()).thenReturn(Collections.emptyList());
+		AtomCheckHook atomCheckHook = new AtomCheckHook(
+			() -> universe,
+			() -> 0,
+			true,
+			30
+		);
+
 		CMInstruction cmInstruction = mock(CMInstruction.class);
 		when(cmInstruction.getParticles()).thenReturn(ImmutableList.of(mock(CMParticle.class)));
 		when(cmInstruction.getSignatures()).thenReturn(ImmutableMap.of(mock(EUID.class), mock(ECSignature.class)));
@@ -70,14 +77,21 @@ public class AtomOSKernelConstraintScryptTest {
 		when(immutableAtom.getMetaData()).thenReturn(ImmutableMap.of());
 		SimpleRadixEngineAtom cmAtom = new SimpleRadixEngineAtom(immutableAtom, cmInstruction);
 
-		assertThat(cmAtomOS.testAtom(cmAtom))
-			.isPresent()
-			.get()
-			.matches(p -> p.getErrMsg().contains("metadata does not contain"));
+		assertThat(atomCheckHook.hook(cmAtom).getErrorMessage())
+			.contains("metadata does not contain");
 	}
 
 	@Test
 	public void when_validating_atom_with_bad_timestamp__result_has_error() throws Exception {
+		Universe universe = mock(Universe.class);
+		when(universe.getGenesis()).thenReturn(Collections.emptyList());
+		AtomCheckHook atomCheckHook = new AtomCheckHook(
+			() -> universe,
+			() -> 0,
+			true,
+			30
+		);
+
 		CMInstruction cmInstruction = mock(CMInstruction.class);
 		when(cmInstruction.getParticles()).thenReturn(ImmutableList.of(mock(CMParticle.class)));
 		when(cmInstruction.getSignatures()).thenReturn(ImmutableMap.of(mock(EUID.class), mock(ECSignature.class)));
@@ -85,9 +99,7 @@ public class AtomOSKernelConstraintScryptTest {
 		when(immutableAtom.getMetaData()).thenReturn(ImmutableMap.of("timestamp", "badinput"));
 		SimpleRadixEngineAtom cmAtom = new SimpleRadixEngineAtom(immutableAtom, cmInstruction);
 
-		assertThat(cmAtomOS.testAtom(cmAtom))
-			.isPresent()
-			.get()
-			.matches(p -> p.getErrMsg().contains("invalid timestamp"));
+		assertThat(atomCheckHook.hook(cmAtom).getErrorMessage())
+			.contains("invalid timestamp");
 	}
 }

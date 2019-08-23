@@ -1,15 +1,16 @@
 package com.radixdlt.engine;
 
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.atomos.Result;
+import com.radixdlt.atoms.DataPointer;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.atoms.Spin;
 import com.radixdlt.atoms.SpunParticle;
 import com.radixdlt.common.Pair;
-import com.radixdlt.constraintmachine.CMErrors;
+import com.radixdlt.constraintmachine.CMErrorCode;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.ConstraintMachine;
-import com.radixdlt.atomos.KernelProcedureError;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.SpinStateTransitionValidator;
@@ -21,8 +22,6 @@ import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -53,20 +52,17 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 	private final ConstraintMachine constraintMachine;
 	private final CMStore virtualizedCMStore;
 
-	private final Function<T, Optional<KernelProcedureError>> atomCheck;
 	private final EngineStore<T> engineStore;
 	private final CopyOnWriteArrayList<AtomEventListener<T>> atomEventListeners = new CopyOnWriteArrayList<>();
-	private final CopyOnWriteArrayList<Consumer<T>> cmSuccessHooks = new CopyOnWriteArrayList<>();
+	private final CopyOnWriteArrayList<CMSuccessHook<T>> cmSuccessHooks = new CopyOnWriteArrayList<>();
 	private	final BlockingQueue<EngineAction<T>> commitQueue = new LinkedBlockingQueue<>();
 	private final Thread stateUpdateEngine;
 
 	public RadixEngine(
 		ConstraintMachine constraintMachine,
-		Function<T, Optional<KernelProcedureError>> atomCheck,
 		EngineStore<T> engineStore
 	) {
 		this.constraintMachine = constraintMachine;
-		this.atomCheck = atomCheck;
 		this.virtualizedCMStore = constraintMachine.getVirtualStore().apply(engineStore);
 		this.engineStore = engineStore;
 		this.stateUpdateEngine = new Thread(this::run);
@@ -102,7 +98,7 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 		stateUpdateEngine.start();
 	}
 
-	public void addCMSuccessHook(Consumer<T> hook) {
+	public void addCMSuccessHook(CMSuccessHook<T> hook) {
 		this.cmSuccessHooks.add(hook);
 	}
 
@@ -119,25 +115,27 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 		Objects.requireNonNull(cmAtom);
 		Objects.requireNonNull(atomEventListener);
 
-		final Optional<KernelProcedureError> kernelError = atomCheck.apply(cmAtom);
-		if (kernelError.isPresent()) {
-			CMError cmError = CMErrors.fromKernelProcedureError(kernelError.get());
-			atomEventListener.onCMError(cmAtom, ImmutableSet.of(cmError));
-			this.atomEventListeners.forEach(acceptor -> acceptor.onCMError(cmAtom, ImmutableSet.of(cmError)));
+		final Optional<CMError> error = constraintMachine.validate(cmAtom.getCMInstruction());
+		if (error.isPresent()) {
+			atomEventListener.onCMError(cmAtom, ImmutableSet.of(error.get()));
+			this.atomEventListeners.forEach(acceptor -> acceptor.onCMError(cmAtom, ImmutableSet.of(error.get())));
 			return;
 		}
 
-		final Optional<CMError> error = constraintMachine.validate(cmAtom.getCMInstruction());
-		if (!error.isPresent()) {
-			this.cmSuccessHooks.forEach(hook -> hook.accept(cmAtom));
-			this.commitQueue.add(new StoreAtom<>(cmAtom, atomEventListener));
-
-			atomEventListener.onCMSuccess(cmAtom);
-			this.atomEventListeners.forEach(acceptor -> acceptor.onCMSuccess(cmAtom));
-		} else {
-			atomEventListener.onCMError(cmAtom, ImmutableSet.of(error.get()));
-			this.atomEventListeners.forEach(acceptor -> acceptor.onCMError(cmAtom, ImmutableSet.of(error.get())));
+		for (CMSuccessHook<T> hook : cmSuccessHooks) {
+			Result hookResult = hook.hook(cmAtom);
+			if (hookResult.isError()) {
+				CMError cmError = new CMError(DataPointer.ofAtom(), CMErrorCode.HOOK_ERROR, null, hookResult.getErrorMessage());
+				atomEventListener.onCMError(cmAtom, ImmutableSet.of(cmError));
+				this.atomEventListeners.forEach(acceptor -> acceptor.onCMError(cmAtom, ImmutableSet.of(cmError)));
+				return;
+			}
 		}
+
+		this.commitQueue.add(new StoreAtom<>(cmAtom, atomEventListener));
+
+		atomEventListener.onCMSuccess(cmAtom);
+		this.atomEventListeners.forEach(acceptor -> acceptor.onCMSuccess(cmAtom));
 	}
 
 	private void stateCheckAndStore(StoreAtom<T> storeAtom) {
