@@ -5,33 +5,33 @@ import com.radixdlt.engine.RadixEngineAtom;
 /**
  * Exposes the interface which low-level atom output constraints can be built on top of.
  */
-public interface AtomOSKernel {
+public interface AtomOSKernel<T extends RadixEngineAtom> {
 	/**
 	 * Function which returns result of a kernel check
 	 */
-	interface AtomKernelConstraintCheck {
+	interface AtomKernelConstraintCheck<T extends RadixEngineAtom> {
 
 		/**
 		 * Returns whether cmAtom passes this verification check.
 		 * @param radixEngineAtom atom to validate
 		 * @return success or failure of verification
 		 */
-		Result check(RadixEngineAtom radixEngineAtom);
+		Result check(T radixEngineAtom);
 	}
 
 	/**
 	 * Computes a value for a given atom
 	 */
-	interface AtomKernelCompute {
-		Object compute(RadixEngineAtom atom);
+	interface AtomKernelCompute<T extends RadixEngineAtom> {
+		Object compute(T atom);
 	}
 
 	/**
 	 * Callback interface for creating verification requirements and computation.
 	 */
-	interface AtomKernel {
-		void require(AtomKernelConstraintCheck constraint);
-		void setCompute(AtomKernelCompute compute);
+	interface AtomKernel<T extends RadixEngineAtom> {
+		void require(AtomKernelConstraintCheck<T> constraint);
+		void setCompute(AtomKernelCompute<T> compute);
 	}
 
 	/**
@@ -43,5 +43,5 @@ public interface AtomOSKernel {
 	 *
 	 * @return a callback function onto which the constraint will be defined
 	 */
-	AtomKernel onAtom();
+	AtomKernel<T> onAtom();
 }

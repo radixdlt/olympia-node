@@ -1,11 +1,10 @@
-package com.radixdlt.engine;
+package com.radixdlt.atomos;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.powermock.api.mockito.PowerMockito.when;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.atomos.RadixEngineUtils;
 import com.radixdlt.atoms.DataPointer;
 import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.atoms.IndexedParticleGroup;

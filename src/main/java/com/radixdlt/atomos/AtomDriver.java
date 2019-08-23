@@ -14,7 +14,7 @@ import java.util.function.Supplier;
  * An implementation of an AtomOS Kernel level "driver" which adds constraints
  * to low level atom properties such as size, fees, signatures, etc.
  */
-public final class AtomDriver implements AtomOSDriver {
+public final class AtomDriver implements AtomOSDriver<SimpleRadixEngineAtom> {
 	private final boolean skipAtomFeeCheck;
 	private final Supplier<Universe> universeSupplier;
 	private final LongSupplier timestampSupplier;
@@ -34,12 +34,12 @@ public final class AtomDriver implements AtomOSDriver {
 	}
 
 	@Override
-	public void main(AtomOSKernel kernel) {
+	public void main(AtomOSKernel<SimpleRadixEngineAtom> kernel) {
 		kernel.onAtom()
 			.setCompute(atom -> {
 				//TODO: Fix module loadup sequence so that massFunction doesn't need to be recreated everytime
 				final FungibleOrHashMassFunction massFunction = new FungibleOrHashMassFunction(universeSupplier.get());
-				return massFunction.getMass((SimpleRadixEngineAtom) atom);
+				return massFunction.getMass(atom);
 			});
 
 		// Atom has particles
@@ -54,8 +54,7 @@ public final class AtomDriver implements AtomOSDriver {
 
 		kernel.onAtom()
 			.require(cmAtom -> {
-				SimpleRadixEngineAtom simpleCMAtom = (SimpleRadixEngineAtom) cmAtom;
-				final boolean isMagic = Objects.equals(simpleCMAtom.getAtom().getMetaData().get("magic"), "0xdeadbeef");
+				final boolean isMagic = Objects.equals(cmAtom.getAtom().getMetaData().get("magic"), "0xdeadbeef");
 
 				// Atom has signatures
 				if (cmAtom.getCMInstruction().getSignatures().isEmpty() && !isMagic) {
@@ -65,19 +64,19 @@ public final class AtomDriver implements AtomOSDriver {
 				// Atom has fee
 				if (!skipAtomFeeCheck) {
 					if (universeSupplier.get().getGenesis().stream()
-						.map(ImmutableAtom::getAID).anyMatch(simpleCMAtom.getAtom().getAID()::equals) || isMagic) {
+						.map(ImmutableAtom::getAID).anyMatch(cmAtom.getAtom().getAID()::equals) || isMagic) {
 						// genesis and magic atoms don't need a fee
 						return Result.success();
 					}
 
-					String powNonceString = simpleCMAtom.getAtom().getMetaData().get(ImmutableAtom.METADATA_POW_NONCE_KEY);
+					String powNonceString = cmAtom.getAtom().getMetaData().get(ImmutableAtom.METADATA_POW_NONCE_KEY);
 					if (powNonceString == null) {
 						return Result.error("atom fee missing, metadata does not contain '" + ImmutableAtom.METADATA_POW_NONCE_KEY + "'");
 					}
 
 					try {
 						final long powNonce = Long.parseLong(powNonceString);
-						final Hash powFeeHash = simpleCMAtom.getAtom()
+						final Hash powFeeHash = cmAtom.getAtom()
 							.copyExcludingMetadata(ImmutableAtom.METADATA_POW_NONCE_KEY).getHash();
 						POW pow = new POW(universeSupplier.get().getMagic(), powFeeHash, powNonce);
 
@@ -93,7 +92,7 @@ public final class AtomDriver implements AtomOSDriver {
 		// Atom timestamp constraints
 		kernel.onAtom()
 			.require(cmAtom -> {
-				String timestampString = ((SimpleRadixEngineAtom) cmAtom).getAtom().getMetaData().get(ImmutableAtom.METADATA_TIMESTAMP_KEY);
+				String timestampString = cmAtom.getAtom().getMetaData().get(ImmutableAtom.METADATA_TIMESTAMP_KEY);
 				if (timestampString == null) {
 					return Result.error("atom metadata does not contain '" + ImmutableAtom.METADATA_TIMESTAMP_KEY + "'");
 				}
