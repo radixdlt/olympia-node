@@ -8,7 +8,7 @@ import java.util.function.Consumer;
 /**
  *  A state that gives access to the state of a certain shard space
  */
-public interface EngineStore extends CMStore {
+public interface EngineStore<T extends CMAtom> extends CMStore {
 	/**
 	 * Retrieves the atom containing the given spun particle.
 	 * TODO: change to reactive streams interface
@@ -18,10 +18,10 @@ public interface EngineStore extends CMStore {
 	/**
 	 * Stores the atom into this CMStore
 	 */
-	void storeAtom(CMAtom atom, Object computed);
+	void storeAtom(T atom, Object computed);
 
 	/**
 	 * Deletes an atom and all it's dependencies
 	 */
-	void deleteAtom(CMAtom atom);
+	void deleteAtom(T atom);
 }

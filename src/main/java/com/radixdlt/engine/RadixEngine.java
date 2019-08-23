@@ -29,24 +29,24 @@ import java.util.stream.Collectors;
 /**
  * Top Level Class for the Radix Engine, a real-time, shardable, distributed state machine.
  */
-public final class RadixEngine {
+public final class RadixEngine<T extends CMAtom> {
 
-	private interface EngineAction {
+	private interface EngineAction<U extends CMAtom> {
 	}
 
-	private final class DeleteAtom implements EngineAction {
-		private final CMAtom cmAtom;
-		DeleteAtom(CMAtom cmAtom) {
+	private final class DeleteAtom<U extends CMAtom> implements EngineAction<U> {
+		private final U cmAtom;
+		DeleteAtom(U cmAtom) {
 			this.cmAtom = cmAtom;
 		}
 	}
 
-	private final class StoreAtom implements EngineAction {
-		private final CMAtom cmAtom;
+	private final class StoreAtom<U extends CMAtom> implements EngineAction<U> {
+		private final U cmAtom;
 		private final Object computed;
-		private final AtomEventListener listener;
+		private final AtomEventListener<U> listener;
 
-		StoreAtom(CMAtom cmAtom, Object computed, AtomEventListener listener) {
+		StoreAtom(U cmAtom, Object computed, AtomEventListener<U> listener) {
 			this.cmAtom = cmAtom;
 			this.computed = computed;
 			this.listener = listener;
@@ -54,20 +54,21 @@ public final class RadixEngine {
 	}
 
 	private final ConstraintMachine constraintMachine;
-	private final Function<CMAtom, Optional<KernelProcedureError>> atomCheck;
-	private final AtomCompute compute;
-	private final EngineStore engineStore;
 	private final CMStore virtualizedCMStore;
-	private final CopyOnWriteArrayList<AtomEventListener> atomEventListeners = new CopyOnWriteArrayList<>();
-	private final CopyOnWriteArrayList<BiConsumer<CMAtom, Object>> cmSuccessHooks = new CopyOnWriteArrayList<>();
-	private	final BlockingQueue<EngineAction> commitQueue = new LinkedBlockingQueue<>();
+
+	private final Function<T, Optional<KernelProcedureError>> atomCheck;
+	private final AtomCompute<T> compute;
+	private final EngineStore<T> engineStore;
+	private final CopyOnWriteArrayList<AtomEventListener<T>> atomEventListeners = new CopyOnWriteArrayList<>();
+	private final CopyOnWriteArrayList<BiConsumer<T, Object>> cmSuccessHooks = new CopyOnWriteArrayList<>();
+	private	final BlockingQueue<EngineAction<T>> commitQueue = new LinkedBlockingQueue<>();
 	private final Thread stateUpdateEngine;
 
 	public RadixEngine(
 		ConstraintMachine constraintMachine,
-		Function<CMAtom, Optional<KernelProcedureError>> atomCheck,
-		AtomCompute compute,
-		EngineStore engineStore
+		Function<T, Optional<KernelProcedureError>> atomCheck,
+		AtomCompute<T> compute,
+		EngineStore<T> engineStore
 	) {
 		this.constraintMachine = constraintMachine;
 		this.atomCheck = atomCheck;
@@ -82,12 +83,12 @@ public final class RadixEngine {
 	private void run() {
 		while (true) {
 			try {
-				final EngineAction action = this.commitQueue.take();
+				final EngineAction<T> action = this.commitQueue.take();
 				if (action instanceof StoreAtom) {
-					StoreAtom storeAtom = (StoreAtom) action;
+					StoreAtom<T> storeAtom = (StoreAtom<T>) action;
 					stateCheckAndStore(storeAtom);
 				} else if (action instanceof DeleteAtom) {
-					DeleteAtom deleteAtom = (DeleteAtom) action;
+					DeleteAtom<T> deleteAtom = (DeleteAtom<T>) action;
 					engineStore.deleteAtom(deleteAtom.cmAtom);
 				}
 			} catch (InterruptedException e) {
@@ -107,20 +108,20 @@ public final class RadixEngine {
 		stateUpdateEngine.start();
 	}
 
-	public void addCMSuccessHook(BiConsumer<CMAtom, Object> hook) {
+	public void addCMSuccessHook(BiConsumer<T, Object> hook) {
 		this.cmSuccessHooks.add(hook);
 	}
 
-	public void addAtomEventListener(AtomEventListener acceptor) {
+	public void addAtomEventListener(AtomEventListener<T> acceptor) {
 		this.atomEventListeners.add(acceptor);
 	}
 
-	public void delete(CMAtom cmAtom) {
-		this.commitQueue.add(new DeleteAtom(cmAtom));
+	public void delete(T cmAtom) {
+		this.commitQueue.add(new DeleteAtom<>(cmAtom));
 	}
 
 	// TODO use reactive interface
-	public void store(CMAtom cmAtom, AtomEventListener atomEventListener) {
+	public void store(T cmAtom, AtomEventListener<T> atomEventListener) {
 		Objects.requireNonNull(cmAtom);
 		Objects.requireNonNull(atomEventListener);
 
@@ -136,7 +137,7 @@ public final class RadixEngine {
 		if (!error.isPresent()) {
 			Object computed = compute.compute(cmAtom);
 			this.cmSuccessHooks.forEach(hook -> hook.accept(cmAtom, computed));
-			this.commitQueue.add(new StoreAtom(cmAtom, computed, atomEventListener));
+			this.commitQueue.add(new StoreAtom<>(cmAtom, computed, atomEventListener));
 
 			atomEventListener.onCMSuccess(cmAtom, computed);
 			this.atomEventListeners.forEach(acceptor -> acceptor.onCMSuccess(cmAtom, computed));
@@ -146,8 +147,8 @@ public final class RadixEngine {
 		}
 	}
 
-	private void stateCheckAndStore(StoreAtom storeAtom) {
-		final CMAtom cmAtom = storeAtom.cmAtom;
+	private void stateCheckAndStore(StoreAtom<T> storeAtom) {
+		final T cmAtom = storeAtom.cmAtom;
 		final CMInstruction cmInstruction = cmAtom.getCMInstruction();
 		final Object computed = storeAtom.computed;
 
