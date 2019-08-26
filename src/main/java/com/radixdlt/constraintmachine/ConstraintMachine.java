@@ -4,6 +4,7 @@ import com.radixdlt.atoms.DataPointer;
 import com.radixdlt.atoms.Spin;
 import com.radixdlt.atoms.SpunParticle;
 import com.radixdlt.common.EUID;
+import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.TransitionProcedure.ProcedureResult;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
 import com.radixdlt.crypto.ECPublicKey;
@@ -324,26 +325,29 @@ public final class ConstraintMachine {
 		);
 
 		// Particle checks
-		for (CMParticle cmParticle : cmInstruction.getParticles()) {
-			final Optional<Spin> initSpin = localEngineStore.getSpin(cmParticle.getParticle());
+		for (Pair<CMMicroInstruction, DataPointer> cmParticle : cmInstruction.getParticles()) {
+			final CMMicroInstruction microInstruction = cmParticle.getFirst();
+			final DataPointer dataPointer = cmParticle.getSecond();
+
+			final Optional<Spin> initSpin = localEngineStore.getSpin(microInstruction.getParticle());
 
 			// "Segfaults" or particles which should not exist
 			if (!initSpin.isPresent()) {
-				return Optional.of(new CMError(cmParticle.getDataPointer(), CMErrorCode.UNKNOWN_PARTICLE));
+				return Optional.of(new CMError(dataPointer, CMErrorCode.UNKNOWN_PARTICLE));
 			}
 
-			final Spin checkSpin = cmParticle.getCheckSpin();
+			final Spin checkSpin = microInstruction.getCheckSpin();
 			final Spin curSpin = initSpin.get();
 
 			// Virtual particle state checks
 			// TODO: Is this better suited at the state check pipeline?
 			if (SpinStateMachine.isBefore(checkSpin, curSpin)) {
-				return Optional.of(new CMError(cmParticle.getDataPointer(), CMErrorCode.INTERNAL_SPIN_CONFLICT));
+				return Optional.of(new CMError(dataPointer, CMErrorCode.INTERNAL_SPIN_CONFLICT));
 			}
 
-			boolean updated = validationState.checkSpin(cmParticle.getParticle(), checkSpin);
+			boolean updated = validationState.checkSpin(microInstruction.getParticle(), checkSpin);
 			if (!updated) {
-				return Optional.of(new CMError(cmParticle.getDataPointer(), CMErrorCode.INTERNAL_SPIN_CONFLICT));
+				return Optional.of(new CMError(dataPointer, CMErrorCode.INTERNAL_SPIN_CONFLICT));
 			}
 		}
 

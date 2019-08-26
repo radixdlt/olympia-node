@@ -12,7 +12,6 @@ import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.CMErrorCode;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
-import com.radixdlt.constraintmachine.CMParticle;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
@@ -203,12 +202,12 @@ public final class RadixEngineUtils {
 			throw new CMAtomConversionException(errors);
 		}
 
-		final ImmutableList<CMParticle> cmParticles =
+		final ImmutableList<Pair<CMMicroInstruction, DataPointer>> cmParticles =
 			spunParticles.entrySet().stream()
 				.map(e -> {
 					ImmutableList<IndexedSpunParticle> sp = e.getValue();
 					Spin checkSpin = SpinStateMachine.prev(sp.get(0).getSpunParticle().getSpin());
-					return new CMParticle(e.getKey(), sp.get(0).getDataPointer(), checkSpin);
+					return Pair.of(CMMicroInstruction.checkSpin(e.getKey(), checkSpin), sp.get(0).getDataPointer());
 				})
 				.collect(ImmutableList.toImmutableList());
 

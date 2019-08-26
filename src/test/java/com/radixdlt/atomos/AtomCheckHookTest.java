@@ -6,10 +6,12 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.radixdlt.atoms.DataPointer;
 import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.common.EUID;
+import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.CMInstruction;
-import com.radixdlt.constraintmachine.CMParticle;
+import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.crypto.ECSignature;
 import com.radixdlt.universe.Universe;
 import java.util.Collections;
@@ -28,7 +30,7 @@ public class AtomCheckHookTest {
 		);
 
 		CMInstruction cmInstruction = mock(CMInstruction.class);
-		when(cmInstruction.getParticles()).thenReturn(ImmutableList.of(mock(CMParticle.class)));
+		when(cmInstruction.getParticles()).thenReturn(ImmutableList.of(Pair.of(mock(CMMicroInstruction.class), mock(DataPointer.class))));
 		when(cmInstruction.getSignatures()).thenReturn(ImmutableMap.of(mock(EUID.class), mock(ECSignature.class)));
 		ImmutableAtom immutableAtom = mock(ImmutableAtom.class);
 		when(immutableAtom.getMetaData()).thenReturn(ImmutableMap.of("timestamp", "0"));
@@ -71,7 +73,7 @@ public class AtomCheckHookTest {
 		);
 
 		CMInstruction cmInstruction = mock(CMInstruction.class);
-		when(cmInstruction.getParticles()).thenReturn(ImmutableList.of(mock(CMParticle.class)));
+		when(cmInstruction.getParticles()).thenReturn(ImmutableList.of(Pair.of(mock(CMMicroInstruction.class), mock(DataPointer.class))));
 		when(cmInstruction.getSignatures()).thenReturn(ImmutableMap.of(mock(EUID.class), mock(ECSignature.class)));
 		ImmutableAtom immutableAtom = mock(ImmutableAtom.class);
 		when(immutableAtom.getMetaData()).thenReturn(ImmutableMap.of());
@@ -93,7 +95,7 @@ public class AtomCheckHookTest {
 		);
 
 		CMInstruction cmInstruction = mock(CMInstruction.class);
-		when(cmInstruction.getParticles()).thenReturn(ImmutableList.of(mock(CMParticle.class)));
+		when(cmInstruction.getParticles()).thenReturn(ImmutableList.of(Pair.of(mock(CMMicroInstruction.class), mock(DataPointer.class))));
 		when(cmInstruction.getSignatures()).thenReturn(ImmutableMap.of(mock(EUID.class), mock(ECSignature.class)));
 		ImmutableAtom immutableAtom = mock(ImmutableAtom.class);
 		when(immutableAtom.getMetaData()).thenReturn(ImmutableMap.of("timestamp", "badinput"));

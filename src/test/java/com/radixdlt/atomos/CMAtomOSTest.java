@@ -3,8 +3,9 @@ package com.radixdlt.atomos;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.atoms.DataPointer;
 import com.radixdlt.atoms.Spin;
+import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.CMInstruction;
-import com.radixdlt.constraintmachine.CMParticle;
+import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
 import org.junit.Test;
@@ -48,8 +49,8 @@ public class CMAtomOSTest {
 		ConstraintMachine machine = os.buildMachine();
 		CMInstruction instruction = mock(CMInstruction.class);
 		TestParticle testParticle = new TestParticle();
-		when(instruction.getParticles()).thenReturn(ImmutableList.of(
-			new CMParticle(testParticle, DataPointer.ofParticle(0, 0), Spin.NEUTRAL)
+		when(instruction.getParticles()).thenReturn(
+			ImmutableList.of(Pair.of(CMMicroInstruction.checkSpin(testParticle, Spin.NEUTRAL), DataPointer.ofParticle(0, 0))
 		));
 		assertThat(machine.validate(instruction))
 			.isPresent()

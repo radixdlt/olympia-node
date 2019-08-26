@@ -148,8 +148,9 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 			.stream()
 			.map(cmParticle -> {
 				// First spun is the only one we need to check
-				final Spin nextSpin = SpinStateMachine.next(cmParticle.getCheckSpin());
-				final Particle particle = cmParticle.getParticle();
+				final Spin checkSpin = cmParticle.getFirst().getCheckSpin();
+				final Spin nextSpin = SpinStateMachine.next(checkSpin);
+				final Particle particle = cmParticle.getFirst().getParticle();
 				final TransitionCheckResult spinCheck = SpinStateTransitionValidator.checkParticleTransition(
 					particle,
 					nextSpin,
