@@ -1,27 +1,25 @@
 package com.radixdlt.engine;
 
-import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.atoms.SpunParticle;
-import com.radixdlt.constraintmachine.CMAtom;
 import com.radixdlt.constraintmachine.CMError;
 import java.util.Set;
 
 /**
  * Listener for atom events as they go through the Radix Engine pipeline.
  */
-public interface AtomEventListener {
-	default void onCMSuccess(CMAtom cmAtom, Object computed) {
+public interface AtomEventListener<T extends RadixEngineAtom> {
+	default void onCMSuccess(T cmAtom) {
 	}
 
-	default void onCMError(CMAtom cmAtom, Set<CMError> errors) {
+	default void onCMError(T cmAtom, Set<CMError> errors) {
 	}
 
-	default void onStateStore(CMAtom cmAtom, Object computed) {
+	default void onStateStore(T cmAtom) {
 	}
 
-	default void onStateConflict(CMAtom cmAtom, SpunParticle issueParticle, ImmutableAtom conflictingAtom) {
+	default void onStateConflict(T cmAtom, SpunParticle issueParticle, T conflictingAtom) {
 	}
 
-	default void onStateMissingDependency(CMAtom cmAtom, SpunParticle issueParticle) {
+	default void onStateMissingDependency(T cmAtom, SpunParticle issueParticle) {
 	}
 }

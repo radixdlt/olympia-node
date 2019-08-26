@@ -36,7 +36,7 @@ public class MessageParticleConstraintScrypt implements ConstraintScrypt {
 			null,
 			MessageParticle.class,
 			(in, usedIn, out, usedOut) -> ProcedureResult.popOutput(null),
-			(res, in, out, meta) -> meta.isSignedBy(out.getFrom())
+			(res, in, out, meta) -> meta.isSignedBy(out.getFrom().getKey())
 				? WitnessValidatorResult.success()
 				: WitnessValidatorResult.error("Message particle " + out + " not signed.")
 		);

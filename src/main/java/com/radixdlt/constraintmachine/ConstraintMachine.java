@@ -1,15 +1,17 @@
 package com.radixdlt.constraintmachine;
 
-import com.google.common.collect.ImmutableList;
 import com.radixdlt.atoms.DataPointer;
 import com.radixdlt.atoms.Spin;
 import com.radixdlt.atoms.SpunParticle;
+import com.radixdlt.common.EUID;
 import com.radixdlt.constraintmachine.TransitionProcedure.ProcedureResult;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECSignature;
+import com.radixdlt.crypto.Hash;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.SpinStateMachine;
-import com.radixdlt.store.SpinStateTransitionValidator;
-import com.radixdlt.store.SpinStateTransitionValidator.TransitionCheckResult;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -19,7 +21,6 @@ import com.radixdlt.atoms.Particle;
 import com.radixdlt.store.CMStores;
 
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 /**
  * An implementation of a UTXO based constraint machine which uses Radix's atom structure.
@@ -27,17 +28,11 @@ import java.util.stream.Collectors;
 public final class ConstraintMachine {
 	public static class Builder {
 		private UnaryOperator<CMStore> virtualStore;
-		private ImmutableList.Builder<KernelConstraintProcedure> kernelConstraintProcedureBuilder = new ImmutableList.Builder<>();
 		private BiFunction<Particle, Particle, TransitionProcedure<Particle, Particle>> particleProcedures;
 		private BiFunction<Particle, Particle, WitnessValidator<Particle, Particle>> witnessValidators;
 
 		public Builder virtualStore(UnaryOperator<CMStore> virtualStore) {
 			this.virtualStore = virtualStore;
-			return this;
-		}
-
-		public Builder addProcedure(KernelConstraintProcedure kernelConstraintProcedure) {
-			kernelConstraintProcedureBuilder.add(kernelConstraintProcedure);
 			return this;
 		}
 
@@ -59,7 +54,6 @@ public final class ConstraintMachine {
 
 			return new ConstraintMachine(
 				virtualStore,
-				kernelConstraintProcedureBuilder.build(),
 				particleProcedures,
 				witnessValidators
 			);
@@ -67,14 +61,12 @@ public final class ConstraintMachine {
 	}
 
 	private final UnaryOperator<CMStore> virtualStore;
-	private final ImmutableList<KernelConstraintProcedure> kernelConstraintProcedures;
 	private final BiFunction<Particle, Particle, TransitionProcedure<Particle, Particle>> particleProcedures;
 	private final BiFunction<Particle, Particle, WitnessValidator<Particle, Particle>> witnessValidators;
 	private final CMStore localEngineStore;
 
 	ConstraintMachine(
 		UnaryOperator<CMStore> virtualStore,
-		ImmutableList<KernelConstraintProcedure> kernelConstraintProcedures,
 		BiFunction<Particle, Particle, TransitionProcedure<Particle, Particle>> particleProcedures,
 		BiFunction<Particle, Particle, WitnessValidator<Particle, Particle>> witnessValidators
 	) {
@@ -82,7 +74,6 @@ public final class ConstraintMachine {
 
 		this.virtualStore = Objects.requireNonNull(virtualStore);
 		this.localEngineStore = this.virtualStore.apply(CMStores.empty());
-		this.kernelConstraintProcedures = kernelConstraintProcedures;
 		this.particleProcedures = particleProcedures;
 		this.witnessValidators = witnessValidators;
 	}
@@ -91,9 +82,36 @@ public final class ConstraintMachine {
 		private SpunParticle spunParticleRemaining = null;
 		private Object particleRemainingUsed = null;
 		private final Map<Particle, Spin> currentSpins;
+		private final Hash witness;
+		private final Map<EUID, ECSignature> signatures;
+		private final Map<ECPublicKey, Boolean> isSignedByCache = new HashMap<>();
 
-		CMValidationState(Map<Particle, Spin> initialSpins) {
-			this.currentSpins = initialSpins;
+		CMValidationState(Hash witness, Map<EUID, ECSignature> signatures) {
+			this.currentSpins = new HashMap<>();
+			this.witness = witness;
+			this.signatures = signatures;
+		}
+
+		public boolean checkSpin(Particle particle, Spin spin) {
+			if (currentSpins.containsKey(particle)) {
+				return false;
+			}
+
+			this.currentSpins.put(particle, spin);
+			return true;
+		}
+
+		public boolean isSignedBy(ECPublicKey publicKey) {
+			return this.isSignedByCache.computeIfAbsent(publicKey, this::verifySignedWith);
+		}
+
+		private boolean verifySignedWith(ECPublicKey publicKey) {
+			if (signatures == null || signatures.isEmpty() || witness == null) {
+				return false;
+			}
+
+			final ECSignature signature = signatures.get(publicKey.getUID());
+			return signature != null && publicKey.verify(witness, signature);
 		}
 
 		Spin push(Particle p) {
@@ -143,11 +161,10 @@ public final class ConstraintMachine {
 	 *
 	 * @param nextSpun the next spun particle
 	 * @param dp pointer of the next spun particle
-	 * @param metadata metadata associated with the atom
 	 * @param validationState local state of validation
 	 * @return the first error found, otherwise an empty optional
 	 */
-	Optional<CMError> validateParticle(SpunParticle nextSpun, DataPointer dp, AtomMetadata metadata, CMValidationState validationState) {
+	Optional<CMError> validateParticle(CMValidationState validationState, SpunParticle nextSpun, DataPointer dp) {
 		final Particle nextParticle = nextSpun.getParticle();
 		final Particle curParticle = validationState.getCurParticle();
 
@@ -226,7 +243,7 @@ public final class ConstraintMachine {
 			result.getCmAction(),
 			inputParticle,
 			outputParticle,
-			metadata
+			validationState::isSignedBy
 		);
 		if (witnessValidatorResult.isError()) {
 			return Optional.of(
@@ -246,101 +263,90 @@ public final class ConstraintMachine {
 	 * Executes transition procedures and witness validators in a particle group and validates
 	 * that the particle group is well formed.
 	 *
-	 * @param group the particle group
-	 * @param groupIndex the index of the particle group
-	 * @param metadata atom meta data
 	 * @return the first error found, otherwise an empty optional
 	 */
-	Optional<CMError> validateParticleGroup(CMValidationState validationState, List<Particle> group, long groupIndex, AtomMetadata metadata) {
+	Optional<CMError> validateMicroInstructions(CMValidationState validationState, List<CMMicroInstruction> microInstructions) {
+		int particleGroupIndex = 0;
+		int particleIndex = 0;
 
-		for (int i = 0; i < group.size(); i++) {
-			final DataPointer dp = DataPointer.ofParticle((int) groupIndex, i);
-			final Particle nextParticle = group.get(i);
-			final Spin nextSpin = validationState.push(nextParticle);
-			final SpunParticle nextSpun = SpunParticle.of(nextParticle, nextSpin);
+		for (CMMicroInstruction cmMicroInstruction : microInstructions) {
+			final DataPointer dp = DataPointer.ofParticle(particleGroupIndex, particleIndex);
+			switch (cmMicroInstruction.getMicroOp()) {
+				case CHECK_NEUTRAL:
+				case CHECK_UP:
+					final Optional<Spin> initSpin = localEngineStore.getSpin(cmMicroInstruction.getParticle());
 
-			Optional<CMError> error = validateParticle(nextSpun, dp, metadata, validationState);
-			if (error.isPresent()) {
-				return error;
+					// "Segfaults" or particles which should not exist
+					if (!initSpin.isPresent()) {
+						return Optional.of(new CMError(dp, CMErrorCode.UNKNOWN_PARTICLE));
+					}
+
+					final Spin checkSpin = cmMicroInstruction.getCheckSpin();
+					final Spin curSpin = initSpin.get();
+
+					// Virtual particle state checks
+					// TODO: Is this better suited at the state check pipeline?
+					if (SpinStateMachine.isBefore(checkSpin, curSpin)) {
+						return Optional.of(new CMError(dp, CMErrorCode.INTERNAL_SPIN_CONFLICT));
+					}
+
+					boolean updated = validationState.checkSpin(cmMicroInstruction.getParticle(), checkSpin);
+					if (!updated) {
+						return Optional.of(new CMError(dp, CMErrorCode.INTERNAL_SPIN_CONFLICT));
+					}
+					break;
+				case PUSH:
+					final Particle nextParticle = cmMicroInstruction.getParticle();
+					final Spin nextSpin = validationState.push(nextParticle);
+					final SpunParticle nextSpun = SpunParticle.of(nextParticle, nextSpin);
+					Optional<CMError> error = validateParticle(validationState, nextSpun, dp);
+					if (error.isPresent()) {
+						return error;
+					}
+					particleIndex++;
+					break;
+				case PARTICLE_GROUP:
+					if (!validationState.isEmpty()) {
+						return Optional.of(
+							new CMError(
+								DataPointer.ofParticleGroup(particleGroupIndex),
+								CMErrorCode.UNEQUAL_INPUT_OUTPUT,
+								validationState
+							)
+						);
+					}
+					particleGroupIndex++;
+					particleIndex = 0;
+					break;
+				default:
+					throw new IllegalStateException("Unknown CM Operation: " + cmMicroInstruction.getMicroOp());
 			}
 		}
 
-		if (!validationState.isEmpty()) {
-			return Optional.of(
-				new CMError(
-					DataPointer.ofParticleGroup((int) groupIndex),
-					CMErrorCode.UNEQUAL_INPUT_OUTPUT,
-					validationState
-				)
-			);
+		if (particleIndex != 0) {
+			return Optional.of(new CMError(
+				DataPointer.ofParticle(particleGroupIndex, particleIndex),
+				CMErrorCode.MISSING_PARTICLE_GROUP
+			));
 		}
 
 		return Optional.empty();
 	}
 
 	/**
-	 * Validates an atom and calculates the necessary state checks and post-validation
+	 * Validates a CM instruction and calculates the necessary state checks and post-validation
 	 * write logic.
 	 *
-	 * @param cmAtom atom to validate
+	 * @param cmInstruction instruction to validate
 	 * @return the first error found, otherwise an empty optional
 	 */
-	public Optional<CMError> validate(CMAtom cmAtom) {
-		// "Segfaults" or particles which should not exist
-		final Optional<CMError> unknownParticleError = cmAtom.getParticles().stream()
-			.filter(p -> !localEngineStore.getSpin(p.getParticle()).isPresent())
-			.map(p -> new CMError(p.getDataPointer(), CMErrorCode.UNKNOWN_PARTICLE))
-			.findFirst();
+	public Optional<CMError> validate(CMInstruction cmInstruction) {
+		final CMValidationState validationState = new CMValidationState(
+			cmInstruction.getWitness(),
+			cmInstruction.getSignatures()
+		);
 
-		if (unknownParticleError.isPresent()) {
-			return unknownParticleError;
-		}
-
-		// Virtual particle state checks
-		// TODO: Is this better suited at the state check pipeline?
-		final Optional<CMError> virtualParticleError = cmAtom.getParticles().stream()
-			.filter(p -> {
-				Particle particle = p.getParticle();
-				Spin nextSpin = p.getNextSpin();
-				TransitionCheckResult result = SpinStateTransitionValidator.checkParticleTransition(
-					particle,
-					nextSpin, localEngineStore
-				);
-
-				return result.equals(TransitionCheckResult.CONFLICT);
-			})
-			.map(p ->  new CMError(p.getDataPointer(), CMErrorCode.INTERNAL_SPIN_CONFLICT))
-			.findFirst();
-
-		if (virtualParticleError.isPresent()) {
-			return virtualParticleError;
-		}
-
-		// "Kernel" checks
-		final Optional<CMError> kernelErr = kernelConstraintProcedures.stream()
-			.flatMap(kernelProcedure -> kernelProcedure.validate(cmAtom))
-			.map(CMErrors::fromKernelProcedureError)
-			.findFirst();
-
-		if (kernelErr.isPresent()) {
-			return kernelErr;
-		}
-
-		// "Application" checks
-		final AtomMetadata metadata = new AtomMetadataFromAtom(cmAtom);
-		final Map<Particle, Spin> initialSpins = cmAtom.getParticles().stream().collect(Collectors.toMap(
-			CMParticle::getParticle,
-			CMParticle::getCheckSpin
-		));
-		final CMValidationState validationState = new CMValidationState(initialSpins);
-		for (int i = 0; i < cmAtom.getParticlePushes().size(); i++) {
-			final Optional<CMError> error = this.validateParticleGroup(validationState, cmAtom.getParticlePushes().get(i), i, metadata);
-			if (error.isPresent()) {
-				return error;
-			}
-		}
-
-		return Optional.empty();
+		return this.validateMicroInstructions(validationState, cmInstruction.getMicroInstructions());
 	}
 
 	/**

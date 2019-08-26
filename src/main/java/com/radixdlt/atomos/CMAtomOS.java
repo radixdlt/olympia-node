@@ -1,25 +1,17 @@
 package com.radixdlt.atomos;
 
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.atomos.AtomOSKernel.AtomKernelCompute;
 import com.radixdlt.common.Pair;
-import com.radixdlt.compute.AtomCompute;
-import com.radixdlt.constraintmachine.CMAtom;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.WitnessValidator;
 import com.radixdlt.store.CMStore;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import com.radixdlt.constraintmachine.ConstraintMachine.Builder;
 import com.radixdlt.constraintmachine.ConstraintMachine;
-import com.radixdlt.constraintmachine.KernelConstraintProcedure;
-import com.radixdlt.constraintmachine.KernelProcedureError;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.atoms.Spin;
 import com.radixdlt.store.CMStores;
@@ -38,8 +30,6 @@ public final class CMAtomOS {
 		rri -> ((RRIParticle) rri).getRri()
 	);
 
-	private final List<KernelConstraintProcedure> kernelProcedures = new ArrayList<>();
-	private AtomKernelCompute atomKernelCompute;
 	private final Map<Class<? extends Particle>, ParticleDefinition<Particle>> particleDefinitions = new HashMap<>();
 	private final ImmutableMap.Builder<Pair<Class<? extends Particle>, Class<? extends Particle>>, TransitionProcedure<Particle, Particle>>
 		proceduresBuilder = new ImmutableMap.Builder<>();
@@ -61,32 +51,6 @@ public final class CMAtomOS {
 		this.witnessesBuilder.putAll(constraintScryptEnv.getScryptWitnessValidators());
 	}
 
-	public void loadKernelConstraintScrypt(AtomOSDriver driverScrypt) {
-		driverScrypt.main(new AtomOSKernel() {
-			@Override
-			public AtomKernel onAtom() {
-				return new AtomKernel() {
-					@Override
-					public void require(AtomKernelConstraintCheck constraint) {
-						CMAtomOS.this.kernelProcedures.add(
-							(cmAtom) -> constraint.check(cmAtom).errorStream().map(errMsg -> KernelProcedureError.of(cmAtom, errMsg))
-						);
-					}
-
-					@Override
-					public void setCompute(AtomKernelCompute compute) {
-
-						if (CMAtomOS.this.atomKernelCompute != null) {
-							throw new IllegalStateException("Compute already set.");
-						}
-
-						CMAtomOS.this.atomKernelCompute = compute;
-					}
-				};
-			}
-		});
-	}
-
 	/**
 	 * Checks that the machine is set up correctly where invariants aren't broken.
 	 * If all is well, this then returns an instance of a machine in which atom
@@ -94,10 +58,8 @@ public final class CMAtomOS {
 	 *
 	 * @return a constraint machine which can validate atoms and the virtual layer on top of the store
 	 */
-	public Pair<ConstraintMachine, AtomCompute> buildMachine() {
+	public ConstraintMachine buildMachine() {
 		ConstraintMachine.Builder cmBuilder = new Builder();
-
-		this.kernelProcedures.forEach(cmBuilder::addProcedure);
 
 		final ImmutableMap<Pair<Class<? extends Particle>, Class<? extends Particle>>, TransitionProcedure<Particle, Particle>>
 			procedures = proceduresBuilder.build();
@@ -142,9 +104,7 @@ public final class CMAtomOS {
 
 		cmBuilder.virtualStore(virtualizedDefault);
 
-		final AtomCompute compute = atomKernelCompute != null ? a -> atomKernelCompute.compute(a) : null;
-
-		return Pair.of(cmBuilder.build(), compute);
+		return cmBuilder.build();
 	}
 
 	/**
@@ -158,16 +118,5 @@ public final class CMAtomOS {
 		return particleDefinitions.get(particle.getClass())
 			.getStaticValidation()
 			.apply(particle);
-	}
-
-	public Optional<KernelProcedureError> testAtom(CMAtom cmAtom) {
-		for (KernelConstraintProcedure procedure : kernelProcedures) {
-			Optional<KernelProcedureError> error = procedure.validate(cmAtom).findFirst();
-			if (error.isPresent()) {
-				return error;
-			}
-		}
-
-		return Optional.empty();
 	}
 }

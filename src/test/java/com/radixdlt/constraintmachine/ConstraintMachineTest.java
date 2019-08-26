@@ -1,12 +1,10 @@
 package com.radixdlt.constraintmachine;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.radixdlt.constraintmachine.ConstraintMachine.CMValidationState;
 import com.radixdlt.constraintmachine.TransitionProcedure.ProcedureResult;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Optional;
 import org.junit.Test;
 import com.radixdlt.atoms.DataPointer;
@@ -39,12 +37,12 @@ public class ConstraintMachineTest {
 		IndexedParticle p = mock(IndexedParticle.class);
 		when(p.getDestinations()).thenReturn(Collections.singleton(EUID.ONE));
 
-		CMAtom atom = mock(CMAtom.class);
-		when(atom.getParticles()).thenReturn(ImmutableList.of(
-			new CMParticle(p, DataPointer.ofParticle(0, 0), Spin.NEUTRAL, 1)
-		));
+		CMInstruction instruction = mock(CMInstruction.class);
+		when(instruction.getMicroInstructions()).thenReturn(
+			ImmutableList.of(CMMicroInstruction.checkSpin(p, Spin.NEUTRAL))
+		);
 
-		assertThat(machine.validate(atom))
+		assertThat(machine.validate(instruction))
 			.contains(new CMError(DataPointer.ofParticle(0, 0), CMErrorCode.INTERNAL_SPIN_CONFLICT));
 	}
 
@@ -64,15 +62,18 @@ public class ConstraintMachineTest {
 		Particle particle1 = mock(Particle.class);
 		Particle particle2 = mock(Particle.class);
 
-		Optional<CMError> errors = machine.validateParticleGroup(
-			new CMValidationState(new HashMap<>(ImmutableMap.of(
-				particle0, Spin.UP,
-				particle1, Spin.UP,
-				particle2, Spin.NEUTRAL
-			))),
-			ImmutableList.of(particle0, particle1, particle2),
-			0,
-			mock(AtomMetadata.class)
+		CMValidationState validationState = new CMValidationState(null, null);
+		validationState.checkSpin(particle0, Spin.UP);
+		validationState.checkSpin(particle1, Spin.UP);
+		validationState.checkSpin(particle2, Spin.UP);
+
+		Optional<CMError> errors = machine.validateMicroInstructions(validationState,
+			ImmutableList.of(
+				CMMicroInstruction.push(particle0),
+				CMMicroInstruction.push(particle1),
+				CMMicroInstruction.push(particle2),
+				CMMicroInstruction.particleGroup()
+			)
 		);
 
 		assertThat(errors).isEmpty();

@@ -19,6 +19,7 @@ import java.util.function.Supplier;
  */
 @SerializerId2("radix.particle")
 public abstract class Particle {
+	// TODO: Move this out and up to Atom level
 	@JsonProperty("destinations")
 	@DsonOutput(Output.ALL)
 	private ImmutableSet<EUID> destinations;

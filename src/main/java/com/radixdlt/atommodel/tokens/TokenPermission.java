@@ -6,7 +6,7 @@ import static com.radixdlt.atomos.Result.success;
 
 import com.radixdlt.atomos.RRI;
 import com.radixdlt.atomos.Result;
-import com.radixdlt.constraintmachine.AtomMetadata;
+import com.radixdlt.constraintmachine.WitnessData;
 import java.util.Objects;
 
 /**
@@ -17,7 +17,7 @@ public enum TokenPermission {
 	 * Only the token owner can do this
 	 */
 	TOKEN_OWNER_ONLY((tokDefRef, meta) -> of(
-		meta.isSignedBy(tokDefRef.getAddress()),
+		meta.isSignedBy(tokDefRef.getAddress().getKey()),
 		() -> "must be signed by token owner: " + tokDefRef.getAddress())),
 
 	/**
@@ -42,7 +42,7 @@ public enum TokenPermission {
 	 * @param meta the metadata of the containing atom
 	 * @return the result of this check
 	 */
-	public Result check(RRI tokDefRef, AtomMetadata meta) {
+	public Result check(RRI tokDefRef, WitnessData meta) {
 		return check.check(tokDefRef, meta);
 	}
 
@@ -51,6 +51,6 @@ public enum TokenPermission {
 	 */
 	@FunctionalInterface
 	private interface TokenPermissionCheck {
-		Result check(RRI tokDefRef, AtomMetadata meta);
+		Result check(RRI tokDefRef, WitnessData meta);
 	}
 }

@@ -6,6 +6,8 @@ package com.radixdlt.constraintmachine;
  */
 public enum CMErrorCode {
 	EMPTY_PARTICLE_GROUP("Empty particle group"),
+	HOOK_ERROR("Hook error"),
+	MISSING_PARTICLE_GROUP("Missing particle group"),
 	DUPLICATE_PARTICLES_IN_GROUP("Duplicate particles in group"),
 	INTERNAL_SPIN_CONFLICT("Internal spin conflict"),
 	INTERNAL_SPIN_MISSING_DEPENDENCY("Internal spin missing dependency"),
