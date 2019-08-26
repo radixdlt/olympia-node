@@ -2,8 +2,7 @@ package org.radix.atoms;
 
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.atoms.Spin;
-import com.radixdlt.constraintmachine.CMMicroInstruction.CMOperation;
-import com.radixdlt.engine.RadixEngineAtom;
+import com.radixdlt.constraintmachine.CMMicroInstruction.CMMicroOp;
 import com.radixdlt.atomos.SimpleRadixEngineAtom;
 import com.radixdlt.store.SpinStateMachine;
 import com.radixdlt.utils.UInt384;
@@ -13,7 +12,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -21,7 +19,6 @@ import java.util.stream.Collectors;
 
 import com.radixdlt.common.AID;
 import org.radix.atoms.AtomStore.IDType;
-import com.radixdlt.constraintmachine.CMParticle;
 import com.radixdlt.common.EUID;
 import org.radix.modules.Modules;
 import com.radixdlt.utils.WireIO.Reader;
@@ -69,9 +66,9 @@ public class PreparedAtom {
 
 
 		Map<Particle, Spin> curSpins = radixEngineAtom.getCMInstruction().getParticles().stream()
-			.collect(Collectors.toMap(CMParticle::getParticle, CMParticle::getCheckSpin));
+			.collect(Collectors.toMap(p -> p.getFirst().getParticle(), p -> p.getFirst().getCheckSpin()));
 		radixEngineAtom.getCMInstruction().getMicroInstructions().stream()
-			.filter(i -> i.getOperation() == CMOperation.PUSH)
+			.filter(i -> i.getOperation() == CMMicroOp.PUSH)
 			.forEach(i -> {
 				Spin curSpin = curSpins.get(i.getParticle());
 				Spin nextSpin = SpinStateMachine.next(curSpin);
@@ -109,7 +106,7 @@ public class PreparedAtom {
 			// This does not handle nested particle classes.
 			// If that ever becomes a problem, this is the place to fix it.
 			final Serialization serialization = Modules.get(Serialization.class);
-			final String idForClass = serialization.getIdForClass(cmParticle.getParticle().getClass());
+			final String idForClass = serialization.getIdForClass(cmParticle.getFirst().getParticle().getClass());
 			final EUID numericClassId = SerializationUtils.stringToNumericID(idForClass);
 			this.duplicateIndexables.put(numericClassId.getLow(), IDType.toByteArray(IDType.PARTICLE_CLASS, numericClassId));
 		});
