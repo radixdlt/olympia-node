@@ -1,7 +1,9 @@
 package org.radix.atoms;
 
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.atoms.Spin;
+import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.CMMicroInstruction.CMMicroOp;
 import com.radixdlt.atomos.SimpleRadixEngineAtom;
 import com.radixdlt.store.SpinStateMachine;
@@ -65,10 +67,14 @@ public class PreparedAtom {
 		this.uniqueIndexables = new HashMap<>();
 
 
-		Map<Particle, Spin> curSpins = radixEngineAtom.getCMInstruction().getParticles().stream()
-			.collect(Collectors.toMap(p -> p.getFirst().getParticle(), p -> p.getFirst().getCheckSpin()));
+		Map<Particle, Spin> curSpins = radixEngineAtom.getCMInstruction().getMicroInstructions().stream()
+			.filter(CMMicroInstruction::isCheckSpin)
+			.collect(Collectors.toMap(
+				CMMicroInstruction::getParticle,
+				CMMicroInstruction::getCheckSpin
+			));
 		radixEngineAtom.getCMInstruction().getMicroInstructions().stream()
-			.filter(i -> i.getOperation() == CMMicroOp.PUSH)
+			.filter(i -> i.getMicroOp() == CMMicroOp.PUSH)
 			.forEach(i -> {
 				Spin curSpin = curSpins.get(i.getParticle());
 				Spin nextSpin = SpinStateMachine.next(curSpin);
@@ -95,21 +101,29 @@ public class PreparedAtom {
 		this.shards = new HashSet<>();
 		this.duplicateIndexables = new HashMap<>();
 
-		for (EUID euid : radixEngineAtom.getCMInstruction().getDestinations()) {
+		final ImmutableSet<EUID> destinations = radixEngineAtom.getCMInstruction().getMicroInstructions().stream()
+			.filter(CMMicroInstruction::isCheckSpin)
+			.map(CMMicroInstruction::getParticle)
+			.map(Particle::getDestinations)
+			.flatMap(Set::stream)
+			.collect(ImmutableSet.toImmutableSet());
+
+		for (EUID euid : destinations) {
 			this.duplicateIndexables.put(euid.getLow(), IDType.toByteArray(IDType.DESTINATION, euid));
 			this.duplicateIndexables.put(euid.getShard(), IDType.toByteArray(IDType.SHARD, euid.getShard()));
 			this.shards.add(euid.getShard());
 		}
 
-		radixEngineAtom.getCMInstruction().getParticles().forEach(cmParticle -> {
-			// TODO: Remove
-			// This does not handle nested particle classes.
-			// If that ever becomes a problem, this is the place to fix it.
-			final Serialization serialization = Modules.get(Serialization.class);
-			final String idForClass = serialization.getIdForClass(cmParticle.getFirst().getParticle().getClass());
-			final EUID numericClassId = SerializationUtils.stringToNumericID(idForClass);
-			this.duplicateIndexables.put(numericClassId.getLow(), IDType.toByteArray(IDType.PARTICLE_CLASS, numericClassId));
-		});
+		radixEngineAtom.getCMInstruction().getMicroInstructions().stream().filter(CMMicroInstruction::isCheckSpin)
+			.forEach(checkSpin -> {
+				// TODO: Remove
+				// This does not handle nested particle classes.
+				// If that ever becomes a problem, this is the place to fix it.
+				final Serialization serialization = Modules.get(Serialization.class);
+				final String idForClass = serialization.getIdForClass(checkSpin.getParticle().getClass());
+				final EUID numericClassId = SerializationUtils.stringToNumericID(idForClass);
+				this.duplicateIndexables.put(numericClassId.getLow(), IDType.toByteArray(IDType.PARTICLE_CLASS, numericClassId));
+			});
 	}
 
 	PreparedAtom(byte[] bytes) throws IOException
