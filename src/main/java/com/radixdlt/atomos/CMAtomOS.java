@@ -27,7 +27,8 @@ public final class CMAtomOS {
 	private static final ParticleDefinition<Particle> RRI_PARTICLE_DEF = new ParticleDefinition<>(
 		rri -> Stream.of(((RRIParticle) rri).getRri().getAddress()),
 		rri -> Result.success(),
-		rri -> ((RRIParticle) rri).getRri()
+		rri -> ((RRIParticle) rri).getRri(),
+		true
 	);
 
 	private final Map<Class<? extends Particle>, ParticleDefinition<Particle>> particleDefinitions = new HashMap<>();
@@ -42,11 +43,9 @@ public final class CMAtomOS {
 	}
 
 	public void load(ConstraintScrypt constraintScrypt) {
-		final Map<Class<? extends Particle>, ParticleDefinition<Particle>> scryptParticleDefinitions = new HashMap<>();
-		scryptParticleDefinitions.put(RRIParticle.class, RRI_PARTICLE_DEF);
-		ConstraintScryptEnv constraintScryptEnv = new ConstraintScryptEnv(particleDefinitions, scryptParticleDefinitions);
+		ConstraintScryptEnv constraintScryptEnv = new ConstraintScryptEnv(ImmutableMap.copyOf(particleDefinitions));
 		constraintScrypt.main(constraintScryptEnv);
-		this.particleDefinitions.putAll(scryptParticleDefinitions);
+		this.particleDefinitions.putAll(constraintScryptEnv.getScryptParticleDefinitions());
 		this.proceduresBuilder.putAll(constraintScryptEnv.getScryptTransitionProcedures());
 		this.witnessesBuilder.putAll(constraintScryptEnv.getScryptWitnessValidators());
 	}

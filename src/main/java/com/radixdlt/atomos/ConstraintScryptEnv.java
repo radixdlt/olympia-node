@@ -1,5 +1,6 @@
 package com.radixdlt.atomos;
 
+import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atommodel.procedures.CombinedTransition;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.common.Pair;
@@ -19,19 +20,22 @@ import java.util.function.Function;
  * SysCall environment for CMAtomOS Constraint Scrypts.
  */
 final class ConstraintScryptEnv implements SysCalls {
-	private final Map<Class<? extends Particle>, ParticleDefinition<Particle>> particleDefinitions;
+	private final ImmutableMap<Class<? extends Particle>, ParticleDefinition<Particle>> particleDefinitions;
 	private final Map<Class<? extends Particle>, ParticleDefinition<Particle>> scryptParticleDefinitions;
 	private final Map<Pair<Class<? extends Particle>, Class<? extends Particle>>, TransitionProcedure<Particle, Particle>> scryptTransitionProcedures;
 	private final Map<Pair<Class<? extends Particle>, Class<? extends Particle>>, WitnessValidator<Particle, Particle>> scryptWitnessValidators;
 
 	ConstraintScryptEnv(
-		Map<Class<? extends Particle>, ParticleDefinition<Particle>> particleDefinitions,
-		Map<Class<? extends Particle>, ParticleDefinition<Particle>> scryptParticleDefinitions
+		ImmutableMap<Class<? extends Particle>, ParticleDefinition<Particle>> particleDefinitions
 	) {
 		this.particleDefinitions = particleDefinitions;
-		this.scryptParticleDefinitions = scryptParticleDefinitions;
+		this.scryptParticleDefinitions = new HashMap<>();
 		this.scryptTransitionProcedures = new HashMap<>();
 		this.scryptWitnessValidators = new HashMap<>();
+	}
+
+	public Map<Class<? extends Particle>, ParticleDefinition<Particle>> getScryptParticleDefinitions() {
+		return scryptParticleDefinitions;
 	}
 
 	public Map<Pair<Class<? extends Particle>, Class<? extends Particle>>, TransitionProcedure<Particle, Particle>> getScryptTransitionProcedures() {
@@ -79,6 +83,27 @@ final class ConstraintScryptEnv implements SysCalls {
 		registerParticleMultipleAddresses(particleClass, mapper, staticCheck, null);
 	}
 
+	private <T extends Particle> boolean particleDefinitionExists(Class<T> particleClass) {
+		return particleDefinitions.containsKey(particleClass) || scryptParticleDefinitions.containsKey(particleClass);
+	}
+
+	private <T extends Particle> ParticleDefinition<Particle> getParticleDefinition(Class<T> particleClass) {
+		ParticleDefinition<Particle> particleDefinition = particleDefinitions.get(particleClass);
+		if (particleDefinition != null) {
+			if (!particleDefinition.allowsTransitionsFromOutsideScrypts()) {
+				throw new IllegalStateException(particleClass + " can only be used in registering scrypt.");
+			}
+			return particleDefinition;
+		}
+
+		particleDefinition = scryptParticleDefinitions.get(particleClass);
+		if (particleDefinition == null) {
+			throw new IllegalStateException(particleClass + " is not registered.");
+		}
+
+		return particleDefinition;
+	}
+
 	@Override
 	public <T extends Particle> void registerParticleMultipleAddresses(
 		Class<T> particleClass,
@@ -86,7 +111,7 @@ final class ConstraintScryptEnv implements SysCalls {
 		Function<T, Result> staticCheck,
 		Function<T, RRI> rriMapper
 	) {
-		if (particleDefinitions.containsKey(particleClass)) {
+		if (particleDefinitionExists(particleClass)) {
 			throw new IllegalStateException("Particle " + particleClass + " is already registered");
 		}
 
@@ -101,16 +126,14 @@ final class ConstraintScryptEnv implements SysCalls {
 
 				return staticCheck.apply((T) p);
 			},
-			rriMapper == null ? null : p -> rriMapper.apply((T) p)
+			rriMapper == null ? null : p -> rriMapper.apply((T) p),
+			false
 		));
 	}
 
 	@Override
 	public <T extends Particle> void createTransitionFromRRI(Class<T> particleClass) {
-		final ParticleDefinition<Particle> particleDefinition = scryptParticleDefinitions.get(particleClass);
-		if (particleDefinition == null) {
-			throw new IllegalStateException(particleClass + " must be registered in calling scrypt.");
-		}
+		ParticleDefinition<Particle> particleDefinition = getParticleDefinition(particleClass);
 		if (particleDefinition.getRriMapper() == null) {
 			throw new IllegalStateException(particleClass + " must be registered with an RRI mapper.");
 		}
@@ -136,17 +159,11 @@ final class ConstraintScryptEnv implements SysCalls {
 		Class<U> particleClass1,
 		BiFunction<T, U, Result> combinedCheck
 	) {
-		final ParticleDefinition<Particle> particleDefinition0 = scryptParticleDefinitions.get(particleClass0);
-		if (particleDefinition0 == null) {
-			throw new IllegalStateException(particleClass0 + " must be registered in calling scrypt.");
-		}
+		final ParticleDefinition<Particle> particleDefinition0 = getParticleDefinition(particleClass0);
 		if (particleDefinition0.getRriMapper() == null) {
 			throw new IllegalStateException(particleClass0 + " must be registered with an RRI mapper.");
 		}
-		final ParticleDefinition<Particle> particleDefinition1 = scryptParticleDefinitions.get(particleClass1);
-		if (particleDefinition1 == null) {
-			throw new IllegalStateException(particleClass1 + " must be registered in calling scrypt.");
-		}
+		final ParticleDefinition<Particle> particleDefinition1 = getParticleDefinition(particleClass1);
 		if (particleDefinition1.getRriMapper() == null) {
 			throw new IllegalStateException(particleClass1 + " must be registered with an RRI mapper.");
 		}
@@ -214,21 +231,16 @@ final class ConstraintScryptEnv implements SysCalls {
 		TransitionProcedure<T, U> procedure,
 		WitnessValidator<T, U> witnessValidator
 	) {
-		if ((inputClass != null && !scryptParticleDefinitions.containsKey(inputClass))) {
-			throw new IllegalStateException(inputClass + " must be registered in calling scrypt.");
-		}
-		if (outputClass != null && !scryptParticleDefinitions.containsKey(outputClass)) {
-			throw new IllegalStateException(outputClass + " must be registered in calling scrypt.");
-		}
+		final ParticleDefinition<Particle> inputDefinition = inputClass != null ? getParticleDefinition(inputClass) : null;
+		final ParticleDefinition<Particle> outputDefinition = outputClass != null ? getParticleDefinition(outputClass) : null;
 
 		final TransitionProcedure<Particle, Particle> transformedProcedure;
-
 		// RRIs must be the same across RRI particle transitions
-		if (inputClass != null && scryptParticleDefinitions.get(inputClass).getRriMapper() != null
-			&& outputClass != null && scryptParticleDefinitions.get(outputClass).getRriMapper() != null) {
+		if (inputClass != null && inputDefinition.getRriMapper() != null
+			&& outputClass != null && outputDefinition.getRriMapper() != null) {
 			transformedProcedure = (in, inUsed, out, outUsed) -> {
-				final RRI inputRRI = scryptParticleDefinitions.get(inputClass).getRriMapper().apply(in);
-				final RRI outputRRI = scryptParticleDefinitions.get(outputClass).getRriMapper().apply(out);
+				final RRI inputRRI = inputDefinition.getRriMapper().apply(in);
+				final RRI outputRRI = outputDefinition.getRriMapper().apply(out);
 				if (!inputRRI.equals(outputRRI)) {
 					return ProcedureResult.error("Input/Output RRIs not equal");
 				}

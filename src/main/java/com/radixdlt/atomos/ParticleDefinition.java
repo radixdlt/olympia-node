@@ -12,15 +12,18 @@ class ParticleDefinition<T extends Particle> {
 	private final Function<T, Stream<RadixAddress>> addressMapper;
 	private final Function<T, Result> staticValidation;
 	private final Function<T, RRI> rriMapper;
+	private final boolean allowsTransitionsFromOutsideScrypts;
 
 	ParticleDefinition(
 		Function<T, Stream<RadixAddress>> addressMapper,
 		Function<T, Result> staticValidation,
-		Function<T, RRI> rriMapper
+		Function<T, RRI> rriMapper,
+		boolean allowsTransitionsFromOutsideScrypts
 	) {
 		this.staticValidation = staticValidation;
 		this.addressMapper = addressMapper;
 		this.rriMapper = rriMapper;
+		this.allowsTransitionsFromOutsideScrypts = allowsTransitionsFromOutsideScrypts;
 	}
 
 	Function<T, Stream<RadixAddress>> getAddressMapper() {
@@ -33,5 +36,9 @@ class ParticleDefinition<T extends Particle> {
 
 	Function<T, RRI> getRriMapper() {
 		return rriMapper;
+	}
+
+	public boolean allowsTransitionsFromOutsideScrypts() {
+		return allowsTransitionsFromOutsideScrypts;
 	}
 }
