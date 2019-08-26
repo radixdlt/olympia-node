@@ -1,7 +1,6 @@
 package com.radixdlt.constraintmachine;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.ConstraintMachine.CMValidationState;
 import com.radixdlt.constraintmachine.TransitionProcedure.ProcedureResult;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
@@ -39,9 +38,9 @@ public class ConstraintMachineTest {
 		when(p.getDestinations()).thenReturn(Collections.singleton(EUID.ONE));
 
 		CMInstruction instruction = mock(CMInstruction.class);
-		when(instruction.getParticles()).thenReturn(
-			ImmutableList.of(Pair.of(CMMicroInstruction.checkSpin(p, Spin.NEUTRAL), DataPointer.ofParticle(0, 0))
-		));
+		when(instruction.getMicroInstructions()).thenReturn(
+			ImmutableList.of(CMMicroInstruction.checkSpin(p, Spin.NEUTRAL))
+		);
 
 		assertThat(machine.validate(instruction))
 			.contains(new CMError(DataPointer.ofParticle(0, 0), CMErrorCode.INTERNAL_SPIN_CONFLICT));

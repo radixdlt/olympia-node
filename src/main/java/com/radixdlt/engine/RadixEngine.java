@@ -10,6 +10,7 @@ import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.CMErrorCode;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.constraintmachine.CMError;
+import com.radixdlt.constraintmachine.CMMicroInstruction.CMMicroOp;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
@@ -144,13 +145,14 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 		final CMInstruction cmInstruction = cmAtom.getCMInstruction();
 
 		// TODO: Optimize these collectors out
-		Map<TransitionCheckResult, List<Pair<SpunParticle, TransitionCheckResult>>> spinCheckResults = cmInstruction.getParticles()
+		Map<TransitionCheckResult, List<Pair<SpunParticle, TransitionCheckResult>>> spinCheckResults = cmInstruction.getMicroInstructions()
 			.stream()
-			.map(cmParticle -> {
+			.filter(i -> i.getMicroOp() == CMMicroOp.CHECK_NEUTRAL || i.getMicroOp() == CMMicroOp.CHECK_UP)
+			.map(instruction -> {
 				// First spun is the only one we need to check
-				final Spin checkSpin = cmParticle.getFirst().getCheckSpin();
+				final Spin checkSpin = instruction.getCheckSpin();
 				final Spin nextSpin = SpinStateMachine.next(checkSpin);
-				final Particle particle = cmParticle.getFirst().getParticle();
+				final Particle particle = instruction.getParticle();
 				final TransitionCheckResult spinCheck = SpinStateTransitionValidator.checkParticleTransition(
 					particle,
 					nextSpin,

@@ -31,8 +31,8 @@ public class AtomCheckHook implements CMSuccessHook<SimpleRadixEngineAtom> {
 
 	@Override
 	public Result hook(SimpleRadixEngineAtom cmAtom) {
-		if (cmAtom.getCMInstruction().getParticles().isEmpty()) {
-			return Result.error("atom has no particles");
+		if (cmAtom.getCMInstruction().getMicroInstructions().isEmpty()) {
+			return Result.error("atom has no instructions");
 		}
 
 		final boolean isMagic = Objects.equals(cmAtom.getAtom().getMetaData().get("magic"), "0xdeadbeef");

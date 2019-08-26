@@ -17,8 +17,10 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.SpinStateMachine;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -202,27 +204,24 @@ public final class RadixEngineUtils {
 			throw new CMAtomConversionException(errors);
 		}
 
-		final ImmutableList<Pair<CMMicroInstruction, DataPointer>> cmParticles =
-			spunParticles.entrySet().stream()
-				.map(e -> {
-					ImmutableList<IndexedSpunParticle> sp = e.getValue();
-					Spin checkSpin = SpinStateMachine.prev(sp.get(0).getSpunParticle().getSpin());
-					return Pair.of(CMMicroInstruction.checkSpin(e.getKey(), checkSpin), sp.get(0).getDataPointer());
-				})
-				.collect(ImmutableList.toImmutableList());
-
+		final Set<Particle> seen = new HashSet<>();
 		final ImmutableList.Builder<CMMicroInstruction> microInstructionsBuilder = new Builder<>();
 		for (int i = 0; i < atom.getParticleGroupCount(); i++) {
 			ParticleGroup pg = atom.getParticleGroup(i);
 			pg.spunParticles()
-				.map(SpunParticle::getParticle)
-				.map(CMMicroInstruction::push)
-				.forEach(microInstructionsBuilder::add);
+				.forEach(sp -> {
+					Particle particle = sp.getParticle();
+					if (!seen.contains(particle)) {
+						Spin checkSpin = SpinStateMachine.prev(sp.getSpin());
+						microInstructionsBuilder.add(CMMicroInstruction.checkSpin(particle, checkSpin));
+						seen.add(particle);
+					}
+					microInstructionsBuilder.add(CMMicroInstruction.push(particle));
+				});
 			microInstructionsBuilder.add(CMMicroInstruction.particleGroup());
 		}
 
 		final CMInstruction cmInstruction = new CMInstruction(
-			cmParticles,
 			microInstructionsBuilder.build(),
 			atom.getHash(),
 			ImmutableMap.copyOf(atom.getSignatures())

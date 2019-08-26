@@ -19,12 +19,16 @@ public final class CMMicroInstruction {
 		this.particle = particle;
 	}
 
-	public CMMicroOp getOperation() {
+	public CMMicroOp getMicroOp() {
 		return operation;
 	}
 
 	public Particle getParticle() {
 		return particle;
+	}
+
+	public boolean isCheckSpin() {
+		return operation == CMMicroOp.CHECK_NEUTRAL || operation == CMMicroOp.CHECK_UP;
 	}
 
 	public Spin getCheckSpin() {

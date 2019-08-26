@@ -4,7 +4,6 @@ import com.radixdlt.atoms.DataPointer;
 import com.radixdlt.atoms.Spin;
 import com.radixdlt.atoms.SpunParticle;
 import com.radixdlt.common.EUID;
-import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.TransitionProcedure.ProcedureResult;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
 import com.radixdlt.crypto.ECPublicKey;
@@ -272,7 +271,30 @@ public final class ConstraintMachine {
 
 		for (CMMicroInstruction cmMicroInstruction : microInstructions) {
 			final DataPointer dp = DataPointer.ofParticle(particleGroupIndex, particleIndex);
-			switch (cmMicroInstruction.getOperation()) {
+			switch (cmMicroInstruction.getMicroOp()) {
+				case CHECK_NEUTRAL:
+				case CHECK_UP:
+					final Optional<Spin> initSpin = localEngineStore.getSpin(cmMicroInstruction.getParticle());
+
+					// "Segfaults" or particles which should not exist
+					if (!initSpin.isPresent()) {
+						return Optional.of(new CMError(dp, CMErrorCode.UNKNOWN_PARTICLE));
+					}
+
+					final Spin checkSpin = cmMicroInstruction.getCheckSpin();
+					final Spin curSpin = initSpin.get();
+
+					// Virtual particle state checks
+					// TODO: Is this better suited at the state check pipeline?
+					if (SpinStateMachine.isBefore(checkSpin, curSpin)) {
+						return Optional.of(new CMError(dp, CMErrorCode.INTERNAL_SPIN_CONFLICT));
+					}
+
+					boolean updated = validationState.checkSpin(cmMicroInstruction.getParticle(), checkSpin);
+					if (!updated) {
+						return Optional.of(new CMError(dp, CMErrorCode.INTERNAL_SPIN_CONFLICT));
+					}
+					break;
 				case PUSH:
 					final Particle nextParticle = cmMicroInstruction.getParticle();
 					final Spin nextSpin = validationState.push(nextParticle);
@@ -297,7 +319,7 @@ public final class ConstraintMachine {
 					particleIndex = 0;
 					break;
 				default:
-					throw new IllegalStateException("Unknown CM Operation: " + cmMicroInstruction.getOperation());
+					throw new IllegalStateException("Unknown CM Operation: " + cmMicroInstruction.getMicroOp());
 			}
 		}
 
@@ -312,7 +334,7 @@ public final class ConstraintMachine {
 	}
 
 	/**
-	 * Validates an atom and calculates the necessary state checks and post-validation
+	 * Validates a CM instruction and calculates the necessary state checks and post-validation
 	 * write logic.
 	 *
 	 * @param cmInstruction instruction to validate
@@ -323,33 +345,6 @@ public final class ConstraintMachine {
 			cmInstruction.getWitness(),
 			cmInstruction.getSignatures()
 		);
-
-		// Particle checks
-		for (Pair<CMMicroInstruction, DataPointer> cmParticle : cmInstruction.getParticles()) {
-			final CMMicroInstruction microInstruction = cmParticle.getFirst();
-			final DataPointer dataPointer = cmParticle.getSecond();
-
-			final Optional<Spin> initSpin = localEngineStore.getSpin(microInstruction.getParticle());
-
-			// "Segfaults" or particles which should not exist
-			if (!initSpin.isPresent()) {
-				return Optional.of(new CMError(dataPointer, CMErrorCode.UNKNOWN_PARTICLE));
-			}
-
-			final Spin checkSpin = microInstruction.getCheckSpin();
-			final Spin curSpin = initSpin.get();
-
-			// Virtual particle state checks
-			// TODO: Is this better suited at the state check pipeline?
-			if (SpinStateMachine.isBefore(checkSpin, curSpin)) {
-				return Optional.of(new CMError(dataPointer, CMErrorCode.INTERNAL_SPIN_CONFLICT));
-			}
-
-			boolean updated = validationState.checkSpin(microInstruction.getParticle(), checkSpin);
-			if (!updated) {
-				return Optional.of(new CMError(dataPointer, CMErrorCode.INTERNAL_SPIN_CONFLICT));
-			}
-		}
 
 		return this.validateMicroInstructions(validationState, cmInstruction.getMicroInstructions());
 	}

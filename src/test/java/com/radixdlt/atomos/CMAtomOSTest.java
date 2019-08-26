@@ -1,9 +1,7 @@
 package com.radixdlt.atomos;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.atoms.DataPointer;
 import com.radixdlt.atoms.Spin;
-import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.TransitionProcedure;
@@ -49,9 +47,9 @@ public class CMAtomOSTest {
 		ConstraintMachine machine = os.buildMachine();
 		CMInstruction instruction = mock(CMInstruction.class);
 		TestParticle testParticle = new TestParticle();
-		when(instruction.getParticles()).thenReturn(
-			ImmutableList.of(Pair.of(CMMicroInstruction.checkSpin(testParticle, Spin.NEUTRAL), DataPointer.ofParticle(0, 0))
-		));
+		when(instruction.getMicroInstructions()).thenReturn(
+			ImmutableList.of(CMMicroInstruction.checkSpin(testParticle, Spin.NEUTRAL))
+		);
 		assertThat(machine.validate(instruction))
 			.isPresent()
 			.matches(e -> e.get().getErrorCode() == CMErrorCode.UNKNOWN_PARTICLE);
