@@ -2,6 +2,7 @@ package org.radix.atoms;
 
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.atoms.Spin;
+import com.radixdlt.constraintmachine.CMMicroInstruction.CMOperation;
 import com.radixdlt.engine.RadixEngineAtom;
 import com.radixdlt.atomos.SimpleRadixEngineAtom;
 import com.radixdlt.store.SpinStateMachine;
@@ -69,12 +70,12 @@ public class PreparedAtom {
 
 		Map<Particle, Spin> curSpins = radixEngineAtom.getCMInstruction().getParticles().stream()
 			.collect(Collectors.toMap(CMParticle::getParticle, CMParticle::getCheckSpin));
-		radixEngineAtom.getCMInstruction().getParticlePushes().stream()
-			.flatMap(List::stream)
-			.forEach(particle -> {
-				Spin curSpin = curSpins.get(particle);
+		radixEngineAtom.getCMInstruction().getMicroInstructions().stream()
+			.filter(i -> i.getOperation() == CMOperation.PUSH)
+			.forEach(i -> {
+				Spin curSpin = curSpins.get(i.getParticle());
 				Spin nextSpin = SpinStateMachine.next(curSpin);
-				curSpins.put(particle, nextSpin);
+				curSpins.put(i.getParticle(), nextSpin);
 
 				final IDType idType;
 				switch (nextSpin) {
@@ -88,8 +89,8 @@ public class PreparedAtom {
 						throw new IllegalStateException("Unknown SPIN state for particle " + nextSpin);
 				}
 
-				final byte[] indexableBytes = IDType.toByteArray(idType, particle.getHID());
-				this.uniqueIndexables.put(particle.getHID().getLow() + nextSpin.intValue(), indexableBytes);
+				final byte[] indexableBytes = IDType.toByteArray(idType, i.getParticle().getHID());
+				this.uniqueIndexables.put(i.getParticle().getHID().getLow() + nextSpin.intValue(), indexableBytes);
 			});
 
 		this.uniqueIndexables.put(atom.getAID().getLow(), IDType.toByteArray(IDType.ATOM, atom.getAID()));
