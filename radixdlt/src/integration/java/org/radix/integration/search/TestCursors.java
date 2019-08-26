@@ -1,7 +1,8 @@
 package org.radix.integration.search;
 
-import com.radixdlt.common.Pair;
-import com.radixdlt.engine.RadixEngineUtils;
+import com.radixdlt.atomos.SimpleRadixEngineAtom;
+import com.radixdlt.engine.RadixEngineAtom;
+import com.radixdlt.atomos.RadixEngineUtils;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.UInt384;
 import java.util.Comparator;
@@ -21,7 +22,6 @@ import org.radix.modules.Modules;
 import org.radix.time.TemporalVertex;
 import org.radix.time.Time;
 import org.radix.universe.system.LocalSystem;
-import org.radix.validation.ValidationHandler;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -30,7 +30,6 @@ import com.radixdlt.atommodel.message.MessageParticle;
 import com.radixdlt.atomos.RadixAddress;
 import org.radix.atoms.Atom;
 import com.radixdlt.atoms.Spin;
-import com.radixdlt.constraintmachine.CMAtom;
 import com.radixdlt.crypto.ECKeyPair;
 
 import static org.junit.Assert.assertEquals;
@@ -117,8 +116,8 @@ public class TestCursors extends RadixTestWithStores {
 	}
 
 	private void storeAtom(Atom atom) throws Exception {
-		CMAtom cmAtom = RadixEngineUtils.toCMAtom(atom);
-		Modules.get(AtomStore.class).storeAtom(new PreparedAtom(cmAtom, UInt384.ONE));
+		SimpleRadixEngineAtom radixEngineAtom = RadixEngineUtils.toCMAtom(atom);
+		Modules.get(AtomStore.class).storeAtom(new PreparedAtom(radixEngineAtom, UInt384.ONE));
 	}
 
 	private List<Atom> createUniqueAtoms(ECKeyPair identity, int n) throws Exception {

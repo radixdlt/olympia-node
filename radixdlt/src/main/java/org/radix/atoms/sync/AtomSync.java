@@ -1,14 +1,18 @@
 package org.radix.atoms.sync;
 
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.atomos.AtomCheckHook;
+import com.radixdlt.atomos.Result;
 import com.radixdlt.atoms.AtomStatus;
 import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.atoms.SpunParticle;
 import com.radixdlt.constraintmachine.CMError;
+import com.radixdlt.engine.RadixEngineAtom;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.engine.RadixEngineUtils;
-import com.radixdlt.engine.RadixEngineUtils.CMAtomConversionException;
+import com.radixdlt.atomos.RadixEngineUtils;
+import com.radixdlt.atomos.RadixEngineUtils.CMAtomConversionException;
 import com.radixdlt.engine.AtomEventListener;
+import com.radixdlt.atomos.SimpleRadixEngineAtom;
 import java.io.IOException;
 import java.net.SocketException;
 import java.net.URI;
@@ -21,6 +25,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.BlockingQueue;
@@ -37,7 +42,6 @@ import org.radix.atoms.AtomDependencyNotFoundException;
 import org.radix.atoms.AtomDiscoveryRequest;
 import org.radix.atoms.AtomStore;
 import org.radix.atoms.PreparedAtom;
-import com.radixdlt.constraintmachine.CMAtom;
 import org.radix.atoms.events.AtomDeletedEvent;
 import org.radix.atoms.events.AtomEvent;
 import org.radix.atoms.events.AtomExceptionEvent;
@@ -433,7 +437,7 @@ public class AtomSync extends Service
 					continue;
 				}
 
-				final CMAtom cmAtom;
+				final SimpleRadixEngineAtom cmAtom;
 				try {
 					cmAtom = RadixEngineUtils.toCMAtom(atom);
 				} catch (CMAtomConversionException e) {
@@ -444,7 +448,55 @@ public class AtomSync extends Service
 					continue;
 				}
 
-				Modules.get(ValidationHandler.class).getRadixEngine().store(cmAtom);
+				Modules.get(ValidationHandler.class).getRadixEngine().store(cmAtom, new AtomEventListener<SimpleRadixEngineAtom>() {
+					@Override
+					public void onCMSuccess(SimpleRadixEngineAtom cmAtom) {
+						if (atomsLog.hasLevel(Logging.DEBUG)) {
+							atomsLog.debug("Validated Atom " + cmAtom.getAtom().getAID() + " to SIGNATURE");
+						}
+					}
+
+					@Override
+					public void onCMError(SimpleRadixEngineAtom cmAtom, Set<CMError> errors) {
+						CMError cmError = errors.iterator().next();
+						ConstraintMachineValidationException e = new ConstraintMachineValidationException(cmAtom.getAtom(), cmError.getErrorDescription(), cmError.getDataPointer());
+						atomsLog.error(e);
+						Events.getInstance().broadcast(new AtomExceptionEvent(e, (Atom) cmAtom.getAtom()));
+					}
+
+					@Override
+					public void onStateStore(SimpleRadixEngineAtom cmAtom) {
+						if (atomsLog.hasLevel(Logging.DEBUG)) {
+							atomsLog.debug("Validated Atom " + cmAtom.getAtom().getAID() + " to COMPLETE");
+						}
+					}
+
+					@Override
+					public void onStateConflict(SimpleRadixEngineAtom cmAtom, SpunParticle issueParticle, SimpleRadixEngineAtom conflictAtom) {
+						final ParticleConflictException conflict = new ParticleConflictException(
+							new ParticleConflict(
+								issueParticle,
+								ImmutableSet.of((Atom) cmAtom.getAtom(), (Atom) conflictAtom.getAtom())
+							));
+						AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(conflict, (Atom) cmAtom.getAtom());
+						Events.getInstance().broadcast(atomExceptionEvent);
+						atomsLog.error(conflict);
+					}
+
+					@Override
+					public void onStateMissingDependency(SimpleRadixEngineAtom cmAtom, SpunParticle issueParticle) {
+						final AtomDependencyNotFoundException notFoundException =
+							new AtomDependencyNotFoundException(
+								String.format("Atom has missing dependencies in transitions: %s", issueParticle.getParticle().getHID()),
+								Collections.singleton(issueParticle.getParticle().getHID()),
+								(Atom) cmAtom.getAtom()
+							);
+
+						AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(notFoundException, (Atom) cmAtom.getAtom());
+						Events.getInstance().broadcast(atomExceptionEvent);
+						atomsLog.error(notFoundException);
+					}
+				});
 			}
 		}
 	}
@@ -1370,78 +1422,34 @@ public class AtomSync extends Service
 			this.prepareProcessorThreads[thread].start();
 		}
 
-		RadixEngine engine = Modules.get(ValidationHandler.class).getRadixEngine();
+		RadixEngine<SimpleRadixEngineAtom> engine = Modules.get(ValidationHandler.class).getRadixEngine();
 
-		engine.addCMSuccessHook(((cmAtom, computed) -> {
+		final boolean skipAtomFeeCheck = Modules.isAvailable(RuntimeProperties.class)
+			&& Modules.get(RuntimeProperties.class).get("debug.nopow", false);
+
+		engine.addCMSuccessHook(
+			new AtomCheckHook(
+				() -> Modules.get(Universe.class),
+				Time::currentTimestamp,
+				skipAtomFeeCheck,
+				Time.MAXIMUM_DRIFT
+			)
+		);
+
+		engine.addCMSuccessHook((cmAtom -> {
 			// TODO is this good here?
 			// All atoms will be witnessed, even invalid ones.  If flooded with invalid atoms, it may make it harder for
 			// remote nodes to determine if this node saw a particular atom vs a commitment stream that only includes
 			// committed atoms.
 			try {
 				witnessed(cmAtom);
+				return Result.success();
 			} catch (Exception e) {
 				atomsLog.error(e);
 				Events.getInstance().broadcast(new AtomExceptionEvent(e, (Atom) cmAtom.getAtom()));
+				return Result.error(e.getMessage());
 			}
 		}));
-
-		engine.addAtomEventListener(
-			new AtomEventListener() {
-				@Override
-				public void onCMSuccess(CMAtom cmAtom, Object computed) {
-					if (atomsLog.hasLevel(Logging.DEBUG)) {
-						atomsLog.debug("Validated Atom " + cmAtom.getAtom().getHID() + " to SIGNATURE");
-					}
-				}
-
-				@Override
-				public void onCMError(CMAtom cmAtom, Set<CMError> errors) {
-					CMError cmError = errors.iterator().next();
-					ConstraintMachineValidationException e = new ConstraintMachineValidationException(cmAtom.getAtom(), cmError.getErrorDescription(), cmError.getDataPointer());
-					if (Modules.get(Universe.class).getGenesis().contains(cmAtom.getAtom())) {
-						log.fatal("Failed to process genesis Atom", e);
-						System.exit(-1);
-						return;
-					}
-
-					atomsLog.error(e);
-					Events.getInstance().broadcast(new AtomExceptionEvent(e, (Atom) cmAtom.getAtom()));
-				}
-
-				@Override
-				public void onStateStore(CMAtom cmAtom, Object computed) {
-					if (atomsLog.hasLevel(Logging.DEBUG)) {
-						atomsLog.debug("Validated Atom " + cmAtom.getAtom().getAID() + " to COMPLETE");
-					}
-				}
-
-				@Override
-				public void onStateConflict(CMAtom cmAtom, SpunParticle issueParticle, ImmutableAtom conflictAtom) {
-					final ParticleConflictException conflict = new ParticleConflictException(
-						new ParticleConflict(
-							issueParticle,
-							ImmutableSet.of((Atom) cmAtom.getAtom(), (Atom) conflictAtom)
-						));
-					AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(conflict, (Atom) cmAtom.getAtom());
-					Events.getInstance().broadcast(atomExceptionEvent);
-					atomsLog.error(conflict);
-				}
-
-				@Override
-				public void onStateMissingDependency(CMAtom cmAtom, SpunParticle issueParticle) {
-					final AtomDependencyNotFoundException notFoundException =
-						new AtomDependencyNotFoundException(
-							String.format("Atom has missing dependencies in transitions: %s", issueParticle.getParticle().getHID()),
-							Collections.singleton(issueParticle.getParticle().getHID()),
-							(Atom) cmAtom.getAtom()
-						);
-
-					AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(notFoundException, (Atom) cmAtom.getAtom());
-					Events.getInstance().broadcast(atomExceptionEvent);
-					atomsLog.error(notFoundException);
-				}
-			}
-		);
 
 		// SYNC DISCOVERY //
 		scheduleAtFixedRate(new ScheduledExecutable(10, 10, TimeUnit.SECONDS)
@@ -1474,22 +1482,42 @@ public class AtomSync extends Service
 			}
 		});
 
-		try
-		{
+		try {
 			LinkedList<AID> atomIds = new LinkedList<>();
-			for (ImmutableAtom immutableAtom : Modules.get(Universe.class).getGenesis())
-			{
+			for (ImmutableAtom immutableAtom : Modules.get(Universe.class).getGenesis()) {
+
 				final Atom atom = (Atom) immutableAtom;
-				if (!Modules.get(AtomStore.class).hasAtom(atom.getAID()))
-				{
-					final CMAtom cmAtom;
+				if (!Modules.get(AtomStore.class).hasAtom(atom.getAID())) {
+					final SimpleRadixEngineAtom cmAtom;
 					try {
 						cmAtom = RadixEngineUtils.toCMAtom(atom);
 					} catch (CMAtomConversionException e) {
 						CMError cmError = e.getErrors().iterator().next();
 						throw new ConstraintMachineValidationException(atom, cmError.getErrorDescription(), cmError.getDataPointer());
 					}
-					Modules.get(ValidationHandler.class).getRadixEngine().store(cmAtom);
+
+					Modules.get(ValidationHandler.class).getRadixEngine().store(cmAtom,
+						new AtomEventListener<SimpleRadixEngineAtom>() {
+							@Override
+							public void onCMError(SimpleRadixEngineAtom cmAtom, Set<CMError> errors) {
+								CMError cmError = errors.iterator().next();
+								ConstraintMachineValidationException e = new ConstraintMachineValidationException(cmAtom.getAtom(), cmError.getErrorDescription(), cmError.getDataPointer());
+								log.fatal("Failed to process genesis Atom", e);
+								System.exit(-1);
+							}
+
+							@Override
+							public void onStateConflict(SimpleRadixEngineAtom cmAtom, SpunParticle issueParticle, SimpleRadixEngineAtom conflictAtom) {
+								log.fatal("Failed to process genesis Atom");
+								System.exit(-1);
+							}
+
+							@Override
+							public void onStateMissingDependency(SimpleRadixEngineAtom cmAtom, SpunParticle issueParticle) {
+								log.fatal("Failed to process genesis Atom");
+								System.exit(-1);
+							}
+						});
 				}
 			}
 			waitForAtoms(atomIds);
@@ -1680,9 +1708,9 @@ public class AtomSync extends Service
 		Events.getInstance().broadcast(new AtomStoreEvent(atom));
 	}
 
-	private void witnessed(CMAtom cmAtom) throws DatabaseException, ValidationException, CryptoException
+	private void witnessed(RadixEngineAtom radixEngineAtom) throws DatabaseException, ValidationException, CryptoException
 	{
-		final Atom atom = (Atom) cmAtom.getAtom();
+		final Atom atom = (Atom) ((SimpleRadixEngineAtom) radixEngineAtom).getAtom();
 		TemporalVertex existingNIDVertex = atom.getTemporalProof().getVertexByNID(LocalSystem.getInstance().getNID());
 
 		if (existingNIDVertex != null)
@@ -1710,7 +1738,7 @@ public class AtomSync extends Service
 				// Filter out the live peers with shards we need that are within sync bounds
 				filteredNIDs.addAll(Modules.get(PeerHandler.class).getPeers(PeerDomain.NETWORK, PeerFilter.getInstance()).stream().
 													 filter(peer -> peer.getSystem().isSynced(LocalSystem.getInstance()) == true). 					// Gossip to nodes that are in sync TODO isAhead is better?
-													 filter(peer -> peer.getSystem().getShards().intersects(cmAtom.getShards()) == true). 			// Gossip to nodes that serve the atom shards
+													 filter(peer -> peer.getSystem().getShards().intersects(atom.getShards()) == true). 			// Gossip to nodes that serve the atom shards
 													 filter(peer -> peer.getSystem().getNID().equals(LocalSystem.getInstance().getNID()) == false).	// Don't gossip to the local node
 													 map(peer -> peer.getSystem().getNID()).
 													 collect(Collectors.toSet()));
@@ -1914,7 +1942,7 @@ public class AtomSync extends Service
 					{
 						AtomSync.this.committing.remove(atom.getAID());
 
-						final CMAtom cmAtom;
+						final SimpleRadixEngineAtom cmAtom;
 						try {
 							cmAtom = RadixEngineUtils.toCMAtom(atom);
 						} catch (CMAtomConversionException e) {

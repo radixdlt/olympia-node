@@ -1,10 +1,11 @@
 package com.radixdlt.tempo.store;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.atomos.SimpleRadixEngineAtom;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.Pair;
-import com.radixdlt.constraintmachine.CMAtom;
-import com.radixdlt.engine.RadixEngineUtils;
+import com.radixdlt.engine.RadixEngineAtom;
+import com.radixdlt.atomos.RadixEngineUtils;
 import com.radixdlt.ledger.LedgerCursor;
 import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerSearchMode;
@@ -73,10 +74,10 @@ public class LegacyAtomStoreAdapter implements AtomStore {
 	@Override
 	public boolean store(TempoAtom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
 		// TODO remove awful conversion
-		final CMAtom cmAtom = convertToCMAtom(atom);
+		final SimpleRadixEngineAtom radixEngineAtom = convertToCMAtom(atom);
 
 		try {
-			return atomStoreSupplier.get().storeAtom(new PreparedAtom(cmAtom, UInt384.ONE)).isCompleted();
+			return atomStoreSupplier.get().storeAtom(new PreparedAtom(radixEngineAtom, UInt384.ONE)).isCompleted();
 		} catch (IOException e) {
 			throw new TempoException("Error while storing atom " + atom.getAID(), e);
 		}
@@ -94,10 +95,10 @@ public class LegacyAtomStoreAdapter implements AtomStore {
 	@Override
 	public boolean replace(Set<AID> aids, TempoAtom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
 		// TODO remove awful conversion
-		final CMAtom cmAtom = convertToCMAtom(atom);
+		final SimpleRadixEngineAtom radixEngineAtom = convertToCMAtom(atom);
 
 		try {
-			return atomStoreSupplier.get().replaceAtom(aids, new PreparedAtom(cmAtom, UInt384.ONE)).isCompleted();
+			return atomStoreSupplier.get().replaceAtom(aids, new PreparedAtom(radixEngineAtom, UInt384.ONE)).isCompleted();
 		} catch (IOException e) {
 			throw new TempoException("Error while storing atom " + atom.getAID(), e);
 		}
@@ -146,7 +147,7 @@ public class LegacyAtomStoreAdapter implements AtomStore {
 		// not implemented here as is already done in legacy AtomStore directly
 	}
 
-	private CMAtom convertToCMAtom(TempoAtom atom) {
+	private SimpleRadixEngineAtom convertToCMAtom(TempoAtom atom) {
 		try {
 			Atom legacyAtom = LegacyUtils.toLegacyAtom(atom);
 			return RadixEngineUtils.toCMAtom(legacyAtom);
