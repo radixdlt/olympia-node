@@ -11,19 +11,15 @@ import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.engine.RadixEngine;
 import org.radix.atoms.AtomStore;
 import org.radix.atoms.AtomEngineStore;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
 import org.radix.modules.Modules;
 import org.radix.modules.Plugin;
 import org.radix.modules.exceptions.ModuleException;
 import org.radix.properties.RuntimeProperties;
-import com.radixdlt.serialization.Serialization;
 import org.radix.time.Time;
 import com.radixdlt.universe.Universe;
 import org.radix.universe.system.LocalSystem;
 
 public class Validation extends Plugin {
-	private static final Logger log = Logging.getLogger();
 	private final AtomEngineStore atomStore = new AtomEngineStore(
 		() -> Modules.get(AtomStore.class),
 		() -> LocalSystem.getInstance().getShards()
@@ -37,7 +33,6 @@ public class Validation extends Plugin {
 		final AtomDriver atomDriver = new AtomDriver(
 			() -> Modules.get(Universe.class),
 			Time::currentTimestamp,
-			Modules.get(Serialization.class),
 			skipAtomFeeCheck,
 			Time.MAXIMUM_DRIFT
 		);

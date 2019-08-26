@@ -1,7 +1,6 @@
 package org.radix.network2.messaging;
 
 import java.io.IOException;
-import java.security.SecureRandom;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Semaphore;
@@ -25,7 +24,6 @@ import org.radix.network2.transport.TransportInfo;
 import org.radix.network2.transport.TransportMetadata;
 import org.radix.network2.transport.TransportOutboundConnection;
 import org.radix.properties.RuntimeProperties;
-import org.radix.shards.ShardSpace;
 import org.radix.state.State;
 import org.xerial.snappy.Snappy;
 
@@ -121,20 +119,11 @@ public class MessageCentralImplTest {
 		when(universe.getMagic()).thenReturn(0);
 		RuntimeProperties runtimeProperties = mock(RuntimeProperties.class);
 		when(runtimeProperties.get(eq("network.whitelist"), any())).thenReturn("");
-		when(runtimeProperties.get(eq("messaging.inbound.queue_max"), any())).thenReturn(8192);
-		when(runtimeProperties.get(eq("messaging.outbound.queue_max"), any())).thenReturn(16384);
-		when(runtimeProperties.get(eq("messaging.time_to_live"), any())).thenReturn(30);
-    	when(runtimeProperties.get(eq("network.udp.buffer"), any())).thenReturn(1 << 18);
-    	// Following required by Network -> LocalSystem dependency
-    	when(runtimeProperties.get(eq("node.key.path"), any())).thenReturn("node.key");
-    	when(runtimeProperties.get(eq("shards.range"), any())).thenReturn(ShardSpace.SHARD_CHUNK_RANGE);
 
 		PeerStore peerStore = mock(PeerStore.class);
 		Modules.put(Universe.class, universe);
 		Modules.put(RuntimeProperties.class, runtimeProperties);
 		Modules.put(PeerStore.class, peerStore);
-		Modules.put(Serialization.class, serialization);
-		Modules.put(SecureRandom.class, new SecureRandom());
 
 		// Other scaffolding
 		this.toc = new DummyTransportOutboundConnection();
@@ -159,7 +148,7 @@ public class MessageCentralImplTest {
 		};
 
 		Events events = mock(Events.class);
-		this.mci = new MessageCentralImpl(staticConfig(), serialization, transportManager, events);
+		this.mci = new MessageCentralImpl(staticConfig(), serialization, transportManager, events, System::currentTimeMillis);
 	}
 
 	@After
@@ -167,8 +156,6 @@ public class MessageCentralImplTest {
 		Modules.remove(Universe.class);
 		Modules.remove(RuntimeProperties.class);
 		Modules.remove(PeerStore.class);
-		Modules.remove(Serialization.class);
-		Modules.remove(SecureRandom.class);
 
 		this.mci.close();
 	}
@@ -234,11 +221,45 @@ public class MessageCentralImplTest {
 		mci.removeListener(TestMessage.class, null);
 	}
 
+	@Test
 	public void testAddRemoveListener() {
-		MessageListener<TestMessage> listener = (source, message) -> {};
-		mci.addListener(TestMessage.class, listener);
+		MessageListener<TestMessage> listener1 = (source, message) -> {};
+		MessageListener<TestMessage> listener2 = (source, message) -> {};
+
+		mci.addListener(TestMessage.class, listener1);
 		assertEquals(1, mci.listenersSize());
-		mci.addListener(TestMessage.class, listener);
+
+		mci.addListener(TestMessage.class, listener2);
+		assertEquals(2, mci.listenersSize());
+
+		mci.removeListener(TestMessage.class, listener1);
+		assertEquals(1, mci.listenersSize());
+
+		mci.removeListener(TestMessage.class, listener1);
+		assertEquals(1, mci.listenersSize());
+
+		mci.removeListener(TestMessage.class, listener2);
+		assertEquals(0, mci.listenersSize());
+	}
+
+	@Test
+	public void testRemoveUnspecifiedListener() {
+		MessageListener<TestMessage> listener1 = (source, message) -> {};
+		MessageListener<TestMessage> listener2 = (source, message) -> {};
+
+		mci.addListener(TestMessage.class, listener1);
+		assertEquals(1, mci.listenersSize());
+
+		mci.addListener(TestMessage.class, listener2);
+		assertEquals(2, mci.listenersSize());
+
+		mci.removeListener(listener1);
+		assertEquals(1, mci.listenersSize());
+
+		mci.removeListener(listener1);
+		assertEquals(1, mci.listenersSize());
+
+		mci.removeListener(listener2);
 		assertEquals(0, mci.listenersSize());
 	}
 
@@ -246,16 +267,24 @@ public class MessageCentralImplTest {
 		// More robust than mocking when adding new config
 		return new MessageCentralConfiguration() {
 			@Override
-			public int getMessagingInboundQueueMax(int defaultValue) {
+			public int messagingInboundQueueMax(int defaultValue) {
 				return 10;
 			}
 			@Override
-			public int getMessagingOutboundQueueMax(int defaultValue) {
+			public int messagingOutboundQueueMax(int defaultValue) {
 				return 10;
 			}
 			@Override
-			public int getMessagingTimeToLive(int defaultValue) {
+			public int messagingTimeToLive(int defaultValue) {
 				return 10;
+			}
+			@Override
+			public int messagingInboundQueueThreads(int defaultValue) {
+				return 1;
+			}
+			@Override
+			public int messagingOutboundQueueThreads(int defaultValue) {
+				return 1;
 			}
 		};
 	}
