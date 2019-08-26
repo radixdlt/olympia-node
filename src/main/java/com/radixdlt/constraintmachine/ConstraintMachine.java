@@ -21,7 +21,6 @@ import com.radixdlt.atoms.Particle;
 import com.radixdlt.store.CMStores;
 
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 /**
  * An implementation of a UTXO based constraint machine which uses Radix's atom structure.
@@ -264,32 +263,48 @@ public final class ConstraintMachine {
 	 * Executes transition procedures and witness validators in a particle group and validates
 	 * that the particle group is well formed.
 	 *
-	 * @param group the particle group
-	 * @param groupIndex the index of the particle group
 	 * @return the first error found, otherwise an empty optional
 	 */
-	Optional<CMError> validateParticleGroup(CMValidationState validationState, List<Particle> group, long groupIndex) {
+	Optional<CMError> validateMicroInstructions(CMValidationState validationState, List<CMMicroInstruction> microInstructions) {
+		int particleGroupIndex = 0;
+		int particleIndex = 0;
 
-		for (int i = 0; i < group.size(); i++) {
-			final DataPointer dp = DataPointer.ofParticle((int) groupIndex, i);
-			final Particle nextParticle = group.get(i);
-			final Spin nextSpin = validationState.push(nextParticle);
-			final SpunParticle nextSpun = SpunParticle.of(nextParticle, nextSpin);
-
-			Optional<CMError> error = validateParticle(validationState, nextSpun, dp);
-			if (error.isPresent()) {
-				return error;
+		for (CMMicroInstruction cmMicroInstruction : microInstructions) {
+			final DataPointer dp = DataPointer.ofParticle(particleGroupIndex, particleIndex);
+			switch (cmMicroInstruction.getOperation()) {
+				case PUSH:
+					final Particle nextParticle = cmMicroInstruction.getParticle();
+					final Spin nextSpin = validationState.push(nextParticle);
+					final SpunParticle nextSpun = SpunParticle.of(nextParticle, nextSpin);
+					Optional<CMError> error = validateParticle(validationState, nextSpun, dp);
+					if (error.isPresent()) {
+						return error;
+					}
+					particleIndex++;
+					break;
+				case PARTICLE_GROUP:
+					if (!validationState.isEmpty()) {
+						return Optional.of(
+							new CMError(
+								DataPointer.ofParticleGroup(particleGroupIndex),
+								CMErrorCode.UNEQUAL_INPUT_OUTPUT,
+								validationState
+							)
+						);
+					}
+					particleGroupIndex++;
+					particleIndex = 0;
+					break;
+				default:
+					throw new IllegalStateException("Unknown CM Operation: " + cmMicroInstruction.getOperation());
 			}
 		}
 
-		if (!validationState.isEmpty()) {
-			return Optional.of(
-				new CMError(
-					DataPointer.ofParticleGroup((int) groupIndex),
-					CMErrorCode.UNEQUAL_INPUT_OUTPUT,
-					validationState
-				)
-			);
+		if (particleIndex != 0) {
+			return Optional.of(new CMError(
+				DataPointer.ofParticle(particleGroupIndex, particleIndex),
+				CMErrorCode.MISSING_PARTICLE_GROUP
+			));
 		}
 
 		return Optional.empty();
@@ -332,19 +347,7 @@ public final class ConstraintMachine {
 			}
 		}
 
-		// Push transition checks
-		for (int i = 0; i < cmInstruction.getParticlePushes().size(); i++) {
-			final Optional<CMError> error = this.validateParticleGroup(
-				validationState,
-				cmInstruction.getParticlePushes().get(i),
-				i
-			);
-			if (error.isPresent()) {
-				return error;
-			}
-		}
-
-		return Optional.empty();
+		return this.validateMicroInstructions(validationState, cmInstruction.getMicroInstructions());
 	}
 
 	/**

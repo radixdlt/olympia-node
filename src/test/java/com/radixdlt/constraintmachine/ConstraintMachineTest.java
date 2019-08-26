@@ -1,12 +1,10 @@
 package com.radixdlt.constraintmachine;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.radixdlt.constraintmachine.ConstraintMachine.CMValidationState;
 import com.radixdlt.constraintmachine.TransitionProcedure.ProcedureResult;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Optional;
 import org.junit.Test;
 import com.radixdlt.atoms.DataPointer;
@@ -69,9 +67,13 @@ public class ConstraintMachineTest {
 		validationState.checkSpin(particle1, Spin.UP);
 		validationState.checkSpin(particle2, Spin.UP);
 
-		Optional<CMError> errors = machine.validateParticleGroup(validationState,
-			ImmutableList.of(particle0, particle1, particle2),
-			0
+		Optional<CMError> errors = machine.validateMicroInstructions(validationState,
+			ImmutableList.of(
+				CMMicroInstruction.push(particle0),
+				CMMicroInstruction.push(particle1),
+				CMMicroInstruction.push(particle2),
+				CMMicroInstruction.particleGroup()
+			)
 		);
 
 		assertThat(errors).isEmpty();

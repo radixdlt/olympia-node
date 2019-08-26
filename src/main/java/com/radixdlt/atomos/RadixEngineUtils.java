@@ -1,14 +1,17 @@
 package com.radixdlt.atomos;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Streams;
 import com.radixdlt.atoms.DataPointer;
 import com.radixdlt.atoms.ImmutableAtom;
+import com.radixdlt.atoms.ParticleGroup;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.CMErrorCode;
+import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.CMParticle;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
@@ -208,14 +211,20 @@ public final class RadixEngineUtils {
 					return new CMParticle(e.getKey(), sp.get(0).getDataPointer(), checkSpin);
 				})
 				.collect(ImmutableList.toImmutableList());
-		final ImmutableList<ImmutableList<Particle>> particlePushes =
-			atom.particleGroups()
-				.map(pg -> pg.spunParticles().map(SpunParticle::getParticle).collect(ImmutableList.toImmutableList()))
-				.collect(ImmutableList.toImmutableList());
+
+		final ImmutableList.Builder<CMMicroInstruction> microInstructionsBuilder = new Builder<>();
+		for (int i = 0; i < atom.getParticleGroupCount(); i++) {
+			ParticleGroup pg = atom.getParticleGroup(i);
+			pg.spunParticles()
+				.map(SpunParticle::getParticle)
+				.map(CMMicroInstruction::push)
+				.forEach(microInstructionsBuilder::add);
+			microInstructionsBuilder.add(CMMicroInstruction.particleGroup());
+		}
 
 		final CMInstruction cmInstruction = new CMInstruction(
 			cmParticles,
-			particlePushes,
+			microInstructionsBuilder.build(),
 			atom.getHash(),
 			ImmutableMap.copyOf(atom.getSignatures())
 		);

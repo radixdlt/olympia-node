@@ -15,19 +15,19 @@ import java.util.Set;
 public final class CMInstruction {
 	private final ImmutableSet<EUID> destinations;
 	private final ImmutableList<CMParticle> cmParticles;
-	private final ImmutableList<ImmutableList<Particle>> particlePushes;
+	private final ImmutableList<CMMicroInstruction> microInstructions;
 	private final Hash witness;
 	private final ImmutableMap<EUID, ECSignature> signatures;
 
 	public CMInstruction(
 		ImmutableList<CMParticle> cmParticles,
-		ImmutableList<ImmutableList<Particle>> particlePushes,
+		ImmutableList<CMMicroInstruction> microInstructions,
 		Hash witness,
 		ImmutableMap<EUID, ECSignature> signatures
 	) {
 		this.witness = witness;
 		this.cmParticles = cmParticles;
-		this.particlePushes = particlePushes;
+		this.microInstructions = microInstructions;
 		this.signatures = signatures;
 		this.destinations = cmParticles.stream()
 			.map(CMParticle::getParticle)
@@ -36,8 +36,8 @@ public final class CMInstruction {
 			.collect(ImmutableSet.toImmutableSet());
 	}
 
-	public ImmutableList<ImmutableList<Particle>> getParticlePushes() {
-		return particlePushes;
+	public ImmutableList<CMMicroInstruction> getMicroInstructions() {
+		return microInstructions;
 	}
 
 	public Hash getWitness() {
