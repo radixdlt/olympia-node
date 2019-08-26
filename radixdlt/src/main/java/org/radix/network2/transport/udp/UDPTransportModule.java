@@ -15,10 +15,14 @@ import com.google.inject.name.Names;
  * Guice configuration for the UDP transport subsystem.
  */
 public class UDPTransportModule extends AbstractModule {
-	private final RuntimeProperties properties;
+	private final UDPConfiguration config;
 
 	public UDPTransportModule(RuntimeProperties properties) {
-		this.properties = Objects.requireNonNull(properties);
+		this(UDPConfiguration.fromRuntimeProperties(properties));
+	}
+
+	public UDPTransportModule(UDPConfiguration config) {
+		this.config = Objects.requireNonNull(config);
 	}
 
 	@Override
@@ -28,7 +32,7 @@ public class UDPTransportModule extends AbstractModule {
 	     transportMultibinder.addBinding().to(NettyUDPTransportImpl.class);
 
 		// NettyUDPTransportImpl dependencies
-		bind(UDPConfiguration.class).toInstance(UDPConfiguration.fromRuntimeProperties(properties));
+		bind(UDPConfiguration.class).toInstance(config);
 		bind(TransportMetadata.class).annotatedWith(Names.named("local")).toInstance(StaticTransportMetadata.empty()); // Use defaults for now
 		bind(UDPTransportControlFactory.class).toProvider(this::udpTransportControlFactoryProvider);
 		bind(UDPTransportOutboundConnectionFactory.class).toProvider(this::udpTransportOutboundConnectionFactoryProvider);

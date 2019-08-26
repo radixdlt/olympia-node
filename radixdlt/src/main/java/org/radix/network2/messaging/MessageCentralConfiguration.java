@@ -14,7 +14,19 @@ public interface MessageCentralConfiguration {
 	 * @param defaultValue a default value if no special configuration value is set
 	 * @return The maximum queue depth
 	 */
-	int getMessagingInboundQueueMax(int defaultValue);
+	int messagingInboundQueueMax(int defaultValue);
+
+	/**
+	 * Retrieves the number of threads to use for processing inbound messages.
+	 * <p>
+	 * <b>Note</b> that using a number other than 1 here may result in messages being
+	 * processed out of order from a specific peer.  At the moment it's not clear if
+	 * this is going to be an issue or not.
+	 *
+	 * @param defaultValue a default value if no special configuration value is set
+	 * @return The number of inbound queue processing threads
+	 */
+	int messagingInboundQueueThreads(int defaultValue);
 
 	/**
 	 * Retrieves the maximum queue depth for outbound messages before
@@ -23,7 +35,19 @@ public interface MessageCentralConfiguration {
 	 * @param defaultValue a default value if no special configuration value is set
 	 * @return The maximum queue depth
 	 */
-	int getMessagingOutboundQueueMax(int defaultValue);
+	int messagingOutboundQueueMax(int defaultValue);
+
+	/**
+	 * Retrieves the number of threads to use for processing outbound messages.
+	 * <p>
+	 * <b>Note</b> that using a number other than 1 here may result in messages being
+	 * sent out of order to a specific peer.  At the moment it's not clear if this is
+	 * going to be an issue or not.
+	 *
+	 * @param defaultValue a default value if no special configuration value is set
+	 * @return The number of outbound queue processing threads
+	 */
+	int messagingOutboundQueueThreads(int defaultValue);
 
 	/**
 	 * Retrieves the maximum time-to-live for inbound and outbound messages in seconds.
@@ -33,7 +57,7 @@ public interface MessageCentralConfiguration {
 	 * @param defaultValue a default value if no special configuration value is set
 	 * @return Message time-to-live in seconds
 	 */
-	int getMessagingTimeToLive(int defaultValue);
+	int messagingTimeToLive(int defaultValue);
 
 	/**
 	 * Create a configuration from specified {@link RuntimeProperties}.
@@ -44,17 +68,27 @@ public interface MessageCentralConfiguration {
 	static MessageCentralConfiguration fromRuntimeProperties(RuntimeProperties properties) {
 		return new MessageCentralConfiguration() {
 			@Override
-			public int getMessagingInboundQueueMax(int defaultValue) {
+			public int messagingInboundQueueMax(int defaultValue) {
 				return properties.get("messaging.inbound.queue_max", defaultValue);
 			}
 
 			@Override
-			public int getMessagingOutboundQueueMax(int defaultValue) {
+			public int messagingInboundQueueThreads(int defaultValue) {
+				return properties.get("messaging.inbound.threads", defaultValue);
+			}
+
+			@Override
+			public int messagingOutboundQueueMax(int defaultValue) {
 				return properties.get("messaging.outbound.queue_max", defaultValue);
 			}
 
 			@Override
-			public int getMessagingTimeToLive(int defaultValue) {
+			public int messagingOutboundQueueThreads(int defaultValue) {
+				return properties.get("messaging.outbound.threads", defaultValue);
+			}
+
+			@Override
+			public int messagingTimeToLive(int defaultValue) {
 				return properties.get("messaging.time_to_live", defaultValue);
 			}
 		};

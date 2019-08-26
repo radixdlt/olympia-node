@@ -1,8 +1,9 @@
 package org.radix.atoms;
 
+import com.radixdlt.atomos.RadixEngineUtils;
+import com.radixdlt.atomos.RadixEngineUtils.CMAtomConversionException;
 import com.radixdlt.atoms.ImmutableAtom;
-import com.radixdlt.common.AID;
-import com.radixdlt.constraintmachine.CMAtom;
+import com.radixdlt.atomos.SimpleRadixEngineAtom;
 import com.radixdlt.utils.UInt384;
 import java.util.Optional;
 import java.util.Set;
@@ -24,7 +25,7 @@ import org.radix.shards.ShardSpace;
 /**
  * A state store that uses an {@link AtomStore} to provide relevant shard state
  */
-public class AtomEngineStore implements EngineStore {
+public class AtomEngineStore implements EngineStore<SimpleRadixEngineAtom> {
 	private final Supplier<AtomStore> atomStoreSupplier;
 	private final Supplier<ShardSpace> shardSpaceSupplier;
 
@@ -37,7 +38,7 @@ public class AtomEngineStore implements EngineStore {
 	}
 
 	@Override
-	public void getAtomContaining(SpunParticle spunParticle, Consumer<ImmutableAtom> callback) {
+	public void getAtomContaining(SpunParticle spunParticle, Consumer<SimpleRadixEngineAtom> callback) {
 		try {
 			// cheap early out in case the spun particle is not even in the store
 			if (!atomStoreSupplier.get().hasAtomContaining(spunParticle.getParticle(), spunParticle.getSpin())) {
@@ -45,10 +46,14 @@ public class AtomEngineStore implements EngineStore {
 				return;
 			}
 
-			callback.accept(atomStoreSupplier.get().getAtomContaining(spunParticle.getParticle(), spunParticle.getSpin()));
-
-		} catch (DatabaseException dex) {
-			throw new StateStoreException("Discovery for " + spunParticle + " failed: " + dex, dex);
+			Atom atom = atomStoreSupplier.get().getAtomContaining(spunParticle.getParticle(), spunParticle.getSpin());
+			if (atom == null) {
+				callback.accept(null);
+			} else {
+				callback.accept(RadixEngineUtils.toCMAtom(atom));
+			}
+		} catch (DatabaseException | CMAtomConversionException e) {
+			throw new StateStoreException("Discovery for " + spunParticle + " failed: " + e, e);
 		}
 	}
 
@@ -67,13 +72,9 @@ public class AtomEngineStore implements EngineStore {
 	}
 
 	@Override
-	public void storeAtom(CMAtom cmAtom, Object computed) {
+	public void storeAtom(SimpleRadixEngineAtom cmAtom) {
 		try {
-			if (computed == null) {
-				throw new IllegalStateException("mass was not computed");
-			}
-
-			final PreparedAtom preparedAtom = new PreparedAtom(cmAtom, (UInt384) computed);
+			final PreparedAtom preparedAtom = new PreparedAtom(cmAtom, UInt384.TEN);
 			atomStoreSupplier.get().storeAtom(preparedAtom);
 		} catch (Exception e) {
 			AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(e, (Atom) cmAtom.getAtom());
@@ -82,7 +83,7 @@ public class AtomEngineStore implements EngineStore {
 	}
 
 	@Override
-	public void deleteAtom(CMAtom cmAtom) {
+	public void deleteAtom(SimpleRadixEngineAtom cmAtom) {
 		try {
 			atomStoreSupplier.get().deleteAtoms((Atom) cmAtom.getAtom());
 		} catch (DatabaseException dex) {

@@ -5,6 +5,7 @@ import java.util.Map;
 
 import org.radix.events.Event;
 import org.radix.network.messages.PeerPingMessage;
+import org.radix.network.messages.PeerPongMessage;
 import org.radix.network.messaging.Message;
 import org.radix.network.peers.Peer;
 
@@ -22,7 +23,10 @@ public final class MessageEvent extends Event {
 
 	private static final int DEFAULT_PRIORITY = 0;
 	// Lower (inc -ve) numbers are higher priority than larger numbers
-	private static final Map<Class<?>, Integer> MESSAGE_PRIORITIES = ImmutableMap.of(PeerPingMessage.class, Integer.MIN_VALUE);
+	private static final Map<Class<?>, Integer> MESSAGE_PRIORITIES = ImmutableMap.of(
+		PeerPingMessage.class, Integer.MIN_VALUE,
+		PeerPongMessage.class, Integer.MIN_VALUE
+	);
 
 	static final Comparator<MessageEvent> COMPARATOR =
 		Comparator.comparingInt(MessageEvent::priority).thenComparingLong(MessageEvent::nanoTimeDiff);

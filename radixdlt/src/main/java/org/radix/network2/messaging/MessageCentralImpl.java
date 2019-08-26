@@ -3,7 +3,6 @@ package org.radix.network2.messaging;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.net.URI;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -13,26 +12,22 @@ import org.radix.events.Events;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.modules.Modules;
-import org.radix.network.Network;
-import org.radix.network.Protocol;
 import org.radix.network.messaging.Message;
 import org.radix.network.peers.Peer;
-import org.radix.network.peers.PeerStore;
-import org.radix.network.peers.UDPPeer;
+import org.radix.network2.NetworkLegacyPatching;
+import org.radix.network2.TimeSupplier;
 import org.radix.network2.transport.Transport;
 import org.radix.universe.system.events.QueueFullEvent;
 import org.radix.utils.SystemMetaData;
 import org.xerial.snappy.Snappy;
 
-import com.radixdlt.universe.Universe;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.Inject;
 import com.radixdlt.serialization.Serialization;
 
-//FIXME: Dependency on Modules.get(SystemMetadata.class) for updating metadata
-// FIXME: Dependency on Network.getInstance() for peer handling
+//FIXME: Optional dependency on Modules.get(SystemMetadata.class) for updating metadata
 final class MessageCentralImpl implements MessageCentral, Closeable {
 	private static final Logger log = Logging.getLogger("message");
 
@@ -51,7 +46,7 @@ final class MessageCentralImpl implements MessageCentral, Closeable {
 	// Listeners
 	private final ConcurrentHashMap<Class<? extends Message>, MessageListenerList> listeners = new ConcurrentHashMap<>();
 
-	// Out time base for System.nanoTime() differences.  Per documentation can only compare deltas
+	// Our time base for System.nanoTime() differences.  Per documentation can only compare deltas
 	private final long timeBase = System.nanoTime();
 
 	// Listeners we are managing
@@ -63,11 +58,11 @@ final class MessageCentralImpl implements MessageCentral, Closeable {
 
 	// Inbound message handling
 	private final PriorityBlockingQueue<MessageEvent> inboundQueue;
-	private final Thread inboundProcessingThread;
+	private final SimpleThreadPool<MessageEvent> inboundThreadPool;
 
 	// Outbound message handling
 	private final PriorityBlockingQueue<MessageEvent> outboundQueue;
-	private final Thread outboundProcessingThread;
+	private final SimpleThreadPool<MessageEvent> outboundThreadPool;
 
 
 	@Inject
@@ -75,26 +70,30 @@ final class MessageCentralImpl implements MessageCentral, Closeable {
 		MessageCentralConfiguration config,
 		Serialization serialization,
 		TransportManager transportManager,
-		Events events
+		Events events,
+		TimeSupplier timeSource
 	) {
-		this.inboundQueue = new PriorityBlockingQueue<>(config.getMessagingInboundQueueMax(8192));
-		this.outboundQueue = new PriorityBlockingQueue<>(config.getMessagingOutboundQueueMax(16384));
+		this.inboundQueue = new PriorityBlockingQueue<>(config.messagingInboundQueueMax(8192));
+		this.outboundQueue = new PriorityBlockingQueue<>(config.messagingOutboundQueueMax(16384));
+
 		this.serialization = Objects.requireNonNull(serialization);
-		this.messageDispatcher = new MessageDispatcher(config, serialization, events); // FIXME: Probably should be injected dependency
 		this.connectionManager = Objects.requireNonNull(transportManager);
 		this.events = Objects.requireNonNull(events);
+
+		Objects.requireNonNull(timeSource);
+		this.messageDispatcher = new MessageDispatcher(config, serialization, timeSource);
 
 		this.transports = Lists.newArrayList(transportManager.transports());
 
 		// Start inbound processing thread
-		this.inboundProcessingThread = new Thread(this::inboundMessageProcessor, getClass().getSimpleName() + " inbound message processing");
-		this.inboundProcessingThread.setDaemon(true);
-		this.inboundProcessingThread.start();
+		int inboundThreads = config.messagingInboundQueueThreads(1);
+		this.inboundThreadPool = new SimpleThreadPool<>("Inbound message processing", inboundThreads, inboundQueue::take, this::inboundMessageProcessor);
+		this.inboundThreadPool.start();
 
 		// Start outbound processing thread
-		this.outboundProcessingThread = new Thread(this::outboundMessageProcessor, getClass().getSimpleName() + " outbound message processing");
-		this.outboundProcessingThread.setDaemon(true);
-		this.outboundProcessingThread.start();
+		int outboundThreads = config.messagingOutboundQueueThreads(1);
+		this.outboundThreadPool = new SimpleThreadPool<>("Outbound message processing", outboundThreads, outboundQueue::take, this::outboundMessageProcessor);
+		this.outboundThreadPool.start();
 
 		// Start our listeners
 		this.transports.forEach(tl -> tl.start(this::inboundMessage));
@@ -105,14 +104,8 @@ final class MessageCentralImpl implements MessageCentral, Closeable {
 		this.transports.forEach(tl -> closeWithLog(tl));
 		this.transports.clear();
 
-		if (inboundProcessingThread != null) {
-			inboundProcessingThread.interrupt();
-			try {
-				inboundProcessingThread.join();
-			} catch (InterruptedException e) {
-				log.error(inboundProcessingThread.getName() + " did not exit before interrupt");
-			}
-		}
+		inboundThreadPool.stop();
+		outboundThreadPool.stop();
 	}
 
 	@Override
@@ -154,69 +147,32 @@ final class MessageCentralImpl implements MessageCentral, Closeable {
 	}
 
 	@VisibleForTesting
-	boolean hasInboundThread() {
-		return this.inboundProcessingThread != null;
-	}
-
-	@VisibleForTesting
 	int listenersSize() {
 		return listeners.values().stream().mapToInt(MessageListenerList::size).sum();
 	}
 
 	private void inboundMessage(InboundMessage inboundMessage) {
 		// FIXME: This needs replacing - at the moment just hooking up to existing infra
-		if (Modules.isAvailable(PeerStore.class)) {
-			String peerAddress = inboundMessage.source().metadata().get("host");
-			URI uri = URI.create(Network.URI_PREFIX + peerAddress + ":" + Modules.get(Universe.class).getPort());
-			try {
-				UDPPeer peer = Network.getInstance().connect(uri, Protocol.UDP);
+		try {
+			Peer peer = NetworkLegacyPatching.findPeer(inboundMessage.source());
+			if (peer != null) {
 				Message message = deserialize(inboundMessage.message());
-				MessageEvent event = new MessageEvent(peer, message, System.nanoTime() - timeBase);
-				if (!inboundQueue.offer(event)) {
-					if (inboundLogRateLimiter.tryAcquire()) {
-						log.error(String.format("Inbound %s message from %s dropped", inboundMessage.source().name(), inboundMessage.source().metadata()));
-					}
-					events.broadcast(new QueueFullEvent());
-				}
-			} catch (IOException e) {
-				throw new UncheckedIOException("While processing inbound message from " + inboundMessage.source(), e);
+				inject(peer, message);
 			}
+		} catch (IOException e) {
+			throw new UncheckedIOException("While processing inbound message from " + inboundMessage.source(), e);
 		}
 	}
 
-	private void inboundMessageProcessor() {
-		for (;;) {
-			try {
-				final MessageEvent inbound = inboundQueue.take();
-				Modules.ifAvailable(SystemMetaData.class, a -> a.put("messages.inbound.pending", inboundQueue.size()));
-				MessageListenerList listeners = this.listeners.getOrDefault(inbound.message().getClass(), EMPTY_MESSAGE_LISTENER_LIST);
-				messageDispatcher.receive(listeners, inbound);
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-				// Exit loop
-				break;
-			} catch (Exception e) {
-				// Don't really want this thread to exit, even if an exception does occur
-				log.error("While processing inbound message", e);
-			}
-		}
+	private void inboundMessageProcessor(MessageEvent inbound) {
+		Modules.ifAvailable(SystemMetaData.class, a -> a.put("messages.inbound.pending", inboundQueue.size()));
+		MessageListenerList listeners = this.listeners.getOrDefault(inbound.message().getClass(), EMPTY_MESSAGE_LISTENER_LIST);
+		messageDispatcher.receive(listeners, inbound);
 	}
 
-	private void outboundMessageProcessor() {
-		for (;;) {
-			try {
-				final MessageEvent outbound = outboundQueue.take();
-				Modules.ifAvailable(SystemMetaData.class, a -> a.put("messages.outbound.pending", outboundQueue.size()));
-				messageDispatcher.send(connectionManager, outbound);
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-				// Exit loop
-				break;
-			} catch (Exception e) {
-				// Don't really want this thread to exit, even if an exception does occur
-				log.error("While processing outbound message", e);
-			}
-		}
+	private void outboundMessageProcessor(MessageEvent outbound) {
+		Modules.ifAvailable(SystemMetaData.class, a -> a.put("messages.outbound.pending", outboundQueue.size()));
+		messageDispatcher.send(connectionManager, outbound);
 	}
 
 	private Message deserialize(byte[] in) {
