@@ -160,7 +160,7 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 			// TODO: Log
 			//}
 
-			if (spinCheck == TransitionCheckResult.ILLEGAL_TRANSITION_TO || spinCheck == TransitionCheckResult.MISSING_STATE) {
+			if (spinCheck == TransitionCheckResult.ILLEGAL_TRANSITION_TO) {
 				throw new IllegalStateException("Should not be here. This should be caught by Constraint Machine Stateless validation.");
 			}
 

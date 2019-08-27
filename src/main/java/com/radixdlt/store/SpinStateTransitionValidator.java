@@ -2,7 +2,6 @@ package com.radixdlt.store;
 
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.atoms.Spin;
-import java.util.Optional;
 
 /**
  * Validate transitions of an instance of a Particle spin state machine
@@ -21,7 +20,6 @@ public class SpinStateTransitionValidator {
 		CONFLICT,
 		MISSING_DEPENDENCY,
 		ILLEGAL_TRANSITION_TO,
-		MISSING_STATE,
 		MISSING_STATE_FROM_UNSUPPORTED_SHARD,
 		OKAY
 	}
@@ -44,21 +42,16 @@ public class SpinStateTransitionValidator {
 			return TransitionCheckResult.ILLEGAL_TRANSITION_TO;
 		}
 
-		final Optional<Spin> currentSpinOptional = state.getSpin(particle);
-		if (currentSpinOptional.isPresent()) {
-			final Spin currentSpin = currentSpinOptional.get();
-			if (!SpinStateMachine.canTransition(currentSpin, nextSpin)) {
-				if (!SpinStateMachine.isBefore(currentSpin, nextSpin)) {
-					return TransitionCheckResult.CONFLICT;
-				} else {
-					return TransitionCheckResult.MISSING_DEPENDENCY;
-				}
-			}
-		} else {
-			if (!state.supports(particle.getDestinations())) {
-				return TransitionCheckResult.MISSING_STATE_FROM_UNSUPPORTED_SHARD;
+		if (!state.supports(particle.getDestinations())) {
+			return TransitionCheckResult.MISSING_STATE_FROM_UNSUPPORTED_SHARD;
+		}
+
+		final Spin currentSpin = state.getSpin(particle);
+		if (!SpinStateMachine.canTransition(currentSpin, nextSpin)) {
+			if (!SpinStateMachine.isBefore(currentSpin, nextSpin)) {
+				return TransitionCheckResult.CONFLICT;
 			} else {
-				return TransitionCheckResult.MISSING_STATE;
+				return TransitionCheckResult.MISSING_DEPENDENCY;
 			}
 		}
 

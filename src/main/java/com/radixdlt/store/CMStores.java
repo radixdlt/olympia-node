@@ -3,7 +3,6 @@ package com.radixdlt.store;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.atoms.Spin;
 import com.radixdlt.common.EUID;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 
@@ -22,8 +21,8 @@ public final class CMStores {
 		}
 
 		@Override
-		public Optional<Spin> getSpin(Particle particle) {
-			return Optional.empty();
+		public Spin getSpin(Particle particle) {
+			return Spin.NEUTRAL;
 		}
 	};
 
@@ -53,14 +52,14 @@ public final class CMStores {
 			}
 
 			@Override
-			public Optional<Spin> getSpin(Particle particle) {
-				Optional<Spin> curSpin = base.getSpin(particle);
+			public Spin getSpin(Particle particle) {
+				Spin curSpin = base.getSpin(particle);
 
 				if (base.supports(particle.getDestinations())
 					&& particleCheck.test(particle)
-					&& curSpin.map(s -> SpinStateMachine.isAfter(spin, s)).orElse(true)
+					&& SpinStateMachine.isAfter(spin, curSpin)
 				) {
-					return Optional.of(spin);
+					return spin;
 				}
 
 				return curSpin;
@@ -86,9 +85,9 @@ public final class CMStores {
 			}
 
 			@Override
-			public Optional<Spin> getSpin(Particle particle) {
+			public Spin getSpin(Particle particle) {
 				if (particleCheck.test(particle)) {
-					return Optional.of(spin);
+					return spin;
 				}
 
 				return base.getSpin(particle);

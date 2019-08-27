@@ -3,7 +3,6 @@ package com.radixdlt.store;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.atoms.Spin;
 import com.radixdlt.common.EUID;
-import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -19,11 +18,12 @@ public interface CMStore {
 	boolean supports(Set<EUID> destinations);
 
 	/**
-	 * Get the current spin of a particle. Returns an empty optional if
-	 * the state provider does not know (for example, in sharded environments).
+	 * Get the current spin of a particle. Must call supports() to see if this
+	 * store supports the given particle. If not, the return value of getSpin() is
+	 * undefined.
 	 *
 	 * @param particle the particle to get the spin of
-	 * @return if known, the current spin of a particle, otherwise an empty optional
+	 * @return the current spin of a particle
 	 */
-	Optional<Spin> getSpin(Particle particle);
+	Spin getSpin(Particle particle);
 }

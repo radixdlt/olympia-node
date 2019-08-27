@@ -70,8 +70,6 @@ public final class RadixEngineUtils {
 		switch (result) {
 			case OKAY:
 				// Follow through
-			case MISSING_STATE:
-				// Follow through
 			case MISSING_STATE_FROM_UNSUPPORTED_SHARD:
 				error = null;
 				break;

@@ -292,15 +292,8 @@ public final class ConstraintMachine {
 						return Optional.of(new CMError(dp, CMErrorCode.UNKNOWN_PARTICLE, validationState, staticCheckResult.getErrorMessage()));
 					}
 
-					final Optional<Spin> initSpin = localEngineStore.getSpin(cmMicroInstruction.getParticle());
-
-					// "Segfaults" or particles which should not exist
-					if (!initSpin.isPresent()) {
-						return Optional.of(new CMError(dp, CMErrorCode.UNKNOWN_PARTICLE));
-					}
-
+					final Spin curSpin = localEngineStore.getSpin(cmMicroInstruction.getParticle());
 					final Spin checkSpin = cmMicroInstruction.getCheckSpin();
-					final Spin curSpin = initSpin.get();
 
 					// Virtual particle state checks
 					// TODO: Is this better suited at the state check pipeline?

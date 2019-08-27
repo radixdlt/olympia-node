@@ -1,6 +1,5 @@
 package com.radixdlt.store;
 
-import java.util.Optional;
 import org.junit.Test;
 import com.radixdlt.store.SpinStateTransitionValidator.TransitionCheckResult;
 import com.radixdlt.atoms.Particle;
@@ -18,22 +17,9 @@ public class SpinStateMachineTransitionTest {
 		Particle particle0, Spin spin0
 	) {
 		EngineStore engineStore = mock(EngineStore.class);
-		when(engineStore.getSpin(eq(particle0))).thenReturn(Optional.of(spin0));
-		return engineStore;
-	}
-
-	@Test
-	public void when_validating_an_up_or_down_particle_currently_unknown__unknown_state_is_returned() {
-		Particle particle = mock(Particle.class);
-		EngineStore engineStore = mock(EngineStore.class);
-		when(engineStore.getSpin(any())).thenReturn(Optional.empty());
 		when(engineStore.supports(any())).thenReturn(true);
-
-		assertThat(SpinStateTransitionValidator.checkParticleTransition(particle, Spin.UP, engineStore))
-			.isEqualTo(TransitionCheckResult.MISSING_STATE);
-
-		assertThat(SpinStateTransitionValidator.checkParticleTransition(particle, Spin.DOWN, engineStore))
-			.isEqualTo(TransitionCheckResult.MISSING_STATE);
+		when(engineStore.getSpin(eq(particle0))).thenReturn(spin0);
+		return engineStore;
 	}
 
 	@Test
