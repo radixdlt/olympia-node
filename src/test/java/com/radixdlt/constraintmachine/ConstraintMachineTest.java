@@ -1,6 +1,7 @@
 package com.radixdlt.constraintmachine;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.ConstraintMachine.CMValidationState;
 import com.radixdlt.constraintmachine.TransitionProcedure.ProcedureResult;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
@@ -31,6 +32,7 @@ public class ConstraintMachineTest {
 	@Test
 	public void when_validating_an_atom_with_particle_which_conflicts_with_virtual_state__an_internal_spin_conflict_is_returned() {
 		ConstraintMachine machine = new ConstraintMachine.Builder()
+			.setParticleStaticCheck(p -> Result.success())
 			.virtualStore(state -> CMStores.virtualizeDefault(state, p -> true, Spin.UP))
 			.build();
 

@@ -84,6 +84,32 @@ public final class CMAtomOS {
 				out == null ? null : out.getClass())
 		));
 
+		cmBuilder.setParticleStaticCheck(p -> {
+			final ParticleDefinition<Particle> particleDefinition = particleDefinitions.get(p.getClass());
+			if (particleDefinition == null) {
+				return Result.error("Unknown particle type: " + p.getClass());
+			}
+
+			final Function<Particle, Result> staticValidation = particleDefinition.getStaticValidation();
+			final Result staticCheckResult = staticValidation.apply(p);
+			if (staticCheckResult.isError()) {
+				return staticCheckResult;
+			}
+
+			final Function<Particle, Stream<RadixAddress>> mapper = particleDefinition.getAddressMapper();
+			final Set<EUID> destinations = mapper.apply(p).map(RadixAddress::getUID).collect(Collectors.toSet());
+
+			if (!destinations.containsAll(p.getDestinations())) {
+				return Result.error("Address destinations does not contain all destinations");
+			}
+
+			if (!p.getDestinations().containsAll(destinations)) {
+				return Result.error("Destinations does not contain all Address destinations");
+			}
+
+			return Result.success();
+		});
+
 		UnaryOperator<CMStore> rriTransformer = base ->
 			CMStores.virtualizeDefault(base, p -> p instanceof RRIParticle && ((RRIParticle) p).getNonce() == 0, Spin.UP);
 
@@ -113,18 +139,5 @@ public final class CMAtomOS {
 		cmBuilder.virtualStore(virtualizedDefault);
 
 		return cmBuilder.build();
-	}
-
-	/**
-	 * Executes static particle validation given the current particle definitions.
-	 * Does not modify state in anyway
-	 *
-	 * @param particle the particle to test
-	 * @return result of the validation
-	 */
-	public Result testParticle(Particle particle) {
-		return particleDefinitions.get(particle.getClass())
-			.getStaticValidation()
-			.apply(particle);
 	}
 }

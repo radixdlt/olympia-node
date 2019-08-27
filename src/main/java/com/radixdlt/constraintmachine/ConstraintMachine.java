@@ -1,5 +1,6 @@
 package com.radixdlt.constraintmachine;
 
+import com.radixdlt.atomos.Result;
 import com.radixdlt.atoms.DataPointer;
 import com.radixdlt.atoms.Spin;
 import com.radixdlt.atoms.SpunParticle;
@@ -16,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.store.CMStores;
@@ -28,6 +30,7 @@ import java.util.Objects;
 public final class ConstraintMachine {
 	public static class Builder {
 		private UnaryOperator<CMStore> virtualStore;
+		private Function<Particle, Result> particleStaticCheck;
 		private BiFunction<Particle, Particle, TransitionProcedure<Particle, Particle>> particleProcedures;
 		private BiFunction<Particle, Particle, WitnessValidator<Particle, Particle>> witnessValidators;
 
@@ -35,6 +38,12 @@ public final class ConstraintMachine {
 			this.virtualStore = virtualStore;
 			return this;
 		}
+
+		public Builder setParticleStaticCheck(Function<Particle, Result> particleStaticCheck) {
+			this.particleStaticCheck = particleStaticCheck;
+			return this;
+		}
+
 
 		public Builder setParticleProcedures(BiFunction<Particle, Particle, TransitionProcedure<Particle, Particle>> particleProcedures) {
 			this.particleProcedures = particleProcedures;
@@ -54,6 +63,7 @@ public final class ConstraintMachine {
 
 			return new ConstraintMachine(
 				virtualStore,
+				particleStaticCheck,
 				particleProcedures,
 				witnessValidators
 			);
@@ -61,12 +71,14 @@ public final class ConstraintMachine {
 	}
 
 	private final UnaryOperator<CMStore> virtualStore;
+	private final Function<Particle, Result> particleStaticCheck;
 	private final BiFunction<Particle, Particle, TransitionProcedure<Particle, Particle>> particleProcedures;
 	private final BiFunction<Particle, Particle, WitnessValidator<Particle, Particle>> witnessValidators;
 	private final CMStore localEngineStore;
 
 	ConstraintMachine(
 		UnaryOperator<CMStore> virtualStore,
+		Function<Particle, Result> particleStaticCheck,
 		BiFunction<Particle, Particle, TransitionProcedure<Particle, Particle>> particleProcedures,
 		BiFunction<Particle, Particle, WitnessValidator<Particle, Particle>> witnessValidators
 	) {
@@ -74,6 +86,7 @@ public final class ConstraintMachine {
 
 		this.virtualStore = Objects.requireNonNull(virtualStore);
 		this.localEngineStore = this.virtualStore.apply(CMStores.empty());
+		this.particleStaticCheck = particleStaticCheck;
 		this.particleProcedures = particleProcedures;
 		this.witnessValidators = witnessValidators;
 	}
@@ -274,6 +287,11 @@ public final class ConstraintMachine {
 			switch (cmMicroInstruction.getMicroOp()) {
 				case CHECK_NEUTRAL:
 				case CHECK_UP:
+					final Result staticCheckResult = particleStaticCheck.apply(cmMicroInstruction.getParticle());
+					if (staticCheckResult.isError()) {
+						return Optional.of(new CMError(dp, CMErrorCode.UNKNOWN_PARTICLE, validationState, staticCheckResult.getErrorMessage()));
+					}
+
 					final Optional<Spin> initSpin = localEngineStore.getSpin(cmMicroInstruction.getParticle());
 
 					// "Segfaults" or particles which should not exist
