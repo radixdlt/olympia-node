@@ -12,7 +12,7 @@ import org.radix.Radix;
 import com.radixdlt.utils.Offset;
 import org.radix.common.executors.Executor;
 import org.radix.common.executors.ScheduledExecutable;
-import com.radixdlt.common.Pair;
+import com.radixdlt.utils.Pair;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.crypto.CryptoException;

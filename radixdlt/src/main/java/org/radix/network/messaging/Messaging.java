@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.util.Objects;
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.common.Pair;
+import com.radixdlt.utils.Pair;
 
 import com.radixdlt.serialization.SerializerConstants;
 

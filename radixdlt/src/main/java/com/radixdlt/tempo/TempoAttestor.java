@@ -2,7 +2,7 @@ package com.radixdlt.tempo;
 
 import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
-import com.radixdlt.common.Pair;
+import com.radixdlt.utils.Pair;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;

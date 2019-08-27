@@ -25,7 +25,7 @@ import com.radixdlt.atomos.RRI;
 import com.radixdlt.constraintmachine.Spin;
 import org.radix.atoms.sync.AtomSync;
 import com.radixdlt.common.EUID;
-import com.radixdlt.common.Pair;
+import com.radixdlt.utils.Pair;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
