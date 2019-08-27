@@ -441,8 +441,7 @@ public class AtomSync extends Service
 				try {
 					cmAtom = RadixEngineUtils.toCMAtom(atom);
 				} catch (CMAtomConversionException e) {
-					CMError cmError = e.getErrors().iterator().next();
-					ConstraintMachineValidationException ex = new ConstraintMachineValidationException(atom, cmError.getErrorDescription(), cmError.getDataPointer());
+					ConstraintMachineValidationException ex = new ConstraintMachineValidationException(atom, e.getMessage(), e.getDataPointer());
 					atomsLog.error(ex);
 					Events.getInstance().broadcast(new AtomExceptionEvent(ex, atom));
 					continue;
@@ -1492,8 +1491,7 @@ public class AtomSync extends Service
 					try {
 						cmAtom = RadixEngineUtils.toCMAtom(atom);
 					} catch (CMAtomConversionException e) {
-						CMError cmError = e.getErrors().iterator().next();
-						throw new ConstraintMachineValidationException(atom, cmError.getErrorDescription(), cmError.getDataPointer());
+						throw new ConstraintMachineValidationException(atom, e.getMessage(), e.getDataPointer());
 					}
 
 					Modules.get(ValidationHandler.class).getRadixEngine().store(cmAtom,
