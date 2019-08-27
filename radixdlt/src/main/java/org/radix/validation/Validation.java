@@ -40,11 +40,11 @@ public class Validation extends Plugin {
 			.setParticleProcedures(os.buildTransitionProcedures())
 			.setWitnessValidators(os.buildWitnessValidators())
 			.setParticleStaticCheck(os.buildParticleStaticCheck())
-			.virtualStore(os.buildVirtualLayer())
 			.build();
 
 		final RadixEngine<SimpleRadixEngineAtom> radixEngine = new RadixEngine<>(
 			constraintMachine,
+			os.buildVirtualLayer(),
 			atomStore
 		);
 

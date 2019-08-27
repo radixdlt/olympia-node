@@ -471,8 +471,15 @@ public class AtomSync extends Service
 					}
 
 					@Override
+					public void onVirtualStateConflict(SimpleRadixEngineAtom cmAtom, DataPointer dp) {
+						ConstraintMachineValidationException e = new ConstraintMachineValidationException(cmAtom.getAtom(), "Virtual state conflict", dp);
+						atomsLog.error(e);
+						Events.getInstance().broadcast(new AtomExceptionEvent(e, (Atom) cmAtom.getAtom()));
+					}
+
+					@Override
 					public void onStateConflict(SimpleRadixEngineAtom cmAtom, DataPointer dp, SimpleRadixEngineAtom conflictAtom) {
-						SpunParticle issueParticle = conflictAtom.getAtom().getSpunParticle(dp);
+						SpunParticle issueParticle = cmAtom.getAtom().getSpunParticle(dp);
 
 						final ParticleConflictException conflict = new ParticleConflictException(
 							new ParticleConflict(
@@ -1509,14 +1516,20 @@ public class AtomSync extends Service
 							}
 
 							@Override
+							public void onVirtualStateConflict(SimpleRadixEngineAtom cmAtom, DataPointer dp) {
+								log.fatal("Failed to process genesis Atom: Virtual State Conflict");
+								System.exit(-1);
+							}
+
+							@Override
 							public void onStateConflict(SimpleRadixEngineAtom cmAtom, DataPointer dp, SimpleRadixEngineAtom conflictAtom) {
-								log.fatal("Failed to process genesis Atom");
+								log.fatal("Failed to process genesis Atom: State Conflict");
 								System.exit(-1);
 							}
 
 							@Override
 							public void onStateMissingDependency(SimpleRadixEngineAtom cmAtom, DataPointer dp) {
-								log.fatal("Failed to process genesis Atom");
+								log.fatal("Failed to process genesis Atom: Missing Dependency");
 								System.exit(-1);
 							}
 						});
