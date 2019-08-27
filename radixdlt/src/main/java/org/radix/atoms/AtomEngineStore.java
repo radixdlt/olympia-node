@@ -2,10 +2,8 @@ package org.radix.atoms;
 
 import com.radixdlt.atomos.RadixEngineUtils;
 import com.radixdlt.atomos.RadixEngineUtils.CMAtomConversionException;
-import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.atomos.SimpleRadixEngineAtom;
 import com.radixdlt.utils.UInt384;
-import java.util.Optional;
 import java.util.Set;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.atoms.Spin;
@@ -63,9 +61,9 @@ public class AtomEngineStore implements EngineStore<SimpleRadixEngineAtom> {
 	}
 
 	@Override
-	public Optional<Spin> getSpin(Particle particle) {
+	public Spin getSpin(Particle particle) {
 		try {
-			return Optional.of(atomStoreSupplier.get().getSpin(particle));
+			return atomStoreSupplier.get().getSpin(particle);
 		} catch (DatabaseException dex) {
 			throw new StateStoreException("Discovery for " + particle.getClass() + " with " + particle.getHID() + " failed: " + dex, dex);
 		}
