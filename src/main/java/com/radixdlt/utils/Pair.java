@@ -1,4 +1,4 @@
-package com.radixdlt.common;
+package com.radixdlt.utils;
 
 import java.util.Objects;
 
