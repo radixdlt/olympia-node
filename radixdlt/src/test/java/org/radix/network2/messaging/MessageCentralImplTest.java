@@ -1,15 +1,16 @@
 package org.radix.network2.messaging;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
-
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.serialization.DsonOutput.Output;
+import com.radixdlt.serialization.Serialization;
+import com.radixdlt.universe.Universe;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.powermock.api.mockito.PowerMockito;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.junit4.PowerMockRunner;
 import org.radix.events.Events;
 import org.radix.modules.Modules;
 import org.radix.network.messages.TestMessage;
@@ -25,21 +26,42 @@ import org.radix.network2.transport.TransportMetadata;
 import org.radix.network2.transport.TransportOutboundConnection;
 import org.radix.properties.RuntimeProperties;
 import org.radix.state.State;
+import org.radix.universe.system.events.QueueFullEvent;
 import org.xerial.snappy.Snappy;
 
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.Serialization;
-import com.radixdlt.universe.Universe;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.PriorityBlockingQueue;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
 
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+@RunWith(PowerMockRunner.class)
+@PrepareForTest({MessageCentralImpl.class})
 public class MessageCentralImplTest {
 
 	static class DummyTransportOutboundConnection implements TransportOutboundConnection {
 		private boolean sent = false;
 		private final Semaphore sentSemaphore = new Semaphore(0);
+		private List<byte[]> messages = new ArrayList<>();
+		private CountDownLatch countDownLatch;
 
 		@Override
 		public void close() throws IOException {
@@ -48,9 +70,21 @@ public class MessageCentralImplTest {
 
 		@Override
 		public CompletableFuture<SendResult> send(byte[] data) {
+			if (countDownLatch != null) {
+				countDownLatch.countDown();
+			}
 			sent = true;
 			sentSemaphore.release();
+			messages.add(data);
 			return CompletableFuture.completedFuture(SendResult.complete());
+		}
+
+		public List<byte[]> getMessages() {
+			return messages;
+		}
+
+		public void setCountDownLatch(CountDownLatch countDownLatch) {
+			this.countDownLatch = countDownLatch;
 		}
 	}
 
@@ -109,10 +143,14 @@ public class MessageCentralImplTest {
 	private DummyTransport dt;
 	private TransportManager transportManager;
 	private MessageCentralImpl mci;
+	private PriorityBlockingQueue inboundQueue;
+	private PriorityBlockingQueue outboundQueue;
+	private Events events;
 
 	@Before
-	public void testSetup() {
+	public void testSetup() throws Exception {
 		this.serialization = Serialization.getDefault();
+		MessageCentralConfiguration conf = staticConfig();
 
 		// Curse you singletons
 		Universe universe = mock(Universe.class);
@@ -147,7 +185,13 @@ public class MessageCentralImplTest {
 			}
 		};
 
-		Events events = mock(Events.class);
+		this.events = mock(Events.class);
+		inboundQueue = spy(new PriorityBlockingQueue<>(conf.messagingInboundQueueMax(0)));
+		outboundQueue = spy(new PriorityBlockingQueue<>(conf.messagingOutboundQueueMax(0)));
+		//Mocking inboundQueue and outboundQueue
+		//Differentiation is done by messagingInboundQueueMax and messagingOutboundQueueMax. These values mast be different
+		PowerMockito.whenNew(PriorityBlockingQueue.class).withArguments(conf.messagingInboundQueueMax(0)).thenReturn(inboundQueue);
+		PowerMockito.whenNew(PriorityBlockingQueue.class).withArguments(conf.messagingOutboundQueueMax(0)).thenReturn(outboundQueue);
 		this.mci = new MessageCentralImpl(staticConfig(), serialization, transportManager, events, System::currentTimeMillis);
 	}
 
@@ -180,6 +224,70 @@ public class MessageCentralImplTest {
 		mci.send(peer, msg);
 		assertTrue(toc.sentSemaphore.tryAcquire(10, TimeUnit.SECONDS));
 		assertTrue(toc.sent);
+	}
+
+	@Test
+	public void testSendMessageDeliveredToTransport() throws InterruptedException {
+		Message msg = new TestMessage();
+		Peer peer = mock(Peer.class);
+		doReturn(new State(State.CONNECTED)).when(peer).getState();
+
+		int numberOfRequests = 6;
+		CountDownLatch receivedFlag = new CountDownLatch(numberOfRequests);
+		toc.setCountDownLatch(receivedFlag);
+		for (int i = 0; i < numberOfRequests; i++) {
+			mci.send(peer, msg);
+		}
+
+		receivedFlag.await(10, TimeUnit.SECONDS);
+		assertEquals(numberOfRequests, toc.getMessages().size());
+	}
+
+	@Test
+	public void testInjectMessageDeliveredToListeners() throws InterruptedException {
+		Message msg = new TestMessage();
+		Peer peer = mock(Peer.class);
+		doReturn(new State(State.CONNECTED)).when(peer).getState();
+
+		int numberOfRequests = 6;
+		CountDownLatch receivedFlag = new CountDownLatch(numberOfRequests);
+		List<Message> messages = new ArrayList<>();
+		mci.addListener(TestMessage.class, (source, message) -> {
+			messages.add(message);
+			receivedFlag.countDown();
+		});
+
+		for (int i = 0; i < numberOfRequests; i++) {
+			mci.inject(peer, msg);
+		}
+		receivedFlag.await(10, TimeUnit.SECONDS);
+		assertEquals(numberOfRequests, messages.size());
+		verify(inboundQueue, times(numberOfRequests)).offer(any());
+	}
+
+	@Test
+	public void testInjectQueueIsFull() throws Exception {
+		testQueueIsFull(inboundQueue, (peer, message) -> mci.inject(peer, message));
+	}
+
+	@Test
+	public void testSendQueueIsFull() throws Exception {
+		testQueueIsFull(outboundQueue, (peer, message) -> mci.send(peer, message));
+	}
+
+
+	private void testQueueIsFull(Queue queue, BiConsumer<Peer, Message> biConsumer) throws Exception {
+		MessageEvent mockEvent = mock(MessageEvent.class);
+		PowerMockito.whenNew(MessageEvent.class).withAnyArguments().thenReturn(mockEvent);
+		doReturn(false).when(queue).offer(mockEvent);
+		Message msg = new TestMessage();
+		Peer peer = mock(Peer.class);
+
+		int numberOfRequests = 6;
+		for (int i = 0; i < numberOfRequests; i++) {
+			biConsumer.accept(peer, msg);
+		}
+		verify(events, times(numberOfRequests)).broadcast(any(QueueFullEvent.class));
 	}
 
 	@Test
@@ -265,6 +373,7 @@ public class MessageCentralImplTest {
 
 	private MessageCentralConfiguration staticConfig() {
 		// More robust than mocking when adding new config
+		// messagingInboundQueueMax and messagingOutboundQueueMax should have different values. It is important for mocking
 		return new MessageCentralConfiguration() {
 			@Override
 			public int messagingInboundQueueMax(int defaultValue) {
@@ -272,7 +381,7 @@ public class MessageCentralImplTest {
 			}
 			@Override
 			public int messagingOutboundQueueMax(int defaultValue) {
-				return 10;
+				return 11;
 			}
 			@Override
 			public int messagingTimeToLive(int defaultValue) {
