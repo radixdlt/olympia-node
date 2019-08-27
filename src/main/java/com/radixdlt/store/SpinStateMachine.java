@@ -148,9 +148,4 @@ public final class SpinStateMachine {
 	public static boolean canTransition(Spin from, Spin to) {
 		return SpinStateIndexes.VALID_TRANSITIONS.contains(Transition.of(from, to));
 	}
-
-	public static boolean canTransitionTo(Spin to) {
-		Objects.requireNonNull(to);
-		return to != NEUTRAL;
-	}
 }
