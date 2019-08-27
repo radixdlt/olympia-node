@@ -303,22 +303,6 @@ public class ImmutableAtom {
 		return this.particleGroups.stream().flatMap(ParticleGroup::spunParticles);
 	}
 
-	/**
-	 * Returns a stream of indexed particle groups in this atom
-	 * @return stream of indexed particle groups
-	 */
-	public final Stream<IndexedParticleGroup> indexedParticleGroups() {
-		return Streams.mapWithIndex(particleGroups(), (pg, groupIndex) -> new IndexedParticleGroup(pg, (int) groupIndex));
-	}
-
-	/**
-	 * Returns a stream of indexed spun particles in this atom
-	 * @return stream of indexed spun particles
-	 */
-	public final Stream<IndexedSpunParticle> indexedSpunParticles() {
-		return indexedParticleGroups().flatMap(IndexedParticleGroup::indexedSpunParticles);
-	}
-
 	public final Stream<Particle> particles(Spin spin) {
 		return this.spunParticles().filter(p -> p.getSpin() == spin).map(SpunParticle::getParticle);
 	}
