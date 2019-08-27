@@ -1,9 +1,7 @@
 package com.radixdlt.atoms;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.mock;
 
-import com.radixdlt.middleware.ImmutableAtom;
 import org.junit.Test;
 
 public class DataPointerTest {
@@ -27,10 +25,5 @@ public class DataPointerTest {
 	@Test
 	public void when_data_pointer_with_particle_index_and_bad_particle_group_index_is_created__then_an_illegal_state_exception_is_thrown() {
 		assertThatThrownBy(() -> new DataPointer(-1, 1)).isInstanceOf(IllegalArgumentException.class);
-	}
-
-	@Test
-	public void when_just_atom_data_pointer_is_validated_with_any_atom__then_no_exception_is_thrown() {
-		DataPointer.ofAtom().validateExists(mock(ImmutableAtom.class));
 	}
 }

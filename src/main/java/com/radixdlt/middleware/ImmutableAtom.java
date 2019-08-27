@@ -5,6 +5,7 @@ import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import com.radixdlt.atoms.DataPointer;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.atoms.Spin;
 import com.radixdlt.common.AID;
@@ -338,6 +339,10 @@ public class ImmutableAtom {
 			.filter(p -> type.isAssignableFrom(p.getClass()))
 			.map(type::cast)
 			.findFirst().orElse(null);
+	}
+
+	public SpunParticle getSpunParticle(DataPointer dp) {
+		return getParticleGroup(dp.getParticleGroupIndex()).getSpunParticle(dp.getParticleIndex());
 	}
 
 	/**
