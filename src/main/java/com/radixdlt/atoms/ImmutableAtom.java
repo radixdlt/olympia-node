@@ -291,6 +291,10 @@ public class ImmutableAtom {
 		return this.particleGroups.stream();
 	}
 
+	public final List<ParticleGroup> getParticleGroups() {
+		return this.particleGroups;
+	}
+
 	public final ParticleGroup getParticleGroup(int particleGroupIndex) {
 		return this.particleGroups.get(particleGroupIndex);
 	}
