@@ -36,7 +36,13 @@ public class Validation extends Plugin {
 		os.load(new UniqueParticleConstraintScrypt());
 		os.load(new MessageParticleConstraintScrypt());
 
-		final ConstraintMachine constraintMachine = os.buildMachine();
+		final ConstraintMachine constraintMachine = new ConstraintMachine.Builder()
+			.setParticleProcedures(os.buildTransitionProcedures())
+			.setWitnessValidators(os.buildWitnessValidators())
+			.setParticleStaticCheck(os.buildParticleStaticCheck())
+			.virtualStore(os.buildVirtualLayer())
+			.build();
+
 		final RadixEngine<SimpleRadixEngineAtom> radixEngine = new RadixEngine<>(
 			constraintMachine,
 			atomStore
