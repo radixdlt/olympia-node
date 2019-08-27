@@ -8,10 +8,9 @@ import com.radixdlt.store.CMStore;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
-import com.radixdlt.constraintmachine.ConstraintMachine.Builder;
-import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.atoms.Spin;
 import com.radixdlt.store.CMStores;
@@ -59,32 +58,30 @@ public final class CMAtomOS {
 		this.witnessesBuilder.putAll(constraintScryptEnv.getScryptWitnessValidators());
 	}
 
-	/**
-	 * Checks that the machine is set up correctly where invariants aren't broken.
-	 * If all is well, this then returns an instance of a machine in which atom
-	 * validation can be done with the Particles and Transitions it's been set up with.
-	 *
-	 * @return a constraint machine which can validate atoms and the virtual layer on top of the store
-	 */
-	public ConstraintMachine buildMachine() {
-		ConstraintMachine.Builder cmBuilder = new Builder();
-
+	public BiFunction<Particle, Particle, TransitionProcedure<Particle, Particle>> buildTransitionProcedures() {
 		final ImmutableMap<Pair<Class<? extends Particle>, Class<? extends Particle>>, TransitionProcedure<Particle, Particle>>
-			procedures = proceduresBuilder.build();
-		cmBuilder.setParticleProcedures((input, output) -> procedures.get(
+		procedures = proceduresBuilder.build();
+		return (input, output) -> procedures.get(
 			Pair.<Class<? extends Particle>, Class<? extends Particle>>of(
 				input == null ? null : input.getClass(),
 				output == null ? null : output.getClass())
-		));
+		);
+	}
+
+	public BiFunction<Particle, Particle, WitnessValidator<Particle, Particle>> buildWitnessValidators() {
 		final ImmutableMap<Pair<Class<? extends Particle>, Class<? extends Particle>>, WitnessValidator<Particle, Particle>>
-			witnessValidators = witnessesBuilder.build();
-		cmBuilder.setWitnessValidators((in, out) -> witnessValidators.get(
+		witnessValidators = witnessesBuilder.build();
+		return (in, out) -> witnessValidators.get(
 			Pair.<Class<? extends Particle>, Class<? extends Particle>>of(
 				in == null ? null : in.getClass(),
 				out == null ? null : out.getClass())
-		));
+		);
+	}
 
-		cmBuilder.setParticleStaticCheck(p -> {
+	public Function<Particle, Result> buildParticleStaticCheck() {
+		final ImmutableMap<Class<? extends Particle>, ParticleDefinition<Particle>> particleDefinitions
+			= ImmutableMap.copyOf(this.particleDefinitions);
+		return p -> {
 			final ParticleDefinition<Particle> particleDefinition = particleDefinitions.get(p.getClass());
 			if (particleDefinition == null) {
 				return Result.error("Unknown particle type: " + p.getClass());
@@ -108,36 +105,10 @@ public final class CMAtomOS {
 			}
 
 			return Result.success();
-		});
-
-		UnaryOperator<CMStore> rriTransformer = base ->
-			CMStores.virtualizeDefault(base, p -> p instanceof RRIParticle && ((RRIParticle) p).getNonce() == 0, Spin.UP);
-
-		UnaryOperator<CMStore> virtualizedDefault = base -> {
-			CMStore virtualizeNeutral = CMStores.virtualizeDefault(base, p -> {
-				final ParticleDefinition<Particle> particleDefinition = particleDefinitions.get(p.getClass());
-				if (particleDefinition == null) {
-					return false;
-				}
-
-				final Function<Particle, Result> staticValidation = particleDefinition.getStaticValidation();
-				if (staticValidation.apply(p).isError()) {
-					return false;
-				}
-
-				final Function<Particle, Stream<RadixAddress>> mapper = particleDefinition.getAddressMapper();
-				final Set<EUID> destinations = mapper.apply(p).map(RadixAddress::getUID).collect(Collectors.toSet());
-
-				return !(destinations.isEmpty())
-					&& destinations.containsAll(p.getDestinations())
-					&& p.getDestinations().containsAll(destinations);
-			}, Spin.NEUTRAL);
-
-			return rriTransformer.apply(virtualizeNeutral);
 		};
+	}
 
-		cmBuilder.virtualStore(virtualizedDefault);
-
-		return cmBuilder.build();
+	public UnaryOperator<CMStore> buildVirtualLayer() {
+		return base -> CMStores.virtualizeDefault(base, p -> p instanceof RRIParticle && ((RRIParticle) p).getNonce() == 0, Spin.UP);
 	}
 }

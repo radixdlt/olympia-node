@@ -42,10 +42,4 @@ public class CMStoresTest {
 		CMStore cmStore = CMStores.virtualizeDefault(createStore(true, p -> Spin.DOWN), p -> true, Spin.UP);
 		assertThat(cmStore.getSpin(mock(Particle.class))).isEqualTo(Spin.DOWN);
 	}
-
-	@Test
-	public void when_a_store_is_virtualized_overwrite_up_and_spin_is_requested__then_it_should_return_up() {
-		CMStore cmStore = CMStores.virtualizeOverwrite(mock(EngineStore.class), p -> true, Spin.UP);
-		assertThat(cmStore.getSpin(mock(Particle.class))).isEqualTo(Spin.UP);
-	}
 }

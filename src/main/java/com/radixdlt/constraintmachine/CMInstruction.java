@@ -16,12 +16,6 @@ public final class CMInstruction {
 	private final ImmutableMap<EUID, ECSignature> signatures;
 
 	public CMInstruction(
-		ImmutableList<CMMicroInstruction> microInstructions
-	) {
-		this(microInstructions, null, ImmutableMap.of());
-	}
-
-	public CMInstruction(
 		ImmutableList<CMMicroInstruction> microInstructions,
 		Hash witness,
 		ImmutableMap<EUID, ECSignature> signatures

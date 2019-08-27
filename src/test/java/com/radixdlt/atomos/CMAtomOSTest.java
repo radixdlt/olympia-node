@@ -1,16 +1,8 @@
 package com.radixdlt.atomos;
 
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.atoms.DataPointer;
-import com.radixdlt.atoms.Spin;
-import com.radixdlt.constraintmachine.CMError;
-import com.radixdlt.constraintmachine.CMErrorCode;
-import com.radixdlt.constraintmachine.CMInstruction;
-import com.radixdlt.constraintmachine.CMMicroInstruction;
-import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
-import java.util.Optional;
+import java.util.function.Function;
 import org.junit.Test;
 
 import com.radixdlt.atoms.Particle;
@@ -18,7 +10,6 @@ import com.radixdlt.atoms.Particle;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class CMAtomOSTest {
 	private static class TestParticle extends Particle {
@@ -76,20 +67,10 @@ public class CMAtomOSTest {
 	@Test
 	public void when_a_particle_which_is_not_registered_via_os_is_validated__it_should_cause_errors() {
 		CMAtomOS os = new CMAtomOS();
-		ConstraintMachine machine = os.buildMachine();
-		CMInstruction instruction = mock(CMInstruction.class);
+		Function<Particle, Result> staticCheck = os.buildParticleStaticCheck();
 		TestParticle testParticle = new TestParticle();
-		when(instruction.getMicroInstructions()).thenReturn(
-			ImmutableList.of(CMMicroInstruction.checkSpin(testParticle, Spin.UP))
-		);
-		Optional<CMError> error = machine.validate(instruction);
-		assertThat(error)
-			.get()
-			.satisfies(err -> {
-				assertThat(err.getDataPointer()).isEqualTo(DataPointer.ofParticle(0, 0));
-				assertThat(err.getErrorCode()).isEqualTo(CMErrorCode.INVALID_PARTICLE);
-				assertThat(err.getErrorDescription()).contains("Unknown particle type");
-			});
+		assertThat(staticCheck.apply(testParticle).getErrorMessage())
+			.contains("Unknown particle type");
 	}
 
 	@Test
@@ -98,19 +79,9 @@ public class CMAtomOSTest {
 		os.load(syscalls -> {
 			syscalls.registerParticle(TestParticle.class, p -> mock(RadixAddress.class), p -> Result.success());
 		});
-		ConstraintMachine machine = os.buildMachine();
-		CMInstruction instruction = mock(CMInstruction.class);
+		Function<Particle, Result> staticCheck = os.buildParticleStaticCheck();
 		TestParticle testParticle = new TestParticle();
-		when(instruction.getMicroInstructions()).thenReturn(
-			ImmutableList.of(CMMicroInstruction.checkSpin(testParticle, Spin.UP))
-		);
-		Optional<CMError> error = machine.validate(instruction);
-		assertThat(error)
-			.get()
-			.satisfies(err -> {
-				assertThat(err.getDataPointer()).isEqualTo(DataPointer.ofParticle(0, 0));
-				assertThat(err.getErrorCode()).isEqualTo(CMErrorCode.INVALID_PARTICLE);
-				assertThat(err.getErrorDescription()).contains("Bad address");
-			});
+		assertThat(staticCheck.apply(testParticle).getErrorMessage())
+			.contains("Bad address");
 	}
 }

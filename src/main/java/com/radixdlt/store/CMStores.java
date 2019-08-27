@@ -66,32 +66,4 @@ public final class CMStores {
 			}
 		};
 	}
-
-	/**
-	 * Virtualizes the spin for a given particle predicate. That is,
-	 * the given spin is always returned when the given predicate
-	 * passes.
-	 *
-	 * @param base the base state store
-	 * @param particleCheck the particle predicate
-	 * @param spin the spin to always return given predicate success
-	 * @return the virtualized state store
-	 */
-	public static CMStore virtualizeOverwrite(CMStore base, Predicate<Particle> particleCheck, Spin spin) {
-		return new CMStore() {
-			@Override
-			public boolean supports(Set<EUID> destinations) {
-				return base.supports(destinations);
-			}
-
-			@Override
-			public Spin getSpin(Particle particle) {
-				if (particleCheck.test(particle)) {
-					return spin;
-				}
-
-				return base.getSpin(particle);
-			}
-		};
-	}
 }
