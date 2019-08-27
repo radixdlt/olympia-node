@@ -2,8 +2,8 @@ package org.radix.atoms;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.atoms.ParticleGroup;
-import com.radixdlt.atoms.ImmutableAtom;
+import com.radixdlt.middleware.ParticleGroup;
+import com.radixdlt.middleware.ImmutableAtom;
 import com.radixdlt.common.EUID;
 import com.radixdlt.crypto.ECSignature;
 import com.radixdlt.serialization.DsonOutput;

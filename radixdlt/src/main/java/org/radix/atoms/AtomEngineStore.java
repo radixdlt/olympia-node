@@ -1,8 +1,8 @@
 package org.radix.atoms;
 
-import com.radixdlt.atomos.RadixEngineUtils;
-import com.radixdlt.atomos.RadixEngineUtils.CMAtomConversionException;
-import com.radixdlt.atomos.SimpleRadixEngineAtom;
+import com.radixdlt.middleware.RadixEngineUtils;
+import com.radixdlt.middleware.RadixEngineUtils.CMAtomConversionException;
+import com.radixdlt.middleware.SimpleRadixEngineAtom;
 import com.radixdlt.utils.UInt384;
 import java.util.Set;
 import com.radixdlt.atoms.Particle;

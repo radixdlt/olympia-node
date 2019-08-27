@@ -1,6 +1,6 @@
 package org.radix.api.jsonrpc;
 
-import com.radixdlt.atoms.AtomStatus;
+import com.radixdlt.engine.AtomStatus;
 import com.radixdlt.atoms.DataPointer;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;

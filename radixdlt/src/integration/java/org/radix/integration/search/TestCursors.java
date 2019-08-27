@@ -1,8 +1,7 @@
 package org.radix.integration.search;
 
-import com.radixdlt.atomos.SimpleRadixEngineAtom;
-import com.radixdlt.engine.RadixEngineAtom;
-import com.radixdlt.atomos.RadixEngineUtils;
+import com.radixdlt.middleware.SimpleRadixEngineAtom;
+import com.radixdlt.middleware.RadixEngineUtils;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.UInt384;
 import java.util.Comparator;

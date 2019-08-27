@@ -2,7 +2,7 @@ package org.radix.validation;
 
 import com.radixdlt.engine.RadixEngine;
 
-import com.radixdlt.atomos.SimpleRadixEngineAtom;
+import com.radixdlt.middleware.SimpleRadixEngineAtom;
 import org.radix.modules.Service;
 
 /**

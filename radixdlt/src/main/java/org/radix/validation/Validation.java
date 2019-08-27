@@ -7,7 +7,7 @@ import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.atomos.SimpleRadixEngineAtom;
+import com.radixdlt.middleware.SimpleRadixEngineAtom;
 import com.radixdlt.universe.Universe;
 import org.radix.atoms.AtomStore;
 import org.radix.atoms.AtomEngineStore;

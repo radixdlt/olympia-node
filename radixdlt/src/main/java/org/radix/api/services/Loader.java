@@ -18,11 +18,9 @@ import org.radix.atoms.AtomStore;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.atomos.RadixAddress;
 import org.radix.atoms.events.AtomStoredEvent;
-import com.radixdlt.atoms.ParticleGroup;
+import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.atoms.Spin;
 import com.radixdlt.atoms.SpunParticle;
-import org.radix.atoms.sync.AtomSync;
-import org.radix.atoms.sync.AtomSync.AtomComplexity;
 
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.CryptoException;

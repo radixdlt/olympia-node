@@ -5,10 +5,8 @@ import com.radixdlt.serialization.SerializationException;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.radix.atoms.Atom;
-import com.radixdlt.atoms.ParticleGroup;
+import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.core.ClasspathScanningSerializationPolicy;
-import com.radixdlt.serialization.core.ClasspathScanningSerializerIds;
 
 import static org.junit.Assert.assertEquals;
 

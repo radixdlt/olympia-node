@@ -2,7 +2,7 @@ package com.radixdlt.tempo;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.AtomContent;
-import com.radixdlt.atoms.ImmutableAtom;
+import com.radixdlt.middleware.ImmutableAtom;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerId2;
 import org.radix.atoms.Atom;

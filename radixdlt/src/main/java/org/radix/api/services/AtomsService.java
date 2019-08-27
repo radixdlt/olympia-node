@@ -1,7 +1,7 @@
 package org.radix.api.services;
 
 import com.google.common.collect.EvictingQueue;
-import com.radixdlt.atoms.AtomStatus;
+import com.radixdlt.engine.AtomStatus;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -41,7 +41,6 @@ import org.radix.atoms.events.AtomUpdatedEvent;
 import com.radixdlt.atoms.Particle;
 import org.radix.atoms.particles.conflict.ParticleConflict;
 import org.radix.atoms.particles.conflict.ParticleConflictStore;
-import org.radix.atoms.sync.AtomSync;
 import com.radixdlt.common.EUID;
 import com.radixdlt.common.AID;
 import org.radix.discovery.DiscoveryCursor;

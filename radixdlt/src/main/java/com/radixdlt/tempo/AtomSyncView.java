@@ -1,6 +1,6 @@
 package com.radixdlt.tempo;
 
-import com.radixdlt.atoms.AtomStatus;
+import com.radixdlt.engine.AtomStatus;
 import com.radixdlt.common.AID;
 import org.radix.atoms.Atom;
 
