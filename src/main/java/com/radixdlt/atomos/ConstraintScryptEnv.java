@@ -2,7 +2,7 @@ package com.radixdlt.atomos;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atommodel.procedures.CombinedTransition;
-import com.radixdlt.atoms.Particle;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.common.Pair;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.TransitionProcedure.CMAction;

@@ -1,7 +1,7 @@
 package com.radixdlt.store;
 
-import com.radixdlt.atoms.Particle;
-import com.radixdlt.atoms.Spin;
+import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.common.EUID;
 import java.util.Set;
 import java.util.function.Predicate;

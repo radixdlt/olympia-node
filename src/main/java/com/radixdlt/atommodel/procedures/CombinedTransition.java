@@ -1,7 +1,7 @@
 package com.radixdlt.atommodel.procedures;
 
 import com.radixdlt.atomos.Result;
-import com.radixdlt.atoms.Particle;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import java.util.function.BiFunction;
 

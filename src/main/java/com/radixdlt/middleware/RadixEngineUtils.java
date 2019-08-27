@@ -13,8 +13,8 @@ import com.radixdlt.store.SpinStateMachine;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import com.radixdlt.atoms.Particle;
-import com.radixdlt.atoms.Spin;
+import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.Spin;
 
 /**
  * Utility class for low level Constraint Machine "hardware" level validation.

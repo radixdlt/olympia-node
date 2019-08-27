@@ -1,7 +1,6 @@
 package com.radixdlt.constraintmachine;
 
 import com.radixdlt.atomos.Result;
-import com.radixdlt.atoms.Spin;
 import com.radixdlt.common.EUID;
 import com.radixdlt.constraintmachine.TransitionProcedure.ProcedureResult;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
@@ -17,7 +16,6 @@ import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
-import com.radixdlt.atoms.Particle;
 import com.radixdlt.store.CMStores;
 
 import java.util.Objects;

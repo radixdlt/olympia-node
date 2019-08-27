@@ -9,11 +9,11 @@ import java.util.EnumSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import com.radixdlt.atoms.Spin;
+import com.radixdlt.constraintmachine.Spin;
 
-import static com.radixdlt.atoms.Spin.NEUTRAL;
-import static com.radixdlt.atoms.Spin.UP;
-import static com.radixdlt.atoms.Spin.DOWN;
+import static com.radixdlt.constraintmachine.Spin.NEUTRAL;
+import static com.radixdlt.constraintmachine.Spin.UP;
+import static com.radixdlt.constraintmachine.Spin.DOWN;
 
 /**
  * The spin state machine used for an instance of a particle.

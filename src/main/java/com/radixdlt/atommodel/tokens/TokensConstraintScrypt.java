@@ -6,7 +6,7 @@ import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atommodel.procedures.FungibleTransition;
 import com.radixdlt.constraintmachine.WitnessValidator;
-import com.radixdlt.atoms.Particle;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.WitnessData;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
 import com.radixdlt.utils.UInt256;

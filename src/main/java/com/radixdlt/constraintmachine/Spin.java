@@ -1,4 +1,4 @@
-package com.radixdlt.atoms;
+package com.radixdlt.constraintmachine;
 
 /**
  * The state of a {@link Particle}

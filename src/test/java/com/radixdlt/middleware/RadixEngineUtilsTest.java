@@ -6,7 +6,7 @@ import static org.mockito.Mockito.mock;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.middleware.RadixEngineUtils.CMAtomConversionException;
 import com.radixdlt.constraintmachine.DataPointer;
-import com.radixdlt.atoms.Particle;
+import com.radixdlt.constraintmachine.Particle;
 import org.junit.Test;
 
 public class RadixEngineUtilsTest {

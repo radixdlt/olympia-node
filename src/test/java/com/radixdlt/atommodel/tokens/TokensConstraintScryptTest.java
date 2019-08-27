@@ -10,7 +10,7 @@ import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.RRI;
 import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.atomos.Result;
-import com.radixdlt.atoms.Particle;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.utils.UInt256;
 import java.util.HashMap;
 import java.util.function.Function;

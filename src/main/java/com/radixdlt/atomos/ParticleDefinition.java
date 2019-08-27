@@ -1,6 +1,6 @@
 package com.radixdlt.atomos;
 
-import com.radixdlt.atoms.Particle;
+import com.radixdlt.constraintmachine.Particle;
 import java.util.function.Function;
 import java.util.stream.Stream;
 

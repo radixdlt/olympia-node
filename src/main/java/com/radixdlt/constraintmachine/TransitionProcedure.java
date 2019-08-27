@@ -1,7 +1,5 @@
 package com.radixdlt.constraintmachine;
 
-import com.radixdlt.atoms.Particle;
-
 /**
  * Application level "Bytecode" to be run per particle in the Constraint machine
  */

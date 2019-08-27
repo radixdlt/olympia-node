@@ -1,6 +1,6 @@
 package com.radixdlt.atomos;
 
-import com.radixdlt.atoms.Particle;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.WitnessValidator;
 import java.util.Set;

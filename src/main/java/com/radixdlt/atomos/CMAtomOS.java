@@ -11,8 +11,8 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
-import com.radixdlt.atoms.Particle;
-import com.radixdlt.atoms.Spin;
+import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.store.CMStores;
 import com.radixdlt.common.EUID;
 

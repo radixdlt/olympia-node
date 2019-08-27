@@ -5,7 +5,7 @@ import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
 import java.util.function.Function;
 import org.junit.Test;
 
-import com.radixdlt.atoms.Particle;
+import com.radixdlt.constraintmachine.Particle;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;

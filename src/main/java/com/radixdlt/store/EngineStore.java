@@ -1,6 +1,6 @@
 package com.radixdlt.store;
 
-import com.radixdlt.atoms.Particle;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.RadixEngineAtom;
 import java.util.function.Consumer;
 
