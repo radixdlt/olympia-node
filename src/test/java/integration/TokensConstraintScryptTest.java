@@ -52,7 +52,7 @@ public class TokensConstraintScryptTest {
 			.get()
 			.satisfies(e -> {
 				assertThat(e.getErrMsg()).contains(errorMessage);
-				assertThat(e.getErrorCode()).isEqualTo(CMErrorCode.UNKNOWN_PARTICLE);
+				assertThat(e.getErrorCode()).isEqualTo(CMErrorCode.INVALID_PARTICLE);
 				assertThat(e.getDataPointer()).isEqualTo(DataPointer.ofParticle(0, 0));
 			});
 	}

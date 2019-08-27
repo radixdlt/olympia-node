@@ -1,19 +1,22 @@
 package com.radixdlt.atomos;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.atoms.DataPointer;
 import com.radixdlt.atoms.Spin;
+import com.radixdlt.constraintmachine.CMError;
+import com.radixdlt.constraintmachine.CMErrorCode;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
+import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
+import java.util.Optional;
 import org.junit.Test;
 
 import com.radixdlt.atoms.Particle;
-import com.radixdlt.constraintmachine.CMErrorCode;
-import com.radixdlt.constraintmachine.ConstraintMachine;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -41,19 +44,6 @@ public class CMAtomOSTest {
 	private abstract static class TestParticle1 extends Particle {
 	}
 
-	@Test
-	public void when_a_particle_which_is_not_registered_via_os_is_validated__it_should_cause_errors() {
-		CMAtomOS os = new CMAtomOS();
-		ConstraintMachine machine = os.buildMachine();
-		CMInstruction instruction = mock(CMInstruction.class);
-		TestParticle testParticle = new TestParticle();
-		when(instruction.getMicroInstructions()).thenReturn(
-			ImmutableList.of(CMMicroInstruction.checkSpin(testParticle, Spin.NEUTRAL))
-		);
-		assertThat(machine.validate(instruction))
-			.isPresent()
-			.matches(e -> e.get().getErrorCode() == CMErrorCode.UNKNOWN_PARTICLE);
-	}
 
 	@Test
 	public void when_adding_procedure_on_particle_registered_in_another_scrypt__exception_is_thrown() {
@@ -80,5 +70,47 @@ public class CMAtomOSTest {
 				);
 			})
 		).isInstanceOf(IllegalStateException.class);
+	}
+
+
+	@Test
+	public void when_a_particle_which_is_not_registered_via_os_is_validated__it_should_cause_errors() {
+		CMAtomOS os = new CMAtomOS();
+		ConstraintMachine machine = os.buildMachine();
+		CMInstruction instruction = mock(CMInstruction.class);
+		TestParticle testParticle = new TestParticle();
+		when(instruction.getMicroInstructions()).thenReturn(
+			ImmutableList.of(CMMicroInstruction.checkSpin(testParticle, Spin.UP))
+		);
+		Optional<CMError> error = machine.validate(instruction);
+		assertThat(error)
+			.get()
+			.satisfies(err -> {
+				assertThat(err.getDataPointer()).isEqualTo(DataPointer.ofParticle(0, 0));
+				assertThat(err.getErrorCode()).isEqualTo(CMErrorCode.INVALID_PARTICLE);
+				assertThat(err.getErrorDescription()).contains("Unknown particle type");
+			});
+	}
+
+	@Test
+	public void when_a_particle_with_a_bad_address_is_validated__it_should_cause_errors() {
+		CMAtomOS os = new CMAtomOS(addr -> Result.error("Bad address"));
+		os.load(syscalls -> {
+			syscalls.registerParticle(TestParticle.class, p -> mock(RadixAddress.class), p -> Result.success());
+		});
+		ConstraintMachine machine = os.buildMachine();
+		CMInstruction instruction = mock(CMInstruction.class);
+		TestParticle testParticle = new TestParticle();
+		when(instruction.getMicroInstructions()).thenReturn(
+			ImmutableList.of(CMMicroInstruction.checkSpin(testParticle, Spin.UP))
+		);
+		Optional<CMError> error = machine.validate(instruction);
+		assertThat(error)
+			.get()
+			.satisfies(err -> {
+				assertThat(err.getDataPointer()).isEqualTo(DataPointer.ofParticle(0, 0));
+				assertThat(err.getErrorCode()).isEqualTo(CMErrorCode.INVALID_PARTICLE);
+				assertThat(err.getErrorDescription()).contains("Bad address");
+			});
 	}
 }

@@ -289,7 +289,7 @@ public final class ConstraintMachine {
 				case CHECK_UP:
 					final Result staticCheckResult = particleStaticCheck.apply(cmMicroInstruction.getParticle());
 					if (staticCheckResult.isError()) {
-						return Optional.of(new CMError(dp, CMErrorCode.UNKNOWN_PARTICLE, validationState, staticCheckResult.getErrorMessage()));
+						return Optional.of(new CMError(dp, CMErrorCode.INVALID_PARTICLE, validationState, staticCheckResult.getErrorMessage()));
 					}
 
 					final Spin curSpin = localEngineStore.getSpin(cmMicroInstruction.getParticle());
