@@ -1,13 +1,12 @@
-package com.radixdlt.atomos;
+package com.radixdlt.middleware;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.atomos.RadixEngineUtils.CMAtomConversionException;
+import com.radixdlt.middleware.RadixEngineUtils.CMAtomConversionException;
 import com.radixdlt.atoms.DataPointer;
 import com.radixdlt.atoms.Particle;
-import com.radixdlt.atoms.ParticleGroup;
 import com.radixdlt.atoms.SpunParticle;
 import org.junit.Test;
 

@@ -1,4 +1,4 @@
-package com.radixdlt.atoms;
+package com.radixdlt.middleware;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
@@ -6,6 +6,9 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Streams;
 import com.google.common.collect.Streams.FunctionWithIndex;
+import com.radixdlt.atoms.Particle;
+import com.radixdlt.atoms.Spin;
+import com.radixdlt.atoms.SpunParticle;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;

@@ -1,6 +1,6 @@
-package com.radixdlt.atomos;
+package com.radixdlt.middleware;
 
-import com.radixdlt.atoms.ImmutableAtom;
+import com.radixdlt.atomos.Result;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.CMSuccessHook;
 import com.radixdlt.universe.Universe;

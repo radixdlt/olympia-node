@@ -1,10 +1,13 @@
-package com.radixdlt.atoms;
+package com.radixdlt.middleware;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import com.radixdlt.atoms.Particle;
+import com.radixdlt.atoms.Spin;
+import com.radixdlt.atoms.SpunParticle;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
 import com.radixdlt.crypto.AtomAlreadySignedException;

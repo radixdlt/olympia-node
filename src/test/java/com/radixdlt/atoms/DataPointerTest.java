@@ -3,6 +3,7 @@ package com.radixdlt.atoms;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
+import com.radixdlt.middleware.ImmutableAtom;
 import org.junit.Test;
 
 public class DataPointerTest {
