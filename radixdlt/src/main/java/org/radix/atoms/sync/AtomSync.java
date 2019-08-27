@@ -472,7 +472,7 @@ public class AtomSync extends Service
 
 					@Override
 					public void onStateConflict(SimpleRadixEngineAtom cmAtom, DataPointer dp, SimpleRadixEngineAtom conflictAtom) {
-						SpunParticle issueParticle = dp.getParticleFrom(conflictAtom.getAtom());
+						SpunParticle issueParticle = conflictAtom.getAtom().getSpunParticle(dp);
 
 						final ParticleConflictException conflict = new ParticleConflictException(
 							new ParticleConflict(
@@ -486,7 +486,7 @@ public class AtomSync extends Service
 
 					@Override
 					public void onStateMissingDependency(SimpleRadixEngineAtom cmAtom, DataPointer dp) {
-						SpunParticle issueParticle = dp.getParticleFrom(cmAtom.getAtom());
+						SpunParticle issueParticle = cmAtom.getAtom().getSpunParticle(dp);
 
 						final AtomDependencyNotFoundException notFoundException =
 							new AtomDependencyNotFoundException(

@@ -19,8 +19,6 @@ public class ConstraintMachineValidationException extends ValidationException {
 		Objects.requireNonNull(atom);
 		Objects.requireNonNull(dataPointer);
 
-		dataPointer.validateExists(atom);
-
 		this.atom = atom;
 		this.dataPointer = dataPointer;
 	}
