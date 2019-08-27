@@ -1,11 +1,12 @@
 package org.radix.atoms.sync;
 
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.atoms.DataPointer;
 import com.radixdlt.middleware.AtomCheckHook;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.engine.AtomStatus;
 import com.radixdlt.middleware.ImmutableAtom;
-import com.radixdlt.atoms.SpunParticle;
+import com.radixdlt.middleware.SpunParticle;
 import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.engine.RadixEngineAtom;
 import com.radixdlt.engine.RadixEngine;
@@ -470,7 +471,9 @@ public class AtomSync extends Service
 					}
 
 					@Override
-					public void onStateConflict(SimpleRadixEngineAtom cmAtom, SpunParticle issueParticle, SimpleRadixEngineAtom conflictAtom) {
+					public void onStateConflict(SimpleRadixEngineAtom cmAtom, DataPointer dp, SimpleRadixEngineAtom conflictAtom) {
+						SpunParticle issueParticle = dp.getParticleFrom(conflictAtom.getAtom());
+
 						final ParticleConflictException conflict = new ParticleConflictException(
 							new ParticleConflict(
 								issueParticle,
@@ -482,7 +485,9 @@ public class AtomSync extends Service
 					}
 
 					@Override
-					public void onStateMissingDependency(SimpleRadixEngineAtom cmAtom, SpunParticle issueParticle) {
+					public void onStateMissingDependency(SimpleRadixEngineAtom cmAtom, DataPointer dp) {
+						SpunParticle issueParticle = dp.getParticleFrom(cmAtom.getAtom());
+
 						final AtomDependencyNotFoundException notFoundException =
 							new AtomDependencyNotFoundException(
 								String.format("Atom has missing dependencies in transitions: %s", issueParticle.getParticle().getHID()),
@@ -1504,13 +1509,13 @@ public class AtomSync extends Service
 							}
 
 							@Override
-							public void onStateConflict(SimpleRadixEngineAtom cmAtom, SpunParticle issueParticle, SimpleRadixEngineAtom conflictAtom) {
+							public void onStateConflict(SimpleRadixEngineAtom cmAtom, DataPointer dp, SimpleRadixEngineAtom conflictAtom) {
 								log.fatal("Failed to process genesis Atom");
 								System.exit(-1);
 							}
 
 							@Override
-							public void onStateMissingDependency(SimpleRadixEngineAtom cmAtom, SpunParticle issueParticle) {
+							public void onStateMissingDependency(SimpleRadixEngineAtom cmAtom, DataPointer dp) {
 								log.fatal("Failed to process genesis Atom");
 								System.exit(-1);
 							}

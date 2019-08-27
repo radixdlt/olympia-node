@@ -1,6 +1,6 @@
 package org.radix.atoms.particles.conflict.messages;
 
-import com.radixdlt.atoms.SpunParticle;
+import com.radixdlt.middleware.SpunParticle;
 import com.radixdlt.common.EUID;
 import org.radix.common.ID.ID;
 import org.radix.network.messaging.Message;

@@ -1,6 +1,6 @@
 package org.radix.atoms.events;
 
-import com.radixdlt.atoms.SpunParticle;
+import com.radixdlt.middleware.SpunParticle;
 import org.radix.events.Event;
 
 public abstract class ParticleEvent extends Event {

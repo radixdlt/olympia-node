@@ -20,7 +20,7 @@ import com.radixdlt.atomos.RadixAddress;
 import org.radix.atoms.events.AtomStoredEvent;
 import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.atoms.Spin;
-import com.radixdlt.atoms.SpunParticle;
+import com.radixdlt.middleware.SpunParticle;
 
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.CryptoException;
