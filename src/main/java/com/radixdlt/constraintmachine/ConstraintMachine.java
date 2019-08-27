@@ -7,7 +7,6 @@ import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.ECSignature;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.store.CMStore;
 import com.radixdlt.store.SpinStateMachine;
 import java.util.HashMap;
 import java.util.List;
@@ -15,31 +14,20 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.function.UnaryOperator;
-import com.radixdlt.store.CMStores;
-
-import java.util.Objects;
 
 /**
  * An implementation of a UTXO based constraint machine which uses Radix's atom structure.
  */
 public final class ConstraintMachine {
 	public static class Builder {
-		private UnaryOperator<CMStore> virtualStore;
 		private Function<Particle, Result> particleStaticCheck;
 		private BiFunction<Particle, Particle, TransitionProcedure<Particle, Particle>> particleProcedures;
 		private BiFunction<Particle, Particle, WitnessValidator<Particle, Particle>> witnessValidators;
-
-		public Builder virtualStore(UnaryOperator<CMStore> virtualStore) {
-			this.virtualStore = virtualStore;
-			return this;
-		}
 
 		public Builder setParticleStaticCheck(Function<Particle, Result> particleStaticCheck) {
 			this.particleStaticCheck = particleStaticCheck;
 			return this;
 		}
-
 
 		public Builder setParticleProcedures(BiFunction<Particle, Particle, TransitionProcedure<Particle, Particle>> particleProcedures) {
 			this.particleProcedures = particleProcedures;
@@ -53,12 +41,7 @@ public final class ConstraintMachine {
 
 
 		public ConstraintMachine build() {
-			if (virtualStore == null) {
-				virtualStore = UnaryOperator.identity();
-			}
-
 			return new ConstraintMachine(
-				virtualStore,
 				particleStaticCheck,
 				particleProcedures,
 				witnessValidators
@@ -66,22 +49,15 @@ public final class ConstraintMachine {
 		}
 	}
 
-	private final UnaryOperator<CMStore> virtualStore;
 	private final Function<Particle, Result> particleStaticCheck;
 	private final BiFunction<Particle, Particle, TransitionProcedure<Particle, Particle>> particleProcedures;
 	private final BiFunction<Particle, Particle, WitnessValidator<Particle, Particle>> witnessValidators;
-	private final CMStore localEngineStore;
 
 	ConstraintMachine(
-		UnaryOperator<CMStore> virtualStore,
 		Function<Particle, Result> particleStaticCheck,
 		BiFunction<Particle, Particle, TransitionProcedure<Particle, Particle>> particleProcedures,
 		BiFunction<Particle, Particle, WitnessValidator<Particle, Particle>> witnessValidators
 	) {
-		Objects.requireNonNull(virtualStore);
-
-		this.virtualStore = Objects.requireNonNull(virtualStore);
-		this.localEngineStore = this.virtualStore.apply(CMStores.empty());
 		this.particleStaticCheck = particleStaticCheck;
 		this.particleProcedures = particleProcedures;
 		this.witnessValidators = witnessValidators;
@@ -288,15 +264,7 @@ public final class ConstraintMachine {
 						return Optional.of(new CMError(dp, CMErrorCode.INVALID_PARTICLE, validationState, staticCheckResult.getErrorMessage()));
 					}
 
-					final Spin curSpin = localEngineStore.getSpin(cmMicroInstruction.getParticle());
 					final Spin checkSpin = cmMicroInstruction.getCheckSpin();
-
-					// Virtual particle state checks
-					// TODO: Is this better suited at the state check pipeline?
-					if (SpinStateMachine.isBefore(checkSpin, curSpin)) {
-						return Optional.of(new CMError(dp, CMErrorCode.INTERNAL_SPIN_CONFLICT));
-					}
-
 					boolean updated = validationState.checkSpin(cmMicroInstruction.getParticle(), checkSpin);
 					if (!updated) {
 						return Optional.of(new CMError(dp, CMErrorCode.INTERNAL_SPIN_CONFLICT));
@@ -353,12 +321,5 @@ public final class ConstraintMachine {
 		);
 
 		return this.validateMicroInstructions(validationState, cmInstruction.getMicroInstructions());
-	}
-
-	/**
-	 * Retrieves the virtual layer used by this Constraint Machine
-	 */
-	public UnaryOperator<CMStore> getVirtualStore() {
-		return this.virtualStore;
 	}
 }

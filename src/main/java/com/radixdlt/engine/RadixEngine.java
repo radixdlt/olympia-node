@@ -12,6 +12,7 @@ import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.CMMicroInstruction.CMMicroOp;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.store.CMStore;
+import com.radixdlt.store.CMStores;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.SpinStateMachine;
 import java.util.Objects;
@@ -19,6 +20,7 @@ import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.function.UnaryOperator;
 
 /**
  * Top Level Class for the Radix Engine, a real-time, shardable, distributed state machine.
@@ -56,10 +58,12 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 
 	public RadixEngine(
 		ConstraintMachine constraintMachine,
+		UnaryOperator<CMStore> virtualStoreLayer,
 		EngineStore<T> engineStore
 	) {
 		this.constraintMachine = constraintMachine;
-		this.virtualizedCMStore = constraintMachine.getVirtualStore().apply(engineStore);
+		// Remove cm virtual store
+		this.virtualizedCMStore = virtualStoreLayer.apply(CMStores.empty());
 		this.engineStore = engineStore;
 		this.stateUpdateEngine = new Thread(this::run);
 		this.stateUpdateEngine.setDaemon(true);
@@ -153,14 +157,24 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 			}
 
 			final Particle particle = microInstruction.getParticle();
-			if (!virtualizedCMStore.supports(particle.getDestinations())) {
+			if (!engineStore.supports(particle.getDestinations())) {
 				continue;
 			}
 
+			final DataPointer dp = DataPointer.ofParticle(particleGroupIndex, particleIndex);
+
 			// First spun is the only one we need to check
 			final Spin checkSpin = microInstruction.getCheckSpin();
+			final Spin virtualSpin = virtualizedCMStore.getSpin(particle);
+			if (SpinStateMachine.isBefore(checkSpin, virtualSpin)) {
+				storeAtom.listener.onVirtualStateConflict(cmAtom, dp);
+				atomEventListeners.forEach(listener -> listener.onVirtualStateConflict(cmAtom, dp));
+				return;
+			}
+
 			final Spin nextSpin = SpinStateMachine.next(checkSpin);
-			final Spin currentSpin = virtualizedCMStore.getSpin(particle);
+			final Spin physicalSpin = engineStore.getSpin(particle);
+			final Spin currentSpin = SpinStateMachine.isAfter(virtualSpin, physicalSpin) ? virtualSpin : physicalSpin;
 			if (!SpinStateMachine.canTransition(currentSpin, nextSpin)) {
 				if (!SpinStateMachine.isBefore(currentSpin, nextSpin)) {
 					// TODO: Refactor so that two DB fetches aren't required to get conflicting atoms
@@ -169,7 +183,6 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 					//
 					// Modified StateProviderFromStore.getAtomsContaining to be singular based on the
 					// above assumption.
-					final DataPointer dp = DataPointer.ofParticle(particleGroupIndex, particleIndex);
 					engineStore.getAtomContaining(particle, nextSpin == Spin.DOWN, conflictAtom -> {
 						storeAtom.listener.onStateConflict(cmAtom, dp, conflictAtom);
 						atomEventListeners.forEach(listener -> listener.onStateConflict(cmAtom, dp, conflictAtom));
@@ -177,7 +190,6 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 
 					return;
 				} else {
-					final DataPointer dp = DataPointer.ofParticle(particleGroupIndex, particleIndex);
 					storeAtom.listener.onStateMissingDependency(cmAtom, dp);
 					atomEventListeners.forEach(listener -> listener.onStateMissingDependency(cmAtom, dp));
 					return;

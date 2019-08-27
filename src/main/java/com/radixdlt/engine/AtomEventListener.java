@@ -17,6 +17,9 @@ public interface AtomEventListener<T extends RadixEngineAtom> {
 	default void onStateStore(T cmAtom) {
 	}
 
+	default void onVirtualStateConflict(T cmAtom, DataPointer issueParticle) {
+	}
+
 	default void onStateConflict(T cmAtom, DataPointer issueParticle, T conflictingAtom) {
 	}
 
