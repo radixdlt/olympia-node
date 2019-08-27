@@ -38,7 +38,7 @@ import org.radix.atoms.events.AtomExceptionEvent;
 import org.radix.atoms.events.AtomStoreEvent;
 import org.radix.atoms.events.AtomStoredEvent;
 import org.radix.atoms.events.AtomUpdatedEvent;
-import com.radixdlt.atoms.Particle;
+import com.radixdlt.constraintmachine.Particle;
 import org.radix.atoms.particles.conflict.ParticleConflict;
 import org.radix.atoms.particles.conflict.ParticleConflictStore;
 import com.radixdlt.common.EUID;

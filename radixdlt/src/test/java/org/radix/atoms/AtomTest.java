@@ -1,8 +1,7 @@
 package org.radix.atoms;
 
-import com.radixdlt.atoms.Spin;
+import com.radixdlt.constraintmachine.Spin;
 import org.junit.Test;
-import org.radix.atoms.Atom;
 
 public class AtomTest {
 	@Test

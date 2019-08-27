@@ -28,7 +28,7 @@ import com.google.common.primitives.Longs;
 import com.radixdlt.atommodel.message.MessageParticle;
 import com.radixdlt.atomos.RadixAddress;
 import org.radix.atoms.Atom;
-import com.radixdlt.atoms.Spin;
+import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECKeyPair;
 
 import static org.junit.Assert.assertEquals;

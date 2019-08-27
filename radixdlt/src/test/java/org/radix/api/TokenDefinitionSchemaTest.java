@@ -16,7 +16,7 @@ import org.radix.modules.Modules;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atomos.RadixAddress;
 import org.radix.atoms.Atom;
-import com.radixdlt.atoms.Spin;
+import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.serialization.Serialization;

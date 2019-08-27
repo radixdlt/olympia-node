@@ -17,7 +17,7 @@ import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.tokens.TokenPermission;
 import org.radix.atoms.Atom;
 import com.radixdlt.atomos.RRI;
-import com.radixdlt.atoms.Spin;
+import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECKeyPair;
 import org.radix.integration.RadixTest;
 import org.radix.modules.Modules;

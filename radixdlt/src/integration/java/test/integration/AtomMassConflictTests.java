@@ -22,7 +22,7 @@ import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.atomos.RRIParticle;
 import org.radix.atoms.Atom;
 import com.radixdlt.atomos.RRI;
-import com.radixdlt.atoms.Spin;
+import com.radixdlt.constraintmachine.Spin;
 import org.radix.atoms.sync.AtomSync;
 import com.radixdlt.common.EUID;
 import com.radixdlt.common.Pair;
