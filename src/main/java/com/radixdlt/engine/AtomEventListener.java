@@ -1,6 +1,6 @@
 package com.radixdlt.engine;
 
-import com.radixdlt.atoms.DataPointer;
+import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.constraintmachine.CMError;
 import java.util.Set;
 

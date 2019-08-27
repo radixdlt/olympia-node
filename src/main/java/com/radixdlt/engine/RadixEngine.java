@@ -2,7 +2,7 @@ package com.radixdlt.engine;
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atomos.Result;
-import com.radixdlt.atoms.DataPointer;
+import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.atoms.Spin;
 import com.radixdlt.constraintmachine.CMErrorCode;

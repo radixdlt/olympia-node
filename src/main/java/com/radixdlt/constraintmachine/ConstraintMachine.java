@@ -1,7 +1,6 @@
 package com.radixdlt.constraintmachine;
 
 import com.radixdlt.atomos.Result;
-import com.radixdlt.atoms.DataPointer;
 import com.radixdlt.atoms.Spin;
 import com.radixdlt.common.EUID;
 import com.radixdlt.constraintmachine.TransitionProcedure.ProcedureResult;

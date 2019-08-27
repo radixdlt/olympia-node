@@ -1,4 +1,4 @@
-package com.radixdlt.atoms;
+package com.radixdlt.constraintmachine;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 

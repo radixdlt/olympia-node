@@ -1,4 +1,4 @@
-package com.radixdlt.atoms;
+package com.radixdlt.constraintmachine;
 
 import com.google.common.base.Suppliers;
 import java.util.Objects;

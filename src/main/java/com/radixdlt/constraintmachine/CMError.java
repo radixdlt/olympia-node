@@ -3,7 +3,6 @@ package com.radixdlt.constraintmachine;
 import com.radixdlt.constraintmachine.ConstraintMachine.CMValidationState;
 import java.util.Objects;
 import javax.annotation.Nullable;
-import com.radixdlt.atoms.DataPointer;
 
 /**
  * An error with a pointer to the issue
