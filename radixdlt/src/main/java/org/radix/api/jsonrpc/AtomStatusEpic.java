@@ -1,7 +1,7 @@
 package org.radix.api.jsonrpc;
 
 import com.radixdlt.engine.AtomStatus;
-import com.radixdlt.atoms.DataPointer;
+import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
 import com.radixdlt.middleware.ImmutableAtom;

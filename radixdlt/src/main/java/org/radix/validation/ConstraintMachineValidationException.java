@@ -3,7 +3,7 @@ package org.radix.validation;
 import com.radixdlt.middleware.ImmutableAtom;
 import java.util.Objects;
 import org.radix.atoms.Atom;
-import com.radixdlt.atoms.DataPointer;
+import com.radixdlt.constraintmachine.DataPointer;
 import org.radix.exceptions.ValidationException;
 
 /**

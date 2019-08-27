@@ -1,7 +1,7 @@
 package org.radix.atoms.sync;
 
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.atoms.DataPointer;
+import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.middleware.AtomCheckHook;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.engine.AtomStatus;

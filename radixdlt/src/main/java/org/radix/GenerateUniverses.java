@@ -7,7 +7,7 @@ import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import org.apache.commons.cli.CommandLine;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.json.JSONObject;
-import com.radixdlt.atoms.DataPointer;
+import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.atommodel.message.MessageParticle;
 import com.radixdlt.atomos.RRIParticle;
