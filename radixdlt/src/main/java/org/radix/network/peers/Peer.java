@@ -1,11 +1,12 @@
 package org.radix.network.peers;
 
-import java.io.IOException;
-import java.net.URI;
-import java.util.HashMap;
-import java.util.Map;
-import org.radix.collections.WireableSet;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableMap;
 import com.radixdlt.common.EUID;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.DsonOutput.Output;
+import com.radixdlt.serialization.SerializerId2;
+import org.radix.collections.WireableSet;
 import org.radix.containers.BasicContainer;
 import org.radix.events.Events;
 import org.radix.logging.Logger;
@@ -13,7 +14,6 @@ import org.radix.logging.Logging;
 import org.radix.modules.Modules;
 import org.radix.network.Network;
 import org.radix.network.Protocol;
-import org.radix.network.messaging.Message;
 import org.radix.network.peers.events.PeerBannedEvent;
 import org.radix.network.peers.events.PeerConnectedEvent;
 import org.radix.network.peers.events.PeerConnectingEvent;
@@ -22,10 +22,6 @@ import org.radix.network2.transport.StaticTransportMetadata;
 import org.radix.network2.transport.TransportException;
 import org.radix.network2.transport.TransportMetadata;
 import org.radix.network2.transport.udp.UDPConstants;
-
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.SerializerId2;
 import org.radix.state.State;
 import org.radix.time.Chronologic;
 import org.radix.time.NtpService;
@@ -33,8 +29,9 @@ import org.radix.time.Time;
 import org.radix.time.Timestamps;
 import org.radix.universe.system.RadixSystem;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableMap;
+import java.net.URI;
+import java.util.HashMap;
+import java.util.Map;
 
 @SerializerId2("network.peer")
 public class Peer extends BasicContainer implements Chronologic
@@ -229,11 +226,6 @@ public class Peer extends BasicContainer implements Chronologic
 		setState(new State(State.DISCONNECTED));
 		setTimestamp(Timestamps.DISCONNECTED, Modules.get(NtpService.class).getUTCTimeMS());
 		Events.getInstance().broadcast(new PeerDisconnectedEvent(this));
-	}
-
-	public void send(Message message) throws IOException
-	{
-		throw new UnsupportedOperationException("Send not supported on Peer object");
 	}
 
 	// FIXME temporary until address book is sorted

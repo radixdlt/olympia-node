@@ -5,10 +5,7 @@ import com.radixdlt.serialization.Polymorphic;
 import com.radixdlt.serialization.SerializerId2;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.modules.Modules;
 import org.radix.network.Protocol;
-import org.radix.network.messaging.Message;
-import org.radix.network2.messaging.MessageCentral;
 
 import java.net.URI;
 
@@ -40,11 +37,6 @@ public class UDPPeer extends Peer implements Polymorphic
 	public String toString()
 	{
 		return "UDP "+super.toString();
-	}
-
-	@Override
-	public void send(Message message) {
-		Modules.get(MessageCentral.class).send(this, message);
 	}
 
 	private void connect() {

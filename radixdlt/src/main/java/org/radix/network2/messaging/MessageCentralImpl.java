@@ -1,6 +1,5 @@
 package org.radix.network2.messaging;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.List;
@@ -28,7 +27,7 @@ import com.google.inject.Inject;
 import com.radixdlt.serialization.Serialization;
 
 //FIXME: Optional dependency on Modules.get(SystemMetadata.class) for updating metadata
-final class MessageCentralImpl implements MessageCentral, Closeable {
+final class MessageCentralImpl implements MessageCentral {
 	private static final Logger log = Logging.getLogger("message");
 
 	private static final MessageListenerList EMPTY_MESSAGE_LISTENER_LIST = new MessageListenerList();
@@ -67,14 +66,15 @@ final class MessageCentralImpl implements MessageCentral, Closeable {
 
 	@Inject
 	public MessageCentralImpl(
-		MessageCentralConfiguration config,
-		Serialization serialization,
-		TransportManager transportManager,
-		Events events,
-		TimeSupplier timeSource
+			MessageCentralConfiguration config,
+			Serialization serialization,
+			TransportManager transportManager,
+			Events events,
+			TimeSupplier timeSource,
+			EventQueueFactory eventQueueFactory
 	) {
-		this.inboundQueue = new PriorityBlockingQueue<>(config.messagingInboundQueueMax(8192));
-		this.outboundQueue = new PriorityBlockingQueue<>(config.messagingOutboundQueueMax(16384));
+		this.inboundQueue = eventQueueFactory.createEventQueue(config.messagingInboundQueueMax(8192));
+		this.outboundQueue = eventQueueFactory.createEventQueue(config.messagingOutboundQueueMax(16384));
 
 		this.serialization = Objects.requireNonNull(serialization);
 		this.connectionManager = Objects.requireNonNull(transportManager);

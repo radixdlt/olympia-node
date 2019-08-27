@@ -25,6 +25,7 @@ import org.radix.network.peers.Peer;
 import org.radix.network.peers.PeerStore;
 import org.radix.network.peers.UDPPeer;
 import org.radix.network.peers.filters.PeerFilter;
+import org.radix.network2.messaging.MessageCentral;
 import org.radix.properties.RuntimeProperties;
 import org.radix.state.State;
 import org.radix.time.LogicalClock;
@@ -445,7 +446,7 @@ public final class RTPService extends Service
                 if (udp == null) {
                     rtp.info("no connected peer to request from");
                 } else {
-                    udp.send(response);
+                    Modules.get(MessageCentral.class).send(udp, response);
                 }
             } else {
                 if (!completed.get()) {
@@ -484,7 +485,7 @@ public final class RTPService extends Service
                         		long seq = sequence.incrementAndGet();
                                 RTPMessage request = new RTPMessage(0, seq);
 
-                                udp.send(request);
+                                Modules.get(MessageCentral.class).send(udp, request);
                                 rtp.info("request sent to " + peer.getURI());
                                 store.putRequest(seq, radix_time());
                             } else {

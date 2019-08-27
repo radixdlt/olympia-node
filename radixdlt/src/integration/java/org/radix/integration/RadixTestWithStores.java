@@ -21,6 +21,8 @@ import org.radix.properties.RuntimeProperties;
 import org.radix.routing.RoutingHandler;
 import org.radix.routing.RoutingStore;
 
+import java.io.IOException;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -34,7 +36,7 @@ public class RadixTestWithStores extends RadixTest
 		Modules.getInstance().start(new RoutingHandler());
 
 		RuntimeProperties properties = Modules.get(RuntimeProperties.class);
-		MessageCentral messageCentral = new MessageCentralFactory().getDefault(properties);
+		MessageCentral messageCentral = new MessageCentralFactory().createDefault(properties);
 		Modules.put(MessageCentral.class, messageCentral);
 
 		if (Modules.get(RuntimeProperties.class).get("tempo2", false)) {
@@ -56,8 +58,7 @@ public class RadixTestWithStores extends RadixTest
 	}
 
 	@After
-	public void afterEachRadixTest() throws ModuleException
-	{
+	public void afterEachRadixTest() throws ModuleException, IOException {
 		safelyStop(Modules.get(RoutingHandler.class));
 		safelyStop(Modules.get(RoutingStore.class));
 		safelyStop(Modules.get(DatabaseEnvironment.class));
@@ -73,6 +74,9 @@ public class RadixTestWithStores extends RadixTest
 			Modules.remove(AtomSyncView.class);
 		}
 		Modules.remove(DatabaseEnvironment.class);
+
+		MessageCentral messageCentral = Modules.get(MessageCentral.class);
+		messageCentral.close();
 		Modules.remove(MessageCentral.class);
 	}
 

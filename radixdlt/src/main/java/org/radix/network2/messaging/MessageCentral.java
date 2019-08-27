@@ -4,10 +4,12 @@ import org.radix.network.messaging.Message;
 import org.radix.network.peers.Peer;
 import org.radix.network2.transport.TransportException;
 
+import java.io.Closeable;
+
 /**
  * Central processing facility for inbound and outbound messages.
  */
-public interface MessageCentral {
+public interface MessageCentral extends Closeable {
 
 	/**
 	 * Sends a single message to a peer.

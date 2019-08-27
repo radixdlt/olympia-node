@@ -32,7 +32,8 @@ final class MessageCentralModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		// The main target
-		bind(MessageCentral.class).to(MessageCentralImpl.class).asEagerSingleton();
+		bind(EventQueueFactory.class).to(EventQueueFactoryImpl.class);
+		bind(MessageCentral.class).to(MessageCentralImpl.class);
 
 		// MessageCentral dependencies
 		bind(MessageCentralConfiguration.class).toInstance(this.config);

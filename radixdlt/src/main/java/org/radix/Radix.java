@@ -349,6 +349,6 @@ public class Radix extends Plugin
 	public void stop_impl() throws ModuleException { }
 
 	private MessageCentral createMessageCentral(RuntimeProperties properties) {
-		return new MessageCentralFactory().getDefault(properties);
+		return new MessageCentralFactory().createDefault(properties);
 	}
 }

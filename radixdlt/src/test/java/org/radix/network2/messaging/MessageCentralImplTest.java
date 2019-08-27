@@ -7,10 +7,6 @@ import com.radixdlt.universe.Universe;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 import org.radix.events.Events;
 import org.radix.modules.Modules;
 import org.radix.network.messages.TestMessage;
@@ -44,6 +40,7 @@ import java.util.function.BiConsumer;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
@@ -53,14 +50,12 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({MessageCentralImpl.class})
 public class MessageCentralImplTest {
 
 	static class DummyTransportOutboundConnection implements TransportOutboundConnection {
 		private boolean sent = false;
 		private final Semaphore sentSemaphore = new Semaphore(0);
-		private List<byte[]> messages = new ArrayList<>();
+		private final List<byte[]> messages = new ArrayList<>();
 		private CountDownLatch countDownLatch;
 
 		@Override
@@ -74,8 +69,8 @@ public class MessageCentralImplTest {
 				countDownLatch.countDown();
 			}
 			sent = true;
-			sentSemaphore.release();
 			messages.add(data);
+			sentSemaphore.release();
 			return CompletableFuture.completedFuture(SendResult.complete());
 		}
 
@@ -188,11 +183,11 @@ public class MessageCentralImplTest {
 		this.events = mock(Events.class);
 		inboundQueue = spy(new PriorityBlockingQueue<>(conf.messagingInboundQueueMax(0)));
 		outboundQueue = spy(new PriorityBlockingQueue<>(conf.messagingOutboundQueueMax(0)));
-		//Mocking inboundQueue and outboundQueue
-		//Differentiation is done by messagingInboundQueueMax and messagingOutboundQueueMax. These values mast be different
-		PowerMockito.whenNew(PriorityBlockingQueue.class).withArguments(conf.messagingInboundQueueMax(0)).thenReturn(inboundQueue);
-		PowerMockito.whenNew(PriorityBlockingQueue.class).withArguments(conf.messagingOutboundQueueMax(0)).thenReturn(outboundQueue);
-		this.mci = new MessageCentralImpl(staticConfig(), serialization, transportManager, events, System::currentTimeMillis);
+		EventQueueFactory<MessageEvent> queueFactory = spy(new EventQueueFactoryImpl<>());
+		doReturn(inboundQueue).when(queueFactory).createEventQueue(conf.messagingInboundQueueMax(0));
+		doReturn(outboundQueue).when(queueFactory).createEventQueue(conf.messagingOutboundQueueMax(0));
+		this.mci = new MessageCentralImpl(staticConfig(), serialization, transportManager, events, System::currentTimeMillis,
+				queueFactory);
 	}
 
 	@After
@@ -275,11 +270,8 @@ public class MessageCentralImplTest {
 		testQueueIsFull(outboundQueue, (peer, message) -> mci.send(peer, message));
 	}
 
-
-	private void testQueueIsFull(Queue queue, BiConsumer<Peer, Message> biConsumer) throws Exception {
-		MessageEvent mockEvent = mock(MessageEvent.class);
-		PowerMockito.whenNew(MessageEvent.class).withAnyArguments().thenReturn(mockEvent);
-		doReturn(false).when(queue).offer(mockEvent);
+	private void testQueueIsFull(Queue queue, BiConsumer<Peer, Message> biConsumer) {
+		doReturn(false).when(queue).offer(notNull());
 		Message msg = new TestMessage();
 		Peer peer = mock(Peer.class);
 
