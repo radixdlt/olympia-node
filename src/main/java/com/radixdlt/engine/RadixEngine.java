@@ -14,8 +14,6 @@ import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.SpinStateMachine;
-import com.radixdlt.store.SpinStateTransitionValidator;
-import com.radixdlt.store.SpinStateTransitionValidator.TransitionCheckResult;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
@@ -141,52 +139,43 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 		final CMInstruction cmInstruction = cmAtom.getCMInstruction();
 
 		for (CMMicroInstruction microInstruction : cmInstruction.getMicroInstructions()) {
+			// Treat check spin as the first push for now
 			if (!microInstruction.isCheckSpin()) {
+				continue;
+			}
+
+			final Particle particle = microInstruction.getParticle();
+			if (!virtualizedCMStore.supports(particle.getDestinations())) {
 				continue;
 			}
 
 			// First spun is the only one we need to check
 			final Spin checkSpin = microInstruction.getCheckSpin();
 			final Spin nextSpin = SpinStateMachine.next(checkSpin);
-			final Particle particle = microInstruction.getParticle();
-			final TransitionCheckResult spinCheck = SpinStateTransitionValidator.checkParticleTransition(
-				particle,
-				nextSpin,
-				virtualizedCMStore
-			);
+			final Spin currentSpin = virtualizedCMStore.getSpin(particle);
+			if (!SpinStateMachine.canTransition(currentSpin, nextSpin)) {
+				if (!SpinStateMachine.isBefore(currentSpin, nextSpin)) {
+					final SpunParticle issueParticle = SpunParticle.of(particle, nextSpin);
 
-			//if (spinCheckResult == TransitionCheckResult.MISSING_STATE_FROM_UNSUPPORTED_SHARD) {
-			// Could be missing state needed from other shards. This is okay.
-			// TODO: Log
-			//}
+					// TODO: Refactor so that two DB fetches aren't required to get conflicting atoms
+					// TODO Because we're checking SpunParticles I understand there can only be one of
+					// them in store as they are unique.
+					//
+					// Modified StateProviderFromStore.getAtomsContaining to be singular based on the
+					// above assumption.
+					engineStore.getAtomContaining(issueParticle, conflictAtom -> {
+						storeAtom.listener.onStateConflict(cmAtom, issueParticle, conflictAtom);
+						atomEventListeners.forEach(listener -> listener.onStateConflict(cmAtom, issueParticle, conflictAtom));
+					});
 
-			if (spinCheck == TransitionCheckResult.ILLEGAL_TRANSITION_TO) {
-				throw new IllegalStateException("Should not be here. This should be caught by Constraint Machine Stateless validation.");
-			}
+					return;
+				} else {
+					SpunParticle issueParticle = SpunParticle.of(particle, nextSpin);
 
-			if (spinCheck == TransitionCheckResult.CONFLICT) {
-				final SpunParticle issueParticle = SpunParticle.of(particle, nextSpin);
-
-				// TODO: Refactor so that two DB fetches aren't required to get conflicting atoms
-				// TODO Because we're checking SpunParticles I understand there can only be one of
-				// them in store as they are unique.
-				//
-				// Modified StateProviderFromStore.getAtomsContaining to be singular based on the
-				// above assumption.
-				engineStore.getAtomContaining(issueParticle, conflictAtom -> {
-					storeAtom.listener.onStateConflict(cmAtom, issueParticle, conflictAtom);
-					atomEventListeners.forEach(listener -> listener.onStateConflict(cmAtom, issueParticle, conflictAtom));
-				});
-
-				return;
-			}
-
-			if (spinCheck == TransitionCheckResult.MISSING_DEPENDENCY)  {
-				SpunParticle issueParticle = SpunParticle.of(particle, nextSpin);
-
-				storeAtom.listener.onStateMissingDependency(cmAtom, issueParticle);
-				atomEventListeners.forEach(listener -> listener.onStateMissingDependency(cmAtom, issueParticle));
-				return;
+					storeAtom.listener.onStateMissingDependency(cmAtom, issueParticle);
+					atomEventListeners.forEach(listener -> listener.onStateMissingDependency(cmAtom, issueParticle));
+					return;
+				}
 			}
 		}
 
