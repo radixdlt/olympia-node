@@ -5,11 +5,11 @@ import com.radixdlt.atomos.Result;
 import com.radixdlt.atoms.DataPointer;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.atoms.Spin;
-import com.radixdlt.atoms.SpunParticle;
 import com.radixdlt.constraintmachine.CMErrorCode;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
+import com.radixdlt.constraintmachine.CMMicroInstruction.CMMicroOp;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
@@ -138,9 +138,17 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 		final T cmAtom = storeAtom.cmAtom;
 		final CMInstruction cmInstruction = cmAtom.getCMInstruction();
 
+		int particleIndex = 0;
+		int particleGroupIndex = 0;
 		for (CMMicroInstruction microInstruction : cmInstruction.getMicroInstructions()) {
 			// Treat check spin as the first push for now
 			if (!microInstruction.isCheckSpin()) {
+				if (microInstruction.getMicroOp() == CMMicroOp.PARTICLE_GROUP) {
+					particleGroupIndex++;
+					particleIndex = 0;
+				} else {
+					particleIndex++;
+				}
 				continue;
 			}
 
@@ -155,25 +163,23 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 			final Spin currentSpin = virtualizedCMStore.getSpin(particle);
 			if (!SpinStateMachine.canTransition(currentSpin, nextSpin)) {
 				if (!SpinStateMachine.isBefore(currentSpin, nextSpin)) {
-					final SpunParticle issueParticle = SpunParticle.of(particle, nextSpin);
-
 					// TODO: Refactor so that two DB fetches aren't required to get conflicting atoms
 					// TODO Because we're checking SpunParticles I understand there can only be one of
 					// them in store as they are unique.
 					//
 					// Modified StateProviderFromStore.getAtomsContaining to be singular based on the
 					// above assumption.
-					engineStore.getAtomContaining(issueParticle, conflictAtom -> {
-						storeAtom.listener.onStateConflict(cmAtom, issueParticle, conflictAtom);
-						atomEventListeners.forEach(listener -> listener.onStateConflict(cmAtom, issueParticle, conflictAtom));
+					final DataPointer dp = DataPointer.ofParticle(particleGroupIndex, particleIndex);
+					engineStore.getAtomContaining(particle, nextSpin == Spin.DOWN, conflictAtom -> {
+						storeAtom.listener.onStateConflict(cmAtom, dp, conflictAtom);
+						atomEventListeners.forEach(listener -> listener.onStateConflict(cmAtom, dp, conflictAtom));
 					});
 
 					return;
 				} else {
-					SpunParticle issueParticle = SpunParticle.of(particle, nextSpin);
-
-					storeAtom.listener.onStateMissingDependency(cmAtom, issueParticle);
-					atomEventListeners.forEach(listener -> listener.onStateMissingDependency(cmAtom, issueParticle));
+					final DataPointer dp = DataPointer.ofParticle(particleGroupIndex, particleIndex);
+					storeAtom.listener.onStateMissingDependency(cmAtom, dp);
+					atomEventListeners.forEach(listener -> listener.onStateMissingDependency(cmAtom, dp));
 					return;
 				}
 			}

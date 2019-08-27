@@ -1,6 +1,6 @@
 package com.radixdlt.engine;
 
-import com.radixdlt.atoms.SpunParticle;
+import com.radixdlt.atoms.DataPointer;
 import com.radixdlt.constraintmachine.CMError;
 import java.util.Set;
 
@@ -17,9 +17,9 @@ public interface AtomEventListener<T extends RadixEngineAtom> {
 	default void onStateStore(T cmAtom) {
 	}
 
-	default void onStateConflict(T cmAtom, SpunParticle issueParticle, T conflictingAtom) {
+	default void onStateConflict(T cmAtom, DataPointer issueParticle, T conflictingAtom) {
 	}
 
-	default void onStateMissingDependency(T cmAtom, SpunParticle issueParticle) {
+	default void onStateMissingDependency(T cmAtom, DataPointer issueParticle) {
 	}
 }

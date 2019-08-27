@@ -3,6 +3,7 @@ package com.radixdlt.atoms;
 import com.google.common.base.Suppliers;
 import com.radixdlt.middleware.ImmutableAtom;
 import com.radixdlt.middleware.ParticleGroup;
+import com.radixdlt.middleware.SpunParticle;
 import java.util.Objects;
 import java.util.function.Supplier;
 

@@ -15,7 +15,6 @@ import java.util.HashSet;
 import java.util.List;
 import com.radixdlt.atoms.Particle;
 import com.radixdlt.atoms.Spin;
-import com.radixdlt.atoms.SpunParticle;
 
 /**
  * Utility class for low level Constraint Machine "hardware" level validation.

@@ -1,6 +1,8 @@
-package com.radixdlt.atoms;
+package com.radixdlt.middleware;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.atoms.Particle;
+import com.radixdlt.atoms.Spin;
 import com.radixdlt.common.EUID;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;

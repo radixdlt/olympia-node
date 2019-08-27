@@ -7,7 +7,6 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.middleware.RadixEngineUtils.CMAtomConversionException;
 import com.radixdlt.atoms.DataPointer;
 import com.radixdlt.atoms.Particle;
-import com.radixdlt.atoms.SpunParticle;
 import org.junit.Test;
 
 public class RadixEngineUtilsTest {
