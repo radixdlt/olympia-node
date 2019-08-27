@@ -31,19 +31,28 @@ public final class CMAtomOS {
 		true
 	);
 
+	private final Function<RadixAddress, Result> addressChecker;
 	private final Map<Class<? extends Particle>, ParticleDefinition<Particle>> particleDefinitions = new HashMap<>();
 	private final ImmutableMap.Builder<Pair<Class<? extends Particle>, Class<? extends Particle>>, TransitionProcedure<Particle, Particle>>
 		proceduresBuilder = new ImmutableMap.Builder<>();
 	private final ImmutableMap.Builder<Pair<Class<? extends Particle>, Class<? extends Particle>>, WitnessValidator<Particle, Particle>>
 		witnessesBuilder = new ImmutableMap.Builder<>();
 
-	public CMAtomOS() {
+	public CMAtomOS(Function<RadixAddress, Result> addressChecker) {
 		// RRI particle is a low level particle managed by the OS used for the management of all other resources
 		this.particleDefinitions.put(RRIParticle.class, RRI_PARTICLE_DEF);
+		this.addressChecker = addressChecker;
+	}
+
+	public CMAtomOS() {
+		this(address -> Result.success());
 	}
 
 	public void load(ConstraintScrypt constraintScrypt) {
-		ConstraintScryptEnv constraintScryptEnv = new ConstraintScryptEnv(ImmutableMap.copyOf(particleDefinitions));
+		ConstraintScryptEnv constraintScryptEnv = new ConstraintScryptEnv(
+			ImmutableMap.copyOf(particleDefinitions),
+			addressChecker
+		);
 		constraintScrypt.main(constraintScryptEnv);
 		this.particleDefinitions.putAll(constraintScryptEnv.getScryptParticleDefinitions());
 		this.proceduresBuilder.putAll(constraintScryptEnv.getScryptTransitionProcedures());

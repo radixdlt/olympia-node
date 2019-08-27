@@ -21,14 +21,19 @@ import java.util.function.Function;
  */
 final class ConstraintScryptEnv implements SysCalls {
 	private final ImmutableMap<Class<? extends Particle>, ParticleDefinition<Particle>> particleDefinitions;
+	private final Function<RadixAddress, Result> addressChecker;
+
 	private final Map<Class<? extends Particle>, ParticleDefinition<Particle>> scryptParticleDefinitions;
 	private final Map<Pair<Class<? extends Particle>, Class<? extends Particle>>, TransitionProcedure<Particle, Particle>> scryptTransitionProcedures;
 	private final Map<Pair<Class<? extends Particle>, Class<? extends Particle>>, WitnessValidator<Particle, Particle>> scryptWitnessValidators;
 
 	ConstraintScryptEnv(
-		ImmutableMap<Class<? extends Particle>, ParticleDefinition<Particle>> particleDefinitions
+		ImmutableMap<Class<? extends Particle>, ParticleDefinition<Particle>> particleDefinitions,
+		Function<RadixAddress, Result> addressChecker
 	) {
 		this.particleDefinitions = particleDefinitions;
+		this.addressChecker = addressChecker;
+
 		this.scryptParticleDefinitions = new HashMap<>();
 		this.scryptTransitionProcedures = new HashMap<>();
 		this.scryptWitnessValidators = new HashMap<>();
@@ -119,8 +124,26 @@ final class ConstraintScryptEnv implements SysCalls {
 			p -> mapper.apply((T) p).stream(),
 			p -> {
 				if (rriMapper != null) {
-					if (rriMapper.apply((T) p) == null) {
+					final RRI rri = rriMapper.apply((T) p);
+					if (rri == null) {
 						return Result.error("rri cannot be null");
+					}
+
+					final Result rriAddressResult = addressChecker.apply(rri.getAddress());
+					if (rriAddressResult.isError()) {
+						return rriAddressResult;
+					}
+				}
+
+				final Set<RadixAddress> addresses = mapper.apply((T) p);
+				if (addresses.isEmpty()) {
+					return Result.error("address required");
+				}
+
+				for (RadixAddress address : addresses) {
+					Result addressResult = addressChecker.apply(address);
+					if (addressResult.isError()) {
+						return addressResult;
 					}
 				}
 
@@ -235,6 +258,7 @@ final class ConstraintScryptEnv implements SysCalls {
 		final ParticleDefinition<Particle> outputDefinition = outputClass != null ? getParticleDefinition(outputClass) : null;
 
 		final TransitionProcedure<Particle, Particle> transformedProcedure;
+
 		// RRIs must be the same across RRI particle transitions
 		if (inputClass != null && inputDefinition.getRriMapper() != null
 			&& outputClass != null && outputDefinition.getRriMapper() != null) {
