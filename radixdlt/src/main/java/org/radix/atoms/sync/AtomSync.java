@@ -1510,8 +1510,10 @@ public class AtomSync extends Service
 							@Override
 							public void onCMError(SimpleRadixEngineAtom cmAtom, Set<CMError> errors) {
 								CMError cmError = errors.iterator().next();
-								ConstraintMachineValidationException e = new ConstraintMachineValidationException(cmAtom.getAtom(), cmError.getErrorDescription(), cmError.getDataPointer());
-								log.fatal("Failed to process genesis Atom", e);
+								log.fatal("Failed to process genesis Atom: " + cmError.getErrorCode() + " "
+									+ cmError.getErrMsg() + " " + cmError.getDataPointer() + "\n"
+									+ cmAtom.getAtom().getSpunParticle(cmError.getDataPointer()) + "\n"
+									+ cmError.getCmValidationState().toString());
 								System.exit(-1);
 							}
 
