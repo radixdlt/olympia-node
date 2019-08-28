@@ -6,7 +6,7 @@ import com.google.common.reflect.TypeToken;
 import com.radixdlt.atommodel.procedures.CombinedTransition;
 import com.radixdlt.atommodel.procedures.CombinedTransition.UsedParticle;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.TransitionLiteral;
+import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.UsedData;
 import com.radixdlt.constraintmachine.VoidUsedData;
 import com.radixdlt.utils.Pair;
@@ -31,7 +31,7 @@ final class ConstraintScryptEnv implements SysCalls {
 	private final Function<RadixAddress, Result> addressChecker;
 
 	private final Map<Class<? extends Particle>, ParticleDefinition<Particle>> scryptParticleDefinitions;
-	private final Map<TransitionLiteral, TransitionProcedure<Particle, UsedData, Particle, UsedData>> scryptTransitionProcedures;
+	private final Map<TransitionToken, TransitionProcedure<Particle, UsedData, Particle, UsedData>> scryptTransitionProcedures;
 	private final Map<Pair<Class<? extends Particle>, Class<? extends Particle>>, WitnessValidator<Particle, Particle>> scryptWitnessValidators;
 
 	ConstraintScryptEnv(
@@ -50,7 +50,7 @@ final class ConstraintScryptEnv implements SysCalls {
 		return scryptParticleDefinitions;
 	}
 
-	public Map<TransitionLiteral, TransitionProcedure<Particle, UsedData, Particle, UsedData>> getScryptTransitionProcedures() {
+	public Map<TransitionToken, TransitionProcedure<Particle, UsedData, Particle, UsedData>> getScryptTransitionProcedures() {
 		return scryptTransitionProcedures;
 	}
 
@@ -301,8 +301,8 @@ final class ConstraintScryptEnv implements SysCalls {
 			transformedProcedure = toGeneric(procedure);
 		}
 
-		final TransitionLiteral transitionLiteral = new TransitionLiteral(inputClass, inputUsedClass, outputClass, outputUsedClass);
-		scryptTransitionProcedures.put(transitionLiteral, transformedProcedure);
+		final TransitionToken transitionToken = new TransitionToken(inputClass, inputUsedClass, outputClass, outputUsedClass);
+		scryptTransitionProcedures.put(transitionToken, transformedProcedure);
 		scryptWitnessValidators.put(Pair.of(inputClass, outputClass), toGeneric(witnessValidator));
 	}
 }

@@ -3,13 +3,13 @@ package com.radixdlt.constraintmachine;
 import com.google.common.reflect.TypeToken;
 import java.util.Objects;
 
-public final class TransitionLiteral {
+public final class TransitionToken {
 	private final Class<? extends Particle> inputClass;
 	private final TypeToken<? extends UsedData> inputUsedClass;
 	private final Class<? extends Particle> outputClass;
 	private final TypeToken<? extends UsedData> outputUsedClass;
 
-	public TransitionLiteral(
+	public TransitionToken(
 		Class<? extends Particle> inputClass,
 		TypeToken<? extends UsedData> inputUsedClass,
 		Class<? extends Particle> outputClass,
@@ -33,11 +33,11 @@ public final class TransitionLiteral {
 
 	@Override
 	public boolean equals(Object obj) {
-		if (!(obj instanceof TransitionLiteral)) {
+		if (!(obj instanceof TransitionToken)) {
 			return false;
 		}
 
-		TransitionLiteral t = (TransitionLiteral) obj;
+		TransitionToken t = (TransitionToken) obj;
 
 		return Objects.equals(t.inputClass, this.inputClass)
 			&& Objects.equals(t.inputUsedClass, this.inputUsedClass)

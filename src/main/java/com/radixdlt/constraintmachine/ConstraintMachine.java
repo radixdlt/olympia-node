@@ -22,7 +22,7 @@ import java.util.function.Function;
 public final class ConstraintMachine {
 	public static class Builder {
 		private Function<Particle, Result> particleStaticCheck;
-		private Function<TransitionLiteral, TransitionProcedure<Particle, UsedData, Particle, UsedData>> particleProcedures;
+		private Function<TransitionToken, TransitionProcedure<Particle, UsedData, Particle, UsedData>> particleProcedures;
 		private BiFunction<Particle, Particle, WitnessValidator<Particle, Particle>> witnessValidators;
 
 		public Builder setParticleStaticCheck(Function<Particle, Result> particleStaticCheck) {
@@ -31,7 +31,7 @@ public final class ConstraintMachine {
 		}
 
 		public Builder setParticleProcedures(
-			Function<TransitionLiteral, TransitionProcedure<Particle, UsedData, Particle, UsedData>> particleProcedures
+			Function<TransitionToken, TransitionProcedure<Particle, UsedData, Particle, UsedData>> particleProcedures
 		) {
 			this.particleProcedures = particleProcedures;
 			return this;
@@ -53,12 +53,12 @@ public final class ConstraintMachine {
 	}
 
 	private final Function<Particle, Result> particleStaticCheck;
-	private final Function<TransitionLiteral, TransitionProcedure<Particle, UsedData, Particle, UsedData>> particleProcedures;
+	private final Function<TransitionToken, TransitionProcedure<Particle, UsedData, Particle, UsedData>> particleProcedures;
 	private final BiFunction<Particle, Particle, WitnessValidator<Particle, Particle>> witnessValidators;
 
 	ConstraintMachine(
 		Function<Particle, Result> particleStaticCheck,
-		Function<TransitionLiteral, TransitionProcedure<Particle, UsedData, Particle, UsedData>> particleProcedures,
+		Function<TransitionToken, TransitionProcedure<Particle, UsedData, Particle, UsedData>> particleProcedures,
 		BiFunction<Particle, Particle, WitnessValidator<Particle, Particle>> witnessValidators
 	) {
 		this.particleStaticCheck = particleStaticCheck;
@@ -188,14 +188,14 @@ public final class ConstraintMachine {
 
 		final Particle inputParticle = isInput ? nextParticle : curParticle;
 		final Particle outputParticle = isInput ? curParticle : nextParticle;
-		final TransitionLiteral transitionLiteral = new TransitionLiteral(
+		final TransitionToken transitionToken = new TransitionToken(
 			inputParticle != null ? inputParticle.getClass() : VoidParticle.class,
 			validationState.getInputUsedType(),
 			outputParticle != null ? outputParticle.getClass() : VoidParticle.class,
 			validationState.getOutputUsedType()
 		);
 
-		final TransitionProcedure<Particle, UsedData, Particle, UsedData> transitionProcedure = this.particleProcedures.apply(transitionLiteral);
+		final TransitionProcedure<Particle, UsedData, Particle, UsedData> transitionProcedure = this.particleProcedures.apply(transitionToken);
 
 		if (transitionProcedure == null) {
 			if (inputParticle == null || outputParticle == null) {

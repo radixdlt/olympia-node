@@ -2,6 +2,7 @@ package com.radixdlt.atommodel.tokens;
 
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.atommodel.procedures.FungibleTransition.UsedAmount;
+import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Result;
@@ -11,6 +12,7 @@ import com.radixdlt.constraintmachine.WitnessValidator;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.WitnessData;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
+import com.radixdlt.store.SpinStateMachine.Transition;
 import com.radixdlt.utils.UInt256;
 import java.util.Objects;
 import java.util.function.BiFunction;
@@ -111,6 +113,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			checkInput((in, meta) -> meta.isSignedBy(in.getTokDefRef().getAddress().getKey())),
 			os
 		);
+
 		// Mint
 		FungibleTransition<UnallocatedTokensParticle, TransferrableTokensParticle> mintTransitions = new FungibleTransition<>(
 			UnallocatedTokensParticle::getAmount, TransferrableTokensParticle::getAmount,
@@ -127,9 +130,10 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			UnallocatedTokensParticle.class,
 			TransferrableTokensParticle.class,
 			mintTransitions,
-			checkInput((in, meta) -> meta.isSignedBy(in.getTokDefRef().getAddress().getKey())),
+			checkInput((in, meta) -> in.getTokenPermission(TokenTransition.MINT).check(in.getTokDefRef(), meta).isSuccess()),
 			os
 		);
+
 		// Transfers
 		FungibleTransition<TransferrableTokensParticle, TransferrableTokensParticle> transferTransitions = new FungibleTransition<>(
 			TransferrableTokensParticle::getAmount, TransferrableTokensParticle::getAmount,
@@ -149,6 +153,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			checkInput((in, meta) -> meta.isSignedBy(in.getTokDefRef().getAddress().getKey())),
 			os
 		);
+
 		// Burns
 		FungibleTransition<TransferrableTokensParticle, UnallocatedTokensParticle> burnTransitions = new FungibleTransition<>(
 			TransferrableTokensParticle::getAmount, UnallocatedTokensParticle::getAmount,
@@ -165,7 +170,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			TransferrableTokensParticle.class,
 			UnallocatedTokensParticle.class,
 			burnTransitions,
-			checkInput((in, meta) -> meta.isSignedBy(in.getTokDefRef().getAddress().getKey())),
+			checkInput((in, meta) -> in.getTokenPermission(TokenTransition.BURN).check(in.getTokDefRef(), meta).isSuccess()),
 			os
 		);
 	}

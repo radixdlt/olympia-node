@@ -1,7 +1,7 @@
 package com.radixdlt.atomos;
 
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.constraintmachine.TransitionLiteral;
+import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.UsedData;
 import com.radixdlt.constraintmachine.VoidParticle;
 import com.radixdlt.utils.Pair;
@@ -46,7 +46,7 @@ public final class CMAtomOS {
 
 	private final Function<RadixAddress, Result> addressChecker;
 	private final Map<Class<? extends Particle>, ParticleDefinition<Particle>> particleDefinitions = new HashMap<>();
-	private final ImmutableMap.Builder<TransitionLiteral, TransitionProcedure<Particle, UsedData, Particle, UsedData>>
+	private final ImmutableMap.Builder<TransitionToken, TransitionProcedure<Particle, UsedData, Particle, UsedData>>
 		proceduresBuilder = new ImmutableMap.Builder<>();
 	private final ImmutableMap.Builder<Pair<Class<? extends Particle>, Class<? extends Particle>>, WitnessValidator<Particle, Particle>>
 		witnessesBuilder = new ImmutableMap.Builder<>();
@@ -73,8 +73,8 @@ public final class CMAtomOS {
 		this.witnessesBuilder.putAll(constraintScryptEnv.getScryptWitnessValidators());
 	}
 
-	public Function<TransitionLiteral, TransitionProcedure<Particle, UsedData, Particle, UsedData>> buildTransitionProcedures() {
-		final ImmutableMap<TransitionLiteral, TransitionProcedure<Particle, UsedData, Particle, UsedData>> procedures = proceduresBuilder.build();
+	public Function<TransitionToken, TransitionProcedure<Particle, UsedData, Particle, UsedData>> buildTransitionProcedures() {
+		final ImmutableMap<TransitionToken, TransitionProcedure<Particle, UsedData, Particle, UsedData>> procedures = proceduresBuilder.build();
 		return procedures::get;
 	}
 
