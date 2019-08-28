@@ -1,10 +1,8 @@
 package com.radixdlt.atomos;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.reflect.TypeParameter;
 import com.google.common.reflect.TypeToken;
-import com.radixdlt.atommodel.procedures.CombinedTransition;
-import com.radixdlt.atommodel.procedures.CombinedTransition.UsedParticle;
+import com.radixdlt.atommodel.routines.CreateCombinedTransitionRoutine;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.UsedData;
@@ -188,49 +186,16 @@ final class ConstraintScryptEnv implements SysCalls {
 			throw new IllegalStateException(particleClass1 + " must be registered with an RRI mapper.");
 		}
 
-		CombinedTransition<RRIParticle, O, U> combinedTransition = new CombinedTransition<>(
+		CreateCombinedTransitionRoutine<RRIParticle, O, U> createCombinedTransitionRoutine = new CreateCombinedTransitionRoutine<>(
+			RRIParticle.class,
 			particleClass0,
 			particleClass1,
 			combinedCheck,
 			(in, witness) -> witness.isSignedBy(in.getRri().getAddress().getKey())
 				? WitnessValidatorResult.success() : WitnessValidatorResult.error("Not signed by " + in.getRri().getAddress())
 		);
-		createTransitionInternal(
-			new TransitionToken<>(
-				RRIParticle.class,
-				TypeToken.of(VoidUsedData.class),
-				particleClass0,
-				TypeToken.of(VoidUsedData.class)
-			),
-			combinedTransition.getProcedure0()
-		);
-		createTransitionInternal(
-			new TransitionToken<>(
-				RRIParticle.class,
-				TypeToken.of(VoidUsedData.class),
-				particleClass1,
-				TypeToken.of(VoidUsedData.class)
-			),
-			combinedTransition.getProcedure1()
-		);
-		createTransitionInternal(
-			new TransitionToken<>(
-				RRIParticle.class,
-				new TypeToken<UsedParticle<U>>() { }.where(new TypeParameter<U>() { }, particleClass1),
-				particleClass0,
-				TypeToken.of(VoidUsedData.class)
-			),
-			combinedTransition.getProcedure2()
-		);
-		createTransitionInternal(
-			new TransitionToken<>(
-				RRIParticle.class,
-				new TypeToken<UsedParticle<O>>() { }.where(new TypeParameter<O>() { }, particleClass0),
-				particleClass1,
-				TypeToken.of(VoidUsedData.class)
-			),
-			combinedTransition.getProcedure3()
-		);
+
+		this.executeRoutine(createCombinedTransitionRoutine);
 	}
 
 	@Override
@@ -239,11 +204,6 @@ final class ConstraintScryptEnv implements SysCalls {
 		TransitionProcedure<I, N, O, U> procedure
 	) {
 		createTransitionInternal(transitionToken, procedure);
-	}
-
-	private static <I extends Particle, N extends UsedData, O extends Particle, U extends UsedData>
-		TransitionProcedure<Particle, UsedData, Particle, UsedData> toGeneric(TransitionProcedure<I, N, O, U> procedure) {
-		return (in, inUsed, out, outUsed) -> procedure.execute((I) in, (N) inUsed, (O) out, (U) outUsed).toGeneric();
 	}
 
 	private <I extends Particle, N extends UsedData, O extends Particle, U extends UsedData> void createTransitionInternal(
@@ -267,9 +227,14 @@ final class ConstraintScryptEnv implements SysCalls {
 				return procedure.execute((I) in, (N) inUsed, (O) out, (U) outUsed).toGeneric();
 			};
 		} else {
-			transformedProcedure = toGeneric(procedure);
+			transformedProcedure = (in, inUsed, out, outUsed) -> procedure.execute((I) in, (N) inUsed, (O) out, (U) outUsed).toGeneric();
 		}
 
 		scryptTransitionProcedures.put(transitionToken, transformedProcedure);
+	}
+
+	@Override
+	public void executeRoutine(ConstraintRoutine routine) {
+		routine.main(this);
 	}
 }

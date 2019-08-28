@@ -1,15 +1,10 @@
 package com.radixdlt.atommodel.tokens;
 
-import com.google.common.reflect.TypeToken;
-import com.radixdlt.atommodel.procedures.FungibleTransition.UsedAmount;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Result;
-import com.radixdlt.atommodel.procedures.FungibleTransition;
-import com.radixdlt.constraintmachine.TransitionToken;
-import com.radixdlt.constraintmachine.VoidUsedData;
-import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.atommodel.routines.CreateFungibleTransitionRoutine;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
 import com.radixdlt.utils.UInt256;
 import java.util.Objects;
@@ -89,8 +84,11 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 		);
 
 		// Unallocated movement
-		FungibleTransition<UnallocatedTokensParticle, UnallocatedTokensParticle> unallocatedTransitions = new FungibleTransition<>(
-			UnallocatedTokensParticle::getAmount, UnallocatedTokensParticle::getAmount,
+		os.executeRoutine(new CreateFungibleTransitionRoutine<>(
+			UnallocatedTokensParticle.class,
+			UnallocatedTokensParticle.class,
+			UnallocatedTokensParticle::getAmount,
+			UnallocatedTokensParticle::getAmount,
 			checkEquals(
 				UnallocatedTokensParticle::getGranularity,
 				UnallocatedTokensParticle::getGranularity,
@@ -101,17 +99,14 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			),
 			(in, meta) -> meta.isSignedBy(in.getTokDefRef().getAddress().getKey())
 				? WitnessValidatorResult.success() : WitnessValidatorResult.error("Permission not allowed.")
-		);
-		createFungibleTransitions(
-			UnallocatedTokensParticle.class,
-			UnallocatedTokensParticle.class,
-			unallocatedTransitions,
-			os
-		);
+		));
 
 		// Mint
-		FungibleTransition<UnallocatedTokensParticle, TransferrableTokensParticle> mintTransitions = new FungibleTransition<>(
-			UnallocatedTokensParticle::getAmount, TransferrableTokensParticle::getAmount,
+		os.executeRoutine(new CreateFungibleTransitionRoutine<>(
+			UnallocatedTokensParticle.class,
+			TransferrableTokensParticle.class,
+			UnallocatedTokensParticle::getAmount,
+			TransferrableTokensParticle::getAmount,
 			checkEquals(
 				UnallocatedTokensParticle::getGranularity,
 				TransferrableTokensParticle::getGranularity,
@@ -122,17 +117,14 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			),
 			(in, meta) -> in.getTokenPermission(TokenTransition.MINT).check(in.getTokDefRef(), meta).isSuccess()
 				? WitnessValidatorResult.success() : WitnessValidatorResult.error("Permission not allowed.")
-		);
-		createFungibleTransitions(
-			UnallocatedTokensParticle.class,
-			TransferrableTokensParticle.class,
-			mintTransitions,
-			os
-		);
+		));
 
 		// Transfers
-		FungibleTransition<TransferrableTokensParticle, TransferrableTokensParticle> transferTransitions = new FungibleTransition<>(
-			TransferrableTokensParticle::getAmount, TransferrableTokensParticle::getAmount,
+		os.executeRoutine(new CreateFungibleTransitionRoutine<>(
+			TransferrableTokensParticle.class,
+			TransferrableTokensParticle.class,
+			TransferrableTokensParticle::getAmount,
+			TransferrableTokensParticle::getAmount,
 			checkEquals(
 				TransferrableTokensParticle::getGranularity,
 				TransferrableTokensParticle::getGranularity,
@@ -143,17 +135,14 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			),
 			(in, meta) -> meta.isSignedBy(in.getAddress().getKey())
 				? WitnessValidatorResult.success() : WitnessValidatorResult.error("Permission not allowed.")
-		);
-		createFungibleTransitions(
-			TransferrableTokensParticle.class,
-			TransferrableTokensParticle.class,
-			transferTransitions,
-			os
-		);
+		));
 
 		// Burns
-		FungibleTransition<TransferrableTokensParticle, UnallocatedTokensParticle> burnTransitions = new FungibleTransition<>(
-			TransferrableTokensParticle::getAmount, UnallocatedTokensParticle::getAmount,
+		os.executeRoutine(new CreateFungibleTransitionRoutine<>(
+			TransferrableTokensParticle.class,
+			UnallocatedTokensParticle.class,
+			TransferrableTokensParticle::getAmount,
+			UnallocatedTokensParticle::getAmount,
 			checkEquals(
 				TransferrableTokensParticle::getGranularity,
 				UnallocatedTokensParticle::getGranularity,
@@ -164,48 +153,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			),
 			(in, meta) -> in.getTokenPermission(TokenTransition.BURN).check(in.getTokDefRef(), meta).isSuccess()
 				? WitnessValidatorResult.success() : WitnessValidatorResult.error("Permission not allowed.")
-		);
-		createFungibleTransitions(
-			TransferrableTokensParticle.class,
-			UnallocatedTokensParticle.class,
-			burnTransitions,
-			os
-		);
-	}
-
-	private static <I extends Particle, O extends Particle> void createFungibleTransitions(
-		Class<I> inputClass,
-		Class<O> outputClass,
-		FungibleTransition<I, O> transition,
-		SysCalls os
-	) {
-		os.createTransition(
-			new TransitionToken<>(
-				inputClass,
-				TypeToken.of(VoidUsedData.class),
-				outputClass,
-				TypeToken.of(VoidUsedData.class)
-			),
-			transition.getProcedure0()
-		);
-		os.createTransition(
-			new TransitionToken<>(
-				inputClass,
-				TypeToken.of(UsedAmount.class),
-				outputClass,
-				TypeToken.of(VoidUsedData.class)
-			),
-			transition.getProcedure1()
-		);
-		os.createTransition(
-			new TransitionToken<>(
-				inputClass,
-				TypeToken.of(VoidUsedData.class),
-				outputClass,
-				TypeToken.of(UsedAmount.class)
-			),
-			transition.getProcedure2()
-		);
+		));
 	}
 
 	private static <T, U, V> BiFunction<T, U, Result> checkEquals(

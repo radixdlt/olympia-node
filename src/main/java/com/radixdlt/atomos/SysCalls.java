@@ -1,9 +1,6 @@
 package com.radixdlt.atomos;
 
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.TransitionProcedure;
-import com.radixdlt.constraintmachine.TransitionToken;
-import com.radixdlt.constraintmachine.UsedData;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -11,7 +8,7 @@ import java.util.function.Function;
 /**
  * The interface in which a constraint scrypt can be programmed against.
  */
-public interface SysCalls {
+public interface SysCalls extends RoutineCalls {
 	/**
 	 * Registers a Particle with a given identifier.
 	 * This is required for all other system calls using the particle.
@@ -62,17 +59,6 @@ public interface SysCalls {
 		Function<T, RRI> rriMapper
 	);
 
-	/**
-	 * Defines a valid transition in the constraint machine as well as the
-	 * requirements for executing that transition.
-	 *
-	 * @param <I> input particle type
-	 * @param <U> output particle type
-	 */
-	<I extends Particle, N extends UsedData, O extends Particle, U extends UsedData> void createTransition(
-		TransitionToken<I, N, O, U> transitionToken,
-		TransitionProcedure<I, N, O, U> transitionProcedure
-	);
 
 	/**
 	 * Creates a new resource globally identifiable by an RRI.
@@ -90,4 +76,6 @@ public interface SysCalls {
 		Class<U> outputClass1,
 		BiFunction<T, U, Result> combinedCheck
 	);
+
+	void executeRoutine(ConstraintRoutine routine);
 }

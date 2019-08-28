@@ -1,9 +1,9 @@
-package com.radixdlt.atommodel.procedures;
+package com.radixdlt.atommodel.routines;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
-import com.radixdlt.atommodel.procedures.FungibleTransition.UsedAmount;
+import com.radixdlt.atommodel.routines.CreateFungibleTransitionRoutine.UsedAmount;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.TransitionProcedure;
@@ -14,7 +14,7 @@ import com.radixdlt.constraintmachine.WitnessValidator;
 import com.radixdlt.utils.UInt256;
 import org.junit.Test;
 
-public class FungibleTransitionTest {
+public class CreateFungibleTransitionRoutineTest {
 	private static class Fungible extends Particle {
 		private final UInt256 amount;
 		Fungible(UInt256 amount) {
@@ -33,8 +33,8 @@ public class FungibleTransitionTest {
 
 	@Test
 	public void when_validating_a_simple_fungible_transfer__then_validation_should_succeed() {
-		TransitionProcedure<Fungible, VoidUsedData, Fungible, VoidUsedData> procedure = new FungibleTransition<>(
-			Fungible::getAmount, Fungible::getAmount,
+		TransitionProcedure<Fungible, VoidUsedData, Fungible, VoidUsedData> procedure = new CreateFungibleTransitionRoutine<>(
+			Fungible.class, Fungible.class, Fungible::getAmount, Fungible::getAmount,
 			(a, b) -> Result.success(),
 			mock(WitnessValidator.class)
 		).getProcedure0();
@@ -50,8 +50,8 @@ public class FungibleTransitionTest {
 
 	@Test
 	public void when_validating_a_two_to_one_transfer__then_execution_should_pop_output_and_one_left_on_input() {
-		TransitionProcedure<Fungible, VoidUsedData, Fungible, VoidUsedData> procedure = new FungibleTransition<>(
-			Fungible::getAmount, Fungible::getAmount,
+		TransitionProcedure<Fungible, VoidUsedData, Fungible, VoidUsedData> procedure = new CreateFungibleTransitionRoutine<>(
+			Fungible.class, Fungible.class, Fungible::getAmount, Fungible::getAmount,
 			(a, b) -> Result.success(),
 			mock(WitnessValidator.class)
 		).getProcedure0();
@@ -69,8 +69,8 @@ public class FungibleTransitionTest {
 
 	@Test
 	public void when_validating_a_one_to_two_transfer__then_input_should_succeed_and_one_left_on_stack() {
-		TransitionProcedure<Fungible, VoidUsedData, Fungible, VoidUsedData> procedure = new FungibleTransition<>(
-			Fungible::getAmount, Fungible::getAmount,
+		TransitionProcedure<Fungible, VoidUsedData, Fungible, VoidUsedData> procedure = new CreateFungibleTransitionRoutine<>(
+			Fungible.class, Fungible.class, Fungible::getAmount, Fungible::getAmount,
 			(a, b) -> Result.success(),
 			mock(WitnessValidator.class)
 		).getProcedure0();
@@ -88,8 +88,8 @@ public class FungibleTransitionTest {
 
 	@Test
 	public void when_validating_a_two_to_two_transfer__then_input_should_succeed_and_zero_left_on_stack() {
-		TransitionProcedure<Fungible, VoidUsedData, Fungible, VoidUsedData> procedure = new FungibleTransition<>(
-			Fungible::getAmount, Fungible::getAmount,
+		TransitionProcedure<Fungible, VoidUsedData, Fungible, VoidUsedData> procedure = new CreateFungibleTransitionRoutine<>(
+			Fungible.class, Fungible.class, Fungible::getAmount, Fungible::getAmount,
 			(a, b) -> Result.success(),
 			mock(WitnessValidator.class)
 		).getProcedure0();
@@ -107,8 +107,8 @@ public class FungibleTransitionTest {
 
 	@Test
 	public void when_validating_a_one_to_two_one_transfer__then_input_should_succeed_and_zero_left_on_stack() {
-		TransitionProcedure<Fungible, VoidUsedData, Fungible, UsedAmount> procedure = new FungibleTransition<>(
-			Fungible::getAmount, Fungible::getAmount,
+		TransitionProcedure<Fungible, VoidUsedData, Fungible, UsedAmount> procedure = new CreateFungibleTransitionRoutine<>(
+			Fungible.class, Fungible.class, Fungible::getAmount, Fungible::getAmount,
 			(a, b) -> Result.success(),
 			mock(WitnessValidator.class)
 		).getProcedure2();
