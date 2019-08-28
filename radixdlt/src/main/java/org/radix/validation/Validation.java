@@ -38,7 +38,6 @@ public class Validation extends Plugin {
 
 		final ConstraintMachine constraintMachine = new ConstraintMachine.Builder()
 			.setParticleProcedures(os.buildTransitionProcedures())
-			.setWitnessValidators(os.buildWitnessValidators())
 			.setParticleStaticCheck(os.buildParticleStaticCheck())
 			.build();
 
