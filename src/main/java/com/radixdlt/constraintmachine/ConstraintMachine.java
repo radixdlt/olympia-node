@@ -267,7 +267,7 @@ public final class ConstraintMachine {
 					final Spin checkSpin = cmMicroInstruction.getCheckSpin();
 					boolean updated = validationState.checkSpin(cmMicroInstruction.getParticle(), checkSpin);
 					if (!updated) {
-						return Optional.of(new CMError(dp, CMErrorCode.INTERNAL_SPIN_CONFLICT));
+						return Optional.of(new CMError(dp, CMErrorCode.INTERNAL_SPIN_CONFLICT, validationState));
 					}
 					break;
 				case PUSH:
@@ -300,7 +300,8 @@ public final class ConstraintMachine {
 		if (particleIndex != 0) {
 			return Optional.of(new CMError(
 				DataPointer.ofParticle(particleGroupIndex, particleIndex),
-				CMErrorCode.MISSING_PARTICLE_GROUP
+				CMErrorCode.MISSING_PARTICLE_GROUP,
+				validationState
 			));
 		}
 

@@ -13,10 +13,6 @@ public final class CMError {
 	private final String errMsg;
 	private final CMValidationState cmValidationState;
 
-	public CMError(DataPointer dataPointer, CMErrorCode errorCode) {
-		this(dataPointer, errorCode, null, null);
-	}
-
 	public CMError(
 		DataPointer dataPointer,
 		CMErrorCode errorCode,
