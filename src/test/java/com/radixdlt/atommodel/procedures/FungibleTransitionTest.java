@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.TransitionProcedure;
-import com.radixdlt.constraintmachine.TransitionProcedure.CMAction;
+import com.radixdlt.constraintmachine.CMAction;
 import com.radixdlt.constraintmachine.TransitionProcedure.ProcedureResult;
 import com.radixdlt.utils.UInt256;
 import org.junit.Test;

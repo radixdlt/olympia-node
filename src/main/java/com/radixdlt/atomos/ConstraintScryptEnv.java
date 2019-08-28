@@ -2,10 +2,14 @@ package com.radixdlt.atomos;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atommodel.procedures.CombinedTransition;
+import com.radixdlt.constraintmachine.OutputProcedure;
+import com.radixdlt.constraintmachine.OutputProcedure.OutputProcedureResult;
+import com.radixdlt.constraintmachine.OutputWitnessValidator;
+import com.radixdlt.constraintmachine.OutputWitnessValidator.OutputWitnessValidatorResult;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.constraintmachine.TransitionProcedure;
-import com.radixdlt.constraintmachine.TransitionProcedure.CMAction;
+import com.radixdlt.constraintmachine.CMAction;
 import com.radixdlt.constraintmachine.TransitionProcedure.ProcedureResult;
 import com.radixdlt.constraintmachine.WitnessValidator;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
@@ -238,6 +242,26 @@ final class ConstraintScryptEnv implements SysCalls {
 		WitnessValidator<T, U> witnessValidator
 	) {
 		createTransitionInternal(inputClass, outputClass, procedure, witnessValidator);
+	}
+
+	@Override
+	public <T extends Particle> void createOutputOnlyTransition(
+		Class<T> outputClass,
+		OutputProcedure<T> procedure,
+		OutputWitnessValidator<T> witnessValidator
+	) {
+		this.createTransitionInternal(
+			null,
+			outputClass,
+			(in, inUsed, out, outUsed) -> {
+				OutputProcedureResult res = procedure.execute(out);
+				return res.isSuccess() ? ProcedureResult.popOutput(null) : ProcedureResult.error(res.getErrorMessage());
+			},
+			(res, in, out, witness) -> {
+				OutputWitnessValidatorResult witnessRes = witnessValidator.validate(out, witness);
+				return witnessRes.isSuccess() ? WitnessValidatorResult.success() : WitnessValidatorResult.error(witnessRes.getErrorMessage());
+			}
+		);
 	}
 
 	private static <T extends Particle, U extends Particle> TransitionProcedure<Particle, Particle> toGeneric(TransitionProcedure<T, U> procedure) {

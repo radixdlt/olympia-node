@@ -1,7 +1,5 @@
 package com.radixdlt.constraintmachine;
 
-import com.radixdlt.constraintmachine.TransitionProcedure.CMAction;
-
 /**
  * Validates whether a specific transition procedure is permissible
  * @param <T> input particle class

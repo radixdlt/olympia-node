@@ -4,12 +4,6 @@ package com.radixdlt.constraintmachine;
  * Application level "Bytecode" to be run per particle in the Constraint machine
  */
 public interface TransitionProcedure<T extends Particle, U extends Particle> {
-	enum CMAction {
-		POP_INPUT,
-		POP_OUTPUT,
-		POP_INPUT_OUTPUT,
-		ERROR
-	}
 
 	final class ProcedureResult {
 		private final CMAction cmAction;
