@@ -23,7 +23,7 @@ public class ConstraintMachineTest {
 			.thenReturn(ProcedureResult.popInputOutput());
 
 		ConstraintMachine machine = new ConstraintMachine.Builder()
-			.setParticleProcedures((p0, p1) -> procedure)
+			.setParticleProcedures(t -> procedure)
 			.setWitnessValidators((p0, p1) -> (res, v0, v1, meta) -> WitnessValidatorResult.success())
 			.build();
 

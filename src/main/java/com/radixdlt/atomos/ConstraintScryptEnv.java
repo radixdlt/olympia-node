@@ -7,6 +7,7 @@ import com.radixdlt.constraintmachine.OutputProcedure.OutputProcedureResult;
 import com.radixdlt.constraintmachine.OutputWitnessValidator;
 import com.radixdlt.constraintmachine.OutputWitnessValidator.OutputWitnessValidatorResult;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.TransitionId;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.CMAction;
@@ -28,7 +29,7 @@ final class ConstraintScryptEnv implements SysCalls {
 	private final Function<RadixAddress, Result> addressChecker;
 
 	private final Map<Class<? extends Particle>, ParticleDefinition<Particle>> scryptParticleDefinitions;
-	private final Map<Pair<Class<? extends Particle>, Class<? extends Particle>>, TransitionProcedure<Particle, Particle>> scryptTransitionProcedures;
+	private final Map<TransitionId, TransitionProcedure<Particle, Particle>> scryptTransitionProcedures;
 	private final Map<Pair<Class<? extends Particle>, Class<? extends Particle>>, WitnessValidator<Particle, Particle>> scryptWitnessValidators;
 
 	ConstraintScryptEnv(
@@ -47,7 +48,7 @@ final class ConstraintScryptEnv implements SysCalls {
 		return scryptParticleDefinitions;
 	}
 
-	public Map<Pair<Class<? extends Particle>, Class<? extends Particle>>, TransitionProcedure<Particle, Particle>> getScryptTransitionProcedures() {
+	public Map<TransitionId, TransitionProcedure<Particle, Particle>> getScryptTransitionProcedures() {
 		return scryptTransitionProcedures;
 	}
 
@@ -299,7 +300,8 @@ final class ConstraintScryptEnv implements SysCalls {
 			transformedProcedure = toGeneric(procedure);
 		}
 
-		scryptTransitionProcedures.put(Pair.of(inputClass, outputClass), transformedProcedure);
+		final TransitionId transitionId = new TransitionId(inputClass, null, outputClass, null);
+		scryptTransitionProcedures.put(transitionId, transformedProcedure);
 		scryptWitnessValidators.put(Pair.of(inputClass, outputClass), toGeneric(witnessValidator));
 	}
 }

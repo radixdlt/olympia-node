@@ -21,7 +21,7 @@ import java.util.function.Function;
 public final class ConstraintMachine {
 	public static class Builder {
 		private Function<Particle, Result> particleStaticCheck;
-		private BiFunction<Particle, Particle, TransitionProcedure<Particle, Particle>> particleProcedures;
+		private Function<TransitionId, TransitionProcedure<Particle, Particle>> particleProcedures;
 		private BiFunction<Particle, Particle, WitnessValidator<Particle, Particle>> witnessValidators;
 
 		public Builder setParticleStaticCheck(Function<Particle, Result> particleStaticCheck) {
@@ -29,7 +29,7 @@ public final class ConstraintMachine {
 			return this;
 		}
 
-		public Builder setParticleProcedures(BiFunction<Particle, Particle, TransitionProcedure<Particle, Particle>> particleProcedures) {
+		public Builder setParticleProcedures(Function<TransitionId, TransitionProcedure<Particle, Particle>> particleProcedures) {
 			this.particleProcedures = particleProcedures;
 			return this;
 		}
@@ -50,12 +50,12 @@ public final class ConstraintMachine {
 	}
 
 	private final Function<Particle, Result> particleStaticCheck;
-	private final BiFunction<Particle, Particle, TransitionProcedure<Particle, Particle>> particleProcedures;
+	private final Function<TransitionId, TransitionProcedure<Particle, Particle>> particleProcedures;
 	private final BiFunction<Particle, Particle, WitnessValidator<Particle, Particle>> witnessValidators;
 
 	ConstraintMachine(
 		Function<Particle, Result> particleStaticCheck,
-		BiFunction<Particle, Particle, TransitionProcedure<Particle, Particle>> particleProcedures,
+		Function<TransitionId, TransitionProcedure<Particle, Particle>> particleProcedures,
 		BiFunction<Particle, Particle, WitnessValidator<Particle, Particle>> witnessValidators
 	) {
 		this.particleStaticCheck = particleStaticCheck;
@@ -165,7 +165,13 @@ public final class ConstraintMachine {
 
 		final Particle inputParticle = isInput ? nextParticle : curParticle;
 		final Particle outputParticle = isInput ? curParticle : nextParticle;
-		final TransitionProcedure<Particle, Particle> transitionProcedure = this.particleProcedures.apply(inputParticle, outputParticle);
+		final TransitionId transitionId = new TransitionId(
+			inputParticle != null ? inputParticle.getClass() : null,
+			null,
+			outputParticle != null ? outputParticle.getClass() : null,
+			null
+		);
+		final TransitionProcedure<Particle, Particle> transitionProcedure = this.particleProcedures.apply(transitionId);
 
 		if (transitionProcedure == null) {
 			if (inputParticle == null || outputParticle == null) {
