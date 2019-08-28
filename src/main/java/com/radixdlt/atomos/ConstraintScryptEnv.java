@@ -9,11 +9,8 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.UsedData;
 import com.radixdlt.constraintmachine.VoidUsedData;
-import com.radixdlt.utils.Pair;
 import com.radixdlt.constraintmachine.TransitionProcedure;
-import com.radixdlt.constraintmachine.CMAction;
 import com.radixdlt.constraintmachine.TransitionProcedure.ProcedureResult;
-import com.radixdlt.constraintmachine.WitnessValidator;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
 import java.util.Collections;
 import java.util.HashMap;
@@ -32,7 +29,6 @@ final class ConstraintScryptEnv implements SysCalls {
 
 	private final Map<Class<? extends Particle>, ParticleDefinition<Particle>> scryptParticleDefinitions;
 	private final Map<TransitionToken, TransitionProcedure<Particle, UsedData, Particle, UsedData>> scryptTransitionProcedures;
-	private final Map<Pair<Class<? extends Particle>, Class<? extends Particle>>, WitnessValidator<Particle, Particle>> scryptWitnessValidators;
 
 	ConstraintScryptEnv(
 		ImmutableMap<Class<? extends Particle>, ParticleDefinition<Particle>> particleDefinitions,
@@ -43,7 +39,6 @@ final class ConstraintScryptEnv implements SysCalls {
 
 		this.scryptParticleDefinitions = new HashMap<>();
 		this.scryptTransitionProcedures = new HashMap<>();
-		this.scryptWitnessValidators = new HashMap<>();
 	}
 
 	public Map<Class<? extends Particle>, ParticleDefinition<Particle>> getScryptParticleDefinitions() {
@@ -52,10 +47,6 @@ final class ConstraintScryptEnv implements SysCalls {
 
 	public Map<TransitionToken, TransitionProcedure<Particle, UsedData, Particle, UsedData>> getScryptTransitionProcedures() {
 		return scryptTransitionProcedures;
-	}
-
-	public Map<Pair<Class<? extends Particle>, Class<? extends Particle>>, WitnessValidator<Particle, Particle>> getScryptWitnessValidators() {
-		return scryptWitnessValidators;
 	}
 
 	@Override
@@ -173,9 +164,11 @@ final class ConstraintScryptEnv implements SysCalls {
 			TypeToken.of(VoidUsedData.class),
 			particleClass,
 			TypeToken.of(VoidUsedData.class),
-			(in, inUsed, out, outUsed) -> ProcedureResult.popInputOutput(),
-			(res, in, out, meta) -> res == CMAction.POP_INPUT_OUTPUT && meta.isSignedBy(in.getRri().getAddress().getKey())
-				? WitnessValidatorResult.success() : WitnessValidatorResult.error("Not signed by " + in.getRri().getAddress())
+			(in, inUsed, out, outUsed) -> ProcedureResult.popInputOutput(
+				(rri, witnessData) -> witnessData.isSignedBy(rri.getRri().getAddress().getKey())
+					? WitnessValidatorResult.success() : WitnessValidatorResult.error("Not signed by " + in.getRri().getAddress()),
+				(o, witnessData) -> WitnessValidatorResult.success()
+			)
 		);
 	}
 
@@ -197,55 +190,37 @@ final class ConstraintScryptEnv implements SysCalls {
 		CombinedTransition<RRIParticle, O, U> combinedTransition = new CombinedTransition<>(
 			particleClass0,
 			particleClass1,
-			combinedCheck
+			combinedCheck,
+			(in, witness) -> witness.isSignedBy(in.getRri().getAddress().getKey())
+				? WitnessValidatorResult.success() : WitnessValidatorResult.error("Not signed by " + in.getRri().getAddress())
 		);
 		createTransitionInternal(
 			RRIParticle.class,
 			TypeToken.of(VoidUsedData.class),
 			particleClass0,
 			TypeToken.of(VoidUsedData.class),
-			combinedTransition.getProcedure0(),
-			(res, in, out, meta) -> WitnessValidatorResult.success()
+			combinedTransition.getProcedure0()
 		);
 		createTransitionInternal(
 			RRIParticle.class,
 			TypeToken.of(VoidUsedData.class),
 			particleClass1,
 			TypeToken.of(VoidUsedData.class),
-			combinedTransition.getProcedure1(),
-			(res, in, out, meta) -> WitnessValidatorResult.success()
+			combinedTransition.getProcedure1()
 		);
 		createTransitionInternal(
 			RRIParticle.class,
 			new TypeToken<UsedParticle<U>>() { }.where(new TypeParameter<U>() { }, particleClass1),
 			particleClass0,
 			TypeToken.of(VoidUsedData.class),
-			combinedTransition.getProcedure2(),
-			(res, in, out, meta) -> {
-				if (res == CMAction.POP_INPUT_OUTPUT) {
-					if (!meta.isSignedBy(in.getRri().getAddress().getKey())) {
-						return WitnessValidatorResult.error("Not signed by " + in.getRri().getAddress());
-					}
-				}
-
-				return WitnessValidatorResult.success();
-			}
+			combinedTransition.getProcedure2()
 		);
 		createTransitionInternal(
 			RRIParticle.class,
 			new TypeToken<UsedParticle<O>>() { }.where(new TypeParameter<O>() { }, particleClass0),
 			particleClass1,
 			TypeToken.of(VoidUsedData.class),
-			combinedTransition.getProcedure3(),
-			(res, in, out, meta) -> {
-				if (res == CMAction.POP_INPUT_OUTPUT) {
-					if (!meta.isSignedBy(in.getRri().getAddress().getKey())) {
-						return WitnessValidatorResult.error("Not signed by " + in.getRri().getAddress());
-					}
-				}
-
-				return WitnessValidatorResult.success();
-			}
+			combinedTransition.getProcedure3()
 		);
 	}
 
@@ -255,19 +230,14 @@ final class ConstraintScryptEnv implements SysCalls {
 		TypeToken<N> inputUsedType,
 		Class<O> outputClass,
 		TypeToken<U> outputUsedType,
-		TransitionProcedure<I, N, O, U> procedure,
-		WitnessValidator<I, O> witnessValidator
+		TransitionProcedure<I, N, O, U> procedure
 	) {
-		createTransitionInternal(inputClass, inputUsedType, outputClass, outputUsedType, procedure, witnessValidator);
+		createTransitionInternal(inputClass, inputUsedType, outputClass, outputUsedType, procedure);
 	}
 
 	private static <I extends Particle, N extends UsedData, O extends Particle, U extends UsedData>
 		TransitionProcedure<Particle, UsedData, Particle, UsedData> toGeneric(TransitionProcedure<I, N, O, U> procedure) {
-		return (in, inUsed, out, outUsed) -> procedure.execute((I) in, (N) inUsed, (O) out, (U) outUsed);
-	}
-
-	private static <I extends Particle, O extends Particle> WitnessValidator<Particle, Particle> toGeneric(WitnessValidator<I, O> validator) {
-		return (res, in, out, meta) -> validator.validate(res, (I) in, (O) out, meta);
+		return (in, inUsed, out, outUsed) -> procedure.execute((I) in, (N) inUsed, (O) out, (U) outUsed).toGeneric();
 	}
 
 	private <I extends Particle, N extends UsedData, O extends Particle, U extends UsedData> void createTransitionInternal(
@@ -275,8 +245,7 @@ final class ConstraintScryptEnv implements SysCalls {
 		TypeToken<N> inputUsedClass,
 		Class<O> outputClass,
 		TypeToken<U> outputUsedClass,
-		TransitionProcedure<I, N, O, U> procedure,
-		WitnessValidator<I, O> witnessValidator
+		TransitionProcedure<I, N, O, U> procedure
 	) {
 		Objects.requireNonNull(inputClass);
 		Objects.requireNonNull(outputClass);
@@ -295,7 +264,7 @@ final class ConstraintScryptEnv implements SysCalls {
 					return ProcedureResult.error("Input/Output RRIs not equal");
 				}
 
-				return procedure.execute((I) in, (N) inUsed, (O) out, (U) outUsed);
+				return procedure.execute((I) in, (N) inUsed, (O) out, (U) outUsed).toGeneric();
 			};
 		} else {
 			transformedProcedure = toGeneric(procedure);
@@ -303,6 +272,5 @@ final class ConstraintScryptEnv implements SysCalls {
 
 		final TransitionToken transitionToken = new TransitionToken(inputClass, inputUsedClass, outputClass, outputUsedClass);
 		scryptTransitionProcedures.put(transitionToken, transformedProcedure);
-		scryptWitnessValidators.put(Pair.of(inputClass, outputClass), toGeneric(witnessValidator));
 	}
 }

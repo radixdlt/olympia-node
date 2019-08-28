@@ -19,12 +19,14 @@ public class ConstraintMachineTest {
 	public void when_validating_a_2_input_1_output_particle_group_which_pops_1_input_first__validation_should_succeed() {
 		TransitionProcedure<Particle, UsedData, Particle, UsedData> procedure = mock(TransitionProcedure.class);
 		when(procedure.execute(any(), any(), any(), any()))
-			.thenReturn(ProcedureResult.popInput(null))
-			.thenReturn(ProcedureResult.popInputOutput());
+			.thenReturn(ProcedureResult.popInput(null, (p, w) -> WitnessValidatorResult.success()))
+			.thenReturn(ProcedureResult.popInputOutput(
+				(p, w) -> WitnessValidatorResult.success(),
+				(p, w) -> WitnessValidatorResult.success()
+			));
 
 		ConstraintMachine machine = new ConstraintMachine.Builder()
 			.setParticleProcedures(t -> procedure)
-			.setWitnessValidators((p0, p1) -> (res, v0, v1, meta) -> WitnessValidatorResult.success())
 			.build();
 
 		Particle particle0 = mock(Particle.class);

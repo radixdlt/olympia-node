@@ -8,6 +8,8 @@ import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.TransitionProcedure.ProcedureResult;
 import com.radixdlt.constraintmachine.UsedData;
 import com.radixdlt.constraintmachine.VoidUsedData;
+import com.radixdlt.constraintmachine.WitnessValidator;
+import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
 import java.util.function.BiFunction;
 
 /**
@@ -32,23 +34,32 @@ public final class CombinedTransition<I extends Particle, O extends Particle, V 
 	private final BiFunction<O, V, Result> combinedCheck;
 	private final TypeToken<UsedParticle<O>> typeToken0;
 	private final TypeToken<UsedParticle<V>> typeToken1;
+	private final WitnessValidator<I> inputWitnessValidator;
 
 	public CombinedTransition(
 		Class<O> outputClass0,
 		Class<V> outputClass1,
-		BiFunction<O, V, Result> combinedCheck
+		BiFunction<O, V, Result> combinedCheck,
+		WitnessValidator<I> inputWitnessValidator
 	) {
 		this.typeToken0 = new TypeToken<UsedParticle<O>>() { }.where(new TypeParameter<O>() { }, outputClass0);
 		this.typeToken1 = new TypeToken<UsedParticle<V>>() { }.where(new TypeParameter<V>() { }, outputClass1);
 		this.combinedCheck = combinedCheck;
+		this.inputWitnessValidator = inputWitnessValidator;
 	}
 
 	public TransitionProcedure<I, VoidUsedData, O, VoidUsedData> getProcedure0() {
-		return (in, inUsed, out, outUsed) -> ProcedureResult.popOutput(new UsedParticle<>(typeToken0, out));
+		return (in, inUsed, out, outUsed) -> ProcedureResult.popOutput(
+			new UsedParticle<>(typeToken0, out),
+			(o, w) -> WitnessValidatorResult.success()
+		);
 	}
 
 	public TransitionProcedure<I, VoidUsedData, V, VoidUsedData> getProcedure1() {
-		return (in, inUsed, out, outUsed) -> ProcedureResult.popOutput(new UsedParticle<>(typeToken1, out));
+		return (in, inUsed, out, outUsed) -> ProcedureResult.popOutput(
+			new UsedParticle<>(typeToken1, out),
+			(o, w) -> WitnessValidatorResult.success()
+		);
 	}
 
 	public TransitionProcedure<I, UsedParticle<V>, O, VoidUsedData> getProcedure2() {
@@ -58,7 +69,10 @@ public final class CombinedTransition<I extends Particle, O extends Particle, V 
 				return ProcedureResult.error(combinedCheckResult.getErrorMessage());
 			}
 
-			return ProcedureResult.popInputOutput();
+			return ProcedureResult.popInputOutput(
+				inputWitnessValidator,
+				(o, w) -> WitnessValidatorResult.success()
+			);
 		};
 	}
 
@@ -69,7 +83,10 @@ public final class CombinedTransition<I extends Particle, O extends Particle, V 
 				return ProcedureResult.error(combinedCheckResult.getErrorMessage());
 			}
 
-			return ProcedureResult.popInputOutput();
+			return ProcedureResult.popInputOutput(
+				inputWitnessValidator,
+				(o, w) -> WitnessValidatorResult.success()
+			);
 		};
 	}
 }

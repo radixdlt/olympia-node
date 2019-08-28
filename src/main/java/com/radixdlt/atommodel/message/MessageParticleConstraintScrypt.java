@@ -40,10 +40,11 @@ public class MessageParticleConstraintScrypt implements ConstraintScrypt {
 			TypeToken.of(VoidUsedData.class),
 			MessageParticle.class,
 			TypeToken.of(VoidUsedData.class),
-			(in, usedIn, out, usedOut) -> ProcedureResult.popOutput(null),
-			(res, in, out, meta) -> meta.isSignedBy(out.getFrom().getKey())
-				? WitnessValidatorResult.success()
-				: WitnessValidatorResult.error("Message particle " + out + " not signed.")
+			(in, usedIn, out, usedOut) -> ProcedureResult.popOutput(null, (msg, meta) ->
+				meta.isSignedBy(((MessageParticle) msg).getFrom().getKey())
+					? WitnessValidatorResult.success()
+					: WitnessValidatorResult.error("Message particle " + msg + " not signed.")
+			)
 		);
 	}
 }

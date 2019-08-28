@@ -4,14 +4,11 @@ import com.google.common.collect.ImmutableMap;
 import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.UsedData;
 import com.radixdlt.constraintmachine.VoidParticle;
-import com.radixdlt.utils.Pair;
 import com.radixdlt.constraintmachine.TransitionProcedure;
-import com.radixdlt.constraintmachine.WitnessValidator;
 import com.radixdlt.store.CMStore;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import com.radixdlt.constraintmachine.Particle;
@@ -48,8 +45,6 @@ public final class CMAtomOS {
 	private final Map<Class<? extends Particle>, ParticleDefinition<Particle>> particleDefinitions = new HashMap<>();
 	private final ImmutableMap.Builder<TransitionToken, TransitionProcedure<Particle, UsedData, Particle, UsedData>>
 		proceduresBuilder = new ImmutableMap.Builder<>();
-	private final ImmutableMap.Builder<Pair<Class<? extends Particle>, Class<? extends Particle>>, WitnessValidator<Particle, Particle>>
-		witnessesBuilder = new ImmutableMap.Builder<>();
 
 	public CMAtomOS(Function<RadixAddress, Result> addressChecker) {
 		// RRI particle is a low level particle managed by the OS used for the management of all other resources
@@ -70,22 +65,11 @@ public final class CMAtomOS {
 		constraintScrypt.main(constraintScryptEnv);
 		this.particleDefinitions.putAll(constraintScryptEnv.getScryptParticleDefinitions());
 		this.proceduresBuilder.putAll(constraintScryptEnv.getScryptTransitionProcedures());
-		this.witnessesBuilder.putAll(constraintScryptEnv.getScryptWitnessValidators());
 	}
 
 	public Function<TransitionToken, TransitionProcedure<Particle, UsedData, Particle, UsedData>> buildTransitionProcedures() {
 		final ImmutableMap<TransitionToken, TransitionProcedure<Particle, UsedData, Particle, UsedData>> procedures = proceduresBuilder.build();
 		return procedures::get;
-	}
-
-	public BiFunction<Particle, Particle, WitnessValidator<Particle, Particle>> buildWitnessValidators() {
-		final ImmutableMap<Pair<Class<? extends Particle>, Class<? extends Particle>>, WitnessValidator<Particle, Particle>>
-		witnessValidators = witnessesBuilder.build();
-		return (in, out) -> witnessValidators.get(
-			Pair.<Class<? extends Particle>, Class<? extends Particle>>of(
-				in == null ? VoidParticle.class : in.getClass(),
-				out == null ? VoidParticle.class : out.getClass())
-		);
 	}
 
 	public Function<Particle, Result> buildParticleStaticCheck() {

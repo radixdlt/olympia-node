@@ -4,7 +4,6 @@ import com.google.common.reflect.TypeToken;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.UsedData;
-import com.radixdlt.constraintmachine.WitnessValidator;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -70,7 +69,6 @@ public interface SysCalls {
 	 * @param inputClass class of the input particle
 	 * @param outputClass class of the output particle
 	 * @param procedure procedure which gets executed on the constraint machine
-	 * @param witnessValidator validation which defines who can execute this transition
 	 * @param <I> input particle type
 	 * @param <U> output particle type
 	 */
@@ -79,8 +77,7 @@ public interface SysCalls {
 		TypeToken<N> inputUsedClass,
 		Class<O> outputClass,
 		TypeToken<U> outputUsedClass,
-		TransitionProcedure<I, N, O, U> procedure,
-		WitnessValidator<I, O> witnessValidator
+		TransitionProcedure<I, N, O, U> procedure
 	);
 
 	/**

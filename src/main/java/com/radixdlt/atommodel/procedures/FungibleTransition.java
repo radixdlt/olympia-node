@@ -7,6 +7,8 @@ import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.TransitionProcedure.ProcedureResult;
 import com.radixdlt.constraintmachine.UsedData;
 import com.radixdlt.constraintmachine.VoidUsedData;
+import com.radixdlt.constraintmachine.WitnessValidator;
+import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
 import com.radixdlt.utils.UInt256;
 import java.util.Objects;
 import java.util.function.BiFunction;
@@ -50,11 +52,13 @@ public final class FungibleTransition<T extends Particle, U extends Particle> {
 	private final Function<T, UInt256> inputAmountMapper;
 	private final Function<U, UInt256> outputAmountMapper;
 	private final BiFunction<T, U, Result> transition;
+	private final WitnessValidator<T> inputWitnessValidator;
 
 	public FungibleTransition(
 		Function<T, UInt256> inputAmountMapper,
 		Function<U, UInt256> outputAmountMapper,
-		BiFunction<T, U, Result> transition
+		BiFunction<T, U, Result> transition,
+		WitnessValidator<T> inputWitnessValidator
 	) {
 		Objects.requireNonNull(inputAmountMapper);
 		Objects.requireNonNull(outputAmountMapper);
@@ -63,16 +67,26 @@ public final class FungibleTransition<T extends Particle, U extends Particle> {
 		this.inputAmountMapper = inputAmountMapper;
 		this.outputAmountMapper = outputAmountMapper;
 		this.transition = transition;
+		this.inputWitnessValidator = inputWitnessValidator;
 	}
 
-	private static ProcedureResult calculate(UInt256 in, UInt256 out) {
+	private ProcedureResult<T, U> calculate(UInt256 in, UInt256 out) {
 		int compare = in.compareTo(out);
 		if (compare == 0) {
-			return ProcedureResult.popInputOutput();
+			return ProcedureResult.popInputOutput(
+				inputWitnessValidator,
+				(p, witnessData) -> WitnessValidatorResult.success()
+			);
 		} else if (compare > 0) {
-			return ProcedureResult.popOutput(new UsedAmount(out));
+			return ProcedureResult.popOutput(
+				new UsedAmount(out),
+				(p, witnessData) -> WitnessValidatorResult.success()
+			);
 		} else {
-			return ProcedureResult.popInput(new UsedAmount(in));
+			return ProcedureResult.popInput(
+				new UsedAmount(in),
+				inputWitnessValidator
+			);
 		}
 	}
 

@@ -3,7 +3,6 @@ package com.radixdlt.atomos;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.VoidUsedData;
-import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
 import java.util.function.Function;
 import org.junit.Test;
 
@@ -49,8 +48,7 @@ public class CMAtomOSTest {
 				TypeToken.of(VoidUsedData.class),
 				TestParticle0.class,
 				TypeToken.of(VoidUsedData.class),
-				procedure,
-				(res, in, out, meta) -> WitnessValidatorResult.success()
+				procedure
 			);
 		});
 		TransitionProcedure<TestParticle1, VoidUsedData, TestParticle0, VoidUsedData> procedure0 = mock(TransitionProcedure.class);
@@ -62,8 +60,7 @@ public class CMAtomOSTest {
 					TypeToken.of(VoidUsedData.class),
 					TestParticle0.class,
 					TypeToken.of(VoidUsedData.class),
-					procedure0,
-					(res, in, out, meta) -> WitnessValidatorResult.success()
+					procedure0
 				);
 			})
 		).isInstanceOf(IllegalStateException.class);

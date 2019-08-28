@@ -13,7 +13,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
@@ -23,7 +22,6 @@ public final class ConstraintMachine {
 	public static class Builder {
 		private Function<Particle, Result> particleStaticCheck;
 		private Function<TransitionToken, TransitionProcedure<Particle, UsedData, Particle, UsedData>> particleProcedures;
-		private BiFunction<Particle, Particle, WitnessValidator<Particle, Particle>> witnessValidators;
 
 		public Builder setParticleStaticCheck(Function<Particle, Result> particleStaticCheck) {
 			this.particleStaticCheck = particleStaticCheck;
@@ -37,36 +35,29 @@ public final class ConstraintMachine {
 			return this;
 		}
 
-		public Builder setWitnessValidators(BiFunction<Particle, Particle, WitnessValidator<Particle, Particle>> witnessValidators) {
-			this.witnessValidators = witnessValidators;
-			return this;
-		}
-
-
 		public ConstraintMachine build() {
 			return new ConstraintMachine(
 				particleStaticCheck,
-				particleProcedures,
-				witnessValidators
+				particleProcedures
 			);
 		}
 	}
 
 	private final Function<Particle, Result> particleStaticCheck;
 	private final Function<TransitionToken, TransitionProcedure<Particle, UsedData, Particle, UsedData>> particleProcedures;
-	private final BiFunction<Particle, Particle, WitnessValidator<Particle, Particle>> witnessValidators;
 
 	ConstraintMachine(
 		Function<Particle, Result> particleStaticCheck,
-		Function<TransitionToken, TransitionProcedure<Particle, UsedData, Particle, UsedData>> particleProcedures,
-		BiFunction<Particle, Particle, WitnessValidator<Particle, Particle>> witnessValidators
+		Function<TransitionToken, TransitionProcedure<Particle, UsedData, Particle, UsedData>> particleProcedures
 	) {
 		this.particleStaticCheck = particleStaticCheck;
 		this.particleProcedures = particleProcedures;
-		this.witnessValidators = witnessValidators;
 	}
 
 	public static final class CMValidationState {
+		private TransitionToken currentTransitionToken = null;
+		private CMAction currentCMAction = null;
+
 		private Particle particleRemaining = null;
 		private boolean particleRemainingIsInput;
 		private UsedData particleRemainingUsed = null;
@@ -79,6 +70,14 @@ public final class ConstraintMachine {
 			this.currentSpins = new HashMap<>();
 			this.witness = witness;
 			this.signatures = signatures;
+		}
+
+		public void setCurrentCMAction(CMAction currentCMAction) {
+			this.currentCMAction = currentCMAction;
+		}
+
+		public void setCurrentTransitionToken(TransitionToken currentTransitionToken) {
+			this.currentTransitionToken = currentTransitionToken;
 		}
 
 		public boolean checkSpin(Particle particle, Spin spin) {
@@ -157,12 +156,24 @@ public final class ConstraintMachine {
 
 		@Override
 		public String toString() {
+			StringBuilder builder = new StringBuilder();
+			builder.append("CMTrace:\n[\n");
 			if (particleRemaining != null) {
-				return "Remaining (" + (this.particleRemainingIsInput ? "input" : "output") + "): " + this.particleRemaining + "\n"
-					+ "Used: " + this.particleRemainingUsed;
+				builder
+					.append("  Remaining (")
+					.append(this.particleRemainingIsInput ? "input" : "output")
+					.append("): ")
+					.append(this.particleRemaining)
+					.append("\n  Used: ")
+					.append(this.particleRemainingUsed);
 			} else {
-				return "Remaining: " + "[empty]";
+				builder.append("  Remaining: [empty]");
 			}
+			builder.append("\n  TransitionToken: ").append(currentTransitionToken);
+			builder.append("\n  CMAction: ").append(currentCMAction);
+			builder.append("\n]");
+
+			return builder.toString();
 		}
 	}
 
@@ -195,6 +206,8 @@ public final class ConstraintMachine {
 			validationState.getOutputUsedType()
 		);
 
+		validationState.setCurrentTransitionToken(transitionToken);
+
 		final TransitionProcedure<Particle, UsedData, Particle, UsedData> transitionProcedure = this.particleProcedures.apply(transitionToken);
 
 		if (transitionProcedure == null) {
@@ -212,12 +225,15 @@ public final class ConstraintMachine {
 			);
 		}
 
-		final ProcedureResult result = transitionProcedure.execute(
+		final ProcedureResult<Particle, Particle> result = transitionProcedure.execute(
 			inputParticle,
 			validationState.getInputUsed(),
 			outputParticle,
 			validationState.getOutputUsed()
 		);
+		validationState.setCurrentCMAction(result.getCmAction());
+
+		final WitnessValidatorResult witnessResult;
 		switch (result.getCmAction()) {
 			case POP_INPUT:
 				if (!isInput) {
@@ -225,6 +241,8 @@ public final class ConstraintMachine {
 				} else {
 					validationState.updateUsed(result.getUsed());
 				}
+
+				witnessResult = result.getInputWitnessValidator().validate(inputParticle, validationState::isSignedBy);
 				break;
 			case POP_OUTPUT:
 				if (isInput) {
@@ -232,12 +250,17 @@ public final class ConstraintMachine {
 				} else {
 					validationState.updateUsed(result.getUsed());
 				}
+				witnessResult = result.getOutputWitnessValidator().validate(outputParticle, validationState::isSignedBy);
 				break;
 			case POP_INPUT_OUTPUT:
 				if (result.getUsed() != null) {
 					throw new IllegalStateException("POP_INPUT_OUTPUT must output null");
 				}
 				validationState.pop();
+				WitnessValidatorResult r0 = result.getInputWitnessValidator().validate(inputParticle, validationState::isSignedBy);
+				witnessResult = r0.isSuccess()
+					? result.getOutputWitnessValidator().validate(outputParticle, validationState::isSignedBy)
+					: r0;
 				break;
 			case ERROR:
 				return Optional.of(
@@ -248,28 +271,23 @@ public final class ConstraintMachine {
 						result.getErrorMessage()
 					)
 				);
+			default:
+				throw new IllegalStateException("Should never get here");
 		}
 
-		final WitnessValidator<Particle, Particle> witnessValidator = this.witnessValidators.apply(inputParticle, outputParticle);
-		if (witnessValidator == null) {
-			throw new IllegalStateException("No witness validator for: " + inputParticle + " -> " + outputParticle);
-		}
-		final WitnessValidatorResult witnessValidatorResult = witnessValidator.validate(
-			result.getCmAction(),
-			inputParticle,
-			outputParticle,
-			validationState::isSignedBy
-		);
-		if (witnessValidatorResult.isError()) {
+		if (witnessResult.isError()) {
 			return Optional.of(
 				new CMError(
 					dp,
 					CMErrorCode.WITNESS_ERROR,
 					validationState,
-					witnessValidatorResult.getErrorMessage()
+					witnessResult.getErrorMessage()
 				)
 			);
 		}
+
+		validationState.setCurrentCMAction(null);
+		validationState.setCurrentTransitionToken(null);
 
 		return Optional.empty();
 	}

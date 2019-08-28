@@ -8,11 +8,8 @@ import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atommodel.procedures.FungibleTransition;
 import com.radixdlt.constraintmachine.VoidUsedData;
-import com.radixdlt.constraintmachine.WitnessValidator;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.WitnessData;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
-import com.radixdlt.store.SpinStateMachine.Transition;
 import com.radixdlt.utils.UInt256;
 import java.util.Objects;
 import java.util.function.BiFunction;
@@ -61,11 +58,9 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 				if (!Objects.equals(unallocated.getGranularity(), tokDef.getGranularity())) {
 					return Result.error("Granularities not equal.");
 				}
-
 				if (!Objects.equals(unallocated.getTokenPermissions(), tokDef.getTokenPermissions())) {
 					return Result.error("Permissions not equal.");
 				}
-
 				if (!unallocated.getAmount().equals(UInt256.MAX_VALUE)) {
 					return Result.error("Unallocated amount must be UInt256.MAX_VALUE but was " + unallocated.getAmount());
 				}
@@ -81,11 +76,9 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 				if (!Objects.equals(tokDef.getGranularity(), transferrable.getGranularity())) {
 					return Result.error("Granularities not equal.");
 				}
-
 				if (!Objects.equals(tokDef.getSupply(), transferrable.getAmount())) {
 					return Result.error("Supply and amount are not equal.");
 				}
-
 				if (!transferrable.getTokenPermissions().isEmpty()) {
 					return Result.error("Transferrable tokens of a fixed supply token must be empty.");
 				}
@@ -104,13 +97,14 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 				UnallocatedTokensParticle::getTokenPermissions,
 				UnallocatedTokensParticle::getTokenPermissions,
 				"Permissions not equal."
-			)
+			),
+			(in, meta) -> meta.isSignedBy(in.getTokDefRef().getAddress().getKey())
+				? WitnessValidatorResult.success() : WitnessValidatorResult.error("Permission not allowed.")
 		);
 		createFungibleTransitions(
 			UnallocatedTokensParticle.class,
 			UnallocatedTokensParticle.class,
 			unallocatedTransitions,
-			checkInput((in, meta) -> meta.isSignedBy(in.getTokDefRef().getAddress().getKey())),
 			os
 		);
 
@@ -124,13 +118,14 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 				UnallocatedTokensParticle::getTokenPermissions,
 				TransferrableTokensParticle::getTokenPermissions,
 				"Permissions not equal."
-			)
+			),
+			(in, meta) -> in.getTokenPermission(TokenTransition.MINT).check(in.getTokDefRef(), meta).isSuccess()
+				? WitnessValidatorResult.success() : WitnessValidatorResult.error("Permission not allowed.")
 		);
 		createFungibleTransitions(
 			UnallocatedTokensParticle.class,
 			TransferrableTokensParticle.class,
 			mintTransitions,
-			checkInput((in, meta) -> in.getTokenPermission(TokenTransition.MINT).check(in.getTokDefRef(), meta).isSuccess()),
 			os
 		);
 
@@ -144,13 +139,14 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 				TransferrableTokensParticle::getTokenPermissions,
 				TransferrableTokensParticle::getTokenPermissions,
 				"Permissions not equal."
-			)
+			),
+			(in, meta) -> meta.isSignedBy(in.getAddress().getKey())
+				? WitnessValidatorResult.success() : WitnessValidatorResult.error("Permission not allowed.")
 		);
 		createFungibleTransitions(
 			TransferrableTokensParticle.class,
 			TransferrableTokensParticle.class,
 			transferTransitions,
-			checkInput((in, meta) -> meta.isSignedBy(in.getTokDefRef().getAddress().getKey())),
 			os
 		);
 
@@ -164,13 +160,14 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 				TransferrableTokensParticle::getTokenPermissions,
 				UnallocatedTokensParticle::getTokenPermissions,
 				"Permissions not equal."
-			)
+			),
+			(in, meta) -> in.getTokenPermission(TokenTransition.BURN).check(in.getTokDefRef(), meta).isSuccess()
+				? WitnessValidatorResult.success() : WitnessValidatorResult.error("Permission not allowed.")
 		);
 		createFungibleTransitions(
 			TransferrableTokensParticle.class,
 			UnallocatedTokensParticle.class,
 			burnTransitions,
-			checkInput((in, meta) -> in.getTokenPermission(TokenTransition.BURN).check(in.getTokDefRef(), meta).isSuccess()),
 			os
 		);
 	}
@@ -179,7 +176,6 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 		Class<I> inputClass,
 		Class<O> outputClass,
 		FungibleTransition<I, O> transition,
-		WitnessValidator<I, O> witnessValidator,
 		SysCalls os
 	) {
 		os.createTransition(
@@ -187,24 +183,21 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			TypeToken.of(VoidUsedData.class),
 			outputClass,
 			TypeToken.of(VoidUsedData.class),
-			transition.getProcedure0(),
-			witnessValidator
+			transition.getProcedure0()
 		);
 		os.createTransition(
 			inputClass,
 			TypeToken.of(UsedAmount.class),
 			outputClass,
 			TypeToken.of(VoidUsedData.class),
-			transition.getProcedure1(),
-			witnessValidator
+			transition.getProcedure1()
 		);
 		os.createTransition(
 			inputClass,
 			TypeToken.of(VoidUsedData.class),
 			outputClass,
 			TypeToken.of(UsedAmount.class),
-			transition.getProcedure2(),
-			witnessValidator
+			transition.getProcedure2()
 		);
 	}
 
@@ -222,20 +215,6 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			}
 
 			return Result.success();
-		};
-	}
-
-	private static <T extends Particle, U extends Particle> WitnessValidator<T, U> checkInput(BiFunction<T, WitnessData, Boolean> check) {
-		return (res, in, out, meta) -> {
-			switch (res) {
-				case POP_OUTPUT:
-					return WitnessValidatorResult.success();
-				case POP_INPUT:
-				case POP_INPUT_OUTPUT:
-					return check.apply(in, meta) ? WitnessValidatorResult.success() : WitnessValidatorResult.error("Permission not allowed.");
-				default:
-					throw new IllegalStateException("Unsupported CMAction: " + res);
-			}
 		};
 	}
 }
