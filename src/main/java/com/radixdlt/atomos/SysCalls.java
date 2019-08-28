@@ -1,7 +1,5 @@
 package com.radixdlt.atomos;
 
-import com.radixdlt.constraintmachine.OutputProcedure;
-import com.radixdlt.constraintmachine.OutputWitnessValidator;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.WitnessValidator;
@@ -79,12 +77,6 @@ public interface SysCalls {
 		Class<U> outputClass,
 		TransitionProcedure<T, U> procedure,
 		WitnessValidator<T, U> witnessValidator
-	);
-
-	<T extends Particle> void createOutputOnlyTransition(
-		Class<T> outputClass,
-		OutputProcedure<T> procedure,
-		OutputWitnessValidator<T> witnessValidator
 	);
 
 	/**

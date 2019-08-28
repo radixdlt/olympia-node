@@ -2,10 +2,6 @@ package com.radixdlt.atomos;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atommodel.procedures.CombinedTransition;
-import com.radixdlt.constraintmachine.OutputProcedure;
-import com.radixdlt.constraintmachine.OutputProcedure.OutputProcedureResult;
-import com.radixdlt.constraintmachine.OutputWitnessValidator;
-import com.radixdlt.constraintmachine.OutputWitnessValidator.OutputWitnessValidatorResult;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.TransitionId;
 import com.radixdlt.utils.Pair;
@@ -17,6 +13,7 @@ import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -160,7 +157,7 @@ final class ConstraintScryptEnv implements SysCalls {
 	}
 
 	@Override
-	public <T extends Particle> void createTransitionFromRRI(Class<T> particleClass) {
+	public <O extends Particle> void createTransitionFromRRI(Class<O> particleClass) {
 		ParticleDefinition<Particle> particleDefinition = getParticleDefinition(particleClass);
 		if (particleDefinition.getRriMapper() == null) {
 			throw new IllegalStateException(particleClass + " must be registered with an RRI mapper.");
@@ -182,10 +179,10 @@ final class ConstraintScryptEnv implements SysCalls {
 	}
 
 	@Override
-	public <T extends Particle, U extends Particle> void createTransitionFromRRICombined(
-		Class<T> particleClass0,
+	public <O extends Particle, U extends Particle> void createTransitionFromRRICombined(
+		Class<O> particleClass0,
 		Class<U> particleClass1,
-		BiFunction<T, U, Result> combinedCheck
+		BiFunction<O, U, Result> combinedCheck
 	) {
 		final ParticleDefinition<Particle> particleDefinition0 = getParticleDefinition(particleClass0);
 		if (particleDefinition0.getRriMapper() == null) {
@@ -196,7 +193,7 @@ final class ConstraintScryptEnv implements SysCalls {
 			throw new IllegalStateException(particleClass1 + " must be registered with an RRI mapper.");
 		}
 
-		final TransitionProcedure<RRIParticle, T> procedure0 = new CombinedTransition<>(
+		final TransitionProcedure<RRIParticle, O> procedure0 = new CombinedTransition<>(
 			particleClass1,
 			combinedCheck
 		);
@@ -236,57 +233,39 @@ final class ConstraintScryptEnv implements SysCalls {
 	}
 
 	@Override
-	public <T extends Particle, U extends Particle> void createTransition(
-		Class<T> inputClass,
-		Class<U> outputClass,
-		TransitionProcedure<T, U> procedure,
-		WitnessValidator<T, U> witnessValidator
+	public <I extends Particle, O extends Particle> void createTransition(
+		Class<I> inputClass,
+		Class<O> outputClass,
+		TransitionProcedure<I, O> procedure,
+		WitnessValidator<I, O> witnessValidator
 	) {
 		createTransitionInternal(inputClass, outputClass, procedure, witnessValidator);
 	}
 
-	@Override
-	public <T extends Particle> void createOutputOnlyTransition(
-		Class<T> outputClass,
-		OutputProcedure<T> procedure,
-		OutputWitnessValidator<T> witnessValidator
+	private static <I extends Particle, O extends Particle> TransitionProcedure<Particle, Particle> toGeneric(TransitionProcedure<I, O> procedure) {
+		return (in, inUsed, out, outUsed) -> procedure.execute((I) in, inUsed, (O) out, outUsed);
+	}
+
+	private static <I extends Particle, O extends Particle> WitnessValidator<Particle, Particle> toGeneric(WitnessValidator<I, O> validator) {
+		return (res, in, out, meta) -> validator.validate(res, (I) in, (O) out, meta);
+	}
+
+	private <I extends Particle, O extends Particle> void createTransitionInternal(
+		Class<I> inputClass,
+		Class<O> outputClass,
+		TransitionProcedure<I, O> procedure,
+		WitnessValidator<I, O> witnessValidator
 	) {
-		this.createTransitionInternal(
-			null,
-			outputClass,
-			(in, inUsed, out, outUsed) -> {
-				OutputProcedureResult res = procedure.execute(out);
-				return res.isSuccess() ? ProcedureResult.popOutput(null) : ProcedureResult.error(res.getErrorMessage());
-			},
-			(res, in, out, witness) -> {
-				OutputWitnessValidatorResult witnessRes = witnessValidator.validate(out, witness);
-				return witnessRes.isSuccess() ? WitnessValidatorResult.success() : WitnessValidatorResult.error(witnessRes.getErrorMessage());
-			}
-		);
-	}
+		Objects.requireNonNull(inputClass);
+		Objects.requireNonNull(outputClass);
 
-	private static <T extends Particle, U extends Particle> TransitionProcedure<Particle, Particle> toGeneric(TransitionProcedure<T, U> procedure) {
-		return (in, inUsed, out, outUsed) -> procedure.execute((T) in, inUsed, (U) out, outUsed);
-	}
-
-	private static <T extends Particle, U extends Particle> WitnessValidator<Particle, Particle> toGeneric(WitnessValidator<T, U> validator) {
-		return (res, in, out, meta) -> validator.validate(res, (T) in, (U) out, meta);
-	}
-
-	private <T extends Particle, U extends Particle> void createTransitionInternal(
-		Class<T> inputClass,
-		Class<U> outputClass,
-		TransitionProcedure<T, U> procedure,
-		WitnessValidator<T, U> witnessValidator
-	) {
-		final ParticleDefinition<Particle> inputDefinition = inputClass != null ? getParticleDefinition(inputClass) : null;
-		final ParticleDefinition<Particle> outputDefinition = outputClass != null ? getParticleDefinition(outputClass) : null;
+		final ParticleDefinition<Particle> inputDefinition = getParticleDefinition(inputClass);
+		final ParticleDefinition<Particle> outputDefinition = getParticleDefinition(outputClass);
 
 		final TransitionProcedure<Particle, Particle> transformedProcedure;
 
 		// RRIs must be the same across RRI particle transitions
-		if (inputClass != null && inputDefinition.getRriMapper() != null
-			&& outputClass != null && outputDefinition.getRriMapper() != null) {
+		if (inputDefinition.getRriMapper() != null && outputDefinition.getRriMapper() != null) {
 			transformedProcedure = (in, inUsed, out, outUsed) -> {
 				final RRI inputRRI = inputDefinition.getRriMapper().apply(in);
 				final RRI outputRRI = outputDefinition.getRriMapper().apply(out);
@@ -294,7 +273,7 @@ final class ConstraintScryptEnv implements SysCalls {
 					return ProcedureResult.error("Input/Output RRIs not equal");
 				}
 
-				return procedure.execute((T) in, inUsed, (U) out, outUsed);
+				return procedure.execute((I) in, inUsed, (O) out, outUsed);
 			};
 		} else {
 			transformedProcedure = toGeneric(procedure);

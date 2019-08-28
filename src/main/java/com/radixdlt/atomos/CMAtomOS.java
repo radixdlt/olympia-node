@@ -2,6 +2,7 @@ package com.radixdlt.atomos;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.constraintmachine.TransitionId;
+import com.radixdlt.constraintmachine.VoidParticle;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.WitnessValidator;
@@ -24,6 +25,17 @@ import java.util.stream.Stream;
  * Implementation of the AtomOS interface on top of a UTXO based Constraint Machine.
  */
 public final class CMAtomOS {
+	private static final ParticleDefinition<Particle> VOID_PARTICLE_DEF = new ParticleDefinition<>(
+		v -> {
+			throw new UnsupportedOperationException("Should not ever call here");
+		},
+		v -> {
+			throw new UnsupportedOperationException("Should not ever call here");
+		},
+		v -> null,
+		true
+	);
+
 	private static final ParticleDefinition<Particle> RRI_PARTICLE_DEF = new ParticleDefinition<>(
 		rri -> Stream.of(((RRIParticle) rri).getRri().getAddress()),
 		rri -> Result.success(),
@@ -40,6 +52,7 @@ public final class CMAtomOS {
 
 	public CMAtomOS(Function<RadixAddress, Result> addressChecker) {
 		// RRI particle is a low level particle managed by the OS used for the management of all other resources
+		this.particleDefinitions.put(VoidParticle.class, VOID_PARTICLE_DEF);
 		this.particleDefinitions.put(RRIParticle.class, RRI_PARTICLE_DEF);
 		this.addressChecker = addressChecker;
 	}
@@ -69,8 +82,8 @@ public final class CMAtomOS {
 		witnessValidators = witnessesBuilder.build();
 		return (in, out) -> witnessValidators.get(
 			Pair.<Class<? extends Particle>, Class<? extends Particle>>of(
-				in == null ? null : in.getClass(),
-				out == null ? null : out.getClass())
+				in == null ? VoidParticle.class : in.getClass(),
+				out == null ? VoidParticle.class : out.getClass())
 		);
 	}
 

@@ -166,9 +166,9 @@ public final class ConstraintMachine {
 		final Particle inputParticle = isInput ? nextParticle : curParticle;
 		final Particle outputParticle = isInput ? curParticle : nextParticle;
 		final TransitionId transitionId = new TransitionId(
-			inputParticle != null ? inputParticle.getClass() : null,
+			inputParticle != null ? inputParticle.getClass() : VoidParticle.class,
 			null,
-			outputParticle != null ? outputParticle.getClass() : null,
+			outputParticle != null ? outputParticle.getClass() : VoidParticle.class,
 			null
 		);
 		final TransitionProcedure<Particle, Particle> transitionProcedure = this.particleProcedures.apply(transitionId);

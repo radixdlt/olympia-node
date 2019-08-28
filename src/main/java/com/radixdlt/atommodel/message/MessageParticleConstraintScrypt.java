@@ -3,8 +3,9 @@ package com.radixdlt.atommodel.message;
 import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Result;
-import com.radixdlt.constraintmachine.OutputProcedure.OutputProcedureResult;
-import com.radixdlt.constraintmachine.OutputWitnessValidator.OutputWitnessValidatorResult;
+import com.radixdlt.constraintmachine.TransitionProcedure.ProcedureResult;
+import com.radixdlt.constraintmachine.VoidParticle;
+import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
 
 /**
  * Scrypt which defines the constraints on the message particle
@@ -32,12 +33,13 @@ public class MessageParticleConstraintScrypt implements ConstraintScrypt {
 			}
 		);
 
-		os.createOutputOnlyTransition(
+		os.createTransition(
+			VoidParticle.class,
 			MessageParticle.class,
-			out -> OutputProcedureResult.pop(),
-			(out, meta) -> meta.isSignedBy(out.getFrom().getKey())
-				? OutputWitnessValidatorResult.success()
-				: OutputWitnessValidatorResult.error("Message particle " + out + " not signed.")
+			(in, usedIn, out, usedOut) -> ProcedureResult.popOutput(null),
+			(res, in, out, meta) -> meta.isSignedBy(out.getFrom().getKey())
+				? WitnessValidatorResult.success()
+				: WitnessValidatorResult.error("Message particle " + out + " not signed.")
 		);
 	}
 }
