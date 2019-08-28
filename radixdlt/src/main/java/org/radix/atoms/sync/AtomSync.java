@@ -456,9 +456,12 @@ public class AtomSync extends Service
 					}
 
 					@Override
-					public void onCMError(SimpleRadixEngineAtom cmAtom, Set<CMError> errors) {
-						CMError cmError = errors.iterator().next();
-						ConstraintMachineValidationException e = new ConstraintMachineValidationException(cmAtom.getAtom(), cmError.getErrorDescription(), cmError.getDataPointer());
+					public void onCMError(SimpleRadixEngineAtom cmAtom, CMError error) {
+						ConstraintMachineValidationException e = new ConstraintMachineValidationException(
+							cmAtom.getAtom(),
+							error.getErrorDescription(),
+							error.getDataPointer()
+						);
 						atomsLog.error(e);
 						Events.getInstance().broadcast(new AtomExceptionEvent(e, (Atom) cmAtom.getAtom()));
 					}
@@ -1508,12 +1511,11 @@ public class AtomSync extends Service
 					Modules.get(ValidationHandler.class).getRadixEngine().store(cmAtom,
 						new AtomEventListener<SimpleRadixEngineAtom>() {
 							@Override
-							public void onCMError(SimpleRadixEngineAtom cmAtom, Set<CMError> errors) {
-								CMError cmError = errors.iterator().next();
-								log.fatal("Failed to process genesis Atom: " + cmError.getErrorCode() + " "
-									+ cmError.getErrMsg() + " " + cmError.getDataPointer() + "\n"
-									+ cmAtom.getAtom().getSpunParticle(cmError.getDataPointer()) + "\n"
-									+ cmError.getCmValidationState().toString());
+							public void onCMError(SimpleRadixEngineAtom cmAtom, CMError error) {
+								log.fatal("Failed to process genesis Atom: " + error.getErrorCode() + " "
+									+ error.getErrMsg() + " " + error.getDataPointer() + "\n"
+									+ cmAtom.getAtom() + "\n"
+									+ error.getCmValidationState().toString());
 								System.exit(-1);
 							}
 
