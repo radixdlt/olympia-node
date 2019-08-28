@@ -15,6 +15,11 @@ public final class TransitionToken<I extends Particle, N extends UsedData, O ext
 		Class<O> outputClass,
 		TypeToken<U> outputUsedClass
 	) {
+		if (!Objects.equals(inputUsedClass, TypeToken.of(VoidUsedData.class))
+			&& !Objects.equals(outputUsedClass, TypeToken.of(VoidUsedData.class))) {
+			throw new IllegalArgumentException("There must be atleast one VoidUsedData type.");
+		}
+
 		this.inputClass = Objects.requireNonNull(inputClass);
 		this.inputUsedClass = Objects.requireNonNull(inputUsedClass);
 		this.outputClass = Objects.requireNonNull(outputClass);

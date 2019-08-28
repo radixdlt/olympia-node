@@ -156,7 +156,7 @@ final class ConstraintScryptEnv implements SysCalls {
 			throw new IllegalStateException(particleClass + " must be registered with an RRI mapper.");
 		}
 
-		createTransitionInternal(
+		createTransition(
 			new TransitionToken<>(
 				RRIParticle.class,
 				TypeToken.of(VoidUsedData.class),
@@ -203,13 +203,10 @@ final class ConstraintScryptEnv implements SysCalls {
 		TransitionToken<I, N, O, U> transitionToken,
 		TransitionProcedure<I, N, O, U> procedure
 	) {
-		createTransitionInternal(transitionToken, procedure);
-	}
+		if (scryptTransitionProcedures.containsKey(transitionToken)) {
+			throw new IllegalStateException(transitionToken + " already created");
+		}
 
-	private <I extends Particle, N extends UsedData, O extends Particle, U extends UsedData> void createTransitionInternal(
-		TransitionToken<I, N, O, U> transitionToken,
-		TransitionProcedure<I, N, O, U> procedure
-	) {
 		final ParticleDefinition<Particle> inputDefinition = getParticleDefinition(transitionToken.getInputClass());
 		final ParticleDefinition<Particle> outputDefinition = getParticleDefinition(transitionToken.getOutputClass());
 
