@@ -1,6 +1,8 @@
 package com.radixdlt.atomos;
 
+import com.google.common.reflect.TypeToken;
 import com.radixdlt.constraintmachine.TransitionProcedure;
+import com.radixdlt.constraintmachine.VoidUsedData;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
 import java.util.function.Function;
 import org.junit.Test;
@@ -39,23 +41,27 @@ public class CMAtomOSTest {
 	@Test
 	public void when_adding_procedure_on_particle_registered_in_another_scrypt__exception_is_thrown() {
 		CMAtomOS os = new CMAtomOS();
-		TransitionProcedure<TestParticle0, TestParticle0> procedure = mock(TransitionProcedure.class);
+		TransitionProcedure<TestParticle0, VoidUsedData, TestParticle0, VoidUsedData> procedure = mock(TransitionProcedure.class);
 		os.load(syscalls -> {
 			syscalls.registerParticle(TestParticle0.class, (TestParticle0 p) -> mock(RadixAddress.class), t -> Result.success());
 			syscalls.createTransition(
 				TestParticle0.class,
+				TypeToken.of(VoidUsedData.class),
 				TestParticle0.class,
+				TypeToken.of(VoidUsedData.class),
 				procedure,
 				(res, in, out, meta) -> WitnessValidatorResult.success()
 			);
 		});
-		TransitionProcedure<TestParticle1, TestParticle0> procedure0 = mock(TransitionProcedure.class);
+		TransitionProcedure<TestParticle1, VoidUsedData, TestParticle0, VoidUsedData> procedure0 = mock(TransitionProcedure.class);
 		assertThatThrownBy(() ->
 			os.load(syscalls -> {
 				syscalls.registerParticle(TestParticle1.class, (TestParticle1 p) -> mock(RadixAddress.class), t -> Result.success());
 				syscalls.createTransition(
 					TestParticle1.class,
+					TypeToken.of(VoidUsedData.class),
 					TestParticle0.class,
+					TypeToken.of(VoidUsedData.class),
 					procedure0,
 					(res, in, out, meta) -> WitnessValidatorResult.success()
 				);

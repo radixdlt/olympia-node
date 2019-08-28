@@ -1,10 +1,12 @@
 package com.radixdlt.atommodel.tokens;
 
-import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
+import com.google.common.reflect.TypeToken;
+import com.radixdlt.atommodel.procedures.FungibleTransition.UsedAmount;
 import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atommodel.procedures.FungibleTransition;
+import com.radixdlt.constraintmachine.VoidUsedData;
 import com.radixdlt.constraintmachine.WitnessValidator;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.WitnessData;
@@ -90,67 +92,114 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			}
 		);
 
+		// Unallocated movement
+		FungibleTransition<UnallocatedTokensParticle, UnallocatedTokensParticle> unallocatedTransitions = new FungibleTransition<>(
+			UnallocatedTokensParticle::getAmount, UnallocatedTokensParticle::getAmount,
+			checkEquals(
+				UnallocatedTokensParticle::getGranularity,
+				UnallocatedTokensParticle::getGranularity,
+				"Granulaties not equal.",
+				UnallocatedTokensParticle::getTokenPermissions,
+				UnallocatedTokensParticle::getTokenPermissions,
+				"Permissions not equal."
+			)
+		);
+		createFungibleTransitions(
+			UnallocatedTokensParticle.class,
+			UnallocatedTokensParticle.class,
+			unallocatedTransitions,
+			checkInput((in, meta) -> meta.isSignedBy(in.getTokDefRef().getAddress().getKey())),
+			os
+		);
+		// Mint
+		FungibleTransition<UnallocatedTokensParticle, TransferrableTokensParticle> mintTransitions = new FungibleTransition<>(
+			UnallocatedTokensParticle::getAmount, TransferrableTokensParticle::getAmount,
+			checkEquals(
+				UnallocatedTokensParticle::getGranularity,
+				TransferrableTokensParticle::getGranularity,
+				"Granulaties not equal.",
+				UnallocatedTokensParticle::getTokenPermissions,
+				TransferrableTokensParticle::getTokenPermissions,
+				"Permissions not equal."
+			)
+		);
+		createFungibleTransitions(
+			UnallocatedTokensParticle.class,
+			TransferrableTokensParticle.class,
+			mintTransitions,
+			checkInput((in, meta) -> meta.isSignedBy(in.getTokDefRef().getAddress().getKey())),
+			os
+		);
+		// Transfers
+		FungibleTransition<TransferrableTokensParticle, TransferrableTokensParticle> transferTransitions = new FungibleTransition<>(
+			TransferrableTokensParticle::getAmount, TransferrableTokensParticle::getAmount,
+			checkEquals(
+				TransferrableTokensParticle::getGranularity,
+				TransferrableTokensParticle::getGranularity,
+				"Granulaties not equal.",
+				TransferrableTokensParticle::getTokenPermissions,
+				TransferrableTokensParticle::getTokenPermissions,
+				"Permissions not equal."
+			)
+		);
+		createFungibleTransitions(
+			TransferrableTokensParticle.class,
+			TransferrableTokensParticle.class,
+			transferTransitions,
+			checkInput((in, meta) -> meta.isSignedBy(in.getTokDefRef().getAddress().getKey())),
+			os
+		);
+		// Burns
+		FungibleTransition<TransferrableTokensParticle, UnallocatedTokensParticle> burnTransitions = new FungibleTransition<>(
+			TransferrableTokensParticle::getAmount, UnallocatedTokensParticle::getAmount,
+			checkEquals(
+				TransferrableTokensParticle::getGranularity,
+				UnallocatedTokensParticle::getGranularity,
+				"Granulaties not equal.",
+				TransferrableTokensParticle::getTokenPermissions,
+				UnallocatedTokensParticle::getTokenPermissions,
+				"Permissions not equal."
+			)
+		);
+		createFungibleTransitions(
+			TransferrableTokensParticle.class,
+			UnallocatedTokensParticle.class,
+			burnTransitions,
+			checkInput((in, meta) -> meta.isSignedBy(in.getTokDefRef().getAddress().getKey())),
+			os
+		);
+	}
 
-		// Define mint, transfer, burn transitions
+	private static <I extends Particle, O extends Particle> void createFungibleTransitions(
+		Class<I> inputClass,
+		Class<O> outputClass,
+		FungibleTransition<I, O> transition,
+		WitnessValidator<I, O> witnessValidator,
+		SysCalls os
+	) {
 		os.createTransition(
-			UnallocatedTokensParticle.class, UnallocatedTokensParticle.class,
-			new FungibleTransition<>(
-				UnallocatedTokensParticle::getAmount, UnallocatedTokensParticle::getAmount,
-				checkEquals(
-					UnallocatedTokensParticle::getGranularity,
-					UnallocatedTokensParticle::getGranularity,
-					"Granulaties not equal.",
-					UnallocatedTokensParticle::getTokenPermissions,
-					UnallocatedTokensParticle::getTokenPermissions,
-					"Permissions not equal."
-				)
-			),
-			checkInput((in, meta) -> meta.isSignedBy(in.getTokDefRef().getAddress().getKey()))
+			inputClass,
+			TypeToken.of(VoidUsedData.class),
+			outputClass,
+			TypeToken.of(VoidUsedData.class),
+			transition.getProcedure0(),
+			witnessValidator
 		);
 		os.createTransition(
-			UnallocatedTokensParticle.class, TransferrableTokensParticle.class,
-			new FungibleTransition<>(
-				UnallocatedTokensParticle::getAmount, TransferrableTokensParticle::getAmount,
-				checkEquals(
-					UnallocatedTokensParticle::getGranularity,
-					TransferrableTokensParticle::getGranularity,
-					"Granulaties not equal.",
-					UnallocatedTokensParticle::getTokenPermissions,
-					TransferrableTokensParticle::getTokenPermissions,
-					"Permissions not equal."
-				)
-			),
-			checkInput((u, meta) -> u.getTokenPermission(TokenTransition.MINT).check(u.getTokDefRef(), meta).isSuccess())
+			inputClass,
+			TypeToken.of(UsedAmount.class),
+			outputClass,
+			TypeToken.of(VoidUsedData.class),
+			transition.getProcedure1(),
+			witnessValidator
 		);
 		os.createTransition(
-			TransferrableTokensParticle.class, TransferrableTokensParticle.class,
-			new FungibleTransition<>(
-				TransferrableTokensParticle::getAmount, TransferrableTokensParticle::getAmount,
-				checkEquals(
-					TransferrableTokensParticle::getGranularity,
-					TransferrableTokensParticle::getGranularity,
-					"Granulaties not equal.",
-					TransferrableTokensParticle::getTokenPermissions,
-					TransferrableTokensParticle::getTokenPermissions,
-					"Permissions not equal."
-				)
-			),
-			checkInput((in, meta) -> meta.isSignedBy(in.getAddress().getKey()))
-		);
-		os.createTransition(
-			TransferrableTokensParticle.class, UnallocatedTokensParticle.class,
-			new FungibleTransition<>(
-				TransferrableTokensParticle::getAmount, UnallocatedTokensParticle::getAmount,
-				checkEquals(
-					TransferrableTokensParticle::getGranularity,
-					UnallocatedTokensParticle::getGranularity,
-					"Granulaties not equal.",
-					TransferrableTokensParticle::getTokenPermissions,
-					UnallocatedTokensParticle::getTokenPermissions,
-					"Permissions not equal."
-				)
-			),
-			checkInput((in, meta) -> in.getTokenPermission(TokenTransition.BURN).check(in.getTokDefRef(), meta).isSuccess())
+			inputClass,
+			TypeToken.of(VoidUsedData.class),
+			outputClass,
+			TypeToken.of(UsedAmount.class),
+			transition.getProcedure2(),
+			witnessValidator
 		);
 	}
 

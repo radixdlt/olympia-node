@@ -1,5 +1,6 @@
 package com.radixdlt.constraintmachine;
 
+import com.google.common.reflect.TypeToken;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.common.EUID;
 import com.radixdlt.constraintmachine.TransitionProcedure.ProcedureResult;
@@ -21,7 +22,7 @@ import java.util.function.Function;
 public final class ConstraintMachine {
 	public static class Builder {
 		private Function<Particle, Result> particleStaticCheck;
-		private Function<TransitionId, TransitionProcedure<Particle, Particle>> particleProcedures;
+		private Function<TransitionLiteral, TransitionProcedure<Particle, UsedData, Particle, UsedData>> particleProcedures;
 		private BiFunction<Particle, Particle, WitnessValidator<Particle, Particle>> witnessValidators;
 
 		public Builder setParticleStaticCheck(Function<Particle, Result> particleStaticCheck) {
@@ -29,7 +30,9 @@ public final class ConstraintMachine {
 			return this;
 		}
 
-		public Builder setParticleProcedures(Function<TransitionId, TransitionProcedure<Particle, Particle>> particleProcedures) {
+		public Builder setParticleProcedures(
+			Function<TransitionLiteral, TransitionProcedure<Particle, UsedData, Particle, UsedData>> particleProcedures
+		) {
 			this.particleProcedures = particleProcedures;
 			return this;
 		}
@@ -50,12 +53,12 @@ public final class ConstraintMachine {
 	}
 
 	private final Function<Particle, Result> particleStaticCheck;
-	private final Function<TransitionId, TransitionProcedure<Particle, Particle>> particleProcedures;
+	private final Function<TransitionLiteral, TransitionProcedure<Particle, UsedData, Particle, UsedData>> particleProcedures;
 	private final BiFunction<Particle, Particle, WitnessValidator<Particle, Particle>> witnessValidators;
 
 	ConstraintMachine(
 		Function<Particle, Result> particleStaticCheck,
-		Function<TransitionId, TransitionProcedure<Particle, Particle>> particleProcedures,
+		Function<TransitionLiteral, TransitionProcedure<Particle, UsedData, Particle, UsedData>> particleProcedures,
 		BiFunction<Particle, Particle, WitnessValidator<Particle, Particle>> witnessValidators
 	) {
 		this.particleStaticCheck = particleStaticCheck;
@@ -63,10 +66,10 @@ public final class ConstraintMachine {
 		this.witnessValidators = witnessValidators;
 	}
 
-	static final class CMValidationState {
+	public static final class CMValidationState {
 		private Particle particleRemaining = null;
 		private boolean particleRemainingIsInput;
-		private Object particleRemainingUsed = null;
+		private UsedData particleRemainingUsed = null;
 		private final Map<Particle, Spin> currentSpins;
 		private final Hash witness;
 		private final Map<EUID, ECSignature> signatures;
@@ -115,11 +118,21 @@ public final class ConstraintMachine {
 			return particleRemaining != null && nextIsInput == particleRemainingIsInput;
 		}
 
-		Object getInputUsed() {
+		TypeToken<? extends UsedData> getInputUsedType() {
+			return particleRemaining != null && particleRemainingIsInput && particleRemainingUsed != null
+				? particleRemainingUsed.getTypeToken() : TypeToken.of(VoidUsedData.class);
+		}
+
+		TypeToken<? extends UsedData> getOutputUsedType() {
+			return particleRemaining != null && !particleRemainingIsInput && particleRemainingUsed != null
+				? particleRemainingUsed.getTypeToken() : TypeToken.of(VoidUsedData.class);
+		}
+
+		UsedData getInputUsed() {
 			return particleRemaining != null && particleRemainingIsInput ? particleRemainingUsed : null;
 		}
 
-		Object getOutputUsed() {
+		UsedData getOutputUsed() {
 			return particleRemaining != null && !particleRemainingIsInput ? particleRemainingUsed : null;
 		}
 
@@ -128,18 +141,28 @@ public final class ConstraintMachine {
 			this.particleRemainingUsed = null;
 		}
 
-		void popAndReplace(Particle particle, boolean isInput, Object particleRemainingUsed) {
+		void popAndReplace(Particle particle, boolean isInput, UsedData particleRemainingUsed) {
 			this.particleRemaining = particle;
 			this.particleRemainingIsInput = isInput;
 			this.particleRemainingUsed = particleRemainingUsed;
 		}
 
-		void updateUsed(Object particleRemainingUsed) {
+		void updateUsed(UsedData particleRemainingUsed) {
 			this.particleRemainingUsed = particleRemainingUsed;
 		}
 
 		boolean isEmpty() {
 			return this.particleRemaining == null;
+		}
+
+		@Override
+		public String toString() {
+			if (particleRemaining != null) {
+				return "Remaining (" + (this.particleRemainingIsInput ? "input" : "output") + "): " + this.particleRemaining + "\n"
+					+ "Used: " + this.particleRemainingUsed;
+			} else {
+				return "Remaining: " + "[empty]";
+			}
 		}
 	}
 
@@ -165,13 +188,14 @@ public final class ConstraintMachine {
 
 		final Particle inputParticle = isInput ? nextParticle : curParticle;
 		final Particle outputParticle = isInput ? curParticle : nextParticle;
-		final TransitionId transitionId = new TransitionId(
+		final TransitionLiteral transitionLiteral = new TransitionLiteral(
 			inputParticle != null ? inputParticle.getClass() : VoidParticle.class,
-			null,
+			validationState.getInputUsedType(),
 			outputParticle != null ? outputParticle.getClass() : VoidParticle.class,
-			null
+			validationState.getOutputUsedType()
 		);
-		final TransitionProcedure<Particle, Particle> transitionProcedure = this.particleProcedures.apply(transitionId);
+
+		final TransitionProcedure<Particle, UsedData, Particle, UsedData> transitionProcedure = this.particleProcedures.apply(transitionLiteral);
 
 		if (transitionProcedure == null) {
 			if (inputParticle == null || outputParticle == null) {

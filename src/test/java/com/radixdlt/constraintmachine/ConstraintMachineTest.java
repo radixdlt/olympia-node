@@ -17,9 +17,9 @@ public class ConstraintMachineTest {
 
 	@Test
 	public void when_validating_a_2_input_1_output_particle_group_which_pops_1_input_first__validation_should_succeed() {
-		TransitionProcedure<Particle, Particle> procedure = mock(TransitionProcedure.class);
+		TransitionProcedure<Particle, UsedData, Particle, UsedData> procedure = mock(TransitionProcedure.class);
 		when(procedure.execute(any(), any(), any(), any()))
-			.thenReturn(ProcedureResult.popInput(new Object()))
+			.thenReturn(ProcedureResult.popInput(null))
 			.thenReturn(ProcedureResult.popInputOutput());
 
 		ConstraintMachine machine = new ConstraintMachine.Builder()
@@ -34,7 +34,7 @@ public class ConstraintMachineTest {
 		CMValidationState validationState = new CMValidationState(null, null);
 		validationState.checkSpin(particle0, Spin.UP);
 		validationState.checkSpin(particle1, Spin.UP);
-		validationState.checkSpin(particle2, Spin.UP);
+		validationState.checkSpin(particle2, Spin.NEUTRAL);
 
 		Optional<CMError> errors = machine.validateMicroInstructions(validationState,
 			ImmutableList.of(

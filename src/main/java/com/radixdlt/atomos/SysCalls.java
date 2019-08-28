@@ -1,7 +1,9 @@
 package com.radixdlt.atomos;
 
+import com.google.common.reflect.TypeToken;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.TransitionProcedure;
+import com.radixdlt.constraintmachine.UsedData;
 import com.radixdlt.constraintmachine.WitnessValidator;
 import java.util.Set;
 import java.util.function.BiFunction;
@@ -69,14 +71,16 @@ public interface SysCalls {
 	 * @param outputClass class of the output particle
 	 * @param procedure procedure which gets executed on the constraint machine
 	 * @param witnessValidator validation which defines who can execute this transition
-	 * @param <T> input particle type
+	 * @param <I> input particle type
 	 * @param <U> output particle type
 	 */
-	<T extends Particle, U extends Particle> void createTransition(
-		Class<T> inputClass,
-		Class<U> outputClass,
-		TransitionProcedure<T, U> procedure,
-		WitnessValidator<T, U> witnessValidator
+	<I extends Particle, N extends UsedData, O extends Particle, U extends UsedData> void createTransition(
+		Class<I> inputClass,
+		TypeToken<N> inputUsedClass,
+		Class<O> outputClass,
+		TypeToken<U> outputUsedClass,
+		TransitionProcedure<I, N, O, U> procedure,
+		WitnessValidator<I, O> witnessValidator
 	);
 
 	/**

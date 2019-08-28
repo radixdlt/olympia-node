@@ -3,24 +3,24 @@ package com.radixdlt.constraintmachine;
 /**
  * Application level "Bytecode" to be run per particle in the Constraint machine
  */
-public interface TransitionProcedure<T extends Particle, U extends Particle> {
+public interface TransitionProcedure<I extends Particle, N extends UsedData, O extends Particle, U extends UsedData> {
 
 	final class ProcedureResult {
 		private final CMAction cmAction;
-		private final Object used;
+		private final UsedData used;
 		private final String errorMessage;
 
-		private ProcedureResult(CMAction cmAction, Object used, String errorMessage) {
+		private ProcedureResult(CMAction cmAction, UsedData used, String errorMessage) {
 			this.cmAction = cmAction;
 			this.used = used;
 			this.errorMessage = errorMessage;
 		}
 
-		public static ProcedureResult popInput(Object outputUsed) {
+		public static ProcedureResult popInput(UsedData outputUsed) {
 			return new ProcedureResult(CMAction.POP_INPUT, outputUsed, null);
 		}
 
-		public static ProcedureResult popOutput(Object inputUsed) {
+		public static ProcedureResult popOutput(UsedData inputUsed) {
 			return new ProcedureResult(CMAction.POP_OUTPUT, inputUsed, null);
 		}
 
@@ -40,13 +40,13 @@ public interface TransitionProcedure<T extends Particle, U extends Particle> {
 			return cmAction;
 		}
 
-		public Object getUsed() {
+		public UsedData getUsed() {
 			return used;
 		}
 	}
 
 	ProcedureResult execute(
-		T inputParticle, Object inputUsed,
-		U outputParticle, Object outputUsed
+		I inputParticle, N inputUsed,
+		O outputParticle, U outputUsed
 	);
 }

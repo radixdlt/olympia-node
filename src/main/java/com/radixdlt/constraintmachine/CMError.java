@@ -50,6 +50,10 @@ public final class CMError {
 		return errorCode.getDescription() + (errMsg == null ? "" : ": " + errMsg);
 	}
 
+	public CMValidationState getCmValidationState() {
+		return cmValidationState;
+	}
+
 	@Override
 	public int hashCode() {
 		return Objects.hash(errMsg, dataPointer, errorCode, cmValidationState);
