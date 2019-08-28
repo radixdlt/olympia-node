@@ -2,7 +2,6 @@ package com.radixdlt.engine;
 
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.constraintmachine.CMError;
-import java.util.Set;
 
 /**
  * Listener for atom events as they go through the Radix Engine pipeline.
@@ -11,7 +10,7 @@ public interface AtomEventListener<T extends RadixEngineAtom> {
 	default void onCMSuccess(T cmAtom) {
 	}
 
-	default void onCMError(T cmAtom, Set<CMError> errors) {
+	default void onCMError(T cmAtom, CMError error) {
 	}
 
 	default void onStateStore(T cmAtom) {

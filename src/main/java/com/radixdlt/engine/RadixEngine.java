@@ -1,6 +1,5 @@
 package com.radixdlt.engine;
 
-import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.constraintmachine.Particle;
@@ -117,8 +116,8 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 
 		final Optional<CMError> error = constraintMachine.validate(cmAtom.getCMInstruction());
 		if (error.isPresent()) {
-			atomEventListener.onCMError(cmAtom, ImmutableSet.of(error.get()));
-			this.atomEventListeners.forEach(acceptor -> acceptor.onCMError(cmAtom, ImmutableSet.of(error.get())));
+			atomEventListener.onCMError(cmAtom, error.get());
+			this.atomEventListeners.forEach(acceptor -> acceptor.onCMError(cmAtom, error.get()));
 			return;
 		}
 
@@ -126,8 +125,8 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 			Result hookResult = hook.hook(cmAtom);
 			if (hookResult.isError()) {
 				CMError cmError = new CMError(DataPointer.ofAtom(), CMErrorCode.HOOK_ERROR, null, hookResult.getErrorMessage());
-				atomEventListener.onCMError(cmAtom, ImmutableSet.of(cmError));
-				this.atomEventListeners.forEach(acceptor -> acceptor.onCMError(cmAtom, ImmutableSet.of(cmError)));
+				atomEventListener.onCMError(cmAtom, cmError);
+				this.atomEventListeners.forEach(acceptor -> acceptor.onCMError(cmAtom, cmError));
 				return;
 			}
 		}
