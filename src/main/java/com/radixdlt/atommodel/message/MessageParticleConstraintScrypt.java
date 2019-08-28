@@ -5,6 +5,7 @@ import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.TransitionProcedure.ProcedureResult;
+import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.VoidParticle;
 import com.radixdlt.constraintmachine.VoidUsedData;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
@@ -36,12 +37,14 @@ public class MessageParticleConstraintScrypt implements ConstraintScrypt {
 		);
 
 		os.createTransition(
-			VoidParticle.class,
-			TypeToken.of(VoidUsedData.class),
-			MessageParticle.class,
-			TypeToken.of(VoidUsedData.class),
+			new TransitionToken<>(
+				VoidParticle.class,
+				TypeToken.of(VoidUsedData.class),
+				MessageParticle.class,
+				TypeToken.of(VoidUsedData.class)
+			),
 			(in, usedIn, out, usedOut) -> ProcedureResult.popOutput(null, (msg, meta) ->
-				meta.isSignedBy(((MessageParticle) msg).getFrom().getKey())
+				meta.isSignedBy(msg.getFrom().getKey())
 					? WitnessValidatorResult.success()
 					: WitnessValidatorResult.error("Message particle " + msg + " not signed.")
 			)

@@ -3,22 +3,38 @@ package com.radixdlt.constraintmachine;
 import com.google.common.reflect.TypeToken;
 import java.util.Objects;
 
-public final class TransitionToken {
-	private final Class<? extends Particle> inputClass;
-	private final TypeToken<? extends UsedData> inputUsedClass;
-	private final Class<? extends Particle> outputClass;
-	private final TypeToken<? extends UsedData> outputUsedClass;
+public final class TransitionToken<I extends Particle, N extends UsedData, O extends Particle, U extends UsedData> {
+	private final Class<I> inputClass;
+	private final TypeToken<N> inputUsedClass;
+	private final Class<O> outputClass;
+	private final TypeToken<U> outputUsedClass;
 
 	public TransitionToken(
-		Class<? extends Particle> inputClass,
-		TypeToken<? extends UsedData> inputUsedClass,
-		Class<? extends Particle> outputClass,
-		TypeToken<? extends UsedData> outputUsedClass
+		Class<I> inputClass,
+		TypeToken<N> inputUsedClass,
+		Class<O> outputClass,
+		TypeToken<U> outputUsedClass
 	) {
-		this.inputClass = inputClass;
-		this.inputUsedClass = inputUsedClass;
-		this.outputClass = outputClass;
-		this.outputUsedClass = outputUsedClass;
+		this.inputClass = Objects.requireNonNull(inputClass);
+		this.inputUsedClass = Objects.requireNonNull(inputUsedClass);
+		this.outputClass = Objects.requireNonNull(outputClass);
+		this.outputUsedClass = Objects.requireNonNull(outputUsedClass);
+	}
+
+	public Class<I> getInputClass() {
+		return inputClass;
+	}
+
+	public Class<O> getOutputClass() {
+		return outputClass;
+	}
+
+	public TypeToken<N> getInputUsedClass() {
+		return inputUsedClass;
+	}
+
+	public TypeToken<U> getOutputUsedClass() {
+		return outputUsedClass;
 	}
 
 	@Override

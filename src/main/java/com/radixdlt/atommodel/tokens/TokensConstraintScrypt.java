@@ -7,6 +7,7 @@ import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atommodel.procedures.FungibleTransition;
+import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.VoidUsedData;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
@@ -179,24 +180,30 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 		SysCalls os
 	) {
 		os.createTransition(
-			inputClass,
-			TypeToken.of(VoidUsedData.class),
-			outputClass,
-			TypeToken.of(VoidUsedData.class),
+			new TransitionToken<>(
+				inputClass,
+				TypeToken.of(VoidUsedData.class),
+				outputClass,
+				TypeToken.of(VoidUsedData.class)
+			),
 			transition.getProcedure0()
 		);
 		os.createTransition(
-			inputClass,
-			TypeToken.of(UsedAmount.class),
-			outputClass,
-			TypeToken.of(VoidUsedData.class),
+			new TransitionToken<>(
+				inputClass,
+				TypeToken.of(UsedAmount.class),
+				outputClass,
+				TypeToken.of(VoidUsedData.class)
+			),
 			transition.getProcedure1()
 		);
 		os.createTransition(
-			inputClass,
-			TypeToken.of(VoidUsedData.class),
-			outputClass,
-			TypeToken.of(UsedAmount.class),
+			new TransitionToken<>(
+				inputClass,
+				TypeToken.of(VoidUsedData.class),
+				outputClass,
+				TypeToken.of(UsedAmount.class)
+			),
 			transition.getProcedure2()
 		);
 	}

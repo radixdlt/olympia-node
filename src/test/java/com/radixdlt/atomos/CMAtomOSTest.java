@@ -2,6 +2,7 @@ package com.radixdlt.atomos;
 
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.constraintmachine.TransitionProcedure;
+import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.VoidUsedData;
 import java.util.function.Function;
 import org.junit.Test;
@@ -44,10 +45,12 @@ public class CMAtomOSTest {
 		os.load(syscalls -> {
 			syscalls.registerParticle(TestParticle0.class, (TestParticle0 p) -> mock(RadixAddress.class), t -> Result.success());
 			syscalls.createTransition(
-				TestParticle0.class,
-				TypeToken.of(VoidUsedData.class),
-				TestParticle0.class,
-				TypeToken.of(VoidUsedData.class),
+				new TransitionToken<>(
+					TestParticle0.class,
+					TypeToken.of(VoidUsedData.class),
+					TestParticle0.class,
+					TypeToken.of(VoidUsedData.class)
+				),
 				procedure
 			);
 		});
@@ -56,10 +59,12 @@ public class CMAtomOSTest {
 			os.load(syscalls -> {
 				syscalls.registerParticle(TestParticle1.class, (TestParticle1 p) -> mock(RadixAddress.class), t -> Result.success());
 				syscalls.createTransition(
-					TestParticle1.class,
-					TypeToken.of(VoidUsedData.class),
-					TestParticle0.class,
-					TypeToken.of(VoidUsedData.class),
+					new TransitionToken<>(
+						TestParticle1.class,
+						TypeToken.of(VoidUsedData.class),
+						TestParticle0.class,
+						TypeToken.of(VoidUsedData.class)
+					),
 					procedure0
 				);
 			})
