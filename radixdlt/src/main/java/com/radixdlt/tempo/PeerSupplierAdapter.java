@@ -40,7 +40,7 @@ public class PeerSupplierAdapter implements PeerSupplier {
 	@Override
 	public Optional<Peer> getPeer(EUID nid) {
 		try {
-			return Optional.of(peerHandlerSupplier.get().getPeer(PeerHandler.PeerDomain.NETWORK, nid));
+			return Optional.ofNullable(peerHandlerSupplier.get().getPeer(PeerHandler.PeerDomain.NETWORK, nid));
 		} catch (DatabaseException e) {
 			throw new TempoException("Error while getting peers", e);
 		}

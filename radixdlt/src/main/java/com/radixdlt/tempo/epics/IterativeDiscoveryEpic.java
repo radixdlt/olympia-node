@@ -31,11 +31,9 @@ import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.modules.Modules;
 import org.radix.network.peers.Peer;
-import org.radix.shards.ShardSpace;
 
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 @SuppressWarnings("unchecked") // TODO remove warning for varargs
