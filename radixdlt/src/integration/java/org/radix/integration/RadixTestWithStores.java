@@ -2,7 +2,6 @@ package org.radix.integration;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.tempo.Tempo;
-import com.radixdlt.tempo.TempoController;
 import com.radixdlt.tempo.PeerSupplier;
 import com.radixdlt.tempo.AtomSyncView;
 import com.radixdlt.tempo.EdgeSelector;
