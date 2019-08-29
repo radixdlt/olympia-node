@@ -43,9 +43,9 @@ import org.radix.mass.NodeMassStore;
 import org.radix.modules.Modules;
 import org.radix.modules.Service;
 import org.radix.modules.exceptions.ModuleException;
-import org.radix.network.peers.filters.PeerFilter;
 import org.radix.network2.addressbook.AddressBook;
 import org.radix.network2.addressbook.Peer;
+import org.radix.network2.addressbook.StandardFilters;
 import org.radix.network2.messaging.MessageCentral;
 import org.radix.network2.transport.TransportException;
 import org.radix.properties.RuntimeProperties;
@@ -479,7 +479,8 @@ public class ParticleConflictHandler extends Service
 					this.assistRequests.put(conflict.getUID(), new HashSet<EUID>());
 
 				List<Peer> livePeers = Modules.get(AddressBook.class).recentPeers()
-					.filter(p -> !PeerFilter.getInstance().filter(p)).collect(Collectors.toList());
+					.filter(StandardFilters.standardFilter())
+					.collect(Collectors.toList());
 				if (livePeers.isEmpty() == true)
 				{
 					conflictsLog.debug(conflict.getUID()+": No peer connections are currently available");
@@ -505,8 +506,8 @@ public class ParticleConflictHandler extends Service
 				conflictsLog.debug(conflict.getUID()+": Collected "+assistNIDs.size()+" NIDs for assist request");
 
 				List<Peer> assistPeers = Modules.get(AddressBook.class).recentPeers()
-					.filter(p -> !PeerFilter.getInstance().filter(p))
-					.filter(p -> p.hasNID() && assistNIDs.contains(p.getNID()))
+					.filter(StandardFilters.standardFilter())
+					.filter(StandardFilters.oneOf(assistNIDs))
 					.collect(Collectors.toList());
 				Collections.shuffle(assistPeers);
 				if (assistPeers.isEmpty() == true)

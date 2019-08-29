@@ -18,15 +18,17 @@ import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.modules.Modules;
 import org.radix.modules.Service;
-import org.radix.network.peers.filters.PeerFilter;
 import org.radix.network2.addressbook.AddressBook;
 import org.radix.network2.addressbook.Peer;
+import org.radix.network2.addressbook.StandardFilters;
 import org.radix.network2.messaging.MessageCentral;
 import org.radix.properties.RuntimeProperties;
 import org.radix.time.LogicalClock;
 import org.radix.time.NtpService;
 import org.radix.time.RTP.messages.RTPMessage;
 import org.radix.universe.system.LocalSystem;
+
+import com.google.common.collect.ImmutableList;
 
 import static java.lang.Math.max;
 import static java.lang.Math.abs;
@@ -363,15 +365,14 @@ public final class RTPService extends Service
 
     private List<Peer> getPeersGroup()
     {
-        List<Peer> raw_peers = new ArrayList<>();
+        final List<Peer> raw_peers;
         if (Modules.isAvailable(AddressBook.class)) {
-        	PeerFilter filter = PeerFilter.getInstance();
-        	Modules.get(AddressBook.class).recentPeers()
-        	.filter(p -> !filter.filter(p))
-        	.filter(p -> !p.getNID().equals(LocalSystem.getInstance().getNID()))
-        	.forEachOrdered(raw_peers::add);
+        	raw_peers = Modules.get(AddressBook.class).recentPeers()
+        		.filter(StandardFilters.standardFilter())
+        		.collect(ImmutableList.toImmutableList());
         } else {
     		rtp.error("AddressBook not yet available");
+    		raw_peers = ImmutableList.of();
         }
 
 		numberOfPeers = raw_peers.size();

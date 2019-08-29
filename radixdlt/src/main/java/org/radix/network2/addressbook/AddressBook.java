@@ -44,7 +44,14 @@ public interface AddressBook {
 	 */
 	boolean updatePeer(Peer peer);
 
-	// FIXME: Document
+	/**
+	 * Updates a peer's {@link RadixSystem} in the address book.
+	 * <p>
+	 * This method is thread-safe.
+	 *
+	 * @param peer The peer to update the system for
+	 * @return the updated peer
+	 */
 	Peer updatePeerSystem(Peer peer, RadixSystem system);
 
 	/**
@@ -89,6 +96,5 @@ public interface AddressBook {
 	 * @return A {@link Stream} of {@link Peer} objects
 	 */
 	Stream<Peer> recentPeers();
-
 
 }

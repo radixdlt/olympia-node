@@ -19,9 +19,9 @@ import org.radix.logging.Logging;
 import org.radix.modules.Modules;
 import org.radix.network.Network;
 import org.radix.network.SSLFix;
-import org.radix.network.peers.filters.PeerFilter;
 import org.radix.network2.addressbook.AddressBook;
 import org.radix.network2.addressbook.Peer;
+import org.radix.network2.addressbook.PeerPredicate;
 import org.radix.network2.transport.StaticTransportMetadata;
 import org.radix.network2.transport.TransportInfo;
 import org.radix.network2.transport.udp.UDPConstants;
@@ -208,7 +208,7 @@ public class BootstrapDiscovery
 		}
 	}
 
-	public Collection<TransportInfo> discover(PeerFilter filter)
+	public Collection<TransportInfo> discover(PeerPredicate filter)
 	{
 		List<TransportInfo> results = Lists.newArrayList();
 
@@ -219,7 +219,7 @@ public class BootstrapDiscovery
 				} else {
 					Peer peer = Modules.get(AddressBook.class).peer(host);
 
-					if (peer != null && !filter.filter(peer)) {
+					if (peer != null && filter.test(peer)) {
 						results.add(host);
 					}
 				}

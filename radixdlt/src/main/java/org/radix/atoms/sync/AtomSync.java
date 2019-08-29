@@ -101,13 +101,13 @@ import org.radix.modules.Service;
 import org.radix.modules.exceptions.ModuleException;
 import org.radix.network.discovery.SyncDiscovery;
 import org.radix.network.peers.PeerTask;
-import org.radix.network.peers.filters.TCPPeerFilter;
 import org.radix.network2.messaging.MessageCentral;
 import org.radix.network2.transport.TransportException;
 import org.radix.network2.addressbook.AddressBook;
 import org.radix.network2.addressbook.AddressBookEvent;
 import org.radix.network2.addressbook.Peer;
 import org.radix.network2.addressbook.PeersRemovedEvent;
+import org.radix.network2.addressbook.StandardFilters;
 import org.radix.properties.RuntimeProperties;
 import org.radix.routing.NodeAddressGroupTable;
 
@@ -1339,7 +1339,8 @@ public class AtomSync extends Service
 			public void execute()
 			{
 				// Get our preferred neighbour nodes to open TCP connections too
-				Collection<Peer> discovered = SyncDiscovery.getInstance().discover(new TCPPeerFilter());
+				Collection<Peer> discovered = SyncDiscovery.getInstance()
+					.discover(StandardFilters.standardFilter().and(StandardFilters.hasOverlappingShards()));
 
 				synchronized(AtomSync.this.syncPeers)
 				{

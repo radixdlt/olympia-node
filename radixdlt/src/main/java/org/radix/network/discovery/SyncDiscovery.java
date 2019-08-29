@@ -14,10 +14,10 @@ import org.radix.logging.Logging;
 import org.radix.modules.Modules;
 import org.radix.universe.system.LocalSystem;
 import org.radix.utils.MathUtils;
-import org.radix.network.peers.filters.PeerFilter;
-import org.radix.network.peers.filters.UDPPeerFilter;
 import org.radix.network2.addressbook.AddressBook;
 import org.radix.network2.addressbook.Peer;
+import org.radix.network2.addressbook.PeerPredicate;
+import org.radix.network2.addressbook.StandardFilters;
 
 /**
  * Discovers peers which the local node will hold TCP connections with for the purpose of synchronisation.
@@ -69,7 +69,7 @@ public class SyncDiscovery
 	{
 	}
 
-	public Collection<Peer> discover(PeerFilter filter)
+	public Collection<Peer> discover(PeerPredicate filter)
 	{
 		List<Peer> results = new ArrayList<>();
 
@@ -78,10 +78,10 @@ public class SyncDiscovery
 			// Handle running without PeerHandler/test conditions a little better
 			final List<Peer> peers;
 			if (Modules.isAvailable(AddressBook.class)) {
-				UDPPeerFilter udpFilter = new UDPPeerFilter();
 				SyncPeerDistanceComparator comparator = new SyncPeerDistanceComparator(LocalSystem.getInstance().getNID());
 				peers = Modules.get(AddressBook.class).recentPeers()
-					.filter(p -> !udpFilter.filter(p))
+					.filter(StandardFilters.standardFilter())
+					.filter(StandardFilters.hasOverlappingShards())
 					.sorted(comparator)
 					.collect(Collectors.toList());
 			} else {
@@ -91,9 +91,10 @@ public class SyncDiscovery
 				return results;
 
 			List<Peer> candidatePeers = new ArrayList<Peer>();
-			for (Peer peer : peers)
-				if (filter == null || !filter.filter(peer))
+			for (Peer peer : peers) {
+				if (filter == null || filter.test(peer))
 					candidatePeers.add(peer);
+			}
 
 			int shardRedundancy = Math.max(3, MathUtils.log2(peers.size()));
 			long remainingCoverage = LocalSystem.getInstance().getShards().getRange().getSpan();

@@ -2,17 +2,11 @@ package org.radix.network2.addressbook;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Random;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.google.common.collect.ImmutableList;
@@ -21,8 +15,6 @@ import com.radixdlt.common.EUID;
 import com.radixdlt.common.Pair;
 
 import org.radix.database.DatabaseEnvironment;
-import org.radix.common.executors.Executor;
-import org.radix.common.executors.ScheduledExecutable;
 import org.radix.database.DatabaseStore;
 import org.radix.events.Events;
 import org.radix.logging.Logger;
@@ -32,32 +24,14 @@ import org.radix.modules.exceptions.ModuleException;
 import org.radix.modules.exceptions.ModuleResetException;
 import org.radix.modules.exceptions.ModuleStartException;
 import org.radix.network.Network;
-import org.radix.network.discovery.BootstrapDiscovery;
-import org.radix.network.messages.GetPeersMessage;
-import org.radix.network.messages.PeerPingMessage;
-import org.radix.network.messages.PeerPongMessage;
-import org.radix.network.messages.PeersMessage;
-import org.radix.network.peers.PeerTask;
-import org.radix.network.peers.events.PeerAvailableEvent;
-import org.radix.network.peers.filters.PeerBroadcastFilter;
-import org.radix.network.peers.filters.PeerFilter;
-import org.radix.network2.messaging.MessageCentral;
-import org.radix.network2.transport.TransportException;
 import org.radix.network2.transport.TransportInfo;
 import org.radix.network2.utils.Locking;
-import org.radix.properties.RuntimeProperties;
 import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.universe.Universe;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
 
-import org.radix.time.NtpService;
-import org.radix.time.Time;
 import org.radix.time.Timestamps;
-import org.radix.universe.system.LocalSystem;
 import org.radix.universe.system.RadixSystem;
-import org.radix.universe.system.SystemMessage;
-
 import com.sleepycat.je.Cursor;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
@@ -72,89 +46,17 @@ import com.sleepycat.je.TransactionConfig;
 public class AddressBookImpl extends DatabaseStore implements AddressBook {
 	private static final Logger log = Logging.getLogger("addressbook");
 
-	private static final long PROBE_TIMEOUT_SECONDS = 20;
-
-	private final Random rand = new Random(); // No need for cryptographically secure here
 	private final Serialization serialization;
 
 	private final Lock peersLock = new ReentrantLock();
 	private final Map<EUID, Peer>          peersByNid  = new HashMap<>();
 	private final Map<TransportInfo, Peer> peersByInfo = new HashMap<>();
 
-	private final Map<Peer, Long> probes = new HashMap<>(); // TODO can convert to simpler Map<EUID, Long>?
-
 	private Database peersByNidDB;
 
-	private final long inactivityLimitMs;
-	private final int peersBroadcastIntervalSec;
-	private final int peersProbeIntervalSec;
-	private final long peerProbeDelayMs;
-
-
-	private class ProbeTask implements Runnable {
-		private LinkedList<Peer> peersToProbe = new LinkedList<>();
-		private int numPeers = 0;
-
-		@Override
-		public void run() {
-			try {
-				int numProbes = (int) (this.numPeers / TimeUnit.MILLISECONDS.toSeconds(Modules.get(Universe.class).getPlanck()));
-
-				if (numProbes == 0) {
-					numProbes = 16;
-				}
-
-				if (peersToProbe.isEmpty()) {
-					PeerFilter filter = new PeerFilter();
-					peers()
-						.filter(p -> !filter.filter(p))
-						.forEachOrdered(peersToProbe::add);
-					this.numPeers = Math.max(this.numPeers, peersToProbe.size());
-				}
-
-				numProbes = Math.min(numProbes, peersToProbe.size());
-				if (numProbes > 0) {
-					List<Peer> toProbe = peersToProbe.subList(0, numProbes);
-					toProbe.forEach(AddressBookImpl.this::probe);
-					toProbe.clear();
-				}
-			} catch (Exception ex) {
-				log.error("Peer probing failed", ex);
-			}
-		}
-	}
-
-	private class ProbeTimeout extends PeerTask {
-		private final long nonce;
-
-		ProbeTimeout(final Peer peer, final long nonce, long delay, TimeUnit unit) {
-			super(peer, delay, unit);
-			this.nonce = nonce;
-		}
-
-		@Override
-		public void execute() {
-			synchronized(AddressBookImpl.this.probes) {
-				if (AddressBookImpl.this.probes.containsKey(getPeer()) && AddressBookImpl.this.probes.get(getPeer()).longValue() == this.nonce) {
-					log.info("Removing peer " + getPeer() + " because of probe timeout");
-					AddressBookImpl.this.probes.remove(getPeer());
-					removePeer(getPeer());
-				}
-			}
-		}
-	}
-
-	public AddressBookImpl(Serialization serialization) {
+	AddressBookImpl(Serialization serialization) {
 		super();
-
 		this.serialization = Objects.requireNonNull(serialization);
-		this.inactivityLimitMs = TimeUnit.SECONDS.toMillis(Modules.get(RuntimeProperties.class).get("network.peer.inactivity", 60));
-		this.peersBroadcastIntervalSec = Modules.get(RuntimeProperties.class).get("network.peers.broadcast.interval", 30);
-		this.peersProbeIntervalSec = Modules.get(RuntimeProperties.class).get("network.peers.probe.interval", 1);
-		this.peerProbeDelayMs = TimeUnit.SECONDS.toMillis(Modules.get(RuntimeProperties.class).get("network.peer.probe.delay", 30));
-
-		log.info(String.format("%s started, inactivityLimit=%s, broadcastInterval=%s, probeInterval=%s, probeDelay=%s",
-			this.getClass().getSimpleName(), this.inactivityLimitMs / 1000L, this.peersBroadcastIntervalSec, this.peersProbeIntervalSec, this.peerProbeDelayMs / 1000L));
 	}
 
 	@Override
@@ -176,19 +78,6 @@ public class AddressBookImpl extends DatabaseStore implements AddressBook {
 		} catch (Exception ex) {
 			throw new ModuleStartException(ex, this);
 		}
-
-		// Listen for messages
-		register(PeersMessage.class, this::handlePeersMessage);
-		register(GetPeersMessage.class, this::handleGetPeersMessage);
-		register(PeerPingMessage.class, this::handlePeerPingMessage);
-		register(PeerPongMessage.class, this::handlePeerPongMessage);
-
-		// Tasks
-		scheduleAtFixedRate(scheduledExecutable(10L, 10L, TimeUnit.SECONDS, this::heartbeatPeers));
-		scheduleWithFixedDelay(scheduledExecutable(60, peersBroadcastIntervalSec, TimeUnit.SECONDS, this::peersHousekeeping));
-		scheduleWithFixedDelay(scheduledExecutable(0,  peersProbeIntervalSec, TimeUnit.SECONDS, new ProbeTask()));
-		scheduleWithFixedDelay(scheduledExecutable(1, 60, TimeUnit.SECONDS, this::discoverPeers));
-
 	}
 
 	@Override
@@ -298,7 +187,7 @@ public class AddressBookImpl extends DatabaseStore implements AddressBook {
 
 	@Override
 	public Stream<Peer> recentPeers() {
-		return peers().filter(this::isRecentPeer);
+		return peers().filter(StandardFilters.recentlyActive());
 	}
 
 	private boolean handleUpdatedPeers(Pair<Peer, Peer> updatedPeers) {
@@ -392,16 +281,6 @@ public class AddressBookImpl extends DatabaseStore implements AddressBook {
 		return newPeer;
 	}
 
-	private boolean isRecentPeer(Peer p) {
-		// Don't include banned peers
-		PeerTimestamps pt = p.getTimestamps();
-		if (pt.getBanned() > Time.currentTimestamp()) {
-			// Banned!
-			return false;
-		}
-		return p.getTimestamps().getActive() + inactivityLimitMs > Time.currentTimestamp();
-	}
-
 	// Needs peerLock held
 	private void loadDatabase() {
 		this.peersByInfo.clear();
@@ -447,160 +326,6 @@ public class AddressBookImpl extends DatabaseStore implements AddressBook {
 			}
 		}
 		return false;
-	}
-
-	private void heartbeatPeers() {
-		// System Heartbeat
-		SystemMessage msg = new SystemMessage();
-		recentPeers().forEachOrdered(peer -> {
-			try {
-				Modules.get(MessageCentral.class).send(peer, msg);
-			} catch (TransportException ioex) {
-				log.error("Could not send System heartbeat to " + peer, ioex);
-			}
-		});
-	}
-
-	private ScheduledExecutable scheduledExecutable(long initialDelay, long recurrentDelay, TimeUnit units, Runnable r) {
-		return new ScheduledExecutable(initialDelay, recurrentDelay, units) {
-			@Override
-			public void execute() {
-				r.run();
-			}
-		};
-	}
-
-	private void handlePeersMessage(Peer peer, PeersMessage peersMessage) {
-		List<Peer> peers = peersMessage.getPeers();
-		if (peers != null) {
-			EUID localNid = LocalSystem.getInstance().getNID();
-			peers.stream()
-				.filter(Peer::hasSystem)
-				.filter(p -> !localNid.equals(p.getSystem().getNID()))
-				.forEachOrdered(this::updatePeer);
-		}
-	}
-
-	private void handleGetPeersMessage(Peer peer, GetPeersMessage getPeersMessage) {
-		try {
-			// Deliver known Peers in its entirety, filtered on whitelist and activity
-			// Chunk the sending of Peers so that UDP can handle it
-			PeersMessage peersMessage = new PeersMessage();
-			PeerBroadcastFilter filter = new PeerBroadcastFilter();
-			List<Peer> peers = peers()
-				.filter(Peer::hasNID)
-				.filter(p -> !filter.filter(p))
-				.collect(Collectors.toList());
-
-			for (Peer p : peers) {
-				if (p.getNID().equals(peer.getNID())) {
-					continue;
-				}
-
-				peersMessage.getPeers().add(p);
-
-				if (peersMessage.getPeers().size() == 64) {
-					Modules.get(MessageCentral.class).send(peer, peersMessage);
-					peersMessage = new PeersMessage();
-				}
-			}
-
-			if (!peersMessage.getPeers().isEmpty()){
-				Modules.get(MessageCentral.class).send(peer, peersMessage);
-			}
-		} catch (Exception ex) {
-			log.error("peers.get " + peer, ex);
-		}
-	}
-
-	private void handlePeerPingMessage(Peer peer, PeerPingMessage message) {
-		try {
-			long nonce = message.getNonce();
-			log.debug("peer.ping from " + peer + " with nonce '" + nonce + "'");
-			Modules.get(MessageCentral.class).send(peer, new PeerPongMessage(nonce));
-			Events.getInstance().broadcast(new PeerAvailableEvent(peer));
-		} catch (Exception ex) {
-			log.error("peer.ping " + peer, ex);
-		}
-	}
-
-	private void handlePeerPongMessage(Peer peer, PeerPongMessage message) {
-		try {
-			synchronized (this.probes) {
-				long nonce = message.getNonce();
-				if (this.probes.containsKey(peer) && this.probes.get(peer).longValue() == nonce) {
-					this.probes.remove(peer);
-					log.debug("Got peer.pong from " + peer + " with nonce '" + nonce + "'");
-					Events.getInstance().broadcast(new PeerAvailableEvent(peer));
-				} else {
-					// Probably a transport-only peer which we now have a system for
-					log.debug("Got peer.pong without matching probe from " + peer + " with nonce '" + nonce + "'");
-				}
-			}
-		} catch (Exception ex) {
-			log.error("peer.pong " + peer, ex);
-		}
-	}
-
-	private void peersHousekeeping() {
-		try {
-			// Request peers information from connected nodes
-			List<Peer> peers = Modules.get(AddressBook.class).recentPeers().collect(Collectors.toList());
-			if (!peers.isEmpty()) {
-				int index = rand.nextInt(peers.size());
-				Peer peer = peers.get(index);
-				try {
-					Modules.get(MessageCentral.class).send(peer, new GetPeersMessage());
-				} catch (TransportException ioex) {
-					log.info("Failed to request peer information from " + peer, ioex);
-				}
-			}
-		} catch (Exception t) {
-			log.error("Peers update failed", t);
-		}
-	}
-
-	private boolean probe(Peer peer) {
-		try {
-			synchronized(this.probes) {
-				if (peer != null && (Time.currentTimestamp() - peer.getTimestamp(Timestamps.PROBED) < peerProbeDelayMs)) {
-					return false;
-				}
-
-				if (peer != null && !this.probes.containsKey(peer)) {
-					PeerPingMessage ping = new PeerPingMessage();
-
-					this.probes.put(peer, ping.getNonce());
-					log.debug("Probing "+peer+" with nonce '"+ping.getNonce()+"'");
-					Executor.getInstance().schedule(new ProbeTimeout(peer, ping.getNonce(), PROBE_TIMEOUT_SECONDS, TimeUnit.SECONDS));
-
-					Modules.get(MessageCentral.class).send(peer, ping);
-					peer.setTimestamp(Timestamps.PROBED, Modules.get(NtpService.class).getUTCTimeMS());
-					return true;
-				}
-			}
-		} catch (Exception ex) {
-			log.error("Probe of peer " +peer + " failed", ex);
-		}
-
-		return false;
-	}
-
-	private void discoverPeers() {
-		// Probe all the bootstrap hosts so that they know about us //
-		Collection<Peer> bootstrap = BootstrapDiscovery.getInstance().discover(new PeerFilter()).stream()
-			.map(Modules.get(AddressBook.class)::peer)
-			.collect(ImmutableList.toImmutableList());
-
-		for (Peer peer : bootstrap) {
-			probe(peer);
-		}
-
-		// Ask them for known peers too //
-		GetPeersMessage msg = new GetPeersMessage();
-		for (Peer peer : bootstrap) {
-			Modules.get(MessageCentral.class).send(peer, msg);
-		}
 	}
 
 }
