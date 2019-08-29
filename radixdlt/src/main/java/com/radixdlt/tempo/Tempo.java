@@ -36,7 +36,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.stream.Collectors;
 
 /**
@@ -44,12 +46,15 @@ import java.util.stream.Collectors;
  */
 public final class Tempo extends Plugin implements Ledger {
 	private static final Logger log = Logging.getLogger("Tempo");
+	private static final int INBOUND_QUEUE_CAPACITY = 16384;
 
 	private final AtomStore store;
 	private final TempoController controller;
 	private final EdgeSelector edgeSelector;
 	private final PeerSupplier peerSupplier;
 	private final Attestor attestor;
+
+	private final BlockingQueue<TempoAtom> inboundAtoms;
 
 	private final IterativeDiscoveryController iterativeDiscovery;
 	private final AtomDeliveryController delivery;
@@ -69,18 +74,17 @@ public final class Tempo extends Plugin implements Ledger {
 		this.iterativeDiscovery = iterativeDiscovery;
 		this.delivery = delivery;
 
+		this.inboundAtoms = new LinkedBlockingQueue<>(INBOUND_QUEUE_CAPACITY);
+
 		// hook up components
-		// TODO remove listeners?
+		// TODO remove listeners when closed?
 		this.iterativeDiscovery.addListener(delivery::deliver);
-		this.delivery.addListener(((atom, peer) -> {
-			// TODO hook up to receive / inbound queue
-			log.info("Got delivery of atom '" + atom.getAID() + "' from " + peer);
-		}));
+		this.delivery.addListener(((atom, peer) -> this.inboundAtoms.add(atom)));
 	}
 
 	@Override
 	public Atom receive() throws InterruptedException {
-		return this.controller.receive();
+		return this.inboundAtoms.take();
 	}
 
 	@Override

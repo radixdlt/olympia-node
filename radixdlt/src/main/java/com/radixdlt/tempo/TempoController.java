@@ -234,14 +234,7 @@ public final class TempoController {
 	}
 
 	private void internalEpic(TempoAction action) {
-		if (action instanceof ReceiveAtomAction) {
-			// try to add to inbound queue
-			TempoAtom atom = ((ReceiveAtomAction) action).getAtom();
-			if (!inboundAtoms.add(atom)) {
-				// reschedule
-				delay(action, FULL_INBOUND_QUEUE_RESCHEDULE_TIME_SECONDS, TimeUnit.SECONDS);
-			}
-		} else if (action instanceof OnConflictResolvedAction) {
+		if (action instanceof OnConflictResolvedAction) {
 			OnConflictResolvedAction resolution = (OnConflictResolvedAction) action;
 			EUID tag = resolution.getTag();
 			CompletableFuture<TempoAtom> future = pendingConflictFutures.remove(tag);

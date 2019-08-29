@@ -140,7 +140,6 @@ public class CommitmentStore implements Store {
 		try (Cursor cursor = this.commitments.openCursor(null, null)) {
 			DatabaseEntry pKey = new DatabaseEntry(toPKey(nid, logicalClock + 1));
 			DatabaseEntry value = new DatabaseEntry();
-			logger.debug("Getting next commitments for " + nid + " from " + Hex.toHexString(pKey.getData()));
 
 			OperationStatus status = cursor.getSearchKeyRange(pKey, value, LockMode.DEFAULT);
 			int size = 0;
