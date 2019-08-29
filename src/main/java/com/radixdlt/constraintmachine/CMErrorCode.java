@@ -12,7 +12,10 @@ public enum CMErrorCode {
 	PARTICLE_REGISTER_SPIN_CLASH("Particle spin clashes with current particle in register"),
 	MISSING_TRANSITION_PROCEDURE("Transition procedure missing"),
 	UNEQUAL_INPUT_OUTPUT("Inputs and outputs do not match"),
-	WITNESS_ERROR("Witness error"),
+	NO_FULL_POP_ERROR("Neither input nor output are fully popped"),
+	INPUT_WITNESS_ERROR("Witness error"),
+	OUTPUT_WITNESS_ERROR("Witness error"),
+	TRANSITION_PRECONDITION_FAILURE("Transition Precondition failure"),
 	TRANSITION_ERROR("Transition error");
 
 	private final String description;

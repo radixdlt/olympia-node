@@ -7,12 +7,12 @@ import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.RoutineCalls;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.TransitionProcedure;
-import com.radixdlt.constraintmachine.TransitionProcedure.ProcedureResult;
 import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.UsedData;
 import com.radixdlt.constraintmachine.VoidUsedData;
 import com.radixdlt.constraintmachine.WitnessValidator;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
+import java.util.Optional;
 import java.util.function.BiFunction;
 
 /**
@@ -81,44 +81,118 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 	}
 
 	public TransitionProcedure<I, VoidUsedData, O, VoidUsedData> getProcedure0() {
-		return (in, inUsed, out, outUsed) -> ProcedureResult.popOutput(
-			new UsedParticle<>(typeToken0, out),
-			(o, w) -> WitnessValidatorResult.success()
-		);
+		return new TransitionProcedure<I, VoidUsedData, O, VoidUsedData>() {
+			@Override
+			public Result precondition(I inputParticle, VoidUsedData inputUsed, O outputParticle, VoidUsedData outputUsed) {
+				return Result.success();
+			}
+
+			@Override
+			public Optional<UsedData> inputUsed(I inputParticle, VoidUsedData inputUsed, O outputParticle, VoidUsedData outputUsed) {
+				return Optional.of(new UsedParticle<>(typeToken0, outputParticle));
+			}
+
+			@Override
+			public WitnessValidator<I> inputWitnessValidator() {
+				throw new IllegalStateException("Should never call here");
+			}
+
+			@Override
+			public Optional<UsedData> outputUsed(I inputParticle, VoidUsedData inputUsed, O outputParticle, VoidUsedData outputUsed) {
+				return Optional.empty();
+			}
+
+			@Override
+			public WitnessValidator<O> outputWitnessValidator() {
+				return (o, w) -> WitnessValidatorResult.success();
+			}
+		};
 	}
 
 	public TransitionProcedure<I, VoidUsedData, V, VoidUsedData> getProcedure1() {
-		return (in, inUsed, out, outUsed) -> ProcedureResult.popOutput(
-			new UsedParticle<>(typeToken1, out),
-			(o, w) -> WitnessValidatorResult.success()
-		);
+		return new TransitionProcedure<I, VoidUsedData, V, VoidUsedData>() {
+			@Override
+			public Result precondition(I inputParticle, VoidUsedData inputUsed, V outputParticle, VoidUsedData outputUsed) {
+				return Result.success();
+			}
+
+			@Override
+			public Optional<UsedData> inputUsed(I inputParticle, VoidUsedData inputUsed, V outputParticle, VoidUsedData outputUsed) {
+				return Optional.of(new UsedParticle<>(typeToken1, outputParticle));
+			}
+
+			@Override
+			public WitnessValidator<I> inputWitnessValidator() {
+				throw new IllegalStateException("Should never call here");
+			}
+
+			@Override
+			public Optional<UsedData> outputUsed(I inputParticle, VoidUsedData inputUsed, V outputParticle, VoidUsedData outputUsed) {
+				return Optional.empty();
+			}
+
+			@Override
+			public WitnessValidator<V> outputWitnessValidator() {
+				return (o, w) -> WitnessValidatorResult.success();
+			}
+		};
 	}
 
 	public TransitionProcedure<I, UsedParticle<V>, O, VoidUsedData> getProcedure2() {
-		return (in, inUsed, out, outUsed) -> {
-			Result combinedCheckResult = combinedCheck.apply(out, inUsed.usedParticle);
-			if (combinedCheckResult.isError()) {
-				return ProcedureResult.error(combinedCheckResult.getErrorMessage());
+		return new TransitionProcedure<I, UsedParticle<V>, O, VoidUsedData>() {
+			@Override
+			public Result precondition(I inputParticle, UsedParticle<V> inputUsed, O outputParticle, VoidUsedData outputUsed) {
+				return combinedCheck.apply(outputParticle, inputUsed.usedParticle);
 			}
 
-			return ProcedureResult.popInputOutput(
-				inputWitnessValidator,
-				(o, w) -> WitnessValidatorResult.success()
-			);
+			@Override
+			public Optional<UsedData> inputUsed(I inputParticle, UsedParticle<V> inputUsed, O outputParticle, VoidUsedData outputUsed) {
+				return Optional.empty();
+			}
+
+			@Override
+			public WitnessValidator<I> inputWitnessValidator() {
+				return (o, w) -> WitnessValidatorResult.success();
+			}
+
+			@Override
+			public Optional<UsedData> outputUsed(I inputParticle, UsedParticle<V> inputUsed, O outputParticle, VoidUsedData outputUsed) {
+				return Optional.empty();
+			}
+
+			@Override
+			public WitnessValidator<O> outputWitnessValidator() {
+				return (o, w) -> WitnessValidatorResult.success();
+			}
 		};
 	}
 
 	public TransitionProcedure<I, UsedParticle<O>, V, VoidUsedData> getProcedure3() {
-		return (in, inUsed, out, outUsed) -> {
-			Result combinedCheckResult = combinedCheck.apply(inUsed.usedParticle, out);
-			if (combinedCheckResult.isError()) {
-				return ProcedureResult.error(combinedCheckResult.getErrorMessage());
+		return new TransitionProcedure<I, UsedParticle<O>, V, VoidUsedData>() {
+			@Override
+			public Result precondition(I inputParticle, UsedParticle<O> inputUsed, V outputParticle, VoidUsedData outputUsed) {
+				return combinedCheck.apply(inputUsed.usedParticle, outputParticle);
 			}
 
-			return ProcedureResult.popInputOutput(
-				inputWitnessValidator,
-				(o, w) -> WitnessValidatorResult.success()
-			);
+			@Override
+			public Optional<UsedData> inputUsed(I inputParticle, UsedParticle<O> inputUsed, V outputParticle, VoidUsedData outputUsed) {
+				return Optional.empty();
+			}
+
+			@Override
+			public WitnessValidator<I> inputWitnessValidator() {
+				return (o, w) -> WitnessValidatorResult.success();
+			}
+
+			@Override
+			public Optional<UsedData> outputUsed(I inputParticle, UsedParticle<O> inputUsed, V outputParticle, VoidUsedData outputUsed) {
+				return Optional.empty();
+			}
+
+			@Override
+			public WitnessValidator<V> outputWitnessValidator() {
+				return (o, w) -> WitnessValidatorResult.success();
+			}
 		};
 	}
 }

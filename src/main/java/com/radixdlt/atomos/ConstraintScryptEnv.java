@@ -8,11 +8,12 @@ import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.UsedData;
 import com.radixdlt.constraintmachine.VoidUsedData;
 import com.radixdlt.constraintmachine.TransitionProcedure;
-import com.radixdlt.constraintmachine.TransitionProcedure.ProcedureResult;
+import com.radixdlt.constraintmachine.WitnessValidator;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -157,17 +158,34 @@ final class ConstraintScryptEnv implements SysCalls {
 		}
 
 		createTransition(
-			new TransitionToken<>(
-				RRIParticle.class,
-				TypeToken.of(VoidUsedData.class),
-				particleClass,
-				TypeToken.of(VoidUsedData.class)
-			),
-			(in, inUsed, out, outUsed) -> ProcedureResult.popInputOutput(
-				(rri, witnessData) -> witnessData.isSignedBy(rri.getRri().getAddress().getKey())
-					? WitnessValidatorResult.success() : WitnessValidatorResult.error("Not signed by " + in.getRri().getAddress()),
-				(o, witnessData) -> WitnessValidatorResult.success()
-			)
+			new TransitionToken<>(RRIParticle.class, TypeToken.of(VoidUsedData.class), particleClass, TypeToken.of(VoidUsedData.class)),
+			new TransitionProcedure<RRIParticle, VoidUsedData, O, VoidUsedData>() {
+				@Override
+				public Result precondition(RRIParticle inputParticle, VoidUsedData inputUsed, O outputParticle, VoidUsedData outputUsed) {
+					return Result.success();
+				}
+
+				@Override
+				public Optional<UsedData> inputUsed(RRIParticle inputParticle, VoidUsedData inputUsed, O outputParticle, VoidUsedData outputUsed) {
+					return Optional.empty();
+				}
+
+				@Override
+				public WitnessValidator<RRIParticle> inputWitnessValidator() {
+					return (rri, witnessData) -> witnessData.isSignedBy(rri.getRri().getAddress().getKey())
+						? WitnessValidatorResult.success() : WitnessValidatorResult.error("Not signed by " + rri.getRri().getAddress());
+				}
+
+				@Override
+				public Optional<UsedData> outputUsed(RRIParticle inputParticle, VoidUsedData inputUsed, O outputParticle, VoidUsedData outputUsed) {
+					return Optional.empty();
+				}
+
+				@Override
+				public WitnessValidator<O> outputWitnessValidator() {
+					return (o, witnessData) -> WitnessValidatorResult.success();
+				}
+			}
 		);
 	}
 
@@ -210,22 +228,42 @@ final class ConstraintScryptEnv implements SysCalls {
 		final ParticleDefinition<Particle> inputDefinition = getParticleDefinition(transitionToken.getInputClass());
 		final ParticleDefinition<Particle> outputDefinition = getParticleDefinition(transitionToken.getOutputClass());
 
-		final TransitionProcedure<Particle, UsedData, Particle, UsedData> transformedProcedure;
+		final TransitionProcedure<Particle, UsedData, Particle, UsedData> transformedProcedure
+			= new TransitionProcedure<Particle, UsedData, Particle, UsedData>() {
+				@Override
+				public Result precondition(Particle inputParticle, UsedData inputUsed, Particle outputParticle, UsedData outputUsed) {
+					// RRIs must be the same across RRI particle transitions
+					if (inputDefinition.getRriMapper() != null && outputDefinition.getRriMapper() != null) {
+						final RRI inputRRI = inputDefinition.getRriMapper().apply(inputParticle);
+						final RRI outputRRI = outputDefinition.getRriMapper().apply(outputParticle);
+						if (!inputRRI.equals(outputRRI)) {
+							return Result.error("Input/Output RRIs not equal");
+						}
+					}
 
-		// RRIs must be the same across RRI particle transitions
-		if (inputDefinition.getRriMapper() != null && outputDefinition.getRriMapper() != null) {
-			transformedProcedure = (in, inUsed, out, outUsed) -> {
-				final RRI inputRRI = inputDefinition.getRriMapper().apply(in);
-				final RRI outputRRI = outputDefinition.getRriMapper().apply(out);
-				if (!inputRRI.equals(outputRRI)) {
-					return ProcedureResult.error("Input/Output RRIs not equal");
+					return procedure.precondition((I) inputParticle, (N) inputUsed, (O) outputParticle, (U) outputUsed);
 				}
 
-				return procedure.execute((I) in, (N) inUsed, (O) out, (U) outUsed).toGeneric();
+				@Override
+				public Optional<UsedData> inputUsed(Particle inputParticle, UsedData inputUsed, Particle outputParticle, UsedData outputUsed) {
+					return procedure.inputUsed((I) inputParticle, (N) inputUsed, (O) outputParticle, (U) outputUsed);
+				}
+
+				@Override
+				public WitnessValidator<Particle> inputWitnessValidator() {
+					return (i, w) -> procedure.inputWitnessValidator().validate((I) i, w);
+				}
+
+				@Override
+				public Optional<UsedData> outputUsed(Particle inputParticle, UsedData inputUsed, Particle outputParticle, UsedData outputUsed) {
+					return procedure.outputUsed((I) inputParticle, (N) inputUsed, (O) outputParticle, (U) outputUsed);
+				}
+
+				@Override
+				public WitnessValidator<Particle> outputWitnessValidator() {
+					return (o, w) -> procedure.outputWitnessValidator().validate((O) o, w);
+				}
 			};
-		} else {
-			transformedProcedure = (in, inUsed, out, outUsed) -> procedure.execute((I) in, (N) inUsed, (O) out, (U) outUsed).toGeneric();
-		}
 
 		scryptTransitionProcedures.put(transitionToken, transformedProcedure);
 	}

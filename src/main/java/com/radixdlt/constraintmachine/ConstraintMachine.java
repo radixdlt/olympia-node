@@ -3,7 +3,6 @@ package com.radixdlt.constraintmachine;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.common.EUID;
-import com.radixdlt.constraintmachine.TransitionProcedure.ProcedureResult;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.ECSignature;
@@ -56,8 +55,6 @@ public final class ConstraintMachine {
 
 	public static final class CMValidationState {
 		private TransitionToken currentTransitionToken = null;
-		private CMAction currentCMAction = null;
-
 		private Particle particleRemaining = null;
 		private boolean particleRemainingIsInput;
 		private UsedData particleRemainingUsed = null;
@@ -70,10 +67,6 @@ public final class ConstraintMachine {
 			this.currentSpins = new HashMap<>();
 			this.witness = witness;
 			this.signatures = signatures;
-		}
-
-		public void setCurrentCMAction(CMAction currentCMAction) {
-			this.currentCMAction = currentCMAction;
 		}
 
 		public void setCurrentTransitionToken(TransitionToken currentTransitionToken) {
@@ -170,7 +163,6 @@ public final class ConstraintMachine {
 				builder.append("  Remaining: [empty]");
 			}
 			builder.append("\n  TransitionToken: ").append(currentTransitionToken);
-			builder.append("\n  CMAction: ").append(currentCMAction);
 			builder.append("\n]");
 
 			return builder.toString();
@@ -225,68 +217,97 @@ public final class ConstraintMachine {
 			);
 		}
 
-		final ProcedureResult<Particle, Particle> result = transitionProcedure.execute(
+		final Result preconditionCheckResult = transitionProcedure.precondition(
 			inputParticle,
 			validationState.getInputUsed(),
 			outputParticle,
 			validationState.getOutputUsed()
 		);
-		validationState.setCurrentCMAction(result.getCmAction());
 
-		final WitnessValidatorResult witnessResult;
-		switch (result.getCmAction()) {
-			case POP_INPUT:
-				if (!isInput) {
-					validationState.popAndReplace(nextParticle, isInput, result.getUsed());
-				} else {
-					validationState.updateUsed(result.getUsed());
-				}
-
-				witnessResult = result.getInputWitnessValidator().validate(inputParticle, validationState::isSignedBy);
-				break;
-			case POP_OUTPUT:
-				if (isInput) {
-					validationState.popAndReplace(nextParticle, isInput, result.getUsed());
-				} else {
-					validationState.updateUsed(result.getUsed());
-				}
-				witnessResult = result.getOutputWitnessValidator().validate(outputParticle, validationState::isSignedBy);
-				break;
-			case POP_INPUT_OUTPUT:
-				if (result.getUsed() != null) {
-					throw new IllegalStateException("POP_INPUT_OUTPUT must output null");
-				}
-				validationState.pop();
-				WitnessValidatorResult r0 = result.getInputWitnessValidator().validate(inputParticle, validationState::isSignedBy);
-				witnessResult = r0.isSuccess()
-					? result.getOutputWitnessValidator().validate(outputParticle, validationState::isSignedBy)
-					: r0;
-				break;
-			case ERROR:
-				return Optional.of(
-					new CMError(
-						dp,
-						CMErrorCode.TRANSITION_ERROR,
-						validationState,
-						result.getErrorMessage()
-					)
-				);
-			default:
-				throw new IllegalStateException("Should never get here");
-		}
-
-		if (witnessResult.isError()) {
+		if (preconditionCheckResult.isError()) {
 			return Optional.of(
 				new CMError(
 					dp,
-					CMErrorCode.WITNESS_ERROR,
-					validationState,
-					witnessResult.getErrorMessage()
+					CMErrorCode.TRANSITION_PRECONDITION_FAILURE,
+					validationState
 				)
 			);
 		}
 
-		validationState.setCurrentCMAction(null);
+		final Optional<UsedData> inputUsed = transitionProcedure.inputUsed(
+			inputParticle,
+			validationState.getInputUsed(),
+			outputParticle,
+			validationState.getOutputUsed()
+		);
+
+		final Optional<UsedData> outputUsed = transitionProcedure.outputUsed(
+			inputParticle,
+			validationState.getInputUsed(),
+			outputParticle,
+			validationState.getOutputUsed()
+		);
+
+		if (inputUsed.isPresent() && outputUsed.isPresent()) {
+			return Optional.of(
+				new CMError(
+					dp,
+					CMErrorCode.NO_FULL_POP_ERROR,
+					validationState
+				)
+			);
+		}
+
+		if (inputUsed.isPresent()) {
+			if (isInput) {
+				validationState.popAndReplace(nextParticle, true, inputUsed.get());
+			} else {
+				validationState.updateUsed(inputUsed.get());
+			}
+		} else {
+			final WitnessValidatorResult inputWitness = transitionProcedure.inputWitnessValidator().validate(
+				inputParticle, validationState::isSignedBy
+			);
+
+			if (inputWitness.isError()) {
+				return Optional.of(
+					new CMError(
+						dp,
+						CMErrorCode.INPUT_WITNESS_ERROR,
+						validationState,
+						inputWitness.getErrorMessage()
+					)
+				);
+			}
+		}
+
+		if (outputUsed.isPresent()) {
+			if (!isInput) {
+				validationState.popAndReplace(nextParticle, false, outputUsed.get());
+			} else {
+				validationState.updateUsed(outputUsed.get());
+			}
+		} else {
+			final WitnessValidatorResult outputWitness = transitionProcedure.outputWitnessValidator().validate(
+				outputParticle, validationState::isSignedBy
+			);
+
+			if (outputWitness.isError()) {
+				return Optional.of(
+					new CMError(
+						dp,
+						CMErrorCode.OUTPUT_WITNESS_ERROR,
+						validationState,
+						outputWitness.getErrorMessage()
+					)
+				);
+			}
+		}
+
+		if (!inputUsed.isPresent() && !outputUsed.isPresent()) {
+			validationState.pop();
+		}
+
 		validationState.setCurrentTransitionToken(null);
 
 		return Optional.empty();

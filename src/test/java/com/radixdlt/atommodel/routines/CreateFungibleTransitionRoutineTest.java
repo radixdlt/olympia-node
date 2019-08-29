@@ -7,8 +7,6 @@ import com.radixdlt.atommodel.routines.CreateFungibleTransitionRoutine.UsedAmoun
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.TransitionProcedure;
-import com.radixdlt.constraintmachine.CMAction;
-import com.radixdlt.constraintmachine.TransitionProcedure.ProcedureResult;
 import com.radixdlt.constraintmachine.VoidUsedData;
 import com.radixdlt.constraintmachine.WitnessValidator;
 import com.radixdlt.utils.UInt256;
@@ -38,14 +36,21 @@ public class CreateFungibleTransitionRoutineTest {
 			(a, b) -> Result.success(),
 			mock(WitnessValidator.class)
 		).getProcedure0();
-		ProcedureResult<Fungible, Fungible> result = procedure.execute(
+
+		assertThat(procedure.inputUsed(
 			new Fungible(UInt256.ONE),
 			null,
 			new Fungible(UInt256.ONE),
 			null
-		);
+		)).isEmpty();
 
-		assertThat(result.getCmAction()).isEqualTo(CMAction.POP_INPUT_OUTPUT);
+
+		assertThat(procedure.outputUsed(
+			new Fungible(UInt256.ONE),
+			null,
+			new Fungible(UInt256.ONE),
+			null
+		)).isEmpty();
 	}
 
 	@Test
@@ -56,15 +61,20 @@ public class CreateFungibleTransitionRoutineTest {
 			mock(WitnessValidator.class)
 		).getProcedure0();
 
-		ProcedureResult result = procedure.execute(
+
+		assertThat(procedure.inputUsed(
 			new Fungible(UInt256.TWO),
 			null,
 			new Fungible(UInt256.ONE),
 			null
-		);
+		)).get().isEqualTo(new UsedAmount(UInt256.ONE));
 
-		assertThat(result.getUsed()).isEqualTo(new UsedAmount(UInt256.ONE));
-		assertThat(result.getCmAction()).isEqualTo(CMAction.POP_OUTPUT);
+		assertThat(procedure.outputUsed(
+			new Fungible(UInt256.TWO),
+			null,
+			new Fungible(UInt256.ONE),
+			null
+		)).isEmpty();
 	}
 
 	@Test
@@ -75,15 +85,19 @@ public class CreateFungibleTransitionRoutineTest {
 			mock(WitnessValidator.class)
 		).getProcedure0();
 
-		ProcedureResult result = procedure.execute(
+		assertThat(procedure.inputUsed(
 			new Fungible(UInt256.ONE),
 			null,
 			new Fungible(UInt256.TWO),
 			null
-		);
+		)).isEmpty();
 
-		assertThat(result.getUsed()).isEqualTo(new UsedAmount(UInt256.ONE));
-		assertThat(result.getCmAction()).isEqualTo(CMAction.POP_INPUT);
+		assertThat(procedure.outputUsed(
+			new Fungible(UInt256.ONE),
+			null,
+			new Fungible(UInt256.TWO),
+			null
+		)).get().isEqualTo(new UsedAmount(UInt256.ONE));
 	}
 
 	@Test
@@ -94,15 +108,19 @@ public class CreateFungibleTransitionRoutineTest {
 			mock(WitnessValidator.class)
 		).getProcedure0();
 
-		ProcedureResult result = procedure.execute(
+		assertThat(procedure.inputUsed(
 			new Fungible(UInt256.TWO),
 			null,
 			new Fungible(UInt256.TWO),
 			null
-		);
+		)).isEmpty();
 
-		assertThat(result.getCmAction()).isEqualTo(CMAction.POP_INPUT_OUTPUT);
-		assertThat(result.getUsed()).isNull();
+		assertThat(procedure.outputUsed(
+			new Fungible(UInt256.TWO),
+			null,
+			new Fungible(UInt256.TWO),
+			null
+		)).isEmpty();
 	}
 
 	@Test
@@ -113,12 +131,18 @@ public class CreateFungibleTransitionRoutineTest {
 			mock(WitnessValidator.class)
 		).getProcedure2();
 
-		ProcedureResult result = procedure.execute(
-			new Fungible(UInt256.ONE), null,
-			new Fungible(UInt256.TWO), new UsedAmount(UInt256.ONE)
-		);
+		assertThat(procedure.inputUsed(
+			new Fungible(UInt256.ONE),
+			null,
+			new Fungible(UInt256.TWO),
+			new UsedAmount(UInt256.ONE)
+		)).isEmpty();
 
-		assertThat(result.getCmAction()).isEqualTo(CMAction.POP_INPUT_OUTPUT);
-		assertThat(result.getUsed()).isNull();
+		assertThat(procedure.outputUsed(
+			new Fungible(UInt256.ONE),
+			null,
+			new Fungible(UInt256.TWO),
+			new UsedAmount(UInt256.ONE)
+		)).isEmpty();
 	}
 }
