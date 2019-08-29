@@ -2,8 +2,6 @@ package com.radixdlt.tempo.epics;
 
 import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
-import com.radixdlt.utils.Pair;
-import com.radixdlt.tempo.TempoAction;
 import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.TempoException;
 import com.radixdlt.tempo.actions.OnConflictResolvedAction;
@@ -12,6 +10,7 @@ import com.radixdlt.tempo.reactive.TempoAction;
 import com.radixdlt.tempo.reactive.TempoEpic;
 import com.radixdlt.tempo.reactive.TempoFlow;
 import com.radixdlt.tempo.reactive.TempoFlowSource;
+import com.radixdlt.utils.Pair;
 
 import java.util.Comparator;
 import java.util.Set;
