@@ -5,7 +5,6 @@ import com.google.common.collect.ImmutableMap;
 import com.radixdlt.common.EUID;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.tempo.actions.AcceptAtomAction;
 import com.radixdlt.tempo.actions.OnConflictResolvedAction;
 import com.radixdlt.tempo.actions.RaiseConflictAction;
 import com.radixdlt.tempo.actions.ReceiveAtomAction;
@@ -14,23 +13,16 @@ import com.radixdlt.tempo.actions.ReselectPassivePeersAction;
 import com.radixdlt.tempo.actions.ResetAction;
 import com.radixdlt.tempo.actions.control.RepeatScheduleAction;
 import com.radixdlt.tempo.actions.control.ScheduleAction;
-import com.radixdlt.tempo.actions.messaging.ReceiveDeliveryRequestAction;
-import com.radixdlt.tempo.actions.messaging.ReceiveDeliveryResponseAction;
 import com.radixdlt.tempo.actions.messaging.ReceivePushAction;
 import com.radixdlt.tempo.actions.messaging.ReceiveSampleRequestAction;
 import com.radixdlt.tempo.actions.messaging.ReceiveSampleResponseAction;
-import com.radixdlt.tempo.actions.messaging.SendDeliveryRequestAction;
-import com.radixdlt.tempo.actions.messaging.SendDeliveryResponseAction;
 import com.radixdlt.tempo.actions.messaging.SendPushAction;
 import com.radixdlt.tempo.actions.messaging.SendSampleRequestAction;
 import com.radixdlt.tempo.actions.messaging.SendSampleResponseAction;
-import com.radixdlt.tempo.epics.ActiveSyncEpic;
 import com.radixdlt.tempo.epics.LocalResolverEpic;
 import com.radixdlt.tempo.epics.MessagingEpic;
 import com.radixdlt.tempo.epics.MomentumResolverEpic;
 import com.radixdlt.tempo.epics.SampleCollectorEpic;
-import com.radixdlt.tempo.messages.DeliveryRequestMessage;
-import com.radixdlt.tempo.messages.DeliveryResponseMessage;
 import com.radixdlt.tempo.messages.PushMessage;
 import com.radixdlt.tempo.messages.SampleRequestMessage;
 import com.radixdlt.tempo.messages.SampleResponseMessage;
@@ -337,9 +329,6 @@ public final class TempoController {
 		String resolver = properties.get("tempo2.resolver", "local");
 		logger.info(String.format("Creating Tempo controller with sync='%s' and resolver='%s'",
 			Arrays.toString(syncFeatures), resolver));
-		if (Arrays.stream(syncFeatures).anyMatch("active"::equalsIgnoreCase)) {
-			builder.addEpic(new ActiveSyncEpic(localSystem.getNID()));
-		}
 		if (resolver.equalsIgnoreCase("local")) {
 			builder.addEpic(new LocalResolverEpic(localSystem.getNID()));
 		} else if (resolver.equalsIgnoreCase("momentum")) {
