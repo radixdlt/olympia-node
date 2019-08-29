@@ -3,7 +3,6 @@ package com.radixdlt.constraintmachine;
 import com.radixdlt.constraintmachine.ConstraintMachine.CMValidationState;
 import java.util.Objects;
 import javax.annotation.Nullable;
-import com.radixdlt.atoms.DataPointer;
 
 /**
  * An error with a pointer to the issue
@@ -13,10 +12,6 @@ public final class CMError {
 	private final CMErrorCode errorCode;
 	private final String errMsg;
 	private final CMValidationState cmValidationState;
-
-	public CMError(DataPointer dataPointer, CMErrorCode errorCode) {
-		this(dataPointer, errorCode, null, null);
-	}
 
 	public CMError(
 		DataPointer dataPointer,
@@ -53,6 +48,10 @@ public final class CMError {
 
 	public String getErrorDescription() {
 		return errorCode.getDescription() + (errMsg == null ? "" : ": " + errMsg);
+	}
+
+	public CMValidationState getCmValidationState() {
+		return cmValidationState;
 	}
 
 	@Override

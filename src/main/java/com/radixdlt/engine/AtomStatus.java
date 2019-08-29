@@ -1,4 +1,4 @@
-package com.radixdlt.atoms;
+package com.radixdlt.engine;
 
 /**
  * The different states an atom can be in.

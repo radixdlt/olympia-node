@@ -65,6 +65,10 @@ public final class RadixAddress {
 		}
 	}
 
+	public int getMagic() {
+		return addressBytes[0];
+	}
+
 	public static RadixAddress from(String address) {
 		byte[] raw = Base58.fromBase58(address);
 		return from(raw);

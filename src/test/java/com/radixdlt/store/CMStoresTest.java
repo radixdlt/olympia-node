@@ -3,16 +3,15 @@ package com.radixdlt.store;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.mockito.Mockito.mock;
 
-import com.radixdlt.atoms.Particle;
-import com.radixdlt.atoms.Spin;
+import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.common.EUID;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import org.junit.Test;
 
 public class CMStoresTest {
-	private CMStore createStore(boolean supports, Function<Particle, Optional<Spin>> getSpinFunc) {
+	private CMStore createStore(boolean supports, Function<Particle, Spin> getSpinFunc) {
 		return new CMStore() {
 			@Override
 			public boolean supports(Set<EUID> destinations) {
@@ -20,7 +19,7 @@ public class CMStoresTest {
 			}
 
 			@Override
-			public Optional<Spin> getSpin(Particle particle) {
+			public Spin getSpin(Particle particle) {
 				return getSpinFunc.apply(particle);
 			}
 		};
@@ -29,42 +28,18 @@ public class CMStoresTest {
 	@Test
 	public void when_an_empty_store_is_virtualized_default_up_and_spin_is_requested__then_it_should_return_up() {
 		CMStore cmStore = CMStores.virtualizeDefault(CMStores.empty(), p -> true, Spin.UP);
-		assertThat(cmStore.getSpin(mock(Particle.class)))
-			.contains(Spin.UP);
+		assertThat(cmStore.getSpin(mock(Particle.class))).isEqualTo(Spin.UP);
 	}
 
 	@Test
 	public void when_an_up_store_is_virtualized_default_up_and_spin_is_requested__then_it_should_return_up() {
-		CMStore cmStore = CMStores.virtualizeDefault(createStore(true, p -> Optional.of(Spin.UP)), p -> true, Spin.UP);
-		assertThat(cmStore.getSpin(mock(Particle.class)))
-			.contains(Spin.UP);
+		CMStore cmStore = CMStores.virtualizeDefault(createStore(true, p -> Spin.UP), p -> true, Spin.UP);
+		assertThat(cmStore.getSpin(mock(Particle.class))).isEqualTo(Spin.UP);
 	}
 
 	@Test
 	public void when_a_down_store_is_virtualized_default_up_and_spin_is_requested__then_it_should_return_down() {
-		CMStore cmStore = CMStores.virtualizeDefault(createStore(true, p -> Optional.of(Spin.DOWN)), p -> true, Spin.UP);
-		assertThat(cmStore.getSpin(mock(Particle.class)))
-			.contains(Spin.DOWN);
-	}
-
-	@Test
-	public void when_an_unknown_store_supporting_all_shards_is_virtualized_default_up_and_spin_is_requested__then_it_should_return_up() {
-		CMStore cmStore = CMStores.virtualizeDefault(createStore(true, p -> Optional.empty()), p -> true, Spin.UP);
-		assertThat(cmStore.getSpin(mock(Particle.class)))
-			.contains(Spin.UP);
-	}
-
-	@Test
-	public void when_an_unknown_store_supporting_no_shards_is_virtualized_default_up_and_spin_is_requested__then_it_should_return_up() {
-		CMStore cmStore = CMStores.virtualizeDefault(createStore(false, p -> Optional.empty()), p -> true, Spin.UP);
-		assertThat(cmStore.getSpin(mock(Particle.class))).isNotPresent();
-	}
-
-
-	@Test
-	public void when_a_store_is_virtualized_overwrite_up_and_spin_is_requested__then_it_should_return_up() {
-		CMStore cmStore = CMStores.virtualizeOverwrite(mock(EngineStore.class), p -> true, Spin.UP);
-		assertThat(cmStore.getSpin(mock(Particle.class)))
-			.contains(Spin.UP);
+		CMStore cmStore = CMStores.virtualizeDefault(createStore(true, p -> Spin.DOWN), p -> true, Spin.UP);
+		assertThat(cmStore.getSpin(mock(Particle.class))).isEqualTo(Spin.DOWN);
 	}
 }

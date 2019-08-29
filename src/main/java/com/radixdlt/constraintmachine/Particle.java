@@ -1,4 +1,4 @@
-package com.radixdlt.atoms;
+package com.radixdlt.constraintmachine;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Suppliers;
@@ -16,6 +16,8 @@ import java.util.function.Supplier;
 
 /**
  * A content-identifiable, sub-state of the ledger.
+ *
+ * TODO: Remove serialization stuff out of here
  */
 @SerializerId2("radix.particle")
 public abstract class Particle {

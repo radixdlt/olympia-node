@@ -1,11 +1,13 @@
-package com.radixdlt.atoms;
+package com.radixdlt.middleware;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Streams;
+import com.radixdlt.constraintmachine.DataPointer;
+import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
 import com.radixdlt.crypto.AtomAlreadySignedException;
@@ -291,28 +293,16 @@ public class ImmutableAtom {
 		return this.particleGroups.stream();
 	}
 
+	public final List<ParticleGroup> getParticleGroups() {
+		return this.particleGroups;
+	}
+
 	public final ParticleGroup getParticleGroup(int particleGroupIndex) {
 		return this.particleGroups.get(particleGroupIndex);
 	}
 
 	public final Stream<SpunParticle> spunParticles() {
 		return this.particleGroups.stream().flatMap(ParticleGroup::spunParticles);
-	}
-
-	/**
-	 * Returns a stream of indexed particle groups in this atom
-	 * @return stream of indexed particle groups
-	 */
-	public final Stream<IndexedParticleGroup> indexedParticleGroups() {
-		return Streams.mapWithIndex(particleGroups(), (pg, groupIndex) -> new IndexedParticleGroup(pg, (int) groupIndex));
-	}
-
-	/**
-	 * Returns a stream of indexed spun particles in this atom
-	 * @return stream of indexed spun particles
-	 */
-	public final Stream<IndexedSpunParticle> indexedSpunParticles() {
-		return indexedParticleGroups().flatMap(IndexedParticleGroup::indexedSpunParticles);
 	}
 
 	public final Stream<Particle> particles(Spin spin) {
@@ -349,6 +339,10 @@ public class ImmutableAtom {
 			.filter(p -> type.isAssignableFrom(p.getClass()))
 			.map(type::cast)
 			.findFirst().orElse(null);
+	}
+
+	public SpunParticle getSpunParticle(DataPointer dp) {
+		return getParticleGroup(dp.getParticleGroupIndex()).getSpunParticle(dp.getParticleIndex());
 	}
 
 	/**

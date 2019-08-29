@@ -1,6 +1,5 @@
-package com.radixdlt.atomos;
+package com.radixdlt.middleware;
 
-import com.radixdlt.atoms.ImmutableAtom;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.engine.RadixEngineAtom;
 

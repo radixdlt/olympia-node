@@ -1,9 +1,8 @@
 package com.radixdlt.store;
 
-import com.radixdlt.atoms.Particle;
-import com.radixdlt.atoms.Spin;
+import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.common.EUID;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 
@@ -22,8 +21,8 @@ public final class CMStores {
 		}
 
 		@Override
-		public Optional<Spin> getSpin(Particle particle) {
-			return Optional.empty();
+		public Spin getSpin(Particle particle) {
+			return Spin.NEUTRAL;
 		}
 	};
 
@@ -53,45 +52,17 @@ public final class CMStores {
 			}
 
 			@Override
-			public Optional<Spin> getSpin(Particle particle) {
-				Optional<Spin> curSpin = base.getSpin(particle);
+			public Spin getSpin(Particle particle) {
+				Spin curSpin = base.getSpin(particle);
 
 				if (base.supports(particle.getDestinations())
 					&& particleCheck.test(particle)
-					&& curSpin.map(s -> SpinStateMachine.isAfter(spin, s)).orElse(true)
+					&& SpinStateMachine.isAfter(spin, curSpin)
 				) {
-					return Optional.of(spin);
+					return spin;
 				}
 
 				return curSpin;
-			}
-		};
-	}
-
-	/**
-	 * Virtualizes the spin for a given particle predicate. That is,
-	 * the given spin is always returned when the given predicate
-	 * passes.
-	 *
-	 * @param base the base state store
-	 * @param particleCheck the particle predicate
-	 * @param spin the spin to always return given predicate success
-	 * @return the virtualized state store
-	 */
-	public static CMStore virtualizeOverwrite(CMStore base, Predicate<Particle> particleCheck, Spin spin) {
-		return new CMStore() {
-			@Override
-			public boolean supports(Set<EUID> destinations) {
-				return base.supports(destinations);
-			}
-
-			@Override
-			public Optional<Spin> getSpin(Particle particle) {
-				if (particleCheck.test(particle)) {
-					return Optional.of(spin);
-				}
-
-				return base.getSpin(particle);
 			}
 		};
 	}

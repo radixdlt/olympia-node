@@ -1,86 +1,64 @@
 package com.radixdlt.constraintmachine;
 
-import com.radixdlt.atoms.DataPointer;
-import com.radixdlt.atoms.Spin;
-import com.radixdlt.atoms.SpunParticle;
+import com.google.common.reflect.TypeToken;
+import com.radixdlt.atomos.Result;
 import com.radixdlt.common.EUID;
-import com.radixdlt.constraintmachine.TransitionProcedure.ProcedureResult;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.ECSignature;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.store.CMStore;
 import com.radixdlt.store.SpinStateMachine;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.BiFunction;
-import java.util.function.UnaryOperator;
-import com.radixdlt.atoms.Particle;
-import com.radixdlt.store.CMStores;
-
-import java.util.Objects;
+import java.util.function.Function;
 
 /**
  * An implementation of a UTXO based constraint machine which uses Radix's atom structure.
  */
 public final class ConstraintMachine {
 	public static class Builder {
-		private UnaryOperator<CMStore> virtualStore;
-		private BiFunction<Particle, Particle, TransitionProcedure<Particle, Particle>> particleProcedures;
-		private BiFunction<Particle, Particle, WitnessValidator<Particle, Particle>> witnessValidators;
+		private Function<Particle, Result> particleStaticCheck;
+		private Function<TransitionToken, TransitionProcedure<Particle, UsedData, Particle, UsedData>> particleProcedures;
 
-		public Builder virtualStore(UnaryOperator<CMStore> virtualStore) {
-			this.virtualStore = virtualStore;
+		public Builder setParticleStaticCheck(Function<Particle, Result> particleStaticCheck) {
+			this.particleStaticCheck = particleStaticCheck;
 			return this;
 		}
 
-		public Builder setParticleProcedures(BiFunction<Particle, Particle, TransitionProcedure<Particle, Particle>> particleProcedures) {
+		public Builder setParticleTransitionProcedures(
+			Function<TransitionToken, TransitionProcedure<Particle, UsedData, Particle, UsedData>> particleProcedures
+		) {
 			this.particleProcedures = particleProcedures;
 			return this;
 		}
 
-		public Builder setWitnessValidators(BiFunction<Particle, Particle, WitnessValidator<Particle, Particle>> witnessValidators) {
-			this.witnessValidators = witnessValidators;
-			return this;
-		}
-
-
 		public ConstraintMachine build() {
-			if (virtualStore == null) {
-				virtualStore = UnaryOperator.identity();
-			}
-
 			return new ConstraintMachine(
-				virtualStore,
-				particleProcedures,
-				witnessValidators
+				particleStaticCheck,
+				particleProcedures
 			);
 		}
 	}
 
-	private final UnaryOperator<CMStore> virtualStore;
-	private final BiFunction<Particle, Particle, TransitionProcedure<Particle, Particle>> particleProcedures;
-	private final BiFunction<Particle, Particle, WitnessValidator<Particle, Particle>> witnessValidators;
-	private final CMStore localEngineStore;
+	private final Function<Particle, Result> particleStaticCheck;
+	private final Function<TransitionToken, TransitionProcedure<Particle, UsedData, Particle, UsedData>> particleProcedures;
 
 	ConstraintMachine(
-		UnaryOperator<CMStore> virtualStore,
-		BiFunction<Particle, Particle, TransitionProcedure<Particle, Particle>> particleProcedures,
-		BiFunction<Particle, Particle, WitnessValidator<Particle, Particle>> witnessValidators
+		Function<Particle, Result> particleStaticCheck,
+		Function<TransitionToken, TransitionProcedure<Particle, UsedData, Particle, UsedData>> particleProcedures
 	) {
-		Objects.requireNonNull(virtualStore);
-
-		this.virtualStore = Objects.requireNonNull(virtualStore);
-		this.localEngineStore = this.virtualStore.apply(CMStores.empty());
+		this.particleStaticCheck = particleStaticCheck;
 		this.particleProcedures = particleProcedures;
-		this.witnessValidators = witnessValidators;
 	}
 
-	static final class CMValidationState {
-		private SpunParticle spunParticleRemaining = null;
-		private Object particleRemainingUsed = null;
+	public static final class CMValidationState {
+		private TransitionToken currentTransitionToken = null;
+		private Particle particleRemaining = null;
+		private boolean particleRemainingIsInput;
+		private UsedData particleRemainingUsed = null;
 		private final Map<Particle, Spin> currentSpins;
 		private final Hash witness;
 		private final Map<EUID, ECSignature> signatures;
@@ -90,6 +68,10 @@ public final class ConstraintMachine {
 			this.currentSpins = new HashMap<>();
 			this.witness = witness;
 			this.signatures = signatures;
+		}
+
+		public void setCurrentTransitionToken(TransitionToken currentTransitionToken) {
+			this.currentTransitionToken = currentTransitionToken;
 		}
 
 		public boolean checkSpin(Particle particle, Spin spin) {
@@ -114,61 +96,91 @@ public final class ConstraintMachine {
 			return signature != null && publicKey.verify(witness, signature);
 		}
 
-		Spin push(Particle p) {
+		boolean push(Particle p) {
 			final Spin curSpin = currentSpins.get(p);
 			final Spin nextSpin = SpinStateMachine.next(curSpin);
 			currentSpins.put(p, nextSpin);
-			return nextSpin;
+			return nextSpin == Spin.DOWN;
 		}
 
 		Particle getCurParticle() {
-			return spunParticleRemaining == null ? null : spunParticleRemaining.getParticle();
+			return particleRemaining;
 		}
 
-		boolean spinClashes(Spin spin) {
-			return spunParticleRemaining != null && spunParticleRemaining.getSpin() == spin;
+		boolean spinClashes(boolean nextIsInput) {
+			return particleRemaining != null && nextIsInput == particleRemainingIsInput;
 		}
 
-		Object getInputUsed() {
-			return spunParticleRemaining != null && spunParticleRemaining.getSpin() == Spin.DOWN ? particleRemainingUsed : null;
+		TypeToken<? extends UsedData> getInputUsedType() {
+			return particleRemaining != null && particleRemainingIsInput && particleRemainingUsed != null
+				? particleRemainingUsed.getTypeToken() : TypeToken.of(VoidUsedData.class);
 		}
 
-		Object getOutputUsed() {
-			return spunParticleRemaining != null && spunParticleRemaining.getSpin() == Spin.UP ? particleRemainingUsed : null;
+		TypeToken<? extends UsedData> getOutputUsedType() {
+			return particleRemaining != null && !particleRemainingIsInput && particleRemainingUsed != null
+				? particleRemainingUsed.getTypeToken() : TypeToken.of(VoidUsedData.class);
+		}
+
+		UsedData getInputUsed() {
+			return particleRemaining != null && particleRemainingIsInput ? particleRemainingUsed : null;
+		}
+
+		UsedData getOutputUsed() {
+			return particleRemaining != null && !particleRemainingIsInput ? particleRemainingUsed : null;
 		}
 
 		void pop() {
-			this.spunParticleRemaining = null;
+			this.particleRemaining = null;
 			this.particleRemainingUsed = null;
 		}
 
-		void popAndReplace(SpunParticle spunParticle, Object particleRemainingUsed) {
-			this.spunParticleRemaining = spunParticle;
+		void popAndReplace(Particle particle, boolean isInput, UsedData particleRemainingUsed) {
+			this.particleRemaining = particle;
+			this.particleRemainingIsInput = isInput;
 			this.particleRemainingUsed = particleRemainingUsed;
 		}
 
-		void updateUsed(Object particleRemainingUsed) {
+		void updateUsed(UsedData particleRemainingUsed) {
 			this.particleRemainingUsed = particleRemainingUsed;
 		}
 
 		boolean isEmpty() {
-			return this.spunParticleRemaining == null;
+			return this.particleRemaining == null;
+		}
+
+		@Override
+		public String toString() {
+			StringBuilder builder = new StringBuilder();
+			builder.append("CMTrace:\n[\n");
+			if (particleRemaining != null) {
+				builder
+					.append("  Remaining (")
+					.append(this.particleRemainingIsInput ? "input" : "output")
+					.append("): ")
+					.append(this.particleRemaining)
+					.append("\n  Used: ")
+					.append(this.particleRemainingUsed);
+			} else {
+				builder.append("  Remaining: [empty]");
+			}
+			builder.append("\n  TransitionToken: ").append(currentTransitionToken);
+			builder.append("\n]");
+
+			return builder.toString();
 		}
 	}
 
 	/**
 	 * Executes a transition procedure given the next spun particle and a current validation state.
 	 *
-	 * @param nextSpun the next spun particle
 	 * @param dp pointer of the next spun particle
 	 * @param validationState local state of validation
 	 * @return the first error found, otherwise an empty optional
 	 */
-	Optional<CMError> validateParticle(CMValidationState validationState, SpunParticle nextSpun, DataPointer dp) {
-		final Particle nextParticle = nextSpun.getParticle();
+	Optional<CMError> validateParticle(CMValidationState validationState, Particle nextParticle, boolean isInput, DataPointer dp) {
 		final Particle curParticle = validationState.getCurParticle();
 
-		if (validationState.spinClashes(nextSpun.getSpin())) {
+		if (validationState.spinClashes(isInput)) {
 			return Optional.of(
 				new CMError(
 					dp,
@@ -178,13 +190,22 @@ public final class ConstraintMachine {
 			);
 		}
 
-		final Particle inputParticle = nextSpun.getSpin() == Spin.DOWN ? nextParticle : curParticle;
-		final Particle outputParticle = nextSpun.getSpin() == Spin.DOWN ? curParticle : nextParticle;
-		final TransitionProcedure<Particle, Particle> transitionProcedure = this.particleProcedures.apply(inputParticle, outputParticle);
+		final Particle inputParticle = isInput ? nextParticle : curParticle;
+		final Particle outputParticle = isInput ? curParticle : nextParticle;
+		final TransitionToken transitionToken = new TransitionToken(
+			inputParticle != null ? inputParticle.getClass() : VoidParticle.class,
+			validationState.getInputUsedType(),
+			outputParticle != null ? outputParticle.getClass() : VoidParticle.class,
+			validationState.getOutputUsedType()
+		);
+
+		validationState.setCurrentTransitionToken(transitionToken);
+
+		final TransitionProcedure<Particle, UsedData, Particle, UsedData> transitionProcedure = this.particleProcedures.apply(transitionToken);
 
 		if (transitionProcedure == null) {
 			if (inputParticle == null || outputParticle == null) {
-				validationState.popAndReplace(nextSpun, null);
+				validationState.popAndReplace(nextParticle, isInput, null);
 				return Optional.empty();
 			}
 
@@ -197,64 +218,76 @@ public final class ConstraintMachine {
 			);
 		}
 
-		final ProcedureResult result = transitionProcedure.execute(
-			inputParticle,
-			validationState.getInputUsed(),
-			outputParticle,
-			validationState.getOutputUsed()
-		);
-		switch (result.getCmAction()) {
-			case POP_INPUT:
-				if (nextSpun.getSpin() == Spin.UP) {
-					validationState.popAndReplace(nextSpun, result.getUsed());
-				} else {
-					validationState.updateUsed(result.getUsed());
-				}
-				break;
-			case POP_OUTPUT:
-				if (nextSpun.getSpin() == Spin.DOWN) {
-					validationState.popAndReplace(nextSpun, result.getUsed());
-				} else {
-					validationState.updateUsed(result.getUsed());
-				}
-				break;
-			case POP_INPUT_OUTPUT:
-				if (result.getUsed() != null) {
-					throw new IllegalStateException("POP_INPUT_OUTPUT must output null");
-				}
-				validationState.pop();
-				break;
-			case ERROR:
-				return Optional.of(
-					new CMError(
-						dp,
-						CMErrorCode.TRANSITION_ERROR,
-						validationState,
-						result.getErrorMessage()
-					)
-				);
-		}
+		final UsedData inputUsed = validationState.getInputUsed();
+		final UsedData outputUsed = validationState.getOutputUsed();
 
-		final WitnessValidator<Particle, Particle> witnessValidator = this.witnessValidators.apply(inputParticle, outputParticle);
-		if (witnessValidator == null) {
-			throw new IllegalStateException("No witness validator for: " + inputParticle + " -> " + outputParticle);
-		}
-		final WitnessValidatorResult witnessValidatorResult = witnessValidator.validate(
-			result.getCmAction(),
+		// Precondition check
+		final Result preconditionCheckResult = transitionProcedure.precondition(
 			inputParticle,
+			inputUsed,
 			outputParticle,
-			validationState::isSignedBy
+			outputUsed
 		);
-		if (witnessValidatorResult.isError()) {
+		if (preconditionCheckResult.isError()) {
 			return Optional.of(
 				new CMError(
 					dp,
-					CMErrorCode.WITNESS_ERROR,
-					validationState,
-					witnessValidatorResult.getErrorMessage()
+					CMErrorCode.TRANSITION_PRECONDITION_FAILURE,
+					validationState
 				)
 			);
 		}
+
+		Optional<UsedData> prevUsedData = null;
+		for (Boolean testInput : Arrays.asList(Boolean.TRUE, Boolean.FALSE)) {
+
+			UsedCompute<Particle, UsedData, Particle, UsedData> usedCompute
+				= testInput ? transitionProcedure.inputUsedCompute() : transitionProcedure.outputUsedCompute();
+
+			final Optional<UsedData> usedData = usedCompute.compute(inputParticle, inputUsed, outputParticle, outputUsed);
+			if (usedData.isPresent()) {
+				if (prevUsedData != null && prevUsedData.isPresent()) {
+					return Optional.of(
+						new CMError(
+							dp,
+							CMErrorCode.NO_FULL_POP_ERROR,
+							validationState
+						)
+					);
+				}
+
+				if (isInput) {
+					validationState.popAndReplace(nextParticle, true, usedData.get());
+				} else {
+					validationState.updateUsed(usedData.get());
+				}
+			} else {
+				final WitnessValidator<Particle> witnessValidator = testInput ? transitionProcedure.inputWitnessValidator()
+					: transitionProcedure.outputWitnessValidator();
+				final WitnessValidatorResult inputWitness = witnessValidator.validate(
+					testInput ? inputParticle : outputParticle, validationState::isSignedBy
+				);
+
+				if (inputWitness.isError()) {
+					return Optional.of(
+						new CMError(
+							dp,
+							CMErrorCode.WITNESS_ERROR,
+							validationState,
+							inputWitness.getErrorMessage()
+						)
+					);
+				}
+
+				if (prevUsedData != null && !prevUsedData.isPresent()) {
+					validationState.pop();
+				}
+			}
+
+			prevUsedData = usedData;
+		}
+
+		validationState.setCurrentTransitionToken(null);
 
 		return Optional.empty();
 	}
@@ -274,32 +307,21 @@ public final class ConstraintMachine {
 			switch (cmMicroInstruction.getMicroOp()) {
 				case CHECK_NEUTRAL:
 				case CHECK_UP:
-					final Optional<Spin> initSpin = localEngineStore.getSpin(cmMicroInstruction.getParticle());
-
-					// "Segfaults" or particles which should not exist
-					if (!initSpin.isPresent()) {
-						return Optional.of(new CMError(dp, CMErrorCode.UNKNOWN_PARTICLE));
+					final Result staticCheckResult = particleStaticCheck.apply(cmMicroInstruction.getParticle());
+					if (staticCheckResult.isError()) {
+						return Optional.of(new CMError(dp, CMErrorCode.INVALID_PARTICLE, validationState, staticCheckResult.getErrorMessage()));
 					}
 
 					final Spin checkSpin = cmMicroInstruction.getCheckSpin();
-					final Spin curSpin = initSpin.get();
-
-					// Virtual particle state checks
-					// TODO: Is this better suited at the state check pipeline?
-					if (SpinStateMachine.isBefore(checkSpin, curSpin)) {
-						return Optional.of(new CMError(dp, CMErrorCode.INTERNAL_SPIN_CONFLICT));
-					}
-
 					boolean updated = validationState.checkSpin(cmMicroInstruction.getParticle(), checkSpin);
 					if (!updated) {
-						return Optional.of(new CMError(dp, CMErrorCode.INTERNAL_SPIN_CONFLICT));
+						return Optional.of(new CMError(dp, CMErrorCode.INTERNAL_SPIN_CONFLICT, validationState));
 					}
 					break;
 				case PUSH:
 					final Particle nextParticle = cmMicroInstruction.getParticle();
-					final Spin nextSpin = validationState.push(nextParticle);
-					final SpunParticle nextSpun = SpunParticle.of(nextParticle, nextSpin);
-					Optional<CMError> error = validateParticle(validationState, nextSpun, dp);
+					final boolean isInput = validationState.push(nextParticle);
+					Optional<CMError> error = validateParticle(validationState, nextParticle, isInput, dp);
 					if (error.isPresent()) {
 						return error;
 					}
@@ -326,7 +348,8 @@ public final class ConstraintMachine {
 		if (particleIndex != 0) {
 			return Optional.of(new CMError(
 				DataPointer.ofParticle(particleGroupIndex, particleIndex),
-				CMErrorCode.MISSING_PARTICLE_GROUP
+				CMErrorCode.MISSING_PARTICLE_GROUP,
+				validationState
 			));
 		}
 
@@ -347,12 +370,5 @@ public final class ConstraintMachine {
 		);
 
 		return this.validateMicroInstructions(validationState, cmInstruction.getMicroInstructions());
-	}
-
-	/**
-	 * Retrieves the virtual layer used by this Constraint Machine
-	 */
-	public UnaryOperator<CMStore> getVirtualStore() {
-		return this.virtualStore;
 	}
 }

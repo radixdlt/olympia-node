@@ -9,45 +9,47 @@ import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenT
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.RRI;
 import com.radixdlt.atomos.RadixAddress;
+import com.radixdlt.atomos.Result;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.utils.UInt256;
 import java.util.HashMap;
-import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.mockito.Mockito;
 import org.powermock.api.mockito.PowerMockito;
 
 public class TokensConstraintScryptTest {
-	private static CMAtomOS cmAtomOS = new CMAtomOS();
+	private static Function<Particle, Result> staticCheck;
 
 	@BeforeClass
 	public static void initializeConstraintScrypt() {
 		TokensConstraintScrypt tokensConstraintScrypt = new TokensConstraintScrypt();
+		CMAtomOS cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(tokensConstraintScrypt);
+		staticCheck = cmAtomOS.buildParticleStaticCheck();
 	}
 
 	@Test
 	public void when_validating_mutable_token_def_particle_with_no_rri__result_has_error() {
 		MutableSupplyTokenDefinitionParticle token = mock(MutableSupplyTokenDefinitionParticle.class);
-		assertThat(cmAtomOS.testParticle(token).getErrorMessage())
+		assertThat(staticCheck.apply(token).getErrorMessage())
 			.contains("rri cannot be null");
 	}
 
 	@Test
 	public void when_validating_fixed_token_def_particle_with_no_rri__result_has_error() {
 		FixedSupplyTokenDefinitionParticle token = mock(FixedSupplyTokenDefinitionParticle.class);
-		assertThat(cmAtomOS.testParticle(token).getErrorMessage())
+		assertThat(staticCheck.apply(token).getErrorMessage())
 			.contains("rri cannot be null");
 	}
-
 
 	@Test
 	public void when_validating_token_class_particle_with_too_long_symbol__result_has_error() {
 		MutableSupplyTokenDefinitionParticle token = PowerMockito.mock(MutableSupplyTokenDefinitionParticle.class);
 		when(token.getRRI()).thenReturn(RRI.of(mock(RadixAddress.class), "TEEEEEEEEEEEEEEEEEEEEEEEEEEST"));
-		assertThat(cmAtomOS.testParticle(token).getErrorMessage())
+		assertThat(staticCheck.apply(token).getErrorMessage())
 			.contains("Symbol: invalid length");
 	}
 
@@ -55,7 +57,7 @@ public class TokensConstraintScryptTest {
 	public void when_validating_token_class_particle_with_too_short_symbol__result_has_error() {
 		MutableSupplyTokenDefinitionParticle token = PowerMockito.mock(MutableSupplyTokenDefinitionParticle.class);
 		when(token.getRRI()).thenReturn(RRI.of(mock(RadixAddress.class), ""));
-		assertThat(cmAtomOS.testParticle(token).getErrorMessage())
+		assertThat(staticCheck.apply(token).getErrorMessage())
 			.contains("Symbol: invalid length");
 	}
 
@@ -63,41 +65,27 @@ public class TokensConstraintScryptTest {
 	public void when_validating_token_class_particle_without_description__result_has_error() {
 		MutableSupplyTokenDefinitionParticle token = PowerMockito.mock(MutableSupplyTokenDefinitionParticle.class);
 		when(token.getRRI()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
-		assertThat(cmAtomOS.testParticle(token).isError())
-			.isTrue();
+		assertThat(staticCheck.apply(token).getErrorMessage())
+			.contains("Description: no or empty provided");
 	}
 
 	@Test
 	public void when_validating_token_class_particle_with_too_long_description__result_has_error() {
 		MutableSupplyTokenDefinitionParticle token = PowerMockito.mock(MutableSupplyTokenDefinitionParticle.class);
 		when(token.getRRI()).thenReturn(RRI.of(mock(RadixAddress.class), "TEST"));
-		Mockito.when(token.getDescription()).thenReturn(
+		when(token.getDescription()).thenReturn(
 			IntStream.range(0, TokenDefinitionUtils.MAX_DESCRIPTION_LENGTH + 1).mapToObj(i -> "c").collect(Collectors.joining()));
-		assertThat(cmAtomOS.testParticle(token).getErrorMessage())
+		assertThat(staticCheck.apply(token).getErrorMessage())
 			.contains("Description: invalid length");
-	}
-
-	@Test
-	public void when_validating_valid_token_class_particle__result_has_no_errors() {
-		MutableSupplyTokenDefinitionParticle token = PowerMockito.mock(MutableSupplyTokenDefinitionParticle.class);
-		when(token.getRRI()).thenReturn(RRI.of(mock(RadixAddress.class), "TEST"));
-		when(token.getDescription()).thenReturn("Valid test description.");
-		Map<TokenTransition, TokenPermission> permissions = ImmutableMap.of(
-			TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY,
-			TokenTransition.BURN, TokenPermission.TOKEN_OWNER_ONLY
-		);
-		when(token.getTokenPermissions()).thenReturn(permissions);
-		assertThat(cmAtomOS.testParticle(token).isSuccess())
-			.isTrue();
 	}
 
 	@Test
 	public void when_validating_token_class_particle_without_permissions_set__result_has_error() {
 		MutableSupplyTokenDefinitionParticle token = PowerMockito.mock(MutableSupplyTokenDefinitionParticle.class);
 		when(token.getRRI()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
-		Mockito.when(token.getTokenPermissions()).thenReturn(new HashMap<>());
+		when(token.getTokenPermissions()).thenReturn(new HashMap<>());
 		when(token.getDescription()).thenReturn("Hello");
-		assertThat(cmAtomOS.testParticle(token).getErrorMessage())
+		assertThat(staticCheck.apply(token).getErrorMessage())
 			.contains("Permissions: must be set");
 	}
 
@@ -110,8 +98,8 @@ public class TokensConstraintScryptTest {
 			TokenTransition.MINT, TokenPermission.ALL,
 			TokenTransition.BURN, TokenPermission.ALL
 		));
-		Mockito.when(token.getIconUrl()).thenReturn("this is not a url");
-		assertThat(cmAtomOS.testParticle(token).getErrorMessage())
+		when(token.getIconUrl()).thenReturn("this is not a url");
+		assertThat(staticCheck.apply(token).getErrorMessage())
 			.contains("Icon: not a valid URL");
 	}
 
@@ -120,7 +108,7 @@ public class TokensConstraintScryptTest {
 		TransferrableTokensParticle transferrableTokensParticle = mock(TransferrableTokensParticle.class);
 		when(transferrableTokensParticle.getTokDefRef()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
 		when(transferrableTokensParticle.getAmount()).thenReturn(null);
-		assertThat(cmAtomOS.testParticle(transferrableTokensParticle).getErrorMessage())
+		assertThat(staticCheck.apply(transferrableTokensParticle).getErrorMessage())
 			.contains("null");
 	}
 
@@ -129,7 +117,7 @@ public class TokensConstraintScryptTest {
 		UnallocatedTokensParticle unallocated = mock(UnallocatedTokensParticle.class);
 		when(unallocated.getTokDefRef()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
 		when(unallocated.getAmount()).thenReturn(null);
-		assertThat(cmAtomOS.testParticle(unallocated).getErrorMessage())
+		assertThat(staticCheck.apply(unallocated).getErrorMessage())
 			.contains("null");
 	}
 
@@ -138,7 +126,7 @@ public class TokensConstraintScryptTest {
 		TransferrableTokensParticle transferrableTokensParticle = mock(TransferrableTokensParticle.class);
 		when(transferrableTokensParticle.getTokDefRef()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
 		when(transferrableTokensParticle.getAmount()).thenReturn(UInt256.ZERO);
-		assertThat(cmAtomOS.testParticle(transferrableTokensParticle).getErrorMessage())
+		assertThat(staticCheck.apply(transferrableTokensParticle).getErrorMessage())
 			.contains("zero");
 	}
 
@@ -147,7 +135,7 @@ public class TokensConstraintScryptTest {
 		UnallocatedTokensParticle burnedTokensParticle = mock(UnallocatedTokensParticle.class);
 		when(burnedTokensParticle.getTokDefRef()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
 		when(burnedTokensParticle.getAmount()).thenReturn(UInt256.ZERO);
-		assertThat(cmAtomOS.testParticle(burnedTokensParticle).getErrorMessage())
+		assertThat(staticCheck.apply(burnedTokensParticle).getErrorMessage())
 			.contains("zero");
 	}
 
@@ -157,7 +145,7 @@ public class TokensConstraintScryptTest {
 		when(transferrableTokensParticle.getTokDefRef()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
 		when(transferrableTokensParticle.getAmount()).thenReturn(UInt256.ONE);
 		when(transferrableTokensParticle.getGranularity()).thenReturn(null);
-		assertThat(cmAtomOS.testParticle(transferrableTokensParticle).getErrorMessage())
+		assertThat(staticCheck.apply(transferrableTokensParticle).getErrorMessage())
 			.contains("granularity");
 	}
 
@@ -167,7 +155,7 @@ public class TokensConstraintScryptTest {
 		when(unallocated.getTokDefRef()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
 		when(unallocated.getAmount()).thenReturn(UInt256.ONE);
 		when(unallocated.getGranularity()).thenReturn(null);
-		assertThat(cmAtomOS.testParticle(unallocated).getErrorMessage())
+		assertThat(staticCheck.apply(unallocated).getErrorMessage())
 			.contains("granularity");
 	}
 
@@ -177,7 +165,7 @@ public class TokensConstraintScryptTest {
 		when(unallocated.getTokDefRef()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
 		when(unallocated.getAmount()).thenReturn(UInt256.ONE);
 		when(unallocated.getGranularity()).thenReturn(UInt256.ZERO);
-		assertThat(cmAtomOS.testParticle(unallocated).getErrorMessage())
+		assertThat(staticCheck.apply(unallocated).getErrorMessage())
 			.contains("granularity");
 	}
 
@@ -187,7 +175,7 @@ public class TokensConstraintScryptTest {
 		when(transferrableTokensParticle.getTokDefRef()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
 		when(transferrableTokensParticle.getAmount()).thenReturn(UInt256.THREE);
 		when(transferrableTokensParticle.getGranularity()).thenReturn(UInt256.TWO);
-		assertThat(cmAtomOS.testParticle(transferrableTokensParticle).getErrorMessage())
+		assertThat(staticCheck.apply(transferrableTokensParticle).getErrorMessage())
 			.contains("granularity");
 	}
 }

@@ -1,4 +1,4 @@
-package com.radixdlt.atoms;
+package com.radixdlt.constraintmachine;
 
 import com.google.common.base.Suppliers;
 import java.util.Objects;
@@ -59,53 +59,12 @@ public final class DataPointer {
 		return new DataPointer(-1, -1);
 	}
 
-	public SpunParticle getParticleFrom(ImmutableAtom atom) {
-		if (particleIndex < 0) {
-			throw new IllegalArgumentException("Pointer does not point to a particle");
-		}
-
-		this.validateExists(atom);
-
-		return atom.getParticleGroup(this.particleGroupIndex).getSpunParticle(particleIndex);
+	public int getParticleGroupIndex() {
+		return particleGroupIndex;
 	}
 
-	public void validateExists(ImmutableAtom atom) {
-		if (particleGroupIndex < 0) {
-			return;
-		}
-
-		if (particleGroupIndex >= atom.getParticleGroupCount()) {
-			throw new IllegalArgumentException("Particle group index " + particleGroupIndex
-				+ " is >= atom particle group count " + atom.getParticleGroupCount());
-		}
-
-		if (particleIndex < 0) {
-			return;
-		}
-
-		if (particleIndex >= atom.getParticleGroup(particleGroupIndex).getParticleCount()) {
-			throw new IllegalArgumentException("Particle index " + particleIndex + " is >= particle group particle count "
-				+ atom.getParticleGroup(particleGroupIndex).getParticleCount());
-		}
-	}
-
-	/**
-	 * Retrieve the data pointer of a spun particle in an atom
-	 * @param spunParticle the spun particle to get the data pointer of
-	 * @param atom the atom the spun particle is within
-	 * @return a pointer into the atom pointing to the spun particle given
-	 */
-	public static DataPointer ofParticleInAtom(SpunParticle spunParticle, ImmutableAtom atom) {
-		ParticleGroup particleGroup = atom.particleGroups()
-			.filter(pg -> pg.contains(spunParticle))
-			.findFirst()
-			.orElseThrow(() -> new IllegalStateException(String.format(
-				"Could not get validation pointer for %s in atom %s, no containing group found",
-				spunParticle.getParticle().getHID(), atom.getAID())));
-		int groupIndex = atom.indexOfParticleGroup(particleGroup);
-		int particleInGroupIndex = particleGroup.indexOfSpunParticle(spunParticle);
-
-		return DataPointer.ofParticle(groupIndex, particleInGroupIndex);
+	public int getParticleIndex() {
+		return particleIndex;
 	}
 
 	@Override

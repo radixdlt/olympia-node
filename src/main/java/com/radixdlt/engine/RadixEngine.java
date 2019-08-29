@@ -1,30 +1,25 @@
 package com.radixdlt.engine;
 
-import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atomos.Result;
-import com.radixdlt.atoms.DataPointer;
-import com.radixdlt.atoms.Particle;
-import com.radixdlt.atoms.Spin;
-import com.radixdlt.atoms.SpunParticle;
-import com.radixdlt.common.Pair;
+import com.radixdlt.constraintmachine.DataPointer;
+import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.constraintmachine.CMErrorCode;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.constraintmachine.CMError;
+import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.CMMicroInstruction.CMMicroOp;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.store.CMStore;
+import com.radixdlt.store.CMStores;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.SpinStateMachine;
-import com.radixdlt.store.SpinStateTransitionValidator;
-import com.radixdlt.store.SpinStateTransitionValidator.TransitionCheckResult;
-import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.stream.Collectors;
+import java.util.function.UnaryOperator;
 
 /**
  * Top Level Class for the Radix Engine, a real-time, shardable, distributed state machine.
@@ -62,10 +57,12 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 
 	public RadixEngine(
 		ConstraintMachine constraintMachine,
+		UnaryOperator<CMStore> virtualStoreLayer,
 		EngineStore<T> engineStore
 	) {
 		this.constraintMachine = constraintMachine;
-		this.virtualizedCMStore = constraintMachine.getVirtualStore().apply(engineStore);
+		// Remove cm virtual store
+		this.virtualizedCMStore = virtualStoreLayer.apply(CMStores.empty());
 		this.engineStore = engineStore;
 		this.stateUpdateEngine = new Thread(this::run);
 		this.stateUpdateEngine.setDaemon(true);
@@ -119,8 +116,8 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 
 		final Optional<CMError> error = constraintMachine.validate(cmAtom.getCMInstruction());
 		if (error.isPresent()) {
-			atomEventListener.onCMError(cmAtom, ImmutableSet.of(error.get()));
-			this.atomEventListeners.forEach(acceptor -> acceptor.onCMError(cmAtom, ImmutableSet.of(error.get())));
+			atomEventListener.onCMError(cmAtom, error.get());
+			this.atomEventListeners.forEach(acceptor -> acceptor.onCMError(cmAtom, error.get()));
 			return;
 		}
 
@@ -128,8 +125,8 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 			Result hookResult = hook.hook(cmAtom);
 			if (hookResult.isError()) {
 				CMError cmError = new CMError(DataPointer.ofAtom(), CMErrorCode.HOOK_ERROR, null, hookResult.getErrorMessage());
-				atomEventListener.onCMError(cmAtom, ImmutableSet.of(cmError));
-				this.atomEventListeners.forEach(acceptor -> acceptor.onCMError(cmAtom, ImmutableSet.of(cmError)));
+				atomEventListener.onCMError(cmAtom, cmError);
+				this.atomEventListeners.forEach(acceptor -> acceptor.onCMError(cmAtom, cmError));
 				return;
 			}
 		}
@@ -144,65 +141,62 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 		final T cmAtom = storeAtom.cmAtom;
 		final CMInstruction cmInstruction = cmAtom.getCMInstruction();
 
-		// TODO: Optimize these collectors out
-		Map<TransitionCheckResult, List<Pair<SpunParticle, TransitionCheckResult>>> spinCheckResults = cmInstruction.getMicroInstructions()
-			.stream()
-			.filter(i -> i.getMicroOp() == CMMicroOp.CHECK_NEUTRAL || i.getMicroOp() == CMMicroOp.CHECK_UP)
-			.map(instruction -> {
-				// First spun is the only one we need to check
-				final Spin checkSpin = instruction.getCheckSpin();
-				final Spin nextSpin = SpinStateMachine.next(checkSpin);
-				final Particle particle = instruction.getParticle();
-				final TransitionCheckResult spinCheck = SpinStateTransitionValidator.checkParticleTransition(
-					particle,
-					nextSpin,
-					virtualizedCMStore
-				);
+		int particleIndex = 0;
+		int particleGroupIndex = 0;
+		for (CMMicroInstruction microInstruction : cmInstruction.getMicroInstructions()) {
+			// Treat check spin as the first push for now
+			if (!microInstruction.isCheckSpin()) {
+				if (microInstruction.getMicroOp() == CMMicroOp.PARTICLE_GROUP) {
+					particleGroupIndex++;
+					particleIndex = 0;
+				} else {
+					particleIndex++;
+				}
+				continue;
+			}
 
-				return Pair.of(SpunParticle.of(particle, nextSpin), spinCheck);
-			})
-			.collect(Collectors.groupingBy(Pair::getSecond));
+			final Particle particle = microInstruction.getParticle();
+			if (!engineStore.supports(particle.getDestinations())) {
+				continue;
+			}
 
-		//if (spinCheckResults.get(TransitionCheckResult.MISSING_STATE_FROM_UNSUPPORTED_SHARD) != null) {
-			// Could be missing state needed from other shards. This is okay.
-			// TODO: Log
-		//}
+			final DataPointer dp = DataPointer.ofParticle(particleGroupIndex, particleIndex);
 
-		if (spinCheckResults.get(TransitionCheckResult.ILLEGAL_TRANSITION_TO) != null
-			|| spinCheckResults.get(TransitionCheckResult.MISSING_STATE) != null) {
-			throw new IllegalStateException("Should not be here. This should be caught by Constraint Machine Stateless validation.");
-		}
+			// First spun is the only one we need to check
+			final Spin checkSpin = microInstruction.getCheckSpin();
+			final Spin virtualSpin = virtualizedCMStore.getSpin(particle);
+			if (SpinStateMachine.isBefore(checkSpin, virtualSpin)) {
+				storeAtom.listener.onVirtualStateConflict(cmAtom, dp);
+				atomEventListeners.forEach(listener -> listener.onVirtualStateConflict(cmAtom, dp));
+				return;
+			}
 
-		if (spinCheckResults.get(TransitionCheckResult.CONFLICT) != null) {
-			final Pair<SpunParticle, TransitionCheckResult> issue = spinCheckResults.get(TransitionCheckResult.CONFLICT).get(0);
-			final SpunParticle issueParticle = issue.getFirst();
+			final Spin nextSpin = SpinStateMachine.next(checkSpin);
+			final Spin physicalSpin = engineStore.getSpin(particle);
+			final Spin currentSpin = SpinStateMachine.isAfter(virtualSpin, physicalSpin) ? virtualSpin : physicalSpin;
+			if (!SpinStateMachine.canTransition(currentSpin, nextSpin)) {
+				if (!SpinStateMachine.isBefore(currentSpin, nextSpin)) {
+					// TODO: Refactor so that two DB fetches aren't required to get conflicting atoms
+					// TODO Because we're checking SpunParticles I understand there can only be one of
+					// them in store as they are unique.
+					//
+					// Modified StateProviderFromStore.getAtomsContaining to be singular based on the
+					// above assumption.
+					engineStore.getAtomContaining(particle, nextSpin == Spin.DOWN, conflictAtom -> {
+						storeAtom.listener.onStateConflict(cmAtom, dp, conflictAtom);
+						atomEventListeners.forEach(listener -> listener.onStateConflict(cmAtom, dp, conflictAtom));
+					});
 
-			// TODO: Refactor so that two DB fetches aren't required to get conflicting atoms
-			// TODO Because we're checking SpunParticles I understand there can only be one of
-			// them in store as they are unique.
-			//
-			// Modified StateProviderFromStore.getAtomsContaining to be singular based on the
-			// above assumption.
-			engineStore.getAtomContaining(issueParticle, conflictAtom -> {
-				storeAtom.listener.onStateConflict(cmAtom, issueParticle, conflictAtom);
-				atomEventListeners.forEach(listener -> listener.onStateConflict(cmAtom, issueParticle, conflictAtom));
-			});
-
-			return;
-		}
-
-		// TODO: Add ALL missing dependencies for optimization
-		if (spinCheckResults.get(TransitionCheckResult.MISSING_DEPENDENCY) != null)  {
-			Pair<SpunParticle, TransitionCheckResult> issue = spinCheckResults.get(TransitionCheckResult.MISSING_DEPENDENCY).get(0);
-			SpunParticle issueParticle = issue.getFirst();
-
-			storeAtom.listener.onStateMissingDependency(cmAtom, issueParticle);
-			atomEventListeners.forEach(listener -> listener.onStateMissingDependency(cmAtom, issueParticle));
-			return;
+					return;
+				} else {
+					storeAtom.listener.onStateMissingDependency(cmAtom, dp);
+					atomEventListeners.forEach(listener -> listener.onStateMissingDependency(cmAtom, dp));
+					return;
+				}
+			}
 		}
 
 		engineStore.storeAtom(cmAtom);
-
 		storeAtom.listener.onStateStore(cmAtom);
 		atomEventListeners.forEach(listener -> listener.onStateStore(cmAtom));
 	}

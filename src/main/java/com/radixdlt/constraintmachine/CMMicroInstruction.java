@@ -1,8 +1,5 @@
 package com.radixdlt.constraintmachine;
 
-import com.radixdlt.atoms.Particle;
-import com.radixdlt.atoms.Spin;
-
 public final class CMMicroInstruction {
 	public enum CMMicroOp {
 		CHECK_NEUTRAL,
