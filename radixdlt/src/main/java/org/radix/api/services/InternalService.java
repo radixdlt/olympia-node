@@ -133,7 +133,7 @@ public class InternalService {
 								atom.sign(this.owner);
 
 								if (LocalSystem.getInstance().getShards().intersects(atom.getShards()) == true) {
-									Modules.get(AtomSyncView.class).receive(atom);
+									Modules.get(AtomSyncView.class).inject(atom);
 								} else {
 									for (Peer peer : Modules.get(PeerHandler.class).getPeers(PeerDomain.NETWORK, null, new PeerHandler.PeerDistanceComparator(LocalSystem.getInstance().getNID()))) {
 										if (!peer.getSystem().getNID().equals(LocalSystem.getInstance().getNID()) && peer.getSystem().getShards().intersects(atom.getShards())) {

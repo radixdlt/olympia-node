@@ -558,7 +558,7 @@ public class AtomSync extends Service
 		// TODO remove atomsync so we no longer need this
 		Modules.put(AtomSyncView.class, new AtomSyncView() {
 			@Override
-			public void receive(Atom atom) {
+			public void inject(Atom atom) {
 				AtomSync.this.store(atom);
 			}
 

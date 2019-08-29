@@ -183,7 +183,7 @@ public class AtomsService {
 		}
 
 		try {
-			atomSync.receive(atom);
+			atomSync.inject(atom);
 		} catch (AtomAlreadyInProcessingException e) {
 			return AtomStatus.PENDING_CM_VERIFICATION;
 		} catch (AtomAlreadyStoredException e) {

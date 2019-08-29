@@ -59,7 +59,6 @@ public final class Tempo extends Plugin implements Ledger {
 	private final AtomStore atomStore;
 	private final CommitmentStore commitmentStore;
 
-	private final TempoController controller;
 	private final EdgeSelector edgeSelector;
 	private final PeerSupplier peerSupplier;
 	private final Attestor attestor;
@@ -86,7 +85,6 @@ public final class Tempo extends Plugin implements Ledger {
 		this.self = self;
 		this.atomStore = atomStore;
 		this.commitmentStore = commitmentStore;
-		this.controller = controller;
 		this.edgeSelector = edgeSelector;
 		this.peerSupplier = peerSupplier;
 		this.attestor = attestor;
@@ -179,10 +177,7 @@ public final class Tempo extends Plugin implements Ledger {
 			.map(Atom::getAID)
 			.collect(Collectors.toList())));
 
-		return controller.resolve(convertToTempoAtom(atom), conflictingAtoms.stream()
-			.map(Tempo::convertToTempoAtom)
-			.collect(Collectors.toSet()))
-			.thenApply(Tempo::convertToTempoAtom);
+		throw new UnsupportedOperationException("Not yet implemented");
 	}
 
 	@Override
@@ -203,9 +198,9 @@ public final class Tempo extends Plugin implements Ledger {
 		Modules.put(AtomStoreView.class, this.atomStore);
 		Modules.put(AtomSyncView.class, new AtomSyncView() {
 			@Override
-			public void receive(org.radix.atoms.Atom atom) {
+			public void inject(org.radix.atoms.Atom atom) {
 				TempoAtom tempoAtom = LegacyUtils.fromLegacyAtom(atom);
-				controller.queue(tempoAtom);
+				addInbound(tempoAtom);
 			}
 
 			@Override
@@ -215,14 +210,13 @@ public final class Tempo extends Plugin implements Ledger {
 
 			@Override
 			public long getQueueSize() {
-				return controller.getInboundQueueSize();
+				return inboundAtoms.size();
 			}
 
 			@Override
 			public Map<String, Object> getMetaData() {
 				return ImmutableMap.of(
-					"inboundQueue", controller.getInboundQueueSize(),
-					"actionQueue", controller.getActionQueueSize()
+					"inboundQueue", inboundAtoms.size()
 				);
 			}
 		});
@@ -239,20 +233,11 @@ public final class Tempo extends Plugin implements Ledger {
 	@Override
 	public void reset_impl() {
 		this.atomStore.reset();
-		this.controller.reset();
 	}
 
 	@Override
 	public String getName() {
 		return "Tempo";
-	}
-
-	public JSONObject getJsonRepresentation(String stateClassName) {
-		return controller.getJsonRepresentation(stateClassName);
-	}
-
-	public JSONObject getJsonRepresentation() {
-		return controller.getJsonRepresentation();
 	}
 
 	private static TempoAtom convertToTempoAtom(Atom atom) {
