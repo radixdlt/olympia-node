@@ -226,7 +226,6 @@ public final class Tempo extends Plugin implements Ledger {
 		Modules.remove(AtomStoreView.class);
 		Modules.remove(AtomSyncView.class);
 		this.atomStore.close();
-		// nothing to do
 	}
 
 	@Override
