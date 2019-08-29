@@ -33,8 +33,5 @@ public interface WitnessValidator<P extends Particle> {
 		}
 	}
 
-	WitnessValidatorResult validate(
-		P particle,
-		WitnessData witnessData
-	);
+	WitnessValidatorResult validate(P particle, WitnessData witnessData);
 }

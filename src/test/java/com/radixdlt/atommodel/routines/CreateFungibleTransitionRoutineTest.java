@@ -37,7 +37,7 @@ public class CreateFungibleTransitionRoutineTest {
 			mock(WitnessValidator.class)
 		).getProcedure0();
 
-		assertThat(procedure.inputUsed(
+		assertThat(procedure.inputUsedCompute().compute(
 			new Fungible(UInt256.ONE),
 			null,
 			new Fungible(UInt256.ONE),
@@ -45,7 +45,7 @@ public class CreateFungibleTransitionRoutineTest {
 		)).isEmpty();
 
 
-		assertThat(procedure.outputUsed(
+		assertThat(procedure.outputUsedCompute().compute(
 			new Fungible(UInt256.ONE),
 			null,
 			new Fungible(UInt256.ONE),
@@ -62,14 +62,14 @@ public class CreateFungibleTransitionRoutineTest {
 		).getProcedure0();
 
 
-		assertThat(procedure.inputUsed(
+		assertThat(procedure.inputUsedCompute().compute(
 			new Fungible(UInt256.TWO),
 			null,
 			new Fungible(UInt256.ONE),
 			null
 		)).get().isEqualTo(new UsedAmount(UInt256.ONE));
 
-		assertThat(procedure.outputUsed(
+		assertThat(procedure.outputUsedCompute().compute(
 			new Fungible(UInt256.TWO),
 			null,
 			new Fungible(UInt256.ONE),
@@ -85,14 +85,14 @@ public class CreateFungibleTransitionRoutineTest {
 			mock(WitnessValidator.class)
 		).getProcedure0();
 
-		assertThat(procedure.inputUsed(
+		assertThat(procedure.inputUsedCompute().compute(
 			new Fungible(UInt256.ONE),
 			null,
 			new Fungible(UInt256.TWO),
 			null
 		)).isEmpty();
 
-		assertThat(procedure.outputUsed(
+		assertThat(procedure.outputUsedCompute().compute(
 			new Fungible(UInt256.ONE),
 			null,
 			new Fungible(UInt256.TWO),
@@ -108,14 +108,14 @@ public class CreateFungibleTransitionRoutineTest {
 			mock(WitnessValidator.class)
 		).getProcedure0();
 
-		assertThat(procedure.inputUsed(
+		assertThat(procedure.inputUsedCompute().compute(
 			new Fungible(UInt256.TWO),
 			null,
 			new Fungible(UInt256.TWO),
 			null
 		)).isEmpty();
 
-		assertThat(procedure.outputUsed(
+		assertThat(procedure.inputUsedCompute().compute(
 			new Fungible(UInt256.TWO),
 			null,
 			new Fungible(UInt256.TWO),
@@ -131,14 +131,14 @@ public class CreateFungibleTransitionRoutineTest {
 			mock(WitnessValidator.class)
 		).getProcedure2();
 
-		assertThat(procedure.inputUsed(
+		assertThat(procedure.inputUsedCompute().compute(
 			new Fungible(UInt256.ONE),
 			null,
 			new Fungible(UInt256.TWO),
 			new UsedAmount(UInt256.ONE)
 		)).isEmpty();
 
-		assertThat(procedure.outputUsed(
+		assertThat(procedure.outputUsedCompute().compute(
 			new Fungible(UInt256.ONE),
 			null,
 			new Fungible(UInt256.TWO),

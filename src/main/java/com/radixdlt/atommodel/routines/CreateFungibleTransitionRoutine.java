@@ -7,6 +7,7 @@ import com.radixdlt.atomos.RoutineCalls;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.TransitionToken;
+import com.radixdlt.constraintmachine.UsedCompute;
 import com.radixdlt.constraintmachine.UsedData;
 import com.radixdlt.constraintmachine.VoidUsedData;
 import com.radixdlt.constraintmachine.WitnessValidator;
@@ -114,26 +115,30 @@ public final class CreateFungibleTransitionRoutine<I extends Particle, O extends
 		}
 
 		@Override
-		public Optional<UsedData> inputUsed(I inputParticle, N inputUsed, O outputParticle, U outputUsed) {
-			final UInt256 inputUsedAmount = inputUsedMapper.apply(inputUsed);
-			final UInt256 inputAmount = inputAmountMapper.apply(inputParticle).subtract(inputUsedAmount);
-			final UInt256 outputAmount = outputAmountMapper.apply(outputParticle).subtract(outputUsedMapper.apply(outputUsed));
-			int compare = inputAmount.compareTo(outputAmount);
-			return compare > 0 ? Optional.of(new UsedAmount(inputUsedAmount.add(outputAmount))) : Optional.empty();
+		public UsedCompute<I, N, O, U> inputUsedCompute() {
+			return (inputParticle, inputUsed, outputParticle, outputUsed) -> {
+				final UInt256 inputUsedAmount = inputUsedMapper.apply(inputUsed);
+				final UInt256 inputAmount = inputAmountMapper.apply(inputParticle).subtract(inputUsedAmount);
+				final UInt256 outputAmount = outputAmountMapper.apply(outputParticle).subtract(outputUsedMapper.apply(outputUsed));
+				int compare = inputAmount.compareTo(outputAmount);
+				return compare > 0 ? Optional.of(new UsedAmount(inputUsedAmount.add(outputAmount))) : Optional.empty();
+			};
+		}
+
+		@Override
+		public UsedCompute<I, N, O, U> outputUsedCompute() {
+			return (inputParticle, inputUsed, outputParticle, outputUsed) -> {
+				final UInt256 outputUsedAmount = outputUsedMapper.apply(outputUsed);
+				final UInt256 inputAmount = inputAmountMapper.apply(inputParticle).subtract(inputUsedMapper.apply(inputUsed));
+				final UInt256 outputAmount = outputAmountMapper.apply(outputParticle).subtract(outputUsedAmount);
+				int compare = inputAmount.compareTo(outputAmount);
+				return compare < 0 ? Optional.of(new UsedAmount(outputUsedAmount.add(inputAmount))) : Optional.empty();
+			};
 		}
 
 		@Override
 		public WitnessValidator<I> inputWitnessValidator() {
 			return inputWitnessValidator;
-		}
-
-		@Override
-		public Optional<UsedData> outputUsed(I inputParticle, N inputUsed, O outputParticle, U outputUsed) {
-			final UInt256 outputUsedAmount = outputUsedMapper.apply(outputUsed);
-			final UInt256 inputAmount = inputAmountMapper.apply(inputParticle).subtract(inputUsedMapper.apply(inputUsed));
-			final UInt256 outputAmount = outputAmountMapper.apply(outputParticle).subtract(outputUsedAmount);
-			int compare = inputAmount.compareTo(outputAmount);
-			return compare < 0 ? Optional.of(new UsedAmount(outputUsedAmount.add(inputAmount))) : Optional.empty();
 		}
 
 		@Override

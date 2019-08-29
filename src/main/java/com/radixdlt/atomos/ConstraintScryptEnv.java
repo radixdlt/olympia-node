@@ -5,6 +5,7 @@ import com.google.common.reflect.TypeToken;
 import com.radixdlt.atommodel.routines.CreateCombinedTransitionRoutine;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.TransitionToken;
+import com.radixdlt.constraintmachine.UsedCompute;
 import com.radixdlt.constraintmachine.UsedData;
 import com.radixdlt.constraintmachine.VoidUsedData;
 import com.radixdlt.constraintmachine.TransitionProcedure;
@@ -166,19 +167,20 @@ final class ConstraintScryptEnv implements SysCalls {
 				}
 
 				@Override
-				public Optional<UsedData> inputUsed(RRIParticle inputParticle, VoidUsedData inputUsed, O outputParticle, VoidUsedData outputUsed) {
-					return Optional.empty();
+				public UsedCompute<RRIParticle, VoidUsedData, O, VoidUsedData> inputUsedCompute() {
+					return (input, inputUsed, output, outputUsed) -> Optional.empty();
 				}
+
+				@Override
+				public UsedCompute<RRIParticle, VoidUsedData, O, VoidUsedData> outputUsedCompute() {
+					return (input, inputUsed, output, outputUsed) -> Optional.empty();
+				}
+
 
 				@Override
 				public WitnessValidator<RRIParticle> inputWitnessValidator() {
 					return (rri, witnessData) -> witnessData.isSignedBy(rri.getRri().getAddress().getKey())
 						? WitnessValidatorResult.success() : WitnessValidatorResult.error("Not signed by " + rri.getRri().getAddress());
-				}
-
-				@Override
-				public Optional<UsedData> outputUsed(RRIParticle inputParticle, VoidUsedData inputUsed, O outputParticle, VoidUsedData outputUsed) {
-					return Optional.empty();
 				}
 
 				@Override
@@ -245,18 +247,21 @@ final class ConstraintScryptEnv implements SysCalls {
 				}
 
 				@Override
-				public Optional<UsedData> inputUsed(Particle inputParticle, UsedData inputUsed, Particle outputParticle, UsedData outputUsed) {
-					return procedure.inputUsed((I) inputParticle, (N) inputUsed, (O) outputParticle, (U) outputUsed);
+				public UsedCompute<Particle, UsedData, Particle, UsedData> inputUsedCompute() {
+					return (input, inputUsed, output, outputUsed) -> procedure.inputUsedCompute()
+						.compute((I) input, (N) inputUsed, (O) output, (U) outputUsed);
 				}
+
+				@Override
+				public UsedCompute<Particle, UsedData, Particle, UsedData> outputUsedCompute() {
+					return (input, inputUsed, output, outputUsed) -> procedure.outputUsedCompute()
+						.compute((I) input, (N) inputUsed, (O) output, (U) outputUsed);
+				}
+
 
 				@Override
 				public WitnessValidator<Particle> inputWitnessValidator() {
 					return (i, w) -> procedure.inputWitnessValidator().validate((I) i, w);
-				}
-
-				@Override
-				public Optional<UsedData> outputUsed(Particle inputParticle, UsedData inputUsed, Particle outputParticle, UsedData outputUsed) {
-					return procedure.outputUsed((I) inputParticle, (N) inputUsed, (O) outputParticle, (U) outputUsed);
 				}
 
 				@Override

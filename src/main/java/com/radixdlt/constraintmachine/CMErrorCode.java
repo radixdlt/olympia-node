@@ -13,8 +13,7 @@ public enum CMErrorCode {
 	MISSING_TRANSITION_PROCEDURE("Transition procedure missing"),
 	UNEQUAL_INPUT_OUTPUT("Inputs and outputs do not match"),
 	NO_FULL_POP_ERROR("Neither input nor output are fully popped"),
-	INPUT_WITNESS_ERROR("Witness error"),
-	OUTPUT_WITNESS_ERROR("Witness error"),
+	WITNESS_ERROR("Witness error"),
 	TRANSITION_PRECONDITION_FAILURE("Transition Precondition failure"),
 	TRANSITION_ERROR("Transition error");
 

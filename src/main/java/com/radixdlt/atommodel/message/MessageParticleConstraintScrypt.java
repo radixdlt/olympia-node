@@ -6,7 +6,7 @@ import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.TransitionToken;
-import com.radixdlt.constraintmachine.UsedData;
+import com.radixdlt.constraintmachine.UsedCompute;
 import com.radixdlt.constraintmachine.VoidParticle;
 import com.radixdlt.constraintmachine.VoidUsedData;
 import com.radixdlt.constraintmachine.WitnessValidator;
@@ -49,20 +49,18 @@ public class MessageParticleConstraintScrypt implements ConstraintScrypt {
 				}
 
 				@Override
-				public Optional<UsedData> inputUsed(VoidParticle inputParticle, VoidUsedData inputUsed, MessageParticle outputParticle,
-					VoidUsedData outputUsed) {
-					return Optional.empty();
+				public UsedCompute<VoidParticle, VoidUsedData, MessageParticle, VoidUsedData> inputUsedCompute() {
+					return (input, inputUsed, output, outputUsed) -> Optional.empty();
+				}
+
+				@Override
+				public UsedCompute<VoidParticle, VoidUsedData, MessageParticle, VoidUsedData> outputUsedCompute() {
+					return (input, inputUsed, output, outputUsed) -> Optional.empty();
 				}
 
 				@Override
 				public WitnessValidator<VoidParticle> inputWitnessValidator() {
 					return (i, w) -> WitnessValidatorResult.success();
-				}
-
-				@Override
-				public Optional<UsedData> outputUsed(VoidParticle inputParticle, VoidUsedData inputUsed, MessageParticle outputParticle,
-					VoidUsedData outputUsed) {
-					return Optional.empty();
 				}
 
 				@Override

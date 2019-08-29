@@ -8,6 +8,7 @@ import com.radixdlt.atomos.RoutineCalls;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.TransitionToken;
+import com.radixdlt.constraintmachine.UsedCompute;
 import com.radixdlt.constraintmachine.UsedData;
 import com.radixdlt.constraintmachine.VoidUsedData;
 import com.radixdlt.constraintmachine.WitnessValidator;
@@ -65,13 +66,13 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 		);
 
 		calls.createTransition(
-			new TransitionToken<>(inputClass, TypeToken.of(VoidUsedData.class), outputClass1, TypeToken.of(VoidUsedData.class)),
-			getProcedure1()
+			new TransitionToken<>(inputClass, typeToken1, outputClass0, TypeToken.of(VoidUsedData.class)),
+			getProcedure2()
 		);
 
 		calls.createTransition(
-			new TransitionToken<>(inputClass, typeToken1, outputClass0, TypeToken.of(VoidUsedData.class)),
-			getProcedure2()
+			new TransitionToken<>(inputClass, TypeToken.of(VoidUsedData.class), outputClass1, TypeToken.of(VoidUsedData.class)),
+			getProcedure1()
 		);
 
 		calls.createTransition(
@@ -88,8 +89,8 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 			}
 
 			@Override
-			public Optional<UsedData> inputUsed(I inputParticle, VoidUsedData inputUsed, O outputParticle, VoidUsedData outputUsed) {
-				return Optional.of(new UsedParticle<>(typeToken0, outputParticle));
+			public UsedCompute<I, VoidUsedData, O, VoidUsedData> inputUsedCompute() {
+				return (input, inputUsed, output, outputUsed) -> Optional.of(new UsedParticle<>(typeToken0, output));
 			}
 
 			@Override
@@ -98,8 +99,8 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 			}
 
 			@Override
-			public Optional<UsedData> outputUsed(I inputParticle, VoidUsedData inputUsed, O outputParticle, VoidUsedData outputUsed) {
-				return Optional.empty();
+			public UsedCompute<I, VoidUsedData, O, VoidUsedData> outputUsedCompute() {
+				return (input, inputUsed, output, outputUsed) -> Optional.empty();
 			}
 
 			@Override
@@ -117,18 +118,18 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 			}
 
 			@Override
-			public Optional<UsedData> inputUsed(I inputParticle, VoidUsedData inputUsed, V outputParticle, VoidUsedData outputUsed) {
-				return Optional.of(new UsedParticle<>(typeToken1, outputParticle));
+			public UsedCompute<I, VoidUsedData, V, VoidUsedData> inputUsedCompute() {
+				return (input, inputUsed, output, outputUsed) -> Optional.of(new UsedParticle<>(typeToken1, output));
+			}
+
+			@Override
+			public UsedCompute<I, VoidUsedData, V, VoidUsedData> outputUsedCompute() {
+				return (input, inputUsed, output, outputUsed) -> Optional.empty();
 			}
 
 			@Override
 			public WitnessValidator<I> inputWitnessValidator() {
 				throw new IllegalStateException("Should never call here");
-			}
-
-			@Override
-			public Optional<UsedData> outputUsed(I inputParticle, VoidUsedData inputUsed, V outputParticle, VoidUsedData outputUsed) {
-				return Optional.empty();
 			}
 
 			@Override
@@ -146,18 +147,18 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 			}
 
 			@Override
-			public Optional<UsedData> inputUsed(I inputParticle, UsedParticle<V> inputUsed, O outputParticle, VoidUsedData outputUsed) {
-				return Optional.empty();
+			public UsedCompute<I, UsedParticle<V>, O, VoidUsedData> inputUsedCompute() {
+				return (input, inputUsed, output, outputUsed) -> Optional.empty();
+			}
+
+			@Override
+			public UsedCompute<I, UsedParticle<V>, O, VoidUsedData> outputUsedCompute() {
+				return (input, inputUsed, output, outputUsed) -> Optional.empty();
 			}
 
 			@Override
 			public WitnessValidator<I> inputWitnessValidator() {
-				return (o, w) -> WitnessValidatorResult.success();
-			}
-
-			@Override
-			public Optional<UsedData> outputUsed(I inputParticle, UsedParticle<V> inputUsed, O outputParticle, VoidUsedData outputUsed) {
-				return Optional.empty();
+				return inputWitnessValidator;
 			}
 
 			@Override
@@ -175,18 +176,18 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 			}
 
 			@Override
-			public Optional<UsedData> inputUsed(I inputParticle, UsedParticle<O> inputUsed, V outputParticle, VoidUsedData outputUsed) {
-				return Optional.empty();
+			public UsedCompute<I, UsedParticle<O>, V, VoidUsedData> inputUsedCompute() {
+				return (input, inputUsed, output, outputUsed) -> Optional.empty();
+			}
+
+			@Override
+			public UsedCompute<I, UsedParticle<O>, V, VoidUsedData> outputUsedCompute() {
+				return (input, inputUsed, output, outputUsed) -> Optional.empty();
 			}
 
 			@Override
 			public WitnessValidator<I> inputWitnessValidator() {
-				return (o, w) -> WitnessValidatorResult.success();
-			}
-
-			@Override
-			public Optional<UsedData> outputUsed(I inputParticle, UsedParticle<O> inputUsed, V outputParticle, VoidUsedData outputUsed) {
-				return Optional.empty();
+				return inputWitnessValidator;
 			}
 
 			@Override
