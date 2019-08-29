@@ -13,17 +13,14 @@ import com.radixdlt.tempo.actions.ReselectPassivePeersAction;
 import com.radixdlt.tempo.actions.ResetAction;
 import com.radixdlt.tempo.actions.control.RepeatScheduleAction;
 import com.radixdlt.tempo.actions.control.ScheduleAction;
-import com.radixdlt.tempo.actions.messaging.ReceivePushAction;
 import com.radixdlt.tempo.actions.messaging.ReceiveSampleRequestAction;
 import com.radixdlt.tempo.actions.messaging.ReceiveSampleResponseAction;
-import com.radixdlt.tempo.actions.messaging.SendPushAction;
 import com.radixdlt.tempo.actions.messaging.SendSampleRequestAction;
 import com.radixdlt.tempo.actions.messaging.SendSampleResponseAction;
 import com.radixdlt.tempo.epics.LocalResolverEpic;
 import com.radixdlt.tempo.epics.MessagingEpic;
 import com.radixdlt.tempo.epics.MomentumResolverEpic;
 import com.radixdlt.tempo.epics.SampleCollectorEpic;
-import com.radixdlt.tempo.messages.PushMessage;
 import com.radixdlt.tempo.messages.SampleRequestMessage;
 import com.radixdlt.tempo.messages.SampleResponseMessage;
 import com.radixdlt.tempo.reactive.TempoFlowSource;
@@ -36,9 +33,7 @@ import com.radixdlt.tempo.reactive.TempoAction;
 import com.radixdlt.tempo.reactive.TempoEpic;
 import com.radixdlt.tempo.reactive.TempoReducer;
 import com.radixdlt.tempo.reactive.TempoState;
-import com.radixdlt.tempo.state.AtomDeliveryState;
 import com.radixdlt.tempo.state.ConflictsState;
-import com.radixdlt.tempo.state.IterativeDiscoveryState;
 import com.radixdlt.tempo.state.LivePeersState;
 import com.radixdlt.tempo.state.PassivePeersState;
 import com.radixdlt.tempo.state.SampleCollectorState;
@@ -267,9 +262,7 @@ public final class TempoController {
 
 	// TODO temporary hack for debugging, revisit or remove later
 	private static final Map<String, Class<? extends TempoState>> exposedStateClassMap = ImmutableMap.<String, Class<? extends TempoState>>builder()
-		.put("atomDelivery", AtomDeliveryState.class)
 		.put("conflicts", ConflictsState.class)
-		.put("iterativeDiscovery", IterativeDiscoveryState.class)
 		.put("livePeers", LivePeersState.class)
 		.put("passivePeers", PassivePeersState.class)
 		.put("sampleCollector", SampleCollectorState.class)
@@ -311,8 +304,6 @@ public final class TempoController {
 		Builder builder = builder()
 			.addEpicBuilder(controller -> MessagingEpic.builder()
 				.messager(messageCentral)
-				.addInbound(PushMessage.class, ReceivePushAction::from)
-				.addOutbound(SendPushAction.class, SendPushAction::toMessage, SendPushAction::getPeer)
 				.addInbound(SampleRequestMessage.class, ReceiveSampleRequestAction::from)
 				.addOutbound(SendSampleRequestAction.class, SendSampleRequestAction::toMessage, SendSampleRequestAction::getPeer)
 				.addInbound(SampleResponseMessage.class, ReceiveSampleResponseAction::from)
