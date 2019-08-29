@@ -1,9 +1,9 @@
 package org.radix.validation;
 
-import com.radixdlt.atoms.ImmutableAtom;
+import com.radixdlt.middleware.ImmutableAtom;
 import java.util.Objects;
 import org.radix.atoms.Atom;
-import com.radixdlt.atoms.DataPointer;
+import com.radixdlt.constraintmachine.DataPointer;
 import org.radix.exceptions.ValidationException;
 
 /**
@@ -18,8 +18,6 @@ public class ConstraintMachineValidationException extends ValidationException {
 
 		Objects.requireNonNull(atom);
 		Objects.requireNonNull(dataPointer);
-
-		dataPointer.validateExists(atom);
 
 		this.atom = atom;
 		this.dataPointer = dataPointer;

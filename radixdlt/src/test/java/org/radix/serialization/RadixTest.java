@@ -2,7 +2,7 @@ package org.radix.serialization;
 
 import com.radixdlt.atommodel.tokens.TokensConstraintScrypt;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.atomos.SimpleRadixEngineAtom;
+import com.radixdlt.middleware.SimpleRadixEngineAtom;
 import com.radixdlt.serialization.Serialization;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.AfterClass;
@@ -96,9 +96,15 @@ public abstract class RadixTest
 			() -> Modules.get(AtomStore.class),
 			() -> LocalSystem.getInstance().getShards()
 		);
-		final ConstraintMachine constraintMachine = os.buildMachine();
+
+		final ConstraintMachine constraintMachine = new ConstraintMachine.Builder()
+			.setParticleTransitionProcedures(os.buildTransitionProcedures())
+			.setParticleStaticCheck(os.buildParticleStaticCheck())
+			.build();
+
 		final RadixEngine<SimpleRadixEngineAtom> radixEngine = new RadixEngine<>(
 			constraintMachine,
+			os.buildVirtualLayer(),
 			atomStore
 		);
 

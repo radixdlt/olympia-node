@@ -8,8 +8,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.radix.atoms.Atom;
-import com.radixdlt.atoms.Particle;
-import com.radixdlt.atoms.SpunParticle;
+import com.radixdlt.middleware.SpunParticle;
 import org.radix.collections.WireableSet;
 import com.radixdlt.common.EUID;
 import com.radixdlt.common.AID;

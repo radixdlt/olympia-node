@@ -2,7 +2,7 @@ package com.radixdlt.tempo;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.common.AID;
-import com.radixdlt.common.Pair;
+import com.radixdlt.utils.Pair;
 import com.radixdlt.ledger.LedgerCursor;
 import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerSearchMode;

@@ -1,8 +1,7 @@
 package org.radix.integration.search;
 
-import com.radixdlt.atomos.SimpleRadixEngineAtom;
-import com.radixdlt.engine.RadixEngineAtom;
-import com.radixdlt.atomos.RadixEngineUtils;
+import com.radixdlt.middleware.SimpleRadixEngineAtom;
+import com.radixdlt.middleware.RadixEngineUtils;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.UInt384;
 import java.util.Comparator;
@@ -29,7 +28,7 @@ import com.google.common.primitives.Longs;
 import com.radixdlt.atommodel.message.MessageParticle;
 import com.radixdlt.atomos.RadixAddress;
 import org.radix.atoms.Atom;
-import com.radixdlt.atoms.Spin;
+import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECKeyPair;
 
 import static org.junit.Assert.assertEquals;

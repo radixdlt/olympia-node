@@ -2,7 +2,7 @@ package com.radixdlt.tempo.epics;
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.common.EUID;
-import com.radixdlt.common.Pair;
+import com.radixdlt.utils.Pair;
 import com.radixdlt.tempo.AtomStoreView;
 import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.TempoException;

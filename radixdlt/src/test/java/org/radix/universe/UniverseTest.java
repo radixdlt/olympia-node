@@ -1,14 +1,13 @@
 package org.radix.universe;
 
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.universe.Universe;
 import org.radix.atoms.Atom;
-import com.radixdlt.atoms.Spin;
+import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.common.EUID;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
@@ -23,7 +22,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.radix.modules.Modules;
 import org.radix.time.TemporalVertex;
-import org.radix.universe.UniverseValidator;
 import org.radix.validation.ValidationHandler;
 
 import static org.mockito.Mockito.mock;

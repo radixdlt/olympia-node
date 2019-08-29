@@ -6,7 +6,7 @@ import com.google.common.collect.Lists;
 import com.google.common.primitives.UnsignedBytes;
 import com.radixdlt.Atom;
 import com.radixdlt.common.AID;
-import com.radixdlt.common.Pair;
+import com.radixdlt.utils.Pair;
 import com.radixdlt.ledger.LedgerCursor;
 import com.radixdlt.ledger.LedgerCursor.Type;
 import com.radixdlt.ledger.LedgerIndex;

@@ -3,7 +3,7 @@ package com.radixdlt.tempo;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.Atom;
-import com.radixdlt.atoms.AtomStatus;
+import com.radixdlt.engine.AtomStatus;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
 import com.radixdlt.ledger.Ledger;

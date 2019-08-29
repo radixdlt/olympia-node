@@ -1,7 +1,7 @@
 package org.radix.serialization;
 
 import com.radixdlt.atomos.RadixAddress;
-import com.radixdlt.atoms.SpunParticle;
+import com.radixdlt.middleware.SpunParticle;
 import com.radixdlt.atommodel.message.MessageParticle;
 import com.radixdlt.universe.Universe;
 import org.radix.atoms.particles.conflict.messages.ConflictAssistRequestMessage;

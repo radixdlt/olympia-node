@@ -21,7 +21,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.radix.Radix;
 import com.radixdlt.common.EUID;
-import com.radixdlt.common.Pair;
+import com.radixdlt.utils.Pair;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.crypto.CryptoException;

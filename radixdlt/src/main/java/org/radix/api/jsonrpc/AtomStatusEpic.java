@@ -1,9 +1,12 @@
 package org.radix.api.jsonrpc;
 
-import com.radixdlt.atoms.AtomStatus;
-import com.radixdlt.atoms.DataPointer;
+import com.radixdlt.engine.AtomStatus;
+import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
+import com.radixdlt.middleware.ImmutableAtom;
+import com.radixdlt.middleware.ParticleGroup;
+import com.radixdlt.middleware.SpunParticle;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -96,7 +99,7 @@ public class AtomStatusEpic {
 				} else if (e instanceof ParticleConflictException) {
 					ParticleConflict conflict = ((ParticleConflictException) e).getConflict();
 					JSONObject data = new JSONObject();
-					DataPointer dp = DataPointer.ofParticleInAtom(conflict.getSpunParticle(), conflict.getAtom(aid));
+					DataPointer dp = ofParticleInAtom(conflict.getSpunParticle(), conflict.getAtom(aid));
 					data.put("pointerToIssue", dp.toString());
 					sendAtomSubmissionState.accept(AtomStatus.CONFLICT_LOSER, data);
 				} else if (e instanceof AtomDependencyNotFoundException) {
@@ -124,6 +127,26 @@ public class AtomStatusEpic {
 			lastDisposable.dispose();
 		}
 		observers.put(subscriberId, disposable);
+	}
+
+
+	/**
+	 * Retrieve the data pointer of a spun particle in an atom
+	 * @param spunParticle the spun particle to get the data pointer of
+	 * @param atom the atom the spun particle is within
+	 * @return a pointer into the atom pointing to the spun particle given
+	 */
+	private static DataPointer ofParticleInAtom(SpunParticle spunParticle, ImmutableAtom atom) {
+		ParticleGroup particleGroup = atom.particleGroups()
+			.filter(pg -> pg.contains(spunParticle))
+			.findFirst()
+			.orElseThrow(() -> new IllegalStateException(String.format(
+				"Could not get validation pointer for %s in atom %s, no containing group found",
+				spunParticle.getParticle().getHID(), atom.getAID())));
+		int groupIndex = atom.indexOfParticleGroup(particleGroup);
+		int particleInGroupIndex = particleGroup.indexOfSpunParticle(spunParticle);
+
+		return DataPointer.ofParticle(groupIndex, particleInGroupIndex);
 	}
 
 	public void dispose() {

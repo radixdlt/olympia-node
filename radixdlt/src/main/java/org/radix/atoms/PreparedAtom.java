@@ -1,11 +1,11 @@
 package org.radix.atoms;
 
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.atoms.Particle;
-import com.radixdlt.atoms.Spin;
+import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.CMMicroInstruction.CMMicroOp;
-import com.radixdlt.atomos.SimpleRadixEngineAtom;
+import com.radixdlt.middleware.SimpleRadixEngineAtom;
 import com.radixdlt.store.SpinStateMachine;
 import com.radixdlt.utils.UInt384;
 import java.io.ByteArrayOutputStream;

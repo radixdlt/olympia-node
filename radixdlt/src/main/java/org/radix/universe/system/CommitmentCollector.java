@@ -7,7 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.radixdlt.common.Pair;
+import com.radixdlt.utils.Pair;
 
 public class CommitmentCollector
 {

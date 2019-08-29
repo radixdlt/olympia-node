@@ -1,7 +1,7 @@
 package org.radix.atoms;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.atoms.Particle;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
 import org.radix.discovery.DiscoveryRequest;
