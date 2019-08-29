@@ -9,6 +9,6 @@ import java.util.function.BiConsumer;
 /**
  * Thread-safe sink for discoveries of a certain set of aids at a given peer.
  */
-public interface DiscoveredAtomSink extends BiConsumer<Collection<AID>, Peer> {
+public interface AtomDiscoveryListener extends BiConsumer<Collection<AID>, Peer> {
 	// only extends consumer interface
 }

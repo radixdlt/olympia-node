@@ -59,7 +59,8 @@ public final class Tempo extends Plugin implements Ledger {
 	              EdgeSelector edgeSelector,
 	              PeerSupplier peerSupplier,
 	              Attestor attestor,
-	              IterativeDiscoveryController iterativeDiscovery, AtomDeliveryController delivery) {
+	              IterativeDiscoveryController iterativeDiscovery,
+	              AtomDeliveryController delivery) {
 		this.store = store;
 		this.controller = controller;
 		this.edgeSelector = edgeSelector;
@@ -67,6 +68,14 @@ public final class Tempo extends Plugin implements Ledger {
 		this.attestor = attestor;
 		this.iterativeDiscovery = iterativeDiscovery;
 		this.delivery = delivery;
+
+		// hook up components
+		// TODO remove listeners?
+		this.iterativeDiscovery.addListener(delivery::deliver);
+		this.delivery.addListener(((atom, peer) -> {
+			// TODO hook up to receive / inbound queue
+			log.info("Got delivery of atom '" + atom.getAID() + "' from " + peer);
+		}));
 	}
 
 	@Override
@@ -247,18 +256,13 @@ public final class Tempo extends Plugin implements Ledger {
 			store,
 			Modules.get(DatabaseEnvironment.class),
 			scheduler,
-			(aids, peer) -> {
-				// TODO hook up to delivery
-				log.info("Received " + aids.size() + " for delivery from " + peer);
-			},
 			Modules.get(MessageCentral.class),
 			new LegacyAddressBookAdapter(() -> Modules.get(PeerHandler.class), Events.getInstance())
 		);
 		AtomDeliveryController delivery = new AtomDeliveryController(
 			scheduler,
 			Modules.get(MessageCentral.class),
-			store,
-			(atom, peer) -> {}
+			store
 		);
 
 		return builder()

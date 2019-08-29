@@ -10,6 +10,7 @@ import com.radixdlt.tempo.LegacyAddressBook;
 import com.radixdlt.tempo.LegacyAddressBookListener;
 import com.radixdlt.tempo.LogicalClockCursor;
 import com.radixdlt.tempo.Scheduler;
+import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.messages.IterativeDiscoveryRequestMessage;
 import com.radixdlt.tempo.messages.IterativeDiscoveryResponseMessage;
 import com.radixdlt.tempo.store.CommitmentStore;
@@ -23,6 +24,9 @@ import org.radix.time.TemporalVertex;
 import org.radix.utils.SimpleThreadPool;
 
 import java.io.Closeable;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -52,11 +56,11 @@ public final class IterativeDiscoveryController implements Closeable {
 	final IterativeDiscoveryState discoveryState = new IterativeDiscoveryState();
 
 	private final AtomStoreView storeView;
-
 	private final Scheduler scheduler;
-	private final DiscoveredAtomSink discoverySink;
 	private final MessageCentral messageCentral;
 	private final LegacyAddressBook selectedPeers;
+
+	private final Collection<AtomDiscoveryListener> discoveryListeners;
 
 	private final BlockingQueue<IterativeDiscoveryRequest> requestQueue;
 	private final SimpleThreadPool<IterativeDiscoveryRequest> requestThreadPool;
@@ -66,20 +70,19 @@ public final class IterativeDiscoveryController implements Closeable {
 		AtomStoreView storeView,
 		DatabaseEnvironment dbEnv,
 		Scheduler scheduler,
-		DiscoveredAtomSink discoverySink,
 		MessageCentral messageCentral,
 		LegacyAddressBook selectedPeers
 	) {
 		this.self = Objects.requireNonNull(self);
 		this.storeView = Objects.requireNonNull(storeView);
 		this.scheduler = Objects.requireNonNull(scheduler);
-		this.discoverySink = Objects.requireNonNull(discoverySink);
 		this.messageCentral = Objects.requireNonNull(messageCentral);
 		this.selectedPeers = Objects.requireNonNull(selectedPeers);
 
+		// TODO improve locking to something like in messaging
+		this.discoveryListeners = Collections.synchronizedList(new ArrayList<>());
 		this.commitmentStore = new CommitmentStore(dbEnv);
 		this.commitmentStore.open();
-
 		this.cursorStore = new LogicalClockCursorStore(dbEnv);
 		this.cursorStore.open();
 
@@ -119,7 +122,7 @@ public final class IterativeDiscoveryController implements Closeable {
 
 	private void onResponse(Peer peer, IterativeDiscoveryResponseMessage message) {
 		EUID peerNid = peer.getSystem().getNID();
-		discoverySink.accept(message.getAids(), peer);
+		notifyListeners(message.getAids(), peer);
 		commitmentStore.put(peerNid, message.getCommitments(), message.getCursor().getLcPosition());
 		discoveryState.removeRequest(peerNid, message.getCursor().getLcPosition());
 
@@ -206,6 +209,18 @@ public final class IterativeDiscoveryController implements Closeable {
 
 	public void accept(TemporalVertex vertex) {
 		commitmentStore.put(vertex.getOwner().getUID(), vertex.getClock(), vertex.getCommitment());
+	}
+
+	public void addListener(AtomDiscoveryListener listener) {
+		discoveryListeners.add(listener);
+	}
+
+	public void removeListener(AtomDiscoveryListener listener) {
+		discoveryListeners.remove(listener);
+	}
+
+	private void notifyListeners(ImmutableList<AID> aids, Peer peer) {
+		discoveryListeners.forEach(listener -> listener.accept(aids, peer));
 	}
 
 	public void reset() {

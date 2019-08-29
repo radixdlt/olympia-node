@@ -6,6 +6,7 @@ import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
 import com.radixdlt.tempo.AtomStoreView;
 import com.radixdlt.tempo.Scheduler;
+import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.messages.DeliveryRequestMessage;
 import com.radixdlt.tempo.messages.DeliveryResponseMessage;
 import org.radix.logging.Logger;
@@ -17,6 +18,7 @@ import org.radix.utils.SimpleThreadPool;
 import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -41,21 +43,22 @@ public final class AtomDeliveryController implements Closeable {
 	private final Scheduler scheduler;
 	private final MessageCentral messageCentral;
 	private final AtomStoreView storeView;
-	private final DeliveredAtomSink deliverySink;
+	private final Collection<AtomDeliveryListener> deliveryListeners;
 
 	private final BlockingQueue<AtomDeliveryRequest> requestQueue;
 	private final SimpleThreadPool<AtomDeliveryRequest> requestThreadPool;
 
 	public AtomDeliveryController(
-			Scheduler scheduler,
-	        MessageCentral messageCentral,
-			AtomStoreView storeView,
-			DeliveredAtomSink deliverySink
+		Scheduler scheduler,
+		MessageCentral messageCentral,
+		AtomStoreView storeView
 	) {
 		this.scheduler = Objects.requireNonNull(scheduler);
 		this.messageCentral = Objects.requireNonNull(messageCentral);
 		this.storeView = Objects.requireNonNull(storeView);
-		this.deliverySink = Objects.requireNonNull(deliverySink);
+
+		// TODO improve locking to something like in messaging
+		this.deliveryListeners = Collections.synchronizedList(new ArrayList<>());
 
 		this.messageCentral.addListener(DeliveryRequestMessage.class, this::onRequest);
 		this.messageCentral.addListener(DeliveryResponseMessage.class, this::onResponse);
@@ -85,8 +88,9 @@ public final class AtomDeliveryController implements Closeable {
 	}
 
 	private void onResponse(Peer peer, DeliveryResponseMessage message) {
-		deliveryState.removeRequest(message.getAtom().getAID());
-		deliverySink.accept(message.getAtom(), peer);
+		TempoAtom atom = message.getAtom();
+		deliveryState.removeRequest(atom.getAID());
+		notifyListeners(peer, atom);
 	}
 
 	public void deliver(Collection<AID> aids, Peer peer) {
@@ -164,6 +168,18 @@ public final class AtomDeliveryController implements Closeable {
 		if (!undeliverableAids.isEmpty()) {
 			log.warn("Delivery of " + undeliverableAids.size() + " is currently impossible, no peers available");
 		}
+	}
+
+	public void addListener(AtomDeliveryListener listener) {
+		deliveryListeners.add(listener);
+	}
+
+	public void removeListener(AtomDeliveryListener listener) {
+		deliveryListeners.remove(listener);
+	}
+
+	private void notifyListeners(Peer peer, TempoAtom atom) {
+		deliveryListeners.forEach(listener -> listener.accept(atom, peer));
 	}
 
 	@Override
