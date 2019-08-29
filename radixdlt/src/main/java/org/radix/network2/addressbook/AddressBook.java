@@ -3,6 +3,7 @@ package org.radix.network2.addressbook;
 import java.util.stream.Stream;
 
 import org.radix.network2.transport.TransportInfo;
+import org.radix.universe.system.RadixSystem;
 
 import com.radixdlt.common.EUID;
 
@@ -42,6 +43,9 @@ public interface AddressBook {
 	 * 	present
 	 */
 	boolean updatePeer(Peer peer);
+
+	// FIXME: Document
+	Peer updatePeerSystem(Peer peer, RadixSystem system);
 
 	/**
 	 * Retrieve the {@link Peer} with the specified Node ID.
@@ -85,5 +89,6 @@ public interface AddressBook {
 	 * @return A {@link Stream} of {@link Peer} objects
 	 */
 	Stream<Peer> recentPeers();
+
 
 }

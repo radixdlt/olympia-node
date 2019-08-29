@@ -13,6 +13,7 @@ import org.radix.network.Network;
 import org.radix.network2.addressbook.Peer;
 import org.radix.network2.transport.TransportInfo;
 import org.radix.universe.system.LocalSystem;
+import org.radix.universe.system.RadixSystem;
 
 public class PeerFilter
 {
@@ -45,17 +46,18 @@ public class PeerFilter
 				return true;
 			}
 
-			if (peer.getSystem() == null)
+			if (peer.hasNID() && peer.getNID().equals(LocalSystem.getInstance().getNID())) {
 				return true;
+			}
 
-			if (peer.getSystem().getNID().equals(LocalSystem.getInstance().getNID()))
-				return true;
+			if (peer.hasSystem()) {
+				RadixSystem system = peer.getSystem();
+				if (system.getProtocolVersion() != 0 && system.getProtocolVersion() < Radix.PROTOCOL_VERSION)
+					return true;
 
-			if (peer.getSystem().getProtocolVersion() != 0 && peer.getSystem().getProtocolVersion() < Radix.PROTOCOL_VERSION)
-	    		return true;
-
-	    	if (peer.getSystem().getAgentVersion() != 0 && peer.getSystem().getAgentVersion() <= Radix.MAJOR_AGENT_VERSION)
-	    		return true;
+				if (system.getAgentVersion() != 0 && system.getAgentVersion() <= Radix.MAJOR_AGENT_VERSION)
+					return true;
+			}
 
 	    	if (peer.isBanned())
     			return true;

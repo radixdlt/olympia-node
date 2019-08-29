@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -56,9 +55,9 @@ import org.radix.time.NtpService;
 import org.radix.time.Time;
 import org.radix.time.Timestamps;
 import org.radix.universe.system.LocalSystem;
+import org.radix.universe.system.RadixSystem;
 import org.radix.universe.system.SystemMessage;
 
-import com.radixdlt.utils.RadixConstants;
 import com.sleepycat.je.Cursor;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
@@ -67,15 +66,12 @@ import com.sleepycat.je.DatabaseException;
 import com.sleepycat.je.DatabaseNotFoundException;
 import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationStatus;
-import com.sleepycat.je.SecondaryConfig;
-import com.sleepycat.je.SecondaryDatabase;
 import com.sleepycat.je.Transaction;
 import com.sleepycat.je.TransactionConfig;
 
 public class AddressBookImpl extends DatabaseStore implements AddressBook {
 	private static final Logger log = Logging.getLogger("addressbook");
 
-	private static final int MAX_CONNECTION_ATTEMPTS = 10;
 	private static final long PROBE_TIMEOUT_SECONDS = 20;
 
 	private final Random rand = new Random(); // No need for cryptographically secure here
@@ -87,8 +83,7 @@ public class AddressBookImpl extends DatabaseStore implements AddressBook {
 
 	private final Map<Peer, Long> probes = new HashMap<>(); // TODO can convert to simpler Map<EUID, Long>?
 
-	private Database 			peersByNidDB;
-	private SecondaryDatabase 	peersByInfoDB;
+	private Database peersByNidDB;
 
 	private final long inactivityLimitMs;
 	private final int peersBroadcastIntervalSec;
@@ -98,7 +93,6 @@ public class AddressBookImpl extends DatabaseStore implements AddressBook {
 
 	private class ProbeTask implements Runnable {
 		private LinkedList<Peer> peersToProbe = new LinkedList<>();
-		private int index = 0;
 		private int numPeers = 0;
 
 		@Override
@@ -110,7 +104,7 @@ public class AddressBookImpl extends DatabaseStore implements AddressBook {
 					numProbes = 16;
 				}
 
-				if (peersToProbe.size() < numProbes) {
+				if (peersToProbe.isEmpty()) {
 					PeerFilter filter = new PeerFilter();
 					peers()
 						.filter(p -> !filter.filter(p))
@@ -142,6 +136,7 @@ public class AddressBookImpl extends DatabaseStore implements AddressBook {
 		public void execute() {
 			synchronized(AddressBookImpl.this.probes) {
 				if (AddressBookImpl.this.probes.containsKey(getPeer()) && AddressBookImpl.this.probes.get(getPeer()).longValue() == this.nonce) {
+					log.info("Removing peer " + getPeer() + " because of probe timeout");
 					AddressBookImpl.this.probes.remove(getPeer());
 					removePeer(getPeer());
 				}
@@ -157,6 +152,9 @@ public class AddressBookImpl extends DatabaseStore implements AddressBook {
 		this.peersBroadcastIntervalSec = Modules.get(RuntimeProperties.class).get("network.peers.broadcast.interval", 30);
 		this.peersProbeIntervalSec = Modules.get(RuntimeProperties.class).get("network.peers.probe.interval", 1);
 		this.peerProbeDelayMs = TimeUnit.SECONDS.toMillis(Modules.get(RuntimeProperties.class).get("network.peer.probe.delay", 30));
+
+		log.info(String.format("%s started, inactivityLimit=%s, broadcastInterval=%s, probeInterval=%s, probeDelay=%s",
+			this.getClass().getSimpleName(), this.inactivityLimitMs / 1000L, this.peersBroadcastIntervalSec, this.peersProbeIntervalSec, this.peerProbeDelayMs / 1000L));
 	}
 
 	@Override
@@ -166,12 +164,6 @@ public class AddressBookImpl extends DatabaseStore implements AddressBook {
 
 		try {
 			this.peersByNidDB = Modules.get(DatabaseEnvironment.class).getEnvironment().openDatabase(null, "peers_by_nid", config);
-
-			SecondaryConfig infoConfig = new SecondaryConfig();
-			infoConfig.setAllowCreate(true);
-			infoConfig.setMultiKeyCreator(this::createTransportInfoKeys);
-			infoConfig.setSortedDuplicates(true);
-			this.peersByInfoDB = Modules.get(DatabaseEnvironment.class).getEnvironment().openSecondaryDatabase(null, "peers_by_info", this.peersByNidDB, infoConfig);
 		} catch (DatabaseException | IllegalArgumentException | IllegalStateException ex) {
         	throw new ModuleStartException(ex, this);
 		}
@@ -225,7 +217,6 @@ public class AddressBookImpl extends DatabaseStore implements AddressBook {
 	public void stop_impl() throws ModuleException {
 		super.stop_impl();
 
-		this.peersByInfoDB.close();
 		this.peersByNidDB.close();
 	}
 
@@ -255,6 +246,11 @@ public class AddressBookImpl extends DatabaseStore implements AddressBook {
 	}
 
 	@Override
+	public Class<?> declaredClass() {
+		return AddressBook.class;
+	}
+
+	@Override
 	public boolean addPeer(Peer peer) {
 		return handleUpdatedPeers(Locking.withFunctionLock(this.peersLock, this::addUpdatePeerInternal, peer));
 	}
@@ -267,6 +263,11 @@ public class AddressBookImpl extends DatabaseStore implements AddressBook {
 	@Override
 	public boolean updatePeer(Peer peer) {
 		return handleUpdatedPeers(Locking.withFunctionLock(this.peersLock, this::addUpdatePeerInternal, peer));
+	}
+
+	@Override
+	public Peer updatePeerSystem(Peer peer, RadixSystem system) {
+		return Locking.withBiFunctionLock(this.peersLock, this::updateSystemInternal, peer, system);
 	}
 
 	@Override
@@ -358,7 +359,7 @@ public class AddressBookImpl extends DatabaseStore implements AddressBook {
 		if (!peer.hasNID()) {
 			// We didn't save connection-only peers to the database
 			boolean changed = peer.supportedTransports()
-				.map(t -> peersByInfo.remove(t) != null)
+				.map(t -> peersByInfo.remove(t, peer))
 				.reduce(false, (a, b) -> a | b);
 			return changed ? Pair.of(null, peer) : null;
 		} else {
@@ -367,9 +368,7 @@ public class AddressBookImpl extends DatabaseStore implements AddressBook {
 			if (oldPeer != null) {
 				peer.supportedTransports().forEachOrdered(peersByInfo::remove);
 				DatabaseEntry key = new DatabaseEntry(nid.toByteArray());
-				if (peersByNidDB.delete(null, key) == OperationStatus.SUCCESS) {
-					log.info("Removed " + oldPeer + " associated with " + nid);
-				} else {
+				if (peersByNidDB.delete(null, key) != OperationStatus.SUCCESS) {
 					log.error("Failure removing " + oldPeer + " associated with " + nid);
 				}
 			}
@@ -377,6 +376,21 @@ public class AddressBookImpl extends DatabaseStore implements AddressBook {
 		}
 	}
 
+	// Needs peersLock held
+	private Peer updateSystemInternal(Peer peer, RadixSystem system) {
+		Peer newPeer = new PeerImpl(peer, system);
+		if (!peer.hasNID() || peer.getNID().equals(system.getNID())) {
+			// Here if it is basically a new peer or a peer with the same NID
+			// This is a simple update or add
+			peer.supportedTransports().forEachOrdered(this.peersByInfo::remove);
+			addUpdatePeerInternal(newPeer);
+		} else {
+			// Peer has somehow changed NID?
+			removePeerInternal(peer);
+			addUpdatePeerInternal(newPeer);
+		}
+		return newPeer;
+	}
 
 	private boolean isRecentPeer(Peer p) {
 		// Don't include banned peers
@@ -447,19 +461,6 @@ public class AddressBookImpl extends DatabaseStore implements AddressBook {
 		});
 	}
 
-	private void createTransportInfoKeys(SecondaryDatabase database, DatabaseEntry key, DatabaseEntry value, Set<DatabaseEntry> secondaries) {
-		try {
-			Peer peer = serialization.fromDson(value.getData(), Peer.class);
-			peer.supportedTransports()
-				.map(TransportInfo::toString)
-				.map(s -> s.getBytes(RadixConstants.STANDARD_CHARSET))
-				.map(DatabaseEntry::new)
-				.forEachOrdered(secondaries::add);
-		} catch (SerializationException ex) {
-			log.error("TransportInfo keys failed for Peer", ex);
-		}
-	}
-
 	private ScheduledExecutable scheduledExecutable(long initialDelay, long recurrentDelay, TimeUnit units, Runnable r) {
 		return new ScheduledExecutable(initialDelay, recurrentDelay, units) {
 			@Override
@@ -474,9 +475,9 @@ public class AddressBookImpl extends DatabaseStore implements AddressBook {
 		if (peers != null) {
 			EUID localNid = LocalSystem.getInstance().getNID();
 			peers.stream()
-			.filter(p -> p.getSystem() != null)
-			.filter(p -> !localNid.equals(p.getSystem().getNID()))
-			.forEachOrdered(this::updatePeer);
+				.filter(Peer::hasSystem)
+				.filter(p -> !localNid.equals(p.getSystem().getNID()))
+				.forEachOrdered(this::updatePeer);
 		}
 	}
 
@@ -532,6 +533,7 @@ public class AddressBookImpl extends DatabaseStore implements AddressBook {
 					log.debug("Got peer.pong from " + peer + " with nonce '" + nonce + "'");
 					Events.getInstance().broadcast(new PeerAvailableEvent(peer));
 				} else {
+					// Probably a transport-only peer which we now have a system for
 					log.debug("Got peer.pong without matching probe from " + peer + " with nonce '" + nonce + "'");
 				}
 			}
@@ -600,5 +602,6 @@ public class AddressBookImpl extends DatabaseStore implements AddressBook {
 			Modules.get(MessageCentral.class).send(peer, msg);
 		}
 	}
+
 }
 

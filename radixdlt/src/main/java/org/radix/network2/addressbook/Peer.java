@@ -32,8 +32,18 @@ public abstract class Peer extends BasicContainer implements Chronologic {
 
 	public static final int DEFAULT_BANTIME = 60 * 60;
 
-	private String banReason = null;
-	private HashMap<String, Long> timestamps = new HashMap<>();
+	private String banReason;
+	private HashMap<String, Long> timestamps;
+
+	protected Peer() {
+		banReason = null;
+		timestamps = new HashMap<>();
+	}
+
+	protected Peer(Peer toCopy) {
+		this.banReason = toCopy.banReason;
+		this.timestamps = new HashMap<>(toCopy.timestamps);
+	}
 
 	public String getBanReason() {
 		return banReason;

@@ -8,11 +8,17 @@ import org.radix.network2.transport.TransportInfo;
 import org.radix.network2.transport.TransportMetadata;
 import org.radix.universe.system.RadixSystem;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.common.EUID;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
 
 @SerializerId2("network.peer.nid")
 final class NidOnlyPeer extends Peer {
+
+	@JsonProperty("nid")
+	@DsonOutput(Output.ALL)
 	private final EUID nid;
 
 	@Override

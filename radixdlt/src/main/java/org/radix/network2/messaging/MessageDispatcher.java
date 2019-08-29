@@ -21,6 +21,7 @@ import org.radix.network.messaging.MessageProfiler;
 import org.radix.network.messaging.SignedMessage;
 import org.radix.network2.NetworkLegacyPatching;
 import org.radix.network2.TimeSupplier;
+import org.radix.network2.addressbook.AddressBook;
 import org.radix.network2.addressbook.Peer;
 import org.radix.network2.transport.SendResult;
 import org.radix.network2.transport.Transport;
@@ -41,6 +42,7 @@ import org.xerial.snappy.Snappy;
  */
 //FIXME: Optional dependency on Modules.get(SystemMetaData.class) for system metadata
 //FIXME: Optional dependency on Modules.get(MessageProfiler.class) for profiling
+//FIXME: Optional dependency on Modules.get(AddressBook.class) for profiling
 //FIXME: Optional dependency on Modules.get(Interfaces.class) for keeping track of network interfaces
 // FIXME: Dependency on LocalSystem.getInstance() for signing key
 class MessageDispatcher {
@@ -94,7 +96,7 @@ class MessageDispatcher {
 	}
 
 	void receive(MessageListenerList listeners, final MessageEvent inboundMessage) {
-		final Peer peer = inboundMessage.peer();
+		Peer peer = inboundMessage.peer();
 		final Message message = inboundMessage.message();
 
 		long currentTime = timeSource.currentTime();
@@ -112,10 +114,10 @@ class MessageDispatcher {
 				RadixSystem system = systemMessage.getSystem();
 
 				// TODO this feels dirty here
-				if (system.getClock().get() < peer.getSystem().getClock().get()) {
+				if (peer.hasSystem() && system.getClock().get() < peer.getSystem().getClock().get()) {
 					log.error("IMPLEMENT CLOCK MANIPULATION CHECK!");
 				}
-				peer.setSystem(system);
+				peer = Modules.get(AddressBook.class).updatePeerSystem(peer, system);
 
 				if (system.getNID() == null || EUID.ZERO.equals(system.getNID())) {
 					peer.ban(String.format("%s:%s gave null NID", peer, message.getClass().getName()));
@@ -139,7 +141,7 @@ class MessageDispatcher {
 					return;
 				}
 
-				if (!NetworkLegacyPatching.checkPeerBanned(peer, system.getNID(), timeSource)) {
+				if (NetworkLegacyPatching.checkPeerBanned(peer, system.getNID(), timeSource)) {
 					return;
 				}
 			}
@@ -150,7 +152,8 @@ class MessageDispatcher {
 
 		long start = SystemProfiler.getInstance().begin();
 		try {
-			Modules.ifAvailable(MessageProfiler.class, mp -> mp.process(message, peer));
+			final Peer fp = peer; // Awkward
+			Modules.ifAvailable(MessageProfiler.class, mp -> mp.process(message, fp));
 			listeners.messageReceived(peer, message);
 			Modules.ifAvailable(SystemMetaData.class, a -> a.increment("messages.inbound.processed"));
 		} finally {

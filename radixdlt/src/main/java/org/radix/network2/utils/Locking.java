@@ -2,6 +2,7 @@ package org.radix.network2.utils;
 
 import java.util.concurrent.locks.Lock;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -113,8 +114,8 @@ public final class Locking {
 	 * Acquire a lock, execute a {@link Function} and finally unlock the lock, returning the
 	 * result.
 	 *
-	 * @param <R> The result type from <code>r</code>.
-	 * @param <A> The argument type for <code>r</code>.
+	 * @param <R> The result type from <code>f</code>.
+	 * @param <A> The argument type for <code>f</code>.
 	 * @param l   The lock to acquire/release.
 	 * @param f   The function to execute.
 	 * @param arg The argument to the function.
@@ -124,6 +125,28 @@ public final class Locking {
 		l.lock();
 		try {
 			return f.apply(arg);
+		} finally {
+			l.unlock();
+		}
+	}
+
+	/**
+	 * Acquire a lock, execute a {@link BiFunction} and finally unlock the lock, returning the
+	 * result.
+	 *
+	 * @param <R> The result type from <code>f</code>.
+	 * @param <A1> The first argument type for <code>f</code>.
+	 * @param <A2> The second argument type for <code>f</code>.
+	 * @param l   The lock to acquire/release.
+	 * @param f   The function to execute.
+	 * @param arg1 The first argument to the function.
+	 * @param arg2 The second argument to the function.
+	 * @return The result from the executed function.
+	 */
+	public static <R, A1, A2> R withBiFunctionLock(Lock l, BiFunction<A1, A2, R> f, A1 arg1, A2 arg2) {
+		l.lock();
+		try {
+			return f.apply(arg1, arg2);
 		} finally {
 			l.unlock();
 		}

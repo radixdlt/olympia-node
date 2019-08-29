@@ -8,11 +8,17 @@ import org.radix.network2.transport.TransportInfo;
 import org.radix.network2.transport.TransportMetadata;
 import org.radix.universe.system.RadixSystem;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.common.EUID;
+import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerId2;
+import com.radixdlt.serialization.DsonOutput.Output;
 
 @SerializerId2("network.peer.transport")
 final class UriOnlyPeer extends Peer {
+
+	@JsonProperty("transport")
+	@DsonOutput(Output.ALL)
 	private final TransportInfo transportInfo;
 
 	@Override

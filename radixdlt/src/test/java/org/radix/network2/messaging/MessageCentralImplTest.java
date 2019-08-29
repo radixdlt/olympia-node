@@ -183,7 +183,7 @@ public class MessageCentralImplTest {
 		this.events = mock(Events.class);
 		inboundQueue = spy(new PriorityBlockingQueue<>(conf.messagingInboundQueueMax(0)));
 		outboundQueue = spy(new PriorityBlockingQueue<>(conf.messagingOutboundQueueMax(0)));
-		EventQueueFactory<MessageEvent> queueFactory = spy(new EventQueueFactoryImpl<>());
+		EventQueueFactory<MessageEvent> queueFactory = mock(EventQueueFactory.class);
 		doReturn(inboundQueue).when(queueFactory).createEventQueue(conf.messagingInboundQueueMax(0));
 		doReturn(outboundQueue).when(queueFactory).createEventQueue(conf.messagingOutboundQueueMax(0));
 		this.mci = new MessageCentralImpl(staticConfig(), serialization, transportManager, events, System::currentTimeMillis,

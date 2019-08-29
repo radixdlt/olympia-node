@@ -4,9 +4,8 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.PriorityBlockingQueue;
-
 import org.radix.events.Events;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
@@ -56,22 +55,22 @@ final class MessageCentralImpl implements MessageCentral {
 	private final RateLimiter outboundLogRateLimiter = RateLimiter.create(1.0);
 
 	// Inbound message handling
-	private final PriorityBlockingQueue<MessageEvent> inboundQueue;
+	private final BlockingQueue<MessageEvent> inboundQueue;
 	private final SimpleThreadPool<MessageEvent> inboundThreadPool;
 
 	// Outbound message handling
-	private final PriorityBlockingQueue<MessageEvent> outboundQueue;
+	private final BlockingQueue<MessageEvent> outboundQueue;
 	private final SimpleThreadPool<MessageEvent> outboundThreadPool;
 
 
 	@Inject
 	public MessageCentralImpl(
-			MessageCentralConfiguration config,
-			Serialization serialization,
-			TransportManager transportManager,
-			Events events,
-			TimeSupplier timeSource,
-			EventQueueFactory eventQueueFactory
+		MessageCentralConfiguration config,
+		Serialization serialization,
+		TransportManager transportManager,
+		Events events,
+		TimeSupplier timeSource,
+		EventQueueFactory<MessageEvent> eventQueueFactory
 	) {
 		this.inboundQueue = eventQueueFactory.createEventQueue(config.messagingInboundQueueMax(8192));
 		this.outboundQueue = eventQueueFactory.createEventQueue(config.messagingOutboundQueueMax(16384));

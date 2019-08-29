@@ -2,9 +2,11 @@ package org.radix.network.discovery;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Collections;
@@ -200,7 +202,7 @@ public class BootstrapDiscovery
 			}
 			try {
 				this.hosts.add(toUdpTransportInfo(host));
-			} catch (IllegalArgumentException e) {
+			} catch (IllegalArgumentException | UnknownHostException e) {
 				log.error("Host specification " + host + " does not specify a valid host and port");
 			}
 		}
@@ -230,12 +232,15 @@ public class BootstrapDiscovery
 		return results;
 	}
 
-	private TransportInfo toUdpTransportInfo(String host) {
+	private TransportInfo toUdpTransportInfo(String host) throws UnknownHostException {
 		HostAndPort hap = HostAndPort.fromString(host).withDefaultPort(Modules.get(Universe.class).getPort());
+		// Resolve any names so we don't have to do it again and again, and we will also be more
+		// likely to have a canonical representation.
+		InetAddress resolved = InetAddress.getByName(hap.getHost());
 		return TransportInfo.of(
 			UDPConstants.UDP_NAME,
 			StaticTransportMetadata.of(
-				UDPConstants.METADATA_UDP_HOST, hap.getHost(),
+				UDPConstants.METADATA_UDP_HOST, resolved.getHostAddress(),
 				UDPConstants.METADATA_UDP_PORT, String.valueOf(hap.getPort())
 			)
 		);

@@ -26,12 +26,16 @@ public final class PeerImpl extends Peer {
 	@DsonOutput(Output.ALL)
 	private RadixSystem system;
 
-	public PeerImpl()
-	{
+	public PeerImpl() {
 		this(new RadixSystem());
 	}
 
 	public PeerImpl(RadixSystem system) {
+		this.system = Objects.requireNonNull(system);
+	}
+
+	PeerImpl(Peer toCopy, RadixSystem system) {
+		super(toCopy);
 		this.system = Objects.requireNonNull(system);
 	}
 
@@ -59,7 +63,7 @@ public final class PeerImpl extends Peer {
 	@Override
 	public String toString()
 	{
-		return String.format("%s ID: %s", connectionData(UDPConstants.UDP_NAME), this.system.getNID());
+		return String.format("%s[%s:%s]", this.getClass().getSimpleName(), this.system.getNID(), connectionData(UDPConstants.UDP_NAME));
 	}
 
 	@Override
