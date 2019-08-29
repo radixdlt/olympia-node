@@ -8,11 +8,13 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerId2;
 import org.radix.network.messaging.Message;
 
+import java.util.Collection;
+
 @SerializerId2("tempo.sample.request")
 public class SampleRequestMessage extends Message {
 	@JsonProperty("aids")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private final ImmutableSet<AID> aids;
+	private final Collection<AID> aids;
 
 	@JsonProperty("tag")
 	@DsonOutput(DsonOutput.Output.ALL)
@@ -24,12 +26,12 @@ public class SampleRequestMessage extends Message {
 		this.tag = null;
 	}
 
-	public SampleRequestMessage(ImmutableSet<AID> aids, EUID tag) {
+	public SampleRequestMessage(Collection<AID> aids, EUID tag) {
 		this.aids = aids;
 		this.tag = tag;
 	}
 
-	public ImmutableSet<AID> getAids() {
+	public Collection<AID> getAids() {
 		return aids;
 	}
 

@@ -11,9 +11,9 @@ import org.radix.time.TemporalProof;
 
 @SerializerId2("tempo.sample.response")
 public class SampleResponseMessage extends Message {
-	@JsonProperty("temporalProofs")
+	@JsonProperty("collectedSamples")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private final ImmutableSet<TemporalProof> temporalProofs;
+	private final ImmutableSet<TemporalProof> collectedSamples;
 
 	@JsonProperty("unavailableAids")
 	@DsonOutput(DsonOutput.Output.ALL)
@@ -25,19 +25,19 @@ public class SampleResponseMessage extends Message {
 
 	private SampleResponseMessage() {
 		// For serializer
-		this.temporalProofs = ImmutableSet.of();
+		this.collectedSamples = ImmutableSet.of();
 		this.unavailableAids = ImmutableSet.of();
 		this.tag = null;
 	}
 
-	public SampleResponseMessage(ImmutableSet<TemporalProof> temporalProofs, ImmutableSet<AID> unavailableAids, EUID tag) {
-		this.temporalProofs = temporalProofs;
+	public SampleResponseMessage(ImmutableSet<TemporalProof> collectedSamples, ImmutableSet<AID> unavailableAids, EUID tag) {
+		this.collectedSamples = collectedSamples;
 		this.unavailableAids = unavailableAids;
 		this.tag = tag;
 	}
 
-	public ImmutableSet<TemporalProof> getTemporalProofs() {
-		return temporalProofs;
+	public ImmutableSet<TemporalProof> getCollectedSamples() {
+		return collectedSamples;
 	}
 
 	public ImmutableSet<AID> getUnavailableAids() {
