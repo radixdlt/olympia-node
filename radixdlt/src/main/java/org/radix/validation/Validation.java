@@ -37,7 +37,7 @@ public class Validation extends Plugin {
 		os.load(new MessageParticleConstraintScrypt());
 
 		final ConstraintMachine constraintMachine = new ConstraintMachine.Builder()
-			.setParticleProcedures(os.buildTransitionProcedures())
+			.setParticleTransitionProcedures(os.buildTransitionProcedures())
 			.setParticleStaticCheck(os.buildParticleStaticCheck())
 			.build();
 
