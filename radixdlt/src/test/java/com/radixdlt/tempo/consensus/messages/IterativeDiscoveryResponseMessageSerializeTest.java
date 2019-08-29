@@ -1,4 +1,4 @@
-package com.radixdlt.tempo.messages;
+package com.radixdlt.tempo.consensus.messages;
 
 public class IterativeDiscoveryResponseMessageSerializeTest {
 

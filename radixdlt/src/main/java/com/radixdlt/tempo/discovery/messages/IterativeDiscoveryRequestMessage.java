@@ -1,4 +1,4 @@
-package com.radixdlt.tempo.messages;
+package com.radixdlt.tempo.discovery.messages;
 
 
 import com.fasterxml.jackson.annotation.JsonProperty;

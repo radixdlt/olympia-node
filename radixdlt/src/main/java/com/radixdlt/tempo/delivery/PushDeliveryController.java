@@ -3,7 +3,7 @@ package com.radixdlt.tempo.delivery;
 import com.radixdlt.common.EUID;
 import com.radixdlt.tempo.PeerSupplier;
 import com.radixdlt.tempo.TempoAtom;
-import com.radixdlt.tempo.messages.PushMessage;
+import com.radixdlt.tempo.delivery.messages.PushMessage;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.network.peers.Peer;

@@ -1,4 +1,4 @@
-package com.radixdlt.tempo.messages;
+package com.radixdlt.tempo.consensus.messages;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSet;

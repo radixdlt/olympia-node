@@ -1,4 +1,4 @@
-package com.radixdlt.tempo.messages;
+package com.radixdlt.tempo.delivery.messages;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.serialization.DsonOutput;
