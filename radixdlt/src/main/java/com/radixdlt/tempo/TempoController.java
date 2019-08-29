@@ -340,9 +340,6 @@ public final class TempoController {
 		Serialization serialization = Serialization.getDefault();
 		MessageCentral messageCentral = Modules.get(MessageCentral.class);
 		Builder builder = builder()
-			.addEpic(AtomDeliveryEpic.builder()
-				.storeView(storeView)
-				.build())
 			.addEpicBuilder(controller -> MessagingEpic.builder()
 				.messager(messageCentral)
 				.addInbound(DeliveryRequestMessage.class, ReceiveDeliveryRequestAction::from)
@@ -358,7 +355,6 @@ public final class TempoController {
 				.build(controller))
 			.addReducer(new LivePeersReducer(peerSupplier))
 			.addReducer(new PassivePeersReducer(16))
-			.addReducer(new AtomDeliveryReducer())
 			.addInitialAction(new RefreshLivePeersAction().repeat(10, 5, TimeUnit.SECONDS))
 			.addInitialAction(new ReselectPassivePeersAction().repeat(10, 20, TimeUnit.SECONDS));
 

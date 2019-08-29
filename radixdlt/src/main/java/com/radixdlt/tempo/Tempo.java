@@ -12,6 +12,7 @@ import com.radixdlt.ledger.LedgerCursor.LedgerIndexType;
 import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerSearchMode;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.tempo.delivery.AtomDeliveryController;
 import com.radixdlt.tempo.discovery.IterativeDiscoveryController;
 import com.radixdlt.tempo.store.TempoAtomStore;
 import org.json.JSONObject;
@@ -49,20 +50,23 @@ public final class Tempo extends Plugin implements Ledger {
 	private final EdgeSelector edgeSelector;
 	private final PeerSupplier peerSupplier;
 	private final Attestor attestor;
+
 	private final IterativeDiscoveryController iterativeDiscovery;
+	private final AtomDeliveryController delivery;
 
 	private Tempo(AtomStore store,
 	              TempoController controller,
 	              EdgeSelector edgeSelector,
 	              PeerSupplier peerSupplier,
 	              Attestor attestor,
-	              IterativeDiscoveryController iterativeDiscovery) {
+	              IterativeDiscoveryController iterativeDiscovery, AtomDeliveryController delivery) {
 		this.store = store;
 		this.controller = controller;
 		this.edgeSelector = edgeSelector;
 		this.peerSupplier = peerSupplier;
 		this.attestor = attestor;
 		this.iterativeDiscovery = iterativeDiscovery;
+		this.delivery = delivery;
 	}
 
 	@Override
@@ -237,12 +241,12 @@ public final class Tempo extends Plugin implements Ledger {
 			SystemProfiler.getInstance(),
 			localSystem,
 			() -> Modules.get(DatabaseEnvironment.class));
-		TempoAttestor attestor = new TempoAttestor(localSystem, Time::currentTimestamp);
+		SingleThreadedScheduler scheduler = new SingleThreadedScheduler();
 		IterativeDiscoveryController iterativeDiscovery = new IterativeDiscoveryController(
 			localSystem.getNID(),
 			store,
 			Modules.get(DatabaseEnvironment.class),
-			new SingleThreadedScheduler(),
+			scheduler,
 			(aids, peer) -> {
 				// TODO hook up to delivery
 				log.info("Received " + aids.size() + " for delivery from " + peer);
@@ -250,12 +254,20 @@ public final class Tempo extends Plugin implements Ledger {
 			Modules.get(MessageCentral.class),
 			new LegacyAddressBookAdapter(() -> Modules.get(PeerHandler.class), Events.getInstance())
 		);
+		AtomDeliveryController delivery = new AtomDeliveryController(
+			scheduler,
+			Modules.get(MessageCentral.class),
+			store,
+			(atom, peer) -> {}
+		);
+
 		return builder()
-			.attestor(attestor::attestTo)
+			.attestor(new TempoAttestor(localSystem, Time::currentTimestamp)::attestTo)
 			.peerSupplier(new PeerSupplierAdapter(() -> Modules.get(PeerHandler.class)))
 			.edgeSelector(new SimpleEdgeSelector())
 			.store(store)
 			.iterativeDiscovery(iterativeDiscovery)
+			.delivery(delivery)
 			.controller(TempoController.defaultBuilder(store).build());
 	}
 
@@ -266,6 +278,7 @@ public final class Tempo extends Plugin implements Ledger {
 		private PeerSupplier peerSupplier;
 		private EdgeSelector edgeSelector;
 		private IterativeDiscoveryController iterativeDiscovery;
+		private AtomDeliveryController delivery;
 
 		public Builder store(AtomStore store) {
 			this.store = store;
@@ -297,6 +310,11 @@ public final class Tempo extends Plugin implements Ledger {
 			return this;
 		}
 
+		public Builder delivery(AtomDeliveryController delivery) {
+			this.delivery = delivery;
+			return this;
+		}
+
 		public Tempo build() {
 			Objects.requireNonNull(store, "store is required");
 			Objects.requireNonNull(controller, "controller is required");
@@ -304,6 +322,7 @@ public final class Tempo extends Plugin implements Ledger {
 			Objects.requireNonNull(peerSupplier, "peerSupplier is required");
 			Objects.requireNonNull(attestor, "attestor is required");
 			Objects.requireNonNull(iterativeDiscovery, "iterativeDiscovery is required");
+			Objects.requireNonNull(delivery, "delivery is required");
 
 			return new Tempo(
 				store,
@@ -311,7 +330,8 @@ public final class Tempo extends Plugin implements Ledger {
 				edgeSelector,
 				peerSupplier,
 				attestor,
-				iterativeDiscovery
+				iterativeDiscovery,
+				delivery
 			);
 		}
 	}

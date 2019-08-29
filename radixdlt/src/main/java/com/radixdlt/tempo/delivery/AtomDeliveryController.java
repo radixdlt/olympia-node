@@ -46,7 +46,12 @@ public final class AtomDeliveryController implements Closeable {
 	private final BlockingQueue<AtomDeliveryRequest> requestQueue;
 	private final SimpleThreadPool<AtomDeliveryRequest> requestThreadPool;
 
-	public AtomDeliveryController(Scheduler scheduler, MessageCentral messageCentral, AtomStoreView storeView, DeliveredAtomSink deliverySink) {
+	public AtomDeliveryController(
+			Scheduler scheduler,
+	        MessageCentral messageCentral,
+			AtomStoreView storeView,
+			DeliveredAtomSink deliverySink
+	) {
 		this.scheduler = Objects.requireNonNull(scheduler);
 		this.messageCentral = Objects.requireNonNull(messageCentral);
 		this.storeView = Objects.requireNonNull(storeView);
