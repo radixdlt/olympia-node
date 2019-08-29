@@ -28,7 +28,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 public final class IterativeDiscoveryController implements Closeable {
@@ -39,7 +38,6 @@ public final class IterativeDiscoveryController implements Closeable {
 	private static final int MAX_BACKOFF = 4;
 	// how many commitments to send per response (32 bytes for commitment + 8 bytes for position)
 	private static final int RESPONSE_LIMIT = 10;
-
 	private static final int REQUEST_QUEUE_CAPACITY = 8192;
 	private static final int REQUEST_PROCESSOR_THREADS = 2;
 
@@ -52,7 +50,7 @@ public final class IterativeDiscoveryController implements Closeable {
 	final CommitmentStore commitmentStore;
 
 	@VisibleForTesting
-	final IterativeDiscoveryState state = new IterativeDiscoveryState(MAX_BACKOFF);
+	final IterativeDiscoveryState discoveryState = new IterativeDiscoveryState();
 
 	private final AtomStoreView storeView;
 
@@ -92,7 +90,7 @@ public final class IterativeDiscoveryController implements Closeable {
 			@Override
 			public void onPeerAdded(Set<Peer> peers) {
 				peers.stream()
-					.filter(peer -> !state.contains(peer.getSystem().getNID()))
+					.filter(peer -> !discoveryState.contains(peer.getSystem().getNID()))
 					.forEach(IterativeDiscoveryController.this::initiateDiscovery);
 			}
 
@@ -124,17 +122,17 @@ public final class IterativeDiscoveryController implements Closeable {
 		EUID peerNid = peer.getSystem().getNID();
 		deliverySink.accept(message.getAids(), peer);
 		commitmentStore.put(peerNid, message.getCommitments(), message.getCursor().getLcPosition());
-		state.removeRequest(peerNid, message.getCursor().getLcPosition());
+		discoveryState.removeRequest(peerNid, message.getCursor().getLcPosition());
 
 		boolean isLatest = updateCursor(peer, message.getCursor());
 		if (selectedPeers.contains(peerNid) && isLatest) {
 			// if there is more to synchronise, request more immediately
 			if (message.getCursor().hasNext()) {
-				state.onDiscovering(peerNid);
+				discoveryState.onDiscovering(peerNid);
 				requestDiscovery(peer, message.getCursor().getNext());
 			} else { // if synchronised, back off exponentially
-				state.onDiscovered(peerNid);
-				int timeout = 1 << state.getBackoff(peerNid);
+				discoveryState.onDiscovered(peerNid);
+				int timeout = 1 << Math.min(discoveryState.getBackoff(peerNid), MAX_BACKOFF);
 				// TODO aggregate cancellables and cancel on stop
 				scheduler.schedule(() -> initiateDiscovery(peer), timeout, TimeUnit.SECONDS);
 
@@ -147,7 +145,7 @@ public final class IterativeDiscoveryController implements Closeable {
 
 	private void initiateDiscovery(Peer peer) {
 		log.info("Initiating iterative discovery with " + peer);
-		state.add(peer.getSystem().getNID());
+		discoveryState.add(peer.getSystem().getNID());
 
 		long latestCursorPosition = getLatestCursor(peer);
 		LogicalClockCursor cursor = new LogicalClockCursor(latestCursorPosition);
@@ -156,17 +154,17 @@ public final class IterativeDiscoveryController implements Closeable {
 
 	private void abandonDiscovery(Peer peer) {
 		log.info("Abandoning iterative discovery with " + peer);
-		state.remove(peer.getSystem().getNID());
+		discoveryState.remove(peer.getSystem().getNID());
 	}
 
 	private void requestDiscovery(Peer peer, LogicalClockCursor cursor) {
 		IterativeDiscoveryRequestMessage request = new IterativeDiscoveryRequestMessage(cursor);
-		state.addRequest(peer.getSystem().getNID(), cursor.getLcPosition());
+		discoveryState.addRequest(peer.getSystem().getNID(), cursor.getLcPosition());
 		messageCentral.send(peer, request);
 
 		// re-request after a certain timeout if no response hasbeen received
 		scheduler.schedule(() -> {
-			if (state.isPending(peer.getSystem().getNID(), cursor.getLcPosition())) {
+			if (discoveryState.isPending(peer.getSystem().getNID(), cursor.getLcPosition())) {
 				if (log.hasLevel(Logging.DEBUG)) {
 					log.debug("Iterative discovery request to peer " + peer + " at " + cursor + " has timed out, resending");
 				}

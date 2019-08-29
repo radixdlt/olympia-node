@@ -18,24 +18,22 @@ import java.util.stream.Stream;
  * The individual peer states capture pending requests and a 'backoff' when discovery is synchronised.
  */
 class IterativeDiscoveryState {
-	private final int maxBackoff; // results in 2^4 -> 16 seconds
-
 	private final Lock stateLock = new ReentrantLock(true);
 	private final Map<EUID, IterativeDiscoveryPeerState> states = new HashMap<>();
 
-	IterativeDiscoveryState(int maxBackoff) {
-		this.maxBackoff = maxBackoff;
+	IterativeDiscoveryState() {
+		// nothing to do here
 	}
 
-	public boolean isDiscovered(EUID nid) {
+	boolean isDiscovered(EUID nid) {
 		return Locking.withSupplierLock(stateLock, () -> states.containsKey(nid) && states.get(nid).backoffCounter == 0);
 	}
 
-	public boolean contains(EUID nid) {
+	boolean contains(EUID nid) {
 		return Locking.withSupplierLock(stateLock, () -> states.containsKey(nid));
 	}
 
-	public boolean isPending(EUID nid, long request) {
+	boolean isPending(EUID nid, long request) {
 		return Locking.withSupplierLock(stateLock, () -> states.containsKey(nid) && states.get(nid).isPending(request));
 	}
 
@@ -43,11 +41,11 @@ class IterativeDiscoveryState {
 		Locking.withLock(stateLock, () -> states.computeIfAbsent(nid, n -> new IterativeDiscoveryPeerState()));
 	}
 
-	public void remove(EUID nid) {
+	void remove(EUID nid) {
 		Locking.withLock(stateLock, () -> states.remove(nid));
 	}
 
-	public void addRequest(EUID nid, long request) {
+	void addRequest(EUID nid, long request) {
 		Locking.withLock(stateLock, () -> {
 			IterativeDiscoveryPeerState state = states.get(nid);
 			if (state == null) {
@@ -57,7 +55,7 @@ class IterativeDiscoveryState {
 		});
 	}
 
-	public void removeRequest(EUID nid, long request) {
+	void removeRequest(EUID nid, long request) {
 		Locking.withLock(stateLock, () -> {
 			IterativeDiscoveryPeerState state = states.get(nid);
 			if (state == null) {
@@ -67,7 +65,7 @@ class IterativeDiscoveryState {
 		});
 	}
 
-	public void onDiscovered(EUID nid) {
+	void onDiscovered(EUID nid) {
 		Locking.withLock(stateLock, () -> {
 			IterativeDiscoveryPeerState state = states.get(nid);
 			if (state == null) {
@@ -77,7 +75,7 @@ class IterativeDiscoveryState {
 		});
 	}
 
-	public void onDiscovering(EUID nid) {
+	void onDiscovering(EUID nid) {
 		Locking.withLock(stateLock, () -> {
 			IterativeDiscoveryPeerState state = states.get(nid);
 			if (state == null) {
@@ -99,7 +97,7 @@ class IterativeDiscoveryState {
 		);
 	}
 
-	public int getBackoff(EUID nid) {
+	int getBackoff(EUID nid) {
 		IterativeDiscoveryPeerState state = states.get(nid);
 		if (state == null) {
 			throw new TempoException("State for '" + nid + "' does not exist");
@@ -133,7 +131,7 @@ class IterativeDiscoveryState {
 		}
 
 		private void onDiscovered() {
-			this.backoffCounter = Math.min(maxBackoff, backoffCounter + 1);
+			this.backoffCounter = Math.min(backoffCounter + 1, Integer.MAX_VALUE - 1);
 		}
 
 		private void onDiscovering() {
