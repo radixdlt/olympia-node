@@ -12,7 +12,7 @@ import com.radixdlt.ledger.LedgerCursor.LedgerIndexType;
 import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerSearchMode;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.tempo.discovery.iterative.IterativeDiscoveryController;
+import com.radixdlt.tempo.discovery.IterativeDiscoveryController;
 import com.radixdlt.tempo.store.TempoAtomStore;
 import org.json.JSONObject;
 import org.radix.database.DatabaseEnvironment;

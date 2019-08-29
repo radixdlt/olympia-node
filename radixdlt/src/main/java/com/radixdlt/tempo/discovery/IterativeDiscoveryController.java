@@ -1,4 +1,4 @@
-package com.radixdlt.tempo.discovery.iterative;
+package com.radixdlt.tempo.discovery;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
@@ -10,7 +10,6 @@ import com.radixdlt.tempo.LegacyAddressBook;
 import com.radixdlt.tempo.LegacyAddressBookListener;
 import com.radixdlt.tempo.LogicalClockCursor;
 import com.radixdlt.tempo.Scheduler;
-import com.radixdlt.tempo.discovery.DiscoveredAtomSink;
 import com.radixdlt.tempo.messages.IterativeDiscoveryRequestMessage;
 import com.radixdlt.tempo.messages.IterativeDiscoveryResponseMessage;
 import com.radixdlt.tempo.store.CommitmentStore;

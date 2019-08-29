@@ -1,4 +1,4 @@
-package com.radixdlt.tempo.discovery.iterative;
+package com.radixdlt.tempo.discovery;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.common.EUID;
