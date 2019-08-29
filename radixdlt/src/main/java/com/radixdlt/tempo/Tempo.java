@@ -18,9 +18,9 @@ import com.radixdlt.tempo.delivery.TargetDeliveryController;
 import com.radixdlt.tempo.delivery.PushDeliveryController;
 import com.radixdlt.tempo.discovery.AtomDiscoverer;
 import com.radixdlt.tempo.discovery.IterativeDiscoveryController;
+import com.radixdlt.tempo.store.berkeley.BerkeleyCommitmentStore;
+import com.radixdlt.tempo.store.berkeley.BerkeleyTempoAtomStore;
 import com.radixdlt.tempo.store.CommitmentStore;
-import com.radixdlt.tempo.store.TempoAtomStore;
-import org.json.JSONObject;
 import org.radix.database.DatabaseEnvironment;
 import org.radix.events.Events;
 import org.radix.logging.Logger;
@@ -56,7 +56,7 @@ public final class Tempo extends Plugin implements Ledger {
 	private static final int INBOUND_QUEUE_CAPACITY = 16384;
 
 	private final EUID self;
-	private final AtomStore atomStore;
+	private final TempoAtomStore atomStore;
 	private final CommitmentStore commitmentStore;
 
 	private final EdgeSelector edgeSelector;
@@ -71,7 +71,7 @@ public final class Tempo extends Plugin implements Ledger {
 	private final ImmutableList<Consumer<TempoAtom>> acceptors;
 
 	private Tempo(EUID self,
-	              AtomStore atomStore,
+	              TempoAtomStore atomStore,
 	              CommitmentStore commitmentStore,
 	              EdgeSelector edgeSelector,
 	              PeerSupplier peerSupplier,
@@ -260,12 +260,12 @@ public final class Tempo extends Plugin implements Ledger {
 
 	public static Builder defaultBuilderStoreOnly() {
 		LocalSystem localSystem = LocalSystem.getInstance();
-		TempoAtomStore atomStore = new TempoAtomStore(
+		BerkeleyTempoAtomStore atomStore = new BerkeleyTempoAtomStore(
 			Serialization.getDefault(),
 			SystemProfiler.getInstance(),
 			localSystem,
 			() -> Modules.get(DatabaseEnvironment.class));
-		CommitmentStore commitmentStore = new CommitmentStore(Modules.get(DatabaseEnvironment.class));
+		BerkeleyCommitmentStore commitmentStore = new BerkeleyCommitmentStore(Modules.get(DatabaseEnvironment.class));
 		commitmentStore.open();
 		TempoAttestor attestor = new TempoAttestor(localSystem, Time::currentTimestamp);
 		return builder()
@@ -277,13 +277,13 @@ public final class Tempo extends Plugin implements Ledger {
 
 	public static Builder defaultBuilder() {
 		LocalSystem localSystem = LocalSystem.getInstance();
-		TempoAtomStore atomStore = new TempoAtomStore(
+		BerkeleyTempoAtomStore atomStore = new BerkeleyTempoAtomStore(
 			Serialization.getDefault(),
 			SystemProfiler.getInstance(),
 			localSystem,
 			() -> Modules.get(DatabaseEnvironment.class));
 		SingleThreadedScheduler scheduler = new SingleThreadedScheduler();
-		CommitmentStore commitmentStore = new CommitmentStore(Modules.get(DatabaseEnvironment.class));
+		BerkeleyCommitmentStore commitmentStore = new BerkeleyCommitmentStore(Modules.get(DatabaseEnvironment.class));
 		commitmentStore.open();
 		PeerSupplierAdapter peerSupplier = new PeerSupplierAdapter(() -> Modules.get(PeerHandler.class));
 		IterativeDiscoveryController iterativeDiscoverer = new IterativeDiscoveryController(
@@ -322,7 +322,7 @@ public final class Tempo extends Plugin implements Ledger {
 
 	public static class Builder {
 		private EUID self;
-		private AtomStore atomStore;
+		private TempoAtomStore atomStore;
 		private CommitmentStore commitmentStore;
 		private Attestor attestor;
 		private PeerSupplier peerSupplier;
@@ -337,7 +337,7 @@ public final class Tempo extends Plugin implements Ledger {
 			return this;
 		}
 
-		public Builder atomStore(AtomStore atomStore) {
+		public Builder atomStore(TempoAtomStore atomStore) {
 			this.atomStore = atomStore;
 			return this;
 		}

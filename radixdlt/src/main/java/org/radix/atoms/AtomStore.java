@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.ledger.LedgerSearchMode;
 import com.radixdlt.tempo.AtomStoreView;
-import com.radixdlt.tempo.store.LegacyAtomStoreAdapter;
+import com.radixdlt.tempo.store.legacy.LegacyAtomStoreAdapter;
 import org.bouncycastle.util.Arrays;
 import org.radix.atoms.events.AtomDeletedEvent;
 import org.radix.atoms.events.AtomStoredEvent;
@@ -67,7 +67,7 @@ import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerCursor.LedgerIndexType;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationUtils;
-import com.radixdlt.tempo.store.LegacyCursor;
+import com.radixdlt.tempo.store.legacy.LegacyCursor;
 import com.radixdlt.utils.Longs;
 import com.sleepycat.je.Cursor;
 import com.sleepycat.je.Database;
@@ -86,7 +86,7 @@ import com.sleepycat.je.Transaction;
 import com.sleepycat.je.TransactionConfig;
 import com.sleepycat.je.UniqueConstraintException;
 
-import static com.radixdlt.tempo.store.TempoAtomIndices.ATOM_INDEX_PREFIX;
+import static com.radixdlt.tempo.store.berkeley.TempoAtomIndices.ATOM_INDEX_PREFIX;
 
 public class AtomStore extends DatabaseStore implements DiscoverySource<AtomDiscoveryRequest>
 {

@@ -1,4 +1,4 @@
-package com.radixdlt.tempo.store;
+package com.radixdlt.tempo.store.berkeley;
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.Atom;
@@ -12,6 +12,9 @@ import com.radixdlt.ledger.LedgerSearchMode;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.tempo.AtomGenerator;
 import com.radixdlt.tempo.TempoAtom;
+import com.radixdlt.tempo.store.berkeley.BerkeleyCursor;
+import com.radixdlt.tempo.store.berkeley.BerkeleyTempoAtomStore;
+import com.radixdlt.tempo.store.berkeley.TempoAtomIndices;
 import com.radixdlt.utils.Ints;
 
 import static org.junit.Assume.assumeTrue;
@@ -36,15 +39,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
-public class TempoAtomStoreTests extends RadixTestWithStores {
+public class BerkeleyTempoAtomStoreTests extends RadixTestWithStores {
 
-    private static final Logger LOGGER = Logging.getLogger("TempoAtomStoreTests");
+    private static final Logger LOGGER = Logging.getLogger("BerkeleyTempoAtomStoreTests");
 
     private AtomGenerator atomGenerator = new AtomGenerator();
     private LocalSystem localSystem = LocalSystem.getInstance();
     private Serialization serialization = Serialization.getDefault();
     private SystemProfiler profiler = SystemProfiler.getInstance();
-    private TempoAtomStore tempoAtomStore;
+    private BerkeleyTempoAtomStore tempoAtomStore;
 
     private List<Atom> atoms;
     private List<TempoAtom> tempoAtoms;
@@ -58,7 +61,7 @@ public class TempoAtomStoreTests extends RadixTestWithStores {
 
     @Before
     public void setup() throws CryptoException, ValidationException {
-        tempoAtomStore = new TempoAtomStore(serialization, profiler, localSystem, () -> Modules.get(DatabaseEnvironment.class));
+        tempoAtomStore = new BerkeleyTempoAtomStore(serialization, profiler, localSystem, () -> Modules.get(DatabaseEnvironment.class));
         tempoAtomStore.open();
 
         identity = new ECKeyPair();
@@ -167,7 +170,7 @@ public class TempoAtomStoreTests extends RadixTestWithStores {
         storeAtoms();
         // LedgerIndex for shard 200
         LedgerIndex ledgerIndex = new LedgerIndex((byte) 200, Ints.toByteArray(200));
-        validateShard200(() -> (TempoCursor) tempoAtomStore.search(LedgerCursor.LedgerIndexType.DUPLICATE, ledgerIndex, LedgerSearchMode.EXACT));
+        validateShard200(() -> (BerkeleyCursor) tempoAtomStore.search(LedgerCursor.LedgerIndexType.DUPLICATE, ledgerIndex, LedgerSearchMode.EXACT));
     }
 
     @Test
@@ -175,7 +178,7 @@ public class TempoAtomStoreTests extends RadixTestWithStores {
         storeAtoms();
         LedgerIndex ledgerIndex = new LedgerIndex((byte) 200, Ints.toByteArray(150));
         // LedgerIndex pointing to not existing shard 150. But because ofLedgerSearchMode.RANGE Cursor will point it to next available shard - shard 200
-        validateShard200(() -> (TempoCursor) tempoAtomStore.search(LedgerCursor.LedgerIndexType.DUPLICATE, ledgerIndex, LedgerSearchMode.RANGE));
+        validateShard200(() -> (BerkeleyCursor) tempoAtomStore.search(LedgerCursor.LedgerIndexType.DUPLICATE, ledgerIndex, LedgerSearchMode.RANGE));
     }
 
     @Test
@@ -185,7 +188,7 @@ public class TempoAtomStoreTests extends RadixTestWithStores {
             // LedgerIndex for Atom 3
             LedgerIndex ledgerIndex = new LedgerIndex(TempoAtomIndices.ATOM_INDEX_PREFIX, tempoAtoms.get(3).getAID().getBytes());
 
-            TempoCursor tempoCursor = (TempoCursor) tempoAtomStore.search(LedgerCursor.LedgerIndexType.UNIQUE, ledgerIndex, LedgerSearchMode.EXACT);
+            BerkeleyCursor tempoCursor = (BerkeleyCursor) tempoAtomStore.search(LedgerCursor.LedgerIndexType.UNIQUE, ledgerIndex, LedgerSearchMode.EXACT);
             //Cursor pointing to unique single result.
             //getFirst and getLast pointing to the same value
             //getNext and getPrev are not available
@@ -203,13 +206,13 @@ public class TempoAtomStoreTests extends RadixTestWithStores {
     }
 
     /**
-     * Method validating navigation when shard200Supplier returning TempoCursor which pointing to "Shard 200" which contains TempoAtoms(2,3,4)
+     * Method validating navigation when shard200Supplier returning BerkeleyCursor which pointing to "Shard 200" which contains TempoAtoms(2,3,4)
      *
-     * @param shard200Supplier function which return TempoCursor to "shard 200"
+     * @param shard200Supplier function which return BerkeleyCursor to "shard 200"
      */
-    private void validateShard200(Supplier<TempoCursor> shard200Supplier) {
+    private void validateShard200(Supplier<BerkeleyCursor> shard200Supplier) {
         SoftAssertions.assertSoftly(softly -> {
-            TempoCursor tempoCursor = shard200Supplier.get();
+            BerkeleyCursor tempoCursor = shard200Supplier.get();
             //Navigation in scope of shard 200 => (2,3,4)
             //Pointing Atom[2] - first element in shard
             softly.assertThat(tempoCursor.get()).isEqualTo(tempoAtoms.get(2).getAID());

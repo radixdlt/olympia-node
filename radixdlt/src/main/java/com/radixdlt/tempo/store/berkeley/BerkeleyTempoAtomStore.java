@@ -1,11 +1,10 @@
-package com.radixdlt.tempo.store;
+package com.radixdlt.tempo.store.berkeley;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.UnsignedBytes;
 import com.radixdlt.Atom;
 import com.radixdlt.common.AID;
-import com.radixdlt.utils.Pair;
 import com.radixdlt.ledger.LedgerCursor;
 import com.radixdlt.ledger.LedgerCursor.LedgerIndexType;
 import com.radixdlt.ledger.LedgerIndex;
@@ -14,7 +13,7 @@ import com.radixdlt.ledger.exceptions.LedgerKeyConstraintException;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
-import com.radixdlt.tempo.AtomStore;
+import com.radixdlt.tempo.TempoAtomStore;
 import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.TempoException;
 import com.radixdlt.utils.Longs;
@@ -56,10 +55,10 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static com.radixdlt.tempo.store.TempoAtomIndices.ATOM_INDEX_PREFIX;
-import static com.radixdlt.tempo.store.TempoAtomIndices.SHARD_INDEX_PREFIX;
+import static com.radixdlt.tempo.store.berkeley.TempoAtomIndices.ATOM_INDEX_PREFIX;
+import static com.radixdlt.tempo.store.berkeley.TempoAtomIndices.SHARD_INDEX_PREFIX;
 
-public class TempoAtomStore implements AtomStore {
+public class BerkeleyTempoAtomStore implements TempoAtomStore {
 	private static final String ATOM_INDICES_DB_NAME = "tempo2.atom_indices";
 	private static final String DUPLICATE_INDICES_DB_NAME = "tempo2.duplicated_indices";
 	private static final String UNIQUE_INDICES_DB_NAME = "tempo2.unique_indices";
@@ -78,7 +77,7 @@ public class TempoAtomStore implements AtomStore {
 	private SecondaryDatabase duplicatedIndices; // TempoAtoms by secondary duplicate indices (with prefixes)
 	private Database atomIndices; // TempoAtomIndices by same primary keys
 
-	public TempoAtomStore(Serialization serialization, SystemProfiler profiler, LocalSystem localSystem, Supplier<DatabaseEnvironment> dbEnv) {
+	public BerkeleyTempoAtomStore(Serialization serialization, SystemProfiler profiler, LocalSystem localSystem, Supplier<DatabaseEnvironment> dbEnv) {
 		this.serialization = Objects.requireNonNull(serialization, "serialization is required");
 		this.profiler = Objects.requireNonNull(profiler, "profiler is required");
 		this.localSystem = Objects.requireNonNull(localSystem, "localSystem is required");
@@ -91,7 +90,7 @@ public class TempoAtomStore implements AtomStore {
 		primaryConfig.setAllowCreate(true);
 		primaryConfig.setTransactional(true);
 		primaryConfig.setKeyPrefixing(true);
-		primaryConfig.setBtreeComparator(TempoAtomStore.AtomStorePackedPrimaryKeyComparator.class);
+		primaryConfig.setBtreeComparator(BerkeleyTempoAtomStore.AtomStorePackedPrimaryKeyComparator.class);
 
 		SecondaryConfig uniqueIndicesConfig = new SecondaryConfig();
 		uniqueIndicesConfig.setAllowCreate(true);
@@ -107,7 +106,7 @@ public class TempoAtomStore implements AtomStore {
 		DatabaseConfig indicesConfig = new DatabaseConfig();
 		indicesConfig.setAllowCreate(true);
 		indicesConfig.setTransactional(true);
-		indicesConfig.setBtreeComparator(TempoAtomStore.AtomStorePackedPrimaryKeyComparator.class);
+		indicesConfig.setBtreeComparator(BerkeleyTempoAtomStore.AtomStorePackedPrimaryKeyComparator.class);
 
 		try {
 			Environment dbEnv = this.dbEnv.get().getEnvironment();
@@ -467,11 +466,11 @@ public class TempoAtomStore implements AtomStore {
 			DatabaseEntry key = new DatabaseEntry(index.asKey());
 			if (mode == LedgerSearchMode.EXACT) {
 				if (databaseCursor.getSearchKey(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
-					return new TempoCursor(this, type, pKey.getData(), key.getData());
+					return new BerkeleyCursor(this, type, pKey.getData(), key.getData());
 				}
 			} else if (mode == LedgerSearchMode.RANGE) {
 				if (databaseCursor.getSearchKeyRange(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
-					return new TempoCursor(this, type, pKey.getData(), key.getData());
+					return new BerkeleyCursor(this, type, pKey.getData(), key.getData());
 				}
 			}
 
@@ -553,13 +552,13 @@ public class TempoAtomStore implements AtomStore {
 		}
 	}
 
-	TempoCursor getNext(TempoCursor cursor) throws DatabaseException {
+	BerkeleyCursor getNext(BerkeleyCursor cursor) throws DatabaseException {
 		try (SecondaryCursor databaseCursor = toSecondaryCursor(cursor.getType())) {
 			DatabaseEntry pKey = new DatabaseEntry(cursor.getPrimary());
 			DatabaseEntry key = new DatabaseEntry(cursor.getIndex());
 			if (databaseCursor.getSearchBothRange(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
 				if (databaseCursor.getNextDup(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
-					return new TempoCursor(this, cursor.getType(), pKey.getData(), key.getData());
+					return new BerkeleyCursor(this, cursor.getType(), pKey.getData(), key.getData());
 				}
 			}
 
@@ -569,13 +568,13 @@ public class TempoAtomStore implements AtomStore {
 		}
 	}
 
-	TempoCursor getPrev(TempoCursor cursor) throws DatabaseException {
+	BerkeleyCursor getPrev(BerkeleyCursor cursor) throws DatabaseException {
 		try (SecondaryCursor databaseCursor = toSecondaryCursor(cursor.getType())) {
 			DatabaseEntry pKey = new DatabaseEntry(cursor.getPrimary());
 			DatabaseEntry key = new DatabaseEntry(cursor.getIndex());
 			if (databaseCursor.getSearchBothRange(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
 				if (databaseCursor.getPrevDup(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
-					return new TempoCursor(this, cursor.getType(), pKey.getData(), key.getData());
+					return new BerkeleyCursor(this, cursor.getType(), pKey.getData(), key.getData());
 				}
 			}
 
@@ -585,17 +584,17 @@ public class TempoAtomStore implements AtomStore {
 		}
 	}
 
-	TempoCursor getFirst(TempoCursor cursor) throws DatabaseException {
+	BerkeleyCursor getFirst(BerkeleyCursor cursor) throws DatabaseException {
 		try (SecondaryCursor databaseCursor = toSecondaryCursor(cursor.getType())) {
 			DatabaseEntry pKey = new DatabaseEntry(cursor.getPrimary());
 			DatabaseEntry key = new DatabaseEntry(cursor.getIndex());
 			if (databaseCursor.getSearchBothRange(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
 				if (databaseCursor.getPrevNoDup(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
 					if (databaseCursor.getNext(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
-						return new TempoCursor(this, cursor.getType(), pKey.getData(), key.getData());
+						return new BerkeleyCursor(this, cursor.getType(), pKey.getData(), key.getData());
 					}
 				} else if (databaseCursor.getFirst(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
-					return new TempoCursor(this, cursor.getType(), pKey.getData(), key.getData());
+					return new BerkeleyCursor(this, cursor.getType(), pKey.getData(), key.getData());
 				}
 			}
 
@@ -605,7 +604,7 @@ public class TempoAtomStore implements AtomStore {
 		}
 	}
 
-	TempoCursor getLast(TempoCursor cursor) throws DatabaseException {
+	BerkeleyCursor getLast(BerkeleyCursor cursor) throws DatabaseException {
 		try (SecondaryCursor databaseCursor = toSecondaryCursor(cursor.getType())) {
 			DatabaseEntry pKey = new DatabaseEntry(cursor.getPrimary());
 			DatabaseEntry key = new DatabaseEntry(cursor.getIndex());
@@ -613,10 +612,10 @@ public class TempoAtomStore implements AtomStore {
 			if (databaseCursor.getSearchBothRange(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
 				if (databaseCursor.getNextNoDup(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
 					if (databaseCursor.getPrev(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
-						return new TempoCursor(this, cursor.getType(), pKey.getData(), key.getData());
+						return new BerkeleyCursor(this, cursor.getType(), pKey.getData(), key.getData());
 					}
 				} else if (databaseCursor.getLast(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
-					return new TempoCursor(this, cursor.getType(), pKey.getData(), key.getData());
+					return new BerkeleyCursor(this, cursor.getType(), pKey.getData(), key.getData());
 				}
 			}
 

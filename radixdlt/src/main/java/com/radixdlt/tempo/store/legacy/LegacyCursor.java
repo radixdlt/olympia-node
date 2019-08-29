@@ -1,4 +1,4 @@
-package com.radixdlt.tempo.store;
+package com.radixdlt.tempo.store.legacy;
 
 import com.radixdlt.common.AID;
 import com.radixdlt.ledger.LedgerCursor;

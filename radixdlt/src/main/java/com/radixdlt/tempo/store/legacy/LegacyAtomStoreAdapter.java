@@ -1,4 +1,4 @@
-package com.radixdlt.tempo.store;
+package com.radixdlt.tempo.store.legacy;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.common.AID;
@@ -7,7 +7,7 @@ import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerSearchMode;
 import com.radixdlt.middleware.RadixEngineUtils;
 import com.radixdlt.middleware.SimpleRadixEngineAtom;
-import com.radixdlt.tempo.AtomStore;
+import com.radixdlt.tempo.TempoAtomStore;
 import com.radixdlt.tempo.LegacyUtils;
 import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.TempoException;
@@ -32,7 +32,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 
-public class LegacyAtomStoreAdapter implements AtomStore {
+public class LegacyAtomStoreAdapter implements TempoAtomStore {
 	private final Logger logger = Logging.getLogger("Store");
 	private final Supplier<org.radix.atoms.AtomStore> atomStoreSupplier;
 	private final Supplier<AtomSyncStore> atomSyncStoreSupplier;
@@ -149,17 +149,17 @@ public class LegacyAtomStoreAdapter implements AtomStore {
 
 	@Override
 	public void open() {
-		// not implemented here as is already done in legacy AtomStore directly
+		// not implemented here as is already done in legacy TempoAtomStore directly
 	}
 
 	@Override
 	public void close() {
-		// not implemented here as is already done in legacy AtomStore directly
+		// not implemented here as is already done in legacy TempoAtomStore directly
 	}
 
 	@Override
 	public void reset() {
-		// not implemented here as is already done in legacy AtomStore directly
+		// not implemented here as is already done in legacy TempoAtomStore directly
 	}
 
 	private SimpleRadixEngineAtom convertToCMAtom(TempoAtom atom) {

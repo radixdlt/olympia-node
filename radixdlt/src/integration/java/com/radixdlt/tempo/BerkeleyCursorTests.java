@@ -18,7 +18,7 @@ import static org.junit.Assume.assumeTrue;
 
 import java.util.List;
 
-public class TempoCursorTests extends RadixTestWithStores {
+public class BerkeleyCursorTests extends RadixTestWithStores {
 
 	private AtomGenerator atomGenerator = new AtomGenerator();
 

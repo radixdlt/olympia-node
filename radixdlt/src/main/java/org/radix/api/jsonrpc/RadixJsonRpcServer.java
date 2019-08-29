@@ -170,7 +170,7 @@ public final class RadixJsonRpcServer {
 						LedgerIndex index;
 						if (Modules.get(RuntimeProperties.class).get("tempo2", false)) {
 							throw new UnsupportedOperationException("Not yet implemented");
-//							index = new LedgerIndex(TempoAtomStore.DESTINATION_INDEX_PREFIX, address.getUID().toByteArray());
+//							index = new LedgerIndex(BerkeleyTempoAtomStore.DESTINATION_INDEX_PREFIX, address.getUID().toByteArray());
 						} else {
 							index = new LedgerIndex(AtomStore.IDType.toByteArray(AtomStore.IDType.DESTINATION, address.getUID()));
 						}

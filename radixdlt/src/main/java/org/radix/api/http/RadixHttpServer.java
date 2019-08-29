@@ -15,8 +15,7 @@ import com.radixdlt.mock.MockAccessor;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.tempo.AtomStoreView;
 import com.radixdlt.tempo.AtomSyncView;
-import com.radixdlt.tempo.Tempo;
-import com.radixdlt.tempo.store.CommitmentStore;
+import com.radixdlt.tempo.store.berkeley.BerkeleyCommitmentStore;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.radix.api.AtomSchemas;
@@ -152,7 +151,7 @@ public final class RadixHttpServer {
 	    }, handler);
 
 	    addGetRoute("/api/internal/tempo/commitments/next", exchange -> {
-	    	if (!Modules.isAvailable(CommitmentStore.class)) {
+	    	if (!Modules.isAvailable(BerkeleyCommitmentStore.class)) {
 	    		respond("Commitment store is unavailable", exchange);
 	    		return;
 		    }
@@ -162,7 +161,7 @@ public final class RadixHttpServer {
 		    long position = Long.parseLong(positionStr);
 		    int limit = Integer.parseInt(limitStr);
 
-		    ImmutableList<Hash> commitments = Modules.get(CommitmentStore.class).getNext(LocalSystem.getInstance().getNID(), position, limit);
+		    ImmutableList<Hash> commitments = Modules.get(BerkeleyCommitmentStore.class).getNext(LocalSystem.getInstance().getNID(), position, limit);
 		    String commitmentsJson = Serialization.getDefault().toJson(commitments, DsonOutput.Output.ALL);
 		    respond(commitmentsJson, exchange);
 	    }, handler);

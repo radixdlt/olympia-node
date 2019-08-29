@@ -1,7 +1,9 @@
-package com.radixdlt.tempo.store;
+package com.radixdlt.tempo.store.berkeley;
 
 import com.radixdlt.common.EUID;
 import com.radixdlt.tempo.TempoException;
+import com.radixdlt.tempo.store.LCCursorStore;
+import com.radixdlt.tempo.store.Store;
 import com.radixdlt.utils.Longs;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
@@ -18,16 +20,15 @@ import org.radix.logging.Logging;
 
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Supplier;
 
-public final class LogicalClockCursorStore implements Store {
+public final class BerkeleyLCCursorStore implements Store, LCCursorStore {
 	private static final String ITERATIVE_CURSORS_DB_NAME = "tempo2.sync.iterative.cursors";
 	private static final Logger logger = Logging.getLogger("CursorStore");
 
 	private final DatabaseEnvironment dbEnv;
 	private Database cursors;
 
-	public LogicalClockCursorStore(DatabaseEnvironment dbEnv) {
+	public BerkeleyLCCursorStore(DatabaseEnvironment dbEnv) {
 		this.dbEnv = Objects.requireNonNull(dbEnv, "dbEnv is required");
 	}
 
@@ -91,6 +92,7 @@ public final class LogicalClockCursorStore implements Store {
 		}
 	}
 
+	@Override
 	public void put(EUID nid, long cursor) {
 		Transaction transaction = dbEnv.getEnvironment().beginTransaction(null, null);
 		try {
@@ -109,6 +111,7 @@ public final class LogicalClockCursorStore implements Store {
 		}
 	}
 
+	@Override
 	public Optional<Long> get(EUID nid) {
 		try {
 			DatabaseEntry key = new DatabaseEntry(toPKey(nid));

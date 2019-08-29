@@ -1,4 +1,4 @@
-package com.radixdlt.tempo.store;
+package com.radixdlt.tempo.store.berkeley;
 
 import com.radixdlt.common.AID;
 import com.radixdlt.ledger.LedgerCursor;
@@ -10,13 +10,13 @@ import java.util.Objects;
 /**
  * A Tempo implementation of a {@link LedgerCursor}
  */
-public class TempoCursor implements LedgerCursor {
+public class BerkeleyCursor implements LedgerCursor {
 	private final LedgerIndexType type;
 	private final byte[] primary;
 	private final byte[] index;
-	private final TempoAtomStore store;
+	private final BerkeleyTempoAtomStore store;
 
-	TempoCursor(TempoAtomStore store, LedgerIndexType type, byte[] primary, byte[] index) {
+	BerkeleyCursor(BerkeleyTempoAtomStore store, LedgerIndexType type, byte[] primary, byte[] index) {
 		this.type = type;
 		this.primary = Arrays.clone(Objects.requireNonNull(primary));
 		this.index = Arrays.clone(Objects.requireNonNull(index));

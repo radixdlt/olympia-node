@@ -9,7 +9,7 @@ import java.util.Set;
 /**
  * An entry-point for manipulating the state of a Tempo ledger.
  */
-public interface AtomStore extends AtomStoreView, Store {
+public interface TempoAtomStore extends AtomStoreView, Store {
 	/**
 	 * Deletes the atom associated with a certain {@link AID}.
 	 *

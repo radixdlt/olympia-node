@@ -1,4 +1,4 @@
-package com.radixdlt.tempo.store;
+package com.radixdlt.tempo.store.berkeley;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSet;

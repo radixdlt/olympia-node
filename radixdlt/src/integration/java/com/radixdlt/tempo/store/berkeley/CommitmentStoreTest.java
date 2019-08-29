@@ -1,8 +1,7 @@
-package com.radixdlt.tempo.store;
+package com.radixdlt.tempo.store.berkeley;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.common.EUID;
-import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.tempo.AtomGenerator;
@@ -11,7 +10,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.radix.database.DatabaseEnvironment;
-import org.radix.exceptions.ValidationException;
 import org.radix.integration.RadixTestWithStores;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
@@ -27,17 +25,17 @@ import static org.junit.Assume.assumeTrue;
 
 public class CommitmentStoreTest extends RadixTestWithStores {
 
-    private static final Logger LOGGER = Logging.getLogger("TempoAtomStoreTests");
+    private static final Logger LOGGER = Logging.getLogger("BerkeleyTempoAtomStoreTests");
 
     private AtomGenerator atomGenerator = new AtomGenerator();
     private LocalSystem localSystem = LocalSystem.getInstance();
     private Serialization serialization = Serialization.getDefault();
     private SystemProfiler profiler = SystemProfiler.getInstance();
-    private CommitmentStore commitmentStore;
+    private BerkeleyCommitmentStore commitmentStore;
 
     @Before
-    public void setup() throws CryptoException, ValidationException {
-        commitmentStore = new CommitmentStore(() -> Modules.get(DatabaseEnvironment.class));
+    public void setup() {
+        commitmentStore = new BerkeleyCommitmentStore(Modules.get(DatabaseEnvironment.class));
         commitmentStore.reset();
         commitmentStore.open();
     }

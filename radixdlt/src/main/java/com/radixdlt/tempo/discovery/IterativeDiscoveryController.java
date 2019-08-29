@@ -12,8 +12,9 @@ import com.radixdlt.tempo.LogicalClockCursor;
 import com.radixdlt.tempo.Scheduler;
 import com.radixdlt.tempo.discovery.messages.IterativeDiscoveryRequestMessage;
 import com.radixdlt.tempo.discovery.messages.IterativeDiscoveryResponseMessage;
+import com.radixdlt.tempo.store.berkeley.BerkeleyCommitmentStore;
+import com.radixdlt.tempo.store.berkeley.BerkeleyLCCursorStore;
 import com.radixdlt.tempo.store.CommitmentStore;
-import com.radixdlt.tempo.store.LogicalClockCursorStore;
 import org.radix.database.DatabaseEnvironment;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
@@ -45,7 +46,7 @@ public final class IterativeDiscoveryController implements Closeable, AtomDiscov
 	private final EUID self;
 
 	@VisibleForTesting
-	final LogicalClockCursorStore cursorStore;
+	final BerkeleyLCCursorStore cursorStore;
 
 	@VisibleForTesting
 	final IterativeDiscoveryState discoveryState = new IterativeDiscoveryState();
@@ -79,7 +80,7 @@ public final class IterativeDiscoveryController implements Closeable, AtomDiscov
 
 		// TODO improve locking to something like in messaging
 		this.discoveryListeners = Collections.synchronizedList(new ArrayList<>());
-		this.cursorStore = new LogicalClockCursorStore(dbEnv);
+		this.cursorStore = new BerkeleyLCCursorStore(dbEnv);
 		this.cursorStore.open();
 
 		// TODO replace with regular address book once it's hooked up
