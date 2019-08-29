@@ -32,7 +32,10 @@ public abstract class Peer extends BasicContainer implements Chronologic {
 
 	public static final int DEFAULT_BANTIME = 60 * 60;
 
+	@JsonProperty("ban_reason")
+	@DsonOutput(Output.PERSIST)
 	private String banReason;
+
 	private HashMap<String, Long> timestamps;
 
 	protected Peer() {
@@ -45,25 +48,34 @@ public abstract class Peer extends BasicContainer implements Chronologic {
 		this.timestamps = new HashMap<>(toCopy.timestamps);
 	}
 
+	/**
+	 * Returns the reason this peer is banned, as a human-readable text string.
+	 * Note that the result is invalid if {@link #isBanned()} is {@code false}.
+	 *
+	 * @return The ban reason, or {@code null} if none specified
+	 */
 	public String getBanReason() {
 		return banReason;
 	}
 
-	public void setBanReason(String banReason) {
-		this.banReason = banReason;
-	}
-
+	/**
+	 * Marks the peer as banned for the specified reason.
+	 * The peer will be banned for {@link #DEFAULT_BANTIME} seconds.
+	 *
+	 * @param reason the reason for the ban, as a human-readable string
+	 */
 	public void ban(String reason) {
-		ban(reason, DEFAULT_BANTIME);
-	}
-
-	public void ban(String reason, int duration) {
-		log.info(toString()+" - Banned for "+duration+" seconds due to "+reason);
-		setBanReason(reason);
-		setTimestamp(Timestamps.BANNED, Time.currentTimestamp() + TimeUnit.SECONDS.toMillis(duration));
+		log.info(toString()+" - Banned for "+DEFAULT_BANTIME+" seconds due to "+reason);
+		this.banReason = reason;
+		setTimestamp(Timestamps.BANNED, Time.currentTimestamp() + TimeUnit.SECONDS.toMillis(DEFAULT_BANTIME));
 		Events.getInstance().broadcast(new PeerBannedEvent(this));
 	}
 
+	/**
+	 * Returns {@code true} if this peer is banned.
+	 *
+	 * @return {@code true} if this peer is banned, {@code false} otherwise
+	 */
 	public boolean isBanned() {
 		return getTimestamp(Timestamps.BANNED) > Time.currentTimestamp();
 	}
@@ -81,15 +93,6 @@ public abstract class Peer extends BasicContainer implements Chronologic {
 	 * @return Return {@code true} if we know the node ID of the peer, {@code false} otherwise
 	 */
 	public abstract boolean hasNID();
-
-	/**
-	 * Returns the timestamps associated with the {@link Peer}.
-	 *
-	 * @return Return the timestamps associated with the {@link Peer}.
-	 */
-	public PeerTimestamps getTimestamps() {
-		return PeerTimestamps.of(this.getTimestamp(Timestamps.ACTIVE), this.getTimestamp(Timestamps.BANNED));
-	}
 
 	/**
 	 * Returns {@code true} or {@code false} indicating if this {@link Peer}
@@ -118,12 +121,19 @@ public abstract class Peer extends BasicContainer implements Chronologic {
 	public abstract TransportMetadata connectionData(String transportName);
 
 
-	// Possibly legacy?  Not sure.
+	/**
+	 * Returns if this {@code Peer} has known system information.
+	 *
+	 * @return Return {@code true} if we know the system information of the peer, {@code false} otherwise
+	 */
 	public abstract boolean hasSystem();
-	public abstract RadixSystem getSystem();
 
-	// To be removed somehow
-	public abstract void setSystem(RadixSystem system);
+	/**
+	 * Returns the system information of the {@link Peer}.
+	 *
+	 * @return Return the system information of the {@link Peer}, or {@code null} if unknown
+	 */
+	public abstract RadixSystem getSystem();
 
 	// CHRONOLOGIC //
 	@Override
@@ -157,17 +167,5 @@ public abstract class Peer extends BasicContainer implements Chronologic {
 		setTimestamp(Timestamps.PROBED, props.get("probed").longValue());
 		setTimestamp(Timestamps.ACTIVE, props.get("active").longValue());
 		setTimestamp(Timestamps.BANNED, props.get("banned").longValue());
-	}
-
-	// Property "ban_reason" - 1 getter, 1 setter
-	@JsonProperty("ban_reason")
-	@DsonOutput(Output.PERSIST)
-	private String getJsonBanReason() {
-		return (getTimestamp(Timestamps.BANNED) > 0) ? banReason : null;
-	}
-
-	@JsonProperty("ban_reason")
-	private void setJsonBanReason(String banReason) {
-		this.banReason = banReason;
 	}
 }

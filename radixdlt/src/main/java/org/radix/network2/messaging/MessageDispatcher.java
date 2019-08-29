@@ -193,9 +193,4 @@ class MessageDispatcher {
 			throw new UncheckedIOException("While serializing message", e);
 		}
 	}
-
-	private <T extends Message> MessageListener<Message> untyped(MessageListener<T> listener) {
-		// FIXME: Type abuse
-		return (MessageListener<Message>) listener;
-	}
 }

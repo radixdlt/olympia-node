@@ -14,8 +14,14 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.serialization.DsonOutput.Output;
 
+/**
+ * Stub peer used when we only have a transport method for the peer.
+ * Typically used for discovery when nothing else substantial is known
+ * about the peer, and ideally will be replaced relatively quickly with
+ * a peer type with full system information.
+ */
 @SerializerId2("network.peer.transport")
-final class UriOnlyPeer extends Peer {
+final class PeerWithTransport extends Peer {
 
 	@JsonProperty("transport")
 	@DsonOutput(Output.ALL)
@@ -26,12 +32,12 @@ final class UriOnlyPeer extends Peer {
 		return 100;
 	}
 
-	UriOnlyPeer() {
+	PeerWithTransport() {
 		// Serializer only
 		this.transportInfo = null;
 	}
 
-	UriOnlyPeer(TransportInfo transportInfo) {
+	PeerWithTransport(TransportInfo transportInfo) {
 		this.transportInfo = transportInfo;
 	}
 
@@ -74,12 +80,6 @@ final class UriOnlyPeer extends Peer {
 	}
 
 	@Override
-	public void setSystem(RadixSystem system) {
-		// FIXME: In fact, shouldn't be able to do this at all
-		throw new IllegalStateException("Can't set system on stub peer");
-	}
-
-	@Override
 	public int hashCode() {
 		return this.transportInfo.hashCode();
 	}
@@ -89,8 +89,8 @@ final class UriOnlyPeer extends Peer {
 		if (this == obj) {
 			return true;
 		}
-		if (obj instanceof UriOnlyPeer) {
-			UriOnlyPeer other = (UriOnlyPeer) obj;
+		if (obj instanceof PeerWithTransport) {
+			PeerWithTransport other = (PeerWithTransport) obj;
 			return Objects.equals(this.transportInfo, other.transportInfo);
 		}
 		return false;

@@ -7,6 +7,10 @@ import org.radix.universe.system.RadixSystem;
 
 import com.radixdlt.common.EUID;
 
+/**
+ * Address book interface allowing client code to discover and add
+ * {@link Peer} objects.
+ */
 public interface AddressBook {
 
 	/**

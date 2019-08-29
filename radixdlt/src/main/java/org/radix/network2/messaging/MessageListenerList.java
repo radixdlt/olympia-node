@@ -162,8 +162,9 @@ final class MessageListenerList {
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	private MessageListener<Message> untyped(MessageListener<? extends Message> listener) {
-		// FIXME: Type abuse
+		// Type abuse
 		return (MessageListener<Message>) listener;
 	}
 }

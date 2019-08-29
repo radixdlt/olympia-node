@@ -5,15 +5,15 @@ import java.util.Objects;
 
 import com.google.common.collect.ImmutableList;
 
+/**
+ * An {@link AddressBookEvent} to let interested parties know that
+ * newly discovered peers have been added to the address book.
+ */
 public final class PeersAddedEvent extends AddressBookEvent {
 
 	private final ImmutableList<Peer> peers;
 
-	public PeersAddedEvent(Iterable<Peer> peers) {
-		this.peers = ImmutableList.copyOf(peers);
-	}
-
-	public PeersAddedEvent(ImmutableList<Peer> peers) {
+	PeersAddedEvent(ImmutableList<Peer> peers) {
 		this.peers = Objects.requireNonNull(peers);
 	}
 

@@ -30,7 +30,6 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
 
-import org.radix.time.Timestamps;
 import org.radix.universe.system.RadixSystem;
 import com.sleepycat.je.Cursor;
 import com.sleepycat.je.Database;
@@ -43,6 +42,11 @@ import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.Transaction;
 import com.sleepycat.je.TransactionConfig;
 
+/**
+ * Implementation of {@link AddressBook}.
+ * Note that the underlying storage is (largely) persistent so that clients
+ * do not have to wait for a lengthy discovery process to complete on restarting.
+ */
 public class AddressBookImpl extends DatabaseStore implements AddressBook {
 	private static final Logger log = Logging.getLogger("addressbook");
 
@@ -173,7 +177,7 @@ public class AddressBookImpl extends DatabaseStore implements AddressBook {
 	public Peer peer(TransportInfo transportInfo) {
 		Peer p = Locking.withFunctionLock(this.peersLock, this.peersByInfo::get, transportInfo);
 		if (p == null) {
-			p = new UriOnlyPeer(transportInfo);
+			p = new PeerWithTransport(transportInfo);
 			addPeer(p);
 		}
 		return p;
@@ -190,6 +194,7 @@ public class AddressBookImpl extends DatabaseStore implements AddressBook {
 		return peers().filter(StandardFilters.recentlyActive());
 	}
 
+	// Sends PeersAddedEvents and/or PeersRemoveEvents as required
 	private boolean handleUpdatedPeers(Pair<Peer, Peer> updatedPeers) {
 		if (updatedPeers != null) {
 			if (updatedPeers.getFirst() != null) {
@@ -204,11 +209,12 @@ public class AddressBookImpl extends DatabaseStore implements AddressBook {
 	}
 
 	// Needs peersLock held
-	// FIXME: revisit logic here - especially around NID changes
+	// FIXME: double check logic here - especially around NID changes
 	private Pair<Peer, Peer> addUpdatePeerInternal(Peer peer) {
 		// Handle specially if it's a connection-only peer (no NID)
 		if (!peer.hasNID()) {
 			// We don't save connection-only peers to the database
+			// We don't overwrite if transport already exists
 			boolean changed = peer.supportedTransports()
 				.map(t -> peersByInfo.putIfAbsent(t, peer) == null)
 				.reduce(false, (a, b) -> a | b);
@@ -235,6 +241,7 @@ public class AddressBookImpl extends DatabaseStore implements AddressBook {
 			DatabaseEntry value = new DatabaseEntry(bytes);
 			if (peersByNidDB.put(null, key, value) == OperationStatus.SUCCESS) {
 				peersByNid.put(nid, peer);
+				// We overwrite transports here
 				peer.supportedTransports()
 					.forEachOrdered(t -> peersByInfo.put(t, peer));
 			}
@@ -247,6 +254,7 @@ public class AddressBookImpl extends DatabaseStore implements AddressBook {
 	private Pair<Peer, Peer> removePeerInternal(Peer peer) {
 		if (!peer.hasNID()) {
 			// We didn't save connection-only peers to the database
+			// Only remove transport if it points to specified peer
 			boolean changed = peer.supportedTransports()
 				.map(t -> peersByInfo.remove(t, peer))
 				.reduce(false, (a, b) -> a | b);
@@ -255,6 +263,7 @@ public class AddressBookImpl extends DatabaseStore implements AddressBook {
 			EUID nid = peer.getNID();
 			Peer oldPeer = peersByNid.remove(nid);
 			if (oldPeer != null) {
+				// Remove all transports
 				peer.supportedTransports().forEachOrdered(peersByInfo::remove);
 				DatabaseEntry key = new DatabaseEntry(nid.toByteArray());
 				if (peersByNidDB.delete(null, key) != OperationStatus.SUCCESS) {
@@ -267,11 +276,12 @@ public class AddressBookImpl extends DatabaseStore implements AddressBook {
 
 	// Needs peersLock held
 	private Peer updateSystemInternal(Peer peer, RadixSystem system) {
-		Peer newPeer = new PeerImpl(peer, system);
+		Peer newPeer = new PeerWithSystem(peer, system);
 		if (!peer.hasNID() || peer.getNID().equals(system.getNID())) {
 			// Here if it is basically a new peer or a peer with the same NID
 			// This is a simple update or add
-			peer.supportedTransports().forEachOrdered(this.peersByInfo::remove);
+			// Only remove transports if it belongs to the specified peer
+			peer.supportedTransports().forEachOrdered(t -> this.peersByInfo.remove(t, peer));
 			addUpdatePeerInternal(newPeer);
 		} else {
 			// Peer has somehow changed NID?
@@ -291,9 +301,6 @@ public class AddressBookImpl extends DatabaseStore implements AddressBook {
 
 			while (cursor.getNext(key, value, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
 				Peer peer = this.serialization.fromDson(value.getData(), Peer.class);
-				peer.setTimestamp(Timestamps.CONNECTED, 0);
-				byte[] bytes = this.serialization.toDson(peer, Output.PERSIST);
-				this.peersByNidDB.put(null, key, new DatabaseEntry(bytes));
 				EUID nid = peer.getNID();
 				this.peersByNid.put(nid, peer);
 				peer.supportedTransports()
@@ -310,7 +317,7 @@ public class AddressBookImpl extends DatabaseStore implements AddressBook {
 		// Take copy to avoid CoMoException
 		ImmutableList<Peer> allPeers = ImmutableList.copyOf(peersByNid.values());
 		for (Peer peer : allPeers) {
-			// FIXME: Maybe consider making this per transport at some point
+			// Maybe consider making whitelist per transport at some point?
 			if (peer.supportedTransports().anyMatch(this::hostNotWhitelisted)) {
 				log.info("Deleting " + peer + ", as not whitelisted");
 				removePeer(peer);

@@ -16,8 +16,11 @@ import org.radix.universe.system.RadixSystem;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * Full peer used when we have discovered full system information for the peer.
+ */
 @SerializerId2("network.peer")
-public final class PeerImpl extends Peer {
+public final class PeerWithSystem extends Peer {
 
 	@Override
 	public short VERSION() { return 100;}
@@ -26,56 +29,28 @@ public final class PeerImpl extends Peer {
 	@DsonOutput(Output.ALL)
 	private RadixSystem system;
 
-	public PeerImpl() {
+	/**
+	 * Creates a peer with the specified system.
+	 *
+	 * @param system the system to associate with the peer
+	 */
+	public PeerWithSystem(RadixSystem system) {
+		this.system = Objects.requireNonNull(system);
+	}
+
+	PeerWithSystem() {
+		// Serializer only
 		this(new RadixSystem());
 	}
 
-	public PeerImpl(RadixSystem system) {
-		this.system = Objects.requireNonNull(system);
-	}
-
-	PeerImpl(Peer toCopy, RadixSystem system) {
-		super(toCopy);
+	PeerWithSystem(Peer toCopy, RadixSystem system) {
+		super(toCopy); // Timestamps etc
 		this.system = Objects.requireNonNull(system);
 	}
 
 	@Override
-	public final boolean equals(Object object)
-	{
-		if (object == this) {
-			return true;
-		}
-
-		if (object instanceof PeerImpl) {
-			PeerImpl other = (PeerImpl) object;
-			return Objects.equals(this.system.getNID(), other.system.getNID());
-		}
-
-		return false;
-	}
-
-	@Override
-	public final int hashCode()
-	{
-		return this.system.getNID().hashCode();
-	}
-
-	@Override
-	public String toString()
-	{
-		return String.format("%s[%s:%s]", this.getClass().getSimpleName(), this.system.getNID(), connectionData(UDPConstants.UDP_NAME));
-	}
-
-	@Override
-	public RadixSystem getSystem()
-	{
+	public RadixSystem getSystem() {
 		return this.system;
-	}
-
-	@Override
-	public void setSystem(RadixSystem system)
-	{
-		this.system = system;
 	}
 
 	@Override
@@ -93,7 +68,6 @@ public final class PeerImpl extends Peer {
 	}
 
 	@Override
-	// FIXME temporary until address book is sorted
 	public boolean supportsTransport(String transportName) {
 		return !system.supportedTransports()
 			.map(TransportInfo::name)
@@ -114,4 +88,29 @@ public final class PeerImpl extends Peer {
 	public boolean hasSystem() {
 		return true;
 	}
+
+	@Override
+	public final boolean equals(Object object) {
+		if (object == this) {
+			return true;
+		}
+
+		if (object instanceof PeerWithSystem) {
+			PeerWithSystem other = (PeerWithSystem) object;
+			return Objects.equals(this.system.getNID(), other.system.getNID());
+		}
+
+		return false;
+	}
+
+	@Override
+	public final int hashCode() {
+		return this.system.getNID().hashCode();
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s[%s:%s]", this.getClass().getSimpleName(), this.system.getNID(), connectionData(UDPConstants.UDP_NAME));
+	}
+
 }

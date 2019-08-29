@@ -14,6 +14,12 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
 
+/**
+ * Stub peer used when we only have a NID for the peer.
+ * Here so we can satisfy Tempo2 requirements to remember NIDs received
+ * in temporal proofs.  Will be replaced with a peer type with full system
+ * information once this has been discovered.
+ */
 @SerializerId2("network.peer.nid")
 final class NidOnlyPeer extends Peer {
 
@@ -68,12 +74,6 @@ final class NidOnlyPeer extends Peer {
 	@Override
 	public RadixSystem getSystem() {
 		return null; // No system
-	}
-
-	@Override
-	public void setSystem(RadixSystem system) {
-		// FIXME: In fact, shouldn't be able to do this at all
-		throw new IllegalStateException("Can't set system on stub peer");
 	}
 
 	@Override

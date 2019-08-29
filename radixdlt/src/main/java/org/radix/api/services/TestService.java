@@ -13,7 +13,7 @@ import org.radix.modules.Modules;
 import org.radix.network.messages.PeersMessage;
 import org.radix.network.messaging.Message.Direction;
 import org.radix.network2.addressbook.Peer;
-import org.radix.network2.addressbook.PeerImpl;
+import org.radix.network2.addressbook.PeerWithSystem;
 import org.radix.network2.messaging.MessageCentral;
 import org.radix.network2.transport.StaticTransportMetadata;
 import org.radix.network2.transport.TransportInfo;
@@ -102,8 +102,7 @@ public final class TestService {
 					)
 				)
 			);
-			Peer peer = new PeerImpl(system);
-			peer.setSystem(system);
+			Peer peer = new PeerWithSystem(system);
 			PeersMessage peersMessage = new PeersMessage();
 			peersMessage.setPeers(Collections.singletonList(peer));
 			peersMessage.setDirection(Direction.INBOUND);
