@@ -96,9 +96,15 @@ public abstract class RadixTest
 			() -> Modules.get(AtomStore.class),
 			() -> LocalSystem.getInstance().getShards()
 		);
-		final ConstraintMachine constraintMachine = os.buildMachine();
+
+		final ConstraintMachine constraintMachine = new ConstraintMachine.Builder()
+			.setParticleTransitionProcedures(os.buildTransitionProcedures())
+			.setParticleStaticCheck(os.buildParticleStaticCheck())
+			.build();
+
 		final RadixEngine<SimpleRadixEngineAtom> radixEngine = new RadixEngine<>(
 			constraintMachine,
+			os.buildVirtualLayer(),
 			atomStore
 		);
 
