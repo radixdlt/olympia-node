@@ -35,8 +35,8 @@ public class LivePeersReducer implements TempoReducer<LivePeersState> {
 		if (action instanceof RefreshLivePeersAction) {
 			LivePeersState livePeersState = new LivePeersState(peerSupplier.getPeers().stream()
 				.collect(ImmutableMap.toImmutableMap(p -> p.getSystem().getNID(), p -> p)));
-			if (logger.hasLevel(Logging.DEBUG)) {
-				logger.debug("Detected " + livePeersState.getLivePeers().size() + " live peers");
+			if (logger.hasLevel(Logging.TRACE)) {
+				logger.trace("Detected " + livePeersState.getLivePeers().size() + " live peers");
 			}
 			return livePeersState;
 		}

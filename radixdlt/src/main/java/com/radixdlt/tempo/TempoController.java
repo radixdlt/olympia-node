@@ -16,37 +16,27 @@ import com.radixdlt.tempo.actions.control.RepeatScheduleAction;
 import com.radixdlt.tempo.actions.control.ScheduleAction;
 import com.radixdlt.tempo.actions.messaging.ReceiveDeliveryRequestAction;
 import com.radixdlt.tempo.actions.messaging.ReceiveDeliveryResponseAction;
-import com.radixdlt.tempo.actions.messaging.ReceiveIterativeDiscoveryRequestAction;
-import com.radixdlt.tempo.actions.messaging.ReceiveIterativeDiscoveryResponseAction;
 import com.radixdlt.tempo.actions.messaging.ReceivePushAction;
 import com.radixdlt.tempo.actions.messaging.ReceiveSampleRequestAction;
 import com.radixdlt.tempo.actions.messaging.ReceiveSampleResponseAction;
 import com.radixdlt.tempo.actions.messaging.SendDeliveryRequestAction;
 import com.radixdlt.tempo.actions.messaging.SendDeliveryResponseAction;
-import com.radixdlt.tempo.actions.messaging.SendIterativeDiscoveryRequestAction;
-import com.radixdlt.tempo.actions.messaging.SendIterativeDiscoveryResponseAction;
 import com.radixdlt.tempo.actions.messaging.SendPushAction;
 import com.radixdlt.tempo.actions.messaging.SendSampleRequestAction;
 import com.radixdlt.tempo.actions.messaging.SendSampleResponseAction;
 import com.radixdlt.tempo.epics.ActiveSyncEpic;
-import com.radixdlt.tempo.epics.AtomDeliveryEpic;
-import com.radixdlt.tempo.epics.IterativeDiscoveryEpic;
 import com.radixdlt.tempo.epics.LocalResolverEpic;
 import com.radixdlt.tempo.epics.MessagingEpic;
 import com.radixdlt.tempo.epics.MomentumResolverEpic;
 import com.radixdlt.tempo.epics.SampleCollectorEpic;
 import com.radixdlt.tempo.messages.DeliveryRequestMessage;
 import com.radixdlt.tempo.messages.DeliveryResponseMessage;
-import com.radixdlt.tempo.messages.IterativeDiscoveryRequestMessage;
-import com.radixdlt.tempo.messages.IterativeDiscoveryResponseMessage;
 import com.radixdlt.tempo.messages.PushMessage;
 import com.radixdlt.tempo.messages.SampleRequestMessage;
 import com.radixdlt.tempo.messages.SampleResponseMessage;
 import com.radixdlt.tempo.reactive.TempoFlowSource;
 import com.radixdlt.tempo.reactive.TempoFlowSource.TempoFlowInjector;
-import com.radixdlt.tempo.reducers.AtomDeliveryReducer;
 import com.radixdlt.tempo.reducers.ConflictsStateReducer;
-import com.radixdlt.tempo.reducers.IterativeDiscoveryReducer;
 import com.radixdlt.tempo.reducers.LivePeersReducer;
 import com.radixdlt.tempo.reducers.PassivePeersReducer;
 import com.radixdlt.tempo.reducers.SampleCollectorReducer;
@@ -60,8 +50,6 @@ import com.radixdlt.tempo.state.IterativeDiscoveryState;
 import com.radixdlt.tempo.state.LivePeersState;
 import com.radixdlt.tempo.state.PassivePeersState;
 import com.radixdlt.tempo.state.SampleCollectorState;
-import com.radixdlt.tempo.store.CommitmentStore;
-import com.radixdlt.tempo.store.LogicalClockCursorStore;
 import com.radixdlt.tempo.store.SampleStore;
 import org.json.JSONObject;
 import org.radix.database.DatabaseEnvironment;
@@ -261,10 +249,6 @@ public final class TempoController {
 		return winnerFuture;
 	}
 
-	public void accept(TempoAtom atom) {
-		this.dispatch(new AcceptAtomAction(atom));
-	}
-
 	public void queue(TempoAtom atom) {
 		this.dispatch(new ReceiveAtomAction(atom));
 	}
@@ -335,10 +319,6 @@ public final class TempoController {
 		Builder builder = builder()
 			.addEpicBuilder(controller -> MessagingEpic.builder()
 				.messager(messageCentral)
-				.addInbound(DeliveryRequestMessage.class, ReceiveDeliveryRequestAction::from)
-				.addOutbound(SendDeliveryRequestAction.class, SendDeliveryRequestAction::toMessage, SendDeliveryRequestAction::getPeer)
-				.addInbound(DeliveryResponseMessage.class, ReceiveDeliveryResponseAction::from)
-				.addOutbound(SendDeliveryResponseAction.class, SendDeliveryResponseAction::toMessage, SendDeliveryResponseAction::getPeer)
 				.addInbound(PushMessage.class, ReceivePushAction::from)
 				.addOutbound(SendPushAction.class, SendPushAction::toMessage, SendPushAction::getPeer)
 				.addInbound(SampleRequestMessage.class, ReceiveSampleRequestAction::from)
