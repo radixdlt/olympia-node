@@ -73,7 +73,6 @@ public final class Tempo extends Plugin implements Ledger {
 	private Tempo(EUID self,
 	              AtomStore atomStore,
 	              CommitmentStore commitmentStore,
-	              TempoController controller,
 	              EdgeSelector edgeSelector,
 	              PeerSupplier peerSupplier,
 	              Attestor attestor,
@@ -319,15 +318,13 @@ public final class Tempo extends Plugin implements Ledger {
 			.addDeliverer(targetDeliverer)
 			.addDeliverer(pushDelivery)
 			.targetDeliverer(targetDeliverer)
-			.addAcceptor(pushDelivery::accept)
-			.controller(TempoController.defaultBuilder(atomStore).build());
+			.addAcceptor(pushDelivery::accept);
 	}
 
 	public static class Builder {
 		private EUID self;
 		private AtomStore atomStore;
 		private CommitmentStore commitmentStore;
-		private TempoController controller;
 		private Attestor attestor;
 		private PeerSupplier peerSupplier;
 		private EdgeSelector edgeSelector;
@@ -348,11 +345,6 @@ public final class Tempo extends Plugin implements Ledger {
 
 		public Builder commitmentStore(CommitmentStore commitmentStore) {
 			this.commitmentStore = commitmentStore;
-			return this;
-		}
-
-		public Builder controller(TempoController controller) {
-			this.controller = controller;
 			return this;
 		}
 
@@ -395,7 +387,6 @@ public final class Tempo extends Plugin implements Ledger {
 			Objects.requireNonNull(self, "self is required");
 			Objects.requireNonNull(atomStore, "atomStore is required");
 			Objects.requireNonNull(commitmentStore, "commitmentStore is required");
-			Objects.requireNonNull(controller, "controller is required");
 			Objects.requireNonNull(edgeSelector, "edgeSelector is required");
 			Objects.requireNonNull(peerSupplier, "peerSupplier is required");
 			Objects.requireNonNull(attestor, "attestor is required");
@@ -405,7 +396,6 @@ public final class Tempo extends Plugin implements Ledger {
 				self,
 				atomStore,
 				commitmentStore,
-				controller,
 				edgeSelector,
 				peerSupplier,
 				attestor,

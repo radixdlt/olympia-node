@@ -41,13 +41,11 @@ public class RadixTestWithStores extends RadixTest
 		Modules.put(MessageCentral.class, messageCentral);
 
 		if (Modules.get(RuntimeProperties.class).get("tempo2", false)) {
-			TempoController controller = TempoController.builder().build();
 			PeerSupplier peerSupplier = mock(PeerSupplier.class);
 			when(peerSupplier.getNids()).thenReturn(ImmutableList.of());
 			EdgeSelector edgeSelector = mock(EdgeSelector.class);
 			when(edgeSelector.selectEdges(any(), any())).thenReturn(ImmutableList.of());
 			Tempo tempo = Tempo.defaultBuilderStoreOnly()
-				.controller(controller)
 				.peerSupplier(peerSupplier)
 				.edgeSelector(edgeSelector)
 				.targetDeliverer(mock(TargetDeliverer.class))
