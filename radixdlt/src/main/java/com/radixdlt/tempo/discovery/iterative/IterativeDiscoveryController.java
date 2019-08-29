@@ -15,6 +15,7 @@ import com.radixdlt.tempo.messages.IterativeDiscoveryRequestMessage;
 import com.radixdlt.tempo.messages.IterativeDiscoveryResponseMessage;
 import com.radixdlt.tempo.store.CommitmentStore;
 import com.radixdlt.tempo.store.LogicalClockCursorStore;
+import org.radix.database.DatabaseEnvironment;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.network.peers.Peer;
@@ -64,8 +65,7 @@ public final class IterativeDiscoveryController implements Closeable {
 	public IterativeDiscoveryController(
 		EUID self,
 		AtomStoreView storeView,
-		LogicalClockCursorStore cursorStore,
-		CommitmentStore commitmentStore,
+		DatabaseEnvironment dbEnv,
 		Scheduler scheduler,
 		DeliveredAtomSink deliverySink,
 		MessageCentral messageCentral,
@@ -73,12 +73,16 @@ public final class IterativeDiscoveryController implements Closeable {
 	) {
 		this.self = Objects.requireNonNull(self);
 		this.storeView = Objects.requireNonNull(storeView);
-		this.cursorStore = Objects.requireNonNull(cursorStore);
-		this.commitmentStore = Objects.requireNonNull(commitmentStore);
 		this.scheduler = Objects.requireNonNull(scheduler);
 		this.deliverySink = Objects.requireNonNull(deliverySink);
 		this.messageCentral = Objects.requireNonNull(messageCentral);
 		this.selectedPeers = Objects.requireNonNull(selectedPeers);
+
+		this.commitmentStore = new CommitmentStore(dbEnv);
+		this.commitmentStore.open();
+
+		this.cursorStore = new LogicalClockCursorStore(dbEnv);
+		this.cursorStore.open();
 
 		// TODO replace with regular address book once it's hooked up
 		// TODO remove listener when closed

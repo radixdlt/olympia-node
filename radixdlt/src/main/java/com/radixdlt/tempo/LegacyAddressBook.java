@@ -6,7 +6,7 @@ import com.radixdlt.common.EUID;
 public interface LegacyAddressBook {
 	boolean contains(EUID nid);
 
-	boolean addListener(LegacyAddressBookListener listener);
+	void addListener(LegacyAddressBookListener listener);
 
 	boolean removeListener(LegacyAddressBookListener listener);
 }

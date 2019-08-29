@@ -24,10 +24,10 @@ public final class LogicalClockCursorStore implements Store {
 	private static final String ITERATIVE_CURSORS_DB_NAME = "tempo2.sync.iterative.cursors";
 	private static final Logger logger = Logging.getLogger("CursorStore");
 
-	private final Supplier<DatabaseEnvironment> dbEnv;
+	private final DatabaseEnvironment dbEnv;
 	private Database cursors;
 
-	public LogicalClockCursorStore(Supplier<DatabaseEnvironment> dbEnv) {
+	public LogicalClockCursorStore(DatabaseEnvironment dbEnv) {
 		this.dbEnv = Objects.requireNonNull(dbEnv, "dbEnv is required");
 	}
 
@@ -48,7 +48,7 @@ public final class LogicalClockCursorStore implements Store {
 		primaryConfig.setTransactional(true);
 
 		try {
-			Environment dbEnv = this.dbEnv.get().getEnvironment();
+			Environment dbEnv = this.dbEnv.getEnvironment();
 			this.cursors = dbEnv.openDatabase(null, ITERATIVE_CURSORS_DB_NAME, primaryConfig);
 		} catch (Exception e) {
 			throw new TempoException("Error while opening database", e);
@@ -63,9 +63,9 @@ public final class LogicalClockCursorStore implements Store {
 	public void reset() {
 		Transaction transaction = null;
 		try {
-			dbEnv.get().lock();
+			dbEnv.lock();
 
-			Environment env = this.dbEnv.get().getEnvironment();
+			Environment env = this.dbEnv.getEnvironment();
 			transaction = env.beginTransaction(null, new TransactionConfig().setReadUncommitted(true));
 			env.truncateDatabase(transaction, ITERATIVE_CURSORS_DB_NAME, false);
 			transaction.commit();
@@ -80,7 +80,7 @@ public final class LogicalClockCursorStore implements Store {
 			}
 			throw new TempoException("Error while resetting databases", e);
 		} finally {
-			dbEnv.get().unlock();
+			dbEnv.unlock();
 		}
 	}
 
@@ -92,7 +92,7 @@ public final class LogicalClockCursorStore implements Store {
 	}
 
 	public void put(EUID nid, long cursor) {
-		Transaction transaction = dbEnv.get().getEnvironment().beginTransaction(null, null);
+		Transaction transaction = dbEnv.getEnvironment().beginTransaction(null, null);
 		try {
 			DatabaseEntry key = new DatabaseEntry(toPKey(nid));
 			DatabaseEntry value = new DatabaseEntry(Longs.toByteArray(cursor));

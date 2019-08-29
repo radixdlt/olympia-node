@@ -30,10 +30,10 @@ public class CommitmentStore implements Store {
 	private static final String COMMITMENTS_DB_NAME = "tempo2.sync.iterative.commitments";
 	private static final Logger logger = Logging.getLogger("CursorStore");
 
-	private final Supplier<DatabaseEnvironment> dbEnv;
+	private final DatabaseEnvironment dbEnv;
 	private Database commitments; // commitment hashes by NID + logical clock
 
-	public CommitmentStore(Supplier<DatabaseEnvironment> dbEnv) {
+	public CommitmentStore(DatabaseEnvironment dbEnv) {
 		this.dbEnv = Objects.requireNonNull(dbEnv, "dbEnv is required");
 	}
 
@@ -54,7 +54,7 @@ public class CommitmentStore implements Store {
 		primaryConfig.setTransactional(true);
 
 		try {
-			Environment dbEnv = this.dbEnv.get().getEnvironment();
+			Environment dbEnv = this.dbEnv.getEnvironment();
 			this.commitments = dbEnv.openDatabase(null, COMMITMENTS_DB_NAME, primaryConfig);
 		} catch (Exception e) {
 			throw new TempoException("Error while opening database", e);
@@ -69,9 +69,9 @@ public class CommitmentStore implements Store {
 	public void reset() {
 		Transaction transaction = null;
 		try {
-			dbEnv.get().lock();
+			dbEnv.lock();
 
-			Environment env = this.dbEnv.get().getEnvironment();
+			Environment env = this.dbEnv.getEnvironment();
 			transaction = env.beginTransaction(null, new TransactionConfig().setReadUncommitted(true));
 			env.truncateDatabase(transaction, COMMITMENTS_DB_NAME, false);
 			transaction.commit();
@@ -86,7 +86,7 @@ public class CommitmentStore implements Store {
 			}
 			throw new TempoException("Error while resetting databases", e);
 		} finally {
-			dbEnv.get().unlock();
+			dbEnv.unlock();
 		}
 	}
 
@@ -98,7 +98,7 @@ public class CommitmentStore implements Store {
 	}
 
 	public void put(EUID nid, long logicalClock, Hash commitment) {
-		Transaction transaction = dbEnv.get().getEnvironment().beginTransaction(null, null);
+		Transaction transaction = dbEnv.getEnvironment().beginTransaction(null, null);
 		try {
 			DatabaseEntry pKey = new DatabaseEntry(toPKey(nid, logicalClock));
 			DatabaseEntry value = new DatabaseEntry(commitment.toByteArray());
@@ -115,7 +115,7 @@ public class CommitmentStore implements Store {
 	}
 
 	public void put(EUID nid, List<Hash> commitments, long startPosition) {
-		Transaction transaction = dbEnv.get().getEnvironment().beginTransaction(null, null);
+		Transaction transaction = dbEnv.getEnvironment().beginTransaction(null, null);
 		try {
 			DatabaseEntry pKey = new DatabaseEntry();
 			DatabaseEntry value = new DatabaseEntry();

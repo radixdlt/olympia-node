@@ -349,10 +349,6 @@ public final class TempoController {
 				.addOutbound(SendDeliveryRequestAction.class, SendDeliveryRequestAction::toMessage, SendDeliveryRequestAction::getPeer)
 				.addInbound(DeliveryResponseMessage.class, ReceiveDeliveryResponseAction::from)
 				.addOutbound(SendDeliveryResponseAction.class, SendDeliveryResponseAction::toMessage, SendDeliveryResponseAction::getPeer)
-				.addInbound(IterativeDiscoveryRequestMessage.class, ReceiveIterativeDiscoveryRequestAction::from)
-				.addOutbound(SendIterativeDiscoveryRequestAction.class, SendIterativeDiscoveryRequestAction::toMessage, SendIterativeDiscoveryRequestAction::getPeer)
-				.addInbound(IterativeDiscoveryResponseMessage.class, ReceiveIterativeDiscoveryResponseAction::from)
-				.addOutbound(SendIterativeDiscoveryResponseAction.class, SendIterativeDiscoveryResponseAction::toMessage, SendIterativeDiscoveryResponseAction::getPeer)
 				.addInbound(PushMessage.class, ReceivePushAction::from)
 				.addOutbound(SendPushAction.class, SendPushAction::toMessage, SendPushAction::getPeer)
 				.addInbound(SampleRequestMessage.class, ReceiveSampleRequestAction::from)
@@ -374,19 +370,6 @@ public final class TempoController {
 			Arrays.toString(syncFeatures), resolver));
 		if (Arrays.stream(syncFeatures).anyMatch("active"::equalsIgnoreCase)) {
 			builder.addEpic(new ActiveSyncEpic(localSystem.getNID()));
-		}
-		if (Arrays.stream(syncFeatures).anyMatch("iterative"::equalsIgnoreCase)) {
-			LogicalClockCursorStore cursorStore = new LogicalClockCursorStore(dbEnv);
-			cursorStore.open();
-			CommitmentStore commitmentStore = new CommitmentStore(dbEnv);
-			commitmentStore.open();
-			builder.addEpic(IterativeDiscoveryEpic.builder()
-				.self(localSystem.getNID())
-				.storeView(storeView)
-				.cursorStore(cursorStore)
-				.commitmentStore(commitmentStore)
-				.build());
-			builder.addReducer(new IterativeDiscoveryReducer());
 		}
 		if (resolver.equalsIgnoreCase("local")) {
 			builder.addEpic(new LocalResolverEpic(localSystem.getNID()));

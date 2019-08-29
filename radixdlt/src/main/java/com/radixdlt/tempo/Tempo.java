@@ -12,15 +12,18 @@ import com.radixdlt.ledger.LedgerCursor.LedgerIndexType;
 import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerSearchMode;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.tempo.discovery.iterative.IterativeDiscoveryController;
 import com.radixdlt.tempo.store.TempoAtomStore;
 import org.json.JSONObject;
 import org.radix.database.DatabaseEnvironment;
+import org.radix.events.Events;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.modules.Module;
 import org.radix.modules.Modules;
 import org.radix.modules.Plugin;
 import org.radix.network.peers.PeerHandler;
+import org.radix.network2.messaging.MessageCentral;
 import org.radix.time.TemporalProof;
 import org.radix.time.Time;
 import org.radix.universe.system.LocalSystem;
@@ -39,23 +42,27 @@ import java.util.stream.Collectors;
  * The Tempo implementation of a ledger.
  */
 public final class Tempo extends Plugin implements Ledger {
-	private static final Logger logger = Logging.getLogger("Tempo");
+	private static final Logger log = Logging.getLogger("Tempo");
 
 	private final AtomStore store;
 	private final TempoController controller;
 	private final EdgeSelector edgeSelector;
 	private final PeerSupplier peerSupplier;
 	private final Attestor attestor;
+	private final IterativeDiscoveryController iterativeDiscovery;
 
 	private Tempo(AtomStore store,
 	              TempoController controller,
 	              EdgeSelector edgeSelector,
-	              PeerSupplier peerSupplier, Attestor attestor) {
+	              PeerSupplier peerSupplier,
+	              Attestor attestor,
+	              IterativeDiscoveryController iterativeDiscovery) {
 		this.store = store;
 		this.controller = controller;
 		this.edgeSelector = edgeSelector;
 		this.peerSupplier = peerSupplier;
 		this.attestor = attestor;
+		this.iterativeDiscovery = iterativeDiscovery;
 	}
 
 	@Override
@@ -110,7 +117,7 @@ public final class Tempo extends Plugin implements Ledger {
 
 	@Override
 	public CompletableFuture<Atom> resolve(Atom atom, Collection<Atom> conflictingAtoms) {
-		logger.info(String.format("Resolving conflict between '%s' and '%s'", atom.getAID(), conflictingAtoms.stream()
+		log.info(String.format("Resolving conflict between '%s' and '%s'", atom.getAID(), conflictingAtoms.stream()
 			.map(Atom::getAID)
 			.collect(Collectors.toList())));
 
@@ -194,8 +201,8 @@ public final class Tempo extends Plugin implements Ledger {
 		if (atom instanceof TempoAtom) {
 			return (TempoAtom) atom;
 		} else {
-			if (logger.hasLevel(Logging.DEBUG)) {
-				logger.debug("Converting foreign atom '" + atom.getAID() + "' to Tempo atom");
+			if (log.hasLevel(Logging.DEBUG)) {
+				log.debug("Converting foreign atom '" + atom.getAID() + "' to Tempo atom");
 			}
 			return new TempoAtom(
 				atom.getContent(),
@@ -231,6 +238,19 @@ public final class Tempo extends Plugin implements Ledger {
 			localSystem,
 			() -> Modules.get(DatabaseEnvironment.class));
 		TempoAttestor attestor = new TempoAttestor(localSystem, Time::currentTimestamp);
+		IterativeDiscoveryController iterativeDiscovery = new IterativeDiscoveryController(
+			localSystem.getNID(),
+			store,
+			Modules.get(DatabaseEnvironment.class),
+			new SingleThreadedScheduler(),
+			(aids, peer) -> {
+				// TODO hook up to delivery
+				log.info("Received " + aids.size() + " for delivery from " + peer);
+			},
+			Modules.get(MessageCentral.class),
+			new LegacyAddressBookAdapter(Modules.get(PeerHandler.class), Events.getInstance())
+
+		);
 		return builder()
 			.attestor(attestor::attestTo)
 			.peerSupplier(new PeerSupplierAdapter(() -> Modules.get(PeerHandler.class)))
@@ -245,6 +265,7 @@ public final class Tempo extends Plugin implements Ledger {
 		private Attestor attestor;
 		private PeerSupplier peerSupplier;
 		private EdgeSelector edgeSelector;
+		private IterativeDiscoveryController iterativeDiscovery;
 
 		public Builder store(AtomStore store) {
 			this.store = store;
@@ -271,19 +292,26 @@ public final class Tempo extends Plugin implements Ledger {
 			return this;
 		}
 
+		public Builder iterativeDiscovery(IterativeDiscoveryController iterativeDiscovery) {
+			this.iterativeDiscovery = iterativeDiscovery;
+			return this;
+		}
+
 		public Tempo build() {
 			Objects.requireNonNull(store, "store is required");
 			Objects.requireNonNull(controller, "controller is required");
 			Objects.requireNonNull(edgeSelector, "edgeSelector is required");
 			Objects.requireNonNull(peerSupplier, "peerSupplier is required");
 			Objects.requireNonNull(attestor, "attestor is required");
+			Objects.requireNonNull(iterativeDiscovery, "iterativeDiscovery is required");
 
 			return new Tempo(
 				store,
 				controller,
 				edgeSelector,
 				peerSupplier,
-				attestor
+				attestor,
+				iterativeDiscovery
 			);
 		}
 	}
