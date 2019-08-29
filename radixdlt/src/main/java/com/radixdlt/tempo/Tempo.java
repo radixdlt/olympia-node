@@ -14,6 +14,7 @@ import com.radixdlt.ledger.LedgerSearchMode;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.tempo.delivery.AtomDeliveryController;
 import com.radixdlt.tempo.discovery.IterativeDiscoveryController;
+import com.radixdlt.tempo.store.CommitmentStore;
 import com.radixdlt.tempo.store.TempoAtomStore;
 import org.json.JSONObject;
 import org.radix.database.DatabaseEnvironment;
@@ -26,6 +27,7 @@ import org.radix.modules.Plugin;
 import org.radix.network.peers.PeerHandler;
 import org.radix.network2.messaging.MessageCentral;
 import org.radix.time.TemporalProof;
+import org.radix.time.TemporalVertex;
 import org.radix.time.Time;
 import org.radix.universe.system.LocalSystem;
 import org.radix.utils.SystemProfiler;
@@ -48,7 +50,10 @@ public final class Tempo extends Plugin implements Ledger {
 	private static final Logger log = Logging.getLogger("Tempo");
 	private static final int INBOUND_QUEUE_CAPACITY = 16384;
 
-	private final AtomStore store;
+	private final EUID self;
+	private final AtomStore atomStore;
+	private final CommitmentStore commitmentStore;
+
 	private final TempoController controller;
 	private final EdgeSelector edgeSelector;
 	private final PeerSupplier peerSupplier;
@@ -59,14 +64,18 @@ public final class Tempo extends Plugin implements Ledger {
 	private final IterativeDiscoveryController iterativeDiscovery;
 	private final AtomDeliveryController delivery;
 
-	private Tempo(AtomStore store,
+	private Tempo(EUID self,
+	              AtomStore atomStore,
+	              CommitmentStore commitmentStore,
 	              TempoController controller,
 	              EdgeSelector edgeSelector,
 	              PeerSupplier peerSupplier,
 	              Attestor attestor,
 	              IterativeDiscoveryController iterativeDiscovery,
 	              AtomDeliveryController delivery) {
-		this.store = store;
+		this.self = self;
+		this.atomStore = atomStore;
+		this.commitmentStore = commitmentStore;
 		this.controller = controller;
 		this.edgeSelector = edgeSelector;
 		this.peerSupplier = peerSupplier;
@@ -79,7 +88,7 @@ public final class Tempo extends Plugin implements Ledger {
 		// hook up components
 		// TODO remove listeners when closed?
 		this.iterativeDiscovery.addListener(delivery::deliver);
-		this.delivery.addListener(((atom, peer) -> this.inboundAtoms.add(atom)));
+		this.delivery.addListener(((atom, peer) -> addInbound(atom)));
 	}
 
 	@Override
@@ -90,18 +99,18 @@ public final class Tempo extends Plugin implements Ledger {
 	@Override
 	public Optional<Atom> get(AID aid) {
 		// cast to abstract atom
-		return store.get(aid).map(atom -> atom);
+		return atomStore.get(aid).map(atom -> atom);
 	}
 
 	@Override
 	public boolean store(Atom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
 		TempoAtom tempoAtom = convertToTempoAtom(atom);
-		if (store.contains(tempoAtom.getAID())) {
+		if (atomStore.contains(tempoAtom.getAID())) {
 			return false;
 		}
 		tempoAtom = attestTo(tempoAtom);
-		if (store.store(tempoAtom, uniqueIndices, duplicateIndices)) {
-			controller.accept(tempoAtom);
+		if (atomStore.store(tempoAtom, uniqueIndices, duplicateIndices)) {
+			accept(tempoAtom);
 			return true;
 		} else {
 			return false;
@@ -110,19 +119,34 @@ public final class Tempo extends Plugin implements Ledger {
 
 	@Override
 	public boolean delete(AID aid) {
-		return store.delete(aid);
+		return atomStore.delete(aid);
 	}
 
 	@Override
 	public boolean replace(Set<AID> aids, Atom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
 		TempoAtom tempoAtom = convertToTempoAtom(atom);
 		tempoAtom = attestTo(tempoAtom);
-		if (store.replace(aids, tempoAtom, uniqueIndices, duplicateIndices)) {
-			controller.accept(tempoAtom);
+		if (atomStore.replace(aids, tempoAtom, uniqueIndices, duplicateIndices)) {
+			accept(tempoAtom);
 			return true;
 		} else {
 			return false;
 		}
+	}
+
+	private void addInbound(TempoAtom atom) {
+		if (!this.inboundAtoms.add(atom)) {
+			// TODO more graceful queue full handling
+			log.error("Inbound atoms queue full");
+		}
+	}
+
+	private void accept(TempoAtom atom) {
+		TemporalVertex ownVertex = atom.getTemporalProof().getVertexByNID(self);
+		if (ownVertex == null) {
+			throw new TempoException("Accepted atom " + atom.getAID() + " has no vertex by self");
+		}
+		commitmentStore.put(self, ownVertex.getClock(), ownVertex.getCommitment());
 	}
 
 	private TempoAtom attestTo(TempoAtom atom) {
@@ -146,7 +170,7 @@ public final class Tempo extends Plugin implements Ledger {
 
 	@Override
 	public LedgerCursor search(LedgerIndexType type, LedgerIndex index, LedgerSearchMode mode) {
-		return store.search(type, index, mode);
+		return atomStore.search(type, index, mode);
 	}
 
 	@Override
@@ -158,8 +182,8 @@ public final class Tempo extends Plugin implements Ledger {
 
 	@Override
 	public void start_impl() {
-		this.store.open();
-		Modules.put(AtomStoreView.class, this.store);
+		this.atomStore.open();
+		Modules.put(AtomStoreView.class, this.atomStore);
 		Modules.put(AtomSyncView.class, new AtomSyncView() {
 			@Override
 			public void receive(org.radix.atoms.Atom atom) {
@@ -169,7 +193,7 @@ public final class Tempo extends Plugin implements Ledger {
 
 			@Override
 			public AtomStatus getAtomStatus(AID aid) {
-				return store.contains(aid) ? AtomStatus.STORED : AtomStatus.DOES_NOT_EXIST;
+				return atomStore.contains(aid) ? AtomStatus.STORED : AtomStatus.DOES_NOT_EXIST;
 			}
 
 			@Override
@@ -191,13 +215,13 @@ public final class Tempo extends Plugin implements Ledger {
 	public void stop_impl() {
 		Modules.remove(AtomStoreView.class);
 		Modules.remove(AtomSyncView.class);
-		this.store.close();
+		this.atomStore.close();
 		// nothing to do
 	}
 
 	@Override
 	public void reset_impl() {
-		this.store.reset();
+		this.atomStore.reset();
 		this.controller.reset();
 	}
 
@@ -236,28 +260,35 @@ public final class Tempo extends Plugin implements Ledger {
 
 	public static Builder defaultBuilderStoreOnly() {
 		LocalSystem localSystem = LocalSystem.getInstance();
-		TempoAtomStore store = new TempoAtomStore(
+		TempoAtomStore atomStore = new TempoAtomStore(
 			Serialization.getDefault(),
 			SystemProfiler.getInstance(),
 			localSystem,
 			() -> Modules.get(DatabaseEnvironment.class));
+		CommitmentStore commitmentStore = new CommitmentStore(Modules.get(DatabaseEnvironment.class));
+		commitmentStore.open();
 		TempoAttestor attestor = new TempoAttestor(localSystem, Time::currentTimestamp);
 		return builder()
+			.self(localSystem.getNID())
 			.attestor(attestor::attestTo)
-			.store(store);
+			.atomStore(atomStore)
+			.commitmentStore(commitmentStore);
 	}
 
 	public static Builder defaultBuilder() {
 		LocalSystem localSystem = LocalSystem.getInstance();
-		TempoAtomStore store = new TempoAtomStore(
+		TempoAtomStore atomStore = new TempoAtomStore(
 			Serialization.getDefault(),
 			SystemProfiler.getInstance(),
 			localSystem,
 			() -> Modules.get(DatabaseEnvironment.class));
 		SingleThreadedScheduler scheduler = new SingleThreadedScheduler();
+		CommitmentStore commitmentStore = new CommitmentStore(Modules.get(DatabaseEnvironment.class));
+		commitmentStore.open();
 		IterativeDiscoveryController iterativeDiscovery = new IterativeDiscoveryController(
 			localSystem.getNID(),
-			store,
+			atomStore,
+			commitmentStore,
 			Modules.get(DatabaseEnvironment.class),
 			scheduler,
 			Modules.get(MessageCentral.class),
@@ -266,21 +297,25 @@ public final class Tempo extends Plugin implements Ledger {
 		AtomDeliveryController delivery = new AtomDeliveryController(
 			scheduler,
 			Modules.get(MessageCentral.class),
-			store
+			atomStore
 		);
 
 		return builder()
+			.self(localSystem.getNID())
 			.attestor(new TempoAttestor(localSystem, Time::currentTimestamp)::attestTo)
 			.peerSupplier(new PeerSupplierAdapter(() -> Modules.get(PeerHandler.class)))
 			.edgeSelector(new SimpleEdgeSelector())
-			.store(store)
+			.atomStore(atomStore)
+			.commitmentStore(commitmentStore)
 			.iterativeDiscovery(iterativeDiscovery)
 			.delivery(delivery)
-			.controller(TempoController.defaultBuilder(store).build());
+			.controller(TempoController.defaultBuilder(atomStore).build());
 	}
 
 	public static class Builder {
-		private AtomStore store;
+		private EUID self;
+		private AtomStore atomStore;
+		private CommitmentStore commitmentStore;
 		private TempoController controller;
 		private Attestor attestor;
 		private PeerSupplier peerSupplier;
@@ -288,8 +323,18 @@ public final class Tempo extends Plugin implements Ledger {
 		private IterativeDiscoveryController iterativeDiscovery;
 		private AtomDeliveryController delivery;
 
-		public Builder store(AtomStore store) {
-			this.store = store;
+		public Builder self(EUID self) {
+			this.self = self;
+			return this;
+		}
+
+		public Builder atomStore(AtomStore atomStore) {
+			this.atomStore = atomStore;
+			return this;
+		}
+
+		public Builder commitmentStore(CommitmentStore commitmentStore) {
+			this.commitmentStore = commitmentStore;
 			return this;
 		}
 
@@ -324,7 +369,9 @@ public final class Tempo extends Plugin implements Ledger {
 		}
 
 		public Tempo build() {
-			Objects.requireNonNull(store, "store is required");
+			Objects.requireNonNull(self, "self is required");
+			Objects.requireNonNull(atomStore, "atomStore is required");
+			Objects.requireNonNull(commitmentStore, "commitmentStore is required");
 			Objects.requireNonNull(controller, "controller is required");
 			Objects.requireNonNull(edgeSelector, "edgeSelector is required");
 			Objects.requireNonNull(peerSupplier, "peerSupplier is required");
@@ -333,7 +380,9 @@ public final class Tempo extends Plugin implements Ledger {
 			Objects.requireNonNull(delivery, "delivery is required");
 
 			return new Tempo(
-				store,
+				self,
+				atomStore,
+				commitmentStore,
 				controller,
 				edgeSelector,
 				peerSupplier,

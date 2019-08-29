@@ -10,7 +10,6 @@ import com.radixdlt.tempo.LegacyAddressBook;
 import com.radixdlt.tempo.LegacyAddressBookListener;
 import com.radixdlt.tempo.LogicalClockCursor;
 import com.radixdlt.tempo.Scheduler;
-import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.messages.IterativeDiscoveryRequestMessage;
 import com.radixdlt.tempo.messages.IterativeDiscoveryResponseMessage;
 import com.radixdlt.tempo.store.CommitmentStore;
@@ -49,12 +48,11 @@ public final class IterativeDiscoveryController implements Closeable {
 	@VisibleForTesting
 	final LogicalClockCursorStore cursorStore;
 
-	@VisibleForTesting
-	final CommitmentStore commitmentStore;
 
 	@VisibleForTesting
 	final IterativeDiscoveryState discoveryState = new IterativeDiscoveryState();
 
+	private final CommitmentStore commitmentStore;
 	private final AtomStoreView storeView;
 	private final Scheduler scheduler;
 	private final MessageCentral messageCentral;
@@ -68,6 +66,7 @@ public final class IterativeDiscoveryController implements Closeable {
 	public IterativeDiscoveryController(
 		EUID self,
 		AtomStoreView storeView,
+		CommitmentStore commitmentStore,
 		DatabaseEnvironment dbEnv,
 		Scheduler scheduler,
 		MessageCentral messageCentral,
@@ -75,14 +74,13 @@ public final class IterativeDiscoveryController implements Closeable {
 	) {
 		this.self = Objects.requireNonNull(self);
 		this.storeView = Objects.requireNonNull(storeView);
+		this.commitmentStore = Objects.requireNonNull(commitmentStore);
 		this.scheduler = Objects.requireNonNull(scheduler);
 		this.messageCentral = Objects.requireNonNull(messageCentral);
 		this.selectedPeers = Objects.requireNonNull(selectedPeers);
 
 		// TODO improve locking to something like in messaging
 		this.discoveryListeners = Collections.synchronizedList(new ArrayList<>());
-		this.commitmentStore = new CommitmentStore(dbEnv);
-		this.commitmentStore.open();
 		this.cursorStore = new LogicalClockCursorStore(dbEnv);
 		this.cursorStore.open();
 
@@ -117,6 +115,9 @@ public final class IterativeDiscoveryController implements Closeable {
 
 	private void processRequest(IterativeDiscoveryRequest request) {
 		IterativeDiscoveryResponseMessage response = fetchResponse(request.getMessage().getCursor());
+		if (log.hasLevel(Logging.DEBUG)) {
+			log.debug("Responding to iterative discovery request from " + request.getPeer() + " with " + response.getCursor() + "");
+		}
 		messageCentral.send(request.getPeer(), response);
 	}
 
@@ -163,6 +164,9 @@ public final class IterativeDiscoveryController implements Closeable {
 		IterativeDiscoveryRequestMessage request = new IterativeDiscoveryRequestMessage(cursor);
 		discoveryState.addRequest(peer.getSystem().getNID(), cursor.getLcPosition());
 		messageCentral.send(peer, request);
+		if (log.hasLevel(Logging.DEBUG)) {
+			log.debug("Requesting iterative discovery from " + peer + " at " + cursor);
+		}
 
 		// re-request after a certain timeout if no response hasbeen received
 		scheduler.schedule(() -> {
@@ -196,6 +200,12 @@ public final class IterativeDiscoveryController implements Closeable {
 		long lcPosition = cursor.getLcPosition();
 		ImmutableList<Hash> commitments = commitmentStore.getNext(self, lcPosition, RESPONSE_LIMIT);
 		ImmutableList<AID> aids = storeView.getNext(lcPosition, RESPONSE_LIMIT);
+
+		// there should be at least as many commitments as aids, otherwise the stores are corrupt
+		if (commitments.size() < aids.size()) {
+			throw new IllegalStateException(String.format("Missing commitments at [%d, %d[",
+				lcPosition, lcPosition + aids.size()));
+		}
 
 		long nextLcPosition = lcPosition + commitments.size();
 		LogicalClockCursor nextCursor = null;

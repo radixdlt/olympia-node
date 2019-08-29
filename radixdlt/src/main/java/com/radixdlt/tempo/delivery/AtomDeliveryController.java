@@ -125,7 +125,7 @@ public final class AtomDeliveryController implements Closeable {
 		}
 
 		if (log.hasLevel(Logging.DEBUG)) {
-			log.debug("Requesting delivery of " + aids.size() + " from " + peer);
+			log.debug("Requesting delivery of " + aids.size() + " aids from " + peer);
 		}
 		DeliveryRequestMessage request = new DeliveryRequestMessage(aids);
 		deliveryState.addRequest(aids, peer.getSystem().getNID());
