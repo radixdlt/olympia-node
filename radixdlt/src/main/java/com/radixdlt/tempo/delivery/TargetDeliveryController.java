@@ -31,7 +31,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 public final class TargetDeliveryController implements Closeable, AtomDeliverer, TargetDeliverer {
-	private static final Logger log = Logging.getLogger("Delivery");
+	private static final Logger log = Logging.getLogger("TargetDeliverer");
 
 	private static final int REQUEST_QUEUE_CAPACITY = 8192;
 	private static final int REQUEST_PROCESSOR_THREADS = 2;

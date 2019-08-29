@@ -32,7 +32,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 public final class IterativeDiscoveryController implements Closeable, AtomDiscoverer {
-	private static final Logger log = Logging.getLogger("Discovery");
+	private static final Logger log = Logging.getLogger("IterativeDiscoverer");
 
 	private static final int REQUEST_TIMEOUT_SECONDS = 5;
 	// maximum backoff when synchronised (exponential, e.g. 2^4 = 16 seconds)

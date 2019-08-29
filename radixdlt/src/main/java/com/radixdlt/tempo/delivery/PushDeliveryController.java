@@ -4,6 +4,8 @@ import com.radixdlt.common.EUID;
 import com.radixdlt.tempo.PeerSupplier;
 import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.messages.PushMessage;
+import org.radix.logging.Logger;
+import org.radix.logging.Logging;
 import org.radix.network.peers.Peer;
 import org.radix.network2.messaging.MessageCentral;
 import org.radix.time.TemporalVertex;
@@ -16,6 +18,8 @@ import java.util.Objects;
 import java.util.Optional;
 
 public final class PushDeliveryController implements Closeable, AtomDeliverer {
+	private static final Logger log = Logging.getLogger("Pusher");
+
 	private final EUID self;
 	private final MessageCentral messageCentral;
 	private final PeerSupplier peerSupplier;
@@ -40,11 +44,16 @@ public final class PushDeliveryController implements Closeable, AtomDeliverer {
 	public void accept(TempoAtom atom) {
 		TemporalVertex ownVertex = atom.getTemporalProof().getVertexByNID(self);
 		PushMessage push = new PushMessage(atom);
-		ownVertex.getEdges().stream()
-			.map(peerSupplier::getPeer)
-			.filter(Optional::isPresent)
-			.map(Optional::get)
-			.forEach(peer -> messageCentral.send(peer, push));
+		if (!ownVertex.getEdges().isEmpty()) {
+			if (log.hasLevel(Logging.DEBUG)) {
+				log.debug("Pushing atom " + atom.getAID() + " to " + ownVertex.getEdges());
+			}
+			ownVertex.getEdges().stream()
+				.map(peerSupplier::getPeer)
+				.filter(Optional::isPresent)
+				.map(Optional::get)
+				.forEach(peer -> messageCentral.send(peer, push));
+		}
 	}
 
 	private void onReceivePush(Peer peer, PushMessage message) {
