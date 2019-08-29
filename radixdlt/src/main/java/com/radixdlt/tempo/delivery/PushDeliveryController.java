@@ -1,5 +1,6 @@
 package com.radixdlt.tempo.delivery;
 
+import com.radixdlt.common.EUID;
 import com.radixdlt.tempo.PeerSupplier;
 import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.messages.PushMessage;
@@ -14,16 +15,19 @@ import java.util.Collections;
 import java.util.Objects;
 import java.util.Optional;
 
-public final class PushDeliveryController implements Closeable {
+public final class PushDeliveryController implements Closeable, AtomDeliverer {
+	private final EUID self;
 	private final MessageCentral messageCentral;
 	private final PeerSupplier peerSupplier;
 
 	private final Collection<AtomDeliveryListener> deliveryListeners;
 
 	public PushDeliveryController(
-			MessageCentral messageCentral,
-	        PeerSupplier peerSupplier
+		EUID self,
+		MessageCentral messageCentral,
+		PeerSupplier peerSupplier
 	) {
+		this.self = self;
 		this.messageCentral = Objects.requireNonNull(messageCentral);
 		this.peerSupplier = Objects.requireNonNull(peerSupplier);
 
@@ -33,7 +37,8 @@ public final class PushDeliveryController implements Closeable {
 		messageCentral.addListener(PushMessage.class, this::onReceivePush);
 	}
 
-	public void accept(TempoAtom atom, TemporalVertex ownVertex) {
+	public void accept(TempoAtom atom) {
+		TemporalVertex ownVertex = atom.getTemporalProof().getVertexByNID(self);
 		PushMessage push = new PushMessage(atom);
 		ownVertex.getEdges().stream()
 			.map(peerSupplier::getPeer)
@@ -50,10 +55,12 @@ public final class PushDeliveryController implements Closeable {
 		deliveryListeners.forEach(listener -> listener.accept(atom, peer));
 	}
 
+	@Override
 	public void addListener(AtomDeliveryListener deliveryListener) {
 		deliveryListeners.add(deliveryListener);
 	}
 
+	@Override
 	public void removeListener(AtomDeliveryListener deliveryListener) {
 		deliveryListeners.remove(deliveryListener);
 	}

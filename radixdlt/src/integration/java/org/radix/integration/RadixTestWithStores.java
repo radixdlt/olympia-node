@@ -6,6 +6,7 @@ import com.radixdlt.tempo.TempoController;
 import com.radixdlt.tempo.PeerSupplier;
 import com.radixdlt.tempo.AtomSyncView;
 import com.radixdlt.tempo.EdgeSelector;
+import com.radixdlt.tempo.delivery.TargetDeliverer;
 import org.junit.After;
 import org.junit.Before;
 import org.radix.atoms.AtomStore;
@@ -49,6 +50,7 @@ public class RadixTestWithStores extends RadixTest
 				.controller(controller)
 				.peerSupplier(peerSupplier)
 				.edgeSelector(edgeSelector)
+				.targetDeliverer(mock(TargetDeliverer.class))
 				.build();
 			Modules.getInstance().start(tempo);
 		} else {

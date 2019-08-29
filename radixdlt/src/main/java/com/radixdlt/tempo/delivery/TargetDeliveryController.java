@@ -30,7 +30,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-public final class TargetDeliveryController implements Closeable {
+public final class TargetDeliveryController implements Closeable, AtomDeliverer, TargetDeliverer {
 	private static final Logger log = Logging.getLogger("Delivery");
 
 	private static final int REQUEST_QUEUE_CAPACITY = 8192;
@@ -93,6 +93,7 @@ public final class TargetDeliveryController implements Closeable {
 		notifyListeners(peer, atom);
 	}
 
+	@Override
 	public void deliver(Collection<AID> aids, Peer peer) {
 		// early out if there is nothing to do
 		if (aids.isEmpty()) {

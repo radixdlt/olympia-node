@@ -19,7 +19,6 @@ import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.network.peers.Peer;
 import org.radix.network2.messaging.MessageCentral;
-import org.radix.time.TemporalVertex;
 import org.radix.utils.SimpleThreadPool;
 
 import java.io.Closeable;
@@ -32,7 +31,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-public final class IterativeDiscoveryController implements Closeable {
+public final class IterativeDiscoveryController implements Closeable, AtomDiscoverer {
 	private static final Logger log = Logging.getLogger("Discovery");
 
 	private static final int REQUEST_TIMEOUT_SECONDS = 5;
@@ -216,10 +215,12 @@ public final class IterativeDiscoveryController implements Closeable {
 		return new IterativeDiscoveryResponseMessage(commitments, aids, responseCursor);
 	}
 
+	@Override
 	public void addListener(AtomDiscoveryListener listener) {
 		discoveryListeners.add(listener);
 	}
 
+	@Override
 	public void removeListener(AtomDiscoveryListener listener) {
 		discoveryListeners.remove(listener);
 	}
