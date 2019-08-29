@@ -30,7 +30,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-public final class AtomDeliveryController implements Closeable {
+public final class TargetDeliveryController implements Closeable {
 	private static final Logger log = Logging.getLogger("Delivery");
 
 	private static final int REQUEST_QUEUE_CAPACITY = 8192;
@@ -48,7 +48,7 @@ public final class AtomDeliveryController implements Closeable {
 	private final BlockingQueue<AtomDeliveryRequest> requestQueue;
 	private final SimpleThreadPool<AtomDeliveryRequest> requestThreadPool;
 
-	public AtomDeliveryController(
+	public TargetDeliveryController(
 		Scheduler scheduler,
 		MessageCentral messageCentral,
 		AtomStoreView storeView

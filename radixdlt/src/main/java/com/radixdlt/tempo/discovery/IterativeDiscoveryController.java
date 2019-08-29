@@ -48,7 +48,6 @@ public final class IterativeDiscoveryController implements Closeable {
 	@VisibleForTesting
 	final LogicalClockCursorStore cursorStore;
 
-
 	@VisibleForTesting
 	final IterativeDiscoveryState discoveryState = new IterativeDiscoveryState();
 
@@ -215,10 +214,6 @@ public final class IterativeDiscoveryController implements Closeable {
 		}
 		LogicalClockCursor responseCursor = new LogicalClockCursor(lcPosition, nextCursor);
 		return new IterativeDiscoveryResponseMessage(commitments, aids, responseCursor);
-	}
-
-	public void accept(TemporalVertex vertex) {
-		commitmentStore.put(vertex.getOwner().getUID(), vertex.getClock(), vertex.getCommitment());
 	}
 
 	public void addListener(AtomDiscoveryListener listener) {
