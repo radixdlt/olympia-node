@@ -14,14 +14,15 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 // TODO remove when addressbook has been fully integrated
 public class LegacyAddressBookAdapter implements LegacyAddressBook {
-	private final PeerHandler peerHandler;
+	private final Supplier<PeerHandler> peerHandler;
 	private final Events events;
 	private final List<LegacyAddressBookListener> listeners;
 
-	public LegacyAddressBookAdapter(PeerHandler peerHandler, Events events) {
+	public LegacyAddressBookAdapter(Supplier<PeerHandler> peerHandler, Events events) {
 		this.peerHandler = Objects.requireNonNull(peerHandler);
 		this.events = Objects.requireNonNull(events);
 		this.listeners = Collections.synchronizedList(new ArrayList<>());
@@ -41,7 +42,7 @@ public class LegacyAddressBookAdapter implements LegacyAddressBook {
 	@Override
 	public boolean contains(EUID nid) {
 		try {
-			return !peerHandler.getPeers(PeerHandler.PeerDomain.NETWORK, Collections.singleton(nid)).isEmpty();
+			return !peerHandler.get().getPeers(PeerHandler.PeerDomain.NETWORK, Collections.singleton(nid)).isEmpty();
 		} catch (DatabaseException e) {
 			throw new TempoException(e);
 		}

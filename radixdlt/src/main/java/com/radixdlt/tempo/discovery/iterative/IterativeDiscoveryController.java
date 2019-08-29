@@ -26,6 +26,8 @@ import org.radix.utils.SimpleThreadPool;
 import java.io.Closeable;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -59,7 +61,7 @@ public final class IterativeDiscoveryController implements Closeable {
 	private final MessageCentral messageCentral;
 	private final LegacyAddressBook selectedPeers;
 
-	private final PriorityBlockingQueue<IterativeDiscoveryRequest> requestQueue;
+	private final BlockingQueue<IterativeDiscoveryRequest> requestQueue;
 	private final SimpleThreadPool<IterativeDiscoveryRequest> requestThreadPool;
 
 	public IterativeDiscoveryController(
@@ -103,7 +105,7 @@ public final class IterativeDiscoveryController implements Closeable {
 		this.messageCentral.addListener(IterativeDiscoveryRequestMessage.class, this::onRequest);
 		this.messageCentral.addListener(IterativeDiscoveryResponseMessage.class, this::onResponse);
 
-		this.requestQueue = new PriorityBlockingQueue<>(REQUEST_QUEUE_CAPACITY);
+		this.requestQueue = new ArrayBlockingQueue<>(REQUEST_QUEUE_CAPACITY);
 		this.requestThreadPool = new SimpleThreadPool<>("Iterative discovery processing", REQUEST_PROCESSOR_THREADS, requestQueue::take, this::processRequest, log);
 		this.requestThreadPool.start();
 	}

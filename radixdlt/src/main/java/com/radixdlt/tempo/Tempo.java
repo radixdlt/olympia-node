@@ -248,14 +248,14 @@ public final class Tempo extends Plugin implements Ledger {
 				log.info("Received " + aids.size() + " for delivery from " + peer);
 			},
 			Modules.get(MessageCentral.class),
-			new LegacyAddressBookAdapter(Modules.get(PeerHandler.class), Events.getInstance())
-
+			new LegacyAddressBookAdapter(() -> Modules.get(PeerHandler.class), Events.getInstance())
 		);
 		return builder()
 			.attestor(attestor::attestTo)
 			.peerSupplier(new PeerSupplierAdapter(() -> Modules.get(PeerHandler.class)))
 			.edgeSelector(new SimpleEdgeSelector())
 			.store(store)
+			.iterativeDiscovery(iterativeDiscovery)
 			.controller(TempoController.defaultBuilder(store).build());
 	}
 
