@@ -5,6 +5,15 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
  
 ## [Unreleased](#)
 
+
+## [1.0.0-beta.3](https://github.com/radixdlt/radixdlt-java/releases/tag/1.0.0-beta.3) - 2019-08-28
+### Added
+- Support for https in trusted boostrap mode
+
+### Changed
+- Remove atom serializer when calculating atom hash
+- Universe update
+
 ## [1.0.0-beta.1](https://github.com/radixdlt/radixdlt-java/releases/tag/1.0.0-beta.1) - 2019-08-19
 ### Added
 - This CHANGELOG file
