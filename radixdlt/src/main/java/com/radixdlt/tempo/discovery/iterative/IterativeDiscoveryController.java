@@ -10,7 +10,7 @@ import com.radixdlt.tempo.LegacyAddressBook;
 import com.radixdlt.tempo.LegacyAddressBookListener;
 import com.radixdlt.tempo.LogicalClockCursor;
 import com.radixdlt.tempo.Scheduler;
-import com.radixdlt.tempo.delivery.DeliveredAtomSink;
+import com.radixdlt.tempo.discovery.DiscoveredAtomSink;
 import com.radixdlt.tempo.messages.IterativeDiscoveryRequestMessage;
 import com.radixdlt.tempo.messages.IterativeDiscoveryResponseMessage;
 import com.radixdlt.tempo.store.CommitmentStore;
@@ -55,7 +55,7 @@ public final class IterativeDiscoveryController implements Closeable {
 	private final AtomStoreView storeView;
 
 	private final Scheduler scheduler;
-	private final DeliveredAtomSink deliverySink;
+	private final DiscoveredAtomSink discoverySink;
 	private final MessageCentral messageCentral;
 	private final LegacyAddressBook selectedPeers;
 
@@ -67,14 +67,14 @@ public final class IterativeDiscoveryController implements Closeable {
 		AtomStoreView storeView,
 		DatabaseEnvironment dbEnv,
 		Scheduler scheduler,
-		DeliveredAtomSink deliverySink,
+		DiscoveredAtomSink discoverySink,
 		MessageCentral messageCentral,
 		LegacyAddressBook selectedPeers
 	) {
 		this.self = Objects.requireNonNull(self);
 		this.storeView = Objects.requireNonNull(storeView);
 		this.scheduler = Objects.requireNonNull(scheduler);
-		this.deliverySink = Objects.requireNonNull(deliverySink);
+		this.discoverySink = Objects.requireNonNull(discoverySink);
 		this.messageCentral = Objects.requireNonNull(messageCentral);
 		this.selectedPeers = Objects.requireNonNull(selectedPeers);
 
@@ -120,7 +120,7 @@ public final class IterativeDiscoveryController implements Closeable {
 
 	private void onResponse(Peer peer, IterativeDiscoveryResponseMessage message) {
 		EUID peerNid = peer.getSystem().getNID();
-		deliverySink.accept(message.getAids(), peer);
+		discoverySink.accept(message.getAids(), peer);
 		commitmentStore.put(peerNid, message.getCommitments(), message.getCursor().getLcPosition());
 		discoveryState.removeRequest(peerNid, message.getCursor().getLcPosition());
 
