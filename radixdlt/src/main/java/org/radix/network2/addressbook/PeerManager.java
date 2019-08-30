@@ -192,13 +192,13 @@ public class PeerManager extends Plugin {
 		try {
 			synchronized (this.probes) {
 				long nonce = message.getNonce();
-				if (this.probes.containsKey(peer) && this.probes.get(peer).longValue() == nonce) {
+				Long ourNonce = this.probes.get(peer);
+				if (ourNonce != null && ourNonce.longValue() == nonce) {
 					this.probes.remove(peer);
 					log.debug("Got peer.pong from " + peer + " with nonce '" + nonce + "'");
 					events.broadcast(new PeerAvailableEvent(peer));
-				} else {
-					// Probably a transport-only peer which we now have a system for
-					log.debug("Got peer.pong without matching probe from " + peer + " with nonce '" + nonce + "'");
+				} else if (ourNonce != null) {
+					log.debug("Got mismatched peer.pong from " + peer + " with nonce'" + nonce + "', ours '" + ourNonce + "'");
 				}
 			}
 		} catch (Exception ex) {
@@ -230,14 +230,18 @@ public class PeerManager extends Plugin {
 				if (peer != null && (Time.currentTimestamp() - peer.getTimestamp(Timestamps.PROBED) < peerProbeDelayMs)) {
 					return false;
 				}
-
 				if (peer != null && !this.probes.containsKey(peer)) {
 					PeerPingMessage ping = new PeerPingMessage();
-					this.probes.put(peer, ping.getNonce());
 
-					schedule(scheduledExecutable(PROBE_TIMEOUT_SECONDS, 0, TimeUnit.SECONDS, () -> handleProbeTimeout(peer, ping.getNonce())));
-
-					log.debug("Probing "+peer+" with nonce '"+ping.getNonce()+"'");
+					// Only wait for response if peer has a system, otherwise peer will be upgraded by pong message
+					long nonce = ping.getNonce();
+					if (peer.hasSystem()) {
+						this.probes.put(peer, nonce);
+						schedule(scheduledExecutable(PROBE_TIMEOUT_SECONDS, 0, TimeUnit.SECONDS, () -> handleProbeTimeout(peer, nonce)));
+						log.debug("Probing "+peer+" with nonce '"+nonce+"'");
+					} else {
+						log.debug("Nudging "+peer);
+					}
 					messageCentral.send(peer, ping);
 					peer.setTimestamp(Timestamps.PROBED, Time.currentTimestamp());
 					return true;
@@ -246,7 +250,6 @@ public class PeerManager extends Plugin {
 		} catch (Exception ex) {
 			log.error("Probe of peer " +peer + " failed", ex);
 		}
-
 		return false;
 	}
 
