@@ -3,6 +3,7 @@ package com.radixdlt.tempo;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.inject.name.Named;
 import com.radixdlt.Atom;
 import com.radixdlt.engine.AtomStatus;
 import com.radixdlt.common.AID;
@@ -75,7 +76,7 @@ public final class Tempo extends Plugin implements Ledger {
 	private final RequestDeliverer requestDeliverer;
 	private final Set<Consumer<TempoAtom>> acceptors;
 
-	private Tempo(EUID self,
+	private Tempo(@Named("self") EUID self,
 	              TempoAtomStore atomStore,
 	              CommitmentStore commitmentStore,
 	              EdgeSelector edgeSelector,

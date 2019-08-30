@@ -2,6 +2,7 @@ package com.radixdlt.tempo.discovery;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
+import com.google.inject.name.Named;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
 import com.radixdlt.crypto.Hash;
@@ -22,7 +23,6 @@ import org.radix.network2.addressbook.PeersRemovedEvent;
 import org.radix.network2.messaging.MessageCentral;
 import org.radix.utils.SimpleThreadPool;
 
-import javax.inject.Named;
 import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -32,6 +32,9 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Discoverer which uses logical clocks as a cursor to iterate through all relevant {@link AID}s of known nodes
+ */
 public final class IterativeDiscoverer implements Closeable, AtomDiscoverer {
 	private static final Logger log = Logging.getLogger("IterativeDiscoverer");
 
@@ -80,7 +83,7 @@ public final class IterativeDiscoverer implements Closeable, AtomDiscoverer {
 		// TODO improve locking to something like in messaging
 		this.discoveryListeners = Collections.synchronizedList(new ArrayList<>());
 
-		// TODO replace with regular address book once it's hooked up
+		// TODO replace with more restricted address book once it's hooked up
 		// TODO remove listener when closed
 		events.register(PeersAddedEvent.class, (EventListener<PeersAddedEvent>) event -> event.peers().stream()
 			.filter(peer -> !discoveryState.contains(peer.getNID()))
