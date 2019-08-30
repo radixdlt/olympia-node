@@ -4,12 +4,16 @@ import java.util.List;
 
 import com.google.common.collect.ImmutableList;
 
-public class PeersRemovedEvent implements AddressBookEvent {
+/**
+ * An {@link AddressBookEvent} to let interested parties know that
+ * newly discovered peers have been removed from the address book.
+ */
+public final class PeersRemovedEvent extends AddressBookEvent {
 
 	private final ImmutableList<Peer> peers;
 
-	public PeersRemovedEvent(Iterable<Peer> peers) {
-		this.peers = ImmutableList.copyOf(peers);
+	PeersRemovedEvent(ImmutableList<Peer> peers) {
+		this.peers = peers;
 	}
 
 	@Override

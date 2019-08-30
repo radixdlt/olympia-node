@@ -2,7 +2,7 @@ package com.radixdlt.tempo.delivery;
 
 import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
-import org.radix.network.peers.Peer;
+import org.radix.network2.addressbook.Peer;
 
 import java.util.ArrayDeque;
 import java.util.Collection;

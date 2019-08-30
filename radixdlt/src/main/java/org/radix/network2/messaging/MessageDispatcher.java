@@ -19,13 +19,14 @@ import org.radix.network.messaging.Message;
 import org.radix.network.messaging.Message.Direction;
 import org.radix.network.messaging.MessageProfiler;
 import org.radix.network.messaging.SignedMessage;
-import org.radix.network.peers.Peer;
 import org.radix.network2.NetworkLegacyPatching;
 import org.radix.network2.TimeSupplier;
+import org.radix.network2.addressbook.AddressBook;
+import org.radix.network2.addressbook.Peer;
 import org.radix.network2.transport.SendResult;
 import org.radix.network2.transport.Transport;
+import org.radix.network2.transport.TransportInfo;
 import org.radix.network2.transport.TransportOutboundConnection;
-import org.radix.state.State;
 import org.radix.time.Timestamps;
 import org.radix.universe.system.LocalSystem;
 import org.radix.universe.system.RadixSystem;
@@ -41,6 +42,7 @@ import org.xerial.snappy.Snappy;
  */
 //FIXME: Optional dependency on Modules.get(SystemMetaData.class) for system metadata
 //FIXME: Optional dependency on Modules.get(MessageProfiler.class) for profiling
+//FIXME: Optional dependency on Modules.get(AddressBook.class) for profiling
 //FIXME: Optional dependency on Modules.get(Interfaces.class) for keeping track of network interfaces
 // FIXME: Dependency on LocalSystem.getInstance() for signing key
 class MessageDispatcher {
@@ -60,17 +62,9 @@ class MessageDispatcher {
 		long start = SystemProfiler.getInstance().begin();
 		final Message message = outboundMessage.message();
 		final Peer peer = outboundMessage.peer();
-		final State peerState = peer.getState();
 
 		if (timeSource.currentTime() - message.getTimestamp() > messageTtlMs) {
-			String msg = String.format("%s: TTL to %s has expired", message.getClass().getName(), peer.getURI());
-			log.warn(msg);
-			Modules.ifAvailable(SystemMetaData.class, a -> a.increment("messages.outbound.aborted"));
-			return SendResult.failure(new IOException(msg));
-		}
-
-		if (peerState.in(State.DISCONNECTED) || peerState.in(State.DISCONNECTING)) {
-			String msg = String.format("%s: peer %s is %s", message.getClass().getName(), peer.getURI(), peerState);
+			String msg = String.format("%s: TTL to %s has expired", message.getClass().getName(), peer);
 			log.warn(msg);
 			Modules.ifAvailable(SystemMetaData.class, a -> a.increment("messages.outbound.aborted"));
 			return SendResult.failure(new IOException(msg));
@@ -93,7 +87,7 @@ class MessageDispatcher {
 				.thenApply(this::updateStatistics)
 				.get();
 		} catch (Exception ex) {
-			String msg = String.format("%s: Sending to  %s failed", message.getClass().getName(), peer.getURI());
+			String msg = String.format("%s: Sending to  %s failed", message.getClass().getName(), peer);
 			log.error(msg, ex);
 			return SendResult.failure(new IOException(msg, ex));
 		} finally {
@@ -102,19 +96,12 @@ class MessageDispatcher {
 	}
 
 	void receive(MessageListenerList listeners, final MessageEvent inboundMessage) {
-		final Peer peer = inboundMessage.peer();
+		Peer peer = inboundMessage.peer();
 		final Message message = inboundMessage.message();
 
 		long currentTime = timeSource.currentTime();
 		peer.setTimestamp(Timestamps.ACTIVE, currentTime);
 		Modules.ifAvailable(SystemMetaData.class, a -> a.increment("messages.inbound.received"));
-
-		State peerState = peer.getState();
-
-		// Do we really want to do this?
-		if (peerState.in(State.DISCONNECTING) || peerState.in(State.DISCONNECTED)) {
-			return;
-		}
 
 		if (currentTime - message.getTimestamp() > messageTtlMs) {
 			Modules.ifAvailable(SystemMetaData.class, a -> a.increment("messages.inbound.discarded"));
@@ -127,39 +114,46 @@ class MessageDispatcher {
 				RadixSystem system = systemMessage.getSystem();
 
 				// TODO this feels dirty here
-				if (system.getClock().get() < peer.getSystem().getClock().get()) {
+				if (peer.hasSystem() && system.getClock().get() < peer.getSystem().getClock().get()) {
 					log.error("IMPLEMENT CLOCK MANIPULATION CHECK!");
 				}
-				peer.setSystem(system);
+				peer = Modules.get(AddressBook.class).updatePeerSystem(peer, system);
 
 				if (system.getNID() == null || EUID.ZERO.equals(system.getNID())) {
-					peer.disconnect(String.format("%s:%s gave null NID", peer.getURI(), message.getClass().getName()));
+					peer.ban(String.format("%s:%s gave null NID", peer, message.getClass().getName()));
 					return;
 				}
 
 				if (systemMessage.getSystem().getAgentVersion() <= Radix.REFUSE_AGENT_VERSION) {
-					peer.disconnect(String.format("Old peer %s %s:%s", peer.getURI(), system.getAgent(), system.getProtocolVersion()));
+					peer.ban(String.format("Old peer %s %s:%s", peer, system.getAgent(), system.getProtocolVersion()));
 					return;
 				}
 
 				if (system.getNID().equals(LocalSystem.getInstance().getNID())) {
 					peer.ban("Message from self");
-					Modules.ifAvailable(Interfaces.class, i -> addInterfaceAddress(i, peer)); // TODO what about DNS lookups?
+					TransportInfo ti = inboundMessage.transportInfo();
+					if (ti != null) {
+						String host = ti.metadata().get("host");
+						if (host != null) {
+							Modules.ifAvailable(Interfaces.class, i -> addInterfaceAddress(i, host)); // TODO what about DNS lookups?
+						}
+					}
 					return;
 				}
 
-				if (!peerState.in(State.CONNECTED) && NetworkLegacyPatching.checkPeerBanned(peer, system.getNID(), timeSource)) {
+				if (NetworkLegacyPatching.checkPeerBanned(peer, system.getNID(), timeSource)) {
 					return;
 				}
 			}
 		} catch (Exception ex) {
-			log.error(inboundMessage.message().getClass().getName() + ": Pre-processing from " + inboundMessage.peer().getURI() + " failed", ex);
+			log.error(inboundMessage.message().getClass().getName() + ": Pre-processing from " + inboundMessage.peer() + " failed", ex);
 			return;
 		}
 
 		long start = SystemProfiler.getInstance().begin();
 		try {
-			Modules.ifAvailable(MessageProfiler.class, mp -> mp.process(message, peer));
+			final Peer fp = peer; // Awkward
+			Modules.ifAvailable(MessageProfiler.class, mp -> mp.process(message, fp));
 			listeners.messageReceived(peer, message);
 			Modules.ifAvailable(SystemMetaData.class, a -> a.increment("messages.inbound.processed"));
 		} finally {
@@ -176,9 +170,9 @@ class MessageDispatcher {
 		return result;
 	}
 
-	private void addInterfaceAddress(Interfaces interfaces, Peer peer) {
+	private void addInterfaceAddress(Interfaces interfaces, String host) {
 		try {
-			interfaces.addInterfaceAddress(InetAddress.getByName(peer.getURI().getHost()));
+			interfaces.addInterfaceAddress(InetAddress.getByName(host));
 		} catch (UnknownHostException e) {
 			log.warn("Host name lookup failed", e);
 		}
@@ -198,10 +192,5 @@ class MessageDispatcher {
 		} catch (IOException e) {
 			throw new UncheckedIOException("While serializing message", e);
 		}
-	}
-
-	private <T extends Message> MessageListener<Message> untyped(MessageListener<T> listener) {
-		// FIXME: Type abuse
-		return (MessageListener<Message>) listener;
 	}
 }

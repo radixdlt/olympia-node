@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
 
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.network.peers.Peer;
+import org.radix.network2.addressbook.Peer;
 import org.radix.network2.messaging.TransportManager;
 import org.radix.network2.transport.udp.UDPConstants;
 import org.radix.universe.system.RadixSystem;

@@ -1,14 +1,16 @@
 package org.radix.network2.addressbook;
 
-import java.util.EnumSet;
-import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Stream;
 
-import org.radix.network2.transport.Transport;
+import org.radix.network2.transport.TransportInfo;
+import org.radix.universe.system.RadixSystem;
 
 import com.radixdlt.common.EUID;
 
+/**
+ * Address book interface allowing client code to discover and add
+ * {@link Peer} objects.
+ */
 public interface AddressBook {
 
 	/**
@@ -47,15 +49,36 @@ public interface AddressBook {
 	boolean updatePeer(Peer peer);
 
 	/**
+	 * Updates a peer's {@link RadixSystem} in the address book.
+	 * <p>
+	 * This method is thread-safe.
+	 *
+	 * @param peer The peer to update the system for
+	 * @return the updated peer
+	 */
+	Peer updatePeerSystem(Peer peer, RadixSystem system);
+
+	/**
 	 * Retrieve the {@link Peer} with the specified Node ID.
 	 * <p>
 	 * This method is thread-safe, although the returned {@link Peer}, if any, may
 	 * change status at any time due to external events.
 	 *
 	 * @param nid The Node ID of the peer to retrieve
-	 * @return an {@link Optional} with the {@link Peer} with matching Node ID
+	 * @return the {@link Peer} with matching Node ID
 	 */
-	Optional<Peer> peer(EUID nid);
+	Peer peer(EUID nid);
+
+	/**
+	 * Retrieve or create the {@link Peer} with the specified URI.
+	 * <p>
+	 * This method is thread-safe, although the returned {@link Peer}, if any, may
+	 * change status at any time due to external events.
+	 *
+	 * @param uri The URI of the peer to retrieve
+	 * @return the {@link Peer} with the specified URI
+	 */
+	Peer peer(TransportInfo uri);
 
 	/**
 	 * Returns a stream of {@link Peer} objects that this address book knows about.
@@ -69,47 +92,13 @@ public interface AddressBook {
 
 	/**
 	 * Returns a stream of {@link Peer} objects that this address book knows about
-	 * and are in a particular state.  Typically used to find connected peers.
+	 * and have been heard from recently.  Typically used to find connected peers.
 	 * <p>
 	 * This method is thread-safe, although the returned {@link Peer} objects, if any,
 	 * may change status at any time due to external events.
 	 *
 	 * @return A {@link Stream} of {@link Peer} objects
 	 */
-	Stream<Peer> peers(EnumSet<PeerState> allowableStates);
-
-	/**
-	 * Returns a stream of {@link Peer} objects that this address book knows about
-	 * and are in a particular state and can communicate using one of the specified
-	 * transports.
-	 * <p>
-	 * This method is thread-safe, although the returned {@link Peer} objects, if any,
-	 * may change status at any time due to external events.
-	 *
-	 * @return A {@link Stream} of {@link Peer} objects
-	 */
-	Stream<Peer> peers(EnumSet<PeerState> allowableStates, Set<Transport> allowableTransports);
-
-	/**
-	 * Add a listener to the address book.
-	 * <p>
-	 * This method is thread-safe.
-	 *
-	 * @param listener A listener to be notified when the {@link AddressBook} changes.
-	 * @return {@code true} if the listener was added to the {@link AddressBook},
-	 * 	{@code false} if the listener was already present.
-	 */
-	boolean addListener(AddressBookListener listener);
-
-	/**
-	 * Remover a listener from the address book.
-	 * <p>
-	 * This method is thread-safe.
-	 *
-	 * @param listener A listener already added to the {@link AddressBook}.
-	 * @return {@code true} if the listener was removed from the {@link AddressBook},
-	 * 	{@code false} if the listener was not present.
-	 */
-	boolean removeListener(AddressBookListener listener);
+	Stream<Peer> recentPeers();
 
 }

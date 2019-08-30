@@ -6,7 +6,7 @@ import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.delivery.messages.PushMessage;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.network.peers.Peer;
+import org.radix.network2.addressbook.Peer;
 import org.radix.network2.messaging.MessageCentral;
 import org.radix.time.TemporalVertex;
 

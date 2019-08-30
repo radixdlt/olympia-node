@@ -1,7 +1,7 @@
 package com.radixdlt.tempo.delivery;
 
 import com.radixdlt.common.AID;
-import org.radix.network.peers.Peer;
+import org.radix.network2.addressbook.Peer;
 
 import java.util.Collection;
 

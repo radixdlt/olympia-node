@@ -3,6 +3,7 @@ package org.radix.network.peers;
 import java.util.concurrent.TimeUnit;
 
 import org.radix.common.executors.ScheduledExecutable;
+import org.radix.network2.addressbook.Peer;
 
 public abstract class PeerTask extends ScheduledExecutable
 {

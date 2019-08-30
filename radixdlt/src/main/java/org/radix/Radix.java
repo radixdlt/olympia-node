@@ -19,14 +19,16 @@ import org.radix.events.Events;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.mass.Masses;
+import org.radix.modules.Module;
 import org.radix.modules.Modules;
 import org.radix.modules.Plugin;
 import org.radix.modules.exceptions.ModuleException;
 import org.radix.modules.exceptions.ModuleStartException;
 import org.radix.network.Interfaces;
 import org.radix.network.Network;
-import org.radix.network.peers.PeerHandler;
-import org.radix.network.peers.PeerStore;
+import org.radix.network2.addressbook.AddressBookFactory;
+import org.radix.network2.addressbook.AddressBookImpl;
+import org.radix.network2.addressbook.PeerManagerFactory;
 import org.radix.network2.messaging.MessageCentral;
 import org.radix.network2.messaging.MessageCentralFactory;
 import org.radix.properties.PersistedProperties;
@@ -230,13 +232,8 @@ public class Radix extends Plugin
 		/*
 		 * MESSAGES
 		 */
-		try {
-			MessageCentral messageCentral = createMessageCentral(Modules.get(RuntimeProperties.class));
-			Modules.put(MessageCentral.class, messageCentral);
-//			Modules.getInstance().start(new MessageProfiler());
-		} catch (Exception ex) {
-			throw new ModuleStartException("Failure setting up Messages", ex, this);
-		}
+		MessageCentral messageCentral = createMessageCentral(Modules.get(RuntimeProperties.class));
+		Modules.put(MessageCentral.class, messageCentral);
 
 		/*
 		 * RTP
@@ -307,8 +304,9 @@ public class Radix extends Plugin
 		{
 			Modules.getInstance().start(new Interfaces());
 			Modules.getInstance().start(Network.getInstance());
-			Modules.getInstance().start(new PeerStore());
-			Modules.getInstance().start(new PeerHandler());
+			AddressBookImpl addressBook = createAddressBook(Serialization.getDefault());
+			Modules.getInstance().start(addressBook);
+			Modules.getInstance().start(createPeerManager(Modules.get(RuntimeProperties.class), addressBook, messageCentral, Events.getInstance()));
 		}
 		catch (Exception ex)
 		{
@@ -350,5 +348,13 @@ public class Radix extends Plugin
 
 	private MessageCentral createMessageCentral(RuntimeProperties properties) {
 		return new MessageCentralFactory().createDefault(properties);
+	}
+
+	private AddressBookImpl createAddressBook(Serialization serialization) {
+		return new AddressBookFactory().createDefault(serialization);
+	}
+
+	private Module createPeerManager(RuntimeProperties properties, AddressBookImpl addressBook, MessageCentral messageCentral, Events events) {
+		return new PeerManagerFactory().createDefault(properties, addressBook, messageCentral, events);
 	}
 }

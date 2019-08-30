@@ -8,7 +8,6 @@ import java.util.stream.Collectors;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.radix.network.peers.Peer;
 import org.radix.network2.transport.Transport;
 import org.radix.network2.transport.TransportMetadata;
 import org.radix.network2.transport.udp.UDPConstants;
@@ -17,6 +16,7 @@ import org.radix.universe.system.RadixSystem;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
+import org.radix.network2.addressbook.Peer;
 import org.radix.network2.transport.FirstMatchTransportManager;
 
 import static org.junit.Assert.*;

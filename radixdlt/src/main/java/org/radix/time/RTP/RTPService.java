@@ -14,24 +14,21 @@ import java.util.stream.Collectors;
 import org.radix.common.executors.Executable;
 import org.radix.common.executors.Executor;
 import org.radix.common.executors.ScheduledExecutable;
-import org.radix.database.exceptions.DatabaseException;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.modules.Modules;
 import org.radix.modules.Service;
-import org.radix.network.Network;
-import org.radix.network.Protocol;
-import org.radix.network.peers.Peer;
-import org.radix.network.peers.PeerStore;
-import org.radix.network.peers.UDPPeer;
-import org.radix.network.peers.filters.PeerFilter;
+import org.radix.network2.addressbook.AddressBook;
+import org.radix.network2.addressbook.Peer;
+import org.radix.network2.addressbook.StandardFilters;
 import org.radix.network2.messaging.MessageCentral;
 import org.radix.properties.RuntimeProperties;
-import org.radix.state.State;
 import org.radix.time.LogicalClock;
 import org.radix.time.NtpService;
 import org.radix.time.RTP.messages.RTPMessage;
 import org.radix.universe.system.LocalSystem;
+
+import com.google.common.collect.ImmutableList;
 
 import static java.lang.Math.max;
 import static java.lang.Math.abs;
@@ -368,18 +365,14 @@ public final class RTPService extends Service
 
     private List<Peer> getPeersGroup()
     {
-        List<Peer> raw_peers = new ArrayList<>();
-        if (Modules.isAvailable(PeerStore.class)) {
-        	try {
-        		PeerFilter filter = PeerFilter.getInstance();
-        		Modules.get(PeerStore.class).getPeers(filter).stream()
-        			.filter(p -> !p.getSystem().getNID().equals(LocalSystem.getInstance().getNID()))
-            		.forEachOrdered(raw_peers::add);
-        	} catch (DatabaseException ex) {
-        		rtp.error("Unable to find any peers", ex);
-        	}
+        final List<Peer> raw_peers;
+        if (Modules.isAvailable(AddressBook.class)) {
+        	raw_peers = Modules.get(AddressBook.class).recentPeers()
+        		.filter(StandardFilters.standardFilter())
+        		.collect(ImmutableList.toImmutableList());
         } else {
-    		rtp.error("PeerStore not yet available");
+    		rtp.error("AddressBook not yet available");
+    		raw_peers = ImmutableList.of();
         }
 
 		numberOfPeers = raw_peers.size();
@@ -433,7 +426,7 @@ public final class RTPService extends Service
         //Messages
         register(RTPMessage.class, (peer, rtpMessage) -> {
             if (rtpMessage.getMessageType() == 0) {
-                rtp.info("got a request message from " + peer.getURI());
+                rtp.info("got a request message from " + peer);
                 RTPMessage response = new RTPMessage(
                         1,
                         rtpMessage.getSeq(),
@@ -442,15 +435,10 @@ public final class RTPService extends Service
                         LogicalClock.getInstance().get(),
                         radix_time());
 
-                UDPPeer udp = Network.getInstance().get(peer.getURI(), Protocol.UDP, State.CONNECTED);
-                if (udp == null) {
-                    rtp.info("no connected peer to request from");
-                } else {
-                    Modules.get(MessageCentral.class).send(udp, response);
-                }
+                Modules.get(MessageCentral.class).send(peer, response);
             } else {
                 if (!completed.get()) {
-                    rtp.info("got a response message from " + peer.getURI());
+                    rtp.info("got a response message from " + peer);
                     store.setResponse(rtpMessage, radix_time());
                 } else {
                     rtp.info("got a response after timeout");
@@ -480,17 +468,12 @@ public final class RTPService extends Service
                     {
                         for (Peer peer : peers)
                         {
-                        	UDPPeer udp = Network.getInstance().get(peer.getURI(), Protocol.UDP, State.CONNECTED);
-                        	if (udp != null) {
-                        		long seq = sequence.incrementAndGet();
-                                RTPMessage request = new RTPMessage(0, seq);
+                        	long seq = sequence.incrementAndGet();
+                        	RTPMessage request = new RTPMessage(0, seq);
 
-                                Modules.get(MessageCentral.class).send(udp, request);
-                                rtp.info("request sent to " + peer.getURI());
-                                store.putRequest(seq, radix_time());
-                            } else {
-                                rtp.info("no connected UDPPeer found for Peer " + peer.getURI().getHost() + " ... skipping");
-                            }
+                        	Modules.get(MessageCentral.class).send(peer, request);
+                        	rtp.info("request sent to " + peer);
+                        	store.putRequest(seq, radix_time());
                         }
                     } else {
                         rtp.error("No peers available");

@@ -1,15 +1,15 @@
 package org.radix.network2.messaging;
 
-import org.radix.network.messaging.Message;
-import org.radix.network.peers.Peer;
-import org.radix.network2.transport.TransportException;
+import java.io.IOException;
 
-import java.io.Closeable;
+import org.radix.network.messaging.Message;
+import org.radix.network2.addressbook.Peer;
+import org.radix.network2.transport.TransportException;
 
 /**
  * Central processing facility for inbound and outbound messages.
  */
-public interface MessageCentral extends Closeable {
+public interface MessageCentral {
 
 	/**
 	 * Sends a single message to a peer.
@@ -61,4 +61,13 @@ public interface MessageCentral extends Closeable {
 	 * @throws IllegalArgumentException if an attempt to remove a null listener
 	 */
 	<T extends Message> void removeListener(MessageListener<T> listener);
+
+    /**
+     * Closes this {@code MessageCentral} and releases any system resources associated
+     * with it. If it is already closed then invoking this method has no effect.
+     *
+     * @throws IOException if an I/O error occurs
+     */
+    public void close() throws IOException;
+
 }

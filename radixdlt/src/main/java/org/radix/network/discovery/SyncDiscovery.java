@@ -1,12 +1,12 @@
 package org.radix.network.discovery;
 
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import com.radixdlt.common.EUID;
 import org.radix.logging.Logger;
@@ -14,11 +14,10 @@ import org.radix.logging.Logging;
 import org.radix.modules.Modules;
 import org.radix.universe.system.LocalSystem;
 import org.radix.utils.MathUtils;
-import org.radix.network.peers.Peer;
-import org.radix.network.peers.PeerHandler;
-import org.radix.network.peers.PeerHandler.PeerDomain;
-import org.radix.network.peers.filters.PeerFilter;
-import org.radix.network.peers.filters.UDPPeerFilter;
+import org.radix.network2.addressbook.AddressBook;
+import org.radix.network2.addressbook.Peer;
+import org.radix.network2.addressbook.PeerPredicate;
+import org.radix.network2.addressbook.StandardFilters;
 
 /**
  * Discovers peers which the local node will hold TCP connections with for the purpose of synchronisation.
@@ -26,7 +25,7 @@ import org.radix.network.peers.filters.UDPPeerFilter;
  * @author Dan
  *
  */
-public class SyncDiscovery implements Discovery
+public class SyncDiscovery
 {
 	private static final Logger networkLog = Logging.getLogger("network");
 
@@ -70,24 +69,32 @@ public class SyncDiscovery implements Discovery
 	{
 	}
 
-	@Override
-	public Collection<URI> discover(PeerFilter filter)
+	public Collection<Peer> discover(PeerPredicate filter)
 	{
-		List<URI> results = new ArrayList<URI>();
+		List<Peer> results = new ArrayList<>();
 
 		try
 		{
 			// Handle running without PeerHandler/test conditions a little better
-			List<Peer> peers = Modules.isAvailable(PeerHandler.class)
-				?  Modules.get(PeerHandler.class).getPeers(PeerDomain.NETWORK, new UDPPeerFilter(), new SyncPeerDistanceComparator(LocalSystem.getInstance().getNID()))
-				: Collections.emptyList();
+			final List<Peer> peers;
+			if (Modules.isAvailable(AddressBook.class)) {
+				SyncPeerDistanceComparator comparator = new SyncPeerDistanceComparator(LocalSystem.getInstance().getNID());
+				peers = Modules.get(AddressBook.class).recentPeers()
+					.filter(StandardFilters.standardFilter())
+					.filter(StandardFilters.hasOverlappingShards())
+					.sorted(comparator)
+					.collect(Collectors.toList());
+			} else {
+				peers = Collections.emptyList();
+			}
 			if (peers.isEmpty() == true)
 				return results;
 
 			List<Peer> candidatePeers = new ArrayList<Peer>();
-			for (Peer peer : peers)
-				if (filter == null || !filter.filter(peer))
+			for (Peer peer : peers) {
+				if (filter == null || filter.test(peer))
 					candidatePeers.add(peer);
+			}
 
 			int shardRedundancy = Math.max(3, MathUtils.log2(peers.size()));
 			long remainingCoverage = LocalSystem.getInstance().getShards().getRange().getSpan();
@@ -100,7 +107,7 @@ public class SyncDiscovery implements Discovery
 				if (candidatePeer.getSystem().getShards().intersects(LocalSystem.getInstance().getShards()) == false)
 					continue;
 
-				results.add(candidatePeer.getURI());
+				results.add(candidatePeer);
 				networkLog.debug("Added "+candidatePeer+" to shard space set");
 
 				long coverage = Math.max(0, Math.min(candidatePeer.getSystem().getShards().getRange().getHigh(), LocalSystem.getInstance().getShards().getRange().getHigh()) -

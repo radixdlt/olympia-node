@@ -11,8 +11,8 @@ import org.radix.events.Events;
 import org.radix.modules.Modules;
 import org.radix.network.messages.TestMessage;
 import org.radix.network.messaging.Message;
-import org.radix.network.peers.Peer;
-import org.radix.network.peers.PeerStore;
+import org.radix.network2.addressbook.AddressBook;
+import org.radix.network2.addressbook.Peer;
 import org.radix.network2.transport.SendResult;
 import org.radix.network2.transport.StaticTransportMetadata;
 import org.radix.network2.transport.Transport;
@@ -21,7 +21,6 @@ import org.radix.network2.transport.TransportInfo;
 import org.radix.network2.transport.TransportMetadata;
 import org.radix.network2.transport.TransportOutboundConnection;
 import org.radix.properties.RuntimeProperties;
-import org.radix.state.State;
 import org.radix.universe.system.events.QueueFullEvent;
 import org.xerial.snappy.Snappy;
 
@@ -138,8 +137,8 @@ public class MessageCentralImplTest {
 	private DummyTransport dt;
 	private TransportManager transportManager;
 	private MessageCentralImpl mci;
-	private PriorityBlockingQueue inboundQueue;
-	private PriorityBlockingQueue outboundQueue;
+	private PriorityBlockingQueue<MessageEvent> inboundQueue;
+	private PriorityBlockingQueue<MessageEvent> outboundQueue;
 	private Events events;
 
 	@Before
@@ -152,11 +151,12 @@ public class MessageCentralImplTest {
 		when(universe.getMagic()).thenReturn(0);
 		RuntimeProperties runtimeProperties = mock(RuntimeProperties.class);
 		when(runtimeProperties.get(eq("network.whitelist"), any())).thenReturn("");
+		AddressBook addressbook = mock(AddressBook.class);
+		when(addressbook.peer(any(TransportInfo.class))).thenReturn(mock(Peer.class));
 
-		PeerStore peerStore = mock(PeerStore.class);
 		Modules.put(Universe.class, universe);
 		Modules.put(RuntimeProperties.class, runtimeProperties);
-		Modules.put(PeerStore.class, peerStore);
+		Modules.put(AddressBook.class, addressbook);
 
 		// Other scaffolding
 		this.toc = new DummyTransportOutboundConnection();
@@ -183,7 +183,7 @@ public class MessageCentralImplTest {
 		this.events = mock(Events.class);
 		inboundQueue = spy(new PriorityBlockingQueue<>(conf.messagingInboundQueueMax(0)));
 		outboundQueue = spy(new PriorityBlockingQueue<>(conf.messagingOutboundQueueMax(0)));
-		EventQueueFactory<MessageEvent> queueFactory = spy(new EventQueueFactoryImpl<>());
+		EventQueueFactory<MessageEvent> queueFactory = eventQueueFactoryMock();
 		doReturn(inboundQueue).when(queueFactory).createEventQueue(conf.messagingInboundQueueMax(0));
 		doReturn(outboundQueue).when(queueFactory).createEventQueue(conf.messagingOutboundQueueMax(0));
 		this.mci = new MessageCentralImpl(staticConfig(), serialization, transportManager, events, System::currentTimeMillis,
@@ -194,7 +194,7 @@ public class MessageCentralImplTest {
 	public void cleanup() {
 		Modules.remove(Universe.class);
 		Modules.remove(RuntimeProperties.class);
-		Modules.remove(PeerStore.class);
+		Modules.remove(AddressBook.class);
 
 		this.mci.close();
 	}
@@ -215,7 +215,6 @@ public class MessageCentralImplTest {
 	public void testSend() throws InterruptedException {
 		Message msg = new TestMessage();
 		Peer peer = mock(Peer.class);
-		doReturn(new State(State.CONNECTED)).when(peer).getState();
 		mci.send(peer, msg);
 		assertTrue(toc.sentSemaphore.tryAcquire(10, TimeUnit.SECONDS));
 		assertTrue(toc.sent);
@@ -225,7 +224,6 @@ public class MessageCentralImplTest {
 	public void testSendMessageDeliveredToTransport() throws InterruptedException {
 		Message msg = new TestMessage();
 		Peer peer = mock(Peer.class);
-		doReturn(new State(State.CONNECTED)).when(peer).getState();
 
 		int numberOfRequests = 6;
 		CountDownLatch receivedFlag = new CountDownLatch(numberOfRequests);
@@ -242,7 +240,6 @@ public class MessageCentralImplTest {
 	public void testInjectMessageDeliveredToListeners() throws InterruptedException {
 		Message msg = new TestMessage();
 		Peer peer = mock(Peer.class);
-		doReturn(new State(State.CONNECTED)).when(peer).getState();
 
 		int numberOfRequests = 6;
 		CountDownLatch receivedFlag = new CountDownLatch(numberOfRequests);
@@ -270,7 +267,7 @@ public class MessageCentralImplTest {
 		testQueueIsFull(outboundQueue, (peer, message) -> mci.send(peer, message));
 	}
 
-	private void testQueueIsFull(Queue queue, BiConsumer<Peer, Message> biConsumer) {
+	private <T> void testQueueIsFull(Queue<T> queue, BiConsumer<Peer, Message> biConsumer) {
 		doReturn(false).when(queue).offer(notNull());
 		Message msg = new TestMessage();
 		Peer peer = mock(Peer.class);
@@ -388,5 +385,10 @@ public class MessageCentralImplTest {
 				return 1;
 			}
 		};
+	}
+
+	@SuppressWarnings("unchecked")
+	private <T> EventQueueFactory<T> eventQueueFactoryMock() {
+		return mock(EventQueueFactory.class);
 	}
 }

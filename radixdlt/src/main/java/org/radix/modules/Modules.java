@@ -283,19 +283,19 @@ public class Modules implements ModuleListener
 	{
 		if (event instanceof ModuleStartedEvent)
 		{
-			put(event.getModule().getClass(), event.getModule());
+			put(event.getModule().declaredClass(), event.getModule());
 			log.debug("Started module "+event.getModule());
 		}
 
 		if (event instanceof ModuleResetEvent)
 		{
-			remove(event.getModule().getClass());
+			remove(event.getModule().declaredClass());
 			log.debug("Reset module "+event.getModule());
 		}
 
 		if (event instanceof ModuleStoppedEvent)
 		{
-			remove(event.getModule().getClass());
+			remove(event.getModule().declaredClass());
 			log.debug("Stopped module "+event.getModule());
 		}
 	}

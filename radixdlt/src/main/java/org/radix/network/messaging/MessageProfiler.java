@@ -10,7 +10,7 @@ import org.radix.common.executors.ScheduledExecutable;
 import org.radix.modules.Modules;
 import org.radix.modules.Service;
 import org.radix.modules.exceptions.ModuleException;
-import org.radix.network.peers.Peer;
+import org.radix.network2.addressbook.Peer;
 import org.radix.utils.SystemMetaData;
 
 public class MessageProfiler extends Service

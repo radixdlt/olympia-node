@@ -135,6 +135,10 @@ public abstract class Module implements ID, ReadWriteLockable, SingletonState
 		}
 	}
 
+	public Class<?> declaredClass() {
+		return this.getClass();
+	}
+
 	/**
 	 * Specifies if this service is a Singleton, defaults to true.
 	 *
