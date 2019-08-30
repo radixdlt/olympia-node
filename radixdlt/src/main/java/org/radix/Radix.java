@@ -25,9 +25,8 @@ import org.radix.modules.Plugin;
 import org.radix.modules.exceptions.ModuleException;
 import org.radix.modules.exceptions.ModuleStartException;
 import org.radix.network.Interfaces;
-import org.radix.network.Network;
+import org.radix.network2.addressbook.AddressBook;
 import org.radix.network2.addressbook.AddressBookFactory;
-import org.radix.network2.addressbook.AddressBookImpl;
 import org.radix.network2.addressbook.PeerManagerFactory;
 import org.radix.network2.messaging.MessageCentral;
 import org.radix.network2.messaging.MessageCentralFactory;
@@ -303,9 +302,8 @@ public class Radix extends Plugin
 		try
 		{
 			Modules.getInstance().start(new Interfaces());
-			Modules.getInstance().start(Network.getInstance());
-			AddressBookImpl addressBook = createAddressBook(Serialization.getDefault(), Events.getInstance());
-			Modules.getInstance().start(addressBook);
+			AddressBook addressBook = createAddressBook();
+			Modules.put(AddressBook.class, addressBook);
 			Modules.getInstance().start(createPeerManager(Modules.get(RuntimeProperties.class), addressBook, messageCentral, Events.getInstance()));
 		}
 		catch (Exception ex)
@@ -350,11 +348,12 @@ public class Radix extends Plugin
 		return new MessageCentralFactory().createDefault(properties);
 	}
 
-	private AddressBookImpl createAddressBook(Serialization serialization, Events events) {
-		return new AddressBookFactory().createDefault(serialization, events);
+	private AddressBook createAddressBook() {
+		return new AddressBookFactory().createDefault();
 	}
 
-	private Module createPeerManager(RuntimeProperties properties, AddressBookImpl addressBook, MessageCentral messageCentral, Events events) {
+	private Module createPeerManager(RuntimeProperties properties, AddressBook addressBook, MessageCentral messageCentral, Events events) {
 		return new PeerManagerFactory().createDefault(properties, addressBook, messageCentral, events);
 	}
+
 }
