@@ -19,6 +19,7 @@ import com.radixdlt.tempo.delivery.SingleRequestDeliverer;
 import com.radixdlt.tempo.delivery.PushOnlyDeliverer;
 import com.radixdlt.tempo.discovery.AtomDiscoverer;
 import com.radixdlt.tempo.discovery.IterativeDiscoverer;
+import com.radixdlt.tempo.discovery.IterativeDiscovererConfiguration;
 import com.radixdlt.tempo.store.berkeley.BerkeleyCommitmentStore;
 import com.radixdlt.tempo.store.berkeley.BerkeleyTempoAtomStore;
 import com.radixdlt.tempo.store.CommitmentStore;
@@ -31,6 +32,7 @@ import org.radix.modules.Modules;
 import org.radix.modules.Plugin;
 import org.radix.network.peers.PeerHandler;
 import org.radix.network2.messaging.MessageCentral;
+import org.radix.properties.RuntimeProperties;
 import org.radix.time.TemporalProof;
 import org.radix.time.TemporalVertex;
 import org.radix.time.Time;
@@ -294,7 +296,8 @@ public final class Tempo extends Plugin implements Ledger {
 			Modules.get(DatabaseEnvironment.class),
 			scheduler,
 			Modules.get(MessageCentral.class),
-			new LegacyAddressBookAdapter(() -> Modules.get(PeerHandler.class), Events.getInstance())
+			new LegacyAddressBookAdapter(() -> Modules.get(PeerHandler.class), Events.getInstance()),
+			IterativeDiscovererConfiguration.fromRuntimeProperties(Modules.get(RuntimeProperties.class))
 		);
 		SingleRequestDeliverer requestDeliverer = new SingleRequestDeliverer(
 			scheduler,

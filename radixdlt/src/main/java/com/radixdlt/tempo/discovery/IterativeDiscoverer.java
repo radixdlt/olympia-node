@@ -12,6 +12,7 @@ import com.radixdlt.tempo.LogicalClockCursor;
 import com.radixdlt.tempo.Scheduler;
 import com.radixdlt.tempo.discovery.messages.IterativeDiscoveryRequestMessage;
 import com.radixdlt.tempo.discovery.messages.IterativeDiscoveryResponseMessage;
+import com.radixdlt.tempo.store.LCCursorStore;
 import com.radixdlt.tempo.store.berkeley.BerkeleyLCCursorStore;
 import com.radixdlt.tempo.store.CommitmentStore;
 import org.radix.database.DatabaseEnvironment;
@@ -34,18 +35,19 @@ import java.util.concurrent.TimeUnit;
 public final class IterativeDiscoverer implements Closeable, AtomDiscoverer {
 	private static final Logger log = Logging.getLogger("IterativeDiscoverer");
 
-	private static final int REQUEST_TIMEOUT_SECONDS = 5;
-	// maximum backoff when synchronised (exponential, e.g. 2^4 = 16 seconds)
-	private static final int MAX_BACKOFF = 4;
-	// how many commitments to send per response (32 bytes for commitment + 8 bytes for position)
-	private static final int RESPONSE_LIMIT = 10;
-	private static final int REQUEST_QUEUE_CAPACITY = 8192;
-	private static final int REQUEST_PROCESSOR_THREADS = 2;
+	private static final int DEFAULT_REQUEST_TIMEOUT_SECONDS = 5;
+	private static final int DEFAULT_MAX_BACKOFF = 4;
+	private static final int DEFAULT_RESPONSE_LIMIT = 10;
+	private static final int DEFAULT_REQUEST_QUEUE_CAPACITY = 8192;
+	private static final int DEFAULT_REQUEST_PROCESSOR_THREADS = 2;
 
 	private final EUID self;
+	private final int maxBackoff;
+	private final int responseLimit;
+	private final int requestTimeoutSeconds;
 
 	@VisibleForTesting
-	final BerkeleyLCCursorStore cursorStore;
+	final LCCursorStore cursorStore;
 
 	@VisibleForTesting
 	final IterativeDiscoveryState discoveryState = new IterativeDiscoveryState();
@@ -68,7 +70,8 @@ public final class IterativeDiscoverer implements Closeable, AtomDiscoverer {
 		DatabaseEnvironment dbEnv,
 		Scheduler scheduler,
 		MessageCentral messageCentral,
-		LegacyAddressBook selectedPeers
+		LegacyAddressBook selectedPeers,
+		IterativeDiscovererConfiguration configuration
 	) {
 		this.self = Objects.requireNonNull(self);
 		this.storeView = Objects.requireNonNull(storeView);
@@ -98,11 +101,16 @@ public final class IterativeDiscoverer implements Closeable, AtomDiscoverer {
 			}
 		});
 
+		this.responseLimit = configuration.responseLimit(DEFAULT_RESPONSE_LIMIT);
+		this.maxBackoff = configuration.maxBackoff(DEFAULT_MAX_BACKOFF);
+		this.requestTimeoutSeconds = configuration.requestTimeoutSeconds(DEFAULT_REQUEST_TIMEOUT_SECONDS);
+
 		this.messageCentral.addListener(IterativeDiscoveryRequestMessage.class, this::onRequest);
 		this.messageCentral.addListener(IterativeDiscoveryResponseMessage.class, this::onResponse);
 
-		this.requestQueue = new ArrayBlockingQueue<>(REQUEST_QUEUE_CAPACITY);
-		this.requestThreadPool = new SimpleThreadPool<>("Iterative discovery processing", REQUEST_PROCESSOR_THREADS, requestQueue::take, this::processRequest, log);
+		this.requestQueue = new ArrayBlockingQueue<>(configuration.requestProcessorThreads(DEFAULT_REQUEST_QUEUE_CAPACITY));
+		int processorThreads = configuration.requestProcessorThreads(DEFAULT_REQUEST_PROCESSOR_THREADS);
+		this.requestThreadPool = new SimpleThreadPool<>("Iterative discovery processing", processorThreads, requestQueue::take, this::processRequest, log);
 		this.requestThreadPool.start();
 	}
 
@@ -133,7 +141,7 @@ public final class IterativeDiscoverer implements Closeable, AtomDiscoverer {
 				requestDiscovery(peer, message.getCursor().getNext());
 			} else { // if synchronised, back off exponentially
 				discoveryState.onDiscovered(peerNid);
-				int timeout = 1 << Math.min(discoveryState.getBackoff(peerNid), MAX_BACKOFF);
+				int timeout = 1 << Math.min(discoveryState.getBackoff(peerNid), maxBackoff);
 				// TODO aggregate cancellables and cancel on stop
 				scheduler.schedule(() -> initiateDiscovery(peer), timeout, TimeUnit.SECONDS);
 
@@ -175,7 +183,7 @@ public final class IterativeDiscoverer implements Closeable, AtomDiscoverer {
 
 				requestDiscovery(peer, cursor);
 			}
-		}, REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+		}, requestTimeoutSeconds, TimeUnit.SECONDS);
 	}
 
 	private long getLatestCursorPosition(Peer peer) {
@@ -196,8 +204,8 @@ public final class IterativeDiscoverer implements Closeable, AtomDiscoverer {
 
 	private IterativeDiscoveryResponseMessage fetchResponse(LogicalClockCursor cursor) {
 		long lcPosition = cursor.getLcPosition();
-		ImmutableList<Hash> commitments = commitmentStore.getNext(self, lcPosition, RESPONSE_LIMIT);
-		ImmutableList<AID> aids = storeView.getNext(lcPosition, RESPONSE_LIMIT);
+		ImmutableList<Hash> commitments = commitmentStore.getNext(self, lcPosition, responseLimit);
+		ImmutableList<AID> aids = storeView.getNext(lcPosition, responseLimit);
 
 		// there should be at least as many commitments as aids, otherwise the stores are corrupt
 		if (commitments.size() < aids.size()) {
@@ -236,6 +244,7 @@ public final class IterativeDiscoverer implements Closeable, AtomDiscoverer {
 
 	@Override
 	public void close() {
+		requestThreadPool.stop();
 		cursorStore.close();
 		commitmentStore.close();
 
