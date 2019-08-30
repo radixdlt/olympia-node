@@ -1,8 +1,6 @@
 package org.radix.network.discovery;
 
 import java.net.InetAddress;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -16,23 +14,23 @@ public class Whitelist
 	private static final Logger networkLog = Logging.getLogger ("network");
 
 	private Set<String> parameters = new HashSet<String>();
-	
+
 	public Whitelist(String parameters)
 	{
 		if (parameters == null)
 			return;
-		
+
 		String[] split = parameters.split(",");
-		
+
 		for (String parameter : split)
 		{
 			if (parameter.trim().length() == 0)
 				continue;
-			
+
 			this.parameters.add(parameter.trim());
 		}
 	}
-	
+
 	private int[] convert(String host)
 	{
 		String[] segments;
@@ -52,7 +50,7 @@ public class Whitelist
 		}
 		else
 			return new int[] {0, 0, 0, 0};
-		
+
 		Arrays.fill(output, Integer.MAX_VALUE);
 		for (int s = 0 ; s < segments.length ; s++)
 		{
@@ -61,32 +59,32 @@ public class Whitelist
 
 			output[s] = Integer.valueOf(segments[s]);
 		}
-		
+
 		return output;
 	}
-	
+
 	private boolean isRange(String parameter)
 	{
 		if (parameter.contains("-"))
 			return true;
-		
+
 		return false;
 	}
 
 	private boolean isInRange(String parameter, String address)
 	{
 		String[] hosts = parameter.split("-");
-		
+
 		if (hosts.length != 2)
 			throw new IllegalStateException("Range is invalid");
-		
+
 		int[] target = convert(address);
 		int[] low = convert(hosts[0]);
 		int[] high = convert(hosts[1]);
-		
+
 		if (low.length != high.length || target.length != low.length)
 			return false;
-		
+
 		for (int s = 0 ; s < low.length ; s++)
 		{
 			if (low[s] < high[s])
@@ -96,11 +94,11 @@ public class Whitelist
 				high = swap;
 				break;
 			}
-			
+
 			if (target[s] < low[s] || target[s] > high[s])
 				return false;
 		}
-		
+
 		return true;
 	}
 
@@ -108,18 +106,18 @@ public class Whitelist
 	{
 		if (parameter.contains("*") || parameter.contains("::"))
 			return true;
-		
+
 		return false;
 	}
-	
-	private boolean isMasked(String parameter, String address) throws UnknownHostException, URISyntaxException
+
+	private boolean isMasked(String parameter, String address)
 	{
 		int[] target = convert(address);
 		int[] mask = convert(parameter);
-		
+
 		if (target.length != mask.length)
 			return false;
-		
+
 		for (int s = 0 ; s < mask.length ; s++)
 		{
 			if (mask[s] == Integer.MAX_VALUE)
@@ -127,32 +125,30 @@ public class Whitelist
 			else if (target[s] != mask[s])
 				return false;
 		}
-		
+
 		return false;
 	}
 
-	public boolean accept(URI host)
-	{
-		if (parameters.isEmpty())
+	public boolean accept(String hostName) {
+		if (parameters.isEmpty()) {
 			return true;
-		
-		try
-		{
-			for (String parameter : parameters)
-			{
-				if (parameter.equalsIgnoreCase(host.getHost()))
-					return true;
-				else if (isRange(parameter) && isInRange(parameter, InetAddress.getByName(host.getHost()).getHostAddress()))
-					return true;
-				else if (isMask(parameter) && isMasked(parameter, InetAddress.getByName(host.getHost()).getHostAddress()))
-					return true;
-			}
 		}
-		catch (UnknownHostException | URISyntaxException ex)
-		{
+
+		try {
+			String hostAddress = InetAddress.getByName(hostName).getHostAddress();
+			for (String parameter : parameters) {
+				if (parameter.equalsIgnoreCase(hostName)) {
+					return true;
+				} else if (isRange(parameter) && isInRange(parameter, hostAddress)) {
+					return true;
+				} else if (isMask(parameter) && isMasked(parameter, hostAddress)) {
+					return true;
+				}
+			}
+		} catch (UnknownHostException ex) {
 			networkLog.error(ex);
 		}
-		
+
 		return false;
 	}
 }

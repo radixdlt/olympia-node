@@ -143,7 +143,7 @@ final class Loader {
 			Set<AID> mintAtomHids = new HashSet<>();
 			for (Atom mintAtom : mintAtoms) {
 				mintAtom.sign(sourceKey);
-				Modules.get(AtomSyncView.class).receive(mintAtom);
+				Modules.get(AtomSyncView.class).inject(mintAtom);
 				mintAtomHids.add(mintAtom.getAID());
 			}
 			new HashWaiter(mintAtomHids).awaitUninterruptibly();
@@ -176,7 +176,7 @@ final class Loader {
 
 	private void storeAndAwait(Atom prepareAtom, ECKeyPair sourceKey) throws CryptoException, DatabaseException {
 		prepareAtom.sign(sourceKey);
-		Modules.get(AtomSyncView.class).receive(prepareAtom);
+		Modules.get(AtomSyncView.class).inject(prepareAtom);
 		new HashWaiter(ImmutableSet.of(prepareAtom.getAID())).awaitUninterruptibly();
 	}
 
@@ -228,7 +228,7 @@ final class Loader {
 				if (LocalSystem.getInstance().getShards().intersects(atom.getShards())) {
 					for (boolean wasStored = false; !wasStored;) {
 						try {
-							Modules.get(AtomSyncView.class).receive(atom);
+							Modules.get(AtomSyncView.class).inject(atom);
 							lastStored = atom;
 							stored += 1;
 							wasStored = true;

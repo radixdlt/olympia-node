@@ -1,6 +1,5 @@
 package org.radix.api.services;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -13,9 +12,7 @@ import org.radix.database.exceptions.DatabaseException;
 import org.radix.mass.NodeMass;
 import org.radix.mass.NodeMassStore;
 import org.radix.modules.Modules;
-import org.radix.network.peers.PeerHandler;
-import org.radix.network.peers.PeerHandler.PeerDomain;
-import org.radix.network.peers.filters.PeerFilter;
+import org.radix.network2.addressbook.AddressBook;
 import org.radix.routing.NodeAddressGroupTable;
 import org.radix.routing.RoutingHandler;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -41,8 +38,8 @@ public class GraphService
 				.collect(Collectors.toList());
 	}
 
-	public List<JSONObject> getLivePeers() throws IOException {
-		return Modules.get(PeerHandler.class).getPeers(PeerDomain.NETWORK, (PeerFilter) null, null).stream()
+	public List<JSONObject> getLivePeers() {
+		return Modules.get(AddressBook.class).recentPeers()
 			.map(peer -> Modules.get(Serialization.class).toJsonObject(peer, Output.WIRE))
 			.collect(Collectors.toList());
 	}

@@ -29,8 +29,8 @@ import org.radix.modules.exceptions.ModuleResetException;
 import org.radix.modules.exceptions.ModuleRestartException;
 import org.radix.modules.exceptions.ModuleStartException;
 import org.radix.network.messaging.Message;
-import org.radix.network.messaging.MessageProcessor;
-import org.radix.network.messaging.Messaging;
+import org.radix.network2.messaging.MessageCentral;
+import org.radix.network2.messaging.MessageListener;
 import org.radix.state.SingletonState;
 import org.radix.state.State;
 
@@ -48,7 +48,7 @@ public abstract class Module implements ID, ReadWriteLockable, SingletonState
 	private final Semaphore dependents = new Semaphore(0);
 	private final ReentrantReadWriteLock	lock = new ReentrantReadWriteLock(true);
 	private final Map<Long, Executable>		executables = new WeakHashMap<Long, Executable>();
-	private final Map<String, MessageProcessor<? extends Message>>	listeners = new HashMap<String, MessageProcessor<? extends Message>>();
+	private final Map<Class<? extends Message>, MessageListener<? extends Message>>	listeners = new HashMap<>();
 
 	@Override
 	public EUID getUID()
@@ -135,6 +135,10 @@ public abstract class Module implements ID, ReadWriteLockable, SingletonState
 		}
 	}
 
+	public Class<?> declaredClass() {
+		return this.getClass();
+	}
+
 	/**
 	 * Specifies if this service is a Singleton, defaults to true.
 	 *
@@ -188,21 +192,17 @@ public abstract class Module implements ID, ReadWriteLockable, SingletonState
 	/**
 	 * Registers a message listener to this module.
 	 */
-	public void register(String command, MessageProcessor<? extends Message> listener)
-	{
-		listeners.put(command, listener);
-
-		Messaging.getInstance().register(command, listener);
+	public <T extends Message> void register(Class<T> messageClass, MessageListener<T> listener) {
+		listeners.put(messageClass, listener);
+		Modules.get(MessageCentral.class).addListener(messageClass, listener);
 	}
 
 	/**
 	 * Unregisters a message listener registered to this module.
 	 */
-	public void unregister(String command)
-	{
-		Messaging.getInstance().deregister(listeners.get(command));
-
-		listeners.remove(command);
+	public <T extends Message> void unregister(Class<T> messageClass) {
+		Modules.get(MessageCentral.class).removeListener(listeners.get(messageClass));
+		listeners.remove(messageClass);
 	}
 
 	protected final void start() throws ModuleException
@@ -307,8 +307,9 @@ public abstract class Module implements ID, ReadWriteLockable, SingletonState
 						executable.terminate(true);
 				}
 
-				for (String command : listeners.keySet())
-					Messaging.getInstance().deregister(listeners.get(command));
+				for (Class<? extends Message> messageClass : listeners.keySet()) {
+					Modules.get(MessageCentral.class).removeListener(listeners.get(messageClass));
+				}
 
 				listeners.clear();
 

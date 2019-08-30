@@ -31,14 +31,14 @@ public class MessageCentralFactory {
 	 * @param properties Static configuration properties to use when creating
 	 * @return The newly constructed {@link MessageCentral}
 	 */
-	public MessageCentral getDefault(RuntimeProperties properties) {
+	public MessageCentral createDefault(RuntimeProperties properties) {
 		return createInjector(properties).getInstance(MessageCentral.class);
 	}
 
 	private Injector createInjector(RuntimeProperties properties) {
-	    Injector injector = Guice.createInjector(
-			new MessageCentralModule(properties),
-			new UDPTransportModule(properties)
+		Injector injector = Guice.createInjector(
+				new MessageCentralModule(properties),
+				new UDPTransportModule(properties)
 		);
 		return injector;
 	}

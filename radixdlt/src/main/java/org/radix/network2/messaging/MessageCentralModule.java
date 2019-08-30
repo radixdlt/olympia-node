@@ -1,6 +1,7 @@
 package org.radix.network2.messaging;
 
 import java.util.Objects;
+import java.util.concurrent.PriorityBlockingQueue;
 
 import org.radix.events.Events;
 import org.radix.network2.TimeSupplier;
@@ -9,6 +10,7 @@ import org.radix.properties.RuntimeProperties;
 import org.radix.time.Time;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.TypeLiteral;
 import com.radixdlt.serialization.Serialization;
 
 /**
@@ -32,6 +34,8 @@ final class MessageCentralModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		// The main target
+		bind(new TypeLiteral<EventQueueFactory<MessageEvent>>() {}).toInstance(PriorityBlockingQueue::new);
+
 		bind(MessageCentral.class).to(MessageCentralImpl.class);
 
 		// MessageCentral dependencies

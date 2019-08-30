@@ -10,7 +10,7 @@ import java.util.Map;
  * Temporary interface to seamlessly interchange new and old AtomSync
  */
 public interface AtomSyncView {
-	void receive(Atom atom);
+	void inject(Atom atom);
 
 	AtomStatus getAtomStatus(AID aid);
 

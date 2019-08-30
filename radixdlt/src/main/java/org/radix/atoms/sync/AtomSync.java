@@ -16,7 +16,6 @@ import com.radixdlt.engine.AtomEventListener;
 import com.radixdlt.middleware.SimpleRadixEngineAtom;
 import java.io.IOException;
 import java.net.SocketException;
-import java.net.URI;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -88,6 +87,7 @@ import org.radix.database.exceptions.KeyExistsDatabaseException;
 import org.radix.discovery.DiscoveryCursor;
 import org.radix.discovery.DiscoveryRequest.Action;
 import org.radix.events.Event.EventPriority;
+import org.radix.events.EventListener;
 import org.radix.events.Events;
 import org.radix.exceptions.AtomAlreadyInProcessingException;
 import org.radix.exceptions.AtomAlreadyStoredException;
@@ -99,20 +99,15 @@ import org.radix.logging.Logging;
 import org.radix.modules.Modules;
 import org.radix.modules.Service;
 import org.radix.modules.exceptions.ModuleException;
-import org.radix.network.Network;
-import org.radix.network.Protocol;
 import org.radix.network.discovery.SyncDiscovery;
-import org.radix.network.messaging.MessageProcessor;
-import org.radix.network.messaging.Messaging;
-import org.radix.network.peers.Peer;
-import org.radix.network.peers.PeerHandler;
-import org.radix.network.peers.PeerListener;
 import org.radix.network.peers.PeerTask;
-import org.radix.network.peers.PeerHandler.PeerDomain;
-import org.radix.network.peers.events.PeerDisconnectedEvent;
-import org.radix.network.peers.events.PeerEvent;
-import org.radix.network.peers.filters.PeerFilter;
-import org.radix.network.peers.filters.TCPPeerFilter;
+import org.radix.network2.messaging.MessageCentral;
+import org.radix.network2.transport.TransportException;
+import org.radix.network2.addressbook.AddressBook;
+import org.radix.network2.addressbook.AddressBookEvent;
+import org.radix.network2.addressbook.Peer;
+import org.radix.network2.addressbook.PeersRemovedEvent;
+import org.radix.network2.addressbook.StandardFilters;
 import org.radix.properties.RuntimeProperties;
 import org.radix.routing.NodeAddressGroupTable;
 
@@ -241,17 +236,14 @@ public class AtomSync extends Service
 		@Override
 		public void execute()
 		{
-			if (getPeer().getState().in(State.CONNECTED))
+			if (this.session == this.inventorySyncState.getSession())
 			{
-				if (this.session == this.inventorySyncState.getSession())
-				{
-					discoveryLog.error(this.getPeer()+ " did not respond to InventorySyncState "+this.inventorySyncState);
+				discoveryLog.error(this.getPeer()+ " did not respond to InventorySyncState "+this.inventorySyncState);
 
-					if (AtomSync.this.inventorySyncQueue.add(this.inventorySyncState) == false)
-					{
-						atomsLog.error("Could not queue InventorySyncState for "+getPeer()+" ... rescheduling");
-						Executor.getInstance().schedule(new PostponedInventoryTimeout(this.inventorySyncState, 1, TimeUnit.SECONDS));
-					}
+				if (AtomSync.this.inventorySyncQueue.add(this.inventorySyncState) == false)
+				{
+					atomsLog.error("Could not queue InventorySyncState for "+getPeer()+" ... rescheduling");
+					Executor.getInstance().schedule(new PostponedInventoryTimeout(this.inventorySyncState, 1, TimeUnit.SECONDS));
 				}
 			}
 		}
@@ -273,15 +265,12 @@ public class AtomSync extends Service
 		@Override
 		public void execute()
 		{
-			if (getPeer().getState().in(State.CONNECTED))
+			if (this.session == this.inventorySyncState.getSession())
 			{
-				if (this.session == this.inventorySyncState.getSession())
+				if (AtomSync.this.inventorySyncQueue.add(this.inventorySyncState) == false)
 				{
-					if (AtomSync.this.inventorySyncQueue.add(this.inventorySyncState) == false)
-					{
-						atomsLog.error("Could not queue InventorySyncState for "+getPeer()+" ... rescheduling");
-						Executor.getInstance().schedule(new PostponedInventoryTimeout(this.inventorySyncState, 1, TimeUnit.SECONDS));
-					}
+					atomsLog.error("Could not queue InventorySyncState for "+getPeer()+" ... rescheduling");
+					Executor.getInstance().schedule(new PostponedInventoryTimeout(this.inventorySyncState, 1, TimeUnit.SECONDS));
 				}
 			}
 		}
@@ -334,15 +323,12 @@ public class AtomSync extends Service
 		@Override
 		public void execute()
 		{
-			if (getPeer().getState().in(State.CONNECTED))
+			if (this.session == this.checksumSyncState.getSession())
 			{
-				if (this.session == this.checksumSyncState.getSession())
+				if (AtomSync.this.checksumSyncQueue.add(this.checksumSyncState) == false)
 				{
-					if (AtomSync.this.checksumSyncQueue.add(this.checksumSyncState) == false)
-					{
-						atomsLog.error("Could not queue ChecksumState for "+getPeer()+" ... rescheduling");
-						Executor.getInstance().schedule(new PostponedChecksumTimeout(this.checksumSyncState, 1, TimeUnit.SECONDS));
-					}
+					atomsLog.error("Could not queue ChecksumState for "+getPeer()+" ... rescheduling");
+					Executor.getInstance().schedule(new PostponedChecksumTimeout(this.checksumSyncState, 1, TimeUnit.SECONDS));
 				}
 			}
 		}
@@ -364,17 +350,14 @@ public class AtomSync extends Service
 		@Override
 		public void execute()
 		{
-			if (getPeer().getState().in(State.CONNECTED))
+			if (this.session == this.checksumSyncState.getSession())
 			{
-				if (this.session == this.checksumSyncState.getSession())
-				{
-					discoveryLog.error(this.getPeer()+ " did not respond to ChecksumState "+this.checksumSyncState);
+				discoveryLog.error(this.getPeer()+ " did not respond to ChecksumState "+this.checksumSyncState);
 
-					if (AtomSync.this.checksumSyncQueue.add(this.checksumSyncState) == false)
-					{
-						atomsLog.error("Could not queue ChecksumState for "+getPeer()+" ... rescheduling");
-						Executor.getInstance().schedule(new PostponedChecksumTimeout(this.checksumSyncState, 1, TimeUnit.SECONDS));
-					}
+				if (AtomSync.this.checksumSyncQueue.add(this.checksumSyncState) == false)
+				{
+					atomsLog.error("Could not queue ChecksumState for "+getPeer()+" ... rescheduling");
+					Executor.getInstance().schedule(new PostponedChecksumTimeout(this.checksumSyncState, 1, TimeUnit.SECONDS));
 				}
 			}
 		}
@@ -559,7 +542,7 @@ public class AtomSync extends Service
 		// TODO remove atomsync so we no longer need this
 		Modules.put(AtomSyncView.class, new AtomSyncView() {
 			@Override
-			public void receive(Atom atom) {
+			public void inject(Atom atom) {
 				AtomSync.this.store(atom);
 			}
 
@@ -579,337 +562,236 @@ public class AtomSync extends Service
 			}
 		});
 
-		register("atom.broadcast", new MessageProcessor<AtomBroadcastMessage>()
-		{
-			@Override
-			public void process(AtomBroadcastMessage message, Peer peer)
-			{
-				try
-				{
-					if (atomsLog.hasLevel(Logging.DEBUG))
-						atomsLog.debug("atom.broadcast for Atom "+message.getAtomHID());
+		register(AtomBroadcastMessage.class, (peer, message) -> {
+			try {
+				if (atomsLog.hasLevel(Logging.DEBUG))
+					atomsLog.debug("atom.broadcast for Atom " + message.getAtomHID());
 
-					if (AtomSync.this.committing.containsKey(message.getAtomHID()) == false &&
+				if (AtomSync.this.committing.containsKey(message.getAtomHID()) == false &&
 						AtomSync.this.deliveries.containsKey(message.getAtomHID()) == false &&
 						Modules.get(AtomStore.class).hasAtom(message.getAtomHID()) == false)
-						AtomSync.this.addInventory(new RemoteAID(message.getAtomHID(), peer));
+					AtomSync.this.addInventory(new RemoteAID(message.getAtomHID(), peer));
+			} catch (Exception ex) {
+				atomsLog.error("Processing of atom.broadcast for Atom " + message.getAtomHID() + " failed", ex);
+			}
+		});
+
+		register(AtomChecksumChunksDiscoveryRequestMessage.class, (peer, message) ->
+		{
+			Executor.getInstance().submit(new Executable() {
+				@Override
+				public void execute() {
+					try {
+						if (discoveryLog.hasLevel(Logging.DEBUG))
+							discoveryLog.debug("atom.sync.checksum.chunks.discovery.request for checksums from chunk " + message.getChunk() + " with chunk mask " + message.getChunkMask() + " from " + peer);
+
+						BArray chunkBits = new BArray(CHECKSUM_CHUNKS_BITSET_LIMIT);
+
+						int from = (message.getChunk() / CHECKSUM_CHUNKS_BITSET_LIMIT) * CHECKSUM_CHUNKS_BITSET_LIMIT;
+						for (int chunk = message.getChunk(); chunk < Math.min(message.getChunk() + AtomSync.CHECKSUM_CHUNKS_LIMIT, ShardSpace.SHARD_CHUNKS); chunk++) {
+							if (chunk == from + AtomSync.CHECKSUM_CHUNKS_BITSET_LIMIT) {
+								Modules.get(MessageCentral.class).send(peer, new AtomChecksumChunksDiscoveryResponseMessage(chunkBits, from, from + AtomSync.CHECKSUM_CHUNKS_BITSET_LIMIT));
+								from += AtomSync.CHECKSUM_CHUNKS_BITSET_LIMIT;
+								chunkBits.clear();
+							}
+
+							long checksum = Modules.get(ShardChecksumStore.class).getChecksum(chunk, peer.getSystem().getShards().getRange());
+							if ((checksum & (1 << message.getChunkMask())) != 0)
+								chunkBits.set(chunk - from);
+						}
+
+						Modules.get(MessageCentral.class).send(peer, new AtomChecksumChunksDiscoveryResponseMessage(chunkBits, from, from + AtomSync.CHECKSUM_CHUNKS_BITSET_LIMIT));
+					} catch (Exception ex) {
+						discoveryLog.error("Processing of atom.sync.checksum.chunks.discovery.request from " + peer + " failed", ex);
+					}
 				}
-				catch (Exception ex)
-				{
-					atomsLog.error("Processing of atom.broadcast for Atom "+message.getAtomHID()+" failed", ex);
+			});
+		});
+
+		register(AtomChecksumChunksDiscoveryResponseMessage.class, (peer, message) ->
+		{
+			Executor.getInstance().submit(new Executable() {
+				@Override
+				public void execute() {
+					try {
+						if (discoveryLog.hasLevel(Logging.DEBUG))
+							discoveryLog.debug("atom.sync.checksum.chunks.discovery.response for checksum chunks " + message.getFrom() + " -> " + message.getTo() + " from " + peer);
+
+						synchronized (AtomSync.this.checksumSyncStates) {
+							ChecksumSyncState checksumSyncState = AtomSync.this.checksumSyncStates.get(peer);
+
+							if (checksumSyncState == null)
+								throw new SocketException("Can not process atom.sync.checksum.chunks.discovery.response " + peer + " is gone");
+
+							checksumSyncState.setChunkBits(message.getChunkBits(), message.getFrom(), message.getTo());
+						}
+					} catch (Exception ex) {
+						discoveryLog.error("Processing of atom.sync.checksum.chunks.discovery.response from " + peer + " failed", ex);
+					}
 				}
-			}
+			});
 		});
 
-		register("atom.sync.checksum.chunks.discovery.request", new MessageProcessor<AtomChecksumChunksDiscoveryRequestMessage>()
+		register(AtomChecksumDiscoveryRequestMessage.class, (peer, message) ->
 		{
-			@Override
-			public void process(AtomChecksumChunksDiscoveryRequestMessage message, Peer peer)
-			{
-				Executor.getInstance().submit(new Executable()
-				{
-					@Override
-					public void execute()
-					{
-						try
-						{
-							if (discoveryLog.hasLevel(Logging.DEBUG))
-								discoveryLog.debug("atom.sync.checksum.chunks.discovery.request for checksums from chunk "+message.getChunk()+" with chunk mask "+message.getChunkMask()+" from "+peer);
+			Executor.getInstance().submit(new Executable() {
+				@Override
+				public void execute() {
+					try {
+						if (discoveryLog.hasLevel(Logging.DEBUG))
+							discoveryLog.debug("atom.sync.checksum.delivery.request for inventory for shard chunk " + message.getIndex() + " and range " + message.getRange() + " from " + peer);
 
-							BArray chunkBits = new BArray(CHECKSUM_CHUNKS_BITSET_LIMIT);
-
-							int from = (message.getChunk() / CHECKSUM_CHUNKS_BITSET_LIMIT) * CHECKSUM_CHUNKS_BITSET_LIMIT;
-							for (int chunk = message.getChunk() ; chunk < Math.min(message.getChunk() + AtomSync.CHECKSUM_CHUNKS_LIMIT, ShardSpace.SHARD_CHUNKS) ; chunk++)
-							{
-								if (chunk == from + AtomSync.CHECKSUM_CHUNKS_BITSET_LIMIT)
-								{
-									Messaging.getInstance().send(new AtomChecksumChunksDiscoveryResponseMessage(chunkBits, from, from + AtomSync.CHECKSUM_CHUNKS_BITSET_LIMIT), peer);
-									from += AtomSync.CHECKSUM_CHUNKS_BITSET_LIMIT;
-									chunkBits.clear();
-								}
-
-								long checksum = Modules.get(ShardChecksumStore.class).getChecksum(chunk, peer.getSystem().getShards().getRange());
-								if ((checksum & (1 << message.getChunkMask())) != 0)
-									chunkBits.set(chunk - from);
-							}
-
-							Messaging.getInstance().send(new AtomChecksumChunksDiscoveryResponseMessage(chunkBits, from, from + AtomSync.CHECKSUM_CHUNKS_BITSET_LIMIT), peer);
-						}
-						catch (Exception ex)
-						{
-							discoveryLog.error("Processing of atom.sync.checksum.chunks.discovery.request from "+peer+" failed", ex);
-						}
-					}
-				});
-			}
-		});
-
-		register("atom.sync.checksum.chunks.discovery.response", new MessageProcessor<AtomChecksumChunksDiscoveryResponseMessage>()
-		{
-			@Override
-			public void process(AtomChecksumChunksDiscoveryResponseMessage message, Peer peer)
-			{
-				Executor.getInstance().submit(new Executable()
-				{
-					@Override
-					public void execute()
-					{
-						try
-						{
-							if (discoveryLog.hasLevel(Logging.DEBUG))
-								discoveryLog.debug("atom.sync.checksum.chunks.discovery.response for checksum chunks "+message.getFrom()+" -> "+message.getTo()+" from "+peer);
-
-							synchronized(AtomSync.this.checksumSyncStates)
-							{
-								ChecksumSyncState checksumSyncState = AtomSync.this.checksumSyncStates.get(peer);
-
-								if (checksumSyncState == null)
-									throw new SocketException("Can not process atom.sync.checksum.chunks.discovery.response "+peer+" is gone");
-
-								checksumSyncState.setChunkBits(message.getChunkBits(), message.getFrom(), message.getTo());
+						Set<AID> atoms = Modules.get(AtomStore.class).getByShardChunkAndRange(message.getIndex(), message.getRange());
+						if (!atoms.isEmpty()) {
+							for (List<AID> fragmentAtoms : Iterables.partition(atoms, MAX_ATOMS_PER_CHECKSUM_DISCOVERY_RESPONSE)) {
+								Modules.get(MessageCentral.class).send(peer, new AtomChecksumDiscoveryResponseMessage(fragmentAtoms));
 							}
 						}
-						catch (Exception ex)
-						{
-							discoveryLog.error("Processing of atom.sync.checksum.chunks.discovery.response from "+peer+" failed", ex);
-						}
+
+						if (discoveryLog.hasLevel(Logging.DEBUG))
+							discoveryLog.debug("atom.sync.checksum.delivery.request collected " + atoms.size() + " inventory objects for shard chunk " + message.getIndex() + " and range " + message.getRange() + " for " + peer);
+					} catch (Exception ex) {
+						discoveryLog.error("Processing of atom.sync.checksum.discovery.request from " + peer + " failed", ex);
 					}
-				});
-			}
+				}
+			});
+
 		});
 
-		register("atom.sync.checksum.discovery.request", new MessageProcessor<AtomChecksumDiscoveryRequestMessage>()
-		{
-			@Override
-			public void process(AtomChecksumDiscoveryRequestMessage message, Peer peer)
-			{
-				Executor.getInstance().submit(new Executable()
-				{
+		register(AtomChecksumDiscoveryResponseMessage.class, (peer, message) ->
+				Executor.getInstance().submit(new Executable() {
 					@Override
-					public void execute()
-					{
-						try
-						{
+					public void execute() {
+						try {
 							if (discoveryLog.hasLevel(Logging.DEBUG))
-								discoveryLog.debug("atom.sync.checksum.delivery.request for inventory for shard chunk "+message.getIndex()+" and range "+message.getRange()+" from "+peer);
+								discoveryLog.debug("atom.sync.checksum.discovery.response " + message.getObjects().size() + " checksum objects from " + peer);
 
-							Set<AID> atoms = Modules.get(AtomStore.class).getByShardChunkAndRange(message.getIndex(), message.getRange());
-							if (!atoms.isEmpty()) {
-								for (List<AID> fragmentAtoms : Iterables.partition(atoms, MAX_ATOMS_PER_CHECKSUM_DISCOVERY_RESPONSE)) {
-									Messaging.getInstance().send(new AtomChecksumDiscoveryResponseMessage(fragmentAtoms), peer);
-								}
-							}
-
-							if (discoveryLog.hasLevel(Logging.DEBUG))
-								discoveryLog.debug("atom.sync.checksum.delivery.request collected "+atoms.size()+" inventory objects for shard chunk "+message.getIndex()+" and range "+message.getRange()+" for "+peer);
-						}
-						catch (Exception ex)
-						{
-							discoveryLog.error("Processing of atom.sync.checksum.discovery.request from "+peer+" failed", ex);
-						}
-					}
-				});
-			}
-		});
-
-		register("atom.sync.checksum.discovery.response", new MessageProcessor<AtomChecksumDiscoveryResponseMessage>()
-		{
-			@Override
-			public void process(AtomChecksumDiscoveryResponseMessage message, Peer peer)
-			{
-				Executor.getInstance().submit(new Executable()
-				{
-					@Override
-					public void execute()
-					{
-						try
-						{
-							if (discoveryLog.hasLevel(Logging.DEBUG))
-								discoveryLog.debug("atom.sync.checksum.discovery.response "+message.getObjects().size()+" checksum objects from "+peer);
-
-							if (message.getObjects().isEmpty() == false)
-							{
-								for (AID object : message.getObjects())
-								{
+							if (message.getObjects().isEmpty() == false) {
+								for (AID object : message.getObjects()) {
 									if (AtomSync.this.committing.containsKey(object) == false &&
-										AtomSync.this.deliveries.containsKey(object) == false &&
-										Modules.get(AtomStore.class).hasAtom(object) == false)
+											AtomSync.this.deliveries.containsKey(object) == false &&
+											Modules.get(AtomStore.class).hasAtom(object) == false)
 										AtomSync.this.addInventory(new RemoteAID(object, peer));
 								}
 							}
-						}
-						catch (Exception ex)
-						{
-							discoveryLog.error("Processing of atom.sync.checksum.delivery.response from "+peer+" failed", ex);
+						} catch (Exception ex) {
+							discoveryLog.error("Processing of atom.sync.checksum.delivery.response from " + peer + " failed", ex);
 						}
 					}
-				});
-			}
-		});
+				})
+		);
 
-		register("atom.sync.inventory.request", new MessageProcessor<AtomSyncInventoryRequestMessage>()
-		{
-			@Override
-			public void process(AtomSyncInventoryRequestMessage message, Peer peer)
-			{
-				Executor.getInstance().submit(new Executable()
-				{
+		register(AtomSyncInventoryRequestMessage.class, (peer, message) ->
+				Executor.getInstance().submit(new Executable() {
 					@Override
-					public void execute()
-					{
+					public void execute() {
 						long start = SystemProfiler.getInstance().begin();
 
-						try
-						{
+						try {
 							AtomDiscoveryRequest atomDiscoveryRequest = new AtomDiscoveryRequest(Action.DISCOVER);
 							atomDiscoveryRequest.setLimit((short) 64);
 							atomDiscoveryRequest.setCursor(message.getCursor());
 							atomDiscoveryRequest.setShards(message.getShards());
 							Modules.get(AtomSyncStore.class).discovery(atomDiscoveryRequest);
 
-							Messaging.getInstance().send(new AtomSyncInventoryResponseMessage(atomDiscoveryRequest.getInventory(), atomDiscoveryRequest.getCursor()), peer);
+							Modules.get(MessageCentral.class).send(peer, new AtomSyncInventoryResponseMessage(atomDiscoveryRequest.getInventory(), atomDiscoveryRequest.getCursor()));
 							if (discoveryLog.hasLevel(Logging.DEBUG))
-								discoveryLog.debug("Sent atom.sync.inventory.response "+message+" to "+peer);
-						}
-						catch (Exception ex)
-						{
-							atomsLog.error("Processing of atom.sync.inventory.request "+message+" from "+peer+" failed", ex);
-						}
-						finally
-						{
+								discoveryLog.debug("Sent atom.sync.inventory.response " + message + " to " + peer);
+						} catch (Exception ex) {
+							atomsLog.error("Processing of atom.sync.inventory.request " + message + " from " + peer + " failed", ex);
+						} finally {
 							Modules.ifAvailable(SystemProfiler.class, a -> a.increment("ATOM_SYNC:INVENTORY_REQUEST_TASK", start));
 						}
 					}
-				});
-			}
-		});
+				})
+		);
 
-		register("atom.sync.inventory.response", new MessageProcessor<AtomSyncInventoryResponseMessage>()
-		{
-			@Override
-			public void process(AtomSyncInventoryResponseMessage message, Peer peer)
-			{
-				Executor.getInstance().submit(new Executable()
-				{
+		register(AtomSyncInventoryResponseMessage.class, (peer, message) ->
+				Executor.getInstance().submit(new Executable() {
 					@Override
-					public void execute()
-					{
+					public void execute() {
 						long start = SystemProfiler.getInstance().begin();
-
-						try
-						{
-							if (message.getInventory().isEmpty() == false)
-							{
+						try {
+							if (message.getInventory().isEmpty() == false) {
 								for (AID object : message.getInventory())
 									if (AtomSync.this.committing.containsKey(object) == false &&
-										AtomSync.this.deliveries.containsKey(object) == false &&
-										Modules.get(AtomStore.class).hasAtom(object) == false)
+											AtomSync.this.deliveries.containsKey(object) == false &&
+											Modules.get(AtomStore.class).hasAtom(object) == false)
 										addInventory(new RemoteAID(object, peer));
 							}
 
-							synchronized(AtomSync.this.inventorySyncStates)
-							{
+							synchronized (AtomSync.this.inventorySyncStates) {
 								InventorySyncState inventorySyncState = AtomSync.this.inventorySyncStates.get(peer);
 								inventorySyncState.setState(new State(State.DISCOVERED));
 								inventorySyncState.setCursor(message.getCursor());
 								AtomSync.this.inventorySyncQueue.add(inventorySyncState);
 							}
-						}
-						catch (Exception ex)
-						{
-							atomsLog.error("Processing of atom.sync.inventory.response "+message+" from "+peer+" failed", ex);
-						}
-						finally
-						{
+						} catch (Exception ex) {
+							atomsLog.error("Processing of atom.sync.inventory.response " + message + " from " + peer + " failed", ex);
+						} finally {
 							Modules.ifAvailable(SystemProfiler.class, a -> a.increment("ATOM_SYNC:INVENTORY_RESPONSE_TASK", start));
 						}
 					}
-				});
-			}
-		});
+				})
+		);
 
-		register("atom.sync.delivery.request", new MessageProcessor<AtomSyncDeliveryRequestMessage>()
-		{
-			@Override
-			public void process(AtomSyncDeliveryRequestMessage message, Peer peer)
-			{
-				Executor.getInstance().submit(new Executable()
-				{
+		register(AtomSyncDeliveryRequestMessage.class, (peer, message) ->
+				Executor.getInstance().submit(new Executable() {
 					@Override
-					public void execute()
-					{
+					public void execute() {
 						long start = SystemProfiler.getInstance().begin();
 
-						try
-						{
+						try {
 							Collection<Atom> atoms = Modules.get(AtomStore.class).getAtoms(message.getInventory());
 							if (atoms != null) {
-								for (Atom atom : atoms)
-								{
-									if (Modules.get(RuntimeProperties.class).get("debug.atoms.sync.delivery_error", 0.0d) <= ThreadLocalRandom.current().nextDouble())
-									{
+								for (Atom atom : atoms) {
+									if (Modules.get(RuntimeProperties.class).get("debug.atoms.sync.delivery_error", 0.0d) <= ThreadLocalRandom.current().nextDouble()) {
 										byte[] atomBytes = Modules.get(Serialization.class).toDson(atom, Output.WIRE);
 										int numFragments = (atomBytes.length + FRAGMENT_SIZE - 1) / FRAGMENT_SIZE;
 
 										if (numFragments > FRAGMENT_COUNT_THRESHOLD && atomsLog.hasLevel(Logging.DEBUG)) {
-											atomsLog.debug("Discovered large atom "+atom.getAID()+" "+atomBytes.length+" bytes");
+											atomsLog.debug("Discovered large atom " + atom.getAID() + " " + atomBytes.length + " bytes");
 										}
 
-										for (int fragment = 0 ; fragment < numFragments ; fragment++) {
+										for (int fragment = 0; fragment < numFragments; fragment++) {
 											final int fragmentOffset = fragment * FRAGMENT_SIZE;
 											final int fragmentUpperBound = Math.min(atomBytes.length, fragmentOffset + FRAGMENT_SIZE);
 											byte[] fragmentBytes = Arrays.copyOfRange(atomBytes, fragmentOffset, fragmentUpperBound);
-											Messaging.getInstance().send(new AtomSyncDeliveryResponseMessage(atom.getAID(), fragmentBytes, fragment, numFragments), peer);
+											Modules.get(MessageCentral.class).send(peer, new AtomSyncDeliveryResponseMessage(atom.getAID(), fragmentBytes, fragment, numFragments));
 										}
 									}
 								}
 
 								if (discoveryLog.hasLevel(Logging.DEBUG))
-									discoveryLog.debug("atom.sync.delivery.request collected "+atoms.size()+" atoms to send to "+peer);
+									discoveryLog.debug("atom.sync.delivery.request collected " + atoms.size() + " atoms to send to " + peer);
 							}
-						}
-						catch (Exception ex)
-						{
-							atomsLog.error("Processing of atom.sync.delivery.request "+message+" from "+peer+" failed", ex);
-						}
-						finally
-						{
+						} catch (Exception ex) {
+							atomsLog.error("Processing of atom.sync.delivery.request " + message + " from " + peer + " failed", ex);
+						} finally {
 							Modules.ifAvailable(SystemProfiler.class, a -> a.increment("ATOM_SYNC:DELIVERY_REQUEST_TASK", start));
 						}
 					}
-				});
-			}
-		});
+				})
+		);
 
-		register("atom.sync.delivery.response", new MessageProcessor<AtomSyncDeliveryResponseMessage>()
-		{
-			@Override
-			public void process(AtomSyncDeliveryResponseMessage message, Peer peer)
-			{
-				Executor.getInstance().submit(new Executable()
-				{
+		register(AtomSyncDeliveryResponseMessage.class, (peer, message) ->
+				Executor.getInstance().submit(new Executable() {
 					@Override
-					public void execute()
-					{
+					public void execute() {
 						long start = SystemProfiler.getInstance().begin();
 
-						try
-						{
+						try {
 							if (discoveryLog.hasLevel(Logging.DEBUG))
-								discoveryLog.debug("atom.delivery.response "+message+" from "+peer);
+								discoveryLog.debug("atom.delivery.response " + message + " from " + peer);
 
 							Atom atom = processFragment(message);
 							if (atom != null) {
 								AtomSync.this.removeDelivery(atom.getAID());
 								queue(atom);
 							}
-						}
-						catch (Throwable ex)
-						{
-							atomsLog.error("Processing of atom.delivery.response "+message+" from "+peer+" failed", ex);
-						}
-						finally
-						{
+						} catch (Throwable ex) {
+							atomsLog.error("Processing of atom.delivery.response " + message + " from " + peer + " failed", ex);
+						} finally {
 							Modules.ifAvailable(SystemProfiler.class, a -> a.increment("ATOM_SYNC:DELIVERY_RESPONSE_TASK", start));
 						}
 					}
@@ -920,7 +802,7 @@ public class AtomSync extends Service
 						} else {
 							TreeSet<AtomSyncDeliveryResponseMessage> fragments = AtomSync.this.deliveryFragments.computeIfAbsent(message.getAtom(), k -> new TreeSet<>(FRAGMENT_ORDER_COMPARATOR));
 
-							synchronized(fragments) {
+							synchronized (fragments) {
 								fragments.add(message);
 								if (fragments.size() == message.getFragments()) {
 									int atomBytesSize = 0;
@@ -936,7 +818,7 @@ public class AtomSync extends Service
 									}
 
 									if (message.getFragments() > FRAGMENT_COUNT_THRESHOLD && atomsLog.hasLevel(Logging.DEBUG))
-										atomsLog.debug("Reconstructing large atom "+message.getAtom()+" "+atomBytesSize+" bytes");
+										atomsLog.debug("Reconstructing large atom " + message.getAtom() + " " + atomBytesSize + " bytes");
 
 									return Modules.get(Serialization.class).fromDson(atomBytes, Atom.class);
 								}
@@ -944,30 +826,21 @@ public class AtomSync extends Service
 						}
 						return null;
 					}
-				});
+				})
+		);
+
+		register(AtomSubmitMessage.class, (peer, message) -> {
+			try {
+				if (atomsLog.hasLevel(Logging.DEBUG))
+					atomsLog.debug("atom.submit " + message.getAtom() + " from " + peer);
+
+				store(message.getAtom());
+			} catch (Throwable ex) {
+				atomsLog.error("Processing of atom.submit " + message.getAtom() + " from " + peer + " failed", ex);
 			}
 		});
 
-		register("atom.submit", new MessageProcessor<AtomSubmitMessage>()
-		{
-			@Override
-			public void process(AtomSubmitMessage message, Peer peer)
-			{
-				try
-				{
-					if (atomsLog.hasLevel(Logging.DEBUG))
-						atomsLog.debug("atom.submit "+message.getAtom()+" from "+peer);
-
-					store(message.getAtom());
-				}
-				catch (Throwable ex)
-				{
-					atomsLog.error("Processing of atom.submit "+message.getAtom()+" from "+peer+" failed", ex);
-				}
-			}
-		});
-
-		Events.getInstance().register(PeerEvent.class, this.peerListener);
+		Events.getInstance().register(AddressBookEvent.class, this.addressBookListener);
 		Events.getInstance().register(AtomEvent.class, this.atomListener);
 		Events.getInstance().register(ParticleEvent.class, this.particleListener);
 		Events.getInstance().register(AtomExceptionEvent.class, this.exceptionListener);
@@ -1000,7 +873,11 @@ public class AtomSync extends Service
 						if (temporalVertex.getEdges().isEmpty())
 							continue;
 
-						List<Peer> broadcastPeers = Modules.get(PeerHandler.class).getPeers(PeerDomain.NETWORK, temporalVertex.getEdges(), null, null);
+						Set<EUID> nids = temporalVertex.getEdges();
+						List<Peer> broadcastPeers = Modules.get(AddressBook.class).recentPeers()
+							.filter(p -> p.hasNID() && nids.contains(p.getNID()))
+							.collect(Collectors.toList());
+
 						if (atomsLog.hasLevel(Logging.DEBUG))
 							atomsLog.debug("Broadcasting Atom "+atom.getHID()+" to "+broadcastPeers.size()+" broadcast peers "+broadcastPeers);
 
@@ -1008,10 +885,9 @@ public class AtomSync extends Service
 						{
 							try
 							{
-								broadcastPeer = Network.getInstance().connect(broadcastPeer.getURI(), Protocol.UDP);
-								Messaging.getInstance().send(new AtomBroadcastMessage(atom.getAID()), broadcastPeer);
+								Modules.get(MessageCentral.class).send(broadcastPeer, new AtomBroadcastMessage(atom.getAID()));
 							}
-							catch (IOException ioex)
+							catch (TransportException ioex)
 							{
 								atomsLog.error("Failed to broadcast Atom "+atom+" to "+broadcastPeer, ioex);
 							}
@@ -1041,26 +917,25 @@ public class AtomSync extends Service
 				while (!isTerminated())
 				{
 					// TODO needs optimising, will be super slow with larger networks
-					for (Peer peer : Network.getInstance().get(Protocol.UDP, State.CONNECTED))
-					{
+					Modules.get(AddressBook.class).recentPeers().forEachOrdered(peer -> {
+						final boolean inSyncPeers;
 						synchronized(AtomSync.this.syncPeers)
 						{
-							if (AtomSync.this.syncPeers.contains(peer) == false)
-								continue;
+							inSyncPeers = AtomSync.this.syncPeers.contains(peer);
 						}
 
-						synchronized(AtomSync.this.checksumSyncStates)
-						{
-							ChecksumSyncState checksumSyncState = AtomSync.this.checksumSyncStates.get(peer);
+						if (inSyncPeers) {
+							synchronized(AtomSync.this.checksumSyncStates) {
+								ChecksumSyncState checksumSyncState = AtomSync.this.checksumSyncStates.get(peer);
 
-							if (checksumSyncState == null)
-							{
-								checksumSyncState = new ChecksumSyncState(peer, LocalSystem.getInstance().getShards(), (int) (System.nanoTime() % ShardSpace.SHARD_CHUNKS));
-								AtomSync.this.checksumSyncStates.put(peer, checksumSyncState);
-								AtomSync.this.checksumSyncQueue.add(checksumSyncState);
+								if (checksumSyncState == null) {
+									checksumSyncState = new ChecksumSyncState(peer, LocalSystem.getInstance().getShards(), (int) (System.nanoTime() % ShardSpace.SHARD_CHUNKS));
+									AtomSync.this.checksumSyncStates.put(peer, checksumSyncState);
+									AtomSync.this.checksumSyncQueue.add(checksumSyncState);
+								}
 							}
 						}
-					}
+					});
 
 					ChecksumSyncState checksumState = null;
 
@@ -1122,7 +997,7 @@ public class AtomSync extends Service
 								discoveryLog.debug("Initiating checksum discovery for "+checksumState.getPeer());
 							checksumState.setState(new State(State.DISCOVERING));
 							AtomChecksumChunksDiscoveryRequestMessage m = new AtomChecksumChunksDiscoveryRequestMessage(checksumState.getChunk(), checksumState.getChunkMask());
-							Messaging.getInstance().send(m, checksumState.getPeer());
+							Modules.get(MessageCentral.class).send(checksumState.getPeer(), m);
 							Executor.getInstance().schedule(new PostponedChecksumTimeout(checksumState, 10, TimeUnit.SECONDS));
 						}
 						else if (checksumState.getState().in(State.DISCOVERING))
@@ -1135,7 +1010,7 @@ public class AtomSync extends Service
 									if (discoveryLog.hasLevel(Logging.DEBUG))
 										discoveryLog.debug("Checksum discovery request of "+chunk+":"+checksumState.getShards().getRange()+" from "+checksumState.getPeer());
 									AtomChecksumDiscoveryRequestMessage m = new AtomChecksumDiscoveryRequestMessage(chunk, checksumState.getShards().getRange());
-									Messaging.getInstance().send(m, checksumState.getPeer());
+									Modules.get(MessageCentral.class).send(checksumState.getPeer(), m);
 								}
 							}
 
@@ -1155,7 +1030,7 @@ public class AtomSync extends Service
 							else
 							{
 								AtomChecksumChunksDiscoveryRequestMessage m = new AtomChecksumChunksDiscoveryRequestMessage(checksumState.getChunk(), checksumState.getChunkMask());
-								Messaging.getInstance().send(m, checksumState.getPeer());
+								Modules.get(MessageCentral.class).send(checksumState.getPeer(), m);
 								checksumState.setState(new State(State.DISCOVERING));
 								Executor.getInstance().schedule(new PostponedChecksumTimeout(checksumState, 10, TimeUnit.SECONDS));
 							}
@@ -1192,41 +1067,37 @@ public class AtomSync extends Service
 				while (!isTerminated())
 				{
 					// TODO needs optimising, will be super slow with larger networks
-					for (Peer peer : Network.getInstance().get(Protocol.UDP, State.CONNECTED))
-					{
+					Modules.get(AddressBook.class).recentPeers().forEachOrdered(peer -> {
+						final boolean inSyncPeers;
 						synchronized(AtomSync.this.syncPeers)
 						{
-							if (AtomSync.this.syncPeers.contains(peer) == false)
-								continue;
+							inSyncPeers = AtomSync.this.syncPeers.contains(peer);
 						}
 
-						synchronized(AtomSync.this.inventorySyncStates)
-						{
-							InventorySyncState inventorySyncState = AtomSync.this.inventorySyncStates.get(peer);
+						if (inSyncPeers) {
+							synchronized(AtomSync.this.inventorySyncStates) {
+								InventorySyncState inventorySyncState = AtomSync.this.inventorySyncStates.get(peer);
 
-							if (inventorySyncState == null)
-							{
-								try
-								{
-									// Fetch any historic inventory cursor from the AtomSyncStore.
-									DiscoveryCursor inventoryCursor = Modules.get(AtomSyncStore.class).getSyncState(peer.getSystem().getNID());
+								if (inventorySyncState == null) {
+									try {
+										// Fetch any historic inventory cursor from the AtomSyncStore.
+										DiscoveryCursor inventoryCursor = Modules.get(AtomSyncStore.class).getSyncState(peer.getNID());
 
-									// Check the form of the inventory cursor against the peer's system information it provided
-									// Reset the cursor if a discrepancy is found
-									if (inventoryCursor.getPosition() > (peer.getSystem().getClock().get() + 1))
-										inventoryCursor.setPosition(0l);
+										// Check the form of the inventory cursor against the peer's system information it provided
+										// Reset the cursor if a discrepancy is found
+										if (inventoryCursor.getPosition() > (peer.getSystem().getClock().get() + 1))
+											inventoryCursor.setPosition(0l);
 
-									inventorySyncState = new InventorySyncState(peer, inventoryCursor);
-									AtomSync.this.inventorySyncStates.put(peer, inventorySyncState);
-									AtomSync.this.inventorySyncQueue.add(inventorySyncState);
-								}
-								catch (DatabaseException dbex)
-								{
-									discoveryLog.error("Can not retreive InventorySyncState from AtomSyncStore for "+peer, dbex);
+										inventorySyncState = new InventorySyncState(peer, inventoryCursor);
+										AtomSync.this.inventorySyncStates.put(peer, inventorySyncState);
+										AtomSync.this.inventorySyncQueue.add(inventorySyncState);
+									} catch (DatabaseException dbex) {
+										discoveryLog.error("Can not retreive InventorySyncState from AtomSyncStore for "+peer, dbex);
+									}
 								}
 							}
 						}
-					}
+					});
 
 					InventorySyncState inventorySyncState = null;
 
@@ -1287,7 +1158,7 @@ public class AtomSync extends Service
 						{
 							if (discoveryLog.hasLevel(Logging.DEBUG))
 								discoveryLog.debug("Inventory discovery from "+inventorySyncState.getPeer()+" at cursor position "+inventorySyncState.getCursor().getPosition());
-							Messaging.getInstance().send(new AtomSyncInventoryRequestMessage(LocalSystem.getInstance().getShards(), inventorySyncState.getCursor()), inventorySyncState.getPeer());
+							Modules.get(MessageCentral.class).send(inventorySyncState.getPeer(), new AtomSyncInventoryRequestMessage(LocalSystem.getInstance().getShards(), inventorySyncState.getCursor()));
 							AtomSync.this.schedule(new InventoryTimeout(inventorySyncState, 10, TimeUnit.SECONDS));
 							if (discoveryLog.hasLevel(Logging.DEBUG))
 								discoveryLog.debug("Sent atom.sync.discovery.request for shards "+LocalSystem.getInstance().getShards()+" at cursor "+inventorySyncState.getCursor()+" to "+inventorySyncState.getPeer());
@@ -1309,7 +1180,7 @@ public class AtomSync extends Service
 									discoveryLog.debug("Delaying next inventory for "+inventorySyncState.getPeer()+" for "+inventorySyncState.getDelay());
 							}
 
-							Modules.get(AtomSyncStore.class).storeSyncState(inventorySyncState.getPeer().getSystem().getNID(), inventorySyncState.getCursor());
+							Modules.get(AtomSyncStore.class).storeSyncState(inventorySyncState.getPeer().getNID(), inventorySyncState.getCursor());
 						}
 						else
 						{
@@ -1354,9 +1225,6 @@ public class AtomSync extends Service
 						if ((remoteAID = AtomSync.this.inventories.poll(1, TimeUnit.SECONDS)) == null)
 							continue;
 
-						if (remoteAID.getPeer().getState().getDefinition().equals(State.CONNECTED) == false)
-							continue;
-
 						Peer peer = remoteAID.getPeer();
 						Set<AID> deliveryInventory = new HashSet<>();
 
@@ -1392,7 +1260,7 @@ public class AtomSync extends Service
 							if (deliveryInventory.isEmpty() == false)
 							{
 								deliveryRequest.setInventory(deliveryInventory);
-								Messaging.getInstance().send(new AtomSyncDeliveryRequestMessage(deliveryInventory), peer);
+								Modules.get(MessageCentral.class).send(peer, new AtomSyncDeliveryRequestMessage(deliveryInventory));
 								AtomSync.this.schedule(new DeliveryTimeout(peer, deliveryInventory, 10, TimeUnit.SECONDS));
 								if (discoveryLog.hasLevel(Logging.DEBUG))
 									discoveryLog.debug("atom.delivery.request "+deliveryRequest+" to "+peer);
@@ -1471,25 +1339,18 @@ public class AtomSync extends Service
 			public void execute()
 			{
 				// Get our preferred neighbour nodes to open TCP connections too
-				Collection<URI> discovered = SyncDiscovery.getInstance().discover(new TCPPeerFilter());
+				Collection<Peer> discovered = SyncDiscovery.getInstance()
+					.discover(StandardFilters.standardFilter().and(StandardFilters.hasOverlappingShards()));
 
 				synchronized(AtomSync.this.syncPeers)
 				{
 					AtomSync.this.syncPeers.clear();
 
-					for (URI uri : discovered)
+					for (Peer peer : discovered)
 					{
-						try
-						{
-							if (discoveryLog.hasLevel(Logging.DEBUG))
-								discoveryLog.debug("Discovered sync peer "+uri);
-							Peer syncPeer = Network.getInstance().connect(uri, Protocol.UDP);
-							AtomSync.this.syncPeers.add(syncPeer);
-						}
-						catch (Exception ex)
-						{
-							discoveryLog.error("Could not connect to sync peer "+uri, ex);
-						}
+						if (discoveryLog.hasLevel(Logging.DEBUG))
+							discoveryLog.debug("Discovered sync peer "+peer);
+						AtomSync.this.syncPeers.add(peer);
 					}
 				}
 			}
@@ -1578,7 +1439,7 @@ public class AtomSync extends Service
 		Events.getInstance().deregister(ExceptionEvent.class, this.exceptionListener);
 		Events.getInstance().deregister(ParticleEvent.class, this.particleListener);
 		Events.getInstance().deregister(AtomEvent.class, this.atomListener);
-		Events.getInstance().deregister(PeerEvent.class, this.peerListener);
+		Events.getInstance().deregister(AddressBookEvent.class, this.addressBookListener);
 	}
 
 	@Override
@@ -1629,7 +1490,7 @@ public class AtomSync extends Service
 				}
 			}
 
-			syncMetaData.put(syncPeer.getSystem().getNID().toString(), syncPeerMetaData);
+			syncMetaData.put(syncPeer.getNID().toString(), syncPeerMetaData);
 		}
 
 		metadata.put("sync", syncMetaData);
@@ -1751,15 +1612,16 @@ public class AtomSync extends Service
 			NodeAddressGroupTable nodeGroupTable = null;
 			Set<EUID> filteredNIDs = new HashSet<>();
 
-			if (Modules.isAvailable(PeerHandler.class) == true)
+			if (Modules.isAvailable(AddressBook.class) == true)
 			{
 				// FIXME If PeerHandler is not available yet, causes a real mess when genesis atoms are committed.
 				// Filter out the live peers with shards we need that are within sync bounds
-				filteredNIDs.addAll(Modules.get(PeerHandler.class).getPeers(PeerDomain.NETWORK, PeerFilter.getInstance()).stream().
+				filteredNIDs.addAll(Modules.get(AddressBook.class).recentPeers().
+													 filter(Peer::hasSystem).
 													 filter(peer -> peer.getSystem().isSynced(LocalSystem.getInstance()) == true). 					// Gossip to nodes that are in sync TODO isAhead is better?
 													 filter(peer -> peer.getSystem().getShards().intersects(atom.getShards()) == true). 			// Gossip to nodes that serve the atom shards
-													 filter(peer -> peer.getSystem().getNID().equals(LocalSystem.getInstance().getNID()) == false).	// Don't gossip to the local node
-													 map(peer -> peer.getSystem().getNID()).
+													 map(Peer::getNID).
+													 filter(nid -> nid.equals(LocalSystem.getInstance().getNID()) == false).	// Don't gossip to the local node
 													 collect(Collectors.toSet()));
 			}
 
@@ -2088,28 +1950,22 @@ public class AtomSync extends Service
 		}
 	};
 
-	// PEER LISTENER //
-	private PeerListener peerListener = new PeerListener()
-	{
-		@Override
-		public void process(PeerEvent event)
-		{
-			if (event instanceof PeerDisconnectedEvent)
+	// AddressBook Listener //
+	private EventListener<AddressBookEvent> addressBookListener = event -> {
+		if (event instanceof PeersRemovedEvent) {
+			synchronized(AtomSync.this.syncPeers)
 			{
-				synchronized(AtomSync.this.syncPeers)
-				{
-					AtomSync.this.syncPeers.remove(event.getPeer());
-				}
+				AtomSync.this.syncPeers.removeAll(event.peers());
+			}
 
-				synchronized(AtomSync.this.inventorySyncStates)
-				{
-					AtomSync.this.inventorySyncStates.remove(event.getPeer());
-				}
+			synchronized(AtomSync.this.inventorySyncStates)
+			{
+				AtomSync.this.inventorySyncStates.keySet().removeAll(event.peers());
+			}
 
-				synchronized(AtomSync.this.checksumSyncStates)
-				{
-					AtomSync.this.checksumSyncStates.remove(event.getPeer());
-				}
+			synchronized(AtomSync.this.checksumSyncStates)
+			{
+				AtomSync.this.checksumSyncStates.keySet().removeAll(event.peers());
 			}
 		}
 	};

@@ -7,6 +7,7 @@ import java.util.function.Supplier;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSortedMap;
 
 /**
  * Class that implements {@link TransportMetadata} and provides
@@ -16,7 +17,7 @@ import com.google.common.collect.ImmutableMap;
 public final class DynamicTransportMetadata implements TransportMetadata {
 	private static final Supplier<String> NULL_SUPPLIER = () -> null;
 
-	private final ImmutableMap<String, Supplier<String>> metadata;
+	private final ImmutableSortedMap<String, Supplier<String>> metadata;
 
 	/**
 	 * Returns a {@code DynamicTransportMetadata} containing all the mappings
@@ -26,7 +27,7 @@ public final class DynamicTransportMetadata implements TransportMetadata {
 	 * @return The metadata
 	 */
 	public static DynamicTransportMetadata from(Map<String, Supplier<String>> metadata) {
-		return new DynamicTransportMetadata(ImmutableMap.copyOf(metadata));
+		return new DynamicTransportMetadata(ImmutableSortedMap.copyOf(metadata));
 	}
 
 	/**
@@ -36,7 +37,7 @@ public final class DynamicTransportMetadata implements TransportMetadata {
 	 * @param metadata The {@link ImmutableMap} supplying the properties for the metadata
 	 * @return The metadata
 	 */
-	public static DynamicTransportMetadata from(ImmutableMap<String, Supplier<String>> metadata) {
+	public static DynamicTransportMetadata from(ImmutableSortedMap<String, Supplier<String>> metadata) {
 		return new DynamicTransportMetadata(metadata);
 	}
 
@@ -49,7 +50,7 @@ public final class DynamicTransportMetadata implements TransportMetadata {
 	 * @return The metadata
 	 */
 	public static DynamicTransportMetadata of(String k1, Supplier<String> v1) {
-		return new DynamicTransportMetadata(ImmutableMap.of(k1, v1));
+		return new DynamicTransportMetadata(ImmutableSortedMap.of(k1, v1));
 	}
 
 	/**
@@ -63,11 +64,11 @@ public final class DynamicTransportMetadata implements TransportMetadata {
 	 * @return The metadata
 	 */
 	public static DynamicTransportMetadata of(String k1, Supplier<String> v1, String k2, Supplier<String> v2) {
-		return new DynamicTransportMetadata(ImmutableMap.of(k1, v1, k2, v2));
+		return new DynamicTransportMetadata(ImmutableSortedMap.of(k1, v1, k2, v2));
 	}
 
 	@JsonCreator
-	private DynamicTransportMetadata(ImmutableMap<String, Supplier<String>> metadata) {
+	private DynamicTransportMetadata(ImmutableSortedMap<String, Supplier<String>> metadata) {
 		this.metadata = Objects.requireNonNull(metadata);
 	}
 
@@ -102,6 +103,6 @@ public final class DynamicTransportMetadata implements TransportMetadata {
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s]", getClass().getSimpleName(), jsonValue());
+		return jsonValue().toString();
 	}
 }

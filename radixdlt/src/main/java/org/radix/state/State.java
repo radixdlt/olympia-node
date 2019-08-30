@@ -108,10 +108,6 @@ public class State
 	public static final StateDefinition UNKNOWN = new StateDefinition("unknown");
 	public static final StateDefinition UPDATED = new StateDefinition("updated");
 
-	public static final StateDefinition DISCONNECTED = new StateDefinition("disconnected", State.NONE);
-	public static final StateDefinition DISCONNECTING = new StateDefinition("disconnecting", State.DISCONNECTED);
-	public static final StateDefinition CONNECTED = new StateDefinition("connected", State.DISCONNECTING, State.DISCONNECTED);
-	public static final StateDefinition CONNECTING = new StateDefinition("connecting", State.CONNECTED, State.DISCONNECTING, State.DISCONNECTED, State.TIMEDOUT, State.FAILED);
 	public static final StateDefinition DELETING = new StateDefinition("deleting", State.DELETED, State.FAILED);
 	public static final StateDefinition DISCOVERING = new StateDefinition("discovering", State.DISCOVERED, State.FAILED, State.TIMEDOUT);
 	public static final StateDefinition EXECUTING = new StateDefinition("executing", State.EXECUTED, State.FAILED, State.TIMEDOUT);

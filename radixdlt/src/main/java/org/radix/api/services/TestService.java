@@ -10,11 +10,11 @@ import org.radix.Radix;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.modules.Modules;
-import org.radix.network.Network;
 import org.radix.network.messages.PeersMessage;
-import org.radix.network.messaging.Messaging;
 import org.radix.network.messaging.Message.Direction;
-import org.radix.network.peers.Peer;
+import org.radix.network2.addressbook.Peer;
+import org.radix.network2.addressbook.PeerWithSystem;
+import org.radix.network2.messaging.MessageCentral;
 import org.radix.network2.transport.StaticTransportMetadata;
 import org.radix.network2.transport.TransportInfo;
 import org.radix.network2.transport.udp.UDPConstants;
@@ -84,7 +84,6 @@ public final class TestService {
 			Objects.requireNonNull("ip is required", ipaddr);
 			Objects.requireNonNull("port is required", port);
 			ECKeyPair keyValue = new ECKeyPair(Bytes.fromHexString(key));
-			int portValue = Integer.parseInt(port);
 
 			// Some special magic to avoid constructor range checks.
 			String json = String.format(SHARD_JSON_TEMPLATE, anchor, high, low);
@@ -103,14 +102,13 @@ public final class TestService {
 					)
 				)
 			);
-			Peer peer = new Peer(Network.getURI(ipaddr, portValue));
-			peer.setSystem(system);
+			Peer peer = new PeerWithSystem(system);
 			PeersMessage peersMessage = new PeersMessage();
 			peersMessage.setPeers(Collections.singletonList(peer));
 			peersMessage.setDirection(Direction.INBOUND);
 			peersMessage.setTimestamp(Timestamps.RECEIVED, Modules.get(NtpService.class).getUTCTimeMS());
 			peersMessage.setTimestamp(Timestamps.LATENCY, java.lang.System.nanoTime());
-			Messaging.getInstance().received(peersMessage, peer);
+			Modules.get(MessageCentral.class).inject(peer, peersMessage);
 			log.debug("Submitted peers message for NID " + keyValue.getUID().toString());
 			JSONObject result = new JSONObject();
 			result.put("nid", keyValue.getUID().toString());

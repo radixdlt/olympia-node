@@ -1,21 +1,19 @@
 package org.radix.network2.messaging;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.PriorityBlockingQueue;
-
 import org.radix.events.Events;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.modules.Modules;
 import org.radix.network.messaging.Message;
-import org.radix.network.peers.Peer;
 import org.radix.network2.NetworkLegacyPatching;
 import org.radix.network2.TimeSupplier;
+import org.radix.network2.addressbook.Peer;
 import org.radix.network2.transport.Transport;
 import org.radix.universe.system.events.QueueFullEvent;
 import org.radix.utils.SystemMetaData;
@@ -28,7 +26,7 @@ import com.google.inject.Inject;
 import com.radixdlt.serialization.Serialization;
 
 //FIXME: Optional dependency on Modules.get(SystemMetadata.class) for updating metadata
-final class MessageCentralImpl implements MessageCentral, Closeable {
+final class MessageCentralImpl implements MessageCentral {
 	private static final Logger log = Logging.getLogger("message");
 
 	private static final MessageListenerList EMPTY_MESSAGE_LISTENER_LIST = new MessageListenerList();
@@ -57,11 +55,11 @@ final class MessageCentralImpl implements MessageCentral, Closeable {
 	private final RateLimiter outboundLogRateLimiter = RateLimiter.create(1.0);
 
 	// Inbound message handling
-	private final PriorityBlockingQueue<MessageEvent> inboundQueue;
+	private final BlockingQueue<MessageEvent> inboundQueue;
 	private final SimpleThreadPool<MessageEvent> inboundThreadPool;
 
 	// Outbound message handling
-	private final PriorityBlockingQueue<MessageEvent> outboundQueue;
+	private final BlockingQueue<MessageEvent> outboundQueue;
 	private final SimpleThreadPool<MessageEvent> outboundThreadPool;
 
 
@@ -71,10 +69,11 @@ final class MessageCentralImpl implements MessageCentral, Closeable {
 		Serialization serialization,
 		TransportManager transportManager,
 		Events events,
-		TimeSupplier timeSource
+		TimeSupplier timeSource,
+		EventQueueFactory<MessageEvent> eventQueueFactory
 	) {
-		this.inboundQueue = new PriorityBlockingQueue<>(config.messagingInboundQueueMax(8192));
-		this.outboundQueue = new PriorityBlockingQueue<>(config.messagingOutboundQueueMax(16384));
+		this.inboundQueue = eventQueueFactory.createEventQueue(config.messagingInboundQueueMax(8192));
+		this.outboundQueue = eventQueueFactory.createEventQueue(config.messagingOutboundQueueMax(16384));
 
 		this.serialization = Objects.requireNonNull(serialization);
 		this.connectionManager = Objects.requireNonNull(transportManager);
@@ -110,9 +109,9 @@ final class MessageCentralImpl implements MessageCentral, Closeable {
 
 	@Override
 	public void send(Peer peer, Message message) {
-		if (!outboundQueue.offer(new MessageEvent(peer, message, System.nanoTime() - timeBase))) {
+		if (!outboundQueue.offer(new MessageEvent(peer, null, message, System.nanoTime() - timeBase))) {
 			if (outboundLogRateLimiter.tryAcquire()) {
-				log.error(String.format("Outbound message to %s dropped", peer.getURI()));
+				log.error(String.format("Outbound message to %s dropped", peer));
 			}
 			events.broadcast(new QueueFullEvent());
 		}
@@ -120,10 +119,10 @@ final class MessageCentralImpl implements MessageCentral, Closeable {
 
 	@Override
 	public void inject(Peer peer, Message message) {
-		MessageEvent event = new MessageEvent(peer, message, System.nanoTime() - timeBase);
+		MessageEvent event = new MessageEvent(peer, null, message, System.nanoTime() - timeBase);
 		if (!inboundQueue.offer(event)) {
 			if (inboundLogRateLimiter.tryAcquire()) {
-				log.error(String.format("Injected message from %s dropped", peer.getURI()));
+				log.error(String.format("Injected message from %s dropped", peer));
 			}
 			events.broadcast(new QueueFullEvent());
 		}
@@ -152,15 +151,10 @@ final class MessageCentralImpl implements MessageCentral, Closeable {
 	}
 
 	private void inboundMessage(InboundMessage inboundMessage) {
-		// FIXME: This needs replacing - at the moment just hooking up to existing infra
-		try {
-			Peer peer = NetworkLegacyPatching.findPeer(inboundMessage.source());
-			if (peer != null) {
-				Message message = deserialize(inboundMessage.message());
-				inject(peer, message);
-			}
-		} catch (IOException e) {
-			throw new UncheckedIOException("While processing inbound message from " + inboundMessage.source(), e);
+		Peer peer = NetworkLegacyPatching.findPeer(inboundMessage.source());
+		if (peer != null) {
+			Message message = deserialize(inboundMessage.message());
+			inject(peer, message);
 		}
 	}
 

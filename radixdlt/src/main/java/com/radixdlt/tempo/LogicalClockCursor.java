@@ -48,5 +48,8 @@ public final class LogicalClockCursor {
 		return next;
 	}
 
-
+	@Override
+	public String toString() {
+		return String.format("LCCursor{pos=%d, next=%s}", logicalClockPosition, next == null ? "<none>" : next);
+	}
 }

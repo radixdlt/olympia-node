@@ -2,9 +2,10 @@ package org.radix.serialization;
 
 import java.util.Arrays;
 
-import org.radix.network.Network;
 import org.radix.network.messages.PeersMessage;
-import org.radix.network.peers.Peer;
+import org.radix.network2.addressbook.Peer;
+import org.radix.network2.addressbook.PeerWithSystem;
+import org.radix.universe.system.RadixSystem;
 
 /**
  * Check serialization of PeersMessage
@@ -16,9 +17,9 @@ public class PeersMessageSerializeTest extends SerializeMessageObject<PeersMessa
 
 	private static PeersMessage get() {
 		PeersMessage pm = new PeersMessage();
-		Peer p1 = new Peer(Network.getURI("127.0.0.1", 30000));
-		Peer p2 = new Peer(Network.getURI("127.0.0.2", 30000));
-		Peer p3 = new Peer(Network.getURI("127.0.0.3", 30000));
+		Peer p1 = new PeerWithSystem(new RadixSystem());
+		Peer p2 = new PeerWithSystem(new RadixSystem());
+		Peer p3 = new PeerWithSystem(new RadixSystem());
 		pm.setPeers(Arrays.asList(p1, p2, p3));
 		return pm;
 	}

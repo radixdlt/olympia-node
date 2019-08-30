@@ -4,11 +4,13 @@ import com.radixdlt.tempo.AtomSyncView;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.Bytes;
 
+import java.util.List;
 import java.util.Map;
 
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 import org.json.JSONObject;
 import com.radixdlt.atomos.RadixAddress;
@@ -28,12 +30,9 @@ import com.radixdlt.crypto.CryptoException;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.modules.Modules;
-import org.radix.network.Network;
-import org.radix.network.Protocol;
-import org.radix.network.messaging.Messaging;
-import org.radix.network.peers.Peer;
-import org.radix.network.peers.PeerHandler;
-import org.radix.network.peers.PeerHandler.PeerDomain;
+import org.radix.network2.addressbook.AddressBook;
+import org.radix.network2.addressbook.Peer;
+import org.radix.network2.messaging.MessageCentral;
 import org.radix.properties.RuntimeProperties;
 import org.radix.shards.ShardChecksumStore;
 
@@ -133,15 +132,15 @@ public class InternalService {
 								atom.sign(this.owner);
 
 								if (LocalSystem.getInstance().getShards().intersects(atom.getShards()) == true) {
-									Modules.get(AtomSyncView.class).receive(atom);
+									Modules.get(AtomSyncView.class).inject(atom);
 								} else {
-									for (Peer peer : Modules.get(PeerHandler.class).getPeers(PeerDomain.NETWORK, null, new PeerHandler.PeerDistanceComparator(LocalSystem.getInstance().getNID()))) {
-										if (!peer.getSystem().getNID().equals(LocalSystem.getInstance().getNID()) && peer.getSystem().getShards().intersects(atom.getShards())) {
+									List<Peer> peers = Modules.get(AddressBook.class).recentPeers().collect(Collectors.toList());
+									for (Peer peer : peers) {
+										if (peer.hasSystem() && !peer.getNID().equals(LocalSystem.getInstance().getNID()) && peer.getSystem().getShards().intersects(atom.getShards())) {
 //											if (!org.radix.universe.System.getInstance().isSynced(peer.getSystem())) // TODO put this back in
 //												continue;
 
-											peer = Network.getInstance().connect(peer.getURI(), Protocol.UDP);
-											Messaging.getInstance().send(new AtomSubmitMessage(atom), peer);
+											Modules.get(MessageCentral.class).send(peer, new AtomSubmitMessage(atom));
 											break;
 										}
 									}

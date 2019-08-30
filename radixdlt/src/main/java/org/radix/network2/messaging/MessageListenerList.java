@@ -11,7 +11,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.network.messaging.Message;
-import org.radix.network.peers.Peer;
+import org.radix.network2.addressbook.Peer;
 import org.radix.network2.utils.Locking;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -162,8 +162,9 @@ final class MessageListenerList {
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	private MessageListener<Message> untyped(MessageListener<? extends Message> listener) {
-		// FIXME: Type abuse
+		// Type abuse
 		return (MessageListener<Message>) listener;
 	}
 }

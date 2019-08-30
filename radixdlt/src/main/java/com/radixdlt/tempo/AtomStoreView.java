@@ -6,8 +6,8 @@ import com.radixdlt.utils.Pair;
 import com.radixdlt.ledger.LedgerCursor;
 import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerSearchMode;
-import org.radix.shards.ShardSpace;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -20,6 +20,27 @@ public interface AtomStoreView {
 	 * @return Whether the given aid is contained in this view
 	 */
 	boolean contains(AID aid);
+
+	/**
+	 * Check whether this store contains a given partial {@link AID}
+	 * @param partialAid The partial aid
+	 * @return Whether any atom matching the partial {@link AID} is contained in this store
+	 */
+	boolean contains(byte[] partialAid);
+
+	/**
+	 * Get the {@link AID}s starting with a specific partial {@link AID}
+	 * @param partialAid The partial aid
+	 * @return The list of {@link AID}s in this store that begin with the given partial {@link AID}
+	 */
+	List<AID> get(byte[] partialAid);
+
+	/**
+	 * Gets the {@link AID} associated with a certain aid
+	 * @param clock The clock
+	 * @return The {@link AID} associated with the given clock (if any)
+	 */
+	Optional<AID> get(long clock);
 
 	/**
 	 * Gets the atom associated with a certain aid
@@ -36,14 +57,13 @@ public interface AtomStoreView {
 	 * @param mode The mode
 	 * @return The resulting ledger cursor
 	 */
-	LedgerCursor search(LedgerCursor.Type type, LedgerIndex index, LedgerSearchMode mode);
+	LedgerCursor search(LedgerCursor.LedgerIndexType type, LedgerIndex index, LedgerSearchMode mode);
 
 	/**
 	 * Advance the cursor to discover up to certain number of aids within a shard range
-	 * @param cursor The current cursor
+	 * @param logicalClock The current cursor
 	 * @param limit The maximum number of aids
-	 * @param shardSpace The shard range to consider
 	 * @return The relevant aids and the advanced cursor
 	 */
-	Pair<ImmutableList<AID>, LogicalClockCursor> getNext(LogicalClockCursor cursor, int limit, ShardSpace shardSpace);
+	ImmutableList<AID> getNext(long logicalClock, int limit);
 }

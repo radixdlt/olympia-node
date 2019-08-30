@@ -1,6 +1,5 @@
 package org.radix.atoms.particles.conflict;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -44,14 +43,11 @@ import org.radix.mass.NodeMassStore;
 import org.radix.modules.Modules;
 import org.radix.modules.Service;
 import org.radix.modules.exceptions.ModuleException;
-import org.radix.network.Network;
-import org.radix.network.Protocol;
-import org.radix.network.messaging.MessageProcessor;
-import org.radix.network.messaging.Messaging;
-import org.radix.network.peers.Peer;
-import org.radix.network.peers.PeerHandler;
-import org.radix.network.peers.PeerHandler.PeerDomain;
-import org.radix.network.peers.filters.PeerFilter;
+import org.radix.network2.addressbook.AddressBook;
+import org.radix.network2.addressbook.Peer;
+import org.radix.network2.addressbook.StandardFilters;
+import org.radix.network2.messaging.MessageCentral;
+import org.radix.network2.transport.TransportException;
 import org.radix.properties.RuntimeProperties;
 import com.radixdlt.serialization.MapHelper;
 import org.radix.state.State;
@@ -182,106 +178,9 @@ public class ParticleConflictHandler extends Service
 	}
 
 	@Override
-	public void start_impl() throws ModuleException
-	{
-		register("conflict.assist.request", new MessageProcessor<ConflictAssistRequestMessage>()
-		{
-			@Override
-			public void process(ConflictAssistRequestMessage conflictAssistMessage, Peer peer)
-			{
-				try
-				{
-					conflictsLog.debug(conflictAssistMessage.getUID()+": Conflict assist request from "+peer);
-
-					Atom committedAtom = Modules.get(AtomStore.class).getAtomContaining(conflictAssistMessage.getSpunParticle().getParticle(), conflictAssistMessage.getSpunParticle().getSpin());
-
-					ParticleConflict existingConflict;
-					synchronized(ParticleConflictHandler.this.conflicts)
-					{
-						existingConflict = ParticleConflictHandler.this.conflicts.getOrDefault(conflictAssistMessage.getUID(), Modules.get(ParticleConflictStore.class).getConflict(conflictAssistMessage.getUID()));
-					}
-
-					// FIXME needs to be improved due to 65kb UDP limit.  The following only mitigates it temporarily.  Large atoms may still cause oversized UDP packets.
-					Set<Atom> assistAtoms = new HashSet<Atom>();
-
-					if (committedAtom != null)
-						assistAtoms.add(committedAtom);
-
-					if (existingConflict != null)
-					{
-						synchronized(existingConflict)
-						{
-							assistAtoms.addAll(existingConflict.getAtoms());
-						}
-					}
-
-					if (assistAtoms.isEmpty() == false)
-					{
-						for (Atom assistAtom : assistAtoms)
-						{
-							ParticleConflict assistConflict = new ParticleConflict(conflictAssistMessage.getSpunParticle(), Collections.singleton(assistAtom));
-							Messaging.getInstance().send(new ConflictAssistResponseMessage(assistConflict), peer);
-						}
-					}
-				}
-				catch (Exception ex)
-				{
-					conflictsLog.error("conflict.assist.request "+peer, ex);
-				}
-			}
-		});
-
-		register("conflict.assist.response", new MessageProcessor<ConflictAssistResponseMessage>()
-		{
-			@Override
-			public void process(ConflictAssistResponseMessage conflictAssistResponseMessage, Peer peer)
-			{
-				try
-				{
-					// TODO want to disconnect peer on these errors?
-					synchronized(ParticleConflictHandler.this.conflicts)
-					{
-						if (ParticleConflictHandler.this.conflicts.containsKey(conflictAssistResponseMessage.getConflict().getUID()) == false)
-						{
-							conflictsLog.debug(conflictAssistResponseMessage.getConflict().getUID()+": Got conflict assist response from "+peer+" but conflict does not exist");
-							return;
-						}
-					}
-
-					synchronized(ParticleConflictHandler.this.assistRequests)
-					{
-						if (ParticleConflictHandler.this.assistRequests.containsKey(conflictAssistResponseMessage.getConflict().getUID()) == false)
-						{
-							conflictsLog.debug(conflictAssistResponseMessage.getConflict().getUID()+": Got conflict assist response from "+peer+" but no conflict assist requests have been sent");
-							return;
-						}
-
-						if (ParticleConflictHandler.this.assistRequests.get(conflictAssistResponseMessage.getConflict().getUID()).contains(peer.getSystem().getNID()) == false)
-						{
-							conflictsLog.debug(conflictAssistResponseMessage.getConflict().getUID()+": Got conflict assist response from "+peer+" but no conflict assist requests was sent");
-							return;
-						}
-					}
-
-					synchronized(ParticleConflictHandler.this.assistResponses)
-					{
-						if (ParticleConflictHandler.this.assistResponses.containsKey(conflictAssistResponseMessage.getConflict().getUID()) == false)
-						{
-							conflictsLog.debug(conflictAssistResponseMessage.getConflict().getUID()+": Got conflict assist response from "+peer+" but not accepting conflict assist responses");
-							return;
-						}
-
-						conflictsLog.debug(conflictAssistResponseMessage.getConflict().getUID()+": Conflict assist response containing "+conflictAssistResponseMessage.getConflict().getAtoms()+" from "+peer);
-
-						ParticleConflictHandler.this.assistResponses.get(conflictAssistResponseMessage.getConflict().getUID()).add(conflictAssistResponseMessage.getConflict());
-					}
-				}
-				catch (Throwable t)
-				{
-					conflictsLog.error("conflict.assist.response "+peer, t);
-				}
-			}
-		});
+	public void start_impl() throws ModuleException {
+		register(ConflictAssistRequestMessage.class, this::handleConflictAssistRequest);
+		register(ConflictAssistResponseMessage.class, this::handleConflictAssistResponse);
 
 		Events.getInstance().register(ParticleEvent.class, this.particleListener);
 
@@ -486,6 +385,77 @@ public class ParticleConflictHandler extends Service
 		}
 	}
 
+	private void handleConflictAssistRequest(Peer peer, ConflictAssistRequestMessage conflictAssistMessage) {
+		try {
+			conflictsLog.debug(conflictAssistMessage.getUID() + ": Conflict assist request from " + peer);
+
+			Atom committedAtom = Modules.get(AtomStore.class).getAtomContaining(conflictAssistMessage.getSpunParticle().getParticle(), conflictAssistMessage.getSpunParticle().getSpin());
+
+			ParticleConflict existingConflict;
+			synchronized (ParticleConflictHandler.this.conflicts) {
+				existingConflict = ParticleConflictHandler.this.conflicts.getOrDefault(conflictAssistMessage.getUID(), Modules.get(ParticleConflictStore.class).getConflict(conflictAssistMessage.getUID()));
+			}
+
+			// FIXME needs to be improved due to 65kb UDP limit.  The following only mitigates it temporarily.  Large atoms may still cause oversized UDP packets.
+			Set<Atom> assistAtoms = new HashSet<Atom>();
+
+			if (committedAtom != null)
+				assistAtoms.add(committedAtom);
+
+			if (existingConflict != null) {
+				synchronized (existingConflict) {
+					assistAtoms.addAll(existingConflict.getAtoms());
+				}
+			}
+
+			if (assistAtoms.isEmpty() == false) {
+				for (Atom assistAtom : assistAtoms) {
+					ParticleConflict assistConflict = new ParticleConflict(conflictAssistMessage.getSpunParticle(), Collections.singleton(assistAtom));
+					Modules.get(MessageCentral.class).send(peer, new ConflictAssistResponseMessage(assistConflict));
+				}
+			}
+		} catch (Exception ex) {
+			conflictsLog.error("conflict.assist.request " + peer, ex);
+		}
+	}
+
+	private void handleConflictAssistResponse(Peer peer, ConflictAssistResponseMessage conflictAssistResponseMessage) {
+		try {
+			// TODO want to disconnect peer on these errors?
+			synchronized (ParticleConflictHandler.this.conflicts) {
+				if (ParticleConflictHandler.this.conflicts.containsKey(conflictAssistResponseMessage.getConflict().getUID()) == false) {
+					conflictsLog.debug(conflictAssistResponseMessage.getConflict().getUID() + ": Got conflict assist response from " + peer + " but conflict does not exist");
+					return;
+				}
+			}
+
+			synchronized (ParticleConflictHandler.this.assistRequests) {
+				if (ParticleConflictHandler.this.assistRequests.containsKey(conflictAssistResponseMessage.getConflict().getUID()) == false) {
+					conflictsLog.debug(conflictAssistResponseMessage.getConflict().getUID() + ": Got conflict assist response from " + peer + " but no conflict assist requests have been sent");
+					return;
+				}
+
+				if (ParticleConflictHandler.this.assistRequests.get(conflictAssistResponseMessage.getConflict().getUID()).contains(peer.getNID()) == false) {
+					conflictsLog.debug(conflictAssistResponseMessage.getConflict().getUID() + ": Got conflict assist response from " + peer + " but no conflict assist requests was sent");
+					return;
+				}
+			}
+
+			synchronized (ParticleConflictHandler.this.assistResponses) {
+				if (ParticleConflictHandler.this.assistResponses.containsKey(conflictAssistResponseMessage.getConflict().getUID()) == false) {
+					conflictsLog.debug(conflictAssistResponseMessage.getConflict().getUID() + ": Got conflict assist response from " + peer + " but not accepting conflict assist responses");
+					return;
+				}
+
+				conflictsLog.debug(conflictAssistResponseMessage.getConflict().getUID() + ": Conflict assist response containing " + conflictAssistResponseMessage.getConflict().getAtoms() + " from " + peer);
+
+				ParticleConflictHandler.this.assistResponses.get(conflictAssistResponseMessage.getConflict().getUID()).add(conflictAssistResponseMessage.getConflict());
+			}
+		} catch (Throwable t) {
+			conflictsLog.error("conflict.assist.response " + peer, t);
+		}
+	}
+
 	private void validateConflict(ParticleConflict conflict) throws ValidationException {
 		boolean haveAtomsWithTemporalProofs = false;
 		for (Atom atom : conflict.getAtoms()) {
@@ -499,7 +469,7 @@ public class ParticleConflictHandler extends Service
 		}
 	}
 
-	private boolean requestAssist(ParticleConflict conflict) throws DatabaseException
+	private boolean requestAssist(ParticleConflict conflict)
 	{
 		synchronized(conflict)
 		{
@@ -508,7 +478,9 @@ public class ParticleConflictHandler extends Service
 				if (!this.assistRequests.containsKey(conflict.getUID()))
 					this.assistRequests.put(conflict.getUID(), new HashSet<EUID>());
 
-				List<Peer> livePeers = Modules.get(PeerHandler.class).getPeers(PeerDomain.NETWORK, PeerFilter.getInstance());
+				List<Peer> livePeers = Modules.get(AddressBook.class).recentPeers()
+					.filter(StandardFilters.standardFilter())
+					.collect(Collectors.toList());
 				if (livePeers.isEmpty() == true)
 				{
 					conflictsLog.debug(conflict.getUID()+": No peer connections are currently available");
@@ -533,7 +505,11 @@ public class ParticleConflictHandler extends Service
 
 				conflictsLog.debug(conflict.getUID()+": Collected "+assistNIDs.size()+" NIDs for assist request");
 
-				List<Peer> assistPeers = Modules.get(PeerHandler.class).getPeers(PeerDomain.NETWORK, assistNIDs, PeerFilter.getInstance(), PeerHandler.SHUFFLER).stream().collect(Collectors.toList());
+				List<Peer> assistPeers = Modules.get(AddressBook.class).recentPeers()
+					.filter(StandardFilters.standardFilter())
+					.filter(StandardFilters.oneOf(assistNIDs))
+					.collect(Collectors.toList());
+				Collections.shuffle(assistPeers);
 				if (assistPeers.isEmpty() == true)
 				{
 					conflictsLog.debug(conflict.getUID()+": Found nodes to ask for assist, but peer connections are not available");
@@ -544,12 +520,10 @@ public class ParticleConflictHandler extends Service
 
 				for (Peer assistPeer : assistPeers)
 				{
-					try
-					{
-						assistPeer = Network.getInstance().connect(assistPeer.getURI(), Protocol.UDP);
-						Modules.get(Messaging.class).send(new ConflictAssistRequestMessage(conflict.getSpunParticle()), assistPeer);
+					try {
+						Modules.get(MessageCentral.class).send(assistPeer, new ConflictAssistRequestMessage(conflict.getSpunParticle()));
 					}
-					catch (IOException ioex)
+					catch (TransportException ioex)
 					{
 						conflictsLog.debug(conflict.getUID()+": Failed to request assistance from "+assistPeer, ioex);
 					}

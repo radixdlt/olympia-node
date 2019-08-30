@@ -1,7 +1,9 @@
 package org.radix.network2.messaging;
 
+import java.io.IOException;
+
 import org.radix.network.messaging.Message;
-import org.radix.network.peers.Peer;
+import org.radix.network2.addressbook.Peer;
 import org.radix.network2.transport.TransportException;
 
 /**
@@ -59,4 +61,13 @@ public interface MessageCentral {
 	 * @throws IllegalArgumentException if an attempt to remove a null listener
 	 */
 	<T extends Message> void removeListener(MessageListener<T> listener);
+
+    /**
+     * Closes this {@code MessageCentral} and releases any system resources associated
+     * with it. If it is already closed then invoking this method has no effect.
+     *
+     * @throws IOException if an I/O error occurs
+     */
+    public void close() throws IOException;
+
 }

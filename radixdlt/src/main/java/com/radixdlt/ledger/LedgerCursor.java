@@ -8,7 +8,7 @@ import java.io.IOException;
  * A ledger cursor, bound to a specific ledger instance.
  */
 public interface LedgerCursor {
-	enum Type {
+	enum LedgerIndexType {
 		UNIQUE, DUPLICATE
 	}
 
@@ -16,7 +16,7 @@ public interface LedgerCursor {
 	 * Gets the type of cursor
 	 * @return The type of cursor
 	 */
-	Type getType();
+	LedgerIndexType getType();
 
 	/**
 	 * Gets the current AID at this cursor

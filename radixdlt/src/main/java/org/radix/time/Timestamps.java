@@ -4,10 +4,8 @@ package org.radix.time;
 public final class Timestamps {
 	public static final String ACTIVE = "active";
 	public static final String BANNED = "banned";
-	public static final String CONNECTED = "connected";
 	public static final String CREATED = "created";
 	public static final String DEFAULT = "default";
-	public static final String DISCONNECTED = "disconnected";
 	public static final String FROM = "from";
 	public static final String LATENCY = "latency";
 	public static final String PROBED = "probed";

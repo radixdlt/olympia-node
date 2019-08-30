@@ -2,7 +2,7 @@ package org.radix.atoms.sync;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.radix.network.peers.Peer;
+import org.radix.network2.addressbook.Peer;
 import org.radix.shards.ShardSpace;
 import org.radix.state.SingletonState;
 import org.radix.state.State;
