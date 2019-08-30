@@ -41,8 +41,6 @@ public class BerkeleySampleStore implements SampleStore {
 	public BerkeleySampleStore(DatabaseEnvironment dbEnv, Serialization serialization) {
 		this.dbEnv = Objects.requireNonNull(dbEnv, "dbEnv is required");
 		this.serialization = Objects.requireNonNull(serialization, "serialization is required");
-
-		this.open();
 	}
 
 	private void fail(String message) {

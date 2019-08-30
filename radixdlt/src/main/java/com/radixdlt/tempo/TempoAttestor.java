@@ -26,7 +26,7 @@ public final class TempoAttestor implements Attestor {
 	private final WallclockTimeSupplier wallclockTimeSupplier;
 
 	@Inject
-	TempoAttestor(
+	public TempoAttestor(
 		@Named("self") LocalSystem localSystem,
 		WallclockTimeSupplier wallclockTimeSupplier
 	) {

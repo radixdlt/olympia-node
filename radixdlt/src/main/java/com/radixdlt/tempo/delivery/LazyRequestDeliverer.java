@@ -6,6 +6,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
+import com.radixdlt.tempo.Resource;
 import com.radixdlt.tempo.store.TempoAtomStoreView;
 import com.radixdlt.tempo.Scheduler;
 import com.radixdlt.tempo.TempoAtom;
@@ -33,7 +34,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 @Singleton
-public final class LazyRequestDeliverer implements Closeable, AtomDeliverer, RequestDeliverer {
+public final class LazyRequestDeliverer implements Resource, AtomDeliverer, RequestDeliverer {
 	private static final Logger log = Logging.getLogger("RequestDeliverer");
 
 	private static final int DEFAULT_REQUEST_QUEUE_CAPACITY = 8192;
@@ -193,6 +194,16 @@ public final class LazyRequestDeliverer implements Closeable, AtomDeliverer, Req
 
 	private void notifyListeners(Peer peer, TempoAtom atom) {
 		deliveryListeners.forEach(listener -> listener.accept(atom, peer));
+	}
+
+	@Override
+	public void reset() {
+		deliveryState.reset();
+	}
+
+	@Override
+	public void open() {
+		// nothing to do here
 	}
 
 	@Override

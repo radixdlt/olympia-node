@@ -263,7 +263,7 @@ public class Radix extends Plugin
 		}
 
 		if (Modules.get(RuntimeProperties.class).get("tempo2", false)) {
-			Tempo tempo = new TempoFactory().createDefault(LocalSystem.getInstance(), Modules.get(RuntimeProperties.class));
+			Tempo tempo = new TempoFactory().createDefault(Modules.get(RuntimeProperties.class));
 			Modules.getInstance().start(tempo);
 
 			MockApplication mockApplication = new MockApplication(tempo);

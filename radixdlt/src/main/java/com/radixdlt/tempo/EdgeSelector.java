@@ -11,10 +11,9 @@ import java.util.List;
  */
 public interface EdgeSelector {
 	/**
-	 * Select the next edges for an atom from a collection of possible nodes
-	 * @param nodes The nodes
+	 * Select the next edges for an atom
 	 * @param atom The atom
 	 * @return The subset of next edges
 	 */
-	List<EUID> selectEdges(Collection<EUID> nodes, TempoAtom atom);
+	List<EUID> selectEdges(TempoAtom atom);
 }

@@ -51,11 +51,6 @@ public class BerkeleyTempoAtomStoreTests extends RadixTestWithStores {
 
     private ECKeyPair identity;
 
-    @BeforeClass
-    public static void doesntWorkAtAllForMe() {
-    	assumeTrue(false);
-    }
-
     @Before
     public void setup() throws CryptoException, ValidationException {
         tempoAtomStore = new BerkeleyTempoAtomStore(localSystem.getNID(), serialization, profiler, Modules.get(DatabaseEnvironment.class));

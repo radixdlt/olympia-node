@@ -7,6 +7,8 @@ import com.radixdlt.tempo.delivery.LazyRequestDelivererModule;
 import com.radixdlt.tempo.delivery.PushOnlyDelivererModule;
 import com.radixdlt.tempo.discovery.IterativeDiscovererModule;
 import com.radixdlt.tempo.store.berkeley.BerkeleyStoreModule;
+import org.radix.modules.Modules;
+import org.radix.network2.messaging.MessageCentral;
 import org.radix.properties.RuntimeProperties;
 import org.radix.universe.system.LocalSystem;
 
@@ -14,17 +16,17 @@ import org.radix.universe.system.LocalSystem;
  * Factory for creating {@link Tempo}
  */
 public class TempoFactory {
-	public Tempo createDefault(LocalSystem localSystem, RuntimeProperties properties) {
-		return createInjector(localSystem, properties).getInstance(Tempo.class);
+	public Tempo createDefault(RuntimeProperties properties) {
+		return createInjector(LocalSystem.getInstance(), Modules.get(MessageCentral.class), properties).getInstance(Tempo.class);
 	}
 
-	private Injector createInjector(LocalSystem localSystem, RuntimeProperties properties) {
+	private Injector createInjector(LocalSystem localSystem, MessageCentral messageCentral, RuntimeProperties properties) {
 		return Guice.createInjector(
 			new LazyRequestDelivererModule(properties),
 			new PushOnlyDelivererModule(),
 			new IterativeDiscovererModule(properties),
 			new BerkeleyStoreModule(),
-			new TempoModule(localSystem)
+			new TempoModule(localSystem, messageCentral)
 		);
 	}
 }

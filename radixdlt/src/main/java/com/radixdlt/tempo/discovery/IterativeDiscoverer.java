@@ -8,6 +8,7 @@ import com.google.inject.name.Named;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
 import com.radixdlt.crypto.Hash;
+import com.radixdlt.tempo.Resource;
 import com.radixdlt.tempo.store.TempoAtomStoreView;
 import com.radixdlt.tempo.LogicalClockCursor;
 import com.radixdlt.tempo.Scheduler;
@@ -25,7 +26,6 @@ import org.radix.network2.addressbook.PeersRemovedEvent;
 import org.radix.network2.messaging.MessageCentral;
 import org.radix.utils.SimpleThreadPool;
 
-import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -38,7 +38,7 @@ import java.util.concurrent.TimeUnit;
  * Discoverer which uses logical clocks as a cursor to iterate through all relevant {@link AID}s of known nodes
  */
 @Singleton
-public final class IterativeDiscoverer implements Closeable, AtomDiscoverer {
+public final class IterativeDiscoverer implements Resource, AtomDiscoverer {
 	private static final Logger log = Logging.getLogger("IterativeDiscoverer");
 
 	private static final int DEFAULT_REQUEST_TIMEOUT_SECONDS = 5;
@@ -231,17 +231,19 @@ public final class IterativeDiscoverer implements Closeable, AtomDiscoverer {
 		discoveryListeners.forEach(listener -> listener.accept(aids, peer));
 	}
 
+	@Override
 	public void reset() {
-		cursorStore.reset();
-		commitmentStore.reset();
+		discoveryState.reset();
+	}
+
+	@Override
+	public void open() {
+		// nothing to do here
 	}
 
 	@Override
 	public void close() {
 		requestThreadPool.stop();
-		cursorStore.close();
-		commitmentStore.close();
-
 		messageCentral.removeListener(IterativeDiscoveryRequestMessage.class, this::onRequest);
 		messageCentral.removeListener(IterativeDiscoveryResponseMessage.class, this::onResponse);
 	}

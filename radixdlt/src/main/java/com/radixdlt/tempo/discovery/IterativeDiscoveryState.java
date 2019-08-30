@@ -1,6 +1,5 @@
 package com.radixdlt.tempo.discovery;
 
-import com.google.common.collect.ImmutableMap;
 import com.radixdlt.common.EUID;
 import com.radixdlt.tempo.TempoException;
 import org.radix.network2.utils.Locking;
@@ -101,6 +100,10 @@ class IterativeDiscoveryState {
 
 	public Stream<EUID> peers() {
 		return this.states.keySet().stream();
+	}
+
+	public void reset() {
+		Locking.withLock(stateLock, this.states::clear);
 	}
 
 	private class IterativeDiscoveryPeerState {

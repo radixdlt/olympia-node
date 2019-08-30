@@ -2,58 +2,35 @@ package com.radixdlt.tempo;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.radixdlt.Atom;
-import com.radixdlt.engine.AtomStatus;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
+import com.radixdlt.engine.AtomStatus;
 import com.radixdlt.ledger.Ledger;
 import com.radixdlt.ledger.LedgerCursor;
 import com.radixdlt.ledger.LedgerCursor.LedgerIndexType;
 import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerSearchMode;
-import com.radixdlt.serialization.Serialization;
 import com.radixdlt.tempo.delivery.AtomDeliverer;
-import com.radixdlt.tempo.delivery.LazyRequestDelivererModule;
-import com.radixdlt.tempo.delivery.PushOnlyDelivererModule;
 import com.radixdlt.tempo.delivery.RequestDeliverer;
-import com.radixdlt.tempo.delivery.LazyRequestDeliverer;
-import com.radixdlt.tempo.delivery.PushOnlyDeliverer;
-import com.radixdlt.tempo.delivery.LazyRequestDelivererConfiguration;
 import com.radixdlt.tempo.discovery.AtomDiscoverer;
-import com.radixdlt.tempo.discovery.IterativeDiscoverer;
-import com.radixdlt.tempo.discovery.IterativeDiscovererConfiguration;
-import com.radixdlt.tempo.discovery.IterativeDiscovererModule;
+import com.radixdlt.tempo.store.CommitmentStore;
 import com.radixdlt.tempo.store.TempoAtomStore;
 import com.radixdlt.tempo.store.TempoAtomStoreView;
-import com.radixdlt.tempo.store.berkeley.BerkeleyCommitmentStore;
-import com.radixdlt.tempo.store.berkeley.BerkeleyLCCursorStore;
-import com.radixdlt.tempo.store.berkeley.BerkeleyStoreModule;
-import com.radixdlt.tempo.store.berkeley.BerkeleyTempoAtomStore;
-import com.radixdlt.tempo.store.CommitmentStore;
 import org.radix.database.DatabaseEnvironment;
-import org.radix.events.Events;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.modules.Module;
 import org.radix.modules.Modules;
 import org.radix.modules.Plugin;
-import org.radix.network2.addressbook.AddressBook;
-import org.radix.network2.messaging.MessageCentral;
-import org.radix.properties.RuntimeProperties;
 import org.radix.time.TemporalProof;
 import org.radix.time.TemporalVertex;
-import org.radix.time.Time;
-import org.radix.universe.system.LocalSystem;
-import org.radix.utils.SystemProfiler;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
@@ -73,33 +50,34 @@ public final class Tempo extends Plugin implements Ledger {
 	private final CommitmentStore commitmentStore;
 
 	private final EdgeSelector edgeSelector;
-	private final PeerSupplier peerSupplier;
 	private final Attestor attestor;
 
 	private final BlockingQueue<TempoAtom> inboundAtoms;
 
+	private final Set<Resource> ownedResources;
 	private final Set<AtomDiscoverer> atomDiscoverers;
 	private final Set<AtomDeliverer> atomDeliverers;
 	private final RequestDeliverer requestDeliverer;
 	private final Set<AtomAcceptor> acceptors;
 
 	@Inject
-	public Tempo(@Named("self") EUID self,
-	              TempoAtomStore atomStore,
-	              CommitmentStore commitmentStore,
-	              EdgeSelector edgeSelector,
-	              PeerSupplier peerSupplier,
-	              Attestor attestor,
-	              Set<AtomDiscoverer> atomDiscoverers,
-	              Set<AtomDeliverer> atomDeliverers,
-	              RequestDeliverer requestDeliverer,
-	              Set<AtomAcceptor> acceptors
+	public Tempo(
+		@Named("self") EUID self,
+	    TempoAtomStore atomStore,
+	    CommitmentStore commitmentStore,
+	    EdgeSelector edgeSelector,
+	    Attestor attestor,
+	    @Owned Set<Resource> ownedResources,
+	    Set<AtomDiscoverer> atomDiscoverers,
+	    Set<AtomDeliverer> atomDeliverers,
+	    RequestDeliverer requestDeliverer,
+	    Set<AtomAcceptor> acceptors
 	) {
 		this.self = self;
 		this.atomStore = atomStore;
 		this.commitmentStore = commitmentStore;
+		this.ownedResources = ownedResources;
 		this.edgeSelector = edgeSelector;
-		this.peerSupplier = peerSupplier;
 		this.attestor = attestor;
 		this.atomDiscoverers = atomDiscoverers;
 		this.atomDeliverers = atomDeliverers;
@@ -178,8 +156,7 @@ public final class Tempo extends Plugin implements Ledger {
 	}
 
 	private TempoAtom attestTo(TempoAtom atom) {
-		List<EUID> nids = peerSupplier.getNids();
-		List<EUID> edges = edgeSelector.selectEdges(nids, atom);
+		List<EUID> edges = edgeSelector.selectEdges(atom);
 		TemporalProof attestedTP = attestor.attestTo(atom.getTemporalProof(), edges);
 		return atom.with(attestedTP);
 	}
@@ -207,7 +184,7 @@ public final class Tempo extends Plugin implements Ledger {
 
 	@Override
 	public void start_impl() {
-		this.atomStore.open();
+		this.ownedResources.forEach(Resource::open);
 		Modules.put(TempoAtomStoreView.class, this.atomStore);
 		Modules.put(AtomSyncView.class, new AtomSyncView() {
 			@Override
@@ -239,12 +216,12 @@ public final class Tempo extends Plugin implements Ledger {
 	public void stop_impl() {
 		Modules.remove(TempoAtomStoreView.class);
 		Modules.remove(AtomSyncView.class);
-		this.atomStore.close();
+		this.ownedResources.forEach(Resource::close);
 	}
 
 	@Override
 	public void reset_impl() {
-		this.atomStore.reset();
+		this.ownedResources.forEach(Resource::reset);
 	}
 
 	@Override
@@ -267,166 +244,4 @@ public final class Tempo extends Plugin implements Ledger {
 			);
 		}
 	}
-
-	public static Builder builder() {
-		return new Builder();
-	}
-
-	public static Builder defaultBuilderStoreOnly() {
-		LocalSystem localSystem = LocalSystem.getInstance();
-		BerkeleyTempoAtomStore atomStore = new BerkeleyTempoAtomStore(
-			localSystem.getNID(),
-			Serialization.getDefault(),
-			SystemProfiler.getInstance(),
-			Modules.get(DatabaseEnvironment.class));
-		BerkeleyCommitmentStore commitmentStore = new BerkeleyCommitmentStore(Modules.get(DatabaseEnvironment.class));
-		commitmentStore.open();
-		TempoAttestor attestor = new TempoAttestor(localSystem, Time::currentTimestamp);
-		return builder()
-			.self(localSystem.getNID())
-			.attestor(attestor::attestTo)
-			.atomStore(atomStore)
-			.commitmentStore(commitmentStore);
-	}
-
-	public static Builder defaultBuilder() {
-		RuntimeProperties properties = Modules.get(RuntimeProperties.class);
-		Guice.createInjector(
-			new LazyRequestDelivererModule(properties),
-			new PushOnlyDelivererModule(),
-			new IterativeDiscovererModule(properties),
-			new BerkeleyStoreModule()
-		);
-		LocalSystem localSystem = LocalSystem.getInstance();
-		BerkeleyTempoAtomStore atomStore = new BerkeleyTempoAtomStore(
-			localSystem.getNID(), Serialization.getDefault(),
-			SystemProfiler.getInstance(),
-			Modules.get(DatabaseEnvironment.class));
-		SingleThreadedScheduler scheduler = new SingleThreadedScheduler();
-		BerkeleyLCCursorStore cursorStore = new BerkeleyLCCursorStore(Modules.get(DatabaseEnvironment.class));
-		cursorStore.open();
-		BerkeleyCommitmentStore commitmentStore = new BerkeleyCommitmentStore(Modules.get(DatabaseEnvironment.class));
-		commitmentStore.open();
-		PeerSupplierAdapter peerSupplier = new PeerSupplierAdapter(() -> Modules.get(AddressBook.class));
-		IterativeDiscoverer iterativeDiscoverer = new IterativeDiscoverer(
-			localSystem.getNID(),
-			atomStore,
-			cursorStore,
-			commitmentStore,
-			scheduler,
-			Modules.get(MessageCentral.class),
-			Events.getInstance(),
-			IterativeDiscovererConfiguration.fromRuntimeProperties(properties)
-		);
-		LazyRequestDeliverer requestDeliverer = new LazyRequestDeliverer(
-			scheduler,
-			Modules.get(MessageCentral.class),
-			atomStore,
-			LazyRequestDelivererConfiguration.fromRuntimeProperties(properties)
-		);
-		PushOnlyDeliverer pushDelivery = new PushOnlyDeliverer(
-			localSystem.getNID(),
-			Modules.get(MessageCentral.class),
-			peerSupplier
-		);
-
-		return builder()
-			.self(localSystem.getNID())
-			.attestor(new TempoAttestor(localSystem, Time::currentTimestamp)::attestTo)
-			.peerSupplier(new PeerSupplierAdapter(() -> Modules.get(AddressBook.class)))
-			.edgeSelector(new SimpleEdgeSelector())
-			.atomStore(atomStore)
-			.commitmentStore(commitmentStore)
-			.addDiscoverer(iterativeDiscoverer)
-			.addDeliverer(requestDeliverer)
-			.addDeliverer(pushDelivery)
-			.requestDeliverer(requestDeliverer)
-			.addAcceptor(pushDelivery);
-	}
-
-	public static class Builder {
-		private EUID self;
-		private TempoAtomStore atomStore;
-		private CommitmentStore commitmentStore;
-		private Attestor attestor;
-		private PeerSupplier peerSupplier;
-		private EdgeSelector edgeSelector;
-		private RequestDeliverer requestDeliverer;
-		private final ImmutableSet.Builder<AtomDiscoverer> atomDiscoverers = ImmutableSet.builder();
-		private final ImmutableSet.Builder<AtomDeliverer> atomDeliverers = ImmutableSet.builder();
-		private final ImmutableSet.Builder<AtomAcceptor> atomAcceptors = ImmutableSet.builder();
-
-		public Builder self(EUID self) {
-			this.self = self;
-			return this;
-		}
-
-		public Builder atomStore(TempoAtomStore atomStore) {
-			this.atomStore = atomStore;
-			return this;
-		}
-
-		public Builder commitmentStore(CommitmentStore commitmentStore) {
-			this.commitmentStore = commitmentStore;
-			return this;
-		}
-
-		public Builder attestor(Attestor attestor) {
-			this.attestor = attestor;
-			return this;
-		}
-
-		public Builder edgeSelector(EdgeSelector edgeSelector) {
-			this.edgeSelector = edgeSelector;
-			return this;
-		}
-
-		public Builder peerSupplier(PeerSupplier peerSupplier) {
-			this.peerSupplier = peerSupplier;
-			return this;
-		}
-
-		public Builder addDiscoverer(AtomDiscoverer discoverer) {
-			this.atomDiscoverers.add(discoverer);
-			return this;
-		}
-
-		public Builder addDeliverer(AtomDeliverer deliverer) {
-			this.atomDeliverers.add(deliverer);
-			return this;
-		}
-
-		public Builder requestDeliverer(RequestDeliverer requestDeliverer) {
-			this.requestDeliverer = requestDeliverer;
-			return this;
-		}
-
-		public Builder addAcceptor(AtomAcceptor acceptor) {
-			this.atomAcceptors.add(acceptor);
-			return this;
-		}
-
-		public Tempo build() {
-			Objects.requireNonNull(self, "self is required");
-			Objects.requireNonNull(atomStore, "atomStore is required");
-			Objects.requireNonNull(commitmentStore, "commitmentStore is required");
-			Objects.requireNonNull(edgeSelector, "edgeSelector is required");
-			Objects.requireNonNull(peerSupplier, "peerSupplier is required");
-			Objects.requireNonNull(attestor, "attestor is required");
-			Objects.requireNonNull(requestDeliverer, "requestDeliverer is required");
-
-			return new Tempo(
-				self,
-				atomStore,
-				commitmentStore,
-				edgeSelector,
-				peerSupplier,
-				attestor,
-				atomDiscoverers.build(),
-				atomDeliverers.build(),
-				requestDeliverer,
-				atomAcceptors.build());
-		}
-	}
-
 }

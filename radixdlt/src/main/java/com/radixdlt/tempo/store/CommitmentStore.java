@@ -3,10 +3,11 @@ package com.radixdlt.tempo.store;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.common.EUID;
 import com.radixdlt.crypto.Hash;
+import com.radixdlt.tempo.Resource;
 
 import java.util.List;
 
-public interface CommitmentStore extends Store {
+public interface CommitmentStore extends Resource {
 	void put(EUID nid, long logicalClock, Hash commitment);
 
 	void put(EUID nid, List<Hash> commitments, long startPosition);

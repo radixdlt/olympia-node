@@ -7,7 +7,6 @@ import com.radixdlt.common.EUID;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.tempo.TempoException;
 import com.radixdlt.tempo.store.CommitmentStore;
-import com.radixdlt.tempo.store.Store;
 import com.radixdlt.utils.Longs;
 import com.sleepycat.je.Cursor;
 import com.sleepycat.je.Database;
@@ -29,7 +28,7 @@ import java.util.List;
 import java.util.Objects;
 
 @Singleton
-public class BerkeleyCommitmentStore implements Store, CommitmentStore {
+public class BerkeleyCommitmentStore implements CommitmentStore {
 	private static final String COMMITMENTS_DB_NAME = "tempo2.sync.iterative.commitments";
 	private static final Logger logger = Logging.getLogger("CursorStore");
 
@@ -39,8 +38,6 @@ public class BerkeleyCommitmentStore implements Store, CommitmentStore {
 	@Inject
 	public BerkeleyCommitmentStore(DatabaseEnvironment dbEnv) {
 		this.dbEnv = Objects.requireNonNull(dbEnv, "dbEnv is required");
-
-		this.open();
 	}
 
 	private void fail(String message) {
