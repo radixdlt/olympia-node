@@ -8,6 +8,7 @@ import java.security.Security;
 import com.radixdlt.mock.MockAccessor;
 import com.radixdlt.mock.MockApplication;
 import com.radixdlt.tempo.Tempo;
+import com.radixdlt.tempo.TempoFactory;
 import org.apache.commons.cli.CommandLine;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.json.JSONObject;
@@ -262,7 +263,7 @@ public class Radix extends Plugin
 		}
 
 		if (Modules.get(RuntimeProperties.class).get("tempo2", false)) {
-			Tempo tempo = Tempo.defaultBuilder().build();
+			Tempo tempo = new TempoFactory().createDefault(LocalSystem.getInstance(), Modules.get(RuntimeProperties.class));
 			Modules.getInstance().start(tempo);
 
 			MockApplication mockApplication = new MockApplication(tempo);

@@ -39,6 +39,8 @@ public class BerkeleyCommitmentStore implements Store, CommitmentStore {
 	@Inject
 	public BerkeleyCommitmentStore(DatabaseEnvironment dbEnv) {
 		this.dbEnv = Objects.requireNonNull(dbEnv, "dbEnv is required");
+
+		this.open();
 	}
 
 	private void fail(String message) {

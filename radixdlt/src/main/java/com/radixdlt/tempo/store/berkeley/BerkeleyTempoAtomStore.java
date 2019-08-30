@@ -91,6 +91,8 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 		this.serialization = Objects.requireNonNull(serialization);
 		this.profiler = Objects.requireNonNull(profiler);
 		this.dbEnv = Objects.requireNonNull(dbEnv);
+
+		this.open();
 	}
 
 	@Override

@@ -34,6 +34,8 @@ public final class BerkeleyLCCursorStore implements Store, LCCursorStore {
 	@Inject
 	public BerkeleyLCCursorStore(DatabaseEnvironment dbEnv) {
 		this.dbEnv = Objects.requireNonNull(dbEnv, "dbEnv is required");
+
+		this.open();
 	}
 
 	private void fail(String message) {
