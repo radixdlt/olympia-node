@@ -135,7 +135,7 @@ public final class SingleRequestDeliverer implements Closeable, AtomDeliverer, R
 			log.debug("Requesting delivery of " + aids.size() + " aids from " + peer);
 		}
 		DeliveryRequestMessage request = new DeliveryRequestMessage(aids);
-		deliveryState.addRequest(aids, peer.getSystem().getNID());
+		deliveryState.addRequest(aids, peer.getNID());
 		messageCentral.send(peer, request);
 
 		// TODO aggregate cancellables and cancel on stop
@@ -163,7 +163,7 @@ public final class SingleRequestDeliverer implements Closeable, AtomDeliverer, R
 			Optional<Peer> fallback = deliveryState.getFallback(missingAid);
 			if (fallback.isPresent()) {
 				Peer fallbackPeer = fallback.get();
-				EUID fallbackPeerNid = fallbackPeer.getSystem().getNID();
+				EUID fallbackPeerNid = fallbackPeer.getNID();
 				peersByNid.putIfAbsent(fallbackPeerNid, fallbackPeer);
 				retriesByNid.computeIfAbsent(fallbackPeerNid, x -> new HashSet<>()).add(missingAid);
 			} else {
@@ -177,10 +177,12 @@ public final class SingleRequestDeliverer implements Closeable, AtomDeliverer, R
 		}
 	}
 
+	@Override
 	public void addListener(AtomDeliveryListener listener) {
 		deliveryListeners.add(listener);
 	}
 
+	@Override
 	public void removeListener(AtomDeliveryListener listener) {
 		deliveryListeners.remove(listener);
 	}

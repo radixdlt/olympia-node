@@ -140,7 +140,7 @@ public class PeerManager extends Plugin {
 			EUID localNid = LocalSystem.getInstance().getNID();
 			peers.stream()
 				.filter(Peer::hasSystem)
-				.filter(p -> !localNid.equals(p.getSystem().getNID()))
+				.filter(p -> !localNid.equals(p.getNID()))
 				.forEachOrdered(addressbook::updatePeer);
 		}
 	}

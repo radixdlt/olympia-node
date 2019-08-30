@@ -435,7 +435,7 @@ public class ParticleConflictHandler extends Service
 					return;
 				}
 
-				if (ParticleConflictHandler.this.assistRequests.get(conflictAssistResponseMessage.getConflict().getUID()).contains(peer.getSystem().getNID()) == false) {
+				if (ParticleConflictHandler.this.assistRequests.get(conflictAssistResponseMessage.getConflict().getUID()).contains(peer.getNID()) == false) {
 					conflictsLog.debug(conflictAssistResponseMessage.getConflict().getUID() + ": Got conflict assist response from " + peer + " but no conflict assist requests was sent");
 					return;
 				}

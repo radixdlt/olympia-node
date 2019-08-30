@@ -197,7 +197,7 @@ public class RoutingHandler extends Service
 					RoutingHandler.this.NIDSets.put(period, NIDs);
 				}
 
-				NIDs.add(event.getPeer().getSystem().getNID());
+				NIDs.add(event.getPeer().getNID());
 			}
 		}
 	};

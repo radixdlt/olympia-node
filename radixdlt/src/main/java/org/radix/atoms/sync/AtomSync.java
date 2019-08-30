@@ -1081,7 +1081,7 @@ public class AtomSync extends Service
 								if (inventorySyncState == null) {
 									try {
 										// Fetch any historic inventory cursor from the AtomSyncStore.
-										DiscoveryCursor inventoryCursor = Modules.get(AtomSyncStore.class).getSyncState(peer.getSystem().getNID());
+										DiscoveryCursor inventoryCursor = Modules.get(AtomSyncStore.class).getSyncState(peer.getNID());
 
 										// Check the form of the inventory cursor against the peer's system information it provided
 										// Reset the cursor if a discrepancy is found
@@ -1180,7 +1180,7 @@ public class AtomSync extends Service
 									discoveryLog.debug("Delaying next inventory for "+inventorySyncState.getPeer()+" for "+inventorySyncState.getDelay());
 							}
 
-							Modules.get(AtomSyncStore.class).storeSyncState(inventorySyncState.getPeer().getSystem().getNID(), inventorySyncState.getCursor());
+							Modules.get(AtomSyncStore.class).storeSyncState(inventorySyncState.getPeer().getNID(), inventorySyncState.getCursor());
 						}
 						else
 						{
@@ -1490,7 +1490,7 @@ public class AtomSync extends Service
 				}
 			}
 
-			syncMetaData.put(syncPeer.getSystem().getNID().toString(), syncPeerMetaData);
+			syncMetaData.put(syncPeer.getNID().toString(), syncPeerMetaData);
 		}
 
 		metadata.put("sync", syncMetaData);
@@ -1617,10 +1617,11 @@ public class AtomSync extends Service
 				// FIXME If PeerHandler is not available yet, causes a real mess when genesis atoms are committed.
 				// Filter out the live peers with shards we need that are within sync bounds
 				filteredNIDs.addAll(Modules.get(AddressBook.class).recentPeers().
+													 filter(Peer::hasSystem).
 													 filter(peer -> peer.getSystem().isSynced(LocalSystem.getInstance()) == true). 					// Gossip to nodes that are in sync TODO isAhead is better?
 													 filter(peer -> peer.getSystem().getShards().intersects(atom.getShards()) == true). 			// Gossip to nodes that serve the atom shards
-													 filter(peer -> peer.getSystem().getNID().equals(LocalSystem.getInstance().getNID()) == false).	// Don't gossip to the local node
-													 map(peer -> peer.getSystem().getNID()).
+													 map(Peer::getNID).
+													 filter(nid -> nid.equals(LocalSystem.getInstance().getNID()) == false).	// Don't gossip to the local node
 													 collect(Collectors.toSet()));
 			}
 

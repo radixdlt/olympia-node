@@ -75,7 +75,7 @@ public class NetworkService {
 
 	public JSONObject getLiveNIDS() {
 		JSONArray NIDS = new JSONArray();
-		Modules.get(AddressBook.class).recentPeers().forEachOrdered(peer -> NIDS.put(peer.getSystem().getNID().toString()));
+		Modules.get(AddressBook.class).recentPeers().forEachOrdered(peer -> NIDS.put(peer.getNID().toString()));
 		return new JSONObject().put("nids", NIDS);
 	}
 

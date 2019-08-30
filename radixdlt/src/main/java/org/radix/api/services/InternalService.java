@@ -136,7 +136,7 @@ public class InternalService {
 								} else {
 									List<Peer> peers = Modules.get(AddressBook.class).recentPeers().collect(Collectors.toList());
 									for (Peer peer : peers) {
-										if (!peer.getSystem().getNID().equals(LocalSystem.getInstance().getNID()) && peer.getSystem().getShards().intersects(atom.getShards())) {
+										if (peer.hasSystem() && !peer.getNID().equals(LocalSystem.getInstance().getNID()) && peer.getSystem().getShards().intersects(atom.getShards())) {
 //											if (!org.radix.universe.System.getInstance().isSynced(peer.getSystem())) // TODO put this back in
 //												continue;
 

@@ -53,8 +53,8 @@ public class SyncDiscovery
 		@Override
 		public int compare(Peer p1, Peer p2)
 		{
-			long d1 = Math.abs((this.origin.getLow() * SyncPeerDistanceComparator.seed) - p1.getSystem().getNID().getLow());
-			long d2 = Math.abs((this.origin.getLow() * SyncPeerDistanceComparator.seed) - p2.getSystem().getNID().getLow());
+			long d1 = Math.abs((this.origin.getLow() * SyncPeerDistanceComparator.seed) - p1.getNID().getLow());
+			long d2 = Math.abs((this.origin.getLow() * SyncPeerDistanceComparator.seed) - p2.getNID().getLow());
 
 			if (d1 < d2)
 				return -1;

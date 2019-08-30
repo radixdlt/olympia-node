@@ -26,7 +26,7 @@ public class PeerSupplierAdapter implements PeerSupplier {
 	public List<EUID> getNids() {
 		return addressbookSupplier.get().recentPeers()
 			.filter(Peer::hasNID)
-			.map(peer -> peer.getSystem().getNID())
+			.map(peer -> peer.getNID())
 			.collect(Collectors.toList());
 	}
 
