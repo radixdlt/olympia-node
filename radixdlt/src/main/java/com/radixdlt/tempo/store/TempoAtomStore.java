@@ -1,15 +1,15 @@
-package com.radixdlt.tempo;
+package com.radixdlt.tempo.store;
 
 import com.radixdlt.common.AID;
 import com.radixdlt.ledger.LedgerIndex;
-import com.radixdlt.tempo.store.Store;
+import com.radixdlt.tempo.TempoAtom;
 
 import java.util.Set;
 
 /**
  * An entry-point for manipulating the state of a Tempo ledger.
  */
-public interface TempoAtomStore extends AtomStoreView, Store {
+public interface TempoAtomStore extends TempoAtomStoreView, Store {
 	/**
 	 * Deletes the atom associated with a certain {@link AID}.
 	 *

@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.UnsignedBytes;
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import com.radixdlt.Atom;
 import com.radixdlt.common.AID;
@@ -16,7 +17,7 @@ import com.radixdlt.ledger.exceptions.LedgerKeyConstraintException;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
-import com.radixdlt.tempo.TempoAtomStore;
+import com.radixdlt.tempo.store.TempoAtomStore;
 import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.TempoException;
 import com.radixdlt.utils.Longs;
@@ -59,6 +60,7 @@ import java.util.stream.Collectors;
 import static com.radixdlt.tempo.store.berkeley.TempoAtomIndices.ATOM_INDEX_PREFIX;
 import static com.radixdlt.tempo.store.berkeley.TempoAtomIndices.SHARD_INDEX_PREFIX;
 
+@Singleton
 public class BerkeleyTempoAtomStore implements TempoAtomStore {
 	private static final String ATOM_INDICES_DB_NAME = "tempo2.atom_indices";
 	private static final String DUPLICATE_INDICES_DB_NAME = "tempo2.duplicated_indices";

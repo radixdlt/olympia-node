@@ -7,7 +7,7 @@ import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerSearchMode;
 import com.radixdlt.middleware.RadixEngineUtils;
 import com.radixdlt.middleware.SimpleRadixEngineAtom;
-import com.radixdlt.tempo.TempoAtomStore;
+import com.radixdlt.tempo.store.TempoAtomStore;
 import com.radixdlt.tempo.LegacyUtils;
 import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.TempoException;

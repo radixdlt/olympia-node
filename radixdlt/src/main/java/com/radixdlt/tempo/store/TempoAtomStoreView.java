@@ -1,7 +1,8 @@
-package com.radixdlt.tempo;
+package com.radixdlt.tempo.store;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.common.AID;
+import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.ledger.LedgerCursor;
 import com.radixdlt.ledger.LedgerIndex;
@@ -13,7 +14,7 @@ import java.util.Optional;
 /**
  * A read-only view of a specific AtomStore
  */
-public interface AtomStoreView {
+public interface TempoAtomStoreView {
 	/**
 	 * Checks whether the given aid is contained in this view
 	 * @param aid The aid

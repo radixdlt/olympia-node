@@ -1,5 +1,7 @@
 package com.radixdlt.tempo;
 
+import com.google.inject.Inject;
+import com.google.inject.name.Named;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
 import com.radixdlt.utils.Pair;
@@ -17,18 +19,22 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.LongSupplier;
 
-final class TempoAttestor {
+public final class TempoAttestor implements Attestor {
 	private static final Logger logger = Logging.getLogger("Tempo");
 
 	private final LocalSystem localSystem;
-	private final LongSupplier wallclockTimeSupplier;
+	private final WallclockTimeSupplier wallclockTimeSupplier;
 
-	TempoAttestor(LocalSystem localSystem, LongSupplier wallclockTimeSupplier) {
+	@Inject
+	TempoAttestor(
+		@Named("self") LocalSystem localSystem,
+		WallclockTimeSupplier wallclockTimeSupplier
+	) {
 		this.localSystem = Objects.requireNonNull(localSystem, "localSystem is required");
 		this.wallclockTimeSupplier = Objects.requireNonNull(wallclockTimeSupplier, "wallclockTimeSupplier");
 	}
 
-	TemporalProof attestTo(TemporalProof temporalProof, List<EUID> edges) {
+	public TemporalProof attestTo(TemporalProof temporalProof, List<EUID> edges) {
 		TemporalVertex existingNIDVertex = temporalProof.getVertexByNID(this.localSystem.getNID());
 		AID aid = temporalProof.getAID();
 		if (existingNIDVertex != null) {

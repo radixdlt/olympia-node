@@ -3,6 +3,8 @@ package com.radixdlt.tempo;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.inject.Guice;
+import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.radixdlt.Atom;
 import com.radixdlt.engine.AtomStatus;
@@ -15,15 +17,21 @@ import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerSearchMode;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.tempo.delivery.AtomDeliverer;
+import com.radixdlt.tempo.delivery.LazyRequestDelivererModule;
+import com.radixdlt.tempo.delivery.PushOnlyDelivererModule;
 import com.radixdlt.tempo.delivery.RequestDeliverer;
-import com.radixdlt.tempo.delivery.SingleRequestDeliverer;
+import com.radixdlt.tempo.delivery.LazyRequestDeliverer;
 import com.radixdlt.tempo.delivery.PushOnlyDeliverer;
-import com.radixdlt.tempo.delivery.SingleRequestDelivererConfiguration;
+import com.radixdlt.tempo.delivery.LazyRequestDelivererConfiguration;
 import com.radixdlt.tempo.discovery.AtomDiscoverer;
 import com.radixdlt.tempo.discovery.IterativeDiscoverer;
 import com.radixdlt.tempo.discovery.IterativeDiscovererConfiguration;
+import com.radixdlt.tempo.discovery.IterativeDiscovererModule;
+import com.radixdlt.tempo.store.TempoAtomStore;
+import com.radixdlt.tempo.store.TempoAtomStoreView;
 import com.radixdlt.tempo.store.berkeley.BerkeleyCommitmentStore;
 import com.radixdlt.tempo.store.berkeley.BerkeleyLCCursorStore;
+import com.radixdlt.tempo.store.berkeley.BerkeleyStoreModule;
 import com.radixdlt.tempo.store.berkeley.BerkeleyTempoAtomStore;
 import com.radixdlt.tempo.store.CommitmentStore;
 import org.radix.database.DatabaseEnvironment;
@@ -51,7 +59,6 @@ import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -74,9 +81,10 @@ public final class Tempo extends Plugin implements Ledger {
 	private final Set<AtomDiscoverer> atomDiscoverers;
 	private final Set<AtomDeliverer> atomDeliverers;
 	private final RequestDeliverer requestDeliverer;
-	private final Set<Consumer<TempoAtom>> acceptors;
+	private final Set<AtomAcceptor> acceptors;
 
-	private Tempo(@Named("self") EUID self,
+	@Inject
+	public Tempo(@Named("self") EUID self,
 	              TempoAtomStore atomStore,
 	              CommitmentStore commitmentStore,
 	              EdgeSelector edgeSelector,
@@ -85,7 +93,7 @@ public final class Tempo extends Plugin implements Ledger {
 	              Set<AtomDiscoverer> atomDiscoverers,
 	              Set<AtomDeliverer> atomDeliverers,
 	              RequestDeliverer requestDeliverer,
-	              ImmutableSet<Consumer<TempoAtom>> acceptors
+	              Set<AtomAcceptor> acceptors
 	) {
 		this.self = self;
 		this.atomStore = atomStore;
@@ -200,7 +208,7 @@ public final class Tempo extends Plugin implements Ledger {
 	@Override
 	public void start_impl() {
 		this.atomStore.open();
-		Modules.put(AtomStoreView.class, this.atomStore);
+		Modules.put(TempoAtomStoreView.class, this.atomStore);
 		Modules.put(AtomSyncView.class, new AtomSyncView() {
 			@Override
 			public void inject(org.radix.atoms.Atom atom) {
@@ -229,7 +237,7 @@ public final class Tempo extends Plugin implements Ledger {
 
 	@Override
 	public void stop_impl() {
-		Modules.remove(AtomStoreView.class);
+		Modules.remove(TempoAtomStoreView.class);
 		Modules.remove(AtomSyncView.class);
 		this.atomStore.close();
 	}
@@ -282,6 +290,13 @@ public final class Tempo extends Plugin implements Ledger {
 	}
 
 	public static Builder defaultBuilder() {
+		RuntimeProperties properties = Modules.get(RuntimeProperties.class);
+		Guice.createInjector(
+			new LazyRequestDelivererModule(properties),
+			new PushOnlyDelivererModule(),
+			new IterativeDiscovererModule(properties),
+			new BerkeleyStoreModule()
+		);
 		LocalSystem localSystem = LocalSystem.getInstance();
 		BerkeleyTempoAtomStore atomStore = new BerkeleyTempoAtomStore(
 			localSystem.getNID(), Serialization.getDefault(),
@@ -293,7 +308,6 @@ public final class Tempo extends Plugin implements Ledger {
 		BerkeleyCommitmentStore commitmentStore = new BerkeleyCommitmentStore(Modules.get(DatabaseEnvironment.class));
 		commitmentStore.open();
 		PeerSupplierAdapter peerSupplier = new PeerSupplierAdapter(() -> Modules.get(AddressBook.class));
-		RuntimeProperties properties = Modules.get(RuntimeProperties.class);
 		IterativeDiscoverer iterativeDiscoverer = new IterativeDiscoverer(
 			localSystem.getNID(),
 			atomStore,
@@ -304,11 +318,11 @@ public final class Tempo extends Plugin implements Ledger {
 			Events.getInstance(),
 			IterativeDiscovererConfiguration.fromRuntimeProperties(properties)
 		);
-		SingleRequestDeliverer requestDeliverer = new SingleRequestDeliverer(
+		LazyRequestDeliverer requestDeliverer = new LazyRequestDeliverer(
 			scheduler,
 			Modules.get(MessageCentral.class),
 			atomStore,
-			SingleRequestDelivererConfiguration.fromRuntimeProperties(properties)
+			LazyRequestDelivererConfiguration.fromRuntimeProperties(properties)
 		);
 		PushOnlyDeliverer pushDelivery = new PushOnlyDeliverer(
 			localSystem.getNID(),
@@ -327,7 +341,7 @@ public final class Tempo extends Plugin implements Ledger {
 			.addDeliverer(requestDeliverer)
 			.addDeliverer(pushDelivery)
 			.requestDeliverer(requestDeliverer)
-			.addAcceptor(pushDelivery::accept);
+			.addAcceptor(pushDelivery);
 	}
 
 	public static class Builder {
@@ -340,7 +354,7 @@ public final class Tempo extends Plugin implements Ledger {
 		private RequestDeliverer requestDeliverer;
 		private final ImmutableSet.Builder<AtomDiscoverer> atomDiscoverers = ImmutableSet.builder();
 		private final ImmutableSet.Builder<AtomDeliverer> atomDeliverers = ImmutableSet.builder();
-		private final ImmutableSet.Builder<Consumer<TempoAtom>> atomAcceptors = ImmutableSet.builder();
+		private final ImmutableSet.Builder<AtomAcceptor> atomAcceptors = ImmutableSet.builder();
 
 		public Builder self(EUID self) {
 			this.self = self;
@@ -387,7 +401,7 @@ public final class Tempo extends Plugin implements Ledger {
 			return this;
 		}
 
-		public Builder addAcceptor(Consumer<TempoAtom> acceptor) {
+		public Builder addAcceptor(AtomAcceptor acceptor) {
 			this.atomAcceptors.add(acceptor);
 			return this;
 		}

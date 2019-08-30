@@ -2,11 +2,13 @@ package com.radixdlt.tempo.discovery;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.tempo.AtomStoreView;
+import com.radixdlt.tempo.store.TempoAtomStoreView;
 import com.radixdlt.tempo.LogicalClockCursor;
 import com.radixdlt.tempo.Scheduler;
 import com.radixdlt.tempo.discovery.messages.IterativeDiscoveryRequestMessage;
@@ -35,6 +37,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Discoverer which uses logical clocks as a cursor to iterate through all relevant {@link AID}s of known nodes
  */
+@Singleton
 public final class IterativeDiscoverer implements Closeable, AtomDiscoverer {
 	private static final Logger log = Logging.getLogger("IterativeDiscoverer");
 
@@ -54,7 +57,7 @@ public final class IterativeDiscoverer implements Closeable, AtomDiscoverer {
 
 	private final LCCursorStore cursorStore;
 	private final CommitmentStore commitmentStore;
-	private final AtomStoreView storeView;
+	private final TempoAtomStoreView storeView;
 	private final Scheduler scheduler;
 	private final MessageCentral messageCentral;
 
@@ -63,9 +66,10 @@ public final class IterativeDiscoverer implements Closeable, AtomDiscoverer {
 	private final BlockingQueue<IterativeDiscoveryRequest> requestQueue;
 	private final SimpleThreadPool<IterativeDiscoveryRequest> requestThreadPool;
 
+	@Inject
 	public IterativeDiscoverer(
 		@Named("self") EUID self,
-		AtomStoreView storeView,
+		TempoAtomStoreView storeView,
 		LCCursorStore cursorStore,
 		CommitmentStore commitmentStore,
 		Scheduler scheduler,

@@ -1,5 +1,6 @@
 package com.radixdlt.tempo.store.berkeley;
 
+import com.google.inject.Singleton;
 import com.radixdlt.common.AID;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
@@ -24,6 +25,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+@Singleton
 public class BerkeleySampleStore implements SampleStore {
 	private static final Logger logger = Logging.getLogger("Sampling.Store");
 	private static final String COLLECTED_SAMPLES_DB_NAME = "tempo2.samples.collected";

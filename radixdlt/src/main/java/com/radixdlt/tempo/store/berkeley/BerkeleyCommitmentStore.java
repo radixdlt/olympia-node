@@ -2,6 +2,7 @@ package com.radixdlt.tempo.store.berkeley;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.radixdlt.common.EUID;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.tempo.TempoException;
@@ -27,6 +28,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 
+@Singleton
 public class BerkeleyCommitmentStore implements Store, CommitmentStore {
 	private static final String COMMITMENTS_DB_NAME = "tempo2.sync.iterative.commitments";
 	private static final Logger logger = Logging.getLogger("CursorStore");
