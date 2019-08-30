@@ -1,6 +1,7 @@
 package com.radixdlt.tempo.store.berkeley;
 
 import com.google.common.collect.ImmutableList;
+import com.google.inject.Inject;
 import com.radixdlt.common.EUID;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.tempo.TempoException;
@@ -33,6 +34,7 @@ public class BerkeleyCommitmentStore implements Store, CommitmentStore {
 	private final DatabaseEnvironment dbEnv;
 	private Database commitments; // commitment hashes by NID + logical clock
 
+	@Inject
 	public BerkeleyCommitmentStore(DatabaseEnvironment dbEnv) {
 		this.dbEnv = Objects.requireNonNull(dbEnv, "dbEnv is required");
 	}

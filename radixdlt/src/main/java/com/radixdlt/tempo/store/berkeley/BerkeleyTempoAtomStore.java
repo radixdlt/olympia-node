@@ -3,8 +3,11 @@ package com.radixdlt.tempo.store.berkeley;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.UnsignedBytes;
+import com.google.inject.Inject;
+import com.google.inject.name.Named;
 import com.radixdlt.Atom;
 import com.radixdlt.common.AID;
+import com.radixdlt.common.EUID;
 import com.radixdlt.ledger.LedgerCursor;
 import com.radixdlt.ledger.LedgerCursor.LedgerIndexType;
 import com.radixdlt.ledger.LedgerIndex;
@@ -40,7 +43,6 @@ import org.radix.logging.Logging;
 import org.radix.shards.ShardRange;
 import org.radix.shards.ShardSpace;
 import org.radix.time.TemporalVertex;
-import org.radix.universe.system.LocalSystem;
 import org.radix.utils.SystemProfiler;
 
 import java.util.ArrayList;
@@ -52,7 +54,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static com.radixdlt.tempo.store.berkeley.TempoAtomIndices.ATOM_INDEX_PREFIX;
@@ -65,10 +66,10 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 	private static final String ATOMS_DB_NAME = "tempo2.atoms";
 	private static final Logger logger = Logging.getLogger("Store");
 
+	private final EUID self;
 	private final Serialization serialization;
 	private final SystemProfiler profiler;
-	private final LocalSystem localSystem;
-	private final Supplier<DatabaseEnvironment> dbEnv;
+	private final DatabaseEnvironment dbEnv;
 
 	private final Map<AID, TempoAtomIndices> currentIndices = new ConcurrentHashMap<>();
 
@@ -77,11 +78,17 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 	private SecondaryDatabase duplicatedIndices; // TempoAtoms by secondary duplicate indices (with prefixes)
 	private Database atomIndices; // TempoAtomIndices by same primary keys
 
-	public BerkeleyTempoAtomStore(Serialization serialization, SystemProfiler profiler, LocalSystem localSystem, Supplier<DatabaseEnvironment> dbEnv) {
-		this.serialization = Objects.requireNonNull(serialization, "serialization is required");
-		this.profiler = Objects.requireNonNull(profiler, "profiler is required");
-		this.localSystem = Objects.requireNonNull(localSystem, "localSystem is required");
-		this.dbEnv = Objects.requireNonNull(dbEnv, "dbEnv is required");
+	@Inject
+	public BerkeleyTempoAtomStore(
+		@Named("self") EUID self,
+		Serialization serialization,
+		SystemProfiler profiler,
+		DatabaseEnvironment dbEnv
+	) {
+		this.self = Objects.requireNonNull(self);
+		this.serialization = Objects.requireNonNull(serialization);
+		this.profiler = Objects.requireNonNull(profiler);
+		this.dbEnv = Objects.requireNonNull(dbEnv);
 	}
 
 	@Override
@@ -109,7 +116,7 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 		indicesConfig.setBtreeComparator(BerkeleyTempoAtomStore.AtomStorePackedPrimaryKeyComparator.class);
 
 		try {
-			Environment dbEnv = this.dbEnv.get().getEnvironment();
+			Environment dbEnv = this.dbEnv.getEnvironment();
 			this.atoms = dbEnv.openDatabase(null, ATOMS_DB_NAME, primaryConfig);
 			this.uniqueIndices = dbEnv.openSecondaryDatabase(null, UNIQUE_INDICES_DB_NAME, this.atoms, uniqueIndicesConfig);
 			this.duplicatedIndices = dbEnv.openSecondaryDatabase(null, DUPLICATE_INDICES_DB_NAME, this.atoms, duplicateIndicesConfig);
@@ -127,9 +134,9 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 	public void reset() {
 		Transaction transaction = null;
 		try {
-			dbEnv.get().lock();
+			dbEnv.lock();
 
-			Environment env = this.dbEnv.get().getEnvironment();
+			Environment env = this.dbEnv.getEnvironment();
 			transaction = env.beginTransaction(null, new TransactionConfig().setReadUncommitted(true));
 			env.truncateDatabase(transaction, ATOMS_DB_NAME, false);
 			env.truncateDatabase(transaction, UNIQUE_INDICES_DB_NAME, false);
@@ -149,7 +156,7 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 
 			throw new TempoException("Error while resetting databases", e);
 		} finally {
-			dbEnv.get().unlock();
+			dbEnv.unlock();
 		}
 	}
 
@@ -272,7 +279,7 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 	@Override
 	public boolean store(TempoAtom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
 		long start = profiler.begin();
-		Transaction transaction = dbEnv.get().getEnvironment().beginTransaction(null, null);
+		Transaction transaction = dbEnv.getEnvironment().beginTransaction(null, null);
 		try {
 			if (doStore(atom, uniqueIndices, duplicateIndices, transaction)) {
 				transaction.commit();
@@ -295,7 +302,7 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 	@Override
 	public boolean delete(AID aid) {
 		long start = profiler.begin();
-		Transaction transaction = dbEnv.get().getEnvironment().beginTransaction(null, null);
+		Transaction transaction = dbEnv.getEnvironment().beginTransaction(null, null);
 		try {
 			if (doDelete(aid, transaction)) {
 				transaction.commit();
@@ -316,7 +323,7 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 	@Override
 	public boolean replace(Set<AID> aids, TempoAtom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
 		long start = profiler.begin();
-		Transaction transaction = dbEnv.get().getEnvironment().beginTransaction(null, null);
+		Transaction transaction = dbEnv.getEnvironment().beginTransaction(null, null);
 		try {
 			for (AID aid : aids) {
 				if (!doDelete(aid, transaction)) {
@@ -343,7 +350,7 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 	}
 
 	private boolean doStore(TempoAtom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices, Transaction transaction) throws SerializationException {
-		TemporalVertex localTemporalVertex = atom.getTemporalProof().getVertexByNID(localSystem.getNID());
+		TemporalVertex localTemporalVertex = atom.getTemporalProof().getVertexByNID(self);
 		if (localTemporalVertex == null) {
 			fail("Cannot store atom '" + atom.getAID() + "' without local temporal vertex");
 		}

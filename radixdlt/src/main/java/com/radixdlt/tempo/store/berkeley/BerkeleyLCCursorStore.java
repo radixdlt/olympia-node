@@ -1,5 +1,6 @@
 package com.radixdlt.tempo.store.berkeley;
 
+import com.google.inject.Inject;
 import com.radixdlt.common.EUID;
 import com.radixdlt.tempo.TempoException;
 import com.radixdlt.tempo.store.LCCursorStore;
@@ -28,6 +29,7 @@ public final class BerkeleyLCCursorStore implements Store, LCCursorStore {
 	private final DatabaseEnvironment dbEnv;
 	private Database cursors;
 
+	@Inject
 	public BerkeleyLCCursorStore(DatabaseEnvironment dbEnv) {
 		this.dbEnv = Objects.requireNonNull(dbEnv, "dbEnv is required");
 	}

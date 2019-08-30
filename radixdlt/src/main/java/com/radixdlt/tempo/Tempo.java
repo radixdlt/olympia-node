@@ -267,10 +267,10 @@ public final class Tempo extends Plugin implements Ledger {
 	public static Builder defaultBuilderStoreOnly() {
 		LocalSystem localSystem = LocalSystem.getInstance();
 		BerkeleyTempoAtomStore atomStore = new BerkeleyTempoAtomStore(
+			localSystem.getNID(),
 			Serialization.getDefault(),
 			SystemProfiler.getInstance(),
-			localSystem,
-			() -> Modules.get(DatabaseEnvironment.class));
+			Modules.get(DatabaseEnvironment.class));
 		BerkeleyCommitmentStore commitmentStore = new BerkeleyCommitmentStore(Modules.get(DatabaseEnvironment.class));
 		commitmentStore.open();
 		TempoAttestor attestor = new TempoAttestor(localSystem, Time::currentTimestamp);
@@ -284,10 +284,9 @@ public final class Tempo extends Plugin implements Ledger {
 	public static Builder defaultBuilder() {
 		LocalSystem localSystem = LocalSystem.getInstance();
 		BerkeleyTempoAtomStore atomStore = new BerkeleyTempoAtomStore(
-			Serialization.getDefault(),
+			localSystem.getNID(), Serialization.getDefault(),
 			SystemProfiler.getInstance(),
-			localSystem,
-			() -> Modules.get(DatabaseEnvironment.class));
+			Modules.get(DatabaseEnvironment.class));
 		SingleThreadedScheduler scheduler = new SingleThreadedScheduler();
 		BerkeleyLCCursorStore cursorStore = new BerkeleyLCCursorStore(Modules.get(DatabaseEnvironment.class));
 		cursorStore.open();

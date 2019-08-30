@@ -12,9 +12,6 @@ import com.radixdlt.ledger.LedgerSearchMode;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.tempo.AtomGenerator;
 import com.radixdlt.tempo.TempoAtom;
-import com.radixdlt.tempo.store.berkeley.BerkeleyCursor;
-import com.radixdlt.tempo.store.berkeley.BerkeleyTempoAtomStore;
-import com.radixdlt.tempo.store.berkeley.TempoAtomIndices;
 import com.radixdlt.utils.Ints;
 
 import static org.junit.Assume.assumeTrue;
@@ -61,7 +58,7 @@ public class BerkeleyTempoAtomStoreTests extends RadixTestWithStores {
 
     @Before
     public void setup() throws CryptoException, ValidationException {
-        tempoAtomStore = new BerkeleyTempoAtomStore(serialization, profiler, localSystem, () -> Modules.get(DatabaseEnvironment.class));
+        tempoAtomStore = new BerkeleyTempoAtomStore(localSystem.getNID(), serialization, profiler, Modules.get(DatabaseEnvironment.class));
         tempoAtomStore.open();
 
         identity = new ECKeyPair();

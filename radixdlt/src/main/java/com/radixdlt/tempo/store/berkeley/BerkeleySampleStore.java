@@ -19,6 +19,7 @@ import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.time.TemporalProof;
 
+import javax.inject.Inject;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -28,13 +29,14 @@ public class BerkeleySampleStore implements SampleStore {
 	private static final String COLLECTED_SAMPLES_DB_NAME = "tempo2.samples.collected";
 	private static final String LOCAL_SAMPLES_DB_NAME = "tempo2.samples.local";
 
-	private final Supplier<DatabaseEnvironment> dbEnv;
+	private final DatabaseEnvironment dbEnv;
 	private final Serialization serialization;
 	// TODO use prefix instead of two different databases (use type + aid as primary)
 	private Database collectedSamples;
 	private Database localSamples;
 
-	public BerkeleySampleStore(Supplier<DatabaseEnvironment> dbEnv, Serialization serialization) {
+	@Inject
+	public BerkeleySampleStore(DatabaseEnvironment dbEnv, Serialization serialization) {
 		this.dbEnv = Objects.requireNonNull(dbEnv, "dbEnv is required");
 		this.serialization = Objects.requireNonNull(serialization, "serialization is required");
 	}
@@ -56,7 +58,7 @@ public class BerkeleySampleStore implements SampleStore {
 		primaryConfig.setTransactional(true);
 
 		try {
-			Environment dbEnv = this.dbEnv.get().getEnvironment();
+			Environment dbEnv = this.dbEnv.getEnvironment();
 			this.collectedSamples = dbEnv.openDatabase(null, COLLECTED_SAMPLES_DB_NAME, primaryConfig);
 			this.localSamples = dbEnv.openDatabase(null, LOCAL_SAMPLES_DB_NAME, primaryConfig);
 		} catch (Exception e) {
@@ -72,9 +74,9 @@ public class BerkeleySampleStore implements SampleStore {
 	public void reset() {
 		Transaction transaction = null;
 		try {
-			dbEnv.get().lock();
+			dbEnv.lock();
 
-			Environment env = this.dbEnv.get().getEnvironment();
+			Environment env = this.dbEnv.getEnvironment();
 			transaction = env.beginTransaction(null, new TransactionConfig().setReadUncommitted(true));
 			env.truncateDatabase(transaction, COLLECTED_SAMPLES_DB_NAME, false);
 			env.truncateDatabase(transaction, LOCAL_SAMPLES_DB_NAME, false);
@@ -90,7 +92,7 @@ public class BerkeleySampleStore implements SampleStore {
 			}
 			throw new TempoException("Error while resetting databases", e);
 		} finally {
-			dbEnv.get().unlock();
+			dbEnv.unlock();
 		}
 	}
 
@@ -126,7 +128,7 @@ public class BerkeleySampleStore implements SampleStore {
 	}
 
 	private void add(TemporalProof temporalProof, Database database) {
-		Transaction transaction = dbEnv.get().getEnvironment().beginTransaction(null, null);
+		Transaction transaction = dbEnv.getEnvironment().beginTransaction(null, null);
 		AID aid = temporalProof.getAID();
 		try {
 			DatabaseEntry key = new DatabaseEntry(aid.getBytes());
