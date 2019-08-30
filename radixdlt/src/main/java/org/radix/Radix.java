@@ -304,7 +304,7 @@ public class Radix extends Plugin
 		{
 			Modules.getInstance().start(new Interfaces());
 			Modules.getInstance().start(Network.getInstance());
-			AddressBookImpl addressBook = createAddressBook(Serialization.getDefault());
+			AddressBookImpl addressBook = createAddressBook(Serialization.getDefault(), Events.getInstance());
 			Modules.getInstance().start(addressBook);
 			Modules.getInstance().start(createPeerManager(Modules.get(RuntimeProperties.class), addressBook, messageCentral, Events.getInstance()));
 		}
@@ -350,8 +350,8 @@ public class Radix extends Plugin
 		return new MessageCentralFactory().createDefault(properties);
 	}
 
-	private AddressBookImpl createAddressBook(Serialization serialization) {
-		return new AddressBookFactory().createDefault(serialization);
+	private AddressBookImpl createAddressBook(Serialization serialization, Events events) {
+		return new AddressBookFactory().createDefault(serialization, events);
 	}
 
 	private Module createPeerManager(RuntimeProperties properties, AddressBookImpl addressBook, MessageCentral messageCentral, Events events) {

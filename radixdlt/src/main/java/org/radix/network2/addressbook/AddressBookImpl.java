@@ -47,10 +47,12 @@ import com.sleepycat.je.TransactionConfig;
  * Note that the underlying storage is (largely) persistent so that clients
  * do not have to wait for a lengthy discovery process to complete on restarting.
  */
+// FIXME: Static dependency on Network.getInstance().isWhitelisted(...)
 public class AddressBookImpl extends DatabaseStore implements AddressBook {
 	private static final Logger log = Logging.getLogger("addressbook");
 
 	private final Serialization serialization;
+	private final Events events;
 
 	private final Lock peersLock = new ReentrantLock();
 	private final Map<EUID, Peer>          peersByNid  = new HashMap<>();
@@ -58,9 +60,10 @@ public class AddressBookImpl extends DatabaseStore implements AddressBook {
 
 	private Database peersByNidDB;
 
-	AddressBookImpl(Serialization serialization) {
+	AddressBookImpl(Serialization serialization, Events events) {
 		super();
 		this.serialization = Objects.requireNonNull(serialization);
+		this.events = Objects.requireNonNull(events);
 	}
 
 	@Override
@@ -198,10 +201,10 @@ public class AddressBookImpl extends DatabaseStore implements AddressBook {
 	private boolean handleUpdatedPeers(Pair<Peer, Peer> updatedPeers) {
 		if (updatedPeers != null) {
 			if (updatedPeers.getFirst() != null) {
-				Events.getInstance().broadcast(new PeersAddedEvent(ImmutableList.of(updatedPeers.getFirst())));
+				events.broadcast(new PeersAddedEvent(ImmutableList.of(updatedPeers.getFirst())));
 			}
 			if (updatedPeers.getSecond() != null) {
-				Events.getInstance().broadcast(new PeersRemovedEvent(ImmutableList.of(updatedPeers.getSecond())));
+				events.broadcast(new PeersRemovedEvent(ImmutableList.of(updatedPeers.getSecond())));
 			}
 			return updatedPeers.getFirst() != null || updatedPeers.getSecond() != null;
 		}
