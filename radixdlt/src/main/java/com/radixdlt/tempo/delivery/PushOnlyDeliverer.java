@@ -17,7 +17,7 @@ import java.util.Collections;
 import java.util.Objects;
 import java.util.Optional;
 
-public final class PushDeliveryController implements Closeable, AtomDeliverer {
+public final class PushOnlyDeliverer implements Closeable, AtomDeliverer {
 	private static final Logger log = Logging.getLogger("Pusher");
 
 	private final EUID self;
@@ -26,7 +26,7 @@ public final class PushDeliveryController implements Closeable, AtomDeliverer {
 
 	private final Collection<AtomDeliveryListener> deliveryListeners;
 
-	public PushDeliveryController(
+	public PushOnlyDeliverer(
 		EUID self,
 		MessageCentral messageCentral,
 		PeerSupplier peerSupplier

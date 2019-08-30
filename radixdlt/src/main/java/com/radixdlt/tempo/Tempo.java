@@ -2,6 +2,7 @@ package com.radixdlt.tempo;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.Atom;
 import com.radixdlt.engine.AtomStatus;
 import com.radixdlt.common.AID;
@@ -13,11 +14,11 @@ import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerSearchMode;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.tempo.delivery.AtomDeliverer;
-import com.radixdlt.tempo.delivery.TargetDeliverer;
-import com.radixdlt.tempo.delivery.TargetDeliveryController;
-import com.radixdlt.tempo.delivery.PushDeliveryController;
+import com.radixdlt.tempo.delivery.RequestDeliverer;
+import com.radixdlt.tempo.delivery.SingleRequestDeliverer;
+import com.radixdlt.tempo.delivery.PushOnlyDeliverer;
 import com.radixdlt.tempo.discovery.AtomDiscoverer;
-import com.radixdlt.tempo.discovery.IterativeDiscoveryController;
+import com.radixdlt.tempo.discovery.IterativeDiscoverer;
 import com.radixdlt.tempo.store.berkeley.BerkeleyCommitmentStore;
 import com.radixdlt.tempo.store.berkeley.BerkeleyTempoAtomStore;
 import com.radixdlt.tempo.store.CommitmentStore;
@@ -65,10 +66,10 @@ public final class Tempo extends Plugin implements Ledger {
 
 	private final BlockingQueue<TempoAtom> inboundAtoms;
 
-	private final ImmutableList<AtomDiscoverer> atomDiscoverers;
-	private final ImmutableList<AtomDeliverer> atomDeliverers;
-	private final TargetDeliverer targetDeliverer;
-	private final ImmutableList<Consumer<TempoAtom>> acceptors;
+	private final Set<AtomDiscoverer> atomDiscoverers;
+	private final Set<AtomDeliverer> atomDeliverers;
+	private final RequestDeliverer requestDeliverer;
+	private final Set<Consumer<TempoAtom>> acceptors;
 
 	private Tempo(EUID self,
 	              TempoAtomStore atomStore,
@@ -76,10 +77,10 @@ public final class Tempo extends Plugin implements Ledger {
 	              EdgeSelector edgeSelector,
 	              PeerSupplier peerSupplier,
 	              Attestor attestor,
-	              ImmutableList<AtomDiscoverer> atomDiscoverers,
-	              ImmutableList<AtomDeliverer> atomDeliverers,
-	              TargetDeliverer targetDeliverer,
-	              ImmutableList<Consumer<TempoAtom>> acceptors
+	              Set<AtomDiscoverer> atomDiscoverers,
+	              Set<AtomDeliverer> atomDeliverers,
+	              RequestDeliverer requestDeliverer,
+	              ImmutableSet<Consumer<TempoAtom>> acceptors
 	) {
 		this.self = self;
 		this.atomStore = atomStore;
@@ -89,7 +90,7 @@ public final class Tempo extends Plugin implements Ledger {
 		this.attestor = attestor;
 		this.atomDiscoverers = atomDiscoverers;
 		this.atomDeliverers = atomDeliverers;
-		this.targetDeliverer = targetDeliverer;
+		this.requestDeliverer = requestDeliverer;
 		this.acceptors = acceptors;
 
 		this.inboundAtoms = new LinkedBlockingQueue<>(INBOUND_QUEUE_CAPACITY);
@@ -97,7 +98,7 @@ public final class Tempo extends Plugin implements Ledger {
 		// hook up components
 		// TODO remove listeners when closed?
 		for (AtomDiscoverer atomDiscoverer : this.atomDiscoverers) {
-			atomDiscoverer.addListener(targetDeliverer::deliver);
+			atomDiscoverer.addListener(requestDeliverer::tryDeliver);
 		}
 		for (AtomDeliverer atomDeliverer : atomDeliverers) {
 			atomDeliverer.addListener((atom, peer) -> addInbound(atom));
@@ -286,7 +287,7 @@ public final class Tempo extends Plugin implements Ledger {
 		BerkeleyCommitmentStore commitmentStore = new BerkeleyCommitmentStore(Modules.get(DatabaseEnvironment.class));
 		commitmentStore.open();
 		PeerSupplierAdapter peerSupplier = new PeerSupplierAdapter(() -> Modules.get(PeerHandler.class));
-		IterativeDiscoveryController iterativeDiscoverer = new IterativeDiscoveryController(
+		IterativeDiscoverer iterativeDiscoverer = new IterativeDiscoverer(
 			localSystem.getNID(),
 			atomStore,
 			commitmentStore,
@@ -295,12 +296,12 @@ public final class Tempo extends Plugin implements Ledger {
 			Modules.get(MessageCentral.class),
 			new LegacyAddressBookAdapter(() -> Modules.get(PeerHandler.class), Events.getInstance())
 		);
-		TargetDeliveryController targetDeliverer = new TargetDeliveryController(
+		SingleRequestDeliverer requestDeliverer = new SingleRequestDeliverer(
 			scheduler,
 			Modules.get(MessageCentral.class),
 			atomStore
 		);
-		PushDeliveryController pushDelivery = new PushDeliveryController(
+		PushOnlyDeliverer pushDelivery = new PushOnlyDeliverer(
 			localSystem.getNID(),
 			Modules.get(MessageCentral.class),
 			peerSupplier
@@ -314,9 +315,9 @@ public final class Tempo extends Plugin implements Ledger {
 			.atomStore(atomStore)
 			.commitmentStore(commitmentStore)
 			.addDiscoverer(iterativeDiscoverer)
-			.addDeliverer(targetDeliverer)
+			.addDeliverer(requestDeliverer)
 			.addDeliverer(pushDelivery)
-			.targetDeliverer(targetDeliverer)
+			.requestDeliverer(requestDeliverer)
 			.addAcceptor(pushDelivery::accept);
 	}
 
@@ -327,10 +328,10 @@ public final class Tempo extends Plugin implements Ledger {
 		private Attestor attestor;
 		private PeerSupplier peerSupplier;
 		private EdgeSelector edgeSelector;
-		private TargetDeliverer targetDeliverer;
-		private final ImmutableList.Builder<AtomDiscoverer> atomDiscoverers = ImmutableList.builder();
-		private final ImmutableList.Builder<AtomDeliverer> atomDeliverers = ImmutableList.builder();
-		private final ImmutableList.Builder<Consumer<TempoAtom>> atomAcceptors = ImmutableList.builder();
+		private RequestDeliverer requestDeliverer;
+		private final ImmutableSet.Builder<AtomDiscoverer> atomDiscoverers = ImmutableSet.builder();
+		private final ImmutableSet.Builder<AtomDeliverer> atomDeliverers = ImmutableSet.builder();
+		private final ImmutableSet.Builder<Consumer<TempoAtom>> atomAcceptors = ImmutableSet.builder();
 
 		public Builder self(EUID self) {
 			this.self = self;
@@ -372,8 +373,8 @@ public final class Tempo extends Plugin implements Ledger {
 			return this;
 		}
 
-		public Builder targetDeliverer(TargetDeliverer targetDeliverer) {
-			this.targetDeliverer = targetDeliverer;
+		public Builder requestDeliverer(RequestDeliverer requestDeliverer) {
+			this.requestDeliverer = requestDeliverer;
 			return this;
 		}
 
@@ -389,7 +390,7 @@ public final class Tempo extends Plugin implements Ledger {
 			Objects.requireNonNull(edgeSelector, "edgeSelector is required");
 			Objects.requireNonNull(peerSupplier, "peerSupplier is required");
 			Objects.requireNonNull(attestor, "attestor is required");
-			Objects.requireNonNull(targetDeliverer, "targetDeliverer is required");
+			Objects.requireNonNull(requestDeliverer, "requestDeliverer is required");
 
 			return new Tempo(
 				self,
@@ -400,7 +401,7 @@ public final class Tempo extends Plugin implements Ledger {
 				attestor,
 				atomDiscoverers.build(),
 				atomDeliverers.build(),
-				targetDeliverer,
+				requestDeliverer,
 				atomAcceptors.build());
 		}
 	}

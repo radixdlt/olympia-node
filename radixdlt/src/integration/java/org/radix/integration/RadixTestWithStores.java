@@ -5,7 +5,7 @@ import com.radixdlt.tempo.Tempo;
 import com.radixdlt.tempo.PeerSupplier;
 import com.radixdlt.tempo.AtomSyncView;
 import com.radixdlt.tempo.EdgeSelector;
-import com.radixdlt.tempo.delivery.TargetDeliverer;
+import com.radixdlt.tempo.delivery.RequestDeliverer;
 import org.junit.After;
 import org.junit.Before;
 import org.radix.atoms.AtomStore;
@@ -47,7 +47,7 @@ public class RadixTestWithStores extends RadixTest
 			Tempo tempo = Tempo.defaultBuilderStoreOnly()
 				.peerSupplier(peerSupplier)
 				.edgeSelector(edgeSelector)
-				.targetDeliverer(mock(TargetDeliverer.class))
+				.requestDeliverer(mock(RequestDeliverer.class))
 				.build();
 			Modules.getInstance().start(tempo);
 		} else {

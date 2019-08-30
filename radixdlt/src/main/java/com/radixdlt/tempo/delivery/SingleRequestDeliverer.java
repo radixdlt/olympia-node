@@ -30,15 +30,15 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-public final class TargetDeliveryController implements Closeable, AtomDeliverer, TargetDeliverer {
-	private static final Logger log = Logging.getLogger("TargetDeliverer");
+public final class SingleRequestDeliverer implements Closeable, AtomDeliverer, RequestDeliverer {
+	private static final Logger log = Logging.getLogger("RequestDeliverer");
 
 	private static final int REQUEST_QUEUE_CAPACITY = 8192;
 	private static final int REQUEST_PROCESSOR_THREADS = 2;
 	private static final int DELIVERY_REQUEST_TIMEOUT = 5;
 
 	@VisibleForTesting
-	final AtomDeliveryState deliveryState = new AtomDeliveryState();
+	final RequestDeliveryState deliveryState = new RequestDeliveryState();
 
 	private final Scheduler scheduler;
 	private final MessageCentral messageCentral;
@@ -48,7 +48,7 @@ public final class TargetDeliveryController implements Closeable, AtomDeliverer,
 	private final BlockingQueue<AtomDeliveryRequest> requestQueue;
 	private final SimpleThreadPool<AtomDeliveryRequest> requestThreadPool;
 
-	public TargetDeliveryController(
+	public SingleRequestDeliverer(
 		Scheduler scheduler,
 		MessageCentral messageCentral,
 		AtomStoreView storeView
@@ -94,7 +94,7 @@ public final class TargetDeliveryController implements Closeable, AtomDeliverer,
 	}
 
 	@Override
-	public void deliver(Collection<AID> aids, Peer peer) {
+	public void tryDeliver(Collection<AID> aids, Peer peer) {
 		// early out if there is nothing to do
 		if (aids.isEmpty()) {
 			return;

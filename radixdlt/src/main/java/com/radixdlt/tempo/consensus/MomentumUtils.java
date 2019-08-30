@@ -1,4 +1,4 @@
-package com.radixdlt.tempo;
+package com.radixdlt.tempo.consensus;
 
 import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;

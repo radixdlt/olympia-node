@@ -81,7 +81,7 @@ class IterativeDiscoveryState {
 			if (state == null) {
 				throw new TempoException("State for nid '" + nid + "' does not exist");
 			}
-			state.onDiscovered();
+			state.onDiscovering();
 		});
 	}
 

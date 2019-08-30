@@ -12,7 +12,6 @@ import com.radixdlt.tempo.LogicalClockCursor;
 import com.radixdlt.tempo.Scheduler;
 import com.radixdlt.tempo.discovery.messages.IterativeDiscoveryRequestMessage;
 import com.radixdlt.tempo.discovery.messages.IterativeDiscoveryResponseMessage;
-import com.radixdlt.tempo.store.berkeley.BerkeleyCommitmentStore;
 import com.radixdlt.tempo.store.berkeley.BerkeleyLCCursorStore;
 import com.radixdlt.tempo.store.CommitmentStore;
 import org.radix.database.DatabaseEnvironment;
@@ -32,7 +31,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-public final class IterativeDiscoveryController implements Closeable, AtomDiscoverer {
+public final class IterativeDiscoverer implements Closeable, AtomDiscoverer {
 	private static final Logger log = Logging.getLogger("IterativeDiscoverer");
 
 	private static final int REQUEST_TIMEOUT_SECONDS = 5;
@@ -62,7 +61,7 @@ public final class IterativeDiscoveryController implements Closeable, AtomDiscov
 	private final BlockingQueue<IterativeDiscoveryRequest> requestQueue;
 	private final SimpleThreadPool<IterativeDiscoveryRequest> requestThreadPool;
 
-	public IterativeDiscoveryController(
+	public IterativeDiscoverer(
 		EUID self,
 		AtomStoreView storeView,
 		CommitmentStore commitmentStore,
@@ -90,12 +89,12 @@ public final class IterativeDiscoveryController implements Closeable, AtomDiscov
 			public void onPeerAdded(Set<Peer> peers) {
 				peers.stream()
 					.filter(peer -> !discoveryState.contains(peer.getSystem().getNID()))
-					.forEach(IterativeDiscoveryController.this::initiateDiscovery);
+					.forEach(IterativeDiscoverer.this::initiateDiscovery);
 			}
 
 			@Override
 			public void onPeerRemoved(Set<Peer> peers) {
-				peers.forEach(IterativeDiscoveryController.this::abandonDiscovery);
+				peers.forEach(IterativeDiscoverer.this::abandonDiscovery);
 			}
 		});
 
@@ -149,7 +148,7 @@ public final class IterativeDiscoveryController implements Closeable, AtomDiscov
 		log.info("Initiating iterative discovery with " + peer);
 		discoveryState.add(peer.getSystem().getNID());
 
-		long latestCursorPosition = getLatestCursor(peer);
+		long latestCursorPosition = getLatestCursorPosition(peer);
 		LogicalClockCursor cursor = new LogicalClockCursor(latestCursorPosition);
 		requestDiscovery(peer, cursor);
 	}
@@ -167,7 +166,7 @@ public final class IterativeDiscoveryController implements Closeable, AtomDiscov
 			log.debug("Requesting iterative discovery from " + peer + " at " + cursor);
 		}
 
-		// re-request after a certain timeout if no response hasbeen received
+		// re-request after a certain timeout if no response has been received
 		scheduler.schedule(() -> {
 			if (discoveryState.isPending(peer.getSystem().getNID(), cursor.getLcPosition())) {
 				if (log.hasLevel(Logging.DEBUG)) {
@@ -179,14 +178,14 @@ public final class IterativeDiscoveryController implements Closeable, AtomDiscov
 		}, REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS);
 	}
 
-	private long getLatestCursor(Peer peer) {
+	private long getLatestCursorPosition(Peer peer) {
 		return this.cursorStore.get(peer.getSystem().getNID()).orElse(0L);
 	}
 
 	private boolean updateCursor(Peer peer, LogicalClockCursor peerCursor) {
 		EUID peerNid = peer.getSystem().getNID();
 		LogicalClockCursor nextCursor = peerCursor.hasNext() ? peerCursor.getNext() : peerCursor;
-		long latestCursor = getLatestCursor(peer);
+		long latestCursor = getLatestCursorPosition(peer);
 		// store new cursor if higher than current
 		if (nextCursor.getLcPosition() > latestCursor) {
 			cursorStore.put(peerNid, nextCursor.getLcPosition());

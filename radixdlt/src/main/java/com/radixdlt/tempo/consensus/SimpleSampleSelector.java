@@ -1,7 +1,8 @@
-package com.radixdlt.tempo;
+package com.radixdlt.tempo.consensus;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.common.EUID;
+import com.radixdlt.tempo.TempoAtom;
 
 import java.util.Collection;
 import java.util.List;
