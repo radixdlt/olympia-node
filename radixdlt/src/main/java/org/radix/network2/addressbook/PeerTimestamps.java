@@ -1,9 +1,6 @@
 package org.radix.network2.addressbook;
 
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.function.LongSupplier;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.common.annotations.VisibleForTesting;
@@ -11,12 +8,6 @@ import com.google.common.collect.ImmutableMap;
 
 public final class PeerTimestamps {
 	private static final long NEVER = Long.MIN_VALUE;
-	private static LongSupplier timeSource = System::currentTimeMillis;
-
-	@VisibleForTesting
-	static void setTimeSource(LongSupplier timeSource) {
-		PeerTimestamps.timeSource = timeSource;
-	}
 
 	public static PeerTimestamps of(long active, long banned) {
 		return new PeerTimestamps(active, banned);
@@ -61,24 +52,8 @@ public final class PeerTimestamps {
 		return active;
 	}
 
-	public void setActive(long active) {
-		this.active = active;
-	}
-
-	public void setActive() {
-		this.active = timeSource.getAsLong();
-	}
-
 	public long getBanned() {
 		return banned;
-	}
-
-	public void setBanned(long banned) {
-		this.banned = banned;
-	}
-
-	public void banFor(long duration, TimeUnit timeUnit) {
-		this.banned = timeSource.getAsLong() + timeUnit.toMillis(duration);
 	}
 
 	@Override

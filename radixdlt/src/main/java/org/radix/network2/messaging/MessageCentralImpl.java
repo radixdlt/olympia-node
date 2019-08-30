@@ -12,9 +12,9 @@ import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.modules.Modules;
 import org.radix.network.messaging.Message;
-import org.radix.network.peers.Peer;
 import org.radix.network2.NetworkLegacyPatching;
 import org.radix.network2.TimeSupplier;
+import org.radix.network2.addressbook.Peer;
 import org.radix.network2.transport.Transport;
 import org.radix.universe.system.events.QueueFullEvent;
 import org.radix.utils.SystemMetaData;
@@ -110,9 +110,9 @@ final class MessageCentralImpl implements MessageCentral {
 
 	@Override
 	public void send(Peer peer, Message message) {
-		if (!outboundQueue.offer(new MessageEvent(peer, message, System.nanoTime() - timeBase))) {
+		if (!outboundQueue.offer(new MessageEvent(peer, null, message, System.nanoTime() - timeBase))) {
 			if (outboundLogRateLimiter.tryAcquire()) {
-				log.error(String.format("Outbound message to %s dropped", peer.getURI()));
+				log.error(String.format("Outbound message to %s dropped", peer));
 			}
 			events.broadcast(new QueueFullEvent());
 		}
@@ -120,10 +120,10 @@ final class MessageCentralImpl implements MessageCentral {
 
 	@Override
 	public void inject(Peer peer, Message message) {
-		MessageEvent event = new MessageEvent(peer, message, System.nanoTime() - timeBase);
+		MessageEvent event = new MessageEvent(peer, null, message, System.nanoTime() - timeBase);
 		if (!inboundQueue.offer(event)) {
 			if (inboundLogRateLimiter.tryAcquire()) {
-				log.error(String.format("Injected message from %s dropped", peer.getURI()));
+				log.error(String.format("Injected message from %s dropped", peer));
 			}
 			events.broadcast(new QueueFullEvent());
 		}
@@ -152,15 +152,10 @@ final class MessageCentralImpl implements MessageCentral {
 	}
 
 	private void inboundMessage(InboundMessage inboundMessage) {
-		// FIXME: This needs replacing - at the moment just hooking up to existing infra
-		try {
-			Peer peer = NetworkLegacyPatching.findPeer(inboundMessage.source());
-			if (peer != null) {
-				Message message = deserialize(inboundMessage.message());
-				inject(peer, message);
-			}
-		} catch (IOException e) {
-			throw new UncheckedIOException("While processing inbound message from " + inboundMessage.source(), e);
+		Peer peer = NetworkLegacyPatching.findPeer(inboundMessage.source());
+		if (peer != null) {
+			Message message = deserialize(inboundMessage.message());
+			inject(peer, message);
 		}
 	}
 

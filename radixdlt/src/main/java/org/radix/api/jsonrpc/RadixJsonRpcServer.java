@@ -24,9 +24,8 @@ import org.json.JSONObject;
 import org.radix.api.services.AtomsService;
 import org.radix.atoms.AtomStore;
 import org.radix.modules.Modules;
-import org.radix.network.peers.PeerHandler;
-import org.radix.network.peers.PeerHandler.PeerDomain;
-import org.radix.network.peers.filters.PeerFilter;
+import org.radix.network2.addressbook.AddressBook;
+
 import com.radixdlt.universe.Universe;
 import org.radix.properties.RuntimeProperties;
 import org.radix.universe.system.LocalSystem;
@@ -36,6 +35,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Stateless Json Rpc 2.0 Server
@@ -189,10 +189,10 @@ public final class RadixJsonRpcServer {
 					result = Modules.get(Universe.class);
 					break;
                 case "Network.getLivePeers":
-                    result = Modules.get(PeerHandler.class).getPeers(PeerDomain.NETWORK, (PeerFilter) null, null);
+                    result = Modules.get(AddressBook.class).recentPeers().collect(Collectors.toList());
                     break;
                 case "Network.getPeers":
-                    result = Modules.get(PeerHandler.class).getPeers(PeerDomain.PERSISTED, (PeerFilter) null, null);
+                    result = Modules.get(AddressBook.class).peers().collect(Collectors.toList());
                     break;
                 case "Network.getInfo":
                     result = LocalSystem.getInstance();

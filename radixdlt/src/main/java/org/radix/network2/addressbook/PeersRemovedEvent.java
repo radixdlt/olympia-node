@@ -4,7 +4,7 @@ import java.util.List;
 
 import com.google.common.collect.ImmutableList;
 
-public class PeersRemovedEvent implements AddressBookEvent {
+public final class PeersRemovedEvent extends AddressBookEvent {
 
 	private final ImmutableList<Peer> peers;
 

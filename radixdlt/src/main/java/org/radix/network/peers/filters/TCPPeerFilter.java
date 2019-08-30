@@ -5,7 +5,7 @@ import java.util.concurrent.TimeUnit;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.modules.Modules;
-import org.radix.network.peers.Peer;
+import org.radix.network2.addressbook.Peer;
 import org.radix.properties.RuntimeProperties;
 import org.radix.time.NtpService;
 import org.radix.time.Timestamps;

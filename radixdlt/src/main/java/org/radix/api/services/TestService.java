@@ -10,10 +10,10 @@ import org.radix.Radix;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.modules.Modules;
-import org.radix.network.Network;
 import org.radix.network.messages.PeersMessage;
 import org.radix.network.messaging.Message.Direction;
-import org.radix.network.peers.Peer;
+import org.radix.network2.addressbook.Peer;
+import org.radix.network2.addressbook.PeerImpl;
 import org.radix.network2.messaging.MessageCentral;
 import org.radix.network2.transport.StaticTransportMetadata;
 import org.radix.network2.transport.TransportInfo;
@@ -84,7 +84,6 @@ public final class TestService {
 			Objects.requireNonNull("ip is required", ipaddr);
 			Objects.requireNonNull("port is required", port);
 			ECKeyPair keyValue = new ECKeyPair(Bytes.fromHexString(key));
-			int portValue = Integer.parseInt(port);
 
 			// Some special magic to avoid constructor range checks.
 			String json = String.format(SHARD_JSON_TEMPLATE, anchor, high, low);
@@ -103,7 +102,7 @@ public final class TestService {
 					)
 				)
 			);
-			Peer peer = new Peer(Network.getURI(ipaddr, portValue));
+			Peer peer = new PeerImpl(system);
 			peer.setSystem(system);
 			PeersMessage peersMessage = new PeersMessage();
 			peersMessage.setPeers(Collections.singletonList(peer));

@@ -2,14 +2,10 @@ package org.radix.network.discovery;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
-import java.net.Socket;
-import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -21,12 +17,19 @@ import org.radix.logging.Logging;
 import org.radix.modules.Modules;
 import org.radix.network.Network;
 import org.radix.network.SSLFix;
-import org.radix.network.peers.Peer;
-import org.radix.network.peers.PeerStore;
 import org.radix.network.peers.filters.PeerFilter;
+import org.radix.network2.addressbook.AddressBook;
+import org.radix.network2.addressbook.Peer;
+import org.radix.network2.transport.StaticTransportMetadata;
+import org.radix.network2.transport.TransportInfo;
+import org.radix.network2.transport.udp.UDPConstants;
 import org.radix.properties.RuntimeProperties;
 
-public class BootstrapDiscovery implements Discovery
+import com.google.common.collect.Lists;
+import com.google.common.net.HostAndPort;
+import com.radixdlt.universe.Universe;
+
+public class BootstrapDiscovery
 {
 	// https://en.wikipedia.org/wiki/Domain_Name_System
 	private static final int MAX_DNS_NAME_OCTETS = 253;
@@ -43,7 +46,7 @@ public class BootstrapDiscovery implements Discovery
 
 	private static BootstrapDiscovery instance = null;
 
-	private Set<URI> hosts = new HashSet<URI>();
+	private Set<TransportInfo> hosts = new HashSet<>();
 
 	/**
 	 * Safely converts the data recieved by the find-nodes to a potential hostname.
@@ -68,16 +71,6 @@ public class BootstrapDiscovery implements Discovery
 			return null;
 		}
 		return new String(buf, 0, len, StandardCharsets.US_ASCII);
-	}
-
-	/**
-	 * Tries to determine if a host is reachable by connecting (TCP) to the specified port.
-	 */
-	private static void testConnection(String host, int port, int timeout) throws IOException
-	{
-		try (Socket socket = new Socket()) {
-			socket.connect(new InetSocketAddress(host, port), timeout);
-		}
 	}
 
 	/**
@@ -160,93 +153,92 @@ public class BootstrapDiscovery implements Discovery
 		return null;
 	}
 
-	private BootstrapDiscovery()
-	{
+	private BootstrapDiscovery() {
 		RuntimeProperties cfg = Modules.get(RuntimeProperties.class);
-		HashSet<String> hosts = new HashSet<String>();
 
 		// allow nodes to connect to others, bypassing TLS handshake
-		if(cfg.get("network.discovery.allow_tls_bypass", 0) == 1) {
+		if (cfg.get("network.discovery.allow_tls_bypass", 0) == 1) {
 			log.info("Allowing TLS handshake bypass...");
 			SSLFix.trustAllHosts();
 		}
 
-		for (String unparsedURL : cfg.get("network.discovery.urls", "").split(","))
-		{
+		HashSet<String> hosts = new HashSet<>();
+		for (String unparsedURL : cfg.get("network.discovery.urls", "").split(",")) {
 			unparsedURL = unparsedURL.trim();
-			if (unparsedURL.isEmpty())
+			if (unparsedURL.isEmpty()) {
 				continue;
+			}
 			try
 			{
 				// if host is an URL - we should GET the node from the given URL
 				URL url = new URL(unparsedURL);
-				if (!url.getProtocol().equals("https"))
+				if (!url.getProtocol().equals("https")) {
 					throw new IllegalStateException("cowardly refusing all but HTTPS network.seeds");
+				}
 
 				String host = getNextNode(url);
-				if (host != null)
-				{
+				if (host != null) {
 					log.info("seeding from random host: "+host);
 					hosts.add(host);
 				}
-			}
-			catch (MalformedURLException ignoreConcreteHost)
-			{
+			} catch (MalformedURLException ignoreConcreteHost) {
 				// concrete host addresses end up here.
 			}
 		}
 
-		for (String host : cfg.get("network.seeds", "").split(","))
-		{
+		for (String host : cfg.get("network.seeds", "").split(",")) {
 			hosts.add(host);
 		}
 
-		for (String host : hosts)
-		{
+		for (String host : hosts) {
 			host = host.trim();
-			if (host.isEmpty())
+			if (host.isEmpty()) {
 				continue;
-				try
-				{
-					if (!Network.getInstance().isWhitelisted(Network.getURI(host)))
-						continue;
-
-				this.hosts.add(Network.getURI(host.trim()));
-				}
-				catch (Exception ex)
-				{
-					log.error("Could not add bootstrap "+host.trim(), ex);
-				}
+			}
+			if (!Network.getInstance().isWhitelisted(host)) {
+				continue;
+			}
+			try {
+				this.hosts.add(toUdpTransportInfo(host));
+			} catch (IllegalArgumentException e) {
+				log.error("Host specification " + host + " does not specify a valid host and port");
 			}
 		}
+	}
 
-	@Override
-	public Collection<URI> discover(PeerFilter filter)
+	public Collection<TransportInfo> discover(PeerFilter filter)
 	{
-		List<URI> results = new ArrayList<URI>();
+		List<TransportInfo> results = Lists.newArrayList();
 
-		for (URI host : hosts)
-		{
-			try
-			{
-				if (filter == null)
+		for (TransportInfo host : hosts) {
+			try {
+				if (filter == null) {
 					results.add(host);
-				else
-				{
-					Peer peer = Modules.get(PeerStore.class).getPeer(host);
+				} else {
+					Peer peer = Modules.get(AddressBook.class).peer(host);
 
-					if (peer == null || !filter.filter(peer))
+					if (peer != null && !filter.filter(peer)) {
 						results.add(host);
+					}
 				}
-			}
-			catch (Exception ex)
-			{
+			} catch (Exception ex) {
 				log.error("Could not process BootstrapDiscovery for host:"+host, ex);
 			}
 		}
 
 		Collections.shuffle(results);
-
 		return results;
 	}
+
+	private TransportInfo toUdpTransportInfo(String host) {
+		HostAndPort hap = HostAndPort.fromString(host).withDefaultPort(Modules.get(Universe.class).getPort());
+		return TransportInfo.of(
+			UDPConstants.UDP_NAME,
+			StaticTransportMetadata.of(
+				UDPConstants.METADATA_UDP_HOST, hap.getHost(),
+				UDPConstants.METADATA_UDP_PORT, String.valueOf(hap.getPort())
+			)
+		);
+	}
+
 }

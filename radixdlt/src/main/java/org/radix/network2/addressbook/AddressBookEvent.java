@@ -2,8 +2,10 @@ package org.radix.network2.addressbook;
 
 import java.util.List;
 
-public interface AddressBookEvent {
+import org.radix.events.Event;
 
-	List<Peer> peers();
+public abstract class AddressBookEvent extends Event {
+
+	public abstract List<Peer> peers();
 
 }

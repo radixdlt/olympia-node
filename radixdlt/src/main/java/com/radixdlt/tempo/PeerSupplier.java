@@ -1,10 +1,11 @@
 package com.radixdlt.tempo;
 
 import com.radixdlt.common.EUID;
-import org.radix.network.peers.Peer;
 
 import java.util.List;
 import java.util.Optional;
+
+import org.radix.network2.addressbook.Peer;
 
 public interface PeerSupplier {
 	/**

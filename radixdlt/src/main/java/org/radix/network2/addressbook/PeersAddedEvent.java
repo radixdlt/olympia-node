@@ -1,15 +1,20 @@
 package org.radix.network2.addressbook;
 
 import java.util.List;
+import java.util.Objects;
 
 import com.google.common.collect.ImmutableList;
 
-public class PeersAddedEvent implements AddressBookEvent {
+public final class PeersAddedEvent extends AddressBookEvent {
 
 	private final ImmutableList<Peer> peers;
 
 	public PeersAddedEvent(Iterable<Peer> peers) {
 		this.peers = ImmutableList.copyOf(peers);
+	}
+
+	public PeersAddedEvent(ImmutableList<Peer> peers) {
+		this.peers = Objects.requireNonNull(peers);
 	}
 
 	@Override

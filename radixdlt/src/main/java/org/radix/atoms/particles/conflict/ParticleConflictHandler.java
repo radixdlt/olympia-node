@@ -1,6 +1,5 @@
 package org.radix.atoms.particles.conflict;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -44,13 +43,11 @@ import org.radix.mass.NodeMassStore;
 import org.radix.modules.Modules;
 import org.radix.modules.Service;
 import org.radix.modules.exceptions.ModuleException;
-import org.radix.network.Network;
-import org.radix.network.Protocol;
-import org.radix.network.peers.Peer;
-import org.radix.network.peers.PeerHandler;
-import org.radix.network.peers.PeerHandler.PeerDomain;
 import org.radix.network.peers.filters.PeerFilter;
+import org.radix.network2.addressbook.AddressBook;
+import org.radix.network2.addressbook.Peer;
 import org.radix.network2.messaging.MessageCentral;
+import org.radix.network2.transport.TransportException;
 import org.radix.properties.RuntimeProperties;
 import com.radixdlt.serialization.MapHelper;
 import org.radix.state.State;
@@ -472,7 +469,7 @@ public class ParticleConflictHandler extends Service
 		}
 	}
 
-	private boolean requestAssist(ParticleConflict conflict) throws DatabaseException
+	private boolean requestAssist(ParticleConflict conflict)
 	{
 		synchronized(conflict)
 		{
@@ -481,7 +478,8 @@ public class ParticleConflictHandler extends Service
 				if (!this.assistRequests.containsKey(conflict.getUID()))
 					this.assistRequests.put(conflict.getUID(), new HashSet<EUID>());
 
-				List<Peer> livePeers = Modules.get(PeerHandler.class).getPeers(PeerDomain.NETWORK, PeerFilter.getInstance());
+				List<Peer> livePeers = Modules.get(AddressBook.class).recentPeers()
+					.filter(p -> !PeerFilter.getInstance().filter(p)).collect(Collectors.toList());
 				if (livePeers.isEmpty() == true)
 				{
 					conflictsLog.debug(conflict.getUID()+": No peer connections are currently available");
@@ -506,7 +504,11 @@ public class ParticleConflictHandler extends Service
 
 				conflictsLog.debug(conflict.getUID()+": Collected "+assistNIDs.size()+" NIDs for assist request");
 
-				List<Peer> assistPeers = Modules.get(PeerHandler.class).getPeers(PeerDomain.NETWORK, assistNIDs, PeerFilter.getInstance(), PeerHandler.SHUFFLER).stream().collect(Collectors.toList());
+				List<Peer> assistPeers = Modules.get(AddressBook.class).recentPeers()
+					.filter(p -> !PeerFilter.getInstance().filter(p))
+					.filter(p -> p.hasNID() && assistNIDs.contains(p.getNID()))
+					.collect(Collectors.toList());
+				Collections.shuffle(assistPeers);
 				if (assistPeers.isEmpty() == true)
 				{
 					conflictsLog.debug(conflict.getUID()+": Found nodes to ask for assist, but peer connections are not available");
@@ -518,10 +520,9 @@ public class ParticleConflictHandler extends Service
 				for (Peer assistPeer : assistPeers)
 				{
 					try {
-						assistPeer = Network.getInstance().connect(assistPeer.getURI(), Protocol.UDP);
 						Modules.get(MessageCentral.class).send(assistPeer, new ConflictAssistRequestMessage(conflict.getSpunParticle()));
 					}
-					catch (IOException ioex)
+					catch (TransportException ioex)
 					{
 						conflictsLog.debug(conflict.getUID()+": Failed to request assistance from "+assistPeer, ioex);
 					}

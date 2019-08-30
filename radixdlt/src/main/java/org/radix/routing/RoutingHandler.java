@@ -27,7 +27,6 @@ import org.radix.modules.Modules;
 import org.radix.modules.Service;
 import org.radix.modules.exceptions.ModuleException;
 import org.radix.network.peers.PeerListener;
-import org.radix.network.peers.UDPPeer;
 import org.radix.network.peers.events.PeerAvailableEvent;
 import org.radix.network.peers.events.PeerEvent;
 import org.radix.properties.RuntimeProperties;
@@ -184,9 +183,6 @@ public class RoutingHandler extends Service
 		public void process(PeerEvent event)
 		{
 			if (!(event instanceof PeerAvailableEvent))
-				return;
-
-			if (!(event.getPeer() instanceof UDPPeer))
 				return;
 
 			int period = Modules.get(Universe.class).toPlanck(Modules.get(NtpService.class).getUTCTimeMS(), Offset.NEXT);

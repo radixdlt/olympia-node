@@ -1,7 +1,7 @@
 package org.radix.network2.messaging;
 
 import org.radix.network.messaging.Message;
-import org.radix.network.peers.Peer;
+import org.radix.network2.addressbook.Peer;
 
 /**
  * A listener to messages of a specific type.

@@ -3,68 +3,111 @@ package org.radix.network2.addressbook;
 import java.util.Objects;
 import java.util.stream.Stream;
 
+import com.radixdlt.common.EUID;
 import org.radix.network2.transport.TransportException;
 import org.radix.network2.transport.TransportInfo;
 import org.radix.network2.transport.TransportMetadata;
+import org.radix.network2.transport.udp.UDPConstants;
+
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.DsonOutput.Output;
+import com.radixdlt.serialization.SerializerId2;
 import org.radix.universe.system.RadixSystem;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.annotations.VisibleForTesting;
-import com.radixdlt.common.EUID;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.DsonOutput.Output;
 
-public final class PeerImpl implements Peer {
+@SerializerId2("network.peer")
+public final class PeerImpl extends Peer {
+
+	@Override
+	public short VERSION() { return 100;}
 
 	@JsonProperty("system")
 	@DsonOutput(Output.ALL)
 	private RadixSystem system;
 
-	@JsonProperty("timestamps")
-	@DsonOutput(Output.ALL)
-	private PeerTimestamps timestamps;
-
-	@VisibleForTesting
-	PeerImpl(RadixSystem system) {
-		this(system, PeerTimestamps.never());
+	public PeerImpl()
+	{
+		this(new RadixSystem());
 	}
 
-	@VisibleForTesting
-	PeerImpl(RadixSystem system, PeerTimestamps timestamps) {
+	public PeerImpl(RadixSystem system) {
 		this.system = Objects.requireNonNull(system);
-		this.timestamps = Objects.requireNonNull(timestamps);
 	}
 
 	@Override
-	public EUID getNID() {
-		return system.getNID();
+	public final boolean equals(Object object)
+	{
+		if (object == this) {
+			return true;
+		}
+
+		if (object instanceof PeerImpl) {
+			PeerImpl other = (PeerImpl) object;
+			return Objects.equals(this.system.getNID(), other.system.getNID());
+		}
+
+		return false;
 	}
 
 	@Override
-	public PeerTimestamps getTimestamps() {
-		return this.timestamps;
+	public final int hashCode()
+	{
+		return this.system.getNID().hashCode();
 	}
 
 	@Override
-	public boolean supportsTransport(String transportName) {
-		return supportedTransports()
-			.map(TransportInfo::name)
-			.filter(transportName::equals)
-			.findAny()
-			.isPresent();
+	public String toString()
+	{
+		return String.format("%s ID: %s", connectionData(UDPConstants.UDP_NAME), this.system.getNID());
+	}
+
+	@Override
+	public RadixSystem getSystem()
+	{
+		return this.system;
+	}
+
+	@Override
+	public void setSystem(RadixSystem system)
+	{
+		this.system = system;
 	}
 
 	@Override
 	public TransportMetadata connectionData(String transportName) {
-		return supportedTransports()
+		return system.supportedTransports()
 			.filter(t -> t.name().equals(transportName))
-			.map(TransportInfo::metadata)
 			.findAny()
-			.orElseThrow(() -> new TransportException("Transport " + transportName + " not supported"));
+			.map(TransportInfo::metadata)
+			.orElseThrow(() -> new TransportException(String.format("Peer %s has no transport %s", toString(), transportName)));
+	}
+
+	@Override
+	public EUID getNID() {
+		return this.system.getNID();
+	}
+
+	@Override
+	// FIXME temporary until address book is sorted
+	public boolean supportsTransport(String transportName) {
+		return !system.supportedTransports()
+			.map(TransportInfo::name)
+			.anyMatch(transportName::equals);
 	}
 
 	@Override
 	public Stream<TransportInfo> supportedTransports() {
 		return system.supportedTransports();
+	}
+
+	@Override
+	public boolean hasNID() {
+		return true;
+	}
+
+	@Override
+	public boolean hasSystem() {
+		return true;
 	}
 }

@@ -25,8 +25,7 @@ import org.radix.modules.exceptions.ModuleException;
 import org.radix.modules.exceptions.ModuleStartException;
 import org.radix.network.Interfaces;
 import org.radix.network.Network;
-import org.radix.network.peers.PeerHandler;
-import org.radix.network.peers.PeerStore;
+import org.radix.network2.addressbook.AddressBookImpl;
 import org.radix.network2.messaging.MessageCentral;
 import org.radix.network2.messaging.MessageCentralFactory;
 import org.radix.properties.PersistedProperties;
@@ -307,8 +306,7 @@ public class Radix extends Plugin
 		{
 			Modules.getInstance().start(new Interfaces());
 			Modules.getInstance().start(Network.getInstance());
-			Modules.getInstance().start(new PeerStore());
-			Modules.getInstance().start(new PeerHandler());
+			Modules.getInstance().start(new AddressBookImpl(Serialization.getDefault()));
 		}
 		catch (Exception ex)
 		{

@@ -42,7 +42,7 @@ class SimpleThreadPool<T> {
 				try {
 					this.threads[i].join();
 				} catch (InterruptedException e) {
-					log.error(this.threads[i].getName() + " did not exit before interrupt");
+					log.error(this.threads[i].getName() + " did not exit before interrupt", e);
 				}
 				this.threads[i] = null;
 			}

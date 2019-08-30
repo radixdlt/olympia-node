@@ -9,7 +9,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.radix.modules.Modules;
 import org.radix.network.messages.TestMessage;
-import org.radix.network.peers.Peer;
+import org.radix.network2.addressbook.Peer;
 import org.radix.network2.messaging.MessageListener;
 import org.radix.network2.messaging.MessageListenerList;
 

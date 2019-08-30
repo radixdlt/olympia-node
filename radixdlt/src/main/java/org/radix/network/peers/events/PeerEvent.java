@@ -1,7 +1,7 @@
 package org.radix.network.peers.events;
 
 import org.radix.events.Event;
-import org.radix.network.peers.Peer;
+import org.radix.network2.addressbook.Peer;
 
 public abstract class PeerEvent extends Event 
 {

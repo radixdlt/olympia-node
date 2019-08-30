@@ -5,7 +5,7 @@ import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSortedMap;
 
 /**
  * Class that implements {@link TransportMetadata} and provides
@@ -13,14 +13,14 @@ import com.google.common.collect.ImmutableMap;
  */
 public final class StaticTransportMetadata implements TransportMetadata {
 	@JsonValue
-	private final ImmutableMap<String, String> metadata;
+	private final ImmutableSortedMap<String, String> metadata;
 
 	/**
 	 * Returns an empty {@link StaticTransportMetadata}.
 	 * @return an empty metadata
 	 */
 	public static StaticTransportMetadata empty() {
-		return new StaticTransportMetadata(ImmutableMap.of());
+		return new StaticTransportMetadata(ImmutableSortedMap.of());
 	}
 
 	/**
@@ -31,7 +31,7 @@ public final class StaticTransportMetadata implements TransportMetadata {
 	 * @return The metadata
 	 */
 	public static StaticTransportMetadata from(Map<String, String> metadata) {
-		return new StaticTransportMetadata(ImmutableMap.copyOf(metadata));
+		return new StaticTransportMetadata(ImmutableSortedMap.copyOf(metadata));
 	}
 
 	/**
@@ -41,7 +41,7 @@ public final class StaticTransportMetadata implements TransportMetadata {
 	 * @param metadata The {@link ImmutableMap} supplying the properties for the metadata
 	 * @return The metadata
 	 */
-	public static StaticTransportMetadata from(ImmutableMap<String, String> metadata) {
+	public static StaticTransportMetadata from(ImmutableSortedMap<String, String> metadata) {
 		return new StaticTransportMetadata(metadata);
 	}
 
@@ -54,7 +54,7 @@ public final class StaticTransportMetadata implements TransportMetadata {
 	 * @return The metadata
 	 */
 	public static StaticTransportMetadata of(String k1, String v1) {
-		return new StaticTransportMetadata(ImmutableMap.of(k1, v1));
+		return new StaticTransportMetadata(ImmutableSortedMap.of(k1, v1));
 	}
 
 	/**
@@ -68,11 +68,11 @@ public final class StaticTransportMetadata implements TransportMetadata {
 	 * @return The metadata
 	 */
 	public static StaticTransportMetadata of(String k1, String v1, String k2, String v2) {
-		return new StaticTransportMetadata(ImmutableMap.of(k1, v1, k2, v2));
+		return new StaticTransportMetadata(ImmutableSortedMap.of(k1, v1, k2, v2));
 	}
 
 	@JsonCreator
-	private StaticTransportMetadata(ImmutableMap<String, String> metadata) {
+	private StaticTransportMetadata(ImmutableSortedMap<String, String> metadata) {
 		this.metadata = Objects.requireNonNull(metadata);
 	}
 
@@ -100,6 +100,6 @@ public final class StaticTransportMetadata implements TransportMetadata {
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s]", getClass().getSimpleName(), metadata);
+		return this.metadata.toString();
 	}
 }

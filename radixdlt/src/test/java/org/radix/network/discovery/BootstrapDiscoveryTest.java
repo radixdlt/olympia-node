@@ -22,11 +22,8 @@ import com.radixdlt.universe.Universe;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.powermock.api.mockito.PowerMockito.doNothing;
 import static org.powermock.api.mockito.PowerMockito.doReturn;
 import static org.powermock.api.mockito.PowerMockito.doThrow;
 import static org.powermock.api.mockito.PowerMockito.mock;
@@ -65,7 +62,6 @@ public class BootstrapDiscoveryTest {
         getNextNode = Whitebox.getMethod(BootstrapDiscovery.class, "getNextNode", URL.class);
 
         // initialize stubs
-        doNothing().when(BootstrapDiscovery.class, "testConnection", anyString(), anyInt(), anyInt());
         doReturn(config).when(Modules.class, "get", RuntimeProperties.class);
         doReturn(30).when(config).get("network.discovery.connection.retries", 30);
         doReturn(1).when(config).get("network.discovery.connection.cooldown", 1);

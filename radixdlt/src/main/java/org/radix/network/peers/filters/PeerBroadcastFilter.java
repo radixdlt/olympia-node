@@ -1,7 +1,7 @@
 package org.radix.network.peers.filters;
 
 import org.radix.modules.Modules;
-import org.radix.network.peers.Peer;
+import org.radix.network2.addressbook.Peer;
 import org.radix.time.NtpService;
 import org.radix.time.Timestamps;
 import com.radixdlt.universe.Universe;

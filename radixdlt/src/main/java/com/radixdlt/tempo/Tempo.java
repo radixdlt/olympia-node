@@ -31,9 +31,7 @@ import org.radix.logging.Logging;
 import org.radix.modules.Module;
 import org.radix.modules.Modules;
 import org.radix.modules.Plugin;
-import org.radix.network.peers.PeerHandler;
-import org.radix.network2.messaging.MessageCentral;
-import org.radix.properties.RuntimeProperties;
+import org.radix.network2.addressbook.AddressBook;
 import org.radix.time.TemporalProof;
 import org.radix.time.TemporalVertex;
 import org.radix.time.Time;
@@ -314,9 +312,8 @@ public final class Tempo extends Plugin implements Ledger {
 		);
 
 		return builder()
-			.self(localSystem.getNID())
-			.attestor(new TempoAttestor(localSystem, Time::currentTimestamp)::attestTo)
-			.peerSupplier(peerSupplier)
+			.attestor(attestor::attestTo)
+			.peerSupplier(new PeerSupplierAdapter(() -> Modules.get(AddressBook.class)))
 			.edgeSelector(new SimpleEdgeSelector())
 			.atomStore(atomStore)
 			.commitmentStore(commitmentStore)

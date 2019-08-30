@@ -61,7 +61,7 @@ public class Interfaces extends Service
 	{
 	}
 
-	public boolean isSelf(InetAddress address) throws SocketException
+	public boolean isSelf(InetAddress address)
 	{
 		if (addresses.containsKey(Domain.LAN) && addresses.get(Domain.LAN).contains(address))
 			return true;
