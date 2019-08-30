@@ -22,6 +22,7 @@ import com.radixdlt.tempo.discovery.AtomDiscoverer;
 import com.radixdlt.tempo.discovery.IterativeDiscoverer;
 import com.radixdlt.tempo.discovery.IterativeDiscovererConfiguration;
 import com.radixdlt.tempo.store.berkeley.BerkeleyCommitmentStore;
+import com.radixdlt.tempo.store.berkeley.BerkeleyLCCursorStore;
 import com.radixdlt.tempo.store.berkeley.BerkeleyTempoAtomStore;
 import com.radixdlt.tempo.store.CommitmentStore;
 import org.radix.database.DatabaseEnvironment;
@@ -32,7 +33,6 @@ import org.radix.modules.Module;
 import org.radix.modules.Modules;
 import org.radix.modules.Plugin;
 import org.radix.network2.addressbook.AddressBook;
-import org.radix.network2.addressbook.Peer;
 import org.radix.network2.messaging.MessageCentral;
 import org.radix.properties.RuntimeProperties;
 import org.radix.time.TemporalProof;
@@ -288,6 +288,8 @@ public final class Tempo extends Plugin implements Ledger {
 			localSystem,
 			() -> Modules.get(DatabaseEnvironment.class));
 		SingleThreadedScheduler scheduler = new SingleThreadedScheduler();
+		BerkeleyLCCursorStore cursorStore = new BerkeleyLCCursorStore(Modules.get(DatabaseEnvironment.class));
+		cursorStore.open();
 		BerkeleyCommitmentStore commitmentStore = new BerkeleyCommitmentStore(Modules.get(DatabaseEnvironment.class));
 		commitmentStore.open();
 		PeerSupplierAdapter peerSupplier = new PeerSupplierAdapter(() -> Modules.get(AddressBook.class));
@@ -295,8 +297,8 @@ public final class Tempo extends Plugin implements Ledger {
 		IterativeDiscoverer iterativeDiscoverer = new IterativeDiscoverer(
 			localSystem.getNID(),
 			atomStore,
+			cursorStore,
 			commitmentStore,
-			Modules.get(DatabaseEnvironment.class),
 			scheduler,
 			Modules.get(MessageCentral.class),
 			Events.getInstance(),
