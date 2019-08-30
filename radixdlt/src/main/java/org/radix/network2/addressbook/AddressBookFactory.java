@@ -1,5 +1,7 @@
 package org.radix.network2.addressbook;
 
+import org.radix.events.Events;
+
 import com.radixdlt.serialization.Serialization;
 
 /**
@@ -15,9 +17,10 @@ public class AddressBookFactory {
 	 * {@code DatabaseStore} right now.
 	 *
 	 * @param serialization serializer to use when storing data
+	 * @param events event system for publishing system events
 	 * @return The newly constructed {@link AddressBook}
 	 */
-	public AddressBookImpl createDefault(Serialization serialization) {
-		return new AddressBookImpl(serialization);
+	public AddressBookImpl createDefault(Serialization serialization, Events events) {
+		return new AddressBookImpl(serialization, events);
 	}
 }
