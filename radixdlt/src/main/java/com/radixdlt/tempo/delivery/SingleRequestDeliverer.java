@@ -33,9 +33,11 @@ import java.util.concurrent.TimeUnit;
 public final class SingleRequestDeliverer implements Closeable, AtomDeliverer, RequestDeliverer {
 	private static final Logger log = Logging.getLogger("RequestDeliverer");
 
-	private static final int REQUEST_QUEUE_CAPACITY = 8192;
-	private static final int REQUEST_PROCESSOR_THREADS = 2;
-	private static final int DELIVERY_REQUEST_TIMEOUT = 5;
+	private static final int DEFAULT_REQUEST_QUEUE_CAPACITY = 8192;
+	private static final int DEFAULT_REQUEST_PROCESSOR_THREADS = 2;
+	private static final int DEFAULT_REQUEST_TIMEOUT_SECONDS = 5;
+
+	private final int requestTimeoutSeconds;
 
 	@VisibleForTesting
 	final RequestDeliveryState deliveryState = new RequestDeliveryState();
@@ -51,7 +53,8 @@ public final class SingleRequestDeliverer implements Closeable, AtomDeliverer, R
 	public SingleRequestDeliverer(
 		Scheduler scheduler,
 		MessageCentral messageCentral,
-		AtomStoreView storeView
+		AtomStoreView storeView,
+		SingleRequestDelivererConfiguration configuration
 	) {
 		this.scheduler = Objects.requireNonNull(scheduler);
 		this.messageCentral = Objects.requireNonNull(messageCentral);
@@ -60,11 +63,14 @@ public final class SingleRequestDeliverer implements Closeable, AtomDeliverer, R
 		// TODO improve locking to something like in messaging
 		this.deliveryListeners = Collections.synchronizedList(new ArrayList<>());
 
+		this.requestTimeoutSeconds = configuration.requestTimeoutSeconds(DEFAULT_REQUEST_TIMEOUT_SECONDS);
+
 		this.messageCentral.addListener(DeliveryRequestMessage.class, this::onRequest);
 		this.messageCentral.addListener(DeliveryResponseMessage.class, this::onResponse);
 
-		this.requestQueue = new ArrayBlockingQueue<>(REQUEST_QUEUE_CAPACITY);
-		this.requestThreadPool = new SimpleThreadPool<>("Atom delivery processing", REQUEST_PROCESSOR_THREADS, requestQueue::take, this::processRequest, log);
+		this.requestQueue = new ArrayBlockingQueue<>(configuration.requestQueueCapacity(DEFAULT_REQUEST_QUEUE_CAPACITY));
+		int processorThreads = configuration.requestProcessorThreads(DEFAULT_REQUEST_PROCESSOR_THREADS);
+		this.requestThreadPool = new SimpleThreadPool<>("Atom delivery processing", processorThreads, requestQueue::take, this::processRequest, log);
 		this.requestThreadPool.start();
 	}
 
@@ -141,7 +147,7 @@ public final class SingleRequestDeliverer implements Closeable, AtomDeliverer, R
 				handleFailedDelivery(missingAids, peer);
 				// TODO retry
 			}
-		}, DELIVERY_REQUEST_TIMEOUT, TimeUnit.SECONDS);
+		}, requestTimeoutSeconds, TimeUnit.SECONDS);
 	}
 
 	private void handleFailedDelivery(Collection<AID> missingAids, Peer peer) {

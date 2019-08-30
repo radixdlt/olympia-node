@@ -17,6 +17,7 @@ import com.radixdlt.tempo.delivery.AtomDeliverer;
 import com.radixdlt.tempo.delivery.RequestDeliverer;
 import com.radixdlt.tempo.delivery.SingleRequestDeliverer;
 import com.radixdlt.tempo.delivery.PushOnlyDeliverer;
+import com.radixdlt.tempo.delivery.SingleRequestDelivererConfiguration;
 import com.radixdlt.tempo.discovery.AtomDiscoverer;
 import com.radixdlt.tempo.discovery.IterativeDiscoverer;
 import com.radixdlt.tempo.discovery.IterativeDiscovererConfiguration;
@@ -289,6 +290,7 @@ public final class Tempo extends Plugin implements Ledger {
 		BerkeleyCommitmentStore commitmentStore = new BerkeleyCommitmentStore(Modules.get(DatabaseEnvironment.class));
 		commitmentStore.open();
 		PeerSupplierAdapter peerSupplier = new PeerSupplierAdapter(() -> Modules.get(PeerHandler.class));
+		RuntimeProperties properties = Modules.get(RuntimeProperties.class);
 		IterativeDiscoverer iterativeDiscoverer = new IterativeDiscoverer(
 			localSystem.getNID(),
 			atomStore,
@@ -297,12 +299,13 @@ public final class Tempo extends Plugin implements Ledger {
 			scheduler,
 			Modules.get(MessageCentral.class),
 			new LegacyAddressBookAdapter(() -> Modules.get(PeerHandler.class), Events.getInstance()),
-			IterativeDiscovererConfiguration.fromRuntimeProperties(Modules.get(RuntimeProperties.class))
+			IterativeDiscovererConfiguration.fromRuntimeProperties(properties)
 		);
 		SingleRequestDeliverer requestDeliverer = new SingleRequestDeliverer(
 			scheduler,
 			Modules.get(MessageCentral.class),
-			atomStore
+			atomStore,
+			SingleRequestDelivererConfiguration.fromRuntimeProperties(properties)
 		);
 		PushOnlyDeliverer pushDelivery = new PushOnlyDeliverer(
 			localSystem.getNID(),
