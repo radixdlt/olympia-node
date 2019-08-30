@@ -6,8 +6,6 @@ import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.tempo.AtomStoreView;
-import com.radixdlt.tempo.LegacyAddressBook;
-import com.radixdlt.tempo.LegacyAddressBookListener;
 import com.radixdlt.tempo.LogicalClockCursor;
 import com.radixdlt.tempo.Scheduler;
 import com.radixdlt.tempo.discovery.messages.IterativeDiscoveryRequestMessage;
@@ -16,18 +14,22 @@ import com.radixdlt.tempo.store.LCCursorStore;
 import com.radixdlt.tempo.store.berkeley.BerkeleyLCCursorStore;
 import com.radixdlt.tempo.store.CommitmentStore;
 import org.radix.database.DatabaseEnvironment;
+import org.radix.events.EventListener;
+import org.radix.events.Events;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.network.peers.Peer;
+import org.radix.network2.addressbook.Peer;
+import org.radix.network2.addressbook.PeersAddedEvent;
+import org.radix.network2.addressbook.PeersRemovedEvent;
 import org.radix.network2.messaging.MessageCentral;
 import org.radix.utils.SimpleThreadPool;
 
+import javax.inject.Named;
 import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -56,7 +58,6 @@ public final class IterativeDiscoverer implements Closeable, AtomDiscoverer {
 	private final AtomStoreView storeView;
 	private final Scheduler scheduler;
 	private final MessageCentral messageCentral;
-	private final LegacyAddressBook selectedPeers;
 
 	private final Collection<AtomDiscoveryListener> discoveryListeners;
 
@@ -64,13 +65,13 @@ public final class IterativeDiscoverer implements Closeable, AtomDiscoverer {
 	private final SimpleThreadPool<IterativeDiscoveryRequest> requestThreadPool;
 
 	public IterativeDiscoverer(
-		EUID self,
+		@Named("self") EUID self,
 		AtomStoreView storeView,
 		CommitmentStore commitmentStore,
 		DatabaseEnvironment dbEnv,
 		Scheduler scheduler,
 		MessageCentral messageCentral,
-		LegacyAddressBook selectedPeers,
+		Events events,
 		IterativeDiscovererConfiguration configuration
 	) {
 		this.self = Objects.requireNonNull(self);
@@ -78,28 +79,20 @@ public final class IterativeDiscoverer implements Closeable, AtomDiscoverer {
 		this.commitmentStore = Objects.requireNonNull(commitmentStore);
 		this.scheduler = Objects.requireNonNull(scheduler);
 		this.messageCentral = Objects.requireNonNull(messageCentral);
-		this.selectedPeers = Objects.requireNonNull(selectedPeers);
 
 		// TODO improve locking to something like in messaging
 		this.discoveryListeners = Collections.synchronizedList(new ArrayList<>());
 		this.cursorStore = new BerkeleyLCCursorStore(dbEnv);
 		this.cursorStore.open();
 
+
 		// TODO replace with regular address book once it's hooked up
 		// TODO remove listener when closed
-		this.selectedPeers.addListener(new LegacyAddressBookListener() {
-			@Override
-			public void onPeerAdded(Set<Peer> peers) {
-				peers.stream()
-					.filter(peer -> !discoveryState.contains(peer.getSystem().getNID()))
-					.forEach(IterativeDiscoverer.this::initiateDiscovery);
-			}
-
-			@Override
-			public void onPeerRemoved(Set<Peer> peers) {
-				peers.forEach(IterativeDiscoverer.this::abandonDiscovery);
-			}
-		});
+		events.register(PeersAddedEvent.class, (EventListener<PeersAddedEvent>) event -> event.peers().stream()
+			.filter(peer -> !discoveryState.contains(peer.getNID()))
+			.forEach(IterativeDiscoverer.this::initiateDiscovery));
+		events.register(PeersRemovedEvent.class, (EventListener<PeersRemovedEvent>) event -> event.peers()
+			.forEach(IterativeDiscoverer.this::abandonDiscovery));
 
 		this.responseLimit = configuration.responseLimit(DEFAULT_RESPONSE_LIMIT);
 		this.maxBackoff = configuration.maxBackoff(DEFAULT_MAX_BACKOFF);
@@ -134,7 +127,7 @@ public final class IterativeDiscoverer implements Closeable, AtomDiscoverer {
 		discoveryState.removeRequest(peerNid, message.getCursor().getLcPosition());
 
 		boolean isLatest = updateCursor(peer, message.getCursor());
-		if (selectedPeers.contains(peerNid) && isLatest) {
+		if (discoveryState.contains(peerNid) && isLatest) {
 			// if there is more to synchronise, request more immediately
 			if (message.getCursor().hasNext()) {
 				discoveryState.onDiscovering(peerNid);

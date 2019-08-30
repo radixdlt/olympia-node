@@ -1,7 +1,7 @@
 package com.radixdlt.tempo.delivery;
 
 import com.radixdlt.tempo.TempoAtom;
-import org.radix.network.peers.Peer;
+import org.radix.network2.addressbook.Peer;
 
 import java.util.function.BiConsumer;
 

@@ -12,8 +12,8 @@ import java.util.stream.Stream;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.common.EUID;
-import com.radixdlt.common.Pair;
 
+import com.radixdlt.utils.Pair;
 import org.radix.database.DatabaseEnvironment;
 import org.radix.database.DatabaseStore;
 import org.radix.events.Events;

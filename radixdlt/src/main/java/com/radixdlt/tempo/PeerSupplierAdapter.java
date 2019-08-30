@@ -32,14 +32,6 @@ public class PeerSupplierAdapter implements PeerSupplier {
 
 	@Override
 	public Optional<Peer> getPeer(EUID nid) {
-<<<<<<< HEAD
-		try {
-			return Optional.ofNullable(peerHandlerSupplier.get().getPeer(PeerHandler.PeerDomain.NETWORK, nid));
-		} catch (DatabaseException e) {
-			throw new TempoException("Error while getting peers", e);
-		}
-=======
 		return Optional.of(addressbookSupplier.get().peer(nid));
->>>>>>> e676c83... First draft of addressbook with unit and integration tests running
 	}
 }
