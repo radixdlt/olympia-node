@@ -89,7 +89,7 @@ public final class StandardFilters {
 	 * @return {@code true} if the peer has a NID, and it's not the local NID, {@code false} otherwise
 	 */
 	public static PeerPredicate notOurNID() {
-		return peer -> peer.hasNID() && peer.getNID().equals(LocalSystem.getInstance().getNID());
+		return peer -> !(peer.hasNID() && peer.getNID().equals(LocalSystem.getInstance().getNID()));
 	}
 
 	/**
