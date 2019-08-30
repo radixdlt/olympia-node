@@ -22,6 +22,7 @@ import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.TempoException;
 import com.radixdlt.utils.Longs;
 import com.sleepycat.je.Cursor;
+import com.sleepycat.je.CursorConfig;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
@@ -247,10 +248,13 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 
 	public Optional<AID> get(long clock) {
 		long start = profiler.begin();
-		try {
+		try (Cursor cursor = this.atoms.openCursor(null, null)) {
 			DatabaseEntry key = new DatabaseEntry(Longs.toByteArray(clock));
+			DatabaseEntry value = new DatabaseEntry();
+			OperationStatus status = cursor.getSearchKeyRange(key, value, LockMode.DEFAULT);
+
 			if (this.atoms.get(null, key, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
-				return Optional.of(AID.from(key.getData()));
+				return Optional.of(AID.from(key.getData(), Long.BYTES));
 			}
 		} finally {
 			profiler.incrementFrom("ATOM_STORE:GET:CLOCK", start);
