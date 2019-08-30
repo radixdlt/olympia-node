@@ -14,7 +14,7 @@ public class PeerManagerFactory {
 	 *
 	 * @return The newly constructed {@link PeerManager}
 	 */
-	public PeerManager createDefault(RuntimeProperties properties, AddressBookImpl addressBook, MessageCentral messageCentral, Events events) {
+	public PeerManager createDefault(RuntimeProperties properties, AddressBook addressBook, MessageCentral messageCentral, Events events) {
 		PeerManagerConfiguration config = PeerManagerConfiguration.fromRuntimeProperties(properties);
 		return new PeerManager(config, addressBook, messageCentral, events);
 	}

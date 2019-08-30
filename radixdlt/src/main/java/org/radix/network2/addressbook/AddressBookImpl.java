@@ -1,7 +1,5 @@
 package org.radix.network2.addressbook;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -11,139 +9,83 @@ import java.util.stream.Stream;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.inject.Inject;
 import com.radixdlt.common.EUID;
 
-import com.radixdlt.utils.Pair;
-import org.radix.database.DatabaseEnvironment;
-import org.radix.database.DatabaseStore;
 import org.radix.events.Events;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.modules.Modules;
-import org.radix.modules.exceptions.ModuleException;
-import org.radix.modules.exceptions.ModuleResetException;
-import org.radix.modules.exceptions.ModuleStartException;
 import org.radix.network.Network;
 import org.radix.network2.transport.TransportInfo;
 import org.radix.network2.utils.Locking;
-import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.Serialization;
-import com.radixdlt.serialization.SerializationException;
-
 import org.radix.universe.system.RadixSystem;
-import com.sleepycat.je.Cursor;
-import com.sleepycat.je.Database;
-import com.sleepycat.je.DatabaseConfig;
-import com.sleepycat.je.DatabaseEntry;
-import com.sleepycat.je.DatabaseException;
-import com.sleepycat.je.DatabaseNotFoundException;
-import com.sleepycat.je.LockMode;
-import com.sleepycat.je.OperationStatus;
-import com.sleepycat.je.Transaction;
-import com.sleepycat.je.TransactionConfig;
 
 /**
  * Implementation of {@link AddressBook}.
- * Note that the underlying storage is (largely) persistent so that clients
- * do not have to wait for a lengthy discovery process to complete on restarting.
+ * Note that a persistence layer may be specified so that clients do not have
+ * to wait for a lengthy discovery process to complete on restarting.
  */
 // FIXME: Static dependency on Network.getInstance().isWhitelisted(...)
-public class AddressBookImpl extends DatabaseStore implements AddressBook {
+public class AddressBookImpl implements AddressBook {
 	private static final Logger log = Logging.getLogger("addressbook");
 
-	private final Serialization serialization;
+	private final PeerPersistence persistence;
 	private final Events events;
 
 	private final Lock peersLock = new ReentrantLock();
 	private final Map<EUID, Peer>          peersByNid  = new HashMap<>();
 	private final Map<TransportInfo, Peer> peersByInfo = new HashMap<>();
 
-	private Database peersByNidDB;
-
-	AddressBookImpl(Serialization serialization, Events events) {
+	@Inject
+	AddressBookImpl(PeerPersistence persistence, Events events) {
 		super();
-		this.serialization = Objects.requireNonNull(serialization);
+		this.persistence = Objects.requireNonNull(persistence);
 		this.events = Objects.requireNonNull(events);
-	}
 
-	@Override
-	public void start_impl() throws ModuleException {
-		DatabaseConfig config = new DatabaseConfig();
-		config.setAllowCreate(true);
+		this.persistence.forEachPersistedPeer(peer -> {
+			this.peersByNid.put(peer.getNID(), peer);
+			peer.supportedTransports()
+				.forEachOrdered(ti -> this.peersByInfo.put(ti, peer));
+		});
 
-		try {
-			this.peersByNidDB = Modules.get(DatabaseEnvironment.class).getEnvironment().openDatabase(null, "peers_by_nid", config);
-		} catch (DatabaseException | IllegalArgumentException | IllegalStateException ex) {
-        	throw new ModuleStartException(ex, this);
-		}
-
-		super.start_impl();
-
-		try {
-			Locking.withLock(this.peersLock, this::loadDatabase);
-			Locking.withLock(this.peersLock, this::removeNotWhitelisted);
-		} catch (Exception ex) {
-			throw new ModuleStartException(ex, this);
-		}
-	}
-
-	@Override
-	public void reset_impl() throws ModuleException {
-		Transaction transaction = null;
-
-		try {
-			transaction = Modules.get(DatabaseEnvironment.class).getEnvironment().beginTransaction(null, new TransactionConfig().setReadUncommitted(true));
-			Modules.get(DatabaseEnvironment.class).getEnvironment().truncateDatabase(transaction, "peers", false);
-			Modules.get(DatabaseEnvironment.class).getEnvironment().truncateDatabase(transaction, "peer_nids", false);
-			transaction.commit();
-		} catch (DatabaseNotFoundException dsnfex) {
-			if (transaction != null) {
-				transaction.abort();
+		// Clean out any existing non-whitelisted peers from the store (whitelist may have changed since last execution)
+		// Take copy to avoid CoMoException
+		ImmutableList<Peer> allPeers = ImmutableList.copyOf(peersByNid.values());
+		for (Peer peer : allPeers) {
+			// Maybe consider making whitelist per transport at some point?
+			if (peer.supportedTransports().anyMatch(this::hostNotWhitelisted)) {
+				log.info("Deleting " + peer + ", as not whitelisted");
+				removePeer(peer);
 			}
-			log.warn(dsnfex.getMessage());
-		} catch (Exception ex) {
-			if (transaction != null) {
-				transaction.abort();
-			}
-			throw new ModuleResetException(ex, this);
 		}
 	}
 
-	@Override
-	public void stop_impl() throws ModuleException {
-		super.stop_impl();
+	private static final class PeerUpdates {
+		final Peer added;
+		final Peer removed;
+		final Peer updated;
 
-		this.peersByNidDB.close();
-	}
+		static PeerUpdates added(Peer peer) {
+			return new PeerUpdates(peer, null, null);
+		}
 
-	@Override
-	public void build() throws DatabaseException {
-		// Not used
-	}
+		public static PeerUpdates removed(Peer peer) {
+			return new PeerUpdates(null, peer, null);
+		}
 
-	@Override
-	public void maintenence() throws DatabaseException {
-		// Not used
-	}
+		public static PeerUpdates updated(Peer peer) {
+			return new PeerUpdates(null, null, peer);
+		}
 
-	@Override
-	public void integrity() throws DatabaseException {
-		// Not used
-	}
+		public static PeerUpdates addAndRemove(Peer added, Peer removed) {
+			return new PeerUpdates(added, removed, null);
+		}
 
-	@Override
-	public void flush() throws DatabaseException  {
-		// Not used
-	}
-
-	@Override
-	public String getName() {
-		return "Peer Address Book";
-	}
-
-	@Override
-	public Class<?> declaredClass() {
-		return AddressBook.class;
+		private PeerUpdates(Peer added, Peer removed, Peer updated) {
+			this.added = added;
+			this.removed = removed;
+			this.updated = updated;
+		}
 	}
 
 	@Override
@@ -163,7 +105,17 @@ public class AddressBookImpl extends DatabaseStore implements AddressBook {
 
 	@Override
 	public Peer updatePeerSystem(Peer peer, RadixSystem system) {
-		return Locking.withBiFunctionLock(this.peersLock, this::updateSystemInternal, peer, system);
+		PeerUpdates updates = Locking.withBiFunctionLock(this.peersLock, this::updateSystemInternal, peer, system);
+		handleUpdatedPeers(updates);
+		if (updates != null) {
+			if (updates.updated != null) {
+				return updates.updated;
+			}
+			if (updates.added != null) {
+				return updates.added;
+			}
+		}
+		return peer;
 	}
 
 	@Override
@@ -198,22 +150,25 @@ public class AddressBookImpl extends DatabaseStore implements AddressBook {
 	}
 
 	// Sends PeersAddedEvents and/or PeersRemoveEvents as required
-	private boolean handleUpdatedPeers(Pair<Peer, Peer> updatedPeers) {
-		if (updatedPeers != null) {
-			if (updatedPeers.getFirst() != null) {
-				events.broadcast(new PeersAddedEvent(ImmutableList.of(updatedPeers.getFirst())));
+	private boolean handleUpdatedPeers(PeerUpdates peerUpdates) {
+		if (peerUpdates != null) {
+			if (peerUpdates.added != null) {
+				events.broadcast(new PeersAddedEvent(ImmutableList.of(peerUpdates.added)));
 			}
-			if (updatedPeers.getSecond() != null) {
-				events.broadcast(new PeersRemovedEvent(ImmutableList.of(updatedPeers.getSecond())));
+			if (peerUpdates.removed != null) {
+				events.broadcast(new PeersRemovedEvent(ImmutableList.of(peerUpdates.removed)));
 			}
-			return updatedPeers.getFirst() != null || updatedPeers.getSecond() != null;
+			if (peerUpdates.updated != null) {
+				events.broadcast(new PeersUpdatedEvent(ImmutableList.of(peerUpdates.updated)));
+			}
+			return !(peerUpdates.added == null && peerUpdates.removed == null && peerUpdates.updated == null);
 		}
 		return false;
 	}
 
 	// Needs peersLock held
 	// FIXME: double check logic here - especially around NID changes
-	private Pair<Peer, Peer> addUpdatePeerInternal(Peer peer) {
+	private PeerUpdates addUpdatePeerInternal(Peer peer) {
 		// Handle specially if it's a connection-only peer (no NID)
 		if (!peer.hasNID()) {
 			// We don't save connection-only peers to the database
@@ -221,14 +176,15 @@ public class AddressBookImpl extends DatabaseStore implements AddressBook {
 			boolean changed = peer.supportedTransports()
 				.map(t -> peersByInfo.putIfAbsent(t, peer) == null)
 				.reduce(false, (a, b) -> a | b);
-			return changed ? Pair.of(peer, null) : null;
+			return changed ? PeerUpdates.added(peer) : null;
 		}
 
 		Peer oldPeer = peersByNid.get(peer.getNID());
-		if (oldPeer == null || peer.hasSystem()) {
-			// Add new peer
-			updatePeerInternal(peer);
-			return Pair.of(peer, null);
+		if (oldPeer == null || !Objects.equals(oldPeer.getSystem(), peer.getSystem())) {
+			// Add new peer or update old peer
+			if (updatePeerInternal(peer)) {
+				return oldPeer == null ? PeerUpdates.added(peer) : PeerUpdates.updated(peer);
+			}
 		}
 		// No change
 		return null;
@@ -236,96 +192,63 @@ public class AddressBookImpl extends DatabaseStore implements AddressBook {
 
 	// Needs peersLock held
 	// Note that peer must have a nid to get here
-	private void updatePeerInternal(Peer peer) {
-		EUID nid = peer.getNID();
-		try {
-			DatabaseEntry key = new DatabaseEntry(nid.toByteArray());
-			byte[] bytes = Modules.get(Serialization.class).toDson(peer, Output.PERSIST);
-			DatabaseEntry value = new DatabaseEntry(bytes);
-			if (peersByNidDB.put(null, key, value) == OperationStatus.SUCCESS) {
-				peersByNid.put(nid, peer);
-				// We overwrite transports here
-				peer.supportedTransports()
-					.forEachOrdered(t -> peersByInfo.put(t, peer));
-			}
-		} catch (SerializationException e) {
-			log.error("Failure updating " + peer + " associated with " + nid);
+	private boolean updatePeerInternal(Peer peer) {
+		if (this.persistence.savePeer(peer)) {
+			peersByNid.put(peer.getNID(), peer);
+			// We overwrite transports here
+			peer.supportedTransports()
+				.forEachOrdered(t -> peersByInfo.put(t, peer));
+			return true;
 		}
+		log.error("Failure saving " + peer);
+		return false;
 	}
 
 	// Needs peersLock held
-	private Pair<Peer, Peer> removePeerInternal(Peer peer) {
+	private PeerUpdates removePeerInternal(Peer peer) {
 		if (!peer.hasNID()) {
 			// We didn't save connection-only peers to the database
 			// Only remove transport if it points to specified peer
 			boolean changed = peer.supportedTransports()
 				.map(t -> peersByInfo.remove(t, peer))
 				.reduce(false, (a, b) -> a | b);
-			return changed ? Pair.of(null, peer) : null;
+			return changed ? PeerUpdates.removed(peer) : null;
 		} else {
 			EUID nid = peer.getNID();
 			Peer oldPeer = peersByNid.remove(nid);
 			if (oldPeer != null) {
 				// Remove all transports
-				peer.supportedTransports().forEachOrdered(peersByInfo::remove);
-				DatabaseEntry key = new DatabaseEntry(nid.toByteArray());
-				if (peersByNidDB.delete(null, key) != OperationStatus.SUCCESS) {
-					log.error("Failure removing " + oldPeer + " associated with " + nid);
+				oldPeer.supportedTransports().forEachOrdered(peersByInfo::remove);
+				if (!this.persistence.deletePeer(nid)) {
+					log.error("Failure removing " + oldPeer);
 				}
 			}
-			return Pair.of(null, oldPeer);
+			return PeerUpdates.removed(oldPeer);
 		}
 	}
 
 	// Needs peersLock held
-	private Peer updateSystemInternal(Peer peer, RadixSystem system) {
-		Peer newPeer = new PeerWithSystem(peer, system);
+	private PeerUpdates updateSystemInternal(Peer peer, RadixSystem system) {
 		if (!peer.hasNID() || peer.getNID().equals(system.getNID())) {
-			// Here if it is basically a new peer or a peer with the same NID
-			// This is a simple update or add
-			// Only remove transports if it belongs to the specified peer
-			peer.supportedTransports().forEachOrdered(t -> this.peersByInfo.remove(t, peer));
-			addUpdatePeerInternal(newPeer);
+			if (!Objects.equals(peer.getSystem(), system)) {
+				// Here if:
+				// 1. Old peer has no NID at all, or does have a nid, and nids match
+				// 2. Old system does not match the updated system
+				// This is a simple update or add
+				// Only remove transports if it belongs to the specified peer
+				Peer newPeer = new PeerWithSystem(peer, system);
+				peer.supportedTransports().forEachOrdered(t -> this.peersByInfo.remove(t, peer));
+				return addUpdatePeerInternal(newPeer);
+			}
 		} else {
 			// Peer has somehow changed NID?
+			Peer newPeer = new PeerWithSystem(peer, system);
 			removePeerInternal(peer);
 			addUpdatePeerInternal(newPeer);
+			return PeerUpdates.addAndRemove(newPeer, peer);
 		}
-		return newPeer;
-	}
-
-	// Needs peerLock held
-	private void loadDatabase() {
-		this.peersByInfo.clear();
-		this.peersByNid.clear();
-		try (Cursor cursor = this.peersByNidDB.openCursor(null, null)) {
-			DatabaseEntry key = new DatabaseEntry();
-			DatabaseEntry value = new DatabaseEntry();
-
-			while (cursor.getNext(key, value, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
-				Peer peer = this.serialization.fromDson(value.getData(), Peer.class);
-				EUID nid = peer.getNID();
-				this.peersByNid.put(nid, peer);
-				peer.supportedTransports()
-					.forEachOrdered(ti -> this.peersByInfo.put(ti, peer));
-			}
-		} catch (IOException ex) {
-			throw new UncheckedIOException("Error while loading database", ex);
-		}
-	}
-
-	// Needs peerLock held
-	private void removeNotWhitelisted() {
-		// Clean out any existing non-whitelisted peers from the store (whitelist may have changed since last execution)
-		// Take copy to avoid CoMoException
-		ImmutableList<Peer> allPeers = ImmutableList.copyOf(peersByNid.values());
-		for (Peer peer : allPeers) {
-			// Maybe consider making whitelist per transport at some point?
-			if (peer.supportedTransports().anyMatch(this::hostNotWhitelisted)) {
-				log.info("Deleting " + peer + ", as not whitelisted");
-				removePeer(peer);
-			}
-		}
+		// No change
+		return null;
 	}
 
 	private boolean hostNotWhitelisted(TransportInfo ti) {
@@ -337,6 +260,5 @@ public class AddressBookImpl extends DatabaseStore implements AddressBook {
 		}
 		return false;
 	}
-
 }
 
