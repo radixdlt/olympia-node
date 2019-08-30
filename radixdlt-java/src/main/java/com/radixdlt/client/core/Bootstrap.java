@@ -15,9 +15,12 @@ import java.util.function.Supplier;
 
 public enum Bootstrap implements BootstrapConfig {
 	LOCALHOST(
-		RadixUniverseConfigs::getLocalnet,
-		new RadixNode("localhost", false, 8080),
-		new RadixNode("localhost", false, 8081)
+		new BootstrapByTrustedNode(
+			ImmutableSet.of(
+				new RadixNode("localhost", false, 8080),
+				new RadixNode("localhost", false, 8081)
+			)
+		)
 	),
 	LOCALHOST_SINGLENODE(
 		new BootstrapByTrustedNode(new RadixNode("localhost", false, 8080))
