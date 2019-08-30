@@ -11,9 +11,7 @@ import com.radixdlt.tempo.Scheduler;
 import com.radixdlt.tempo.discovery.messages.IterativeDiscoveryRequestMessage;
 import com.radixdlt.tempo.discovery.messages.IterativeDiscoveryResponseMessage;
 import com.radixdlt.tempo.store.LCCursorStore;
-import com.radixdlt.tempo.store.berkeley.BerkeleyLCCursorStore;
 import com.radixdlt.tempo.store.CommitmentStore;
-import org.radix.database.DatabaseEnvironment;
 import org.radix.events.EventListener;
 import org.radix.events.Events;
 import org.radix.logging.Logger;
@@ -49,11 +47,9 @@ public final class IterativeDiscoverer implements Closeable, AtomDiscoverer {
 	private final int requestTimeoutSeconds;
 
 	@VisibleForTesting
-	final LCCursorStore cursorStore;
-
-	@VisibleForTesting
 	final IterativeDiscoveryState discoveryState = new IterativeDiscoveryState();
 
+	private final LCCursorStore cursorStore;
 	private final CommitmentStore commitmentStore;
 	private final AtomStoreView storeView;
 	private final Scheduler scheduler;
@@ -67,8 +63,8 @@ public final class IterativeDiscoverer implements Closeable, AtomDiscoverer {
 	public IterativeDiscoverer(
 		@Named("self") EUID self,
 		AtomStoreView storeView,
+		LCCursorStore cursorStore,
 		CommitmentStore commitmentStore,
-		DatabaseEnvironment dbEnv,
 		Scheduler scheduler,
 		MessageCentral messageCentral,
 		Events events,
@@ -76,15 +72,13 @@ public final class IterativeDiscoverer implements Closeable, AtomDiscoverer {
 	) {
 		this.self = Objects.requireNonNull(self);
 		this.storeView = Objects.requireNonNull(storeView);
+		this.cursorStore = Objects.requireNonNull(cursorStore);
 		this.commitmentStore = Objects.requireNonNull(commitmentStore);
 		this.scheduler = Objects.requireNonNull(scheduler);
 		this.messageCentral = Objects.requireNonNull(messageCentral);
 
 		// TODO improve locking to something like in messaging
 		this.discoveryListeners = Collections.synchronizedList(new ArrayList<>());
-		this.cursorStore = new BerkeleyLCCursorStore(dbEnv);
-		this.cursorStore.open();
-
 
 		// TODO replace with regular address book once it's hooked up
 		// TODO remove listener when closed

@@ -91,12 +91,6 @@ class IterativeDiscoveryState {
 			"states=" + states + '}';
 	}
 
-	public Object getDebugRepresentation() {
-		return ImmutableMap.of(
-			"states", states
-		);
-	}
-
 	int getBackoff(EUID nid) {
 		IterativeDiscoveryPeerState state = states.get(nid);
 		if (state == null) {
