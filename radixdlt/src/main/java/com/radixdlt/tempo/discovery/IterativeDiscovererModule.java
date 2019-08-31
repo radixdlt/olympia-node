@@ -23,6 +23,7 @@ public class IterativeDiscovererModule extends AbstractModule {
 		discovererMultibinder.addBinding().to(IterativeDiscoverer.class);
 
 		// dependencies
+		// FIXME remove static dependency on Events
 		bind(Events.class).toProvider(Events::getInstance);
 		bind(IterativeDiscovererConfiguration.class).toInstance(configuration);
 	}

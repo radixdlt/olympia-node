@@ -30,7 +30,7 @@ import java.util.Objects;
 @Singleton
 public class BerkeleyCommitmentStore implements CommitmentStore {
 	private static final String COMMITMENTS_DB_NAME = "tempo2.sync.iterative.commitments";
-	private static final Logger logger = Logging.getLogger("CursorStore");
+	private static final Logger logger = Logging.getLogger("store.commitments");
 
 	private final DatabaseEnvironment dbEnv;
 	private Database commitments; // commitment hashes by NID + logical clock

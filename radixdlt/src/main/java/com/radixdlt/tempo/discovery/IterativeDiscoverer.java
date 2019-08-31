@@ -44,7 +44,7 @@ import java.util.stream.Stream;
  */
 @Singleton
 public final class IterativeDiscoverer implements Resource, AtomDiscoverer {
-	private static final Logger log = Logging.getLogger("IterativeDiscoverer");
+	private static final Logger log = Logging.getLogger("discoverer.iterative");
 
 	private static final int DEFAULT_REQUEST_TIMEOUT_SECONDS = 5;
 	private static final int DEFAULT_MAX_BACKOFF = 4;

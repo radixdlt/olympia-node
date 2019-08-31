@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
  * A simple mock application for testing ledgers.
  */
 public final class MockApplication {
-	private static final Logger logger = Logging.getLogger("App");
+	private static final Logger logger = Logging.getLogger("mock.app");
 
 	private static AtomicInteger applicationId = new AtomicInteger(0);
 

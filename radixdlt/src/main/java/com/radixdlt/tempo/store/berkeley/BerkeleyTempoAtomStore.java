@@ -67,7 +67,7 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 	private static final String DUPLICATE_INDICES_DB_NAME = "tempo2.duplicated_indices";
 	private static final String UNIQUE_INDICES_DB_NAME = "tempo2.unique_indices";
 	private static final String ATOMS_DB_NAME = "tempo2.atoms";
-	private static final Logger logger = Logging.getLogger("Store");
+	private static final Logger logger = Logging.getLogger("store.atoms");
 
 	private final EUID self;
 	private final Serialization serialization;

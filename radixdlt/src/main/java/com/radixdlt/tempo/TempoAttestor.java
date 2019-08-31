@@ -20,7 +20,7 @@ import java.util.Objects;
 import java.util.function.LongSupplier;
 
 public final class TempoAttestor implements Attestor {
-	private static final Logger logger = Logging.getLogger("Tempo");
+	private static final Logger logger = Logging.getLogger("tempo.attestor");
 
 	private final LocalSystem localSystem;
 	private final WallclockTimeSupplier wallclockTimeSupplier;

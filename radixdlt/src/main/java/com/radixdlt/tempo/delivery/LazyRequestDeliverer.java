@@ -35,7 +35,7 @@ import java.util.concurrent.TimeUnit;
 
 @Singleton
 public final class LazyRequestDeliverer implements Resource, AtomDeliverer, RequestDeliverer {
-	private static final Logger log = Logging.getLogger("RequestDeliverer");
+	private static final Logger log = Logging.getLogger("deliverer.request");
 
 	private static final int DEFAULT_REQUEST_QUEUE_CAPACITY = 8192;
 	private static final int DEFAULT_REQUEST_PROCESSOR_THREADS = 2;

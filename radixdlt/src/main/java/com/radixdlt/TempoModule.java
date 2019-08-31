@@ -57,7 +57,6 @@ public class TempoModule extends AbstractModule {
 		bind(Scheduler.class).toProvider(SingleThreadedScheduler::new);
 		bind(Attestor.class).to(TempoAttestor.class);
 		bind(WallclockTimeSupplier.class).toInstance(Time::currentTimestamp);
-		bind(Events.class).toProvider(Events::getInstance);
 
 		bind(EdgeSelector.class).to(SimpleEdgeSelector.class);
 		// FIXME: static dependency on modules for address book

@@ -26,7 +26,7 @@ import java.util.Optional;
 @Singleton
 public final class BerkeleyLCCursorStore implements Resource, LCCursorStore {
 	private static final String ITERATIVE_CURSORS_DB_NAME = "tempo2.sync.iterative.cursors";
-	private static final Logger logger = Logging.getLogger("CursorStore");
+	private static final Logger logger = Logging.getLogger("store.cursors");
 
 	private final DatabaseEnvironment dbEnv;
 	private Database cursors;

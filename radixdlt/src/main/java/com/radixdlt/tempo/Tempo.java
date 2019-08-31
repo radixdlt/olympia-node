@@ -42,7 +42,7 @@ import java.util.stream.Collectors;
  * The Tempo implementation of a ledger.
  */
 public final class Tempo extends Plugin implements Ledger {
-	private static final Logger log = Logging.getLogger("Tempo");
+	private static final Logger log = Logging.getLogger("tempo");
 	private static final int INBOUND_QUEUE_CAPACITY = 16384;
 
 	private final EUID self;

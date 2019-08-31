@@ -12,7 +12,7 @@ import java.util.Random;
  * Public facing accessor for mocking operations in a {@link MockApplication}
  */
 public final class MockAccessor {
-	private static final Logger logger = Logging.getLogger("App");
+	private static final Logger logger = Logging.getLogger("mock.accessor");
 
 	private final Random rng = new Random();
 	private final MockApplication mockApplication;

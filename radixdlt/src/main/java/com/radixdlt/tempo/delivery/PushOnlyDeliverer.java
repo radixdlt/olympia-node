@@ -23,7 +23,7 @@ import java.util.Optional;
 
 @Singleton
 public final class PushOnlyDeliverer implements Closeable, AtomDeliverer, AtomAcceptor {
-	private static final Logger log = Logging.getLogger("Pusher");
+	private static final Logger log = Logging.getLogger("deliverer.push");
 
 	private final EUID self;
 	private final MessageCentral messageCentral;
