@@ -151,6 +151,7 @@ public final class Tempo extends Plugin implements Ledger {
 		if (ownVertex == null) {
 			throw new TempoException("Accepted atom " + atom.getAID() + " has no vertex by self");
 		}
+		// TODO move to commitment acceptor
 		commitmentStore.put(self, ownVertex.getClock(), ownVertex.getCommitment());
 		acceptors.forEach(acceptor -> acceptor.accept(atom));
 	}

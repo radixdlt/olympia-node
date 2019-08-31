@@ -20,12 +20,15 @@ import com.radixdlt.tempo.store.CommitmentStore;
 import com.radixdlt.tempo.store.LCCursorStore;
 import com.radixdlt.tempo.store.SampleStore;
 import com.radixdlt.tempo.store.TempoAtomStore;
+import org.radix.events.Events;
 import org.radix.modules.Modules;
 import org.radix.network2.addressbook.AddressBook;
 import org.radix.network2.messaging.MessageCentral;
 import org.radix.time.Time;
 import org.radix.universe.system.LocalSystem;
 
+// FIXME: remove static dependency on Time
+// FIXME: remove static dependency on Events
 public class TempoModule extends AbstractModule {
 	// FIXME: manual injection of MessageCentral should be done automatically
 	private final LocalSystem localSystem;
@@ -38,6 +41,8 @@ public class TempoModule extends AbstractModule {
 
 	@Override
 	protected void configure() {
+		// TODO bind Ledger interface to Tempo when ready to consume in application level
+
 		bind(LocalSystem.class).annotatedWith(Names.named("self")).toInstance(localSystem);
 		bind(EUID.class).annotatedWith(Names.named("self")).toProvider(localSystem::getNID);
 
@@ -47,10 +52,12 @@ public class TempoModule extends AbstractModule {
 		ownedResourcesBinder.addBinding().to(LCCursorStore.class);
 		ownedResourcesBinder.addBinding().to(SampleStore.class);
 
+		// dependencies
 		bind(MessageCentral.class).toInstance(messageCentral);
 		bind(Scheduler.class).toProvider(SingleThreadedScheduler::new);
 		bind(Attestor.class).to(TempoAttestor.class);
 		bind(WallclockTimeSupplier.class).toInstance(Time::currentTimestamp);
+		bind(Events.class).toProvider(Events::getInstance);
 
 		bind(EdgeSelector.class).to(SimpleEdgeSelector.class);
 		// FIXME: static dependency on modules for address book

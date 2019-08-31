@@ -20,9 +20,11 @@ public class BerkeleyStoreModule extends AbstractModule {
 		bind(LCCursorStore.class).to(BerkeleyLCCursorStore.class);
 		bind(SampleStore.class).to(BerkeleySampleStore.class);
 
-		// FIXME: remove static dependency on modules
+		// FIXME: remove static dependency on modules for databaseenvironment
 		bind(DatabaseEnvironment.class).toProvider(() -> Modules.get(DatabaseEnvironment.class));
+		// FIXME: remove static dependency on modules for serialization
 		bind(Serialization.class).toProvider(Serialization::getDefault);
+		// FIXME: remove static dependency on modules for systemprofiler
 		bind(SystemProfiler.class).toProvider(SystemProfiler::getInstance);
 	}
 }
