@@ -8,6 +8,7 @@ import com.radixdlt.Atom;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
 import com.radixdlt.engine.AtomStatus;
+import com.radixdlt.ledger.AtomObservation;
 import com.radixdlt.ledger.Ledger;
 import com.radixdlt.ledger.LedgerCursor;
 import com.radixdlt.ledger.LedgerIndex.LedgerIndexType;
@@ -53,7 +54,7 @@ public final class Tempo extends Plugin implements Ledger {
 	private final EdgeSelector edgeSelector;
 	private final Attestor attestor;
 
-	private final BlockingQueue<TempoAtom> inboundAtoms;
+	private final BlockingQueue<AtomObservation> atomObservations;
 
 	private final Set<Resource> ownedResources;
 	private final Set<AtomDiscoverer> atomDiscoverers;
@@ -85,7 +86,7 @@ public final class Tempo extends Plugin implements Ledger {
 		this.requestDeliverer = requestDeliverer;
 		this.acceptors = acceptors;
 
-		this.inboundAtoms = new LinkedBlockingQueue<>(INBOUND_QUEUE_CAPACITY);
+		this.atomObservations = new LinkedBlockingQueue<>(INBOUND_QUEUE_CAPACITY);
 
 		// hook up components
 		// TODO remove listeners when closed?
@@ -98,8 +99,8 @@ public final class Tempo extends Plugin implements Ledger {
 	}
 
 	@Override
-	public Atom receive() throws InterruptedException {
-		return this.inboundAtoms.take();
+	public AtomObservation observe() throws InterruptedException {
+		return this.atomObservations.take();
 	}
 
 	@Override
@@ -137,7 +138,7 @@ public final class Tempo extends Plugin implements Ledger {
 	}
 
 	private void addInbound(TempoAtom atom) {
-		if (!this.inboundAtoms.add(atom)) {
+		if (!this.atomObservations.add(AtomObservation.receive(atom))) {
 			// TODO more graceful queue full handling
 			log.error("Inbound atoms queue full");
 		}
@@ -194,13 +195,13 @@ public final class Tempo extends Plugin implements Ledger {
 
 			@Override
 			public long getQueueSize() {
-				return inboundAtoms.size();
+				return atomObservations.size();
 			}
 
 			@Override
 			public Map<String, Object> getMetaData() {
 				return ImmutableMap.of(
-					"inboundQueue", inboundAtoms.size()
+					"inboundQueue", atomObservations.size()
 				);
 			}
 		});

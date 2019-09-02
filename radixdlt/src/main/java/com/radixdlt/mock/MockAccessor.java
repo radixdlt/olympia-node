@@ -34,7 +34,7 @@ public final class MockAccessor {
 
 			LedgerIndex key = new LedgerIndex(keyBytes);
 			MockAtom atom = new MockAtom(new MockAtomContent(key, valueBytes));
-			mockApplication.queue(atom);
+			mockApplication.inject(atom);
 		}
 	}
 
@@ -47,7 +47,7 @@ public final class MockAccessor {
 
 			LedgerIndex keyIndex = new LedgerIndex(MockAtomContent.GENERIC_KEY_PREFIX, Longs.toByteArray(key));
 			MockAtom atom = new MockAtom(new MockAtomContent(keyIndex, valueBytes));
-			mockApplication.queue(atom);
+			mockApplication.inject(atom);
 		}
 	}
 }

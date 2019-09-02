@@ -13,13 +13,13 @@ import java.util.Set;
  */
 public interface Ledger {
 	/**
-	 * Receives a new atom, blocking until an atom becomes available.
+	 * Receives observations of this ledger, blocking until an atom becomes available.
 	 *
-	 * @return The received atom
+	 * @return The atom observation
 	 *
 	 * @throws LedgerException in case of internal errors
 	 */
-	Atom receive() throws InterruptedException;
+	AtomObservation observe() throws InterruptedException;
 
 	/**
 	 * Gets the atom associated with a certain {@link AID}.
