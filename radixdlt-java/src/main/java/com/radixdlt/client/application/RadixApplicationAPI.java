@@ -2,6 +2,7 @@ package com.radixdlt.client.application;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.client.application.translate.InvalidAddressMagicException;
 import com.radixdlt.client.application.translate.StageActionException;
 import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
@@ -10,6 +11,7 @@ import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.RRI;
+import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.ledger.AtomStore;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.RadixNodeAction;
@@ -1032,6 +1034,14 @@ public class RadixApplicationAPI {
 
 			List<ParticleGroup> pgs = statefulMapper.apply(action, particles);
 			for (ParticleGroup pg : pgs) {
+				for (SpunParticle sp : pg.getSpunParticles()) {
+					for (RadixAddress address : sp.getParticle().getShardables()) {
+						if (address.getMagicByte() != (universe.getMagic() & 0xff)) {
+							throw new InvalidAddressMagicException(address, universe.getMagic() & 0xff);
+						}
+					}
+				}
+
 				universe.getAtomStore().stageParticleGroup(uuid, pg);
 			}
 		}
