@@ -17,6 +17,7 @@ public class RadixAddress {
  	 */
 	private final String addressBase58;
 
+	private final transient int magicByte;
 	private final transient ECPublicKey publicKey;
 
 	public RadixAddress(String addressBase58) {
@@ -32,6 +33,7 @@ public class RadixAddress {
 		System.arraycopy(raw, 1, publicKey, 0, raw.length - 5);
 
 		this.addressBase58 = addressBase58;
+		this.magicByte = raw[0];
 		this.publicKey = new ECPublicKey(publicKey);
 	}
 
@@ -56,6 +58,7 @@ public class RadixAddress {
 
 		this.addressBase58 = Base58.toBase58(addressBytes);
 		this.publicKey = publicKey;
+		this.magicByte = addressBytes[0];
 	}
 
 	private RadixAddress(byte[] raw) {
@@ -71,7 +74,12 @@ public class RadixAddress {
 		System.arraycopy(raw, 1, publicKey, 0, raw.length - 5);
 
 		this.addressBase58 = addressBase58;
+		this.magicByte = raw[0] & 0xff;
 		this.publicKey = new ECPublicKey(publicKey);
+	}
+
+	public int getMagicByte() {
+		return magicByte;
 	}
 
 	public boolean ownsKey(ECKeyPair ecKeyPair) {
