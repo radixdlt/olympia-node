@@ -7,7 +7,6 @@ import org.bouncycastle.util.Arrays;
 import org.radix.atoms.AtomStore;
 import org.radix.modules.Modules;
 
-import java.io.IOException;
 import java.util.Objects;
 
 public class LegacyCursor implements LedgerCursor {
@@ -40,22 +39,22 @@ public class LegacyCursor implements LedgerCursor {
 	}
 
 	@Override
-	public LedgerCursor next() throws IOException {
+	public LedgerCursor next() {
 		return Modules.get(AtomStore.class).getNext(this);
 	}
 
 	@Override
-	public LedgerCursor previous() throws IOException {
+	public LedgerCursor previous() {
 		return Modules.get(AtomStore.class).getPrev(this);
 	}
 
 	@Override
-	public LedgerCursor first() throws IOException {
+	public LedgerCursor first() {
 		return Modules.get(AtomStore.class).getFirst(this);
 	}
 
 	@Override
-	public LedgerCursor last() throws IOException {
+	public LedgerCursor last() {
 		return Modules.get(AtomStore.class).getLast(this);
 	}
 }

@@ -76,7 +76,7 @@ public final class MockApplication {
 				AtomObservation atomObservation = atomObservationQueue.take();
 				if (atomObservation.getType() == AtomObservation.Type.COMMIT) {
 					logger.info("Committed to atom '" + atomObservation.getAtom().getAID() + "'");
-				} else if (atomObservation.getType() == AtomObservation.Type.RECEIVE) {
+				} else if (atomObservation.getType() == AtomObservation.Type.ADOPT) {
 					receive(atomObservation);
 				}
 			} catch (InterruptedException e) {

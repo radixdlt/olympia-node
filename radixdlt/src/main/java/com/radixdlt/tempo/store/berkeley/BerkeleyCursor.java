@@ -5,7 +5,6 @@ import com.radixdlt.ledger.LedgerCursor;
 import com.radixdlt.ledger.LedgerIndex;
 import org.bouncycastle.util.Arrays;
 
-import java.io.IOException;
 import java.util.Objects;
 
 /**
@@ -43,22 +42,22 @@ public class BerkeleyCursor implements LedgerCursor {
 	}
 
 	@Override
-	public LedgerCursor next() throws IOException {
+	public LedgerCursor next() {
 		return this.store.getNext(this);
 	}
 
 	@Override
-	public LedgerCursor previous() throws IOException {
+	public LedgerCursor previous() {
 		return this.store.getPrev(this);
 	}
 
 	@Override
-	public LedgerCursor first() throws IOException {
+	public LedgerCursor first() {
 		return this.store.getFirst(this);
 	}
 
 	@Override
-	public LedgerCursor last() throws IOException {
+	public LedgerCursor last() {
 		return this.store.getLast(this);
 	}
 }

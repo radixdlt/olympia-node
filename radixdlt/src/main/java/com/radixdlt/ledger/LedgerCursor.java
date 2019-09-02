@@ -2,8 +2,6 @@ package com.radixdlt.ledger;
 
 import com.radixdlt.common.AID;
 
-import java.io.IOException;
-
 /**
  * A ledger cursor, bound to a specific ledger instance.
  */
@@ -21,11 +19,11 @@ public interface LedgerCursor {
 	 */
 	AID get();
 
-	LedgerCursor next() throws IOException;
+	LedgerCursor next();
 
-	LedgerCursor previous() throws IOException;
+	LedgerCursor previous();
 
-	LedgerCursor first() throws IOException;
+	LedgerCursor first();
 
-	LedgerCursor last() throws IOException;
+	LedgerCursor last();
 }

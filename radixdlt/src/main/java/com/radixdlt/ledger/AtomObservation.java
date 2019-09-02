@@ -11,7 +11,7 @@ import java.util.Set;
  */
 public final class AtomObservation {
 	public enum Type {
-		RECEIVE,
+		ADOPT,
 		COMMIT
 	}
 
@@ -43,13 +43,13 @@ public final class AtomObservation {
 
 	public static AtomObservation receive(Atom newAtom) {
 		Objects.requireNonNull(newAtom, "newAtom is required");
-		return new AtomObservation(Type.RECEIVE, newAtom, ImmutableSet.of());
+		return new AtomObservation(Type.ADOPT, newAtom, ImmutableSet.of());
 	}
 
 	public static AtomObservation change(Set<Atom> previousAtoms, Atom newAtom) {
 		Objects.requireNonNull(previousAtoms, "previousAtoms is required");
 		Objects.requireNonNull(newAtom, "newAtom is required");
-		return new AtomObservation(Type.RECEIVE, newAtom, previousAtoms);
+		return new AtomObservation(Type.ADOPT, newAtom, previousAtoms);
 	}
 
 	public static AtomObservation commit(Atom atom) {

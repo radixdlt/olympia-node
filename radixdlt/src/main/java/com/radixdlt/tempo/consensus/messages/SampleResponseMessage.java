@@ -1,55 +1,32 @@
 package com.radixdlt.tempo.consensus.messages;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableSet;
-import com.radixdlt.common.AID;
+import com.google.common.collect.ImmutableMap;
 import com.radixdlt.common.EUID;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerId2;
+import com.radixdlt.tempo.consensus.Sample;
 import org.radix.network.messaging.Message;
-import org.radix.time.TemporalProof;
 
-@SerializerId2("tempo.sample.response")
+import java.util.Map;
+
+@SerializerId2("tempo.consensus.sampling.response")
 public class SampleResponseMessage extends Message {
-	@JsonProperty("collectedSamples")
+	@JsonProperty("samples")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private final ImmutableSet<TemporalProof> collectedSamples;
-
-	@JsonProperty("unavailableAids")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private final ImmutableSet<AID> unavailableAids;
-
-	@JsonProperty("tag")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private final EUID tag;
+	private final Map<EUID, Sample> samplesByTag;
 
 	private SampleResponseMessage() {
 		// For serializer
-		this.collectedSamples = ImmutableSet.of();
-		this.unavailableAids = ImmutableSet.of();
-		this.tag = null;
+		this.samplesByTag = ImmutableMap.of();
 	}
 
-	public SampleResponseMessage(ImmutableSet<TemporalProof> collectedSamples, ImmutableSet<AID> unavailableAids, EUID tag) {
-		this.collectedSamples = collectedSamples;
-		this.unavailableAids = unavailableAids;
-		this.tag = tag;
-	}
-
-	public ImmutableSet<TemporalProof> getCollectedSamples() {
-		return collectedSamples;
-	}
-
-	public ImmutableSet<AID> getUnavailableAids() {
-		return unavailableAids;
-	}
-
-	public EUID getTag() {
-		return tag;
+	public SampleResponseMessage(Map<EUID, Sample> samplesByTag) {
+		this.samplesByTag = samplesByTag;
 	}
 
 	@Override
 	public String getCommand() {
-		return "tempo.sample.response";
+		return "tempo.consensus.sampling.response";
 	}
 }

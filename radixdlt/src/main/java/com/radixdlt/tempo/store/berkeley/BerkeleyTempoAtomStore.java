@@ -556,7 +556,7 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 		}
 	}
 
-	BerkeleyCursor getNext(BerkeleyCursor cursor) throws DatabaseException {
+	BerkeleyCursor getNext(BerkeleyCursor cursor) {
 		try (SecondaryCursor databaseCursor = toSecondaryCursor(cursor.getType())) {
 			DatabaseEntry pKey = new DatabaseEntry(cursor.getPrimary());
 			DatabaseEntry key = new DatabaseEntry(cursor.getIndex());
@@ -568,11 +568,11 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 
 			return null;
 		} catch (Exception ex) {
-			throw new DatabaseException(ex);
+			throw new TempoException("Error while advancing cursor", ex);
 		}
 	}
 
-	BerkeleyCursor getPrev(BerkeleyCursor cursor) throws DatabaseException {
+	BerkeleyCursor getPrev(BerkeleyCursor cursor) {
 		try (SecondaryCursor databaseCursor = toSecondaryCursor(cursor.getType())) {
 			DatabaseEntry pKey = new DatabaseEntry(cursor.getPrimary());
 			DatabaseEntry key = new DatabaseEntry(cursor.getIndex());
@@ -584,11 +584,11 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 
 			return null;
 		} catch (Exception ex) {
-			throw new DatabaseException(ex);
+			throw new TempoException("Error while advancing cursor", ex);
 		}
 	}
 
-	BerkeleyCursor getFirst(BerkeleyCursor cursor) throws DatabaseException {
+	BerkeleyCursor getFirst(BerkeleyCursor cursor) {
 		try (SecondaryCursor databaseCursor = toSecondaryCursor(cursor.getType())) {
 			DatabaseEntry pKey = new DatabaseEntry(cursor.getPrimary());
 			DatabaseEntry key = new DatabaseEntry(cursor.getIndex());
@@ -604,11 +604,11 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 
 			return null;
 		} catch (Exception ex) {
-			throw new DatabaseException(ex);
+			throw new TempoException("Error while advancing cursor", ex);
 		}
 	}
 
-	BerkeleyCursor getLast(BerkeleyCursor cursor) throws DatabaseException {
+	BerkeleyCursor getLast(BerkeleyCursor cursor) {
 		try (SecondaryCursor databaseCursor = toSecondaryCursor(cursor.getType())) {
 			DatabaseEntry pKey = new DatabaseEntry(cursor.getPrimary());
 			DatabaseEntry key = new DatabaseEntry(cursor.getIndex());
@@ -625,7 +625,7 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 
 			return null;
 		} catch (Exception ex) {
-			throw new DatabaseException(ex);
+			throw new TempoException("Error while advancing cursor", ex);
 		}
 	}
 
