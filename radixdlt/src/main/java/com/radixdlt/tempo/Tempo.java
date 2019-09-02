@@ -163,15 +163,6 @@ public final class Tempo extends Plugin implements Ledger {
 	}
 
 	@Override
-	public CompletableFuture<Atom> resolve(Atom atom, Collection<Atom> conflictingAtoms) {
-		log.info(String.format("Resolving conflict between '%s' and '%s'", atom.getAID(), conflictingAtoms.stream()
-			.map(Atom::getAID)
-			.collect(Collectors.toList())));
-
-		throw new UnsupportedOperationException("Not yet implemented");
-	}
-
-	@Override
 	public LedgerCursor search(LedgerIndexType type, LedgerIndex index, LedgerSearchMode mode) {
 		return atomStore.search(type, index, mode);
 	}

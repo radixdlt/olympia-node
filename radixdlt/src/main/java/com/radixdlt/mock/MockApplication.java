@@ -85,7 +85,8 @@ public final class MockApplication {
 					logger.debug(String.format("Received foreign atom content %s, cannot infer indices", content.getClass().getSimpleName()));
 				}
 
-				store(atom, uniqueIndices, duplicateIndices);
+				ledger.store(atom, uniqueIndices, duplicateIndices);
+				logger.info(String.format("Stored atom '%s'", atom.getAID()));
 			} catch (InterruptedException e) {
 				// exit if interrupted
 				Thread.currentThread().interrupt();
@@ -93,36 +94,6 @@ public final class MockApplication {
 			} catch (Exception e) {
 				logger.error("Error in core application loop: '" + e.toString() + "'", e);
 			}
-		}
-	}
-
-	private void store(Atom atom, ImmutableSet<LedgerIndex> uniqueIndices, ImmutableSet<LedgerIndex> duplicateIndices) {
-		try {
-			ImmutableSet<AID> previousRemnants = conflictRemnants.remove(atom.getAID());
-			// if there are no remnants from previous conflict, just store the atom
-			if (previousRemnants == null || conflictRemnants.isEmpty()) {
-				ledger.store(atom, uniqueIndices, duplicateIndices);
-				logger.info(String.format("Stored atom '%s'", atom.getAID()));
-			} else {
-				// otherwise replace the remnants with the new atom
-				ledger.replace(previousRemnants, atom, uniqueIndices, duplicateIndices);
-				logger.info(String.format("Replaced '%s' with '%s'", previousRemnants, atom.getAID()));
-			}
-		} catch (LedgerIndexConflictException e) { // conflict!
-			// TODO should use own conflict detection mechanism?
-			ImmutableMap<LedgerIndex, Atom> conflictingAtoms = e.getConflictingAtoms();
-			ImmutableSet<AID> allConflictingAids = e.getAllAids();
-			// resolve conflict by calling ledger
-			logger.info(String.format("Detected conflict between current atom '%s' and '%s', calling ledger to resolve", atom.getAID(), e.getConflictingAids()));
-			ledger.resolve(e.getAtom(), conflictingAtoms.values())
-				.thenAccept(winner -> {
-					logger.info(String.format("Ledger resolved conflict between '%s' to '%s'", allConflictingAids, winner.getAID()));
-					// add conflict 'remnants' to the queue to be replaced atomically with the winner
-					conflictRemnants.put(winner.getAID(), allConflictingAids.stream()
-						.filter(aid -> ledger.get(aid).isPresent())
-						.collect(ImmutableSet.toImmutableSet()));
-					queue(winner);
-				});
 		}
 	}
 

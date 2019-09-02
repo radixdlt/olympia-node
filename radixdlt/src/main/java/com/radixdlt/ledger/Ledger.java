@@ -69,16 +69,4 @@ public interface Ledger {
 	 * @throws LedgerException in case of internal errors
 	 */
 	LedgerCursor search(LedgerCursor.LedgerIndexType type, LedgerIndex index, LedgerSearchMode mode);
-
-	/**
-	 * Resolves a conflict between an atom and non-empty set of conflicting atoms.
-	 *
-	 * @param atom The atom
-	 * @param conflictingAtoms The non-empty set of conflicting atoms
-	 * @return a {@link Future} yielding the winning atom
-	 *
-	 * @throws LedgerException in case of internal errors
-	 */
-	// TODO remove
-	CompletableFuture<Atom> resolve(Atom atom, Collection<Atom> conflictingAtoms);
 }
