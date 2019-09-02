@@ -36,4 +36,12 @@ public final class AtomConflict {
 			.map(Atom::getAID)
 			.collect(ImmutableSet.toImmutableSet());
 	}
+
+	@Override
+	public String toString() {
+		return "AtomConflict{" +
+			"atom=" + atom +
+			", conflictingAtoms=" + conflictingAtoms +
+			'}';
+	}
 }

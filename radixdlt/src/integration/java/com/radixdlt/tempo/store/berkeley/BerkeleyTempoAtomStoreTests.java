@@ -140,26 +140,6 @@ public class BerkeleyTempoAtomStoreTests extends RadixTestWithStores {
     }
 
     @Test
-    public void storeGetDeleteTest() {
-        SoftAssertions.assertSoftly(softly -> {
-            //atom added to store successfully
-            softly.assertThat(tempoAtomStore.store(tempoAtoms.get(0), ImmutableSet.of(), ImmutableSet.of()).isSuccess());
-
-            //added atom is present in store
-            softly.assertThat(tempoAtomStore.get(tempoAtoms.get(0).getAID()).isPresent()).isTrue();
-
-            //not added atom is absent in store
-            softly.assertThat(tempoAtomStore.get(tempoAtoms.get(1).getAID()).isPresent()).isFalse();
-
-            //atom is deleted successfully
-            softly.assertThat(tempoAtomStore.delete(tempoAtoms.get(0).getAID())).isTrue();
-
-            //deleted atom is not present in store
-            softly.assertThat(tempoAtomStore.get(tempoAtoms.get(0).getAID()).isPresent()).isFalse();
-        });
-    }
-
-    @Test
     public void searchDuplicateExactTest() {
         storeAtoms();
         // LedgerIndex for shard 200

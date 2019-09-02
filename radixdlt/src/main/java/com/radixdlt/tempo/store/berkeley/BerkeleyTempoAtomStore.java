@@ -303,27 +303,6 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 	}
 
 	@Override
-	public boolean delete(AID aid) {
-		long start = profiler.begin();
-		Transaction transaction = dbEnv.getEnvironment().beginTransaction(null, null);
-		try {
-			if (doDelete(aid, transaction)) {
-				transaction.commit();
-				return true;
-			} else {
-				transaction.abort();
-			}
-		} catch (Exception e) {
-			transaction.abort();
-			fail("Delete of atom '" + aid + "' failed", e);
-		} finally {
-			profiler.incrementFrom("ATOM_STORE:DELETE_ATOM", start);
-		}
-
-		return false;
-	}
-
-	@Override
 	public AtomStoreResult replace(Set<AID> aids, TempoAtom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
 		long start = profiler.begin();
 		Transaction transaction = dbEnv.getEnvironment().beginTransaction(null, null);

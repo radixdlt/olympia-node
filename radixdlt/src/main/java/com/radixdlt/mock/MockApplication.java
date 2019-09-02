@@ -6,7 +6,7 @@ import com.radixdlt.Atom;
 import com.radixdlt.common.AID;
 import com.radixdlt.ledger.Ledger;
 import com.radixdlt.ledger.LedgerIndex;
-import com.radixdlt.ledger.exceptions.LedgerKeyConstraintException;
+import com.radixdlt.ledger.exceptions.LedgerIndexConflictException;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 
@@ -101,15 +101,15 @@ public final class MockApplication {
 			ImmutableSet<AID> previousRemnants = conflictRemnants.remove(atom.getAID());
 			// if there are no remnants from previous conflict, just store the atom
 			if (previousRemnants == null || conflictRemnants.isEmpty()) {
-				if (ledger.submit(atom, uniqueIndices, duplicateIndices)) {
-					logger.info(String.format("Stored atom '%s'", atom.getAID()));
-				}
-			} else { // otherwise replace the remnants with the new atom
-				if (ledger.replace(previousRemnants, atom, uniqueIndices, duplicateIndices)) {
-					logger.info(String.format("Replaced '%s' with '%s'", previousRemnants, atom.getAID()));
-				}
+				ledger.store(atom, uniqueIndices, duplicateIndices);
+				logger.info(String.format("Stored atom '%s'", atom.getAID()));
+			} else {
+				// otherwise replace the remnants with the new atom
+				ledger.replace(previousRemnants, atom, uniqueIndices, duplicateIndices);
+				logger.info(String.format("Replaced '%s' with '%s'", previousRemnants, atom.getAID()));
 			}
-		} catch (LedgerKeyConstraintException e) { // conflict!
+		} catch (LedgerIndexConflictException e) { // conflict!
+			// TODO should use own conflict detection mechanism?
 			ImmutableMap<LedgerIndex, Atom> conflictingAtoms = e.getConflictingAtoms();
 			ImmutableSet<AID> allConflictingAids = e.getAllAids();
 			// resolve conflict by calling ledger

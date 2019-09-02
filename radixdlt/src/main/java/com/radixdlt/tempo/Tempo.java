@@ -13,9 +13,13 @@ import com.radixdlt.ledger.LedgerCursor;
 import com.radixdlt.ledger.LedgerCursor.LedgerIndexType;
 import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerSearchMode;
+import com.radixdlt.ledger.exceptions.AtomAlreadyExistsException;
+import com.radixdlt.ledger.exceptions.LedgerIndexConflictException;
 import com.radixdlt.tempo.delivery.AtomDeliverer;
 import com.radixdlt.tempo.delivery.RequestDeliverer;
 import com.radixdlt.tempo.discovery.AtomDiscoverer;
+import com.radixdlt.tempo.store.AtomConflict;
+import com.radixdlt.tempo.store.AtomStoreResult;
 import com.radixdlt.tempo.store.CommitmentStore;
 import com.radixdlt.tempo.store.TempoAtomStore;
 import com.radixdlt.tempo.store.TempoAtomStoreView;
@@ -108,35 +112,31 @@ public final class Tempo extends Plugin implements Ledger {
 	}
 
 	@Override
-	public boolean submit(Atom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
-		TempoAtom tempoAtom = convertToTempoAtom(atom);
-		if (atomStore.contains(tempoAtom.getAID())) {
-			return false;
+	public void store(Atom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
+		if (atomStore.contains(atom.getAID())) {
+			throw new AtomAlreadyExistsException(atom);
 		}
-		tempoAtom = attestTo(tempoAtom);
-		if (atomStore.store(tempoAtom, uniqueIndices, duplicateIndices).isSuccess()) {
-			onAdopted(tempoAtom);
-			return true;
-		} else {
-			return false;
+		TempoAtom tempoAtom = attestTo(convertToTempoAtom(atom));
+		AtomStoreResult status = atomStore.store(tempoAtom, uniqueIndices, duplicateIndices);
+		if (!status.isSuccess()) {
+			AtomConflict conflictInfo = status.getConflictInfo();
+			throw new LedgerIndexConflictException(conflictInfo.getAtom(), conflictInfo.getConflictingAtoms());
 		}
+		onAdopted(tempoAtom);
 	}
 
 	@Override
-	public boolean delete(AID aid) {
-		return atomStore.delete(aid);
-	}
-
-	@Override
-	public boolean replace(Set<AID> aids, Atom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
-		TempoAtom tempoAtom = convertToTempoAtom(atom);
-		tempoAtom = attestTo(tempoAtom);
-		if (atomStore.replace(aids, tempoAtom, uniqueIndices, duplicateIndices).isSuccess()) {
-			onAdopted(tempoAtom);
-			return true;
-		} else {
-			return false;
+	public void replace(Set<AID> aids, Atom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
+		if (atomStore.contains(atom.getAID())) {
+			throw new AtomAlreadyExistsException(atom);
 		}
+		TempoAtom tempoAtom = attestTo(convertToTempoAtom(atom));
+		AtomStoreResult status = atomStore.replace(aids, tempoAtom, uniqueIndices, duplicateIndices);
+		if (!status.isSuccess()) {
+			AtomConflict conflictInfo = status.getConflictInfo();
+			throw new LedgerIndexConflictException(conflictInfo.getAtom(), conflictInfo.getConflictingAtoms());
+		}
+		onAdopted(tempoAtom);
 	}
 
 	private void addInbound(TempoAtom atom) {

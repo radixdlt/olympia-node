@@ -11,13 +11,6 @@ import java.util.Set;
  * An entry-point for manipulating the state of a Tempo ledger.
  */
 public interface TempoAtomStore extends TempoAtomStoreView, Resource {
-	/**
-	 * Deletes the atom associated with a certain {@link AID}.
-	 *
-	 * @param aid The {@link AID}
-	 * @return Whether the {@link AID} was deleted
-	 */
-	boolean delete(AID aid);
 
 	/**
 	 * Stores an {@link com.radixdlt.Atom} with certain indices.

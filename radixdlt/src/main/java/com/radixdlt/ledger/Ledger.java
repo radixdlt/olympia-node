@@ -3,7 +3,7 @@ package com.radixdlt.ledger;
 import com.radixdlt.Atom;
 import com.radixdlt.common.AID;
 import com.radixdlt.ledger.exceptions.LedgerException;
-import com.radixdlt.ledger.exceptions.LedgerKeyConstraintException;
+import com.radixdlt.ledger.exceptions.LedgerIndexConflictException;
 
 import java.util.Collection;
 import java.util.Optional;
@@ -22,14 +22,7 @@ public interface Ledger {
 	 *
 	 * @throws LedgerException in case of internal errors
 	 */
-	// TODO replace with add/remove observation listener
 	Atom receive() throws InterruptedException;
-
-	/**
-	 * Sets a non-default atom arbiter.
-	 * @param arbiter The atom arbiter
-	 */
-//	void setArbiter(AtomArbiter arbiter);
 
 	/**
 	 * Gets the atom associated with a certain {@link AID}.
@@ -47,23 +40,11 @@ public interface Ledger {
 	 * @param atom The atom
 	 * @param uniqueIndices The unique indices
 	 * @param duplicateIndices The duplicate indices
-	 * @return Whether the {@link Atom} was stored
 	 *
-	 * @throws LedgerKeyConstraintException if unique key constraints were violated
+	 * @throws LedgerIndexConflictException if the unique indices conflict with existing indices
 	 * @throws LedgerException in case of internal errors
 	 */
-	boolean submit(Atom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices);
-
-	/**
-	 * Deletes the atom associated with a certain {@link AID}.
-	 *
-	 * @param aid The {@link AID}
-	 * @return Whether the {@link AID} was deleted
-	 *
-	 * @throws LedgerException in case of internal errors
-	 */
-	// TODO remove
-	boolean delete(AID aid);
+	void store(Atom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices);
 
 	/**
 	 * Replaces a set of atoms with another atom in an atomic operation
@@ -71,13 +52,11 @@ public interface Ledger {
 	 * @param atom The new atom
 	 * @param uniqueIndices The unique indices of that atom
 	 * @param duplicateIndices The duplicate indices of that atom
-	 * @return Whether all {@link AID}s were successfully deleted
 	 *
-	 * @throws LedgerKeyConstraintException if unique key constraints were violated
+	 * @throws LedgerIndexConflictException if the unique indices conflict with existing indices
 	 * @throws LedgerException in case of internal errors
 	 */
-	// TODO remove
-	boolean replace(Set<AID> aids, Atom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices);
+	void replace(Set<AID> aids, Atom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices);
 
 	/**
 	 * Searches for a certain index.

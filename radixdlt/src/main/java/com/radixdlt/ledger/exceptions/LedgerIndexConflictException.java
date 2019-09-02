@@ -13,11 +13,11 @@ import java.util.stream.Stream;
 /**
  * An exception thrown when a unique key constraint is violated
  */
-public class LedgerKeyConstraintException extends LedgerException {
+public class LedgerIndexConflictException extends LedgerException {
 	private final Atom atom;
 	private final ImmutableMap<LedgerIndex, Atom> conflictingAtoms;
 
-	public LedgerKeyConstraintException(Atom atom, ImmutableMap<LedgerIndex, Atom> conflictingAtoms) {
+	public LedgerIndexConflictException(Atom atom, ImmutableMap<LedgerIndex, Atom> conflictingAtoms) {
 		super(getMessage(atom, conflictingAtoms));
 		this.atom = Objects.requireNonNull(atom, "atom is required");
 		this.conflictingAtoms = conflictingAtoms;

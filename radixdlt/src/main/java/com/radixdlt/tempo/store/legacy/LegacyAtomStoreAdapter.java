@@ -109,15 +109,6 @@ public class LegacyAtomStoreAdapter implements TempoAtomStore {
 	}
 
 	@Override
-	public boolean delete(AID aid) {
-		try {
-			return atomStoreSupplier.get().deleteAtom(aid).isCompleted();
-		} catch (DatabaseException e) {
-			throw new TempoException("Error while deleting " + aid, e);
-		}
-	}
-
-	@Override
 	public AtomStoreResult replace(Set<AID> aids, TempoAtom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
 		// TODO remove awful conversion
 		final SimpleRadixEngineAtom radixEngineAtom = convertToCMAtom(atom);
