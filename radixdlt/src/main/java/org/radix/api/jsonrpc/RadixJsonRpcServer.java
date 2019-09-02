@@ -176,7 +176,7 @@ public final class RadixJsonRpcServer {
 						}
 
 						List<AID> collectedAids = new ArrayList<>();
-						LedgerCursor cursor = storeView.search(LedgerCursor.LedgerIndexType.DUPLICATE, index, LedgerSearchMode.EXACT);
+						LedgerCursor cursor = storeView.search(LedgerIndex.LedgerIndexType.DUPLICATE, index, LedgerSearchMode.EXACT);
 						while (cursor != null) {
 							collectedAids.add(cursor.get());
 							cursor = cursor.next();

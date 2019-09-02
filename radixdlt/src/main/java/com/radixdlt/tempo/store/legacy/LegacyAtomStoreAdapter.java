@@ -126,12 +126,18 @@ public class LegacyAtomStoreAdapter implements TempoAtomStore {
 	}
 
 	@Override
-	public LedgerCursor search(LedgerCursor.LedgerIndexType type, LedgerIndex index, LedgerSearchMode mode) {
+	public LedgerCursor search(LedgerIndex.LedgerIndexType type, LedgerIndex index, LedgerSearchMode mode) {
 		try {
 			return atomStoreSupplier.get().search(type, index, mode);
 		} catch (DatabaseException e) {
 			throw new TempoException("Error while searching for " + index, e);
 		}
+	}
+
+	@Override
+	public boolean contains(LedgerIndex.LedgerIndexType type, LedgerIndex index, LedgerSearchMode mode) {
+		// TODO not very efficient but will be removed anyway soon
+		return search(type, index, mode) != null;
 	}
 
 	@Override

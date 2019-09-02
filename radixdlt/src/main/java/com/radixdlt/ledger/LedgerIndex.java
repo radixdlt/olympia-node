@@ -88,4 +88,8 @@ public final class LedgerIndex {
 	public static byte[] from(byte prefix, byte[] identifier) {
 		return Arrays.concatenate(new byte[]{prefix}, identifier);
 	}
+
+	public enum LedgerIndexType {
+		UNIQUE, DUPLICATE
+	}
 }

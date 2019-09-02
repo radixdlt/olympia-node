@@ -10,7 +10,7 @@ import com.radixdlt.common.EUID;
 import com.radixdlt.engine.AtomStatus;
 import com.radixdlt.ledger.Ledger;
 import com.radixdlt.ledger.LedgerCursor;
-import com.radixdlt.ledger.LedgerCursor.LedgerIndexType;
+import com.radixdlt.ledger.LedgerIndex.LedgerIndexType;
 import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerSearchMode;
 import com.radixdlt.ledger.exceptions.AtomAlreadyExistsException;
@@ -32,15 +32,12 @@ import org.radix.modules.Plugin;
 import org.radix.time.TemporalProof;
 import org.radix.time.TemporalVertex;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.stream.Collectors;
 
 /**
  * The Tempo implementation of a ledger.
@@ -165,6 +162,11 @@ public final class Tempo extends Plugin implements Ledger {
 	@Override
 	public LedgerCursor search(LedgerIndexType type, LedgerIndex index, LedgerSearchMode mode) {
 		return atomStore.search(type, index, mode);
+	}
+
+	@Override
+	public boolean contains(LedgerIndexType type, LedgerIndex index, LedgerSearchMode mode) {
+		return atomStore.contains(type, index, mode);
 	}
 
 	@Override

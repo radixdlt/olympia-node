@@ -8,15 +8,12 @@ import java.io.IOException;
  * A ledger cursor, bound to a specific ledger instance.
  */
 public interface LedgerCursor {
-	enum LedgerIndexType {
-		UNIQUE, DUPLICATE
-	}
 
 	/**
 	 * Gets the type of cursor
 	 * @return The type of cursor
 	 */
-	LedgerIndexType getType();
+	LedgerIndex.LedgerIndexType getType();
 
 	/**
 	 * Gets the current AID at this cursor

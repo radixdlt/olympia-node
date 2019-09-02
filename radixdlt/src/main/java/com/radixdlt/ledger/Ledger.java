@@ -5,11 +5,8 @@ import com.radixdlt.common.AID;
 import com.radixdlt.ledger.exceptions.LedgerException;
 import com.radixdlt.ledger.exceptions.LedgerIndexConflictException;
 
-import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Future;
 
 /**
  * An instance of a ledger which may be synchronised across a set of nodes.
@@ -68,5 +65,17 @@ public interface Ledger {
 	 *
 	 * @throws LedgerException in case of internal errors
 	 */
-	LedgerCursor search(LedgerCursor.LedgerIndexType type, LedgerIndex index, LedgerSearchMode mode);
+	LedgerCursor search(LedgerIndex.LedgerIndexType type, LedgerIndex index, LedgerSearchMode mode);
+
+	/**
+	 * Checks whether a certain index is contained in this ledger.
+	 *
+	 * @param type The type of index
+	 * @param index The index
+	 * @param mode The mode
+	 * @return The resulting ledger cursor
+	 *
+	 * @throws LedgerException in case of internal errors
+	 */
+	boolean contains(LedgerIndex.LedgerIndexType type, LedgerIndex index, LedgerSearchMode mode);
 }

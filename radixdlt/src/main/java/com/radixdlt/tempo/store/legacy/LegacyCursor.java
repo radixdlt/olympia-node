@@ -2,6 +2,7 @@ package com.radixdlt.tempo.store.legacy;
 
 import com.radixdlt.common.AID;
 import com.radixdlt.ledger.LedgerCursor;
+import com.radixdlt.ledger.LedgerIndex;
 import org.bouncycastle.util.Arrays;
 import org.radix.atoms.AtomStore;
 import org.radix.modules.Modules;
@@ -10,18 +11,18 @@ import java.io.IOException;
 import java.util.Objects;
 
 public class LegacyCursor implements LedgerCursor {
-	private LedgerIndexType type;
+	private LedgerIndex.LedgerIndexType type;
 	private byte[] primary;
 	private byte[] index;
 
-	public LegacyCursor(LedgerIndexType type, byte[] primary, byte[] index) {
+	public LegacyCursor(LedgerIndex.LedgerIndexType type, byte[] primary, byte[] index) {
 		this.type = type;
 		this.primary = Arrays.clone(Objects.requireNonNull(primary));
 		this.index = Arrays.clone(Objects.requireNonNull(index));
 	}
 
 	@Override
-	public LedgerIndexType getType() {
+	public LedgerIndex.LedgerIndexType getType() {
 		return this.type;
 	}
 

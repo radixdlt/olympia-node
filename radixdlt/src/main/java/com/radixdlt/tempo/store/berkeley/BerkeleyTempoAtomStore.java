@@ -10,7 +10,7 @@ import com.radixdlt.Atom;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
 import com.radixdlt.ledger.LedgerCursor;
-import com.radixdlt.ledger.LedgerCursor.LedgerIndexType;
+import com.radixdlt.ledger.LedgerIndex.LedgerIndexType;
 import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerSearchMode;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -28,6 +28,7 @@ import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.DatabaseNotFoundException;
 import com.sleepycat.je.Environment;
+import com.sleepycat.je.Get;
 import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.SecondaryConfig;
@@ -228,7 +229,7 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 	@Override
 	public List<AID> get(byte[] partialAid) {
 		long start = profiler.begin();
-		try (SecondaryCursor databaseCursor = toSecondaryCursor(LedgerCursor.LedgerIndexType.UNIQUE)) {
+		try (SecondaryCursor databaseCursor = toSecondaryCursor(LedgerIndex.LedgerIndexType.UNIQUE)) {
 			DatabaseEntry key = new DatabaseEntry(LedgerIndex.from(ATOM_INDEX_PREFIX, partialAid));
 			DatabaseEntry pKey = new DatabaseEntry();
 			if (databaseCursor.getSearchBothRange(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
@@ -459,6 +460,28 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 		}
 	}
 
+	@Override
+	public boolean contains(LedgerIndexType type, LedgerIndex index, LedgerSearchMode mode) {
+		Objects.requireNonNull(type, "type is required");
+		Objects.requireNonNull(index, "index is required");
+		Objects.requireNonNull(mode, "mode is required");
+		try (SecondaryCursor databaseCursor = toSecondaryCursor(type)) {
+			DatabaseEntry pKey = new DatabaseEntry();
+			DatabaseEntry key = new DatabaseEntry(index.asKey());
+			if (mode == LedgerSearchMode.EXACT) {
+				if (databaseCursor.getSearchKey(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
+					return true;
+				}
+			} else if (mode == LedgerSearchMode.RANGE) {
+				if (databaseCursor.getSearchKeyRange(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
+					return true;
+				}
+			}
+
+			return false;
+		}
+	}
+
 	// not used yet
 	private List<AID> getByShardChunkAndRange(int chunk, ShardRange range) throws DatabaseException {
 		long start = profiler.begin();
@@ -609,9 +632,9 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 	private SecondaryCursor toSecondaryCursor(LedgerIndexType type) {
 		Objects.requireNonNull(type, "cursor is required");
 		SecondaryCursor databaseCursor;
-		if (type.equals(LedgerCursor.LedgerIndexType.UNIQUE)) {
+		if (type.equals(LedgerIndex.LedgerIndexType.UNIQUE)) {
 			databaseCursor = this.uniqueIndices.openCursor(null, null);
-		} else if (type.equals(LedgerCursor.LedgerIndexType.DUPLICATE)) {
+		} else if (type.equals(LedgerIndex.LedgerIndexType.DUPLICATE)) {
 			databaseCursor = this.duplicatedIndices.openCursor(null, null);
 		} else {
 			throw new IllegalStateException("Cursor type " + type + " not supported");

@@ -6,22 +6,18 @@ import com.radixdlt.common.EUID;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.ledger.LedgerCursor;
 import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerSearchMode;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.tempo.AtomGenerator;
 import com.radixdlt.tempo.TempoAtom;
-import com.radixdlt.tempo.store.AtomStoreResult;
 import com.radixdlt.utils.Ints;
 
 import static org.junit.Assume.assumeTrue;
 
-import org.assertj.core.api.Condition;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.radix.database.DatabaseEnvironment;
 import org.radix.database.exceptions.DatabaseException;
@@ -144,7 +140,7 @@ public class BerkeleyTempoAtomStoreTests extends RadixTestWithStores {
         storeAtoms();
         // LedgerIndex for shard 200
         LedgerIndex ledgerIndex = new LedgerIndex((byte) 200, Ints.toByteArray(200));
-        validateShard200(() -> (BerkeleyCursor) tempoAtomStore.search(LedgerCursor.LedgerIndexType.DUPLICATE, ledgerIndex, LedgerSearchMode.EXACT));
+        validateShard200(() -> (BerkeleyCursor) tempoAtomStore.search(LedgerIndex.LedgerIndexType.DUPLICATE, ledgerIndex, LedgerSearchMode.EXACT));
     }
 
     @Test
@@ -152,7 +148,7 @@ public class BerkeleyTempoAtomStoreTests extends RadixTestWithStores {
         storeAtoms();
         LedgerIndex ledgerIndex = new LedgerIndex((byte) 200, Ints.toByteArray(150));
         // LedgerIndex pointing to not existing shard 150. But because ofLedgerSearchMode.RANGE Cursor will point it to next available shard - shard 200
-        validateShard200(() -> (BerkeleyCursor) tempoAtomStore.search(LedgerCursor.LedgerIndexType.DUPLICATE, ledgerIndex, LedgerSearchMode.RANGE));
+        validateShard200(() -> (BerkeleyCursor) tempoAtomStore.search(LedgerIndex.LedgerIndexType.DUPLICATE, ledgerIndex, LedgerSearchMode.RANGE));
     }
 
     @Test
@@ -162,7 +158,7 @@ public class BerkeleyTempoAtomStoreTests extends RadixTestWithStores {
             // LedgerIndex for Atom 3
             LedgerIndex ledgerIndex = new LedgerIndex(TempoAtomIndices.ATOM_INDEX_PREFIX, tempoAtoms.get(3).getAID().getBytes());
 
-            BerkeleyCursor tempoCursor = (BerkeleyCursor) tempoAtomStore.search(LedgerCursor.LedgerIndexType.UNIQUE, ledgerIndex, LedgerSearchMode.EXACT);
+            BerkeleyCursor tempoCursor = (BerkeleyCursor) tempoAtomStore.search(LedgerIndex.LedgerIndexType.UNIQUE, ledgerIndex, LedgerSearchMode.EXACT);
             //Cursor pointing to unique single result.
             //getFirst and getLast pointing to the same value
             //getNext and getPrev are not available
