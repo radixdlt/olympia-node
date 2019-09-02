@@ -90,27 +90,10 @@ public final class PeerWithSystem extends Peer {
 	}
 
 	@Override
-	public final boolean equals(Object object) {
-		if (object == this) {
-			return true;
-		}
-
-		if (object instanceof PeerWithSystem) {
-			PeerWithSystem other = (PeerWithSystem) object;
-			return Objects.equals(this.system.getNID(), other.system.getNID());
-		}
-
-		return false;
-	}
-
-	@Override
-	public final int hashCode() {
-		return this.system.getNID().hashCode();
-	}
-
-	@Override
 	public String toString() {
-		return String.format("%s[%s:%s]", this.getClass().getSimpleName(), this.system.getNID(), connectionData(UDPConstants.UDP_NAME));
+		String connectionInfo = supportsTransport(UDPConstants.UDP_NAME) ? connectionData(UDPConstants.UDP_NAME).toString() : "(No UDP data)";
+		return String.format("%s[%s:%s]", this.getClass().getSimpleName(), this.system.getNID(), connectionInfo);
 	}
 
+	// Note that we rely on equals(...) and hashCode() from BasicContainer here.
 }

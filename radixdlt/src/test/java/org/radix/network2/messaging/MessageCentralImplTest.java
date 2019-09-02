@@ -7,6 +7,7 @@ import com.radixdlt.universe.Universe;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentMatchers;
 import org.radix.events.Events;
 import org.radix.modules.Modules;
 import org.radix.network.messages.TestMessage;
@@ -26,6 +27,7 @@ import org.xerial.snappy.Snappy;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
@@ -35,11 +37,11 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
+import java.util.stream.Stream;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
@@ -54,8 +56,8 @@ public class MessageCentralImplTest {
 	static class DummyTransportOutboundConnection implements TransportOutboundConnection {
 		private boolean sent = false;
 		private final Semaphore sentSemaphore = new Semaphore(0);
-		private final List<byte[]> messages = new ArrayList<>();
-		private CountDownLatch countDownLatch;
+		private final List<byte[]> messages = Collections.synchronizedList(new ArrayList<>());
+		private volatile CountDownLatch countDownLatch;
 
 		@Override
 		public void close() throws IOException {
@@ -175,7 +177,7 @@ public class MessageCentralImplTest {
 			}
 
 			@Override
-			public Transport findTransport(Peer peer, byte[] bytes) {
+			public Transport findTransport(Stream<TransportInfo> peerTransports, byte[] bytes) {
 				return MessageCentralImplTest.this.dt;
 			}
 		};
@@ -232,7 +234,7 @@ public class MessageCentralImplTest {
 			mci.send(peer, msg);
 		}
 
-		receivedFlag.await(10, TimeUnit.SECONDS);
+		assertTrue(receivedFlag.await(10, TimeUnit.SECONDS));
 		assertEquals(numberOfRequests, toc.getMessages().size());
 	}
 
@@ -268,7 +270,7 @@ public class MessageCentralImplTest {
 	}
 
 	private <T> void testQueueIsFull(Queue<T> queue, BiConsumer<Peer, Message> biConsumer) {
-		doReturn(false).when(queue).offer(notNull());
+		doReturn(false).when(queue).offer(ArgumentMatchers.notNull());
 		Message msg = new TestMessage();
 		Peer peer = mock(Peer.class);
 

@@ -19,8 +19,6 @@ public final class NetworkLegacyPatching {
 
 	/**
 	 * Finds a peer, given transport information.
-	 * <p>
-	 * Eventually this will be replaced with something that uses AddressBook.
 	 *
 	 * @param info the {@link TransportInfo} for which to return a {@link Peer}
 	 * @return the {@link Peer} or {@code null} if the system is not yet ready
@@ -36,8 +34,6 @@ public final class NetworkLegacyPatching {
 	 * Note that if the peer is already banned according to our address book, the
 	 * specified peer instance will have it's banned timestamp updated to match the
 	 * known peer's banned time.
-	 * <p>
-	 * Eventually this will be replaced with something that uses AddressBook.
 	 *
 	 * @param peer the peer we are inquiring about
 	 * @param peerNid the corresponding node ID of the peer

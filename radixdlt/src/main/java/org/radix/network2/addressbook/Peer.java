@@ -12,7 +12,6 @@ import org.radix.logging.Logging;
 import org.radix.network.peers.events.PeerBannedEvent;
 import org.radix.network2.transport.TransportInfo;
 import org.radix.network2.transport.TransportMetadata;
-import org.radix.time.Chronologic;
 import org.radix.time.Time;
 import org.radix.time.Timestamps;
 import org.radix.universe.system.RadixSystem;
@@ -27,7 +26,7 @@ import com.radixdlt.serialization.DsonOutput.Output;
 // This could really be an interface, but some serialization quirks mean that
 // interfaces can't currently be part of a serialization type hierarchy.
 @SerializerId2("network.peer.base")
-public abstract class Peer extends BasicContainer implements Chronologic {
+public abstract class Peer extends BasicContainer {
 	protected static final Logger log = Logging.getLogger("addressbook");
 
 	public static final int DEFAULT_BANTIME = 60 * 60;
@@ -135,18 +134,10 @@ public abstract class Peer extends BasicContainer implements Chronologic {
 	 */
 	public abstract RadixSystem getSystem();
 
-	// CHRONOLOGIC //
-	@Override
-	public long getTimestamp() {
-		return timestamps.getOrDefault(Timestamps.DEFAULT, 0l);
-	}
-
-	@Override
 	public long getTimestamp(String type) {
 		return timestamps.getOrDefault(type, 0l);
 	}
 
-	@Override
 	public void setTimestamp(String type, long timestamp) {
 		timestamps.put(type, timestamp);
 	}

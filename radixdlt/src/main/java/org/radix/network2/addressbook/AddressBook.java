@@ -81,7 +81,8 @@ public interface AddressBook {
 	Peer peer(TransportInfo uri);
 
 	/**
-	 * Returns a stream of {@link Peer} objects that this address book knows about.
+	 * Returns a stream of {@link Peer} objects that this address book knows about,
+	 * where we have knowledge of a suitable communication method for the peer.
 	 * <p>
 	 * This method is thread-safe, although the returned {@link Peer} objects, if any,
 	 * may change status at any time due to external events.
@@ -92,6 +93,7 @@ public interface AddressBook {
 
 	/**
 	 * Returns a stream of {@link Peer} objects that this address book knows about
+	 * where we have knowledge of a suitable communication method for the peer
 	 * and have been heard from recently.  Typically used to find connected peers.
 	 * <p>
 	 * This method is thread-safe, although the returned {@link Peer} objects, if any,
@@ -100,5 +102,14 @@ public interface AddressBook {
 	 * @return A {@link Stream} of {@link Peer} objects
 	 */
 	Stream<Peer> recentPeers();
+
+	/**
+	 * Returns a stream of {@link EUID} for node IDs that this address book knows about.
+	 * <p>
+	 * This method is thread-safe.
+	 *
+	 * @return A {@link Stream} of {@link EUID} objects representing node IDs
+	 */
+	Stream<EUID> nids();
 
 }

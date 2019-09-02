@@ -11,8 +11,6 @@ import org.junit.Test;
 import org.radix.network2.transport.Transport;
 import org.radix.network2.transport.TransportMetadata;
 import org.radix.network2.transport.udp.UDPConstants;
-import org.radix.universe.system.RadixSystem;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
@@ -49,7 +47,7 @@ public class FirstMatchTransportManagerTest {
 		TransportMetadata tm1 = mock(TransportMetadata.class);
 		Peer peer1 = mock(Peer.class);
 		when(peer1.connectionData(any())).thenReturn(tm1);
-		assertNotNull(transportManager.findTransport(peer1, dummyMessage));
+		assertNotNull(transportManager.findTransport(peer1.supportedTransports(), dummyMessage));
 	}
 
 	@Test
@@ -61,13 +59,10 @@ public class FirstMatchTransportManagerTest {
 
 		List<TransportInfo> transports = ImmutableList.of(dummyTransport, udpTransport);
 
-		RadixSystem system = mock(RadixSystem.class);
-		doAnswer(invocation -> transports.stream()).when(system).supportedTransports();
-
 		Peer peer1 = mock(Peer.class);
-		doReturn(system).when(peer1).getSystem();
+		doAnswer(invocation -> transports.stream()).when(peer1).supportedTransports();
 		@SuppressWarnings("resource")
-		Transport found = transportManager.findTransport(peer1, dummyMessage);
+		Transport found = transportManager.findTransport(peer1.supportedTransports(), dummyMessage);
 		assertNotNull(found);
 		assertEquals(found.name(), "DUMMY");
 	}

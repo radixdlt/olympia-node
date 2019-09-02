@@ -1,6 +1,5 @@
 package org.radix.network2.addressbook;
 
-import java.util.Objects;
 import java.util.stream.Stream;
 
 import org.radix.network2.transport.TransportException;
@@ -80,24 +79,9 @@ final class PeerWithTransport extends Peer {
 	}
 
 	@Override
-	public int hashCode() {
-		return this.transportInfo.hashCode();
-	}
-
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj) {
-			return true;
-		}
-		if (obj instanceof PeerWithTransport) {
-			PeerWithTransport other = (PeerWithTransport) obj;
-			return Objects.equals(this.transportInfo, other.transportInfo);
-		}
-		return false;
-	}
-
-	@Override
 	public String toString() {
 		return String.format("%s[%s]", getClass().getSimpleName(), transportInfo);
 	}
+
+	// Note that we rely on equals(...) and hashCode() from BasicContainer here.
 }
