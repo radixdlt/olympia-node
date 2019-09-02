@@ -11,6 +11,7 @@ import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerSearchMode;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.tempo.AtomGenerator;
+import com.radixdlt.tempo.Tempo;
 import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.utils.Ints;
 
@@ -19,7 +20,6 @@ import static org.junit.Assume.assumeTrue;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.radix.database.DatabaseEnvironment;
 import org.radix.database.exceptions.DatabaseException;
@@ -53,6 +53,8 @@ public class BerkeleyTempoAtomStoreTests extends RadixTestWithStores {
 
     @Before
     public void setup() throws CryptoException, ValidationException {
+    	assumeTrue(Modules.isAvailable(Tempo.class)); // Otherwise databases are not reset, and key conflicts occur and tests fail
+
         tempoAtomStore = new BerkeleyTempoAtomStore(localSystem.getNID(), serialization, profiler, Modules.get(DatabaseEnvironment.class));
         tempoAtomStore.open();
 
@@ -71,7 +73,9 @@ public class BerkeleyTempoAtomStoreTests extends RadixTestWithStores {
 
     @After
     public void teardown() {
-        tempoAtomStore.close();
+    	if (tempoAtomStore != null) {
+    		tempoAtomStore.close();
+    	}
     }
 
     @Test
