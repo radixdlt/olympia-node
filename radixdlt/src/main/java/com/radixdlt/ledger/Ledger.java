@@ -22,7 +22,14 @@ public interface Ledger {
 	 *
 	 * @throws LedgerException in case of internal errors
 	 */
+	// TODO replace with add/remove observation listener
 	Atom receive() throws InterruptedException;
+
+	/**
+	 * Sets a non-default atom arbiter.
+	 * @param arbiter The atom arbiter
+	 */
+//	void setArbiter(AtomArbiter arbiter);
 
 	/**
 	 * Gets the atom associated with a certain {@link AID}.
@@ -35,7 +42,7 @@ public interface Ledger {
 	Optional<Atom> get(AID aid);
 
 	/**
-	 * Stores an {@link Atom} with certain indices.
+	 * Submits an {@link Atom} with certain indices.
 	 *
 	 * @param atom The atom
 	 * @param uniqueIndices The unique indices
@@ -45,7 +52,7 @@ public interface Ledger {
 	 * @throws LedgerKeyConstraintException if unique key constraints were violated
 	 * @throws LedgerException in case of internal errors
 	 */
-	boolean store(Atom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices);
+	boolean submit(Atom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices);
 
 	/**
 	 * Deletes the atom associated with a certain {@link AID}.
@@ -55,6 +62,7 @@ public interface Ledger {
 	 *
 	 * @throws LedgerException in case of internal errors
 	 */
+	// TODO remove
 	boolean delete(AID aid);
 
 	/**
@@ -68,6 +76,7 @@ public interface Ledger {
 	 * @throws LedgerKeyConstraintException if unique key constraints were violated
 	 * @throws LedgerException in case of internal errors
 	 */
+	// TODO remove
 	boolean replace(Set<AID> aids, Atom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices);
 
 	/**
@@ -91,5 +100,6 @@ public interface Ledger {
 	 *
 	 * @throws LedgerException in case of internal errors
 	 */
+	// TODO remove
 	CompletableFuture<Atom> resolve(Atom atom, Collection<Atom> conflictingAtoms);
 }

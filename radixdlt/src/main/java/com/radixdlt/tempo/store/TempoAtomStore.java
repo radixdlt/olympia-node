@@ -27,7 +27,7 @@ public interface TempoAtomStore extends TempoAtomStoreView, Resource {
 	 * @param duplicateIndices The duplicate indices
 	 * @return Whether the {@link com.radixdlt.Atom} was stored
 	 */
-	boolean store(TempoAtom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices);
+	AtomStoreResult store(TempoAtom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices);
 
 	/**
 	 * Replaces a set of atoms with another atom in an atomic operation
@@ -37,5 +37,5 @@ public interface TempoAtomStore extends TempoAtomStoreView, Resource {
 	 * @param duplicateIndices The duplicate indices of that atom
 	 * @return Whether all {@link AID}s were successfully deleted
 	 */
-	boolean replace(Set<AID> aids, TempoAtom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices);
+	AtomStoreResult replace(Set<AID> aids, TempoAtom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices);
 }

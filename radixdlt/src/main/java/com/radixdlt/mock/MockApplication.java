@@ -11,13 +11,11 @@ import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 
 import java.util.Objects;
-import java.util.Random;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 /**
  * A simple mock application for testing ledgers.
@@ -103,7 +101,7 @@ public final class MockApplication {
 			ImmutableSet<AID> previousRemnants = conflictRemnants.remove(atom.getAID());
 			// if there are no remnants from previous conflict, just store the atom
 			if (previousRemnants == null || conflictRemnants.isEmpty()) {
-				if (ledger.store(atom, uniqueIndices, duplicateIndices)) {
+				if (ledger.submit(atom, uniqueIndices, duplicateIndices)) {
 					logger.info(String.format("Stored atom '%s'", atom.getAID()));
 				}
 			} else { // otherwise replace the remnants with the new atom

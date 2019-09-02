@@ -12,10 +12,12 @@ import com.radixdlt.ledger.LedgerSearchMode;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.tempo.AtomGenerator;
 import com.radixdlt.tempo.TempoAtom;
+import com.radixdlt.tempo.store.AtomStoreResult;
 import com.radixdlt.utils.Ints;
 
 import static org.junit.Assume.assumeTrue;
 
+import org.assertj.core.api.Condition;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.After;
 import org.junit.Before;
@@ -78,7 +80,7 @@ public class BerkeleyTempoAtomStoreTests extends RadixTestWithStores {
     public void storeContainsTest() {
         SoftAssertions.assertSoftly(softly -> {
             //atom added to store successfully
-            softly.assertThat(tempoAtomStore.store(tempoAtoms.get(0), ImmutableSet.of(), ImmutableSet.of())).isTrue();
+            softly.assertThat(tempoAtomStore.store(tempoAtoms.get(0), ImmutableSet.of(), ImmutableSet.of()).isSuccess());
 
             //added atom is present in store
             softly.assertThat(tempoAtomStore.contains(tempoAtoms.get(0).getAID())).isTrue();
@@ -98,7 +100,7 @@ public class BerkeleyTempoAtomStoreTests extends RadixTestWithStores {
     public void storeGetTest() {
         SoftAssertions.assertSoftly(softly -> {
             //atom added to store successfully
-            softly.assertThat(tempoAtomStore.store(tempoAtoms.get(0), ImmutableSet.of(), ImmutableSet.of())).isTrue();
+            softly.assertThat(tempoAtomStore.store(tempoAtoms.get(0), ImmutableSet.of(), ImmutableSet.of()).isSuccess());
 
             //added atom is present in store
             softly.assertThat(tempoAtomStore.get(tempoAtoms.get(0).getAID()).get()).isEqualTo(tempoAtoms.get(0));
@@ -118,7 +120,7 @@ public class BerkeleyTempoAtomStoreTests extends RadixTestWithStores {
     public void storeGetReplaceTest() {
         SoftAssertions.assertSoftly(softly -> {
             //atom added to store successfully
-            softly.assertThat(tempoAtomStore.store(tempoAtoms.get(0), ImmutableSet.of(), ImmutableSet.of())).isTrue();
+            softly.assertThat(tempoAtomStore.store(tempoAtoms.get(0), ImmutableSet.of(), ImmutableSet.of()).isSuccess());
 
             //added atom is present in store
             softly.assertThat(tempoAtomStore.get(tempoAtoms.get(0).getAID()).isPresent()).isTrue();
@@ -127,7 +129,7 @@ public class BerkeleyTempoAtomStoreTests extends RadixTestWithStores {
             softly.assertThat(tempoAtomStore.get(tempoAtoms.get(1).getAID()).isPresent()).isFalse();
 
             //atom replaced successfully
-            softly.assertThat(tempoAtomStore.replace(ImmutableSet.of(tempoAtoms.get(0).getAID()), tempoAtoms.get(1), ImmutableSet.of(), ImmutableSet.of())).isTrue();
+            softly.assertThat(tempoAtomStore.replace(ImmutableSet.of(tempoAtoms.get(0).getAID()), tempoAtoms.get(1), ImmutableSet.of(), ImmutableSet.of()).isSuccess());
 
             //replaced atom gone
             softly.assertThat(tempoAtomStore.get(tempoAtoms.get(0).getAID()).isPresent()).isFalse();
@@ -141,7 +143,7 @@ public class BerkeleyTempoAtomStoreTests extends RadixTestWithStores {
     public void storeGetDeleteTest() {
         SoftAssertions.assertSoftly(softly -> {
             //atom added to store successfully
-            softly.assertThat(tempoAtomStore.store(tempoAtoms.get(0), ImmutableSet.of(), ImmutableSet.of())).isTrue();
+            softly.assertThat(tempoAtomStore.store(tempoAtoms.get(0), ImmutableSet.of(), ImmutableSet.of()).isSuccess());
 
             //added atom is present in store
             softly.assertThat(tempoAtomStore.get(tempoAtoms.get(0).getAID()).isPresent()).isTrue();
@@ -246,7 +248,7 @@ public class BerkeleyTempoAtomStoreTests extends RadixTestWithStores {
             for (int i = 0; i < atoms.size(); i++) {
                 int shard = i < atoms.size() / 2 ? 100 : 200;
                 LedgerIndex ledgerIndex = new LedgerIndex((byte) 200, Ints.toByteArray(shard));
-                softly.assertThat(tempoAtomStore.store(tempoAtoms.get(i), ImmutableSet.of(), ImmutableSet.of(ledgerIndex))).isTrue();
+                softly.assertThat(tempoAtomStore.store(tempoAtoms.get(i), ImmutableSet.of(), ImmutableSet.of(ledgerIndex)).isSuccess());
             }
         });
     }

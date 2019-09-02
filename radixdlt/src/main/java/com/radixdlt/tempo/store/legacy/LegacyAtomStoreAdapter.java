@@ -5,8 +5,10 @@ import com.radixdlt.common.AID;
 import com.radixdlt.ledger.LedgerCursor;
 import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerSearchMode;
+import com.radixdlt.ledger.exceptions.LedgerException;
 import com.radixdlt.middleware.RadixEngineUtils;
 import com.radixdlt.middleware.SimpleRadixEngineAtom;
+import com.radixdlt.tempo.store.AtomStoreResult;
 import com.radixdlt.tempo.store.TempoAtomStore;
 import com.radixdlt.tempo.LegacyUtils;
 import com.radixdlt.tempo.TempoAtom;
@@ -90,12 +92,17 @@ public class LegacyAtomStoreAdapter implements TempoAtomStore {
 	}
 
 	@Override
-	public boolean store(TempoAtom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
+	public AtomStoreResult store(TempoAtom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
 		// TODO remove awful conversion
 		final SimpleRadixEngineAtom radixEngineAtom = convertToCMAtom(atom);
 
 		try {
-			return atomStoreSupplier.get().storeAtom(new PreparedAtom(radixEngineAtom, UInt384.ONE)).isCompleted();
+			if (atomStoreSupplier.get().storeAtom(new PreparedAtom(radixEngineAtom, UInt384.ONE)).isCompleted()) {
+				return AtomStoreResult.success();
+			} else {
+				// TODO awful error handling, but legacy store should be removed entirely soon
+				throw new LedgerException("Store failed");
+			}
 		} catch (IOException e) {
 			throw new TempoException("Error while storing atom " + atom.getAID(), e);
 		}
@@ -111,12 +118,17 @@ public class LegacyAtomStoreAdapter implements TempoAtomStore {
 	}
 
 	@Override
-	public boolean replace(Set<AID> aids, TempoAtom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
+	public AtomStoreResult replace(Set<AID> aids, TempoAtom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
 		// TODO remove awful conversion
 		final SimpleRadixEngineAtom radixEngineAtom = convertToCMAtom(atom);
 
 		try {
-			return atomStoreSupplier.get().replaceAtom(aids, new PreparedAtom(radixEngineAtom, UInt384.ONE)).isCompleted();
+			if (atomStoreSupplier.get().replaceAtom(aids, new PreparedAtom(radixEngineAtom, UInt384.ONE)).isCompleted()) {
+				return AtomStoreResult.success();
+			} else {
+				// TODO awful error handling, but legacy store should be removed entirely soon
+				throw new LedgerException("Replace failed");
+			}
 		} catch (IOException e) {
 			throw new TempoException("Error while storing atom " + atom.getAID(), e);
 		}

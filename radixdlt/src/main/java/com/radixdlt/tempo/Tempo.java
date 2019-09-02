@@ -108,14 +108,14 @@ public final class Tempo extends Plugin implements Ledger {
 	}
 
 	@Override
-	public boolean store(Atom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
+	public boolean submit(Atom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
 		TempoAtom tempoAtom = convertToTempoAtom(atom);
 		if (atomStore.contains(tempoAtom.getAID())) {
 			return false;
 		}
 		tempoAtom = attestTo(tempoAtom);
-		if (atomStore.store(tempoAtom, uniqueIndices, duplicateIndices)) {
-			accept(tempoAtom);
+		if (atomStore.store(tempoAtom, uniqueIndices, duplicateIndices).isSuccess()) {
+			onAdopted(tempoAtom);
 			return true;
 		} else {
 			return false;
@@ -131,8 +131,8 @@ public final class Tempo extends Plugin implements Ledger {
 	public boolean replace(Set<AID> aids, Atom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
 		TempoAtom tempoAtom = convertToTempoAtom(atom);
 		tempoAtom = attestTo(tempoAtom);
-		if (atomStore.replace(aids, tempoAtom, uniqueIndices, duplicateIndices)) {
-			accept(tempoAtom);
+		if (atomStore.replace(aids, tempoAtom, uniqueIndices, duplicateIndices).isSuccess()) {
+			onAdopted(tempoAtom);
 			return true;
 		} else {
 			return false;
@@ -146,7 +146,7 @@ public final class Tempo extends Plugin implements Ledger {
 		}
 	}
 
-	private void accept(TempoAtom atom) {
+	private void onAdopted(TempoAtom atom) {
 		TemporalVertex ownVertex = atom.getTemporalProof().getVertexByNID(self);
 		if (ownVertex == null) {
 			throw new TempoException("Accepted atom " + atom.getAID() + " has no vertex by self");

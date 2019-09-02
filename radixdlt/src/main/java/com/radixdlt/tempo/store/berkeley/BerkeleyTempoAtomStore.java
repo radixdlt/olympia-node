@@ -13,16 +13,16 @@ import com.radixdlt.ledger.LedgerCursor;
 import com.radixdlt.ledger.LedgerCursor.LedgerIndexType;
 import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerSearchMode;
-import com.radixdlt.ledger.exceptions.LedgerKeyConstraintException;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
+import com.radixdlt.tempo.store.AtomConflict;
+import com.radixdlt.tempo.store.AtomStoreResult;
 import com.radixdlt.tempo.store.TempoAtomStore;
 import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.TempoException;
 import com.radixdlt.utils.Longs;
 import com.sleepycat.je.Cursor;
-import com.sleepycat.je.CursorConfig;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
@@ -283,26 +283,23 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 	}
 
 	@Override
-	public boolean store(TempoAtom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
+	public AtomStoreResult store(TempoAtom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
 		long start = profiler.begin();
 		Transaction transaction = dbEnv.getEnvironment().beginTransaction(null, null);
 		try {
-			if (doStore(atom, uniqueIndices, duplicateIndices, transaction)) {
+			// transaction is aborted in doStore in case of conflict
+			AtomStoreResult result = doStore(atom, uniqueIndices, duplicateIndices, transaction);
+			if (result.isSuccess()) {
 				transaction.commit();
-				return true;
-			} else {
-				transaction.abort();
 			}
-		} catch (LedgerKeyConstraintException e) {
-			// transaction already aborted internally in doStore
-			throw e;
+			return result;
 		} catch (Exception e) {
 			transaction.abort();
 			fail("Store of atom '" + atom.getAID() + "' failed", e);
 		} finally {
 			profiler.incrementFrom("ATOM_STORE:STORE", start);
 		}
-		return false;
+		throw new IllegalStateException("Should never reach here");
 	}
 
 	@Override
@@ -327,35 +324,32 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 	}
 
 	@Override
-	public boolean replace(Set<AID> aids, TempoAtom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
+	public AtomStoreResult replace(Set<AID> aids, TempoAtom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
 		long start = profiler.begin();
 		Transaction transaction = dbEnv.getEnvironment().beginTransaction(null, null);
 		try {
 			for (AID aid : aids) {
 				if (!doDelete(aid, transaction)) {
 					transaction.abort();
-					return false;
+					fail("Could not delete '" + aid + "'");
 				}
 			}
-			if (doStore(atom, uniqueIndices, duplicateIndices, transaction)) {
+			// transaction is aborted in doStore in case of conflict
+			AtomStoreResult result = doStore(atom, uniqueIndices, duplicateIndices, transaction);
+			if (result.isSuccess()) {
 				transaction.commit();
-				return true;
-			} else {
-				transaction.abort();
 			}
-		} catch (LedgerKeyConstraintException e) {
-			// transaction already aborted internally in doStore
-			throw e;
+			return result;
 		} catch (Exception e) {
 			transaction.abort();
 			fail("Replace of atoms '" + aids + "' with atom '" + atom.getAID() + "' failed", e);
 		} finally {
 			profiler.incrementFrom("ATOM_STORE:REPLACE", start);
 		}
-		return false;
+		throw new IllegalStateException("Should never reach here");
 	}
 
-	private boolean doStore(TempoAtom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices, Transaction transaction) throws SerializationException {
+	private AtomStoreResult doStore(TempoAtom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices, Transaction transaction) throws SerializationException {
 		TemporalVertex localTemporalVertex = atom.getTemporalProof().getVertexByNID(self);
 		if (localTemporalVertex == null) {
 			fail("Cannot store atom '" + atom.getAID() + "' without local temporal vertex");
@@ -371,7 +365,7 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 			this.currentIndices.put(atom.getAID(), indices);
 			OperationStatus status = this.atoms.putNoOverwrite(transaction, pKey, pData);
 			if (status != OperationStatus.SUCCESS) {
-				return false;
+				fail("Internal error, atom write failed with status " + status);
 			}
 
 			DatabaseEntry indicesData = new DatabaseEntry(serialization.toDson(indices, Output.PERSIST));
@@ -380,15 +374,15 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 				fail("Internal error, atom indices write failed with status " + status);
 			}
 		} catch (UniqueConstraintException e) {
-			logger.error("Unique indices of atom '" + atom.getAID() + "' violated key constraint, aborting transaction");
+			logger.error("Unique indices of atom '" + atom.getAID() + "' are in conflict, aborting transaction");
 			transaction.abort();
 
 			ImmutableMap<LedgerIndex, Atom> conflictingAtoms = doGetConflictingAtoms(uniqueIndices, null);
-			throw new LedgerKeyConstraintException(atom, conflictingAtoms);
+			return AtomStoreResult.conflict(new AtomConflict(atom, conflictingAtoms));
 		} finally {
 			this.currentIndices.remove(atom.getAID());
 		}
-		return true;
+		return AtomStoreResult.success();
 	}
 
 	private ImmutableMap<LedgerIndex, Atom> doGetConflictingAtoms(Set<LedgerIndex> uniqueIndices, Transaction transaction) {
