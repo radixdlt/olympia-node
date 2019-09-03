@@ -8,18 +8,18 @@ import com.google.common.annotations.VisibleForTesting;
 
 // FIXME: remove this and put the remaining whitelist stuff in a better spot.
 public class Network {
-	private static class Holder {
-		static Network instance = new Network();
-	}
+	private static Network instance = null;
 
 	@VisibleForTesting
-	// Not thread safe.  Be careful.
-	public static void reset() {
-		Holder.instance = new Network();
+	public static synchronized void reset() {
+		Network.instance = null;
 	}
 
-	public static Network getInstance() {
-		return Holder.instance;
+	public static synchronized Network getInstance() {
+		if (Network.instance == null) {
+			Network.instance = new Network();
+		}
+		return Network.instance;
 	}
 
 	private final Whitelist whitelist;

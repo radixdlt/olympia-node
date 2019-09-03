@@ -52,6 +52,11 @@ public final class LocalSystem extends RadixSystem
 	private static LongSupplier maxMemory = () -> Runtime.getRuntime().maxMemory();
 	private static LongSupplier totalMemory = () -> Runtime.getRuntime().totalMemory();
 
+	@VisibleForTesting
+	public static synchronized void reset() {
+		LocalSystem.instance = null;
+	}
+
 	public static synchronized LocalSystem getInstance()
 	{
 		if (LocalSystem.instance == null)

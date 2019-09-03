@@ -87,18 +87,6 @@ public class StandardFiltersTest {
 	}
 
 	@Test
-	@Ignore("Can't really do this sensibly until Whitelist is non-static")
-	public void testIsWhitelisted() {
-		fail("Not yet implemented");
-	}
-
-	@Test
-	@Ignore("Can't really do this sensibly until LocalSystem is non-static")
-	public void testNotOurNID() {
-		fail("Not yet implemented");
-	}
-
-	@Test
 	public void testNotBanned() {
 		pwt.ban("No good reason at all");
 		assertFalse(StandardFilters.notBanned().test(this.pwt));
@@ -122,12 +110,6 @@ public class StandardFiltersTest {
 		assertFalse(StandardFilters.oneOf(tester2).test(this.pws));
 		assertFalse(StandardFilters.oneOf(tester2).test(this.pwt));
 		assertTrue(StandardFilters.oneOf(tester2).test(this.pwn));
-	}
-
-	@Test
-	@Ignore("Can't really do this sensibly until LocalSystem is non-static")
-	public void testHasOverlappingShards() {
-		fail("Not yet implemented");
 	}
 
 	@Test
