@@ -5,8 +5,7 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
-import org.radix.modules.Modules;
-import org.radix.time.NtpService;
+import org.radix.time.Time;
 
 public class State
 {
@@ -146,10 +145,11 @@ public class State
 
 		this.definition = definition;
 
-		if (Modules.isAvailable(NtpService.class) && !definition.equals(State.NONE))
-			this.timestamp = Modules.get(NtpService.class).getUTCTimeMS();
-		else
-			this.timestamp = 0l;
+		if (!definition.equals(State.NONE)) {
+			this.timestamp = Time.currentTimestamp();
+		} else {
+			this.timestamp = 0L;
+		}
 	}
 
 	@Override

@@ -1,47 +1,40 @@
 package org.radix.network2.messaging;
 
-import com.google.common.collect.ImmutableList;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.universe.Universe;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.ArgumentMatchers;
 import org.radix.events.Events;
 import org.radix.modules.Modules;
 import org.radix.network.messages.TestMessage;
 import org.radix.network.messaging.Message;
+import org.radix.network2.messaging.MessagingDummyConfigurations.DummyTransport;
+import org.radix.network2.messaging.MessagingDummyConfigurations.DummyTransportOutboundConnection;
 import org.radix.network2.addressbook.AddressBook;
 import org.radix.network2.addressbook.Peer;
-import org.radix.network2.transport.SendResult;
 import org.radix.network2.transport.StaticTransportMetadata;
-import org.radix.network2.transport.Transport;
-import org.radix.network2.transport.TransportControl;
 import org.radix.network2.transport.TransportInfo;
-import org.radix.network2.transport.TransportMetadata;
-import org.radix.network2.transport.TransportOutboundConnection;
 import org.radix.properties.RuntimeProperties;
 import org.radix.universe.system.events.QueueFullEvent;
 import org.xerial.snappy.Snappy;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Queue;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
-import java.util.stream.Stream;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
@@ -53,87 +46,6 @@ import static org.mockito.Mockito.when;
 
 public class MessageCentralImplTest {
 
-	static class DummyTransportOutboundConnection implements TransportOutboundConnection {
-		private boolean sent = false;
-		private final Semaphore sentSemaphore = new Semaphore(0);
-		private final List<byte[]> messages = Collections.synchronizedList(new ArrayList<>());
-		private volatile CountDownLatch countDownLatch;
-
-		@Override
-		public void close() throws IOException {
-			// Ignore for now
-		}
-
-		@Override
-		public CompletableFuture<SendResult> send(byte[] data) {
-			if (countDownLatch != null) {
-				countDownLatch.countDown();
-			}
-			sent = true;
-			messages.add(data);
-			sentSemaphore.release();
-			return CompletableFuture.completedFuture(SendResult.complete());
-		}
-
-		public List<byte[]> getMessages() {
-			return messages;
-		}
-
-		public void setCountDownLatch(CountDownLatch countDownLatch) {
-			this.countDownLatch = countDownLatch;
-		}
-	}
-
-	static class DummyTransport implements Transport {
-		private InboundMessageConsumer messageSink = null;
-		private boolean isClosed = false;
-
-		private final TransportOutboundConnection out;
-
-		DummyTransport(TransportOutboundConnection out) {
-			this.out = out;
-		}
-
-		@Override
-		public void start(InboundMessageConsumer messageSink) {
-			this.messageSink = messageSink;
-		}
-
-		@Override
-		public void close() throws IOException {
-			this.isClosed = true;
-		}
-
-		void inboundMessage(InboundMessage msg) {
-			messageSink.accept(msg);
-		}
-
-		@Override
-		public String name() {
-			return "DUMMY";
-		}
-
-		@Override
-		public TransportControl control() {
-			return new TransportControl() {
-				@Override
-				public CompletableFuture<TransportOutboundConnection> open(TransportMetadata ignored) {
-					return CompletableFuture.completedFuture(out);
-				}
-
-				@Override
-				public void close() throws IOException {
-					// Nothing to do
-				}
-			};
-		}
-
-		@Override
-		public TransportMetadata localMetadata() {
-			return StaticTransportMetadata.empty();
-		}
-	}
-
 	private Serialization serialization;
 	private DummyTransportOutboundConnection toc;
 	private DummyTransport dt;
@@ -144,9 +56,9 @@ public class MessageCentralImplTest {
 	private Events events;
 
 	@Before
-	public void testSetup() throws Exception {
+	public void testSetup() {
 		this.serialization = Serialization.getDefault();
-		MessageCentralConfiguration conf = staticConfig();
+		MessageCentralConfiguration conf = new MessagingDummyConfigurations.DummyMessageCentralConfiguration();
 
 		// Curse you singletons
 		Universe universe = mock(Universe.class);
@@ -164,23 +76,7 @@ public class MessageCentralImplTest {
 		this.toc = new DummyTransportOutboundConnection();
 		this.dt = new DummyTransport(this.toc);
 
-		this.transportManager = new TransportManager() {
-
-			@Override
-			public void close() throws IOException {
-				// Nothing
-			}
-
-			@Override
-			public List<Transport> transports() {
-				return ImmutableList.of(MessageCentralImplTest.this.dt);
-			}
-
-			@Override
-			public Transport findTransport(Stream<TransportInfo> peerTransports, byte[] bytes) {
-				return MessageCentralImplTest.this.dt;
-			}
-		};
+		this.transportManager = new MessagingDummyConfigurations.DummyTransportManager(this.dt);
 
 		this.events = mock(Events.class);
 		inboundQueue = spy(new PriorityBlockingQueue<>(conf.messagingInboundQueueMax(0)));
@@ -188,7 +84,7 @@ public class MessageCentralImplTest {
 		EventQueueFactory<MessageEvent> queueFactory = eventQueueFactoryMock();
 		doReturn(inboundQueue).when(queueFactory).createEventQueue(conf.messagingInboundQueueMax(0));
 		doReturn(outboundQueue).when(queueFactory).createEventQueue(conf.messagingOutboundQueueMax(0));
-		this.mci = new MessageCentralImpl(staticConfig(), serialization, transportManager, events, System::currentTimeMillis,
+		this.mci = new MessageCentralImpl(new MessagingDummyConfigurations.DummyMessageCentralConfiguration(), serialization, transportManager, events, System::currentTimeMillis,
 				queueFactory);
 	}
 
@@ -204,13 +100,13 @@ public class MessageCentralImplTest {
 	@Test
 	public void testConstruct() {
 		// Make sure start called on our transport
-		assertNotNull(dt.messageSink);
+		assertNotNull(dt.getMessageSink());
 	}
 
 	@Test
 	public void testClose() {
 		mci.close();
-		assertTrue(dt.isClosed);
+		assertTrue(dt.isClosed());
 	}
 
 	@Test
@@ -218,8 +114,8 @@ public class MessageCentralImplTest {
 		Message msg = new TestMessage();
 		Peer peer = mock(Peer.class);
 		mci.send(peer, msg);
-		assertTrue(toc.sentSemaphore.tryAcquire(10, TimeUnit.SECONDS));
-		assertTrue(toc.sent);
+		assertTrue(toc.getCountDownLatch().await(10, TimeUnit.SECONDS));
+		assertTrue(toc.isSent());
 	}
 
 	@Test
@@ -234,13 +130,14 @@ public class MessageCentralImplTest {
 			mci.send(peer, msg);
 		}
 
-		assertTrue(receivedFlag.await(10, TimeUnit.SECONDS));
+		receivedFlag.await(10, TimeUnit.SECONDS);
 		assertEquals(numberOfRequests, toc.getMessages().size());
 	}
 
 	@Test
 	public void testInjectMessageDeliveredToListeners() throws InterruptedException {
-		Message msg = new TestMessage();
+		Message msg = spy(new TestMessage());
+		doReturn(System.currentTimeMillis()).when(msg).getTimestamp();
 		Peer peer = mock(Peer.class);
 
 		int numberOfRequests = 6;
@@ -270,7 +167,7 @@ public class MessageCentralImplTest {
 	}
 
 	private <T> void testQueueIsFull(Queue<T> queue, BiConsumer<Peer, Message> biConsumer) {
-		doReturn(false).when(queue).offer(ArgumentMatchers.notNull());
+		doReturn(false).when(queue).offer(notNull());
 		Message msg = new TestMessage();
 		Peer peer = mock(Peer.class);
 
@@ -360,33 +257,6 @@ public class MessageCentralImplTest {
 
 		mci.removeListener(listener2);
 		assertEquals(0, mci.listenersSize());
-	}
-
-	private MessageCentralConfiguration staticConfig() {
-		// More robust than mocking when adding new config
-		// messagingInboundQueueMax and messagingOutboundQueueMax should have different values. It is important for mocking
-		return new MessageCentralConfiguration() {
-			@Override
-			public int messagingInboundQueueMax(int defaultValue) {
-				return 10;
-			}
-			@Override
-			public int messagingOutboundQueueMax(int defaultValue) {
-				return 11;
-			}
-			@Override
-			public int messagingTimeToLive(int defaultValue) {
-				return 10;
-			}
-			@Override
-			public int messagingInboundQueueThreads(int defaultValue) {
-				return 1;
-			}
-			@Override
-			public int messagingOutboundQueueThreads(int defaultValue) {
-				return 1;
-			}
-		};
 	}
 
 	@SuppressWarnings("unchecked")
