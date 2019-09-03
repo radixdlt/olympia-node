@@ -4,7 +4,6 @@ import java.util.stream.Stream;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.radix.Radix;
 import org.radix.modules.Modules;
@@ -66,12 +65,6 @@ public class StandardFiltersTest {
 	public void tearDown() throws Exception {
 		Modules.remove(Universe.class);
 		Modules.remove(Interfaces.class);
-	}
-
-	@Test
-	@Ignore("Can't really do this sensibly until Whitelist is non-static")
-	public void testStandardFilter() {
-		fail("Not yet implemented");
 	}
 
 	@Test
