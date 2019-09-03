@@ -66,7 +66,7 @@ public final class SampleRetriever implements Closeable {
 		this.requestThreadPool.start();
 	}
 
-	public CompletableFuture<Sample> sample(Set<LedgerIndex> indices, Collection<Peer> peers) {
+	public CompletableFuture<Samples> sample(Set<LedgerIndex> indices, Collection<Peer> peers) {
 		EUID tag = allocateTag();
 		// TODO batch requests to same node
 		SampleRequestMessage request = new SampleRequestMessage(ImmutableMap.of(tag, indices));
@@ -127,7 +127,6 @@ public final class SampleRetriever implements Closeable {
 
 	private Map<LedgerIndex, Set<AID>> gatherAidsByIndex(Map<EUID, Set<LedgerIndex>> requestedIndicesByTag) {
 		Map<LedgerIndex, Set<AID>> aidsByIndex = new HashMap<>();
-
 		for (EUID tag : requestedIndicesByTag.keySet()) {
 			Set<LedgerIndex> requestedIndices = requestedIndicesByTag.get(tag);
 			for (LedgerIndex requestedIndex : requestedIndices) {

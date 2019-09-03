@@ -8,6 +8,7 @@ import com.google.inject.name.Named;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
 import com.radixdlt.crypto.Hash;
+import com.radixdlt.tempo.AtomObserver;
 import com.radixdlt.tempo.Resource;
 import com.radixdlt.tempo.store.TempoAtomStoreView;
 import com.radixdlt.tempo.LogicalClockCursor;
@@ -43,7 +44,7 @@ import java.util.stream.Stream;
  * Discoverer which uses logical clocks as a cursor to iterate through all relevant {@link AID}s of known nodes
  */
 @Singleton
-public final class IterativeDiscoverer implements Resource, AtomDiscoverer {
+public final class IterativeDiscoverer implements Resource, AtomDiscoverer, AtomObserver {
 	private static final Logger log = Logging.getLogger("discoverer.iterative");
 
 	private static final int DEFAULT_REQUEST_TIMEOUT_SECONDS = 5;

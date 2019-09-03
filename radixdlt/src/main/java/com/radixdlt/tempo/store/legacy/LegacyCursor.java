@@ -5,8 +5,10 @@ import com.radixdlt.ledger.LedgerCursor;
 import com.radixdlt.ledger.LedgerIndex;
 import org.bouncycastle.util.Arrays;
 import org.radix.atoms.AtomStore;
+import org.radix.database.exceptions.DatabaseException;
 import org.radix.modules.Modules;
 
+import java.io.UncheckedIOException;
 import java.util.Objects;
 
 public class LegacyCursor implements LedgerCursor {
@@ -40,21 +42,37 @@ public class LegacyCursor implements LedgerCursor {
 
 	@Override
 	public LedgerCursor next() {
-		return Modules.get(AtomStore.class).getNext(this);
+		try {
+			return Modules.get(AtomStore.class).getNext(this);
+		} catch (DatabaseException e) {
+			throw new UncheckedIOException(e);
+		}
 	}
 
 	@Override
 	public LedgerCursor previous() {
-		return Modules.get(AtomStore.class).getPrev(this);
+		try {
+			return Modules.get(AtomStore.class).getPrev(this);
+		} catch (DatabaseException e) {
+			throw new UncheckedIOException(e);
+		}
 	}
 
 	@Override
 	public LedgerCursor first() {
-		return Modules.get(AtomStore.class).getFirst(this);
+		try {
+			return Modules.get(AtomStore.class).getFirst(this);
+		} catch (DatabaseException e) {
+			throw new UncheckedIOException(e);
+		}
 	}
 
 	@Override
 	public LedgerCursor last() {
-		return Modules.get(AtomStore.class).getLast(this);
+		try {
+			return Modules.get(AtomStore.class).getLast(this);
+		} catch (DatabaseException e) {
+			throw new UncheckedIOException(e);
+		}
 	}
 }

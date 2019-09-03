@@ -16,6 +16,8 @@ import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerSearchMode;
 import com.radixdlt.ledger.exceptions.AtomAlreadyExistsException;
 import com.radixdlt.ledger.exceptions.LedgerIndexConflictException;
+import com.radixdlt.tempo.consensus.ConsensusController;
+import com.radixdlt.tempo.consensus.ConsensusReceptor;
 import com.radixdlt.tempo.delivery.AtomDeliverer;
 import com.radixdlt.tempo.delivery.RequestDeliverer;
 import com.radixdlt.tempo.discovery.AtomDiscoverer;
@@ -35,6 +37,7 @@ import org.radix.time.TemporalVertex;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
@@ -44,13 +47,14 @@ import java.util.concurrent.LinkedBlockingQueue;
  * The Tempo implementation of a ledger.
  */
 // TODO remove Plugin dependency from Tempo
-public final class Tempo extends Plugin implements Ledger {
+public final class Tempo extends Plugin implements Ledger, ConsensusReceptor {
 	private static final Logger log = Logging.getLogger("tempo");
 	private static final int INBOUND_QUEUE_CAPACITY = 16384;
 
 	private final EUID self;
 	private final TempoAtomStore atomStore;
 	private final CommitmentStore commitmentStore;
+	private final ConsensusController consensus;
 
 	private final EdgeSelector edgeSelector;
 	private final Attestor attestor;
@@ -66,26 +70,28 @@ public final class Tempo extends Plugin implements Ledger {
 	@Inject
 	public Tempo(
 		@Named("self") EUID self,
-	    TempoAtomStore atomStore,
-	    CommitmentStore commitmentStore,
-	    EdgeSelector edgeSelector,
-	    Attestor attestor,
-	    @Owned Set<Resource> ownedResources,
-	    Set<AtomDiscoverer> atomDiscoverers,
-	    Set<AtomDeliverer> atomDeliverers,
-	    RequestDeliverer requestDeliverer,
-	    Set<AtomObserver> observers
+		TempoAtomStore atomStore,
+		CommitmentStore commitmentStore,
+		ConsensusController consensus,
+		EdgeSelector edgeSelector,
+		Attestor attestor,
+		@Owned Set<Resource> ownedResources,
+		Set<AtomDiscoverer> atomDiscoverers,
+		Set<AtomDeliverer> atomDeliverers,
+		RequestDeliverer requestDeliverer,
+		Set<AtomObserver> observers
 	) {
-		this.self = self;
-		this.atomStore = atomStore;
-		this.commitmentStore = commitmentStore;
-		this.ownedResources = ownedResources;
-		this.edgeSelector = edgeSelector;
-		this.attestor = attestor;
-		this.atomDiscoverers = atomDiscoverers;
-		this.atomDeliverers = atomDeliverers;
-		this.requestDeliverer = requestDeliverer;
-		this.observers = observers;
+		this.self = Objects.requireNonNull(self);
+		this.atomStore = Objects.requireNonNull(atomStore);
+		this.commitmentStore = Objects.requireNonNull(commitmentStore);
+		this.consensus = Objects.requireNonNull(consensus);
+		this.ownedResources = Objects.requireNonNull(ownedResources);
+		this.edgeSelector = Objects.requireNonNull(edgeSelector);
+		this.attestor = Objects.requireNonNull(attestor);
+		this.atomDiscoverers = Objects.requireNonNull(atomDiscoverers);
+		this.atomDeliverers = Objects.requireNonNull(atomDeliverers);
+		this.requestDeliverer = Objects.requireNonNull(requestDeliverer);
+		this.observers = Objects.requireNonNull(observers);
 
 		this.atomObservations = new LinkedBlockingQueue<>(INBOUND_QUEUE_CAPACITY);
 
@@ -97,6 +103,16 @@ public final class Tempo extends Plugin implements Ledger {
 		for (AtomDeliverer atomDeliverer : atomDeliverers) {
 			atomDeliverer.addListener((atom, peer) -> addInbound(atom));
 		}
+	}
+
+	@Override
+	public void change(TempoAtom oldPreference, AID newPreferenceAid) {
+		throw new UnsupportedOperationException("Not yet implemented");
+	}
+
+	@Override
+	public void commit(TempoAtom preference) {
+		this.addObservation(AtomObservation.commit(preference));
 	}
 
 	@Override
@@ -121,7 +137,7 @@ public final class Tempo extends Plugin implements Ledger {
 			AtomConflict conflictInfo = status.getConflictInfo();
 			throw new LedgerIndexConflictException(conflictInfo.getAtom(), conflictInfo.getConflictingAtoms());
 		}
-		onAdopted(tempoAtom);
+		onAdopted(tempoAtom, uniqueIndices, duplicateIndices);
 	}
 
 	@Override
@@ -136,7 +152,7 @@ public final class Tempo extends Plugin implements Ledger {
 			throw new LedgerIndexConflictException(conflictInfo.getAtom(), conflictInfo.getConflictingAtoms());
 		}
 		aids.forEach(this::onDeleted);
-		onAdopted(tempoAtom);
+		onAdopted(tempoAtom, uniqueIndices, duplicateIndices);
 	}
 
 	private void onDeleted(AID aid) {
@@ -144,20 +160,27 @@ public final class Tempo extends Plugin implements Ledger {
 	}
 
 	private void addInbound(TempoAtom atom) {
-		if (!this.atomObservations.add(AtomObservation.receive(atom))) {
+		AtomObservation observation = AtomObservation.receive(atom);
+		addObservation(observation);
+	}
+
+	private void addObservation(AtomObservation observation) {
+		if (!this.atomObservations.add(observation)) {
 			// TODO more graceful queue full handling
-			log.error("Inbound atoms queue full");
+			log.error("Atom observations queue full");
 		}
 	}
 
-	private void onAdopted(TempoAtom atom) {
+	private void onAdopted(TempoAtom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
 		TemporalVertex ownVertex = atom.getTemporalProof().getVertexByNID(self);
 		if (ownVertex == null) {
 			throw new TempoException("Accepted atom " + atom.getAID() + " has no vertex by self");
 		}
-		// TODO move to commitment acceptor
+
+		// TODO populate commitment store elsewhere
 		commitmentStore.put(self, ownVertex.getClock(), ownVertex.getCommitment());
-		observers.forEach(acceptor -> acceptor.onAdopted(atom));
+
+		observers.forEach(acceptor -> acceptor.onAdopted(atom, uniqueIndices, duplicateIndices));
 	}
 
 	private TempoAtom attestTo(TempoAtom atom) {
@@ -186,6 +209,8 @@ public final class Tempo extends Plugin implements Ledger {
 	@Override
 	public void start_impl() {
 		this.ownedResources.forEach(Resource::open);
+		// TODO remove need for onopen, open resources on construction..
+		this.consensus.onOpen();
 		Modules.put(TempoAtomStoreView.class, this.atomStore);
 		Modules.put(AtomSyncView.class, new AtomSyncView() {
 			@Override

@@ -54,6 +54,10 @@ public class LegacyAtomStoreAdapter implements TempoAtomStore {
 	}
 
 	@Override
+	public Set<LedgerIndex> getUniqueIndices(AID aid) {
+		throw new UnsupportedOperationException("Not implemented");
+	}
+
 	public boolean contains(byte[] partialAid) {
 		try {
 			return atomStoreSupplier.get().contains(partialAid);
@@ -82,7 +86,6 @@ public class LegacyAtomStoreAdapter implements TempoAtomStore {
 		}
 	}
 
-	@Override
 	public List<AID> get(byte[] partialAid) {
 		try {
 			return atomStoreSupplier.get().get(partialAid);

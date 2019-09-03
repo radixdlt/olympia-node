@@ -6,9 +6,9 @@ import com.radixdlt.tempo.Resource;
 import java.util.Set;
 
 public interface ConsensusStore extends Resource {
-	int getConfidenceOrDefault(AID aid, int defaultValue);
+	int increaseConfidence(AID aid);
 
-	void setConfidence(AID aid, int confidence);
+	void resetConfidence(AID aid);
 
 	boolean delete(AID aid);
 
@@ -16,7 +16,7 @@ public interface ConsensusStore extends Resource {
 
 	boolean isCommitted(AID aid);
 
-	boolean isPending(AID aid);
+	boolean isUncommitted(AID aid);
 
-	Set<AID> getPending();
+	Set<AID> getUncommitted();
 }

@@ -282,6 +282,16 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 	}
 
 	@Override
+	public Set<LedgerIndex> getUniqueIndices(AID aid) {
+		try {
+			return doGetIndices(null, aid, new DatabaseEntry()).getUniqueIndices();
+		} catch (SerializationException e) {
+			fail("Get unique indices of '" + aid + "' failed");
+		}
+		throw new IllegalStateException("Should never reach here");
+	}
+
+	@Override
 	public AtomStoreResult store(TempoAtom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
 		long start = profiler.begin();
 		Transaction transaction = dbEnv.getEnvironment().beginTransaction(null, null);
@@ -387,8 +397,18 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 	}
 
 	private boolean doDelete(AID aid, Transaction transaction) throws SerializationException {
-		DatabaseEntry key = new DatabaseEntry(LedgerIndex.from(ATOM_INDEX_PREFIX, aid.getBytes()));
 		DatabaseEntry pKey = new DatabaseEntry();
+		TempoAtomIndices indices = doGetIndices(transaction, aid, pKey);
+		try {
+			currentIndices.put(aid, indices);
+			return atoms.delete(transaction, pKey) == OperationStatus.SUCCESS;
+		} finally {
+			currentIndices.remove(aid);
+		}
+	}
+
+	private TempoAtomIndices doGetIndices(Transaction transaction, AID aid, DatabaseEntry pKey) throws SerializationException {
+		DatabaseEntry key = new DatabaseEntry(LedgerIndex.from(ATOM_INDEX_PREFIX, aid.getBytes()));
 		DatabaseEntry value = new DatabaseEntry();
 
 		OperationStatus status = uniqueIndices.get(transaction, key, pKey, value, LockMode.RMW);
@@ -404,14 +424,8 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 		if (status != OperationStatus.SUCCESS) {
 			fail("Deleting indices of atom '" + aid + "' failed with status " + status);
 		}
-		
-		TempoAtomIndices indices = serialization.fromDson(value.getData(), TempoAtomIndices.class);
-		try {
-			currentIndices.put(aid, indices);
-			return atoms.delete(transaction, pKey) == OperationStatus.SUCCESS;
-		} finally {
-			currentIndices.remove(aid);
-		}
+
+		return serialization.fromDson(value.getData(), TempoAtomIndices.class);
 	}
 
 	// TODO missing shardspace check, should be added?

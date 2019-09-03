@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.common.AID;
 import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.SerializerConstants;
+import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import org.radix.time.TemporalProof;
 
@@ -17,6 +19,11 @@ import java.util.Set;
  */
 @SerializerId2("tempo.consensus.sample")
 public final class Sample {
+	// Placeholder for the serializer ID
+	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
+	@DsonOutput(DsonOutput.Output.ALL)
+	private SerializerDummy serializer = SerializerDummy.DUMMY;
+
 	@JsonProperty("temporalProofs")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final Map<LedgerIndex, Map<AID, TemporalProof>> temporalProofsByIndex;

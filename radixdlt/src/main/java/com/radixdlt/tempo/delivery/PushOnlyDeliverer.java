@@ -4,6 +4,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import com.radixdlt.common.EUID;
+import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.tempo.AtomObserver;
 import com.radixdlt.tempo.PeerSupplier;
 import com.radixdlt.tempo.TempoAtom;
@@ -20,6 +21,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 @Singleton
 public final class PushOnlyDeliverer implements Closeable, AtomDeliverer, AtomObserver {
@@ -48,7 +50,7 @@ public final class PushOnlyDeliverer implements Closeable, AtomDeliverer, AtomOb
 	}
 
 	@Override
-	public void onAdopted(TempoAtom atom) {
+	public void onAdopted(TempoAtom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
 		TemporalVertex ownVertex = atom.getTemporalProof().getVertexByNID(self);
 		PushMessage push = new PushMessage(atom);
 		if (!ownVertex.getEdges().isEmpty()) {

@@ -14,8 +14,10 @@ import com.radixdlt.tempo.Resource;
 import com.radixdlt.tempo.Scheduler;
 import com.radixdlt.tempo.SimpleEdgeSelector;
 import com.radixdlt.tempo.SingleThreadedScheduler;
+import com.radixdlt.tempo.Tempo;
 import com.radixdlt.tempo.TempoAttestor;
 import com.radixdlt.tempo.WallclockTimeSupplier;
+import com.radixdlt.tempo.consensus.ConsensusReceptor;
 import com.radixdlt.tempo.store.CommitmentStore;
 import com.radixdlt.tempo.store.LCCursorStore;
 import com.radixdlt.tempo.store.SampleStore;
@@ -42,9 +44,10 @@ public class TempoModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		// TODO bind Ledger interface to Tempo when ready to consume in application level
+		bind(ConsensusReceptor.class).to(Tempo.class);
 
 		bind(LocalSystem.class).annotatedWith(Names.named("self")).toInstance(localSystem);
-		bind(EUID.class).annotatedWith(Names.named("self")).toProvider(localSystem::getNID);
+		bind(EUID.class).annotatedWith(Names.named("self")).toInstance(localSystem.getNID());
 
 		Multibinder<Resource> ownedResourcesBinder = Multibinder.newSetBinder(binder(), Resource.class, Owned.class);
 		ownedResourcesBinder.addBinding().to(TempoAtomStore.class);

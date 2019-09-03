@@ -10,6 +10,7 @@ import com.radixdlt.common.EUID;
 import com.radixdlt.tempo.AtomSyncView;
 import com.radixdlt.tempo.Tempo;
 import com.radixdlt.tempo.TempoAttestor;
+import com.radixdlt.tempo.consensus.ConsensusController;
 import com.radixdlt.tempo.delivery.RequestDeliverer;
 import com.radixdlt.tempo.store.CommitmentStore;
 import com.radixdlt.tempo.store.TempoAtomStore;
@@ -64,6 +65,7 @@ public class RadixTestWithStores extends RadixTest
 				self,
 				atomStore,
 				commitmentStore,
+				mock(ConsensusController.class),
 				atom -> ImmutableList.of(),
 				new TempoAttestor(LocalSystem.getInstance(), System::currentTimeMillis),
 				ImmutableSet.of(atomStore, commitmentStore),

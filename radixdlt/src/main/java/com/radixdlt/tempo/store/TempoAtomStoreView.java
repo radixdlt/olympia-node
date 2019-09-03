@@ -10,6 +10,7 @@ import com.radixdlt.ledger.LedgerSearchMode;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * A read-only view of a specific AtomStore
@@ -35,6 +36,13 @@ public interface TempoAtomStoreView {
 	 * @return The atom associated with the given aid (if any)
 	 */
 	Optional<TempoAtom> get(AID aid);
+
+	/**
+	 * Gets the unique indices associated with a certain aid
+	 * @param aid The aid
+	 * @return The unique indices
+	 */
+	Set<LedgerIndex> getUniqueIndices(AID aid);
 
 	/**
 	 * Searches for a certain index.
