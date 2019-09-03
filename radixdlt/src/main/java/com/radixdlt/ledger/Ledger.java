@@ -13,7 +13,7 @@ import java.util.Set;
  */
 public interface Ledger {
 	/**
-	 * Receives observations of this ledger, blocking until an atom becomes available.
+	 * Receives atoms observations of this ledger, blocking until an observations becomes available.
 	 *
 	 * @return The atom observation
 	 *

@@ -23,20 +23,6 @@ public interface TempoAtomStoreView {
 	boolean contains(AID aid);
 
 	/**
-	 * Check whether this store contains a given partial {@link AID}
-	 * @param partialAid The partial aid
-	 * @return Whether any atom matching the partial {@link AID} is contained in this store
-	 */
-	boolean contains(byte[] partialAid);
-
-	/**
-	 * Get the {@link AID}s starting with a specific partial {@link AID}
-	 * @param partialAid The partial aid
-	 * @return The list of {@link AID}s in this store that begin with the given partial {@link AID}
-	 */
-	List<AID> get(byte[] partialAid);
-
-	/**
 	 * Gets the {@link AID} associated with a certain aid
 	 * @param clock The clock
 	 * @return The {@link AID} associated with the given clock (if any)

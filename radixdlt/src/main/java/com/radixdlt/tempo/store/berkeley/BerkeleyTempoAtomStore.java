@@ -215,7 +215,6 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 		}
 	}
 
-	@Override
 	public boolean contains(byte[] partialAid) {
 		long start = profiler.begin();
 		try {
@@ -226,7 +225,6 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 		}
 	}
 
-	@Override
 	public List<AID> get(byte[] partialAid) {
 		long start = profiler.begin();
 		try (SecondaryCursor databaseCursor = toSecondaryCursor(LedgerIndex.LedgerIndexType.UNIQUE)) {
