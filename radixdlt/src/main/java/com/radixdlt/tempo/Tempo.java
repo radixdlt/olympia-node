@@ -43,6 +43,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 /**
  * The Tempo implementation of a ledger.
  */
+// TODO remove Plugin dependency from Tempo
 public final class Tempo extends Plugin implements Ledger {
 	private static final Logger log = Logging.getLogger("tempo");
 	private static final int INBOUND_QUEUE_CAPACITY = 16384;
@@ -60,7 +61,7 @@ public final class Tempo extends Plugin implements Ledger {
 	private final Set<AtomDiscoverer> atomDiscoverers;
 	private final Set<AtomDeliverer> atomDeliverers;
 	private final RequestDeliverer requestDeliverer;
-	private final Set<AtomAcceptor> acceptors;
+	private final Set<AtomObserver> observers;
 
 	@Inject
 	public Tempo(
@@ -73,7 +74,7 @@ public final class Tempo extends Plugin implements Ledger {
 	    Set<AtomDiscoverer> atomDiscoverers,
 	    Set<AtomDeliverer> atomDeliverers,
 	    RequestDeliverer requestDeliverer,
-	    Set<AtomAcceptor> acceptors
+	    Set<AtomObserver> observers
 	) {
 		this.self = self;
 		this.atomStore = atomStore;
@@ -84,7 +85,7 @@ public final class Tempo extends Plugin implements Ledger {
 		this.atomDiscoverers = atomDiscoverers;
 		this.atomDeliverers = atomDeliverers;
 		this.requestDeliverer = requestDeliverer;
-		this.acceptors = acceptors;
+		this.observers = observers;
 
 		this.atomObservations = new LinkedBlockingQueue<>(INBOUND_QUEUE_CAPACITY);
 
@@ -134,7 +135,12 @@ public final class Tempo extends Plugin implements Ledger {
 			AtomConflict conflictInfo = status.getConflictInfo();
 			throw new LedgerIndexConflictException(conflictInfo.getAtom(), conflictInfo.getConflictingAtoms());
 		}
+		aids.forEach(this::onDeleted);
 		onAdopted(tempoAtom);
+	}
+
+	private void onDeleted(AID aid) {
+		observers.forEach(observer -> observer.onDeleted(aid));
 	}
 
 	private void addInbound(TempoAtom atom) {
@@ -151,7 +157,7 @@ public final class Tempo extends Plugin implements Ledger {
 		}
 		// TODO move to commitment acceptor
 		commitmentStore.put(self, ownVertex.getClock(), ownVertex.getCommitment());
-		acceptors.forEach(acceptor -> acceptor.accept(atom));
+		observers.forEach(acceptor -> acceptor.onAdopted(atom));
 	}
 
 	private TempoAtom attestTo(TempoAtom atom) {

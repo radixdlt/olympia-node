@@ -102,7 +102,7 @@ public final class MockApplication {
 			logger.debug(String.format("Received foreign atom content %s, cannot infer indices", content.getClass().getSimpleName()));
 		}
 
-		if (atomObservation.hasPreviousAtoms()) {
+		if (!atomObservation.hasPreviousAtoms()) {
 			ledger.store(atom, uniqueIndices, duplicateIndices);
 			logger.info(String.format("Stored atom '%s'", atom.getAID()));
 		} else {

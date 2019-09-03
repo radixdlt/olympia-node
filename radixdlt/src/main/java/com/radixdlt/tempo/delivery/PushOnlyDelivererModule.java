@@ -2,14 +2,14 @@ package com.radixdlt.tempo.delivery;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.Multibinder;
-import com.radixdlt.tempo.AtomAcceptor;
+import com.radixdlt.tempo.AtomObserver;
 
 public class PushOnlyDelivererModule extends AbstractModule {
 	@Override
 	protected void configure() {
-		Multibinder<AtomAcceptor> acceptorMultibinder = Multibinder.newSetBinder(binder(), AtomAcceptor.class);
-		acceptorMultibinder.addBinding().to(PushOnlyDeliverer.class);
+		Multibinder<AtomObserver> observerMultibinder = Multibinder.newSetBinder(binder(), AtomObserver.class);
+		observerMultibinder.addBinding().to(PushOnlyDeliverer.class);
 		Multibinder<AtomDeliverer> delivererMultibinder = Multibinder.newSetBinder(binder(), AtomDeliverer.class);
-		acceptorMultibinder.addBinding().to(PushOnlyDeliverer.class);
+		delivererMultibinder.addBinding().to(PushOnlyDeliverer.class);
 	}
 }

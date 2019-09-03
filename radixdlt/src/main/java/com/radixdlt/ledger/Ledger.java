@@ -32,7 +32,7 @@ public interface Ledger {
 	Optional<Atom> get(AID aid);
 
 	/**
-	 * Submits an {@link Atom} with certain indices.
+	 * Stores an {@link Atom} with certain indices.
 	 *
 	 * @param atom The atom
 	 * @param uniqueIndices The unique indices
@@ -44,7 +44,8 @@ public interface Ledger {
 	void store(Atom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices);
 
 	/**
-	 * Replaces a set of atoms with another atom in an atomic operation
+	 * Replaces a set of atoms with another atom in an atomic operation.
+	 *
 	 * @param aids The aids to delete
 	 * @param atom The new atom
 	 * @param uniqueIndices The unique indices of that atom

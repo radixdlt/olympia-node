@@ -4,7 +4,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import com.radixdlt.common.EUID;
-import com.radixdlt.tempo.AtomAcceptor;
+import com.radixdlt.tempo.AtomObserver;
 import com.radixdlt.tempo.PeerSupplier;
 import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.delivery.messages.PushMessage;
@@ -22,7 +22,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 @Singleton
-public final class PushOnlyDeliverer implements Closeable, AtomDeliverer, AtomAcceptor {
+public final class PushOnlyDeliverer implements Closeable, AtomDeliverer, AtomObserver {
 	private static final Logger log = Logging.getLogger("deliverer.push");
 
 	private final EUID self;
@@ -47,7 +47,8 @@ public final class PushOnlyDeliverer implements Closeable, AtomDeliverer, AtomAc
 		messageCentral.addListener(PushMessage.class, this::onReceivePush);
 	}
 
-	public void accept(TempoAtom atom) {
+	@Override
+	public void onAdopted(TempoAtom atom) {
 		TemporalVertex ownVertex = atom.getTemporalProof().getVertexByNID(self);
 		PushMessage push = new PushMessage(atom);
 		if (!ownVertex.getEdges().isEmpty()) {
