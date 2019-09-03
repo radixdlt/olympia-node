@@ -68,6 +68,7 @@ public final class SampleRetriever implements Closeable {
 
 	public CompletableFuture<SamplingResult> sample(Set<LedgerIndex> indices, Collection<Peer> peers) {
 		EUID tag = allocateTag();
+		// TODO batch requests to same node
 		SampleRequestMessage request = new SampleRequestMessage(ImmutableMap.of(tag, indices));
 		for (Peer peer : peers) {
 			messageCentral.send(peer, request);
@@ -116,7 +117,7 @@ public final class SampleRetriever implements Closeable {
 			Map<AID, TemporalProof> temporalProofsByAid = new HashMap<>();
 			Set<AID> aids = aidsByIndex.get(requestedIndex);
 			for (AID aid : aids) {
-				TemporalProof localSample = sampleStore.getLocal(aid).orElseThrow(()
+				TemporalProof localSample = sampleStore.get(aid).orElseThrow(()
 					-> new IllegalStateException("Internal cursor returned AID for which a local sample is unavailable"));
 				temporalProofsByAid.put(aid, localSample);
 			}

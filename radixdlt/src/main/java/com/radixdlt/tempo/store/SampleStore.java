@@ -7,11 +7,18 @@ import org.radix.time.TemporalProof;
 import java.util.Optional;
 
 public interface SampleStore extends Resource {
-	Optional<TemporalProof> getCollected(AID aid);
+	/**
+	 * Gets the local temporal proof branch of this node of a certain {@link AID}.
+	 * @param aid The {@link AID}.
+	 * @return The temporal proof associated with the given {@link AID} (if any)
+	 */
+	Optional<TemporalProof> get(AID aid);
 
-	Optional<TemporalProof> getLocal(AID aid);
-
-	void addLocal(TemporalProof temporalProof);
-
-	void addCollected(TemporalProof temporalProof);
+	/**
+	 * Appends a temporal proof to this store.
+	 * If a temporal proof with the same {@link AID} is already stored, the proofs will be merged.
+	 *
+	 * @param temporalProof The temporal proof
+	 */
+	void add(TemporalProof temporalProof);
 }

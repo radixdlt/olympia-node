@@ -23,19 +23,16 @@ import org.radix.time.TemporalProof;
 import javax.inject.Inject;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Supplier;
 
 @Singleton
 public class BerkeleySampleStore implements SampleStore {
 	private static final Logger logger = Logging.getLogger("store.samples");
 	private static final String COLLECTED_SAMPLES_DB_NAME = "tempo2.samples.collected";
-	private static final String LOCAL_SAMPLES_DB_NAME = "tempo2.samples.local";
+	private static final String SAMPLES_DB_NAME = "tempo2.samples.local";
 
 	private final DatabaseEnvironment dbEnv;
 	private final Serialization serialization;
-	// TODO use prefix instead of two different databases (use type + aid as primary)
-	private Database collectedSamples;
-	private Database localSamples;
+	private Database samples;
 
 	@Inject
 	public BerkeleySampleStore(DatabaseEnvironment dbEnv, Serialization serialization) {
@@ -61,8 +58,8 @@ public class BerkeleySampleStore implements SampleStore {
 
 		try {
 			Environment dbEnv = this.dbEnv.getEnvironment();
-			this.collectedSamples = dbEnv.openDatabase(null, COLLECTED_SAMPLES_DB_NAME, primaryConfig);
-			this.localSamples = dbEnv.openDatabase(null, LOCAL_SAMPLES_DB_NAME, primaryConfig);
+			this.samples = dbEnv.openDatabase(null, SAMPLES_DB_NAME, primaryConfig);
+
 		} catch (Exception e) {
 			throw new TempoException("Error while opening database", e);
 		}
@@ -81,7 +78,7 @@ public class BerkeleySampleStore implements SampleStore {
 			Environment env = this.dbEnv.getEnvironment();
 			transaction = env.beginTransaction(null, new TransactionConfig().setReadUncommitted(true));
 			env.truncateDatabase(transaction, COLLECTED_SAMPLES_DB_NAME, false);
-			env.truncateDatabase(transaction, LOCAL_SAMPLES_DB_NAME, false);
+			env.truncateDatabase(transaction, SAMPLES_DB_NAME, false);
 			transaction.commit();
 		} catch (DatabaseNotFoundException e) {
 			if (transaction != null) {
@@ -100,11 +97,8 @@ public class BerkeleySampleStore implements SampleStore {
 
 	@Override
 	public void close() {
-		if (this.collectedSamples != null) {
-			this.collectedSamples.close();
-		}
-		if (this.localSamples != null) {
-			this.localSamples.close();
+		if (this.samples != null) {
+			this.samples.close();
 		}
 	}
 
@@ -161,45 +155,13 @@ public class BerkeleySampleStore implements SampleStore {
 		}
 	}
 
-	/**
-	 * Gets the aggregated temporal proofs associated with a certain {@link AID}.
-	 * @param aid The {@link AID}.
-	 * @return The temporal proof associated with the given {@link AID} (if any)
-	 */
 	@Override
-	public Optional<TemporalProof> getCollected(AID aid) {
-		return getTemporalProof(aid, this.collectedSamples);
+	public Optional<TemporalProof> get(AID aid) {
+		return getTemporalProof(aid, this.samples);
 	}
 
-	/**
-	 * Gets the local temporal proof branch of this node of a certain {@link AID}.
-	 * @param aid The {@link AID}.
-	 * @return The temporal proof associated with the given {@link AID} (if any)
-	 */
 	@Override
-	public Optional<TemporalProof> getLocal(AID aid) {
-		return getTemporalProof(aid, this.localSamples);
-	}
-
-	/**
-	 * Appends a temporal proof to this store.
-	 * If a temporal proof with the same {@link AID} is already stored, the proofs will be merged.
-	 *
-	 * @param temporalProof The temporal proof
-	 */
-	@Override
-	public void addLocal(TemporalProof temporalProof) {
-		add(temporalProof, this.localSamples);
-	}
-
-	/**
-	 * Appends a temporal proof to this store.
-	 * If a temporal proof with the same {@link AID} is already stored, the proofs will be merged.
-	 *
-	 * @param temporalProof The temporal proof
-	 */
-	@Override
-	public void addCollected(TemporalProof temporalProof) {
-		add(temporalProof, this.collectedSamples);
+	public void add(TemporalProof temporalProof) {
+		add(temporalProof, this.samples);
 	}
 }
