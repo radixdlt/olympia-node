@@ -5,7 +5,7 @@ import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.ledger.LedgerCursor;
 import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerSearchMode;
-import com.radixdlt.tempo.AtomStoreView;
+import com.radixdlt.tempo.store.TempoAtomStoreView;
 import com.radixdlt.tempo.AtomSyncView;
 import com.radixdlt.tempo.LegacyUtils;
 import org.radix.atoms.Atom;
@@ -61,7 +61,7 @@ public final class RadixJsonRpcServer {
 	/**
 	 * Store to query atoms from
 	 */
-    private final AtomStoreView storeView;
+    private final TempoAtomStoreView storeView;
 
 	private final AtomSyncView syncView;
 
@@ -70,11 +70,11 @@ public final class RadixJsonRpcServer {
 	 */
 	private final Serialization serialization;
 
-	public RadixJsonRpcServer(Serialization serialization, AtomStoreView storeView, AtomSyncView syncView, AtomsService atomsService, Schema atomSchema) {
+	public RadixJsonRpcServer(Serialization serialization, TempoAtomStoreView storeView, AtomSyncView syncView, AtomsService atomsService, Schema atomSchema) {
 		this(serialization, storeView, syncView, atomsService, atomSchema, DEFAULT_MAX_REQUEST_SIZE);
 	}
 
-	public RadixJsonRpcServer(Serialization serialization, AtomStoreView storeView, AtomSyncView syncView, AtomsService atomsService, Schema atomSchema, long maxRequestSizeBytes) {
+	public RadixJsonRpcServer(Serialization serialization, TempoAtomStoreView storeView, AtomSyncView syncView, AtomsService atomsService, Schema atomSchema, long maxRequestSizeBytes) {
 		this.serialization = Objects.requireNonNull(serialization);
 		this.storeView = Objects.requireNonNull(storeView);
 		this.syncView = Objects.requireNonNull(syncView);

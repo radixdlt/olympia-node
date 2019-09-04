@@ -1,11 +1,25 @@
 package org.radix.integration;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.tempo.Tempo;
-import com.radixdlt.tempo.PeerSupplier;
+import com.google.common.collect.ImmutableSet;
+import com.google.inject.AbstractModule;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
+import com.google.inject.multibindings.Multibinder;
+import com.google.inject.name.Names;
+import com.radixdlt.TempoModule;
+import com.radixdlt.common.EUID;
+import com.radixdlt.tempo.AtomAcceptor;
 import com.radixdlt.tempo.AtomSyncView;
-import com.radixdlt.tempo.EdgeSelector;
+import com.radixdlt.tempo.Tempo;
+import com.radixdlt.tempo.TempoAtom;
+import com.radixdlt.tempo.TempoAttestor;
+import com.radixdlt.tempo.delivery.AtomDeliverer;
 import com.radixdlt.tempo.delivery.RequestDeliverer;
+import com.radixdlt.tempo.discovery.AtomDiscoverer;
+import com.radixdlt.tempo.store.CommitmentStore;
+import com.radixdlt.tempo.store.TempoAtomStore;
+import com.radixdlt.tempo.store.berkeley.BerkeleyStoreModule;
 import org.junit.After;
 import org.junit.Before;
 import org.radix.atoms.AtomStore;
@@ -20,12 +34,12 @@ import org.radix.network2.messaging.MessageCentralFactory;
 import org.radix.properties.RuntimeProperties;
 import org.radix.routing.RoutingHandler;
 import org.radix.routing.RoutingStore;
+import org.radix.time.Time;
+import org.radix.universe.system.LocalSystem;
 
 import java.io.IOException;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class RadixTestWithStores extends RadixTest
 {
@@ -40,15 +54,31 @@ public class RadixTestWithStores extends RadixTest
 		Modules.put(MessageCentral.class, messageCentral);
 
 		if (Modules.get(RuntimeProperties.class).get("tempo2", false)) {
-			PeerSupplier peerSupplier = mock(PeerSupplier.class);
-			when(peerSupplier.getNids()).thenReturn(ImmutableList.of());
-			EdgeSelector edgeSelector = mock(EdgeSelector.class);
-			when(edgeSelector.selectEdges(any(), any())).thenReturn(ImmutableList.of());
-			Tempo tempo = Tempo.defaultBuilderStoreOnly()
-				.peerSupplier(peerSupplier)
-				.edgeSelector(edgeSelector)
-				.requestDeliverer(mock(RequestDeliverer.class))
-				.build();
+			EUID self = LocalSystem.getInstance().getNID();
+			Injector injector = Guice.createInjector(
+				new AbstractModule() {
+					@Override
+					protected void configure() {
+						bind(EUID.class).annotatedWith(Names.named("self")).toInstance(self);
+					}
+				},
+				new BerkeleyStoreModule()
+			);
+
+			TempoAtomStore atomStore = injector.getInstance(TempoAtomStore.class);
+			CommitmentStore commitmentStore = injector.getInstance(CommitmentStore.class);
+			Tempo tempo = new Tempo(
+				self,
+				atomStore,
+				commitmentStore,
+				atom -> ImmutableList.of(),
+				new TempoAttestor(LocalSystem.getInstance(), System::currentTimeMillis),
+				ImmutableSet.of(atomStore, commitmentStore),
+				ImmutableSet.of(),
+				ImmutableSet.of(),
+				mock(RequestDeliverer.class),
+				ImmutableSet.of()
+			);
 			Modules.getInstance().start(tempo);
 		} else {
 			Modules.getInstance().start(clean(new AtomStore()));

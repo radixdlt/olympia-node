@@ -69,7 +69,7 @@ public final class PeerWithSystem extends Peer {
 
 	@Override
 	public boolean supportsTransport(String transportName) {
-		return !system.supportedTransports()
+		return system.supportedTransports()
 			.map(TransportInfo::name)
 			.anyMatch(transportName::equals);
 	}

@@ -22,11 +22,6 @@ public class BerkeleyCursorTests extends RadixTestWithStores {
 
 	private AtomGenerator atomGenerator = new AtomGenerator();
 
-	@BeforeClass
-	public static void checkTempoAvailable() {
-		assumeTrue("Tempo 2.0 must be available", Modules.isAvailable(Tempo.class));
-	}
-
 	@Test
 	public void store_single_atom__search_by_unique_aid_and_get() throws Exception {
 		ECKeyPair identity = new ECKeyPair();

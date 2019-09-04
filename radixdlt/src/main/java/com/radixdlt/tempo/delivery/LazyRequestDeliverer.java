@@ -2,9 +2,12 @@ package com.radixdlt.tempo.delivery;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
-import com.radixdlt.tempo.AtomStoreView;
+import com.radixdlt.tempo.Resource;
+import com.radixdlt.tempo.store.TempoAtomStoreView;
 import com.radixdlt.tempo.Scheduler;
 import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.delivery.messages.DeliveryRequestMessage;
@@ -30,8 +33,9 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-public final class SingleRequestDeliverer implements Closeable, AtomDeliverer, RequestDeliverer {
-	private static final Logger log = Logging.getLogger("RequestDeliverer");
+@Singleton
+public final class LazyRequestDeliverer implements Resource, AtomDeliverer, RequestDeliverer {
+	private static final Logger log = Logging.getLogger("deliverer.request");
 
 	private static final int DEFAULT_REQUEST_QUEUE_CAPACITY = 8192;
 	private static final int DEFAULT_REQUEST_PROCESSOR_THREADS = 2;
@@ -44,17 +48,18 @@ public final class SingleRequestDeliverer implements Closeable, AtomDeliverer, R
 
 	private final Scheduler scheduler;
 	private final MessageCentral messageCentral;
-	private final AtomStoreView storeView;
+	private final TempoAtomStoreView storeView;
 	private final Collection<AtomDeliveryListener> deliveryListeners;
 
 	private final BlockingQueue<AtomDeliveryRequest> requestQueue;
 	private final SimpleThreadPool<AtomDeliveryRequest> requestThreadPool;
 
-	public SingleRequestDeliverer(
+	@Inject
+	public LazyRequestDeliverer(
 		Scheduler scheduler,
 		MessageCentral messageCentral,
-		AtomStoreView storeView,
-		SingleRequestDelivererConfiguration configuration
+		TempoAtomStoreView storeView,
+		LazyRequestDelivererConfiguration configuration
 	) {
 		this.scheduler = Objects.requireNonNull(scheduler);
 		this.messageCentral = Objects.requireNonNull(messageCentral);
@@ -189,6 +194,16 @@ public final class SingleRequestDeliverer implements Closeable, AtomDeliverer, R
 
 	private void notifyListeners(Peer peer, TempoAtom atom) {
 		deliveryListeners.forEach(listener -> listener.accept(atom, peer));
+	}
+
+	@Override
+	public void reset() {
+		deliveryState.reset();
+	}
+
+	@Override
+	public void open() {
+		// nothing to do here
 	}
 
 	@Override

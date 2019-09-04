@@ -1,6 +1,10 @@
 package com.radixdlt.tempo.delivery;
 
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
+import com.google.inject.name.Named;
 import com.radixdlt.common.EUID;
+import com.radixdlt.tempo.AtomAcceptor;
 import com.radixdlt.tempo.PeerSupplier;
 import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.delivery.messages.PushMessage;
@@ -17,8 +21,9 @@ import java.util.Collections;
 import java.util.Objects;
 import java.util.Optional;
 
-public final class PushOnlyDeliverer implements Closeable, AtomDeliverer {
-	private static final Logger log = Logging.getLogger("Pusher");
+@Singleton
+public final class PushOnlyDeliverer implements Closeable, AtomDeliverer, AtomAcceptor {
+	private static final Logger log = Logging.getLogger("deliverer.push");
 
 	private final EUID self;
 	private final MessageCentral messageCentral;
@@ -26,8 +31,9 @@ public final class PushOnlyDeliverer implements Closeable, AtomDeliverer {
 
 	private final Collection<AtomDeliveryListener> deliveryListeners;
 
+	@Inject
 	public PushOnlyDeliverer(
-		EUID self,
+		@Named("self") EUID self,
 		MessageCentral messageCentral,
 		PeerSupplier peerSupplier
 	) {

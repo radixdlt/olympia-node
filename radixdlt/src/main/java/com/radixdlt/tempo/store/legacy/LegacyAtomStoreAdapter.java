@@ -7,7 +7,7 @@ import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerSearchMode;
 import com.radixdlt.middleware.RadixEngineUtils;
 import com.radixdlt.middleware.SimpleRadixEngineAtom;
-import com.radixdlt.tempo.TempoAtomStore;
+import com.radixdlt.tempo.store.TempoAtomStore;
 import com.radixdlt.tempo.LegacyUtils;
 import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.TempoException;
@@ -33,7 +33,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 public class LegacyAtomStoreAdapter implements TempoAtomStore {
-	private final Logger logger = Logging.getLogger("Store");
+	private final Logger logger = Logging.getLogger("store.atoms");
 	private final Supplier<org.radix.atoms.AtomStore> atomStoreSupplier;
 	private final Supplier<AtomSyncStore> atomSyncStoreSupplier;
 

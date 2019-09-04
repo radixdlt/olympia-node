@@ -51,4 +51,9 @@ final class RequestDeliveryState {
 			"pendingDeliveries=" + pendingDeliveries +
 			'}';
 	}
+
+	public void reset() {
+		this.pendingDeliveries.clear();
+		this.fallbackDeliveries.clear();
+	}
 }

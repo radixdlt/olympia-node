@@ -24,7 +24,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
 
 public final class SampleRetriever implements Closeable {
-	private static final Logger log = Logging.getLogger("SampleRetriever");
+	private static final Logger log = Logging.getLogger("consensus.sampler");
 	private static final int REQUEST_QUEUE_CAPACITY = 8192;
 	private static final int REQUEST_PROCESSOR_THREADS = 1;
 

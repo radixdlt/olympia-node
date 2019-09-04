@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.UnsignedBytes;
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import com.radixdlt.Atom;
 import com.radixdlt.common.AID;
@@ -16,11 +17,12 @@ import com.radixdlt.ledger.exceptions.LedgerKeyConstraintException;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
-import com.radixdlt.tempo.TempoAtomStore;
+import com.radixdlt.tempo.store.TempoAtomStore;
 import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.TempoException;
 import com.radixdlt.utils.Longs;
 import com.sleepycat.je.Cursor;
+import com.sleepycat.je.CursorConfig;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
@@ -59,12 +61,13 @@ import java.util.stream.Collectors;
 import static com.radixdlt.tempo.store.berkeley.TempoAtomIndices.ATOM_INDEX_PREFIX;
 import static com.radixdlt.tempo.store.berkeley.TempoAtomIndices.SHARD_INDEX_PREFIX;
 
+@Singleton
 public class BerkeleyTempoAtomStore implements TempoAtomStore {
 	private static final String ATOM_INDICES_DB_NAME = "tempo2.atom_indices";
 	private static final String DUPLICATE_INDICES_DB_NAME = "tempo2.duplicated_indices";
 	private static final String UNIQUE_INDICES_DB_NAME = "tempo2.unique_indices";
 	private static final String ATOMS_DB_NAME = "tempo2.atoms";
-	private static final Logger logger = Logging.getLogger("Store");
+	private static final Logger logger = Logging.getLogger("store.atoms");
 
 	private final EUID self;
 	private final Serialization serialization;
@@ -245,10 +248,13 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 
 	public Optional<AID> get(long clock) {
 		long start = profiler.begin();
-		try {
+		try (Cursor cursor = this.atoms.openCursor(null, null)) {
 			DatabaseEntry key = new DatabaseEntry(Longs.toByteArray(clock));
+			DatabaseEntry value = new DatabaseEntry();
+			OperationStatus status = cursor.getSearchKeyRange(key, value, LockMode.DEFAULT);
+
 			if (this.atoms.get(null, key, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
-				return Optional.of(AID.from(key.getData()));
+				return Optional.of(AID.from(key.getData(), Long.BYTES));
 			}
 		} finally {
 			profiler.incrementFrom("ATOM_STORE:GET:CLOCK", start);
@@ -436,28 +442,23 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 		}
 	}
 
-	// FIXME bad performance due to shardpsace check for every atom
-	// FIXME bad performance due to complete atom deserialization
+	// TODO missing shardspace check, should be added?
 	@Override
 	public ImmutableList<AID> getNext(long logicalClock, int limit) {
 		long start = profiler.begin();
 		try (Cursor cursor = this.atoms.openCursor(null, null)) {
 			ImmutableList.Builder<AID> aids = ImmutableList.builder();
 			DatabaseEntry search = new DatabaseEntry(Longs.toByteArray(logicalClock + 1));
-			DatabaseEntry value = new DatabaseEntry();
-			OperationStatus status = cursor.getSearchKeyRange(search, value, LockMode.DEFAULT);
+			OperationStatus status = cursor.getSearchKeyRange(search, null, LockMode.DEFAULT);
 
 			int size = 0;
 			while (status == OperationStatus.SUCCESS && size < limit) {
-				TempoAtom atom = serialization.fromDson(value.getData(), TempoAtom.class);
-				aids.add(atom.getAID());
-				status = cursor.getNext(search, value, LockMode.DEFAULT);
+				aids.add(AID.from(search.getData(), Long.BYTES));
+				status = cursor.getNext(search, null, LockMode.DEFAULT);
 				size++;
 			}
 
 			return aids.build();
-		} catch (SerializationException e) {
-			throw new TempoException("Error while querying from database", e);
 		} finally {
 			profiler.incrementFrom("ATOM_STORE:DISCOVER:SYNC", start);
 		}

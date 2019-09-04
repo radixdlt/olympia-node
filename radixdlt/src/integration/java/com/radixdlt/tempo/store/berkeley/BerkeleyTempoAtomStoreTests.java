@@ -51,11 +51,6 @@ public class BerkeleyTempoAtomStoreTests extends RadixTestWithStores {
 
     private ECKeyPair identity;
 
-    @BeforeClass
-    public static void doesntWorkAtAllForMe() {
-    	assumeTrue(false);
-    }
-
     @Before
     public void setup() throws CryptoException, ValidationException {
         tempoAtomStore = new BerkeleyTempoAtomStore(localSystem.getNID(), serialization, profiler, Modules.get(DatabaseEnvironment.class));
@@ -109,7 +104,7 @@ public class BerkeleyTempoAtomStoreTests extends RadixTestWithStores {
             softly.assertThat(tempoAtomStore.get(tempoAtoms.get(0).getAID()).get()).isEqualTo(tempoAtoms.get(0));
 
             //added atom is present in store
-            softly.assertThat(tempoAtomStore.get(tempoAtoms.get(0).getTemporalProof().getVertices().get(0).getClock()).get()).isEqualTo(tempoAtoms.get(0));
+            softly.assertThat(tempoAtomStore.get(tempoAtoms.get(0).getTemporalProof().getVertices().get(0).getClock()).get()).isEqualTo(tempoAtoms.get(0).getAID());
 
             //not added atom is absent in store
             softly.assertThat(tempoAtomStore.get(tempoAtoms.get(1).getAID()).isPresent()).isFalse();

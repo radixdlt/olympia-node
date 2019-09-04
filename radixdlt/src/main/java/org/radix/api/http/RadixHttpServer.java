@@ -13,7 +13,7 @@ import com.radixdlt.common.AID;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.mock.MockAccessor;
 import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.tempo.AtomStoreView;
+import com.radixdlt.tempo.store.TempoAtomStoreView;
 import com.radixdlt.tempo.AtomSyncView;
 import com.radixdlt.tempo.store.berkeley.BerkeleyCommitmentStore;
 import org.json.JSONArray;
@@ -69,7 +69,7 @@ public final class RadixHttpServer {
 
     private final RadixJsonRpcServer jsonRpcServer = new RadixJsonRpcServer(
 		Modules.get(Serialization.class),
-		Modules.get(AtomStoreView.class),
+		Modules.get(TempoAtomStoreView.class),
 		Modules.get(AtomSyncView.class),
 		atomsService,
         AtomSchemas.get()
@@ -145,7 +145,7 @@ public final class RadixHttpServer {
 			long position = Long.parseLong(positionStr);
 			int limit = Integer.parseInt(limitStr);
 
-		    ImmutableList<AID> aids = Modules.get(AtomStoreView.class).getNext(position, limit);
+		    ImmutableList<AID> aids = Modules.get(TempoAtomStoreView.class).getNext(position, limit);
 		    String aidsJson = Serialization.getDefault().toJson(aids, DsonOutput.Output.ALL);
 		    respond(aidsJson, exchange);
 	    }, handler);

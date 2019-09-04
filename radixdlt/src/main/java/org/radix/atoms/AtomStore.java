@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.ledger.LedgerSearchMode;
-import com.radixdlt.tempo.AtomStoreView;
+import com.radixdlt.tempo.store.TempoAtomStoreView;
 import com.radixdlt.tempo.store.legacy.LegacyAtomStoreAdapter;
 import org.bouncycastle.util.Arrays;
 import org.radix.atoms.events.AtomDeletedEvent;
@@ -288,7 +288,7 @@ public class AtomStore extends DatabaseStore implements DiscoverySource<AtomDisc
 		});
 
 		// FIXME remove hack to expose legacy store view
-		Modules.put(AtomStoreView.class, new LegacyAtomStoreAdapter(
+		Modules.put(TempoAtomStoreView.class, new LegacyAtomStoreAdapter(
 			() -> this,
 			() -> Modules.get(AtomSyncStore.class)
 		));
@@ -352,7 +352,7 @@ public class AtomStore extends DatabaseStore implements DiscoverySource<AtomDisc
 	{
 		super.stop_impl();
 
-		Modules.remove(AtomStoreView.class);
+		Modules.remove(TempoAtomStoreView.class);
 
 		if (this.uniqueIndexables != null) this.uniqueIndexables.close();
 		if (this.duplicatedIndexables != null) this.duplicatedIndexables.close();

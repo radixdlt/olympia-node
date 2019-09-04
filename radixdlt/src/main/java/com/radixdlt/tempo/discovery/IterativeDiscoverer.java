@@ -2,28 +2,33 @@ package com.radixdlt.tempo.discovery;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.tempo.AtomStoreView;
+import com.radixdlt.tempo.Resource;
+import com.radixdlt.tempo.store.TempoAtomStoreView;
 import com.radixdlt.tempo.LogicalClockCursor;
 import com.radixdlt.tempo.Scheduler;
 import com.radixdlt.tempo.discovery.messages.IterativeDiscoveryRequestMessage;
 import com.radixdlt.tempo.discovery.messages.IterativeDiscoveryResponseMessage;
 import com.radixdlt.tempo.store.LCCursorStore;
 import com.radixdlt.tempo.store.CommitmentStore;
+import org.radix.common.Syncronicity;
 import org.radix.events.EventListener;
 import org.radix.events.Events;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
+import org.radix.network2.addressbook.AddressBookEvent;
 import org.radix.network2.addressbook.Peer;
 import org.radix.network2.addressbook.PeersAddedEvent;
 import org.radix.network2.addressbook.PeersRemovedEvent;
+import org.radix.network2.addressbook.PeersUpdatedEvent;
 import org.radix.network2.messaging.MessageCentral;
 import org.radix.utils.SimpleThreadPool;
 
-import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -31,12 +36,15 @@ import java.util.Objects;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /**
  * Discoverer which uses logical clocks as a cursor to iterate through all relevant {@link AID}s of known nodes
  */
-public final class IterativeDiscoverer implements Closeable, AtomDiscoverer {
-	private static final Logger log = Logging.getLogger("IterativeDiscoverer");
+@Singleton
+public final class IterativeDiscoverer implements Resource, AtomDiscoverer {
+	private static final Logger log = Logging.getLogger("discoverer.iterative");
 
 	private static final int DEFAULT_REQUEST_TIMEOUT_SECONDS = 5;
 	private static final int DEFAULT_MAX_BACKOFF = 4;
@@ -54,7 +62,7 @@ public final class IterativeDiscoverer implements Closeable, AtomDiscoverer {
 
 	private final LCCursorStore cursorStore;
 	private final CommitmentStore commitmentStore;
-	private final AtomStoreView storeView;
+	private final TempoAtomStoreView storeView;
 	private final Scheduler scheduler;
 	private final MessageCentral messageCentral;
 
@@ -63,9 +71,10 @@ public final class IterativeDiscoverer implements Closeable, AtomDiscoverer {
 	private final BlockingQueue<IterativeDiscoveryRequest> requestQueue;
 	private final SimpleThreadPool<IterativeDiscoveryRequest> requestThreadPool;
 
+	@Inject
 	public IterativeDiscoverer(
 		@Named("self") EUID self,
-		AtomStoreView storeView,
+		TempoAtomStoreView storeView,
 		LCCursorStore cursorStore,
 		CommitmentStore commitmentStore,
 		Scheduler scheduler,
@@ -85,10 +94,10 @@ public final class IterativeDiscoverer implements Closeable, AtomDiscoverer {
 
 		// TODO replace with more restricted address book once it's hooked up
 		// TODO remove listener when closed
-		events.register(PeersAddedEvent.class, (EventListener<PeersAddedEvent>) event -> event.peers().stream()
-			.filter(peer -> !discoveryState.contains(peer.getNID()))
-			.forEach(IterativeDiscoverer.this::initiateDiscovery));
-		events.register(PeersRemovedEvent.class, (EventListener<PeersRemovedEvent>) event -> event.peers()
+		events.register(PeersAddedEvent.class, new LegacyPeersEventListenerAdapter(this::handleNewPeers));
+		events.register(PeersUpdatedEvent.class, new LegacyPeersEventListenerAdapter(this::handleNewPeers));
+		events.register(PeersRemovedEvent.class, (EventListener<PeersRemovedEvent>) event -> event.peers().stream()
+			.filter(Peer::hasSystem)
 			.forEach(IterativeDiscoverer.this::abandonDiscovery));
 
 		this.responseLimit = configuration.responseLimit(DEFAULT_RESPONSE_LIMIT);
@@ -227,19 +236,47 @@ public final class IterativeDiscoverer implements Closeable, AtomDiscoverer {
 		discoveryListeners.forEach(listener -> listener.accept(aids, peer));
 	}
 
+	@Override
 	public void reset() {
-		cursorStore.reset();
-		commitmentStore.reset();
+		discoveryState.reset();
+	}
+
+	@Override
+	public void open() {
+		// nothing to do here
 	}
 
 	@Override
 	public void close() {
 		requestThreadPool.stop();
-		cursorStore.close();
-		commitmentStore.close();
-
 		messageCentral.removeListener(IterativeDiscoveryRequestMessage.class, this::onRequest);
 		messageCentral.removeListener(IterativeDiscoveryResponseMessage.class, this::onResponse);
+	}
+
+	private void handleNewPeers(Stream<Peer> peers) {
+		peers
+			.filter(Peer::hasSystem)
+			.filter(peer -> !discoveryState.contains(peer.getNID()))
+			.forEach(IterativeDiscoverer.this::initiateDiscovery);
+	}
+
+	// TODO remove once event listeners for address book are proper listeners
+	private static final class LegacyPeersEventListenerAdapter implements EventListener<AddressBookEvent> {
+		private final Consumer<Stream<Peer>> peersConsumer;
+
+		private LegacyPeersEventListenerAdapter(Consumer<Stream<Peer>> peersConsumer) {
+			this.peersConsumer = peersConsumer;
+		}
+
+		@Override
+		public void process(AddressBookEvent event) throws Throwable {
+			peersConsumer.accept(event.peers().stream());
+		}
+
+		@Override
+		public Syncronicity getSyncronicity() {
+			return Syncronicity.SYNCRONOUS;
+		}
 	}
 
 	private static final class IterativeDiscoveryRequest {
