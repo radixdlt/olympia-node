@@ -24,11 +24,32 @@ public interface TempoAtomStoreView {
 	boolean contains(AID aid);
 
 	/**
-	 * Gets the {@link AID} associated with a certain aid
-	 * @param clock The clock
-	 * @return The {@link AID} associated with the given clock (if any)
+	 * Checks whether the given aid is (i.e. no longer pending).
+	 *
+	 * @param aid The aid
+	 * @return Whether the given aid is marked as "committed"
 	 */
-	Optional<AID> get(long clock);
+	boolean isCommitted(AID aid);
+
+	/**
+	 * Checks whether the given aid is pending (i.e. not committed).
+	 * @param aid The aid
+	 * @return Whether the given aid is marked as "pending"
+	 */
+	boolean isPending(AID aid);
+
+	/**
+	 * Gets the pending aids
+	 * @return The pending aids
+	 */
+	Set<AID> getPending();
+
+	/**
+	 * Gets the {@link AID} associated with a certain aid
+	 * @param logicalClock The logicalClock
+	 * @return The {@link AID} associated with the given logical clock (if any)
+	 */
+	Optional<AID> get(long logicalClock);
 
 	/**
 	 * Gets the atom associated with a certain aid

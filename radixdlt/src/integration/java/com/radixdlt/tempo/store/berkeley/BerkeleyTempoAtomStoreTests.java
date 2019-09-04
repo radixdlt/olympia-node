@@ -163,15 +163,10 @@ public class BerkeleyTempoAtomStoreTests extends RadixTestWithStores {
             //getFirst and getLast pointing to the same value
             //getNext and getPrev are not available
             softly.assertThat(tempoCursor.get()).isEqualTo(tempoAtoms.get(3).getAID());
-            try {
-                softly.assertThat((tempoCursor = tempoAtomStore.getFirst(tempoCursor)).get()).isEqualTo(tempoAtoms.get(3).getAID());
-                softly.assertThat((tempoCursor = tempoAtomStore.getLast(tempoCursor)).get()).isEqualTo(tempoAtoms.get(3).getAID());
-                softly.assertThat((tempoAtomStore.getNext(tempoCursor))).isNull();
-                softly.assertThat((tempoAtomStore.getPrev(tempoCursor))).isNull();
-            } catch (DatabaseException e) {
-                e.printStackTrace();
-                softly.fail("Cursor navigation failed", e);
-            }
+            softly.assertThat((tempoCursor = tempoAtomStore.getFirst(tempoCursor)).get()).isEqualTo(tempoAtoms.get(3).getAID());
+            softly.assertThat((tempoCursor = tempoAtomStore.getLast(tempoCursor)).get()).isEqualTo(tempoAtoms.get(3).getAID());
+            softly.assertThat((tempoAtomStore.getNext(tempoCursor))).isNull();
+            softly.assertThat((tempoAtomStore.getPrev(tempoCursor))).isNull();
         });
     }
 
@@ -186,31 +181,26 @@ public class BerkeleyTempoAtomStoreTests extends RadixTestWithStores {
             //Navigation in scope of shard 200 => (2,3,4)
             //Pointing Atom[2] - first element in shard
             softly.assertThat(tempoCursor.get()).isEqualTo(tempoAtoms.get(2).getAID());
-            try {
-                //Atom[2] getNext -> cursor pointing to Atom[3] - second element in shard
-                softly.assertThat((tempoCursor = tempoAtomStore.getNext(tempoCursor)).get()).isEqualTo(tempoAtoms.get(3).getAID());
+            //Atom[2] getNext -> cursor pointing to Atom[3] - second element in shard
+            softly.assertThat((tempoCursor = tempoAtomStore.getNext(tempoCursor)).get()).isEqualTo(tempoAtoms.get(3).getAID());
 
-                //Atom[3] getNext -> cursor pointing to Atom[4] - third element in shard
-                softly.assertThat((tempoCursor = tempoAtomStore.getNext(tempoCursor)).get()).isEqualTo(tempoAtoms.get(4).getAID());
+            //Atom[3] getNext -> cursor pointing to Atom[4] - third element in shard
+            softly.assertThat((tempoCursor = tempoAtomStore.getNext(tempoCursor)).get()).isEqualTo(tempoAtoms.get(4).getAID());
 
-                //Atom[4] getFirst -> cursor pointing to Atom[2] - first element in shard
-                softly.assertThat((tempoCursor = tempoAtomStore.getFirst(tempoCursor)).get()).isEqualTo(tempoAtoms.get(2).getAID());
+            //Atom[4] getFirst -> cursor pointing to Atom[2] - first element in shard
+            softly.assertThat((tempoCursor = tempoAtomStore.getFirst(tempoCursor)).get()).isEqualTo(tempoAtoms.get(2).getAID());
 
-                //Atom[2] getPrev -> cursor is null, no previous element for first element. Cursor is not saved, tempoCursor still pointing to Atom[2] - first element
-                softly.assertThat((tempoAtomStore.getPrev(tempoCursor))).isNull();
+            //Atom[2] getPrev -> cursor is null, no previous element for first element. Cursor is not saved, tempoCursor still pointing to Atom[2] - first element
+            softly.assertThat((tempoAtomStore.getPrev(tempoCursor))).isNull();
 
-                //Atom[2] getLast -> cursor pointing to Atom[4] - last element in shard
-                softly.assertThat((tempoCursor = tempoAtomStore.getLast(tempoCursor)).get()).isEqualTo(tempoAtoms.get(4).getAID());
+            //Atom[2] getLast -> cursor pointing to Atom[4] - last element in shard
+            softly.assertThat((tempoCursor = tempoAtomStore.getLast(tempoCursor)).get()).isEqualTo(tempoAtoms.get(4).getAID());
 
-                //Atom[4] getNext -> cursor is null, no next element for last element. Cursor is not saved, tempoCursor still pointing to Atom[4] - last element
-                softly.assertThat((tempoAtomStore.getNext(tempoCursor))).isNull();
+            //Atom[4] getNext -> cursor is null, no next element for last element. Cursor is not saved, tempoCursor still pointing to Atom[4] - last element
+            softly.assertThat((tempoAtomStore.getNext(tempoCursor))).isNull();
 
-                //Atom[4] getPrev -> cursor pointing to Atom[3] - element before last one
-                softly.assertThat((tempoCursor = tempoAtomStore.getPrev(tempoCursor)).get()).isEqualTo(tempoAtoms.get(3).getAID());
-            } catch (DatabaseException e) {
-                e.printStackTrace();
-                softly.fail("Cursor navigation failed", e);
-            }
+            //Atom[4] getPrev -> cursor pointing to Atom[3] - element before last one
+            softly.assertThat((tempoCursor = tempoAtomStore.getPrev(tempoCursor)).get()).isEqualTo(tempoAtoms.get(3).getAID());
         });
     }
 

@@ -11,6 +11,13 @@ import java.util.Set;
  * An entry-point for manipulating the state of a Tempo ledger.
  */
 public interface TempoAtomStore extends TempoAtomStoreView, Resource {
+	/**
+	 * Commits the atom with the given AID to a certain logical clock.
+	 * This irreversibly removes the atom from the pending set.
+	 * @param aid The aid
+	 * @param logicalClock The logical clock
+	 */
+	void commit(AID aid, long logicalClock);
 
 	/**
 	 * Stores an {@link com.radixdlt.Atom} with certain indices.

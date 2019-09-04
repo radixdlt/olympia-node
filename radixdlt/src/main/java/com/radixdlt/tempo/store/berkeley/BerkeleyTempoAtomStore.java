@@ -2,6 +2,7 @@ package com.radixdlt.tempo.store.berkeley;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.primitives.UnsignedBytes;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
@@ -10,17 +11,17 @@ import com.radixdlt.Atom;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
 import com.radixdlt.ledger.LedgerCursor;
-import com.radixdlt.ledger.LedgerIndex.LedgerIndexType;
 import com.radixdlt.ledger.LedgerIndex;
+import com.radixdlt.ledger.LedgerIndex.LedgerIndexType;
 import com.radixdlt.ledger.LedgerSearchMode;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
+import com.radixdlt.tempo.TempoAtom;
+import com.radixdlt.tempo.TempoException;
 import com.radixdlt.tempo.store.AtomConflict;
 import com.radixdlt.tempo.store.AtomStoreResult;
 import com.radixdlt.tempo.store.TempoAtomStore;
-import com.radixdlt.tempo.TempoAtom;
-import com.radixdlt.tempo.TempoException;
 import com.radixdlt.utils.Longs;
 import com.sleepycat.je.Cursor;
 import com.sleepycat.je.Database;
@@ -28,7 +29,6 @@ import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.DatabaseNotFoundException;
 import com.sleepycat.je.Environment;
-import com.sleepycat.je.Get;
 import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.SecondaryConfig;
@@ -45,7 +45,6 @@ import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.shards.ShardRange;
 import org.radix.shards.ShardSpace;
-import org.radix.time.TemporalVertex;
 import org.radix.utils.SystemProfiler;
 
 import java.util.ArrayList;
@@ -64,11 +63,15 @@ import static com.radixdlt.tempo.store.berkeley.TempoAtomIndices.SHARD_INDEX_PRE
 
 @Singleton
 public class BerkeleyTempoAtomStore implements TempoAtomStore {
+	private static final Logger logger = Logging.getLogger("store.atoms");
+
 	private static final String ATOM_INDICES_DB_NAME = "tempo2.atom_indices";
 	private static final String DUPLICATE_INDICES_DB_NAME = "tempo2.duplicated_indices";
 	private static final String UNIQUE_INDICES_DB_NAME = "tempo2.unique_indices";
+	private static final String PENDING_DB_NAME = "tempo2.pending";
 	private static final String ATOMS_DB_NAME = "tempo2.atoms";
-	private static final Logger logger = Logging.getLogger("store.atoms");
+
+	private static final long PREFIX_PENDING = Long.MAX_VALUE;
 
 	private final EUID self;
 	private final Serialization serialization;
@@ -81,6 +84,7 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 	private SecondaryDatabase uniqueIndices; // TempoAtoms by secondary unique indices (with prefixes)
 	private SecondaryDatabase duplicatedIndices; // TempoAtoms by secondary duplicate indices (with prefixes)
 	private Database atomIndices; // TempoAtomIndices by same primary keys
+	private Database pending; // AIDs marked as 'pending'
 
 	@Inject
 	public BerkeleyTempoAtomStore(
@@ -119,12 +123,18 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 		indicesConfig.setTransactional(true);
 		indicesConfig.setBtreeComparator(BerkeleyTempoAtomStore.AtomStorePackedPrimaryKeyComparator.class);
 
+		DatabaseConfig pendingConfig = new DatabaseConfig();
+		pendingConfig.setAllowCreate(true);
+		pendingConfig.setTransactional(true);
+		pendingConfig.setBtreeComparator(BerkeleyTempoAtomStore.AtomStorePackedPrimaryKeyComparator.class);
+
 		try {
 			Environment dbEnv = this.dbEnv.getEnvironment();
 			this.atoms = dbEnv.openDatabase(null, ATOMS_DB_NAME, primaryConfig);
 			this.uniqueIndices = dbEnv.openSecondaryDatabase(null, UNIQUE_INDICES_DB_NAME, this.atoms, uniqueIndicesConfig);
 			this.duplicatedIndices = dbEnv.openSecondaryDatabase(null, DUPLICATE_INDICES_DB_NAME, this.atoms, duplicateIndicesConfig);
 			this.atomIndices = dbEnv.openDatabase(null, ATOM_INDICES_DB_NAME, primaryConfig);
+			this.pending = dbEnv.openDatabase(null, PENDING_DB_NAME, pendingConfig);
 		} catch (Exception e) {
 			throw new TempoException("Error while opening databases", e);
 		}
@@ -146,6 +156,7 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 			env.truncateDatabase(transaction, UNIQUE_INDICES_DB_NAME, false);
 			env.truncateDatabase(transaction, DUPLICATE_INDICES_DB_NAME, false);
 			env.truncateDatabase(transaction, ATOM_INDICES_DB_NAME, false);
+			env.truncateDatabase(transaction, PENDING_DB_NAME, false);
 			transaction.commit();
 		} catch (DatabaseNotFoundException e) {
 			if (transaction != null) {
@@ -177,6 +188,9 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 		}
 		if (this.atomIndices != null) {
 			this.atomIndices.close();
+		}
+		if (this.pending != null) {
+			this.pending.close();
 		}
 	}
 
@@ -215,40 +229,26 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 		}
 	}
 
-	public boolean contains(byte[] partialAid) {
+	@Override
+	public boolean isCommitted(AID aid) {
+		return contains(aid) && !isPending(aid);
+	}
+
+	@Override
+	public boolean isPending(AID aid) {
 		long start = profiler.begin();
 		try {
-			DatabaseEntry key = new DatabaseEntry(LedgerIndex.from(ATOM_INDEX_PREFIX, partialAid));
-			return OperationStatus.SUCCESS == this.uniqueIndices.get(null, key, null, LockMode.DEFAULT);
+			DatabaseEntry key = new DatabaseEntry(aid.getBytes());
+			return OperationStatus.SUCCESS == this.pending.get(null, key, null, LockMode.DEFAULT);
 		} finally {
 			profiler.incrementFrom("ATOM_STORE:CONTAINS:CLOCK", start);
 		}
 	}
 
-	public List<AID> get(byte[] partialAid) {
-		long start = profiler.begin();
-		try (SecondaryCursor databaseCursor = toSecondaryCursor(LedgerIndex.LedgerIndexType.UNIQUE)) {
-			DatabaseEntry key = new DatabaseEntry(LedgerIndex.from(ATOM_INDEX_PREFIX, partialAid));
-			DatabaseEntry pKey = new DatabaseEntry();
-			if (databaseCursor.getSearchBothRange(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
-				ImmutableList.Builder<AID> matchingAids = ImmutableList.builder();
-				while (databaseCursor.getNextDup(key, pKey, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
-					AID matchingAid = AID.from(pKey.getData());
-					matchingAids.add(matchingAid);
-				}
-				return matchingAids.build();
-			} else {
-				return ImmutableList.of();
-			}
-		} finally {
-			profiler.incrementFrom("ATOM_STORE:GET:AID", start);
-		}
-	}
-
-	public Optional<AID> get(long clock) {
+	public Optional<AID> get(long logicalClock) {
 		long start = profiler.begin();
 		try (Cursor cursor = this.atoms.openCursor(null, null)) {
-			DatabaseEntry key = new DatabaseEntry(Longs.toByteArray(clock));
+			DatabaseEntry key = new DatabaseEntry(Longs.toByteArray(logicalClock));
 			DatabaseEntry value = new DatabaseEntry();
 			OperationStatus status = cursor.getSearchKeyRange(key, value, LockMode.DEFAULT);
 
@@ -292,12 +292,43 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 	}
 
 	@Override
+	public void commit(AID aid, long logicalClock) {
+		// delete from pending and move to committed
+		long start = profiler.begin();
+
+		Transaction transaction = dbEnv.getEnvironment().beginTransaction(null, null);
+		try {
+			DatabaseEntry pKey = new DatabaseEntry();
+			TempoAtomIndices indices = doGetIndices(transaction, aid, pKey);
+			DatabaseEntry value = new DatabaseEntry();
+			OperationStatus status = atoms.get(transaction, pKey, value, LockMode.DEFAULT);
+			if (status != OperationStatus.SUCCESS) {
+				fail("Getting pending atom '" + aid + "' failed with status " + status);
+			}
+			if (!doDelete(aid, transaction, pKey, indices)) {
+				fail("Delete of pending atom '" + aid + "' failed");
+			}
+
+			// transaction is aborted in doStore in case of conflict
+			AtomStoreResult result = doStore(logicalClock, aid, value.getData(), indices, transaction);
+			if (result.isSuccess()) {
+				transaction.commit();
+			}
+		} catch (Exception e) {
+			transaction.abort();
+			fail("Commit of pending atom '" + aid + "' failed", e);
+		} finally {
+			profiler.incrementFrom("ATOM_STORE:COMMIT", start);
+		}
+	}
+
+	@Override
 	public AtomStoreResult store(TempoAtom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
 		long start = profiler.begin();
 		Transaction transaction = dbEnv.getEnvironment().beginTransaction(null, null);
 		try {
 			// transaction is aborted in doStore in case of conflict
-			AtomStoreResult result = doStore(atom, uniqueIndices, duplicateIndices, transaction);
+			AtomStoreResult result = doStorePending(atom, uniqueIndices, duplicateIndices, transaction);
 			if (result.isSuccess()) {
 				transaction.commit();
 			}
@@ -323,7 +354,7 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 				}
 			}
 			// transaction is aborted in doStore in case of conflict
-			AtomStoreResult result = doStore(atom, uniqueIndices, duplicateIndices, transaction);
+			AtomStoreResult result = doStorePending(atom, uniqueIndices, duplicateIndices, transaction);
 			if (result.isSuccess()) {
 				transaction.commit();
 			}
@@ -337,20 +368,24 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 		throw new IllegalStateException("Should never reach here");
 	}
 
-	private AtomStoreResult doStore(TempoAtom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices, Transaction transaction) throws SerializationException {
-		TemporalVertex localTemporalVertex = atom.getTemporalProof().getVertexByNID(self);
-		if (localTemporalVertex == null) {
-			fail("Cannot store atom '" + atom.getAID() + "' without local temporal vertex");
-		}
-		long logicalClock = localTemporalVertex.getClock();
+	private AtomStoreResult doStorePending(TempoAtom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices, Transaction transaction) throws SerializationException {
+		DatabaseEntry key = new DatabaseEntry(atom.getAID().getBytes());
+		// TODO what to use as value?
+		pending.put(transaction, key, null);
+
+		byte[] atomData = serialization.toDson(atom, Output.PERSIST);
+		TempoAtomIndices indices = TempoAtomIndices.from(atom, uniqueIndices, duplicateIndices);
+		return doStore(PREFIX_PENDING, atom.getAID(), atomData, indices, transaction);
+	}
+
+	private AtomStoreResult doStore(long logicalClock, AID aid, byte[] atomData, TempoAtomIndices indices, Transaction transaction) throws SerializationException {
 		try {
-			byte[] aidBytes = atom.getAID().getBytes();
-			TempoAtomIndices indices = TempoAtomIndices.from(atom, uniqueIndices, duplicateIndices, logicalClock);
+			byte[] aidBytes = aid.getBytes();
 			DatabaseEntry pKey = new DatabaseEntry(Arrays.concatenate(Longs.toByteArray(logicalClock), aidBytes));
-			DatabaseEntry pData = new DatabaseEntry(serialization.toDson(atom, Output.PERSIST));
+			DatabaseEntry pData = new DatabaseEntry(atomData);
 
 			// put indices in temporary map for key creator to pick up
-			this.currentIndices.put(atom.getAID(), indices);
+			this.currentIndices.put(aid, indices);
 			OperationStatus status = this.atoms.putNoOverwrite(transaction, pKey, pData);
 			if (status != OperationStatus.SUCCESS) {
 				fail("Internal error, atom write failed with status " + status);
@@ -362,13 +397,14 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 				fail("Internal error, atom indices write failed with status " + status);
 			}
 		} catch (UniqueConstraintException e) {
-			logger.error("Unique indices of atom '" + atom.getAID() + "' are in conflict, aborting transaction");
+			logger.error("Unique indices of atom '" + aid + "' are in conflict, aborting transaction");
 			transaction.abort();
 
-			ImmutableMap<LedgerIndex, Atom> conflictingAtoms = doGetConflictingAtoms(uniqueIndices, null);
+			Atom atom = serialization.fromDson(atomData, Atom.class);
+			ImmutableMap<LedgerIndex, Atom> conflictingAtoms = doGetConflictingAtoms(indices.getUniqueIndices(), null);
 			return AtomStoreResult.conflict(new AtomConflict(atom, conflictingAtoms));
 		} finally {
-			this.currentIndices.remove(atom.getAID());
+			this.currentIndices.remove(aid);
 		}
 		return AtomStoreResult.success();
 	}
@@ -397,9 +433,21 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 	}
 
 	private boolean doDelete(AID aid, Transaction transaction) throws SerializationException {
+		if (isCommitted(aid)) {
+			fail("Attempted to delete committed atom '" + aid + "'");
+		}
+
 		DatabaseEntry pKey = new DatabaseEntry();
 		TempoAtomIndices indices = doGetIndices(transaction, aid, pKey);
+		return doDelete(aid, transaction, pKey, indices);
+	}
+
+	private boolean doDelete(AID aid, Transaction transaction, DatabaseEntry pKey, TempoAtomIndices indices) {
 		try {
+			OperationStatus status = atomIndices.delete(transaction, pKey);
+			if (status != OperationStatus.SUCCESS) {
+				fail("Deleting indices of atom '" + aid + "' failed with status " + status);
+			}
 			currentIndices.put(aid, indices);
 			return atoms.delete(transaction, pKey) == OperationStatus.SUCCESS;
 		} finally {
@@ -419,10 +467,6 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 		status = atomIndices.get(transaction, pKey, value, LockMode.DEFAULT);
 		if (status != OperationStatus.SUCCESS) {
 			fail("Getting indices of atom '" + aid + "' failed with status " + status);
-		}
-		status = atomIndices.delete(transaction, pKey);
-		if (status != OperationStatus.SUCCESS) {
-			fail("Deleting indices of atom '" + aid + "' failed with status " + status);
 		}
 
 		return serialization.fromDson(value.getData(), TempoAtomIndices.class);
@@ -492,6 +536,20 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 
 			return false;
 		}
+	}
+
+	@Override
+	public Set<AID> getPending() {
+		ImmutableSet.Builder<AID> pendingAids = ImmutableSet.builder();
+		try (Cursor cursor = this.pending.openCursor(null, null)) {
+			DatabaseEntry pKey = new DatabaseEntry();
+			OperationStatus status = cursor.getFirst(pKey, null, LockMode.DEFAULT);
+			while (status == OperationStatus.SUCCESS) {
+				AID aid = AID.from(pKey.getData());
+				pendingAids.add(aid);
+			}
+		}
+		return pendingAids.build();
 	}
 
 	// not used yet

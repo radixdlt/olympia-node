@@ -7,7 +7,7 @@ import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.tempo.AtomObserver;
 import com.radixdlt.tempo.Scheduler;
 import com.radixdlt.tempo.TempoAtom;
-import com.radixdlt.tempo.store.ConsensusStore;
+import com.radixdlt.tempo.store.ConfidenceStore;
 import com.radixdlt.tempo.store.SampleStore;
 import com.radixdlt.tempo.store.TempoAtomStoreView;
 import org.radix.logging.Logger;
@@ -38,7 +38,7 @@ public final class ConsensusController implements AtomObserver {
 
 	private final Scheduler scheduler;
 	private final TempoAtomStoreView storeView;
-	private final ConsensusStore consensusStore;
+	private final ConfidenceStore confidenceStore;
 	private final SampleStore sampleStore;
 	private final SampleRetriever sampleRetriever;
 	private final SampleNodeSelector sampleNodeSelector;
@@ -51,7 +51,7 @@ public final class ConsensusController implements AtomObserver {
 	public ConsensusController(
 		Scheduler scheduler,
 		TempoAtomStoreView storeView,
-		ConsensusStore consensusStore,
+		ConfidenceStore confidenceStore,
 		SampleStore sampleStore,
 		SampleRetriever sampleRetriever,
 		SampleNodeSelector sampleNodeSelector,
@@ -60,7 +60,7 @@ public final class ConsensusController implements AtomObserver {
 	) {
 		this.scheduler = Objects.requireNonNull(scheduler);
 		this.storeView = Objects.requireNonNull(storeView);
-		this.consensusStore = Objects.requireNonNull(consensusStore);
+		this.confidenceStore = Objects.requireNonNull(confidenceStore);
 		this.sampleStore = Objects.requireNonNull(sampleStore);
 		this.sampleRetriever = Objects.requireNonNull(sampleRetriever);
 		this.sampleNodeSelector = Objects.requireNonNull(sampleNodeSelector);
@@ -70,14 +70,14 @@ public final class ConsensusController implements AtomObserver {
 
 	// FIXME open resources in constructor so we can just do this in constructor instead
 	public void onOpen() {
-		Set<AID> uncommitted = consensusStore.getUncommitted();
+		Set<AID> uncommitted = confidenceStore.getUncommitted();
 		for (AID aid : uncommitted) {
 			Optional<TempoAtom> uncommittedAtom = storeView.get(aid);
 			if (uncommittedAtom.isPresent()) {
 				pendingAtoms.put(uncommittedAtom.get(), storeView.getUniqueIndices(aid));
 			} else {
 				log.warn("Consensus store contains uncommitted atom '" + aid + "' which no longer exists, removing");
-				consensusStore.delete(aid);
+				confidenceStore.delete(aid);
 			}
 		}
 		pendingAtoms.forEachPending(this::continueConsensus);
@@ -152,7 +152,7 @@ public final class ConsensusController implements AtomObserver {
 	}
 
 	private void increaseConfidence(TempoAtom preference) {
-		int confidence = consensusStore.increaseConfidence(preference.getAID());
+		int confidence = confidenceStore.increaseConfidence(preference.getAID());
 		if (confidence > CONFIDENCE_THRESHOLD) {
 			commit(preference);
 		} else {
@@ -162,14 +162,14 @@ public final class ConsensusController implements AtomObserver {
 
 	private void change(TempoAtom oldPreference, AID newPreference) {
 		pendingAtoms.remove(oldPreference.getAID());
-		consensusStore.delete(oldPreference.getAID());
+		confidenceStore.delete(oldPreference.getAID());
 		consensusReceptor.change(oldPreference, newPreference);
 	}
 
 	private void commit(TempoAtom preference) {
 		log.info("Committing to '" + preference.getAID() + "'");
 		pendingAtoms.remove(preference.getAID());
-		consensusStore.commit(preference.getAID());
+		confidenceStore.commit(preference.getAID());
 		consensusReceptor.commit(preference);
 	}
 
@@ -183,6 +183,6 @@ public final class ConsensusController implements AtomObserver {
 	@Override
 	public void onDeleted(AID aid) {
 		pendingAtoms.remove(aid);
-		consensusStore.delete(aid);
+		confidenceStore.delete(aid);
 	}
 }

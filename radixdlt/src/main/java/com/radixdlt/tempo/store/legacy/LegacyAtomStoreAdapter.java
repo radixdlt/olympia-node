@@ -45,6 +45,26 @@ public class LegacyAtomStoreAdapter implements TempoAtomStore {
 	}
 
 	@Override
+	public Set<AID> getPending() {
+		throw new UnsupportedOperationException("Not implemented");
+	}
+
+	@Override
+	public void commit(AID aid, long logicalClock) {
+		throw new UnsupportedOperationException("Not implemented");
+	}
+
+	@Override
+	public boolean isCommitted(AID aid) {
+		throw new UnsupportedOperationException("Not implemented");
+	}
+
+	@Override
+	public boolean isPending(AID aid) {
+		throw new UnsupportedOperationException("Not implemented");
+	}
+
+	@Override
 	public boolean contains(AID aid) {
 		try {
 			return atomStoreSupplier.get().hasAtom(aid);
@@ -78,11 +98,11 @@ public class LegacyAtomStoreAdapter implements TempoAtomStore {
 	}
 
 	@Override
-	public Optional<AID> get(long clock) {
+	public Optional<AID> get(long logicalClock) {
 		try {
-			return Optional.ofNullable(atomStoreSupplier.get().getAtom(clock).getAtomID());
+			return Optional.ofNullable(atomStoreSupplier.get().getAtom(logicalClock).getAtomID());
 		} catch (DatabaseException e) {
-			throw new TempoException("Error while querying getAtom(" + clock + ")", e);
+			throw new TempoException("Error while querying getAtom(" + logicalClock + ")", e);
 		}
 	}
 
