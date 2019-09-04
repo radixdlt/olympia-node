@@ -11,7 +11,7 @@ public class PeerPredicateTest {
 
 	@Test
 	public void testAnd() {
-		//   A   |   B   | A ^ B
+		//   A   |   B   | A & B
 		// ------+-------+------
 		// false | false | false
 		// true  | false | false
@@ -25,7 +25,7 @@ public class PeerPredicateTest {
 
 	@Test
 	public void testNegate() {
-		//   A   |   ¬A
+		//   A   |  !A
 		// ------+------
 		// false | true
 		// true  | false
@@ -35,7 +35,7 @@ public class PeerPredicateTest {
 
 	@Test
 	public void testOr() {
-		//   A   |   B   | A v B
+		//   A   |   B   | A | B
 		// ------+-------+------
 		// false | false | false
 		// true  | false | true
