@@ -36,8 +36,7 @@ public final class LegacyUtils {
 		return new TempoAtom(
 			new LegacyAtomContentWrapper(legacyAtom),
 			legacyAtom.getAID(),
-			legacyAtom.getShards(),
-			legacyAtom.getTemporalProof()
+			legacyAtom.getShards()
 		);
 	}
 

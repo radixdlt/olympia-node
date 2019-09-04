@@ -37,23 +37,14 @@ public final class TempoAtom implements Atom {
 	@DsonOutput(value = {DsonOutput.Output.ALL})
 	private ImmutableSet<Long> shards;
 
-	@JsonProperty("temporalProof")
-	@DsonOutput(value = {DsonOutput.Output.API, DsonOutput.Output.WIRE, DsonOutput.Output.PERSIST})
-	private TemporalProof temporalProof;
-
 	private TempoAtom() {
 		// For serializer
 	}
 
 	public TempoAtom(AtomContent content, AID aid, Set<Long> shards) {
-		this(content, aid, shards, null);
-	}
-
-	public TempoAtom(AtomContent content, AID aid, Set<Long> shards, TemporalProof temporalProof) {
 		this.content = Objects.requireNonNull(content, "content is required");
 		this.aid = Objects.requireNonNull(aid, "aid is required");
 		this.shards = ImmutableSet.copyOf(shards);
-		this.temporalProof = temporalProof;
 	}
 
 	@Override
@@ -69,14 +60,6 @@ public final class TempoAtom implements Atom {
 	@Override
 	public ImmutableSet<Long> getShards() {
 		return this.shards;
-	}
-
-	public TemporalProof getTemporalProof() {
-		if (this.temporalProof == null) {
-			this.temporalProof = new TemporalProof(this.getAID());
-		}
-
-		return this.temporalProof;
 	}
 
 	@Override

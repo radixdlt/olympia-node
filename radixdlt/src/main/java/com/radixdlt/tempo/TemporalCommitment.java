@@ -21,11 +21,11 @@ public final class TemporalCommitment {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final AID aid;
 
-	@JsonProperty("aid")
+	@JsonProperty("logicalClock")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final long logicalClock;
 
-	@JsonProperty("aid")
+	@JsonProperty("commitment")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final Hash commitment;
 

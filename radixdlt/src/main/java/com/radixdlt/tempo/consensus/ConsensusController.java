@@ -8,7 +8,6 @@ import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.tempo.AtomObserver;
 import com.radixdlt.tempo.Scheduler;
 import com.radixdlt.tempo.TempoAtom;
-import com.radixdlt.tempo.TempoException;
 import com.radixdlt.tempo.store.ConfidenceStore;
 import com.radixdlt.tempo.store.SampleStore;
 import com.radixdlt.tempo.store.TempoAtomStore;
@@ -17,7 +16,6 @@ import org.radix.logging.Logging;
 import org.radix.network2.addressbook.AddressBook;
 import org.radix.network2.addressbook.Peer;
 import org.radix.time.TemporalProof;
-import org.radix.time.TemporalVertex;
 
 import java.util.Comparator;
 import java.util.HashMap;

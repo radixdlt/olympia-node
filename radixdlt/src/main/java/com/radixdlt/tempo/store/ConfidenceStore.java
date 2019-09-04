@@ -6,7 +6,5 @@ import com.radixdlt.tempo.Resource;
 public interface ConfidenceStore extends Resource {
 	int increaseConfidence(AID aid);
 
-	void resetConfidence(AID aid);
-
 	boolean delete(AID aid);
 }
