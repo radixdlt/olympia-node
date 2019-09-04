@@ -107,7 +107,11 @@ abstract class TicTacToeBaseParticle extends Particle {
   @DsonOutput(Output.ALL)
   private final ImmutableList<TicTacToeSquare> board;
 
-  TicTacToeBaseParticle(RadixAddress xPlayer, RadixAddress oPlayer, ImmutableList<TicTacToeSquare> board) {
+  TicTacToeBaseParticle(
+  	RadixAddress xPlayer,
+  	RadixAddress oPlayer,
+    ImmutableList<TicTacToeSquare> board
+  ) {
     super(ImmutableSet.of(xPlayer.getUID(), oPlayer.getUID()));
   
     this.xPlayer = xPlayer;
@@ -132,7 +136,11 @@ abstract class TicTacToeBaseParticle extends Particle {
 ```java
 @SerializerId2("o-to-move-particle")
 class OToMoveParticle extends TicTacToeBaseParticle {
-  OToMoveParticle(RadixAddress xPlayer, RadixAddress oPlayer, ImmutableList<TicTacToeSquare> board) {
+  OToMoveParticle(
+    RadixAddress xPlayer,
+    RadixAddress oPlayer,
+    ImmutableList<TicTacToeSquare> board
+  ) {
     super(xPlayer, oPlayer, board);
   }
 }
@@ -141,7 +149,11 @@ class OToMoveParticle extends TicTacToeBaseParticle {
 ```java
 @SerializerId2("x-to-move-particle")
 class XToMoveParticle extends TicTacToeBaseParticle {
-  XToMoveParticle(RadixAddress xPlayer, RadixAddress oPlayer, ImmutableList<TicTacToeSquare> board) {
+  XToMoveParticle(
+    RadixAddress xPlayer,
+    RadixAddress oPlayer,
+    ImmutableList<TicTacToeSquare> board
+  ) {
     super(xPlayer, oPlayer, board);
   }
 }
@@ -150,7 +162,11 @@ class XToMoveParticle extends TicTacToeBaseParticle {
 ```java
 @SerializerId2("o-wins-particle")
 class OWinsParticle extends TicTacToeBaseParticle {
-  OWinsParticle(RadixAddress xPlayer, RadixAddress oPlayer, ImmutableList<TicTacToeSquare> board) {
+  OWinsParticle(
+    RadixAddress xPlayer,
+    RadixAddress oPlayer,
+    ImmutableList<TicTacToeSquare> board
+  ) {
     super(xPlayer, oPlayer, board);
   }
 }
@@ -159,7 +175,11 @@ class OWinsParticle extends TicTacToeBaseParticle {
 ```java
 @SerializerId2("x-wins-particle")
 class XWinsParticle extends TicTacToeBaseParticle {
-  XWinsParticle(RadixAddress xPlayer, RadixAddress oPlayer, ImmutableList<TicTacToeSquare> board) {
+  XWinsParticle(
+    RadixAddress xPlayer,
+    RadixAddress oPlayer,
+    ImmutableList<TicTacToeSquare> board
+  ) {
     super(xPlayer, oPlayer, board);
   }
 }
@@ -168,7 +188,11 @@ class XWinsParticle extends TicTacToeBaseParticle {
 ```java
 @SerializerId2("draw-particle")
 class DrawParticle extends TicTacToeBaseParticle {
-  DrawParticle(RadixAddress xPlayer, RadixAddress oPlayer, ImmutableList<TicTacToeSquare> board) {
+  DrawParticle(
+    RadixAddress xPlayer,
+    RadixAddress oPlayer,
+    ImmutableList<TicTacToeSquare> board
+  ) {
     super(xPlayer, oPlayer, board);
   }
 }
@@ -180,12 +204,16 @@ In our Constraint Scrypt we now need to register these particles:
 
 ```java
 public class TicTacToeConstraintScrypt implements ConstraintScrypt {
-  private static Result staticCheck(TicTacToeBaseParticle ticTacToe, GameStatus requiredGameStatus) {
+  private static Result staticCheck(
+    TicTacToeBaseParticle ticTacToe,
+    GameStatus requiredGameStatus
+  ) {
     if (ticTacToe.getBoard() == null) {
       return Result.error("Tic Tac Toe board cannot be null.");
     }
 
-    if (ticTacToe.getBoard().size() != TicTacToeBaseParticle.TIC_TAC_TOE_BOARD_SIZE) {
+    if (ticTacToe.getBoard().size()
+      != TicTacToeBaseParticle.TIC_TAC_TOE_BOARD_SIZE) {
       return Result.error("Tic Tac Toe board must be size 9.");
     }
 
@@ -209,17 +237,21 @@ public class TicTacToeConstraintScrypt implements ConstraintScrypt {
       if (board.get(line.get(0)) != TicTacToeSquare.EMPTY
         && board.get(line.get(0)) == board.get(line.get(1))
         && board.get(line.get(1)) == board.get(line.get(2))) {
-        gameStatus = board.get(line.get(0)) == TicTacToeSquare.X ? GameStatus.X_WINS : GameStatus.O_WINS;
+        gameStatus = board.get(line.get(0)) == TicTacToeSquare.X
+          ? GameStatus.X_WINS : GameStatus.O_WINS;
         break;
       }
     }
 
     if (gameStatus == null) {
-      gameStatus = ticTacToe.getBoard().stream().allMatch(s -> s != TicTacToeSquare.EMPTY) ? GameStatus.DRAW : GameStatus.IN_PROGRESS;
+      gameStatus = ticTacToe.getBoard().stream()
+      .allMatch(s -> s != TicTacToeSquare.EMPTY)
+        ? GameStatus.DRAW : GameStatus.IN_PROGRESS;
     }
 
     if (gameStatus != requiredGameStatus) {
-      return Result.error("Required game state is " + requiredGameStatus + " but was " + gameStatus);
+      return Result.error("Required game state is " + requiredGameStatus
+        + " but was " + gameStatus);
     }
 
     return Result.success();
@@ -277,24 +309,52 @@ public class TicTacToeConstraintScrypt implements ConstraintScrypt {
   
 // ...
 
-    TransitionToken<VoidParticle, VoidUsedData, XToMoveParticle, VoidUsedData> newGameToken = new TransitionToken<>(
-      VoidParticle.class, TypeToken.of(VoidUsedData.class), XToMoveParticle.class, TypeToken.of(VoidUsedData.class)
-    );
-    TransitionToken<XToMoveParticle, VoidUsedData, OToMoveParticle, VoidUsedData> xMovesToken = new TransitionToken<>(
-      XToMoveParticle.class, TypeToken.of(VoidUsedData.class), OToMoveParticle.class, TypeToken.of(VoidUsedData.class)
-    );
-    TransitionToken<OToMoveParticle, VoidUsedData, XToMoveParticle, VoidUsedData> oMovesToken = new TransitionToken<>(
-      OToMoveParticle.class, TypeToken.of(VoidUsedData.class), XToMoveParticle.class, TypeToken.of(VoidUsedData.class)
-    );
-    TransitionToken<OToMoveParticle, VoidUsedData, OWinsParticle, VoidUsedData> oWinsToken = new TransitionToken<>(
-      OToMoveParticle.class, TypeToken.of(VoidUsedData.class), OWinsParticle.class, TypeToken.of(VoidUsedData.class)
-    );
-    TransitionToken<XToMoveParticle, VoidUsedData, XWinsParticle, VoidUsedData> xWinsToken = new TransitionToken<>(
-      XToMoveParticle.class, TypeToken.of(VoidUsedData.class), XWinsParticle.class, TypeToken.of(VoidUsedData.class)
-    );
-    TransitionToken<XToMoveParticle, VoidUsedData, DrawParticle, VoidUsedData> drawsToken = new TransitionToken<>(
-      XToMoveParticle.class, TypeToken.of(VoidUsedData.class), DrawParticle.class, TypeToken.of(VoidUsedData.class)
-    );
+    TransitionToken<VoidParticle, VoidUsedData, XToMoveParticle, VoidUsedData>
+      newGameToken = new TransitionToken<>(
+        VoidParticle.class,
+        TypeToken.of(VoidUsedData.class),
+        XToMoveParticle.class,
+        TypeToken.of(VoidUsedData.class)
+      );
+    
+    TransitionToken<XToMoveParticle, VoidUsedData, OToMoveParticle, VoidUsedData>
+      xMovesToken = new TransitionToken<>(
+        XToMoveParticle.class,
+        TypeToken.of(VoidUsedData.class),
+        OToMoveParticle.class,
+        TypeToken.of(VoidUsedData.class)
+      );
+    
+    TransitionToken<OToMoveParticle, VoidUsedData, XToMoveParticle, VoidUsedData>
+      oMovesToken = new TransitionToken<>(
+        OToMoveParticle.class,
+        TypeToken.of(VoidUsedData.class),
+        XToMoveParticle.class,
+        TypeToken.of(VoidUsedData.class)
+      );
+    
+    TransitionToken<OToMoveParticle, VoidUsedData, OWinsParticle, VoidUsedData>
+      oWinsToken = new TransitionToken<>(
+        OToMoveParticle.class,
+        TypeToken.of(VoidUsedData.class),
+        OWinsParticle.class,
+        TypeToken.of(VoidUsedData.class)
+      );
+    
+    TransitionToken<XToMoveParticle, VoidUsedData, XWinsParticle, VoidUsedData>
+      xWinsToken = new TransitionToken<>(
+        XToMoveParticle.class,
+        TypeToken.of(VoidUsedData.class),
+        XWinsParticle.class,
+        TypeToken.of(VoidUsedData.class)
+      );
+    TransitionToken<XToMoveParticle, VoidUsedData, DrawParticle, VoidUsedData>
+      drawsToken = new TransitionToken<>(
+        XToMoveParticle.class,
+        TypeToken.of(VoidUsedData.class),
+        DrawParticle.class,
+        TypeToken.of(VoidUsedData.class)
+      );
   }
 }
 ```
@@ -326,29 +386,36 @@ public class TicTacToeConstraintScrypt implements ConstraintScrypt {
   
 // ...
 
-    os.createTransition(newGameToken, new TransitionProcedure<VoidParticle, VoidUsedData, XToMoveParticle, VoidUsedData>() {
-      @Override
-      public Result precondition(VoidParticle inputParticle, VoidUsedData inputUsed, XToMoveParticle outputParticle, VoidUsedData outputUsed) {
-        for (int squareIndex = 0; squareIndex < 9; squareIndex++) {
-          TicTacToeSquare nextSquareState = outputParticle.getBoard().get(squareIndex);
+    os.createTransition(
+      newGameToken,
+      new TransitionProcedure<VoidParticle, VoidUsedData, XToMoveParticle, VoidUsedData>() {
+        @Override
+        public Result precondition(
+          VoidParticle inputParticle,
+          VoidUsedData inputUsed,
+          XToMoveParticle outputParticle,
+          VoidUsedData outputUsed
+        ) {
+          for (int squareIndex = 0; squareIndex < 9; squareIndex++) {
+            TicTacToeSquare nextSquareState = outputParticle.getBoard().get(squareIndex);
 
-          if (nextSquareState != TicTacToeSquare.EMPTY) {
-            return Result.error("Game must start with an empty board");
+            if (nextSquareState != TicTacToeSquare.EMPTY) {
+              return Result.error("Game must start with an empty board");
+            }
           }
+
+          return Result.success();
         }
 
-        return Result.success();
-      }
+        @Override
+        public UsedCompute<VoidParticle, VoidUsedData, XToMoveParticle, VoidUsedData> inputUsedCompute() {
+          return (in, inUsed, out, outUsed) -> Optional.empty();
+        }
 
-      @Override
-      public UsedCompute<VoidParticle, VoidUsedData, XToMoveParticle, VoidUsedData> inputUsedCompute() {
-        return (in, inUsed, out, outUsed) -> Optional.empty();
-      }
-
-      @Override
-      public UsedCompute<VoidParticle, VoidUsedData, XToMoveParticle, VoidUsedData> outputUsedCompute() {
-        return (in, inUsed, out, outUsed) -> Optional.empty();
-      }
+        @Override
+        public UsedCompute<VoidParticle, VoidUsedData, XToMoveParticle, VoidUsedData> outputUsedCompute() {
+          return (in, inUsed, out, outUsed) -> Optional.empty();
+        }
 
       @Override
       public WitnessValidator<VoidParticle> inputWitnessValidator() {
@@ -403,7 +470,8 @@ public class TicTacToeRunner {
       .setParticleStaticCheck(cmAtomOS.buildParticleStaticCheck())
       .setParticleTransitionProcedures(cmAtomOS.buildTransitionProcedures())
       .build();
-    InMemoryEngineStore<BasicRadixEngineAtom> engineStore = new InMemoryEngineStore<>();
+    InMemoryEngineStore<BasicRadixEngineAtom> engineStore
+      = new InMemoryEngineStore<>();
     RadixEngine<BasicRadixEngineAtom> engine = new RadixEngine<>(
       cm,
       cmAtomOS.buildVirtualLayer(),
@@ -435,7 +503,8 @@ public class TicTacToeRunner {
   ) throws CryptoException {
 
     // Program the board transition
-    ImmutableList.Builder<CMMicroInstruction> microInstructions = ImmutableList.builder();
+    ImmutableList.Builder<CMMicroInstruction> microInstructions
+      = ImmutableList.builder();
     if (prevBoard != null) {
       microInstructions.add(CMMicroInstruction.checkSpin(prevBoard, Spin.UP));
       microInstructions.add(CMMicroInstruction.push(prevBoard));
@@ -457,7 +526,12 @@ public class TicTacToeRunner {
   
 // ...
 
-    BasicRadixEngineAtom atom = buildAtom("Legal Initial board", null, initialBoard, xPlayer);
+    BasicRadixEngineAtom atom = buildAtom(
+      "Legal Initial board",
+      null,
+      initialBoard,
+      xPlayer
+    );
     
     engine.store(atom, new AtomEventListener<BasicRadixEngineAtom>() {
       @Override
@@ -466,8 +540,13 @@ public class TicTacToeRunner {
       }
 
       @Override
-      public void onStateConflict(BasicRadixEngineAtom cmAtom, DataPointer issueParticle, BasicRadixEngineAtom conflictingAtom) {
-        System.out.println("ERROR:   " + cmAtom + " Conflict with atom " + conflictingAtom);
+      public void onStateConflict(
+        BasicRadixEngineAtom cmAtom,
+        DataPointer issueParticle,
+        BasicRadixEngineAtom conflictingAtom
+      ) {
+        System.out.println("ERROR:   " + cmAtom + " Conflict with atom "
+          + conflictingAtom);
       }
 
       @Override
