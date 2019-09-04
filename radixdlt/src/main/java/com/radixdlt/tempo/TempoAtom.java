@@ -33,10 +33,6 @@ public final class TempoAtom implements Atom {
 	@DsonOutput(value = {DsonOutput.Output.ALL})
 	private AID aid;
 
-	@JsonProperty("timestamp")
-	@DsonOutput(value = {DsonOutput.Output.ALL})
-	private long timestamp;
-
 	@JsonProperty("shards")
 	@DsonOutput(value = {DsonOutput.Output.ALL})
 	private ImmutableSet<Long> shards;
@@ -49,14 +45,13 @@ public final class TempoAtom implements Atom {
 		// For serializer
 	}
 
-	public TempoAtom(AtomContent content, AID aid, long timestamp, Set<Long> shards) {
-		this(content, aid, timestamp, shards, null);
+	public TempoAtom(AtomContent content, AID aid, Set<Long> shards) {
+		this(content, aid, shards, null);
 	}
 
-	public TempoAtom(AtomContent content, AID aid, long timestamp, Set<Long> shards, TemporalProof temporalProof) {
+	public TempoAtom(AtomContent content, AID aid, Set<Long> shards, TemporalProof temporalProof) {
 		this.content = Objects.requireNonNull(content, "content is required");
 		this.aid = Objects.requireNonNull(aid, "aid is required");
-		this.timestamp = timestamp;
 		this.shards = ImmutableSet.copyOf(shards);
 		this.temporalProof = temporalProof;
 	}
@@ -74,11 +69,6 @@ public final class TempoAtom implements Atom {
 	@Override
 	public ImmutableSet<Long> getShards() {
 		return this.shards;
-	}
-
-	@Override
-	public long getTimestamp() {
-		return this.timestamp;
 	}
 
 	public TemporalProof getTemporalProof() {
@@ -104,7 +94,6 @@ public final class TempoAtom implements Atom {
 		return new TempoAtom(
 			this.content,
 			this.aid,
-			this.timestamp,
 			this.shards,
 			temporalProof
 		);

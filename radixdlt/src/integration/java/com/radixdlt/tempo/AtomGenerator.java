@@ -44,8 +44,7 @@ public class AtomGenerator {
         TempoAtom atom = new TempoAtom(
                 content,
                 AID.from(pKey),
-                System.currentTimeMillis(),
-                ImmutableSet.of(Longs.fromByteArray(pKey))
+            ImmutableSet.of(Longs.fromByteArray(pKey))
         );
         return atom;
     }
@@ -59,7 +58,6 @@ public class AtomGenerator {
         return new TempoAtom(
                 atom.getContent(),
                 atom.getAID(),
-                atom.getTimestamp(),
                 atom.getShards()
         );
     }

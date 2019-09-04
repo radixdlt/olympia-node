@@ -265,7 +265,6 @@ public final class Tempo extends Plugin implements Ledger, ConsensusReceptor {
 			return new TempoAtom(
 				atom.getContent(),
 				atom.getAID(),
-				atom.getTimestamp(),
 				atom.getShards()
 			);
 		}

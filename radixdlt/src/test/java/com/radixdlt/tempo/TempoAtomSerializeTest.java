@@ -15,7 +15,6 @@ public class TempoAtomSerializeTest extends SerializeMessageObject<TempoAtom> {
 				new byte[]{6, 7, 8, 9, 10}
 			),
 			AID.from(Hash.ZERO_HASH.toByteArray()),
-			System.currentTimeMillis(),
 			ImmutableSet.of(
 				1L,
 				2L,
