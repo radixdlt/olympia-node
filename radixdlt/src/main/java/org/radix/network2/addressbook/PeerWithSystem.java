@@ -59,7 +59,7 @@ public final class PeerWithSystem extends Peer {
 			.filter(t -> t.name().equals(transportName))
 			.findAny()
 			.map(TransportInfo::metadata)
-			.orElseThrow(() -> new TransportException(String.format("Peer %s has no transport %s", toString(), transportName)));
+			.orElseThrow(() -> new TransportException(String.format("Peer %s has no transport %s", this.getNID(), transportName)));
 	}
 
 	@Override
