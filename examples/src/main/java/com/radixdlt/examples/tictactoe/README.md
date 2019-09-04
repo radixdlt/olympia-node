@@ -72,7 +72,7 @@ We will now show how this is coded into the Radix Engine.
 Before we can program the engine we need an entrypoint for our new code. This is done by creating a
 `ConstraintScrypt` which has a `main()` method entrypoint similar to regular applications. 
 
-```
+```java
 public class TicTacToeConstraintScrypt implements ConstraintScrypt {
   @Override
   public void main(SysCalls os) {
@@ -90,7 +90,7 @@ extended state machine and define the data each of these states will have. Becau
 the same in all five states (we just need a board and the two player playing) we'll create a
 `TicTacToeBaseParticle.java` which the five states can simply extend:
 
-```
+```java
 abstract class TicTacToeBaseParticle extends Particle {
   enum TicTacToeSquare { X, O, EMPTY }
   public static final int TIC_TAC_TOE_BOARD_SIZE = 9;
@@ -129,8 +129,8 @@ abstract class TicTacToeBaseParticle extends Particle {
 }
 ```
 
-```
-SerializerId2("o-to-move-particle")
+```java
+@SerializerId2("o-to-move-particle")
 class OToMoveParticle extends TicTacToeBaseParticle {
   OToMoveParticle(RadixAddress xPlayer, RadixAddress oPlayer, ImmutableList<TicTacToeSquare> board) {
     super(xPlayer, oPlayer, board);
@@ -138,7 +138,7 @@ class OToMoveParticle extends TicTacToeBaseParticle {
 }
 ```
 
-```
+```java
 @SerializerId2("x-to-move-particle")
 class XToMoveParticle extends TicTacToeBaseParticle {
   XToMoveParticle(RadixAddress xPlayer, RadixAddress oPlayer, ImmutableList<TicTacToeSquare> board) {
@@ -147,7 +147,7 @@ class XToMoveParticle extends TicTacToeBaseParticle {
 }
 ```
 
-```
+```java
 @SerializerId2("o-wins-particle")
 class OWinsParticle extends TicTacToeBaseParticle {
   OWinsParticle(RadixAddress xPlayer, RadixAddress oPlayer, ImmutableList<TicTacToeSquare> board) {
@@ -156,7 +156,7 @@ class OWinsParticle extends TicTacToeBaseParticle {
 }
 ```
 
-```
+```java
 @SerializerId2("x-wins-particle")
 class XWinsParticle extends TicTacToeBaseParticle {
   XWinsParticle(RadixAddress xPlayer, RadixAddress oPlayer, ImmutableList<TicTacToeSquare> board) {
@@ -165,7 +165,7 @@ class XWinsParticle extends TicTacToeBaseParticle {
 }
 ```
 
-```
+```java
 @SerializerId2("draw-particle")
 class DrawParticle extends TicTacToeBaseParticle {
   DrawParticle(RadixAddress xPlayer, RadixAddress oPlayer, ImmutableList<TicTacToeSquare> board) {
@@ -178,7 +178,7 @@ and content based hashing purposes.
 
 In our Constraint Scrypt we now need to register these particles:
 
-```
+```java
 public class TicTacToeConstraintScrypt implements ConstraintScrypt {
   private static Result staticCheck(TicTacToeBaseParticle ticTacToe, GameStatus requiredGameStatus) {
     if (ticTacToe.getBoard() == null) {
@@ -203,7 +203,6 @@ public class TicTacToeConstraintScrypt implements ConstraintScrypt {
       return Result.error("O player cannot be null.");
     }
 
-    // Compute what the new game state is
     GameStatus gameStatus = null;
     for (ImmutableList<Integer> line : LINES) {
       ImmutableList<TicTacToeSquare> board = ticTacToe.getBoard();
@@ -219,7 +218,6 @@ public class TicTacToeConstraintScrypt implements ConstraintScrypt {
       gameStatus = ticTacToe.getBoard().stream().allMatch(s -> s != TicTacToeSquare.EMPTY) ? GameStatus.DRAW : GameStatus.IN_PROGRESS;
     }
 
-    // Check that the game state matches
     if (gameStatus != requiredGameStatus) {
       return Result.error("Required game state is " + requiredGameStatus + " but was " + gameStatus);
     }
@@ -269,15 +267,15 @@ their State definition.
 We now need to code in the transitions of our state machine. For the engine, this is done via
 Transition Tokens. Based on our earlier state machine we've got six transitions to code up:
 
-```
+```java
 public class TicTacToeConstraintScrypt implements ConstraintScrypt {
-
-...
+	
+// ...
 
   @Override
   public void main(SysCalls os) {
   
-...
+// ...
 
     TransitionToken<VoidParticle, VoidUsedData, XToMoveParticle, VoidUsedData> newGameToken = new TransitionToken<>(
       VoidParticle.class, TypeToken.of(VoidUsedData.class), XToMoveParticle.class, TypeToken.of(VoidUsedData.class)
@@ -318,58 +316,60 @@ them.
 Transition procedures contain the logic asserting that given the transition token and the Particle
 Data associated with the input and outputs of the Transition token is valid.
 
-```
+```java
 public class TicTacToeConstraintScrypt implements ConstraintScrypt {
 
-...
+// ...
 
   @Override
   public void main(SysCalls os) {
   
-...
+// ...
 
-  os.createTransition(newGameToken, new TransitionProcedure<VoidParticle, VoidUsedData, XToMoveParticle, VoidUsedData>() {
-    @Override
-    public Result precondition(VoidParticle inputParticle, VoidUsedData inputUsed, XToMoveParticle outputParticle, VoidUsedData outputUsed) {
-      for (int squareIndex = 0; squareIndex < 9; squareIndex++) {
-        TicTacToeSquare nextSquareState = outputParticle.getBoard().get(squareIndex);
+    os.createTransition(newGameToken, new TransitionProcedure<VoidParticle, VoidUsedData, XToMoveParticle, VoidUsedData>() {
+      @Override
+      public Result precondition(VoidParticle inputParticle, VoidUsedData inputUsed, XToMoveParticle outputParticle, VoidUsedData outputUsed) {
+        for (int squareIndex = 0; squareIndex < 9; squareIndex++) {
+          TicTacToeSquare nextSquareState = outputParticle.getBoard().get(squareIndex);
 
-        if (nextSquareState != TicTacToeSquare.EMPTY) {
-          return Result.error("Game must start with an empty board");
+          if (nextSquareState != TicTacToeSquare.EMPTY) {
+            return Result.error("Game must start with an empty board");
+          }
         }
+
+        return Result.success();
       }
 
-      return Result.success();
-    }
+      @Override
+      public UsedCompute<VoidParticle, VoidUsedData, XToMoveParticle, VoidUsedData> inputUsedCompute() {
+        return (in, inUsed, out, outUsed) -> Optional.empty();
+      }
 
-    @Override
-    public UsedCompute<VoidParticle, VoidUsedData, XToMoveParticle, VoidUsedData> inputUsedCompute() {
-      return (in, inUsed, out, outUsed) -> Optional.empty();
-    }
+      @Override
+      public UsedCompute<VoidParticle, VoidUsedData, XToMoveParticle, VoidUsedData> outputUsedCompute() {
+        return (in, inUsed, out, outUsed) -> Optional.empty();
+      }
 
-    @Override
-    public UsedCompute<VoidParticle, VoidUsedData, XToMoveParticle, VoidUsedData> outputUsedCompute() {
-      return (in, inUsed, out, outUsed) -> Optional.empty();
-    }
+      @Override
+      public WitnessValidator<VoidParticle> inputWitnessValidator() {
+        return (p, w) -> WitnessValidatorResult.success();
+      }
 
-    @Override
-    public WitnessValidator<VoidParticle> inputWitnessValidator() {
-      return (p, w) -> WitnessValidatorResult.success();
-    }
+      @Override
+      public WitnessValidator<XToMoveParticle> outputWitnessValidator() {
+        return (p, w) -> w.isSignedBy(p.getXPlayer().getKey()) || w.isSignedBy(p.getOPlayer().getKey())
+          ? WitnessValidatorResult.success()
+          : WitnessValidatorResult.error("Game must be started by either one of the players.");
+      }
+    });
 
-    @Override
-    public WitnessValidator<XToMoveParticle> outputWitnessValidator() {
-      return (p, w) -> w.isSignedBy(p.getXPlayer().getKey()) || w.isSignedBy(p.getOPlayer().getKey())
-        ? WitnessValidatorResult.success()
-        : WitnessValidatorResult.error("Game must be started by either one of the players.");
-    }
-  });
-
-  os.createTransition(xMovesToken, new TicTacToeMoveTransitionProcedure<>(TicTacToeSquare.X));
-  os.createTransition(oMovesToken, new TicTacToeMoveTransitionProcedure<>(TicTacToeSquare.O));
-  os.createTransition(xWinsToken, new TicTacToeMoveTransitionProcedure<>(TicTacToeSquare.X));
-  os.createTransition(oWinsToken, new TicTacToeMoveTransitionProcedure<>(TicTacToeSquare.O));
-  os.createTransition(drawsToken, new TicTacToeMoveTransitionProcedure<>(TicTacToeSquare.X));
+    os.createTransition(xMovesToken, new TicTacToeMoveTransitionProcedure<>(TicTacToeSquare.X));
+    os.createTransition(oMovesToken, new TicTacToeMoveTransitionProcedure<>(TicTacToeSquare.O));
+    os.createTransition(xWinsToken, new TicTacToeMoveTransitionProcedure<>(TicTacToeSquare.X));
+    os.createTransition(oWinsToken, new TicTacToeMoveTransitionProcedure<>(TicTacToeSquare.O));
+    os.createTransition(drawsToken, new TicTacToeMoveTransitionProcedure<>(TicTacToeSquare.X));
+  }
+}
 ```
 
 The above TransitionProcedure for the `newGameToken` transition token has five implemented methods.
@@ -394,7 +394,7 @@ Now that our ConstraintScrypt is complete we need to load in up into engine.
 We do this by loading it up into a `CMAtomOS` which manages how Constraint Scrypts get loaded
 into an engine:
 
-```
+```java
 public class TicTacToeRunner {
   public static void main(String[] args) throws CryptoException {
     CMAtomOS cmAtomOS = new CMAtomOS();
@@ -422,10 +422,10 @@ Now how do you actually use this engine that's been created? Atoms must be creat
 particles and spins. The mechanism to do this is quite low level and complex at the moment so
 we will just include the relevant code below found in `TicTacToeRunner.java`.
 
-```
+```java
 public class TicTacToeRunner {
 
-...
+// ...
 
   private static BasicRadixEngineAtom buildAtom(
     String description,
@@ -455,7 +455,7 @@ public class TicTacToeRunner {
 	
   public static void main(String[] args) throws CryptoException {
   
-...
+// ...
 
     BasicRadixEngineAtom atom = buildAtom("Legal Initial board", null, initialBoard, xPlayer);
     
@@ -476,4 +476,5 @@ public class TicTacToeRunner {
       }
     });
   }
+}
 ```
