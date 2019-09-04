@@ -173,22 +173,12 @@ public final class ConsensusController implements AtomObserver {
 	}
 
 	private void commit(TempoAtom preference) {
-		// TODO remove temporalvertex/temporalproof
-		TemporalVertex localTemporalVertex = preference.getTemporalProof().getVertexByNID(self);
-		if (localTemporalVertex == null) {
-			throw new IllegalStateException("Cannot commit to atom '" + preference.getAID() + "' without local temporal vertex");
-		}
-		long logicalClock = localTemporalVertex.getClock();
-
-		log.info("Committing to '" + preference.getAID() + "'");
 		pendingAtoms.remove(preference.getAID());
-		atomStore.commit(preference.getAID(), localTemporalVertex.getClock());
 		consensusReceptor.commit(preference);
 	}
 
 	@Override
 	public void onAdopted(TempoAtom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
-		sampleStore.add(atom.getTemporalProof());
 		pendingAtoms.put(atom, uniqueIndices);
 		continueConsensus(atom);
 	}

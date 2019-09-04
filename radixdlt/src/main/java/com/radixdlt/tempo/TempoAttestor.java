@@ -34,50 +34,9 @@ public final class TempoAttestor implements Attestor {
 		this.wallclockTimeSupplier = Objects.requireNonNull(wallclockTimeSupplier, "wallclockTimeSupplier");
 	}
 
-	public TemporalProof attestTo(TemporalProof temporalProof, List<EUID> edges) {
-		TemporalVertex existingNIDVertex = temporalProof.getVertexByNID(this.localSystem.getNID());
-		AID aid = temporalProof.getAID();
-		if (existingNIDVertex != null) {
-			if (existingNIDVertex.getClock() > this.localSystem.getClock().get()) {
-				this.localSystem.set(existingNIDVertex.getClock(), existingNIDVertex.getCommitment(), wallclockTimeSupplier.getAsLong());
-			}
-			if (logger.hasLevel(Logging.DEBUG)) {
-				logger.debug("Refusing to attest to atom '" + aid + "', already attested to it");
-			}
-
-			return temporalProof;
-		}
-
+	public TemporalCommitment attestTo(AID aid) {
 		long wallclockTime = wallclockTimeSupplier.getAsLong();
 		Pair<Long, Hash> clockAndCommitment = this.localSystem.update(aid, wallclockTime);
-		TemporalVertex previousVertex = null;
-		if (!temporalProof.isEmpty()) {
-			for (TemporalVertex vertex : temporalProof.getVertices()) {
-				if (vertex.getEdges().contains(this.localSystem.getNID())) {
-					previousVertex = vertex;
-					break;
-				} else if (previousVertex == null) {
-					previousVertex = vertex;
-				}
-			}
-		}
-
-		ECKeyPair nodeKey = this.localSystem.getKeyPair();
-		TemporalVertex vertex = new TemporalVertex(nodeKey.getPublicKey(),
-			clockAndCommitment.getFirst(),
-			wallclockTime,
-			clockAndCommitment.getSecond(),
-			previousVertex != null ? previousVertex.getHID() : EUID.ZERO,
-			edges);
-		if (logger.hasLevel(Logging.DEBUG)) {
-			logger.debug("Attesting to '" + aid + "' at " + clockAndCommitment.getFirst());
-		}
-		try {
-			temporalProof.add(vertex, nodeKey);
-		} catch (ValidationException | CryptoException e) {
-			throw new TempoException("Error while attesting to atom '" + aid + "'", e);
-		}
-
-		return temporalProof;
+		return new TemporalCommitment(aid, clockAndCommitment.getFirst(), clockAndCommitment.getSecond());
 	}
 }

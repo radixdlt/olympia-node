@@ -79,26 +79,6 @@ public final class TempoAtom implements Atom {
 		return this.temporalProof;
 	}
 
-	TempoAtom aggregate(TemporalProof temporalProof) {
-		TemporalProof aggregated = new TemporalProof(this.aid, getTemporalProof().getVertices());
-		try {
-			// TODO make TP.merge operate on two immutable tps
-			aggregated.merge(temporalProof);
-			return with(aggregated);
-		} catch (ValidationException e) {
-			throw new TempoException("Error while aggregating temporal proof", e);
-		}
-	}
-
-	TempoAtom with(TemporalProof temporalProof) {
-		return new TempoAtom(
-			this.content,
-			this.aid,
-			this.shards,
-			temporalProof
-		);
-	}
-
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) {

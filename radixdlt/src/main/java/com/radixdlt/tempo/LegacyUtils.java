@@ -48,7 +48,6 @@ public final class LegacyUtils {
 			content.getSignatures(),
 			content.getMetaData()
 		);
-		legacyAtom.setTemporalProof(atom.getTemporalProof());
 		return legacyAtom;
 	}
 }

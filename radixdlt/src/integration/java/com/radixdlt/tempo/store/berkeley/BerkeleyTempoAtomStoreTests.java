@@ -59,9 +59,7 @@ public class BerkeleyTempoAtomStoreTests extends RadixTestWithStores {
 
         tempoAtoms = new ArrayList<>(atoms.size());
         for (int i = 0; i < atoms.size(); i++) {
-            TemporalVertex temporalVertex = new TemporalVertex(localSystem.getKey(), i, 0, Hash.random(), EUID.ZERO, ImmutableSet.of());
             TempoAtom tempoAtom = atomGenerator.convertToTempoAtom(atoms.get(i));
-            tempoAtom.getTemporalProof().add(temporalVertex, identity);
             tempoAtoms.add(tempoAtom);
             LOGGER.info("tempoAtom" + i + ": " + tempoAtom.getAID());
         }

@@ -5,7 +5,6 @@ import com.google.inject.Injector;
 import com.radixdlt.TempoModule;
 import com.radixdlt.tempo.consensus.ConsensusModule;
 import com.radixdlt.tempo.delivery.LazyRequestDelivererModule;
-import com.radixdlt.tempo.delivery.PushOnlyDelivererModule;
 import com.radixdlt.tempo.discovery.IterativeDiscovererModule;
 import com.radixdlt.tempo.store.berkeley.BerkeleyStoreModule;
 import org.radix.modules.Modules;
@@ -24,7 +23,6 @@ public class TempoFactory {
 	private Injector createInjector(LocalSystem localSystem, MessageCentral messageCentral, RuntimeProperties properties) {
 		return Guice.createInjector(
 			new LazyRequestDelivererModule(properties),
-			new PushOnlyDelivererModule(),
 			new IterativeDiscovererModule(properties),
 			new BerkeleyStoreModule(),
 			new ConsensusModule(),

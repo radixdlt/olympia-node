@@ -38,6 +38,7 @@ import com.google.common.collect.ImmutableList;
 import static com.radixdlt.serialization.MapHelper.mapOf;
 
 @SerializerId2("api.local_system")
+// FIXME reimplement localsystem as an interface, extract persistence to elsewhere
 public final class LocalSystem extends RadixSystem
 {
 	private static final Logger log = Logging.getLogger ();

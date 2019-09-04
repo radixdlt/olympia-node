@@ -56,7 +56,6 @@ public final class Tempo extends Plugin implements Ledger, ConsensusReceptor {
 	private final CommitmentStore commitmentStore;
 	private final ConsensusController consensus;
 
-	private final EdgeSelector edgeSelector;
 	private final Attestor attestor;
 
 	private final BlockingQueue<AtomObservation> atomObservations;
@@ -73,7 +72,6 @@ public final class Tempo extends Plugin implements Ledger, ConsensusReceptor {
 		TempoAtomStore atomStore,
 		CommitmentStore commitmentStore,
 		ConsensusController consensus,
-		EdgeSelector edgeSelector,
 		Attestor attestor,
 		@Owned Set<Resource> ownedResources,
 		Set<AtomDiscoverer> atomDiscoverers,
@@ -85,9 +83,8 @@ public final class Tempo extends Plugin implements Ledger, ConsensusReceptor {
 		this.atomStore = Objects.requireNonNull(atomStore);
 		this.commitmentStore = Objects.requireNonNull(commitmentStore);
 		this.consensus = Objects.requireNonNull(consensus);
-		this.ownedResources = Objects.requireNonNull(ownedResources);
-		this.edgeSelector = Objects.requireNonNull(edgeSelector);
 		this.attestor = Objects.requireNonNull(attestor);
+		this.ownedResources = Objects.requireNonNull(ownedResources);
 		this.atomDiscoverers = Objects.requireNonNull(atomDiscoverers);
 		this.atomDeliverers = Objects.requireNonNull(atomDeliverers);
 		this.requestDeliverer = Objects.requireNonNull(requestDeliverer);
@@ -112,6 +109,10 @@ public final class Tempo extends Plugin implements Ledger, ConsensusReceptor {
 
 	@Override
 	public void commit(TempoAtom preference) {
+		TemporalCommitment temporalCommitment = attestTo(preference);
+		// TODO do something with commitment
+		log.info("Committing to '" + preference.getAID() + "' at " + temporalCommitment.getLogicalClock());
+		this.atomStore.commit(preference.getAID(), temporalCommitment.getLogicalClock());
 		this.addObservation(AtomObservation.commit(preference));
 	}
 
@@ -131,7 +132,7 @@ public final class Tempo extends Plugin implements Ledger, ConsensusReceptor {
 		if (atomStore.contains(atom.getAID())) {
 			throw new AtomAlreadyExistsException(atom);
 		}
-		TempoAtom tempoAtom = attestTo(convertToTempoAtom(atom));
+		TempoAtom tempoAtom = convertToTempoAtom(atom);
 		AtomStoreResult status = atomStore.store(tempoAtom, uniqueIndices, duplicateIndices);
 		if (!status.isSuccess()) {
 			AtomConflict conflictInfo = status.getConflictInfo();
@@ -145,7 +146,7 @@ public final class Tempo extends Plugin implements Ledger, ConsensusReceptor {
 		if (atomStore.contains(atom.getAID())) {
 			throw new AtomAlreadyExistsException(atom);
 		}
-		TempoAtom tempoAtom = attestTo(convertToTempoAtom(atom));
+		TempoAtom tempoAtom = convertToTempoAtom(atom);
 		AtomStoreResult status = atomStore.replace(aids, tempoAtom, uniqueIndices, duplicateIndices);
 		if (!status.isSuccess()) {
 			AtomConflict conflictInfo = status.getConflictInfo();
@@ -172,21 +173,11 @@ public final class Tempo extends Plugin implements Ledger, ConsensusReceptor {
 	}
 
 	private void onAdopted(TempoAtom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
-		TemporalVertex ownVertex = atom.getTemporalProof().getVertexByNID(self);
-		if (ownVertex == null) {
-			throw new TempoException("Accepted atom " + atom.getAID() + " has no vertex by self");
-		}
-
-		// TODO populate commitment store elsewhere
-		commitmentStore.put(self, ownVertex.getClock(), ownVertex.getCommitment());
-
 		observers.forEach(acceptor -> acceptor.onAdopted(atom, uniqueIndices, duplicateIndices));
 	}
 
-	private TempoAtom attestTo(TempoAtom atom) {
-		List<EUID> edges = edgeSelector.selectEdges(atom);
-		TemporalProof attestedTP = attestor.attestTo(atom.getTemporalProof(), edges);
-		return atom.with(attestedTP);
+	private TemporalCommitment attestTo(TempoAtom atom) {
+		return attestor.attestTo(atom.getAID());
 	}
 
 	@Override
