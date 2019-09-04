@@ -35,7 +35,7 @@ This makes the game a prime target for Radix Engine implementation.
 Unlucky for us, even though it is bounded, mapping out each of the game states and every possible
 transition would quickly explode the size of a Tic Tac Toe FSM:
  
-<img src="https://yuml.me/diagram/scruffy/class/[___;___;___]->[___;_X_;___],[___;___;___]->[___;___;__X], [___;___;___]->[X__;___;___],[___;___;___]->[_X_;___;___],[___;___;___]->[__X;___;___],[___;___;___]->[___;X__;___], [___;___;___]->[___;__X;___],[___;___;___]->[___;___;X__], [___;___;___]->[___;___;__X],[___;___;__X]->[O__;___;__X],[___;___;__X]->[_O_;___;__X],[___;___;__X]->[__O;___;__X],[___;___;__X]->[___;O__;__X],[___;___;__X]->[___;_O_;__X],[___;___;__X]->[___;__O;__X],[___;___;__X]->[___;___;O_X],[___;___;__X]->[___;___;_OX]," width=400 />
+<img src="https://yuml.me/diagram/scruffy/class/%5B___%3B___%3B___%5D-%3E%5B___%3B_X_%3B___%5D%2C%5B___%3B___%3B___%5D-%3E%5B___%3B___%3B__X%5D%2C%20%5B___%3B___%3B___%5D-%3E%5BX__%3B___%3B___%5D%2C%5B___%3B___%3B___%5D-%3E%5B_X_%3B___%3B___%5D%2C%5B___%3B___%3B___%5D-%3E%5B__X%3B___%3B___%5D%2C%5B___%3B___%3B___%5D-%3E%5B___%3BX__%3B___%5D%2C%20%5B___%3B___%3B___%5D-%3E%5B___%3B__X%3B___%5D%2C%5B___%3B___%3B___%5D-%3E%5B___%3B___%3BX__%5D%2C%20%5B___%3B___%3B___%5D-%3E%5B___%3B___%3B__X%5D%2C%5B___%3B___%3B__X%5D-%3E%5BO__%3B___%3B__X%5D%2C%5B___%3B___%3B__X%5D-%3E%5B_O_%3B___%3B__X%5D%2C%5B___%3B___%3B__X%5D-%3E%5B__O%3B___%3B__X%5D%2C%5B___%3B___%3B__X%5D-%3E%5B___%3BO__%3B__X%5D%2C%5B___%3B___%3B__X%5D-%3E%5B___%3B_O_%3B__X%5D%2C%5B___%3B___%3B__X%5D-%3E%5B___%3B__O%3B__X%5D%2C%5B___%3B___%3B__X%5D-%3E%5B___%3B___%3BO_X%5D%2C%5B___%3B___%3B__X%5D-%3E%5B___%3B___%3B_OX%5D%2C" width=400 />
 
 To mitigate this we use the help of an extended state machine.
 
