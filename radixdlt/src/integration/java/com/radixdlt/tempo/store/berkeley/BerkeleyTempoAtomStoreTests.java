@@ -11,6 +11,7 @@ import com.radixdlt.ledger.LedgerSearchMode;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.tempo.AtomGenerator;
 import com.radixdlt.tempo.TempoAtom;
+import com.radixdlt.tempo.store.TempoAtomStatus;
 import com.radixdlt.utils.Ints;
 
 import static org.junit.Assume.assumeTrue;
@@ -73,6 +74,32 @@ public class BerkeleyTempoAtomStoreTests extends RadixTestWithStores {
     }
 
     @Test
+    public void storePendingCommittest() {
+        SoftAssertions.assertSoftly(softly -> {
+            //atom added to store successfully
+            softly.assertThat(tempoAtomStore.store(tempoAtoms.get(0), ImmutableSet.of(), ImmutableSet.of()).isSuccess());
+
+            //atom added to store is pending but not committed
+            softly.assertThat(tempoAtomStore.getStatus(tempoAtoms.get(0).getAID())).isEqualTo(TempoAtomStatus.PENDING);
+
+            //added atom is present in store
+            softly.assertThat(tempoAtomStore.contains(tempoAtoms.get(0).getAID())).isTrue();
+
+            // commit atom
+            tempoAtomStore.commit(tempoAtoms.get(0).getAID(), 1);
+
+            // atom is committed but not pending
+            softly.assertThat(tempoAtomStore.getStatus(tempoAtoms.get(0).getAID())).isEqualTo(TempoAtomStatus.COMMITTED);
+
+            //added atom is present in store
+            softly.assertThat(tempoAtomStore.contains(1)).isTrue();
+
+            //not added atom is absent in store
+            softly.assertThat(tempoAtomStore.contains(tempoAtoms.get(1).getAID())).isFalse();
+        });
+    }
+
+    @Test
     public void storeContainsTest() {
         SoftAssertions.assertSoftly(softly -> {
             //atom added to store successfully
@@ -81,14 +108,8 @@ public class BerkeleyTempoAtomStoreTests extends RadixTestWithStores {
             //added atom is present in store
             softly.assertThat(tempoAtomStore.contains(tempoAtoms.get(0).getAID())).isTrue();
 
-            //added atom is present in store
-            softly.assertThat(tempoAtomStore.contains(tempoAtoms.get(0).getTemporalProof().getVertices().get(0).getClock())).isTrue();
-
             //not added atom is absent in store
             softly.assertThat(tempoAtomStore.contains(tempoAtoms.get(1).getAID())).isFalse();
-
-            //not added atom is absent in store
-            softly.assertThat(tempoAtomStore.contains(tempoAtoms.get(1).getTemporalProof().getVertices().get(0).getClock())).isFalse();
         });
     }
 
@@ -101,14 +122,8 @@ public class BerkeleyTempoAtomStoreTests extends RadixTestWithStores {
             //added atom is present in store
             softly.assertThat(tempoAtomStore.get(tempoAtoms.get(0).getAID()).get()).isEqualTo(tempoAtoms.get(0));
 
-            //added atom is present in store
-            softly.assertThat(tempoAtomStore.get(tempoAtoms.get(0).getTemporalProof().getVertices().get(0).getClock()).get()).isEqualTo(tempoAtoms.get(0).getAID());
-
             //not added atom is absent in store
             softly.assertThat(tempoAtomStore.get(tempoAtoms.get(1).getAID()).isPresent()).isFalse();
-
-            //not added atom is absent in store
-            softly.assertThat(tempoAtomStore.get(tempoAtoms.get(1).getTemporalProof().getVertices().get(0).getClock()).isPresent()).isFalse();
         });
     }
 

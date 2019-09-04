@@ -24,19 +24,11 @@ public interface TempoAtomStoreView {
 	boolean contains(AID aid);
 
 	/**
-	 * Checks whether the given aid is (i.e. no longer pending).
-	 *
+	 * Gets the status for a certain aid.
 	 * @param aid The aid
-	 * @return Whether the given aid is marked as "committed"
+	 * @return The status
 	 */
-	boolean isCommitted(AID aid);
-
-	/**
-	 * Checks whether the given aid is pending (i.e. not committed).
-	 * @param aid The aid
-	 * @return Whether the given aid is marked as "pending"
-	 */
-	boolean isPending(AID aid);
+	TempoAtomStatus getStatus(AID aid);
 
 	/**
 	 * Gets the pending aids

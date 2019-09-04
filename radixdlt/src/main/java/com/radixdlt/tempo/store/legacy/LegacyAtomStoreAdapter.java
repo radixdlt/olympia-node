@@ -9,6 +9,7 @@ import com.radixdlt.ledger.exceptions.LedgerException;
 import com.radixdlt.middleware.RadixEngineUtils;
 import com.radixdlt.middleware.SimpleRadixEngineAtom;
 import com.radixdlt.tempo.store.AtomStoreResult;
+import com.radixdlt.tempo.store.TempoAtomStatus;
 import com.radixdlt.tempo.store.TempoAtomStore;
 import com.radixdlt.tempo.LegacyUtils;
 import com.radixdlt.tempo.TempoAtom;
@@ -55,12 +56,7 @@ public class LegacyAtomStoreAdapter implements TempoAtomStore {
 	}
 
 	@Override
-	public boolean isCommitted(AID aid) {
-		throw new UnsupportedOperationException("Not implemented");
-	}
-
-	@Override
-	public boolean isPending(AID aid) {
+	public TempoAtomStatus getStatus(AID aid) {
 		throw new UnsupportedOperationException("Not implemented");
 	}
 

@@ -21,6 +21,7 @@ import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.TempoException;
 import com.radixdlt.tempo.store.AtomConflict;
 import com.radixdlt.tempo.store.AtomStoreResult;
+import com.radixdlt.tempo.store.TempoAtomStatus;
 import com.radixdlt.tempo.store.TempoAtomStore;
 import com.radixdlt.utils.Longs;
 import com.sleepycat.je.Cursor;
@@ -71,7 +72,8 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 	private static final String PENDING_DB_NAME = "tempo2.pending";
 	private static final String ATOMS_DB_NAME = "tempo2.atoms";
 
-	private static final long PREFIX_PENDING = Long.MAX_VALUE;
+	private static final long LC_PREFIX_PENDING = Long.MAX_VALUE;
+	private static final byte[] EMPTY_DATA = new byte[0];
 
 	private final EUID self;
 	private final Serialization serialization;
@@ -230,12 +232,19 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 	}
 
 	@Override
-	public boolean isCommitted(AID aid) {
-		return contains(aid) && !isPending(aid);
+	public TempoAtomStatus getStatus(AID aid) {
+		if (!contains(aid)) {
+			return TempoAtomStatus.UNAVAILABLE;
+		}
+
+		if (isPending(aid)) {
+			return TempoAtomStatus.PENDING;
+		} else {
+			return TempoAtomStatus.COMMITTED;
+		}
 	}
 
-	@Override
-	public boolean isPending(AID aid) {
+	private boolean isPending(AID aid) {
 		long start = profiler.begin();
 		try {
 			DatabaseEntry key = new DatabaseEntry(aid.getBytes());
@@ -308,6 +317,7 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 			if (!doDelete(aid, transaction, pKey, indices)) {
 				fail("Delete of pending atom '" + aid + "' failed");
 			}
+			doRemovePending(aid, transaction);
 
 			// transaction is aborted in doStore in case of conflict
 			AtomStoreResult result = doStore(logicalClock, aid, value.getData(), indices, transaction);
@@ -369,19 +379,16 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 	}
 
 	private AtomStoreResult doStorePending(TempoAtom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices, Transaction transaction) throws SerializationException {
-		DatabaseEntry key = new DatabaseEntry(atom.getAID().getBytes());
-		// TODO what to use as value?
-		pending.put(transaction, key, null);
+		doAddPending(atom.getAID(), transaction);
 
 		byte[] atomData = serialization.toDson(atom, Output.PERSIST);
 		TempoAtomIndices indices = TempoAtomIndices.from(atom, uniqueIndices, duplicateIndices);
-		return doStore(PREFIX_PENDING, atom.getAID(), atomData, indices, transaction);
+		return doStore(LC_PREFIX_PENDING, atom.getAID(), atomData, indices, transaction);
 	}
 
 	private AtomStoreResult doStore(long logicalClock, AID aid, byte[] atomData, TempoAtomIndices indices, Transaction transaction) throws SerializationException {
 		try {
-			byte[] aidBytes = aid.getBytes();
-			DatabaseEntry pKey = new DatabaseEntry(Arrays.concatenate(Longs.toByteArray(logicalClock), aidBytes));
+			DatabaseEntry pKey = new DatabaseEntry(Arrays.concatenate(Longs.toByteArray(logicalClock), aid.getBytes()));
 			DatabaseEntry pData = new DatabaseEntry(atomData);
 
 			// put indices in temporary map for key creator to pick up
@@ -433,7 +440,7 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 	}
 
 	private boolean doDelete(AID aid, Transaction transaction) throws SerializationException {
-		if (isCommitted(aid)) {
+		if (!isPending(aid)) {
 			fail("Attempted to delete committed atom '" + aid + "'");
 		}
 
@@ -470,6 +477,20 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 		}
 
 		return serialization.fromDson(value.getData(), TempoAtomIndices.class);
+	}
+
+	private void doAddPending(AID aid, Transaction transaction) {
+		DatabaseEntry key = new DatabaseEntry(aid.getBytes());
+		// TODO anything useful that could be used as value?
+		DatabaseEntry value = new DatabaseEntry(EMPTY_DATA);
+		pending.putNoOverwrite(transaction, key, value);
+	}
+
+	private void doRemovePending(AID aid, Transaction transaction) {
+		OperationStatus status = pending.delete(transaction, new DatabaseEntry(aid.getBytes()));
+		if (status != OperationStatus.SUCCESS) {
+			fail("Removing atom '" + aid + "' from pending failed with status " + status);
+		}
 	}
 
 	// TODO missing shardspace check, should be added?
