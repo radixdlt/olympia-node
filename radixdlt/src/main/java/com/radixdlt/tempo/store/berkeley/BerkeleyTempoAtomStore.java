@@ -64,7 +64,7 @@ import static com.radixdlt.tempo.store.berkeley.TempoAtomIndices.SHARD_INDEX_PRE
 
 @Singleton
 public class BerkeleyTempoAtomStore implements TempoAtomStore {
-	private static final Logger logger = Logging.getLogger("store.atoms");
+	private static final Logger log = Logging.getLogger("store.atoms");
 
 	private static final String ATOM_INDICES_DB_NAME = "tempo2.atom_indices";
 	private static final String DUPLICATE_INDICES_DB_NAME = "tempo2.duplicated_indices";
@@ -165,7 +165,7 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 				transaction.abort();
 			}
 
-			logger.warn("Error while resetting database, database not found", e);
+			log.warn("Error while resetting database, database not found", e);
 		} catch (Exception e) {
 			if (transaction != null) {
 				transaction.abort();
@@ -197,12 +197,12 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 	}
 
 	private void fail(String message) {
-		logger.error(message);
+		log.error(message);
 		throw new TempoException(message);
 	}
 
 	private void fail(String message, Exception cause) {
-		logger.error(message, cause);
+		log.error(message, cause);
 		throw new TempoException(message, cause);
 	}
 
@@ -307,6 +307,7 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 
 		Transaction transaction = dbEnv.getEnvironment().beginTransaction(null, null);
 		try {
+			// TODO there must be a better way to change primary keys
 			DatabaseEntry pKey = new DatabaseEntry();
 			TempoAtomIndices indices = doGetIndices(transaction, aid, pKey);
 			DatabaseEntry value = new DatabaseEntry();
@@ -383,6 +384,7 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 
 		byte[] atomData = serialization.toDson(atom, Output.PERSIST);
 		TempoAtomIndices indices = TempoAtomIndices.from(atom, uniqueIndices, duplicateIndices);
+		// TODO should probably do some ordering on pending atoms
 		return doStore(LC_PREFIX_PENDING, atom.getAID(), atomData, indices, transaction);
 	}
 
@@ -395,16 +397,16 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 			this.currentIndices.put(aid, indices);
 			OperationStatus status = this.atoms.putNoOverwrite(transaction, pKey, pData);
 			if (status != OperationStatus.SUCCESS) {
-				fail("Internal error, atom write failed with status " + status);
+				fail("Atom write for '" + aid + "' failed with status " + status);
 			}
 
 			DatabaseEntry indicesData = new DatabaseEntry(serialization.toDson(indices, Output.PERSIST));
 			status = this.atomIndices.putNoOverwrite(transaction, pKey, indicesData);
 			if (status != OperationStatus.SUCCESS) {
-				fail("Internal error, atom indices write failed with status " + status);
+				fail("Atom indices write for '" + aid + "' failed with status " + status);
 			}
 		} catch (UniqueConstraintException e) {
-			logger.error("Unique indices of atom '" + aid + "' are in conflict, aborting transaction");
+			log.error("Unique indices of atom '" + aid + "' are in conflict, aborting transaction");
 			transaction.abort();
 
 			Atom atom = serialization.fromDson(atomData, Atom.class);
@@ -568,6 +570,21 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 			while (status == OperationStatus.SUCCESS) {
 				AID aid = AID.from(pKey.getData());
 				pendingAids.add(aid);
+				status = cursor.getNext(pKey, null, LockMode.DEFAULT);
+			}
+		}
+		return pendingAids.build();
+	}
+
+	private Set<AID> dumpAll() {
+		ImmutableSet.Builder<AID> pendingAids = ImmutableSet.builder();
+		try (Cursor cursor = this.atoms.openCursor(null, null)) {
+			DatabaseEntry pKey = new DatabaseEntry();
+			OperationStatus status = cursor.getFirst(pKey, null, LockMode.DEFAULT);
+			while (status == OperationStatus.SUCCESS) {
+				AID aid = AID.from(pKey.getData(), Long.BYTES);
+				pendingAids.add(aid);
+				status = cursor.getNext(pKey, null, LockMode.DEFAULT);
 			}
 		}
 		return pendingAids.build();
@@ -736,8 +753,9 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 	public static class AtomStorePackedPrimaryKeyComparator implements Comparator<byte[]> {
 		@Override
 		public int compare(byte[] primary1, byte[] primary2) {
-			for (int b = 0; b < Long.BYTES; b++) {
-				int compare = UnsignedBytes.compare(primary1[b], primary2[b]);
+			int minLen = Math.min(primary1.length, primary2.length);
+			for (int i = 0; i < minLen; i++) {
+				int compare = UnsignedBytes.compare(primary1[i], primary2[i]);
 				if (compare != 0) {
 					return compare;
 				}

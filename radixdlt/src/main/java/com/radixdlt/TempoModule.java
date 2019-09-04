@@ -49,6 +49,7 @@ public class TempoModule extends AbstractModule {
 		bind(LocalSystem.class).annotatedWith(Names.named("self")).toInstance(localSystem);
 		bind(EUID.class).annotatedWith(Names.named("self")).toInstance(localSystem.getNID());
 
+		// TODO ugly way of assigning resource "ownership", should be cleaner
 		Multibinder<Resource> ownedResourcesBinder = Multibinder.newSetBinder(binder(), Resource.class, Owned.class);
 		ownedResourcesBinder.addBinding().to(TempoAtomStore.class);
 		ownedResourcesBinder.addBinding().to(CommitmentStore.class);
