@@ -1,6 +1,7 @@
 package com.radixdlt.tempo.consensus;
 
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
 import com.radixdlt.ledger.LedgerCursor;
@@ -30,8 +31,9 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+@Singleton
 public final class SampleRetriever implements Closeable {
-	private static final Logger log = Logging.getLogger("consensus.sampler");
+	private static final Logger log = Logging.getLogger("tempo.consensus.sampler");
 	private static final int REQUEST_QUEUE_CAPACITY = 8192;
 	private static final int REQUEST_PROCESSOR_THREADS = 1;
 	private static final int SAMPLE_REQUEST_TIMEOUT_MILLISECONDS = 1000;
@@ -63,7 +65,7 @@ public final class SampleRetriever implements Closeable {
 		this.requestThreadPool.start();
 	}
 
-	public CompletableFuture<Samples> sample(Set<LedgerIndex> indices, Collection<Peer> peers) {
+	CompletableFuture<Samples> sample(Set<LedgerIndex> indices, Collection<Peer> peers) {
 		// TODO batch requests to same node over time window?
 		EUID tag = generateTag();
 		CompletableFuture<Samples> future = new CompletableFuture<>();
@@ -72,6 +74,9 @@ public final class SampleRetriever implements Closeable {
 		for (Peer peer : peers) {
 			messageCentral.send(peer, request);
 		}
+		log.debug("Request sampling '" + tag + "' for " + indices + " from " + peers);
+
+		// schedule timeout
 		scheduler.schedule(() -> attemptComplete(tag, pendingSamples.timeout(tag)), SAMPLE_REQUEST_TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS);
 		return future;
 	}
@@ -104,9 +109,11 @@ public final class SampleRetriever implements Closeable {
 		Sample sample = new Sample(aidByIndex, unavailableIndices);
 		SampleResponseMessage response = new SampleResponseMessage(request.getMessage().getTag(), sample);
 		messageCentral.send(request.getPeer(), response);
+		log.debug("Responding to sample request '" + request.getMessage().getTag() + "' from " + request.getPeer() + " for " + requestedIndices);
 	}
 
 	private void onResponse(Peer peer, SampleResponseMessage message) {
+		log.debug("Received sample response for '" + message.getTag() + "' from " + peer);
 		Samples completeSamples = pendingSamples.receiveSample(message.getTag(), peer.getNID(), message.getSample());
 		attemptComplete(message.getTag(), completeSamples);
 	}

@@ -59,4 +59,12 @@ public final class Sample {
 	public Set<LedgerIndex> getUnavailableIndices() {
 		return unavailableIndices;
 	}
+
+	@Override
+	public String toString() {
+		return "Sample{" +
+			"preferences=" + preferencesByIndex +
+			", unavailable=" + unavailableIndices +
+			'}';
+	}
 }

@@ -80,7 +80,7 @@ public final class ConsensusController implements AtomObserver {
 	}
 
 	private void beginRound(TempoAtom preference) {
-		log.debug("Beginning consensus round for '" + preference.getAID() + "'");
+		log.debug("Beginning consensus round for atom '" + preference.getAID() + "'");
 		Set<EUID> availableNids = addressBook.recentPeers()
 			.filter(Peer::hasNID)
 			.map(Peer::getNID)
@@ -101,7 +101,7 @@ public final class ConsensusController implements AtomObserver {
 	}
 
 	private void endRound(TempoAtom preference, Set<LedgerIndex> requestedIndices, List<EUID> sampleNids, Samples samples) {
-		log.debug("Completing consensus round for '" + preference.getAID() + "'");
+		log.debug("Ending consensus round for atom '" + preference.getAID() + "'");
 		if (!pendingAtoms.isPending(preference.getAID())) {
 			log.debug("Preference '" + preference.getAID() + "' is no longer pending, aborting");
 			return;
