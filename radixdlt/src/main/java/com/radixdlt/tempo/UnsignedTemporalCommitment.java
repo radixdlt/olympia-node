@@ -11,8 +11,8 @@ import com.radixdlt.serialization.SerializerId2;
 
 import java.util.Objects;
 
-@SerializerId2("tempo.temporal_commitment")
-public final class TemporalCommitment {
+@SerializerId2("tempo.unsigned_temporal_commitment")
+public final class UnsignedTemporalCommitment {
 	// Placeholder for the serializer ID
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(value = {DsonOutput.Output.API, DsonOutput.Output.WIRE, DsonOutput.Output.PERSIST})
@@ -30,23 +30,21 @@ public final class TemporalCommitment {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final Hash commitment;
 
-	@JsonProperty("signature")
-	@DsonOutput(value = {DsonOutput.Output.API, DsonOutput.Output.WIRE, DsonOutput.Output.PERSIST})
-	private final ECSignature signature;
-
-	private TemporalCommitment() {
+	private UnsignedTemporalCommitment() {
 		// For serializer
 		aid = null;
 		logicalClock = 0L;
 		commitment = null;
-		signature = null;
 	}
 
-	public TemporalCommitment(AID aid, long logicalClock, Hash commitment, ECSignature signature) {
+	public UnsignedTemporalCommitment(AID aid, long logicalClock, Hash commitment) {
 		this.aid = Objects.requireNonNull(aid);
-		this.logicalClock = logicalClock;
+		this.logicalClock = Objects.requireNonNull(logicalClock);
 		this.commitment = Objects.requireNonNull(commitment);
-		this.signature = Objects.requireNonNull(signature);
+	}
+
+	public TemporalCommitment sign(ECSignature signature) {
+		return new TemporalCommitment(aid, logicalClock, commitment, signature);
 	}
 
 	public AID getAID() {

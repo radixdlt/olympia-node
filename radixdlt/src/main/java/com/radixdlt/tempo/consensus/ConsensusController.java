@@ -14,12 +14,8 @@ import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.network2.addressbook.AddressBook;
 import org.radix.network2.addressbook.Peer;
-import org.radix.time.TemporalProof;
 
-import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -33,8 +29,8 @@ public final class ConsensusController implements AtomObserver {
 	private static final int CONFIDENCE_THRESHOLD = 3;
 	private static final int MAX_SAMPLE_NODES = 5;
 
-	private static final int SAMPLE_NODES_UNAVAILABLE_DELAY = 5000;
-	private static final long DELAY_SAMPLE_EMPTY = 500;
+	private static final int SAMPLE_NODES_UNAVAILABLE_DELAY_MILLISECONDS = 1000;
+	private static final long SAMPLE_EMPTY_REATTEMPT_DELAY_MILLISECONDS = 500;
 
 	private final EUID self;
 	private final Scheduler scheduler;
@@ -69,7 +65,7 @@ public final class ConsensusController implements AtomObserver {
 	}
 
 	// FIXME open resources in constructor so we can just do this in constructor instead
-	public void onOpen() {
+	public void start() {
 		Set<AID> pending = atomStore.getPending();
 		for (AID aid : pending) {
 			Optional<TempoAtom> uncommittedAtom = atomStore.get(aid);
@@ -93,7 +89,7 @@ public final class ConsensusController implements AtomObserver {
 		List<EUID> sampleNids = sampleNodeSelector.selectNodes(availableNids, preference, MAX_SAMPLE_NODES);
 		if (sampleNids.isEmpty()) {
 			log.warn("No sample nodes to talk to, unable to achieve consensus on '" + preference.getAID() + "', waiting");
-			scheduler.schedule(() -> continueConsensus(preference), SAMPLE_NODES_UNAVAILABLE_DELAY, TimeUnit.MILLISECONDS);
+			scheduler.schedule(() -> continueConsensus(preference), SAMPLE_NODES_UNAVAILABLE_DELAY_MILLISECONDS, TimeUnit.MILLISECONDS);
 			return;
 		}
 
@@ -102,10 +98,10 @@ public final class ConsensusController implements AtomObserver {
 			.collect(Collectors.toSet());
 		Set<LedgerIndex> uniqueIndices = pendingAtoms.getUniqueIndices(preference.getAID());
 		sampleRetriever.sample(uniqueIndices, samplePeers)
-			.thenAccept(samples -> receiveSample(preference, uniqueIndices, samples));
+			.thenAccept(samples -> receiveSamples(preference, uniqueIndices, samples));
 	}
 
-	private void receiveSample(TempoAtom preference, Set<LedgerIndex> requestedIndices, Samples samples) {
+	private void receiveSamples(TempoAtom preference, Set<LedgerIndex> requestedIndices, Samples samples) {
 		log.debug("Received sample for '" + preference.getAID() + "'");
 		if (!pendingAtoms.isPending(preference.getAID())) {
 			log.debug("Preference '" + preference.getAID() + "' is no longer pending, aborting");

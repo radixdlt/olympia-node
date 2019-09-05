@@ -32,8 +32,6 @@ import org.radix.logging.Logging;
 import org.radix.modules.Module;
 import org.radix.modules.Modules;
 import org.radix.modules.Plugin;
-import org.radix.time.TemporalProof;
-import org.radix.time.TemporalVertex;
 
 import java.util.List;
 import java.util.Map;
@@ -201,7 +199,7 @@ public final class Tempo extends Plugin implements Ledger, ConsensusReceptor {
 	public void start_impl() {
 		this.ownedResources.forEach(Resource::open);
 		// TODO remove need for onopen, open resources on construction..
-		this.consensus.onOpen();
+		this.consensus.start();
 		Modules.put(TempoAtomStoreView.class, this.atomStore);
 		Modules.put(AtomSyncView.class, new AtomSyncView() {
 			@Override
