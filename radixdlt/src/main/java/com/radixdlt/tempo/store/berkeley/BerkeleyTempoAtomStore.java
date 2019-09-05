@@ -469,7 +469,7 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 		DatabaseEntry key = new DatabaseEntry(LedgerIndex.from(ATOM_INDEX_PREFIX, aid.getBytes()));
 		DatabaseEntry value = new DatabaseEntry();
 
-		OperationStatus status = uniqueIndices.get(transaction, key, pKey, value, LockMode.RMW);
+		OperationStatus status = uniqueIndices.get(transaction, key, pKey, value, LockMode.DEFAULT);
 		if (status != OperationStatus.SUCCESS) {
 			fail("Getting primary key of atom '" + aid + "' failed with status " + status);
 		}

@@ -73,7 +73,8 @@ public class RadixTestWithStores extends RadixTest
 				mock(RequestDeliverer.class),
 				ImmutableSet.of()
 			);
-			Modules.getInstance().start(tempo);
+			tempo.start();
+			Modules.put(Tempo.class, tempo);
 		} else {
 			Modules.getInstance().start(clean(new AtomStore()));
 			Modules.getInstance().start(new AtomSync());
@@ -84,10 +85,9 @@ public class RadixTestWithStores extends RadixTest
 	public void afterEachRadixTest() throws ModuleException, IOException {
 		safelyStop(Modules.get(RoutingHandler.class));
 		safelyStop(Modules.get(RoutingStore.class));
-		safelyStop(Modules.get(DatabaseEnvironment.class));
 		if (Modules.get(RuntimeProperties.class).get("tempo2", false)) {
-			Modules.get(Tempo.class).stop_impl();
-			Modules.get(Tempo.class).reset_impl();
+			Modules.get(Tempo.class).close();
+			Modules.get(Tempo.class).reset();
 			Modules.remove(Tempo.class);
 		} else {
 			safelyStop(Modules.get(AtomStore.class));
@@ -96,6 +96,7 @@ public class RadixTestWithStores extends RadixTest
 			Modules.remove(AtomStore.class);
 			Modules.remove(AtomSyncView.class);
 		}
+		safelyStop(Modules.get(DatabaseEnvironment.class));
 		Modules.remove(DatabaseEnvironment.class);
 
 		MessageCentral messageCentral = Modules.get(MessageCentral.class);

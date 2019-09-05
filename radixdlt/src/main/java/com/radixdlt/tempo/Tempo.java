@@ -1,6 +1,5 @@
 package com.radixdlt.tempo;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
@@ -12,8 +11,8 @@ import com.radixdlt.engine.AtomStatus;
 import com.radixdlt.ledger.AtomObservation;
 import com.radixdlt.ledger.Ledger;
 import com.radixdlt.ledger.LedgerCursor;
-import com.radixdlt.ledger.LedgerIndex.LedgerIndexType;
 import com.radixdlt.ledger.LedgerIndex;
+import com.radixdlt.ledger.LedgerIndex.LedgerIndexType;
 import com.radixdlt.ledger.LedgerSearchMode;
 import com.radixdlt.ledger.exceptions.AtomAlreadyExistsException;
 import com.radixdlt.ledger.exceptions.LedgerIndexConflictException;
@@ -27,15 +26,12 @@ import com.radixdlt.tempo.store.AtomStoreResult;
 import com.radixdlt.tempo.store.CommitmentStore;
 import com.radixdlt.tempo.store.TempoAtomStore;
 import com.radixdlt.tempo.store.TempoAtomStoreView;
-import org.radix.database.DatabaseEnvironment;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.modules.Module;
 import org.radix.modules.Modules;
-import org.radix.modules.Plugin;
 import org.radix.network2.addressbook.Peer;
 
-import java.util.List;
+import java.io.Closeable;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -47,8 +43,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 /**
  * The Tempo implementation of a ledger.
  */
-// TODO remove Plugin dependency from Tempo
-public final class Tempo extends Plugin implements Ledger, ConsensusReceptor {
+public final class Tempo implements Ledger, ConsensusReceptor, Closeable {
 	private static final Logger log = Logging.getLogger("tempo");
 	private static final int INBOUND_QUEUE_CAPACITY = 16384;
 
@@ -196,15 +191,7 @@ public final class Tempo extends Plugin implements Ledger, ConsensusReceptor {
 		return atomStore.contains(type, index, mode);
 	}
 
-	@Override
-	public List<Class<? extends Module>> getDependsOn() {
-		return ImmutableList.of(
-			DatabaseEnvironment.class
-		);
-	}
-
-	@Override
-	public void start_impl() {
+	public void start() {
 		this.ownedResources.forEach(Resource::open);
 		// TODO remove need for onopen, open resources on construction..
 		this.consensus.start();
@@ -236,20 +223,14 @@ public final class Tempo extends Plugin implements Ledger, ConsensusReceptor {
 	}
 
 	@Override
-	public void stop_impl() {
+	public void close() {
 		Modules.remove(TempoAtomStoreView.class);
 		Modules.remove(AtomSyncView.class);
 		this.ownedResources.forEach(Resource::close);
 	}
 
-	@Override
-	public void reset_impl() {
+	public void reset() {
 		this.ownedResources.forEach(Resource::reset);
-	}
-
-	@Override
-	public String getName() {
-		return "Tempo";
 	}
 
 	private static TempoAtom convertToTempoAtom(Atom atom) {
