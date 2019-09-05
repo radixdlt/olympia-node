@@ -233,7 +233,8 @@ public final class ConstraintMachine {
 				new CMError(
 					dp,
 					CMErrorCode.TRANSITION_PRECONDITION_FAILURE,
-					validationState
+					validationState,
+					preconditionCheckResult.getErrorMessage()
 				)
 			);
 		}

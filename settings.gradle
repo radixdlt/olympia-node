@@ -1,2 +1,4 @@
 rootProject.name = 'radixdlt-engine'
+include 'radixdlt-engine'
+include 'examples'
 
