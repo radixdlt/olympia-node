@@ -75,6 +75,7 @@ public class RadixTestWithStores extends RadixTest
 			);
 			tempo.start();
 			Modules.put(Tempo.class, tempo);
+			Modules.put(TempoAtomStore.class, atomStore);
 		} else {
 			Modules.getInstance().start(clean(new AtomStore()));
 			Modules.getInstance().start(new AtomSync());

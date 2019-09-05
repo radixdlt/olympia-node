@@ -61,10 +61,11 @@ public final class ConsensusController implements AtomObserver {
 		this.sampleNodeSelector = Objects.requireNonNull(sampleNodeSelector);
 		this.addressBook = Objects.requireNonNull(addressBook);
 		this.consensusReceptor = Objects.requireNonNull(consensusReceptor);
+
+		start();
 	}
 
-	// FIXME open resources in constructor so we can just do this in constructor instead
-	public void start() {
+	private void start() {
 		Set<AID> pending = storeView.getPending();
 		for (AID aid : pending) {
 			Optional<TempoAtom> uncommittedAtom = storeView.get(aid);

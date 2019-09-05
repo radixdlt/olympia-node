@@ -202,11 +202,6 @@ public final class LazyRequestDeliverer implements Resource, AtomDeliverer, Requ
 	}
 
 	@Override
-	public void open() {
-		// nothing to do here
-	}
-
-	@Override
 	public void close() {
 		requestThreadPool.stop();
 	}

@@ -12,12 +12,6 @@ public interface Resource extends Closeable {
 	 */
 	void reset();
 
-	// TODO remove explicit open, make open on instantiation
-	/**
-	 * Opens any underlying resources.
-	 */
-	void open();
-
 	/**
 	 * Closes any underlying resources.
 	 */

@@ -192,9 +192,6 @@ public final class Tempo implements Ledger, ConsensusReceptor, Closeable {
 	}
 
 	public void start() {
-		this.ownedResources.forEach(Resource::open);
-		// TODO remove need for onopen, open resources on construction..
-		this.consensus.start();
 		Modules.put(TempoAtomStoreView.class, this.atomStore);
 		Modules.put(AtomSyncView.class, new AtomSyncView() {
 			@Override

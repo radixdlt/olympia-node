@@ -38,6 +38,8 @@ public class BerkeleyCommitmentStore implements CommitmentStore {
 	@Inject
 	public BerkeleyCommitmentStore(DatabaseEnvironment dbEnv) {
 		this.dbEnv = Objects.requireNonNull(dbEnv, "dbEnv is required");
+
+		this.open();
 	}
 
 	private void fail(String message) {
@@ -50,8 +52,7 @@ public class BerkeleyCommitmentStore implements CommitmentStore {
 		throw new TempoException(message, cause);
 	}
 
-	@Override
-	public void open() {
+	private void open() {
 		DatabaseConfig primaryConfig = new DatabaseConfig();
 		primaryConfig.setAllowCreate(true);
 		primaryConfig.setTransactional(true);

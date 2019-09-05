@@ -2,6 +2,7 @@ package com.radixdlt.tempo;
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.Atom;
+import com.radixdlt.tempo.store.TempoAtomStore;
 import org.junit.Assert;
 import org.junit.Test;
 import org.radix.atoms.AtomStore;
@@ -93,8 +94,10 @@ public class BerkeleyCursorTests extends RadixTestWithStores {
 
 		LedgerIndex index = new LedgerIndex((byte) AtomStore.IDType.DESTINATION.ordinal(), identity.getUID().toByteArray());
 		List<Atom> atoms = atomGenerator.createAtoms(identity, 2);
+		int logicalClock = 0;
 		for (Atom atom : atoms) {
 			Modules.get(Tempo.class).store(atom, ImmutableSet.of(), ImmutableSet.of(index));
+			Modules.get(TempoAtomStore.class).commit(atom.getAID(), logicalClock++);
 		}
 
 		LedgerCursor cursor = Modules.get(Tempo.class).search(LedgerIndex.LedgerIndexType.DUPLICATE, index, LedgerSearchMode.EXACT);

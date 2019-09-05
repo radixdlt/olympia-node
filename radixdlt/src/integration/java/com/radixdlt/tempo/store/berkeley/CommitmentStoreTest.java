@@ -37,7 +37,6 @@ public class CommitmentStoreTest extends RadixTestWithStores {
     public void setup() {
         commitmentStore = new BerkeleyCommitmentStore(Modules.get(DatabaseEnvironment.class));
         commitmentStore.reset();
-        commitmentStore.open();
     }
 
     @After

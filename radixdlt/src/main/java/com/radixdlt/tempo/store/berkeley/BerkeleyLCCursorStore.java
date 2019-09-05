@@ -34,6 +34,8 @@ public final class BerkeleyLCCursorStore implements Resource, LCCursorStore {
 	@Inject
 	public BerkeleyLCCursorStore(DatabaseEnvironment dbEnv) {
 		this.dbEnv = Objects.requireNonNull(dbEnv, "dbEnv is required");
+
+		this.open();
 	}
 
 	private void fail(String message) {
@@ -46,8 +48,7 @@ public final class BerkeleyLCCursorStore implements Resource, LCCursorStore {
 		throw new TempoException(message, cause);
 	}
 
-	@Override
-	public void open() {
+	private void open() {
 		DatabaseConfig primaryConfig = new DatabaseConfig();
 		primaryConfig.setAllowCreate(true);
 		primaryConfig.setTransactional(true);

@@ -242,11 +242,6 @@ public final class IterativeDiscoverer implements Resource, AtomDiscoverer {
 	}
 
 	@Override
-	public void open() {
-		// nothing to do here
-	}
-
-	@Override
 	public void close() {
 		requestThreadPool.stop();
 		messageCentral.removeListener(IterativeDiscoveryRequestMessage.class, this::onRequest);

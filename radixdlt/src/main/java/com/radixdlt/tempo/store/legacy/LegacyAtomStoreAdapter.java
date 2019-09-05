@@ -176,11 +176,6 @@ public class LegacyAtomStoreAdapter implements TempoAtomStore {
 	}
 
 	@Override
-	public void open() {
-		// not implemented here as is already done in legacy TempoAtomStore directly
-	}
-
-	@Override
 	public void close() {
 		// not implemented here as is already done in legacy TempoAtomStore directly
 	}
