@@ -160,7 +160,7 @@ public class LegacyAtomStoreAdapter implements TempoAtomStore {
 	}
 
 	@Override
-	public ImmutableList<AID> getNext(long logicalClockCursor, int limit) {
+	public ImmutableList<AID> getNextCommitted(long logicalClockCursor, int limit) {
 		try {
 			AtomDiscoveryRequest atomDiscoveryRequest = new AtomDiscoveryRequest(DiscoveryRequest.Action.DISCOVER);
 			atomDiscoveryRequest.setLimit((short) 64);

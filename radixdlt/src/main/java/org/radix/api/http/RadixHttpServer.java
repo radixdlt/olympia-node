@@ -145,7 +145,7 @@ public final class RadixHttpServer {
 			long position = Long.parseLong(positionStr);
 			int limit = Integer.parseInt(limitStr);
 
-		    ImmutableList<AID> aids = Modules.get(TempoAtomStoreView.class).getNext(position, limit);
+		    ImmutableList<AID> aids = Modules.get(TempoAtomStoreView.class).getNextCommitted(position, limit);
 		    String aidsJson = Serialization.getDefault().toJson(aids, DsonOutput.Output.ALL);
 		    respond(aidsJson, exchange);
 	    }, handler);

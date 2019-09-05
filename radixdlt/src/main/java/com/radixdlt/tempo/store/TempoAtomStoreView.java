@@ -83,5 +83,5 @@ public interface TempoAtomStoreView {
 	 * @param limit The maximum number of aids
 	 * @return The relevant aids and the advanced cursor
 	 */
-	ImmutableList<AID> getNext(long logicalClock, int limit);
+	ImmutableList<AID> getNextCommitted(long logicalClock, int limit);
 }

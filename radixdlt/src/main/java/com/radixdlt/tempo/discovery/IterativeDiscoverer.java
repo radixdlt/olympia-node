@@ -8,7 +8,6 @@ import com.google.inject.name.Named;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.tempo.AtomObserver;
 import com.radixdlt.tempo.Resource;
 import com.radixdlt.tempo.store.TempoAtomStoreView;
 import com.radixdlt.tempo.LogicalClockCursor;
@@ -205,7 +204,7 @@ public final class IterativeDiscoverer implements Resource, AtomDiscoverer {
 	private IterativeDiscoveryResponseMessage fetchResponse(LogicalClockCursor cursor) {
 		long lcPosition = cursor.getLcPosition();
 		ImmutableList<Hash> commitments = commitmentStore.getNext(self, lcPosition, responseLimit);
-		ImmutableList<AID> aids = storeView.getNext(lcPosition, responseLimit);
+		ImmutableList<AID> aids = storeView.getNextCommitted(lcPosition, responseLimit);
 
 		// there should be at least as many commitments as aids, otherwise the stores are corrupt
 		if (commitments.size() < aids.size()) {

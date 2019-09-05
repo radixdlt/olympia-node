@@ -73,6 +73,7 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 	private static final String ATOMS_DB_NAME = "tempo2.atoms";
 
 	private static final long LC_PREFIX_PENDING = Long.MAX_VALUE;
+	private static final byte[] LC_PREFIX_PENDING_BYTES = Longs.toByteArray(LC_PREFIX_PENDING);
 	private static final byte[] EMPTY_DATA = new byte[0];
 
 	private final EUID self;
@@ -497,7 +498,7 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 
 	// TODO missing shardspace check, should be added?
 	@Override
-	public ImmutableList<AID> getNext(long logicalClock, int limit) {
+	public ImmutableList<AID> getNextCommitted(long logicalClock, int limit) {
 		long start = profiler.begin();
 		try (Cursor cursor = this.atoms.openCursor(null, null)) {
 			ImmutableList.Builder<AID> aids = ImmutableList.builder();
@@ -506,6 +507,11 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 
 			int size = 0;
 			while (status == OperationStatus.SUCCESS && size < limit) {
+				if (Longs.fromByteArray(search.getData()) == LC_PREFIX_PENDING) {
+					// if we've reached the pending keys, abort, as this is only for committed atoms
+					break;
+				}
+
 				aids.add(AID.from(search.getData(), Long.BYTES));
 				status = cursor.getNext(search, null, LockMode.DEFAULT);
 				size++;
