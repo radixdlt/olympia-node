@@ -12,7 +12,8 @@ import org.bouncycastle.util.encoders.Hex;
 import java.util.Objects;
 
 @SerializerId2("ledger.index")
-public final class LedgerIndex {
+// TODO Comparable impl is unfortunately required for Jackson as this is used as a map keyA
+public final class LedgerIndex implements Comparable<LedgerIndex> {
 	// Placeholder for the serializer ID
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(DsonOutput.Output.ALL)
@@ -94,6 +95,23 @@ public final class LedgerIndex {
 
 	public static byte[] from(byte prefix, byte[] identifier) {
 		return Arrays.concatenate(new byte[]{prefix}, identifier);
+	}
+
+	@Override
+	public int compareTo(LedgerIndex other) {
+		int compare = other.prefix - this.prefix;
+		if (compare != 0) {
+			return compare;
+		}
+
+		int minLen = Math.min(this.identifier.length, other.identifier.length);
+		for (int i = 0; i < minLen; i++) {
+			compare = other.identifier[i] - this.identifier[i];
+			if (compare != 0) {
+				return compare;
+			}
+		}
+		return 0;
 	}
 
 	public enum LedgerIndexType {
