@@ -208,8 +208,8 @@ public final class IterativeDiscoverer implements Resource, AtomDiscoverer {
 
 		// there should be at least as many commitments as aids, otherwise the stores are corrupt
 		if (commitments.size() < aids.size()) {
-			throw new IllegalStateException(String.format("Missing commitments at [%d, %d[",
-				lcPosition, lcPosition + aids.size()));
+			throw new IllegalStateException(String.format("Missing commitments at [%d, %d[ for %s",
+				lcPosition, lcPosition + aids.size(), aids.toString()));
 		}
 
 		long nextLcPosition = lcPosition + commitments.size();

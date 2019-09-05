@@ -478,7 +478,7 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 		long start = profiler.begin();
 		try (Cursor cursor = this.atoms.openCursor(null, null)) {
 			ImmutableList.Builder<AID> aids = ImmutableList.builder();
-			DatabaseEntry search = toPKey(PREFIX_COMMITTED, logicalClock);
+			DatabaseEntry search = toPKey(PREFIX_COMMITTED, logicalClock + 1);
 			OperationStatus status = cursor.getSearchKeyRange(search, null, LockMode.DEFAULT);
 
 			int size = 0;
