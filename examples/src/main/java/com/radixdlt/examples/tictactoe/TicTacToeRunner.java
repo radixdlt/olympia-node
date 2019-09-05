@@ -16,7 +16,7 @@ import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.AtomEventListener;
 import com.radixdlt.engine.RadixEngine;
 
-import static com.radixdlt.examples.tictactoe.TicTacToeBaseParticle.TicTacToeSquare.*;
+import static com.radixdlt.examples.tictactoe.TicTacToeBaseParticle.TicTacToeSquareValue.*;
 
 import com.radixdlt.examples.tictactoe.TicTacToeConstraintScrypt.OToMoveParticle;
 import com.radixdlt.examples.tictactoe.TicTacToeConstraintScrypt.XToMoveParticle;

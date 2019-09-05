@@ -6,17 +6,25 @@ import com.radixdlt.constraintmachine.UsedCompute;
 import com.radixdlt.constraintmachine.VoidUsedData;
 import com.radixdlt.constraintmachine.WitnessValidator;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
-import com.radixdlt.examples.tictactoe.TicTacToeBaseParticle.TicTacToeSquare;
+import com.radixdlt.examples.tictactoe.TicTacToeBaseParticle.TicTacToeSquareValue;
 import java.util.Objects;
 import java.util.Optional;
 
-public class TicTacToeMoveTransitionProcedure<T extends TicTacToeBaseParticle, U extends TicTacToeBaseParticle>
+public class TicTacToeMoveGuard<T extends TicTacToeBaseParticle, U extends TicTacToeBaseParticle>
 	implements TransitionProcedure<T, VoidUsedData, U, VoidUsedData> {
 
-	private final TicTacToeSquare toMove;
+	private final TicTacToeSquareValue toMove;
 
-	TicTacToeMoveTransitionProcedure(TicTacToeSquare toMove) {
+	private TicTacToeMoveGuard(TicTacToeSquareValue toMove) {
 		this.toMove = Objects.requireNonNull(toMove);
+	}
+
+	public static <T extends TicTacToeBaseParticle, U extends TicTacToeBaseParticle> TicTacToeMoveGuard<T, U> xToMove() {
+		return new TicTacToeMoveGuard<>(TicTacToeSquareValue.X);
+	}
+
+	public static <T extends TicTacToeBaseParticle, U extends TicTacToeBaseParticle> TicTacToeMoveGuard<T, U> oToMove() {
+		return new TicTacToeMoveGuard<>(TicTacToeSquareValue.O);
 	}
 
 	@Override
@@ -32,15 +40,15 @@ public class TicTacToeMoveTransitionProcedure<T extends TicTacToeBaseParticle, U
 			return Result.error("Game should have the same players");
 		}
 
-		TicTacToeSquare foundMove = null;
+		TicTacToeSquareValue foundMove = null;
 
 		// Check that it is a legal next move
 		for (int squareIndex = 0; squareIndex < TicTacToeBaseParticle.TIC_TAC_TOE_BOARD_SIZE; squareIndex++) {
-			TicTacToeSquare initSquareState = inputParticle.getBoard().get(squareIndex);
-			TicTacToeSquare nextSquareState = outputParticle.getBoard().get(squareIndex);
+			TicTacToeSquareValue initSquareState = inputParticle.getBoard().get(squareIndex);
+			TicTacToeSquareValue nextSquareState = outputParticle.getBoard().get(squareIndex);
 
 			if (initSquareState != nextSquareState) {
-				if (foundMove != null || initSquareState != TicTacToeSquare.EMPTY) {
+				if (foundMove != null || initSquareState != TicTacToeSquareValue.EMPTY) {
 					return Result.error("Invalid move");
 				}
 
@@ -69,7 +77,7 @@ public class TicTacToeMoveTransitionProcedure<T extends TicTacToeBaseParticle, U
 	@Override
 	public WitnessValidator<T> inputWitnessValidator() {
 		// Move should be signed by player making the move
-		return (p, w) -> w.isSignedBy((toMove == TicTacToeSquare.X ? p.getXPlayer() : p.getOPlayer()).getKey())
+		return (p, w) -> w.isSignedBy((toMove == TicTacToeSquareValue.X ? p.getXPlayer() : p.getOPlayer()).getKey())
 			? WitnessValidatorResult.success()
 			: WitnessValidatorResult.error("Move not signed by player");
 	}

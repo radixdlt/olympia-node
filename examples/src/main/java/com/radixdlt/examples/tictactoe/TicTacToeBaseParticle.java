@@ -15,7 +15,7 @@ import com.radixdlt.serialization.DsonOutput.Output;
  * TODO: from being a particle interface
  */
 abstract class TicTacToeBaseParticle extends Particle {
-	enum TicTacToeSquare { X, O, EMPTY }
+	enum TicTacToeSquareValue { X, O, EMPTY }
 	public static final int TIC_TAC_TOE_BOARD_SIZE = 9;
 
 	@JsonProperty("xPlayer")
@@ -28,9 +28,9 @@ abstract class TicTacToeBaseParticle extends Particle {
 
 	@JsonProperty("board")
 	@DsonOutput(Output.ALL)
-	private final ImmutableList<TicTacToeSquare> board;
+	private final ImmutableList<TicTacToeSquareValue> board;
 
-	TicTacToeBaseParticle(RadixAddress xPlayer, RadixAddress oPlayer, ImmutableList<TicTacToeSquare> board) {
+	TicTacToeBaseParticle(RadixAddress xPlayer, RadixAddress oPlayer, ImmutableList<TicTacToeSquareValue> board) {
 		super(ImmutableSet.of(xPlayer.getUID(), oPlayer.getUID()));
 
 		this.xPlayer = xPlayer;
@@ -38,7 +38,7 @@ abstract class TicTacToeBaseParticle extends Particle {
 		this.board = board;
 	}
 
-	public final ImmutableList<TicTacToeSquare> getBoard() {
+	public final ImmutableList<TicTacToeSquareValue> getBoard() {
 		return board;
 	}
 

@@ -14,13 +14,15 @@ import com.radixdlt.constraintmachine.VoidParticle;
 import com.radixdlt.constraintmachine.VoidUsedData;
 import com.radixdlt.constraintmachine.WitnessValidator;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
-import com.radixdlt.examples.tictactoe.TicTacToeBaseParticle.TicTacToeSquare;
+import com.radixdlt.examples.tictactoe.TicTacToeBaseParticle.TicTacToeSquareValue;
 import com.radixdlt.serialization.SerializerId2;
 import java.util.Optional;
 
 /**
  * Constraint Scrypt which describes an extended finite state machine of a Tic Tac Toe game
  * between two players (each represented by an EC Key Pair).
+ *
+ * <img src="https://yuml.me/diagram/scruffy/class/%5Bstart%5D-is%20empty%20board%3F%3E%5BX%20to%20Move%5D%2C%5BX%20to%20Move%7CX%20to%20move%20board%5D-valid%20move%3F%3E%5BO%20to%20Move%7CO%20to%20move%20board%5D%2C%5BO%20to%20Move%5D-valid%20move%3F%3E%5BX%20to%20Move%5D%2C%5BO%20to%20Move%5D-valid%20move%3F%3E%5BO%20wins%7C%20O%20winning%20board%5D%2C%20%5BX%20to%20Move%5D-valid%20move%3F%3E%5BX%20wins%7CX%20winning%20board%5D%2C%5BX%20to%20Move%5D-valid%20move%3F%3E%5BDraw%7CDraw%20Board%5D" width=400 />
  */
 public class TicTacToeConstraintScrypt implements ConstraintScrypt {
 
@@ -28,35 +30,35 @@ public class TicTacToeConstraintScrypt implements ConstraintScrypt {
 
 	@SerializerId2("o-to-move-particle")
 	static class OToMoveParticle extends TicTacToeBaseParticle {
-		OToMoveParticle(RadixAddress xPlayer, RadixAddress oPlayer, ImmutableList<TicTacToeSquare> board) {
+		OToMoveParticle(RadixAddress xPlayer, RadixAddress oPlayer, ImmutableList<TicTacToeSquareValue> board) {
 			super(xPlayer, oPlayer, board);
 		}
 	}
 
 	@SerializerId2("x-to-move-particle")
 	static class XToMoveParticle extends TicTacToeBaseParticle {
-		XToMoveParticle(RadixAddress xPlayer, RadixAddress oPlayer, ImmutableList<TicTacToeSquare> board) {
+		XToMoveParticle(RadixAddress xPlayer, RadixAddress oPlayer, ImmutableList<TicTacToeSquareValue> board) {
 			super(xPlayer, oPlayer, board);
 		}
 	}
 
 	@SerializerId2("o-wins-particle")
 	static class OWinsParticle extends TicTacToeBaseParticle {
-		OWinsParticle(RadixAddress xPlayer, RadixAddress oPlayer, ImmutableList<TicTacToeSquare> board) {
+		OWinsParticle(RadixAddress xPlayer, RadixAddress oPlayer, ImmutableList<TicTacToeSquareValue> board) {
 			super(xPlayer, oPlayer, board);
 		}
 	}
 
 	@SerializerId2("x-wins-particle")
 	static class XWinsParticle extends TicTacToeBaseParticle {
-		XWinsParticle(RadixAddress xPlayer, RadixAddress oPlayer, ImmutableList<TicTacToeSquare> board) {
+		XWinsParticle(RadixAddress xPlayer, RadixAddress oPlayer, ImmutableList<TicTacToeSquareValue> board) {
 			super(xPlayer, oPlayer, board);
 		}
 	}
 
 	@SerializerId2("draw-particle")
 	static class DrawParticle extends TicTacToeBaseParticle {
-		DrawParticle(RadixAddress xPlayer, RadixAddress oPlayer, ImmutableList<TicTacToeSquare> board) {
+		DrawParticle(RadixAddress xPlayer, RadixAddress oPlayer, ImmutableList<TicTacToeSquareValue> board) {
 			super(xPlayer, oPlayer, board);
 		}
 	}
@@ -89,7 +91,7 @@ public class TicTacToeConstraintScrypt implements ConstraintScrypt {
 			return Result.error("Tic Tac Toe board must be size 9.");
 		}
 
-		for (TicTacToeSquare square : ticTacToe.getBoard()) {
+		for (TicTacToeSquareValue square : ticTacToe.getBoard()) {
 			if (square == null) {
 				return Result.error("No square can be null.");
 			}
@@ -103,20 +105,20 @@ public class TicTacToeConstraintScrypt implements ConstraintScrypt {
 			return Result.error("O player cannot be null.");
 		}
 
-		// Compute what the new game state is
+		// Compute what the game state is
 		GameStatus gameStatus = null;
 		for (ImmutableList<Integer> line : LINES) {
-			ImmutableList<TicTacToeSquare> board = ticTacToe.getBoard();
-			if (board.get(line.get(0)) != TicTacToeSquare.EMPTY
+			ImmutableList<TicTacToeSquareValue> board = ticTacToe.getBoard();
+			if (board.get(line.get(0)) != TicTacToeSquareValue.EMPTY
 				&& board.get(line.get(0)) == board.get(line.get(1))
 				&& board.get(line.get(1)) == board.get(line.get(2))) {
-				gameStatus = board.get(line.get(0)) == TicTacToeSquare.X ? GameStatus.X_WINS : GameStatus.O_WINS;
+				gameStatus = board.get(line.get(0)) == TicTacToeSquareValue.X ? GameStatus.X_WINS : GameStatus.O_WINS;
 				break;
 			}
 		}
 
 		if (gameStatus == null) {
-			gameStatus = ticTacToe.getBoard().stream().allMatch(s -> s != TicTacToeSquare.EMPTY) ? GameStatus.DRAW : GameStatus.IN_PROGRESS;
+			gameStatus = ticTacToe.getBoard().stream().allMatch(s -> s != TicTacToeSquareValue.EMPTY) ? GameStatus.DRAW : GameStatus.IN_PROGRESS;
 		}
 
 		// Check that the game state matches
@@ -131,7 +133,8 @@ public class TicTacToeConstraintScrypt implements ConstraintScrypt {
 	public void main(SysCalls os) {
 
 		// First, we must define and register each of the 5 qualitative states in the extended state machine.
-		// During this process we also define where each of these states will "live". In our case we want
+		// We also need to define the quantative aspects of each state, this is done in the staticCheck()
+		// call. During this process we also define where each of these states will "live". In our case we want
 		// the game to be stored in both player's addresses.
 		os.registerParticleMultipleAddresses(
 			XToMoveParticle.class,
@@ -180,7 +183,7 @@ public class TicTacToeConstraintScrypt implements ConstraintScrypt {
 			XToMoveParticle.class, TypeToken.of(VoidUsedData.class), DrawParticle.class, TypeToken.of(VoidUsedData.class)
 		);
 
-		// Next we must define the quantitative part of our extended state machine, that is
+		// Next we must define the transition guards of our extended state machine, that is
 		// under what conditions are the transitions we defined above allowed?
 		os.createTransition(newGameToken, new TransitionProcedure<VoidParticle, VoidUsedData, XToMoveParticle, VoidUsedData>() {
 
@@ -190,9 +193,9 @@ public class TicTacToeConstraintScrypt implements ConstraintScrypt {
 			@Override
 			public Result precondition(VoidParticle inputParticle, VoidUsedData inputUsed, XToMoveParticle outputParticle, VoidUsedData outputUsed) {
 				for (int squareIndex = 0; squareIndex < 9; squareIndex++) {
-					TicTacToeSquare nextSquareState = outputParticle.getBoard().get(squareIndex);
+					TicTacToeSquareValue nextSquareState = outputParticle.getBoard().get(squareIndex);
 
-					if (nextSquareState != TicTacToeSquare.EMPTY) {
+					if (nextSquareState != TicTacToeSquareValue.EMPTY) {
 						return Result.error("Game must start with an empty board");
 					}
 				}
@@ -236,10 +239,10 @@ public class TicTacToeConstraintScrypt implements ConstraintScrypt {
 		});
 
 		// The rest of the transition constraints are defined for succinct purposes in the TicTacToeMoveTransitionProcedure class
-		os.createTransition(xMovesToken, new TicTacToeMoveTransitionProcedure<>(TicTacToeSquare.X));
-		os.createTransition(oMovesToken, new TicTacToeMoveTransitionProcedure<>(TicTacToeSquare.O));
-		os.createTransition(xWinsToken, new TicTacToeMoveTransitionProcedure<>(TicTacToeSquare.X));
-		os.createTransition(oWinsToken, new TicTacToeMoveTransitionProcedure<>(TicTacToeSquare.O));
-		os.createTransition(drawsToken, new TicTacToeMoveTransitionProcedure<>(TicTacToeSquare.X));
+		os.createTransition(xMovesToken, TicTacToeMoveGuard.xToMove());
+		os.createTransition(oMovesToken, TicTacToeMoveGuard.oToMove());
+		os.createTransition(xWinsToken, TicTacToeMoveGuard.xToMove());
+		os.createTransition(oWinsToken, TicTacToeMoveGuard.oToMove());
+		os.createTransition(drawsToken, TicTacToeMoveGuard.xToMove());
 	}
 }
