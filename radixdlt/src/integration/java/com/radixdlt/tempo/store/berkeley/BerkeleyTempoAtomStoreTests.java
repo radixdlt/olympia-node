@@ -93,9 +93,6 @@ public class BerkeleyTempoAtomStoreTests extends RadixTestWithStores {
             // committed atom is not in pending
             softly.assertThat(tempoAtomStore.getPending()).doesNotContain(tempoAtoms.get(0).getAID());
 
-            //added atom is present in store
-            softly.assertThat(tempoAtomStore.contains(1)).isTrue();
-
             //not added atom is absent in store
             softly.assertThat(tempoAtomStore.contains(tempoAtoms.get(1).getAID())).isFalse();
         });

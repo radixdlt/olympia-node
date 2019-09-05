@@ -38,7 +38,7 @@ public class BerkeleyCursor implements LedgerCursor {
 
 	@Override
 	public AID get() {
-		return AID.from(this.primary, Long.BYTES);
+		return AID.from(this.primary, Long.BYTES + 1);
 	}
 
 	@Override

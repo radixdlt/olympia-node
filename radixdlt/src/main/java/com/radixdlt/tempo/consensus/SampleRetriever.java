@@ -38,7 +38,7 @@ import java.util.stream.Collectors;
 
 @Singleton
 public final class SampleRetriever implements Closeable, AtomDiscoverer {
-	private static final Logger log = Logging.getLogger("tempo.consensus.sampler");
+	private static final Logger log = Logging.getLogger("consensus.sampler");
 	private static final int REQUEST_QUEUE_CAPACITY = 8192;
 	private static final int REQUEST_PROCESSOR_THREADS = 1;
 	private static final int SAMPLE_REQUEST_TIMEOUT_MILLISECONDS = 1000;

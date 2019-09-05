@@ -37,13 +37,6 @@ public interface TempoAtomStoreView {
 	Set<AID> getPending();
 
 	/**
-	 * Gets the {@link AID} associated with a certain aid
-	 * @param logicalClock The logicalClock
-	 * @return The {@link AID} associated with the given logical clock (if any)
-	 */
-	Optional<AID> get(long logicalClock);
-
-	/**
 	 * Gets the atom associated with a certain aid
 	 * @param aid The aid
 	 * @return The atom associated with the given aid (if any)

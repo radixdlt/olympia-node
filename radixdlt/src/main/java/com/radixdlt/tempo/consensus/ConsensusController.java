@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public final class ConsensusController implements AtomObserver {
-	private static final Logger log = Logging.getLogger("tempo.consensus");
+	private static final Logger log = Logging.getLogger("consensus");
 
 	// TODO extract to consensusconfiguration
 	private static final int CONFIDENCE_THRESHOLD = 3;

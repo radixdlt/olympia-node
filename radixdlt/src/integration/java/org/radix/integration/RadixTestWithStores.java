@@ -90,6 +90,7 @@ public class RadixTestWithStores extends RadixTest
 			Modules.get(Tempo.class).close();
 			Modules.get(Tempo.class).reset();
 			Modules.remove(Tempo.class);
+			Modules.remove(TempoAtomStore.class);
 		} else {
 			safelyStop(Modules.get(AtomStore.class));
 			safelyStop(Modules.get(AtomSync.class));

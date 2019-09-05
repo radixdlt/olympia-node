@@ -93,15 +93,6 @@ public class LegacyAtomStoreAdapter implements TempoAtomStore {
 		}
 	}
 
-	@Override
-	public Optional<AID> get(long logicalClock) {
-		try {
-			return Optional.ofNullable(atomStoreSupplier.get().getAtom(logicalClock).getAtomID());
-		} catch (DatabaseException e) {
-			throw new TempoException("Error while querying getAtom(" + logicalClock + ")", e);
-		}
-	}
-
 	public List<AID> get(byte[] partialAid) {
 		try {
 			return atomStoreSupplier.get().get(partialAid);

@@ -39,7 +39,7 @@ import com.sleepycat.je.SecondaryMultiKeyCreator;
 import com.sleepycat.je.Transaction;
 import com.sleepycat.je.TransactionConfig;
 import com.sleepycat.je.UniqueConstraintException;
-import org.bouncycastle.util.Arrays;
+import org.bouncycastle.util.encoders.Hex;
 import org.radix.database.DatabaseEnvironment;
 import org.radix.database.exceptions.DatabaseException;
 import org.radix.logging.Logger;
@@ -56,6 +56,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -72,8 +73,9 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 	private static final String PENDING_DB_NAME = "tempo2.pending";
 	private static final String ATOMS_DB_NAME = "tempo2.atoms";
 
-	private static final long LC_PREFIX_PENDING = Long.MAX_VALUE;
-	private static final byte[] LC_PREFIX_PENDING_BYTES = Longs.toByteArray(LC_PREFIX_PENDING);
+	private static final byte PREFIX_COMMITTED = 0b0000_0000;
+	private static final byte PREFIX_PENDING = 0b0000_0001;
+
 	private static final byte[] EMPTY_DATA = new byte[0];
 
 	private final EUID self;
@@ -81,6 +83,7 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 	private final SystemProfiler profiler;
 	private final DatabaseEnvironment dbEnv;
 
+	private final AtomicLong pendingLogicalClock;
 	private final Map<AID, TempoAtomIndices> currentIndices = new ConcurrentHashMap<>();
 
 	private Database atoms; // TempoAtoms by primary keys (logical clock + AID bytes, no prefixes)
@@ -102,6 +105,9 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 		this.dbEnv = Objects.requireNonNull(dbEnv);
 
 		this.open();
+
+		// TODO is this LC persistence sufficient? might be reset if there are no pending at some point in time
+		this.pendingLogicalClock = new AtomicLong(getLastPendingCursor());
 	}
 
 	private void open() {
@@ -208,20 +214,6 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 		throw new TempoException(message, cause);
 	}
 
-	public boolean contains(long clock) {
-		long start = profiler.begin();
-		try {
-			DatabaseEntry key = new DatabaseEntry(Longs.toByteArray(clock));
-			if (this.atoms.get(null, key, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
-				return true;
-			}
-		} finally {
-			profiler.incrementFrom("ATOM_STORE:CONTAINS:CLOCK", start);
-		}
-
-		return false;
-	}
-
 	@Override
 	public boolean contains(AID aid) {
 		long start = profiler.begin();
@@ -254,23 +246,6 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 		} finally {
 			profiler.incrementFrom("ATOM_STORE:CONTAINS:CLOCK", start);
 		}
-	}
-
-	public Optional<AID> get(long logicalClock) {
-		long start = profiler.begin();
-		try (Cursor cursor = this.atoms.openCursor(null, null)) {
-			DatabaseEntry key = new DatabaseEntry(Longs.toByteArray(logicalClock));
-			DatabaseEntry value = new DatabaseEntry();
-			OperationStatus status = cursor.getSearchKeyRange(key, value, LockMode.DEFAULT);
-
-			if (this.atoms.get(null, key, null, LockMode.DEFAULT) == OperationStatus.SUCCESS) {
-				return Optional.of(AID.from(key.getData(), Long.BYTES));
-			}
-		} finally {
-			profiler.incrementFrom("ATOM_STORE:GET:CLOCK", start);
-		}
-
-		return Optional.empty();
 	}
 
 	@Override
@@ -323,7 +298,7 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 			doRemovePending(aid, transaction);
 
 			// transaction is aborted in doStore in case of conflict
-			AtomStoreResult result = doStore(logicalClock, aid, value.getData(), indices, transaction);
+			AtomStoreResult result = doStore(PREFIX_COMMITTED, logicalClock, aid, value.getData(), indices, transaction);
 			if (result.isSuccess()) {
 				transaction.commit();
 			}
@@ -382,17 +357,17 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 	}
 
 	private AtomStoreResult doStorePending(TempoAtom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices, Transaction transaction) throws SerializationException {
-		doAddPending(atom.getAID(), transaction);
-
 		byte[] atomData = serialization.toDson(atom, Output.PERSIST);
 		TempoAtomIndices indices = TempoAtomIndices.from(atom, uniqueIndices, duplicateIndices);
 		// TODO should probably do some ordering on pending atoms
-		return doStore(LC_PREFIX_PENDING, atom.getAID(), atomData, indices, transaction);
+		long pendingLC = pendingLogicalClock.incrementAndGet();
+		doAddPending(atom.getAID(), pendingLC, transaction);
+		return doStore(PREFIX_PENDING, pendingLC, atom.getAID(), atomData, indices, transaction);
 	}
 
-	private AtomStoreResult doStore(long logicalClock, AID aid, byte[] atomData, TempoAtomIndices indices, Transaction transaction) throws SerializationException {
+	private AtomStoreResult doStore(byte prefix, long logicalClock, AID aid, byte[] atomData, TempoAtomIndices indices, Transaction transaction) throws SerializationException {
 		try {
-			DatabaseEntry pKey = new DatabaseEntry(Arrays.concatenate(Longs.toByteArray(logicalClock), aid.getBytes()));
+			DatabaseEntry pKey = toPKey(prefix, logicalClock, aid);
 			DatabaseEntry pData = new DatabaseEntry(atomData);
 
 			// put indices in temporary map for key creator to pick up
@@ -483,10 +458,10 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 		return serialization.fromDson(value.getData(), TempoAtomIndices.class);
 	}
 
-	private void doAddPending(AID aid, Transaction transaction) {
+	private void doAddPending(AID aid, long pendingLC, Transaction transaction) {
 		DatabaseEntry key = new DatabaseEntry(aid.getBytes());
-		// TODO anything useful that could be used as value?
-		DatabaseEntry value = new DatabaseEntry(EMPTY_DATA);
+		// TODO anything more useful that could be used as value for pending markers?
+		DatabaseEntry value = new DatabaseEntry(Longs.toByteArray(pendingLC));
 		pending.putNoOverwrite(transaction, key, value);
 	}
 
@@ -503,17 +478,17 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 		long start = profiler.begin();
 		try (Cursor cursor = this.atoms.openCursor(null, null)) {
 			ImmutableList.Builder<AID> aids = ImmutableList.builder();
-			DatabaseEntry search = new DatabaseEntry(Longs.toByteArray(logicalClock + 1));
+			DatabaseEntry search = toPKey(PREFIX_COMMITTED, logicalClock);
 			OperationStatus status = cursor.getSearchKeyRange(search, null, LockMode.DEFAULT);
 
 			int size = 0;
 			while (status == OperationStatus.SUCCESS && size < limit) {
-				if (Longs.fromByteArray(search.getData()) == LC_PREFIX_PENDING) {
-					// if we've reached the pending keys, abort, as this is only for committed atoms
+				if (search.getData()[0] != PREFIX_COMMITTED) {
+					// if we've gone behind committed keys, abort, as this is only for committed atoms
 					break;
 				}
 
-				aids.add(AID.from(search.getData(), Long.BYTES));
+				aids.add(getAidFromPKey(search));
 				status = cursor.getNext(search, null, LockMode.DEFAULT);
 				size++;
 			}
@@ -523,7 +498,6 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 			profiler.incrementFrom("ATOM_STORE:DISCOVER:SYNC", start);
 		}
 	}
-
 	@Override
 	public LedgerCursor search(LedgerIndexType type, LedgerIndex index, LedgerSearchMode mode) {
 		Objects.requireNonNull(type, "type is required");
@@ -583,13 +557,26 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 		return pendingAids.build();
 	}
 
+	private long getLastPendingCursor() {
+		try (Cursor cursor = this.pending.openCursor(null, null)) {
+			DatabaseEntry pKey = new DatabaseEntry();
+			DatabaseEntry value = new DatabaseEntry();
+			OperationStatus status = cursor.getLast(pKey, value, LockMode.DEFAULT);
+			if (status == OperationStatus.SUCCESS) {
+				return Longs.fromByteArray(value.getData());
+			} else {
+				return 0L;
+			}
+		}
+	}
+
 	private Set<AID> dumpAll() {
 		ImmutableSet.Builder<AID> pendingAids = ImmutableSet.builder();
 		try (Cursor cursor = this.atoms.openCursor(null, null)) {
 			DatabaseEntry pKey = new DatabaseEntry();
 			OperationStatus status = cursor.getFirst(pKey, null, LockMode.DEFAULT);
 			while (status == OperationStatus.SUCCESS) {
-				AID aid = AID.from(pKey.getData(), Long.BYTES);
+				AID aid = getAidFromPKey(pKey);
 				pendingAids.add(aid);
 				status = cursor.getNext(pKey, null, LockMode.DEFAULT);
 			}
@@ -629,7 +616,7 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 					break;
 				}
 
-				AID aid = AID.from(pKey.getData(), Long.BYTES);
+				AID aid = getAidFromPKey(pKey);
 				aids.add(aid);
 
 				status = cursor.getNextDup(key, value, pKey, LockMode.DEFAULT);
@@ -658,7 +645,7 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 
 			OperationStatus status = cursor.getSearchKeyRange(key, value, pKey, LockMode.DEFAULT);
 			while (status == OperationStatus.SUCCESS) {
-				AID aid = AID.from(pKey.getData(), Long.BYTES);
+				AID aid = getAidFromPKey(pKey);
 				aids.add(aid);
 				status = cursor.getNextDup(key, value, pKey, LockMode.DEFAULT);
 			}
@@ -670,7 +657,6 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 			profiler.incrementFrom("ATOM_STORE:GET_BY_SHARD", start);
 		}
 	}
-
 	BerkeleyCursor getNext(BerkeleyCursor cursor) {
 		try (SecondaryCursor databaseCursor = toSecondaryCursor(cursor.getType())) {
 			DatabaseEntry pKey = new DatabaseEntry(cursor.getPrimary());
@@ -757,11 +743,30 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 		return databaseCursor;
 	}
 
+	private static AID getAidFromPKey(DatabaseEntry pKey) {
+		return AID.from(pKey.getData(), Long.BYTES + 1); // prefix + LC
+	}
+
+	private static DatabaseEntry toPKey(byte prefix, long logicalClock) {
+		byte[] pKey = new byte[1 + Long.BYTES];
+		pKey[0] = prefix;
+		Longs.copyTo(logicalClock, pKey, 1);
+		return new DatabaseEntry(pKey);
+	}
+
+	private static DatabaseEntry toPKey(byte prefix, long logicalClock, AID aid) {
+		byte[] pKey = new byte[1 + Long.BYTES + AID.BYTES];
+		pKey[0] = prefix;
+		Longs.copyTo(logicalClock, pKey, 1);
+		System.arraycopy(aid.getBytes(), 0, pKey, Long.BYTES + 1, AID.BYTES);
+		return new DatabaseEntry(pKey);
+	}
+
 	public static class AtomStorePackedPrimaryKeyComparator implements Comparator<byte[]> {
+		private static final int RELEVANT_PREFIX_LENGTH = 1 + Long.BYTES;
 		@Override
 		public int compare(byte[] primary1, byte[] primary2) {
-			int minLen = Math.min(primary1.length, primary2.length);
-			for (int i = 0; i < minLen; i++) {
+			for (int i = 0; i < RELEVANT_PREFIX_LENGTH; i++) {
 				int compare = UnsignedBytes.compare(primary1[i], primary2[i]);
 				if (compare != 0) {
 					return compare;
@@ -788,7 +793,7 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 		private static AtomSecondaryCreator from(Map<AID, TempoAtomIndices> atomIndices, Function<TempoAtomIndices, Set<LedgerIndex>> indexer) {
 			return new AtomSecondaryCreator(
 				key -> {
-					TempoAtomIndices tempoAtomIndices = atomIndices.get(AID.from(key.getData(), Long.BYTES));
+					TempoAtomIndices tempoAtomIndices = atomIndices.get(getAidFromPKey(key));
 					if (tempoAtomIndices == null) {
 						throw new IllegalStateException("Indices for atom '" + Longs.fromByteArray(key.getData()) + "' not available");
 					}
