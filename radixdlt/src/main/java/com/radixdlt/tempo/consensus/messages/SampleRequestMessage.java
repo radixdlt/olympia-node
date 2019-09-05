@@ -1,32 +1,42 @@
 package com.radixdlt.tempo.consensus.messages;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.common.EUID;
 import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerId2;
 import org.radix.network.messaging.Message;
 
-import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 @SerializerId2("tempo.consensus.sampling.request")
 public class SampleRequestMessage extends Message {
+	@JsonProperty("tag")
+	@DsonOutput(DsonOutput.Output.ALL)
+	private final EUID tag;
+
 	@JsonProperty("indices")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private final Map<EUID, Set<LedgerIndex>> requestedIndicesByTag;
+	private final Set<LedgerIndex> requestedIndices;
 
 	private SampleRequestMessage() {
-		this.requestedIndicesByTag = ImmutableMap.of();
+		this.tag = null;
+		this.requestedIndices = ImmutableSet.of();
 	}
 
-	public SampleRequestMessage(Map<EUID, Set<LedgerIndex>> requestedIndicesByTag) {
-		this.requestedIndicesByTag = requestedIndicesByTag;
+	public SampleRequestMessage(EUID tag, Set<LedgerIndex> requestedIndices) {
+		this.tag = Objects.requireNonNull(tag);
+		this.requestedIndices = Objects.requireNonNull(requestedIndices);
 	}
 
-	public Map<EUID, Set<LedgerIndex>> getRequestedIndicesByTag() {
-		return requestedIndicesByTag;
+	public EUID getTag() {
+		return tag;
+	}
+
+	public Set<LedgerIndex> getRequestedIndices() {
+		return requestedIndices;
 	}
 
 	@Override

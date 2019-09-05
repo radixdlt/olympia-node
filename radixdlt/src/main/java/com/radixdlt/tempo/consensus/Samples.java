@@ -1,29 +1,33 @@
 package com.radixdlt.tempo.consensus;
 
-import org.radix.network2.addressbook.Peer;
+import com.radixdlt.common.EUID;
 
-import java.util.Collection;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 public final class Samples {
-	private final Map<Peer, Sample> samplesByPeer;
-	private final Set<Peer> unresponsivePeers;
+	private final Map<EUID, Sample> samplesByPeer;
+	private final Set<EUID> unresponsivePeers;
 
-	public Samples(Map<Peer, Sample> samplesByPeer, Set<Peer> unresponsivePeers) {
-		this.samplesByPeer = samplesByPeer;
-		this.unresponsivePeers = unresponsivePeers;
+	public Samples(Map<EUID, Sample> samplesByPeer, Set<EUID> unresponsivePeers) {
+		this.samplesByPeer = Objects.requireNonNull(samplesByPeer);
+		this.unresponsivePeers = Objects.requireNonNull(unresponsivePeers);
 	}
 
-	public Collection<Sample> getSamples() {
-		return samplesByPeer.values();
-	}
-
-	public Map<Peer, Sample> getSamplesByPeer() {
+	public Map<EUID, Sample> getSamplesByPeer() {
 		return samplesByPeer;
 	}
 
-	public Set<Peer> getUnresponsivePeers() {
+	public Set<EUID> getUnresponsivePeers() {
 		return unresponsivePeers;
+	}
+
+	@Override
+	public String toString() {
+		return "Samples{" +
+			"samples=" + samplesByPeer +
+			", unresponsive=" + unresponsivePeers +
+			'}';
 	}
 }

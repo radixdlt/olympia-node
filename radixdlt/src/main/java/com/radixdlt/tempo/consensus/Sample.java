@@ -1,13 +1,14 @@
 package com.radixdlt.tempo.consensus;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.common.AID;
 import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-import org.radix.time.TemporalProof;
 
 import java.util.Map;
 import java.util.Set;
@@ -24,21 +25,26 @@ public final class Sample {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	@JsonProperty("temporalProofs")
+	@JsonProperty("preferencesByIndex")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private final Map<LedgerIndex, Map<AID, TemporalProof>> temporalProofsByIndex;
+	private final Map<LedgerIndex, AID> preferencesByIndex;
 
 	@JsonProperty("unavailableIndices")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final Set<LedgerIndex> unavailableIndices;
 
-	public Sample(Map<LedgerIndex, Map<AID, TemporalProof>> temporalProofsByIndex, Set<LedgerIndex> unavailableIndices) {
-		this.temporalProofsByIndex = temporalProofsByIndex;
+	private Sample() {
+		this.preferencesByIndex = ImmutableMap.of();
+		this.unavailableIndices = ImmutableSet.of();
+	}
+
+	public Sample(Map<LedgerIndex, AID> preferencesByIndex, Set<LedgerIndex> unavailableIndices) {
+		this.preferencesByIndex = preferencesByIndex;
 		this.unavailableIndices = unavailableIndices;
 	}
 
-	public Map<LedgerIndex, Map<AID, TemporalProof>> getTemporalProofsByIndex() {
-		return temporalProofsByIndex;
+	public Map<LedgerIndex, AID> getPreferencesByIndex() {
+		return preferencesByIndex;
 	}
 
 	public Set<LedgerIndex> getUnavailableIndices() {

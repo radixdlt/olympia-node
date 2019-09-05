@@ -1,7 +1,7 @@
 package com.radixdlt.tempo.store;
 
 /**
- * Status of an {@link com.radixdlt.Atom}, typically in a store
+ * Status of an {@link com.radixdlt.Atom} in Tempo consensus
  */
 public enum TempoAtomStatus {
 	/**

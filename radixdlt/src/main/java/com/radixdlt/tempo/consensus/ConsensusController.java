@@ -9,7 +9,6 @@ import com.radixdlt.tempo.AtomObserver;
 import com.radixdlt.tempo.Scheduler;
 import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.store.ConfidenceStore;
-import com.radixdlt.tempo.store.SampleStore;
 import com.radixdlt.tempo.store.TempoAtomStore;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
@@ -41,7 +40,6 @@ public final class ConsensusController implements AtomObserver {
 	private final Scheduler scheduler;
 	private final TempoAtomStore atomStore;
 	private final ConfidenceStore confidenceStore;
-	private final SampleStore sampleStore;
 	private final SampleRetriever sampleRetriever;
 	private final SampleNodeSelector sampleNodeSelector;
 	private final AddressBook addressBook;
@@ -55,7 +53,6 @@ public final class ConsensusController implements AtomObserver {
 		Scheduler scheduler,
 		TempoAtomStore atomStore,
 		ConfidenceStore confidenceStore,
-		SampleStore sampleStore,
 		SampleRetriever sampleRetriever,
 		SampleNodeSelector sampleNodeSelector,
 		AddressBook addressBook,
@@ -65,7 +62,6 @@ public final class ConsensusController implements AtomObserver {
 		this.scheduler = Objects.requireNonNull(scheduler);
 		this.atomStore = Objects.requireNonNull(atomStore);
 		this.confidenceStore = Objects.requireNonNull(confidenceStore);
-		this.sampleStore = Objects.requireNonNull(sampleStore);
 		this.sampleRetriever = Objects.requireNonNull(sampleRetriever);
 		this.sampleNodeSelector = Objects.requireNonNull(sampleNodeSelector);
 		this.addressBook = Objects.requireNonNull(addressBook);
@@ -121,7 +117,6 @@ public final class ConsensusController implements AtomObserver {
 
 		// TODO does this even work???
 		// temporal proofs may contain stale votes and will keep growing if we use a multi-vote system..
-		Map<AID, TemporalProof> temporalProofs = new HashMap<>();
 //		for (Sample sample : samples.getSamples()) {
 //			for (LedgerIndex index : sample.getTemporalProofsByIndex().keySet()) {
 //				if (requestedIndices.contains(index)) {
@@ -133,26 +128,13 @@ public final class ConsensusController implements AtomObserver {
 //			}
 //		}
 
-		if (temporalProofs.isEmpty()) {
-			log.debug("Received empty sample, retrying");
-			scheduler.schedule(() -> continueConsensus(preference), DELAY_SAMPLE_EMPTY, TimeUnit.MILLISECONDS);
-			return;
-		}
-
-		Map<AID, List<EUID>> preferences = MomentumUtils.extractPreferences(temporalProofs.values());
-		Map<AID, Long> momenta = MomentumUtils.measure(preferences, nid -> 1L);
-		long totalMomenta = momenta.values().stream().mapToLong(l -> l).sum();
-		Map.Entry<AID, Long> winner = momenta.entrySet().stream()
-			.max(Comparator.comparingLong(Map.Entry::getValue))
-			.orElseThrow(IllegalStateException::new);
-
-		if (!winner.getKey().equals(preference.getAID())) {
-			log.debug(String.format("Conflicting aid '%s' is in majority (%d/%d), changing preference",
-				winner.getKey(), winner.getValue(), totalMomenta));
-			change(preference, winner.getKey());
-		} else {
-			increaseConfidence(preference);
-		}
+//		if (!winner.getKey().equals(preference.getAID())) {
+//			log.debug(String.format("Conflicting aid '%s' is in majority (%d/%d), changing preference",
+//				winner.getKey(), winner.getValue(), totalMomenta));
+//			change(preference, winner.getKey());
+//		} else {
+//			increaseConfidence(preference);
+//		}
 	}
 
 	private void increaseConfidence(TempoAtom preference) {

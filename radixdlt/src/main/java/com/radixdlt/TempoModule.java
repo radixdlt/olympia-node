@@ -51,7 +51,6 @@ public class TempoModule extends AbstractModule {
 		ownedResourcesBinder.addBinding().to(TempoAtomStore.class);
 		ownedResourcesBinder.addBinding().to(CommitmentStore.class);
 		ownedResourcesBinder.addBinding().to(LCCursorStore.class);
-		ownedResourcesBinder.addBinding().to(SampleStore.class);
 
 		// dependencies
 		bind(MessageCentral.class).toInstance(messageCentral);

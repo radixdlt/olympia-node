@@ -18,7 +18,6 @@ public class BerkeleyStoreModule extends AbstractModule {
 		bind(TempoAtomStoreView.class).to(BerkeleyTempoAtomStore.class);
 		bind(CommitmentStore.class).to(BerkeleyCommitmentStore.class);
 		bind(LCCursorStore.class).to(BerkeleyLCCursorStore.class);
-		bind(SampleStore.class).to(BerkeleySampleStore.class);
 
 		// FIXME: remove static dependency on modules for databaseenvironment
 		bind(DatabaseEnvironment.class).toProvider(() -> Modules.get(DatabaseEnvironment.class));
