@@ -1,15 +1,19 @@
 package com.radixdlt.tempo.consensus.messages;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableMap;
+import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
 import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerId2;
 import org.radix.network.messaging.Message;
 
+import java.util.Collection;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @SerializerId2("tempo.consensus.sampling.request")
 public class SampleRequestMessage extends Message {
@@ -19,16 +23,20 @@ public class SampleRequestMessage extends Message {
 
 	@JsonProperty("indices")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private final Set<LedgerIndex> requestedIndices;
+	private final Map<AID, Set<LedgerIndex>> requestedIndicesByAids;
 
 	private SampleRequestMessage() {
 		this.tag = null;
-		this.requestedIndices = ImmutableSet.of();
+		this.requestedIndicesByAids = ImmutableMap.of();
 	}
 
-	public SampleRequestMessage(EUID tag, Set<LedgerIndex> requestedIndices) {
+	public SampleRequestMessage(EUID tag, Map<AID, Set<LedgerIndex>> requestedIndicesByAids) {
 		this.tag = Objects.requireNonNull(tag);
-		this.requestedIndices = Objects.requireNonNull(requestedIndices);
+		this.requestedIndicesByAids = Objects.requireNonNull(requestedIndicesByAids);
+
+		if (requestedIndicesByAids.isEmpty()) {
+			throw new IllegalArgumentException("Requested indices are empty");
+		}
 	}
 
 	public EUID getTag() {
@@ -36,7 +44,13 @@ public class SampleRequestMessage extends Message {
 	}
 
 	public Set<LedgerIndex> getRequestedIndices() {
-		return requestedIndices;
+		return requestedIndicesByAids.values().stream()
+			.flatMap(Collection::stream)
+			.collect(Collectors.toSet());
+	}
+
+	public Set<AID> getPreferredAids() {
+		return requestedIndicesByAids.keySet();
 	}
 
 	@Override

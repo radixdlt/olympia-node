@@ -8,7 +8,6 @@ import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.tempo.AtomObserver;
 import com.radixdlt.tempo.Scheduler;
 import com.radixdlt.tempo.TempoAtom;
-import com.radixdlt.tempo.store.ConfidenceStore;
 import com.radixdlt.tempo.store.TempoAtomStoreView;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
@@ -35,7 +34,7 @@ public final class ConsensusController implements AtomObserver {
 	private final EUID self;
 	private final Scheduler scheduler;
 	private final TempoAtomStoreView storeView;
-	private final ConfidenceStore confidenceStore;
+	private final AtomConfidence atomConfidence;
 	private final SampleRetriever sampleRetriever;
 	private final SampleNodeSelector sampleNodeSelector;
 	private final AddressBook addressBook;
@@ -48,7 +47,7 @@ public final class ConsensusController implements AtomObserver {
 		@Named("self") EUID self,
 		Scheduler scheduler,
 		TempoAtomStoreView  storeView,
-		ConfidenceStore confidenceStore,
+		AtomConfidence atomConfidence,
 		SampleRetriever sampleRetriever,
 		SampleNodeSelector sampleNodeSelector,
 		AddressBook addressBook,
@@ -57,7 +56,7 @@ public final class ConsensusController implements AtomObserver {
 		this.self = Objects.requireNonNull(self);
 		this.scheduler = Objects.requireNonNull(scheduler);
 		this.storeView = Objects.requireNonNull(storeView);
-		this.confidenceStore = Objects.requireNonNull(confidenceStore);
+		this.atomConfidence = Objects.requireNonNull(atomConfidence);
 		this.sampleRetriever = Objects.requireNonNull(sampleRetriever);
 		this.sampleNodeSelector = Objects.requireNonNull(sampleNodeSelector);
 		this.addressBook = Objects.requireNonNull(addressBook);
@@ -73,7 +72,7 @@ public final class ConsensusController implements AtomObserver {
 				pendingAtoms.put(uncommittedAtom.get(), storeView.getUniqueIndices(aid));
 			} else {
 				log.warn("Consensus store contains uncommitted atom '" + aid + "' which no longer exists, removing");
-				confidenceStore.delete(aid);
+				atomConfidence.reset(aid);
 			}
 		}
 		pendingAtoms.forEachPending(this::beginRound);
@@ -96,7 +95,7 @@ public final class ConsensusController implements AtomObserver {
 			.map(addressBook::peer)
 			.collect(Collectors.toSet());
 		Set<LedgerIndex> uniqueIndices = pendingAtoms.getUniqueIndices(preference.getAID());
-		sampleRetriever.sample(uniqueIndices, samplePeers)
+		sampleRetriever.sample(preference.getAID(), uniqueIndices, samplePeers)
 			.thenAccept(samples -> endRound(preference, uniqueIndices, sampleNids, samples));
 	}
 
@@ -117,7 +116,7 @@ public final class ConsensusController implements AtomObserver {
 		AID topPreference = samples.getTopPreference();
 		if (topPreference.equals(preference.getAID())) {
 			// if the significant preference matches our current preference, increase confidence
-			int confidence = confidenceStore.increaseConfidence(preference.getAID());
+			int confidence = atomConfidence.increaseConfidence(preference.getAID());
 			if (confidence > CONFIDENCE_THRESHOLD) {
 				// if we have sufficient confidence in our preference, commit to it
 				commit(preference);
@@ -133,7 +132,7 @@ public final class ConsensusController implements AtomObserver {
 
 	private void changePreference(TempoAtom oldPreference, AID newPreference, Set<EUID> peersToContact) {
 		pendingAtoms.remove(oldPreference.getAID());
-		confidenceStore.delete(oldPreference.getAID());
+		atomConfidence.reset(oldPreference.getAID());
 		consensusReceptor.requestChangePreference(oldPreference, newPreference, peersToContact.stream()
 			.map(addressBook::peer)
 			.collect(Collectors.toSet()));
@@ -153,6 +152,6 @@ public final class ConsensusController implements AtomObserver {
 	@Override
 	public void onDeleted(AID aid) {
 		pendingAtoms.remove(aid);
-		confidenceStore.delete(aid);
+		atomConfidence.reset(aid);
 	}
 }

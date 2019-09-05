@@ -1,5 +1,6 @@
 package com.radixdlt.tempo.consensus;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.radixdlt.common.AID;
@@ -10,6 +11,8 @@ import com.radixdlt.ledger.LedgerSearchMode;
 import com.radixdlt.tempo.Scheduler;
 import com.radixdlt.tempo.consensus.messages.SampleRequestMessage;
 import com.radixdlt.tempo.consensus.messages.SampleResponseMessage;
+import com.radixdlt.tempo.discovery.AtomDiscoverer;
+import com.radixdlt.tempo.discovery.AtomDiscoveryListener;
 import com.radixdlt.tempo.store.TempoAtomStoreView;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
@@ -18,7 +21,9 @@ import org.radix.network2.messaging.MessageCentral;
 import org.radix.utils.SimpleThreadPool;
 
 import java.io.Closeable;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -32,7 +37,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Singleton
-public final class SampleRetriever implements Closeable {
+public final class SampleRetriever implements Closeable, AtomDiscoverer {
 	private static final Logger log = Logging.getLogger("tempo.consensus.sampler");
 	private static final int REQUEST_QUEUE_CAPACITY = 8192;
 	private static final int REQUEST_PROCESSOR_THREADS = 1;
@@ -43,6 +48,8 @@ public final class SampleRetriever implements Closeable {
 	private final MessageCentral messageCentral;
 
 	private final PendingSamplesState pendingSamples = new PendingSamplesState();
+
+	private final Collection<AtomDiscoveryListener> discoveryListeners;
 
 	private final BlockingQueue<SampleRequest> requestQueue;
 	private final SimpleThreadPool<SampleRequest> requestThreadPool;
@@ -57,6 +64,9 @@ public final class SampleRetriever implements Closeable {
 		this.storeView = Objects.requireNonNull(storeView);
 		this.messageCentral = Objects.requireNonNull(messageCentral);
 
+		// TODO improve locking to something like in messaging
+		this.discoveryListeners = Collections.synchronizedList(new ArrayList<>());
+
 		messageCentral.addListener(SampleRequestMessage.class, this::onRequest);
 		messageCentral.addListener(SampleResponseMessage.class, this::onResponse);
 
@@ -65,12 +75,12 @@ public final class SampleRetriever implements Closeable {
 		this.requestThreadPool.start();
 	}
 
-	CompletableFuture<Samples> sample(Set<LedgerIndex> indices, Collection<Peer> peers) {
+	CompletableFuture<Samples> sample(AID aid, Set<LedgerIndex> indices, Collection<Peer> peers) {
 		// TODO batch requests to same node over time window?
 		EUID tag = generateTag();
 		CompletableFuture<Samples> future = new CompletableFuture<>();
 		pendingSamples.put(tag, future, indices, peers.stream().map(Peer::getNID).collect(Collectors.toSet()));
-		SampleRequestMessage request = new SampleRequestMessage(tag, indices);
+		SampleRequestMessage request = new SampleRequestMessage(tag, ImmutableMap.of(aid, indices));
 		for (Peer peer : peers) {
 			messageCentral.send(peer, request);
 		}
@@ -95,6 +105,8 @@ public final class SampleRetriever implements Closeable {
 	}
 
 	private void processRequest(SampleRequest request) {
+		notifyListeners(request.getMessage().getPreferredAids(), request.getPeer());
+
 		Set<LedgerIndex> requestedIndices = request.getMessage().getRequestedIndices();
 		Map<LedgerIndex, AID> aidByIndex = new HashMap<>();
 		Set<LedgerIndex> unavailableIndices = new HashSet<>();
@@ -130,6 +142,20 @@ public final class SampleRetriever implements Closeable {
 		requestThreadPool.stop();
 		messageCentral.removeListener(SampleRequestMessage.class, this::onRequest);
 		messageCentral.removeListener(SampleResponseMessage.class, this::onResponse);
+	}
+
+	@Override
+	public void addListener(AtomDiscoveryListener listener) {
+		discoveryListeners.add(listener);
+	}
+
+	@Override
+	public void removeListener(AtomDiscoveryListener listener) {
+		discoveryListeners.remove(listener);
+	}
+
+	private void notifyListeners(Collection<AID> aids, Peer peer) {
+		discoveryListeners.forEach(listener -> listener.accept(aids, peer));
 	}
 
 	private static final class SampleRequest {
