@@ -25,23 +25,18 @@ import org.radix.network2.messaging.MessageCentral;
 import org.radix.time.Time;
 import org.radix.universe.system.LocalSystem;
 
-// FIXME: remove static dependency on Time
-// FIXME: remove static dependency on Events
+// FIXME: static dependency on Time
+// FIXME: static dependency on Events
+// FIXME: static dependency on LocalSystem
+// FIXME: static dependency on MessageCentral through Modules
+// FIXME: static dependency on AddressBook through Modules
 public class TempoModule extends AbstractModule {
-	// FIXME: manual injection of MessageCentral should be done automatically
-	private final LocalSystem localSystem;
-	private final MessageCentral messageCentral;
-
-	public TempoModule(LocalSystem localSystem, MessageCentral messageCentral) {
-		this.localSystem = localSystem;
-		this.messageCentral = messageCentral;
-	}
-
 	@Override
 	protected void configure() {
 		// TODO bind Ledger interface to Tempo when ready to consume in application level
 		bind(ConsensusReceptor.class).to(Tempo.class);
 
+		LocalSystem localSystem = LocalSystem.getInstance();
 		bind(LocalSystem.class).annotatedWith(Names.named("self")).toInstance(localSystem);
 		bind(EUID.class).annotatedWith(Names.named("self")).toInstance(localSystem.getNID());
 
@@ -52,12 +47,11 @@ public class TempoModule extends AbstractModule {
 		ownedResourcesBinder.addBinding().to(LCCursorStore.class);
 
 		// dependencies
-		bind(MessageCentral.class).toInstance(messageCentral);
+		bind(MessageCentral.class).toInstance(Modules.get(MessageCentral.class));
 		bind(Scheduler.class).toProvider(SingleThreadedScheduler::new);
 		bind(Attestor.class).to(TempoAttestor.class);
 		bind(WallclockTimeSupplier.class).toInstance(Time::currentTimestamp);
 
-		// FIXME: static dependency on modules for address book
 		bind(PeerSupplier.class).toProvider(() -> new PeerSupplierAdapter(() -> Modules.get(AddressBook.class))).in(Singleton.class);
 	}
 }
