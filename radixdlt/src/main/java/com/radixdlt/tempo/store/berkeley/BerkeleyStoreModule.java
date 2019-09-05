@@ -4,7 +4,6 @@ import com.google.inject.AbstractModule;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.tempo.store.CommitmentStore;
 import com.radixdlt.tempo.store.LCCursorStore;
-import com.radixdlt.tempo.store.SampleStore;
 import com.radixdlt.tempo.store.TempoAtomStore;
 import com.radixdlt.tempo.store.TempoAtomStoreView;
 import org.radix.database.DatabaseEnvironment;

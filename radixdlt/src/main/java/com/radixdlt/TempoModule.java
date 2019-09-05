@@ -18,7 +18,6 @@ import com.radixdlt.tempo.WallclockTimeSupplier;
 import com.radixdlt.tempo.consensus.ConsensusReceptor;
 import com.radixdlt.tempo.store.CommitmentStore;
 import com.radixdlt.tempo.store.LCCursorStore;
-import com.radixdlt.tempo.store.SampleStore;
 import com.radixdlt.tempo.store.TempoAtomStore;
 import org.radix.modules.Modules;
 import org.radix.network2.addressbook.AddressBook;
