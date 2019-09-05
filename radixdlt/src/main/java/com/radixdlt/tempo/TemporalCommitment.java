@@ -2,6 +2,7 @@ package com.radixdlt.tempo;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.common.AID;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.ECSignature;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.serialization.DsonOutput;
@@ -30,6 +31,10 @@ public final class TemporalCommitment {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final Hash commitment;
 
+	@JsonProperty("owner")
+	@DsonOutput(DsonOutput.Output.ALL)
+	private final ECPublicKey owner;
+
 	@JsonProperty("signature")
 	@DsonOutput(value = {DsonOutput.Output.API, DsonOutput.Output.WIRE, DsonOutput.Output.PERSIST})
 	private final ECSignature signature;
@@ -39,13 +44,15 @@ public final class TemporalCommitment {
 		aid = null;
 		logicalClock = 0L;
 		commitment = null;
+		owner = null;
 		signature = null;
 	}
 
-	public TemporalCommitment(AID aid, long logicalClock, Hash commitment, ECSignature signature) {
+	public TemporalCommitment(AID aid, long logicalClock, Hash commitment, ECPublicKey owner, ECSignature signature) {
 		this.aid = Objects.requireNonNull(aid);
 		this.logicalClock = logicalClock;
 		this.commitment = Objects.requireNonNull(commitment);
+		this.owner = Objects.requireNonNull(owner);
 		this.signature = Objects.requireNonNull(signature);
 	}
 
@@ -59,5 +66,13 @@ public final class TemporalCommitment {
 
 	public Hash getCommitment() {
 		return commitment;
+	}
+
+	public ECPublicKey getOwner() {
+		return owner;
+	}
+
+	public ECSignature getSignature() {
+		return signature;
 	}
 }

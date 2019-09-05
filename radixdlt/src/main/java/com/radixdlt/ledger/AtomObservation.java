@@ -17,12 +17,12 @@ public final class AtomObservation {
 
 	private final Type type;
 	private final Atom atom;
-	private final Set<Atom> previousAtoms;
+	private final Set<Atom> supersededAtoms;
 
-	private AtomObservation(Type type, Atom atom, Set<Atom> previousAtoms) {
+	private AtomObservation(Type type, Atom atom, Set<Atom> supersededAtoms) {
 		this.type = type;
 		this.atom = atom;
-		this.previousAtoms = previousAtoms;
+		this.supersededAtoms = supersededAtoms;
 	}
 
 	public Type getType() {
@@ -33,21 +33,21 @@ public final class AtomObservation {
 		return atom;
 	}
 
-	public boolean hasPreviousAtoms() {
-		return !previousAtoms.isEmpty();
+	public boolean hasSupersededAtoms() {
+		return !supersededAtoms.isEmpty();
 	}
 
-	public Set<Atom> getPreviousAtoms() {
-		return previousAtoms;
+	public Set<Atom> getSupersededAtoms() {
+		return supersededAtoms;
 	}
 
-	public static AtomObservation receive(Atom newAtom) {
+	public static AtomObservation adopt(Atom newAtom) {
 		Objects.requireNonNull(newAtom, "newAtom is required");
 		return new AtomObservation(Type.ADOPT, newAtom, ImmutableSet.of());
 	}
 
-	public static AtomObservation change(Set<Atom> previousAtoms, Atom newAtom) {
-		Objects.requireNonNull(previousAtoms, "previousAtoms is required");
+	public static AtomObservation adopt(Set<Atom> previousAtoms, Atom newAtom) {
+		Objects.requireNonNull(previousAtoms, "supersededAtoms is required");
 		Objects.requireNonNull(newAtom, "newAtom is required");
 		return new AtomObservation(Type.ADOPT, newAtom, previousAtoms);
 	}

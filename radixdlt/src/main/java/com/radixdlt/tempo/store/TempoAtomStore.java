@@ -12,15 +12,17 @@ import java.util.Set;
  */
 public interface TempoAtomStore extends TempoAtomStoreView, Resource {
 	/**
-	 * Commits the atom with the given AID to a certain logical clock.
-	 * This irreversibly removes the atom from the pending set.
+	 * Irreversibly commits this store to an atom with at a certain logical clock.
+	 * Once committed, an atom may no longer be deleted or replaced.
+	 *
 	 * @param aid The aid
 	 * @param logicalClock The logical clock
 	 */
 	void commit(AID aid, long logicalClock);
 
 	/**
-	 * Stores an {@link com.radixdlt.Atom} with certain indices.
+	 * Stores a {@link com.radixdlt.Atom} with certain indices.
+	 * The stored atom will be treated as 'pending' until it is eventually deleted or committed.
 	 *
 	 * @param atom The atom
 	 * @param uniqueIndices The unique indices
@@ -31,6 +33,8 @@ public interface TempoAtomStore extends TempoAtomStoreView, Resource {
 
 	/**
 	 * Replaces a set of atoms with another atom in an atomic operation
+	 * The stored atom will be treated as 'pending' until it is eventually deleted or committed.
+
 	 * @param aids The aids to delete
 	 * @param atom The new atom
 	 * @param uniqueIndices The unique indices of that atom

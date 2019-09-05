@@ -2,6 +2,7 @@ package com.radixdlt.tempo;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.radixdlt.Atom;
@@ -32,6 +33,7 @@ import org.radix.logging.Logging;
 import org.radix.modules.Module;
 import org.radix.modules.Modules;
 import org.radix.modules.Plugin;
+import org.radix.network2.addressbook.Peer;
 
 import java.util.List;
 import java.util.Map;
@@ -39,6 +41,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 
 /**
@@ -53,16 +56,16 @@ public final class Tempo extends Plugin implements Ledger, ConsensusReceptor {
 	private final TempoAtomStore atomStore;
 	private final CommitmentStore commitmentStore;
 	private final ConsensusController consensus;
-
 	private final Attestor attestor;
 
 	private final BlockingQueue<AtomObservation> atomObservations;
+	private final Map<AID, Atom> pendingPreferenceChanges = new ConcurrentHashMap<>();
 
 	private final Set<Resource> ownedResources;
 	private final Set<AtomDiscoverer> atomDiscoverers;
 	private final Set<AtomDeliverer> atomDeliverers;
 	private final RequestDeliverer requestDeliverer;
-	private final Set<AtomObserver> observers;
+	private final Set<AtomObserver> observers; // TODO external atomObservations and internal observers is ambiguous
 
 	@Inject
 	public Tempo(
@@ -96,21 +99,24 @@ public final class Tempo extends Plugin implements Ledger, ConsensusReceptor {
 			atomDiscoverer.addListener(requestDeliverer::tryDeliver);
 		}
 		for (AtomDeliverer atomDeliverer : atomDeliverers) {
-			atomDeliverer.addListener((atom, peer) -> addInbound(atom));
+			atomDeliverer.addListener((atom, peer) -> onDelivered(atom));
 		}
 	}
 
 	@Override
-	public void change(TempoAtom oldPreference, AID newPreferenceAid) {
-		throw new UnsupportedOperationException("Not yet implemented");
+	public void requestChangePreference(TempoAtom oldPreference, AID newPreferenceAid, Set<Peer> peersToContact) {
+		// TODO introduce cache for recently discarded preferences so we don't have to request every time
+		pendingPreferenceChanges.put(newPreferenceAid, oldPreference);
+		peersToContact.forEach(peer -> requestDeliverer.tryDeliver(ImmutableSet.of(newPreferenceAid), peer));
 	}
 
 	@Override
-	public void commit(TempoAtom preference) {
+	public void requestCommit(TempoAtom preference) {
 		TemporalCommitment temporalCommitment = attestTo(preference);
 		// TODO do something with commitment
 		log.info("Committing to '" + preference.getAID() + "' at " + temporalCommitment.getLogicalClock());
 		this.atomStore.commit(preference.getAID(), temporalCommitment.getLogicalClock());
+		this.commitmentStore.put(self, temporalCommitment.getLogicalClock(), temporalCommitment.getCommitment());
 		this.addObservation(AtomObservation.commit(preference));
 	}
 
@@ -158,9 +164,11 @@ public final class Tempo extends Plugin implements Ledger, ConsensusReceptor {
 		observers.forEach(observer -> observer.onDeleted(aid));
 	}
 
-	private void addInbound(TempoAtom atom) {
-		AtomObservation observation = AtomObservation.receive(atom);
-		addObservation(observation);
+	private void onDelivered(TempoAtom atom) {
+		// TODO add shard space relevance check
+		Atom oldPreference = pendingPreferenceChanges.remove(atom.getAID());
+		ImmutableSet<Atom> supersededAtoms = oldPreference == null ? ImmutableSet.of() : ImmutableSet.of(oldPreference);
+		addObservation(AtomObservation.adopt(supersededAtoms, atom));
 	}
 
 	private void addObservation(AtomObservation observation) {
@@ -205,7 +213,7 @@ public final class Tempo extends Plugin implements Ledger, ConsensusReceptor {
 			@Override
 			public void inject(org.radix.atoms.Atom atom) {
 				TempoAtom tempoAtom = LegacyUtils.fromLegacyAtom(atom);
-				addInbound(tempoAtom);
+				onDelivered(tempoAtom);
 			}
 
 			@Override

@@ -9,7 +9,7 @@ import com.radixdlt.tempo.AtomObserver;
 import com.radixdlt.tempo.Scheduler;
 import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.store.ConfidenceStore;
-import com.radixdlt.tempo.store.TempoAtomStore;
+import com.radixdlt.tempo.store.TempoAtomStoreView;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.network2.addressbook.AddressBook;
@@ -28,13 +28,13 @@ public final class ConsensusController implements AtomObserver {
 	// TODO extract to consensusconfiguration
 	private static final int CONFIDENCE_THRESHOLD = 3;
 	private static final int MAX_SAMPLE_NODES = 5;
+	private static final double SAMPLE_SIGNIFICANCE_THRESHOLD = 0.7;
 
 	private static final int SAMPLE_NODES_UNAVAILABLE_DELAY_MILLISECONDS = 1000;
-	private static final long SAMPLE_EMPTY_REATTEMPT_DELAY_MILLISECONDS = 500;
 
 	private final EUID self;
 	private final Scheduler scheduler;
-	private final TempoAtomStore atomStore;
+	private final TempoAtomStoreView storeView;
 	private final ConfidenceStore confidenceStore;
 	private final SampleRetriever sampleRetriever;
 	private final SampleNodeSelector sampleNodeSelector;
@@ -47,7 +47,7 @@ public final class ConsensusController implements AtomObserver {
 	public ConsensusController(
 		@Named("self") EUID self,
 		Scheduler scheduler,
-		TempoAtomStore atomStore,
+		TempoAtomStoreView  storeView,
 		ConfidenceStore confidenceStore,
 		SampleRetriever sampleRetriever,
 		SampleNodeSelector sampleNodeSelector,
@@ -56,7 +56,7 @@ public final class ConsensusController implements AtomObserver {
 	) {
 		this.self = Objects.requireNonNull(self);
 		this.scheduler = Objects.requireNonNull(scheduler);
-		this.atomStore = Objects.requireNonNull(atomStore);
+		this.storeView = Objects.requireNonNull(storeView);
 		this.confidenceStore = Objects.requireNonNull(confidenceStore);
 		this.sampleRetriever = Objects.requireNonNull(sampleRetriever);
 		this.sampleNodeSelector = Objects.requireNonNull(sampleNodeSelector);
@@ -66,22 +66,21 @@ public final class ConsensusController implements AtomObserver {
 
 	// FIXME open resources in constructor so we can just do this in constructor instead
 	public void start() {
-		Set<AID> pending = atomStore.getPending();
+		Set<AID> pending = storeView.getPending();
 		for (AID aid : pending) {
-			Optional<TempoAtom> uncommittedAtom = atomStore.get(aid);
+			Optional<TempoAtom> uncommittedAtom = storeView.get(aid);
 			if (uncommittedAtom.isPresent()) {
-				pendingAtoms.put(uncommittedAtom.get(), atomStore.getUniqueIndices(aid));
+				pendingAtoms.put(uncommittedAtom.get(), storeView.getUniqueIndices(aid));
 			} else {
 				log.warn("Consensus store contains uncommitted atom '" + aid + "' which no longer exists, removing");
 				confidenceStore.delete(aid);
 			}
 		}
-		pendingAtoms.forEachPending(this::continueConsensus);
+		pendingAtoms.forEachPending(this::beginRound);
 	}
 
-	private void continueConsensus(TempoAtom preference) {
-		log.debug("Continuing consensus for '" + preference.getAID() + "'");
-
+	private void beginRound(TempoAtom preference) {
+		log.debug("Beginning consensus round for '" + preference.getAID() + "'");
 		Set<EUID> availableNids = addressBook.recentPeers()
 			.filter(Peer::hasNID)
 			.map(Peer::getNID)
@@ -89,7 +88,7 @@ public final class ConsensusController implements AtomObserver {
 		List<EUID> sampleNids = sampleNodeSelector.selectNodes(availableNids, preference, MAX_SAMPLE_NODES);
 		if (sampleNids.isEmpty()) {
 			log.warn("No sample nodes to talk to, unable to achieve consensus on '" + preference.getAID() + "', waiting");
-			scheduler.schedule(() -> continueConsensus(preference), SAMPLE_NODES_UNAVAILABLE_DELAY_MILLISECONDS, TimeUnit.MILLISECONDS);
+			scheduler.schedule(() -> beginRound(preference), SAMPLE_NODES_UNAVAILABLE_DELAY_MILLISECONDS, TimeUnit.MILLISECONDS);
 			return;
 		}
 
@@ -98,65 +97,57 @@ public final class ConsensusController implements AtomObserver {
 			.collect(Collectors.toSet());
 		Set<LedgerIndex> uniqueIndices = pendingAtoms.getUniqueIndices(preference.getAID());
 		sampleRetriever.sample(uniqueIndices, samplePeers)
-			.thenAccept(samples -> receiveSamples(preference, uniqueIndices, samples));
+			.thenAccept(samples -> endRound(preference, uniqueIndices, sampleNids, samples));
 	}
 
-	private void receiveSamples(TempoAtom preference, Set<LedgerIndex> requestedIndices, Samples samples) {
-		log.debug("Received sample for '" + preference.getAID() + "'");
+	private void endRound(TempoAtom preference, Set<LedgerIndex> requestedIndices, List<EUID> sampleNids, Samples samples) {
+		log.debug("Completing consensus round for '" + preference.getAID() + "'");
 		if (!pendingAtoms.isPending(preference.getAID())) {
 			log.debug("Preference '" + preference.getAID() + "' is no longer pending, aborting");
 			return;
 		}
 
-		// TODO node might have sent index we didn't request, BFD or just ignore
-		// aggregate all temporal proofs for all indices of the atom
+		int availableVotes = requestedIndices.size() * sampleNids.size();
+		if (!samples.hasTopPreference() || samples.getTopPreferenceCount() < availableVotes * SAMPLE_SIGNIFICANCE_THRESHOLD) {
+			// nothing to do if there is no significant top preference, just begin another round
+			beginRound(preference);
+			return;
+		}
 
-		// TODO does this even work???
-		// temporal proofs may contain stale votes and will keep growing if we use a multi-vote system..
-//		for (Sample sample : samples.getSamples()) {
-//			for (LedgerIndex index : sample.getTemporalProofsByIndex().keySet()) {
-//				if (requestedIndices.contains(index)) {
-//					for (Map.Entry<AID, TemporalProof> aidAndTemporalProof : sample.getTemporalProofsByIndex().get(index).entrySet()) {
-//
-//					}
-//					temporalProofs.putAll(sample.getTemporalProofsByIndex().get(index));
-//				}
-//			}
-//		}
-
-//		if (!winner.getKey().equals(preference.getAID())) {
-//			log.debug(String.format("Conflicting aid '%s' is in majority (%d/%d), changing preference",
-//				winner.getKey(), winner.getValue(), totalMomenta));
-//			change(preference, winner.getKey());
-//		} else {
-//			increaseConfidence(preference);
-//		}
-	}
-
-	private void increaseConfidence(TempoAtom preference) {
-		int confidence = confidenceStore.increaseConfidence(preference.getAID());
-		if (confidence > CONFIDENCE_THRESHOLD) {
-			commit(preference);
+		AID topPreference = samples.getTopPreference();
+		if (topPreference.equals(preference.getAID())) {
+			// if the significant preference matches our current preference, increase confidence
+			int confidence = confidenceStore.increaseConfidence(preference.getAID());
+			if (confidence > CONFIDENCE_THRESHOLD) {
+				// if we have sufficient confidence in our preference, commit to it
+				commit(preference);
+			} else {
+				// if we don't have sufficient confidence yet, begin another round
+				beginRound(preference);
+			}
 		} else {
-			continueConsensus(preference);
+			// if the significant preference is a different preference, try and change to that
+			changePreference(preference, topPreference, samples.getPeersFor(topPreference));
 		}
 	}
 
-	private void change(TempoAtom oldPreference, AID newPreference) {
+	private void changePreference(TempoAtom oldPreference, AID newPreference, Set<EUID> peersToContact) {
 		pendingAtoms.remove(oldPreference.getAID());
 		confidenceStore.delete(oldPreference.getAID());
-		consensusReceptor.change(oldPreference, newPreference);
+		consensusReceptor.requestChangePreference(oldPreference, newPreference, peersToContact.stream()
+			.map(addressBook::peer)
+			.collect(Collectors.toSet()));
 	}
 
 	private void commit(TempoAtom preference) {
 		pendingAtoms.remove(preference.getAID());
-		consensusReceptor.commit(preference);
+		consensusReceptor.requestCommit(preference);
 	}
 
 	@Override
 	public void onAdopted(TempoAtom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
 		pendingAtoms.put(atom, uniqueIndices);
-		continueConsensus(atom);
+		beginRound(atom);
 	}
 
 	@Override

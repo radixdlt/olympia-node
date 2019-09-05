@@ -12,6 +12,7 @@ import com.radixdlt.serialization.SerializerId2;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * Sample of a certain set of {@link LedgerIndex}.
@@ -41,6 +42,14 @@ public final class Sample {
 	public Sample(Map<LedgerIndex, AID> preferencesByIndex, Set<LedgerIndex> unavailableIndices) {
 		this.preferencesByIndex = preferencesByIndex;
 		this.unavailableIndices = unavailableIndices;
+	}
+
+	public Stream<AID> preferences() {
+		return preferencesByIndex.values().stream();
+	}
+
+	public Stream<AID> uniquePreferences() {
+		return preferencesByIndex.values().stream();
 	}
 
 	public Map<LedgerIndex, AID> getPreferencesByIndex() {

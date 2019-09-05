@@ -2,10 +2,11 @@ package com.radixdlt.tempo.store.berkeley;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.radixdlt.common.EUID;
+import com.radixdlt.common.AID;
 import com.radixdlt.tempo.Resource;
 import com.radixdlt.tempo.TempoException;
-import com.radixdlt.tempo.store.LCCursorStore;
+import com.radixdlt.tempo.store.ConfidenceStore;
+import com.radixdlt.utils.Ints;
 import com.radixdlt.utils.Longs;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
@@ -21,18 +22,19 @@ import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 
 import java.util.Objects;
-import java.util.Optional;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 @Singleton
-public final class BerkeleyLCCursorStore implements Resource, LCCursorStore {
-	private static final String LC_CURSOR_STORE_NAME = "tempo2.sync.iterative.cursors";
-	private static final Logger logger = Logging.getLogger("store.cursors");
+public final class BerkeleyConfidenceStore implements Resource, ConfidenceStore {
+	private static final String CONFIDENCE_STORE_NAME = "tempo2.consensus.confidence";
+	private static final Logger logger = Logging.getLogger("store.confidence");
 
 	private final DatabaseEnvironment dbEnv;
-	private Database cursors;
+	private Database confidence;
 
 	@Inject
-	public BerkeleyLCCursorStore(DatabaseEnvironment dbEnv) {
+	public BerkeleyConfidenceStore(DatabaseEnvironment dbEnv) {
 		this.dbEnv = Objects.requireNonNull(dbEnv, "dbEnv is required");
 	}
 
@@ -54,7 +56,7 @@ public final class BerkeleyLCCursorStore implements Resource, LCCursorStore {
 
 		try {
 			Environment dbEnv = this.dbEnv.getEnvironment();
-			this.cursors = dbEnv.openDatabase(null, LC_CURSOR_STORE_NAME, primaryConfig);
+			this.confidence = dbEnv.openDatabase(null, CONFIDENCE_STORE_NAME, primaryConfig);
 		} catch (Exception e) {
 			throw new TempoException("Error while opening database", e);
 		}
@@ -72,7 +74,7 @@ public final class BerkeleyLCCursorStore implements Resource, LCCursorStore {
 
 			Environment env = this.dbEnv.getEnvironment();
 			transaction = env.beginTransaction(null, new TransactionConfig().setReadUncommitted(true));
-			env.truncateDatabase(transaction, LC_CURSOR_STORE_NAME, false);
+			env.truncateDatabase(transaction, CONFIDENCE_STORE_NAME, false);
 			transaction.commit();
 		} catch (DatabaseNotFoundException e) {
 			if (transaction != null) {
@@ -91,53 +93,54 @@ public final class BerkeleyLCCursorStore implements Resource, LCCursorStore {
 
 	@Override
 	public void close() {
-		if (this.cursors != null) {
-			this.cursors.close();
+		if (this.confidence != null) {
+			this.confidence.close();
 		}
 	}
 
 	@Override
-	public void put(EUID nid, long cursor) {
+	public int increaseConfidence(AID aid) {
 		Transaction transaction = dbEnv.getEnvironment().beginTransaction(null, null);
 		try {
-			DatabaseEntry key = new DatabaseEntry(toPKey(nid));
-			DatabaseEntry value = new DatabaseEntry(Longs.toByteArray(cursor));
+			DatabaseEntry key = new DatabaseEntry(toPKey(aid));
+			DatabaseEntry value = new DatabaseEntry();
 
-			OperationStatus status = this.cursors.put(transaction, key, value);
-			if (status != OperationStatus.SUCCESS) {
-				fail("Database returned status " + status + " for put operation");
+			// TODO potential race condition here?
+			OperationStatus status = this.confidence.get(transaction, key, value, LockMode.DEFAULT);
+			int previousConfidence = 0;
+			if (status != OperationStatus.NOTFOUND && status != OperationStatus.SUCCESS) {
+				fail("Database returned status " + status + " for get operation");
+			} else {
+				previousConfidence = Ints.fromByteArray(value.getData());
 			}
-
+			int nextConfidence = previousConfidence + 1;
+			value.setData(Longs.toByteArray(nextConfidence));
+			this.confidence.put(transaction, key, value);
 			transaction.commit();
+			return nextConfidence;
 		} catch (Exception e) {
 			transaction.abort();
-			fail("Error while storing cursor for '" + nid + "'", e);
+			fail("Error while getting cursor for '" + aid + "'", e);
 		}
+		throw new IllegalStateException("Should never reach here");
 	}
 
 	@Override
-	public Optional<Long> get(EUID nid) {
+	public boolean delete(AID aid) {
+		Transaction transaction = dbEnv.getEnvironment().beginTransaction(null, null);
 		try {
-			DatabaseEntry key = new DatabaseEntry(toPKey(nid));
-			DatabaseEntry value = new DatabaseEntry();
-
-			OperationStatus status = this.cursors.get(null, key, value, LockMode.DEFAULT);
-			if (status == OperationStatus.NOTFOUND) {
-				return Optional.empty();
-			} else if (status != OperationStatus.SUCCESS) {
-				fail("Database returned status " + status + " for get operation");
-			} else {
-				long cursor = Longs.fromByteArray(value.getData());
-				return Optional.of(cursor);
-			}
+			DatabaseEntry key = new DatabaseEntry(toPKey(aid));
+			OperationStatus status = this.confidence.delete(transaction, key);
+			transaction.commit();
+			return status == OperationStatus.SUCCESS;
 		} catch (Exception e) {
-			fail("Error while getting cursor for '" + nid + "'", e);
+			transaction.abort();
+			fail("Error while getting cursor for '" + aid + "'", e);
 		}
-
-		return Optional.empty();
+		throw new IllegalStateException("Should never reach here");
 	}
 
-	private byte[] toPKey(EUID nid) {
-		return nid.toByteArray();
+	private byte[] toPKey(AID aid) {
+		return aid.getBytes();
 	}
 }

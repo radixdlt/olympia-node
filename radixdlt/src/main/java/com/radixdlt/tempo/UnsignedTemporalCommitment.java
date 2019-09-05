@@ -2,6 +2,7 @@ package com.radixdlt.tempo;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.common.AID;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.ECSignature;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.serialization.DsonOutput;
@@ -43,8 +44,8 @@ public final class UnsignedTemporalCommitment {
 		this.commitment = Objects.requireNonNull(commitment);
 	}
 
-	public TemporalCommitment sign(ECSignature signature) {
-		return new TemporalCommitment(aid, logicalClock, commitment, signature);
+	public TemporalCommitment sign(ECSignature signature, ECPublicKey owner) {
+		return new TemporalCommitment(aid, logicalClock, commitment, owner, signature);
 	}
 
 	public AID getAID() {

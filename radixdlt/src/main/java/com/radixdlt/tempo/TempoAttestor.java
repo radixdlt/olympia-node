@@ -40,7 +40,7 @@ public final class TempoAttestor implements Attestor {
 		try {
 			byte[] commitmentData = serialization.toDson(unsignedCommitment, DsonOutput.Output.HASH);
 			ECSignature signature = localSystem.getKeyPair().sign(commitmentData);
-			return unsignedCommitment.sign(signature);
+			return unsignedCommitment.sign(signature, localSystem.getKey());
 		} catch (SerializationException | CryptoException e) {
 			throw new TempoException("Error while signing temporal commitment for '" + aid + "'", e);
 		}

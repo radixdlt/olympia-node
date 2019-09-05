@@ -102,11 +102,11 @@ public final class MockApplication {
 			logger.debug(String.format("Received foreign atom content %s, cannot infer indices", content.getClass().getSimpleName()));
 		}
 
-		if (!atomObservation.hasPreviousAtoms()) {
+		if (!atomObservation.hasSupersededAtoms()) {
 			ledger.store(atom, uniqueIndices, duplicateIndices);
 			logger.info(String.format("Stored atom '%s'", atom.getAID()));
 		} else {
-			Set<AID> previousAids = atomObservation.getPreviousAtoms().stream()
+			Set<AID> previousAids = atomObservation.getSupersededAtoms().stream()
 				.map(Atom::getAID)
 				.collect(Collectors.toSet());
 			ledger.replace(previousAids, atom, uniqueIndices, duplicateIndices);
@@ -115,7 +115,7 @@ public final class MockApplication {
 	}
 
 	boolean inject(Atom atom) {
-		return atomObservationQueue.add(AtomObservation.receive(atom));
+		return atomObservationQueue.add(AtomObservation.adopt(atom));
 	}
 
 	public MockAccessor getAccessor() {

@@ -44,7 +44,7 @@ import java.util.stream.Stream;
  * Discoverer which uses logical clocks as a cursor to iterate through all relevant {@link AID}s of known nodes
  */
 @Singleton
-public final class IterativeDiscoverer implements Resource, AtomDiscoverer, AtomObserver {
+public final class IterativeDiscoverer implements Resource, AtomDiscoverer {
 	private static final Logger log = Logging.getLogger("discoverer.iterative");
 
 	private static final int DEFAULT_REQUEST_TIMEOUT_SECONDS = 5;

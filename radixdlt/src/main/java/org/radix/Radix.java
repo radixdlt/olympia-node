@@ -133,8 +133,8 @@ public class Radix extends Plugin
 				jarPath = jarPath.substring(0, jarPath.lastIndexOf("/"));
 			java.lang.System.setProperty("radix.jar.path", jarPath);
 
-			log.info("Execution file: "+java.lang.System.getProperty("radix.jar"));
-			log.info("Execution path: "+java.lang.System.getProperty("radix.jar.path"));
+			log.debug("Execution file: "+java.lang.System.getProperty("radix.jar"));
+			log.debug("Execution path: "+java.lang.System.getProperty("radix.jar.path"));
 		}
 		catch (Exception ex)
 		{
@@ -261,15 +261,6 @@ public class Radix extends Plugin
 			throw new ModuleStartException("Failure setting up Routing", ex, this);
 		}
 
-		if (Modules.get(RuntimeProperties.class).get("tempo2", false)) {
-			Tempo tempo = new TempoFactory().createDefault(Modules.get(RuntimeProperties.class));
-			Modules.getInstance().start(tempo);
-
-			MockApplication mockApplication = new MockApplication(tempo);
-			mockApplication.startInstance();
-			Modules.put(MockAccessor.class, mockApplication.getAccessor());
-		}
-
 		/*
 		 * ATOMS
 		 */
@@ -310,6 +301,18 @@ public class Radix extends Plugin
 		catch (Exception ex)
 		{
 			throw new ModuleStartException("Failure setting up Network", ex, this);
+		}
+
+		/**
+		 * TEMPO
+		 */
+		if (Modules.get(RuntimeProperties.class).get("tempo2", false)) {
+			Tempo tempo = new TempoFactory().createDefault(Modules.get(RuntimeProperties.class));
+			Modules.getInstance().start(tempo);
+
+			MockApplication mockApplication = new MockApplication(tempo);
+			mockApplication.startInstance();
+			Modules.put(MockAccessor.class, mockApplication.getAccessor());
 		}
 
 		/*
