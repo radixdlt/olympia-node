@@ -15,7 +15,7 @@ import com.radixdlt.tempo.SingleThreadedScheduler;
 import com.radixdlt.tempo.Tempo;
 import com.radixdlt.tempo.TempoAttestor;
 import com.radixdlt.tempo.WallclockTimeSupplier;
-import com.radixdlt.tempo.consensus.ConsensusReceptor;
+import com.radixdlt.tempo.consensus.ConsensusEnforcer;
 import com.radixdlt.tempo.store.CommitmentStore;
 import com.radixdlt.tempo.store.LCCursorStore;
 import com.radixdlt.tempo.store.TempoAtomStore;
@@ -34,7 +34,7 @@ public class TempoModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		// TODO bind Ledger interface to Tempo when ready to consume in application level
-		bind(ConsensusReceptor.class).to(Tempo.class);
+		bind(ConsensusEnforcer.class).to(Tempo.class);
 
 		LocalSystem localSystem = LocalSystem.getInstance();
 		bind(LocalSystem.class).annotatedWith(Names.named("self")).toInstance(localSystem);

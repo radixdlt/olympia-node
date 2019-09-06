@@ -38,7 +38,7 @@ public final class ConsensusController implements AtomObserver {
 	private final SampleRetriever sampleRetriever;
 	private final SampleNodeSelector sampleNodeSelector;
 	private final AddressBook addressBook;
-	private final ConsensusReceptor consensusReceptor;
+	private final ConsensusEnforcer consensusEnforcer;
 
 	private final PendingAtomState pendingAtoms = new PendingAtomState();
 
@@ -51,7 +51,7 @@ public final class ConsensusController implements AtomObserver {
 		SampleRetriever sampleRetriever,
 		SampleNodeSelector sampleNodeSelector,
 		AddressBook addressBook,
-		ConsensusReceptor consensusReceptor
+		ConsensusEnforcer consensusEnforcer
 	) {
 		this.self = Objects.requireNonNull(self);
 		this.scheduler = Objects.requireNonNull(scheduler);
@@ -60,7 +60,7 @@ public final class ConsensusController implements AtomObserver {
 		this.sampleRetriever = Objects.requireNonNull(sampleRetriever);
 		this.sampleNodeSelector = Objects.requireNonNull(sampleNodeSelector);
 		this.addressBook = Objects.requireNonNull(addressBook);
-		this.consensusReceptor = Objects.requireNonNull(consensusReceptor);
+		this.consensusEnforcer = Objects.requireNonNull(consensusEnforcer);
 
 		start();
 	}
@@ -96,8 +96,9 @@ public final class ConsensusController implements AtomObserver {
 
 	private void endRound(TempoAtom preference, Set<LedgerIndex> requestedIndices, List<Peer> samplePeers, Samples samples) {
 		log.debug("Ending consensus round for atom '" + preference.getAID() + "'");
+
 		if (!pendingAtoms.isPending(preference.getAID())) {
-			log.debug("Preference '" + preference.getAID() + "' is no longer pending, aborting");
+			log.debug("Preference '" + preference.getAID() + "' is no longer pending, round result will be ignored");
 			return;
 		}
 
@@ -129,16 +130,15 @@ public final class ConsensusController implements AtomObserver {
 	}
 
 	private void changePreference(TempoAtom oldPreference, AID newPreference, Set<EUID> peersToContact) {
-		pendingAtoms.remove(oldPreference.getAID());
 		atomConfidence.reset(oldPreference.getAID());
-		consensusReceptor.requestChangePreference(oldPreference, newPreference, peersToContact.stream()
+		consensusEnforcer.requestChangePreference(oldPreference, newPreference, peersToContact.stream()
 			.map(addressBook::peer)
 			.collect(Collectors.toSet()));
 	}
 
 	private void commit(TempoAtom preference) {
 		pendingAtoms.remove(preference.getAID());
-		consensusReceptor.requestCommit(preference);
+		consensusEnforcer.requestCommit(preference);
 	}
 
 	@Override

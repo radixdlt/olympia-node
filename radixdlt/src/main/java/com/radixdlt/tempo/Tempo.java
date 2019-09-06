@@ -17,7 +17,7 @@ import com.radixdlt.ledger.LedgerSearchMode;
 import com.radixdlt.ledger.exceptions.AtomAlreadyExistsException;
 import com.radixdlt.ledger.exceptions.LedgerIndexConflictException;
 import com.radixdlt.tempo.consensus.ConsensusController;
-import com.radixdlt.tempo.consensus.ConsensusReceptor;
+import com.radixdlt.tempo.consensus.ConsensusEnforcer;
 import com.radixdlt.tempo.delivery.AtomDeliverer;
 import com.radixdlt.tempo.delivery.RequestDeliverer;
 import com.radixdlt.tempo.discovery.AtomDiscoverer;
@@ -43,7 +43,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 /**
  * The Tempo implementation of a ledger.
  */
-public final class Tempo implements Ledger, ConsensusReceptor, Closeable {
+public final class Tempo implements Ledger, ConsensusEnforcer, Closeable {
 	private static final Logger log = Logging.getLogger("tempo");
 	private static final int INBOUND_QUEUE_CAPACITY = 16384;
 
