@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import com.radixdlt.common.EUID;
@@ -31,12 +32,9 @@ import org.radix.universe.system.LocalSystem;
 import org.radix.universe.system.SystemMessage;
 
 // FIXME: static dependency on Modules.get(Universe.class).getPlanck()
-// FIXME: static dependency on BootstrapDiscovery.getInstance().discover(...)
 // FIXME: static dependency on LocalSystem.getInstance().getNID()
 public class PeerManager extends Plugin {
 	private static final Logger log = Logging.getLogger("peermanager");
-
-	private static final long PROBE_TIMEOUT_SECONDS = 20;
 
 	private final Random rand = new Random(); // No need for cryptographically secure here
 	private final Map<Peer, Long> probes = new HashMap<>();
@@ -44,10 +42,28 @@ public class PeerManager extends Plugin {
 	private final AddressBook addressbook;
 	private final MessageCentral messageCentral;
 	private final Events events;
+	private final BootstrapDiscovery bootstrapDiscovery;
 
-	private final int peersBroadcastIntervalSec;
-	private final int peersProbeIntervalSec;
+	private final long peersBroadcastIntervalMs;
+	private final long peersBroadcastDelayMs;
+	private final long peerProbeIntervalMs;
 	private final long peerProbeDelayMs;
+
+	private final long peerProbeTimeoutMs;
+	private final long peerProbeFrequencyMs;
+
+	private final long heartbeatPeersIntervalMs;
+	private final long heartbeatPeersDelayMs;
+
+	private final long discoverPeersIntervalMs;
+	private final long discoverPeersDelayMs;
+
+	private final int peerMessageBatchSize;
+
+	private Future heartbeatPeersFuture;
+	private Future peersBroadcastFuture;
+	private Future peerProbeFuture;
+	private Future discoverPeersFuture;
 
 
 	private class ProbeTask implements Runnable {
@@ -82,19 +98,39 @@ public class PeerManager extends Plugin {
 		}
 	}
 
-	PeerManager(PeerManagerConfiguration config, AddressBook addressbook, MessageCentral messageCentral, Events events) {
+	PeerManager(PeerManagerConfiguration config, AddressBook addressbook, MessageCentral messageCentral, Events events, BootstrapDiscovery bootstrapDiscovery) {
 		super();
 
 		this.addressbook = Objects.requireNonNull(addressbook);
 		this.messageCentral = Objects.requireNonNull(messageCentral);
 		this.events = Objects.requireNonNull(events);
+		this.bootstrapDiscovery = Objects.requireNonNull(bootstrapDiscovery);
 
-		this.peersBroadcastIntervalSec = config.networkPeersBroadcastInterval(30);
-		this.peersProbeIntervalSec = config.networkPeersProbeInterval(1);
-		this.peerProbeDelayMs = TimeUnit.SECONDS.toMillis(config.networkPeerProbeDelay(30));
+		this.peersBroadcastIntervalMs = config.networkPeersBroadcastInterval(30000);
+		this.peersBroadcastDelayMs = config.networkPeersBroadcastDelay(60000);
 
-		log.info(String.format("%s started, broadcastInterval=%s, probeInterval=%s, probeDelay=%s",
-			this.getClass().getSimpleName(), this.peersBroadcastIntervalSec, this.peersProbeIntervalSec, this.peerProbeDelayMs / 1000L));
+		this.peerProbeIntervalMs = config.networkPeersProbeInterval(1000);
+		this.peerProbeDelayMs = config.networkPeersProbeDelay(0);
+		this.peerProbeFrequencyMs = config.networkPeersProbeFrequency(30000);
+		this.peerProbeTimeoutMs = config.networkPeersProbeTimeout(20000);
+
+		this.heartbeatPeersIntervalMs = config.networkHeartbeatPeersInterval(10000);
+		this.heartbeatPeersDelayMs = config.networkHeartbeatPeersDelay(10000);
+
+		this.discoverPeersIntervalMs = config.networkDiscoverPeersInterval(60000);
+		this.discoverPeersDelayMs = config.networkDiscoverPeersDelay(1000);
+
+		this.peerMessageBatchSize = config.networkPeersMessageBatchSize(64);
+
+		log.info(String.format("%s started, " +
+						"peersBroadcastInterval=%s, peersBroadcastDelay=%s, peersProbeInterval=%s, " +
+						"peersProbeDelay=%s, heartbeatPeersInterval=%s, heartbeatPeersDelay=%s, " +
+						"discoverPeersInterval=%s, discoverPeersDelay=%s, peerProbeFrequency=%s",
+			this.getClass().getSimpleName(),
+				this.peersBroadcastIntervalMs, this.peersBroadcastDelayMs, this.peerProbeIntervalMs,
+				this.peerProbeDelayMs, this.heartbeatPeersIntervalMs, this.heartbeatPeersDelayMs,
+				this.discoverPeersIntervalMs, this.discoverPeersDelayMs, this.peerProbeFrequencyMs
+		));
 	}
 
 	@Override
@@ -104,17 +140,27 @@ public class PeerManager extends Plugin {
 		register(GetPeersMessage.class, this::handleGetPeersMessage);
 		register(PeerPingMessage.class, this::handlePeerPingMessage);
 		register(PeerPongMessage.class, this::handlePeerPongMessage);
+		register(SystemMessage.class, this::handleHeartbeatPeersMessage);
 
 		// Tasks
-		scheduleAtFixedRate(scheduledExecutable(10L, 10L, TimeUnit.SECONDS, this::heartbeatPeers));
-		scheduleWithFixedDelay(scheduledExecutable(60, peersBroadcastIntervalSec, TimeUnit.SECONDS, this::peersHousekeeping));
-		scheduleWithFixedDelay(scheduledExecutable(0,  peersProbeIntervalSec, TimeUnit.SECONDS, new ProbeTask()));
-		scheduleWithFixedDelay(scheduledExecutable(1, 60, TimeUnit.SECONDS, this::discoverPeers));
+		heartbeatPeersFuture = scheduleAtFixedRate(scheduledExecutable(heartbeatPeersDelayMs, heartbeatPeersIntervalMs, TimeUnit.MILLISECONDS, this::heartbeatPeers));
+		peersBroadcastFuture = scheduleWithFixedDelay(scheduledExecutable(peersBroadcastDelayMs, peersBroadcastIntervalMs, TimeUnit.MILLISECONDS, this::peersHousekeeping));
+		peerProbeFuture = scheduleWithFixedDelay(scheduledExecutable(peerProbeDelayMs, peerProbeIntervalMs, TimeUnit.MILLISECONDS, new ProbeTask()));
+		discoverPeersFuture = scheduleWithFixedDelay(scheduledExecutable(discoverPeersDelayMs, discoverPeersIntervalMs, TimeUnit.MILLISECONDS, this::discoverPeers));
 	}
 
 	@Override
 	public void stop_impl() throws ModuleException {
-		// Nothing to do here
+		unregister(PeersMessage.class);
+		unregister(GetPeersMessage.class);
+		unregister(PeerPingMessage.class);
+		unregister(PeerPongMessage.class);
+		unregister(SystemMessage.class);
+
+		heartbeatPeersFuture.cancel(true);
+		peersBroadcastFuture.cancel(true);
+		peerProbeFuture.cancel(true);
+		discoverPeersFuture.cancel(true);
 	}
 
 	@Override
@@ -132,6 +178,10 @@ public class PeerManager extends Plugin {
 				log.error("Could not send System heartbeat to " + peer, ioex);
 			}
 		});
+	}
+
+	private void handleHeartbeatPeersMessage(Peer peer, SystemMessage heartBeatMessage) {
+		//TODO implement HeartBeat handler
 	}
 
 	private void handlePeersMessage(Peer peer, PeersMessage peersMessage) {
@@ -163,7 +213,7 @@ public class PeerManager extends Plugin {
 				}
 
 				peersMessage.getPeers().add(p);
-				if (peersMessage.getPeers().size() == 64) {
+				if (peersMessage.getPeers().size() == peerMessageBatchSize) {
 					messageCentral.send(peer, peersMessage);
 					peersMessage = new PeersMessage();
 				}
@@ -226,18 +276,18 @@ public class PeerManager extends Plugin {
 
 	private boolean probe(Peer peer) {
 		try {
-			synchronized(this.probes) {
-				if (peer != null && (Time.currentTimestamp() - peer.getTimestamp(Timestamps.PROBED) < peerProbeDelayMs)) {
+			if(peer != null) {
+				if (Time.currentTimestamp() - peer.getTimestamp(Timestamps.PROBED) < peerProbeFrequencyMs) {
 					return false;
 				}
-				if (peer != null && !this.probes.containsKey(peer)) {
+				if (!this.probes.containsKey(peer)) {
 					PeerPingMessage ping = new PeerPingMessage();
 
 					// Only wait for response if peer has a system, otherwise peer will be upgraded by pong message
 					long nonce = ping.getNonce();
 					if (peer.hasSystem()) {
 						this.probes.put(peer, nonce);
-						schedule(scheduledExecutable(PROBE_TIMEOUT_SECONDS, 0, TimeUnit.SECONDS, () -> handleProbeTimeout(peer, nonce)));
+						schedule(scheduledExecutable(peerProbeTimeoutMs, 0, TimeUnit.MILLISECONDS, () -> handleProbeTimeout(peer, nonce)));
 						log.debug("Probing "+peer+" with nonce '"+nonce+"'");
 					} else {
 						log.debug("Nudging "+peer);
@@ -267,7 +317,7 @@ public class PeerManager extends Plugin {
 	private void discoverPeers() {
 		// Probe all the bootstrap hosts so that they know about us
 		GetPeersMessage msg = new GetPeersMessage();
-		BootstrapDiscovery.getInstance().discover(StandardFilters.standardFilter()).stream()
+		bootstrapDiscovery.discover(StandardFilters.standardFilter()).stream()
 			.map(addressbook::peer)
 			.forEachOrdered(peer -> {
 				probe(peer);

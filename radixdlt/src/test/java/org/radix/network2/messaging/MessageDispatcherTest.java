@@ -7,6 +7,7 @@ import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.stubbing.Answer;
 import org.radix.Radix;
 import org.radix.modules.Modules;
 import org.radix.network.Interfaces;
@@ -63,7 +64,7 @@ public class MessageDispatcherTest extends RadixTest {
     @Before
     public void setup() {
         ntpService = Modules.get(NtpService.class);
-        doReturn(System.currentTimeMillis()).when(ntpService).getUTCTimeMS();
+        when(ntpService.getUTCTimeMS()).thenAnswer((Answer<Long>) invocation -> System.currentTimeMillis());
         Serialization serialization = Serialization.getDefault();
         MessageCentralConfiguration conf = new MessagingDummyConfigurations.DummyMessageCentralConfiguration();
         messageDispatcher = new MessageDispatcher(conf, serialization, () -> 30_000);

@@ -24,12 +24,12 @@ public class PeerManagerConfigurationTest {
 
 		when(properties.get(eq("network.peers.broadcast.interval"), anyInt())).thenReturn(100);
 		when(properties.get(eq("network.peers.probe.interval"), anyInt())).thenReturn(101);
-		when(properties.get(eq("network.peer.probe.delay"), anyInt())).thenReturn(102);
+		when(properties.get(eq("network.peers.probe.delay"), anyInt())).thenReturn(102);
 
 		PeerManagerConfiguration config = PeerManagerConfiguration.fromRuntimeProperties(properties);
 
 		assertEquals(100, config.networkPeersBroadcastInterval(-1));
 		assertEquals(101, config.networkPeersProbeInterval(-1));
-		assertEquals(102, config.networkPeerProbeDelay(-1));
+		assertEquals(102, config.networkPeersProbeDelay(-1));
 	}
 }
