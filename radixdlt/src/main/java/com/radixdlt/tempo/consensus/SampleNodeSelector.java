@@ -1,19 +1,19 @@
 package com.radixdlt.tempo.consensus;
 
-import com.radixdlt.common.EUID;
 import com.radixdlt.tempo.TempoAtom;
+import org.radix.network2.addressbook.Peer;
 
-import java.util.Collection;
 import java.util.List;
+import java.util.stream.Stream;
 
 public interface SampleNodeSelector {
 	/**
 	 * Select the next edges for an atom from a collection of possible nodes
-	 * @param nodes The nodes
+	 * @param peers The nodes
 	 * @param atom The atom
 	 * @param limit
 	 * @return The subset of next edges
 	 */
-	List<EUID> selectNodes(Collection<EUID> nodes, TempoAtom atom, int limit);
+	List<Peer> selectNodes(Stream<Peer> peers, TempoAtom atom, int limit);
 }
 

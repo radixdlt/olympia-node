@@ -6,7 +6,7 @@ import com.radixdlt.tempo.Resource;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-// TODO does confidence really need to be a persisted store?
+// TODO does confidence need to be a persisted store?
 public final class AtomConfidence {
 	private static final Map<AID, Integer> confidenceByAid = new ConcurrentHashMap<>();
 

@@ -100,6 +100,7 @@ public final class Tempo implements Ledger, ConsensusReceptor, Closeable {
 
 	@Override
 	public void requestChangePreference(TempoAtom oldPreference, AID newPreferenceAid, Set<Peer> peersToContact) {
+		log.info("Indicating preference change from '" + oldPreference.getAID() + "' to '" + newPreferenceAid + "'");
 		// TODO introduce cache for recently discarded preferences so we don't have to request every time
 		pendingPreferenceChanges.put(newPreferenceAid, oldPreference);
 		peersToContact.forEach(peer -> requestDeliverer.tryDeliver(ImmutableSet.of(newPreferenceAid), peer));

@@ -11,11 +11,11 @@ import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 
-final class RequestDeliveryState {
+final class PendingDeliveryState {
 	private final Map<AID, EUID> pendingDeliveries;
 	private final Map<AID, Queue<Peer>> fallbackDeliveries;
 
-	RequestDeliveryState() {
+	PendingDeliveryState() {
 		this.pendingDeliveries = new ConcurrentHashMap<>();
 		this.fallbackDeliveries = new ConcurrentHashMap<>();
 	}
@@ -47,7 +47,7 @@ final class RequestDeliveryState {
 
 	@Override
 	public String toString() {
-		return "RequestDeliveryState{" +
+		return "PendingDeliveryState{" +
 			"pendingDeliveries=" + pendingDeliveries +
 			'}';
 	}

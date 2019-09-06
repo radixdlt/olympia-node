@@ -18,7 +18,6 @@ import org.radix.network2.addressbook.Peer;
 import org.radix.network2.messaging.MessageCentral;
 import org.radix.utils.SimpleThreadPool;
 
-import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -44,7 +43,7 @@ public final class LazyRequestDeliverer implements Resource, AtomDeliverer, Requ
 	private final int requestTimeoutSeconds;
 
 	@VisibleForTesting
-	final RequestDeliveryState deliveryState = new RequestDeliveryState();
+	final PendingDeliveryState deliveryState = new PendingDeliveryState();
 
 	private final Scheduler scheduler;
 	private final MessageCentral messageCentral;
@@ -99,6 +98,9 @@ public final class LazyRequestDeliverer implements Resource, AtomDeliverer, Requ
 	}
 
 	private void onResponse(Peer peer, DeliveryResponseMessage message) {
+		if (log.hasLevel(Logging.DEBUG)) {
+			log.debug("Received delivery of '" + message.getAtom().getAID() + "' from " + peer);
+		}
 		TempoAtom atom = message.getAtom();
 		deliveryState.removeRequest(atom.getAID());
 		notifyListeners(peer, atom);

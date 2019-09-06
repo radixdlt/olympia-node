@@ -5,9 +5,10 @@ import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.radixdlt.common.EUID;
 import com.radixdlt.tempo.TempoAtom;
+import org.radix.network2.addressbook.Peer;
 
-import java.util.Collection;
 import java.util.List;
+import java.util.stream.Stream;
 
 public final class SimpleSampleNodeSelector implements SampleNodeSelector {
 	private final EUID self;
@@ -20,9 +21,9 @@ public final class SimpleSampleNodeSelector implements SampleNodeSelector {
 	}
 
 	@Override
-	public List<EUID> selectNodes(Collection<EUID> nodes, TempoAtom atom, int limit) {
-		return nodes.stream()
-			.filter(nid -> !nid.equals(self))
+	public List<Peer> selectNodes(Stream<Peer> peers, TempoAtom atom, int limit) {
+		return peers
+			.filter(Peer::hasSystem)
 			.collect(ImmutableList.toImmutableList());
 	}
 }

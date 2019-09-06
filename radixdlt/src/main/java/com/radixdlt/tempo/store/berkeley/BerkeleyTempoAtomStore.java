@@ -386,7 +386,7 @@ public class BerkeleyTempoAtomStore implements TempoAtomStore {
 			log.error("Unique indices of atom '" + aid + "' are in conflict, aborting transaction");
 			transaction.abort();
 
-			Atom atom = serialization.fromDson(atomData, Atom.class);
+			Atom atom = serialization.fromDson(atomData, TempoAtom.class);
 			ImmutableMap<LedgerIndex, Atom> conflictingAtoms = doGetConflictingAtoms(indices.getUniqueIndices(), null);
 			return AtomStoreResult.conflict(new AtomConflict(atom, conflictingAtoms));
 		} finally {

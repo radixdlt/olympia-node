@@ -81,33 +81,27 @@ public final class ConsensusController implements AtomObserver {
 
 	private void beginRound(TempoAtom preference) {
 		log.debug("Beginning consensus round for atom '" + preference.getAID() + "'");
-		Set<EUID> availableNids = addressBook.recentPeers()
-			.filter(Peer::hasNID)
-			.map(Peer::getNID)
-			.collect(Collectors.toSet());
-		List<EUID> sampleNids = sampleNodeSelector.selectNodes(availableNids, preference, MAX_SAMPLE_NODES);
-		if (sampleNids.isEmpty()) {
+
+		List<Peer> samplePeers = sampleNodeSelector.selectNodes(addressBook.recentPeers(), preference, MAX_SAMPLE_NODES);
+		if (samplePeers.isEmpty()) {
 			log.warn("No sample nodes to talk to, unable to achieve consensus on '" + preference.getAID() + "', waiting");
 			scheduler.schedule(() -> beginRound(preference), SAMPLE_NODES_UNAVAILABLE_DELAY_MILLISECONDS, TimeUnit.MILLISECONDS);
 			return;
 		}
 
-		Set<Peer> samplePeers = availableNids.stream()
-			.map(addressBook::peer)
-			.collect(Collectors.toSet());
 		Set<LedgerIndex> uniqueIndices = pendingAtoms.getUniqueIndices(preference.getAID());
 		sampleRetriever.sample(preference.getAID(), uniqueIndices, samplePeers)
-			.thenAccept(samples -> endRound(preference, uniqueIndices, sampleNids, samples));
+			.thenAccept(samples -> endRound(preference, uniqueIndices, samplePeers, samples));
 	}
 
-	private void endRound(TempoAtom preference, Set<LedgerIndex> requestedIndices, List<EUID> sampleNids, Samples samples) {
+	private void endRound(TempoAtom preference, Set<LedgerIndex> requestedIndices, List<Peer> samplePeers, Samples samples) {
 		log.debug("Ending consensus round for atom '" + preference.getAID() + "'");
 		if (!pendingAtoms.isPending(preference.getAID())) {
 			log.debug("Preference '" + preference.getAID() + "' is no longer pending, aborting");
 			return;
 		}
 
-		int availableVotes = requestedIndices.size() * sampleNids.size();
+		int availableVotes = requestedIndices.size() * samplePeers.size();
 		if (!samples.hasTopPreference() || samples.getTopPreferenceCount() < availableVotes * SAMPLE_SIGNIFICANCE_THRESHOLD) {
 			// reset confidence if there is no majority top preference, then begin another round
 			atomConfidence.reset(preference.getAID());
@@ -129,6 +123,8 @@ public final class ConsensusController implements AtomObserver {
 		} else {
 			// if the majority preference is a different preference, try and change to that
 			changePreference(preference, majorityPreference, samples.getPeersFor(majorityPreference));
+			// but continue with our current preference anyway in case the other one doesn't make it
+			beginRound(preference);
 		}
 	}
 

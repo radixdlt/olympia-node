@@ -78,4 +78,12 @@ public final class TempoAtom implements Atom {
 	public int hashCode() {
 		return aid.hashCode();
 	}
+
+	@Override
+	public String toString() {
+		return "TempoAtom{" +
+			"aid=" + aid +
+			", shards=" + shards +
+			'}';
+	}
 }

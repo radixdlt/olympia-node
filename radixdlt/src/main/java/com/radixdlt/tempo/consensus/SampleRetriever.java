@@ -78,13 +78,14 @@ public final class SampleRetriever implements Closeable, AtomDiscoverer {
 	CompletableFuture<Samples> sample(AID aid, Set<LedgerIndex> indices, Collection<Peer> peers) {
 		// TODO batch requests to same node over time window?
 		EUID tag = generateTag();
+		log.debug("Request sampling '" + tag + "' for " + indices + " from " + peers);
+
 		CompletableFuture<Samples> future = new CompletableFuture<>();
 		pendingSamples.put(tag, future, indices, peers.stream().map(Peer::getNID).collect(Collectors.toSet()));
 		SampleRequestMessage request = new SampleRequestMessage(tag, ImmutableMap.of(aid, indices));
 		for (Peer peer : peers) {
 			messageCentral.send(peer, request);
 		}
-		log.debug("Request sampling '" + tag + "' for " + indices + " from " + peers);
 
 		// schedule timeout
 		scheduler.schedule(() -> attemptComplete(tag, pendingSamples.timeout(tag)), SAMPLE_REQUEST_TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS);
