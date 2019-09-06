@@ -46,10 +46,10 @@ public final class LedgerObservation {
 		return new LedgerObservation(Type.ADOPT, newAtom, ImmutableSet.of());
 	}
 
-	public static LedgerObservation adopt(Set<Atom> previousAtoms, Atom newAtom) {
-		Objects.requireNonNull(previousAtoms, "supersededAtoms is required");
+	public static LedgerObservation adopt(Set<Atom> supersededAtoms, Atom newAtom) {
+		Objects.requireNonNull(supersededAtoms, "supersededAtoms is required");
 		Objects.requireNonNull(newAtom, "newAtom is required");
-		return new LedgerObservation(Type.ADOPT, newAtom, previousAtoms);
+		return new LedgerObservation(Type.ADOPT, newAtom, supersededAtoms);
 	}
 
 	public static LedgerObservation commit(Atom atom) {

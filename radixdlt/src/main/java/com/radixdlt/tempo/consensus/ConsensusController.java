@@ -38,7 +38,7 @@ public final class ConsensusController implements AtomObserver {
 	private final SampleRetriever sampleRetriever;
 	private final SampleNodeSelector sampleNodeSelector;
 	private final AddressBook addressBook;
-	private final ConsensusEnforcer consensusEnforcer;
+	private final ConsensusObserver consensusObserver;
 
 	private final PendingAtomState pendingAtoms = new PendingAtomState();
 
@@ -46,12 +46,12 @@ public final class ConsensusController implements AtomObserver {
 	public ConsensusController(
 		@Named("self") EUID self,
 		Scheduler scheduler,
-		TempoAtomStoreView  storeView,
+		TempoAtomStoreView storeView,
 		AtomConfidence atomConfidence,
 		SampleRetriever sampleRetriever,
 		SampleNodeSelector sampleNodeSelector,
 		AddressBook addressBook,
-		ConsensusEnforcer consensusEnforcer
+		ConsensusObserver consensusObserver
 	) {
 		this.self = Objects.requireNonNull(self);
 		this.scheduler = Objects.requireNonNull(scheduler);
@@ -60,7 +60,7 @@ public final class ConsensusController implements AtomObserver {
 		this.sampleRetriever = Objects.requireNonNull(sampleRetriever);
 		this.sampleNodeSelector = Objects.requireNonNull(sampleNodeSelector);
 		this.addressBook = Objects.requireNonNull(addressBook);
-		this.consensusEnforcer = Objects.requireNonNull(consensusEnforcer);
+		this.consensusObserver = Objects.requireNonNull(consensusObserver);
 
 		start();
 	}
@@ -72,7 +72,7 @@ public final class ConsensusController implements AtomObserver {
 			if (uncommittedAtom.isPresent()) {
 				pendingAtoms.put(uncommittedAtom.get(), storeView.getUniqueIndices(aid));
 			} else {
-				log.warn("Consensus store contains uncommitted atom '" + aid + "' which no longer exists, removing");
+				log.warn("Atom store contains pending atom '" + aid + "' which no longer exists, removing");
 				atomConfidence.reset(aid);
 			}
 		}
@@ -91,10 +91,10 @@ public final class ConsensusController implements AtomObserver {
 
 		Set<LedgerIndex> uniqueIndices = pendingAtoms.getUniqueIndices(preference.getAID());
 		sampleRetriever.sample(preference.getAID(), uniqueIndices, samplePeers)
-			.thenAccept(samples -> endRound(preference, uniqueIndices, samplePeers, samples));
+			.thenAccept(samples -> endRound(preference, samplePeers, samples));
 	}
 
-	private void endRound(TempoAtom preference, Set<LedgerIndex> requestedIndices, List<Peer> samplePeers, Samples samples) {
+	private void endRound(TempoAtom preference, List<Peer> samplePeers, Samples samples) {
 		log.debug("Ending consensus round for atom '" + preference.getAID() + "'");
 
 		if (!pendingAtoms.isPending(preference.getAID())) {
@@ -102,12 +102,34 @@ public final class ConsensusController implements AtomObserver {
 			return;
 		}
 
-		int availableVotes = requestedIndices.size() * samplePeers.size();
+		Set<LedgerIndex> indices = pendingAtoms.getUniqueIndices(preference.getAID());
+		ConsensusDecision decision = decide(preference, indices, samples);
+		log.debug("Decided to " + decision + " for preference '" + preference.getAID() + "'");
+		switch (decision) {
+			case COMMIT:
+				pendingAtoms.remove(preference.getAID());
+				consensusObserver.requestCommit(preference);
+				return;
+			case SWITCH_TO_MAJORITY:
+				// TODO need to consider sharding here, what happens if the majority is outside our shard range?
+				consensusObserver.requestChangePreference(preference, samples.getTopPreference(), samples.getPeersFor(samples.getTopPreference()).stream()
+					.map(addressBook::peer)
+					.collect(Collectors.toSet()));
+				// intentional fall-through, continue in both cases
+			case CONTINUE:
+				beginRound(preference);
+				return;
+			default:
+				throw new IllegalStateException("Unknown consensus decision for preference '" + preference.getAID() + "': " + decision);
+		}
+	}
+
+	private ConsensusDecision decide(TempoAtom preference, Set<LedgerIndex> indices, Samples samples) {
+		int availableVotes = indices.size() * samples.getSamplePeerCount();
 		if (!samples.hasTopPreference() || samples.getTopPreferenceCount() < availableVotes * SAMPLE_SIGNIFICANCE_THRESHOLD) {
 			// reset confidence if there is no majority top preference, then begin another round
 			atomConfidence.reset(preference.getAID());
-			beginRound(preference);
-			return;
+			return ConsensusDecision.CONTINUE;
 		}
 
 		AID majorityPreference = samples.getTopPreference();
@@ -116,29 +138,16 @@ public final class ConsensusController implements AtomObserver {
 			int confidence = atomConfidence.increaseConfidence(preference.getAID());
 			if (confidence > CONFIDENCE_THRESHOLD) {
 				// if we have sufficient confidence in our preference, commit to it
-				commit(preference);
+				return ConsensusDecision.COMMIT;
 			} else {
 				// if we don't have sufficient confidence yet, begin another round
-				beginRound(preference);
+				return ConsensusDecision.CONTINUE;
 			}
 		} else {
 			// if the majority preference is a different preference, try and change to that
-			changePreference(preference, majorityPreference, samples.getPeersFor(majorityPreference));
-			// but continue with our current preference anyway in case the other one doesn't make it
-			beginRound(preference);
+			atomConfidence.reset(preference.getAID());
+			return ConsensusDecision.SWITCH_TO_MAJORITY;
 		}
-	}
-
-	private void changePreference(TempoAtom oldPreference, AID newPreference, Set<EUID> peersToContact) {
-		atomConfidence.reset(oldPreference.getAID());
-		consensusEnforcer.requestChangePreference(oldPreference, newPreference, peersToContact.stream()
-			.map(addressBook::peer)
-			.collect(Collectors.toSet()));
-	}
-
-	private void commit(TempoAtom preference) {
-		pendingAtoms.remove(preference.getAID());
-		consensusEnforcer.requestCommit(preference);
 	}
 
 	@Override

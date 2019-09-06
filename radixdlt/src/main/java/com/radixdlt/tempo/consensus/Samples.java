@@ -48,6 +48,10 @@ final class Samples {
 		return peers.build();
 	}
 
+	int getSamplePeerCount() {
+		return unresponsivePeers.size() + samplesByPeer.size();
+	}
+
 	boolean hasTopPreference() {
 		return topPreference != null;
 	}
