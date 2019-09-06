@@ -1,12 +1,16 @@
 package org.radix.network2.utils;
 
+import org.junit.Test;
+
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 
-import org.junit.Test;
-
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests for locking class.
@@ -76,6 +80,24 @@ public class LockingTest {
 		assertEquals(lock.getLockCount(), 0);
 	}
 
+    @Test
+    public void withLockException() {
+        final TestLock lock = new TestLock();
+        Locking.withLock(lock, () -> {
+            assertEquals(lock.getLockCount(), 1);
+            try {
+                Locking.withLock(lock, () -> {
+                    assertEquals(lock.getLockCount(), 2);
+                    throw new RuntimeException("Expected exception");
+                });
+            } catch (Exception e) {
+                assertEquals("Expected exception", e.getMessage());
+            }
+            assertEquals(lock.getLockCount(), 1);
+        });
+        assertEquals(lock.getLockCount(), 0);
+    }
+
 	@Test
 	public void withConsumerLock() {
 		final TestLock lock = new TestLock();
@@ -91,6 +113,27 @@ public class LockingTest {
 		}, null);
 		assertEquals(lock.getLockCount(), 0);
 	}
+
+    @Test
+    public void withConsumerLockException() {
+        final TestLock lock = new TestLock();
+        final Object testObj = new Object();
+        Locking.withConsumerLock(lock, o -> {
+            assertNull(o);
+            assertEquals(lock.getLockCount(), 1);
+            try {
+                Locking.withConsumerLock(lock, o2 -> {
+                    assertSame(o2, testObj);
+                    assertEquals(lock.getLockCount(), 2);
+                    throw new RuntimeException("Expected exception");
+                }, testObj);
+            } catch (Exception e) {
+                assertEquals("Expected exception", e.getMessage());
+            }
+            assertEquals(lock.getLockCount(), 1);
+        }, null);
+        assertEquals(lock.getLockCount(), 0);
+    }
 
 	@Test
 	public void withBiConsumerLock() {
@@ -111,6 +154,31 @@ public class LockingTest {
 		assertEquals(lock.getLockCount(), 0);
 	}
 
+    @Test
+    public void withBiConsumerLockException() {
+        final TestLock lock = new TestLock();
+        final Object testObj1 = new Object();
+        final Object testObj2 = new Object();
+        Locking.withConsumerLock(lock, (a1, a2) -> {
+            assertNull(a1);
+            assertNull(a2);
+            assertEquals(lock.getLockCount(), 1);
+            try {
+                Locking.withConsumerLock(lock, (b1, b2) -> {
+                    assertSame(b1, testObj1);
+                    assertSame(b2, testObj2);
+                    assertEquals(lock.getLockCount(), 2);
+                    throw new RuntimeException("Expected exception");
+                }, testObj1, testObj2);
+            } catch (Exception e) {
+                assertEquals("Expected exception", e.getMessage());
+            }
+            assertEquals(lock.getLockCount(), 1);
+
+        }, null, null);
+        assertEquals(lock.getLockCount(), 0);
+    }
+
 	@Test
 	public void withSupplierLock() {
 		final TestLock lock = new TestLock();
@@ -128,6 +196,27 @@ public class LockingTest {
 		assertEquals(lock.getLockCount(), 0);
 		assertSame(testObj, result1);
 	}
+
+    @Test
+    public void withSupplierLockException() {
+        final TestLock lock = new TestLock();
+        final Object testObj = new Object();
+        final Object result1 = Locking.withSupplierLock(lock, () -> {
+            assertEquals(lock.getLockCount(), 1);
+            try {
+                Locking.withSupplierLock(lock, () -> {
+                    assertEquals(lock.getLockCount(), 2);
+                    throw new RuntimeException("Expected exception");
+                });
+            } catch (Exception e) {
+                assertEquals("Expected exception", e.getMessage());
+            }
+            assertEquals(lock.getLockCount(), 1);
+            return testObj;
+        });
+        assertEquals(lock.getLockCount(), 0);
+        assertSame(testObj, result1);
+    }
 
 	@Test
 	public void withPredicateLock() {
@@ -149,6 +238,29 @@ public class LockingTest {
 		assertTrue(result1);
 	}
 
+    @Test
+    public void withPredicateLockException() {
+        final TestLock lock = new TestLock();
+        final Object testObj = new Object();
+        final boolean result1 = Locking.withPredicateLock(lock, o -> {
+            assertNull(o);
+            assertEquals(lock.getLockCount(), 1);
+            try {
+                Locking.withPredicateLock(lock, o2 -> {
+                    assertSame(o2, testObj);
+                    assertEquals(lock.getLockCount(), 2);
+                    throw new RuntimeException("Expected exception");
+                }, testObj);
+            } catch (Exception e) {
+                assertEquals("Expected exception", e.getMessage());
+            }
+            assertEquals(lock.getLockCount(), 1);
+            return true;
+        }, null);
+        assertEquals(lock.getLockCount(), 0);
+        assertTrue(result1);
+    }
+
 	@Test
 	public void withFunctionLock() {
 		final TestLock lock = new TestLock();
@@ -168,4 +280,65 @@ public class LockingTest {
 		assertEquals(lock.getLockCount(), 0);
 		assertNull(result1);
 	}
+
+    @Test
+    public void withFunctionLockException() {
+        final TestLock lock = new TestLock();
+        final Object testObj = new Object();
+        final Object result1 = Locking.withFunctionLock(lock, o -> {
+            assertNull(o);
+            assertEquals(lock.getLockCount(), 1);
+            try {
+                Locking.withFunctionLock(lock, o2 -> {
+                    assertSame(o2, testObj);
+                    assertEquals(lock.getLockCount(), 2);
+                    throw new RuntimeException("Expected exception");
+                }, testObj);
+            } catch (Exception e) {
+                assertEquals("Expected exception", e.getMessage());
+            }
+            assertEquals(lock.getLockCount(), 1);
+            return o;
+        }, null);
+        assertEquals(lock.getLockCount(), 0);
+        assertNull(result1);
+    }
+
+    @Test
+    public void withBiFunctionLock() {
+        final TestLock lock = new TestLock();
+        final Object testObj1 = new Object();
+        final Object testObj2 = new Object();
+        Locking.withBiFunctionLock(lock, (o, o2) -> {
+            assertEquals(lock.getLockCount(), 1);
+            Locking.withBiFunctionLock(lock, (o1, o21) -> {
+                assertEquals(lock.getLockCount(), 2);
+                return null;
+            }, testObj1, testObj2);
+            assertEquals(lock.getLockCount(), 1);
+            return null;
+        }, testObj1, testObj2);
+        assertEquals(lock.getLockCount(), 0);
+    }
+
+    @Test
+    public void withBiFunctionLockException() {
+        final TestLock lock = new TestLock();
+        final Object testObj1 = new Object();
+        final Object testObj2 = new Object();
+        Locking.withBiFunctionLock(lock, (o, o2) -> {
+            assertEquals(lock.getLockCount(), 1);
+            try {
+                Locking.withBiFunctionLock(lock, (o1, o21) -> {
+                    assertEquals(lock.getLockCount(), 2);
+                    throw new RuntimeException("Expected exception");
+                }, testObj1, testObj2);
+            } catch (Exception e) {
+                assertEquals("Expected exception", e.getMessage());
+            }
+            assertEquals(lock.getLockCount(), 1);
+            return null;
+        }, testObj1, testObj2);
+        assertEquals(lock.getLockCount(), 0);
+    }
 }
