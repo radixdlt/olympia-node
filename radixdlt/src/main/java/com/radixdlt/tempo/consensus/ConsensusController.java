@@ -109,13 +109,14 @@ public final class ConsensusController implements AtomObserver {
 
 		int availableVotes = requestedIndices.size() * sampleNids.size();
 		if (!samples.hasTopPreference() || samples.getTopPreferenceCount() < availableVotes * SAMPLE_SIGNIFICANCE_THRESHOLD) {
-			// nothing to do if there is no significant top preference, just begin another round
+			// reset confidence if there is no majority top preference, then begin another round
+			atomConfidence.reset(preference.getAID());
 			beginRound(preference);
 			return;
 		}
 
-		AID topPreference = samples.getTopPreference();
-		if (topPreference.equals(preference.getAID())) {
+		AID majorityPreference = samples.getTopPreference();
+		if (majorityPreference.equals(preference.getAID())) {
 			// if the significant preference matches our current preference, increase confidence
 			int confidence = atomConfidence.increaseConfidence(preference.getAID());
 			if (confidence > CONFIDENCE_THRESHOLD) {
@@ -126,8 +127,8 @@ public final class ConsensusController implements AtomObserver {
 				beginRound(preference);
 			}
 		} else {
-			// if the significant preference is a different preference, try and change to that
-			changePreference(preference, topPreference, samples.getPeersFor(topPreference));
+			// if the majority preference is a different preference, try and change to that
+			changePreference(preference, majorityPreference, samples.getPeersFor(majorityPreference));
 		}
 	}
 
