@@ -122,7 +122,7 @@ public class AddressBookImpl implements AddressBook {
 	public Peer peer(EUID nid) {
 		Peer p = Locking.withFunctionLock(this.peersLock, this.peersByNid::get, nid);
 		if (p == null) {
-			p = new NidOnlyPeer(nid);
+			p = new PeerWithNid(nid);
 			addPeer(p);
 		}
 		return p;
@@ -147,6 +147,12 @@ public class AddressBookImpl implements AddressBook {
 	@Override
 	public Stream<Peer> recentPeers() {
 		return peers().filter(StandardFilters.recentlyActive());
+	}
+
+	@Override
+	public Stream<EUID> nids() {
+		// FIXME: Think about how to do this in a not so copying way
+		return Locking.withSupplierLock(this.peersLock, () -> ImmutableSet.copyOf(this.peersByNid.keySet())).stream();
 	}
 
 	// Sends PeersAddedEvents and/or PeersRemoveEvents as required
@@ -222,9 +228,10 @@ public class AddressBookImpl implements AddressBook {
 				if (!this.persistence.deletePeer(nid)) {
 					log.error("Failure removing " + oldPeer);
 				}
+				return PeerUpdates.removed(oldPeer);
 			}
-			return PeerUpdates.removed(oldPeer);
 		}
+		return null;
 	}
 
 	// Needs peersLock held

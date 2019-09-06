@@ -38,7 +38,15 @@ public final class DatabaseEnvironment extends Service
 	private static final Logger log = Logging.getLogger();
 
 	private class CheckpointerTask implements Runnable {
-		private boolean interrupted = false;
+		private volatile boolean interrupted = false;
+
+		void interrupt() {
+			// It appears that berkeley behaves quite badly when checkpoint thread
+			// is interrupted.  We use special magic here to make sure we exit in
+			// a timely fashion.
+			this.interrupted = true;
+		}
+
 		@Override
 		public void run()
 		{
@@ -56,12 +64,12 @@ public final class DatabaseEnvironment extends Service
 					DatabaseEnvironment.this.environment.checkpoint(checkpointConfig);
 					DatabaseEnvironment.this.environment.evictMemory();
 
-					if (System.currentTimeMillis() - start < TimeUnit.MINUTES.toMillis(10)) {
-						Thread.sleep(TimeUnit.MINUTES.toMillis(10) - (System.currentTimeMillis() - start));
+					while (!interrupted && (System.currentTimeMillis() - start < TimeUnit.MINUTES.toMillis(10))) {
+						Thread.sleep(100);
 					}
 				} catch (InterruptedException ex) {
-					Thread.currentThread().interrupt();
 					interrupted = true;
+					Thread.currentThread().interrupt();
 				} catch (Exception ex) {
 					log.error("Checkpointing of environment failed!", ex);
 				}
@@ -72,8 +80,10 @@ public final class DatabaseEnvironment extends Service
 	private Database metaDatabase;
 
 	private Environment						environment = null;
+	private CheckpointerTask checkpointTask;
 	private Thread 							checkpointThread = null;
 	private Map<Class<?>, DatabaseStore> 	databases = new HashMap<>();
+
 
     public DatabaseEnvironment() { super(); }
 
@@ -124,7 +134,8 @@ public final class DatabaseEnvironment extends Service
         	throw new ModuleStartException(ex, this);
 		}
 
-		this.checkpointThread = new Thread(new CheckpointerTask());
+		this.checkpointTask = new CheckpointerTask();
+		this.checkpointThread = new Thread(this.checkpointTask);
 		this.checkpointThread.setDaemon(true);
 		this.checkpointThread.setName("Checkpointer");
 		this.checkpointThread.start();
@@ -154,7 +165,7 @@ public final class DatabaseEnvironment extends Service
         this.metaDatabase.close();
 		this.metaDatabase = null;
 
-		this.checkpointThread.interrupt();
+		this.checkpointTask.interrupt();
 		try {
 			this.checkpointThread.join();
 		} catch (InterruptedException ex) {

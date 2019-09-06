@@ -81,7 +81,10 @@ public class AddressBookPersistence extends DatabaseStore implements PeerPersist
 	@Override
 	public void stop_impl() throws ModuleException {
 		super.stop_impl();
-		this.peersByNidDB.close();
+		if (this.peersByNidDB != null) {
+			this.peersByNidDB.close();
+			this.peersByNidDB = null;
+		}
 	}
 
 	@Override

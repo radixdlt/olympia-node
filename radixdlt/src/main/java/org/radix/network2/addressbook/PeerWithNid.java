@@ -1,6 +1,5 @@
 package org.radix.network2.addressbook;
 
-import java.util.Objects;
 import java.util.stream.Stream;
 
 import org.radix.network2.transport.TransportException;
@@ -21,7 +20,7 @@ import com.radixdlt.serialization.SerializerId2;
  * information once this has been discovered.
  */
 @SerializerId2("network.peer.nid")
-final class NidOnlyPeer extends Peer {
+final class PeerWithNid extends Peer {
 
 	@JsonProperty("nid")
 	@DsonOutput(Output.ALL)
@@ -32,12 +31,12 @@ final class NidOnlyPeer extends Peer {
 		return 100;
 	}
 
-	NidOnlyPeer() {
+	PeerWithNid() {
 		// Serializer only
 		this.nid = null;
 	}
 
-	NidOnlyPeer(EUID nid) {
+	PeerWithNid(EUID nid) {
 		this.nid = nid;
 	}
 
@@ -77,24 +76,9 @@ final class NidOnlyPeer extends Peer {
 	}
 
 	@Override
-	public int hashCode() {
-		return this.nid.hashCode();
-	}
-
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj) {
-			return true;
-		}
-		if (obj instanceof NidOnlyPeer) {
-			NidOnlyPeer other = (NidOnlyPeer) obj;
-			return Objects.equals(this.nid, other.nid);
-		}
-		return false;
-	}
-
-	@Override
 	public String toString() {
 		return String.format("%s[%s]", getClass().getSimpleName(), this.nid);
 	}
+
+	// Note that we rely on equals(...) and hashCode() from BasicContainer here.
 }

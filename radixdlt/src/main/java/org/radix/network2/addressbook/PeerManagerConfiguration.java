@@ -8,30 +8,94 @@ import org.radix.properties.RuntimeProperties;
 public interface PeerManagerConfiguration {
 
 	/**
-	 * Returns the interval in seconds for which to ask a random peer for its
+	 * Returns the interval in millisecond for which to ask a random peer for its
 	 * list of peers.
 	 *
 	 * @param defaultValue a default value if no special configuration value is set
-	 * @return the interval in seconds for which to ask a random peer for its list of peers
+	 * @return the interval in millisecond for which to ask a random peer for its list of peers
 	 */
 	int networkPeersBroadcastInterval(int defaultValue);
 
 	/**
-	 * Returns the interval in seconds for which to probe known peers to determine
+	 * Returns the delay in millisecond for peers broadcast message.
+	 *
+	 * @param defaultValue a default value if no special configuration value is set
+	 * @return delay in millisecond before first peer broadcast message
+	 */
+	int networkPeersBroadcastDelay(int defaultValue);
+
+	/**
+	 * Returns the interval in millisecond for which to probe known peers to determine
 	 * availability.
 	 *
 	 * @param defaultValue a default value if no special configuration value is set
-	 * @return the interval in seconds for which to probe known peers
+	 * @return the interval in millisecond for which to probe known peers
 	 */
 	int networkPeersProbeInterval(int defaultValue);
 
 	/**
-	 * Returns the minimum interval in seconds for which to probe an individual peer.
+	 * Returns the delay in millisecond before first probe message.
 	 *
 	 * @param defaultValue a default value if no special configuration value is set
-	 * @return the minimum interval in seconds for which to probe an individual peer
+	 * @return delay in millisecond before first probe message
 	 */
-	int networkPeerProbeDelay(int defaultValue);
+	int networkPeersProbeDelay(int defaultValue);
+
+	/**
+	 * Returns timeout in millisecond for probe handler.
+	 *
+	 * @param defaultValue a default value if no special configuration value is set
+	 * @return timeout in millisecond for probe handler.
+	 */
+	int networkPeersProbeTimeout(int defaultValue);
+
+	/**
+	 * Returns the minimum interval in millisecond for which to probe an individual peer.
+	 *
+	 * @param defaultValue a default value if no special configuration value is set
+	 * @return the minimum interval in millisecond for which to probe an individual peer
+	 */
+	int networkPeersProbeFrequency(int defaultValue);
+
+	/**
+	 * Returns the delay in millisecond for peers heartbeat message.
+	 *
+	 * @param defaultValue a default value if no special configuration value is set
+	 * @return delay in millisecond before first peer heartbeat message
+	 */
+	int networkHeartbeatPeersDelay(int defaultValue);
+
+	/**
+	 * Returns the delay in millisecond for peers heartbeat message.
+	 *
+	 * @param defaultValue a default value if no special configuration value is set
+	 * @return delay in millisecond between heartbeat messages
+	 */
+	int networkHeartbeatPeersInterval(int defaultValue);
+
+	/**
+	 * Returns the delay in millisecond for discover peers message.
+	 *
+	 * @param defaultValue a default value if no special configuration value is set
+	 * @return delay in millisecond between discover messages
+	 */
+	int networkDiscoverPeersInterval(int defaultValue);
+
+	/**
+	 * Returns the delay in millisecond before first discover peers message
+	 *
+	 * @param defaultValue a default value if no special configuration value is set
+	 * @return delay in millisecond before first discover peers message
+	 */
+	int networkDiscoverPeersDelay(int defaultValue);
+
+	/**
+	 * Returns maximum number of peers in PeersMessage.
+	 *
+	 * @param defaultValue a default value if no special configuration value is set
+	 * @return maximum number of peers in PeersMessage
+	 */
+	int networkPeersMessageBatchSize(int defaultValue);
 
 	/**
 	 * Create a configuration from specified {@link RuntimeProperties}.
@@ -47,13 +111,53 @@ public interface PeerManagerConfiguration {
 			}
 
 			@Override
+			public int networkPeersBroadcastDelay(int defaultValue) {
+				return properties.get("network.peers.broadcast.delay", defaultValue);
+			}
+
+			@Override
 			public int networkPeersProbeInterval(int defaultValue) {
 				return properties.get("network.peers.probe.interval", defaultValue);
 			}
 
 			@Override
-			public int networkPeerProbeDelay(int defaultValue) {
-				return properties.get("network.peer.probe.delay", defaultValue);
+			public int networkPeersProbeDelay(int defaultValue) {
+				return properties.get("network.peers.probe.delay", defaultValue);
+			}
+
+			@Override
+			public int networkPeersProbeTimeout(int defaultValue) {
+				return properties.get("network.peers.probe.timeout", defaultValue);
+			}
+
+			@Override
+			public int networkPeersProbeFrequency(int defaultValue) {
+				return properties.get("network.peers.probe.frequency", defaultValue);
+			}
+
+			@Override
+			public int networkHeartbeatPeersInterval(int defaultValue) {
+				return properties.get("network.peers.heartbeat.interval", defaultValue);
+			}
+
+			@Override
+			public int networkHeartbeatPeersDelay(int defaultValue) {
+				return properties.get("network.peers.heartbeat.delay", defaultValue);
+			}
+
+			@Override
+			public int networkDiscoverPeersInterval(int defaultValue) {
+				return properties.get("network.peers.discover.interval", defaultValue);
+			}
+
+			@Override
+			public int networkDiscoverPeersDelay(int defaultValue) {
+				return properties.get("network.peers.discover.delay", defaultValue);
+			}
+
+			@Override
+			public int networkPeersMessageBatchSize(int defaultValue) {
+				return properties.get("network.peers.message.batch.size", defaultValue);
 			}
 		};
 	}

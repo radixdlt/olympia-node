@@ -8,6 +8,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
@@ -40,11 +41,10 @@ public class FirstMatchTransportManager implements TransportManager {
 	}
 
 	@Override
-	public Transport findTransport(Peer peer, byte[] bytes) {
-		RadixSystem system = peer.getSystem();
-		if (system != null) {
+	public Transport findTransport(Stream<TransportInfo> peerTransports, byte[] bytes) {
+		if (peerTransports != null) {
 			// First that matches for now.  Later we can check against message size etc
-			return system.supportedTransports()
+			return peerTransports
 				.map(TransportInfo::name)
 				.map(transports::get)
 				.filter(Objects::nonNull)
