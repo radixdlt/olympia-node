@@ -24,6 +24,7 @@ public final class SimpleSampleNodeSelector implements SampleNodeSelector {
 	public List<Peer> selectNodes(Stream<Peer> peers, TempoAtom atom, int limit) {
 		return peers
 			.filter(Peer::hasSystem)
+			.limit(limit)
 			.collect(ImmutableList.toImmutableList());
 	}
 }

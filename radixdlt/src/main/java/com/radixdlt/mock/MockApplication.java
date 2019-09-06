@@ -3,7 +3,7 @@ package com.radixdlt.mock;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.Atom;
 import com.radixdlt.common.AID;
-import com.radixdlt.ledger.AtomObservation;
+import com.radixdlt.ledger.LedgerObservation;
 import com.radixdlt.ledger.Ledger;
 import com.radixdlt.ledger.LedgerIndex;
 import org.radix.logging.Logger;
@@ -27,7 +27,7 @@ public final class MockApplication {
 	private static AtomicInteger applicationId = new AtomicInteger(0);
 
 	private final Ledger ledger;
-	private final BlockingQueue<AtomObservation> atomObservationQueue;
+	private final BlockingQueue<LedgerObservation> ledgerObservationQueue;
 	private final ConcurrentMap<AID, ImmutableSet<AID>> conflictRemnants;
 	private final int id;
 	private final MockAccessor mockAccessor;
@@ -35,7 +35,7 @@ public final class MockApplication {
 	public MockApplication(Ledger ledger) {
 		this.ledger = Objects.requireNonNull(ledger);
 
-		this.atomObservationQueue = new LinkedBlockingQueue<>();
+		this.ledgerObservationQueue = new LinkedBlockingQueue<>();
 		this.conflictRemnants = new ConcurrentHashMap<>();
 		this.id = applicationId.getAndIncrement();
 		this.mockAccessor = new MockAccessor(this);
@@ -57,8 +57,8 @@ public final class MockApplication {
 	private void consume() {
 		while (true) {
 			try {
-				AtomObservation atomObservation = ledger.observe();
-				atomObservationQueue.put(atomObservation);
+				LedgerObservation ledgerObservation = ledger.observe();
+				ledgerObservationQueue.put(ledgerObservation);
 			} catch (InterruptedException e) {
 				// exit if interrupted
 				Thread.currentThread().interrupt();
@@ -73,11 +73,11 @@ public final class MockApplication {
 	private void run() {
 		while (true) {
 			try {
-				AtomObservation atomObservation = atomObservationQueue.take();
-				if (atomObservation.getType() == AtomObservation.Type.COMMIT) {
-					logger.info("Committed to atom '" + atomObservation.getAtom().getAID() + "'");
-				} else if (atomObservation.getType() == AtomObservation.Type.ADOPT) {
-					receive(atomObservation);
+				LedgerObservation ledgerObservation = ledgerObservationQueue.take();
+				if (ledgerObservation.getType() == LedgerObservation.Type.COMMIT) {
+					logger.info("Committed to atom '" + ledgerObservation.getAtom().getAID() + "'");
+				} else if (ledgerObservation.getType() == LedgerObservation.Type.ADOPT) {
+					receive(ledgerObservation);
 				}
 			} catch (InterruptedException e) {
 				// exit if interrupted
@@ -89,8 +89,8 @@ public final class MockApplication {
 		}
 	}
 
-	private void receive(AtomObservation atomObservation) {
-		Atom atom = atomObservation.getAtom();
+	private void receive(LedgerObservation ledgerObservation) {
+		Atom atom = ledgerObservation.getAtom();
 		Object content = atom.getContent();
 		// figure out indices
 		ImmutableSet<LedgerIndex> uniqueIndices = ImmutableSet.of();
@@ -102,11 +102,11 @@ public final class MockApplication {
 			logger.debug(String.format("Received foreign atom content %s, cannot infer indices", content.getClass().getSimpleName()));
 		}
 
-		if (!atomObservation.hasSupersededAtoms()) {
+		if (!ledgerObservation.hasSupersededAtoms()) {
 			ledger.store(atom, uniqueIndices, duplicateIndices);
 			logger.info(String.format("Stored atom '%s'", atom.getAID()));
 		} else {
-			Set<AID> previousAids = atomObservation.getSupersededAtoms().stream()
+			Set<AID> previousAids = ledgerObservation.getSupersededAtoms().stream()
 				.map(Atom::getAID)
 				.collect(Collectors.toSet());
 			ledger.replace(previousAids, atom, uniqueIndices, duplicateIndices);
@@ -115,7 +115,7 @@ public final class MockApplication {
 	}
 
 	boolean inject(Atom atom) {
-		return atomObservationQueue.add(AtomObservation.adopt(atom));
+		return ledgerObservationQueue.add(LedgerObservation.adopt(atom));
 	}
 
 	public MockAccessor getAccessor() {

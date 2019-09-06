@@ -8,7 +8,7 @@ import com.radixdlt.Atom;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
 import com.radixdlt.engine.AtomStatus;
-import com.radixdlt.ledger.AtomObservation;
+import com.radixdlt.ledger.LedgerObservation;
 import com.radixdlt.ledger.Ledger;
 import com.radixdlt.ledger.LedgerCursor;
 import com.radixdlt.ledger.LedgerIndex;
@@ -53,14 +53,14 @@ public final class Tempo implements Ledger, ConsensusEnforcer, Closeable {
 	private final ConsensusController consensus;
 	private final Attestor attestor;
 
-	private final BlockingQueue<AtomObservation> atomObservations;
+	private final BlockingQueue<LedgerObservation> ledgerObservations;
 	private final Map<AID, Atom> pendingPreferenceChanges = new ConcurrentHashMap<>();
 
 	private final Set<Resource> ownedResources;
 	private final Set<AtomDiscoverer> atomDiscoverers;
 	private final Set<AtomDeliverer> atomDeliverers;
 	private final RequestDeliverer requestDeliverer;
-	private final Set<AtomObserver> observers; // TODO external atomObservations and internal observers is ambiguous
+	private final Set<AtomObserver> observers; // TODO external ledgerObservations and internal observers is ambiguous
 
 	@Inject
 	public Tempo(
@@ -86,7 +86,7 @@ public final class Tempo implements Ledger, ConsensusEnforcer, Closeable {
 		this.requestDeliverer = Objects.requireNonNull(requestDeliverer);
 		this.observers = Objects.requireNonNull(observers);
 
-		this.atomObservations = new LinkedBlockingQueue<>(INBOUND_QUEUE_CAPACITY);
+		this.ledgerObservations = new LinkedBlockingQueue<>(INBOUND_QUEUE_CAPACITY);
 
 		// hook up components
 		// TODO remove listeners when closed?
@@ -113,12 +113,13 @@ public final class Tempo implements Ledger, ConsensusEnforcer, Closeable {
 		log.info("Committing to '" + preference.getAID() + "' at " + temporalCommitment.getLogicalClock());
 		this.atomStore.commit(preference.getAID(), temporalCommitment.getLogicalClock());
 		this.commitmentStore.put(self, temporalCommitment.getLogicalClock(), temporalCommitment.getCommitment());
-		this.addObservation(AtomObservation.commit(preference));
+
+		this.injectObservation(LedgerObservation.commit(preference));
 	}
 
 	@Override
-	public AtomObservation observe() throws InterruptedException {
-		return this.atomObservations.take();
+	public LedgerObservation observe() throws InterruptedException {
+		return this.ledgerObservations.take();
 	}
 
 	@Override
@@ -164,11 +165,11 @@ public final class Tempo implements Ledger, ConsensusEnforcer, Closeable {
 		// TODO add shard space relevance check
 		Atom oldPreference = pendingPreferenceChanges.remove(atom.getAID());
 		ImmutableSet<Atom> supersededAtoms = oldPreference == null ? ImmutableSet.of() : ImmutableSet.of(oldPreference);
-		addObservation(AtomObservation.adopt(supersededAtoms, atom));
+		injectObservation(LedgerObservation.adopt(supersededAtoms, atom));
 	}
 
-	private void addObservation(AtomObservation observation) {
-		if (!this.atomObservations.add(observation)) {
+	private void injectObservation(LedgerObservation observation) {
+		if (!this.ledgerObservations.add(observation)) {
 			// TODO more graceful queue full handling
 			log.error("Atom observations queue full");
 		}
@@ -208,13 +209,13 @@ public final class Tempo implements Ledger, ConsensusEnforcer, Closeable {
 
 			@Override
 			public long getQueueSize() {
-				return atomObservations.size();
+				return ledgerObservations.size();
 			}
 
 			@Override
 			public Map<String, Object> getMetaData() {
 				return ImmutableMap.of(
-					"inboundQueue", atomObservations.size()
+					"inboundQueue", ledgerObservations.size()
 				);
 			}
 		});
