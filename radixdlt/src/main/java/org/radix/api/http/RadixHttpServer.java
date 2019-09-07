@@ -1,21 +1,26 @@
 package org.radix.api.http;
 
-import java.io.IOException;
-import java.util.Collections;
-import java.util.Deque;
-import java.util.HashMap;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.common.AID;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.mock.MockAccessor;
 import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.tempo.store.TempoAtomStoreView;
+import com.radixdlt.serialization.Serialization;
 import com.radixdlt.tempo.AtomSyncView;
+import com.radixdlt.tempo.store.TempoAtomStoreView;
 import com.radixdlt.tempo.store.berkeley.BerkeleyCommitmentStore;
+import com.radixdlt.universe.Universe;
+import com.stijndewitt.undertow.cors.AllowAll;
+import com.stijndewitt.undertow.cors.Filter;
+import io.undertow.Handlers;
+import io.undertow.Undertow;
+import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
+import io.undertow.server.RoutingHandler;
+import io.undertow.util.Headers;
+import io.undertow.util.Methods;
+import io.undertow.util.StatusCodes;
+import io.undertow.websockets.core.WebSocketChannel;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.radix.api.AtomSchemas;
@@ -33,26 +38,18 @@ import org.radix.logging.Logging;
 import org.radix.modules.Modules;
 import org.radix.properties.RuntimeProperties;
 import org.radix.shards.ShardSpace;
-
-import com.radixdlt.serialization.Serialization;
-import org.radix.time.Time;
 import org.radix.time.RTP.RTPService;
 import org.radix.time.RTP.RTPTimestamp;
-import com.radixdlt.universe.Universe;
+import org.radix.time.Time;
 import org.radix.universe.system.LocalSystem;
 
-import com.stijndewitt.undertow.cors.AllowAll;
-import com.stijndewitt.undertow.cors.Filter;
-
-import io.undertow.Handlers;
-import io.undertow.Undertow;
-import io.undertow.server.HttpHandler;
-import io.undertow.server.HttpServerExchange;
-import io.undertow.server.RoutingHandler;
-import io.undertow.util.Headers;
-import io.undertow.util.Methods;
-import io.undertow.util.StatusCodes;
-import io.undertow.websockets.core.WebSocketChannel;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * TODO: Document me!
@@ -166,25 +163,20 @@ public final class RadixHttpServer {
 		    respond(commitmentsJson, exchange);
 	    }, handler);
 
-    	addGetRoute("/api/internal/mock/spawn", exchange -> {
-			if (Modules.isAvailable(MockAccessor.class)) {
-				String atomCountStr = getParameter(exchange, "atoms").orElse("1");
-				int atomCount = Integer.parseUnsignedInt(atomCountStr);
-				respond("Spamming " + atomCount + " random mock atom(s)", exchange);
-				Modules.get(MockAccessor.class).spawn(atomCount);
-			} else {
-				respond("Mock application is unavailable", exchange);
-			}
-	    }, handler);
-
-	    addGetRoute("/api/internal/mock/spawnkey", exchange -> {
+	    addGetRoute("/api/internal/mock/inject", exchange -> {
 		    if (Modules.isAvailable(MockAccessor.class)) {
 			    String atomCountStr = getParameter(exchange, "atoms").orElse("1");
-			    String keyStr = getParameter(exchange, "atoms").orElse("0");
 			    int atomCount = Integer.parseUnsignedInt(atomCountStr);
-			    int key = Integer.parseUnsignedInt(keyStr);
-			    respond("Spamming " + atomCount + " random mock atom(s) with key " + key, exchange);
-			    Modules.get(MockAccessor.class).spawnWithKey(key, atomCount);
+			    Optional<String> optionalKeyStr = getParameter(exchange, "key");
+			    if (optionalKeyStr.isPresent()) {
+				    String keyStr = optionalKeyStr.orElse("0");
+				    int key = Integer.parseUnsignedInt(keyStr);
+				    respond("Injecting " + atomCount + " random mock atom(s) with key " + key, exchange);
+				    Modules.get(MockAccessor.class).inject(key, atomCount);
+			    } else {
+				    respond("Injecting " + atomCount + " random mock atom(s)", exchange);
+				    Modules.get(MockAccessor.class).inject(atomCount);
+			    }
 		    } else {
 			    respond("Mock application is unavailable", exchange);
 		    }

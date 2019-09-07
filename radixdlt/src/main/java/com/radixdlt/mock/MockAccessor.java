@@ -21,8 +21,8 @@ public final class MockAccessor {
 		this.mockApplication = mockApplication;
 	}
 
-	public void spawn(int atomCount) {
-		logger.info("Spamming " + atomCount + " random mock atoms");
+	public void inject(int atomCount) {
+		logger.info("Injecting " + atomCount + " random mock atoms");
 		for (int i = 0; i < atomCount; i++) {
 			// generate random key / value
 			byte[] keyBytes = new byte[9];
@@ -38,8 +38,8 @@ public final class MockAccessor {
 		}
 	}
 
-	public void spawnWithKey(long key, int atomCount) {
-		logger.info("Spamming " + atomCount + " mock atoms with key " + key);
+	public void inject(long key, int atomCount) {
+		logger.info("Injecting " + atomCount + " mock atoms with key " + key);
 		for (int i = 0; i < atomCount; i++) {
 			// generate random key / value
 			byte[] valueBytes = Ints.toByteArray(i);
