@@ -2,6 +2,7 @@ package com.radixdlt.tempo.discovery;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
@@ -233,7 +234,7 @@ public final class IterativeDiscoverer implements Resource, AtomDiscoverer {
 	}
 
 	private void notifyListeners(ImmutableList<AID> aids, Peer peer) {
-		discoveryListeners.forEach(listener -> listener.accept(aids, peer));
+		discoveryListeners.forEach(listener -> listener.accept(ImmutableSet.copyOf(aids), peer));
 	}
 
 	@Override

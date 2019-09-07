@@ -173,7 +173,7 @@ public final class SampleRetriever implements Closeable, AtomDiscoverer {
 		discoveryListeners.remove(listener);
 	}
 
-	private void notifyListeners(Collection<AID> aids, Peer peer) {
+	private void notifyListeners(Set<AID> aids, Peer peer) {
 		discoveryListeners.forEach(listener -> listener.accept(aids, peer));
 	}
 

@@ -137,10 +137,14 @@ public final class RSSConsensus implements AtomObserver, Consensus {
 	private void notifySwitchToMajority(TempoAtom oldPreference, Samples samples) {
 		// TODO add cache for recent preferences?
 		AID newPreference = samples.getTopPreference();
-		Set<Peer> peersToContact = samples.getPeersFor(newPreference).stream()
+		samples.getPeersFor(newPreference).stream()
 			.map(addressBook::peer)
-			.collect(Collectors.toSet());
-		notify(ConsensusAction.changePreference(newPreference, ImmutableSet.of(oldPreference), peersToContact));
+			.forEach(peer -> requestDeliverer.deliver(newPreference, peer)
+				.thenAccept(result -> {
+					if (result.isSuccess()) {
+						notify(ConsensusAction.changePreference(result.getAtom(), ImmutableSet.of(oldPreference)));
+					}
+				}));
 	}
 
 	private void notify(ConsensusAction action) {

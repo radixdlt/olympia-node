@@ -29,6 +29,7 @@ import com.radixdlt.tempo.store.TempoAtomStoreView;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.modules.Modules;
+import org.radix.network2.addressbook.Peer;
 import org.radix.utils.SimpleThreadPool;
 
 import java.io.Closeable;
@@ -37,7 +38,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 
 /**
@@ -55,12 +55,10 @@ public final class Tempo implements Ledger, Closeable {
 
 	private final Set<Resource> ownedResources;
 	private final Set<AtomDiscoverer> atomDiscoverers;
-	private final Set<AtomDeliverer> atomDeliverers;
 	private final RequestDeliverer requestDeliverer;
 	private final Set<AtomObserver> observers; // TODO external ledgerObservations and internal observers is ambiguous
 
 	private final BlockingQueue<LedgerObservation> ledgerObservations;
-	private final Map<AID, Set<? extends Atom>> pendingPreferenceChanges = new ConcurrentHashMap<>();
 	private final SimpleThreadPool<ConsensusAction> consensusProcessor;
 
 	@Inject
@@ -72,7 +70,6 @@ public final class Tempo implements Ledger, Closeable {
 		Attestor attestor,
 		@Owned Set<Resource> ownedResources,
 		Set<AtomDiscoverer> atomDiscoverers,
-		Set<AtomDeliverer> atomDeliverers,
 		RequestDeliverer requestDeliverer,
 		Set<AtomObserver> observers
 	) {
@@ -83,7 +80,6 @@ public final class Tempo implements Ledger, Closeable {
 		this.attestor = Objects.requireNonNull(attestor);
 		this.ownedResources = Objects.requireNonNull(ownedResources);
 		this.atomDiscoverers = Objects.requireNonNull(atomDiscoverers);
-		this.atomDeliverers = Objects.requireNonNull(atomDeliverers);
 		this.requestDeliverer = Objects.requireNonNull(requestDeliverer);
 		this.observers = Objects.requireNonNull(observers);
 
@@ -93,36 +89,7 @@ public final class Tempo implements Ledger, Closeable {
 
 		// hook up components
 		for (AtomDiscoverer atomDiscoverer : this.atomDiscoverers) {
-			atomDiscoverer.addListener(requestDeliverer::tryDeliver);
-		}
-		for (AtomDeliverer atomDeliverer : atomDeliverers) {
-			atomDeliverer.addListener((atom, peer) -> onDelivered(atom));
-		}
-	}
-
-	private void processConsensusAction(ConsensusAction action) {
-		if (action.getType() == ConsensusAction.Type.COMMIT) {
-			// TODO do something with commitment
-			TempoAtom preference = action.getPreference();
-			TemporalCommitment temporalCommitment = attestTo(preference);
-			log.info("Committing to '" + preference.getAID() + "' at " + temporalCommitment.getLogicalClock());
-			this.atomStore.commit(preference.getAID(), temporalCommitment.getLogicalClock());
-			this.commitmentStore.put(self, temporalCommitment.getLogicalClock(), temporalCommitment.getCommitment());
-
-			this.injectObservation(LedgerObservation.commit(preference));
-		} else if (action.getType() == ConsensusAction.Type.SWITCH_PREFERENCE) {
-			AID newPreferenceAid = action.getPreferenceAid();
-			if (action.hasPreference()) {
-				log.info("Switching preference from '" + action.getOldPreferences() + "' to '" + newPreferenceAid + "'");
-				injectObservation(LedgerObservation.adopt(action.getOldPreferences(), action.getPreference()));
-			} else {
-				log.info("Trying to switch preference from '" + action.getOldPreferences() + "' to '" + newPreferenceAid + "'");
-				pendingPreferenceChanges.put(newPreferenceAid, action.getOldPreferences());
-				action.getPeersToContact()
-					.forEach(peer -> requestDeliverer.tryDeliver(ImmutableSet.of(newPreferenceAid), peer));
-			}
-		} else {
-			throw new IllegalStateException("Unknown consensus action type: " + action.getType());
+			atomDiscoverer.addListener(this::onDiscovered);
 		}
 	}
 
@@ -170,13 +137,34 @@ public final class Tempo implements Ledger, Closeable {
 		observers.forEach(observer -> observer.onDeleted(aid));
 	}
 
-	private void onDelivered(TempoAtom atom) {
+	private void onDiscovered(Set<AID> aids, Peer peer) {
+		requestDeliverer.deliver(aids, ImmutableSet.of(peer)).forEach((aid, future) -> future.thenAccept(result -> {
+			if (result.isSuccess()) {
+				onDelivered(result.getAtom(), result.getPeer());
+			}
+		}));
+	}
+
+	private void onDelivered(TempoAtom atom, Peer peer) {
 		// TODO add shard space relevance check
-		Set<? extends Atom> oldPreferences = pendingPreferenceChanges.remove(atom.getAID());
-		if (oldPreferences != null) {
-			injectObservation(LedgerObservation.adopt(oldPreferences, atom));
+		injectObservation(LedgerObservation.adopt(atom));
+	}
+
+	private void processConsensusAction(ConsensusAction action) {
+		if (action.getType() == ConsensusAction.Type.COMMIT) {
+			// TODO do something with commitment
+			TempoAtom preference = action.getPreference();
+			TemporalCommitment temporalCommitment = attestTo(preference);
+			log.info("Committing to '" + preference.getAID() + "' at " + temporalCommitment.getLogicalClock());
+			this.atomStore.commit(preference.getAID(), temporalCommitment.getLogicalClock());
+			this.commitmentStore.put(self, temporalCommitment.getLogicalClock(), temporalCommitment.getCommitment());
+
+			this.injectObservation(LedgerObservation.commit(preference));
+		} else if (action.getType() == ConsensusAction.Type.SWITCH_PREFERENCE) {
+			log.info("Switching preference from '" + action.getOldPreferences() + "' to '" + action.getPreference() + "'");
+			injectObservation(LedgerObservation.adopt(action.getOldPreferences(), action.getPreference()));
 		} else {
-			injectObservation(LedgerObservation.adopt(atom));
+			throw new IllegalStateException("Unknown consensus action type: " + action.getType());
 		}
 	}
 
@@ -211,7 +199,7 @@ public final class Tempo implements Ledger, Closeable {
 			@Override
 			public void inject(org.radix.atoms.Atom atom) {
 				TempoAtom tempoAtom = LegacyUtils.fromLegacyAtom(atom);
-				onDelivered(tempoAtom);
+				onDelivered(tempoAtom, null);
 			}
 
 			@Override

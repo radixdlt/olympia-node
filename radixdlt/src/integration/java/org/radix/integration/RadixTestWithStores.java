@@ -69,7 +69,6 @@ public class RadixTestWithStores extends RadixTest
 				new TempoAttestor(LocalSystem.getInstance(), Serialization.getDefault(), System::currentTimeMillis),
 				ImmutableSet.of(atomStore, commitmentStore),
 				ImmutableSet.of(),
-				ImmutableSet.of(),
 				mock(RequestDeliverer.class),
 				ImmutableSet.of()
 			);
