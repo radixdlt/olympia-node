@@ -3,7 +3,7 @@ package com.radixdlt.tempo;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.Atom;
 import org.junit.Assert;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.radix.atoms.AtomStore;
 import org.radix.integration.RadixTestWithStores;
@@ -22,8 +22,8 @@ public class BerkeleyCursorTests extends RadixTestWithStores {
 
 	private AtomGenerator atomGenerator = new AtomGenerator();
 
-	@Before
-	public void beforeTest() {
+	@BeforeClass
+	public static void checkTempoAvailable() {
 		assumeTrue(Modules.isAvailable(Tempo.class));
 	}
 

@@ -20,6 +20,7 @@ import static org.junit.Assume.assumeTrue;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.radix.database.DatabaseEnvironment;
 import org.radix.database.exceptions.DatabaseException;
@@ -51,10 +52,13 @@ public class BerkeleyTempoAtomStoreTests extends RadixTestWithStores {
 
     private ECKeyPair identity;
 
+	@BeforeClass
+	public static void checkForTempo() {
+		assumeTrue(Modules.isAvailable(Tempo.class)); // Otherwise databases are not reset, and key conflicts occur and tests fail
+	}
+
     @Before
     public void setup() throws CryptoException, ValidationException {
-    	assumeTrue(Modules.isAvailable(Tempo.class)); // Otherwise databases are not reset, and key conflicts occur and tests fail
-
         tempoAtomStore = new BerkeleyTempoAtomStore(localSystem.getNID(), serialization, profiler, Modules.get(DatabaseEnvironment.class));
         tempoAtomStore.open();
 
