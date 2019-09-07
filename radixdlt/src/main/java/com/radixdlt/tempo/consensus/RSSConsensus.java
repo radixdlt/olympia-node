@@ -195,4 +195,10 @@ public final class RSSConsensus implements AtomObserver, Consensus {
 	public ConsensusAction observe() throws InterruptedException {
 		return actions.take();
 	}
+
+	public enum ConsensusDecision {
+		COMMIT,
+		CONTINUE,
+		SWITCH_TO_MAJORITY
+	}
 }
