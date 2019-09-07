@@ -9,4 +9,8 @@ public class AtomAlreadyExistsException extends LedgerException {
 		super("Atom '" + atom.getAID() + "' already exists");
 		this.atom = atom;
 	}
+
+	public Atom getAtom() {
+		return atom;
+	}
 }

@@ -18,7 +18,6 @@ import com.radixdlt.ledger.exceptions.AtomAlreadyExistsException;
 import com.radixdlt.ledger.exceptions.LedgerIndexConflictException;
 import com.radixdlt.tempo.consensus.Consensus;
 import com.radixdlt.tempo.consensus.ConsensusAction;
-import com.radixdlt.tempo.delivery.AtomDeliverer;
 import com.radixdlt.tempo.delivery.RequestDeliverer;
 import com.radixdlt.tempo.discovery.AtomDiscoverer;
 import com.radixdlt.tempo.store.AtomConflict;
@@ -106,31 +105,45 @@ public final class Tempo implements Ledger, Closeable {
 
 	@Override
 	public void store(Atom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
-		if (atomStore.contains(atom.getAID())) {
-			throw new AtomAlreadyExistsException(atom);
-		}
+		preCheckStore(atom, uniqueIndices, duplicateIndices);
 		TempoAtom tempoAtom = convertToTempoAtom(atom);
 		AtomStoreResult status = atomStore.store(tempoAtom, uniqueIndices, duplicateIndices);
-		if (!status.isSuccess()) {
-			AtomConflict conflictInfo = status.getConflictInfo();
-			throw new LedgerIndexConflictException(conflictInfo.getAtom(), conflictInfo.getConflictingAtoms());
-		}
+		postCheckStore(status);
 		onAdopted(tempoAtom, uniqueIndices, duplicateIndices);
 	}
 
 	@Override
 	public void replace(Set<AID> aids, Atom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
+		Objects.requireNonNull(aids, "aids");
+		preCheckStore(atom, uniqueIndices, duplicateIndices);
+
+		TempoAtom tempoAtom = convertToTempoAtom(atom);
+		AtomStoreResult status = atomStore.replace(aids, tempoAtom, uniqueIndices, duplicateIndices);
+		postCheckStore(status);
+		aids.forEach(this::onDeleted);
+		onAdopted(tempoAtom, uniqueIndices, duplicateIndices);
+	}
+
+	private void preCheckStore(Atom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
+		Objects.requireNonNull(atom, "atom");
+		Objects.requireNonNull(uniqueIndices, "uniqueIndices");
+		Objects.requireNonNull(duplicateIndices, "duplicateIndices");
+		if (uniqueIndices.isEmpty()) {
+			throw new TempoException("Atom '" + atom.getAID() + "' must have at least one unique index");
+		}
+		if (atom.getShards().isEmpty()) {
+			throw new TempoException("Atom '" + atom.getAID() + "' must have at least one shard");
+		}
 		if (atomStore.contains(atom.getAID())) {
 			throw new AtomAlreadyExistsException(atom);
 		}
-		TempoAtom tempoAtom = convertToTempoAtom(atom);
-		AtomStoreResult status = atomStore.replace(aids, tempoAtom, uniqueIndices, duplicateIndices);
+	}
+
+	private void postCheckStore(AtomStoreResult status) {
 		if (!status.isSuccess()) {
 			AtomConflict conflictInfo = status.getConflictInfo();
 			throw new LedgerIndexConflictException(conflictInfo.getAtom(), conflictInfo.getConflictingAtoms());
 		}
-		aids.forEach(this::onDeleted);
-		onAdopted(tempoAtom, uniqueIndices, duplicateIndices);
 	}
 
 	private void onDeleted(AID aid) {
@@ -154,7 +167,7 @@ public final class Tempo implements Ledger, Closeable {
 		if (action.getType() == ConsensusAction.Type.COMMIT) {
 			// TODO do something with commitment
 			TempoAtom preference = action.getPreference();
-			TemporalCommitment temporalCommitment = attestTo(preference);
+			TemporalCommitment temporalCommitment = attestor.attestTo(preference.getAID());
 			log.info("Committing to '" + preference.getAID() + "' at " + temporalCommitment.getLogicalClock());
 			this.atomStore.commit(preference.getAID(), temporalCommitment.getLogicalClock());
 			this.commitmentStore.put(self, temporalCommitment.getLogicalClock(), temporalCommitment.getCommitment());
@@ -177,10 +190,6 @@ public final class Tempo implements Ledger, Closeable {
 
 	private void onAdopted(TempoAtom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
 		observers.forEach(acceptor -> acceptor.onAdopted(atom, uniqueIndices, duplicateIndices));
-	}
-
-	private TemporalCommitment attestTo(TempoAtom atom) {
-		return attestor.attestTo(atom.getAID());
 	}
 
 	@Override
