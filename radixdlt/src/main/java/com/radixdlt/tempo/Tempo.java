@@ -8,16 +8,16 @@ import com.radixdlt.Atom;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
 import com.radixdlt.engine.AtomStatus;
-import com.radixdlt.ledger.LedgerObservation;
 import com.radixdlt.ledger.Ledger;
 import com.radixdlt.ledger.LedgerCursor;
 import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerIndex.LedgerIndexType;
+import com.radixdlt.ledger.LedgerObservation;
 import com.radixdlt.ledger.LedgerSearchMode;
 import com.radixdlt.ledger.exceptions.AtomAlreadyExistsException;
 import com.radixdlt.ledger.exceptions.LedgerIndexConflictException;
-import com.radixdlt.tempo.consensus.ConsensusController;
-import com.radixdlt.tempo.consensus.ConsensusObserver;
+import com.radixdlt.tempo.consensus.Consensus;
+import com.radixdlt.tempo.consensus.ConsensusAction;
 import com.radixdlt.tempo.delivery.AtomDeliverer;
 import com.radixdlt.tempo.delivery.RequestDeliverer;
 import com.radixdlt.tempo.discovery.AtomDiscoverer;
@@ -29,7 +29,7 @@ import com.radixdlt.tempo.store.TempoAtomStoreView;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.modules.Modules;
-import org.radix.network2.addressbook.Peer;
+import org.radix.utils.SimpleThreadPool;
 
 import java.io.Closeable;
 import java.util.Map;
@@ -43,18 +43,15 @@ import java.util.concurrent.LinkedBlockingQueue;
 /**
  * The Tempo implementation of a ledger.
  */
-public final class Tempo implements Ledger, ConsensusObserver, Closeable {
+public final class Tempo implements Ledger, Closeable {
 	private static final Logger log = Logging.getLogger("tempo");
 	private static final int INBOUND_QUEUE_CAPACITY = 16384;
 
 	private final EUID self;
 	private final TempoAtomStore atomStore;
 	private final CommitmentStore commitmentStore;
-	private final ConsensusController consensus;
+	private final Consensus consensus;
 	private final Attestor attestor;
-
-	private final BlockingQueue<LedgerObservation> ledgerObservations;
-	private final Map<AID, Atom> pendingPreferenceChanges = new ConcurrentHashMap<>();
 
 	private final Set<Resource> ownedResources;
 	private final Set<AtomDiscoverer> atomDiscoverers;
@@ -62,12 +59,16 @@ public final class Tempo implements Ledger, ConsensusObserver, Closeable {
 	private final RequestDeliverer requestDeliverer;
 	private final Set<AtomObserver> observers; // TODO external ledgerObservations and internal observers is ambiguous
 
+	private final BlockingQueue<LedgerObservation> ledgerObservations;
+	private final Map<AID, Set<? extends Atom>> pendingPreferenceChanges = new ConcurrentHashMap<>();
+	private final SimpleThreadPool<ConsensusAction> consensusProcessor;
+
 	@Inject
 	public Tempo(
 		@Named("self") EUID self,
 		TempoAtomStore atomStore,
 		CommitmentStore commitmentStore,
-		ConsensusController consensus,
+		Consensus consensus,
 		Attestor attestor,
 		@Owned Set<Resource> ownedResources,
 		Set<AtomDiscoverer> atomDiscoverers,
@@ -87,9 +88,10 @@ public final class Tempo implements Ledger, ConsensusObserver, Closeable {
 		this.observers = Objects.requireNonNull(observers);
 
 		this.ledgerObservations = new LinkedBlockingQueue<>(INBOUND_QUEUE_CAPACITY);
+		this.consensusProcessor = new SimpleThreadPool<>("Tempo consensus processing", 1, consensus::observe, this::processConsensusAction, log);
+		this.consensusProcessor.start();
 
 		// hook up components
-		// TODO remove listeners when closed?
 		for (AtomDiscoverer atomDiscoverer : this.atomDiscoverers) {
 			atomDiscoverer.addListener(requestDeliverer::tryDeliver);
 		}
@@ -98,23 +100,30 @@ public final class Tempo implements Ledger, ConsensusObserver, Closeable {
 		}
 	}
 
-	@Override
-	public void requestChangePreference(TempoAtom oldPreference, AID newPreferenceAid, Set<Peer> peersToContact) {
-		log.info("Indicating preference change from '" + oldPreference.getAID() + "' to '" + newPreferenceAid + "'");
-		// TODO introduce cache for recently discarded preferences so we don't have to request every time
-		pendingPreferenceChanges.put(newPreferenceAid, oldPreference);
-		peersToContact.forEach(peer -> requestDeliverer.tryDeliver(ImmutableSet.of(newPreferenceAid), peer));
-	}
+	private void processConsensusAction(ConsensusAction action) {
+		if (action.getType() == ConsensusAction.Type.COMMIT) {
+			// TODO do something with commitment
+			TempoAtom preference = action.getPreference();
+			TemporalCommitment temporalCommitment = attestTo(preference);
+			log.info("Committing to '" + preference.getAID() + "' at " + temporalCommitment.getLogicalClock());
+			this.atomStore.commit(preference.getAID(), temporalCommitment.getLogicalClock());
+			this.commitmentStore.put(self, temporalCommitment.getLogicalClock(), temporalCommitment.getCommitment());
 
-	@Override
-	public void requestCommit(TempoAtom preference) {
-		TemporalCommitment temporalCommitment = attestTo(preference);
-		// TODO do something with commitment
-		log.info("Committing to '" + preference.getAID() + "' at " + temporalCommitment.getLogicalClock());
-		this.atomStore.commit(preference.getAID(), temporalCommitment.getLogicalClock());
-		this.commitmentStore.put(self, temporalCommitment.getLogicalClock(), temporalCommitment.getCommitment());
-
-		this.injectObservation(LedgerObservation.commit(preference));
+			this.injectObservation(LedgerObservation.commit(preference));
+		} else if (action.getType() == ConsensusAction.Type.SWITCH_PREFERENCE) {
+			AID newPreferenceAid = action.getPreferenceAid();
+			if (action.hasPreference()) {
+				log.info("Switching preference from '" + action.getOldPreferences() + "' to '" + newPreferenceAid + "'");
+				injectObservation(LedgerObservation.adopt(action.getOldPreferences(), action.getPreference()));
+			} else {
+				log.info("Trying to switch preference from '" + action.getOldPreferences() + "' to '" + newPreferenceAid + "'");
+				pendingPreferenceChanges.put(newPreferenceAid, action.getOldPreferences());
+				action.getPeersToContact()
+					.forEach(peer -> requestDeliverer.tryDeliver(ImmutableSet.of(newPreferenceAid), peer));
+			}
+		} else {
+			throw new IllegalStateException("Unknown consensus action type: " + action.getType());
+		}
 	}
 
 	@Override
@@ -163,9 +172,12 @@ public final class Tempo implements Ledger, ConsensusObserver, Closeable {
 
 	private void onDelivered(TempoAtom atom) {
 		// TODO add shard space relevance check
-		Atom oldPreference = pendingPreferenceChanges.remove(atom.getAID());
-		ImmutableSet<Atom> supersededAtoms = oldPreference == null ? ImmutableSet.of() : ImmutableSet.of(oldPreference);
-		injectObservation(LedgerObservation.adopt(supersededAtoms, atom));
+		Set<? extends Atom> oldPreferences = pendingPreferenceChanges.remove(atom.getAID());
+		if (oldPreferences != null) {
+			injectObservation(LedgerObservation.adopt(oldPreferences, atom));
+		} else {
+			injectObservation(LedgerObservation.adopt(atom));
+		}
 	}
 
 	private void injectObservation(LedgerObservation observation) {

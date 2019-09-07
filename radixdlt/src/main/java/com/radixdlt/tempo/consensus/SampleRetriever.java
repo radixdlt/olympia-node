@@ -1,6 +1,7 @@
 package com.radixdlt.tempo.consensus;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.radixdlt.common.AID;
@@ -106,23 +107,40 @@ public final class SampleRetriever implements Closeable, AtomDiscoverer {
 	}
 
 	private void processRequest(SampleRequest request) {
-		notifyListeners(request.getMessage().getPreferredAids(), request.getPeer());
-
-		Set<LedgerIndex> requestedIndices = request.getMessage().getRequestedIndices();
+		Set<AID> proposedAids = new HashSet<>();
 		Map<LedgerIndex, AID> aidByIndex = new HashMap<>();
 		Set<LedgerIndex> unavailableIndices = new HashSet<>();
-		for (LedgerIndex requestedIndex : requestedIndices) {
-			LedgerCursor cursor = storeView.search(LedgerIndex.LedgerIndexType.UNIQUE, requestedIndex, LedgerSearchMode.EXACT);
-			if (cursor != null) {
-				aidByIndex.put(requestedIndex, cursor.get());
-			} else {
-				unavailableIndices.add(requestedIndex);
+
+		Map<AID, Set<LedgerIndex>> requestedIndicesByAids = request.getMessage().getRequestedIndicesByAids();
+		for (AID proposedAid : requestedIndicesByAids.keySet()) {
+			boolean haveConflictingAtom = false;
+			Set<LedgerIndex> requestedIndices = requestedIndicesByAids.get(proposedAid);
+			for (LedgerIndex requestedIndex : requestedIndices) {
+				LedgerCursor cursor = storeView.search(LedgerIndex.LedgerIndexType.UNIQUE, requestedIndex, LedgerSearchMode.EXACT);
+				if (cursor != null) {
+					AID myAidForIndex = cursor.get();
+					aidByIndex.put(requestedIndex, myAidForIndex);
+					if (!myAidForIndex.equals(proposedAid)) {
+						haveConflictingAtom = true;
+					}
+				} else {
+					unavailableIndices.add(requestedIndex);
+				}
+			}
+			if (!haveConflictingAtom) {
+				proposedAids.add(proposedAid);
 			}
 		}
+
+		// TODO need to reconsider notifying for every unknown aid, may be sampled many times for same aid etc.
+		if (!proposedAids.isEmpty()) {
+			notifyListeners(proposedAids, request.getPeer());
+		}
+
 		Sample sample = new Sample(aidByIndex, unavailableIndices);
 		SampleResponseMessage response = new SampleResponseMessage(request.getMessage().getTag(), sample);
 		messageCentral.send(request.getPeer(), response);
-		log.debug("Responding to sample request '" + request.getMessage().getTag() + "' from " + request.getPeer() + " for " + requestedIndices);
+		log.debug("Responding to sample request '" + request.getMessage().getTag() + "' from " + request.getPeer() + " for " + request.getMessage().getRequestedIndicesByAids());
 	}
 
 	private void onResponse(Peer peer, SampleResponseMessage message) {

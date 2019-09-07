@@ -3,7 +3,7 @@ package com.radixdlt.tempo;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.radixdlt.TempoModule;
-import com.radixdlt.tempo.consensus.ConsensusModule;
+import com.radixdlt.tempo.consensus.RSSConsensusModule;
 import com.radixdlt.tempo.delivery.LazyRequestDelivererModule;
 import com.radixdlt.tempo.discovery.IterativeDiscovererModule;
 import com.radixdlt.tempo.store.berkeley.BerkeleyStoreModule;
@@ -22,7 +22,7 @@ public class TempoFactory {
 			new LazyRequestDelivererModule(properties),
 			new IterativeDiscovererModule(properties),
 			new BerkeleyStoreModule(),
-			new ConsensusModule(),
+			new RSSConsensusModule(),
 			new TempoModule()
 		);
 	}

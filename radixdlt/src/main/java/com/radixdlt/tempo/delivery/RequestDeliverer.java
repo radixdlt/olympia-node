@@ -19,5 +19,6 @@ public interface RequestDeliverer {
 	 * @param aids The {@link AID}s to request
 	 * @param peer The peer at which the aids are present
 	 */
+	// TODO should be changed to return a CompletableFuture of a RequestResult (TempoAtom or failure)
 	void tryDeliver(Collection<AID> aids, Peer peer);
 }

@@ -137,10 +137,10 @@ public final class LazyRequestDeliverer implements Resource, AtomDeliverer, Requ
 		if (aids.isEmpty()) {
 			return;
 		}
-
 		if (log.hasLevel(Logging.DEBUG)) {
 			log.debug("Requesting delivery of " + aids.size() + " aids from " + peer);
 		}
+
 		DeliveryRequestMessage request = new DeliveryRequestMessage(aids);
 		deliveryState.addRequest(aids, peer.getNID());
 		messageCentral.send(peer, request);

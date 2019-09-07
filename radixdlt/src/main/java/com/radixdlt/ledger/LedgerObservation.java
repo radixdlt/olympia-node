@@ -17,9 +17,9 @@ public final class LedgerObservation {
 
 	private final Type type;
 	private final Atom atom;
-	private final Set<Atom> supersededAtoms;
+	private final Set<? extends Atom> supersededAtoms;
 
-	private LedgerObservation(Type type, Atom atom, Set<Atom> supersededAtoms) {
+	private LedgerObservation(Type type, Atom atom, Set<? extends Atom> supersededAtoms) {
 		this.type = type;
 		this.atom = atom;
 		this.supersededAtoms = supersededAtoms;
@@ -37,7 +37,7 @@ public final class LedgerObservation {
 		return !supersededAtoms.isEmpty();
 	}
 
-	public Set<Atom> getSupersededAtoms() {
+	public Set<? extends Atom> getSupersededAtoms() {
 		return supersededAtoms;
 	}
 
@@ -46,7 +46,7 @@ public final class LedgerObservation {
 		return new LedgerObservation(Type.ADOPT, newAtom, ImmutableSet.of());
 	}
 
-	public static LedgerObservation adopt(Set<Atom> supersededAtoms, Atom newAtom) {
+	public static LedgerObservation adopt(Set<? extends Atom> supersededAtoms, Atom newAtom) {
 		Objects.requireNonNull(supersededAtoms, "supersededAtoms is required");
 		Objects.requireNonNull(newAtom, "newAtom is required");
 		return new LedgerObservation(Type.ADOPT, newAtom, supersededAtoms);

@@ -49,6 +49,10 @@ public class SampleRequestMessage extends Message {
 			.collect(Collectors.toSet());
 	}
 
+	public Map<AID, Set<LedgerIndex>> getRequestedIndicesByAids() {
+		return requestedIndicesByAids;
+	}
+
 	public Set<AID> getPreferredAids() {
 		return requestedIndicesByAids.keySet();
 	}

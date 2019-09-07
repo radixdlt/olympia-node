@@ -10,7 +10,7 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.tempo.AtomSyncView;
 import com.radixdlt.tempo.Tempo;
 import com.radixdlt.tempo.TempoAttestor;
-import com.radixdlt.tempo.consensus.ConsensusController;
+import com.radixdlt.tempo.consensus.RSSConsensus;
 import com.radixdlt.tempo.delivery.RequestDeliverer;
 import com.radixdlt.tempo.store.CommitmentStore;
 import com.radixdlt.tempo.store.TempoAtomStore;
@@ -65,7 +65,7 @@ public class RadixTestWithStores extends RadixTest
 				self,
 				atomStore,
 				commitmentStore,
-				mock(ConsensusController.class),
+				mock(RSSConsensus.class),
 				new TempoAttestor(LocalSystem.getInstance(), Serialization.getDefault(), System::currentTimeMillis),
 				ImmutableSet.of(atomStore, commitmentStore),
 				ImmutableSet.of(),
