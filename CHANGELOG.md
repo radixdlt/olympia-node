@@ -5,6 +5,9 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
  
 ## [Unreleased](#)
 
+## [1.0-beta.4](https://github.com/radixdlt/radixdlt-java/releases/tag/1.0-beta.4) - 2019-09-08
+### Added
+- Added address magic number check
 
 ## [1.0.0-beta.3](https://github.com/radixdlt/radixdlt-java/releases/tag/1.0.0-beta.3) - 2019-08-28
 ### Added
