@@ -29,8 +29,8 @@ repositories {
 }
 
 dependencies {
-    //implementation 'com.radixdlt:radixdlt-java:release~1.0.0-beta.3-SNAPSHOT'
-    compile project(":radixdlt-java")
+    implementation 'com.radixdlt:radixdlt-java:release~1.0-beta.4-SNAPSHOT'
+    //compile project(":radixdlt-java")
     compile group: 'io.reactivex.rxjava2', name: 'rxjava', version: '2.1.14'
     compile group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.25'
     compile group: 'com.google.guava', name: 'guava', version: '27.1-jre'
