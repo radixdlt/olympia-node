@@ -1,7 +1,6 @@
 package org.radix.network2.transport.udp;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.concurrent.CompletableFuture;
@@ -59,12 +58,8 @@ final class UDPTransportOutboundConnection implements TransportOutboundConnectio
 				Throwable cause = f.cause();
 				if (cause == null) {
 					cfsr.complete(SendResult.complete());
-				} else if (cause instanceof IOException) {
-					cfsr.complete(SendResult.failure((IOException) cause));
-				} else if (cause instanceof UncheckedIOException) {
-					cfsr.complete(SendResult.failure(((UncheckedIOException) cause).getCause()));
 				} else {
-					cfsr.complete(SendResult.failure(new IOException(cause)));
+					cfsr.complete(SendResult.failure(cause));
 				}
 			});
 		}

@@ -14,10 +14,6 @@ import org.radix.network2.messaging.InboundMessage;
 import org.radix.network2.transport.SendResult;
 import org.radix.network2.transport.TransportControl;
 import org.radix.network2.transport.TransportOutboundConnection;
-import org.radix.network2.transport.udp.NettyUDPTransportImpl;
-import org.radix.network2.transport.udp.UDPConfiguration;
-import org.radix.network2.transport.udp.UDPConstants;
-import org.radix.network2.transport.udp.UDPTransportModule;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -94,7 +90,7 @@ public class NettyUDPTransportImplTest {
 				while (queue.size() > windowSize) {
 					SendResult sr = waitFor(queue.pop());
 					if (!sr.isComplete()) {
-						sr.getException().printStackTrace(System.err);
+						sr.getThrowable().printStackTrace(System.err);
 						assertTrue(sr.isComplete()); // fail
 					}
 				}

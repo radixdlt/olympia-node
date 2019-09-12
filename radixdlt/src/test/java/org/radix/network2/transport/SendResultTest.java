@@ -28,7 +28,7 @@ public class SendResultTest {
 	public void testGetException() {
 		SendResult complete = SendResult.failure(new IOException());
 
-		assertThat(complete.getException(), notNullValue());
-		assertThat(complete.getException().getClass().getName(), equalTo(IOException.class.getName()));
+		assertThat(complete.getThrowable(), notNullValue());
+		assertThat(complete.getThrowable().getClass().getName(), equalTo(IOException.class.getName()));
 	}
 }
