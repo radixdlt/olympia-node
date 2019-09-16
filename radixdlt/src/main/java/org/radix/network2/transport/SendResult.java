@@ -1,6 +1,5 @@
 package org.radix.network2.transport;
 
-import java.io.IOException;
 import java.util.Objects;
 
 /**
@@ -22,17 +21,17 @@ public class SendResult {
 	 * Returns a freshly created failure result with the specified
 	 * failure exception.
 	 *
-	 * @param exception The failure reason, must not be {@code null}
+	 * @param throwable The failure reason, must not be {@code null}
 	 * @return a failure result with the specified exception reason
 	 */
-	public static final SendResult failure(IOException exception) {
-		return new SendResult(Objects.requireNonNull(exception));
+	public static final SendResult failure(Throwable throwable) {
+		return new SendResult(Objects.requireNonNull(throwable));
 	}
 
-	private final IOException exception;
+	private final Throwable throwable;
 
-	private SendResult(IOException exception) {
-		this.exception = exception;
+	private SendResult(Throwable throwable) {
+		this.throwable = throwable;
 	}
 
 	/**
@@ -41,7 +40,7 @@ public class SendResult {
 	 * @return {@code true} if this is a successful completion result
 	 */
 	public boolean isComplete() {
-		return this.exception == null;
+		return this.throwable == null;
 	}
 
 	/**
@@ -50,15 +49,15 @@ public class SendResult {
 	 *
 	 * @return failure reason, or {@code null} if no failure
 	 */
-	public IOException getException() {
-		return this.exception;
+	public Throwable getThrowable() {
+		return this.throwable;
 	}
 
 	@Override
 	public String toString() {
-		if (this.exception == null) {
+		if (this.throwable == null) {
 			return String.format("%s[Complete]", getClass().getSimpleName());
 		}
-		return String.format("%s[%s]", getClass().getSimpleName(), exception.getClass().getName());
+		return String.format("%s[%s]", getClass().getSimpleName(), throwable.getClass().getName());
 	}
 }
