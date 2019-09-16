@@ -1,4 +1,4 @@
-rootProject.name = 'radixdlt-engine'
-include 'radixdlt-engine'
+rootProject.name = 'radix-engine-library'
+include 'radix-engine-library'
 include 'examples'
 
