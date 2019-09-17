@@ -4,7 +4,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.primitives.Longs;
-import com.radixdlt.Atom;
 import com.radixdlt.common.AID;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.ledger.LedgerIndex;
@@ -15,21 +14,21 @@ import java.util.Map;
 import java.util.Random;
 
 public class AtomGenerator {
-    public List<Atom> createAtoms(ECKeyPair identity, int n) {
+    public List<TempoAtom> createAtoms(ECKeyPair identity, int n) {
         Random r = new Random(); // SecureRandom not required for test
         // Super paranoid way of doing things
-        Map<AID, Atom> atoms = Maps.newLinkedHashMap();
+        Map<AID, TempoAtom> atoms = Maps.newLinkedHashMap();
         while (atoms.size() < n) {
-            Atom atom = createAtom(identity, r);
+            TempoAtom atom = createAtom(identity, r);
             atoms.put(atom.getAID(), atom);
         }
 
         // Make sure return list is ordered by atom clock.
-        List<Atom> atomList = Lists.newArrayList(atoms.values());
+        List<TempoAtom> atomList = Lists.newArrayList(atoms.values());
         return atomList;
     }
 
-    public List<Atom> createAtoms(int n) throws Exception {
+    public List<TempoAtom> createAtoms(int n) throws Exception {
         ECKeyPair identity = new ECKeyPair();
         return createAtoms(identity, n);
     }
@@ -47,18 +46,5 @@ public class AtomGenerator {
             ImmutableSet.of(Longs.fromByteArray(pKey))
         );
         return atom;
-    }
-
-    public TempoAtom createAtom(Random r) throws Exception {
-        ECKeyPair identity = new ECKeyPair();
-        return createAtom(identity, r);
-    }
-
-    public TempoAtom convertToTempoAtom(Atom atom) {
-        return new TempoAtom(
-                atom.getContent(),
-                atom.getAID(),
-                atom.getShards()
-        );
     }
 }

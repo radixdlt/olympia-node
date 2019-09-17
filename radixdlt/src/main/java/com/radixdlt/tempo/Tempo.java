@@ -42,7 +42,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 /**
  * The Tempo implementation of a ledger.
  */
-public final class Tempo implements Ledger, Closeable {
+public final class Tempo implements Ledger<TempoAtom>, Closeable {
 	private static final Logger log = Logging.getLogger("tempo");
 	private static final int INBOUND_QUEUE_CAPACITY = 16384;
 
@@ -98,26 +98,24 @@ public final class Tempo implements Ledger, Closeable {
 	}
 
 	@Override
-	public Optional<Atom> get(AID aid) {
+	public Optional<TempoAtom> get(AID aid) {
 		// cast to abstract atom
 		return atomStore.get(aid).map(atom -> atom);
 	}
 
 	@Override
-	public void store(Atom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
-		preCheckStore(atom, uniqueIndices, duplicateIndices);
-		TempoAtom tempoAtom = convertToTempoAtom(atom);
+	public void store(TempoAtom tempoAtom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
+		preCheckStore(tempoAtom, uniqueIndices, duplicateIndices);
 		AtomStoreResult status = atomStore.store(tempoAtom, uniqueIndices, duplicateIndices);
 		postCheckStore(status);
 		onAdopted(tempoAtom, uniqueIndices, duplicateIndices);
 	}
 
 	@Override
-	public void replace(Set<AID> aids, Atom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
+	public void replace(Set<AID> aids, TempoAtom tempoAtom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
 		Objects.requireNonNull(aids, "aids");
-		preCheckStore(atom, uniqueIndices, duplicateIndices);
+		preCheckStore(tempoAtom, uniqueIndices, duplicateIndices);
 
-		TempoAtom tempoAtom = convertToTempoAtom(atom);
 		AtomStoreResult status = atomStore.replace(aids, tempoAtom, uniqueIndices, duplicateIndices);
 		postCheckStore(status);
 		aids.forEach(this::onDeleted);
@@ -128,6 +126,7 @@ public final class Tempo implements Ledger, Closeable {
 		Objects.requireNonNull(atom, "atom");
 		Objects.requireNonNull(uniqueIndices, "uniqueIndices");
 		Objects.requireNonNull(duplicateIndices, "duplicateIndices");
+		log.info("Checking atom: " + atom.getClass());
 		if (uniqueIndices.isEmpty()) {
 			throw new TempoException("Atom '" + atom.getAID() + "' must have at least one unique index");
 		}
@@ -239,20 +238,5 @@ public final class Tempo implements Ledger, Closeable {
 
 	public void reset() {
 		this.ownedResources.forEach(Resource::reset);
-	}
-
-	private static TempoAtom convertToTempoAtom(Atom atom) {
-		if (atom instanceof TempoAtom) {
-			return (TempoAtom) atom;
-		} else {
-			if (log.hasLevel(Logging.DEBUG)) {
-				log.debug("Converting foreign atom '" + atom.getAID() + "' to Tempo atom");
-			}
-			return new TempoAtom(
-				atom.getContent(),
-				atom.getAID(),
-				atom.getShards()
-			);
-		}
 	}
 }

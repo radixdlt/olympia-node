@@ -34,18 +34,18 @@ public final class LegacyUtils {
 
 	public static TempoAtom fromLegacyAtom(Atom legacyAtom) {
 		return new TempoAtom(
-			new LegacyAtomContentWrapper(legacyAtom),
-			legacyAtom.getAID(),
-			legacyAtom.getShards()
+				new LegacyAtomContentWrapper(legacyAtom),
+				legacyAtom.getAID(),
+				legacyAtom.getShards()
 		);
 	}
 
 	public static Atom toLegacyAtom(TempoAtom atom) {
 		ImmutableAtom content = ((LegacyAtomContentWrapper) atom.getContent()).getContent();
 		Atom legacyAtom = new Atom(
-			content.particleGroups().collect(Collectors.toList()),
-			content.getSignatures(),
-			content.getMetaData()
+				content.particleGroups().collect(Collectors.toList()),
+				content.getSignatures(),
+				content.getMetaData()
 		);
 		return legacyAtom;
 	}

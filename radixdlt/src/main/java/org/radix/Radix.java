@@ -5,10 +5,10 @@ import java.lang.reflect.Modifier;
 import java.security.SecureRandom;
 import java.security.Security;
 
+import com.radixdlt.middleware2.processing.AtomProcessor;
 import com.radixdlt.mock.MockAccessor;
 import com.radixdlt.mock.MockApplication;
 import com.radixdlt.tempo.Tempo;
-import com.radixdlt.tempo.TempoFactory;
 import org.apache.commons.cli.CommandLine;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.json.JSONObject;
@@ -25,6 +25,7 @@ import org.radix.modules.Modules;
 import org.radix.modules.Plugin;
 import org.radix.modules.exceptions.ModuleException;
 import org.radix.modules.exceptions.ModuleStartException;
+import org.radix.modules.exceptions.ModuleStopException;
 import org.radix.network.Interfaces;
 import org.radix.network2.addressbook.AddressBook;
 import org.radix.network2.addressbook.AddressBookFactory;
@@ -61,6 +62,8 @@ public class Radix extends Plugin
 	public static final int 	MAJOR_AGENT_VERSION 	= 2709999;
 	public static final int 	REFUSE_AGENT_VERSION 	= 2709999;
 	public static final String 	AGENT 					= "/Radix:/"+AGENT_VERSION;
+
+	private GlobalInjector globalInjector;
 
 	/**
 	 * @param args
@@ -303,16 +306,21 @@ public class Radix extends Plugin
 			throw new ModuleStartException("Failure setting up Network", ex, this);
 		}
 
+		/*
+		 * Eventually modules should be created using Google Guice injector
+		 */
+		globalInjector = new GlobalInjector();
+
 		/**
 		 * TEMPO
 		 */
 		if (Modules.get(RuntimeProperties.class).get("tempo2", false)) {
-			Tempo tempo = new TempoFactory().createDefault(Modules.get(RuntimeProperties.class));
+			Tempo tempo = globalInjector.getInjector().getInstance(Tempo.class);
 			tempo.start();
 
-			MockApplication mockApplication = new MockApplication(tempo);
-			mockApplication.startInstance();
-			Modules.put(MockAccessor.class, mockApplication.getAccessor());
+//			MockApplication mockApplication = new MockApplication(tempo);
+//			mockApplication.startInstance();
+//			Modules.put(MockAccessor.class, mockApplication.getAccessor());
 		}
 
 		/*
@@ -342,11 +350,32 @@ public class Radix extends Plugin
 		// START UP ALL SERVICES //
 		Modules.getInstance().start();
 
+		/*
+		 * Middleware
+		 */
+		try {
+			AtomProcessor atomProcessor = globalInjector.getInjector().getInstance(AtomProcessor.class);
+			atomProcessor.start();
+		} catch (Exception e) {
+			throw new ModuleStartException("Failure setting up AtomProcessor", e, this);
+		}
+
 		log.info("Node '"+LocalSystem.getInstance().getNID()+"' started successfully");
 	}
 
 	@Override
-	public void stop_impl() throws ModuleException { }
+	public void stop_impl() throws ModuleException {
+
+		/*
+		 * Middleware
+		 */
+		try {
+			AtomProcessor atomProcessor = globalInjector.getInjector().getInstance(AtomProcessor.class);
+			atomProcessor.stop();
+		} catch (Exception e) {
+			throw new ModuleStopException("Failure turning off AtomProcessor", e, this);
+		}
+	}
 
 	private MessageCentral createMessageCentral(RuntimeProperties properties) {
 		return new MessageCentralFactory().createDefault(properties);

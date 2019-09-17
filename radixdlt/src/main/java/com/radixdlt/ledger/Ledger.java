@@ -11,7 +11,7 @@ import java.util.Set;
 /**
  * An instance of a ledger which may be synchronised across a set of nodes.
  */
-public interface Ledger {
+public interface Ledger<T extends Atom> {
 	/**
 	 * Observes this ledger, blocking until an observations becomes available.
 	 *
@@ -19,7 +19,7 @@ public interface Ledger {
 	 *
 	 * @throws LedgerException in case of internal errors
 	 */
-	LedgerObservation observe() throws InterruptedException;
+	LedgerObservation<T> observe() throws InterruptedException;
 
 	/**
 	 * Gets the atom associated with a certain {@link AID}.
@@ -29,7 +29,7 @@ public interface Ledger {
 	 *
 	 * @throws LedgerException in case of internal errors
 	 */
-	Optional<Atom> get(AID aid);
+	Optional<T> get(AID aid);
 
 	/**
 	 * Stores an {@link Atom} with certain indices.
@@ -41,7 +41,7 @@ public interface Ledger {
 	 * @throws LedgerIndexConflictException if the unique indices conflict with existing indices
 	 * @throws LedgerException in case of internal errors
 	 */
-	void store(Atom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices);
+	void store(T atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices);
 
 	/**
 	 * Replaces a set of atoms with another atom in an atomic operation.
@@ -54,7 +54,7 @@ public interface Ledger {
 	 * @throws LedgerIndexConflictException if the unique indices conflict with existing indices
 	 * @throws LedgerException in case of internal errors
 	 */
-	void replace(Set<AID> aids, Atom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices);
+	void replace(Set<AID> aids, T atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices);
 
 	/**
 	 * Searches for a certain index.

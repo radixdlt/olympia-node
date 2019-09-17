@@ -9,6 +9,7 @@ import com.radixdlt.ledger.LedgerIndex;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
@@ -16,7 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
+import java.util.function.Consumer;
 
 /**
  * A simple mock application for testing ledgers.
@@ -106,9 +107,8 @@ public final class MockApplication {
 			ledger.store(atom, uniqueIndices, duplicateIndices);
 			logger.info(String.format("Stored atom '%s'", atom.getAID()));
 		} else {
-			Set<AID> previousAids = ledgerObservation.getSupersededAtoms().stream()
-				.map(Atom::getAID)
-				.collect(Collectors.toSet());
+			Set<AID> previousAids = new HashSet<>();
+			ledgerObservation.getSupersededAtoms().forEach((Consumer<Atom>) atom1 -> previousAids.add(atom1.getAID()));
 			ledger.replace(previousAids, atom, uniqueIndices, duplicateIndices);
 			logger.info(String.format("Replaced atoms '%s' with '%s'", previousAids, atom.getAID()));
 		}

@@ -1,11 +1,8 @@
 package com.radixdlt.tempo.store.berkeley;
 
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.Atom;
-import com.radixdlt.common.EUID;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerSearchMode;
 import com.radixdlt.serialization.Serialization;
@@ -13,9 +10,6 @@ import com.radixdlt.tempo.AtomGenerator;
 import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.store.TempoAtomStatus;
 import com.radixdlt.utils.Ints;
-
-import static org.junit.Assume.assumeTrue;
-
 import org.assertj.core.api.SoftAssertions;
 import org.junit.After;
 import org.junit.Before;
@@ -26,11 +20,9 @@ import org.radix.integration.RadixTestWithStores;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.modules.Modules;
-import org.radix.time.TemporalVertex;
 import org.radix.universe.system.LocalSystem;
 import org.radix.utils.SystemProfiler;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -44,7 +36,6 @@ public class BerkeleyTempoAtomStoreTests extends RadixTestWithStores {
     private SystemProfiler profiler = SystemProfiler.getInstance();
     private BerkeleyTempoAtomStore tempoAtomStore;
 
-    private List<Atom> atoms;
     private List<TempoAtom> tempoAtoms;
 
     private ECKeyPair identity;
@@ -54,14 +45,7 @@ public class BerkeleyTempoAtomStoreTests extends RadixTestWithStores {
         tempoAtomStore = new BerkeleyTempoAtomStore(localSystem.getNID(), serialization, profiler, Modules.get(DatabaseEnvironment.class));
 
         identity = new ECKeyPair();
-        atoms = atomGenerator.createAtoms(identity, 5);
-
-        tempoAtoms = new ArrayList<>(atoms.size());
-        for (int i = 0; i < atoms.size(); i++) {
-            TempoAtom tempoAtom = atomGenerator.convertToTempoAtom(atoms.get(i));
-            tempoAtoms.add(tempoAtom);
-            LOGGER.info("tempoAtom" + i + ": " + tempoAtom.getAID());
-        }
+        tempoAtoms = atomGenerator.createAtoms(identity, 5);
     }
 
     @After
@@ -226,8 +210,8 @@ public class BerkeleyTempoAtomStoreTests extends RadixTestWithStores {
      */
     private void storeAndCommitAtoms() {
         SoftAssertions.assertSoftly(softly -> {
-            for (int i = 0; i < atoms.size(); i++) {
-                int shard = i < atoms.size() / 2 ? 100 : 200;
+            for (int i = 0; i < tempoAtoms.size(); i++) {
+                int shard = i < tempoAtoms.size() / 2 ? 100 : 200;
                 LedgerIndex ledgerIndex = new LedgerIndex((byte) 200, Ints.toByteArray(shard));
                 softly.assertThat(tempoAtomStore.store(tempoAtoms.get(i), ImmutableSet.of(), ImmutableSet.of(ledgerIndex)).isSuccess()).isTrue();
                 tempoAtomStore.commit(tempoAtoms.get(i).getAID(), i);

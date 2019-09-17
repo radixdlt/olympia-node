@@ -1,7 +1,6 @@
 package com.radixdlt.tempo;
 
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.Atom;
 import com.radixdlt.tempo.store.TempoAtomStore;
 import org.junit.Assert;
 import org.junit.Test;
@@ -14,8 +13,6 @@ import com.radixdlt.ledger.LedgerCursor;
 import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerSearchMode;
 
-import static org.junit.Assume.assumeTrue;
-
 import java.util.List;
 
 public class BerkeleyCursorTests extends RadixTestWithStores {
@@ -26,7 +23,7 @@ public class BerkeleyCursorTests extends RadixTestWithStores {
 	public void store_single_atom__search_by_unique_aid_and_get() throws Exception {
 		ECKeyPair identity = new ECKeyPair();
 
-		List<Atom> atoms = atomGenerator.createAtoms(identity, 1);
+		List<TempoAtom> atoms = atomGenerator.createAtoms(identity, 1);
 		Modules.get(Tempo.class).store(atoms.get(0), ImmutableSet.of(), ImmutableSet.of());
 
 		LedgerCursor cursor = Modules.get(Tempo.class).search(LedgerIndex.LedgerIndexType.UNIQUE, new LedgerIndex((byte) AtomStore.IDType.ATOM.ordinal(), atoms.get(0).getAID().getBytes()), LedgerSearchMode.EXACT);
@@ -37,7 +34,7 @@ public class BerkeleyCursorTests extends RadixTestWithStores {
 
 	@Test
 	public void create_two_atoms__store_single_atom__search_by_non_existing_unique_aid__fail() throws Exception {
-		List<Atom> atoms = atomGenerator.createAtoms(2);
+		List<TempoAtom> atoms = atomGenerator.createAtoms(2);
 		Modules.get(Tempo.class).store(atoms.get(0), ImmutableSet.of(), ImmutableSet.of());
 
 		LedgerCursor cursor = Modules.get(Tempo.class).search(LedgerIndex.LedgerIndexType.UNIQUE, new LedgerIndex((byte) AtomStore.IDType.ATOM.ordinal(), atoms.get(1).getAID().getBytes()), LedgerSearchMode.EXACT);
@@ -49,8 +46,8 @@ public class BerkeleyCursorTests extends RadixTestWithStores {
 		ECKeyPair identity = new ECKeyPair();
 
 		LedgerIndex index = new LedgerIndex((byte) AtomStore.IDType.DESTINATION.ordinal(), identity.getUID().toByteArray());
-		List<Atom> atoms = atomGenerator.createAtoms(identity, 2);
-		for (Atom atom : atoms) {
+		List<TempoAtom> atoms = atomGenerator.createAtoms(identity, 2);
+		for (TempoAtom atom : atoms) {
 			Modules.get(Tempo.class).store(atom, ImmutableSet.of(), ImmutableSet.of(index));
 		}
 
@@ -71,8 +68,8 @@ public class BerkeleyCursorTests extends RadixTestWithStores {
 		ECKeyPair identity = new ECKeyPair();
 
 		LedgerIndex index = new LedgerIndex((byte) AtomStore.IDType.DESTINATION.ordinal(), identity.getUID().toByteArray());
-		List<Atom> atoms = atomGenerator.createAtoms(identity, 2);
-		for (Atom atom : atoms) {
+		List<TempoAtom> atoms = atomGenerator.createAtoms(identity, 2);
+		for (TempoAtom atom : atoms) {
 			Modules.get(Tempo.class).store(atom, ImmutableSet.of(), ImmutableSet.of(index));
 		}
 
@@ -93,9 +90,9 @@ public class BerkeleyCursorTests extends RadixTestWithStores {
 		ECKeyPair identity = new ECKeyPair();
 
 		LedgerIndex index = new LedgerIndex((byte) AtomStore.IDType.DESTINATION.ordinal(), identity.getUID().toByteArray());
-		List<Atom> atoms = atomGenerator.createAtoms(identity, 2);
+		List<TempoAtom> atoms = atomGenerator.createAtoms(identity, 2);
 		int logicalClock = 0;
-		for (Atom atom : atoms) {
+		for (TempoAtom atom : atoms) {
 			Modules.get(Tempo.class).store(atom, ImmutableSet.of(), ImmutableSet.of(index));
 			Modules.get(TempoAtomStore.class).commit(atom.getAID(), logicalClock++);
 		}

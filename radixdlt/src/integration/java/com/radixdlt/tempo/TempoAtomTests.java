@@ -27,7 +27,7 @@ public class TempoAtomTests extends RadixTestWithStores
 	{
 		ECKeyPair identity = new ECKeyPair();
 
-		List<Atom> atoms = atomGenerator.createAtoms(identity, 1);
+		List<TempoAtom> atoms = atomGenerator.createAtoms(identity, 1);
 		Tempo tempo = Modules.get(Tempo.class);
 		tempo.store(atoms.get(0), ImmutableSet.of(), ImmutableSet.of());
 		Atom actual = tempo.get(atoms.get(0).getAID()).get();
@@ -41,7 +41,7 @@ public class TempoAtomTests extends RadixTestWithStores
 	{
 		ECKeyPair identity = new ECKeyPair();
 
-		List<Atom> atoms = atomGenerator.createAtoms(identity, 1);
+		List<TempoAtom> atoms = atomGenerator.createAtoms(identity, 1);
 		Modules.get(Tempo.class).store(atoms.get(0), ImmutableSet.of(), ImmutableSet.of());
 		Modules.get(Tempo.class).store(atoms.get(0), ImmutableSet.of(), ImmutableSet.of());
 	}
@@ -51,7 +51,7 @@ public class TempoAtomTests extends RadixTestWithStores
 	{
 		ECKeyPair identity = new ECKeyPair();
 
-		List<Atom> atoms = atomGenerator.createAtoms(identity, 2);
+		List<TempoAtom> atoms = atomGenerator.createAtoms(identity, 2);
 		Modules.get(Tempo.class).store(atoms.get(0), ImmutableSet.of(), ImmutableSet.of());
 		Assert.assertEquals(atoms.get(0), Modules.get(Tempo.class).get(atoms.get(0).getAID()).get());
 

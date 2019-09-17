@@ -5,6 +5,7 @@ import com.google.inject.Singleton;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.name.Names;
 import com.radixdlt.common.EUID;
+import com.radixdlt.ledger.Ledger;
 import com.radixdlt.tempo.Attestor;
 import com.radixdlt.tempo.Owned;
 import com.radixdlt.tempo.PeerSupplier;
@@ -15,9 +16,6 @@ import com.radixdlt.tempo.SingleThreadedScheduler;
 import com.radixdlt.tempo.Tempo;
 import com.radixdlt.tempo.TempoAttestor;
 import com.radixdlt.tempo.WallclockTimeSupplier;
-import com.radixdlt.tempo.consensus.Consensus;
-import com.radixdlt.tempo.consensus.ConsensusListener;
-import com.radixdlt.tempo.consensus.RSSConsensus;
 import com.radixdlt.tempo.store.CommitmentStore;
 import com.radixdlt.tempo.store.LCCursorStore;
 import com.radixdlt.tempo.store.TempoAtomStore;
@@ -51,6 +49,7 @@ public class TempoModule extends AbstractModule {
 		bind(Scheduler.class).toProvider(SingleThreadedScheduler::new);
 		bind(Attestor.class).to(TempoAttestor.class);
 		bind(WallclockTimeSupplier.class).toInstance(Time::currentTimestamp);
+		bind(Ledger.class).to(Tempo.class);
 
 		bind(PeerSupplier.class).toProvider(() -> new PeerSupplierAdapter(() -> Modules.get(AddressBook.class))).in(Singleton.class);
 	}
