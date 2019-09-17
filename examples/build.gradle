@@ -1,4 +1,4 @@
-group 'radixdlt-engine'
+group 'radix-engine-library'
 version '1.0-SNAPSHOT'
 
 apply plugin: 'java'
