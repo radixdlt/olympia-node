@@ -1,4 +1,4 @@
-package com.radixdlt.tempo;
+package com.radixdlt.middleware2.atom;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Suppliers;
@@ -39,8 +39,8 @@ import java.util.stream.Stream;
 /**
  * TempoAtomContent
  */
-@SerializerId2("tempo.content")
-public class TempoAtomContent extends AtomContent {
+@SerializerId2("engine.content")
+public class EngineAtomContent extends AtomContent {
     public static final String METADATA_TIMESTAMP_KEY = "timestamp";
     public static final String METADATA_POW_NONCE_KEY = "powNonce";
 
@@ -70,22 +70,22 @@ public class TempoAtomContent extends AtomContent {
     private final Supplier<AID> cachedAID = Suppliers.memoize(this::doGetAID);
     private final Supplier<Hash> cachedHash = Suppliers.memoize(this::doGetHash);
 
-    protected TempoAtomContent() {
+    protected EngineAtomContent() {
         this.metaData = ImmutableMap.of();
     }
 
-    protected TempoAtomContent(long timestamp) {
+    protected EngineAtomContent(long timestamp) {
         this.metaData = ImmutableMap.of(METADATA_TIMESTAMP_KEY, String.valueOf(timestamp));
     }
 
-    public TempoAtomContent(long timestamp, Map<String, String> metadata) {
+    public EngineAtomContent(long timestamp, Map<String, String> metadata) {
         this.metaData = ImmutableMap.<String, String>builder()
                 .put(METADATA_TIMESTAMP_KEY, String.valueOf(timestamp))
                 .putAll(metadata)
                 .build();
     }
 
-    protected TempoAtomContent(List<ParticleGroup> particleGroups, Map<EUID, ECSignature> signatures) {
+    protected EngineAtomContent(List<ParticleGroup> particleGroups, Map<EUID, ECSignature> signatures) {
         Objects.requireNonNull(particleGroups, "particleGroups is required");
         Objects.requireNonNull(signatures, "signatures is required");
 
@@ -94,7 +94,7 @@ public class TempoAtomContent extends AtomContent {
         this.metaData = ImmutableMap.of();
     }
 
-    public TempoAtomContent(List<ParticleGroup> particleGroups, Map<EUID, ECSignature> signatures, Map<String, String> metaData) {
+    public EngineAtomContent(List<ParticleGroup> particleGroups, Map<EUID, ECSignature> signatures, Map<String, String> metaData) {
         Objects.requireNonNull(particleGroups, "particleGroups is required");
         Objects.requireNonNull(signatures, "signatures is required");
         Objects.requireNonNull(metaData, "metaData is required");
@@ -105,7 +105,7 @@ public class TempoAtomContent extends AtomContent {
     }
 
     // copied from legacy Atom.java, temporary hack that will be fixed when ImmutableAtom becomes ImmutableContent
-    public TempoAtomContent copyExcludingMetadata(String... keysToExclude) {
+    public EngineAtomContent copyExcludingMetadata(String... keysToExclude) {
         Objects.requireNonNull(keysToExclude, "keysToRetain is required");
 
         ImmutableSet<String> keysToExcludeSet = ImmutableSet.copyOf(keysToExclude);
@@ -113,7 +113,7 @@ public class TempoAtomContent extends AtomContent {
                 .filter(metaDataEntry -> !keysToExcludeSet.contains(metaDataEntry.getKey()))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-        return new TempoAtomContent(this.particleGroups, this.signatures, filteredMetaData);
+        return new EngineAtomContent(this.particleGroups, this.signatures, filteredMetaData);
     }
 
     /**
@@ -382,7 +382,7 @@ public class TempoAtomContent extends AtomContent {
             return true;
         }
 
-        if (getClass().isInstance(o) && getHash().equals(((TempoAtomContent) o).getHash())) {
+        if (getClass().isInstance(o) && getHash().equals(((EngineAtomContent) o).getHash())) {
             return true;
         }
 

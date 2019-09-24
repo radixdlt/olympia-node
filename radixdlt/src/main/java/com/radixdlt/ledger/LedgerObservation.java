@@ -9,17 +9,17 @@ import java.util.Set;
 /**
  * Observation of an {@link Atom} made in a {@link Ledger}
  */
-public final class LedgerObservation<T extends Atom> {
+public final class LedgerObservation {
 	public enum Type {
 		ADOPT,
 		COMMIT
 	}
 
 	private final Type type;
-	private final T atom;
-	private final Set<T> supersededAtoms;
+	private final Atom atom;
+	private final Set<? extends Atom> supersededAtoms;
 
-	private LedgerObservation(Type type, T atom, Set<T> supersededAtoms) {
+	private LedgerObservation(Type type, Atom atom, Set<? extends Atom> supersededAtoms) {
 		this.type = type;
 		this.atom = atom;
 		this.supersededAtoms = supersededAtoms;
@@ -29,7 +29,7 @@ public final class LedgerObservation<T extends Atom> {
 		return type;
 	}
 
-	public T getAtom() {
+	public Atom getAtom() {
 		return atom;
 	}
 
@@ -37,7 +37,7 @@ public final class LedgerObservation<T extends Atom> {
 		return !supersededAtoms.isEmpty();
 	}
 
-	public Set<T> getSupersededAtoms() {
+	public Set<? extends Atom> getSupersededAtoms() {
 		return supersededAtoms;
 	}
 

@@ -5,10 +5,7 @@ import java.lang.reflect.Modifier;
 import java.security.SecureRandom;
 import java.security.Security;
 
-import com.radixdlt.middleware2.processing.AtomProcessor;
-import com.radixdlt.mock.MockAccessor;
-import com.radixdlt.mock.MockApplication;
-import com.radixdlt.tempo.Tempo;
+import com.radixdlt.middleware2.processing.RadixEngineAtomProcessor;
 import org.apache.commons.cli.CommandLine;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.json.JSONObject;
@@ -315,8 +312,9 @@ public class Radix extends Plugin
 		 * TEMPO
 		 */
 		if (Modules.get(RuntimeProperties.class).get("tempo2", false)) {
-			Tempo tempo = globalInjector.getInjector().getInstance(Tempo.class);
-			tempo.start();
+//			Tempo is created by GoogleGuice as eager singleton
+//			Tempo tempo = globalInjector.getInjector().getInstance(Tempo.class);
+//			tempo.start();
 
 //			MockApplication mockApplication = new MockApplication(tempo);
 //			mockApplication.startInstance();
@@ -354,7 +352,7 @@ public class Radix extends Plugin
 		 * Middleware
 		 */
 		try {
-			AtomProcessor atomProcessor = globalInjector.getInjector().getInstance(AtomProcessor.class);
+			RadixEngineAtomProcessor atomProcessor = globalInjector.getInjector().getInstance(RadixEngineAtomProcessor.class);
 			atomProcessor.start();
 		} catch (Exception e) {
 			throw new ModuleStartException("Failure setting up AtomProcessor", e, this);
@@ -370,7 +368,7 @@ public class Radix extends Plugin
 		 * Middleware
 		 */
 		try {
-			AtomProcessor atomProcessor = globalInjector.getInjector().getInstance(AtomProcessor.class);
+			RadixEngineAtomProcessor atomProcessor = globalInjector.getInjector().getInstance(RadixEngineAtomProcessor.class);
 			atomProcessor.stop();
 		} catch (Exception e) {
 			throw new ModuleStopException("Failure turning off AtomProcessor", e, this);

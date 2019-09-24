@@ -1,11 +1,10 @@
 package com.radixdlt.middleware2;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Injector;
-import com.google.inject.Provides;
+import com.google.inject.Inject;
+import com.google.inject.Provider;
+import com.google.inject.Scopes;
 import com.google.inject.TypeLiteral;
-import com.google.inject.multibindings.MapBinder;
-import com.radixdlt.AtomContent;
 import com.radixdlt.atommodel.message.MessageParticleConstraintScrypt;
 import com.radixdlt.atommodel.tokens.TokensConstraintScrypt;
 import com.radixdlt.atommodel.unique.UniqueParticleConstraintScrypt;
@@ -14,13 +13,8 @@ import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.middleware.SimpleRadixEngineAtom;
-import com.radixdlt.middleware2.converters.AtomContentToImmutableAtomConverter;
-import com.radixdlt.middleware2.converters.TempoAtomContentToImmutableAtomConverter;
-import com.radixdlt.middleware2.processing.AtomProcessor;
-import com.radixdlt.middleware2.processing.RadixEngineAtomProcessor;
 import com.radixdlt.middleware2.store.LedgerEngineStore;
 import com.radixdlt.store.EngineStore;
-import com.radixdlt.tempo.TempoAtomContent;
 import com.radixdlt.universe.Universe;
 import org.radix.modules.Modules;
 
@@ -52,13 +46,26 @@ public class MiddlewareModule extends AbstractModule {
         return constraintMachine;
     }
 
-    @Provides
-    private RadixEngine<SimpleRadixEngineAtom> getRadixEngine(Injector injector) {
-        return new RadixEngine<SimpleRadixEngineAtom>(
-                injector.getInstance(ConstraintMachine.class),
-                injector.getInstance(UnaryOperator.class),
-                injector.getInstance(EngineStore.class)
-        );
+    private static class RadixEngineProvider implements Provider<RadixEngine<SimpleRadixEngineAtom>> {
+        private ConstraintMachine constraintMachine;
+        private UnaryOperator unaryOperator;
+        private EngineStore engineStore;
+
+        @Inject
+        public RadixEngineProvider(ConstraintMachine constraintMachine, UnaryOperator unaryOperator, EngineStore engineStore) {
+            this.constraintMachine = constraintMachine;
+            this.unaryOperator = unaryOperator;
+            this.engineStore = engineStore;
+        }
+
+        @Override
+        public RadixEngine<SimpleRadixEngineAtom> get() {
+            return new RadixEngine<SimpleRadixEngineAtom>(
+                    constraintMachine,
+                    unaryOperator,
+                    engineStore
+            );
+        }
     }
 
     @Override
@@ -69,13 +76,7 @@ public class MiddlewareModule extends AbstractModule {
         bind(ConstraintMachine.class).toInstance(constraintMachine);
         bind(UnaryOperator.class).toInstance(os.buildVirtualLayer());
         bind(EngineStore.class).to(LedgerEngineStore.class);
-
-        bind(AtomProcessor.class).to(RadixEngineAtomProcessor.class);
-
-        MapBinder<Class<? extends AtomContent>, AtomContentToImmutableAtomConverter> contentConverterBinder =
-                MapBinder.newMapBinder(binder(), new TypeLiteral<Class<? extends AtomContent>>() {
-                }, new TypeLiteral<AtomContentToImmutableAtomConverter>() {
-                });
-        contentConverterBinder.addBinding(TempoAtomContent.class).to(TempoAtomContentToImmutableAtomConverter.class);
+        bind(new TypeLiteral<RadixEngine<SimpleRadixEngineAtom>>() {
+        }).toProvider(RadixEngineProvider.class).in(Scopes.SINGLETON);
     }
 }

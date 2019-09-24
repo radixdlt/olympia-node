@@ -2,7 +2,6 @@ package com.radixdlt.middleware2.store;
 
 import com.google.inject.Inject;
 import com.radixdlt.Atom;
-import com.radixdlt.AtomContent;
 import com.radixdlt.common.EUID;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
@@ -11,13 +10,10 @@ import com.radixdlt.ledger.LedgerCursor;
 import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerSearchMode;
 import com.radixdlt.middleware.SimpleRadixEngineAtom;
-import com.radixdlt.middleware2.converters.AtomContentToImmutableAtomConverter;
+import com.radixdlt.middleware2.converters.SimpleRadixEngineAtomToEngineAtom;
 import com.radixdlt.store.EngineStore;
-import com.radixdlt.tempo.TempoAtom;
-import com.radixdlt.tempo.TempoAtomContent;
 import org.radix.atoms.AtomStore;
 
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -25,18 +21,21 @@ import java.util.function.Consumer;
 public class LedgerEngineStore implements EngineStore<SimpleRadixEngineAtom> {
 
     private Ledger ledger;
-    private Map<Class<? extends AtomContent>, AtomContentToImmutableAtomConverter> contentConverters;
+    private SimpleRadixEngineAtomToEngineAtom atomConverter;
 
     @Inject
-    public LedgerEngineStore(Ledger ledger, Map<Class<? extends AtomContent>, AtomContentToImmutableAtomConverter> contentConverters) {
+    public LedgerEngineStore(Ledger ledger, SimpleRadixEngineAtomToEngineAtom atomConverter) {
         this.ledger = ledger;
-        this.contentConverters = contentConverters;
+        this.atomConverter = atomConverter;
     }
 
     @Override
-    public void getAtomContaining(Particle particle, boolean isInput, Consumer callback) {
-        Optional<Atom> atom = getAtomByParticle(particle, isInput);
-        callback.accept(atom);
+    public void getAtomContaining(Particle particle, boolean isInput, Consumer<SimpleRadixEngineAtom> callback) {
+        Optional<Atom> atomOptional = getAtomByParticle(particle, isInput);
+        if (atomOptional.isPresent()) {
+            SimpleRadixEngineAtom simpleRadixEngineAtom = atomConverter.convert(atomOptional.get());
+            callback.accept(simpleRadixEngineAtom);
+        }
     }
 
     private Optional<Atom> getAtomByParticle(Particle particle, boolean isInput) {
@@ -46,16 +45,15 @@ public class LedgerEngineStore implements EngineStore<SimpleRadixEngineAtom> {
     }
 
     @Override
-    public void storeAtom(SimpleRadixEngineAtom atom) {
-        AtomContentToImmutableAtomConverter<TempoAtomContent> atomConverter = contentConverters.get(TempoAtomContent.class);
-        EngineAtomIndexer preparedAtom = new EngineAtomIndexer(atom);
-        TempoAtom tempoAtom = new TempoAtom(atomConverter.convert(atom.getAtom()), atom.getAtom().getAID(), atom.getAtom().getShards());
-        ledger.store(tempoAtom, preparedAtom.getUniqueIndices(), preparedAtom.getDuplicateIndices());
+    public void storeAtom(SimpleRadixEngineAtom simpleRadixEngineAtom) {
+        EngineAtomIndexer engineAtomIndexer = new EngineAtomIndexer(simpleRadixEngineAtom);
+        Atom atom = atomConverter.convert(simpleRadixEngineAtom);
+        ledger.store(atom, engineAtomIndexer.getUniqueIndices(), engineAtomIndexer.getDuplicateIndices());
     }
 
     @Override
     public void deleteAtom(SimpleRadixEngineAtom atom) {
-        throw new UnsupportedOperationException("delete operation is not supported by Tempo Ledger");
+        throw new UnsupportedOperationException("Delete operation is not supported by Ledger interface");
     }
 
     @Override

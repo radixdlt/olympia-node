@@ -72,7 +72,6 @@ public class RadixTestWithStores extends RadixTest
 				mock(RequestDeliverer.class),
 				ImmutableSet.of()
 			);
-			tempo.start();
 			Modules.put(Tempo.class, tempo);
 			Modules.put(TempoAtomStore.class, atomStore);
 		} else {
