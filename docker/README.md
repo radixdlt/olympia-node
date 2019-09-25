@@ -86,3 +86,36 @@ Heapdumps don't work from VisualVM currently - the alternate is to use jmap, for
 $ docker exec docker_explorer_1 jmap -dump:live,format=b,file=/tmp/radixdlt.hprof 1
 $ docker cp docker_explorer_1:/tmp/radixdlt.hprof .
 ```
+
+# Running from Jenkins
+
+Ephemeral networks are supported by using the `-p` argument with `docker-compose`.
+
+## Build the radixdlt debian package
+
+The [Dockerfile](Dockerfile) depends on the `radixdlt_*_all.deb` package which is built with:
+
+```shell
+$ ./gradlew deb4docker
+```
+
+## Create and start the network
+
+Create an ephemeral network called `test$BUILD_NUMBER`, in example `test123`.
+
+```shell
+$ docker-compose -p test$BUILD_NUMBER -f docker/jenkins-network.yml up -d --build
+```
+
+# Find the IP number of the the core0 node
+
+```shell
+$ docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' test${BUILD_NUMBER}_core${i}_1
+```
+# Find the IP of all core nodes
+
+for i in 0 1 2 3 4 5; do docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' test${BUILD_NUMBER}_core${i}_1; done
+
+# kill the network
+
+docker-compose -p  test$BUILD_NUMBER -f docker/minimal-network.yml down
