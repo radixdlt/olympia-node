@@ -10,13 +10,22 @@ import com.radixdlt.atommodel.tokens.TokensConstraintScrypt;
 import com.radixdlt.atommodel.unique.UniqueParticleConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.Result;
+import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.engine.AtomEventListener;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.middleware.SimpleRadixEngineAtom;
+import com.radixdlt.middleware2.atom.EngineAtom;
+import com.radixdlt.middleware2.converters.SimpleRadixEngineAtomToEngineAtom;
 import com.radixdlt.middleware2.store.LedgerEngineStore;
 import com.radixdlt.store.EngineStore;
+import com.radixdlt.tempo.LegacyUtils;
+import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.universe.Universe;
+import org.radix.atoms.events.AtomExceptionEvent;
+import org.radix.events.Events;
 import org.radix.modules.Modules;
+import org.radix.validation.ConstraintMachineValidationException;
 
 import java.util.function.UnaryOperator;
 
@@ -50,21 +59,34 @@ public class MiddlewareModule extends AbstractModule {
         private ConstraintMachine constraintMachine;
         private UnaryOperator unaryOperator;
         private EngineStore engineStore;
+        private SimpleRadixEngineAtomToEngineAtom simpleRadixEngineAtomToEngineAtom;
 
         @Inject
-        public RadixEngineProvider(ConstraintMachine constraintMachine, UnaryOperator unaryOperator, EngineStore engineStore) {
+        public RadixEngineProvider(ConstraintMachine constraintMachine, UnaryOperator unaryOperator, EngineStore engineStore, SimpleRadixEngineAtomToEngineAtom simpleRadixEngineAtomToEngineAtom) {
             this.constraintMachine = constraintMachine;
             this.unaryOperator = unaryOperator;
             this.engineStore = engineStore;
+            this.simpleRadixEngineAtomToEngineAtom = simpleRadixEngineAtomToEngineAtom;
         }
 
         @Override
         public RadixEngine<SimpleRadixEngineAtom> get() {
-            return new RadixEngine<SimpleRadixEngineAtom>(
+            RadixEngine<SimpleRadixEngineAtom> radixEngine = new RadixEngine<SimpleRadixEngineAtom>(
                     constraintMachine,
                     unaryOperator,
                     engineStore
             );
+            radixEngine.addAtomEventListener(new AtomEventListener<SimpleRadixEngineAtom>() {
+                @Override
+                public void onCMError(SimpleRadixEngineAtom cmAtom, CMError error) {
+                    ConstraintMachineValidationException ex = new ConstraintMachineValidationException(cmAtom.getAtom(), error.getErrMsg(), error.getDataPointer());
+                    EngineAtom engineAtom = simpleRadixEngineAtomToEngineAtom.convert(cmAtom);
+                    TempoAtom tempoAtom = new TempoAtom(engineAtom.getContent(), engineAtom.getAID(), engineAtom.getShards());
+                    Events.getInstance().broadcast(new AtomExceptionEvent(ex, LegacyUtils.toLegacyAtom(tempoAtom)));
+                }
+            });
+            radixEngine.start();
+            return radixEngine;
         }
     }
 

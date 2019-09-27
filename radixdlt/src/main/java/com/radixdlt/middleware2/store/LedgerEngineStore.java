@@ -46,9 +46,9 @@ public class LedgerEngineStore implements EngineStore<SimpleRadixEngineAtom> {
 
     @Override
     public void storeAtom(SimpleRadixEngineAtom simpleRadixEngineAtom) {
-        EngineAtomIndexer engineAtomIndexer = new EngineAtomIndexer(simpleRadixEngineAtom);
+        EngineAtomIndices engineAtomIndices = EngineAtomIndices.from(simpleRadixEngineAtom);
         Atom atom = atomConverter.convert(simpleRadixEngineAtom);
-        ledger.store(atom, engineAtomIndexer.getUniqueIndices(), engineAtomIndexer.getDuplicateIndices());
+        ledger.store(atom, engineAtomIndices.getUniqueIndices(), engineAtomIndices.getDuplicateIndices());
     }
 
     @Override

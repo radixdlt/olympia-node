@@ -93,6 +93,10 @@ public final class LedgerIndex implements Comparable<LedgerIndex> {
 		return new LedgerIndex(Hex.decode(hexKey));
 	}
 
+	public static LedgerIndex from(byte[] key) {
+		return new LedgerIndex(key);
+	}
+
 	public static byte[] from(byte prefix, byte[] identifier) {
 		return Arrays.concatenate(new byte[]{prefix}, identifier);
 	}

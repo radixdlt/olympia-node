@@ -34,10 +34,11 @@ public class RadixEngineAtomProcessor {
                 log.info("Middleware received ADOPT event");
                 try {
                     SimpleRadixEngineAtom simpleRadixEngineAtom = atomConverter.convert(ledgerObservation.getAtom());
+                    log.debug("Store received atom to engine");
                     radixEngine.store(simpleRadixEngineAtom, new AtomEventListener() {
                     });
                 } catch (Exception e) {
-                    log.error("Atom processing failed");
+                    log.error("Atom processing failed", e);
                 }
             }
         }

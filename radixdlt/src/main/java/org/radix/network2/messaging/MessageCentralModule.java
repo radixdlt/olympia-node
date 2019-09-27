@@ -3,6 +3,11 @@ package org.radix.network2.messaging;
 import java.util.Objects;
 import java.util.concurrent.PriorityBlockingQueue;
 
+import com.google.common.collect.ImmutableSet;
+import com.radixdlt.ledger.LedgerCborJacksonModule;
+import com.radixdlt.ledger.LedgerJsonJacksonModule;
+import com.radixdlt.serialization.core.ClasspathScanningSerializationPolicy;
+import com.radixdlt.serialization.core.ClasspathScanningSerializerIds;
 import org.radix.events.Events;
 import org.radix.network2.TimeSupplier;
 import org.radix.network2.transport.FirstMatchTransportManager;
@@ -40,7 +45,9 @@ final class MessageCentralModule extends AbstractModule {
 
 		// MessageCentral dependencies
 		bind(MessageCentralConfiguration.class).toInstance(this.config);
-		bind(Serialization.class).toProvider(Serialization::getDefault);
+		bind(Serialization.class).toInstance(Serialization.create(ClasspathScanningSerializerIds.create(),
+				ClasspathScanningSerializationPolicy.create(), ImmutableSet.of(new LedgerCborJacksonModule()),
+				ImmutableSet.of(new LedgerJsonJacksonModule())));
 		bind(TransportManager.class).to(FirstMatchTransportManager.class);
 		bind(Events.class).toProvider(Events::getInstance);
 		bind(TimeSupplier.class).toInstance(this.timeSource);

@@ -12,18 +12,30 @@ import com.radixdlt.serialization.SerializationUtils;
 import com.radixdlt.store.SpinStateMachine;
 import org.radix.modules.Modules;
 
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class EngineAtomIndexer {
+public class EngineAtomIndices {
+    private enum IndexType {
+        PARTICLE_UP((byte)3), PARTICLE_DOWN((byte)4), PARTICLE_CLASS((byte)5), UID((byte)6), DESTINATION((byte)7);
+        byte value;
 
-    Set<LedgerIndex> uniqueIndices = new HashSet<>();
-    Set<LedgerIndex> duplicateIndices = new HashSet<>();
+        IndexType(byte value) {
+            this.value = value;
+        }
+    }
+    private final Set<LedgerIndex> uniqueIndices;
+    private final Set<LedgerIndex> duplicateIndices;
 
-    public EngineAtomIndexer(SimpleRadixEngineAtom radixEngineAtom) {
-        uniqueIndices.add(new LedgerIndex(IDType.toByteArray(IDType.ATOM, radixEngineAtom.getAtom().getAID())));
+    public EngineAtomIndices(Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
+        this.uniqueIndices = uniqueIndices;
+        this.duplicateIndices = duplicateIndices;
+    }
+
+    public static EngineAtomIndices from(SimpleRadixEngineAtom radixEngineAtom) {
+        ImmutableSet.Builder<LedgerIndex> uniqueIndices = ImmutableSet.builder();
+        ImmutableSet.Builder<LedgerIndex> duplicateIndices = ImmutableSet.builder();
 
         Map<Particle, Spin> curSpins = radixEngineAtom.getCMInstruction().getMicroInstructions().stream()
                 .filter(CMMicroInstruction::isCheckSpin)
@@ -39,19 +51,19 @@ public class EngineAtomIndexer {
                     Spin nextSpin = SpinStateMachine.next(curSpin);
                     curSpins.put(i.getParticle(), nextSpin);
 
-                    final IDType idType;
+                    final IndexType indexType;
                     switch (nextSpin) {
                         case UP:
-                            idType = IDType.PARTICLE_UP;
+                            indexType = IndexType.PARTICLE_UP;
                             break;
                         case DOWN:
-                            idType = IDType.PARTICLE_DOWN;
+                            indexType = IndexType.PARTICLE_DOWN;
                             break;
                         default:
                             throw new IllegalStateException("Unknown SPIN state for particle " + nextSpin);
                     }
 
-                    final byte[] indexableBytes = IDType.toByteArray(idType, i.getParticle().getHID());
+                    final byte[] indexableBytes = toByteArray(indexType, i.getParticle().getHID());
                     uniqueIndices.add(new LedgerIndex(indexableBytes));
                 });
 
@@ -64,8 +76,7 @@ public class EngineAtomIndexer {
                 .collect(ImmutableSet.toImmutableSet());
 
         for (EUID euid : destinations) {
-            duplicateIndices.add(new LedgerIndex(IDType.toByteArray(IDType.DESTINATION, euid)));
-            duplicateIndices.add(new LedgerIndex(IDType.toByteArray(IDType.SHARD, euid.getShard())));
+            duplicateIndices.add(new LedgerIndex(toByteArray(IndexType.DESTINATION, euid)));
         }
 
         radixEngineAtom.getCMInstruction().getMicroInstructions().stream().filter(CMMicroInstruction::isCheckSpin)
@@ -76,15 +87,29 @@ public class EngineAtomIndexer {
                     final Serialization serialization = Modules.get(Serialization.class);
                     final String idForClass = serialization.getIdForClass(checkSpin.getParticle().getClass());
                     final EUID numericClassId = SerializationUtils.stringToNumericID(idForClass);
-                    duplicateIndices.add(new LedgerIndex(IDType.toByteArray(IDType.PARTICLE_CLASS, numericClassId)));
+                    duplicateIndices.add(new LedgerIndex((byte)4, toByteArray(IndexType.PARTICLE_CLASS, numericClassId)));
                 });
+        return new EngineAtomIndices(uniqueIndices.build(), duplicateIndices.build());
     }
 
     public Set<LedgerIndex> getUniqueIndices() {
-        return ImmutableSet.copyOf(uniqueIndices);
+        return uniqueIndices;
     }
 
     public Set<LedgerIndex> getDuplicateIndices() {
-        return ImmutableSet.copyOf(duplicateIndices);
+        return duplicateIndices;
     }
+
+    private static byte[] toByteArray(IndexType type, EUID id) {
+        if (id == null) {
+            throw new IllegalArgumentException("EUID is null");
+        }
+
+        byte[] idBytes = id.toByteArray();
+        byte[] typeBytes = new byte[idBytes.length + 1];
+        typeBytes[0] = type.value;
+        System.arraycopy(idBytes, 0, typeBytes, 1, idBytes.length);
+        return typeBytes;
+    }
+
 }

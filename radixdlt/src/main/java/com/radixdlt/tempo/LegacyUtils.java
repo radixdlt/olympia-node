@@ -11,6 +11,7 @@ public final class LegacyUtils {
 		throw new IllegalStateException("Can't construct");
 	}
 
+	//We are using EngineAtomContent what is part of middleware2 package. It is not good, but lets cleanup it when AtomContent will be defined
 	public static TempoAtom fromLegacyAtom(Atom legacyAtom) {
 		return new TempoAtom(
 				new EngineAtomContent(legacyAtom.getParticleGroups(), legacyAtom.getSignatures(), legacyAtom.getMetaData()),
