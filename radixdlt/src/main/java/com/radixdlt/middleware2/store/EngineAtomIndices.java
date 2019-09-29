@@ -17,12 +17,16 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public class EngineAtomIndices {
-    private enum IndexType {
+    public enum IndexType {
         PARTICLE_UP((byte)3), PARTICLE_DOWN((byte)4), PARTICLE_CLASS((byte)5), UID((byte)6), DESTINATION((byte)7);
         byte value;
 
         IndexType(byte value) {
             this.value = value;
+        }
+
+        public byte getValue() {
+            return value;
         }
     }
     private final Set<LedgerIndex> uniqueIndices;
@@ -100,7 +104,7 @@ public class EngineAtomIndices {
         return duplicateIndices;
     }
 
-    private static byte[] toByteArray(IndexType type, EUID id) {
+    public static byte[] toByteArray(IndexType type, EUID id) {
         if (id == null) {
             throw new IllegalArgumentException("EUID is null");
         }

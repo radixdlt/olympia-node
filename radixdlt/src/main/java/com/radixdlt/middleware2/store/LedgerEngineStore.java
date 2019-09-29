@@ -12,7 +12,6 @@ import com.radixdlt.ledger.LedgerSearchMode;
 import com.radixdlt.middleware.SimpleRadixEngineAtom;
 import com.radixdlt.middleware2.converters.SimpleRadixEngineAtomToEngineAtom;
 import com.radixdlt.store.EngineStore;
-import org.radix.atoms.AtomStore;
 
 import java.util.Optional;
 import java.util.Set;
@@ -39,7 +38,7 @@ public class LedgerEngineStore implements EngineStore<SimpleRadixEngineAtom> {
     }
 
     private Optional<Atom> getAtomByParticle(Particle particle, boolean isInput) {
-        final byte[] indexableBytes = AtomStore.IDType.toByteArray(isInput ? AtomStore.IDType.PARTICLE_UP : AtomStore.IDType.PARTICLE_DOWN, particle.getHID());
+        final byte[] indexableBytes = EngineAtomIndices.toByteArray(isInput ? EngineAtomIndices.IndexType.PARTICLE_UP : EngineAtomIndices.IndexType.PARTICLE_DOWN, particle.getHID());
         LedgerCursor cursor = ledger.search(LedgerIndex.LedgerIndexType.DUPLICATE, new LedgerIndex(indexableBytes), LedgerSearchMode.EXACT);
         return ledger.get(cursor.get());
     }
@@ -59,7 +58,7 @@ public class LedgerEngineStore implements EngineStore<SimpleRadixEngineAtom> {
     @Override
     public boolean supports(Set<EUID> destinations) {
         return destinations.stream()
-                .map(euid -> new LedgerIndex(AtomStore.IDType.toByteArray(AtomStore.IDType.DESTINATION, euid)))
+                .map(euid -> new LedgerIndex(EngineAtomIndices.toByteArray(EngineAtomIndices.IndexType.DESTINATION, euid)))
                 .filter(ledgerIndex -> ledger.contains(LedgerIndex.LedgerIndexType.DUPLICATE, ledgerIndex, LedgerSearchMode.EXACT))
                 .findFirst()
                 .isPresent();

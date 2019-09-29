@@ -7,8 +7,11 @@ import com.radixdlt.middleware.SimpleRadixEngineAtom;
 import com.radixdlt.middleware2.atom.EngineAtom;
 import com.radixdlt.middleware2.atom.EngineAtomContent;
 import com.radixdlt.tempo.TempoAtom;
+import org.radix.atoms.events.AtomExceptionEvent;
+import org.radix.events.Events;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
+import org.radix.validation.ConstraintMachineValidationException;
 
 public class SimpleRadixEngineAtomToEngineAtom {
 
@@ -35,7 +38,11 @@ public class SimpleRadixEngineAtomToEngineAtom {
         try {
             simpleRadixEngineAtom = RadixEngineUtils.toCMAtom(immutableAtom);
         } catch (RadixEngineUtils.CMAtomConversionException e) {
-            log.error("Atom processing failed", e);
+            org.radix.atoms.Atom legacyAtom = new org.radix.atoms.Atom(immutableAtom.getParticleGroups(), immutableAtom.getSignatures(), immutableAtom.getMetaData());
+            ConstraintMachineValidationException validationException = new ConstraintMachineValidationException(immutableAtom,e.getMessage(), e.getDataPointer() );
+            AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(validationException, legacyAtom);
+            Events.getInstance().broadcast(atomExceptionEvent);
+            log.error("Atom to SimpleRadixEngineAtom conversion failed", e);
             throw new RuntimeException(e);
         }
         return simpleRadixEngineAtom;
