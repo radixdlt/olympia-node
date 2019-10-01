@@ -1,5 +1,7 @@
 package org.radix.api.observable;
 
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import com.radixdlt.common.AID;
 import com.radixdlt.ledger.Ledger;
 import com.radixdlt.ledger.LedgerCursor;
@@ -9,10 +11,10 @@ import com.radixdlt.middleware.SimpleRadixEngineAtom;
 import com.radixdlt.middleware2.converters.SimpleRadixEngineAtomToEngineAtom;
 import com.radixdlt.middleware2.store.EngineAtomIndices;
 import com.radixdlt.tempo.LegacyUtils;
+
 import org.radix.api.AtomQuery;
 import org.radix.api.observable.AtomEventDto.AtomEventType;
 import org.radix.atoms.Atom;
-import org.radix.atoms.AtomDiscoveryRequest;
 import org.radix.atoms.events.AtomDeletedEvent;
 import org.radix.atoms.events.AtomStoredEvent;
 import org.radix.atoms.events.PreparedAtomEvent;
@@ -21,35 +23,33 @@ import org.radix.logging.Logging;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class AtomEventObserver {
 	private static final Logger log = Logging.getLogger("api");
 
-	private final ConcurrentHashMap<Atom, String> processedAtoms = new ConcurrentHashMap<>();
+	private static final int BATCH_SIZE = 50;
+
 	private final AtomQuery atomQuery;
 	private final Consumer<ObservedAtomEvents> onNext;
-	private final AtomDiscoveryRequest request;
-	private final AtomicBoolean synced = new AtomicBoolean(false);
 	private final AtomicBoolean cancelled = new AtomicBoolean(false);
 	private CompletableFuture<?> currentRunnable;
 	private CompletableFuture<?> firstRunnable;
 	private final ExecutorService executorService;
 	private final Ledger ledger;
-	private SimpleRadixEngineAtomToEngineAtom simpleRadixEngineAtomToEngineAtom = new SimpleRadixEngineAtomToEngineAtom();
 
-	private void checkForDuplicates(Atom atom, String method) {
-		if (processedAtoms.containsKey(atom)) {
-			System.out.println("Duplicate in " + method + " atom: " + processedAtoms.get(atom));
-		} else {
-			processedAtoms.put(atom, method);
-		}
-	}
+	private final Object syncLock = new Object();
+	private boolean synced = false;
+	private final List<AtomEventDto> waitingQueue = Lists.newArrayList();
+
+	private final SimpleRadixEngineAtomToEngineAtom simpleRadixEngineAtomToEngineAtom = new SimpleRadixEngineAtomToEngineAtom();
 
 	public AtomEventObserver(
 		AtomQuery atomQuery,
@@ -59,7 +59,6 @@ public class AtomEventObserver {
 	) {
 		this.atomQuery = atomQuery;
 		this.onNext = onNext;
-		this.request = atomQuery.toAtomDiscovery();
 		this.executorService = executorService;
 		this.ledger = ledger;
 	}
@@ -76,7 +75,7 @@ public class AtomEventObserver {
 
 	public void cancel() {
 		cancelled.set(true);
-		synchronized(this) {
+		synchronized (this) {
 			if (firstRunnable != null) {
 				firstRunnable.cancel(true);
 			}
@@ -85,7 +84,7 @@ public class AtomEventObserver {
 
 	public void start() {
 		synchronized (this) {
-			this.currentRunnable = CompletableFuture.runAsync(() -> this.update(null), executorService);
+			this.currentRunnable = CompletableFuture.runAsync(this::sync, executorService);
 			this.firstRunnable = currentRunnable;
 		}
 	}
@@ -102,56 +101,85 @@ public class AtomEventObserver {
 		}
 	}
 
-	private void update(AtomEventDto atomEventDto) {
-		log.debug("Atom discovery request: " + request);
+	private void sync() {
+		log.debug("AtomEventObserver sync: " + atomQuery.getDestination());
 		if (cancelled.get()) {
 			return;
 		}
 
-
-		if (atomEventDto != null && synced.get()) {
-			onNext.accept(new ObservedAtomEvents(true, Stream.of(atomEventDto)));
-		} else {
-
-			// FIXME: There are clearly race conditions and ordeing issues now that Atom DELETE's have been introduced.
-			// FIXME: But too hard to fix at the moment without deep refactors of the database and event handling.
-			if (atomEventDto != null && atomEventDto.getType().equals(AtomEventType.DELETE)) {
-				onNext.accept(new ObservedAtomEvents(false, Stream.of(atomEventDto)));
-			}
-
-			try {
-				List<com.radixdlt.Atom> atoms = new ArrayList<>();
-
-				if (request.getDestination() != null) {
-					LedgerIndex destinationIndex = new LedgerIndex(EngineAtomIndices.IndexType.DESTINATION.getValue(), request.getDestination().toByteArray());
-					LedgerCursor ledgerCursor = ledger.search(LedgerIndex.LedgerIndexType.DUPLICATE, destinationIndex, LedgerSearchMode.EXACT);
-					if (ledgerCursor == null) {
-						log.debug("ledgerCursor is null");
+		try {
+			long count = 0;
+			LedgerIndex destinationIndex = new LedgerIndex(EngineAtomIndices.IndexType.DESTINATION.getValue(), atomQuery.getDestination().toByteArray());
+			LedgerCursor ledgerCursor = ledger.search(LedgerIndex.LedgerIndexType.DUPLICATE, destinationIndex, LedgerSearchMode.EXACT);
+			Set<AID> processedAids = Sets.newHashSet();
+			while (ledgerCursor != null) {
+				if (count >= 200) {
+					synchronized(this) {
+						this.currentRunnable = currentRunnable.thenRunAsync(() -> {
+							// Hack to throttle back high amounts of atom reads
+							// Will fix this once an async library is used
+							try {
+								TimeUnit.SECONDS.sleep(1);
+							} catch (InterruptedException e) {
+								// Re-interrupt and continue
+								Thread.currentThread().interrupt();
+							}
+							this.sync();
+						}, executorService);
 					}
-					while (ledgerCursor != null) {
-						log.debug("ledgerCursor is not null");
-						AID destinationAID = ledgerCursor.get();
-						com.radixdlt.Atom destinationAtom = ledger.get(destinationAID).get();
-						atoms.add(destinationAtom);
-						ledgerCursor = ledgerCursor.next();
-					}
+					return;
 				}
 
-				log.debug("atoms size = " + atoms.size());
-				Stream<AtomEventDto> atomStream = atoms.stream().map(atom -> {
+				List<Atom> atoms = new ArrayList<>();
+				while (ledgerCursor != null && atoms.size() < BATCH_SIZE) {
+					AID aid = ledgerCursor.get();
+					processedAids.add(aid);
 					//potentially we could have performance issue here
-					SimpleRadixEngineAtom simpleRadixEngineAtom = simpleRadixEngineAtomToEngineAtom.convert(atom);
-					Atom legacyAtom = LegacyUtils.toLegacyAtom(simpleRadixEngineAtom);
-					return new AtomEventDto(AtomEventType.STORE, legacyAtom);
-				});
-				onNext.accept(new ObservedAtomEvents(true, atomStream));
-				synced.set(true);
+					SimpleRadixEngineAtom simpleRadixEngineAtom = simpleRadixEngineAtomToEngineAtom.convert(ledger.get(aid).get());
+					atoms.add(LegacyUtils.toLegacyAtom(simpleRadixEngineAtom));
+					ledgerCursor = ledgerCursor.next();
+				}
 
-				// Send HEAD flag once we've read through all atoms
-				onNext.accept(new ObservedAtomEvents(true, Stream.empty()));
-			} catch (Exception e) {
-				log.error("While handling atom event update", e);
+				log.debug("atoms size = "+atoms.size());
+				if (!atoms.isEmpty()) {
+					final Stream<AtomEventDto> atomEvents = atoms.stream()
+						.map(atom -> new AtomEventDto(AtomEventType.STORE, atom));
+					onNext.accept(new ObservedAtomEvents(false, atomEvents));
+					count += atoms.size();
+				}
+			}
+
+			// Send received and queued events
+			final List<AtomEventDto> atomEvents;
+			synchronized (syncLock) {
+				this.synced = true;
+				// Note that we filter here so that the filter executes with lock held
+				atomEvents = this.waitingQueue.stream()
+					.filter(aed -> !processedAids.contains(aed.getAtom().getAID()) || aed.getType() == AtomEventType.DELETE)
+					.collect(Collectors.toList());
+				this.waitingQueue.clear();
+			}
+			this.onNext.accept(new ObservedAtomEvents(false, atomEvents.stream()));
+
+			// Send HEAD flag once we've read through all atoms
+			onNext.accept(new ObservedAtomEvents(true, Stream.empty()));
+		} catch (Exception e) {
+			log.error("While handling atom event update", e);
+		}
+	}
+
+	private void update(AtomEventDto atomEventDto) {
+		log.debug("AtomEventObserver update: " + this.atomQuery.getDestination());
+		if (this.cancelled.get()) {
+			return;
+		}
+
+		synchronized (syncLock) {
+			if (!this.synced) {
+				this.waitingQueue.add(atomEventDto);
+				return;
 			}
 		}
+		this.onNext.accept(new ObservedAtomEvents(true, Stream.of(atomEventDto)));
 	}
 }
