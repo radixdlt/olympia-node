@@ -3,6 +3,7 @@ package org.radix.api.http;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.common.AID;
 import com.radixdlt.crypto.Hash;
+import com.radixdlt.ledger.Ledger;
 import com.radixdlt.mock.MockAccessor;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
@@ -60,17 +61,21 @@ public final class RadixHttpServer {
 
     private static final Logger logger = Logging.getLogger("api");
 
-    private final ConcurrentHashMap<RadixJsonRpcPeer, WebSocketChannel> peers = new ConcurrentHashMap<>();
+	private final ConcurrentHashMap<RadixJsonRpcPeer, WebSocketChannel> peers;
+	private final AtomsService atomsService;
+    private final RadixJsonRpcServer jsonRpcServer;
 
-	private final AtomsService atomsService = new AtomsService(Modules.get(AtomSyncView.class));
-
-    private final RadixJsonRpcServer jsonRpcServer = new RadixJsonRpcServer(
-		Modules.get(Serialization.class),
-		Modules.get(TempoAtomStoreView.class),
-		Modules.get(AtomSyncView.class),
-		atomsService,
-        AtomSchemas.get()
-    );
+	public RadixHttpServer(Ledger ledger) {
+		this.peers = new ConcurrentHashMap<>();
+		this.atomsService = new AtomsService(Modules.get(AtomSyncView.class), ledger);
+		this.jsonRpcServer = new RadixJsonRpcServer(
+				Modules.get(Serialization.class),
+				Modules.get(TempoAtomStoreView.class),
+				Modules.get(AtomSyncView.class),
+				atomsService,
+				AtomSchemas.get()
+		);
+	}
 
     private Undertow server;
 

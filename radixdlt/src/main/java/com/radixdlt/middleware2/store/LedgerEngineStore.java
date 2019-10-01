@@ -12,12 +12,15 @@ import com.radixdlt.ledger.LedgerSearchMode;
 import com.radixdlt.middleware.SimpleRadixEngineAtom;
 import com.radixdlt.middleware2.converters.SimpleRadixEngineAtomToEngineAtom;
 import com.radixdlt.store.EngineStore;
+import org.radix.logging.Logger;
+import org.radix.logging.Logging;
 
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 
 public class LedgerEngineStore implements EngineStore<SimpleRadixEngineAtom> {
+    private static final Logger log = Logging.getLogger("LedgerEngineStore");
 
     private Ledger ledger;
     private SimpleRadixEngineAtomToEngineAtom atomConverter;
@@ -38,9 +41,14 @@ public class LedgerEngineStore implements EngineStore<SimpleRadixEngineAtom> {
     }
 
     private Optional<Atom> getAtomByParticle(Particle particle, boolean isInput) {
-        final byte[] indexableBytes = EngineAtomIndices.toByteArray(isInput ? EngineAtomIndices.IndexType.PARTICLE_UP : EngineAtomIndices.IndexType.PARTICLE_DOWN, particle.getHID());
-        LedgerCursor cursor = ledger.search(LedgerIndex.LedgerIndexType.DUPLICATE, new LedgerIndex(indexableBytes), LedgerSearchMode.EXACT);
-        return ledger.get(cursor.get());
+        final byte[] indexableBytes = EngineAtomIndices.toByteArray(isInput ? EngineAtomIndices.IndexType.PARTICLE_DOWN : EngineAtomIndices.IndexType.PARTICLE_UP, particle.getHID());
+        LedgerCursor cursor = ledger.search(LedgerIndex.LedgerIndexType.UNIQUE, new LedgerIndex(indexableBytes), LedgerSearchMode.EXACT);
+        if (cursor != null) {
+            return ledger.get(cursor.get());
+        } else {
+            log.debug("getAtomByParticle returned empty result");
+            return Optional.empty();
+        }
     }
 
     @Override

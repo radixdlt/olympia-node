@@ -5,6 +5,7 @@ import java.lang.reflect.Modifier;
 import java.security.SecureRandom;
 import java.security.Security;
 
+import com.radixdlt.ledger.Ledger;
 import com.radixdlt.middleware2.processing.RadixEngineAtomProcessor;
 import org.apache.commons.cli.CommandLine;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -311,10 +312,9 @@ public class Radix extends Plugin
 		/**
 		 * TEMPO
 		 */
+		Ledger ledger = null;
 		if (Modules.get(RuntimeProperties.class).get("tempo2", false)) {
-//			Tempo is created by GoogleGuice as eager singleton
-//			Tempo tempo = globalInjector.getInjector().getInstance(Tempo.class);
-//			tempo.start();
+			ledger = globalInjector.getInjector().getInstance(Ledger.class);
 
 //			MockApplication mockApplication = new MockApplication(tempo);
 //			mockApplication.startInstance();
@@ -338,7 +338,7 @@ public class Radix extends Plugin
 		 */
 		try
 		{
-			Modules.getInstance().start(new API());
+			Modules.getInstance().start(new API(ledger));
 		}
 		catch (Exception ex)
 		{

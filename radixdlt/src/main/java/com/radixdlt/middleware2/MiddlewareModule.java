@@ -54,14 +54,12 @@ public class MiddlewareModule extends AbstractModule {
         private ConstraintMachine constraintMachine;
         private UnaryOperator unaryOperator;
         private EngineStore engineStore;
-        private SimpleRadixEngineAtomToEngineAtom simpleRadixEngineAtomToEngineAtom;
 
         @Inject
         public RadixEngineProvider(ConstraintMachine constraintMachine, UnaryOperator unaryOperator, EngineStore engineStore, SimpleRadixEngineAtomToEngineAtom simpleRadixEngineAtomToEngineAtom) {
             this.constraintMachine = constraintMachine;
             this.unaryOperator = unaryOperator;
             this.engineStore = engineStore;
-            this.simpleRadixEngineAtomToEngineAtom = simpleRadixEngineAtomToEngineAtom;
         }
 
         @Override

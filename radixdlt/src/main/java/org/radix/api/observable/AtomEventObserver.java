@@ -1,26 +1,32 @@
 package org.radix.api.observable;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
-import java.util.stream.Stream;
-
+import com.radixdlt.common.AID;
+import com.radixdlt.ledger.Ledger;
+import com.radixdlt.ledger.LedgerCursor;
+import com.radixdlt.ledger.LedgerIndex;
+import com.radixdlt.ledger.LedgerSearchMode;
+import com.radixdlt.middleware.SimpleRadixEngineAtom;
+import com.radixdlt.middleware2.converters.SimpleRadixEngineAtomToEngineAtom;
+import com.radixdlt.middleware2.store.EngineAtomIndices;
+import com.radixdlt.tempo.LegacyUtils;
 import org.radix.api.AtomQuery;
 import org.radix.api.observable.AtomEventDto.AtomEventType;
+import org.radix.atoms.Atom;
 import org.radix.atoms.AtomDiscoveryRequest;
-import org.radix.atoms.AtomStore;
 import org.radix.atoms.events.AtomDeletedEvent;
 import org.radix.atoms.events.AtomStoredEvent;
 import org.radix.atoms.events.PreparedAtomEvent;
-import org.radix.discovery.DiscoveryException;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.modules.Modules;
 
-import org.radix.atoms.Atom;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 public class AtomEventObserver {
 	private static final Logger log = Logging.getLogger("api");
@@ -34,6 +40,8 @@ public class AtomEventObserver {
 	private CompletableFuture<?> currentRunnable;
 	private CompletableFuture<?> firstRunnable;
 	private final ExecutorService executorService;
+	private final Ledger ledger;
+	private SimpleRadixEngineAtomToEngineAtom simpleRadixEngineAtomToEngineAtom = new SimpleRadixEngineAtomToEngineAtom();
 
 	private void checkForDuplicates(Atom atom, String method) {
 		if (processedAtoms.containsKey(atom)) {
@@ -46,12 +54,14 @@ public class AtomEventObserver {
 	public AtomEventObserver(
 		AtomQuery atomQuery,
 		Consumer<ObservedAtomEvents> onNext,
-		ExecutorService executorService
+		ExecutorService executorService,
+		Ledger ledger
 	) {
 		this.atomQuery = atomQuery;
 		this.onNext = onNext;
 		this.request = atomQuery.toAtomDiscovery();
 		this.executorService = executorService;
+		this.ledger = ledger;
 	}
 
 	public boolean isDone() {
@@ -93,6 +103,7 @@ public class AtomEventObserver {
 	}
 
 	private void update(AtomEventDto atomEventDto) {
+		log.debug("Atom discovery request: " + request);
 		if (cancelled.get()) {
 			return;
 		}
@@ -109,50 +120,36 @@ public class AtomEventObserver {
 			}
 
 			try {
-				long count = 0;
-				do {
-					if (count >= 200) {
-						synchronized(this) {
-							this.currentRunnable = currentRunnable.thenRunAsync(() -> {
-								// Hack to throttle back high amounts of atom reads
-								// Will fix this once an async library is used
-								try {
-									TimeUnit.SECONDS.sleep(1);
-								} catch (InterruptedException e) {
-									// Re-interrupt and continue
-									Thread.currentThread().interrupt();
-								}
-								this.update(null);
-							}, executorService);
-						}
-						return;
+				List<com.radixdlt.Atom> atoms = new ArrayList<>();
+
+				if (request.getDestination() != null) {
+					LedgerIndex destinationIndex = new LedgerIndex(EngineAtomIndices.IndexType.DESTINATION.getValue(), request.getDestination().toByteArray());
+					LedgerCursor ledgerCursor = ledger.search(LedgerIndex.LedgerIndexType.DUPLICATE, destinationIndex, LedgerSearchMode.EXACT);
+					if (ledgerCursor == null) {
+						log.debug("ledgerCursor is null");
 					}
-
-					Modules.get(AtomStore.class).discovery(request);
-
-					if (!request.getDelivered().isEmpty()) {
-						request.getDelivered().forEach(raw -> checkForDuplicates(raw, atomEventDto == null ? "discovery" : "event"));
-
-						if (atomEventDto != null
-							&& atomEventDto.getType().equals(AtomEventType.STORE)
-							&& request.getDelivered().size() == 1) {
-							if (request.getDelivered().get(0).equals(atomEventDto.getAtom())) {
-								synced.set(true);
-							}
-						}
-
-						final Stream<AtomEventDto> atomEvents = request.getDelivered().stream()
-							.map(atom -> new AtomEventDto(AtomEventType.STORE, atom));
-						onNext.accept(new ObservedAtomEvents(false, atomEvents));
+					while (ledgerCursor != null) {
+						log.debug("ledgerCursor is not null");
+						AID destinationAID = ledgerCursor.get();
+						com.radixdlt.Atom destinationAtom = ledger.get(destinationAID).get();
+						atoms.add(destinationAtom);
+						ledgerCursor = ledgerCursor.next();
 					}
+				}
 
-					count += request.getDelivered().size();
-
-				} while (request.next());
+				log.debug("atoms size = " + atoms.size());
+				Stream<AtomEventDto> atomStream = atoms.stream().map(atom -> {
+					//potentially we could have performance issue here
+					SimpleRadixEngineAtom simpleRadixEngineAtom = simpleRadixEngineAtomToEngineAtom.convert(atom);
+					Atom legacyAtom = LegacyUtils.toLegacyAtom(simpleRadixEngineAtom);
+					return new AtomEventDto(AtomEventType.STORE, legacyAtom);
+				});
+				onNext.accept(new ObservedAtomEvents(true, atomStream));
+				synced.set(true);
 
 				// Send HEAD flag once we've read through all atoms
 				onNext.accept(new ObservedAtomEvents(true, Stream.empty()));
-			} catch (DiscoveryException e) {
+			} catch (Exception e) {
 				log.error("While handling atom event update", e);
 			}
 		}

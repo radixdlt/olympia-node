@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 
 public class EngineAtomIndices {
     public enum IndexType {
-        PARTICLE_UP((byte)3), PARTICLE_DOWN((byte)4), PARTICLE_CLASS((byte)5), UID((byte)6), DESTINATION((byte)7);
+        PARTICLE_UP((byte)2), PARTICLE_DOWN((byte)3), PARTICLE_CLASS((byte)4), UID((byte)5), DESTINATION((byte)6);
         byte value;
 
         IndexType(byte value) {

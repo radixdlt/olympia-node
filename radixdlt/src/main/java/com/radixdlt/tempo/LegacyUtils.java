@@ -1,6 +1,7 @@
 package com.radixdlt.tempo;
 
 import com.radixdlt.middleware.ImmutableAtom;
+import com.radixdlt.middleware.SimpleRadixEngineAtom;
 import com.radixdlt.middleware2.atom.EngineAtomContent;
 import org.radix.atoms.Atom;
 
@@ -27,6 +28,16 @@ public final class LegacyUtils {
 			content.particleGroups().collect(Collectors.toList()),
 			content.getSignatures(),
 			content.getMetaData()
+		);
+		return legacyAtom;
+	}
+
+	public static Atom toLegacyAtom(SimpleRadixEngineAtom atom) {
+		ImmutableAtom content = atom.getAtom();
+		Atom legacyAtom = new Atom(
+				content.particleGroups().collect(Collectors.toList()),
+				content.getSignatures(),
+				content.getMetaData()
 		);
 		return legacyAtom;
 	}

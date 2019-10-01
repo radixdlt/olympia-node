@@ -3,6 +3,7 @@ package org.radix.api;
 import java.util.Collections;
 import java.util.List;
 
+import com.radixdlt.ledger.Ledger;
 import org.radix.RadixServer;
 import org.radix.api.http.RadixHttpServer;
 import org.radix.modules.Module;
@@ -15,9 +16,11 @@ import org.radix.modules.exceptions.ModuleStopException;
 public class API extends Service {
 
 	private RadixHttpServer radixHttpServer;
+	private Ledger ledger;
 
-	public API() {
+	public API(Ledger ledger) {
 		super();
+		this.ledger = ledger;
 	}
 
 	public RadixHttpServer getRadixHttpServer() {
@@ -30,7 +33,7 @@ public class API extends Service {
 			throw new ModuleStartException("API is enabled but no RadixServer is available", this);
 		}
 
-		radixHttpServer = new RadixHttpServer();
+		radixHttpServer = new RadixHttpServer(ledger);
 		radixHttpServer.start();
 	}
 
