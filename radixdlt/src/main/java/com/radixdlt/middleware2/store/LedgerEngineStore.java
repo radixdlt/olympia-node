@@ -75,9 +75,9 @@ public class LedgerEngineStore implements EngineStore<SimpleRadixEngineAtom> {
     @Override
     public Spin getSpin(Particle particle) {
         if (getAtomByParticle(particle, true).isPresent()) {
-            return Spin.UP;
-        } else if (getAtomByParticle(particle, false).isPresent()) {
             return Spin.DOWN;
+        } else if (getAtomByParticle(particle, false).isPresent()) {
+            return Spin.UP;
         }
         return Spin.NEUTRAL;
     }
