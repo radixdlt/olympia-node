@@ -15,6 +15,7 @@ import org.radix.atoms.events.AtomExceptionEvent;
 import org.radix.atoms.events.AtomStoredEvent;
 import org.radix.atoms.particles.conflict.ParticleConflict;
 import org.radix.atoms.particles.conflict.ParticleConflictException;
+import org.radix.atoms.particles.conflict.events.ConflictDetectedEvent;
 import org.radix.events.Events;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
@@ -78,6 +79,7 @@ public class EngineAtomEventListener implements AtomEventListener<SimpleRadixEng
                 ));
         AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(conflict, (Atom) cmAtom.getAtom());
         Events.getInstance().broadcast(atomExceptionEvent);
+        Events.getInstance().broadcast(new ConflictDetectedEvent(conflict.getConflict()));
         log.error("Conflict: ", conflict);
     }
 
