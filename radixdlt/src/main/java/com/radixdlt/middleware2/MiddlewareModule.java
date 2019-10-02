@@ -1,9 +1,15 @@
 package com.radixdlt.middleware2;
 
+import java.util.function.UnaryOperator;
+
+import org.radix.modules.Modules;
+import org.radix.properties.RuntimeProperties;
+import org.radix.time.Time;
+
 import com.google.inject.AbstractModule;
-import com.google.inject.Inject;
-import com.google.inject.Provider;
+import com.google.inject.Provides;
 import com.google.inject.Scopes;
+import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.atommodel.message.MessageParticleConstraintScrypt;
 import com.radixdlt.atommodel.tokens.TokensConstraintScrypt;
@@ -12,21 +18,16 @@ import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.middleware.AtomCheckHook;
 import com.radixdlt.middleware.SimpleRadixEngineAtom;
-import com.radixdlt.middleware2.processing.EngineAtomEventListener;
 import com.radixdlt.middleware2.converters.SimpleRadixEngineAtomToEngineAtom;
+import com.radixdlt.middleware2.processing.EngineAtomEventListener;
 import com.radixdlt.middleware2.store.LedgerEngineStore;
+import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.universe.Universe;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
-import org.radix.modules.Modules;
-
-import java.util.function.UnaryOperator;
 
 public class MiddlewareModule extends AbstractModule {
-    private static final Logger log = Logging.getLogger("MiddlewareModule");
-
     private CMAtomOS buildCMAtomOS() {
         final CMAtomOS os = new CMAtomOS(addr -> {
             final int universeMagic = Modules.get(Universe.class).getMagic() & 0xff;
@@ -42,7 +43,6 @@ public class MiddlewareModule extends AbstractModule {
     }
 
     private ConstraintMachine buildConstraintMachine(CMAtomOS os) {
-
         final ConstraintMachine constraintMachine = new ConstraintMachine.Builder()
                 .setParticleTransitionProcedures(os.buildTransitionProcedures())
                 .setParticleStaticCheck(os.buildParticleStaticCheck())
@@ -50,29 +50,35 @@ public class MiddlewareModule extends AbstractModule {
         return constraintMachine;
     }
 
-    private static class RadixEngineProvider implements Provider<RadixEngine<SimpleRadixEngineAtom>> {
-        private ConstraintMachine constraintMachine;
-        private UnaryOperator unaryOperator;
-        private EngineStore engineStore;
+    @Provides
+    @Singleton
+    private RadixEngine<SimpleRadixEngineAtom> getRadixEngine(
+    	ConstraintMachine constraintMachine,
+    	UnaryOperator<CMStore> virtualStoreLayer,
+    	EngineStore<SimpleRadixEngineAtom> engineStore,
+    	SimpleRadixEngineAtomToEngineAtom converter
+    ) {
+    	RadixEngine<SimpleRadixEngineAtom> radixEngine = new RadixEngine<>(
+   			constraintMachine,
+   			virtualStoreLayer,
+   			engineStore
+		);
 
-        @Inject
-        public RadixEngineProvider(ConstraintMachine constraintMachine, UnaryOperator unaryOperator, EngineStore engineStore, SimpleRadixEngineAtomToEngineAtom simpleRadixEngineAtomToEngineAtom) {
-            this.constraintMachine = constraintMachine;
-            this.unaryOperator = unaryOperator;
-            this.engineStore = engineStore;
-        }
+    	final boolean skipAtomFeeCheck = Modules.isAvailable(RuntimeProperties.class)
+    			&& Modules.get(RuntimeProperties.class).get("debug.nopow", false);
 
-        @Override
-        public RadixEngine<SimpleRadixEngineAtom> get() {
-            RadixEngine<SimpleRadixEngineAtom> radixEngine = new RadixEngine<SimpleRadixEngineAtom>(
-                    constraintMachine,
-                    unaryOperator,
-                    engineStore
-            );
-            radixEngine.addAtomEventListener(new EngineAtomEventListener());
-            radixEngine.start();
-            return radixEngine;
-        }
+    	radixEngine.addCMSuccessHook(
+   			new AtomCheckHook(
+				() -> Modules.get(Universe.class),
+				Time::currentTimestamp,
+				skipAtomFeeCheck,
+				Time.MAXIMUM_DRIFT
+			)
+		);
+
+    	radixEngine.addAtomEventListener(new EngineAtomEventListener());
+    	radixEngine.start();
+    	return radixEngine;
     }
 
     @Override
@@ -81,9 +87,7 @@ public class MiddlewareModule extends AbstractModule {
         ConstraintMachine constraintMachine = buildConstraintMachine(os);
 
         bind(ConstraintMachine.class).toInstance(constraintMachine);
-        bind(UnaryOperator.class).toInstance(os.buildVirtualLayer());
-        bind(EngineStore.class).to(LedgerEngineStore.class);
-        bind(new TypeLiteral<RadixEngine<SimpleRadixEngineAtom>>() {
-        }).toProvider(RadixEngineProvider.class).in(Scopes.SINGLETON);
+        bind(new TypeLiteral<UnaryOperator<CMStore>>(){}).toInstance(os.buildVirtualLayer());
+        bind(new TypeLiteral<EngineStore<SimpleRadixEngineAtom>>(){}).to(LedgerEngineStore.class).in(Scopes.SINGLETON);
     }
 }
