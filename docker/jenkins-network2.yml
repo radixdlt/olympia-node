@@ -13,7 +13,6 @@ services:
       - "30000:30000/tcp"
       - "10000:10000/udp"
       - "20000:20000/udp"
-      - "30000:30000/udp"      
   core1:
     environment:
       RADIXDLT_NETWORK_SEEDS_REMOTE: core0
