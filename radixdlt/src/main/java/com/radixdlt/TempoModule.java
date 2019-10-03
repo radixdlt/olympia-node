@@ -1,6 +1,7 @@
 package com.radixdlt;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.name.Names;
@@ -49,7 +50,7 @@ public class TempoModule extends AbstractModule {
 		bind(Scheduler.class).toProvider(SingleThreadedScheduler::new);
 		bind(Attestor.class).to(TempoAttestor.class);
 		bind(WallclockTimeSupplier.class).toInstance(Time::currentTimestamp);
-		bind(Ledger.class).to(Tempo.class).asEagerSingleton();
+		bind(Ledger.class).to(Tempo.class).in(Scopes.SINGLETON);
 
 		bind(PeerSupplier.class).toProvider(() -> new PeerSupplierAdapter(() -> Modules.get(AddressBook.class))).in(Singleton.class);
 	}

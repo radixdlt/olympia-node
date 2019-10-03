@@ -7,6 +7,7 @@ import java.security.Security;
 
 import com.radixdlt.ledger.Ledger;
 import com.radixdlt.middleware2.processing.RadixEngineAtomProcessor;
+import com.radixdlt.tempo.Tempo;
 import org.apache.commons.cli.CommandLine;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.json.JSONObject;
@@ -312,9 +313,10 @@ public class Radix extends Plugin
 		/**
 		 * TEMPO
 		 */
-		Ledger ledger = null;
+		Tempo ledger = null;
 		if (Modules.get(RuntimeProperties.class).get("tempo2", false)) {
-			ledger = globalInjector.getInjector().getInstance(Ledger.class);
+			ledger = (Tempo)globalInjector.getInjector().getInstance(Ledger.class);
+			ledger.start();
 
 //			MockApplication mockApplication = new MockApplication(tempo);
 //			mockApplication.startInstance();

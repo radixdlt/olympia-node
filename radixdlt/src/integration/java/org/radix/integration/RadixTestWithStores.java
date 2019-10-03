@@ -10,7 +10,7 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.tempo.AtomSyncView;
 import com.radixdlt.tempo.Tempo;
 import com.radixdlt.tempo.TempoAttestor;
-import com.radixdlt.tempo.consensus.RSSConsensus;
+import com.radixdlt.tempo.consensus.Consensus;
 import com.radixdlt.tempo.delivery.RequestDeliverer;
 import com.radixdlt.tempo.store.CommitmentStore;
 import com.radixdlt.tempo.store.TempoAtomStore;
@@ -37,6 +37,8 @@ import static org.mockito.Mockito.mock;
 
 public class RadixTestWithStores extends RadixTest
 {
+	protected Injector injector;
+
 	@Before
 	public void beforeEachRadixTest() throws ModuleException {
 		Modules.getInstance().start(new DatabaseEnvironment());
@@ -49,7 +51,7 @@ public class RadixTestWithStores extends RadixTest
 
 		if (Modules.get(RuntimeProperties.class).get("tempo2", false)) {
 			EUID self = LocalSystem.getInstance().getNID();
-			Injector injector = Guice.createInjector(
+			injector = Guice.createInjector(
 				new AbstractModule() {
 					@Override
 					protected void configure() {
@@ -65,7 +67,7 @@ public class RadixTestWithStores extends RadixTest
 				self,
 				atomStore,
 				commitmentStore,
-				mock(RSSConsensus.class),
+				mock(Consensus.class),
 				new TempoAttestor(LocalSystem.getInstance(), Serialization.getDefault(), System::currentTimeMillis),
 				ImmutableSet.of(atomStore, commitmentStore),
 				ImmutableSet.of(),

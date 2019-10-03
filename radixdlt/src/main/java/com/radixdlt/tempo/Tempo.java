@@ -84,13 +84,11 @@ public final class Tempo implements Ledger, Closeable {
 
 		this.ledgerObservations = new LinkedBlockingQueue<>(INBOUND_QUEUE_CAPACITY);
 		this.consensusProcessor = new SimpleThreadPool<>("Tempo consensus processing", 1, consensus::observe, this::processConsensusAction, log);
-		this.consensusProcessor.start();
 
 		// hook up components
 		for (AtomDiscoverer atomDiscoverer : this.atomDiscoverers) {
 			atomDiscoverer.addListener(this::onDiscovered);
 		}
-		start();
 	}
 
 	@Override
@@ -203,7 +201,8 @@ public final class Tempo implements Ledger, Closeable {
 		return atomStore.contains(type, index, mode);
 	}
 
-	private void start() {
+	public void start() {
+		this.consensusProcessor.start();
 		Modules.put(TempoAtomStoreView.class, this.atomStore);
 		Modules.put(AtomSyncView.class, new AtomSyncView() {
 			@Override
