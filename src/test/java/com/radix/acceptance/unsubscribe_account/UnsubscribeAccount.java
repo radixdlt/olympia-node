@@ -219,10 +219,6 @@ public class UnsubscribeAccount {
 			.map(Notification::getEvent)
 			.subscribe(atomSubmission);
 
-
-		this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, this.atom.getAid()).blockingAwait();
-		this.jsonRpcClient.pushAtom(this.atom).blockingAwait();
-
 		atomSubmission.awaitCount(1);
 		atomSubmission.assertValue(n -> n.getAtomStatus() == AtomStatus.STORED);
 		atomSubmission.dispose();
