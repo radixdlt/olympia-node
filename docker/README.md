@@ -110,7 +110,7 @@ $ docker-compose -p test$BUILD_NUMBER -f docker/jenkins-network.yml up -d --buil
 # Find the IP number of the the core0 node
 
 ```shell
-$ docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' test${BUILD_NUMBER}_core${i}_1
+$ docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' test${BUILD_NUMBER}_core0_1
 ```
 # Find the IP of all core nodes
 
