@@ -7,6 +7,13 @@ services:
     image: radixdlt.azurecr.io/radixdlt/radixdlt-core:develop
     networks:
       - minimal_universe
+    ports:
+      - "10000:10000/tcp"
+      - "20000:20000/tcp"
+      - "30000:30000/tcp"
+      - "10000:10000/udp"
+      - "20000:20000/udp"
+      - "30000:30000/udp"      
   core1:
     environment:
       RADIXDLT_NETWORK_SEEDS_REMOTE: core0
