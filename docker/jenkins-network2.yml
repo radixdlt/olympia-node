@@ -9,9 +9,7 @@ services:
       - minimal_universe
     ports:
       - "10000:10000/tcp"
-      - "20000:20000/tcp"
       - "10000:10000/udp"
-      - "20000:20000/udp"
   core1:
     environment:
       RADIXDLT_NETWORK_SEEDS_REMOTE: core0
