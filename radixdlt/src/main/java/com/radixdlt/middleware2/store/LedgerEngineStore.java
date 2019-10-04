@@ -14,21 +14,26 @@ import com.radixdlt.middleware2.converters.SimpleRadixEngineAtomToEngineAtom;
 import com.radixdlt.store.EngineStore;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
+import org.radix.shards.ShardSpace;
 
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 public class LedgerEngineStore implements EngineStore<SimpleRadixEngineAtom> {
-    private static final Logger log = Logging.getLogger("LedgerEngineStore");
+    private static final Logger log = Logging.getLogger(LedgerEngineStore.class.getSimpleName());
 
     private Ledger ledger;
     private SimpleRadixEngineAtomToEngineAtom atomConverter;
+    private Supplier<ShardSpace> shardSpaceSupplier;
 
     @Inject
-    public LedgerEngineStore(Ledger ledger, SimpleRadixEngineAtomToEngineAtom atomConverter) {
+    public LedgerEngineStore(Ledger ledger, SimpleRadixEngineAtomToEngineAtom atomConverter, Supplier<ShardSpace> shardSpaceSupplier) {
         this.ledger = ledger;
         this.atomConverter = atomConverter;
+        this.shardSpaceSupplier = shardSpaceSupplier;
     }
 
     @Override
@@ -65,11 +70,7 @@ public class LedgerEngineStore implements EngineStore<SimpleRadixEngineAtom> {
 
     @Override
     public boolean supports(Set<EUID> destinations) {
-        return destinations.stream()
-                .map(euid -> new LedgerIndex(EngineAtomIndices.toByteArray(EngineAtomIndices.IndexType.DESTINATION, euid)))
-                .filter(ledgerIndex -> ledger.contains(LedgerIndex.LedgerIndexType.DUPLICATE, ledgerIndex, LedgerSearchMode.EXACT))
-                .findFirst()
-                .isPresent();
+        return shardSpaceSupplier.get().intersects(destinations.stream().map(EUID::getShard).collect(Collectors.toSet()));
     }
 
     @Override

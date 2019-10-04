@@ -38,12 +38,12 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public class RadixEngineAtomProcessor {
-	private static final Logger log = Logging.getLogger("RadixEngineAtomProcessor");
+	private static final Logger log = Logging.getLogger(RadixEngineAtomProcessor.class.getSimpleName());
 
 	private boolean interrupted;
 
 	private Ledger ledger;
-	private RadixEngine radixEngine;
+	private RadixEngine<SimpleRadixEngineAtom> radixEngine;
 	private SimpleRadixEngineAtomToEngineAtom atomConverter;
 
 	@Inject

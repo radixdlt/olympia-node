@@ -1,9 +1,11 @@
 package com.radixdlt.middleware2;
 
+import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
 import org.radix.modules.Modules;
 import org.radix.properties.RuntimeProperties;
+import org.radix.shards.ShardSpace;
 import org.radix.time.Time;
 
 import com.google.inject.AbstractModule;
@@ -26,6 +28,7 @@ import com.radixdlt.middleware2.store.LedgerEngineStore;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.universe.Universe;
+import org.radix.universe.system.LocalSystem;
 
 public class MiddlewareModule extends AbstractModule {
 	private CMAtomOS buildCMAtomOS() {
@@ -91,5 +94,7 @@ public class MiddlewareModule extends AbstractModule {
 		}).toInstance(os.buildVirtualLayer());
 		bind(new TypeLiteral<EngineStore<SimpleRadixEngineAtom>>() {
 		}).to(LedgerEngineStore.class).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<Supplier<ShardSpace>>() {
+		}).toInstance(() -> LocalSystem.getInstance().getShards());
 	}
 }

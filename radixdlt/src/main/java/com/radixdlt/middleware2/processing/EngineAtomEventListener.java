@@ -25,7 +25,7 @@ import org.radix.validation.ConstraintMachineValidationException;
 import java.util.Collections;
 
 public class EngineAtomEventListener implements AtomEventListener<SimpleRadixEngineAtom> {
-	private static final Logger log = Logging.getLogger("EngineAtomEventListener");
+	private static final Logger log = Logging.getLogger(EngineAtomEventListener.class.getSimpleName());
 
 	@Override
 	public void onCMError(SimpleRadixEngineAtom cmAtom, CMError error) {
