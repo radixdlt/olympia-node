@@ -12,39 +12,39 @@ import java.util.Set;
 
 public class EngineAtom implements Atom {
 
-    /**
-     * Arbitrary, opaque content
-     */
-    @JsonProperty("content")
-    @DsonOutput(value = {DsonOutput.Output.ALL})
-    private AtomContent content;
+	/**
+	 * Arbitrary, opaque content
+	 */
+	@JsonProperty("content")
+	@DsonOutput(value = {DsonOutput.Output.ALL})
+	private AtomContent content;
 
-    @JsonProperty("aid")
-    @DsonOutput(value = {DsonOutput.Output.ALL})
-    private AID aid;
+	@JsonProperty("aid")
+	@DsonOutput(value = {DsonOutput.Output.ALL})
+	private AID aid;
 
-    @JsonProperty("shards")
-    @DsonOutput(value = {DsonOutput.Output.ALL})
-    private ImmutableSet<Long> shards;
+	@JsonProperty("shards")
+	@DsonOutput(value = {DsonOutput.Output.ALL})
+	private ImmutableSet<Long> shards;
 
-    public EngineAtom(AtomContent content, AID aid, Set<Long> shards) {
-        this.content = Objects.requireNonNull(content, "content is required");
-        this.aid = Objects.requireNonNull(aid, "aid is required");
-        this.shards = ImmutableSet.copyOf(shards);
-    }
+	public EngineAtom(AtomContent content, AID aid, Set<Long> shards) {
+		this.content = Objects.requireNonNull(content, "content is required");
+		this.aid = Objects.requireNonNull(aid, "aid is required");
+		this.shards = ImmutableSet.copyOf(shards);
+	}
 
-    @Override
-    public AtomContent getContent() {
-        return content;
-    }
+	@Override
+	public AtomContent getContent() {
+		return content;
+	}
 
-    @Override
-    public ImmutableSet<Long> getShards() {
-        return shards;
-    }
+	@Override
+	public ImmutableSet<Long> getShards() {
+		return shards;
+	}
 
-    @Override
-    public AID getAID() {
-        return aid;
-    }
+	@Override
+	public AID getAID() {
+		return aid;
+	}
 }

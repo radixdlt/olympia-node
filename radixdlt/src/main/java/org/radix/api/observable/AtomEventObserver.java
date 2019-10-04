@@ -102,7 +102,6 @@ public class AtomEventObserver {
 	}
 
 	private void sync() {
-		log.debug("AtomEventObserver sync: " + atomQuery.getDestination());
 		if (cancelled.get()) {
 			return;
 		}
@@ -139,8 +138,6 @@ public class AtomEventObserver {
 					atoms.add(LegacyUtils.toLegacyAtom(simpleRadixEngineAtom));
 					ledgerCursor = ledgerCursor.next();
 				}
-
-				log.debug("atoms size = "+atoms.size());
 				if (!atoms.isEmpty()) {
 					final Stream<AtomEventDto> atomEvents = atoms.stream()
 						.map(atom -> new AtomEventDto(AtomEventType.STORE, atom));
@@ -169,7 +166,6 @@ public class AtomEventObserver {
 	}
 
 	private void update(AtomEventDto atomEventDto) {
-		log.debug("AtomEventObserver update: " + this.atomQuery.getDestination());
 		if (this.cancelled.get()) {
 			return;
 		}

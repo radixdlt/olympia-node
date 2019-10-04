@@ -14,26 +14,26 @@ import org.radix.properties.RuntimeProperties;
 
 public class GlobalInjector {
 
-    private  Injector injector;
+	private Injector injector;
 
-    public GlobalInjector() {
-        Module lazyRequestDelivererModule = new LazyRequestDelivererModule(Modules.get(RuntimeProperties.class));
-        Module iterativeDiscovererModule = new IterativeDiscovererModule(Modules.get(RuntimeProperties.class));
-        Module berkeleyStoreModule = new BerkeleyStoreModule();
-        Module rssConsensusModule = new RSSConsensusModule();
-        Module tempoModule = new TempoModule();
-        Module middlewareModule = new MiddlewareModule();
+	public GlobalInjector() {
+		Module lazyRequestDelivererModule = new LazyRequestDelivererModule(Modules.get(RuntimeProperties.class));
+		Module iterativeDiscovererModule = new IterativeDiscovererModule(Modules.get(RuntimeProperties.class));
+		Module berkeleyStoreModule = new BerkeleyStoreModule();
+		Module rssConsensusModule = new RSSConsensusModule();
+		Module tempoModule = new TempoModule();
+		Module middlewareModule = new MiddlewareModule();
 
-        injector = Guice.createInjector(
-                lazyRequestDelivererModule,
-                iterativeDiscovererModule,
-                berkeleyStoreModule,
-                rssConsensusModule,
-                tempoModule,
-                middlewareModule);
-    }
+		injector = Guice.createInjector(
+				lazyRequestDelivererModule,
+				iterativeDiscovererModule,
+				berkeleyStoreModule,
+				rssConsensusModule,
+				tempoModule,
+				middlewareModule);
+	}
 
-    public Injector getInjector() {
-        return injector;
-    }
+	public Injector getInjector() {
+		return injector;
+	}
 }
