@@ -1,0 +1,53 @@
+version: '3'
+services:
+  core0:
+    environment:
+      JAVA_OPTS: -server -Xms2g -Xmx2g -Dcom.sun.management.jmxremote.port=9011 -Dcom.sun.management.jmxremote.rmi.port=9011 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=localhost -agentlib:jdwp=transport=dt_socket,address=50505,suspend=n,server=y
+    build: .
+    image: radixdlt.azurecr.io/radixdlt/radixdlt-core:develop
+    networks:
+      - minimal_universe
+  core1:
+    environment:
+      RADIXDLT_NETWORK_SEEDS_REMOTE: core0
+      JAVA_OPTS: -server -Xms2g -Xmx2g -Dcom.sun.management.jmxremote.port=9012 -Dcom.sun.management.jmxremote.rmi.port=9012 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=localhost -agentlib:jdwp=transport=dt_socket,address=50506,suspend=n,server=y
+    build: .
+    image: radixdlt.azurecr.io/radixdlt/radixdlt-core:develop
+    networks:
+      - minimal_universe
+  core2:
+    environment:
+      RADIXDLT_NETWORK_SEEDS_REMOTE: core0
+      JAVA_OPTS: -server -Xms2g -Xmx2g -Dcom.sun.management.jmxremote.port=9013 -Dcom.sun.management.jmxremote.rmi.port=9013 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=localhost -agentlib:jdwp=transport=dt_socket,address=50507,suspend=n,server=y
+    build: .
+    image: radixdlt.azurecr.io/radixdlt/radixdlt-core:develop
+    networks:
+      - minimal_universe
+  core3:
+    environment:
+      RADIXDLT_NETWORK_SEEDS_REMOTE: core0
+      JAVA_OPTS: -server -Xms2g -Xmx2g -Dcom.sun.management.jmxremote.port=9014 -Dcom.sun.management.jmxremote.rmi.port=9014 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=localhost -agentlib:jdwp=transport=dt_socket,address=50508,suspend=n,server=y
+    build: .
+    image: radixdlt.azurecr.io/radixdlt/radixdlt-core:develop
+    networks:
+      - minimal_universe
+  core4:
+    environment:
+      RADIXDLT_NETWORK_SEEDS_REMOTE: core0
+      JAVA_OPTS: -server -Xms2g -Xmx2g -Dcom.sun.management.jmxremote.port=9015 -Dcom.sun.management.jmxremote.rmi.port=9015 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=localhost -agentlib:jdwp=transport=dt_socket,address=50509,suspend=n,server=y
+    build: .
+    image: radixdlt.azurecr.io/radixdlt/radixdlt-core:develop
+    networks:
+      - minimal_universe
+  core5:
+    environment:
+      RADIXDLT_NETWORK_SEEDS_REMOTE: core0
+      JAVA_OPTS: -server -Xms2g -Xmx2g -Dcom.sun.management.jmxremote.port=9016 -Dcom.sun.management.jmxremote.rmi.port=9016 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=localhost -agentlib:jdwp=transport=dt_socket,address=50510,suspend=n,server=y
+    build: .
+    image: radixdlt.azurecr.io/radixdlt/radixdlt-core:develop
+    networks:
+      - minimal_universe
+networks:
+  minimal_universe:
+    external:
+      name: radix_default
