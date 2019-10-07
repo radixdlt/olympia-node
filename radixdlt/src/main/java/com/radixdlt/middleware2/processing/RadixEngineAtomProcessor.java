@@ -22,8 +22,11 @@ public class RadixEngineAtomProcessor {
 	private SimpleRadixEngineAtomToEngineAtom atomConverter;
 
 	@Inject
-	public RadixEngineAtomProcessor(Ledger ledger, RadixEngine<SimpleRadixEngineAtom> radixEngine,
-									SimpleRadixEngineAtomToEngineAtom atomConverter) {
+	public RadixEngineAtomProcessor(
+			Ledger ledger,
+			RadixEngine<SimpleRadixEngineAtom> radixEngine,
+			SimpleRadixEngineAtomToEngineAtom atomConverter
+	) {
 		this.ledger = ledger;
 		this.radixEngine = radixEngine;
 		this.atomConverter = atomConverter;
