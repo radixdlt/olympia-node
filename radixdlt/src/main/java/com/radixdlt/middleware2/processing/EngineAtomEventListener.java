@@ -7,10 +7,11 @@ import com.radixdlt.engine.AtomEventListener;
 import com.radixdlt.middleware.ImmutableAtom;
 import com.radixdlt.middleware.SimpleRadixEngineAtom;
 import com.radixdlt.middleware.SpunParticle;
-import com.radixdlt.utils.UInt384;
+import com.radixdlt.middleware2.store.EngineAtomIndices;
+import com.radixdlt.tempo.LegacyUtils;
 import org.radix.atoms.Atom;
 import org.radix.atoms.AtomDependencyNotFoundException;
-import org.radix.atoms.PreparedAtom;
+import org.radix.atoms.AtomStore;
 import org.radix.atoms.events.AtomExceptionEvent;
 import org.radix.atoms.events.AtomStoredEvent;
 import org.radix.atoms.particles.conflict.ParticleConflict;
@@ -23,6 +24,7 @@ import org.radix.time.TemporalProofValidator;
 import org.radix.validation.ConstraintMachineValidationException;
 
 import java.util.Collections;
+import java.util.stream.Collectors;
 
 public class EngineAtomEventListener implements AtomEventListener<SimpleRadixEngineAtom> {
 	private static final Logger log = Logging.getLogger(EngineAtomEventListener.class.getSimpleName());
@@ -38,8 +40,13 @@ public class EngineAtomEventListener implements AtomEventListener<SimpleRadixEng
 	@Override
 	public void onStateStore(SimpleRadixEngineAtom cmAtom) {
 		try {
-			PreparedAtom preparedAtom = new PreparedAtom(cmAtom, UInt384.ONE);
-			Events.getInstance().broadcastWithException(new AtomStoredEvent(preparedAtom));
+			Atom legacyAtom = LegacyUtils.toLegacyAtom(cmAtom);
+			EngineAtomIndices engineAtomIndices = EngineAtomIndices.from(cmAtom);
+			Events.getInstance().broadcastWithException(new AtomStoredEvent(legacyAtom, () ->
+					engineAtomIndices.getDuplicateIndices().stream().filter(e -> e.getPrefix() == EngineAtomIndices.IndexType.DESTINATION.getValue())
+					.map(e -> AtomStore.IDType.toEUID(e.asKey()))
+					.collect(Collectors.toSet()))
+			);
 
 			ImmutableAtom immutableAtom = cmAtom.getAtom();
 			Atom atom = new Atom(immutableAtom.getParticleGroups(), immutableAtom.getSignatures(), immutableAtom.getMetaData());

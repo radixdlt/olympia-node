@@ -16,8 +16,8 @@ import org.radix.api.AtomQuery;
 import org.radix.api.observable.AtomEventDto.AtomEventType;
 import org.radix.atoms.Atom;
 import org.radix.atoms.events.AtomDeletedEvent;
+import org.radix.atoms.events.AtomEventWithDestinations;
 import org.radix.atoms.events.AtomStoredEvent;
-import org.radix.atoms.events.PreparedAtomEvent;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 
@@ -89,9 +89,9 @@ public class AtomEventObserver {
 		}
 	}
 
-	public void tryNext(PreparedAtomEvent atomEvent) {
+	public void tryNext(AtomEventWithDestinations atomEvent) {
 		if (atomEvent instanceof AtomStoredEvent || atomEvent instanceof AtomDeletedEvent) {
-			if (atomQuery.filter(atomEvent.getPreparedAtom())) {
+			if (atomQuery.filter(atomEvent.getDestinations())) {
 				final AtomEventType atomEventType = atomEvent instanceof AtomStoredEvent ? AtomEventType.STORE : AtomEventType.DELETE;
 				final AtomEventDto atomEventDto = new AtomEventDto(atomEventType, atomEvent.getAtom());
 				synchronized (this) {
