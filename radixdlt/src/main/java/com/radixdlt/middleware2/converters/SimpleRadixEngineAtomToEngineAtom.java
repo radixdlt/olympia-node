@@ -15,7 +15,7 @@ import org.radix.validation.ConstraintMachineValidationException;
 
 public class SimpleRadixEngineAtomToEngineAtom {
 
-	private static final Logger log = Logging.getLogger(SimpleRadixEngineAtomToEngineAtom.class.getSimpleName());
+	private static final Logger log = Logging.getLogger("middleware2.converter");
 
 	public EngineAtom convert(SimpleRadixEngineAtom simpleRadixEngineAtom) {
 		ImmutableAtom immutableAtom = simpleRadixEngineAtom.getAtom();

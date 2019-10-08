@@ -27,7 +27,7 @@ import java.util.Collections;
 import java.util.stream.Collectors;
 
 public class EngineAtomEventListener implements AtomEventListener<SimpleRadixEngineAtom> {
-	private static final Logger log = Logging.getLogger(EngineAtomEventListener.class.getSimpleName());
+	private static final Logger log = Logging.getLogger("middleware2.eventListener");
 
 	@Override
 	public void onCMError(SimpleRadixEngineAtom cmAtom, CMError error) {

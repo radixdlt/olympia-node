@@ -23,7 +23,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class LedgerEngineStore implements EngineStore<SimpleRadixEngineAtom> {
-    private static final Logger log = Logging.getLogger(LedgerEngineStore.class.getSimpleName());
+    private static final Logger log = Logging.getLogger("middleware2.store");
 
     private Ledger ledger;
     private SimpleRadixEngineAtomToEngineAtom atomConverter;

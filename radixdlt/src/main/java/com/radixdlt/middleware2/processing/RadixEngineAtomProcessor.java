@@ -13,7 +13,7 @@ import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 
 public class RadixEngineAtomProcessor {
-	private static final Logger log = Logging.getLogger(RadixEngineAtomProcessor.class.getSimpleName());
+	private static final Logger log = Logging.getLogger("middleware2.atomProcessor");
 
 	private boolean interrupted;
 

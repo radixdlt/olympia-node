@@ -62,7 +62,8 @@ public class Radix extends Plugin
 	public static final int 	REFUSE_AGENT_VERSION 	= 2709999;
 	public static final String 	AGENT 					= "/Radix:/"+AGENT_VERSION;
 
-	private GlobalInjector globalInjector;
+	private RadixEngineAtomProcessor atomProcessor;
+	private Tempo ledger;
 
 	/**
 	 * @param args
@@ -308,12 +309,11 @@ public class Radix extends Plugin
 		/*
 		 * Eventually modules should be created using Google Guice injector
 		 */
-		globalInjector = new GlobalInjector();
+		GlobalInjector globalInjector = new GlobalInjector();
 
 		/**
 		 * TEMPO
 		 */
-		Tempo ledger = null;
 		if (Modules.get(RuntimeProperties.class).get("tempo2", false)) {
 			ledger = (Tempo)globalInjector.getInjector().getInstance(Ledger.class);
 			ledger.start();
@@ -354,7 +354,7 @@ public class Radix extends Plugin
 		 * Middleware
 		 */
 		try {
-			RadixEngineAtomProcessor atomProcessor = globalInjector.getInjector().getInstance(RadixEngineAtomProcessor.class);
+			atomProcessor = globalInjector.getInjector().getInstance(RadixEngineAtomProcessor.class);
 			atomProcessor.start();
 		} catch (Exception e) {
 			throw new ModuleStartException("Failure setting up AtomProcessor", e, this);
@@ -370,7 +370,6 @@ public class Radix extends Plugin
 		 * Middleware
 		 */
 		try {
-			RadixEngineAtomProcessor atomProcessor = globalInjector.getInjector().getInstance(RadixEngineAtomProcessor.class);
 			atomProcessor.stop();
 		} catch (Exception e) {
 			throw new ModuleStopException("Failure turning off AtomProcessor", e, this);
