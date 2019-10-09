@@ -32,11 +32,11 @@ configurations {
 }
 
 jar {
-   dependsOn ':radixdlt-engine:jar'
+   dependsOn ':radix-engine-library:jar'
 }
 
 dependencies {
-    compile project(":radixdlt-engine")
+    compile project(":radix-engine-library")
     compile 'commons-cli:commons-cli:1.4'
     compile 'org.bouncycastle:bcprov-jdk15on:1.52'
     compile 'org.json:json:20180813'
