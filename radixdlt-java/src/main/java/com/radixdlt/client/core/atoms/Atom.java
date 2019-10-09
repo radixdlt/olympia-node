@@ -101,13 +101,18 @@ public final class Atom {
 
 	// TODO: refactor to utilize an AtomBuilder
 	public Atom addSignature(EUID signatureId, ECSignature signature) {
+		ImmutableMap.Builder<String, ECSignature> builder = ImmutableMap.builder();
+		signatures.forEach((id, sig) -> {
+			if (!id.equals(signatureId.toString())) {
+				builder.put(id, sig);
+			}
+		});
+		builder.put(signatureId.toString(), signature);
+
 		return new Atom(
 			this.particleGroups,
 			this.metaData,
-			ImmutableMap.<String, ECSignature>builder()
-				.putAll(this.signatures)
-				.put(signatureId.toString(), signature)
-				.build()
+			builder.build()
 		);
 	}
 
