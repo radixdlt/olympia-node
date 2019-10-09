@@ -99,7 +99,7 @@ public class ImmutableAtom {
 		this.metaData = ImmutableMap.of();
 	}
 
-	protected ImmutableAtom(List<ParticleGroup> particleGroups, Map<EUID, ECSignature> signatures, Map<String, String> metaData) {
+	public ImmutableAtom(List<ParticleGroup> particleGroups, Map<EUID, ECSignature> signatures, Map<String, String> metaData) {
 		Objects.requireNonNull(particleGroups, "particleGroups is required");
 		Objects.requireNonNull(signatures, "signatures is required");
 		Objects.requireNonNull(metaData, "metaData is required");

@@ -13,7 +13,7 @@ import java.util.Set;
  * An Atom ID, made up of 192 bits of truncated hash and 64 bits of a selected shard.
  * The Atom ID is used so that Atoms can be located using just their hid.
  */
-public final class AID {
+public final class AID implements Comparable<AID> {
 	public static final int BYTES = 32;
 	static final int HASH_BYTES = 24;
 	static final int SHARD_BYTES = 8;
@@ -182,6 +182,11 @@ public final class AID {
 		}
 
 		return new AID(Bytes.fromHexString(hexBytes));
+	}
+
+	@Override
+	public int compareTo(AID o) {
+		return lexicalComparator().compare(this, o);
 	}
 
 	private static final class LexicalComparatorHolder {

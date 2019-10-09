@@ -71,18 +71,18 @@ public class Serialization {
 
 		ImmutableMap.Builder<Output, JacksonCborMapper> dsonBuilder = ImmutableMap.builder();
 		for (Output e : availableOutputs) {
-			dsonBuilder.put(e, JacksonCborMapper.create(idLookup, filterProviderFor(policy.getIncludedFields(e))));
+			dsonBuilder.put(e, JacksonCborMapper.create(idLookup, filterProviderFor(policy.getIncludedFields(e)), true));
 		}
-		dsonBuilder.put(Output.NONE, JacksonCborMapper.create(idLookup, noneProvider));
-		dsonBuilder.put(Output.ALL, JacksonCborMapper.create(idLookup, allProvider));
+		dsonBuilder.put(Output.NONE, JacksonCborMapper.create(idLookup, noneProvider, true));
+		dsonBuilder.put(Output.ALL, JacksonCborMapper.create(idLookup, allProvider, true));
 		dsonMappers = dsonBuilder.build();
 
 		ImmutableMap.Builder<Output, JacksonJsonMapper> jsonBuilder = ImmutableMap.builder();
 		for (Output e : availableOutputs) {
-			jsonBuilder.put(e, JacksonJsonMapper.create(idLookup, filterProviderFor(policy.getIncludedFields(e))));
+			jsonBuilder.put(e, JacksonJsonMapper.create(idLookup, filterProviderFor(policy.getIncludedFields(e)), false));
 		}
-		jsonBuilder.put(Output.NONE, JacksonJsonMapper.create(idLookup, noneProvider));
-		jsonBuilder.put(Output.ALL, JacksonJsonMapper.create(idLookup, allProvider));
+		jsonBuilder.put(Output.NONE, JacksonJsonMapper.create(idLookup, noneProvider, false));
+		jsonBuilder.put(Output.ALL, JacksonJsonMapper.create(idLookup, allProvider, false));
 		jsonMappers = jsonBuilder.build();
 	}
 
