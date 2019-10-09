@@ -5,8 +5,11 @@ import com.radixdlt.common.AID;
 import com.radixdlt.ledger.LedgerCursor;
 import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerSearchMode;
+import com.radixdlt.ledger.exceptions.LedgerException;
 import com.radixdlt.middleware.RadixEngineUtils;
 import com.radixdlt.middleware.SimpleRadixEngineAtom;
+import com.radixdlt.tempo.store.AtomStoreResult;
+import com.radixdlt.tempo.store.TempoAtomStatus;
 import com.radixdlt.tempo.store.TempoAtomStore;
 import com.radixdlt.tempo.LegacyUtils;
 import com.radixdlt.tempo.TempoAtom;
@@ -43,6 +46,21 @@ public class LegacyAtomStoreAdapter implements TempoAtomStore {
 	}
 
 	@Override
+	public Set<AID> getPending() {
+		throw new UnsupportedOperationException("Not implemented");
+	}
+
+	@Override
+	public void commit(AID aid, long logicalClock) {
+		throw new UnsupportedOperationException("Not implemented");
+	}
+
+	@Override
+	public TempoAtomStatus getStatus(AID aid) {
+		throw new UnsupportedOperationException("Not implemented");
+	}
+
+	@Override
 	public boolean contains(AID aid) {
 		try {
 			return atomStoreSupplier.get().hasAtom(aid);
@@ -52,6 +70,10 @@ public class LegacyAtomStoreAdapter implements TempoAtomStore {
 	}
 
 	@Override
+	public Set<LedgerIndex> getUniqueIndices(AID aid) {
+		throw new UnsupportedOperationException("Not implemented");
+	}
+
 	public boolean contains(byte[] partialAid) {
 		try {
 			return atomStoreSupplier.get().contains(partialAid);
@@ -71,16 +93,6 @@ public class LegacyAtomStoreAdapter implements TempoAtomStore {
 		}
 	}
 
-	@Override
-	public Optional<AID> get(long clock) {
-		try {
-			return Optional.ofNullable(atomStoreSupplier.get().getAtom(clock).getAtomID());
-		} catch (DatabaseException e) {
-			throw new TempoException("Error while querying getAtom(" + clock + ")", e);
-		}
-	}
-
-	@Override
 	public List<AID> get(byte[] partialAid) {
 		try {
 			return atomStoreSupplier.get().get(partialAid);
@@ -90,40 +102,41 @@ public class LegacyAtomStoreAdapter implements TempoAtomStore {
 	}
 
 	@Override
-	public boolean store(TempoAtom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
+	public AtomStoreResult store(TempoAtom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
 		// TODO remove awful conversion
 		final SimpleRadixEngineAtom radixEngineAtom = convertToCMAtom(atom);
 
 		try {
-			return atomStoreSupplier.get().storeAtom(new PreparedAtom(radixEngineAtom, UInt384.ONE)).isCompleted();
+			if (atomStoreSupplier.get().storeAtom(new PreparedAtom(radixEngineAtom, UInt384.ONE)).isCompleted()) {
+				return AtomStoreResult.success();
+			} else {
+				// TODO awful error handling, but legacy store should be removed entirely soon
+				throw new LedgerException("Store failed");
+			}
 		} catch (IOException e) {
 			throw new TempoException("Error while storing atom " + atom.getAID(), e);
 		}
 	}
 
 	@Override
-	public boolean delete(AID aid) {
-		try {
-			return atomStoreSupplier.get().deleteAtom(aid).isCompleted();
-		} catch (DatabaseException e) {
-			throw new TempoException("Error while deleting " + aid, e);
-		}
-	}
-
-	@Override
-	public boolean replace(Set<AID> aids, TempoAtom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
+	public AtomStoreResult replace(Set<AID> aids, TempoAtom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
 		// TODO remove awful conversion
 		final SimpleRadixEngineAtom radixEngineAtom = convertToCMAtom(atom);
 
 		try {
-			return atomStoreSupplier.get().replaceAtom(aids, new PreparedAtom(radixEngineAtom, UInt384.ONE)).isCompleted();
+			if (atomStoreSupplier.get().replaceAtom(aids, new PreparedAtom(radixEngineAtom, UInt384.ONE)).isCompleted()) {
+				return AtomStoreResult.success();
+			} else {
+				// TODO awful error handling, but legacy store should be removed entirely soon
+				throw new LedgerException("Replace failed");
+			}
 		} catch (IOException e) {
 			throw new TempoException("Error while storing atom " + atom.getAID(), e);
 		}
 	}
 
 	@Override
-	public LedgerCursor search(LedgerCursor.LedgerIndexType type, LedgerIndex index, LedgerSearchMode mode) {
+	public LedgerCursor search(LedgerIndex.LedgerIndexType type, LedgerIndex index, LedgerSearchMode mode) {
 		try {
 			return atomStoreSupplier.get().search(type, index, mode);
 		} catch (DatabaseException e) {
@@ -132,7 +145,13 @@ public class LegacyAtomStoreAdapter implements TempoAtomStore {
 	}
 
 	@Override
-	public ImmutableList<AID> getNext(long logicalClockCursor, int limit) {
+	public boolean contains(LedgerIndex.LedgerIndexType type, LedgerIndex index, LedgerSearchMode mode) {
+		// TODO not very efficient but will be removed anyway soon
+		return search(type, index, mode) != null;
+	}
+
+	@Override
+	public ImmutableList<AID> getNextCommitted(long logicalClockCursor, int limit) {
 		try {
 			AtomDiscoveryRequest atomDiscoveryRequest = new AtomDiscoveryRequest(DiscoveryRequest.Action.DISCOVER);
 			atomDiscoveryRequest.setLimit((short) 64);
@@ -145,11 +164,6 @@ public class LegacyAtomStoreAdapter implements TempoAtomStore {
 		} catch (DiscoveryException e) {
 			throw new TempoException("Error while advancing cursor", e);
 		}
-	}
-
-	@Override
-	public void open() {
-		// not implemented here as is already done in legacy TempoAtomStore directly
 	}
 
 	@Override

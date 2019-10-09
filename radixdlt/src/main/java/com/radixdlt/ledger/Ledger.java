@@ -3,26 +3,23 @@ package com.radixdlt.ledger;
 import com.radixdlt.Atom;
 import com.radixdlt.common.AID;
 import com.radixdlt.ledger.exceptions.LedgerException;
-import com.radixdlt.ledger.exceptions.LedgerKeyConstraintException;
+import com.radixdlt.ledger.exceptions.LedgerIndexConflictException;
 
-import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Future;
 
 /**
  * An instance of a ledger which may be synchronised across a set of nodes.
  */
 public interface Ledger {
 	/**
-	 * Receives a new atom, blocking until an atom becomes available.
+	 * Observes this ledger, blocking until an observations becomes available.
 	 *
-	 * @return The received atom
+	 * @return The ledger observation
 	 *
 	 * @throws LedgerException in case of internal errors
 	 */
-	Atom receive() throws InterruptedException;
+	LedgerObservation observe() throws InterruptedException;
 
 	/**
 	 * Gets the atom associated with a certain {@link AID}.
@@ -40,35 +37,24 @@ public interface Ledger {
 	 * @param atom The atom
 	 * @param uniqueIndices The unique indices
 	 * @param duplicateIndices The duplicate indices
-	 * @return Whether the {@link Atom} was stored
 	 *
-	 * @throws LedgerKeyConstraintException if unique key constraints were violated
+	 * @throws LedgerIndexConflictException if the unique indices conflict with existing indices
 	 * @throws LedgerException in case of internal errors
 	 */
-	boolean store(Atom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices);
+	void store(Atom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices);
 
 	/**
-	 * Deletes the atom associated with a certain {@link AID}.
+	 * Replaces a set of atoms with another atom in an atomic operation.
 	 *
-	 * @param aid The {@link AID}
-	 * @return Whether the {@link AID} was deleted
-	 *
-	 * @throws LedgerException in case of internal errors
-	 */
-	boolean delete(AID aid);
-
-	/**
-	 * Replaces a set of atoms with another atom in an atomic operation
 	 * @param aids The aids to delete
 	 * @param atom The new atom
 	 * @param uniqueIndices The unique indices of that atom
 	 * @param duplicateIndices The duplicate indices of that atom
-	 * @return Whether all {@link AID}s were successfully deleted
 	 *
-	 * @throws LedgerKeyConstraintException if unique key constraints were violated
+	 * @throws LedgerIndexConflictException if the unique indices conflict with existing indices
 	 * @throws LedgerException in case of internal errors
 	 */
-	boolean replace(Set<AID> aids, Atom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices);
+	void replace(Set<AID> aids, Atom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices);
 
 	/**
 	 * Searches for a certain index.
@@ -80,16 +66,17 @@ public interface Ledger {
 	 *
 	 * @throws LedgerException in case of internal errors
 	 */
-	LedgerCursor search(LedgerCursor.LedgerIndexType type, LedgerIndex index, LedgerSearchMode mode);
+	LedgerCursor search(LedgerIndex.LedgerIndexType type, LedgerIndex index, LedgerSearchMode mode);
 
 	/**
-	 * Resolves a conflict between an atom and non-empty set of conflicting atoms.
+	 * Checks whether a certain index is contained in this ledger.
 	 *
-	 * @param atom The atom
-	 * @param conflictingAtoms The non-empty set of conflicting atoms
-	 * @return a {@link Future} yielding the winning atom
+	 * @param type The type of index
+	 * @param index The index
+	 * @param mode The mode
+	 * @return The resulting ledger cursor
 	 *
 	 * @throws LedgerException in case of internal errors
 	 */
-	CompletableFuture<Atom> resolve(Atom atom, Collection<Atom> conflictingAtoms);
+	boolean contains(LedgerIndex.LedgerIndexType type, LedgerIndex index, LedgerSearchMode mode);
 }

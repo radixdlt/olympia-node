@@ -5,10 +5,9 @@ import java.lang.reflect.Modifier;
 import java.security.SecureRandom;
 import java.security.Security;
 
-import com.radixdlt.mock.MockAccessor;
-import com.radixdlt.mock.MockApplication;
+import com.radixdlt.ledger.Ledger;
+import com.radixdlt.middleware2.processing.RadixEngineAtomProcessor;
 import com.radixdlt.tempo.Tempo;
-import com.radixdlt.tempo.TempoFactory;
 import org.apache.commons.cli.CommandLine;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.json.JSONObject;
@@ -25,6 +24,7 @@ import org.radix.modules.Modules;
 import org.radix.modules.Plugin;
 import org.radix.modules.exceptions.ModuleException;
 import org.radix.modules.exceptions.ModuleStartException;
+import org.radix.modules.exceptions.ModuleStopException;
 import org.radix.network.Interfaces;
 import org.radix.network.discovery.BootstrapDiscovery;
 import org.radix.network2.addressbook.AddressBook;
@@ -62,6 +62,9 @@ public class Radix extends Plugin
 	public static final int 	MAJOR_AGENT_VERSION 	= 2709999;
 	public static final int 	REFUSE_AGENT_VERSION 	= 2709999;
 	public static final String 	AGENT 					= "/Radix:/"+AGENT_VERSION;
+
+	private RadixEngineAtomProcessor atomProcessor;
+	private Tempo ledger;
 
 	/**
 	 * @param args
@@ -134,8 +137,8 @@ public class Radix extends Plugin
 				jarPath = jarPath.substring(0, jarPath.lastIndexOf("/"));
 			java.lang.System.setProperty("radix.jar.path", jarPath);
 
-			log.info("Execution file: "+java.lang.System.getProperty("radix.jar"));
-			log.info("Execution path: "+java.lang.System.getProperty("radix.jar.path"));
+			log.debug("Execution file: "+java.lang.System.getProperty("radix.jar"));
+			log.debug("Execution path: "+java.lang.System.getProperty("radix.jar.path"));
 		}
 		catch (Exception ex)
 		{
@@ -262,15 +265,6 @@ public class Radix extends Plugin
 			throw new ModuleStartException("Failure setting up Routing", ex, this);
 		}
 
-		if (Modules.get(RuntimeProperties.class).get("tempo2", false)) {
-			Tempo tempo = new TempoFactory().createDefault(Modules.get(RuntimeProperties.class));
-			Modules.getInstance().start(tempo);
-
-			MockApplication mockApplication = new MockApplication(tempo);
-			mockApplication.startInstance();
-			Modules.put(MockAccessor.class, mockApplication.getAccessor());
-		}
-
 		/*
 		 * ATOMS
 		 */
@@ -315,6 +309,23 @@ public class Radix extends Plugin
 		}
 
 		/*
+		 * Eventually modules should be created using Google Guice injector
+		 */
+		GlobalInjector globalInjector = new GlobalInjector();
+
+		/**
+		 * TEMPO
+		 */
+		if (Modules.get(RuntimeProperties.class).get("tempo2", false)) {
+			ledger = (Tempo)globalInjector.getInjector().getInstance(Ledger.class);
+			ledger.start();
+
+//			MockApplication mockApplication = new MockApplication(tempo);
+//			mockApplication.startInstance();
+//			Modules.put(MockAccessor.class, mockApplication.getAccessor());
+		}
+
+		/*
 		 * CP
 		 */
 		try
@@ -331,7 +342,7 @@ public class Radix extends Plugin
 		 */
 		try
 		{
-			Modules.getInstance().start(new API());
+			Modules.getInstance().start(new API(ledger));
 		}
 		catch (Exception ex)
 		{
@@ -341,11 +352,31 @@ public class Radix extends Plugin
 		// START UP ALL SERVICES //
 		Modules.getInstance().start();
 
+		/*
+		 * Middleware
+		 */
+		try {
+			atomProcessor = globalInjector.getInjector().getInstance(RadixEngineAtomProcessor.class);
+			atomProcessor.start();
+		} catch (Exception e) {
+			throw new ModuleStartException("Failure setting up AtomProcessor", e, this);
+		}
+
 		log.info("Node '"+LocalSystem.getInstance().getNID()+"' started successfully");
 	}
 
 	@Override
-	public void stop_impl() throws ModuleException { }
+	public void stop_impl() throws ModuleException {
+
+		/*
+		 * Middleware
+		 */
+		try {
+			atomProcessor.stop();
+		} catch (Exception e) {
+			throw new ModuleStopException("Failure turning off AtomProcessor", e, this);
+		}
+	}
 
 	private MessageCentral createMessageCentral(RuntimeProperties properties) {
 		return new MessageCentralFactory().createDefault(properties);

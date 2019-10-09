@@ -2,6 +2,7 @@ package com.radixdlt.tempo.delivery;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.radixdlt.common.AID;
@@ -18,10 +19,8 @@ import org.radix.network2.addressbook.Peer;
 import org.radix.network2.messaging.MessageCentral;
 import org.radix.utils.SimpleThreadPool;
 
-import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -31,10 +30,11 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 @Singleton
-public final class LazyRequestDeliverer implements Resource, AtomDeliverer, RequestDeliverer {
+public final class LazyRequestDeliverer implements Resource, RequestDeliverer {
 	private static final Logger log = Logging.getLogger("deliverer.request");
 
 	private static final int DEFAULT_REQUEST_QUEUE_CAPACITY = 8192;
@@ -44,12 +44,11 @@ public final class LazyRequestDeliverer implements Resource, AtomDeliverer, Requ
 	private final int requestTimeoutSeconds;
 
 	@VisibleForTesting
-	final RequestDeliveryState deliveryState = new RequestDeliveryState();
+	final PendingDeliveryState pendingDeliveries = new PendingDeliveryState();
 
 	private final Scheduler scheduler;
 	private final MessageCentral messageCentral;
 	private final TempoAtomStoreView storeView;
-	private final Collection<AtomDeliveryListener> deliveryListeners;
 
 	private final BlockingQueue<AtomDeliveryRequest> requestQueue;
 	private final SimpleThreadPool<AtomDeliveryRequest> requestThreadPool;
@@ -64,9 +63,6 @@ public final class LazyRequestDeliverer implements Resource, AtomDeliverer, Requ
 		this.scheduler = Objects.requireNonNull(scheduler);
 		this.messageCentral = Objects.requireNonNull(messageCentral);
 		this.storeView = Objects.requireNonNull(storeView);
-
-		// TODO improve locking to something like in messaging
-		this.deliveryListeners = Collections.synchronizedList(new ArrayList<>());
 
 		this.requestTimeoutSeconds = configuration.requestTimeoutSeconds(DEFAULT_REQUEST_TIMEOUT_SECONDS);
 
@@ -99,35 +95,41 @@ public final class LazyRequestDeliverer implements Resource, AtomDeliverer, Requ
 	}
 
 	private void onResponse(Peer peer, DeliveryResponseMessage message) {
+		if (log.hasLevel(Logging.DEBUG)) {
+			log.debug("Received delivery of '" + message.getAtom().getAID() + "' from " + peer);
+		}
 		TempoAtom atom = message.getAtom();
-		deliveryState.removeRequest(atom.getAID());
-		notifyListeners(peer, atom);
+		pendingDeliveries.complete(atom.getAID(), DeliveryResult.success(atom, peer));
 	}
 
 	@Override
-	public void tryDeliver(Collection<AID> aids, Peer peer) {
+	public Map<AID, CompletableFuture<DeliveryResult>> deliver(Set<AID> aids, Set<Peer> peers) {
 		// early out if there is nothing to do
 		if (aids.isEmpty()) {
-			return;
+			return ImmutableMap.of();
+		}
+		if (peers.isEmpty()) {
+			throw new IllegalArgumentException("peers cannot be empty");
 		}
 
-		ImmutableList<AID> missingAids = aids.stream()
-			.filter(aid -> !storeView.contains(aid))
-			.collect(ImmutableList.toImmutableList());
-		// if we already have all requested aids, just bail
-		if (missingAids.isEmpty()) {
-			return;
-		}
-
-		ImmutableList.Builder<AID> unrequestedAids = ImmutableList.builder();
-		for (AID aid : missingAids) {
-			if (deliveryState.isPending(aid)) {
-				deliveryState.addFallback(aid, peer);
+		final ImmutableMap.Builder<AID, CompletableFuture<DeliveryResult>> result = ImmutableMap.builder();
+		final List<AID> unrequestedAids = new ArrayList<>();
+		Peer primaryPeer = peers.iterator().next();
+		for (AID aid : aids) {
+			if (storeView.contains(aid)) {
+				result.put(aid, CompletableFuture.completedFuture(DeliveryResult.alreadyStored()));
 			} else {
-				unrequestedAids.add(aid);
+				CompletableFuture<DeliveryResult> future = new CompletableFuture<>();
+				// if this is the first peer added for that aid, we need to request it
+				if (pendingDeliveries.add(aid, primaryPeer, peers, future)) {
+					unrequestedAids.add(aid);
+				}
+				result.put(aid, future);
 			}
 		}
-		requestDelivery(unrequestedAids.build(), peer);
+		requestDelivery(unrequestedAids, primaryPeer);
+
+		return result.build();
 	}
 
 	private void requestDelivery(Collection<AID> aids, Peer peer) {
@@ -135,18 +137,17 @@ public final class LazyRequestDeliverer implements Resource, AtomDeliverer, Requ
 		if (aids.isEmpty()) {
 			return;
 		}
-
 		if (log.hasLevel(Logging.DEBUG)) {
 			log.debug("Requesting delivery of " + aids.size() + " aids from " + peer);
 		}
+
 		DeliveryRequestMessage request = new DeliveryRequestMessage(aids);
-		deliveryState.addRequest(aids, peer.getNID());
 		messageCentral.send(peer, request);
 
 		// TODO aggregate cancellables and cancel on stop
 		scheduler.schedule(() -> {
 			ImmutableList<AID> missingAids = aids.stream()
-				.filter(deliveryState::isPending)
+				.filter(pendingDeliveries::isPending)
 				.collect(ImmutableList.toImmutableList());
 			if (!missingAids.isEmpty()) {
 				handleFailedDelivery(missingAids, peer);
@@ -157,53 +158,30 @@ public final class LazyRequestDeliverer implements Resource, AtomDeliverer, Requ
 
 	private void handleFailedDelivery(Collection<AID> missingAids, Peer peer) {
 		if (log.hasLevel(Logging.DEBUG)) {
-			log.debug("Delivery of " + missingAids.size() + " aids from peer " + peer + " failed, attempting retry");
+			log.debug("Delivery of " + missingAids.size() + " aids from primary peer " + peer + " failed, attempting retry with fallback peers");
 		}
 
 		// get fallback peers and aggregate all aids that can be requested from a peer
 		Map<EUID, Set<AID>> retriesByNid = new HashMap<>();
 		Map<EUID, Peer> peersByNid = new HashMap<>();
-		List<AID> undeliverableAids = new ArrayList<>();
 		for (AID missingAid : missingAids) {
-			Optional<Peer> fallback = deliveryState.getFallback(missingAid);
-			if (fallback.isPresent()) {
-				Peer fallbackPeer = fallback.get();
+			Peer fallbackPeer = pendingDeliveries.popFallback(missingAid);
+			if (fallbackPeer != null) {
 				EUID fallbackPeerNid = fallbackPeer.getNID();
 				peersByNid.putIfAbsent(fallbackPeerNid, fallbackPeer);
 				retriesByNid.computeIfAbsent(fallbackPeerNid, x -> new HashSet<>()).add(missingAid);
 			} else {
-				undeliverableAids.add(missingAid);
+				log.warn("Delivery of " + missingAid + " is currently impossible, no fallback peers are available");
+				pendingDeliveries.complete(missingAid, DeliveryResult.failed());
 			}
 		}
 
 		retriesByNid.forEach((nid, aids) -> requestDelivery(aids, peersByNid.get(nid)));
-		if (!undeliverableAids.isEmpty()) {
-			log.warn("Delivery of " + undeliverableAids.size() + " is currently impossible, no peers available");
-		}
-	}
-
-	@Override
-	public void addListener(AtomDeliveryListener listener) {
-		deliveryListeners.add(listener);
-	}
-
-	@Override
-	public void removeListener(AtomDeliveryListener listener) {
-		deliveryListeners.remove(listener);
-	}
-
-	private void notifyListeners(Peer peer, TempoAtom atom) {
-		deliveryListeners.forEach(listener -> listener.accept(atom, peer));
 	}
 
 	@Override
 	public void reset() {
-		deliveryState.reset();
-	}
-
-	@Override
-	public void open() {
-		// nothing to do here
+		pendingDeliveries.reset();
 	}
 
 	@Override

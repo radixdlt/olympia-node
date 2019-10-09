@@ -1,26 +1,30 @@
 package com.radixdlt.tempo.consensus;
 
 import com.google.common.collect.ImmutableList;
+import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.radixdlt.common.EUID;
 import com.radixdlt.tempo.TempoAtom;
+import org.radix.network2.addressbook.Peer;
 
-import java.util.Collection;
 import java.util.List;
+import java.util.stream.Stream;
 
-public final class SimpleSampleSelector implements SampleSelector {
+public final class SimpleSampleNodeSelector implements SampleNodeSelector {
 	private final EUID self;
 
-	public SimpleSampleSelector(
+	@Inject
+	public SimpleSampleNodeSelector(
 		@Named("self") EUID self
 	) {
 		this.self = self;
 	}
 
 	@Override
-	public List<EUID> selectSamples(Collection<EUID> nodes, TempoAtom atom) {
-		return nodes.stream()
-			.filter(nid -> !nid.equals(self))
+	public List<Peer> selectNodes(Stream<Peer> peers, TempoAtom atom, int limit) {
+		return peers
+			.filter(Peer::hasSystem)
+			.limit(limit)
 			.collect(ImmutableList.toImmutableList());
 	}
 }

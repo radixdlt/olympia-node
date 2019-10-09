@@ -35,10 +35,6 @@ final class MockAtom implements Atom {
 	@DsonOutput(value = {DsonOutput.Output.ALL})
 	private AID aid;
 
-	@JsonProperty("timestamp")
-	@DsonOutput(value = {DsonOutput.Output.ALL})
-	private long timestamp;
-
 	@JsonProperty("shards")
 	@DsonOutput(value = {DsonOutput.Output.ALL})
 	private ImmutableSet<Long> shards;
@@ -53,7 +49,6 @@ final class MockAtom implements Atom {
 			.map(LedgerIndex::asKey)
 			.map(Longs::fromByteArray)
 			.collect(ImmutableSet.toImmutableSet());
-		this.timestamp = Time.currentTimestamp();
 		this.aid = doGetAID();
 	}
 
@@ -65,11 +60,6 @@ final class MockAtom implements Atom {
 	@Override
 	public ImmutableSet<Long> getShards() {
 		return this.shards;
-	}
-
-	@Override
-	public long getTimestamp() {
-		return this.timestamp;
 	}
 
 	private AID doGetAID() {

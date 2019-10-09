@@ -25,7 +25,7 @@ import java.util.Optional;
 
 @Singleton
 public final class BerkeleyLCCursorStore implements Resource, LCCursorStore {
-	private static final String ITERATIVE_CURSORS_DB_NAME = "tempo2.sync.iterative.cursors";
+	private static final String LC_CURSOR_STORE_NAME = "tempo2.sync.iterative.cursors";
 	private static final Logger logger = Logging.getLogger("store.cursors");
 
 	private final DatabaseEnvironment dbEnv;
@@ -34,6 +34,8 @@ public final class BerkeleyLCCursorStore implements Resource, LCCursorStore {
 	@Inject
 	public BerkeleyLCCursorStore(DatabaseEnvironment dbEnv) {
 		this.dbEnv = Objects.requireNonNull(dbEnv, "dbEnv is required");
+
+		this.open();
 	}
 
 	private void fail(String message) {
@@ -46,15 +48,14 @@ public final class BerkeleyLCCursorStore implements Resource, LCCursorStore {
 		throw new TempoException(message, cause);
 	}
 
-	@Override
-	public void open() {
+	private void open() {
 		DatabaseConfig primaryConfig = new DatabaseConfig();
 		primaryConfig.setAllowCreate(true);
 		primaryConfig.setTransactional(true);
 
 		try {
 			Environment dbEnv = this.dbEnv.getEnvironment();
-			this.cursors = dbEnv.openDatabase(null, ITERATIVE_CURSORS_DB_NAME, primaryConfig);
+			this.cursors = dbEnv.openDatabase(null, LC_CURSOR_STORE_NAME, primaryConfig);
 		} catch (Exception e) {
 			throw new TempoException("Error while opening database", e);
 		}
@@ -72,7 +73,7 @@ public final class BerkeleyLCCursorStore implements Resource, LCCursorStore {
 
 			Environment env = this.dbEnv.getEnvironment();
 			transaction = env.beginTransaction(null, new TransactionConfig().setReadUncommitted(true));
-			env.truncateDatabase(transaction, ITERATIVE_CURSORS_DB_NAME, false);
+			env.truncateDatabase(transaction, LC_CURSOR_STORE_NAME, false);
 			transaction.commit();
 		} catch (DatabaseNotFoundException e) {
 			if (transaction != null) {
@@ -139,16 +140,5 @@ public final class BerkeleyLCCursorStore implements Resource, LCCursorStore {
 
 	private byte[] toPKey(EUID nid) {
 		return nid.toByteArray();
-	}
-
-	public enum CursorType {
-		DISCOVERY((byte) 0),
-		LAG((byte) 1);
-
-		private final byte prefix;
-
-		CursorType(byte prefix) {
-			this.prefix = prefix;
-		}
 	}
 }

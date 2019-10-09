@@ -2,26 +2,28 @@ package com.radixdlt.tempo.store.legacy;
 
 import com.radixdlt.common.AID;
 import com.radixdlt.ledger.LedgerCursor;
+import com.radixdlt.ledger.LedgerIndex;
 import org.bouncycastle.util.Arrays;
 import org.radix.atoms.AtomStore;
+import org.radix.database.exceptions.DatabaseException;
 import org.radix.modules.Modules;
 
-import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Objects;
 
 public class LegacyCursor implements LedgerCursor {
-	private LedgerIndexType type;
+	private LedgerIndex.LedgerIndexType type;
 	private byte[] primary;
 	private byte[] index;
 
-	public LegacyCursor(LedgerIndexType type, byte[] primary, byte[] index) {
+	public LegacyCursor(LedgerIndex.LedgerIndexType type, byte[] primary, byte[] index) {
 		this.type = type;
 		this.primary = Arrays.clone(Objects.requireNonNull(primary));
 		this.index = Arrays.clone(Objects.requireNonNull(index));
 	}
 
 	@Override
-	public LedgerIndexType getType() {
+	public LedgerIndex.LedgerIndexType getType() {
 		return this.type;
 	}
 
@@ -39,22 +41,38 @@ public class LegacyCursor implements LedgerCursor {
 	}
 
 	@Override
-	public LedgerCursor next() throws IOException {
-		return Modules.get(AtomStore.class).getNext(this);
+	public LedgerCursor next() {
+		try {
+			return Modules.get(AtomStore.class).getNext(this);
+		} catch (DatabaseException e) {
+			throw new UncheckedIOException(e);
+		}
 	}
 
 	@Override
-	public LedgerCursor previous() throws IOException {
-		return Modules.get(AtomStore.class).getPrev(this);
+	public LedgerCursor previous() {
+		try {
+			return Modules.get(AtomStore.class).getPrev(this);
+		} catch (DatabaseException e) {
+			throw new UncheckedIOException(e);
+		}
 	}
 
 	@Override
-	public LedgerCursor first() throws IOException {
-		return Modules.get(AtomStore.class).getFirst(this);
+	public LedgerCursor first() {
+		try {
+			return Modules.get(AtomStore.class).getFirst(this);
+		} catch (DatabaseException e) {
+			throw new UncheckedIOException(e);
+		}
 	}
 
 	@Override
-	public LedgerCursor last() throws IOException {
-		return Modules.get(AtomStore.class).getLast(this);
+	public LedgerCursor last() {
+		try {
+			return Modules.get(AtomStore.class).getLast(this);
+		} catch (DatabaseException e) {
+			throw new UncheckedIOException(e);
+		}
 	}
 }

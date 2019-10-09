@@ -2,21 +2,21 @@ package com.radixdlt.tempo.store.berkeley;
 
 import com.radixdlt.common.AID;
 import com.radixdlt.ledger.LedgerCursor;
+import com.radixdlt.ledger.LedgerIndex;
 import org.bouncycastle.util.Arrays;
 
-import java.io.IOException;
 import java.util.Objects;
 
 /**
  * A Tempo implementation of a {@link LedgerCursor}
  */
 public class BerkeleyCursor implements LedgerCursor {
-	private final LedgerIndexType type;
+	private final LedgerIndex.LedgerIndexType type;
 	private final byte[] primary;
 	private final byte[] index;
 	private final BerkeleyTempoAtomStore store;
 
-	BerkeleyCursor(BerkeleyTempoAtomStore store, LedgerIndexType type, byte[] primary, byte[] index) {
+	BerkeleyCursor(BerkeleyTempoAtomStore store, LedgerIndex.LedgerIndexType type, byte[] primary, byte[] index) {
 		this.type = type;
 		this.primary = Arrays.clone(Objects.requireNonNull(primary));
 		this.index = Arrays.clone(Objects.requireNonNull(index));
@@ -24,7 +24,7 @@ public class BerkeleyCursor implements LedgerCursor {
 	}
 
 	@Override
-	public LedgerIndexType getType() {
+	public LedgerIndex.LedgerIndexType getType() {
 		return this.type;
 	}
 
@@ -38,26 +38,26 @@ public class BerkeleyCursor implements LedgerCursor {
 
 	@Override
 	public AID get() {
-		return AID.from(this.primary, Long.BYTES);
+		return AID.from(this.primary, Long.BYTES + 1);
 	}
 
 	@Override
-	public LedgerCursor next() throws IOException {
+	public LedgerCursor next() {
 		return this.store.getNext(this);
 	}
 
 	@Override
-	public LedgerCursor previous() throws IOException {
+	public LedgerCursor previous() {
 		return this.store.getPrev(this);
 	}
 
 	@Override
-	public LedgerCursor first() throws IOException {
+	public LedgerCursor first() {
 		return this.store.getFirst(this);
 	}
 
 	@Override
-	public LedgerCursor last() throws IOException {
+	public LedgerCursor last() {
 		return this.store.getLast(this);
 	}
 }

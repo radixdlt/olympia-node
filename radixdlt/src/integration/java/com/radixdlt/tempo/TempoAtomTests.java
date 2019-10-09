@@ -27,9 +27,9 @@ public class TempoAtomTests extends RadixTestWithStores
 	{
 		ECKeyPair identity = new ECKeyPair();
 
-		List<Atom> atoms = atomGenerator.createAtoms(identity, 1);
+		List<TempoAtom> atoms = atomGenerator.createAtoms(identity, 1);
 		Tempo tempo = Modules.get(Tempo.class);
-		Assert.assertTrue(tempo.store(atoms.get(0), ImmutableSet.of(), ImmutableSet.of()));
+		tempo.store(atoms.get(0), ImmutableSet.of(), ImmutableSet.of());
 		Atom actual = tempo.get(atoms.get(0).getAID()).get();
 		Assert.assertEquals(atoms.get(0), actual);
 
@@ -41,26 +41,9 @@ public class TempoAtomTests extends RadixTestWithStores
 	{
 		ECKeyPair identity = new ECKeyPair();
 
-		List<Atom> atoms = atomGenerator.createAtoms(identity, 1);
-		Assert.assertTrue(Modules.get(Tempo.class).store(atoms.get(0), ImmutableSet.of(), ImmutableSet.of()));
-		Assert.assertFalse(Modules.get(Tempo.class).store(atoms.get(0), ImmutableSet.of(), ImmutableSet.of()));
-	}
-
-	@Test
-	public void store_atom__delete_atom__attempt_get() throws Exception
-	{
-		ECKeyPair identity = new ECKeyPair();
-
-		List<Atom> atoms = atomGenerator.createAtoms(identity, 1);
-		Assert.assertTrue(Modules.get(Tempo.class).store(atoms.get(0), ImmutableSet.of(), ImmutableSet.of()));
-		Assert.assertEquals(atoms.get(0), Modules.get(Tempo.class).get(atoms.get(0).getAID()).get());
-
-		boolean deleted = Modules.get(Tempo.class).delete(atoms.get(0).getAID());
-		Assert.assertTrue(deleted);
-
-		Assert.assertFalse("Deleted atom is no longer present", Modules.get(Tempo.class).get(atoms.get(0).getAID()).isPresent());
-
-		// TODO should check LocalSystem clocks once implemented
+		List<TempoAtom> atoms = atomGenerator.createAtoms(identity, 1);
+		Modules.get(Tempo.class).store(atoms.get(0), ImmutableSet.of(), ImmutableSet.of());
+		Modules.get(Tempo.class).store(atoms.get(0), ImmutableSet.of(), ImmutableSet.of());
 	}
 
 	@Test
@@ -68,12 +51,11 @@ public class TempoAtomTests extends RadixTestWithStores
 	{
 		ECKeyPair identity = new ECKeyPair();
 
-		List<Atom> atoms = atomGenerator.createAtoms(identity, 2);
-		Assert.assertTrue(Modules.get(Tempo.class).store(atoms.get(0), ImmutableSet.of(), ImmutableSet.of()));
+		List<TempoAtom> atoms = atomGenerator.createAtoms(identity, 2);
+		Modules.get(Tempo.class).store(atoms.get(0), ImmutableSet.of(), ImmutableSet.of());
 		Assert.assertEquals(atoms.get(0), Modules.get(Tempo.class).get(atoms.get(0).getAID()).get());
 
-		boolean deleted = Modules.get(Tempo.class).replace(ImmutableSet.of(atoms.get(0).getAID()), atoms.get(1), ImmutableSet.of(), ImmutableSet.of());
-		Assert.assertTrue(deleted);
+		Modules.get(Tempo.class).replace(ImmutableSet.of(atoms.get(0).getAID()), atoms.get(1), ImmutableSet.of(), ImmutableSet.of());
 
 		Assert.assertTrue("New atom is present", Modules.get(Tempo.class).get(atoms.get(1).getAID()).isPresent());
 		Assert.assertFalse("Replaced atom is no longer present", Modules.get(Tempo.class).get(atoms.get(0).getAID()).isPresent());

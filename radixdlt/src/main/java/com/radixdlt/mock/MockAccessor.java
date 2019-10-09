@@ -21,8 +21,8 @@ public final class MockAccessor {
 		this.mockApplication = mockApplication;
 	}
 
-	public void spawn(int atomCount) {
-		logger.info("Spamming " + atomCount + " random mock atoms");
+	public void inject(int atomCount) {
+		logger.info("Injecting " + atomCount + " random mock atoms");
 		for (int i = 0; i < atomCount; i++) {
 			// generate random key / value
 			byte[] keyBytes = new byte[9];
@@ -34,12 +34,12 @@ public final class MockAccessor {
 
 			LedgerIndex key = new LedgerIndex(keyBytes);
 			MockAtom atom = new MockAtom(new MockAtomContent(key, valueBytes));
-			mockApplication.queue(atom);
+			mockApplication.inject(atom);
 		}
 	}
 
-	public void spawnWithKey(long key, int atomCount) {
-		logger.info("Spamming " + atomCount + " mock atoms with key " + key);
+	public void inject(long key, int atomCount) {
+		logger.info("Injecting " + atomCount + " mock atoms with key " + key);
 		for (int i = 0; i < atomCount; i++) {
 			// generate random key / value
 			byte[] valueBytes = Ints.toByteArray(i);
@@ -47,7 +47,7 @@ public final class MockAccessor {
 
 			LedgerIndex keyIndex = new LedgerIndex(MockAtomContent.GENERIC_KEY_PREFIX, Longs.toByteArray(key));
 			MockAtom atom = new MockAtom(new MockAtomContent(keyIndex, valueBytes));
-			mockApplication.queue(atom);
+			mockApplication.inject(atom);
 		}
 	}
 }

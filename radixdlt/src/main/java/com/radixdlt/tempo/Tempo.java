@@ -1,7 +1,7 @@
 package com.radixdlt.tempo;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.radixdlt.Atom;
@@ -10,95 +10,90 @@ import com.radixdlt.common.EUID;
 import com.radixdlt.engine.AtomStatus;
 import com.radixdlt.ledger.Ledger;
 import com.radixdlt.ledger.LedgerCursor;
-import com.radixdlt.ledger.LedgerCursor.LedgerIndexType;
 import com.radixdlt.ledger.LedgerIndex;
+import com.radixdlt.ledger.LedgerIndex.LedgerIndexType;
+import com.radixdlt.ledger.LedgerObservation;
 import com.radixdlt.ledger.LedgerSearchMode;
-import com.radixdlt.tempo.delivery.AtomDeliverer;
+import com.radixdlt.ledger.exceptions.AtomAlreadyExistsException;
+import com.radixdlt.ledger.exceptions.LedgerIndexConflictException;
+import com.radixdlt.tempo.consensus.Consensus;
+import com.radixdlt.tempo.consensus.ConsensusAction;
 import com.radixdlt.tempo.delivery.RequestDeliverer;
 import com.radixdlt.tempo.discovery.AtomDiscoverer;
+import com.radixdlt.tempo.store.AtomConflict;
+import com.radixdlt.tempo.store.AtomStoreResult;
 import com.radixdlt.tempo.store.CommitmentStore;
 import com.radixdlt.tempo.store.TempoAtomStore;
 import com.radixdlt.tempo.store.TempoAtomStoreView;
-import org.radix.database.DatabaseEnvironment;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.modules.Module;
 import org.radix.modules.Modules;
-import org.radix.modules.Plugin;
-import org.radix.time.TemporalProof;
-import org.radix.time.TemporalVertex;
+import org.radix.network2.addressbook.Peer;
+import org.radix.utils.SimpleThreadPool;
 
-import java.util.Collection;
-import java.util.List;
+import java.io.Closeable;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.stream.Collectors;
 
 /**
  * The Tempo implementation of a ledger.
  */
-public final class Tempo extends Plugin implements Ledger {
+public final class Tempo implements Ledger, Closeable {
 	private static final Logger log = Logging.getLogger("tempo");
 	private static final int INBOUND_QUEUE_CAPACITY = 16384;
 
 	private final EUID self;
 	private final TempoAtomStore atomStore;
 	private final CommitmentStore commitmentStore;
-
-	private final EdgeSelector edgeSelector;
+	private final Consensus consensus;
 	private final Attestor attestor;
-
-	private final BlockingQueue<TempoAtom> inboundAtoms;
 
 	private final Set<Resource> ownedResources;
 	private final Set<AtomDiscoverer> atomDiscoverers;
-	private final Set<AtomDeliverer> atomDeliverers;
 	private final RequestDeliverer requestDeliverer;
-	private final Set<AtomAcceptor> acceptors;
+	private final Set<AtomObserver> observers; // TODO external ledgerObservations and internal observers is ambiguous
+
+	private final BlockingQueue<LedgerObservation> ledgerObservations;
+	private final SimpleThreadPool<ConsensusAction> consensusProcessor;
 
 	@Inject
 	public Tempo(
 		@Named("self") EUID self,
-	    TempoAtomStore atomStore,
-	    CommitmentStore commitmentStore,
-	    EdgeSelector edgeSelector,
-	    Attestor attestor,
-	    @Owned Set<Resource> ownedResources,
-	    Set<AtomDiscoverer> atomDiscoverers,
-	    Set<AtomDeliverer> atomDeliverers,
-	    RequestDeliverer requestDeliverer,
-	    Set<AtomAcceptor> acceptors
+		TempoAtomStore atomStore,
+		CommitmentStore commitmentStore,
+		Consensus consensus,
+		Attestor attestor,
+		@Owned Set<Resource> ownedResources,
+		Set<AtomDiscoverer> atomDiscoverers,
+		RequestDeliverer requestDeliverer,
+		Set<AtomObserver> observers
 	) {
-		this.self = self;
-		this.atomStore = atomStore;
-		this.commitmentStore = commitmentStore;
-		this.ownedResources = ownedResources;
-		this.edgeSelector = edgeSelector;
-		this.attestor = attestor;
-		this.atomDiscoverers = atomDiscoverers;
-		this.atomDeliverers = atomDeliverers;
-		this.requestDeliverer = requestDeliverer;
-		this.acceptors = acceptors;
+		this.self = Objects.requireNonNull(self);
+		this.atomStore = Objects.requireNonNull(atomStore);
+		this.commitmentStore = Objects.requireNonNull(commitmentStore);
+		this.consensus = Objects.requireNonNull(consensus);
+		this.attestor = Objects.requireNonNull(attestor);
+		this.ownedResources = Objects.requireNonNull(ownedResources);
+		this.atomDiscoverers = Objects.requireNonNull(atomDiscoverers);
+		this.requestDeliverer = Objects.requireNonNull(requestDeliverer);
+		this.observers = Objects.requireNonNull(observers);
 
-		this.inboundAtoms = new LinkedBlockingQueue<>(INBOUND_QUEUE_CAPACITY);
+		this.ledgerObservations = new LinkedBlockingQueue<>(INBOUND_QUEUE_CAPACITY);
+		this.consensusProcessor = new SimpleThreadPool<>("Tempo consensus processing", 1, consensus::observe, this::processConsensusAction, log);
 
 		// hook up components
-		// TODO remove listeners when closed?
 		for (AtomDiscoverer atomDiscoverer : this.atomDiscoverers) {
-			atomDiscoverer.addListener(requestDeliverer::tryDeliver);
-		}
-		for (AtomDeliverer atomDeliverer : atomDeliverers) {
-			atomDeliverer.addListener((atom, peer) -> addInbound(atom));
+			atomDiscoverer.addListener(this::onDiscovered);
 		}
 	}
 
 	@Override
-	public Atom receive() throws InterruptedException {
-		return this.inboundAtoms.take();
+	public LedgerObservation observe() throws InterruptedException {
+		return this.ledgerObservations.take();
 	}
 
 	@Override
@@ -108,67 +103,92 @@ public final class Tempo extends Plugin implements Ledger {
 	}
 
 	@Override
-	public boolean store(Atom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
+	public void store(Atom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
+		preCheckStore(atom, uniqueIndices, duplicateIndices);
 		TempoAtom tempoAtom = convertToTempoAtom(atom);
-		if (atomStore.contains(tempoAtom.getAID())) {
-			return false;
-		}
-		tempoAtom = attestTo(tempoAtom);
-		if (atomStore.store(tempoAtom, uniqueIndices, duplicateIndices)) {
-			accept(tempoAtom);
-			return true;
-		} else {
-			return false;
-		}
+		AtomStoreResult status = atomStore.store(tempoAtom, uniqueIndices, duplicateIndices);
+		postCheckStore(status);
+		onAdopted(tempoAtom, uniqueIndices, duplicateIndices);
 	}
 
 	@Override
-	public boolean delete(AID aid) {
-		return atomStore.delete(aid);
+	public void replace(Set<AID> aids, Atom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
+		Objects.requireNonNull(aids, "aids");
+		preCheckStore(atom, uniqueIndices, duplicateIndices);
+
+		TempoAtom tempoAtom = convertToTempoAtom(atom);
+		AtomStoreResult status = atomStore.replace(aids, tempoAtom, uniqueIndices, duplicateIndices);
+		postCheckStore(status);
+		aids.forEach(this::onDeleted);
+		onAdopted(tempoAtom, uniqueIndices, duplicateIndices);
 	}
 
-	@Override
-	public boolean replace(Set<AID> aids, Atom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
-		TempoAtom tempoAtom = convertToTempoAtom(atom);
-		tempoAtom = attestTo(tempoAtom);
-		if (atomStore.replace(aids, tempoAtom, uniqueIndices, duplicateIndices)) {
-			accept(tempoAtom);
-			return true;
-		} else {
-			return false;
+	private void preCheckStore(Atom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
+		Objects.requireNonNull(atom, "atom");
+		Objects.requireNonNull(uniqueIndices, "uniqueIndices");
+		Objects.requireNonNull(duplicateIndices, "duplicateIndices");
+		if (uniqueIndices.isEmpty()) {
+			throw new TempoException("Atom '" + atom.getAID() + "' must have at least one unique index");
+		}
+		if (atom.getShards().isEmpty()) {
+			throw new TempoException("Atom '" + atom.getAID() + "' must have at least one shard");
+		}
+		if (atomStore.contains(atom.getAID())) {
+			throw new AtomAlreadyExistsException(atom);
 		}
 	}
 
-	private void addInbound(TempoAtom atom) {
-		if (!this.inboundAtoms.add(atom)) {
+	private void postCheckStore(AtomStoreResult status) {
+		if (!status.isSuccess()) {
+			AtomConflict conflictInfo = status.getConflictInfo();
+			throw new LedgerIndexConflictException(conflictInfo.getAtom(), conflictInfo.getConflictingAtoms());
+		}
+	}
+
+	private void onDeleted(AID aid) {
+		observers.forEach(observer -> observer.onDeleted(aid));
+	}
+
+	private void onDiscovered(Set<AID> aids, Peer peer) {
+		requestDeliverer.deliver(aids, ImmutableSet.of(peer)).forEach((aid, future) -> future.thenAccept(result -> {
+			if (result.isSuccess()) {
+				onDelivered(result.getAtom(), result.getPeer());
+			}
+		}));
+	}
+
+	private void onDelivered(TempoAtom atom, Peer peer) {
+		// TODO add shard space relevance check
+		injectObservation(LedgerObservation.adopt(atom));
+	}
+
+	private void processConsensusAction(ConsensusAction action) {
+		if (action.getType() == ConsensusAction.Type.COMMIT) {
+			// TODO do something with commitment
+			TempoAtom preference = action.getPreference();
+			TemporalCommitment temporalCommitment = attestor.attestTo(preference.getAID());
+			log.info("Committing to '" + preference.getAID() + "' at " + temporalCommitment.getLogicalClock());
+			this.atomStore.commit(preference.getAID(), temporalCommitment.getLogicalClock());
+			this.commitmentStore.put(self, temporalCommitment.getLogicalClock(), temporalCommitment.getCommitment());
+
+			this.injectObservation(LedgerObservation.commit(preference));
+		} else if (action.getType() == ConsensusAction.Type.SWITCH_PREFERENCE) {
+			log.info("Switching preference from '" + action.getOldPreferences() + "' to '" + action.getPreference() + "'");
+			injectObservation(LedgerObservation.adopt(action.getOldPreferences(), action.getPreference()));
+		} else {
+			throw new IllegalStateException("Unknown consensus action type: " + action.getType());
+		}
+	}
+
+	private void injectObservation(LedgerObservation observation) {
+		if (!this.ledgerObservations.add(observation)) {
 			// TODO more graceful queue full handling
-			log.error("Inbound atoms queue full");
+			log.error("Atom observations queue full");
 		}
 	}
 
-	private void accept(TempoAtom atom) {
-		TemporalVertex ownVertex = atom.getTemporalProof().getVertexByNID(self);
-		if (ownVertex == null) {
-			throw new TempoException("Accepted atom " + atom.getAID() + " has no vertex by self");
-		}
-		// TODO move to commitment acceptor
-		commitmentStore.put(self, ownVertex.getClock(), ownVertex.getCommitment());
-		acceptors.forEach(acceptor -> acceptor.accept(atom));
-	}
-
-	private TempoAtom attestTo(TempoAtom atom) {
-		List<EUID> edges = edgeSelector.selectEdges(atom);
-		TemporalProof attestedTP = attestor.attestTo(atom.getTemporalProof(), edges);
-		return atom.with(attestedTP);
-	}
-
-	@Override
-	public CompletableFuture<Atom> resolve(Atom atom, Collection<Atom> conflictingAtoms) {
-		log.info(String.format("Resolving conflict between '%s' and '%s'", atom.getAID(), conflictingAtoms.stream()
-			.map(Atom::getAID)
-			.collect(Collectors.toList())));
-
-		throw new UnsupportedOperationException("Not yet implemented");
+	private void onAdopted(TempoAtom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
+		observers.forEach(acceptor -> acceptor.onAdopted(atom, uniqueIndices, duplicateIndices));
 	}
 
 	@Override
@@ -177,21 +197,18 @@ public final class Tempo extends Plugin implements Ledger {
 	}
 
 	@Override
-	public List<Class<? extends Module>> getDependsOn() {
-		return ImmutableList.of(
-			DatabaseEnvironment.class
-		);
+	public boolean contains(LedgerIndexType type, LedgerIndex index, LedgerSearchMode mode) {
+		return atomStore.contains(type, index, mode);
 	}
 
-	@Override
-	public void start_impl() {
-		this.ownedResources.forEach(Resource::open);
+	public void start() {
+		this.consensusProcessor.start();
 		Modules.put(TempoAtomStoreView.class, this.atomStore);
 		Modules.put(AtomSyncView.class, new AtomSyncView() {
 			@Override
 			public void inject(org.radix.atoms.Atom atom) {
 				TempoAtom tempoAtom = LegacyUtils.fromLegacyAtom(atom);
-				addInbound(tempoAtom);
+				onDelivered(tempoAtom, null);
 			}
 
 			@Override
@@ -201,33 +218,27 @@ public final class Tempo extends Plugin implements Ledger {
 
 			@Override
 			public long getQueueSize() {
-				return inboundAtoms.size();
+				return ledgerObservations.size();
 			}
 
 			@Override
 			public Map<String, Object> getMetaData() {
 				return ImmutableMap.of(
-					"inboundQueue", inboundAtoms.size()
+					"inboundQueue", ledgerObservations.size()
 				);
 			}
 		});
 	}
 
 	@Override
-	public void stop_impl() {
+	public void close() {
 		Modules.remove(TempoAtomStoreView.class);
 		Modules.remove(AtomSyncView.class);
 		this.ownedResources.forEach(Resource::close);
 	}
 
-	@Override
-	public void reset_impl() {
+	public void reset() {
 		this.ownedResources.forEach(Resource::reset);
-	}
-
-	@Override
-	public String getName() {
-		return "Tempo";
 	}
 
 	private static TempoAtom convertToTempoAtom(Atom atom) {
@@ -240,7 +251,6 @@ public final class Tempo extends Plugin implements Ledger {
 			return new TempoAtom(
 				atom.getContent(),
 				atom.getAID(),
-				atom.getTimestamp(),
 				atom.getShards()
 			);
 		}

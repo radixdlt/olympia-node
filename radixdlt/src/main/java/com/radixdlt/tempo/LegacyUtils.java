@@ -1,10 +1,8 @@
 package com.radixdlt.tempo;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.AtomContent;
 import com.radixdlt.middleware.ImmutableAtom;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.SerializerId2;
+import com.radixdlt.middleware.SimpleRadixEngineAtom;
+import com.radixdlt.middleware2.atom.EngineAtomContent;
 import org.radix.atoms.Atom;
 
 import java.util.stream.Collectors;
@@ -14,42 +12,33 @@ public final class LegacyUtils {
 		throw new IllegalStateException("Can't construct");
 	}
 
-	@SerializerId2("tempo.legacy.atom.content")
-	private static class LegacyAtomContentWrapper extends AtomContent {
-		@JsonProperty("content")
-		@DsonOutput(DsonOutput.Output.ALL)
-		private ImmutableAtom content;
-
-		private LegacyAtomContentWrapper() {
-		}
-
-		private LegacyAtomContentWrapper(ImmutableAtom content) {
-			this.content = content;
-		}
-
-		private ImmutableAtom getContent() {
-			return content;
-		}
-	}
-
+	//We are using EngineAtomContent what is part of middleware2 package. It is not good, but lets cleanup it when AtomContent will be defined
 	public static TempoAtom fromLegacyAtom(Atom legacyAtom) {
 		return new TempoAtom(
-			new LegacyAtomContentWrapper(legacyAtom),
+				new EngineAtomContent(legacyAtom.getParticleGroups(), legacyAtom.getSignatures(), legacyAtom.getMetaData()),
 			legacyAtom.getAID(),
-			legacyAtom.getTimestamp(),
-			legacyAtom.getShards(),
-			legacyAtom.getTemporalProof()
+			legacyAtom.getShards()
 		);
 	}
 
 	public static Atom toLegacyAtom(TempoAtom atom) {
-		ImmutableAtom content = ((LegacyAtomContentWrapper) atom.getContent()).getContent();
+		EngineAtomContent engineAtomContent = (EngineAtomContent)atom.getContent();
+		ImmutableAtom content = new ImmutableAtom(engineAtomContent.getParticleGroups(), engineAtomContent.getSignatures(), engineAtomContent.getMetaData());
 		Atom legacyAtom = new Atom(
 			content.particleGroups().collect(Collectors.toList()),
 			content.getSignatures(),
 			content.getMetaData()
 		);
-		legacyAtom.setTemporalProof(atom.getTemporalProof());
+		return legacyAtom;
+	}
+
+	public static Atom toLegacyAtom(SimpleRadixEngineAtom atom) {
+		ImmutableAtom content = atom.getAtom();
+		Atom legacyAtom = new Atom(
+				content.particleGroups().collect(Collectors.toList()),
+				content.getSignatures(),
+				content.getMetaData()
+		);
 		return legacyAtom;
 	}
 }

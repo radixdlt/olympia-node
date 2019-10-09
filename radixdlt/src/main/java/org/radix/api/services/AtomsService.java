@@ -15,6 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import com.radixdlt.ledger.Ledger;
 import com.radixdlt.tempo.AtomSyncView;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -76,9 +77,11 @@ public class AtomsService {
 	private final Object lock = new Object();
 	private final EvictingQueue<String> eventRingBuffer = EvictingQueue.create(64);
 	private final AtomSyncView atomSync;
+	private final Ledger ledger;
 
-	public AtomsService(AtomSyncView atomSync) {
+	public AtomsService(AtomSyncView atomSync, Ledger ledger) {
 		this.atomSync = Objects.requireNonNull(atomSync);
+		this.ledger = Objects.requireNonNull(ledger);
 
 		Events.getInstance().register(AtomEvent.class, (event) -> {
 			executorService.submit(() -> {
@@ -220,7 +223,7 @@ public class AtomsService {
 
 	public Observable<ObservedAtomEvents> getAtomEvents(AtomQuery atomQuery) {
 		return observer -> {
-			final AtomEventObserver atomEventObserver = new AtomEventObserver(atomQuery, observer, executorService);
+			final AtomEventObserver atomEventObserver = new AtomEventObserver(atomQuery, observer, executorService, ledger);
 			atomEventObserver.start();
 			this.atomEventObservers.add(atomEventObserver);
 

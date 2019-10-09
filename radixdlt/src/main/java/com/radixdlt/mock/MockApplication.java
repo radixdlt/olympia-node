@@ -1,17 +1,16 @@
 package com.radixdlt.mock;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.Atom;
 import com.radixdlt.common.AID;
+import com.radixdlt.ledger.LedgerObservation;
 import com.radixdlt.ledger.Ledger;
 import com.radixdlt.ledger.LedgerIndex;
-import com.radixdlt.ledger.exceptions.LedgerKeyConstraintException;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 
 import java.util.Objects;
-import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -28,7 +27,7 @@ public final class MockApplication {
 	private static AtomicInteger applicationId = new AtomicInteger(0);
 
 	private final Ledger ledger;
-	private final BlockingQueue<Atom> atomQueue;
+	private final BlockingQueue<LedgerObservation> ledgerObservationQueue;
 	private final ConcurrentMap<AID, ImmutableSet<AID>> conflictRemnants;
 	private final int id;
 	private final MockAccessor mockAccessor;
@@ -36,7 +35,7 @@ public final class MockApplication {
 	public MockApplication(Ledger ledger) {
 		this.ledger = Objects.requireNonNull(ledger);
 
-		this.atomQueue = new LinkedBlockingQueue<>();
+		this.ledgerObservationQueue = new LinkedBlockingQueue<>();
 		this.conflictRemnants = new ConcurrentHashMap<>();
 		this.id = applicationId.getAndIncrement();
 		this.mockAccessor = new MockAccessor(this);
@@ -58,8 +57,8 @@ public final class MockApplication {
 	private void consume() {
 		while (true) {
 			try {
-				Atom atom = ledger.receive();
-				atomQueue.put(atom);
+				LedgerObservation ledgerObservation = ledger.observe();
+				ledgerObservationQueue.put(ledgerObservation);
 			} catch (InterruptedException e) {
 				// exit if interrupted
 				Thread.currentThread().interrupt();
@@ -74,20 +73,12 @@ public final class MockApplication {
 	private void run() {
 		while (true) {
 			try {
-				Atom atom = atomQueue.take();
-				Object content = atom.getContent();
-
-				// figure out indices
-				ImmutableSet<LedgerIndex> uniqueIndices = ImmutableSet.of();
-				ImmutableSet<LedgerIndex> duplicateIndices = ImmutableSet.of();
-				if (content instanceof MockAtomContent) {
-					uniqueIndices = MockAtomIndexer.getUniqueIndices((MockAtomContent) content);
-					duplicateIndices = MockAtomIndexer.getDuplicateIndices((MockAtomContent) content);
-				} else {
-					logger.debug(String.format("Received foreign atom content %s, cannot infer indices", content.getClass().getSimpleName()));
+				LedgerObservation ledgerObservation = ledgerObservationQueue.take();
+				if (ledgerObservation.getType() == LedgerObservation.Type.COMMIT) {
+					logger.info("Committed to atom '" + ledgerObservation.getAtom().getAID() + "'");
+				} else if (ledgerObservation.getType() == LedgerObservation.Type.ADOPT) {
+					receive(ledgerObservation);
 				}
-
-				store(atom, uniqueIndices, duplicateIndices);
 			} catch (InterruptedException e) {
 				// exit if interrupted
 				Thread.currentThread().interrupt();
@@ -98,38 +89,33 @@ public final class MockApplication {
 		}
 	}
 
-	private void store(Atom atom, ImmutableSet<LedgerIndex> uniqueIndices, ImmutableSet<LedgerIndex> duplicateIndices) {
-		try {
-			ImmutableSet<AID> previousRemnants = conflictRemnants.remove(atom.getAID());
-			// if there are no remnants from previous conflict, just store the atom
-			if (previousRemnants == null || conflictRemnants.isEmpty()) {
-				if (ledger.store(atom, uniqueIndices, duplicateIndices)) {
-					logger.info(String.format("Stored atom '%s'", atom.getAID()));
-				}
-			} else { // otherwise replace the remnants with the new atom
-				if (ledger.replace(previousRemnants, atom, uniqueIndices, duplicateIndices)) {
-					logger.info(String.format("Replaced '%s' with '%s'", previousRemnants, atom.getAID()));
-				}
-			}
-		} catch (LedgerKeyConstraintException e) { // conflict!
-			ImmutableMap<LedgerIndex, Atom> conflictingAtoms = e.getConflictingAtoms();
-			ImmutableSet<AID> allConflictingAids = e.getAllAids();
-			// resolve conflict by calling ledger
-			logger.info(String.format("Detected conflict between current atom '%s' and '%s', calling ledger to resolve", atom.getAID(), e.getConflictingAids()));
-			ledger.resolve(e.getAtom(), conflictingAtoms.values())
-				.thenAccept(winner -> {
-					logger.info(String.format("Ledger resolved conflict between '%s' to '%s'", allConflictingAids, winner.getAID()));
-					// add conflict 'remnants' to the queue to be replaced atomically with the winner
-					conflictRemnants.put(winner.getAID(), allConflictingAids.stream()
-						.filter(aid -> ledger.get(aid).isPresent())
-						.collect(ImmutableSet.toImmutableSet()));
-					queue(winner);
-				});
+	private void receive(LedgerObservation ledgerObservation) {
+		Atom atom = ledgerObservation.getAtom();
+		Object content = atom.getContent();
+		// figure out indices
+		ImmutableSet<LedgerIndex> uniqueIndices = ImmutableSet.of();
+		ImmutableSet<LedgerIndex> duplicateIndices = ImmutableSet.of();
+		if (content instanceof MockAtomContent) {
+			uniqueIndices = MockAtomIndexer.getUniqueIndices((MockAtomContent) content);
+			duplicateIndices = MockAtomIndexer.getDuplicateIndices((MockAtomContent) content);
+		} else {
+			logger.debug(String.format("Received foreign atom content %s, cannot infer indices", content.getClass().getSimpleName()));
+		}
+
+		if (!ledgerObservation.hasSupersededAtoms()) {
+			ledger.store(atom, uniqueIndices, duplicateIndices);
+			logger.info(String.format("Stored atom '%s'", atom.getAID()));
+		} else {
+			Set<AID> previousAids = ledgerObservation.getSupersededAtoms().stream()
+				.map(Atom::getAID)
+				.collect(Collectors.toSet());
+			ledger.replace(previousAids, atom, uniqueIndices, duplicateIndices);
+			logger.info(String.format("Replaced atoms '%s' with '%s'", previousAids, atom.getAID()));
 		}
 	}
 
-	boolean queue(Atom winner) {
-		return atomQueue.add(winner);
+	boolean inject(Atom atom) {
+		return ledgerObservationQueue.add(LedgerObservation.adopt(atom));
 	}
 
 	public MockAccessor getAccessor() {

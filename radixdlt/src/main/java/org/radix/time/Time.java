@@ -19,9 +19,9 @@ public class Time extends Plugin
 
 	@Override
 	public void start_impl() throws ModuleException {
-		if (Modules.get(RuntimeProperties.class).get("ntp", false) == true && !Modules.get(CommandLine.class).hasOption("genesis"))
-			Modules.put(NtpService.class, new NtpService(Modules.get(RuntimeProperties.class).get("ntp.pool")));
-		else
+//		if (Modules.get(RuntimeProperties.class).get("ntp", false) == true && !Modules.get(CommandLine.class).hasOption("genesis"))
+//			Modules.put(NtpService.class, new NtpService(Modules.get(RuntimeProperties.class).get("ntp.pool")));
+//		else
 			Modules.put(NtpService.class, new NtpService(null));
 	}
 

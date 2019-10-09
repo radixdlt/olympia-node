@@ -51,7 +51,7 @@ public final class TempoAtomIndices {
 		return this.duplicateIndices;
 	}
 
-	static TempoAtomIndices from(TempoAtom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices, long logicalClock) {
+	static TempoAtomIndices from(TempoAtom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
 		List<LedgerIndex> offendingIndices = Stream.concat(uniqueIndices.stream(), duplicateIndices.stream())
 			.filter(index -> index.getPrefix() == ATOM_INDEX_PREFIX || index.getPrefix() == SHARD_INDEX_PREFIX)
 			.collect(Collectors.toList());

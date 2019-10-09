@@ -2,6 +2,7 @@ package com.radixdlt.tempo.discovery;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
@@ -204,12 +205,12 @@ public final class IterativeDiscoverer implements Resource, AtomDiscoverer {
 	private IterativeDiscoveryResponseMessage fetchResponse(LogicalClockCursor cursor) {
 		long lcPosition = cursor.getLcPosition();
 		ImmutableList<Hash> commitments = commitmentStore.getNext(self, lcPosition, responseLimit);
-		ImmutableList<AID> aids = storeView.getNext(lcPosition, responseLimit);
+		ImmutableList<AID> aids = storeView.getNextCommitted(lcPosition, responseLimit);
 
 		// there should be at least as many commitments as aids, otherwise the stores are corrupt
 		if (commitments.size() < aids.size()) {
-			throw new IllegalStateException(String.format("Missing commitments at [%d, %d[",
-				lcPosition, lcPosition + aids.size()));
+			throw new IllegalStateException(String.format("Missing commitments at [%d, %d[ for %s",
+				lcPosition, lcPosition + aids.size(), aids.toString()));
 		}
 
 		long nextLcPosition = lcPosition + commitments.size();
@@ -233,17 +234,12 @@ public final class IterativeDiscoverer implements Resource, AtomDiscoverer {
 	}
 
 	private void notifyListeners(ImmutableList<AID> aids, Peer peer) {
-		discoveryListeners.forEach(listener -> listener.accept(aids, peer));
+		discoveryListeners.forEach(listener -> listener.accept(ImmutableSet.copyOf(aids), peer));
 	}
 
 	@Override
 	public void reset() {
 		discoveryState.reset();
-	}
-
-	@Override
-	public void open() {
-		// nothing to do here
 	}
 
 	@Override

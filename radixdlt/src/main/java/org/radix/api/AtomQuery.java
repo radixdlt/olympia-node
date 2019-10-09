@@ -1,12 +1,13 @@
 package org.radix.api;
 
 import org.radix.atoms.AtomDiscoveryRequest;
-import org.radix.atoms.PreparedAtom;
 import org.radix.discovery.DiscoveryCursor;
 import org.radix.discovery.DiscoveryRequest.Action;
 
 import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.common.EUID;
+
+import java.util.Set;
 
 public class AtomQuery {
 	private final EUID destination;
@@ -45,9 +46,9 @@ public class AtomQuery {
 		return atomDiscoveryRequest;
 	}
 
-	public boolean filter(PreparedAtom atom) {
+	public boolean filter(Set<EUID> destinations) {
 		if (this.destination != null) {
-			return atom.getDestinations().contains(this.destination);
+			return destinations.contains(this.destination);
 		}
 
 		return true;

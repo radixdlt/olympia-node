@@ -5,6 +5,7 @@ import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.ledger.LedgerCursor;
 import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerSearchMode;
+import com.radixdlt.middleware2.store.EngineAtomIndices;
 import com.radixdlt.tempo.store.TempoAtomStoreView;
 import com.radixdlt.tempo.AtomSyncView;
 import com.radixdlt.tempo.LegacyUtils;
@@ -169,14 +170,13 @@ public final class RadixJsonRpcServer {
 						// TODO FIXME super ugly hack because indices are handled differently
 						LedgerIndex index;
 						if (Modules.get(RuntimeProperties.class).get("tempo2", false)) {
-							throw new UnsupportedOperationException("Not yet implemented");
-//							index = new LedgerIndex(BerkeleyTempoAtomStore.DESTINATION_INDEX_PREFIX, address.getUID().toByteArray());
+							index = new LedgerIndex(EngineAtomIndices.IndexType.DESTINATION.getValue(), address.getUID().toByteArray());
 						} else {
 							index = new LedgerIndex(AtomStore.IDType.toByteArray(AtomStore.IDType.DESTINATION, address.getUID()));
 						}
 
 						List<AID> collectedAids = new ArrayList<>();
-						LedgerCursor cursor = storeView.search(LedgerCursor.LedgerIndexType.DUPLICATE, index, LedgerSearchMode.EXACT);
+						LedgerCursor cursor = storeView.search(LedgerIndex.LedgerIndexType.DUPLICATE, index, LedgerSearchMode.EXACT);
 						while (cursor != null) {
 							collectedAids.add(cursor.get());
 							cursor = cursor.next();

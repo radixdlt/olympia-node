@@ -5,23 +5,20 @@ import com.radixdlt.common.EUID;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.tempo.AtomGenerator;
+import com.radixdlt.tempo.store.CommitmentStore;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.radix.database.DatabaseEnvironment;
 import org.radix.integration.RadixTestWithStores;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.modules.Modules;
 import org.radix.universe.system.LocalSystem;
 import org.radix.utils.SystemProfiler;
 
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static org.junit.Assume.assumeTrue;
 
 public class CommitmentStoreTest extends RadixTestWithStores {
 
@@ -31,13 +28,11 @@ public class CommitmentStoreTest extends RadixTestWithStores {
     private LocalSystem localSystem = LocalSystem.getInstance();
     private Serialization serialization = Serialization.getDefault();
     private SystemProfiler profiler = SystemProfiler.getInstance();
-    private BerkeleyCommitmentStore commitmentStore;
+    private CommitmentStore commitmentStore;
 
     @Before
     public void setup() {
-        commitmentStore = new BerkeleyCommitmentStore(Modules.get(DatabaseEnvironment.class));
-        commitmentStore.reset();
-        commitmentStore.open();
+        commitmentStore = injector.getInstance(CommitmentStore.class);
     }
 
     @After
