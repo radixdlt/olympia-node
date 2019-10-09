@@ -99,7 +99,8 @@ public final class Atom {
 		this.signatures = signatures;
 	}
 
-	public Atom addSignature(ECSignature signature, EUID signatureId) {
+	// TODO: refactor to utilize an AtomBuilder
+	public Atom addSignature(EUID signatureId, ECSignature signature) {
 		return new Atom(
 			this.particleGroups,
 			this.metaData,

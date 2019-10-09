@@ -49,7 +49,6 @@ import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.ParticleGroup;
-import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
@@ -794,7 +793,7 @@ public class RadixApplicationAPI {
 	 * @param particleGroups particle groups to include in atom
 	 * @return unsigned atom with appropriate fees
 	 */
-	public UnsignedAtom buildAtomWithFee(List<ParticleGroup> particleGroups) {
+	public Atom buildAtomWithFee(List<ParticleGroup> particleGroups) {
 		List<ParticleGroup> allParticleGroups = new ArrayList<>(particleGroups);
 		Map<String, String> metaData = new HashMap<>();
 		metaData.put(Atom.METADATA_TIMESTAMP_KEY, String.valueOf(generateTimestamp()));
@@ -803,7 +802,7 @@ public class RadixApplicationAPI {
 		allParticleGroups.addAll(fee.getSecond());
 		metaData.putAll(fee.getFirst());
 
-		return new UnsignedAtom(ImmutableList.copyOf(allParticleGroups), ImmutableMap.copyOf(metaData));
+		return Atom.create(ImmutableList.copyOf(allParticleGroups), ImmutableMap.copyOf(metaData));
 	}
 
 	/**
@@ -1159,7 +1158,7 @@ public class RadixApplicationAPI {
 		 *
 		 * @return an unsigned atom
 		 */
-		public UnsignedAtom buildAtom() {
+		public Atom buildAtom() {
 			List<ParticleGroup> pgs = universe.getAtomStore().getStagedAndClear(uuid);
 			return buildAtomWithFee(pgs);
 		}
@@ -1170,8 +1169,8 @@ public class RadixApplicationAPI {
 		 * @return the results of committing
 		 */
 		public Result commitAndPush() {
-			final UnsignedAtom unsignedAtom = buildAtom();
-			final Single<Atom> atom = identity.sign(unsignedAtom);
+			final Atom unsignedAtom = buildAtom();
+			final Single<Atom> atom = identity.addSignature(unsignedAtom);
 			return createAtomSubmission(atom, false, null).connect();
 		}
 
@@ -1182,8 +1181,8 @@ public class RadixApplicationAPI {
 		 * @return the results of committing
 		 */
 		public Result commitAndPush(RadixNode originNode) {
-			final UnsignedAtom unsignedAtom = buildAtom();
-			final Single<Atom> atom = identity.sign(unsignedAtom);
+			final Atom unsignedAtom = buildAtom();
+			final Single<Atom> atom = identity.addSignature(unsignedAtom);
 			return createAtomSubmission(atom, false, originNode).connect();
 		}
 	}

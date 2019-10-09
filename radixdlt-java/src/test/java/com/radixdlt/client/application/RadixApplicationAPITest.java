@@ -79,7 +79,7 @@ public class RadixApplicationAPITest {
 
 		Atom atom = mock(Atom.class);
 		when(atom.getRequiredFirstShard()).thenReturn(Collections.singleton(0L));
-		when(identity.sign(any())).thenReturn(Single.just(atom));
+		when(identity.addSignature(any())).thenReturn(Single.just(atom));
 
 		FeeMapper feeMapper = (a, b, c) -> Pair.of(ImmutableMap.of(), ImmutableList.of());
 
@@ -264,7 +264,7 @@ public class RadixApplicationAPITest {
 		when(particle.getHid()).thenReturn(EUID.ONE);
 		Atom atom = Atom.create(Collections.singletonList(ParticleGroup.of(SpunParticle.up(particle))), 0L);
 		RadixIdentity identity = mock(RadixIdentity.class);
-		when(identity.sign(any())).thenReturn(Single.just(atom));
+		when(identity.addSignature(any())).thenReturn(Single.just(atom));
 		RadixUniverse universe = mock(RadixUniverse.class);
 
 		RadixNetworkController controller = mock(RadixNetworkController.class);
