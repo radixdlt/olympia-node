@@ -3,6 +3,7 @@ package com.radixdlt.tempo;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.tempo.store.TempoAtomStore;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.radix.atoms.AtomStore;
 import org.radix.integration.RadixTestWithStores;
@@ -14,6 +15,8 @@ import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerSearchMode;
 
 import java.util.List;
+
+import static org.junit.Assume.assumeTrue;
 
 public class BerkeleyCursorTests extends RadixTestWithStores {
 

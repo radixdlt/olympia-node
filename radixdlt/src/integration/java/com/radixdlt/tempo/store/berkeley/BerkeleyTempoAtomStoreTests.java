@@ -14,6 +14,7 @@ import com.radixdlt.utils.Ints;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.radix.database.DatabaseEnvironment;
 import org.radix.exceptions.ValidationException;
@@ -26,6 +27,8 @@ import org.radix.utils.SystemProfiler;
 
 import java.util.List;
 import java.util.function.Supplier;
+
+import static org.junit.Assume.assumeTrue;
 
 public class BerkeleyTempoAtomStoreTests extends RadixTestWithStores {
 
