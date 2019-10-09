@@ -1,16 +1,14 @@
 package com.radixdlt.serialization.mapper;
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.KeyDeserializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.FilterProvider;
-import com.fasterxml.jackson.datatype.guava.GuavaModule;
-import com.fasterxml.jackson.datatype.jsonorg.JsonOrgModule;
+import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.radixdlt.atomos.RRI;
 import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.common.AID;
@@ -22,26 +20,20 @@ import com.radixdlt.utils.Longs;
 import com.radixdlt.utils.RadixConstants;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
+
+import java.io.IOException;
 import java.util.function.Function;
 
 /**
- * A Jackson {@link ObjectMapper} that will serialize and deserialize
+ * A Jackson {@link RadixObjectMapperConfigurator} that will serialize and deserialize
  * to the subset of <a href="http://cbor.io/">CBOR</a> that DSON uses.
  */
 public class JacksonCborMapper extends ObjectMapper {
 
 	private static final long serialVersionUID = 4917479892309630214L;
 
-	private JacksonCborMapper() {
-		super(createCborFactory());
-	}
-
-	private static JsonFactory createCborFactory() {
-		return new RadixCBORFactory();
-	}
-
 	/**
-	 * Create an {@link ObjectMapper} that will serialize to/from
+	 * Create an {@link RadixObjectMapperConfigurator} that will serialize to/from
 	 * CBOR encoded DSON.
 	 *
 	 * @param idLookup A {@link SerializerIds} used to perform serializer
@@ -50,7 +42,13 @@ public class JacksonCborMapper extends ObjectMapper {
 	 * 		serialized fields
 	 * @return A freshly created {@link JacksonCborMapper}
 	 */
-	public static JacksonCborMapper create(SerializerIds idLookup, FilterProvider filterProvider) {
+	public static JacksonCborMapper create(SerializerIds idLookup, FilterProvider filterProvider, boolean sortProperties) {
+		return new JacksonCborMapper(idLookup, filterProvider, sortProperties);
+	}
+
+	private JacksonCborMapper(SerializerIds idLookup, FilterProvider filterProvider, boolean sortProperties) {
+		super(new RadixCBORFactory());
+		RadixObjectMapperConfigurator.configure(this, idLookup, filterProvider, sortProperties);
 		SimpleModule cborModule = new SimpleModule();
 
 		cborModule.addSerializer(SerializerDummy.class, new JacksonSerializerDummySerializer(idLookup));
@@ -100,6 +98,13 @@ public class JacksonCborMapper extends ObjectMapper {
 			Longs::toBytes
 		));
 
+		cborModule.addKeySerializer(AID.class, new StdSerializer<AID>(AID.class) {
+			@Override
+			public void serialize(AID value, JsonGenerator gen, SerializerProvider provider) throws IOException {
+				gen.writeFieldName(JacksonCodecConstants.AID_STR_VALUE + value.toString());
+			}
+		});
+
 		cborModule.addDeserializer(SerializerDummy.class, new JacksonSerializerDummyDeserializer());
 		cborModule.addDeserializer(EUID.class, new JacksonCborObjectBytesDeserializer<>(
 			EUID.class,
@@ -146,24 +151,16 @@ public class JacksonCborMapper extends ObjectMapper {
 			JacksonCodecConstants.LONGS_VALUE,
 			Longs::fromBytes
 		));
+		cborModule.addKeyDeserializer(AID.class, new KeyDeserializer() {
+			@Override
+			public Object deserializeKey(String key, DeserializationContext ctxt) throws IOException {
+				if (!key.startsWith(JacksonCodecConstants.AID_STR_VALUE)) {
+					throw new InvalidFormatException(ctxt.getParser(), "Expecting prefix" + JacksonCodecConstants.AID_STR_VALUE, key, AID.class);
+				}
+				return AID.from(key.substring(JacksonCodecConstants.STR_VALUE_LEN));
+			}
+		});
 
-		JacksonCborMapper mapper = new JacksonCborMapper();
-		mapper.registerModule(cborModule);
-	    mapper.registerModule(new JsonOrgModule());
-	    mapper.registerModule(new GuavaModule());
-
-		mapper.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
-		mapper.configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true);
-		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-		mapper.setVisibility(mapper.getSerializationConfig().getDefaultVisibilityChecker()
-                .withFieldVisibility(JsonAutoDetect.Visibility.NONE)
-                .withGetterVisibility(JsonAutoDetect.Visibility.NONE)
-                .withSetterVisibility(JsonAutoDetect.Visibility.NONE)
-                .withCreatorVisibility(JsonAutoDetect.Visibility.PUBLIC_ONLY));
-		mapper.setSerializationInclusion(Include.NON_EMPTY);
-		mapper.setFilterProvider(filterProvider);
-		mapper.setAnnotationIntrospector(new DsonFilteringIntrospector());
-	    mapper.setDefaultTyping(new DsonTypeResolverBuilder(idLookup));
-		return mapper;
+		registerModule(cborModule);
 	}
 }
