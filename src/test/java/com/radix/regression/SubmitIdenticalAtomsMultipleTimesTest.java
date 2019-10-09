@@ -104,9 +104,12 @@ public class SubmitIdenticalAtomsMultipleTimesTest {
 			submission.assertNoErrors();
 			submission.assertComplete();
 		});
-
-		observer.awaitCount(1);
-		observer.assertValue(notification -> notification.getAtomStatus() == AtomStatus.STORED);
+		observer.awaitCount(times);
+		observer.assertValueCount(times);
+		observer.assertValueAt(0, notification -> notification.getAtomStatus() == AtomStatus.STORED);
+		for (int i = 1; i < times; i++) {
+			observer.assertValueAt(i, notification -> notification.getAtomStatus() == AtomStatus.CONFLICT_LOSER);
+		}
 		observer.dispose();
 	}
 
