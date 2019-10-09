@@ -99,11 +99,14 @@ public final class Atom {
 		this.signatures = signatures;
 	}
 
-	public Atom withSignature(ECSignature signature, EUID signatureId) {
+	public Atom addSignature(ECSignature signature, EUID signatureId) {
 		return new Atom(
 			this.particleGroups,
 			this.metaData,
-			ImmutableMap.of(signatureId.toString(), signature)
+			ImmutableMap.<String, ECSignature>builder()
+				.putAll(this.signatures)
+				.put(signatureId.toString(), signature)
+				.build()
 		);
 	}
 

@@ -1,5 +1,6 @@
 package com.radixdlt.client.application;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.gson.JsonElement;
@@ -138,6 +139,7 @@ public class RadixApplicationAPI {
 			.addAtomMapper(new AtomToTokenTransfersMapper())
 			.addAtomErrorMapper(new AlreadyUsedUniqueIdReasonMapper());
 	}
+
 	private final RadixIdentity identity;
 	private final RadixUniverse universe;
 	private final Map<Class<?>, AtomToExecutedActionsMapper> actionStores;
@@ -801,7 +803,7 @@ public class RadixApplicationAPI {
 		allParticleGroups.addAll(fee.getSecond());
 		metaData.putAll(fee.getFirst());
 
-		return new UnsignedAtom(Atom.create(allParticleGroups, metaData));
+		return new UnsignedAtom(ImmutableList.copyOf(allParticleGroups), ImmutableMap.copyOf(metaData));
 	}
 
 	/**
