@@ -261,7 +261,7 @@ public class InMemoryAtomStoreTest {
 		Particle particle1 = mock(Particle.class);
 		when(particle1.getShardables()).thenReturn(Collections.singleton(someAddress));
 
-		Atom atom0 = new Atom(
+		Atom atom0 = Atom.create(
 			ParticleGroup.of(
 				SpunParticle.down(particle0),
 				SpunParticle.up(particle1)
@@ -272,7 +272,7 @@ public class InMemoryAtomStoreTest {
 
 		Particle particle2 = mock(Particle.class);
 		when(particle2.getShardables()).thenReturn(Collections.singleton(someAddress));
-		Atom atom1 = new Atom(
+		Atom atom1 = Atom.create(
 			ParticleGroup.of(
 				SpunParticle.down(particle0),
 				SpunParticle.up(particle2)

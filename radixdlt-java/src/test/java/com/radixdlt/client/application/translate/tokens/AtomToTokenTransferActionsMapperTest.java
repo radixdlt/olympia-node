@@ -32,7 +32,7 @@ public class AtomToTokenTransferActionsMapperTest {
 		);
 
 		ParticleGroup pg = ParticleGroup.of(SpunParticle.down(ttp), SpunParticle.up(ttp));
-		Atom atom = new Atom(pg, 0L);
+		Atom atom = Atom.create(pg, 0L);
 
 		AtomToTokenTransfersMapper tokenTransferTranslator = new AtomToTokenTransfersMapper();
 		TestObserver<TokenTransfer> testObserver = TestObserver.create();

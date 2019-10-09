@@ -19,7 +19,7 @@ public class AtomTest {
 		when(particle0.getShardables()).thenReturn(Collections.singleton(address));
 		Particle particle1 = mock(Particle.class);
 		when(particle1.getShardables()).thenReturn(Collections.singleton(address));
-		Atom atom = new Atom(ParticleGroup.of(SpunParticle.up(particle0), SpunParticle.up(particle1)), 0L);
+		Atom atom = Atom.create(ParticleGroup.of(SpunParticle.up(particle0), SpunParticle.up(particle1)), 0L);
 		assertThat(atom.addresses()).containsExactly(address);
 	}
 }
