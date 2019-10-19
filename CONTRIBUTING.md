@@ -1,9 +1,8 @@
-# Contributing to radixdlt-js
+# Contributing to radixdlt-java
 
 ### Table of contents
 - [Code of conduct](#code-of-conduct)
 - [Get started](#get-started)
-  - [Package manager](#package-manager)
   - [Reporting a bug](#reporting-a-bug)
 - [Branching strategy](#branching-strategy)
   - [Rebasing](#rebasing)
@@ -28,10 +27,6 @@ By participating, you are expected to uphold this code.
 Please report unacceptable behavior to [hello@radixdlt.com](mailto:hello@radixdlt.com).
 
 ## Get started
-
-### Package manager 
-
-We use [yarn only](https://yarnpkg.com/lang/en/).
 
 ### Reporting a bug
 
@@ -110,26 +105,15 @@ Once the hotfix branch is ready, it should be treated basically as a release can
 
 ### Code structure
 
-* Single quote strings, 4 spaces indentation, no semicolons
-* Use [EditorConfig plugin](https://editorconfig.org/) for your IDE to enforce consistency
-* Follow tsconfig and tslint recommendations (make sure to install IDE plugins for Typescript)
-* All new public methods must have a [TSDoc](https://github.com/microsoft/tsdoc) (if possible add one to old methods as well when working on them) 
+* TBD
 
 ### Testing
 
-* Unit tests go next to the module being tested
-* Integration tests go into `test/integration` 
+* TBD
 
 ### Code structure
 
-* [Don't use default exports](https://basarat.gitbooks.io/typescript/docs/tips/defaultIsBad.html)
-* Export everything that needs to be public in `src/index.ts`
-* Everything in `src/modules/atommodel`  must be exported through `src/modules/atommodel/index.ts`. 
-  * The `atommodel` classes should have no references to any other parts of the project. 
-  * This is to avoid a circular dependency issues, and potentially split out the `atommodel` into a separate package in the future
-* Here's a [good way to do singletons in JS/TS](https://k94n.com/es6-modules-single-instance-pattern). 
-  * See an example in `RadixUniverse.ts`.
-  
+* TBD
 
 ### Commit messages
 
