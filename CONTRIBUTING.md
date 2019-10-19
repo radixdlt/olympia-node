@@ -13,9 +13,9 @@
   - [Releases](#releases)
   - [Hotfixes](#hotfixes)  
 - [Contribute](#contribute)
+  - [Code style](#code-style)
   - [Code structure](#code-structure)
   - [Testing](#testing)
-  - [Code structure](#code-structure)
   - [Commit messages](#commit-messages)
   - [Opening a pull request](#opening-a-pull-request)
   
@@ -103,15 +103,15 @@ Once the hotfix branch is ready, it should be treated basically as a release can
 ## Contribute
 
 
+### Code style
+
+* TBD
+
 ### Code structure
 
 * TBD
 
 ### Testing
-
-* TBD
-
-### Code structure
 
 * TBD
 
