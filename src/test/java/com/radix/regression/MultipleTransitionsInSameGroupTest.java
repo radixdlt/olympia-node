@@ -19,7 +19,6 @@ import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.AtomStatusEvent;
 import com.radixdlt.client.core.atoms.ParticleGroup;
-import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.network.HttpClients;
 import com.radixdlt.client.core.network.RadixNode;
@@ -240,11 +239,11 @@ public class MultipleTransitionsInSameGroupTest {
 	private TestObserver<AtomStatusEvent> submitAtom(List<ParticleGroup> particleGroups) {
 		Map<String, String> atomMetaData = new HashMap<>();
 		atomMetaData.put("timestamp", String.valueOf(System.currentTimeMillis()));
-		atomMetaData.putAll(feeMapper.map(new Atom(particleGroups, atomMetaData), universe, this.identity.getPublicKey()).getFirst());
+		atomMetaData.putAll(feeMapper.map(Atom.create(particleGroups, atomMetaData), universe, this.identity.getPublicKey()).getFirst());
 
-		UnsignedAtom unsignedAtom = new UnsignedAtom(new Atom(particleGroups, atomMetaData));
+		Atom unsignedAtom = Atom.create(particleGroups, atomMetaData);
 		// Sign and submit
-		Atom signedAtom = this.identity.sign(unsignedAtom).blockingGet();
+		Atom signedAtom = this.identity.addSignature(unsignedAtom).blockingGet();
 
 		TestObserver<AtomStatusEvent> observer = TestObserver.create();
 

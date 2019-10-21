@@ -20,7 +20,6 @@ import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomStatus;
-import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.ledger.AtomObservation.Type;
 import com.radixdlt.client.core.network.RadixNetworkEpic;
 import com.radixdlt.client.core.network.RadixNetworkState;
@@ -124,9 +123,9 @@ public final class DoubleSpendTestRunner {
 						.map(api::pullOnce)
 						.forEach(Completable::blockingAwait);
 					transaction.stageWorkingArea();
-					UnsignedAtom unsignedAtom = transaction.buildAtom();
+					Atom unsignedAtom = transaction.buildAtom();
 
-					return api.getIdentity().sign(unsignedAtom)
+					return api.getIdentity().addSignature(unsignedAtom)
 						.flatMapObservable(a -> api.submitAtom(a, true).toObservable());
 				});
 		}

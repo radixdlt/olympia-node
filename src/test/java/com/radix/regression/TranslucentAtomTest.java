@@ -11,7 +11,6 @@ import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.ParticleGroup;
-import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
@@ -46,8 +45,8 @@ public class TranslucentAtomTest {
 			new byte[1],
 			new MetadataMap(),
 			0, ImmutableSet.of(EUID.ONE));
-		UnsignedAtom unsignedAtom = new UnsignedAtom(new Atom(ParticleGroup.of(SpunParticle.up(messageParticle)), System.currentTimeMillis()));
-		Atom signedAtom = this.identity.syncSign(unsignedAtom);
+		Atom unsignedAtom = Atom.create(ParticleGroup.of(SpunParticle.up(messageParticle)), System.currentTimeMillis());
+		Atom signedAtom = this.identity.addSignature(unsignedAtom).blockingGet();
 		Result result = api.submitAtom(signedAtom);
 		TestObserver<SubmitAtomAction> testObserver = TestObserver.create(Util.loggingObserver("SubmitAtom"));
 		result.toObservable()
@@ -76,8 +75,8 @@ public class TranslucentAtomTest {
 			new byte[1],
 			new MetadataMap(),
 			0, ImmutableSet.of(api.getAddress().getUID(), EUID.ONE));
-		UnsignedAtom unsignedAtom = new UnsignedAtom(new Atom(ParticleGroup.of(SpunParticle.up(messageParticle)), System.currentTimeMillis()));
-		Atom signedAtom = this.identity.syncSign(unsignedAtom);
+		Atom unsignedAtom = Atom.create(ParticleGroup.of(SpunParticle.up(messageParticle)), System.currentTimeMillis());
+		Atom signedAtom = this.identity.addSignature(unsignedAtom).blockingGet();
 		Result result = api.submitAtom(signedAtom);
 		TestObserver<SubmitAtomAction> testObserver = TestObserver.create(Util.loggingObserver("SubmitAtom"));
 		result.toObservable()

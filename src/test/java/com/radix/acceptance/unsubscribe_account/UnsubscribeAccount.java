@@ -5,7 +5,6 @@ import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
 import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.AtomStatusEvent;
-import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.ledger.AtomObservation;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.Notification;
@@ -153,8 +152,8 @@ public class UnsubscribeAccount {
 	public void the_client_sends_a_message_to_himself() throws Throwable {
 		Transaction transaction = this.api.createTransaction();
 		transaction.stage(SendMessageAction.create(this.api.getAddress(), this.api.getAddress(), new byte[]{1}, false));
-		UnsignedAtom unsignedAtom = transaction.buildAtom();
-		this.atom = this.identity.sign(unsignedAtom).blockingGet();
+		Atom unsignedAtom = transaction.buildAtom();
+		this.atom = this.identity.addSignature(unsignedAtom).blockingGet();
 
 		TestObserver<AtomStatusEvent> atomSubmission = TestObserver.create(Util.loggingObserver("Atom Submission"));
 		final String subscriberId = UUID.randomUUID().toString();
@@ -178,8 +177,8 @@ public class UnsubscribeAccount {
 	public void the_client_sends_another_message_to_himself() throws Throwable {
 		Transaction transaction = this.api.createTransaction();
 		transaction.stage(SendMessageAction.create(this.api.getAddress(), this.api.getAddress(), new byte[]{1}, false));
-		UnsignedAtom unsignedAtom = transaction.buildAtom();
-		this.otherAtom = this.identity.sign(unsignedAtom).blockingGet();
+		Atom unsignedAtom = transaction.buildAtom();
+		this.otherAtom = this.identity.addSignature(unsignedAtom).blockingGet();
 
 		TestObserver<AtomStatusEvent> atomSubmission = TestObserver.create(Util.loggingObserver("Atom Submission"));
 		final String subscriberId = UUID.randomUUID().toString();
@@ -203,8 +202,8 @@ public class UnsubscribeAccount {
 	public void the_client_sends_a_message_to_the_other_account() throws Throwable {
 		Transaction transaction = this.api.createTransaction();
 		transaction.stage(SendMessageAction.create(this.api.getAddress(), this.otherAccount, new byte[]{3}, false));
-		UnsignedAtom unsignedAtom = transaction.buildAtom();
-		this.atom = this.identity.sign(unsignedAtom).blockingGet();
+		Atom unsignedAtom = transaction.buildAtom();
+		this.atom = this.identity.addSignature(unsignedAtom).blockingGet();
 
 		TestObserver<AtomStatusEvent> atomSubmission = TestObserver.create(Util.loggingObserver("Atom Submission"));
 		final String subscriberId = UUID.randomUUID().toString();

@@ -17,7 +17,6 @@ import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.AtomStatusEvent;
 import com.radixdlt.client.core.atoms.ParticleGroup;
-import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.network.HttpClients;
 import com.radixdlt.client.core.network.RadixNode;
@@ -110,10 +109,10 @@ public class ParticleGroupsMetaData {
         metaData.put("test", "123");
         metaData.put("test2", "456");
 
-        UnsignedAtom atom = constructTestAtom(metaData);
+        Atom atom = constructTestAtom(metaData);
 
         // Sign and submit
-        Atom signedAtom = this.identity.sign(atom).blockingGet();
+        Atom signedAtom = this.identity.addSignature(atom).blockingGet();
 
         this.observer = TestObserver.create(Util.loggingObserver("Atom Status Observer"));
         final String subscriberId = UUID.randomUUID().toString();
@@ -132,10 +131,10 @@ public class ParticleGroupsMetaData {
     @When("^I submit an atom with particle groups which have no metadata$")
     public void iSubmitAValidAtomWithNoMetadata() throws Throwable {
         // Construct atom
-        UnsignedAtom atom = constructTestAtom(new HashMap<>());
+        Atom atom = constructTestAtom(new HashMap<>());
 
         // Sign and submit
-        Atom signedAtom = this.identity.sign(atom).blockingGet();
+        Atom signedAtom = this.identity.addSignature(atom).blockingGet();
 
         this.observer = TestObserver.create(Util.loggingObserver("Atom Status Observer"));
 		final String subscriberId = UUID.randomUUID().toString();
@@ -158,10 +157,10 @@ public class ParticleGroupsMetaData {
         Map<String, String> metaData = new HashMap<>();
         metaData.put("super big test", generateStringOfLength(655360));
 
-        UnsignedAtom atom = constructTestAtom(metaData);
+        Atom atom = constructTestAtom(metaData);
 
         // Sign and submit
-        Atom signedAtom = this.identity.sign(atom).blockingGet();
+        Atom signedAtom = this.identity.addSignature(atom).blockingGet();
 
         this.atomPushObserver = TestObserver.create();
         this.jsonRpcClient.pushAtom(signedAtom).subscribe(this.atomPushObserver);
@@ -176,11 +175,11 @@ public class ParticleGroupsMetaData {
         Map<String, String> metaData = new HashMap<>();
         metaData.put("test", validMetaData);
 
-        UnsignedAtom atom = constructTestAtom(metaData);
+        Atom atom = constructTestAtom(metaData);
 
 
         // Sign and submit
-        Atom signedAtom = this.identity.sign(atom).blockingGet();
+        Atom signedAtom = this.identity.addSignature(atom).blockingGet();
 
 
         this.observer2 = TestObserver.create();
@@ -227,10 +226,10 @@ public class ParticleGroupsMetaData {
         Map<String, String> metaData = new HashMap<>();
         metaData.put("test", "123456");
 
-        UnsignedAtom atom = constructTestAtom(metaData);
+        Atom atom = constructTestAtom(metaData);
 
         // Sign and submit
-        Atom signedAtom = this.identity.sign(atom).blockingGet();
+        Atom signedAtom = this.identity.addSignature(atom).blockingGet();
 
 
         this.observer2 = TestObserver.create();
@@ -299,7 +298,7 @@ public class ParticleGroupsMetaData {
         return new String(array, Charset.forName("UTF-8"));
     }
 
-    private UnsignedAtom constructTestAtom(Map<String, String> metaData) {
+    private Atom constructTestAtom(Map<String, String> metaData) {
         List<ParticleGroup> particleGroups = new ArrayList<>();
 
         // Add content
@@ -314,9 +313,9 @@ public class ParticleGroupsMetaData {
 
         Map<String, String> atomMetaData = new HashMap<>();
         atomMetaData.put("timestamp", System.currentTimeMillis() + "");
-        atomMetaData.putAll(feeMapper.map(new Atom(particleGroups, atomMetaData), universe, this.identity.getPublicKey()).getFirst());
+        atomMetaData.putAll(feeMapper.map(Atom.create(particleGroups, atomMetaData), universe, this.identity.getPublicKey()).getFirst());
 
-        return new UnsignedAtom(new Atom(particleGroups, atomMetaData));
+        return Atom.create(particleGroups, atomMetaData);
     }
 
 }

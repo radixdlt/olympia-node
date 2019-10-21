@@ -9,9 +9,9 @@ import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle
 import com.radixdlt.client.atommodel.tokens.TokenPermission;
 import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.core.RadixEnv;
+import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.ParticleGroup;
-import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.client.core.atoms.particles.RRI;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
@@ -46,10 +46,10 @@ public class UnallocatedTokensParticleTest {
 
 		groups.add(ParticleGroup.of(SpunParticle.up(particle)));
 
-		UnsignedAtom unsignedAtom = api.buildAtomWithFee(groups);
+		Atom unsignedAtom = api.buildAtomWithFee(groups);
 
 		Observable<SubmitAtomAction> updates = api.getIdentity()
-			.sign(unsignedAtom)
+			.addSignature(unsignedAtom)
 			.flatMapObservable(a -> api.submitAtom(a).toObservable());
 
 		TestObserver<SubmitAtomStatusAction> testObserver = TestObserver.create();
@@ -87,10 +87,10 @@ public class UnallocatedTokensParticleTest {
 
 		groups.add(ParticleGroup.of(SpunParticle.up(unallocatedParticle)));
 
-		UnsignedAtom unsignedAtom = api.buildAtomWithFee(groups);
+		Atom unsignedAtom = api.buildAtomWithFee(groups);
 
 		Observable<SubmitAtomAction> updates = api.getIdentity()
-			.sign(unsignedAtom)
+			.addSignature(unsignedAtom)
 			.flatMapObservable(a -> api.submitAtom(a).toObservable());
 
 		TestObserver<SubmitAtomStatusAction> testObserver = TestObserver.create();
@@ -144,10 +144,10 @@ public class UnallocatedTokensParticleTest {
 			SpunParticle.up(tokenDefinitionParticle)
 		));
 
-		UnsignedAtom unsignedAtom = api.buildAtomWithFee(groups);
+		Atom unsignedAtom = api.buildAtomWithFee(groups);
 
 		Observable<SubmitAtomAction> updates = api.getIdentity()
-			.sign(unsignedAtom)
+			.addSignature(unsignedAtom)
 			.flatMapObservable(a -> api.submitAtom(a).toObservable());
 
 		TestObserver<SubmitAtomStatusAction> testObserver = TestObserver.create();

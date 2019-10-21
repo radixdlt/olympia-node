@@ -76,7 +76,7 @@ public class AtomStatusTest {
 		Transaction transaction = api.createTransaction();
 		RRI unique = RRI.of(api.getAddress(), "test");
 		transaction.stage(PutUniqueIdAction.create(unique));
-		Atom atom = api.getIdentity().sign(transaction.buildAtom())
+		Atom atom = api.getIdentity().addSignature(transaction.buildAtom())
 			.blockingGet();
 		AID aid = atom.getAid();
 
