@@ -38,6 +38,8 @@ Please report unacceptable behavior to [hello@radixdlt.com](mailto:hello@radixdl
 
 ## Branching strategy
 
+Our branching strategy is based on [this article](https://medium.com/@matt.dekrey/a-better-git-branching-model-b3bc8b73e472).
+
 ### Rebasing
 
 Rebasing should be avoided. Rebases cause potential conflicts with other people's work on the same branches, overwrite history of the project and ruin any GPG signed commits from other developers. The only time it is OK to rebase is when there is a local branch that hasn't been pushed to any remotes yet.
