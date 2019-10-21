@@ -15,7 +15,6 @@
 - [Contribute](#contribute)
   - [Code style](#code-style)
   - [Code structure](#code-structure)
-  - [Testing](#testing)
   - [Commit messages](#commit-messages)
   - [Opening a pull request](#opening-a-pull-request)
   
@@ -105,15 +104,29 @@ Once the hotfix branch is ready, it should be treated basically as a release can
 
 ### Code style
 
-* TBD
+#### Opening Braces on the Same Line
+
+Braces follow the Kernighan and Ritchie (K&R) style for nonempty blocks and block-like constructs:
+
+* No line break before the opening brace.
+* Line break after the opening brace.
+* Line break before the closing brace.
+* Line break after the closing brace, only if that brace terminates a statement or terminates the body of a method, constructor, or named class. For example, there is no line break after the brace if it is followed by else or a comma.
+
+#### Braces Always Required
+
+* Braces are always required with `if`, `else`, `for`, `do` and `while` statements, even when the body of the statement is empty or contains only a single statement.
+
+#### Use of "this." for Field Access
+
+* Use of the `this` keyword is preferred in situations where there may be ambiguity in field and variable names, such as in setters and constructors.
 
 ### Code structure
 
-* TBD
+#### Javadoc locations
 
-### Testing
-
-* TBD
+* Properly formatted and complete Javadoc must be included for all fields and methods with either `public` or `protected` visibility.
+* Note that overridden instance methods or implemented `interface` methods need not have Javadoc if the inherited Javadoc is correct and suitable.  In particular methods that override superclass methods and change the behaviour of the method should document the new behaviour.
 
 ### Commit messages
 
