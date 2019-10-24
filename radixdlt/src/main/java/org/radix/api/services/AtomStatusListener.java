@@ -6,6 +6,5 @@ package org.radix.api.services;
  */
 public interface AtomStatusListener {
 	void onStored();
-	void onDeleted();
 	void onError(Throwable e);
 }

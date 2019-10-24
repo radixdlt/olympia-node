@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.List;
 
 import com.radixdlt.ledger.Ledger;
+import com.radixdlt.middleware2.processing.RadixEngineAtomProcessor;
 import org.radix.RadixServer;
 import org.radix.api.http.RadixHttpServer;
 import org.radix.modules.Module;
@@ -17,10 +18,12 @@ public class API extends Service {
 
 	private RadixHttpServer radixHttpServer;
 	private Ledger ledger;
+	private RadixEngineAtomProcessor radixEngineAtomProcessor;
 
-	public API(Ledger ledger) {
+	public API(Ledger ledger, RadixEngineAtomProcessor radixEngineAtomProcessor) {
 		super();
 		this.ledger = ledger;
+		this.radixEngineAtomProcessor = radixEngineAtomProcessor;
 	}
 
 	public RadixHttpServer getRadixHttpServer() {
@@ -33,7 +36,7 @@ public class API extends Service {
 			throw new ModuleStartException("API is enabled but no RadixServer is available", this);
 		}
 
-		radixHttpServer = new RadixHttpServer(ledger);
+		radixHttpServer = new RadixHttpServer(ledger, radixEngineAtomProcessor);
 		radixHttpServer.start();
 	}
 

@@ -10,8 +10,6 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * A request-based deliverer which can try and deliver given {@link AID}s on request.
- *
- * @see AtomDeliverer
  */
 public interface RequestDeliverer {
 	/**

@@ -10,6 +10,7 @@ import com.radixdlt.middleware.SimpleRadixEngineAtom;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationUtils;
 import com.radixdlt.store.SpinStateMachine;
+import com.radixdlt.utils.Longs;
 import org.radix.modules.Modules;
 
 import java.util.Map;
@@ -120,6 +121,32 @@ public class EngineAtomIndices {
 		typeBytes[0] = type.value;
 		System.arraycopy(idBytes, 0, typeBytes, 1, idBytes.length);
 		return typeBytes;
+	}
+
+	public static byte[] toByteArray(byte prefix, byte[] idBytes) {
+		if (idBytes == null) {
+			throw new IllegalArgumentException("EUID is null");
+		}
+
+		byte[] typeBytes = new byte[idBytes.length + 1];
+		typeBytes[0] = prefix;
+		System.arraycopy(idBytes, 0, typeBytes, 1, idBytes.length);
+		return typeBytes;
+	}
+
+	public static byte[] toByteArray(byte prefix, long value)
+	{
+		byte[] typeBytes = new byte[Long.BYTES+1];
+		typeBytes[0] = prefix;
+		System.arraycopy(Longs.toByteArray(value), 0, typeBytes, 1, Long.BYTES);
+		return typeBytes;
+	}
+
+	public static EUID toEUID(byte[] bytes)
+	{
+		byte[] temp = new byte[bytes.length-1];
+		System.arraycopy(bytes, 1, temp, 0, temp.length);
+		return new EUID(temp);
 	}
 
 }

@@ -9,7 +9,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.radix.atoms.events.AtomDeletedEvent;
 import org.radix.atoms.events.AtomEvent;
 import org.radix.atoms.events.AtomListener;
 import org.radix.atoms.events.AtomStoredEvent;
@@ -399,9 +398,6 @@ public class ShardChecksumStore extends DatabaseStore
 		{
 			if (event instanceof AtomStoredEvent)
 				ShardChecksumStore.this.incrementChecksums(event.getAtom());
-	
-			if (event instanceof AtomDeletedEvent)
-				ShardChecksumStore.this.decrementChecksums(event.getAtom());
 	
 			Modules.ifAvailable(SystemMetaData.class, a -> a.put("ledger.checksum", ShardChecksumStore.this.checksum.get()));
 		}

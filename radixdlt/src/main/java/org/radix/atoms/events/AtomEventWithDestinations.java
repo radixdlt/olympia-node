@@ -2,7 +2,6 @@ package org.radix.atoms.events;
 
 import com.radixdlt.common.EUID;
 import org.radix.atoms.Atom;
-import org.radix.atoms.PreparedAtom;
 
 import java.util.Set;
 import java.util.function.Supplier;
@@ -19,8 +18,4 @@ public class AtomEventWithDestinations extends AtomEvent {
 		return destinations;
 	}
 
-	//Method for compilation of legacy code without changes in NodeMassStore and AtomSyncStore
-	public PreparedAtom getPreparedAtom() {
-		throw new UnsupportedOperationException("PreparedAtom is deprecated");
-	}
 }

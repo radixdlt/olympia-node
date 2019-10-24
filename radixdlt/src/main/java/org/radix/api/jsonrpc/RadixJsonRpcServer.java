@@ -2,12 +2,12 @@ package org.radix.api.jsonrpc;
 
 import com.google.common.io.CharStreams;
 import com.radixdlt.atomos.RadixAddress;
+import com.radixdlt.ledger.Ledger;
 import com.radixdlt.ledger.LedgerCursor;
 import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerSearchMode;
+import com.radixdlt.middleware2.converters.SimpleRadixEngineAtomToEngineAtom;
 import com.radixdlt.middleware2.store.EngineAtomIndices;
-import com.radixdlt.tempo.store.TempoAtomStoreView;
-import com.radixdlt.tempo.AtomSyncView;
 import com.radixdlt.tempo.LegacyUtils;
 import org.radix.atoms.Atom;
 import com.radixdlt.engine.AtomStatus;
@@ -23,12 +23,10 @@ import org.everit.json.schema.ValidationException;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.radix.api.services.AtomsService;
-import org.radix.atoms.AtomStore;
 import org.radix.modules.Modules;
 import org.radix.network2.addressbook.AddressBook;
 
 import com.radixdlt.universe.Universe;
-import org.radix.properties.RuntimeProperties;
 import org.radix.universe.system.LocalSystem;
 
 import java.io.IOException;
@@ -62,23 +60,23 @@ public final class RadixJsonRpcServer {
 	/**
 	 * Store to query atoms from
 	 */
-    private final TempoAtomStoreView storeView;
+    private final Ledger ledger;
 
-	private final AtomSyncView syncView;
 
 	/**
 	 * Serialization mechanism
 	 */
 	private final Serialization serialization;
 
-	public RadixJsonRpcServer(Serialization serialization, TempoAtomStoreView storeView, AtomSyncView syncView, AtomsService atomsService, Schema atomSchema) {
-		this(serialization, storeView, syncView, atomsService, atomSchema, DEFAULT_MAX_REQUEST_SIZE);
+	private final SimpleRadixEngineAtomToEngineAtom simpleRadixEngineAtomToEngineAtom = new SimpleRadixEngineAtomToEngineAtom();
+
+	public RadixJsonRpcServer(Serialization serialization, Ledger ledger, AtomsService atomsService, Schema atomSchema) {
+		this(serialization, ledger, atomsService, atomSchema, DEFAULT_MAX_REQUEST_SIZE);
 	}
 
-	public RadixJsonRpcServer(Serialization serialization, TempoAtomStoreView storeView, AtomSyncView syncView, AtomsService atomsService, Schema atomSchema, long maxRequestSizeBytes) {
+	public RadixJsonRpcServer(Serialization serialization, Ledger ledger, AtomsService atomsService, Schema atomSchema, long maxRequestSizeBytes) {
 		this.serialization = Objects.requireNonNull(serialization);
-		this.storeView = Objects.requireNonNull(storeView);
-		this.syncView = Objects.requireNonNull(syncView);
+		this.ledger = Objects.requireNonNull(ledger);
 		this.atomsService = Objects.requireNonNull(atomsService);
 		this.atomSchema = Objects.requireNonNull(atomSchema);
 		this.maxRequestSizeBytes = Objects.requireNonNull(maxRequestSizeBytes);
@@ -145,7 +143,8 @@ public final class RadixJsonRpcServer {
 
 						String aidString = params.getString("aid");
 						// TODO remove legacy conversion
-						Optional<Atom> foundAtom = storeView.get(AID.from(aidString))
+						Optional<Atom> foundAtom = ledger.get(AID.from(aidString))
+							.map(atom -> simpleRadixEngineAtomToEngineAtom.convert(atom))
 							.map(LegacyUtils::toLegacyAtom);
 						if (foundAtom.isPresent()) {
 							result = foundAtom.get();
@@ -167,16 +166,9 @@ public final class RadixJsonRpcServer {
 						final String addressString = params.getString("address");
 						final RadixAddress address = RadixAddress.from(addressString);
 
-						// TODO FIXME super ugly hack because indices are handled differently
-						LedgerIndex index;
-						if (Modules.get(RuntimeProperties.class).get("tempo2", false)) {
-							index = new LedgerIndex(EngineAtomIndices.IndexType.DESTINATION.getValue(), address.getUID().toByteArray());
-						} else {
-							index = new LedgerIndex(AtomStore.IDType.toByteArray(AtomStore.IDType.DESTINATION, address.getUID()));
-						}
-
+						LedgerIndex index = new LedgerIndex(EngineAtomIndices.IndexType.DESTINATION.getValue(), address.getUID().toByteArray());
 						List<AID> collectedAids = new ArrayList<>();
-						LedgerCursor cursor = storeView.search(LedgerIndex.LedgerIndexType.DUPLICATE, index, LedgerSearchMode.EXACT);
+						LedgerCursor cursor = ledger.search(LedgerIndex.LedgerIndexType.DUPLICATE, index, LedgerSearchMode.EXACT);
 						while (cursor != null) {
 							collectedAids.add(cursor.get());
 							cursor = cursor.next();
@@ -228,13 +220,11 @@ public final class RadixJsonRpcServer {
 					} else {
 						String aidString = ((JSONObject) paramsObject).getString("aid");
 						final AID aid = AID.from(aidString);
-						AtomStatus atomStatus = syncView.getAtomStatus(aid);
-						if (atomStatus == null) {
-							if (storeView.contains(aid)) {
-								atomStatus = AtomStatus.STORED;
-							} else {
-								atomStatus = AtomStatus.DOES_NOT_EXIST;
-							}
+						AtomStatus atomStatus;
+						if (ledger.contains(aid)) {
+							atomStatus = AtomStatus.STORED;
+						} else {
+							atomStatus = AtomStatus.DOES_NOT_EXIST;
 						}
 						result = new JSONObject().put("status", atomStatus.toString());
 					}

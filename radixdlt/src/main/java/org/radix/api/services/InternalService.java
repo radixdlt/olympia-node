@@ -1,11 +1,11 @@
 package org.radix.api.services;
 
-import com.radixdlt.tempo.AtomSyncView;
+import com.radixdlt.ledger.Ledger;
+import com.radixdlt.middleware2.processing.RadixEngineAtomProcessor;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.Bytes;
 
 import java.util.List;
-import java.util.Map;
 
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
@@ -16,15 +16,12 @@ import org.json.JSONObject;
 import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.atomos.RRIParticle;
 import org.radix.atoms.Atom;
-import org.radix.atoms.AtomStore;
 import org.radix.atoms.messages.AtomSubmitMessage;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atomos.RRI;
 import com.radixdlt.constraintmachine.Spin;
-import org.radix.atoms.particles.conflict.ParticleConflictHandler;
-import org.radix.atoms.sync.AtomSyncStore;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.CryptoException;
 import org.radix.logging.Logger;
@@ -36,8 +33,6 @@ import org.radix.network2.messaging.MessageCentral;
 import org.radix.properties.RuntimeProperties;
 import org.radix.shards.ShardChecksumStore;
 
-import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.Serialization;
 import org.radix.time.Time;
 import org.radix.universe.system.LocalSystem;
 import org.radix.utils.SystemProfiler;
@@ -47,10 +42,14 @@ import org.radix.utils.SystemProfiler;
  */
 public class InternalService {
 	private static final Logger log = Logging.getLogger();
+	private Ledger ledger;
+	private RadixEngineAtomProcessor radixEngineAtomProcessor;
+	private static InternalService INTERNAL_SERVICE;
 
-	private static final InternalService INTERNAL_SERVICE = new InternalService();
-
-	public static InternalService getInstance() {
+	public static InternalService getInstance(Ledger ledger, RadixEngineAtomProcessor radixEngineAtomProcessor) {
+		if (INTERNAL_SERVICE == null) {
+			INTERNAL_SERVICE = new InternalService(ledger, radixEngineAtomProcessor);
+		}
 		return INTERNAL_SERVICE;
 	}
 
@@ -59,11 +58,15 @@ public class InternalService {
 	// Executor for prepare/store
 	private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
-	private InternalService() {}
+	private InternalService(Ledger ledger, RadixEngineAtomProcessor radixEngineAtomProcessor) {
+		this.ledger = ledger;
+		this.radixEngineAtomProcessor = radixEngineAtomProcessor;
+	}
 
 	private static class Spammer implements Runnable {
 		private final int nonceBits = Modules.get(RuntimeProperties.class).get("test.nullatom.junk_size", 40);
 
+		private final RadixEngineAtomProcessor radixEngineAtomProcessor;
 		private final ECKeyPair owner;
 		private final RadixAddress account;
 		private final int     iterations;
@@ -72,7 +75,8 @@ public class InternalService {
 
 		private static final Random random = new Random();
 
-		public Spammer(ECKeyPair owner, int iterations, int batching, int rate) {
+		public Spammer(RadixEngineAtomProcessor radixEngineAtomProcessor, ECKeyPair owner, int iterations, int batching, int rate) {
+			this.radixEngineAtomProcessor = radixEngineAtomProcessor;
 			this.owner = owner;
 			this.iterations = iterations;
 			this.rate = rate;
@@ -132,7 +136,7 @@ public class InternalService {
 								atom.sign(this.owner);
 
 								if (LocalSystem.getInstance().getShards().intersects(atom.getShards()) == true) {
-									Modules.get(AtomSyncView.class).inject(atom);
+									radixEngineAtomProcessor.process(atom);
 								} else {
 									List<Peer> peers = Modules.get(AddressBook.class).recentPeers().collect(Collectors.toList());
 									for (Peer peer : peers) {
@@ -207,7 +211,7 @@ public class InternalService {
 		}
 
 		try {
-			Thread spammerThread = new Thread(new Spammer(new ECKeyPair(), Integer.decode(iterations), batching == null ? 1 : Integer.decode(batching), Integer.decode(rate)));
+			Thread spammerThread = new Thread(new Spammer(radixEngineAtomProcessor, new ECKeyPair(), Integer.decode(iterations), batching == null ? 1 : Integer.decode(batching), Integer.decode(rate)));
 			spammerThread.setDaemon(true);
 			spammerThread.setName("Spammer " + System.currentTimeMillis());
 			spammerThread.start();
@@ -234,7 +238,7 @@ public class InternalService {
 		try {
 			ECKeyPair sourceKey = new ECKeyPair();
 			RadixAddress destination = RadixAddress.from(Modules.get(Universe.class), new ECKeyPair().getPublicKey());
-			executor.execute(() -> Loader.getInstance().prepareMessages(sourceKey, destination, atomCount));
+			executor.execute(() -> Loader.getInstance(ledger, radixEngineAtomProcessor).prepareMessages(sourceKey, destination, atomCount));
 			result.put("data", "OK");
 		} catch (CryptoException e) {
 			result.put("error", e.getMessage());
@@ -257,7 +261,7 @@ public class InternalService {
 		try {
 			ECKeyPair sourceKey = new ECKeyPair();
 			RadixAddress destination = RadixAddress.from(Modules.get(Universe.class), new ECKeyPair().getPublicKey());
-			executor.execute(() -> Loader.getInstance().prepareTransfers(sourceKey, destination, atomCount));
+			executor.execute(() -> Loader.getInstance(ledger, radixEngineAtomProcessor).prepareTransfers(sourceKey, destination, atomCount));
 			result.put("data", "OK");
 		} catch (CryptoException e) {
 			result.put("error", e.getMessage());
@@ -269,7 +273,7 @@ public class InternalService {
 	public JSONObject bulkstore() {
 		JSONObject result = new JSONObject();
 
-		executor.execute(Loader.getInstance()::store);
+		executor.execute(Loader.getInstance(ledger, radixEngineAtomProcessor)::store);
 		result.put("data", "OK");
 
 		return result;
@@ -280,23 +284,6 @@ public class InternalService {
 
 		Loader.ping();
 		result.put("data", "pong");
-
-		return result;
-	}
-
-	public JSONObject dumpAtoms(boolean verbose) {
-		JSONObject result = new JSONObject();
-
-		try
-		{
-			Modules.get(AtomStore.class).dumpAtoms(verbose);
-		}
-		catch (Exception e)
-		{
-			throw new RuntimeException(e);
-		}
-
-		result.put("data", "OK");
 
 		return result;
 	}
@@ -314,43 +301,6 @@ public class InternalService {
 		}
 
 		result.put("data", "OK");
-
-		return result;
-	}
-
-	public JSONObject dumpSyncBlocks() {
-		JSONObject result = new JSONObject();
-
-		try
-		{
-			Modules.get(AtomSyncStore.class).dumpSyncBlocks();
-		}
-		catch (Exception e)
-		{
-			throw new RuntimeException(e);
-		}
-
-		result.put("data", "OK");
-
-		return result;
-	}
-
-
-	public JSONObject ledgerMetaData() {
-		JSONObject result = new JSONObject();
-
-		try
-		{
-			Map<String, Object> atomSyncMetaData = Modules.get(AtomSyncView.class).getMetaData();
-			Map<String, Object> particleConflictHandlerMetaData = Modules.get(ParticleConflictHandler.class).getMetaData();
-
-			result.put("atom_sync", Modules.get(Serialization.class).toJsonObject(atomSyncMetaData, Output.ALL));
-			result.put("particle_conflicts", Modules.get(Serialization.class).toJsonObject(particleConflictHandlerMetaData, Output.ALL));
-		}
-		catch (Exception e)
-		{
-			throw new RuntimeException(e);
-		}
 
 		return result;
 	}

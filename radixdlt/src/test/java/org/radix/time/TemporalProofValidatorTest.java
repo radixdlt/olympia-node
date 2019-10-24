@@ -16,7 +16,6 @@ import org.radix.modules.Modules;
 import org.radix.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.universe.Universe;
-import org.radix.validation.ValidationHandler;
 
 import java.util.Collections;
 
@@ -41,9 +40,6 @@ public class TemporalProofValidatorTest {
 		Modules.put(RuntimeProperties.class, runtimeProperties);
 		Modules.put(NtpService.class, ntpService);
 		Modules.put(Serialization.class, Serialization.getDefault());
-
-		ValidationHandler validationHandler = mock(ValidationHandler.class);
-		Modules.put(ValidationHandler.class, validationHandler);
 	}
 
 	@After
@@ -52,7 +48,6 @@ public class TemporalProofValidatorTest {
 		Modules.remove(RuntimeProperties.class);
 		Modules.remove(NtpService.class);
 		Modules.remove(Serialization.class);
-		Modules.remove(ValidationHandler.class);
 	}
 
 	@Test

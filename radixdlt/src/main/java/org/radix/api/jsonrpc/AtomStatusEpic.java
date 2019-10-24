@@ -81,12 +81,6 @@ public class AtomStatusEpic {
 			}
 
 			@Override
-			public void onDeleted() {
-				JSONObject data = new JSONObject();
-				sendAtomSubmissionState.accept(AtomStatus.EVICTED_CONFLICT_LOSER, data);
-			}
-
-			@Override
 			public void onError(Throwable e) {
 				if (e instanceof ConstraintMachineValidationException) {
 					ConstraintMachineValidationException cmException = (ConstraintMachineValidationException) e;

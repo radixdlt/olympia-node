@@ -18,7 +18,6 @@ import org.radix.events.EventProfiler;
 import org.radix.events.Events;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.mass.Masses;
 import org.radix.modules.Module;
 import org.radix.modules.Modules;
 import org.radix.modules.Plugin;
@@ -45,7 +44,6 @@ import org.radix.utils.IOUtils;
 import org.radix.utils.SystemMetaData;
 import org.radix.utils.SystemProfiler;
 import com.radixdlt.utils.Bytes;
-import org.radix.validation.Validation;
 
 public class Radix extends Plugin
 {
@@ -210,30 +208,6 @@ public class Radix extends Plugin
 		}
 
 		/*
-		 * VALIDATORS
-		 */
-		try
-		{
-			Modules.getInstance().start(new Validation());
-		}
-		catch (Exception ex)
-		{
-			throw new ModuleStartException("Failure setting up Validation", ex, this);
-		}
-
-		/*
-		 * MASS
-		 */
-		try
-		{
-			Modules.getInstance().startIfNeeded(Masses.class);
-		}
-		catch (Exception ex)
-		{
-			throw new ModuleStartException("Failure setting up Mass", ex, this);
-		}
-
-		/*
 		 * MESSAGES
 		 */
 		MessageCentral messageCentral = createMessageCentral(Modules.get(RuntimeProperties.class));
@@ -316,14 +290,8 @@ public class Radix extends Plugin
 		/**
 		 * TEMPO
 		 */
-		if (Modules.get(RuntimeProperties.class).get("tempo2", false)) {
-			ledger = (Tempo)globalInjector.getInjector().getInstance(Ledger.class);
-			ledger.start();
-
-//			MockApplication mockApplication = new MockApplication(tempo);
-//			mockApplication.startInstance();
-//			Modules.put(MockAccessor.class, mockApplication.getAccessor());
-		}
+		ledger = (Tempo) globalInjector.getInjector().getInstance(Ledger.class);
+		ledger.start();
 
 		/*
 		 * CP
@@ -338,21 +306,6 @@ public class Radix extends Plugin
 		}
 
 		/*
-		 * API
-		 */
-		try
-		{
-			Modules.getInstance().start(new API(ledger));
-		}
-		catch (Exception ex)
-		{
-			throw new ModuleStartException("Failure setting up API", ex, this);
-		}
-
-		// START UP ALL SERVICES //
-		Modules.getInstance().start();
-
-		/*
 		 * Middleware
 		 */
 		try {
@@ -361,6 +314,21 @@ public class Radix extends Plugin
 		} catch (Exception e) {
 			throw new ModuleStartException("Failure setting up AtomProcessor", e, this);
 		}
+
+		/*
+		 * API
+		 */
+		try
+		{
+			Modules.getInstance().start(new API(ledger, atomProcessor));
+		}
+		catch (Exception ex)
+		{
+			throw new ModuleStartException("Failure setting up API", ex, this);
+		}
+
+		// START UP ALL SERVICES //
+		Modules.getInstance().start();
 
 		log.info("Node '"+LocalSystem.getInstance().getNID()+"' started successfully");
 	}

@@ -12,16 +12,17 @@ import com.radixdlt.middleware.ImmutableAtom;
 import com.radixdlt.middleware.RadixEngineUtils;
 import com.radixdlt.middleware.SimpleRadixEngineAtom;
 import com.radixdlt.middleware2.converters.SimpleRadixEngineAtomToEngineAtom;
+import com.radixdlt.tempo.LegacyUtils;
+import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.universe.Universe;
 import org.radix.atoms.Atom;
-import org.radix.atoms.AtomStore;
-import org.radix.database.exceptions.DatabaseException;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.modules.Modules;
 import org.radix.validation.ConstraintMachineValidationException;
 
 import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class RadixEngineAtomProcessor {
@@ -38,7 +39,7 @@ public class RadixEngineAtomProcessor {
 			Ledger ledger,
 			RadixEngine<SimpleRadixEngineAtom> radixEngine,
 			SimpleRadixEngineAtomToEngineAtom atomConverter
-	) {
+			) {
 		this.ledger = ledger;
 		this.radixEngine = radixEngine;
 		this.atomConverter = atomConverter;
@@ -57,6 +58,19 @@ public class RadixEngineAtomProcessor {
 					log.error("Atom processing failed", e);
 				}
 			}
+		}
+	}
+
+	public void process(Atom atom) {
+		//We have 2 conversion operation. Should be fixed when we will define clear Atom model
+		try {
+			TempoAtom tempoAtom = LegacyUtils.fromLegacyAtom(atom);
+			SimpleRadixEngineAtom simpleRadixEngineAtom = atomConverter.convert(tempoAtom);
+			simpleRadixEngineAtom = getSimpleRadixEngineAtomWithLegacyAtom(simpleRadixEngineAtom);
+			radixEngine.store(simpleRadixEngineAtom, new AtomEventListener() {
+			});
+		} catch (Exception e) {
+			log.error("Engine processing exception ", e);
 		}
 	}
 
@@ -85,14 +99,12 @@ public class RadixEngineAtomProcessor {
 		try {
 			LinkedList<AID> atomIds = new LinkedList<>();
 			for (ImmutableAtom immutableAtom : Modules.get(Universe.class).getGenesis()) {
-
-				final Atom atom = (Atom) immutableAtom;
-				if (!ledger.get(atom.getAID()).isPresent()) {
+				if (!ledger.contains(immutableAtom.getAID())) {
 					final SimpleRadixEngineAtom cmAtom;
 					try {
-						cmAtom = RadixEngineUtils.toCMAtom(atom);
+						cmAtom = RadixEngineUtils.toCMAtom(immutableAtom);
 					} catch (RadixEngineUtils.CMAtomConversionException e) {
-						throw new ConstraintMachineValidationException(atom, e.getMessage(), e.getDataPointer());
+						throw new ConstraintMachineValidationException(immutableAtom, e.getMessage(), e.getDataPointer());
 					}
 
 					radixEngine.store(cmAtom,
@@ -138,9 +150,9 @@ public class RadixEngineAtomProcessor {
 		}
 	}
 
-	private void waitForAtoms(LinkedList<AID> atomHashes) throws DatabaseException, InterruptedException {
+	private void waitForAtoms(List<AID> atomHashes) throws InterruptedException {
 		for (AID atomID : atomHashes) {
-			while (!Modules.get(AtomStore.class).hasAtom(atomID)) {
+			while (!ledger.contains(atomID)) {
 				TimeUnit.MILLISECONDS.sleep(100);
 			}
 		}

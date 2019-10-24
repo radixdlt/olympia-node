@@ -11,7 +11,6 @@ import com.radixdlt.middleware2.store.EngineAtomIndices;
 import com.radixdlt.tempo.LegacyUtils;
 import org.radix.atoms.Atom;
 import org.radix.atoms.AtomDependencyNotFoundException;
-import org.radix.atoms.AtomStore;
 import org.radix.atoms.events.AtomExceptionEvent;
 import org.radix.atoms.events.AtomStoredEvent;
 import org.radix.atoms.particles.conflict.ParticleConflict;
@@ -44,7 +43,7 @@ public class EngineAtomEventListener implements AtomEventListener<SimpleRadixEng
 			EngineAtomIndices engineAtomIndices = EngineAtomIndices.from(cmAtom);
 			Events.getInstance().broadcastWithException(new AtomStoredEvent(legacyAtom, () ->
 					engineAtomIndices.getDuplicateIndices().stream().filter(e -> e.getPrefix() == EngineAtomIndices.IndexType.DESTINATION.getValue())
-					.map(e -> AtomStore.IDType.toEUID(e.asKey()))
+					.map(e -> EngineAtomIndices.toEUID(e.asKey()))
 					.collect(Collectors.toSet()))
 			);
 

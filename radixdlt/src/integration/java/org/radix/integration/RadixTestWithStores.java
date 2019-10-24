@@ -7,7 +7,6 @@ import com.google.inject.Injector;
 import com.google.inject.name.Names;
 import com.radixdlt.common.EUID;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.tempo.AtomSyncView;
 import com.radixdlt.tempo.Tempo;
 import com.radixdlt.tempo.TempoAttestor;
 import com.radixdlt.tempo.consensus.Consensus;
@@ -17,8 +16,6 @@ import com.radixdlt.tempo.store.TempoAtomStore;
 import com.radixdlt.tempo.store.berkeley.BerkeleyStoreModule;
 import org.junit.After;
 import org.junit.Before;
-import org.radix.atoms.AtomStore;
-import org.radix.atoms.sync.AtomSync;
 import org.radix.database.DatabaseEnvironment;
 import org.radix.database.DatabaseStore;
 import org.radix.modules.Module;
@@ -49,9 +46,8 @@ public class RadixTestWithStores extends RadixTest
 		MessageCentral messageCentral = new MessageCentralFactory().createDefault(properties);
 		Modules.put(MessageCentral.class, messageCentral);
 
-		if (Modules.get(RuntimeProperties.class).get("tempo2", false)) {
-			EUID self = LocalSystem.getInstance().getNID();
-			injector = Guice.createInjector(
+		EUID self = LocalSystem.getInstance().getNID();
+		injector = Guice.createInjector(
 				new AbstractModule() {
 					@Override
 					protected void configure() {
@@ -59,11 +55,11 @@ public class RadixTestWithStores extends RadixTest
 					}
 				},
 				new BerkeleyStoreModule()
-			);
+		);
 
-			TempoAtomStore atomStore = injector.getInstance(TempoAtomStore.class);
-			CommitmentStore commitmentStore = injector.getInstance(CommitmentStore.class);
-			Tempo tempo = new Tempo(
+		TempoAtomStore atomStore = injector.getInstance(TempoAtomStore.class);
+		CommitmentStore commitmentStore = injector.getInstance(CommitmentStore.class);
+		Tempo tempo = new Tempo(
 				self,
 				atomStore,
 				commitmentStore,
@@ -73,31 +69,21 @@ public class RadixTestWithStores extends RadixTest
 				ImmutableSet.of(),
 				mock(RequestDeliverer.class),
 				ImmutableSet.of()
-			);
+		);
 			Modules.put(Tempo.class, tempo);
 			Modules.put(TempoAtomStore.class, atomStore);
-		} else {
-			Modules.getInstance().start(clean(new AtomStore()));
-			Modules.getInstance().start(new AtomSync());
-		}
 	}
 
 	@After
 	public void afterEachRadixTest() throws ModuleException, IOException {
 		safelyStop(Modules.get(RoutingHandler.class));
 		safelyStop(Modules.get(RoutingStore.class));
-		if (Modules.get(RuntimeProperties.class).get("tempo2", false)) {
-			Modules.get(Tempo.class).close();
-			Modules.get(Tempo.class).reset();
-			Modules.remove(Tempo.class);
-			Modules.remove(TempoAtomStore.class);
-		} else {
-			safelyStop(Modules.get(AtomStore.class));
-			safelyStop(Modules.get(AtomSync.class));
-			Modules.remove(AtomSync.class);
-			Modules.remove(AtomStore.class);
-			Modules.remove(AtomSyncView.class);
-		}
+
+		Modules.get(Tempo.class).close();
+		Modules.get(Tempo.class).reset();
+		Modules.remove(Tempo.class);
+		Modules.remove(TempoAtomStore.class);
+
 		safelyStop(Modules.get(DatabaseEnvironment.class));
 		Modules.remove(DatabaseEnvironment.class);
 

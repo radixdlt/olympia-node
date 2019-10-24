@@ -22,7 +22,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.radix.modules.Modules;
 import org.radix.time.TemporalVertex;
-import org.radix.validation.ValidationHandler;
 
 import static org.mockito.Mockito.mock;
 
@@ -31,17 +30,11 @@ public class UniverseTest {
 	@Before
 	public void setUp() {
 		Modules.put(Serialization.class, Serialization.getDefault());
-
-		// Atom.getAID currently has an unfortunate dependency on the Constraint machine
-		// This will be revisited and cleaned up at a later point but would be too much effort for this change
-		final ValidationHandler validationHandler = mock(ValidationHandler.class);
-		Modules.put(ValidationHandler.class, validationHandler);
 	}
 
 	@After
 	public void tearDown() {
 		Modules.remove(Serialization.class);
-		Modules.remove(ValidationHandler.class);
 	}
 
     @Rule
