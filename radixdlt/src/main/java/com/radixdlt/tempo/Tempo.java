@@ -1,13 +1,11 @@
 package com.radixdlt.tempo;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.radixdlt.Atom;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
-import com.radixdlt.engine.AtomStatus;
 import com.radixdlt.ledger.Ledger;
 import com.radixdlt.ledger.LedgerCursor;
 import com.radixdlt.ledger.LedgerIndex;
@@ -32,7 +30,6 @@ import org.radix.network2.addressbook.Peer;
 import org.radix.utils.SimpleThreadPool;
 
 import java.io.Closeable;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -152,14 +149,9 @@ public final class Tempo implements Ledger, Closeable {
 	private void onDiscovered(Set<AID> aids, Peer peer) {
 		requestDeliverer.deliver(aids, ImmutableSet.of(peer)).forEach((aid, future) -> future.thenAccept(result -> {
 			if (result.isSuccess()) {
-				onDelivered(result.getAtom(), result.getPeer());
+				injectObservation(LedgerObservation.adopt(result.getAtom()));
 			}
 		}));
-	}
-
-	private void onDelivered(TempoAtom atom, Peer peer) {
-		// TODO add shard space relevance check
-		injectObservation(LedgerObservation.adopt(atom));
 	}
 
 	private void processConsensusAction(ConsensusAction action) {
@@ -170,8 +162,7 @@ public final class Tempo implements Ledger, Closeable {
 			log.info("Committing to '" + preference.getAID() + "' at " + temporalCommitment.getLogicalClock());
 			this.atomStore.commit(preference.getAID(), temporalCommitment.getLogicalClock());
 			this.commitmentStore.put(self, temporalCommitment.getLogicalClock(), temporalCommitment.getCommitment());
-
-			this.injectObservation(LedgerObservation.commit(preference));
+			injectObservation(LedgerObservation.commit(preference));
 		} else if (action.getType() == ConsensusAction.Type.SWITCH_PREFERENCE) {
 			log.info("Switching preference from '" + action.getOldPreferences() + "' to '" + action.getPreference() + "'");
 			injectObservation(LedgerObservation.adopt(action.getOldPreferences(), action.getPreference()));
@@ -201,39 +192,19 @@ public final class Tempo implements Ledger, Closeable {
 		return atomStore.contains(type, index, mode);
 	}
 
+	@Override
+	public boolean contains(AID aid) {
+		return atomStore.contains(aid);
+	}
+
 	public void start() {
 		this.consensusProcessor.start();
 		Modules.put(TempoAtomStoreView.class, this.atomStore);
-		Modules.put(AtomSyncView.class, new AtomSyncView() {
-			@Override
-			public void inject(org.radix.atoms.Atom atom) {
-				TempoAtom tempoAtom = LegacyUtils.fromLegacyAtom(atom);
-				onDelivered(tempoAtom, null);
-			}
-
-			@Override
-			public AtomStatus getAtomStatus(AID aid) {
-				return atomStore.contains(aid) ? AtomStatus.STORED : AtomStatus.DOES_NOT_EXIST;
-			}
-
-			@Override
-			public long getQueueSize() {
-				return ledgerObservations.size();
-			}
-
-			@Override
-			public Map<String, Object> getMetaData() {
-				return ImmutableMap.of(
-					"inboundQueue", ledgerObservations.size()
-				);
-			}
-		});
 	}
 
 	@Override
 	public void close() {
 		Modules.remove(TempoAtomStoreView.class);
-		Modules.remove(AtomSyncView.class);
 		this.ownedResources.forEach(Resource::close);
 	}
 

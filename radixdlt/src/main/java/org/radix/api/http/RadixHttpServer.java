@@ -1,14 +1,12 @@
 package org.radix.api.http;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.common.AID;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.Ledger;
+import com.radixdlt.middleware2.processing.RadixEngineAtomProcessor;
 import com.radixdlt.mock.MockAccessor;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.tempo.AtomSyncView;
-import com.radixdlt.tempo.store.TempoAtomStoreView;
 import com.radixdlt.tempo.store.berkeley.BerkeleyCommitmentStore;
 import com.radixdlt.universe.Universe;
 import com.stijndewitt.undertow.cors.AllowAll;
@@ -64,17 +62,18 @@ public final class RadixHttpServer {
 	private final ConcurrentHashMap<RadixJsonRpcPeer, WebSocketChannel> peers;
 	private final AtomsService atomsService;
     private final RadixJsonRpcServer jsonRpcServer;
+    private final InternalService internalService;
 
-	public RadixHttpServer(Ledger ledger) {
+	public RadixHttpServer(Ledger ledger, RadixEngineAtomProcessor radixEngineAtomProcessor) {
 		this.peers = new ConcurrentHashMap<>();
-		this.atomsService = new AtomsService(Modules.get(AtomSyncView.class), ledger);
+		this.atomsService = new AtomsService(ledger, radixEngineAtomProcessor);
 		this.jsonRpcServer = new RadixJsonRpcServer(
 				Modules.get(Serialization.class),
-				Modules.get(TempoAtomStoreView.class),
-				Modules.get(AtomSyncView.class),
+				ledger,
 				atomsService,
 				AtomSchemas.get()
 		);
+		this.internalService = InternalService.getInstance(ledger, radixEngineAtomProcessor);
 	}
 
     private Undertow server;
@@ -141,17 +140,6 @@ public final class RadixHttpServer {
     }
 
     private void addDevelopmentOnlyRoutesTo(RoutingHandler handler) {
-    	addGetRoute("/api/internal/tempo/store/next", exchange -> {
-		    String positionStr = getParameter(exchange, "position").orElse("0");
-		    String limitStr = getParameter(exchange, "limit").orElse("10");
-			long position = Long.parseLong(positionStr);
-			int limit = Integer.parseInt(limitStr);
-
-		    ImmutableList<AID> aids = Modules.get(TempoAtomStoreView.class).getNextCommitted(position, limit);
-		    String aidsJson = Serialization.getDefault().toJson(aids, DsonOutput.Output.ALL);
-		    respond(aidsJson, exchange);
-	    }, handler);
-
 	    addGetRoute("/api/internal/tempo/commitments/next", exchange -> {
 	    	if (!Modules.isAvailable(BerkeleyCommitmentStore.class)) {
 	    		respond("Commitment store is unavailable", exchange);
@@ -192,22 +180,22 @@ public final class RadixHttpServer {
             String batching = getParameter(exchange, "batching").orElse(null);
             String rate = getParameter(exchange, "rate").orElse(null);
 
-            respond(InternalService.getInstance().spamathon(iterations, batching, rate), exchange);
+            respond(internalService.spamathon(iterations, batching, rate), exchange);
         }, handler);
 
 		addGetRoute("/api/internal/bulkpreparemessages", exchange -> {
 			String atomCount = getParameter(exchange, "atoms").orElse("100");
-			respond(InternalService.getInstance().prepareMessages(atomCount), exchange);
+			respond(internalService.prepareMessages(atomCount), exchange);
 		}, handler);
 		addGetRoute("/api/internal/bulkpreparetransfers", exchange -> {
 			String atomCount = getParameter(exchange, "atoms").orElse("100");
-			respond(InternalService.getInstance().prepareTransfers(atomCount), exchange);
+			respond(internalService.prepareTransfers(atomCount), exchange);
 		}, handler);
 		addGetRoute("/api/internal/bulkstore", exchange -> {
-			respond(InternalService.getInstance().bulkstore(), exchange);
+			respond(internalService.bulkstore(), exchange);
 		}, handler);
 		addGetRoute("/api/internal/ping", exchange -> {
-			respond(InternalService.getInstance().ping(), exchange);
+			respond(internalService.ping(), exchange);
 		}, handler);
 
 		addGetRoute("/api/test/newpeer", exchange -> {
@@ -222,15 +210,8 @@ public final class RadixHttpServer {
 	}
 
     private void addTestRoutesTo(RoutingHandler handler) {
-    	addGetRoute("/api/internal/ledger/metadata", exchange -> {
-    		respond(InternalService.getInstance().ledgerMetaData(), exchange);
-    	}, handler);
-    	addGetRoute("/api/internal/atoms/dump", exchange -> {
-    		boolean verbose = getParameter(exchange, "verbose").map(Boolean::valueOf).orElse(false);
-    		respond(InternalService.getInstance().dumpAtoms(verbose), exchange);
-    	}, handler);
     	addGetRoute("/api/internal/shards/dump", exchange -> {
-    		respond(InternalService.getInstance().dumpShardChunks(), exchange);
+    		respond(internalService.dumpShardChunks(), exchange);
     	}, handler);
     }
 
@@ -273,41 +254,10 @@ public final class RadixHttpServer {
 			respond(AtomSchemas.getJsonSchemaString(4), exchange);
         }, handler);
 
-        // Misc routes
-        addGetRoute("/api/atoms", exchange -> {
-            String clazz = getParameter(exchange, "clazz").orElse(null);
-            String aid = getParameter(exchange, "aid").orElse(null);
-            String uid = getParameter(exchange, "uid").orElse(null);
-            String address = getParameter(exchange, "address").orElse(null);
-            String action = getParameter(exchange, "action").orElse(null);
-            String destination = getParameter(exchange, "destination").orElse(null);
-            String index = getParameter(exchange, "index").orElse(null);
-            String time = getParameter(exchange, "time").orElse(null);
-            String limit = getParameter(exchange, "limit").orElse(null);
-
-			respond(
-				atomsService.getAtoms(
-					clazz,
-					aid,
-					uid,
-					address,
-					action,
-					destination,
-					index,
-					time,
-					limit
-				), exchange);
-        }, handler);
-
         addGetRoute("/api/atoms/byshard", exchange -> {
 			String from = getParameter(exchange, "from").orElse(null);
 			String to = getParameter(exchange, "to").orElse(null);
 			respond(atomsService.getAtomsByShardRange(from, to), exchange);
-		}, handler);
-
-        addGetRoute("/api/atoms/conflict/:uid", exchange -> {
-			String uid = getParameter(exchange, "from").orElse(null);
-			respond(atomsService.getConflict(uid), exchange);
 		}, handler);
 
         addGetRoute("/api/events", exchange -> {
@@ -411,32 +361,11 @@ public final class RadixHttpServer {
     }
 
     private void addRestGraphRoutesTo(RoutingHandler handler) {
-        addGetRoute("/api/graph/node/mass", exchange
-                -> {
-            String timestamp = getParameter(exchange, "timestamp").orElse(Long.toString(Long.MAX_VALUE));
-            respond(GraphService.getInstance().getNodeMasses(timestamp).toString(), exchange);
-        }, handler);
-
-        addGetRoute("/api/graph/node/mass/{nid}", exchange
-                -> {
-            String nid = getParameter(exchange, "nid").orElse(null);
-            String timestamp = getParameter(exchange, "timestamp").orElse(null);
-
-            respond(GraphService.getInstance().getNodeMass(nid, timestamp), exchange);
-        }, handler);
 
         addGetRoute("/api/graph/route", exchange -> {
         	String timestamp = getParameter(exchange, "timestamp").orElseGet(() -> String.valueOf(Time.currentTimestamp()));
 			respond(GraphService.getInstance().getRoutingTable(LocalSystem.getInstance().getNID().toString(), timestamp), exchange);
 		}, handler);
-
-        addGetRoute("/api/graph/route/{nid}", exchange
-                -> {
-            String nid = getParameter(exchange, "nid").orElse(null);
-            String timestamp = getParameter(exchange, "timestamp").orElse(null);
-
-            respond(GraphService.getInstance().getNodeMass(nid, timestamp), exchange); // TODO WTF?
-        }, handler);
     }
 
     private void addRestNetworkRoutesTo(RoutingHandler handler) {

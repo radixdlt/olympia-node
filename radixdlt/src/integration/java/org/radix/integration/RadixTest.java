@@ -34,8 +34,6 @@ import org.radix.time.Time;
 import com.radixdlt.universe.Universe;
 import org.radix.universe.system.LocalSystem;
 import org.radix.utils.IOUtils;
-import org.radix.validation.Validation;
-import org.radix.validation.ValidationHandler;
 
 public class RadixTest
 {
@@ -86,7 +84,6 @@ public class RadixTest
 		Modules.get(RuntimeProperties.class).set("db.location", dbLocation);
 
 		Modules.getInstance().start(new Time());
-		Modules.getInstance().start(new Validation());
 
 		Universe universe = new GenerateUniverses().generateUniverses().stream().filter(Universe::isTest).findAny().get();
 		Modules.remove(Universe.class); // GenerateUniverses adds this
@@ -99,12 +96,9 @@ public class RadixTest
 	@AfterClass
 	public static void endRadixTest() throws ModuleException {
 		safelyStop(Modules.get(Time.class));
-		safelyStop(Modules.get(Validation.class));
 
 		Modules.remove(Universe.class);
 		Modules.remove(Time.class);
-		Modules.remove(Validation.class);
-		Modules.remove(ValidationHandler.class);
 		Modules.remove(Serialization.class);
 		Modules.remove(CommandLine.class);
 		Modules.remove(PersistedProperties.class);

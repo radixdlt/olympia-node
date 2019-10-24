@@ -13,7 +13,6 @@ import java.util.stream.Collectors;
 import org.radix.atoms.events.AtomEvent;
 import org.radix.atoms.events.AtomListener;
 import org.radix.atoms.events.AtomStoreEvent;
-import org.radix.atoms.events.AtomUpdatedEvent;
 import com.radixdlt.common.EUID;
 import com.radixdlt.utils.Offset;
 import org.radix.common.executors.ScheduledExecutable;
@@ -208,7 +207,7 @@ public class RoutingHandler extends Service
 		@Override
 		public void process(AtomEvent event)
 		{
-			if (event instanceof AtomStoreEvent || event instanceof AtomUpdatedEvent)
+			if (event instanceof AtomStoreEvent)
 			{
 				if (!event.getAtom().getTemporalProof().isEmpty())
 				{

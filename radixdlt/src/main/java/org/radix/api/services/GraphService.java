@@ -9,8 +9,6 @@ import com.radixdlt.common.EUID;
 import com.radixdlt.utils.Offset;
 
 import org.radix.database.exceptions.DatabaseException;
-import org.radix.mass.NodeMass;
-import org.radix.mass.NodeMassStore;
 import org.radix.modules.Modules;
 import org.radix.network2.addressbook.AddressBook;
 import org.radix.routing.NodeAddressGroupTable;
@@ -29,28 +27,10 @@ public class GraphService
 
 	private GraphService() {}
 
-	public List<JSONObject> getNodeMasses(String timestamp) throws DatabaseException {
-		long ts = Long.parseLong(timestamp);
-		long tsms = ts < Integer.MAX_VALUE ? ts * 1000L : ts;
-		int planck = Modules.get(Universe.class).toPlanck(tsms, Offset.NONE);
-		return Modules.get(NodeMassStore.class).getNodeMasses(planck).stream()
-				.map(nodeMass -> Modules.get(Serialization.class).toJsonObject(nodeMass, Output.API))
-				.collect(Collectors.toList());
-	}
-
 	public List<JSONObject> getLivePeers() {
 		return Modules.get(AddressBook.class).recentPeers()
 			.map(peer -> Modules.get(Serialization.class).toJsonObject(peer, Output.WIRE))
 			.collect(Collectors.toList());
-	}
-
-
-	public JSONObject getNodeMass(String nid, String timestamp) {
-		long ts = Long.parseLong(timestamp);
-		long tsms = ts < Integer.MAX_VALUE ? ts * 1000L : ts;
-		int planck = Modules.get(Universe.class).toPlanck(tsms, Offset.NONE);
-		NodeMass nodeMass = Modules.get(NodeMassStore.class).getNodeMass(planck, EUID.valueOf(nid));
-		return Modules.get(Serialization.class).toJsonObject(nodeMass, Output.API);
 	}
 
 	public JSONObject getRoutingTable(String nid, String timestamp) throws DatabaseException {

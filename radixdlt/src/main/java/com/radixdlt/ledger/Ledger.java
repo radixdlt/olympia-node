@@ -79,4 +79,12 @@ public interface Ledger {
 	 * @throws LedgerException in case of internal errors
 	 */
 	boolean contains(LedgerIndex.LedgerIndexType type, LedgerIndex index, LedgerSearchMode mode);
+
+	/**
+	 * Checks whether a certain index is contained in this ledger.
+	 *
+	 * @param aid
+	 * @return true if atom exists and false otherwise
+	 */
+	boolean contains(AID aid);
 }

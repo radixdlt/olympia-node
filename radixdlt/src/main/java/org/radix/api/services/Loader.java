@@ -11,10 +11,10 @@ import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenT
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.atommodel.tokens.TokenPermission;
-import com.radixdlt.tempo.AtomSyncView;
+import com.radixdlt.ledger.Ledger;
+import com.radixdlt.middleware2.processing.RadixEngineAtomProcessor;
 import org.radix.atoms.Atom;
 import com.radixdlt.universe.Universe;
-import org.radix.atoms.AtomStore;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.atomos.RadixAddress;
 import org.radix.atoms.events.AtomStoredEvent;
@@ -52,16 +52,21 @@ final class Loader {
 
 	private List<Atom> atoms = null;
 
-	private static class Holder {
-		private static final Loader INSTANCE = new Loader();
+	private Ledger ledger;
+	private RadixEngineAtomProcessor radixEngineAtomProcessor;
+	private static Loader INSTANCE;
+
+
+	static Loader getInstance(Ledger ledger, RadixEngineAtomProcessor radixEngineAtomProcessor) {
+		if (INSTANCE == null) {
+			INSTANCE = new Loader(ledger, radixEngineAtomProcessor);
+		}
+		return INSTANCE;
 	}
 
-	static Loader getInstance() {
-		return Holder.INSTANCE;
-	}
-
-	private Loader() {
-		// Nothing to do here
+	private Loader(Ledger ledger, RadixEngineAtomProcessor radixEngineAtomProcessor) {
+		this.ledger = ledger;
+		this.radixEngineAtomProcessor = radixEngineAtomProcessor;
 	}
 
 	static void ping() {
@@ -143,10 +148,11 @@ final class Loader {
 			Set<AID> mintAtomHids = new HashSet<>();
 			for (Atom mintAtom : mintAtoms) {
 				mintAtom.sign(sourceKey);
-				Modules.get(AtomSyncView.class).inject(mintAtom);
+				System.out.println("Loader1 process");
+				radixEngineAtomProcessor.process(mintAtom);
 				mintAtomHids.add(mintAtom.getAID());
 			}
-			new HashWaiter(mintAtomHids).awaitUninterruptibly();
+			new HashWaiter(ledger, mintAtomHids).awaitUninterruptibly();
 
 			log.info("Building...");
 			// build actual test atoms
@@ -176,8 +182,9 @@ final class Loader {
 
 	private void storeAndAwait(Atom prepareAtom, ECKeyPair sourceKey) throws CryptoException, DatabaseException {
 		prepareAtom.sign(sourceKey);
-		Modules.get(AtomSyncView.class).inject(prepareAtom);
-		new HashWaiter(ImmutableSet.of(prepareAtom.getAID())).awaitUninterruptibly();
+		System.out.println("Loader2 process");
+		radixEngineAtomProcessor.process(prepareAtom);
+		new HashWaiter(ledger, ImmutableSet.of(prepareAtom.getAID())).awaitUninterruptibly();
 	}
 
 	synchronized void prepareMessages(ECKeyPair sourceKey, RadixAddress destination, int atomCount) {
@@ -228,7 +235,8 @@ final class Loader {
 				if (LocalSystem.getInstance().getShards().intersects(atom.getShards())) {
 					for (boolean wasStored = false; !wasStored;) {
 						try {
-							Modules.get(AtomSyncView.class).inject(atom);
+							System.out.println("Loader3 process");
+							radixEngineAtomProcessor.process(atom);
 							lastStored = atom;
 							stored += 1;
 							wasStored = true;
@@ -236,9 +244,7 @@ final class Loader {
 							if (e.getMessage().startsWith("Commit queue size")) {
 								log.info("Commit queue too deep, backing off (" + e.getMessage() + ")");
 								// Backoff and retry
-                                while (Modules.get(AtomSyncView.class).getQueueSize() > 20000) {
-									TimeUnit.MILLISECONDS.sleep(500);
-								}
+								TimeUnit.MILLISECONDS.sleep(1000);
 								log.info("Commit queue part drained");
 							} else {
 								throw e;
@@ -250,7 +256,7 @@ final class Loader {
 				}
 			}
 			if (lastStored != null) {
-				HashWaiter hw = new HashWaiter(ImmutableSet.of(lastStored.getAID()));
+				HashWaiter hw = new HashWaiter(ledger, ImmutableSet.of(lastStored.getAID()));
 				hw.await(stored, TimeUnit.SECONDS);
 			}
 		} catch (Exception ex) {
@@ -275,13 +281,13 @@ final class Loader {
 		private final Semaphore storedSem = new Semaphore(0);
 		private final Set<AID> hids = ConcurrentHashMap.newKeySet();
 
-		HashWaiter(Set<AID> hids) throws DatabaseException {
+		HashWaiter(Ledger ledger, Set<AID> hids) {
 			this.hids.addAll(Objects.requireNonNull(hids));
 
 			Events.getInstance().register(AtomStoredEvent.class, this);
 
 			for (AID hid : hids) {
-				if (Modules.get(AtomStore.class).hasAtom(hid)) {
+				if (ledger.contains(hid)) {
 					this.hids.remove(hid);
 				}
 			}

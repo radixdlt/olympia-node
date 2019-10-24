@@ -37,7 +37,6 @@ import org.radix.utils.IOUtils;
 import com.radixdlt.utils.RadixConstants;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.Bytes;
-import org.radix.validation.Validation;
 
 import java.io.File;
 import java.io.IOException;
@@ -78,7 +77,6 @@ public final class GenerateUniverses
 				Modules.put(RuntimeProperties.class, runtimeProperties);
 				Modules.put(PersistedProperties.class, runtimeProperties);
 				Modules.put(CommandLine.class, runtimeProperties.getCommandLine());
-				new Validation().start_impl(); // not sure if this is a good way to about this
 			} catch (Exception ex) {
 				throw new IOException("Could not load runtime properties and set command ling arguments", ex);
 			}

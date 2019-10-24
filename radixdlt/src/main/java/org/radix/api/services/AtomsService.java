@@ -2,71 +2,63 @@ package org.radix.api.services;
 
 import com.google.common.collect.EvictingQueue;
 import com.radixdlt.engine.AtomStatus;
-import java.io.IOException;
+
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.StringTokenizer;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import com.radixdlt.ledger.Ledger;
-import com.radixdlt.tempo.AtomSyncView;
+import com.radixdlt.ledger.LedgerCursor;
+import com.radixdlt.ledger.LedgerIndex;
+import com.radixdlt.ledger.LedgerSearchMode;
+import com.radixdlt.middleware2.converters.SimpleRadixEngineAtomToEngineAtom;
+import com.radixdlt.middleware2.processing.RadixEngineAtomProcessor;
+import com.radixdlt.middleware2.store.EngineAtomIndices;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import java.util.Map;
 import org.radix.api.observable.AtomEventDto;
 import org.radix.api.observable.AtomEventDto.AtomEventType;
-import com.radixdlt.atomos.RadixAddress;
 import org.radix.api.AtomQuery;
 import org.radix.api.observable.AtomEventObserver;
 import org.radix.api.observable.Disposable;
 import org.radix.api.observable.ObservedAtomEvents;
 import org.radix.api.observable.Observable;
 import org.radix.atoms.Atom;
-import org.radix.atoms.AtomDiscoveryRequest;
-import org.radix.atoms.AtomStore;
-import org.radix.atoms.events.AtomDeletedEvent;
 import org.radix.atoms.events.AtomEvent;
 import org.radix.atoms.events.AtomExceptionEvent;
 import org.radix.atoms.events.AtomStoreEvent;
 import org.radix.atoms.events.AtomStoredEvent;
-import org.radix.atoms.events.AtomUpdatedEvent;
-import com.radixdlt.constraintmachine.Particle;
-import org.radix.atoms.particles.conflict.ParticleConflict;
-import org.radix.atoms.particles.conflict.ParticleConflictStore;
-import com.radixdlt.common.EUID;
 import com.radixdlt.common.AID;
-import org.radix.discovery.DiscoveryCursor;
-import org.radix.discovery.DiscoveryException;
-import org.radix.discovery.DiscoveryRequest.Action;
 import org.radix.events.Events;
 import org.radix.exceptions.AtomAlreadyInProcessingException;
 import org.radix.exceptions.AtomAlreadyStoredException;
-import org.radix.modules.Modules;
-import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.Serialization;
 import org.radix.shards.ShardSpace;
 import org.radix.shards.Shards;
-import org.radix.time.Timestamps;
 import org.radix.universe.system.LocalSystem;
 
+import static com.radixdlt.tempo.store.berkeley.TempoAtomIndices.SHARD_INDEX_PREFIX;
+
 public class AtomsService {
+	private static int  NUMBER_OF_THREADS = 8;
 	/**
 	 * Some of these may block for a short while so keep a few.
 	 * TODO: remove the blocking
 	 */
 	private final static ExecutorService executorService = Executors.newFixedThreadPool(
-		8,
+		NUMBER_OF_THREADS,
 		new ThreadFactoryBuilder().setNameFormat("AtomsService-%d").build()
 	);
+
+	private final SimpleRadixEngineAtomToEngineAtom atomConverter = new SimpleRadixEngineAtomToEngineAtom();
 
 	private final Set<AtomEventObserver> atomEventObservers = Collections.newSetFromMap(new ConcurrentHashMap<>());
 	private final ConcurrentHashMap<AID, List<AtomStatusListener>> singleAtomObservers = new ConcurrentHashMap<>();
@@ -76,11 +68,11 @@ public class AtomsService {
 
 	private final Object lock = new Object();
 	private final EvictingQueue<String> eventRingBuffer = EvictingQueue.create(64);
-	private final AtomSyncView atomSync;
+	private final RadixEngineAtomProcessor radixEngineAtomProcessor;
 	private final Ledger ledger;
 
-	public AtomsService(AtomSyncView atomSync, Ledger ledger) {
-		this.atomSync = Objects.requireNonNull(atomSync);
+	public AtomsService(Ledger ledger, RadixEngineAtomProcessor radixEngineAtomProcessor) {
+		this.radixEngineAtomProcessor = Objects.requireNonNull(radixEngineAtomProcessor);
 		this.ledger = Objects.requireNonNull(ledger);
 
 		Events.getInstance().register(AtomEvent.class, (event) -> {
@@ -117,18 +109,6 @@ public class AtomsService {
 					}
 
 					this.atomEventCount.merge(AtomEventType.STORE, 1L, Long::sum);
-				} else if (event instanceof AtomDeletedEvent) {
-					final AtomDeletedEvent deletedEvent = (AtomDeletedEvent) atomEvent;
-					eventName = "DELETED";
-
-					this.atomEventObservers.forEach(observer -> observer.tryNext(deletedEvent));
-					for (AtomStatusListener atomStatusListener : this.singleAtomObservers.getOrDefault(atom.getAID(), Collections.emptyList())) {
-						atomStatusListener.onDeleted();
-					}
-
-					this.atomEventCount.merge(AtomEventType.DELETE, 1L, Long::sum);
-				} else if (event instanceof AtomUpdatedEvent) {
-					eventName = "UPDATED";
 				} else if (event instanceof AtomStoreEvent) {
 					eventName = "STORE";
 				} else {
@@ -186,7 +166,7 @@ public class AtomsService {
 		}
 
 		try {
-			atomSync.inject(atom);
+			radixEngineAtomProcessor.process(atom);
 		} catch (AtomAlreadyInProcessingException e) {
 			return AtomStatus.PENDING_CM_VERIFICATION;
 		} catch (AtomAlreadyStoredException e) {
@@ -238,113 +218,23 @@ public class AtomsService {
 		return this.atomEventObservers.stream().map(AtomEventObserver::isDone).filter(done -> !done).count();
 	}
 
-	public JSONObject getAtoms(
-		String particle, //
-		String aid, //
-		String uid, //
-		String address, //
-		String action, //
-		String destination, //
-		String index, //
-		String time, //
-		String limit) throws DiscoveryException, JSONException {
-
+	public JSONObject getAtomsByShardRange(String from, String to) throws JSONException {
 		JSONObject result = new JSONObject();
-
-		Class<? extends Particle> particleClazz = null;
-
-		if (particle != null) {
-			particleClazz = (Class<? extends Particle>) Modules.get(Serialization.class).getClassForId(particle);
-		}
-
-		Action requestAction = Action.DISCOVER_AND_DELIVER;
-		if (action != null && action.toUpperCase().equals("DISCOVER")) {
-			requestAction = Action.DISCOVER;
-		}
-
-		AtomDiscoveryRequest request;
-
-		if (particleClazz != null) {
-			request = new AtomDiscoveryRequest(particleClazz, requestAction);
-		} else {
-			request = new AtomDiscoveryRequest(requestAction);
-		}
-
-		if (uid != null) {
-			request.setUID(EUID.valueOf(uid));
-		}
-
-		if (aid != null) {
-			request.setAID(AID.from(aid));
-		}
-
-		if (address != null) {
-			request.setDestination(RadixAddress.from(address).getUID());
-		}
-
-		if (destination != null) {
-			request.setDestination(EUID.valueOf(destination));
-		}
-
-		request.setCursor(new DiscoveryCursor(index == null ? 0 : Long.parseLong(index)));
-
-		if (time != null) {
-			StringTokenizer timestamps = new StringTokenizer(time, ",");
-			if (timestamps.hasMoreTokens()) {
-				request.setTimestamp(Timestamps.FROM, Integer.parseInt(timestamps.nextToken()) * 1000L);
-			}
-			if (timestamps.hasMoreTokens()) {
-				request.setTimestamp(Timestamps.TO, Integer.parseInt(timestamps.nextToken()) * 1000L);
-			}
-		}
-
-		if (limit != null) {
-			request.setLimit(Short.parseShort(limit));
-		} else {
-			request.setLimit((short) 50);
-		}
-
-		Modules.get(AtomStore.class).discovery(request);
-
-		if (requestAction.equals(Action.DISCOVER)) {
-			for (AID id : request.getInventory()) {
-				result.append("ids", id.toString());
-			}
-		} else {
-			JSONArray array = new JSONArray();
-			for (Atom container : request.getDelivered()) {
-				array.put(Modules.get(Serialization.class).toJsonObject(container, Output.API));
-			}
-			result.put("data", array);
-		}
-
-		// result.put("links", APICommons.createLinks(url, request));
-
-		return result;
-	}
-
-	public JSONObject getAtomsByShardRange(String from, String to) throws IOException, JSONException
-	{
-		JSONObject result = new JSONObject();
-
-		Collection<AID> shardHIDS = Modules.get(AtomStore.class).getByShardRange(Shards.fromGroup(Integer.parseInt(from), (1 << 20)).getLow(),
-																				  Shards.fromGroup(Integer.parseInt(to == null ? from : to), (1 << 20)).getHigh());
 
 		JSONArray array = new JSONArray();
-		for (AID aid : shardHIDS) {
-			array.put(aid.toString());
+		for (
+				long shard = Shards.fromGroup(Integer.parseInt(from), (1 << 20)).getLow();
+				shard < Shards.fromGroup(Integer.parseInt(to == null ? from : to), (1 << 20)).getHigh();
+				shard++
+		) {
+			LedgerIndex fromIndex = LedgerIndex.from(EngineAtomIndices.toByteArray(SHARD_INDEX_PREFIX, shard));
+			LedgerCursor searchResultCursor = ledger.search(LedgerIndex.LedgerIndexType.DUPLICATE, fromIndex, LedgerSearchMode.RANGE);
+			AID atomId;
+			while ((atomId = searchResultCursor.get()) != null) {
+				array.put(atomId.toString());
+			}
 		}
 		result.put("hids", array);
 		return result;
-	}
-
-	public JSONObject getConflict(String uid) throws JSONException, IOException
-	{
-		ParticleConflict conflict = Modules.get(ParticleConflictStore.class).getConflict(EUID.valueOf(uid));
-
-		if (conflict != null)
-			return Modules.get(Serialization.class).toJsonObject(conflict, Output.API);
-
-		return null;
 	}
 }
