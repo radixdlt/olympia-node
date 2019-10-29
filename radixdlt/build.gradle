@@ -38,7 +38,6 @@ jar {
 dependencies {
     compile project(":radix-engine-library")
     compile 'commons-cli:commons-cli:1.4'
-    compile 'org.bouncycastle:bcprov-jdk15on:1.52'
     compile 'org.json:json:20180813'
     compile 'org.xerial.snappy:snappy-java:1.1.7.3'
     compile 'io.netty:netty-all:4.1.39.Final'
