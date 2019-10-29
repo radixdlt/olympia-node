@@ -46,7 +46,7 @@ dependencies {
         exclude group: 'com.google.guava', module: 'guava'
     }
 
-    compile 'org.bouncycastle:bcprov-jdk15on:1.52'
+    compile 'org.bouncycastle:bcprov-jdk15to18:1.64'
     compile 'org.json:json:20180813'
     compile 'com.fasterxml.jackson.core:jackson-core:2.9.9'
     compile 'com.fasterxml.jackson.core:jackson-databind:2.9.9'

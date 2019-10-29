@@ -45,7 +45,7 @@ class ECKeyUtils {
 	    domain = new ECDomainParameters(curve.getCurve(), curve.getG(), curve.getN(), curve.getH());
 	    spec = new ECParameterSpec(curve.getCurve(), curve.getG(), curve.getN(), curve.getH());
 
-        FixedPointUtil.precompute(curve.getG(), 12);
+        FixedPointUtil.precompute(curve.getG());
 	}
 
 	// Must be after secureRandom init
