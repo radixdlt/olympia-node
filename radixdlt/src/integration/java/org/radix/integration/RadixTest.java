@@ -60,7 +60,7 @@ public class RadixTest
 		isRestricted.setAccessible(false);
 		System.out.println("...override success!");
 
-		Security.addProvider(new BouncyCastleProvider());
+		Security.insertProviderAt(new BouncyCastleProvider(), 1);
 
 		Serialization serialization = Serialization.getDefault();
 

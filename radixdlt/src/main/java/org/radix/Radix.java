@@ -82,7 +82,7 @@ public class Radix extends Plugin
 
 			// Setup bouncy castle
 			// This is used when loading the node key below, so set it up now.
-			Security.addProvider(new BouncyCastleProvider());
+			Security.insertProviderAt(new BouncyCastleProvider(), 1);
 			try {
 				Field isRestricted = Class.forName("javax.crypto.JceSecurity").getDeclaredField("isRestricted");
 

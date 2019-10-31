@@ -63,7 +63,7 @@ public final class GenerateUniverses
 		this.serialization = Serialization.getDefault();
 
 		if (standalone) {
-			Security.addProvider(new BouncyCastleProvider());
+			Security.insertProviderAt(new BouncyCastleProvider(), 1);
 
 			Modules.put(SecureRandom.class, new SecureRandom());
 			Modules.put(Serialization.class, this.serialization);

@@ -50,7 +50,7 @@ public abstract class RadixTest
 			System.out.println("...failed.  Best of luck.");
 		}
 
-		Security.addProvider(new BouncyCastleProvider());
+		Security.insertProviderAt(new BouncyCastleProvider(), 1);
 
 		final SecureRandom secureRandom = new SecureRandom();
 
