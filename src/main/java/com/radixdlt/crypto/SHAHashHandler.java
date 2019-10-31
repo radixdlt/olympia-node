@@ -7,9 +7,9 @@ import java.security.NoSuchProviderException;
 class SHAHashHandler implements HashHandler {
 	// Note that default provide around 20-25% faster than Bouncy Castle.
 	// See jmh/org.radix.benchmark.HashBenchmark
-	private final ThreadLocal<MessageDigest> hash256DigesterInner = ThreadLocal.withInitial(() -> getDigester("SHA-256", null));
-	private final ThreadLocal<MessageDigest> hash256DigesterOuter = ThreadLocal.withInitial(() -> getDigester("SHA-256", null));
-	private final ThreadLocal<MessageDigest> hash512Digester = ThreadLocal.withInitial(() -> getDigester("SHA-512", null));
+	private final ThreadLocal<MessageDigest> hash256DigesterInner = ThreadLocal.withInitial(() -> getDigester("SHA-256", "BC"));
+	private final ThreadLocal<MessageDigest> hash256DigesterOuter = ThreadLocal.withInitial(() -> getDigester("SHA-256", "BC"));
+	private final ThreadLocal<MessageDigest> hash512Digester = ThreadLocal.withInitial(() -> getDigester("SHA-512", "BC"));
 
 	SHAHashHandler() {
 	}
@@ -52,9 +52,7 @@ class SHAHashHandler implements HashHandler {
 
 	private static MessageDigest getDigester(String algorithm, String provider) {
 		try {
-			return (provider == null)
-				? MessageDigest.getInstance(algorithm)
-				: MessageDigest.getInstance(algorithm, provider);
+			return  MessageDigest.getInstance(algorithm, provider);
 		} catch (NoSuchProviderException e) {
 			throw new IllegalArgumentException("No such provider for: " + algorithm, e);
 		} catch (NoSuchAlgorithmException e) {

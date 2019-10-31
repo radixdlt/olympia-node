@@ -34,7 +34,7 @@ public final class TestSetupUtils {
                 isRestricted.setBoolean(null, false);
             }
             isRestricted.setAccessible(false);
-			Security.addProvider(new BouncyCastleProvider());
+			Security.insertProviderAt(new BouncyCastleProvider(), 1);
 		} catch (ReflectiveOperationException | SecurityException ex) {
 			throw new IllegalStateException("Can't install Bouncy Castle security provider", ex);
 		}

@@ -13,7 +13,7 @@ import org.junit.Test;
 public class RRITest {
 	@BeforeClass
 	public static void setup() {
-		Security.addProvider(new BouncyCastleProvider());
+		Security.insertProviderAt(new BouncyCastleProvider(), 1);
 	}
 
 	@Test

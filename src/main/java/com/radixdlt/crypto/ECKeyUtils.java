@@ -3,7 +3,6 @@ package com.radixdlt.crypto;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
-import java.security.Security;
 import java.util.Arrays;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -19,7 +18,6 @@ import org.bouncycastle.crypto.paddings.PaddedBufferedBlockCipher;
 import org.bouncycastle.crypto.params.ECDomainParameters;
 import org.bouncycastle.crypto.params.KeyParameter;
 import org.bouncycastle.crypto.params.ParametersWithIV;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.jce.spec.ECParameterSpec;
 import org.bouncycastle.math.ec.FixedPointUtil;
 
@@ -38,8 +36,6 @@ class ECKeyUtils {
 	static final ECParameterSpec spec;
 
 	static {
-	    Security.insertProviderAt(new BouncyCastleProvider(), 1);
-
 	    curve = CustomNamedCurves.getByName("secp256k1");
 
 	    domain = new ECDomainParameters(curve.getCurve(), curve.getG(), curve.getN(), curve.getH());
