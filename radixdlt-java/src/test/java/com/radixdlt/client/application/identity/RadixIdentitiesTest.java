@@ -12,7 +12,7 @@ public class RadixIdentitiesTest {
 	@Test
 	public void newEncryptedIdentityWriterTest() throws Exception {
 		Writer writer = mock(Writer.class);
-		RadixIdentities.createNewEncryptedIdentity(writer, "");
+		RadixIdentities.createNewEncryptedIdentity(writer, "Password");
 		verify(writer, times(1)).flush();
 	}
 }

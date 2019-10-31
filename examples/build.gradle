@@ -20,6 +20,6 @@ dependencies {
 
 shadowJar {
     dependencies {
-        exclude(dependency('org.bouncycastle:bcprov-jdk15on'))
+        exclude(dependency('org.bouncycastle:bcprov-jdk15to18'))
     }
 }

@@ -19,6 +19,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.security.SecureRandom;
 import java.security.Security;
 import java.security.spec.InvalidKeySpecException;
@@ -64,7 +65,7 @@ public final class PrivateKeyEncrypter {
 
         SecretKey derivedKey = getSecretKey(password, salt, ITERATIONS, KEY_LENGTH);
 
-        Cipher cipher = Cipher.getInstance("AES/CTR/NoPadding");
+        Cipher cipher = Cipher.getInstance("AES/CTR/NoPadding", "BC");
         cipher.init(Cipher.ENCRYPT_MODE, derivedKey);
         byte[] iv = cipher.getParameters().getParameterSpec(IvParameterSpec.class).getIV();
 
@@ -88,7 +89,7 @@ public final class PrivateKeyEncrypter {
 
         SecretKey derivedKey = getSecretKey(password, salt, iterations, keyLen);
 
-        Cipher cipher = Cipher.getInstance("AES/CTR/NoPadding");
+        Cipher cipher = Cipher.getInstance("AES/CTR/NoPadding", "BC");
         cipher.init(Cipher.DECRYPT_MODE, derivedKey, new IvParameterSpec(iv));
 
         byte[] computedMac = generateMac(derivedKey.getEncoded(), cipherText);
@@ -103,8 +104,8 @@ public final class PrivateKeyEncrypter {
     }
 
     private static SecretKey getSecretKey(String passPhrase, byte[] salt, int iterations, int keyLength)
-            throws NoSuchAlgorithmException, InvalidKeySpecException {
-        SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA512");
+        throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchProviderException {
+        SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA512", "BC");
         KeySpec spec = new PBEKeySpec(passPhrase.toCharArray(), salt, iterations, keyLength * 8);
         SecretKey key = factory.generateSecret(spec);
 
@@ -154,7 +155,7 @@ public final class PrivateKeyEncrypter {
         return new String(decrypted, StandardCharsets.UTF_8);
     }
 
-    private static byte[] generateMac(byte[] derivedKey, byte[] cipherText) throws NoSuchAlgorithmException {
+    private static byte[] generateMac(byte[] derivedKey, byte[] cipherText) {
         byte[] result = new byte[derivedKey.length + cipherText.length];
         result = ByteBuffer.wrap(result).put(derivedKey).put(cipherText).array();
 
