@@ -3,17 +3,16 @@ package com.radixdlt.atomos;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import java.security.Security;
 import java.util.Arrays;
 import java.util.List;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import com.radixdlt.TestSetupUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class RRITest {
 	@BeforeClass
 	public static void setup() {
-		Security.insertProviderAt(new BouncyCastleProvider(), 1);
+		TestSetupUtils.installBouncyCastleProvider();
 	}
 
 	@Test
