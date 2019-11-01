@@ -13,8 +13,6 @@ import org.radix.time.NtpService;
 import org.radix.universe.system.LocalSystem;
 import org.radix.utils.SystemMetaData;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.security.SecureRandom;
 import java.security.Security;
 
@@ -26,31 +24,8 @@ import static org.powermock.api.mockito.PowerMockito.when;
 public abstract class RadixTest
 {
 	@BeforeClass
-	public static void startRadixTest() throws Exception
-	{
-		Field isRestricted = Class.forName("javax.crypto.JceSecurity").getDeclaredField("isRestricted");
-
-
-		if ( Modifier.isFinal(isRestricted.getModifiers()) )
-		{
-			Field modifiers = Field.class.getDeclaredField("modifiers");
-			modifiers.setAccessible(true);
-			modifiers.setInt(isRestricted, isRestricted.getModifiers() & ~Modifier.FINAL);
-		}
-
-		try {
-			isRestricted.setAccessible(true);
-			if (isRestricted.get(null).equals(Boolean.TRUE)) {
-				System.out.print("Encryption restrictions are set, need to override...");
-				isRestricted.setBoolean(null, false);
-				System.out.println("...override success!");
-			}
-			isRestricted.setAccessible(false);
-		} catch (IllegalAccessException e) {
-			System.out.println("...failed.  Best of luck.");
-		}
-
-		Security.insertProviderAt(new BouncyCastleProvider(), 1);
+	public static void startRadixTest() {
+		TestSetupUtils.installBouncyCastleProvider();
 
 		final SecureRandom secureRandom = new SecureRandom();
 

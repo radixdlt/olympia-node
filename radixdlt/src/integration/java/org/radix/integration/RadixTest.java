@@ -1,13 +1,9 @@
 package org.radix.integration;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.security.SecureRandom;
-import java.security.Security;
 import java.util.List;
 
 import org.apache.commons.cli.CommandLine;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.json.JSONObject;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -28,6 +24,7 @@ import org.radix.modules.exceptions.ModuleException;
 import org.radix.properties.PersistedProperties;
 import org.radix.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
+import org.radix.serialization.TestSetupUtils;
 import org.radix.time.TemporalProof;
 import org.radix.time.TemporalVertex;
 import org.radix.time.Time;
@@ -42,25 +39,8 @@ public class RadixTest
 	private long clock = 100L; // Arbitrary starting point. Must be larger than number of atoms in genesis.
 
 	@BeforeClass
-	public static void startRadixTest() throws Exception
-	{
-		Field isRestricted = Class.forName("javax.crypto.JceSecurity").getDeclaredField("isRestricted");
-
-		System.out.print("Encryption restrictions are set, need to override...");
-
-		if ( Modifier.isFinal(isRestricted.getModifiers()) )
-		{
-			Field modifiers = Field.class.getDeclaredField("modifiers");
-			modifiers.setAccessible(true);
-			modifiers.setInt(isRestricted, isRestricted.getModifiers() & ~Modifier.FINAL);
-		}
-
-		isRestricted.setAccessible(true);
-		isRestricted.setBoolean(null, false);
-		isRestricted.setAccessible(false);
-		System.out.println("...override success!");
-
-		Security.insertProviderAt(new BouncyCastleProvider(), 1);
+	public static void startRadixTest() throws Exception {
+		TestSetupUtils.installBouncyCastleProvider();
 
 		Serialization serialization = Serialization.getDefault();
 
