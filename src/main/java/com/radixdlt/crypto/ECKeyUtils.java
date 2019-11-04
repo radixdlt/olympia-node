@@ -56,7 +56,7 @@ class ECKeyUtils {
 		System.arraycopy(encrypted, 0, bytes, iv.length + ephemeralPubKey.length, encrypted.length);
 
 		try {
-			Mac mac = Mac.getInstance("HmacSHA256", "BC");
+			Mac mac = Mac.getInstance("HmacSHA256");
 	        mac.init(new SecretKeySpec(salt, "HmacSHA256"));
 	        return mac.doFinal(bytes);
 		} catch (GeneralSecurityException e) {
