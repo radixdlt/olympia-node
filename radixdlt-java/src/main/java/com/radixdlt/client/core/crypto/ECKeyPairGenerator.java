@@ -4,7 +4,6 @@ import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.security.Provider;
 import java.security.SecureRandom;
 import java.security.Security;
@@ -87,7 +86,7 @@ public final class ECKeyPairGenerator {
 	// Generates a new Public/Private Key pair
 	public ECKeyPair generateKeyPair(int numBits) {
 		try {
-			KeyPairGenerator g2 = KeyPairGenerator.getInstance("EC", "BC");
+			KeyPairGenerator g2 = KeyPairGenerator.getInstance("EC");
 			ECDomainParameters domain = getDomain(numBits);
 			ECParameterSpec curveSpec = new ECParameterSpec(domain.getCurve(), domain.getG(),
 				domain.getN(), domain.getH());
@@ -115,8 +114,6 @@ public final class ECKeyPairGenerator {
 		} catch (InvalidAlgorithmParameterException e) {
 			throw new RuntimeException(e.getMessage());
 		} catch (NoSuchAlgorithmException e) {
-			throw new RuntimeException(e.getMessage());
-		} catch (NoSuchProviderException e) {
 			throw new RuntimeException(e.getMessage());
 		}
 	}

@@ -65,7 +65,7 @@ public final class PrivateKeyEncrypter {
 
         SecretKey derivedKey = getSecretKey(password, salt, ITERATIONS, KEY_LENGTH);
 
-        Cipher cipher = Cipher.getInstance("AES/CTR/NoPadding", "BC");
+        Cipher cipher = Cipher.getInstance("AES/CTR/NoPadding");
         cipher.init(Cipher.ENCRYPT_MODE, derivedKey);
         byte[] iv = cipher.getParameters().getParameterSpec(IvParameterSpec.class).getIV();
 
@@ -89,7 +89,7 @@ public final class PrivateKeyEncrypter {
 
         SecretKey derivedKey = getSecretKey(password, salt, iterations, keyLen);
 
-        Cipher cipher = Cipher.getInstance("AES/CTR/NoPadding", "BC");
+        Cipher cipher = Cipher.getInstance("AES/CTR/NoPadding");
         cipher.init(Cipher.DECRYPT_MODE, derivedKey, new IvParameterSpec(iv));
 
         byte[] computedMac = generateMac(derivedKey.getEncoded(), cipherText);
@@ -105,7 +105,7 @@ public final class PrivateKeyEncrypter {
 
     private static SecretKey getSecretKey(String passPhrase, byte[] salt, int iterations, int keyLength)
         throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchProviderException {
-        SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA512", "BC");
+        SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA512");
         KeySpec spec = new PBEKeySpec(passPhrase.toCharArray(), salt, iterations, keyLength * 8);
         SecretKey key = factory.generateSecret(spec);
 

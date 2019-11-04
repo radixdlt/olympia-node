@@ -2,7 +2,6 @@ package org.radix.crypto;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.security.SecureRandom;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -48,9 +47,7 @@ public class Hash implements Comparable<Hash> {
 
 	private static MessageDigest getDigester(String algorithm) {
 		try {
-			return MessageDigest.getInstance(algorithm, "BC");
-		} catch (NoSuchProviderException e) {
-			throw new IllegalArgumentException("No such provider for: " + algorithm, e);
+			return MessageDigest.getInstance(algorithm);
 		} catch (NoSuchAlgorithmException e) {
 			throw new IllegalArgumentException("No such algorithm: " + algorithm, e);
 		}

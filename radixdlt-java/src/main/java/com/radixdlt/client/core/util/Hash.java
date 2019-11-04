@@ -2,7 +2,6 @@ package com.radixdlt.client.core.util;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.security.Security;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
@@ -20,14 +19,12 @@ public class Hash {
 
 	private static byte[] hash(String algorithm, byte[] data, int offset, int len) {
 		try {
-			MessageDigest messageDigest = MessageDigest.getInstance(algorithm, "BC");
+			MessageDigest messageDigest = MessageDigest.getInstance(algorithm);
 			synchronized (messageDigest) {
 				messageDigest.update(data, offset, len);
 				return messageDigest.digest();
 			}
 		} catch (NoSuchAlgorithmException e) {
-			throw new RuntimeException(e.getMessage());
-		} catch (NoSuchProviderException e) {
 			throw new RuntimeException(e.getMessage());
 		}
 	}
