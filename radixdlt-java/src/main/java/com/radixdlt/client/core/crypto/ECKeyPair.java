@@ -67,7 +67,7 @@ public class ECKeyPair extends SerializableObject {
 				new BigInteger(1, this.privateKey),
 				new ECParameterSpec(domain.getCurve(), domain.getG(), domain.getN(), domain.getH())
 			);
-			ecPrivateKey = (ECPrivateKey) KeyFactory.getInstance("EC", "BC").generatePrivate(privateKeySpec);
+			ecPrivateKey = (ECPrivateKey) KeyFactory.getInstance("EC").generatePrivate(privateKeySpec);
 		} catch (Exception e) {
 			throw new RuntimeException(e.getMessage());
 		}
@@ -79,7 +79,7 @@ public class ECKeyPair extends SerializableObject {
 				new ECParameterSpec(domain.getCurve(), domain.getG(), domain.getN(), domain.getH())
 			);
 			this.publicKey = new ECPublicKey(
-				((org.bouncycastle.jce.interfaces.ECPublicKey) KeyFactory.getInstance("EC", "BC")
+				((org.bouncycastle.jce.interfaces.ECPublicKey) KeyFactory.getInstance("EC")
 					.generatePublic(publicKeySpec)).getQ().getEncoded(true));
 		} catch (Exception e) {
 			throw new RuntimeException(e.getMessage());

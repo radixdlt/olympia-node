@@ -127,7 +127,7 @@ public class ECPublicKey implements Base64Encoded {
 		outputStream.write(encrypted);
 
 		try {
-			Mac mac = Mac.getInstance("HmacSHA256", "BC");
+			Mac mac = Mac.getInstance("HmacSHA256");
 			mac.init(new SecretKeySpec(salt, "HmacSHA256"));
 			return mac.doFinal(baos.toByteArray());
 		} catch (GeneralSecurityException e) {

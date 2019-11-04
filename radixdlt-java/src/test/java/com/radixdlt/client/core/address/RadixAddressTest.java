@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.bouncycastle.util.encoders.Base64;
+import org.bouncycastle.util.encoders.DecoderException;
 import org.junit.Test;
 import org.radix.common.ID.EUID;
 
@@ -22,7 +23,7 @@ public class RadixAddressTest {
 		assertEquals(address, RadixAddress.from("JHB89drvftPj6zVCNjnaijURk8D8AMFw4mVja19aoBGmRXWchnJ"));
 	}
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test(expected = DecoderException.class)
 	public void createAddressFromBadPublicKey() {
 		ECPublicKey publicKey = new ECPublicKey(Base64.decode("BADKEY"));
 		new RadixAddress(RadixUniverseConfigs.getLocalnet(), publicKey);
