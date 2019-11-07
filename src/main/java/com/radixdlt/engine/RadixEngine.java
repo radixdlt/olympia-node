@@ -21,10 +21,14 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.UnaryOperator;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Top Level Class for the Radix Engine, a real-time, shardable, distributed state machine.
  */
 public final class RadixEngine<T extends RadixEngineAtom> {
+	private static final Logger log = LoggerFactory.getLogger(RadixEngine.class);
 
 	private interface EngineAction<U extends RadixEngineAtom> {
 	}
@@ -78,6 +82,10 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 				} else if (action instanceof DeleteAtom) {
 					DeleteAtom<T> deleteAtom = (DeleteAtom<T>) action;
 					engineStore.deleteAtom(deleteAtom.cmAtom);
+				} else {
+					// We don't want to stop processing future EngineActions,
+					// but we do want to flag this logic error.
+					log.error("Unknown EngineAction: {}", action.getClass().getName());
 				}
 			} catch (InterruptedException e) {
 				// Just exit if we are interrupted
