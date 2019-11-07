@@ -19,12 +19,16 @@ import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.UnaryOperator;
 
 /**
  * Top Level Class for the Radix Engine, a real-time, shardable, distributed state machine.
  */
 public final class RadixEngine<T extends RadixEngineAtom> {
+
+	private enum ThreadState { CREATED, RUNNING, DECEASED }
+	private final AtomicReference<ThreadState> running;
 
 	private interface EngineAction<U extends RadixEngineAtom> {
 	}
@@ -67,10 +71,11 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 		this.stateUpdateEngine = new Thread(this::run);
 		this.stateUpdateEngine.setDaemon(true);
 		this.stateUpdateEngine.setName("Radix Engine");
+		this.running = new AtomicReference<>(ThreadState.CREATED);
 	}
 
 	private void run() {
-		while (true) {
+		while (ThreadState.RUNNING.equals(running.get())) {
 			try {
 				final EngineAction<T> action = this.commitQueue.take();
 				if (action instanceof StoreAtom) {
@@ -93,8 +98,26 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 		return commitQueue.size();
 	}
 
-	public void start() {
-		stateUpdateEngine.start();
+	public boolean start() {
+		if (this.running.compareAndSet(ThreadState.CREATED, ThreadState.RUNNING)) {
+			this.stateUpdateEngine.start();
+			return true;
+		}
+		return false;
+	}
+
+	public boolean stop() {
+		if (this.running.compareAndSet(ThreadState.RUNNING, ThreadState.DECEASED)) {
+			this.stateUpdateEngine.interrupt();
+			try {
+				this.stateUpdateEngine.join();
+			} catch (InterruptedException e) {
+				// Continue without waiting further
+				Thread.currentThread().interrupt();
+			}
+			return true;
+		}
+		return false;
 	}
 
 	public void addCMSuccessHook(CMSuccessHook<T> hook) {
