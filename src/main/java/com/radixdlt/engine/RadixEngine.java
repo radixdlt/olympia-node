@@ -21,10 +21,14 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.UnaryOperator;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Top Level Class for the Radix Engine, a real-time, shardable, distributed state machine.
  */
 public final class RadixEngine<T extends RadixEngineAtom> {
+	private static final Logger log = LoggerFactory.getLogger(RadixEngine.class);
 
 	private interface EngineAction<U extends RadixEngineAtom> {
 	}
@@ -54,7 +58,8 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 	private final CopyOnWriteArrayList<CMSuccessHook<T>> cmSuccessHooks = new CopyOnWriteArrayList<>();
 	private	final BlockingQueue<EngineAction<T>> commitQueue = new LinkedBlockingQueue<>();
 
-	private volatile Thread stateUpdateEngine = null;
+	private volatile boolean running = false;
+	private Thread stateUpdateThread = null;
 	private final Object stateUpdateEngineLock = new Object();
 
 	public RadixEngine(
@@ -69,7 +74,7 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 	}
 
 	private void run() {
-		while (this.stateUpdateEngine != null) {
+		while (this.running) {
 			try {
 				final EngineAction<T> action = this.commitQueue.take();
 				if (action instanceof StoreAtom) {
@@ -78,6 +83,10 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 				} else if (action instanceof DeleteAtom) {
 					DeleteAtom<T> deleteAtom = (DeleteAtom<T>) action;
 					engineStore.deleteAtom(deleteAtom.cmAtom);
+				} else {
+					// We don't want to stop processing future EngineActions,
+					// but we do want to flag this logic error.
+					log.error("Unknown EngineAction: {}", action.getClass().getName());
 				}
 			} catch (InterruptedException e) {
 				// Just exit if we are interrupted
@@ -98,8 +107,7 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 	 * and {@link #store(RadixEngineAtom, AtomEventListener)} methods.
 	 * <p>
 	 * In order to initially start the engine processing events, this method
-	 * needs to be called after instance creation and required callbacks have
-	 * been added.
+	 * needs to be called after instance creation.
 	 * <p>
 	 * Note that the engine instance can be restarted as many time as necessary
 	 * after {@link #stop()} has been called.
@@ -109,10 +117,12 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 	 */
 	public boolean start() {
 		synchronized (stateUpdateEngineLock) {
-			if (this.stateUpdateEngine == null) {
-				this.stateUpdateEngine = new Thread(this::run);
-				this.stateUpdateEngine.setDaemon(true);
-				this.stateUpdateEngine.setName("Radix Engine");
+			if (!this.running) {
+				this.stateUpdateThread = new Thread(this::run);
+				this.stateUpdateThread.setDaemon(true);
+				this.stateUpdateThread.setName("Radix Engine");
+				this.running = true;
+				this.stateUpdateThread.start();
 				return true;
 			}
 			return false;
@@ -122,23 +132,27 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 	/**
 	 * Stop this instance of the Radix Engine from processing incoming events.
 	 * Event processing may be restarted by calling the {@link #start()} method.
+	 * <p>
+	 * It is not necessary to call {@code stop()} before exiting the main
+	 * thread in order to exit the JVM when using instances of this class.
 	 *
 	 * @return {@code true} if the call to this method actually stopped
 	 * 		processing, {@code false} otherwise.
 	 */
 	public boolean stop() {
 		synchronized (stateUpdateEngineLock) {
-			if (this.stateUpdateEngine != null) {
-				// Reset thread variable here, so we can restart
-				// if an exception occurs that we don't handle.
-				Thread t = this.stateUpdateEngine;
-				this.stateUpdateEngine = null;
-				t.interrupt();
+			if (this.running) {
 				try {
-					t.join();
+					this.stateUpdateThread.interrupt();
+					this.stateUpdateThread.join();
 				} catch (InterruptedException e) {
 					// Continue without waiting further
 					Thread.currentThread().interrupt();
+				} finally {
+					// Reset thread variable here, so we can restart
+					// if an exception occurs that we don't handle.
+					this.stateUpdateThread = null;
+					this.running = false;
 				}
 				return true;
 			}
