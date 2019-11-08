@@ -18,7 +18,7 @@
         -8931354512573938187
       ],
       "hid": ":uid:ad3e047e1aa2afb1d192f70c00a76425",
-      "serializer": "radix.atom",
+      "serializer": "radix.content",
       "version": 100,
       "particleGroups": [
         {
