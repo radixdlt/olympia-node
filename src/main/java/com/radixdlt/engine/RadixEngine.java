@@ -106,8 +106,7 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 	 * and {@link #store(RadixEngineAtom, AtomEventListener)} methods.
 	 * <p>
 	 * In order to initially start the engine processing events, this method
-	 * needs to be called after instance creation and required callbacks have
-	 * been added.
+	 * needs to be called after instance creation.
 	 * <p>
 	 * Note that the engine instance can be restarted as many time as necessary
 	 * after {@link #stop()} has been called.
