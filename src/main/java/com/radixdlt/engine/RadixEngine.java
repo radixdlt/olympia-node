@@ -130,6 +130,9 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 	/**
 	 * Stop this instance of the Radix Engine from processing incoming events.
 	 * Event processing may be restarted by calling the {@link #start()} method.
+	 * <p>
+	 * It is not necessary to call {@code stop()} before exiting any application
+	 * using this library.
 	 *
 	 * @return {@code true} if the call to this method actually stopped
 	 * 		processing, {@code false} otherwise.
