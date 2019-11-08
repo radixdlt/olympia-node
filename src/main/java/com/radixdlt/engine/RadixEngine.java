@@ -19,16 +19,12 @@ import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.UnaryOperator;
 
 /**
  * Top Level Class for the Radix Engine, a real-time, shardable, distributed state machine.
  */
 public final class RadixEngine<T extends RadixEngineAtom> {
-
-	private enum ThreadState { CREATED, RUNNING, DECEASED }
-	private final AtomicReference<ThreadState> running;
 
 	private interface EngineAction<U extends RadixEngineAtom> {
 	}
@@ -57,7 +53,9 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 	private final CopyOnWriteArrayList<AtomEventListener<T>> atomEventListeners = new CopyOnWriteArrayList<>();
 	private final CopyOnWriteArrayList<CMSuccessHook<T>> cmSuccessHooks = new CopyOnWriteArrayList<>();
 	private	final BlockingQueue<EngineAction<T>> commitQueue = new LinkedBlockingQueue<>();
-	private final Thread stateUpdateEngine;
+
+	private volatile Thread stateUpdateEngine = null;
+	private final Object stateUpdateEngineLock = new Object();
 
 	public RadixEngine(
 		ConstraintMachine constraintMachine,
@@ -68,14 +66,10 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 		// Remove cm virtual store
 		this.virtualizedCMStore = virtualStoreLayer.apply(CMStores.empty());
 		this.engineStore = engineStore;
-		this.stateUpdateEngine = new Thread(this::run);
-		this.stateUpdateEngine.setDaemon(true);
-		this.stateUpdateEngine.setName("Radix Engine");
-		this.running = new AtomicReference<>(ThreadState.CREATED);
 	}
 
 	private void run() {
-		while (ThreadState.RUNNING.equals(running.get())) {
+		while (this.stateUpdateEngine != null) {
 			try {
 				final EngineAction<T> action = this.commitQueue.take();
 				if (action instanceof StoreAtom) {
@@ -98,26 +92,58 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 		return commitQueue.size();
 	}
 
+	/**
+	 * Start this instance of the Radix Engine processing incoming events.
+	 * Events are placed onto a queue by the {@link #delete(RadixEngineAtom)}
+	 * and {@link #store(RadixEngineAtom, AtomEventListener)} methods.
+	 * <p>
+	 * In order to initially start the engine processing events, this method
+	 * needs to be called after instance creation and required callbacks have
+	 * been added.
+	 * <p>
+	 * Note that the engine instance can be restarted as many time as necessary
+	 * after {@link #stop()} has been called.
+	 *
+	 * @return {@code true} if the call to this method actually started
+	 * 		processing, {@code false} otherwise.
+	 */
 	public boolean start() {
-		if (this.running.compareAndSet(ThreadState.CREATED, ThreadState.RUNNING)) {
-			this.stateUpdateEngine.start();
-			return true;
+		synchronized (stateUpdateEngineLock) {
+			if (this.stateUpdateEngine == null) {
+				this.stateUpdateEngine = new Thread(this::run);
+				this.stateUpdateEngine.setDaemon(true);
+				this.stateUpdateEngine.setName("Radix Engine");
+				return true;
+			}
+			return false;
 		}
-		return false;
 	}
 
+	/**
+	 * Stop this instance of the Radix Engine from processing incoming events.
+	 * Event processing may be restarted by calling the {@link #start()} method.
+	 *
+	 * @return {@code true} if the call to this method actually stopped
+	 * 		processing, {@code false} otherwise.
+	 */
 	public boolean stop() {
-		if (this.running.compareAndSet(ThreadState.RUNNING, ThreadState.DECEASED)) {
-			this.stateUpdateEngine.interrupt();
-			try {
-				this.stateUpdateEngine.join();
-			} catch (InterruptedException e) {
-				// Continue without waiting further
-				Thread.currentThread().interrupt();
+		synchronized (stateUpdateEngineLock) {
+			if (this.stateUpdateEngine != null) {
+				// Reset thread variable here, so we can restart
+				// if an exception occurs that we don't handle.
+				Thread t = this.stateUpdateEngine;
+				this.stateUpdateEngine = null;
+				t.interrupt();
+				try {
+					t.join();
+				} catch (InterruptedException e) {
+					// Continue without waiting further
+					Thread.currentThread().interrupt();
+				}
+				return true;
 			}
-			return true;
+			return false;
 		}
-		return false;
 	}
 
 	public void addCMSuccessHook(CMSuccessHook<T> hook) {
