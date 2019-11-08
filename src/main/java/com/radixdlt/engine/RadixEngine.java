@@ -59,7 +59,7 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 	private	final BlockingQueue<EngineAction<T>> commitQueue = new LinkedBlockingQueue<>();
 
 	private volatile boolean running = false;
-	private Thread stateUpdateEngine = null;
+	private Thread stateUpdateThread = null;
 	private final Object stateUpdateEngineLock = new Object();
 
 	public RadixEngine(
@@ -118,11 +118,11 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 	public boolean start() {
 		synchronized (stateUpdateEngineLock) {
 			if (!this.running) {
-				this.stateUpdateEngine = new Thread(this::run);
-				this.stateUpdateEngine.setDaemon(true);
-				this.stateUpdateEngine.setName("Radix Engine");
+				this.stateUpdateThread = new Thread(this::run);
+				this.stateUpdateThread.setDaemon(true);
+				this.stateUpdateThread.setName("Radix Engine");
 				this.running = true;
-				this.stateUpdateEngine.start();
+				this.stateUpdateThread.start();
 				return true;
 			}
 			return false;
@@ -142,17 +142,17 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 	public boolean stop() {
 		synchronized (stateUpdateEngineLock) {
 			if (this.running) {
-				// Reset thread variable here, so we can restart
-				// if an exception occurs that we don't handle.
-				Thread t = this.stateUpdateEngine;
-				this.stateUpdateEngine = null;
-				this.running = false;
-				t.interrupt();
 				try {
-					t.join();
+					this.stateUpdateThread.interrupt();
+					this.stateUpdateThread.join();
 				} catch (InterruptedException e) {
 					// Continue without waiting further
 					Thread.currentThread().interrupt();
+				} finally {
+					// Reset thread variable here, so we can restart
+					// if an exception occurs that we don't handle.
+					this.stateUpdateThread = null;
+					this.running = false;
 				}
 				return true;
 			}
