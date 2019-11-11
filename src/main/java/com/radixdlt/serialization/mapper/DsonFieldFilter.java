@@ -40,6 +40,8 @@ public class DsonFieldFilter extends SimpleBeanPropertyFilter {
 			writer.serializeAsField(pojo, jgen, provider);
 		} else if (!jgen.canOmitFields()) { // since 2.3
 			writer.serializeAsOmittedField(pojo, jgen, provider);
+		} else {
+			// Field can just be omitted in this case, which means there is nothing to do here
 		}
 	}
 
@@ -54,11 +56,11 @@ public class DsonFieldFilter extends SimpleBeanPropertyFilter {
 	}
 
 	private boolean shouldInclude(Class<?> cls, String property) {
-		// FIXME: Special cases ideally handled better
+		// Maps and Collection sub-classes always have contents serialised
 		if (Map.class.isAssignableFrom(cls) || Collection.class.isAssignableFrom(cls)) {
 			return true;
 		}
 		ImmutableSet<String> fieldsForClass = this.includedItems.get(cls);
-		return fieldsForClass == null ? false : fieldsForClass.contains(property);
+		return fieldsForClass != null && fieldsForClass.contains(property);
 	}
 }
