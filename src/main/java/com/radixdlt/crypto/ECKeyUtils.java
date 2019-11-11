@@ -21,6 +21,10 @@ import org.bouncycastle.crypto.params.ParametersWithIV;
 import org.bouncycastle.jce.spec.ECParameterSpec;
 import org.bouncycastle.math.ec.FixedPointUtil;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.primitives.UnsignedBytes;
+import com.radixdlt.utils.Bytes;
+
 /**
  * Utilities used by both {@link ECPublicKey} and {@link ECKeyPair}.
  */
@@ -31,15 +35,18 @@ class ECKeyUtils {
 	}
 
 	static final SecureRandom secureRandom = new SecureRandom();
-	static final X9ECParameters	curve;
+	private static final X9ECParameters curve;
 	static final ECDomainParameters domain;
 	static final ECParameterSpec spec;
+	private static final byte[] order;
 
 	static {
 	    curve = CustomNamedCurves.getByName("secp256k1");
 
 	    domain = new ECDomainParameters(curve.getCurve(), curve.getG(), curve.getN(), curve.getH());
 	    spec = new ECParameterSpec(curve.getCurve(), curve.getG(), curve.getN(), curve.getH());
+
+	    order = adjustArray(domain.getN().toByteArray(), ECKeyPair.BYTES);
 
         FixedPointUtil.precompute(curve.getG());
 	}
@@ -81,4 +88,69 @@ class ECKeyUtils {
             throw new CryptoException(e);
         }
     }
+
+	static void validatePrivate(byte[] privateKey) throws CryptoException {
+		if (privateKey == null) {
+			throw new CryptoException("Private key is null");
+		}
+
+		if (privateKey.length != ECKeyPair.BYTES) {
+			throw new CryptoException("Private key is invalid length: " + privateKey.length);
+		}
+
+		if (greaterOrEqualOrder(privateKey)) {
+			throw new CryptoException("Private key is greater than or equal to curve order");
+		}
+
+		int pklen = privateKey.length;
+		if (allZero(privateKey, 0, pklen - 1)) {
+			byte lastByte = privateKey[pklen - 1];
+			if (lastByte == 0) {
+				throw new CryptoException("Private key is zero");
+			}
+			if (lastByte == 1) {
+				throw new CryptoException("Private key is one");
+			}
+		}
+	}
+
+	static byte[] adjustArray(byte[] array, int length) {
+		if (length == array.length) {
+			// Length is fine
+			return array;
+		}
+		if (length > array.length) {
+			// Needs zero padding at front
+			byte[] result = new byte[length];
+			System.arraycopy(array, 0, result, length - array.length, array.length);
+			return result;
+		}
+		// Need to drop zeros at front -> error if dropped bytes are not zero
+		int offset = 0;
+		while (array.length - offset > length) {
+			if (array[offset] != 0) {
+				throw new IllegalArgumentException(String.format("Array is greater than %s bytes: %s", length, Bytes.toHexString(array)));
+			}
+			offset += 1;
+		}
+		// Now return length bytes from offset within array
+		return Arrays.copyOfRange(array, offset, offset + length);
+	}
+
+	@VisibleForTesting
+	static boolean greaterOrEqualOrder(byte[] privateKey) {
+		if (privateKey.length != order.length) {
+			throw new IllegalArgumentException("Invalid private key");
+		}
+		return UnsignedBytes.lexicographicalComparator().compare(order, privateKey) <= 0;
+	}
+
+	private static boolean allZero(byte[] bytes, int offset, int len) {
+		for (int i = 0; i < len; ++i) {
+			if (bytes[offset + i] != 0) {
+				return false;
+			}
+		}
+		return true;
+	}
 }

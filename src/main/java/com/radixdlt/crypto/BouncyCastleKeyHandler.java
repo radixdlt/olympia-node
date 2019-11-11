@@ -51,33 +51,14 @@ class BouncyCastleKeyHandler implements KeyHandler {
 
 	@Override
 	public byte[] computePublicKey(byte[] privateKey) throws CryptoException {
-		BigInteger d = new BigInteger(1, privateKey);
-		validatePrivate(d);
+		ECKeyUtils.validatePrivate(privateKey);
 
+		BigInteger d = new BigInteger(1, privateKey);
 		try {
 			ECPublicKeySpec publicKeySpec = new ECPublicKeySpec(spec.getG().multiply(d), spec);
 			return ((ECPublicKey) KeyFactory.getInstance("EC").generatePublic(publicKeySpec)).getQ().getEncoded(true);
 		} catch (Exception e) {
 			throw new CryptoException(e);
-		}
-	}
-
-	private void validatePrivate(BigInteger privateKey) throws CryptoException {
-		if (privateKey == null) {
-			throw new CryptoException("Private key is null");
-		}
-
-		if (privateKey.equals(BigInteger.ONE)) {
-			throw new CryptoException("Private key is one");
-		}
-
-		int signum = privateKey.signum();
-		if (signum == 0) {
-			throw new CryptoException("Private key is zero");
-		}
-
-		if (signum < 0) {
-			throw new CryptoException("Private key is negative");
 		}
 	}
 }
