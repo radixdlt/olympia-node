@@ -105,11 +105,8 @@ class ECKeyUtils {
 		int pklen = privateKey.length;
 		if (allZero(privateKey, 0, pklen - 1)) {
 			byte lastByte = privateKey[pklen - 1];
-			if (lastByte == 0) {
-				throw new CryptoException("Private key is zero");
-			}
-			if (lastByte == 1) {
-				throw new CryptoException("Private key is one");
+			if (lastByte == 0 || lastByte == 1) {
+				throw new CryptoException("Private key is " + lastByte);
 			}
 		}
 	}
