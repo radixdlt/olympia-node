@@ -87,10 +87,10 @@ public final class ECKeyPair {
 	        ECPrivateKeyParameters privParams = (ECPrivateKeyParameters) keypair.getPrivate();
 	        ECPublicKeyParameters pubParams = (ECPublicKeyParameters) keypair.getPublic();
 
-	        byte[] privateKeyBytes = privParams.getD().toByteArray();
-			validatePrivate(privateKeyBytes);
+	        byte[] privateKeyBytes = ECKeyUtils.adjustArray(privParams.getD().toByteArray(), BYTES);
+			ECKeyUtils.validatePrivate(privateKeyBytes);
 
-	        this.privateKey = trimPrivateKey(privateKeyBytes);
+	        this.privateKey = privateKeyBytes;
 
 	        this.publicKey = new ECPublicKey(pubParams.getQ().getEncoded(true));
 		} catch (Exception ex) {
@@ -98,51 +98,14 @@ public final class ECKeyPair {
 		}
 	}
 
-	private byte[] trimPrivateKey(byte[] privKey) {
-		if (privKey.length > BYTES && privKey[0] == 0) {
-			byte[] tmp = new byte[privKey.length - 1];
-			System.arraycopy(privKey, 1, tmp, 0, privKey.length - 1);
-			return tmp;
-		}
-		if (privKey.length < BYTES) {
-			byte[] tmp = new byte[BYTES];
-			System.arraycopy(privKey, 0, tmp, BYTES - privKey.length, privKey.length);
-		}
-		return privKey;
-	}
-
 	public ECKeyPair(byte[] key) throws CryptoException {
 		try {
-			validatePrivate(key);
+			ECKeyUtils.validatePrivate(key);
 			this.privateKey = key;
 			this.publicKey = new ECPublicKey(ECKeyUtils.keyHandler.computePublicKey(key));
 		} catch (Exception ex) {
 			throw new CryptoException(ex);
 		}
-	}
-
-	private void validatePrivate(byte[] privateKey) throws CryptoException {
-		if (privateKey == null || privateKey.length == 0) {
-			throw new CryptoException("Private key is null");
-		}
-
-		int pklen = privateKey.length;
-		if (allZero(privateKey, 0, pklen)) {
-			throw new CryptoException("Private key is zero");
-		}
-
-		if (allZero(privateKey, 0, pklen - 1) && privateKey[pklen - 1] == 1) {
-			throw new CryptoException("Private key is one");
-		}
-	}
-
-	private boolean allZero(byte[] bytes, int offset, int len) {
-		for (int i = 0; i < len; ++i) {
-			if (bytes[offset + i] != 0) {
-				return false;
-			}
-		}
-		return true;
 	}
 
 	public EUID getUID() {
