@@ -1,7 +1,6 @@
 package org.radix.universe.system;
 
 import com.radixdlt.utils.Bytes;
-import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -15,6 +14,7 @@ import org.radix.common.executors.ScheduledExecutable;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
+import com.radixdlt.keys.Keys;
 import com.radixdlt.crypto.CryptoException;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
@@ -66,7 +66,8 @@ public final class LocalSystem extends RadixSystem
 
 			try
 			{
-				nodeKey = ECKeyPair.fromFile(new File(Modules.get(RuntimeProperties.class).get("node.key.path", "node.key")), true);
+				String nodeKeyPath = Modules.get(RuntimeProperties.class).get("node.key.path", "node.ks");
+				nodeKey = Keys.readKey(nodeKeyPath, "node", "RADIX_NODE_KEYSTORE_PASSWORD", "RADIX_NODE_KEY_PASSWORD");
 			}
 			catch (IOException | CryptoException ex)
 			{
@@ -116,6 +117,11 @@ public final class LocalSystem extends RadixSystem
 		}
 
 		return LocalSystem.instance;
+	}
+
+	private static void clearPassword(char[] nodeKeyPassword) {
+		// TODO Auto-generated method stub
+
 	}
 
 	private ECKeyPair keyPair;

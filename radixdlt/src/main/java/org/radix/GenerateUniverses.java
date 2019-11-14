@@ -20,6 +20,7 @@ import com.radixdlt.common.EUID;
 import com.radixdlt.utils.Offset;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
+import com.radixdlt.keys.Keys;
 import com.radixdlt.crypto.CryptoException;
 import org.radix.exceptions.ValidationException;
 import org.radix.logging.Logger;
@@ -38,7 +39,6 @@ import com.radixdlt.utils.RadixConstants;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.Bytes;
 
-import java.io.File;
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.security.Security;
@@ -82,12 +82,12 @@ public final class GenerateUniverses
 			}
 		}
 
-		String universeKeyPath = Modules.get(RuntimeProperties.class).get("universe.key.path", "universe.key");
-		universeKey = ECKeyPair.fromFile(new File(universeKeyPath), true);
+		String universeKeyPath = Modules.get(RuntimeProperties.class).get("universe.key.path", "universe.ks");
+		universeKey = Keys.readKey(universeKeyPath, "universe", "RADIX_UNIVERSE_KEYSTORE_PASSWORD", "RADIX_UNIVERSE_KEY_PASSWORD");
 
 		// TODO want to be able to specify multiple nodes to get the genesis mass as bootstrapping
-		String nodeKeyPath = Modules.get(RuntimeProperties.class).get("node.key.path", "node.key");
-		nodeKey = ECKeyPair.fromFile(new File(nodeKeyPath), true);
+		String nodeKeyPath = Modules.get(RuntimeProperties.class).get("node.key.path", "node.ks");
+		nodeKey = Keys.readKey(nodeKeyPath, "node", "RADIX_NODE_KEYSTORE_PASSWORD", "RADIX_NODE_KEY_PASSWORD");
 	}
 
 	public GenerateUniverses() throws Exception {
