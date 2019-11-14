@@ -89,11 +89,11 @@ public final class PublicInetAddress {
 	 * <p>
 	 * Note that data will be consumed from {@code buf} as required to handle NAT processing.
 	 *
-	 * @param channel  channel to write address challenges on, if required
+	 * @param ctx channel context to write any required address challenges on
 	 * @param peerAddress the address of the sending peer
 	 * @param buf the inbound packet
 	 */
-	void handleInboundPacket(ChannelHandlerContext channel, InetAddress peerAddress, ByteBuf buf) {
+	void handleInboundPacket(ChannelHandlerContext ctx, InetAddress peerAddress, ByteBuf buf) {
 		int length = buf.readableBytes();
 		if (length > 0) {
 			byte firstByte = buf.getByte(0); // peek
@@ -119,7 +119,7 @@ public final class PublicInetAddress {
 
 						InetAddress localAddr = InetAddress.getByAddress(rawLocalAddress);
 						if (isPublicUnicastInetAddress(localAddr)) {
-							startValidation(channel, localAddr);
+							startValidation(ctx, localAddr);
 						}
 					} catch (UnknownHostException e) {
 						log.error("While processing NAT address", e);
@@ -174,10 +174,11 @@ public final class PublicInetAddress {
 	 * <p>
 	 * The caller will receive a special UDP, which should be passed to the endValidation() methods.
 	 *
+	 * @param ctx The {@link ChannelHandlerContext} to write challenges on
 	 * @param address untrusted address to validate
 	 * @see #endValidation(DatagramPacket)
 	 */
-	private void startValidation(ChannelHandlerContext channel, InetAddress address) {
+	private void startValidation(ChannelHandlerContext ctx, InetAddress address) {
 		long data;
 
 		// update state in a thread-safe manner
@@ -197,7 +198,7 @@ public final class PublicInetAddress {
 		}
 
 		log.info("validating untrusted public address: " + address.getHostAddress());
-		sendSecret(channel, address, data);
+		sendSecret(ctx, address, data);
 	}
 
 	@Override
@@ -206,10 +207,10 @@ public final class PublicInetAddress {
 		return get().getHostAddress();
 	}
 
-	private void sendSecret(ChannelHandlerContext channel, InetAddress address, long secret) {
+	private void sendSecret(ChannelHandlerContext ctx, InetAddress address, long secret) {
 		ByteBuf data = Unpooled.wrappedBuffer(Longs.toByteArray(secret));
 		DatagramPacket packet = new DatagramPacket(data, new InetSocketAddress(address, this.localPort));
-		channel.writeAndFlush(packet);
+		ctx.writeAndFlush(packet);
 	}
 
 	private InetAddress getLocalAddress(String localAddress) {
