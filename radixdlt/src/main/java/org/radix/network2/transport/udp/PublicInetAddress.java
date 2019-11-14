@@ -15,7 +15,7 @@ import com.radixdlt.utils.Longs;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import io.netty.channel.socket.DatagramChannel;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.socket.DatagramPacket;
 
 /**
@@ -93,7 +93,7 @@ public final class PublicInetAddress {
 	 * @param peerAddress the address of the sending peer
 	 * @param buf the inbound packet
 	 */
-	void handleInboundPacket(DatagramChannel channel, InetAddress peerAddress, ByteBuf buf) {
+	void handleInboundPacket(ChannelHandlerContext channel, InetAddress peerAddress, ByteBuf buf) {
 		int length = buf.readableBytes();
 		if (length > 0) {
 			byte firstByte = buf.getByte(0); // peek
@@ -177,7 +177,7 @@ public final class PublicInetAddress {
 	 * @param address untrusted address to validate
 	 * @see #endValidation(DatagramPacket)
 	 */
-	private void startValidation(DatagramChannel channel, InetAddress address) {
+	private void startValidation(ChannelHandlerContext channel, InetAddress address) {
 		long data;
 
 		// update state in a thread-safe manner
@@ -206,7 +206,7 @@ public final class PublicInetAddress {
 		return get().getHostAddress();
 	}
 
-	private void sendSecret(DatagramChannel channel, InetAddress address, long secret) {
+	private void sendSecret(ChannelHandlerContext channel, InetAddress address, long secret) {
 		ByteBuf data = Unpooled.wrappedBuffer(Longs.toByteArray(secret));
 		DatagramPacket packet = new DatagramPacket(data, new InetSocketAddress(address, this.localPort));
 		channel.writeAndFlush(packet);

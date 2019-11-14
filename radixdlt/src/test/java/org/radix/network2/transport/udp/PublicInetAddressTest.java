@@ -21,7 +21,7 @@ import static org.mockito.Mockito.*;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import io.netty.channel.socket.DatagramChannel;
+import io.netty.channel.ChannelHandlerContext;
 
 public class PublicInetAddressTest {
 
@@ -71,14 +71,14 @@ public class PublicInetAddressTest {
 
 	@Test
 	public void testStartValidation() throws Exception {
-		DatagramChannel channel = mock(DatagramChannel.class);
+		ChannelHandlerContext ctx = mock(ChannelHandlerContext.class);
 		InetAddress from = InetAddress.getByName("127.0.0.1");
 
 		// Reset
 		dut.reset();
 
 		// single validation until confirmed or time has elapsed
-		dut.handleInboundPacket(channel, from, packetFromTo(from, "1.1.1.1"));
+		dut.handleInboundPacket(ctx, from, packetFromTo(from, "1.1.1.1"));
 		long expectedTime = (long) Whitebox.getField(PublicInetAddress.class, "secretEndOfLife").get(dut);
 		long expectedSecret = (long) Whitebox.getField(PublicInetAddress.class, "secret").get(dut);
 
@@ -89,10 +89,10 @@ public class PublicInetAddressTest {
 		assertNotEquals(expectedTime, clock.get());
 
 		// try to trigger validation again with the same address
-		dut.handleInboundPacket(channel, from, packetFromTo(from, "1.1.1.1"));
+		dut.handleInboundPacket(ctx, from, packetFromTo(from, "1.1.1.1"));
 
 		// try to trigger validation again with a different address
-		dut.handleInboundPacket(channel, from, packetFromTo(from, "2.2.2.2"));
+		dut.handleInboundPacket(ctx, from, packetFromTo(from, "2.2.2.2"));
 
 		// make sure secretEndOfLife did not change since the first valid invocation
 		assertEquals(expectedTime, Whitebox.getField(PublicInetAddress.class, "secretEndOfLife").get(dut));
@@ -106,7 +106,7 @@ public class PublicInetAddressTest {
 		clock.addAndGet(PublicInetAddress.SECRET_LIFETIME_MS);
 
 		// trigger validation again with a different address
-		dut.handleInboundPacket(channel, from, packetFromTo(from, "3.3.3.3"));
+		dut.handleInboundPacket(ctx, from, packetFromTo(from, "3.3.3.3"));
 
 		// make sure secretEndOfLife changed
 		assertNotEquals(expectedTime, Whitebox.getField(PublicInetAddress.class, "secretEndOfLife").get(dut));
@@ -121,7 +121,7 @@ public class PublicInetAddressTest {
 
 	@Test
 	public void testEndValidation() throws IllegalAccessException, IOException {
-		DatagramChannel channel = mock(DatagramChannel.class);
+		ChannelHandlerContext ctx = mock(ChannelHandlerContext.class);
 		InetAddress from = InetAddress.getByName("127.0.0.1");
 
 		long secret = -1L;
@@ -146,11 +146,11 @@ public class PublicInetAddressTest {
 
 		// no new secret now if we start again with the same address
 		long oldSecret = Whitebox.getField(PublicInetAddress.class, "secret").getLong(dut);
-		dut.handleInboundPacket(channel, from, packetFromTo(from, "1.1.1.1"));
+		dut.handleInboundPacket(ctx, from, packetFromTo(from, "1.1.1.1"));
 		assertEquals(oldSecret, Whitebox.getField(PublicInetAddress.class, "secret").getLong(dut));
 
 		// ... but should get a new secret if we start again with a new host
-		dut.handleInboundPacket(channel, from, packetFromTo(from, "2.2.2.2"));
+		dut.handleInboundPacket(ctx, from, packetFromTo(from, "2.2.2.2"));
 		assertNotEquals(oldSecret, Whitebox.getField(PublicInetAddress.class, "secret").getLong(dut));
 	}
 
