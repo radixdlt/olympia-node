@@ -1,21 +1,11 @@
 package com.radixdlt.crypto;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.common.io.ByteStreams;
 import com.radixdlt.common.EUID;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.WireIO;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.math.BigInteger;
-import java.nio.file.Files;
-import java.nio.file.attribute.PosixFilePermission;
 import java.security.SecureRandom;
 import java.util.Arrays;
-import java.util.Set;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.generators.ECKeyPairGenerator;
 import org.bouncycastle.crypto.params.ECKeyGenerationParameters;
@@ -28,48 +18,6 @@ import org.bouncycastle.math.ec.ECPoint;
  */
 public final class ECKeyPair {
 	public static final int	BYTES = 32;
-
-	/**
-	 * Load a private key from file, and compute the public key.
-	 *
-	 * @param file  The file to load the private key from.
-	 * @param create Set to {@code true} if the file should be created if it doesn't exist.
-	 * @return An {@link ECKeyPair}
-	 * @throws IOException If reading or writing the file fails
-	 * @throws CryptoException If the key read from the file is invalid
-	 */
-	public static ECKeyPair fromFile(File file, boolean create) throws IOException, CryptoException {
-		if (!file.exists()) {
-			if (!create) {
-				throw new FileNotFoundException("Keyfile " + file.toString() + " not found");
-			}
-
-			File dir = file.getParentFile();
-			if (dir != null && !dir.exists() && !dir.mkdirs()) {
-				throw new FileNotFoundException("Failed to create directory: " + dir.toString());
-			}
-
-			try (FileOutputStream io = new FileOutputStream(file)) {
-				try {
-					Set<PosixFilePermission> perms = ImmutableSet.of(PosixFilePermission.OWNER_READ,
-							PosixFilePermission.OWNER_WRITE);
-					Files.setPosixFilePermissions(file.toPath(), perms);
-				} catch (UnsupportedOperationException ignoredException) {
-					// probably windows
-				}
-
-				ECKeyPair key = new ECKeyPair();
-				io.write(key.getPrivateKey());
-				return key;
-			}
-		} else {
-			try (FileInputStream io = new FileInputStream(file)) {
-				byte[] universePriv = new byte[BYTES];
-				ByteStreams.readFully(io, universePriv);
-				return new ECKeyPair(universePriv);
-			}
-		}
-	}
 
 	private final byte[] privateKey;
 	private final ECPublicKey publicKey;
