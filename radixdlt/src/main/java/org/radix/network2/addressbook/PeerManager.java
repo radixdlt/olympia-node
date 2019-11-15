@@ -60,10 +60,10 @@ public class PeerManager extends Plugin {
 
 	private final int peerMessageBatchSize;
 
-	private Future heartbeatPeersFuture;
-	private Future peersBroadcastFuture;
-	private Future peerProbeFuture;
-	private Future discoverPeersFuture;
+	private Future<?> heartbeatPeersFuture;
+	private Future<?> peersBroadcastFuture;
+	private Future<?> peerProbeFuture;
+	private Future<?> discoverPeersFuture;
 
 
 	private class ProbeTask implements Runnable {
