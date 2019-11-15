@@ -44,8 +44,12 @@ public final class Keys {
 		try (RadixKeyStore ks = RadixKeyStore.fromFile(new File(keyStorePath), keyStorePassword, true)) {
 			return ks.readKeyPair(keyName, keyPassword, true);
 		} finally {
-			Arrays.fill(keyPassword, ' ');
-			Arrays.fill(keyStorePassword, ' ');
+			if (keyPassword != null) {
+				Arrays.fill(keyPassword, ' ');
+			}
+			if (keyStorePassword != null) {
+				Arrays.fill(keyStorePassword, ' ');
+			}
 		}
 	}
 
