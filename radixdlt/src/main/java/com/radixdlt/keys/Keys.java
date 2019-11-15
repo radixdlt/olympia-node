@@ -42,7 +42,7 @@ public final class Keys {
 		char[] keyPassword = readPassword(keyPasswordEnv);
 		char[] keyStorePassword = readPassword(keyStorePasswordEnv);
 		try (RadixKeyStore ks = RadixKeyStore.fromFile(new File(keyStorePath), keyStorePassword, true)) {
-			return ks.readKeyPair(keyName, keyPassword, true);
+			return ks.readKeyPair(keyName, true);
 		} finally {
 			if (keyPassword != null) {
 				Arrays.fill(keyPassword, ' ');
