@@ -119,11 +119,6 @@ public final class LocalSystem extends RadixSystem
 		return LocalSystem.instance;
 	}
 
-	private static void clearPassword(char[] nodeKeyPassword) {
-		// TODO Auto-generated method stub
-
-	}
-
 	private ECKeyPair keyPair;
 	private long 	revertClock = 0;
 	private long 	revertTimestamp = 0;

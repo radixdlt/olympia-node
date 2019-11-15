@@ -25,7 +25,7 @@ public final class Keys {
 	 * if possible.
 	 *
 	 * @param keyStorePath The path to the {@link RadixKeyStore}
-	 * @param keyName The of the key within the key store to read
+	 * @param keyName The name of the key within the key store to read
 	 * @param keyStorePasswordEnv The environment variable holding the key
 	 * 		store password.  This environment variable is read and used as
 	 * 		the password for accessing the key store overall.  If the
@@ -41,8 +41,8 @@ public final class Keys {
 	public static ECKeyPair readKey(String keyStorePath, String keyName, String keyStorePasswordEnv, String keyPasswordEnv) throws IOException, CryptoException {
 		char[] keyPassword = readPassword(keyPasswordEnv);
 		char[] keyStorePassword = readPassword(keyStorePasswordEnv);
-		try {
-			return RadixKeyStore.fromFile(new File(keyStorePath), keyStorePassword, true).keyPair(keyName, keyPassword);
+		try (RadixKeyStore ks = RadixKeyStore.fromFile(new File(keyStorePath), keyStorePassword, true)) {
+			return ks.readKeyPair(keyName, keyPassword, true);
 		} finally {
 			Arrays.fill(keyPassword, ' ');
 			Arrays.fill(keyStorePassword, ' ');
