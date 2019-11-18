@@ -58,7 +58,7 @@ import com.google.common.collect.ImmutableSet;
  * default 5 character password, "radix" is used.  Clearly this is insecure,
  * and clients should make an effort to specify passwords in a secure way.
  */
-public class RadixKeyStore implements Closeable {
+public final class RadixKeyStore implements Closeable {
 	// ASN.1 Object Identifiers for various things we use
 	private static final ASN1ObjectIdentifier OID_EC_ENCRYPTION     = new ASN1ObjectIdentifier("1.2.840.10045.2.1");
 	private static final ASN1ObjectIdentifier OID_SECP256K1_CURVE   = new ASN1ObjectIdentifier("1.3.132.0.10");
@@ -86,6 +86,11 @@ public class RadixKeyStore implements Closeable {
 
 	/**
 	 * Load a private key from file, and compute the public key.
+	 * <p>
+	 * Note that if {@code create} is set to {@code true}, then the file will
+	 * be created if it does not exist.  If the file is created, then it's
+	 * permissions will be set to just {@link PosixFilePermission.OWNER_READ}
+	 * and {@link PosixFilePermission.OWNER_WRITE} on Posix filesystems.
 	 *
 	 * @param file  The file to load the private key from
 	 * @param storePassword The password to use for securing the store.
@@ -318,7 +323,7 @@ public class RadixKeyStore implements Closeable {
 	private static void writeKeyStore(File file, KeyStore ks, char[] storePassword) throws GeneralSecurityException, IOException {
 		try (OutputStream os = new FileOutputStream(file)) {
 			try {
-				// Make some effort to make file readable only by owner
+				// Make some effort to make file read/writable only by owner
 				Set<PosixFilePermission> perms =
 						ImmutableSet.of(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE);
 				Files.setPosixFilePermissions(file.toPath(), perms);
