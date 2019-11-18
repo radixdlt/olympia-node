@@ -30,6 +30,7 @@ import static org.assertj.core.api.Assertions.*;
 
 public class RadixKeyStoreTest {
 
+	private static final String TEST_SECRET = "secret";
 	private static final String TEST_KS_FILENAME = "testfile.ks";
 
 	@BeforeClass
@@ -42,10 +43,7 @@ public class RadixKeyStoreTest {
 	 */
 	@Test
 	public void testFromFileCreate() throws IOException, CryptoException {
-		File file = new File(TEST_KS_FILENAME);
-		assertAny(Files.deleteIfExists(file.toPath()));
-		assertFalse(file.exists());
-
+		File file = newFile(TEST_KS_FILENAME);
 		try (RadixKeyStore ks = RadixKeyStore.fromFile(file, null, true)) {
 			assertTrue(file.exists());
 		}
@@ -56,10 +54,7 @@ public class RadixKeyStoreTest {
 	 */
 	@Test
 	public void testFromFileNotFound() throws IOException {
-		File file = new File(TEST_KS_FILENAME);
-		assertAny(Files.deleteIfExists(file.toPath()));
-		assertFalse(file.exists());
-
+		File file = newFile(TEST_KS_FILENAME);
 		assertThatThrownBy(() -> RadixKeyStore.fromFile(file, null, false))
 			.isInstanceOf(FileNotFoundException.class);
 	}
@@ -69,10 +64,7 @@ public class RadixKeyStoreTest {
 	 */
 	@Test
 	public void testFromFileReload1() throws IOException, CryptoException {
-		File file = new File(TEST_KS_FILENAME);
-		assertAny(Files.deleteIfExists(file.toPath()));
-		assertFalse(file.exists());
-
+		File file = newFile(TEST_KS_FILENAME);
 		ECKeyPair kp1 = new ECKeyPair();
 		try (RadixKeyStore ks = RadixKeyStore.fromFile(file, null, true)) {
 			assertTrue(file.exists());
@@ -90,10 +82,7 @@ public class RadixKeyStoreTest {
 	 */
 	@Test
 	public void testFromFileReload2() throws IOException, CryptoException {
-		File file = new File(TEST_KS_FILENAME);
-		assertAny(Files.deleteIfExists(file.toPath()));
-		assertFalse(file.exists());
-
+		File file = newFile(TEST_KS_FILENAME);
 		final ECKeyPair kp1;
 		try (RadixKeyStore ks = RadixKeyStore.fromFile(file, null, true)) {
 			assertTrue(file.exists());
@@ -111,10 +100,7 @@ public class RadixKeyStoreTest {
 	 */
 	@Test
 	public void testFromFileWrongFilePassword() throws IOException, CryptoException {
-		File file = new File(TEST_KS_FILENAME);
-		assertAny(Files.deleteIfExists(file.toPath()));
-		assertFalse(file.exists());
-
+		File file = newFile(TEST_KS_FILENAME);
 		try (RadixKeyStore ks = RadixKeyStore.fromFile(file, "secret1".toCharArray(), true)) {
 			assertTrue(file.exists());
 		}
@@ -129,10 +115,7 @@ public class RadixKeyStoreTest {
 	 */
 	@Test
 	public void testReadKeyPairFail() throws IOException, CryptoException {
-		File file = new File(TEST_KS_FILENAME);
-		assertAny(Files.deleteIfExists(file.toPath()));
-		assertFalse(file.exists());
-
+		File file = newFile(TEST_KS_FILENAME);
 		try (RadixKeyStore ks = RadixKeyStore.fromFile(file, null, true)) {
 			assertTrue(file.exists());
 			assertThatThrownBy(() -> ks.readKeyPair("notexist", false))
@@ -147,10 +130,7 @@ public class RadixKeyStoreTest {
 	 */
 	@Test
 	public void testClose() throws IOException, CryptoException {
-		File file = new File(TEST_KS_FILENAME);
-		assertAny(Files.deleteIfExists(file.toPath()));
-		assertFalse(file.exists());
-
+		File file = newFile(TEST_KS_FILENAME);
 		@SuppressWarnings("resource")
 		RadixKeyStore ks = RadixKeyStore.fromFile(file, "testpassword".toCharArray(), true);
 		assertTrue(file.exists());
@@ -165,10 +145,7 @@ public class RadixKeyStoreTest {
 	 */
 	@Test
 	public void testToString() throws IOException, CryptoException {
-		File file = new File(TEST_KS_FILENAME);
-		assertAny(Files.deleteIfExists(file.toPath()));
-		assertFalse(file.exists());
-
+		File file = newFile(TEST_KS_FILENAME);
 		try (RadixKeyStore ks = RadixKeyStore.fromFile(file, null, true)) {
 			assertThat(ks.toString(), containsString(file.toString()));
 			assertThat(ks.toString(), containsString(RadixKeyStore.class.getSimpleName()));
@@ -180,13 +157,12 @@ public class RadixKeyStoreTest {
 	 */
 	@Test
 	public void testInvalidECKey() throws IOException, GeneralSecurityException, CryptoException {
-		File file = new File(TEST_KS_FILENAME);
-		assertAny(Files.deleteIfExists(file.toPath()));
-		assertFalse(file.exists());
+		File file = newFile(TEST_KS_FILENAME);
 
 		KeyStore jks = KeyStore.getInstance("pkcs12");
-		jks.load(null, "password".toCharArray());
+		jks.load(null, TEST_SECRET.toCharArray());
 
+		// Only secp256k1 curve is supported - use a different curve here
         KeyPairGenerator keyGen = KeyPairGenerator.getInstance("EC");
         keyGen.initialize(new ECGenParameterSpec("secp256r1"), new SecureRandom());
 
@@ -200,7 +176,7 @@ public class RadixKeyStoreTest {
         KeyStore.PrivateKeyEntry entry = new KeyStore.PrivateKeyEntry(privKey, chain);
         jks.setEntry("test", entry, new KeyStore.PasswordProtection(new char[0]));
 
-        try (RadixKeyStore rks = new RadixKeyStore(file, jks, "password".toCharArray())) {
+        try (RadixKeyStore rks = new RadixKeyStore(file, jks, TEST_SECRET.toCharArray())) {
         	assertThatThrownBy(() -> rks.readKeyPair("test", false))
         		.isInstanceOf(CryptoException.class)
         		.hasMessageContaining("Unknown curve")
@@ -216,7 +192,7 @@ public class RadixKeyStoreTest {
 		KeyStore jks = KeyStore.getInstance("pkcs12");
 		jks.load(null, "password".toCharArray());
 
-		SecretKey sk = new PKCS12Key("secret".toCharArray());
+		SecretKey sk = new PKCS12Key(TEST_SECRET.toCharArray());
 		KeyStore.SecretKeyEntry entry = new KeyStore.SecretKeyEntry(sk);
 
 		assertThatThrownBy(() -> jks.setEntry("test", entry, new KeyStore.PasswordProtection(new char[0])))
@@ -225,9 +201,12 @@ public class RadixKeyStoreTest {
 			.hasNoCause();
 	}
 
-	private static void assertAny(boolean result) {
-		if (result) {
-			// Nothing to do
+	private static File newFile(String filename) throws IOException {
+		File file = new File(filename);
+		if (!Files.deleteIfExists(file.toPath())) {
+			// In this case we are fine if "file" does not exist and wasn't deleted.
 		}
+		assertFalse(file.exists());
+		return file;
 	}
 }
