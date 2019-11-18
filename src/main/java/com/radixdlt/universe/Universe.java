@@ -429,7 +429,6 @@ public class Universe {
 	}
 
 	// Type - 1 getter, 1 setter
-	// Better option would be to output string enum value (as with other enums), rather than ordinal
 	@JsonProperty("type")
 	@DsonOutput(Output.ALL)
 	private int getJsonType() {
@@ -442,8 +441,6 @@ public class Universe {
 	}
 
 	// Signature - 1 getter, 1 setter.
-	// Better option would be to make public keys primitive types as they are
-	// very common, or alternatively serialize as an embedded object.
 	@JsonProperty("creator")
 	@DsonOutput(Output.ALL)
 	private byte[] getJsonCreator() {
@@ -456,8 +453,6 @@ public class Universe {
 	}
 
 	// Signature - 2 getters, 2 setters.
-	// FIXME: Better option would be to serialize as a ECSignature embedded object
-	// rather than the two individual components directly in the object.
 	@JsonProperty("signature.r")
 	@DsonOutput(value = Output.HASH, include = false)
 	private byte[] getJsonSignatureR() {
