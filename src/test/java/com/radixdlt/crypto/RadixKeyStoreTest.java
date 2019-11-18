@@ -1,6 +1,3 @@
-/**
- *
- */
 package com.radixdlt.crypto;
 
 import java.io.File;
