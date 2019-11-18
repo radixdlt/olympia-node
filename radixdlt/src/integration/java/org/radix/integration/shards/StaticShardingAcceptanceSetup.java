@@ -2,10 +2,13 @@ package org.radix.integration.shards;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.powermock.reflect.Whitebox;
 import org.radix.modules.Modules;
 import org.radix.properties.RuntimeProperties;
+import org.radix.serialization.TestSetupUtils;
+
 import com.radixdlt.universe.Universe;
 import org.radix.universe.system.LocalSystem;
 
@@ -24,6 +27,12 @@ import static org.mockito.ArgumentMatchers.eq;
 public class StaticShardingAcceptanceSetup {
 	// Typed null value
 	private static final LocalSystem NULL_LOCALSYSTEM = null;
+
+	@BeforeClass
+	public static void initialise() {
+		// Needs this to be installed before using the keystore in LocalSystem
+		TestSetupUtils.installBouncyCastleProvider();
+	}
 
 	@Before
 	public void beforeTest() {
@@ -92,7 +101,7 @@ public class StaticShardingAcceptanceSetup {
 		Universe universe = mock(Universe.class);
 		when(universe.getPort()).thenReturn(30000);
 		RuntimeProperties runtimeProperties = mock(RuntimeProperties.class);
-		when(runtimeProperties.get("node.key.path", "node.key")).thenReturn("node.key");
+		when(runtimeProperties.get(eq("node.key.path"), any())).thenReturn("node.ks");
 		when(runtimeProperties.get(eq("shards.range"), any())).thenReturn(value);
 		when(runtimeProperties.get("network.port", 30000)).thenReturn(30000);
 		Modules.replace(Universe.class, universe);
@@ -106,7 +115,7 @@ public class StaticShardingAcceptanceSetup {
 		Universe universe = mock(Universe.class);
 		when(universe.getPort()).thenReturn(30000);
 		RuntimeProperties runtimeProperties = mock(RuntimeProperties.class);
-		when(runtimeProperties.get("node.key.path", "node.key")).thenReturn("node.key");
+		when(runtimeProperties.get(eq("node.key.path"), any())).thenReturn("node.ks");
 		when(runtimeProperties.get(eq("shards.range"), any())).thenReturn(value);
 		when(runtimeProperties.get("network.port", 30000)).thenReturn(30000);
 		Modules.replace(Universe.class, universe);
