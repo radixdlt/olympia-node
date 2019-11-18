@@ -157,6 +157,11 @@ public final class RadixKeyStore implements Closeable {
 	/**
 	 * Writes the specified key pair identified by the specified name to the
 	 * key store.
+	 * <p>
+	 * <b>Implementation note:</b><br> Note that this method will create a new
+	 * file and set it's permissions to just
+	 * {@link PosixFilePermission.OWNER_READ} and
+	 * {@link PosixFilePermission.OWNER_WRITE} on Posix filesystems.
 	 *
 	 * @param name The name the key will have in the key store.  If a key
 	 * 		already exists with this name, it will be overwritten.
