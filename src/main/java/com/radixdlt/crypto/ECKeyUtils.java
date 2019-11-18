@@ -34,6 +34,7 @@ class ECKeyUtils {
 		throw new IllegalStateException("Can't construct");
 	}
 
+	static final String CURVE_NAME = "secp256k1";
 	static final SecureRandom secureRandom = new SecureRandom();
 	private static final X9ECParameters curve;
 	static final ECDomainParameters domain;
@@ -41,7 +42,7 @@ class ECKeyUtils {
 	private static final byte[] order;
 
 	static {
-	    curve = CustomNamedCurves.getByName("secp256k1");
+	    curve = CustomNamedCurves.getByName(CURVE_NAME);
 
 	    domain = new ECDomainParameters(curve.getCurve(), curve.getG(), curve.getN(), curve.getH());
 	    spec = new ECParameterSpec(curve.getCurve(), curve.getG(), curve.getN(), curve.getH());

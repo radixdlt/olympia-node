@@ -56,7 +56,11 @@ class BouncyCastleKeyHandler implements KeyHandler {
 		BigInteger d = new BigInteger(1, privateKey);
 		try {
 			ECPublicKeySpec publicKeySpec = new ECPublicKeySpec(spec.getG().multiply(d), spec);
-			return ((ECPublicKey) KeyFactory.getInstance("EC").generatePublic(publicKeySpec)).getQ().getEncoded(true);
+
+			// Note that the provider here *must* be "BC" for this to work
+			// correctly because we are using the bouncy castle ECPublicKeySpec,
+			// and are casting to a bouncy castle ECPublicKey.
+			return ((ECPublicKey) KeyFactory.getInstance("EC", "BC").generatePublic(publicKeySpec)).getQ().getEncoded(true);
 		} catch (Exception e) {
 			throw new CryptoException(e);
 		}
