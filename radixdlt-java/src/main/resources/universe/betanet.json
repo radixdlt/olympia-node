@@ -10,7 +10,7 @@
     "planck": 60000,
     "genesis": [{
         "metaData": {"timestamp": ":str:1551225600000"},
-        "serializer": "radix.content",
+        "serializer": "radix.atom",
         "version": 100,
         "particleGroups": [
             {

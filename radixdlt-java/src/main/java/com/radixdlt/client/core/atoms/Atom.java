@@ -28,7 +28,7 @@ import java.util.stream.Stream;
  * An atom is the fundamental atomic unit of storage on the ledger (similar to a block
  * in a blockchain) and defines the actions that can be issued onto the ledger.
  */
-@SerializerId2("radix.content")
+@SerializerId2("radix.atom")
 public final class Atom {
 	public static final String METADATA_TIMESTAMP_KEY = "timestamp";
 	public static final String METADATA_POW_NONCE_KEY = "powNonce";
