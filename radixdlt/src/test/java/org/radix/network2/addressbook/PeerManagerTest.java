@@ -4,11 +4,13 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
+import com.radixdlt.TestSetupUtils;
 import com.radixdlt.common.EUID;
 import com.radixdlt.universe.Universe;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
@@ -34,6 +36,7 @@ import org.radix.properties.RuntimeProperties;
 import org.radix.serialization.RadixTest;
 import org.radix.time.RTP.RTPService;
 import org.radix.time.Timestamps;
+import org.radix.universe.system.LocalSystem;
 import org.radix.universe.system.RadixSystem;
 import org.radix.universe.system.SystemMessage;
 
@@ -79,7 +82,19 @@ public class PeerManagerTest extends RadixTest {
     private TransportInfo transportInfo4;
     private ArgumentCaptor<Peer> peerArgumentCaptor;
     private ArgumentCaptor<Message> messageArgumentCaptor;
-    private Multimap<Peer, ? extends Message> peerMessageMultimap;
+    private Multimap<Peer, Message> peerMessageMultimap;
+
+    @BeforeClass
+    public static void beforeClass() {
+    	// This takes a relatively long time to read the encrypted key store now
+    	// on first construction, so make sure we pre-initialise here before
+    	// running timing critical tests.
+    	TestSetupUtils.installBouncyCastleProvider();
+    	long start = System.nanoTime();
+    	LocalSystem.getInstance();
+    	long finish = System.nanoTime();
+    	System.out.format("%.3f seconds to initialise%n", (finish - start) / 1E9);
+    }
 
     @Before
     public void setUp() {
@@ -123,7 +138,7 @@ public class PeerManagerTest extends RadixTest {
         messageArgumentCaptor = ArgumentCaptor.forClass(Message.class);
         doAnswer(invocation -> {
             peerMessageMultimap.put(invocation.getArgument(0), invocation.getArgument(1));
-            MessageListener messageListener = messageListenerRegistry.get(invocation.getArgument(1).getClass());
+            MessageListener<Message> messageListener = messageListenerRegistry.get(invocation.getArgument(1).getClass());
             messageListener.handleMessage(invocation.getArgument(0), invocation.getArgument(1));
             return null;
         }).when(messageCentral).send(peerArgumentCaptor.capture(), messageArgumentCaptor.capture());
