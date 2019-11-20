@@ -69,7 +69,7 @@ public class RadixTest
 		Modules.remove(Universe.class); // GenerateUniverses adds this
 		Modules.put(Universe.class, universe);
 
-		LocalSystem.getInstance(); // Load node.key, after universe
+		LocalSystem.getInstance(); // Load node.ks, after universe
 	}
 
 

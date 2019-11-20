@@ -2,6 +2,7 @@ package org.radix.network2.addressbook;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.radix.Radix;
@@ -11,6 +12,7 @@ import org.radix.network2.transport.StaticTransportMetadata;
 import org.radix.network2.transport.TransportInfo;
 import org.radix.network2.transport.udp.UDPConstants;
 import org.radix.properties.RuntimeProperties;
+import org.radix.serialization.TestSetupUtils;
 import org.radix.shards.ShardSpace;
 import org.radix.universe.system.LocalSystem;
 import org.radix.universe.system.RadixSystem;
@@ -29,6 +31,11 @@ import static org.mockito.Mockito.*;
  * other parts of the system (singletons etc).
  */
 public class StandardFilters2Test {
+
+	@BeforeClass
+	public static void beforeClass() {
+		TestSetupUtils.installBouncyCastleProvider();
+	}
 
 	@Before
 	public void setUp() throws Exception {
@@ -92,7 +99,7 @@ public class StandardFilters2Test {
 	public void testNotOurNID() {
 		try {
 			RuntimeProperties properties = mock(RuntimeProperties.class);
-			when(properties.get(eq("node.key.path"), any())).thenReturn("node.key");
+			when(properties.get(eq("node.key.path"), any())).thenReturn("node.ks");
 			when(properties.get(eq("shards.range"), anyLong())).thenReturn(ShardSpace.SHARD_CHUNK_RANGE);
 			Modules.put(RuntimeProperties.class, properties);
 
@@ -113,7 +120,7 @@ public class StandardFilters2Test {
 	public void testHasOverlappingShards() throws CryptoException {
 		try {
 			RuntimeProperties properties = mock(RuntimeProperties.class);
-			when(properties.get(eq("node.key.path"), any())).thenReturn("node.key");
+			when(properties.get(eq("node.key.path"), any())).thenReturn("node.ks");
 			when(properties.get(eq("shards.range"), anyLong())).thenReturn(1L);
 			Modules.put(RuntimeProperties.class, properties);
 
