@@ -73,7 +73,6 @@ public final class RadixEngineUtils {
 	}
 
 	public static SimpleRadixEngineAtom toCMAtom(ImmutableAtom atom) throws CMAtomConversionException {
-		// TODO: Move to more appropriate place
 		final int computedSize;
 		try {
 			computedSize = Serialization.getDefault().toDson(atom, Output.PERSIST).length;

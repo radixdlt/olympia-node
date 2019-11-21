@@ -239,12 +239,6 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 			final Spin currentSpin = SpinStateMachine.isAfter(virtualSpin, physicalSpin) ? virtualSpin : physicalSpin;
 			if (!SpinStateMachine.canTransition(currentSpin, nextSpin)) {
 				if (!SpinStateMachine.isBefore(currentSpin, nextSpin)) {
-					// TODO: Refactor so that two DB fetches aren't required to get conflicting atoms
-					// TODO Because we're checking SpunParticles I understand there can only be one of
-					// them in store as they are unique.
-					//
-					// Modified StateProviderFromStore.getAtomsContaining to be singular based on the
-					// above assumption.
 					engineStore.getAtomContaining(particle, nextSpin == Spin.DOWN, conflictAtom -> {
 						storeAtom.listener.onStateConflict(cmAtom, dp, conflictAtom);
 						atomEventListeners.forEach(listener -> listener.onStateConflict(cmAtom, dp, conflictAtom));
