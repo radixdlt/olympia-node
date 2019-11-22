@@ -4,7 +4,6 @@ import com.radixdlt.crypto.ECPublicKey;
 
 /**
  * Metadata of a relevant Atom
- * TODO: Move this logic into OS layer
  */
 public interface WitnessData {
 	/**

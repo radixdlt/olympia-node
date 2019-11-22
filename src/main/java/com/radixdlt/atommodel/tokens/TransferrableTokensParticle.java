@@ -44,7 +44,6 @@ public final class TransferrableTokensParticle extends Particle {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private UInt256 amount;
 
-	// FIXME: Temporary, will remove once atom dependency is implemented
 	private Map<TokenTransition, TokenPermission> tokenPermissions;
 
 	public TransferrableTokensParticle() {

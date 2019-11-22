@@ -41,25 +41,26 @@ public final class ECPublicKey {
 	}
 
 	private void validatePublic(byte[] publicKey) throws CryptoException {
-		if (publicKey == null) {
-			throw new CryptoException("Public key is null");
+		if (publicKey == null || publicKey.length == 0) {
+			throw new CryptoException("Public key is empty");
 		}
 
 		int pubkey0 = publicKey[0] & 0xFF;
-		if (pubkey0 != 2 && pubkey0 != 3 && pubkey0 != 4) {
+		switch (pubkey0) {
+		case 2:
+		case 3:
+			if (publicKey.length != BYTES + 1) {
+				throw new CryptoException("Public key is an invalid compressed size");
+			}
+			break;
+		case 4:
+			if (publicKey.length != (BYTES * 2) + 1) {
+				throw new CryptoException("Public key is an invalid uncompressed size");
+			}
+			break;
+		default:
 			throw new CryptoException("Public key is an invalid format");
 		}
-
-		if (pubkey0 == 4 && publicKey.length != (BYTES * 2) + 1) {
-			throw new CryptoException("Public key is an invalid uncompressed size");
-		}
-
-		if ((pubkey0 == 2 || pubkey0 == 3) && publicKey.length != BYTES + 1) {
-			throw new CryptoException("Public key is an invalid compressed size");
-		}
-
-		// TODO want to check Y value for compressed pub keys?
-		// What are the performance implications?
 	}
 
 
