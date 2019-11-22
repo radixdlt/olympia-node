@@ -15,7 +15,9 @@ public enum CMErrorCode {
 	NO_FULL_POP_ERROR("Neither input nor output are fully popped"),
 	WITNESS_ERROR("Witness error"),
 	TRANSITION_PRECONDITION_FAILURE("Transition Precondition failure"),
-	TRANSITION_ERROR("Transition error");
+	TRANSITION_ERROR("Transition error"),
+	ARITHMETIC_ERROR("Arithmetic error");
+
 
 	private final String description;
 

@@ -5,6 +5,9 @@ package com.radixdlt.utils;
  */
 public final class UIntUtils {
 
+	private static final String OVERFLOW = "overflow";
+	private static final String UNDERFLOW = "underflow";
+
 	// Values taken from
 	// https://en.wikipedia.org/wiki/Double-precision_floating-point_format
 	private static final int  SIGNIFICAND_PREC = 53; // Including implicit leading one bit
@@ -26,10 +29,27 @@ public final class UIntUtils {
 	 * @return {@code addend + augend} if no overflow
 	 * @throws ArithmeticException if an overflow occurs
 	 */
+	public static UInt256 addWithOverflow(UInt256 addend, UInt256 augend) {
+		UInt256 maxAddend = UInt256.MAX_VALUE.subtract(augend);
+		if (maxAddend.compareTo(addend) < 0) {
+			throw new ArithmeticException(OVERFLOW);
+		}
+		return addend.add(augend);
+	}
+
+	/**
+	 * Compute {@code addend + augend}, throwing an exception if overflow
+	 * occurs.
+	 *
+	 * @param addend The addend
+	 * @param augend The augend
+	 * @return {@code addend + augend} if no overflow
+	 * @throws ArithmeticException if an overflow occurs
+	 */
 	public static UInt384 addWithOverflow(UInt384 addend, UInt256 augend) {
 		UInt384 maxAddend = UInt384.MAX_VALUE.subtract(augend);
 		if (maxAddend.compareTo(addend) < 0) {
-			throw new ArithmeticException("overflow");
+			throw new ArithmeticException(OVERFLOW);
 		}
 		return addend.add(augend);
 	}
@@ -46,7 +66,7 @@ public final class UIntUtils {
 	public static UInt384 addWithOverflow(UInt384 addend, UInt384 augend) {
 		UInt384 maxAddend = UInt384.MAX_VALUE.subtract(augend);
 		if (maxAddend.compareTo(addend) < 0) {
-			throw new ArithmeticException("overflow");
+			throw new ArithmeticException(OVERFLOW);
 		}
 		return addend.add(augend);
 	}
@@ -60,9 +80,25 @@ public final class UIntUtils {
 	 * @return {@code minuend - subtrahend} if no overflow
 	 * @throws ArithmeticException if an underflow occurs
 	 */
+	public static UInt256 subtractWithUnderflow(UInt256 minuend, UInt256 subtrahend) {
+		if (minuend.compareTo(subtrahend) < 0) {
+			throw new ArithmeticException(UNDERFLOW);
+		}
+		return minuend.subtract(subtrahend);
+	}
+
+	/**
+	 * Compute {@code minuend - subtrahend}, throwing an exception if underflow
+	 * occurs.
+	 *
+	 * @param addend The minuend
+	 * @param augend The subtrahend
+	 * @return {@code minuend - subtrahend} if no overflow
+	 * @throws ArithmeticException if an underflow occurs
+	 */
 	public static UInt384 subtractWithUnderflow(UInt384 minuend, UInt256 subtrahend) {
 		if (minuend.compareTo(UInt384.from(subtrahend)) < 0) {
-			throw new ArithmeticException("underflow");
+			throw new ArithmeticException(UNDERFLOW);
 		}
 		return minuend.subtract(subtrahend);
 	}
@@ -78,7 +114,7 @@ public final class UIntUtils {
 	 */
 	public static UInt384 subtractWithUnderflow(UInt384 minuend, UInt384 subtrahend) {
 		if (minuend.compareTo(subtrahend) < 0) {
-			throw new ArithmeticException("underflow");
+			throw new ArithmeticException(UNDERFLOW);
 		}
 		return minuend.subtract(subtrahend);
 	}

@@ -8,7 +8,6 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.ECSignature;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.store.SpinStateMachine;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,6 +18,8 @@ import java.util.function.Function;
  * An implementation of a UTXO based constraint machine which uses Radix's atom structure.
  */
 public final class ConstraintMachine {
+	private static final boolean[] truefalse = new boolean[] { true, false };
+
 	public static class Builder {
 		private Function<Particle, Result> particleStaticCheck;
 		private Function<TransitionToken, TransitionProcedure<Particle, UsedData, Particle, UsedData>> particleProcedures;
@@ -240,52 +241,55 @@ public final class ConstraintMachine {
 		}
 
 		Optional<UsedData> prevUsedData = null;
-		for (Boolean testInput : Arrays.asList(Boolean.TRUE, Boolean.FALSE)) {
+		for (boolean testInput : truefalse) {
 
 			UsedCompute<Particle, UsedData, Particle, UsedData> usedCompute
 				= testInput ? transitionProcedure.inputUsedCompute() : transitionProcedure.outputUsedCompute();
 
-			final Optional<UsedData> usedData = usedCompute.compute(inputParticle, inputUsed, outputParticle, outputUsed);
-			if (usedData.isPresent()) {
-				if (prevUsedData != null && prevUsedData.isPresent()) {
-					return Optional.of(
-						new CMError(
-							dp,
-							CMErrorCode.NO_FULL_POP_ERROR,
-							validationState
-						)
-					);
-				}
+			try {
+				final Optional<UsedData> usedData = usedCompute.compute(inputParticle, inputUsed, outputParticle, outputUsed);
+				if (usedData.isPresent()) {
+					if (prevUsedData != null && prevUsedData.isPresent()) {
+						return Optional.of(
+								new CMError(
+										dp,
+										CMErrorCode.NO_FULL_POP_ERROR,
+										validationState
+										)
+								);
+					}
 
-				if (isInput) {
-					validationState.popAndReplace(nextParticle, true, usedData.get());
+					if (isInput) {
+						validationState.popAndReplace(nextParticle, true, usedData.get());
+					} else {
+						validationState.updateUsed(usedData.get());
+					}
 				} else {
-					validationState.updateUsed(usedData.get());
-				}
-			} else {
-				final WitnessValidator<Particle> witnessValidator = testInput ? transitionProcedure.inputWitnessValidator()
-					: transitionProcedure.outputWitnessValidator();
-				final WitnessValidatorResult inputWitness = witnessValidator.validate(
-					testInput ? inputParticle : outputParticle, validationState::isSignedBy
-				);
+					final WitnessValidator<Particle> witnessValidator = testInput ? transitionProcedure.inputWitnessValidator()
+							: transitionProcedure.outputWitnessValidator();
+					final WitnessValidatorResult inputWitness = witnessValidator.validate(
+							testInput ? inputParticle : outputParticle, validationState::isSignedBy
+							);
 
-				if (inputWitness.isError()) {
-					return Optional.of(
-						new CMError(
-							dp,
-							CMErrorCode.WITNESS_ERROR,
-							validationState,
-							inputWitness.getErrorMessage()
-						)
-					);
-				}
+					if (inputWitness.isError()) {
+						return Optional.of(
+								new CMError(
+										dp,
+										CMErrorCode.WITNESS_ERROR,
+										validationState,
+										inputWitness.getErrorMessage()
+										)
+								);
+					}
 
-				if (prevUsedData != null && !prevUsedData.isPresent()) {
-					validationState.pop();
+					if (prevUsedData != null && !prevUsedData.isPresent()) {
+						validationState.pop();
+					}
 				}
+				prevUsedData = usedData;
+			} catch (ArithmeticException e) {
+				return Optional.of(new CMError(dp, CMErrorCode.ARITHMETIC_ERROR, validationState, e.getMessage()));
 			}
-
-			prevUsedData = usedData;
 		}
 
 		validationState.setCurrentTransitionToken(null);
