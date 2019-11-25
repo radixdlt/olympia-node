@@ -13,6 +13,8 @@ import com.radixdlt.constraintmachine.VoidUsedData;
 import com.radixdlt.constraintmachine.WitnessValidator;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
 import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.UIntUtils;
+
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiFunction;
@@ -23,13 +25,14 @@ import java.util.function.Function;
  */
 public final class CreateFungibleTransitionRoutine<I extends Particle, O extends Particle> implements ConstraintRoutine {
 	public static class UsedAmount implements UsedData {
-		private final UInt256 usedAmount;
+		private final UInt256 amount;
+
 		UsedAmount(UInt256 usedAmount) {
-			this.usedAmount = usedAmount;
+			this.amount = usedAmount;
 		}
 
 		public UInt256 getUsedAmount() {
-			return usedAmount;
+			return this.amount;
 		}
 
 		@Override
@@ -39,7 +42,7 @@ public final class CreateFungibleTransitionRoutine<I extends Particle, O extends
 
 		@Override
 		public int hashCode() {
-			return usedAmount.hashCode();
+			return this.amount.hashCode();
 		}
 
 		@Override
@@ -49,7 +52,12 @@ public final class CreateFungibleTransitionRoutine<I extends Particle, O extends
 			}
 
 			UsedAmount u = (UsedAmount) obj;
-			return this.usedAmount.equals(u.usedAmount);
+			return this.amount.equals(u.amount);
+		}
+
+		@Override
+		public String toString() {
+			return String.valueOf(this.amount);
 		}
 	}
 
@@ -80,6 +88,7 @@ public final class CreateFungibleTransitionRoutine<I extends Particle, O extends
 		this.inputWitnessValidator = inputWitnessValidator;
 	}
 
+	@Override
 	public void main(RoutineCalls calls) {
 		calls.createTransition(
 			new TransitionToken<>(inputClass, TypeToken.of(VoidUsedData.class), outputClass, TypeToken.of(VoidUsedData.class)),
@@ -118,10 +127,32 @@ public final class CreateFungibleTransitionRoutine<I extends Particle, O extends
 		public UsedCompute<I, N, O, U> inputUsedCompute() {
 			return (inputParticle, inputUsed, outputParticle, outputUsed) -> {
 				final UInt256 inputUsedAmount = inputUsedMapper.apply(inputUsed);
-				final UInt256 inputAmount = inputAmountMapper.apply(inputParticle).subtract(inputUsedAmount);
-				final UInt256 outputAmount = outputAmountMapper.apply(outputParticle).subtract(outputUsedMapper.apply(outputUsed));
+				final UInt256 inputAmount =
+					UIntUtils.subtractWithUnderflow(inputAmountMapper.apply(inputParticle), inputUsedAmount);
+				final UInt256 outputAmount =
+					UIntUtils.subtractWithUnderflow(outputAmountMapper.apply(outputParticle), outputUsedMapper.apply(outputUsed));
+				// Note that overflow is not possible in the addition below.
+				// Given
+				//   inputAmount > outputAmount                                  (comparison in java code below)
+				//   => inputParticle - inputUsed > outputParticle - outputUsed  (substitute equalities)
+				//   => outputParticle - outputUsed < inputParticle - inputUsed  (rearrange [1])
+				// and
+				//   inputUsed + outputAmount <= MAX_VALUE                       (otherwise overflow occurs)
+				//   => inputUsed + outputParticle - outputUsed <= MAX_VALUE     (substitute equalities [2])
+				//
+				// Assume that
+				//   inputUsed + outputParticle - outputUsed > MAX_VALUE         (contradiction of [2])
+				// but
+				//   outputParticle - outputUsed < inputParticle - inputUsed     (from [1])
+				// so this also must be true
+				//   inputUsed + inputParticle - inputUsed > MAX_VALUE           (substitute larger term)
+				//   => inputParticle > MAX_VALUE                                (combine terms)
+				// but this cannot be true, due to properties of variables, therefore
+				//   inputUsed + outputParticle - outputUsed <= MAX_VALUE
 				int compare = inputAmount.compareTo(outputAmount);
-				return compare > 0 ? Optional.of(new UsedAmount(inputUsedAmount.add(outputAmount))) : Optional.empty();
+				return compare > 0
+					? Optional.of(new UsedAmount(inputUsedAmount.add(outputAmount)))
+					: Optional.empty();
 			};
 		}
 
@@ -129,10 +160,32 @@ public final class CreateFungibleTransitionRoutine<I extends Particle, O extends
 		public UsedCompute<I, N, O, U> outputUsedCompute() {
 			return (inputParticle, inputUsed, outputParticle, outputUsed) -> {
 				final UInt256 outputUsedAmount = outputUsedMapper.apply(outputUsed);
-				final UInt256 inputAmount = inputAmountMapper.apply(inputParticle).subtract(inputUsedMapper.apply(inputUsed));
-				final UInt256 outputAmount = outputAmountMapper.apply(outputParticle).subtract(outputUsedAmount);
+				final UInt256 inputAmount =
+					UIntUtils.subtractWithUnderflow(inputAmountMapper.apply(inputParticle), inputUsedMapper.apply(inputUsed));
+				final UInt256 outputAmount =
+					UIntUtils.subtractWithUnderflow(outputAmountMapper.apply(outputParticle), outputUsedAmount);
+				// Note that overflow is not possible in the addition below.
+				// Given
+				//   inputAmount < outputAmount                                  (comparison in java code below)
+				//   => inputParticle - inputUsed < outputParticle - outputUsed  (substitute equalities [1])
+				//   => outputParticle - outputUsed > inputParticle - inputUsed  (rearrange [1])
+				// and
+				//   outputUsed + inputAmount <= MAX_VALUE                       (otherwise overflow occurs)
+				//   => outputUsed + inputParticle - inputUsed <= MAX_VALUE      (substitute equalities [2])
+				//
+				// Assume that
+				//   outputUsed + inputParticle - inputUsed > MAX_VALUE          (contradiction of [2])
+				// but
+				//   outputParticle - outputUsed > inputParticle - inputUsed     (from [1])
+				// so this also must be true
+				//   outputUsed + outputParticle - outputUsed > MAX_VALUE        (substitute larger term)
+				//   => outputParticle > MAX_VALUE                               (combine terms)
+				// but this cannot be true, due to properties of variables, therefore
+				//   outputUsed + inputParticle - inputUsed <= MAX_VALUE
 				int compare = inputAmount.compareTo(outputAmount);
-				return compare < 0 ? Optional.of(new UsedAmount(outputUsedAmount.add(inputAmount))) : Optional.empty();
+				return compare < 0
+					? Optional.of(new UsedAmount(UIntUtils.addWithOverflow(outputUsedAmount, inputAmount)))
+					: Optional.empty();
 			};
 		}
 

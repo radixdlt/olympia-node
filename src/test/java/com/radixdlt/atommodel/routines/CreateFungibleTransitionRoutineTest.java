@@ -1,7 +1,6 @@
 package com.radixdlt.atommodel.routines;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
+import org.junit.Test;
 
 import com.radixdlt.atommodel.routines.CreateFungibleTransitionRoutine.UsedAmount;
 import com.radixdlt.atomos.Result;
@@ -10,7 +9,8 @@ import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.VoidUsedData;
 import com.radixdlt.constraintmachine.WitnessValidator;
 import com.radixdlt.utils.UInt256;
-import org.junit.Test;
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Mockito.mock;
 
 public class CreateFungibleTransitionRoutineTest {
 	private static class Fungible extends Particle {
@@ -27,6 +27,52 @@ public class CreateFungibleTransitionRoutineTest {
 		public String toString() {
 			return "Fungible " + amount;
 		}
+	}
+
+	@Test
+	public void when_underflowing_input__then_arithmetic_exception_thrown() {
+		TransitionProcedure<Fungible, UsedAmount, Fungible, VoidUsedData> procedure = new CreateFungibleTransitionRoutine<>(
+			Fungible.class, Fungible.class, Fungible::getAmount, Fungible::getAmount,
+			(a, b) -> Result.success(),
+			mock(WitnessValidator.class)
+		).getProcedure1();
+
+		assertThatThrownBy(() -> procedure.inputUsedCompute().compute(
+			new Fungible(UInt256.ONE),
+			new UsedAmount(UInt256.TWO),
+			new Fungible(UInt256.ZERO),
+			null
+		)).isInstanceOf(ArithmeticException.class).hasMessage("underflow").hasNoCause();
+
+		assertThatThrownBy(() -> procedure.outputUsedCompute().compute(
+			new Fungible(UInt256.ONE),
+			new UsedAmount(UInt256.TWO),
+			new Fungible(UInt256.ZERO),
+			null
+		)).isInstanceOf(ArithmeticException.class).hasMessage("underflow").hasNoCause();
+	}
+
+	@Test
+	public void when_underflowing_output__then_arithmetic_exception_thrown() {
+		TransitionProcedure<Fungible, VoidUsedData, Fungible, UsedAmount> procedure = new CreateFungibleTransitionRoutine<>(
+			Fungible.class, Fungible.class, Fungible::getAmount, Fungible::getAmount,
+			(a, b) -> Result.success(),
+			mock(WitnessValidator.class)
+		).getProcedure2();
+
+		assertThatThrownBy(() -> procedure.inputUsedCompute().compute(
+			new Fungible(UInt256.ONE),
+			null,
+			new Fungible(UInt256.ONE),
+			new UsedAmount(UInt256.TWO)
+		)).isInstanceOf(ArithmeticException.class).hasMessage("underflow").hasNoCause();
+
+		assertThatThrownBy(() -> procedure.outputUsedCompute().compute(
+			new Fungible(UInt256.ONE),
+			null,
+			new Fungible(UInt256.ONE),
+			new UsedAmount(UInt256.TWO)
+		)).isInstanceOf(ArithmeticException.class).hasMessage("underflow").hasNoCause();
 	}
 
 	@Test
