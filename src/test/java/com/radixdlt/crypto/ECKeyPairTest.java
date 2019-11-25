@@ -3,11 +3,19 @@ package com.radixdlt.crypto;
 import java.nio.charset.StandardCharsets;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import com.radixdlt.TestSetupUtils;
+
 public class ECKeyPairTest {
+	@BeforeClass
+	public static void beforeClass() {
+		TestSetupUtils.installBouncyCastleProvider();
+	}
+
 	@Rule
 	public ExpectedException thrown = ExpectedException.none();
 
