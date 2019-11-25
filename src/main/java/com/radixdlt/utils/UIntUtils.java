@@ -81,7 +81,8 @@ public final class UIntUtils {
 	 * @throws ArithmeticException if an underflow occurs
 	 */
 	public static UInt256 subtractWithUnderflow(UInt256 minuend, UInt256 subtrahend) {
-		if (minuend.compareTo(subtrahend) < 0) {
+		UInt256 minMinuend = UInt256.MIN_VALUE.add(minuend);
+		if (minMinuend.compareTo(subtrahend) < 0) {
 			throw new ArithmeticException(UNDERFLOW);
 		}
 		return minuend.subtract(subtrahend);
@@ -97,7 +98,8 @@ public final class UIntUtils {
 	 * @throws ArithmeticException if an underflow occurs
 	 */
 	public static UInt384 subtractWithUnderflow(UInt384 minuend, UInt256 subtrahend) {
-		if (minuend.compareTo(UInt384.from(subtrahend)) < 0) {
+		UInt384 minMinuend = UInt384.MIN_VALUE.add(minuend);
+		if (minMinuend.compareTo(UInt384.from(subtrahend)) < 0) {
 			throw new ArithmeticException(UNDERFLOW);
 		}
 		return minuend.subtract(subtrahend);
@@ -113,7 +115,8 @@ public final class UIntUtils {
 	 * @throws ArithmeticException if an underflow occurs
 	 */
 	public static UInt384 subtractWithUnderflow(UInt384 minuend, UInt384 subtrahend) {
-		if (minuend.compareTo(subtrahend) < 0) {
+		UInt384 minMinuend = UInt384.MIN_VALUE.add(minuend);
+		if (minMinuend.compareTo(subtrahend) < 0) {
 			throw new ArithmeticException(UNDERFLOW);
 		}
 		return minuend.subtract(subtrahend);

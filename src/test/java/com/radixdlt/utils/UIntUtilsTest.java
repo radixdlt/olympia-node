@@ -20,6 +20,11 @@ public class UIntUtilsTest {
 		assertEquals(UInt384.TEN, UIntUtils.addWithOverflow(UInt384.FIVE, UInt256.FIVE));
 	}
 
+	@Test
+	public void when_adding_two_uint256_values__the_correct_result_is_returned() {
+		assertEquals(UInt256.TEN, UIntUtils.addWithOverflow(UInt256.FIVE, UInt256.FIVE));
+	}
+
 	@Test(expected = ArithmeticException.class)
 	public void when_adding_uint384_one_to_max_value__an_exception_is_thrown() {
 		UIntUtils.addWithOverflow(UInt384.MAX_VALUE, UInt384.ONE);
@@ -29,6 +34,12 @@ public class UIntUtilsTest {
 	@Test(expected = ArithmeticException.class)
 	public void when_adding_uint256_one_to_max_value__an_exception_is_thrown() {
 		UIntUtils.addWithOverflow(UInt384.MAX_VALUE, UInt256.ONE);
+		fail();
+	}
+
+	@Test(expected = ArithmeticException.class)
+	public void when_adding_uint256_one_to_uint256_max_value__an_exception_is_thrown() {
+		UIntUtils.addWithOverflow(UInt256.MAX_VALUE, UInt256.ONE);
 		fail();
 	}
 
@@ -42,6 +53,11 @@ public class UIntUtilsTest {
 		assertEquals(UInt384.FIVE, UIntUtils.subtractWithUnderflow(UInt384.TEN, UInt256.FIVE));
 	}
 
+	@Test
+	public void when_subtracting_two_uint256_values__the_correct_result_is_returned() {
+		assertEquals(UInt256.FIVE, UIntUtils.subtractWithUnderflow(UInt256.TEN, UInt256.FIVE));
+	}
+
 	@Test(expected = ArithmeticException.class)
 	public void when_subtracting_uint384_one_from_zero__an_exception_is_thrown() {
 		UIntUtils.subtractWithUnderflow(UInt384.ZERO, UInt384.ONE);
@@ -51,6 +67,12 @@ public class UIntUtilsTest {
 	@Test(expected = ArithmeticException.class)
 	public void when_subtracting_uint256_one_from_zero__an_exception_is_thrown() {
 		UIntUtils.subtractWithUnderflow(UInt384.ZERO, UInt256.ONE);
+		fail();
+	}
+
+	@Test(expected = ArithmeticException.class)
+	public void when_subtracting_uint256_one_from_uint256_zero__an_exception_is_thrown() {
+		UIntUtils.subtractWithUnderflow(UInt256.ZERO, UInt256.ONE);
 		fail();
 	}
 

@@ -18,7 +18,9 @@ import java.util.function.Function;
  * An implementation of a UTXO based constraint machine which uses Radix's atom structure.
  */
 public final class ConstraintMachine {
-	private static final boolean[] truefalse = new boolean[] { true, false };
+	private static final boolean[] truefalse = new boolean[] {
+		true, false
+	};
 
 	public static class Builder {
 		private Function<Particle, Result> particleStaticCheck;

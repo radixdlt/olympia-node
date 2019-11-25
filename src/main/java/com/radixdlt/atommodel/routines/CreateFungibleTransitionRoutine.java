@@ -26,12 +26,13 @@ import java.util.function.Function;
 public final class CreateFungibleTransitionRoutine<I extends Particle, O extends Particle> implements ConstraintRoutine {
 	public static class UsedAmount implements UsedData {
 		private final UInt256 amount;
+
 		UsedAmount(UInt256 usedAmount) {
 			this.amount = usedAmount;
 		}
 
 		public UInt256 getUsedAmount() {
-			return amount;
+			return this.amount;
 		}
 
 		@Override
@@ -41,7 +42,7 @@ public final class CreateFungibleTransitionRoutine<I extends Particle, O extends
 
 		@Override
 		public int hashCode() {
-			return amount.hashCode();
+			return this.amount.hashCode();
 		}
 
 		@Override
